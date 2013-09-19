@@ -96,6 +96,7 @@ public class VfpuState extends FpuState {
     public static final int pspNaNint = 0x7F800001;
     public static final int pspNaNintBad = 0x7FC00001;
     public static final float pspNaNfloat = Float.intBitsToFloat(pspNaNint);
+    public static final float PI_2 = (float) (Math.PI * 0.5);
 
     private static class Random {
         private long seed;
@@ -1154,7 +1155,11 @@ public class VfpuState extends FpuState {
         }
     }
 
-    static public float halffloatToFloat(int imm16) {   
+    private void consumeVpfxt() {
+        vcr.pfxt.enabled = false;
+    }
+
+    static public int halffloatToFloat(int imm16) { 
         int s = (imm16 >> 15) & 0x00000001; // sign
         int e = (imm16 >> 10) & 0x0000001f; // exponent
         int f = (imm16 >>  0) & 0x000003ff; // fraction
@@ -1164,7 +1169,7 @@ public class VfpuState extends FpuState {
             // need to handle +-0 case f==0 or f=0x8000?
             if (f == 0) {
                 // Plus or minus zero
-                return Float.intBitsToFloat(s << 31);                
+                return s << 31;                
             }
 			// Denormalized number -- renormalize it
 			while ((f & 0x00000400) == 0) {
@@ -1176,16 +1181,16 @@ public class VfpuState extends FpuState {
         } else if (e == 31) {
             if (f == 0) {
                 // Inf
-                return Float.intBitsToFloat((s << 31) | 0x7f800000);
+                return (s << 31) | 0x7f800000;
             }
 			// NaN
-			return Float.intBitsToFloat((s << 31) | 0x7f800000 | (f << 13));
+			return (s << 31) | 0x7f800000 | f; // fraction is not shifted by PSP
         }
 
         e = e + (127 - 15);
         f = f << 13;
-       
-        return Float.intBitsToFloat((s << 31) | (e << 23) | f);
+
+        return (s << 31) | (e << 23) | f;
     }
 
     int floatToHalffloat(int i) {
@@ -1211,6 +1216,7 @@ public class VfpuState extends FpuState {
             }
             // NAN
             f >>= 13;
+			f = 0x3ff; // PSP always encodes NaN with this value
             return s | 0x7c00 | f | ((f == 0) ? 1 : 0);
         }
         if (e > 30) {
@@ -1707,7 +1713,19 @@ public class VfpuState extends FpuState {
         loadVt(vsize, vt);
 
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = Math.signum(v1[i] - v2[i]);
+        	if (Float.isInfinite(v1[i]) && Float.isInfinite(v2[i])) {
+        		if (v1[i] == v2[i]) {
+        			// +Inf and +Inf
+        			// -Inf and -Inf
+        			v3[i] = 0f;
+        		} else {
+        			// +Inf and -Inf
+        			// -Inf and +Inf
+        			v3[i] = Math.signum(v1[i]);
+        		}
+        	} else {
+        		v3[i] = Math.signum(v1[i] - v2[i]);
+        	}
         }
 
         saveVd(vsize, vd, v3);
@@ -1750,6 +1768,9 @@ public class VfpuState extends FpuState {
     public void doVMOV(int vsize, int vd, int vs) {
         loadVsInt(vsize, vs);
         saveVdInt(vsize, vd, v1i);
+
+        // VMOV consumes VPFXT prefix.
+        consumeVpfxt();
     }
 
     // VFPU4:VABS
@@ -1839,7 +1860,7 @@ public class VfpuState extends FpuState {
     public void doVSIN(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = (float) Math.sin(0.5 * Math.PI * v1[i]);
+            v3[i] = (float) Math.sin(PI_2 * v1[i]);
         }
         saveVd(vsize, vd, v3);
     }
@@ -1847,7 +1868,7 @@ public class VfpuState extends FpuState {
     public void doVCOS(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = (float) Math.cos(0.5 * Math.PI * v1[i]);
+            v3[i] = (float) Math.cos(PI_2 * v1[i]);
         }
         saveVd(vsize, vd, v3);
     }
@@ -1881,7 +1902,7 @@ public class VfpuState extends FpuState {
     public void doVASIN(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = (float) (Math.asin(v1[i]) * 2.0 / Math.PI);
+            v3[i] = ((float) Math.asin(v1[i])) / PI_2;
         }
         saveVd(vsize, vd, v3);
     }
@@ -1890,7 +1911,7 @@ public class VfpuState extends FpuState {
     public void doVNRCP(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = 0.0f - (1.0f / v1[i]);
+            v3[i] = -1f / v1[i];
         }
         saveVd(vsize, vd, v3);
     }
@@ -1899,7 +1920,7 @@ public class VfpuState extends FpuState {
     public void doVNSIN(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = 0.0f - (float) Math.sin(0.5 * Math.PI * v1[i]);
+            v3[i] = - (float) Math.sin(PI_2 * v1[i]);
         }
         saveVd(vsize, vd, v3);
     }
@@ -1967,10 +1988,10 @@ public class VfpuState extends FpuState {
         loadVsInt(vsize, vs);
         for (int i = 0, j = 0; i < vsize; ++i, j += 2) {
             int imm32 = v1i[i];
-            v3[j] = halffloatToFloat(imm32 & 0xFFFF);
-            v3[j + 1] = halffloatToFloat(imm32 >>> 16);
+            v3i[j] = halffloatToFloat(imm32 & 0xFFFF);
+            v3i[j + 1] = halffloatToFloat(imm32 >>> 16);
         }
-        saveVd(vsize << 1, vd, v3);
+        saveVdInt(vsize << 1, vd, v3i);
     }
     // VFPU4:VSBZ
     public void doVSBZ(int vsize, int vd, int vs) {
@@ -1984,7 +2005,7 @@ public class VfpuState extends FpuState {
     public void doVUC2I(int vsize, int vd, int vs) {
         if (vsize != 1) {
             doUNK("Only supported VUC2I.S");
-            return;
+            // PSP is ignoring the vsize
         }
         loadVsInt(1, vs);
         int n = v1i[0];
@@ -1999,7 +2020,7 @@ public class VfpuState extends FpuState {
     public void doVC2I(int vsize, int vd, int vs) {
         if (vsize != 1) {
             doUNK("Only supported VC2I.S");
-            return;
+            // PSP is ignoring the vsize
         }
         loadVsInt(1, vs);
         int n = v1i[0];
@@ -2263,11 +2284,10 @@ public class VfpuState extends FpuState {
 
         loadVs(vsize, vs);
 
-        for (int i = 1; i < vsize; ++i) {
-            v1[0] += v1[i];
-        }
-
         v1[0] /= vsize;
+        for (int i = 1; i < vsize; ++i) {
+            v1[0] += v1[i] / vsize;
+        }
 
         saveVd(1, vd, v1);
     }
@@ -2807,9 +2827,9 @@ public class VfpuState extends FpuState {
 
     // VFPU5:VFIM
     public void doVFIM(int vd, int imm16) {        
-        v3[0] = halffloatToFloat(imm16);
-        
-        saveVd(1, vd, v3);
+        v3i[0] = halffloatToFloat(imm16);
+
+        saveVdInt(1, vd, v3i);
     }
 
     // group VFPU6   
@@ -2976,29 +2996,29 @@ public class VfpuState extends FpuState {
     public void doVROT(int vsize, int vd, int vs, int imm5) {
         loadVs(1, vs);
 
-        double a = 0.5 * Math.PI * v1[0];
-        double ca = Math.cos(a);
-        double sa = Math.sin(a);
+        float a = PI_2 * v1[0];
+        float ca = (float) Math.cos(a);
+        float sa = (float) Math.sin(a);
 
         int i;
         int si = (imm5 >>> 2) & 3;
         int ci = (imm5 >>> 0) & 3;
 
         if (((imm5 & 16) != 0)) {
-            sa = 0.0 - sa;
+            sa = 0f - sa;
         }
 
         if (si == ci) {
             for (i = 0; i < vsize; ++i) {
-                v3[i] = (float) sa;
+                v3[i] = sa;
             }
         } else {
             for (i = 0; i < vsize; ++i) {
                 v3[i] = 0f;
             }
-            v3[si] = (float) sa;
+            v3[si] = sa;
         }
-        v3[ci] = (float) ca;
+        v3[ci] = ca;
 
         saveVd(vsize, vd, v3);
     }

@@ -308,27 +308,29 @@ public class CompilerContext implements ICompilerContext {
     		return;
     	}
 
-    	if (!isFloat && (pfxSrcState.pfxSrc.abs[n] || pfxSrcState.pfxSrc.neg[n])) {
-    		// The value is requested as an "int", first convert to float
-    		convertVIntToFloat();
-    	}
-
     	if (pfxSrcState.pfxSrc.abs[n]) {
 			if (log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
 				log.trace(String.format("PFX    %08X - applyPfxSrcPostfix abs(%d)", getCodeInstruction().getAddress(), n));
 			}
-    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "abs", "(F)F");
+
+			if (isFloat) {
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "abs", "(F)F");
+			} else {
+    			loadImm(0x7FFFFFFF);
+    			mv.visitInsn(Opcodes.IAND);
+			}
     	}
     	if (pfxSrcState.pfxSrc.neg[n]) {
 			if (log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
 				log.trace(String.format("PFX    %08X - applyPfxSrcPostfix neg(%d)", getCodeInstruction().getAddress(), n));
 			}
-    		mv.visitInsn(Opcodes.FNEG);
-    	}
 
-    	if (!isFloat && (pfxSrcState.pfxSrc.abs[n] || pfxSrcState.pfxSrc.neg[n])) {
-    		// The value is requested as an "int", convert back from float to int
-			convertVFloatToInt();
+			if (isFloat) {
+				mv.visitInsn(Opcodes.FNEG);
+			} else {
+    			loadImm(0x80000000);
+    			mv.visitInsn(Opcodes.IXOR);
+			}
     	}
     }
 
@@ -1748,6 +1750,11 @@ public class CompilerContext implements ICompilerContext {
 	    if (!isNonBranchingCodeSequence(codeInstruction)) {
 	    	startNonBranchingCodeSequence();
 	    }
+
+	    // This instructions consumes the PFXT prefix but does not use it.
+	    if (codeInstruction.hasFlags(Instruction.FLAG_CONSUMES_VFPU_PFXT)) {
+            disablePfxSrc(vfpuPfxtState);
+        }
     }
 
     private void disablePfxSrc(VfpuPfxSrcState pfxSrcState) {
@@ -3326,6 +3333,23 @@ public class CompilerContext implements ICompilerContext {
     	return isVxVdOverlap(vfpuPfxtState, getVtRegisterIndex());
 	}
 
+	private boolean canUseVFPUInt(int vsize) {
+		if (vfpuPfxsState.isKnown() && vfpuPfxsState.pfxSrc.enabled) {
+			for (int i = 0; i < vsize; i++) {
+				// abs, neg and cst source prefixes can be handled as int
+				if (vfpuPfxsState.pfxSrc.swz[i] != i) {
+					return false;
+				}
+			}
+		}
+
+		if (vfpuPfxdState.isKnown() && vfpuPfxdState.pfxDst.enabled) {
+			return false;
+		}
+
+		return true;
+	}
+
 	@Override
 	public void compileVFPUInstr(Object cstBefore, int opcode, String mathFunction) {
 		int vsize = getVsize();
@@ -3335,8 +3359,7 @@ public class CompilerContext implements ICompilerContext {
 		    opcode == Opcodes.NOP &&
 		    !useVt &&
 		    cstBefore == null &&
-		    !(vfpuPfxsState.isKnown() && vfpuPfxsState.pfxSrc.enabled) &&
-		    !(vfpuPfxdState.isKnown() && vfpuPfxdState.pfxDst.enabled)) {
+		    canUseVFPUInt(vsize)) {
 			// VMOV should use int instead of float
 			startPfxCompiled(false);
 
