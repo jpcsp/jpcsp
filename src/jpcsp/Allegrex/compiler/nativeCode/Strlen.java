@@ -16,12 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode;
 
+import static jpcsp.Allegrex.Common._a0;
+import static jpcsp.Allegrex.Common._a1;
+import static jpcsp.Allegrex.Common._a2;
+
 /**
  * @author gid15
  *
  */
 public class Strlen extends AbstractNativeCodeSequence {
-	static public void call() {
+	static public void call(int lastUpdatedRegister) {
 		int srcAddr = getGprA0();
 
 		int srcLength = getStrlen(srcAddr);
@@ -29,8 +33,14 @@ public class Strlen extends AbstractNativeCodeSequence {
 
 		// Some games are also assuming that the other registers
 		// have been modified... dirty programming
-		getCpu()._a0 = srcAddr + srcLength;
-		getCpu()._a1 = srcAddr;
-		getCpu()._a2 = 0;
+		if (lastUpdatedRegister >= _a0) {
+			getCpu()._a0 = srcAddr + srcLength;
+			if (lastUpdatedRegister >= _a1) {
+				getCpu()._a1 = srcAddr;
+				if (lastUpdatedRegister >= _a2) {
+					getCpu()._a2 = 0;
+				}
+			}
+		}
 	}
 }
