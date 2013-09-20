@@ -31,14 +31,22 @@ public class SampleSourcePCM implements ISampleSource {
 	private int sampleIndex;
 	private int currentSampleIndex;
 	private int samples;
-	private int numberSamples = 0x10000000;
+	private int numberSamples;
 
-	public SampleSourcePCM(SoundVoice voice, int addr, int samples) {
+	public SampleSourcePCM(SoundVoice voice, int addr, int samples, int loopMode) {
 		this.voice = voice;
 		this.addr = addr;
 		this.samples = samples;
 		size = samples << 1;
 		sampleIndex = samples;
+
+		if (loopMode < 0) {
+			// Playing only once
+			numberSamples = samples;
+		} else {
+			// Looping until the voice is off.
+			numberSamples = 0x10000000;
+		}
 	}
 
 	@Override
