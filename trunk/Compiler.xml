@@ -4900,6 +4900,7 @@
 	<NativeCodeSequence name="strlen">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strlen</Class>
 		<IsReturning>true</IsReturning>
+		<Parameters>$a2</Parameters>
 		<CodeInstructions><![CDATA[
 0886E5A8:[80860000]: lb         $a2, 0($a0)
 0886E5AC:[10C00005]: beq        $a2, $zr, 0x0886E5C4
@@ -4915,6 +4916,7 @@
 	<NativeCodeSequence name="strlen">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strlen</Class>
 		<IsReturning>true</IsReturning>
+		<Parameters>$a1</Parameters>
 		<CodeInstructions><![CDATA[
 08928D74:[80850000]: lb         $a1, 0($a0)
 08928D78:[10A00005]: beq        $a1, $zr, 0x08928D90
@@ -4930,6 +4932,7 @@
 	<NativeCodeSequence name="strlen">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strlen</Class>
 		<IsReturning>true</IsReturning>
+		<Parameters>$a0</Parameters>
 		<CodeInstructions><![CDATA[
 0896C72C:[24820001]: addiu      $v0, $a0, 1
 0896C730:[90830000]: lbu        $v1, 0($a0)
