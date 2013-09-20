@@ -40,7 +40,7 @@ public class SoftwareSynthesizer {
 			if (voice.getAtracId() != null) {
 				sampleSource = new SampleSourceAtrac3(voice.getAtracId());
 			} else if (voice.getPcmAddress() != 0) {
-				sampleSource = new SampleSourcePCM(voice, voice.getPcmAddress(), voice.getPcmSize());
+				sampleSource = new SampleSourcePCM(voice, voice.getPcmAddress(), voice.getPcmSize(), voice.getLoopMode());
 				if (Modules.sceSasCoreModule.getOutputMode() == PSP_SAS_OUTPUTMODE_STEREO) {
 					// Convert mono VAG to stereo
 					sampleSource = new SampleSourceMono(sampleSource);
