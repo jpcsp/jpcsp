@@ -67,6 +67,7 @@ import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.VirtualFileSystemManager;
 import jpcsp.HLE.VFS.emulator.EmulatorVirtualFileSystem;
+import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.local.TmpLocalVirtualFileSystem;
@@ -2620,13 +2621,22 @@ public class IoFileMgrForUser extends HLEModule {
 
                                 long fileLength = (info.vFile != null) ? info.vFile.length() : info.readOnlyFile.length();
                                 if (hashOffset < 0 || hashOffset > fileLength || dataSize < 0) {
-                                // The decrypted PGD header is incorrect...
-                                // abort the decryption and leave the file unchanged
+                                    // The decrypted PGD header is incorrect...
+                                    // abort the decryption and leave the file unchanged
                                     log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
                                     result = SceKernelErrors.ERROR_PGD_INVALID_HEADER;
                                 } else {
+                                	// Remember the PGD original file to perform ioctl operations on it (and not on the decrypted file)
+                                    IVirtualFile originalFile = null;
+                                    if (info.vFile != null) {
+                                    	originalFile = info.vFile;
+                                    } else if (info.readOnlyFile instanceof UmdIsoFile) {
+                                    	UmdIsoFile umdIsoFile = (UmdIsoFile) info.readOnlyFile;
+                                    	originalFile = new UmdIsoVirtualFile(umdIsoFile);
+                                    }
+
                                     // Check for an already decrypted file with the correct size
-                                    decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, info.flags, 0, ITmpVirtualFileSystem.tmpPurposePGD);
+                                    decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, info.flags, 0, ITmpVirtualFileSystem.tmpPurposePGD, originalFile);
                                     if (decInput == null || decInput.length() < dataSize) {
                                         // Create a new decrypted file
                                         decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, PSP_O_CREAT | PSP_O_WRONLY, 0777, ITmpVirtualFileSystem.tmpPurposePGD);
@@ -2664,7 +2674,7 @@ public class IoFileMgrForUser extends HLEModule {
 
                                         // Reuse the created file (re-open it in read-only mode)
                                         decInput.ioClose();
-                                        decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, info.flags, 0, ITmpVirtualFileSystem.tmpPurposePGD);
+                                        decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, info.flags, 0, ITmpVirtualFileSystem.tmpPurposePGD, originalFile);
                                     }
                                 }
                             }

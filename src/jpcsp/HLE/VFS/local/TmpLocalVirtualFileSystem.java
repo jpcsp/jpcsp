@@ -39,4 +39,24 @@ public class TmpLocalVirtualFileSystem extends LocalVirtualFileSystem implements
 
 		return ioOpen(purposeFileName, flags, mode);
 	}
+
+	@Override
+	public IVirtualFile ioOpen(String fileName, int flags, int mode, IPurpose purpose, IVirtualFile originalFile) {
+		if (originalFile == null) {
+			return ioOpen(fileName, flags, mode, purpose);
+		}
+
+		String purposeFileName = purpose.getFileName(fileName);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("TmpLocalVirtualFileSystem ioOpen %s -> %s", fileName, purposeFileName));
+		}
+
+		IVirtualFile vFile = ioOpen(purposeFileName, flags, mode);
+		if (vFile == null) {
+			return null;
+		}
+
+		return new TmpLocalVirtualFile(vFile, originalFile);
+	}
 }

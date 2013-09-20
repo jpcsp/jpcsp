@@ -27,6 +27,7 @@ public interface ITmpVirtualFileSystem extends IVirtualFileSystem {
 	public static final IPurpose tmpPurposePGD = new PurposePGD();
 	public static final IPurpose tmpPurposeAtrac = new PurposeAtrac();
 	public IVirtualFile ioOpen(String fileName, int flags, int mode, IPurpose purpose);
+	public IVirtualFile ioOpen(String fileName, int flags, int mode, IPurpose purpose, IVirtualFile originalFile);
 
 	public static interface IPurpose {
 		public String getFileName(String fileName);

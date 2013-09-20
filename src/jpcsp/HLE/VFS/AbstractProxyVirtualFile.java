@@ -25,9 +25,16 @@ import jpcsp.HLE.TPointer;
  *
  */
 public abstract class AbstractProxyVirtualFile implements IVirtualFile {
-	protected final IVirtualFile vFile;
+	protected IVirtualFile vFile;
+
+	protected AbstractProxyVirtualFile() {
+	}
 
 	protected AbstractProxyVirtualFile(IVirtualFile vFile) {
+		this.vFile = vFile;
+	}
+
+	protected void setProxyVirtualFile(IVirtualFile vFile) {
 		this.vFile = vFile;
 	}
 
