@@ -22,6 +22,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import javax.imageio.ImageIO;
@@ -51,6 +52,7 @@ import com.xuggle.xuggler.video.IConverter;
 
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupMicParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupStillExParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupStillParam;
@@ -337,6 +339,17 @@ public class sceUsbCam extends HLEModule {
 		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		image.setRGB(0, 0, width, height, output, 0, width);
 
+		if ((currentVideoFrameCount % 30) == 0) {
+			int imageIndex = currentVideoFrameCount / 30;
+			try {
+				OutputStream os = new FileOutputStream(String.format("tmp/UsbCam-%d.yuyv422", imageIndex));
+				os.write(input);
+				os.close();
+			} catch (IOException e) {
+				log.error("dumping yuyv422 image", e);
+			}
+		}
+
 		return image;
 	}
 
@@ -617,11 +630,15 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x41E73E95, version = 271)
 	public int sceUsbCamPollReadVideoFrameEnd() {
+		if (jpegBuffer == null || jpegBuffer.isNull()) {
+			return SceKernelErrors.ERROR_USBCAM_NO_READ_ON_VIDEO_FRAME;
+		}
+
 		if (currentVideoFrameCount <= lastVideoFrameCount) {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("sceUsbCamPollReadVideoFrameEnd not frame end (%d - %d)", currentVideoFrameCount, lastVideoFrameCount));
 			}
-			return 0;
+			return SceKernelErrors.ERROR_USBCAM_NO_VIDEO_FRAME_AVAILABLE;
 		}
 
 		return writeCurrentVideoImage(jpegBuffer, jpegBufferSize);
@@ -1074,6 +1091,8 @@ public class sceUsbCam extends HLEModule {
 		readMicBuffer = buffer;
 		readMicBufferSize = bufferSize;
 
+		buffer.clear(bufferSize);
+
 		return 0;
 	}
 
@@ -1091,7 +1110,7 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x5778B452, version = 271)
 	public int sceUsbCamGetMicDataLength() {
-		return 0;
+		return readMicBufferSize;
 	}
 
 	@HLEUnimplemented
