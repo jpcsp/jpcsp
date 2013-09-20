@@ -364,17 +364,18 @@ public class Loader {
                 // After the user chooses a game to run and we load it, then
                 // we can't load another PBP at the same time. We can only load
                 // relocatable modules (PRX's) after the user loaded app.
-                if (baseAddress > 0x08900000)
+                if (baseAddress > 0x08900000) {
                     log.warn("Loader: Probably trying to load PBP ELF while another PBP ELF is already loaded");
+                }
 
                 baseAddress = 0;
             }
 
             module.baseAddress = baseAddress;
-            if (elf.getHeader().getE_entry() == 0xFFFFFFFFL) {
+            if (elf.getHeader().getE_entry() == -1) {
                 module.entry_addr = -1;
             } else {
-                module.entry_addr = baseAddress + (int)elf.getHeader().getE_entry();
+                module.entry_addr = baseAddress + elf.getHeader().getE_entry();
             }
 
             // Note: baseAddress is 0 unless we are loading a PRX
