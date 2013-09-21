@@ -623,7 +623,7 @@ public class sceAtrac3plus extends HLEModule {
         	}
         }
 
-        private boolean hasLoop() {
+        public boolean hasLoop() {
         	return numLoops > 0;
         }
 
@@ -1145,6 +1145,9 @@ public class sceAtrac3plus extends HLEModule {
     @HLEFunction(nid = 0x868120B5, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetLoopNum(@CheckArgument("checkAtracID") int atID, int loopNbr) {
     	AtracID id = atracIDs.get(atID);
+    	if (!id.hasLoop()) {
+    		return SceKernelErrors.ERROR_ATRAC_NO_LOOP_INFORMATION;
+    	}
         id.setLoopNum(loopNbr);
         id.getAtracCodec().setAtracLoopCount(loopNbr);
 
