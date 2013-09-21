@@ -772,6 +772,9 @@ public class sceAtrac3plus extends HLEModule {
         if (readSize > bufferSize) {
         	return SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
         }
+        if (readSize < 12) {
+        	return SceKernelErrors.ERROR_ATRAC_INVALID_SIZE;
+        }
 
         // readSize and bufferSize are unsigned int's.
         // Allow negative values.
