@@ -66,7 +66,6 @@ public class sceP3da extends HLEModule {
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x013016F3, version = 280)
 	public int sceP3daBridgeCore(TPointer32 p3daCoreAddr, int channelsNum, int samplesNum, TPointer32 inputAddr, TPointer outputAddr) {
 		int[] p3daCore = new int[2];

@@ -115,6 +115,7 @@ public class SceKernelErrors {
     public final static int ERROR_ERRNO_IS_ALREADY_CONNECTED                    = 0x8001007F;    
     public final static int ERROR_ERRNO_NOT_CONNECTED                           = 0x80010080;
     public final static int ERROR_ERRNO_FILE_QUOTA_EXCEEDED                     = 0x80010084;
+    public final static int ERROR_ERRNO_INVALID_IODEVCTL_CMD                    = 0x80010086;
     public final static int ERROR_ERRNO_FUNCTION_NOT_SUPPORTED                  = 0x8001B000;
     public final static int ERROR_ERRNO_ADDR_OUT_OF_MAIN_MEM                    = 0x8001B001;
     public final static int ERROR_ERRNO_INVALID_UNIT_NUM                        = 0x8001B002;
@@ -499,6 +500,7 @@ public class SceKernelErrors {
     public final static int ERROR_ATRAC_BAD_ID                                  = 0x80630005;
     public final static int ERROR_ATRAC_ALL_DATA_LOADED                         = 0x80630009;
     public final static int ERROR_ATRAC_NO_DATA                                 = 0x80630010;
+    public final static int ERROR_ATRAC_INVALID_SIZE                            = 0x80630011;
     public final static int ERROR_ATRAC_SECOND_BUFFER_NEEDED                    = 0x80630012;
     public final static int ERROR_ATRAC_INCORRECT_READ_SIZE                     = 0x80630013;
     public final static int ERROR_ATRAC_NO_LOOP_INFORMATION                     = 0x80630021;

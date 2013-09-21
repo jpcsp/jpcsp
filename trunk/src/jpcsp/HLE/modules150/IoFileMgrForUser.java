@@ -4041,7 +4041,7 @@ public class IoFileMgrForUser extends HLEModule {
                         log.warn("sceIoDevctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
                     }
                 }
-                result = -1;
+                result = SceKernelErrors.ERROR_ERRNO_INVALID_IODEVCTL_CMD;
                 break;
         }
         for (IIoListener ioListener : ioListeners) {
