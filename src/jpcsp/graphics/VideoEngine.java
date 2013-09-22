@@ -3380,8 +3380,8 @@ public class VideoEngine {
         }
 
         nopCount++;
-        if (nopCount > 1000) {
-        	// More than 1000 NOP instructions executed during this list,
+        if (nopCount > 2000) {
+        	// More than 2000 NOP instructions executed during this list,
         	// something must be wrong...
         	error(String.format("Too many NOP instructions executed (%d) at 0x%08X", nopCount, currentList.getPc()));
         } else {
