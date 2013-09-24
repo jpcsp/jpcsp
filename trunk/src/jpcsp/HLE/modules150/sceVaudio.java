@@ -16,9 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -39,7 +41,10 @@ public class sceVaudio extends HLEModule {
     @Override
 	public void start() {
 		SoundChannel.init();
-        pspVaudioChannel = new SoundChannel(9); // Use channel 9 for virtual audio.
+
+		// The PSP is using the same channel as the SRC channel
+        pspVaudioChannel = Modules.sceAudioModule.pspSRCChannel;
+        pspVaudioChannelReserved = false;
 
         super.start();
 	}
@@ -60,6 +65,48 @@ public class sceVaudio extends HLEModule {
     protected static final int PSP_VAUDIO_ALC_MODE_1 = 1;
 
     protected SoundChannel pspVaudioChannel;
+    protected boolean pspVaudioChannelReserved;
+
+    public int checkSampleCount(int sampleCount) {
+    	if (sampleCount < 256 || sampleCount > 2048) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Invalid sampleCount 0x%X", sampleCount));
+    		}
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_SIZE);
+    	}
+
+    	return sampleCount;
+    }
+
+    public int checkFrequency(int frequency) {
+    	switch (frequency) {
+	    	case 0:
+	    	case 8000:
+	    	case 11025:
+	    	case 12000:
+	    	case 16000:
+	    	case 22050:
+	    	case 24000:
+	    	case 32000:
+	    	case 48000:
+	    		// OK
+	    		break;
+    		default:
+    			// PSP is yielding in this error code
+    	        Modules.ThreadManForUserModule.hleYieldCurrentThread();
+        		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_INVALID_FREQUENCY);
+    	}
+
+    	return frequency;
+    }
+
+    public int checkChannelCount(int channelCount) {
+    	if (channelCount != 2 && channelCount != 4) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_FORMAT);
+    	}
+
+    	return channelCount;
+    }
 
     protected int doAudioOutput(SoundChannel channel, int pvoid_buf) {
     	return sceAudio.doAudioOutput(channel, pvoid_buf);
@@ -79,6 +126,7 @@ public class sceVaudio extends HLEModule {
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
 
+        pspVaudioChannelReserved = false;
         pspVaudioChannel.release();
         pspVaudioChannel.setReserved(false);
 
@@ -86,15 +134,24 @@ public class sceVaudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x03B6807D, version = 150, checkInsideInterrupt = true)
-    public int sceVaudioChReserve(int sampleCount, int freq, int format) {
+    public int sceVaudioChReserve(@CheckArgument("checkSampleCount") int sampleCount, @CheckArgument("checkFrequency") int freq, @CheckArgument("checkChannelCount") int format) {
+    	// Returning a different error code if the channel has been reserved by sceVaudioChReserve or by sceAudioSRCChReserve
+    	if (pspVaudioChannelReserved) {
+        	return SceKernelErrors.ERROR_BUSY;
+    	}
         if (pspVaudioChannel.isReserved()) {
-        	return -1;
+        	// PSP is yielding in this error case
+            Modules.ThreadManForUserModule.hleYieldCurrentThread();
+        	return SceKernelErrors.ERROR_AUDIO_CHANNEL_ALREADY_RESERVED;
         }
 
+        pspVaudioChannelReserved = true;
         pspVaudioChannel.setReserved(true);
         pspVaudioChannel.setSampleLength(sampleCount);
         pspVaudioChannel.setSampleRate(freq);
         pspVaudioChannel.setFormat(format == PSP_VAUDIO_FORMAT_MONO ? sceAudio.PSP_AUDIO_FORMAT_MONO : sceAudio.PSP_AUDIO_FORMAT_STEREO);
+
+        Modules.ThreadManForUserModule.hleYieldCurrentThread();
 
         return 0;
     }
