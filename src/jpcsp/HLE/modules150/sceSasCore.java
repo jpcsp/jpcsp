@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAS_INVALID_ADDRESS;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAS_INVALID_ADSR_CURVE_MODE;
 import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
@@ -184,6 +185,14 @@ public class sceSasCore extends HLEModule {
         	}
         	throw new SceKernelErrorException(SceKernelErrors.ERROR_SAS_VOICE_PAUSED);
         }
+    }
+
+    public int checkVolume(int volume) {
+    	if (volume < -PSP_SAS_VOL_MAX || volume > PSP_SAS_VOL_MAX) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_SAS_INVALID_VOLUME_VAL);
+    	}
+
+    	return volume;
     }
 
     private void delayThread(long startMicros, int delayMicros, int minimumDelayMicros) {
@@ -370,7 +379,7 @@ public class sceSasCore extends HLEModule {
      *                          ERROR_SAS_INVALID_VOICE if an invalid voice number is provided
      */
     @HLEFunction(nid = 0x440CA7D8, version = 150, checkInsideInterrupt = true)
-    public int __sceSasSetVolume(int sasCore, int voice, int leftVolume, int rightVolume, int effectLeftVolumne, int effectRightVolume) {
+    public int __sceSasSetVolume(int sasCore, int voice, @CheckArgument("checkVolume") int leftVolume, @CheckArgument("checkVolume") int rightVolume, @CheckArgument("checkVolume") int effectLeftVolumne, @CheckArgument("checkVolume") int effectRightVolume) {
         checkSasAndVoiceHandlesGood(sasCore, voice);
 
         voices[voice].setLeftVolume(leftVolume << 3);	// 0 - 0x8000
