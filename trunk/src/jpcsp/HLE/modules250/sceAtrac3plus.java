@@ -20,6 +20,7 @@ import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -27,6 +28,9 @@ import jpcsp.util.Utilities;
 
 @HLELogging
 public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
+	protected static final int MAX_ATRAC3_IDS = 6;
+	protected static final int MAX_ATRAC3PLUS_IDS = MAX_ATRAC3_IDS / 2;
+
     @HLEFunction(nid = 0xB3B5D042, version = 250, checkInsideInterrupt = true)
     public int sceAtracGetOutputChannel(@CheckArgument("checkAtracID") int atID, TPointer32 outputChannelAddr) {
     	AtracID id = atracIDs.get(atID);
@@ -45,22 +49,47 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
     @HLEFunction(nid = 0x132F1ECA, version = 250, checkInsideInterrupt = true)
     public int sceAtracReinit(int at3IDNum, int at3plusIDNum) {
-        if (at3IDNum + at3plusIDNum * 2 > 6) {
-            // The total ammount of AT3 IDs and AT3+ IDs (x2) can't be superior to 6.
-            return SceKernelErrors.ERROR_ATRAC_NO_ID;
-        }
+    	int result = 0;
+		boolean delay = false;
 
-        hleAtracReinit(at3IDNum, at3plusIDNum);
+    	if (atrac3Num > 0 || atrac3plusNum > 0) {
+    		result = SceKernelErrors.ERROR_BUSY;
+    	} else {
+    		if (at3IDNum == 0 && at3plusIDNum == 0) {
+    			// Both parameters set to 0 reschedule the current thread)
+    			delay = true;
+    		}
 
-        return 0;
+    		if (at3plusIDNum > MAX_ATRAC3PLUS_IDS) {
+	    		// Can't create more than 3 AT3+ IDs
+	    		at3plusIDNum = MAX_ATRAC3PLUS_IDS;
+	    		result = SceKernelErrors.ERROR_OUT_OF_MEMORY;
+	    	} else if (at3plusIDNum < 0) {
+	    		at3plusIDNum = 0;
+	    	}
+
+	    	if (at3plusIDNum * 2 + at3IDNum > MAX_ATRAC3_IDS) {
+	    		// Can't create more than 6 AT3 IDs (where each AT3+ ID takes 2 AT3 IDs)
+	    		at3IDNum = MAX_ATRAC3_IDS - at3plusIDNum * 2;
+	    		result = SceKernelErrors.ERROR_OUT_OF_MEMORY;
+	    	} else if (at3IDNum < 0) {
+	    		at3IDNum = 0;
+	    	}
+
+	    	hleAtracReinit(at3IDNum, at3plusIDNum);
+    	}
+
+    	if (delay) {
+    		Modules.ThreadManForUserModule.hleYieldCurrentThread();
+    	}
+
+    	return result;
     }
 
     @HLEFunction(nid = 0x2DD3E298, version = 250, checkInsideInterrupt = true)
     public int sceAtracGetBufferInfoForResetting(@CheckArgument("checkAtracID") int atID, int sample, TPointer32 bufferInfoAddr) {
         AtracID id = atracIDs.get(atID);
-        id.getBufferInfoForResetting(sample, bufferInfoAddr);
-
-        return 0;
+        return id.getBufferInfoForResetting(sample, bufferInfoAddr);
     }
 
     @HLEFunction(nid = 0x5CF9D852, version = 250, checkInsideInterrupt = true)

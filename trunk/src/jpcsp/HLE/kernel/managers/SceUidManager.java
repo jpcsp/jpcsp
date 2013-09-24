@@ -122,6 +122,10 @@ public class SceUidManager {
     	return freeIds.remove();
     }
 
+    static public void resetIds(Object purpose) {
+    	freeIdsMap.remove(purpose);
+    }
+
     /**
      * Release an ID for a given purpose. The ID had to be created first
      * by getNewId().

@@ -127,6 +127,10 @@ public class pspFileBuffer {
 		return addr;
 	}
 
+	public void setAddr(int addr) {
+		this.addr = addr;
+	}
+
 	public boolean isEmpty() {
 		return currentSize == 0;
 	}
