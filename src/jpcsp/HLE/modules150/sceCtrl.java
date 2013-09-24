@@ -134,11 +134,12 @@ public class sceCtrl extends HLEModule {
         }
 
         int changed = oldButtons ^ Buttons;
+        int unpressed = ~Buttons;
 
-        uiMake = Buttons & changed;
-        uiBreak = oldButtons & changed;
-        uiPress = Buttons;
-        uiRelease = (oldButtons - Buttons) & changed;
+        uiMake |= Buttons & changed;
+        uiBreak |= unpressed & changed;
+        uiPress |= Buttons;
+        uiRelease |= unpressed;
     }
 
     @Override
@@ -491,6 +492,15 @@ public class sceCtrl extends HLEModule {
         latchAddr.setValue(4, uiBreak);
         latchAddr.setValue(8, uiPress);
         latchAddr.setValue(12, uiRelease);
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceCtrlReadLatch uiMake=0x%06X, uiBreak=0x%06X, uiPress=0x%06X, uiRelease=0x%06X, returning %d", uiMake, uiBreak, uiPress, uiRelease, latchSamplingCount));
+        }
+
+        uiMake = 0;
+        uiBreak = 0;
+        uiPress = 0;
+        uiRelease = 0;
 
         int prevLatchSamplingCount = latchSamplingCount;
         latchSamplingCount = 0;
