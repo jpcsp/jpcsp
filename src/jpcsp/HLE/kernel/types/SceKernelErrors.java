@@ -57,6 +57,7 @@ public class SceKernelErrors {
      *      -> E.g.: 0x80110001 - Error -> Utility -> Some unknown error.
      */
 
+	public static final int ERROR_UNSUPPORTED                                   = 0x80000003;
     public static final int ERROR_ALREADY                                       = 0x80000020;
     public static final int ERROR_BUSY                                          = 0x80000021;
     public static final int ERROR_OUT_OF_MEMORY                                 = 0x80000022;
@@ -498,11 +499,14 @@ public class SceKernelErrors {
     public final static int ERROR_ATRAC_NO_ID                                   = 0x80630003;
     public final static int ERROR_ATRAC_INVALID_CODEC                           = 0x80630004;
     public final static int ERROR_ATRAC_BAD_ID                                  = 0x80630005;
+    public final static int ERROR_ATRAC_UNKNOWN_FORMAT                          = 0x80630006;
+    public final static int ERROR_ATRAC_WRONG_CODEC                             = 0x80630007;
     public final static int ERROR_ATRAC_ALL_DATA_LOADED                         = 0x80630009;
     public final static int ERROR_ATRAC_NO_DATA                                 = 0x80630010;
     public final static int ERROR_ATRAC_INVALID_SIZE                            = 0x80630011;
     public final static int ERROR_ATRAC_SECOND_BUFFER_NEEDED                    = 0x80630012;
     public final static int ERROR_ATRAC_INCORRECT_READ_SIZE                     = 0x80630013;
+    public final static int ERROR_ATRAC_BAD_SAMPLE                              = 0x80630015;
     public final static int ERROR_ATRAC_NO_LOOP_INFORMATION                     = 0x80630021;
     public final static int ERROR_ATRAC_SECOND_BUFFER_NOT_NEEDED                = 0x80630022;
     public final static int ERROR_ATRAC_BUFFER_IS_EMPTY                         = 0x80630023;

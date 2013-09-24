@@ -396,7 +396,9 @@ public class AtracCodec {
         				// Fake returning 1 sample with remainFrames == 0
         				// to force a call to sceAtracAddStreamData.
         				samples = 1;
-        				Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample); 
+        				if (address != 0) {
+        					Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample);
+        				}
         			}
         		} else if (atracChannel.length() >= getAtracChannelStartLength() || atracChannel.length() >= atracFileSize) {
     				me.init(atracChannel, false, true, 0, 0);
@@ -404,7 +406,9 @@ public class AtracCodec {
     				// Fake returning 1 sample with remainFrames == 0
     				// to force a call to sceAtracAddStreamData.
     				samples = 1;
-    				Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample); 
+    				if (address != 0) {
+    					Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample);
+    				}
     			}
         	}
         	setChannels(channels);
@@ -419,7 +423,9 @@ public class AtracCodec {
                 int length = decodedStream.read(atracDecodeBuffer);
                 if (length > 0) {
                     samples = length / 4;
-                    Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(atracDecodeBuffer, 0, length), length);
+                    if (address != 0) {
+                    	Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(atracDecodeBuffer, 0, length), length);
+                    }
                     long restLength = decodedStream.length() - decodedStream.getFilePointer();
                     if (restLength <= 0) {
                     	atracEnd = true;
@@ -492,7 +498,9 @@ public class AtracCodec {
         int bytes = me.getCurrentAudioSamples(samplesBuffer);
         if (bytes > 0) {
             atracEndSample += bytes;
-            mem.copyToMemory(address, ByteBuffer.wrap(samplesBuffer, 0, bytes), bytes);
+            if (address != 0) {
+            	mem.copyToMemory(address, ByteBuffer.wrap(samplesBuffer, 0, bytes), bytes);
+            }
         }
 
         return bytes / bytesPerSample;
