@@ -114,14 +114,26 @@ fdelay(int _time_)
 		sceDisplayWaitVblankStart();
 }
 
+int uiMake, uiBreak, uiPress, uiRelease;
+
 void
 check_latch(void)
 {
 	SceCtrlLatch	pad_state;
 	SceCtrlData	pad;
+	int result;
 
 	sceCtrlPeekBufferPositive(&pad, 1);
-	sceCtrlReadLatch(&pad_state);
+	result = sceCtrlReadLatch(&pad_state);
+	if (result > 0) {
+		if (pad_state.uiMake != uiMake || pad_state.uiBreak != uiBreak || pad_state.uiPress != uiPress || pad_state.uiRelease != uiRelease) {
+			uiMake = pad_state.uiMake;
+			uiBreak = pad_state.uiBreak;
+			uiPress = pad_state.uiPress;
+			uiRelease = pad_state.uiRelease;
+			printf("Latch: 0x%06X 0x%06X 0x%06X 0x%06X\n", uiMake, uiBreak, uiPress, uiRelease);
+		}
+	}
 
 	key = pad.Buttons;
 
