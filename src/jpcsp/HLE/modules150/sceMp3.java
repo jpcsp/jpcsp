@@ -124,6 +124,7 @@ public class sceMp3 extends HLEModule {
 
         // MP3 decoding vars.
         private int mp3DecodedBytes;
+        private int mp3SumDecodedSamples;
 
         // MP3 properties.
         private int mp3SampleRate;
@@ -220,6 +221,7 @@ public class sceMp3 extends HLEModule {
             // Set default properties.
             mp3LoopNum = PSP_MP3_LOOP_NUM_INFINITE;
             mp3DecodedBytes = 0;
+            mp3SumDecodedSamples = 0;
 
             if (checkMediaEngineState()) {
                 me = new MediaEngine();
@@ -457,7 +459,9 @@ public class sceMp3 extends HLEModule {
                 consumeRead(mp3BufReadConsumed);
             }
 
-            return mp3DecodedBytes;
+        	mp3SumDecodedSamples += mp3DecodedBytes / getBytesPerSample();
+
+        	return mp3DecodedBytes;
         }
 
         public int getBytesPerSample() {
@@ -583,6 +587,10 @@ public class sceMp3 extends HLEModule {
         public int getMp3Version() {
         	return mp3Version;
         }
+
+		public int getMp3SumDecodedSamples() {
+			return mp3SumDecodedSamples;
+		}
 
         @Override
 		public String toString() {
@@ -724,9 +732,9 @@ public class sceMp3 extends HLEModule {
     @HLEFunction(nid = 0x354D27EA, version = 150)
     public int sceMp3GetSumDecodedSample(Mp3Stream mp3Stream) {
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceMp3GetSumDecodedSample returning %d", mp3Stream.getMp3DecodedSamples()));
+    		log.debug(String.format("sceMp3GetSumDecodedSample returning %d", mp3Stream.getMp3SumDecodedSamples()));
     	}
-        return mp3Stream.getMp3DecodedSamples();
+        return mp3Stream.getMp3SumDecodedSamples();
     }
 
     @HLEFunction(nid = 0x87677E40, version = 150, checkInsideInterrupt = true)
