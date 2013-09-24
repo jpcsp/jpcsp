@@ -727,6 +727,10 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
+    public void hleYieldCurrentThread() {
+    	hleKernelDelayThread(100, false);
+    }
+
     public int getCurrentThreadID() {
         if (currentThread == null) {
             return -1;
