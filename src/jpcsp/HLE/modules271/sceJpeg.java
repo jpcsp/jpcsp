@@ -545,7 +545,7 @@ public class sceJpeg extends HLEModule {
 
         return getWidthHeight(width, height);
     }
-    
+
     @HLEFunction(nid = 0x227662D7, version = 271)
     public int sceJpegDecodeMJpegYCbCrSuccessively(TPointer jpegBuffer, int jpegBufferSize, TPointer yCbCrBuffer, int yCbCrBufferSize, int dhtMode) {
         // Works in the same way as sceJpegDecodeMJpegYCbCr, but sends smaller blocks to the Media Engine in a real PSP (avoids speed decrease).
@@ -554,5 +554,23 @@ public class sceJpeg extends HLEModule {
         }
 
         return hleJpegDecodeMJpegYCbCr(jpegBuffer, jpegBufferSize, yCbCrBuffer, yCbCrBufferSize, dhtMode);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA06A75C4, version = 271)
+    public int sceJpeg_A06A75C4(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9B36444C, version = 271)
+    public int sceJpeg_9B36444C() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0425B986, version = 271)
+    public int sceJpegDecompressAllImage() {
+    	return 0;
     }
 }
