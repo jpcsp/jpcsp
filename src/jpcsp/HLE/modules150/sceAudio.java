@@ -225,7 +225,7 @@ public class sceAudio extends HLEModule {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo thread = threadMan.getThreadById(threadId);
             if (thread != null) {
-            	thread.cpuContext._v0 = 0;
+            	thread.cpuContext._v0 = channel.getSampleLength();
                 threadMan.hleUnblockThread(threadId);
             }
     	} else if (!channel.isOutputBlocking()) {
@@ -342,6 +342,17 @@ public class sceAudio extends HLEModule {
     	return sampleCount;
     }
 
+    public int checkReserveSampleCount(int sampleCount) {
+    	if (sampleCount < 17 || sampleCount >= 4095 + 17) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Invalid reserve sampleCount 0x%X", sampleCount));
+    		}
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_SIZE);
+    	}
+
+    	return sampleCount;
+    }
+
     public int checkVolume(int volume) {
     	// Negative volume is allowed
     	if (volume > 0xFFFF) {
@@ -374,6 +385,37 @@ public class sceAudio extends HLEModule {
     	}
 
     	return format;
+    }
+
+    public int checkFrequency(int frequency) {
+    	switch (frequency) {
+	    	case 0:
+	    	case 8000:
+	    	case 11025:
+	    	case 12000:
+	    	case 16000:
+	    	case 22050:
+	    	case 24000:
+	    	case 32000:
+	    	case 48000:
+	    		// OK
+	    		break;
+    		default:
+        		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_INVALID_FREQUENCY);
+    	}
+
+    	return frequency;
+    }
+
+    public int checkChannelCount(int channelCount) {
+    	if (channelCount != 2) {
+    		if (channelCount == 4) {
+    			throw new SceKernelErrorException(SceKernelErrors.ERROR_UNSUPPORTED);
+    		}
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_SIZE);
+    	}
+
+    	return channelCount;
     }
 
     protected void hleAudioBlockingInput(int threadId, int addr, int samples, int frequency) {
@@ -527,6 +569,7 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x136CAF51, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutputBlocking(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkVolume") int vol, @CanBeNull TPointer pvoid_buf) {
+    	int result = 0;
         if (pvoid_buf.isNull()) {
             if (!pspPCMChannels[channel].isDrained()) {
                 if (log.isDebugEnabled()) {
@@ -534,11 +577,8 @@ public class sceAudio extends HLEModule {
                 }
                 blockThreadOutput(pspPCMChannels[channel], pvoid_buf.getAddress(), vol, vol);
             }
-            return 0;
-        }
-
-        int result = 0;
-        if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
+            result = pspPCMChannels[channel].getSampleLength();
+        } else if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
             if (log.isDebugEnabled()) {
                 log.debug("sceAudioOutputBlocking[not blocking] " + pspPCMChannels[channel].toString());
             }
@@ -573,6 +613,14 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x13F592BC, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutputPannedBlocking(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkVolume") int leftvol, @CheckArgument("checkVolume") int rightvol, @CanBeNull TPointer pvoid_buf) {
+        int result = 0;
+
+        if (leftvol == Integer.MIN_VALUE || rightvol == Integer.MIN_VALUE) {
+        	// In case of blocking panned output, 0x80000000 is not allowed.
+        	// In case of non-blocking panned output, 0x80000000 is allowed.
+        	return SceKernelErrors.ERROR_AUDIO_INVALID_VOLUME;
+        }
+
         if (pvoid_buf.isNull()) {
             // Tested on PSP:
             // An output adress of 0 is actually a special code for the PSP.
@@ -584,11 +632,8 @@ public class sceAudio extends HLEModule {
                 }
                 blockThreadOutput(pspPCMChannels[channel], pvoid_buf.getAddress(), leftvol, rightvol);
             }
-            return 0;
-        }
-
-        int result = 0;
-        if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
+            result = pspPCMChannels[channel].getSampleLength();
+        } else if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceAudioOutputPannedBlocking[not blocking] leftVol=%d, rightVol=%d, channel=%s", leftvol, rightvol, pspPCMChannels[channel].toString()));
             }
@@ -689,7 +734,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x01562BA3, version = 150, checkInsideInterrupt = true)
-    public int sceAudioOutput2Reserve(int sampleCount) {
+    public int sceAudioOutput2Reserve(@CheckArgument("checkReserveSampleCount") int sampleCount) {
         return hleAudioSRCChReserve(sampleCount, 44100, SoundChannel.FORMAT_STEREO);
     }
 
@@ -730,7 +775,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x38553111, version = 150, checkInsideInterrupt = true)
-    public int sceAudioSRCChReserve(int sampleCount, int freq, int format) {
+    public int sceAudioSRCChReserve(@CheckArgument("checkReserveSampleCount") int sampleCount, @CheckArgument("checkFrequency") int freq, @CheckArgument("checkChannelCount") int format) {
         return hleAudioSRCChReserve(sampleCount, freq, format);
     }
 
@@ -765,6 +810,8 @@ public class sceAudio extends HLEModule {
                 }
                 // Do not update volume, it has already been updated above
                 blockThreadOutput(pspSRCChannel, buf.getAddress(), -1, -1);
+            } else {
+            	Modules.ThreadManForUserModule.hleYieldCurrentThread();
             }
         } else if (!pspSRCChannel.isReserved() && !disableChReserve) {
         	// Channel is automatically reserved. The audio data (buf) is not used in this case.
