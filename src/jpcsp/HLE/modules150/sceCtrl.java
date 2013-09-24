@@ -17,9 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
@@ -169,6 +171,7 @@ public class sceCtrl extends HLEModule {
         samples = new Sample[SAMPLE_BUFFER_SIZE + 1];
         for (int i = 0; i < samples.length; i++) {
             samples[i] = new Sample();
+            samples[i].setValues(0, Lx, Ly, Rx, Ry, Buttons);
         }
         currentSamplingIndex = 0;
         currentReadingIndex = 0;
@@ -292,6 +295,29 @@ public class sceCtrl extends HLEModule {
         return n;
     }
 
+    public int checkThreshold(int threshold) {
+    	if (threshold < -1 || threshold > 128) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_VALUE);
+    	}
+
+    	return threshold;
+    }
+
+    public int checkMode(int mode) {
+    	if (mode != PSP_CTRL_MODE_DIGITAL && mode != PSP_CTRL_MODE_ANALOG) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_MODE);
+    	}
+
+    	return mode;
+    }
+
+    public int checkCycle(int cycle) {
+    	if (cycle < 0 || (cycle > 0 && cycle < 5555) || cycle > 20000) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_VALUE);
+    	}
+    	return cycle;
+    }
+
     protected void hleCtrlExecuteSampling() {
         if (log.isDebugEnabled()) {
             log.debug("hleCtrlExecuteSampling");
@@ -392,7 +418,7 @@ public class sceCtrl extends HLEModule {
     }
 
     @HLEFunction(nid = 0x6A2774F3, version = 150, checkInsideInterrupt = true)
-    public int sceCtrlSetSamplingCycle(int newCycle) {
+    public int sceCtrlSetSamplingCycle(@CheckArgument("checkCycle") int newCycle) {
     	int oldCycle = cycle;
         this.cycle = newCycle;
 
@@ -411,7 +437,7 @@ public class sceCtrl extends HLEModule {
     }
 
     @HLEFunction(nid = 0x1F4011E6, version = 150, checkInsideInterrupt = true)
-    public int sceCtrlSetSamplingMode(int newMode) {
+    public int sceCtrlSetSamplingMode(@CheckArgument("checkMode") int newMode) {
         int oldMode = mode;
         this.mode = newMode;
 
@@ -473,7 +499,7 @@ public class sceCtrl extends HLEModule {
     }
 
     @HLEFunction(nid = 0xA7144800, version = 150)
-    public int sceCtrlSetIdleCancelThreshold(int idlereset, int idleback) {
+    public int sceCtrlSetIdleCancelThreshold(@CheckArgument("checkThreshold") int idlereset, @CheckArgument("checkThreshold") int idleback) {
         this.idlereset = idlereset;
         this.idleback  = idleback;
 
