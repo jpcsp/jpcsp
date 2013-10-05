@@ -155,7 +155,7 @@ public class scePspNpDrm_user extends HLEModule {
                 System.arraycopy(inBuf, 0x40, nameHash, 0, 0x10);
 
                 // If the CryptoEngine fails to find a match, then the file has been renamed.
-                if (!crypto.CheckEDATRenameKey(nameHash, npDrmKey, fName.getBytes())) {
+                if (!crypto.getPGDEngine().CheckEDATRenameKey(nameHash, npDrmKey, fName.getBytes())) {
                     // result = SceKernelErrors.ERROR_NPDRM_NO_FILENAME_MATCH;
                     result = 0; // Fake for now.
                 }
@@ -191,7 +191,7 @@ public class scePspNpDrm_user extends HLEModule {
         if (edatFileConnector == null) {
             edatFileConnector = new PGDFileConnector();
         }
-        
+               
         // Generate the necessary directories and file paths.
         String dlcPath = edatFileConnector.getBaseDLCDirectory() + getDLCPathFromFilePath(info.filename);
         String decFileName = dlcPath + File.separatorChar + getFileNameFromPath(info.filename);
@@ -235,9 +235,9 @@ public class scePspNpDrm_user extends HLEModule {
                 System.arraycopy(fileBuf, edatPGDOffset, encHeaderBuf, 0, pgdHeaderSize);
 
                 // Get the decryption key from the PGD header and then decrypt the header.
-                byte[] decKey = crypto.GetEDATPGDKey(encHeaderBuf, pgdHeaderSize);
-                byte[] decHeader = crypto.DecryptEDATPGDHeader(encHeaderBuf, pgdHeaderSize, decKey);
-
+                byte[] decKey = crypto.getPGDEngine().GetEDATPGDKey(encHeaderBuf, pgdHeaderSize);
+                byte[] decHeader = crypto.getPGDEngine().DecryptEDATPGDHeader(encHeaderBuf, pgdHeaderSize, decKey);
+                
                 // Copy back the decrypted header.
                 System.arraycopy(decHeader, 0, fileBuf, edatPGDOffset + pgdHeaderDataOffset, decHeader.length);
 
@@ -255,7 +255,7 @@ public class scePspNpDrm_user extends HLEModule {
                 byte[] inBuf = new byte[fileBuf.length - edatPGDOffset];
                 System.arraycopy(fileBuf, edatPGDOffset, inBuf, 0, inBuf.length);
 
-                byte[] outBuf = crypto.DecryptEDATPGD(inBuf, dataSize, hashOffset, chunkSize, decKey);
+                byte[] outBuf = crypto.getPGDEngine().DecryptEDATPGD(inBuf, dataSize, hashOffset, chunkSize, decKey);
 
                 if (hashOffset < 0 || dataSize < 0) {
                     log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));

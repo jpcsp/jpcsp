@@ -532,7 +532,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
         // Read main data.
         if (CryptoEngine.getSavedataCryptoStatus()) {
-            dataSize = loadEncryptedFile(mem, path, fileName, dataBuf, dataBufSize, key, secureVersion);
+            dataSize = loadEncryptedFile(mem, path, fileName, dataBuf, dataBufSize, key);
         } else {
             dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
         }
@@ -587,7 +587,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
         // Write main data.
         if (CryptoEngine.getSavedataCryptoStatus()) {
-            writeEncryptedFile(mem, path, fileName, dataBuf, dataSize, key, secureVersion);
+            writeEncryptedFile(mem, path, fileName, dataBuf, dataSize, key);
         } else {
             writeFile(mem, path, fileName, dataBuf, dataSize);
         }
@@ -612,7 +612,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         writeFile(mem, path, snd0FileName, snd0FileData.buf, snd0FileData.size);
 
         // Write PARAM.SFO
-        writePsf(mem, path, paramSfoFileName, sfoParam, CryptoEngine.getSavedataCryptoStatus(), fileName, dataSize, key, secureVersion, secure);
+        writePsf(mem, path, paramSfoFileName, sfoParam, CryptoEngine.getSavedataCryptoStatus(), fileName, dataSize, key);
     }
 
     private int loadFile(Memory mem, String path, String name, int address, int maxLength) throws IOException {
@@ -638,7 +638,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         return fileSize;
     }
 
-    private void writeEncryptedFile(Memory mem, String path, String name, int address, int length, byte[] key, int mode) throws IOException {
+    private void writeEncryptedFile(Memory mem, String path, String name, int address, int length, byte[] key) throws IOException {
         if (name == null || name.length() <= 0 || address == 0) {
             return;
         }
@@ -656,13 +656,14 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             inBuf[i] = (byte) memoryReader.readNext();
         }
 
-        byte[] outBuf = crypto.EncryptSavedata(inBuf, length, key, mode);
+        // Replace the key with the generated hash.
+        this.key = crypto.getSAVEDATAEngine().EncryptSavedata(inBuf, length, key);
 
-        fileOutput.write(outBuf, 0, outBuf.length);
+        fileOutput.write(inBuf, 0, inBuf.length);
         fileOutput.close();
     }
 
-    private int loadEncryptedFile(Memory mem, String path, String name, int address, int maxLength, byte[] key, int mode) throws IOException {
+    private int loadEncryptedFile(Memory mem, String path, String name, int address, int maxLength, byte[] key) throws IOException {
         if (name == null || name.length() <= 0 || address == 0) {
             return 0;
         }
@@ -677,12 +678,12 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         byte[] inBuf = new byte[fileSize];
         fileInput.readFully(inBuf);
 
-        byte[] outBuf = crypto.DecryptSavedata(inBuf, fileSize, key, mode);
+        crypto.getSAVEDATAEngine().DecryptSavedata(inBuf, fileSize, key);
 
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 1);
-        int length = Math.min(outBuf.length, maxLength);
+        int length = Math.min(inBuf.length, maxLength);
         for (int i = 0; i < length; i++) {
-            memoryWriter.writeNext(outBuf[i]);
+            memoryWriter.writeNext(inBuf[i]);
         }
         memoryWriter.flush();
 
@@ -728,7 +729,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         }
     }
 
-    private void writePsf(Memory mem, String path, String psfName, PspUtilitySavedataSFOParam sfoParam, boolean cryptoMode, String dataName, int dataLength, byte[] key, int mode, boolean secure) throws IOException {
+    private void writePsf(Memory mem, String path, String psfName, PspUtilitySavedataSFOParam sfoParam, boolean cryptoMode, String dataName, int dataLength, byte[] key) throws IOException {
         SeekableRandomFile psfOutput = getDataOutput(path, psfName);
         if (psfOutput == null) {
             return;
@@ -738,8 +739,29 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         psf.put("CATEGORY", "MS", 4);
         psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
         psf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
-        psf.put("SAVEDATA_DIRECTORY", gameName + saveName, 64);
+        if (saveName.equals("<>")) {
+            // Do not write the saveName if it's "<>".
+            psf.put("SAVEDATA_DIRECTORY", gameName, 64);
+        } else {
+            psf.put("SAVEDATA_DIRECTORY", gameName + saveName, 64);
+        }
 
+        // Save the SAVEDATA_FILE_LIST
+        PspUtilitySavedataSecureFileList secureFileList = getSecureFileList(null);
+        // Even if the main data file is not being saved by a secure method, if the
+        // key is not null then the file is saved in the file list.
+        if (key != null) {
+        	// Add the current dataName as a secure file name
+        	if (secureFileList == null) {
+        		secureFileList = new PspUtilitySavedataSecureFileList();
+        	}
+        	secureFileList.add(dataName, key);
+        }
+        if (secureFileList != null) {
+        	psf.put("SAVEDATA_FILE_LIST", secureFileList.getBytes());
+        }
+        
+        // Generate the SAVEDATA_PARAMS
         if (cryptoMode) {
             SeekableRandomFile dataOutput = getDataOutput(path, dataName);
             if (dataOutput == null) {
@@ -750,20 +772,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             byte[] dataBuffer = new byte[dataLength];
             dataOutput.readFully(dataBuffer);
 
-            crypto.UpdateSavedataHashes(psf, dataBuffer, dataLength, key, dataName, mode);
-        }
-
-        // Save the SAVEDATA_FILE_LIST
-        PspUtilitySavedataSecureFileList secureFileList = getSecureFileList(null);
-        if (secure) {
-        	// Add the current dataName as a secure file name
-        	if (secureFileList == null) {
-        		secureFileList = new PspUtilitySavedataSecureFileList();
-        	}
-        	secureFileList.add(dataName, key);
-        }
-        if (secureFileList != null) {
-        	psf.put("SAVEDATA_FILE_LIST", secureFileList.getBytes());
+            crypto.getSAVEDATAEngine().UpdateSavedataHashes(psf, dataBuffer, dataLength, dataName);
         }
 
         psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);

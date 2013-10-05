@@ -5094,9 +5094,19 @@ public class VideoEngine {
     }
 
     private void executeCommandVAP() {
-        int alpha = normalArgument & 0xFF;
-        int prim_type = (normalArgument >> 8) & 0x7;
-        log.warn(String.format("Unimplemented VAP: alpha=%d, prim_type=%d, unknown=0x%04X", alpha, prim_type, normalArgument >> 11));
+        int color = normalArgument & 0xFF;               // Vertex color (8bit unsigned).
+        int prim_type = (normalArgument >> 8) & 0x7;     // Primitive used.
+        int antialias = (normalArgument >> 11) & 0x1;    // Perform antialiasing or not (only for PRIM_LINE or PRIM_LINES_STRIPS).
+        int clip = (normalArgument >> 12) & 0x3F;        // Clipping value (6bit unsigned).
+        int shading = (normalArgument >> 18) & 0x1;      // Shading mode.
+        int cull = (normalArgument >> 19) & 0x1;         // Back face culling.
+        int v_order = (normalArgument >> 20) & 0x1;      // Vertex order (only for PRIM_TRIANGLE).
+        int map_texture = (normalArgument >> 21) & 0x1;  // Texture mapping.
+        int fog = (normalArgument >> 22) & 0x1;          // Fogging.
+        int dither = (normalArgument >> 23) & 0x1;       // Dithering.
+        log.warn(String.format("Unimplemented VAP: color=%d, prim_type=%d, antialias=%d, clip=%d, shading=%d, cull=%d" +
+                ", v_order=%d, map_texture=%d, fog=%d, dither=%d",
+                color, prim_type, antialias, clip, shading, cull, v_order, map_texture, fog, dither));
     }
 
     private void executeCommandVFC() {

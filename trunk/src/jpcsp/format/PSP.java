@@ -26,11 +26,8 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 
-import jpcsp.State;
-import jpcsp.connector.Connector;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.settings.Settings;
-import jpcsp.util.Utilities;
 
 /**
  *
@@ -41,7 +38,7 @@ public class PSP {
 
     public static final int PSP_MAGIC = 0x5053507E;
     private int magic;
-	private int mod_attr;
+    private int mod_attr;
     private int comp_mod_attr;
     private int mod_ver_lo;
     private int mod_ver_hi;
@@ -153,28 +150,21 @@ public class PSP {
         CryptoEngine crypto = new CryptoEngine();
         byte[] inBuf = f.array();
         int inSize = inBuf.length;
-        byte[] outBuf = new byte[inSize];
-        int fileTag = ((inBuf[0xD0] & 0xFF) << 24) | ((inBuf[0xD1] & 0xFF) << 16)
-                | ((inBuf[0xD2] & 0xFF) << 8) | (inBuf[0xD3] & 0xFF);
-
-        int retsize = crypto.DecryptPRX1(inBuf, outBuf, inSize, fileTag);
-        if (retsize <= 0) {
-            retsize = crypto.DecryptPRX2(inBuf, outBuf, inSize, fileTag);
-        }
+        int retsize = crypto.getPRXEngine().DecryptPRX(inBuf, inSize, null, 0, 2, null, null);
 
         if (CryptoEngine.getExtractEbootStatus()) {
             try {
                 String ebootPath = Settings.getInstance().getDiscTmpDirectory();
                 new File(ebootPath).mkdirs();
                 RandomAccessFile raf = new RandomAccessFile(ebootPath + "EBOOT.BIN", "rw");
-                raf.write(outBuf, 0, retsize);
+                raf.write(inBuf, 0, retsize);
                 raf.close();
             } catch (Exception e) {
                 // Ignore.
             }
         }
 
-        return ByteBuffer.wrap(outBuf, 0, retsize);
+        return ByteBuffer.wrap(inBuf, 0, retsize);
     }
 
     public boolean isValid() {
