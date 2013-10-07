@@ -649,7 +649,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             return;
         }
 
-        byte[] inBuf = new byte[length];
+        byte[] inBuf = new byte[length + 0x10];
 
         IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, 1);
         for (int i = 0; i < length; i++) {

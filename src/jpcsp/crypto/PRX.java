@@ -195,21 +195,21 @@ public class PRX {
         new TAG_INFO(0x407810F0, KeyVault.key_407810F0, 0x6A),
         new TAG_INFO(0xE92410F0, KeyVault.drmkeys_6XX_1, 0x40),
         new TAG_INFO(0x692810F0, KeyVault.drmkeys_6XX_2, 0x40),
-        new TAG_INFO(0x00000000, KeyVault.g_key0, 0x42),
-        new TAG_INFO(0x02000000, KeyVault.g_key2, 0x45),
-        new TAG_INFO(0x03000000, KeyVault.g_key3, 0x46),
+        new TAG_INFO(0x00000000, KeyVault.g_key0, 0x42, 0x00),
+        new TAG_INFO(0x02000000, KeyVault.g_key2, 0x45, 0x00),
+        new TAG_INFO(0x03000000, KeyVault.g_key3, 0x46, 0x00),
         new TAG_INFO(0x4467415d, KeyVault.g_key44, 0x59, 0x59),
         new TAG_INFO(0x207bbf2f, KeyVault.g_key20, 0x5A, 0x5A),
         new TAG_INFO(0x3ace4dce, KeyVault.g_key3A, 0x5B, 0x5B),
         new TAG_INFO(0x07000000, KeyVault.g_key_INDEXDAT1xx, 0x4A),
-        new TAG_INFO(0x08000000, KeyVault.g_keyEBOOT1xx, 0x4B),
+        new TAG_INFO(0x08000000, KeyVault.g_keyEBOOT1xx, 0x4B, 0x00),
         new TAG_INFO(0xC0CB167C, KeyVault.g_keyEBOOT2xx, 0x5D, 0x5D),
-        new TAG_INFO(0x0B000000, KeyVault.g_keyUPDATER, 0x4E),
-        new TAG_INFO(0x0C000000, KeyVault.g_keyDEMOS27X, 0x4F),
-        new TAG_INFO(0x0F000000, KeyVault.g_keyMEIMG250, 0x52),
+        new TAG_INFO(0x0B000000, KeyVault.g_keyUPDATER, 0x4E, 0x00),
+        new TAG_INFO(0x0C000000, KeyVault.g_keyDEMOS27X, 0x4F, 0x00),
+        new TAG_INFO(0x0F000000, KeyVault.g_keyMEIMG250, 0x52, 0x00),
         new TAG_INFO(0x862648D1, KeyVault.g_keyMEIMG260, 0x52, 0x52),
         new TAG_INFO(0x207BBF2F, KeyVault.g_keyUNK1, 0x5A, 0x5A),
-        new TAG_INFO(0x09000000, KeyVault.g_key_GAMESHARE1xx, 0x4C),
+        new TAG_INFO(0x09000000, KeyVault.g_key_GAMESHARE1xx, 0x4C, 0x00),
         new TAG_INFO(0xBB67C59F, KeyVault.g_key_GAMESHARE2xx, 0x5E, 0x5E)};
     
     private TAG_INFO GetTagInfo(int tag) {
@@ -311,359 +311,450 @@ public class PRX {
         byte[] sigbuf = new byte[0x28];
         byte[] sha1buf = new byte[0x14];
         int unk_0xD4 = 0;
-        
+
         // Copy the first header to buf1.
         System.arraycopy(buf, 0, buf1, 0, 0x150);
-        
+
         // Fetch the PRX tag.
         int tag = ((buf[0xD0] & 0xFF) << 24) | ((buf[0xD1] & 0xFF) << 16)
-                | ((buf[0xD2] & 0xFF) << 8) | (buf[0xD3] & 0xFF);       
+                | ((buf[0xD2] & 0xFF) << 8) | (buf[0xD3] & 0xFF);
 
         // Get the tag info.
         TAG_INFO pti = GetTagInfo(Integer.reverseBytes(tag));
         if (pti == null) {
             return -1;
         }
-        
+
         // Check for blacklisted tags.
         if ((blacklist != null) && (blacklistsize != 0)) {
             if (TestBlacklist(buf1, blacklist, blacklistsize)) {
                 return -1;
             }
-	}
-        
+        }
+
         // Fetch the final ELF size.
         int retsize = ((buf[0xB3] & 0xFF) << 24) | ((buf[0xB2] & 0xFF) << 16)
                 | ((buf[0xB1] & 0xFF) << 8) | ((buf[0xB0] & 0xFF));
-        
-        // Read in the user key and apply scramble.
-        if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
-            for (int i = 0; i < 9; i++) {
-                for (int j = 0; j < 0x10; j++) {
-                    buf2[0x14 + ((i << 4) + j)] = (byte) pti.key[j];
+
+        // Old encryption method (144 bytes key).
+        if (pti.key.length > 0x10) {
+            // Setup the buffers.
+            byte[] oldbuf = new byte[size];
+            byte[] oldbuf1 = new byte[0x150];
+            
+            System.arraycopy(buf, 0, oldbuf, 0, size);
+            
+            for (int i = 0; i < 0x150; i++) {
+                oldbuf[i] = 0;
+            }
+            for (int i = 0; i < 0x40; i++) {
+                oldbuf[i] = 0x55;
+            }
+
+            oldbuf[0x2C + 0] = 0;
+            oldbuf[0x2C + 1] = 0;
+            oldbuf[0x2C + 2] = 0;
+            oldbuf[0x2C + 3] = 5;
+
+            oldbuf[0x2C + 4] = 0;
+            oldbuf[0x2C + 5] = 0;
+            oldbuf[0x2C + 6] = 0;
+            oldbuf[0x2C + 7] = 0;
+
+            oldbuf[0x2C + 8] = 0;
+            oldbuf[0x2C + 9] = 0;
+            oldbuf[0x2C + 10] = 0;
+            oldbuf[0x2C + 11] = 0;
+
+            oldbuf[0x2C + 12] = 0;
+            oldbuf[0x2C + 13] = 0;
+            oldbuf[0x2C + 14] = 0;
+            oldbuf[0x2C + 15] = (byte) pti.code;
+
+            oldbuf[0x2C + 16] = 0;
+            oldbuf[0x2C + 17] = 0;
+            oldbuf[0x2C + 18] = 0;
+            oldbuf[0x2C + 19] = (byte) 0x70;
+
+            System.arraycopy(buf, 0xD0, oldbuf1, 0, 0x80);
+            System.arraycopy(buf, 0x80, oldbuf1, 0x80, 0x50);
+            System.arraycopy(buf, 0, oldbuf1, 0xD0, 0x80);
+
+            if (pti.codeExtra != 0) {
+                byte[] tmp = new byte[0x14 + 0xA0];
+                System.arraycopy(oldbuf1, 0x10, tmp, 0x14, 0xA0);
+                ScramblePRX(tmp, 0xA0, (byte) pti.codeExtra);
+                System.arraycopy(tmp, 0, oldbuf1, 0x10, 0xA0);
+            }
+
+            System.arraycopy(oldbuf1, 0x40, oldbuf, 0x40, 0x40);
+
+            for (int iXOR = 0; iXOR < 0x70; iXOR++) {
+                oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x40 + iXOR] ^ (byte) pti.key[0x14 + iXOR]);
+            }
+
+            // Scramble the data by calling CMD7.
+            ByteBuffer bScrambleOut = ByteBuffer.allocate(oldbuf.length);
+            ByteBuffer bScrambleIn = ByteBuffer.wrap(oldbuf);
+            bScrambleIn.position(0x2C);
+            kirk.hleUtilsBufferCopyWithRange(bScrambleOut, 0x70, bScrambleIn, 0x70, 7);
+            System.arraycopy(bScrambleOut.array(), 0, oldbuf, 0x2C, 0x70);
+
+            for (int iXOR = 0x6F; iXOR >= 0; iXOR--) {
+                oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x2C + iXOR] ^ (byte) pti.key[0x20 + iXOR]);
+            }
+
+            for (int k = 0; k < 0x30; k++) {
+                oldbuf[k + 0x80] = 0;
+            }
+
+            // Set mode field to 1.
+            oldbuf[0xA0] = 0x0;
+            oldbuf[0xA1] = 0x0;
+            oldbuf[0xA2] = 0x0;
+            oldbuf[0xA3] = 0x1;
+            
+            System.arraycopy(buf, 0xB0, oldbuf, 0xB0, 0x20);
+            System.arraycopy(buf, 0, oldbuf, 0xD0, 0x80);
+
+            // Call KIRK CMD1 for final decryption.
+            ByteBuffer bDataOut = ByteBuffer.wrap(oldbuf);
+            ByteBuffer bHeaderIn = bDataOut.duplicate();
+            bHeaderIn.position(0x40);
+            kirk.hleUtilsBufferCopyWithRange(bDataOut, size, bHeaderIn, size, 0x1);
+            
+            // Copy back the decrypted file.
+            System.arraycopy(oldbuf, 0, buf, 0, size);
+        } else { // New encryption method (16 bytes key).
+            // Read in the user key and apply scramble.
+            if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
+                for (int i = 0; i < 9; i++) {
+                    for (int j = 0; j < 0x10; j++) {
+                        buf2[0x14 + ((i << 4) + j)] = (byte) pti.key[j];
+                    }
+                    buf2[0x14 + ((i << 4))] = (byte) i;
                 }
-                buf2[0x14 + ((i << 4))] = (byte) i;
-            }
-        } else {
-            for (int i = 0; i < 0x90; i++) {
-                buf2[0x14 + i] = (byte) pti.key[i];
-            }
-        }
-        
-        ScramblePRX(buf2, 0x90, (byte) (pti.code & 0xFF));
-        
-        // Round XOR key for PRX type 3,5,7 and 10.
-        if ((type == 3) || (type == 5) || (type == 7) || (type == 10)) {
-            if(!isNullKey(xor2)) {
-                RoundXOR(buf2, 0x90, xor2, null);
-            }
-        }
-        
-        System.arraycopy(buf2, 0, buf3, 0, 0x90);
-        
-        // Type 9 and 10 specific step.
-        if ((type == 9) || (type == 10)) {
-            System.arraycopy(buf, 0x104, buf6, 0, buf6.length);
-            
-            for (int i = 0; i < buf6.length; i++) {
-                buf[0x104 + i] = 0;
-            }
-            
-            System.arraycopy(buf6, 0, sigbuf, 0, sigbuf.length);
-            
-            buf[0] = (byte) (((size - 4) & 0xFF) << 24);
-            buf[1] = (byte) (((size - 4) & 0xFF) << 16);
-            buf[2] = (byte) (((size - 4) & 0xFF) << 8);
-            buf[3] = (byte) (((size - 4) & 0xFF));
-
-            // Generate SHA1 hash.
-            ByteBuffer bSHA1 = ByteBuffer.wrap(buf);
-            kirk.hleUtilsBufferCopyWithRange(bSHA1, size, bSHA1, size, KIRK.PSP_KIRK_CMD_SHA1_HASH);
-            
-            System.arraycopy(buf, 0, sha1buf, 0, sha1buf.length);
-            System.arraycopy(buf, 0, buf1, 0, 0x20);
-            
-            if ((((tag << 16) & 0xFF) & 0x16) == 0x16) {
-                System.arraycopy(KeyVault.g_pubkey_28752, 0, buf4, 0, KeyVault.g_pubkey_28752.length);
-            } else if ((((tag << 16) & 0xFF) & 0x5E) == 0x5E) {
-                System.arraycopy(KeyVault.g_pubkey_28712, 0, buf4, 0, KeyVault.g_pubkey_28712.length);
             } else {
-                System.arraycopy(KeyVault.g_pubkey_28672, 0, buf4, 0, KeyVault.g_pubkey_28672.length);
+                for (int i = 0; i < 0x90; i++) {
+                    buf2[0x14 + i] = (byte) pti.key[i];
+                }
             }
-            
-            System.arraycopy(sha1buf, 0, buf4, 0x28, sha1buf.length);
-            System.arraycopy(sigbuf, 0, buf4, 0x28 + sha1buf.length, sigbuf.length);
 
-            // Verify ECDSA signature.
-            ByteBuffer bECDSA = ByteBuffer.wrap(buf4);
-            kirk.hleUtilsBufferCopyWithRange(null, 0, bECDSA, 100, KIRK.PSP_KIRK_CMD_ECDSA_VERIFY);
-        }
+            ScramblePRX(buf2, 0x90, (byte) (pti.code & 0xFF));
 
-        if (type == 3) {            
-            System.arraycopy(buf1, 0xEC, buf2, 0, 0x40);
-            for(int i = 0; i < 0x50; i++) {
-                buf2[0x40 + i] = 0;
-            }
-            
-            buf2[0x60] = 0x03;
-            buf2[0x70] = 0x50;
-            
-            System.arraycopy(buf1, 0x80, buf2, 0x90, 0x30);
-            System.arraycopy(buf1, 0xC0, buf2, 0x90 + 0x30, 0x10);
-            System.arraycopy(buf1, 0x12C, buf2, 0x90 + 0x30 + 0x10, 0x10);
-            
-            byte[] tmp = new byte[0x50];
-            for (int i = 0; i < tmp.length; i++) {
-                tmp[i] = buf2[0x90 + i];
-            }
-        
-            // Round XOR with xor1 and xor2.
-            RoundXOR(tmp, 0x50, xor1, xor2);
-            
-            System.arraycopy(tmp, 0, buf2, 0x90, 0x50);
-            
-            // Decrypt signature (type 3).
-            ByteBuffer bSIGin = ByteBuffer.wrap(buf2);
-            ByteBuffer bSIGout = ByteBuffer.wrap(buf4);
-            kirk.hleUtilsBufferCopyWithRange(bSIGout, 0xB4, bSIGin, 0x150, KIRK.PSP_KIRK_CMD_DECRYPT_SIGN);
-
-            // Regenerate signature.
-            System.arraycopy(buf1, 0xD0, buf2, 0, 0x4);
-            for(int i = 0; i < 0x58; i++) {
-                buf2[0x4 + i] = 0;
-            }
-            System.arraycopy(buf1, 0x140, buf2, 0x5C, 0x10);
-            System.arraycopy(buf1, 0x12C, buf2, 0x6C, 0x14);
-            System.arraycopy(buf4, 0x40, buf2, 0x6C, 0x10);
-            System.arraycopy(buf4, 0, buf2, 0x80, 0x30);
-            System.arraycopy(buf4, 0x30, buf2, 0xB0, 0x10);
-            System.arraycopy(buf1, 0xB0, buf2, 0xC0, 0x10);
-            System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
-        } else if ((type == 5) || (type == 7) || (type == 10)) { 
-            System.arraycopy(buf1, 0x80, buf2, 0x14, 0x30);
-            System.arraycopy(buf1, 0xC0, buf2, 0x44, 0x10);
-            System.arraycopy(buf1, 0x12C, buf2, 0x54, 0x10);
-            
-            byte[] tmp = new byte[0x50];
-            for (int i = 0; i < tmp.length; i++) {
-                tmp[i] = buf2[0x14 + i];
-            }
-        
-            // Round XOR with xor1 and xor2.
-            RoundXOR(tmp, 0x50, xor1, xor2);
-            
-            System.arraycopy(tmp, 0, buf2, 0x14, 0x50);
-
-            // Apply scramble.
-            ScramblePRX(buf2, 0x50, (byte) (pti.code & 0xFF));
-        
-            // Copy to buf4.
-            System.arraycopy(buf2, 0, buf4, 0, 0x50);
-
-            // Regenerate signature.
-            System.arraycopy(buf1, 0xD0, buf2, 0, 0x4);
-            for (int i = 0; i < 0x58; i++) {
-                buf2[0x4 + i] = 0;
-            }
-            System.arraycopy(buf1, 0x140, buf2, 0x5C, 0x10);
-            System.arraycopy(buf1, 0x12C, buf2, 0x6C, 0x14);
-            System.arraycopy(buf4, 0x40, buf2, 0x6C, 0x10);
-            System.arraycopy(buf4, 0, buf2, 0x80, 0x30);
-            System.arraycopy(buf4, 0x30, buf2, 0xB0, 0x10);
-            System.arraycopy(buf1, 0xB0, buf2, 0xC0, 0x10);
-            System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
-        } else if ((type == 2) || (type == 4) || (type == 6) || (type == 9)) {
-            // Regenerate sig check.
-            System.arraycopy(buf1, 0xD0, buf2, 0, 0x5C);
-            System.arraycopy(buf1, 0x140, buf2, 0x5C, 0x10);
-            System.arraycopy(buf1, 0x12C, buf2, 0x6C, 0x14);
-            System.arraycopy(buf1, 0x80, buf2, 0x80, 0x30);
-            System.arraycopy(buf1, 0xC0, buf2, 0xB0, 0x10);
-            System.arraycopy(buf1, 0xB0, buf2, 0xC0, 0x10);
-            System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
-        } else {
-            // Regenerate sig check.
-            System.arraycopy(buf1, 0xD0, buf2, 0, 0x80);
-            System.arraycopy(buf1, 0x80, buf2, 0x80, 0x50);
-            System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
-        }
-        
-        if (type == 1) {
-            System.arraycopy(buf2, 0x10, buf4, 0x14, 0xA0);
-            ScramblePRX(buf4, 0xA0, (byte) (pti.code & 0xFF));
-            System.arraycopy(buf4, 0, buf2, 0x10, 0xA0);
-        } else if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) { 
-            System.arraycopy(buf2, 0x5C, buf4, 0x14, 0x60);
-            
+            // Round XOR key for PRX type 3,5,7 and 10.
             if ((type == 3) || (type == 5) || (type == 7) || (type == 10)) {
-                byte[] tmp = new byte[0x60];
-                for (int i = 0; i < tmp.length; i++) {
-                    tmp[i] = buf4[0x14 + i];
+                if (!isNullKey(xor2)) {
+                    RoundXOR(buf2, 0x90, xor2, null);
                 }
-                RoundXOR(tmp, 0x60, xor1, null);
-                System.arraycopy(tmp, 0, buf4, 0x14, 0x60);
             }
-            ScramblePRX(buf4, 0x60, (byte) (pti.code & 0xFF));
-            System.arraycopy(buf4, 0, buf2, 0x5C, 0x60);
-        }
-        
-        if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
-            System.arraycopy(buf2, 0x6C, buf4, 0, 0x14);
-            
-            if (type == 4) {
-                System.arraycopy(buf2, 0, buf2, 0x18, 0x67);
-                for(int i = 0; i < 0x18; i++) {
-                    buf2[i] = 0;
+
+            System.arraycopy(buf2, 0, buf3, 0, 0x90);
+
+            // Type 9 and 10 specific step.
+            if ((type == 9) || (type == 10)) {
+                System.arraycopy(buf, 0x104, buf6, 0, buf6.length);
+
+                for (int i = 0; i < buf6.length; i++) {
+                    buf[0x104 + i] = 0;
                 }
+
+                System.arraycopy(buf6, 0, sigbuf, 0, sigbuf.length);
+
+                buf[0] = (byte) (((size - 4) & 0xFF) << 24);
+                buf[1] = (byte) (((size - 4) & 0xFF) << 16);
+                buf[2] = (byte) (((size - 4) & 0xFF) << 8);
+                buf[3] = (byte) (((size - 4) & 0xFF));
+
+                // Generate SHA1 hash.
+                ByteBuffer bSHA1 = ByteBuffer.wrap(buf);
+                kirk.hleUtilsBufferCopyWithRange(bSHA1, size, bSHA1, size, KIRK.PSP_KIRK_CMD_SHA1_HASH);
+
+                System.arraycopy(buf, 0, sha1buf, 0, sha1buf.length);
+                System.arraycopy(buf, 0, buf1, 0, 0x20);
+
+                if ((((tag << 16) & 0xFF) & 0x16) == 0x16) {
+                    System.arraycopy(KeyVault.g_pubkey_28752, 0, buf4, 0, KeyVault.g_pubkey_28752.length);
+                } else if ((((tag << 16) & 0xFF) & 0x5E) == 0x5E) {
+                    System.arraycopy(KeyVault.g_pubkey_28712, 0, buf4, 0, KeyVault.g_pubkey_28712.length);
+                } else {
+                    System.arraycopy(KeyVault.g_pubkey_28672, 0, buf4, 0, KeyVault.g_pubkey_28672.length);
+                }
+
+                System.arraycopy(sha1buf, 0, buf4, 0x28, sha1buf.length);
+                System.arraycopy(sigbuf, 0, buf4, 0x28 + sha1buf.length, sigbuf.length);
+
+                // Verify ECDSA signature.
+                ByteBuffer bECDSA = ByteBuffer.wrap(buf4);
+                kirk.hleUtilsBufferCopyWithRange(null, 0, bECDSA, 100, KIRK.PSP_KIRK_CMD_ECDSA_VERIFY);
+            }
+
+            if (type == 3) {
+                System.arraycopy(buf1, 0xEC, buf2, 0, 0x40);
+                for (int i = 0; i < 0x50; i++) {
+                    buf2[0x40 + i] = 0;
+                }
+
+                buf2[0x60] = 0x03;
+                buf2[0x70] = 0x50;
+
+                System.arraycopy(buf1, 0x80, buf2, 0x90, 0x30);
+                System.arraycopy(buf1, 0xC0, buf2, 0x90 + 0x30, 0x10);
+                System.arraycopy(buf1, 0x12C, buf2, 0x90 + 0x30 + 0x10, 0x10);
+
+                byte[] tmp = new byte[0x50];
+                for (int i = 0; i < tmp.length; i++) {
+                    tmp[i] = buf2[0x90 + i];
+                }
+
+                // Round XOR with xor1 and xor2.
+                RoundXOR(tmp, 0x50, xor1, xor2);
+
+                System.arraycopy(tmp, 0, buf2, 0x90, 0x50);
+
+                // Decrypt signature (type 3).
+                ByteBuffer bSIGin = ByteBuffer.wrap(buf2);
+                ByteBuffer bSIGout = ByteBuffer.wrap(buf4);
+                kirk.hleUtilsBufferCopyWithRange(bSIGout, 0xB4, bSIGin, 0x150, KIRK.PSP_KIRK_CMD_DECRYPT_SIGN);
+
+                // Regenerate signature.
+                System.arraycopy(buf1, 0xD0, buf2, 0, 0x4);
+                for (int i = 0; i < 0x58; i++) {
+                    buf2[0x4 + i] = 0;
+                }
+                System.arraycopy(buf1, 0x140, buf2, 0x5C, 0x10);
+                System.arraycopy(buf1, 0x12C, buf2, 0x6C, 0x14);
+                System.arraycopy(buf4, 0x40, buf2, 0x6C, 0x10);
+                System.arraycopy(buf4, 0, buf2, 0x80, 0x30);
+                System.arraycopy(buf4, 0x30, buf2, 0xB0, 0x10);
+                System.arraycopy(buf1, 0xB0, buf2, 0xC0, 0x10);
+                System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
+            } else if ((type == 5) || (type == 7) || (type == 10)) {
+                System.arraycopy(buf1, 0x80, buf2, 0x14, 0x30);
+                System.arraycopy(buf1, 0xC0, buf2, 0x44, 0x10);
+                System.arraycopy(buf1, 0x12C, buf2, 0x54, 0x10);
+
+                byte[] tmp = new byte[0x50];
+                for (int i = 0; i < tmp.length; i++) {
+                    tmp[i] = buf2[0x14 + i];
+                }
+
+                // Round XOR with xor1 and xor2.
+                RoundXOR(tmp, 0x50, xor1, xor2);
+
+                System.arraycopy(tmp, 0, buf2, 0x14, 0x50);
+
+                // Apply scramble.
+                ScramblePRX(buf2, 0x50, (byte) (pti.code & 0xFF));
+
+                // Copy to buf4.
+                System.arraycopy(buf2, 0, buf4, 0, 0x50);
+
+                // Regenerate signature.
+                System.arraycopy(buf1, 0xD0, buf2, 0, 0x4);
+                for (int i = 0; i < 0x58; i++) {
+                    buf2[0x4 + i] = 0;
+                }
+                System.arraycopy(buf1, 0x140, buf2, 0x5C, 0x10);
+                System.arraycopy(buf1, 0x12C, buf2, 0x6C, 0x14);
+                System.arraycopy(buf4, 0x40, buf2, 0x6C, 0x10);
+                System.arraycopy(buf4, 0, buf2, 0x80, 0x30);
+                System.arraycopy(buf4, 0x30, buf2, 0xB0, 0x10);
+                System.arraycopy(buf1, 0xB0, buf2, 0xC0, 0x10);
+                System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
+            } else if ((type == 2) || (type == 4) || (type == 6) || (type == 9)) {
+                // Regenerate sig check.
+                System.arraycopy(buf1, 0xD0, buf2, 0, 0x5C);
+                System.arraycopy(buf1, 0x140, buf2, 0x5C, 0x10);
+                System.arraycopy(buf1, 0x12C, buf2, 0x6C, 0x14);
+                System.arraycopy(buf1, 0x80, buf2, 0x80, 0x30);
+                System.arraycopy(buf1, 0xC0, buf2, 0xB0, 0x10);
+                System.arraycopy(buf1, 0xB0, buf2, 0xC0, 0x10);
+                System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
             } else {
-                System.arraycopy(buf2, 0x5C, buf2, 0x70, 0x10);
-                
-                if ((type == 6) || (type == 7)) {
-                    System.arraycopy(buf2, 0x3C, buf5, 0, 0x20);
-                    System.arraycopy(buf5, 0, buf2, 0x50, 0x20);
-                    for(int i = 0; i < 0x38; i++) {
-                        buf2[0x18 + i] = 0;
+                // Regenerate sig check.
+                System.arraycopy(buf1, 0xD0, buf2, 0, 0x80);
+                System.arraycopy(buf1, 0x80, buf2, 0x80, 0x50);
+                System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
+            }
+
+            if (type == 1) {
+                System.arraycopy(buf2, 0x10, buf4, 0x14, 0xA0);
+                ScramblePRX(buf4, 0xA0, (byte) (pti.code & 0xFF));
+                System.arraycopy(buf4, 0, buf2, 0x10, 0xA0);
+            } else if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
+                System.arraycopy(buf2, 0x5C, buf4, 0x14, 0x60);
+
+                if ((type == 3) || (type == 5) || (type == 7) || (type == 10)) {
+                    byte[] tmp = new byte[0x60];
+                    for (int i = 0; i < tmp.length; i++) {
+                        tmp[i] = buf4[0x14 + i];
+                    }
+                    RoundXOR(tmp, 0x60, xor1, null);
+                    System.arraycopy(tmp, 0, buf4, 0x14, 0x60);
+                }
+                ScramblePRX(buf4, 0x60, (byte) (pti.code & 0xFF));
+                System.arraycopy(buf4, 0, buf2, 0x5C, 0x60);
+            }
+
+            if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
+                System.arraycopy(buf2, 0x6C, buf4, 0, 0x14);
+
+                if (type == 4) {
+                    System.arraycopy(buf2, 0, buf2, 0x18, 0x67);
+                    for (int i = 0; i < 0x18; i++) {
+                        buf2[i] = 0;
                     }
                 } else {
-                    for(int i = 0; i < 0x58; i++) {
-                        buf2[0x18 + i] = 0;
+                    System.arraycopy(buf2, 0x5C, buf2, 0x70, 0x10);
+
+                    if ((type == 6) || (type == 7)) {
+                        System.arraycopy(buf2, 0x3C, buf5, 0, 0x20);
+                        System.arraycopy(buf5, 0, buf2, 0x50, 0x20);
+                        for (int i = 0; i < 0x38; i++) {
+                            buf2[0x18 + i] = 0;
+                        }
+                    } else {
+                        for (int i = 0; i < 0x58; i++) {
+                            buf2[0x18 + i] = 0;
+                        }
+                    }
+
+                    if (unk_0xD4 == 0x80) {
+                        buf2[0x18] = (byte) 0x80;
                     }
                 }
-                
-                if (unk_0xD4 == 0x80 ) {
-                    buf2[0x18] = (byte) 0x80;
-                }
-            }
-            
-            // Set the SHA1 block size to digest.
-            System.arraycopy(buf2, 0, buf2, 0x4, 4);
-            buf2[0] = 0x00;
-            buf2[1] = 0x00;
-            buf2[2] = 0x01;
-            buf2[3] = 0x4C;
-            System.arraycopy(buf3, 0, buf2, 0x8, 0x10);
-        } else {
-            // Set the SHA1 block size to digest.
-            System.arraycopy(buf2, 0x4, buf4, 0, 0x14);
-            buf2[0] = 0x00;
-            buf2[1] = 0x00;
-            buf2[2] = 0x01;
-            buf2[3] = 0x4C;
-            System.arraycopy(buf3, 0, buf2, 0x4, 0x14);
-        }
-        
-        // Generate SHA1 hash.
-        ByteBuffer bSHA1Out = ByteBuffer.wrap(buf2);
-        kirk.hleUtilsBufferCopyWithRange(bSHA1Out, 0x150, bSHA1Out, 0x150, KIRK.PSP_KIRK_CMD_SHA1_HASH);
-        
-        if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
-            byte[] tmp1 = new byte[0x40];
-            byte[] tmp2 = new byte[0x40];
-            byte[] tmp3 = new byte[0x40 + 0x14];
-            byte[] tmp4 = new byte[0x40];
-            byte[] tmp5 = new byte[0x40];
-            byte[] tmp6 = new byte[0x40];
-            
-            for (int i = 0; i < 0x40; i++) {
-                tmp1[i] = buf2[0x80 + i];
-                tmp2[i] = buf3[0x10 + i];
-            }
-            
-            MixXOR(tmp1, 0x40, tmp1, tmp2);
-            System.arraycopy(tmp1, 0, tmp3, 0x14, 0x40);
-            ScramblePRX(tmp3, 0x40, (byte) (pti.code & 0xFF));
-            System.arraycopy(tmp3, 0, buf2, 0x80, 0x40);
-            
-            for (int i = 0; i < 0x40; i++) {
-                tmp4[i] = buf[0x40 + i];
-                tmp5[i] = buf2[0x80 + i];
-                tmp6[i] = buf3[0x50 + i];
-            }
-            
-            MixXOR(tmp4, 0x40, tmp5, tmp6);
-            System.arraycopy(tmp4, 0, buf, 0x40, 0x40);
 
-            if ((type == 6) || (type == 7)) {
-                System.arraycopy(buf5, 0, buf, 0x80, 0x20);
-                for(int i = 0; i < 0x10; i++) {
-                    buf[0xA0 + i] = 0;
-                }
-                buf[0xA4] = 0x0;
-                buf[0xA5] = 0x0;
-                buf[0xA6] = 0x0;
-                buf[0xA7] = 0x1;
-                buf[0xA0] = 0x0;
-                buf[0xA1] = 0x0;
-                buf[0xA2] = 0x0;
-                buf[0xA3] = 0x1;
+                // Set the SHA1 block size to digest.
+                System.arraycopy(buf2, 0, buf2, 0x4, 4);
+                buf2[0] = 0x00;
+                buf2[1] = 0x00;
+                buf2[2] = 0x01;
+                buf2[3] = 0x4C;
+                System.arraycopy(buf3, 0, buf2, 0x8, 0x10);
             } else {
-                for(int i = 0; i < 0x30; i++) {
-                    buf[0x80 + i] = 0;
+                // Set the SHA1 block size to digest.
+                System.arraycopy(buf2, 0x4, buf4, 0, 0x14);
+                buf2[0] = 0x00;
+                buf2[1] = 0x00;
+                buf2[2] = 0x01;
+                buf2[3] = 0x4C;
+                System.arraycopy(buf3, 0, buf2, 0x4, 0x14);
+            }
+
+            // Generate SHA1 hash.
+            ByteBuffer bSHA1Out = ByteBuffer.wrap(buf2);
+            kirk.hleUtilsBufferCopyWithRange(bSHA1Out, 0x150, bSHA1Out, 0x150, KIRK.PSP_KIRK_CMD_SHA1_HASH);
+
+            if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
+                byte[] tmp1 = new byte[0x40];
+                byte[] tmp2 = new byte[0x40];
+                byte[] tmp3 = new byte[0x40 + 0x14];
+                byte[] tmp4 = new byte[0x40];
+                byte[] tmp5 = new byte[0x40];
+                byte[] tmp6 = new byte[0x40];
+
+                for (int i = 0; i < 0x40; i++) {
+                    tmp1[i] = buf2[0x80 + i];
+                    tmp2[i] = buf3[0x10 + i];
                 }
-                buf[0xA0] = 0x0;
-                buf[0xA1] = 0x0;
-                buf[0xA2] = 0x0;
-                buf[0xA3] = 0x1;
+
+                MixXOR(tmp1, 0x40, tmp1, tmp2);
+                System.arraycopy(tmp1, 0, tmp3, 0x14, 0x40);
+                ScramblePRX(tmp3, 0x40, (byte) (pti.code & 0xFF));
+                System.arraycopy(tmp3, 0, buf2, 0x80, 0x40);
+
+                for (int i = 0; i < 0x40; i++) {
+                    tmp4[i] = buf[0x40 + i];
+                    tmp5[i] = buf2[0x80 + i];
+                    tmp6[i] = buf3[0x50 + i];
+                }
+
+                MixXOR(tmp4, 0x40, tmp5, tmp6);
+                System.arraycopy(tmp4, 0, buf, 0x40, 0x40);
+
+                if ((type == 6) || (type == 7)) {
+                    System.arraycopy(buf5, 0, buf, 0x80, 0x20);
+                    for (int i = 0; i < 0x10; i++) {
+                        buf[0xA0 + i] = 0;
+                    }
+                    buf[0xA4] = 0x0;
+                    buf[0xA5] = 0x0;
+                    buf[0xA6] = 0x0;
+                    buf[0xA7] = 0x1;
+                    buf[0xA0] = 0x0;
+                    buf[0xA1] = 0x0;
+                    buf[0xA2] = 0x0;
+                    buf[0xA3] = 0x1;
+                } else {
+                    for (int i = 0; i < 0x30; i++) {
+                        buf[0x80 + i] = 0;
+                    }
+                    buf[0xA0] = 0x0;
+                    buf[0xA1] = 0x0;
+                    buf[0xA2] = 0x0;
+                    buf[0xA3] = 0x1;
+                }
+
+                System.arraycopy(buf2, 0xC0, buf, 0xB0, 0x10);
+                for (int i = 0; i < 0x10; i++) {
+                    buf[0xC0 + i] = 0;
+                }
+                System.arraycopy(buf2, 0xD0, buf, 0xD0, 0x80);
+            } else {
+                byte[] tmp7 = new byte[0x70];
+                byte[] tmp8 = new byte[0x70];
+                byte[] tmp9 = new byte[0x70 + 0x14];
+                byte[] tmp10 = new byte[0x70];
+                byte[] tmp11 = new byte[0x70];
+                byte[] tmp12 = new byte[0x70];
+                for (int i = 0; i < 0x70; i++) {
+                    tmp7[i] = buf2[0x40 + i];
+                    tmp8[i] = buf3[0x14 + i];
+                }
+
+                MixXOR(tmp7, 0x70, tmp7, tmp8);
+                System.arraycopy(tmp7, 0, tmp9, 0x14, 0x70);
+                ScramblePRX(tmp9, 0x70, (byte) (pti.code & 0xFF));
+                System.arraycopy(tmp9, 0, buf2, 0x40, 0x40);
+
+                for (int i = 0; i < 0x70; i++) {
+                    tmp10[i] = buf[0x40 + i];
+                    tmp11[i] = buf2[0x40 + i];
+                    tmp12[i] = buf3[0x20 + i];
+                }
+
+                MixXOR(tmp10, 0x70, tmp11, tmp12);
+                System.arraycopy(tmp10, 0, buf, 0x40, 0x70);
+                System.arraycopy(buf2, 0xB0, buf, 0xB0, 0xA0);
             }
 
-            System.arraycopy(buf2, 0xC0, buf, 0xB0, 0x10);
-            for(int i = 0; i < 0x10; i++) {
-                buf[0xC0 + i] = 0;
+            if (type == 8) {
+                if ((buf[0xA4] & 0x1) != 0x1) {
+                    return -1;
+                }
             }
-            System.arraycopy(buf2, 0xD0, buf, 0xD0, 0x80);
-        } else {
-            byte[] tmp7 = new byte[0x70];
-            byte[] tmp8 = new byte[0x70];
-            byte[] tmp9 = new byte[0x70 + 0x14];
-            byte[] tmp10 = new byte[0x70];
-            byte[] tmp11 = new byte[0x70];
-            byte[] tmp12 = new byte[0x70];
-            for (int i = 0; i < 0x70; i++) {
-                tmp7[i] = buf2[0x40 + i];
-                tmp8[i] = buf3[0x14 + i];
+
+            if (unk_0xD4 == 0x80) {
+                if ((buf[0x590] & 0x1) == 0x1) {
+                    return -1;
+                }
+                buf[0x590] |= 0x80;
             }
-            
-            MixXOR(tmp7, 0x70, tmp7, tmp8);
-            System.arraycopy(tmp7, 0, tmp9, 0x14, 0x70);
-            ScramblePRX(tmp9, 0x70, (byte) (pti.code & 0xFF));
-            System.arraycopy(tmp9, 0, buf2, 0x40, 0x40);
-               
-            for (int i = 0; i < 0x70; i++) {
-                tmp10[i] = buf[0x40 + i];
-                tmp11[i] = buf2[0x40 + i];
-                tmp12[i] = buf3[0x20 + i];
+
+            // Call KIRK CMD1 for final decryption.
+            ByteBuffer bDataOut = ByteBuffer.wrap(buf);
+            ByteBuffer bHeaderIn = bDataOut.duplicate();
+            bHeaderIn.position(0x40);
+            kirk.hleUtilsBufferCopyWithRange(bDataOut, size, bHeaderIn, size, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
+
+            if (retsize < 0x150) {
+                for (int i = 0; i < (0x150 - retsize); i++) {
+                    buf[retsize + i] = 0;
+                }
             }
-            
-            MixXOR(tmp10, 0x70, tmp11, tmp12);
-            System.arraycopy(tmp10, 0, buf, 0x40, 0x70);
-            System.arraycopy(buf2, 0xB0, buf, 0xB0, 0xA0);
         }
-        
-        if (type == 8) {
-            if ((buf[0xA4] & 0x1) != 0x1) {
-		return -1;
-            }
-        }
 
-	if (unk_0xD4 == 0x80) {
-            if ((buf[0x590] & 0x1) == 0x1) {
-                return -1;
-            }
-            buf[0x590] |= 0x80;
-	}
-        
-        // Call KIRK CMD1 for final decryption.
-        ByteBuffer bDataOut = ByteBuffer.wrap(buf);
-        ByteBuffer bHeaderIn = bDataOut.duplicate();
-        bHeaderIn.position(0x40);
-        kirk.hleUtilsBufferCopyWithRange(bDataOut, size, bHeaderIn, size, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
-
-	if (retsize < 0x150) {
-            for(int i = 0; i < (0x150 - retsize); i++) {
-                buf[retsize + i] = 0;
-            }
-	} 
-
-	return retsize;
+        return retsize;
     }
 }

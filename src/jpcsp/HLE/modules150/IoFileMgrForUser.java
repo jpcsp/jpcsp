@@ -43,7 +43,6 @@ import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
@@ -55,7 +54,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -98,7 +96,6 @@ import jpcsp.hardware.MemoryStick;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.AbstractBoolSettingsListener;
-import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -2596,57 +2593,6 @@ public class IoFileMgrForUser extends HLEModule {
                                 info.vFile.ioRead(inBuf, 0, pgdHeaderSize);
                             } else {
                                 info.readOnlyFile.readFully(inBuf, 0, pgdHeaderSize);
-                            }
-                            
-                            // Some games attempt to decrypt gzipped files.
-                            // Check and decompress gzipped files (GZIP header: 0x1F8B).
-                            if (((inBuf[0] & 0x1F) == 0x1F) && ((inBuf[1] & 0x8B) == 0x8B)) {         
-                                int zipsize = (int)info.readOnlyFile.length();
-                                byte[] zip = new byte[zipsize];
-                                
-                                // Read the file contents again.
-                                if (info.vFile != null) {
-                                    info.vFile.ioRead(zip, 0, zipsize);
-                                } else {
-                                    info.readOnlyFile.readFully(zip);
-                                }
-                                
-                                // Extract the original file size (decompressed) from the gzip footer.
-                                int unzipsize = (zip[zipsize - 1] << 24) | (zip[zipsize - 2] << 16) 
-                                        + (zip[zipsize - 3] << 8) + zip[zipsize - 4];
-                                byte[] unzip = new byte[unzipsize];
-                                
-                                // Use GZIPInputStream to decompress the data.
-                                GZIPInputStream gzis = new GZIPInputStream(new ByteArrayInputStream(zip));
-                                gzis.read(unzip);
-                                gzis.close();
-                                
-                                // Create a temporary copy of the decompressed file under the tmp folder.
-                                String[] fpath = info.filename.split("/");
-                                String unzipfile = fpath[fpath.length - 1].replace(".gz", "");
-                                String unzipdir = Settings.getInstance().getDiscTmpDirectory() + "/ZIP/";
-                
-                                File f = new File(unzipdir);
-                                f.mkdirs();
-                                
-                                SeekableRandomFile srf = new SeekableRandomFile(unzipdir + unzipfile, "rw");
-                                srf.write(unzip);
-                
-                                // Replace the original data stream and read back the file header.
-                                if (info.vFile != null) {
-                                    String absoluteFileName = getAbsoluteFileName(info.filename);
-                                    StringBuilder localFileName = new StringBuilder();
-                                    
-                                    IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
-                                    IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), info.flags, info.permissions);
-                                    
-                                    info.vFile = vFile;
-                                    
-                                    info.vFile.ioRead(inBuf, 0, pgdHeaderSize);
-                                } else {
-                                    info.readOnlyFile = srf;
-                                    info.readOnlyFile.readFully(inBuf, 0, pgdHeaderSize);
-                                }
                             }
 
                             // Check if the "PGD" header is present
