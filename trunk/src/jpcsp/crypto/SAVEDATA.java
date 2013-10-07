@@ -109,28 +109,30 @@ public class SAVEDATA {
 
         // Key generator mode 0x1 (encryption): use an encrypted pseudo random number before XORing the data with the given key.
         if (genMode == 0x1) {
-            byte[] header = new byte[0x10 + 0x14];
-            byte[] random = new byte[0x14];
-            byte[] newKey = new byte[0x10];
+            byte[] header = new byte[0x14 + 0x2C];
+            byte[] seed = new byte[0x14];
+            byte[] tmp = new byte[0x2C];
 
-            ByteBuffer bRandom = ByteBuffer.wrap(random);
-            kirk.hleUtilsBufferCopyWithRange(bRandom, 0x14, null, 0, 0xE);
+            ByteBuffer bSeed = ByteBuffer.wrap(seed);
+            kirk.hleUtilsBufferCopyWithRange(bSeed, 0x14, null, 0, 0xE);
+            
+            System.arraycopy(seed, 0, tmp, 0x8, 0x14);
             
             for (int i = 0xF; i >= 0; i--) {
-                newKey[0xF - i] = random[i];
+                tmp[0x14 - i] = tmp[0x8 + i];
             }
-            System.arraycopy(newKey, 0, header, 0x14, 0x10);
             for (int i = 0; i < 4; i++) {
-                header[0x20 + i] = 0;
+                tmp[0x20 + 0x8 + i] = 0;
             }
+            System.arraycopy(tmp, 0, header, 0x14, 0x2C);
 
             // Encryption mode 0x1: encrypt with KIRK CMD4 and XOR with the given key.
             if (ctx.mode == 0x1) {
                 ScrambleSD(header, 0x10, 0x4, 0x4, 0x04);
-                System.arraycopy(header, 0, ctx.buf, 0, 0x10);
-                System.arraycopy(header, 0, data, 0, 0x10);
+                System.arraycopy(header, 0xC, ctx.buf, 0, 0x10);
+                System.arraycopy(header, 0xC, data, 0, 0x10);
                 // If the key is not null, XOR the hash with it.
-                if (key != null) {
+                if (!isNullKey(key)) {
                     for (int i = 0; i < 16; i++) {
                         ctx.buf[i] = (byte) (ctx.buf[i] ^ key[i]);
                     }
@@ -138,10 +140,10 @@ public class SAVEDATA {
                 return 0;
             } else if (ctx.mode == 0x2) { // Encryption mode 0x2: encrypt with KIRK CMD5 and XOR with the given key.
                 ScrambleSD(header, 0x10, 0x100, 0x4, 0x05);
-                System.arraycopy(header, 0, ctx.buf, 0, 0x10);
-                System.arraycopy(header, 0, data, 0, 0x10);
+                System.arraycopy(header, 0xC, ctx.buf, 0, 0x10);
+                System.arraycopy(header, 0xC, data, 0, 0x10);
                 // If the key is not null, XOR the hash with it.
-                if (key != null) {
+                if (!isNullKey(key)) {
                     for (int i = 0; i < 16; i++) {
                         ctx.buf[i] = (byte) (ctx.buf[i] ^ key[i]);
                     }
@@ -149,16 +151,16 @@ public class SAVEDATA {
                 return 0;
             } else if (ctx.mode == 0x3) { // Encryption mode 0x3: XOR with SD keys, encrypt with KIRK CMD4 and XOR with the given key.
                 for (int i = 0; i < 0x10; i++) {
-                    header[0x14 + i] = (byte) (header[0x14 + i] ^ KeyVault.sdHashKey3[i]);
+                    header[0x14 + 0xC + i] = (byte) (header[0x14 + 0xC + i] ^ KeyVault.sdHashKey3[i]);
                 }
                 ScrambleSD(header, 0x10, 0xE, 0x4, 0x04);
                 for (int i = 0; i < 0x10; i++) {
-                    header[i] = (byte) (header[i] ^ KeyVault.sdHashKey4[i]);
+                    header[0xC + i] = (byte) (0xC + header[i] ^ KeyVault.sdHashKey4[i]);
                 }
-                System.arraycopy(header, 0, ctx.buf, 0, 0x10);
-                System.arraycopy(header, 0, data, 0, 0x10);
+                System.arraycopy(header, 0xC, ctx.buf, 0, 0x10);
+                System.arraycopy(header, 0xC, data, 0, 0x10);
                 // If the key is not null, XOR the hash with it.
-                if (key != null) {
+                if (!isNullKey(key)) {
                     for (int i = 0; i < 16; i++) {
                         ctx.buf[i] = (byte) (ctx.buf[i] ^ key[i]);
                     }
@@ -166,16 +168,16 @@ public class SAVEDATA {
                 return 0;
             } else if (ctx.mode == 0x4) { // Encryption mode 0x4: XOR with SD keys, encrypt with KIRK CMD5 and XOR with the given key.
                 for (int i = 0; i < 0x10; i++) {
-                    header[0x14 + i] = (byte) (header[0x14 + i] ^ KeyVault.sdHashKey3[i]);
+                    header[0x14 + 0xC + i] = (byte) (header[0x14 + 0xC + i] ^ KeyVault.sdHashKey3[i]);
                 }
                 ScrambleSD(header, 0x10, 0x100, 0x4, 0x05);
                 for (int i = 0; i < 0x10; i++) {
-                    header[i] = (byte) (header[i] ^ KeyVault.sdHashKey4[i]);
+                    header[0xC + i] = (byte) (header[0xC + i] ^ KeyVault.sdHashKey4[i]);
                 }
-                System.arraycopy(header, 0, ctx.buf, 0, 0x10);
-                System.arraycopy(header, 0, data, 0, 0x10);
+                System.arraycopy(header, 0xC, ctx.buf, 0, 0x10);
+                System.arraycopy(header, 0xC, data, 0, 0x10);
                 // If the key is not null, XOR the hash with it.
-                if (key != null) {
+                if (!isNullKey(key)) {
                     for (int i = 0; i < 16; i++) {
                         ctx.buf[i] = (byte) (ctx.buf[i] ^ key[i]);
                     }
@@ -183,16 +185,16 @@ public class SAVEDATA {
                 return 0;
             } else if (ctx.mode == 0x6) { // Encryption mode 0x6: XOR with new SD keys, encrypt with KIRK CMD5 and XOR with the given key.
                 for (int i = 0; i < 0x10; i++) {
-                    header[0x14 + i] = (byte) (header[0x14 + i] ^ KeyVault.sdHashKey3[i]);
+                    header[0x14 + 0xC + i] = (byte) (header[0x14 + 0xC + i] ^ KeyVault.sdHashKey3[i]);
                 }
                 ScrambleSD(header, 0x10, 0x100, 0x4, 0x05);
                 for (int i = 0; i < 0x10; i++) {
-                    header[i] = (byte) (header[i] ^ KeyVault.sdHashKey4[i]);
+                    header[0xC + i] = (byte) (header[0xC + i] ^ KeyVault.sdHashKey4[i]);
                 }
-                System.arraycopy(header, 0, ctx.buf, 0, 0x10);
-                System.arraycopy(header, 0, data, 0, 0x10);
+                System.arraycopy(header, 0xC, ctx.buf, 0, 0x10);
+                System.arraycopy(header, 0xC, data, 0, 0x10);
                 // If the key is not null, XOR the hash with it.
-                if (key != null) {
+                if (!isNullKey(key)) {
                     for (int i = 0; i < 16; i++) {
                         ctx.buf[i] = (byte) (ctx.buf[i] ^ key[i]);
                     }
@@ -200,16 +202,16 @@ public class SAVEDATA {
                 return 0;
             } else { // Encryption mode 0x0: XOR with new SD keys, encrypt with KIRK CMD4 and XOR with the given key.
                 for (int i = 0; i < 0x10; i++) {
-                    header[0x14 + i] = (byte) (header[0x14 + i] ^ KeyVault.sdHashKey6[i]);
+                    header[0x14 + 0xC + i] = (byte) (header[0x14 + 0xC + i] ^ KeyVault.sdHashKey6[i]);
                 }
                 ScrambleSD(header, 0x10, 0x12, 0x4, 0x04);
                 for (int i = 0; i < 0x10; i++) {
-                    header[i] = (byte) (header[i] ^ KeyVault.sdHashKey7[i]);
+                    header[0xC + i] = (byte) (header[0xC + i] ^ KeyVault.sdHashKey7[i]);
                 }
-                System.arraycopy(header, 0, ctx.buf, 0, 0x10);
-                System.arraycopy(header, 0, data, 0, 0x10);
+                System.arraycopy(header, 0xC, ctx.buf, 0, 0x10);
+                System.arraycopy(header, 0xC, data, 0, 0x10);
                 // If the key is not null, XOR the hash with it.
-                if (key != null) {
+                if (!isNullKey(key)) {
                     for (int i = 0; i < 16; i++) {
                         ctx.buf[i] = (byte) (ctx.buf[i] ^ key[i]);
                     }
@@ -220,7 +222,7 @@ public class SAVEDATA {
             // Grab the data hash (first 16-bytes).
             System.arraycopy(data, 0, ctx.buf, 0, 0x10);
             // If the key is not null, XOR the hash with it.
-            if (key != null) {
+            if (!isNullKey(key)) {
                 for (int i = 0; i < 16; i++) {
                     ctx.buf[i] = (byte) (ctx.buf[i] ^ key[i]);
                 }
@@ -615,11 +617,12 @@ public class SAVEDATA {
 
         // Setup the buffers.
         int alignedSize = ((size + 0xF) >> 4) << 4;
-        byte[] tmpbuf = new byte[alignedSize + 0x10];
+        byte[] tmpbuf1 = new byte[alignedSize + 0x10];
+        byte[] tmpbuf2 = new byte[alignedSize];
         byte[] hash = new byte[0x10];
 
         // Copy the plain data to tmpbuf.
-        System.arraycopy(buf, 0, tmpbuf, 0x10, size);
+        System.arraycopy(buf, 0, tmpbuf1, 0x10, size);
 
         // Set the encryption mode.
         if (isNullKey(key)) {
@@ -634,19 +637,24 @@ public class SAVEDATA {
         }
 
         // Generate the encryption IV (first 0x10 bytes).
-        hleSdCreateList(ctx2, sdEncMode, 1, tmpbuf, key);
+        hleSdCreateList(ctx2, sdEncMode, 1, tmpbuf1, key);
         hleSdSetIndex(ctx1, sdEncMode);
-        hleSdRemoveValue(ctx1, tmpbuf, 0x10);
-        System.arraycopy(tmpbuf, 0x10, buf, 0, alignedSize);
-        hleSdSetMember(ctx2, buf, alignedSize);
+        hleSdRemoveValue(ctx1, tmpbuf1, 0x10);
+        
+        System.arraycopy(tmpbuf1, 0x10, tmpbuf2, 0, alignedSize);
+        hleSdSetMember(ctx2, tmpbuf2, alignedSize);
         
         // Clear extra bytes.
         for (int i = 0; i < (alignedSize - size); i++) {
-            buf[size + i] = 0;
+            tmpbuf2[size + i] = 0;
         }
         
         // Encrypt the data.
-        hleSdRemoveValue(ctx1, buf, alignedSize);
+        hleSdRemoveValue(ctx1, tmpbuf2, alignedSize);
+        
+        // Copy back the encrypted data + IV.
+        System.arraycopy(tmpbuf2, 0, tmpbuf1, 0x10, alignedSize);
+        System.arraycopy(tmpbuf1, 0, buf, 0, buf.length);
         
         // Clear context 2.
         hleChnnlsv_21BE78B4(ctx2);
