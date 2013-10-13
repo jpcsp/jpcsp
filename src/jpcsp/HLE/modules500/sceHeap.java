@@ -196,10 +196,18 @@ public class sceHeap extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x7012BBDD, version = 500, checkInsideInterrupt = true)
     public int sceHeapIsAllocatedHeapMemory(TPointer heapAddr, TPointer memAddr) {
-        return 0;
+        if (heapMap.containsKey(heapAddr.getAddress())) {
+            HeapInfo heapInfo = heapMap.get(heapAddr.getAddress());
+            if (heapInfo.allocatedMemoryChunks.containsKey(memAddr.getAddress())) {
+                return 1;
+            } else {
+                return 0;
+            }
+        } else {
+            return SceKernelErrors.ERROR_INVALID_ID;
+        }
     }
 
     @HLEFunction(nid = 0x70210B73, version = 500, checkInsideInterrupt = true)
