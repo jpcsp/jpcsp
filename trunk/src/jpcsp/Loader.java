@@ -863,8 +863,15 @@ public class Loader {
                     if (A == 0) {
                         result = S - GP_ADDR;
                     } else {
-                        result = S + GP_OFFSET + (((A & 0x00008000) != 0) ? (((A & 0x00003FFF) + 0x4000) | 0xFFFF0000) : A) - GP_ADDR;
+                        result = S + GP_OFFSET + A - GP_ADDR;
                     }
+                    
+                    // Adjust the lower bits.
+                    if ((A & 0x8000) != 0) {
+                        result -= 0x4500;
+                    }
+                    
+                    // Check for overflow.
                     if ((result > 32768) || (result < -32768)) {
                         log.warn("Relocation overflow (R_MIPS_GPREL16)");
                     }
@@ -873,7 +880,6 @@ public class Loader {
                     if (log.isTraceEnabled()) {
                 		log.trace(String.format("R_MIPS_GPREL16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     }
-            		log.warn(String.format("Probably incorrect relocation R_MIPS_GPREL16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     break;
 
                 default:

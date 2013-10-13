@@ -134,6 +134,7 @@ public class HLEModuleManager {
         KDebugForKernel(Modules.KDebugForKernelModule),
         sceCcc(Modules.sceCccModule, new String[] { "libccc" }),
         scePauth(Modules.scePauthModule),
+        sceSfmt19937(Modules.sceSfmt19937Module),
         sceMd5(Modules.sceMd5Module, new String[] { "libmd5" }),
         sceParseUri(Modules.sceParseUriModule, new String[] { "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceUsbAcc(Modules.sceUsbAccModule, new String[] { "PSP_USB_MODULE_ACC", "USBAccBaseDriver" }),

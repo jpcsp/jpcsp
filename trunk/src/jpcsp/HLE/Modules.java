@@ -75,6 +75,7 @@ import jpcsp.HLE.modules.scePsmfPlayer;
 import jpcsp.HLE.modules.scePspNpDrm_user;
 import jpcsp.HLE.modules.sceRtc;
 import jpcsp.HLE.modules.sceSasCore;
+import jpcsp.HLE.modules.sceSfmt19937;
 import jpcsp.HLE.modules.sceSsl;
 import jpcsp.HLE.modules.sceSuspendForUser;
 import jpcsp.HLE.modules.sceUmdUser;
@@ -155,6 +156,7 @@ public class Modules {
     public static KDebugForKernel KDebugForKernelModule = new KDebugForKernel();
     public static sceCcc sceCccModule = new sceCcc();
     public static scePauth scePauthModule = new scePauth();
+    public static sceSfmt19937 sceSfmt19937Module = new sceSfmt19937();
     public static sceMd5 sceMd5Module = new sceMd5();
     public static sceParseUri sceParseUriModule = new sceParseUri();
     public static sceUsbAcc sceUsbAccModule = new sceUsbAcc();
