@@ -84,12 +84,12 @@ public class scePspNpDrm_user extends HLEModule {
     
     protected String getDLCPathFromFilePath(String path) {
         String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(path);
-        
+
         String[] name = pcfilename.split("/");
         String fName = "";
         for (int i = 0; i < name.length; i++) {
-        	String uname = name[i].toUpperCase();
-            if (!name[i].contains("ms0") && uname.contains("PSP") 
+            String uname = name[i].toUpperCase();
+            if (!name[i].contains("ms0") && uname.contains("PSP")
                     && uname.contains("GAME") && uname.contains(State.discId)
                     && uname.contains("EDAT")) {
                 fName += File.separatorChar + name[i];
