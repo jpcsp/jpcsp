@@ -45,7 +45,7 @@ public class PGDFileConnector {
     }
 
     public String getBaseDLCDirectory() {
-        return String.format("%sDLC%c", Settings.getInstance().getDiscTmpDirectory(), File.separatorChar);
+        return String.format("%sDLC", Settings.getInstance().getDiscTmpDirectory());
     }
     
     public String getBaseDirectory(String id) {

@@ -18,6 +18,7 @@ package jpcsp.crypto;
 
 import java.nio.ByteBuffer;
 import jpcsp.Emulator;
+import jpcsp.State;
 import jpcsp.format.PSF;
 
 public class SAVEDATA {
@@ -185,11 +186,11 @@ public class SAVEDATA {
                 return 0;
             } else if (ctx.mode == 0x6) { // Encryption mode 0x6: XOR with new SD keys, encrypt with KIRK CMD5 and XOR with the given key.
                 for (int i = 0; i < 0x10; i++) {
-                    header[0x14 + 0xC + i] = (byte) (header[0x14 + 0xC + i] ^ KeyVault.sdHashKey3[i]);
+                    header[0x14 + 0xC + i] = (byte) (header[0x14 + 0xC + i] ^ KeyVault.sdHashKey6[i]);
                 }
                 ScrambleSD(header, 0x10, 0x100, 0x4, 0x05);
                 for (int i = 0; i < 0x10; i++) {
-                    header[0xC + i] = (byte) (header[0xC + i] ^ KeyVault.sdHashKey4[i]);
+                    header[0xC + i] = (byte) (header[0xC + i] ^ KeyVault.sdHashKey7[i]);
                 }
                 System.arraycopy(header, 0xC, ctx.buf, 0, 0x10);
                 System.arraycopy(header, 0xC, data, 0, 0x10);
@@ -462,21 +463,21 @@ public class SAVEDATA {
         } else if (ctx.mode == 0x3) {
             // Decryption mode 0x03: XOR the hash with SD keys and decrypt with KIRK CMD7.
             for (int i = 0; i < 0x10; i++) {
-                dataBuf[0x14 + i] = (byte) (dataBuf[0x14 + i] ^ KeyVault.sdHashKey3[i]);
+                dataBuf[0x14 + i] = (byte) (dataBuf[0x14 + i] ^ KeyVault.sdHashKey4[i]);
             }
             ScrambleSD(dataBuf, 0x10, 0xE, 5, 0x07);
             for (int i = 0; i < 0x10; i++) {
-                dataBuf[i] = (byte) (dataBuf[i] ^ KeyVault.sdHashKey4[i]);
+                dataBuf[i] = (byte) (dataBuf[i] ^ KeyVault.sdHashKey3[i]);
             }
             finalSeed = 0x57;
         } else if (ctx.mode == 0x4) {
             // Decryption mode 0x04: XOR the hash with SD keys and decrypt with KIRK CMD8.
             for (int i = 0; i < 0x10; i++) {
-                dataBuf[0x14 + i] = (byte) (dataBuf[0x14 + i] ^ KeyVault.sdHashKey3[i]);
+                dataBuf[0x14 + i] = (byte) (dataBuf[0x14 + i] ^ KeyVault.sdHashKey4[i]);
             }
             ScrambleSD(dataBuf, 0x10, 0x100, 5, 0x08);
             for (int i = 0; i < 0x10; i++) {
-                dataBuf[i] = (byte) (dataBuf[i] ^ KeyVault.sdHashKey4[i]);
+                dataBuf[i] = (byte) (dataBuf[i] ^ KeyVault.sdHashKey3[i]);
             }
             finalSeed = 0x57;
         } else if (ctx.mode == 0x6) {
@@ -579,8 +580,14 @@ public class SAVEDATA {
         if (isNullKey(key)) {
             sdDecMode = 1;
         } else {
-            // After firmware version 2.5.2 the decryption mode used is 5.
-            if (Emulator.getInstance().getFirmwareVersion() > 252) {
+            // After firmware version 2.7.1 the decryption mode used is 5.
+            // Note: Due to a mislabel, 3 games from firmware 2.8.1 (Sonic Rivals, 
+            // Star Trek: Tactical Assault and Brothers in Arms: D-Day) 
+            // still use the decryption mode 3.
+            if (Emulator.getInstance().getFirmwareVersion() > 271 && 
+                    !((State.discId.equals("ULUS10195") || State.discId.equals("ULES00622"))
+                    || (State.discId.equals("ULUS10193") || State.discId.equals("ULES00608"))
+                    || (State.discId.equals("ULUS10150") || State.discId.equals("ULES00623")))) {
                 sdDecMode = 5;
             } else {
                 sdDecMode = 3;
@@ -628,8 +635,14 @@ public class SAVEDATA {
         if (isNullKey(key)) {
             sdEncMode = 1;
         } else {
-            // After firmware version 2.5.2 the encryption mode used is 5.
-            if (Emulator.getInstance().getFirmwareVersion() > 252) {
+            // After firmware version 2.7.1 the encryption mode used is 5.
+            // Note: Due to a mislabel, 3 games from firmware 2.8.1 (Sonic Rivals, 
+            // Star Trek: Tactical Assault and Brothers in Arms: D-Day) 
+            // still use the encryption mode 3.
+            if (Emulator.getInstance().getFirmwareVersion() > 271 && 
+                    !((State.discId.equals("ULUS10195") || State.discId.equals("ULES00622"))
+                    || (State.discId.equals("ULUS10193") || State.discId.equals("ULES00608"))
+                    || (State.discId.equals("ULUS10150") || State.discId.equals("ULES00623")))) {
                 sdEncMode = 5;
             } else {
                 sdEncMode = 3;
@@ -668,11 +681,10 @@ public class SAVEDATA {
     private byte[] GenerateSavedataHash(byte[] data, int size, int mode, byte[] key) {
         SD_Ctx1 ctx1 = new SD_Ctx1();
         byte[] hash = new byte[0x10];
-        int alignedSize = (((size + 0xF) >> 4) << 4);
 
         // Generate a new hash using a key.
         hleSdSetIndex(ctx1, mode);
-        hleSdRemoveValue(ctx1, data, alignedSize);
+        hleSdRemoveValue(ctx1, data, size);
         hleSdGetLastIndex(ctx1, hash, key);
         
         return hash;
@@ -683,9 +695,10 @@ public class SAVEDATA {
         byte[] savedataParams = new byte[0x80];
         byte[] key = new byte[0x10];
         byte[] hash_0x70 = new byte[0x10];
-        byte[] hash_0x20; 
-        byte[] hash_0x10;
-        int mode = 2;
+        byte[] hash_0x20 = new byte[0x10]; 
+        byte[] hash_0x10 = new byte[0x10];
+        // Set mode to 4 and check_bit to 1 (0x41 is the most recent bit flag).
+        int mode = 4;
         int check_bit = 1;
         
         // Check for previous SAVEDATA_PARAMS data in the file.
@@ -697,33 +710,33 @@ public class SAVEDATA {
             check_bit = ((savedataParamsOldArray[0]) & 0xF);
         }
         
-        if (((mode & 0x2) == 0x2) || ((mode & 0x4) == 0x4)) {
-            if ((check_bit & 0x1) == 0x1) {
-                // Generate a type 2 hash.
-                hash_0x20 = GenerateSavedataHash(data, size, 2, key);
-                // Set the SAVEDATA_PARAMS byte to 0x41.
-                savedataParams[0] |= 0x41;
-                // Generate a type 3 hash.
-                hash_0x70 = GenerateSavedataHash(data, size, 3, key);
-                // Generate a type 1 hash.
-                hash_0x10 = GenerateSavedataHash(data, size, 1, key);
-            } else {
-                // Generate a type 4 hash.
-                hash_0x20 = GenerateSavedataHash(data, size, 4, key);
-                // Set the SAVEDATA_PARAMS byte to 0x21.
-                savedataParams[0] |= 0x21;
-                // Generate a type 3 hash.
-                hash_0x70 = GenerateSavedataHash(data, size, 3, key);
-                // Generate a type 1 hash.
-                hash_0x10 = GenerateSavedataHash(data, size, 1, key);
-            }
-        } else {
+        // New mode (after firmware 2.7.1).
+        if ((mode & 0x4) == 0x4) {
+            // Generate a type 6 hash.
+            hash_0x20 = GenerateSavedataHash(data, size, 6, key);
+            // Generate a type 5 hash.
+            hash_0x70 = GenerateSavedataHash(data, size, 5, key);
+            // Set the SAVEDATA_PARAMS byte to 0x40.
+            savedataParams[0] |= 0x40;
+        } else if ((mode & 0x2) == 0x2) { // Last old mode (firmware 2.0.0 to 2.7.1).
+            // Generate a type 4 hash.
+            hash_0x20 = GenerateSavedataHash(data, size, 4, key);
+            // Generate a type 3 hash.
+            hash_0x70 = GenerateSavedataHash(data, size, 3, key);
+            // Set the SAVEDATA_PARAMS byte to 0x20.
+            savedataParams[0] |= 0x20;
+        } else { // First old mode (before firmware 2.0.0).
             // Generate a type 2 hash.
             hash_0x20 = GenerateSavedataHash(data, size, 2, key);
-            // Set the SAVEDATA_PARAMS bit to 1.
-            savedataParams[0] |= 0x01;
+            // Set the SAVEDATA_PARAMS byte to 0x00.
+            savedataParams[0] |= 0x00;
+        }
+        
+        if ((check_bit & 0x1) == 0x1) {
             // Generate a type 1 hash.
             hash_0x10 = GenerateSavedataHash(data, size, 1, key);
+            // Set the SAVEDATA_PARAMS byte to 0x01.
+            savedataParams[0] |= 0x01;
         }
         
         // Store the hashes at the right offsets.
