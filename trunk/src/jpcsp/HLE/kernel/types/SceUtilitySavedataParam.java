@@ -612,7 +612,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         writeFile(mem, path, snd0FileName, snd0FileData.buf, snd0FileData.size);
 
         // Write PARAM.SFO
-        writePsf(mem, path, paramSfoFileName, sfoParam, CryptoEngine.getSavedataCryptoStatus(), fileName, dataSize, key);
+        writePsf(mem, path, paramSfoFileName, sfoParam, CryptoEngine.getSavedataCryptoStatus(), fileName, key);
     }
 
     private int loadFile(Memory mem, String path, String name, int address, int maxLength) throws IOException {
@@ -729,24 +729,46 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         }
     }
 
-    private void writePsf(Memory mem, String path, String psfName, PspUtilitySavedataSFOParam sfoParam, boolean cryptoMode, String dataName, int dataLength, byte[] key) throws IOException {
+    private void writePsf(Memory mem, String path, String psfName, PspUtilitySavedataSFOParam sfoParam, boolean cryptoMode, String dataName, byte[] key) throws IOException {
         SeekableRandomFile psfOutput = getDataOutput(path, psfName);
         if (psfOutput == null) {
             return;
         }
 
+        // Generate different PSF instances for plain PSF and encrypted PSF (with hashes).
         PSF psf = new PSF();
+        PSF encryptedPsf = new PSF();
+
+        // Test if a PARAM.SFO already exists and save it's SAVEDATA_PARAMS.
+        byte[] savedata_params_old = new byte[128];
+        PSF oldPsf = readPsf(path, psfName);
+        if (oldPsf != null) {
+            savedata_params_old = (byte[]) oldPsf.get("SAVEDATA_PARAMS");
+        }
+        
+        // Insert CATEGORY.
         psf.put("CATEGORY", "MS", 4);
+        encryptedPsf.put("CATEGORY", "MS", 4);
+        
+        // Insert PARENTAL_LEVEL.
         psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
+        encryptedPsf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
+        
+        // Insert SAVEDATA_DETAIL.
         psf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
+        encryptedPsf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
+        
+        // Insert SAVEDATA_DIRECTORY.
         if (saveName.equals("<>")) {
             // Do not write the saveName if it's "<>".
             psf.put("SAVEDATA_DIRECTORY", gameName, 64);
+            encryptedPsf.put("SAVEDATA_DIRECTORY", gameName, 64);
         } else {
             psf.put("SAVEDATA_DIRECTORY", gameName + saveName, 64);
+            encryptedPsf.put("SAVEDATA_DIRECTORY", gameName + saveName, 64);
         }
 
-        // Save the SAVEDATA_FILE_LIST
+        // Insert SAVEDATA_FILE_LIST.
         PspUtilitySavedataSecureFileList secureFileList = getSecureFileList(null);
         // Even if the main data file is not being saved by a secure method, if the
         // key is not null then the file is saved in the file list.
@@ -759,26 +781,44 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         }
         if (secureFileList != null) {
         	psf.put("SAVEDATA_FILE_LIST", secureFileList.getBytes());
+                encryptedPsf.put("SAVEDATA_FILE_LIST", secureFileList.getBytes());
         }
         
-        // Generate the SAVEDATA_PARAMS
-        if (cryptoMode) {
-            SeekableRandomFile dataOutput = getDataOutput(path, dataName);
-            if (dataOutput == null) {
-                return;
-            }
-
-            CryptoEngine crypto = new CryptoEngine();
-            byte[] dataBuffer = new byte[dataLength];
-            dataOutput.readFully(dataBuffer);
-
-            crypto.getSAVEDATAEngine().UpdateSavedataHashes(psf, dataBuffer, dataLength, dataName);
-        }
-
+        // Generate blank SAVEDATA_PARAMS for plain PSF.
+        byte[] savedata_params = new byte[128];
+        psf.put("SAVEDATA_PARAMS", savedata_params);
+        
+        // Insert the remaining params for plain PSF.
         psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
         psf.put("TITLE", sfoParam.title, 128);
+        
+        // Setup a temporary buffer for encryption (PARAM.SFO size is 0x1330).
+        ByteBuffer buf = ByteBuffer.allocate(0x1330);
+        
+        // Save back the PARAM.SFO data to be encrypted.
+        psf.write(buf);
 
-        psf.write(psfOutput);
+        // Generate a new PARAM.SFO and update file hashes.
+        if (cryptoMode) {
+            CryptoEngine crypto = new CryptoEngine();
+            int sfoSize = buf.array().length;
+            byte[] sfoData = buf.array();
+            
+            // Generate the final SAVEDATA_PARAMS (encrypted).
+            crypto.getSAVEDATAEngine().UpdateSavedataHashes(encryptedPsf, sfoData, sfoSize, savedata_params_old);
+            
+            // Insert the remaining params for encrypted PSF.
+            encryptedPsf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
+            encryptedPsf.put("TITLE", sfoParam.title, 128);
+            
+            // Write the new encrypted PARAM.SFO (with hashes) from the encrypted PSF.
+            encryptedPsf.write(psfOutput);
+        } else {
+            // Write the new PARAM.SFO (without hashes) from the plain PSF.
+            psf.write(psfOutput);
+        }
+
+        // Close the PARAM.SFO file stream.
         psfOutput.close();
     }
 

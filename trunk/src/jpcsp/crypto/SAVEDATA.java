@@ -156,7 +156,7 @@ public class SAVEDATA {
                 }
                 ScrambleSD(header, 0x10, 0xE, 0x4, 0x04);
                 for (int i = 0; i < 0x10; i++) {
-                    header[0xC + i] = (byte) (0xC + header[i] ^ KeyVault.sdHashKey4[i]);
+                    header[0xC + i] = (byte) (header[0xC + i] ^ KeyVault.sdHashKey4[i]);
                 }
                 System.arraycopy(header, 0xC, ctx.buf, 0, 0x10);
                 System.arraycopy(header, 0xC, data, 0, 0x10);
@@ -409,6 +409,10 @@ public class SAVEDATA {
         if ((ctx.mode == 0x2) || (ctx.mode == 0x4) || (ctx.mode == 0x6)) {
             System.arraycopy(resultBuf, 0, scrambleResultBuf, 0x14, 0x10);
             ScrambleSD(scrambleResultBuf, 0x10, 0x100, 0x4, 0x05);
+            System.arraycopy(scrambleResultBuf, 0, scrambleResultBuf, 0x14, 0x10);
+            for(int i = 0; i < 0x14; i++) {
+                scrambleResultBuf[i] = 0;
+            }
             ScrambleSD(scrambleResultBuf, 0x10, seed, 0x4, 0x04);
             System.arraycopy(scrambleResultBuf, 0, resultBuf, 0, 0x10);
         }
@@ -690,7 +694,7 @@ public class SAVEDATA {
         return hash;
     }
 
-    public void UpdateSavedataHashes(PSF psf, byte[] data, int size, String fileName) {
+    public void UpdateSavedataHashes(PSF psf, byte[] data, int size, byte[] params) {
         // Setup the params, hashes, modes and key (empty).
         byte[] savedataParams = new byte[0x80];
         byte[] key = new byte[0x10];
@@ -701,13 +705,14 @@ public class SAVEDATA {
         int mode = 4;
         int check_bit = 1;
         
-        // Check for previous SAVEDATA_PARAMS data in the file.
-        Object savedataParamsOld = psf.get("SAVEDATA_PARAMS");
-        if (savedataParamsOld != null) {
-            // Extract the mode setup from the already existing data.
-            byte[] savedataParamsOldArray = (byte[]) savedataParamsOld;
-            mode = ((savedataParamsOldArray[0] >> 4) & 0xF);
-            check_bit = ((savedataParamsOldArray[0]) & 0xF);
+        // Check for previous SAVEDATA_PARAMS.
+        for (int i = 0; i < params.length; i++) {
+            if (params[i] != 0) {
+                // Extract the mode setup from the already existing data.
+                mode = ((params[0] >> 4) & 0xF);
+                check_bit = ((params[0]) & 0xF);
+                break;
+            }
         }
         
         // New mode (after firmware 2.7.1).

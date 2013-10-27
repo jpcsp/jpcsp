@@ -147,6 +147,11 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         if (result >= 0) {
         	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
         }
+        
+        // The VAUDIO module reserves audio channel 8 in the PSP.
+        if (module == UtilityModule.PSP_MODULE_AV_VAUDIO.id) {
+            Modules.sceAudioModule.sceAudioOutput2Reserve(1024);
+        }
 
         return result;
     }
@@ -156,6 +161,11 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         String moduleName = getModuleName(module);
         log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
 
+         // The VAUDIO module releases audio channel 8 in the PSP.
+        if (module == UtilityModule.PSP_MODULE_AV_VAUDIO.id) {
+            Modules.sceAudioModule.sceAudioOutput2Release();
+        }
+        
         return hleUtilityUnloadModule(module);
     }
 }
