@@ -5498,6 +5498,17 @@ public class VideoEngine {
 
         int width = context.texture_width[0];
         int height = context.texture_height[0];
+        
+        // Simulate a change in the texture's width and height so it doesn't get
+        // reused when the viewport has changed.
+        if (display.getViewportResizeScaleFactor() > 1.0f) {
+            width = Math.min(display.getCanvasWidth(), (int) (width * display.getViewportResizeScaleFactor()));
+            height = Math.min(display.getCanvasHeight(), (int) (height * display.getViewportResizeScaleFactor()));
+            if (isLogDebugEnabled) {
+                log.debug(String.format("Viewport has been resized! Scale factor is %f", display.getViewportResizeScaleFactor()));
+            }
+        }
+        
         if (geTexture.getWidthPow2() == width && geTexture.getHeightPow2() == height) {
             if (isLogDebugEnabled) {
                 log.debug(String.format("Reusing GETexture %s", geTexture));
