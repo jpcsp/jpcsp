@@ -290,10 +290,12 @@ public class scePspNpDrm_user extends HLEModule {
         IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd);
         int size = 0;
         if (info != null) {
-            try {
-                size = (int) info.readOnlyFile.length();
-            } catch (IOException e) {
-                log.error("sceNpDrmEdataGetDataSize", e);
+            if (info.readOnlyFile != null) {
+                try {
+                    size = (int) info.readOnlyFile.length();
+                } catch (IOException e) {
+                    log.error("sceNpDrmEdataGetDataSize", e);
+                }
             }
         }
 
