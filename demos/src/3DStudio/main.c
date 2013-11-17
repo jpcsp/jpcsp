@@ -1520,21 +1520,31 @@ void draw()
 
 	drawAttributes();
 
-	u16 *zTestPixelAddress = (u16 *) (zbp + 0x44000000 + (zTestPixelY * BUF_WIDTH + zTestPixelX) * 2);
 	pspDebugScreenSetXY(35, 0);
 	pspDebugScreenPrintf("Depth (%d,%d)=0x%04X", zTestPixelX, zTestPixelY, zTestPixelDepth);
 
-	u32 *geTestPixelAddress = (u32 *) (fbp0 + 0x44000000 + (geTestPixelY * BUF_WIDTH + geTestPixelX) * 4);
 	pspDebugScreenSetXY(35, 1);
-	pspDebugScreenPrintf("GE (%d,%d)=0x%08X", geTestPixelX, geTestPixelY, geTestPixelValue);
+	if (psm == 3) {
+		pspDebugScreenPrintf("GE (%d,%d)=0x%08X", geTestPixelX, geTestPixelY, geTestPixelValue);
+	} else {
+		pspDebugScreenPrintf("GE (%d,%d)=0x%04X", geTestPixelX, geTestPixelY, geTestPixelValue);
+	}
 
 	drawDebugPrintBuffer();
 
 	sceGuFinish();
 	sceGuSync(0, 0);
 
+	u16 *zTestPixelAddress = (u16 *) (zbp + 0x44000000 + (zTestPixelY * BUF_WIDTH + zTestPixelX) * 2);
 	zTestPixelDepth = *zTestPixelAddress;
-	geTestPixelValue = *geTestPixelAddress;
+
+	if (psm == 3) {
+		u32 *geTestPixelAddress = (u32 *) (fbp0 + 0x44000000 + (geTestPixelY * BUF_WIDTH + geTestPixelX) * 4);
+		geTestPixelValue = *geTestPixelAddress;
+	} else {
+		u16 *geTestPixelAddress = (u16 *) (fbp0 + 0x44000000 + (geTestPixelY * BUF_WIDTH + geTestPixelX) * 2);
+		geTestPixelValue = *geTestPixelAddress;
+	}
 
 	sceDisplayWaitVblank();
 	fbp0 = sceGuSwapBuffers();
@@ -1550,6 +1560,7 @@ void init()
 	zbp  = getStaticVramBuffer((BUF_WIDTH + 64), SCR_HEIGHT, GU_PSM_4444);
  
 	sceGuInit();
+	guSwapBuffersBehaviour(PSP_DISPLAY_SETBUF_NEXTFRAME);
 	sceGuStart(GU_DIRECT,list);
 	sceGuDrawBuffer(GU_PSM_8888,fbp0,BUF_WIDTH);
 	sceGuDispBuffer(SCR_WIDTH,SCR_HEIGHT,fbp1,BUF_WIDTH);
