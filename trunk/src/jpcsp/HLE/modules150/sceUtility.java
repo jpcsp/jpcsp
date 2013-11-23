@@ -210,8 +210,15 @@ public class sceUtility extends HLEModule {
     public static final int PSP_NETPARAM_USE_PROXY = 13; // int
     public static final int PSP_NETPARAM_PROXY_SERVER = 14; // string
     public static final int PSP_NETPARAM_PROXY_PORT = 15; // int
-    public static final int PSP_NETPARAM_UNKNOWN1 = 16; // int
-    public static final int PSP_NETPARAM_UNKNOWN2 = 17; // int
+    public static final int PSP_NETPARAM_VERSION = 16; // int
+    public static final int PSP_NETPARAM_UNKNOWN = 17; // int
+    public static final int PSP_NETPARAM_8021X_AUTH_TYPE = 18; // int
+    public static final int PSP_NETPARAM_8021X_USER = 19; // string
+    public static final int PSP_NETPARAM_8021X_PASS = 20; // string
+    public static final int PSP_NETPARAM_WPA_TYPE = 21; // int
+    public static final int PSP_NETPARAM_WPA_KEY = 22; // string
+    public static final int PSP_NETPARAM_BROWSER = 23; // int
+    public static final int PSP_NETPARAM_WIFI_CONFIG = 24; // int
     protected static final int maxLineLengthForDialog = 40;
     protected static final int icon0Width = 144;
     protected static final int icon0Height = 80;
@@ -236,7 +243,7 @@ public class sceUtility extends HLEModule {
     protected GamedataInstallUtilityDialogState gamedataInstallState;
     protected UtilityDialogState startedDialogState;
     private static final String dummyNetParamName = "NetConf #%d";
-    private static final int numberNetConfigurations = 1;
+    private int lastNetParamID;
 
     protected abstract static class UtilityDialogState {
         protected String name;
@@ -818,15 +825,14 @@ public class sceUtility extends HLEModule {
                         case display: {
                             if (!isDialogActive()) {
                                 if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
-                                	int result;
                                     if (saveListEmpty) {
                                         // No data available
-                                        result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                                     } else {
                                         // Dialog cancelled
-                                        result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
+                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
                                     }
-                                    quitDialog(result);
+                                    quitDialog(savedataParams.base.result);
                                 } else if (saveListSelection == null) {
                                     log.warn("Savedata MODE_LISTLOAD no save selected");
                                     quitDialog(SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS);
@@ -1076,23 +1082,22 @@ public class sceUtility extends HLEModule {
                             GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
                             openDialog(gu);
                         } else if (!isDialogActive()) {
-                        	int result;
                             if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
                                 // Dialog cancelled
-                                result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
+                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
                             } else if (saveListSelection == null) {
                                 log.warn("Savedata MODE_DELETE no save selected");
-                                result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
+                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
                             } else {
                                 String dirName = savedataParams.getBasePath(saveListSelection);
                                 if (Modules.IoFileMgrForUserModule.rmdir(dirName, true)) {
                                     log.debug("Savedata MODE_DELETE deleting " + dirName);
-                                    result = 0;
+                                    savedataParams.base.result = 0;
                                 } else {
-                                    result = SceKernelErrors.ERROR_SAVEDATA_DELETE_ACCESS_ERROR;
+                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_ACCESS_ERROR;
                                 }
                             }
-                            quitDialog(result);
+                            quitDialog(savedataParams.base.result);
                         } else {
                             updateDialog();
                         }
@@ -1268,6 +1273,14 @@ public class sceUtility extends HLEModule {
                 case SceUtilitySavedataParam.MODE_FILES: {
                     int fileListAddr = savedataParams.fileListAddr;
                     if (Memory.isAddressGood(fileListAddr)) {
+                        int saveFileSecureMaxNumEntries = mem.read32(fileListAddr);
+                        int saveFileMaxNumEntries = mem.read32(fileListAddr + 4);
+                        int systemMaxNumEntries = mem.read32(fileListAddr + 8);
+                        
+                        if (log.isDebugEnabled()) {
+                            log.debug(String.format("MaxFiles in FileList: secure=%d, normal=%d, system=%d", saveFileSecureMaxNumEntries, saveFileMaxNumEntries, systemMaxNumEntries));
+                        }
+                        
                         int saveFileSecureEntriesAddr = mem.read32(fileListAddr + 24);
                         int saveFileEntriesAddr = mem.read32(fileListAddr + 28);
                         int systemEntriesAddr = mem.read32(fileListAddr + 32);
@@ -1310,8 +1323,8 @@ public class sceUtility extends HLEModule {
                                         // Write the file size
                                         long fileSize = stat.size;
                                         if (CryptoEngine.getSavedataCryptoStatus()) {
-                                        	// Write the size of the decrypted file
-                                        	fileSize = ((fileSize + 0xF) & ~0xF) - 0x10;
+                                            // Write the size of the decrypted file (fileSize -= IV).
+                                            fileSize -= 0x10;
                                         }
                                         mem.write64(entryAddr + 8, fileSize);
                                         stat.ctime.write(mem, entryAddr + 16);
@@ -3774,7 +3787,7 @@ public class sceUtility extends HLEModule {
      */
     @HLEFunction(nid = 0x5EEE6548, version = 150)
     public int sceUtilityCheckNetParam(int id) {
-        boolean available = (id >= 0 && id <= numberNetConfigurations);
+        boolean available = (id >= 0 && id <= 24);
 
         return available ? 0 : SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
     }
@@ -3790,7 +3803,7 @@ public class sceUtility extends HLEModule {
      */
     @HLEFunction(nid = 0x434D4B3A, version = 150)
     public int sceUtilityGetNetParam(int id, int param, TPointer data) {
-        if (id < 0 || id > numberNetConfigurations) {
+        if (id < 0 || id > 24) {
             log.warn(String.format("sceUtilityGetNetParam invalid id=%d", id));
             return SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
         }
@@ -3803,12 +3816,19 @@ public class sceUtility extends HLEModule {
                 data.setStringZ(sceNetApctl.getSSID());
                 break;
             case PSP_NETPARAM_SECURE:
+                // 0 is no security.
+                // 1 is WEP (64bit).
+                // 2 is WEP (128bit).
+                // 3 is WPA.
                 data.setValue32(1);
                 break;
             case PSP_NETPARAM_WEPKEY:
                 data.setStringZ("XXXXXXXXXXXXXXXXX");
                 break;
             case PSP_NETPARAM_IS_STATIC_IP:
+                // 0 is DHCP.
+                // 1 is static.
+                // 2 is PPPOE.
                 data.setValue32(0);
                 break;
             case PSP_NETPARAM_IP:
@@ -3821,6 +3841,8 @@ public class sceUtility extends HLEModule {
                 data.setStringZ(sceNetApctl.getGateway());
                 break;
             case PSP_NETPARAM_MANUAL_DNS:
+                // 0 is auto.
+                // 1 is manual.
                 data.setValue32(0);
                 break;
             case PSP_NETPARAM_PRIMARYDNS:
@@ -3829,10 +3851,69 @@ public class sceUtility extends HLEModule {
             case PSP_NETPARAM_SECONDARYDNS:
                 data.setStringZ(sceNetApctl.getSecondaryDNS());
                 break;
+            case PSP_NETPARAM_PROXY_USER:
+                data.setStringZ("JPCSP"); // Faking.
+                break;
+            case PSP_NETPARAM_PROXY_PASS:
+                data.setStringZ("JPCSP"); // Faking.
+                break;
+            case PSP_NETPARAM_USE_PROXY:
+                // 0 is to not use proxy.
+                // 1 is to use proxy.
+                data.setValue32(0);
+                break;
+            case PSP_NETPARAM_PROXY_SERVER:
+                data.setStringZ("dummy_server"); // Faking.
+                break;
+            case PSP_NETPARAM_PROXY_PORT:
+                data.setValue32(0); // Faking.
+                break;
+            case PSP_NETPARAM_VERSION:
+                // 0 is not used.
+                // 1 is old version.
+                // 2 is new version.
+                data.setValue32(2);
+                break;
+            case PSP_NETPARAM_UNKNOWN:
+                data.setValue32(0);
+                break;
+            case PSP_NETPARAM_8021X_AUTH_TYPE:
+                // 0 is none.
+                // 1 is EAP (MD5).
+                data.setValue32(0);
+                break;
+            case PSP_NETPARAM_8021X_USER:
+                data.setStringZ("JPCSP"); // Faking.
+                break;
+            case PSP_NETPARAM_8021X_PASS:
+                data.setStringZ("JPCSP"); // Faking.
+                break;
+            case PSP_NETPARAM_WPA_TYPE:
+                // 0 is key in hexadecimal format.
+                // 1 is key in ASCII format.
+                data.setValue32(0);
+                break;
+            case PSP_NETPARAM_WPA_KEY:
+                data.setStringZ("XXXXXXXXXXXXXXXXX");
+                break;
+            case PSP_NETPARAM_BROWSER:
+                // 0 is to not start the native browser.
+                // 1 is to start the native browser.
+                data.setValue32(0);
+                break;
+            case PSP_NETPARAM_WIFI_CONFIG:
+                // 0 is no config.
+                // 1 is unknown.
+                // 2 is Playstation Spot.
+                // 3 is unknown.
+                data.setValue32(0);
+                break;
             default:
                 log.warn(String.format("sceUtilityGetNetParam invalid param %d", param));
                 return SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
         }
+        
+        lastNetParamID = id;
 
         return 0;
     }
@@ -3845,9 +3926,9 @@ public class sceUtility extends HLEModule {
      */
     @HLEFunction(nid = 0x4FED24D8, version = 150)
     public int sceUtilityGetNetParamLatestID(TPointer32 idAddr) {
-        // TODO Check if this function returns the number of net configurations
-        // or the ID the latest selected net configuration
-        idAddr.setValue(numberNetConfigurations);
+        // This function is saving the last net param ID and not
+        // the number of net configurations.
+        idAddr.setValue(lastNetParamID);
 
         return 0;
     }

@@ -528,8 +528,8 @@ public class SAVEDATA {
 
         // Setup the buffers.
         int alignedSize = ((size + 0xF) >> 4) << 4;
+        byte[] decbuf = new byte[size - 0x10];
         byte[] tmpbuf = new byte[alignedSize];
-        byte[] hash = new byte[0x10];
 
         // Set the decryption mode.
         if (isNullKey(key)) {
@@ -562,13 +562,10 @@ public class SAVEDATA {
         // Clear context 2.
         hleChnnlsv_21BE78B4(ctx2);
         
-        // Generate a file hash for this data.
-        hleSdGetLastIndex(ctx1, hash, key);
-        
         // Copy back the data.
-        System.arraycopy(tmpbuf, 0, buf, 0, alignedSize - 0x10);
+        System.arraycopy(tmpbuf, 0, decbuf, 0, size - 0x10);
 
-        return hash;
+        return decbuf;
     }
 
     public byte[] EncryptSavedata(byte[] buf, int size, byte[] key) {
@@ -621,6 +618,9 @@ public class SAVEDATA {
         hleSdRemoveValue(ctx1, tmpbuf2, alignedSize);
         
         // Copy back the encrypted data + IV.
+        for (int i = 0; i < (tmpbuf1.length - 0x10); i++) {
+            tmpbuf1[0x10 + i] = 0;
+        }
         System.arraycopy(tmpbuf2, 0, tmpbuf1, 0x10, alignedSize);
         System.arraycopy(tmpbuf1, 0, buf, 0, buf.length);
         

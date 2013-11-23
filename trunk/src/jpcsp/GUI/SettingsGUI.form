@@ -100,7 +100,7 @@
           <Layout>
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Group type="102" alignment="0" attributes="0">
+                  <Group type="102" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" alignment="0" attributes="0">
@@ -116,30 +116,39 @@
                               <EmptySpace min="-2" pref="489" max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
-                              <Component id="umdBrowser" max="32767" attributes="0"/>
+                              <Component id="umdBrowser" pref="171" max="32767" attributes="0"/>
                               <EmptySpace min="-2" pref="582" max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
                               <Component id="classicUmdDialog" max="32767" attributes="0"/>
                               <EmptySpace min="-2" pref="482" max="-2" attributes="0"/>
                           </Group>
-                          <Group type="102" attributes="0">
+                          <Group type="102" alignment="0" attributes="0">
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Component id="umdPathLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="tmpPathLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="modelLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace min="-2" pref="21" max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                  <Component id="jScrollPane1" pref="385" max="32767" attributes="0"/>
-                                  <Component id="tmppath" max="32767" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="tmpPathBrowseButton" min="-2" max="-2" attributes="0"/>
-                                  <Component id="btnUMDPathRemove" min="-2" max="-2" attributes="0"/>
-                                  <Component id="btnUMDPathAdd" min="-2" max="-2" attributes="0"/>
+                                  <Group type="102" attributes="0">
+                                      <Component id="modelBox" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                                  </Group>
+                                  <Group type="102" attributes="0">
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="jScrollPane1" pref="385" max="32767" attributes="0"/>
+                                          <Component id="tmppath" max="32767" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="tmpPathBrowseButton" min="-2" max="-2" attributes="0"/>
+                                          <Component id="btnUMDPathRemove" min="-2" max="-2" attributes="0"/>
+                                          <Component id="btnUMDPathAdd" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="32767" attributes="0"/>
+                                  </Group>
                               </Group>
-                              <EmptySpace max="32767" attributes="0"/>
                           </Group>
                       </Group>
                   </Group>
@@ -149,37 +158,40 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="1" attributes="0">
-                          <Component id="tmpPathBrowseButton" min="-2" max="-2" attributes="0"/>
+                      <Component id="pbpunpackcheck" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="saveWindowPosCheck" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="loadAndRunCheck" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace type="separate" max="-2" attributes="0"/>
+                      <Component id="umdBrowser" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="classicUmdDialog" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace type="separate" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
                           <Group type="102" attributes="0">
-                              <Component id="pbpunpackcheck" min="-2" max="-2" attributes="0"/>
+                              <Component id="umdPathLabel" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="32767" attributes="0"/>
+                              <Component id="btnUMDPathAdd" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="saveWindowPosCheck" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="loadAndRunCheck" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="separate" max="-2" attributes="0"/>
-                              <Component id="umdBrowser" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="classicUmdDialog" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="separate" max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                  <Group type="102" attributes="0">
-                                      <Component id="umdPathLabel" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace max="32767" attributes="0"/>
-                                      <Component id="btnUMDPathAdd" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="btnUMDPathRemove" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                                  <Component id="jScrollPane1" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace type="separate" max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="tmppath" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="tmpPathLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                              </Group>
+                              <Component id="btnUMDPathRemove" min="-2" max="-2" attributes="0"/>
                           </Group>
+                          <Component id="jScrollPane1" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace pref="165" max="32767" attributes="0"/>
+                      <EmptySpace type="separate" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Group type="103" groupAlignment="3" attributes="0">
+                              <Component id="tmppath" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="tmpPathLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <Component id="tmpPathBrowseButton" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace min="-2" pref="22" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="modelLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="modelBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace pref="117" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -305,6 +317,26 @@
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnUMDPathAddActionPerformed"/>
               </Events>
+            </Component>
+            <Component class="javax.swing.JLabel" name="modelLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.modelLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JComboBox" name="modelBox">
+              <Properties>
+                <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+                  <StringArray count="5">
+                    <StringItem index="0" value="PSP-1000"/>
+                    <StringItem index="1" value="PSP-2000"/>
+                    <StringItem index="2" value="PSP-3000"/>
+                    <StringItem index="3" value="PSP-3000 (V2)"/>
+                    <StringItem index="4" value="PSP-N1000 (GO)"/>
+                  </StringArray>
+                </Property>
+              </Properties>
             </Component>
           </SubComponents>
         </Container>
@@ -1024,7 +1056,7 @@
                           <Component id="methodMaxInstructionsBox" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="methodMaxInstructionsLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace pref="412" max="32767" attributes="0"/>
+                      <EmptySpace pref="416" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -1180,7 +1212,7 @@
                       </Group>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
                       <Component id="fullscreenCheck" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="385" max="32767" attributes="0"/>
+                      <EmptySpace pref="393" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>

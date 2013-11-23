@@ -56,6 +56,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         PSP_MODULE_NP_COMMON(0x0400),
         PSP_MODULE_NP_SERVICE(0x0401),
         PSP_MODULE_NP_MATCHING2(0x0402),
+        PSP_MODULE_NP_COMMERCE2(0x0403),
         PSP_MODULE_NP_DRM(0x0500),
         PSP_MODULE_IRDA(0x0600);
 

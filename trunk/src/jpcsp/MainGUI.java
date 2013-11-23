@@ -120,6 +120,7 @@ import javax.swing.KeyStroke;
 import javax.swing.MenuElement;
 import javax.swing.SwingUtilities;
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
+import jpcsp.hardware.Model;
 
 /**
  *
@@ -1930,6 +1931,8 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
                 emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
             }
             RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
+            
+            Model.setModel(Settings.getInstance().readInt("emu.model"));
 
             State.discId = discId;
 

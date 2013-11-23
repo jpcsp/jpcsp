@@ -19,6 +19,9 @@ package jpcsp.hardware;
 public class Model {
 	public static final int MODEL_PSP_FAT = 0;
 	public static final int MODEL_PSP_SLIM = 1;
+        public static final int MODEL_PSP_BRITE = 2;
+        public static final int MODEL_PSP_BRITE2 = 3;
+        public static final int MODEL_PSP_GO = 4;
 	private static int model = MODEL_PSP_FAT;
 
 	public static int getModel() {
