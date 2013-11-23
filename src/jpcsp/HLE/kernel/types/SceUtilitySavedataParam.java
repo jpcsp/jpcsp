@@ -678,12 +678,12 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         byte[] inBuf = new byte[fileSize];
         fileInput.readFully(inBuf);
 
-        crypto.getSAVEDATAEngine().DecryptSavedata(inBuf, fileSize, key);
+        byte[] outBuf = crypto.getSAVEDATAEngine().DecryptSavedata(inBuf, fileSize, key);
 
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 1);
-        int length = Math.min(inBuf.length, maxLength);
+        int length = Math.min(outBuf.length, maxLength);
         for (int i = 0; i < length; i++) {
-            memoryWriter.writeNext(inBuf[i]);
+            memoryWriter.writeNext(outBuf[i]);
         }
         memoryWriter.flush();
 

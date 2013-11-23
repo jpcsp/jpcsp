@@ -20,6 +20,8 @@ package jpcsp.HLE.kernel.types;
 public class SceIoDirent extends pspAbstractMemoryMappedStructure {
     public SceIoStat stat;
     public String filename;
+    public int reserved;  // This field is a pointer to user data and is set manually.
+    public int dummy;     // Always 0.
 
     public SceIoDirent(SceIoStat stat, String filename) {
         this.stat = stat;
@@ -31,14 +33,16 @@ public class SceIoDirent extends pspAbstractMemoryMappedStructure {
 		stat = new SceIoStat();
 		read(stat);
 		filename = readStringNZ(256);
+                reserved = read32();
+                dummy = read32();
 	}
 
 	@Override
 	protected void write() {
 		write(stat);
 		writeStringNZ(256, filename);
-        // 2 ints reserved
-		writeUnknown(8);
+                // NOTE: Do not overwrite the reserved field.
+                // Tests confirm that sceIoDread only writes the stat and filename.
 	}
 
 	@Override
