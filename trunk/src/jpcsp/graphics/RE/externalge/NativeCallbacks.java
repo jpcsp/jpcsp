@@ -96,6 +96,10 @@ public class NativeCallbacks {
 		getMemory().write8(address, value);
 	}
 
+	public static void copy(int destination, int source, int length) {
+		getMemory().memcpy(destination, source, length);
+	}
+
 	public static void writeByteBuffer(int address, ByteBuffer source, int length) {
 		writeByteBuffer.start();
 		if (RuntimeContext.memoryInt != null && (address & 3) == 0 && (length & 3) == 0) {
