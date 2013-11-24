@@ -26,7 +26,6 @@ import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 import static jpcsp.util.Utilities.makePow2;
-
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -78,6 +77,7 @@ import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.RenderingEngineFactory;
 import jpcsp.graphics.RE.RenderingEngineLwjgl;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
+import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.GETextureManager;
@@ -214,7 +214,19 @@ public class sceDisplay extends HLEModule {
 
             setInsideRendering(true);
 
-            if (isUsingSoftwareRenderer()) {
+            if (ExternalGE.isActive()) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("sceDisplay.paintGL - ExternalGE - rendering the FB 0x%08X", currentFb.getTopAddr()));
+                }
+
+            	reDisplay.startDisplay();
+            	drawFrameBufferFromMemory(currentFb);
+            	reDisplay.endDisplay();
+
+                if (log.isDebugEnabled()) {
+                    log.debug("sceDisplay.paintGL - ExternalGE - end display");
+                }
+            } else if (isUsingSoftwareRenderer()) {
                 // Software rendering: the processing of the GE list is done by the
                 // SoftwareRenderingDisplayThread.
                 // We just need to display the frame buffer.

@@ -91,6 +91,7 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
 import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.hardware.Audio;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
@@ -106,6 +107,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 
 import com.jidesoft.plaf.LookAndFeelFactory;
+
 import java.awt.AWTEvent;
 import java.awt.Component;
 import java.awt.Toolkit;
@@ -115,10 +117,12 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+
 import javax.swing.JMenu;
 import javax.swing.KeyStroke;
 import javax.swing.MenuElement;
 import javax.swing.SwingUtilities;
+
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
 import jpcsp.hardware.Model;
 
@@ -2729,7 +2733,9 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }
 
     private void processArgs(String[] args) {
-        for (int i = 0; i < args.length; i++) {
+    	ExternalGE.init();
+
+    	for (int i = 0; i < args.length; i++) {
             //System.err.println("Args: " + args[0]);
             if (args[i].equals("-t") || args[i].equals("--tests")) {
                 //(new AutoTestsRunner()).run();

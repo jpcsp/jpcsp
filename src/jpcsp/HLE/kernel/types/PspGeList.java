@@ -18,6 +18,7 @@ package jpcsp.HLE.kernel.types;
 
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_CANCEL_DONE;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_DONE;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_DRAWING;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_QUEUED;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_STALL_REACHED;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_STRINGS;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import jpcsp.HLE.Modules;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.Memory;
@@ -191,7 +193,7 @@ public class PspGeList {
     	}
     }
 
-    private void sync() {
+    public void sync() {
 		if (sync != null) {
 			sync.release();
 		}
@@ -221,6 +223,9 @@ public class PspGeList {
     	stall_addr &= pcAddressMask;
     	if (this.stall_addr != stall_addr) {
     		this.stall_addr = stall_addr;
+    		if (ExternalGE.isActive()) {
+    			ExternalGE.onStallAddrUpdated(this);
+    		}
     		sync();
     	}
     }
@@ -235,12 +240,21 @@ public class PspGeList {
 
     public void startList() {
     	paused = false;
-        videoEngine.pushDrawList(this);
+    	if (ExternalGE.isActive()) {
+    		ExternalGE.startList(this);
+    	} else {
+    		videoEngine.pushDrawList(this);
+    	}
+    	sync();
     }
 
     public void startListHead() {
         paused = false;
-        videoEngine.pushDrawListHead(this);
+        if (ExternalGE.isActive()) {
+        	ExternalGE.startListHead(this);
+        } else {
+        	videoEngine.pushDrawListHead(this);
+        }
     }
 
     public void pauseList() {
@@ -251,6 +265,9 @@ public class PspGeList {
     	paused = false;
     	restarted = true;
     	sync();
+    	if (ExternalGE.isActive()) {
+    		ExternalGE.onRestartList(this);
+    	}
     }
 
     public void clearRestart() {
@@ -295,6 +312,10 @@ public class PspGeList {
 
 	public boolean isReset() {
 		return reset;
+	}
+
+	public boolean isDrawing() {
+		return status == PSP_GE_LIST_DRAWING;
 	}
 
 	private void resetMemoryReader() {

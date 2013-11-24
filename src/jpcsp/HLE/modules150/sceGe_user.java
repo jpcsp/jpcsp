@@ -46,6 +46,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.externalge.ExternalGE;
 
 import org.apache.log4j.Logger;
 
@@ -568,8 +569,14 @@ public class sceGe_user extends HLEModule {
     	// local data, only list information from the VideoEngine.
         int result = 0;
         if (mode == 0) {
-            PspGeList lastList = VideoEngine.getInstance().getLastDrawList();
-            if (lastList != null) {
+        	PspGeList lastList;
+        	if (ExternalGE.isActive()) {
+        		lastList = ExternalGE.getLastDrawList();
+        	} else {
+        		lastList = VideoEngine.getInstance().getLastDrawList();
+        	}
+
+        	if (lastList != null) {
                 blockCurrentThreadOnList(lastList, new HLEAfterDrawSyncAction());
             } else {
     			if (log.isDebugEnabled()) {
@@ -594,7 +601,14 @@ public class sceGe_user extends HLEModule {
     @HLEFunction(nid = 0xB448EC0D, version = 150)
     public int sceGeBreak(@CheckArgument("checkMode") int mode, TPointer brk_addr) {
         int result = 0;
-        PspGeList list = VideoEngine.getInstance().getCurrentList();
+
+        PspGeList list;
+        if (ExternalGE.isActive()) {
+        	list = ExternalGE.getCurrentList();
+        } else {
+        	list = VideoEngine.getInstance().getCurrentList();
+        }
+
         if (mode == 0) {  // Pause the current list only.
             if (list != null) {
                 list.pauseList();
