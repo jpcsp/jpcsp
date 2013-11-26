@@ -682,8 +682,28 @@ public class sceDisplay extends HLEModule {
         @Override
         public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
             // Continue the wait state until the vcount changes
-            return sceDisplay.this.vcount < vcount;
+        	boolean continueWait = sceDisplay.this.vcount < vcount;
+
+        	if (!continueWait && ExternalGE.isActive()) {
+        		ExternalGE.onDisplayStopWaitVblank();
+        	}
+
+        	return continueWait;
         }
+    }
+
+    private class VblankUnblockThreadAction extends UnblockThreadAction {
+		public VblankUnblockThreadAction(int threadId) {
+			super(threadId);
+		}
+
+		@Override
+		public void execute() {
+			if (ExternalGE.isActive()) {
+				ExternalGE.onDisplayStopWaitVblank();
+			}
+			super.execute();
+		}
     }
 
     private class AntiAliasSettingsListerner extends AbstractStringSettingsListener {
@@ -1768,7 +1788,7 @@ public class sceDisplay extends HLEModule {
         if (unblockVcount <= vcount) {
             // This thread has just to wait for the next VBLANK.
             // Add a Vblank action to unblock the thread
-            UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
+            UnblockThreadAction vblankAction = new VblankUnblockThreadAction(threadId);
             IntrManager.getInstance().addVBlankActionOnce(vblankAction);
             thread.displayLastWaitVcount = vcount + 1;
         } else {
@@ -1780,6 +1800,10 @@ public class sceDisplay extends HLEModule {
         // Block the current thread.
         threadMan.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_DISPLAY_VBLANK, unblockVcount, doCallbacks, null, new VblankWaitStateChecker(unblockVcount));
 
+        if (ExternalGE.isActive()) {
+        	ExternalGE.onDisplayStartWaitVblank();
+        }
+
         return 0;
     }
 
@@ -1787,6 +1811,10 @@ public class sceDisplay extends HLEModule {
         lastVblankMicroTime = Emulator.getClock().microTime();
         // Vcount increases at each VBLANK.
         vcount++;
+
+        if (ExternalGE.isActive()) {
+        	ExternalGE.onDisplayVblank();
+        }
 
         // Check the threads waiting for VBLANK (multi).
         if (!waitingOnVblank.isEmpty()) {
@@ -1796,6 +1824,9 @@ public class sceDisplay extends HLEModule {
                     ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                     SceKernelThreadInfo thread = threadMan.getThreadById(waitVblankInfo.threadId);
                     if (thread != null) {
+                    	if (ExternalGE.isActive()) {
+                    		ExternalGE.onDisplayStopWaitVblank();
+                    	}
                         thread.displayLastWaitVcount = vcount;
                         threadMan.hleUnblockThread(waitVblankInfo.threadId);
                     }

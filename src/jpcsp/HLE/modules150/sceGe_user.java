@@ -157,6 +157,10 @@ public class sceGe_user extends HLEModule {
         		log.debug("really waking thread " + Integer.toHexString(thid) + "(" + threadMan.getThreadName(thid) + ")");
         	}
             threadMan.hleUnblockThread(thid);
+
+    		if (ExternalGE.isActive()) {
+    			ExternalGE.onGeStopWaitList();
+    		}
         }
     }
 
@@ -207,6 +211,10 @@ public class sceGe_user extends HLEModule {
     	if (blockCurrentThread) {
     		// Block the thread, but do not execute callbacks.
     		threadMan.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_GE_LIST, list.id, false, action, new ListSyncWaitStateChecker(list));
+
+    		if (ExternalGE.isActive()) {
+    			ExternalGE.onGeStartWaitList();
+    		}
     	}
     }
 
@@ -336,7 +344,13 @@ public class sceGe_user extends HLEModule {
 		@Override
 		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
     		// Continue the wait state until the list is done
-    		return !list.isDone();
+			boolean contineWait = !list.isDone();
+
+			if (!contineWait && ExternalGE.isActive()) {
+				ExternalGE.onGeStopWaitList();
+			}
+
+			return contineWait;
 		}
     }
 

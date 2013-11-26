@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.modules.sceGe_user;
+import jpcsp.util.DurationStatistics;
 
 /**
  * @author gid15
@@ -57,6 +58,9 @@ public class ExternalGE {
 		}
 
 		if (currentList == null) {
+			if (DurationStatistics.collectStatistics) {
+				NativeUtils.notifyEvent(NativeUtils.EVENT_GE_START_LIST);
+			}
 			list.status = sceGe_user.PSP_GE_LIST_DRAWING;
 			NativeUtils.setLogLevel();
 			NativeUtils.setCoreSadr(list.getStallAddr());
@@ -109,6 +113,9 @@ public class ExternalGE {
 		}
 
 		if (list == currentList) {
+			if (DurationStatistics.collectStatistics) {
+				NativeUtils.notifyEvent(NativeUtils.EVENT_GE_UPDATE_STALL_ADDR);
+			}
 			NativeUtils.setCoreSadr(list.getStallAddr());
 			NativeUtils.setCoreCtrlActive();
 			CoreThread.getInstance().sync();
@@ -132,6 +139,9 @@ public class ExternalGE {
 		Modules.sceGe_userModule.hleGeListSyncDone(list);
 
 		if (list == currentList) {
+			if (DurationStatistics.collectStatistics) {
+				NativeUtils.notifyEvent(NativeUtils.EVENT_GE_FINISH_LIST);
+			}
 			currentList = null;
 		} else {
 			drawListQueue.remove(list);
@@ -160,5 +170,35 @@ public class ExternalGE {
 
 	public static PspGeList getCurrentList() {
 		return currentList;
+	}
+
+	public static void onGeStartWaitList() {
+		if (DurationStatistics.collectStatistics) {
+			NativeUtils.startEvent(NativeUtils.EVENT_GE_WAIT_FOR_LIST);
+		}
+	}
+
+	public static void onGeStopWaitList() {
+		if (DurationStatistics.collectStatistics) {
+			NativeUtils.stopEvent(NativeUtils.EVENT_GE_WAIT_FOR_LIST);
+		}
+	}
+
+	public static void onDisplayStartWaitVblank() {
+		if (DurationStatistics.collectStatistics) {
+			NativeUtils.startEvent(NativeUtils.EVENT_DISPLAY_WAIT_VBLANK);
+		}
+	}
+
+	public static void onDisplayStopWaitVblank() {
+		if (DurationStatistics.collectStatistics) {
+			NativeUtils.stopEvent(NativeUtils.EVENT_DISPLAY_WAIT_VBLANK);
+		}
+	}
+
+	public static void onDisplayVblank() {
+		if (DurationStatistics.collectStatistics) {
+			NativeUtils.notifyEvent(NativeUtils.EVENT_DISPLAY_VBLANK);
+		}
 	}
 }

@@ -43,6 +43,13 @@ public class NativeUtils {
 	private static Object[] arrayObject = new Object[] { null };
 	private static long arrayObjectBaseOffset = 0L;
     private static DurationStatistics coreInterpret = new DurationStatistics("coreInterpret");
+    public static final int EVENT_GE_START_LIST        = 0;
+    public static final int EVENT_GE_FINISH_LIST       = 1;
+    public static final int EVENT_GE_ENQUEUE_LIST      = 2;
+    public static final int EVENT_GE_UPDATE_STALL_ADDR = 3;
+    public static final int EVENT_GE_WAIT_FOR_LIST     = 4;
+    public static final int EVENT_DISPLAY_WAIT_VBLANK  = 5;
+    public static final int EVENT_DISPLAY_VBLANK       = 6;
 
 	public static void init() {
 		if (!isInitialized) {
@@ -203,4 +210,7 @@ public class NativeUtils {
     public static native void setCoreMtxArray(int mtx, float value);
     public static native void setLogLevel(int level);
     public static native void setMemoryUnsafeAddr(long addr);
+    public static native void startEvent(int event);
+    public static native void stopEvent(int event);
+    public static native void notifyEvent(int event);
 }
