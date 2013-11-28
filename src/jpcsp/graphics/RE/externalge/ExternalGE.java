@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.externalge;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Semaphore;
 
 import org.apache.log4j.Logger;
 
@@ -30,21 +31,42 @@ import jpcsp.util.DurationStatistics;
  *
  */
 public class ExternalGE {
+	public static final boolean enableAsyncRendering = false;
 	public static Logger log = Logger.getLogger("externalge");
 	private static ConcurrentLinkedQueue<PspGeList> drawListQueue;
 	private static PspGeList currentList;
+	private static RendererThread[] rendererThreads;
+	private static Semaphore rendererThreadsDone;
 
 	public static void init() {
 		NativeUtils.init();
 		if (isActive()) {
 			drawListQueue = new ConcurrentLinkedQueue<PspGeList>();
 		}
+
+		if (enableAsyncRendering) {
+			rendererThreads = new RendererThread[2];
+			rendererThreads[0] = new RendererThread(0xF0F0F0F0);
+			rendererThreads[1] = new RendererThread(0x0F0F0F0F);
+			for (int i = 0; i < rendererThreads.length; i++) {
+				rendererThreads[i].setName(String.format("Renderer Thread #%d", i));
+				rendererThreads[i].start();
+			}
+			rendererThreadsDone = new Semaphore(0);
+		}
+		NativeUtils.setRendererAsyncRendering(enableAsyncRendering);
 	}
 
 	public static void exit() {
 		if (isActive()) {
 			NativeUtils.exit();
 			NativeCallbacks.exit();
+			CoreThread.exit();
+			if (enableAsyncRendering) {
+				for (int i = 0; i < rendererThreads.length; i++) {
+					rendererThreads[i].exit();
+				}
+			}
 		}
 	}
 
@@ -199,6 +221,28 @@ public class ExternalGE {
 	public static void onDisplayVblank() {
 		if (DurationStatistics.collectStatistics) {
 			NativeUtils.notifyEvent(NativeUtils.EVENT_DISPLAY_VBLANK);
+		}
+	}
+
+	public static void render() {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("ExternalGE starting rendering"));
+		}
+
+		for (int i = 0; i < rendererThreads.length; i++) {
+			rendererThreads[i].sync(rendererThreadsDone);
+		}
+
+		try {
+			rendererThreadsDone.acquire(rendererThreads.length);
+		} catch (InterruptedException e) {
+			log.error("render", e);
+		}
+
+		NativeUtils.rendererTerminate();
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("ExternalGE terminating rendering"));
 		}
 	}
 }
