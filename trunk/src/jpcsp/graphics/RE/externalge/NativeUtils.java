@@ -213,4 +213,8 @@ public class NativeUtils {
     public static native void startEvent(int event);
     public static native void stopEvent(int event);
     public static native void notifyEvent(int event);
+    public static native void setRendererAsyncRendering(boolean asyncRendering);
+    public static native int getRendererIndexCount();
+    public static native void rendererRender(int lineMask);
+    public static native void rendererTerminate();
 }

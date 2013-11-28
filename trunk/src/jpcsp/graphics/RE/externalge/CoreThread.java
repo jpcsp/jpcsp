@@ -26,6 +26,7 @@ import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.GeContext.EnableDisableFlag;
 
 import org.apache.log4j.Logger;
 
@@ -65,16 +66,24 @@ public class CoreThread extends Thread {
 
 	@Override
 	public void run() {
+		boolean doCoreInterpret = false;
+
 		while (!exit) {
 			PspGeList list = ExternalGE.getCurrentList();
 
 			if (list == null) {
 				waitForSync(100);
-			} else if (list.waitForSync(100)) {
+			} else if (doCoreInterpret || list.waitForSync(100)) {
+				doCoreInterpret = false;
 				NativeUtils.setCoreMadr(list.getPc());
+				NativeUtils.updateMemoryUnsafeAddr();
 
 				while (NativeUtils.coreInterpret()) {
 					NativeUtils.updateMemoryUnsafeAddr();
+
+					if (ExternalGE.enableAsyncRendering && NativeUtils.getRendererIndexCount() > 0) {
+						break;
+					}
 				}
 
 				list.setPc(NativeUtils.getCoreMadr());
@@ -89,6 +98,11 @@ public class CoreThread extends Thread {
 					}
 					intrStat &= ~(INTR_STAT_END | INTR_STAT_SIGNAL | INTR_STAT_FINISH);
 					NativeUtils.setCoreIntrStat(intrStat);
+				}
+
+				if (ExternalGE.enableAsyncRendering && NativeUtils.getRendererIndexCount() > 0) {
+					ExternalGE.render();
+					doCoreInterpret = true;
 				}
 			}
 		}
