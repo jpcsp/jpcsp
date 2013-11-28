@@ -35,7 +35,6 @@ public class NativeUtils {
 	public static Logger log = ExternalGE.log;
 	private static boolean isInitialized = false;
 	private static boolean isActive = false;
-	private static final boolean useUnsafe = false;
     private static Unsafe unsafe = null;
     private static boolean unsafeInitialized = false;
     private static int intArrayBaseOffset = 0;
@@ -93,7 +92,7 @@ public class NativeUtils {
     }
 
     public static long getMemoryUnsafeAddr() {
-    	if (!useUnsafe || memoryInt == null) {
+    	if (!ExternalGE.useUnsafe || memoryInt == null) {
     		return 0L;
     	}
 
