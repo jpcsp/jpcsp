@@ -32,6 +32,7 @@ import jpcsp.util.DurationStatistics;
  */
 public class ExternalGE {
 	public static final boolean enableAsyncRendering = false;
+	public static final boolean useUnsafe = false;
 	public static Logger log = Logger.getLogger("externalge");
 	private static ConcurrentLinkedQueue<PspGeList> drawListQueue;
 	private static PspGeList currentList;
@@ -46,8 +47,8 @@ public class ExternalGE {
 
 		if (enableAsyncRendering) {
 			rendererThreads = new RendererThread[2];
-			rendererThreads[0] = new RendererThread(0xF0F0F0F0);
-			rendererThreads[1] = new RendererThread(0x0F0F0F0F);
+			rendererThreads[0] = new RendererThread(0xFF00FF00);
+			rendererThreads[1] = new RendererThread(0x00FF00FF);
 			for (int i = 0; i < rendererThreads.length; i++) {
 				rendererThreads[i].setName(String.format("Renderer Thread #%d", i));
 				rendererThreads[i].start();
