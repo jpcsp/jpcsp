@@ -223,9 +223,7 @@ public class PspGeList {
     	stall_addr &= pcAddressMask;
     	if (this.stall_addr != stall_addr) {
     		this.stall_addr = stall_addr;
-    		if (ExternalGE.isActive()) {
-    			ExternalGE.onStallAddrUpdated(this);
-    		}
+			ExternalGE.onStallAddrUpdated(this);
     		sync();
     	}
     }
@@ -240,6 +238,7 @@ public class PspGeList {
 
     public void startList() {
     	paused = false;
+    	ExternalGE.onGeStartList(this);
     	if (ExternalGE.isActive()) {
     		ExternalGE.startList(this);
     	} else {
@@ -250,6 +249,7 @@ public class PspGeList {
 
     public void startListHead() {
         paused = false;
+        ExternalGE.onGeStartList(this);
         if (ExternalGE.isActive()) {
         	ExternalGE.startListHead(this);
         } else {
@@ -265,9 +265,7 @@ public class PspGeList {
     	paused = false;
     	restarted = true;
     	sync();
-    	if (ExternalGE.isActive()) {
-    		ExternalGE.onRestartList(this);
-    	}
+		ExternalGE.onRestartList(this);
     }
 
     public void clearRestart() {
@@ -296,6 +294,7 @@ public class PspGeList {
 
     public void finishList() {
     	finished = true;
+    	ExternalGE.onGeFinishList(this);
     }
 
     public void endList() {

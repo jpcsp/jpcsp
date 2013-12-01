@@ -26,7 +26,6 @@ import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.GeCommands;
-import jpcsp.graphics.GeContext.EnableDisableFlag;
 
 import org.apache.log4j.Logger;
 

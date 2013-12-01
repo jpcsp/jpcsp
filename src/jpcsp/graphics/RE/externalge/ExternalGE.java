@@ -32,6 +32,7 @@ import jpcsp.util.DurationStatistics;
  */
 public class ExternalGE {
 	public static final boolean enableAsyncRendering = false;
+	public static final boolean activateWhenAvailable = true;
 	public static final boolean useUnsafe = false;
 	public static Logger log = Logger.getLogger("externalge");
 	private static ConcurrentLinkedQueue<PspGeList> drawListQueue;
@@ -43,19 +44,19 @@ public class ExternalGE {
 		NativeUtils.init();
 		if (isActive()) {
 			drawListQueue = new ConcurrentLinkedQueue<PspGeList>();
-		}
 
-		if (enableAsyncRendering) {
-			rendererThreads = new RendererThread[2];
-			rendererThreads[0] = new RendererThread(0xFF00FF00);
-			rendererThreads[1] = new RendererThread(0x00FF00FF);
-			for (int i = 0; i < rendererThreads.length; i++) {
-				rendererThreads[i].setName(String.format("Renderer Thread #%d", i));
-				rendererThreads[i].start();
+			if (enableAsyncRendering) {
+				rendererThreads = new RendererThread[2];
+				rendererThreads[0] = new RendererThread(0xFF00FF00);
+				rendererThreads[1] = new RendererThread(0x00FF00FF);
+				for (int i = 0; i < rendererThreads.length; i++) {
+					rendererThreads[i].setName(String.format("Renderer Thread #%d", i));
+					rendererThreads[i].start();
+				}
+				rendererThreadsDone = new Semaphore(0);
 			}
-			rendererThreadsDone = new Semaphore(0);
+			NativeUtils.setRendererAsyncRendering(enableAsyncRendering);
 		}
-		NativeUtils.setRendererAsyncRendering(enableAsyncRendering);
 	}
 
 	public static void exit() {
@@ -72,7 +73,11 @@ public class ExternalGE {
 	}
 
 	public static boolean isActive() {
-		return NativeUtils.isActive();
+		return activateWhenAvailable && isAvailable();
+	}
+
+	public static boolean isAvailable() {
+		return NativeUtils.isAvailable();
 	}
 
 	public static void startList(PspGeList list) {
@@ -81,9 +86,6 @@ public class ExternalGE {
 		}
 
 		if (currentList == null) {
-			if (DurationStatistics.collectStatistics) {
-				NativeUtils.notifyEvent(NativeUtils.EVENT_GE_START_LIST);
-			}
 			list.status = sceGe_user.PSP_GE_LIST_DRAWING;
 			NativeUtils.setLogLevel();
 			NativeUtils.setCoreSadr(list.getStallAddr());
@@ -131,30 +133,35 @@ public class ExternalGE {
 	}
 
 	public static void onStallAddrUpdated(PspGeList list) {
-		if (list == null) {
-			return;
+		if (isAvailable() && DurationStatistics.collectStatistics) {
+			NativeUtils.stopEvent(NativeUtils.EVENT_GE_UPDATE_STALL_ADDR);
 		}
 
-		if (list == currentList) {
-			if (DurationStatistics.collectStatistics) {
-				NativeUtils.notifyEvent(NativeUtils.EVENT_GE_UPDATE_STALL_ADDR);
+		if (isActive()) {
+			if (list == null) {
+				return;
 			}
-			NativeUtils.setCoreSadr(list.getStallAddr());
-			NativeUtils.setCoreCtrlActive();
-			CoreThread.getInstance().sync();
+
+			if (list == currentList) {
+				NativeUtils.setCoreSadr(list.getStallAddr());
+				NativeUtils.setCoreCtrlActive();
+				CoreThread.getInstance().sync();
+			}
 		}
 	}
 
 	public static void onRestartList(PspGeList list) {
-		if (list == null) {
-			return;
-		}
+		if (isActive()) {
+			if (list == null) {
+				return;
+			}
 
-		if (list == currentList) {
-			list.status = sceGe_user.PSP_GE_LIST_DRAWING;
-			NativeUtils.setCoreCtrlActive();
-			CoreThread.getInstance().sync();
-			list.sync();
+			if (list == currentList) {
+				list.status = sceGe_user.PSP_GE_LIST_DRAWING;
+				NativeUtils.setCoreCtrlActive();
+				CoreThread.getInstance().sync();
+				list.sync();
+			}
 		}
 	}
 
@@ -162,9 +169,6 @@ public class ExternalGE {
 		Modules.sceGe_userModule.hleGeListSyncDone(list);
 
 		if (list == currentList) {
-			if (DurationStatistics.collectStatistics) {
-				NativeUtils.notifyEvent(NativeUtils.EVENT_GE_FINISH_LIST);
-			}
 			currentList = null;
 		} else {
 			drawListQueue.remove(list);
@@ -196,32 +200,44 @@ public class ExternalGE {
 	}
 
 	public static void onGeStartWaitList() {
-		if (DurationStatistics.collectStatistics) {
+		if (isAvailable() && DurationStatistics.collectStatistics) {
 			NativeUtils.startEvent(NativeUtils.EVENT_GE_WAIT_FOR_LIST);
 		}
 	}
 
 	public static void onGeStopWaitList() {
-		if (DurationStatistics.collectStatistics) {
+		if (isAvailable() && DurationStatistics.collectStatistics) {
 			NativeUtils.stopEvent(NativeUtils.EVENT_GE_WAIT_FOR_LIST);
 		}
 	}
 
 	public static void onDisplayStartWaitVblank() {
-		if (DurationStatistics.collectStatistics) {
+		if (isAvailable() && DurationStatistics.collectStatistics) {
 			NativeUtils.startEvent(NativeUtils.EVENT_DISPLAY_WAIT_VBLANK);
 		}
 	}
 
 	public static void onDisplayStopWaitVblank() {
-		if (DurationStatistics.collectStatistics) {
+		if (isAvailable() && DurationStatistics.collectStatistics) {
 			NativeUtils.stopEvent(NativeUtils.EVENT_DISPLAY_WAIT_VBLANK);
 		}
 	}
 
 	public static void onDisplayVblank() {
-		if (DurationStatistics.collectStatistics) {
+		if (isAvailable() && DurationStatistics.collectStatistics) {
 			NativeUtils.notifyEvent(NativeUtils.EVENT_DISPLAY_VBLANK);
+		}
+	}
+
+	public static void onGeStartList(PspGeList list) {
+		if (isAvailable() && DurationStatistics.collectStatistics) {
+			NativeUtils.notifyEvent(NativeUtils.EVENT_GE_START_LIST);
+		}
+	}
+
+	public static void onGeFinishList(PspGeList list) {
+		if (isAvailable() && DurationStatistics.collectStatistics) {
+			NativeUtils.notifyEvent(NativeUtils.EVENT_GE_FINISH_LIST);
 		}
 	}
 
