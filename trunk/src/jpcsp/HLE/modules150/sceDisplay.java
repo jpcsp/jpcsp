@@ -684,7 +684,7 @@ public class sceDisplay extends HLEModule {
             // Continue the wait state until the vcount changes
         	boolean continueWait = sceDisplay.this.vcount < vcount;
 
-        	if (!continueWait && ExternalGE.isActive()) {
+        	if (!continueWait) {
         		ExternalGE.onDisplayStopWaitVblank();
         	}
 
@@ -699,9 +699,7 @@ public class sceDisplay extends HLEModule {
 
 		@Override
 		public void execute() {
-			if (ExternalGE.isActive()) {
-				ExternalGE.onDisplayStopWaitVblank();
-			}
+			ExternalGE.onDisplayStopWaitVblank();
 			super.execute();
 		}
     }
@@ -1800,9 +1798,7 @@ public class sceDisplay extends HLEModule {
         // Block the current thread.
         threadMan.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_DISPLAY_VBLANK, unblockVcount, doCallbacks, null, new VblankWaitStateChecker(unblockVcount));
 
-        if (ExternalGE.isActive()) {
-        	ExternalGE.onDisplayStartWaitVblank();
-        }
+    	ExternalGE.onDisplayStartWaitVblank();
 
         return 0;
     }
@@ -1812,9 +1808,7 @@ public class sceDisplay extends HLEModule {
         // Vcount increases at each VBLANK.
         vcount++;
 
-        if (ExternalGE.isActive()) {
-        	ExternalGE.onDisplayVblank();
-        }
+    	ExternalGE.onDisplayVblank();
 
         // Check the threads waiting for VBLANK (multi).
         if (!waitingOnVblank.isEmpty()) {
@@ -1824,9 +1818,7 @@ public class sceDisplay extends HLEModule {
                     ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                     SceKernelThreadInfo thread = threadMan.getThreadById(waitVblankInfo.threadId);
                     if (thread != null) {
-                    	if (ExternalGE.isActive()) {
-                    		ExternalGE.onDisplayStopWaitVblank();
-                    	}
+                		ExternalGE.onDisplayStopWaitVblank();
                         thread.displayLastWaitVcount = vcount;
                         threadMan.hleUnblockThread(waitVblankInfo.threadId);
                     }

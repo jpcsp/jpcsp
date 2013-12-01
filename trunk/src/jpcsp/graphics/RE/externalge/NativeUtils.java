@@ -34,7 +34,7 @@ import sun.misc.Unsafe;
 public class NativeUtils {
 	public static Logger log = ExternalGE.log;
 	private static boolean isInitialized = false;
-	private static boolean isActive = false;
+	private static boolean isAvailable = false;
     private static Unsafe unsafe = null;
     private static boolean unsafeInitialized = false;
     private static int intArrayBaseOffset = 0;
@@ -56,9 +56,9 @@ public class NativeUtils {
 				System.loadLibrary("software-ge-renderer");
 				initNative();
 				log.info(String.format("Loaded software-ge-renderer library"));
-				isActive = true;
+				isAvailable = true;
 			} catch (UnsatisfiedLinkError e) {
-				isActive = false;
+				isAvailable = false;
 			}
 
 			isInitialized = true;
@@ -71,8 +71,8 @@ public class NativeUtils {
 		}
 	}
 
-	public static boolean isActive() {
-		return isActive;
+	public static boolean isAvailable() {
+		return isAvailable;
 	}
 
     public static void checkMemoryIntAddress() {

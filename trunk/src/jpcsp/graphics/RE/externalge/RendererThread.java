@@ -38,7 +38,9 @@ public class RendererThread extends Thread {
 	public void run() {
 		while (!exit) {
 			if (waitForSync(100)) {
-				NativeUtils.rendererRender(lineMask);
+				if (lineMask != 0) {
+					NativeUtils.rendererRender(lineMask);
+				}
 				if (response != null) {
 					response.release();
 				}
