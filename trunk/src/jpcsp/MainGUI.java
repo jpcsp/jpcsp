@@ -2211,7 +2211,8 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         logConfigurationSettingBool("SettingsGUI.disableOptimizedVertexInfoReading.text", "emu.disableoptimizedvertexinforeading", false);
         logConfigurationSettingBool("SettingsGUI.saveStencilToMemory.text", "emu.saveStencilToMemory", false);
         logConfigurationSettingBool("SettingsGUI.useSoftwareRenderer.text", "emu.useSoftwareRenderer", false);
-
+        logConfigurationSettingBool("SettingsGUI.useExternalSoftwareRenderer.text", "emu.useExternalSoftwareRenderer", false);
+        
         logConfigurationPanel("SettingsGUI.AudioPanel.title");
         logConfigurationSettingBool("SettingsGUI.IgnoreAudioThreadsCheck.text", "emu.ignoreaudiothreads", false);
         logConfigurationSettingBool("SettingsGUI.DisableSceAudioCheck.text", "emu.disablesceAudio", false);
@@ -2733,7 +2734,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }
 
     private void processArgs(String[] args) {
-    	ExternalGE.init();
+    	if(Settings.getInstance().readBool("emu.useExternalSoftwareRenderer"))
+           ExternalGE.init();
+
+
 
     	for (int i = 0; i < args.length; i++) {
             //System.err.println("Args: " + args[0]);
