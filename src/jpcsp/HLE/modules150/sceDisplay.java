@@ -563,6 +563,16 @@ public class sceDisplay extends HLEModule {
             setUseSoftwareRenderer(value);
         }
     }
+    //do the same as above but for external render only
+
+   private class ExternalSoftwareRendererSettingsListener extends AbstractBoolSettingsListener {
+
+       @Override
+        protected void settingsValueChanged(boolean value) {
+           setUseSoftwareRenderer(value);
+       }
+    }
+
 
     private class SaveStencilToMemorySettingsListener extends AbstractBoolSettingsListener {
 
@@ -1018,7 +1028,11 @@ public class sceDisplay extends HLEModule {
         }
 
         setSettingsListener("emu.onlyGEGraphics", new OnlyGeSettingsListener());
-        setSettingsListener("emu.useSoftwareRenderer", new SoftwareRendererSettingsListener());
+        if(Settings.getInstance().readBool("emu.useSoftwareRenderer"))
+          setSettingsListener("emu.useSoftwareRenderer", new ExternalSoftwareRendererSettingsListener());
+        if(Settings.getInstance().readBool("emu.useExternalSoftwareRenderer"))
+            setSettingsListener("emu.useExternalSoftwareRenderer", new SoftwareRendererSettingsListener());
+
         setSettingsListener("emu.saveStencilToMemory", new SaveStencilToMemorySettingsListener());
 
         super.start();
