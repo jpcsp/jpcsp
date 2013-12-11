@@ -299,6 +299,13 @@ public class sceGe_user extends HLEModule {
 		triggerAsyncCallback(cbid, listId, listAddr, behavior, callbackNotifyArg1, signalCallbacks);
     }
 
+    public PspGeList getGeList(int id) {
+    	if (id < 0 || id >= NUMBER_GE_LISTS) {
+    		return null;
+    	}
+    	return allGeLists[id];
+    }
+
     static class DeferredCallbackInfo {
         public final int cbid;
         public final int callbackIndex;

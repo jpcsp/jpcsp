@@ -40,7 +40,7 @@ public class ExternalGE {
 	public static final boolean useUnsafe = false;
 	public static Logger log = Logger.getLogger("externalge");
 	private static ConcurrentLinkedQueue<PspGeList> drawListQueue;
-	private static PspGeList currentList;
+	private static volatile PspGeList currentList;
 	private static RendererThread[] rendererThreads;
 	private static Semaphore rendererThreadsDone;
 	private static Level logLevel;
