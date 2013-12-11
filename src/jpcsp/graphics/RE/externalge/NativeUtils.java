@@ -216,4 +216,8 @@ public class NativeUtils {
     public static native int getRendererIndexCount();
     public static native void rendererRender(int lineMask);
     public static native void rendererTerminate();
+    public static native void setDumpFrames(boolean dumpFrames);
+    public static native void setDumpTextures(boolean dumpTextures);
+    public static native void saveCoreContext(int addr);
+    public static native void restoreCoreContext(int addr);
 }

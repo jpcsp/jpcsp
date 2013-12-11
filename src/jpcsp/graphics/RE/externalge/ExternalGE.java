@@ -19,11 +19,15 @@ package jpcsp.graphics.RE.externalge;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
+import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.modules.sceGe_user;
+import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.util.DurationStatistics;
 
 /**
@@ -39,6 +43,7 @@ public class ExternalGE {
 	private static PspGeList currentList;
 	private static RendererThread[] rendererThreads;
 	private static Semaphore rendererThreadsDone;
+	private static Level logLevel;
 
 	public static void init() {
 		NativeUtils.init();
@@ -86,6 +91,20 @@ public class ExternalGE {
 		}
 
 		if (currentList == null) {
+			if (State.captureGeNextFrame) {
+				State.captureGeNextFrame = false;
+				CaptureManager.captureInProgress = true;
+				NativeUtils.setDumpFrames(true);
+				NativeUtils.setDumpTextures(true);
+				logLevel = log.getLevel();
+				log.setLevel(Level.TRACE);
+			}
+
+	        // Save the context at the beginning of the list processing to the given address (used by sceGu).
+			if (list.hasSaveContextAddr()) {
+	            saveContext(list.getSaveContextAddr());
+			}
+
 			list.status = sceGe_user.PSP_GE_LIST_DRAWING;
 			NativeUtils.setLogLevel();
 			NativeUtils.setCoreSadr(list.getStallAddr());
@@ -169,7 +188,21 @@ public class ExternalGE {
 		Modules.sceGe_userModule.hleGeListSyncDone(list);
 
 		if (list == currentList) {
-			currentList = null;
+			if (CaptureManager.captureInProgress) {
+				log.setLevel(logLevel);
+				NativeUtils.setDumpFrames(false);
+				NativeUtils.setDumpTextures(false);
+				NativeUtils.setLogLevel();
+				CaptureManager.captureInProgress = false;
+				Emulator.PauseEmu();
+			}
+
+	        // Restore the context to the state at the beginning of the list processing (used by sceGu).
+	        if (list.hasSaveContextAddr()) {
+	            restoreContext(list.getSaveContextAddr());
+	        }
+
+	        currentList = null;
 		} else {
 			drawListQueue.remove(list);
 		}
@@ -261,5 +294,21 @@ public class ExternalGE {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("ExternalGE terminating rendering"));
 		}
+	}
+
+	private static void saveContext(int addr) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Saving Core context to 0x%08X", addr));
+		}
+
+		NativeUtils.saveCoreContext(addr);
+	}
+
+	private static void restoreContext(int addr) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Restoring Core context from 0x%08X", addr));
+		}
+
+		NativeUtils.restoreCoreContext(addr);
 	}
 }
