@@ -563,7 +563,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         		s.append(String.format("Umd (0x%02X)", wait.wantedUmdStat));
         		break;
         	case JPCSP_WAIT_GE_LIST:
-        		s.append(String.format("Ge List (0x%X)", waitId));
+        		s.append(String.format("Ge List (%s)", Modules.sceGe_userModule.getGeList(waitId)));
         		break;
         	case JPCSP_WAIT_NET:
         		s.append(String.format("Network"));
