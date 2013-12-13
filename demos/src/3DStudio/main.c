@@ -438,7 +438,7 @@ int textureBufferWidth2 = TEXTURE_WIDTH;
 
 int texFunc1 = 0;
 int texFunc2 = 0;
-char *texFuncNames[] = { "GU_TFX_MODULATE", "GU_TFX_DECAL", "GU_TFX_BLEND", "GU_TFX_REPLACE", "GU_TFX_ADD" };
+char *texFuncNames[] = { "GU_TFX_MODULATE", "GU_TFX_DECAL", "GU_TFX_BLEND", "GU_TFX_REPLACE", "GU_TFX_ADD", "GU_TFX_UNKNOWN5", "GU_TFX_UNKNOWN6", "GU_TFX_UNKNOWN7" };
 
 int texMinFilter1 = 0;
 int texMinFilter2 = 0;
@@ -1796,7 +1796,7 @@ void init()
 	setAttributeValueNames(&primTypeNames[0]);
 	y++;
 
-	addAttribute("sceGuTexFunc", &texFunc1, NULL, x + 6, y, 0, 4, 1, NULL);
+	addAttribute("sceGuTexFunc", &texFunc1, NULL, x + 6, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&texFuncNames[0]);
 	addAttribute(NULL, &texFuncAlpha1, NULL, x + 36, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&texFuncAlphaNames[0]);
@@ -1910,7 +1910,7 @@ void init()
 	setAttributeValueNames(&primTypeNames[0]);
 	y++;
 
-	addAttribute("sceGuTexFunc", &texFunc2, NULL, x + 6, y, 0, 4, 1, NULL);
+	addAttribute("sceGuTexFunc", &texFunc2, NULL, x + 6, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&texFuncNames[0]);
 	addAttribute(NULL, &texFuncAlpha2, NULL, x + 36, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&texFuncAlphaNames[0]);

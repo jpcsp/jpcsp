@@ -1956,8 +1956,9 @@ public class VideoEngine {
     private void executeCommandTFUNC() {
         context.textureFunc = normalArgument & 0x7;
         if (context.textureFunc >= TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_UNKNOW1) {
-            VideoEngine.log.warn("Unimplemented tfunc mode " + context.textureFunc);
-            context.textureFunc = TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE;
+        	// All 3 unknown values have the same function as TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_ADD.
+        	// Tested on PSP using 3DStudio.
+        	context.textureFunc = TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_ADD;
         }
 
         context.textureAlphaUsed = ((normalArgument >> 8) & 0x1) != TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_IGNORED;
