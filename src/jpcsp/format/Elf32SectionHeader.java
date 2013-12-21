@@ -133,6 +133,13 @@ public class Elf32SectionHeader {
         return sh_addr;
     }
 
+    public int getSh_addr(int baseAddress) {
+    	if (Memory.isAddressGood(getSh_addr()) && getSh_addr() >= baseAddress) {
+    		return getSh_addr();
+    	}
+    	return baseAddress + getSh_addr();
+    }
+
     public int getSh_offset() {
         return sh_offset;
     }
