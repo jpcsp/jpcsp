@@ -143,6 +143,9 @@ public class Utilities {
         address &= Memory.addressMask;
         if (address + n > MemoryMap.END_RAM) {
             n = MemoryMap.END_RAM - address + 1;
+            if (n < 0) {
+            	n = 0;
+            }
         }
 
         // Allocate a byte array to store the bytes of the string.
