@@ -566,11 +566,8 @@ public class Loader {
         		log.trace(String.format("ELF Section Header: %s", shdr.toString()));
         	}
 
-            int memOffset = baseAddress + (int)shdr.getSh_addr();
-            if (!Memory.isAddressGood(memOffset)) {
-                memOffset = (int)shdr.getSh_addr();
-            }
-            int len = (int)shdr.getSh_size();
+            int memOffset = shdr.getSh_addr(baseAddress);
+            int len = shdr.getSh_size();
             int flags = shdr.getSh_flags();
 
             if (flags != SHF_NONE && Memory.isAddressGood(memOffset)) {
@@ -700,7 +697,7 @@ public class Loader {
             moduleInfo.read(Memory.getInstance(), memOffset);
             module.copy(moduleInfo);
         } else if (shdr != null) {
-            int memOffset = (int)(baseAddress + shdr.getSh_addr());
+        	int memOffset = shdr.getSh_addr(baseAddress);;
 
             PSPModuleInfo moduleInfo = new PSPModuleInfo();
             moduleInfo.read(Memory.getInstance(), memOffset);
@@ -1322,21 +1319,21 @@ public class Loader {
 
         shdr = elf.getSectionHeader(".init");
         if (shdr != null) {
-            module.initsection[0] = (int)(baseAddress + shdr.getSh_addr());
-            module.initsection[1] = (int)shdr.getSh_size();
+            module.initsection[0] = shdr.getSh_addr(baseAddress);
+            module.initsection[1] = shdr.getSh_size();
         }
 
         shdr = elf.getSectionHeader(".fini");
         if (shdr != null) {
-            module.finisection[0] = (int)(baseAddress + shdr.getSh_addr());
-            module.finisection[1] = (int)shdr.getSh_size();
+            module.finisection[0] = shdr.getSh_addr(baseAddress);
+            module.finisection[1] = shdr.getSh_size();
         }
 
         shdr = elf.getSectionHeader(".sceStub.text");
         if (shdr != null)
         {
-            module.stubtextsection[0] = (int)(baseAddress + shdr.getSh_addr());
-            module.stubtextsection[1] = (int)shdr.getSh_size();
+            module.stubtextsection[0] = shdr.getSh_addr(baseAddress);
+            module.stubtextsection[1] = shdr.getSh_size();
         }
 
         if (!loadedFirstModule) {
