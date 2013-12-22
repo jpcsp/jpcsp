@@ -29,6 +29,7 @@ import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -44,11 +45,33 @@ public class ExternalGE {
 	private static RendererThread[] rendererThreads;
 	private static Semaphore rendererThreadsDone;
 	private static Level logLevel;
+	private static SetLogLevelThread setLogLevelThread;
+
+	private static class SetLogLevelThread extends Thread {
+		private volatile boolean exit;
+
+		public void exit() {
+			exit = true;
+		}
+
+		@Override
+		public void run() {
+			while (!exit) {
+				NativeUtils.setLogLevel();
+				Utilities.sleep(100);
+			}
+		}
+	}
 
 	public static void init() {
 		NativeUtils.init();
 		if (isActive()) {
 			drawListQueue = new ConcurrentLinkedQueue<PspGeList>();
+
+			setLogLevelThread = new SetLogLevelThread();
+			setLogLevelThread.setName("ExternelGE Set Log Level Thread");
+			setLogLevelThread.setDaemon(true);
+			setLogLevelThread.start();
 
 			if (enableAsyncRendering) {
 				rendererThreads = new RendererThread[2];
@@ -69,6 +92,7 @@ public class ExternalGE {
 			NativeUtils.exit();
 			NativeCallbacks.exit();
 			CoreThread.exit();
+			setLogLevelThread.exit();
 			if (enableAsyncRendering) {
 				for (int i = 0; i < rendererThreads.length; i++) {
 					rendererThreads[i].exit();
@@ -90,29 +114,31 @@ public class ExternalGE {
 			return;
 		}
 
-		if (currentList == null) {
-			if (State.captureGeNextFrame) {
-				State.captureGeNextFrame = false;
-				CaptureManager.captureInProgress = true;
-				NativeUtils.setDumpFrames(true);
-				NativeUtils.setDumpTextures(true);
-				logLevel = log.getLevel();
-				log.setLevel(Level.TRACE);
+		synchronized (drawListQueue) {
+			if (currentList == null) {
+				if (State.captureGeNextFrame) {
+					State.captureGeNextFrame = false;
+					CaptureManager.captureInProgress = true;
+					NativeUtils.setDumpFrames(true);
+					NativeUtils.setDumpTextures(true);
+					logLevel = log.getLevel();
+					log.setLevel(Level.TRACE);
+				}
+	
+		        // Save the context at the beginning of the list processing to the given address (used by sceGu).
+				if (list.hasSaveContextAddr()) {
+		            saveContext(list.getSaveContextAddr());
+				}
+	
+				list.status = sceGe_user.PSP_GE_LIST_DRAWING;
+				NativeUtils.setLogLevel();
+				NativeUtils.setCoreSadr(list.getStallAddr());
+				NativeUtils.setCoreCtrlActive();
+				currentList = list;
+				CoreThread.getInstance().sync();
+			} else {
+				drawListQueue.add(list);
 			}
-
-	        // Save the context at the beginning of the list processing to the given address (used by sceGu).
-			if (list.hasSaveContextAddr()) {
-	            saveContext(list.getSaveContextAddr());
-			}
-
-			list.status = sceGe_user.PSP_GE_LIST_DRAWING;
-			NativeUtils.setLogLevel();
-			NativeUtils.setCoreSadr(list.getStallAddr());
-			NativeUtils.setCoreCtrlActive();
-			currentList = list;
-			CoreThread.getInstance().sync();
-		} else {
-			drawListQueue.add(list);
 		}
 	}
 
@@ -175,36 +201,40 @@ public class ExternalGE {
 				return;
 			}
 
-			if (list == currentList) {
-				list.status = sceGe_user.PSP_GE_LIST_DRAWING;
-				NativeUtils.setCoreCtrlActive();
-				CoreThread.getInstance().sync();
-				list.sync();
+			synchronized (drawListQueue) {
+				if (list == currentList) {
+					list.status = sceGe_user.PSP_GE_LIST_DRAWING;
+					NativeUtils.setCoreCtrlActive();
+					CoreThread.getInstance().sync();
+					list.sync();
+				}
 			}
 		}
 	}
 
 	public static void finishList(PspGeList list) {
-		Modules.sceGe_userModule.hleGeListSyncDone(list);
+		synchronized (drawListQueue) {
+			Modules.sceGe_userModule.hleGeListSyncDone(list);
 
-		if (list == currentList) {
-			if (CaptureManager.captureInProgress) {
-				log.setLevel(logLevel);
-				NativeUtils.setDumpFrames(false);
-				NativeUtils.setDumpTextures(false);
-				NativeUtils.setLogLevel();
-				CaptureManager.captureInProgress = false;
-				Emulator.PauseEmu();
+			if (list == currentList) {
+				if (CaptureManager.captureInProgress) {
+					log.setLevel(logLevel);
+					NativeUtils.setDumpFrames(false);
+					NativeUtils.setDumpTextures(false);
+					NativeUtils.setLogLevel();
+					CaptureManager.captureInProgress = false;
+					Emulator.PauseEmu();
+				}
+
+		        // Restore the context to the state at the beginning of the list processing (used by sceGu).
+		        if (list.hasSaveContextAddr()) {
+		            restoreContext(list.getSaveContextAddr());
+		        }
+
+		        currentList = null;
+			} else {
+				drawListQueue.remove(list);
 			}
-
-	        // Restore the context to the state at the beginning of the list processing (used by sceGu).
-	        if (list.hasSaveContextAddr()) {
-	            restoreContext(list.getSaveContextAddr());
-	        }
-
-	        currentList = null;
-		} else {
-			drawListQueue.remove(list);
 		}
 
 		if (currentList == null) {

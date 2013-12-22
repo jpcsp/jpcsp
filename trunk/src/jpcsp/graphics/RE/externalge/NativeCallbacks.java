@@ -77,11 +77,18 @@ public class NativeCallbacks {
 		return getMemory().read8(address);
 	}
 
-	public static void readByteBuffer(int address, ByteBuffer destination, int length) {
+	public static int readByteBuffer(int address, ByteBuffer destination, int length) {
 		readByteBuffer.start();
 		Buffer source = getMemory().getBuffer(address, length);
-		Utilities.putBuffer(destination, source, ByteOrder.LITTLE_ENDIAN, length);
+		int offset = 0;
+		if (source != null) {
+			if (source instanceof IntBuffer) {
+				offset = address & 3;
+			}
+			Utilities.putBuffer(destination, source, ByteOrder.LITTLE_ENDIAN, length + offset);
+		}
 		readByteBuffer.end();
+		return offset;
 	}
 
 	public static void write32(int address, int value) {
