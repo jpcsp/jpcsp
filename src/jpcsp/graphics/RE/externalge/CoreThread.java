@@ -71,14 +71,27 @@ public class CoreThread extends Thread {
 			PspGeList list = ExternalGE.getCurrentList();
 
 			if (list == null) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("CoreThread no current list available... waiting"));
+				}
+
 				waitForSync(100);
 			} else if (doCoreInterpret || list.waitForSync(100)) {
 				doCoreInterpret = false;
 				NativeUtils.setCoreMadr(list.getPc());
 				NativeUtils.updateMemoryUnsafeAddr();
 
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("CoreThread processing %s", list));
+				}
+
 				while (NativeUtils.coreInterpret()) {
 					NativeUtils.updateMemoryUnsafeAddr();
+
+					if (log.isDebugEnabled()) {
+						list.setPc(NativeUtils.getCoreMadr());
+						log.debug(String.format("CoreThread looping %s", list));
+					}
 
 					if (ExternalGE.enableAsyncRendering && NativeUtils.getRendererIndexCount() > 0) {
 						break;
@@ -105,6 +118,8 @@ public class CoreThread extends Thread {
 				}
 			}
 		}
+
+		log.info(String.format("CoreThread exited"));
 	}
 
 	public void sync() {
@@ -127,6 +142,7 @@ public class CoreThread extends Thread {
 				return false;
 			} catch (InterruptedException e) {
 				// Ignore exception and retry again
+				log.debug(String.format("CoreThread waitForSync %s", e));
 			}
 		}
 

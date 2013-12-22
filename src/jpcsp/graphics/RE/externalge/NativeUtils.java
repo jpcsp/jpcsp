@@ -123,6 +123,7 @@ public class NativeUtils {
 
     	arrayObject[0] = memoryInt;
     	long address = unsafe.getInt(arrayObject, arrayObjectBaseOffset);
+    	address &= 0xFFFFFFFFL;
     	if (address == 0L) {
     		return address;
     	}
@@ -134,11 +135,10 @@ public class NativeUtils {
     	long address = getMemoryUnsafeAddr();
     	if (memoryIntAddress != address) {
     		if (log.isDebugEnabled()) {
-	    		if (memoryIntAddress == 0L) {
-	        		log.debug(String.format("memoryInt at 0x%X", address));
-	        	} else {
-	        		log.debug(String.format("memoryInt MOVED from 0x%X to 0x%X", memoryIntAddress, address));
-	    		}
+        		log.debug(String.format("memoryInt at 0x%X", address));
+    		}
+    		if (log.isInfoEnabled() && memoryIntAddress != 0L) {
+    			log.info(String.format("memoryInt MOVED from 0x%X to 0x%X", memoryIntAddress, address));
     		}
 
     		memoryIntAddress = address;

@@ -379,7 +379,12 @@ public class sceGe_user extends HLEModule {
 	    	PspGeList list = listFreeQueue.poll();
 	    	if (list == null) {
 	    		log.warn("sceGeListEnQueue no more free list available!");
-	    		throw new SceKernelErrorException(SceKernelErrors.ERROR_OUT_OF_MEMORY);
+	    		if (log.isDebugEnabled()) {
+		    		for (int i = 0; i < NUMBER_GE_LISTS; i++) {
+		    			log.debug(String.format("List#%d: %s", i, allGeLists[i]));
+		    		}
+	    		}
+	    		return SceKernelErrors.ERROR_OUT_OF_MEMORY;
 	    	}
 
 	    	list.init(listAddr.getAddress(), stallAddr.getAddress(), cbid, argAddr.getAddress());

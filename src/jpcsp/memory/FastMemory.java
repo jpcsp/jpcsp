@@ -221,7 +221,7 @@ public class FastMemory extends Memory {
 
 		IntBuffer buffer = getMainMemoryByteBuffer();
 		buffer.position(address >> 2);
-		buffer.limit(round4(address + length) >> 2);
+		buffer.limit(round4(round4(address) + length) >> 2);
 
 		return buffer.slice();
 	}
