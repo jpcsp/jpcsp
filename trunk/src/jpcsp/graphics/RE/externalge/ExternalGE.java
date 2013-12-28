@@ -326,7 +326,7 @@ public class ExternalGE {
 		}
 	}
 
-	private static void saveContext(int addr) {
+	public static void saveContext(int addr) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Saving Core context to 0x%08X", addr));
 		}
@@ -334,11 +334,20 @@ public class ExternalGE {
 		NativeUtils.saveCoreContext(addr);
 	}
 
-	private static void restoreContext(int addr) {
+	public static void restoreContext(int addr) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Restoring Core context from 0x%08X", addr));
 		}
 
 		NativeUtils.restoreCoreContext(addr);
+	}
+
+	public static int getCmd(int cmd) {
+		return NativeUtils.getCoreCmdArray(cmd);
+	}
+
+	public static float[] getMatrix(int mtxType) {
+		// TODO Not implemented
+		return null;
 	}
 }

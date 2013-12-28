@@ -29,6 +29,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.memory.IMemoryReader;
@@ -213,6 +214,7 @@ public class PspGeList {
 				return false;
 			} catch (InterruptedException e) {
 				// Ignore exception and retry again
+				sceGe_user.log.debug(String.format("PspGeList waitForSync %s", e));
 			}
     	}
 
