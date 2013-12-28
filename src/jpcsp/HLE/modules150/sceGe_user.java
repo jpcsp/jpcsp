@@ -437,7 +437,12 @@ public class sceGe_user extends HLEModule {
     @HLEFunction(nid = 0xDC93CFEF, version = 150)
     public int sceGeGetCmd(int cmd) {
         VideoEngine ve = VideoEngine.getInstance();
-        int value = ve.getCommandValue(cmd);
+    	int value;
+    	if (ExternalGE.isActive()) {
+    		value = ExternalGE.getCmd(cmd);
+    	} else {
+    		value = ve.getCommandValue(cmd);
+    	}
 
         if (log.isInfoEnabled()) {
         	log.info(String.format("sceGeGetCmd %s: cmd=0x%X, value=0x%06X", ve.commandToString(cmd).toUpperCase(), cmd, value));
@@ -448,8 +453,12 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x57C8945B, version = 150)
     public int sceGeGetMtx(int mtxType, TPointer mtxAddr) {
-        VideoEngine ve = VideoEngine.getInstance();
-        float[] mtx = ve.getMatrix(mtxType);
+    	float[] mtx;
+    	if (ExternalGE.isActive()) {
+    		mtx = ExternalGE.getMatrix(mtxType);
+    	} else {
+    		mtx = VideoEngine.getInstance().getMatrix(mtxType);
+    	}
 
         if (mtx == null) {
         	log.warn(String.format("sceGeGetMtx invalid type mtxType=%d", mtxType));
@@ -469,14 +478,22 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x438A385A, version = 150)
     public int sceGeSaveContext(TPointer contextAddr) {
-    	VideoEngine.getInstance().hleSaveContext(contextAddr.getAddress());
+    	if (ExternalGE.isActive()) {
+    		ExternalGE.saveContext(contextAddr.getAddress());
+    	} else {
+    		VideoEngine.getInstance().hleSaveContext(contextAddr.getAddress());
+    	}
 
     	return 0;
     }
 
     @HLEFunction(nid = 0x0BF608FB, version = 150)
     public int sceGeRestoreContext(TPointer contextAddr) {
-    	VideoEngine.getInstance().hleRestoreContext(contextAddr.getAddress());
+    	if (ExternalGE.isActive()) {
+    		ExternalGE.restoreContext(contextAddr.getAddress());
+    	} else {
+    		VideoEngine.getInstance().hleRestoreContext(contextAddr.getAddress());
+    	}
 
     	return 0;
     }
@@ -651,7 +668,13 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x4C06E472, version = 150)
     public int sceGeContinue() {
-    	PspGeList list = VideoEngine.getInstance().getCurrentList();
+    	PspGeList list;
+    	if (ExternalGE.isActive()) {
+    		list = ExternalGE.getCurrentList();
+    	} else {
+    		list = VideoEngine.getInstance().getCurrentList();
+    	}
+
     	if (list != null) {
     		synchronized (this) {
         		if (list.status == PSP_GE_LIST_END_REACHED) {
