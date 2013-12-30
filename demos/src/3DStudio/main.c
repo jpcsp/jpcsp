@@ -25,7 +25,7 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 #define TEXTURE_WIDTH	128
 #define TEXTURE_HEIGHT	128
 #define NUMBER_MIPMAPS	8
-#define NUMBER_CLUT_ENTRIES	8
+#define NUMBER_CLUT_ENTRIES	16
 
 
 //#define USE_VERTEX_8BIT	1
@@ -425,6 +425,16 @@ unsigned int* texture2[8] = { texture2level0, texture2level1, texture2level2, te
 
 unsigned int __attribute__((aligned(16))) clut1[NUMBER_CLUT_ENTRIES * NUMBER_MIPMAPS];
 unsigned int __attribute__((aligned(16))) clut2[NUMBER_CLUT_ENTRIES * NUMBER_MIPMAPS];
+unsigned int __attribute__((aligned(16))) clut[256];
+
+int clutMask1 = 0xFF;
+int clutMask2 = 0xFF;
+int clutShift1 = 0;
+int clutShift2 = 0;
+int clutStart1 = 0;
+int clutStart2 = 0;
+int clutLoadStart1 = 0;
+int clutLoadStart2 = 0;
 
 int texLevelMode1 = 0;
 int texLevelMode2 = 0;
@@ -1040,6 +1050,16 @@ void drawRectangles()
 
 	if (useClut1 || useClut2)
 	{
+		for (i = 0; i < 256; i++)
+		{
+			struct Color color;
+			color.r = i;
+			color.g = i;
+			color.b = i;
+			color.a = i;
+			clut[i] = getColor(&color);
+		}
+
 		for (i = 0; i < NUMBER_CLUT_ENTRIES; i++)
 		{
 			struct Color color;
@@ -1227,10 +1247,16 @@ void drawRectangles()
 		sceGuFrontFace(frontFace1 - 1);
 	}
 	sceKernelDcacheWritebackAll();
+
+	/* Load complete clut with shades of grey */
+	sceGuClutMode(GU_PSM_8888, 0, 0xFF, 0);
+	sceGuClutLoad(32, clut);
+
 	if (useClut1)
 	{
-		sceGuClutMode(GU_PSM_8888, 0, 0xFF, 0);
-		sceGuClutLoad(NUMBER_CLUT_ENTRIES / 8 * (texture1_a2 ? 16 : 1), clut1);
+		sceGuClutMode(GU_PSM_8888, clutShift1, clutMask1, clutLoadStart1);
+		sceGuClutLoad(NUMBER_CLUT_ENTRIES * NUMBER_MIPMAPS / 8, clut1);
+		sceGuClutMode(GU_PSM_8888, clutShift1, clutMask1, clutStart1);
 	}
 	sceGuTexMode(tpsm1, numberMipmaps, texture1_a2, 0);
 	sceGuTexLevelMode(texLevelMode1, texBias1 / 16.0);
@@ -1363,8 +1389,9 @@ void drawRectangles()
 	}
 	if (useClut2)
 	{
-		sceGuClutMode(GU_PSM_8888, 0, 0xFF, 0);
-		sceGuClutLoad(NUMBER_CLUT_ENTRIES / 8 * (texture2_a2 ? 16 : 1), clut2);
+		sceGuClutMode(GU_PSM_8888, clutShift2, clutMask2, clutLoadStart2);
+		sceGuClutLoad(NUMBER_CLUT_ENTRIES * NUMBER_MIPMAPS / 8, clut2);
+		sceGuClutMode(GU_PSM_8888, clutShift2, clutMask2, clutStart2);
 	}
 	sceGuTexMode(tpsm2, numberMipmaps, texture2_a2, 0);
 	sceGuTexLevelMode(texLevelMode2, texBias2 / 16.0);
@@ -1525,9 +1552,9 @@ void draw()
 
 	pspDebugScreenSetXY(35, 1);
 	if (psm == 3) {
-		pspDebugScreenPrintf("GE (%d,%d)=0x%08X", geTestPixelX, geTestPixelY, geTestPixelValue);
+		pspDebugScreenPrintf("GE (%d,%d)=0x%08X", geTestPixelX, geTestPixelY, (unsigned int) geTestPixelValue);
 	} else {
-		pspDebugScreenPrintf("GE (%d,%d)=0x%04X", geTestPixelX, geTestPixelY, geTestPixelValue);
+		pspDebugScreenPrintf("GE (%d,%d)=0x%04X", geTestPixelX, geTestPixelY, (unsigned int) geTestPixelValue);
 	}
 
 	drawDebugPrintBuffer();
@@ -1809,6 +1836,13 @@ void init()
 	addAttribute(", a2", &texture1_a2, NULL, x + 34, y, 0, 1, 1, NULL);
 	y++;
 
+	addAttribute("Clut Load Start ", &clutLoadStart1, NULL, x + 6, y, 0, 32, 1, NULL);
+	addAttribute(", Start ", &clutStart1, NULL, x + 26, y, 0, 32, 1, NULL);
+	y++;
+	addAttribute("Clut Mask ", &clutMask1, NULL, x + 6, y, 0, 0xFF, 1, "0x%02X");
+	addAttribute(", Shift ", &clutShift1, NULL, x + 22, y, 0, 31, 1, NULL);
+	y++;
+
 	addAttribute("Tex Level Mode", &texLevelMode1, NULL, x + 6, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&texModeNames[0]);
 	addAttribute(", Bias", &texBias1, NULL, x + 38, y, -127, 128, 1, NULL);
@@ -1921,6 +1955,13 @@ void init()
 	addAttribute("Texture Type", &textureType2, NULL, x + 6, y, 0, 5, 1, NULL);
 	setAttributeValueNames(&textureTypeNames[0]);
 	addAttribute(", a2", &texture2_a2, NULL, x + 34, y, 0, 1, 1, NULL);
+	y++;
+
+	addAttribute("Clut Load Start ", &clutLoadStart2, NULL, x + 6, y, 0, 32, 1, NULL);
+	addAttribute(", Start ", &clutStart2, NULL, x + 26, y, 0, 32, 1, NULL);
+	y++;
+	addAttribute("Clut Mask ", &clutMask2, NULL, x + 6, y, 0, 0xFF, 1, "0x%02X");
+	addAttribute(", Shift ", &clutShift2, NULL, x + 22, y, 0, 31, 1, NULL);
 	y++;
 
 	addAttribute("Tex Level Mode", &texLevelMode2, NULL, x + 6, y, 0, 2, 1, NULL);
