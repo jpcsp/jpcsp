@@ -145,6 +145,7 @@ public class SoundVoice {
 		playSample = 0;
 		if (!playing) {
 			envelope.height = 0;
+			off();
 		}
 		this.playing = playing;
 	}
