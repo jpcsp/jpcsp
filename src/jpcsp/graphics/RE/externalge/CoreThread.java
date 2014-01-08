@@ -18,6 +18,9 @@ package jpcsp.graphics.RE.externalge;
 
 import static jpcsp.graphics.GeCommands.END;
 import static jpcsp.graphics.GeCommands.FINISH;
+import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
+import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_FINISH;
+import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_SIGNAL;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -38,9 +41,6 @@ public class CoreThread extends Thread {
 	private static CoreThread instance;
 	private volatile boolean exit;
 	private Semaphore sync;
-	private static final int INTR_STAT_SIGNAL = 0x1;
-	private static final int INTR_STAT_END    = 0x2;
-	private static final int INTR_STAT_FINISH = 0x4;
 
 	public static CoreThread getInstance() {
 		if (instance == null) {

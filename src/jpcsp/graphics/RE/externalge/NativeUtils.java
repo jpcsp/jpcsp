@@ -49,6 +49,10 @@ public class NativeUtils {
     public static final int EVENT_GE_WAIT_FOR_LIST     = 4;
     public static final int EVENT_DISPLAY_WAIT_VBLANK  = 5;
     public static final int EVENT_DISPLAY_VBLANK       = 6;
+	public static final int INTR_STAT_SIGNAL = 0x1;
+	public static final int INTR_STAT_END    = 0x2;
+	public static final int INTR_STAT_FINISH = 0x4;
+	public static final int CTRL_ACTIVE      = 0x1;
 
 	public static void init() {
 		if (!isInitialized) {
@@ -190,7 +194,11 @@ public class NativeUtils {
     	return result;
     }
 
-    public static native int initNative();
+	public static boolean isCoreCtrlActive() {
+		return (getCoreCtrl() & CTRL_ACTIVE) != 0;
+	}
+
+	public static native int initNative();
     public static native boolean coreInterpret();
     public static native int getCoreCtrl();
     public static native void setCoreCtrl(int ctrl);

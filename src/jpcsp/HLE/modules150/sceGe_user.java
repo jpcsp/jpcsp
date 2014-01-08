@@ -479,10 +479,10 @@ public class sceGe_user extends HLEModule {
     @HLEFunction(nid = 0x438A385A, version = 150)
     public int sceGeSaveContext(TPointer contextAddr) {
     	if (ExternalGE.isActive()) {
-    		ExternalGE.saveContext(contextAddr.getAddress());
-    	} else {
-    		VideoEngine.getInstance().hleSaveContext(contextAddr.getAddress());
+    		return ExternalGE.saveContext(contextAddr.getAddress());
     	}
+
+    	VideoEngine.getInstance().hleSaveContext(contextAddr.getAddress());
 
     	return 0;
     }
@@ -490,10 +490,10 @@ public class sceGe_user extends HLEModule {
     @HLEFunction(nid = 0x0BF608FB, version = 150)
     public int sceGeRestoreContext(TPointer contextAddr) {
     	if (ExternalGE.isActive()) {
-    		ExternalGE.restoreContext(contextAddr.getAddress());
-    	} else {
-    		VideoEngine.getInstance().hleRestoreContext(contextAddr.getAddress());
+    		return ExternalGE.restoreContext(contextAddr.getAddress());
     	}
+
+    	VideoEngine.getInstance().hleRestoreContext(contextAddr.getAddress());
 
     	return 0;
     }
