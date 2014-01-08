@@ -40,6 +40,7 @@ import jpcsp.media.MediaEngine;
 import jpcsp.settings.Settings;
 
 import com.xuggle.xuggler.Global;
+import com.xuggle.xuggler.IAudioResampler;
 import com.xuggle.xuggler.IAudioSamples;
 import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IContainer;
@@ -52,6 +53,7 @@ import com.xuggle.xuggler.IVideoResampler;
 import com.xuggle.xuggler.video.ConverterFactory;
 import com.xuggle.xuggler.video.IConverter;
 import jpcsp.util.Constants;
+import jpcsp.util.Utilities;
 
 public class UmdBrowserPmf {
 
@@ -59,7 +61,8 @@ public class UmdBrowserPmf {
     private UmdIsoFile isoFile;
     private String fileName;
     private IContainer container;
-    private IVideoResampler resampler;
+    private IAudioResampler audioResampler;
+    private IVideoResampler videoResampler;
     private int videoStreamId;
     private IStreamCoder videoCoder;
     private int audioStreamId;
@@ -179,21 +182,26 @@ public class UmdBrowserPmf {
             return false;
         }
         if (audioCoder != null && streamCoderOpen(audioCoder) < 0) {
-            Emulator.log.info("AT3+ audio format is not yet supported by Jpcsp (file=" + fileName + ")");
+            Emulator.log.info("could not open audio decoder for container: " + fileName);
+            return false;
+        }
+        if (!Settings.getInstance().readBool("emu.useAtrac3plus")) {
+            Emulator.log.info("Unsupported Atrac3+ data!");
             return false;
         }
 
-        resampler = null;
+        videoResampler = null;
+        audioResampler = null;
         if (videoCoder != null) {
             converter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, IPixelFormat.Type.BGR24, videoCoder.getWidth(), videoCoder.getHeight());
 
             if (videoCoder.getPixelType() != IPixelFormat.Type.BGR24 || videoCoder.getWidth() != Constants.ICON0_WIDTH || videoCoder.getHeight() != Constants.ICON0_HEIGHT) {
                 // if this stream is not in BGR24, we're going to need to
                 // convert it.  The VideoResampler does that for us.
-                resampler = IVideoResampler.make(Constants.ICON0_WIDTH, Constants.ICON0_HEIGHT, IPixelFormat.Type.BGR24,
+                videoResampler = IVideoResampler.make(Constants.ICON0_WIDTH, Constants.ICON0_HEIGHT, IPixelFormat.Type.BGR24,
                         videoCoder.getWidth(), videoCoder.getHeight(), videoCoder.getPixelType());
 
-                if (resampler == null) {
+                if (videoResampler == null) {
                     Emulator.log.error("could not create color space resampler for: " + fileName);
                     return false;
                 }
@@ -201,6 +209,17 @@ public class UmdBrowserPmf {
         }
 
         if (audioCoder != null) {
+            // If the audio is Atrac3+, we must resample it first.
+            if (audioCoder.getSampleFormat() == IAudioSamples.Format.FMT_FLTP) {
+                audioResampler = IAudioResampler.make(audioCoder.getChannels(), audioCoder.getChannels(),
+                audioCoder.getSampleRate(), audioCoder.getSampleRate(),
+                IAudioSamples.Format.FMT_S16, audioCoder.getSampleFormat());
+                
+                if (audioResampler == null) {
+                    Emulator.log.error("could not create audio resampler for: " + fileName);
+                    return false;
+                }
+            }
             openAudio(audioCoder);
         }
 
@@ -221,10 +240,15 @@ public class UmdBrowserPmf {
             videoCoder.close();
             videoCoder = null;
         }
+        
+        if (audioResampler != null) {
+            audioResampler.delete();
+            audioResampler = null;
+        }
 
-        if (resampler != null) {
-            resampler.delete();
-            resampler = null;
+        if (videoResampler != null) {
+            videoResampler.delete();
+            videoResampler = null;
         }
 
         if (converter != null) {
@@ -302,10 +326,10 @@ public class UmdBrowserPmf {
                          * video in BGR24 format and
                          * need to convert it into BGR24 format.
                          */
-                        if (resampler != null) {
+                        if (videoResampler != null) {
                             // we must resample
-                            newPic = IVideoPicture.make(resampler.getOutputPixelFormat(), resampler.getOutputWidth(), resampler.getOutputHeight());
-                            if (resampler.resample(newPic, picture) < 0) {
+                            newPic = IVideoPicture.make(videoResampler.getOutputPixelFormat(), videoResampler.getOutputWidth(), videoResampler.getOutputHeight());
+                            if (videoResampler.resample(newPic, picture) < 0) {
                                 throw new RuntimeException("could not resample video from: " + fileName);
                             }
                         }
@@ -385,8 +409,18 @@ public class UmdBrowserPmf {
                      * a full set of samples yet.  Therefore you should always check if you
                      * got a complete set of samples from the decoder
                      */
-                    if (samples.isComplete()) {
-                        playAudio(samples);
+                    if (samples.isComplete()) { 
+                        if (audioResampler != null) {
+                            IAudioSamples newSamples = samples;
+                            int samplesSize = samples.getSize();
+                            newSamples = IAudioSamples.make(samplesSize, samples.getChannels());
+                            if (audioResampler.resample(newSamples, samples, samplesSize) < 0) {
+                                throw new RuntimeException("could not resample audio from: " + fileName);
+                            }
+                            playAtrac3plusAudio(newSamples);
+                        } else {
+                            playAudio(samples);
+                        }
                     }
                 }
             }
@@ -397,7 +431,7 @@ public class UmdBrowserPmf {
 
     private void openAudio(IStreamCoder aAudioCoder) {
         AudioFormat audioFormat = new AudioFormat(aAudioCoder.getSampleRate(),
-                (int) IAudioSamples.findSampleBitDepth(aAudioCoder.getSampleFormat()),
+                16,
                 aAudioCoder.getChannels(),
                 true, /* xuggler defaults to signed 16 bit samples */
                 false);
@@ -422,6 +456,21 @@ public class UmdBrowserPmf {
          * We're just going to dump all the samples into the line.
          */
         byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
+        mLine.write(rawBytes, 0, aSamples.getSize());
+    }
+    
+    private void playAtrac3plusAudio(IAudioSamples aSamples) {
+        int samplesSize = aSamples.getSize();
+        byte[] rawBytes = aSamples.getData().getByteArray(0, samplesSize);
+        
+         // Fix the audio panning (Xuggler bug).
+    	for (int i = 0, j = 0; i < samplesSize - 2; i++, j++) {
+    		int src1 = Utilities.read8(rawBytes, j);
+    		int src2 = Utilities.read8(rawBytes, j + 2);
+    		int src = (src1 + src2);
+    		rawBytes[i] = (byte) (src & 0xFF);
+    	}
+        
         mLine.write(rawBytes, 0, aSamples.getSize());
     }
 

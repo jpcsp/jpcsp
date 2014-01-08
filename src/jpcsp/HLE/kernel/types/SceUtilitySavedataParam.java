@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
+import jpcsp.Emulator;
 
 import jpcsp.Memory;
 import jpcsp.memory.IMemoryReader;
@@ -38,6 +39,7 @@ import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.format.PSF;
 import jpcsp.hardware.MemoryStick;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
@@ -587,6 +589,13 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
         // Write main data.
         if (CryptoEngine.getSavedataCryptoStatus()) {
+            if (CryptoEngine.getExtractSavedataKeyStatus()) {
+                String tmpPath = Settings.getInstance().getDiscTmpDirectory();
+                new File(tmpPath).mkdirs();
+                SeekableRandomFile keyFileOutput = new SeekableRandomFile(tmpPath + "SDKEY.bin", "rw");
+                keyFileOutput.write(key, 0, key.length);
+                keyFileOutput.close();
+            }
             writeEncryptedFile(mem, path, fileName, dataBuf, dataSize, key);
         } else {
             writeFile(mem, path, fileName, dataBuf, dataSize);

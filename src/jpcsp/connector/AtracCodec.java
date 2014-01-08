@@ -1,18 +1,18 @@
 /*
-This file is part of jpcsp.
+ This file is part of jpcsp.
 
-Jpcsp is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+ Jpcsp is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-Jpcsp is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ Jpcsp is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.connector;
 
@@ -51,14 +51,24 @@ import org.apache.log4j.Logger;
  *
  */
 public class AtracCodec {
-	private static Logger log = sceAtrac3plus.log;
 
-	private class EnableMediaEngineSettingsListerner extends AbstractBoolSettingsListener {
-		@Override
-		protected void settingsValueChanged(boolean value) {
-			setEnableMediaEngine(value);
-		}
-	}
+    private static Logger log = sceAtrac3plus.log;
+
+    private class EnableMediaEngineSettingsListerner extends AbstractBoolSettingsListener {
+
+        @Override
+        protected void settingsValueChanged(boolean value) {
+            setEnableMediaEngine(value);
+        }
+    }
+
+    private class EnableAtrac3plusSettingsListerner extends AbstractBoolSettingsListener {
+
+        @Override
+        protected void settingsValueChanged(boolean value) {
+            setEnableAtrac3plus(value);
+        }
+    }
 
     protected String id;
     protected static final String atracSuffix = ".at3";
@@ -81,13 +91,14 @@ public class AtracCodec {
     // Media Engine based playback.
     protected MediaEngine me;
     protected PacketChannel atracChannel;
-	// The MediaEngine requires at least 3 * 0x8000 data bytes available
-	// during initialization. Otherwise, it will assume to have reached
-	// the end of the channel and will not further read.
-	// The readRetryCount of the container does not help.
+    // The MediaEngine requires at least 3 * 0x8000 data bytes available
+    // during initialization. Otherwise, it will assume to have reached
+    // the end of the channel and will not further read.
+    // The readRetryCount of the container does not help.
     protected int atracChannelStartLength = 3 * 0x8000;
     protected int currentLoopCount;
     protected boolean useMediaEngine = false;
+    protected boolean useAtrac3plus = false;
     protected byte[] samplesBuffer;
     protected int samplesChannels = 2;
     protected int bytesPerSample = 4;
@@ -96,9 +107,10 @@ public class AtracCodec {
     private static final String name = "AtracCodec";
 
     public AtracCodec() {
-    	Settings.getInstance().registerSettingsListener(name, "emu.useMediaEngine", new EnableMediaEngineSettingsListerner());
+        Settings.getInstance().registerSettingsListener(name, "emu.useMediaEngine", new EnableMediaEngineSettingsListerner());
+        Settings.getInstance().registerSettingsListener(name, "emu.useAtrac3plus", new EnableAtrac3plusSettingsListerner());
 
-    	if (useMediaEngine()) {
+        if (useMediaEngine()) {
             me = new MediaEngine();
             atracChannel = new PacketChannel();
             currentLoopCount = 0;
@@ -120,14 +132,22 @@ public class AtracCodec {
         useMediaEngine = state;
     }
 
+    protected boolean useAtrac3plus() {
+        return useAtrac3plus;
+    }
+
+    private void setEnableAtrac3plus(boolean state) {
+        useAtrac3plus = state;
+    }
+
     public void setAtracMaxSamples(int atracMaxSamples) {
-    	if (this.atracMaxSamples != atracMaxSamples) {
-	    	this.atracMaxSamples = atracMaxSamples;
-	    	if (useMediaEngine() && me != null) {
-	    		me.setAudioSamplesSize(atracMaxSamples);
-	    	}
-	    	createBuffers();
-    	}
+        if (this.atracMaxSamples != atracMaxSamples) {
+            this.atracMaxSamples = atracMaxSamples;
+            if (useMediaEngine() && me != null) {
+                me.setAudioSamplesSize(atracMaxSamples);
+            }
+            createBuffers();
+        }
     }
 
     private void createBuffers() {
@@ -136,11 +156,11 @@ public class AtracCodec {
     }
 
     protected void setChannels(int channels) {
-    	if (channels != samplesChannels) {
-    		samplesChannels = channels;
-    		bytesPerSample = channels * 2;
-    		createBuffers();
-    	}
+        if (channels != samplesChannels) {
+            samplesChannels = channels;
+            bytesPerSample = channels * 2;
+            createBuffers();
+        }
     }
 
     protected String generateID(int address, int length, int fileSize) {
@@ -206,13 +226,13 @@ public class AtracCodec {
     }
 
     public void setRequireAllAtracData() {
-    	requireAllAtracData = true;
+        requireAllAtracData = true;
     }
 
     public void atracSetData(int atracID, int codecType, int address, int length, int atracFileSize, int atracHash) {
-    	this.atracFileSize = atracFileSize;
-    	this.atracBufferAddress = address;
-    	this.atracHash = atracHash;
+        this.atracFileSize = atracFileSize;
+        this.atracBufferAddress = address;
+        this.atracHash = atracHash;
         id = generateID(address, length, atracFileSize);
         closeStreams();
         atracEndSample = -1;
@@ -220,54 +240,62 @@ public class AtracCodec {
 
         int memoryCodecType = sceAtrac3plus.getCodecType(address);
         if (memoryCodecType != codecType && memoryCodecType != 0) {
-        	log.info(String.format("Different CodecType received %d != %d, assuming %d", codecType, memoryCodecType, memoryCodecType));
-        	codecType = memoryCodecType;
+            log.info(String.format("Different CodecType received %d != %d, assuming %d", codecType, memoryCodecType, memoryCodecType));
+            codecType = memoryCodecType;
         }
 
         if (codecType == PSP_CODEC_AT3) {
             log.info("Decodable AT3 data detected.");
             if (checkMediaEngineState()) {
                 me.finish();
-                IVirtualFile extractedFile = externalDecoder.extractAtrac(address, length, atracFileSize, atracHash); 
+                IVirtualFile extractedFile = externalDecoder.extractAtrac(address, length, atracFileSize, atracHash);
                 if (extractedFile == null) {
-	                atracChannel = new PacketChannel();
-	                atracChannel.setTotalStreamSize(atracFileSize);
-	                atracChannel.setFarRewindAllowed(true);
-	                atracChannel.write(address, length);
-	                // Defer the initialization of the MediaEngine until atracDecodeData()
-	                // to ensure we have enough data into the channel.
-	                atracEndSample = 0;
+                    atracChannel = new PacketChannel();
+                    atracChannel.setTotalStreamSize(atracFileSize);
+                    atracChannel.setFarRewindAllowed(true);
+                    atracChannel.write(address, length);
+                    // Defer the initialization of the MediaEngine until atracDecodeData()
+                    // to ensure we have enough data into the channel.
+                    atracEndSample = 0;
                 } else {
-                	log.info(String.format("Playing AT3 file '%s'", extractedFile));
-        			atracChannel = null;
-        			me.init(new VirtualFileProtocolHandler(extractedFile), false, true, 0, 0);
+                    log.info(String.format("Playing AT3 file '%s'", extractedFile));
+                    atracChannel = null;
+                    me.init(new VirtualFileProtocolHandler(extractedFile), false, true, 0, 0);
                     atracEndSample = -1;
                 }
                 return;
             }
         } else if (codecType == PSP_CODEC_AT3PLUS) {
-        	if (checkMediaEngineState() && ExternalDecoder.isEnabled()) {
-        		IVirtualFile decodedFile = externalDecoder.decodeAtrac(address, length, atracFileSize, atracHash, this);
-        		if (decodedFile != null) {
-        			log.info(String.format("AT3+ data decoded by the external decoder, using '%s'.", decodedFile));
-        			me.finish();
-        			atracChannel = null;
-        			me.init(new VirtualFileProtocolHandler(decodedFile), false, true, 0, 0);
-                    atracEndSample = -1;
-        			return;
-        		} else if (requireAllAtracData) {
-        			// The external decoder requires all the atrac data
-        			// before it can try to decode the atrac.
-        			me.finish();
-        			atracChannel = new PacketChannel();
-        			atracChannel.setTotalStreamSize(atracFileSize);
-        			atracChannel.write(address, length);
-        			return;
-        		}
-    			log.info("AT3+ data could not be decoded by the external decoder.");
-        	} else {
-        		log.info("Undecodable AT3+ data detected.");
-        	}
+            if (checkMediaEngineState()) {
+                if (useAtrac3plus()) {
+                    me.finish();
+                    atracChannel = new PacketChannel();
+                    atracChannel.setTotalStreamSize(atracFileSize);
+                    atracChannel.write(address, length);
+                    return;
+                } else if (ExternalDecoder.isEnabled()) {
+                    IVirtualFile decodedFile = externalDecoder.decodeAtrac(address, length, atracFileSize, atracHash, this);
+                    if (decodedFile != null) {
+                        log.info(String.format("AT3+ data decoded by the external decoder, using '%s'.", decodedFile));
+                        me.finish();
+                        atracChannel = null;
+                        me.init(new VirtualFileProtocolHandler(decodedFile), false, true, 0, 0);
+                        atracEndSample = -1;
+                        return;
+                    } else if (requireAllAtracData) {
+                        // The external decoder requires all the atrac data
+                        // before it can try to decode the atrac.
+                        me.finish();
+                        atracChannel = new PacketChannel();
+                        atracChannel.setTotalStreamSize(atracFileSize);
+                        atracChannel.write(address, length);
+                        return;
+                    }
+                    log.info("AT3+ data could not be decoded by the external decoder.");
+                } else {
+                    log.info("Undecodable AT3+ data detected.");
+                }
+            }
         }
         me = null;
 
@@ -344,9 +372,9 @@ public class AtracCodec {
 
     public void atracAddStreamData(int address, int length) {
         if (checkMediaEngineState()) {
-        	if (atracChannel != null) {
-        		atracChannel.write(address, length);
-        	}
+            if (atracChannel != null) {
+                atracChannel.write(address, length);
+            }
             return;
         }
 
@@ -369,69 +397,69 @@ public class AtracCodec {
         atracEnd = false;
 
         if (checkMediaEngineState()) {
-        	if (me.getContainer() == null && atracChannel != null) {
-        		if (requireAllAtracData) {
-        			if (atracChannel.length() >= atracFileSize) {
-        				requireAllAtracData = false;
-        	        	if (checkMediaEngineState() && ExternalDecoder.isEnabled()) {
-        	        		String decodedFile = externalDecoder.decodeAtrac(atracChannel, atracBufferAddress, atracFileSize, atracHash);
-        	        		if (decodedFile != null) {
-        	        			log.info("AT3+ data decoded by the external decoder (all AT3+ data retrieved).");
-        	        			me.finish();
-        	        			atracChannel = null;
-        	        			me.init(new FileProtocolHandler(decodedFile), false, true, 0, 0);
-        	                    atracEndSample = -1;
-        	        		} else {
-        	        			log.info("AT3+ data could not be decoded by the external decoder, even after retrieving all AT3+ data.");
-        	        			me = null;
-        	        		}
-        	        	} else {
-    	        			log.info("AT3+ data could not be decoded by the external decoder, even after retrieving all AT3+ data.");
-        	        		me = null;
-        	        	}
-        	        	if (me == null) {
-        	        		return atracDecodeData(atracID, address, channels);
-        	        	}
-        			} else {
-        				// Fake returning 1 sample with remainFrames == 0
-        				// to force a call to sceAtracAddStreamData.
-        				samples = 1;
-        				if (address != 0) {
-        					Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample);
-        				}
-        			}
-        		} else if (atracChannel.length() >= getAtracChannelStartLength() || atracChannel.length() >= atracFileSize) {
-    				me.init(atracChannel, false, true, 0, 0);
-    			} else {
-    				// Fake returning 1 sample with remainFrames == 0
-    				// to force a call to sceAtracAddStreamData.
-    				samples = 1;
-    				if (address != 0) {
-    					Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample);
-    				}
-    			}
-        	}
-        	setChannels(channels);
-            if (me.stepAudio(atracMaxSamples * bytesPerSample, channels)) {
-            	samples = copySamplesToMem(address);
+            if (me.getContainer() == null && atracChannel != null) {
+                if (requireAllAtracData) {
+                    if (atracChannel.length() >= atracFileSize) {
+                        requireAllAtracData = false;
+                        if (checkMediaEngineState() && ExternalDecoder.isEnabled()) {
+                            String decodedFile = externalDecoder.decodeAtrac(atracChannel, atracBufferAddress, atracFileSize, atracHash);
+                            if (decodedFile != null) {
+                                log.info("AT3+ data decoded by the external decoder (all AT3+ data retrieved).");
+                                me.finish();
+                                atracChannel = null;
+                                me.init(new FileProtocolHandler(decodedFile), false, true, 0, 0);
+                                atracEndSample = -1;
+                            } else {
+                                log.info("AT3+ data could not be decoded by the external decoder, even after retrieving all AT3+ data.");
+                                me = null;
+                            }
+                        } else {
+                            log.info("AT3+ data could not be decoded by the external decoder, even after retrieving all AT3+ data.");
+                            me = null;
+                        }
+                        if (me == null) {
+                            return atracDecodeData(atracID, address, channels);
+                        }
+                    } else {
+                        // Fake returning 1 sample with remainFrames == 0
+                        // to force a call to sceAtracAddStreamData.
+                        samples = 1;
+                        if (address != 0) {
+                            Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample);
+                        }
+                    }
+                } else if (atracChannel.length() >= getAtracChannelStartLength() || atracChannel.length() >= atracFileSize) {
+                    me.init(atracChannel, false, true, 0, 0);
+                } else {
+                    // Fake returning 1 sample with remainFrames == 0
+                    // to force a call to sceAtracAddStreamData.
+                    samples = 1;
+                    if (address != 0) {
+                        Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample);
+                    }
+                }
             }
-        	if (samples == 0) {
-        		atracEnd = true;
-        	}
+            setChannels(channels);
+            if (me.stepAudio(atracMaxSamples * bytesPerSample, channels)) {
+                samples = copySamplesToMem(address);
+            }
+            if (samples == 0) {
+                atracEnd = true;
+            }
         } else if (decodedStream != null) {
             try {
                 int length = decodedStream.read(atracDecodeBuffer);
                 if (length > 0) {
                     samples = length / 4;
                     if (address != 0) {
-                    	Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(atracDecodeBuffer, 0, length), length);
+                        Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(atracDecodeBuffer, 0, length), length);
                     }
                     long restLength = decodedStream.length() - decodedStream.getFilePointer();
                     if (restLength <= 0) {
-                    	atracEnd = true;
+                        atracEnd = true;
                     }
                 } else {
-                	atracEnd = true;
+                    atracEnd = true;
                 }
             } catch (IOException e) {
                 log.warn(e);
@@ -459,25 +487,25 @@ public class AtracCodec {
     }
 
     public int getChannelLength() {
-    	if (atracChannel == null) {
-    		// External audio
-    		return atracFileSize;
-    	}
-    	return atracChannel.length();
+        if (atracChannel == null) {
+            // External audio
+            return atracFileSize;
+        }
+        return atracChannel.length();
     }
 
     public int getChannelPosition() {
-    	if (atracChannel == null) {
-    		return -1;
-    	}
-    	return (int) atracChannel.getPosition();
+        if (atracChannel == null) {
+            return -1;
+        }
+        return (int) atracChannel.getPosition();
     }
 
     public void resetChannel() {
-    	if (atracChannel == null) {
-    		return;
-    	}
-    	atracChannel.reset();
+        if (atracChannel == null) {
+            return;
+        }
+        atracChannel.reset();
     }
 
     public boolean getAtracEnd() {
@@ -499,7 +527,7 @@ public class AtracCodec {
         if (bytes > 0) {
             atracEndSample += bytes;
             if (address != 0) {
-            	mem.copyToMemory(address, ByteBuffer.wrap(samplesBuffer, 0, bytes), bytes);
+                mem.copyToMemory(address, ByteBuffer.wrap(samplesBuffer, 0, bytes), bytes);
             }
         }
 
@@ -512,7 +540,7 @@ public class AtracCodec {
     }
 
     public boolean isExternalAudio() {
-    	return atracChannel == null;
+        return atracChannel == null;
     }
 
     protected void displayInstructions() {
@@ -538,11 +566,11 @@ public class AtracCodec {
         instructionsDisplayed = true;
     }
 
-	public int getAtracChannelStartLength() {
-		return atracChannelStartLength;
-	}
+    public int getAtracChannelStartLength() {
+        return atracChannelStartLength;
+    }
 
-	public void setAtracChannelStartLength(int atracChannelStartLength) {
-		this.atracChannelStartLength = atracChannelStartLength;
-	}
+    public void setAtracChannelStartLength(int atracChannelStartLength) {
+        this.atracChannelStartLength = atracChannelStartLength;
+    }
 }

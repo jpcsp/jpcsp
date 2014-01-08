@@ -24,16 +24,27 @@ public class CryptoEngine {
 
     private static final String name = "CryptEngine";
     private static boolean isCryptoEngineInit;
-    private static boolean extractEboot;
     private static boolean cryptoSavedata;
+    private static boolean extractEboot;
+    private static boolean extractSavedataKey;
+    private static boolean extractPGD;
     private static KIRK kirk;
     private static PRX prx;
     private static SAVEDATA sd;
     private static AMCTRL amctrl;
     private static PGD pgd;
     private static DRM drm;
-    private static ExtractEbootSettingsListerner extractEbootSettingsListerner;
     private static CryptSavedataSettingsListerner cryptSavedataSettingsListerner;
+    private static ExtractEbootSettingsListerner extractEbootSettingsListerner;
+    private static ExtractSavedataKeySettingsListerner extractSavedataKeySettingsListerner;
+    
+    private static class CryptSavedataSettingsListerner extends AbstractBoolSettingsListener {
+
+        @Override
+        protected void settingsValueChanged(boolean value) {
+            setSavedataCryptoStatus(!value);
+        }
+    }
     
     private static class ExtractEbootSettingsListerner extends AbstractBoolSettingsListener {
 
@@ -42,12 +53,12 @@ public class CryptoEngine {
             setExtractEbootStatus(value);
         }
     }
-
-    private static class CryptSavedataSettingsListerner extends AbstractBoolSettingsListener {
+    
+    private static class ExtractSavedataKeySettingsListerner extends AbstractBoolSettingsListener {
 
         @Override
         protected void settingsValueChanged(boolean value) {
-            setSavedataCryptoStatus(value);
+            setExtractSavedataKeyStatus(value);
         }
     }
 
@@ -87,13 +98,17 @@ public class CryptoEngine {
     }
 
     private static void installSettingsListeners() {
+        if (cryptSavedataSettingsListerner == null) {
+            cryptSavedataSettingsListerner = new CryptSavedataSettingsListerner();
+            Settings.getInstance().registerSettingsListener(name, "emu.cryptoSavedata", cryptSavedataSettingsListerner);
+        }
         if (extractEbootSettingsListerner == null) {
             extractEbootSettingsListerner = new ExtractEbootSettingsListerner();
             Settings.getInstance().registerSettingsListener(name, "emu.extractEboot", extractEbootSettingsListerner);
         }
-        if (cryptSavedataSettingsListerner == null) {
-            cryptSavedataSettingsListerner = new CryptSavedataSettingsListerner();
-            Settings.getInstance().registerSettingsListener(name, "emu.cryptoSavedata", cryptSavedataSettingsListerner);
+        if (extractSavedataKeySettingsListerner == null) {
+            extractSavedataKeySettingsListerner = new ExtractSavedataKeySettingsListerner();
+            Settings.getInstance().registerSettingsListener(name, "emu.extractSavedataKey", extractSavedataKeySettingsListerner);
         }
     }
 
@@ -115,6 +130,15 @@ public class CryptoEngine {
 
     private static void setExtractEbootStatus(boolean status) {
         extractEboot = status;
+    }
+    
+    public static boolean getExtractSavedataKeyStatus() {
+        installSettingsListeners();
+        return extractSavedataKey;
+    }
+
+    private static void setExtractSavedataKeyStatus(boolean status) {
+        extractSavedataKey = status;
     }
 
     public static boolean getSavedataCryptoStatus() {
