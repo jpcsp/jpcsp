@@ -127,6 +127,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(extractEboot, "emu.extractEboot");
         setBoolFromSettings(cryptoSavedata, "emu.cryptoSavedata");
         setBoolFromSettings(extractPGD, "emu.extractPGD");
+        setBoolFromSettings(extractSavedataKey, "emu.extractSavedataKey");
+        setBoolFromSettings(useAtrac3plus, "emu.useAtrac3plus");
         setStringFromSettings(antiAliasingBox, "emu.graphics.antialias");
         setStringFromSettings(resolutionBox, "emu.graphics.resolution");
         setStringFromSettings(tmppath, "emu.tmppath");
@@ -247,6 +249,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(extractEboot, "emu.extractEboot");
         setBoolToSettings(cryptoSavedata, "emu.cryptoSavedata");
         setBoolToSettings(extractPGD, "emu.extractPGD");
+        setBoolToSettings(extractSavedataKey, "emu.extractSavedataKey");
+        setBoolToSettings(useAtrac3plus, "emu.useAtrac3plus");
         setStringToSettings(antiAliasingBox, "emu.graphics.antialias");
         setStringToSettings(resolutionBox, "emu.graphics.resolution");
         setStringToSettings(tmppath, "emu.tmppath");
@@ -484,27 +488,29 @@ public class SettingsGUI extends javax.swing.JFrame {
         MemoryPanel = new javax.swing.JPanel();
         invalidMemoryCheck = new javax.swing.JCheckBox();
         ignoreUnmappedImports = new javax.swing.JCheckBox();
-        MiscPanel = new javax.swing.JPanel();
-        useMediaEngine = new javax.swing.JCheckBox();
-        useConnector = new javax.swing.JCheckBox();
-        useExternalDecoder = new javax.swing.JCheckBox();
-        useDebugFont = new javax.swing.JCheckBox();
         useDebugMemory = new javax.swing.JCheckBox();
         CompilerPanel = new javax.swing.JPanel();
         useCompiler = new javax.swing.JCheckBox();
         methodMaxInstructionsBox = new javax.swing.JComboBox();
         profilerCheck = new javax.swing.JCheckBox();
         methodMaxInstructionsLabel = new javax.swing.JLabel();
-        CryptoPanel = new javax.swing.JPanel();
-        extractEboot = new javax.swing.JCheckBox();
-        cryptoSavedata = new javax.swing.JCheckBox();
-        extractPGD = new javax.swing.JCheckBox();
         DisplayPanel = new javax.swing.JPanel();
         antiAliasLabel = new javax.swing.JLabel();
         antiAliasingBox = new javax.swing.JComboBox();
         resolutionLabel = new javax.swing.JLabel();
         resolutionBox = new javax.swing.JComboBox();
         fullscreenCheck = new javax.swing.JCheckBox();
+        MiscPanel = new javax.swing.JPanel();
+        useMediaEngine = new javax.swing.JCheckBox();
+        useConnector = new javax.swing.JCheckBox();
+        useExternalDecoder = new javax.swing.JCheckBox();
+        useDebugFont = new javax.swing.JCheckBox();
+        useAtrac3plus = new javax.swing.JCheckBox();
+        CryptoPanel = new javax.swing.JPanel();
+        extractEboot = new javax.swing.JCheckBox();
+        cryptoSavedata = new javax.swing.JCheckBox();
+        extractPGD = new javax.swing.JCheckBox();
+        extractSavedataKey = new javax.swing.JCheckBox();
         cancelButton = new jpcsp.GUI.CancelButton();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
@@ -588,13 +594,13 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(431, 431, 431))
                     .addGroup(GeneralPanelLayout.createSequentialGroup()
-                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 258, Short.MAX_VALUE)
+                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 1044, Short.MAX_VALUE)
                         .addGap(493, 493, 493))
                     .addGroup(GeneralPanelLayout.createSequentialGroup()
                         .addComponent(loadAndRunCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(489, 489, 489))
                     .addGroup(GeneralPanelLayout.createSequentialGroup()
-                        .addComponent(umdBrowser, javax.swing.GroupLayout.DEFAULT_SIZE, 171, Short.MAX_VALUE)
+                        .addComponent(umdBrowser, javax.swing.GroupLayout.DEFAULT_SIZE, 955, Short.MAX_VALUE)
                         .addGap(582, 582, 582))
                     .addGroup(GeneralPanelLayout.createSequentialGroup()
                         .addComponent(classicUmdDialog, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -652,7 +658,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(modelLabel)
                     .addComponent(modelBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(117, Short.MAX_VALUE))
+                .addContainerGap(116, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.GeneralPanel.title"), GeneralPanel); // NOI18N
@@ -666,7 +672,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 366, Short.MAX_VALUE)
+            .addGap(0, 758, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -691,7 +697,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 366, Short.MAX_VALUE)
+            .addGap(0, 758, Short.MAX_VALUE)
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -704,7 +710,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         jPanel5.setLayout(jPanel5Layout);
         jPanel5Layout.setHorizontalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 366, Short.MAX_VALUE)
+            .addGap(0, 758, Short.MAX_VALUE)
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -720,7 +726,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 366, Short.MAX_VALUE)
+            .addGap(0, 758, Short.MAX_VALUE)
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -778,7 +784,7 @@ public class SettingsGUI extends javax.swing.JFrame {
             RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(RegionPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 743, Short.MAX_VALUE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 1527, Short.MAX_VALUE)
                 .addContainerGap())
         );
         RegionPanelLayout.setVerticalGroup(
@@ -839,7 +845,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(useExternalSoftwareRenderer)
                     .addComponent(useOpenglRenderer)
                     .addComponent(useSoftwareRenderer))
-                .addGap(0, 546, Short.MAX_VALUE))
+                .addGap(0, 1330, Short.MAX_VALUE))
         );
         renderPanelLayout.setVerticalGroup(
             renderPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -863,7 +869,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addGroup(VideoPanelLayout.createSequentialGroup()
                         .addGroup(VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(VideoPanelLayout.createSequentialGroup()
-                                .addComponent(disableVBOCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 421, Short.MAX_VALUE)
+                                .addComponent(disableVBOCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 1205, Short.MAX_VALUE)
                                 .addGap(315, 315, 315))
                             .addGroup(VideoPanelLayout.createSequentialGroup()
                                 .addComponent(onlyGEGraphicsCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -872,7 +878,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                                 .addComponent(useVertexCache, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGap(575, 575, 575))
                             .addGroup(VideoPanelLayout.createSequentialGroup()
-                                .addComponent(shadersCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 130, Short.MAX_VALUE)
+                                .addComponent(shadersCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 914, Short.MAX_VALUE)
                                 .addGap(606, 606, 606))
                             .addComponent(geometryShaderCheck, javax.swing.GroupLayout.PREFERRED_SIZE, 720, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(VideoPanelLayout.createSequentialGroup()
@@ -908,9 +914,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         VideoPanelLayout.setVerticalGroup(
             VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, VideoPanelLayout.createSequentialGroup()
-                .addContainerGap(24, Short.MAX_VALUE)
+                .addContainerGap()
                 .addComponent(renderPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 108, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(disableVBOCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(onlyGEGraphicsCheck)
@@ -938,7 +944,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(disableOptimizedVertexInfoReading)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(saveStencilToMemory)
-                .addGap(30, 30, 30))
+                .addContainerGap(47, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.VideoPanel.title"), VideoPanel); // NOI18N
@@ -957,7 +963,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(AudioPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(AudioPanelLayout.createSequentialGroup()
-                        .addComponent(IgnoreAudioThreadsCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 202, Short.MAX_VALUE)
+                        .addComponent(IgnoreAudioThreadsCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 986, Short.MAX_VALUE)
                         .addGap(150, 150, 150))
                     .addComponent(DisableSceAudioCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(AudioPanelLayout.createSequentialGroup()
@@ -974,7 +980,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(DisableSceAudioCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(disableBlockingAudioCheck)
-                .addContainerGap(415, Short.MAX_VALUE))
+                .addContainerGap(414, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.AudioPanel.title"), AudioPanel); // NOI18N
@@ -983,6 +989,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         ignoreUnmappedImports.setText(bundle.getString("SettingsGUI.ignoreUnmappedImports.text")); // NOI18N
 
+        useDebugMemory.setText(bundle.getString("SettingsGUI.useDebugMemory.text")); // NOI18N
+
         javax.swing.GroupLayout MemoryPanelLayout = new javax.swing.GroupLayout(MemoryPanel);
         MemoryPanel.setLayout(MemoryPanelLayout);
         MemoryPanelLayout.setHorizontalGroup(
@@ -990,8 +998,9 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(MemoryPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(MemoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(invalidMemoryCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 751, Short.MAX_VALUE)
-                    .addComponent(ignoreUnmappedImports, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(invalidMemoryCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 1535, Short.MAX_VALUE)
+                    .addComponent(ignoreUnmappedImports, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(useDebugMemory, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         MemoryPanelLayout.setVerticalGroup(
@@ -1001,52 +1010,12 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(invalidMemoryCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(ignoreUnmappedImports)
-                .addContainerGap(438, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(useDebugMemory)
+                .addContainerGap(414, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.MemoryPanel.title"), MemoryPanel); // NOI18N
-
-        useMediaEngine.setText(bundle.getString("SettingsGUI.useMediaEngine.text")); // NOI18N
-
-        useConnector.setText(bundle.getString("SettingsGUI.useConnector.text")); // NOI18N
-
-        useExternalDecoder.setText(bundle.getString("SettingsGUI.useExternalDecoder.text")); // NOI18N
-
-        useDebugFont.setText(bundle.getString("SettingsGUI.useDebugFont.text")); // NOI18N
-
-        useDebugMemory.setText(bundle.getString("SettingsGUI.useDebugMemory.text")); // NOI18N
-
-        javax.swing.GroupLayout MiscPanelLayout = new javax.swing.GroupLayout(MiscPanel);
-        MiscPanel.setLayout(MiscPanelLayout);
-        MiscPanelLayout.setHorizontalGroup(
-            MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(MiscPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(useExternalDecoder, javax.swing.GroupLayout.DEFAULT_SIZE, 751, Short.MAX_VALUE)
-                    .addComponent(useConnector, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(useMediaEngine, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(useDebugFont, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(useDebugMemory, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
-        );
-        MiscPanelLayout.setVerticalGroup(
-            MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(MiscPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(useMediaEngine)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useConnector)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useExternalDecoder)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useDebugFont)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useDebugMemory)
-                .addContainerGap(369, Short.MAX_VALUE))
-        );
-
-        jTabbedPane1.addTab(bundle.getString("SettingsGUI.MiscPanel.title"), MiscPanel); // NOI18N
 
         useCompiler.setText(bundle.getString("SettingsGUI.useCompiler.text")); // NOI18N
 
@@ -1069,7 +1038,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addComponent(methodMaxInstructionsBox, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(methodMaxInstructionsLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(368, Short.MAX_VALUE))
+                .addContainerGap(1152, Short.MAX_VALUE))
         );
         CompilerPanelLayout.setVerticalGroup(
             CompilerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1082,42 +1051,10 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addGroup(CompilerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(methodMaxInstructionsBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(methodMaxInstructionsLabel))
-                .addContainerGap(416, Short.MAX_VALUE))
-        );
-
-        jTabbedPane1.addTab(bundle.getString("SettingsGUI.CompilerPanel.title"), CompilerPanel); // NOI18N
-
-        extractEboot.setText(bundle.getString("SettingsGUI.extractEboot.text")); // NOI18N
-
-        cryptoSavedata.setText(bundle.getString("SettingsGUI.cryptoSavedata.text")); // NOI18N
-
-        extractPGD.setText(bundle.getString("SettingsGUI.extractPGD.text")); // NOI18N
-
-        javax.swing.GroupLayout CryptoPanelLayout = new javax.swing.GroupLayout(CryptoPanel);
-        CryptoPanel.setLayout(CryptoPanelLayout);
-        CryptoPanelLayout.setHorizontalGroup(
-            CryptoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(CryptoPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(CryptoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(extractEboot, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(cryptoSavedata, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(extractPGD, javax.swing.GroupLayout.Alignment.LEADING))
-                .addContainerGap(498, Short.MAX_VALUE))
-        );
-        CryptoPanelLayout.setVerticalGroup(
-            CryptoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(CryptoPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(extractEboot)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(cryptoSavedata)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(extractPGD)
                 .addContainerGap(415, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab(bundle.getString("SettingsGUI.CryptoPanel.title"), CryptoPanel); // NOI18N
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.CompilerPanel.title"), CompilerPanel); // NOI18N
 
         antiAliasLabel.setText(bundle.getString("SettingsGUI.antiAliasLabel.text")); // NOI18N
 
@@ -1161,10 +1098,89 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(resolutionLabel))
                 .addGap(18, 18, 18)
                 .addComponent(fullscreenCheck)
-                .addContainerGap(393, Short.MAX_VALUE))
+                .addContainerGap(392, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.DisplayPanel.title"), DisplayPanel); // NOI18N
+
+        useMediaEngine.setText(bundle.getString("SettingsGUI.useMediaEngine.text")); // NOI18N
+
+        useConnector.setText(bundle.getString("SettingsGUI.useConnector.text")); // NOI18N
+
+        useExternalDecoder.setText(bundle.getString("SettingsGUI.useExternalDecoder.text")); // NOI18N
+
+        useDebugFont.setText(bundle.getString("SettingsGUI.useDebugFont.text")); // NOI18N
+
+        useAtrac3plus.setText(bundle.getString("SettingsGUI.useAtrac3plus.text")); // NOI18N
+
+        javax.swing.GroupLayout MiscPanelLayout = new javax.swing.GroupLayout(MiscPanel);
+        MiscPanel.setLayout(MiscPanelLayout);
+        MiscPanelLayout.setHorizontalGroup(
+            MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(MiscPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(useExternalDecoder, javax.swing.GroupLayout.DEFAULT_SIZE, 1535, Short.MAX_VALUE)
+                    .addComponent(useConnector, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(useMediaEngine, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(useDebugFont, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(useAtrac3plus, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
+        );
+        MiscPanelLayout.setVerticalGroup(
+            MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(MiscPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(useMediaEngine)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(useAtrac3plus)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(useConnector)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(useExternalDecoder)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(useDebugFont)
+                .addContainerGap(368, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.MiscPanel.title"), MiscPanel); // NOI18N
+
+        extractEboot.setText(bundle.getString("SettingsGUI.extractEboot.text")); // NOI18N
+
+        cryptoSavedata.setText(bundle.getString("SettingsGUI.cryptoSavedata.text")); // NOI18N
+
+        extractPGD.setText(bundle.getString("SettingsGUI.extractPGD.text")); // NOI18N
+
+        extractSavedataKey.setText(bundle.getString("SettingsGUI.extractSavedataKey.text")); // NOI18N
+
+        javax.swing.GroupLayout CryptoPanelLayout = new javax.swing.GroupLayout(CryptoPanel);
+        CryptoPanel.setLayout(CryptoPanelLayout);
+        CryptoPanelLayout.setHorizontalGroup(
+            CryptoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(CryptoPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(CryptoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addComponent(extractEboot, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(cryptoSavedata, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(extractPGD, javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(extractSavedataKey, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(1282, Short.MAX_VALUE))
+        );
+        CryptoPanelLayout.setVerticalGroup(
+            CryptoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(CryptoPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(cryptoSavedata)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(extractSavedataKey)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(extractPGD)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(extractEboot)
+                .addContainerGap(391, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.CryptoPanel.title"), CryptoPanel); // NOI18N
 
         cancelButton.setText(bundle.getString("CancelButton.text")); // NOI18N
         cancelButton.setParent(this);
@@ -1294,6 +1310,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JCheckBox enableVAOCheck;
     private javax.swing.JCheckBox extractEboot;
     private javax.swing.JCheckBox extractPGD;
+    private javax.swing.JCheckBox extractSavedataKey;
     private javax.swing.JCheckBox fullscreenCheck;
     private javax.swing.JCheckBox geometryShaderCheck;
     private javax.swing.JCheckBox ignoreUnmappedImports;
@@ -1337,6 +1354,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JTextField tmppath;
     private javax.swing.JRadioButton umdBrowser;
     private javax.swing.JLabel umdPathLabel;
+    private javax.swing.JCheckBox useAtrac3plus;
     private javax.swing.JCheckBox useCompiler;
     private javax.swing.JCheckBox useConnector;
     private javax.swing.JCheckBox useDebugFont;

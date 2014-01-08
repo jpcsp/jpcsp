@@ -2224,6 +2224,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 
         logConfigurationPanel("SettingsGUI.MiscPanel.title");
         logConfigurationSettingBool("SettingsGUI.useMediaEngine.text", "emu.useMediaEngine", false);
+        logConfigurationSettingBool("SettingsGUI.useAtrac3plus.text", "emu.useAtrac3plus", false);
         logConfigurationSettingBool("SettingsGUI.useConnector.text", "emu.useConnector", false);
         logConfigurationSettingBool("SettingsGUI.useExternalDecoder.text", "emu.useExternalDecoder", false);
         logConfigurationSettingBool("SettingsGUI.useDebugFont.text", "emu.useDebugFont", false);
@@ -2235,8 +2236,9 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 
         logConfigurationPanel("SettingsGUI.CryptoPanel.title");
         logConfigurationSettingBool("SettingsGUI.extractEboot.text", "emu.extractEboot", false);
-        logConfigurationSettingBool("SettingsGUI.cryptoSavedata.text", "emu.cryptoSavedata", false);
+        logConfigurationSettingBool("SettingsGUI.cryptoSavedata.text", "emu.cryptoSavedata", true);
         logConfigurationSettingBool("SettingsGUI.extractPGD.text", "emu.extractPGD", false);
+        logConfigurationSettingBool("SettingsGUI.extractSavedataKey.text", "emu.extractSavedataKey", false);
 
         logConfigurationPanel("SettingsGUI.DisplayPanel.title");
         logConfigurationSettingString("SettingsGUI.antiAliasLabel.text", "emu.graphics.antialias", true);
