@@ -1008,8 +1008,8 @@ public class ImageReader {
 		@Override
 		protected void storePixels(int strideX, int bits, boolean color3transparent) {
 			for (int y = 0; y < 4; y++) {
-				for (int x = 0; x < 4; x++, bits >>>= 2, alphaLookup >>>= 2) {
-					int alphaPixel = alpha[((int) alphaLookup & 3)];
+				for (int x = 0; x < 4; x++, bits >>>= 2, alphaLookup >>>= 3) {
+					int alphaPixel = alpha[((int) alphaLookup) & 7];
 					buffer[y * width + x + strideX] = colors[bits & 3] | (alphaPixel << 24);
 				}
 			}
