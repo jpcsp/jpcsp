@@ -26,6 +26,7 @@ import jpcsp.Emulator;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.PspGeList;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.util.DurationStatistics;
@@ -326,20 +327,38 @@ public class ExternalGE {
 		}
 	}
 
-	public static void saveContext(int addr) {
+	public static int saveContext(int addr) {
+		if (NativeUtils.isCoreCtrlActive()) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Saving Core context to 0x%08X - Core busy", addr));
+			}
+			return -1;
+		}
+
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Saving Core context to 0x%08X", addr));
 		}
 
 		NativeUtils.saveCoreContext(addr);
+
+		return 0;
 	}
 
-	public static void restoreContext(int addr) {
+	public static int restoreContext(int addr) {
+		if (NativeUtils.isCoreCtrlActive()) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Restoring Core context from 0x%08X - Core busy", addr));
+			}
+			return SceKernelErrors.ERROR_BUSY;
+		}
+
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Restoring Core context from 0x%08X", addr));
 		}
 
 		NativeUtils.restoreCoreContext(addr);
+
+		return 0;
 	}
 
 	public static int getCmd(int cmd) {
