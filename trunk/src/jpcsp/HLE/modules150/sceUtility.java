@@ -711,7 +711,9 @@ public class sceUtility extends HLEModule {
 
             switch (savedataParams.mode) {
                 case SceUtilitySavedataParam.MODE_AUTOLOAD: {
-                    if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                    if (savedataParams.saveName == null 
+                            || savedataParams.saveName.equals(SceUtilitySavedataParam.anyFileName)
+                            || savedataParams.saveName.length() == 0) {
                         if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
                             savedataParams.saveName = savedataParams.saveNameList[0];
                         }
@@ -888,7 +890,9 @@ public class sceUtility extends HLEModule {
                 }
 
                 case SceUtilitySavedataParam.MODE_AUTOSAVE: {
-                    if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                    if (savedataParams.saveName == null 
+                            || savedataParams.saveName.equals(SceUtilitySavedataParam.anyFileName)
+                            || savedataParams.saveName.length() == 0) {
                         if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
                             savedataParams.saveName = savedataParams.saveNameList[0];
                         }

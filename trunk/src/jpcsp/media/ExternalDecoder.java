@@ -44,7 +44,7 @@ import jpcsp.util.Utilities;
 public class ExternalDecoder {
 	private static Logger log = Modules.log;
     private static File extAudioDecoder;
-    private static boolean enabled = true;
+    private static boolean enabled = false;
     private static boolean dumpAt3File = true;
     private static boolean dumpAudioStreamFile = false;
     private static boolean keepOmaFile = true;
