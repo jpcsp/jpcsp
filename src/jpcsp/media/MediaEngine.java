@@ -303,7 +303,7 @@ public class MediaEngine {
         this.bufferMpegOffset = bufferMpegOffset;
         this.lastTimestamp = lastTimestamp;
 
-    	// Save the content of the MPEG header as it might be already overwritten
+        // Save the content of the MPEG header as it might be already overwritten
         // when we need it (at sceMpegGetAtracAu or sceMpegGetAvcAu)
         bufferData = new byte[sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE];
         IMemoryReader memoryReader = MemoryReader.getMemoryReader(bufferAddress, bufferData.length, 1);
@@ -422,7 +422,7 @@ public class MediaEngine {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("Using audio stream #%d from %d", audioStreamID, audioChannelIndex));
                 }
-        	// The creation of the audioSamples might fail
+                // The creation of the audioSamples might fail
                 // if the audioCoder returns 0 channels. The audioSamples will then be
                 // created later, when trying to decode audio samples.
                 // This is the case when decoding an MP3 stream: it seems that the number
@@ -542,7 +542,7 @@ public class MediaEngine {
 
     private boolean getNextPacket(StreamState state) {
         if (state.isPacketEmpty()) {
-    		// Retrieve the next packet for the stream.
+            // Retrieve the next packet for the stream.
             // First try if there is a pending packet for this stream.
             state.releasePacket();
             IPacket packet = state.getNextPacket();
@@ -550,7 +550,7 @@ public class MediaEngine {
                 // use the pending packet
                 state.setPacket(packet);
             } else {
-    			// There is no pending packet, read packets from the container
+                // There is no pending packet, read packets from the container
                 // until a packet for this stream is found.
                 IContainer container = state.getContainer();
                 if (container == null) {
@@ -573,11 +573,11 @@ public class MediaEngine {
                         // This is the kind of packet we are looking for
                         state.setPacket(packet);
                     } else if (videoCoder != null && videoStreamState != null && videoStreamState.isStream(container, streamIndex)) {
-			        	// We are currently not interested in video packets,
+                        // We are currently not interested in video packets,
                         // add this packet to the video pending packets
                         videoStreamState.addPacket(packet);
                     } else if (audioCoder != null && audioStreamState != null && audioStreamState.isStream(container, streamIndex)) {
-			        	// We are currently not interested in audio packets,
+                        // We are currently not interested in audio packets,
                         // add this packet to the audio pending packets
                         audioStreamState.addPacket(packet);
                     } else {
@@ -599,7 +599,7 @@ public class MediaEngine {
                 state.releasePacket();
                 complete = true;
             } else {
-        		// Decode the current video packet
+                // Decode the current video packet
                 // and check if we have a complete video sample
                 complete = decodeVideoPacket(state);
             }
@@ -609,7 +609,7 @@ public class MediaEngine {
                 state.releasePacket();
                 complete = true;
             } else {
-        		// Decode the current audio packet
+                // Decode the current audio packet
                 // and check if we have a complete audio sample,
                 // with the minimum required sample bytes
                 if (decodeAudioPacket(state, requiredAudioChannels)) {
@@ -658,7 +658,7 @@ public class MediaEngine {
         boolean complete = false;
         while (!state.isPacketEmpty()) {
             if (audioSamples == null) {
-        		// Create the audioSamples if required.
+                // Create the audioSamples if required.
                 // Their creation sometimes fails at init if the audioCoder still returns 0 channels.
                 audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
             }
@@ -808,7 +808,7 @@ public class MediaEngine {
         audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
         decodedAudioSamples = new FIFOByteBuffer();
 
-		// External audio is starting at timestamp 0,
+        // External audio is starting at timestamp 0,
         // but the PSP audio is starting at timestamp 89249:
         // offset the external audio timestamp by this value.
         audioStreamState = new StreamState(this, audioStreamID, extContainer, sceMpeg.audioFirstTimestamp);
@@ -954,14 +954,14 @@ public class MediaEngine {
         return samplesSize;
     }
 
-    private void resampleAtrac3plus(IAudioSamples samples, byte[] buffer, int length) {
+    private void resampleAtrac3plus(IAudioSamples samples, byte[] buffer, int length, int requiredAudioChannels) {
         int samplesSize = length;
 
         // Create new samples with the same parameters as the input samples.
         IAudioSamples newSamples = IAudioSamples.make(samplesSize, samples.getChannels());
 
         // Resample the input samples into the temporary container.
-        audioResampler.resample(newSamples, samples, samplesSize);
+        audioResampler.swresample(newSamples, samples, samplesSize);
 
         // Update the samples size.
         samplesSize = newSamples.getSize();
@@ -969,16 +969,24 @@ public class MediaEngine {
         // Output the converted samples.
         newSamples.get(0, tempBuffer, 0, samplesSize);
 
-        // Fix the audio panning (Xuggler bug).
-        for (int i = 0, j = 0; i < samplesSize; i++, j++) {
-            int src1 = Utilities.read8(buffer, j);
-            int src2 = Utilities.read8(buffer, j + 2);
-            int src = (src1 + src2);
-            tempBuffer[i] = (byte) (src & 0xFF);
+        // Fix the audio panning for stereo(Xuggler bug).
+        if (samples.getChannels() == 2) {
+            for (int i = 0, j = 0; i < samplesSize; i++, j++) {
+                int src1 = Utilities.read8(buffer, j);
+                int src2 = Utilities.read8(buffer, j + 2);
+                int src = (src1 + src2);
+                tempBuffer[i] = (byte) (src & 0xFF);
+            }
         }
+
+        // Perform mono or stereo conversion.
+        samplesSize = convertSamples(newSamples, tempBuffer, samplesSize, requiredAudioChannels);
 
         // Write back the samples.
         decodedAudioSamples.write(tempBuffer, 0, samplesSize);
+
+        // Clean up.
+        newSamples.delete();
     }
 
     /**
@@ -994,7 +1002,7 @@ public class MediaEngine {
 
         // Atrac3+ is in FLTP format. Resample and filter into S16.
         if (samples.getFormat() == IAudioSamples.Format.FMT_FLTP) {
-            resampleAtrac3plus(samples, tempBuffer, samplesSize);
+            resampleAtrac3plus(samples, tempBuffer, samplesSize, requiredAudioChannels);
         } else {
             samples.get(0, tempBuffer, 0, samplesSize);
             samplesSize = convertSamples(samples, tempBuffer, samplesSize, requiredAudioChannels);
@@ -1054,7 +1062,7 @@ public class MediaEngine {
                     memoryWriter.flush();
                 }
             } else {
-            	// Non-optimized version supporting any image format,
+                // Non-optimized version supporting any image format,
                 // but very slow (due to BufferImage.getRGB() call)
                 if (videoImagePixels == null || videoImagePixels.length < imageSize) {
                     videoImagePixels = new int[imageSize];
@@ -1087,7 +1095,7 @@ public class MediaEngine {
         // Get the current generated image, convert it to pixels and write it
         // to memory.
         if (getCurrentImg() != null) {
-        	// If we have a range covering the whole image, call the method
+            // If we have a range covering the whole image, call the method
             // without range, its execution is faster.
             if (x == 0 && y == 0 && getCurrentImg().getWidth() == w && getCurrentImg().getHeight() == h) {
                 writeVideoImage(dest_addr, frameWidth, videoPixelMode);

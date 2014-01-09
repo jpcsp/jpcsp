@@ -411,10 +411,9 @@ public class UmdBrowserPmf {
                      */
                     if (samples.isComplete()) { 
                         if (audioResampler != null) {
-                            IAudioSamples newSamples = samples;
                             int samplesSize = samples.getSize();
-                            newSamples = IAudioSamples.make(samplesSize, samples.getChannels());
-                            if (audioResampler.resample(newSamples, samples, samplesSize) < 0) {
+                            IAudioSamples newSamples = IAudioSamples.make(samplesSize, samples.getChannels());
+                            if (audioResampler.swresample(newSamples, samples, samplesSize) < 0) {
                                 throw new RuntimeException("could not resample audio from: " + fileName);
                             }
                             playAtrac3plusAudio(newSamples);
@@ -472,6 +471,8 @@ public class UmdBrowserPmf {
     	}
         
         mLine.write(rawBytes, 0, aSamples.getSize());
+        
+        aSamples.delete();
     }
 
     private void closeAudio() {
