@@ -36,15 +36,15 @@ public class DRM {
         // Get the encryption key.
         byte[] encKey = new byte[0x10];
         if ((mode & 0x1) == 0x1) {
-            for (int i = 0; i < KeyVault.drmEncKey1.length; i++) {
+            for (int i = 0; i < 0x10; i++) {
                 encKey[i] = (byte) (KeyVault.drmEncKey1[i] & 0xFF);
             }
         } else if ((mode & 0x2) == 0x2) {
-            for (int i = 0; i < KeyVault.drmEncKey2.length; i++) {
+            for (int i = 0; i < 0x10; i++) {
                 encKey[i] = (byte) (KeyVault.drmEncKey2[i] & 0xFF);
             }
         } else if ((mode & 0x3) == 0x3) {
-            for (int i = 0; i < KeyVault.drmEncKey3.length; i++) {
+            for (int i = 0; i < 0x10; i++) {
                 encKey[i] = (byte) (KeyVault.drmEncKey3[i] & 0xFF);
             }
         } else {
@@ -52,15 +52,13 @@ public class DRM {
         }
 
         // Get the fixed key.
-        int bbMacEncMode = 1;
-        byte[] fixedKey = new byte[KeyVault.drmFixedKey.length];
-
-        for (int i = 0; i < KeyVault.drmFixedKey.length; i++) {
+        byte[] fixedKey = new byte[0x10];
+        for (int i = 0; i < 0x10; i++) {
             fixedKey[i] = (byte) (KeyVault.drmFixedKey[i] & 0xFF);
         }
 
         // Call the BBMac functions.
-        amctrl.hleDrmBBMacInit(bbctx, bbMacEncMode);
+        amctrl.hleDrmBBMacInit(bbctx, 1);
         amctrl.hleDrmBBMacUpdate(bbctx, data, data.length);
         amctrl.hleDrmBBMacFinal(bbctx, hash, fixedKey);
 

@@ -765,7 +765,7 @@ public class sceMpeg extends HLEModule {
         if (checkMediaEngineState()) {
         	me.setFirstTimestamp(firstTimestamp);
         	if (me.getContainer() == null) {
-        		me.init(createMediaChannel(), hasPsmfVideoStream(), hasPsmfAudioStream(), getRegisteredVideoChannel(), getRegisteredAudioChannel());
+        		me.init(createMediaChannel(), hasPsmfVideoStream(), true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
         	}
         	if (!me.readAudioAu(mpegAtracAu, mpegAudioChannels)) {
         		endOfAudioReached = true;
