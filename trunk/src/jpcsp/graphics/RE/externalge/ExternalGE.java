@@ -198,7 +198,7 @@ public class ExternalGE {
 
 	public static void onRestartList(PspGeList list) {
 		if (isActive()) {
-			if (list == null) {
+			if (list == null || list.isFinished()) {
 				return;
 			}
 
