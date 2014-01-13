@@ -2226,6 +2226,7 @@ public class sceUtility extends HLEModule {
         protected long startDialogMillis;
         protected int drawSpeed;
         private boolean buttonsSwapped;
+        private boolean hasNoButtons;
         final private String strEnter = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strEnter.text");
         final private String strBack = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strBack.text");
         final private String strYes = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strYes.text");
@@ -2233,6 +2234,7 @@ public class sceUtility extends HLEModule {
 
         protected GuUtilityDialog(pspUtilityDialogCommon utilityDialogCommon) {
             buttonsSwapped = (utilityDialogCommon.buttonSwap == pspUtilityDialogCommon.BUTTON_ACCEPT_CIRCLE);
+            hasNoButtons = false;
         }
 
         protected void createDialog(final UtilityDialogState utilityDialogState) {
@@ -2425,7 +2427,8 @@ public class sceUtility extends HLEModule {
         protected abstract void updateDialog();
 
         public void checkController() {
-            if (canConfirm() && isConfirmButtonPressed()) {
+            // In case the dialog has no buttons, assume the user is confirming.
+            if (canConfirm() && (isConfirmButtonPressed() || hasNoButtons())) {
                 utilityDialogState.setButtonPressed(getButtonPressedOK());
                 dispose();
             } else if (canCancel() && isCancelButtonPressed()) {
@@ -2457,6 +2460,14 @@ public class sceUtility extends HLEModule {
 
         protected boolean isCancelButtonPressed() {
             return isButtonPressed(areButtonsSwapped() ? sceCtrl.PSP_CTRL_CROSS : sceCtrl.PSP_CTRL_CIRCLE);
+        }
+        
+        protected void useNoButtons() {
+            hasNoButtons = true;
+        }
+        
+        protected boolean hasNoButtons() {
+            return hasNoButtons;
         }
 
         private int getControllerLy() {
@@ -2645,6 +2656,16 @@ public class sceUtility extends HLEModule {
         protected void drawBack() {
             String cancel = areButtonsSwapped() ? getCross() : getCircle();
             drawTextWithShadow(260, 254, 0.75f, String.format("%s %s", cancel, strBack));
+        }
+        
+        protected void drawEnterWithString(String str) {
+            String confirm = areButtonsSwapped() ? getCircle() : getCross();
+            drawTextWithShadow(183, 254, 0.75f, String.format("%s %s", confirm, str));
+        }
+
+        protected void drawBackWithString(String str) {
+            String cancel = areButtonsSwapped() ? getCross() : getCircle();
+            drawTextWithShadow(260, 254, 0.75f, String.format("%s %s", cancel, str));
         }
 
         protected void drawHeader(String title) {
@@ -2862,13 +2883,13 @@ public class sceUtility extends HLEModule {
             String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Load");
             Calendar savedTime = savedataParams.getSavedTime();
 
+            drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
+            
             if (!hasYesNo()) {
                 gu.sceGuDrawHorizontalLine(201, 464, 114, 0xFF000000 | textColor);
                 drawTextWithShadow(270, 131, 0.75f, strNoData);
                 gu.sceGuDrawHorizontalLine(201, 464, 157, 0xFF000000 | textColor);
             } else {
-                drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
-
                 gu.sceGuDrawHorizontalLine(201, 464, 87, 0xFF000000 | textColor);
                 drawTextWithShadow(236, 105, 0.75f, strAskLoadData);
                 drawYesNo(278, 349, 154);
@@ -3270,16 +3291,30 @@ public class sceUtility extends HLEModule {
             }
 
             if ((msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_NORMAL) != 0 && !msgDialogParams.isOptionOk() && !msgDialogParams.isOptionYesNo()) {
-                drawBack();
+                // In this case, no buttons are displayed to the user.
+                // In the PSP the user waits a few seconds and the dialog closes itself.
+                useNoButtons();
             } else {
                 if ((msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_DISABLE_CANCEL) == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_ENABLE_CANCEL) {
                     // Enter is not displayed when all options are 0
                     if (msgDialogParams.options != 0) {
-                        drawEnter();
+                        if (msgDialogParams.enterButtonString.equals("")) {
+                            drawEnter();
+                        } else {
+                            drawEnterWithString(msgDialogParams.enterButtonString);
+                        }
                     }
-                    drawBack();
+                    if (msgDialogParams.backButtonString.equals("")) {
+                        drawBack();
+                    } else {
+                        drawBackWithString(msgDialogParams.backButtonString);
+                    }
                 } else if ((msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_MASK) != SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_NONE) {
-                    drawEnter();
+                    if (msgDialogParams.enterButtonString.equals("")) {
+                        drawEnter();
+                    } else {
+                        drawEnterWithString(msgDialogParams.enterButtonString);
+                    }
                 }
             }
         }

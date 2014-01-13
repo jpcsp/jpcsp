@@ -45,7 +45,7 @@ public class PGD {
         System.arraycopy(inbuf, 0, dataBuf, 0, size);
 
         amctrl.hleDrmBBMacInit(pgdMacContext, sdEncMode);
-        amctrl.hleDrmBBCipherInit(pgdCipherContext, sdEncMode, sdGenMode, dataBuf, key, 0);
+        amctrl.hleDrmBBCipherInit(pgdCipherContext, sdEncMode, sdGenMode, dataBuf, key);
         amctrl.hleDrmBBMacUpdate(pgdMacContext, dataBuf, 0x10);
         System.arraycopy(dataBuf, 0x10, outbuf, 0, alignedSize - 0x10);
         amctrl.hleDrmBBMacUpdate(pgdMacContext, outbuf, alignedSize - 0x10);
@@ -117,7 +117,7 @@ public class PGD {
         byte[] updateDecDataBuf = new byte[inbuf.length - 0x90];
         System.arraycopy(inbuf, 0x90, updateDecDataBuf, 0, updateDecDataBuf.length);
 
-        amctrl.hleDrmBBCipherInit(pgdCipherContext, cipherEncMode, genMode, decDataBuf, key, 0);
+        amctrl.hleDrmBBCipherInit(pgdCipherContext, cipherEncMode, genMode, decDataBuf, key);
         amctrl.hleDrmBBCipherUpdate(pgdCipherContext, updateDecDataBuf, alignedSize);
         amctrl.hleDrmBBCipherFinal(pgdCipherContext);
 
@@ -155,7 +155,7 @@ public class PGD {
         System.arraycopy(dataBuf, 0x10, cipherBuf, 0, dataBuf.length - 0x10);
         System.arraycopy(dataBuf, 0x30, pgdDataBuf, 0, 0x30);
 
-        amctrl.hleDrmBBCipherInit(pgdCipherContext, cipherEncMode, genMode, cipherBuf, key, 0);
+        amctrl.hleDrmBBCipherInit(pgdCipherContext, cipherEncMode, genMode, cipherBuf, key);
         amctrl.hleDrmBBCipherUpdate(pgdCipherContext, pgdDataBuf, 0x30);
         amctrl.hleDrmBBCipherFinal(pgdCipherContext);
 
@@ -221,22 +221,25 @@ public class PGD {
         amctrl.hleDrmBBMacUpdate(pgdMacContext, dataBuf, 0x70);
 
         // Get the decryption key from BBMAC.
-        byte[] key = new byte[0x10];
-        amctrl.GetKeyFromBBMac(pgdMacContext, macKey70, key);
-
-        return key;
+        return amctrl.GetKeyFromBBMac(pgdMacContext, macKey70);
     }
     
-    public boolean CheckEDATRenameKey(byte[] nameHash, byte[] hash, byte[] data) {
-        byte[] newHash = drm.hleNpDrmGetFixedKey(hash, data, 1);
-
-        // Compare the hashes.
+    public boolean CheckEDATRenameKey(byte[] fileName, byte[] hash, byte[] data) {
+        // Set up MAC context.
+        pgdMacContext = new AMCTRL.BBMac_Ctx();
+        
+        // Perform hash check.
+        amctrl.hleDrmBBMacInit(pgdMacContext, 3);
+        amctrl.hleDrmBBMacUpdate(pgdMacContext, data, 0x30);
+        amctrl.hleDrmBBMacUpdate(pgdMacContext, fileName, fileName.length);     
+        
+        // Get the fixed rename key.
+        byte[] renameKey = new byte[0x10];
         for (int i = 0; i < 0x10; i++) {
-            if (nameHash[i] != newHash[i]) {
-                return false;
-            }
+            renameKey[i] = (byte) (KeyVault.drmRenameKey[i] & 0xFF);
         }
-
-        return true;
+        
+        // Compare and return.
+        return (amctrl.hleDrmBBMacFinal2(pgdMacContext, hash, renameKey) == 0);
     }
 }

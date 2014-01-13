@@ -56,18 +56,17 @@ public class scePspNpDrm_user extends HLEModule {
     }
     public static final int PSP_NPDRM_KEY_LENGHT = 0x10;
     private byte npDrmKey[] = new byte[PSP_NPDRM_KEY_LENGHT];
+    private boolean isNpDrmKeySet = false;
     private PGDFileConnector edatFileConnector;
-
-    protected boolean isEmptyDrmKey() {
-        for (int i = 0; i < npDrmKey.length; i++) {
-            if (npDrmKey[i] != 0) {
-                return false;
-            }
-        }
-
-        return true;
+    
+    protected void setNpDrmKeyStatus(boolean status) {
+        isNpDrmKeySet = status;
     }
     
+    protected boolean getNpDrmKeyStatus() {
+        return isNpDrmKeySet;
+    }
+
     protected String getFileNameFromPath(String path) {
         String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(path);
 
@@ -81,7 +80,7 @@ public class scePspNpDrm_user extends HLEModule {
 
         return fName;
     }
-    
+
     protected String getDLCPathFromFilePath(String path) {
         String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(path);
 
@@ -110,6 +109,7 @@ public class scePspNpDrm_user extends HLEModule {
             npDrmKey[i] = (byte) npDrmKeyAddr.getValue8(i);
             key.append(String.format("%02X", npDrmKey[i] & 0xFF));
         }
+        setNpDrmKeyStatus(true);
         log.info(String.format("NPDRM Encryption key detected: 0x%s", key.toString()));
 
         return 0;
@@ -118,17 +118,17 @@ public class scePspNpDrm_user extends HLEModule {
     @HLEFunction(nid = 0x9B745542, version = 150, checkInsideInterrupt = true)
     public int sceNpDrmClearLicenseeKey() {
         Arrays.fill(npDrmKey, (byte) 0);
-
+        setNpDrmKeyStatus(false);
+        
         return 0;
     }
 
-    @HLELogging(level = "warn")
     @HLEFunction(nid = 0x275987D1, version = 150, checkInsideInterrupt = true)
     public int sceNpDrmRenameCheck(PspString fileName) {
         CryptoEngine crypto = new CryptoEngine();
         int result = 0;
 
-        if (isEmptyDrmKey()) {
+        if (!getNpDrmKeyStatus()) {
             result = SceKernelErrors.ERROR_NPDRM_NO_K_LICENSEE_SET;
         } else {
             try {
@@ -143,21 +143,32 @@ public class scePspNpDrm_user extends HLEModule {
                     }
                 }
 
-                // Setup the buffers.
-                byte[] inBuf = new byte[0x80];
-                byte[] nameHash = new byte[0x10];
+                // The file must contain a valid PSPEDAT header.
+                if (file.length() < 0x80) {
+                    log.warn("sceNpDrmRenameCheck: invalid file size");
+                    result = SceKernelErrors.ERROR_NPDRM_INVALID_FILE;
+                    file.close();
+                } else {
+                    // Setup the buffers.
+                    byte[] inBuf = new byte[0x80];
+                    byte[] srcData = new byte[0x30];
+                    byte[] srcHash = new byte[0x10];
 
-                // Read the encrypted PSPEDATA header.
-                file.readFully(inBuf);
-                file.close();
+                    // Read the header.
+                    file.readFully(inBuf);
+                    file.close();
 
-                // Generate a new name hash for this file and compare with the one stored in it's header.
-                System.arraycopy(inBuf, 0x40, nameHash, 0, 0x10);
-
-                // If the CryptoEngine fails to find a match, then the file has been renamed.
-                if (!crypto.getPGDEngine().CheckEDATRenameKey(nameHash, npDrmKey, fName.getBytes())) {
-                    // result = SceKernelErrors.ERROR_NPDRM_NO_FILENAME_MATCH;
-                    result = 0; // Fake for now.
+                    // The data seed is stored at offset 0x10 of the PSPEDAT header.
+                    System.arraycopy(inBuf, 0x10, srcData, 0, 0x30);
+                    
+                    // The hash to compare is stored at offset 0x40 of the PSPEDAT header.
+                    System.arraycopy(inBuf, 0x40, srcHash, 0, 0x10);
+                    
+                    // If the CryptoEngine fails to find a match, then the file has been renamed.
+                    if (!crypto.getPGDEngine().CheckEDATRenameKey(fName.getBytes(), srcHash, srcData)) {
+                        result = SceKernelErrors.ERROR_NPDRM_NO_FILENAME_MATCH;
+                        log.warn("sceNpDrmRenameCheck: the file has been renamed");
+                    }
                 }
             } catch (FileNotFoundException e) {
                 result = SceKernelErrors.ERROR_NPDRM_INVALID_FILE;
@@ -176,22 +187,23 @@ public class scePspNpDrm_user extends HLEModule {
     @HLEFunction(nid = 0x08D98894, version = 150, checkInsideInterrupt = true)
     public int sceNpDrmEdataSetupKey(int edataFd) {
         // Return an error if the key has not been set.
-        if (isEmptyDrmKey()) {
+        // Note: An empty key is valid, as long as it was set with sceNpDrmSetLicenseeKey.
+        if (!getNpDrmKeyStatus()) {
             return SceKernelErrors.ERROR_NPDRM_NO_K_LICENSEE_SET;
         }
-        
+
         IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd);
         if (info == null) {
             return 0;
         }
-        
+
         CryptoEngine crypto = new CryptoEngine();
         int result = 0;
 
         if (edatFileConnector == null) {
             edatFileConnector = new PGDFileConnector();
         }
-               
+
         // Generate the necessary directories and file paths.
         String dlcPath = edatFileConnector.getBaseDLCDirectory() + getDLCPathFromFilePath(info.filename);
         String decFileName = dlcPath + File.separatorChar + getFileNameFromPath(info.filename);
@@ -223,7 +235,7 @@ public class scePspNpDrm_user extends HLEModule {
                 info.readOnlyFile.seek(startPosition);
 
                 // Check if the "PSPEDAT" header is present
-                if (fileBuf[0] != 0 || fileBuf[1] != 'P' || fileBuf[2] != 'S' || fileBuf[3] != 'P' 
+                if (fileBuf[0] != 0 || fileBuf[1] != 'P' || fileBuf[2] != 'S' || fileBuf[3] != 'P'
                         || fileBuf[4] != 'E' || fileBuf[5] != 'D' || fileBuf[6] != 'A' || fileBuf[7] != 'T') {
                     // No "EDAT" found in the header,
                     // abort the decryption and leave the file unchanged
@@ -237,7 +249,7 @@ public class scePspNpDrm_user extends HLEModule {
                 // Get the decryption key from the PGD header and then decrypt the header.
                 byte[] decKey = crypto.getPGDEngine().GetEDATPGDKey(encHeaderBuf, pgdHeaderSize);
                 byte[] decHeader = crypto.getPGDEngine().DecryptEDATPGDHeader(encHeaderBuf, pgdHeaderSize, decKey);
-                
+
                 // Copy back the decrypted header.
                 System.arraycopy(decHeader, 0, fileBuf, edatPGDOffset + pgdHeaderDataOffset, decHeader.length);
 
@@ -305,7 +317,7 @@ public class scePspNpDrm_user extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x2BAA4294, version = 150, checkInsideInterrupt = true)
     public int sceNpDrmOpen(PspString name, int flags, int permissions) {
-        if (isEmptyDrmKey()) {
+        if (!getNpDrmKeyStatus()) {
             return SceKernelErrors.ERROR_NPDRM_NO_K_LICENSEE_SET;
         }
         // Open the file with flags ORed with PSP_O_FGAMEDATA and send it to 

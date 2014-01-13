@@ -17,14 +17,15 @@
 package jpcsp.crypto;
 
 import java.nio.ByteBuffer;
-import java.util.Random;
 
 public class KIRK {
-    
+
     // PSP specific values.
-    private int[] fuseID = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
-    private byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    
+    private int fuseID0;
+    private int fuseID1;
+    private byte[] priv_iv = new byte[0x10];
+    private byte[] prng_data = new byte[0x14];
+
     // KIRK error values.
     public static final int PSP_KIRK_NOT_ENABLED = 0x1;
     public static final int PSP_KIRK_INVALID_MODE = 0x2;
@@ -45,7 +46,7 @@ public class KIRK {
     public static final int PSP_SUBCWR_NOT_16_ALGINED = 0x90A;
     public static final int PSP_SUBCWR_HEADER_HASH_INVALID = 0x920;
     public static final int PSP_SUBCWR_BUFFER_TOO_SMALL = 0x1000;
-    
+
     // KIRK commands.
     public static final int PSP_KIRK_CMD_DECRYPT_PRIVATE = 0x1;         // Master decryption command, used by firmware modules. Applies CMAC checking.
     public static final int PSP_KIRK_CMD_ENCRYPT_SIGN = 0x2;            // Used for key type 3 (blacklisting), encrypts and signs data with a ECDSA signature.
@@ -65,14 +66,14 @@ public class KIRK {
     public static final int PSP_KIRK_CMD_ECDSA_SIGN = 0x10;             // ECDSA signing command.
     public static final int PSP_KIRK_CMD_ECDSA_VERIFY = 0x11;           // ECDSA checking command.
     public static final int PSP_KIRK_CMD_CERT_VERIFY = 0x12;            // Certificate checking command.
-    
+
     // KIRK command modes.
     public static final int PSP_KIRK_CMD_MODE_CMD1 = 0x1;
     public static final int PSP_KIRK_CMD_MODE_CMD2 = 0x2;
     public static final int PSP_KIRK_CMD_MODE_CMD3 = 0x3;
     public static final int PSP_KIRK_CMD_MODE_ENCRYPT_CBC = 0x4;
     public static final int PSP_KIRK_CMD_MODE_DECRYPT_CBC = 0x5;
-    
+
     // KIRK header structs.
     private class SHA1_Header {
 
@@ -259,7 +260,7 @@ public class KIRK {
             buf.get(sig.s, 0, 0x14);
         }
     }
-    
+
     // Helper functions.
     private int[] getAESKeyFromSeed(int seed) {
         switch (seed) {
@@ -311,15 +312,60 @@ public class KIRK {
                 return null;
         }
     }
-    
+
     public KIRK() {
-        
+    }
+
+    public KIRK(byte[] seed, int seedLength, int fuseid0, int fuseid1) {
+        // Set up the data for the pseudo random number generator using a
+        // seed set by the user.
+        byte[] temp = new byte[0x104];
+        temp[0] = 0;
+        temp[1] = 0;
+        temp[2] = 1;
+        temp[3] = 0;
+
+        ByteBuffer bTemp = ByteBuffer.wrap(temp);
+        ByteBuffer bPRNG = ByteBuffer.wrap(prng_data);
+
+        // Random data to act as a key.
+        byte[] key = {(byte) 0x07, (byte) 0xAB, (byte) 0xEF, (byte) 0xF8, (byte) 0x96,
+            (byte) 0x8C, (byte) 0xF3, (byte) 0xD6, (byte) 0x14, (byte) 0xE0, (byte) 0xEB, (byte) 0xB2,
+            (byte) 0x9D, (byte) 0x8B, (byte) 0x4E, (byte) 0x74};
+
+        // Direct call to get the system time.
+        int systime = (int) System.currentTimeMillis();
+
+        // Generate a SHA-1 hash for the PRNG.
+        if (seedLength > 0) {
+            byte[] seedBuf = new byte[seedLength + 4];
+            ByteBuffer bSeedBuf = ByteBuffer.wrap(seedBuf);
+            
+            SHA1_Header seedHeader = new SHA1_Header(bSeedBuf);
+            bSeedBuf.rewind();
+            
+            seedHeader.dataSize = seedLength;
+            executeKIRKCmd11(bPRNG, bSeedBuf, seedLength + 4);
+        }
+
+        // Use the system time for randomness.
+        System.arraycopy(prng_data, 0, temp, 4, 0x14);
+        temp[0x18] = (byte) (systime & 0xFF);
+        temp[0x19] = (byte) ((systime >> 8) & 0xFF);
+        temp[0x1A] = (byte) ((systime >> 16) & 0xFF);
+        temp[0x1B] = (byte) ((systime >> 24) & 0xFF);
+
+        // Set the final PRNG number.
+        System.arraycopy(key, 0, temp, 0x1C, 0x10);
+        executeKIRKCmd11(bPRNG, bTemp, 0x104);
+
+        fuseID0 = fuseid0;
+        fuseID1 = fuseid1;
     }
 
     /*
      * KIRK commands: main emulated crypto functions.
      */
-    
     // Decrypt with AESCBC128-CMAC header and sig check.
     private int executeKIRKCmd1(ByteBuffer out, ByteBuffer in, int size) {
         // Return an error if the crypto engine hasn't been initialized.
@@ -350,7 +396,7 @@ public class KIRK {
         byte[] encryptedKeys = new byte[32];
         System.arraycopy(header.AES128Key, 0, encryptedKeys, 0, 16);
         System.arraycopy(header.CMACKey, 0, encryptedKeys, 16, 16);
-        byte[] decryptedKeys = aes.decrypt(encryptedKeys, k, iv);
+        byte[] decryptedKeys = aes.decrypt(encryptedKeys, k, priv_iv);
 
         // Check for a valid signature.
         int sigCheck = executeKIRKCmd10(sigIn, size);
@@ -380,7 +426,7 @@ public class KIRK {
         // Decrypt all the ELF data.
         byte[] inBuf = new byte[paddedElfDataSize];
         System.arraycopy(in.array(), elfDataOffset + headerOffset + headerSize, inBuf, 0, paddedElfDataSize);
-        byte[] outBuf = aes.decrypt(inBuf, aesBuf, iv);
+        byte[] outBuf = aes.decrypt(inBuf, aesBuf, priv_iv);
 
         out.clear();
         out.put(outBuf);
@@ -422,7 +468,7 @@ public class KIRK {
 
         byte[] inBuf = new byte[size];
         in.get(inBuf, 0, size);
-        byte[] outBuf = aes.encrypt(inBuf, encKey, iv);
+        byte[] outBuf = aes.encrypt(inBuf, encKey, priv_iv);
 
         out.clear();
         out.put(outBuf);
@@ -449,9 +495,9 @@ public class KIRK {
             return PSP_KIRK_DATA_SIZE_IS_ZERO;
         }
 
-        int[] key = null;
+        byte[] key = null;
         if (header.keySeed == 0x100) {
-            key = fuseID;
+            key = priv_iv;
         } else {
             return PSP_KIRK_INVALID_SIZE; // Dummy.
         }
@@ -465,7 +511,7 @@ public class KIRK {
 
         byte[] inBuf = new byte[size];
         in.get(inBuf, 0, size);
-        byte[] outBuf = aes.encrypt(inBuf, encKey, iv);
+        byte[] outBuf = aes.encrypt(inBuf, encKey, priv_iv);
 
         out.clear();
         out.put(outBuf);
@@ -506,7 +552,7 @@ public class KIRK {
 
         byte[] inBuf = new byte[size];
         in.get(inBuf, 0, size);
-        byte[] outBuf = aes.decrypt(inBuf, decKey, iv);
+        byte[] outBuf = aes.decrypt(inBuf, decKey, priv_iv);
 
         out.clear();
         out.put(outBuf);
@@ -533,9 +579,9 @@ public class KIRK {
             return PSP_KIRK_DATA_SIZE_IS_ZERO;
         }
 
-        int[] key = null;
+        byte[] key = null;
         if (header.keySeed == 0x100) {
-            key = fuseID;
+            key = priv_iv;
         } else {
             return PSP_KIRK_INVALID_SIZE; // Dummy.
         }
@@ -549,7 +595,7 @@ public class KIRK {
 
         byte[] inBuf = new byte[size];
         in.get(inBuf, 0, size);
-        byte[] outBuf = aes.decrypt(inBuf, decKey, iv);
+        byte[] outBuf = aes.decrypt(inBuf, decKey, priv_iv);
 
         out.clear();
         out.put(outBuf);
@@ -589,7 +635,7 @@ public class KIRK {
         byte[] encryptedKeys = new byte[32];
         System.arraycopy(header.AES128Key, 0, encryptedKeys, 0, 16);
         System.arraycopy(header.CMACKey, 0, encryptedKeys, 16, 16);
-        byte[] decryptedKeys = aes.decrypt(encryptedKeys, k, iv);
+        byte[] decryptedKeys = aes.decrypt(encryptedKeys, k, priv_iv);
 
         byte[] cmacHeaderHash = new byte[16];
         byte[] cmacDataHash = new byte[16];
@@ -646,7 +692,7 @@ public class KIRK {
 
         return 0;
     }
-    
+
     // Generate ECDSA key pair.
     private int executeKIRKCmd12(ByteBuffer out, int size) {
         // Return an error if the crypto engine hasn't been initialized.
@@ -703,15 +749,53 @@ public class KIRK {
             return PSP_KIRK_NOT_INIT;
         }
 
-        if (size > 0) {
-            Random rd = new Random();
-            byte[] rdBytes = new byte[size];
+        // Set up a temporary buffer.
+        byte[] temp = new byte[0x104];
+        temp[0] = 0;
+        temp[1] = 0;
+        temp[2] = 1;
+        temp[3] = 0;
+        
+        ByteBuffer bTemp = ByteBuffer.wrap(temp);
+        
+        // Random data to act as a key.
+        byte[] key = {(byte) 0xA7, (byte) 0x2E, (byte) 0x4C, (byte) 0xB6, (byte) 0xC3,
+            (byte) 0x34, (byte) 0xDF, (byte) 0x85, (byte) 0x70, (byte) 0x01, (byte) 0x49,
+            (byte) 0xFC, (byte) 0xC0, (byte) 0x87, (byte) 0xC4, (byte) 0x77};
 
-            rd.nextBytes(rdBytes);
+        // Direct call to get the system time.
+        int systime = (int) System.currentTimeMillis();
 
-            out.clear();
-            out.put(rdBytes);
+        System.arraycopy(prng_data, 0, temp, 4, 0x14);
+        temp[0x18] = (byte) (systime & 0xFF);
+        temp[0x19] = (byte) ((systime >> 8) & 0xFF);
+        temp[0x1A] = (byte) ((systime >> 16) & 0xFF);
+        temp[0x1B] = (byte) ((systime >> 24) & 0xFF);
+
+        System.arraycopy(key, 0, temp, 0x1C, 0x10);
+
+        // Generate a SHA-1 for this PRNG context.
+        ByteBuffer bPRNG = ByteBuffer.wrap(prng_data);
+        executeKIRKCmd11(bPRNG, bTemp, 0x104);
+        
+        out.put(bPRNG.array());
+        
+        // Process the data recursively.
+        for (int i = 0; i < size; i += 0x14) {
+            int remaining = size % 0x14;
+            int block = size / 0x14;
+
+            if (block > 0) {
+                out.put(bPRNG.array());
+                executeKIRKCmd14(out, i);
+            } else {
+                if (remaining > 0) {
+                    out.put(prng_data, out.position(), remaining);
+                    i += remaining;
+                }
+            }
         }
+        out.rewind();
 
         return 0;
     }
@@ -764,8 +848,9 @@ public class KIRK {
     /*
      * sceUtils - memlmd_01g.prx and memlmd_02g.prx
      */
-    public void hleUtilsSetFuseID(int[] id) {
-        fuseID = id;
+    public void hleUtilsSetFuseID(int id0, int id1) {
+        fuseID0 = id0;
+        fuseID1 = id1;
     }
 
     public int hleUtilsBufferCopyWithRange(ByteBuffer out, int outsize, ByteBuffer in, int insize, int cmd) {

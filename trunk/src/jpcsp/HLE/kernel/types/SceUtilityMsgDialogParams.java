@@ -48,6 +48,8 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         public final static int PSP_UTILITY_BUTTON_PRESSED_OK                   = 1;
         public final static int PSP_UTILITY_BUTTON_PRESSED_NO                   = 2;
     	public final static int PSP_UTILITY_BUTTON_PRESSED_ESC                  = 3;
+    public String enterButtonString; // 64 bytes
+    public String backButtonString; // 64 bytes
 
     public SceUtilityMsgDialogParams() {
         base = new pspUtilityDialogCommon();
@@ -65,6 +67,8 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         message         = readStringNZ(512);
         options         = read32();
         buttonPressed   = read32();
+        enterButtonString = readStringNZ(64);
+        backButtonString = readStringNZ(64);
     }
 
     @Override
@@ -78,6 +82,8 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         writeStringNZ(512, message);
         write32(options);
         write32(buttonPressed);
+        writeStringNZ(64, enterButtonString);
+        writeStringNZ(64, backButtonString);
     }
 
     @Override
@@ -123,7 +129,9 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
             sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES\n");
         if (isOptionYesNoDefaultNo())
             sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO\n");
-        sb.append("buttonPressed " + String.format("0x%08X", buttonPressed));
+        sb.append("buttonPressed " + String.format("0x%08X'\n", buttonPressed));
+        sb.append("enterButtonString '" + enterButtonString + "'\n");
+        sb.append("backButtonString '" + backButtonString + "'");
 
         return sb.toString();
     }

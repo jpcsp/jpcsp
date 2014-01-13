@@ -27,7 +27,6 @@ public class CryptoEngine {
     private static boolean cryptoSavedata;
     private static boolean extractEboot;
     private static boolean extractSavedataKey;
-    private static boolean extractPGD;
     private static KIRK kirk;
     private static PRX prx;
     private static SAVEDATA sd;
