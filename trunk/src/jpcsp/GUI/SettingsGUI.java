@@ -128,6 +128,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(cryptoSavedata, "emu.cryptoSavedata");
         setBoolFromSettings(extractPGD, "emu.extractPGD");
         setBoolFromSettings(extractSavedataKey, "emu.extractSavedataKey");
+        setBoolFromSettings(disableDLC, "emu.disableDLC");
         setBoolFromSettings(useAtrac3plus, "emu.useAtrac3plus");
         setStringFromSettings(antiAliasingBox, "emu.graphics.antialias");
         setStringFromSettings(resolutionBox, "emu.graphics.resolution");
@@ -250,6 +251,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(cryptoSavedata, "emu.cryptoSavedata");
         setBoolToSettings(extractPGD, "emu.extractPGD");
         setBoolToSettings(extractSavedataKey, "emu.extractSavedataKey");
+        setBoolToSettings(disableDLC, "emu.disableDLC");
         setBoolToSettings(useAtrac3plus, "emu.useAtrac3plus");
         setStringToSettings(antiAliasingBox, "emu.graphics.antialias");
         setStringToSettings(resolutionBox, "emu.graphics.resolution");
@@ -511,6 +513,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         cryptoSavedata = new javax.swing.JCheckBox();
         extractPGD = new javax.swing.JCheckBox();
         extractSavedataKey = new javax.swing.JCheckBox();
+        disableDLC = new javax.swing.JCheckBox();
         cancelButton = new jpcsp.GUI.CancelButton();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
@@ -1153,6 +1156,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         extractSavedataKey.setText(bundle.getString("SettingsGUI.extractSavedataKey.text")); // NOI18N
 
+        disableDLC.setText(bundle.getString("SettingsGUI.disableDLC.text")); // NOI18N
+
         javax.swing.GroupLayout CryptoPanelLayout = new javax.swing.GroupLayout(CryptoPanel);
         CryptoPanel.setLayout(CryptoPanelLayout);
         CryptoPanelLayout.setHorizontalGroup(
@@ -1163,7 +1168,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(extractEboot, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(cryptoSavedata, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(extractPGD, javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(extractSavedataKey, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(extractSavedataKey, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(disableDLC, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(1282, Short.MAX_VALUE))
         );
         CryptoPanelLayout.setVerticalGroup(
@@ -1177,7 +1183,9 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(extractPGD)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(extractEboot)
-                .addContainerGap(391, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(disableDLC)
+                .addContainerGap(368, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.CryptoPanel.title"), CryptoPanel); // NOI18N
@@ -1299,6 +1307,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JComboBox daylightBox;
     private javax.swing.JLabel daylightLabel;
     private javax.swing.JCheckBox disableBlockingAudioCheck;
+    private javax.swing.JCheckBox disableDLC;
     private javax.swing.JCheckBox disableOptimizedVertexInfoReading;
     private javax.swing.JCheckBox disableUBOCheck;
     private javax.swing.JCheckBox disableVBOCheck;

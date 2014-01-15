@@ -43,10 +43,6 @@ public class PGDFileConnector {
 
     public PGDFileConnector() {
     }
-
-    public String getBaseDLCDirectory() {
-        return String.format("%sDLC", Settings.getInstance().getDiscTmpDirectory());
-    }
     
     public String getBaseDirectory(String id) {
         return String.format("%sPGD%c%s%c", Settings.getInstance().getDiscTmpDirectory(), File.separatorChar, id, File.separatorChar);
@@ -114,20 +110,6 @@ public class PGDFileConnector {
                 }
             }
         }
-        return fileInput;
-    }
-
-    public SeekableDataInput loadDecryptedEDATPGDFile(String fileName) {
-        SeekableDataInput fileInput = null;
-        File decryptedFile = new File(fileName);
-        if (decryptedFile.canRead() && decryptedFile.length() > 0) {
-            try {
-                fileInput = new SeekableRandomFile(decryptedFile, "r");
-                Modules.log.info("Using decrypted file " + fileName);
-            } catch (FileNotFoundException e) {
-            }
-        }
-
         return fileInput;
     }
 
