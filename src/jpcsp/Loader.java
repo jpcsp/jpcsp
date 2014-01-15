@@ -64,14 +64,6 @@ import jpcsp.memory.MemorySections;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
-/*
- * TODO list:
- * 1. Implement relocation type 0x700000A1 in relocateFromHeaders:
- *      -> Info: http://forums.ps2dev.org/viewtopic.php?p=80416#80416
- *
- * 2. Save debugger info for all loaded modules in LoadELFDebuggerInfo.
- */
-
 public class Loader {
     private static Loader instance;
     private boolean loadedFirstModule;
@@ -887,6 +879,204 @@ public class Loader {
             writeUnaligned32(mem, data_addr, data);
         }
     }
+    
+    private void relocateFromBufferA1(ByteBuffer f, Elf32 elf, int i, int end) throws IOException {
+        Memory mem = Memory.getInstance();
+
+        // Relocation variables.
+        int R_OFFSET = 0;
+        int R_BASE = 0;
+        int R_TYPE;
+        int R_TYPE_OLD = 0xFFFFFFFF;
+        int R_FLAG;
+        int R_CMD;
+        int OFS_BASE = 0;
+        int ADDR_BASE;
+        int S;
+        int A;
+
+        // Data variables.
+        int data_addr;
+        int data;
+        int lo16 = 0;
+        int hi16 = 0;
+        int phBaseOffset;
+        int r = 0;
+
+        // Flag, type and segment variables.
+        int fbits;
+        int f_offset;
+        int f_size;
+        int tbits;
+        int t_offset;
+        int t_size;
+        int sbits;
+
+        // Buffer position variable.
+        int pos;
+
+        // Locate and read the flag, type and segment bits.
+        f.position(2);
+        fbits = f.get();
+        tbits = f.get();
+        sbits = 1;
+
+        while ((1 << sbits) < i) {
+            sbits++;
+        }
+
+        // Locate the flag table.
+        f_offset = f.position();
+        f_size = f.get();
+        f.position(f_offset + f_size);
+
+        // Locate the type table.
+        t_offset = f.position();
+        t_size = f.get();
+        f.position(t_offset + t_size);
+
+        // Save the current position.
+        pos = f.position();
+
+        while (pos < end) {
+            // Read the CMD byte.
+            R_CMD = f.get();
+            R_CMD |= (f.get() << 8);
+            pos += 2;
+
+            // Process the relocation flag.
+            R_FLAG = (R_CMD << (16 - fbits)) & 0xFFFF;
+            R_FLAG = (R_FLAG >> (16 - fbits)) & 0xFFFF;
+            f.position(f_offset + R_FLAG);
+            R_FLAG = f.get();
+            f.position(pos);
+
+            // Set the segment offset.
+            S = (R_CMD << (16 - fbits - sbits)) & 0xFFFF;
+            S = (S >> (16 - sbits)) & 0xFFFF;
+
+            // Process the relocation type.
+            R_TYPE = (R_CMD << (16 - (fbits + sbits + tbits))) & 0xFFFF;
+            R_TYPE = (R_TYPE >> (16 - tbits)) & 0xFFFF;
+            f.position(t_offset + R_TYPE);
+            R_TYPE = f.get();
+            f.position(pos);
+
+            // Operate on segment offset based on the relocation flag.
+            if ((R_FLAG & 0x01) == 0) {
+                OFS_BASE = S;
+                if ((R_FLAG & 0x06) == 0) {
+                    R_BASE = (R_CMD >> (fbits + sbits));
+                } else if ((R_FLAG & 0x06) == 4) {
+                    R_BASE = f.get();
+                    R_BASE |= (f.get() << 8);
+                    R_BASE |= (f.get() << 16);
+                    R_BASE |= (f.get() << 24);
+                    pos += 4;
+                } else {
+                    log.warn("PH Relocation type 0x700000A1: Invalid size flag!");
+                    R_BASE = 0;
+                }
+            } else { // Operate on segment address based on the relocation flag.
+                ADDR_BASE = S;
+                phBaseOffset = elf.getProgramHeader(ADDR_BASE).getP_vaddr();
+
+                if ((R_FLAG & 0x06) == 0x00) {
+                    R_OFFSET = R_CMD;
+                    if ((R_OFFSET & 0x8000) == 0x8000) {
+                        R_OFFSET |= 0xFFFF0000;
+                        R_OFFSET >>= fbits + tbits + sbits;
+                        R_OFFSET |= 0xFFFF0000;
+                    } else {
+                        R_OFFSET >>= fbits + tbits + sbits;
+                    }
+                    R_BASE += R_OFFSET;
+                } else if ((R_FLAG & 0x06) == 0x02) {
+                    R_OFFSET = R_CMD;
+                    if ((R_OFFSET & 0x8000) == 0x8000) {
+                        R_OFFSET |= 0xFFFF0000;
+                    }
+                    R_OFFSET = (R_OFFSET >> (fbits + tbits + sbits)) << 16;
+                    R_OFFSET |= f.get();
+                    R_OFFSET |= (f.get() << 8);
+                    pos += 2;
+                    R_BASE += R_OFFSET;
+                } else if ((R_FLAG & 0x06) == 0x04) {
+                    R_BASE = f.get();
+                    R_BASE |= (f.get() << 8);
+                    R_BASE |= (f.get() << 16);
+                    R_BASE |= (f.get() << 24);
+                    pos += 4;
+                } else {
+                    log.warn("PH Relocation type 0x700000A1: Invalid relocation size flag!");
+                }
+
+                // Process lo16.
+                if ((R_FLAG & 0x38) == 0x00) {
+                    lo16 = 0;
+                } else if ((R_FLAG & 0x38) == 0x08) {
+                    if ((R_TYPE_OLD & 0x04) != 0x04) {
+                        lo16 = 0;
+                    }
+                } else if ((R_FLAG & 0x38) == 0x10) {
+                    lo16 = f.get();
+                    lo16 |= (f.get() << 8);
+                    if ((lo16 & 0x8000) == 0x8000) {
+                        lo16 |= 0xFFFF0000;
+                    }
+                    pos += 2;
+                } else if ((R_FLAG & 0x38) == 0x18) {
+                    lo16 = f.get();
+                    lo16 |= (f.get() << 8);
+                    lo16 |= (f.get() << 16);
+                    lo16 |= (f.get() << 24);
+                    pos += 4;
+                } else {
+                    log.warn("PH Relocation type 0x700000A1: Invalid lo16 setup!");
+                }
+
+                // Read the data.
+                data_addr = R_BASE + elf.getProgramHeader(OFS_BASE).getP_vaddr();
+                data = readUnaligned32(mem, data_addr);
+
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("Relocation #%d type=%d,"
+                            + " Offset PH#%d, Base Offset PH#%d, Offset 0x%08X",
+                            r, R_TYPE, OFS_BASE, ADDR_BASE, R_OFFSET));
+                }
+
+                // Apply the changes as requested by the relocation type.
+                switch (R_TYPE) {
+                    case 0: // R_MIPS_NONE
+                        continue;
+                    case 2: // R_MIPS_32
+                        data += phBaseOffset;
+                        break;
+                    case 3: // R_MIPS_REL32
+                    case 6: // R_MIPS_LO16
+                    case 7: // R_MIPS_GPREL16
+                        data = (data & 0xFC000000) | (((data & 0x03FFFFFF) + (phBaseOffset >> 2)) & 0x03FFFFFFF);
+                        break;
+                    case 4: // R_MIPS_26
+                        A = ((data << 16) + lo16) + phBaseOffset;
+                        if ((A & 0x8000) == 0x8000) {
+                            A += 0x00010000;
+                        }
+                        data = (data & 0xffff0000) | (hi16 >> 16);
+                        break;
+                    case 1: // R_MIPS_16
+                    case 5: // R_MIPS_HI16
+                        data = (data & 0xffff0000) | (((data & 0xffff) + phBaseOffset) & 0xffff);
+                        break;
+                    default:
+                        break;
+                }
+                // Write the data.
+                writeUnaligned32(mem, data_addr, data);
+                r++;
+            }
+        }
+    }
 
     private boolean mustRelocate(Elf32 elf, Elf32SectionHeader shdr) {
     	if (shdr.getSh_type() == Elf32SectionHeader.SHT_PRXREL) {
@@ -924,7 +1114,10 @@ public class Loader {
                 relocateFromBuffer(f, module, baseAddress, elf, RelCount, true);
                 return;
             } else if (phdr.getP_type() == 0x700000A1L) {
-                log.warn("Unimplemented:PH#" + i + ": relocate type 0x700000A1");
+                log.warn("PH#" + i + ": relocate type 0x700000A1");
+                f.position(elfOffset + phdr.getP_offset());
+                relocateFromBufferA1(f, elf, i, phdr.getP_filesz());
+                return;
             }
             i++;
         }

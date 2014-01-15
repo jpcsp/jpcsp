@@ -2239,6 +2239,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         logConfigurationSettingBool("SettingsGUI.cryptoSavedata.text", "emu.cryptoSavedata", true);
         logConfigurationSettingBool("SettingsGUI.extractPGD.text", "emu.extractPGD", false);
         logConfigurationSettingBool("SettingsGUI.extractSavedataKey.text", "emu.extractSavedataKey", false);
+        logConfigurationSettingBool("SettingsGUI.disableDLC.text", "emu.disableDLC", false);
 
         logConfigurationPanel("SettingsGUI.DisplayPanel.title");
         logConfigurationSettingString("SettingsGUI.antiAliasLabel.text", "emu.graphics.antialias", true);

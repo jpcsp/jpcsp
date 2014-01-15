@@ -246,6 +246,7 @@ public class sceUtility extends HLEModule {
     private int lastNetParamID;
 
     protected abstract static class UtilityDialogState {
+
         protected String name;
         protected pspAbstractMemoryMappedStructure params;
         protected pspUtilityDialogCommon paramsCommon;
@@ -261,6 +262,7 @@ public class sceUtility extends HLEModule {
         protected boolean isYesSelected;
 
         protected static enum DialogState {
+
             init,
             display,
             confirmation,
@@ -345,10 +347,10 @@ public class sceUtility extends HLEModule {
         }
 
         private void setResult(int result) {
-        	if (paramsCommon != null) {
-        		paramsCommon.result = result;
-    			paramsCommon.writeResult(paramsAddr);
-        	}
+            if (paramsCommon != null) {
+                paramsCommon.result = result;
+                paramsCommon.writeResult(paramsAddr);
+            }
         }
 
         protected void quitDialog() {
@@ -358,7 +360,7 @@ public class sceUtility extends HLEModule {
         }
 
         protected void quitDialog(int result) {
-        	quitDialog();
+            quitDialog();
             setResult(result);
         }
 
@@ -423,7 +425,7 @@ public class sceUtility extends HLEModule {
 
         public int executeGetStatus() {
         	// Return ERROR_UTILITY_WRONG_TYPE if no sceUtilityXXXInitStart has ever been started or
-        	// if a different type of dialog was started.
+            // if a different type of dialog was started.
             if (Modules.sceUtilityModule.startedDialogState == null || Modules.sceUtilityModule.startedDialogState != this) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%sGetStatus returning ERROR_UTILITY_WRONG_TYPE", name));
@@ -449,7 +451,6 @@ public class sceUtility extends HLEModule {
             // After moving to status NONE, subsequent calls of sceUtilityXXXGetStatus
             // keep returning status NONE (if of the same type) and not ERROR_UTILITY_WRONG_TYPE.
             // Keep the current value in Modules.sceUtilityModule.startedDialogState for this purpose.
-
             return previousStatus;
         }
 
@@ -495,9 +496,9 @@ public class sceUtility extends HLEModule {
                 startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
             } else if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE || status == PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN) {
                 // PSP is returning 0 only in STATUS_VISIBLE
-            	result = 0;
+                result = 0;
 
-            	// Some games reach sceUtilitySavedataInitStart with empty params which only
+                // Some games reach sceUtilitySavedataInitStart with empty params which only
                 // get filled with a subsequent call to sceUtilitySavedataUpdate (eg.: To Love-Ru).
                 // This is why we have to re-read the params here.
                 params.read(paramsAddr);
@@ -558,7 +559,7 @@ public class sceUtility extends HLEModule {
         }
 
         public void cancel() {
-        	quitDialog(PSP_UTILITY_DIALOG_RESULT_CANCELED);
+            quitDialog(PSP_UTILITY_DIALOG_RESULT_CANCELED);
         }
 
         protected abstract boolean executeUpdateVisible();
@@ -711,7 +712,7 @@ public class sceUtility extends HLEModule {
 
             switch (savedataParams.mode) {
                 case SceUtilitySavedataParam.MODE_AUTOLOAD: {
-                    if (savedataParams.saveName == null 
+                    if (savedataParams.saveName == null
                             || savedataParams.saveName.equals(SceUtilitySavedataParam.anyFileName)
                             || savedataParams.saveName.length() == 0) {
                         if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
@@ -758,7 +759,7 @@ public class sceUtility extends HLEModule {
                             if (!isDialogActive()) {
                                 if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
                                     // The dialog has been cancelled or the user did not want to load.
-                                	cancel();
+                                    cancel();
                                 } else {
                                     closeDialog();
                                     dialogState = DialogState.inProgress;
@@ -890,7 +891,7 @@ public class sceUtility extends HLEModule {
                 }
 
                 case SceUtilitySavedataParam.MODE_AUTOSAVE: {
-                    if (savedataParams.saveName == null 
+                    if (savedataParams.saveName == null
                             || savedataParams.saveName.equals(SceUtilitySavedataParam.anyFileName)
                             || savedataParams.saveName.length() == 0) {
                         if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
@@ -931,7 +932,7 @@ public class sceUtility extends HLEModule {
                             if (!isDialogActive()) {
                                 if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
                                     // The dialog has been cancelled or the user did not want to save.
-                                	cancel();
+                                    cancel();
                                 } else {
                                     closeDialog();
                                     dialogState = DialogState.inProgress;
@@ -1009,7 +1010,7 @@ public class sceUtility extends HLEModule {
                             if (!isDialogActive()) {
                                 if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
                                     // The dialog has been cancelled or the user did not want to save.
-                                	cancel();
+                                    cancel();
                                 } else {
                                     closeDialog();
                                     dialogState = DialogState.inProgress;
@@ -1280,11 +1281,11 @@ public class sceUtility extends HLEModule {
                         int saveFileSecureMaxNumEntries = mem.read32(fileListAddr);
                         int saveFileMaxNumEntries = mem.read32(fileListAddr + 4);
                         int systemMaxNumEntries = mem.read32(fileListAddr + 8);
-                        
+
                         if (log.isDebugEnabled()) {
                             log.debug(String.format("MaxFiles in FileList: secure=%d, normal=%d, system=%d", saveFileSecureMaxNumEntries, saveFileMaxNumEntries, systemMaxNumEntries));
                         }
-                        
+
                         int saveFileSecureEntriesAddr = mem.read32(fileListAddr + 24);
                         int saveFileEntriesAddr = mem.read32(fileListAddr + 28);
                         int systemEntriesAddr = mem.read32(fileListAddr + 32);
@@ -1599,6 +1600,7 @@ public class sceUtility extends HLEModule {
     }
 
     protected static class MsgDialogUtilityDialogState extends UtilityDialogState {
+
         protected SceUtilityMsgDialogParams msgDialogParams;
 
         public MsgDialogUtilityDialogState(String name) {
@@ -1782,11 +1784,11 @@ public class sceUtility extends HLEModule {
 
         @Override
         protected boolean executeUpdateVisible() {
-        	if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
-        		status = PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN;
-        	}
+            if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
+                status = PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN;
+            }
 
-        	// TODO to be implemented
+            // TODO to be implemented
             return false;
         }
 
@@ -1798,11 +1800,11 @@ public class sceUtility extends HLEModule {
             // be initialized with sceUtilityScreenshotInitStart and the startupType
             // parameter has to be PSP_UTILITY_SCREENSHOT_TYPE_CONT_AUTO, otherwise, an
             // error is returned.
-        	if (status != PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN) {
-        		return SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
-        	}
+            if (status != PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN) {
+                return SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
+            }
 
-        	this.paramsAddr = paramsAddr;
+            this.paramsAddr = paramsAddr;
             this.params = createParams();
             params.read(paramsAddr);
             if (log.isInfoEnabled()) {
@@ -2461,11 +2463,11 @@ public class sceUtility extends HLEModule {
         protected boolean isCancelButtonPressed() {
             return isButtonPressed(areButtonsSwapped() ? sceCtrl.PSP_CTRL_CROSS : sceCtrl.PSP_CTRL_CIRCLE);
         }
-        
+
         protected void useNoButtons() {
             hasNoButtons = true;
         }
-        
+
         protected boolean hasNoButtons() {
             return hasNoButtons;
         }
@@ -2657,7 +2659,7 @@ public class sceUtility extends HLEModule {
             String cancel = areButtonsSwapped() ? getCross() : getCircle();
             drawTextWithShadow(260, 254, 0.75f, String.format("%s %s", cancel, strBack));
         }
-        
+
         protected void drawEnterWithString(String str) {
             String confirm = areButtonsSwapped() ? getCircle() : getCross();
             drawTextWithShadow(183, 254, 0.75f, String.format("%s %s", confirm, str));
@@ -2884,7 +2886,7 @@ public class sceUtility extends HLEModule {
             Calendar savedTime = savedataParams.getSavedTime();
 
             drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
-            
+
             if (!hasYesNo()) {
                 gu.sceGuDrawHorizontalLine(201, 464, 114, 0xFF000000 | textColor);
                 drawTextWithShadow(270, 131, 0.75f, strNoData);
@@ -3298,22 +3300,34 @@ public class sceUtility extends HLEModule {
                 if ((msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_DISABLE_CANCEL) == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_ENABLE_CANCEL) {
                     // Enter is not displayed when all options are 0
                     if (msgDialogParams.options != 0) {
-                        if (msgDialogParams.enterButtonString.equals("")) {
-                            drawEnter();
+                        if (msgDialogParams.enterButtonString != null) {
+                            if (!msgDialogParams.enterButtonString.equals("")) {
+                                drawEnterWithString(msgDialogParams.enterButtonString);
+                            } else {
+                                drawEnter();
+                            }
                         } else {
-                            drawEnterWithString(msgDialogParams.enterButtonString);
+                            drawEnter();
                         }
                     }
-                    if (msgDialogParams.backButtonString.equals("")) {
-                        drawBack();
+                    if (msgDialogParams.backButtonString != null) {
+                        if (!msgDialogParams.backButtonString.equals("")) {
+                            drawBackWithString(msgDialogParams.backButtonString);
+                        } else {
+                            drawBack();
+                        }
                     } else {
-                        drawBackWithString(msgDialogParams.backButtonString);
+                        drawBack();
                     }
                 } else if ((msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_MASK) != SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_NONE) {
-                    if (msgDialogParams.enterButtonString.equals("")) {
-                        drawEnter();
+                    if (msgDialogParams.enterButtonString != null) {
+                        if (!msgDialogParams.enterButtonString.equals("")) {
+                            drawEnterWithString(msgDialogParams.enterButtonString);
+                        } else {
+                            drawEnter();
+                        }
                     } else {
-                        drawEnterWithString(msgDialogParams.enterButtonString);
+                        drawEnter();
                     }
                 }
             }
@@ -3951,7 +3965,7 @@ public class sceUtility extends HLEModule {
                 log.warn(String.format("sceUtilityGetNetParam invalid param %d", param));
                 return SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
         }
-        
+
         lastNetParamID = id;
 
         return 0;

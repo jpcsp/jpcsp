@@ -1299,6 +1299,7 @@
                           <Component id="cryptoSavedata" alignment="0" max="32767" attributes="1"/>
                           <Component id="extractPGD" alignment="0" min="-2" max="-2" attributes="1"/>
                           <Component id="extractSavedataKey" alignment="0" max="32767" attributes="1"/>
+                          <Component id="disableDLC" alignment="0" max="32767" attributes="1"/>
                       </Group>
                       <EmptySpace pref="1282" max="32767" attributes="0"/>
                   </Group>
@@ -1315,7 +1316,9 @@
                       <Component id="extractPGD" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="extractEboot" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="391" max="32767" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="disableDLC" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace pref="368" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -1346,6 +1349,13 @@
               <Properties>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
                   <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.extractSavedataKey.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="disableDLC">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.disableDLC.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
             </Component>

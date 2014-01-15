@@ -31,7 +31,7 @@ import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.Emulator;
 import jpcsp.Loader;
-import jpcsp.connector.PGDFileConnector;
+import jpcsp.connector.DLCConnector;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
@@ -41,7 +41,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IoInfo;
-import jpcsp.State;
+import jpcsp.settings.AbstractBoolSettingsListener;
 
 import org.apache.log4j.Logger;
 
@@ -54,52 +54,40 @@ public class scePspNpDrm_user extends HLEModule {
     public String getName() {
         return "scePspNpDrm_user";
     }
+    
+    @Override
+    public void start() {
+        setSettingsListener("emu.disableDLC", new DisableDLCSettingsListerner());
+        super.start();
+    }
+    
     public static final int PSP_NPDRM_KEY_LENGHT = 0x10;
     private byte npDrmKey[] = new byte[PSP_NPDRM_KEY_LENGHT];
     private boolean isNpDrmKeySet = false;
-    private PGDFileConnector edatFileConnector;
+    private DLCConnector dlcConnector;
+    private boolean disableDLCDecryption;
     
+    public void setDisableDLCStatus(boolean status) {
+        disableDLCDecryption = status;
+    }
+
+    public boolean getDisableDLCStatus() {
+        return disableDLCDecryption;
+    }
+
     protected void setNpDrmKeyStatus(boolean status) {
         isNpDrmKeySet = status;
     }
-    
+
     protected boolean getNpDrmKeyStatus() {
         return isNpDrmKeySet;
     }
-
-    protected String getFileNameFromPath(String path) {
-        String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(path);
-
-        String[] name = pcfilename.split("/");
-        String fName = "";
-        for (int i = 0; i < name.length; i++) {
-            if (name[i].toUpperCase().contains("EDAT")) {
-                fName = name[i];
-            }
+    
+    private class DisableDLCSettingsListerner extends AbstractBoolSettingsListener {
+        @Override
+        protected void settingsValueChanged(boolean value) {
+            setDisableDLCStatus(value);
         }
-
-        return fName;
-    }
-
-    protected String getDLCPathFromFilePath(String path) {
-        String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(path);
-
-        String[] name = pcfilename.split("/");
-        String fName = "";
-        for (int i = 0; i < name.length; i++) {
-            String uname = name[i].toUpperCase();
-            if (!name[i].contains("ms0") && uname.contains("PSP")
-                    && uname.contains("GAME") && uname.contains(State.discId)
-                    && uname.contains("EDAT")) {
-                fName += File.separatorChar + name[i];
-            }
-        }
-
-        if (fName.length() == 0) {
-            return fName;
-        }
-
-        return fName.substring(1);
     }
 
     @HLEFunction(nid = 0xA1336091, version = 150, checkInsideInterrupt = true)
@@ -112,6 +100,11 @@ public class scePspNpDrm_user extends HLEModule {
         setNpDrmKeyStatus(true);
         log.info(String.format("NPDRM Encryption key detected: 0x%s", key.toString()));
 
+        // Start the DLC connector.
+        if (dlcConnector == null) {
+            dlcConnector = new DLCConnector();
+        }
+
         return 0;
     }
 
@@ -119,7 +112,7 @@ public class scePspNpDrm_user extends HLEModule {
     public int sceNpDrmClearLicenseeKey() {
         Arrays.fill(npDrmKey, (byte) 0);
         setNpDrmKeyStatus(false);
-        
+
         return 0;
     }
 
@@ -145,8 +138,12 @@ public class scePspNpDrm_user extends HLEModule {
 
                 // The file must contain a valid PSPEDAT header.
                 if (file.length() < 0x80) {
-                    log.warn("sceNpDrmRenameCheck: invalid file size");
-                    result = SceKernelErrors.ERROR_NPDRM_INVALID_FILE;
+                    // Test if we're using already decrypted DLC.
+                    // Discard the error in this situatuion.
+                    if (!getDisableDLCStatus()) {
+                        log.warn("sceNpDrmRenameCheck: invalid file size");
+                        result = SceKernelErrors.ERROR_NPDRM_INVALID_FILE;
+                    }
                     file.close();
                 } else {
                     // Setup the buffers.
@@ -160,14 +157,16 @@ public class scePspNpDrm_user extends HLEModule {
 
                     // The data seed is stored at offset 0x10 of the PSPEDAT header.
                     System.arraycopy(inBuf, 0x10, srcData, 0, 0x30);
-                    
+
                     // The hash to compare is stored at offset 0x40 of the PSPEDAT header.
                     System.arraycopy(inBuf, 0x40, srcHash, 0, 0x10);
-                    
+
                     // If the CryptoEngine fails to find a match, then the file has been renamed.
                     if (!crypto.getPGDEngine().CheckEDATRenameKey(fName.getBytes(), srcHash, srcData)) {
-                        result = SceKernelErrors.ERROR_NPDRM_NO_FILENAME_MATCH;
-                        log.warn("sceNpDrmRenameCheck: the file has been renamed");
+                        if (!getDisableDLCStatus()) {
+                            result = SceKernelErrors.ERROR_NPDRM_NO_FILENAME_MATCH;
+                            log.warn("sceNpDrmRenameCheck: the file has been renamed");
+                        }
                     }
                 }
             } catch (FileNotFoundException e) {
@@ -200,20 +199,12 @@ public class scePspNpDrm_user extends HLEModule {
         CryptoEngine crypto = new CryptoEngine();
         int result = 0;
 
-        if (edatFileConnector == null) {
-            edatFileConnector = new PGDFileConnector();
-        }
-
         // Generate the necessary directories and file paths.
-        String dlcPath = edatFileConnector.getBaseDLCDirectory() + getDLCPathFromFilePath(info.filename);
-        String decFileName = dlcPath + File.separatorChar + getFileNameFromPath(info.filename);
+        String dlcPath = dlcConnector.getDLCPath(info.filename);
+        String decFileName = dlcConnector.getDecryptedDLCPath(info.filename);
 
-        // Check for an already decrypted file.
-        SeekableDataInput decInput = edatFileConnector.loadDecryptedEDATPGDFile(decFileName);
-
-        if (decInput != null) {
-            info.readOnlyFile = decInput;
-        } else {
+        // Check we're using already decrypted DLC.
+        if (!getDisableDLCStatus()) {
             // Try to decrypt the data with the Crypto Engine.
             try {
                 // PGD header size.
@@ -291,7 +282,7 @@ public class scePspNpDrm_user extends HLEModule {
             }
 
             // Load the manually decrypted file generated just now.
-            info.readOnlyFile = edatFileConnector.loadDecryptedEDATPGDFile(decFileName);
+            info.readOnlyFile = dlcConnector.loadDecryptedDLCFile(decFileName);
         }
 
         return result;
@@ -320,14 +311,14 @@ public class scePspNpDrm_user extends HLEModule {
         if (!getNpDrmKeyStatus()) {
             return SceKernelErrors.ERROR_NPDRM_NO_K_LICENSEE_SET;
         }
-        // Open the file with flags ORed with PSP_O_FGAMEDATA and send it to 
+        // Open the file with flags ORed with PSP_O_FGAMEDATA and send it to the IoFileMgr.
         int fd = Modules.IoFileMgrForUserModule.hleIoOpen(name, flags | 0x40000000, permissions, true);
         return sceNpDrmEdataSetupKey(fd);
     }
 
     @HLEFunction(nid = 0xC618D0B1, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModuleNpDrm(PspString path, int flags, @CanBeNull TPointer optionAddr) {
-        SceKernelLMOption lmOption = null;
+        SceKernelLMOption lmOption;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
             lmOption.read(optionAddr);
@@ -336,7 +327,13 @@ public class scePspNpDrm_user extends HLEModule {
             }
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, false);
+        // SPRX modules can't be decrypted yet.
+        if (!getDisableDLCStatus()) {
+            log.warn(String.format("sceKernelLoadModuleNpDrm detected encrypted DLC module: %s", path.getString()));
+            return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
+        } else {
+            return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, false);
+        }
     }
 
     @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)
@@ -355,35 +352,41 @@ public class scePspNpDrm_user extends HLEModule {
             }
         }
 
-        int result;
-        try {
-            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(fileName.getString(), IoFileMgrForUser.PSP_O_RDONLY);
-            if (moduleInput != null) {
-                byte[] moduleBytes = new byte[(int) moduleInput.length()];
-                moduleInput.readFully(moduleBytes);
-                moduleInput.close();
-                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+        // SPRX modules can't be decrypted yet.
+        if (!getDisableDLCStatus()) {
+            log.warn(String.format("sceKernelLoadModuleNpDrm detected encrypted DLC module: %s", fileName.getString()));
+            return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
+        } else {
+            int result;
+            try {
+                SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(fileName.getString(), IoFileMgrForUser.PSP_O_RDONLY);
+                if (moduleInput != null) {
+                    byte[] moduleBytes = new byte[(int) moduleInput.length()];
+                    moduleInput.readFully(moduleBytes);
+                    moduleInput.close();
+                    ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
-                SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true);
-                Emulator.getClock().resume();
+                    SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true);
+                    Emulator.getClock().resume();
 
-                if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
-                    result = 0;
+                    if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
+                        result = 0;
+                    } else {
+                        log.warn("sceKernelLoadExecNpDrm - failed, target is not an ELF");
+                        result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
+                    }
                 } else {
-                    log.warn("sceKernelLoadExecNpDrm - failed, target is not an ELF");
-                    result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
+                    result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
                 }
-            } else {
+            } catch (GeneralJpcspException e) {
+                log.error("sceKernelLoadExecNpDrm", e);
+                result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+            } catch (IOException e) {
+                log.error(String.format("sceKernelLoadExecNpDrm - Error while loading module '%s'", fileName), e);
                 result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
             }
-        } catch (GeneralJpcspException e) {
-            log.error("sceKernelLoadExecNpDrm", e);
-            result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
-        } catch (IOException e) {
-            log.error(String.format("sceKernelLoadExecNpDrm - Error while loading module '%s'", fileName), e);
-            result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
-        }
 
-        return result;
+            return result;
+        }
     }
 }

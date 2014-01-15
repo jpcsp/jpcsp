@@ -464,9 +464,18 @@ public class SceKernelErrors {
     public final static int ERROR_NPSERVICE_NOT_INIT                            = 0x80550502;
 
     public final static int ERROR_NPDRM_INVALID_FILE                            = 0x80550901;
+    public final static int ERROR_NPDRM_INTERNAL_ERROR                          = 0x80550902;
     public final static int ERROR_NPDRM_INVALID_ACT_SIGN                        = 0x80550903;
     public final static int ERROR_NPDRM_INVALID_RIF_SIGN                        = 0x80550904;
     public final static int ERROR_NPDRM_DIFF_ACC_ID                             = 0x80550905;
+    public final static int ERROR_NPDRM_WRONG_VERSION                           = 0x80550906;
+    public final static int ERROR_NPDRM_FILE_ERROR                              = 0x80550907;
+    public final static int ERROR_NPDRM_BAD_MEDIA_ID                            = 0x80550908;
+    public final static int ERROR_NPDRM_BAD_PRODUCT_ID                          = 0x80550909;
+    public final static int ERROR_NPDRM_NO_RIF                                  = 0x80550910;
+    public final static int ERROR_NPDRM_NO_ACT                                  = 0x80550911;
+    public final static int ERROR_NPDRM_INVALID_PERM                            = 0x80550912;
+    public final static int ERROR_NPDRM_INVALID_FILE_FORMAT                     = 0x80550913;
     public final static int ERROR_NPDRM_TIME_SERVICE_ENDED                      = 0x80550914;
     public final static int ERROR_NPDRM_TIME_SERVICE_NOT_STARTED                = 0x80550915;
     public final static int ERROR_NPDRM_NO_K_LICENSEE_SET                       = 0x80550916;
