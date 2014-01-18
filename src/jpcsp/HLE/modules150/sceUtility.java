@@ -1057,14 +1057,14 @@ public class sceUtility extends HLEModule {
                     if (savedataParams.saveNameList != null) {
                         for (int i = 0; i < savedataParams.saveNameList.length; i++) {
                             String save = savedataParams.getBasePath(savedataParams.saveNameList[i]);
-                            if (Modules.IoFileMgrForUserModule.rmdir(save, true)) {
+                            if (savedataParams.deleteDir(save)) {
                                 log.debug("Savedata MODE_DELETE deleting " + save);
                             }
                         }
                         savedataParams.base.result = 0;
                     } else if (savedataParams.saveName.length() > 0) {
                         String saveDir = savedataParams.getBasePath();
-                        if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
+                        if (savedataParams.deleteDir(saveDir)) {
                             savedataParams.base.result = 0;
                         } else {
                             log.warn("Savedata MODE_DELETE directory not found!");
@@ -1095,7 +1095,7 @@ public class sceUtility extends HLEModule {
                                 savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
                             } else {
                                 String dirName = savedataParams.getBasePath(saveListSelection);
-                                if (Modules.IoFileMgrForUserModule.rmdir(dirName, true)) {
+                                if (savedataParams.deleteDir(dirName)) {
                                     log.debug("Savedata MODE_DELETE deleting " + dirName);
                                     savedataParams.base.result = 0;
                                 } else {
@@ -1208,24 +1208,28 @@ public class sceUtility extends HLEModule {
                 }
 
                 case SceUtilitySavedataParam.MODE_AUTODELETE: {
-                    String saveDir = savedataParams.getBasePath();
-                    if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
+                    if (savedataParams.deleteDir(savedataParams.getBasePath())) {
                         savedataParams.base.result = 0;
                     } else {
                         log.warn("Savedata MODE_AUTODELETE directory not found!");
                         savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
                     }
+                    // Tests show certain applications expect the PSP to change the
+                    // dialog status automatically after delete.
+                    status = PSP_UTILITY_DIALOG_STATUS_QUIT;
                     break;
                 }
 
                 case SceUtilitySavedataParam.MODE_SINGLEDELETE: {
-                    String saveDir = savedataParams.getBasePath();
-                    if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
+                    if (savedataParams.deleteFile(savedataParams.fileName)) {
                         savedataParams.base.result = 0;
                     } else {
-                        log.warn("Savedata MODE_SINGLEDELETE directory not found!");
-                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
+                        log.warn("Savedata MODE_SINGLEDELETE file not found!");
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_MEMSTICK;
                     }
+                    // Tests show certain applications expect the PSP to change the
+                    // dialog status automatically after delete.
+                    status = PSP_UTILITY_DIALOG_STATUS_QUIT;
                     break;
                 }
 
@@ -1460,14 +1464,7 @@ public class sceUtility extends HLEModule {
                 case SceUtilitySavedataParam.MODE_DELETEDATA:
                     // Sub-type of mode DELETE.
                     // Deletes the contents of only one specified file.
-                    if (savedataParams.fileName != null) {
-                        String save = "ms0/PSP/SAVEDATA/" + State.discId + savedataParams.saveName + "/" + savedataParams.fileName;
-                        File f = new File(save);
-
-                        if (f.exists()) {
-                            log.debug("Savedata MODE_DELETEDATA deleting " + save);
-                            f.delete();
-                        }
+                    if (savedataParams.deleteFile(savedataParams.fileName)) {
                         savedataParams.base.result = checkMultipleCallStatus();
                     } else {
                         log.warn("Savedata MODE_DELETEDATA no data found!");
@@ -2731,6 +2728,8 @@ public class sceUtility extends HLEModule {
                     image = ImageIO.read(is);
                 } catch (IOException e) {
                     log.debug("getIcon0", e);
+                } catch (Exception e) {
+                    // Corrupted data, just ignore.
                 }
             }
 

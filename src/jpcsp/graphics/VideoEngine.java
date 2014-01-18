@@ -181,6 +181,7 @@ public class VideoEngine {
     private boolean useAsyncVertexCache = true;
     public boolean useOptimisticVertexCache = false;
     private boolean useTextureAnisotropicFilter = false;
+    private boolean usexBRZFilter = false;
     private boolean disableOptimizedVertexInfoReading = false;
     private boolean avoidDrawElementsWithNonZeroIndexOffset = false;
     private boolean enableTextureModding = true;
@@ -358,6 +359,14 @@ public class VideoEngine {
         @Override
         protected void settingsValueChanged(boolean value) {
             setDisableOptimizedVertexInfoReading(value);
+        }
+    }
+
+    private class UsexBRZFilterSettingsListerner extends AbstractBoolSettingsListener {
+
+        @Override
+        protected void settingsValueChanged(boolean value) {
+            setUsexBRZFilter(value);
         }
     }
 
@@ -576,6 +585,7 @@ public class VideoEngine {
     public void start() {
         Settings.getInstance().registerSettingsListener(name, "emu.useVertexCache", new UseVertexCacheSettingsListerner());
         Settings.getInstance().registerSettingsListener(name, "emu.graphics.filters.anisotropic", new UseTextureAnisotropicFilterSettingsListerner());
+        Settings.getInstance().registerSettingsListener(name, "emu.plugins.xbrz", new UsexBRZFilterSettingsListerner());
         Settings.getInstance().registerSettingsListener(name, "emu.disableoptimizedvertexinforeading", new DisableOptimizedVertexInfoReadingListener());
 
         setMaxTextureSize(Settings.getInstance().readInt("maxTextureSize", 512));
@@ -1006,8 +1016,8 @@ public class VideoEngine {
 
         // No need to wait of the END command for a FINISH.
         if (currentList.isFinished()) {
-        	listHasEnded = true;
-        	return true;
+            listHasEnded = true;
+            return true;
         }
 
         waitSignalStatistics.start();
@@ -1957,8 +1967,8 @@ public class VideoEngine {
         context.textureFunc = normalArgument & 0x7;
         if (context.textureFunc >= TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_UNKNOW1) {
         	// All 3 unknown values have the same function as TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_ADD.
-        	// Tested on PSP using 3DStudio.
-        	context.textureFunc = TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_ADD;
+            // Tested on PSP using 3DStudio.
+            context.textureFunc = TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_ADD;
         }
 
         context.textureAlphaUsed = ((normalArgument >> 8) & 0x1) != TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_IGNORED;
@@ -2179,14 +2189,14 @@ public class VideoEngine {
         }
 
         if (context.textureFlag.isEnabled() && !context.clearMode) {
-        	int textureAddr = context.texture_base_pointer[0] & Memory.addressMask;
-        	if (textureAddr > MemoryMap.END_VRAM && textureAddr < MemoryMap.START_VRAM + 0x800000) {
-        		if (isLogWarnEnabled) {
-        			log.warn(String.format("Texture in swizzled VRAM not supported 0x%08X", textureAddr));
-        		}
-        		endRendering(numberOfVertex);
-        		return;
-        	}
+            int textureAddr = context.texture_base_pointer[0] & Memory.addressMask;
+            if (textureAddr > MemoryMap.END_VRAM && textureAddr < MemoryMap.START_VRAM + 0x800000) {
+                if (isLogWarnEnabled) {
+                    log.warn(String.format("Texture in swizzled VRAM not supported 0x%08X", textureAddr));
+                }
+                endRendering(numberOfVertex);
+                return;
+            }
         }
 
         if (type == GeCommands.PRIM_CONTINUE_PREVIOUS_PRIM) {
@@ -3089,7 +3099,7 @@ public class VideoEngine {
 
         boolean transferUsingMemcpy = false;
         if (!display.isGeAddress(context.textureTx_destinationAddress) || bpp != bppGe || display.isUsingSoftwareRenderer()) {
-        	transferUsingMemcpy = true;
+            transferUsingMemcpy = true;
         }
 
         if (display.isGeAddress(context.textureTx_sourceAddress)) {
@@ -3383,13 +3393,13 @@ public class VideoEngine {
         nopCount++;
         if (nopCount > 3000) {
         	// More than 3000 NOP instructions executed during this list,
-        	// something must be wrong...
-        	error(String.format("Too many NOP instructions executed (%d) at 0x%08X", nopCount, currentList.getPc()));
+            // something must be wrong...
+            error(String.format("Too many NOP instructions executed (%d) at 0x%08X", nopCount, currentList.getPc()));
         } else {
 	        // Check if we are not reading from an invalid memory region.
-	        // Abort the list if this is the case.
-	        // This is only done in the NOP command to not impact performance.
-	        checkCurrentListPc();
+            // Abort the list if this is the case.
+            // This is only done in the NOP command to not impact performance.
+            checkCurrentListPc();
         }
     }
 
@@ -3471,21 +3481,21 @@ public class VideoEngine {
         currentList.callRelativeOffset(normalArgument);
         int newPc = currentList.getPc();
         if (!Memory.isAddressGood(newPc)) {
-        	error(String.format("Call instruction to invalid address 0x%08X", newPc));
-        	// Return immediately
-        	currentList.ret();
+            error(String.format("Call instruction to invalid address 0x%08X", newPc));
+            // Return immediately
+            currentList.ret();
         } else {
-	        if (cachedInstructions.containsKey(newPc)) {
-	            int[] instructions = cachedInstructions.get(newPc);
-	            if (instructions != null) {
-	                int memorySize = instructions.length << 2;
-	                if (isLogInfoEnabled) {
-	                    log.info(String.format("call using cached instructions 0x%08X-0x%08X", newPc, newPc + memorySize));
-	                }
-	                IMemoryReader memoryReader = MemoryReader.getMemoryReader(instructions, 0, memorySize);
-	                currentList.setMemoryReader(memoryReader);
-	            }
-	        }
+            if (cachedInstructions.containsKey(newPc)) {
+                int[] instructions = cachedInstructions.get(newPc);
+                if (instructions != null) {
+                    int memorySize = instructions.length << 2;
+                    if (isLogInfoEnabled) {
+                        log.info(String.format("call using cached instructions 0x%08X-0x%08X", newPc, newPc + memorySize));
+                    }
+                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(instructions, 0, memorySize);
+                    currentList.setMemoryReader(memoryReader);
+                }
+            }
         }
 
         if (isLogDebugEnabled) {
@@ -4181,8 +4191,8 @@ public class VideoEngine {
         }
 
         if (context.light_type[lnum] == LIGHT_TYPE_UNKNOWN) {
-        	// Confirmed by testing with 3DStudio: light type 3 is equivalent to light type 2.
-        	context.light_type[lnum] = LIGHT_SPOT;
+            // Confirmed by testing with 3DStudio: light type 3 is equivalent to light type 2.
+            context.light_type[lnum] = LIGHT_SPOT;
         }
 
         switch (context.light_type[lnum]) {
@@ -4518,7 +4528,7 @@ public class VideoEngine {
         }
 
         if (context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_UNKNOW) {
-        	// Confirmed by testing with 3DStudio: map mode 3 is equivalent to map mode 0
+            // Confirmed by testing with 3DStudio: map mode 3 is equivalent to map mode 0
             context.tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
         }
 
@@ -5105,8 +5115,8 @@ public class VideoEngine {
         int map_texture = (normalArgument >> 21) & 0x1;  // Texture mapping.
         int fog = (normalArgument >> 22) & 0x1;          // Fogging.
         int dither = (normalArgument >> 23) & 0x1;       // Dithering.
-        log.warn(String.format("Unimplemented VAP: color=%d, prim_type=%d, antialias=%d, clip=%d, shading=%d, cull=%d" +
-                ", v_order=%d, map_texture=%d, fog=%d, dither=%d",
+        log.warn(String.format("Unimplemented VAP: color=%d, prim_type=%d, antialias=%d, clip=%d, shading=%d, cull=%d"
+                + ", v_order=%d, map_texture=%d, fog=%d, dither=%d",
                 color, prim_type, antialias, clip, shading, cull, v_order, map_texture, fog, dither));
     }
 
@@ -5299,7 +5309,6 @@ public class VideoEngine {
          nz *= length;
          }
          */
-
         normal[0] = nx;
         normal[1] = ny;
         normal[2] = nz;
@@ -5361,7 +5370,6 @@ public class VideoEngine {
          nz *= length;
          }
          */
-
         if (hasNormal) {
             v.n[0] = nx;
             v.n[1] = ny;
@@ -5499,7 +5507,7 @@ public class VideoEngine {
 
         int width = context.texture_width[0];
         int height = context.texture_height[0];
-        
+
         if (geTexture.getWidthPow2() == width && geTexture.getHeightPow2() == height) {
             if (isLogDebugEnabled) {
                 log.debug(String.format("Reusing GETexture %s", geTexture));
@@ -6133,13 +6141,24 @@ public class VideoEngine {
 
                 // Upload texture to openGL.
                 re.setPixelStore(textureBufferWidthInPixels, textureByteAlignment);
-
+                
                 if (compressedTexture) {
                     re.setCompressedTexImage(
                             level,
                             buffer_storage,
                             context.texture_width[level], context.texture_height[level],
                             compressedTextureSize,
+                            final_buffer);
+                } else if (isUsexBRZFilter() && ((texaddr > 83886080) && (texaddr < 142606336))) {
+                    int textureSize = Math.max(textureBufferWidthInPixels, this.context.texture_width[level]) * this.context.texture_height[level] * textureByteAlignment;
+                    this.re.setTexImagexBRZ(
+                            level,
+                            buffer_storage,
+                            this.context.texture_width[level], this.context.texture_height[level],
+                            this.context.texture_buffer_width[level],
+                            buffer_storage,
+                            buffer_storage,
+                            textureSize,
                             final_buffer);
                 } else {
                     int textureSize = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level] * textureByteAlignment;
@@ -7419,6 +7438,14 @@ public class VideoEngine {
         this.useTextureAnisotropicFilter = useTextureAnisotropicFilter;
     }
 
+    public boolean isUsexBRZFilter() {
+        return usexBRZFilter;
+    }
+
+    public void setUsexBRZFilter(boolean usexBRZFilter) {
+        this.usexBRZFilter = usexBRZFilter;
+    }
+
     public void setSkipThisFrame(boolean skipThisFrame) {
         this.skipThisFrame = skipThisFrame;
     }
@@ -7448,8 +7475,8 @@ public class VideoEngine {
 
     private void initTextureBuffers() {
         int maxTextureSize = 1 << maxTextureSizeLog2;
-		// We might need more space for a texture of size 512x512 and bufferWidth=1024
-		int tmpBufferSize = Math.max(maxTextureSize, 1024) * maxTextureSize;
+        // We might need more space for a texture of size 512x512 and bufferWidth=1024
+        int tmpBufferSize = Math.max(maxTextureSize, 1024) * maxTextureSize;
         if (tmp_texture_buffer32 == null || tmp_texture_buffer32.length != tmpBufferSize) {
             // Tell the garbage collector that the old arrays are no longer in use.
             tmp_texture_buffer32 = null;

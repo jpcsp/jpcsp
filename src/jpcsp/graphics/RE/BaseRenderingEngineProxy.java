@@ -621,6 +621,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
 		proxy.setTexImage(level, internalFormat, width, height, format, type, textureSize, buffer);
 	}
+        
+        @Override
+	public void setTexImagexBRZ(int level, int internalFormat, int width, int height, int bufwidth, int format, int type, int textureSize, Buffer buffer) {
+            proxy.setTexImagexBRZ(level, internalFormat, width, height, bufwidth, format, type, textureSize, buffer);
+        }
 
 	@Override
 	public void setStencilOp(int fail, int zfail, int zpass) {

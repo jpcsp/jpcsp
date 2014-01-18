@@ -725,6 +725,11 @@ public class SAVEDATA {
                 break;
             }
         }
+        
+        // Downgrade to mode 2 for now.
+        if (mode == 4) {
+            mode = 2;
+        }
 
         // New mode (after firmware 2.7.1).
         if ((mode & 0x4) == 0x4) {
@@ -753,6 +758,11 @@ public class SAVEDATA {
             hash_0x10 = GenerateSavedataHash(data, size, 1, seed);
             // Set the SAVEDATA_PARAMS byte to 0x01.
             savedataParams[0] |= 0x01;
+        }
+        
+        // Destroy the 0x20 hash for now.
+        for (int i = 0; i < 0x10; i++) {
+            hash_0x20[i] = (byte) 0xFF;
         }
 
         // Store the hashes at the right offsets.

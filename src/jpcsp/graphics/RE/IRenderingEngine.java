@@ -431,7 +431,8 @@ public interface IRenderingEngine {
 	public void deleteTexture(int texture);
 	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer);
 	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer);
-	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, int textureSize, Buffer buffer);
+	public void setTexImagexBRZ(int level, int internalFormat, int width, int height, int bufwidth, int format, int type, int textureSize, Buffer buffer);
+        public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, int textureSize, Buffer buffer);
 	public void getTexImage(int level, int format, int type, Buffer buffer);
 	public void copyTexSubImage(int level, int xOffset, int yOffset, int x, int y, int width, int height);
 	public void setStencilOp(int fail, int zfail, int zpass);
