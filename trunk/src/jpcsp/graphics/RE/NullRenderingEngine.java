@@ -519,6 +519,10 @@ public class NullRenderingEngine implements IRenderingEngine {
 	@Override
 	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
 	}
+        
+        @Override
+	public void setTexImagexBRZ(int level, int internalFormat, int width, int height, int bufwidth, int format, int type, int textureSize, Buffer buffer) {
+	}
 
 	@Override
 	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, int textureSize, Buffer buffer) {

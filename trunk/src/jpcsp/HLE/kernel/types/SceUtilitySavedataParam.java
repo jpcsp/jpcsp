@@ -546,6 +546,19 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
         return null;
     }
+    
+    public boolean deleteDir(String path) {
+        return Modules.IoFileMgrForUserModule.rmdir(path, true);
+    }
+    
+    public boolean deleteFile(String filename) {
+        boolean success = false;
+        if (filename != null && filename.length() > 0) {
+            File f = new File(getBasePath().replace(":", "/") + filename);
+            success = f.delete();
+        }
+        return success;
+    }
 
     public void load(Memory mem) throws IOException {
         String path = getBasePath();
@@ -717,6 +730,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             memoryWriter.writeNext(outBuf[i]);
         }
         memoryWriter.flush();
+        fileInput.close();
 
         return length;
     }

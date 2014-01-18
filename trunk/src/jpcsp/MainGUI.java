@@ -230,6 +230,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Modules.sceDisplayModule.getCanvas().addMouseListener(this);
         addComponentListener(this);
         pack();
+        
+        // Check if any plugins are available.
+        File plugins = new File(System.getProperty("java.library.path"));
+        xbrzCheck.setEnabled(false);
+        for (String list : plugins.list()) {
+            if (list.contains("XBRZ4JPCSP")) {
+                xbrzCheck.setEnabled(true);
+            }
+        }
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -374,6 +383,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ChineseTW = new javax.swing.JMenuItem();
         Italian = new javax.swing.JMenuItem();
         Greek = new javax.swing.JMenuItem();
+        PluginsMenu = new javax.swing.JMenu();
+        xbrzCheck = new javax.swing.JCheckBoxMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
 
@@ -1072,6 +1083,19 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(Greek);
 
         MenuBar.add(LanguageMenu);
+
+        PluginsMenu.setText(bundle.getString("MainGUI.PluginsMenu.text")); // NOI18N
+
+        xbrzCheck.setSelected(Settings.getInstance().readBool("emu.plugins.xbrz"));
+        xbrzCheck.setText(bundle.getString("MainGUI.xbrzCheck.text")); // NOI18N
+        xbrzCheck.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                xbrzCheckActionPerformed(evt);
+            }
+        });
+        PluginsMenu.add(xbrzCheck);
+
+        MenuBar.add(PluginsMenu);
 
         HelpMenu.setText(bundle.getString("MainGUI.HelpMenu.text")); // NOI18N
 
@@ -2654,6 +2678,11 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         changeLanguage("en_GB");
     }//GEN-LAST:event_EnglishGBActionPerformed
 
+    private void xbrzCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_xbrzCheckActionPerformed
+        VideoEngine.getInstance().setUsexBRZFilter(xbrzCheck.isSelected());
+        Settings.getInstance().writeBool("emu.plugins.xbrz", xbrzCheck.isSelected());
+    }//GEN-LAST:event_xbrzCheckActionPerformed
+
     private void exitEmu() {
         ProOnlineNetworkAdapter.exit();
         Modules.ThreadManForUserModule.exit();
@@ -2923,6 +2952,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem OpenMemStick;
     private javax.swing.JMenu OptionsMenu;
     private javax.swing.JToggleButton PauseButton;
+    private javax.swing.JMenu PluginsMenu;
     private javax.swing.JMenuItem Polish;
     private javax.swing.JMenuItem Portuguese;
     private javax.swing.JMenuItem PortugueseBR;
@@ -2956,6 +2986,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem switchUmd;
     private javax.swing.JCheckBoxMenuItem threeTimesResize;
     private javax.swing.JCheckBoxMenuItem twoTimesResize;
+    private javax.swing.JCheckBoxMenuItem xbrzCheck;
     // End of variables declaration//GEN-END:variables
 
     private boolean userChooseSomething(int returnVal) {
