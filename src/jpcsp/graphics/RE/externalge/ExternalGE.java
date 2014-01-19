@@ -190,7 +190,6 @@ public class ExternalGE {
 
 			if (list == currentList) {
 				NativeUtils.setCoreSadr(list.getStallAddr());
-				NativeUtils.setCoreCtrlActive();
 				CoreThread.getInstance().sync();
 			}
 		}
@@ -214,9 +213,9 @@ public class ExternalGE {
 	}
 
 	public static void finishList(PspGeList list) {
-		synchronized (drawListQueue) {
-			Modules.sceGe_userModule.hleGeListSyncDone(list);
+		Modules.sceGe_userModule.hleGeListSyncDone(list);
 
+		synchronized (drawListQueue) {
 			if (list == currentList) {
 				if (CaptureManager.captureInProgress) {
 					log.setLevel(logLevel);
