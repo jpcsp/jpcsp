@@ -121,6 +121,7 @@
 				<include name="lib/*.jar" />
 				<include name="lib/${platform.name}/**" />
 				<include name="plugins/${platform.name}/**" />
+				<include name="plugins/README.txt" />
 				<include name="demos/**" />
 				<include name="flash0/**" />
 				<include name="ms0/**" />

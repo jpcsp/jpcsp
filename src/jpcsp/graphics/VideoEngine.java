@@ -6138,6 +6138,12 @@ public class VideoEngine {
                         }
                     }
                 }
+                
+                // Check if scaling is needed for xBRZ.
+                boolean scale = isUsexBRZFilter();
+                if ((texaddr > 83886080) && (texaddr < 142606336)) {
+                    scale = false;
+                }
 
                 // Upload texture to openGL.
                 re.setPixelStore(textureBufferWidthInPixels, textureByteAlignment);
@@ -6149,7 +6155,7 @@ public class VideoEngine {
                             context.texture_width[level], context.texture_height[level],
                             compressedTextureSize,
                             final_buffer);
-                } else if (isUsexBRZFilter() && ((texaddr > 83886080) && (texaddr < 142606336))) {
+                } else if (isUsexBRZFilter() && scale) {
                     int textureSize = Math.max(textureBufferWidthInPixels, this.context.texture_width[level]) * this.context.texture_height[level] * textureByteAlignment;
                     this.re.setTexImagexBRZ(
                             level,
