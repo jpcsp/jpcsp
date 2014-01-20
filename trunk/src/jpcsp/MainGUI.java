@@ -2679,7 +2679,6 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }//GEN-LAST:event_EnglishGBActionPerformed
 
     private void xbrzCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_xbrzCheckActionPerformed
-        VideoEngine.getInstance().setUsexBRZFilter(xbrzCheck.isSelected());
         Settings.getInstance().writeBool("emu.plugins.xbrz", xbrzCheck.isSelected());
     }//GEN-LAST:event_xbrzCheckActionPerformed
 

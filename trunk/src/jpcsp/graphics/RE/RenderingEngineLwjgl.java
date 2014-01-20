@@ -1049,34 +1049,50 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setTexImagexBRZ(int level, int internalFormat, int width, int height, int bufwidth, int format, int type, int textureSize, Buffer buffer) {
-        if ((buffer != null) && (bufwidth != -1)) {
-            if ((buffer instanceof ByteBuffer)) {
+        if (buffer == null) {
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+        } else if (buffer instanceof ByteBuffer) {
+            if (bufwidth != -1) {
                 ByteBuffer tmpbuf = DirectBufferUtilities.getDirectBuffer(textureSize, (ByteBuffer) buffer);
                 int length = tmpbuf.remaining();
                 byte[] buf = new byte[length];
                 tmpbuf.get(buf);
                 XBRZNativeFilter.ScaleandSetTexImage(2, buf, level, textureInternalFormatToGL[internalFormat], width, height, bufwidth, textureFormatToGL[format], textureTypeToGL[type]);
-            } else if ((buffer instanceof IntBuffer)) {
+            } else {
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+            }
+        } else if (buffer instanceof IntBuffer) {
+            if (bufwidth != -1) {
                 IntBuffer tmpbuf = DirectBufferUtilities.getDirectBuffer(textureSize, (IntBuffer) buffer);
                 int length = tmpbuf.remaining();
                 int[] buf = new int[length];
                 tmpbuf.get(buf);
                 XBRZNativeFilter.ScaleandSetTexImage(2, buf, level, textureInternalFormatToGL[internalFormat], width, height, bufwidth, textureFormatToGL[format], textureTypeToGL[type]);
-            } else if ((buffer instanceof ShortBuffer)) {
+            } else {
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
+            }
+        } else if (buffer instanceof ShortBuffer) {
+            if (bufwidth != -1) {
                 ShortBuffer tmpbuf = DirectBufferUtilities.getDirectBuffer(textureSize, (ShortBuffer) buffer);
                 int length = tmpbuf.remaining();
                 short[] buf = new short[length];
                 tmpbuf.get(buf);
                 XBRZNativeFilter.ScaleandSetTexImage(2, buf, level, textureInternalFormatToGL[internalFormat], width, height, bufwidth, textureFormatToGL[format], textureTypeToGL[type]);
-            } else if ((buffer instanceof FloatBuffer)) {
+            } else {
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
+            }
+        } else if (buffer instanceof FloatBuffer) {
+            if (bufwidth != -1) {
                 FloatBuffer tmpbuf = DirectBufferUtilities.getDirectBuffer(textureSize, (FloatBuffer) buffer);
                 int length = tmpbuf.remaining();
                 float[] buf = new float[length];
                 tmpbuf.get(buf);
                 XBRZNativeFilter.ScaleandSetTexImage(2, buf, level, textureInternalFormatToGL[internalFormat], width, height, bufwidth, textureFormatToGL[format], textureTypeToGL[type]);
             } else {
-                throw new IllegalArgumentException();
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
             }
+        } else {
+            throw new IllegalArgumentException();
         }
     }
 
