@@ -176,15 +176,12 @@ public class CoreThread extends Thread {
 
         switch (behavior) {
             case sceGe_user.PSP_GE_SIGNAL_SYNC: {
-                // Skip END / FINISH / END
+                // Skip FINISH / END
                 Memory mem = Memory.getInstance();
-                if (command(mem.read32(list.getPc())) == END) {
+                if (command(mem.read32(list.getPc())) == FINISH) {
                 	list.readNextInstruction();
-                    if (command(mem.read32(list.getPc())) == FINISH) {
+                    if (command(mem.read32(list.getPc())) == END) {
                     	list.readNextInstruction();
-                        if (command(mem.read32(list.getPc())) == END) {
-                        	list.readNextInstruction();
-                        }
                     }
                 }
                 if (log.isDebugEnabled()) {
@@ -194,33 +191,24 @@ public class CoreThread extends Thread {
             }
             case sceGe_user.PSP_GE_SIGNAL_CALL: {
                 // Call list using absolute address from SIGNAL + END.
-                Memory mem = Memory.getInstance();
-                if (command(mem.read32(list.getPc())) == END) {
-                    int hi16 = signal & 0x0FFF;
-                    // Read & skip END
-                    int lo16 = (list.readNextInstruction() & 0xFFFF);
-                    int addr = (hi16 << 16) | lo16;
-                    int oldPc = list.getPc();
-                    list.callAbsolute(addr);
-                    int newPc = list.getPc();
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("PSP_GE_SIGNAL_CALL old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
-                    }
+                int hi16 = signal & 0x0FFF;
+                int lo16 = NativeUtils.getCoreCmdArray(GeCommands.END) & 0xFFFF;
+                int addr = (hi16 << 16) | lo16;
+                int oldPc = list.getPc();
+                list.callAbsolute(addr);
+                int newPc = list.getPc();
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("PSP_GE_SIGNAL_CALL old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
                 }
                 break;
             }
             case sceGe_user.PSP_GE_SIGNAL_RETURN: {
                 // Return from PSP_GE_SIGNAL_CALL.
-                Memory mem = Memory.getInstance();
-                if (command(mem.read32(list.getPc())) == END) {
-                    // Skip END
-                	list.readNextInstruction();
-                    int oldPc = list.getPc();
-                    list.ret();
-                    int newPc = list.getPc();
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("PSP_GE_SIGNAL_RETURN old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
-                    }
+                int oldPc = list.getPc();
+                list.ret();
+                int newPc = list.getPc();
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("PSP_GE_SIGNAL_RETURN old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
                 }
                 break;
             }
@@ -233,21 +221,17 @@ public class CoreThread extends Thread {
             case sceGe_user.PSP_GE_SIGNAL_TBP6_REL:
             case sceGe_user.PSP_GE_SIGNAL_TBP7_REL: {
                 // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address only).
-                Memory mem = Memory.getInstance();
-                if (command(mem.read32(list.getPc())) == END) {
-                    int hi16 = signal & 0xFFFF;
-                    // Read & skip END
-                    int ins = list.readNextInstruction();
-                    int lo16 = ins & 0xFFFF;
-                    int width = (ins >> 16) & 0xFF;
-                    int addr = list.getAddressRel((hi16 << 16) | lo16);
-                    int tbpValue = (behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL + GeCommands.TBP0) << 24 |
-                                   (addr & 0x00FFFFFF);
-                    int tbwValue = (behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL + GeCommands.TBW0) << 24 |
-                                   ((addr >> 8) & 0x00FF0000) | (width & 0xFFFF);
-                    NativeUtils.setCoreCmdArray(command(tbpValue),	tbpValue);
-                    NativeUtils.setCoreCmdArray(command(tbwValue),	tbwValue);
-                }
+                int hi16 = signal & 0xFFFF;
+                int end = NativeUtils.getCoreCmdArray(GeCommands.END);
+                int lo16 = end & 0xFFFF;
+                int width = (end >> 16) & 0xFF;
+                int addr = list.getAddressRel((hi16 << 16) | lo16);
+                int tbpValue = (behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL + GeCommands.TBP0) << 24 |
+                               (addr & 0x00FFFFFF);
+                int tbwValue = (behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL + GeCommands.TBW0) << 24 |
+                               ((addr >> 8) & 0x00FF0000) | (width & 0xFFFF);
+                NativeUtils.setCoreCmdArray(command(tbpValue),	tbpValue);
+                NativeUtils.setCoreCmdArray(command(tbwValue),	tbwValue);
                 break;
             }
             case sceGe_user.PSP_GE_SIGNAL_TBP0_REL_OFFSET:
@@ -259,21 +243,18 @@ public class CoreThread extends Thread {
             case sceGe_user.PSP_GE_SIGNAL_TBP6_REL_OFFSET:
             case sceGe_user.PSP_GE_SIGNAL_TBP7_REL_OFFSET: {
                 // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address with offset).
-                Memory mem = Memory.getInstance();
-                if (command(mem.read32(list.getPc())) == END) {
-                    int hi16 = signal & 0xFFFF;
-                    // Read & skip END
-                    int ins = list.readNextInstruction();
-                    int lo16 = ins & 0xFFFF;
-                    int width = (ins >> 16) & 0xFF;
-                    int addr = list.getAddressRelOffset((hi16 << 16) | lo16);
-                    int tbpValue = (behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL + GeCommands.TBP0) << 24 |
-                                   (addr & 0x00FFFFFF);
-                    int tbwValue = (behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL + GeCommands.TBW0) << 24 |
-                                   ((addr >> 8) & 0x00FF0000) | (width & 0xFFFF);
-                    NativeUtils.setCoreCmdArray(command(tbpValue),	tbpValue);
-                    NativeUtils.setCoreCmdArray(command(tbwValue),	tbwValue);
-                }
+                int hi16 = signal & 0xFFFF;
+                // Read & skip END
+                int end = NativeUtils.getCoreCmdArray(GeCommands.END);
+                int lo16 = end & 0xFFFF;
+                int width = (end >> 16) & 0xFF;
+                int addr = list.getAddressRelOffset((hi16 << 16) | lo16);
+                int tbpValue = (behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL + GeCommands.TBP0) << 24 |
+                               (addr & 0x00FFFFFF);
+                int tbwValue = (behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL + GeCommands.TBW0) << 24 |
+                               ((addr >> 8) & 0x00FF0000) | (width & 0xFFFF);
+                NativeUtils.setCoreCmdArray(command(tbpValue),	tbpValue);
+                NativeUtils.setCoreCmdArray(command(tbwValue),	tbwValue);
                 break;
             }
             case sceGe_user.PSP_GE_SIGNAL_HANDLER_SUSPEND:
