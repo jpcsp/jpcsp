@@ -20,13 +20,11 @@ import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._f0;
 import static jpcsp.Allegrex.Common._f12;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import jpcsp.Allegrex.CpuState;
 
 public class ParameterReader {
 	private CpuState cpu;
-	private Memory memory;
+	final private Memory memory;
 	private int parameterIndex = 0;
 	private int parameterIndexFloat = 0;
 	protected static final int maxParameterInGprRegisters = 8;
@@ -57,7 +55,7 @@ public class ParameterReader {
 
 	private float getParameterFloatAt(int index) {
 		if (index >= maxParameterInFprRegisters) {
-			throw(new NotImplementedException());
+			throw(new UnsupportedOperationException());
 		}
 		return cpu.fpr[firstParameterInFpr + index];
 	}
@@ -109,7 +107,7 @@ public class ParameterReader {
 	}
 
 	public void setReturnValueLong(long value) {
-		cpu._v0 = (int)((value >>  0) & 0xFFFFFFFF);
+		cpu._v0 = (int)(                0xFFFFFFFF);
 		cpu._v1 = (int)((value >> 32) & 0xFFFFFFFF);
 	}
 }
