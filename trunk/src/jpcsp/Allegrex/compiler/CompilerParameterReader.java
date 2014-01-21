@@ -21,8 +21,6 @@ import static jpcsp.Allegrex.Common._sp;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import jpcsp.ParameterReader;
 
 /**
@@ -30,7 +28,7 @@ import jpcsp.ParameterReader;
  *
  */
 public class CompilerParameterReader extends ParameterReader {
-	private ICompilerContext compilerContext;
+	final private ICompilerContext compilerContext;
 	private boolean hasErrorPointer = false;
 	private int currentParameterIndex = 0;
 	private int currentStackPopIndex = 0;
@@ -51,7 +49,7 @@ public class CompilerParameterReader extends ParameterReader {
 
 	private void loadParameterFloatAt(int index) {
 		if (index >= maxParameterInFprRegisters) {
-			throw(new NotImplementedException());
+			throw(new UnsupportedOperationException());
 		}
 		compilerContext.loadFRegister(firstParameterInFpr + index);
 	}
