@@ -107,7 +107,7 @@ public class ParameterReader {
 	}
 
 	public void setReturnValueLong(long value) {
-		cpu._v0 = (int)(                0xFFFFFFFF);
+		cpu._v0 = (int)((value      ) & 0xFFFFFFFF);
 		cpu._v1 = (int)((value >> 32) & 0xFFFFFFFF);
 	}
 }
