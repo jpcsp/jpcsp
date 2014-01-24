@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.externalge;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
@@ -47,6 +48,7 @@ public class ExternalGE {
 	private static Semaphore rendererThreadsDone;
 	private static Level logLevel;
 	private static SetLogLevelThread setLogLevelThread;
+	private static int screenScaling = 1;
 
 	private static class SetLogLevelThread extends Thread {
 		private volatile boolean exit;
@@ -86,6 +88,7 @@ public class ExternalGE {
 			}
 			NativeUtils.setRendererAsyncRendering(enableAsyncRendering);
 		}
+		NativeUtils.setScreenScaling(getScreenScaling());
 	}
 
 	public static void exit() {
@@ -367,5 +370,18 @@ public class ExternalGE {
 	public static float[] getMatrix(int mtxType) {
 		// TODO Not implemented
 		return null;
+	}
+
+	public static int getScreenScaling() {
+		return screenScaling;
+	}
+
+	public static void setScreenScaling(int screenScaling) {
+		ExternalGE.screenScaling = screenScaling;
+		NativeUtils.setScreenScaling(screenScaling);
+	}
+
+	public static ByteBuffer getScaledScreen(int address, int bufferWidth, int height, int pixelFormat) {
+		return NativeUtils.getScaledScreen(address, bufferWidth, height, pixelFormat);
 	}
 }

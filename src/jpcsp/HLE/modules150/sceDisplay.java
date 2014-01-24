@@ -220,7 +220,23 @@ public class sceDisplay extends HLEModule {
                 }
 
             	reDisplay.startDisplay();
-            	drawFrameBufferFromMemory(currentFb);
+            	if (ExternalGE.getScreenScaling() <= 1) {
+            		drawFrameBufferFromMemory(currentFb);
+            	} else {
+            		int screenScaling = ExternalGE.getScreenScaling();
+				    fb.getPixels().clear();
+				    reDisplay.bindTexture(resizedTexFb);
+				    reDisplay.setTextureFormat(fb.getPixelFormat(), false);
+				    reDisplay.setPixelStore(fb.getBufferWidth() * screenScaling, getPixelFormatBytes(fb.getPixelFormat()));
+				    ByteBuffer scaledScreen = ExternalGE.getScaledScreen(fb.getTopAddr(), fb.getBufferWidth(), fb.getHeight(), fb.getPixelFormat());
+				    reDisplay.setTexSubImage(0,
+				            0, 0, fb.getBufferWidth() * screenScaling, fb.getHeight() * screenScaling,
+				            fb.getPixelFormat(),
+				            fb.getPixelFormat(),
+				            scaledScreen.remaining(), scaledScreen);
+
+				    drawFrameBuffer(fb, false, true, fb.getBufferWidth(), fb.getPixelFormat(), displayScreen.getWidth(fb), displayScreen.getHeight(fb));
+            	}
             	reDisplay.endDisplay();
 
                 if (log.isDebugEnabled()) {
