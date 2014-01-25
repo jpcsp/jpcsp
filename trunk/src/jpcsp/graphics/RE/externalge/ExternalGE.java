@@ -28,6 +28,7 @@ import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.util.DurationStatistics;
@@ -49,6 +50,7 @@ public class ExternalGE {
 	private static Level logLevel;
 	private static SetLogLevelThread setLogLevelThread;
 	private static int screenScaling = 1;
+	private static Object screenScalingLock = new Object();
 
 	private static class SetLogLevelThread extends Thread {
 		private volatile boolean exit;
@@ -87,7 +89,10 @@ public class ExternalGE {
 				rendererThreadsDone = new Semaphore(0);
 			}
 			NativeUtils.setRendererAsyncRendering(enableAsyncRendering);
-			NativeUtils.setScreenScaling(getScreenScaling());
+			setScreenScaling(sceDisplay.getResizedWidthPow2(1));
+			synchronized (screenScalingLock) {
+				NativeUtils.setScreenScaling(getScreenScaling());
+			}
 		}
 	}
 
@@ -138,6 +143,10 @@ public class ExternalGE {
 				NativeUtils.setLogLevel();
 				NativeUtils.setCoreSadr(list.getStallAddr());
 				NativeUtils.setCoreCtrlActive();
+				synchronized (screenScalingLock) {
+					// Update the screen scaling only at the start of a new list
+					NativeUtils.setScreenScaling(getScreenScaling());
+				}
 				currentList = list;
 				CoreThread.getInstance().sync();
 			} else {
@@ -377,11 +386,13 @@ public class ExternalGE {
 	}
 
 	public static void setScreenScaling(int screenScaling) {
+		log.info(String.format("setScreenScaling %d", screenScaling));
 		ExternalGE.screenScaling = screenScaling;
-		NativeUtils.setScreenScaling(screenScaling);
 	}
 
 	public static ByteBuffer getScaledScreen(int address, int bufferWidth, int height, int pixelFormat) {
-		return NativeUtils.getScaledScreen(address, bufferWidth, height, pixelFormat);
+		synchronized (screenScalingLock) {
+			return NativeUtils.getScaledScreen(address, bufferWidth, height, pixelFormat);
+		}
 	}
 }
