@@ -87,8 +87,8 @@ public class ExternalGE {
 				rendererThreadsDone = new Semaphore(0);
 			}
 			NativeUtils.setRendererAsyncRendering(enableAsyncRendering);
+			NativeUtils.setScreenScaling(getScreenScaling());
 		}
-		NativeUtils.setScreenScaling(getScreenScaling());
 	}
 
 	public static void exit() {
