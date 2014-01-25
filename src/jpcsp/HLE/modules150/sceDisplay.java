@@ -223,19 +223,23 @@ public class sceDisplay extends HLEModule {
             	if (ExternalGE.getScreenScaling() <= 1) {
             		drawFrameBufferFromMemory(currentFb);
             	} else {
-            		int screenScaling = ExternalGE.getScreenScaling();
-				    fb.getPixels().clear();
-				    reDisplay.bindTexture(resizedTexFb);
-				    reDisplay.setTextureFormat(fb.getPixelFormat(), false);
-				    reDisplay.setPixelStore(fb.getBufferWidth() * screenScaling, getPixelFormatBytes(fb.getPixelFormat()));
 				    ByteBuffer scaledScreen = ExternalGE.getScaledScreen(fb.getTopAddr(), fb.getBufferWidth(), fb.getHeight(), fb.getPixelFormat());
-				    reDisplay.setTexSubImage(0,
-				            0, 0, fb.getBufferWidth() * screenScaling, fb.getHeight() * screenScaling,
-				            fb.getPixelFormat(),
-				            fb.getPixelFormat(),
-				            scaledScreen.remaining(), scaledScreen);
+				    if (scaledScreen == null) {
+	            		drawFrameBufferFromMemory(currentFb);
+				    } else {
+	            		int screenScaling = ExternalGE.getScreenScaling();
+					    fb.getPixels().clear();
+					    reDisplay.bindTexture(resizedTexFb);
+					    reDisplay.setTextureFormat(fb.getPixelFormat(), false);
+					    reDisplay.setPixelStore(fb.getBufferWidth() * screenScaling, getPixelFormatBytes(fb.getPixelFormat()));
+					    reDisplay.setTexSubImage(0,
+					            0, 0, fb.getBufferWidth() * screenScaling, fb.getHeight() * screenScaling,
+					            fb.getPixelFormat(),
+					            fb.getPixelFormat(),
+					            scaledScreen.remaining(), scaledScreen);
 
-				    drawFrameBuffer(fb, false, true, fb.getBufferWidth(), fb.getPixelFormat(), displayScreen.getWidth(fb), displayScreen.getHeight(fb));
+					    drawFrameBuffer(fb, false, true, fb.getBufferWidth(), fb.getPixelFormat(), displayScreen.getWidth(fb), displayScreen.getHeight(fb));
+				    }
             	}
             	reDisplay.endDisplay();
 
@@ -872,6 +876,10 @@ public class sceDisplay extends HLEModule {
 
 		// Recreate the texture if the scaling factor has changed
 		createTex = true;
+
+		if (ExternalGE.isActive()) {
+			ExternalGE.setScreenScaling(viewportResizeFilterScaleFactorInt);
+		}
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("setViewportResizeScaleFactor resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, size.width, size.height, canvasWidth, canvasHeight, canvas.getLocation().x, canvas.getLocation().y));
