@@ -19,6 +19,7 @@ package jpcsp.util;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 
 import jpcsp.Memory;
 
@@ -94,8 +95,26 @@ public class FIFOByteBuffer {
     	} else {
     		// The buffer wraps at the end, 2 copy operations necessary
     		int lengthEndBuffer = buffer.length - bufferWriteOffset;
-    		copyToBuffer(bufferWriteOffset, lengthEndBuffer, src);
-    		copyToBuffer(0, length - lengthEndBuffer, src);
+    		if ((lengthEndBuffer & 3) == 0 || !(src instanceof IntBuffer)) {
+	    		copyToBuffer(bufferWriteOffset, lengthEndBuffer, src);
+	    		copyToBuffer(0, length - lengthEndBuffer, src);
+    		} else {
+    			// Making a copy from an IntBuffer on non-int boundaries
+    			int lengthEndBuffer4 = lengthEndBuffer & ~3;
+	    		copyToBuffer(bufferWriteOffset, lengthEndBuffer4, src);
+
+	    		// Copy one int-value across non-int boundaries...
+	    		int overlapValue = ((IntBuffer) src).get();
+	    		byte[] bytes4 = new byte[4];
+	    		ByteBuffer src1 = ByteBuffer.wrap(bytes4).order(ByteOrder.LITTLE_ENDIAN);
+	    		src1.asIntBuffer().put(overlapValue);
+	    		int bytesCopyLength1 = lengthEndBuffer & 3;
+	    		copyToBuffer(bufferWriteOffset + lengthEndBuffer4, bytesCopyLength1, src1);
+	    		int bytesCopyLength2 = bytes4.length - bytesCopyLength1;
+	    		copyToBuffer(0, bytesCopyLength2, src1);
+
+	    		copyToBuffer(bytesCopyLength2, length - lengthEndBuffer - bytesCopyLength2, src);
+    		}
     	}
     	bufferWriteOffset = incrementOffset(bufferWriteOffset, length);
         bufferLength += length;
