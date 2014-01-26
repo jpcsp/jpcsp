@@ -229,6 +229,6 @@ public class NativeUtils {
     public static native void setDumpTextures(boolean dumpTextures);
     public static native void saveCoreContext(int addr);
     public static native void restoreCoreContext(int addr);
-    public static native void setScreenScaling(int screenScaling);
+    public static native void setScreenScale(int screenScale);
     public static native ByteBuffer getScaledScreen(int address, int bufferWidth, int height, int pixelFormat);
 }
