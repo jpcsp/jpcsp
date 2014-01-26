@@ -49,8 +49,8 @@ public class ExternalGE {
 	private static Semaphore rendererThreadsDone;
 	private static Level logLevel;
 	private static SetLogLevelThread setLogLevelThread;
-	private static int screenScaling = 1;
-	private static Object screenScalingLock = new Object();
+	private static int screenScale = 1;
+	private static Object screenScaleLock = new Object();
 
 	private static class SetLogLevelThread extends Thread {
 		private volatile boolean exit;
@@ -89,9 +89,9 @@ public class ExternalGE {
 				rendererThreadsDone = new Semaphore(0);
 			}
 			NativeUtils.setRendererAsyncRendering(enableAsyncRendering);
-			setScreenScaling(sceDisplay.getResizedWidthPow2(1));
-			synchronized (screenScalingLock) {
-				NativeUtils.setScreenScaling(getScreenScaling());
+			setScreenScale(sceDisplay.getResizedWidthPow2(1));
+			synchronized (screenScaleLock) {
+				NativeUtils.setScreenScale(getScreenScale());
 			}
 		}
 	}
@@ -143,9 +143,9 @@ public class ExternalGE {
 				NativeUtils.setLogLevel();
 				NativeUtils.setCoreSadr(list.getStallAddr());
 				NativeUtils.setCoreCtrlActive();
-				synchronized (screenScalingLock) {
-					// Update the screen scaling only at the start of a new list
-					NativeUtils.setScreenScaling(getScreenScaling());
+				synchronized (screenScaleLock) {
+					// Update the screen scale only at the start of a new list
+					NativeUtils.setScreenScale(getScreenScale());
 				}
 				currentList = list;
 				CoreThread.getInstance().sync();
@@ -381,17 +381,17 @@ public class ExternalGE {
 		return null;
 	}
 
-	public static int getScreenScaling() {
-		return screenScaling;
+	public static int getScreenScale() {
+		return screenScale;
 	}
 
-	public static void setScreenScaling(int screenScaling) {
-		log.info(String.format("setScreenScaling %d", screenScaling));
-		ExternalGE.screenScaling = screenScaling;
+	public static void setScreenScale(int screenScale) {
+		log.info(String.format("Setting screen scale to factor %d", screenScale));
+		ExternalGE.screenScale = screenScale;
 	}
 
 	public static ByteBuffer getScaledScreen(int address, int bufferWidth, int height, int pixelFormat) {
-		synchronized (screenScalingLock) {
+		synchronized (screenScaleLock) {
 			return NativeUtils.getScaledScreen(address, bufferWidth, height, pixelFormat);
 		}
 	}
