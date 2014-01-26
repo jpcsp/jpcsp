@@ -395,4 +395,8 @@ public class ExternalGE {
 			return NativeUtils.getScaledScreen(address, bufferWidth, height, pixelFormat);
 		}
 	}
+
+    public static void addVideoTexture(int startAddress, int endAddress) {
+    	NativeUtils.addVideoTexture(startAddress, endAddress);
+    }
 }

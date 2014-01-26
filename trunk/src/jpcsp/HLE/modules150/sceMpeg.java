@@ -2081,7 +2081,6 @@ public class sceMpeg extends HLEModule {
 
         	// Generate a faked image. We cannot use the MediaEngine at this point
         	// as we have not enough MPEG data buffered in advance.
-        	VideoEngine.getInstance().addVideoTexture(buffer, buffer + height * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
 			generateFakeImage(buffer, frameWidth, width, height, videoPixelMode);
 
 			// Clear the avcEsBuf buffer to better recognize the new MPEG data sent next time
@@ -2118,9 +2117,6 @@ public class sceMpeg extends HLEModule {
 
         final int width = Math.min(480, frameWidth);
         final int height = 272;
-
-        // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
-        VideoEngine.getInstance().addVideoTexture(buffer, buffer + height * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
 
         long startTime = Emulator.getClock().microTime();
 
@@ -2208,6 +2204,9 @@ public class sceMpeg extends HLEModule {
         }
 
     	videoFrameCount++;
+
+        // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
+        VideoEngine.getInstance().addVideoTexture(buffer, buffer + height * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceMpegAvcDecode currentTimestamp=%d", mpegAvcAu.pts));
@@ -2538,9 +2537,6 @@ public class sceMpeg extends HLEModule {
             log.debug(String.format("sceMpegAvcCsc range - x=%d, y=%d, xLen=%d, yLen=%d", rangeWidthStart, rangeHeightStart, rangeWidthEnd, rangeHeightEnd));
         }
 
-        // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
-        VideoEngine.getInstance().addVideoTexture(destAddr.getAddress(), destAddr.getAddress() + (rangeHeightStart + rangeHeightEnd) * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
-
         // sceMpegAvcDecodeYCbCr() is performing the video decoding and
         // sceMpegAvcCsc() is transforming the YCbCr image into ABGR.
         // Currently, only the MediaEngine is supporting these 2 steps approach.
@@ -2619,6 +2615,10 @@ public class sceMpeg extends HLEModule {
             }
             delayThread(startTime, avcDecodeDelay);
         }
+
+        // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
+        VideoEngine.getInstance().addVideoTexture(destAddr.getAddress(), destAddr.getAddress() + (rangeHeightStart + rangeHeightEnd) * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
+
         return 0;
     }
 
