@@ -539,9 +539,6 @@ public class scePsmfPlayer extends HLEModule {
             }
         }
 
-        // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
-        VideoEngine.getInstance().addVideoTexture(displayBuffer, displayBuffer + 272 * videoDataFrameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
-
         long startTime = Emulator.getClock().microTime();
 
     	// Write video data.
@@ -559,6 +556,9 @@ public class scePsmfPlayer extends HLEModule {
         	psmfPlayerAvcAu.dts = psmfPlayerAvcAu.pts - psmfPlayerVideoTimestampStep;
             generateFakePSMFVideo(displayBuffer, videoDataFrameWidth);
         }
+
+        // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
+        VideoEngine.getInstance().addVideoTexture(displayBuffer, displayBuffer + 272 * videoDataFrameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
 
         // Return updated timestamp
     	videoDataAddr.setValue(8, (int) psmfPlayerAvcAu.dts);

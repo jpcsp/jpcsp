@@ -75,6 +75,7 @@ import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
+import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.graphics.RE.software.PixelColor;
 import jpcsp.graphics.capture.CaptureImage;
 import jpcsp.graphics.capture.CaptureManager;
@@ -7413,6 +7414,10 @@ public class VideoEngine {
     }
 
     public void addVideoTexture(int startAddress, int endAddress) {
+        if (ExternalGE.isActive()) {
+        	ExternalGE.addVideoTexture(startAddress, endAddress);
+        }
+
         // Synchronize the access to videoTextures as it can be accessed
         // from a parallel threads (async display and PSP thread)
         synchronized (videoTextures) {
