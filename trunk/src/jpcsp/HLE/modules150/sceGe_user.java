@@ -129,7 +129,9 @@ public class sceGe_user extends HLEModule {
 
     @Override
     public void start() {
-        waitingForSync = false;
+    	log.debug(String.format("Starting %s", getName()));
+
+    	waitingForSync = false;
         syncDone = false;
 
         signalCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
@@ -147,6 +149,15 @@ public class sceGe_user extends HLEModule {
         eDRAMMemoryWidth = 1024;
 
         super.start();
+    }
+
+    @Override
+    public void stop() {
+    	log.debug(String.format("Stopping %s", getName()));
+
+    	if (ExternalGE.isActive()) {
+    		ExternalGE.onGeUserStop();
+    	}
     }
 
     public void step() {
