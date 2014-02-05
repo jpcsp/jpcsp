@@ -399,4 +399,15 @@ public class ExternalGE {
     public static void addVideoTexture(int startAddress, int endAddress) {
     	NativeUtils.addVideoTexture(startAddress, endAddress);
     }
+
+    public static void onGeUserStop() {
+		synchronized (drawListQueue) {
+			drawListQueue.clear();
+			if (currentList != null) {
+				currentList.sync();
+			}
+			currentList = null;
+			CoreThread.getInstance().sync();
+		}
+    }
 }
