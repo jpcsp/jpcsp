@@ -1677,7 +1677,7 @@ public class sceMpeg extends HLEModule {
     	StreamInfo info = getStreamInfo(streamUid);
     	if (info == null) {
             log.warn(String.format("sceMpegUnRegistStream unknown stream=0x%X", streamUid));
-            return -1;
+            return SceKernelErrors.ERROR_MPEG_UNKNOWN_STREAM_ID;
     	}
 
         info.release();
