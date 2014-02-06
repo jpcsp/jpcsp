@@ -1594,6 +1594,23 @@ public class sceUtility extends HLEModule {
             // The other modes are silent
             return false;
         }
+
+		@Override
+		public int executeShutdownStart() {
+			int result = super.executeShutdownStart();
+
+			if (status == PSP_UTILITY_DIALOG_STATUS_FINISHED) {
+				// Some modes go directly to status NONE after a shutdown start.
+				// Are these the modes without dialog?
+				switch (savedataParams.mode) {
+					case SceUtilitySavedataParam.MODE_SIZES:
+						status = PSP_UTILITY_DIALOG_STATUS_NONE;
+						break;
+				}
+			}
+
+			return result;
+		}
     }
 
     protected static class MsgDialogUtilityDialogState extends UtilityDialogState {
