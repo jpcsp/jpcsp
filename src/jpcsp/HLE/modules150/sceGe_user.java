@@ -511,7 +511,13 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0xAB49E76A, version = 150)
     public int sceGeListEnQueue(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr) {
-    	if (VideoEngine.getInstance().hasDrawList(listAddr.getAddress())) {
+    	boolean isBusy = false;
+    	if (ExternalGE.isActive()) {
+    		isBusy = ExternalGE.hasDrawList(listAddr.getAddress());
+    	} else {
+    		isBusy = VideoEngine.getInstance().hasDrawList(listAddr.getAddress());
+    	}
+    	if (isBusy) {
     		log.warn("sceGeListEnQueue can't enqueue duplicate list address");
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_BUSY);
     	}
@@ -521,7 +527,13 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x1C0D95A6, version = 150)
     public int sceGeListEnQueueHead(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr) {
-    	if (VideoEngine.getInstance().hasDrawList(listAddr.getAddress())) {
+    	boolean isBusy = false;
+    	if (ExternalGE.isActive()) {
+    		isBusy = ExternalGE.hasDrawList(listAddr.getAddress());
+    	} else {
+    		isBusy = VideoEngine.getInstance().hasDrawList(listAddr.getAddress());
+    	}
+    	if (isBusy) {
     		log.warn("sceGeListEnQueueHead can't enqueue duplicate list address");
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_BUSY);
     	}
@@ -636,7 +648,12 @@ public class sceGe_user extends HLEModule {
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
     		}
         } else if (mode == 1) {
-            PspGeList currentList = VideoEngine.getInstance().getFirstDrawList();
+        	PspGeList currentList;
+        	if (ExternalGE.isActive()) {
+        		currentList = ExternalGE.getFirstDrawList();
+        	} else {
+        		currentList = VideoEngine.getInstance().getFirstDrawList();
+        	}
             if (currentList != null) {
                 result = currentList.status;
             }
