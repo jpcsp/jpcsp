@@ -2881,11 +2881,15 @@ public class sceMpeg extends HLEModule {
         if (checkMediaEngineState()) {
             if (me.getContainer() != null) {
             	BufferedImage bufferedImage = me.getCurrentImg();
-            	if (bufferedImage != null) {
-            		// Store the current image so that sceJpegCsc can retrieve it
-            		int yCbCrBufferSize = Modules.sceJpegModule.hleGetYCbCrBufferSize(bufferedImage);
-            		Modules.sceJpegModule.hleJpegDecodeYCbCr(bufferedImage, yCbCrBuffer, yCbCrBufferSize, 0);
+            	if (bufferedImage == null) {
+            		if (log.isDebugEnabled()) {
+            			log.debug(String.format("sceMpegAvcConvertToYuv420 returning ERROR_AVC_NO_IMAGE_AVAILABLE"));
+            		}
+            		return SceKernelErrors.ERROR_AVC_NO_IMAGE_AVAILABLE;
             	}
+        		// Store the current image so that sceJpegCsc can retrieve it
+        		int yCbCrBufferSize = Modules.sceJpegModule.hleGetYCbCrBufferSize(bufferedImage);
+        		Modules.sceJpegModule.hleJpegDecodeYCbCr(bufferedImage, yCbCrBuffer, yCbCrBufferSize, 0);
             }
         }
 
