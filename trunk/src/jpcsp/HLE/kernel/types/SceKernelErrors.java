@@ -504,6 +504,7 @@ public class SceKernelErrors {
     public final static int ERROR_MPEG_NO_DATA                                  = 0x80618001;
     public final static int ERROR_MPEG_UNKNOWN_STREAM_ID                        = 0x80618009;
 
+    public final static int ERROR_AVC_NO_IMAGE_AVAILABLE                        = 0x806201FE;
     public final static int ERROR_AVC_VIDEO_FATAL                               = 0x80628002;
 
     public final static int ERROR_ATRAC_NO_ID                                   = 0x80630003;
