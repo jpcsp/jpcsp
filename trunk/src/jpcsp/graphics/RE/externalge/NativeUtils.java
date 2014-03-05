@@ -21,6 +21,8 @@ import static jpcsp.Allegrex.compiler.RuntimeContext.memoryInt;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 
+import jpcsp.Memory;
+import jpcsp.memory.FastMemory;
 import jpcsp.util.DurationStatistics;
 
 import org.apache.log4j.Level;
@@ -59,6 +61,9 @@ public class NativeUtils {
 		if (!isInitialized) {
 			try {
 				System.loadLibrary("software-ge-renderer");
+				if (Memory.getInstance() instanceof FastMemory) {
+					memoryInt = ((FastMemory) Memory.getInstance()).getAll();
+				}
 				initNative();
 				log.info(String.format("Loaded software-ge-renderer library"));
 				isAvailable = true;
