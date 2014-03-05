@@ -479,49 +479,52 @@ public class sceAtrac3plus extends HLEModule {
             }
 
         	Emulator.getClock().pause();
-            if (isSecondBuf) {
-                // Set the second buffer, but don't handle it.
-                // This allows it to be ignored while we can't handle it.
-                // TODO: After AT3+ can be decoded, implement real post loop
-                // data handling.
-            	secondBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
-                isSecondBufferSet = true;
-            } else {
-            	inputBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
-                inputFileSize = readSize;
-                secondInputFileSize = 0x100;
-                forceAllDataIsOnMemory = false;
-                forceReloadOfData = false;
-                result = analyzeAtracHeader();
-                if (result != 0) {
-                	return result;
-                }
-                getInputBuffer().setFileMaxSize(inputFileSize);
-                log.info(String.format("hleAtracSetData atID=0x%X, buffer=0x%08X, readSize=0x%X, bufferSize=0x%X, fileSize=0x%X", getAtracId(), buffer, readSize, bufferSize, inputFileSize));
-                if (getAtracCodec() == null) {
-                    log.warn(String.format("hleAtracSetData atID=0x%X is invalid", getAtracId()));
-                    return -1;
-                }
+        	try {
+	            if (isSecondBuf) {
+	                // Set the second buffer, but don't handle it.
+	                // This allows it to be ignored while we can't handle it.
+	                // TODO: After AT3+ can be decoded, implement real post loop
+	                // data handling.
+	            	secondBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
+	                isSecondBufferSet = true;
+	            } else {
+	            	inputBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
+	                inputFileSize = readSize;
+	                secondInputFileSize = 0x100;
+	                forceAllDataIsOnMemory = false;
+	                forceReloadOfData = false;
+	                result = analyzeAtracHeader();
+	                if (result != 0) {
+	                	return result;
+	                }
+	                getInputBuffer().setFileMaxSize(inputFileSize);
+	                log.info(String.format("hleAtracSetData atID=0x%X, buffer=0x%08X, readSize=0x%X, bufferSize=0x%X, fileSize=0x%X", getAtracId(), buffer, readSize, bufferSize, inputFileSize));
+	                if (getAtracCodec() == null) {
+	                    log.warn(String.format("hleAtracSetData atID=0x%X is invalid", getAtracId()));
+	                    return -1;
+	                }
 
-                // readSize and bufferSize can't be larger than the input file size.
-                if (readSize > inputFileSize || bufferSize > inputFileSize) {
-                	readSize = Math.min(readSize, inputFileSize);
-                	bufferSize = Math.min(bufferSize, inputFileSize);
-                	inputBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
-                }
+	                // readSize and bufferSize can't be larger than the input file size.
+	                if (readSize > inputFileSize || bufferSize > inputFileSize) {
+	                	readSize = Math.min(readSize, inputFileSize);
+	                	bufferSize = Math.min(bufferSize, inputFileSize);
+	                	inputBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
+	                }
 
-                // The atrac header has been read
-                inputBuffer.notifyRead(inputFileDataOffset);
+	                // The atrac header has been read
+	                inputBuffer.notifyRead(inputFileDataOffset);
 
-                int atracHash = Hash.getHashCode(0, buffer, Math.min(readSize, ATRAC_HEADER_HASH_LENGTH));
-                getAtracCodec().atracSetData(getAtracId(), getAtracCodecType(), buffer, readSize, inputFileSize, atracHash);
+	                int atracHash = Hash.getHashCode(0, buffer, Math.min(readSize, ATRAC_HEADER_HASH_LENGTH));
+	                getAtracCodec().atracSetData(getAtracId(), getAtracCodecType(), buffer, readSize, inputFileSize, atracHash);
 
-                if (secondBuffer.getAddr() == 0) {
-                	// The address of the second buffer is matching the main buffer
-            		secondBuffer.setAddr(buffer);
-            	}
-            }
-        	Emulator.getClock().resume();
+	                if (secondBuffer.getAddr() == 0) {
+	                	// The address of the second buffer is matching the main buffer
+	            		secondBuffer.setAddr(buffer);
+	            	}
+	            }
+        	} finally {
+        		Emulator.getClock().resume();
+        	}
 
         	return result;
         }
