@@ -192,7 +192,9 @@ public class EventFlagManager {
     public int checkEventFlagID(int uid) {
         SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", true);
         if (!eventMap.containsKey(uid)) {
-            log.warn(String.format("checkEventFlagID unknown uid=0x%X", uid));
+        	if (uid != 0) {
+        		log.warn(String.format("checkEventFlagID unknown uid=0x%X", uid));
+        	}
             throw new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_EVENT_FLAG);
         }
 
