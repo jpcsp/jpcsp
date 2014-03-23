@@ -103,6 +103,14 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 			outTextLimit = read32();
 		}
 
+		private static void replaceFullWidthChar(StringBuilder s, int index, int codePointOffset) {
+			int codePoint = s.codePointAt(index);
+			char chars[] = new char[2];
+			if (Character.toChars(codePoint + codePointOffset, chars, 0) == 1) {
+				s.setCharAt(index, chars[0]);
+			}
+		}
+
 		@Override
 		protected void write() {
             write32(inputMode);
@@ -121,6 +129,26 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 				maxTextOutLength = outTextLimit;
 			}
 			int length = Math.min(outText.length(), maxTextOutLength);
+
+			// When the following values are set for the inputAllowCharType flag set,
+			// the characters returned in the output text field are full width letters/digits:
+			// - PSP_UTILITY_OSK_DATA_CHAR_ALLOW_JPN
+			// - PSP_UTILITY_OSK_DATA_CHAR_ALLOW_JPN_LOWERCASE
+			// - PSP_UTILITY_OSK_DATA_CHAR_ALLOW_JPN_UPPERCASE
+			if ((inputAllowCharType & (PSP_UTILITY_OSK_DATA_CHAR_ALLOW_JPN | PSP_UTILITY_OSK_DATA_CHAR_ALLOW_JPN_LOWERCASE | PSP_UTILITY_OSK_DATA_CHAR_ALLOW_JPN_UPPERCASE)) != 0) {
+				StringBuilder s = new StringBuilder(outText);
+				for (int i = 0; i < length; i++) {
+					int codePoint = s.codePointAt(i);
+					if (codePoint >= 65 && codePoint <= 90) { // A-Z
+						replaceFullWidthChar(s, i, 0xFF21 - 65);
+					} else if (codePoint >= 97 && codePoint <= 122) { // a-z
+						replaceFullWidthChar(s, i, 0xFF41 - 97);
+					} else if (codePoint >= 48 && codePoint <= 57) { // 0-9
+						replaceFullWidthChar(s, i, 0xFF10 - 48);
+					}
+				}
+				outText = s.toString();
+			}
 			int bytesLength = writeStringUTF16Z(outTextAddr, outText.substring(0, length));
 			mem.memset(outTextAddr + bytesLength, (byte) 0, (maxTextOutLength + 1) * 2 - bytesLength);
 			write32(outTextLength);
@@ -174,6 +202,6 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("desc='%s', inText='%s', outText='%s', inputMode=%d, inputAttr=0x%X, outTextLength=%d, outTextLimit=%d", oskData.desc, oskData.inText, oskData.outText, oskData.inputMode, oskData.inputAttr, oskData.outTextLength, oskData.outTextLimit);
+		return String.format("desc='%s', inText='%s', outText='%s', inputMode=%d, inputAttr=0x%X, language=%d, hide=%d, inputAllowCharType=0x%X, lines=%d, showInputText=%d, outTextLength=%d, outTextLimit=%d", oskData.desc, oskData.inText, oskData.outText, oskData.inputMode, oskData.inputAttr, oskData.language, oskData.hide, oskData.inputAllowCharType, oskData.lines, oskData.showInputText, oskData.outTextLength, oskData.outTextLimit);
 	}
 }
