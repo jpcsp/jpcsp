@@ -348,6 +348,9 @@ void utilitySavedataLog(char *buffer, const SyscallInfo *syscallInfo, u32 param)
 	if (syscallInfo->nid == 0x50C4CD57) {
 		utilitySavedataParams = (void *) param;
 	}
+	if (utilitySavedataParams == NULL) {
+		return;
+	}
 
 	int mode = _lw((int) utilitySavedataParams + 48);
 	s = append(s, "mode=");
@@ -369,6 +372,41 @@ void utilitySavedataLog(char *buffer, const SyscallInfo *syscallInfo, u32 param)
 	printLogMem("Data ", _lw((int) utilitySavedataParams + 116), 16);
 
 	printLogMem("Params ", (int) utilitySavedataParams, _lw((int) utilitySavedataParams + 0));
+}
+#endif
+
+#ifdef DEBUG_UTILITY_OSK
+void *utilityOskParams = NULL;
+
+void utilityOskLog(char *buffer, const SyscallInfo *syscallInfo, u32 param) {
+	char *s = buffer;
+
+	if (syscallInfo->nid == 0xF6269B82) {
+		utilityOskParams = (void *) param;
+	}
+	if (utilityOskParams == NULL) {
+		return;
+	}
+
+	int oskDataAddr = _lw((int) utilityOskParams + 52);
+	s = append(s, "inputMode=");
+	s = appendInt(s, _lw(oskDataAddr + 0), 0);
+	s = append(s, ", inputAttr=");
+	s = appendInt(s, _lw(oskDataAddr + 4), 0);
+	s = append(s, ", language=");
+	s = appendInt(s, _lw(oskDataAddr + 8), 0);
+	s = append(s, ", hide=");
+	s = appendInt(s, _lw(oskDataAddr + 12), 0);
+	if (syscallInfo->nid == 0x3DFAEBA9) {
+		s = append(s, ", result=");
+		s = appendHex(s, _lw((int) utilityOskParams + 28), 8);
+	}
+	s = append(s, "\n");
+	writeLog(buffer, s - buffer);
+	s = buffer;
+
+	printLogMem("inText  ", _lw(oskDataAddr + 32), 18);
+	printLogMem("outText ", _lw(oskDataAddr + 40), 18);
 }
 #endif
 
@@ -500,5 +538,8 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 
 	#if DEBUG_UTILITY_SAVEDATA
 	utilitySavedataLog(buffer, syscallInfo, parameters[0]);
+	#endif
+	#if DEBUG_UTILITY_OSK
+	utilityOskLog(buffer, syscallInfo, parameters[0]);
 	#endif
 }
