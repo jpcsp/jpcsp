@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.util.Utilities.endianSwap32;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -69,6 +70,7 @@ public class sceMp3 extends HLEModule {
     protected HashMap<Integer, Mp3Stream> mp3Map;
     protected static final int compressionFactor = 10;
     protected static final int PSP_MP3_LOOP_NUM_INFINITE = -1;
+    protected static final int ID3 = 0x49443300; // "ID3"
 
     protected static final int mp3DecodeDelay = 4000;           // Microseconds
 
@@ -81,10 +83,6 @@ public class sceMp3 extends HLEModule {
 
     private void setEnableMediaEngine(boolean state) {
         useMediaEngine = state;
-    }
-
-    protected int endianSwap(int x) {
-        return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | ((x >> 24) & 0xFF);
     }
 
     public int makeFakeMp3StreamHandle() {
@@ -243,7 +241,16 @@ public class sceMp3 extends HLEModule {
         private void parseMp3FrameHeader() {
             Memory mem = Memory.getInstance();
             // Skip the ID3 tags, the MP3 stream starts at mp3StreamStart.
-            int header = endianSwap(Utilities.readUnaligned32(mem, mp3Buf + (int) mp3StreamStart));
+        	int header = endianSwap32(Utilities.readUnaligned32(mem, mp3Buf + (int) mp3StreamStart));
+        	if ((header & 0xFFFFFF00) == ID3) {
+        		int size = endianSwap32(Utilities.readUnaligned32(mem, mp3Buf + (int) mp3StreamStart + 6));
+        		// Highest bit of each byte has to be ignored (format: 0x7F7F7F7F)
+        		size = (size & 0x7F) | ((size & 0x7F00) >> 1) | ((size & 0x7F0000) >> 2) | ((size & 0x7F000000) >> 3);
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("Skipping ID3 of size 0x%X", size));
+        		}
+        		header = endianSwap32(Utilities.readUnaligned32(mem, mp3Buf + (int) mp3StreamStart + 10 + size));
+        	}
             if (log.isDebugEnabled()) {
             	log.debug(String.format("Mp3 header: 0x%08X", header));
             }
