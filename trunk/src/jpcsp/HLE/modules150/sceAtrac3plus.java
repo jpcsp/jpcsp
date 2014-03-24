@@ -756,8 +756,10 @@ public class sceAtrac3plus extends HLEModule {
         int remainFrames = id.getRemainFrames();
 
         if (!id.getInputBuffer().isFileEnd()) {
-            if (remainFrames > 0 && samples < id.getMaxSamples()) {
-                // If we could not decode all the requested samples, request more data
+            if (remainFrames > 0 && (samples < id.getMaxSamples() && samples < id.getAtracCurrentSample())) {
+                // If we could not decode all the requested samples
+            	// (excepted at the very first decode call which is always returning fewer samples),
+            	// request more data.
             	id.getInputBuffer().notifyReadAll();
             	remainFrames = 0;
             } else if (id.getAtracCodec().getChannelLength() >= id.getInputFileSize()) {
