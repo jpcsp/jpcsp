@@ -3169,7 +3169,7 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0xE3EB004C, version = 150, checkInsideInterrupt = true)
     public int sceIoDread(int id, int dirent_addr) {
         IoDirInfo info = dirIds.get(id);
-        
+
         int result;
         if (info == null) {
             log.warn("sceIoDread unknown id " + Integer.toHexString(id));
