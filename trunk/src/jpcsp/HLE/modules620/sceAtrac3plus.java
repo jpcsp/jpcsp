@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules620;
 
+import static jpcsp.util.Utilities.readUnaligned32;
 import jpcsp.Memory;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -30,8 +31,10 @@ import jpcsp.util.Utilities;
 public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 	protected int findRIFFHeader(int addr) {
 		Memory mem = Memory.getInstance();
+
+		// Try to find a RIFF header before the Atrac data
 		for (int i = 0; i >= -512; i -= 4) {
-			if (mem.read32(addr + i) == RIFF_MAGIC) {
+			if (readUnaligned32(mem, addr + i) == RIFF_MAGIC) {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Found RIFF header at 0x%08X", addr + i));
 					if (log.isTraceEnabled()) {
@@ -42,7 +45,44 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 			}
 		}
 
+		// Try to find a RIFF header after the Atrac data
+		for (int i = 512; i <= 0x8000; i += 512) {
+			if (readUnaligned32(mem, addr + i) == RIFF_MAGIC) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Found RIFF header at 0x%08X", addr + i));
+					if (log.isTraceEnabled()) {
+						log.trace(Utilities.getMemoryDump(addr + i, 256));
+					}
+				}
+				return addr + i;
+			}
+		}
+
 		return 0;
+	}
+
+	protected int findRIFFHeaderLength(int addr) {
+		Memory mem = Memory.getInstance();
+		int length = 0;
+		for (int i = 12; i < 512; ) {
+			int chunkMagic = readUnaligned32(mem, addr + i);
+			int chunkSize = readUnaligned32(mem, addr + i + 4);
+			i += 8;
+			switch (chunkMagic) {
+				case DATA_CHUNK_MAGIC:
+					return i;
+				case FMT_CHUNK_MAGIC:
+				case FACT_CHUNK_MAGIC:
+				case SMPL_CHUNK_MAGIC:
+					length = i + chunkSize;
+					i += chunkSize;
+					break;
+				default:
+					return length;
+			}
+		}
+
+		return length;
 	}
 
 	@HLEFunction(nid = 0x0C116E1B, version = 620)
@@ -58,7 +98,13 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         if (id.getInputBuffer() == null) {
         	int headerAddr = findRIFFHeader(sourceAddr.getAddress());
         	if (headerAddr != 0) {
-        		id.setData(headerAddr, id.getSourceBufferLength() + (sourceAddr.getAddress() - headerAddr), id.getSourceBufferLength(), false);
+        		if (headerAddr <= sourceAddr.getAddress()) {
+        			id.setData(headerAddr, id.getSourceBufferLength() + (sourceAddr.getAddress() - headerAddr), id.getSourceBufferLength(), false);
+        		} else {
+        			int headerLength = findRIFFHeaderLength(headerAddr);
+        			id.setData(headerAddr, headerLength, id.getSourceBufferLength(), false);
+        			id.addStreamData(sourceAddr.getAddress(), id.getSourceBufferLength());
+        		}
         	} else {
         		id.setData(sourceAddr.getAddress(), id.getSourceBufferLength(), id.getSourceBufferLength(), false);
         	}
