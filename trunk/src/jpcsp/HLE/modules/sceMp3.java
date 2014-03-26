@@ -16,5 +16,5 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class sceMp3 extends jpcsp.HLE.modules150.sceMp3 {
+public class sceMp3 extends jpcsp.HLE.modules620.sceMp3 {
 }
