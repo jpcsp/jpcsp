@@ -877,14 +877,6 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             int sfoSize = buf.array().length;
             byte[] sfoData = buf.array();
 
-            // If there's a previous PARAM.SFO, use it's data.
-            if (oldPsf != null) {
-                ByteBuffer buf_old = ByteBuffer.allocate(0x1330);
-                oldPsf.write(buf_old);
-                sfoSize = buf_old.array().length;
-                sfoData = buf_old.array();
-            }
-
             // Generate the final SAVEDATA_PARAMS (encrypted).
             crypto.getSAVEDATAEngine().UpdateSavedataHashes(encryptedPsf, sfoData, sfoSize, savedata_params_old, key);
 
