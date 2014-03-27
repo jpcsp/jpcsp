@@ -685,25 +685,31 @@ public class SAVEDATA {
         return hash;
     }
 
-    private byte[] GenerateSavedataHash(byte[] data, int size, int mode, byte[] key) {
+    private byte[] GenerateSavedataHash(byte[] data, int size, int mode) {
         SD_Ctx1 ctx1 = new SD_Ctx1();
         byte[] hash = new byte[0x10];
 
         // Generate a new hash using a key.
         hleSdSetIndex(ctx1, mode);
         hleSdRemoveValue(ctx1, data, size);
-        hleSdGetLastIndex(ctx1, hash, key);
-
+        hleSdGetLastIndex(ctx1, hash, null);
+        
+        // Ignore KIRK FUSE CMD modes.
+        if ((mode == 2) || (mode == 4) || (mode == 6))
+        {
+            for(int i = 0; i < 0x10; i++)
+            {
+                hash[i] = 1;
+            }
+        }
+        
         return hash;
     }
 
     public void UpdateSavedataHashes(PSF psf, byte[] data, int size, byte[] params, byte[] key) {
-        // Setup the params, hashes, modes and seed (empty).
+        // Setup the params, hash and mode.
         byte[] savedataParams = new byte[0x80];
-        byte[] seed = new byte[0x10];
-        byte[] hash_0x70 = new byte[0x10];
-        byte[] hash_0x20 = new byte[0x10];
-        byte[] hash_0x10 = new byte[0x10];
+        byte[] hash = new byte[0x10];
 
         // Determine the hashing mode.
         int mode = 0;
@@ -725,50 +731,41 @@ public class SAVEDATA {
                 break;
             }
         }
-        
-        // Downgrade to mode 2 for now.
-        if (mode == 4) {
-            mode = 2;
-        }
 
         // New mode (after firmware 2.7.1).
         if ((mode & 0x4) == 0x4) {
             // Generate a type 6 hash.
-            hash_0x20 = GenerateSavedataHash(data, size, 6, seed);
+            hash = GenerateSavedataHash(data, size, 6);
+            System.arraycopy(hash, 0, savedataParams, 0x20, 0x10);
             // Generate a type 5 hash.
-            hash_0x70 = GenerateSavedataHash(data, size, 5, seed);
+            hash = GenerateSavedataHash(data, size, 5);
+            System.arraycopy(hash, 0, savedataParams, 0x70, 0x10);
             // Set the SAVEDATA_PARAMS byte to 0x40.
             savedataParams[0] |= 0x40;
         } else if ((mode & 0x2) == 0x2) { // Last old mode (firmware 2.0.0 to 2.7.1).
             // Generate a type 4 hash.
-            hash_0x20 = GenerateSavedataHash(data, size, 4, seed);
+            hash = GenerateSavedataHash(data, size, 4);
+            System.arraycopy(hash, 0, savedataParams, 0x20, 0x10);
             // Generate a type 3 hash.
-            hash_0x70 = GenerateSavedataHash(data, size, 3, seed);
+            hash = GenerateSavedataHash(data, size, 3);
+            System.arraycopy(hash, 0, savedataParams, 0x70, 0x10);
             // Set the SAVEDATA_PARAMS byte to 0x20.
             savedataParams[0] |= 0x20;
         } else { // First old mode (before firmware 2.0.0).
             // Generate a type 2 hash.
-            hash_0x20 = GenerateSavedataHash(data, size, 2, seed);
+            hash = GenerateSavedataHash(data, size, 2);
+            System.arraycopy(hash, 0, savedataParams, 0x20, 0x10);
             // Set the SAVEDATA_PARAMS byte to 0x00.
             savedataParams[0] |= 0x00;
         }
 
         if ((check_bit & 0x1) == 0x1) {
             // Generate a type 1 hash.
-            hash_0x10 = GenerateSavedataHash(data, size, 1, seed);
+            hash = GenerateSavedataHash(data, size, 1);
+            System.arraycopy(hash, 0, savedataParams, 0x10, 0x10);
             // Set the SAVEDATA_PARAMS byte to 0x01.
             savedataParams[0] |= 0x01;
         }
-        
-        // Destroy the 0x20 hash for now.
-        for (int i = 0; i < 0x10; i++) {
-            hash_0x20[i] = (byte) 0xFF;
-        }
-
-        // Store the hashes at the right offsets.
-        System.arraycopy(hash_0x20, 0, savedataParams, 0x20, 0x10);
-        System.arraycopy(hash_0x70, 0, savedataParams, 0x70, 0x10);
-        System.arraycopy(hash_0x10, 0, savedataParams, 0x10, 0x10);
 
         // Output the final PSF file containing the SAVEDATA param and file hashes.
         try {
