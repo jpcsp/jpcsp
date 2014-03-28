@@ -186,18 +186,30 @@ public class sceMp3 extends HLEModule {
         public Mp3Stream(int args) {
             Memory mem = Memory.getInstance();
 
-            // SceMp3InitArg struct.
-            mp3StreamStart = mem.read64(args);
-            mp3StreamEnd = mem.read64(args + 8);
-            mp3CompleteBuf = mem.read32(args + 16);
-            mp3CompleteBufSize = mem.read32(args + 20);
-            mp3PcmBuf = mem.read32(args + 24);
-            mp3PcmBufSize = mem.read32(args + 28);
+            if (args != 0) {
+	            // SceMp3InitArg struct.
+	            mp3StreamStart = mem.read64(args);
+	            mp3StreamEnd = mem.read64(args + 8);
+	            mp3CompleteBuf = mem.read32(args + 16);
+	            mp3CompleteBufSize = mem.read32(args + 20);
+	            mp3PcmBuf = mem.read32(args + 24);
+	            mp3PcmBufSize = mem.read32(args + 28);
 
-            // 0x5C0 bytes seem to be reserved at the beginning of the buffer
-            final int reservedSize = 0x5C0;
-            mp3Buf = mp3CompleteBuf + reservedSize;
-            mp3BufSize = mp3CompleteBufSize - reservedSize;
+	            // 0x5C0 bytes seem to be reserved at the beginning of the buffer
+	            final int reservedSize = 0x5C0;
+	            mp3Buf = mp3CompleteBuf + reservedSize;
+	            mp3BufSize = mp3CompleteBufSize - reservedSize;
+            } else {
+            	mp3StreamStart = 0;
+            	mp3StreamEnd = 0;
+            	mp3CompleteBuf = 0;
+            	mp3CompleteBufSize = 0;
+            	mp3PcmBuf = 0;
+            	mp3PcmBufSize = 0;
+
+            	mp3Buf = 0;
+            	mp3BufSize = 0;
+            }
 
             if (log.isDebugEnabled()) {
             	log.debug(String.format("sceMp3ReserveMp3Handle Stream start=0x%X, end=0x%X", mp3StreamStart, mp3StreamEnd));
@@ -606,7 +618,7 @@ public class sceMp3 extends HLEModule {
     }
 
     @HLEFunction(nid = 0x07EC321A, version = 150, checkInsideInterrupt = true)
-    public Mp3Stream sceMp3ReserveMp3Handle(TPointer mp3args) {
+    public Mp3Stream sceMp3ReserveMp3Handle(@CanBeNull TPointer mp3args) {
         Mp3Stream mp3Stream = new Mp3Stream(mp3args.getAddress());
 
         if (log.isDebugEnabled()) {
