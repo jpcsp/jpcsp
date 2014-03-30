@@ -53,6 +53,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -105,6 +106,7 @@ import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PSF;
 import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.graphics.capture.CaptureImage;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Screen;
 import jpcsp.memory.IMemoryWriter;
@@ -1789,7 +1791,6 @@ public class sceUtility extends HLEModule {
     }
 
     protected static class ScreenshotUtilityDialogState extends UtilityDialogState {
-
         protected SceUtilityScreenshotParams screenshotParams;
 
         public ScreenshotUtilityDialogState(String name) {
@@ -1798,8 +1799,28 @@ public class sceUtility extends HLEModule {
 
         @Override
         protected boolean executeUpdateVisible() {
-            if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
+            if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && screenshotParams.isContModeOn()) {
                 status = PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN;
+            }
+
+            if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
+            	Buffer buffer = Memory.getInstance().getBuffer(screenshotParams.imgFrameBufAddr, screenshotParams.imgFrameBufWidth * screenshotParams.displayHeigth * IRenderingEngine.sizeOfTextureType[screenshotParams.imgPixelFormat]);
+            	String directoyName = String.format("ms0/PSP/SCREENSHOT/%s/", screenshotParams.screenshotID);
+            	new File(directoyName).mkdirs();
+            	String fileName = null;
+            	for (int fileIndex = 1; fileIndex <= 9999; fileIndex++) {
+            		fileName = String.format("%sPJDEX_%04d.jpeg", directoyName, fileIndex);
+            		if (!new File(fileName).exists()) {
+            			break;
+            		}
+            	}
+            	CaptureImage captureImage = new CaptureImage(screenshotParams.imgFrameBufAddr, 0, buffer, screenshotParams.displayWidth, screenshotParams.displayHeigth, screenshotParams.imgFrameBufWidth, screenshotParams.imgPixelFormat, false, 0, false, true, null);
+            	captureImage.setFileName(fileName);
+            	try {
+					captureImage.write();
+				} catch (IOException e) {
+					log.error("sceUtilityScreenshot", e);
+				}
             }
 
             // TODO to be implemented
