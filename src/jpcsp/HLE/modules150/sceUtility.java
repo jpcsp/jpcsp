@@ -1799,11 +1799,15 @@ public class sceUtility extends HLEModule {
 
         @Override
         protected boolean executeUpdateVisible() {
-            if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && screenshotParams.isContModeOn()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("SceUtilityScreenshotParams %s", Utilities.getMemoryDump(paramsAddr.getAddress(), params.sizeof())));
+        	}
+
+        	if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && screenshotParams.isContModeAuto()) {
                 status = PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN;
             }
 
-            if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
+            if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && !screenshotParams.isContModeAuto() && !screenshotParams.isContModeFinish() && Memory.isAddressGood(screenshotParams.imgFrameBufAddr)) {
             	Buffer buffer = Memory.getInstance().getBuffer(screenshotParams.imgFrameBufAddr, screenshotParams.imgFrameBufWidth * screenshotParams.displayHeigth * IRenderingEngine.sizeOfTextureType[screenshotParams.imgPixelFormat]);
             	String directoyName = String.format("ms0/PSP/SCREENSHOT/%s/", screenshotParams.screenshotID);
             	new File(directoyName).mkdirs();
@@ -1846,7 +1850,7 @@ public class sceUtility extends HLEModule {
                 log.info(String.format("%sContStart %s", name, params.toString()));
             }
 
-            if (!screenshotParams.isContModeOn()) {
+            if (!screenshotParams.isContModeAuto()) {
                 return SceKernelErrors.ERROR_SCREENSHOT_CONT_MODE_NOT_INIT;
             }
 
