@@ -260,8 +260,12 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
 		}
     }
 
-    public boolean isContModeOn() {
+    public boolean isContModeAuto() {
         return (startupType & 0x7) == PSP_UTILITY_SCREENSHOT_TYPE_CONT_AUTO;
+    }
+
+    public boolean isContModeFinish() {
+        return (startupType & 0x7) == PSP_UTILITY_SCREENSHOT_TYPE_CONT_FINISH;
     }
 
     @Override
