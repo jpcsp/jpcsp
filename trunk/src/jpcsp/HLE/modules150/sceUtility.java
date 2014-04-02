@@ -18,6 +18,9 @@ package jpcsp.HLE.modules150;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_JPEG;
+import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_PNG;
+import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_NAMERULE_AUTONUM;
 import static jpcsp.HLE.modules150.sceFont.PSP_FONT_PIXELFORMAT_4;
 import static jpcsp.graphics.GeCommands.ALPHA_ONE_MINUS_SOURCE_ALPHA;
 import static jpcsp.graphics.GeCommands.ALPHA_SOURCE_ALPHA;
@@ -1803,7 +1806,7 @@ public class sceUtility extends HLEModule {
         		log.debug(String.format("SceUtilityScreenshotParams %s", Utilities.getMemoryDump(paramsAddr.getAddress(), params.sizeof())));
         	}
 
-        	if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && screenshotParams.isContModeAuto()) {
+        	if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && (screenshotParams.isContModeAuto() || screenshotParams.isContModeFinish())) {
                 status = PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN;
             }
 
@@ -1812,13 +1815,23 @@ public class sceUtility extends HLEModule {
             	String directoyName = String.format("ms0/PSP/SCREENSHOT/%s/", screenshotParams.screenshotID);
             	new File(directoyName).mkdirs();
             	String fileName = null;
-            	for (int fileIndex = 1; fileIndex <= 9999; fileIndex++) {
-            		fileName = String.format("%sPJDEX_%04d.jpeg", directoyName, fileIndex);
-            		if (!new File(fileName).exists()) {
-            			break;
-            		}
+            	String fileSuffix = screenshotParams.imgFormat == PSP_UTILITY_SCREENSHOT_FORMAT_JPEG ? "jpeg" : "png";
+            	if (screenshotParams.nameRule == PSP_UTILITY_SCREENSHOT_NAMERULE_AUTONUM) {
+	            	for (int fileIndex = 1; fileIndex <= 9999; fileIndex++) {
+	            		fileName = String.format("%s%s_%04d.%s", directoyName, screenshotParams.fileName, fileIndex, fileSuffix);
+	            		if (!new File(fileName).exists()) {
+	            			break;
+	            		}
+	            	}
+            	} else {
+            		fileName = String.format("%s%s.%s", directoyName, screenshotParams.fileName, fileSuffix);
             	}
             	CaptureImage captureImage = new CaptureImage(screenshotParams.imgFrameBufAddr, 0, buffer, screenshotParams.displayWidth, screenshotParams.displayHeigth, screenshotParams.imgFrameBufWidth, screenshotParams.imgPixelFormat, false, 0, false, true, null);
+            	if (screenshotParams.imgFormat == PSP_UTILITY_SCREENSHOT_FORMAT_PNG) {
+            		captureImage.setFileFormat("png");
+            	} else if (screenshotParams.imgFormat == PSP_UTILITY_SCREENSHOT_FORMAT_JPEG) {
+            		//captureImage.setFileFormat("jpg");
+            	}
             	captureImage.setFileName(fileName);
             	try {
 					captureImage.write();

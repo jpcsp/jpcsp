@@ -234,6 +234,54 @@ public abstract class pspAbstractMemoryMappedStructure {
         return Utilities.readStringZ(mem, addr);
     }
 
+    protected String readStringUTF16NZ(int n) {
+    	StringBuilder s = new StringBuilder();
+    	while (n > 0) {
+    		int char16 = read16();
+    		n -= 2;
+    		if (char16 == 0) {
+    			break;
+    		}
+    		byte[] bytes = new byte[2];
+    		bytes[0] = (byte) char16;
+    		bytes[1] = (byte) (char16 >> 8);
+    		s.append(new String(bytes, charset16));
+    	}
+
+    	if (n > 0) {
+    		readUnknown(n);
+    	}
+
+    	return s.toString();
+    }
+
+    protected int writeStringUTF16NZ(int n, String s) {
+    	byte[] bytes = s.getBytes(charset16);
+    	int length = 0;
+    	if (bytes != null) {
+    		length = bytes.length;
+	    	for (int i = 0; i < bytes.length && n > 0; i++, n--) {
+	    		write8(bytes[i]);
+	    	}
+    	}
+
+    	// Write trailing '\0\0'
+    	if (n > 0) {
+    		write8((byte) 0);
+    		n--;
+    	}
+    	if (n > 0) {
+    		write8((byte) 0);
+    		n--;
+    	}
+
+    	if (n > 0) {
+    		offset += n;
+    	}
+
+    	return length;
+    }
+
     /**
      * Read a string in UTF16, until '\0\0'
      * @param addr address of the string
