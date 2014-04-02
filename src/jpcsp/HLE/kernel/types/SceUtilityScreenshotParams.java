@@ -58,9 +58,7 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
     public int commentFlag;
         public final static int PSP_UTILITY_SCREENSHOT_COMMENT_CREATE = 0;
         public final static int PSP_UTILITY_SCREENSHOT_COMMENT_DONT_CREATE = 1;
-    public int commentShapeAddr;
     public SceUtilityScreenshotCommentShape commentShape;
-    public int commentTextAddr;
     public SceUtilityScreenshotCommentText commentText;
 
     public static class SceUtilityScreenshotCommentShape extends pspAbstractMemoryMappedStructure {
@@ -119,6 +117,11 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
 		public int sizeof() {
 			return 14 * 4;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("width=%d, height=%d, backgroundColor=0x%08X, align [X=%d, Y=%d], margin [T=%d, B=%d, L=%d, R=%d], padding [T=%d, B=%d, L=%d, R=%d]", width, heigth, backgroundColor, alignX, alignY, marginTop, marginBottom, marginLeft, marginRight, paddingTop, paddingBottom, paddingLeft, paddingRight);
+		}
 	}
 
     public static class SceUtilityScreenshotCommentText extends pspAbstractMemoryMappedStructure {
@@ -135,7 +138,6 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
             public final static int PSP_UTILITY_SCREENSHOT_COMMENT_FONT_SIZE_LARGE = 3;
         public int lineSpace;
         public int alignX;
-        public int textCommentAddr;
         public String textComment;
         public int textCommentLength;
 
@@ -147,8 +149,7 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
             fontSize = read32();
             lineSpace = read32();
             alignX = read32();
-            textCommentAddr = read32();
-            textComment = readStringUTF16Z(textCommentAddr);
+            textComment = readStringUTF16NZ(256);
             textCommentLength = read32();
 		}
 
@@ -160,14 +161,18 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
             write32(fontSize);
             write32(lineSpace);
             write32(alignX);
-            write32(textCommentAddr);
-            textCommentLength = writeStringUTF16Z(textCommentAddr, textComment);
+            textCommentLength = writeStringUTF16Z(256, textComment);
             write32(textCommentLength);
 		}
 
 		@Override
 		public int sizeof() {
-			return 9 * 4;
+			return 7 * 4 + 256;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("textColor=0x%08X, shadowType=%d, shadowColor=0x%08X, fontSize=%d, lineSpace=%d, alignX=%d, textComment='%s', textCommentLength=%d", textColor, shadowType, shadowColor, fontSize, lineSpace, alignX, textComment, textCommentLength);
 		}
 	}
 
@@ -188,35 +193,25 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
         screenshotOffsetY = read32();
         displayWidth = read32();
         displayHeigth = read32();
-        screenshotID = readStringNZ(16);
-        readUnknown(2);
-        fileName = readStringNZ(16);
+        screenshotID = readStringNZ(12);
+        fileName = readStringNZ(192);
         nameRule = read32();
         readUnknown(4);
-        title = readStringNZ(16);
+        title = readStringNZ(128);
         parentalLevel = read32();
         pscmFileFlag = read32();
-        iconPath = readStringNZ(16);
+        iconPath = readStringNZ(64);
         iconPathSize = read32();
         iconFileSize = read32();
-        backgroundPath = readStringNZ(16);
+        backgroundPath = readStringNZ(64);
         backgroundPathSize = read32();
         backgroundFileSize = read32();
         commentFlag = read32();
-        commentShapeAddr = read32();
-        if (commentShapeAddr != 0) {
-			commentShape = new SceUtilityScreenshotCommentShape();
-			commentShape.read(mem, commentShapeAddr);
-		} else {
-			commentShape = null;
-		}
-        commentTextAddr = read32();
-        if (commentTextAddr != 0) {
-			commentText = new SceUtilityScreenshotCommentText();
-			commentText.read(mem, commentTextAddr);
-		} else {
-			commentText = null;
-		}
+        commentShape = new SceUtilityScreenshotCommentShape();
+        read(commentShape);
+        commentText = new SceUtilityScreenshotCommentText();
+        read(commentText);
+        readUnknown(4);
     }
 
     @Override
@@ -235,12 +230,11 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
         write32(screenshotOffsetY);
         write32(displayWidth);
         write32(displayHeigth);
-        writeStringNZ(64, screenshotID);
-        writeUnknown(2);
-        writeStringNZ(64, fileName);
+        writeStringNZ(12, screenshotID);
+        writeStringNZ(192, fileName);
         write32(nameRule);
         writeUnknown(4);
-        writeStringNZ(64, title);
+        writeStringNZ(128, title);
         write32(parentalLevel);
         write32(pscmFileFlag);
         writeStringNZ(64, iconPath);
@@ -250,14 +244,9 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
         write32(backgroundPathSize);
         write32(backgroundFileSize);
         write32(commentFlag);
-        write32(commentShapeAddr);
-        if (commentShape != null && commentShapeAddr != 0) {
-			commentShape.write(mem, commentShapeAddr);
-		}
-        write32(commentTextAddr);
-        if (commentText != null && commentTextAddr != 0) {
-			commentText.write(mem, commentTextAddr);
-		}
+        write(commentShape);
+        write(commentText);
+        writeUnknown(4);
     }
 
     public boolean isContModeAuto() {
@@ -301,8 +290,8 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
         sb.append(String.format(", backgroundPathSize=%d", backgroundPathSize));
         sb.append(String.format(", backgroundFileSize=%d", backgroundFileSize));
         sb.append(String.format(", commentFlag=%d", commentFlag));
-        sb.append(String.format(", commentShapeAddr=0x%08X", commentShapeAddr));
-        sb.append(String.format(", commentTextAddr=0x%08X", commentTextAddr));
+        sb.append(String.format(", commentShape [%s]", commentShape));
+        sb.append(String.format(", commentTextAddr [%s]", commentText));
 
         return sb.toString();
     }
