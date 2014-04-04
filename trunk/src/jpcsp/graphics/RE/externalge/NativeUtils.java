@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import jpcsp.Memory;
 import jpcsp.memory.FastMemory;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.NativeCpuInfo;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -59,8 +60,18 @@ public class NativeUtils {
 
 	public static void init() {
 		if (!isInitialized) {
+			String libraryName = "software-ge-renderer";
+			if (NativeCpuInfo.isAvailable()) {
+				NativeCpuInfo.init();
+				if (NativeCpuInfo.hasAVX2()) {
+					libraryName = "software-ge-renderer-AVX2";
+				} else if (NativeCpuInfo.hasSSE41()) {
+					libraryName = "software-ge-renderer-SSE41";
+				}
+			}
+
 			try {
-				System.loadLibrary("software-ge-renderer");
+				System.loadLibrary(libraryName);
 				if (Memory.getInstance() instanceof FastMemory) {
 					memoryInt = ((FastMemory) Memory.getInstance()).getAll();
 				}
