@@ -291,7 +291,7 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
         sb.append(String.format(", backgroundFileSize=%d", backgroundFileSize));
         sb.append(String.format(", commentFlag=%d", commentFlag));
         sb.append(String.format(", commentShape [%s]", commentShape));
-        sb.append(String.format(", commentTextAddr [%s]", commentText));
+        sb.append(String.format(", commentText [%s]", commentText));
 
         return sb.toString();
     }

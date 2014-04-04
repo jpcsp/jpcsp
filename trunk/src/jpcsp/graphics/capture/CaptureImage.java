@@ -169,7 +169,10 @@ public class CaptureImage {
 		byte[] rowPadBytes = null;
 		int[] lineARGB = null;
 		if (useImageIO) {
-			im = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+			// Remark: use TYPE_3BYTE_BGR instead of TYPE_4BYTE_ABGR, it looks like ImageIO
+			// is not correctly handling images with alpha values. Incorrect png and jpg images
+			// are created when using an alpha component.
+			im = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
 			lineARGB = new int[width];
 		} else {
 			// The image in the BMP file has always to be upside-down as compared to the PSP image

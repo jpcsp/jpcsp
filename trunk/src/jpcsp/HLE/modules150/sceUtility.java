@@ -1830,7 +1830,7 @@ public class sceUtility extends HLEModule {
             	if (screenshotParams.imgFormat == PSP_UTILITY_SCREENSHOT_FORMAT_PNG) {
             		captureImage.setFileFormat("png");
             	} else if (screenshotParams.imgFormat == PSP_UTILITY_SCREENSHOT_FORMAT_JPEG) {
-            		//captureImage.setFileFormat("jpg");
+            		captureImage.setFileFormat("jpg");
             	}
             	captureImage.setFileName(fileName);
             	try {
