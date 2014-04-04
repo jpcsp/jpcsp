@@ -16,47 +16,55 @@
  */
 package jpcsp.util;
 
+import org.apache.log4j.Logger;
+
 /**
  *
  * @author shadow
  */
 public class NativeCpuInfo {
+	private static Logger log = Logger.getLogger("cpuinfo");
+	private static boolean isAvailable = false;
 
     static {
         try {
             System.loadLibrary("cpuinfo");
+            isAvailable = true;
         } catch (UnsatisfiedLinkError ule) {
-            System.out.println(ule);
+            log.error("Loading cpuinfo native library", ule);
         }
     }
+
+    public static boolean isAvailable() {
+    	return isAvailable;
+    }
+
     public static native void init();
-    
+
     public static native boolean hasSSE();
 
     public static native boolean hasSSE2();
 
     public static native boolean hasSSE3();
-    
+
     public static native boolean hasSSSE3();
-    
+
     public static native boolean hasSSE41();
-    
+
     public static native boolean hasSSE42();
-    
+
     public static native boolean hasAVX();
-    
+
     public static native boolean hasAVX2();
-    
-    public static void printInfo()
-    {
-        System.out.println("Supports SSE    "+ hasSSE());
-        System.out.println("Supports SSE2   "+ hasSSE2());
-        System.out.println("Supports SSE3   "+ hasSSE3());
-        System.out.println("Supports SSSE3  "+ hasSSSE3());
-        System.out.println("Supports SSE4.1 "+ hasSSE41());
-        System.out.println("Supports SSE4.2 "+ hasSSE42());
-        System.out.println("Supports AVX    "+ hasAVX());
-        System.out.println("Supports AVX2   "+ hasAVX2());
+
+    public static void printInfo() {
+        log.info("Supports SSE    "+ hasSSE());
+        log.info("Supports SSE2   "+ hasSSE2());
+        log.info("Supports SSE3   "+ hasSSE3());
+        log.info("Supports SSSE3  "+ hasSSSE3());
+        log.info("Supports SSE4.1 "+ hasSSE41());
+        log.info("Supports SSE4.2 "+ hasSSE42());
+        log.info("Supports AVX    "+ hasAVX());
+        log.info("Supports AVX2   "+ hasAVX2());
     }
-    
 }

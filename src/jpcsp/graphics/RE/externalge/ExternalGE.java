@@ -31,6 +31,8 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.capture.CaptureManager;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
@@ -40,7 +42,7 @@ import jpcsp.util.Utilities;
  */
 public class ExternalGE {
 	public static final boolean enableAsyncRendering = false;
-	public static final boolean activateWhenAvailable = true;
+	public static       boolean activateWhenAvailable = true;
 	public static final boolean useUnsafe = false;
 	public static Logger log = Logger.getLogger("externalge");
 	private static ConcurrentLinkedQueue<PspGeList> drawListQueue;
@@ -51,6 +53,7 @@ public class ExternalGE {
 	private static SetLogLevelThread setLogLevelThread;
 	private static int screenScale = 1;
 	private static Object screenScaleLock = new Object();
+	private static ExternalGESettingsListerner externalGESettingsListerner;
 
 	private static class SetLogLevelThread extends Thread {
 		private volatile boolean exit;
@@ -68,35 +71,77 @@ public class ExternalGE {
 		}
 	}
 
-	public static void init() {
-		NativeUtils.init();
-		if (isActive()) {
-			drawListQueue = new ConcurrentLinkedQueue<PspGeList>();
+    private static class ExternalGESettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			activateWhenAvailable = value;
+			init();
+		}
+    }
 
-			setLogLevelThread = new SetLogLevelThread();
-			setLogLevelThread.setName("ExternelGE Set Log Level Thread");
-			setLogLevelThread.setDaemon(true);
-			setLogLevelThread.start();
+    private static void activate() {
+		drawListQueue = new ConcurrentLinkedQueue<PspGeList>();
 
-			if (enableAsyncRendering) {
-				rendererThreads = new RendererThread[2];
-				rendererThreads[0] = new RendererThread(0xFF00FF00);
-				rendererThreads[1] = new RendererThread(0x00FF00FF);
-				for (int i = 0; i < rendererThreads.length; i++) {
-					rendererThreads[i].setName(String.format("Renderer Thread #%d", i));
-					rendererThreads[i].start();
-				}
-				rendererThreadsDone = new Semaphore(0);
+		setLogLevelThread = new SetLogLevelThread();
+		setLogLevelThread.setName("ExternelGE Set Log Level Thread");
+		setLogLevelThread.setDaemon(true);
+		setLogLevelThread.start();
+
+		if (enableAsyncRendering) {
+			rendererThreads = new RendererThread[2];
+			rendererThreads[0] = new RendererThread(0xFF00FF00);
+			rendererThreads[1] = new RendererThread(0x00FF00FF);
+			for (int i = 0; i < rendererThreads.length; i++) {
+				rendererThreads[i].setName(String.format("Renderer Thread #%d", i));
+				rendererThreads[i].start();
 			}
-			NativeUtils.setRendererAsyncRendering(enableAsyncRendering);
-			setScreenScale(sceDisplay.getResizedWidthPow2(1));
-			synchronized (screenScaleLock) {
-				NativeUtils.setScreenScale(getScreenScale());
+			rendererThreadsDone = new Semaphore(0);
+		}
+		NativeUtils.setRendererAsyncRendering(enableAsyncRendering);
+		setScreenScale(sceDisplay.getResizedWidthPow2(1));
+		synchronized (screenScaleLock) {
+			NativeUtils.setScreenScale(getScreenScale());
+		}
+    }
+
+    private static void deactivate() {
+    	drawListQueue = null;
+
+    	if (setLogLevelThread != null) {
+    		setLogLevelThread.exit();
+    		setLogLevelThread = null;
+    	}
+
+    	CoreThread.exit();
+
+    	if (rendererThreads != null) {
+			for (int i = 0; i < rendererThreads.length; i++) {
+				rendererThreads[i].exit();
 			}
+			rendererThreads = null;
+		}
+    }
+
+    public static void init() {
+    	if (externalGESettingsListerner == null) {
+    		externalGESettingsListerner = new ExternalGESettingsListerner();
+    		Settings.getInstance().registerSettingsListener("ExternalGE", "emu.useExternalSoftwareRenderer", externalGESettingsListerner);
+    	}
+
+    	if (activateWhenAvailable) {
+        	NativeUtils.init();
+			activate();
+		} else {
+			deactivate();
 		}
 	}
 
 	public static void exit() {
+		if (externalGESettingsListerner != null) {
+			Settings.getInstance().removeSettingsListener("ExternalGE");
+			externalGESettingsListerner = null;
+		}
+
 		if (isActive()) {
 			NativeUtils.exit();
 			NativeCallbacks.exit();

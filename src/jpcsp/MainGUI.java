@@ -2765,11 +2765,6 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }
 
     private void processArgs(String[] args) {
-    	if(Settings.getInstance().readBool("emu.useExternalSoftwareRenderer"))
-           ExternalGE.init();
-
-
-
     	for (int i = 0; i < args.length; i++) {
             //System.err.println("Args: " + args[0]);
             if (args[i].equals("-t") || args[i].equals("--tests")) {

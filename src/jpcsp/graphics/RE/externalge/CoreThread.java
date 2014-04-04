@@ -56,6 +56,7 @@ public class CoreThread extends Thread {
 	public static void exit() {
 		if (instance != null) {
 			instance.exit = true;
+			instance = null;
 		}
 	}
 

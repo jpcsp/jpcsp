@@ -152,6 +152,7 @@ public class sceDisplay extends HLEModule {
 
             if (re == null) {
                 if (startModules) {
+                	ExternalGE.init();
                     re = RenderingEngineFactory.createRenderingEngine();
                     if (isUsingSoftwareRenderer()) {
                         reDisplay = RenderingEngineFactory.createRenderingEngineForDisplay();
