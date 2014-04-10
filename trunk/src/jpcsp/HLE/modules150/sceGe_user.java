@@ -723,7 +723,7 @@ public class sceGe_user extends HLEModule {
     @HLEFunction(nid = 0xA4FC06A4, version = 150, checkInsideInterrupt = true)
     public int sceGeSetCallback(TPointer cbdata_addr) {
         pspGeCallbackData cbdata = new pspGeCallbackData();
-        cbdata.read(Emulator.getMemory(), cbdata_addr.getAddress());
+        cbdata.read(cbdata_addr);
 
         // The cbid returned has a value in the range [0..15].
         int cbid = SceUidManager.getNewId(geCallbackPurpose, 0, 15);
