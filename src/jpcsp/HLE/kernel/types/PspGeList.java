@@ -117,11 +117,11 @@ public class PspGeList {
     }
 
     public void pushSignalCallback(int listId, int behavior, int signal) {
-        Modules.sceGe_userModule.triggerSignalCallback(cbid, listId, list_addr, behavior, signal);
+        Modules.sceGe_userModule.triggerSignalCallback(cbid, listId, getPc(), behavior, signal);
     }
 
     public void pushFinishCallback(int listId, int arg) {
-    	Modules.sceGe_userModule.triggerFinishCallback(cbid, listId, list_addr, arg);
+    	Modules.sceGe_userModule.triggerFinishCallback(cbid, listId, getPc(), arg);
     }
 
     private void pushStack(int value) {

@@ -173,13 +173,13 @@ public class sceGe_user extends HLEModule {
         }
     }
 
-    private void triggerAsyncCallback(int cbid, int listId, int listAddr, int behavior, int signalId, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
+    private void triggerAsyncCallback(int cbid, int listId, int listPc, int behavior, int signalId, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
     	SceKernelCallbackInfo callback = callbacks.get(cbid);
     	if (callback != null && callback.callback_addr != 0) {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("Scheduling Async Callback %s, listId=0x%X, behavior=%d, signalId=0x%X", callback.toString(), listId, behavior, signalId));
     		}
-    		GeCallbackInterruptHandler geCallbackInterruptHandler = new GeCallbackInterruptHandler(callback.callback_addr, callback.callback_arg_addr, listAddr);
+    		GeCallbackInterruptHandler geCallbackInterruptHandler = new GeCallbackInterruptHandler(callback.callback_addr, callback.callback_arg_addr, listPc);
     		GeInterruptHandler geInterruptHandler = new GeInterruptHandler(geCallbackInterruptHandler, listId, behavior, signalId);
     		Emulator.getScheduler().addAction(geInterruptHandler);
     	} else {
@@ -301,13 +301,13 @@ public class sceGe_user extends HLEModule {
     }
 
     /** safe to call from the Async display thread */
-    public void triggerFinishCallback(int cbid, int listId, int listAddr, int callbackNotifyArg1) {
-		triggerAsyncCallback(cbid, listId, listAddr, PSP_GE_SIGNAL_HANDLER_SUSPEND, callbackNotifyArg1, finishCallbacks);
+    public void triggerFinishCallback(int cbid, int listId, int listPc, int callbackNotifyArg1) {
+		triggerAsyncCallback(cbid, listId, listPc, PSP_GE_SIGNAL_HANDLER_SUSPEND, callbackNotifyArg1, finishCallbacks);
     }
 
     /** safe to call from the Async display thread */
-    public void triggerSignalCallback(int cbid, int listId, int listAddr, int behavior, int callbackNotifyArg1) {
-		triggerAsyncCallback(cbid, listId, listAddr, behavior, callbackNotifyArg1, signalCallbacks);
+    public void triggerSignalCallback(int cbid, int listId, int listPc, int behavior, int callbackNotifyArg1) {
+		triggerAsyncCallback(cbid, listId, listPc, behavior, callbackNotifyArg1, signalCallbacks);
     }
 
     public PspGeList getGeList(int id) {
