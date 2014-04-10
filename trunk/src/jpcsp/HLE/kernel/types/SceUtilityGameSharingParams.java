@@ -19,8 +19,7 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.util.Utilities;
 
-public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructure {
-    public pspUtilityDialogCommon base;
+public class SceUtilityGameSharingParams extends pspUtilityBaseDialog {
     public String gameSharingName;
     public int uploadCallbackArg;
     public int uploadCallbackAddr;       // Predefined callback used for data upload (params: uploadCallbackArg, pointer to gameSharingDataAddr, pointer to gameSharingDataSize).

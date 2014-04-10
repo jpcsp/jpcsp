@@ -16,8 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class SceUtilityNpSigninParams extends pspAbstractMemoryMappedStructure {
-	public pspUtilityDialogCommon base;
+public class SceUtilityNpSigninParams extends pspUtilityBaseDialog {
 	public int unknown1;
 	public int unknown2;
 	public int unknown3;

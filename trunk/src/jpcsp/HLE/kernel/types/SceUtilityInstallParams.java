@@ -16,8 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class SceUtilityInstallParams extends pspAbstractMemoryMappedStructure {
-	public pspUtilityDialogCommon base;
+public class SceUtilityInstallParams extends pspUtilityBaseDialog {
 	public int unknown1;
 	public String gameName; // DISCID
 	byte[] key = new byte[0x10];

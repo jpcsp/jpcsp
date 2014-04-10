@@ -16,8 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure {
-    public pspUtilityDialogCommon base;
+public class SceUtilityScreenshotParams extends pspUtilityBaseDialog {
     public int startupType;
         public final static int PSP_UTILITY_SCREENSHOT_TYPE_GUI = 0;
         public final static int PSP_UTILITY_SCREENSHOT_TYPE_AUTO = 1;

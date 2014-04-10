@@ -18,6 +18,7 @@ package jpcsp.HLE.modules150;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_JPEG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_PNG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_NAMERULE_AUTONUM;
@@ -89,6 +90,7 @@ import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.SceFontInfo;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceUtilityGamedataInstallParams;
 import jpcsp.HLE.kernel.types.SceUtilityGameSharingParams;
 import jpcsp.HLE.kernel.types.SceUtilityHtmlViewerParams;
@@ -98,11 +100,12 @@ import jpcsp.HLE.kernel.types.SceUtilityNpSigninParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
 import jpcsp.HLE.kernel.types.SceUtilityScreenshotParams;
-import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
+import jpcsp.HLE.kernel.types.pspUtilityBaseDialog;
 import jpcsp.HLE.kernel.types.pspUtilityDialogCommon;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams.SceUtilityOskData;
 import jpcsp.HLE.kernel.types.pspCharInfo;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.sceCtrl;
 import jpcsp.HLE.modules.sceNetApctl;
 import jpcsp.crypto.CryptoEngine;
@@ -151,6 +154,7 @@ public class sceUtility extends HLEModule {
 
         super.start();
     }
+
     public static final String SYSTEMPARAM_SETTINGS_OPTION_NICKNAME = "emu.sysparam.nickname";
     public static final String SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL = "emu.sysparam.adhocchannel";
     public static final String SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE = "emu.sysparam.wlanpowersave";
@@ -249,12 +253,25 @@ public class sceUtility extends HLEModule {
     protected UtilityDialogState startedDialogState;
     private static final String dummyNetParamName = "NetConf #%d";
     private int lastNetParamID;
+    private final static int utilityThreadActionRegister = _s0; // $s0 is preserved across calls
+    private final static int UTILITY_THREAD_ACTION_SHUTDOWN = 0;
+
+    public void hleUtilityThread(Processor processor) {
+    	int action = processor.cpu.getRegister(utilityThreadActionRegister);
+    	log.debug(String.format("hleUtilityThread action=%d", action));
+    	switch (action) {
+	    	case UTILITY_THREAD_ACTION_SHUTDOWN:
+	    		startedDialogState.status = PSP_UTILITY_DIALOG_STATUS_NONE;
+	    		processor.cpu._v0 = 0;
+	    		Modules.ThreadManForUserModule.hleKernelExitDeleteThread();
+	    		break;
+    	}
+    }
 
     protected abstract static class UtilityDialogState {
 
         protected String name;
-        protected pspAbstractMemoryMappedStructure params;
-        protected pspUtilityDialogCommon paramsCommon;
+        protected pspUtilityBaseDialog params;
         protected TPointer paramsAddr;
         protected int status;
         protected UtilityDialog dialog;
@@ -352,9 +369,9 @@ public class sceUtility extends HLEModule {
         }
 
         private void setResult(int result) {
-            if (paramsCommon != null) {
-                paramsCommon.result = result;
-                paramsCommon.writeResult(paramsAddr);
+            if (params != null && params.base != null) {
+                params.base.result = result;
+                params.base.writeResult(paramsAddr);
             }
         }
 
@@ -444,10 +461,9 @@ public class sceUtility extends HLEModule {
 
             int previousStatus = status;
 
-            // after returning FINISHED once, return NONE on following calls
-            if (status == PSP_UTILITY_DIALOG_STATUS_FINISHED) {
-                status = PSP_UTILITY_DIALOG_STATUS_NONE;
-            } else if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
+            // Remark: moving from FINISHED status to NONE is performed in the shutdown thread.
+
+            if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
                 // Move from INIT to VISIBLE
                 status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
                 startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
@@ -475,6 +491,11 @@ public class sceUtility extends HLEModule {
             }
 
             status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
+
+            // Execute the shutdown thread, it will set the status to 0.
+            SceKernelThreadInfo shutdownThread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceUtilityShutdown", ThreadManForUser.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0);
+            Modules.ThreadManForUserModule.hleKernelStartThread(shutdownThread, 0, 0, shutdownThread.gpReg_addr);
+            shutdownThread.cpuContext.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN);
 
             return 0;
         }
@@ -569,7 +590,7 @@ public class sceUtility extends HLEModule {
 
         protected abstract boolean executeUpdateVisible();
 
-        protected abstract pspAbstractMemoryMappedStructure createParams();
+        protected abstract pspUtilityBaseDialog createParams();
 
         protected int checkValidity() {
             return 0;
@@ -646,7 +667,7 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        protected pspAbstractMemoryMappedStructure createParams() {
+        protected pspUtilityBaseDialog createParams() {
             return null;
         }
 
@@ -671,9 +692,8 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        protected pspAbstractMemoryMappedStructure createParams() {
+        protected pspUtilityBaseDialog createParams() {
             savedataParams = new SceUtilitySavedataParam();
-            paramsCommon = savedataParams.base;
             return savedataParams;
         }
 
@@ -808,6 +828,10 @@ public class sceUtility extends HLEModule {
                             }
                             break;
                         }
+					case display:
+					case quit:
+						// Nothing to do
+						break;
                     }
                     break;
                 }
@@ -891,6 +915,10 @@ public class sceUtility extends HLEModule {
                             }
                             break;
                         }
+					case confirmation:
+					case quit:
+						// Nothing to do
+						break;
                     }
                     break;
                 }
@@ -973,6 +1001,10 @@ public class sceUtility extends HLEModule {
                             }
                             break;
                         }
+					case display:
+					case quit:
+						// Nothing to do
+						break;
                     }
                     break;
                 }
@@ -1054,6 +1086,9 @@ public class sceUtility extends HLEModule {
                             }
                             break;
                         }
+					case quit:
+						// Nothing to do
+						break;
                     }
                     break;
                 }
@@ -1599,23 +1634,6 @@ public class sceUtility extends HLEModule {
             // The other modes are silent
             return false;
         }
-
-		@Override
-		public int executeShutdownStart() {
-			int result = super.executeShutdownStart();
-
-			if (status == PSP_UTILITY_DIALOG_STATUS_FINISHED) {
-				// Some modes go directly to status NONE after a shutdown start.
-				// Are these the modes without dialog?
-				switch (savedataParams.mode) {
-					case SceUtilitySavedataParam.MODE_SIZES:
-						status = PSP_UTILITY_DIALOG_STATUS_NONE;
-						break;
-				}
-			}
-
-			return result;
-		}
     }
 
     protected static class MsgDialogUtilityDialogState extends UtilityDialogState {
@@ -1656,9 +1674,8 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        protected pspAbstractMemoryMappedStructure createParams() {
+        protected pspUtilityBaseDialog createParams() {
             msgDialogParams = new SceUtilityMsgDialogParams();
-            paramsCommon = msgDialogParams.base;
             return msgDialogParams;
         }
     }
@@ -1700,9 +1717,8 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        protected pspAbstractMemoryMappedStructure createParams() {
+        protected pspUtilityBaseDialog createParams() {
             oskParams = new SceUtilityOskParams();
-            paramsCommon = oskParams.base;
             return oskParams;
         }
     }
@@ -1722,9 +1738,8 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        protected pspAbstractMemoryMappedStructure createParams() {
+        protected pspUtilityBaseDialog createParams() {
             gameSharingParams = new SceUtilityGameSharingParams();
-            paramsCommon = gameSharingParams.base;
             return gameSharingParams;
         }
 
@@ -1786,9 +1801,8 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        protected pspAbstractMemoryMappedStructure createParams() {
+        protected pspUtilityBaseDialog createParams() {
             netconfParams = new SceUtilityNetconfParams();
-            paramsCommon = netconfParams.base;
             return netconfParams;
         }
     }
@@ -1874,9 +1888,8 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        protected pspAbstractMemoryMappedStructure createParams() {
+        protected pspUtilityBaseDialog createParams() {
             screenshotParams = new SceUtilityScreenshotParams();
-            paramsCommon = screenshotParams.base;
             return screenshotParams;
         }
 
@@ -1895,9 +1908,8 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        protected pspAbstractMemoryMappedStructure createParams() {
+        protected pspUtilityBaseDialog createParams() {
             gamedataInstallParams = new SceUtilityGamedataInstallParams();
-            paramsCommon = gamedataInstallParams.base;
             return gamedataInstallParams;
         }
 
@@ -1973,9 +1985,8 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        protected pspAbstractMemoryMappedStructure createParams() {
+        protected pspUtilityBaseDialog createParams() {
             npSigninParams = new SceUtilityNpSigninParams();
-            paramsCommon = npSigninParams.base;
             return npSigninParams;
         }
 
@@ -2005,9 +2016,8 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        protected pspAbstractMemoryMappedStructure createParams() {
+        protected pspUtilityBaseDialog createParams() {
             htmlViewerParams = new SceUtilityHtmlViewerParams();
-            paramsCommon = htmlViewerParams.base;
             return htmlViewerParams;
         }
 
