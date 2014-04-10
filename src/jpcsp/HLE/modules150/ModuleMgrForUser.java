@@ -337,7 +337,7 @@ public class ModuleMgrForUser extends HLEModule {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
-            lmOption.read(Memory.getInstance(), optionAddr.getAddress());
+            lmOption.read(optionAddr);
             if (log.isInfoEnabled()) {
             	log.info(String.format("sceKernelLoadModule: partition=%d, position=%d", lmOption.mpidText, lmOption.position));
             }

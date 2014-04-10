@@ -292,7 +292,7 @@ public abstract class PdpObject extends AdhocObject {
 				dataLengthAddr.setValue(bufferMessage.length);
 				Memory.getInstance().memcpy(data.getAddress(), buffer.addr + bufferMessage.offset, bufferMessage.length);
 				if (srcMacAddr != null && !srcMacAddr.isNull()) {
-					bufferMessage.macAddress.write(Memory.getInstance(), srcMacAddr.getAddress());
+					bufferMessage.macAddress.write(srcMacAddr);
 				}
 				if (portAddr != null && portAddr.isNotNull()) {
 					portAddr.setValue(bufferMessage.port);

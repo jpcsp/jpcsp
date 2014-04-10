@@ -1604,7 +1604,7 @@ public class sceMpeg extends HLEModule {
         	mpegRingbuffer = SceMpegRingbuffer.fromMem(ringbufferAddr);
         	mpegRingbuffer.reset();
 	        mpegRingbuffer.setMpeg(mpeg.getAddress());
-	        mpegRingbuffer.write(mem, ringbufferAddr.getAddress());
+	        mpegRingbuffer.write(ringbufferAddr);
         }
 
         // Write mpeg system handle.
@@ -1782,11 +1782,11 @@ public class sceMpeg extends HLEModule {
         if (buffer_addr >= 1 && buffer_addr <= allocatedEsBuffers.length && allocatedEsBuffers[buffer_addr - 1]) {
         	mpegAvcAu.esBuffer = buffer_addr;
         	mpegAvcAu.esSize = MPEG_AVC_ES_SIZE;
-        	mpegAvcAu.write(auAddr.getMemory(), auAddr.getAddress());
+        	mpegAvcAu.write(auAddr);
         } else {
         	mpegAtracAu.esBuffer = buffer_addr;
         	mpegAtracAu.esSize = MPEG_ATRAC_ES_SIZE;
-        	mpegAtracAu.write(auAddr.getMemory(), auAddr.getAddress());
+        	mpegAtracAu.write(auAddr);
         }
         return 0;
     }

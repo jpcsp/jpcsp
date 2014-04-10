@@ -3162,12 +3162,12 @@ public class IoFileMgrForUser extends HLEModule {
      * sceIoDread
      * 
      * @param id
-     * @param dirent_addr
+     * @param direntAddr
      * 
      * @return
      */
     @HLEFunction(nid = 0xE3EB004C, version = 150, checkInsideInterrupt = true)
-    public int sceIoDread(int id, int dirent_addr) {
+    public int sceIoDread(int id, TPointer direntAddr) {
         IoDirInfo info = dirIds.get(id);
 
         int result;
@@ -3199,7 +3199,7 @@ public class IoFileMgrForUser extends HLEModule {
                     log.debug(String.format("sceIoDread id=0x%X #%d %s='%s', dir='%s'", id, info.printableposition, type, info.path, filename));
             	}
 
-                dirent.write(Memory.getInstance(), dirent_addr);
+                dirent.write(direntAddr);
             }
         } else {
         	if (log.isDebugEnabled()) {
@@ -3208,7 +3208,7 @@ public class IoFileMgrForUser extends HLEModule {
             result = 0;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoDread(result, id, dirent_addr);
+            ioListener.sceIoDread(result, id, direntAddr.getAddress());
         }
         delayIoOperation(IoOperation.dread);
         return result;
@@ -3462,18 +3462,18 @@ public class IoFileMgrForUser extends HLEModule {
      * sceIoChstat
      * 
      * @param filename
-     * @param stat_addr
+     * @param statAddr
      * @param bits
      * 
      * @return
      */
     @HLEFunction(nid = 0xB8A740F4, version = 150, checkInsideInterrupt = true)
-    public int sceIoChstat(PspString filename, int stat_addr, int bits) {
+    public int sceIoChstat(PspString filename, TPointer statAddr, int bits) {
         String pcfilename = getDeviceFilePath(filename.getString());
         int result;
 
         SceIoStat stat = new SceIoStat();
-        stat.read(Memory.getInstance(), stat_addr);
+        stat.read(statAddr);
 
         String absoluteFileName = getAbsoluteFileName(filename.getString());
         StringBuilder localFileName = new StringBuilder();
@@ -3534,7 +3534,7 @@ public class IoFileMgrForUser extends HLEModule {
         	result = -1;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoChstat(result, filename.getAddress(), filename.getString(), stat_addr, bits);
+            ioListener.sceIoChstat(result, filename.getAddress(), filename.getString(), statAddr.getAddress(), bits);
         }
         return result;
     }

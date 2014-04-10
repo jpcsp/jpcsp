@@ -2286,7 +2286,7 @@ public class ThreadManForUser extends HLEModule {
         	return ERROR_KERNEL_NOT_FOUND_THREAD_EVENT_HANDLER;
         }
 
-        threadEventHandlers.get(uid).write(statusPointer.getMemory(), statusPointer.getAddress());
+        threadEventHandlers.get(uid).write(statusPointer);
         return 0;
     }
 
@@ -3118,7 +3118,7 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0x5F32BEAA, version = 150)
     public int sceKernelReferVTimerStatus(@CheckArgument("checkVTimerID") int vtimerUid, TPointer infoAddr) {
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        sceKernelVTimerInfo.write(Memory.getInstance(), infoAddr.getAddress());
+        sceKernelVTimerInfo.write(infoAddr);
 
         return 0;
     }
@@ -3576,9 +3576,9 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0x627E6F3A, version = 150)
     public int sceKernelReferSystemStatus(TPointer statusPtr) {
         SceKernelSystemStatus status = new SceKernelSystemStatus();
-        status.read(statusPtr.getMemory(), statusPtr.getAddress());
+        status.read(statusPtr);
         status.status = 0;
-        status.write(statusPtr.getMemory(), statusPtr.getAddress());
+        status.write(statusPtr);
 
         return 0;
     }
