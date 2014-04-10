@@ -18,8 +18,7 @@ package jpcsp.HLE.kernel.types;
 
 import static jpcsp.HLE.modules150.sceNetAdhocctl.GROUP_NAME_LENGTH;
 
-public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
-    public pspUtilityDialogCommon base;
+public class SceUtilityNetconfParams extends pspUtilityBaseDialog {
     public int netAction;           // The netconf action (PSPSDK): sets how to connect.
         public final static int PSP_UTILITY_NETCONF_CONNECT_APNET = 0;
         public final static int PSP_UTILITY_NETCONF_GET_STATUS_APNET = 1;

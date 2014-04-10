@@ -17,9 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 
-public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure {
-
-    public pspUtilityDialogCommon base;
+public class SceUtilityHtmlViewerParams extends pspUtilityBaseDialog {
     public int dataAddr;
     public int dataSize;
     public int bookmarkNum;

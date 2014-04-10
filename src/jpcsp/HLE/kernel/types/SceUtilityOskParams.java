@@ -16,8 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
-	public pspUtilityDialogCommon base;
+public class SceUtilityOskParams extends pspUtilityBaseDialog {
 	public int oskDataCount;  // Number of input fields (PSPSDK).
 	public int oskDataAddr;
 	public SceUtilityOskData oskData;

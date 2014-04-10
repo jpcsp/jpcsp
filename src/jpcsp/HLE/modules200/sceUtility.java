@@ -32,7 +32,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.SceUtilityInstallParams;
-import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
+import jpcsp.HLE.kernel.types.pspUtilityBaseDialog;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.ModuleMgrForUser;
@@ -88,7 +88,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 		}
 
 		@Override
-		protected pspAbstractMemoryMappedStructure createParams() {
+		protected pspUtilityBaseDialog createParams() {
 			installParams = new SceUtilityInstallParams();
 			return installParams;
 		}

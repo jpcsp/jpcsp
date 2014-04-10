@@ -199,6 +199,7 @@ public class ThreadManForUser extends HLEModule {
     public static final int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x60;
     public static final int NET_ADHOC_CTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x70;
     public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x80;
+    public static final int UTILITY_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x90;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
@@ -261,6 +262,7 @@ public class ThreadManForUser extends HLEModule {
         installNetAdhocMatchingEventLoopHandler();
         installNetAdhocMatchingInputLoopHandler();
         installNetAdhocCtlLoopHandler();
+        installUtilityLoopHandler();
 
         alarms = new HashMap<Integer, SceKernelAlarmInfo>();
         vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
@@ -520,6 +522,15 @@ public class ThreadManForUser extends HLEModule {
 
     private void installNetAdhocCtlLoopHandler() {
     	installLoopHandler("hleKernelNetAdhocctlLoop", NET_ADHOC_CTL_LOOP_ADDRESS);
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public void hleUtilityLoop(Processor processor) {
+    	Modules.sceUtilityModule.hleUtilityThread(processor);
+    }
+
+    private void installUtilityLoopHandler() {
+    	installLoopHandler("hleUtilityLoop", UTILITY_LOOP_ADDRESS);
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)

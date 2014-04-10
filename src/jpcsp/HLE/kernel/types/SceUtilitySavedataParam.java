@@ -41,7 +41,7 @@ import jpcsp.hardware.MemoryStick;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
-public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
+public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
 
     public final static String savedataPath = "ms0:/PSP/SAVEDATA/";
     public final static String savedataFilePath = "ms0/PSP/SAVEDATA/";
@@ -60,7 +60,6 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         snd0FileName
     };
     public final static String anyFileName = "<>";
-    public pspUtilityDialogCommon base;
     public int mode;
     public final static int MODE_AUTOLOAD = 0;
     public final static int MODE_AUTOSAVE = 1;
