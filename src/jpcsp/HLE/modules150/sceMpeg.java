@@ -2464,8 +2464,8 @@ public class sceMpeg extends HLEModule {
         }
 
         if (auAddr != null) {
-        	// Set esSize to 0
-        	auAddr.setValue32(20, 0);
+        	mpegAvcAu.esSize = 0;
+        	mpegAvcAu.write(auAddr);
         }
 
         // Correct decoding.
