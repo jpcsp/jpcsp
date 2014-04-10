@@ -299,6 +299,9 @@ public class VplManager {
 
     public int sceKernelReferVplStatus(int uid, TPointer infoAddr) {
         SceKernelVplInfo info = vplMap.get(uid);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelReferVplStatus returning %s", info));
+        }
         info.write(infoAddr);
 
         return 0;
