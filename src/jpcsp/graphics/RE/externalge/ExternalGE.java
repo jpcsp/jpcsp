@@ -42,7 +42,7 @@ import jpcsp.util.Utilities;
  */
 public class ExternalGE {
 	public static final boolean enableAsyncRendering = false;
-	public static       boolean activateWhenAvailable = true;
+	public static       boolean activateWhenAvailable = false;
 	public static final boolean useUnsafe = false;
 	public static Logger log = Logger.getLogger("externalge");
 	private static ConcurrentLinkedQueue<PspGeList> drawListQueue;
