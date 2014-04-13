@@ -119,6 +119,10 @@ public class SAVEDATA {
         buf[17] = (byte) ((size >> 16) & 0xFF);
         buf[18] = (byte) ((size >> 8) & 0xFF);
         buf[19] = (byte) (size & 0xFF);
+        
+        // Ignore PSP_KIRK_CMD_ENCRYPT_FUSE and PSP_KIRK_CMD_DECRYPT_FUSE. 
+        if((kirk_code == 0x5) || (kirk_code == 8))
+            return; 
 
         ByteBuffer bBuf = ByteBuffer.wrap(buf);
         kirk.hleUtilsBufferCopyWithRange(bBuf, size, bBuf, size, kirk_code);
@@ -692,23 +696,17 @@ public class SAVEDATA {
         // Generate a new hash using a key.
         hleSdSetIndex(ctx1, mode);
         hleSdRemoveValue(ctx1, data, size);
-        hleSdGetLastIndex(ctx1, hash, null);
-        
-        // Ignore KIRK FUSE CMD modes.
-        if ((mode == 2) || (mode == 4) || (mode == 6))
-        {
-            for(int i = 0; i < 0x10; i++)
-            {
+        if (hleSdGetLastIndex(ctx1, hash, null) < 0) {
+            for (int i = 0; i < 0x10; i++) {
+                // Generate a dummy hash in case of failure.
                 hash[i] = 1;
             }
         }
-        
         return hash;
     }
 
     public void UpdateSavedataHashes(PSF psf, byte[] data, int size, byte[] params, byte[] key) {
         // Setup the params, hash and mode.
-        byte[] savedataParams = new byte[0x80];
         byte[] hash = new byte[0x10];
 
         // Determine the hashing mode.
@@ -736,39 +734,44 @@ public class SAVEDATA {
         if ((mode & 0x4) == 0x4) {
             // Generate a type 6 hash.
             hash = GenerateSavedataHash(data, size, 6);
-            System.arraycopy(hash, 0, savedataParams, 0x20, 0x10);
+            System.arraycopy(hash, 0, data, 0x11B0 + 0x20, 0x10);
+            // Set the SAVEDATA_PARAMS byte to 0x41.
+            data[0x11B0] |= 0x01;
+            data[0x11B0] |= 0x40;
             // Generate a type 5 hash.
             hash = GenerateSavedataHash(data, size, 5);
-            System.arraycopy(hash, 0, savedataParams, 0x70, 0x10);
-            // Set the SAVEDATA_PARAMS byte to 0x40.
-            savedataParams[0] |= 0x40;
+            System.arraycopy(hash, 0, data, 0x11B0 + 0x70, 0x10); 
         } else if ((mode & 0x2) == 0x2) { // Last old mode (firmware 2.0.0 to 2.7.1).
             // Generate a type 4 hash.
             hash = GenerateSavedataHash(data, size, 4);
-            System.arraycopy(hash, 0, savedataParams, 0x20, 0x10);
+            System.arraycopy(hash, 0, data, 0x11B0 + 0x20, 0x10);
+            // Set the SAVEDATA_PARAMS byte to 0x21.
+            data[0x11B0] |= 0x01;
+            data[0x11B0] |= 0x20;
             // Generate a type 3 hash.
             hash = GenerateSavedataHash(data, size, 3);
-            System.arraycopy(hash, 0, savedataParams, 0x70, 0x10);
-            // Set the SAVEDATA_PARAMS byte to 0x20.
-            savedataParams[0] |= 0x20;
+            System.arraycopy(hash, 0, data, 0x11B0 + 0x70, 0x10);
         } else { // First old mode (before firmware 2.0.0).
             // Generate a type 2 hash.
             hash = GenerateSavedataHash(data, size, 2);
-            System.arraycopy(hash, 0, savedataParams, 0x20, 0x10);
-            // Set the SAVEDATA_PARAMS byte to 0x00.
-            savedataParams[0] |= 0x00;
+            System.arraycopy(hash, 0, data, 0x11B0 + 0x20, 0x10);
+            // Set the SAVEDATA_PARAMS byte to 0x01.
+            data[0x11B0] |= 0x01;
         }
 
         if ((check_bit & 0x1) == 0x1) {
             // Generate a type 1 hash.
             hash = GenerateSavedataHash(data, size, 1);
-            System.arraycopy(hash, 0, savedataParams, 0x10, 0x10);
-            // Set the SAVEDATA_PARAMS byte to 0x01.
-            savedataParams[0] |= 0x01;
+            System.arraycopy(hash, 0, data, 0x11B0 + 0x10, 0x10); 
         }
 
-        // Output the final PSF file containing the SAVEDATA param and file hashes.
+        // Output the final PSF file containing the SAVEDATA_PARAMS and file hashes.
         try {
+            // Update the SAVEDATA_PARAMS.
+            byte[] savedataParams = new byte[0x80];
+            for(int i = 0; i < 0x80; i++) {
+                savedataParams[i] = data[0x11B0 + i];
+            }
             psf.put("SAVEDATA_PARAMS", savedataParams);
         } catch (Exception e) {
             // Ignore...
