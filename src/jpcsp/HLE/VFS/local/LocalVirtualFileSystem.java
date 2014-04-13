@@ -32,6 +32,7 @@ import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
 import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -42,12 +43,14 @@ import jpcsp.hardware.MemoryStick;
 
 public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 	protected final String localPath;
+	private final boolean useDirExtendedInfo;
     // modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
     // SeekableRandomFile doesn't support write only: take "rw",
     private final static String[] modeStrings = {"r", "r", "rw", "rw"};
 
-	public LocalVirtualFileSystem(String localPath) {
+	public LocalVirtualFileSystem(String localPath, boolean useDirExtendedInfo) {
 		this.localPath = localPath;
+		this.useDirExtendedInfo = useDirExtendedInfo;
 	}
 
 	protected File getFile(String fileName) {
@@ -152,6 +155,16 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 		}
 
 		return file.list();
+	}
+
+	@Override
+	public int ioDread(String dirName, SceIoDirent dir) {
+		if (dir != null) {
+			// Use ExtendedInfo for the MemoryStick
+			dir.setUseExtendedInfo(useDirExtendedInfo);
+		}
+
+		return super.ioDread(dirName, dir);
 	}
 
 	@Override
