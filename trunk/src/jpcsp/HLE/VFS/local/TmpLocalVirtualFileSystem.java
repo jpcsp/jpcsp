@@ -26,7 +26,7 @@ public class TmpLocalVirtualFileSystem extends LocalVirtualFileSystem implements
 	protected static Logger log = Logger.getLogger("vfs");
 
 	public TmpLocalVirtualFileSystem() {
-		super(Settings.getInstance().getTmpDirectory());
+		super(Settings.getInstance().getTmpDirectory(), false);
 	}
 
 	@Override

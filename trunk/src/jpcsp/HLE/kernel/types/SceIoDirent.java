@@ -24,8 +24,9 @@ import jpcsp.util.Utilities;
 public class SceIoDirent extends pspAbstractMemoryMappedStructure {
     public SceIoStat stat;
     public String filename;
-    public int reserved;  // This field is a pointer to user data and is set manually.
-    public int dummy;     // Always 0.
+    public int extendedInfoAddr; // This field is a pointer to user data and only used by the MemoryStick driver.
+    public int dummy; // Always 0.
+    private boolean useExtendedInfo;
 
     public SceIoDirent(SceIoStat stat, String filename) {
         this.stat = stat;
@@ -37,7 +38,7 @@ public class SceIoDirent extends pspAbstractMemoryMappedStructure {
 		stat = new SceIoStat();
 		read(stat);
 		filename = readStringNZ(256);
-		reserved = read32();
+		extendedInfoAddr = read32();
 		dummy = read32();
 	}
 
@@ -57,28 +58,34 @@ public class SceIoDirent extends pspAbstractMemoryMappedStructure {
 		// NOTE: Do not overwrite the reserved field.
 		// Tests confirm that sceIoDread only writes the stat and filename.
 
-		if (reserved == 0) {
-			reserved = read32();
-		}
-		if (Memory.isAddressGood(reserved)) {
-			if (Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() <= 0x0307FFFF) {
-				// "reserved" is pointing to an area of unknown size
-				// - [0..12] "8.3" file name (null-terminated)
-				// - [13..???] long file name (null-terminated)
-	            Utilities.writeStringNZ(mem, reserved + 0, 13, convertFileNameTo83(filename));
-	            Utilities.writeStringZ(mem, reserved + 13, filename);
-			} else {
-				// "reserved" is pointing to an area of total size 1044
-				// - [0..3] size of area
-				// - [4..19] "8.3" file name (null-terminated)
-				// - [20..???] long file name (null-terminated)
-				int size = mem.read32(reserved);
-				if (size >= 1044) {
-					Utilities.writeStringNZ(mem, reserved + 4, 13, convertFileNameTo83(filename));
-					Utilities.writeStringNZ(mem, reserved + 20, 1024, filename);
+		if (useExtendedInfo) {
+			if (extendedInfoAddr == 0) {
+				extendedInfoAddr = read32();
+			}
+			if (Memory.isAddressGood(extendedInfoAddr)) {
+				if (Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() <= 0x0307FFFF) {
+					// "reserved" is pointing to an area of unknown size
+					// - [0..12] "8.3" file name (null-terminated)
+					// - [13..???] long file name (null-terminated)
+		            Utilities.writeStringNZ(mem, extendedInfoAddr + 0, 13, convertFileNameTo83(filename));
+		            Utilities.writeStringZ(mem, extendedInfoAddr + 13, filename);
+				} else {
+					// "reserved" is pointing to an area of total size 1044
+					// - [0..3] size of area
+					// - [4..19] "8.3" file name (null-terminated)
+					// - [20..???] long file name (null-terminated)
+					int size = mem.read32(extendedInfoAddr);
+					if (size == 1044) {
+						Utilities.writeStringNZ(mem, extendedInfoAddr + 4, 13, convertFileNameTo83(filename));
+						Utilities.writeStringNZ(mem, extendedInfoAddr + 20, 1024, filename);
+					}
 				}
 			}
 		}
+	}
+
+	public void setUseExtendedInfo(boolean useExtendedInfo) {
+		this.useExtendedInfo = useExtendedInfo;
 	}
 
 	@Override

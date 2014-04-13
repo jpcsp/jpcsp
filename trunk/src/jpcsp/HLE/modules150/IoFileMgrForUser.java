@@ -633,7 +633,7 @@ public class IoFileMgrForUser extends HLEModule {
     				if (colon >= 0) {
     					String device = filepath.substring(0, colon);
     					device = device.toLowerCase();
-    					vfsManager.register(device, new LocalVirtualFileSystem(device + ":\\"));
+    					vfsManager.register(device, new LocalVirtualFileSystem(device + ":\\", false));
     				}
     			}
     		}
@@ -671,10 +671,10 @@ public class IoFileMgrForUser extends HLEModule {
         vfsManager.register("emulator", new EmulatorVirtualFileSystem());
         vfsManager.register("kemulator", new EmulatorVirtualFileSystem());
         if (useVirtualFileSystem) {
-	        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
-	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/"));
-	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
-	        vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/"));
+	        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/", true));
+	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/", true));
+	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/", false));
+	        vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/", false));
 	        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
 	        registerUmdIso();
         }
@@ -1472,10 +1472,10 @@ public class IoFileMgrForUser extends HLEModule {
 	        	umdRegistered = true;
 			}
 
-			vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
-	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/"));
-	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
-	        vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/"));
+			vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/", true));
+	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/", true));
+	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/", false));
+	        vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/", false));
 	        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
 	        msRegistered = true;
     	}
@@ -3199,6 +3199,10 @@ public class IoFileMgrForUser extends HLEModule {
                     log.debug(String.format("sceIoDread id=0x%X #%d %s='%s', dir='%s'", id, info.printableposition, type, info.path, filename));
             	}
 
+            	if (info.vfs == null) {
+                	// Write only the extended info for the MemoryStick
+            		dirent.setUseExtendedInfo(!info.path.startsWith("disc"));
+            	}
                 dirent.write(direntAddr);
             }
         } else {
