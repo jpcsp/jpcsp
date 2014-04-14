@@ -473,7 +473,7 @@ public class scePsmfPlayer extends HLEModule {
         // Always switch to STANDBY, because this PSMF can still be resumed.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_STANDBY;
 
-        Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
+        // scePsmfPlayerStop does not reschedule threads
 
         return 0;
     }
