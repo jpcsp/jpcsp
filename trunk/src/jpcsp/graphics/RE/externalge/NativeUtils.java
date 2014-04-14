@@ -60,7 +60,7 @@ public class NativeUtils {
 
 	public static void init() {
 		if (!isInitialized) {
-			String libraryName = "software-ge-renderer";
+			String libraryName = "software-ge-renderer-noSSE";
 			if (NativeCpuInfo.isAvailable()) {
 				NativeCpuInfo.init();
 				if (NativeCpuInfo.hasAVX2()) {
