@@ -88,6 +88,7 @@ public class MediaEngine {
     private int bufferSize;
     private int bufferMpegOffset;
     private long lastTimestamp;
+    private int headerSize;
     private byte[] bufferData;
     private StreamState videoStreamState;
     private StreamState audioStreamState;
@@ -297,11 +298,12 @@ public class MediaEngine {
         init();
     }
 
-    public void init(int bufferAddress, int bufferSize, int bufferMpegOffset, long lastTimestamp) {
+    public void init(int bufferAddress, int bufferSize, int bufferMpegOffset, long lastTimestamp, int headerSize) {
         this.bufferAddress = bufferAddress;
         this.bufferSize = bufferSize;
         this.bufferMpegOffset = bufferMpegOffset;
         this.lastTimestamp = lastTimestamp;
+        this.headerSize = headerSize;
 
         // Save the content of the MPEG header as it might be already overwritten
         // when we need it (at sceMpegGetAtracAu or sceMpegGetAvcAu)
@@ -750,7 +752,7 @@ public class MediaEngine {
                     externalDecoder.decodeExtAudio(new ByteArrayVirtualFile(bufferData), bufferSize, bufferMpegOffset, audioChannel, lastTimestamp);
                 }
             } else {
-                externalDecoder.decodeExtAudio(FileLocator.getInstance().getVirtualFile(bufferAddress, sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE, bufferSize, bufferData), bufferSize, bufferMpegOffset, audioChannel, lastTimestamp);
+                externalDecoder.decodeExtAudio(FileLocator.getInstance().getVirtualFile(bufferAddress, headerSize, bufferSize, bufferData), bufferSize, bufferMpegOffset, audioChannel, lastTimestamp);
             }
             extAudioFile = getExtAudioFile(audioChannel);
         }
