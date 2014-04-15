@@ -313,9 +313,9 @@ public class ThreadManForUser extends HLEModule {
         // Create a thread the program will run inside
 
         // The stack size seems to be 0x40000 when starting the application from the VSH
-        // and smaller when starting the application with sceKernelLoadExec() - guess: 0x4000.
+        // and smaller when starting the application with sceKernelLoadExec() - guess: 0x8000.
         // This could not be reproduced on a PSP.
-        int rootStackSize = (fromSyscall ? 0x4000 : 0x40000);
+        int rootStackSize = (fromSyscall ? 0x8000 : 0x40000);
         // Use the module_start_thread_stacksize when this information was present in the ELF file
         if (module != null && module.module_start_thread_stacksize > 0) {
             rootStackSize = module.module_start_thread_stacksize;
