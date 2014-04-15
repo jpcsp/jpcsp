@@ -241,7 +241,6 @@ public class FplManager {
         if (blocks * blocksize != blocks * (long) blocksize) {
             return ERROR_KERNEL_ILLEGAL_MEMSIZE;
         }
-        
 
         SceKernelFplInfo info = SceKernelFplInfo.tryCreateFpl(name.getString(), partitionid, attr, blocksize, blocks, memType, memAlign);
         if (info == null) {
