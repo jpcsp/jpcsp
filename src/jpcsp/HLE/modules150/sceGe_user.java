@@ -177,7 +177,7 @@ public class sceGe_user extends HLEModule {
     	SceKernelCallbackInfo callback = callbacks.get(cbid);
     	if (callback != null && callback.callback_addr != 0) {
     		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Scheduling Async Callback %s, listId=0x%X, behavior=%d, signalId=0x%X", callback.toString(), listId, behavior, signalId));
+    			log.debug(String.format("Scheduling Async Callback %s, listId=0x%X, listPc=0x%08X, behavior=%d, signalId=0x%X", callback.toString(), listId, listPc, behavior, signalId));
     		}
     		GeCallbackInterruptHandler geCallbackInterruptHandler = new GeCallbackInterruptHandler(callback.callback_addr, callback.callback_arg_addr, listPc);
     		GeInterruptHandler geInterruptHandler = new GeInterruptHandler(geCallbackInterruptHandler, listId, behavior, signalId);

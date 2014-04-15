@@ -117,11 +117,21 @@ public class PspGeList {
     }
 
     public void pushSignalCallback(int listId, int behavior, int signal) {
-        Modules.sceGe_userModule.triggerSignalCallback(cbid, listId, getPc(), behavior, signal);
+    	int listPc = getPc();
+    	if (!ExternalGE.isActive()) {
+    		// PC address after the END command
+    		listPc += 4;
+    	}
+        Modules.sceGe_userModule.triggerSignalCallback(cbid, listId, listPc, behavior, signal);
     }
 
     public void pushFinishCallback(int listId, int arg) {
-    	Modules.sceGe_userModule.triggerFinishCallback(cbid, listId, getPc(), arg);
+    	int listPc = getPc();
+    	if (!ExternalGE.isActive()) {
+    		// PC address after the END command
+    		listPc += 4;
+    	}
+    	Modules.sceGe_userModule.triggerFinishCallback(cbid, listId, listPc, arg);
     }
 
     private void pushStack(int value) {
