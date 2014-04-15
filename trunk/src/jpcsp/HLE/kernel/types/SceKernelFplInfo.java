@@ -21,6 +21,7 @@ import jpcsp.HLE.kernel.managers.FplManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.managers.ThreadWaitingList;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.util.Utilities;
 
 public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLength {
     // PSP info
@@ -57,7 +58,7 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
         }
 
         // Reserve psp memory
-        int alignedBlockSize = (blockSize + (memAlign - 1)) & (~(memAlign - 1));
+        int alignedBlockSize = memAlign == 0 ? blockSize : Utilities.alignUp(blockSize, memAlign - 1);
         int totalFplSize = alignedBlockSize * numBlocks;
         sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, String.format("ThreadMan-Fpl-0x%x-%s", uid, name), memType, totalFplSize, 0);
         if (sysMemInfo == null) {
@@ -74,7 +75,7 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
 
     public static SceKernelFplInfo tryCreateFpl(String name, int partitionid, int attr, int blockSize, int numBlocks, int memType, int memAlign) {
         SceKernelFplInfo info = null;
-        int alignedBlockSize = (blockSize + (memAlign - 1)) & (~(memAlign - 1));
+        int alignedBlockSize = memAlign == 0 ? blockSize : Utilities.alignUp(blockSize, memAlign - 1);
         int totalFplSize = alignedBlockSize * numBlocks;
         int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
 
