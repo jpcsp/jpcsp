@@ -600,7 +600,7 @@ public class sceMpeg extends HLEModule {
 		            if (meChannel == null) {
 		            	// If no MPEG header has been provided by the application (and none could be found),
 		            	// just use the MPEG stream as it is, without header analysis.
-		            	me.init(addr, Math.max(length, mpegStreamSize), 0, 0);
+		            	me.init(addr, Math.max(length, mpegStreamSize), 0, 0, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
 		            	meChannel = new PacketChannel();
 		            }
 		            meChannel.write(addr, length);
@@ -1299,8 +1299,16 @@ public class sceMpeg extends HLEModule {
 
         if (!isCurrentMpegAnalyzed() && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
             if (checkMediaEngineState()) {
-            	me.init(bufferAddr, mpegStreamSize, mpegOffset, mpegLastTimestamp);
-            	meFile = FileLocator.getInstance().getVirtualFile(bufferAddr, MPEG_HEADER_BUFFER_MINIMUM_SIZE, mpegStreamSize + mpegOffset, null);
+            	int headerSize = MPEG_HEADER_BUFFER_MINIMUM_SIZE;
+            	meFile = FileLocator.getInstance().getVirtualFile(bufferAddr, headerSize, mpegStreamSize + mpegOffset, null);
+            	// Try to find the Mpeg header only with a partial length
+            	if (meFile == null && memcmp(bufferAddr, completeMpegHeader, partialMpegHeaderLength)) {
+                	meFile = FileLocator.getInstance().getVirtualFile(bufferAddr, partialMpegHeaderLength, mpegStreamSize + mpegOffset, null);
+                	if (meFile != null) {
+                		headerSize = partialMpegHeaderLength;
+                	}
+            	}
+            	me.init(bufferAddr, mpegStreamSize, mpegOffset, mpegLastTimestamp, headerSize);
             	if (meFile != null) {
             		log.info(String.format("Using MPEG file for streaming: %s", meFile));
             	}
