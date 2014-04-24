@@ -774,6 +774,13 @@ public class VideoEngine {
         }
     }
 
+    public void resetCurrentListCMDValues() {
+        // Reset all the values
+        for (int i = 0; i < currentListCMDValues.length; i++) {
+            currentListCMDValues[i] = -1;
+        }
+    }
+
     private void startUpdate() {
         // Wait longer for a sync when the compiler is not enabled... Jpcsp is then much slower
         maxWaitForSyncCount = RuntimeContext.isCompilerEnabled() ? 100 : 10000;
@@ -804,10 +811,7 @@ public class VideoEngine {
         primCount = 0;
         nopCount = 0;
 
-        // Reset all the values
-        for (int i = 0; i < currentListCMDValues.length; i++) {
-            currentListCMDValues[i] = -1;
-        }
+        resetCurrentListCMDValues();
 
         if (fbBufChanged) {
             context.fbp = display.getTopAddrFb();
@@ -3395,7 +3399,7 @@ public class VideoEngine {
         if (nopCount > 3000) {
         	// More than 3000 NOP instructions executed during this list,
             // something must be wrong...
-            error(String.format("Too many NOP instructions executed (%d) at 0x%08X", nopCount, currentList.getPc()));
+            error(String.format("Too many NOP instructions executed (%d) at 0x%08X, list %s", nopCount, currentList.getPc(), currentList));
         } else {
 	        // Check if we are not reading from an invalid memory region.
             // Abort the list if this is the case.
@@ -3658,11 +3662,11 @@ public class VideoEngine {
     }
 
     private void executeCommandBASE() {
-        context.base = (normalArgument << 8) & 0xff000000;
+        context.base = (normalArgument << 8) & 0xFF000000;
         // Bits of (normalArgument & 0x0000FFFF) are ignored
         // (tested: "Ape Escape On the Loose")
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(BASE) + " " + String.format("%08x", context.base));
+            log(String.format("%s 0x%08X", helper.getCommandString(BASE), context.base));
         }
     }
 

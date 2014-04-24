@@ -119,8 +119,6 @@ public class sceGu {
 		listWriter = MemoryWriter.getMemoryWriter(listAddr, 4);
 		listId = -1;
 
-		Memory.getInstance().memset(bottomAddr, (byte) 0, topAddr - bottomAddr);
-
 		// Init some values
 		sceGuOffsetAddr(0);
 		sendCommandi(GeCommands.BASE, 0);
