@@ -443,7 +443,9 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 		shadeModel = read32();
 		logicOp = read32();
 
-		if (getOffset() > sizeof()) {
+		VideoEngine.getInstance().resetCurrentListCMDValues();
+
+        if (getOffset() > sizeof()) {
 			log.error(String.format("GE context overflow: %d (max allowed=%d)", getOffset(), sizeof()));
 		}
 		if (log.isDebugEnabled()) {

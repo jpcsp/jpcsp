@@ -2426,10 +2426,14 @@ public class sceUtility extends HLEModule {
             x = textX;
             y = textY;
 
-            textAddr = gu.sceGuGetMemory(textWidth * textHeight / 2);
+            int textSize = textWidth * textHeight / 2;
+            textAddr = gu.sceGuGetMemory(textSize);
             if (textAddr == 0) {
                 return;
             }
+
+            // Clear the texture for the text
+            Memory.getInstance().memset(textAddr, (byte) 0, textSize);
 
             for (int i = 0; i < s.length(); i++) {
                 drawText(fontInfo, baseAscender, s.charAt(i), glyphType);
