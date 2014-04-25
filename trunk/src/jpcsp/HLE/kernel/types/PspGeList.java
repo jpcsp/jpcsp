@@ -101,6 +101,9 @@ public class PspGeList {
         if (Memory.isAddressGood(arg_addr)) {
             optParams = new pspGeListOptParam();
             optParams.read(mem, arg_addr);
+            if (sceGe_user.log.isDebugEnabled()) {
+            	sceGe_user.log.debug(String.format("PspGeList optParams=%s", optParams.toString()));
+            }
         }
         setPc(list_addr);
         status = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;

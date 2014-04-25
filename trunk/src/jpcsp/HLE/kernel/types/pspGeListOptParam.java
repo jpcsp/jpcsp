@@ -36,4 +36,9 @@ public class pspGeListOptParam extends pspAbstractMemoryMappedStructureVariableL
         write32(stackDepth);
         write32(stackAddr);
     }
+
+	@Override
+	public String toString() {
+    	return String.format("0x%08X(contextAddr=0x%08X, stackDepth=%d, stackAddr=0x%08X)", getBaseAddress(), contextAddr, stackDepth, stackAddr);
+	}
 }
