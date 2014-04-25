@@ -1343,7 +1343,7 @@ public class ThreadManForUser extends HLEModule {
     private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, boolean preserveCpuState, int[] parameters) {
         if (thread != null) {
             // Save the wait state of the thread to restore it after the call
-            afterAction = new AfterCallAction(thread);
+            afterAction = new AfterCallAction(thread, afterAction);
 
             // Terminate the thread wait state
             thread.waitType = PSP_WAIT_NONE;
@@ -1360,7 +1360,16 @@ public class ThreadManForUser extends HLEModule {
         if (thread == null || thread == currentThread) {
         	if (RuntimeContext.canExecuteCallback(thread)) {
         		thread = currentThread;
-                hleChangeThreadState(thread, PSP_THREAD_RUNNING);
+
+        		if (thread.waitType != PSP_WAIT_NONE) {
+        			afterAction = new AfterCallAction(thread, afterAction);
+        			callback.setAfterAction(afterAction);
+
+        			// Terminate the thread wait state
+        			thread.waitType = PSP_WAIT_NONE;
+        		}
+
+        		hleChangeThreadState(thread, PSP_THREAD_RUNNING);
             	callback.execute(thread);
             	callbackCalled = true;
         	}
@@ -3863,13 +3872,14 @@ public class ThreadManForUser extends HLEModule {
         private boolean doCallbacks;
         private IAction afterAction;
 
-        public AfterCallAction(SceKernelThreadInfo thread) {
+        public AfterCallAction(SceKernelThreadInfo thread, IAction afterAction) {
         	this.thread = thread;
             status = thread.status;
             waitType = thread.waitType;
             waitId = thread.waitId;
             threadWaitInfo = new ThreadWaitInfo(thread.wait);
             doCallbacks = thread.doCallbacks;
+            this.afterAction = afterAction;
         }
 
         @Override
