@@ -249,6 +249,7 @@ public class sceMpeg extends HLEModule {
     protected PacketChannel meChannel;
     protected IVirtualFile meFile;
     protected IMediaChannel mediaChannel;
+    protected boolean startedMpeg;
     protected HashMap<Integer, byte[]> encodedVideoFramesYCbCr;
     protected byte[] audioDecodeBuffer;
     protected boolean[] allocatedEsBuffers;
@@ -740,7 +741,9 @@ public class sceMpeg extends HLEModule {
         	delayThread(mpegDecodeErrorDelay);
         }
 
-        return result;
+    	startedMpeg = true;
+
+    	return result;
     }
 
     private IMediaChannel createMediaChannel() {
@@ -788,7 +791,9 @@ public class sceMpeg extends HLEModule {
         	delayThread(mpegDecodeErrorDelay);
         }
 
-    	return result;
+        startedMpeg = true;
+
+        return result;
     }
 
     public int hleMpegAtracDecode(TPointer bufferAddr, int bufferSize) {
@@ -808,7 +813,9 @@ public class sceMpeg extends HLEModule {
             bufferAddr.clear(bufferSize);
         }
 
-        delayThread(startTime, atracDecodeDelay);
+    	startedMpeg = true;
+
+    	delayThread(startTime, atracDecodeDelay);
 
         return 0;
     }
@@ -1473,6 +1480,7 @@ public class sceMpeg extends HLEModule {
         endOfAudioReached = false;
         endOfVideoReached = false;
         psmfStreams = null;
+        startedMpeg = false;
     }
 
     /**
@@ -2055,7 +2063,7 @@ public class sceMpeg extends HLEModule {
         // Finish the Mpeg only if we are not at the start of a new video,
         // otherwise the analyzed video could be lost.
     	// This call is not deleting the registered streams.
-        if (videoFrameCount > 0 || audioFrameCount > 0) {
+        if (startedMpeg) {
         	finishMpeg();
         }
 
@@ -2212,6 +2220,7 @@ public class sceMpeg extends HLEModule {
         }
 
     	videoFrameCount++;
+    	startedMpeg = true;
 
         // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
         VideoEngine.getInstance().addVideoTexture(buffer, buffer + height * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
@@ -2315,7 +2324,7 @@ public class sceMpeg extends HLEModule {
     	// Finish the Mpeg if it had no audio.
         // Finish the Mpeg only if we are not at the start of a new video,
         // otherwise the analyzed video could be lost.
-        if (videoFrameCount > 0 && audioFrameCount <= 0) {
+        if (startedMpeg && audioFrameCount <= 0) {
         	finishMpeg();
         }
 
@@ -2459,6 +2468,7 @@ public class sceMpeg extends HLEModule {
         }
 
         videoFrameCount++;
+    	startedMpeg = true;
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceMpegAvcDecodeYCbCr currentTimestamp=%d, avcFrameStatus=%d", mpegAvcAu.pts, avcFrameStatus));
@@ -2819,6 +2829,7 @@ public class sceMpeg extends HLEModule {
     	}
 
     	videoFrameCount++;
+    	startedMpeg = true;
 
     	return 0;
     }
