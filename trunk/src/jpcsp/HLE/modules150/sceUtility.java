@@ -1350,7 +1350,7 @@ public class sceUtility extends HLEModule {
 
                             // System files.
                             if (SceUtilitySavedataParam.isSystemFile(entry)) {
-                                if (systemEntriesAddr != 0) {
+                                if (systemEntriesAddr != 0 && systemFileNumEntries < systemMaxNumEntries) {
                                     int entryAddr = systemEntriesAddr + systemFileNumEntries * 80;
                                     if (stat != null) {
                                         mem.write32(entryAddr + 0, stat.mode);
@@ -1365,7 +1365,7 @@ public class sceUtility extends HLEModule {
                                 }
                             } else if (savedataParams.isSecureFile(entry)) {
                                 // Write to secure.
-                                if (saveFileSecureEntriesAddr != 0) {
+                                if (saveFileSecureEntriesAddr != 0 && saveFileSecureNumEntries < saveFileSecureMaxNumEntries) {
                                     int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
                                     if (stat != null) {
                                         mem.write32(entryAddr + 0, stat.mode);
@@ -1386,7 +1386,7 @@ public class sceUtility extends HLEModule {
                                 }
                             } else {
                                 // Write to normal.
-                                if (saveFileEntriesAddr != 0) {
+                                if (saveFileEntriesAddr != 0 && saveFileNumEntries < saveFileMaxNumEntries) {
                                     int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
                                     if (stat != null) {
                                         mem.write32(entryAddr + 0, stat.mode);
