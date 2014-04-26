@@ -23,6 +23,8 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
 import jpcsp.Emulator;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
+import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -213,6 +215,23 @@ public class CodeInstruction {
 
         if (branchingOpcode != Opcodes.NOP) {
             CodeInstruction branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo());
+
+            // Fallback when branching to the 2nd instruction of a native code sequence whose
+            // 1st instruction is the delay slot instruction.
+            // In such a case, assume a branch to the native code sequence.
+            if (branchingToCodeInstruction == null) {
+            	CodeInstruction nativeCodeInstruction = context.getCodeInstruction(getBranchingTo() - 4);
+            	if (nativeCodeInstruction != null && nativeCodeInstruction instanceof NativeCodeInstruction) {
+            		NativeCodeSequence nativeCodeSequence = ((NativeCodeInstruction) nativeCodeInstruction).getNativeCodeSequence();
+            		if (getDelaySlotCodeInstruction(context).getOpcode() == nativeCodeSequence.getFirstOpcode()) {
+            			if (Compiler.log.isDebugEnabled()) {
+            				Compiler.log.debug(String.format("0x%08X: branching to the 2nd instruction of a native code sequence, assuming the 1st instruction", getAddress()));
+            			}
+            			branchingToCodeInstruction = nativeCodeInstruction;
+            		}
+            	}
+            }
+
             if (branchingToCodeInstruction != null) {
             	// Some applications do have branches to delay slot instructions
             	// (probably from programmers that didn't know/care about delay slots).
