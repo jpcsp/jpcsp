@@ -457,8 +457,8 @@ public class ExternalGE {
 		}
 	}
 
-    public static void addVideoTexture(int startAddress, int endAddress) {
-    	NativeUtils.addVideoTexture(startAddress, endAddress);
+    public static void addVideoTexture(int destinationAddress, int sourceAddress, int length) {
+    	NativeUtils.addVideoTexture(destinationAddress, sourceAddress, length);
     }
 
     public static void onGeUserStop() {

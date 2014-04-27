@@ -7417,13 +7417,9 @@ public class VideoEngine {
         context.baseOffset = baseOffset;
     }
 
-    public void addVideoTexture(int startAddress, int endAddress) {
-        if (ExternalGE.isActive()) {
-        	ExternalGE.addVideoTexture(startAddress, endAddress);
-        }
-
+    private void addToVideoTextures(int startAddress, int endAddress) {
         // Synchronize the access to videoTextures as it can be accessed
-        // from a parallel threads (async display and PSP thread)
+        // from parallel threads (async display thread and PSP thread)
         synchronized (videoTextures) {
             for (AddressRange addressRange : videoTextures) {
                 if (addressRange.equals(startAddress, endAddress)) {
@@ -7435,6 +7431,22 @@ public class VideoEngine {
             AddressRange addressRange = new AddressRange(startAddress, endAddress);
             videoTextures.add(addressRange);
         }
+    }
+
+    public void addVideoTexture(int destinationAddress, int sourceAddress, int length) {
+    	if (ExternalGE.isActive()) {
+        	ExternalGE.addVideoTexture(destinationAddress, sourceAddress, length);
+    	}
+
+    	addToVideoTextures(destinationAddress, destinationAddress + length);
+    }
+
+    public void addVideoTexture(int startAddress, int endAddress) {
+        if (ExternalGE.isActive()) {
+        	ExternalGE.addVideoTexture(startAddress, startAddress, endAddress - startAddress);
+        }
+
+        addToVideoTextures(startAddress, endAddress);
     }
 
     public void resetVideoTextures() {
