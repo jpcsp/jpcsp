@@ -1248,6 +1248,9 @@ public class sceDisplay extends HLEModule {
     }
 
     public boolean isGeAddress(int address) {
+    	if (ExternalGE.isActive()) {
+    		return ExternalGE.isGeAddress(address);
+    	}
         return ge.isAddressInside(address);
     }
 
@@ -1944,7 +1947,13 @@ public class sceDisplay extends HLEModule {
     }
 
     public boolean isInsideRendering() {
-        return insideRendering;
+    	if (ExternalGE.isActive()) {
+    		if (ExternalGE.isInsideRendering()) {
+    			return true;
+    		}
+    	}
+
+    	return insideRendering;
     }
 
     public void setInsideRendering(boolean insideRendering) {

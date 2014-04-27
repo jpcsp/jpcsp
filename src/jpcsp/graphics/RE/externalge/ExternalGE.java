@@ -24,6 +24,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.PspGeList;
@@ -513,5 +514,23 @@ public class ExternalGE {
         }
 
         return result;
+    }
+
+    public static boolean isGeAddress(int address) {
+    	return Memory.isVRAM(address);
+    }
+
+    public static boolean isInsideRendering() {
+    	if (CoreThread.getInstance().isInsideRendering()) {
+    		return true;
+    	}
+    	if (currentList == null) {
+    		return false;
+    	}
+    	if (currentList.isStallReached()) {
+    		return false;
+    	}
+
+    	return true;
     }
 }
