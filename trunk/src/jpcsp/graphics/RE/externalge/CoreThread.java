@@ -41,6 +41,7 @@ public class CoreThread extends Thread {
 	private static CoreThread instance;
 	private volatile boolean exit;
 	private Semaphore sync;
+	private volatile boolean insideRendering;
 
 	public static CoreThread getInstance() {
 		if (instance == null) {
@@ -78,6 +79,8 @@ public class CoreThread extends Thread {
 
 				waitForSync(100);
 			} else if (doCoreInterpret || list.waitForSync(100)) {
+				setInsideRendering(true);
+
 				doCoreInterpret = false;
 				NativeUtils.setCoreMadr(list.getPc());
 				NativeUtils.updateMemoryUnsafeAddr();
@@ -117,6 +120,8 @@ public class CoreThread extends Thread {
 					ExternalGE.render();
 					doCoreInterpret = true;
 				}
+
+				setInsideRendering(false);
 			}
 		}
 
@@ -278,5 +283,13 @@ public class CoreThread extends Thread {
         	list.sync();
         	NativeUtils.setCoreCtrlActive();
         }
+	}
+
+	public boolean isInsideRendering() {
+		return insideRendering;
+	}
+
+	public void setInsideRendering(boolean insideRendering) {
+		this.insideRendering = insideRendering;
 	}
 }
