@@ -107,9 +107,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(useSoftwareRenderer, "emu.useSoftwareRenderer");
         setBoolFromSettings(useExternalSoftwareRenderer, "emu.useExternalSoftwareRenderer");
         //set opengl render selected if none of the other renders are selected
-        if(!useSoftwareRenderer.isSelected() && !useExternalSoftwareRenderer.isSelected())
+        if (!useSoftwareRenderer.isSelected() && !useExternalSoftwareRenderer.isSelected()) {
             useOpenglRenderer.setSelected(true);
-
+        }
 
         setBoolFromSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolFromSettings(useConnector, "emu.useConnector");
@@ -231,8 +231,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(useSoftwareRenderer, "emu.useSoftwareRenderer");
         setBoolToSettings(useExternalSoftwareRenderer, "emu.useExternalSoftwareRenderer");
         //set opengl render selected if none of the other renders are selected
-        if(!useSoftwareRenderer.isSelected() && !useExternalSoftwareRenderer.isSelected())
+        if (!useSoftwareRenderer.isSelected() && !useExternalSoftwareRenderer.isSelected()) {
             useOpenglRenderer.setSelected(true);
+        }
 
         setBoolToSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolToSettings(useConnector, "emu.useConnector");

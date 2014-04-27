@@ -91,7 +91,6 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
 import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VideoEngine;
-import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.hardware.Audio;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
@@ -131,8 +130,8 @@ import jpcsp.hardware.Model;
  * @author shadow
  */
 public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener, MouseListener, IMainGUI {
-
     private static final long serialVersionUID = -3647025845406693230L;
+    private static Logger log = Emulator.log;
     public static final int MAX_RECENT = 10;
     Emulator emulator;
     UmdBrowser umdbrowser;
@@ -149,10 +148,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         "ms0/PSP/GAME",
         "tmp"
     };
-    private static final String logConfigurationSettingLeft = "    %1$-40s [%2$s]";
-    private static final String logConfigurationSettingRight = "    [%2$s] %1$s";
-    private static final String logConfigurationSettingLeftPatch = "    %1$-40s [%2$s] (%3$s)";
-    private static final String logConfigurationSettingRightPatch = "    [%2$s] %1$s (%3$s)";
+    private static final String logConfigurationSettingLeft = "    %1$-40s %3$c%2$s%4$c";
+    private static final String logConfigurationSettingRight = "    %3$c%2$s%4$c %1$s";
+    private static final String logConfigurationSettingLeftPatch = "    %1$-40s %3$c%2$s%4$c (%5$s)";
+    private static final String logConfigurationSettingRightPatch = "    %3$c%2$s%4$c %1$s (%5$s)";
     public static final int displayModeBitDepth = 32;
     public static final int preferredDisplayModeRefreshRate = 60; // Preferred refresh rate if 60Hz
     private DisplayMode displayMode;
@@ -1402,8 +1401,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 setLocation();
             }
 
-            if (Emulator.log.isInfoEnabled()) {
-                Emulator.log.info(String.format("Changing resolution to %dx%d, %d bits, %d Hz", displayMode.getWidth(), displayMode.getHeight(), displayMode.getBitDepth(), displayMode.getRefreshRate()));
+            if (log.isInfoEnabled()) {
+                log.info(String.format("Changing resolution to %dx%d, %d bits, %d Hz", displayMode.getWidth(), displayMode.getHeight(), displayMode.getBitDepth(), displayMode.getRefreshRate()));
             }
         }
     }
@@ -1507,7 +1506,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             if (State.logWindow != null) {
                 State.logWindow.clearScreenMessages();
             }
-            Emulator.log.info(MetaInformation.FULL_NAME);
+            log.info(MetaInformation.FULL_NAME);
 
             umdLoaded = false;
             loadedFile = file;
@@ -1862,7 +1861,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int) roChannel.size());
             emulator.load("disc0:/PSP_GAME/SYSDIR/EBOOT.BIN", readbuffer);
             raf.close();
-            Emulator.log.info("Using unpacked UMD EBOOT.BIN image");
+            log.info("Using unpacked UMD EBOOT.BIN image");
             return true;
         }
         return false;
@@ -1907,7 +1906,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             UmdIsoReader iso = new UmdIsoReader(file.getPath());
             iso.getFile("PSP_GAME/param.sfo");
 
-            Emulator.log.info(String.format("Switching to the UMD %s", file));
+            log.info(String.format("Switching to the UMD %s", file));
 
             Modules.IoFileMgrForUserModule.setIsoReader(iso);
             Modules.sceUmdUserModule.setIsoReader(iso);
@@ -1926,11 +1925,11 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             if (State.logWindow != null) {
                 State.logWindow.clearScreenMessages();
             }
-            Emulator.log.info(String.format("Java version: %s (%s)", System.getProperty("java.version"), System.getProperty("java.runtime.version")));
-            Emulator.log.info(String.format("Java library path: %s", System.getProperty("java.library.path")));
+            log.info(String.format("Java version: %s (%s)", System.getProperty("java.version"), System.getProperty("java.runtime.version")));
+            log.info(String.format("Java library path: %s", System.getProperty("java.library.path")));
 
             Modules.SysMemUserForUserModule.reset();
-            Emulator.log.info(MetaInformation.FULL_NAME);
+            log.info(MetaInformation.FULL_NAME);
 
             umdLoaded = true;
             loadedFile = file;
@@ -1943,7 +1942,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             psfFile.read(data);
             psf.read(ByteBuffer.wrap(data));
 
-            Emulator.log.info("UMD param.sfo :\n" + psf);
+            log.info("UMD param.sfo :\n" + psf);
             String title = psf.getPrintableString("TITLE");
             String discId = psf.getString("DISC_ID");
             if (discId == null) {
@@ -1972,7 +1971,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
                     umdDataBin.readFully(buffer);
                     umdDataBin.close();
                     String umdDataBinContent = new String(buffer).replace((char) 0, ' ');
-                    Emulator.log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
+                    log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
 
                     String[] parts = umdDataBinContent.split("\\|");
                     if (parts != null && parts.length >= 2) {
@@ -1988,12 +1987,12 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             // Set the memory model 32MB/64MB before loading the EBOOT.BIN
             int memorySize = Settings.getInstance().readInt("memorySize", 0);
             if (memorySize > 0) {
-                Emulator.log.info(String.format("Using memory size 0x%X from settings for %s", memorySize, State.discId));
+                log.info(String.format("Using memory size 0x%X from settings for %s", memorySize, State.discId));
                 Modules.SysMemUserForUserModule.setMemorySize(memorySize);
             } else {
                 boolean hasMemory64MB = psf.getNumeric("MEMSIZE") == 1;
                 if (Settings.getInstance().readBool("memory64MB")) {
-                    Emulator.log.info(String.format("Using 64MB memory from settings for %s", State.discId));
+                    log.info(String.format("Using 64MB memory from settings for %s", State.discId));
                     hasMemory64MB = true;
                 }
                 Modules.SysMemUserForUserModule.setMemory64MB(hasMemory64MB);
@@ -2048,7 +2047,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
                 State.logWindow.clearScreenMessages();
             }
             Modules.SysMemUserForUserModule.reset();
-            Emulator.log.info(MetaInformation.FULL_NAME);
+            log.info(MetaInformation.FULL_NAME);
 
             umdLoaded = true;
             loadedFile = file;
@@ -2062,7 +2061,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             psfFile.read(data);
             psf.read(ByteBuffer.wrap(data));
 
-            Emulator.log.info("UMD param.sfo :\n" + psf);
+            log.info("UMD param.sfo :\n" + psf);
             String title = psf.getPrintableString("TITLE");
             String discId = psf.getString("DISC_ID");
             if (discId == null) {
@@ -2108,7 +2107,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
                 State.logWindow.clearScreenMessages();
             }
             Modules.SysMemUserForUserModule.reset();
-            Emulator.log.info(MetaInformation.FULL_NAME);
+            log.info(MetaInformation.FULL_NAME);
 
             umdLoaded = true;
             loadedFile = file;
@@ -2121,7 +2120,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             psfFile.read(data);
             psf.read(ByteBuffer.wrap(data));
 
-            Emulator.log.info("UMD param.sfo :\n" + psf);
+            log.info("UMD param.sfo :\n" + psf);
             String title = psf.getPrintableString("TITLE");
             String discId = psf.getString("DISC_ID");
             if (discId == null) {
@@ -2151,8 +2150,8 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         }
     }
 
-    private void logConfigurationSetting(String resourceKey, String settingKey, String value, boolean textLeft) {
-        boolean isSettingFromPatch = Settings.getInstance().isOptionFromPatch(settingKey);
+    private void logConfigurationSetting(String resourceKey, String settingKey, String value, boolean textLeft, boolean square) {
+        boolean isSettingFromPatch = settingKey == null ? false : Settings.getInstance().isOptionFromPatch(settingKey);
         String format;
         if (isSettingFromPatch) {
             format = textLeft ? logConfigurationSettingLeftPatch : logConfigurationSettingRightPatch;
@@ -2167,108 +2166,114 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         } catch (MissingResourceException mre) {
             // do nothing
         }
-        Emulator.log.info(String.format(format, text, value, "from patch file"));
+        log.info(String.format(format, text, value, square ? '[' : '(', square ? ']' : ')', "from patch file"));
     }
 
-    private void logConfigurationSettingBool(String resourceKey, String settingKey, boolean textLeft) {
+    private void logConfigurationSettingBool(String resourceKey, boolean value, boolean textLeft, boolean square) {
+        logConfigurationSetting(resourceKey, null, value ? "X" : " ", textLeft, square);
+    }
+
+    private void logConfigurationSettingBool(String resourceKey, String settingKey, boolean textLeft, boolean square) {
         boolean value = Settings.getInstance().readBool(settingKey);
-        logConfigurationSetting(resourceKey, settingKey, value ? "X" : " ", textLeft);
+        logConfigurationSetting(resourceKey, settingKey, value ? "X" : " ", textLeft, square);
     }
 
-    private void logConfigurationSettingInt(String resourceKey, String settingKey, boolean textLeft) {
+    private void logConfigurationSettingInt(String resourceKey, String settingKey, boolean textLeft, boolean square) {
         int value = Settings.getInstance().readInt(settingKey);
-        logConfigurationSetting(resourceKey, settingKey, Integer.toString(value), textLeft);
+        logConfigurationSetting(resourceKey, settingKey, Integer.toString(value), textLeft, square);
     }
 
-    private void logConfigurationSettingString(String resourceKey, String settingKey, boolean textLeft) {
+    private void logConfigurationSettingString(String resourceKey, String settingKey, boolean textLeft, boolean square) {
         String value = Settings.getInstance().readString(settingKey);
-        logConfigurationSetting(resourceKey, settingKey, value, textLeft);
+        logConfigurationSetting(resourceKey, settingKey, value, textLeft, square);
     }
 
-    private void logConfigurationSettingList(String resourceKey, String settingKey, String[] values, boolean textLeft) {
+    private void logConfigurationSettingList(String resourceKey, String settingKey, String[] values, boolean textLeft, boolean square) {
         int valueIndex = Settings.getInstance().readInt(settingKey);
         String value = Integer.toString(valueIndex);
         if (values != null && valueIndex >= 0 && valueIndex < values.length) {
             value = values[valueIndex];
         }
-        logConfigurationSetting(resourceKey, settingKey, value, textLeft);
+        logConfigurationSetting(resourceKey, settingKey, value, textLeft, square);
     }
 
     private void logConfigurationPanel(String resourceKey) {
         // jog here only in the English locale
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp", new Locale("en"));
-        Emulator.log.info(String.format("%s / %s", bundle.getString("SettingsGUI.title"), bundle.getString(resourceKey)));
+        log.info(String.format("%s / %s", bundle.getString("SettingsGUI.title"), bundle.getString(resourceKey)));
     }
 
     private void logConfigurationSettings() {
-        if (!Emulator.log.isInfoEnabled()) {
+        if (!log.isInfoEnabled()) {
             return;
         }
 
-        Emulator.log.info("Using the following settings:");
+        log.info("Using the following settings:");
 
         // Log the configuration settings
         logConfigurationPanel("SettingsGUI.RegionPanel.title");
-        logConfigurationSettingList("SettingsGUI.languageLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE, SettingsGUI.getImposeLanguages(), true);
-        logConfigurationSettingList("SettingsGUI.buttonLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, SettingsGUI.getImposeButtons(), true);
-        logConfigurationSettingList("SettingsGUI.daylightLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME, SettingsGUI.getSysparamDaylightSavings(), true);
-        logConfigurationSettingInt("SettingsGUI.timezoneLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_TIME_ZONE, true);
-        logConfigurationSettingList("SettingsGUI.timeFormatLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_TIME_FORMAT, SettingsGUI.getSysparamTimeFormats(), true);
-        logConfigurationSettingList("SettingsGUI.dateFormatLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DATE_FORMAT, SettingsGUI.getSysparamDateFormats(), true);
-        logConfigurationSettingList("SettingsGUI.wlanPowerLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE, SettingsGUI.getSysparamWlanPowerSaves(), true);
-        logConfigurationSettingList("SettingsGUI.adhocChannel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, SettingsGUI.getSysparamAdhocChannels(), true);
-        logConfigurationSettingString("SettingsGUI.nicknameLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_NICKNAME, true);
+        logConfigurationSettingList("SettingsGUI.languageLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE, SettingsGUI.getImposeLanguages(), true, true);
+        logConfigurationSettingList("SettingsGUI.buttonLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, SettingsGUI.getImposeButtons(), true, true);
+        logConfigurationSettingList("SettingsGUI.daylightLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME, SettingsGUI.getSysparamDaylightSavings(), true, true);
+        logConfigurationSettingList("SettingsGUI.timeFormatLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_TIME_FORMAT, SettingsGUI.getSysparamTimeFormats(), true, true);
+        logConfigurationSettingList("SettingsGUI.dateFormatLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DATE_FORMAT, SettingsGUI.getSysparamDateFormats(), true, true);
+        logConfigurationSettingList("SettingsGUI.wlanPowerLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE, SettingsGUI.getSysparamWlanPowerSaves(), true, true);
+        logConfigurationSettingList("SettingsGUI.adhocChannel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, SettingsGUI.getSysparamAdhocChannels(), true, true);
+        logConfigurationSettingInt("SettingsGUI.timezoneLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_TIME_ZONE, true, true);
+        logConfigurationSettingString("SettingsGUI.nicknameLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_NICKNAME, true, true);
 
         logConfigurationPanel("SettingsGUI.VideoPanel.title");
-        logConfigurationSettingBool("SettingsGUI.disableVBOCheck.text", "emu.disablevbo", false);
-        logConfigurationSettingBool("SettingsGUI.onlyGEGraphicsCheck.text", "emu.onlyGEGraphics", false);
-        logConfigurationSettingBool("SettingsGUI.useVertexCache.text", "emu.useVertexCache", false);
-        logConfigurationSettingBool("SettingsGUI.shaderCheck.text", "emu.useshaders", false);
-        logConfigurationSettingBool("SettingsGUI.geometryShaderCheck.text", "emu.useGeometryShader", false);
-        logConfigurationSettingBool("SettingsGUI.disableUBOCheck.text", "emu.disableubo", false);
-        logConfigurationSettingBool("SettingsGUI.enableVAOCheck.text", "emu.enablevao", false);
-        logConfigurationSettingBool("SettingsGUI.enableGETextureCheck.text", "emu.enablegetexture", false);
-        logConfigurationSettingBool("SettingsGUI.enableNativeCLUTCheck.text", "emu.enablenativeclut", false);
-        logConfigurationSettingBool("SettingsGUI.enableDynamicShadersCheck.text", "emu.enabledynamicshaders", false);
-        logConfigurationSettingBool("SettingsGUI.enableShaderStencilTestCheck.text", "emu.enableshaderstenciltest", false);
-        logConfigurationSettingBool("SettingsGUI.enableShaderColorMaskCheck.text", "emu.enableshadercolormask", false);
-        logConfigurationSettingBool("SettingsGUI.disableOptimizedVertexInfoReading.text", "emu.disableoptimizedvertexinforeading", false);
-        logConfigurationSettingBool("SettingsGUI.saveStencilToMemory.text", "emu.saveStencilToMemory", false);
-        logConfigurationSettingBool("SettingsGUI.useSoftwareRenderer.text", "emu.useSoftwareRenderer", false);
-        logConfigurationSettingBool("SettingsGUI.useExternalSoftwareRenderer.text", "emu.useExternalSoftwareRenderer", false);
+        logConfigurationSettingBool("SettingsGUI.useOpenglRenderer.text", !Settings.getInstance().readBool("emu.useSoftwareRenderer") && !Settings.getInstance().readBool("emu.useExternalSoftwareRenderer"), false, false);
+        logConfigurationSettingBool("SettingsGUI.useSoftwareRenderer.text", "emu.useSoftwareRenderer", false, false);
+        logConfigurationSettingBool("SettingsGUI.useExternalSoftwareRenderer.text", "emu.useExternalSoftwareRenderer", false, false);
+        logConfigurationSettingBool("SettingsGUI.disableVBOCheck.text", "emu.disablevbo", false, true);
+        logConfigurationSettingBool("SettingsGUI.onlyGEGraphicsCheck.text", "emu.onlyGEGraphics", false, true);
+        logConfigurationSettingBool("SettingsGUI.useVertexCache.text", "emu.useVertexCache", false, true);
+        logConfigurationSettingBool("SettingsGUI.shaderCheck.text", "emu.useshaders", false, true);
+        logConfigurationSettingBool("SettingsGUI.geometryShaderCheck.text", "emu.useGeometryShader", false, true);
+        logConfigurationSettingBool("SettingsGUI.disableUBOCheck.text", "emu.disableubo", false, true);
+        logConfigurationSettingBool("SettingsGUI.enableVAOCheck.text", "emu.enablevao", false, true);
+        logConfigurationSettingBool("SettingsGUI.enableGETextureCheck.text", "emu.enablegetexture", false, true);
+        logConfigurationSettingBool("SettingsGUI.enableNativeCLUTCheck.text", "emu.enablenativeclut", false, true);
+        logConfigurationSettingBool("SettingsGUI.enableDynamicShadersCheck.text", "emu.enabledynamicshaders", false, true);
+        logConfigurationSettingBool("SettingsGUI.enableShaderStencilTestCheck.text", "emu.enableshaderstenciltest", false, true);
+        logConfigurationSettingBool("SettingsGUI.enableShaderColorMaskCheck.text", "emu.enableshadercolormask", false, true);
+        logConfigurationSettingBool("SettingsGUI.disableOptimizedVertexInfoReading.text", "emu.disableoptimizedvertexinforeading", false, true);
+        logConfigurationSettingBool("SettingsGUI.saveStencilToMemory.text", "emu.saveStencilToMemory", false, true);
         
         logConfigurationPanel("SettingsGUI.AudioPanel.title");
-        logConfigurationSettingBool("SettingsGUI.IgnoreAudioThreadsCheck.text", "emu.ignoreaudiothreads", false);
-        logConfigurationSettingBool("SettingsGUI.DisableSceAudioCheck.text", "emu.disablesceAudio", false);
-        logConfigurationSettingBool("SettingsGUI.disableBlockingAudioCheck.text", "emu.disableblockingaudio", false);
+        logConfigurationSettingBool("SettingsGUI.IgnoreAudioThreadsCheck.text", "emu.ignoreaudiothreads", false, true);
+        logConfigurationSettingBool("SettingsGUI.DisableSceAudioCheck.text", "emu.disablesceAudio", false, true);
+        logConfigurationSettingBool("SettingsGUI.disableBlockingAudioCheck.text", "emu.disableblockingaudio", false, true);
 
         logConfigurationPanel("SettingsGUI.MemoryPanel.title");
-        logConfigurationSettingBool("SettingsGUI.invalidMemoryCheck.text", "emu.ignoreInvalidMemoryAccess", false);
-        logConfigurationSettingBool("SettingsGUI.ignoreUnmappedImports.text", "emu.ignoreUnmappedImports", false);
-
-        logConfigurationPanel("SettingsGUI.MiscPanel.title");
-        logConfigurationSettingBool("SettingsGUI.useMediaEngine.text", "emu.useMediaEngine", false);
-        logConfigurationSettingBool("SettingsGUI.useAtrac3plus.text", "emu.useAtrac3plus", false);
-        logConfigurationSettingBool("SettingsGUI.useConnector.text", "emu.useConnector", false);
-        logConfigurationSettingBool("SettingsGUI.useExternalDecoder.text", "emu.useExternalDecoder", false);
-        logConfigurationSettingBool("SettingsGUI.useDebugFont.text", "emu.useDebugFont", false);
+        logConfigurationSettingBool("SettingsGUI.invalidMemoryCheck.text", "emu.ignoreInvalidMemoryAccess", false, true);
+        logConfigurationSettingBool("SettingsGUI.ignoreUnmappedImports.text", "emu.ignoreUnmappedImports", false, true);
+        logConfigurationSettingBool("SettingsGUI.useDebugMemory.text", "emu.useDebuggerMemory", false, true);
 
         logConfigurationPanel("SettingsGUI.CompilerPanel.title");
-        logConfigurationSettingBool("SettingsGUI.useCompiler.text", "emu.compiler", false);
-        logConfigurationSettingBool("SettingsGUI.profileCheck.text", "emu.profiler", false);
-        logConfigurationSettingInt("SettingsGUI.methodMaxInstructionsLabel.text", "emu.compiler.methodMaxInstructions", false);
-
-        logConfigurationPanel("SettingsGUI.CryptoPanel.title");
-        logConfigurationSettingBool("SettingsGUI.extractEboot.text", "emu.extractEboot", false);
-        logConfigurationSettingBool("SettingsGUI.cryptoSavedata.text", "emu.cryptoSavedata", true);
-        logConfigurationSettingBool("SettingsGUI.extractPGD.text", "emu.extractPGD", false);
-        logConfigurationSettingBool("SettingsGUI.extractSavedataKey.text", "emu.extractSavedataKey", false);
-        logConfigurationSettingBool("SettingsGUI.disableDLC.text", "emu.disableDLC", false);
+        logConfigurationSettingBool("SettingsGUI.useCompiler.text", "emu.compiler", false, true);
+        logConfigurationSettingBool("SettingsGUI.profileCheck.text", "emu.profiler", false, true);
+        logConfigurationSettingInt("SettingsGUI.methodMaxInstructionsLabel.text", "emu.compiler.methodMaxInstructions", false, true);
 
         logConfigurationPanel("SettingsGUI.DisplayPanel.title");
-        logConfigurationSettingString("SettingsGUI.antiAliasLabel.text", "emu.graphics.antialias", true);
-        logConfigurationSettingString("SettingsGUI.resolutionLabel.text", "emu.graphics.resolution", true);
-        logConfigurationSettingBool("SettingsGUI.fullscreenCheck.text", "gui.fullscreen", false);
+        logConfigurationSettingString("SettingsGUI.antiAliasLabel.text", "emu.graphics.antialias", true, true);
+        logConfigurationSettingString("SettingsGUI.resolutionLabel.text", "emu.graphics.resolution", true, true);
+        logConfigurationSettingBool("SettingsGUI.fullscreenCheck.text", "gui.fullscreen", false, true);
+
+        logConfigurationPanel("SettingsGUI.MiscPanel.title");
+        logConfigurationSettingBool("SettingsGUI.useMediaEngine.text", "emu.useMediaEngine", false, true);
+        logConfigurationSettingBool("SettingsGUI.useAtrac3plus.text", "emu.useAtrac3plus", false, true);
+        logConfigurationSettingBool("SettingsGUI.useConnector.text", "emu.useConnector", false, true);
+        logConfigurationSettingBool("SettingsGUI.useExternalDecoder.text", "emu.useExternalDecoder", false, true);
+        logConfigurationSettingBool("SettingsGUI.useDebugFont.text", "emu.useDebugFont", false, true);
+
+        logConfigurationPanel("SettingsGUI.CryptoPanel.title");
+        logConfigurationSettingBool("SettingsGUI.cryptoSavedata.text", "emu.cryptoSavedata", false, true);
+        logConfigurationSettingBool("SettingsGUI.extractSavedataKey.text", "emu.extractSavedataKey", false, true);
+        logConfigurationSettingBool("SettingsGUI.extractPGD.text", "emu.extractPGD", false, true);
+        logConfigurationSettingBool("SettingsGUI.extractEboot.text", "emu.extractEboot", false, true);
+        logConfigurationSettingBool("SettingsGUI.disableDLC.text", "emu.disableDLC", false, true);
     }
 
     public void loadAndRun() {
@@ -2378,12 +2383,12 @@ private void ExportISOFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             output.close();
             input.close();
 
-            Emulator.log.info(String.format("Exported file '%s' to '%s'", fileName, exportFileName));
+            log.info(String.format("Exported file '%s' to '%s'", fileName, exportFileName));
             String messageFormat = bundle.getString("MainGUI.FileExported.text");
             String message = MessageFormat.format(messageFormat, fileName, exportFileName);
             JOptionPane.showMessageDialog(null, message, null, JOptionPane.INFORMATION_MESSAGE);
         } catch (IOException e) {
-            Emulator.log.error(e);
+            log.error(e);
         }
 
 }//GEN-LAST:event_ExportISOFileActionPerformed
