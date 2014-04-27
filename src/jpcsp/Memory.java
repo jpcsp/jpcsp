@@ -335,7 +335,7 @@ public abstract class Memory {
 	        	// before performing the memcpy.
 	        	Modules.sceDisplayModule.waitForRenderingCompletion(destination);
 	
-	        	VideoEngine.getInstance().addVideoTexture(destination, destination + length);
+	        	VideoEngine.getInstance().addVideoTexture(destination, source, length);
 	        }
 	        // If copying from the VRAM, force the saving of the GE to memory
 	        if (isVRAM(source) && Modules.sceDisplayModule.getSaveGEToTexture()) {

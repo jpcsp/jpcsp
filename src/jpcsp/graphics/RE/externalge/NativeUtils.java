@@ -247,5 +247,5 @@ public class NativeUtils {
     public static native void restoreCoreContext(int addr);
     public static native void setScreenScale(int screenScale);
     public static native ByteBuffer getScaledScreen(int address, int bufferWidth, int height, int pixelFormat);
-    public static native void addVideoTexture(int startAddress, int endAddress);
+    public static native void addVideoTexture(int destinationAddress, int sourceAddress, int length);
 }
