@@ -347,8 +347,9 @@ struct VertexNoColor
  #endif
 };
 
-struct Vertex __attribute__((aligned(16))) vertices1[8];
-struct Vertex __attribute__((aligned(16))) vertices2[8];
+// Vertex arrays large enough for bezier/spline patches
+struct Vertex __attribute__((aligned(16))) vertices1[128*128];
+struct Vertex __attribute__((aligned(16))) vertices2[128*128];
 
 struct Color
 {
@@ -583,8 +584,6 @@ char *primTypeNames[] = { "GU_POINTS", "GU_LINES", "GU_LINE_STRIP", "GU_TRIANGLE
 int frontFace1 = GU_CW + 1;
 int frontFace2 = GU_CW + 1;
 char *faceNames[] = { "Unchanged", "GU_CW", "GU_CCW" };
-int patchPrim = 0;
-char *patchPrimNames[] = { "GU_TRIANGLE_STRIP", "GU_LINE_STRIP", "GU_POINTS" };
 
 int psm = GU_PSM_8888;
 int fbw = BUF_WIDTH;
@@ -626,6 +625,29 @@ struct Color colorTestRef1;
 struct Color colorTestRef2;
 struct Color colorTestMask1;
 struct Color colorTestMask2;
+
+#define PATCH_PRIM		0
+#define PATCH_SPLINE	1
+#define PATCH_BEZIER	2
+
+int patchType1 = PATCH_PRIM;
+int patchType2 = PATCH_PRIM;
+char *patchTypeNames[] = { "None", "Spline", "Bezier" };
+int patchPrim1 = 0;
+int patchPrim2 = 0;
+char *patchPrimNames[] = { "GU_TRIANGLES", "GU_LINES", "GU_POINTS", "UNKNOWN_3" };
+int ucount1 = 16;
+int vcount1 = 16;
+int uedge1 = 0;
+int vedge1 = 0;
+int udiv1 = 3;
+int vdiv1 = 3;
+int ucount2 = 16;
+int vcount2 = 16;
+int uedge2 = 0;
+int vedge2 = 0;
+int udiv2 = 3;
+int vdiv2 = 3;
 
 u16 zTestPixelDepth;
 u32 geTestPixelValue;
@@ -728,7 +750,7 @@ void setVerticesColor(struct Color *pcolor, struct Vertex pvertices[], int sizeo
 }
 
 
-void setVertexPoint(struct Point *ppoint, struct Point *pnormal, struct Vertex *pvertex, float x, float y, float z, int u, int v)
+void setVertexPoint(struct Point *ppoint, struct Point *pnormal, struct Vertex *pvertex, float x, float y, float z, float u, float v)
 {
 	pvertex->u = u;
 	pvertex->v = v;
@@ -766,7 +788,6 @@ void setRectanglePoint(struct Point *ppoint, struct Point *pnormal, struct Verte
 	setVertexPoint(ppoint, pnormal, &pvertices[5],  width, -height, 0, textureWidth,     textureHeight);
 }
 
-
 void setNoColorRectanglePoint(struct Point *ppoint, struct Point *pnormal, struct VertexNoColor pvertices[], float width, float height, int textureWidth, int textureHeight)
 {
 	width  /= 2;
@@ -779,6 +800,37 @@ void setNoColorRectanglePoint(struct Point *ppoint, struct Point *pnormal, struc
 	setVertexNoColorPoint(ppoint, pnormal, &pvertices[5],  width, -height, 0, textureWidth,     textureHeight);
 }
 
+float getPatchLine(int value, int maxValue)
+{
+	if (2 * value > maxValue)
+	{
+		value = (maxValue - value);
+	}
+
+	return value / (float) maxValue * 2.f;
+}
+
+float getPatchCurve(int u, int v, int ucount, int vcount)
+{
+	return getPatchLine(u, ucount - 1) * getPatchLine(v, vcount - 1);
+}
+
+void setPatchPoint(struct Point *ppoint, struct Point *pnormal, struct Vertex pvertices[], float width, float height, int textureWidth, int textureHeight, int ucount, int vcount)
+{
+	int u, v, i;
+	for (i = 0, v = 0; v < vcount; v++)
+	{
+		for (u = 0; u < ucount; u++, i++)
+		{
+			float x = width  * u / (float) (ucount - 1) - width  / 2;
+			float y = height * v / (float) (vcount - 1) - height / 2;
+			float z = -getPatchCurve(u, v, ucount, vcount);
+			float vertexu = textureWidth  * u / ((float) (ucount - 1));
+			float vertexv = textureHeight * v / ((float) (vcount - 1));
+			setVertexPoint(ppoint, pnormal, &pvertices[i], x, y, z, vertexu, vertexv);
+		}
+	}
+}
 
 unsigned int mixColors(unsigned int color1, unsigned int color2, int factor)
 {
@@ -1135,12 +1187,6 @@ void drawRectangles()
 		numberMipmaps = level;
 	}
 
-	if (vertexColorFlag)
-	{
-		setVerticesColor(&rectangle1VertexColor, vertices1, sizeof(vertices1));
-		setVerticesColor(&rectangle2VertexColor, vertices2, sizeof(vertices2));
-	}
-
 //	sceGuDispBuffer(displayWidth, displayHeight, fbp1 + fbpOffset, fbw);
 	sceGuDrawBuffer(psm, fbp0 + fbpOffset, fbw);
 	sceGuDepthBuffer(zbp + zbpOffset, zbw);
@@ -1212,7 +1258,6 @@ void drawRectangles()
 	}
 	sceGuStencilOp(stencilOpFail, stencilOpZFail, stencilOpZPass);
 	sceGuStencilFunc(stencilFunc, stencilReference, stencilMask);
-	sendCommandi(55, patchPrim);	// sceGuPatchPrim
 	sceGuFog(fogNear, fogFar, getColor(&fogColor));
 
 	for (i = 0; i < NUM_LIGHTS; i++)
@@ -1282,6 +1327,8 @@ void drawRectangles()
 	sceGuTexProjMapMode(texProjMode1);
 	sceGuLogicalOp(logicOp1);
 	sceGuColorFunc(colorTestFunc1, getColor(&colorTestRef1), getColor(&colorTestMask1));
+	sceGuPatchDivide(udiv1, vdiv1);
+	sendCommandi(55, patchPrim1);	// sceGuPatchPrim
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1301,16 +1348,24 @@ void drawRectangles()
 		int height = rectangle1PrimType < GU_SPRITES ? rectangle1height : rectangle1height * 10;
 		if (vertexColorFlag)
 		{
-			setRectanglePoint(&rectangle1point, &rectangle1normal, vertices1, width, height, textureScale, textureScale);
-			if (rectangle1PrimType >= GU_SPRITES)
+			if (patchType1 == PATCH_PRIM)
 			{
-				numberVertex1 /= 2;
-				int i;
-				for (i = 0; i < numberVertex1; i += 2)
+				setRectanglePoint(&rectangle1point, &rectangle1normal, vertices1, width, height, textureScale, textureScale);
+				if (rectangle1PrimType >= GU_SPRITES)
 				{
-					vertices1[i] = vertices1[2 * i];
-					vertices1[i+1] = vertices1[2 * i + 3];
+					numberVertex1 /= 2;
+					int i;
+					for (i = 0; i < numberVertex1; i += 2)
+					{
+						vertices1[i] = vertices1[2 * i];
+						vertices1[i+1] = vertices1[2 * i + 3];
+					}
 				}
+			}
+			else
+			{
+				numberVertex1 = ucount1 * vcount1;
+				setPatchPoint(&rectangle1point, &rectangle1normal, vertices1, width, height, textureScale, textureScale, ucount1, vcount1);
 			}
 		}
 		else
@@ -1353,6 +1408,10 @@ void drawRectangles()
 			setNoColorRectanglePoint(&rectangle1point, &rectangle1normal, (struct VertexNoColor *) vertices1, rectangle1width * 50, rectangle1height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 		}
 	}
+	if (vertexColorFlag)
+	{
+		setVerticesColor(&rectangle1VertexColor, vertices1, sizeof(vertices1[0]) * numberVertex1);
+	}
 
 	int vertexFlags = GU_NORMAL_32BITF;
 #ifdef USE_TEXTURE_8BIT
@@ -1379,7 +1438,18 @@ void drawRectangles()
 	if (rectangle1rendering != RENDERING_OFF)
 	{
 		vertexFlags |= (rectangle1rendering == RENDERING_3D) ? GU_TRANSFORM_3D : GU_TRANSFORM_2D;
-		sceGumDrawArray(rectangle1PrimType, vertexFlags, numberVertex1, 0, vertices1);
+		switch (patchType1)
+		{
+			case PATCH_PRIM:
+				sceGumDrawArray(rectangle1PrimType, vertexFlags, numberVertex1, 0, vertices1);
+				break;
+			case PATCH_SPLINE:
+				sceGumDrawSpline(vertexFlags, ucount1, vcount1, uedge1, vedge1, NULL, vertices1);
+				break;
+			case PATCH_BEZIER:
+				sceGumDrawBezier(vertexFlags, ucount1, vcount1, NULL, vertices1);
+				break;
+		}
 	}
 
 	drawStates(stateValues2);
@@ -1417,6 +1487,8 @@ void drawRectangles()
 	sceGuTexProjMapMode(texProjMode2);
 	sceGuLogicalOp(logicOp2);
 	sceGuColorFunc(colorTestFunc2, getColor(&colorTestRef2), getColor(&colorTestMask2));
+	sceGuPatchDivide(udiv2, vdiv2);
+	sendCommandi(55, patchPrim2);	// sceGuPatchPrim
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1436,16 +1508,24 @@ void drawRectangles()
 		int height = rectangle2PrimType != GU_SPRITES ? rectangle2height : rectangle2height * 10;
 		if (vertexColorFlag)
 		{
-			setRectanglePoint(&rectangle2point, &rectangle2normal, vertices2, width, height, textureScale, textureScale);
-			if (rectangle2PrimType == GU_SPRITES)
+			if (patchType2 == PATCH_PRIM)
 			{
-				numberVertex2 /= 2;
-				int i;
-				for (i = 0; i < numberVertex2; i += 2)
+				setRectanglePoint(&rectangle2point, &rectangle2normal, vertices2, width, height, textureScale, textureScale);
+				if (rectangle2PrimType == GU_SPRITES)
 				{
-					vertices2[i] = vertices2[2 * i];
-					vertices2[i+1] = vertices2[2 * i + 3];
+					numberVertex2 /= 2;
+					int i;
+					for (i = 0; i < numberVertex2; i += 2)
+					{
+						vertices2[i] = vertices2[2 * i];
+						vertices2[i+1] = vertices2[2 * i + 3];
+					}
 				}
+			}
+			else
+			{
+				numberVertex2 = ucount2 * vcount2;
+				setPatchPoint(&rectangle2point, &rectangle2normal, vertices2, width, height, textureScale, textureScale, ucount2, vcount2);
 			}
 		}
 		else
@@ -1478,13 +1558,28 @@ void drawRectangles()
 			setNoColorRectanglePoint(&rectangle2point, &rectangle2normal, (struct VertexNoColor *) vertices2, rectangle2width * 50, rectangle2height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 		}
 	}
+	if (vertexColorFlag)
+	{
+		setVerticesColor(&rectangle2VertexColor, vertices2, sizeof(vertices2[0]) * numberVertex2);
+	}
 
 	if (rectangle2rendering != RENDERING_OFF)
 	{
 		vertexFlags &= ~GU_TRANSFORM_BITS;
 		vertexFlags |= (rectangle2rendering == RENDERING_3D) ? GU_TRANSFORM_3D : GU_TRANSFORM_2D;
 
-		sceGumDrawArray(rectangle2PrimType, vertexFlags, numberVertex2, 0, vertices2);
+		switch (patchType2)
+		{
+			case PATCH_PRIM:
+				sceGumDrawArray(rectangle2PrimType, vertexFlags, numberVertex2, 0, vertices2);
+				break;
+			case PATCH_SPLINE:
+				sceGumDrawSpline(vertexFlags, ucount2, vcount2, uedge2, vedge2, NULL, vertices2);
+				break;
+			case PATCH_BEZIER:
+				sceGumDrawBezier(vertexFlags, ucount2, vcount2, NULL, vertices2);
+				break;
+		}
 	}
 
 	if (clearMode != 0)
@@ -1637,10 +1732,6 @@ void init()
 	setAttributeValueNames(&faceNames[0]);
 	addAttribute(NULL, &frontFace2, NULL, x + 27, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&faceNames[0]);
-	y++;
-
-	addAttribute("Patch Primitive", &patchPrim, NULL, x, y, 0, 2, 1, NULL);
-	setAttributeValueNames(&patchPrimNames[0]);
 	y++;
 
 	addAttribute("sceGuDepthMask", &depthMask, NULL, x, y, 0, 1, 1, NULL);
@@ -1822,6 +1913,21 @@ void init()
 	addAttribute("Type", &rectangle1PrimType, NULL, x + 6, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&primTypeNames[0]);
 	y++;
+	addAttribute("Patch Type", &patchType1, NULL, x + 6, y, 0, 2, 1, NULL);
+	setAttributeValueNames(&patchTypeNames[0]);
+	y++;
+	addAttribute("Patch Primitive", &patchPrim1, NULL, x + 6, y, 0, 3, 1, NULL);
+	setAttributeValueNames(&patchPrimNames[0]);
+	y++;
+	addAttribute("Patch Vertex Count u", &ucount1, NULL, x + 6, y, 1, 128, 1, NULL);
+	addAttribute("v", &vcount1, NULL, x + 32, y, 1, 128, 1, NULL);
+	y++;
+	addAttribute("Patch Division count u", &udiv1, NULL, x + 6, y, 0, 128, 1, NULL);
+	addAttribute("v", &vdiv1, NULL, x + 34, y, 0, 128, 1, NULL);
+	y++;
+	addAttribute("Spline Edge flag u", &uedge1, NULL, x + 6, y, 0, 3, 1, NULL);
+	addAttribute("v", &vedge1, NULL, x + 30, y, 0, 3, 1, NULL);
+	y++;
 
 	addAttribute("sceGuTexFunc", &texFunc1, NULL, x + 6, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&texFuncNames[0]);
@@ -1942,6 +2048,21 @@ void init()
 	y++;
 	addAttribute("Type", &rectangle2PrimType, NULL, x + 6, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&primTypeNames[0]);
+	y++;
+	addAttribute("Patch Type", &patchType2, NULL, x + 6, y, 0, 2, 1, NULL);
+	setAttributeValueNames(&patchTypeNames[0]);
+	y++;
+	addAttribute("Patch Primitive", &patchPrim2, NULL, x + 6, y, 0, 3, 1, NULL);
+	setAttributeValueNames(&patchPrimNames[0]);
+	y++;
+	addAttribute("Patch Vertex Count u", &ucount2, NULL, x + 6, y, 1, 128, 1, NULL);
+	addAttribute("v", &vcount2, NULL, x + 32, y, 1, 128, 1, NULL);
+	y++;
+	addAttribute("Patch Division count u", &udiv2, NULL, x + 6, y, 0, 128, 1, NULL);
+	addAttribute("v", &vdiv2, NULL, x + 34, y, 0, 128, 1, NULL);
+	y++;
+	addAttribute("Spline Edge flag u", &uedge2, NULL, x + 6, y, 0, 3, 1, NULL);
+	addAttribute("v", &vedge2, NULL, x + 30, y, 0, 3, 1, NULL);
 	y++;
 
 	addAttribute("sceGuTexFunc", &texFunc2, NULL, x + 6, y, 0, 7, 1, NULL);
