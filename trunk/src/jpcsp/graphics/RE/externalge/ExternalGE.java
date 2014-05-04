@@ -530,6 +530,9 @@ public class ExternalGE {
     	if (currentList.isStallReached()) {
     		return false;
     	}
+    	if (currentList.status == sceGe_user.PSP_GE_LIST_END_REACHED) {
+    		return false;
+    	}
 
     	return true;
     }
