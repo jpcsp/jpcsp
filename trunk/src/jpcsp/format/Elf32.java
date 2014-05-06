@@ -154,6 +154,9 @@ public class Elf32 {
     }
 
     public Elf32ProgramHeader getProgramHeader(int index) {
+    	if (index < 0 || index >= programHeaderList.size()) {
+    		return null;
+    	}
         return programHeaderList.get(index);
     }
 
@@ -162,6 +165,9 @@ public class Elf32 {
     }
 
     public Elf32SectionHeader getSectionHeader(int index) {
+    	if (index < 0 || index >= sectionHeaderList.size()) {
+    		return null;
+    	}
         return sectionHeaderList.get(index);
     }
 
