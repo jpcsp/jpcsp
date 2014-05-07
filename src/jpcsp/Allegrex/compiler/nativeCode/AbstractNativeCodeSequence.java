@@ -146,6 +146,39 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 		return getFpr()[register];
 	}
 
+	static public void strcpy(int dstAddr, int srcAddr) {
+		int srcLength = getStrlen(srcAddr);
+		getMemory().memcpy(dstAddr, srcAddr, srcLength + 1);
+	}
+
+	static public int strcmp(int src1Addr, int src2Addr) {
+		if (src1Addr == 0) {
+			return -1;
+		}
+
+		if (src2Addr == 0) {
+			return 1;
+		}
+
+		IMemoryReader memoryReader1 = MemoryReader.getMemoryReader(src1Addr, 1);
+		IMemoryReader memoryReader2 = MemoryReader.getMemoryReader(src2Addr, 1);
+
+		if (memoryReader1 != null && memoryReader2 != null) {
+			while (true) {
+				int c1 = memoryReader1.readNext();
+				int c2 = memoryReader2.readNext();
+				if (c1 != c2) {
+					return c1 > c2 ? 1 : -1;
+				} else if (c1 == 0) {
+					// c1 == 0 and c2 == 0
+					break;
+				}
+			}
+		}
+
+		return 0;
+	}
+
 	static protected int getStrlen(int srcAddr) {
 		int srcAddr3 = srcAddr & 3;
 		// Reading 32-bit values is much faster
