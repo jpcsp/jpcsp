@@ -20,6 +20,7 @@ import static java.lang.System.arraycopy;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,6 +30,8 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -1068,5 +1071,25 @@ public class Utilities {
         }
 
         return buffer;
+    }
+
+    public static boolean isSystemLibraryExisting(String libraryName) {
+    	String[] extensions = new String[] { ".dll", ".so" };
+
+    	String path = System.getProperty("java.library.path");
+    	if (path == null) {
+    		path = "";
+    	} else if (!path.endsWith("/")) {
+    		path += "/";
+    	}
+
+    	for (String extension : extensions) {
+        	File libraryFile = new File(String.format("%s%s%s", path, libraryName, extension));
+        	if (libraryFile.canExecute()) {
+        		return true;
+        	}
+    	}
+
+    	return false;
     }
 }
