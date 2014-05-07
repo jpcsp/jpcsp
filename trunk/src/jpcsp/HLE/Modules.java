@@ -24,6 +24,7 @@ import jpcsp.HLE.modules.Kernel_Library;
 import jpcsp.HLE.modules.LoadCoreForKernel;
 import jpcsp.HLE.modules.LoadExecForUser;
 import jpcsp.HLE.modules.ModuleMgrForUser;
+import jpcsp.HLE.modules.StdioForKernel;
 import jpcsp.HLE.modules.StdioForUser;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemForKernel;
@@ -103,6 +104,7 @@ public class Modules {
     public static InterruptManager InterruptManagerModule = new InterruptManager();
     public static LoadExecForUser LoadExecForUserModule = new LoadExecForUser();
     public static StdioForUser StdioForUserModule = new StdioForUser();
+    public static StdioForKernel StdioForKernelModule = new StdioForKernel();
     public static sceCtrl sceCtrlModule = new sceCtrl();
     public static sceDisplay sceDisplayModule;
     public static sceGe_user sceGe_userModule = new sceGe_user();

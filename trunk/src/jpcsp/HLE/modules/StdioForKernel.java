@@ -14,19 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.Allegrex.compiler.nativeCode;
+package jpcsp.HLE.modules;
 
-/**
- * @author gid15
- *
- */
-public class Strcpy extends AbstractNativeCodeSequence {
-	static public void call() {
-		int dstAddr = getGprA0();
-		int srcAddr = getGprA1();
-
-		strcpy(dstAddr, srcAddr);
-
-		setGprV0(dstAddr);
-	}
+public class StdioForKernel extends jpcsp.HLE.modules150.StdioForKernel {
 }
