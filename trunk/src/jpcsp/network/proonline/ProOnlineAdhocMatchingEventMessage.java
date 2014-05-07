@@ -20,7 +20,6 @@ import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.network.ProOnline;
 import jpcsp.network.adhoc.AdhocMatchingEventMessage;
 import jpcsp.network.adhoc.MatchingObject;
 
@@ -33,7 +32,7 @@ import jpcsp.network.adhoc.MatchingObject;
  * - n bytes for the message data
  */
 public class ProOnlineAdhocMatchingEventMessage extends AdhocMatchingEventMessage {
-	protected static Logger log = ProOnline.log;
+	protected static Logger log = ProOnlineNetworkAdapter.log;
 	protected static final int HEADER_SIZE = 1 + 4;
 	private int packetOpcode;
 
