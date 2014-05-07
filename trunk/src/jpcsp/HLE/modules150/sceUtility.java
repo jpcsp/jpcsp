@@ -335,7 +335,7 @@ public class sceUtility extends HLEModule {
         protected void updateDialog() {
             int delayMicros = 1000000 / 60;
             if (drawSpeed > 0) {
-                delayMicros /= drawSpeed;
+                delayMicros *= drawSpeed;
             }
             Modules.ThreadManForUserModule.hleKernelDelayThread(delayMicros, false);
         }
@@ -506,7 +506,9 @@ public class sceUtility extends HLEModule {
          * @return
          */
         public final int executeUpdate(int drawSpeed) {
-            if (Modules.sceUtilityModule.startedDialogState == null || Modules.sceUtilityModule.startedDialogState != this) {
+        	this.drawSpeed = drawSpeed;
+
+        	if (Modules.sceUtilityModule.startedDialogState == null || Modules.sceUtilityModule.startedDialogState != this) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%sUpdate returning ERROR_UTILITY_WRONG_TYPE", name));
                 }
