@@ -20,11 +20,14 @@ import static jpcsp.Allegrex.compiler.RuntimeContext.memoryInt;
 
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
 
 import jpcsp.Memory;
 import jpcsp.memory.FastMemory;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.NativeCpuInfo;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -60,24 +63,41 @@ public class NativeUtils {
 
 	public static void init() {
 		if (!isInitialized) {
-			String libraryName = "software-ge-renderer";
+			List<String> libraries = new LinkedList<String>();
 			if (NativeCpuInfo.isAvailable()) {
 				NativeCpuInfo.init();
 				if (NativeCpuInfo.hasAVX2()) {
-					libraryName = "software-ge-renderer-AVX2";
-				} else if (NativeCpuInfo.hasSSE41()) {
-					libraryName = "software-ge-renderer-SSE41";
+					libraries.add("software-ge-renderer-AVX2");
+				}
+				if (NativeCpuInfo.hasAVX()) {
+					libraries.add("software-ge-renderer-AVX");
+				}
+				if (NativeCpuInfo.hasSSE41()) {
+					libraries.add("software-ge-renderer-SSE41");
+				}
+				if (NativeCpuInfo.hasSSE3()) {
+					libraries.add("software-ge-renderer-SSE3");
+				}
+				if (NativeCpuInfo.hasSSE2()) {
+					libraries.add("software-ge-renderer-SSE2");
 				}
 			}
+			libraries.add("software-ge-renderer");
 
 			try {
-				System.loadLibrary(libraryName);
-				if (Memory.getInstance() instanceof FastMemory) {
-					memoryInt = ((FastMemory) Memory.getInstance()).getAll();
+				// Search for an available library in preference order
+				for (String library : libraries) {
+					if (Utilities.isSystemLibraryExisting(library)) {
+						System.loadLibrary(library);
+						if (Memory.getInstance() instanceof FastMemory) {
+							memoryInt = ((FastMemory) Memory.getInstance()).getAll();
+						}
+						initNative();
+						log.info(String.format("Loaded %s library", library));
+						isAvailable = true;
+						break;
+					}
 				}
-				initNative();
-				log.info(String.format("Loaded software-ge-renderer library"));
-				isAvailable = true;
 			} catch (UnsatisfiedLinkError e) {
 				isAvailable = false;
 			}
