@@ -1975,7 +1975,7 @@ public class sceDisplay extends HLEModule {
 
     @HLEFunction(nid = 0x0E20F177, version = 150, checkInsideInterrupt = true)
     public int sceDisplaySetMode(int displayMode, int displayWidth, int displayHeight) {
-        if (displayWidth <= 0 || displayHeight <= 0 || (displayWidth & 0x7) != 0) {
+        if (displayWidth <= 0 || displayHeight <= 0 || (displayWidth & 0x7) != 0 || displayHeight > Screen.height) {
             return SceKernelErrors.ERROR_INVALID_SIZE;
         }
 
