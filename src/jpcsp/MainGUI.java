@@ -2276,12 +2276,12 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         logConfigurationSettingBool("SettingsGUI.disableDLC.text", "emu.disableDLC", false, true);
 
         logConfigurationPanel("SettingsGUI.networkPanel.TabConstraints.tabTitle");
-        logConfigurationSettingBool("SettingsGUI.lanMultiPlayerRadioButton.text", "emu.lanMultiPlayer", false, true);
-        logConfigurationSettingBool("SettingsGUI.netServerPortShiftRadioButton.text", "emu.netServerPortShift", false, true);
-        logConfigurationSettingBool("SettingsGUI.netClientPortShiftRadioButton.text", "emu.netClientPortShift", false, true);
-        logConfigurationSettingBool("SettingsGUI.enableProOnlineRadioButton.text", "emu.enableProOnline", false, true);
-        logConfigurationSettingString("SettingsGUI.metaServerLabel.text", "network.ProOnline.metaServer", false, true);
-        logConfigurationSettingString("SettingsGUI.broadcastAddressLabel.text", "network.broadcastAddress", false, true);
+        logConfigurationSettingBool("SettingsGUI.lanMultiPlayerRadioButton.text", "emu.lanMultiPlayer", false, false);
+        logConfigurationSettingBool("SettingsGUI.netServerPortShiftRadioButton.text", "emu.netServerPortShift", false, false);
+        logConfigurationSettingBool("SettingsGUI.netClientPortShiftRadioButton.text", "emu.netClientPortShift", false, false);
+        logConfigurationSettingBool("SettingsGUI.enableProOnlineRadioButton.text", "emu.enableProOnline", false, false);
+        logConfigurationSettingString("SettingsGUI.metaServerLabel.text", "network.ProOnline.metaServer", true, true);
+        logConfigurationSettingString("SettingsGUI.broadcastAddressLabel.text", "network.broadcastAddress", true, true);
     }
 
     public void loadAndRun() {
