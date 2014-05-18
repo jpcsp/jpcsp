@@ -3040,11 +3040,11 @@ public class sceNetInet extends HLEModule {
 				result = inetSocket.setReuseAddress(optionValue != 0);
 			} else {
 				log.warn(String.format("Unimplemented sceNetInetSetsockopt optionName=%s", getOptionNameString(optionName)));
-				return -1;
+				result = 0;
 			}
 		} else {
 			log.warn(String.format("Unimplemented sceNetInetSetsockopt unknown level=0x%X, optionName=%s", level, getOptionNameString(optionName)));
-			return -1;
+			result = 0;
 		}
 
 		return result;
