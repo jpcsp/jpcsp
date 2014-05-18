@@ -103,6 +103,13 @@ public class ExternalGE {
 		synchronized (screenScaleLock) {
 			NativeUtils.setScreenScale(getScreenScale());
 		}
+
+		// Used by HD Remaster
+		int maxTextureSize = Settings.getInstance().readInt("maxTextureSize", 512);
+        int maxTextureSizeLog2 = 31 - Integer.numberOfLeadingZeros(maxTextureSize);
+        NativeUtils.setMaxTextureSizeLog2(maxTextureSizeLog2);
+		boolean doubleTexture2DCoords = Settings.getInstance().readBool("doubleTexture2DCoords");
+		NativeUtils.setDoubleTexture2DCoords(doubleTexture2DCoords);
     }
 
     private static void deactivate() {
