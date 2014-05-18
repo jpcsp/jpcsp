@@ -54,6 +54,8 @@ import jpcsp.network.adhoc.AdhocMessage;
 import jpcsp.network.adhoc.PdpObject;
 import jpcsp.network.adhoc.PtpObject;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.AbstractIntSettingsListener;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -89,6 +91,28 @@ public class sceNetAdhoc extends HLEModule {
     private static final int adhocGameModePort = 31000;
     private DatagramSocket gameModeSocket;
     private boolean isInitialized;
+
+    private class ClientPortShiftSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			if (value) {
+				setNetClientPortShift(100);
+			} else {
+				setNetClientPortShift(0);
+			}
+		}
+    }
+
+    private class ServerPortShiftSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			if (value) {
+				setNetServerPortShift(100);
+			} else {
+				setNetServerPortShift(0);
+			}
+		}
+    }
 
     protected static class GameModeScheduledAction implements IAction {
     	private final int scheduleRepeatMicros;
@@ -249,7 +273,10 @@ public class sceNetAdhoc extends HLEModule {
 
     @Override
 	public void start() {
-	    pdpObjects = new HashMap<Integer, PdpObject>();
+    	setSettingsListener("emu.netClientPortShift", new ClientPortShiftSettingsListener());
+    	setSettingsListener("emu.netServerPortShift", new ServerPortShiftSettingsListener());
+
+    	pdpObjects = new HashMap<Integer, PdpObject>();
 	    ptpObjects = new HashMap<Integer, PtpObject>();
 	    currentFreePort = 0x4000;
 	    replicaGameModeAreas = new LinkedList<sceNetAdhoc.GameModeArea>();

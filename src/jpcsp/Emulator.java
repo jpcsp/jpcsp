@@ -44,6 +44,7 @@ import jpcsp.hardware.Battery;
 import jpcsp.hardware.Interrupts;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.MemorySections;
+import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.sound.SoundChannel;
 import jpcsp.util.DurationStatistics;
@@ -237,6 +238,7 @@ public class Emulator implements Runnable {
         jpcsp.HLE.kernel.types.SceModule.ResetAllocator();
         SceUidManager.reset();
         HLEUidObjectMapping.reset();
+        ProOnlineNetworkAdapter.init();
 
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();

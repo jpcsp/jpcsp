@@ -135,7 +135,13 @@ public class SettingsGUI extends javax.swing.JFrame {
         setStringFromSettings(tmppath, "emu.tmppath");
         setIntFromSettings(modelBox, "emu.model");
         setBoolFromSettings(umdBrowser, classicUmdDialog, "emu.umdbrowser");
-
+        setStringFromSettings(metaServerTextField, "network.ProOnline.metaServer");
+        setStringFromSettings(broadcastAddressTextField, "network.broadcastAddress");
+        setBoolFromSettings(lanMultiPlayerRadioButton, "emu.lanMultiPlayer");
+        setBoolFromSettings(netServerPortShiftRadioButton, "emu.netServerPortShift");
+        setBoolFromSettings(netClientPortShiftRadioButton, "emu.netClientPortShift");
+        setBoolFromSettings(enableProOnlineRadioButton, "emu.enableProOnline");
+        
         // special handling for UMD paths
         DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
         dlm.clear();
@@ -259,6 +265,12 @@ public class SettingsGUI extends javax.swing.JFrame {
         setStringToSettings(tmppath, "emu.tmppath");
         setIntToSettings(modelBox, "emu.model");
         setBoolToSettings(umdBrowser, "emu.umdbrowser");
+        setStringToSettings(metaServerTextField, "network.ProOnline.metaServer");
+        setStringToSettings(broadcastAddressTextField,"network.broadcastAddress");
+        setBoolToSettings(lanMultiPlayerRadioButton, "emu.lanMultiPlayer");
+        setBoolToSettings(netServerPortShiftRadioButton, "emu.netServerPortShift");
+        setBoolToSettings(netClientPortShiftRadioButton, "emu.netClientPortShift");
+        setBoolToSettings(enableProOnlineRadioButton, "emu.enableProOnline");
 
         // special handling for UMD paths
         DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
@@ -420,6 +432,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         buttonGroup1 = new javax.swing.ButtonGroup();
         buttonGroup2 = new javax.swing.ButtonGroup();
+        buttonGroup3 = new javax.swing.ButtonGroup();
         jButtonOK = new javax.swing.JButton();
         jButtonApply = new javax.swing.JButton();
         jTabbedPane1 = new javax.swing.JTabbedPane();
@@ -515,6 +528,22 @@ public class SettingsGUI extends javax.swing.JFrame {
         extractPGD = new javax.swing.JCheckBox();
         extractSavedataKey = new javax.swing.JCheckBox();
         disableDLC = new javax.swing.JCheckBox();
+        networkPanel = new javax.swing.JPanel();
+        networkRemindLabel = new javax.swing.JLabel();
+        lanMultiPlayerRadioButton = new javax.swing.JRadioButton();
+        netServerPortShiftRadioButton = new javax.swing.JRadioButton();
+        netClientPortShiftRadioButton = new javax.swing.JRadioButton();
+        enableProOnlineRadioButton = new javax.swing.JRadioButton();
+        lanMultiPlayerLabel = new javax.swing.JLabel();
+        netServerPortShiftLabel = new javax.swing.JLabel();
+        netClientPortShiftLabel = new javax.swing.JLabel();
+        enableProOnlineLabel = new javax.swing.JLabel();
+        metaServerLabel = new javax.swing.JLabel();
+        metaServerTextField = new javax.swing.JTextField();
+        metaServerRemindLabel = new javax.swing.JLabel();
+        broadcastAddressLabel = new javax.swing.JLabel();
+        broadcastAddressTextField = new javax.swing.JTextField();
+        broadcastAddressRemindLabel = new javax.swing.JLabel();
         cancelButton = new jpcsp.GUI.CancelButton();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
@@ -1192,6 +1221,114 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.CryptoPanel.title"), CryptoPanel); // NOI18N
 
+        networkRemindLabel.setForeground(new java.awt.Color(255, 0, 0));
+        networkRemindLabel.setText(bundle.getString("SettingsGUI.networkRemindLabel.text")); // NOI18N
+
+        buttonGroup3.add(lanMultiPlayerRadioButton);
+        lanMultiPlayerRadioButton.setText(bundle.getString("SettingsGUI.lanMultiPlayerRadioButton.text")); // NOI18N
+
+        buttonGroup3.add(netServerPortShiftRadioButton);
+        netServerPortShiftRadioButton.setText(bundle.getString("SettingsGUI.netServerPortShiftRadioButton.text")); // NOI18N
+
+        buttonGroup3.add(netClientPortShiftRadioButton);
+        netClientPortShiftRadioButton.setText(bundle.getString("SettingsGUI.netClientPortShiftRadioButton.text")); // NOI18N
+
+        buttonGroup3.add(enableProOnlineRadioButton);
+        enableProOnlineRadioButton.setText(bundle.getString("SettingsGUI.enableProOnlineRadioButton.text")); // NOI18N
+
+        lanMultiPlayerLabel.setText(bundle.getString("SettingsGUI.lanMultiPlayerLabel.text")); // NOI18N
+
+        netServerPortShiftLabel.setText(bundle.getString("SettingsGUI.netServerPortShiftLabel.text")); // NOI18N
+
+        netClientPortShiftLabel.setText(bundle.getString("SettingsGUI.netClientPortShiftLabel.text")); // NOI18N
+
+        enableProOnlineLabel.setText(bundle.getString("SettingsGUI.enableProOnlineLabel.text")); // NOI18N
+
+        metaServerLabel.setText(bundle.getString("SettingsGUI.metaServerLabel.text")); // NOI18N
+
+        metaServerRemindLabel.setText(bundle.getString("SettingsGUI.metaServerRemindLabel.text")); // NOI18N
+
+        broadcastAddressLabel.setText(bundle.getString("SettingsGUI.broadcastAddressLabel.text")); // NOI18N
+
+        broadcastAddressRemindLabel.setText(bundle.getString("SettingsGUI.broadcastAddressRemindLabel.text")); // NOI18N
+
+        javax.swing.GroupLayout networkPanelLayout = new javax.swing.GroupLayout(networkPanel);
+        networkPanel.setLayout(networkPanelLayout);
+        networkPanelLayout.setHorizontalGroup(
+            networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(networkPanelLayout.createSequentialGroup()
+                .addGap(23, 23, 23)
+                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(networkRemindLabel)
+                    .addGroup(networkPanelLayout.createSequentialGroup()
+                        .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(metaServerLabel)
+                            .addComponent(broadcastAddressLabel))
+                        .addGap(39, 39, 39)
+                        .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(networkPanelLayout.createSequentialGroup()
+                                .addComponent(metaServerTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 154, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(31, 31, 31)
+                                .addComponent(metaServerRemindLabel))
+                            .addGroup(networkPanelLayout.createSequentialGroup()
+                                .addGap(10, 10, 10)
+                                .addComponent(broadcastAddressRemindLabel))
+                            .addComponent(broadcastAddressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 264, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(networkPanelLayout.createSequentialGroup()
+                        .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(netClientPortShiftRadioButton)
+                            .addComponent(enableProOnlineRadioButton))
+                        .addGap(18, 18, 18)
+                        .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(enableProOnlineLabel)
+                            .addComponent(netClientPortShiftLabel)))
+                    .addGroup(networkPanelLayout.createSequentialGroup()
+                        .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(netServerPortShiftRadioButton)
+                            .addComponent(lanMultiPlayerRadioButton))
+                        .addGap(18, 18, 18)
+                        .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(lanMultiPlayerLabel)
+                            .addComponent(netServerPortShiftLabel))))
+                .addContainerGap(108, Short.MAX_VALUE))
+        );
+        networkPanelLayout.setVerticalGroup(
+            networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(networkPanelLayout.createSequentialGroup()
+                .addGap(20, 20, 20)
+                .addComponent(networkRemindLabel)
+                .addGap(18, 18, 18)
+                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lanMultiPlayerRadioButton)
+                    .addComponent(lanMultiPlayerLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(netServerPortShiftRadioButton)
+                    .addComponent(netServerPortShiftLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(netClientPortShiftRadioButton)
+                    .addComponent(netClientPortShiftLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(enableProOnlineRadioButton)
+                    .addComponent(enableProOnlineLabel))
+                .addGap(30, 30, 30)
+                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(metaServerLabel)
+                    .addComponent(metaServerTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(metaServerRemindLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(broadcastAddressLabel)
+                    .addComponent(broadcastAddressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(broadcastAddressRemindLabel)
+                .addContainerGap(242, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.networkPanel.TabConstraints.tabTitle"), networkPanel); // NOI18N
+
         cancelButton.setText(bundle.getString("CancelButton.text")); // NOI18N
         cancelButton.setParent(this);
 
@@ -1295,11 +1432,15 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel adhocChannelLabel;
     private javax.swing.JLabel antiAliasLabel;
     private javax.swing.JComboBox antiAliasingBox;
+    private javax.swing.JLabel broadcastAddressLabel;
+    private javax.swing.JLabel broadcastAddressRemindLabel;
+    private javax.swing.JTextField broadcastAddressTextField;
     private javax.swing.JButton btnUMDPathAdd;
     private javax.swing.JButton btnUMDPathRemove;
     private javax.swing.JComboBox buttonBox;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.ButtonGroup buttonGroup2;
+    private javax.swing.ButtonGroup buttonGroup3;
     private javax.swing.JLabel buttonLabel;
     private jpcsp.GUI.CancelButton cancelButton;
     private javax.swing.JRadioButton classicUmdDialog;
@@ -1316,6 +1457,8 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JCheckBox enableDynamicShadersCheck;
     private javax.swing.JCheckBox enableGETextureCheck;
     private javax.swing.JCheckBox enableNativeCLUTCheck;
+    private javax.swing.JLabel enableProOnlineLabel;
+    private javax.swing.JRadioButton enableProOnlineRadioButton;
     private javax.swing.JCheckBox enableShaderColorMaskCheck;
     private javax.swing.JCheckBox enableShaderStencilTestCheck;
     private javax.swing.JCheckBox enableVAOCheck;
@@ -1336,14 +1479,25 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel5;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JLabel lanMultiPlayerLabel;
+    private javax.swing.JRadioButton lanMultiPlayerRadioButton;
     private javax.swing.JComboBox languageBox;
     private javax.swing.JLabel languageLabel;
     private javax.swing.JList lbUMDPaths;
     private javax.swing.JCheckBox loadAndRunCheck;
+    private javax.swing.JLabel metaServerLabel;
+    private javax.swing.JLabel metaServerRemindLabel;
+    private javax.swing.JTextField metaServerTextField;
     private javax.swing.JComboBox methodMaxInstructionsBox;
     private javax.swing.JLabel methodMaxInstructionsLabel;
     private javax.swing.JComboBox modelBox;
     private javax.swing.JLabel modelLabel;
+    private javax.swing.JLabel netClientPortShiftLabel;
+    private javax.swing.JRadioButton netClientPortShiftRadioButton;
+    private javax.swing.JLabel netServerPortShiftLabel;
+    private javax.swing.JRadioButton netServerPortShiftRadioButton;
+    private javax.swing.JPanel networkPanel;
+    private javax.swing.JLabel networkRemindLabel;
     private javax.swing.JTextField nicknameTextField;
     private javax.swing.JLabel nicknamelLabel;
     private javax.swing.JCheckBox onlyGEGraphicsCheck;

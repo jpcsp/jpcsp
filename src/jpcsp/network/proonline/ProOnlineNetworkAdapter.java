@@ -46,6 +46,9 @@ import jpcsp.network.adhoc.PtpObject;
 import jpcsp.network.proonline.PacketFactory.SceNetAdhocctlPacketBaseC2S;
 import jpcsp.network.proonline.PacketFactory.SceNetAdhocctlPacketBaseS2C;
 import jpcsp.network.upnp.UPnP;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.AbstractIntSettingsListener;
+import jpcsp.settings.AbstractStringSettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
@@ -76,6 +79,27 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	private ChatGUI chatGUI;
 	private boolean connectComplete;
 
+	private static class MetaServerSettingsListener extends AbstractStringSettingsListener {
+		@Override
+		protected void settingsValueChanged(String value) {
+			metaServer = value;
+		}
+	}
+
+	private static class MetaServerPortSettingsListener extends AbstractIntSettingsListener {
+		@Override
+		protected void settingsValueChanged(int value) {
+			metaPort = value;
+		}
+	}
+
+	private static class EnabledSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setEnabled(value);
+		}
+	}
+
 	public static boolean isEnabled() {
 		return enabled;
 	}
@@ -97,9 +121,6 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	@Override
 	public void start() {
 		super.start();
-
-		metaServer = Settings.getInstance().readString("network.ProOnline.metaServer", metaServer);
-		metaPort = Settings.getInstance().readInt("network.ProOnline.metaPort", metaPort);
 
 		log.info(String.format("ProOnline start, server %s:%d", metaServer, metaPort));
 
@@ -655,7 +676,15 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		chatGUI.addChatMessage(nickName, message);
 	}
 
+	public static void init() {
+		Settings.getInstance().registerSettingsListener("ProOnline", "emu.enableProOnline", new EnabledSettingsListener());
+		Settings.getInstance().registerSettingsListener("ProOnline", "network.ProOnline.metaServer", new MetaServerSettingsListener());
+		Settings.getInstance().registerSettingsListener("ProOnline", "network.ProOnline.metaPort", new MetaServerPortSettingsListener());
+	}
+
 	public static void exit() {
+		Settings.getInstance().removeSettingsListener("ProOnline");
+
 		if (!isEnabled()) {
 			return;
 		}
