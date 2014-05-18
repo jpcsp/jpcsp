@@ -1770,6 +1770,7 @@ public class sceUtility extends HLEModule {
                 // The Netconf dialog stays visible until the network reaches
                 // the state PSP_NET_APCTL_STATE_GOT_IP.
                 if (state == sceNetApctl.PSP_NET_APCTL_STATE_GOT_IP) {
+                    quitDialog();
                     keepVisible = false;
                 } else {
                     keepVisible = true;
