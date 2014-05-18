@@ -268,4 +268,6 @@ public class NativeUtils {
     public static native void setScreenScale(int screenScale);
     public static native ByteBuffer getScaledScreen(int address, int bufferWidth, int height, int pixelFormat);
     public static native void addVideoTexture(int destinationAddress, int sourceAddress, int length);
+    public static native void setMaxTextureSizeLog2(int maxTextureSizeLog2);
+    public static native void setDoubleTexture2DCoords(boolean doubleTexture2DCoords);
 }
