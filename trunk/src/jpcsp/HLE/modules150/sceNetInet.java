@@ -70,9 +70,9 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.network.RawChannel;
 import jpcsp.network.RawSelector;
+import jpcsp.settings.AbstractStringSettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
-
 import jpcsp.Emulator;
 import jpcsp.Memory;
 
@@ -171,6 +171,14 @@ public class sceNetInet extends HLEModule {
 	public String getName() {
     	return "sceNetInet";
 	}
+
+    private static class BroadcastAddressSettingsListener extends AbstractStringSettingsListener {
+		@Override
+		protected void settingsValueChanged(String value) {
+			// Force a new evaluation of broadcasrAddresses in getBroadcastInetSocketAddress()
+			broadcastAddresses = null;
+		}
+    }
 
     public static InetSocketAddress[] getBroadcastInetSocketAddress(int port) throws UnknownHostException {
     	if (broadcastAddresses == null) {
@@ -2002,6 +2010,8 @@ public class sceNetInet extends HLEModule {
 
 	@Override
 	public void start() {
+		setSettingsListener("network.broadcastAddress", new BroadcastAddressSettingsListener());
+
 		sockets = new HashMap<Integer, pspInetSocket>();
 
         super.start();
