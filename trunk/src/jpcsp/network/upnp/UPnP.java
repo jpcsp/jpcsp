@@ -52,9 +52,9 @@ import org.xml.sax.SAXException;
 public class UPnP {
 	public static Logger log = Logger.getLogger("upnp");
 	protected IGD igd;
-	private static final int discoveryTimeoutMillis = 2000;
-	private static final int discoveryPort = 1900;
-	private static final String multicastIp = "239.255.255.250";
+	public  static final int discoveryTimeoutMillis = 2000;
+	public  static final int discoveryPort = 1900;
+	public  static final String multicastIp = "239.255.255.250";
 	private static final String[] deviceList = new String[] {
 			"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
 			"urn:schemas-upnp-org:service:WANIPConnection:1",
@@ -105,6 +105,7 @@ public class UPnP {
 					log.info(String.format("Timeout while discovering %s", device));
 				}
 			}
+			socket.close();
 
 			igd = new IGD();
 			Set<String> processedUrls = new HashSet<String>();
