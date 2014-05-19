@@ -53,9 +53,9 @@ import jpcsp.network.INetworkAdapter;
 import jpcsp.network.adhoc.AdhocMessage;
 import jpcsp.network.adhoc.PdpObject;
 import jpcsp.network.adhoc.PtpObject;
+import jpcsp.network.upnp.AutoDetectJpcsp;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.AbstractBoolSettingsListener;
-import jpcsp.settings.AbstractIntSettingsListener;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -275,6 +275,15 @@ public class sceNetAdhoc extends HLEModule {
 	public void start() {
     	setSettingsListener("emu.netClientPortShift", new ClientPortShiftSettingsListener());
     	setSettingsListener("emu.netServerPortShift", new ServerPortShiftSettingsListener());
+
+		AutoDetectJpcsp autoDetectJpcsp = AutoDetectJpcsp.getInstance();
+		if (autoDetectJpcsp != null) {
+			if (autoDetectJpcsp.isOtherJpcspAvailable()) {
+				log.debug(String.format("Other Jpcsp is running"));
+			} else {
+				autoDetectJpcsp.startDaemon();
+			}
+		}
 
     	pdpObjects = new HashMap<Integer, PdpObject>();
 	    ptpObjects = new HashMap<Integer, PtpObject>();
