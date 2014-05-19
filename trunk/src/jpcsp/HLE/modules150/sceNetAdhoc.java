@@ -827,7 +827,7 @@ public class sceNetAdhoc extends HLEModule {
     	ptpObjects.put(ptpObject.getId(), ptpObject);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetAdhocPtpOpen: returning id=%d", ptpObject.getId()));
+			log.debug(String.format("sceNetAdhocPtpOpen: returning id=0x%X", ptpObject.getId()));
 		}
 
 		return ptpObject.getId();
@@ -881,7 +881,7 @@ public class sceNetAdhoc extends HLEModule {
     	ptpObjects.put(ptpObject.getId(), ptpObject);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetAdhocPtpListen: returning id=%d", ptpObject.getId()));
+			log.debug(String.format("sceNetAdhocPtpListen: returning id=0x%X", ptpObject.getId()));
 		}
 
     	return ptpObject.getId();
