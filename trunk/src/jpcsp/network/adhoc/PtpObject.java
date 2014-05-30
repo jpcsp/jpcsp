@@ -401,9 +401,9 @@ public abstract class PtpObject extends PdpObject {
 							log.debug(String.format("Received message not for me: %s", adhocMessage));
 						}
 					}
-				} catch (SocketException e) {
-					log.error("update", e);
-					break;
+//				} catch (SocketException e) {
+//					log.error("update", e);
+//					break;
 				} catch (SocketTimeoutException e) {
 					// Timeout
 					break;
@@ -424,6 +424,6 @@ public abstract class PtpObject extends PdpObject {
 
 	@Override
 	public String toString() {
-		return String.format("PtpObject[id=%d, srcMacAddress=%s, srcPort=%d, destMacAddress=%s, destPort=%d, bufSize=%d, retryDelay=%d, retryCount=%d, queue=%d, rcvdData=%d]", getId(), getMacAddress(), getPort(), getDestMacAddress(), getDestPort(), getBufSize(), getRetryDelay(), getRetryCount(), getQueue(), getRcvdData());
+		return String.format("PtpObject[id=0x%X, srcMacAddress=%s, srcPort=%d, destMacAddress=%s, destPort=%d, bufSize=%d, retryDelay=%d, retryCount=%d, queue=%d, rcvdData=%d]", getId(), getMacAddress(), getPort(), getDestMacAddress(), getDestPort(), getBufSize(), getRetryDelay(), getRetryCount(), getQueue(), getRcvdData());
 	}
 }

@@ -290,6 +290,12 @@ public abstract class MatchingObject extends AdhocObject {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Sending accept to port %d", getPort()));
 				}
+
+				if (getMode() == sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_HOST) {
+					addMember(macAddress.macAddress);
+					connected = true;
+					inConnection = false;
+				}
 			} else {
 				event = PSP_ADHOC_MATCHING_EVENT_JOIN;
 				if (log.isDebugEnabled()) {
@@ -562,7 +568,7 @@ public abstract class MatchingObject extends AdhocObject {
 
 	@Override
 	public String toString() {
-		return String.format("MatchingObject[id=%d, mode=%d, maxPeers=%d, port=%d, callback=0x%08X]", getId(), mode, maxPeers, getPort(), callback);
+		return String.format("MatchingObject[id=0x%X, mode=%d, maxPeers=%d, port=%d, callback=0x%08X]", getId(), mode, maxPeers, getPort(), callback);
 	}
 
 	protected void send(AdhocMatchingEventMessage adhocMatchingEventMessage, pspNetMacAddress macAddress, int dataLen, int data) throws IOException {
