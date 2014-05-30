@@ -53,6 +53,8 @@ import jpcsp.network.INetworkAdapter;
 import jpcsp.network.adhoc.AdhocMessage;
 import jpcsp.network.adhoc.PdpObject;
 import jpcsp.network.adhoc.PtpObject;
+import jpcsp.network.proonline.ProOnlineNetworkAdapter;
+import jpcsp.network.proonline.ProOnlineServer;
 import jpcsp.network.upnp.AutoDetectJpcsp;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.AbstractBoolSettingsListener;
@@ -282,6 +284,10 @@ public class sceNetAdhoc extends HLEModule {
 				log.debug(String.format("Other Jpcsp is running"));
 			} else {
 				autoDetectJpcsp.startDaemon();
+
+				if (ProOnlineNetworkAdapter.isEnabled() && ProOnlineNetworkAdapter.getMetaServer().equalsIgnoreCase("localhost")) {
+					ProOnlineServer.getInstance().start();
+				}
 			}
 		}
 

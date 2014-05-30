@@ -67,6 +67,20 @@ public class UPnP {
 		public String st;
 	}
 
+	private class DiscoverThread extends Thread {
+		@Override
+		public void run() {
+			discover();
+		}
+	}
+
+	public void discoverInBackground() {
+		DiscoverThread discoverThread = new DiscoverThread();
+		discoverThread.setName("UPnP Discover Thread");
+		discoverThread.setDaemon(true);
+		discoverThread.start();
+	}
+
 	public void discover() {
 		try {
 			DatagramSocket socket = new DatagramSocket();

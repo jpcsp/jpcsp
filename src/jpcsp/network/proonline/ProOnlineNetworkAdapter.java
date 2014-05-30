@@ -111,6 +111,10 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 	}
 
+	public static String getMetaServer() {
+		return metaServer;
+	}
+
 	protected class FriendFinder extends Thread {
 		@Override
 		public void run() {
@@ -143,7 +147,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 
 		upnp = new UPnP();
-		upnp.discover();
+		upnp.discoverInBackground();
 	}
 
 	protected void sendToMetaServer(SceNetAdhocctlPacketBaseC2S packet) throws IOException {
@@ -376,7 +380,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 				}
 
 				int consumed = 0;
-				SceNetAdhocctlPacketBaseS2C packet = packetFactory.createPacket(this, buffer, offset);
+				SceNetAdhocctlPacketBaseS2C packet = packetFactory.createPacketS2C(this, buffer, offset);
 				if (packet == null) {
 					// Skip the unknown opcode
 					consumed = 1;

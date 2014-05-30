@@ -362,6 +362,6 @@ public abstract class PdpObject extends AdhocObject {
 
 	@Override
 	public String toString() {
-		return String.format("PdpObject[id=%d, macAddress=%s, port=%d, bufSize=%d, rcvdData=%d]", getId(), macAddress, getPort(), getBufSize(), rcvdData);
+		return String.format("PdpObject[id=0x%X, macAddress=%s, port=%d, bufSize=%d, rcvdData=%d]", getId(), macAddress, getPort(), getBufSize(), rcvdData);
 	}
 }
