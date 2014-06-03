@@ -286,8 +286,9 @@ public class ProOnlineServer {
 		if (consumed >= user.bufferLength) {
 			user.bufferLength = 0;
 		} else {
+			// Removed consumed bytes from the buffer
 			user.bufferLength -= consumed;
-			System.arraycopy(user.buffer, 0, user.buffer, consumed, user.bufferLength);
+			System.arraycopy(user.buffer, consumed, user.buffer, 0, user.bufferLength);
 		}
 	}
 

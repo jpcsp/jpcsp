@@ -322,6 +322,9 @@ public abstract class PdpObject extends AdhocObject {
 				socket.setTimeout(1);
 				byte[] bytes = new byte[getBufSize() - rcvdData + MAX_HEADER_SIZE];
 				int length = socket.receive(bytes, bytes.length);
+				if (length <= 0) {
+					break;
+				}
 				int receivedPort = socket.getReceivedPort();
 				InetAddress receivedAddress = socket.getReceivedAddress();
 				AdhocMessage adhocMessage = createAdhocMessage(bytes, length);

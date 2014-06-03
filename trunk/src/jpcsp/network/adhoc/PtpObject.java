@@ -390,6 +390,9 @@ public abstract class PtpObject extends PdpObject {
 					socket.setTimeout(1);
 					byte[] bytes = new byte[0x10000]; // 64K buffer
 					int length = socket.receive(bytes, bytes.length);
+					if (length <= 0) {
+						break;
+					}
 					int receivedPort = socket.getReceivedPort();
 					InetAddress receivedAddress = socket.getReceivedAddress();
 					AdhocMessage adhocMessage = createAdhocMessage(bytes, length);

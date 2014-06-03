@@ -465,76 +465,78 @@ public abstract class MatchingObject extends AdhocObject {
 		try {
 			byte[] bytes = new byte[getBufSize() + MAX_HEADER_SIZE];
 			int length = socket.receive(bytes, bytes.length);
-			int receivedPort = socket.getReceivedPort();
-			InetAddress receivedAddress = socket.getReceivedAddress();
-			AdhocMatchingEventMessage adhocMatchingEventMessage = createMessage(bytes, length);
-			if (isForMe(adhocMatchingEventMessage, receivedPort, receivedAddress)) {
-				int event = adhocMatchingEventMessage.getEvent();
-				int macAddr = buffer.addr;
-				int optData = buffer.addr + 8;
-				int optLen = adhocMatchingEventMessage.getDataLength();
-				adhocMatchingEventMessage.writeDataToMemory(optData);
-				pspNetMacAddress macAddress = new pspNetMacAddress();
-				macAddress.setMacAddress(adhocMatchingEventMessage.getFromMacAddress());
-				macAddress.write(Memory.getInstance(), macAddr);
+			if (length > 0) {
+				int receivedPort = socket.getReceivedPort();
+				InetAddress receivedAddress = socket.getReceivedAddress();
+				AdhocMatchingEventMessage adhocMatchingEventMessage = createMessage(bytes, length);
+				if (isForMe(adhocMatchingEventMessage, receivedPort, receivedAddress)) {
+					int event = adhocMatchingEventMessage.getEvent();
+					int macAddr = buffer.addr;
+					int optData = buffer.addr + 8;
+					int optLen = adhocMatchingEventMessage.getDataLength();
+					adhocMatchingEventMessage.writeDataToMemory(optData);
+					pspNetMacAddress macAddress = new pspNetMacAddress();
+					macAddress.setMacAddress(adhocMatchingEventMessage.getFromMacAddress());
+					macAddress.write(Memory.getInstance(), macAddr);
 
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Received message length=%d, event=%d, fromMac=%s, port=%d: %s", adhocMatchingEventMessage.getDataLength(), event, macAddress, socket.getReceivedPort(), adhocMatchingEventMessage));
-					if (log.isTraceEnabled() && optLen > 0) {
-						log.trace(String.format("Message data: %s", Utilities.getMemoryDump(optData, optLen)));
-					}
-				}
-
-				// Keep track that we received a new message from this MAC address
-				Modules.sceNetAdhocctlModule.hleNetAdhocctlPeerUpdateTimestamp(adhocMatchingEventMessage.getFromMacAddress());
-
-				if (event == PSP_ADHOC_MATCHING_EVENT_JOIN) {
-					pendingJoinRequest = adhocMatchingEventMessage.getFromMacAddress();
-					inConnection = true;
-				}
-				adhocMatchingEventMessage.processOnReceive(macAddr, optData, optLen);
-
-				if (event == PSP_ADHOC_MATCHING_EVENT_ACCEPT) {
-					addMember(adhocMatchingEventMessage.getFromMacAddress());
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("Sending complete to port %d", getPort()));
+						log.debug(String.format("Received message length=%d, event=%d, fromMac=%s, port=%d: %s", adhocMatchingEventMessage.getDataLength(), event, macAddress, socket.getReceivedPort(), adhocMatchingEventMessage));
+						if (log.isTraceEnabled() && optLen > 0) {
+							log.trace(String.format("Message data: %s", Utilities.getMemoryDump(optData, optLen)));
+						}
 					}
-					adhocMatchingEventMessage = createMessage(PSP_ADHOC_MATCHING_EVENT_COMPLETE, optData, optLen, macAddress.macAddress);
-					send(adhocMatchingEventMessage);
 
-					pendingComplete = true;
-					connected = true;
-					inConnection = false;
-				} else if (event == PSP_ADHOC_MATCHING_EVENT_COMPLETE) {
-					addMember(adhocMatchingEventMessage.getFromMacAddress());
-					if (!pendingComplete) {
+					// Keep track that we received a new message from this MAC address
+					Modules.sceNetAdhocctlModule.hleNetAdhocctlPeerUpdateTimestamp(adhocMatchingEventMessage.getFromMacAddress());
+
+					if (event == PSP_ADHOC_MATCHING_EVENT_JOIN) {
+						pendingJoinRequest = adhocMatchingEventMessage.getFromMacAddress();
+						inConnection = true;
+					}
+					adhocMatchingEventMessage.processOnReceive(macAddr, optData, optLen);
+
+					if (event == PSP_ADHOC_MATCHING_EVENT_ACCEPT) {
+						addMember(adhocMatchingEventMessage.getFromMacAddress());
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("Sending complete to port %d", getPort()));
 						}
 						adhocMatchingEventMessage = createMessage(PSP_ADHOC_MATCHING_EVENT_COMPLETE, optData, optLen, macAddress.macAddress);
 						send(adhocMatchingEventMessage);
-					}
-					connected = true;
-					inConnection = false;
-				} else if (event == PSP_ADHOC_MATCHING_EVENT_DATA) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Sending data confirm to port %d", getPort()));
-					}
-					adhocMatchingEventMessage = createMessage(PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM, 0, 0, macAddress.macAddress);
-					send(adhocMatchingEventMessage);
-				} else if (event == PSP_ADHOC_MATCHING_EVENT_DISCONNECT || event == PSP_ADHOC_MATCHING_EVENT_LEFT) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Received disconnect/leave from %s", macAddress));
-					}
-					removeMember(adhocMatchingEventMessage.getFromMacAddress());
-					if (members.size() <= 1) {
-						connected = false;
+
+						pendingComplete = true;
+						connected = true;
 						inConnection = false;
+					} else if (event == PSP_ADHOC_MATCHING_EVENT_COMPLETE) {
+						addMember(adhocMatchingEventMessage.getFromMacAddress());
+						if (!pendingComplete) {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Sending complete to port %d", getPort()));
+							}
+							adhocMatchingEventMessage = createMessage(PSP_ADHOC_MATCHING_EVENT_COMPLETE, optData, optLen, macAddress.macAddress);
+							send(adhocMatchingEventMessage);
+						}
+						connected = true;
+						inConnection = false;
+					} else if (event == PSP_ADHOC_MATCHING_EVENT_DATA) {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Sending data confirm to port %d", getPort()));
+						}
+						adhocMatchingEventMessage = createMessage(PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM, 0, 0, macAddress.macAddress);
+						send(adhocMatchingEventMessage);
+					} else if (event == PSP_ADHOC_MATCHING_EVENT_DISCONNECT || event == PSP_ADHOC_MATCHING_EVENT_LEFT) {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Received disconnect/leave from %s", macAddress));
+						}
+						removeMember(adhocMatchingEventMessage.getFromMacAddress());
+						if (members.size() <= 1) {
+							connected = false;
+							inConnection = false;
+						}
 					}
-				}
-			} else {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Received message not for me: %s", adhocMatchingEventMessage));
+				} else {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Received message not for me: %s", adhocMatchingEventMessage));
+					}
 				}
 			}
 		} catch (SocketTimeoutException e) {
