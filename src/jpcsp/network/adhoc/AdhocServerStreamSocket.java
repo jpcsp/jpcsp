@@ -62,7 +62,7 @@ public class AdhocServerStreamSocket extends AdhocSocket {
 
 	@Override
 	public int receive(byte[] buffer, int size) throws IOException {
-		log.error(String.format("Receive not supported on ServerSocket"));
+		log.debug(String.format("Receive not supported on ServerSocket"));
 		return -1;
 	}
 

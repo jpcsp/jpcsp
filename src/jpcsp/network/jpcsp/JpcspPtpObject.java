@@ -98,11 +98,13 @@ public class JpcspPtpObject extends PtpObject {
 			if (adhocPtpMessage == null) {
 				byte[] bytes = new byte[getBufSize() + MAX_HEADER_SIZE];
 				int length = socket.receive(bytes, bytes.length);
-				adhocPtpMessage = new JpcspAdhocPtpMessage(bytes, length);
-				adhocPtpMessagePort = socket.getReceivedPort();
+				if (length > 0) {
+					adhocPtpMessage = new JpcspAdhocPtpMessage(bytes, length);
+					adhocPtpMessagePort = socket.getReceivedPort();
 
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("pollAccept: received message %s", adhocPtpMessage));
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("pollAccept: received message %s", adhocPtpMessage));
+					}
 				}
 			} else {
 				if (log.isDebugEnabled()) {
@@ -110,7 +112,7 @@ public class JpcspPtpObject extends PtpObject {
 				}
 			}
 
-			if (adhocPtpMessage.isForMe()) {
+			if (adhocPtpMessage != null && adhocPtpMessage.isForMe()) {
 				switch (adhocPtpMessage.getType()) {
 					case PTP_MESSAGE_TYPE_CONNECT:
 						int acceptedId = adhocPtpMessage.getDataInt32();
@@ -187,9 +189,11 @@ public class JpcspPtpObject extends PtpObject {
 			if (adhocPtpMessage == null) {
 				byte[] bytes = new byte[getBufSize() + MAX_HEADER_SIZE];
 				int length = socket.receive(bytes, bytes.length);
-				adhocPtpMessage = new JpcspAdhocPtpMessage(bytes, length);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("pollConnect: received message %s", adhocPtpMessage));
+				if (length > 0) {
+					adhocPtpMessage = new JpcspAdhocPtpMessage(bytes, length);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("pollConnect: received message %s", adhocPtpMessage));
+					}
 				}
 			} else {
 				if (log.isDebugEnabled()) {
@@ -197,7 +201,7 @@ public class JpcspPtpObject extends PtpObject {
 				}
 			}
 
-			if (adhocPtpMessage.isForMe()) {
+			if (adhocPtpMessage != null && adhocPtpMessage.isForMe()) {
 				switch (adhocPtpMessage.getType()) {
 					case PTP_MESSAGE_TYPE_CONNECT_CONFIRM:
 						// Connect successfully completed, retrieve the new destination port
