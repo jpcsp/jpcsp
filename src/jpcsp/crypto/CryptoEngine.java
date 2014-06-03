@@ -19,7 +19,6 @@ package jpcsp.crypto;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
 
-@SuppressWarnings("unused")
 public class CryptoEngine {
 
     private static final String name = "CryptEngine";
