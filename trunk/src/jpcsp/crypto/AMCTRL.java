@@ -415,6 +415,10 @@ public class AMCTRL {
     }
 
     public int hleDrmBBCipherInit(BBCipher_Ctx ctx, int encMode, int genMode, byte[] data, byte[] key) {
+    	return hleDrmBBCipherInit(ctx, encMode, genMode, data, key, 0);
+    }
+
+    public int hleDrmBBCipherInit(BBCipher_Ctx ctx, int encMode, int genMode, byte[] data, byte[] key, int seed) {
         // If the key is not a 16-byte key, return an error.
         if (key.length < 0x10) {
             return -1;
@@ -422,7 +426,7 @@ public class AMCTRL {
 
         // Set the mode and the unknown parameters.
         ctx.mode = encMode;
-        ctx.seed = 0x1;
+        ctx.seed = seed + 0x1;
 
         // Key generator mode 0x1 (encryption): use an encrypted pseudo random number before XORing the data with the given key.
         if (genMode == 0x1) {
@@ -451,7 +455,6 @@ public class AMCTRL {
                 if (!isNullKey(key)) {
                     ctx.buf = xorKey(ctx.buf, 0, key, 0, 0x10);
                 }
-                return 0;
             } else { // Encryption mode 0x1: XOR with AMCTRL keys, encrypt with KIRK CMD4 and XOR with the given key.
                 header = xorHash(header, 0x14, KeyVault.amHashKey4, 0, 0x10);
                 ScrambleBB(header, 0x10, 0x39, 0x4, 0x04);
@@ -462,7 +465,6 @@ public class AMCTRL {
                 if (!isNullKey(key)) {
                     ctx.buf = xorKey(ctx.buf, 0, key, 0, 0x10);
                 }
-                return 0;
             }
         } else if (genMode == 0x2) { // Key generator mode 0x02 (decryption): directly XOR the data with the given key.
             // Grab the data hash (first 16-bytes).
@@ -471,11 +473,12 @@ public class AMCTRL {
             if (!isNullKey(key)) {
                 ctx.buf = xorKey(ctx.buf, 0, key, 0, 0x10);
             }
-            return 0;
         } else {
             // Invalid mode.
             return -1;
         }
+
+        return 0;
     }
 
     public int hleDrmBBCipherUpdate(BBCipher_Ctx ctx, byte[] data, int length) {
@@ -529,15 +532,16 @@ public class AMCTRL {
         byte[] macKey = new byte[0x10];
         byte[] finalKey = new byte[0x10];
 
+        int mode = ctx.mode; // This will be reset to 0 by hleDrmBBMacFinal
         hleDrmBBMacFinal(ctx, macKey, null);
 
-        if ((ctx.mode & 0x3) == 0x3) {
+        if ((mode & 0x3) == 0x3) {
             decKey = DecryptBBMacKey(bbmac, 0x63);
         } else {
             System.arraycopy(bbmac, 0, decKey, 0, 0x10);
         }
 
-        int seed = getModeSeed(ctx.mode);
+        int seed = getModeSeed(mode);
         finalKey = DecryptBBMacKey(decKey, seed);
 
         key = xorKey(macKey, 0, finalKey, 0, 0x10);
