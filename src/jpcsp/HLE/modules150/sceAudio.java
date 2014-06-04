@@ -410,7 +410,7 @@ public class sceAudio extends HLEModule {
     public int checkChannelCount(int channelCount) {
     	if (channelCount != 2) {
     		if (channelCount == 4) {
-    			throw new SceKernelErrorException(SceKernelErrors.ERROR_UNSUPPORTED);
+    			throw new SceKernelErrorException(SceKernelErrors.ERROR_NOT_IMPLEMENTED);
     		}
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_SIZE);
     	}
