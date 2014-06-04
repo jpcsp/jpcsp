@@ -27,6 +27,7 @@ import java.util.List;
 
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.network.proonline.PacketFactory.SceNetAdhocctlConnectPacketS2C;
+import jpcsp.network.proonline.PacketFactory.SceNetAdhocctlDisconnectPacketS2C;
 import jpcsp.network.proonline.PacketFactory.SceNetAdhocctlPacketBaseC2S;
 import jpcsp.network.proonline.PacketFactory.SceNetAdhocctlPacketBaseS2C;
 import jpcsp.util.Utilities;
@@ -321,6 +322,15 @@ public class ProOnlineServer {
 		if (user.group != null) {
 			Group group = user.group;
 			group.players.remove(user);
+
+			for (User groupUser : group.players) {
+				SceNetAdhocctlDisconnectPacketS2C packet = new SceNetAdhocctlDisconnectPacketS2C(user.ip);
+				try {
+					sendToUser(groupUser, packet);
+				} catch (IOException e) {
+					log.debug("disconnectUser", e);
+				}
+			}
 
 			log.info(String.format("%s left %s group %s.", user, user.game.name, group.name));
 

@@ -520,12 +520,18 @@ public class PacketFactory {
 		}
 	}
 
-	private static class SceNetAdhocctlDisconnectPacketS2C extends SceNetAdhocctlPacketBaseS2C {
+	protected static class SceNetAdhocctlDisconnectPacketS2C extends SceNetAdhocctlPacketBaseS2C {
 		private int ip;
 
 		public SceNetAdhocctlDisconnectPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
 			super(proOnline);
 			init(bytes, length);
+		}
+
+		public SceNetAdhocctlDisconnectPacketS2C(int ip) {
+			super(null);
+			opcode = OPCODE_DISCONNECT;
+			this.ip = ip;
 		}
 
 		@Override
@@ -534,6 +540,12 @@ public class PacketFactory {
 			if (length >= getLength()) {
 				ip = copyInt32FromBytes(bytes);
 			}
+		}
+
+		@Override
+		protected void getBytes(byte[] bytes) {
+			super.getBytes(bytes);
+			copyInt32ToBytes(bytes, ip);
 		}
 
 		@Override
