@@ -1483,6 +1483,33 @@ public class sceMpeg extends HLEModule {
         startedMpeg = false;
     }
 
+    private int getMediaEnginePacketsConsumed() {
+    	int packetsConsumed = mediaChannel.getReadLength() / mpegRingbuffer.getPacketSize();
+
+    	// For very small videos (e.g. intro video < 15 seconds),
+    	// do not consume too fast the ring buffer
+    	if (mpegLastTimestamp > 0 && mpegLastTimestamp < 15 * mpegTimestampPerSecond) {
+    		packetsConsumed = Math.min(1, packetsConsumed);
+    	}
+
+    	// The MediaEngine is already consuming all the remaining
+    	// packets when approaching the end of the video. The PSP
+    	// is only consuming the last packet when reaching the end,
+    	// not before.
+    	// Consuming all the remaining packets?
+    	if (mpegRingbuffer.getFreePackets() + packetsConsumed >= mpegRingbuffer.getTotalPackets()) {
+    		// Having not yet reached the last timestamp?
+    		if (mpegLastTimestamp > 0 && mpegAvcAu.pts < mpegLastTimestamp) {
+    			// Do not yet consume all the remaining packets, leave 2 packets
+    			packetsConsumed = mpegRingbuffer.getTotalPackets() - mpegRingbuffer.getFreePackets() - 2;
+    		}
+    	}
+
+    	mediaChannel.setReadLength(mediaChannel.getReadLength() - packetsConsumed * mpegRingbuffer.getPacketSize());
+
+    	return packetsConsumed;
+    }
+
     /**
      * sceMpegQueryStreamOffset
      * 
@@ -2158,26 +2185,9 @@ public class sceMpeg extends HLEModule {
         }
 
         if (checkMediaEngineState()) {
-        	// Suspend the emulator clock to perform time consuming HLE operation,
-        	// in order to improve the timing compatibility with the PSP.
             if (me.stepVideo(mpegAudioChannels)) {
             	me.writeVideoImage(buffer, frameWidth, videoPixelMode);
-            	packetsConsumed = mediaChannel.getReadLength() / mpegRingbuffer.getPacketSize();
-
-            	// The MediaEngine is already consuming all the remaining
-            	// packets when approaching the end of the video. The PSP
-            	// is only consuming the last packet when reaching the end,
-            	// not before.
-            	// Consuming all the remaining packets?
-            	if (mpegRingbuffer.getFreePackets() + packetsConsumed >= mpegRingbuffer.getTotalPackets()) {
-            		// Having not yet reached the last timestamp?
-            		if (mpegLastTimestamp > 0 && mpegAvcAu.pts < mpegLastTimestamp) {
-            			// Do not yet consume all the remaining packets, leave 2 packets
-            			packetsConsumed = mpegRingbuffer.getTotalPackets() - mpegRingbuffer.getFreePackets() - 2;
-            		}
-            	}
-
-            	mediaChannel.setReadLength(mediaChannel.getReadLength() - packetsConsumed * mpegRingbuffer.getPacketSize());
+            	packetsConsumed = getMediaEnginePacketsConsumed();
             } else {
             	// Consume all the remaining packets
             	packetsConsumed = mpegRingbuffer.getTotalPackets() - mpegRingbuffer.getFreePackets();
@@ -2430,22 +2440,7 @@ public class sceMpeg extends HLEModule {
         if (checkMediaEngineState()) {
             avcFrameStatus = 1;
             if (me.stepVideo(mpegAudioChannels)) {
-    			packetsConsumed = mediaChannel.getReadLength() / mpegRingbuffer.getPacketSize();
-
-            	// The MediaEngine is already consuming all the remaining
-            	// packets when approaching the end of the video. The PSP
-            	// is only consuming the last packet when reaching the end,
-            	// not before.
-            	// Consuming all the remaining packets?
-            	if (mpegRingbuffer.getFreePackets() + packetsConsumed >= mpegRingbuffer.getTotalPackets()) {
-            		// Having not yet reached the last timestamp?
-            		if (mpegLastTimestamp > 0 && mpegAvcAu.pts < mpegLastTimestamp) {
-            			// Do not yet consume all the remaining packets, leave 2 packets
-            			packetsConsumed = mpegRingbuffer.getTotalPackets() - mpegRingbuffer.getFreePackets() - 2;
-            		}
-            	}
-
-        		mediaChannel.setReadLength(mediaChannel.getReadLength() - packetsConsumed * mpegRingbuffer.getPacketSize());
+    			packetsConsumed = getMediaEnginePacketsConsumed();
             } else {
             	// Consume all the remaining packets
             	packetsConsumed = mpegRingbuffer.getPacketsInRingbuffer();
