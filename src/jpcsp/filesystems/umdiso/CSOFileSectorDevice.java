@@ -25,7 +25,7 @@ import java.util.Arrays;
 
 import org.bolet.jgz.Inflater;
 
-public class CSOFileSectorDevice extends ISOFileSectorDevice {
+public class CSOFileSectorDevice extends AbstractFileSectorDevice {
 	protected int offsetShift;
 	protected int numSectors;
 	protected long[] sectorOffsets;
@@ -100,24 +100,5 @@ public class CSOFileSectorDevice extends ISOFileSectorDevice {
 		        }
 	        }
         }
-	}
-
-	@Override
-	public int readSectors(int sectorNumber, int numberSectors, byte[] buffer, int offset) throws IOException {
-        for (int i = 0; i < numberSectors; i++) {
-        	readSector(sectorNumber + i, buffer, offset + i * sectorLength);
-        }
-
-        return numberSectors;
-	}
-
-	@Override
-	public void writeSector(int sectorNumber, byte[] buffer, int offset) throws IOException {
-		throw new IOException("CSO is read-only");
-	}
-
-	@Override
-	public void writeSectors(int sectorNumber, int numberSectors, byte[] buffer, int offset) throws IOException {
-		throw new IOException("CSO is read-only");
 	}
 }

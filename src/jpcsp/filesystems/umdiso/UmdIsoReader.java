@@ -55,6 +55,8 @@ public class UmdIsoReader {
 
         if (header[0] == 'C' && header[1] == 'I' && header[2] == 'S' && header[3] == 'O') {
             sectorDevice = new CSOFileSectorDevice(fileReader, header);
+        } else if (header[0] == 0 && header[1] == 'P' && header[2] == 'B' && header[3] == 'P') {
+        	sectorDevice = new PBPFileSectorDevice(fileReader);
         } else {
             sectorDevice = new ISOFileSectorDevice(fileReader);
         }
@@ -305,7 +307,7 @@ public class UmdIsoReader {
     public String[] listDirectory(String filePath) throws IOException, FileNotFoundException {
         Iso9660Directory dir = null;
 
-        if (filePath.compareTo("") == 0) {
+        if (filePath.length() == 0) {
             dir = new Iso9660Handler(this);
         } else {
             Iso9660File info = getFileEntry(filePath);
@@ -322,7 +324,7 @@ public class UmdIsoReader {
     }
 
     public int getFileProperties(String filePath) throws IOException, FileNotFoundException {
-        if (filePath.compareTo("") == 0) {
+        if (filePath.length() == 0) {
             return 2;
         }
 

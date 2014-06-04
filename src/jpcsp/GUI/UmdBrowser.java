@@ -334,6 +334,8 @@ public class UmdBrowser extends javax.swing.JDialog {
         }
         
         try {
+        	boolean cacheEntry = true;
+        	String entryName = programs[rowIndex].getName();
             if (programs[rowIndex].isDirectory()) {
                 File eboot[] = programs[rowIndex].listFiles(new FileFilter() {
                     @Override
@@ -341,11 +343,16 @@ public class UmdBrowser extends javax.swing.JDialog {
                         return arg0.getName().equalsIgnoreCase("eboot.pbp");
                     }
                 });
-                programs[rowIndex] = eboot[0];
+
+                if (eboot.length > 0) {
+                	programs[rowIndex] = eboot[0];
+                } else {
+                	cacheEntry = false;
+                }
             }
             
-            if (!programs[rowIndex].isDirectory()) {
-                String cacheDirectory = getUmdBrowseCacheDirectory(programs[rowIndex].getName());
+            if (cacheEntry) {
+                String cacheDirectory = getUmdBrowseCacheDirectory(entryName);
                 File sfoFile = new File(cacheDirectory + "param.sfo");
                 if (sfoFile.canRead()) {
                     // Read the param.sfo and ICON0.PNG from the UmdBrowserCache
