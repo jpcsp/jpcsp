@@ -57,10 +57,23 @@ public class SceKernelErrors {
      *      -> E.g.: 0x80110001 - Error -> Utility -> Some unknown error.
      */
 
-	public static final int ERROR_UNSUPPORTED                                   = 0x80000003;
+	public static final int ERROR_NOT_INITIALIZED                               = 0x80000001;
+	public static final int ERROR_UNMATCHED_VERSION                             = 0x80000002;
+	public static final int ERROR_NOT_IMPLEMENTED                               = 0x80000003;
+	public static final int ERROR_NOT_SUPPORTED                                 = 0x80000004;
     public static final int ERROR_ALREADY                                       = 0x80000020;
     public static final int ERROR_BUSY                                          = 0x80000021;
     public static final int ERROR_OUT_OF_MEMORY                                 = 0x80000022;
+    public static final int ERROR_PRIV_REQUIRED                                 = 0x80000023;
+    public static final int ERROR_TIMEOUT                                       = 0x80000024;
+    public static final int ERROR_NOT_FOUND                                     = 0x80000025;
+    public static final int ERROR_ILLEGAL_CONTEXT                               = 0x80000030;
+    public static final int ERROR_CPUDI                                         = 0x80000031;
+    public static final int ERROR_THREAD                                        = 0x80000040;
+    public static final int ERROR_SEMAPHORE                                     = 0x80000041;
+    public static final int ERROR_EVENTFLAG                                     = 0x80000042;
+    public static final int ERROR_TIMER                                         = 0x80000043;
+    public static final int ERROR_ALARM                                         = 0x80000044;
 
     public static final int ERROR_INVALID_ID                                    = 0x80000100;
     public static final int ERROR_INVALID_NAME                                  = 0x80000101;
@@ -74,8 +87,14 @@ public class SceKernelErrors {
     public static final int ERROR_INVALID_VALUE                                 = 0x800001FE;
     public static final int ERROR_INVALID_ARGUMENT                              = 0x800001FF;
 
+    public static final int ERROR_NOENT                                         = 0x80000202;
     public static final int ERROR_BAD_FILE                                      = 0x80000209;
     public static final int ERROR_ACCESS_ERROR                                  = 0x8000020D;
+    public static final int ERROR_EXIST                                         = 0x80000211;
+    public static final int ERROR_INVAL                                         = 0x80000216;
+    public static final int ERROR_MFILE                                         = 0x80000218;
+    public static final int ERROR_NOSPC                                         = 0x8000021C;
+    public static final int ERROR_DFUNC                                         = 0x800002FF;
 
     public final static int ERROR_ERRNO_OPERATION_NOT_PERMITTED                 = 0x80010001;
     public final static int ERROR_ERRNO_FILE_NOT_FOUND                          = 0x80010002;
@@ -382,6 +401,8 @@ public class SceKernelErrors {
 
     public final static int ERROR_NET_BUFFER_TOO_SMALL                          = 0x80400706;
 
+    public final static int ERROR_NET_NO_SPACE                                  = 0x80410001;
+
     public final static int ERROR_NET_RESOLVER_BAD_ID                           = 0x80410408;
     public final static int ERROR_NET_RESOLVER_ALREADY_STOPPED                  = 0x8041040a;
     public final static int ERROR_NET_RESOLVER_INVALID_HOST                     = 0x80410414;
@@ -507,17 +528,24 @@ public class SceKernelErrors {
     public final static int ERROR_AVC_NO_IMAGE_AVAILABLE                        = 0x806201FE;
     public final static int ERROR_AVC_VIDEO_FATAL                               = 0x80628002;
 
+    public final static int ERROR_ATRAC_PARAM_FAIL                              = 0x80630001;
+    public final static int ERROR_ATRAC_API_FAIL                                = 0x80630002;
     public final static int ERROR_ATRAC_NO_ID                                   = 0x80630003;
     public final static int ERROR_ATRAC_INVALID_CODEC                           = 0x80630004;
     public final static int ERROR_ATRAC_BAD_ID                                  = 0x80630005;
     public final static int ERROR_ATRAC_UNKNOWN_FORMAT                          = 0x80630006;
     public final static int ERROR_ATRAC_WRONG_CODEC                             = 0x80630007;
+    public final static int ERROR_ATRAC_BAD_DATA                                = 0x80630008;
     public final static int ERROR_ATRAC_ALL_DATA_LOADED                         = 0x80630009;
     public final static int ERROR_ATRAC_NO_DATA                                 = 0x80630010;
     public final static int ERROR_ATRAC_INVALID_SIZE                            = 0x80630011;
     public final static int ERROR_ATRAC_SECOND_BUFFER_NEEDED                    = 0x80630012;
     public final static int ERROR_ATRAC_INCORRECT_READ_SIZE                     = 0x80630013;
+    public final static int ERROR_ATRAC_NOT_4BYTE_ALIGNMENT                     = 0x80630014;
     public final static int ERROR_ATRAC_BAD_SAMPLE                              = 0x80630015;
+    public final static int ERROR_ATRAC_WRITEBYTE_FIRST_BUFFER                  = 0x80630016;
+    public final static int ERROR_ATRAC_WRITEBYTE_SECOND_BUFFER                 = 0x80630017;
+    public final static int ERROR_ATRAC_ADD_DATA_IS_TOO_BIG                     = 0x80630018;
     public final static int ERROR_ATRAC_NO_LOOP_INFORMATION                     = 0x80630021;
     public final static int ERROR_ATRAC_SECOND_BUFFER_NOT_NEEDED                = 0x80630022;
     public final static int ERROR_ATRAC_BUFFER_IS_EMPTY                         = 0x80630023;
