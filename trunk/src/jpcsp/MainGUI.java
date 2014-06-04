@@ -1945,11 +1945,14 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             log.info("UMD param.sfo :\n" + psf);
             String title = psf.getPrintableString("TITLE");
             String discId = psf.getString("DISC_ID");
+            String titleFormat = "%s - %s";
             if (discId == null) {
                 discId = State.DISCID_UNKNOWN_UMD;
+            } else {
+            	titleFormat += " [%s]";
             }
+            setTitle(String.format(titleFormat, MetaInformation.FULL_NAME, title, discId));
 
-            setTitle(MetaInformation.FULL_NAME + " - " + title);
             addRecentUMD(file, title);
 
             if (psf.isLikelyHomebrew()) {

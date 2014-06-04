@@ -36,7 +36,6 @@ import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.network.INetworkAdapter;
-import jpcsp.settings.Settings;
 
 import org.apache.log4j.Logger;
 
@@ -53,11 +52,12 @@ public class ChatGUI extends JFrame {
     private JLabel chatMessagesLabel;
     private JTextField chatMessage;
     private JButton sendButton;
+    private JLabel adhocIDLabel;
+    private JLabel groupNameLabel;
     private JLabel membersLabel;
     private JLabel membersList;
     private List<String> chatMessages = new LinkedList<String>();
     private List<String> members = new LinkedList<String>();
-    private static final String settingsName = "chat";
     private static final String chatMessageHeader = "<html>";
     private static final String chatMessageFooter = "</html>";
     private static final String membersHeader = "<html>";
@@ -91,6 +91,8 @@ public class ChatGUI extends JFrame {
         chatMessagesLabel = new JLabel();
         chatMessage = new JTextField();
         sendButton = new JButton();
+        adhocIDLabel = new JLabel();
+        groupNameLabel = new JLabel();
         membersLabel = new JLabel();
         membersList = new JLabel();
 
@@ -113,8 +115,10 @@ public class ChatGUI extends JFrame {
 
         scrollPane.setViewportView(chatMessagesLabel);
 
+        adhocIDLabel.setText(getAdhocID());
+        groupNameLabel.setText(getGroupName());
         membersLabel.setText("Members:");
-
+        
         membersList.setPreferredSize(new Dimension(100, chatMessagesLabel.getPreferredSize().height));
 
         chatMessage.setEditable(true);
@@ -140,7 +144,11 @@ public class ChatGUI extends JFrame {
                 .addGroup(layout.createSequentialGroup()
                 .addComponent(scrollPane)
                 .addGroup(layout.createParallelGroup()
-                .addComponent(membersLabel)
+                .addGroup(layout.createParallelGroup()
+                .addComponent(adhocIDLabel))
+                .addGroup(layout.createParallelGroup()
+                .addComponent(groupNameLabel))                           
+                .addComponent(membersLabel)                    
                 .addComponent(membersList)))
                 .addGroup(layout.createSequentialGroup()
                 .addComponent(chatMessage)
@@ -149,7 +157,11 @@ public class ChatGUI extends JFrame {
                 .addGroup(layout.createParallelGroup()
                 .addComponent(scrollPane)
                 .addGroup(layout.createSequentialGroup()
-                .addComponent(membersLabel)
+                .addGroup(layout.createParallelGroup()
+                .addComponent(adhocIDLabel))
+                .addGroup(layout.createParallelGroup()
+                .addComponent(groupNameLabel))                           
+                .addComponent(membersLabel)                         
                 .addComponent(membersList)))
                 .addGroup(layout.createParallelGroup()
                 .addComponent(chatMessage)
@@ -268,5 +280,11 @@ public class ChatGUI extends JFrame {
 
     private static String getMyNickName() {
         return sceUtility.getSystemParamNickname();
+    }
+    private static String getAdhocID(){
+        return Modules.sceNetAdhocctlModule.hleNetAdhocctlGetAdhocID();
+    }
+    private static String getGroupName(){
+        return Modules.sceNetAdhocctlModule.hleNetAdhocctlGetGroupName();
     }
 }
