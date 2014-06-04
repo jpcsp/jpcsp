@@ -25,6 +25,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.ByteArrayVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.PartialVirtualFile;
+import jpcsp.HLE.VFS.filters.VirtualFileFilterManager;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceMpeg;
@@ -157,7 +158,8 @@ public class FileLocator {
         		} else {
         			return null;
         		}
-			} catch (IOException e) {
+        		VirtualFileFilterManager.getInstance().filter(fileData, 0, fileData.length);
+    		} catch (IOException e) {
 				return null;
 			}
 
@@ -315,6 +317,7 @@ public class FileLocator {
 				if (readInfo.position + positionOffset != 0 || vFile.length() != fileSize) {
 					vFile = new PartialVirtualFile(vFile, readInfo.position + positionOffset, fileSize);
 				}
+				vFile = VirtualFileFilterManager.getInstance().getFilteredVirtualFile(vFile);
 				return vFile;
 			}
 			if (readInfo.dataInput != null) {
@@ -339,6 +342,7 @@ public class FileLocator {
 					if (readInfo.position + positionOffset != 0 || vFile.length() != fileSize) {
 						vFile = new PartialVirtualFile(vFile, readInfo.position + positionOffset, fileSize);
 					}
+					vFile = VirtualFileFilterManager.getInstance().getFilteredVirtualFile(vFile);
 					return vFile;
 				}
 			}
@@ -354,7 +358,10 @@ public class FileLocator {
 				return null;
 			}
 
-			return new ByteArrayVirtualFile(fileData, 0, fileData.length);
+			IVirtualFile vFile = new ByteArrayVirtualFile(fileData, 0, fileData.length);
+			vFile = VirtualFileFilterManager.getInstance().getFilteredVirtualFile(vFile);
+
+			return vFile;
     	}
 
     	public void setFileData(SeekableDataInput dataInput, IVirtualFile vFile, int address, long startPosition, int length) {
