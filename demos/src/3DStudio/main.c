@@ -475,7 +475,7 @@ char *testFuncNames[] = { "GU_NEVER", "GU_ALWAYS", "GU_EQUAL", "GU_NOTEQUAL", "G
 int alphaReference = 0;
 
 int blendOp = 0;
-char *blendOpNames[] = { "GU_ADD", "GU_SUBTRACT", "GU_REVERSE_SUBTRACT", "GU_MIN", "GU_MAX", "GU_ABS" };
+char *blendOpNames[] = { "GU_ADD", "GU_SUBTRACT", "GU_REVERSE_SUBTRACT", "GU_MIN", "GU_MAX", "GU_ABS", "GU_BLEND_UNK6", "GU_BLEND_UNK7" };
 
 int blendFuncSrc = 2;
 int blendFuncDst = 3;
@@ -1798,7 +1798,7 @@ void init()
 	addAttribute(", Reference", &alphaReference, NULL, x + 27, y, 0, 255, 0x10, "%02X");
 	y++;
 
-	addAttribute("sceGuBlendFunc op", &blendOp, NULL, x, y, 0, 5, 1, NULL);
+	addAttribute("sceGuBlendFunc op", &blendOp, NULL, x, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&blendOpNames[0]);
 	y++;
 	addAttribute("src", &blendFuncSrc, NULL, x + 15, y, 0, 15, 1, NULL);
