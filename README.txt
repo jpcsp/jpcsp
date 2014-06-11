@@ -75,6 +75,26 @@ Please keep in mind that JPCSP does not support or endorse piracy.
 ...............................................................................
 ...............................................................................
 
+JPCSP v0.8 (???):
+
+-> Added support for an external software rendering engine;
+
+-> Added network configuration settings;
+
+-> A ProOnline server is now built-in within Jpcsp.
+   It can be used to play in a local network;
+
+-> Added support for the loading of demo games (large encrypted EBOOT.PBP)
+
+-> Several improvements in networking support:
+   Compatibility of ProOnline network.
+   Auto-detection of port shifting for running 2 Jpcsp on the same computer;
+
+-> Added an experimental xBRZ plugin for improved 2D texture scaling
+
+
+
+
 JPCSP v0.7 (June 28, 2013):
 
 -> Added support for rendering in software mode, not using the GPU;
@@ -511,6 +531,43 @@ the OpenGL principles, but they also might decrease the performance if the game
 programmers did something completely different (which is also legitimate on a PSP).
 
 So, to the different options:
+- Use OpenGL Render (Default)
+    use OpenGL, i.e. your GPU, to perform the rendering. This is probably the fastest
+    renderer but not all PSP features are supported. Also, bugs in several graphic
+    card drivers have been reported (e.g. for AMD and Intel graphic cards) prevent
+    a proper rendering in some cases.
+- Use Internal Software Rendering:
+    this option enables the emulation of all the PSP graphics in software by the emulator.
+    The hardware of your graphics card is not used (well, it will just be used
+    at the very end of the rendering to show the rendered image).
+    The software rendering is much slower than the hardware-based rendering using
+    a modern graphics card (GPU). But it allows a much higher degree of compatibility
+    and avoids rendering problems related to buggy OpenGL drivers.
+    If you are using a Windows system, this option is probably obsolete and the better
+    choice is the external software rendering.
+- Use External Software Rendering:
+    after several months of development, a new rendering engine is now available for Jpcsp.
+    This new engine is implemented as an external library. It works on 32 and 64 bit versions
+    and supports SSE2, SSE3, SSE4.1, AVX or AVX2 instruction sets if they are supported
+    by your processor. A non-SSE version is also available.
+    Currently, only windows systems are supported.
+
+    The rendering is completely performed in software, i.e. without using the GPU or OpenGL.
+    It was developed with speed (using latest CPU features) and compatibility
+    (implementing all PSP features) in mind. The goal was to be free of the OpenGL limitations
+    and GPU driver bugs. It is still a work in progress but most PSP features are implemented
+    and further speed improvements are in preparation.
+
+    As this is a software renderer, the display speed is mainly based on the power of your CPU
+    and the complexity of the rendered scene. Screen scaling (e.g. x2, x3) is also supported
+    but will increase the rendering time.
+
+    This is a joined work between hlide and gid15. shadow also provided the automatic build
+    and hosting on EmuNewz.
+
+    The compiled libraries (DLLs) can be downloaded in the EmuNewz "Live Downloads" section:
+        http://www.emunewz.net/forum/builds.php?filter=last
+
 - Disable VBO:
     using OpenGL VBO (http://www.opengl.org/wiki/Vertex_Buffer_Object) should always
     bring a win. This option is probably useless.
@@ -589,13 +646,6 @@ So, to the different options:
     you might try this option if graphics are sometimes corrupted.
     This option has a negative impact on the performance (lower FPS), but
     provides higher compatibility.
-- Use Software Rendering:
-    this option enables the emulation of all the PSP graphics in software by the emulator.
-    The hardware of your graphics card is not used (well, it will just be used
-    at the very end of the rendering to show the rendered image).
-    The software rendering is much slower than the hardware-based rendering using
-    a modern graphics card (GPU). But it allows a much higher degree of compatibility
-    and avoids rendering problems related to buggy OpenGL drivers.
 
 
 8. PSP fonts
@@ -816,13 +866,12 @@ The average per GE list is probably the most relevant information.
 ...............................................................................
 JPCSP Team (active):
 - gid15
+- hlide
 - Hykem
-- Orphis
 - shadow
-- tempura.san
 
 Past members and contributors (inactive):
-- hlide
+- Orphis
 - fiveofhearts
 - gigaherz
 - mad
@@ -839,6 +888,7 @@ Past members and contributors (inactive):
 - theball
 - J_BYYX
 - soywiz
+- tempura.san
 
 Beta-testers:
 - BlackDaemon
@@ -867,6 +917,7 @@ Beta-testers:
 - montcer9012
 - nash67
 - sum2012
+- onelight
 ...and a lot more
 
 ...............................................................................
@@ -903,11 +954,15 @@ JPCSP's Google Code repository:
 JPCSP's Official Website:
 - http://www.jpcsp.org
 
-JPCSP's Official Forum (hosted at Emunewz.net):
+JPCSP's Official Forum (hosted at EmuNewz.net):
 - http://www.emunewz.net/forum/forumdisplay.php?fid=51
 
 Official recent SVN builds can be found at:
 - http://buildbot.orphis.net/jpcsp/
-or at the Emunews.net Live Downloads:
+or at the EmuNewz.net Live Downloads:
 - http://www.emunewz.net/forum/builds.php?filter=last
+
+JPCSP's external software renderer can be found at EmuNewz.net Live Downloads:
+- http://www.emunewz.net/forum/builds.php?filter=last
+
 ...............................................................................
