@@ -66,4 +66,9 @@ public class XorVirtualFileFilter extends AbstractProxyVirtualFile implements IV
 	public void setVirtualFile(IVirtualFile vFile) {
 		setProxyVirtualFile(vFile);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("XorVirtualFileFilter(xor=0x%02X, %s)", xor, vFile);
+	}
 }

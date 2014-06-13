@@ -721,13 +721,15 @@ public class SAVEDATA {
         }
 
         // Check for previous SAVEDATA_PARAMS.
-        for (int i = 0; i < params.length; i++) {
-            if (params[i] != 0) {
-                // Extract the mode setup from the already existing data.
-                mode = ((params[0] >> 4) & 0xF);
-                check_bit = ((params[0]) & 0xF);
-                break;
-            }
+        if (params != null) {
+	        for (int i = 0; i < params.length; i++) {
+	            if (params[i] != 0) {
+	                // Extract the mode setup from the already existing data.
+	                mode = ((params[0] >> 4) & 0xF);
+	                check_bit = ((params[0]) & 0xF);
+	                break;
+	            }
+	        }
         }
 
         // New mode (after firmware 2.7.1).
