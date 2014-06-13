@@ -20,21 +20,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
-import org.apache.log4j.Logger;
-
-import jpcsp.Emulator;
-
-public class ISOFileSectorDevice implements ISectorDevice {
-	protected static Logger log = Emulator.log;
-	protected RandomAccessFile fileAccess;
-
+public class ISOFileSectorDevice extends AbstractFileSectorDevice {
 	public ISOFileSectorDevice(RandomAccessFile fileAccess) {
-		this.fileAccess = fileAccess;
-	}
-
-	@Override
-	public int getNumSectors() throws IOException {
-		return (int) (fileAccess.length() / sectorLength);
+		super(fileAccess);
 	}
 
 	@Override
@@ -52,12 +40,6 @@ public class ISOFileSectorDevice implements ISectorDevice {
     	int length = fileAccess.read(buffer, offset, numberSectors * sectorLength);
 
     	return length / sectorLength;
-	}
-
-	@Override
-	public void close() throws IOException {
-		fileAccess.close();
-		fileAccess = null;
 	}
 
 	@Override
