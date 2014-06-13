@@ -16,17 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_ATRAC_STREAM;
-import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_AUDIO_STREAM;
-import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_AVC_STREAM;
-import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_DATA_STREAM;
-import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_PCM_STREAM;
 import static jpcsp.HLE.modules600.sceMpeg.AVC_ES_BUF_SIZE;
 import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PACK_START_CODE;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.endianSwap32;
-
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -62,8 +57,6 @@ import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
-import jpcsp.HLE.modules150.scePsmf.PSMFHeader;
-import jpcsp.HLE.modules150.scePsmf.PSMFStream;
 import jpcsp.connector.MpegCodec;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -128,13 +121,14 @@ public class sceMpeg extends HLEModule {
             meChannel = null;
             mediaChannel = null;
             meFile = null;
+            meFilePosition = -1;
+            me.setFirstTimestamp(videoFirstTimestamp);
         }
 
         encodedVideoFramesYCbCr = new HashMap<Integer, byte[]>();
         audioDecodeBuffer = new byte[MPEG_ATRAC_ES_OUTPUT_SIZE];
         allocatedEsBuffers = new boolean[2];
         streamMap = new HashMap<Integer, StreamInfo>();
-        psmfStreams = null;
 
         if (headerIoListener == null) {
         	headerIoListener = new MpegHeaderIoListener();
@@ -181,6 +175,13 @@ public class sceMpeg extends HLEModule {
     public static final int audioFirstTimestamp = 90000;    // The first MPEG audio AU has always this timestamp
     public static final int videoFirstTimestamp = 90000;
     public static final long UNKNOWN_TIMESTAMP = -1;
+    public static final int PSMF_AVC_STREAM = 0;
+    public static final int PSMF_ATRAC_STREAM = 1;
+    public static final int PSMF_PCM_STREAM = 2;
+    public static final int PSMF_DATA_STREAM = 3;
+    public static final int PSMF_AUDIO_STREAM = 15;
+    public static final int PSMF_VIDEO_STREAM_ID = 0xE0;
+    public static final int PSMF_AUDIO_STREAM_ID = 0xBD;
 
     // At least 2048 bytes of MPEG data is provided when analysing the MPEG header
     public static final int MPEG_HEADER_BUFFER_MINIMUM_SIZE = 2048;
@@ -189,8 +190,6 @@ public class sceMpeg extends HLEModule {
     protected int mpegHandle;
     protected SceMpegRingbuffer mpegRingbuffer;
     protected TPointer mpegRingbufferAddr;
-    protected int mpegStreamSize;
-    protected LinkedList<PSMFStream> psmfStreams;
     protected SceMpegAu mpegAtracAu;
     protected SceMpegAu mpegAvcAu;
     protected long lastAtracSystemTime;
@@ -199,15 +198,9 @@ public class sceMpeg extends HLEModule {
     protected int atracAuAddr;
     protected boolean endOfAudioReached;
     protected boolean endOfVideoReached;
-    protected long mpegLastTimestamp;
-    protected long mpegFirstTimestamp;
-    protected Date mpegFirstDate;
-    protected Date mpegLastDate;
     protected int videoFrameCount;
     protected int audioFrameCount;
     protected int videoPixelMode;
-    protected int avcDetailFrameWidth;
-    protected int avcDetailFrameHeight;
     protected int defaultFrameWidth;
     protected boolean isCurrentMpegAnalyzed;;
     protected byte[] completeMpegHeader;
@@ -230,11 +223,6 @@ public class sceMpeg extends HLEModule {
     public static final int MPEG_VERSION_0013 = 1;
     public static final int MPEG_VERSION_0014 = 2;
     public static final int MPEG_VERSION_0015 = 3;
-    protected int mpegVersion;
-    protected int mpegRawVersion;
-    protected int mpegMagic;
-    protected int mpegOffset;
-    protected int mpegStreamAddr;
     protected static final int MPEG_AU_MODE_DECODE = 0;
     protected static final int MPEG_AU_MODE_SKIP = 1;
     protected int registeredVideoChannel = -1;
@@ -248,6 +236,7 @@ public class sceMpeg extends HLEModule {
     protected MediaEngine me;
     protected PacketChannel meChannel;
     protected IVirtualFile meFile;
+    protected long meFilePosition;
     protected IMediaChannel mediaChannel;
     protected boolean startedMpeg;
     protected HashMap<Integer, byte[]> encodedVideoFramesYCbCr;
@@ -259,6 +248,443 @@ public class sceMpeg extends HLEModule {
     private boolean insideRingbufferPut;
     protected static final int mpegAudioChannels = 2;
     protected SysMemInfo avcEsBuf;
+    public PSMFHeader psmfHeader;
+
+    // Entry class for the PSMF streams.
+    public static class PSMFStream {
+        private int streamType = -1;
+        private int streamChannel = -1;
+        private int streamNumber;
+
+        public PSMFStream(int streamNumber) {
+        	this.streamNumber = streamNumber;
+        }
+
+        public int getStreamType() {
+            return streamType;
+        }
+
+        public int getStreamChannel() {
+            return streamChannel;
+        }
+
+		public int getStreamNumber() {
+			return streamNumber;
+		}
+
+		public boolean isStreamOfType(int type) {
+			if (streamType == type) {
+				return true;
+			}
+			if (type == PSMF_AUDIO_STREAM) {
+				// Atrac or PCM
+				return streamType == PSMF_ATRAC_STREAM || streamType == PSMF_PCM_STREAM;
+			}
+
+			return false;
+		}
+
+		public void readMPEGVideoStreamParams(Memory mem, int addr, byte[] mpegHeader, int offset, PSMFHeader psmfHeader) {
+            int streamID = read8(mem, addr, mpegHeader, offset);                // 0xE0
+            int privateStreamID = read8(mem, addr, mpegHeader, offset + 1);     // 0x00
+            int unk1 = read8(mem, addr, mpegHeader, offset + 2);                // Found values: 0x20/0x21 
+            int unk2 = read8(mem, addr, mpegHeader, offset + 3);                // Found values: 0x44/0xFB/0x75
+            int EPMapOffset = endianSwap32(sceMpeg.readUnaligned32(mem, addr, mpegHeader, offset + 4));
+            int EPMapEntriesNum = endianSwap32(sceMpeg.readUnaligned32(mem, addr, mpegHeader, offset + 8));
+            int videoWidth = read8(mem, addr, mpegHeader, offset + 12) * 0x10;  // PSMF video width (bytes per line).
+            int videoHeight = read8(mem, addr, mpegHeader, offset + 13) * 0x10; // PSMF video heigth (bytes per line).
+
+            if (log.isInfoEnabled()) {
+	            log.info(String.format("Found PSMF MPEG video stream data: streamID=0x%X, privateStreamID=0x%X, unk1=0x%X, unk2=0x%X, EPMapOffset=0x%x, EPMapEntriesNum=%d, videoWidth=%d, videoHeight=%d", streamID, privateStreamID, unk1, unk2, EPMapOffset, EPMapEntriesNum, videoWidth, videoHeight));
+            }
+
+            if (psmfHeader != null) {
+            	psmfHeader.EPMapOffset = EPMapOffset;
+            	psmfHeader.EPMapEntriesNum = EPMapEntriesNum;
+            	psmfHeader.avcDetailFrameWidth = videoWidth;
+            	psmfHeader.avcDetailFrameHeight = videoHeight;
+            }
+
+            streamType = PSMF_AVC_STREAM;
+            streamChannel = streamID & 0x0F;
+        }
+
+        public void readPrivateAudioStreamParams(Memory mem, int addr, byte[] mpegHeader, int offset, PSMFHeader psmfHeader) {
+            int streamID = read8(mem, addr, mpegHeader, offset);                  // 0xBD
+            int privateStreamID = read8(mem, addr, mpegHeader, offset + 1);       // 0x00
+            int unk1 = read8(mem, addr, mpegHeader, offset + 2);                  // Always 0x20
+            int unk2 = read8(mem, addr, mpegHeader, offset + 3);                  // Always 0x04
+            int audioChannelConfig = read8(mem, addr, mpegHeader, offset + 14);   // 1 - mono, 2 - stereo
+            int audioSampleFrequency = read8(mem, addr, mpegHeader, offset + 15); // 2 - 44khz
+
+            if (log.isInfoEnabled()) {
+	            log.info(String.format("Found PSMF MPEG audio stream data: streamID=0x%X, privateStreamID=0x%X, unk1=0x%X, unk2=0x%X, audioChannelConfig=%d, audioSampleFrequency=%d", streamID, privateStreamID, unk1, unk2, audioChannelConfig, audioSampleFrequency));
+            }
+
+            if (psmfHeader != null) {
+            	psmfHeader.audioChannelConfig = audioChannelConfig;
+            	psmfHeader.audioSampleFrequency = audioSampleFrequency;
+            }
+
+            streamType = ((privateStreamID & 0xF0) == 0 ? PSMF_ATRAC_STREAM : PSMF_PCM_STREAM);
+            streamChannel = privateStreamID & 0x0F;
+        }
+
+        public void readUserDataStreamParams(Memory mem, int addr, byte[] mpegHeader, int offset, PSMFHeader psmfHeader) {
+        	log.warn(String.format("Unknwon User Data stream format"));
+        	streamType = PSMF_DATA_STREAM;
+        }
+    }
+
+    // Entry class for the EPMap.
+    protected static class PSMFEntry {
+        private int EPIndex;
+        private int EPPicOffset;
+        private int EPPts;
+        private int EPOffset;
+        private int id;
+
+        public PSMFEntry(int id, int index, int picOffset, int pts, int offset) {
+        	this.id = id;
+            EPIndex = index;
+            EPPicOffset = picOffset;
+            EPPts = pts;
+            EPOffset = offset;
+        }
+
+        public int getEntryIndex() {
+            return EPIndex;
+        }
+
+        public int getEntryPicOffset() {
+            return EPPicOffset;
+        }
+
+        public int getEntryPTS() {
+            return EPPts;
+        }
+
+        public int getEntryOffset() {
+            return EPOffset * MPEG_AVC_ES_SIZE;
+        }
+
+        public int getId() {
+        	return id;
+        }
+
+		@Override
+		public String toString() {
+			return String.format("id=%d, index=0x%X, picOffset=0x%X, PTS=0x%X, offset=0x%X", getId(), getEntryIndex(), getEntryPicOffset(), getEntryPTS(), getEntryOffset());
+		}
+    }
+
+    protected static class PSMFHeader {
+        private static final int size = 2048;
+
+        // Header vars.
+        public int mpegMagic;
+        public int mpegRawVersion;
+        public int mpegVersion;
+        public int mpegOffset;
+        public int mpegStreamSize;
+        public int mpegFirstTimestamp;
+        public int mpegLastTimestamp;
+        public Date mpegFirstDate;
+        public Date mpegLastDate;
+        private int streamNum;
+        private int audioSampleFrequency;
+        private int audioChannelConfig;
+        private int avcDetailFrameWidth;
+        private int avcDetailFrameHeight;
+        private int EPMapEntriesNum;
+
+        // Offsets for the PSMF struct.
+        private int EPMapOffset;
+
+        // EPMap.
+        private List<PSMFEntry> EPMap;
+
+        // Stream map.
+        public List<PSMFStream> psmfStreams;
+        private int currentStreamNumber = -1;
+        private int currentVideoStreamNumber = -1;
+        private int currentAudioStreamNumber = -1;
+
+        public PSMFHeader(int bufferAddr, byte[] mpegHeader) {
+            Memory mem = Memory.getInstance();
+
+            int streamDataTotalSize = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, 0x50));
+            int unk = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, 0x60));
+            int streamDataNextBlockSize = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, 0x6A));      // General stream information block size.
+            int streamDataNextInnerBlockSize = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, 0x7C)); // Inner stream information block size.
+            streamNum = endianSwap16(read16(mem, bufferAddr, mpegHeader, PSMF_NUMBER_STREAMS));                  // Number of total registered streams.
+
+            mpegMagic = read32(mem, bufferAddr, mpegHeader, PSMF_MAGIC_OFFSET);
+            mpegRawVersion = read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_VERSION_OFFSET);
+            mpegVersion = getMpegVersion(mpegRawVersion);
+            mpegOffset = endianSwap32(read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_OFFSET_OFFSET));
+            mpegStreamSize = endianSwap32(read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_SIZE_OFFSET));
+            mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_FIRST_TIMESTAMP_OFFSET));
+            mpegLastTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_LAST_TIMESTAMP_OFFSET));
+            avcDetailFrameWidth = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_WIDTH_OFFSET) << 4;
+            avcDetailFrameHeight = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_HEIGHT_OFFSET) << 4;
+
+            mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
+            mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
+
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("PSMFHeader: version=0x%08X, streamDataTotalSize=%d, unk=0x%08X, streamDataNextBlockSize=%d, streamDataNextInnerBlockSize=%d, streamNum=%d", getVersion(), streamDataTotalSize, unk, streamDataNextBlockSize, streamDataNextInnerBlockSize, streamNum));
+            }
+
+            psmfStreams = readPsmfStreams(mem, bufferAddr, mpegHeader, this);
+
+            // PSP seems to default to stream 0.
+            if (psmfStreams.size() > 0) {
+            	setStreamNum(0);
+            }
+
+            // EPMap info:
+            // - Located at EPMapOffset (set by the AVC stream);
+            // - Each entry is composed by a total of 10 bytes:
+            //      - 1 byte: Reference picture index (RAPI);
+            //      - 1 byte: Reference picture offset from the current index;
+            //      - 4 bytes: PTS of the entry point;
+            //      - 4 bytes: Relative offset of the entry point in the MPEG data.
+            EPMap = new LinkedList<PSMFEntry>();
+            for (int i = 0; i < EPMapEntriesNum; i++) {
+                int index = read8(mem, bufferAddr, mpegHeader, EPMapOffset + i * 10);
+                int picOffset = read8(mem, bufferAddr, mpegHeader, EPMapOffset + 1 + i * 10);
+                int pts = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, EPMapOffset + 2 + i * 10));
+                int offset = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, EPMapOffset + 6 + i * 10));
+                PSMFEntry psmfEntry = new PSMFEntry(i, index, picOffset, pts, offset);
+                EPMap.add(psmfEntry);
+            }
+        }
+
+        public int getVersion() {
+            return mpegRawVersion;
+        }
+
+        public int getHeaderSize() {
+            return size;
+        }
+
+        public int getStreamOffset() {
+            return mpegOffset;
+        }
+
+        public int getStreamSize() {
+            return mpegStreamSize;
+        }
+
+        public int getPresentationStartTime() {
+            return (int) mpegFirstTimestamp;
+        }
+
+        public int getPresentationEndTime() {
+            return (int) mpegLastTimestamp;
+        }
+
+        public int getVideoWidth() {
+            return avcDetailFrameWidth;
+        }
+
+        public int getVideoHeigth() {
+            return avcDetailFrameHeight;
+        }
+
+        public int getAudioSampleFrequency() {
+            return audioSampleFrequency;
+        }
+
+        public int getAudioChannelConfig() {
+            return audioChannelConfig;
+        }
+
+        public int getEPMapOffset() {
+            return EPMapOffset;
+        }
+
+        public int getEPMapEntriesNum() {
+            return EPMapEntriesNum;
+        }
+
+        public boolean hasEPMap() {
+        	return getEPMapEntriesNum() > 0;
+        }
+
+        public PSMFEntry getEPMapEntry(int id) {
+        	if (id < 0 || id >= EPMap.size()) {
+        		return null;
+        	}
+            return EPMap.get(id);
+        }
+
+        public PSMFEntry getEPMapEntryWithTimestamp(int ts) {
+        	PSMFEntry foundEntry = null;
+            for (PSMFEntry entry : EPMap) {
+            	if (foundEntry == null || entry.getEntryPTS() <= ts) {
+            		foundEntry = entry;
+            	} else if (entry.getEntryPTS() > ts) {
+                    break;
+                }
+            }
+            return foundEntry;
+        }
+
+        public PSMFEntry getEPMapEntryWithOffset(int offset) {
+        	PSMFEntry foundEntry = null;
+            for (PSMFEntry entry : EPMap) {
+            	if (foundEntry == null || entry.getEntryOffset() <= offset) {
+            		foundEntry = entry;
+            	} else if (entry.getEntryOffset() > offset) {
+                    break;
+                }
+            }
+            return foundEntry;
+        }
+
+        public int getNumberOfStreams() {
+            return streamNum;
+        }
+
+        public int getCurrentStreamNumber() {
+            return currentStreamNumber;
+        }
+
+        public boolean isValidCurrentStreamNumber() {
+        	return getCurrentStreamNumber() >= 0;
+        }
+
+        public int getCurrentStreamType() {
+            if (currentStreamNumber >= 0 && currentStreamNumber < psmfStreams.size()) {
+                return psmfStreams.get(currentStreamNumber).getStreamType();
+            }
+            return -1;
+        }
+
+        public int getCurrentStreamChannel() {
+            if (currentStreamNumber >= 0 && currentStreamNumber < psmfStreams.size()) {
+                return psmfStreams.get(currentStreamNumber).getStreamChannel();
+            }
+            return -1;
+        }
+
+        public int getSpecificStreamNum(int type) {
+        	int num = 0;
+        	for (PSMFStream stream : psmfStreams) {
+        		if (stream.isStreamOfType(type)) {
+        			num++;
+        		}
+        	}
+
+        	return num;
+        }
+
+        private void setVideoStreamNum(int id, int channel) {
+        	if (currentVideoStreamNumber != id) {
+        		Modules.sceMpegModule.setRegisteredVideoChannel(channel);
+        		currentVideoStreamNumber = id;
+        	}
+        }
+
+        private void setAudioStreamNum(int id, int channel) {
+        	if (currentAudioStreamNumber != id) {
+        		Modules.sceMpegModule.setRegisteredAudioChannel(channel);
+        		currentAudioStreamNumber = id;
+        	}
+        }
+
+        public void setStreamNum(int id) {
+            currentStreamNumber = id;
+
+            if (isValidCurrentStreamNumber()) {
+	            int type = getCurrentStreamType();
+	            int channel = getCurrentStreamChannel();
+	            switch (type) {
+	            	case PSMF_AVC_STREAM:
+	            		setVideoStreamNum(id, channel);
+	            		break;
+	            	case PSMF_PCM_STREAM:
+	            	case PSMF_ATRAC_STREAM:
+	            		setAudioStreamNum(id, channel);
+	            		break;
+	            }
+            }
+        }
+
+        private int getStreamNumber(int type, int typeNum, int channel) {
+        	for (PSMFStream stream : psmfStreams) {
+        		if (stream.isStreamOfType(type)) {
+        			if (typeNum <= 0) {
+        				if (channel < 0 || stream.getStreamChannel() == channel) {
+        					return stream.getStreamNumber();
+        				}
+        			}
+    				typeNum--;
+        		}
+        	}
+
+        	return -1;
+        }
+
+        public boolean setStreamWithType(int type, int channel) {
+        	int streamNumber = getStreamNumber(type, 0, channel);
+        	if (streamNumber < 0) {
+        		return false;
+        	}
+        	setStreamNum(streamNumber);
+
+    		return true;
+        }
+
+        public boolean setStreamWithTypeNum(int type, int typeNum) {
+        	int streamNumber = getStreamNumber(type, typeNum, -1);
+        	if (streamNumber < 0) {
+        		return false;
+        	}
+        	setStreamNum(streamNumber);
+
+    		return true;
+        }
+    }
+
+    public static int getPsmfNumStreams(Memory mem, int addr, byte[] mpegHeader) {
+    	return endianSwap16(read16(mem, addr, mpegHeader, sceMpeg.PSMF_NUMBER_STREAMS));    	
+    }
+
+    public static LinkedList<PSMFStream> readPsmfStreams(Memory mem, int addr, byte[] mpegHeader, PSMFHeader psmfHeader) {
+    	int numStreams = getPsmfNumStreams(mem, addr, mpegHeader);
+
+    	// Stream area:
+        // At offset 0x82, each 16 bytes represent one stream.
+        LinkedList<PSMFStream> streams = new LinkedList<PSMFStream>();
+
+        // Parse the stream field and assign each one to it's type.
+        int numberOfStreams = 0;
+        for (int i = 0; i < numStreams; i++) {
+            PSMFStream stream = null;
+            int currentStreamOffset = 0x82 + i * 16;
+            int streamID = read8(mem, addr, mpegHeader, currentStreamOffset);
+            if ((streamID & 0xF0) == PSMF_VIDEO_STREAM_ID) {
+                stream = new PSMFStream(numberOfStreams);
+                stream.readMPEGVideoStreamParams(mem, addr, mpegHeader, currentStreamOffset, psmfHeader);
+            } else if (streamID == PSMF_AUDIO_STREAM_ID) {
+                stream = new PSMFStream(numberOfStreams);
+                stream.readPrivateAudioStreamParams(mem, addr, mpegHeader, currentStreamOffset, psmfHeader);
+            } else {
+            	stream = new PSMFStream(numberOfStreams);
+            	stream.readUserDataStreamParams(mem, addr, mpegHeader, currentStreamOffset, psmfHeader);
+            }
+
+            if (stream != null) {
+                streams.add(stream);
+                numberOfStreams++;
+            }
+        }
+
+        return streams;
+    }
 
     private class StreamInfo {
     	private int uid;
@@ -574,6 +1000,48 @@ public class sceMpeg extends HLEModule {
                 log.debug(String.format("sceMpegRingbufferPut packetsAdded=0x%X, packetsRead=0x%X, new availableSize=0x%X", packetsAdded, mpegRingbuffer.getReadPackets(), mpegRingbuffer.getFreePackets()));
             }
 
+            if (hasCompleteProtocolHandler() && meFilePosition < 0) {
+            	long currentPosition = meFile.getPosition();
+            	long maxPosition = meFile.length() - length;
+            	byte[] buffer = new byte[length];
+            	for (long position = currentPosition; position < maxPosition; position += mpegRingbuffer.getPacketSize()) {
+            		meFile.ioLseek(position);
+            		int readLength = meFile.ioRead(buffer, 0, length);
+            		if (readLength != length) {
+            			break;
+            		}
+
+            		IMemoryReader memoryReader = MemoryReader.getMemoryReader(putDataAddr, length, 1);
+            		boolean foundMatch = true;
+            		for (int i = 0; i < length; i++) {
+            			int memByte = memoryReader.readNext();
+            			int fileByte = buffer[i] & 0xFF;
+            			if (memByte != fileByte) {
+            				foundMatch = false;
+            				break;
+            			}
+            		}
+
+            		if (foundMatch) {
+            			meFilePosition = position;
+
+            			PSMFEntry entry = psmfHeader.getEPMapEntryWithOffset((int) meFilePosition);
+            			if (entry != null) {
+            				if (log.isDebugEnabled()) {
+            					log.debug(String.format("Setting first timestamp to 0x%X", entry.getEntryPTS()));
+            				}
+            				hleSetFirstTimestamp(entry.getEntryPTS());
+            			}
+
+            			if (log.isDebugEnabled()) {
+            				log.debug(String.format("Found match for meFilePosition=0x%X", meFilePosition));
+            			}
+            			break;
+            		}
+            	}
+            	meFile.ioLseek(currentPosition);
+            }
+
             if (remainingPackets > 0) {
                 int putNumberPackets = Math.min(remainingPackets, mpegRingbuffer.getPutSequentialPackets());
                 putDataAddr = mpegRingbuffer.getPutDataAddr();
@@ -601,7 +1069,7 @@ public class sceMpeg extends HLEModule {
 		            if (meChannel == null) {
 		            	// If no MPEG header has been provided by the application (and none could be found),
 		            	// just use the MPEG stream as it is, without header analysis.
-		            	me.init(addr, Math.max(length, mpegStreamSize), 0, 0, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
+		            	me.init(addr, Math.max(length, psmfHeader.mpegStreamSize), 0, 0, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
 		            	meChannel = new PacketChannel();
 		            }
 		            meChannel.write(addr, length);
@@ -696,23 +1164,22 @@ public class sceMpeg extends HLEModule {
     	this.registeredAudioChannel = registeredAudioChannel;
     }
 
-    public int hleMpegGetAvcAu(TPointer auAddr, int firstTimestamp, int noMoreDataError) {
+    public int hleMpegGetAvcAu(TPointer auAddr, int noMoreDataError) {
     	int result = 0;
 
     	// Read Au of next Avc frame
         if (checkMediaEngineState()) {
-        	me.setFirstTimestamp(firstTimestamp);
             if (me.getContainer() == null) {
                 me.init(createMediaChannel(), hasPsmfVideoStream(), hasPsmfAudioStream(), getRegisteredVideoChannel(), getRegisteredAudioChannel());
             }
         	if (!me.readVideoAu(mpegAvcAu, mpegAudioChannels)) {
         		// end of video reached only when last timestamp has been reached
-        		if (mpegLastTimestamp <= 0 || mpegAvcAu.pts >= mpegLastTimestamp) {
+        		if (psmfHeader.mpegLastTimestamp <= 0 || mpegAvcAu.pts >= psmfHeader.mpegLastTimestamp) {
         			endOfVideoReached = true;
         		}
 
         		// Do not return an error for the very last video frame
-        		if (mpegAvcAu.pts != mpegLastTimestamp) {
+        		if (mpegAvcAu.pts != psmfHeader.mpegLastTimestamp) {
             		// No more data in ringbuffer.
         			result = noMoreDataError;
         		}
@@ -748,6 +1215,10 @@ public class sceMpeg extends HLEModule {
 
     private IMediaChannel createMediaChannel() {
 		if (hasCompleteProtocolHandler()) {
+			if (meFilePosition > 0) {
+				meFile = new PartialVirtualFile(meFile, meFilePosition, meFile.length() - meFilePosition);
+				meFilePosition = 0;
+			}
 			log.info(String.format("Reading MPEG video from %s", meFile));
 			mediaChannel = new VirtualFileProtocolHandler(meFile);
 		} else {
@@ -761,12 +1232,11 @@ public class sceMpeg extends HLEModule {
     	return meFile != null;
     }
 
-    public int hleMpegGetAtracAu(TPointer auAddr, int firstTimestamp) {
+    public int hleMpegGetAtracAu(TPointer auAddr) {
     	int result = 0;
 
     	// Read Au of next Atrac frame
         if (checkMediaEngineState()) {
-        	me.setFirstTimestamp(firstTimestamp);
         	if (me.getContainer() == null) {
         		me.init(createMediaChannel(), hasPsmfVideoStream(), true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
         	}
@@ -975,8 +1445,9 @@ public class sceMpeg extends HLEModule {
 					memoryWriter.flush();
 					if (mem.read32(tmpAddress + PSMF_MAGIC_OFFSET) == PSMF_MAGIC) {
 						analyseMpeg(tmpAddress, null);
-				        if (isCurrentMpegAnalyzed() && meFile == null && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
-							meFile = new PartialVirtualFile(vFile, vFile.getPosition() - MPEG_HEADER_BUFFER_MINIMUM_SIZE, mpegStreamSize + mpegOffset);
+				        if (isCurrentMpegAnalyzed() && meFile == null && psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegOffset > 0 && psmfHeader.mpegOffset <= psmfHeader.mpegStreamSize) {
+							meFile = new PartialVirtualFile(vFile, vFile.getPosition() - MPEG_HEADER_BUFFER_MINIMUM_SIZE, psmfHeader.mpegStreamSize + psmfHeader.mpegOffset);
+							meFilePosition = -1;
 		            		log.info(String.format("Using MPEG file for streaming: %s", meFile));
 						}
 					}
@@ -1010,9 +1481,10 @@ public class sceMpeg extends HLEModule {
 					memoryWriter.flush();
 					if (mem.read32(tmpAddress + PSMF_MAGIC_OFFSET) == PSMF_MAGIC) {
 						analyseMpeg(tmpAddress, null);
-				        if (isCurrentMpegAnalyzed() && meFile == null && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
-							UmdIsoFile mpegFile = new UmdIsoFile(umdIsoReader, headerSectorNumber, mpegStreamSize + mpegOffset, null, umdIsoFile.getName());
+				        if (isCurrentMpegAnalyzed() && meFile == null && psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegOffset > 0 && psmfHeader.mpegOffset <= psmfHeader.mpegStreamSize) {
+							UmdIsoFile mpegFile = new UmdIsoFile(umdIsoReader, headerSectorNumber, psmfHeader.mpegStreamSize + psmfHeader.mpegOffset, null, umdIsoFile.getName());
 							meFile = new UmdIsoVirtualFile(mpegFile);
+							meFilePosition = -1;
 		            		log.info(String.format("Using MPEG file for streaming: %s", meFile));
 						}
 					}
@@ -1071,9 +1543,9 @@ public class sceMpeg extends HLEModule {
 				previousTimestamp = timestamp;
 			}
 
-			mpegStreamSize = (int) (endMpegPosition - startMpegPosition);
+			psmfHeader.mpegStreamSize = (int) (endMpegPosition - startMpegPosition);
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("analyseMpegDataWithoutHeader estimated Mpeg stream size 0x%X (startPosition=0x%X, currentPosition=0x%X, endMpegPosition=0x%X)", mpegStreamSize, startMpegPosition, currentPosition, endMpegPosition));
+				log.debug(String.format("analyseMpegDataWithoutHeader estimated Mpeg stream size 0x%X (startPosition=0x%X, currentPosition=0x%X, endMpegPosition=0x%X)", psmfHeader.mpegStreamSize, startMpegPosition, currentPosition, endMpegPosition));
 			}
 			setCurrentMpegAnalyzed(true);
 			unregisterRingbufferPutIoListener();
@@ -1081,7 +1553,7 @@ public class sceMpeg extends HLEModule {
 			vFile.ioLseek(currentPosition);
 
 			if (checkMediaEngineState()) {
-				me.setStreamFile(dataInput, vFile, readAddress, startMpegPosition, mpegStreamSize);
+				me.setStreamFile(dataInput, vFile, readAddress, startMpegPosition, psmfHeader.mpegStreamSize);
 			}
 		} else if (dataInput != null) {
 			try {
@@ -1116,9 +1588,9 @@ public class sceMpeg extends HLEModule {
 					previousTimestamp = timestamp;
 				}
 
-				mpegStreamSize = (int) (endMpegPosition - startMpegPosition);
+				psmfHeader.mpegStreamSize = (int) (endMpegPosition - startMpegPosition);
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("analyseMpegDataWithoutHeader estimated Mpeg stream size 0x%X (startPosition=0x%X, currentPosition=0x%X, endMpegPosition=0x%X)", mpegStreamSize, startMpegPosition, currentPosition, endMpegPosition));
+					log.debug(String.format("analyseMpegDataWithoutHeader estimated Mpeg stream size 0x%X (startPosition=0x%X, currentPosition=0x%X, endMpegPosition=0x%X)", psmfHeader.mpegStreamSize, startMpegPosition, currentPosition, endMpegPosition));
 				}
 				setCurrentMpegAnalyzed(true);
 				unregisterRingbufferPutIoListener();
@@ -1126,7 +1598,7 @@ public class sceMpeg extends HLEModule {
 				dataInput.seek(currentPosition);
 
 				if (checkMediaEngineState()) {
-					me.setStreamFile(dataInput, vFile, readAddress, startMpegPosition, mpegStreamSize);
+					me.setStreamFile(dataInput, vFile, readAddress, startMpegPosition, psmfHeader.mpegStreamSize);
 				}
 			} catch (IOException e) {
 				log.error("analyseMpegDataWithoutHeader", e);
@@ -1141,7 +1613,7 @@ public class sceMpeg extends HLEModule {
     	}
 
     	analyseMpeg(readAddress, null);
-        if (isCurrentMpegAnalyzed() && meFile == null && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
+        if (isCurrentMpegAnalyzed() && meFile == null && psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegOffset > 0 && psmfHeader.mpegOffset <= psmfHeader.mpegStreamSize) {
         	if (vFile != null) {
         		meFile = vFile.duplicate();
     		} else if (dataInput instanceof UmdIsoFile) {
@@ -1151,6 +1623,7 @@ public class sceMpeg extends HLEModule {
 
         	if (meFile != null) {
         		meFile.ioLseek(meFile.getPosition() - bytesRead);
+            	meFilePosition = -1;
         		log.info(String.format("Using MPEG file for streaming: %s", meFile));
         	}
         }
@@ -1247,22 +1720,11 @@ public class sceMpeg extends HLEModule {
     	return mem.read16(bufferAddr + offset);
     }
 
-    protected void analyseMpeg(int bufferAddr, byte[] mpegHeader, PSMFHeader psmfHeader) {
-        Memory mem = Memory.getInstance();
-
-        mpegStreamAddr = bufferAddr;
-        mpegMagic = read32(mem, bufferAddr, mpegHeader, PSMF_MAGIC_OFFSET);
-        mpegRawVersion = read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_VERSION_OFFSET);
-        mpegVersion = getMpegVersion(mpegRawVersion);
-        mpegOffset = endianSwap32(read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_OFFSET_OFFSET));
-        mpegStreamSize = endianSwap32(read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_SIZE_OFFSET));
-        mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_FIRST_TIMESTAMP_OFFSET));
-        mpegLastTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_LAST_TIMESTAMP_OFFSET));
-        avcDetailFrameWidth = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_WIDTH_OFFSET) * 0x10;
-        avcDetailFrameHeight = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_HEIGHT_OFFSET) * 0x10;
+    protected void analyseMpeg(int bufferAddr, byte[] mpegHeader) {
+		psmfHeader = new PSMFHeader(bufferAddr, mpegHeader);
 
         // Sanity check
-        if (mpegFirstTimestamp != 90000 || mpegFirstTimestamp > mpegLastTimestamp || mpegLastTimestamp <= 0) {
+        if (psmfHeader.mpegFirstTimestamp != 90000 || psmfHeader.mpegFirstTimestamp > psmfHeader.mpegLastTimestamp || psmfHeader.mpegLastTimestamp <= 0) {
         	// Some applications read less than MPEG_HEADER_BUFFER_MINIMUM_SIZE bytes from the header.
         	// An IoListener is trying to recognize such read operations and reading instead
         	// the complete MPEG header.
@@ -1275,14 +1737,11 @@ public class sceMpeg extends HLEModule {
         			}
         		}
         		mpegHeader = completeMpegHeader;
-        		analyseMpeg(bufferAddr, mpegHeader, psmfHeader);
+        		analyseMpeg(bufferAddr, mpegHeader);
         		return;
         	}
         }
 
-        psmfStreams = scePsmf.readPsmfStreams(mem, bufferAddr, mpegHeader, psmfHeader);
-        mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
-        mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
         avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
         avcFrameStatus = 0;
         if (mpegRingbuffer != null && !isCurrentMpegAnalyzed()) {
@@ -1299,30 +1758,34 @@ public class sceMpeg extends HLEModule {
         audioFrameCount = 0;
         endOfAudioReached = false;
         endOfVideoReached = false;
+        if (checkMediaEngineState()) {
+        	me.setFirstTimestamp(videoFirstTimestamp);
+        }
     }
 
-    protected void analyseMpeg(int bufferAddr, PSMFHeader psmfHeader) {
-        analyseMpeg(bufferAddr, null, psmfHeader);
+    protected void analyseMpeg(int bufferAddr) {
+        analyseMpeg(bufferAddr, null);
 
-        if (!isCurrentMpegAnalyzed() && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
+        if (!isCurrentMpegAnalyzed() && psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegOffset > 0 && psmfHeader.mpegOffset <= psmfHeader.mpegStreamSize) {
             if (checkMediaEngineState()) {
             	int headerSize = MPEG_HEADER_BUFFER_MINIMUM_SIZE;
-            	meFile = FileLocator.getInstance().getVirtualFile(bufferAddr, headerSize, mpegStreamSize + mpegOffset, null);
+            	meFile = FileLocator.getInstance().getVirtualFile(bufferAddr, headerSize, psmfHeader.mpegStreamSize + psmfHeader.mpegOffset, null);
             	// Try to find the Mpeg header only with a partial length
             	if (meFile == null && memcmp(bufferAddr, completeMpegHeader, partialMpegHeaderLength)) {
-                	meFile = FileLocator.getInstance().getVirtualFile(bufferAddr, partialMpegHeaderLength, mpegStreamSize + mpegOffset, null);
+                	meFile = FileLocator.getInstance().getVirtualFile(bufferAddr, partialMpegHeaderLength, psmfHeader.mpegStreamSize + psmfHeader.mpegOffset, null);
                 	if (meFile != null) {
                 		headerSize = partialMpegHeaderLength;
                 	}
             	}
-            	me.init(bufferAddr, mpegStreamSize, mpegOffset, mpegLastTimestamp, headerSize);
+            	me.init(bufferAddr, psmfHeader.mpegStreamSize, psmfHeader.mpegOffset, psmfHeader.mpegLastTimestamp, headerSize);
             	if (meFile != null) {
+            		meFilePosition = -1;
             		log.info(String.format("Using MPEG file for streaming: %s", meFile));
             	}
             	meChannel = new PacketChannel();
                 meChannel.write(bufferAddr, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
             } else if (isEnableConnector()) {
-                mpegCodec.init(mpegVersion, mpegStreamSize, mpegLastTimestamp);
+                mpegCodec.init(psmfHeader.mpegVersion, psmfHeader.mpegStreamSize, psmfHeader.mpegLastTimestamp);
                 mpegCodec.writeVideo(bufferAddr, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
             }
 
@@ -1331,8 +1794,8 @@ public class sceMpeg extends HLEModule {
         }
 
         if (log.isDebugEnabled()) {
-	    	log.debug(String.format("Stream offset: %d, Stream size: 0x%X", mpegOffset, mpegStreamSize));
-	    	log.debug(String.format("First timestamp: %d, Last timestamp: %d", mpegFirstTimestamp, mpegLastTimestamp));
+	    	log.debug(String.format("Stream offset: %d, Stream size: 0x%X", psmfHeader.mpegOffset, psmfHeader.mpegStreamSize));
+	    	log.debug(String.format("First timestamp: %d, Last timestamp: %d", psmfHeader.mpegFirstTimestamp, psmfHeader.mpegLastTimestamp));
 	        if (log.isTraceEnabled()) {
 	        	log.trace(Utilities.getMemoryDump(bufferAddr, MPEG_HEADER_BUFFER_MINIMUM_SIZE));
 	        }
@@ -1340,12 +1803,12 @@ public class sceMpeg extends HLEModule {
     }
 
     protected boolean hasPsmfStream(int streamType) {
-    	if (psmfStreams == null) {
+    	if (psmfHeader.psmfStreams == null) {
     		// Header not analyzed, assume that the PSMF has the given stream
     		return true;
     	}
 
-    	for (PSMFStream stream : psmfStreams) {
+    	for (PSMFStream stream : psmfHeader.psmfStreams) {
     		if (stream.isStreamOfType(streamType)) {
     			return true;
     		}
@@ -1371,7 +1834,7 @@ public class sceMpeg extends HLEModule {
     }
 
     private void generateFakeMPEGVideo(int dest_addr, int frameWidth) {
-    	generateFakeImage(dest_addr, frameWidth, avcDetailFrameWidth, avcDetailFrameHeight, videoPixelMode);
+    	generateFakeImage(dest_addr, frameWidth, psmfHeader.getVideoWidth(), psmfHeader.getVideoHeigth(), videoPixelMode);
     }
 
     public static void generateFakeImage(int dest_addr, int frameWidth, int imageWidth, int imageHeight, int pixelMode) {
@@ -1450,11 +1913,13 @@ public class sceMpeg extends HLEModule {
             if (meFile != null) {
             	meFile.ioClose();
             	meFile = null;
+            	meFilePosition = -1;
             }
             if (mediaChannel != null) {
             	mediaChannel.close();
             	mediaChannel = null;
             }
+            me.setFirstTimestamp(videoFirstTimestamp);
         } else if (isEnableConnector()) {
             mpegCodec.finish();
         }
@@ -1470,7 +1935,7 @@ public class sceMpeg extends HLEModule {
 
         registeredVideoChannel = -1;
         registeredAudioChannel = -1;
-        mpegStreamSize = 0;
+        psmfHeader = null;
         mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
         mpegAtracAu.pts = 0;
         mpegAvcAu.dts = 0;
@@ -1479,7 +1944,6 @@ public class sceMpeg extends HLEModule {
         audioFrameCount = 0;
         endOfAudioReached = false;
         endOfVideoReached = false;
-        psmfStreams = null;
         startedMpeg = false;
     }
 
@@ -1488,7 +1952,7 @@ public class sceMpeg extends HLEModule {
 
     	// For very small videos (e.g. intro video < 15 seconds),
     	// do not consume too fast the ring buffer
-    	if (mpegLastTimestamp > 0 && mpegLastTimestamp < 15 * mpegTimestampPerSecond) {
+    	if (psmfHeader.mpegLastTimestamp > 0 && psmfHeader.mpegLastTimestamp < 15 * mpegTimestampPerSecond) {
     		packetsConsumed = Math.min(1, packetsConsumed);
     	}
 
@@ -1499,7 +1963,7 @@ public class sceMpeg extends HLEModule {
     	// Consuming all the remaining packets?
     	if (mpegRingbuffer.getFreePackets() + packetsConsumed >= mpegRingbuffer.getTotalPackets()) {
     		// Having not yet reached the last timestamp?
-    		if (mpegLastTimestamp > 0 && mpegAvcAu.pts < mpegLastTimestamp) {
+    		if (psmfHeader.mpegLastTimestamp > 0 && mpegAvcAu.pts < psmfHeader.mpegLastTimestamp) {
     			// Do not yet consume all the remaining packets, leave 2 packets
     			packetsConsumed = mpegRingbuffer.getTotalPackets() - mpegRingbuffer.getFreePackets() - 2;
     		}
@@ -1524,27 +1988,27 @@ public class sceMpeg extends HLEModule {
         analyseMpeg(bufferAddr.getAddress(), null);
 
         // Check magic.
-        if (mpegMagic != PSMF_MAGIC) {
-            log.warn("sceMpegQueryStreamOffset bad magic " + String.format("0x%08X", mpegMagic));
+        if (psmfHeader.mpegMagic != PSMF_MAGIC) {
+            log.warn("sceMpegQueryStreamOffset bad magic " + String.format("0x%08X", psmfHeader.mpegMagic));
             offsetAddr.setValue(0);
             return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
         }
 
         // Check version.
-        if (mpegVersion < 0) {
-            log.warn("sceMpegQueryStreamOffset bad version " + String.format("0x%08X", mpegRawVersion));
+        if (psmfHeader.mpegVersion < 0) {
+            log.warn("sceMpegQueryStreamOffset bad version " + String.format("0x%08X", psmfHeader.mpegRawVersion));
             offsetAddr.setValue(0);
             return SceKernelErrors.ERROR_MPEG_BAD_VERSION;
         }
 
         // Check offset.
-        if ((mpegOffset & 2047) != 0 || mpegOffset == 0) {
-            log.warn("sceMpegQueryStreamOffset bad offset " + String.format("0x%08X", mpegOffset));
+        if ((psmfHeader.mpegOffset & 2047) != 0 || psmfHeader.mpegOffset == 0) {
+            log.warn("sceMpegQueryStreamOffset bad offset " + String.format("0x%08X", psmfHeader.mpegOffset));
             offsetAddr.setValue(0);
             return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
         }
 
-    	offsetAddr.setValue(mpegOffset);
+    	offsetAddr.setValue(psmfHeader.mpegOffset);
         return 0;
     }
 
@@ -1561,18 +2025,18 @@ public class sceMpeg extends HLEModule {
         analyseMpeg(bufferAddr.getAddress(), null);
 
         // Check magic.
-        if (mpegMagic != PSMF_MAGIC) {
-            log.warn(String.format("sceMpegQueryStreamSize bad magic 0x%08X", mpegMagic));
+        if (psmfHeader.mpegMagic != PSMF_MAGIC) {
+            log.warn(String.format("sceMpegQueryStreamSize bad magic 0x%08X", psmfHeader.mpegMagic));
             return -1;
         }
 
         // Check alignment.
-        if ((mpegStreamSize & 2047) != 0) {
+        if ((psmfHeader.mpegStreamSize & 2047) != 0) {
         	sizeAddr.setValue(0);
             return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
         }
 
-    	sizeAddr.setValue(mpegStreamSize);
+    	sizeAddr.setValue(psmfHeader.mpegStreamSize);
         return 0;
     }
 
@@ -1922,7 +2386,7 @@ public class sceMpeg extends HLEModule {
         int result = 0;
         // Update the video timestamp (AVC).
         if (isRegisteredVideoChannel()) {
-        	result = hleMpegGetAvcAu(auAddr, videoFirstTimestamp, SceKernelErrors.ERROR_MPEG_NO_DATA);
+        	result = hleMpegGetAvcAu(auAddr, SceKernelErrors.ERROR_MPEG_NO_DATA);
         }
 
         attrAddr.setValue(1); // Unknown.
@@ -1966,7 +2430,6 @@ public class sceMpeg extends HLEModule {
         if (getRegisteredPcmChannel() >= 0) {
         	// Read Au of next Atrac frame
             if (checkMediaEngineState()) {
-            	me.setFirstTimestamp(audioFirstTimestamp);
             	if (me.getContainer() == null) {
             		me.init(createMediaChannel(), hasPsmfVideoStream(), hasPsmfAudioStream(), getRegisteredVideoChannel(), getRegisteredAudioChannel());
             	}
@@ -2054,7 +2517,7 @@ public class sceMpeg extends HLEModule {
         // Update the audio timestamp (Atrac).
         int result = 0;
         if (isRegisteredAudioChannel()) {
-        	result = hleMpegGetAtracAu(auAddr, audioFirstTimestamp);
+        	result = hleMpegGetAtracAu(auAddr);
         }
 
         // Bitfield used to store data attributes.
@@ -2135,7 +2598,7 @@ public class sceMpeg extends HLEModule {
 		// When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
             if (defaultFrameWidth == 0) {
-                frameWidth = avcDetailFrameWidth;
+                frameWidth = psmfHeader.getVideoWidth();
             } else {
                 frameWidth = defaultFrameWidth;
             }
@@ -2168,9 +2631,9 @@ public class sceMpeg extends HLEModule {
 
         // let's go with 3 packets per frame for now
         int packetsConsumed = 3;
-        if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
+        if (psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegLastTimestamp > 0) {
             // Try a better approximation of the packets consumed based on the timestamp
-            int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / mpegLastTimestamp) * mpegStreamSize);
+            int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / psmfHeader.mpegLastTimestamp) * psmfHeader.mpegStreamSize);
             if (processedSizeBasedOnTimestamp < processedSize) {
                 packetsConsumed = 0;
             } else {
@@ -2180,7 +2643,7 @@ public class sceMpeg extends HLEModule {
                 }
             }
             if (log.isDebugEnabled()) {
-                log.debug(String.format("sceMpegAvcDecode consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
+                log.debug(String.format("sceMpegAvcDecode consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, psmfHeader.mpegStreamSize, packetsConsumed));
             }
         }
 
@@ -2211,14 +2674,14 @@ public class sceMpeg extends HLEModule {
             }
             SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
             dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-            Debug.printFramebuffer(buffer, frameWidth, 10, avcDetailFrameHeight - 22, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " Enable the Media Engine to see the MPEG Video. ");
+            Debug.printFramebuffer(buffer, frameWidth, 10, psmfHeader.getVideoHeigth() - 22, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " Enable the Media Engine to see the MPEG Video. ");
             String displayedString;
-            if (mpegLastDate != null) {
-                displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
+            if (psmfHeader.mpegLastDate != null) {
+                displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(psmfHeader.mpegLastDate));
                 Debug.printFramebuffer(buffer, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
             }
-            if (mpegStreamSize > 0) {
-                displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
+            if (psmfHeader.mpegStreamSize > 0) {
+                displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, psmfHeader.mpegStreamSize, processedSize * 100f / psmfHeader.mpegStreamSize);
             } else {
                 displayedString = String.format(" %d ", processedSize);
             }
@@ -2270,15 +2733,15 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x0F6C18D7, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeDetail(@CheckArgument("checkMpegHandle") int mpeg, TPointer detailPointer) {
-        detailPointer.setValue32( 0, avcDecodeResult     ); // Stores the result.
-        detailPointer.setValue32( 4, videoFrameCount     ); // Last decoded frame.
-        detailPointer.setValue32( 8, avcDetailFrameWidth ); // Frame width.
-        detailPointer.setValue32(12, avcDetailFrameHeight); // Frame height.
-        detailPointer.setValue32(16, 0                   ); // Frame crop rect (left).
-        detailPointer.setValue32(20, 0                   ); // Frame crop rect (right).
-        detailPointer.setValue32(24, 0                   ); // Frame crop rect (top).
-        detailPointer.setValue32(28, 0                   ); // Frame crop rect (bottom).
-        detailPointer.setValue32(32, avcFrameStatus      ); // Status of the last decoded frame.
+        detailPointer.setValue32( 0, avcDecodeResult     ); // Stores the result
+        detailPointer.setValue32( 4, videoFrameCount     ); // Last decoded frame
+        detailPointer.setValue32( 8, psmfHeader.getVideoWidth() ); // Frame width
+        detailPointer.setValue32(12, psmfHeader.getVideoHeigth()); // Frame height
+        detailPointer.setValue32(16, 0                   ); // Frame crop rect (left)
+        detailPointer.setValue32(20, 0                   ); // Frame crop rect (right)
+        detailPointer.setValue32(24, 0                   ); // Frame crop rect (top)
+        detailPointer.setValue32(28, 0                   ); // Frame crop rect (bottom)
+        detailPointer.setValue32(32, avcFrameStatus      ); // Status of the last decoded frame
 
         return 0;
     }
@@ -2417,9 +2880,9 @@ public class sceMpeg extends HLEModule {
 
         // let's go with 3 packets per frame for now
         int packetsConsumed = 3;
-        if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
+        if (psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegLastTimestamp > 0) {
             // Try a better approximation of the packets consumed based on the timestamp
-            int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / mpegLastTimestamp) * mpegStreamSize);
+            int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / psmfHeader.mpegLastTimestamp) * psmfHeader.mpegStreamSize);
             if (processedSizeBasedOnTimestamp < processedSize) {
                 packetsConsumed = 0;
             } else {
@@ -2429,7 +2892,7 @@ public class sceMpeg extends HLEModule {
                 }
             }
             if (log.isDebugEnabled()) {
-                log.debug(String.format("sceMpegAvcDecodeYCbCr consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
+                log.debug(String.format("sceMpegAvcDecodeYCbCr consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, psmfHeader.mpegStreamSize, packetsConsumed));
             }
         }
 
@@ -2523,7 +2986,7 @@ public class sceMpeg extends HLEModule {
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
             if (defaultFrameWidth == 0) {
-                frameWidth = avcDetailFrameWidth;
+                frameWidth = psmfHeader.getVideoWidth();
             } else {
                 frameWidth = defaultFrameWidth;
             }
@@ -2567,9 +3030,9 @@ public class sceMpeg extends HLEModule {
 
             // let's go with 3 packets per frame for now
             int packetsConsumed = 3;
-            if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
+            if (psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegLastTimestamp > 0) {
                 // Try a better approximation of the packets consumed based on the timestamp
-                int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / mpegLastTimestamp) * mpegStreamSize);
+                int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / psmfHeader.mpegLastTimestamp) * psmfHeader.mpegStreamSize);
                 if (processedSizeBasedOnTimestamp < processedSize) {
                     packetsConsumed = 0;
                 } else {
@@ -2579,7 +3042,7 @@ public class sceMpeg extends HLEModule {
                     }
                 }
                 if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceMpegAvcCsc consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
+                    log.debug(String.format("sceMpegAvcCsc consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, psmfHeader.mpegStreamSize, packetsConsumed));
                 }
             }
 
@@ -2601,12 +3064,12 @@ public class sceMpeg extends HLEModule {
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
                 Debug.printFramebuffer(destAddr.getAddress(), frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
                 String displayedString;
-                if (mpegLastDate != null) {
-                    displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
+                if (psmfHeader.mpegLastDate != null) {
+                    displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(psmfHeader.mpegLastDate));
                     Debug.printFramebuffer(destAddr.getAddress(), frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
                 }
-                if (mpegStreamSize > 0) {
-                    displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
+                if (psmfHeader.mpegStreamSize > 0) {
+                    displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, psmfHeader.mpegStreamSize, processedSize * 100f / psmfHeader.mpegStreamSize);
                 } else {
                     displayedString = String.format(" %d ", processedSize);
                 }
@@ -2811,7 +3274,7 @@ public class sceMpeg extends HLEModule {
             return -1;
         }
 
-        int result = hleMpegGetAvcAu(null, videoFirstTimestamp, SceKernelErrors.ERROR_MPEG_NO_DATA);
+        int result = hleMpegGetAvcAu(null, SceKernelErrors.ERROR_MPEG_NO_DATA);
         if (result != 0) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("sceMpegNextAvcRpAu returning 0x%08X", result));

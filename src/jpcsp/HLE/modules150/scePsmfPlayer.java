@@ -150,8 +150,6 @@ public class scePsmfPlayer extends HLEModule {
     protected int psmfAtracStreamNum = 1;
     protected int psmfPcmStreamNum = 0;
     protected int psmfPlayerVersion = PSMF_PLAYER_VERSION_FULL;
-    protected Date psmfLastDate;
-    protected long psmfLastTimestamp;
 
     // PSMF Player playback params.
     protected int displayBuffer;
@@ -230,8 +228,8 @@ public class scePsmfPlayer extends HLEModule {
         Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked PSMF Player video. ");
 
         String displayedString;
-        if (psmfLastDate != null) {
-            displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(psmfLastDate));
+        if (Modules.sceMpegModule.psmfHeader.mpegLastDate != null) {
+            displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(Modules.sceMpegModule.psmfHeader.mpegLastDate));
             Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
         }
     }
@@ -322,9 +320,7 @@ public class scePsmfPlayer extends HLEModule {
             pmfFileData = new byte[length];
             psmfFile.readFully(pmfFileData);
 
-            Modules.sceMpegModule.analyseMpeg(0, pmfFileData, null);
-            psmfLastTimestamp = Modules.sceMpegModule.mpegLastTimestamp;
-            psmfLastDate = Modules.sceMpegModule.mpegLastDate;
+            Modules.sceMpegModule.analyseMpeg(0, pmfFileData);
 
             if (checkMediaEngineState()) {
                 pmfFileChannel = new PacketChannel(pmfFileData);
@@ -483,7 +479,7 @@ public class scePsmfPlayer extends HLEModule {
         // Can be called from interrupt.
         // Check playback status.
         if (psmfPlayerAvcAu.pts > 0) {
-            if (psmfPlayerAvcAu.pts > psmfLastTimestamp) {
+            if (psmfPlayerAvcAu.pts > Modules.sceMpegModule.psmfHeader.mpegLastTimestamp) {
                 // If we've reached the last timestamp, change the status to PLAYING_FINISHED.
                 psmfPlayerStatus = PSMF_PLAYER_STATUS_PLAYING_FINISHED;
             }
@@ -648,7 +644,7 @@ public class scePsmfPlayer extends HLEModule {
     		return ERROR_PSMFPLAYER_NOT_INITIALIZED;
     	}
 
-    	psmfInfoAddr.setValue(0, (int) psmfLastTimestamp);
+    	psmfInfoAddr.setValue(0, (int) Modules.sceMpegModule.psmfHeader.mpegLastTimestamp);
     	psmfInfoAddr.setValue(4, psmfAvcStreamNum);
         psmfInfoAddr.setValue(8, psmfAtracStreamNum);
         psmfInfoAddr.setValue(12, psmfPcmStreamNum);

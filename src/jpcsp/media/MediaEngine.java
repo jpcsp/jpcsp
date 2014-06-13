@@ -51,6 +51,7 @@ import com.xuggle.xuggler.IAudioSamples;
 import com.xuggle.xuggler.IAudioResampler;
 import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IContainer;
+import com.xuggle.xuggler.IContainerFormat;
 import com.xuggle.xuggler.IPacket;
 import com.xuggle.xuggler.IPixelFormat;
 import com.xuggle.xuggler.IStream;
@@ -217,16 +218,20 @@ public class MediaEngine {
         } else {
             while (true) {
                 if (!getNextPacket(state)) {
-                    if (state == videoStreamState) {
-                        state.incrementTimestamps(sceMpeg.videoTimestampStep);
-                    } else if (state == audioStreamState) {
-                        state.incrementTimestamps(sceMpeg.audioTimestampStep);
-                    }
+                	if (state.getPts() < firstTimestamp) {
+                		state.setTimestamps(firstTimestamp);
+                	} else {
+	                    if (state == videoStreamState) {
+	                        state.incrementTimestamps(sceMpeg.videoTimestampStep);
+	                    } else if (state == audioStreamState) {
+	                        state.incrementTimestamps(sceMpeg.audioTimestampStep);
+	                    }
+                	}
                     successful = false;
                     break;
                 }
 
-                state.updateTimestamps();
+                state.updateTimestamps(false);
                 if (state.getPts() >= firstTimestamp) {
                     break;
                 }
@@ -405,7 +410,7 @@ public class MediaEngine {
                             videoCoder.getPixelType());
                     videoPicture = IVideoPicture.make(videoResampler.getOutputPixelFormat(), videoPicture.getWidth(), videoPicture.getHeight());
                 }
-                videoStreamState = new StreamState(this, videoStreamID, container, 0);
+                videoStreamState = new StreamState(this, videoStreamID, container, 0, sceMpeg.videoTimestampStep);
             }
         }
 
@@ -414,7 +419,7 @@ public class MediaEngine {
                 // Try to use an external audio file instead
                 if (!initExtAudio(audioChannel)) {
                     log.error("MediaEngine: No audio streams found!");
-                    audioStreamState = new StreamState(this, -1, null, sceMpeg.audioFirstTimestamp);
+                    audioStreamState = new StreamState(this, -1, null, sceMpeg.audioFirstTimestamp, sceMpeg.audioTimestampStep);
                 }
             } else if (streamCoderOpen(audioCoder) < 0) {
                 audioCoder.delete();
@@ -430,13 +435,8 @@ public class MediaEngine {
                 // This is the case when decoding an MP3 stream: it seems that the number
                 // of channels is only set after reading one packet from the stream.
                 audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
-                if (audioCoder.getSampleFormat() == IAudioSamples.Format.FMT_FLTP) {
-                    audioResampler = IAudioResampler.make(audioCoder.getChannels(), audioCoder.getChannels(),
-                            audioCoder.getSampleRate(), audioCoder.getSampleRate(),
-                            IAudioSamples.Format.FMT_S16, audioCoder.getSampleFormat());
-                }
                 decodedAudioSamples = new FIFOByteBuffer();
-                audioStreamState = new StreamState(this, audioStreamID, container, 0);
+                audioStreamState = new StreamState(this, audioStreamID, container, 0, sceMpeg.audioTimestampStep);
             }
         }
     }
@@ -481,7 +481,7 @@ public class MediaEngine {
             // Try to use an external audio file instead
             if (!initExtAudio(audioChannel)) {
                 log.error("MediaEngine: No audio streams found!");
-                audioStreamState = new StreamState(this, -1, null, sceMpeg.audioFirstTimestamp);
+                audioStreamState = new StreamState(this, -1, null, sceMpeg.audioFirstTimestamp, sceMpeg.audioTimestampStep);
             }
         } else if (streamCoderOpen(audioCoder) < 0) {
             audioCoder.delete();
@@ -636,7 +636,7 @@ public class MediaEngine {
                 break;
             }
 
-            state.updateTimestamps();
+            state.updateTimestamps(true);
             state.consume(decodedBytes);
 
             // Xuggle 5.4 is not setting the first few frames of the video as complete.
@@ -672,7 +672,7 @@ public class MediaEngine {
                 break;
             }
 
-            state.updateTimestamps();
+            state.updateTimestamps(true);
             state.consume(decodedBytes);
 
             if (audioSamples.isComplete()) {
@@ -730,7 +730,7 @@ public class MediaEngine {
     }
 
     private File getExtAudioFile(int audioChannel) {
-        String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac", "m4a"};
+        String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac", "m4a", "oma"};
         for (int i = 0; i < supportedFormats.length; i++) {
             File f = new File(getExtAudioPath(bufferSize, audioChannel, lastTimestamp, supportedFormats[i]));
             if (f.canRead() && f.length() > 0) {
@@ -767,13 +767,23 @@ public class MediaEngine {
     // Override audio data line with one from an external file.
     private boolean initExtAudio(String file) {
         extContainer = IContainer.make();
+        IContainerFormat containerFormat = null;
+
+        // Xuggle has issue to properly auto-detect the OMA format.
+        // Help by setting explicitly the "oma" input format.
+        if (file.endsWith(".oma")) {
+        	containerFormat = IContainerFormat.make();
+        	if (containerFormat.setInputFormat("oma") < 0) {
+        		containerFormat = null;
+        	}
+        }
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("initExtAudio %s", file));
         }
 
         IURLProtocolHandler fileProtocolHandler = new FileProtocolHandler(file);
-        if (extContainer.open(fileProtocolHandler, IContainer.Type.READ, null) < 0) {
+        if (extContainer.open(fileProtocolHandler, IContainer.Type.READ, containerFormat) < 0) {
             log.error("MediaEngine: Invalid file or container format: " + file);
             extContainer.close();
             extContainer = null;
@@ -813,7 +823,7 @@ public class MediaEngine {
         // External audio is starting at timestamp 0,
         // but the PSP audio is starting at timestamp 89249:
         // offset the external audio timestamp by this value.
-        audioStreamState = new StreamState(this, audioStreamID, extContainer, sceMpeg.audioFirstTimestamp);
+        audioStreamState = new StreamState(this, audioStreamID, extContainer, sceMpeg.audioFirstTimestamp, sceMpeg.audioTimestampStep);
         audioStreamState.setTimestamps(sceMpeg.mpegTimestampPerSecond);
 
         log.info(String.format("Using external audio '%s'", file));
@@ -961,6 +971,12 @@ public class MediaEngine {
 
         // Create new samples with the same parameters as the input samples.
         IAudioSamples newSamples = IAudioSamples.make(samplesSize, samples.getChannels());
+
+        if (audioResampler == null) {
+            audioResampler = IAudioResampler.make(audioCoder.getChannels(), audioCoder.getChannels(),
+                    audioCoder.getSampleRate(), audioCoder.getSampleRate(),
+                    IAudioSamples.Format.FMT_S16, audioCoder.getSampleFormat());
+        }
 
         // Resample the input samples into the temporary container.
         audioResampler.swresample(newSamples, samples, samplesSize);
@@ -1139,6 +1155,9 @@ public class MediaEngine {
     }
 
     public void setFirstTimestamp(int firstTimestamp) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("setFirstTimestamp 0x%X", firstTimestamp));
+    	}
         this.firstTimestamp = firstTimestamp;
     }
 

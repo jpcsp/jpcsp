@@ -16,17 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.modules150.sceMpeg.read16;
-import static jpcsp.HLE.modules150.sceMpeg.read8;
-import static jpcsp.HLE.modules150.scePsmf.PSMFHeader.PSMF_AUDIO_STREAM_ID;
-import static jpcsp.HLE.modules150.scePsmf.PSMFHeader.PSMF_VIDEO_STREAM_ID;
-import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_ATRAC_STREAM;
-import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_AVC_STREAM;
-import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_PCM_STREAM;
-import static jpcsp.util.Utilities.endianSwap16;
-import static jpcsp.util.Utilities.endianSwap32;
-import static jpcsp.util.Utilities.readUnaligned32;
-
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -36,13 +25,12 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 
-import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules150.sceMpeg.PSMFEntry;
+import jpcsp.HLE.modules150.sceMpeg.PSMFHeader;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -92,429 +80,13 @@ public class scePsmf extends HLEModule {
 		return psmfHeaderMap.get(headerAddress);
     }
 
-    // Entry class for the PSMF streams.
-    public static class PSMFStream {
-        private int streamType = -1;
-        private int streamChannel = -1;
-        private int streamNumber;
-        public static final int PSMF_AVC_STREAM = 0;
-        public static final int PSMF_ATRAC_STREAM = 1;
-        public static final int PSMF_PCM_STREAM = 2;
-        public static final int PSMF_DATA_STREAM = 3;
-        public static final int PSMF_AUDIO_STREAM = 15;
-
-        public PSMFStream(int streamNumber) {
-        	this.streamNumber = streamNumber;
-        }
-
-        public int getStreamType() {
-            return streamType;
-        }
-
-        public int getStreamChannel() {
-            return streamChannel;
-        }
-
-		public int getStreamNumber() {
-			return streamNumber;
-		}
-
-		public boolean isStreamOfType(int type) {
-			if (streamType == type) {
-				return true;
-			}
-			if (type == PSMF_AUDIO_STREAM) {
-				// Atrac or PCM
-				return streamType == PSMF_ATRAC_STREAM || streamType == PSMF_PCM_STREAM;
-			}
-
-			return false;
-		}
-
-		public void readMPEGVideoStreamParams(Memory mem, int addr, byte[] mpegHeader, int offset, PSMFHeader psmfHeader) {
-            int streamID = read8(mem, addr, mpegHeader, offset);                // 0xE0
-            int privateStreamID = read8(mem, addr, mpegHeader, offset + 1);     // 0x00
-            int unk1 = read8(mem, addr, mpegHeader, offset + 2);                // Found values: 0x20/0x21 
-            int unk2 = read8(mem, addr, mpegHeader, offset + 3);                // Found values: 0x44/0xFB/0x75
-            int EPMapOffset = endianSwap32(sceMpeg.readUnaligned32(mem, addr, mpegHeader, offset + 4));
-            int EPMapEntriesNum = endianSwap32(sceMpeg.readUnaligned32(mem, addr, mpegHeader, offset + 8));
-            int videoWidth = read8(mem, addr, mpegHeader, offset + 12) * 0x10;  // PSMF video width (bytes per line).
-            int videoHeight = read8(mem, addr, mpegHeader, offset + 13) * 0x10; // PSMF video heigth (bytes per line).
-
-            if (log.isInfoEnabled()) {
-	            log.info(String.format("Found PSMF MPEG video stream data: streamID=0x%X, privateStreamID=0x%X, unk1=0x%X, unk2=0x%X, EPMapOffset=0x%x, EPMapEntriesNum=%d, videoWidth=%d, videoHeight=%d", streamID, privateStreamID, unk1, unk2, EPMapOffset, EPMapEntriesNum, videoWidth, videoHeight));
-            }
-
-            if (psmfHeader != null) {
-            	psmfHeader.EPMapOffset = EPMapOffset;
-            	psmfHeader.EPMapEntriesNum = EPMapEntriesNum;
-            	psmfHeader.videoWidth = videoWidth;
-            	psmfHeader.videoHeight = videoHeight;
-            }
-
-            streamType = PSMF_AVC_STREAM;
-            streamChannel = streamID & 0x0F;
-        }
-
-        public void readPrivateAudioStreamParams(Memory mem, int addr, byte[] mpegHeader, int offset, PSMFHeader psmfHeader) {
-            int streamID = read8(mem, addr, mpegHeader, offset);                  // 0xBD
-            int privateStreamID = read8(mem, addr, mpegHeader, offset + 1);       // 0x00
-            int unk1 = read8(mem, addr, mpegHeader, offset + 2);                  // Always 0x20
-            int unk2 = read8(mem, addr, mpegHeader, offset + 3);                  // Always 0x04
-            int audioChannelConfig = read8(mem, addr, mpegHeader, offset + 14);   // 1 - mono, 2 - stereo
-            int audioSampleFrequency = read8(mem, addr, mpegHeader, offset + 15); // 2 - 44khz
-
-            if (log.isInfoEnabled()) {
-	            log.info(String.format("Found PSMF MPEG audio stream data: streamID=0x%X, privateStreamID=0x%X, unk1=0x%X, unk2=0x%X, audioChannelConfig=%d, audioSampleFrequency=%d", streamID, privateStreamID, unk1, unk2, audioChannelConfig, audioSampleFrequency));
-            }
-
-            if (psmfHeader != null) {
-            	psmfHeader.audioChannelConfig = audioChannelConfig;
-            	psmfHeader.audioSampleFrequency = audioSampleFrequency;
-            }
-
-            streamType = ((privateStreamID & 0xF0) == 0 ? PSMF_ATRAC_STREAM : PSMF_PCM_STREAM);
-            streamChannel = privateStreamID & 0x0F;
-        }
-
-        public void readUserDataStreamParams(Memory mem, int addr, byte[] mpegHeader, int offset, PSMFHeader psmfHeader) {
-        	log.warn(String.format("Unknwon User Data stream format"));
-        	streamType = PSMF_DATA_STREAM;
-        }
-    }
-
-    // Entry class for the EPMap.
-    protected static class PSMFEntry {
-        private int EPIndex;
-        private int EPPicOffset;
-        private int EPPts;
-        private int EPOffset;
-        private int id;
-
-        public PSMFEntry(int id, int index, int picOffset, int pts, int offset) {
-        	this.id = id;
-            EPIndex = index;
-            EPPicOffset = picOffset;
-            EPPts = pts;
-            EPOffset = offset;
-        }
-
-        public int getEntryIndex() {
-            return EPIndex;
-        }
-
-        public int getEntryPicOffset() {
-            return EPPicOffset;
-        }
-
-        public int getEntryPTS() {
-            return EPPts;
-        }
-
-        public int getEntryOffset() {
-            return EPOffset;
-        }
-
-        public int getId() {
-        	return id;
-        }
-    }
-
-    protected static class PSMFHeader {
-        private static final int size = 2048;
-        public static final int PSMF_VIDEO_STREAM_ID = 0xE0;
-        public static final int PSMF_AUDIO_STREAM_ID = 0xBD;
-
-        // Header vars.
-        private int streamNum;
-        private int audioSampleFrequency;
-        private int audioChannelConfig;
-        private int videoWidth;
-        private int videoHeight;
-        private int EPMapEntriesNum;
-
-        // Offsets for the PSMF struct.
-        private int headerOffset;
-        private int EPMapOffset;
-
-        // EPMap.
-        private HashMap<Integer, PSMFEntry> EPMap;
-        private int currentEntryNumber;
-
-        // Stream map.
-        private List<PSMFStream> streams;
-        private int currentStreamNumber = -1;
-        private int currentVideoStreamNumber = -1;
-        private int currentAudioStreamNumber = -1;
-
-        public PSMFHeader(int addr) {
-            Memory mem = Memory.getInstance();
-
-            // PSMF Header Format
-            if (mem.read32(addr) != sceMpeg.PSMF_MAGIC) {
-                log.warn("Invalid PSMF detected!");
-            }
-
-            headerOffset = addr;
-
-            Modules.sceMpegModule.analyseMpeg(addr, this);
-
-            int streamDataTotalSize = endianSwap32(readUnaligned32(mem, addr + 0x50));
-            int unk = endianSwap32(readUnaligned32(mem, addr + 0x60));
-            int streamDataNextBlockSize = endianSwap32(readUnaligned32(mem, addr + 0x6A));                           // General stream information block size.
-            int streamDataNextInnerBlockSize = endianSwap32(readUnaligned32(mem, addr + 0x7C));                      // Inner stream information block size.
-            streamNum = endianSwap16(mem.read16(addr + sceMpeg.PSMF_NUMBER_STREAMS));                                // Number of total registered streams.
-
-            if (log.isDebugEnabled()) {
-            	log.debug(String.format("PSMFHeader: version=0x%08X, streamDataTotalSize=%d, unk=0x%08X, streamDataNextBlockSize=%d, streamDataNextInnerBlockSize=%d, streamNum=%d", getVersion(), streamDataTotalSize, unk, streamDataNextBlockSize, streamDataNextInnerBlockSize, streamNum));
-            }
-
-            streams = Modules.sceMpegModule.psmfStreams;
-
-            // PSP seems to default to stream 0.
-            if (streams.size() > 0) {
-            	setStreamNum(0);
-            }
-
-            // EPMap info:
-            // - Located at EPMapOffset (set by the AVC stream);
-            // - Each entry is composed by a total of 10 bytes:
-            //      - 1 byte: Reference picture index (RAPI);
-            //      - 1 byte: Reference picture offset from the current index;
-            //      - 4 bytes: PTS of the entry point;
-            //      - 4 bytes: Relative offset of the entry point in the MPEG data.
-            EPMap = new HashMap<Integer, PSMFEntry>();
-            for (int i = 0; i < EPMapEntriesNum; i++) {
-                int index = mem.read8(addr + EPMapOffset + i * 10);
-                int picOffset = mem.read8(addr + EPMapOffset + 1 + i * 10);
-                int pts = endianSwap32(readUnaligned32(mem, addr + EPMapOffset + 2 + i * 10));
-                int offset = endianSwap32(readUnaligned32(mem, addr + EPMapOffset + 6 + i * 10));
-                int id = currentEntryNumber++;
-                PSMFEntry pEnt = new PSMFEntry(id, index, picOffset, pts, offset);
-                EPMap.put(id, pEnt);
-            }
-        }
-
-        public int getVersion() {
-            return Modules.sceMpegModule.mpegRawVersion;
-        }
-
-        public int getHeaderSize() {
-            return size;
-        }
-
-        public int getHeaderOffset() {
-            return headerOffset;
-        }
-
-        public int getStreamOffset() {
-            return Modules.sceMpegModule.mpegOffset;
-        }
-
-        public int getStreamSize() {
-            return Modules.sceMpegModule.mpegStreamSize;
-        }
-
-        public int getPresentationStartTime() {
-            return (int) Modules.sceMpegModule.mpegFirstTimestamp;
-        }
-
-        public int getPresentationEndTime() {
-            return (int) Modules.sceMpegModule.mpegLastTimestamp;
-        }
-
-        public int getVideoWidth() {
-            return videoWidth;
-        }
-
-        public int getvideoHeigth() {
-            return videoHeight;
-        }
-
-        public int getAudioSampleFrequency() {
-            return audioSampleFrequency;
-        }
-
-        public int getAudioChannelConfig() {
-            return audioChannelConfig;
-        }
-
-        public int getEPMapOffset() {
-            return EPMapOffset;
-        }
-
-        public int getEPMapEntriesNum() {
-            return EPMapEntriesNum;
-        }
-
-        public boolean hasEPMap() {
-        	return getEPMapEntriesNum() > 0;
-        }
-
-        public PSMFEntry getEPMapEntry(int id) {
-            return EPMap.get(id);
-        }
-
-        public PSMFEntry getEPMapEntryWithTimestamp(int ts) {
-        	PSMFEntry foundEntry = null;
-            for (PSMFEntry entry : EPMap.values()) {
-            	if (foundEntry == null || entry.getEntryPTS() <= ts) {
-            		foundEntry = entry;
-            	} else if (entry.getEntryPTS() > ts) {
-                    break;
-                }
-            }
-            return foundEntry;
-        }
-
-        public int getNumberOfStreams() {
-            return streamNum;
-        }
-
-        public int getCurrentStreamNumber() {
-            return currentStreamNumber;
-        }
-
-        public boolean isValidCurrentStreamNumber() {
-        	return getCurrentStreamNumber() >= 0;
-        }
-
-        public int getCurrentStreamType() {
-            if (currentStreamNumber >= 0 && currentStreamNumber < streams.size()) {
-                return streams.get(currentStreamNumber).getStreamType();
-            }
-            return -1;
-        }
-
-        public int getCurrentStreamChannel() {
-            if (currentStreamNumber >= 0 && currentStreamNumber < streams.size()) {
-                return streams.get(currentStreamNumber).getStreamChannel();
-            }
-            return -1;
-        }
-
-        public int getSpecificStreamNum(int type) {
-        	int num = 0;
-        	for (PSMFStream stream : streams) {
-        		if (stream.isStreamOfType(type)) {
-        			num++;
-        		}
-        	}
-
-        	return num;
-        }
-
-        private void setVideoStreamNum(int id, int channel) {
-        	if (currentVideoStreamNumber != id) {
-        		Modules.sceMpegModule.setRegisteredVideoChannel(channel);
-        		currentVideoStreamNumber = id;
-        	}
-        }
-
-        private void setAudioStreamNum(int id, int channel) {
-        	if (currentAudioStreamNumber != id) {
-        		Modules.sceMpegModule.setRegisteredAudioChannel(channel);
-        		currentAudioStreamNumber = id;
-        	}
-        }
-
-        public void setStreamNum(int id) {
-            currentStreamNumber = id;
-
-            if (isValidCurrentStreamNumber()) {
-	            int type = getCurrentStreamType();
-	            int channel = getCurrentStreamChannel();
-	            switch (type) {
-	            	case PSMF_AVC_STREAM:
-	            		setVideoStreamNum(id, channel);
-	            		break;
-	            	case PSMF_PCM_STREAM:
-	            	case PSMF_ATRAC_STREAM:
-	            		setAudioStreamNum(id, channel);
-	            		break;
-	            }
-            }
-        }
-
-        private int getStreamNumber(int type, int typeNum, int channel) {
-        	for (PSMFStream stream : streams) {
-        		if (stream.isStreamOfType(type)) {
-        			if (typeNum <= 0) {
-        				if (channel < 0 || stream.getStreamChannel() == channel) {
-        					return stream.getStreamNumber();
-        				}
-        			}
-    				typeNum--;
-        		}
-        	}
-
-        	return -1;
-        }
-
-        public boolean setStreamWithType(int type, int channel) {
-        	int streamNumber = getStreamNumber(type, 0, channel);
-        	if (streamNumber < 0) {
-        		return false;
-        	}
-        	setStreamNum(streamNumber);
-
-    		return true;
-        }
-
-        public boolean setStreamWithTypeNum(int type, int typeNum) {
-        	int streamNumber = getStreamNumber(type, typeNum, -1);
-        	if (streamNumber < 0) {
-        		return false;
-        	}
-        	setStreamNum(streamNumber);
-
-    		return true;
-        }
-    }
-
-    public static int getPsmfNumStreams(Memory mem, int addr, byte[] mpegHeader) {
-    	return endianSwap16(read16(mem, addr, mpegHeader, sceMpeg.PSMF_NUMBER_STREAMS));    	
-    }
-
-    public static LinkedList<PSMFStream> readPsmfStreams(Memory mem, int addr, byte[] mpegHeader, PSMFHeader psmfHeader) {
-    	int numStreams = getPsmfNumStreams(mem, addr, mpegHeader);
-
-    	// Stream area:
-        // At offset 0x82, each 16 bytes represent one stream.
-        LinkedList<PSMFStream> streams = new LinkedList<PSMFStream>();
-
-        // Parse the stream field and assign each one to it's type.
-        int numberOfStreams = 0;
-        for (int i = 0; i < numStreams; i++) {
-            PSMFStream stream = null;
-            int currentStreamOffset = 0x82 + i * 16;
-            int streamID = read8(mem, addr, mpegHeader, currentStreamOffset);
-            if ((streamID & 0xF0) == PSMF_VIDEO_STREAM_ID) {
-                stream = new PSMFStream(numberOfStreams);
-                stream.readMPEGVideoStreamParams(mem, addr, mpegHeader, currentStreamOffset, psmfHeader);
-            } else if (streamID == PSMF_AUDIO_STREAM_ID) {
-                stream = new PSMFStream(numberOfStreams);
-                stream.readPrivateAudioStreamParams(mem, addr, mpegHeader, currentStreamOffset, psmfHeader);
-            } else {
-            	stream = new PSMFStream(numberOfStreams);
-            	stream.readUserDataStreamParams(mem, addr, mpegHeader, currentStreamOffset, psmfHeader);
-            }
-
-            if (stream != null) {
-                streams.add(stream);
-                numberOfStreams++;
-            }
-        }
-
-        return streams;
-    }
-
     @HLELogging(level="info")
     @HLEFunction(nid = 0xC22C8327, version = 150, checkInsideInterrupt = true)
     public int scePsmfSetPsmf(TPointer32 psmf, TPointer bufferAddr) {
         Modules.sceMpegModule.setCurrentMpegAnalyzed(false);
-        PSMFHeader header = new PSMFHeader(bufferAddr.getAddress());
-        psmfHeaderMap.put(header.getHeaderOffset(), header);
+        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
+        PSMFHeader header = Modules.sceMpegModule.psmfHeader;
+        psmfHeaderMap.put(bufferAddr.getAddress(), header);
 
         // PSMF struct:
         // This is an internal system data area which is used to store
@@ -528,7 +100,7 @@ public class scePsmf extends HLEModule {
         psmf.setValue(12, 0);                               // Grouping Period ID.
         psmf.setValue(16, 0);                               // Group ID.
         psmf.setValue(20, header.getCurrentStreamNumber()); // Current stream's number.
-        psmf.setValue(24, header.getHeaderOffset());        // Pointer to PSMF header.
+        psmf.setValue(24, bufferAddr.getAddress());         // Pointer to PSMF header.
         // psmf + 28 - Pointer to current PSMF stream info (video/audio).
         // psmf + 32 - Pointer to mark data (used for chapters in UMD_VIDEO).
         // psmf + 36 - Pointer to current PSMF stream grouping period.
@@ -626,7 +198,7 @@ public class scePsmf extends HLEModule {
         	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
         }
         videoInfoAddr.setValue(0, header.getVideoWidth());
-        videoInfoAddr.setValue(4, header.getvideoHeigth());
+        videoInfoAddr.setValue(4, header.getVideoHeigth());
 
         return 0;
     }
@@ -663,6 +235,9 @@ public class scePsmf extends HLEModule {
     		return SceKernelErrors.ERROR_PSMF_INVALID_ID;
     	}
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePsmfGetEPWithId returning %s", entry));
+        }
         outAddr.setValue(0, entry.getEntryPTS());
         outAddr.setValue(4, entry.getEntryOffset());
         outAddr.setValue(8, entry.getEntryIndex());
@@ -690,6 +265,9 @@ public class scePsmf extends HLEModule {
         	return -1;
         }
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePsmfGetEPWithTimestamp returning %s", entry));
+        }
         entryAddr.setValue(0, entry.getEntryPTS());
         entryAddr.setValue(4, entry.getEntryOffset());
         entryAddr.setValue(8, entry.getEntryIndex());
@@ -726,22 +304,20 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x5B70FCC1, version = 150, checkInsideInterrupt = true)
     public int scePsmfQueryStreamOffset(TPointer bufferAddr, TPointer32 offsetAddr) {
-        int offset = endianSwap32(bufferAddr.getValue32(sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
-        offsetAddr.setValue(offset);
-
         // Always let sceMpeg handle the PSMF analysis.
         Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress(), null);
+
+        offsetAddr.setValue(Modules.sceMpegModule.psmfHeader.mpegOffset);
 
         return 0;
     }
 
     @HLEFunction(nid = 0x9553CC91, version = 150, checkInsideInterrupt = true)
     public int scePsmfQueryStreamSize(TPointer bufferAddr, TPointer32 sizeAddr) {
-        int size = endianSwap32(bufferAddr.getValue32(sceMpeg.PSMF_STREAM_SIZE_OFFSET));
-        sizeAddr.setValue(size);
-
         // Always let sceMpeg handle the PSMF analysis.
         Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress(), null);
+
+        sizeAddr.setValue(Modules.sceMpegModule.psmfHeader.mpegStreamSize);
 
         return 0;
     }

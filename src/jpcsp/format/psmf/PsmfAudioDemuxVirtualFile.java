@@ -53,6 +53,7 @@ public class PsmfAudioDemuxVirtualFile extends AbstractProxyVirtualFile {
     private long position;
     private int mpegOffset;
     private long startPosition;
+    private int remainingPacketLength;
 
     public PsmfAudioDemuxVirtualFile(IVirtualFile vFile, int mpegOffset, int audioChannel) {
 		super(vFile);
@@ -191,6 +192,32 @@ public class PsmfAudioDemuxVirtualFile extends AbstractProxyVirtualFile {
 		int readLength = 0;
 		int readAddr = outputPointer != null ? outputPointer.getAddress() : 0;
 
+		while (remainingPacketLength > 0 && readLength < outputLength) {
+			int maxReadLength = Math.min(remainingPacketLength, outputLength - readLength);
+			int l;
+			if (outputBuffer != null) {
+				l = vFile.ioRead(outputBuffer, outputOffset, maxReadLength);
+			} else if (outputPointer != null) {
+				l = vFile.ioRead(new TPointer(outputPointer.getMemory(), readAddr), maxReadLength);
+			} else {
+				l = maxReadLength;
+			}
+
+			if (l > 0) {
+				remainingPacketLength -= l;
+				readLength += l;
+				readAddr += l;
+				outputOffset += l;
+				position += l;
+			} else if (l < 0) {
+				break;
+			}
+		}
+
+		if (remainingPacketLength > 0) {
+			return readLength;
+		}
+
 		while (!isEOF() && readLength < outputLength) {
 			long startIndex = vFile.getPosition();
 			int startCode = 0xFF;
@@ -223,7 +250,7 @@ public class PsmfAudioDemuxVirtualFile extends AbstractProxyVirtualFile {
 					length = readPesHeader(pesHeader, length, startCode);
 					if (pesHeader.channel == audioChannel || audioChannel < 0) {
 						int packetLength = 0;
-						while (packetLength < length) {
+						while (packetLength < length && readLength < outputLength) {
 							int maxReadLength = Math.min(length - packetLength, outputLength - readLength);
 							int l;
 							if (outputBuffer != null) {
@@ -244,6 +271,7 @@ public class PsmfAudioDemuxVirtualFile extends AbstractProxyVirtualFile {
 								break;
 							}
 						}
+						remainingPacketLength = length - packetLength;
 					} else {
 						skip(length);
 					}

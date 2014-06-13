@@ -48,8 +48,6 @@ public class sceMp4 extends HLEModule {
 	protected int readSize;
 	protected boolean fileReadingCompleted;
 	protected boolean fileReadingInProgress;
-	private static final int audioFirstTimestamp = 0;
-	private static final int videoFirstTimestamp = 0;
 	private static final int audioBufferSize = 4096;
 
 	protected class FileReadingAction implements IAction {
@@ -216,6 +214,7 @@ public class sceMp4 extends HLEModule {
 		readSize = 0;
 		fileReadingInProgress = false;
 		fileReadingCompleted = false;
+		Modules.sceMpegModule.hleSetFirstTimestamp(0);
 	}
 
 	@HLEUnimplemented
@@ -416,7 +415,7 @@ public class sceMp4 extends HLEModule {
     	}
 
     	// unknown4: pointer to a 40-bytes structure
-        return Modules.sceMpegModule.hleMpegGetAtracAu(auAddr, audioFirstTimestamp);
+        return Modules.sceMpegModule.hleMpegGetAtracAu(auAddr);
     }
 
     /**
@@ -456,7 +455,7 @@ public class sceMp4 extends HLEModule {
     		return readFile();
     	}
 
-    	return Modules.sceMpegModule.hleMpegGetAvcAu(auAddr, videoFirstTimestamp, SceKernelErrors.ERROR_MP4_NO_MORE_DATA);
+    	return Modules.sceMpegModule.hleMpegGetAvcAu(auAddr, SceKernelErrors.ERROR_MP4_NO_MORE_DATA);
     }
 
     @HLEUnimplemented

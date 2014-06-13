@@ -37,15 +37,19 @@ public class StreamState {
 	private long pts;
 	private IContainer container;
 	private int timestampOffset;
+	private int timestampStep;
+	private boolean firstTimestamp;
 
-	public StreamState(MediaEngine me, int streamID, IContainer container, int timestampOffset) {
+	public StreamState(MediaEngine me, int streamID, IContainer container, int timestampOffset, int timestampStep) {
 		this.me = me;
 		this.streamID = streamID;
 		this.container = container;
 		this.timestampOffset = timestampOffset;
+		this.timestampStep = timestampStep;
 		pts = timestampOffset;
 		dts = timestampOffset;
 		pendingPackets = new LinkedList<IPacket>();
+		firstTimestamp = true;
 	}
 
 	public void setStreamID(int streamID) {
@@ -98,13 +102,26 @@ public class StreamState {
     	return Math.round((ts & timestampMask) * timeBase.getDouble() * timestampsPerSecond);
     }
 
-	public void updateTimestamps() {
+	public void updateTimestamps(boolean increment) {
 		// If multiple picture / audio samples are stored into one packet,
 		// the timestamp of the packet is only valid for the first picture / sample.
 		// Further pictures /samples in the same packet have an unknown timestamp.
 		if (getOffset() == 0) {
-			dts = timestampOffset + convertTimestamp(packet.getDts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
-			pts = timestampOffset + convertTimestamp(packet.getPts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+	    	// When both the pts and dts are equal to (1 << 63), assume they are unknown
+			// and automatically increment the timestamp.
+			if (packet.getDts() == packet.getPts() && packet.getPts() == (timestampMask + 1)) {
+				if (increment) {
+					if (firstTimestamp) {
+						firstTimestamp = false;
+					} else {
+						pts += timestampStep;
+						dts += timestampStep;
+					}
+				}
+			} else {
+				dts = timestampOffset + convertTimestamp(packet.getDts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+				pts = timestampOffset + convertTimestamp(packet.getPts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+			}
 		} else {
 			dts = sceMpeg.UNKNOWN_TIMESTAMP;
 			pts = sceMpeg.UNKNOWN_TIMESTAMP;
