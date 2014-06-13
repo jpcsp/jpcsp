@@ -529,7 +529,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         extractSavedataKey = new javax.swing.JCheckBox();
         disableDLC = new javax.swing.JCheckBox();
         networkPanel = new javax.swing.JPanel();
-        networkRemindLabel = new javax.swing.JLabel();
         lanMultiPlayerRadioButton = new javax.swing.JRadioButton();
         netServerPortShiftRadioButton = new javax.swing.JRadioButton();
         netClientPortShiftRadioButton = new javax.swing.JRadioButton();
@@ -1221,9 +1220,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.CryptoPanel.title"), CryptoPanel); // NOI18N
 
-        networkRemindLabel.setForeground(new java.awt.Color(255, 0, 0));
-        networkRemindLabel.setText(bundle.getString("SettingsGUI.networkRemindLabel.text")); // NOI18N
-
         buttonGroup3.add(lanMultiPlayerRadioButton);
         lanMultiPlayerRadioButton.setText(bundle.getString("SettingsGUI.lanMultiPlayerRadioButton.text")); // NOI18N
 
@@ -1246,9 +1242,13 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         metaServerLabel.setText(bundle.getString("SettingsGUI.metaServerLabel.text")); // NOI18N
 
+        metaServerTextField.setText(bundle.getString("SettingsGUI.metaServerTextField.text")); // NOI18N
+
         metaServerRemindLabel.setText(bundle.getString("SettingsGUI.metaServerRemindLabel.text")); // NOI18N
 
         broadcastAddressLabel.setText(bundle.getString("SettingsGUI.broadcastAddressLabel.text")); // NOI18N
+
+        broadcastAddressTextField.setText(bundle.getString("SettingsGUI.broadcastAddressTextField.text")); // NOI18N
 
         broadcastAddressRemindLabel.setText(bundle.getString("SettingsGUI.broadcastAddressRemindLabel.text")); // NOI18N
 
@@ -1259,7 +1259,6 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(networkPanelLayout.createSequentialGroup()
                 .addGap(23, 23, 23)
                 .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(networkRemindLabel)
                     .addGroup(networkPanelLayout.createSequentialGroup()
                         .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(metaServerLabel)
@@ -1290,14 +1289,12 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lanMultiPlayerLabel)
                             .addComponent(netServerPortShiftLabel))))
-                .addContainerGap(108, Short.MAX_VALUE))
+                .addContainerGap(150, Short.MAX_VALUE))
         );
         networkPanelLayout.setVerticalGroup(
             networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(networkPanelLayout.createSequentialGroup()
-                .addGap(20, 20, 20)
-                .addComponent(networkRemindLabel)
-                .addGap(18, 18, 18)
+                .addGap(53, 53, 53)
                 .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lanMultiPlayerRadioButton)
                     .addComponent(lanMultiPlayerLabel))
@@ -1497,7 +1494,6 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel netServerPortShiftLabel;
     private javax.swing.JRadioButton netServerPortShiftRadioButton;
     private javax.swing.JPanel networkPanel;
-    private javax.swing.JLabel networkRemindLabel;
     private javax.swing.JTextField nicknameTextField;
     private javax.swing.JLabel nicknamelLabel;
     private javax.swing.JCheckBox onlyGEGraphicsCheck;

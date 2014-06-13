@@ -127,6 +127,8 @@ public class ChatGUI extends JFrame {
         // Layout:
         //
         // +-------------------------------------------+-----------------+
+        // |                                           | adhocIDLabel    |
+        // |                                           | groupNameLabel  |
         // | chatMessageLabel in scrollPane            | membersLabel    |
         // |                                           +-----------------+
         // |                                           | membersList     |
