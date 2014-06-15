@@ -61,6 +61,7 @@ import jpcsp.MemoryMap;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
@@ -1950,6 +1951,14 @@ public class sceDisplay extends HLEModule {
     	if (ExternalGE.isActive()) {
     		if (ExternalGE.isInsideRendering()) {
     			return true;
+    		}
+    	} else {
+    		if (insideRendering) {
+    			PspGeList currentList = VideoEngine.getInstance().getCurrentList();
+    			if (currentList != null && currentList.isStalledAtStart()) {
+    				// We are not really rendering when stalling at the start of the list
+					return false;
+    			}
     		}
     	}
 
