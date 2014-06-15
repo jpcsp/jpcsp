@@ -1985,7 +1985,7 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x21FF80E4, version = 150, checkInsideInterrupt = true)
     public int sceMpegQueryStreamOffset(@CheckArgument("checkMpegHandle") int mpeg, TPointer bufferAddr, TPointer32 offsetAddr) {
-        analyseMpeg(bufferAddr.getAddress(), null);
+        analyseMpeg(bufferAddr.getAddress());
 
         // Check magic.
         if (psmfHeader.mpegMagic != PSMF_MAGIC) {
@@ -2022,7 +2022,7 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x611E9E11, version = 150, checkInsideInterrupt = true)
     public int sceMpegQueryStreamSize(TPointer bufferAddr, TPointer32 sizeAddr) {
-        analyseMpeg(bufferAddr.getAddress(), null);
+        analyseMpeg(bufferAddr.getAddress());
 
         // Check magic.
         if (psmfHeader.mpegMagic != PSMF_MAGIC) {

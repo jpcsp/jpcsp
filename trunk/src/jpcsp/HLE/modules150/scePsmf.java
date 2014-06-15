@@ -305,7 +305,7 @@ public class scePsmf extends HLEModule {
     @HLEFunction(nid = 0x5B70FCC1, version = 150, checkInsideInterrupt = true)
     public int scePsmfQueryStreamOffset(TPointer bufferAddr, TPointer32 offsetAddr) {
         // Always let sceMpeg handle the PSMF analysis.
-        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress(), null);
+        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
 
         offsetAddr.setValue(Modules.sceMpegModule.psmfHeader.mpegOffset);
 
@@ -315,7 +315,7 @@ public class scePsmf extends HLEModule {
     @HLEFunction(nid = 0x9553CC91, version = 150, checkInsideInterrupt = true)
     public int scePsmfQueryStreamSize(TPointer bufferAddr, TPointer32 sizeAddr) {
         // Always let sceMpeg handle the PSMF analysis.
-        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress(), null);
+        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
 
         sizeAddr.setValue(Modules.sceMpegModule.psmfHeader.mpegStreamSize);
 
