@@ -84,10 +84,12 @@ public class NativeUtils {
 			}
 			libraries.add("software-ge-renderer");
 
-			try {
-				// Search for an available library in preference order
-				for (String library : libraries) {
-					if (Utilities.isSystemLibraryExisting(library)) {
+			boolean libraryExisting = false;
+			// Search for an available library in preference order
+			for (String library : libraries) {
+				if (Utilities.isSystemLibraryExisting(library)) {
+					libraryExisting = true;
+					try {
 						System.loadLibrary(library);
 						if (Memory.getInstance() instanceof FastMemory) {
 							memoryInt = ((FastMemory) Memory.getInstance()).getAll();
@@ -95,11 +97,15 @@ public class NativeUtils {
 						initNative();
 						log.info(String.format("Loaded %s library", library));
 						isAvailable = true;
-						break;
+					} catch (UnsatisfiedLinkError e) {
+						log.error(String.format("Could not load external software library %s: %s", library, e));
+						isAvailable = false;
 					}
+					break;
 				}
-			} catch (UnsatisfiedLinkError e) {
-				isAvailable = false;
+			}
+			if (!libraryExisting) {
+				log.error(String.format("Missing external software library"));
 			}
 
 			isInitialized = true;

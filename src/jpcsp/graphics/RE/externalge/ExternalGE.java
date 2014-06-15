@@ -138,7 +138,9 @@ public class ExternalGE {
 
     	if (activateWhenAvailable) {
         	NativeUtils.init();
-			activate();
+        	if (isAvailable()) {
+        		activate();
+        	}
 		} else {
 			deactivate();
 		}
