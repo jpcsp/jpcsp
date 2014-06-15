@@ -251,6 +251,10 @@ public class PspGeList {
     	return pc == stall_addr && stall_addr != 0;
     }
 
+    public boolean isStalledAtStart() {
+    	return isStallReached() && pc == list_addr;
+    }
+
     public void startList() {
     	paused = false;
     	ExternalGE.onGeStartList(this);
