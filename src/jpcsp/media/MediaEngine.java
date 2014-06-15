@@ -82,6 +82,8 @@ public class MediaEngine {
     private IVideoPicture videoPicture;
     private IAudioSamples audioSamples;
     private IAudioResampler audioResampler;
+    private IAudioSamples resampleSamples;
+    private int resampleSize;
     private IConverter videoConverter;
     private IVideoResampler videoResampler;
     private int[] videoImagePixels;
@@ -676,7 +678,9 @@ public class MediaEngine {
             state.consume(decodedBytes);
 
             if (audioSamples.isComplete()) {
-                updateSoundSamples(audioSamples, requiredAudioChannels);
+                if (state.getPts() < 0 || state.getPts() >= firstTimestamp) {
+                	updateSoundSamples(audioSamples, requiredAudioChannels);
+                }
                 complete = true;
                 break;
             }
@@ -885,6 +889,10 @@ public class MediaEngine {
             decodedAudioSamples.delete();
             decodedAudioSamples = null;
         }
+        if (resampleSamples != null) {
+        	resampleSamples.delete();
+        	resampleSamples = null;
+        }
         tempBuffer = null;
         currentImg = null;
     }
@@ -970,7 +978,14 @@ public class MediaEngine {
         int samplesSize = length;
 
         // Create new samples with the same parameters as the input samples.
-        IAudioSamples newSamples = IAudioSamples.make(samplesSize, samples.getChannels());
+        if (resampleSamples == null) {
+        	resampleSamples = IAudioSamples.make(samplesSize, samples.getChannels());
+        	resampleSize = samplesSize;
+        } else if (resampleSize < samplesSize || resampleSamples.getChannels() != samples.getChannels()) {
+        	resampleSamples.delete();
+        	resampleSamples = IAudioSamples.make(samplesSize, samples.getChannels());
+        	resampleSize = samplesSize;
+        }
 
         if (audioResampler == null) {
             audioResampler = IAudioResampler.make(audioCoder.getChannels(), audioCoder.getChannels(),
@@ -979,13 +994,13 @@ public class MediaEngine {
         }
 
         // Resample the input samples into the temporary container.
-        audioResampler.swresample(newSamples, samples, samplesSize);
+        audioResampler.swresample(resampleSamples, samples, samplesSize);
 
         // Update the samples size.
-        samplesSize = newSamples.getSize();
+        samplesSize = resampleSamples.getSize();
 
         // Output the converted samples.
-        newSamples.get(0, tempBuffer, 0, samplesSize);
+        resampleSamples.get(0, tempBuffer, 0, samplesSize);
 
         // Fix the audio panning for stereo(Xuggler bug).
         if (samples.getChannels() == 2) {
@@ -998,13 +1013,10 @@ public class MediaEngine {
         }
 
         // Perform mono or stereo conversion.
-        samplesSize = convertSamples(newSamples, tempBuffer, samplesSize, requiredAudioChannels);
+        samplesSize = convertSamples(resampleSamples, tempBuffer, samplesSize, requiredAudioChannels);
 
         // Write back the samples.
         decodedAudioSamples.write(tempBuffer, 0, samplesSize);
-
-        // Clean up.
-        newSamples.delete();
     }
 
     /**
