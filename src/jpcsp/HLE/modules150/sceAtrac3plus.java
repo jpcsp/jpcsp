@@ -497,7 +497,6 @@ public class sceAtrac3plus extends HLEModule {
 	                if (result != 0) {
 	                	return result;
 	                }
-	                getInputBuffer().setFileMaxSize(inputFileSize);
 	                log.info(String.format("hleAtracSetData atID=0x%X, buffer=0x%08X, readSize=0x%X, bufferSize=0x%X, fileSize=0x%X", getAtracId(), buffer, readSize, bufferSize, inputFileSize));
 	                if (getAtracCodec() == null) {
 	                    log.warn(String.format("hleAtracSetData atID=0x%X is invalid", getAtracId()));
@@ -510,6 +509,8 @@ public class sceAtrac3plus extends HLEModule {
 	                	bufferSize = Math.min(bufferSize, inputFileSize);
 	                	inputBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
 	                }
+
+	                getInputBuffer().setFileMaxSize(inputFileSize);
 
 	                // The atrac header has been read
 	                inputBuffer.notifyRead(inputFileDataOffset);
