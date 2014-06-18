@@ -3238,6 +3238,48 @@
 08BE4190:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpy">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcpy</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0882603C:[27BDFFE0]: addiu      $sp, $sp, -32
+08826040:[00C04825]: or         $t1, $a2, $zr <=> move $t1, $a2
+08826044:[00803025]: or         $a2, $a0, $zr <=> move $a2, $a0
+08826048:[00804025]: or         $t0, $a0, $zr <=> move $t0, $a0
+0882604C:[312A000F]: andi       $t2, $t1, 15
+08826050:[00A03825]: or         $a3, $a1, $zr <=> move $a3, $a1
+08826054:[AFBF0010]: sw         $ra, 16($sp)
+08826058:[15400005]: bne        $t2, $zr, 0x08826070
+0882605C:[01202025]: or         $a0, $t1, $zr <=> move $a0, $t1
+08826060:[00C54825]: or         $t1, $a2, $a1
+08826064:[31290003]: andi       $t1, $t1, 3
+08826068:[11200007]: beq        $t1, $zr, 0x08826088
+0882606C:[00000000]: nop
+08826070:[00803025]: or         $a2, $a0, $zr <=> move $a2, $a0
+08826074:[01002025]: or         $a0, $t0, $zr <=> move $a0, $t0
+08826078:[0E217AB0/FC000000]: jal        0x0885EAC0			; memcpy
+0882607C:[00E02825]: or         $a1, $a3, $zr <=> move $a1, $a3
+08826080:[1000000F]: b          0x088260C0
+08826084:[00000000]: nop
+08826088:[00862021]: addu       $a0, $a0, $a2
+0882608C:[10C4000C]: beq        $a2, $a0, 0x088260C0
+08826090:[00000000]: nop
+08826094:[8CA70000]: lw         $a3, 0($a1)
+08826098:[ACC70000]: sw         $a3, 0($a2)
+0882609C:[8CA70004]: lw         $a3, 4($a1)
+088260A0:[ACC70004]: sw         $a3, 4($a2)
+088260A4:[8CA70008]: lw         $a3, 8($a1)
+088260A8:[ACC70008]: sw         $a3, 8($a2)
+088260AC:[8CA7000C]: lw         $a3, 12($a1)
+088260B0:[ACC7000C]: sw         $a3, 12($a2)
+088260B4:[24C60010]: addiu      $a2, $a2, 16
+088260B8:[14C4FFF6]: bne        $a2, $a0, 0x08826094
+088260BC:[24A50010]: addiu      $a1, $a1, 16
+088260C0:[8FBF0010]: lw         $ra, 16($sp)
+088260C4:[03E00008]: jr         $ra
+088260C8:[27BD0020]: addiu      $sp, $sp, 32
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="memset">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<IsReturning>true</IsReturning>
