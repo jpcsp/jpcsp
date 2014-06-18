@@ -281,6 +281,8 @@ public class Compiler implements ICompiler {
 	        	executable.setExecutable(new RecompileExecutable(codeBlock));
     		}
     	}
+
+		getNativeCodeManager().invalidateCompiledNativeCodeBlocks(codeBlock.getLowestAddress(), codeBlock.getHighestAddress());
     }
 
     public void checkCodeBlockValidity(CodeBlock codeBlock) {
