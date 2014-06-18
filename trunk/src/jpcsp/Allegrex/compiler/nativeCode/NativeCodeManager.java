@@ -329,6 +329,33 @@ public class NativeCodeManager {
 		return compiledNativeCodeBlocks.get(address);
 	}
 
+	public void invalidateCompiledNativeCodeBlocks(int startAddress, int endAddress) {
+		// Most common case: nothing to do.
+		if (compiledNativeCodeBlocks.size() == 0) {
+			return;
+		}
+
+		// What is the most efficient?
+		// To scan all the addressed between startAddress and endAddres or
+		// to scan all the compiledNativeCodeBlocks?
+		if ((endAddress - startAddress) >>> 2 < compiledNativeCodeBlocks.size()) {
+			for (int address = startAddress; address <= endAddress; address += 4) {
+				compiledNativeCodeBlocks.remove(address);
+			}
+		} else {
+			List<Integer> toBeRemoved = new LinkedList<Integer>();
+			for (Integer address : compiledNativeCodeBlocks.keySet()) {
+				if (startAddress >= address.intValue() && address.intValue() <= endAddress) {
+					toBeRemoved.add(address);
+				}
+			}
+			for (Integer address : toBeRemoved) {
+				compiledNativeCodeBlocks.remove(address);
+			}
+			toBeRemoved.clear();
+		}
+	}
+
 	private boolean isNativeCodeSequence(NativeCodeSequence nativeCodeSequence, CodeInstruction codeInstruction, CodeBlock codeBlock) {
 		int address = codeInstruction.getAddress();
 		int numOpcodes = nativeCodeSequence.getNumOpcodes();
