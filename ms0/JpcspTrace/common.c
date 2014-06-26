@@ -47,6 +47,22 @@ int (* referMutex)(SceUID, SceKernelMutexInfo *) = NULL;
 SceKernelMutexInfo mutexInfo;
 #endif
 
+int (* ioOpen)(const char *s, int flags, int permissions) = userIoOpen;
+int (* ioWrite)(SceUID id, const void *data, int size) = userIoWrite;
+int (* ioClose)(SceUID id) = userIoClose;
+
+int userIoOpen(const char *s, int flags, int permissions) {
+	return sceIoOpen(s, flags, permissions);
+}
+
+int userIoWrite(SceUID id, const void *data, int size) {
+	return sceIoWrite(id, data, size);
+}
+
+int userIoClose(SceUID id) {
+	return sceIoClose(id);
+}
+
 void *alloc(int size) {
 	void *allocAddr;
 
@@ -94,15 +110,17 @@ char *append(char *dst, const char *src) {
 	return dst;
 }
 
-char *appendHex(char *dst, u32 hex, int numDigits) {
+char *appendHexNoPrefix(char *dst, u32 hex, int numDigits) {
 	int i;
-	*dst++ = '0';
-	*dst++ = 'x';
 	int leadingZero = 1;
+	if (numDigits <= 0) {
+		// Display at least 1 digit
+		numDigits = 1;
+	}
 	numDigits <<= 2;
 	for (i = 28; i >= 0; i -= 4) {
 		int digit = (hex >> i) & 0xF;
-		if (digit > 0 || !leadingZero || i <= numDigits) {
+		if (digit > 0 || !leadingZero || i < numDigits) {
 			*dst++ = hexDigits[digit];
 			leadingZero = 0;
 		}
@@ -110,6 +128,12 @@ char *appendHex(char *dst, u32 hex, int numDigits) {
 	*dst = '\0';
 
 	return dst;
+}
+
+char *appendHex(char *dst, u32 hex, int numDigits) {
+	*dst++ = '0';
+	*dst++ = 'x';
+	return appendHexNoPrefix(dst, hex, numDigits);
 }
 
 char *appendInt(char *dst, s32 n, int numDigits) {
@@ -145,12 +169,12 @@ char *appendInt(char *dst, s32 n, int numDigits) {
 
 void openLogFile() {
 	if (commonInfo->logFd < 0) {
-		commonInfo->logFd = sceIoOpen("ms0:/log.txt", PSP_O_WRONLY | PSP_O_CREAT | PSP_O_APPEND, 0777);
+		commonInfo->logFd = ioOpen("ms0:/log.txt", PSP_O_WRONLY | PSP_O_CREAT | PSP_O_APPEND, 0777);
 	}
 }
 
 void closeLogFile() {
-	sceIoClose(commonInfo->logFd);
+	ioClose(commonInfo->logFd);
 	commonInfo->logFd = -1;
 }
 
@@ -189,7 +213,7 @@ void flushLogBuffer() {
 	while (commonInfo->logBufferLength > 0) {
 		// Try to write pending output.
 		// This will succeed as soon as the interrupts are enabled again.
-		int length = sceIoWrite(commonInfo->logFd, commonInfo->logBuffer, commonInfo->logBufferLength);
+		int length = ioWrite(commonInfo->logFd, commonInfo->logBuffer, commonInfo->logBufferLength);
 		if (length <= 0) {
 			break;
 		}
@@ -215,7 +239,7 @@ void writeLog(const char *s, int length) {
 
 	flushLogBuffer();
 
-	if (sceIoWrite(commonInfo->logFd, s, length) < 0) {
+	if (ioWrite(commonInfo->logFd, s, length) < 0) {
 		// Can't write to the log file right now, probably because the interrupts are disabled.
 		// Save the log string for later output.
 		appendToLogBuffer(s, length);
@@ -313,7 +337,7 @@ void printLogMem(const char *s1, int addr, int length) {
 	s = append(s, ":\n");
 	if (addr != 0) {
 		lineStart = 0;
-		for (i = 0; i < length; i += 4) {
+		for (i = 0; i < length; i++) {
 			if (i > 0) {
 				if ((i % 16) == 0) {
 					s = append(s, "  >");
@@ -329,10 +353,10 @@ void printLogMem(const char *s1, int addr, int length) {
 					s = buffer;
 					lineStart = i;
 				} else {
-					s = append(s, ", ");
+					s = append(s, " ");
 				}
 			}
-			s = appendHex(s, _lw(addr + i), 8);
+			s = appendHexNoPrefix(s, _lb(addr + i), 2);
 		}
 	}
 	s = append(s, "\n");
@@ -344,6 +368,11 @@ void *utilitySavedataParams = NULL;
 
 void utilitySavedataLog(char *buffer, const SyscallInfo *syscallInfo, u32 param) {
 	char *s = buffer;
+	int fd;
+
+	if (syscallInfo->nid != 0x50C4CD57 && syscallInfo->nid != 0x9790B33C) {
+		return;
+	}
 
 	if (syscallInfo->nid == 0x50C4CD57) {
 		utilitySavedataParams = (void *) param;
@@ -371,7 +400,33 @@ void utilitySavedataLog(char *buffer, const SyscallInfo *syscallInfo, u32 param)
 
 	printLogMem("Data ", _lw((int) utilitySavedataParams + 116), 16);
 
+	int fileListAddr = _lw((int) utilitySavedataParams + 1528);
+	if (fileListAddr != 0 && mode == 12) { // MODE_FILES
+		printLogMem("FileList ", fileListAddr, 36);
+		if (syscallInfo->nid == 0x9790B33C) { // sceUtilitySavedataShutdownStart
+			int saveFileSecureNumEntries = _lw(fileListAddr + 12);
+			int saveFileNumEntries = _lw(fileListAddr + 16);
+			int systemFileNumEntries = _lw(fileListAddr + 20);
+			int saveFileSecureEntriesAddr = _lw(fileListAddr + 24);
+			int saveFileEntriesAddr = _lw(fileListAddr + 28);
+			int systemEntriesAddr = _lw(fileListAddr + 32);
+			printLogMem("SecureEntries ", saveFileSecureEntriesAddr, saveFileSecureNumEntries * 80);
+			printLogMem("NormalEntries ", saveFileEntriesAddr, saveFileNumEntries * 80);
+			printLogMem("SystemEntries ", systemEntriesAddr, systemFileNumEntries * 80);
+		}
+	}
+
 	printLogMem("Params ", (int) utilitySavedataParams, _lw((int) utilitySavedataParams + 0));
+
+	if (syscallInfo->nid == 0x9790B33C) {
+		fd = ioOpen("ms0:/SavedataStruct.bin", PSP_O_WRONLY | PSP_O_CREAT | PSP_O_APPEND, 0777);
+		ioWrite(fd, utilitySavedataParams, _lw((int) utilitySavedataParams + 0));
+		ioClose(fd);
+
+		fd = ioOpen("ms0:/SavedataData.bin", PSP_O_WRONLY | PSP_O_CREAT | PSP_O_APPEND, 0777);
+		ioWrite(fd, (void *) _lw((int) utilitySavedataParams + 116), _lw((int) utilitySavedataParams + 124));
+		ioClose(fd);
+	}
 }
 #endif
 
@@ -381,22 +436,21 @@ void *utilityOskParams = NULL;
 void utilityOskLog(char *buffer, const SyscallInfo *syscallInfo, u32 param) {
 	char *s = buffer;
 
-	if (syscallInfo->nid == 0xF6269B82) {
-		utilityOskParams = (void *) param;
-	}
-	if (utilityOskParams == NULL) {
+	if (syscallInfo->nid != 0xF6269B82 && syscallInfo->nid != 0x3DFAEBA9) {
 		return;
 	}
 
+	if (syscallInfo->nid == 0xF6269B82) {
+		utilityOskParams = (void *) param;
+	}
+
 	int oskDataAddr = _lw((int) utilityOskParams + 52);
-	s = append(s, "inputMode=");
-	s = appendInt(s, _lw(oskDataAddr + 0), 0);
-	s = append(s, ", inputAttr=");
-	s = appendInt(s, _lw(oskDataAddr + 4), 0);
-	s = append(s, ", language=");
-	s = appendInt(s, _lw(oskDataAddr + 8), 0);
-	s = append(s, ", hide=");
-	s = appendInt(s, _lw(oskDataAddr + 12), 0);
+	if (oskDataAddr != 0) {
+		s = append(s, "inputMode=");
+		s = appendHex(s, _lw(oskDataAddr + 0), 0);
+		s = append(s, ", inputAttr=");
+		s = appendHex(s, _lw(oskDataAddr + 4), 0);
+	}
 	if (syscallInfo->nid == 0x3DFAEBA9) {
 		s = append(s, ", result=");
 		s = appendHex(s, _lw((int) utilityOskParams + 28), 8);
@@ -405,17 +459,143 @@ void utilityOskLog(char *buffer, const SyscallInfo *syscallInfo, u32 param) {
 	writeLog(buffer, s - buffer);
 	s = buffer;
 
-	printLogMem("inText  ", _lw(oskDataAddr + 32), 18);
-	printLogMem("outText ", _lw(oskDataAddr + 40), 18);
+	printLogMem("Params ", (int) utilityOskParams, _lw((int) utilityOskParams + 0));
 }
 #endif
 
-void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra) {
+#ifdef DEBUG_UTILITY_MSG
+void *utilityMsgParams = NULL;
+
+void utilityMsgLog(char *buffer, const SyscallInfo *syscallInfo, u32 param) {
+	char *s = buffer;
+
+	if (syscallInfo->nid != 0x2AD8E239 && syscallInfo->nid != 0x67AF3428) {
+		return;
+	}
+
+	if (syscallInfo->nid == 0x2AD8E239) {
+		utilityMsgParams = (void *) param;
+	}
+
+	s = append(s, "result=");
+	s = appendHex(s, _lw((int) utilityMsgParams + 48), 0);
+	s = append(s, ", mode=");
+	s = appendHex(s, _lw((int) utilityMsgParams + 52), 0);
+	s = append(s, ", errorValue=");
+	s = appendHex(s, _lw((int) utilityMsgParams + 56), 0);
+	s = append(s, ", options=");
+	s = appendHex(s, _lw((int) utilityMsgParams + 572), 0);
+	s = append(s, ", buttonPressed=");
+	s = appendHex(s, _lw((int) utilityMsgParams + 576), 0);
+	if (syscallInfo->nid == 0x67AF3428) {
+		s = append(s, ", result=");
+		s = appendHex(s, _lw((int) utilityMsgParams + 28), 8);
+	}
+	s = append(s, "\n");
+	writeLog(buffer, s - buffer);
+
+#if 0
+	s = buffer;
+	s = append(s, "message=");
+	s = append(s, utilityMsgParams + 60);
+	s = append(s, "\n");
+	writeLog(buffer, s - buffer);
+
+	printLogMem("Params ", (int) utilityMsgParams, _lw((int) utilityMsgParams + 0));
+#endif
+}
+#endif
+
+char *syscallLogMem(char *buffer, char *s, int addr, int length) {
+	int i, j;
+	int lineStart;
+	int value;
+
+	s = appendHex(s, addr, 8);
+	if (addr != 0) {
+		*s++ = ':';
+		*s++ = '\n';
+		writeLog(buffer, s - buffer);
+		s = buffer;
+		lineStart = 0;
+		for (i = 0; i < length; i++) {
+			if (i > 0) {
+				if ((i % 16) == 0) {
+					s = append(s, " >");
+					for (j = lineStart; j < i; j++) {
+						char c = _lb(addr + j);
+						if (c < ' ' || c > '~') {
+							c = '.';
+						}
+						*s++ = c;
+					}
+					s = append(s, "<\n");
+					writeLog(buffer, s - buffer);
+					s = buffer;
+					lineStart = i;
+				} else {
+					*s++ = ' ';
+				}
+			}
+
+			value = _lb(addr + i);
+			*s++ = hexDigits[value >> 4];
+			*s++ = hexDigits[value & 0x0F];
+		}
+	}
+
+	return s;
+}
+
+#if DEBUG_STACK_USAGE
+
+int maxStackUsage = 0x1000;
+int stackValue = 0xABCD1234;
+int stackBase;
+
+u32 getStackBase(u32 sp) {
+	int a = 0;
+	u32 stackBase = (u32) &a;
+
+	if (stackBase >= sp || stackBase < sp - 0x200) {
+		stackBase = sp;
+	}
+
+	return stackBase;
+}
+
+void prepareStackUsage(u32 sp) {
+	stackBase = getStackBase(sp);
+
+	int i;
+	for (i = 4; i <= maxStackUsage; i += 4) {
+		_sw(stackValue, stackBase - i);
+	}
+}
+
+void logStackUsage(const SyscallInfo *syscallInfo) {
+	int stackUsage = 0;
+	int i;
+	for (i = maxStackUsage; i > 0; i -= 4) {
+		if (_lw(stackBase - i) != stackValue) {
+			stackUsage = i;
+			break;
+		} else {
+			_sw(0, stackBase - i);
+		}
+	}
+
+	printLogSH("Stack usage ", syscallInfo->name, ": ", stackUsage, "\n");
+}
+
+#endif
+
+
+void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra, u32 sp) {
 	char buffer[200];
 	char *s = buffer;
-	int i, j, k;
+	int i;
 	int length;
-	int lineStart;
 
 	if (logTimestamp) {
 		pspTime time;
@@ -490,37 +670,20 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 				}
 				break;
 			case TYPE_VARSTRUCT:
-				s = appendHex(s, parameter, 8);
-				if (parameter != 0) {
-					*s++ = ':';
-					*s++ = '\n';
-					writeLog(buffer, s - buffer);
-					s = buffer;
-					length = _lw(parameter);
-					lineStart = 0;
-					for (j = 0; j < length; j += 4) {
-						if (j > 0) {
-							if ((j % 16) == 0) {
-								s = append(s, "  >");
-								for (k = lineStart; k < j; k++) {
-									char c = _lb(parameter + k);
-									if (c < ' ' || c > '~') {
-										c = '.';
-									}
-									*s++ = c;
-								}
-								s = append(s, "<\n");
-								writeLog(buffer, s - buffer);
-								s = buffer;
-								lineStart = j;
-							} else {
-								*s++ = ',';
-								*s++ = ' ';
-							}
-						}
-						s = appendHex(s, _lw(parameter + j), 8);
-					}
-				}
+				length = parameter != 0 ? _lw(parameter) : 0;
+				s = syscallLogMem(buffer, s, parameter, length);
+				break;
+			case TYPE_FONT_INFO:
+				s = syscallLogMem(buffer, s, parameter, 264);
+				break;
+			case TYPE_FONT_CHAR_INFO:
+				s = syscallLogMem(buffer, s, parameter, 60);
+				break;
+			case TYPE_MPEG_EP:
+				s = syscallLogMem(buffer, s, parameter, 16);
+				break;
+			case TYPE_MPEG_AU:
+				s = syscallLogMem(buffer, s, parameter, 24);
 				break;
 		}
 	}
@@ -541,5 +704,8 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 	#endif
 	#if DEBUG_UTILITY_OSK
 	utilityOskLog(buffer, syscallInfo, parameters[0]);
+	#endif
+	#if DEBUG_UTILITY_MSG
+	utilityMsgLog(buffer, syscallInfo, parameters[0]);
 	#endif
 }
