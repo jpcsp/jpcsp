@@ -17,8 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 #define DEBUG			0
 #define DEBUG_MUTEX		0
-#define DEBUG_UTILITY_SAVEDATA		0
-#define DEBUG_UTILITY_OSK		0
+#define DEBUG_UTILITY_SAVEDATA		1
+#define DEBUG_UTILITY_OSK			1
+#define DEBUG_UTILITY_MSG			1
+#define DEBUG_STACK_USAGE	1
 #define DEFAULT_LOG_BUFFER_SIZE		1024
 
 #define ALIGN_UP(n, alignment) (((n) + ((alignment) - 1)) & ~((alignment) - 1))
@@ -29,6 +31,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define TYPE_POINTER32	3
 #define TYPE_POINTER64	4
 #define TYPE_VARSTRUCT	5
+#define TYPE_FONT_INFO	6
+#define TYPE_FONT_CHAR_INFO	7
+#define TYPE_MPEG_EP	8
+#define TYPE_MPEG_AU	9
 
 typedef struct {
 	SceUID logFd;
@@ -56,6 +62,9 @@ typedef struct SyscallInfo {
 } SyscallInfo;
 
 extern CommonInfo *commonInfo;
+extern int (* ioOpen)(const char *s, int flags, int permissions);
+extern int (* ioWrite)(SceUID id, const void *data, int size);
+extern int (* ioClose)(SceUID id);
 
 void *alloc(int size);
 char *append(char *dst, const char *src);
@@ -72,4 +81,12 @@ void printLogSH(const char *s1, const char *s2, const char *s3, int hex, const c
 void printLogHS(const char *s1, int hex, const char *s2, const char *s3, const char *s4);
 void printLogSS(const char *s1, const char *s2, const char *s3, const char *s4, const char *s5);
 void printLogMem(const char *s1, int addr, int length);
-void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra);
+void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra, u32 sp);
+int userIoOpen(const char *s, int flags, int permissions);
+int userIoWrite(SceUID id, const void *data, int size);
+int userIoClose(SceUID id);
+
+#if DEBUG_STACK_USAGE
+void prepareStackUsage(u32 sp);
+void logStackUsage(const SyscallInfo *syscallInfo);
+#endif

@@ -47,6 +47,10 @@ void * (* getHeadFunc)(u32);
 STMOD_HANDLER nextStartModuleHandler = NULL;
 int syscallPluginUser;
 int callSyscallPluginOffset;
+int (* originalIoOpen)(const char *s, int flags, int permissions);
+int (* originalIoWrite)(SceUID id, const void *data, int size);
+int (* originalIoClose)(SceUID id);
+
 
 SyscallInfo *moduleSyscalls = NULL;
 
@@ -137,6 +141,10 @@ u32 parseParamTypes(const char *s) {
 			case 'p': paramType = TYPE_POINTER32; break;
 			case 'P': paramType = TYPE_POINTER64; break;
 			case 'v': paramType = TYPE_VARSTRUCT; break;
+			case 'F': paramType = TYPE_FONT_INFO; break;
+			case 'f': paramType = TYPE_FONT_CHAR_INFO; break;
+			case 'e': paramType = TYPE_MPEG_EP; break;
+			case 'a': paramType = TYPE_MPEG_AU; break;
 		}
 		paramTypes |= paramType << i;
 	}
@@ -202,7 +210,7 @@ void mutexPreLog(const SyscallInfo *syscallInfo, const u32 *parameters) {
 }
 #endif
 
-u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra) {
+u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra, u32 sp) {
 	u32 parameters[8];
 	int k1;
 	u64 result;
@@ -217,6 +225,14 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	parameters[6] = t2;
 	parameters[7] = t3;
 
+	if (syscallInfo->nid == 0x109F50BC) {
+		commonInfo->inWriteLog++;
+	}
+
+	ioOpen = originalIoOpen;
+	ioWrite = originalIoWrite;
+	ioClose = originalIoClose;
+
 	#if DEBUG_MUTEX
 	mutexPreLog(syscallInfo, parameters);
 	#endif
@@ -224,19 +240,29 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	if (syscallInfo->flags & FLAG_LOG_BEFORE_CALL) {
 		commonInfo->inWriteLog++;
 		k1 = pspSdkSetK1(0);
-		syscallLog(syscallInfo, parameters, 0, ra);
+		syscallLog(syscallInfo, parameters, 0, ra, sp);
 		pspSdkSetK1(k1);
 		commonInfo->inWriteLog--;
 
 		log = 0;
 	}
 
+	// Remark: the stackUsage doesn't make sense here for syscalls, only for user libraries
+
 	result = syscallInfo->originalEntry(a0, a1, a2, a3, t0, t1, t2, t3);
 
 	if (log) {
 		k1 = pspSdkSetK1(0);
-		syscallLog(syscallInfo, parameters, result, ra);
+		syscallLog(syscallInfo, parameters, result, ra, sp);
 		pspSdkSetK1(k1);
+	}
+
+	ioOpen = userIoOpen;
+	ioWrite = userIoWrite;
+	ioClose = userIoClose;
+
+	if (syscallInfo->nid == 0x109F50BC) {
+		commonInfo->inWriteLog--;
 	}
 
 	return result;
@@ -286,7 +312,7 @@ void *getEntryByNID(int nid) {
 }
 
 void patchSyscall(char *module, char *library, const char *name, u32 nid, int numParams, u32 paramTypes) {
-	int asmBlocks = 9;
+	int asmBlocks = 10;
 
 	// Allocate memory for the patch code and SyscallInfo
 	int memSize = asmBlocks * 4 + sizeof(SyscallInfo) + strlen(name) + 1;
@@ -308,6 +334,7 @@ void patchSyscall(char *module, char *library, const char *name, u32 nid, int nu
 	int i = 0;
 	asmblock[i++] = 0x27BDFFF0; // addiu $sp, $sp, -16
 	asmblock[i++] = 0xAFBF0004; // sw $ra, 4($sp)
+	asmblock[i++] = 0xAFBD0008; // sw $sp, 8($sp)
 	asmblock[i++] = 0x3C0C0000 | syscallInfoAddrHi; // lui $t4, syscallInfoAddr
 	asmblock[i++] = 0x358C0000 | syscallInfoAddrLo; // ori $t4, $t4, syscallInfoAddr
 	callSyscallPluginOffset = i * 4;
@@ -695,6 +722,9 @@ int module_start(SceSize args, void * argp) {
 	// Find Allocator Functions in Memory
 	allocFunc = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x237DBD4F);
 	getHeadFunc = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x9D9A5BA1);
+	originalIoOpen = (void *) sctrlHENFindFunction("sceIOFileManager", "IoFileMgrForUser", 0x109F50BC);
+	originalIoWrite = (void *) sctrlHENFindFunction("sceIOFileManager", "IoFileMgrForUser", 0x42EC03AC);
+	originalIoClose = (void *) sctrlHENFindFunction("sceIOFileManager", "IoFileMgrForUser", 0x810C4BC3);
 
 	syscallPluginUser = 0;
 	callSyscallPluginOffset = -1;
