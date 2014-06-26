@@ -455,7 +455,7 @@ public class HLEModuleManager {
 			functionName = method.getName();
 		}
 
-		HLEModuleFunction hleModuleFunction = new HLEModuleFunction(moduleName, functionName, hleModule, method, hleFunction.checkInsideInterrupt(), hleFunction.checkDispatchThreadEnabled());
+		HLEModuleFunction hleModuleFunction = new HLEModuleFunction(moduleName, functionName, hleModule, method, hleFunction.checkInsideInterrupt(), hleFunction.checkDispatchThreadEnabled(), hleFunction.stackUsage());
 
 		if (hleUnimplemented != null) {
 			hleModuleFunction.setUnimplemented(true);

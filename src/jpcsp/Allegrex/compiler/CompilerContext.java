@@ -1409,6 +1409,16 @@ public class CompilerContext implements ICompilerContext {
     		logSyscall(func, null, logCheckFunction, func.getLoggingLevel(), true);
     	}
 
+    	if (func.hasStackUsage()) {
+    		loadMemory();
+    		loadRegister(_sp);
+    		loadImm(func.getStackUsage());
+    		mv.visitInsn(Opcodes.ISUB);
+    		loadImm(0);
+    		loadImm(func.getStackUsage());
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "memset", "(IBI)V");
+    	}
+
     	// Collecting the parameters and calling the module function...
         CompilerParameterReader parameterReader = new CompilerParameterReader(this);
 

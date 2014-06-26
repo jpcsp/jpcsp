@@ -33,13 +33,15 @@ public class HLEModuleFunction {
 	private Method hleModuleMethod;
 	private boolean checkInsideInterrupt;
 	private boolean checkDispatchThreadEnabled;
+	private int stackUsage;
 	private HLEModule hleModule;
 
-    public HLEModuleFunction(String moduleName, String functionName, HLEModule hleModule, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled) {
+    public HLEModuleFunction(String moduleName, String functionName, HLEModule hleModule, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled, int stackUsage) {
         this.moduleName = moduleName;
         this.functionName = functionName;
 		this.checkInsideInterrupt = checkInsideInterrupt;
 		this.checkDispatchThreadEnabled = checkDispatchThreadEnabled;
+		this.stackUsage = stackUsage;
 		this.hleModuleMethod = hleModuleMethod; 
 		this.hleModule = hleModule;
     }
@@ -90,6 +92,14 @@ public class HLEModuleFunction {
 	
 	public boolean checkInsideInterrupt() {
 		return checkInsideInterrupt;
+	}
+
+	public int getStackUsage() {
+		return stackUsage;
+	}
+
+	public boolean hasStackUsage() {
+		return stackUsage > 0;
 	}
 
 	public Method getHLEModuleMethod() {

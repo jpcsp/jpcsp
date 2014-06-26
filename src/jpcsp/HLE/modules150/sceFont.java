@@ -72,6 +72,9 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+//
+// The stackUsage values are based on tests performed using JpcspTrace
+//
 @HLELogging
 public class sceFont extends HLEModule {
     public static Logger log = Modules.getLogger("sceFont");
@@ -759,7 +762,7 @@ public class sceFont extends HLEModule {
     	return internalFonts.get(index);
     }
 
-    @HLEFunction(nid = 0x67F17ED7, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x67F17ED7, version = 150, checkInsideInterrupt = true, stackUsage = 0x590)
     public int sceFontNewLib(TPointer paramsPtr, @CanBeNull TErrorPointer32 errorCodePtr) {
         errorCodePtr.setValue(0);
         FontLib fontLib = new FontLib(paramsPtr);
@@ -784,14 +787,14 @@ public class sceFont extends HLEModule {
         return fontLib.openFont(font).getHandle();
     }
 
-    @HLEFunction(nid = 0xBB8E7FE6, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xBB8E7FE6, version = 150, checkInsideInterrupt = true, stackUsage = 0x440)
     public int sceFontOpenUserMemory(int fontLibHandle, TPointer memoryFontPtr, int memoryFontLength, @CanBeNull TErrorPointer32 errorCodePtr) {
         FontLib fontLib = getFontLib(fontLibHandle);    
         errorCodePtr.setValue(0);
         return fontLib.openFont(openFontFile(memoryFontPtr.getAddress(), memoryFontLength)).getHandle();
     }
 
-    @HLEFunction(nid = 0x0DA7535E, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x0DA7535E, version = 150, checkInsideInterrupt = true, stackUsage = 0x0)
     public int sceFontGetFontInfo(int fontHandle, TPointer fontInfoPtr) {
         // A call to sceFontGetFontInfo is allowed on a closed font.
         Font font = getFont(fontHandle, true);
@@ -849,7 +852,7 @@ public class sceFont extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xDCC80C2F, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xDCC80C2F, version = 150, checkInsideInterrupt = true, stackUsage = 0x100)
     public int sceFontGetCharInfo(int fontHandle, int charCode, TPointer charInfoPtr) {
         Font font = getFont(fontHandle, false);       
         if (log.isDebugEnabled()) {
@@ -1014,7 +1017,7 @@ public class sceFont extends HLEModule {
         return font.getHandle();
     }
 
-    @HLEFunction(nid = 0xCA1E6945, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xCA1E6945, version = 150, checkInsideInterrupt = true, stackUsage = 0x120)
     public int sceFontGetCharGlyphImage_Clip(int fontHandle, int charCode, TPointer glyphImagePtr, int clipXPos, int clipYPos, int clipWidth, int clipHeight) {
         Font font = getFont(fontHandle, false);
         // Identical to sceFontGetCharGlyphImage, but uses a clipping
