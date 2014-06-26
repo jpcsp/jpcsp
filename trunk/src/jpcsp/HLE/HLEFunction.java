@@ -59,4 +59,9 @@ public @interface HLEFunction {
 	 * Name of the function. The default is the name of the method.
 	 */
 	public String functionName() default "";
+
+	/**
+	 * Size of the stack used by the function.
+	 */
+	public int stackUsage() default 0;
 }
