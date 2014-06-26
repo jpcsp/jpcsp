@@ -131,7 +131,7 @@ public class scePspNpDrm_user extends HLEModule {
                 String[] name = pcfilename.split("/");
                 String fName = "";
                 for (int i = 0; i < name.length; i++) {
-                    if (name[i].contains("EDAT")) {
+                    if (name[i].toUpperCase().contains("EDAT")) {
                         fName = name[i];
                     }
                 }
