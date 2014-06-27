@@ -26,6 +26,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ASYNC_BUSY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_FILE_READ_ERROR;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOCWD;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_ASYNC_OP;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_SUCH_DEVICE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_TOO_MANY_OPEN_FILES;
@@ -35,7 +36,6 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_IO;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
-
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -1781,6 +1781,13 @@ public class IoFileMgrForUser extends HLEModule {
                 log.debug("hleIoOpen - file not found (ok to ignore this message, debug purpose only)");
             }
             result = ERROR_ERRNO_FILE_NOT_FOUND;
+        }
+
+        if (result == ERROR_ERRNO_FILE_NOT_FOUND && filepath.equals("disc0/") && !filename.contains(":") && !filename.contains("/")) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("hleIoOpen - no current directory set filepath='%s', filename='%s'", filepath, filename));
+        	}
+        	result = ERROR_KERNEL_NOCWD;
         }
 
         for (IIoListener ioListener : ioListeners) {
