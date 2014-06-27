@@ -920,7 +920,11 @@ public class ThreadManForUser extends HLEModule {
     public void hleUnblockThread(int uid) {
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", false)) {
             SceKernelThreadInfo thread = threadMap.get(uid);
-            hleChangeThreadState(thread, PSP_THREAD_READY);
+            // Remove PSP_THREAD_WAITING from the thread state,
+            // i.e. change the thread state
+            // - from PSP_THREAD_WAITING_SUSPEND to PSP_THREAD_SUSPEND
+            // - from PSP_THREAD_WAITING to PSP_THREAD_READY
+            hleChangeThreadState(thread, thread.isSuspended() ? PSP_THREAD_SUSPEND : PSP_THREAD_READY);
 
             if (LOG_CONTEXT_SWITCHING && thread != null && Modules.log.isDebugEnabled()) {
                 log.debug("-------------------- unblock SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' caller:" + getCallingFunction());
