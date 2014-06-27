@@ -1079,7 +1079,13 @@ public class sceMpeg extends HLEModule {
 		            if (meChannel == null) {
 		            	// If no MPEG header has been provided by the application (and none could be found),
 		            	// just use the MPEG stream as it is, without header analysis.
-		            	me.init(addr, Math.max(length, psmfHeader.mpegStreamSize), 0, 0, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
+		            	int initLength;
+		            	if (psmfHeader == null) {
+		            		initLength = length;
+		            	} else {
+		            		initLength = Math.max(length, psmfHeader.mpegStreamSize);
+		            	}
+		            	me.init(addr, initLength, 0, 0, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
 		            	meChannel = new PacketChannel();
 		            }
 		            meChannel.write(addr, length);
@@ -1813,7 +1819,7 @@ public class sceMpeg extends HLEModule {
     }
 
     protected boolean hasPsmfStream(int streamType) {
-    	if (psmfHeader.psmfStreams == null) {
+    	if (psmfHeader == null || psmfHeader.psmfStreams == null) {
     		// Header not analyzed, assume that the PSMF has the given stream
     		return true;
     	}
@@ -1962,7 +1968,7 @@ public class sceMpeg extends HLEModule {
 
     	// For very small videos (e.g. intro video < 15 seconds),
     	// do not consume too fast the ring buffer
-    	if (psmfHeader.mpegLastTimestamp > 0 && psmfHeader.mpegLastTimestamp < 15 * mpegTimestampPerSecond) {
+    	if (psmfHeader != null && psmfHeader.mpegLastTimestamp > 0 && psmfHeader.mpegLastTimestamp < 15 * mpegTimestampPerSecond) {
     		packetsConsumed = Math.min(1, packetsConsumed);
     	}
 
@@ -1973,7 +1979,7 @@ public class sceMpeg extends HLEModule {
     	// Consuming all the remaining packets?
     	if (mpegRingbuffer.getFreePackets() + packetsConsumed >= mpegRingbuffer.getTotalPackets()) {
     		// Having not yet reached the last timestamp?
-    		if (psmfHeader.mpegLastTimestamp > 0 && mpegAvcAu.pts < psmfHeader.mpegLastTimestamp) {
+    		if (psmfHeader != null && psmfHeader.mpegLastTimestamp > 0 && mpegAvcAu.pts < psmfHeader.mpegLastTimestamp) {
     			// Do not yet consume all the remaining packets, leave 2 packets
     			packetsConsumed = mpegRingbuffer.getTotalPackets() - mpegRingbuffer.getFreePackets() - 2;
     		}
@@ -2641,7 +2647,7 @@ public class sceMpeg extends HLEModule {
 
         // let's go with 3 packets per frame for now
         int packetsConsumed = 3;
-        if (psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegLastTimestamp > 0) {
+        if (psmfHeader != null && psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegLastTimestamp > 0) {
             // Try a better approximation of the packets consumed based on the timestamp
             int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / psmfHeader.mpegLastTimestamp) * psmfHeader.mpegStreamSize);
             if (processedSizeBasedOnTimestamp < processedSize) {
@@ -2890,7 +2896,7 @@ public class sceMpeg extends HLEModule {
 
         // let's go with 3 packets per frame for now
         int packetsConsumed = 3;
-        if (psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegLastTimestamp > 0) {
+        if (psmfHeader != null && psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegLastTimestamp > 0) {
             // Try a better approximation of the packets consumed based on the timestamp
             int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / psmfHeader.mpegLastTimestamp) * psmfHeader.mpegStreamSize);
             if (processedSizeBasedOnTimestamp < processedSize) {
@@ -3040,7 +3046,7 @@ public class sceMpeg extends HLEModule {
 
             // let's go with 3 packets per frame for now
             int packetsConsumed = 3;
-            if (psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegLastTimestamp > 0) {
+            if (psmfHeader != null && psmfHeader.mpegStreamSize > 0 && psmfHeader.mpegLastTimestamp > 0) {
                 // Try a better approximation of the packets consumed based on the timestamp
                 int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / psmfHeader.mpegLastTimestamp) * psmfHeader.mpegStreamSize);
                 if (processedSizeBasedOnTimestamp < processedSize) {
