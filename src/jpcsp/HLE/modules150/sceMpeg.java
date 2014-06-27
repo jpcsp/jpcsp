@@ -331,7 +331,7 @@ public class sceMpeg extends HLEModule {
         }
 
         public void readUserDataStreamParams(Memory mem, int addr, byte[] mpegHeader, int offset, PSMFHeader psmfHeader) {
-        	log.warn(String.format("Unknwon User Data stream format"));
+        	log.warn(String.format("Unknown User Data stream format"));
         	streamType = PSMF_DATA_STREAM;
         }
     }
@@ -436,29 +436,39 @@ public class sceMpeg extends HLEModule {
             	log.debug(String.format("PSMFHeader: version=0x%04X, streamDataTotalSize=%d, unk=0x%08X, streamDataNextBlockSize=%d, streamDataNextInnerBlockSize=%d, streamNum=%d", getVersion(), streamDataTotalSize, unk, streamDataNextBlockSize, streamDataNextInnerBlockSize, streamNum));
             }
 
-            psmfStreams = readPsmfStreams(mem, bufferAddr, mpegHeader, this);
+            if (isValid()) {
+            	psmfStreams = readPsmfStreams(mem, bufferAddr, mpegHeader, this);
 
-            // PSP seems to default to stream 0.
-            if (psmfStreams.size() > 0) {
-            	setStreamNum(0);
-            }
+	            // PSP seems to default to stream 0.
+	            if (psmfStreams.size() > 0) {
+	            	setStreamNum(0);
+	            }
 
-            // EPMap info:
-            // - Located at EPMapOffset (set by the AVC stream);
-            // - Each entry is composed by a total of 10 bytes:
-            //      - 1 byte: Reference picture index (RAPI);
-            //      - 1 byte: Reference picture offset from the current index;
-            //      - 4 bytes: PTS of the entry point;
-            //      - 4 bytes: Relative offset of the entry point in the MPEG data.
-            EPMap = new LinkedList<PSMFEntry>();
-            for (int i = 0; i < EPMapEntriesNum; i++) {
-                int index = read8(mem, bufferAddr, mpegHeader, EPMapOffset + i * 10);
-                int picOffset = read8(mem, bufferAddr, mpegHeader, EPMapOffset + 1 + i * 10);
-                int pts = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, EPMapOffset + 2 + i * 10));
-                int offset = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, EPMapOffset + 6 + i * 10));
-                PSMFEntry psmfEntry = new PSMFEntry(i, index, picOffset, pts, offset);
-                EPMap.add(psmfEntry);
+	            // EPMap info:
+	            // - Located at EPMapOffset (set by the AVC stream);
+	            // - Each entry is composed by a total of 10 bytes:
+	            //      - 1 byte: Reference picture index (RAPI);
+	            //      - 1 byte: Reference picture offset from the current index;
+	            //      - 4 bytes: PTS of the entry point;
+	            //      - 4 bytes: Relative offset of the entry point in the MPEG data.
+	            EPMap = new LinkedList<PSMFEntry>();
+	            for (int i = 0; i < EPMapEntriesNum; i++) {
+	                int index = read8(mem, bufferAddr, mpegHeader, EPMapOffset + i * 10);
+	                int picOffset = read8(mem, bufferAddr, mpegHeader, EPMapOffset + 1 + i * 10);
+	                int pts = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, EPMapOffset + 2 + i * 10));
+	                int offset = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, EPMapOffset + 6 + i * 10));
+	                PSMFEntry psmfEntry = new PSMFEntry(i, index, picOffset, pts, offset);
+	                EPMap.add(psmfEntry);
+	            }
             }
+        }
+
+        public boolean isValid() {
+            return mpegFirstTimestamp == 90000 && mpegFirstTimestamp < mpegLastTimestamp && mpegLastTimestamp > 0;
+        }
+
+        public boolean isInvalid() {
+        	return !isValid();
         }
 
         public int getVersion() {
@@ -1724,7 +1734,7 @@ public class sceMpeg extends HLEModule {
 		psmfHeader = new PSMFHeader(bufferAddr, mpegHeader);
 
         // Sanity check
-        if (psmfHeader.mpegFirstTimestamp != 90000 || psmfHeader.mpegFirstTimestamp > psmfHeader.mpegLastTimestamp || psmfHeader.mpegLastTimestamp <= 0) {
+        if (psmfHeader.isInvalid()) {
         	// Some applications read less than MPEG_HEADER_BUFFER_MINIMUM_SIZE bytes from the header.
         	// An IoListener is trying to recognize such read operations and reading instead
         	// the complete MPEG header.
