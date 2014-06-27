@@ -99,14 +99,14 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         	int headerAddr = findRIFFHeader(sourceAddr.getAddress());
         	if (headerAddr != 0) {
         		if (headerAddr <= sourceAddr.getAddress()) {
-        			id.setData(headerAddr, id.getSourceBufferLength() + (sourceAddr.getAddress() - headerAddr), id.getSourceBufferLength(), false);
+        			id.setData(headerAddr, id.getSourceBufferLength() + (sourceAddr.getAddress() - headerAddr), id.getSourceBufferLength(), false, 0);
         		} else {
         			int headerLength = findRIFFHeaderLength(headerAddr);
-        			id.setData(headerAddr, headerLength, id.getSourceBufferLength(), false);
+        			id.setData(headerAddr, headerLength, id.getSourceBufferLength(), false, 0);
         			id.addStreamData(sourceAddr.getAddress(), id.getSourceBufferLength());
         		}
         	} else {
-        		id.setData(sourceAddr.getAddress(), id.getSourceBufferLength(), id.getSourceBufferLength(), false);
+        		id.setData(sourceAddr.getAddress(), id.getSourceBufferLength(), id.getSourceBufferLength(), false, 0);
         	}
     		if (atracCodec != null && id.getAtracCodecType() == PSP_MODE_AT_3) {
     			atracCodec.setAtracChannelStartLength(0x8000); // Only 0x8000 bytes are required to start decoding AT3

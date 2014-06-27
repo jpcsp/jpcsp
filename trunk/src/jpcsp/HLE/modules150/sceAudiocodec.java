@@ -129,7 +129,7 @@ public class sceAudiocodec extends HLEModule {
 		int bytesPerSamples = 4;
 		int maxSamples = outputBufferSize / bytesPerSamples;
 		if (id.getInputBuffer() == null) {
-			id.setData(inputBuffer, inputBufferSize, inputBufferSize, false);
+			id.setData(inputBuffer, inputBufferSize, inputBufferSize, false, 0);
 			if (atracCodec != null) {
 				if (codecType == PSP_CODEC_AT3) {
 					atracCodec.setAtracChannelStartLength(0x8000); // Only 0x8000 bytes are required to start decoding AT3
