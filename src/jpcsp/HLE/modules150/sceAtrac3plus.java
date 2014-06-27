@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.max;
 import static jpcsp.util.Utilities.readUnaligned32;
 import jpcsp.HLE.CanBeNull;
@@ -245,6 +246,37 @@ public class sceAtrac3plus extends HLEModule {
         	return internalBuffer;
         }
 
+        private int analyzeAE3Header() {
+            Memory mem = Memory.getInstance();
+            int result = 0;
+
+            int currentAddr = inputBuffer.getReadAddr();
+            int bufferSize = inputBuffer.getCurrentSize();
+
+            int headerSize = read28(mem, currentAddr + 6);
+            currentAddr += 10 + headerSize;
+            bufferSize -= 10 + headerSize;
+
+            if (mem.read8(currentAddr) == 0 & bufferSize >= 16) {
+            	currentAddr += 16;
+            	bufferSize -= 16;
+            }
+
+            int startHeaderAddr = currentAddr;
+            int header2Size = (mem.read8(currentAddr + 4) << 8) | mem.read8(currentAddr + 5);
+            boolean at3plus = mem.read8(currentAddr + 32) != 0;
+            int data = endianSwap32(readUnaligned32(mem, currentAddr + 32));
+
+            atracChannels = 2;
+        	atracBytesPerFrame = ((data & 0x3FF) << 3) + (at3plus ? 8 : 0);
+            inputFileDataOffset = startHeaderAddr + header2Size - inputBuffer.getReadAddr();
+
+            // Estimate the end sample based on the file size
+            atracEndSample = (inputFileSize - inputFileDataOffset) / atracBytesPerFrame * getMaxSamples();
+
+            return result;
+        }
+
         private int analyzeAtracHeader() {
             Memory mem = Memory.getInstance();
             int result = 0;
@@ -262,14 +294,18 @@ public class sceAtrac3plus extends HLEModule {
             	return SceKernelErrors.ERROR_ATRAC_INVALID_SIZE;
             }
 
+            int magic = readUnaligned32(mem, currentAddr);
+            if ((magic & 0x00FFFFFF) == 0x336165 || (magic & 0x00FFFFFF) == 0x334145) { // ea3 | EA3
+            	return analyzeAE3Header();
+            }
+
             // RIFF file format:
             // Offset 0: 'RIFF'
             // Offset 4: file length - 8
             // Offset 8: 'WAVE'
-            int RIFFMagic = readUnaligned32(mem, currentAddr);
             int WAVEMagic = readUnaligned32(mem, currentAddr + 8);
-            if (RIFFMagic != RIFF_MAGIC || WAVEMagic != WAVE_MAGIC) {
-            	log.error(String.format("Not a RIFF/WAVE format! %08X %08X", RIFFMagic, WAVEMagic));
+            if (magic != RIFF_MAGIC || WAVEMagic != WAVE_MAGIC) {
+            	log.error(String.format("Not a RIFF/WAVE format! %08X %08X", magic, WAVEMagic));
             	return SceKernelErrors.ERROR_ATRAC_UNKNOWN_FORMAT;
             }
 
@@ -466,7 +502,7 @@ public class sceAtrac3plus extends HLEModule {
             return internalErrorInfo;
         }
 
-        public int setData(int buffer, int readSize, int bufferSize, boolean isSecondBuf) {
+        public int setData(int buffer, int readSize, int bufferSize, boolean isSecondBuf, int inputFileSize) {
         	int result = 0;
 
         	// bufferSize is unsigned int, handle negative values as large values.
@@ -489,7 +525,7 @@ public class sceAtrac3plus extends HLEModule {
 	                isSecondBufferSet = true;
 	            } else {
 	            	inputBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
-	                inputFileSize = readSize;
+	                this.inputFileSize = inputFileSize > 0 ? inputFileSize : readSize;
 	                secondInputFileSize = 0x100;
 	                forceAllDataIsOnMemory = false;
 	                forceReloadOfData = false;
@@ -740,6 +776,13 @@ public class sceAtrac3plus extends HLEModule {
         useAtracCodec = useConnector;
     }
 
+	protected static int read28(Memory mem, int address) {
+		return ((mem.read8(address + 0) & 0x7F) << 21)
+		     | ((mem.read8(address + 1) & 0x7F) << 14)
+		     | ((mem.read8(address + 2) & 0x7F) <<  7)
+		     | ((mem.read8(address + 3) & 0x7F) <<  0);
+	}
+
     protected static String getStringFromInt32(int n) {
     	char c1 = (char) ((n      ) & 0xFF);
     	char c2 = (char) ((n >>  8) & 0xFF);
@@ -819,7 +862,7 @@ public class sceAtrac3plus extends HLEModule {
     	return atracIDs.get(atID);
     }
 
-    protected int hleSetHalfwayBufferAndGetID(TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput) {
+    protected int hleSetHalfwayBufferAndGetID(TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput, int codecType, int inputFileSize) {
         if (readSize > bufferSize) {
         	return SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
         }
@@ -827,13 +870,17 @@ public class sceAtrac3plus extends HLEModule {
         // readSize and bufferSize are unsigned int's.
         // Allow negative values.
         // "Tales of VS - ULJS00209" is even passing an uninitialized value bufferSize=0xDEADBEEF
-        int codecType = getCodecType(buffer.getAddress());
+
+        if (codecType < 0) {
+        	return codecType; // Return codec error code
+        }
         if (codecType == 0) {
         	return SceKernelErrors.ERROR_ATRAC_UNKNOWN_FORMAT;
         }
+
         int atID = hleCreateAtracID(codecType);
         if (atracIDs.containsKey(atID)) {
-        	int result = hleSetHalfwayBuffer(atID, buffer, readSize, bufferSize, isMonoOutput);
+        	int result = hleSetHalfwayBuffer(atID, buffer, readSize, bufferSize, isMonoOutput, false, inputFileSize);
         	if (result != 0) {
         		hleReleaseAtracID(atID);
         		return result;
@@ -847,7 +894,11 @@ public class sceAtrac3plus extends HLEModule {
         return atID;
     }
 
-    protected int hleSetHalfwayBuffer(int atID, TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput) {
+    protected int hleSetHalfwayBufferAndGetID(TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput) {
+    	return hleSetHalfwayBufferAndGetID(buffer, readSize, bufferSize, isMonoOutput, getCodecType(buffer.getAddress()), 0);
+    }
+
+    protected int hleSetHalfwayBuffer(int atID, TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput, boolean checkCodec, int inputFileSize) {
         if (readSize > bufferSize) {
         	return SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
         }
@@ -855,14 +906,14 @@ public class sceAtrac3plus extends HLEModule {
         AtracID id = atracIDs.get(atID);
 
         // At the first "setData", check if the codecs are matching
-        if (id.inputBuffer == null) {
+        if (checkCodec && id.inputBuffer == null) {
         	int codecType = getCodecType(buffer.getAddress());
         	if (codecType != id.getAtracCodecType()) {
         		return SceKernelErrors.ERROR_ATRAC_WRONG_CODEC;
         	}
         }
 
-        int result = id.setData(buffer.getAddress(), readSize, bufferSize, false);
+        int result = id.setData(buffer.getAddress(), readSize, bufferSize, false, inputFileSize);
         if (result == 0) {
 	        if (isMonoOutput && id.getAtracChannels() == 1) {
 	        	// Set Mono output
@@ -943,12 +994,12 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x0E2A73AB, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetData(@CheckArgument("checkAtracID") int atID, TPointer buffer, int bufferSize) {
-    	return hleSetHalfwayBuffer(atID, buffer, bufferSize, bufferSize, false);
+    	return hleSetHalfwayBuffer(atID, buffer, bufferSize, bufferSize, false, true, 0);
     }
 
     @HLEFunction(nid = 0x3F6E26B5, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetHalfwayBuffer(@CheckArgument("checkAtracID") int atID, TPointer halfBuffer, int readSize, int halfBufferSize) {
-    	return hleSetHalfwayBuffer(atID, halfBuffer, readSize, halfBufferSize, false);
+    	return hleSetHalfwayBuffer(atID, halfBuffer, readSize, halfBufferSize, false, true, 0);
     }
 
     @HLEFunction(nid = 0x7A20E7AF, version = 150, checkInsideInterrupt = true)
@@ -1113,7 +1164,7 @@ public class sceAtrac3plus extends HLEModule {
     @HLEFunction(nid = 0x83BF7AFD, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetSecondBuffer(@CheckArgument("checkAtracID") int atID, TPointer secondBuffer, int secondBufferSize) {
         AtracID id = atracIDs.get(atID);
-        id.setData(secondBuffer.getAddress(), secondBufferSize, secondBufferSize, true);
+        id.setData(secondBuffer.getAddress(), secondBufferSize, secondBufferSize, true, 0);
 
         return 0;
     }

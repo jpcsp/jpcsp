@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules250;
 
+import jpcsp.Memory;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -31,7 +32,71 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 	protected static final int MAX_ATRAC3_IDS = 6;
 	protected static final int MAX_ATRAC3PLUS_IDS = MAX_ATRAC3_IDS / 2;
 
-    @HLEFunction(nid = 0xB3B5D042, version = 250, checkInsideInterrupt = true)
+	protected static int read24(Memory mem, int address) {
+		return (mem.read8(address + 0) << 16)
+		     | (mem.read8(address + 1) <<  8)
+		     | (mem.read8(address + 2) <<  0);
+	}
+
+	protected static int read16(Memory mem, int address) {
+		return (mem.read8(address) << 8) | mem.read8(address + 1);
+	}
+
+	protected int parseAA3(TPointer buffer) {
+		Memory mem = buffer.getMemory();
+		int address = buffer.getAddress();
+		int codecType = 0;
+
+		int magic = read24(mem, address);
+		address += 3;
+		if (magic != 0x656133 && magic != 0x494433) { // 3ae | 3AE
+			log.error(String.format("Unknown AA3 magic 0x%06X", magic));
+			return codecType;
+		}
+
+		if (mem.read8(address) != 3 || mem.read8(address + 1) != 0) {
+			log.error(String.format("Unknown AA3 bytes 0x%08X 0x%08X", mem.read8(address), mem.read8(address + 1)));
+			return SceKernelErrors.ERROR_AA3_INVALID_HEADER_VERSION;
+		}
+		address += 3;
+
+		int headerSize = read28(mem, address);
+		address += 4 + headerSize;
+		if (mem.read8(address) == 0) {
+			address += 16;
+		}
+
+		magic = read24(mem, address);
+		if (magic != 0x454133) { // 3AE
+			log.error(String.format("Unknown AA3 magic 0x%06X", magic));
+			return SceKernelErrors.ERROR_AA3_INVALID_HEADER;
+		}
+		address += 4;
+
+		int unknown1 = read16(mem, address);
+		if (unknown1 == 0xFFFF) {
+			return SceKernelErrors.ERROR_AA3_INVALID_HEADER;
+		}
+		address += 2;
+
+		int unknown2 = read16(mem, address);
+		if (unknown2 != 0xFFFF) {
+			return SceKernelErrors.ERROR_AA3_INVALID_HEADER;
+		}
+		address += 2;
+
+		address += 24;
+
+		switch (mem.read8(address)) {
+			case 0: codecType = PSP_MODE_AT_3; break;
+			case 1: codecType = PSP_MODE_AT_3_PLUS; break;
+			default: return SceKernelErrors.ERROR_AA3_INVALID_CODEC;
+		}
+
+		return codecType;
+	}
+
+	@HLEFunction(nid = 0xB3B5D042, version = 250, checkInsideInterrupt = true)
     public int sceAtracGetOutputChannel(@CheckArgument("checkAtracID") int atID, TPointer32 outputChannelAddr) {
     	AtracID id = atracIDs.get(atID);
         outputChannelAddr.setValue(id.getAtracOutputChannels());
@@ -94,7 +159,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
     @HLEFunction(nid = 0x5CF9D852, version = 250, checkInsideInterrupt = true)
     public int sceAtracSetMOutHalfwayBuffer(@CheckArgument("checkAtracID") int atID, TPointer MOutHalfBuffer, int readSize, int MOutHalfBufferSize) {
-    	return hleSetHalfwayBuffer(atID, MOutHalfBuffer, readSize, MOutHalfBufferSize, true);
+    	return hleSetHalfwayBuffer(atID, MOutHalfBuffer, readSize, MOutHalfBufferSize, true, true, 0);
     }
 
     @HLEUnimplemented
@@ -120,7 +185,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceAtracSetAA3DataAndGetID buffer:%s", Utilities.getMemoryDump(buffer.getAddress(), bufferSize)));
     	}
-    	return hleSetHalfwayBufferAndGetID(buffer, bufferSize, bufferSize, false);
+    	return hleSetHalfwayBufferAndGetID(buffer, bufferSize, bufferSize, false, parseAA3(buffer), fileSize);
     }
 
     @HLEUnimplemented
@@ -129,6 +194,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceAtracSetAA3HalfwayBufferAndGetID buffer:%s", Utilities.getMemoryDump(buffer.getAddress(), readSize)));
     	}
-    	return hleSetHalfwayBufferAndGetID(buffer, readSize, bufferSize, false);
+    	return hleSetHalfwayBufferAndGetID(buffer, readSize, bufferSize, false, parseAA3(buffer), fileSize);
     }
 }
