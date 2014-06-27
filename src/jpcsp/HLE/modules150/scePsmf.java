@@ -81,7 +81,7 @@ public class scePsmf extends HLEModule {
     }
 
     @HLELogging(level="info")
-    @HLEFunction(nid = 0xC22C8327, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xC22C8327, version = 150, checkInsideInterrupt = true, stackUsage = 0x50)
     public int scePsmfSetPsmf(TPointer32 psmf, TPointer bufferAddr) {
         Modules.sceMpegModule.setCurrentMpegAnalyzed(false);
         Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
@@ -111,7 +111,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xC7DB3A5B, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xC7DB3A5B, version = 150, checkInsideInterrupt = true, stackUsage = 0x50)
     public int scePsmfGetCurrentStreamType(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 typeAddr, TPointer32 channelAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
         typeAddr.setValue(header.getCurrentStreamType());
@@ -124,14 +124,14 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x28240568, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x28240568, version = 150, checkInsideInterrupt = true, stackUsage = 0x0)
     public int scePsmfGetCurrentStreamNumber(@CheckArgument("checkPsmf") TPointer32 psmf) {
         PSMFHeader header = getPsmfHeader(psmf);
 
         return header.getCurrentStreamNumber();
     }
 
-    @HLEFunction(nid = 0x1E6D9013, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x1E6D9013, version = 150, checkInsideInterrupt = true, stackUsage = 0x20)
     public int scePsmfSpecifyStreamWithStreamType(@CheckArgument("checkPsmf") TPointer32 psmf, int type, int ch) {
         PSMFHeader header = getPsmfHeader(psmf);
         if (!header.setStreamWithType(type, ch)) {
@@ -142,7 +142,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x4BC9BDE0, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x4BC9BDE0, version = 150, checkInsideInterrupt = true, stackUsage = 0x40)
     public int scePsmfSpecifyStream(@CheckArgument("checkPsmf") TPointer32 psmf, int streamNum) {
         PSMFHeader header = getPsmfHeader(psmf);
         header.setStreamNum(streamNum);
@@ -150,7 +150,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x76D3AEBA, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x76D3AEBA, version = 150, checkInsideInterrupt = true, stackUsage = 0x10)
     public int scePsmfGetPresentationStartTime(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 startTimeAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
         int startTime = header.getPresentationStartTime();
@@ -162,7 +162,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xBD8AE0D8, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xBD8AE0D8, version = 150, checkInsideInterrupt = true, stackUsage = 0x10)
     public int scePsmfGetPresentationEndTime(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 endTimeAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
         int endTime = header.getPresentationEndTime();
@@ -174,21 +174,21 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xEAED89CD, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xEAED89CD, version = 150, checkInsideInterrupt = true, stackUsage = 0x10)
     public int scePsmfGetNumberOfStreams(@CheckArgument("checkPsmf") TPointer32 psmf) {
         PSMFHeader header = getPsmfHeader(psmf);
 
         return header.getNumberOfStreams();
     }
 
-    @HLEFunction(nid = 0x7491C438, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x7491C438, version = 150, checkInsideInterrupt = true, stackUsage = 0x10)
     public int scePsmfGetNumberOfEPentries(@CheckArgument("checkPsmf") TPointer32 psmf) {
         PSMFHeader header = getPsmfHeader(psmf);
 
         return header.getEPMapEntriesNum();
     }
 
-    @HLEFunction(nid = 0x0BA514E5, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x0BA514E5, version = 150, checkInsideInterrupt = true, stackUsage = 0x20)
     public int scePsmfGetVideoInfo(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 videoInfoAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
         if (!header.isValidCurrentStreamNumber()) {
@@ -203,7 +203,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xA83F7113, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xA83F7113, version = 150, checkInsideInterrupt = true, stackUsage = 0x20)
     public int scePsmfGetAudioInfo(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 audioInfoAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
         if (!header.isValidCurrentStreamNumber()) {
@@ -218,13 +218,13 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x971A3A90, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x971A3A90, version = 150, checkInsideInterrupt = true, stackUsage = 0x10)
     public int scePsmfCheckEPmap(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf) {
     	// checkPsmfWithEPMap is already returning the correct error code if no EPmap is present
         return 0;
     }
 
-    @HLEFunction(nid = 0x4E624A34, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x4E624A34, version = 150, checkInsideInterrupt = true, stackUsage = 0x10)
     public int scePsmfGetEPWithId(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int id, TPointer32 outAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
         PSMFEntry entry = header.getEPMapEntry(id);
@@ -246,7 +246,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x7C0E7AC3, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x7C0E7AC3, version = 150, checkInsideInterrupt = true, stackUsage = 0x10)
     public int scePsmfGetEPWithTimestamp(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int ts, TPointer32 entryAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
     	if (ts < header.getPresentationStartTime()) {
@@ -276,7 +276,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x5F457515, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x5F457515, version = 150, checkInsideInterrupt = true, stackUsage = 0x20)
     public int scePsmfGetEPidWithTimestamp(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int ts) {
         PSMFHeader header = getPsmfHeader(psmf);
     	if (ts < header.getPresentationStartTime()) {
@@ -302,7 +302,7 @@ public class scePsmf extends HLEModule {
         return entry.getId();
 	}
 
-    @HLEFunction(nid = 0x5B70FCC1, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x5B70FCC1, version = 150, checkInsideInterrupt = true, stackUsage = 0x20)
     public int scePsmfQueryStreamOffset(TPointer bufferAddr, TPointer32 offsetAddr) {
         // Always let sceMpeg handle the PSMF analysis.
         Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
@@ -312,7 +312,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x9553CC91, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x9553CC91, version = 150, checkInsideInterrupt = true, stackUsage = 0x0)
     public int scePsmfQueryStreamSize(TPointer bufferAddr, TPointer32 sizeAddr) {
         // Always let sceMpeg handle the PSMF analysis.
         Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
@@ -322,7 +322,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x68D42328, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x68D42328, version = 150, checkInsideInterrupt = true, stackUsage = 0xA0)
     public int scePsmfGetNumberOfSpecificStreams(@CheckArgument("checkPsmf") TPointer32 psmf, int streamType) {
         PSMFHeader header = getPsmfHeader(psmf);
         int streamNum = header.getSpecificStreamNum(streamType);
@@ -347,7 +347,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x2673646B, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x2673646B, version = 150, checkInsideInterrupt = true, stackUsage = 0x100)
     public int scePsmfVerifyPsmf(TPointer bufferAddr) {
         if (log.isTraceEnabled()) {
             log.trace(String.format("scePsmfVerifyPsmf %s", Utilities.getMemoryDump(bufferAddr.getAddress(), sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE)));
@@ -373,7 +373,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xB78EB9E9, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xB78EB9E9, version = 150, checkInsideInterrupt = true, stackUsage = 0x0)
     public int scePsmfGetHeaderSize(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 sizeAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
         sizeAddr.setValue(header.getHeaderSize());
@@ -381,7 +381,7 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xA5EBFE81, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xA5EBFE81, version = 150, checkInsideInterrupt = true, stackUsage = 0x0)
     public int scePsmfGetStreamSize(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 sizeAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
         sizeAddr.setValue(header.getStreamSize());
@@ -389,11 +389,11 @@ public class scePsmf extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xE1283895, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xE1283895, version = 150, checkInsideInterrupt = true, stackUsage = 0x0)
     public int scePsmfGetPsmfVersion(@CheckArgument("checkPsmf") TPointer32 psmf) {
         PSMFHeader header = getPsmfHeader(psmf);
 
-        // Convert the header version into a number, e.g. "0015" -> 15
+        // Convert the header version into a decimal number, e.g. 0x0015 -> 15
         int headerVersion = header.getVersion();
         int version = 0;
         for (int i = 0; i < 4; i++, headerVersion >>= 8) {
@@ -402,7 +402,7 @@ public class scePsmf extends HLEModule {
         }
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("scePsmfGetPsmfVersion returning version=%d (headerVersion=0x%08X)", version, headerVersion));
+        	log.debug(String.format("scePsmfGetPsmfVersion returning version=%d (headerVersion=0x%04X)", version, headerVersion));
         }
 
         return version;

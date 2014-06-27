@@ -433,7 +433,7 @@ public class sceMpeg extends HLEModule {
             mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
 
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("PSMFHeader: version=0x%08X, streamDataTotalSize=%d, unk=0x%08X, streamDataNextBlockSize=%d, streamDataNextInnerBlockSize=%d, streamNum=%d", getVersion(), streamDataTotalSize, unk, streamDataNextBlockSize, streamDataNextInnerBlockSize, streamNum));
+            	log.debug(String.format("PSMFHeader: version=0x%04X, streamDataTotalSize=%d, unk=0x%08X, streamDataNextBlockSize=%d, streamDataNextInnerBlockSize=%d, streamNum=%d", getVersion(), streamDataTotalSize, unk, streamDataNextBlockSize, streamDataNextInnerBlockSize, streamNum));
             }
 
             psmfStreams = readPsmfStreams(mem, bufferAddr, mpegHeader, this);
