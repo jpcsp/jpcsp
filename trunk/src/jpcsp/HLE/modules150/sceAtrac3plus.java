@@ -514,6 +514,10 @@ public class sceAtrac3plus extends HLEModule {
             	readSize = MemoryMap.SIZE_RAM;
             }
 
+            if (inputFileSize <= 0) {
+        		inputFileSize = readSize;
+        	}
+
         	Emulator.getClock().pause();
         	try {
 	            if (isSecondBuf) {
@@ -525,7 +529,7 @@ public class sceAtrac3plus extends HLEModule {
 	                isSecondBufferSet = true;
 	            } else {
 	            	inputBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
-	                this.inputFileSize = inputFileSize > 0 ? inputFileSize : readSize;
+	                this.inputFileSize = inputFileSize;
 	                secondInputFileSize = 0x100;
 	                forceAllDataIsOnMemory = false;
 	                forceReloadOfData = false;
