@@ -502,7 +502,7 @@ public class sceAtrac3plus extends HLEModule {
             return internalErrorInfo;
         }
 
-        public int setData(int buffer, int readSize, int bufferSize, boolean isSecondBuf, int inputFileSize) {
+        public int setData(int buffer, int readSize, int bufferSize, boolean isSecondBuf, int defaultInputFileSize) {
         	int result = 0;
 
         	// bufferSize is unsigned int, handle negative values as large values.
@@ -514,8 +514,8 @@ public class sceAtrac3plus extends HLEModule {
             	readSize = MemoryMap.SIZE_RAM;
             }
 
-            if (inputFileSize <= 0) {
-        		inputFileSize = readSize;
+            if (defaultInputFileSize <= 0) {
+            	defaultInputFileSize = readSize;
         	}
 
         	Emulator.getClock().pause();
@@ -529,7 +529,7 @@ public class sceAtrac3plus extends HLEModule {
 	                isSecondBufferSet = true;
 	            } else {
 	            	inputBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
-	                this.inputFileSize = inputFileSize;
+	                inputFileSize = defaultInputFileSize;
 	                secondInputFileSize = 0x100;
 	                forceAllDataIsOnMemory = false;
 	                forceReloadOfData = false;
