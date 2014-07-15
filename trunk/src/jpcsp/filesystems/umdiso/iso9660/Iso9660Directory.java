@@ -31,7 +31,7 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 public class Iso9660Directory {
     private final List<Iso9660File> files;
 
-    public Iso9660Directory(UmdIsoReader r, int directorySector, int directorySize) throws IOException {
+    public Iso9660Directory(UmdIsoReader r, int directorySector, long directorySize) throws IOException {
         // parse directory sector
         UmdIsoFile dataStream = new UmdIsoFile(r, directorySector, directorySize, null, null);
 
