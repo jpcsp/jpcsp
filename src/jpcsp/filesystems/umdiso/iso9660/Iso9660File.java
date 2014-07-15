@@ -28,7 +28,7 @@ import java.util.TimeZone;
 public class Iso9660File {
 
     private int fileLBA;
-    private int fileSize;
+    private long fileSize;
     private int fileProperties;
     // padding: byte[3]
     private String fileName; //[128+1];
@@ -60,7 +60,7 @@ public class Iso9660File {
 */
 
         fileLBA = Ubyte(data[1]) | (Ubyte(data[2])<<8) | (Ubyte(data[3])<<16) | (data[4]<<24);
-        fileSize = Ubyte(data[9]) | (Ubyte(data[10])<<8) | (Ubyte(data[11])<<16) | (data[12]<<24);
+        fileSize = Ubyte(data[9]) | (Ubyte(data[10])<<8) | (Ubyte(data[11])<<16) | (((long) Ubyte(data[12]))<<24);
         int year = Ubyte(data[17]);
         int month = Ubyte(data[18]);
         int day = Ubyte(data[19]);
@@ -115,7 +115,7 @@ public class Iso9660File {
         return fileLBA;
     }
 
-    public int getSize()
+    public long getSize()
     {
         return fileSize;
     }

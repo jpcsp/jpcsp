@@ -45,7 +45,7 @@ public class Iso9660Handler extends Iso9660Directory {
         Iso9660File rootDirEntry = new Iso9660File(b,b.length);
 
         int rootLBA = rootDirEntry.getLBA();
-        int rootSize = rootDirEntry.getSize();
+        long rootSize = rootDirEntry.getSize();
 
         internalDir = new Iso9660Directory(r, rootLBA, rootSize);
     }
