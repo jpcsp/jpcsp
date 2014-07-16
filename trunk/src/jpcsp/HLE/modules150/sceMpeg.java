@@ -524,7 +524,7 @@ public class sceMpeg extends HLEModule {
         }
 
         public PSMFEntry getEPMapEntry(int id) {
-        	if (id < 0 || id >= EPMap.size()) {
+        	if (EPMap == null || id < 0 || id >= EPMap.size()) {
         		return null;
         	}
             return EPMap.get(id);
@@ -532,25 +532,29 @@ public class sceMpeg extends HLEModule {
 
         public PSMFEntry getEPMapEntryWithTimestamp(int ts) {
         	PSMFEntry foundEntry = null;
-            for (PSMFEntry entry : EPMap) {
-            	if (foundEntry == null || entry.getEntryPTS() <= ts) {
-            		foundEntry = entry;
-            	} else if (entry.getEntryPTS() > ts) {
-                    break;
-                }
-            }
+        	if (EPMap != null) {
+	            for (PSMFEntry entry : EPMap) {
+	            	if (foundEntry == null || entry.getEntryPTS() <= ts) {
+	            		foundEntry = entry;
+	            	} else if (entry.getEntryPTS() > ts) {
+	                    break;
+	                }
+	            }
+        	}
             return foundEntry;
         }
 
         public PSMFEntry getEPMapEntryWithOffset(int offset) {
         	PSMFEntry foundEntry = null;
-            for (PSMFEntry entry : EPMap) {
-            	if (foundEntry == null || entry.getEntryOffset() <= offset) {
-            		foundEntry = entry;
-            	} else if (entry.getEntryOffset() > offset) {
-                    break;
-                }
-            }
+        	if (EPMap != null) {
+	            for (PSMFEntry entry : EPMap) {
+	            	if (foundEntry == null || entry.getEntryOffset() <= offset) {
+	            		foundEntry = entry;
+	            	} else if (entry.getEntryOffset() > offset) {
+	                    break;
+	                }
+	            }
+        	}
             return foundEntry;
         }
 
@@ -582,10 +586,12 @@ public class sceMpeg extends HLEModule {
 
         public int getSpecificStreamNum(int type) {
         	int num = 0;
-        	for (PSMFStream stream : psmfStreams) {
-        		if (stream.isStreamOfType(type)) {
-        			num++;
-        		}
+        	if (psmfStreams != null) {
+	        	for (PSMFStream stream : psmfStreams) {
+	        		if (stream.isStreamOfType(type)) {
+	        			num++;
+	        		}
+	        	}
         	}
 
         	return num;
@@ -624,15 +630,17 @@ public class sceMpeg extends HLEModule {
         }
 
         private int getStreamNumber(int type, int typeNum, int channel) {
-        	for (PSMFStream stream : psmfStreams) {
-        		if (stream.isStreamOfType(type)) {
-        			if (typeNum <= 0) {
-        				if (channel < 0 || stream.getStreamChannel() == channel) {
-        					return stream.getStreamNumber();
-        				}
-        			}
-    				typeNum--;
-        		}
+        	if (psmfStreams != null) {
+	        	for (PSMFStream stream : psmfStreams) {
+	        		if (stream.isStreamOfType(type)) {
+	        			if (typeNum <= 0) {
+	        				if (channel < 0 || stream.getStreamChannel() == channel) {
+	        					return stream.getStreamNumber();
+	        				}
+	        			}
+	    				typeNum--;
+	        		}
+	        	}
         	}
 
         	return -1;
