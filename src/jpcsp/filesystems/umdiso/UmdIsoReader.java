@@ -272,7 +272,7 @@ public class UmdIsoReader {
             }
         } else if (filePath != null && filePath.length() == 0) {
             fileStart = 0;
-            fileLength = numSectors * sectorLength;
+            fileLength = ((long) numSectors) * sectorLength;
             timestamp = new Date();
         } else {
             Iso9660File info = getFileEntry(filePath);
@@ -430,10 +430,11 @@ public class UmdIsoReader {
         PrintWriter out = new PrintWriter(new FileOutputStream(filename));
         out.println("  Start    Size       Name");
         String[] files = listDirectory("");
-        long size = dumpIndexRecursive(out, "", files);
-        out.println(String.format("Total Size %10d", size));
-        out.println(String.format("Image Size %10d", numSectors * sectorLength));
-        out.println(String.format("Missing    %10d (%d sectors)", (numSectors * sectorLength) - size, numSectors - (size / sectorLength)));
+        long totalSize = dumpIndexRecursive(out, "", files);
+        long imageSize = ((long) numSectors) * sectorLength;
+        out.println(String.format("Total Size %10d", totalSize));
+        out.println(String.format("Image Size %10d", imageSize));
+        out.println(String.format("Missing    %10d (%d sectors)", imageSize - totalSize, numSectors - (totalSize / sectorLength)));
         out.close();
     }
 }
