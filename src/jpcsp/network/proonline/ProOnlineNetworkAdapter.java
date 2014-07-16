@@ -64,7 +64,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	private UPnP upnp;
 	private Socket metaSocket;
 	private static int metaPort = 27312;
-	private static String metaServer = "coldbird.uk.to";
+	private static String metaServer = "coldbird.net";
 	private static final int pingTimeoutMillis = 2000;
 	private volatile boolean exit;
 	private volatile boolean friendFinderActive;
