@@ -410,6 +410,9 @@ public class sceMpeg extends HLEModule {
         private int currentVideoStreamNumber = -1;
         private int currentAudioStreamNumber = -1;
 
+        public PSMFHeader() {
+        }
+
         public PSMFHeader(int bufferAddr, byte[] mpegHeader) {
             Memory mem = Memory.getInstance();
 
@@ -1612,6 +1615,7 @@ public class sceMpeg extends HLEModule {
 					previousTimestamp = timestamp;
 				}
 
+				psmfHeader = new PSMFHeader();
 				psmfHeader.mpegStreamSize = (int) (endMpegPosition - startMpegPosition);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("analyseMpegDataWithoutHeader estimated Mpeg stream size 0x%X (startPosition=0x%X, currentPosition=0x%X, endMpegPosition=0x%X)", psmfHeader.mpegStreamSize, startMpegPosition, currentPosition, endMpegPosition));
