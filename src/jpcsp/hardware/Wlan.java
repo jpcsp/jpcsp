@@ -20,10 +20,15 @@ import static jpcsp.HLE.modules150.sceNet.convertStringToMacAddress;
 
 import java.util.Random;
 
+import org.apache.log4j.Logger;
+
+import jpcsp.Emulator;
 import jpcsp.HLE.modules150.sceUtility;
+import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
 
 public class Wlan {
+	private static Logger log = Emulator.log;
     public static int PSP_WLAN_SWITCH_OFF = 0;
     public static int PSP_WLAN_SWITCH_ON = 1;
     private static int switchState = PSP_WLAN_SWITCH_ON;
@@ -33,6 +38,14 @@ public class Wlan {
     public static int PSP_ADHOC_CHANNEL_AUTO = 0;
     public static int PSP_ADHOC_CHANNEL_DEFAULT = 11;
     private static int signalStrength = 100;
+    private static WlanSwitchSettingsListener wlanSwitchSettingsListener;
+
+    private static class WlanSwitchSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setSwitchState(value ? PSP_WLAN_SWITCH_ON : PSP_WLAN_SWITCH_OFF);
+		}
+    }
 
     public static void initialize() {
     	String macAddressString = Settings.getInstance().readString(settingsMacAddress);
@@ -58,6 +71,11 @@ public class Wlan {
     		// bit 1: 0=Globally unique / 1=Locally administered
     		macAddress[0] &= 0xFC;
     	}
+
+    	if (wlanSwitchSettingsListener == null) {
+    		wlanSwitchSettingsListener = new WlanSwitchSettingsListener();
+    		Settings.getInstance().registerSettingsListener("WlanSwitch", "network.wlanSwitchOn", wlanSwitchSettingsListener);
+    	}
     }
 
     public static int getSwitchState() {
@@ -66,6 +84,7 @@ public class Wlan {
 
     public static void setSwitchState(int switchState) {
 		Wlan.switchState = switchState;
+    	log.info(String.format("WLAN Switch %s", switchState == PSP_WLAN_SWITCH_OFF ? "off" : "on"));
 	}
 
     public static byte[] getMacAddress() {
