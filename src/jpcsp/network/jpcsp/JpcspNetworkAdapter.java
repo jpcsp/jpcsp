@@ -51,7 +51,18 @@ import jpcsp.network.adhoc.PtpObject;
  */
 public class JpcspNetworkAdapter extends BaseNetworkAdapter {
     private DatagramSocket adhocctlSocket;
-    private static final int adhocctlBroadcastPort = 30000;
+    // Try to use a port unused by other applications...
+    private static final int adhocctlBroadcastPort = 30004;
+
+	@Override
+	public void stop() {
+		if (adhocctlSocket != null) {
+			adhocctlSocket.close();
+			adhocctlSocket = null;
+		}
+
+		super.stop();
+	}
 
     @Override
 	public void sceNetAdhocctlInit() {
