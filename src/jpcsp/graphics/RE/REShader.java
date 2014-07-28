@@ -594,6 +594,10 @@ public class REShader extends BaseRenderingEngineFunction {
 					setFlag = false;
 				}
 				break;
+			case IRenderingEngine.GU_FOG:
+				shaderContext.setFogEnable(value);
+				setFlag = false;
+				break;
 		}
 
 		return setFlag;
@@ -1402,5 +1406,18 @@ public class REShader extends BaseRenderingEngineFunction {
 		shaderContext.setWrapModeS(s);
 		shaderContext.setWrapModeT(t);
 		super.setTextureWrapMode(s, t);
+	}
+
+	@Override
+	public void setFogColor(float[] color) {
+		shaderContext.setFogColor(color);
+		super.setFogColor(color);
+	}
+
+	@Override
+	public void setFogDist(float start, float end) {
+		shaderContext.setFogEnd(end);
+		shaderContext.setFogScale(1f / (end - start));
+		super.setFogDist(start, end);
 	}
 }
