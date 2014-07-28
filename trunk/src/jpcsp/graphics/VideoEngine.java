@@ -475,12 +475,12 @@ public class VideoEngine {
         return !isEmpty;
     }
 
-    public boolean hasDrawList(int listAddr) {
+    public boolean hasDrawList(int listAddr, int stackAddr) {
         boolean result = false;
         boolean waitAndRetry = false;
 
         synchronized (drawListQueue) {
-            if (currentList != null && currentList.list_addr == listAddr) {
+            if (currentList != null && currentList.isInUse(listAddr, stackAddr)) {
                 result = true;
                 // The current list has already reached the FINISH command,
                 // but the list processing is not yet completed.
@@ -490,7 +490,7 @@ public class VideoEngine {
                 }
             } else {
                 for (PspGeList list : drawListQueue) {
-                    if (list != null && list.list_addr == listAddr) {
+                    if (list != null && list.isInUse(listAddr, stackAddr)) {
                         result = true;
                         break;
                     }
@@ -4707,6 +4707,13 @@ public class VideoEngine {
         if ((context.fog_far != 0.0f) && (context.fog_dist != 0.0f)) {
             float end = context.fog_far;
             float start = end - (1 / context.fog_dist);
+
+			if (context.fog_dist < 0.f) {
+				// OpenGL need positive values for start & end
+				end = -context.fog_far;
+				start = end + (1 / context.fog_dist);
+			}
+
             if (isLogDebugEnabled) {
                 log(String.format("sceGuFog(near=%f, far=%f, X)", start, end));
             }
