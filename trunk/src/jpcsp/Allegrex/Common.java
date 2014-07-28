@@ -717,6 +717,10 @@ public class Common {
         return String.format("%1$-10s %2$s, 0x%3$04X <=> li %2$s, 0x%3$04X0000", opname, gprNames[rt], (imm & 0xFFFF));
     }
 
+    public static String disasmRTIMM7(String opname, int rt, int imm7) {
+        return String.format("%1$-10s 0x%2$02X, %3$s", opname, imm7, gprNames[rt]);
+    }
+
     public static String disasmRTIMMRS(String opname, int rt, int rs, int imm) {
         return String.format("%1$-10s %2$s, %4$d(%3$s)", opname, gprNames[rt], gprNames[rs], ((int) (short) imm));
     }
