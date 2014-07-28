@@ -87,7 +87,11 @@ public enum Uniforms {
 	blendDFix("blendDFix"),
 	copyRedToAlpha("copyRedToAlpha"),
 	wrapModeS("wrapModeS"),
-	wrapModeT("wrapModeT");
+	wrapModeT("wrapModeT"),
+	fogEnable("fogEnable"),
+	fogColor("fogColor"),
+	fogEnd("fogEnd"),
+	fogScale("fogScale");
 
 	String uniformString;
 	int[] uniformId = new int[StateProxy.maxProgramId];

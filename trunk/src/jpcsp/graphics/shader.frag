@@ -63,6 +63,10 @@
     #if COPY_RED_TO_ALPHA
         uniform bool  copyRedToAlpha;
     #endif
+    uniform bool  fogEnable;
+    uniform vec3  fogColor;
+    uniform float fogEnd;
+    uniform float fogScale;
 #endif
 uniform sampler2D tex;   // The active texture
 uniform sampler2D fbTex; // The texture containing the current screen (FrameBuffer)
@@ -872,6 +876,12 @@ void ApplyBlendTest(inout vec4 Cf, in vec4 Csrc, in vec4 Cdst)
     #endif
 }
 
+void ApplyFog(inout vec4 Cf)
+{
+	float fog = (fogEnd - gl_FogFragCoord) * fogScale;
+	fog = clamp(fog, 0.0, 1.0);
+	Cf.rgb = mix(fogColor, Cf.rgb, fog);
+}
 
 ///////////////////////////////////////////////////////////////
 // Main program
@@ -942,6 +952,12 @@ void main()
 		}
 	#elif COPY_RED_TO_ALPHA
 		Cf.a = Cf.r;
+	#endif
+
+    #if !USE_DYNAMIC_DEFINES
+		if (fogEnable) ApplyFog(Cf);
+	#elif FOG_ENABLE
+		ApplyFog(Cf);
 	#endif
 
     gl_FragColor = Cf;

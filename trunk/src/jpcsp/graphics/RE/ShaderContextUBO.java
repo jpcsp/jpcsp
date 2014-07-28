@@ -88,6 +88,10 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo wrapModeS;
 	private ShaderUniformInfo wrapModeT;
 	private ShaderUniformInfo copyRedToAlpha;
+	private ShaderUniformInfo fogEnable;
+	private ShaderUniformInfo fogColor;
+	private ShaderUniformInfo fogEnd;
+	private ShaderUniformInfo fogScale;
 	private ShaderUniformInfo numberBones;
 	private ShaderUniformInfo boneMatrix;
 	private ShaderUniformInfo endOfUBO;
@@ -233,6 +237,10 @@ public class ShaderContextUBO extends ShaderContext {
 		wrapModeS = addShaderUniform(Uniforms.wrapModeS, "int");
 		wrapModeT = addShaderUniform(Uniforms.wrapModeT, "int");
 		copyRedToAlpha = addShaderUniform(Uniforms.copyRedToAlpha, "bool");
+		fogEnable = addShaderUniform(Uniforms.fogEnable, "bool");
+		fogColor = addShaderUniform(Uniforms.fogColor, "vec3");
+		fogEnd = addShaderUniform(Uniforms.fogEnd, "float");
+		fogScale = addShaderUniform(Uniforms.fogScale, "float");
 		numberBones = addShaderUniform(Uniforms.numberBones, "int");
 		boneMatrix = addShaderUniform(Uniforms.boneMatrix, "mat4", 8);
 		// The following entry has always to be the last one
@@ -910,6 +918,39 @@ public class ShaderContextUBO extends ShaderContext {
 		if (wrapModeT != getWrapModeT()) {
 			copy(wrapModeT, this.wrapModeT);
 			super.setWrapModeT(wrapModeT);
+		}
+	}
+
+	@Override
+	public void setFogEnable(int fogEnable) {
+		if (fogEnable != getFogEnable()) {
+			copy(fogEnable, this.fogEnable);
+			super.setFogEnable(fogEnable);
+		}
+	}
+
+	@Override
+	public void setFogColor(float[] fogColor) {
+		float[] currentFogColor = getFogColor();
+		if (fogColor[0] != currentFogColor[0] || fogColor[1] != currentFogColor[1] || fogColor[2] != currentFogColor[2]) {
+			copy(fogColor, this.fogColor, 0, 3);
+			super.setFogColor(fogColor);
+		}
+	}
+
+	@Override
+	public void setFogEnd(float fogEnd) {
+		if (fogEnd != getFogEnd()) {
+			copy(fogEnd, this.fogEnd);
+			super.setFogEnd(fogEnd);
+		}
+	}
+
+	@Override
+	public void setFogScale(float fogScale) {
+		if (fogScale != getFogScale()) {
+			copy(fogScale, this.fogScale);
+			super.setFogScale(fogScale);
 		}
 	}
 }

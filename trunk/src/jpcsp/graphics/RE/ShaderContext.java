@@ -95,6 +95,10 @@ public class ShaderContext {
 	private int copyRedToAlpha;
 	private int wrapModeS;
 	private int wrapModeT;
+	private int fogEnable;
+	private float[] fogColor = new float[3];
+	private float fogEnd;
+	private float fogScale;
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
@@ -157,6 +161,10 @@ public class ShaderContext {
 		re.setUniform(Uniforms.copyRedToAlpha.getId(shaderProgram), copyRedToAlpha);
 		re.setUniform(Uniforms.wrapModeS.getId(shaderProgram), wrapModeS);
 		re.setUniform(Uniforms.wrapModeT.getId(shaderProgram), wrapModeT);
+		re.setUniform(Uniforms.fogEnable.getId(shaderProgram), fogEnable);
+		re.setUniform3(Uniforms.fogColor.getId(shaderProgram), fogColor);
+		re.setUniform(Uniforms.fogEnd.getId(shaderProgram), fogEnd);
+		re.setUniform(Uniforms.fogScale.getId(shaderProgram), fogScale);
 
 		setUniformsSamplers(re, shaderProgram);
 	}
@@ -709,5 +717,39 @@ public class ShaderContext {
 
 	public void setWrapModeT(int wrapModeT) {
 		this.wrapModeT = wrapModeT;
+	}
+
+	public int getFogEnable() {
+		return fogEnable;
+	}
+
+	public void setFogEnable(int fogEnable) {
+		this.fogEnable = fogEnable;
+	}
+
+	public float[] getFogColor() {
+		return fogColor;
+	}
+
+	public void setFogColor(float[] fogColor) {
+		this.fogColor[0] = fogColor[0];
+		this.fogColor[1] = fogColor[1];
+		this.fogColor[2] = fogColor[2];
+	}
+
+	public float getFogEnd() {
+		return fogEnd;
+	}
+
+	public void setFogEnd(float fogEnd) {
+		this.fogEnd = fogEnd;
+	}
+
+	public float getFogScale() {
+		return fogScale;
+	}
+
+	public void setFogScale(float fogScale) {
+		this.fogScale = fogScale;
 	}
 }
