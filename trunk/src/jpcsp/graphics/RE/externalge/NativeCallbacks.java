@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.externalge;
 
+import static jpcsp.Memory.isAddressGood;
+
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -109,8 +111,8 @@ public class NativeCallbacks {
 
 	public static void writeByteBuffer(int address, ByteBuffer source, int length) {
 		writeByteBuffer.start();
-		if (RuntimeContext.memoryInt != null && (address & 3) == 0 && (length & 3) == 0) {
-			IntBuffer destination = IntBuffer.wrap(RuntimeContext.memoryInt, address >> 2, length >> 2);
+		if (RuntimeContext.memoryInt != null && (address & 3) == 0 && (length & 3) == 0 && isAddressGood(address)) {
+			IntBuffer destination = IntBuffer.wrap(RuntimeContext.memoryInt, (address & Memory.addressMask) >> 2, length >> 2);
 			source.order(ByteOrder.nativeOrder());
 			destination.put(source.asIntBuffer());
 		} else {
