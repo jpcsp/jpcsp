@@ -40,6 +40,7 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.kernel.types.pspGeCallbackData;
+import jpcsp.HLE.kernel.types.pspGeListOptParam;
 import jpcsp.HLE.kernel.types.interrupts.GeCallbackInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.GeInterruptHandler;
 import jpcsp.HLE.modules.HLEModule;
@@ -288,18 +289,6 @@ public class sceGe_user extends HLEModule {
 		}
     }
 
-    private void startGeList(PspGeList list) {
-    	// Send the list to the VideoEngine before triggering the display (setting GE dirty)
-    	list.startList();
-    	Modules.sceDisplayModule.setGeDirty(true);
-    }
-
-    private void startGeListHead(PspGeList list) {
-    	// Send the list to the VideoEngine at the head of the queue.
-    	list.startListHead();
-    	Modules.sceDisplayModule.setGeDirty(true);
-    }
-
     /** safe to call from the Async display thread */
     public void triggerFinishCallback(int cbid, int listId, int listPc, int callbackNotifyArg1) {
 		triggerAsyncCallback(cbid, listId, listPc, PSP_GE_SIGNAL_HANDLER_SUSPEND, callbackNotifyArg1, finishCallbacks);
@@ -384,12 +373,34 @@ public class sceGe_user extends HLEModule {
     	return mode;
     }
 
-    public int hleGeListEnQueue(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr, int saveContextAddr) {
+    public int hleGeListEnQueue(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr, int saveContextAddr, boolean enqueueHead) {
+    	pspGeListOptParam optParams = null;
+    	int stackAddr = 0;
+    	if (argAddr.isNotNull()) {
+	    	optParams = new pspGeListOptParam();
+	        optParams.read(argAddr);
+	        stackAddr = optParams.stackAddr;
+	        if (log.isDebugEnabled()) {
+	        	log.debug(String.format("hleGeListEnQueue optParams=%s", optParams));
+	        }
+    	}
+
+        boolean isBusy;
+    	if (ExternalGE.isActive()) {
+    		isBusy = ExternalGE.hasDrawList(listAddr.getAddress(), stackAddr);
+    	} else {
+    		isBusy = VideoEngine.getInstance().hasDrawList(listAddr.getAddress(), stackAddr);
+    	}
+    	if (isBusy) {
+    		log.warn(String.format("hleGeListEnQueue can't enqueue duplicate list address %s, stack 0x%08X", listAddr, stackAddr));
+    		return SceKernelErrors.ERROR_BUSY;
+    	}
+
         int result;
     	synchronized (this) {
 	    	PspGeList list = listFreeQueue.poll();
 	    	if (list == null) {
-	    		log.warn("sceGeListEnQueue no more free list available!");
+	    		log.warn("hleGeListEnQueue no more free list available!");
 	    		if (log.isDebugEnabled()) {
 		    		for (int i = 0; i < NUMBER_GE_LISTS; i++) {
 		    			log.debug(String.format("List#%d: %s", i, allGeLists[i]));
@@ -398,14 +409,21 @@ public class sceGe_user extends HLEModule {
 	    		return SceKernelErrors.ERROR_OUT_OF_MEMORY;
 	    	}
 
-	    	list.init(listAddr.getAddress(), stallAddr.getAddress(), cbid, argAddr.getAddress());
+	    	list.init(listAddr.getAddress(), stallAddr.getAddress(), cbid, optParams);
 	    	list.setSaveContextAddr(saveContextAddr);
-    		startGeList(list);
+	    	if (enqueueHead) {
+	        	// Send the list to the VideoEngine at the head of the queue.
+	        	list.startListHead();
+	    	} else {
+	        	// Send the list to the VideoEngine before triggering the display (setting GE dirty)
+	        	list.startList();
+	    	}
+	    	Modules.sceDisplayModule.setGeDirty(true);
             result = list.id;
 		}
 
     	if (log.isDebugEnabled()) {
-			log.debug(String.format("sceGeListEnQueue returning 0x%X", result));
+			log.debug(String.format("hleGeListEnQueue returning 0x%X", result));
 		}
 
 		return result;
@@ -511,51 +529,12 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0xAB49E76A, version = 150)
     public int sceGeListEnQueue(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr) {
-    	boolean isBusy = false;
-    	if (ExternalGE.isActive()) {
-    		isBusy = ExternalGE.hasDrawList(listAddr.getAddress());
-    	} else {
-    		isBusy = VideoEngine.getInstance().hasDrawList(listAddr.getAddress());
-    	}
-    	if (isBusy) {
-    		log.warn("sceGeListEnQueue can't enqueue duplicate list address");
-    		throw new SceKernelErrorException(SceKernelErrors.ERROR_BUSY);
-    	}
-
-    	return hleGeListEnQueue(listAddr, stallAddr, cbid, argAddr, 0);
+    	return hleGeListEnQueue(listAddr, stallAddr, cbid, argAddr, 0, false);
     }
 
     @HLEFunction(nid = 0x1C0D95A6, version = 150)
     public int sceGeListEnQueueHead(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr) {
-    	boolean isBusy = false;
-    	if (ExternalGE.isActive()) {
-    		isBusy = ExternalGE.hasDrawList(listAddr.getAddress());
-    	} else {
-    		isBusy = VideoEngine.getInstance().hasDrawList(listAddr.getAddress());
-    	}
-    	if (isBusy) {
-    		log.warn("sceGeListEnQueueHead can't enqueue duplicate list address");
-    		throw new SceKernelErrorException(SceKernelErrors.ERROR_BUSY);
-    	}
-
-    	int result;
-    	synchronized (this) {
-	    	PspGeList list = listFreeQueue.poll();
-	    	if (list == null) {
-	    		log.warn("sceGeListEnQueueHead no more free list available!");
-	    		throw new SceKernelErrorException(SceKernelErrors.ERROR_OUT_OF_MEMORY);
-	    	}
-
-	    	list.init(listAddr.getAddress(), stallAddr.getAddress(), cbid, argAddr.getAddress());
-    		startGeListHead(list);
-            result = list.id;
-		}
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceGeListEnQueueHead returning 0x%X", result));
-		}
-
-		return result;
+    	return hleGeListEnQueue(listAddr, stallAddr, cbid, argAddr, 0, true);
     }
 
     @HLEFunction(nid = 0x5FB86AB0, version = 150)

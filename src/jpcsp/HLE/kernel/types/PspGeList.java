@@ -40,12 +40,11 @@ import jpcsp.MemoryMap;
 public class PspGeList {
 	private VideoEngine videoEngine;
 	private static final int pcAddressMask = 0xFFFFFFFC & Memory.addressMask;
-	private Memory mem;
     public int list_addr;
     private int stall_addr;
     public int cbid;
-    public int arg_addr;
     public pspGeListOptParam optParams;
+    private int stackAddr;
 
     private int pc;
 
@@ -68,7 +67,6 @@ public class PspGeList {
 
     public PspGeList(int id) {
     	videoEngine = VideoEngine.getInstance();
-    	mem = Memory.getInstance();
     	this.id = id;
     	blockedThreadIds = new LinkedList<Integer>();
     	reset();
@@ -87,7 +85,7 @@ public class PspGeList {
         saveContextAddr = 0;
     }
 
-    public void init(int list_addr, int stall_addr, int cbid, int arg_addr) {
+    public void init(int list_addr, int stall_addr, int cbid, pspGeListOptParam optParams) {
         init();
 
         list_addr &= pcAddressMask;
@@ -96,14 +94,12 @@ public class PspGeList {
         this.list_addr = list_addr;
         this.stall_addr = stall_addr;
         this.cbid = cbid;
-        this.arg_addr = arg_addr;
+        this.optParams = optParams;
 
-        if (Memory.isAddressGood(arg_addr)) {
-            optParams = new pspGeListOptParam();
-            optParams.read(mem, arg_addr);
-            if (sceGe_user.log.isDebugEnabled()) {
-            	sceGe_user.log.debug(String.format("PspGeList optParams=%s", optParams.toString()));
-            }
+        if (optParams != null) {
+        	stackAddr = optParams.stackAddr;
+        } else {
+        	stackAddr = 0;
         }
         setPc(list_addr);
         status = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;
@@ -370,6 +366,17 @@ public class PspGeList {
 
 	public boolean hasSaveContextAddr() {
 		return saveContextAddr != 0;
+	}
+
+	public boolean isInUse(int listAddr, int stackAddr) {
+		if (list_addr == listAddr) {
+			return true;
+		}
+		if (stackAddr != 0 && this.stackAddr == stackAddr) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override

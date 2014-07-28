@@ -141,7 +141,7 @@ public class sceGu {
 		int saveContextAddr = sceGuGetMemory(GeContext.SIZE_OF);
 
 		Memory mem = Memory.getInstance();
-		listId = Modules.sceGe_userModule.hleGeListEnQueue(new TPointer(mem, listAddr), TPointer.NULL, -1, TPointer.NULL, saveContextAddr);
+		listId = Modules.sceGe_userModule.hleGeListEnQueue(new TPointer(mem, listAddr), TPointer.NULL, -1, TPointer.NULL, saveContextAddr, false);
 	}
 
 	public boolean isListDrawing() {

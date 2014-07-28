@@ -481,12 +481,12 @@ public class ExternalGE {
 		}
     }
 
-    public static boolean hasDrawList(int listAddr) {
+    public static boolean hasDrawList(int listAddr, int stackAddr) {
         boolean result = false;
         boolean waitAndRetry = false;
 
         synchronized (drawListQueue) {
-            if (currentList != null && currentList.list_addr == listAddr) {
+            if (currentList != null && currentList.isInUse(listAddr, stackAddr)) {
                 result = true;
                 // The current list has already reached the FINISH command,
                 // but the list processing is not yet completed.
@@ -496,7 +496,7 @@ public class ExternalGE {
                 }
             } else {
                 for (PspGeList list : drawListQueue) {
-                    if (list != null && list.list_addr == listAddr) {
+                    if (list != null && list.isInUse(listAddr, stackAddr)) {
                         result = true;
                         break;
                     }
