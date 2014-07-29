@@ -139,7 +139,6 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     protected float[] bboxCenter = new float[3];
 
     protected enum VisibilityTestResult {
-
         undefined,
         visible,
         notVisibleLeft,
@@ -492,7 +491,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
                 for (int i = 0; i < values.length; i++) {
                     VisibilityTestResult vertexVisible = isVertexVisible(values[i]);
                     if (log.isDebugEnabled()) {
-                        log.debug("BBOX Vertex #" + i + ": visible=" + vertexVisible);
+                        log.debug(String.format("BBOX Vertex #%d: visible=%s", i, vertexVisible));
                     }
                     if (vertexVisible == VisibilityTestResult.visible) {
                         bboxVisible = vertexVisible;
@@ -720,26 +719,30 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
             float viewportWidth = context.viewport_width;
             float windowX = (mvpVertex[0] / w * 0.5f + 0.5f) * viewportWidth + viewportX;
             if (log.isTraceEnabled()) {
-                log.trace("isVertexVisible windows X=" + windowX);
+                log.trace(String.format("isVertexVisible windows X=%f", windowX));
             }
             if (windowX < context.region_x1) {
-                return VisibilityTestResult.notVisibleLeft;
+            	// Negative W values are producing incorrect results when usePartialSoftwareTestForBoundingBox
+                return w < 0.f ? VisibilityTestResult.mustUseQuery : VisibilityTestResult.notVisibleLeft;
             }
             if (windowX > context.region_x2) {
-                return VisibilityTestResult.notVisibleRight;
+            	// Negative W values are producing incorrect results when usePartialSoftwareTestForBoundingBox
+                return w < 0.f ? VisibilityTestResult.mustUseQuery : VisibilityTestResult.notVisibleRight;
             }
 
             float viewportY = context.viewport_cy - context.offset_y;
             float viewportHeight = context.viewport_height;
             float windowY = (mvpVertex[1] / w * 0.5f + 0.5f) * viewportHeight + viewportY;
             if (log.isTraceEnabled()) {
-                log.trace("isVertexVisible windows Y=" + windowY);
+                log.trace(String.format("isVertexVisible windows Y=%f", windowY));
             }
             if (windowY < context.region_y1) {
-                return VisibilityTestResult.notVisibleBottom;
+            	// Negative W values are producing incorrect results when usePartialSoftwareTestForBoundingBox
+                return w < 0.f ? VisibilityTestResult.mustUseQuery : VisibilityTestResult.notVisibleBottom;
             }
             if (windowY > context.region_y2) {
-                return VisibilityTestResult.notVisibleTop;
+            	// Negative W values are producing incorrect results when usePartialSoftwareTestForBoundingBox
+                return w < 0.f ? VisibilityTestResult.mustUseQuery : VisibilityTestResult.notVisibleTop;
             }
         }
 
