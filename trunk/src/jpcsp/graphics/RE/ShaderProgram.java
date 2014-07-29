@@ -69,6 +69,7 @@ public class ShaderProgram {
 	private int blendDst; // values: [0..10];
 	private int colorMaskEnable; // values: [0..1]
 	private int copyRedToAlpha; // values: [0..1]
+	private int fogEnable; // values: [0..1]
 
 	public static class ShaderProgramKey {
 		private long key1;
@@ -149,6 +150,7 @@ public class ShaderProgram {
 		blendDst = shaderContext.getBlendDst();
 		colorMaskEnable = shaderContext.getColorMaskEnable();
 		copyRedToAlpha = shaderContext.getCopyRedToAlpha();
+		fogEnable = shaderContext.getFogEnable();
 
 		key = getKey(shaderContext, hasGeometryShader);
 	}
@@ -201,6 +203,7 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "BLEND_DST", dummyValue);
 		REShader.addDefine(defines, "COLOR_MASK_ENABLE", dummyValue);
 		REShader.addDefine(defines, "COPY_RED_TO_ALPHA", dummyValue);
+		REShader.addDefine(defines, "FOG_ENABLE", dummyValue);
 
 		return defines.toString();
 	}
@@ -252,6 +255,7 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "BLEND_DST", blendDst);
 		REShader.addDefine(defines, "COLOR_MASK_ENABLE", colorMaskEnable);
 		REShader.addDefine(defines, "COPY_RED_TO_ALPHA", copyRedToAlpha);
+		REShader.addDefine(defines, "FOG_ENABLE", fogEnable);
 
 		return defines.toString();
 	}
@@ -356,6 +360,8 @@ public class ShaderProgram {
 		key += ((long) shaderContext.getColorMaskEnable()) << shift;
 		shift++;
 		key += ((long) shaderContext.getCopyRedToAlpha()) << shift;
+		shift++;
+		key += ((long) shaderContext.getFogEnable()) << shift;
 		shift++;
 
 		if (shift > Long.SIZE) {
