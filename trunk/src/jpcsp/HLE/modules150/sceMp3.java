@@ -77,6 +77,86 @@ public class sceMp3 extends HLEModule {
     // Media Engine based playback.
     private boolean useMediaEngine = false;
     
+    public static int calculateMp3Bitrate(int bitVal, int mp3Version, int mp3Layer) {
+    	int[] valueMapping = null;
+    	switch (mp3Version) {
+    		case 3: // MPEG Version 1
+    			switch (mp3Layer) {
+        			case 3: // Layer I
+        				valueMapping = new int[] { 0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, -1 };
+        				break;
+        			case 2: // Layer II
+        				valueMapping = new int[] { 0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, -1 };
+        				break;
+        			case 1: // Layer III
+        				valueMapping = new int[] { 0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, -1 };
+        				break;
+    			}
+    			break;
+    		case 2: // MPEG Version 2
+    		case 0: // MPEG Version 2.5
+    			switch (mp3Layer) {
+        			case 3: // Layer I
+        				valueMapping = new int[] { 0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, -1 };
+        				break;
+        			case 2: // Layer II
+        			case 1: // Layer III
+        				valueMapping = new int[] { 0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, -1 };
+        				break;
+    			}
+    			break;
+    	}
+
+    	if (valueMapping == null) {
+    		return -1;
+    	}
+
+    	return valueMapping[bitVal];
+    }
+
+    public static int calculateMp3SampleRate(int bitVal, int mp3Version) {
+    	int[] valueMapping = null;
+    	switch (mp3Version) {
+    		case 3: // MPEG Version 1
+    			valueMapping = new int[] { 44100, 48000, 32000, -1 };
+    			break;
+    		case 2: // MPEG Version 2
+    			valueMapping = new int[] { 22050, 24000, 16000, -1 };
+    			break;
+    		case 0: // MPEG Version 2.5
+    			valueMapping = new int[] { 11025, 12000, 8000, -1 };
+    			break;
+    	}
+
+    	if (valueMapping == null) {
+    		return 0;
+    	}
+
+    	return valueMapping[bitVal];
+    }
+
+    public static int calculateMp3Channels(int bitVal) {
+        if (bitVal == 0 || bitVal == 1 || bitVal == 2) {
+            return 2;  // Stereo / Joint Stereo / Dual Channel.
+        } else if (bitVal == 3) {
+            return 1;  // Mono.
+        } else {
+            return 0;
+        }
+    }
+
+    public static int calculateMp3PaddingBytes(int bitVal, int mp3Layer) {
+    	if (bitVal == 0) {
+    		return 0;
+    	}
+    	// Layer I: 32 bits, Layer II+III: 8 bits
+    	return mp3Layer == 3 ? 4 : 1;
+    }
+
+    public static boolean isMp3Magic(int magic) {
+    	return (magic & 0xFEFF) == 0xFAFF;
+    }
+
     protected boolean checkMediaEngineState() {
         return useMediaEngine;
     }
@@ -263,6 +343,9 @@ public class sceMp3 extends HLEModule {
         		}
         		header = endianSwap32(Utilities.readUnaligned32(mem, mp3Buf + (int) mp3StreamStart + 10 + size));
         	}
+        	if (!isMp3Magic(header)) {
+        		log.error(String.format("Invalid MP3 header 0x%08X", header));
+        	}
             if (log.isDebugEnabled()) {
             	log.debug(String.format("Mp3 header: 0x%08X", header));
             }
@@ -274,74 +357,6 @@ public class sceMp3 extends HLEModule {
 
             // Now, we know the real number of channels, update the max samples
             initMp3MaxSamples(mp3Channels);
-        }
-
-        private int calculateMp3Bitrate(int bitVal, int mp3Version, int mp3Layer) {
-        	int[] valueMapping = null;
-        	switch (mp3Version) {
-        		case 3: // MPEG Version 1
-        			switch (mp3Layer) {
-	        			case 3: // Layer I
-	        				valueMapping = new int[] { 0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, -1 };
-	        				break;
-	        			case 2: // Layer II
-	        				valueMapping = new int[] { 0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, -1 };
-	        				break;
-	        			case 1: // Layer III
-	        				valueMapping = new int[] { 0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, -1 };
-	        				break;
-        			}
-        			break;
-        		case 2: // MPEG Version 2
-        		case 0: // MPEG Version 2.5
-        			switch (mp3Layer) {
-	        			case 3: // Layer I
-	        				valueMapping = new int[] { 0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, -1 };
-	        				break;
-	        			case 2: // Layer II
-	        			case 1: // Layer III
-	        				valueMapping = new int[] { 0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, -1 };
-	        				break;
-	    			}
-        			break;
-        	}
-
-        	if (valueMapping == null) {
-        		return -1;
-        	}
-
-        	return valueMapping[bitVal];
-        }
-
-        private int calculateMp3SampleRate(int bitVal, int mp3Version) {
-        	int[] valueMapping = null;
-        	switch (mp3Version) {
-        		case 3: // MPEG Version 1
-        			valueMapping = new int[] { 44100, 48000, 32000, -1 };
-        			break;
-        		case 2: // MPEG Version 2
-        			valueMapping = new int[] { 22050, 24000, 16000, -1 };
-        			break;
-        		case 0: // MPEG Version 2.5
-        			valueMapping = new int[] { 11025, 12000, 8000, -1 };
-        			break;
-        	}
-
-        	if (valueMapping == null) {
-        		return 0;
-        	}
-
-        	return valueMapping[bitVal];
-        }
-
-        private int calculateMp3Channels(int bitVal) {
-            if (bitVal == 0 || bitVal == 1 || bitVal == 2) {
-                return 2;  // Stereo / Joint Stereo / Dual Channel.
-            } else if (bitVal == 3) {
-                return 1;  // Mono.
-            } else {
-                return 0;
-            }
         }
 
         /**

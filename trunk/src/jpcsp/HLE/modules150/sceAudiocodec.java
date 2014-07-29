@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.modules150.sceMp3.isMp3Magic;
+import static jpcsp.util.Utilities.readUnaligned16;
+import static jpcsp.util.Utilities.readUnaligned32;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
@@ -51,7 +55,7 @@ public class sceAudiocodec extends HLEModule {
 		return 0;
 	}
 
-	@HLEUnimplemented
+	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x5B37EB1D, version = 150)
 	public int sceAudiocodecInit(TPointer workArea, int codecType) {
 		int atID = Modules.sceAtrac3plusModule.hleCreateAtracID(codecType);
@@ -60,9 +64,10 @@ public class sceAudiocodec extends HLEModule {
 		return 0;
 	}
 
-	@HLEUnimplemented
+	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x70A703F8, version = 150)
 	public int sceAudiocodecDecode(TPointer workArea, int codecType) {
+		Memory mem = workArea.getMemory();
 		int inputBuffer = workArea.getValue32(24);
 		int outputBuffer = workArea.getValue32(32);
 		int unknown1 = workArea.getValue32(40);
@@ -72,6 +77,7 @@ public class sceAudiocodec extends HLEModule {
 
 		int inputBufferSize;
 		int outputBufferSize;
+		boolean forceDataReset = false;
 		switch (codecType) {
 			case PSP_CODEC_AT3PLUS:
 				if (workArea.getValue32(48) == 0) {
@@ -95,6 +101,19 @@ public class sceAudiocodec extends HLEModule {
 					outputBufferSize = 0x1200;
 				} else {
 					outputBufferSize = 0x900;
+				}
+
+				// The application (e.g. homebrew "PSP ProQuake")
+				// expects double the given outputBufferSize... why?
+				outputBufferSize *= 2;
+
+				if (inputBufferSize >= 16
+				    && isMp3Magic(readUnaligned16(mem, inputBuffer))
+				    && readUnaligned32(mem, inputBuffer +  4) == 0
+				    && readUnaligned32(mem, inputBuffer +  8) == 0
+				    && readUnaligned32(mem, inputBuffer + 12) == 0) {
+					// New MP3 file has been started, force a data reset
+					forceDataReset = true;
 				}
 				break;
 			case PSP_CODEC_AAC:
@@ -128,14 +147,17 @@ public class sceAudiocodec extends HLEModule {
 		AtracCodec atracCodec = id.getAtracCodec();
 		int bytesPerSamples = 4;
 		int maxSamples = outputBufferSize / bytesPerSamples;
-		if (id.getInputBuffer() == null) {
-			id.setData(inputBuffer, inputBufferSize, inputBufferSize, false, 0);
+		if (id.getInputBuffer() == null || forceDataReset) {
 			if (atracCodec != null) {
 				if (codecType == PSP_CODEC_AT3) {
 					atracCodec.setAtracChannelStartLength(0x8000); // Only 0x8000 bytes are required to start decoding AT3
 				}
+				if (codecType == PSP_CODEC_MP3) {
+					atracCodec.setAtracChannelStartLength(inputBufferSize);
+				}
 				atracCodec.setAtracMaxSamples(maxSamples);
 			}
+			id.setData(inputBuffer, inputBufferSize, inputBufferSize, false, 0);
     		// Allow looping
     		id.setLoopNum(-1);
 		} else {
@@ -143,12 +165,14 @@ public class sceAudiocodec extends HLEModule {
 		}
 
 		if (atracCodec != null) {
-			int samples = atracCodec.atracDecodeData(id.getAtracId(), outputBuffer, 4);
+			int samples = atracCodec.atracDecodeData(id.getAtracId(), outputBuffer, 2);
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("sceAudiocodecDecode decoded %d samples", samples));
 			}
-			int offset = samples * bytesPerSamples;
-			Memory.getInstance().memset(outputBuffer + offset, (byte) 0, outputBufferSize - offset);
+			if (samples >= 0) {
+				int offset = samples * bytesPerSamples;
+				mem.memset(outputBuffer + offset, (byte) 0, outputBufferSize - offset);
+			}
 		}
 
 		workArea.setValue32(28, inputBufferSize);
