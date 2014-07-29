@@ -18,6 +18,7 @@ package jpcsp.filesystems;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 
 /**
@@ -46,6 +47,13 @@ public class SeekableRandomFile extends RandomAccessFile implements SeekableData
 
     public String getMode() {
     	return mode;
+    }
+
+    public SeekableRandomFile duplicate() throws IOException {
+    	SeekableRandomFile duplicate = new SeekableRandomFile(fileName, mode);
+    	duplicate.seek(getFilePointer());
+
+    	return duplicate;
     }
 
     @Override

@@ -18,6 +18,7 @@ package jpcsp.connector;
 
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_MP3;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -295,6 +296,27 @@ public class AtracCodec {
                 } else {
                     log.info("Undecodable AT3+ data detected.");
                 }
+            }
+        } else if (codecType == PSP_CODEC_MP3) {
+            log.info("Decodable MP3 data.");
+            if (checkMediaEngineState()) {
+                me.finish();
+                IVirtualFile extractedFile = externalDecoder.extractAtrac(address, length, atracFileSize, atracHash);
+                if (extractedFile == null) {
+                    atracChannel = new PacketChannel();
+                    atracChannel.setTotalStreamSize(atracFileSize);
+                    atracChannel.setFarRewindAllowed(true);
+                    atracChannel.write(address, length);
+                    // Defer the initialization of the MediaEngine until atracDecodeData()
+                    // to ensure we have enough data into the channel.
+                    atracEndSample = 0;
+                } else {
+                    log.info(String.format("Playing MP3 file '%s'", extractedFile));
+                    atracChannel = null;
+                    me.init(new VirtualFileProtocolHandler(extractedFile), false, true, 0, 0);
+                    atracEndSample = -1;
+                }
+                return;
             }
         }
         me = null;

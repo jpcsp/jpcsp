@@ -1970,9 +1970,6 @@ public class IoFileMgrForUser extends HLEModule {
     }
 
     public int hleIoRead(int id, int data_addr, int size, boolean async) {
-        if (log.isDebugEnabled()) {
-            log.debug("hleIoRead(id=" + Integer.toHexString(id) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
-        }
         IoInfo info = null;
         int result;
         long position = 0;
@@ -2089,13 +2086,11 @@ public class IoFileMgrForUser extends HLEModule {
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+            	log.error("hleIoRead", e);
                 result = ERROR_KERNEL_FILE_READ_ERROR;
             } catch (Exception e) {
-                e.printStackTrace();
+            	log.error("hleIoRead", e);
                 result = ERROR_KERNEL_FILE_READ_ERROR;
-                log.error("hleIoRead: Check other console for exception details. Press Run to continue.");
-                Emulator.PauseEmu();
             }
         }
         result = (int) updateResult(info, result, async, false, IoOperation.read, asyncAction, size);

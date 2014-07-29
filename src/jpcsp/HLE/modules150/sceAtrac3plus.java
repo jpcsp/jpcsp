@@ -16,6 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_MP3;
+import static jpcsp.HLE.modules150.sceMp3.calculateMp3Bitrate;
+import static jpcsp.HLE.modules150.sceMp3.calculateMp3Channels;
+import static jpcsp.HLE.modules150.sceMp3.calculateMp3PaddingBytes;
+import static jpcsp.HLE.modules150.sceMp3.calculateMp3SampleRate;
+import static jpcsp.HLE.modules150.sceMp3.isMp3Magic;
 import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.max;
 import static jpcsp.util.Utilities.readUnaligned32;
@@ -60,11 +68,13 @@ public class sceAtrac3plus extends HLEModule {
         atracIDs = new HashMap<Integer, AtracID>();
         atrac3Num = 0;
         atrac3plusNum = 0;
+        mp3Num = 0;
         // Tested on PSP:
         // Only 2 atracIDs per format can be registered at the same time.
         // Note: After firmware 2.50, these limits can be changed by sceAtracReinit.
         atrac3MaxIDsCount = 2;
         atrac3plusMaxIDsCount = 2;
+        mp3MaxIDsCount = 1;
 
         setSettingsListener("emu.useConnector", new EnableConnectorSettingsListener());
 
@@ -73,6 +83,7 @@ public class sceAtrac3plus extends HLEModule {
 
     protected static final String at3IdPurpose = "sceAtrac3plus.AT3";
     protected static final String at3PlusIdPurpose = "sceAtrac3plus.AT3+";
+    protected static final String mp3IdPurpose = "sceAtrac3plus.MP3";
     protected static final int AT3_MAGIC      = 0x0270; // "AT3"
     protected static final int AT3_PLUS_MAGIC = 0xFFFE; // "AT3PLUS"
     public    static final int RIFF_MAGIC = 0x46464952; // "RIFF"
@@ -93,15 +104,14 @@ public class sceAtrac3plus extends HLEModule {
     protected static final int PSP_ATRAC_STATUS_NONLOOP_STREAM_DATA = 0;
     protected static final int PSP_ATRAC_STATUS_LOOP_STREAM_DATA = 1;
 
-    protected static final int PSP_MODE_AT_3_PLUS = sceAudiocodec.PSP_CODEC_AT3PLUS;
-    protected static final int PSP_MODE_AT_3 = sceAudiocodec.PSP_CODEC_AT3;
-
     public static final int ATRAC_HEADER_HASH_LENGTH = 512;
 
     protected int atrac3MaxIDsCount;
     protected int atrac3plusMaxIDsCount;
+    protected int mp3MaxIDsCount;
     protected int atrac3Num;
     protected int atrac3plusNum;
+    protected int mp3Num;
     public static final int atracDecodeDelay = 2300; // Microseconds, based on PSP tests
 
     public static boolean useAtracCodec = false;
@@ -167,14 +177,18 @@ public class sceAtrac3plus extends HLEModule {
             this.codecType = codecType;
             this.id = id;
             this.atracCodec = atracCodec;
-            if (codecType == PSP_MODE_AT_3 && Modules.sceAtrac3plusModule.atrac3Num < Modules.sceAtrac3plusModule.atrac3MaxIDsCount) {
+            if (codecType == PSP_CODEC_AT3 && Modules.sceAtrac3plusModule.atrac3Num < Modules.sceAtrac3plusModule.atrac3MaxIDsCount) {
             	Modules.sceAtrac3plusModule.atrac3Num++;
                 maxSamples = 1024;
                 atracCodec.setAtracMaxSamples(maxSamples);
-            } else if (codecType == PSP_MODE_AT_3_PLUS && Modules.sceAtrac3plusModule.atrac3plusNum < Modules.sceAtrac3plusModule.atrac3plusMaxIDsCount) {
+            } else if (codecType == PSP_CODEC_AT3PLUS && Modules.sceAtrac3plusModule.atrac3plusNum < Modules.sceAtrac3plusModule.atrac3plusMaxIDsCount) {
             	Modules.sceAtrac3plusModule.atrac3plusNum++;
                 maxSamples = 2048;
                 atracCodec.setAtracMaxSamples(maxSamples);
+            } else if (codecType == PSP_CODEC_MP3 && Modules.sceAtrac3plusModule.mp3Num < Modules.sceAtrac3plusModule.mp3MaxIDsCount) {
+            	Modules.sceAtrac3plusModule.mp3Num++;
+            	maxSamples = 2048;
+            	atracCodec.setAtracMaxSamples(maxSamples);
             } else {
                 this.id = -1;
                 this.atracCodec = null;
@@ -186,9 +200,9 @@ public class sceAtrac3plus extends HLEModule {
 
         public void release() {
         	if (id >= 0) {
-        		if (codecType == PSP_MODE_AT_3) {
+        		if (codecType == PSP_CODEC_AT3) {
         			Modules.sceAtrac3plusModule.atrac3Num--;
-        		} else if (codecType == PSP_MODE_AT_3_PLUS) {
+        		} else if (codecType == PSP_CODEC_AT3PLUS) {
         			Modules.sceAtrac3plusModule.atrac3plusNum--;
 	        	}
         	}
@@ -246,6 +260,34 @@ public class sceAtrac3plus extends HLEModule {
         	return internalBuffer;
         }
 
+        private int analyzeMp3Header(int header) {
+            Memory mem = Memory.getInstance();
+            int currentAddr = inputBuffer.getReadAddr();
+
+            int result = 0;
+
+            int mp3Version = (header >> 19) & 0x3;
+            int mp3Layer = (header >> 17) & 0x3;
+            int mp3Channels = calculateMp3Channels((header >> 6) & 0x3);
+            int mp3SampleRate = calculateMp3SampleRate((header >> 10) & 0x3, mp3Version);
+            int mp3BitRate = calculateMp3Bitrate((header >> 12) & 0xF, mp3Version, mp3Layer);
+            int mp3PaddingBytes = calculateMp3PaddingBytes((header >> 9) & 0x1, mp3Layer);
+
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("Mp3Header mp3Version=%d, mp3Layer=%d, mp3Channels=%d, mp3SampleRate=%d, mp3Bitrate=%d", mp3Version, mp3Layer, mp3Channels, mp3SampleRate, mp3BitRate));
+            }
+
+            // Finding the input file size at offset 0x30
+            inputFileSize = endianSwap32(readUnaligned32(mem, currentAddr + 0x30));
+            atracChannels = mp3Channels;
+            atracBytesPerFrame = (144 * mp3BitRate * 1000) / mp3SampleRate + mp3PaddingBytes;
+            inputFileDataOffset = 0;
+            // Estimate the end sample based on the file size
+            atracEndSample = (inputFileSize - inputFileDataOffset) / atracBytesPerFrame * getMaxSamples();
+
+            return result;
+        }
+
         private int analyzeAE3Header() {
             Memory mem = Memory.getInstance();
             int result = 0;
@@ -297,6 +339,10 @@ public class sceAtrac3plus extends HLEModule {
             int magic = readUnaligned32(mem, currentAddr);
             if ((magic & 0x00FFFFFF) == 0x336165 || (magic & 0x00FFFFFF) == 0x334145) { // ea3 | EA3
             	return analyzeAE3Header();
+            }
+
+            if (codecType == PSP_CODEC_MP3 && isMp3Magic(magic)) {
+            	return analyzeMp3Header(endianSwap32(magic));
             }
 
             // RIFF file format:
@@ -840,15 +886,23 @@ public class sceAtrac3plus extends HLEModule {
     	// "Patapon 2" expects the ID to be signed 8bit
     	int atracID;
     	String idPurpose;
-    	if (codecType == PSP_MODE_AT_3_PLUS) {
-    		idPurpose = at3PlusIdPurpose;
-    		atracID = SceUidManager.getNewId(idPurpose, 0, atrac3plusMaxIDsCount - 1);
-    	} else if (codecType == PSP_MODE_AT_3) {
-    		idPurpose = at3IdPurpose;
-    		atracID = SceUidManager.getNewId(idPurpose, atrac3plusMaxIDsCount, atrac3plusMaxIDsCount + atrac3MaxIDsCount - 1);
-    	} else {
-    		return -1;
+    	switch (codecType) {
+	    	case PSP_CODEC_AT3PLUS:
+	    		idPurpose = at3PlusIdPurpose;
+	    		atracID = SceUidManager.getNewId(idPurpose, 0, atrac3plusMaxIDsCount - 1);
+	    		break;
+	    	case PSP_CODEC_AT3:
+	    		idPurpose = at3IdPurpose;
+	    		atracID = SceUidManager.getNewId(idPurpose, atrac3plusMaxIDsCount, atrac3plusMaxIDsCount + atrac3MaxIDsCount - 1);
+	    		break;
+	    	case PSP_CODEC_MP3:
+	    		idPurpose = mp3IdPurpose;
+	    		atracID = SceUidManager.getNewId(idPurpose, atrac3plusMaxIDsCount + atrac3MaxIDsCount, atrac3plusMaxIDsCount + atrac3MaxIDsCount + mp3MaxIDsCount - 1);
+	    		break;
+    		default:
+    			return -1;
     	}
+
         AtracCodec atracCodec = new AtracCodec();
         AtracID id = new AtracID(atracID, codecType, atracCodec);
         if (id.getAtracId() < 0) {
@@ -934,9 +988,9 @@ public class sceAtrac3plus extends HLEModule {
     protected void hleReleaseAtracID(int atracID) {
     	AtracID id = atracIDs.remove(atracID);
     	if (atracID >= 0) {
-	    	if (id.getAtracCodecType() == PSP_MODE_AT_3_PLUS) {
+	    	if (id.getAtracCodecType() == PSP_CODEC_AT3PLUS) {
 	        	SceUidManager.releaseId(atracID, at3PlusIdPurpose);
-	    	} else if (id.getAtracCodecType() == PSP_MODE_AT_3) {
+	    	} else if (id.getAtracCodecType() == PSP_CODEC_AT3) {
 	        	SceUidManager.releaseId(atracID, at3IdPurpose);
 	    	}
     	}
@@ -946,9 +1000,9 @@ public class sceAtrac3plus extends HLEModule {
     public static int getCodecType(int address) {
         int at3magic = Memory.getInstance().read16(address + 20);
         if (at3magic == AT3_MAGIC) {
-            return PSP_MODE_AT_3;
+            return PSP_CODEC_AT3;
         } else if (at3magic == AT3_PLUS_MAGIC) {
-            return PSP_MODE_AT_3_PLUS;
+            return PSP_CODEC_AT3PLUS;
         }
 
         return 0; // Unknown Codec
@@ -1253,7 +1307,7 @@ public class sceAtrac3plus extends HLEModule {
 
     	// Bitrate based on https://github.com/uofw/uofw/blob/master/src/libatrac3plus/libatrac3plus.c
     	int bitrate = (id.getAtracBytesPerFrame() * 352800) / 1000;
-    	if (id.getAtracCodecType() == PSP_MODE_AT_3_PLUS) {
+    	if (id.getAtracCodecType() == PSP_CODEC_AT3PLUS) {
     		bitrate = ((bitrate >> 11) + 8) & 0xFFFFFFF0;
     	} else {
     		bitrate = (bitrate + 511) >> 10;

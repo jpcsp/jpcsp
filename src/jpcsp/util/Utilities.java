@@ -551,7 +551,7 @@ public class Utilities {
                     // Add an ASCII representation at the end of the line
                     addAsciiDump(dump, charReader, bytesPerLine);
                 }
-                dump.append("\n");
+                dump.append(System.lineSeparator());
                 startOfLine = true;
             }
             if (startOfLine) {
@@ -653,6 +653,13 @@ public class Utilities {
                         | (mem.read8(address + 1) << 8)
                         | (mem.read8(address));
         }
+    }
+
+    public static int readUnaligned16(Memory mem, int address) {
+    	if ((address & 1) == 0) {
+    		return mem.read16(address);
+    	}
+    	return (mem.read8(address + 1) << 8) | mem.read8(address);
     }
 
     public static int read8(byte[] buffer, int offset) {

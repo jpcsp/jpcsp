@@ -27,10 +27,12 @@ import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.PartialVirtualFile;
 import jpcsp.HLE.VFS.filters.VirtualFileFilterManager;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
+import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
@@ -83,7 +85,29 @@ public class FileLocator {
     			this.position = position;
     		}
 
-			@Override
+    		public boolean isFileOpen() {
+    			if (vFile != null) {
+					if (vFile.getPosition() >= 0) {
+						return true;
+					}
+					return false;
+    			}
+
+    			if (dataInput != null) {
+    				try {
+						if (dataInput.getFilePointer() >= 0) {
+							return true;
+						}
+					} catch (IOException e) {
+						// Ignore exception, file is no longer open
+					}
+					return false;
+    			}
+
+    			return false;
+    		}
+
+    		@Override
 			public String toString() {
 				return String.format("ReadInfo(0x%08X-0x%08X(size=0x%X), position=%d, %s)", address, address + size, size, position, dataInput.toString());
 			}
@@ -344,6 +368,24 @@ public class FileLocator {
 					}
 					vFile = VirtualFileFilterManager.getInstance().getFilteredVirtualFile(vFile);
 					return vFile;
+				} else if (readInfo.dataInput instanceof SeekableRandomFile) {
+					SeekableRandomFile seekableRandomFile = (SeekableRandomFile) readInfo.dataInput;
+					try {
+						SeekableRandomFile duplicate = seekableRandomFile.duplicate();
+						if (duplicate != null) {
+							duplicate.seek(readInfo.position);
+							seekableRandomFile = duplicate;
+						}
+					} catch (IOException e) {
+						log.warn("Cannot duplicate SeekableRandomFile", e);
+					}
+
+					IVirtualFile vFile = new LocalVirtualFile(seekableRandomFile);
+					if (readInfo.position + positionOffset != 0 || vFile.length() != fileSize) {
+						vFile = new PartialVirtualFile(vFile, readInfo.position + positionOffset, fileSize);
+					}
+					vFile = VirtualFileFilterManager.getInstance().getFilteredVirtualFile(vFile);
+					return vFile;
 				}
 			}
 
@@ -480,7 +522,7 @@ public class FileLocator {
 				}
 
 				if (!processed) {
-					if (readInfo == null) {
+					if (readInfo == null || !readInfo.isFileOpen()) {
 						readInfo = new ReadInfo(data_addr, bytesRead, dataInput, vFile, position);
 						readInfos.put(data_addr, readInfo);
 					}

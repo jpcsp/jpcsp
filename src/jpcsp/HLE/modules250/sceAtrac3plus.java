@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules250;
 
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
 import jpcsp.Memory;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -88,8 +90,8 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 		address += 24;
 
 		switch (mem.read8(address)) {
-			case 0: codecType = PSP_MODE_AT_3; break;
-			case 1: codecType = PSP_MODE_AT_3_PLUS; break;
+			case 0: codecType = PSP_CODEC_AT3; break;
+			case 1: codecType = PSP_CODEC_AT3PLUS; break;
 			default: return SceKernelErrors.ERROR_AA3_INVALID_CODEC;
 		}
 

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules620;
 
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
 import static jpcsp.util.Utilities.readUnaligned32;
 import jpcsp.Memory;
 import jpcsp.HLE.CheckArgument;
@@ -108,7 +109,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         	} else {
         		id.setData(sourceAddr.getAddress(), id.getSourceBufferLength(), id.getSourceBufferLength(), false, 0);
         	}
-    		if (atracCodec != null && id.getAtracCodecType() == PSP_MODE_AT_3) {
+    		if (atracCodec != null && id.getAtracCodecType() == PSP_CODEC_AT3) {
     			atracCodec.setAtracChannelStartLength(0x8000); // Only 0x8000 bytes are required to start decoding AT3
     		}
     		sourceBytesConsumed = id.getSourceBufferLength();
