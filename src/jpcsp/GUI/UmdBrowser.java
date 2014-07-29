@@ -4,12 +4,15 @@
  */
 package jpcsp.GUI;
 
+import static jpcsp.util.Utilities.endianSwap32;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -35,6 +38,9 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.WindowPropSaver;
@@ -48,8 +54,8 @@ import jpcsp.util.Constants;
  * @author Orphis, gid15
  */
 public class UmdBrowser extends javax.swing.JDialog {
-
     private static final long serialVersionUID = 7788144302296106541L;
+    private static Logger log = Emulator.log;
 
     private final class MemStickTableModel extends AbstractTableModel {
 
@@ -65,16 +71,16 @@ public class UmdBrowser extends javax.swing.JDialog {
             List<File> programList = new ArrayList<File>();
             for (File path : paths) {
                 if (!path.isDirectory()) {
-                    Emulator.log.error("'" + path + "' is not a directory.");
+                    log.error("'" + path + "' is not a directory.");
                     return;
                 }
-                
+
                 try {
                     this.pathPrefix = path.getCanonicalPath();
                 } catch (IOException e) {
                     this.pathPrefix = path.getPath();
                 }
-                
+
                 File[] pathPrograms = path.listFiles(new FileFilter() {
                     @Override
                     public boolean accept(File file) {
@@ -89,7 +95,43 @@ public class UmdBrowser extends javax.swing.JDialog {
                                     return file.getName().equalsIgnoreCase("eboot.pbp");
                                 }
                             });
-                            return eboot.length != 0;
+                            if (eboot.length != 1) {
+                            	return false;
+                            }
+
+                            // Basic sanity checks on EBOOT.PBP
+                            DataInputStream is = null;
+                            try {
+								is = new DataInputStream(new FileInputStream(eboot[0]));
+								byte[] header = new byte[0x24];
+								int length = is.read(header);
+								if (length != header.length) {
+									return false;
+								}
+								// PBP header?
+								if (header[0] != 0 || header[1] != 'P' || header[2] != 'B' || header[3] != 'P') {
+									return false;
+								}
+								int psarDataOffset = endianSwap32(is.readInt());
+								// Homebrews have a PSAR data offset equal to the file length
+								if (psarDataOffset >= eboot[0].length()) {
+									// Homebrew
+									return false;
+								}
+							} catch (IOException e) {
+								return false;
+							} finally {
+								if (is != null) {
+									try {
+										is.close();
+									} catch (IOException e) {
+										// Ignore exception
+									}
+								}
+							}
+
+                            // Valid EBOOT.PBP
+                            return true;
                         }
                         return false;
                     }
@@ -226,7 +268,7 @@ public class UmdBrowser extends javax.swing.JDialog {
                         return text;
                 }
             } catch (IOException e) {
-                Emulator.log.error(e);
+                log.error(e);
             }
             return null;
         }
@@ -264,7 +306,9 @@ public class UmdBrowser extends javax.swing.JDialog {
 
         // set custom renderers
         table.setDefaultRenderer(Icon.class, new DefaultTableCellRenderer() {
-            @Override
+			private static final long serialVersionUID = 1L;
+
+			@Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 setText(""); // NOI18N
                 setIcon((Icon) value);
@@ -272,7 +316,9 @@ public class UmdBrowser extends javax.swing.JDialog {
             }
         });
         table.setDefaultRenderer(String.class, new DefaultTableCellRenderer() {
-            @Override
+			private static final long serialVersionUID = 1L;
+
+			@Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 JTextArea textArea = new JTextArea((String) value);
                 textArea.setFont(getFont());
@@ -294,7 +340,7 @@ public class UmdBrowser extends javax.swing.JDialog {
                 onSelectionChanged(event);
             }
         });
-        
+
         WindowPropSaver.loadWindowProperties(this);
     }
 
@@ -307,7 +353,7 @@ public class UmdBrowser extends javax.swing.JDialog {
         try {
         	getClass().getClassLoader().loadClass("sun.awt.image.PNGImageDecoder").getMethod("setCheckCRC", boolean.class).invoke(null, false);
         } catch (Throwable e) {
-        	Emulator.log.info(e);
+        	log.info(e);
         }
     }
 
@@ -322,25 +368,25 @@ public class UmdBrowser extends javax.swing.JDialog {
             os.write(content);
             os.close();
         } catch (FileNotFoundException e) {
-            Emulator.log.error(e);
+            log.error(e);
         } catch (IOException e) {
-            Emulator.log.error(e);
+            log.error(e);
         }
     }
-    
+
     private void loadUmdInfo(int rowIndex) {
         if (rowIndex >= umdInfoLoaded.length || umdInfoLoaded[rowIndex]) {
             return;
         }
-        
+
         try {
         	boolean cacheEntry = true;
         	String entryName = programs[rowIndex].getName();
             if (programs[rowIndex].isDirectory()) {
                 File eboot[] = programs[rowIndex].listFiles(new FileFilter() {
                     @Override
-                    public boolean accept(File arg0) {
-                        return arg0.getName().equalsIgnoreCase("eboot.pbp");
+                    public boolean accept(File file) {
+                        return file.getName().equalsIgnoreCase("eboot.pbp");
                     }
                 });
 
@@ -350,7 +396,7 @@ public class UmdBrowser extends javax.swing.JDialog {
                 	cacheEntry = false;
                 }
             }
-            
+
             if (cacheEntry) {
                 String cacheDirectory = getUmdBrowseCacheDirectory(entryName);
                 File sfoFile = new File(cacheDirectory + "param.sfo");
@@ -399,7 +445,7 @@ public class UmdBrowser extends javax.swing.JDialog {
             // Check if we're dealing with a UMD_VIDEO.
             try {
                 UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
-                
+
                 UmdIsoFile paramSfo = iso.getFile("UMD_VIDEO/param.sfo");
                 UmdIsoFile umdDataFile = iso.getFile("UMD_DATA.BIN");
 
@@ -408,7 +454,7 @@ public class UmdBrowser extends javax.swing.JDialog {
                 byte[] umdDataId = new byte[10];
                 umdDataFile.readFully(umdDataId, 0, 9);
                 String umdDataIdString = new String(umdDataId);
-                
+
                 byte[] sfo = new byte[(int) paramSfo.length()];
                 paramSfo.read(sfo);
                 paramSfo.close();
@@ -416,7 +462,7 @@ public class UmdBrowser extends javax.swing.JDialog {
                 psfs[rowIndex] = new PSF();
                 psfs[rowIndex].read(buf);
                 psfs[rowIndex].put("DISC_ID", umdDataIdString);
-                
+
                 UmdIsoFile icon0umd = iso.getFile("UMD_VIDEO/ICON0.PNG");
                 byte[] icon0 = new byte[(int) icon0umd.length()];
                 icon0umd.read(icon0);
@@ -426,18 +472,18 @@ public class UmdBrowser extends javax.swing.JDialog {
                 // default icon
                 icons[rowIndex] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
             } catch (IOException ve) {
-                Emulator.log.error(ve);
+                log.error(ve);
             }
         } catch (IOException e) {
-            Emulator.log.error(e);
+            log.error(e);
         }
-        
+
         umdInfoLoaded[rowIndex] = true;
     }
     
     private void onSelectionChanged(ListSelectionEvent event) {
         loadButton.setEnabled(!((ListSelectionModel) event.getSource()).isSelectionEmpty());
-        
+
         ImageIcon pic0Icon = null;
         ImageIcon pic1Icon = null;
         ImageIcon icon0Icon = null;
@@ -455,7 +501,7 @@ public class UmdBrowser extends javax.swing.JDialog {
             } catch (FileNotFoundException e) {
                 // Ignore exception
             } catch (IOException e) {
-                Emulator.log.error(e);
+                log.error(e);
             }
 
             // Read PIC1.PNG
@@ -479,41 +525,41 @@ public class UmdBrowser extends javax.swing.JDialog {
                     BufferedImage image = new BufferedImage(Constants.PSPSCREEN_WIDTH, Constants.PSPSCREEN_HEIGHT, BufferedImage.TYPE_INT_ARGB);
                     pic1Icon.setImage(image);
                 } catch (IOException ve) {
-                    Emulator.log.error(ve);
+                    log.error(ve);
                 }
             } catch (IOException e) {
-                Emulator.log.error(e);
+                log.error(e);
             }
-            
+
             icon0Icon = icons[rowIndex];
-            
+
             if (lastRowIndex != rowIndex) {
                 stopVideo();
                 umdBrowserPmf = new UmdBrowserPmf(iso, "PSP_GAME/ICON1.PMF", icon0Label);
                 umdBrowserSound = new UmdBrowserSound(iso, "PSP_GAME/SND0.AT3");
             }
-            
+
             lastRowIndex = rowIndex;
         } catch (FileNotFoundException e) {
             // Ignore exception
         } catch (IOException e) {
-            Emulator.log.error(e);
+            log.error(e);
         }
         pic0Label.setIcon(pic0Icon);
         pic1Label.setIcon(pic1Icon);
         icon0Label.setIcon(icon0Icon);
     }
-    
+
     private String getTitle(int rowIndex) {
         String title;
         if (psfs[rowIndex] == null || (title = psfs[rowIndex].getString("TITLE")) == null) {
             // No PSF TITLE, get the parent directory name
             title = programs[rowIndex].getParentFile().getName();
         }
-        
+
         return title;
     }
-    
+
     private void scrollTo(char c) {
         c = Character.toLowerCase(c);
         int scrollToRow = -1;
@@ -527,27 +573,27 @@ public class UmdBrowser extends javax.swing.JDialog {
                 }
             }
         }
-        
+
         if (scrollToRow >= 0) {
             table.scrollRectToVisible(table.getCellRect(scrollToRow, 0, true));
         }
     }
-    
+
     private void stopVideo() {
         if (umdBrowserPmf != null) {
             umdBrowserPmf.stopVideo();
             umdBrowserPmf = null;
         }
-        
+
         if (umdBrowserSound != null) {
             umdBrowserSound.stopVideo();
             umdBrowserSound = null;
         }
     }
-    
+
     private void loadSelectedfile() {
         stopVideo();
-        
+
         File selectedFile = programs[table.getSelectedRow()];
         if (isSwitchingUmd()) {
             gui.switchUMD(selectedFile);
@@ -559,14 +605,14 @@ public class UmdBrowser extends javax.swing.JDialog {
             gui.loadAndRun();
         }
     }
-    
+
     @Override
     public void dispose() {
         // Stop the PMF video and sound before closing the UMD Browser
         stopVideo();
         super.dispose();
     }
-    
+
     private static void sleep(long millis) {
         if (millis > 0) {
             try {
@@ -581,7 +627,6 @@ public class UmdBrowser extends javax.swing.JDialog {
      * Load asynchronously all the UMD information (icon, PSF).
      */
     private class UmdInfoLoader extends Thread {
-        
         @Override
         public void run() {
             for (int i = 0; i < umdInfoLoaded.length; i++) {
@@ -589,42 +634,41 @@ public class UmdBrowser extends javax.swing.JDialog {
             }
         }
     }
-    
+
     public boolean isSwitchingUmd() {
         return isSwitchingUmd;
     }
-    
+
     public void setSwitchingUmd(boolean isSwitchingUmd) {
         this.isSwitchingUmd = isSwitchingUmd;
         loadButton.setText(java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString(isSwitchingUmd() ? "UmdBrowser.loadButtonSwitch.text" : "UmdBrowser.loadButton.text"));
     }
-    
+
     private class PmfBorder extends AbstractBorder {
-        
         private static final long serialVersionUID = -700510222853542503L;
         private static final int leftSpace = 20;
         private static final int topSpace = 8;
         private static final int borderWidth = 8;
         private static final int millisPerBeat = 1500;
-        
+
         @Override
         public Insets getBorderInsets(Component c, Insets insets) {
             insets.set(topSpace, leftSpace, borderWidth, borderWidth);
-            
+
             return insets;
         }
-        
+
         @Override
         public Insets getBorderInsets(Component c) {
             return getBorderInsets(c, new Insets(0, 0, 0, 0));
         }
-        
+
         @Override
         public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
             if (icon0Label.getIcon() == null) {
                 return;
             }
-            
+
             long now = System.currentTimeMillis();
             float beat = (now % millisPerBeat) / (float) millisPerBeat;
             float noBeat = 0.5f;
@@ -639,7 +683,7 @@ public class UmdBrowser extends javax.swing.JDialog {
 
                 // Horizontal line at the bottom
                 g.drawLine(x + leftSpace, y + height - borderWidth + i, x + width - borderWidth, y + height - borderWidth + i);
-                
+
                 alpha = getAlpha(beat, i);
                 setColor(g, noBeat, alpha);
 
@@ -662,7 +706,7 @@ public class UmdBrowser extends javax.swing.JDialog {
             // Bottom right corner
             drawCorner(g, noBeat, beat, x + width - borderWidth, y + height - borderWidth, 0, 0);
         }
-        
+
         private void drawCorner(Graphics g, float alphaBeat, float colorBeat, int x, int y, int centerX, int centerY) {
             for (int ix = 1; ix < borderWidth; ix++) {
                 for (int iy = 1; iy < borderWidth; iy++) {
@@ -672,16 +716,16 @@ public class UmdBrowser extends javax.swing.JDialog {
                 }
             }
         }
-        
+
         private int getAlpha(float beat, int distanceX, int distanceY) {
             float distance = (float) Math.sqrt(distanceX * distanceX + distanceY * distanceY);
-            
+
             return getAlpha(beat, distance);
         }
-        
+
         private int getAlpha(float beat, float distance) {
             final float maxDistance = borderWidth;
-            
+
             int maxAlpha = 0xF0;
             if (beat < 0.5f) {
                 // beat 0.0 -> 0.5: increase alpha from 0 to max
@@ -690,16 +734,16 @@ public class UmdBrowser extends javax.swing.JDialog {
                 // beat 0.5 -> 1.0: decrease alpha from max to 0
                 maxAlpha = (int) (maxAlpha * (1 - beat) * 2);
             }
-            
+
             distance = Math.abs(distance);
             distance = Math.min(distance, maxDistance);
-            
+
             return maxAlpha - (int) ((distance * maxAlpha) / maxDistance);
         }
-        
+
         private void setColor(Graphics g, float beat, int alpha) {
             int color = 0xA0;
-            
+
             if (beat < 0.5f) {
                 // beat 0.0 -> 0.5: increase color from 0 to max
                 color = (int) (color * beat * 2);
@@ -707,10 +751,10 @@ public class UmdBrowser extends javax.swing.JDialog {
                 // beat 0.5 -> 1.0: decrease alpha from max to 0
                 color = (int) (color * (1 - beat) * 2);
             }
-            
+
             g.setColor(new Color(color, color, color, alpha));
         }
-        
+
         private void drawPoint(Graphics g, int x, int y) {
             g.drawLine(x, y, x, y);
         }
@@ -721,7 +765,6 @@ public class UmdBrowser extends javax.swing.JDialog {
      * WARNING: Do NOT modify this code. The content of this method is always
      * regenerated by the Form Editor.
      */
-    @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
@@ -743,7 +786,8 @@ public class UmdBrowser extends javax.swing.JDialog {
         loadButton.setText(bundle.getString("LoadButton.text")); // NOI18N
         loadButton.setEnabled(false);
         loadButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 loadButtonActionPerformed(evt);
             }
         });
@@ -756,18 +800,22 @@ public class UmdBrowser extends javax.swing.JDialog {
         table.setRowHeight(Constants.ICON0_HEIGHT);
         table.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         table.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+            @Override
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
                 tableMouseClicked(evt);
             }
         });
         table.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyTyped(java.awt.event.KeyEvent evt) {
+            @Override
+			public void keyTyped(java.awt.event.KeyEvent evt) {
                 tableKeyTyped(evt);
             }
-            public void keyPressed(java.awt.event.KeyEvent evt) {
+            @Override
+			public void keyPressed(java.awt.event.KeyEvent evt) {
                 tableKeyPressed(evt);
             }
-            public void keyReleased(java.awt.event.KeyEvent evt) {
+            @Override
+			public void keyReleased(java.awt.event.KeyEvent evt) {
                 tableKeyReleased(evt);
             }
         });

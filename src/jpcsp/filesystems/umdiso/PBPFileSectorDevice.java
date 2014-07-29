@@ -65,7 +65,10 @@ public class PBPFileSectorDevice extends AbstractFileSectorDevice {
 			byte[] header = new byte[256];
 			int readSize = fileAccess.read(header);
 			if (readSize != header.length) {
-				log.error(String.format("Invalid PBP header"));
+				if (psarDataOffset == fileAccess.length()) {
+					throw new IOException("This is an homebrew PBP");
+				}
+				throw new IOException(String.format("Invalid PBP header"));
 			}
 
 			CryptoEngine cryptoEngine = new CryptoEngine();
