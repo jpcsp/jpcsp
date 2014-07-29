@@ -2606,12 +2606,14 @@ public class sceMpeg extends HLEModule {
         int init = initAddr.getValue();
 
         if (avcEsBuf != null && au == -1 && mpegRingbuffer == null) {
-        	final int height = 272; // How to retrieve the real video height?
         	final int width = frameWidth;
+        	final int height = width < 480 ? 160 : 272; // How to retrieve the real video height?
 
         	// The application seems to stream the MPEG data into the avcEsBuf.addr buffer,
         	// probably only one frame at a time.
-        	log.debug(String.format("sceMpegAvcDecode buffer=0x%08X, avcEsBuf: %s", buffer, Utilities.getMemoryDump(avcEsBuf.addr, AVC_ES_BUF_SIZE)));
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceMpegAvcDecode buffer=0x%08X, avcEsBuf: %s", buffer, Utilities.getMemoryDump(avcEsBuf.addr, AVC_ES_BUF_SIZE)));
+        	}
 
         	// Generate a faked image. We cannot use the MediaEngine at this point
         	// as we have not enough MPEG data buffered in advance.
@@ -2788,9 +2790,12 @@ public class sceMpeg extends HLEModule {
         int mode = modeAddr.getValue(0);
         int pixelMode = modeAddr.getValue(4);
         if (pixelMode >= TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650 && pixelMode <= TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceMpegAvcDecodeMode mode=0x%X, pixelMode=0x%X", mode, pixelMode));
+        	}
             videoPixelMode = pixelMode;
         } else {
-            log.warn("sceMpegAvcDecodeMode mode=0x" + mode + " pixel mode=" + pixelMode + ": unknown mode");
+            log.warn(String.format("sceMpegAvcDecodeMode mode=0x%X, pixel mode=0x%X: unknown pixel mode", mode, pixelMode));
         }
         return 0;
     }
