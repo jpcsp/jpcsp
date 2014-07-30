@@ -156,15 +156,23 @@ void changeAttributeValue(struct attribute *pattribute, float direction)
 {
 	if (pattribute->pvalue != NULL)
 	{
-		*(pattribute->pvalue) += direction * pattribute->step;
-		if (*(pattribute->pvalue) > pattribute->max)
+		int delta = (int) (direction * pattribute->step);
+		int oldValue = *(pattribute->pvalue);
+		int newValue = oldValue + delta;
+		// Value overflow?
+		if (oldValue > 0 && newValue <= 0 && delta > 0)
 		{
-			*(pattribute->pvalue) = pattribute->max;
+			newValue = pattribute->max;
 		}
-		if (*(pattribute->pvalue) < pattribute->min)
+		if (newValue > pattribute->max)
 		{
-			*(pattribute->pvalue) = pattribute->min;
+			newValue = pattribute->max;
 		}
+		if (newValue < pattribute->min)
+		{
+			newValue = pattribute->min;
+		}
+		*(pattribute->pvalue) = newValue;
 	}
 	else if (pattribute->pfvalue != NULL)
 	{
@@ -589,7 +597,9 @@ int psm = GU_PSM_8888;
 int fbw = BUF_WIDTH;
 int zbw = BUF_WIDTH;
 int fbpOffset = 0;
+int fbpLargeOffset = 0;
 int zbpOffset = 0;
+int zbpLargeOffset = 0;
 
 int texWrapU1 = GU_CLAMP;
 int texWrapV1 = GU_CLAMP;
@@ -1188,8 +1198,16 @@ void drawRectangles()
 	}
 
 //	sceGuDispBuffer(displayWidth, displayHeight, fbp1 + fbpOffset, fbw);
-	sceGuDrawBuffer(psm, fbp0 + fbpOffset, fbw);
-	sceGuDepthBuffer(zbp + zbpOffset, zbw);
+//	sceGuDrawBuffer(psm, fbp0 + fbpOffset + fbpLargeOffset, fbw);
+	sceGuDrawBuffer(psm, fbp0, fbw);
+	u32 addr = ((u32) fbp0) + fbpOffset + fbpLargeOffset;
+	sendCommandi(156, addr & 0x00FFFFFF);
+	sendCommandi(157, ((addr & 0xFF000000) >> 8) | fbw);
+//	sceGuDepthBuffer(zbp + zbpOffset + zbpLargeOffset, zbw);
+	sceGuDepthBuffer(zbp, zbw);
+	addr = ((u32) zbp) + zbpOffset + zbpLargeOffset;
+	sendCommandi(158, addr & 0x00FFFFFF);
+	sendCommandi(159, ((addr & 0xFF000000) >> 8) | zbw);
 
 	int clearFlags = 0;
 	if (clearFlagColor   != 0) clearFlags |= GU_COLOR_BUFFER_BIT;
@@ -1670,6 +1688,7 @@ void draw()
 
 	sceDisplayWaitVblank();
 	fbp0 = sceGuSwapBuffers();
+	fbp0 = (void *) (((u32) fbp0) & 0x00FFFFFF);
 }
 
 
@@ -1789,8 +1808,12 @@ void init()
 	addAttribute(", Format", &psm, NULL, x + 35, y, GU_PSM_5650, GU_PSM_8888, 1, NULL);
 	setAttributeValueNames(&tpsmNames[0]);
 	y++;
+	addAttribute("Addr Offset", &fbpLargeOffset, NULL, x + 12, y, 0, 0x7F000000, 0x01000000, "0x%08X");
+	y++;
 	addAttribute("DepthBuffer Width", &zbw, NULL, x, y, 0, 1024, 1, NULL);
 	addAttribute(", Offset", &zbpOffset, NULL, x + 22, y, -1024, 1024, 4, NULL);
+	y++;
+	addAttribute("Addr Offset", &zbpLargeOffset, NULL, x + 12, y, 0, 0x7F000000, 0x01000000, "0x%08X");
 	y++;
 
 	addAttribute("sceGuAlphaFunc", &alphaFunc, NULL, x, y, 0, 7, 1, NULL);
