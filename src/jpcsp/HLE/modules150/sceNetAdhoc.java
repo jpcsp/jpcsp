@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.modules150.sceNetAdhocctl.fillNextPointersInLinkedList;
 import static jpcsp.util.Utilities.writeBytes;
 
 import java.io.IOException;
@@ -736,20 +737,19 @@ public class sceNetAdhoc extends HLEModule {
 
     	final int objectInfoSize = 20;
 
+    	int size = sizeAddr.getValue();
     	sizeAddr.setValue(objectInfoSize * pdpObjects.size());
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceNetAdhocGetPdpStat returning size=%d", sizeAddr.getValue()));
     	}
 
     	if (buf.isNotNull()) {
-        	Memory mem = Memory.getInstance();
-        	int addr = buf.getAddress();
-        	int endAddr = addr + sizeAddr.getValue();
+    		int offset = 0;
         	for (int pdpId : pdpObjects.keySet()) {
         		PdpObject pdpObject = pdpObjects.get(pdpId);
 
         		// Check if enough space available to write the next structure
-        		if (addr + objectInfoSize > endAddr || pdpObject == null) {
+        		if (offset + objectInfoSize > size || pdpObject == null) {
         			break;
         		}
 
@@ -760,38 +760,30 @@ public class sceNetAdhoc extends HLEModule {
 				}
 
         		if (log.isDebugEnabled()) {
-        			log.debug(String.format("sceNetAdhocGetPdpStat returning %s at 0x%08X", pdpObject, addr));
+        			log.debug(String.format("sceNetAdhocGetPdpStat returning %s at 0x%08X", pdpObject, buf.getAddress() + offset));
         		}
 
         		/** Pointer to next PDP structure in list: will be written later */
-        		addr += 4;
+        		offset += 4;
 
         		/** pdp ID */
-        		mem.write32(addr, pdpObject.getId());
-        		addr += 4;
+        		buf.setValue32(offset, pdpObject.getId());
+        		offset += 4;
 
         		/** MAC address */
-        		pdpObject.getMacAddress().write(mem, addr);
-        		addr += pdpObject.getMacAddress().sizeof();
+        		pdpObject.getMacAddress().write(buf.getMemory(), buf.getAddress() + offset);
+        		offset += pdpObject.getMacAddress().sizeof();
 
         		/** Port */
-        		mem.write16(addr, (short) pdpObject.getPort());
-        		addr += 2;
+        		buf.setValue16(offset, (short) pdpObject.getPort());
+        		offset += 2;
 
         		/** Bytes received */
-        		mem.write32(addr, pdpObject.getRcvdData());
-        		addr += 4;
+        		buf.setValue32(offset, pdpObject.getRcvdData());
+        		offset += 4;
         	}
 
-        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += objectInfoSize) {
-        		if (nextAddr + objectInfoSize >= addr) {
-        			// Last one
-        			mem.write32(nextAddr, 0);
-        		} else {
-        			// Pointer to next one
-        			mem.write32(nextAddr, nextAddr + objectInfoSize);
-        		}
-        	}
+        	fillNextPointersInLinkedList(buf, offset, objectInfoSize);
         }
 
         return 0;
@@ -1002,6 +994,7 @@ public class sceNetAdhoc extends HLEModule {
 
     	final int objectInfoSize = 36;
 
+    	int size = sizeAddr.getValue();
     	// Return size required
     	sizeAddr.setValue(objectInfoSize * ptpObjects.size());
     	if (log.isDebugEnabled()) {
@@ -1009,15 +1002,13 @@ public class sceNetAdhoc extends HLEModule {
     	}
 
     	if (buf.isNotNull()) {
-        	Memory mem = Memory.getInstance();
-        	int addr = buf.getAddress();
-        	int endAddr = addr + sizeAddr.getValue();
+    		int offset = 0;
         	pspNetMacAddress nonExistingDestMacAddress = new pspNetMacAddress();
         	for (int pdpId : ptpObjects.keySet()) {
         		PtpObject ptpObject = ptpObjects.get(pdpId);
 
         		// Check if enough space available to write the next structure
-        		if (addr + objectInfoSize > endAddr || ptpObject == null) {
+        		if (offset + objectInfoSize > size || ptpObject == null) {
         			break;
         		}
 
@@ -1028,59 +1019,51 @@ public class sceNetAdhoc extends HLEModule {
 				}
 
         		if (log.isDebugEnabled()) {
-        			log.debug(String.format("sceNetAdhocGetPtpStat returning %s at 0x%08X", ptpObject, addr));
+        			log.debug(String.format("sceNetAdhocGetPtpStat returning %s at 0x%08X", ptpObject, buf.getAddress() + offset));
         		}
 
         		/** Pointer to next PDP structure in list: will be written later */
-        		addr += 4;
+        		offset += 4;
 
         		/** ptp ID */
-        		mem.write32(addr, ptpObject.getId());
-        		addr += 4;
+        		buf.setValue32(offset, ptpObject.getId());
+        		offset += 4;
 
         		/** MAC address */
-        		ptpObject.getMacAddress().write(mem, addr);
-        		addr += ptpObject.getMacAddress().sizeof();
+        		ptpObject.getMacAddress().write(buf.getMemory(), buf.getAddress() + offset);
+        		offset += ptpObject.getMacAddress().sizeof();
 
         		/** Dest MAC address */
         		if (ptpObject.getDestMacAddress() != null) {
-        			ptpObject.getDestMacAddress().write(mem, addr);
-        			addr += ptpObject.getDestMacAddress().sizeof();
+        			ptpObject.getDestMacAddress().write(buf.getMemory(), buf.getAddress() + offset);
+        			offset += ptpObject.getDestMacAddress().sizeof();
         		} else {
-        			nonExistingDestMacAddress.write(mem, addr);
-        			addr += nonExistingDestMacAddress.sizeof();
+        			nonExistingDestMacAddress.write(buf.getMemory(), buf.getAddress() + offset);
+        			offset += nonExistingDestMacAddress.sizeof();
         		}
 
         		/** Port */
-        		mem.write16(addr, (short) ptpObject.getPort());
-        		addr += 2;
+        		buf.setValue16(offset, (short) ptpObject.getPort());
+        		offset += 2;
 
         		/** Dest Port */
-        		mem.write16(addr, (short) ptpObject.getDestPort());
-        		addr += 2;
+        		buf.setValue16(offset, (short) ptpObject.getDestPort());
+        		offset += 2;
 
         		/** Bytes sent */
-        		mem.write32(addr, ptpObject.getSentData());
-        		addr += 4;
+        		buf.setValue32(offset, ptpObject.getSentData());
+        		offset += 4;
 
         		/** Bytes received */
-        		mem.write32(addr, ptpObject.getRcvdData());
-        		addr += 4;
+        		buf.setValue32(offset, ptpObject.getRcvdData());
+        		offset += 4;
 
         		/** Unknown */
-        		mem.write32(addr, 4); // PSP seems to return value 4 here
-        		addr += 4;
+        		buf.setValue32(offset, 4); // PSP seems to return value 4 here
+        		offset += 4;
         	}
 
-        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += objectInfoSize) {
-        		if (nextAddr + objectInfoSize >= addr) {
-        			// Last one
-        			mem.write32(nextAddr, 0);
-        		} else {
-        			// Pointer to next one
-        			mem.write32(nextAddr, nextAddr + objectInfoSize);
-        		}
-        	}
+        	fillNextPointersInLinkedList(buf, offset, objectInfoSize);
         }
 
         return 0;
