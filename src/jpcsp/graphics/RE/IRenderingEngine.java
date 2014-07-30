@@ -440,7 +440,7 @@ public interface IRenderingEngine {
 	public void setAlphaFunc(int func, int ref);
 	public void setFogHint();
 	public void setFogColor(float[] color);
-	public void setFogDist(float start, float end);
+	public void setFogDist(float end, float scale);
 	public void setTextureEnvColor(float[] color);
 	public void setFrontFace(boolean cw);
 	public void setScissor(int x, int y, int width, int height);
