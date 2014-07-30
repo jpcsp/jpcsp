@@ -576,7 +576,7 @@ void main()
     #endif
 
     gl_Position            = gl_ModelViewProjectionMatrix * V;
-    gl_FogFragCoord        = abs(Ve.z);
+    gl_FogFragCoord        = Ve.z;
     gl_TexCoord[0]         = T;
     gl_FrontColor          = Cp;
     gl_FrontSecondaryColor = Cs;

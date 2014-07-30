@@ -878,7 +878,7 @@ void ApplyBlendTest(inout vec4 Cf, in vec4 Csrc, in vec4 Cdst)
 
 void ApplyFog(inout vec4 Cf)
 {
-	float fog = (fogEnd - gl_FogFragCoord) * fogScale;
+	float fog = (fogEnd + gl_FogFragCoord) * fogScale;
 	fog = clamp(fog, 0.0, 1.0);
 	Cf.rgb = mix(fogColor, Cf.rgb, fog);
 }

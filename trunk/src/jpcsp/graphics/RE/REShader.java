@@ -1415,9 +1415,9 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setFogDist(float start, float end) {
+	public void setFogDist(float end, float scale) {
 		shaderContext.setFogEnd(end);
-		shaderContext.setFogScale(1f / (end - start));
-		super.setFogDist(start, end);
+		shaderContext.setFogScale(scale);
+		super.setFogDist(end, scale);
 	}
 }

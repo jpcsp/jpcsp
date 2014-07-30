@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
+import static jpcsp.MemoryMap.START_VRAM;
 import static jpcsp.graphics.GeCommands.TBIAS_MODE_AUTO;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
@@ -48,8 +49,8 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     // baseOffset is updated by the ORIGIN_ADDR and OFFSET_ADDR commands,
     // and both commands share the same value field.
     public int baseOffset;
-    public int fbp, fbw; // frame buffer pointer and width
-    public int zbp, zbw; // depth buffer pointer and width
+    public int fbp = START_VRAM, fbw; // frame buffer pointer and width
+    public int zbp = START_VRAM, zbw; // depth buffer pointer and width
     public int psm; // pixel format
     public int region_x1, region_y1, region_x2, region_y2;
     public int region_width, region_height; // derived

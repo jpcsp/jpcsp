@@ -4376,9 +4376,6 @@ public class VideoEngine {
     }
 
     private void executeCommandFBW() {
-        // Clear upper 4 bits of fbp, they are unused
-        // (and some applications set them, e.g.: fbp=0x10198010 has to be interpreted as fbp=0x00198010).
-        context.fbp = (context.fbp & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
         context.fbw = normalArgument & 0xffff;
         if (isLogDebugEnabled) {
             log(String.format("%s fbp=0x%08X, fbw=%d", helper.getCommandString(FBW), context.fbp, context.fbw));
@@ -4394,7 +4391,6 @@ public class VideoEngine {
     }
 
     private void executeCommandZBW() {
-        context.zbp = (context.zbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
         context.zbw = normalArgument & 0xffff;
         if (isLogDebugEnabled) {
             log(String.format("%s zbp=0x%08X, zbw=%d", helper.getCommandString(ZBW), context.zbp, context.zbw));
@@ -4704,20 +4700,10 @@ public class VideoEngine {
 
     private void executeCommandFDIST() {
         context.fog_dist = floatArgument(normalArgument);
-        if ((context.fog_far != 0.0f) && (context.fog_dist != 0.0f)) {
-            float end = context.fog_far;
-            float start = end - (1 / context.fog_dist);
+        re.setFogDist(context.fog_far, context.fog_dist);
 
-			if (context.fog_dist < 0.f) {
-				// OpenGL need positive values for start & end
-				end = -context.fog_far;
-				start = end + (1 / context.fog_dist);
-			}
-
-            if (isLogDebugEnabled) {
-                log(String.format("sceGuFog(near=%f, far=%f, X)", start, end));
-            }
-            re.setFogDist(start, end);
+        if (isLogDebugEnabled) {
+            log(String.format("sceGuFog(far=%f, dist=%f, X)", context.fog_far, context.fog_dist));
         }
     }
 
@@ -5752,7 +5738,7 @@ public class VideoEngine {
 
             // If the texture is the current GE
             // first save the GE to memory before loading the texture.
-            if (tex_addr == (context.fbp | MemoryMap.START_VRAM) && context.texture_storage == context.psm && context.texture_buffer_width[0] == context.fbw) {
+            if (tex_addr == context.fbp && context.texture_storage == context.psm && context.texture_buffer_width[0] == context.fbw) {
                 display.copyGeToMemory(true, false);
                 // Re-bind the texture to be loaded, as the bind might have been changed during the GE copy.
                 re.bindTexture(context.currentTextureId);

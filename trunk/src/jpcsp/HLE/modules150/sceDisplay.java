@@ -1152,12 +1152,6 @@ public class sceDisplay extends HLEModule {
     }
 
     public void hleDisplaySetGeBuf(int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory, boolean forceLoadGEToScreen, int width, int height) {
-        topaddr &= Memory.addressMask;
-        // We can get the address relative to 0 or already relative to START_VRAM
-        if (topaddr < MemoryMap.START_VRAM) {
-            topaddr += MemoryMap.START_VRAM;
-        }
-
         if (log.isDebugEnabled()) {
             log.debug(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, copyGE=%b, with=%d, height=%d", topaddr, bufferwidth, pixelformat, copyGEToMemory, width, height));
         }
@@ -2039,7 +2033,6 @@ public class sceDisplay extends HLEModule {
 
     public int hleDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int syncType) {
         // The PSP is performing the following parameter checks in this sequence
-
         if (syncType != PSP_DISPLAY_SETBUF_IMMEDIATE && syncType != PSP_DISPLAY_SETBUF_NEXTFRAME) {
             return hleDisplaySetFrameBufError(topaddr, bufferwidth, pixelformat, syncType, ERROR_INVALID_MODE, "bad syncType");
         }

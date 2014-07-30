@@ -250,4 +250,18 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
 
 		return super.setCopyRedToAlpha(copyRedToAlpha);
 	}
+
+	@Override
+	public void setFogDist(float end, float scale) {
+        if (end != 0f && scale != 0f) {
+        	float glEnd = end;
+        	float glStart = end - (1f / scale);
+        	if (scale < 0f) {
+				// OpenGL need positive values for glStart & glEnd
+				glEnd = -glEnd;
+				glStart = -glStart;
+        	}
+            super.setFogDist(glStart, glEnd);
+        }
+	}
 }
