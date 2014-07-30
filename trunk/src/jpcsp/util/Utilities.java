@@ -538,6 +538,7 @@ public class Utilities {
 
     private static String getMemoryDump(int address, int length, int step, int bytesPerLine, IMemoryReader memoryReader, IMemoryReader charReader) {
         StringBuilder dump = new StringBuilder();
+        String lineSeparator = System.getProperty("line.separator");
 
         if (length < bytesPerLine) {
             bytesPerLine = length;
@@ -551,7 +552,7 @@ public class Utilities {
                     // Add an ASCII representation at the end of the line
                     addAsciiDump(dump, charReader, bytesPerLine);
                 }
-                dump.append(System.lineSeparator());
+                dump.append(lineSeparator);
                 startOfLine = true;
             }
             if (startOfLine) {
