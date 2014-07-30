@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_FONT_INVALID_PARAMETER;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_FAMILY_SANS_SERIF;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_FAMILY_SERIF;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_LANGUAGE_CHINESE;
@@ -27,7 +28,6 @@ import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_BOLD_ITALIC;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_DB;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_ITALIC;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_REGULAR;
-
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -1125,14 +1125,25 @@ public class sceFont extends HLEModule {
     }
 
     @HLEFunction(nid = 0x5333322D, version = 150, checkInsideInterrupt = true)
-    public int sceFontGetFontInfoByIndexNumber(int fontLibHandle, TPointer fontInfoPtr, int unknown, int fontIndex) {
-        FontLib fontLib = getFontLib(fontLibHandle);
-        return sceFontGetFontInfo(fontLib.getFontHandle(fontIndex), fontInfoPtr);
+    public int sceFontGetFontInfoByIndexNumber(int fontLibHandle, TPointer fontStylePtr, int fontIndex) {
+        // It says FontInfo but it means Style - this is like sceFontGetFontList().
+        getFontLib(fontLibHandle);
+        if (fontIndex < 0 || fontIndex >= internalFonts.size()) {
+        	return ERROR_FONT_INVALID_PARAMETER;
+        }
+        Font font = internalFonts.get(fontIndex);
+        pspFontStyle fontStyle = font.getFontStyle();
+        fontStyle.write(fontStylePtr);
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceFontGetFontInfoByIndexNumber returning font #%d at %s: %s", fontIndex, fontStylePtr, fontStyle));
+        }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x48293280, version = 150, checkInsideInterrupt = true)
     public int sceFontSetResolution(int fontLibHandle, float hRes, float vRes) {
-        FontLib fontLib = getFontLib(fontLibHandle);     
+        FontLib fontLib = getFontLib(fontLibHandle);
         fontLib.fontHRes = hRes;
         fontLib.fontVRes = vRes;
 

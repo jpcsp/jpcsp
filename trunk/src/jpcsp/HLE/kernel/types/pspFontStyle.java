@@ -68,21 +68,21 @@ public class pspFontStyle extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
-		writeFloat(fontH);
-		writeFloat(fontV);
-		writeFloat(fontHRes);
-		writeFloat(fontVRes);
-		writeFloat(fontWeight);
-		write16(fontFamily);
-		write16(fontStyle);
-		write16(fontStyleSub);
-		write16(fontLanguage);
-		write16(fontRegion);
-		write16(fontCountry);
-		writeStringNZ(64, fontName);
-		writeStringNZ(64, fontFileName);
-		write32(fontAttributes);
-		write32(fontExpire);
+		writeFloat(fontH);               // Offset 0
+		writeFloat(fontV);               // Offset 4
+		writeFloat(fontHRes);            // Offset 8
+		writeFloat(fontVRes);            // Offset 12
+		writeFloat(fontWeight);          // Offset 16
+		write16(fontFamily);             // Offset 20
+		write16(fontStyle);              // Offset 22
+		write16(fontStyleSub);           // Offset 24
+		write16(fontLanguage);           // Offset 26
+		write16(fontRegion);             // Offset 28
+		write16(fontCountry);            // Offset 30
+		writeStringNZ(64, fontName);     // Offset 32
+		writeStringNZ(64, fontFileName); // Offset 96
+		write32(fontAttributes);         // Offset 160
+		write32(fontExpire);             // Offset 164
 	}
 
 	@Override
