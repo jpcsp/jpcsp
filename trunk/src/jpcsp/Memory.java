@@ -341,6 +341,8 @@ public abstract class Memory {
 	        if (isVRAM(source) && Modules.sceDisplayModule.getSaveGEToTexture()) {
 	        	VideoEngine.getInstance().addVideoTexture(source, source + length);
 	        }
+    	} else if (isVRAM(destination)) {
+    		Modules.sceDisplayModule.waitForRenderingCompletion(destination);
     	}
 
     	memcpy(destination, source, length);
@@ -386,6 +388,7 @@ public abstract class Memory {
 
     public static boolean isVRAM(int address) {
         address &= addressMask;
-        return address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM;
+        // Test first against END_VRAM as it is most likely to fail first (because RAM is above VRAM)
+        return address <= MemoryMap.END_VRAM && address >= MemoryMap.START_VRAM;
     }
 }
