@@ -2010,10 +2010,6 @@ public class IoFileMgrForUser extends HLEModule {
                         }
                     }
 
-                    if (async && size == 0) {
-                    	async = false;
-                    }
-
                     if (async) {
                     	// Execute the read operation in the IO async thread
                     	asyncAction = new IOAsyncReadAction(info, data_addr, requestedSize, size);
@@ -2056,10 +2052,6 @@ public class IoFileMgrForUser extends HLEModule {
                         if (log.isDebugEnabled()) {
                         	log.debug("hleIoRead - clamping size old=" + oldSize + " new=" + size + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
                         }
-                    }
-
-                    if (async && size == 0) {
-                    	async = false;
                     }
 
                     if (async) {
