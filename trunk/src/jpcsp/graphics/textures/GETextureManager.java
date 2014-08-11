@@ -63,7 +63,14 @@ public class GETextureManager {
 		return geTexture;
 	}
 
+	private int getGePixelFormat(int pixelFormat) {
+		// Always use a 32-bit texture to store the GE.
+		// 16-bit textures are causing color artifacts.
+		return GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+	}
+
 	public GETexture getGETexture(IRenderingEngine re, int address, int bufferWidth, int width, int height, int pixelFormat, boolean useViewportResize) {
+		int gePixelFormat = getGePixelFormat(pixelFormat);
 		GETexture geTexture = checkGETexturePSM8888(address, bufferWidth, width, height, pixelFormat);
 		if (geTexture == null) {
 			geTexture = checkGETexture(address, bufferWidth, width, height, pixelFormat);
@@ -71,7 +78,7 @@ public class GETextureManager {
 
 		if (geTexture == null) {
 			Long key = getKey(address, bufferWidth, width, height, pixelFormat);
-			geTexture = new GETexture(address, bufferWidth, width, height, pixelFormat, useViewportResize);
+			geTexture = new GETexture(address, bufferWidth, width, height, gePixelFormat, useViewportResize);
 			geTextures.put(key, geTexture);
 		}
 
@@ -79,6 +86,7 @@ public class GETextureManager {
 	}
 
 	public GETexture getGEResizedTexture(IRenderingEngine re, GETexture baseGETexture, int address, int bufferWidth, int width, int height, int pixelFormat) {
+		int gePixelFormat = getGePixelFormat(pixelFormat);
 		GETexture geTexture = checkGETexturePSM8888(address, bufferWidth, width, height, pixelFormat);
 		if (geTexture == null) {
 			geTexture = checkGETexture(address, bufferWidth, width, height, pixelFormat);
@@ -86,7 +94,7 @@ public class GETextureManager {
 
 		if (geTexture == null) {
 			Long key = getKey(address, bufferWidth, width, height, pixelFormat);
-			geTexture = new GEResizedTexture(baseGETexture, address, bufferWidth, width, height, pixelFormat);
+			geTexture = new GEResizedTexture(baseGETexture, address, bufferWidth, width, height, gePixelFormat);
 			geTextures.put(key, geTexture);
 		}
 
