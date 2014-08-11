@@ -674,35 +674,35 @@ public class Loader {
         Elf32ProgramHeader phdr = elf.getProgramHeader(0);
         Elf32SectionHeader shdr = elf.getSectionHeader(".rodata.sceModuleInfo");
 
+        int moduleInfoAddr;
         if (!elf.getHeader().isPRXDetected() && shdr == null) {
             log.warn("ELF is not PRX, but has no section headers!");
-            int memOffset = (int)(phdr.getP_vaddr() + (phdr.getP_paddr() & 0x7FFFFFFFL) - phdr.getP_offset());
-            log.warn("Manually locating ModuleInfo at address: 0x" + Integer.toHexString(memOffset));
+            moduleInfoAddr = (int)(phdr.getP_vaddr() + (phdr.getP_paddr() & 0x7FFFFFFFL) - phdr.getP_offset());
+            log.warn("Manually locating ModuleInfo at address: 0x" + Integer.toHexString(moduleInfoAddr));
 
             PSPModuleInfo moduleInfo = new PSPModuleInfo();
-            moduleInfo.read(Memory.getInstance(), memOffset);
+            moduleInfo.read(Memory.getInstance(), moduleInfoAddr);
             module.copy(moduleInfo);
         } else if (elf.getHeader().isPRXDetected()) {
-            int memOffset = (int)(baseAddress + (phdr.getP_paddr() & 0x7FFFFFFFL) - phdr.getP_offset());
+            moduleInfoAddr = (int)(baseAddress + (phdr.getP_paddr() & 0x7FFFFFFFL) - phdr.getP_offset());
 
             PSPModuleInfo moduleInfo = new PSPModuleInfo();
-            moduleInfo.read(Memory.getInstance(), memOffset);
+            moduleInfo.read(Memory.getInstance(), moduleInfoAddr);
             module.copy(moduleInfo);
         } else if (shdr != null) {
-        	int memOffset = shdr.getSh_addr(baseAddress);;
+        	moduleInfoAddr = shdr.getSh_addr(baseAddress);;
 
             PSPModuleInfo moduleInfo = new PSPModuleInfo();
-            moduleInfo.read(Memory.getInstance(), memOffset);
+            moduleInfo.read(Memory.getInstance(), moduleInfoAddr);
             module.copy(moduleInfo);
         } else {
             log.error("ModuleInfo not found!");
             return;
         }
 
-        log.info("Found ModuleInfo name:'" + module.modname
-            + "' version:" + String.format("%02x%02x", module.version[1], module.version[0])
-            + " attr:" + String.format("%08x", module.attribute)
-            + " gp:" + String.format("%08x", module.gp_value));
+        if (log.isInfoEnabled()) {
+        	log.info(String.format("Found ModuleInfo at 0x%08X, name:'%s', version: %02X%02X, attr: 0x%08X, gp: 0x%08X", moduleInfoAddr, module.modname, module.version[1], module.version[0], module.attribute, module.gp_value));
+        }
 
         if ((module.attribute & 0x1000) != 0) {
             log.warn("Kernel mode module detected");
@@ -761,33 +761,29 @@ public class Loader {
             int targ26 = data & 0x03FFFFFF;
             int hi16 = data & 0x0000FFFF;
             int lo16 = data & 0x0000FFFF;
-            int rel16 = data & 0x0000FFFF;
 
             int A = 0; // addend
             int S = baseAddress + phBaseOffset;
-            int GP_ADDR = baseAddress + R_OFFSET;
-            int GP_OFFSET = GP_ADDR - (baseAddress & 0xFFFF0000);
 
             switch (R_TYPE) {
                 case 0: //R_MIPS_NONE
-                    // Tested on PSP:
-                    // R_MIPS_NONE just returns 0.
+                    // Tested on PSP: R_MIPS_NONE is ignored
                     if (log.isTraceEnabled()) {
-                		log.trace(String.format("R_MIPS_NONE addr=%08X", data_addr));
+                		log.trace(String.format("R_MIPS_NONE addr=0x%08X", data_addr));
                 	}
                     break;
 
                 case 1: // R_MIPS_16
                 	data = (data & 0xFFFF0000) | ((data + S) & 0x0000FFFF);
                 	if (log.isTraceEnabled()) {
-                		log.trace(String.format("R_MIPS_16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                		log.trace(String.format("R_MIPS_16 addr=0x%08X before=0x%08X after=0x%08X", data_addr, word32, data));
                     }
                 	break;
 
                 case 2: //R_MIPS_32
                     data += S;
                 	if (log.isTraceEnabled()) {
-                		log.trace(String.format("R_MIPS_32 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                		log.trace(String.format("R_MIPS_32 addr=0x%08X before=0x%08X after=0x%08X", data_addr, word32, data));
                     }
                     break;
 
@@ -797,7 +793,7 @@ public class Loader {
                     data &= ~0x03FFFFFF;
                     data |= (int) (result & 0x03FFFFFF); // truncate
                 	if (log.isTraceEnabled()) {
-                		log.trace(String.format("R_MIPS_26 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                		log.trace(String.format("R_MIPS_26 addr=0x%08X before=0x%08X after=0x%08X", data_addr, word32, data));
                     }
                     break;
 
@@ -806,7 +802,7 @@ public class Loader {
                     AHL = A << 16;
                     deferredHi16.add(data_addr);
                 	if (log.isTraceEnabled()) {
-                		log.trace(String.format("R_MIPS_HI16 addr=%08X", data_addr));
+                		log.trace(String.format("R_MIPS_HI16 addr=0x%08X", data_addr));
                 	}
                     break;
 
@@ -837,42 +833,25 @@ public class Loader {
                         data2 &= ~0x0000FFFF;
                         data2 |= (result >> 16) & 0x0000FFFF; // truncate
                     	if (log.isTraceEnabled()) {
-                    		log.trace(String.format("R_MIPS_HILO16 addr=%08X before=%08X after=%08X", data_addr2, readUnaligned32(mem, data_addr2), data2));
+                    		log.trace(String.format("R_MIPS_HILO16 addr=0x%08X before=0x%08X after=0x%08X", data_addr2, readUnaligned32(mem, data_addr2), data2));
                         }
                     	writeUnaligned32(mem, data_addr2, data2);
                         it.remove();
                     }
                 	if (log.isTraceEnabled()) {
-                		log.trace(String.format("R_MIPS_LO16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                		log.trace(String.format("R_MIPS_LO16 addr=0x%08X before=0x%08X after=0x%08X", data_addr, word32, data));
                 	}
                     break;
 
                 case 7: // R_MIPS_GPREL16
-                    A = rel16;
-                    if (A == 0) {
-                        result = S - GP_ADDR;
-                    } else {
-                        result = S + GP_OFFSET + A - GP_ADDR;
-                    }
-                    
-                    // Adjust the lower bits.
-                    if ((A & 0x8000) != 0) {
-                        result -= 0x4500;
-                    }
-                    
-                    // Check for overflow.
-                    if ((result > 32768) || (result < -32768)) {
-                        log.warn("Relocation overflow (R_MIPS_GPREL16)");
-                    }
-                    data &= ~0x0000FFFF;
-                    data |= result & 0x0000FFFF;
+                	// This relocation type is ignored by the PSP
                     if (log.isTraceEnabled()) {
-                		log.trace(String.format("R_MIPS_GPREL16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                		log.trace(String.format("R_MIPS_GPREL16 addr=0x%08X before=0x%08X after=0x%08X", data_addr, word32, data));
                     }
                     break;
 
                 default:
-                	log.warn(String.format("Unhandled relocation type %d at %08X", R_TYPE, data_addr));
+                	log.warn(String.format("Unhandled relocation type %d at 0x%08X", R_TYPE, data_addr));
                     break;
             }
 
