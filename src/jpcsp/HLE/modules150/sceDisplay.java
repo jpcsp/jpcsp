@@ -2174,6 +2174,9 @@ public class sceDisplay extends HLEModule {
 
     @HLEFunction(nid = 0x9C6EAAD7, version = 150)
     public int sceDisplayGetVcount() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceDisplayGetVcount returning %d", vcount));
+    	}
         // 60 units per second
         return vcount;
     }
