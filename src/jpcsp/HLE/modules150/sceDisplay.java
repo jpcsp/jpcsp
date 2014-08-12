@@ -1414,14 +1414,15 @@ public class sceDisplay extends HLEModule {
         // Create a GE texture (the texture texFb might not have the right size)
         int texGe = re.genTexture();
 
+        int texturePixelFormat = getTexturePixelFormat(ge.getPixelFormat());
         re.bindTexture(texGe);
         re.setTextureFormat(ge.getPixelFormat(), false);
         re.setTexImage(0,
                 internalTextureFormat,
                 getResizedWidthPow2(ge.getBufferWidth()),
                 getResizedHeightPow2(Utilities.makePow2(ge.getHeight())),
-                ge.getPixelFormat(),
-                ge.getPixelFormat(),
+                texturePixelFormat,
+                texturePixelFormat,
                 0, null);
 
         re.setTextureMipmapMinFilter(TFLT_NEAREST);
@@ -1436,10 +1437,10 @@ public class sceDisplay extends HLEModule {
 
         // Copy the GE texture into temp buffer
         temp.clear();
-        re.getTexImage(0, ge.getPixelFormat(), ge.getPixelFormat(), temp);
+        re.getTexImage(0, texturePixelFormat, texturePixelFormat, temp);
 
         // Capture the GE image
-        CaptureManager.captureImage(ge.getTopAddr(), 0, temp, getResizedWidth(ge.getWidth()), getResizedHeight(ge.getHeight()), getResizedWidthPow2(ge.getBufferWidth()), ge.getPixelFormat(), false, 0, true, false);
+        CaptureManager.captureImage(ge.getTopAddr(), 0, temp, getResizedWidth(ge.getWidth()), getResizedHeight(ge.getHeight()), getResizedWidthPow2(ge.getBufferWidth()), texturePixelFormat, false, 0, true, false);
 
         // Delete the GE texture
         re.deleteTexture(texGe);
@@ -1878,6 +1879,13 @@ public class sceDisplay extends HLEModule {
         return vcount;
     }
 
+    public static int getTexturePixelFormat(int pixelFormat) {
+//    	return pixelFormat;
+		// Always use a 32-bit texture to store the GE.
+		// 16-bit textures are causing color artifacts.
+    	return GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+    }
+
     private int createTexture(int textureId, boolean isResized) {
         if (textureId != -1) {
             reDisplay.deleteTexture(textureId);
@@ -1903,8 +1911,8 @@ public class sceDisplay extends HLEModule {
                 internalTextureFormat,
                 isResized ? getResizedWidthPow2(fb.getBufferWidth()) : fb.getBufferWidth(),
                 isResized ? getResizedHeightPow2(Utilities.makePow2(fb.getHeight())) : Utilities.makePow2(fb.getHeight()),
-                fb.getPixelFormat(),
-                fb.getPixelFormat(),
+                getTexturePixelFormat(getPixelFormatFb()),
+                getTexturePixelFormat(getPixelFormatFb()),
                 0, null);
         reDisplay.setTextureMipmapMinFilter(GeCommands.TFLT_NEAREST);
         reDisplay.setTextureMipmapMagFilter(GeCommands.TFLT_NEAREST);

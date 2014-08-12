@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import static jpcsp.HLE.modules150.sceDisplay.getTexturePixelFormat;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
 
 import java.io.IOException;
@@ -732,7 +733,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 			// Activate the rendering to a texture
 			if (renderTexture == null) {
-				renderTexture = new FBTexture(display.getTopAddrFb(), bufferWidth, width, height, pixelFormat);
+				renderTexture = new FBTexture(display.getTopAddrFb(), bufferWidth, width, height, getTexturePixelFormat(pixelFormat));
 				renderTexture.bind(re, false);
 				re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, renderTexture.getTextureId());
 			} else {
