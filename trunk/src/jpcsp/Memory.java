@@ -348,6 +348,31 @@ public abstract class Memory {
     	memcpy(destination, source, length);
     }
 
+    /**
+     * Same as memset but checking if the destination is not used as video texture.
+     * 
+     * @param address   destination address
+     * @param data      byte to be set in memory
+     * @param length    length in bytes to be set
+     */
+    public void memsetWithVideoCheck(int address, byte data, int length) {
+    	// As an optimization, do not perform the video check if we are setting only a small memory area.
+    	if (length >= MINIMUM_LENGTH_FOR_VIDEO_CHECK) {
+	        // If changing the VRAM or the frame buffer, do not cache the texture
+	        if (isVRAM(address) || Modules.sceDisplayModule.isFbAddress(address)) {
+	        	// If the display is rendering to the destination address, wait for its completion
+	        	// before performing the memcpy.
+	        	Modules.sceDisplayModule.waitForRenderingCompletion(address);
+	
+	        	VideoEngine.getInstance().addVideoTexture(address, address + length);
+	        }
+    	} else if (isVRAM(address)) {
+    		Modules.sceDisplayModule.waitForRenderingCompletion(address);
+    	}
+
+    	memset(address, data, length);
+    }
+
     // memmove reproduces the bytes correctly at destination even if the two areas overlap
     public void memmove(int destination, int source, int length) {
         memcpy(destination, source, length, true);
