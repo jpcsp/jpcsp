@@ -43,9 +43,11 @@ public class Scheduler {
 		nextAction = null;
 	}
 
-	public synchronized void step() {
-		if (nextAction == null) {
-			return;
+	public void step() {
+		synchronized (this) {
+			if (nextAction == null) {
+				return;
+			}
 		}
 
 		long now = getNow();
