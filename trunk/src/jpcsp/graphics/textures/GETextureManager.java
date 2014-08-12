@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.textures;
 
+import static jpcsp.HLE.modules150.sceDisplay.getTexturePixelFormat;
+
 import java.util.HashMap;
 
 import jpcsp.graphics.GeCommands;
@@ -63,14 +65,8 @@ public class GETextureManager {
 		return geTexture;
 	}
 
-	private int getGePixelFormat(int pixelFormat) {
-		// Always use a 32-bit texture to store the GE.
-		// 16-bit textures are causing color artifacts.
-		return GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-	}
-
 	public GETexture getGETexture(IRenderingEngine re, int address, int bufferWidth, int width, int height, int pixelFormat, boolean useViewportResize) {
-		int gePixelFormat = getGePixelFormat(pixelFormat);
+		int gePixelFormat = getTexturePixelFormat(pixelFormat);
 		GETexture geTexture = checkGETexturePSM8888(address, bufferWidth, width, height, pixelFormat);
 		if (geTexture == null) {
 			geTexture = checkGETexture(address, bufferWidth, width, height, pixelFormat);
@@ -86,7 +82,7 @@ public class GETextureManager {
 	}
 
 	public GETexture getGEResizedTexture(IRenderingEngine re, GETexture baseGETexture, int address, int bufferWidth, int width, int height, int pixelFormat) {
-		int gePixelFormat = getGePixelFormat(pixelFormat);
+		int gePixelFormat = getTexturePixelFormat(pixelFormat);
 		GETexture geTexture = checkGETexturePSM8888(address, bufferWidth, width, height, pixelFormat);
 		if (geTexture == null) {
 			geTexture = checkGETexture(address, bufferWidth, width, height, pixelFormat);
