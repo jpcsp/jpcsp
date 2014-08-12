@@ -32,7 +32,7 @@ public class Memset extends AbstractNativeCodeSequence {
 		int c = getGprA1() & 0xFF;
 		int n = getGprA2();
 
-		getMemory().memset(dstAddr, (byte) c, n);
+		getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n);
 
 		setGprV0(dstAddr);
 	}
@@ -48,7 +48,7 @@ public class Memset extends AbstractNativeCodeSequence {
 		int c = getRegisterValue(cReg);
 		int n = getRegisterValue(nReg) - endValue;
 
-		getMemory().memset(dstAddr, (byte) c, n);
+		getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n);
 
 		setRegisterValue(dstAddrReg, dstAddr + n);
 		setRegisterValue(nReg, endValue);
@@ -78,7 +78,7 @@ public class Memset extends AbstractNativeCodeSequence {
 			// Both bytes identical?
 			if ((c & 0xFF) == ((c >> 8) & 0xFF)) {
 				// This is equivalent to a normal memset
-				getMemory().memset(dstAddr, (byte) c, n * 2);
+				getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n * 2);
 			} else {
 				// We have currently no built-in memset for 16bit values
 				// do it manually...
@@ -103,7 +103,7 @@ public class Memset extends AbstractNativeCodeSequence {
 			// All bytes identical?
 			if ((c & 0xFF) == ((c >> 8) & 0xFF) && (c & 0xFFFF) == ((c >> 16) & 0xFFFF)) {
 				// This is equivalent to a normal memset
-				getMemory().memset(dstAddr, (byte) c, n * 4);
+				getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n * 4);
 			} else {
 				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dstAddr, n * 4, 4);
 				for (int i = 0; i < n; i++) {
@@ -125,7 +125,7 @@ public class Memset extends AbstractNativeCodeSequence {
 		int c = getRegisterValue(cReg);
 		int n = (endValue - getRegisterValue(nReg)) * direction * step;
 
-		getMemory().memset(dstAddr, (byte) c, n);
+		getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n);
 
 		setRegisterValue(dstAddrReg, dstAddr + n);
 		setRegisterValue(nReg, endValue);
