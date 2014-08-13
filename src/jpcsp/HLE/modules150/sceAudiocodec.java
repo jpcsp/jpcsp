@@ -58,6 +58,10 @@ public class sceAudiocodec extends HLEModule {
 	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x5B37EB1D, version = 150)
 	public int sceAudiocodecInit(TPointer workArea, int codecType) {
+		if (id != null) {
+			Modules.sceAtrac3plusModule.hleReleaseAtracID(id.id);
+			id = null;
+		}
 		int atID = Modules.sceAtrac3plusModule.hleCreateAtracID(codecType);
 		id = Modules.sceAtrac3plusModule.hleGetAtracID(atID);
 
