@@ -204,6 +204,8 @@ public class sceAtrac3plus extends HLEModule {
         			Modules.sceAtrac3plusModule.atrac3Num--;
         		} else if (codecType == PSP_CODEC_AT3PLUS) {
         			Modules.sceAtrac3plusModule.atrac3plusNum--;
+	        	} else if (codecType == PSP_CODEC_MP3) {
+	        		Modules.sceAtrac3plusModule.mp3Num--;
 	        	}
         	}
         	releaseContext();
@@ -277,8 +279,13 @@ public class sceAtrac3plus extends HLEModule {
             	log.debug(String.format("Mp3Header mp3Version=%d, mp3Layer=%d, mp3Channels=%d, mp3SampleRate=%d, mp3Bitrate=%d", mp3Version, mp3Layer, mp3Channels, mp3SampleRate, mp3BitRate));
             }
 
-            // Finding the input file size at offset 0x30
-            inputFileSize = endianSwap32(readUnaligned32(mem, currentAddr + 0x30));
+            // Finding the input file size at offset 0x30.
+            int fileSize = endianSwap32(readUnaligned32(mem, currentAddr + 0x30));
+            // But not always? Add sanity checks on fileSize.
+            if (fileSize > 0 && fileSize <= 0x0FFFFFFF) {
+            	inputFileSize = fileSize;
+            }
+
             atracChannels = mp3Channels;
             atracBytesPerFrame = (144 * mp3BitRate * 1000) / mp3SampleRate + mp3PaddingBytes;
             inputFileDataOffset = 0;
@@ -590,7 +597,7 @@ public class sceAtrac3plus extends HLEModule {
 	                }
 
 	                // readSize and bufferSize can't be larger than the input file size.
-	                if (readSize > inputFileSize || bufferSize > inputFileSize) {
+	                if (inputFileSize >= 0 && (readSize > inputFileSize || bufferSize > inputFileSize)) {
 	                	readSize = Math.min(readSize, inputFileSize);
 	                	bufferSize = Math.min(bufferSize, inputFileSize);
 	                	inputBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
@@ -992,6 +999,8 @@ public class sceAtrac3plus extends HLEModule {
 	        	SceUidManager.releaseId(atracID, at3PlusIdPurpose);
 	    	} else if (id.getAtracCodecType() == PSP_CODEC_AT3) {
 	        	SceUidManager.releaseId(atracID, at3IdPurpose);
+	    	} else if (id.getAtracCodecType() == PSP_CODEC_MP3) {
+	    		SceUidManager.releaseId(atracID, mp3IdPurpose);
 	    	}
     	}
     	id.release();
