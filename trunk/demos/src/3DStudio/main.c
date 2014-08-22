@@ -481,6 +481,7 @@ struct Color pixelMask;
 int alphaFunc = 7;
 char *testFuncNames[] = { "GU_NEVER", "GU_ALWAYS", "GU_EQUAL", "GU_NOTEQUAL", "GU_LESS", "GU_LEQUAL", "GU_GREATER", "GU_GEQUAL" };
 int alphaReference = 0;
+int alphaMask = 0xFF;
 
 int blendOp = 0;
 char *blendOpNames[] = { "GU_ADD", "GU_SUBTRACT", "GU_REVERSE_SUBTRACT", "GU_MIN", "GU_MAX", "GU_ABS", "GU_BLEND_UNK6", "GU_BLEND_UNK7" };
@@ -658,6 +659,9 @@ int uedge2 = 0;
 int vedge2 = 0;
 int udiv2 = 3;
 int vdiv2 = 3;
+
+int shadeModel = GU_FLAT;
+char *shadeModelNames[] = { "GU_FLAT", "GU_SMOOTH" };
 
 u16 zTestPixelDepth;
 u32 geTestPixelValue;
@@ -1248,7 +1252,7 @@ void drawRectangles()
 
 	sceGuDepthMask(depthMask);
 	sceGuDepthFunc(depthFunc);
-	sceGuAlphaFunc(alphaFunc, alphaReference, 0xFF);
+	sceGuAlphaFunc(alphaFunc, alphaReference, alphaMask);
 	sceGuBlendFunc(blendOp, blendFuncSrc, blendFuncDst, getColor(&blendSFix), getColor(&blendDFix));
 	sendCommandf(68, (float) zscale);
 	sendCommandf(71, (float) zpos);
@@ -1277,6 +1281,7 @@ void drawRectangles()
 	sceGuStencilOp(stencilOpFail, stencilOpZFail, stencilOpZPass);
 	sceGuStencilFunc(stencilFunc, stencilReference, stencilMask);
 	sceGuFog(fogNear, fogFar, getColor(&fogColor));
+	sceGuShadeModel(shadeModel);
 
 	for (i = 0; i < NUM_LIGHTS; i++)
 	{
@@ -1429,6 +1434,8 @@ void drawRectangles()
 	if (vertexColorFlag)
 	{
 		setVerticesColor(&rectangle1VertexColor, vertices1, sizeof(vertices1[0]) * numberVertex1);
+		vertices1[0].color = 0xFF000000;
+		vertices1[1].color = 0xFFFF0000;
 	}
 
 	int vertexFlags = GU_NORMAL_32BITF;
@@ -1818,7 +1825,8 @@ void init()
 
 	addAttribute("sceGuAlphaFunc", &alphaFunc, NULL, x, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&testFuncNames[0]);
-	addAttribute(", Reference", &alphaReference, NULL, x + 27, y, 0, 255, 0x10, "%02X");
+	addAttribute(", Ref", &alphaReference, NULL, x + 27, y, 0, 0xFF, 0x10, "%02X");
+	addAttribute(", Mask", &alphaMask, NULL, x + 38, y, 0, 0xFF, 0x10, "%02X");
 	y++;
 
 	addAttribute("sceGuBlendFunc op", &blendOp, NULL, x, y, 0, 7, 1, NULL);
@@ -1849,6 +1857,10 @@ void init()
 	setAttributeValueNames(&testFuncNames[0]);
 	addAttribute(", Ref", &stencilReference, NULL, x + 27, y, 0, 0xFF, 0x10, "%02X");
 	addAttribute(", Mask", &stencilMask, NULL, x + 38, y, 0, 0xFF, 0x10, "%02X");
+	y++;
+
+	addAttribute("sceGuShadeModel", &shadeModel, NULL, x, y, 0, 1, 1, NULL);
+	setAttributeValueNames(&shadeModelNames[0]);
 	y++;
 
 	int ditherValue = 0;
