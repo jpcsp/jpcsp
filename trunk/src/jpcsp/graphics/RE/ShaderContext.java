@@ -86,6 +86,7 @@ public class ShaderContext {
 	private int alphaTestEnable;
 	private int alphaTestFunc;
 	private int alphaTestRef;
+	private int alphaTestMask;
 	private int blendTestEnable;
 	private int blendEquation;
 	private int blendSrc;
@@ -152,6 +153,7 @@ public class ShaderContext {
 		re.setUniform(Uniforms.alphaTestEnable.getId(shaderProgram), alphaTestEnable);
 		re.setUniform(Uniforms.alphaTestFunc.getId(shaderProgram), alphaTestFunc);
 		re.setUniform(Uniforms.alphaTestRef.getId(shaderProgram), alphaTestRef);
+		re.setUniform(Uniforms.alphaTestMask.getId(shaderProgram), alphaTestMask);
 		re.setUniform(Uniforms.blendTestEnable.getId(shaderProgram), blendTestEnable);
 		re.setUniform(Uniforms.blendEquation.getId(shaderProgram), blendEquation);
 		re.setUniform(Uniforms.blendSrc.getId(shaderProgram), blendSrc);
@@ -641,6 +643,14 @@ public class ShaderContext {
 
 	public void setAlphaTestRef(int alphaTestRef) {
 		this.alphaTestRef = alphaTestRef;
+	}
+
+	public int getAlphaTestMask() {
+		return alphaTestMask;
+	}
+
+	public void setAlphaTestMask(int alphaTestMask) {
+		this.alphaTestMask = alphaTestMask;
 	}
 
 	public int getBlendTestEnable() {

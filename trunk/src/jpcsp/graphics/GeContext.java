@@ -69,6 +69,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     public int colorMask[] = new int[] { 0x00, 0x00, 0x00, 0x00 };
     public int alphaFunc;
     public int alphaRef;
+    public int alphaMask;
 	public int stencilFunc;
 	public int stencilRef;
 	public int stencilMask;
@@ -260,7 +261,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     	re.setColorTestFunc(colorTestFunc);
     	re.setColorTestReference(colorTestRef);
     	re.setColorTestMask(colorTestMsk);
-    	re.setAlphaFunc(alphaFunc, alphaRef);
+    	re.setAlphaFunc(alphaFunc, alphaRef, alphaMask);
     	re.setStencilFunc(stencilFunc, stencilRef, stencilMask);
     	re.setStencilOp(stencilOpFail, stencilOpZFail, stencilOpZPass);
     	re.setBlendEquation(blendEquation);
@@ -329,6 +330,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 		read32Array(colorMask);
 		alphaFunc = read32();
 		alphaRef = read32();
+		alphaMask = read32();
 		stencilFunc = read32();
 		stencilRef = read32();
 		stencilMask = read32();
@@ -501,6 +503,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 		write32Array(colorMask);
 		write32(alphaFunc);
 		write32(alphaRef);
+		write32(alphaMask);
 		write32(stencilFunc);
 		write32(stencilRef);
 		write32(stencilMask);

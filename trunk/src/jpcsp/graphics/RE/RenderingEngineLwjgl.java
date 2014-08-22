@@ -1137,7 +1137,8 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     }
 
     @Override
-    public void setAlphaFunc(int func, int ref) {
+    public void setAlphaFunc(int func, int ref, int mask) {
+    	// mask is not supported by OpenGL
         GL11.glAlphaFunc(alphaFuncToGL[func], ref / 255.0f);
     }
 

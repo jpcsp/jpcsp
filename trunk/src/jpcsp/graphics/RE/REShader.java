@@ -81,7 +81,9 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected boolean useShaderDepthTest = false;
 	protected boolean useShaderStencilTest = false;
 	protected boolean useShaderColorMask = false;
-	protected boolean useShaderAlphaTest = false;
+	// Always use the alpha test implementation in the shader
+	// to support the alpha test mask (not being supported by OpenGL)
+	protected boolean useShaderAlphaTest = true;
 	protected boolean useShaderBlendTest = false;
 	protected boolean useRenderToTexture = false;
 	protected int clutTextureId = -1;
@@ -1338,12 +1340,13 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setAlphaFunc(int func, int ref) {
+	public void setAlphaFunc(int func, int ref, int mask) {
 		if (useShaderAlphaTest) {
 			shaderContext.setAlphaTestFunc(func);
-			shaderContext.setAlphaTestRef(ref);
+			shaderContext.setAlphaTestRef(ref & mask);
+			shaderContext.setAlphaTestMask(mask);
 		}
-		super.setAlphaFunc(func, ref);
+		super.setAlphaFunc(func, ref, mask);
 	}
 
 	@Override

@@ -89,6 +89,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int shadeModel;
 	protected int alphaFunc;
 	protected int alphaFuncRef;
+	protected int alphaFuncMask;
 	protected float depthRangeZpos;
 	protected float depthRangeZscale;
 	protected int depthRangeNear;
@@ -914,11 +915,12 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setAlphaFunc(int func, int ref) {
-		if (alphaFunc != func || alphaFuncRef != ref) {
-			super.setAlphaFunc(func, ref);
+	public void setAlphaFunc(int func, int ref, int mask) {
+		if (alphaFunc != func || alphaFuncRef != ref || alphaFuncMask != mask) {
+			super.setAlphaFunc(func, ref, mask);
 			alphaFunc = func;
 			alphaFuncRef = ref;
+			alphaFuncMask = mask;
 		}
 	}
 

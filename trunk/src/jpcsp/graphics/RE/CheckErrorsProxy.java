@@ -751,8 +751,8 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setAlphaFunc(int func, int ref) {
-		super.setAlphaFunc(func, ref);
+	public void setAlphaFunc(int func, int ref, int mask) {
+		super.setAlphaFunc(func, ref, mask);
 		re.checkAndLogErrors("setAlphaFunc");
 	}
 

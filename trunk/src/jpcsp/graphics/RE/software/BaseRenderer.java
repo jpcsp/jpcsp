@@ -99,6 +99,7 @@ public abstract class BaseRenderer implements IRenderer {
 	public int colorTestRef;
 	public int colorTestMsk;
 	public int alphaRef;
+	public int alphaMask;
 	public int stencilRef;
 	public int stencilMask;
 	public int sfix;
@@ -144,6 +145,7 @@ public abstract class BaseRenderer implements IRenderer {
 		colorTestRef = from.colorTestRef;
 		colorTestMsk = from.colorTestMsk;
 		alphaRef = from.alphaRef;
+		alphaMask = from.alphaMask;
 		stencilRef = from.stencilRef;
 		stencilMask = from.stencilMask;
 		sfix = from.sfix;
@@ -258,8 +260,9 @@ public abstract class BaseRenderer implements IRenderer {
 		zbp = getFrameBufferAddress(context.zbp);
 		colorTestRef = getColorBGR(context.colorTestRef);
 		colorTestMsk = getColorBGR(context.colorTestMsk);
-		alphaRef = context.alphaRef;
-		stencilRef = context.stencilRef;
+		alphaRef = context.alphaRef & context.alphaMask;
+		alphaMask = context.alphaMask;
+		stencilRef = context.stencilRef & context.stencilMask;
 		stencilMask = context.stencilMask;
 		sfix = context.sfix;
 		dfix = context.dfix;

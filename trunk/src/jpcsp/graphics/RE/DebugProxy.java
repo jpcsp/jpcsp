@@ -64,11 +64,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setAlphaFunc(int func, int ref) {
+	public void setAlphaFunc(int func, int ref, int mask) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("setAlphaFunc func=%d, ref=0x%02X", func, ref));
+			log.debug(String.format("setAlphaFunc func=%d, ref=0x%02X, mask=0x%02X", func, ref, mask));
 		}
-		super.setAlphaFunc(func, ref);
+		super.setAlphaFunc(func, ref, mask);
 	}
 
 	@Override

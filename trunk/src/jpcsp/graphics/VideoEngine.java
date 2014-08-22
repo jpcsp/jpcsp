@@ -4811,10 +4811,11 @@ public class VideoEngine {
     private void executeCommandATST() {
         context.alphaFunc = normalArgument & 0x7;
         context.alphaRef = (normalArgument >> 8) & 0xFF;
-        re.setAlphaFunc(context.alphaFunc, context.alphaRef);
+        context.alphaMask = (normalArgument >> 16) & 0xFF;
+        re.setAlphaFunc(context.alphaFunc, context.alphaRef, context.alphaMask);
 
         if (isLogDebugEnabled) {
-            log(String.format("sceGuAlphaFunc(func=%d, ref=0x%02X)", context.alphaFunc, context.alphaRef));
+            log(String.format("sceGuAlphaFunc(func=%d, ref=0x%02X, mask=0x%02X)", context.alphaFunc, context.alphaRef, context.alphaMask));
         }
     }
 
