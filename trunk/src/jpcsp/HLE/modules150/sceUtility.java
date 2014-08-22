@@ -334,9 +334,9 @@ public class sceUtility extends HLEModule {
 
         protected void updateDialog() {
             int delayMicros = 1000000 / 60;
-            if (drawSpeed > 0) {
-                delayMicros *= drawSpeed;
-            }
+//            if (drawSpeed > 0) {
+//                delayMicros *= drawSpeed;
+//            }
             Modules.ThreadManForUserModule.hleKernelDelayThread(delayMicros, false);
         }
 
