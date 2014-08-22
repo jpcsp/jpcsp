@@ -40,6 +40,7 @@ public class NativeCallbacks {
 	private static DurationStatistics read32 = new DurationStatistics("read32");
 	private static DurationStatistics readByteBuffer = new DurationStatistics("readByteBuffer");
 	private static DurationStatistics writeByteBuffer = new DurationStatistics("writeByteBuffer");
+	private static DurationStatistics writeByteBufferArea = new DurationStatistics("writeByteBufferArea");
 	private static DurationStatistics getHashCode = new DurationStatistics("getHashCode");
 
 	// Array indexed by the log category
@@ -119,6 +120,34 @@ public class NativeCallbacks {
 			getMemory().copyToMemory(address, source, length);
 		}
 		writeByteBuffer.end();
+	}
+
+	public static void writeByteBufferArea(int address, ByteBuffer source, int bufferWidth, int width, int height) {
+		writeByteBufferArea.start();
+		if (RuntimeContext.memoryInt != null && (address & 3) == 0 && (width & 3) == 0 && (bufferWidth & 3) == 0 && isAddressGood(address)) {
+			int length = bufferWidth * height;
+			int destinationOffset = (address & Memory.addressMask) >> 2;
+			IntBuffer destination = IntBuffer.wrap(RuntimeContext.memoryInt, destinationOffset, length >> 2);
+			source.order(ByteOrder.nativeOrder());
+			IntBuffer sourceInt = source.asIntBuffer();
+			int width4 = width >> 2;
+			int bufferWidth4 = bufferWidth >> 2;
+			for (int y = 0; y < height; y++) {
+				int offset = y * bufferWidth4;
+				sourceInt.limit(offset + width4);
+				sourceInt.position(offset);
+				destination.position(destinationOffset + offset);
+				destination.put(sourceInt);
+			}
+		} else {
+			Memory mem = getMemory();
+			for (int y = 0; y < height; y++) {
+				int offset = y * bufferWidth;
+				source.position(offset);
+				mem.copyToMemory(address + offset, source, width);
+			}
+		}
+		writeByteBufferArea.end();
 	}
 
 	public static int getHashCode(int hashCode, int addr, int lengthInBytes, int strideInBytes) {
