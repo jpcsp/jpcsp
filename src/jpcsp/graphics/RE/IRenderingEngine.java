@@ -437,7 +437,7 @@ public interface IRenderingEngine {
 	public void copyTexSubImage(int level, int xOffset, int yOffset, int x, int y, int width, int height);
 	public void setStencilOp(int fail, int zfail, int zpass);
 	public void setStencilFunc(int func, int ref, int mask);
-	public void setAlphaFunc(int func, int ref);
+	public void setAlphaFunc(int func, int ref, int mask);
 	public void setFogHint();
 	public void setFogColor(float[] color);
 	public void setFogDist(float end, float scale);

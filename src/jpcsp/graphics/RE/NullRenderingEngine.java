@@ -545,7 +545,7 @@ public class NullRenderingEngine implements IRenderingEngine {
 	}
 
 	@Override
-	public void setAlphaFunc(int func, int ref) {
+	public void setAlphaFunc(int func, int ref, int mask) {
 	}
 
 	@Override

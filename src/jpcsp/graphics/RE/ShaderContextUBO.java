@@ -78,6 +78,7 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo alphaTestEnable;
 	private ShaderUniformInfo alphaTestFunc;
 	private ShaderUniformInfo alphaTestRef;
+	private ShaderUniformInfo alphaTestMask;
 	private ShaderUniformInfo blendTestEnable;
 	private ShaderUniformInfo blendEquation;
 	private ShaderUniformInfo blendSrc;
@@ -229,6 +230,7 @@ public class ShaderContextUBO extends ShaderContext {
 		alphaTestEnable = addShaderUniform(Uniforms.alphaTestEnable, "bool");
 		alphaTestFunc = addShaderUniform(Uniforms.alphaTestFunc, "int");
 		alphaTestRef = addShaderUniform(Uniforms.alphaTestRef, "int");
+		alphaTestMask = addShaderUniform(Uniforms.alphaTestMask, "int");
 		blendTestEnable = addShaderUniform(Uniforms.blendTestEnable, "bool");
 		blendEquation = addShaderUniform(Uniforms.blendEquation, "int");
 		blendSrc = addShaderUniform(Uniforms.blendSrc, "int");
@@ -844,6 +846,14 @@ public class ShaderContextUBO extends ShaderContext {
 		if (alphaTestRef != getAlphaTestRef()) {
 			copy(alphaTestRef, this.alphaTestRef);
 			super.setAlphaTestRef(alphaTestRef);
+		}
+	}
+
+	@Override
+	public void setAlphaTestMask(int alphaTestMask) {
+		if (alphaTestMask != getAlphaTestMask()) {
+			copy(alphaTestMask, this.alphaTestMask);
+			super.setAlphaTestMask(alphaTestMask);
 		}
 	}
 

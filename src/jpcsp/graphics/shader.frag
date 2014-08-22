@@ -52,6 +52,7 @@
     uniform bool  alphaTestEnable;
     uniform int   alphaTestFunc;
     uniform int   alphaTestRef;
+    uniform int   alphaTestMask;
     uniform bool  blendTestEnable;
     uniform int   blendEquation;
     uniform int   blendSrc;
@@ -718,13 +719,20 @@ void ApplyColorMask(inout vec4 Cf, in vec4 Cdst)
 // Alpha Test
 ///////////////////////////////////////////////////////////////
 
+// Convert the alpha value from float to int and apply the alpha mask
+int getAlphaInt(float alpha)
+{
+    #if USE_BIT_OPERATORS
+        return int(ROUND(alpha * 255.0)) & alphaTestMask;
+    #else
+        // Masking with alphaTestMask is not available when not using bit operators...
+        return int(ROUND(alpha * 255.0));
+    #endif
+}
+
 void ApplyAlphaTest(inout vec4 Cf)
 {
     #if !USE_DYNAMIC_DEFINES
-        // Convert Cf.a to an integer value before testing
-        // in order to avoid rouding errors when testing for equality.
-        int alphaTest;
-
         switch (alphaTestFunc)
         {
         case 0: // ATST_NEVER_PASS_PIXEL
@@ -733,28 +741,22 @@ void ApplyAlphaTest(inout vec4 Cf)
             // Nothing to do
             break;
         case 2: // ATST_PASS_PIXEL_IF_MATCHES
-            alphaTest = int(ROUND(Cf.a * 255.0));
-            if (alphaTest != alphaTestRef) discard;
+            if (getAlphaInt(Cf.a) != alphaTestRef) discard;
             break;
         case 3: // ATST_PASS_PIXEL_IF_DIFFERS
-            alphaTest = int(ROUND(Cf.a * 255.0));
-            if (alphaTest == alphaTestRef) discard;
+            if (getAlphaInt(Cf.a) == alphaTestRef) discard;
             break;
         case 4: // ATST_PASS_PIXEL_IF_LESS
-            alphaTest = int(ROUND(Cf.a * 255.0));
-            if (alphaTest >= alphaTestRef) discard;
+            if (getAlphaInt(Cf.a) >= alphaTestRef) discard;
             break;
         case 5: // ATST_PASS_PIXEL_IF_LESS_OR_EQUAL
-            alphaTest = int(ROUND(Cf.a * 255.0));
-            if (alphaTest > alphaTestRef) discard;
+            if (getAlphaInt(Cf.a) > alphaTestRef) discard;
             break;
         case 6: // ATST_PASS_PIXEL_IF_GREATER
-            alphaTest = int(ROUND(Cf.a * 255.0));
-            if (alphaTest <= alphaTestRef) discard;
+            if (getAlphaInt(Cf.a) <= alphaTestRef) discard;
             break;
         case 7: // ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL
-            alphaTest = int(ROUND(Cf.a * 255.0));
-            if (alphaTest < alphaTestRef) discard;
+            if (getAlphaInt(Cf.a) < alphaTestRef) discard;
             break;
         }
     #elif ALPHA_TEST_FUNC == 0
@@ -765,28 +767,22 @@ void ApplyAlphaTest(inout vec4 Cf)
         // Nothing to do
     #elif ALPHA_TEST_FUNC == 2
         // ATST_PASS_PIXEL_IF_MATCHES
-        int alphaTest = int(ROUND(Cf.a * 255.0));
-        if (alphaTest != alphaTestRef) discard;
+        if (getAlphaInt(Cf.a) != alphaTestRef) discard;
     #elif ALPHA_TEST_FUNC == 3
         // ATST_PASS_PIXEL_IF_DIFFERS
-        int alphaTest = int(ROUND(Cf.a * 255.0));
-        if (alphaTest == alphaTestRef) discard;
+        if (getAlphaInt(Cf.a) == alphaTestRef) discard;
     #elif ALPHA_TEST_FUNC == 4
         // ATST_PASS_PIXEL_IF_LESS
-        int alphaTest = int(ROUND(Cf.a * 255.0));
-        if (alphaTest >= alphaTestRef) discard;
+        if (getAlphaInt(Cf.a) >= alphaTestRef) discard;
     #elif ALPHA_TEST_FUNC == 5
         // ATST_PASS_PIXEL_IF_LESS_OR_EQUAL
-        int alphaTest = int(ROUND(Cf.a * 255.0));
-        if (alphaTest > alphaTestRef) discard;
+        if (getAlphaInt(Cf.a) > alphaTestRef) discard;
     #elif ALPHA_TEST_FUNC == 6
         // ATST_PASS_PIXEL_IF_GREATER
-        int alphaTest = int(ROUND(Cf.a * 255.0));
-        if (alphaTest <= alphaTestRef) discard;
+        if (getAlphaInt(Cf.a) <= alphaTestRef) discard;
     #elif ALPHA_TEST_FUNC == 7
         // ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL
-        int alphaTest = int(ROUND(Cf.a * 255.0));
-        if (alphaTest < alphaTestRef) discard;
+        if (getAlphaInt(Cf.a) < alphaTestRef) discard;
     #endif
 }
 

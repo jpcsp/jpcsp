@@ -83,6 +83,7 @@ public class RendererTemplate {
 	public static boolean alphaTestFlagEnabled;
 	public static int alphaFunc;
 	public static int alphaRef;
+	public static int alphaMask;
 	public static boolean stencilTestFlagEnabled;
 	public static int stencilFunc;
 	public static int stencilRef;
@@ -1233,7 +1234,7 @@ public class RendererTemplate {
 		    	        			}
 			        				continue;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_MATCHES:
-		            				if (getAlpha(sourceColor) != alphaRef) {
+		            				if ((getAlpha(sourceColor) & alphaMask) != alphaRef) {
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
@@ -1251,7 +1252,7 @@ public class RendererTemplate {
 		            				}
 		            				break;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_DIFFERS:
-		            				if (getAlpha(sourceColor) == alphaRef) {
+		            				if ((getAlpha(sourceColor) & alphaMask) == alphaRef) {
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
@@ -1269,7 +1270,7 @@ public class RendererTemplate {
 		            				}
 		            				break;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_LESS:
-		            				if (getAlpha(sourceColor) >= alphaRef) {
+		            				if ((getAlpha(sourceColor) & alphaMask) >= alphaRef) {
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
@@ -1289,7 +1290,7 @@ public class RendererTemplate {
 		            			case GeCommands.ATST_PASS_PIXEL_IF_LESS_OR_EQUAL:
 		            				// No test if alphaRef==0xFF
 		            				if (RendererTemplate.alphaRef < 0xFF) {
-			            				if (getAlpha(sourceColor) > alphaRef) {
+			            				if ((getAlpha(sourceColor) & alphaMask) > alphaRef) {
 			    		            		if (isLogTraceEnabled) {
 			    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 			    	            			}
@@ -1308,7 +1309,7 @@ public class RendererTemplate {
 		            				}
 		            				break;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_GREATER:
-		            				if (getAlpha(sourceColor) <= alphaRef) {
+		            				if ((getAlpha(sourceColor) & alphaMask) <= alphaRef) {
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
@@ -1328,7 +1329,7 @@ public class RendererTemplate {
 		            			case GeCommands.ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL:
 		            				// No test if alphaRef==0x00
 		            				if (RendererTemplate.alphaRef > 0x00) {
-			            				if (getAlpha(sourceColor) < alphaRef) {
+			            				if ((getAlpha(sourceColor) & alphaMask) < alphaRef) {
 			    		            		if (isLogTraceEnabled) {
 			    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 			    	            			}

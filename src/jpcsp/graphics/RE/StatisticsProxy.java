@@ -728,10 +728,10 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setAlphaFunc(int func, int ref) {
+	public void setAlphaFunc(int func, int ref, int mask) {
 		DurationStatistics statistic = statistics[63];
 		statistic.start();
-		super.setAlphaFunc(func, ref);
+		super.setAlphaFunc(func, ref, mask);
 		statistic.end();
 	}
 

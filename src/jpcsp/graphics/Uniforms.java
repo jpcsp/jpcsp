@@ -79,6 +79,7 @@ public enum Uniforms {
 	alphaTestEnable("alphaTestEnable"),
 	alphaTestFunc("alphaTestFunc"),
 	alphaTestRef("alphaTestRef"),
+	alphaTestMask("alphaTestMask"),
 	blendTestEnable("blendTestEnable"),
 	blendEquation("blendEquation"),
 	blendSrc("blendSrc"),

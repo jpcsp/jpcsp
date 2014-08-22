@@ -97,6 +97,7 @@ public class FilterCompiler {
 		variables.put("alphaTestFlagEnabled", Boolean.valueOf(context.alphaTestFlag.isEnabled()));
 		variables.put("alphaFunc", new Integer(context.alphaFunc));
 		variables.put("alphaRef", new Integer(context.alphaRef));
+		variables.put("alphaMask", new Integer(context.alphaMask));
 		variables.put("stencilTestFlagEnabled", Boolean.valueOf(context.stencilTestFlag.isEnabled()));
 		variables.put("stencilFunc", new Integer(context.stencilFunc));
 		variables.put("stencilOpFail", new Integer(context.stencilOpFail));

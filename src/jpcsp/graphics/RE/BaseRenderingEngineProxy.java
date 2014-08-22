@@ -638,8 +638,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setAlphaFunc(int func, int ref) {
-		proxy.setAlphaFunc(func, ref);
+	public void setAlphaFunc(int func, int ref, int mask) {
+		proxy.setAlphaFunc(func, ref, mask);
 	}
 
 	@Override
