@@ -1098,4 +1098,9 @@ public class Utilities {
 
     	return false;
     }
+
+    public static int signExtend(int value, int bits) {
+    	int shift = Integer.SIZE - bits;
+    	return (value << shift) >> shift;
+    }
 }

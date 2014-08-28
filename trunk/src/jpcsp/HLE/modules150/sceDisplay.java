@@ -779,7 +779,7 @@ public class sceDisplay extends HLEModule {
         setScreenResolution(displayScreen.getWidth(), displayScreen.getHeight());
 
         // Remember the last window size only if not running in full screen
-        if (!Emulator.getMainGUI().isFullScreen()) {
+        if (Emulator.getMainGUI() != null && !Emulator.getMainGUI().isFullScreen()) {
             setViewportResizeScaleFactor(Settings.getInstance().readFloat(resizeScaleFactorSettings, 1f));
         }
 
@@ -819,7 +819,7 @@ public class sceDisplay extends HLEModule {
 
         // We are currently using only one scale factor to keep the PSP aspect ratio
         float scaleAspectRatio;
-        if (Emulator.getMainGUI().isFullScreen()) {
+        if (Emulator.getMainGUI() != null && Emulator.getMainGUI().isFullScreen()) {
             // In full screen mode, also keep the aspect ratio.
             // The best aspect ratio is when the horizontal or vertical dimension
             // is matching the screen size and the other dimension is less or equal
