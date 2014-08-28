@@ -564,20 +564,17 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xD675EBB8, version = 150, checkInsideInterrupt = true)
-    public int sceKernelSelfStopUnloadModule(int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
+    public int sceKernelSelfStopUnloadModule(int exitCode, int argSize, @CanBeNull TPointer argp) {
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
-        statusAddr.setValue(0);
         sceModule.stop();
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             // Start the module stop thread function.
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
-                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, optionAddr.getAddress());
+                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, 0);
             thread.moduleid = sceModule.modid;
-            // Store the thread exit status into statusAddr when the thread terminates
-            thread.exitStatusAddr = statusAddr;
             // Unload the module when the stop thread will be deleted
             thread.unloadModuleAtDeletion = true;
         } else {
@@ -593,7 +590,7 @@ public class ModuleMgrForUser extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x8f2df740, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x8F2DF740, version = 150, checkInsideInterrupt = true)
     public int sceKernelStopUnloadSelfModuleWithStatus(int exitCode, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
 
