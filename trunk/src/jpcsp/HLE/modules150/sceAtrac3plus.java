@@ -49,6 +49,8 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.connector.AtracCodec;
+import jpcsp.media.codec.CodecFactory;
+import jpcsp.media.codec.ICodec;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Hash;
 
@@ -136,6 +138,7 @@ public class sceAtrac3plus extends HLEModule {
     	protected int id;
         protected int codecType;
         protected AtracCodec atracCodec;
+        protected ICodec codec;
         // Context (used only from firmware 6.00)
         protected SysMemInfo atracContext;
         protected SysMemInfo internalBuffer;
@@ -177,6 +180,7 @@ public class sceAtrac3plus extends HLEModule {
             this.codecType = codecType;
             this.id = id;
             this.atracCodec = atracCodec;
+            codec = CodecFactory.getCodec(codecType);
             if (codecType == PSP_CODEC_AT3 && Modules.sceAtrac3plusModule.atrac3Num < Modules.sceAtrac3plusModule.atrac3MaxIDsCount) {
             	Modules.sceAtrac3plusModule.atrac3Num++;
                 maxSamples = 1024;
@@ -284,6 +288,8 @@ public class sceAtrac3plus extends HLEModule {
             // But not always? Add sanity checks on fileSize.
             if (fileSize > 0 && fileSize <= 0x0FFFFFFF) {
             	inputFileSize = fileSize;
+            } else {
+            	inputFileSize = 0x0FFFFFFF;
             }
 
             atracChannels = mp3Channels;
@@ -815,6 +821,14 @@ public class sceAtrac3plus extends HLEModule {
 
 		public void setAtracOutputChannels(int atracOutputChannels) {
 			this.atracOutputChannels = atracOutputChannels;
+		}
+
+		public ICodec getCodec() {
+			return codec;
+		}
+
+		public void setCodec(ICodec codec) {
+			this.codec = codec;
 		}
     }
 
