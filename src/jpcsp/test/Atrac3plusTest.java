@@ -18,6 +18,7 @@ package jpcsp.test;
 
 import static jpcsp.HLE.modules150.sceAtrac3plus.FMT_CHUNK_MAGIC;
 import static jpcsp.HLE.modules150.sceAtrac3plus.RIFF_MAGIC;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,7 +38,9 @@ import org.apache.log4j.xml.DOMConfigurator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.modules.sceAtrac3plus;
-import jpcsp.media.atrac3plus.Atrac3plusDecoder;
+import jpcsp.media.codec.CodecFactory;
+import jpcsp.media.codec.ICodec;
+import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
 
 public class Atrac3plusTest {
 	private static Logger log = Atrac3plusDecoder.log;
@@ -93,15 +96,14 @@ public class Atrac3plusTest {
             mLine.open(audioFormat);
             mLine.start();
 
-            Atrac3plusDecoder.init();
-			Atrac3plusDecoder decoder = new Atrac3plusDecoder();
-			decoder.decodeInit();
+			ICodec decoder = CodecFactory.getCodec(PSP_CODEC_AT3PLUS);
+			decoder.init();
 
 			at3pAddr += dataOffset;
 			length -= dataOffset;
 
 			for (int frameNbr = 0; true; frameNbr++) {
-				int result = decoder.decodeFrame(at3pAddr, length, samplesAddr);
+				int result = decoder.decode(at3pAddr, length, samplesAddr);
 				if (result < 0) {
 					log.error(String.format("Frame #%d, result 0x%08X", frameNbr, result));
 					break;
@@ -114,7 +116,7 @@ public class Atrac3plusTest {
 					log.warn(String.format("Frame #%d, result 0x%X, expected 0x%X", frameNbr, result, bytesPerFrame));
 				}
 
-				int consumedBytes = result;
+				int consumedBytes = bytesPerFrame;
 				at3pAddr += consumedBytes;
 				length -= consumedBytes;
 

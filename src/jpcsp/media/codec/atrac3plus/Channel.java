@@ -14,9 +14,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media.atrac3plus;
+package jpcsp.media.codec.atrac3plus;
 
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBANDS;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBANDS;
 
 /** Sound channel parameters */
 public class Channel {

@@ -14,25 +14,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media.atrac3plus;
+package jpcsp.media.codec.util;
 
-public class WaveEnvelope {
-	boolean hasStartPoint; ///< indicates start point within the GHA window
-	boolean hasStopPoint;  ///< indicates stop point within the GHA window
-	int startPos;          ///< start position expressed in n*4 samples
-	int stopPos;           ///< stop  position expressed in n*4 samples
+public class SineWin {
+	public static final float[] ff_sine_64  = new float[64];
+	public static final float[] ff_sine_128 = new float[128];
 
-	public void clear() {
-		hasStartPoint = false;
-		hasStopPoint = false;
-		startPos = 0;
-		stopPos = 0;
+	private static void sineWindowInit(float[] window) {
+		int n = window.length;
+		for (int i = 0; i < n; i++) {
+			window[i] = (float) Math.sin((i + 0.5) * (Math.PI / (2.0 * n)));
+		}
 	}
 
-	public void copy(WaveEnvelope from) {
-		this.hasStartPoint = from.hasStartPoint;
-		this.hasStopPoint = from.hasStopPoint;
-		this.startPos = from.startPos;
-		this.stopPos = from.stopPos;
+	public static void initFfSineWindows() {
+		sineWindowInit(ff_sine_64 );
+		sineWindowInit(ff_sine_128);
 	}
 }

@@ -14,31 +14,33 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media.atrac3plus;
+package jpcsp.media.codec.atrac3plus;
 
 import static java.lang.Math.abs;
-import static jpcsp.media.atrac3plus.Atrac3plusData1.atrac3p_spectra_tabs;
-import static jpcsp.media.atrac3plus.Atrac3plusData2.atrac3p_ct_restricted_to_full;
-import static jpcsp.media.atrac3plus.Atrac3plusData2.atrac3p_qu_num_to_seg;
-import static jpcsp.media.atrac3plus.Atrac3plusData2.atrac3p_qu_to_subband;
-import static jpcsp.media.atrac3plus.Atrac3plusData2.atrac3p_sf_shapes;
-import static jpcsp.media.atrac3plus.Atrac3plusData2.atrac3p_subband_to_num_powgrps;
-import static jpcsp.media.atrac3plus.Atrac3plusData2.atrac3p_wl_shapes;
-import static jpcsp.media.atrac3plus.Atrac3plusData2.atrac3p_wl_weights;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.AT3P_ERROR;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.ATRAC3P_POWER_COMP_OFF;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBANDS;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBAND_SAMPLES;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.CH_UNIT_STEREO;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.avLog2;
-import static jpcsp.media.atrac3plus.Atrac3plusDsp.ff_atrac3p_mant_tab;
-import static jpcsp.media.atrac3plus.Atrac3plusDsp.ff_atrac3p_qu_to_spec_pos;
-import static jpcsp.media.atrac3plus.Atrac3plusDsp.ff_atrac3p_sf_tab;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusData1.atrac3p_spectra_tabs;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusData2.atrac3p_ct_restricted_to_full;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusData2.atrac3p_qu_num_to_seg;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusData2.atrac3p_qu_to_subband;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusData2.atrac3p_sf_shapes;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusData2.atrac3p_subband_to_num_powgrps;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusData2.atrac3p_wl_shapes;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusData2.atrac3p_wl_weights;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.AT3P_ERROR;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_POWER_COMP_OFF;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBANDS;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBAND_SAMPLES;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.CH_UNIT_STEREO;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.avLog2;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDsp.ff_atrac3p_mant_tab;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDsp.ff_atrac3p_qu_to_spec_pos;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDsp.ff_atrac3p_sf_tab;
 import static jpcsp.util.Utilities.signExtend;
 
 import java.util.Arrays;
 
-import jpcsp.media.atrac3plus.Atrac3plusData1.Atrac3pSpecCodeTab;
+import jpcsp.media.codec.atrac3plus.Atrac3plusData1.Atrac3pSpecCodeTab;
+import jpcsp.media.codec.util.BitReader;
+import jpcsp.media.codec.util.VLC;
 
 import org.apache.log4j.Logger;
 
@@ -1323,7 +1325,7 @@ public class ChannelUnit {
 		WavesData dst[] = ctx.channels[chNum].tonesInfo;
 		WavesData ref[] = ctx.channels[0].tonesInfo;
 
-		if (chNum == 0 || br.readBool()) { // mode 0: fixed-length coding
+		if (chNum == 0 || !br.readBool()) { // mode 0: fixed-length coding
 			for (int sb = 0; sb < ctx.wavesInfo.numToneBands; sb++) {
 				if (!bandHasTones[sb]) {
 					continue;
@@ -1415,7 +1417,7 @@ public class ChannelUnit {
 		WavesData dst[] = ctx.channels[chNum].tonesInfo;
 		WavesData ref[] = ctx.channels[0].tonesInfo;
 
-		if (chNum == 0 || br.readBool()) { // mode 0: fixed-length coding
+		if (chNum == 0 || !br.readBool()) { // mode 0: fixed-length coding
 			for (int sb = 0; sb < ctx.wavesInfo.numToneBands; sb++) {
 				if (!bandHasTones[sb] || dst[sb].numWavs == 0) {
 					continue;

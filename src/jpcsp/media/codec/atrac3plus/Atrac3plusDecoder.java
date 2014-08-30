@@ -14,12 +14,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media.atrac3plus;
+package jpcsp.media.codec.atrac3plus;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import jpcsp.memory.IMemoryWriter;
-import jpcsp.memory.MemoryWriter;
+import static jpcsp.media.codec.util.CodecUtils.writeOutput;
+import jpcsp.media.codec.ICodec;
+import jpcsp.media.codec.util.BitReader;
+import jpcsp.media.codec.util.FFT;
 
 import org.apache.log4j.Logger;
 
@@ -27,7 +27,7 @@ import org.apache.log4j.Logger;
  * Based on the FFmpeg version from Maxim Poliakovski.
  * All credits go to him.
  */
-public class Atrac3plusDecoder {
+public class Atrac3plusDecoder implements ICodec {
 	public static Logger log = Logger.getLogger("atrac3plus");
 	public static final int AT3P_ERROR = -1;
 	public static final int CH_UNIT_MONO       = 0;        ///< unit containing one coded channel
@@ -48,11 +48,10 @@ public class Atrac3plusDecoder {
 		return 31 - Integer.numberOfLeadingZeros(n);
 	}
 
-	public static void init() {
+	@Override
+	public int init() {
 		ChannelUnit.init();
-	}
 
-	public void decodeInit() {
 		ctx = new Context();
 		ctx.dsp = new Atrac3plusDsp();
 		for (int i = 0; i < ctx.numChannelBlocks; i++) {
@@ -71,19 +70,22 @@ public class Atrac3plusDecoder {
 
 		ctx.gaincCtx = new Atrac();
 		ctx.gaincCtx.initGainCompensation(6, 2);
+
+		return 0;
 	}
 
-	public int decodeFrame(int inputAddr, int inputSize, int outputAddr) {
+	@Override
+	public int decode(int inputAddr, int inputLength, int outputAddr) {
 		int ret;
 
-		if (inputSize < 0) {
+		if (inputLength < 0) {
 			return AT3P_ERROR;
 		}
-		if (inputSize == 0) {
+		if (inputLength == 0) {
 			return 0;
 		}
 
-		ctx.br = new BitReader(inputAddr, inputSize);
+		ctx.br = new BitReader(inputAddr, inputLength);
 		if (ctx.br.readBool()) {
 			log.error(String.format("Invalid start bit"));
 			return AT3P_ERROR;
@@ -120,7 +122,7 @@ public class Atrac3plusDecoder {
 			ctx.channelUnits[chBlock].decodeResidualSpectrum(ctx.samples);
 			ctx.channelUnits[chBlock].reconstructFrame(ctx);
 
-			writeOutput(ctx.outpBuf, outputAddr);
+			writeOutput(ctx.outpBuf, outputAddr, ATRAC3P_FRAME_SAMPLES);
 
 			chBlock++;
 		}
@@ -132,18 +134,8 @@ public class Atrac3plusDecoder {
 		return ctx.br.getBytesRead();
 	}
 
-	private static int convertSampleFloatToInt16(float sample) {
-		return min(max((int) (sample * 32768f + 0.5f), -32768), 32767) & 0xFFFF;
-	}
-
-	private void writeOutput(float[][] samples, int outputAddr) {
-		IMemoryWriter writer = MemoryWriter.getMemoryWriter(outputAddr, ATRAC3P_FRAME_SAMPLES * 4, 2);
-		for (int i = 0; i < ATRAC3P_FRAME_SAMPLES; i++) {
-			int rsample = convertSampleFloatToInt16(samples[0][i]);
-			int lsample = convertSampleFloatToInt16(samples[1][i]);
-			writer.writeNext(rsample);
-			writer.writeNext(lsample);
-		}
-		writer.flush();
+	@Override
+	public int getNumberOfSamples() {
+		return ATRAC3P_FRAME_SAMPLES;
 	}
 }

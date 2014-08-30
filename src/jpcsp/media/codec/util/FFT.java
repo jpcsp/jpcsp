@@ -14,12 +14,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media.atrac3plus;
+package jpcsp.media.codec.util;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
 import static java.lang.Math.sqrt;
+import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
 
 import org.apache.log4j.Logger;
 

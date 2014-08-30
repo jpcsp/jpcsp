@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media.atrac3plus;
+package jpcsp.media.codec.util;
 
 import jpcsp.Memory;
 
@@ -22,6 +22,7 @@ public class BitReader {
 	private Memory mem;
 	private int addr;
 	private int initialAddr;
+	private int initialSize;
 	private int size;
 	private int bits;
 	private int value;
@@ -30,6 +31,7 @@ public class BitReader {
 		this.addr = addr;
 		this.size = size;
 		initialAddr = addr;
+		initialSize = size;
 		mem = Memory.getInstance();
 		bits = 0;
 	}
@@ -111,6 +113,12 @@ public class BitReader {
 			value = mem.read8(addr - 1);
 			value = (value << (8 - bits)) & 0xFF;
 		}
+	}
+
+	public void seek(int n) {
+		addr = initialAddr + n;
+		size = initialSize - n;
+		bits = 0;
 	}
 
 	@Override

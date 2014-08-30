@@ -14,25 +14,27 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media.atrac3plus;
+package jpcsp.media.codec.atrac3plus;
 
 import static java.lang.Math.cos;
 import static java.lang.Math.max;
 import static java.lang.Math.pow;
 import static java.lang.Math.sin;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.ATRAC3P_POWER_COMP_OFF;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBANDS;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBAND_SAMPLES;
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.CH_UNIT_STEREO;
-import static jpcsp.media.atrac3plus.FloatDSP.vectorFmul;
-import static jpcsp.media.atrac3plus.FloatDSP.vectorFmulReverse;
-import static jpcsp.media.atrac3plus.SineWin.ff_sine_128;
-import static jpcsp.media.atrac3plus.SineWin.ff_sine_64;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_POWER_COMP_OFF;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBANDS;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBAND_SAMPLES;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.CH_UNIT_STEREO;
+import static jpcsp.media.codec.util.FloatDSP.vectorFmul;
+import static jpcsp.media.codec.util.FloatDSP.vectorFmulReverse;
+import static jpcsp.media.codec.util.SineWin.ff_sine_128;
+import static jpcsp.media.codec.util.SineWin.ff_sine_64;
 
 import java.util.Arrays;
 
-import jpcsp.media.atrac3plus.ChannelUnitContext.IPQFChannelContext;
+import jpcsp.media.codec.atrac3plus.ChannelUnitContext.IPQFChannelContext;
+import jpcsp.media.codec.util.FFT;
+import jpcsp.media.codec.util.SineWin;
 
 /*
  * Based on the FFmpeg version from Maxim Poliakovski.

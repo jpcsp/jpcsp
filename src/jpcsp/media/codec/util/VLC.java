@@ -1,9 +1,11 @@
-package jpcsp.media.atrac3plus;
+package jpcsp.media.codec.util;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 import java.util.Arrays;
+
+import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
 
 import org.apache.log4j.Logger;
 
