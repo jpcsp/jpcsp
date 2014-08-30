@@ -26,6 +26,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.connector.AtracCodec;
+import jpcsp.media.codec.ICodec;
 import jpcsp.util.Utilities;
 
 @HLELogging
@@ -90,85 +91,98 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
     public int sceAtracLowLevelDecode(@CheckArgument("checkAtracID") int atID, TPointer sourceAddr, TPointer32 sourceBytesConsumedAddr, TPointer samplesAddr, TPointer32 sampleBytesAddr) {
         AtracID id = atracIDs.get(atID);
         AtracCodec atracCodec = id.getAtracCodec();
+        ICodec codec = id.getCodec();
 
         if (log.isTraceEnabled()) {
         	log.trace(String.format("sceAtracLowLevelDecode input:%s", Utilities.getMemoryDump(sourceAddr.getAddress(), id.getSourceBufferLength())));
         }
 
         int sourceBytesConsumed = 0;
-        if (id.getInputBuffer() == null) {
-        	int headerAddr = findRIFFHeader(sourceAddr.getAddress());
-        	if (headerAddr != 0) {
-        		if (headerAddr <= sourceAddr.getAddress()) {
-        			id.setData(headerAddr, id.getSourceBufferLength() + (sourceAddr.getAddress() - headerAddr), id.getSourceBufferLength(), false, 0);
-        		} else {
-        			int headerLength = findRIFFHeaderLength(headerAddr);
-        			id.setData(headerAddr, headerLength, id.getSourceBufferLength(), false, 0);
-        			id.addStreamData(sourceAddr.getAddress(), id.getSourceBufferLength());
-        		}
-        	} else {
-        		id.setData(sourceAddr.getAddress(), id.getSourceBufferLength(), id.getSourceBufferLength(), false, 0);
-        	}
-    		if (atracCodec != null && id.getAtracCodecType() == PSP_CODEC_AT3) {
-    			atracCodec.setAtracChannelStartLength(0x8000); // Only 0x8000 bytes are required to start decoding AT3
-    		}
-    		sourceBytesConsumed = id.getSourceBufferLength();
-    		// Allow looping
-    		id.setLoopNum(-1);
-        } else {
-        	// Estimate source bytes to be read based on current sample position
-        	int estimatedFileOffset = (int) (((long) id.getInputFileSize()) * id.getAtracCurrentSample() / id.getAtracEndSample());
-        	sourceBytesConsumed = Math.max(0, estimatedFileOffset - id.getInputBuffer().getFilePosition());
-        	sourceBytesConsumed = Math.min(sourceBytesConsumed, id.getSourceBufferLength());
-        	id.addStreamData(sourceAddr.getAddress(), sourceBytesConsumed);
-        }
-
     	int bytesPerSample = id.getAtracOutputChannels() << 1;
-        if (atracCodec != null) {
-	        int samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress(), id.getAtracOutputChannels());
-        	if (sourceBytesConsumed < id.getSourceBufferLength()) {
-        		// Not enough data in the channel or running soon out of data?
-        		if (samples < id.getMaxSamples() || atracCodec.getChannelLength() < 0x8000) {
-        			// Consume as much as possible...
-        			id.addStreamData(sourceAddr.getAddress() + sourceBytesConsumed, id.getSourceBufferLength() - sourceBytesConsumed);
-        			sourceBytesConsumed = id.getSourceBufferLength();
-        		}
+        if (codec != null) {
+        	int result = codec.decode(sourceAddr.getAddress(), id.getSourceBufferLength(), samplesAddr.getAddress());
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceAtracLowLevelDecode codec returned 0x%08X", result));
         	}
-
-        	if (samples <= 1) {
-	        	samples = id.getMaxSamples();
-
-	        	int sampleBytes = samples * bytesPerSample;
-		        samplesAddr.clear(sampleBytes);
-	        } else if (samples > 0) {
-	        	id.setDecodedSamples(samples);
-
-	        	// Always return MaxSamples
-	        	if (samples < id.getMaxSamples()) {
-	    	        int sampleBytes = samples * bytesPerSample;
-	        		int fillSamples = id.getMaxSamples() - samples;
-	        		int fillSampleBytes = fillSamples * bytesPerSample;
-	        		samplesAddr.clear(sampleBytes, fillSampleBytes);
-	        		samples = id.getMaxSamples();
-	        	}
-	        }
-
-	        int sampleBytes = samples * bytesPerSample;
-	        sampleBytesAddr.setValue(sampleBytes);
-
-	        if (log.isDebugEnabled()) {
-	        	log.debug(String.format("sceAtracLowLevelDecode returning %d samples (0x%X bytes), 0x%X source bytes consumed, sample position %d/%d, file position %d/%d", samples, sampleBytes, sourceBytesConsumed, id.getAtracCurrentSample(), id.getAtracEndSample(), id.getInputBuffer().getFilePosition(), id.getInputFileSize()));
-	        	if (log.isTraceEnabled()) {
-	        		log.trace(Utilities.getMemoryDump(samplesAddr.getAddress(), sampleBytes));
-	        	}
-	        }
+        	if (result < 0) {
+        		log.info(String.format("sceAtracLowLevelDecode codec returning 0x%08X", result));
+        		return result;
+        	}
+        	sourceBytesConsumed = result > 0 ? id.getSourceBufferLength() : 0;
+        	sampleBytesAddr.setValue(codec.getNumberOfSamples() * bytesPerSample);
         } else {
-	        int samples = id.getMaxSamples();
-	        int sampleBytes = samples * bytesPerSample;
-	        sampleBytesAddr.setValue(sampleBytes);
-	        // Return empty samples
-	        samplesAddr.clear(sampleBytes);
+	        if (id.getInputBuffer() == null) {
+	        	int headerAddr = findRIFFHeader(sourceAddr.getAddress());
+	        	if (headerAddr != 0) {
+	        		if (headerAddr <= sourceAddr.getAddress()) {
+	        			id.setData(headerAddr, id.getSourceBufferLength() + (sourceAddr.getAddress() - headerAddr), id.getSourceBufferLength(), false, 0);
+	        		} else {
+	        			int headerLength = findRIFFHeaderLength(headerAddr);
+	        			id.setData(headerAddr, headerLength, id.getSourceBufferLength(), false, 0);
+	        			id.addStreamData(sourceAddr.getAddress(), id.getSourceBufferLength());
+	        		}
+	        	} else {
+	        		id.setData(sourceAddr.getAddress(), id.getSourceBufferLength(), id.getSourceBufferLength(), false, 0);
+	        	}
+	    		if (atracCodec != null && id.getAtracCodecType() == PSP_CODEC_AT3) {
+	    			atracCodec.setAtracChannelStartLength(0x8000); // Only 0x8000 bytes are required to start decoding AT3
+	    		}
+	    		sourceBytesConsumed = id.getSourceBufferLength();
+	    		// Allow looping
+	    		id.setLoopNum(-1);
+	        } else {
+	        	// Estimate source bytes to be read based on current sample position
+	        	int estimatedFileOffset = (int) (((long) id.getInputFileSize()) * id.getAtracCurrentSample() / id.getAtracEndSample());
+	        	sourceBytesConsumed = Math.max(0, estimatedFileOffset - id.getInputBuffer().getFilePosition());
+	        	sourceBytesConsumed = Math.min(sourceBytesConsumed, id.getSourceBufferLength());
+	        	id.addStreamData(sourceAddr.getAddress(), sourceBytesConsumed);
+	        }
 
+	        if (atracCodec != null) {
+		        int samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress(), id.getAtracOutputChannels());
+	        	if (sourceBytesConsumed < id.getSourceBufferLength()) {
+	        		// Not enough data in the channel or running soon out of data?
+	        		if (samples < id.getMaxSamples() || atracCodec.getChannelLength() < 0x8000) {
+	        			// Consume as much as possible...
+	        			id.addStreamData(sourceAddr.getAddress() + sourceBytesConsumed, id.getSourceBufferLength() - sourceBytesConsumed);
+	        			sourceBytesConsumed = id.getSourceBufferLength();
+	        		}
+	        	}
+
+	        	if (samples <= 1) {
+		        	samples = id.getMaxSamples();
+
+		        	int sampleBytes = samples * bytesPerSample;
+			        samplesAddr.clear(sampleBytes);
+		        } else if (samples > 0) {
+		        	id.setDecodedSamples(samples);
+
+		        	// Always return MaxSamples
+		        	if (samples < id.getMaxSamples()) {
+		    	        int sampleBytes = samples * bytesPerSample;
+		        		int fillSamples = id.getMaxSamples() - samples;
+		        		int fillSampleBytes = fillSamples * bytesPerSample;
+		        		samplesAddr.clear(sampleBytes, fillSampleBytes);
+		        		samples = id.getMaxSamples();
+		        	}
+		        }
+
+		        int sampleBytes = samples * bytesPerSample;
+		        sampleBytesAddr.setValue(sampleBytes);
+
+		        if (log.isDebugEnabled()) {
+		        	log.debug(String.format("sceAtracLowLevelDecode returning %d samples (0x%X bytes), 0x%X source bytes consumed, sample position %d/%d, file position %d/%d", samples, sampleBytes, sourceBytesConsumed, id.getAtracCurrentSample(), id.getAtracEndSample(), id.getInputBuffer().getFilePosition(), id.getInputFileSize()));
+		        	if (log.isTraceEnabled()) {
+		        		log.trace(Utilities.getMemoryDump(samplesAddr.getAddress(), sampleBytes));
+		        	}
+		        }
+	        } else {
+		        int samples = id.getMaxSamples();
+		        int sampleBytes = samples * bytesPerSample;
+		        sampleBytesAddr.setValue(sampleBytes);
+		        // Return empty samples
+		        samplesAddr.clear(sampleBytes);
+	        }
         }
 
         // Consume a part of the Atrac3 source buffer
@@ -224,12 +238,18 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 
         AtracID id = atracIDs.get(atID);
 
+        int result = 0;
+
         id.setAtracChannels(numberOfChannels);
         if (numberOfChannels == 1 && numberOfChannels == outputChannels) {
         	id.setAtracOutputChannels(outputChannels);
         }
         id.setSourceBufferLength(sourceBufferLength);
 
-        return 0;
+        if (id.getCodec() != null) {
+    		result = id.getCodec().init();
+    	}
+
+        return result;
     }
 }
