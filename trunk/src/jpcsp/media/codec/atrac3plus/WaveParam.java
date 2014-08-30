@@ -14,27 +14,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media.atrac3plus;
+package jpcsp.media.codec.atrac3plus;
 
-/**
- *  Gain control parameters for one subband.
- */
-public class AtracGainInfo {
-	public int numPoints;             ///< number of gain control points
-	public int levCode[] = new int[7]; ///< level at corresponding control point
-	public int locCode[] = new int[7]; ///< location of gain control points
+/** Parameters of a single sine wave */
+public class WaveParam {
+	int freqIndex;  ///< wave frequency index
+	int ampSf;      ///< quantized amplitude scale factor
+	int ampIndex;   ///< quantized amplitude index
+	int phaseIndex; ///< quantized phase index
 
 	public void clear() {
-		numPoints = 0;
-		for (int i = 0; i < 7; i++) {
-			levCode[i] = 0;
-			locCode[i] = 0;
-		}
-	}
-
-	public void copy(AtracGainInfo from) {
-		this.numPoints = from.numPoints;
-		System.arraycopy(from.levCode, 0, this.levCode, 0, levCode.length);
-		System.arraycopy(from.locCode, 0, this.locCode, 0, locCode.length);
+		freqIndex = 0;
+		ampSf = 0;
+		ampIndex = 0;
+		phaseIndex = 0;
 	}
 }

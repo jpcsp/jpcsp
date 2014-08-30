@@ -14,9 +14,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media.atrac3plus;
+package jpcsp.media.codec.atrac3plus;
 
-import static jpcsp.media.atrac3plus.Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBAND_SAMPLES;
+import jpcsp.media.codec.util.BitReader;
+import jpcsp.media.codec.util.FFT;
 
 public class Context {
 	public BitReader br;
@@ -30,7 +33,7 @@ public class Context {
 	public FFT ipqfDctCtx; ///< IDCT context used by IPQF
 
 	public float samples[][] = new float[2][ATRAC3P_FRAME_SAMPLES]; ///< quantized MDCT sprectrum
-	public float mdctBuf[][] = new float[2][ATRAC3P_FRAME_SAMPLES]; ///< output of the IMDCT
+	public float mdctBuf[][] = new float[2][ATRAC3P_FRAME_SAMPLES + ATRAC3P_SUBBAND_SAMPLES]; ///< output of the IMDCT
 	public float timeBuf[][] = new float[2][ATRAC3P_FRAME_SAMPLES]; ///< output of the gain compensation
 	public float outpBuf[][] = new float[2][ATRAC3P_FRAME_SAMPLES];
 }
