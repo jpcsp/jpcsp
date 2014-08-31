@@ -2765,8 +2765,8 @@ public class sceMpeg extends HLEModule {
     public int sceMpegAvcDecodeDetail(@CheckArgument("checkMpegHandle") int mpeg, TPointer detailPointer) {
         detailPointer.setValue32( 0, avcDecodeResult     ); // Stores the result
         detailPointer.setValue32( 4, videoFrameCount     ); // Last decoded frame
-        detailPointer.setValue32( 8, psmfHeader.getVideoWidth() ); // Frame width
-        detailPointer.setValue32(12, psmfHeader.getVideoHeigth()); // Frame height
+        detailPointer.setValue32( 8, psmfHeader == null ? 0 : psmfHeader.getVideoWidth() ); // Frame width
+        detailPointer.setValue32(12, psmfHeader == null ? 0 : psmfHeader.getVideoHeigth()); // Frame height
         detailPointer.setValue32(16, 0                   ); // Frame crop rect (left)
         detailPointer.setValue32(20, 0                   ); // Frame crop rect (right)
         detailPointer.setValue32(24, 0                   ); // Frame crop rect (top)
@@ -3192,7 +3192,7 @@ public class sceMpeg extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x37295ED8, version = 150, checkInsideInterrupt = true)
-    public int sceMpegRingbufferConstruct(TPointer ringbufferAddr, int packets, TPointer data, int size, @CanBeNull TPointer callbackAddr, int callbackArgs) {
+    public int sceMpegRingbufferConstruct(TPointer ringbufferAddr, int packets, @CanBeNull TPointer data, int size, @CanBeNull TPointer callbackAddr, int callbackArgs) {
         if (size < getSizeFromPackets(packets)) {
             log.warn(String.format("sceMpegRingbufferConstruct insufficient space: size=%d, packets=%d", size, packets));
             return SceKernelErrors.ERROR_MPEG_NO_MEMORY;
