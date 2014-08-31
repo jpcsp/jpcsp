@@ -17,10 +17,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.media.codec.atrac3;
 
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.lang.Math.sin;
+import static java.lang.Math.sqrt;
+import static jpcsp.media.codec.atrac3.Atrac3Data.clc_length_tab;
+import static jpcsp.media.codec.atrac3.Atrac3Data.inv_max_quant;
+import static jpcsp.media.codec.atrac3.Atrac3Data.mantissa_clc_tab;
+import static jpcsp.media.codec.atrac3.Atrac3Data.mantissa_vlc_tab;
+import static jpcsp.media.codec.atrac3.Atrac3Data.matrix_coeffs;
 import static jpcsp.media.codec.atrac3.Atrac3Data.subband_tab;
+import static jpcsp.media.codec.atrac3plus.Atrac.ff_atrac_sf_table;
 import static jpcsp.media.codec.util.CodecUtils.writeOutput;
 import static jpcsp.media.codec.util.FloatDSP.vectorFmul;
+import static jpcsp.util.Utilities.signExtend;
 
 import java.util.Arrays;
 
@@ -67,12 +76,15 @@ public class Atrac3Decoder implements ICodec {
 	}
 
 	@Override
-	public int init() {
+	public int init(int blockAlign, int channels, int codingMode) {
 		int ret;
 
 		initStaticData();
 
 		ctx = new Context();
+		ctx.channels = channels;
+		ctx.codingMode = codingMode != 0 ? JOINT_STEREO : STEREO;
+		ctx.blockAlign = blockAlign;
 
 		// initialize th MDCT transform
 		ctx.mdctCtx = new FFT();
@@ -142,24 +154,344 @@ public class Atrac3Decoder implements ICodec {
 		}
 	}
 
-	private int decodeGainControl(GainBlock gain, int bandsCoded) {
-		// TODO
+	/**
+	 * Decode gain parameters for the coded bands
+	 *
+	 * @param block     the gainblock for the current band
+	 * @param numBands  amount of coded bands
+	 */
+	private int decodeGainControl(GainBlock block, int numBands) {
+		int b;
+
+		for (b = 0; b <= numBands; b++) {
+			block.gBlock[b].numPoints = br.read(3);
+			int[] level = block.gBlock[b].levCode;
+			int[] loc   = block.gBlock[b].locCode;
+
+			for (int j = 0; j < block.gBlock[b].numPoints; j++) {
+				level[j] = br.read(4);
+				loc[j]   = br.read(5);
+				if (j > 0 && loc[j] <= loc[j - 1]) {
+					return AT3_ERROR;
+				}
+			}
+		}
+
+		// Clear the unused blocks
+		for (; b < 4; b++) {
+			block.gBlock[b].numPoints = 0;
+		}
+
 		return 0;
 	}
 
-	private int decodeTonalComponents(TonalComponent[] components, int bandsCoded) {
-		// TODO
-		return 0;
+	/**
+	 * Restore the quantized tonal components
+	 *
+	 * @param components tonal components
+	 * @param numBands   number of coded bands
+	 */
+	private int decodeTonalComponents(TonalComponent[] components, int numBands) {
+		int bandFlags[] = new int[4];
+		int mantissa[] = new int[8];
+		int componentCount = 0;
+
+		int nbComponents = br.read(5);
+
+		// no tonal components
+		if (nbComponents == 0) {
+			return 0;
+		}
+
+		int codingModeSelector = br.read(2);
+		if (codingModeSelector == 2) {
+			return AT3_ERROR;
+		}
+
+		int codingMode = codingModeSelector & 1;
+
+		for (int i = 0; i < nbComponents; i++) {
+			for (int b = 0; b <= numBands; b++) {
+				bandFlags[b] = br.read1();
+			}
+
+			int codedValuesPerComponent = br.read(3);
+
+			int quantStepIndex = br.read(3);
+			if (quantStepIndex <= 1) {
+				return AT3_ERROR;
+			}
+
+			if (codingModeSelector == 3) {
+				codingMode = br.read1();
+			}
+
+			for (int b = 0; b < (numBands + 1) * 4; b++) {
+				if (bandFlags[b >> 2] == 0) {
+					continue;
+				}
+
+				int codedComponents = br.read(3);
+
+				for (int c = 0; c < codedComponents; c++) {
+					TonalComponent cmp = components[componentCount];
+
+					int sfIndex = br.read(6);
+					if (componentCount >= 64) {
+						return AT3_ERROR;
+					}
+
+					cmp.pos = b * 64 + br.read(6);
+
+					int maxCodedValues = SAMPLES_PER_FRAME - cmp.pos;
+					int codedValues = codedValuesPerComponent + 1;
+					codedValues = min(maxCodedValues, codedValues);
+
+					float scaleFactor = ff_atrac_sf_table[sfIndex] * inv_max_quant[quantStepIndex];
+
+					readQuantSpectralCoeffs(quantStepIndex, codingMode, mantissa, codedValues);
+
+					cmp.numCoefs = codedValues;
+
+					// inverse quant
+					for (int m = 0; m < codedValues; m++) {
+						cmp.coef[m] = mantissa[m] * scaleFactor;
+					}
+
+					componentCount++;
+				}
+			}
+		}
+
+		return componentCount;
 	}
 
-	private int decodeSpectrum(float[] spectrum) {
-		// TODO
-		return 0;
+	/**
+	 * Mantissa decoding
+	 *
+	 * @param selector     which table the output values are coded with
+	 * @param codingFlag   constant length coding or variable length coding
+	 * @param mantissas    mantissa output table
+	 * @param numCodes     number of values to get
+	 */
+	private void readQuantSpectralCoeffs(int selector, int codingFlag, int[] mantissas, int numCodes) {
+		if (selector == 1) {
+			numCodes /= 2;
+		}
+
+		if (codingFlag != 0) {
+			// constant length coding (CLC)
+			int numBits = clc_length_tab[selector];
+
+			if (selector > 1) {
+				for (int i = 0; i < numCodes; i++) {
+					int code = (numBits != 0 ? signExtend(br.read(numBits), numBits) : 0);
+					mantissas[i] = code;
+				}
+			} else {
+				for (int i = 0; i < numCodes; i++) {
+					int code = (numBits != 0 ? br.read(numBits) : 0); // numBits is always 4 in this case
+					mantissas[i * 2    ] = mantissa_clc_tab[code >> 2];
+					mantissas[i * 2 + 1] = mantissa_clc_tab[code &  3];
+				}
+			}
+		} else {
+			// variable length coding (VLC)
+			if (selector != 1) {
+				for (int i = 0; i < numCodes; i++) {
+					int huffSymb = spectral_coeff_tab[selector - 1].getVLC2(br, 3);
+					huffSymb += 1;
+					int code = huffSymb >> 1;
+					if ((huffSymb & 1) != 0) {
+						code = -code;
+					}
+					mantissas[i] = code;
+				}
+			} else {
+				for (int i = 0; i < numCodes; i++) {
+					int huffSymb = spectral_coeff_tab[selector - 1].getVLC2(br, 3);
+					mantissas[i * 2    ] = mantissa_vlc_tab[huffSymb * 2    ];
+					mantissas[i * 2 + 1] = mantissa_vlc_tab[huffSymb * 2 + 1];
+				}
+			}
+		}
 	}
 
+	/**
+	 * Restore the quantized band spectrum coefficients
+	 *
+	 * @return subband count, fix for broken specification/files
+	 */
+	private int decodeSpectrum(float[] output) {
+		int subbandVlcIndex[] = new int[32];
+		int sfIndex[] = new int[32];
+		int mantissas[] = new int[128];
+
+		int numSubbands = br.read(5); // number of coded subbands;
+		int codingMode = br.read(1);  // coding Mode: 0 - VLC/ 1-CLC
+
+		// get the VLC selector table for the subbands, 0 means not coded
+		for (int i = 0; i <= numSubbands; i++) {
+			subbandVlcIndex[i] = br.read(3);
+		}
+
+		// read the scale factor indexes from the stream
+		for (int i = 0; i <= numSubbands; i++) {
+			if (subbandVlcIndex[i] != 0) {
+				sfIndex[i] = br.read(6);
+			}
+		}
+
+		int i;
+		for (i = 0; i <= numSubbands; i++) {
+			int first = subband_tab[i    ];
+			int last  = subband_tab[i + 1];
+
+			int subbandSize = last - first;
+
+			if (subbandVlcIndex[i] != 0) {
+	            // decode spectral coefficients for this subband
+	            // TODO: This can be done faster is several blocks share the
+	            // same VLC selector (subband_vlc_index)
+				readQuantSpectralCoeffs(subbandVlcIndex[i], codingMode, mantissas, subbandSize);
+
+				// decode the scale factor for this subband
+				float scaleFactor = ff_atrac_sf_table[sfIndex[i]] * inv_max_quant[subbandVlcIndex[i]];
+
+				// inverse quantize the coefficients
+				for (int j = 0; first < last; first++, j++) {
+					output[first] = mantissas[j] * scaleFactor;
+				}
+			} else {
+				// this subband was not coded, so zero the entire subband
+				Arrays.fill(output, first, first + subbandSize, 0f);
+			}
+		}
+
+		// clear the subbands that were not coded
+		Arrays.fill(output, subband_tab[i], SAMPLES_PER_FRAME, 0f);
+
+		return numSubbands;
+	}
+
+	/**
+	 * Combine the tonal band spectrum and regular band spectrum
+	 *
+	 * @param spectrum        output spectrum buffer
+	 * @param numComponents   number of tonal components
+	 * @param components      tonal components for this band
+	 * @return                position of the last tonal coefficient
+	 */
 	private int addTonalComponents(float[] spectrum, int numComponents, TonalComponent[] components) {
-		// TODO
-		return 0;
+		int lastPos = -1;
+		for (int i = 0; i < numComponents; i++) {
+			lastPos = Math.max(components[i].pos + components[i].numCoefs, lastPos);
+
+			for (int j = 0; j < components[i].numCoefs; j++) {
+				spectrum[components[i].pos + j] += components[i].coef[j];
+			}
+		}
+
+		return lastPos;
+	}
+
+	private void reverseMatrixing(float[] su1, float[] su2, int[] prevCode, int[] currCode) {
+		for (int i = 0, band = 0; band < 4 * 256; band += 256, i++) {
+			int s1 = prevCode[i];
+			int s2 = currCode[i];
+			int nsample = band;
+
+			if (s1 != s2) {
+				// Selector value changed, interpolation needed.
+				float mc1l = matrix_coeffs[s1 * 2    ];
+				float mc1r = matrix_coeffs[s1 * 2 + 1];
+				float mc2l = matrix_coeffs[s2 * 2    ];
+				float mc2r = matrix_coeffs[s2 * 2 + 1];
+
+				// Interpolation is done over the first eight samples.
+				for (; nsample < band + 8; nsample++) {
+					float c1 = su1[nsample];
+					float c2 = su2[nsample];
+					c2 = c1 * INTERPOLATE(mc1l, mc2l, nsample - band) +
+					     c2 * INTERPOLATE(mc1r, mc2r, nsample - band);
+					su1[nsample] = c2;
+					su2[nsample] = c1 * 2f - c2;
+				}
+			}
+
+			// Apply the matrix without interpolation.
+			switch (s2) {
+				case 0: // M/S decoding
+					for (; nsample < band + 256; nsample++) {
+						float c1 = su1[nsample];
+						float c2 = su2[nsample];
+						su1[nsample] =  c2       * 2f;
+						su2[nsample] = (c1 - c2) * 2f;
+					}
+					break;
+				case 1:
+					for (; nsample < band + 256; nsample++) {
+						float c1 = su1[nsample];
+						float c2 = su2[nsample];
+						su1[nsample] = (c1 + c2) *  2f;
+						su2[nsample] =  c2       * -2f;
+					}
+					break;
+				case 2:
+				case 3:
+					for (; nsample < band + 256; nsample++) {
+						float c1 = su1[nsample];
+						float c2 = su2[nsample];
+						su1[nsample] = c1 + c2;
+						su2[nsample] = c1 - c2;
+					}
+					break;
+				default:
+					log.fatal(String.format("Invalid s2 code %d", s2));
+					break;
+			}
+		}
+	}
+
+	private void getChannelWeights(int index, int flag, float ch[]) {
+		if (index == 7) {
+			ch[0] = 1f;
+			ch[1] = 1f;
+		} else {
+			ch[0] = (index & 7) / 7f;
+			ch[1] = (float) sqrt(2f - ch[0] * ch[0]);
+			if (flag != 0) {
+				float tmp = ch[0];
+				ch[0] = ch[1];
+				ch[1] = tmp;
+			}
+		}
+	}
+
+	private float INTERPOLATE(float oldValue, float newValue, int nsample) {
+		return oldValue + nsample * 0.125f * (newValue - oldValue);
+	}
+
+	private void channelWeighting(float[] su1, float[] su2, int[] p3) {
+		// w[x][y] y=0 is left y=1 is right
+		float w[][] = new float[2][2];
+
+		if (p3[1] != 7 || p3[3] != 7) {
+			getChannelWeights(p3[1], p3[0], w[0]);
+			getChannelWeights(p3[3], p3[2], w[1]);
+
+			for (int band = 256; band < 4 * 256; band += 256) {
+				int nsample;
+				for (nsample = band; nsample < band + 8; nsample++) {
+					su1[nsample] *= INTERPOLATE(w[0][0], w[0][1], nsample - band);
+					su2[nsample] *= INTERPOLATE(w[1][0], w[1][1], nsample - band);
+				}
+				for (; nsample < band + 256; nsample++) {
+					su1[nsample] *= w[1][0];
+					su2[nsample] *= w[1][1];
+				}
+			}
+		}
 	}
 
 	/**
@@ -244,10 +576,39 @@ public class Atrac3Decoder implements ICodec {
 			}
 
 			// Framedata of the su2 in the joint-stereo mode is encoded in
-			// reverse byte order so we need to swap it first
+			// reverse byte order so we need read in reverse direction
+			br.seek(ctx.blockAlign - 1);
+			br.setDirection(-1);
 
-			// TODO
-			log.error("JOINT_STEREO not implemented yet");
+			// Skip the sync codes (0xF8).
+			while (br.peek(8) == 0xF8) {
+				br.read(8);
+			}
+
+			// Fill the Weighting coeffs delay buffer
+			System.arraycopy(ctx.weightingDelay, 2, ctx.weightingDelay, 0, 4);
+			ctx.weightingDelay[4] = br.read1();
+			ctx.weightingDelay[5] = br.read(3);
+
+			for (int i = 0; i < 4; i++) {
+				ctx.matrixCoeffIndexPrev[i] = ctx.matrixCoeffIndexNow[i];
+				ctx.matrixCoeffIndexNow[i] = ctx.matrixCoeffIndexNext[i];
+				ctx.matrixCoeffIndexNext[i] = br.read(2);
+			}
+
+			// Decode sound Unit 2.
+			ret = decodeChannelSoundUnit(ctx.units[1], ctx.samples[1], 1, JOINT_STEREO);
+			br.setDirection(1);
+			br.seek(ctx.blockAlign);
+
+			if (ret != 0) {
+				return ret;
+			}
+
+			// Reconstruct the channel coefficients
+			reverseMatrixing(ctx.samples[0], ctx.samples[1], ctx.matrixCoeffIndexPrev, ctx.matrixCoeffIndexNow);
+
+			channelWeighting(ctx.samples[0], ctx.samples[1], ctx.weightingDelay);
 		} else {
 			// normal stereo mode or mono
 			// Decode the channel sound units

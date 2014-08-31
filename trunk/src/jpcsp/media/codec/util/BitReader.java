@@ -26,6 +26,7 @@ public class BitReader {
 	private int size;
 	private int bits;
 	private int value;
+	private int direction;
 
 	public BitReader(int addr, int size) {
 		this.addr = addr;
@@ -34,6 +35,7 @@ public class BitReader {
 		initialSize = size;
 		mem = Memory.getInstance();
 		bits = 0;
+		direction = 1;
 	}
 
 	public boolean readBool() {
@@ -43,7 +45,7 @@ public class BitReader {
 	public int read1() {
 		if (bits <= 0) {
 			value = mem.read8(addr);
-			addr++;
+			addr += direction;
 			size--;
 			bits = 8;
 		}
@@ -97,20 +99,20 @@ public class BitReader {
 		bits -= n;
 		if (n >= 0) {
 			while (bits < 0) {
-				addr++;
+				addr += direction;
 				size--;
 				bits += 8;
 			}
 		} else {
 			while (bits > 8) {
-				addr--;
+				addr -= direction;
 				size++;
 				bits -= 8;
 			}
 		}
 
 		if (bits > 0) {
-			value = mem.read8(addr - 1);
+			value = mem.read8(addr - direction);
 			value = (value << (8 - bits)) & 0xFF;
 		}
 	}
@@ -118,6 +120,11 @@ public class BitReader {
 	public void seek(int n) {
 		addr = initialAddr + n;
 		size = initialSize - n;
+		bits = 0;
+	}
+
+	public void setDirection(int direction) {
+		this.direction = direction;
 		bits = 0;
 	}
 

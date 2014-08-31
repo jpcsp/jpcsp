@@ -86,8 +86,8 @@ public class sceAtrac3plus extends HLEModule {
     protected static final String at3IdPurpose = "sceAtrac3plus.AT3";
     protected static final String at3PlusIdPurpose = "sceAtrac3plus.AT3+";
     protected static final String mp3IdPurpose = "sceAtrac3plus.MP3";
-    protected static final int AT3_MAGIC      = 0x0270; // "AT3"
-    protected static final int AT3_PLUS_MAGIC = 0xFFFE; // "AT3PLUS"
+    public    static final int AT3_MAGIC      = 0x0270; // "AT3"
+    public    static final int AT3_PLUS_MAGIC = 0xFFFE; // "AT3PLUS"
     public    static final int RIFF_MAGIC = 0x46464952; // "RIFF"
     public    static final int WAVE_MAGIC = 0x45564157; // "WAVE"
     public    static final int FMT_CHUNK_MAGIC = 0x20746D66; // "FMT "

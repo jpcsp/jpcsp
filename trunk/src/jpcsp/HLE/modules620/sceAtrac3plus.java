@@ -247,7 +247,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         id.setSourceBufferLength(sourceBufferLength);
 
         if (id.getCodec() != null) {
-    		result = id.getCodec().init();
+    		result = id.getCodec().init(sourceBufferLength, numberOfChannels, 0);
     	}
 
         return result;

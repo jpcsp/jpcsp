@@ -37,9 +37,10 @@ public class FFT {
 	float tsin[];
 	public static final double M_SQRT1_2 = 0.70710678118654752440; // 1/sqrt(2)
 	private static final float sqrthalf = (float) M_SQRT1_2;
-	private static final float[] ff_cos_16 = new float[16 / 2];
-	private static final float[] ff_cos_32 = new float[32 / 2];
-	private static final float[] ff_cos_64 = new float[64 / 2];
+	private static final float[] ff_cos_16  = new float[16 / 2];
+	private static final float[] ff_cos_32  = new float[32 / 2];
+	private static final float[] ff_cos_64  = new float[64 / 2];
+	private static final float[] ff_cos_128 = new float[128 / 2];
 
 	private static void initFfCosTabs(float[] tab, int m) {
 		double freq = 2 * Math.PI / m;
@@ -77,9 +78,10 @@ public class FFT {
 		revtab = new int[n];
 		tmpBuf = new float[n * 2];
 
-		initFfCosTabs(ff_cos_16, 16);
-		initFfCosTabs(ff_cos_32, 32);
-		initFfCosTabs(ff_cos_64, 64);
+		initFfCosTabs(ff_cos_16 ,  16);
+		initFfCosTabs(ff_cos_32 ,  32);
+		initFfCosTabs(ff_cos_64 ,  64);
+		initFfCosTabs(ff_cos_128, 128);
 
 		for (int i = 0; i < n; i++) {
 			revtab[-splitRadixPermutation(i, n, inverse) & (n - 1)] = i;
@@ -369,13 +371,20 @@ public class FFT {
 		pass(z, o, ff_cos_64, 8);
 	}
 
+	private void fft128(float[] z, int o) {
+		fft64(z, o);
+		fft32(z, o + 128);
+		fft32(z, o + 192);
+		pass(z, o, ff_cos_128, 16);
+	}
 	public void fftCalcFloat(float[] z, int o) {
 		switch (nbits) {
-			case 2: fft4 (z, 0); break;
-			case 3: fft8 (z, o); break;
-			case 4: fft16(z, 0); break;
-			case 5: fft32(z, 0); break;
-			case 6: fft64(z, o); break;
+			case 2: fft4  (z, 0); break;
+			case 3: fft8  (z, o); break;
+			case 4: fft16 (z, 0); break;
+			case 5: fft32 (z, 0); break;
+			case 6: fft64 (z, o); break;
+			case 7: fft128(z, o); break;
 			default:
 				log.error(String.format("FFT nbits=%d not implemented", nbits));
 				break;
