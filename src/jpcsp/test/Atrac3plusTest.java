@@ -16,8 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.test;
 
+import static jpcsp.HLE.modules150.sceAtrac3plus.AT3_MAGIC;
+import static jpcsp.HLE.modules150.sceAtrac3plus.AT3_PLUS_MAGIC;
 import static jpcsp.HLE.modules150.sceAtrac3plus.FMT_CHUNK_MAGIC;
 import static jpcsp.HLE.modules150.sceAtrac3plus.RIFF_MAGIC;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
 
 import java.io.File;
@@ -38,6 +41,7 @@ import org.apache.log4j.xml.DOMConfigurator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.modules.sceAtrac3plus;
+import jpcsp.HLE.modules.sceAudiocodec;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
@@ -50,7 +54,7 @@ public class Atrac3plusTest {
 		Memory mem = Memory.getInstance();
 
 		try {
-			File file = new File("sample.at3p");
+			File file = new File("sample.at3");
 			log.info(String.format("Reading file %s", file));
 			int length = (int) file.length();
 			InputStream in = new FileInputStream(file);
@@ -70,14 +74,26 @@ public class Atrac3plusTest {
 			}
 			int dataOffset = -1;
 			int scanOffset = 12;
-			int bytesPerFrame = mem.read16(at3pAddr + 0x20);
+			int bytesPerFrame = 0;
+			int channels = 2;
+			int codecType = -1;
+			int codingMode = 0;
 			while (dataOffset < 0) {
 				int chunkMagic = mem.read32(at3pAddr + scanOffset);
 				int chunkLength = mem.read32(at3pAddr + scanOffset + 4);
 				scanOffset += 8;
 				switch (chunkMagic) {
 					case FMT_CHUNK_MAGIC:
+						switch (mem.read16(at3pAddr + scanOffset + 0)) {
+							case AT3_PLUS_MAGIC: codecType = PSP_CODEC_AT3PLUS; break;
+							case AT3_MAGIC     : codecType = PSP_CODEC_AT3;     break;
+						}
+						channels = mem.read16(at3pAddr + scanOffset + 2);
 						bytesPerFrame = mem.read16(at3pAddr + scanOffset + 12);
+						int extraDataSize = mem.read16(at3pAddr + scanOffset + 16);
+						if (extraDataSize == 14) {
+							codingMode = mem.read16(at3pAddr + scanOffset + 18 + 6);
+						}
 						break;
 					case sceAtrac3plus.DATA_CHUNK_MAGIC:
 						dataOffset = scanOffset;
@@ -96,14 +112,14 @@ public class Atrac3plusTest {
             mLine.open(audioFormat);
             mLine.start();
 
-			ICodec decoder = CodecFactory.getCodec(PSP_CODEC_AT3PLUS);
-			decoder.init();
+			ICodec codec = CodecFactory.getCodec(codecType);
+			codec.init(bytesPerFrame, channels, codingMode);
 
 			at3pAddr += dataOffset;
 			length -= dataOffset;
 
 			for (int frameNbr = 0; true; frameNbr++) {
-				int result = decoder.decode(at3pAddr, length, samplesAddr);
+				int result = codec.decode(at3pAddr, length, samplesAddr);
 				if (result < 0) {
 					log.error(String.format("Frame #%d, result 0x%08X", frameNbr, result));
 					break;
@@ -120,7 +136,7 @@ public class Atrac3plusTest {
 				at3pAddr += consumedBytes;
 				length -= consumedBytes;
 
-				byte bytes[] = new byte[Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES * 4];
+				byte bytes[] = new byte[codec.getNumberOfSamples() * 4];
 				for (int i = 0; i < bytes.length; i++) {
 					bytes[i] = (byte) mem.read8(samplesAddr + i);
 				}

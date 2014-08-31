@@ -107,6 +107,35 @@ public class Atrac {
 	}
 
 	public static void iqmf(float[] inlo, int inloOffset, float[] inhi, int inhiOffset, int nIn, float[] out, int outOffset, float[] delayBuf, float[] temp) {
-		// TODO
+		System.arraycopy(delayBuf, 0, temp, 0, 46);
+
+		// loop1
+		for (int i = 0; i < nIn; i += 2) {
+			temp[46 + 2 * i + 0] = inlo[inloOffset + i    ] + inhi[inhiOffset + i    ];
+			temp[46 + 2 * i + 1] = inlo[inloOffset + i    ] - inhi[inhiOffset + i    ];
+			temp[46 + 2 * i + 2] = inlo[inloOffset + i + 1] + inhi[inhiOffset + i + 1];
+			temp[46 + 2 * i + 3] = inlo[inloOffset + i + 1] - inhi[inhiOffset + i + 1];
+		}
+
+		// loop2
+		int p1 = 0;
+		for (int j = nIn; j != 0; j--) {
+			float s1 = 0f;
+			float s2 = 0f;
+
+			for (int i = 0; i < 48; i += 2) {
+				s1 += temp[p1 + i] * qmf_window[i];
+				s2 += temp[p1 + i + 1] * qmf_window[i + 1];
+			}
+
+			out[outOffset + 0] = s2;
+			out[outOffset + 1] = s1;
+
+			p1 += 2;
+			outOffset += 2;
+		}
+
+		// Update the delay buffer.
+		System.arraycopy(temp, nIn * 2, delayBuf, 0, 46);
 	}
 }

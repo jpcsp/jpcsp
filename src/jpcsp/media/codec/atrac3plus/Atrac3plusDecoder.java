@@ -49,7 +49,7 @@ public class Atrac3plusDecoder implements ICodec {
 	}
 
 	@Override
-	public int init() {
+	public int init(int bytesPerFrame, int channels, int codingMode) {
 		ChannelUnit.init();
 
 		ctx = new Context();
