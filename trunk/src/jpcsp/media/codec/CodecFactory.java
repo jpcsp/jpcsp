@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.media.codec;
 
 import jpcsp.HLE.modules.sceAudiocodec;
+import jpcsp.media.codec.atrac3.Atrac3Decoder;
 import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
 
 public class CodecFactory {
@@ -26,6 +27,9 @@ public class CodecFactory {
 		switch (codecType) {
 			case sceAudiocodec.PSP_CODEC_AT3PLUS:
 				codec = new Atrac3plusDecoder();
+				break;
+			case sceAudiocodec.PSP_CODEC_AT3:
+				codec = new Atrac3Decoder();
 				break;
 		}
 
