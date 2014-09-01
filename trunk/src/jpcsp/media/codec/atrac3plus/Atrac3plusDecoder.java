@@ -49,10 +49,11 @@ public class Atrac3plusDecoder implements ICodec {
 	}
 
 	@Override
-	public int init(int bytesPerFrame, int channels, int codingMode) {
+	public int init(int bytesPerFrame, int channels, int outputChannels, int codingMode) {
 		ChannelUnit.init();
 
 		ctx = new Context();
+		ctx.outputChannels = outputChannels;
 		ctx.dsp = new Atrac3plusDsp();
 		for (int i = 0; i < ctx.numChannelBlocks; i++) {
 			ctx.channelUnits[i] = new ChannelUnit();
@@ -122,7 +123,7 @@ public class Atrac3plusDecoder implements ICodec {
 			ctx.channelUnits[chBlock].decodeResidualSpectrum(ctx.samples);
 			ctx.channelUnits[chBlock].reconstructFrame(ctx);
 
-			writeOutput(ctx.outpBuf, outputAddr, ATRAC3P_FRAME_SAMPLES);
+			writeOutput(ctx.outpBuf, outputAddr, ATRAC3P_FRAME_SAMPLES, ctx.outputChannels);
 
 			chBlock++;
 		}

@@ -28,12 +28,13 @@ public interface ICodec {
 	 * This method has to be called once before calling the decode() method.
 	 * 
 	 * @param bytesPerFrame  the number of bytes per input frame (block_align in ffmpeg)
-	 * @param channels       the number of channels
+	 * @param channels       the number of input channels
+	 * @param outputChannels the number of output channels
 	 * @param codingMode     Atrac3 1=JOINT_STEREO / 0=STEREO
 	 * @return   0 success
 	 *         < 0 error code
 	 */
-	public int init(int bytesPerFrame, int channels, int codingMode);
+	public int init(int bytesPerFrame, int channels, int outputChannels, int codingMode);
 
 	/**
 	 * Decode a frame.

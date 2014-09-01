@@ -26,6 +26,7 @@ public class Context {
 	public int codingMode;
 	public ChannelUnit units[] = new ChannelUnit[2];
 	public int channels;
+	public int outputChannels;
 	public int blockAlign;
 	// joint-stereo related variables
 	int matrixCoeffIndexPrev[] = new int[4];
