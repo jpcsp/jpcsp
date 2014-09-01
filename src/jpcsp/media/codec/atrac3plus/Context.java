@@ -27,6 +27,7 @@ public class Context {
 
 	public ChannelUnit channelUnits[] = new ChannelUnit[16]; ///< global channel units
 	public int numChannelBlocks = 2;                         ///< number of channel blocks
+	public int outputChannels;
 
 	public Atrac gaincCtx; ///< gain compensation context
 	public FFT mdctCtx;

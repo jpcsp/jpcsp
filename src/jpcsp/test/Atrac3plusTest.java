@@ -41,7 +41,6 @@ import org.apache.log4j.xml.DOMConfigurator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.modules.sceAtrac3plus;
-import jpcsp.HLE.modules.sceAudiocodec;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
@@ -104,7 +103,7 @@ public class Atrac3plusTest {
 
 	        AudioFormat audioFormat = new AudioFormat(44100,
 	                16,
-	                2,
+	                channels,
 	                true,
 	                false);
 	        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
@@ -113,7 +112,7 @@ public class Atrac3plusTest {
             mLine.start();
 
 			ICodec codec = CodecFactory.getCodec(codecType);
-			codec.init(bytesPerFrame, channels, codingMode);
+			codec.init(bytesPerFrame, channels, channels, codingMode);
 
 			at3pAddr += dataOffset;
 			length -= dataOffset;

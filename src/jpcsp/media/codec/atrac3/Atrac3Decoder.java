@@ -76,13 +76,14 @@ public class Atrac3Decoder implements ICodec {
 	}
 
 	@Override
-	public int init(int blockAlign, int channels, int codingMode) {
+	public int init(int blockAlign, int channels, int outputChannels, int codingMode) {
 		int ret;
 
 		initStaticData();
 
 		ctx = new Context();
 		ctx.channels = channels;
+		ctx.outputChannels = outputChannels;
 		ctx.codingMode = codingMode != 0 ? JOINT_STEREO : STEREO;
 		ctx.blockAlign = blockAlign;
 
@@ -643,7 +644,7 @@ public class Atrac3Decoder implements ICodec {
 			return ret;
 		}
 
-		writeOutput(ctx.samples, outputAddr, SAMPLES_PER_FRAME);
+		writeOutput(ctx.samples, outputAddr, SAMPLES_PER_FRAME, ctx.outputChannels);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Bytes read 0x%X", ctx.br.getBytesRead()));
