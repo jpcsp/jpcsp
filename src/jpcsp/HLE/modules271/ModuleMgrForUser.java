@@ -52,8 +52,8 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
         if (!Modules.scePspNpDrm_userModule.getDisableDLCStatus()) {
             log.warn(String.format("ModuleMgrForUser_F2D8D1B4 detected encrypted DLC module: %s", path.getString()));
             return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
-        } else {
-            return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, false);
         }
+
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, false);
     }
 }
