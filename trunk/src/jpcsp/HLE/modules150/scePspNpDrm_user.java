@@ -331,9 +331,9 @@ public class scePspNpDrm_user extends HLEModule {
         if (!getDisableDLCStatus()) {
             log.warn(String.format("sceKernelLoadModuleNpDrm detected encrypted DLC module: %s", path.getString()));
             return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
-        } else {
-            return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, false);
         }
+
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, false);
     }
 
     @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)
@@ -356,37 +356,37 @@ public class scePspNpDrm_user extends HLEModule {
         if (!getDisableDLCStatus()) {
             log.warn(String.format("sceKernelLoadModuleNpDrm detected encrypted DLC module: %s", fileName.getString()));
             return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
-        } else {
-            int result;
-            try {
-                SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(fileName.getString(), IoFileMgrForUser.PSP_O_RDONLY);
-                if (moduleInput != null) {
-                    byte[] moduleBytes = new byte[(int) moduleInput.length()];
-                    moduleInput.readFully(moduleBytes);
-                    moduleInput.close();
-                    ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+        }
 
-                    SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true);
-                    Emulator.getClock().resume();
+        int result;
+        try {
+            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(fileName.getString(), IoFileMgrForUser.PSP_O_RDONLY);
+            if (moduleInput != null) {
+                byte[] moduleBytes = new byte[(int) moduleInput.length()];
+                moduleInput.readFully(moduleBytes);
+                moduleInput.close();
+                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
-                    if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
-                        result = 0;
-                    } else {
-                        log.warn("sceKernelLoadExecNpDrm - failed, target is not an ELF");
-                        result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
-                    }
+                SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true);
+                Emulator.getClock().resume();
+
+                if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
+                    result = 0;
                 } else {
-                    result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+                    log.warn("sceKernelLoadExecNpDrm - failed, target is not an ELF");
+                    result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
                 }
-            } catch (GeneralJpcspException e) {
-                log.error("sceKernelLoadExecNpDrm", e);
-                result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
-            } catch (IOException e) {
-                log.error(String.format("sceKernelLoadExecNpDrm - Error while loading module '%s'", fileName), e);
+            } else {
                 result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
             }
-
-            return result;
+        } catch (GeneralJpcspException e) {
+            log.error("sceKernelLoadExecNpDrm", e);
+            result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+        } catch (IOException e) {
+            log.error(String.format("sceKernelLoadExecNpDrm - Error while loading module '%s'", fileName), e);
+            result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
         }
+
+        return result;
     }
 }

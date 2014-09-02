@@ -670,7 +670,6 @@ public class Settings {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void writeRecent(String cat, List<RecentElement> recent) {
         Enumeration<Object> keys = loadedSettings.keys();
         while (keys.hasMoreElements()) {
