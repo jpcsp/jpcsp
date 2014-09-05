@@ -658,7 +658,7 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
     }
 
     private int loadFile(Memory mem, String path, String name, int address, int maxLength) throws IOException {
-        if (name == null || name.length() <= 0 || address == 0) {
+        if (name == null || name.length() <= 0) {
             return 0;
         }
 
@@ -670,8 +670,10 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         // Some applications set dataBufSize to -1 on purpose. The reason behind this
         // is still unknown, but, for these cases, ignore maxLength.
         int fileSize = (int) fileInput.length();
-        if ((fileSize > maxLength) && (maxLength > 0)) {
+        if (fileSize > maxLength && maxLength > 0) {
             fileSize = maxLength;
+        } else if (address == 0) {
+        	fileSize = 0;
         }
 
         Utilities.readFully(fileInput, address, fileSize);
