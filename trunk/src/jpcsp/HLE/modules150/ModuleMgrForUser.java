@@ -135,7 +135,7 @@ public class ModuleMgrForUser extends HLEModule {
 
         // Ban some modules
         for (bannedModulesList bannedModuleName : bannedModulesList.values()) {
-            if (bannedModuleName.name().equalsIgnoreCase(prxname.toString())) {
+            if (bannedModuleName.name().equalsIgnoreCase(prxname)) {
                 log.warn(String.format("IGNORED:hleKernelLoadModule(path='%s'): module %s from banlist not loaded", name , prxname));
                 return moduleManager.LoadFlash0Module(prxname);
             }
@@ -177,43 +177,61 @@ public class ModuleMgrForUser extends HLEModule {
         // Extract the library name from the file itself
         // for files in "~SCE"/"~PSP" format.
         SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(name, IoFileMgrForUser.PSP_O_RDONLY);
-        if (moduleInput != null) {
-        	final int sceHeaderLength = 0x40;
-        	byte[] header = new byte[sceHeaderLength + 100];
-        	try {
-				moduleInput.readFully(header);
-        		ByteBuffer f = ByteBuffer.wrap(header);
-        		int sceMagic = Utilities.readWord(f);
-        		if (sceMagic == Loader.SCE_MAGIC) {
-        			f.position(sceHeaderLength);
-        			int pspMagic = Utilities.readWord(f);
-        			if (pspMagic == PSP.PSP_MAGIC) {
-        				f.position(f.position() + 6);
-        				String libName = Utilities.readStringZ(f);
-        				if (libName != null && libName.length() > 0) {
-        					// We could extract the library name from the file,
-        					// check if it matches an HLE module
-        					result = loadHLEModule(name, libName);
-        					if (result >= 0) {
-            					prxname.setLength(0);
-            					prxname.append(libName);
-        						return result;
-        					}
-        				}
-        			}
-        		}
+    	result = detectHleModule(name, prxname, moduleInput);
+    	if (moduleInput != null) {
+    		try {
+				moduleInput.close();
 			} catch (IOException e) {
-				// Ignore exception
-			} finally {
-				try {
-					moduleInput.close();
-				} catch (IOException e) {
-					// Ignore exception
-				}
 			}
-        }
+    	}
+    	if (result >= 0) {
+    		return result;
+    	}
 
         return -1;
+    }
+
+    private int detectHleModule(String name, StringBuilder prxname, SeekableDataInput file) {
+    	int result = -1;
+
+    	if (file == null) {
+    		return result;
+    	}
+
+    	final int sceHeaderLength = 0x40;
+    	byte[] header = new byte[sceHeaderLength + 100];
+    	try {
+        	long position = file.getFilePointer();
+    		file.readFully(header);
+    		file.seek(position);
+
+    		ByteBuffer f = ByteBuffer.wrap(header);
+    		int sceMagic = Utilities.readWord(f);
+    		if (sceMagic == Loader.SCE_MAGIC) {
+    			f.position(sceHeaderLength);
+    			int pspMagic = Utilities.readWord(f);
+    			if (pspMagic == PSP.PSP_MAGIC) {
+    				f.position(f.position() + 6);
+    				String libName = Utilities.readStringZ(f);
+    				if (libName != null && libName.length() > 0) {
+    					// We could extract the library name from the file,
+    					// check if it matches an HLE module
+    					result = loadHLEModule(name, libName);
+    					if (result >= 0) {
+    						if (prxname != null) {
+    							prxname.setLength(0);
+    							prxname.append(libName);
+    						}
+    						return result;
+    					}
+    				}
+    			}
+    		}
+		} catch (IOException e) {
+			// Ignore exception
+		}
+
+    	return result;
     }
 
     public int hleKernelLoadModule(String name, int flags, int uid, boolean byUid) {
@@ -329,6 +347,7 @@ public class ModuleMgrForUser extends HLEModule {
     @HLEFunction(nid = 0xB7F46618, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModuleByID(int uid, @CanBeNull TPointer optionAddr) {
         String name = Modules.IoFileMgrForUserModule.getFileFilename(uid);
+        SeekableDataInput file = Modules.IoFileMgrForUserModule.getFile(uid);
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelLoadModuleByID name='%s'", name));
@@ -341,6 +360,11 @@ public class ModuleMgrForUser extends HLEModule {
             if (log.isInfoEnabled()) {
             	log.info(String.format("sceKernelLoadModule: partition=%d, position=%d", lmOption.mpidText, lmOption.position));
             }
+        }
+
+        int result = detectHleModule(name, null, file);
+        if (result >= 0) {
+        	return result;
         }
 
         return hleKernelLoadModule(name, 0, uid, true);
