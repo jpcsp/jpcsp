@@ -1,3 +1,19 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp.media.codec.util;
 
 import static java.lang.Math.max;
@@ -129,7 +145,7 @@ public class VLC {
 						break;
 					}
 					code = codes[codeOffset + k].code;
-					if ((code >> (32 - tableNbBits)) != codePrefix) {
+					if ((code >>> (32 - tableNbBits)) != codePrefix) {
 						break;
 					}
 					codes[codeOffset + k].bits = n;
@@ -182,7 +198,7 @@ public class VLC {
 	 *                 read the longest vlc code
 	 *                 = (max_vlc_length + bits - 1) / bits
 	 */
-	public int getVLC2(BitReader br, int maxDepth) {
+	public int getVLC2(IBitReader br, int maxDepth) {
 		int nbBits;
 		int index = br.peek(bits);
 		int code = table[index][0];
@@ -211,7 +227,7 @@ public class VLC {
 		return code;
 	}
 
-	public int getVLC2(BitReader br) {
+	public int getVLC2(IBitReader br) {
 		return getVLC2(br, 1);
 	}
 }

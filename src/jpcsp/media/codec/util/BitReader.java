@@ -18,7 +18,7 @@ package jpcsp.media.codec.util;
 
 import jpcsp.Memory;
 
-public class BitReader {
+public class BitReader implements IBitReader {
 	private Memory mem;
 	private int addr;
 	private int initialAddr;
@@ -38,10 +38,12 @@ public class BitReader {
 		direction = 1;
 	}
 
+	@Override
 	public boolean readBool() {
 		return read1() != 0;
 	}
 
+	@Override
 	public int read1() {
 		if (bits <= 0) {
 			value = mem.read8(addr);
@@ -56,6 +58,7 @@ public class BitReader {
 		return bit;
 	}
 
+	@Override
 	public int read(int n) {
 		int read;
 		if (n <= bits) {
@@ -68,6 +71,21 @@ public class BitReader {
 				read = (read << 1) + read1();
 			}
 		}
+
+		return read;
+	}
+
+	public int readByte() {
+		if (bits == 8) {
+			bits = 0;
+			return value;
+		}
+		if (bits > 0) {
+			skip(bits);
+		}
+		int read = mem.read8(addr);
+		addr += direction;
+		size--;
 
 		return read;
 	}
@@ -89,12 +107,14 @@ public class BitReader {
 		return (addr - initialAddr) * 8 - bits;
 	}
 
+	@Override
 	public int peek(int n) {
 		int read = read(n);
 		skip(-n);
 		return read;
 	}
 
+	@Override
 	public void skip(int n) {
 		bits -= n;
 		if (n >= 0) {

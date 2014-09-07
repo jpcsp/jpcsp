@@ -63,4 +63,12 @@ public class FloatDSP {
 			dst[dstOffset + i] = src0[src0Offset + i] * src1[src1Offset + len - 1 - i];
 		}
 	}
+
+	public static void butterflies(float[] v1, float[] v2, int len) {
+		for (int i = 0; i < len; i++) {
+			float t = v1[i] - v2[i];
+			v1[i] += v2[i];
+			v2[i] = t;
+		}
+	}
 }

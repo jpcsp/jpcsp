@@ -14,29 +14,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media.codec;
+package jpcsp.media.codec.mp3;
 
-import jpcsp.HLE.modules.sceAudiocodec;
-import jpcsp.media.codec.atrac3.Atrac3Decoder;
-import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
-import jpcsp.media.codec.mp3.Mp3Decoder;
-
-public class CodecFactory {
-	public static ICodec getCodec(int codecType) {
-		ICodec codec = null;
-
-		switch (codecType) {
-			case sceAudiocodec.PSP_CODEC_AT3PLUS:
-				codec = new Atrac3plusDecoder();
-				break;
-			case sceAudiocodec.PSP_CODEC_AT3:
-				codec = new Atrac3Decoder();
-				break;
-			case sceAudiocodec.PSP_CODEC_MP3:
-				codec = new Mp3Decoder();
-				break;
-		}
-
-		return codec;
-	}
+public class Mp3Header {
+	public int frameSize;
+	public int errorProtection;
+	public int layer;
+	public int sampleRate;
+	public int sampleRateIndex; // between 0 and 8
+	public int bitRate;
+	public int nbChannels;
+	public int mode;
+	public int modeExt;
+	public int lsf;
 }
