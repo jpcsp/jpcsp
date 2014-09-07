@@ -22,6 +22,7 @@ import static jpcsp.HLE.modules150.sceAtrac3plus.FMT_CHUNK_MAGIC;
 import static jpcsp.HLE.modules150.sceAtrac3plus.RIFF_MAGIC;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_MP3;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -41,9 +42,13 @@ import org.apache.log4j.xml.DOMConfigurator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.modules.sceAtrac3plus;
+import jpcsp.HLE.modules.sceMp3;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
+import jpcsp.media.codec.mp3.Mp3Decoder;
+import jpcsp.media.codec.mp3.Mp3Header;
+import jpcsp.util.Utilities;
 
 public class Atrac3plusTest {
 	private static Logger log = Atrac3plusDecoder.log;
@@ -53,7 +58,7 @@ public class Atrac3plusTest {
 		Memory mem = Memory.getInstance();
 
 		try {
-			File file = new File("sample.at3");
+			File file = new File("sample.mp3");
 			log.info(String.format("Reading file %s", file));
 			int length = (int) file.length();
 			InputStream in = new FileInputStream(file);
@@ -62,43 +67,59 @@ public class Atrac3plusTest {
 			in.close();
 
 			int samplesAddr = MemoryMap.START_USERSPACE;
-			int at3pAddr = MemoryMap.START_USERSPACE + 0x10000;
+			int inputAddr = MemoryMap.START_USERSPACE + 0x10000;
 			for (int i = 0; i < length; i++) {
-				mem.write8(at3pAddr + i, buffer[i]);
+				mem.write8(inputAddr + i, buffer[i]);
 			}
 
-			if (mem.read32(at3pAddr) != RIFF_MAGIC) {
-				log.error(String.format("File '%s' not in RIFF format", file));
-				return;
-			}
-			int dataOffset = -1;
-			int scanOffset = 12;
-			int bytesPerFrame = 0;
 			int channels = 2;
 			int codecType = -1;
+			int bytesPerFrame = 0;
 			int codingMode = 0;
-			while (dataOffset < 0) {
-				int chunkMagic = mem.read32(at3pAddr + scanOffset);
-				int chunkLength = mem.read32(at3pAddr + scanOffset + 4);
-				scanOffset += 8;
-				switch (chunkMagic) {
-					case FMT_CHUNK_MAGIC:
-						switch (mem.read16(at3pAddr + scanOffset + 0)) {
-							case AT3_PLUS_MAGIC: codecType = PSP_CODEC_AT3PLUS; break;
-							case AT3_MAGIC     : codecType = PSP_CODEC_AT3;     break;
-						}
-						channels = mem.read16(at3pAddr + scanOffset + 2);
-						bytesPerFrame = mem.read16(at3pAddr + scanOffset + 12);
-						int extraDataSize = mem.read16(at3pAddr + scanOffset + 16);
-						if (extraDataSize == 14) {
-							codingMode = mem.read16(at3pAddr + scanOffset + 18 + 6);
-						}
-						break;
-					case sceAtrac3plus.DATA_CHUNK_MAGIC:
-						dataOffset = scanOffset;
-						break;
+			int dataOffset = 0;
+			if (mem.read32(inputAddr) == RIFF_MAGIC) {
+				int scanOffset = 12;
+				while (dataOffset < 0) {
+					int chunkMagic = mem.read32(inputAddr + scanOffset);
+					int chunkLength = mem.read32(inputAddr + scanOffset + 4);
+					scanOffset += 8;
+					switch (chunkMagic) {
+						case FMT_CHUNK_MAGIC:
+							switch (mem.read16(inputAddr + scanOffset + 0)) {
+								case AT3_PLUS_MAGIC: codecType = PSP_CODEC_AT3PLUS; break;
+								case AT3_MAGIC     : codecType = PSP_CODEC_AT3;     break;
+							}
+							channels = mem.read16(inputAddr + scanOffset + 2);
+							bytesPerFrame = mem.read16(inputAddr + scanOffset + 12);
+							int extraDataSize = mem.read16(inputAddr + scanOffset + 16);
+							if (extraDataSize == 14) {
+								codingMode = mem.read16(inputAddr + scanOffset + 18 + 6);
+							}
+							break;
+						case sceAtrac3plus.DATA_CHUNK_MAGIC:
+							dataOffset = scanOffset;
+							break;
+					}
+					scanOffset += chunkLength;
 				}
-				scanOffset += chunkLength;
+			} else if (mem.read32(inputAddr) == 0x02334449) { // ID3v2
+				int headerLength = 0;
+				for (int i = 0; i < 4; i++) {
+					headerLength = (headerLength << 7) + (mem.read8(inputAddr + 6 + i) & 0x7F);
+				}
+				if (sceMp3.isMp3Magic(Utilities.readUnaligned16(mem, inputAddr + 10 + headerLength))) {
+					dataOffset = headerLength + 10;
+					codecType = PSP_CODEC_MP3;
+				}
+			} else if (sceMp3.isMp3Magic(mem.read16(inputAddr))) {
+				Mp3Header mp3Header = new Mp3Header();
+				if (Mp3Decoder.decodeHeader(mp3Header, Integer.reverseBytes(mem.read32(inputAddr))) == 0) {
+					dataOffset = mp3Header.frameSize;
+				}
+				codecType = PSP_CODEC_MP3;
+			} else {
+				log.error(String.format("File '%s' not in RIFF format", file));
+				return;
 			}
 
 	        AudioFormat audioFormat = new AudioFormat(44100,
@@ -114,11 +135,11 @@ public class Atrac3plusTest {
 			ICodec codec = CodecFactory.getCodec(codecType);
 			codec.init(bytesPerFrame, channels, channels, codingMode);
 
-			at3pAddr += dataOffset;
+			inputAddr += dataOffset;
 			length -= dataOffset;
 
 			for (int frameNbr = 0; true; frameNbr++) {
-				int result = codec.decode(at3pAddr, length, samplesAddr);
+				int result = codec.decode(inputAddr, length, samplesAddr);
 				if (result < 0) {
 					log.error(String.format("Frame #%d, result 0x%08X", frameNbr, result));
 					break;
@@ -127,12 +148,16 @@ public class Atrac3plusTest {
 					// End of data
 					break;
 				}
+				int consumedBytes = bytesPerFrame;
 				if (result != bytesPerFrame) {
-					log.warn(String.format("Frame #%d, result 0x%X, expected 0x%X", frameNbr, result, bytesPerFrame));
+					if (bytesPerFrame == 0) {
+						consumedBytes = result;
+					} else {
+						log.warn(String.format("Frame #%d, result 0x%X, expected 0x%X", frameNbr, result, bytesPerFrame));
+					}
 				}
 
-				int consumedBytes = bytesPerFrame;
-				at3pAddr += consumedBytes;
+				inputAddr += consumedBytes;
 				length -= consumedBytes;
 
 				byte bytes[] = new byte[codec.getNumberOfSamples() * 4];
