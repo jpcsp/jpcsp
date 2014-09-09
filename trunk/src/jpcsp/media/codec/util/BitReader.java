@@ -148,6 +148,12 @@ public class BitReader implements IBitReader {
 		bits = 0;
 	}
 
+	public void byteAlign() {
+		if (bits > 0 && bits < 8) {
+			skip(bits);
+		}
+	}
+
 	@Override
 	public String toString() {
 		return String.format("BitReader addr=0x%08X, bits=%d, size=0x%X, bits read %d", addr, bits, size, getBitsRead());

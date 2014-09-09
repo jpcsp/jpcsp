@@ -1,0 +1,56 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package jpcsp.media.codec.aac;
+
+import static jpcsp.media.codec.aac.AacDecoder.MAX_CHANNELS;
+import static jpcsp.media.codec.aac.AacDecoder.MAX_ELEM_ID;
+import jpcsp.media.codec.util.BitReader;
+
+public class Context {
+	public BitReader br;
+	public int dmonoMode;
+	public int frameSize;
+	public int channels;
+	public int skipSamples;
+	public int nbSamples;
+
+	boolean isSaved; ///< Set if elements have stored overlap from previous frame
+	DynamicRangeControl cheDrc = new DynamicRangeControl();
+
+	// Channel element related data
+	ChannelElement che[][] = new ChannelElement[4][MAX_ELEM_ID];
+	ChannelElement tagCheMap[][] = new ChannelElement[4][MAX_ELEM_ID];
+	public int tagsMapped;
+
+	// Members user for output
+	SingleChannelElement outputElement[] = new SingleChannelElement[MAX_CHANNELS]; ///< Points to each SingleChannelElement
+
+	public OutputConfiguration oc[] = new OutputConfiguration[2];
+	public float samples[][] = new float[2][2048];
+
+	public Context() {
+		for (int i = 0; i < oc.length; i++) {
+			oc[i] = new OutputConfiguration();
+		}
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < MAX_ELEM_ID; j++) {
+				che[i][j] = new ChannelElement();
+				tagCheMap[i][j] = new ChannelElement();
+			}
+		}
+	}
+}

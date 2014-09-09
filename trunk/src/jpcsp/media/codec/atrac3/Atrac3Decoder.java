@@ -235,12 +235,13 @@ public class Atrac3Decoder implements ICodec {
 				int codedComponents = br.read(3);
 
 				for (int c = 0; c < codedComponents; c++) {
-					TonalComponent cmp = components[componentCount];
-
-					int sfIndex = br.read(6);
 					if (componentCount >= 64) {
 						return AT3_ERROR;
 					}
+
+					TonalComponent cmp = components[componentCount];
+
+					int sfIndex = br.read(6);
 
 					cmp.pos = b * 64 + br.read(6);
 

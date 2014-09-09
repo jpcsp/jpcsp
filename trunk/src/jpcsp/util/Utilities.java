@@ -853,8 +853,52 @@ public class Utilities {
         return Integer.numberOfTrailingZeros(makePow2(n));
     }
 
+    public static void copy(boolean[] to, boolean[] from) {
+        arraycopy(from, 0, to, 0, to.length);
+    }
+
+    public static void copy(int[] to, int[] from) {
+        arraycopy(from, 0, to, 0, to.length);
+    }
+
+    public static void copy(int[][] to, int[][] from) {
+    	for (int i = 0; i < to.length; i++) {
+    		copy(to[i], from[i]);
+    	}
+    }
+
+    public static void copy(int[][][] to, int[][][] from) {
+    	for (int i = 0; i < to.length; i++) {
+    		copy(to[i], from[i]);
+    	}
+    }
+
+    public static void copy(int[][][][] to, int[][][][] from) {
+    	for (int i = 0; i < to.length; i++) {
+    		copy(to[i], from[i]);
+    	}
+    }
+
     public static void copy(float[] to, float[] from) {
         arraycopy(from, 0, to, 0, to.length);
+    }
+
+    public static void copy(float[][] to, float[][] from) {
+    	for (int i = 0; i < to.length; i++) {
+    		copy(to[i], from[i]);
+    	}
+    }
+
+    public static void copy(float[][][] to, float[][][] from) {
+    	for (int i = 0; i < to.length; i++) {
+    		copy(to[i], from[i]);
+    	}
+    }
+
+    public static void copy(float[][][][] to, float[][][][] from) {
+    	for (int i = 0; i < to.length; i++) {
+    		copy(to[i], from[i]);
+    	}
     }
 
     public static float dot3(float[] a, float[] b) {
@@ -1102,5 +1146,16 @@ public class Utilities {
     public static int signExtend(int value, int bits) {
     	int shift = Integer.SIZE - bits;
     	return (value << shift) >> shift;
+    }
+
+    public static int clip(int value, int min, int max) {
+    	if (value < min) {
+    		return min;
+    	}
+    	if (value > max) {
+    		return max;
+    	}
+
+    	return value;
     }
 }
