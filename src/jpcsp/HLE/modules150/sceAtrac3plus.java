@@ -139,6 +139,7 @@ public class sceAtrac3plus extends HLEModule {
         protected int codecType;
         protected AtracCodec atracCodec;
         protected ICodec codec;
+        protected boolean codecInitialized;
         // Context (used only from firmware 6.00)
         protected SysMemInfo atracContext;
         protected SysMemInfo internalBuffer;
@@ -829,6 +830,18 @@ public class sceAtrac3plus extends HLEModule {
 
 		public void setCodec(ICodec codec) {
 			this.codec = codec;
+		}
+
+		public boolean isCodecInitialized() {
+			return codecInitialized;
+		}
+
+		public void setCodecInitialized(boolean codecInitialized) {
+			this.codecInitialized = codecInitialized;
+		}
+
+		public void setCodecInitialized() {
+			setCodecInitialized(true);
 		}
     }
 
