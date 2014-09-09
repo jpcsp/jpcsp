@@ -249,6 +249,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         if (id.getCodec() != null) {
         	// TODO How to find out the codingMode for AT3 audio? Assume STEREO, not JOINT_STEREO
     		result = id.getCodec().init(sourceBufferLength, numberOfChannels, outputChannels, 0);
+    		id.setCodecInitialized();
     	}
 
         return result;
