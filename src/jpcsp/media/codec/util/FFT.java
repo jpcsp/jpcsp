@@ -21,6 +21,7 @@ import static java.lang.Math.cos;
 import static java.lang.Math.sin;
 import static java.lang.Math.sqrt;
 import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -41,6 +42,17 @@ public class FFT {
 	private static final float[] ff_cos_32  = new float[32 / 2];
 	private static final float[] ff_cos_64  = new float[64 / 2];
 	private static final float[] ff_cos_128 = new float[128 / 2];
+
+	public void copy(FFT that) {
+		nbits = that.nbits;
+		inverse = that.inverse;
+		Utilities.copy(revtab, that.revtab);
+		Utilities.copy(tmpBuf, that.tmpBuf);
+		mdctSize = that.mdctSize;
+		mdctBits = that.mdctBits;
+		Utilities.copy(tcos, that.tcos);
+		Utilities.copy(tsin, that.tsin);
+	}
 
 	private static void initFfCosTabs(float[] tab, int m) {
 		double freq = 2 * Math.PI / m;
