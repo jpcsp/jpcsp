@@ -36,4 +36,13 @@ public class SpectrumParameters {
 		bsAlterScale = that.bsAlterScale;
 		bsNoiseBands = that.bsNoiseBands;
 	}
+
+	public void reset() {
+		bsStartFreq  = -1;
+		bsStopFreq   = -1;
+		bsXoverBand  = -1;
+		bsFreqScale  = -1;
+		bsAlterScale = -1;
+		bsNoiseBands = -1;
+	}
 }

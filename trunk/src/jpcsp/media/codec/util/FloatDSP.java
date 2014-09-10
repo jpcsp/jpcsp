@@ -64,11 +64,11 @@ public class FloatDSP {
 		}
 	}
 
-	public static void butterflies(float[] v1, float[] v2, int len) {
+	public static void butterflies(float[] v1, int v1Offset, float[] v2, int v2Offset, int len) {
 		for (int i = 0; i < len; i++) {
-			float t = v1[i] - v2[i];
-			v1[i] += v2[i];
-			v2[i] = t;
+			float t = v1[v1Offset + i] - v2[v2Offset + i];
+			v1[v1Offset + i] += v2[v2Offset + i];
+			v2[v2Offset + i] = t;
 		}
 	}
 }

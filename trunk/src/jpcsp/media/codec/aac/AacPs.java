@@ -18,12 +18,12 @@ package jpcsp.media.codec.aac;
 
 import org.apache.log4j.Logger;
 
-public class AACSBR {
+public class AacPs {
 	private static Logger log = AacDecoder.log;
 
-	public static int decodeSbrExtension(Context ac, SpectralBandReplication sbr, boolean crc, int cnt, int idAac) {
-		log.warn("Unimplemented decodeSbrExtension");
+	public static int readData(Context ac, PSContext ps, int bitsLeft) {
+		log.warn("AacPs.readData not implemented");
 		// TODO
-		return 0;
+		return bitsLeft;
 	}
 }

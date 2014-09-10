@@ -25,7 +25,7 @@ import jpcsp.util.Utilities;
 public class SpectralBandReplication {
 	int sampleRate;
 	int start;
-	int reset;
+	boolean reset;
 	SpectrumParameters spectrumParams = new SpectrumParameters();
 	int bsAmpResHeader;
 	int bsLimiterBands;
@@ -39,7 +39,7 @@ public class SpectralBandReplication {
 	int kx[] = new int[2];
 	///M' and M respectively, M is the number of QMF subbands that use SBR.
 	int m[] = new int[2];
-	int kxAndMPushed;
+	boolean kxAndMPushed;
 	///The number of frequency bands in f_master
 	int nMaster;
 	SBRData data[] = new SBRData[2];

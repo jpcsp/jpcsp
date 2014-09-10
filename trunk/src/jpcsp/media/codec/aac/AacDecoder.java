@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.media.codec.aac;
 
+import static java.lang.Math.pow;
 import static jpcsp.media.codec.aac.AacTab.POW_SF2_ZERO;
 import static jpcsp.media.codec.aac.AacTab.ff_aac_num_swb_1024;
 import static jpcsp.media.codec.aac.AacTab.ff_aac_num_swb_128;
@@ -38,6 +39,7 @@ import static jpcsp.media.codec.aac.OutputConfiguration.OC_NONE;
 import static jpcsp.media.codec.aac.OutputConfiguration.OC_TRIAL_FRAME;
 import static jpcsp.media.codec.aac.OutputConfiguration.OC_TRIAL_PCE;
 
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +47,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.util.BitReader;
+import jpcsp.media.codec.util.FloatDSP;
 import jpcsp.media.codec.util.VLC;
 import jpcsp.util.Utilities;
 
@@ -75,6 +78,8 @@ public class AacDecoder implements ICodec {
 	public static final int CH_FRONT_LEFT_OF_CENTER     = 0x040;
 	public static final int CH_FRONT_RIGHT_OF_CENTER    = 0x080;
 	public static final int CH_BACK_CENTER              = 0x100;
+	public static final int CH_SIDE_LEFT                = 0x200;
+	public static final int CH_SIDE_RIGHT               = 0x400;
 	public static final int CH_LAYOUT_MONO              = CH_FRONT_CENTER;
 	public static final int CH_LAYOUT_STEREO            = CH_FRONT_LEFT          | CH_FRONT_RIGHT;
 	public static final int CH_LAYOUT_SURROUND          = CH_LAYOUT_STEREO       | CH_FRONT_CENTER;
@@ -103,7 +108,7 @@ public class AacDecoder implements ICodec {
 	public static final int AOT_ER_AAC_LTP    = 19;
 	public static final int AOT_ER_AAC_LD     = 23;
 	public static final int AOT_ER_AAC_ELD    = 39;
-	// Window Sequence
+	// Window Sequences
 	public static final int ONLY_LONG_SEQUENCE   = 0;
 	public static final int LONG_START_SEQUENCE  = 1;
 	public static final int EIGHT_SHORT_SEQUENCE = 2;
@@ -115,12 +120,40 @@ public class AacDecoder implements ICodec {
 	public static final int NOISE_BT       = 13;    ///< Spectral data are scaled white noise not coded in the bitstream.
 	public static final int INTENSITY_BT2  = 14;    ///< Scalefactor data are intensity stereo positions.
 	public static final int INTENSITY_BT   = 15;    ///< Scalefactor data are intensity stereo positions.
+	// Coupling Points
+	public static final int BEFORE_TNS            = 0;
+	public static final int BETWEEN_TNS_AND_IMDCT = 1;
+	public static final int AFTER_IMDCT           = 3;
 
 	private static VLC vlc_scalefactors;
 	private static VLC vlc_spectral[] = new VLC[11];
 
 	private Context ac;
 	private BitReader br;
+
+	private static class ElemToChannel {
+		int avPosition;
+		int synEle;
+		int elemId;
+		int aacPosition;
+
+		public ElemToChannel() {
+		}
+
+		public ElemToChannel(int avPosition, int synEle, int elemId, int aacPosition) {
+			this.avPosition = avPosition;
+			this.synEle = synEle;
+			this.elemId = elemId;
+			this.aacPosition = aacPosition;
+		}
+
+		public void copy(ElemToChannel that) {
+			avPosition  = that.avPosition;
+			synEle      = that.synEle;
+			elemId      = that.elemId;
+			aacPosition = that.aacPosition;
+		}
+	}
 
 	/* @name ltp_coef
 	 * Table of the LTP coefficients
@@ -166,7 +199,7 @@ public class AacDecoder implements ICodec {
 	// @}
 	public static final int tags_per_config[] = { 0, 1, 1, 2, 3, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-	public static final int aac_channel_layout_map[][][] = {
+	public static final int aac_channel_layoutMap[][][] = {
 	    { { TYPE_SCE, 0, AAC_CHANNEL_FRONT }, },
 	    { { TYPE_CPE, 0, AAC_CHANNEL_FRONT }, },
 	    { { TYPE_SCE, 0, AAC_CHANNEL_FRONT }, { TYPE_CPE, 0, AAC_CHANNEL_FRONT }, },
@@ -185,6 +218,15 @@ public class AacDecoder implements ICodec {
 	    CH_LAYOUT_5POINT1_BACK,
 	    CH_LAYOUT_7POINT1_WIDE_BACK,
 	    0
+	};
+
+	private static final double M_SQRT2 = 1.41421356237309504880;
+
+	private static final float cce_scale[] = {
+	    1.09050773266525765921f, //2^(1/8)
+	    1.18920711500272106672f, //2^(1/4)
+	    (float) M_SQRT2,
+	    2f,
 	};
 
 	@Override
@@ -219,7 +261,7 @@ public class AacDecoder implements ICodec {
 
 		tags[0] = tags_per_config[channelConfig];
 		for (int i = 0; i < tags[0]; i++) {
-			Utilities.copy(layoutMap[i], aac_channel_layout_map[channelConfig - 1][i]);
+			Utilities.copy(layoutMap[i], aac_channel_layoutMap[channelConfig - 1][i]);
 		}
 
 		return 0;
@@ -640,8 +682,29 @@ public class AacDecoder implements ICodec {
 	 * Decode pulse data; reference: table 4.7.
 	 */
 	private int decodePulses(Pulse pulse, int swbOffset[], int numSwb) {
-		log.warn("Unimplemented decodePulses");
-		// TODO
+		pulse.numPulse = br.read(2) + 1;
+		int pulseSwb   = br.read(6);
+		if (pulseSwb >= numSwb) {
+			return -1;
+		}
+
+		pulse.pos[0]  = swbOffset[pulseSwb];
+		pulse.pos[0] += br.read(5);
+
+		if (pulse.pos[0] >= swbOffset[numSwb]) {
+			return -1;
+		}
+
+		pulse.amp[0] = br.read(4);
+
+		for (int i = 1; i < pulse.numPulse; i++) {
+			pulse.pos[i] = br.read(5) + pulse.pos[i - 1];
+			if (pulse.pos[i] >= swbOffset[numSwb]) {
+				return -1;
+			}
+			pulse.amp[i] = br.read(4);
+		}
+
 		return 0;
 	}
 
@@ -651,8 +714,38 @@ public class AacDecoder implements ICodec {
 	 * @return  Returns error status. 0 - OK, !0 - error
 	 */
 	private int decodeTns(TemporalNoiseShaping tns, IndividualChannelStream ics) {
-		log.warn("Unimplemented decodeTns");
-		// TODO
+		final int is8 = ics.windowSequence[0] == EIGHT_SHORT_SEQUENCE ? 1 : 0;
+		final int tnsMaxOrder = is8 != 0 ? 7 : ac.oc[1].m4ac.objectType == AOT_AAC_MAIN ? 20 : 12;
+
+		for (int w = 0; w < ics.numWindows; w++) {
+			tns.nFilt[w] = br.read(2 - is8);
+			if (tns.nFilt[w] != 0) {
+				int coefRes = br.read1();
+
+				for (int filt = 0; filt < tns.nFilt[w]; filt++) {
+					tns.length[w][filt] = br.read(6 - 2 * is8);
+					tns.order[w][filt] = br.read(5 - 2 * is8);
+
+					if (tns.order[w][filt] > tnsMaxOrder) {
+						log.error(String.format("TNS filter order %d is greater than maximum %d", tns.order[w][filt], tnsMaxOrder));
+						tns.order[w][filt] = 0;
+						return AAC_ERROR;
+					}
+
+					if (tns.order[w][filt] > 0) {
+						tns.direction[w][filt] = br.read1();
+						int coefCompress = br.read1();
+						int coefLen = coefRes + 3 - coefCompress;
+						int tmp2Idx = 2 * coefCompress + coefRes;
+
+						for (int i = 0; i < tns.order[w][filt]; i++) {
+							tns.coef[w][filt][i] = tns_tmp2_map[tmp2Idx][br.read(coefLen)];
+						}
+					}
+				}
+			}
+		}
+
 		return 0;
 	}
 
@@ -775,7 +868,7 @@ public class AacDecoder implements ICodec {
 	 *
 	 * @return  Returns error status. 0 - OK, !0 - error
 	 */
-	private int decodeIcs(SingleChannelElement sce, int commonWindow, int scaleFlag) {
+	private int decodeIcs(SingleChannelElement sce, boolean commonWindow, boolean scaleFlag) {
 		int ret;
 	    Pulse pulse = new Pulse();
 	    TemporalNoiseShaping    tns = sce.tns;
@@ -790,7 +883,7 @@ public class AacDecoder implements ICodec {
 
 	    int globalGain = br.read(8);
 
-	    if (commonWindow == 0 && scaleFlag == 0) {
+	    if (!commonWindow && !scaleFlag) {
 	    	if (decodeIcsInfo(ics) < 0) {
 	    		return AAC_ERROR;
 	    	}
@@ -807,7 +900,7 @@ public class AacDecoder implements ICodec {
 	    }
 
 	    boolean pulsePresent = false;
-	    if (scaleFlag == 0) {
+	    if (!scaleFlag) {
 	    	if (!eldSyntax && (pulsePresent = br.readBool())) {
 	    		if (ics.windowSequence[0] == EIGHT_SHORT_SEQUENCE) {
 	    			log.error(String.format("Pulse tool not allowed in eight short sequence"));
@@ -840,11 +933,45 @@ public class AacDecoder implements ICodec {
 	    	return AAC_ERROR;
 	    }
 
-	    if (ac.oc[1].m4ac.objectType == AOT_AAC_MAIN && commonWindow == 0) {
+	    if (ac.oc[1].m4ac.objectType == AOT_AAC_MAIN && !commonWindow) {
 	    	applyPrediction(sce);
 	    }
 
 	    return 0;
+	}
+
+	/**
+	 * Decode an array of 4 bit element IDs, optionally interleaved with a
+	 * stereo/mono switching bit.
+	 *
+	 * @param type speaker type/position for these channels
+	 */
+	private void decodeChannelMap(int[][] layoutMap, int layoutMapOffset, int type, int n) {
+		while (n-- != 0) {
+			int synEle;
+			switch (type) {
+		        case AAC_CHANNEL_FRONT:
+		        case AAC_CHANNEL_BACK:
+		        case AAC_CHANNEL_SIDE:
+		            synEle = br.read1();
+		            break;
+		        case AAC_CHANNEL_CC:
+		            br.skip(1);
+		            synEle = TYPE_CCE;
+		            break;
+		        case AAC_CHANNEL_LFE:
+		            synEle = TYPE_LFE;
+		            break;
+		        default:
+		        	log.error(String.format("decodeChannelMap invalid type %d", type));
+		        	return;
+			}
+
+			layoutMap[layoutMapOffset][0] = synEle;
+			layoutMap[layoutMapOffset][1] = br.read(4);
+			layoutMap[layoutMapOffset][2] = type;
+			layoutMapOffset++;
+		}
 	}
 
 	/**
@@ -853,9 +980,61 @@ public class AacDecoder implements ICodec {
 	 * @return  Returns error status. 0 - OK, !0 - error
 	 */
 	private int decodePce(MPEG4AudioConfig m4ac, int[][] layoutMap) {
-		log.warn("Unimplemented decodePce");
-		// TODO
-		return 0;
+		br.skip(2); // object_type
+
+		int samplingIndex = br.read(4);
+		if (m4ac.samplingIndex != samplingIndex) {
+			log.warn(String.format("Sample rate index in program config element does not match the sample rate index configured by the container"));
+		}
+
+		int numFront     = br.read(4);
+		int numSide      = br.read(4);
+		int numBack      = br.read(4);
+		int numLfe       = br.read(2);
+		int numAssocData = br.read(3);
+		int numCc        = br.read(4);
+
+		if (br.readBool()) {
+			br.skip(4); // mono_mixdown_tag
+		}
+		if (br.readBool()) {
+			br.skip(4); // stereo_mixdown_tag
+		}
+
+		if (br.readBool()) {
+			br.skip(3); // mixdown_coeff_index and pseudo_surround
+		}
+
+		if (br.getBitsLeft() < 4 * (numFront + numSide + numBack + numLfe + numAssocData + numCc)) {
+			log.error(String.format("decode_pce: overread error"));
+			return AAC_ERROR;
+		}
+
+		decodeChannelMap(layoutMap,    0, AAC_CHANNEL_FRONT, numFront);
+		int tags = numFront;
+		decodeChannelMap(layoutMap, tags, AAC_CHANNEL_SIDE , numSide );
+		tags += numSide;
+		decodeChannelMap(layoutMap, tags, AAC_CHANNEL_BACK , numBack );
+		tags += numBack;
+		decodeChannelMap(layoutMap, tags, AAC_CHANNEL_LFE  , numLfe  );
+		tags += numLfe;
+
+		br.skip(4 * numAssocData);
+
+		decodeChannelMap(layoutMap, tags, AAC_CHANNEL_CC   , numCc   );
+		tags += numCc;
+
+		br.byteAlign();
+
+		// comment field, first byte is length
+		int commentLen = br.read(8) * 8;
+		if (br.getBitsLeft() < commentLen) {
+			log.error(String.format("decode_pce: overread error"));
+			return AAC_ERROR;
+		}
+		br.skip(commentLen);
+
+		return tags;
 	}
 
 	/**
@@ -880,10 +1059,174 @@ public class AacDecoder implements ICodec {
 		}
 	}
 
+	private int assignPair(ElemToChannel e2cVec[], int layoutMap[][], int offset, int left, int right, int pos) {
+		if (layoutMap[offset][0] == TYPE_CPE) {
+			e2cVec[offset] = new ElemToChannel(left | right, TYPE_CPE, layoutMap[offset][1], pos);
+			return 1;
+		}
+
+		e2cVec[offset    ] = new ElemToChannel(left , TYPE_SCE, layoutMap[offset    ][1], pos);
+		e2cVec[offset + 1] = new ElemToChannel(right, TYPE_SCE, layoutMap[offset + 1][1], pos);
+
+		return 2;
+	}
+
+	private int countPairedChannels(int layoutMap[][], int tags, int pos, int[] current) {
+		int numPosChannels = 0;
+		boolean firstCpe = false;
+		boolean sceParity = false;
+		int i;
+		for (i = current[0]; i < tags; i++) {
+			if (layoutMap[i][2] != pos) {
+				break;
+			}
+			if (layoutMap[i][0] == TYPE_CPE) {
+				if (sceParity) {
+					if (pos == AAC_CHANNEL_FRONT && !firstCpe) {
+						sceParity = false;
+					} else {
+						return -1;
+					}
+				}
+				numPosChannels += 2;
+				firstCpe = true;
+			} else {
+				numPosChannels++;
+				sceParity = !sceParity;
+			}
+		}
+
+		if (sceParity && ((pos == AAC_CHANNEL_FRONT && firstCpe) || pos == AAC_CHANNEL_SIDE)) {
+			return -1;
+		}
+
+		current[0] = i;
+
+		return numPosChannels;
+	}
+
 	private int sniffChannelOrder(int[][] layoutMap, int tags) {
-		log.warn("Unimplemented sniffChannelOrder");
-		// TODO
-		return 0;
+		ElemToChannel e2cVec[] = new ElemToChannel[4 * MAX_ELEM_ID];
+
+		if (e2cVec.length < tags) {
+			return 0;
+		}
+
+		int ii[] = new int[1];
+		ii[0] = 0;
+		int numFrontChannels = countPairedChannels(layoutMap, tags, AAC_CHANNEL_FRONT, ii);
+		if (numFrontChannels < 0) {
+			return 0;
+		}
+		int numSideChannels = countPairedChannels(layoutMap, tags, AAC_CHANNEL_SIDE, ii);
+		if (numSideChannels < 0) {
+			return 0;
+		}
+		int numBackChannels = countPairedChannels(layoutMap, tags, AAC_CHANNEL_BACK, ii);
+		if (numBackChannels < 0) {
+			return 0;
+		}
+
+		int i = 0;
+		if ((numFrontChannels & 1) != 0) {
+			e2cVec[i] = new ElemToChannel(CH_FRONT_CENTER, TYPE_SCE, layoutMap[i][1], AAC_CHANNEL_FRONT);
+			i++;
+			numFrontChannels--;
+		}
+	    if (numFrontChannels >= 4) {
+	        i += assignPair(e2cVec, layoutMap, i,
+	                         CH_FRONT_LEFT_OF_CENTER,
+	                         CH_FRONT_RIGHT_OF_CENTER,
+	                         AAC_CHANNEL_FRONT);
+	        numFrontChannels -= 2;
+	    }
+	    if (numFrontChannels >= 2) {
+	        i += assignPair(e2cVec, layoutMap, i,
+	                         CH_FRONT_LEFT,
+	                         CH_FRONT_RIGHT,
+	                         AAC_CHANNEL_FRONT);
+	        numFrontChannels -= 2;
+	    }
+	    while (numFrontChannels >= 2) {
+	        i += assignPair(e2cVec, layoutMap, i,
+	                         Integer.MAX_VALUE,
+	                         Integer.MAX_VALUE,
+	                         AAC_CHANNEL_FRONT);
+	        numFrontChannels -= 2;
+	    }
+
+	    if (numSideChannels >= 2) {
+	        i += assignPair(e2cVec, layoutMap, i,
+	                         CH_SIDE_LEFT,
+	                         CH_SIDE_RIGHT,
+	                         AAC_CHANNEL_FRONT);
+	        numSideChannels -= 2;
+	    }
+	    while (numSideChannels >= 2) {
+	        i += assignPair(e2cVec, layoutMap, i,
+	        		         Integer.MAX_VALUE,
+	        		         Integer.MAX_VALUE,
+	                         AAC_CHANNEL_SIDE);
+	        numSideChannels -= 2;
+	    }
+
+	    while (numBackChannels >= 4) {
+	        i += assignPair(e2cVec, layoutMap, i,
+	        		         Integer.MAX_VALUE,
+	                         Integer.MAX_VALUE,
+	                         AAC_CHANNEL_BACK);
+	        numBackChannels -= 2;
+	    }
+	    if (numBackChannels >= 2) {
+	        i += assignPair(e2cVec, layoutMap, i,
+	                         CH_BACK_LEFT,
+	                         CH_BACK_RIGHT,
+	                         AAC_CHANNEL_BACK);
+	        numBackChannels -= 2;
+	    }
+	    if (numBackChannels > 0) {
+	        e2cVec[i] = new ElemToChannel(CH_BACK_CENTER, TYPE_SCE, layoutMap[i][1], AAC_CHANNEL_BACK);
+	        i++;
+	        numBackChannels--;
+	    }
+
+	    if (i < tags && layoutMap[i][2] == AAC_CHANNEL_LFE) {
+	        e2cVec[i] = new ElemToChannel(CH_LOW_FREQUENCY, TYPE_LFE, layoutMap[i][1], AAC_CHANNEL_LFE);
+	        i++;
+	    }
+	    while (i < tags && layoutMap[i][2] == AAC_CHANNEL_LFE) {
+	        e2cVec[i] = new ElemToChannel(Integer.MAX_VALUE, TYPE_LFE, layoutMap[i][1], AAC_CHANNEL_LFE);
+	        i++;
+	    }
+
+	    // Must choose a stable sort
+	    int totalNonCcElements = i;
+	    int n = i;
+	    ElemToChannel tmp = new ElemToChannel();
+	    do {
+	    	int nextN = 0;
+	    	for (i = 1; i < n; i++) {
+	    		if (e2cVec[i - 1].avPosition > e2cVec[i].avPosition) {
+	    			tmp.copy(e2cVec[i - 1]);
+	    			e2cVec[i - 2].copy(e2cVec[i]);
+	    			e2cVec[i].copy(tmp);
+	    			nextN = i;
+	    		}
+	    	}
+	    	n = nextN;
+	    } while (n > 0);
+
+	    int layout = 0;
+	    for (i = 0; i < totalNonCcElements; i++) {
+	    	layoutMap[i][0] = e2cVec[i].synEle;
+	    	layoutMap[i][1] = e2cVec[i].elemId;
+	    	layoutMap[i][2] = e2cVec[i].aacPosition;
+	    	if (e2cVec[i].avPosition != Integer.MAX_VALUE) {
+	    		layout |= e2cVec[i].avPosition;
+	    	}
+	    }
+
+	    return layout;
 	}
 
 	/**
@@ -899,8 +1242,32 @@ public class AacDecoder implements ICodec {
 	 * @return  Returns error status. 0 - OK, !0 - error
 	 */
 	private int cheConfigure(int chePos, int type, int id, int[] channels) {
-		log.warn("Unimplemented cheConfigure");
-		// TODO
+		if (channels[0] >= MAX_CHANNELS) {
+			return AAC_ERROR;
+		}
+
+		if (chePos != 0) {
+			if (ac.che[type][id] == null) {
+				ac.che[type][id] = new ChannelElement();
+				AacSbr.ctxInit(ac.che[type][id].sbr);
+			}
+			if (type != TYPE_CCE) {
+				if (channels[0] >= MAX_CHANNELS - ((type == TYPE_CPE || (type == TYPE_SCE && ac.oc[1].m4ac.ps == 1)) ? 1 : 0)) {
+					log.error(String.format("Too many channels"));
+					return AAC_ERROR;
+				}
+				ac.outputElement[channels[0]++] = ac.che[type][id].ch[0];
+				if (type == TYPE_CPE || (type == TYPE_SCE && ac.oc[1].m4ac.ps == 1)) {
+					ac.outputElement[channels[0]++] = ac.che[type][id].ch[1];
+				}
+			}
+		} else {
+			if (ac.che[type][id] != null) {
+				AacSbr.ctxClose(ac.che[type][id].sbr);
+				ac.che[type][id] = null;
+			}
+		}
+
 		return 0;
 	}
 
@@ -967,9 +1334,136 @@ public class AacDecoder implements ICodec {
 	 * @return  Returns error status. 0 - OK, !0 - error
 	 */
 	private int decodeCpe(ChannelElement cpe) {
-		log.warn("Unimplemented decodeCpe");
-		// TODO
+		int ret;
+		int msPresent = 0;
+		boolean eldSyntax = ac.oc[1].m4ac.objectType == AOT_ER_AAC_ELD;
+
+		boolean commonWindow = eldSyntax || br.readBool();
+		if (commonWindow) {
+			if (decodeIcsInfo(cpe.ch[0].ics) != 0) {
+				return AAC_ERROR;
+			}
+			boolean i = cpe.ch[1].ics.useKbWindow[0];
+			cpe.ch[1].ics.copy(cpe.ch[0].ics);
+			cpe.ch[1].ics.useKbWindow[1] = i;
+			if (cpe.ch[1].ics.predictorPresent && ac.oc[1].m4ac.objectType != AOT_AAC_MAIN) {
+				cpe.ch[1].ics.ltp.present = br.readBool();
+				if (cpe.ch[1].ics.ltp.present) {
+					decodeLtp(cpe.ch[1].ics.ltp, cpe.ch[1].ics.maxSfb);
+				}
+			}
+			msPresent = br.read(2);
+			if (msPresent == 3) {
+				log.error(String.format("ms_present = 3 is reserved"));
+				return AAC_ERROR;
+			}
+			if (msPresent != 0) {
+				decodeMidSideStereo(cpe, msPresent);
+			}
+		}
+
+		ret = decodeIcs(cpe.ch[0], commonWindow, false);
+		if (ret != 0) {
+			return ret;
+		}
+		ret = decodeIcs(cpe.ch[1], commonWindow, false);
+		if (ret != 0) {
+			return ret;
+		}
+
+		if (commonWindow) {
+			if (msPresent != 0) {
+				applyMidSideStereo(cpe);
+			}
+			if (ac.oc[1].m4ac.objectType == AOT_AAC_MAIN) {
+				applyPrediction(cpe.ch[0]);
+				applyPrediction(cpe.ch[1]);
+			}
+		}
+
+		applyIntensityStereo(cpe, msPresent);
+
 		return 0;
+	}
+
+	/**
+	 * Decode Mid/Side data; reference: table 4.54.
+	 *
+	 * @param   ms_present  Indicates mid/side stereo presence. [0] mask is all 0s;
+	 *                      [1] mask is decoded from bitstream; [2] mask is all 1s;
+	 *                      [3] reserved for scalable AAC
+	 */
+	private void decodeMidSideStereo(ChannelElement cpe, int msPresent) {
+		if (msPresent == 1) {
+			for (int idx = 0; idx < cpe.ch[0].ics.numWindowGroups * cpe.ch[0].ics.maxSfb; idx++) {
+				cpe.msMask[idx] = br.read1();
+			}
+		} else if (msPresent == 2) {
+			Arrays.fill(cpe.msMask, 0, cpe.ch[0].ics.numWindowGroups * cpe.ch[0].ics.maxSfb, 1);
+		}
+	}
+
+	/**
+	 * Mid/Side stereo decoding; reference: 4.6.8.1.3.
+	 */
+	private void applyMidSideStereo(ChannelElement cpe) {
+		final IndividualChannelStream ics = cpe.ch[0].ics;
+		int ch0 = 0;
+		int ch1 = 0;
+		int idx = 0;
+		final int offsets[] = ics.swbOffset;
+
+		for (int g = 0; g < ics.numWindowGroups; g++) {
+			for (int i = 0; i < ics.maxSfb; i++, idx++) {
+				if (cpe.msMask[idx] != 0 && cpe.ch[0].bandType[idx] < NOISE_BT && cpe.ch[1].bandType[idx] < NOISE_BT) {
+					for (int group = 0; group < ics.groupLen[g]; group++) {
+						FloatDSP.butterflies(cpe.ch[0].coeffs, ch0 + group * 128 + offsets[i], cpe.ch[1].coeffs, ch1 + group * 128 + offsets[i], offsets[i + 1] - offsets[i]);
+					}
+				}
+			}
+			ch0 += ics.groupLen[g] * 128;
+			ch1 += ics.groupLen[g] * 128;
+		}
+	}
+
+	/**
+	 * intensity stereo decoding; reference: 4.6.8.2.3
+	 *
+	 * @param   ms_present  Indicates mid/side stereo presence. [0] mask is all 0s;
+	 *                      [1] mask is decoded from bitstream; [2] mask is all 1s;
+	 *                      [3] reserved for scalable AAC
+	 */
+	private void applyIntensityStereo(ChannelElement cpe, int msPresent) {
+		final IndividualChannelStream ics = cpe.ch[1].ics;
+		final SingleChannelElement sce1 = cpe.ch[1];
+		int coef0 = 0;
+		int coef1 = 0;
+		final int offsets[] = ics.swbOffset;
+		int idx = 0;
+
+		for (int g = 0; g < ics.numWindowGroups; g++) {
+			for (int i = 0; i < ics.maxSfb; ) {
+				if (sce1.bandType[idx] == INTENSITY_BT || sce1.bandType[idx] == INTENSITY_BT2) {
+					final int btRunEnd = sce1.bandTypeRunEnd[idx];
+					for (; i < btRunEnd; i++, idx++) {
+						int c = -1 + 2 * (sce1.bandType[idx] - 14);
+						if (msPresent != 0) {
+							c *= 1 - 2 * cpe.msMask[idx];
+						}
+						float scale = c * sce1.sf[idx];
+						for (int group = 0; group < ics.groupLen[g]; group++) {
+							FloatDSP.vectorFmulScalar(cpe.ch[1].coeffs, coef1 + group * 128 + offsets[i], cpe.ch[0].coeffs, coef0 + group * 128 + offsets[i], scale, offsets[i + 1] - offsets[i]);
+						}
+					}
+				} else {
+					int btRunEnd = sce1.bandTypeRunEnd[idx];
+					idx += btRunEnd - i;
+					i = btRunEnd;
+				}
+			}
+			coef0 += ics.groupLen[g] * 128;
+			coef1 += ics.groupLen[g] * 128;
+		}
 	}
 
 	/**
@@ -978,8 +1472,73 @@ public class AacDecoder implements ICodec {
 	 * @return  Returns error status. 0 - OK, !0 - error
 	 */
 	private int decodeCce(ChannelElement che) {
-		log.warn("Unimplemented decodeCce");
-		// TODO
+		int numGain = 0;
+		SingleChannelElement sce = che.ch[0];
+		ChannelCoupling coup = che.coup;
+
+		coup.couplingPoint = 2 * br.read1();
+		coup.numCoupled = br.read(3);
+		for (int c = 0; c <= coup.numCoupled; c++) {
+			numGain++;
+			coup.type[c] = br.readBool() ? TYPE_CPE : TYPE_SCE;
+			coup.idSelect[c] = br.read(4);
+			if (coup.type[c] == TYPE_CPE) {
+				coup.chSelect[c] = br.read(2);
+				if (coup.chSelect[c] == 3) {
+					numGain++;
+				}
+			} else {
+				coup.chSelect[c] = 2;
+			}
+		}
+
+		coup.couplingPoint += (br.readBool() || (coup.couplingPoint >> 1) != 0) ? 1 : 0;
+
+		boolean sign = br.readBool();
+		float scale = cce_scale[br.read(2)];
+
+		int ret = decodeIcs(sce, false, false);
+		if (ret != 0) {
+			return ret;
+		}
+
+		for (int c = 0; c < numGain; c++) {
+			int idx = 0;
+			boolean cge = true;
+			int gain = 0;
+			float gainCache = 1f;
+			if (c != 0) {
+				cge = coup.couplingPoint == AFTER_IMDCT ? true : br.readBool();
+				gain = cge ? vlc_scalefactors.getVLC2(br, 3) - 60 : 0;
+				gainCache = (float) pow(scale, -gain);
+			}
+
+			if (coup.couplingPoint == AFTER_IMDCT) {
+				coup.gain[c][0] = gainCache;
+			} else {
+				for (int g = 0; g < sce.ics.numWindowGroups; g++) {
+					for (int sfb = 0; sfb < sce.ics.maxSfb; sfb++, idx++) {
+						if (sce.bandType[idx] != ZERO_BT) {
+							if (!cge) {
+								int t = vlc_scalefactors.getVLC2(br, 3) - 60;
+								if (t != 0) {
+									int s = 1;
+									gain += t;
+									t = gain;
+									if (sign) {
+										s -= 2 * (t & 0x1);
+										t >>= 1;
+									}
+									gainCache = (float) pow(scale, -t) * s;
+								}
+							}
+							coup.gain[c][idx] = gainCache;
+						}
+					}
+				}
+			}
+		}
+
 		return 0;
 	}
 
@@ -1133,7 +1692,7 @@ public class AacDecoder implements ICodec {
 				} else {
 					ac.oc[1].m4ac.sbr = 1;
 				}
-				res = AACSBR.decodeSbrExtension(ac, che.sbr, crcFlag, cnt, elemType);
+				res = AacSbr.decodeSbrExtension(ac, che.sbr, crcFlag, cnt, elemType);
 				break;
 			case EXT_DYNAMIC_RANGE:
 				res = decodeDynamicRange(ac.cheDrc);
@@ -1206,7 +1765,7 @@ public class AacDecoder implements ICodec {
 
 			switch (elemType) {
 				case TYPE_SCE:
-					err = decodeIcs(che.ch[0], 0, 0);
+					err = decodeIcs(che.ch[0], false, false);
 					audioFound = true;
 					sceCount++;
 					break;
@@ -1221,7 +1780,7 @@ public class AacDecoder implements ICodec {
 					break;
 
 				case TYPE_LFE:
-					err = decodeIcs(che.ch[0], 0, 0);
+					err = decodeIcs(che.ch[0], false, false);
 					audioFound = true;
 					break;
 
@@ -1308,6 +1867,12 @@ public class AacDecoder implements ICodec {
 		return 0;
 	}
 
+	private int decodeErFrame() {
+		log.warn("decodeErFrame not implemented");
+		// TODO
+		return 0;
+	}
+
 	@Override
 	public int decode(int inputAddr, int inputLength, int outputAddr) {
 		br = new BitReader(inputAddr, inputLength);
@@ -1315,11 +1880,19 @@ public class AacDecoder implements ICodec {
 
 		ac.dmonoMode = 0;
 
-		if (ac.oc[1].m4ac.objectType > 4) {
-			log.warn(String.format("Unimplemented AAC object type %d", ac.oc[1].m4ac.objectType));
+		int err;
+		switch (ac.oc[1].m4ac.objectType) {
+			case AOT_ER_AAC_LC:
+			case AOT_ER_AAC_LTP:
+			case AOT_ER_AAC_LD:
+			case AOT_ER_AAC_ELD:
+				err = decodeErFrame();
+				break;
+			default:
+				err = decodeFrameInt();
+				break;
 		}
 
-		int err = decodeFrameInt();
 		if (err < 0) {
 			return err;
 		}
@@ -1329,7 +1902,6 @@ public class AacDecoder implements ICodec {
 
 	@Override
 	public int getNumberOfSamples() {
-		// TODO Auto-generated method stub
-		return 0;
+		return ac.nbSamples;
 	}
 }

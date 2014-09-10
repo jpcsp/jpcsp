@@ -29,8 +29,8 @@ public class ChannelElement {
 	// shared
 	public SingleChannelElement ch[] = new SingleChannelElement[2];
 	// CCE specific
-	public ChannelCoupling coup;
-	public SpectralBandReplication sbr;
+	public ChannelCoupling coup = new ChannelCoupling();
+	public SpectralBandReplication sbr = new SpectralBandReplication();
 
 	public void copy(ChannelElement that) {
 		commonWindow = that.commonWindow;

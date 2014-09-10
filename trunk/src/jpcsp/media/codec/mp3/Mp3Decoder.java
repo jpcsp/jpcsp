@@ -694,7 +694,7 @@ public class Mp3Decoder implements ICodec {
     	} else if ((ctx.header.modeExt & MODE_EXT_MS_STEREO) != 0) {
     		// ms stereo ONLY
     		// NOTE: the 1/sqrt(2) normalization factor is included in the global gain
-    		FloatDSP.butterflies(g0.sbHybrid, g1.sbHybrid, 576);
+    		FloatDSP.butterflies(g0.sbHybrid, 0, g1.sbHybrid, 0, 576);
     	}
     }
 
