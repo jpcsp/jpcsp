@@ -389,6 +389,7 @@ public class FFT {
 		fft32(z, o + 192);
 		pass(z, o, ff_cos_128, 16);
 	}
+
 	public void fftCalcFloat(float[] z, int o) {
 		switch (nbits) {
 			case 2: fft4  (z, 0); break;

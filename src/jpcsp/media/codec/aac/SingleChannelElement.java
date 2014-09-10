@@ -23,9 +23,9 @@ import jpcsp.util.Utilities;
  * Single Channel Element - used for both SCE and LFE elements.
  */
 public class SingleChannelElement {
-	public IndividualChannelStream ics;
-	public TemporalNoiseShaping tns;
-	public Pulse pulse;
+	public IndividualChannelStream ics = new IndividualChannelStream();
+	public TemporalNoiseShaping tns = new TemporalNoiseShaping();
+	public Pulse pulse = new Pulse();
 	public int bandType[] = new int[128];           ///< band types
 	public int bandTypeRunEnd[] = new int[120];     ///< band type run end points
 	public float sf[] = new float[120];             ///< scalefactors

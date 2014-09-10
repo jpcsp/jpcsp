@@ -34,7 +34,7 @@ public class SBRData {
 	int bsAmpRes;
 
 	// State variables
-	float synthesiesFilterbankSamples[] = new float[SBR_SYNTHESIS_BUF_SIZE];
+	float synthesisFilterbankSamples[] = new float[SBR_SYNTHESIS_BUF_SIZE];
 	float analysisFilterbankSamples[] = new float[1312];
 	int synthesisFilterbankSamplesOffset;
     ///l_APrev and l_A
@@ -75,7 +75,7 @@ public class SBRData {
     	bsAmpRes = that.bsAmpRes;
 
     	// State variables
-    	Utilities.copy(synthesiesFilterbankSamples, that.synthesiesFilterbankSamples);
+    	Utilities.copy(synthesisFilterbankSamples, that.synthesisFilterbankSamples);
     	Utilities.copy(analysisFilterbankSamples, that.analysisFilterbankSamples);
     	synthesisFilterbankSamplesOffset = that.synthesisFilterbankSamplesOffset;
     	Utilities.copy(eA, that.eA);
