@@ -20,6 +20,7 @@ import static jpcsp.HLE.modules150.sceAtrac3plus.AT3_MAGIC;
 import static jpcsp.HLE.modules150.sceAtrac3plus.AT3_PLUS_MAGIC;
 import static jpcsp.HLE.modules150.sceAtrac3plus.FMT_CHUNK_MAGIC;
 import static jpcsp.HLE.modules150.sceAtrac3plus.RIFF_MAGIC;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AAC;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_MP3;
@@ -42,6 +43,7 @@ import org.apache.log4j.xml.DOMConfigurator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.modules.sceAtrac3plus;
+import jpcsp.HLE.modules.sceAudiocodec;
 import jpcsp.HLE.modules.sceMp3;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
@@ -50,7 +52,7 @@ import jpcsp.media.codec.mp3.Mp3Decoder;
 import jpcsp.media.codec.mp3.Mp3Header;
 import jpcsp.util.Utilities;
 
-public class Atrac3plusTest {
+public class CodecTest {
 	private static Logger log = Atrac3plusDecoder.log;
 
 	public static void main(String[] args) {
@@ -58,7 +60,7 @@ public class Atrac3plusTest {
 		Memory mem = Memory.getInstance();
 
 		try {
-			File file = new File("sample.mp3");
+			File file = new File("sample.aac");
 			log.info(String.format("Reading file %s", file));
 			int length = (int) file.length();
 			InputStream in = new FileInputStream(file);
@@ -117,6 +119,8 @@ public class Atrac3plusTest {
 					dataOffset = mp3Header.frameSize;
 				}
 				codecType = PSP_CODEC_MP3;
+			} else if ((Utilities.endianSwap16(mem.read16(inputAddr)) & 0xFFF0) == 0xFFF0) {
+				codecType = PSP_CODEC_AAC;
 			} else {
 				log.error(String.format("File '%s' not in RIFF format", file));
 				return;
@@ -160,7 +164,7 @@ public class Atrac3plusTest {
 				inputAddr += consumedBytes;
 				length -= consumedBytes;
 
-				byte bytes[] = new byte[codec.getNumberOfSamples() * 4];
+				byte bytes[] = new byte[codec.getNumberOfSamples() * 2 * channels];
 				for (int i = 0; i < bytes.length; i++) {
 					bytes[i] = (byte) mem.read8(samplesAddr + i);
 				}

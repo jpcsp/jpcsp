@@ -29,27 +29,27 @@ public class PSContext {
 	public static final int PS_AP_LINKS = 3;
 	public static final int PS_MAX_AP_DELAY = 5;
 
-	public int start;
-	int enableIid;
+	public boolean start;
+	boolean enableIid;
 	int iidQuant;
 	int nrIidPar;
 	int nrIpdopdPar;
-	int enableIcc;
+	boolean enableIcc;
 	int iccMode;
 	int nrIccPar;
-	int enableExt;
+	boolean enableExt;
 	int frameClass;
 	int numEnvOld;
 	int numEnv;
-	int enableIpdopd;
+	boolean enableIpdopd;
 	int borderPosition[] = new int[PS_MAX_NUM_ENV + 1];
 	int iidPar[][] = new int[PS_MAX_NUM_ENV][PS_MAX_NR_IIDICC]; ///< Inter-channel Intensity Difference Parameters
 	int iccPar[][] = new int[PS_MAX_NUM_ENV][PS_MAX_NR_IIDICC]; ///< Inter-Channel Coherence Parameters
 	// ipd/opd is iid/icc sized so that the same functions can handle both
 	int ipdPar[][] = new int[PS_MAX_NUM_ENV][PS_MAX_NR_IIDICC]; ///< Inter-channel Phase Difference Parameters
 	int opdPar[][] = new int[PS_MAX_NUM_ENV][PS_MAX_NR_IIDICC]; ///< Overall Phase Difference Parameters
-	int is34bands;
-	int is34bandsOld;
+	boolean is34bands;
+	boolean is34bandsOld;
 
 	float inBuf[][][] = new float[5][44][2];
 	float delay[][][] = new float[PS_MAX_SSB][PS_QMF_TIME_SLOTS + PS_MAX_DELAY][2];

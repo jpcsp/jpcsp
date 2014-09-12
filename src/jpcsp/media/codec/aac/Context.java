@@ -19,14 +19,16 @@ package jpcsp.media.codec.aac;
 import static jpcsp.media.codec.aac.AacDecoder.MAX_CHANNELS;
 import static jpcsp.media.codec.aac.AacDecoder.MAX_ELEM_ID;
 import jpcsp.media.codec.util.BitReader;
+import jpcsp.media.codec.util.FFT;
 
 public class Context {
 	public BitReader br;
-	public int dmonoMode;
 	public int frameSize;
 	public int channels;
 	public int skipSamples;
 	public int nbSamples;
+	public int randomState;
+	public int sampleRate;
 
 	boolean isSaved; ///< Set if elements have stored overlap from previous frame
 	DynamicRangeControl cheDrc = new DynamicRangeControl();
@@ -36,8 +38,19 @@ public class Context {
 	ChannelElement tagCheMap[][] = new ChannelElement[4][MAX_ELEM_ID];
 	public int tagsMapped;
 
+	public float bufMdct[] = new float[1024];
+
+	FFT mdct;
+	FFT mdctSmall;
+	FFT mdctLd;
+	FFT mdctLtp;
+
 	// Members user for output
 	SingleChannelElement outputElement[] = new SingleChannelElement[MAX_CHANNELS]; ///< Points to each SingleChannelElement
+
+	public int dmonoMode;
+
+	public float temp[] = new float[128];
 
 	public OutputConfiguration oc[] = new OutputConfiguration[2];
 	public float samples[][] = new float[2][2048];

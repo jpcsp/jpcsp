@@ -32,6 +32,12 @@ public class ChannelElement {
 	public ChannelCoupling coup = new ChannelCoupling();
 	public SpectralBandReplication sbr = new SpectralBandReplication();
 
+	public ChannelElement() {
+		for (int i = 0; i < ch.length; i++) {
+			ch[i] = new SingleChannelElement();
+		}
+	}
+
 	public void copy(ChannelElement that) {
 		commonWindow = that.commonWindow;
 		msMode = that.msMode;

@@ -24,15 +24,15 @@ import jpcsp.util.Utilities;
  */
 public class SpectralBandReplication {
 	int sampleRate;
-	int start;
+	boolean start;
 	boolean reset;
 	SpectrumParameters spectrumParams = new SpectrumParameters();
-	int bsAmpResHeader;
+	boolean bsAmpResHeader;
 	int bsLimiterBands;
 	int bsLimiterGains;
-	int bsInterpolFreq;
-	int bsSmoothingMode;
-	int bsCoupling;
+	boolean bsInterpolFreq;
+	boolean bsSmoothingMode;
+	boolean bsCoupling;
 	int k[] = new int[5]; ///< k0, k1, k2
 	///kx', and kx respectively, kx is the first QMF subband where SBR is used.
 	///kx' is its value from the previous frame
@@ -43,7 +43,7 @@ public class SpectralBandReplication {
 	///The number of frequency bands in f_master
 	int nMaster;
 	SBRData data[] = new SBRData[2];
-	PSContext ps;
+	PSContext ps = new PSContext();
 	///N_Low and N_High respectively, the number of frequency bands for low and high resolution
 	int n[] = new int[2];
 	///Number of noise floor bands
@@ -86,9 +86,15 @@ public class SpectralBandReplication {
     ///Sinusoidal levels
     float sM[][] = new float[7][48];
     float gain[][] = new float [7][48];
-    float qmfFilterScratch[][] = new float[5][64];
-    FFT mdctAna;
-    FFT mdct;
+    float qmfFilterScratch[] = new float[5 * 64]; // originally: float[5][64]
+    FFT mdctAna = new FFT();
+    FFT mdct = new FFT();
+
+    public SpectralBandReplication() {
+    	for (int i = 0; i < data.length; i++) {
+    		data[i] = new SBRData();
+    	}
+    }
 
     public void copy(SpectralBandReplication that) {
     	sampleRate = that.sampleRate;

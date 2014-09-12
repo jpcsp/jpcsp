@@ -41,13 +41,6 @@ public class Atrac3plusDecoder implements ICodec {
 	public static final int ATRAC3P_PQF_FIR_LEN = 12;      ///< length of the prototype FIR of the PQF
 	private Context ctx;
 
-	public static int avLog2(int n) {
-		if (n == 0) {
-			return 0;
-		}
-		return 31 - Integer.numberOfLeadingZeros(n);
-	}
-
 	@Override
 	public int init(int bytesPerFrame, int channels, int outputChannels, int codingMode) {
 		ChannelUnit.init();

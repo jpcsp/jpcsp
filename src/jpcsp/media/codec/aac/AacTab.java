@@ -19,8 +19,8 @@ package jpcsp.media.codec.aac;
 import static java.lang.Math.pow;
 
 public class AacTab {
-	float ff_aac_kbd_long_1024[] = new float[1024];
-	float ff_aac_kbd_short_128[] = new float[128];
+	public static final float ff_aac_kbd_long_1024[] = new float[1024];
+	public static final float ff_aac_kbd_short_128[] = new float[128];
 
 	public static final int ff_aac_num_swb_1024[] = {
 	    41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40, 40
@@ -1717,9 +1717,18 @@ public class AacTab {
 	public static final int POW_SF2_ZERO = 200; ///< ff_aac_pow2sf_tab index corresponding to pow(2, 0);
 	public static float ff_aac_pow2sf_tab[] = new float[428];
 
+	public static final int cbrt_tab[] = new int[1 << 13];
+
 	public static void tableinit() {
 		for (int i = 0; i < 428; i++) {
 			ff_aac_pow2sf_tab[i] = (float) pow(2.0, (i - POW_SF2_ZERO) / 4.0);
+		}
+
+		if (cbrt_tab[cbrt_tab.length - 1] == 0) {
+			for (int i = 0; i < cbrt_tab.length; i++) {
+				float f = (float) Math.pow(i, 1.0 / 3.0) * i;
+				cbrt_tab[i] = Float.floatToRawIntBits(f);
+			}
 		}
 	}
 }
