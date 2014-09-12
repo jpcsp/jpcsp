@@ -26,7 +26,7 @@ public class TemporalNoiseShaping {
 	public boolean present;
 	public int nFilt[] = new int[8];
 	public int length[][] = new int[8][4];
-	public int direction[][] = new int[8][4];
+	public boolean direction[][] = new boolean[8][4];
 	public int order[][] = new int[8][4];
 	public float coef[][][] = new float[8][4][TNS_MAX_ORDER];
 

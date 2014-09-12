@@ -45,4 +45,34 @@ public class SpectrumParameters {
 		bsAlterScale = -1;
 		bsNoiseBands = -1;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof SpectrumParameters) {
+			SpectrumParameters that = (SpectrumParameters) obj;
+
+			if (bsStartFreq != that.bsStartFreq) {
+				return false;
+			}
+			if (bsStopFreq != that.bsStopFreq) {
+				return false;
+			}
+			if (bsXoverBand != that.bsXoverBand) {
+				return false;
+			}
+			if (bsFreqScale != that.bsFreqScale) {
+				return false;
+			}
+			if (bsAlterScale != that.bsAlterScale) {
+				return false;
+			}
+			if (bsNoiseBands != that.bsNoiseBands) {
+				return false;
+			}
+
+			return true;
+		}
+
+		return super.equals(obj);
+	}
 }

@@ -23,7 +23,7 @@ public class SBRData {
 
 	// Main bitstream data variables
 	int bsFrameClass;
-	int bsAddHarmonicFlag;
+	boolean bsAddHarmonicFlag;
 	int bsNumEnv;
 	int bsFreqRes[] = new int[7];
 	int bsNumNoise;
@@ -31,7 +31,7 @@ public class SBRData {
 	int bsDfNoise[] = new int[2];
 	int bsInvfMode[][] = new int[2][5];
 	int bsAddHarmonic[] = new int[48];
-	int bsAmpRes;
+	boolean bsAmpRes;
 
 	// State variables
 	float synthesisFilterbankSamples[] = new float[SBR_SYNTHESIS_BUF_SIZE];

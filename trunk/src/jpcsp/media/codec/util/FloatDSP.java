@@ -71,4 +71,14 @@ public class FloatDSP {
 			v2[v2Offset + i] = t;
 		}
 	}
+
+	public static float scalarproduct(float[] v1, int v1Offset, float[] v2, int v2Offset, int len) {
+		float p = 0f;
+
+		for (int i = 0; i < len; i++) {
+			p += v1[v1Offset + i] * v2[v2Offset + i];
+		}
+
+		return p;
+	}
 }

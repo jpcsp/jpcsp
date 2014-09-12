@@ -30,10 +30,10 @@ import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_POWER_COMP_
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBANDS;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBAND_SAMPLES;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.CH_UNIT_STEREO;
-import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.avLog2;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDsp.ff_atrac3p_mant_tab;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDsp.ff_atrac3p_qu_to_spec_pos;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDsp.ff_atrac3p_sf_tab;
+import static jpcsp.media.codec.util.CodecUtils.avLog2;
 import static jpcsp.util.Utilities.signExtend;
 
 import java.util.Arrays;

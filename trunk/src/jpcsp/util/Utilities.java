@@ -30,6 +30,7 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -857,6 +858,12 @@ public class Utilities {
         arraycopy(from, 0, to, 0, to.length);
     }
 
+    public static void copy(boolean[][] to, boolean[][] from) {
+    	for (int i = 0; i < to.length; i++) {
+    		copy(to[i], from[i]);
+    	}
+    }
+
     public static void copy(int[] to, int[] from) {
         arraycopy(from, 0, to, 0, to.length);
     }
@@ -1157,5 +1164,44 @@ public class Utilities {
     	}
 
     	return value;
+    }
+
+    public static float clipf(float value, float min, float max) {
+    	if (value < min) {
+    		return min;
+    	}
+    	if (value > max) {
+    		return max;
+    	}
+
+    	return value;
+    }
+
+    public static void fill(int a[][], int value) {
+    	for (int i = 0; i < a.length; i++) {
+    		Arrays.fill(a[i], value);
+    	}
+    }
+
+    public static void fill(float a[], float value) {
+		Arrays.fill(a, value);
+    }
+
+    public static void fill(float a[][], float value) {
+    	for (int i = 0; i < a.length; i++) {
+    		Arrays.fill(a[i], value);
+    	}
+    }
+
+    public static void fill(float a[][][], float value) {
+    	for (int i = 0; i < a.length; i++) {
+    		fill(a[i], value);
+    	}
+    }
+
+    public static void fill(float a[][][][], float value) {
+    	for (int i = 0; i < a.length; i++) {
+    		fill(a[i], value);
+    	}
     }
 }

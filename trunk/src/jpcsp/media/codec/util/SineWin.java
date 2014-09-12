@@ -17,8 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.media.codec.util;
 
 public class SineWin {
-	public static final float[] ff_sine_64  = new float[64];
-	public static final float[] ff_sine_128 = new float[128];
+	public static final float[] ff_sine_64   = new float[  64];
+	public static final float[] ff_sine_128  = new float[ 128];
+	public static final float[] ff_sine_512  = new float[ 512];
+	public static final float[] ff_sine_1024 = new float[1024];
 
 	private static void sineWindowInit(float[] window) {
 		int n = window.length;
@@ -30,5 +32,7 @@ public class SineWin {
 	public static void initFfSineWindows() {
 		sineWindowInit(ff_sine_64 );
 		sineWindowInit(ff_sine_128);
+		sineWindowInit(ff_sine_512);
+		sineWindowInit(ff_sine_1024);
 	}
 }

@@ -20,28 +20,30 @@ import static java.lang.Math.abs;
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
 import static java.lang.Math.sqrt;
-import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
+import jpcsp.media.codec.CodecFactory;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
 public class FFT {
-	private static Logger log = Atrac3plusDecoder.log;
+	private static Logger log = CodecFactory.log;
 	int nbits;
 	boolean inverse;
-	int revtab[];
-	float tmpBuf[];
+	int revtab[] = new int[0];
+	float tmpBuf[] = new float[0];
 	int mdctSize; // size of MDCT (i.e. number of input data * 2)
 	int mdctBits; // n = 2^nbits
 	// pre/post rotation tables
-	float tcos[];
-	float tsin[];
+	float tcos[] = new float[0];
+	float tsin[] = new float[0];
 	public static final double M_SQRT1_2 = 0.70710678118654752440; // 1/sqrt(2)
 	private static final float sqrthalf = (float) M_SQRT1_2;
 	private static final float[] ff_cos_16  = new float[16 / 2];
 	private static final float[] ff_cos_32  = new float[32 / 2];
 	private static final float[] ff_cos_64  = new float[64 / 2];
 	private static final float[] ff_cos_128 = new float[128 / 2];
+	private static final float[] ff_cos_256 = new float[256 / 2];
+	private static final float[] ff_cos_512 = new float[512 / 2];
 
 	public void copy(FFT that) {
 		nbits = that.nbits;
@@ -94,6 +96,8 @@ public class FFT {
 		initFfCosTabs(ff_cos_32 ,  32);
 		initFfCosTabs(ff_cos_64 ,  64);
 		initFfCosTabs(ff_cos_128, 128);
+		initFfCosTabs(ff_cos_256, 256);
+		initFfCosTabs(ff_cos_512, 512);
 
 		for (int i = 0; i < n; i++) {
 			revtab[-splitRadixPermutation(i, n, inverse) & (n - 1)] = i;
@@ -390,6 +394,20 @@ public class FFT {
 		pass(z, o, ff_cos_128, 16);
 	}
 
+	private void fft256(float[] z, int o) {
+		fft128(z, o);
+		fft64(z, o + 256);
+		fft64(z, o + 384);
+		pass(z, o, ff_cos_256, 32);
+	}
+
+	private void fft512(float[] z, int o) {
+		fft256(z, o);
+		fft128(z, o + 512);
+		fft128(z, o + 768);
+		pass(z, o, ff_cos_512, 64);
+	}
+
 	public void fftCalcFloat(float[] z, int o) {
 		switch (nbits) {
 			case 2: fft4  (z, 0); break;
@@ -398,9 +416,50 @@ public class FFT {
 			case 5: fft32 (z, 0); break;
 			case 6: fft64 (z, o); break;
 			case 7: fft128(z, o); break;
+			case 8: fft256(z, 0); break;
+			case 9: fft512(z, 0); break;
 			default:
 				log.error(String.format("FFT nbits=%d not implemented", nbits));
 				break;
+		}
+	}
+
+	/**
+	 * Compute MDCT of size N = 2^nbits
+	 * @param input N samples
+	 * @param out N/2 samples
+	 */
+	public void mdctCalc(float[] output, int outputOffset, float[] input, int inputOffset) {
+		int n = 1 << mdctBits;
+		int n2 = n >> 1;
+		int n4 = n >> 2;
+		int n8 = n >> 3;
+		int n3 = 3 * n4;
+
+		// pre rotation
+		for (int i = 0; i < n8; i++) {
+			float re = -input[inputOffset + 2 * i + n3] - input[inputOffset + n3 - 1 - 2 * i];
+			float im = -input[inputOffset + n4 + 2 * i] + input[inputOffset + n4 - 1 - 2 * i];
+			int j = revtab[i];
+			CMUL(output, outputOffset + 2 * j + 0, outputOffset + 2 * j + 1, re, im, -tcos[i], tsin[i]);
+
+			re =  input[inputOffset + 2 * i     ] - input[inputOffset + n2 - 1 - 2 * i];
+			im = -input[inputOffset + n2 + 2 * i] - input[inputOffset + n  - 1 - 2 * i];
+			j = revtab[n8 + i];
+			CMUL(output, outputOffset + 2 * j + 0, outputOffset + 2 * j + 1, re, im, -tcos[n8 + i], tsin[n8 + i]);
+		}
+
+		fftCalcFloat(output, outputOffset);
+
+		// post rotation
+		final float r[] = new float[4];
+		for (int i = 0; i < n8; i++) {
+			CMUL(r, 3, 0, output[outputOffset + (n8 - i - 1) * 2 + 0], output[outputOffset + (n8 - i - 1) * 2 + 1], -tsin[n8 - i - 1], -tcos[n8 - i - 1]);
+			CMUL(r, 1, 2, output[outputOffset + (n8 + i    ) * 2 + 0], output[outputOffset + (n8 + i    ) * 2 + 1], -tsin[n8 + i    ], -tcos[n8 + i    ]);
+			output[outputOffset + (n8 - i - 1) * 2 + 0] = r[0];
+			output[outputOffset + (n8 - i - 1) * 2 + 1] = r[1];
+			output[outputOffset + (n8 + i    ) * 2 + 0] = r[2];
+			output[outputOffset + (n8 + i    ) * 2 + 1] = r[3];
 		}
 	}
 }

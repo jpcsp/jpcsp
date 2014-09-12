@@ -36,6 +36,12 @@ public class SingleChannelElement {
 	public PredictorState predictorState[] = new PredictorState[MAX_PREDICTORS];
 	public float ret[];
 
+	public SingleChannelElement() {
+		for (int i = 0; i < predictorState.length; i++) {
+			predictorState[i] = new PredictorState();
+		}
+	}
+
 	public void copy(SingleChannelElement that) {
 		ics.copy(that.ics);
 		tns.copy(that.tns);

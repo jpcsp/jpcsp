@@ -17,7 +17,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.media.codec.aac;
 
 import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
 import static jpcsp.media.codec.aac.AacTab.POW_SF2_ZERO;
+import static jpcsp.media.codec.aac.AacTab.cbrt_tab;
+import static jpcsp.media.codec.aac.AacTab.ff_aac_codebook_vector_idx;
+import static jpcsp.media.codec.aac.AacTab.ff_aac_codebook_vector_vals;
+import static jpcsp.media.codec.aac.AacTab.ff_aac_kbd_long_1024;
+import static jpcsp.media.codec.aac.AacTab.ff_aac_kbd_short_128;
 import static jpcsp.media.codec.aac.AacTab.ff_aac_num_swb_1024;
 import static jpcsp.media.codec.aac.AacTab.ff_aac_num_swb_128;
 import static jpcsp.media.codec.aac.AacTab.ff_aac_num_swb_512;
@@ -34,10 +40,15 @@ import static jpcsp.media.codec.aac.AacTab.ff_swb_offset_512;
 import static jpcsp.media.codec.aac.AacTab.ff_tns_max_bands_1024;
 import static jpcsp.media.codec.aac.AacTab.ff_tns_max_bands_128;
 import static jpcsp.media.codec.aac.AacTab.ff_tns_max_bands_512;
+import static jpcsp.media.codec.aac.Lpc.computeLpcCoefs;
 import static jpcsp.media.codec.aac.OutputConfiguration.OC_LOCKED;
 import static jpcsp.media.codec.aac.OutputConfiguration.OC_NONE;
 import static jpcsp.media.codec.aac.OutputConfiguration.OC_TRIAL_FRAME;
 import static jpcsp.media.codec.aac.OutputConfiguration.OC_TRIAL_PCE;
+import static jpcsp.media.codec.util.CodecUtils.avLog2;
+import static jpcsp.media.codec.util.SineWin.ff_sine_1024;
+import static jpcsp.media.codec.util.SineWin.ff_sine_128;
+import static jpcsp.media.codec.util.SineWin.ff_sine_512;
 
 import java.util.Arrays;
 import java.util.regex.Matcher;
@@ -47,7 +58,10 @@ import org.apache.log4j.Logger;
 
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.util.BitReader;
+import jpcsp.media.codec.util.CodecUtils;
+import jpcsp.media.codec.util.FFT;
 import jpcsp.media.codec.util.FloatDSP;
+import jpcsp.media.codec.util.SineWin;
 import jpcsp.media.codec.util.VLC;
 import jpcsp.util.Utilities;
 
@@ -104,6 +118,7 @@ public class AacDecoder implements ICodec {
 	// Audio object types
 	public static final int AOT_AAC_MAIN      = 1;
 	public static final int AOT_AAC_LC        = 2;
+	public static final int AOT_AAC_LTP       = 4;
 	public static final int AOT_ER_AAC_LC     = 17;
 	public static final int AOT_ER_AAC_LTP    = 19;
 	public static final int AOT_ER_AAC_LD     = 23;
@@ -199,7 +214,7 @@ public class AacDecoder implements ICodec {
 	// @}
 	public static final int tags_per_config[] = { 0, 1, 1, 2, 3, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-	public static final int aac_channel_layoutMap[][][] = {
+	public static final int aac_channel_layout_map[][][] = {
 	    { { TYPE_SCE, 0, AAC_CHANNEL_FRONT }, },
 	    { { TYPE_CPE, 0, AAC_CHANNEL_FRONT }, },
 	    { { TYPE_SCE, 0, AAC_CHANNEL_FRONT }, { TYPE_CPE, 0, AAC_CHANNEL_FRONT }, },
@@ -233,18 +248,47 @@ public class AacDecoder implements ICodec {
 	public int init(int bytesPerFrame, int channels, int outputChannels, int codingMode) {
 		ac = new Context();
 
-		AacTab.tableinit();
-
-		vlc_scalefactors = new VLC();
-		vlc_scalefactors.initVLCSparse(7, ff_aac_scalefactor_code.length, ff_aac_scalefactor_bits, ff_aac_scalefactor_code, null);
+		ac.oc[1].m4ac.sampleRate = ac.sampleRate;
 
 		for (int i = 0; i < vlc_spectral.length; i++) {
 			vlc_spectral[i] = new VLC();
 			vlc_spectral[i].initVLCSparse(8, ff_aac_spectral_sizes[i], ff_aac_spectral_bits[i], ff_aac_spectral_codes[i], null);
 		}
 
-		// TODO Auto-generated method stub
+		AacSbr.sbrInit();
+
+		ac.randomState = 0x1f2e3d4c;
+
+		AacTab.tableinit();
+		AacPs.init();
+		AacPsData.tableinit();
+
+		vlc_scalefactors = new VLC();
+		vlc_scalefactors.initVLCSparse(7, ff_aac_scalefactor_code.length, ff_aac_scalefactor_bits, ff_aac_scalefactor_code, null);
+
+		ac.mdct = new FFT();
+		ac.mdct.mdctInit(11, true, 1.0 / (32768.0 * 1024.0));
+		ac.mdctLd = new FFT();
+		ac.mdctLd.mdctInit(10, true, 1.0 / (32768.0 * 512.0));
+		ac.mdctSmall = new FFT();
+		ac.mdctSmall.mdctInit(8, true, 1.0 / (32768.0 * 128.0));
+		ac.mdctLtp = new FFT();
+		ac.mdctLtp.mdctInit(11, false, -2.0 * 32768.0);
+
+		SineWin.initFfSineWindows();
+
 		return 0;
+	}
+
+	/**
+	 * linear congruential pseudorandom number generator
+	 *
+	 * @param   previousVal    pointer to the current state of the generator
+	 *
+	 * @return  Returns a 32-bit pseudorandom integer
+	 */
+	private static int lcgRandom(int previousVal) {
+		return previousVal * 1664525 + 1013904223;
 	}
 
 	/**
@@ -261,7 +305,7 @@ public class AacDecoder implements ICodec {
 
 		tags[0] = tags_per_config[channelConfig];
 		for (int i = 0; i < tags[0]; i++) {
-			Utilities.copy(layoutMap[i], aac_channel_layoutMap[channelConfig - 1][i]);
+			Utilities.copy(layoutMap[i], aac_channel_layout_map[channelConfig - 1][i]);
 		}
 
 		return 0;
@@ -733,7 +777,7 @@ public class AacDecoder implements ICodec {
 					}
 
 					if (tns.order[w][filt] > 0) {
-						tns.direction[w][filt] = br.read1();
+						tns.direction[w][filt] = br.readBool();
 						int coefCompress = br.read1();
 						int coefLen = coefRes + 3 - coefCompress;
 						int tmp2Idx = 2 * coefCompress + coefRes;
@@ -749,6 +793,58 @@ public class AacDecoder implements ICodec {
 		return 0;
 	}
 
+	private static int VMUL2(float dst[], int dstOffset, float v[], int vOffset, int idx, float scale) {
+		dst[dstOffset++] = v[vOffset + ((idx     ) & 15)] * scale;
+		dst[dstOffset++] = v[vOffset + ((idx >> 4) & 15)] * scale;
+
+		return dstOffset;
+	}
+
+	private static int VMUL4(float dst[], int dstOffset, float v[], int vOffset, int idx, float scale) {
+		dst[dstOffset++] = v[vOffset + ((idx     ) & 3)] * scale;
+		dst[dstOffset++] = v[vOffset + ((idx >> 2) & 3)] * scale;
+		dst[dstOffset++] = v[vOffset + ((idx >> 4) & 3)] * scale;
+		dst[dstOffset++] = v[vOffset + ((idx >> 6) & 3)] * scale;
+
+		return dstOffset;
+	}
+
+	private static int VMUL2S(float dst[], int dstOffset, float v[], int vOffset, int idx, int sign, float scale) {
+		int s0 = Float.floatToRawIntBits(scale);
+		int s1 = Float.floatToRawIntBits(scale);
+
+		s0 ^= (sign >> 1) << 31;
+		s1 ^= (sign     ) << 31;
+
+		dst[dstOffset++] = v[vOffset + ((idx     ) & 15)] * Float.intBitsToFloat(s0);
+		dst[dstOffset++] = v[vOffset + ((idx >> 4) & 15)] * Float.intBitsToFloat(s1);
+
+		return dstOffset;
+	}
+
+	private static int VMUL4S(float dst[], int dstOffset, float v[], int vOffset, int idx, int sign, float scale) {
+		int nz = idx >>> 12;
+		int s = Float.floatToRawIntBits(scale);
+		int t;
+
+		t = s ^ (sign & (1 << 31));
+		dst[dstOffset++] = v[vOffset + ((idx     ) & 3)] * Float.intBitsToFloat(t);
+
+		sign <<= nz & 1; nz >>= 1;
+		t = s ^ (sign & (1 << 31));
+		dst[dstOffset++] = v[vOffset + ((idx >> 2) & 3)] * Float.intBitsToFloat(t);
+
+		sign <<= nz & 1; nz >>= 1;
+		t = s ^ (sign & (1 << 31));
+		dst[dstOffset++] = v[vOffset + ((idx >> 4) & 3)] * Float.intBitsToFloat(t);
+
+		sign <<= nz & 1;
+		t = s ^ (sign & (1 << 31));
+		dst[dstOffset++] = v[vOffset + ((idx >> 6) & 3)] * Float.intBitsToFloat(t);
+
+		return dstOffset;
+	}
+
 	/**
 	 * Decode spectral data; reference: table 4.50.
 	 * Dequantize and scale spectral data; reference: 4.6.3.3.
@@ -762,8 +858,179 @@ public class AacDecoder implements ICodec {
 	 * @return  Returns error status. 0 - OK, !0 - error
 	 */
 	private int decodeSpectrumAndDequant(float coef[], float sf[], boolean pulsePresent, Pulse pulse, IndividualChannelStream ics, int bandType[]) {
-		log.warn("Unimplemented decodeSpectrumAndDequant");
-		// TODO
+		int idx = 0;
+		final int c = 1024 / ics.numWindows;
+		final int offsets[] = ics.swbOffset;
+
+		for (int g = 0; g < ics.numWindows; g++) {
+			Arrays.fill(coef, g * 128 + offsets[ics.maxSfb], g * 128 + c, 0f);
+		}
+
+		int coefOffset = 0;
+		for (int g = 0; g < ics.numWindowGroups; g++) {
+			int gLen = ics.groupLen[g];
+
+			for (int i = 0; i < ics.maxSfb; i++, idx++) {
+				final int cbtM1 = bandType[idx] == 0 ? Integer.MAX_VALUE : bandType[idx] - 1;
+				int cfo = coefOffset + offsets[i];
+				int offLen = offsets[i + 1] - offsets[i];
+
+				if (cbtM1 >= INTENSITY_BT2 - 1) {
+					for (int group = 0; group < gLen; group++, cfo += 128) {
+						Arrays.fill(coef, cfo, cfo + offLen, 0f);
+					}
+				} else if (cbtM1 == NOISE_BT - 1) {
+					for (int group = 0; group < gLen; group++, cfo += 128) {
+						for (int k = 0; k < offLen; k++) {
+							ac.randomState = lcgRandom(ac.randomState);
+							coef[cfo + k] = ac.randomState;
+						}
+
+						float bandEnergy = FloatDSP.scalarproduct(coef, cfo, coef, cfo, offLen);
+						float scale = sf[idx] / (float) sqrt(bandEnergy);
+						FloatDSP.vectorFmulScalar(coef, cfo, coef, cfo, scale, offLen);
+					}
+				} else {
+					final float vq[] = ff_aac_codebook_vector_vals[cbtM1];
+					final int cbVertexIdx[] = ff_aac_codebook_vector_idx[cbtM1];
+					VLC vlc = vlc_spectral[cbtM1];
+
+					switch (cbtM1 >> 1) {
+						case 0:
+							for (int group = 0; group < gLen; group++, cfo += 128) {
+								int cf = cfo;
+
+								for (int len = offLen; len != 0; len -= 4) {
+									int code = vlc.getVLC2(br, 2);
+									int cbIdx = cbVertexIdx[code];
+									cf = VMUL4(coef, cf, vq, 0, cbIdx, sf[idx]);
+								}
+							}
+							break;
+
+						case 1:
+							for (int group = 0; group < gLen; group++, cfo += 128) {
+								int cf = cfo;
+
+								for (int len = offLen; len != 0; len -= 4) {
+									int code = vlc.getVLC2(br, 2);
+									int cbIdx = cbVertexIdx[code];
+									int nnz = (cbIdx >> 8) & 15;
+									int bits = nnz != 0 ? br.peek(32) : 0;
+									br.skip(nnz);
+									cf = VMUL4S(coef, cf, vq, 0, cbIdx, bits, sf[idx]);
+								}
+							}
+							break;
+
+						case 2:
+							for (int group = 0; group < gLen; group++, cfo += 128) {
+								int cf = cfo;
+
+								for (int len = offLen; len != 0; len -= 2) {
+									int code = vlc.getVLC2(br, 2);
+									int cbIdx = cbVertexIdx[code];
+									cf = VMUL2(coef, cf, vq, 0, cbIdx, sf[idx]);
+								}
+							}
+							break;
+
+						case 3:
+						case 4:
+							for (int group = 0; group < gLen; group++, cfo += 128) {
+								int cf = cfo;
+
+								for (int len = offLen; len != 0; len -= 2) {
+									int code = vlc.getVLC2(br, 2);
+									int cbIdx = cbVertexIdx[code];
+									int nnz = (cbIdx >> 8) & 15;
+									int sign = nnz != 0 ? (br.peek(nnz) << (cbIdx >> 12)) : 0;
+									br.skip(nnz);
+									cf = VMUL2S(coef, cf, vq, 0, cbIdx, sign, sf[idx]);
+								}
+							}
+							break;
+
+						default:
+							for (int group = 0; group < gLen; group++, cfo += 128) {
+								int icf = cfo;
+
+								for (int len = offLen; len != 0; len -= 2) {
+									int code = vlc.getVLC2(br, 2);
+
+									if (code == 0) {
+										coef[icf++] = 0f;
+										coef[icf++] = 0f;
+										continue;
+									}
+
+									int cbIdx = cbVertexIdx[code];
+									int nnz = cbIdx >> 12;
+									int nzt = cbIdx >> 8;
+									int bits = br.read(nnz) << (32 - nnz);
+
+									for (int j = 0; j < 2; j++) {
+										if ((nzt & (1 << j)) != 0) {
+		                                    /* The total length of escape_sequence must be < 22 bits according
+		                                       to the specification (i.e. max is 111111110xxxxxxxxxxxx). */
+											int b = br.peek(32);
+											b = 31 - avLog2(~b);
+
+											if (b > 8) {
+												log.error(String.format("error in spectral data, ESC overflow"));
+												return AAC_ERROR;
+											}
+
+											br.skip(b + 1);
+											b += 4;
+											int n = (1 << b) + br.read(b);
+											coef[icf++] = Float.intBitsToFloat(cbrt_tab[n] | (bits & (1 << 31)));
+											bits <<= 1;
+										} else {
+											float v = vq[cbIdx & 15];
+											if (v == 0f) {
+												coef[icf++] = 0f;
+											} else {
+												if ((bits & (1 << 31)) != 0) {
+													v = -v;
+												}
+												coef[icf++] = v;
+												bits <<= 1;
+											}
+										}
+										cbIdx >>= 4;
+									}
+								}
+
+								FloatDSP.vectorFmulScalar(coef, cfo, coef, cfo, sf[idx], offLen);
+							}
+							break;
+					}
+				}
+			}
+
+			coefOffset += gLen << 7;
+		}
+
+		if (pulsePresent) {
+			idx = 0;
+			for (int i = 0; i < pulse.numPulse; i++) {
+				float co = coef[pulse.pos[i]];
+				while (offsets[idx + 1] <= pulse.pos[i]) {
+					idx++;
+				}
+
+				if (bandType[idx] != NOISE_BT && sf[idx] != 0f) {
+					float ico = -pulse.amp[i];
+					if (co != 0f) {
+						co /= sf[idx];
+						ico = co / (float) Math.sqrt(Math.sqrt(Math.abs(co))) + (co > 0f ? -ico : ico);
+					}
+					coef[pulse.pos[i]] = (float) Math.cbrt(Math.abs(ico)) * ico * sf[idx];
+				}
+			}
+		}
+
 		return 0;
 	}
 
@@ -1710,12 +1977,465 @@ public class AacDecoder implements ICodec {
 		return res;
 	}
 
+	private void imdctAndWindowing(SingleChannelElement sce) {
+		IndividualChannelStream ics = sce.ics;
+		float in[]    = sce.coeffs;
+		float out[]   = sce.ret;
+		float saved[] = sce.saved;
+		final float swindow    [] = ics.useKbWindow[0] ? ff_aac_kbd_short_128 : ff_sine_128;
+		final float lwindowPrev[] = ics.useKbWindow[1] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+		final float swindowPrev[] = ics.useKbWindow[1] ? ff_aac_kbd_short_128 : ff_sine_128;
+		float buf[] = ac.bufMdct;
+		float temp[] = ac.temp;
+
+		// imdct
+		if (ics.windowSequence[0] == EIGHT_SHORT_SEQUENCE) {
+			for (int i = 0; i < 1024; i += 128) {
+				ac.mdctSmall.imdctHalf(buf, i, in, i);
+			}
+		} else {
+			ac.mdct.imdctHalf(buf, 0, in, 0);
+		}
+
+	    /* window overlapping
+	     * NOTE: To simplify the overlapping code, all 'meaningless' short to long
+	     * and long to short transitions are considered to be short to short
+	     * transitions. This leaves just two cases (long to long and short to short)
+	     * with a little special sauce for EIGHT_SHORT_SEQUENCE.
+	     */
+		if ((ics.windowSequence[1] == ONLY_LONG_SEQUENCE || ics.windowSequence[1] == LONG_STOP_SEQUENCE) &&
+		    (ics.windowSequence[0] == ONLY_LONG_SEQUENCE || ics.windowSequence[0] == LONG_START_SEQUENCE)) {
+			FloatDSP.vectorFmulWindow(out, 0, saved, 0, buf, 0, lwindowPrev, 0, 512);
+		} else {
+			System.arraycopy(saved, 0, out, 0, 448);
+
+			if (ics.windowSequence[0] == EIGHT_SHORT_SEQUENCE) {
+				FloatDSP.vectorFmulWindow(out , 448 + 0 * 128, saved, 448         , buf, 0 * 128, swindowPrev, 0, 64);
+				FloatDSP.vectorFmulWindow(out , 448 + 1 * 128, buf  , 0 * 128 + 64, buf, 1 * 128, swindow    , 0, 64);
+				FloatDSP.vectorFmulWindow(out , 448 + 2 * 128, buf  , 1 * 128 + 64, buf, 2 * 128, swindow    , 0, 64);
+				FloatDSP.vectorFmulWindow(out , 448 + 3 * 128, buf  , 2 * 128 + 64, buf, 3 * 128, swindow    , 0, 64);
+				FloatDSP.vectorFmulWindow(temp, 0            , buf  , 3 * 128 + 64, buf, 4 * 128, swindow    , 0, 64);
+				System.arraycopy(temp, 0, out, 448 + 4 * 128, 64);
+			} else {
+				FloatDSP.vectorFmulWindow(out , 448          , saved, 448         , buf, 0      , swindowPrev, 0, 64);
+				System.arraycopy(buf, 64, out, 576, 448);
+			}
+		}
+
+		// buffer update
+		if (ics.windowSequence[0] == EIGHT_SHORT_SEQUENCE) {
+			System.arraycopy(temp, 64, saved, 0, 64);
+			FloatDSP.vectorFmulWindow(saved, 64 , buf, 4 * 128 + 64, buf, 5 * 128, swindow, 0, 64);
+			FloatDSP.vectorFmulWindow(saved, 192, buf, 5 * 128 + 64, buf, 6 * 128, swindow, 0, 64);
+			FloatDSP.vectorFmulWindow(saved, 320, buf, 6 * 128 + 64, buf, 7 * 128, swindow, 0, 64);
+			System.arraycopy(buf, 7 * 128 + 64, saved, 448, 64);
+		} else if (ics.windowSequence[0] == LONG_START_SEQUENCE) {
+			System.arraycopy(buf, 512         , saved, 0  , 448);
+			System.arraycopy(buf, 7 * 128 + 64, saved, 448, 64 );
+		} else { // LONG_STOP or ONLY_LONG
+			System.arraycopy(buf, 512         , saved, 0  , 512);
+		}
+	}
+
+	private void imdctAndWindowingLd(SingleChannelElement sce) {
+		IndividualChannelStream ics = sce.ics;
+		float in[]    = sce.coeffs;
+		float out[]   = sce.ret;
+		float saved[] = sce.saved;
+		float buf[]   = ac.bufMdct;
+
+		// imdct
+		ac.mdct.imdctHalf(buf, 0, in, 0);
+
+		// window overlapping
+		if (ics.useKbWindow[1]) {
+			// AAC LD uses a low overlap sine window instead of a KBD window
+			System.arraycopy(saved, 0, out, 0, 192);
+			FloatDSP.vectorFmulWindow(out, 192, saved, 192, buf, 0, ff_sine_128, 0, 64);
+			System.arraycopy(buf, 64, out, 320, 192);
+		} else {
+			FloatDSP.vectorFmulWindow(out, 0, saved, 0, buf, 0, ff_sine_512, 0, 256);
+		}
+
+		// buffer update
+		System.arraycopy(buf, 256, saved, 0, 256);
+	}
+
+	private void imdctAndWindowingEld(SingleChannelElement sce) {
+		float in[]     = sce.coeffs;
+		float out[]    = sce.ret;
+		float saved[]  = sce.saved;
+		float window[] = AacTab.ff_aac_eld_window;
+		float buf[]    = ac.bufMdct;
+		final int n = 512;
+		final int n2 = n >> 1;
+		final int n4 = n >> 2;
+
+	    // Inverse transform, mapped to the conventional IMDCT by
+	    // Chivukula, R.K.; Reznik, Y.A.; Devarajan, V.,
+	    // "Efficient algorithms for MPEG-4 AAC-ELD, AAC-LD and AAC-LC filterbanks,"
+	    // International Conference on Audio, Language and Image Processing, ICALIP 2008.
+	    // URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4590245&isnumber=4589950
+		for (int i = 0; i < n2; i += 2) {
+			float temp;
+	        temp =  in[i    ]; in[i    ] = -in[n - 1 - i]; in[n - 1 - i] = temp;
+	        temp = -in[i + 1]; in[i + 1] =  in[n - 2 - i]; in[n - 2 - i] = temp;
+		}
+		ac.mdct.imdctHalf(buf, 0, in, 0);
+		for (int i = 0; i < n; i += 2) {
+			buf[i] = -buf[i];
+		}
+	    // Like with the regular IMDCT at this point we still have the middle half
+	    // of a transform but with even symmetry on the left and odd symmetry on
+	    // the right
+
+	    // window overlapping
+	    // The spec says to use samples [0..511] but the reference decoder uses
+	    // samples [128..639].
+	    for (int i = n4; i < n2; i ++) {
+	        out[i - n4] =    buf[n2 - 1 - i]       * window[i       - n4] +
+	                       saved[      i + n2]     * window[i +   n - n4] +
+	                      -saved[  n + n2 - 1 - i] * window[i + 2*n - n4] +
+	                      -saved[2*n + n2 + i]     * window[i + 3*n - n4];
+	    }
+	    for (int i = 0; i < n2; i ++) {
+	        out[n4 + i] =    buf[i]               * window[i + n2       - n4] +
+	                      -saved[      n - 1 - i] * window[i + n2 +   n - n4] +
+	                      -saved[  n + i]         * window[i + n2 + 2*n - n4] +
+	                       saved[2*n + n - 1 - i] * window[i + n2 + 3*n - n4];
+	    }
+	    for (int i = 0; i < n4; i ++) {
+	        out[n2 + n4 + i] =    buf[      i + n2]     * window[i +   n - n4] +
+	                           -saved[      n2 - 1 - i] * window[i + 2*n - n4] +
+	                           -saved[  n + n2 + i]     * window[i + 3*n - n4];
+	    }
+
+	    // buffer update
+	    System.arraycopy(saved, 0, saved, n, 2 * n);
+	    System.arraycopy(buf  , 0, saved, 0,     n);
+	}
+
+	private void imdctAndWindow(SingleChannelElement sce) {
+		switch (ac.oc[1].m4ac.objectType) {
+			case AOT_ER_AAC_LD:  imdctAndWindowingLd(sce);  break;
+			case AOT_ER_AAC_ELD: imdctAndWindowingEld(sce); break;
+			default:             imdctAndWindowing(sce);    break;
+		}
+	}
+
+	/**
+	 *  Apply windowing and MDCT to obtain the spectral
+	 *  coefficient from the predicted sample by LTP.
+	 */
+	private void windowingAndMdctLtp(float out[], float in[], IndividualChannelStream ics) {
+		final float lwindow    [] = ics.useKbWindow[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+		final float swindow    [] = ics.useKbWindow[0] ? ff_aac_kbd_short_128 : ff_sine_128;
+		final float lwindowPrev[] = ics.useKbWindow[1] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+		final float swindowPrev[] = ics.useKbWindow[1] ? ff_aac_kbd_short_128 : ff_sine_128;
+
+		if (ics.windowSequence[0] != LONG_STOP_SEQUENCE) {
+			FloatDSP.vectorFmul(in, 0, in, 0, lwindowPrev, 0, 1024);
+		} else {
+			Arrays.fill(in, 0, 448, 0f);
+			FloatDSP.vectorFmul(in, 448, in, 448, swindowPrev, 0, 128);
+		}
+
+		if (ics.windowSequence[0] != LONG_START_SEQUENCE) {
+			FloatDSP.vectorFmulReverse(in, 1024, in, 1024, lwindow, 0, 1024);
+		} else {
+			FloatDSP.vectorFmulReverse(in, 1024 + 448, in, 1024 + 448, swindow, 0, 128);
+			Arrays.fill(in, 1024 + 576, 1024 + 576 + 448, 0f);
+		}
+		ac.mdctLtp.mdctCalc(out, 0, in, 0);
+	}
+
+	/**
+	 * Apply the long term prediction
+	 */
+	private void applyLtp(SingleChannelElement sce) {
+		LongTermPrediction ltp = sce.ics.ltp;
+		final int offsets[] = sce.ics.swbOffset;
+
+		if (sce.ics.windowSequence[0] != EIGHT_SHORT_SEQUENCE) {
+			final float predTime[] = sce.ret;
+			final float predFreq[] = ac.bufMdct;
+			int numSamples = 2048;
+
+			if (ltp.lag < 1024) {
+				numSamples = ltp.lag + 1024;
+			}
+
+			for (int i = 0; i < numSamples; i++) {
+				predTime[i] = sce.ltpState[i + 2048 - ltp.lag] * ltp.coef;
+			}
+			Arrays.fill(predTime, numSamples, 2048, 0f);
+
+			windowingAndMdctLtp(predFreq, predTime, sce.ics);
+
+			if (sce.tns.present) {
+				applyTns(predFreq, sce.tns, sce.ics, false);
+			}
+
+			for (int sfb = 0; sfb < Math.min(sce.ics.maxSfb,  MAX_LTP_LONG_SFB); sfb++) {
+				if (ltp.used[sfb]) {
+					for (int i = offsets[sfb]; i < offsets[sfb + 1]; i++) {
+						sce.coeffs[i] += predFreq[i];
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Update the LTP buffer for next frame
+	 */
+	private void updateLtp(SingleChannelElement sce) {
+		IndividualChannelStream ics = sce.ics;
+		float saved[]    = sce.saved;
+		float savedLtp[] = sce.coeffs;
+		final float lwindow[] = ics.useKbWindow[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+		final float swindow[] = ics.useKbWindow[0] ? ff_aac_kbd_short_128 : ff_sine_128;
+
+		if (ics.windowSequence[0] == EIGHT_SHORT_SEQUENCE) {
+			System.arraycopy(saved, 0, savedLtp, 0, 512);
+			Arrays.fill(savedLtp, 576, 576 + 448, 0f);
+			FloatDSP.vectorFmulReverse(savedLtp, 448, ac.bufMdct, 960, swindow, 64, 64);
+			for (int i = 0; i < 64; i++) {
+				savedLtp[i + 512] = ac.bufMdct[1023 - i] * swindow[63 - i];
+			}
+		} else if (ics.windowSequence[0] == LONG_START_SEQUENCE) {
+			System.arraycopy(ac.bufMdct, 512, savedLtp, 0, 448);
+			Arrays.fill(savedLtp, 576, 576 + 448, 0f);
+			FloatDSP.vectorFmulReverse(savedLtp, 448, ac.bufMdct, 960, swindow, 64, 64);
+			for (int i = 0; i < 64; i++) {
+				savedLtp[i + 512] = ac.bufMdct[1023 - i] * swindow[63 - i];
+			}
+		} else { // LONG_STOP or ONLY_LONG
+			FloatDSP.vectorFmulReverse(savedLtp, 0, ac.bufMdct, 512, lwindow, 512, 512);
+			for (int i = 0; i < 512; i++) {
+				savedLtp[i + 512] = ac.bufMdct[1023 - i] * lwindow[511 - i];
+			}
+		}
+
+		System.arraycopy(sce.ltpState, 1024, sce.ltpState, 0   , 1024);
+		System.arraycopy(sce.ret     , 0   , sce.ltpState, 1024, 1024);
+		System.arraycopy(savedLtp    , 0   , sce.ltpState, 2048, 1024);
+	}
+
+	/**
+	 * Decode Temporal Noise Shaping filter coefficients and apply all-pole filters; reference: 4.6.9.3.
+	 *
+	 * @param   decode  1 if tool is used normally, 0 if tool is used in LTP.
+	 * @param   coef    spectral coefficients
+	 */
+	private void applyTns(float coef[], TemporalNoiseShaping tns, IndividualChannelStream ics, boolean decode) {
+		final int mmm = Math.min(ics.tnsMaxBands, ics.maxSfb);
+		final float lpc[] = new float[TNS_MAX_ORDER];
+		final float tmp[] = new float[TNS_MAX_ORDER + 1];
+
+		for (int w = 0; w < ics.numWindows; w++) {
+			int bottom = ics.numSwb;
+			for (int filt = 0; filt < tns.nFilt[w]; filt++) {
+				int top = bottom;
+				bottom = Math.max(0, top - tns.length[w][filt]);
+				int order = tns.order[w][filt];
+
+				if (order == 0) {
+					continue;
+				}
+
+				// tns_decode_coef
+				computeLpcCoefs(tns.coef[w][filt], order, lpc, 0, false, false);
+
+				int start = ics.swbOffset[Math.min(bottom, mmm)];
+				int end   = ics.swbOffset[Math.min(top   , mmm)];
+				int size  = end - start;
+				if (size <= 0) {
+					continue;
+				}
+
+				int inc;
+				if (tns.direction[w][filt]) {
+					inc = -1;
+					start = end - 1;
+				} else {
+					inc = 1;
+				}
+				start += w * 128;
+
+				if (decode) {
+					// ar filter
+					for (int m = 0; m < size; m++, start += inc) {
+						for (int i = 1; i <= Math.min(m, order); i++) {
+							coef[start] -= coef[start - i * inc] * lpc[i - 1];
+						}
+					}
+				} else {
+					// ma filter
+					for (int m = 0; m < size; m++, start += inc) {
+						tmp[0] = coef[start];
+						for (int i = 1; i <= Math.min(m, order); i++) {
+							coef[start] += tmp[i] * lpc[i - 1];
+						}
+						for (int i = order; i > 0; i--) {
+							tmp[i] = tmp[i - 1];
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Apply dependent channel coupling (applied before IMDCT).
+	 *
+	 * @param   index   index into coupling gain array
+	 */
+	private void applyDependentCoupling(SingleChannelElement target, ChannelElement cce, int index) {
+		IndividualChannelStream ics = cce.ch[0].ics;
+		int offsets[] = ics.swbOffset;
+		float dest[] = target.coeffs;
+		float src[] = cce.ch[0].coeffs;
+		int idx = 0;
+
+		if (ac.oc[1].m4ac.objectType == AOT_AAC_LTP) {
+			log.error(String.format("Dependent coupling is not supported together with LTP"));
+			return;
+		}
+
+		int destOffset = 0;
+		int srcOffset = 0;
+		for (int g = 0; g < ics.numWindowGroups; g++) {
+			for (int i = 0; i < ics.maxSfb; i++, idx++) {
+				if (cce.ch[0].bandType[idx] != ZERO_BT) {
+					final float gain = cce.coup.gain[index][idx];
+					for (int group = 0; group < ics.groupLen[g]; group++) {
+						for (int k = offsets[i]; k < offsets[i + 1]; k++) {
+							dest[destOffset + group * 128 + k] += gain * src[srcOffset + group * 128 + k];
+						}
+					}
+				}
+			}
+
+			destOffset += ics.groupLen[g] * 128;
+			srcOffset  += ics.groupLen[g] * 128;
+		}
+	}
+
+	/**
+	 * Apply independent channel coupling (applied after IMDCT).
+	 *
+	 * @param   index   index into coupling gain array
+	 */
+	private void applyIndependentCoupling(SingleChannelElement target, ChannelElement cce, int index) {
+		final float gain = cce.coup.gain[index][0];
+		float src[] = cce.ch[0].ret;
+		float dest[] = target.ret;
+		final int len = 1024 << (ac.oc[1].m4ac.sbr == 1 ? 1 : 0);
+
+		for (int i = 0; i < len; i++) {
+			dest[i] += gain * src[i];
+		}
+	}
+
+	private void applyCouplingMethod(SingleChannelElement target, ChannelElement cce, int index, boolean applyDependentCoupling) {
+		if (applyDependentCoupling) {
+			applyDependentCoupling(target, cce, index);
+		} else {
+			applyIndependentCoupling(target, cce, index);
+		}
+	}
+
+	/**
+	 * channel coupling transformation interface
+	 *
+	 * @param   apply_coupling_method   pointer to (in)dependent coupling function
+	 */
+	private void applyChannelCoupling(ChannelElement cc, int type, int elemId, int couplingPoint, boolean applyDependentCoupling) {
+		for (int i = 0; i < MAX_ELEM_ID; i++) {
+			ChannelElement cce = ac.che[TYPE_CCE][i];
+
+			if (cce != null && cce.coup.couplingPoint == couplingPoint) {
+				int index = 0;
+				ChannelCoupling coup = cce.coup;
+
+				for (int c = 0; c <= coup.numCoupled; c++) {
+					if (coup.type[c] == type && coup.idSelect[c] == elemId) {
+						if (coup.chSelect[c] != 1) {
+							applyCouplingMethod(cc.ch[0], cce, index, applyDependentCoupling);
+							if (coup.chSelect[c] != 0) {
+								index++;
+							}
+						}
+						if (coup.chSelect[c] != 2) {
+							applyCouplingMethod(cc.ch[1], cce, index++, applyDependentCoupling);
+						}
+					} else {
+						index += 1 + (coup.chSelect[c] == 3 ? 1 : 0);
+					}
+				}
+			}
+		}
+	}
+
 	/**
 	 * Convert spectral data to float samples, applying all supported tools as appropriate.
 	 */
 	private void spectralToSample() {
-		log.warn("Unimplemented spectralToSample");
-		// TODO
+		for (int type = 3; type >= 0; type--) {
+			for (int i = 0; i < MAX_ELEM_ID; i++) {
+				ChannelElement che = ac.che[type][i];
+				if (che != null) {
+					if (type <= TYPE_CPE) {
+						applyChannelCoupling(che, type, i, BEFORE_TNS, true);
+					}
+					if (ac.oc[1].m4ac.objectType == AOT_AAC_LTP) {
+						if (che.ch[0].ics.predictorPresent) {
+							if (che.ch[0].ics.ltp.present) {
+								applyLtp(che.ch[0]);
+							}
+							if (che.ch[1].ics.ltp.present && type == TYPE_CPE) {
+								applyLtp(che.ch[1]);
+							}
+						}
+					}
+
+					if (che.ch[0].tns.present) {
+						applyTns(che.ch[0].coeffs, che.ch[0].tns, che.ch[0].ics, true);
+					}
+					if (che.ch[1].tns.present) {
+						applyTns(che.ch[1].coeffs, che.ch[1].tns, che.ch[1].ics, true);
+					}
+
+					if (type <= TYPE_CPE) {
+						applyChannelCoupling(che, type, i, BETWEEN_TNS_AND_IMDCT, true);
+					}
+
+					if (type != TYPE_CCE || che.coup.couplingPoint == AFTER_IMDCT) {
+						imdctAndWindow(che.ch[0]);
+
+						if (ac.oc[1].m4ac.objectType == AOT_AAC_LTP) {
+							updateLtp(che.ch[0]);
+						}
+
+						if (type == TYPE_CPE) {
+							imdctAndWindow(che.ch[1]);
+							if (ac.oc[1].m4ac.objectType == AOT_AAC_LTP) {
+								updateLtp(che.ch[1]);
+							}
+						}
+
+						if (ac.oc[1].m4ac.sbr > 0) {
+							AacSbr.sbrApply(ac, che.sbr, type, che.ch[0].ret, che.ch[1].ret);
+						}
+					}
+
+					if (type <= TYPE_CCE) {
+						applyChannelCoupling(che, type, i, AFTER_IMDCT, false);
+					}
+				}
+			}
+		}
 	}
 
 	private int decodeFrameInt() {
@@ -1854,6 +2574,10 @@ public class AacDecoder implements ICodec {
 			ac.oc[1].status = OutputConfiguration.OC_LOCKED;
 		}
 
+		if (samples != 0) {
+			ac.nbSamples = samples;
+		}
+
 		// for dual-mono audio (SCE + SCE)
 		boolean isDmono = ac.dmonoMode != 0 && sceCount == 2 && ac.oc[1].channelLayout == (CH_FRONT_LEFT | CH_FRONT_RIGHT);
 		if (isDmono) {
@@ -1868,8 +2592,62 @@ public class AacDecoder implements ICodec {
 	}
 
 	private int decodeErFrame() {
-		log.warn("decodeErFrame not implemented");
-		// TODO
+		int samples = 1024;
+		int chanConfig = ac.oc[1].m4ac.chanConfig;
+		int aot = ac.oc[1].m4ac.objectType;
+
+		if (aot == AOT_ER_AAC_LD || aot == AOT_ER_AAC_ELD) {
+			samples >>= 1;
+		}
+
+		int err = frameConfigureElements();
+		if (err < 0) {
+			return err;
+		}
+
+		ac.tagsMapped = 0;
+
+		if (chanConfig < 0 || chanConfig >= 8) {
+			log.error(String.format("Unknown ER channel configuration %d", chanConfig));
+			return AAC_ERROR;
+		}
+
+		for (int i = 0; i < tags_per_config[chanConfig]; i++) {
+			final int elemType = aac_channel_layout_map[chanConfig - 1][i][0];
+			final int elemId   = aac_channel_layout_map[chanConfig - 1][i][1];
+
+			ChannelElement che = getChe(elemType, elemId);
+			if (che == null) {
+				log.error(String.format("channel element %d.%d is not allocated", elemType, elemId));
+				return AAC_ERROR;
+			}
+
+			if (aot != AOT_ER_AAC_ELD) {
+				br.skip(4);
+			}
+
+			switch (elemType) {
+				case TYPE_SCE:
+					err = decodeIcs(che.ch[0], false, false);
+					break;
+				case TYPE_CPE:
+					err = decodeCpe(che);
+					break;
+				case TYPE_LFE:
+					err = decodeIcs(che.ch[0], false, false);
+					break;
+			}
+			if (err < 0) {
+				return err;
+			}
+		}
+
+		spectralToSample();
+
+		ac.nbSamples = samples;
+
+		br.skip(br.getBitsLeft());
+
 		return 0;
 	}
 
@@ -1896,6 +2674,8 @@ public class AacDecoder implements ICodec {
 		if (err < 0) {
 			return err;
 		}
+
+		CodecUtils.writeOutput(ac.samples, outputAddr, ac.nbSamples, ac.channels);
 
 		return br.getBytesRead();
 	}
