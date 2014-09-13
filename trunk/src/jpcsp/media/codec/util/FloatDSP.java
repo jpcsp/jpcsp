@@ -42,13 +42,16 @@ public class FloatDSP {
 	}
 
 	public static void vectorFmulWindow(float[] dst, int dstOffset, final float[] src0, int src0Offset, final float[] src1, int src1Offset, final float[] win, int winOffset, int len) {
+		dstOffset += len;
+		winOffset += len;
+		src0Offset += len;
 		for (int i = -len, j = len - 1; i < 0; i++, j--) {
-			float s0 = src0[src0Offset + len + i];
-			float s1 = src1[src1Offset + len + j];
-			float wi = win[winOffset + len + i];
-			float wj = win[winOffset + len + j];
-			dst[dstOffset + len + i] = s0 * wj - s1 * wi;
-			dst[dstOffset + len + j] = s0 * wi + s1 * wj;
+			float s0 = src0[src0Offset + i];
+			float s1 = src1[src1Offset + j];
+			float wi = win[winOffset + i];
+			float wj = win[winOffset + j];
+			dst[dstOffset + i] = s0 * wj - s1 * wi;
+			dst[dstOffset + j] = s0 * wi + s1 * wj;
 		}
 	}
 

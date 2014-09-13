@@ -59,10 +59,5 @@ public class Context {
 		for (int i = 0; i < oc.length; i++) {
 			oc[i] = new OutputConfiguration();
 		}
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < MAX_ELEM_ID; j++) {
-				che[i][j] = new ChannelElement();
-			}
-		}
 	}
 }
