@@ -34,6 +34,7 @@ import static jpcsp.media.codec.aac.AacTab.ff_aac_scalefactor_code;
 import static jpcsp.media.codec.aac.AacTab.ff_aac_spectral_bits;
 import static jpcsp.media.codec.aac.AacTab.ff_aac_spectral_codes;
 import static jpcsp.media.codec.aac.AacTab.ff_aac_spectral_sizes;
+import static jpcsp.media.codec.aac.AacTab.ff_mpeg4audio_channels;
 import static jpcsp.media.codec.aac.AacTab.ff_swb_offset_1024;
 import static jpcsp.media.codec.aac.AacTab.ff_swb_offset_128;
 import static jpcsp.media.codec.aac.AacTab.ff_swb_offset_512;
@@ -41,6 +42,7 @@ import static jpcsp.media.codec.aac.AacTab.ff_tns_max_bands_1024;
 import static jpcsp.media.codec.aac.AacTab.ff_tns_max_bands_128;
 import static jpcsp.media.codec.aac.AacTab.ff_tns_max_bands_512;
 import static jpcsp.media.codec.aac.Lpc.computeLpcCoefs;
+import static jpcsp.media.codec.aac.OutputConfiguration.OC_GLOBAL_HDR;
 import static jpcsp.media.codec.aac.OutputConfiguration.OC_LOCKED;
 import static jpcsp.media.codec.aac.OutputConfiguration.OC_NONE;
 import static jpcsp.media.codec.aac.OutputConfiguration.OC_TRIAL_FRAME;
@@ -244,11 +246,47 @@ public class AacDecoder implements ICodec {
 	    2f,
 	};
 
+	private static int sampleRateIdx (int rate) {
+	         if (92017 <= rate) return 0;
+	    else if (75132 <= rate) return 1;
+	    else if (55426 <= rate) return 2;
+	    else if (46009 <= rate) return 3;
+	    else if (37566 <= rate) return 4;
+	    else if (27713 <= rate) return 5;
+	    else if (23004 <= rate) return 6;
+	    else if (18783 <= rate) return 7;
+	    else if (13856 <= rate) return 8;
+	    else if (11502 <= rate) return 9;
+	    else if (9391  <= rate) return 10;
+	    else                    return 11;
+	}
+
 	@Override
 	public int init(int bytesPerFrame, int channels, int outputChannels, int codingMode) {
 		ac = new Context();
 
-		ac.oc[1].m4ac.sampleRate = ac.sampleRate;
+		ac.oc[1].m4ac.sampleRate = 44100;
+		ac.oc[1].m4ac.samplingIndex = sampleRateIdx(ac.oc[1].m4ac.sampleRate);
+		ac.channels = channels;
+		ac.oc[1].m4ac.sbr = -1;
+		ac.oc[1].m4ac.ps = -1;
+
+		ac.oc[1].m4ac.chanConfig = 0;
+		for (int i = 0; i < ff_mpeg4audio_channels.length; i++) {
+			if (ff_mpeg4audio_channels[i] == ac.channels) {
+				ac.oc[1].m4ac.chanConfig = i;
+				break;
+			}
+		}
+
+		if (ac.oc[1].m4ac.chanConfig != 0) {
+			int layoutMap[][] = new int[MAX_ELEM_ID * 4][3];
+			int layoutMapTags[] = new int[1];
+			int ret = setDefaultChannelConfig(layoutMap, layoutMapTags, ac.oc[1].m4ac.chanConfig);
+			if (ret == 0) {
+				outputConfigure(layoutMap, layoutMapTags[0], OC_GLOBAL_HDR, false);
+			}
+		}
 
 		for (int i = 0; i < vlc_spectral.length; i++) {
 			vlc_spectral[i] = new VLC();
@@ -1577,7 +1615,7 @@ public class AacDecoder implements ICodec {
 
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < MAX_ELEM_ID; j++) {
-				ac.tagCheMap[i][j].copy(ac.che[i][j]);
+				ac.tagCheMap[i][j] = ac.che[i][j];
 			}
 		}
 		ac.oc[1].channelLayout = layout;
