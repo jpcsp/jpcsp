@@ -88,6 +88,7 @@ public class sceVaudio extends HLEModule {
 	    	case 22050:
 	    	case 24000:
 	    	case 32000:
+	    	case 44100:
 	    	case 48000:
 	    		// OK
 	    		break;
