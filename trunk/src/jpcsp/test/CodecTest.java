@@ -119,7 +119,7 @@ public class CodecTest {
 					dataOffset = mp3Header.frameSize;
 				}
 				codecType = PSP_CODEC_MP3;
-			} else if ((Utilities.endianSwap16(mem.read16(inputAddr)) & 0xFFF0) == 0xFFF0) {
+			} else if ((Utilities.endianSwap16(mem.read16(inputAddr)) & 0xFFF0) == 0xFFF0 || file.getName().endsWith(".aac")) {
 				codecType = PSP_CODEC_AAC;
 			} else {
 				log.error(String.format("File '%s' not in RIFF format", file));

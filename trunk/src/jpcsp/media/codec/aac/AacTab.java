@@ -19,6 +19,10 @@ package jpcsp.media.codec.aac;
 import static java.lang.Math.pow;
 
 public class AacTab {
+	public static final int ff_mpeg4audio_channels[] = {
+	    0, 1, 2, 3, 4, 5, 6, 8
+	};
+
 	public static final float ff_aac_kbd_long_1024[] = new float[1024];
 	public static final float ff_aac_kbd_short_128[] = new float[128];
 
@@ -1729,6 +1733,33 @@ public class AacTab {
 				float f = (float) Math.pow(i, 1.0 / 3.0) * i;
 				cbrt_tab[i] = Float.floatToRawIntBits(f);
 			}
+		}
+
+		kbdWindowInit(ff_aac_kbd_long_1024, 4.0f, 1024);
+		kbdWindowInit(ff_aac_kbd_short_128, 6.0f, 128);
+	}
+
+	private static final int BESSEL_I0_ITER = 50; // default: 50 iterations of Bessel I0 approximation
+	private static final int FF_KBD_WINDOW_MAX = 1024;
+
+	private static void kbdWindowInit(float window[], float alpha, int n) {
+		double sum = 0.0;
+		double localWindow[] = new double[FF_KBD_WINDOW_MAX];
+		double alpha2 = (alpha * Math.PI / n) * (alpha * Math.PI / n);
+
+		for (int i = 0; i < n; i++) {
+			double tmp = i * (n - i) * alpha2;
+			double bessel = 1.0;
+			for (int j = BESSEL_I0_ITER; j > 0; j--) {
+				bessel = bessel * tmp / (j * j) + 1;
+			}
+			sum += bessel;
+			localWindow[i] = sum;
+		}
+
+		sum++;
+		for (int i = 0; i < n; i++) {
+			window[i] = (float) Math.sqrt(localWindow[i] / sum);
 		}
 	}
 }
