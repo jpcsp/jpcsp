@@ -49,6 +49,13 @@ public class pspFileBuffer {
 		notifyWrite(readSize);
 	}
 
+	public pspFileBuffer(int addr, int maxSize, int readSize, int filePosition) {
+		this.addr = addr;
+		this.maxSize = maxSize;
+		notifyWrite(readSize);
+		this.filePosition = filePosition;
+	}
+
 	public void setFileMaxSize(int fileMaxSize) {
 		this.fileMaxSize = fileMaxSize;
 	}
@@ -63,6 +70,10 @@ public class pspFileBuffer {
 
 	public int getWriteSize() {
 		return min(maxSize - currentSize, maxSize - writePosition, fileMaxSize - filePosition);
+	}
+
+	public int getFileWriteSize() {
+		return fileMaxSize - filePosition;
 	}
 
 	public int getFilePosition() {

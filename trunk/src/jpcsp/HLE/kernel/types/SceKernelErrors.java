@@ -560,6 +560,7 @@ public class SceKernelErrors {
     public final static int ERROR_AAC_INVALID_PARAMETER                         = 0x80691003;
     public final static int ERROR_AAC_ID_NOT_INITIALIZED                        = 0x80691103;
     public final static int ERROR_AAC_NO_MORE_FREE_ID                           = 0x80691201;
+    public final static int ERROR_AAC_DECODING_ERROR                            = 0x80691401;
     public final static int ERROR_AAC_NOT_ENOUGH_MEMORY                         = 0x80691501;
     public final static int ERROR_AAC_RESOURCE_NOT_INITIALIZED                  = 0x80691503;
 
