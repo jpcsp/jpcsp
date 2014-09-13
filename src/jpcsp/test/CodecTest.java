@@ -43,7 +43,6 @@ import org.apache.log4j.xml.DOMConfigurator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.modules.sceAtrac3plus;
-import jpcsp.HLE.modules.sceAudiocodec;
 import jpcsp.HLE.modules.sceMp3;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
