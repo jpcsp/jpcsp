@@ -798,7 +798,7 @@ public class Mp3Decoder implements ICodec {
     	in0 += in4 * 0.5f;
     	in4  = in0 + in2;
     	in5 += 2f * in1;
-    	in1  = (in5 * in3) * C5;
+    	in1  = (in5 + in3) * C5;
     	out[outOffset + 8] = in4 + in1;
     	out[outOffset + 9] = in4 + in1;
     	out[outOffset + 2] = in4 - in1;
