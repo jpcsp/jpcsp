@@ -33,8 +33,11 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.sceAudiocodec;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
+import jpcsp.media.codec.CodecFactory;
+import jpcsp.media.codec.ICodec;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Utilities;
 
@@ -216,6 +219,7 @@ public class sceMp3 extends HLEModule {
         protected PacketChannel mp3Channel;
         private byte[] mp3PcmBuffer;
         private int decodeCount;
+        private ICodec codec;
 
         //
         // The Buffer layout is the following:
@@ -313,6 +317,7 @@ public class sceMp3 extends HLEModule {
             mp3DecodedBytes = 0;
             mp3SumDecodedSamples = 0;
 
+            codec = CodecFactory.getCodec(sceAudiocodec.PSP_CODEC_MP3);
             if (checkMediaEngineState()) {
                 me = new MediaEngine();
                 me.setAudioSamplesSize(mp3MaxSamples);
@@ -626,7 +631,11 @@ public class sceMp3 extends HLEModule {
 			return mp3SumDecodedSamples;
 		}
 
-        @Override
+		public ICodec getCodec() {
+			return codec;
+		}
+
+		@Override
 		public String toString() {
 			return String.format("Mp3Stream(maxSize=%d, availableSize=%d, readPos=%d, writePos=%d)", mp3BufSize, mp3InputBufSize, mp3InputFileReadPos, mp3InputBufWritePos);
 		}

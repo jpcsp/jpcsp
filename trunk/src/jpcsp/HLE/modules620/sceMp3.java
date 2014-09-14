@@ -18,23 +18,32 @@ package jpcsp.HLE.modules620;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 @HLELogging
 public class sceMp3 extends jpcsp.HLE.modules150.sceMp3 {
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x1B839B83 , version = 620)
     public int sceMp3LowLevelInit(Mp3Stream mp3Stream, int unknown) {
+		// The init parameter values are all ignored by the MP3 decoder
+		mp3Stream.getCodec().init(0, 2, 2, 0);
+
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xE3EE2C81, version = 620)
     public int sceMp3LowLevelDecode(Mp3Stream mp3Stream, TPointer sourceAddr, TPointer32 sourceBytesConsumedAddr, TPointer samplesAddr, TPointer32 sampleBytesAddr) {
-		sampleBytesAddr.setValue(0);
-		sourceBytesConsumedAddr.setValue(0);
+		int result = mp3Stream.getCodec().decode(sourceAddr.getAddress(), 10000, samplesAddr.getAddress());
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceMp3LowLevelDecode result=0x%08X, samples=0x%X", result, mp3Stream.getCodec().getNumberOfSamples()));
+		}
+		if (result < 0) {
+			return SceKernelErrors.ERROR_MP3_DECODING_ERROR;
+		}
+
+		sourceBytesConsumedAddr.setValue(result);
+		sampleBytesAddr.setValue(mp3Stream.getCodec().getNumberOfSamples() * 4);
 
 		return 0;
 	}

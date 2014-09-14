@@ -555,6 +555,8 @@ public class SceKernelErrors {
     public final static int ERROR_AA3_INVALID_HEADER                            = 0x80631003;
     public final static int ERROR_AA3_INVALID_CODEC                             = 0x80631004;
 
+    public final static int ERROR_MP3_DECODING_ERROR                            = 0x80672001;
+
     public final static int ERROR_AAC_INVALID_ID                                = 0x80691001;
     public final static int ERROR_AAC_INVALID_ADDRESS                           = 0x80691002;
     public final static int ERROR_AAC_INVALID_PARAMETER                         = 0x80691003;
