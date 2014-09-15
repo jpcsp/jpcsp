@@ -645,7 +645,7 @@ public class Atrac3Decoder implements ICodec {
 			return ret;
 		}
 
-		writeOutput(ctx.samples, outputAddr, SAMPLES_PER_FRAME, ctx.outputChannels);
+		writeOutput(ctx.samples, outputAddr, SAMPLES_PER_FRAME, ctx.channels, ctx.outputChannels);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Bytes read 0x%X", ctx.br.getBytesRead()));

@@ -116,7 +116,7 @@ public class Atrac3plusDecoder implements ICodec {
 			ctx.channelUnits[chBlock].decodeResidualSpectrum(ctx.samples);
 			ctx.channelUnits[chBlock].reconstructFrame(ctx);
 
-			writeOutput(ctx.outpBuf, outputAddr, ATRAC3P_FRAME_SAMPLES, ctx.outputChannels);
+			writeOutput(ctx.outpBuf, outputAddr, ATRAC3P_FRAME_SAMPLES, channelsToProcess, ctx.outputChannels);
 
 			chBlock++;
 		}

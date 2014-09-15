@@ -16,29 +16,29 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MP3_DECODING_ERROR;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MP3_ID_NOT_RESERVED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MP3_INVALID_ID;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_MP3;
 import static jpcsp.util.Utilities.endianSwap32;
+import static jpcsp.util.Utilities.readUnaligned16;
+import static jpcsp.util.Utilities.readUnaligned32;
 import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUidClass;
-import jpcsp.HLE.HLEUidObjectMapping;
-import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
-
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-
-import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.pspFileBuffer;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.sceAudiocodec;
-import jpcsp.media.MediaEngine;
-import jpcsp.media.PacketChannel;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
-import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.media.codec.mp3.Mp3Decoder;
+import jpcsp.media.codec.mp3.Mp3Header;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -46,13 +46,14 @@ import org.apache.log4j.Logger;
 @HLELogging
 public class sceMp3 extends HLEModule {
     public static Logger log = Modules.getLogger("sceMp3");
-
-	private class EnableMediaEngineSettingsListerner extends AbstractBoolSettingsListener {
-		@Override
-		protected void settingsValueChanged(boolean value) {
-			setEnableMediaEngine(value);
-		}
-	}
+    private Mp3Info[] ids;
+    private static final int ID3 = 0x00334449; // "ID3"
+    private static final int TAG_Xing = 0x676E6958; // "Xing"
+    private static final int TAG_Info = 0x6F666E49; // "Info"
+    private static final int TAG_VBRI = 0x49524256; // "VBRI"
+    private static final int infoTagOffsets[][] = {{17, 32}, {9, 17}};
+    private static final int mp3DecodeDelay = 4000; // Microseconds
+	private static final int maxSamplesBytesStereo = 0x1200;
 
 	@Override
     public String getName() {
@@ -61,166 +62,40 @@ public class sceMp3 extends HLEModule {
 
     @Override
     public void start() {
-        mp3Map = new HashMap<Integer, Mp3Stream>();
-
-        setSettingsListener("emu.useMediaEngine", new EnableMediaEngineSettingsListerner());
+        ids = null;
 
         super.start();
     }
 
-
-    protected int mp3HandleCount;
-    protected HashMap<Integer, Mp3Stream> mp3Map;
-    protected static final int compressionFactor = 10;
-    protected static final int PSP_MP3_LOOP_NUM_INFINITE = -1;
-    protected static final int ID3 = 0x49443300; // "ID3"
-
-    protected static final int mp3DecodeDelay = 4000;           // Microseconds
-
-    // Media Engine based playback.
-    private boolean useMediaEngine = false;
-    
-    public static int calculateMp3Bitrate(int bitVal, int mp3Version, int mp3Layer) {
-    	int[] valueMapping = null;
-    	switch (mp3Version) {
-    		case 3: // MPEG Version 1
-    			switch (mp3Layer) {
-        			case 3: // Layer I
-        				valueMapping = new int[] { 0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, -1 };
-        				break;
-        			case 2: // Layer II
-        				valueMapping = new int[] { 0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, -1 };
-        				break;
-        			case 1: // Layer III
-        				valueMapping = new int[] { 0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, -1 };
-        				break;
-    			}
-    			break;
-    		case 2: // MPEG Version 2
-    		case 0: // MPEG Version 2.5
-    			switch (mp3Layer) {
-        			case 3: // Layer I
-        				valueMapping = new int[] { 0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, -1 };
-        				break;
-        			case 2: // Layer II
-        			case 1: // Layer III
-        				valueMapping = new int[] { 0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, -1 };
-        				break;
-    			}
-    			break;
-    	}
-
-    	if (valueMapping == null) {
-    		return -1;
-    	}
-
-    	return valueMapping[bitVal];
-    }
-
-    public static int calculateMp3SampleRate(int bitVal, int mp3Version) {
-    	int[] valueMapping = null;
-    	switch (mp3Version) {
-    		case 3: // MPEG Version 1
-    			valueMapping = new int[] { 44100, 48000, 32000, -1 };
-    			break;
-    		case 2: // MPEG Version 2
-    			valueMapping = new int[] { 22050, 24000, 16000, -1 };
-    			break;
-    		case 0: // MPEG Version 2.5
-    			valueMapping = new int[] { 11025, 12000, 8000, -1 };
-    			break;
-    	}
-
-    	if (valueMapping == null) {
-    		return 0;
-    	}
-
-    	return valueMapping[bitVal];
-    }
-
-    public static int calculateMp3Channels(int bitVal) {
-        if (bitVal == 0 || bitVal == 1 || bitVal == 2) {
-            return 2;  // Stereo / Joint Stereo / Dual Channel.
-        } else if (bitVal == 3) {
-            return 1;  // Mono.
-        } else {
-            return 0;
+    public int checkId(int id) {
+        if (ids == null || ids.length == 0) {
+            throw new SceKernelErrorException(ERROR_MP3_INVALID_ID);
         }
+        if (id < 0 || id >= ids.length) {
+            throw new SceKernelErrorException(ERROR_MP3_INVALID_ID);
+        }
+
+        return id;
     }
 
-    public static int calculateMp3PaddingBytes(int bitVal, int mp3Layer) {
-    	if (bitVal == 0) {
-    		return 0;
-    	}
-    	// Layer I: 32 bits, Layer II+III: 8 bits
-    	return mp3Layer == 3 ? 4 : 1;
+    public int checkInitId(int id) {
+        id = checkId(id);
+        if (!ids[id].isReserved()) {
+            throw new SceKernelErrorException(ERROR_MP3_ID_NOT_RESERVED);
+        }
+
+        return id;
+    }
+
+    protected Mp3Info getMp3Info(int id) {
+        return ids[id];
     }
 
     public static boolean isMp3Magic(int magic) {
-    	return (magic & 0xFEFF) == 0xFAFF;
+    	return (magic & 0xE0FF) == 0xE0FF;
     }
 
-    protected boolean checkMediaEngineState() {
-        return useMediaEngine;
-    }
-
-    private void setEnableMediaEngine(boolean state) {
-        useMediaEngine = state;
-    }
-
-    public int makeFakeMp3StreamHandle() {
-        // The stream can't be negative.
-        return 0x0000A300 | (mp3HandleCount++ & 0xFFFF);
-    }
-
-    private void delayThread(long startMicros, int delayMicros) {
-    	long now = Emulator.getClock().microTime();
-    	int threadDelayMicros = delayMicros - (int) (now - startMicros);
-    	if (threadDelayMicros > 0) {
-    		Modules.ThreadManForUserModule.hleKernelDelayThread(threadDelayMicros, false);
-    	}
-    }
-    
-    static final int ERROR_MP3_NOT_FOUND = 0;
-
-    @HLEUidClass(moduleMethodUidGenerator = "makeFakeMp3StreamHandle", errorValueOnNotFound = ERROR_MP3_NOT_FOUND)
-    protected class Mp3Stream {
-    	private final static int ME_READ_AHEAD = 32 * 1024; // 32K
-    	
-    	// SceMp3InitArg struct.
-        private final long mp3StreamStart;
-        private final long mp3StreamEnd;
-        private final int mp3Buf;
-        private final int mp3BufSize;
-        private final int mp3PcmBuf;
-        private final int mp3PcmBufSize;
-        private final int mp3CompleteBuf;
-        private final int mp3CompleteBufSize;
-
-        // MP3 internal file buffer vars.
-        private long mp3InputFileSize;
-        private int mp3InputFileReadPos;
-        private int mp3InputBufWritePos;
-        private int mp3InputBufSize;
-
-        // MP3 decoding vars.
-        private int mp3DecodedBytes;
-        private int mp3SumDecodedSamples;
-
-        // MP3 properties.
-        private int mp3SampleRate;
-        private int mp3LoopNum;
-        private int mp3BitRate;
-        private int mp3MaxSamples;
-        private int mp3Channels;
-        private int mp3Version;
-
-        protected MediaEngine me;
-        protected PacketChannel mp3Channel;
-        private byte[] mp3PcmBuffer;
-        private int decodeCount;
-        private ICodec codec;
-
+    protected class Mp3Info {
         //
         // The Buffer layout is the following:
         // - mp3BufSize: maximum buffer size, cannot be changed
@@ -267,552 +142,497 @@ public class sceMp3 extends HLEModule {
         // NOTE: sceMp3 is only capable of handling MPEG Version 1 Layer III data.
         //
 
-        public Mp3Stream(int args) {
-            Memory mem = Memory.getInstance();
+    	// The PSP is always reserving this size at the beginning of the input buffer
+    	private static final int reservedBufferSize = 0x5C0;
+    	private static final int minimumInputBufferSize = reservedBufferSize;
+        private boolean reserved;
+        private pspFileBuffer inputBuffer;
+        private int bufferAddr;
+        private int outputAddr;
+        private int outputSize;
+        private int sumDecodedSamples;
+        private ICodec codec;
+        private int halfBufferSize;
+        private int outputIndex;
+        private int loopNum;
+        private int startPos;
+        private int sampleRate;
+        private int bitRate;
+        private int maxSamples;
+        private int channels;
+        private int version;
+        private int numberOfFrames;
+        private int outputChannels;
 
-            if (args != 0) {
-	            // SceMp3InitArg struct.
-	            mp3StreamStart = mem.read64(args);
-	            mp3StreamEnd = mem.read64(args + 8);
-	            mp3CompleteBuf = mem.read32(args + 16);
-	            mp3CompleteBufSize = mem.read32(args + 20);
-	            mp3PcmBuf = mem.read32(args + 24);
-	            mp3PcmBufSize = mem.read32(args + 28);
-
-	            // 0x5C0 bytes seem to be reserved at the beginning of the buffer
-	            final int reservedSize = 0x5C0;
-	            mp3Buf = mp3CompleteBuf + reservedSize;
-	            mp3BufSize = mp3CompleteBufSize - reservedSize;
-            } else {
-            	mp3StreamStart = 0;
-            	mp3StreamEnd = 0;
-            	mp3CompleteBuf = 0;
-            	mp3CompleteBufSize = 0;
-            	mp3PcmBuf = 0;
-            	mp3PcmBufSize = 0;
-
-            	mp3Buf = 0;
-            	mp3BufSize = 0;
-            }
-
-            if (log.isDebugEnabled()) {
-            	log.debug(String.format("sceMp3ReserveMp3Handle Stream start=0x%X, end=0x%X", mp3StreamStart, mp3StreamEnd));
-            	log.debug(String.format("sceMp3ReserveMp3Handle Mp3Buf 0x%08X, size=0x%X", mp3CompleteBuf, mp3CompleteBufSize));
-            	log.debug(String.format("sceMp3ReserveMp3Handle PcmBuf 0x%08X, size=0x%X", mp3PcmBuf, mp3PcmBufSize));
-            }
-
-            mp3InputFileReadPos = 0;
-            mp3InputFileSize = 0;
-
-            // The MP3 buffer is currently empty.
-            mp3InputBufWritePos = mp3InputFileReadPos;
-            mp3InputBufSize = 0;
-
-            // We do not know yet the number of channels, assume 2.
-            // This will be overwritten as soon as we parse the MP3 header
-            initMp3MaxSamples(2);
-
-            // Set default properties.
-            mp3LoopNum = PSP_MP3_LOOP_NUM_INFINITE;
-            mp3DecodedBytes = 0;
-            mp3SumDecodedSamples = 0;
-
-            codec = CodecFactory.getCodec(sceAudiocodec.PSP_CODEC_MP3);
-            if (checkMediaEngineState()) {
-                me = new MediaEngine();
-                me.setAudioSamplesSize(mp3MaxSamples);
-                mp3Channel = new PacketChannel();
-            }
-
-            mp3PcmBuffer = new byte[mp3PcmBufSize];
+        public boolean isReserved() {
+            return reserved;
         }
 
-        private void initMp3MaxSamples(int mp3Channels) {
-            // In the JpcspTrace log of "Downstream Panic! - ULUS10322",
-            // the PSP is returning 0x1200 bytes at each sceMp3Decode call.
-            // Is this maybe depending on the MP3 file itself?
-            final int maxSampleBytes = mp3Channels == 1 ? 0x900 : 0x1200;
-            mp3MaxSamples = Math.min(mp3PcmBufSize, maxSampleBytes) / 4;
+        public void reserve(int bufferAddr, int bufferSize, int outputAddr, int outputSize, long startPos, long endPos) {
+            reserved = true;
+            this.bufferAddr = bufferAddr;
+            this.outputAddr = outputAddr;
+            this.outputSize = outputSize;
+            this.startPos = (int) startPos;
+            inputBuffer = new pspFileBuffer(bufferAddr + reservedBufferSize, bufferSize - reservedBufferSize, 0, this.startPos);
+            inputBuffer.setFileMaxSize((int) endPos);
+            loopNum = -1; // Looping indefinitely by default
+            codec = CodecFactory.getCodec(PSP_CODEC_MP3);
+
+            halfBufferSize = (bufferSize - reservedBufferSize) >> 1;
         }
+
+        public void release() {
+            reserved = false;
+        }
+
+        public int notifyAddStream(int bytesToAdd) {
+            if (log.isTraceEnabled()) {
+                log.trace(String.format("notifyAddStream: %s", Utilities.getMemoryDump(inputBuffer.getWriteAddr(), bytesToAdd)));
+            }
+
+            inputBuffer.notifyWrite(bytesToAdd);
+
+            return 0;
+        }
+
+        public pspFileBuffer getInputBuffer() {
+            return inputBuffer;
+        }
+
+        public boolean isStreamDataNeeded() {
+        	int writeSize = inputBuffer.getWriteSize();
+
+        	if (writeSize <= 0) {
+        		return false;
+        	}
+
+        	if (writeSize >= halfBufferSize) {
+            	return true;
+            }
+
+            if (writeSize >= inputBuffer.getFileWriteSize()) {
+            	return true;
+            }
+
+            return false;
+        }
+
+        public int getSumDecodedSamples() {
+            return sumDecodedSamples;
+        }
+
+        public int decode(TPointer32 outputBufferAddress) {
+        	int result;
+        	int decodeOutputAddr = outputAddr + outputIndex;
+        	if (inputBuffer.isFileEnd() && inputBuffer.getCurrentSize() <= 0) {
+        		int outputBytes = codec.getNumberOfSamples() * 4;
+        		Memory mem = Memory.getInstance();
+        		mem.memset(decodeOutputAddr, (byte) 0, outputBytes);
+        		result = outputBytes;
+        	} else {
+	        	int decodeInputAddr = inputBuffer.getReadAddr();
+	        	int decodeInputLength = inputBuffer.getReadSize();
+
+	        	// Reaching the end of the input buffer (wrapping to its beginning)?
+	        	if (decodeInputLength < minimumInputBufferSize && decodeInputLength < inputBuffer.getCurrentSize()) {
+	        		// Concatenate the input into a temporary buffer
+	        		Memory mem = Memory.getInstance();
+	        		mem.memcpy(bufferAddr, decodeInputAddr, decodeInputLength);
+	        		int wrapLength = Math.min(inputBuffer.getCurrentSize(), minimumInputBufferSize) - decodeInputLength;
+	        		mem.memcpy(bufferAddr + decodeInputLength, inputBuffer.getAddr(), wrapLength);
+
+	        		decodeInputAddr = bufferAddr;
+	        		decodeInputLength += wrapLength;
+	        	}
+
+	        	if (log.isDebugEnabled()) {
+	            	log.debug(String.format("Decoding from 0x%08X, length=0x%X to 0x%08X", decodeInputAddr, decodeInputLength, decodeOutputAddr));
+	            }
+
+	        	result = codec.decode(decodeInputAddr, decodeInputLength, decodeOutputAddr);
+
+	            if (result < 0) {
+	            	result = ERROR_MP3_DECODING_ERROR;
+	            } else {
+		            int readSize = result;
+		            int samples = codec.getNumberOfSamples();
+		            int outputBytes = samples * outputChannels * 2;
+
+		            inputBuffer.notifyRead(readSize);
+
+		            sumDecodedSamples += samples;
+
+		            // Update index in output buffer for next decode()
+		            outputIndex += outputBytes;
+		            if (outputIndex + outputBytes > outputSize) {
+		            	// No space enough to store the same amount of output bytes,
+		            	// reset to beginning of output buffer
+		            	outputIndex = 0;
+		            }
+
+		            result = outputBytes;
+	            }
+
+	            if (inputBuffer.getCurrentSize() < minimumInputBufferSize && inputBuffer.isFileEnd() && loopNum != 0) {
+	            	if (log.isDebugEnabled()) {
+	            		log.debug(String.format("Looping loopNum=%d", loopNum));
+	            	}
+
+	            	if (loopNum > 0) {
+	            		loopNum--;
+	            	}
+
+	            	resetPlayPosition(0);
+	            }
+        	}
+
+            outputBufferAddress.setValue(decodeOutputAddr);
+
+            return result;
+        }
+
+        public int getWritableBytes() {
+        	int writeSize = inputBuffer.getWriteSize();
+
+        	if (writeSize >= 2 * halfBufferSize) {
+        		return 2 * halfBufferSize;
+        	}
+
+        	if (writeSize >= halfBufferSize) {
+        		return halfBufferSize;
+        	}
+
+        	if (writeSize >= inputBuffer.getFileWriteSize()) {
+        		return halfBufferSize;
+        	}
+
+        	return 0;
+        }
+
+		public int getLoopNum() {
+			return loopNum;
+		}
+
+		public void setLoopNum(int loopNum) {
+			this.loopNum = loopNum;
+		}
+
+		public int resetPlayPosition(int position) {
+			inputBuffer.reset(0, startPos);
+			sumDecodedSamples = 0;
+
+			return 0;
+		}
 
         private void parseMp3FrameHeader() {
             Memory mem = Memory.getInstance();
-            // Skip the ID3 tags, the MP3 stream starts at mp3StreamStart.
-        	int header = endianSwap32(Utilities.readUnaligned32(mem, mp3Buf + (int) mp3StreamStart));
-        	if ((header & 0xFFFFFF00) == ID3) {
-        		int size = endianSwap32(Utilities.readUnaligned32(mem, mp3Buf + (int) mp3StreamStart + 6));
+            int startAddr = inputBuffer.getAddr();
+            int headerAddr = startAddr;
+        	int header = readUnaligned32(mem, headerAddr);
+
+            // Skip the ID3 tags
+        	if ((header & 0x00FFFFFF) == ID3) {
+        		int size = endianSwap32(readUnaligned32(mem, startAddr + 6));
         		// Highest bit of each byte has to be ignored (format: 0x7F7F7F7F)
         		size = (size & 0x7F) | ((size & 0x7F00) >> 1) | ((size & 0x7F0000) >> 2) | ((size & 0x7F000000) >> 3);
         		if (log.isDebugEnabled()) {
         			log.debug(String.format("Skipping ID3 of size 0x%X", size));
         		}
-        		header = endianSwap32(Utilities.readUnaligned32(mem, mp3Buf + (int) mp3StreamStart + 10 + size));
+        		inputBuffer.notifyRead(10 + size);
+        		headerAddr = startAddr + 10 + size;
+        		header = readUnaligned32(mem, headerAddr);
         	}
+
         	if (!isMp3Magic(header)) {
         		log.error(String.format("Invalid MP3 header 0x%08X", header));
+        		return;
         	}
+
+        	header = Utilities.endianSwap32(header);
             if (log.isDebugEnabled()) {
             	log.debug(String.format("Mp3 header: 0x%08X", header));
             }
-            mp3Version = (header >> 19) & 0x3;
-            int mp3Layer = (header >> 17) & 0x3;
-            mp3Channels = calculateMp3Channels((header >> 6) & 0x3);
-            mp3SampleRate = calculateMp3SampleRate((header >> 10) & 0x3, mp3Version);
-            mp3BitRate = calculateMp3Bitrate((header >> 12) & 0xF, mp3Version, mp3Layer);
 
-            // Now, we know the real number of channels, update the max samples
-            initMp3MaxSamples(mp3Channels);
+            Mp3Header mp3Header = new Mp3Header();
+            Mp3Decoder.decodeHeader(mp3Header, header);
+            version = mp3Header.version;
+            channels = mp3Header.nbChannels;
+            sampleRate = mp3Header.sampleRate;
+            bitRate = mp3Header.bitRate;
+            maxSamples = mp3Header.maxSamples;
+
+            parseInfoTag(headerAddr + 4 + infoTagOffsets[mp3Header.lsf][mp3Header.nbChannels - 1]);
+            parseVbriTag(headerAddr + 4 + 32);
         }
 
-        /**
-         * The PSP is always adding data to the MP3 stream with this size.
-         * 
-         * @return the size used by the PSP to add data to the MP3 stream.
-         */
-        private int getMaxAddStreamDataSize() {
-        	return mp3BufSize >> 1;
+        private void parseInfoTag(int addr) {
+        	Memory mem = Memory.getInstance();
+        	int tag = readUnaligned32(mem, addr);
+        	if (tag == TAG_Xing || tag == TAG_Info) {
+        		int numberOfBytes = 0;
+        		int flags = endianSwap32(readUnaligned32(mem, addr + 4));
+        		addr += 8;
+        		if ((flags & 0x1) != 0) {
+        			numberOfFrames = endianSwap32(readUnaligned32(mem, addr));
+        			addr += 4;
+        		}
+        		if ((flags & 0x2) != 0) {
+        			numberOfBytes = endianSwap32(readUnaligned32(mem, addr));
+        			addr += 4;
+        		}
+
+        		if (log.isDebugEnabled()) {
+            		log.debug(String.format("Found TAG 0x%08X, numberOfFrames=%d, numberOfBytes=0x%X", tag, numberOfFrames, numberOfBytes));
+            	}
+        	}
         }
 
-        /**
-         * @return number of bytes that can be written sequentially into the buffer
-         */
-        public int getMp3AvailableSequentialWriteSize() {
-        	return Math.min(getMp3AvailableWriteSize(), mp3BufSize - mp3InputBufWritePos);
-        }
+        private void parseVbriTag(int addr) {
+        	Memory mem = Memory.getInstance();
+        	int tag = readUnaligned32(mem, addr);
+        	if (tag == TAG_VBRI) {
+        		int version = readUnaligned16(mem, addr + 4);
+        		if (version == 1) {
+        			int numberOfBytes = endianSwap32(readUnaligned32(mem, addr + 10));
+        			numberOfFrames = endianSwap32(readUnaligned32(mem, addr + 14));
 
-        /**
-         * @return number of bytes that can be read from the buffer
-         */
-        public int getMp3AvailableReadSize() {
-            return mp3InputBufSize;
-        }
-
-        /**
-         * @return number of bytes that can be written into the buffer
-         */
-        public int getMp3AvailableWriteSize() {
-            return mp3BufSize - getMp3AvailableReadSize();
-        }
-
-        /**
-         * Read bytes from the buffer.
-         *
-         * @param size    number of byte read
-         * @return        number of bytes actually read
-         */
-        private int consumeRead(int size) {
-            size = Math.min(size, getMp3AvailableReadSize());
-            mp3InputBufSize -= size;
-            mp3InputFileReadPos += size;
-            return size;
-        }
-
-        /**
-         * Write bytes into the buffer.
-         *
-         * @param size    number of byte written
-         * @return        number of bytes actually written
-         */
-        private int consumeWrite(int size) {
-            size = Math.min(size, getMp3AvailableWriteSize());
-            mp3InputBufSize += size;
-            mp3InputBufWritePos += size;
-            if (mp3InputBufWritePos >= mp3BufSize) {
-                mp3InputBufWritePos -= mp3BufSize;
-            }
-            return size;
+        			if (log.isDebugEnabled()) {
+                		log.debug(String.format("Found TAG 0x%08X, numberOfFrames=%d, numberOfBytes=0x%X", tag, numberOfFrames, numberOfBytes));
+                	}
+        		}
+        	}
         }
 
         public void init() {
-            parseMp3FrameHeader();
-            if (checkMediaEngineState()) {
-                me.finish();
-            }
+        	parseMp3FrameHeader();
+
+        	// Always output in stereo, even if the input is mono
+        	outputChannels = 2;
+
+            codec.init(0, channels, outputChannels, 0);
         }
 
-        private boolean checkMediaEngineChannel() {
-        	if (checkMediaEngineState()) {
-        		int minimumChannelLength = (int) Math.min(ME_READ_AHEAD, mp3StreamEnd - mp3StreamStart);
-            	if (mp3Channel.length() < minimumChannelLength) {
-            		int neededLength = ME_READ_AHEAD - mp3Channel.length();
-            		consumeRead(neededLength);
-            		return false;
-            	}
-        	}
-
-        	return true;
+        public int getChannelNum() {
+        	return channels;
         }
 
-        /**
-         * The PSP is using the PCM buffer to perform some double-buffering.
-         * The first half of the buffer is used at the first sceMp3Decode call,
-         * the second halt of the buffer is used at the second sceMp3Decode call.
-         * The third call is reusing the first halt of the buffer and so on.
-         * 
-         * @return the address where to store the PCM data returned by sceMp3Decode.
-         */
-        public int getDecodeBuffer() {
-    		int decodeBuffer = mp3PcmBuf;
-    		if ((decodeCount & 1) != 0) {
-    			decodeBuffer += getDecodeBufferSize();
-    		}
-
-    		return decodeBuffer;
+        public int getSampleRate() {
+        	return sampleRate;
         }
 
-        public int getDecodeBufferSize() {
-        	return mp3PcmBufSize >> 1;
+        public int getBitRate() {
+        	return bitRate;
         }
 
-        public int decode(int decodeBuffer, int decodeBufferSize) {
-    		decodeCount++;
-
-        	if (checkMediaEngineState()) {
-            	// Wait to fill the ME Channel with enough data before opening the
-            	// audio channel, otherwise the decoding might stop and assume
-            	// an "End Of File" condition.
-            	if (me.getContainer() != null || checkMediaEngineChannel()) {
-            		if (me.getContainer() == null) {
-	            		me.init(mp3Channel, false, true, 0, 0);
-	            	}
-            		me.stepAudio(getMp3MaxSamples() * getBytesPerSample(), getMp3DecodeNumberOfChannels());
-	                mp3DecodedBytes = copySamplesToMem(decodeBuffer, decodeBufferSize, mp3PcmBuffer);
-	                if (log.isTraceEnabled()) {
-	                	log.trace(String.format("decoded %d samples: %s", mp3DecodedBytes, Utilities.getMemoryDump(decodeBuffer, mp3DecodedBytes)));
-	                }
-            	} else {
-            		// sceMp3Decode is not expected to return 0 samples at the start.
-            		// Fake the return of 1 empty sample.
-            		int fakeSamples = 1;
-            		mp3DecodedBytes = fakeSamples * getBytesPerSample();
-                    // Clear the whole PCM buffer, just in case the application is expecting
-            		// mp3MaxSamples and not just 1 sample.
-                    Memory.getInstance().memset(decodeBuffer, (byte) 0, decodeBufferSize);
-            	}
-            } else {
-            	// Return mp3MaxSamples samples (all set to 0).
-                mp3DecodedBytes = getMp3MaxSamples() * getBytesPerSample();
-                Memory.getInstance().memset(decodeBuffer, (byte) 0, mp3DecodedBytes);
-
-                int mp3BufReadConsumed = Math.min(mp3DecodedBytes / compressionFactor, getMp3AvailableReadSize());
-                consumeRead(mp3BufReadConsumed);
-            }
-
-        	mp3SumDecodedSamples += mp3DecodedBytes / getBytesPerSample();
-
-        	return mp3DecodedBytes;
+        public int getMaxSamples() {
+        	return maxSamples;
         }
 
-        public int getBytesPerSample() {
-        	// 2 Bytes per decoded channel
-        	return getMp3DecodeNumberOfChannels() * 2;
+        public int getVersion() {
+        	return version;
         }
 
-        public boolean isStreamDataNeeded() {
-        	if (isStreamDataEnd()) {
-        		return false;
-        	}
-
-        	if (checkMediaEngineState()) {
-        		checkMediaEngineChannel();
-        		if (mp3Channel.length() >= ME_READ_AHEAD) {
-        			// We have enough data into the channel
-        			return false;
-        		}
-        	}
-
-        	// We have not enough data into the channel,
-        	// accept only in packets of maxAddStreamDataSize (like the PSP)
-        	return getMp3AvailableSequentialWriteSize() >= getMaxAddStreamDataSize();
+        public ICodec getCodec() {
+        	return codec;
         }
 
-        public boolean isStreamDataEnd() {
-            return mp3InputFileSize >= mp3StreamEnd;
+        public int getNumberOfFrames() {
+        	return numberOfFrames;
         }
-
-        public int addMp3StreamData(int size) {
-            if (checkMediaEngineState()) {
-                mp3Channel.write(getMp3BufWriteAddr(), size);
-            }
-            mp3InputFileSize += size;
-            return consumeWrite(size);
-        }
-
-        private int copySamplesToMem(int address, int maxLength, byte[] buffer) {
-            Memory mem = Memory.getInstance();
-
-            int bytes = me.getCurrentAudioSamples(buffer);
-
-        	if (bytes > 0) {
-        		mem.copyToMemory(address, ByteBuffer.wrap(buffer, 0, bytes), bytes);
-            }
-
-            return bytes;
-        }
-
-        public int getMp3BufWriteAddr() {
-        	return getMp3BufAddr() + getMp3InputBufWritePos();
-        }
-
-        public int getMp3LoopNum() {
-            return mp3LoopNum;
-        }
-
-        public int getMp3BufAddr() {
-            return mp3Buf;
-        }
-
-        public int getMp3PcmBufAddr() {
-            return mp3PcmBuf;
-        }
-
-        public int getMp3PcmBufSize() {
-            return mp3PcmBufSize;
-        }
-
-        public int getMp3InputFileReadPos() {
-            return mp3InputFileReadPos;
-        }
-
-        public int getMp3InputBufWritePos() {
-            return mp3InputBufWritePos;
-        }
-
-        public int getMp3BufSize() {
-            return mp3BufSize;
-        }
-
-        public int getMp3DecodedSamples() {
-            return mp3DecodedBytes / getBytesPerSample();
-        }
-
-        public int getMp3MaxSamples() {
-            return mp3MaxSamples;
-        }
-
-        public int getMp3BitRate() {
-            return mp3BitRate;
-        }
-
-        public int getMp3ChannelNum() {
-            return mp3Channels;
-        }
-
-        public int getMp3DecodeNumberOfChannels() {
-        	// Always return 2 channels from decoding
-        	return 2;
-        }
-
-        public int getMp3SamplingRate() {
-            return mp3SampleRate;
-        }
-
-        public long getMp3InputFileSize() {
-        	return mp3InputFileSize;
-        }
-        
-        public void setMp3LoopNum(int n) {
-            mp3LoopNum = n;
-        }
-
-        public void setMp3BufCurrentPos(int pos) {
-            mp3InputFileReadPos = pos;
-            mp3InputBufWritePos = pos;
-            mp3InputBufSize = 0;
-            mp3InputFileSize = 0;
-            mp3DecodedBytes = 0;
-        }
-
-        public int getMp3Version() {
-        	return mp3Version;
-        }
-
-		public int getMp3SumDecodedSamples() {
-			return mp3SumDecodedSamples;
-		}
-
-		public ICodec getCodec() {
-			return codec;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("Mp3Stream(maxSize=%d, availableSize=%d, readPos=%d, writePos=%d)", mp3BufSize, mp3InputBufSize, mp3InputFileReadPos, mp3InputBufWritePos);
-		}
     }
 
     @HLEFunction(nid = 0x07EC321A, version = 150, checkInsideInterrupt = true)
-    public Mp3Stream sceMp3ReserveMp3Handle(@CanBeNull TPointer mp3args) {
-        Mp3Stream mp3Stream = new Mp3Stream(mp3args.getAddress());
+    public int sceMp3ReserveMp3Handle(@CanBeNull TPointer parameters) {
+    	long startPos = 0;
+    	long endPos = 0;
+    	int bufferAddr = 0;
+    	int bufferSize = 0;
+    	int outputAddr = 0;
+    	int outputSize = 0;
+    	if (parameters.isNotNull()) {
+	        startPos = parameters.getValue64(0);   // Audio data frame start position.
+	        endPos = parameters.getValue64(8);     // Audio data frame end position.
+	        bufferAddr = parameters.getValue32(16); // Input AAC data buffer.
+	        bufferSize = parameters.getValue32(20); // Input AAC data buffer size.
+	        outputAddr = parameters.getValue32(24); // Output PCM data buffer.
+	        outputSize = parameters.getValue32(28); // Output PCM data buffer size.
+
+	        if (bufferAddr == 0 || outputAddr == 0) {
+	        	return SceKernelErrors.ERROR_MP3_INVALID_ADDRESS;
+	        }
+	        if (startPos < 0 || startPos > endPos) {
+	        	return SceKernelErrors.ERROR_MP3_INVALID_PARAMETER;
+	        }
+	        if (bufferSize < 8192 || outputSize < maxSamplesBytesStereo * 2) {
+	        	return SceKernelErrors.ERROR_MP3_INVALID_PARAMETER;
+	        }
+    	}
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceMp3ReserveMp3Handle returning %s", mp3Stream));
+            log.debug(String.format("sceMp3ReserveMp3Handle parameters: startPos=0x%X, endPos=0x%X, "
+                    + "bufferAddr=0x%08X, bufferSize=0x%X, outputAddr=0x%08X, outputSize=0x%X",
+                    startPos, endPos, bufferAddr, bufferSize, outputAddr, outputSize));
         }
 
-        return mp3Stream;
+        int id = -1;
+        for (int i = 0; i < ids.length; i++) {
+            if (!ids[i].isReserved()) {
+                id = i;
+                break;
+            }
+        }
+        if (id < 0) {
+            return -1;
+        }
+
+        ids[id].reserve(bufferAddr, bufferSize, outputAddr, outputSize, startPos, endPos);
+
+        return id;
     }
 
     @HLEFunction(nid = 0x0DB149F4, version = 150, checkInsideInterrupt = true)
-    public int sceMp3NotifyAddStreamData(Mp3Stream mp3Stream, int size) {
-        // New data has been written by the application.
-        mp3Stream.addMp3StreamData(size);
-        return 0;
+    public int sceMp3NotifyAddStreamData(@CheckArgument("checkInitId") int id, int bytesToAdd) {
+    	return getMp3Info(id).notifyAddStream(bytesToAdd);
     }
 
     @HLEFunction(nid = 0x2A368661, version = 150, checkInsideInterrupt = true)
-    public int sceMp3ResetPlayPosition(Mp3Stream mp3Stream) {
-        mp3Stream.setMp3BufCurrentPos(0);
-
-        return 0;
+    public int sceMp3ResetPlayPosition(@CheckArgument("checkInitId") int id) {
+    	return getMp3Info(id).resetPlayPosition(0);
     }
 
     @HLELogging(level="info")
     @HLEFunction(nid = 0x35750070, version = 150, checkInsideInterrupt = true)
     public int sceMp3InitResource() {
+    	ids = new Mp3Info[2];
+    	for (int i = 0; i < ids.length; i++) {
+    		ids[i] = new Mp3Info();
+    	}
+
         return 0;
     }
 
     @HLELogging(level="info")
     @HLEFunction(nid = 0x3C2FA058, version = 150, checkInsideInterrupt = true)
     public int sceMp3TermResource() {
+    	ids = null;
+
         return 0;
     }
 
     @HLEFunction(nid = 0x3CEF484F, version = 150, checkInsideInterrupt = true)
-    public int sceMp3SetLoopNum(Mp3Stream mp3Stream, int loopNbr) {
-        mp3Stream.setMp3LoopNum(loopNbr);
+    public int sceMp3SetLoopNum(@CheckArgument("checkInitId") int id, int loopNum) {
+    	getMp3Info(id).setLoopNum(loopNum);
 
         return 0;
     }
 
     @HLEFunction(nid = 0x44E07129, version = 150, checkInsideInterrupt = true)
-    public int sceMp3Init(Mp3Stream mp3Stream) {
-    	mp3Stream.init();
+    public int sceMp3Init(@CheckArgument("checkId") int id) {
+    	Mp3Info mp3Info = getMp3Info(id);
+    	mp3Info.init();
         if (log.isInfoEnabled()) {
-            log.info(String.format("Initializing Mp3 data: channels=%d, samplerate=%dkHz, bitrate=%dkbps.", mp3Stream.getMp3ChannelNum(), mp3Stream.getMp3SamplingRate(), mp3Stream.getMp3BitRate()));
+            log.info(String.format("Initializing Mp3 data: channels=%d, samplerate=%dkHz, bitrate=%dkbps.", mp3Info.getChannelNum(), mp3Info.getSampleRate(), mp3Info.getBitRate()));
         }
 
         return 0;
     }
 
     @HLEFunction(nid = 0x7F696782, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetMp3ChannelNum(Mp3Stream mp3Stream) {
-        return mp3Stream.getMp3ChannelNum();
+    public int sceMp3GetMp3ChannelNum(@CheckArgument("checkInitId") int id) {
+        return getMp3Info(id).getChannelNum();
     }
 
     @HLEFunction(nid = 0x8F450998, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetSamplingRate(Mp3Stream mp3Stream) {
+    public int sceMp3GetSamplingRate(@CheckArgument("checkInitId") int id) {
+    	Mp3Info mp3Info = getMp3Info(id);
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceMp3GetSamplingRate returning 0x%X", mp3Stream.getMp3SamplingRate()));
+    		log.debug(String.format("sceMp3GetSamplingRate returning 0x%X", mp3Info.getSampleRate()));
     	}
-        return mp3Stream.getMp3SamplingRate();
+        return mp3Info.getSampleRate();
     }
 
     @HLEFunction(nid = 0xA703FE0F, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetInfoToAddStreamData(Mp3Stream mp3Stream, @CanBeNull TPointer32 mp3BufPtr, @CanBeNull TPointer32 mp3BufToWritePtr, @CanBeNull TPointer32 mp3PosPtr) {
-        // Address where to write
-        mp3BufPtr.setValue(mp3Stream.isStreamDataEnd() ? 0 : mp3Stream.getMp3BufWriteAddr());
-
-        // Length that can be written from bufAddr
-        int mp3BufToWrite;
-        if (mp3Stream.isStreamDataEnd()) {
-        	mp3BufToWrite = 0;
-        } else if (mp3Stream.getMp3InputFileSize() == 0) {
-        	mp3BufToWrite = mp3Stream.getMaxAddStreamDataSize() * 2;
-        } else {
-        	mp3BufToWrite = mp3Stream.getMaxAddStreamDataSize();
-        }
-        mp3BufToWrite = Math.min(mp3BufToWrite, mp3Stream.getMp3AvailableSequentialWriteSize());
-        mp3BufToWritePtr.setValue(mp3BufToWrite);
-
-        // Position in the source stream file to start reading from (seek position)
-        mp3PosPtr.setValue((int) mp3Stream.getMp3InputFileSize());
+    public int sceMp3GetInfoToAddStreamData(@CheckArgument("checkInitId") int id, @CanBeNull TPointer32 writeAddr, @CanBeNull TPointer32 writableBytesAddr, @CanBeNull TPointer32 readOffsetAddr) {
+        Mp3Info info = getMp3Info(id);
+        writeAddr.setValue(info.getInputBuffer().getWriteAddr());
+        writableBytesAddr.setValue(info.getWritableBytes());
+        readOffsetAddr.setValue(info.getInputBuffer().getFilePosition());
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceMp3GetInfoToAddStreamData returning mp3Buf=0x%08X, mp3BufToWrite=0x%X, mp3Pos=0x%X", mp3BufPtr.getValue(), mp3BufToWritePtr.getValue(), mp3PosPtr.getValue()));
+        	log.debug(String.format("sceMp3GetInfoToAddStreamData returning writeAddr=0x%08X, writableBytes=0x%X, readOffset=0x%X", writeAddr.getValue(), writableBytesAddr.getValue(), readOffsetAddr.getValue()));
         }
-
         return 0;
     }
 
     @HLEFunction(nid = 0xD021C0FB, version = 150, checkInsideInterrupt = true)
-    public int sceMp3Decode(Mp3Stream mp3Stream, TPointer32 outPcmPtr) {
-        long startTime = Emulator.getClock().microTime();
-
-        int decodeBuffer = mp3Stream.getDecodeBuffer();
-        int pcmBytes = mp3Stream.decode(decodeBuffer, mp3Stream.getDecodeBufferSize());
-        outPcmPtr.setValue(decodeBuffer);
+    public int sceMp3Decode(@CheckArgument("checkInitId") int id, TPointer32 bufferAddress) {
+        int result = getMp3Info(id).decode(bufferAddress);
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceMp3Decode returning 0x%X bytes (%d samples) at 0x%08X", pcmBytes, mp3Stream.getMp3DecodedSamples(), outPcmPtr.getValue()));
+            log.debug(String.format("sceMp3Decode bufferAddress=%s(0x%08X) returning 0x%X", bufferAddress, bufferAddress.getValue(), result));
         }
 
-        delayThread(startTime, mp3DecodeDelay);
+        if (result >= 0) {
+            Modules.ThreadManForUserModule.hleKernelDelayThread(mp3DecodeDelay, false);
+        }
 
-        return pcmBytes;
+        return result;
     }
 
     @HLEFunction(nid = 0xD0A56296, version = 150, checkInsideInterrupt = true)
-    public boolean sceMp3CheckStreamDataNeeded(Mp3Stream mp3Stream) {
-    	boolean dataNeeded = mp3Stream.isStreamDataNeeded();
-
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceMp3CheckStreamDataNeeded returning %b", dataNeeded));
-    	}
-
-    	// 1 - Needs more data.
-        // 0 - Doesn't need more data.
-        return dataNeeded;
+    public boolean sceMp3CheckStreamDataNeeded(@CheckArgument("checkInitId") int id) {
+        return getMp3Info(id).isStreamDataNeeded();
     }
 
     @HLEFunction(nid = 0xF5478233, version = 150, checkInsideInterrupt = true)
-    public int sceMp3ReleaseMp3Handle(Mp3Stream mp3Stream) {
-        HLEUidObjectMapping.removeObject(mp3Stream);
+    public int sceMp3ReleaseMp3Handle(@CheckArgument("checkInitId") int id) {
+    	getMp3Info(id).release();
 
         return 0;
     }
 
     @HLEFunction(nid = 0x354D27EA, version = 150)
-    public int sceMp3GetSumDecodedSample(Mp3Stream mp3Stream) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceMp3GetSumDecodedSample returning %d", mp3Stream.getMp3SumDecodedSamples()));
-    	}
-        return mp3Stream.getMp3SumDecodedSamples();
+    public int sceMp3GetSumDecodedSample(@CheckArgument("checkInitId") int id) {
+        int sumDecodedSamples = getMp3Info(id).getSumDecodedSamples();
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceMp3GetSumDecodedSample returning 0x%X", sumDecodedSamples));
+        }
+
+        return sumDecodedSamples;
     }
 
     @HLEFunction(nid = 0x87677E40, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetBitRate(Mp3Stream mp3Stream) {
-        return mp3Stream.getMp3BitRate();
+    public int sceMp3GetBitRate(@CheckArgument("checkInitId") int id) {
+        return getMp3Info(id).getBitRate();
     }
     
     @HLEFunction(nid = 0x87C263D1, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetMaxOutputSample(Mp3Stream mp3Stream) {
+    public int sceMp3GetMaxOutputSample(@CheckArgument("checkInitId") int id) {
+    	Mp3Info mp3Info = getMp3Info(id);
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceMp3GetMaxOutputSample returning 0x%X", mp3Stream.getMp3MaxSamples()));
+    		log.debug(String.format("sceMp3GetMaxOutputSample returning 0x%X", mp3Info.getMaxSamples()));
     	}
-        return mp3Stream.getMp3MaxSamples();
+        return mp3Info.getMaxSamples();
     }
 
     @HLEFunction(nid = 0xD8F54A51, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetLoopNum(Mp3Stream mp3Stream) {
-        return mp3Stream.getMp3LoopNum();
+    public int sceMp3GetLoopNum(@CheckArgument("checkInitId") int id) {
+        return getMp3Info(id).getLoopNum();
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x3548AEC8, version = 150)
-    public int sceMp3GetFrameNum(Mp3Stream mp3Stream) {
-    	return 0;
+    public int sceMp3GetFrameNum(@CheckArgument("checkInitId") int id) {
+    	return getMp3Info(id).getNumberOfFrames();
     }
 
     @HLEFunction(nid = 0xAE6D2027, version = 150)
-    public int sceMp3GetVersion(Mp3Stream mp3Stream) {
-    	return mp3Stream.getMp3Version();
+    public int sceMp3GetVersion(@CheckArgument("checkInitId") int id) {
+    	return getMp3Info(id).getVersion();
     }
 
     @HLEFunction(nid = 0x0840E808, version = 150, checkInsideInterrupt = true)
-    public int sceMp3ResetPlayPosition2(Mp3Stream mp3Stream, int position) {
-        mp3Stream.setMp3BufCurrentPos(position);
-
-        return 0;
+    public int sceMp3ResetPlayPosition2(@CheckArgument("checkInitId") int id, int position) {
+    	return getMp3Info(id).resetPlayPosition(position);
     }
 }

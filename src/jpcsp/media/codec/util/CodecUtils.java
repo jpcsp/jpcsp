@@ -43,7 +43,7 @@ public class CodecUtils {
 		return min(max((int) (sample * 32768f + 0.5f), -32768), 32767) & 0xFFFF;
 	}
 
-	public static void writeOutput(float[][] samples, int outputAddr, int numberOfSamples, int outputChannels) {
+	public static void writeOutput(float[][] samples, int outputAddr, int numberOfSamples, int decodedChannels, int outputChannels) {
 		IMemoryWriter writer = MemoryWriter.getMemoryWriter(outputAddr, numberOfSamples * 2 * outputChannels, 2);
 		switch (outputChannels) {
 			case 1:
@@ -53,11 +53,20 @@ public class CodecUtils {
 				}
 				break;
 			case 2:
-				for (int i = 0; i < numberOfSamples; i++) {
-					int lsample = convertSampleFloatToInt16(samples[0][i]);
-					int rsample = convertSampleFloatToInt16(samples[1][i]);
-					writer.writeNext(lsample);
-					writer.writeNext(rsample);
+				if (decodedChannels == 1) {
+					// Convert decoded mono into output stereo
+					for (int i = 0; i < numberOfSamples; i++) {
+						int sample = convertSampleFloatToInt16(samples[0][i]);
+						writer.writeNext(sample);
+						writer.writeNext(sample);
+					}
+				} else {
+					for (int i = 0; i < numberOfSamples; i++) {
+						int lsample = convertSampleFloatToInt16(samples[0][i]);
+						int rsample = convertSampleFloatToInt16(samples[1][i]);
+						writer.writeNext(lsample);
+						writer.writeNext(rsample);
+					}
 				}
 				break;
 		}
