@@ -217,6 +217,8 @@ public class Mp3Decoder implements ICodec {
 
 		ctx = new Context();
 
+		ctx.outputChannels = outputChannels;
+
 		return 0;
 	}
 
@@ -250,6 +252,7 @@ public class Mp3Decoder implements ICodec {
 			mpeg25 = 1;
 		}
 
+        s.version = (header >> 19) & 0x3;
 		s.layer = 4 - ((header >> 17) & 3);
 		// extract frequency
 		int sampleRateIndex = (header >> 10) & 3;
@@ -277,6 +280,13 @@ public class Mp3Decoder implements ICodec {
 			s.nbChannels = 2;
 		}
 
+		switch (s.layer) {
+			case 1:	 s.maxSamples = 384;                     break;
+			case 2:  s.maxSamples = 1152;                    break;
+			case 3:
+			default: s.maxSamples = s.lsf != 0 ? 576 : 1152; break;
+		}
+
 		if (bitrateIndex != 0) {
 			int frameSize = mp3_bitrate_tab[s.lsf][s.layer - 1][bitrateIndex];
 			s.bitRate = frameSize * 1000;
@@ -302,7 +312,7 @@ public class Mp3Decoder implements ICodec {
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("layer%d, %d Hz, %d kbits/s, %s", s.layer, s.sampleRate, s.bitRate, s.nbChannels == 2 ? "stereo" : "mono"));
+			log.debug(String.format("Mp3Header: %s", s));
 		}
 
 		return 0;
@@ -1133,16 +1143,12 @@ public class Mp3Decoder implements ICodec {
 
 		switch (ctx.header.layer) {
 			case 1:
-				ctx.frameSize = 384;
 				nbFrames = decodeLayer1();
 				break;
 			case 2:
-				ctx.frameSize = 1152;
 				nbFrames = decodeLayer2();
 				break;
 			case 3:
-				ctx.frameSize = ctx.header.lsf != 0 ? 576 : 1152;
-				// FALLTHROUGH
 			default:
 				nbFrames = decodeLayer3(frameStart);
 				break;
@@ -1154,7 +1160,7 @@ public class Mp3Decoder implements ICodec {
 
 		// get output buffer
 		if (ctx.samples == null) {
-			ctx.samples = new float[ctx.header.nbChannels][ctx.frameSize];
+			ctx.samples = new float[ctx.header.nbChannels][ctx.header.maxSamples];
 		}
 
 		// apply the synthesis filter
@@ -1201,13 +1207,13 @@ public class Mp3Decoder implements ICodec {
 			return ret;
 		}
 
-		CodecUtils.writeOutput(ctx.samples, outputAddr, ctx.frameSize, ctx.header.nbChannels);
+		CodecUtils.writeOutput(ctx.samples, outputAddr, ctx.header.maxSamples, ctx.header.nbChannels, ctx.outputChannels);
 
 		return ctx.header.frameSize;
 	}
 
 	@Override
 	public int getNumberOfSamples() {
-		return ctx.frameSize;
+		return ctx.header.maxSamples;
 	}
 }

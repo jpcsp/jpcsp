@@ -19,10 +19,6 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_MP3;
-import static jpcsp.HLE.modules150.sceMp3.calculateMp3Bitrate;
-import static jpcsp.HLE.modules150.sceMp3.calculateMp3Channels;
-import static jpcsp.HLE.modules150.sceMp3.calculateMp3PaddingBytes;
-import static jpcsp.HLE.modules150.sceMp3.calculateMp3SampleRate;
 import static jpcsp.HLE.modules150.sceMp3.isMp3Magic;
 import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.max;
@@ -51,6 +47,8 @@ import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.connector.AtracCodec;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
+import jpcsp.media.codec.mp3.Mp3Decoder;
+import jpcsp.media.codec.mp3.Mp3Header;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Hash;
 
@@ -273,15 +271,10 @@ public class sceAtrac3plus extends HLEModule {
 
             int result = 0;
 
-            int mp3Version = (header >> 19) & 0x3;
-            int mp3Layer = (header >> 17) & 0x3;
-            int mp3Channels = calculateMp3Channels((header >> 6) & 0x3);
-            int mp3SampleRate = calculateMp3SampleRate((header >> 10) & 0x3, mp3Version);
-            int mp3BitRate = calculateMp3Bitrate((header >> 12) & 0xF, mp3Version, mp3Layer);
-            int mp3PaddingBytes = calculateMp3PaddingBytes((header >> 9) & 0x1, mp3Layer);
-
+            Mp3Header mp3Header = new Mp3Header();
+            Mp3Decoder.decodeHeader(mp3Header, header);
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("Mp3Header mp3Version=%d, mp3Layer=%d, mp3Channels=%d, mp3SampleRate=%d, mp3Bitrate=%d", mp3Version, mp3Layer, mp3Channels, mp3SampleRate, mp3BitRate));
+            	log.debug(String.format("Mp3Header: %s", mp3Header));
             }
 
             // Finding the input file size at offset 0x30.
@@ -293,8 +286,8 @@ public class sceAtrac3plus extends HLEModule {
             	inputFileSize = 0x0FFFFFFF;
             }
 
-            atracChannels = mp3Channels;
-            atracBytesPerFrame = (144 * mp3BitRate * 1000) / mp3SampleRate + mp3PaddingBytes;
+            atracChannels = mp3Header.nbChannels;
+            atracBytesPerFrame = mp3Header.frameSize;
             inputFileDataOffset = 0;
             // Estimate the end sample based on the file size
             atracEndSample = (inputFileSize - inputFileDataOffset) / atracBytesPerFrame * getMaxSamples();

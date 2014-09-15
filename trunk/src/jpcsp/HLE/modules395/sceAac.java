@@ -21,6 +21,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AAC_INVALID_ADDRESS;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AAC_INVALID_ID;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AAC_INVALID_PARAMETER;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AAC_RESOURCE_NOT_INITIALIZED;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AAC;
 
 import org.apache.log4j.Logger;
 
@@ -38,7 +39,6 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspFileBuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.sceAtrac3plus;
-import jpcsp.HLE.modules.sceAudiocodec;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
@@ -79,7 +79,7 @@ public class sceAac extends HLEModule {
             inputBuffer = new pspFileBuffer(bufferAddr + reservedBufferSize, bufferSize - reservedBufferSize, 0, this.startPos);
             inputBuffer.setFileMaxSize((int) endPos);
             loopNum = -1; // Looping indefinitely by default
-            codec = CodecFactory.getCodec(sceAudiocodec.PSP_CODEC_AAC);
+            codec = CodecFactory.getCodec(PSP_CODEC_AAC);
             codec.init(0, 2, 2, 0); // TODO How to find out correct parameter values?
 
             halfBufferSize = (bufferSize - reservedBufferSize) >> 1;

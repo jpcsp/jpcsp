@@ -27,4 +27,11 @@ public class Mp3Header {
 	public int mode;
 	public int modeExt;
 	public int lsf;
+	public int version;
+	public int maxSamples;
+
+	@Override
+	public String toString() {
+		return String.format("Mp3Header[version %d, layer%d, %d Hz, %d kbits/s, %s]", version, layer, sampleRate, bitRate, nbChannels == 2 ? "stereo" : "mono");
+	}
 }

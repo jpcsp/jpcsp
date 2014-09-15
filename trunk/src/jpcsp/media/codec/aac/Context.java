@@ -29,6 +29,7 @@ public class Context {
 	public int nbSamples;
 	public int randomState;
 	public int sampleRate;
+	public int outputChannels;
 
 	boolean isSaved; ///< Set if elements have stored overlap from previous frame
 	DynamicRangeControl cheDrc = new DynamicRangeControl();

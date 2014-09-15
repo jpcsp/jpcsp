@@ -2713,7 +2713,7 @@ public class AacDecoder implements ICodec {
 			return err;
 		}
 
-		CodecUtils.writeOutput(ac.samples, outputAddr, ac.nbSamples, ac.channels);
+		CodecUtils.writeOutput(ac.samples, outputAddr, ac.nbSamples, ac.channels, ac.outputChannels);
 
 		return br.getBytesRead();
 	}

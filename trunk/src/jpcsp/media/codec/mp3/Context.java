@@ -24,7 +24,6 @@ import jpcsp.media.codec.util.BitReader;
 public class Context {
 	public BitReader br;
 	public Mp3Header header = new Mp3Header();
-	public int frameSize;
 	public float samples[][];
 	public int lastBuf[] = new int[LAST_BUF_SIZE];
 	public int lastBufSize;
@@ -36,6 +35,7 @@ public class Context {
 	public int aduMode; ///<0 for standard mp3, 1 for adu formatted mp3
 	public int ditherState[] = new int[1];
 	public int errRecognition;
+	public int outputChannels;
 
 	public Context() {
 		for (int i = 0; i < 2; i++) {
