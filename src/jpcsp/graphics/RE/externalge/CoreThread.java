@@ -25,6 +25,7 @@ import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_SIGNAL;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.modules.sceGe_user;
@@ -73,7 +74,7 @@ public class CoreThread extends Thread {
 			PspGeList list = ExternalGE.getCurrentList();
 
 			if (list == null) {
-				if (log.isDebugEnabled()) {
+				if (!Emulator.pause && log.isDebugEnabled()) {
 					log.debug(String.format("CoreThread no current list available... waiting"));
 				}
 
