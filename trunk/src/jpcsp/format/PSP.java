@@ -148,7 +148,16 @@ public class PSP {
         }
 
         CryptoEngine crypto = new CryptoEngine();
-        byte[] inBuf = f.array();
+        byte[] inBuf;
+        if (f.hasArray()) {
+        	inBuf = f.array();
+        } else {
+        	int currentPosition = f.position();
+        	f.position(currentPosition - 336);
+        	inBuf = new byte[f.remaining()];
+        	f.get(inBuf);
+        	f.position(currentPosition);
+        }
         int inSize = inBuf.length;
         int retsize = crypto.getPRXEngine().DecryptPRX(inBuf, inSize, null, 0, 2, null, null);
 
