@@ -265,6 +265,7 @@ public class AacDecoder implements ICodec {
 	public int init(int bytesPerFrame, int channels, int outputChannels, int codingMode) {
 		ac = new Context();
 
+		ac.outputChannels = outputChannels;
 		ac.oc[1].m4ac.sampleRate = 44100;
 		ac.oc[1].m4ac.samplingIndex = sampleRateIdx(ac.oc[1].m4ac.sampleRate);
 		ac.channels = channels;
