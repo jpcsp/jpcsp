@@ -284,7 +284,7 @@ public class Loader {
             ElfHeaderInfo.PbpInfo = pbp.toString();
 
             // Setup position for chaining loaders
-            f.position((int)pbp.getOffsetPspData());
+            f.position(pbp.getOffsetPspData());
             return true;
         }
         // Not a valid PBP
