@@ -2236,7 +2236,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("hleIoLseek returning %d", result));
+        	log.debug(String.format("hleIoLseek returning 0x%X", result));
         }
 
         return result;
@@ -2935,7 +2935,9 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0x6A638D83, version = 150, checkInsideInterrupt = true)
     public int sceIoRead(int id, int data_addr, int size) {
         int result = hleIoRead(id, data_addr, size, false);
-        delayIoOperation(IoOperation.read);
+        if (size > 0x100) {
+        	delayIoOperation(IoOperation.read);
+        }
         return result;
     }
 
