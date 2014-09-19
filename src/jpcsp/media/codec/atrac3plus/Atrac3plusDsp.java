@@ -22,6 +22,7 @@ import static java.lang.Math.pow;
 import static java.lang.Math.sin;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_POWER_COMP_OFF;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_PQF_FIR_LEN;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBANDS;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBAND_SAMPLES;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.CH_UNIT_STEREO;
@@ -566,7 +567,7 @@ public class Atrac3plusDsp {
 		}
 
 		if (tonesNext.numWavs > 0 && reg2EnvNonzero) {
-			wavesSynth(ctx.wavesInfoPrev, tonesNext, tonesNext.currEnv, ctx.wavesInfo.phaseShift[sb] ? chNum & 1 : 0, 0, wavreg2);
+			wavesSynth(ctx.wavesInfo, tonesNext, tonesNext.currEnv, ctx.wavesInfo.phaseShift[sb] ? chNum & 1 : 0, 0, wavreg2);
 		}
 
 		// Hann windowing for non-faded wave signals
@@ -612,7 +613,7 @@ public class Atrac3plusDsp {
 			int posNow = hist.pos;
 			int posNext = mod23_lut[posNow + 2]; // posNext = (posNow + 1) % 23
 
-			for (int t = 0; t < Atrac3plusDecoder.ATRAC3P_PQF_FIR_LEN; t++) {
+			for (int t = 0; t < ATRAC3P_PQF_FIR_LEN; t++) {
 				for (int i = 0; i < 8; i++) {
 					out[s * 16 + i + 0] += hist.buf1[posNow][i] * ipqf_coeffs1[t][i] + hist.buf2[posNext][i] * ipqf_coeffs2[t][i];
 					out[s * 16 + i + 8] += hist.buf1[posNow][7 - i] * ipqf_coeffs1[t][i + 8] + hist.buf2[posNext][7 - i] * ipqf_coeffs2[t][i + 8];
