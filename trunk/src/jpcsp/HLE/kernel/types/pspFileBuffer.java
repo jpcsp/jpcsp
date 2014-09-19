@@ -80,6 +80,10 @@ public class pspFileBuffer {
 		return filePosition;
 	}
 
+	public void setFilePosition(int filePosition) {
+		this.filePosition = filePosition;
+	}
+
 	public int getReadAddr() {
 		return addr + readPosition;
 	}

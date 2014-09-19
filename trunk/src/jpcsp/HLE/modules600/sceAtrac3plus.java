@@ -23,10 +23,13 @@ import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 @HLELogging
 public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
 	public AtracID getAtracIdFromContext(int atrac3Context) {
-		for (AtracID id : atracIDs.values()) {
-			SysMemInfo context = id.getContext();
-			if (context != null && context.addr == atrac3Context) {
-				return id;
+		for (int i = 0; i < atracIDs.length; i++) {
+			AtracID id = atracIDs[i];
+			if (id.isInUse()) {
+				SysMemInfo context = id.getContext();
+				if (context != null && context.addr == atrac3Context) {
+					return id;
+				}
 			}
 		}
 
@@ -35,11 +38,11 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
 
 	@HLELogging(level="info")
 	@HLEFunction(nid = 0x231FC6B7, version = 600, checkInsideInterrupt = true)
-    public int _sceAtracGetContextAddress(int at3IDNum) {
-        AtracID id = atracIDs.get(at3IDNum);
-        if (id == null) {
-        	return 0;
-        }
+    public int _sceAtracGetContextAddress(int atID) {
+		if (atID < 0 || atID >= atracIDs.length || !atracIDs[atID].isInUse()) {
+			return 0;
+		}
+        AtracID id = atracIDs[atID];
 
         id.createContext();
         SysMemInfo atracContext = id.getContext();

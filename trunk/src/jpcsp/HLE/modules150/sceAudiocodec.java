@@ -16,13 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.modules150.sceMp3.isMp3Magic;
-import static jpcsp.util.Utilities.readUnaligned16;
-import static jpcsp.util.Utilities.readUnaligned32;
-
 import org.apache.log4j.Logger;
 
-import jpcsp.Memory;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
@@ -31,7 +26,6 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
-import jpcsp.connector.AtracCodec;
 import jpcsp.media.codec.ICodec;
 import jpcsp.util.Utilities;
 
@@ -40,11 +34,12 @@ public class sceAudiocodec extends HLEModule {
 	public static Logger log = Modules.getLogger("sceAudiocodec");
 
 	public static final int PSP_CODEC_AT3PLUS = 0x00001000;
-	public static final int PSP_CODEC_AT3 = 0x00001001;
-	public static final int PSP_CODEC_MP3 = 0x00001002;
-	public static final int PSP_CODEC_AAC = 0x00001003;
+	public static final int PSP_CODEC_AT3     = 0x00001001;
+	public static final int PSP_CODEC_MP3     = 0x00001002;
+	public static final int PSP_CODEC_AAC     = 0x00001003;
 
 	private AtracID id;
+	private int atID;
 	private boolean edramAllocated;
 
 	@Override
@@ -70,11 +65,12 @@ public class sceAudiocodec extends HLEModule {
 	@HLEFunction(nid = 0x5B37EB1D, version = 150)
 	public int sceAudiocodecInit(TPointer workArea, int codecType) {
 		if (id != null) {
-			Modules.sceAtrac3plusModule.hleReleaseAtracID(id.id);
+			Modules.sceAtrac3plusModule.hleReleaseAtracID(atID);
+			atID = -1;
 			id = null;
 		}
-		int atID = Modules.sceAtrac3plusModule.hleCreateAtracID(codecType);
-		id = Modules.sceAtrac3plusModule.hleGetAtracID(atID);
+		atID = Modules.sceAtrac3plusModule.hleGetAtracID(codecType);
+		id = Modules.sceAtrac3plusModule.getAtracID(atID);
 
 		return 0;
 	}
@@ -86,7 +82,6 @@ public class sceAudiocodec extends HLEModule {
 			return SceKernelErrors.ERROR_INVALID_POINTER;
 		}
 
-		Memory mem = workArea.getMemory();
 		int inputBuffer = workArea.getValue32(24);
 		int outputBuffer = workArea.getValue32(32);
 		int unknown1 = workArea.getValue32(40);
@@ -99,7 +94,6 @@ public class sceAudiocodec extends HLEModule {
 
 		int inputBufferSize;
 		int outputBufferSize;
-		boolean forceDataReset = false;
 		switch (codecType) {
 			case PSP_CODEC_AT3PLUS:
 				if (workArea.getValue32(48) == 0) {
@@ -128,15 +122,6 @@ public class sceAudiocodec extends HLEModule {
 				// The application (e.g. homebrew "PSP ProQuake")
 				// expects double the given outputBufferSize... why?
 				outputBufferSize *= 2;
-
-				if (inputBufferSize >= 16
-				    && isMp3Magic(readUnaligned16(mem, inputBuffer))
-				    && readUnaligned32(mem, inputBuffer +  4) == 0
-				    && readUnaligned32(mem, inputBuffer +  8) == 0
-				    && readUnaligned32(mem, inputBuffer + 12) == 0) {
-					// New MP3 file has been started, force a data reset
-					forceDataReset = true;
-				}
 				break;
 			case PSP_CODEC_AAC:
 				if (workArea.getValue8(44) == 0) {
@@ -166,46 +151,13 @@ public class sceAudiocodec extends HLEModule {
 			}
 		}
 
-		AtracCodec atracCodec = id.getAtracCodec();
-		int bytesPerSamples = 4;
-		int maxSamples = outputBufferSize / bytesPerSamples;
         ICodec codec = id.getCodec();
 
-        if (codec != null) {
-        	if (!id.isCodecInitialized()) {
-        		codec.init(inputBufferSize, channels, outputChannels, codingMode);
-        		id.setCodecInitialized();
-        	}
-        	codec.decode(inputBuffer, inputBufferSize, outputBuffer);
-        } else {
-	        if (id.getInputBuffer() == null || forceDataReset) {
-				if (atracCodec != null) {
-					if (codecType == PSP_CODEC_AT3) {
-						atracCodec.setAtracChannelStartLength(0x8000); // Only 0x8000 bytes are required to start decoding AT3
-					}
-					if (codecType == PSP_CODEC_MP3) {
-						atracCodec.setAtracChannelStartLength(inputBufferSize);
-					}
-					atracCodec.setAtracMaxSamples(maxSamples);
-				}
-				id.setData(inputBuffer, inputBufferSize, inputBufferSize, false, 0);
-	    		// Allow looping
-	    		id.setLoopNum(-1);
-			} else {
-				id.addStreamData(inputBuffer, inputBufferSize);
-			}
-
-			if (atracCodec != null) {
-				int samples = atracCodec.atracDecodeData(id.getAtracId(), outputBuffer, 2);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceAudiocodecDecode decoded %d samples", samples));
-				}
-				if (samples >= 0) {
-					int offset = samples * bytesPerSamples;
-					mem.memset(outputBuffer + offset, (byte) 0, outputBufferSize - offset);
-				}
-			}
-        }
+    	if (!id.isCodecInitialized()) {
+    		codec.init(inputBufferSize, channels, outputChannels, codingMode);
+    		id.setCodecInitialized();
+    	}
+    	codec.decode(inputBuffer, inputBufferSize, outputBuffer);
 
 		workArea.setValue32(28, inputBufferSize);
 

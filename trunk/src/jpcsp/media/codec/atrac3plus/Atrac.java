@@ -70,7 +70,7 @@ public class Atrac {
     }
 
 	public void gainCompensation(float in[], int inOffset, float prev[], int prevOffset, AtracGainInfo gcNow, AtracGainInfo gcNext, int numSamples, float out[], int outOffset) {
-		float gcScale = (gcNext.numPoints > 0 ? gainTab1[gcNext.levCode[0]] : 1f);
+		float gcScale = (gcNext.numPoints != 0 ? gainTab1[gcNext.levCode[0]] : 1f);
 
 		if (gcNow.numPoints == 0) {
 			for (int pos = 0; pos < numSamples; pos++) {
