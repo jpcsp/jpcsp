@@ -195,6 +195,7 @@ public class sceAtrac3plus extends HLEModule {
 
         public int setHalfwayBuffer(int addr, int readSize, int bufferSize, boolean isMonoOutput, AtracFileInfo info) {
         	this.info = info;
+        	channels = info.atracChannels;
     		inputBuffer = new pspFileBuffer(addr, bufferSize, readSize, readSize);
         	inputBuffer.notifyRead(info.inputFileDataOffset);
     		inputBuffer.setFileMaxSize(info.inputFileSize);
