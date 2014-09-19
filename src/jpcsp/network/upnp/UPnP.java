@@ -99,12 +99,25 @@ public class UPnP {
 					socket.receive(responsePacket);
 					if (responsePacket.getLength() > 0) {
 						String reply = new String(responsePacket.getData(), responsePacket.getOffset(), responsePacket.getLength());
-						log.debug(String.format("Discovery %s: %s", device, reply));
-						Pattern p = Pattern.compile("^location: *(\\S+)$.*^st: *(\\S+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
-						Matcher m = p.matcher(reply);
-						if (m.find()) {
-							String location = m.group(1);
-							String st = m.group(2);
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Discovery %s: %s", device, reply));
+						}
+
+						String location = null;
+						Pattern pLocation = Pattern.compile("^location: *(\\S+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
+						Matcher mLocation = pLocation.matcher(reply);
+						if (mLocation.find()) {
+							location = mLocation.group(1);
+						}
+
+						String st = null;
+						Pattern pSt = Pattern.compile("^st: *(\\S+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
+						Matcher mSt = pSt.matcher(reply);
+						if (mSt.find()) {
+							st = mSt.group(1);
+						}
+
+						if (location != null && st != null) {
 							log.debug(String.format("Location: '%s', st: '%s'", location, st));
 							Device newDevice = new Device();
 							newDevice.descURL = location;
