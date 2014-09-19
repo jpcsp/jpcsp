@@ -29,7 +29,7 @@ import jpcsp.util.Utilities;
 public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 	@HLEFunction(nid = 0x0C116E1B, version = 620)
     public int sceAtracLowLevelDecode(@CheckArgument("checkAtracID") int atID, TPointer sourceAddr, TPointer32 sourceBytesConsumedAddr, TPointer samplesAddr, TPointer32 sampleBytesAddr) {
-        AtracID id = atracIDs.get(atID);
+        AtracID id = atracIDs[atID];
         ICodec codec = id.getCodec();
 
         if (log.isTraceEnabled()) {
@@ -37,19 +37,17 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         }
 
         int sourceBytesConsumed = 0;
-    	int bytesPerSample = id.getAtracOutputChannels() << 1;
-        if (codec != null) {
-        	int result = codec.decode(sourceAddr.getAddress(), id.getSourceBufferLength(), samplesAddr.getAddress());
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("sceAtracLowLevelDecode codec returned 0x%08X", result));
-        	}
-        	if (result < 0) {
-        		log.info(String.format("sceAtracLowLevelDecode codec returning 0x%08X", result));
-        		return result;
-        	}
-        	sourceBytesConsumed = result > 0 ? id.getSourceBufferLength() : 0;
-        	sampleBytesAddr.setValue(codec.getNumberOfSamples() * bytesPerSample);
-        }
+    	int bytesPerSample = id.getOutputChannels() << 1;
+    	int result = codec.decode(sourceAddr.getAddress(), id.getSourceBufferLength(), samplesAddr.getAddress());
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAtracLowLevelDecode codec returned 0x%08X", result));
+    	}
+    	if (result < 0) {
+    		log.info(String.format("sceAtracLowLevelDecode codec returning 0x%08X", result));
+    		return result;
+    	}
+    	sourceBytesConsumed = result > 0 ? id.getSourceBufferLength() : 0;
+    	sampleBytesAddr.setValue(codec.getNumberOfSamples() * bytesPerSample);
 
         // Consume a part of the Atrac3 source buffer
         sourceBytesConsumedAddr.setValue(sourceBytesConsumed);
@@ -70,21 +68,17 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 			log.debug(String.format("sceAtracLowLevelInitDecoder values at %s: numberOfChannels=%d, outputChannels=%d, sourceBufferLength=0x%08X", paramsAddr, numberOfChannels, outputChannels, sourceBufferLength));
 		}
 
-        AtracID id = atracIDs.get(atID);
+        AtracID id = atracIDs[atID];
 
         int result = 0;
 
-        id.setAtracChannels(numberOfChannels);
-        if (numberOfChannels == 1 && numberOfChannels == outputChannels) {
-        	id.setAtracOutputChannels(outputChannels);
-        }
+        id.setChannels(numberOfChannels);
+        id.setOutputChannels(outputChannels);
         id.setSourceBufferLength(sourceBufferLength);
 
-        if (id.getCodec() != null) {
-        	// TODO How to find out the codingMode for AT3 audio? Assume STEREO, not JOINT_STEREO
-    		result = id.getCodec().init(sourceBufferLength, numberOfChannels, outputChannels, 0);
-    		id.setCodecInitialized();
-    	}
+    	// TODO How to find out the codingMode for AT3 audio? Assume STEREO, not JOINT_STEREO
+		result = id.getCodec().init(sourceBufferLength, numberOfChannels, outputChannels, 0);
+		id.setCodecInitialized();
 
         return result;
     }

@@ -21,9 +21,9 @@ import static java.lang.Math.min;
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
 import jpcsp.HLE.modules150.sceSasCore;
-import jpcsp.connector.AtracCodec;
 
 /**
  * @author gid15
@@ -32,7 +32,6 @@ import jpcsp.connector.AtracCodec;
 public class SampleSourceAtrac3 implements ISampleSource {
 	private Logger log = sceSasCore.log;
 	private final AtracID id;
-	private final AtracCodec codec;
 	private final int maxSamples;
 	private final int buffer;
 	private int sampleIndex;
@@ -42,7 +41,6 @@ public class SampleSourceAtrac3 implements ISampleSource {
 
 	public SampleSourceAtrac3(AtracID id) {
 		this.id = id;
-		codec = id.getAtracCodec();
 		maxSamples = id.getMaxSamples();
 		id.createInternalBuffer(maxSamples * 4);
 		buffer = id.getInternalBuffer().addr;
@@ -53,7 +51,13 @@ public class SampleSourceAtrac3 implements ISampleSource {
 	}
 
 	private void decode() {
-		bufferedSamples = codec.atracDecodeData(id.getAtracId(), buffer, id.getAtracOutputChannels());
+		int result = id.decodeData(buffer, TPointer32.NULL);
+		if (result < 0) {
+			log.error(String.format("SampleSourceAtrac3 decodeData returned 0x%08X", result));
+			bufferedSamples = 0;
+		} else {
+			bufferedSamples = id.getCodec().getNumberOfSamples();
+		}
 
 		if (!id.getInputBuffer().isFileEnd()) {
 			int requestedSize = min(id.getInputFileSize() - id.getInputBuffer().getFilePosition(), id.getInputBuffer().getMaxSize());
@@ -63,7 +67,7 @@ public class SampleSourceAtrac3 implements ISampleSource {
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("SampleSourceAtrac3 decode: bufferedSamples=%d, currentSample=%d, endSample=%d, isEnd=%b", bufferedSamples, getSampleIndex(), id.getAtracEndSample(), codec.getAtracEnd()));
+			log.debug(String.format("SampleSourceAtrac3 decode: bufferedSamples=%d, currentSample=%d, endSample=%d", bufferedSamples, getSampleIndex(), id.getAtracEndSample()));
 		}
 
 		sampleIndex = 0;
