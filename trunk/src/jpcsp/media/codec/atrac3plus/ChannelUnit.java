@@ -26,6 +26,7 @@ import static jpcsp.media.codec.atrac3plus.Atrac3plusData2.atrac3p_subband_to_nu
 import static jpcsp.media.codec.atrac3plus.Atrac3plusData2.atrac3p_wl_shapes;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusData2.atrac3p_wl_weights;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.AT3P_ERROR;
+import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_POWER_COMP_OFF;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBANDS;
 import static jpcsp.media.codec.atrac3plus.Atrac3plusDecoder.ATRAC3P_SUBBAND_SAMPLES;
@@ -1677,7 +1678,7 @@ public class ChannelUnit {
 		// inverse quant and power compensation
 		for (int ch = 0; ch < numChannels; ch++) {
 			// clear channel's residual spectrum
-			Arrays.fill(out[ch], 0f);
+			Arrays.fill(out[ch], 0, ATRAC3P_FRAME_SAMPLES, 0f);
 
 			for (int qu = 0; qu < ctx.usedQuantUnits; qu++) {
 				int src = ff_atrac3p_qu_to_spec_pos[qu];
