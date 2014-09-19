@@ -59,7 +59,11 @@ public class CodecTest {
 		Memory mem = Memory.getInstance();
 
 		try {
-			File file = new File("sample.aac");
+			String fileName = "sample.at3";
+			if (args != null && args.length > 0) {
+				fileName = args[0];
+			}
+			File file = new File(fileName);
 			log.info(String.format("Reading file %s", file));
 			int length = (int) file.length();
 			InputStream in = new FileInputStream(file);
@@ -80,7 +84,7 @@ public class CodecTest {
 			int dataOffset = 0;
 			if (mem.read32(inputAddr) == RIFF_MAGIC) {
 				int scanOffset = 12;
-				while (dataOffset < 0) {
+				while (dataOffset <= 0) {
 					int chunkMagic = mem.read32(inputAddr + scanOffset);
 					int chunkLength = mem.read32(inputAddr + scanOffset + 4);
 					scanOffset += 8;
