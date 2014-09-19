@@ -56,12 +56,23 @@ public class Sound extends AbstractNativeCodeSequence {
 		int samples = getRegisterValue(samplesReg);
 		int srcAddr = getRegisterValue(srcAddrReg);
 		int dstAddr = getRegisterValue(dstAddrReg);
-		IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr, samples << 2, 4);
+		int srcAddrAlignment = srcAddr & 0x2;
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr - srcAddrAlignment, samples << 2, 4);
 		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dstAddr, samples << 1, 2);
 
-		for (int i = 0; i < samples; i++) {
-			int sample = memoryReader.readNext();
-			memoryWriter.writeNext(sample);
+		if (srcAddrAlignment == 0) {
+			// Taking left samples as mono samples
+			for (int i = 0; i < samples; i++) {
+				int sample = memoryReader.readNext();
+				memoryWriter.writeNext(sample);
+			}
+		} else {
+			// Taking right samples as mono samples
+			for (int i = 0; i < samples; i++) {
+				int sample = memoryReader.readNext();
+				sample >>>= 16;
+				memoryWriter.writeNext(sample);
+			}
 		}
 		memoryWriter.flush();
 	}
