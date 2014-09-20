@@ -177,8 +177,6 @@ public class sceAtrac3plus extends HLEModule {
         protected boolean isSecondBufferSet;
         protected int internalErrorInfo;
         // Loops
-        protected int loopStartBytesWrittenFirstBuf;
-        protected int loopStartBytesWrittenSecondBuf;
         protected int currentLoopNum = -1;
         // LowLevel decoding
         protected int sourceBufferLength;
@@ -277,8 +275,6 @@ public class sceAtrac3plus extends HLEModule {
         		LoopInfo loop = info.loops[i];
         		if (currentSample <= loop.startSample && loop.startSample < nextCurrentSample) {
         			// We are just starting a loop
-        			loopStartBytesWrittenFirstBuf = currentReadPosition - info.atracBytesPerFrame;
-        			loopStartBytesWrittenSecondBuf = getSecondBufferReadPosition();
         			currentLoopNum = i;
         			break;
         		} else if (currentSample <= loop.endSample && loop.endSample < nextCurrentSample && currentLoopNum == i) {
@@ -289,7 +285,7 @@ public class sceAtrac3plus extends HLEModule {
         			} else {
         				// Replay the loop
         				log.info(String.format("Replaying atrac loop atracID=%d, loopStart=0x%X, loopEnd=0x%X", id, loop.startSample, loop.endSample));
-        				setPlayPosition(loop.startSample, loopStartBytesWrittenFirstBuf, loopStartBytesWrittenSecondBuf);
+        				setPlayPosition(loop.startSample);
         				nextCurrentSample = loop.startSample;
         				// loopNum < 0: endless loop playback
         				// loopNum > 0: play the loop loopNum times
@@ -496,18 +492,12 @@ public class sceAtrac3plus extends HLEModule {
         		return SceKernelErrors.ERROR_ATRAC_BAD_SAMPLE;
         	}
 
-        	// Offset of the given sample in the input file.
-        	// Assuming "atracBytesPerFrame" bytes in the input file for each "maxSamples" samples.
-        	int inputFileSampleOffset = inputBuffer.isFileEnd() ? 0 : info.inputFileDataOffset + sample / maxSamples * info.atracBytesPerFrame;
-        	int resetWritableBytes = inputBuffer.isFileEnd() ? 0 : inputBuffer.getMaxSize();
-        	int resetNeededBytes = inputBuffer.isFileEnd() ? 0 : info.atracBytesPerFrame * 2;
-
         	// Holds buffer related parameters.
             // Main buffer.
-            bufferInfoAddr.setValue(0, inputBuffer.getAddr());           // Pointer to current writing position in the buffer.
-            bufferInfoAddr.setValue(4, resetWritableBytes);              // Number of bytes which can be written to the buffer.
-            bufferInfoAddr.setValue(8, resetNeededBytes);                // Number of bytes that must to be written to the buffer.
-            bufferInfoAddr.setValue(12, inputFileSampleOffset);          // Read offset in the input file for the given sample.
+            bufferInfoAddr.setValue(0, inputBuffer.getAddr());              // Pointer to current writing position in the buffer.
+            bufferInfoAddr.setValue(4, inputBuffer.getMaxSize());           // Number of bytes which can be written to the buffer.
+            bufferInfoAddr.setValue(8, info.atracBytesPerFrame * 2);        // Number of bytes that must to be written to the buffer.
+            bufferInfoAddr.setValue(12, getFilePositionFromSample(sample)); // Read offset in the input file for the given sample.
             // Secondary buffer.
             bufferInfoAddr.setValue(16, getSecondBufferAddr());          // Pointer to current writing position in the buffer.
             bufferInfoAddr.setValue(20, getSecondBufferSize());          // Number of bytes which can be written to the buffer.
@@ -515,6 +505,14 @@ public class sceAtrac3plus extends HLEModule {
             bufferInfoAddr.setValue(28, getSecondBufferReadPosition());  // Read offset for input file.
 
             return 0;
+        }
+
+        public void setPlayPosition(int sample, int bytesWrittenFirstBuf, int bytesWrittenSecondBuf) {
+        	inputBuffer.notifyReadAll();
+        	currentReadPosition = getFilePositionFromSample(sample);
+        	inputBuffer.setFilePosition(currentReadPosition);
+        	inputBuffer.notifyWrite(bytesWrittenFirstBuf);
+        	setAtracCurrentSample(sample);
         }
 
         private boolean inputBufferContainsAllData() {
@@ -531,8 +529,8 @@ public class sceAtrac3plus extends HLEModule {
     		return info.inputFileDataOffset + sample / maxSamples * info.atracBytesPerFrame;
         }
 
-        public void setPlayPosition(int sample, int bytesWrittenFirstBuf, int bytesWrittenSecondBuf) {
-        	if (sample != getAtracCurrentSample()) {
+        private void setPlayPosition(int sample) {
+        	if ((sample / maxSamples * maxSamples) != getAtracCurrentSample()) {
 	            if (inputBufferContainsAllData()) {
 	            	getInputBuffer().reset(inputBuffer.getFilePosition(), inputBuffer.getFilePosition());
 	            	getInputBuffer().notifyRead(getFilePositionFromSample(sample));
@@ -1184,6 +1182,7 @@ public class sceAtrac3plus extends HLEModule {
         return 0;
     }
 
+    @HLELogging(level = "info")
     @HLEFunction(nid = 0xCA3CA3D2, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetBufferInfoForReseting(@CheckArgument("checkAtracID") int atID, int sample, TPointer32 bufferInfoAddr) {
     	AtracID id = atracIDs[atID];
