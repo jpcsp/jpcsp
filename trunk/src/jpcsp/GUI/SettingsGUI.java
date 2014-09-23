@@ -112,7 +112,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         }
 
         setBoolFromSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
-        setBoolFromSettings(useConnector, "emu.useConnector");
         setBoolFromSettings(useDebugFont, "emu.useDebugFont");
         setBoolFromSettings(useDebugMemory, "emu.useDebuggerMemory");
         setBoolFromSettings(useExternalDecoder, "emu.useExternalDecoder");
@@ -129,7 +128,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(extractPGD, "emu.extractPGD");
         setBoolFromSettings(extractSavedataKey, "emu.extractSavedataKey");
         setBoolFromSettings(disableDLC, "emu.disableDLC");
-        setBoolFromSettings(useAtrac3plus, "emu.useAtrac3plus");
         setStringFromSettings(antiAliasingBox, "emu.graphics.antialias");
         setStringFromSettings(resolutionBox, "emu.graphics.resolution");
         setStringFromSettings(tmppath, "emu.tmppath");
@@ -242,7 +240,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         }
 
         setBoolToSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
-        setBoolToSettings(useConnector, "emu.useConnector");
         setBoolToSettings(useDebugFont, "emu.useDebugFont");
         setBoolToSettings(useDebugMemory, "emu.useDebuggerMemory");
         setBoolToSettings(useExternalDecoder, "emu.useExternalDecoder");
@@ -259,7 +256,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(extractPGD, "emu.extractPGD");
         setBoolToSettings(extractSavedataKey, "emu.extractSavedataKey");
         setBoolToSettings(disableDLC, "emu.disableDLC");
-        setBoolToSettings(useAtrac3plus, "emu.useAtrac3plus");
         setStringToSettings(antiAliasingBox, "emu.graphics.antialias");
         setStringToSettings(resolutionBox, "emu.graphics.resolution");
         setStringToSettings(tmppath, "emu.tmppath");
@@ -518,10 +514,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         fullscreenCheck = new javax.swing.JCheckBox();
         MiscPanel = new javax.swing.JPanel();
         useMediaEngine = new javax.swing.JCheckBox();
-        useConnector = new javax.swing.JCheckBox();
         useExternalDecoder = new javax.swing.JCheckBox();
         useDebugFont = new javax.swing.JCheckBox();
-        useAtrac3plus = new javax.swing.JCheckBox();
         CryptoPanel = new javax.swing.JPanel();
         extractEboot = new javax.swing.JCheckBox();
         cryptoSavedata = new javax.swing.JCheckBox();
@@ -1138,13 +1132,9 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         useMediaEngine.setText(bundle.getString("SettingsGUI.useMediaEngine.text")); // NOI18N
 
-        useConnector.setText(bundle.getString("SettingsGUI.useConnector.text")); // NOI18N
-
         useExternalDecoder.setText(bundle.getString("SettingsGUI.useExternalDecoder.text")); // NOI18N
 
         useDebugFont.setText(bundle.getString("SettingsGUI.useDebugFont.text")); // NOI18N
-
-        useAtrac3plus.setText(bundle.getString("SettingsGUI.useAtrac3plus.text")); // NOI18N
 
         javax.swing.GroupLayout MiscPanelLayout = new javax.swing.GroupLayout(MiscPanel);
         MiscPanel.setLayout(MiscPanelLayout);
@@ -1154,10 +1144,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(useExternalDecoder, javax.swing.GroupLayout.DEFAULT_SIZE, 1535, Short.MAX_VALUE)
-                    .addComponent(useConnector, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(useMediaEngine, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(useDebugFont, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(useAtrac3plus, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(useDebugFont, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         MiscPanelLayout.setVerticalGroup(
@@ -1165,10 +1153,6 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(MiscPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(useMediaEngine)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useAtrac3plus)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useConnector)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useExternalDecoder)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -1515,9 +1499,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JTextField tmppath;
     private javax.swing.JRadioButton umdBrowser;
     private javax.swing.JLabel umdPathLabel;
-    private javax.swing.JCheckBox useAtrac3plus;
     private javax.swing.JCheckBox useCompiler;
-    private javax.swing.JCheckBox useConnector;
     private javax.swing.JCheckBox useDebugFont;
     private javax.swing.JCheckBox useDebugMemory;
     private javax.swing.JCheckBox useExternalDecoder;

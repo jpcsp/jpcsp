@@ -23,9 +23,9 @@ package jpcsp.format.psmf;
  *
  */
 public class PesHeader {
-	public long pts;
-	public long dts;
-	public int channel;
+	private long pts;
+	private long dts;
+	private int channel;
 
 	public PesHeader(int channel) {
 		setPts(0);
@@ -47,6 +47,11 @@ public class PesHeader {
 
 	public void setDts(long dts) {
 		this.dts = dts;
+	}
+
+	public void setDtsPts(long ts) {
+		this.dts = ts;
+		this.pts = ts;
 	}
 
 	public int getChannel() {
