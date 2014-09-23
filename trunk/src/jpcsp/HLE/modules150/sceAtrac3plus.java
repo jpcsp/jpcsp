@@ -30,7 +30,6 @@ import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
 import static jpcsp.util.Utilities.readUnaligned32;
-
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -51,6 +50,7 @@ import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.atrac3.Atrac3Decoder;
 import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -127,7 +127,7 @@ public class sceAtrac3plus extends HLEModule {
 		}
     }
 
-    protected static class AtracFileInfo {
+    public static class AtracFileInfo {
     	public int atracBitrate = 64;
     	public int atracChannels = 2;
     	public int atracSampleRate = 0xAC44;
@@ -142,9 +142,6 @@ public class sceAtrac3plus extends HLEModule {
     	public int loopNum;
     	public int numLoops;
     	public LoopInfo[] loops;
-
-        public AtracFileInfo() {
-        }
     }
 
     public static class AtracID {
@@ -201,6 +198,8 @@ public class sceAtrac3plus extends HLEModule {
         	atracCurrentSample = 0;
         	currentLoopNum = -1;
         	lastDecodedSamples = 0;
+
+    		setOutputChannels(isMonoOutput ? 1 : 2);
 
         	int result = codec.init(info.atracBytesPerFrame, channels, outputChannels, info.atracCodingMode);
         	if (result < 0) {
@@ -504,14 +503,19 @@ public class sceAtrac3plus extends HLEModule {
             bufferInfoAddr.setValue(24, getSecondBufferSize());          // Number of bytes that must to be written to the buffer.
             bufferInfoAddr.setValue(28, getSecondBufferReadPosition());  // Read offset for input file.
 
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("sceAtracGetBufferInfoForReseting returning writeAddr=0x%08X, writeMaxSize=0x%X, writeMinSize=0x%X, readPosition=0x%X", bufferInfoAddr.getValue(0), bufferInfoAddr.getValue(4), bufferInfoAddr.getValue(8), bufferInfoAddr.getValue(12)));
+            }
             return 0;
         }
 
         public void setPlayPosition(int sample, int bytesWrittenFirstBuf, int bytesWrittenSecondBuf) {
-        	inputBuffer.notifyReadAll();
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("sceAtracResetPlayPosition: %s", Utilities.getMemoryDump(inputBuffer.getWriteAddr(), bytesWrittenFirstBuf)));
+        	}
+
         	currentReadPosition = getFilePositionFromSample(sample);
-        	inputBuffer.setFilePosition(currentReadPosition);
-        	inputBuffer.notifyWrite(bytesWrittenFirstBuf);
+        	inputBuffer.reset(bytesWrittenFirstBuf, currentReadPosition);
         	setAtracCurrentSample(sample);
         }
 
@@ -532,7 +536,7 @@ public class sceAtrac3plus extends HLEModule {
         private void setPlayPosition(int sample) {
         	if ((sample / maxSamples * maxSamples) != getAtracCurrentSample()) {
 	            if (inputBufferContainsAllData()) {
-	            	getInputBuffer().reset(inputBuffer.getFilePosition(), inputBuffer.getFilePosition());
+	            	getInputBuffer().reset(inputBuffer.getFilePosition(), 0);
 	            	getInputBuffer().notifyRead(getFilePositionFromSample(sample));
 	            } else if (reloadingFromLoopStart && currentLoopNum >= 0 && sample == info.loops[currentLoopNum].startSample) {
 	            	// We have already started to reload data from the loop start
@@ -698,8 +702,7 @@ public class sceAtrac3plus extends HLEModule {
     	return atracIDs[atID];
     }
 
-    public int analyzeRiffFile(int addr, int length, AtracFileInfo info) {
-        Memory mem = Memory.getInstance();
+    public static int analyzeRiffFile(Memory mem, int addr, int length, AtracFileInfo info) {
         int result = ERROR_ATRAC_UNKNOWN_FORMAT;
 
         int currentAddr = addr;
@@ -853,7 +856,7 @@ public class sceAtrac3plus extends HLEModule {
         }
 
         AtracFileInfo info = new AtracFileInfo();
-        int codecType = analyzeRiffFile(buffer.getAddress(), readSize, info);
+        int codecType = analyzeRiffFile(buffer.getMemory(), buffer.getAddress(), readSize, info);
         if (codecType < 0) {
         	return codecType;
         }
@@ -861,10 +864,6 @@ public class sceAtrac3plus extends HLEModule {
         AtracID id = atracIDs[atID];
     	if (codecType != id.getCodecType()) {
     		return SceKernelErrors.ERROR_ATRAC_WRONG_CODEC;
-        }
-
-        if (isMonoOutput && info.atracChannels == 1) {
-        	id.setOutputChannels(1);
         }
 
         int result = id.setHalfwayBuffer(buffer.getAddress(), readSize, bufferSize, isMonoOutput, info);
@@ -888,7 +887,7 @@ public class sceAtrac3plus extends HLEModule {
         // "Tales of VS - ULJS00209" is even passing an uninitialized value bufferSize=0xDEADBEEF
 
         AtracFileInfo info = new AtracFileInfo();
-        int codecType = analyzeRiffFile(buffer.getAddress(), readSize, info);
+        int codecType = analyzeRiffFile(buffer.getMemory(), buffer.getAddress(), readSize, info);
         if (codecType < 0) {
         	return codecType;
         }

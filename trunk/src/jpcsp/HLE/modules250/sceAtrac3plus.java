@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules250;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AA3_INVALID_CODEC;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AA3_INVALID_HEADER;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AA3_INVALID_HEADER_FLAGS;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AA3_INVALID_HEADER_VERSION;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
@@ -27,25 +31,23 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.media.codec.atrac3.Atrac3Decoder;
+import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
 import jpcsp.util.Utilities;
 
 @HLELogging
 public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
-	protected static final int MAX_ATRAC3_IDS = 6;
-	protected static final int MAX_ATRAC3PLUS_IDS = MAX_ATRAC3_IDS / 2;
-
-	protected static int read24(Memory mem, int address) {
+	private static int read24(Memory mem, int address) {
 		return (mem.read8(address + 0) << 16)
 		     | (mem.read8(address + 1) <<  8)
 		     | (mem.read8(address + 2) <<  0);
 	}
 
-	protected static int read16(Memory mem, int address) {
+	private static int read16(Memory mem, int address) {
 		return (mem.read8(address) << 8) | mem.read8(address + 1);
 	}
 
-	protected int analyzeAA3File(TPointer buffer, int fileSize, AtracFileInfo info) {
+	private static int analyzeAA3File(TPointer buffer, int fileSize, AtracFileInfo info) {
 		Memory mem = buffer.getMemory();
 		int address = buffer.getAddress();
 		int codecType = 0;
@@ -59,7 +61,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
 		if (mem.read8(address) != 3 || mem.read8(address + 1) != 0) {
 			log.error(String.format("Unknown AA3 bytes 0x%08X 0x%08X", mem.read8(address), mem.read8(address + 1)));
-			return SceKernelErrors.ERROR_AA3_INVALID_HEADER_VERSION;
+			return ERROR_AA3_INVALID_HEADER_VERSION;
 		}
 		address += 3;
 
@@ -73,35 +75,97 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 		magic = read24(mem, address);
 		if (magic != 0x454133) { // 3AE
 			log.error(String.format("Unknown AA3 magic 0x%06X", magic));
-			return SceKernelErrors.ERROR_AA3_INVALID_HEADER;
+			return ERROR_AA3_INVALID_HEADER;
 		}
 		address += 4;
 
 		int dataOffset = read16(mem, address);
 		if (dataOffset == 0xFFFF) {
-			return SceKernelErrors.ERROR_AA3_INVALID_HEADER;
+			return ERROR_AA3_INVALID_HEADER;
 		}
 		address += 2;
 
 		int unknown2 = read16(mem, address);
 		if (unknown2 != 0xFFFF) {
-			return SceKernelErrors.ERROR_AA3_INVALID_HEADER;
+			return ERROR_AA3_INVALID_HEADER;
 		}
 		address += 2;
 
 		address += 24;
 
+		int samplesPerFrame;
+		int flags = read16(mem, address + 2);
 		switch (mem.read8(address)) {
-			case 0: codecType = PSP_CODEC_AT3; break;
-			case 1: codecType = PSP_CODEC_AT3PLUS; break;
-			default: return SceKernelErrors.ERROR_AA3_INVALID_CODEC;
+			case 0: // AT3
+				if ((flags & 0xE000) != 0x2000) { // Number of channels?
+					return ERROR_AA3_INVALID_HEADER_FLAGS;
+				}
+				codecType = PSP_CODEC_AT3;
+				samplesPerFrame = Atrac3Decoder.SAMPLES_PER_FRAME;
+				info.atracChannels = 2;
+				info.atracCodingMode = (mem.read8(address + 1) & 0x2) >> 1;
+				info.atracBytesPerFrame = ((flags & 0x3FF) << 3);
+				break;
+			case 1: // AT3+
+				if ((flags & 0x1C00) != 0x0800) {
+					return ERROR_AA3_INVALID_HEADER_FLAGS;
+				}
+				if ((flags & 0xE000) != 0x2000) { // Number of channels?
+					return ERROR_AA3_INVALID_HEADER_FLAGS;
+				}
+				codecType = PSP_CODEC_AT3PLUS;
+				samplesPerFrame = Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES;
+				info.atracChannels = 2;
+				info.atracBytesPerFrame = ((flags & 0x3FF) << 3) + 8;
+				break;
+			default:
+				return ERROR_AA3_INVALID_CODEC;
 		}
 
 		info.inputFileDataOffset += dataOffset;
 		info.inputFileSize = fileSize;
+		info.inputDataSize = fileSize - info.inputFileDataOffset;
+		info.atracEndSample = (info.inputDataSize / info.atracBytesPerFrame) * samplesPerFrame;
 
 		return codecType;
 	}
+
+    protected int hleSetAA3HalfwayBufferAndGetID(TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput, int fileSize) {
+        if (readSize > bufferSize) {
+        	return ERROR_ATRAC_INCORRECT_READ_SIZE;
+        }
+
+        // readSize and bufferSize are unsigned int's.
+        // Allow negative values.
+        // "Tales of VS - ULJS00209" is even passing an uninitialized value bufferSize=0xDEADBEEF
+
+        AtracFileInfo info = new AtracFileInfo();
+        int codecType = analyzeAA3File(buffer, fileSize, info);
+        if (codecType < 0) {
+        	return codecType;
+        }
+
+        int atID = hleGetAtracID(codecType);
+        if (atID < 0) {
+        	return atID;
+        }
+
+        AtracID id = atracIDs[atID];
+    	int result = id.setHalfwayBuffer(buffer.getAddress(), readSize, bufferSize, isMonoOutput, info);
+    	if (result < 0) {
+    		hleReleaseAtracID(atID);
+    		return result;
+    	}
+
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("hleSetHalfwayBufferAndGetID returning atID=0x%X", atID));
+        }
+
+        // Reschedule
+        Modules.ThreadManForUserModule.hleYieldCurrentThread();
+
+        return atID;
+    }
 
 	@HLEFunction(nid = 0xB3B5D042, version = 250, checkInsideInterrupt = true)
     public int sceAtracGetOutputChannel(@CheckArgument("checkAtracID") int atID, TPointer32 outputChannelAddr) {
@@ -141,12 +205,14 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     	return hleSetHalfwayBuffer(atID, MOutHalfBuffer, readSize, MOutHalfBufferSize, true);
     }
 
+    // Not sure if this function does really exist
     @HLEUnimplemented
     @HLEFunction(nid = 0xF6837A1A, version = 250, checkInsideInterrupt = true)
     public int sceAtracSetMOutData(@CheckArgument("checkAtracID") int atID, int unknown2, int unknown3, int unknown4, int unknown5, int unknown6) {
         return 0;
     }
 
+    // Not sure if this function does really exist
     @HLEUnimplemented
     @HLEFunction(nid = 0x472E3825, version = 250, checkInsideInterrupt = true)
     public int sceAtracSetMOutDataAndGetID(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5, int unknown6) {
@@ -158,44 +224,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     	return hleSetHalfwayBufferAndGetID(MOutHalfBuffer, readSize, MOutHalfBufferSize, true);
     }
 
-    protected int hleSetAA3HalfwayBufferAndGetID(TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput, int fileSize) {
-        if (readSize > bufferSize) {
-        	return ERROR_ATRAC_INCORRECT_READ_SIZE;
-        }
-
-        // readSize and bufferSize are unsigned int's.
-        // Allow negative values.
-        // "Tales of VS - ULJS00209" is even passing an uninitialized value bufferSize=0xDEADBEEF
-
-        AtracFileInfo info = new AtracFileInfo();
-        int codecType = analyzeAA3File(buffer, fileSize, info);
-        if (codecType < 0) {
-        	return codecType;
-        }
-
-        int atID = hleGetAtracID(codecType);
-        if (atID < 0) {
-        	return atID;
-        }
-
-        AtracID id = atracIDs[atID];
-    	int result = id.setHalfwayBuffer(buffer.getAddress(), readSize, bufferSize, isMonoOutput, info);
-    	if (result < 0) {
-    		hleReleaseAtracID(atID);
-    		return result;
-    	}
-
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("hleSetHalfwayBufferAndGetID returning atID=0x%X", atID));
-        }
-
-        // Reschedule
-        Modules.ThreadManForUserModule.hleYieldCurrentThread();
-
-        return atID;
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x5622B7C1, version = 250, checkInsideInterrupt = true)
     public int sceAtracSetAA3DataAndGetID(TPointer buffer, int bufferSize, int fileSize, int unused) {
     	if (log.isDebugEnabled()) {
@@ -204,7 +232,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     	return hleSetAA3HalfwayBufferAndGetID(buffer, bufferSize, bufferSize, false, fileSize);
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x5DD66588, version = 250)
     public int sceAtracSetAA3HalfwayBufferAndGetID(TPointer buffer, int readSize, int bufferSize, int fileSize, int unused) {
     	if (log.isDebugEnabled()) {
