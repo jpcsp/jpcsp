@@ -79,6 +79,10 @@ JPCSP v0.8 (???):
 
 -> Added support for an external software rendering engine;
 
+-> Added a Java implementation for the audio decoding (Atrac3, Atrac3+, MP3 and AAC)
+   which is improving the compatibility and makes the use of an external audio
+   decoder obsolete.
+
 -> Added network configuration settings;
 
 -> A ProOnline server is now built-in within Jpcsp.
@@ -370,14 +374,8 @@ the user interface will be overridden regardless of their state.
 - Media Engine:
 The "Media Engine" can be enabled under "Options" > "Configuration" > "Media".
 This allows JPCSP to use the FFMPEG's wrapper Xuggler to decode and playback
-ingame videos (instead of faked MPEG data) and audio (ATRAC3 only).
-The playback of ATRAC3+ audio is only available when the configuration option
-"Decode audio files with SonicStage" is enabled
-(under "Options" > "Configuration" > "Media") and when SonicStage is installed
-on your computer. SonicStage (http://en.wikipedia.org/wiki/Sonicstage)
-is not provided by Jpcsp and must be installed separately. The playback of monaural
-ATRAC3+ audio has been reported to not work. Mono ATRAC3+ cannot be decoded by
-SonicStage, this is a restriction of this product.
+ingame videos (instead of faked MPEG data).
+Audio can be decoded without the Media Engine.
 
 
 - Debug Tools (under "Debug" > "Tools"):
