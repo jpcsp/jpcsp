@@ -434,7 +434,7 @@ public class sceMp4 extends HLEModule {
     	// Decode audio:
     	// - init: 1 at first call, 0 afterwards
     	// - frequency: 44100
-    	return Modules.sceMpegModule.hleMpegAtracDecode(bufferAddr, audioBufferSize);
+    	return Modules.sceMpegModule.hleMpegAtracDecode(auAddr, bufferAddr, audioBufferSize);
     }
 
     /**

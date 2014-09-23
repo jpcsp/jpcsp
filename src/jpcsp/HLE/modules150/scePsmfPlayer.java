@@ -17,12 +17,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_PSMFPLAYER_NOT_INITIALIZED;
+import static jpcsp.HLE.kernel.types.SceMpegRingbuffer.ringbufferPacketSize;
+import static jpcsp.HLE.modules150.SysMemUserForUser.KERNEL_PARTITION_ID;
+import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
+import static jpcsp.HLE.modules150.sceMpeg.MPEG_MEMSIZE;
 import static jpcsp.HLE.modules150.sceMpeg.PSMF_MAGIC;
 import static jpcsp.HLE.modules150.sceMpeg.PSMF_MAGIC_OFFSET;
 import static jpcsp.HLE.modules150.sceMpeg.PSMF_STREAM_OFFSET_OFFSET;
 import static jpcsp.HLE.modules150.sceMpeg.PSMF_STREAM_SIZE_OFFSET;
 import static jpcsp.HLE.modules150.sceMpeg.convertTimestampToDate;
-import static jpcsp.HLE.modules150.sceMpeg.mpegAudioChannels;
+import static jpcsp.HLE.modules150.sceMpeg.mpegAudioOutputChannels;
 import static jpcsp.HLE.modules150.sceMpeg.read32;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
@@ -40,7 +44,6 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
@@ -50,12 +53,15 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceMpegAu;
+import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.sceMpeg;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.ISectorDevice;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.hardware.Screen;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 import jpcsp.settings.AbstractBoolSettingsListener;
@@ -182,6 +188,9 @@ public class scePsmfPlayer extends HLEModule {
     protected MediaEngine me;
     protected boolean useMediaEngine = false;
     protected byte[] audioDecodeBuffer;
+    protected SysMemInfo mpegMem;
+    protected SysMemInfo ringbufferMem;
+    protected int pmfFileDataAudioPosition;
 
     protected boolean checkMediaEngineState() {
         return useMediaEngine;
@@ -319,8 +328,10 @@ public class scePsmfPlayer extends HLEModule {
             psmfFile.seek(offset);
             pmfFileData = new byte[length];
             psmfFile.readFully(pmfFileData);
+            psmfFile.close();
 
             Modules.sceMpegModule.analyseMpeg(0, pmfFileData);
+            pmfFileDataAudioPosition = Modules.sceMpegModule.getPsmfHeader().mpegOffset;
 
             if (checkMediaEngineState()) {
                 pmfFileChannel = new PacketChannel(pmfFileData);
@@ -354,8 +365,24 @@ public class scePsmfPlayer extends HLEModule {
         psmfPlayerAtracAu = new SceMpegAu();
         psmfPlayerAvcAu = new SceMpegAu();
 
-        // scePsmfPlayer creates a ringbuffer with 581 packets
-        psmfMaxAheadTimestamp = sceMpeg.getMaxAheadTimestamp(581);
+        // Allocate memory for the MPEG structure
+        Memory mem = Memory.getInstance();
+        mpegMem = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, getName() + "-Mpeg", PSP_SMEM_Low, MPEG_MEMSIZE, 0);
+        int result = Modules.sceMpegModule.hleMpegCreate(TPointer.NULL, new TPointer(mem, mpegMem.addr), MPEG_MEMSIZE, null, Screen.width, 0, 0);
+        if (result < 0) {
+        	log.error(String.format("scePsmfPlayerCreate: error 0x%08X while calling hleMpegCreate", result));
+        }
+
+        // Allocate memory for the ringbuffer, scePsmfPlayer creates a ringbuffer with 581 packets
+        final int packets = 581;
+        ringbufferMem = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, getName() + "-Ringbuffer", PSP_SMEM_Low, packets * ringbufferPacketSize, 0);
+        Modules.sceMpegModule.hleCreateRingbuffer(packets, ringbufferMem.addr, ringbufferMem.size);
+        SceMpegRingbuffer ringbuffer = Modules.sceMpegModule.getMpegRingbuffer();
+        // This ringbuffer is only used for audio
+        ringbuffer.setHasAudio(true);
+        ringbuffer.setHasVideo(false);
+
+        psmfMaxAheadTimestamp = sceMpeg.getMaxAheadTimestamp(packets);
 
         // Start with INIT.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_INIT;
@@ -375,6 +402,15 @@ public class scePsmfPlayer extends HLEModule {
             }
         }
         VideoEngine.getInstance().resetVideoTextures();
+
+        if (ringbufferMem != null) {
+        	Modules.SysMemUserForUserModule.free(ringbufferMem);
+        	ringbufferMem = null;
+        }
+        if (mpegMem != null) {
+        	Modules.SysMemUserForUserModule.free(mpegMem);
+        	mpegMem = null;
+        }
 
         // Set to NONE.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_NONE;
@@ -540,7 +576,7 @@ public class scePsmfPlayer extends HLEModule {
     	// Write video data.
         if (checkMediaEngineState() && pmfFileChannel != null) {
         	startMediaEngine();
-            if (me.stepVideo(mpegAudioChannels)) {
+            if (me.stepVideo(mpegAudioOutputChannels)) {
             	me.writeVideoImage(displayBuffer, videoDataFrameWidth, videoPixelMode);
 	            me.getCurrentVideoAu(psmfPlayerAvcAu);
             } else {
@@ -595,31 +631,46 @@ public class scePsmfPlayer extends HLEModule {
             return result;
         }
 
-        long startTime = Emulator.getClock().microTime();
+        // Check if the ringbuffer needs additional data
+        SceMpegRingbuffer ringbuffer = Modules.sceMpegModule.getMpegRingbuffer();
+        if (ringbuffer.getPutSequentialPackets() > 0) {
+        	Memory mem = audioDataAddr.getMemory();
+        	int packetSize = ringbuffer.getPacketSize();
+        	int addr = ringbuffer.getPutDataAddr();
+        	int size = ringbuffer.getPutSequentialPackets() * packetSize;
+        	size = Math.min(size, pmfFileData.length - pmfFileDataAudioPosition);
+
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("Filling ringbuffer at 0x%08X, size=0x%X with file data from offset 0x%X", addr, size, pmfFileDataAudioPosition));
+        	}
+        	for (int i = 0; i < size; i++) {
+        		mem.write8(addr + i, pmfFileData[pmfFileDataAudioPosition + i]);
+        	}
+        	ringbuffer.addPackets((size + packetSize - 1) / packetSize);
+        	pmfFileDataAudioPosition += size;
+        }
 
     	// Write audio data
-        Memory mem = Memory.getInstance();
-    	int bytes = 0;
-        if (checkMediaEngineState() && pmfFileChannel != null) {
-        	startMediaEngine();
-        	if (me.stepAudio(audioSamplesBytes, mpegAudioChannels)) {
-                bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
-                if (log.isDebugEnabled()) {
-                	log.debug(String.format("scePsmfPlayerGetAudioData ME returned %d bytes (audioSamplesBytes=%d)", bytes, audioSamplesBytes));
-                }
-                mem.copyToMemory(audioDataAddr.getAddress(), ByteBuffer.wrap(audioDecodeBuffer, 0, bytes), bytes);
-            	me.getCurrentAudioAu(psmfPlayerAtracAu);
-        	} else {
-        		psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
-        	}
-    	} else {
-    		psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
-    		psmfPlayerAtracAu.dts = -1;
-    	}
-    	// Fill the rest of the buffer with 0's
-    	audioDataAddr.clear(bytes, audioSamplesBytes - bytes);
+    	result = Modules.sceMpegModule.hleMpegAtracDecode(null, audioDataAddr, audioSamplesBytes);
 
-        sceMpeg.delayThread(startTime, sceMpeg.atracDecodeDelay);
+    	psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
+		psmfPlayerAtracAu.dts = -1;
+//        if (checkMediaEngineState() && pmfFileChannel != null) {
+//        	startMediaEngine();
+//        	if (me.stepAudio(audioSamplesBytes, mpegAudioOutputChannels)) {
+//                bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
+//                if (log.isDebugEnabled()) {
+//                	log.debug(String.format("scePsmfPlayerGetAudioData ME returned %d bytes (audioSamplesBytes=%d)", bytes, audioSamplesBytes));
+//                }
+//                mem.copyToMemory(audioDataAddr.getAddress(), ByteBuffer.wrap(audioDecodeBuffer, 0, bytes), bytes);
+//            	me.getCurrentAudioAu(psmfPlayerAtracAu);
+//        	} else {
+//        		psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
+//        	}
+//    	} else {
+//    		psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
+//    		psmfPlayerAtracAu.dts = -1;
+//    	}
 
         if (log.isDebugEnabled()) {
         	log.debug(String.format("scePsmfPlayerGetAudioData atracAu=[%s], avcAu=[%s], returning 0x%08X", psmfPlayerAtracAu, psmfPlayerAvcAu, result));

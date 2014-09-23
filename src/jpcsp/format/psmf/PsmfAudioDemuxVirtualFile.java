@@ -109,13 +109,12 @@ public class PsmfAudioDemuxVirtualFile extends AbstractProxyVirtualFile {
 			c = read8();
 			length -= 2;
 		}
-		pesHeader.pts = 0;
-		pesHeader.dts = 0;
+		pesHeader.setDtsPts(0);
 		if ((c & 0xE0) == 0x20) {
-			pesHeader.dts = pesHeader.pts = readPts(c);
+			pesHeader.setDtsPts(readPts(c));
 			length -= 4;
 			if ((c & 0x10) != 0) {
-				pesHeader.dts = readPts();
+				pesHeader.setDts(readPts());
 				length -= 5;
 			}
 		} else if ((c & 0xC0) == 0x80) {
@@ -124,10 +123,10 @@ public class PsmfAudioDemuxVirtualFile extends AbstractProxyVirtualFile {
 			length -= 2;
 			length -= headerLength;
 			if ((flags & 0x80) != 0) {
-				pesHeader.dts = pesHeader.pts = readPts();
+				pesHeader.setDtsPts(readPts());
 				headerLength -= 5;
 				if ((flags & 0x40) != 0) {
-					pesHeader.dts = readPts();
+					pesHeader.setDts(readPts());
 					headerLength -= 5;
 				}
 			}
@@ -160,7 +159,7 @@ public class PsmfAudioDemuxVirtualFile extends AbstractProxyVirtualFile {
 		}
 		if (startCode == PRIVATE_STREAM_1) {
 			int channel = read8();
-			pesHeader.channel = channel;
+			pesHeader.setChannel(channel);
 			length--;
 			if (channel >= 0x80 && channel <= 0xCF) {
 				// Skip audio header
@@ -248,7 +247,7 @@ public class PsmfAudioDemuxVirtualFile extends AbstractProxyVirtualFile {
 					int length = read16();
 					PesHeader pesHeader = new PesHeader(audioChannel);
 					length = readPesHeader(pesHeader, length, startCode);
-					if (pesHeader.channel == audioChannel || audioChannel < 0) {
+					if (pesHeader.getChannel() == audioChannel || audioChannel < 0) {
 						int packetLength = 0;
 						while (packetLength < length && readLength < outputLength) {
 							int maxReadLength = Math.min(length - packetLength, outputLength - readLength);

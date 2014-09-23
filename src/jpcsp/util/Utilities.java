@@ -773,7 +773,11 @@ public class Utilities {
     }
 
     public static void sleep(int millis, int micros) {
-        try {
+    	if (millis < 0) {
+    		return;
+    	}
+
+    	try {
             if (micros <= 0) {
                 Thread.sleep(millis);
             } else {

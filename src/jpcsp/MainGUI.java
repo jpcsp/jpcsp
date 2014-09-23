@@ -2266,8 +2266,6 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 
         logConfigurationPanel("SettingsGUI.MiscPanel.title");
         logConfigurationSettingBool("SettingsGUI.useMediaEngine.text", "emu.useMediaEngine", false, true);
-        logConfigurationSettingBool("SettingsGUI.useAtrac3plus.text", "emu.useAtrac3plus", false, true);
-        logConfigurationSettingBool("SettingsGUI.useConnector.text", "emu.useConnector", false, true);
         logConfigurationSettingBool("SettingsGUI.useExternalDecoder.text", "emu.useExternalDecoder", false, true);
         logConfigurationSettingBool("SettingsGUI.useDebugFont.text", "emu.useDebugFont", false, true);
 
