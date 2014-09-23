@@ -1613,8 +1613,7 @@ public class ChannelUnit {
 			getSubbandFlags(ctx.wavesInfo.toneSharing, ctx.wavesInfo.numToneBands);
 			getSubbandFlags(ctx.wavesInfo.toneMaster, ctx.wavesInfo.numToneBands);
 			if (getSubbandFlags(ctx.wavesInfo.phaseShift, ctx.wavesInfo.numToneBands)) {
-				log.error(String.format("GHA Phase shifting"));
-				return AT3P_ERROR;
+				log.warn(String.format("GHA Phase shifting"));
 			}
 		}
 
