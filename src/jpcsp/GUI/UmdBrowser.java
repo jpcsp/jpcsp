@@ -43,6 +43,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
+import jpcsp.Memory;
 import jpcsp.WindowPropSaver;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
@@ -536,7 +537,7 @@ public class UmdBrowser extends javax.swing.JDialog {
             if (lastRowIndex != rowIndex) {
                 stopVideo();
                 umdBrowserPmf = new UmdBrowserPmf(iso, "PSP_GAME/ICON1.PMF", icon0Label);
-                umdBrowserSound = new UmdBrowserSound(iso, "PSP_GAME/SND0.AT3");
+                umdBrowserSound = new UmdBrowserSound(Memory.getInstance(), iso, "PSP_GAME/SND0.AT3");
             }
 
             lastRowIndex = rowIndex;
@@ -586,7 +587,7 @@ public class UmdBrowser extends javax.swing.JDialog {
         }
 
         if (umdBrowserSound != null) {
-            umdBrowserSound.stopVideo();
+            umdBrowserSound.stopSound();
             umdBrowserSound = null;
         }
     }

@@ -25,11 +25,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
@@ -37,11 +32,8 @@ import jpcsp.Emulator;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.media.MediaEngine;
-import jpcsp.settings.Settings;
 
 import com.xuggle.xuggler.Global;
-import com.xuggle.xuggler.IAudioResampler;
-import com.xuggle.xuggler.IAudioSamples;
 import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IContainer;
 import com.xuggle.xuggler.IPacket;
@@ -52,6 +44,7 @@ import com.xuggle.xuggler.IVideoPicture;
 import com.xuggle.xuggler.IVideoResampler;
 import com.xuggle.xuggler.video.ConverterFactory;
 import com.xuggle.xuggler.video.IConverter;
+
 import jpcsp.util.Constants;
 import jpcsp.util.Utilities;
 
@@ -61,12 +54,9 @@ public class UmdBrowserPmf {
     private UmdIsoFile isoFile;
     private String fileName;
     private IContainer container;
-    private IAudioResampler audioResampler;
     private IVideoResampler videoResampler;
     private int videoStreamId;
     private IStreamCoder videoCoder;
-    private int audioStreamId;
-    private IStreamCoder audioCoder;
     private IPacket packet;
     private long firstTimestampInStream;
     private long systemClockStartTime;
@@ -78,7 +68,6 @@ public class UmdBrowserPmf {
     private JLabel display;
     private PmfDisplayThread displayThread;
     private PmfByteChannel byteChannel;
-    private SourceDataLine mLine;
 
     public UmdBrowserPmf(UmdIsoReader iso, String fileName, JLabel display) {
         this.iso = iso;
@@ -152,12 +141,9 @@ public class UmdBrowserPmf {
         // query how many streams the call to open found
         int numStreams = container.getNumStreams();
 
-        // and iterate through the streams to find the first video and audio stream
+        // and iterate through the streams to find the first video stream
         videoStreamId = -1;
         videoCoder = null;
-        audioStreamId = -1;
-        audioCoder = null;
-        boolean audioMuted = Settings.getInstance().readBool("emu.mutesound");
         for (int i = 0; i < numStreams; i++) {
             // Find the stream object
             IStream stream = container.getStream(i);
@@ -167,31 +153,19 @@ public class UmdBrowserPmf {
             if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
                 videoStreamId = i;
                 videoCoder = coder;
-            } else if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO && !audioMuted) {
-                audioStreamId = i;
-                audioCoder = coder;
             }
         }
 
         /*
-         * Now we have found the audio and video streams in this file.
+         * Now we have found the video stream in this file.
          * Let's open up our decoder so it can do work.
          */
         if (videoCoder != null && streamCoderOpen(videoCoder) < 0) {
             Emulator.log.error("could not open video decoder for container: " + fileName);
             return false;
         }
-        if (audioCoder != null && streamCoderOpen(audioCoder) < 0) {
-            Emulator.log.info("could not open audio decoder for container: " + fileName);
-            return false;
-        }
-        if (!Settings.getInstance().readBool("emu.useAtrac3plus")) {
-            Emulator.log.info("Unsupported Atrac3+ data!");
-            return false;
-        }
 
         videoResampler = null;
-        audioResampler = null;
         if (videoCoder != null) {
             converter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, IPixelFormat.Type.BGR24, videoCoder.getWidth(), videoCoder.getHeight());
 
@@ -206,21 +180,6 @@ public class UmdBrowserPmf {
                     return false;
                 }
             }
-        }
-
-        if (audioCoder != null) {
-            // If the audio is Atrac3+, we must resample it first.
-            if (audioCoder.getSampleFormat() == IAudioSamples.Format.FMT_FLTP) {
-                audioResampler = IAudioResampler.make(audioCoder.getChannels(), audioCoder.getChannels(),
-                audioCoder.getSampleRate(), audioCoder.getSampleRate(),
-                IAudioSamples.Format.FMT_S16, audioCoder.getSampleFormat());
-                
-                if (audioResampler == null) {
-                    Emulator.log.error("could not create audio resampler for: " + fileName);
-                    return false;
-                }
-            }
-            openAudio(audioCoder);
         }
 
         packet = IPacket.make();
@@ -241,11 +200,6 @@ public class UmdBrowserPmf {
             videoCoder = null;
         }
         
-        if (audioResampler != null) {
-            audioResampler.delete();
-            audioResampler = null;
-        }
-
         if (videoResampler != null) {
             videoResampler.delete();
             videoResampler = null;
@@ -264,14 +218,13 @@ public class UmdBrowserPmf {
 
     private void loopVideo() {
         closeVideo();
-        closeAudio();
         startVideo();
     }
 
     private void stopDisplayThread() {
         while (displayThread != null && !threadExit) {
             done = true;
-            sleep(1);
+            Utilities.sleep(1, 0);
         }
         displayThread = null;
     }
@@ -279,7 +232,6 @@ public class UmdBrowserPmf {
     public void stopVideo() {
         stopDisplayThread();
         closeVideo();
-        closeAudio();
 
         if (isoFile != null) {
             try {
@@ -371,131 +323,16 @@ public class UmdBrowserPmf {
                             long millisecondsStreamTimeSinceStartOfVideo = (picture.getTimeStamp() - firstTimestampInStream) / 1000;
                             final long millisecondsTolerance = 50; // and we give ourselfs 50 ms of tolerance
                             final long millisecondsToSleep = (millisecondsStreamTimeSinceStartOfVideo - (millisecondsClockTimeSinceStartofVideo + millisecondsTolerance));
-                            sleep(millisecondsToSleep);
+                            Utilities.sleep((int) millisecondsToSleep, 0);
                         }
 
                         // And finally, convert the BGR24 to an Java buffered image
                         image = converter.toImage(newPic);
                     }
                 }
-            } else if (packet.getStreamIndex() == audioStreamId && audioCoder != null) {
-                /*
-                 * We allocate a set of samples with the same number of channels as the
-                 * coder tells us is in this buffer.
-                 *
-                 * We also pass in a buffer size (1024 in our example), although Xuggler
-                 * will probably allocate more space than just the 1024 (it's not important why).
-                 */
-                IAudioSamples samples = IAudioSamples.make(1024, audioCoder.getChannels());
-
-                /*
-                 * A packet can actually contain multiple sets of samples (or frames of samples
-                 * in audio-decoding speak).  So, we may need to call decode audio multiple
-                 * times at different offsets in the packet's data.  We capture that here.
-                 */
-                int offset = 0;
-
-                /*
-                 * Keep going until we've processed all data
-                 */
-                while (offset < packet.getSize()) {
-                    int bytesDecoded = audioCoder.decodeAudio(samples, packet, offset);
-                    if (bytesDecoded < 0) {
-                        throw new RuntimeException("got error decoding audio in: " + fileName);
-                    }
-                    offset += bytesDecoded;
-                    /*
-                     * Some decoder will consume data in a packet, but will not be able to construct
-                     * a full set of samples yet.  Therefore you should always check if you
-                     * got a complete set of samples from the decoder
-                     */
-                    if (samples.isComplete()) { 
-                        if (audioResampler != null) {
-                            int samplesSize = samples.getSize();
-                            IAudioSamples newSamples = IAudioSamples.make(samplesSize, samples.getChannels());
-                            if (audioResampler.swresample(newSamples, samples, samplesSize) < 0) {
-                                throw new RuntimeException("could not resample audio from: " + fileName);
-                            }
-                            playAtrac3plusAudio(newSamples);
-                        } else {
-                            playAudio(samples);
-                        }
-                    }
-                }
             }
         } else {
             endOfVideo = true;
-        }
-    }
-
-    private void openAudio(IStreamCoder aAudioCoder) {
-        AudioFormat audioFormat = new AudioFormat(aAudioCoder.getSampleRate(),
-                16,
-                aAudioCoder.getChannels(),
-                true, /* xuggler defaults to signed 16 bit samples */
-                false);
-        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-        try {
-            mLine = (SourceDataLine) AudioSystem.getLine(info);
-            /**
-             * if that succeeded, try opening the line.
-             */
-            mLine.open(audioFormat);
-            /**
-             * And if that succeed, start the line.
-             */
-            mLine.start();
-        } catch (LineUnavailableException e) {
-            throw new RuntimeException("could not open audio line");
-        }
-    }
-
-    private void playAudio(IAudioSamples aSamples) {
-        /**
-         * We're just going to dump all the samples into the line.
-         */
-        byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
-        mLine.write(rawBytes, 0, aSamples.getSize());
-    }
-    
-    private void playAtrac3plusAudio(IAudioSamples aSamples) {
-        int samplesSize = aSamples.getSize();
-        byte[] rawBytes = aSamples.getData().getByteArray(0, samplesSize);
-        
-         // Fix the audio panning (Xuggler bug).
-    	for (int i = 0, j = 0; i < samplesSize - 2; i++, j++) {
-    		int src1 = Utilities.read8(rawBytes, j);
-    		int src2 = Utilities.read8(rawBytes, j + 2);
-    		int src = (src1 + src2);
-    		rawBytes[i] = (byte) (src & 0xFF);
-    	}
-        
-        mLine.write(rawBytes, 0, aSamples.getSize());
-        
-        aSamples.delete();
-    }
-
-    private void closeAudio() {
-        if (mLine != null) {
-            /*
-             * Wait for the line to finish playing
-             */
-            mLine.drain();
-            /*
-             * Close the line.
-             */
-            mLine.close();
-            mLine = null;
-        }
-    }
-
-    private void sleep(long millis) {
-        if (millis > 0) {
-            try {
-                Thread.sleep(millis);
-            } catch (InterruptedException e) {
-                // Ignore exception
-            }
         }
     }
 
