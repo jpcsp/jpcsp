@@ -100,8 +100,8 @@ public class pspFileBuffer {
 		currentSize = 0;
 		readPosition = 0;
 		writePosition = 0;
-		notifyWrite(readSize);
 		this.filePosition = filePosition;
+		notifyWrite(readSize);
 	}
 
 	public void notifyRead(int size) {
