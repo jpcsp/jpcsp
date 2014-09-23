@@ -476,14 +476,14 @@ public class Atrac3plusDsp {
 	/**
 	 *  Synthesize sine waves according to given parameters.
 	 *
-	 *  @param[in]    synth_param   ptr to common synthesis parameters
-	 *  @param[in]    waves_info    parameters for each sine wave
-	 *  @param[in]    envelope      envelope data for all waves in a group
-	 *  @param[in]    phase_shift   flag indicates 180 degrees phase shift
-	 *  @param[in]    reg_offset    region offset for trimming envelope data
-	 *  @param[out]   out           receives sythesized data
+	 *  @param[in]    synthParam   common synthesis parameters
+	 *  @param[in]    wavesInfo    parameters for each sine wave
+	 *  @param[in]    envelope     envelope data for all waves in a group
+	 *  @param[in]    phaseShift   flag indicates 180 degrees phase shift
+	 *  @param[in]    regOffset    region offset for trimming envelope data
+	 *  @param[out]   out          receives synthesized data
 	 */
-	private void wavesSynth(WaveSynthParams synthParams, WavesData wavesInfo, WaveEnvelope envelope, int phaseShift, int regOffset, float[] out) {
+	private void wavesSynth(WaveSynthParams synthParams, WavesData wavesInfo, WaveEnvelope envelope, boolean phaseShift, int regOffset, float[] out) {
 		int waveParam = wavesInfo.startIndex;
 
 		for (int wn = 0; wn < wavesInfo.numWavs; wn++, waveParam++) {
@@ -497,6 +497,13 @@ public class Atrac3plusDsp {
 			for (int i = 0; i < 128; i++) {
 				out[i] += sine_table[pos] * amp;
 				pos     = (pos + inc) & 2047;
+			}
+		}
+
+		if (phaseShift) {
+			// 180 degrees phase shift
+			for (int i = 0; i < 128; i++) {
+				out[i] = -out[i];
 			}
 		}
 
@@ -563,11 +570,11 @@ public class Atrac3plusDsp {
 
 		// synthesize waves for both overlapping regions
 		if (tonesNow.numWavs > 0 && reg1EnvNonzero) {
-			wavesSynth(ctx.wavesInfoPrev, tonesNow, tonesNow.currEnv, ctx.wavesInfoPrev.phaseShift[sb] ? chNum & 1 : 0, 128, wavreg1);
+			wavesSynth(ctx.wavesInfoPrev, tonesNow, tonesNow.currEnv, ctx.wavesInfoPrev.phaseShift[sb] && (chNum > 0), 128, wavreg1);
 		}
 
 		if (tonesNext.numWavs > 0 && reg2EnvNonzero) {
-			wavesSynth(ctx.wavesInfo, tonesNext, tonesNext.currEnv, ctx.wavesInfo.phaseShift[sb] ? chNum & 1 : 0, 0, wavreg2);
+			wavesSynth(ctx.wavesInfo, tonesNext, tonesNext.currEnv, ctx.wavesInfo.phaseShift[sb] && (chNum > 0), 0, wavreg2);
 		}
 
 		// Hann windowing for non-faded wave signals
