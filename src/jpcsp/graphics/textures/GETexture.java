@@ -373,7 +373,7 @@ public class GETexture {
 	}
 
 	public boolean isCompatible(int width, int height, int bufferWidth, int pixelFormat) {
-		if (width != this.width || height != this.height || bufferWidth != this.bufferWidth || pixelFormat != this.pixelFormat) {
+		if (width != this.width || height != this.height || bufferWidth != this.bufferWidth) {
 			return false;
 		}
 
