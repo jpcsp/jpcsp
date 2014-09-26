@@ -21,6 +21,7 @@ import java.nio.IntBuffer;
 
 import jpcsp.graphics.Uniforms;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.software.PixelColor;
 
 /**
  * @author gid15
@@ -85,6 +86,14 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("setBlendFunc src=%d, dst=%d", src, dst));
 		}
 		super.setBlendFunc(src, dst);
+	}
+
+	@Override
+	public void setBlendColor(float[] color) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setBlendColor color=0x%08X", PixelColor.getColor(color)));
+		}
+		super.setBlendColor(color);
 	}
 
 	@Override
