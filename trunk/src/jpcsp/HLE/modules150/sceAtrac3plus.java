@@ -515,7 +515,10 @@ public class sceAtrac3plus extends HLEModule {
         	}
 
         	currentReadPosition = getFilePositionFromSample(sample);
-        	inputBuffer.reset(bytesWrittenFirstBuf, currentReadPosition);
+        	// Do not change the position of the inputBuffer when it contains all the Atrac data
+        	if (!inputBufferContainsAllData()) {
+        		inputBuffer.reset(bytesWrittenFirstBuf, currentReadPosition);
+        	}
         	setAtracCurrentSample(sample);
         }
 
