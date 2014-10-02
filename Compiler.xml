@@ -10029,12 +10029,93 @@
 0884A218:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="soundDelayHack">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Mpeg</Class>
+		<Method>soundDelayHack</Method>
+		<IsHook>true</IsHook>
+		<CodeInstructions><![CDATA[
+089CF998:[27BDFFF0]: addiu      $sp, $sp, -16
+089CF99C:[AFA70000]: sw         $a3, 0($sp)
+089CF9A0:[AFA40004]: sw         $a0, 4($sp)
+089CF9A4:[AC850000]: sw         $a1, 0($a0)
+089CF9A8:[AC860004]: sw         $a2, 4($a0)
+089CF9AC:[AC800008]: sw         $zr, 8($a0)
+089CF9B0:[AFBF0008]: sw         $ra, 8($sp)
+089CF9B4:[0E27453C/FC000000]: jal        0x089D14F0
+089CF9B8:[00072080]: sll        $a0, $a3, 0x0002
+089CF9BC:[8FA50004]: lw         $a1, 4($sp)
+089CF9C0:[ACA20008]: sw         $v0, 8($a1)
+089CF9C4:[14400005]: bne        $v0, $zr, 0x089CF9DC
+089CF9C8:[8FA40000]: lw         $a0, 0($sp)
+089CF9CC:[2402FFFF]: addiu      $v0, $zr, -1 <=> li $v0, -1
+089CF9D0:[8FBF0008]: lw         $ra, 8($sp)
+089CF9D4:[03E00008]: jr         $ra
+089CF9D8:[27BD0010]: addiu      $sp, $sp, 16
+089CF9DC:[0E2E4B12/FC000000]: jal        0x08B92C48 [sceDisplayGetFramePerSec]
+089CF9E0:[ACA40018]: sw         $a0, 24($a1)
+089CF9E4:[3C0447AF]: lui        $a0, 0x47AF <=> li $a0, 0x47AF0000
+089CF9E8:[3484C800]: ori        $a0, $a0, -14336
+089CF9EC:[44846000]: mtc1       $a0, $f12
+089CF9F0:[46006303]: div.s      $f12, $f12, $f0
+089CF9F4:[3C044000]: lui        $a0, 0x4000 <=> li $a0, 0x40000000
+089CF9F8:[3C0508C5/FFFF0000]: lui        $a1, 0x08C5 <=> li $a1, 0x08C50000
+089CF9FC:[00001025]: or         $v0, $zr, $zr <=> li $v0, 0
+089CFA00:[44846800]: mtc1       $a0, $f13
+089CFA04:[460D6302]: mul.s      $f12, $f12, $f13
+089CFA08:[4600630D]: trunc.w.s  $f12, $f12
+089CFA0C:[44046000]: mfc1       $a0, $f12
+089CFA10:[ACA4CCD8/FFFF0000]: sw         $a0, -13096($a1)
+089CFA14:[8FBF0008]: lw         $ra, 8($sp)
+089CFA18:[03E00008]: jr         $ra
+089CFA1C:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="soundDelayHack">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Mpeg</Class>
+		<Method>soundDelayHack</Method>
+		<IsHook>true</IsHook>
+		<CodeInstructions><![CDATA[
+08806F50:[27BDFFF0]: addiu      $sp, $sp, -16
+08806F54:[AFB00004]: sw         $s0, 4($sp)
+08806F58:[AC850000]: sw         $a1, 0($a0)
+08806F5C:[00808021]: addu       $s0, $a0, $zr <=> move $s0, $a0
+08806F60:[AC860004]: sw         $a2, 4($a0)
+08806F64:[AC800008]: sw         $zr, 8($a0)
+08806F68:[00072080]: sll        $a0, $a3, 0x0002
+08806F6C:[AFB10008]: sw         $s1, 8($sp)
+08806F70:[AFBF000C]: sw         $ra, 12($sp)
+08806F74:[0E202798/FC000000]: jal        0x08809E60
+08806F78:[00E08821]: addu       $s1, $a3, $zr <=> move $s1, $a3
+08806F7C:[1040000E]: beq        $v0, $zr, 0x08806FB8
+08806F80:[AE020008]: sw         $v0, 8($s0)
+08806F84:[0E206B86/FC000000]: jal        0x0881AE18 [sceDisplayGetFramePerSec]
+08806F88:[AE110018]: sw         $s1, 24($s0)
+08806F8C:[C7818024/FFFF0000]: lwc1       $f1, -32732($gp)
+08806F90:[8FBF000C]: lw         $ra, 12($sp)
+08806F94:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+08806F98:[46000843]: div.s      $f1, $f1, $f0
+08806F9C:[8FB10008]: lw         $s1, 8($sp)
+08806FA0:[8FB00004]: lw         $s0, 4($sp)
+08806FA4:[27BD0010]: addiu      $sp, $sp, 16
+08806FA8:[46010840]: add.s      $f1, $f1, $f1
+08806FAC:[4600084D]: trunc.w.s  $f1, $f1
+08806FB0:[03E00008]: jr         $ra
+08806FB4:[E781808C/FFFF0000]: swc1       $f1, -32628($gp)
+08806FB8:[8FBF000C]: lw         $ra, 12($sp)
+08806FBC:[2402FFFF]: addiu      $v0, $zr, -1 <=> li $v0, -1
+08806FC0:[8FB10008]: lw         $s1, 8($sp)
+08806FC4:[8FB00004]: lw         $s0, 4($sp)
+08806FC8:[03E00008]: jr         $ra
+08806FCC:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
 		<Method>call</Method>
 		<IsReturning>true</IsReturning>
 		<Parameters>$a0,$a1,@01234567</Parameters>
+		<IsHook>false</IsHook>
 		<CodeInstructions><![CDATA[
 ]]></CodeInstructions>
 	</NativeCodeSequence>
