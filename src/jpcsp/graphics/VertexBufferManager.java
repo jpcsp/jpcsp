@@ -137,12 +137,6 @@ public class VertexBufferManager {
 		return vertexBuffer;
 	}
 
-	public synchronized void forceReloadAllVertexBuffers() {
-		for (VertexBuffer vertexBuffer : vertexBuffers) {
-			vertexBuffer.forceReload();
-		}
-	}
-
 	public synchronized void resetAddressAlreadyChecked() {
 		for (VertexBuffer vertexBuffer : vertexBuffers) {
 			vertexBuffer.resetAddressAlreadyChecked();
