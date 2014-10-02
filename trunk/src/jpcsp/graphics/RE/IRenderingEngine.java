@@ -446,7 +446,6 @@ public interface IRenderingEngine {
 	public void setScissor(int x, int y, int width, int height);
 	public void setBlendEquation(int mode);
 	public void setLineSmoothHint();
-	public boolean hasBoundingBox();
 	public void beginBoundingBox(int numberOfVertexBoundingBox);
 	public void drawBoundingBox(float[][] values);
 	public void endBoundingBox(VertexInfo vinfo);
