@@ -1209,11 +1209,6 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     }
 
     @Override
-    public boolean hasBoundingBox() {
-        return true;
-    }
-
-    @Override
     public boolean isBoundingBoxVisible() {
         return true;
     }

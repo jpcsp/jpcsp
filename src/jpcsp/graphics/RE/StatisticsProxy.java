@@ -84,7 +84,6 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("getTexImage", 52);
 		addStatistic("getUniformBlockIndex", 53);
 		addStatistic("getUniformLocation", 54);
-		addStatistic("hasBoundingBox", 55);
 		addStatistic("isBoundingBoxVisible", 56);
 		addStatistic("isExtensionAvailable", 57);
 		addStatistic("isFramebufferObjectAvailable", 58);
@@ -660,15 +659,6 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		DurationStatistics statistic = statistics[54];
 		statistic.start();
 		int value = super.getUniformLocation(program, name);
-		statistic.end();
-		return value;
-	}
-
-	@Override
-	public boolean hasBoundingBox() {
-		DurationStatistics statistic = statistics[55];
-		statistic.start();
-		boolean value = super.hasBoundingBox();
 		statistic.end();
 		return value;
 	}

@@ -427,11 +427,6 @@ public class RESoftware extends NullRenderingEngine {
 	}
 
 	@Override
-	public boolean hasBoundingBox() {
-		return true;
-	}
-
-	@Override
 	public void beginBoundingBox(int numberOfVertexBoundingBox) {
 		boundingBoxRenderer = new BoundingBoxRenderer(context);
 		boundingBoxVisible = true;

@@ -854,13 +854,6 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public boolean hasBoundingBox() {
-		boolean value = super.hasBoundingBox();
-		re.checkAndLogErrors("hasBoundingBox");
-		return value;
-	}
-
-	@Override
 	public boolean isBoundingBoxVisible() {
 		boolean value = super.isBoundingBoxVisible();
 		re.checkAndLogErrors("isBoundingBoxVisible");

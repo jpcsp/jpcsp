@@ -723,11 +723,6 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public boolean hasBoundingBox() {
-		return proxy.hasBoundingBox();
-	}
-
-	@Override
 	public boolean isBoundingBoxVisible() {
 		return proxy.isBoundingBoxVisible();
 	}

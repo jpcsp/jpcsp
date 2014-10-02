@@ -581,11 +581,6 @@ public class NullRenderingEngine implements IRenderingEngine {
 	}
 
 	@Override
-	public boolean hasBoundingBox() {
-		return false;
-	}
-
-	@Override
 	public void beginBoundingBox(int numberOfVertexBoundingBox) {
 	}
 

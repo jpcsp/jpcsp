@@ -255,7 +255,6 @@ public class VideoEngine {
     private int[] currentCMDValues;
     private int[] currentListCMDValues;
     private int previousPrim;
-    private boolean bboxWarningDisplayed = false;
     private LinkedList<AddressRange> videoTextures;
     private IntBuffer multiDrawFirst;
     private IntBuffer multiDrawCount;
@@ -3281,12 +3280,6 @@ public class VideoEngine {
         } else if (context.vinfo.position == 0) {
             log.warn(helper.getCommandString(BBOX) + " no positions for vertex!");
             return;
-        } else if (!re.hasBoundingBox()) {
-            if (!bboxWarningDisplayed) {
-                log.warn("Not supported by your OpenGL version (but can be ignored): " + helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
-                bboxWarningDisplayed = true;
-            }
-            return;
         } else if ((numberOfVertexBoundingBox % 8) != 0) {
             // How to interpret non-multiple of 8?
             log.warn(helper.getCommandString(BBOX) + " unsupported numberOfVertex=" + numberOfVertexBoundingBox);
@@ -3340,7 +3333,7 @@ public class VideoEngine {
             takeConditionalJump = true;
         } else if (export3D && !export3DOnlyVisible) {
             takeConditionalJump = false;
-        } else if (re.hasBoundingBox()) {
+        } else {
             takeConditionalJump = !re.isBoundingBoxVisible();
         }
 
