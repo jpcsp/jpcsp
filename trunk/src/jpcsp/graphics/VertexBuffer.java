@@ -52,6 +52,7 @@ public class VertexBuffer {
 	private boolean reloadBufferDataPending = false;
 	private static final int bufferUsage = IRenderingEngine.RE_DYNAMIC_DRAW;
 	private static final int bufferTarget = IRenderingEngine.RE_ARRAY_BUFFER;
+	private static final boolean workaroundBufferDataBug = true;
 
 	private static class AddressRange {
 		public int address;
@@ -98,6 +99,16 @@ public class VertexBuffer {
 		return 0;
 	}
 
+	private void loadFromMemory(int address, int length) {
+		if (length > 0) {
+			copyToCachedMemory(address, length);
+			Buffer buffer = Memory.getInstance().getBuffer(address, length);
+			int bufferAlignment = getBufferAlignment(buffer, address);
+			position(address, bufferAlignment);
+			Utilities.putBuffer(cachedBuffer, buffer, ByteOrder.LITTLE_ENDIAN, length + bufferAlignment);
+		}
+	}
+
 	private boolean extend(Buffer buffer, int address, int length) {
 		final boolean overflowBottom = address < bufferAddress;
 		final boolean overflowTop = address + length > bufferAddress + bufferLength;
@@ -133,6 +144,7 @@ public class VertexBuffer {
 			System.arraycopy(cachedMemory, 0, newCachedMemory, extendLength >> 2, cachedMemory.length);
 			cachedMemory = newCachedMemory;
 			bufferAddress = address;
+			loadFromMemory(bufferAddress + length, extendLength - length);
 			// The buffer has been resized: its content is lost, reload it
 			reloadBufferDataPending = true;
 			extended = true;
@@ -144,10 +156,12 @@ public class VertexBuffer {
 			newBuffer.put(cachedBuffer);
 			newBuffer.rewind();
 			cachedBuffer = newBuffer;
+			int oldBufferEnd = bufferAddress + bufferLength;
 			bufferLength += extendLength;
 			int[] newCachedMemory = new int[bufferLength >> 2];
 			System.arraycopy(cachedMemory, 0, newCachedMemory, 0, cachedMemory.length);
 			cachedMemory = newCachedMemory;
+			loadFromMemory(oldBufferEnd, address - oldBufferEnd);
 			// The buffer has been resized: its content is lost, reload it
 			reloadBufferDataPending = true;
 			extended = true;
@@ -281,6 +295,20 @@ public class VertexBuffer {
 				copyToCachedMemory(address, length);
 			} else if (re != null) {
 				checkDirty(re);
+
+				// Here the buffer data should not need to be reloaded, it is matching
+				// the previous data. However, due to a driver bug (?), the buffer data
+				// has sometimes been corrupted in the GPU. This problem seems to happen
+				// only under some circumstances but I was not able to identify the exact
+				// conditions. Just reloading a single byte of the buffer restores
+				// the correct data in the buffer. This is why I assumed this is a driver bug.
+				// This workaround could however completely break the performance of the vertex
+				// cache!
+				if (workaroundBufferDataBug) {
+					bind(re);
+					position(bufferAddress);
+					re.setBufferSubData(bufferTarget, cachedBuffer.position(), 1, cachedBuffer);
+				}
 			}
 
 			setAddressAlreadyChecked(address, length);
@@ -289,17 +317,6 @@ public class VertexBuffer {
 				log.trace(String.format("VertexBuffer address already checked 0x%08X, %d", address, length));
 			}
 			checkDirty(re);
-		}
-	}
-
-	public synchronized void forceReload() {
-		if (cachedBuffer != null) {
-			Buffer vertexData = Memory.getInstance().getBuffer(bufferAddress, bufferLength);
-			position(bufferAddress);
-			Utilities.putBuffer(cachedBuffer, vertexData, ByteOrder.LITTLE_ENDIAN, bufferLength);
-			copyToCachedMemory(bufferAddress, bufferLength);
-
-			reloadBufferDataPending = true;
 		}
 	}
 
