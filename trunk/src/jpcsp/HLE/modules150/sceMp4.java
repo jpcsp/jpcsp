@@ -415,7 +415,7 @@ public class sceMp4 extends HLEModule {
     	}
 
     	// unknown4: pointer to a 40-bytes structure
-        return Modules.sceMpegModule.hleMpegGetAtracAu(auAddr);
+        return Modules.sceMpegModule.hleMpegGetAtracAuME(auAddr);
     }
 
     /**

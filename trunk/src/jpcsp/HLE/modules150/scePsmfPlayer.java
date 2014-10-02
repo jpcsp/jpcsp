@@ -272,7 +272,7 @@ public class scePsmfPlayer extends HLEModule {
 	            me = new MediaEngine();
 	            audioDecodeBuffer = new byte[audioSamplesBytes];
 	            me.init(pmfFileData);
-	            me.init(pmfFileChannel, Modules.sceMpegModule.hasPsmfVideoStream(), Modules.sceMpegModule.hasPsmfAudioStream(), Modules.sceMpegModule.getRegisteredVideoChannel(), Modules.sceMpegModule.getRegisteredAudioChannel());
+	            me.init(pmfFileChannel, Modules.sceMpegModule.hasPsmfVideoStream(), false, Modules.sceMpegModule.getRegisteredVideoChannel(), Modules.sceMpegModule.getRegisteredAudioChannel());
 
 	            if (psmfPlayerAvcAu.pts != 0) {
 	            	// Set the starting PTS
@@ -465,6 +465,9 @@ public class scePsmfPlayer extends HLEModule {
 	        playMode = initPlayInfoAddr.getValue(16);
 	        playSpeed = initPlayInfoAddr.getValue(20);
 
+	        Modules.sceMpegModule.setRegisteredVideoChannel(videoStreamNum);
+	        Modules.sceMpegModule.setRegisteredAudioChannel(audioStreamNum);
+
 	        if (log.isInfoEnabled()) {
 	        	log.info(String.format("Found play info data: videoCodec=0x%X, videoStreamNum=%d, audioCodec=0x%X, audioStreamNum=%d, playMode=%d, playSpeed=%d", videoCodec, videoStreamNum, audioCodec, audioStreamNum, playMode, playSpeed));
 	        }
@@ -650,27 +653,13 @@ public class scePsmfPlayer extends HLEModule {
         	pmfFileDataAudioPosition += size;
         }
 
+        result = Modules.sceMpegModule.hleMpegGetAtracAu(null);
+
     	// Write audio data
     	result = Modules.sceMpegModule.hleMpegAtracDecode(null, audioDataAddr, audioSamplesBytes);
 
     	psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
 		psmfPlayerAtracAu.dts = -1;
-//        if (checkMediaEngineState() && pmfFileChannel != null) {
-//        	startMediaEngine();
-//        	if (me.stepAudio(audioSamplesBytes, mpegAudioOutputChannels)) {
-//                bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
-//                if (log.isDebugEnabled()) {
-//                	log.debug(String.format("scePsmfPlayerGetAudioData ME returned %d bytes (audioSamplesBytes=%d)", bytes, audioSamplesBytes));
-//                }
-//                mem.copyToMemory(audioDataAddr.getAddress(), ByteBuffer.wrap(audioDecodeBuffer, 0, bytes), bytes);
-//            	me.getCurrentAudioAu(psmfPlayerAtracAu);
-//        	} else {
-//        		psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
-//        	}
-//    	} else {
-//    		psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
-//    		psmfPlayerAtracAu.dts = -1;
-//    	}
 
         if (log.isDebugEnabled()) {
         	log.debug(String.format("scePsmfPlayerGetAudioData atracAu=[%s], avcAu=[%s], returning 0x%08X", psmfPlayerAtracAu, psmfPlayerAvcAu, result));

@@ -198,6 +198,8 @@ public class sceMpeg extends HLEModule {
     protected boolean endOfVideoReached;
     protected int videoFrameCount;
     protected int audioFrameCount;
+    private long currentVideoTimestamp;
+    private long currentAudioTimestamp;
     protected int videoPixelMode;
     protected int defaultFrameWidth;
     protected boolean isCurrentMpegAnalyzed;;
@@ -1325,6 +1327,8 @@ public class sceMpeg extends HLEModule {
         mpegRingbufferAddr = ringbufferAddr;
         videoFrameCount = 0;
         audioFrameCount = 0;
+        currentVideoTimestamp = 0;
+        currentAudioTimestamp = 0;
         videoPixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
         defaultFrameWidth = frameWidth;
         insideRingbufferPut = false;
@@ -1601,7 +1605,7 @@ public class sceMpeg extends HLEModule {
     	return meFile != null;
     }
 
-    public int hleMpegGetAtracAu(TPointer auAddr) {
+    public int hleMpegGetAtracAuME(TPointer auAddr) {
     	int result = 0;
 
     	// Read Au of next Atrac frame
@@ -1633,29 +1637,40 @@ public class sceMpeg extends HLEModule {
         return result;
     }
 
-    public int hleMpegAtracDecode(TPointer auAddr, TPointer bufferAddr, int bufferSize) {
-    	if (audioFrameLength == 0 || audioBuffer == null || audioBuffer.getLength() < audioFrameLength) {
-        	PesHeader pesHeader = new PesHeader(getRegisteredAudioChannel());
-        	pesHeader.setDtsPts(UNKNOWN_TIMESTAMP);
-        	readNextAudioFrame(pesHeader);
-        	if (audioBuffer.getLength() >= audioFrameLength) {
-        		// On PSP, the audio DTS is always set to -1
+    public int hleMpegGetAtracAu(TPointer auAddr) {
+        int result = 0;
+        if (isRegisteredAudioChannel()) {
+        	if (audioFrameLength == 0 || audioBuffer == null || audioBuffer.getLength() < audioFrameLength) {
+	        	PesHeader pesHeader = new PesHeader(getRegisteredAudioChannel());
+	        	pesHeader.setDtsPts(UNKNOWN_TIMESTAMP);
+	        	readNextAudioFrame(pesHeader);
+	        	if (audioBuffer.getLength() >= audioFrameLength) {
+	        		// On PSP, the audio DTS is always set to -1
+	        		mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
+	        		mpegAtracAu.pts = pesHeader.getPts();
+	        		if (auAddr != null && auAddr.isNotNull()) {
+	        			mpegAtracAu.write(auAddr);
+	        		}
+	        	} else {
+	        		endOfAudioReached = true;
+	        	}
+        	} else {
         		mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
-        		mpegAtracAu.pts = pesHeader.getPts();
-        		if (auAddr != null) {
+        		mpegAtracAu.pts = UNKNOWN_TIMESTAMP;
+        		if (auAddr != null && auAddr.isNotNull()) {
         			mpegAtracAu.write(auAddr);
         		}
-        	} else {
-        		endOfAudioReached = true;
         	}
-    	} else {
-    		mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
-    		mpegAtracAu.pts = UNKNOWN_TIMESTAMP;
-    		if (auAddr != null) {
-    			mpegAtracAu.write(auAddr);
-    		}
-    	}
+        }
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("hleMpegGetAtracAu returning pts=%d, dts=%d", mpegAtracAu.pts, mpegAtracAu.dts));
+        }
+
+        return result;
+    }
+
+    public int hleMpegAtracDecode(TPointer auAddr, TPointer bufferAddr, int bufferSize) {
     	int result = 0;
     	int bytes = 0;
 
@@ -1689,7 +1704,11 @@ public class sceMpeg extends HLEModule {
     	// Fill the rest of the buffer with 0's
     	bufferAddr.clear(bytes, bufferSize - bytes);
 
-        return 0;
+    	if (auAddr != null && auAddr.isNotNull()) {
+    		mpegAtracAu.write(auAddr);
+    	}
+
+    	return 0;
     }
 
     public static boolean checkMediaEngineState() {
@@ -2148,6 +2167,8 @@ public class sceMpeg extends HLEModule {
         mpegAvcAu.pts = 0;
         videoFrameCount = 0;
         audioFrameCount = 0;
+        currentVideoTimestamp = 0;
+        currentAudioTimestamp = 0;
         endOfAudioReached = false;
         endOfVideoReached = false;
         if (checkMediaEngineState()) {
@@ -2329,6 +2350,8 @@ public class sceMpeg extends HLEModule {
         mpegAvcAu.pts = 0;
         videoFrameCount = 0;
         audioFrameCount = 0;
+        currentVideoTimestamp = 0;
+        currentAudioTimestamp = 0;
         endOfAudioReached = false;
         endOfVideoReached = false;
         startedMpeg = false;
@@ -2767,6 +2790,15 @@ public class sceMpeg extends HLEModule {
 
         attrAddr.setValue(1); // Unknown.
 
+        if (mpegAvcAu.pts != UNKNOWN_TIMESTAMP) {
+        	currentVideoTimestamp = mpegAvcAu.pts;
+        } else {
+        	currentVideoTimestamp += videoTimestampStep;
+        }
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("videoFrameCount=%d(pts=%d), audioFrameCount=%d(pts=%d), pts difference %d, vcount=%d", videoFrameCount, currentVideoTimestamp, audioFrameCount, currentAudioTimestamp, currentAudioTimestamp - currentVideoTimestamp, Modules.sceDisplayModule.getVcount()));
+        }
+
         return result;
     }
 
@@ -2889,33 +2921,19 @@ public class sceMpeg extends HLEModule {
         }
 
         // Update the audio timestamp (Atrac).
-        int result = 0;
-        if (isRegisteredAudioChannel()) {
-        	if (audioFrameLength == 0 || audioBuffer == null || audioBuffer.getLength() < audioFrameLength) {
-	        	PesHeader pesHeader = new PesHeader(getRegisteredAudioChannel());
-	        	pesHeader.setDtsPts(UNKNOWN_TIMESTAMP);
-	        	readNextAudioFrame(pesHeader);
-	        	if (audioBuffer.getLength() >= audioFrameLength) {
-	        		// On PSP, the audio DTS is always set to -1
-	        		mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
-	        		mpegAtracAu.pts = pesHeader.getPts();
-	                mpegAtracAu.write(auAddr);
-	        	} else {
-	        		endOfAudioReached = true;
-	        	}
-        	} else {
-        		mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
-        		mpegAtracAu.pts = UNKNOWN_TIMESTAMP;
-                mpegAtracAu.write(auAddr);
-        	}
-        }
-
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceMpegGetAtracAu returning pts=0x%X, dts=0x%X", mpegAtracAu.pts, mpegAtracAu.dts));
-        }
+        int result = hleMpegGetAtracAu(auAddr);
 
         // Bitfield used to store data attributes.
         attrAddr.setValue(0);     // Pointer to ATRAC3plus stream (from PSMF file).
+
+        if (mpegAtracAu.pts != UNKNOWN_TIMESTAMP) {
+        	currentAudioTimestamp = mpegAtracAu.pts;
+        } else {
+        	currentAudioTimestamp += audioTimestampStep;
+        }
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("videoFrameCount=%d(pts=%d), audioFrameCount=%d(pts=%d), pts difference %d, vcount=%d", videoFrameCount, currentVideoTimestamp, audioFrameCount, currentAudioTimestamp, currentAudioTimestamp - currentVideoTimestamp, Modules.sceDisplayModule.getVcount()));
+        }
 
         return result;
     }
