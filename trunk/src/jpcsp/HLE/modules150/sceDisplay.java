@@ -569,6 +569,8 @@ public class sceDisplay extends HLEModule {
     private static final int[] stencilPixelMasks = new int[]{0, 0x7FFF, 0x0FFF, 0x00FFFFFF};
     private static final int[] stencilValueMasks = new int[]{0, 0x80, 0xF0, 0xFF};
     private static final int[] stencilValueShifts = new int[]{0, 8, 8, 24};
+    // Mpeg audio hack
+    private int framePerSecFactor;
 
     private class OnlyGeSettingsListener extends AbstractBoolSettingsListener {
 
@@ -952,6 +954,13 @@ public class sceDisplay extends HLEModule {
 
     private void setAntiAliasSamplesNum(int samples) {
         antiAliasSamplesNum = samples;
+    }
+
+    public void setFramePerSecFactor(int framePerSecFactor) {
+    	if (log.isInfoEnabled()) {
+    		log.info(String.format("setFramePerSecFactor %d", framePerSecFactor));
+    	}
+    	this.framePerSecFactor = framePerSecFactor;
     }
 
     @Override
@@ -2013,7 +2022,29 @@ public class sceDisplay extends HLEModule {
 
     @HLEFunction(nid = 0xDBA6C4C4, version = 150)
     public float sceDisplayGetFramePerSec() {
-        return FRAME_PER_SEC;
+    	// Some applications are using a video playback loop requiring a very exact
+    	// audio synchronization: the video playback keeps 4 buffers each for video
+    	// images and for decoded audio buffers. When the buffer timestamps between
+    	// audio and video differ by a too long delay value, the video playback breaks.
+    	// The application actually tries to skip video frames to sync up but usually
+    	// fails to it.
+    	//
+    	// The synchronization problem in Jpcsp is caused by the audio queues in sceAudio:
+    	// the blocking methods (sceAudioOutputXXXBlocking) are not blocking as much as the
+    	// PSP methods are doing. Especially, the first few calls (until the Jpcsp queue is
+    	// filled up) are not blocking at all. This is causing the audio to play faster than
+    	// the video at the beginning.
+    	//
+    	// The allowed delay is computed as follows:
+    	//    2 * int(sceMpeg.mpegTimestampPerSecond / sceDisplayGetFramePerSec() * 2) = 6006
+    	//
+    	// Allow artificially a longer delay by returning here a lower value:
+        float framePerSec = FRAME_PER_SEC / framePerSecFactor;
+
+        // The hack is only used once
+        framePerSecFactor = 1;
+
+        return framePerSec;
     }
 
     @HLEUnimplemented
