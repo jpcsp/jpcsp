@@ -44,10 +44,12 @@ public class NativeUtils {
 	private static boolean isAvailable = false;
     private static Unsafe unsafe = null;
     private static boolean unsafeInitialized = false;
-    private static int intArrayBaseOffset = 0;
+    private static long intArrayBaseOffset = 0L;
     private static long memoryIntAddress = 0L;
-	private static Object[] arrayObject = new Object[] { null };
+	private static Object[] arrayObject = new Object[] { null, 0x123456789ABCDEFL, 0x1111111122222222L };
 	private static long arrayObjectBaseOffset = 0L;
+	private static int arrayObjectIndexScale = 0;
+	private static int addressSize = 0;
     private static DurationStatistics coreInterpret = new DurationStatistics("coreInterpret");
     public static final int EVENT_GE_START_LIST        = 0;
     public static final int EVENT_GE_FINISH_LIST       = 1;
@@ -151,15 +153,31 @@ public class NativeUtils {
 			    	unsafe = (Unsafe) f.get(null);
 			    	intArrayBaseOffset = unsafe.arrayBaseOffset(memoryInt.getClass());
 			    	arrayObjectBaseOffset = unsafe.arrayBaseOffset(arrayObject.getClass());
+			    	arrayObjectIndexScale = unsafe.arrayIndexScale(arrayObject.getClass());
+			    	addressSize = unsafe.addressSize();
+
+			    	if (log.isInfoEnabled()) {
+			    		log.info(String.format("Unsafe address information: addressSize=%d, arrayBase=%d, indexScale=%d", addressSize, arrayObjectBaseOffset, arrayObjectIndexScale));
+			    	}
+
+			    	if (addressSize != 4 && addressSize != 8) {
+			    		log.error(String.format("Unknown addressSize=%d", addressSize));
+			    	}
+			    	if (arrayObjectIndexScale != 4 && arrayObjectIndexScale != 8) {
+			    		log.error(String.format("Unknown addressSize=%d, indexScale=%d", addressSize, arrayObjectIndexScale));
+			    	}
+			    	if (arrayObjectIndexScale > addressSize) {
+			    		log.error(String.format("Unknown addressSize=%d, indexScale=%d", addressSize, arrayObjectIndexScale));
+			    	}
 				}
 			} catch (NoSuchFieldException e) {
-				e.printStackTrace();
+				log.error("getMemoryUnsafeAddr", e);
 			} catch (SecurityException e) {
-				e.printStackTrace();
+				log.error("getMemoryUnsafeAddr", e);
 			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
+				log.error("getMemoryUnsafeAddr", e);
 			} catch (IllegalAccessException e) {
-				e.printStackTrace();
+				log.error("getMemoryUnsafeAddr", e);
 			}
 			unsafeInitialized = true;
     	}
@@ -169,10 +187,39 @@ public class NativeUtils {
     	}
 
     	arrayObject[0] = memoryInt;
-    	long address = unsafe.getInt(arrayObject, arrayObjectBaseOffset);
-    	address &= 0xFFFFFFFFL;
+    	long address = 0L;
+    	if (addressSize == 4) {
+    		address = unsafe.getInt(arrayObject, arrayObjectBaseOffset);
+        	address &= 0xFFFFFFFFL;
+    	} else if (addressSize == 8) {
+    		if (arrayObjectIndexScale == 8) {
+    			// The JVM is running with the following option disabled:
+    			//   -XX:-UseCompressedOops
+    			// Object addresses are stored as 64-bit values.
+    			address = unsafe.getLong(arrayObject, arrayObjectBaseOffset);
+    		} else if (arrayObjectIndexScale == 4) {
+    			// The JVM is running with the following option enabled
+    			//   -XX:+UseCompressedOops
+    			// Object addresses are stored as compressed 32-bit values (shifted by 3).
+    			address = unsafe.getInt(arrayObject, arrayObjectBaseOffset) & 0xFFFFFFFFL;
+    			address <<= 3;
+    		}
+    	}
+
     	if (address == 0L) {
     		return address;
+    	}
+
+    	if (false) {
+	    	// Perform a self-test
+	    	int testValue = 0x12345678;
+	    	int originalValue = memoryInt[0];
+	    	memoryInt[0] = testValue;
+	    	int resultValue = unsafe.getInt(address + intArrayBaseOffset);
+	    	memoryInt[0] = originalValue;
+	    	if (resultValue != testValue) {
+	    		log.error(String.format("Unsafe self-test failed: 0x%08X != 0x%08X", testValue, resultValue));
+	    	}
     	}
 
     	return address + intArrayBaseOffset;
