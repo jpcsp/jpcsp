@@ -491,17 +491,29 @@ public class sceAtrac3plus extends HLEModule {
         		return SceKernelErrors.ERROR_ATRAC_BAD_SAMPLE;
         	}
 
+        	int writableBytes;
+        	int minimumWriteBytes;
+        	int readPosition;
+        	if (inputBufferContainsAllData()) {
+        		writableBytes = 0;
+        		minimumWriteBytes = 0;
+        		readPosition = 0;
+        	} else {
+        		writableBytes = inputBuffer.getMaxSize();
+        		minimumWriteBytes = info.atracBytesPerFrame * 2;
+        		readPosition = getFilePositionFromSample(sample);
+        	}
         	// Holds buffer related parameters.
             // Main buffer.
-            bufferInfoAddr.setValue(0, inputBuffer.getAddr());              // Pointer to current writing position in the buffer.
-            bufferInfoAddr.setValue(4, inputBuffer.getMaxSize());           // Number of bytes which can be written to the buffer.
-            bufferInfoAddr.setValue(8, info.atracBytesPerFrame * 2);        // Number of bytes that must to be written to the buffer.
-            bufferInfoAddr.setValue(12, getFilePositionFromSample(sample)); // Read offset in the input file for the given sample.
+            bufferInfoAddr.setValue(0, inputBuffer.getAddr());          // Pointer to current writing position in the buffer.
+            bufferInfoAddr.setValue(4, writableBytes);                  // Number of bytes which can be written to the buffer.
+            bufferInfoAddr.setValue(8, minimumWriteBytes);              // Number of bytes that must to be written to the buffer.
+            bufferInfoAddr.setValue(12, readPosition);                  // Read offset in the input file for the given sample.
             // Secondary buffer.
-            bufferInfoAddr.setValue(16, getSecondBufferAddr());          // Pointer to current writing position in the buffer.
-            bufferInfoAddr.setValue(20, getSecondBufferSize());          // Number of bytes which can be written to the buffer.
-            bufferInfoAddr.setValue(24, getSecondBufferSize());          // Number of bytes that must to be written to the buffer.
-            bufferInfoAddr.setValue(28, getSecondBufferReadPosition());  // Read offset for input file.
+            bufferInfoAddr.setValue(16, getSecondBufferAddr());         // Pointer to current writing position in the buffer.
+            bufferInfoAddr.setValue(20, getSecondBufferSize());         // Number of bytes which can be written to the buffer.
+            bufferInfoAddr.setValue(24, getSecondBufferSize());         // Number of bytes that must to be written to the buffer.
+            bufferInfoAddr.setValue(28, getSecondBufferReadPosition()); // Read offset for input file.
 
             if (log.isDebugEnabled()) {
             	log.debug(String.format("sceAtracGetBufferInfoForReseting returning writeAddr=0x%08X, writeMaxSize=0x%X, writeMinSize=0x%X, readPosition=0x%X", bufferInfoAddr.getValue(0), bufferInfoAddr.getValue(4), bufferInfoAddr.getValue(8), bufferInfoAddr.getValue(12)));
