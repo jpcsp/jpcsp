@@ -2198,7 +2198,7 @@ public class H264Context {
 	        	} // for i	        	
 	        } else {
 	        	for(int i=0;i<8;i++) {
-	        		top_border_base[top_border_offset + 0 + i] = src_y_base[src_y_offset + 1 + i];
+	        		src_y_base[src_y_offset + 1 + i] = top_border_base[top_border_offset + 0 + i];
 	        	} // for i	        	
 	        } // if
 
@@ -2217,19 +2217,18 @@ public class H264Context {
 	        	} // for i	        	
 	            //XCHG(this.top_borders[top_idx][s.mb_x+1], src_y +17, 1);
 	        }
-	    }
 
 	    //if(simple !=0|| 0==MpegEncContext.CONFIG_GRAY || 0==(s.flags&MpegEncContext.CODEC_FLAG_GRAY)){
-	        if(deblock_top!=0){
+	        if(simple!=0){
 	            if(deblock_left!=0){
 		        	for(int i=0;i<8;i++) {
 			        	tmp = top_border_m1_base[top_border_m1_offset + 16 + i];
-			        	top_border_m1_base[top_border_m1_offset + 16 + i] = src_cb_base[src_cb_offset + 1 + i];
-			        	src_cb_base[src_cb_offset + 1 + i] = tmp;
+			        	top_border_m1_base[top_border_m1_offset + 16 + i] = src_cb_base[src_cb_offset - 7 + i];
+			        	src_cb_base[src_cb_offset - 7 + i] = tmp;
 
 			        	tmp = top_border_m1_base[top_border_m1_offset + 24 + i];
-			        	top_border_m1_base[top_border_m1_offset + 24 + i] = src_cr_base[src_cr_offset + 1 + i];
-			        	src_cr_base[src_cr_offset + 1 + i] = tmp;
+			        	top_border_m1_base[top_border_m1_offset + 24 + i] = src_cr_base[src_cr_offset - 7 + i];
+			        	src_cr_base[src_cr_offset - 7 + i] = tmp;
 		        	} // for i		        	
 	            }
 	            
@@ -2243,7 +2242,7 @@ public class H264Context {
 		        	src_cr_base[src_cr_offset + 1 + i] = tmp;
 	        	} // for i
 	        }
-	    //}
+	    }
 	}	
 	
 	public /*av_always_inline*/ void hl_decode_mb_internal(int simple){
