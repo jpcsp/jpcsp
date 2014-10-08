@@ -27,6 +27,7 @@ public class MemoryStick {
     // States for fatms0 (used in callbacks).
     public final static int PSP_FAT_MEMORYSTICK_STATE_UNASSIGNED   = 0;
     public final static int PSP_FAT_MEMORYSTICK_STATE_ASSIGNED     = 1;
+    public final static int PSP_FAT_MEMORYSTICK_STATE_REMOVED      = 2;
     // MS and FatMS states.
     private static int msState = PSP_MEMORYSTICK_STATE_DRIVER_READY;
     private static int fatMsState = PSP_FAT_MEMORYSTICK_STATE_ASSIGNED;
@@ -49,6 +50,10 @@ public class MemoryStick {
 
 	public static void setStateFatMs(int state) {
 		MemoryStick.fatMsState = state;
+	}
+
+	public static boolean isInserted() {
+		return fatMsState != PSP_FAT_MEMORYSTICK_STATE_REMOVED;
 	}
 
 	public static long getFreeSize() {

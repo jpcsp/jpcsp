@@ -92,6 +92,7 @@ import jpcsp.format.PSF;
 import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.Audio;
+import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
@@ -307,6 +308,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         OpenMemStick = new javax.swing.JMenuItem();
         RecentMenu = new javax.swing.JMenu();
         switchUmd = new javax.swing.JMenuItem();
+        ejectMs = new javax.swing.JMenuItem();
         jSeparator2 = new javax.swing.JSeparator();
         SaveSnap = new javax.swing.JMenuItem();
         LoadSnap = new javax.swing.JMenuItem();
@@ -490,6 +492,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         FileMenu.add(switchUmd);
+
+        ejectMs.setText(bundle.getString("MainGUI.ejectMs.text")); // NOI18N
+        ejectMs.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ejectMsActionPerformed(evt);
+            }
+        });
+        FileMenu.add(ejectMs);
         FileMenu.add(jSeparator2);
 
         SaveSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.SHIFT_MASK));
@@ -1823,7 +1833,25 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         }
 }//GEN-LAST:event_switchUmdActionPerformed
 
-    public void RefreshUI() {
+private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ejectMsActionPerformed
+	if (MemoryStick.isInserted()) {
+		Modules.IoFileMgrForUserModule.hleEjectMemoryStick();
+	} else {
+		Modules.IoFileMgrForUserModule.hleInsertMemoryStick();
+	}
+}//GEN-LAST:event_ejectMsActionPerformed
+
+	@Override
+	public void onMemoryStickChange() {
+        ResourceBundle bundle = ResourceBundle.getBundle("jpcsp/languages/jpcsp");
+		if (MemoryStick.isInserted()) {
+	        ejectMs.setText(bundle.getString("MainGUI.ejectMs.text"));
+		} else {
+	        ejectMs.setText(bundle.getString("MainGUI.insertMs.text"));
+		}
+	}
+
+	public void RefreshUI() {
         ExportISOFile.setEnabled(umdLoaded);
         DumpIso.setEnabled(umdLoaded);
     }
@@ -2992,6 +3020,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem openUmd;
     private javax.swing.ButtonGroup resGroup;
     private javax.swing.JMenuItem switchUmd;
+    private javax.swing.JMenuItem ejectMs;
     private javax.swing.JCheckBoxMenuItem threeTimesResize;
     private javax.swing.JCheckBoxMenuItem twoTimesResize;
     private javax.swing.JCheckBoxMenuItem xbrzCheck;

@@ -17,18 +17,25 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules200;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UMD_NOT_READY;
-
 import jpcsp.Emulator;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 
 @HLELogging
 public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
     private boolean umdAllowReplace;
 
-	public boolean isUmdAllowReplace() {
+    private static class DelayedUmdSwitch implements IAction {
+		@Override
+		public void execute() {
+			Modules.sceUmdUserModule.hleDelayedUmdSwitch();
+		}
+    }
+
+    public boolean isUmdAllowReplace() {
 		return umdAllowReplace;
 	}
 
@@ -47,6 +54,16 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
 	}
 
 	public void hleUmdSwitch() {
+		// First notify that the UMD has been removed
+		int notifyArg = getNotificationArg(false);
+    	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, notifyArg);
+
+    	// After 100ms delay, notify that a new UMD has been inserted
+    	long schedule = Emulator.getClock().microTime() + 100 * 1000;
+    	Emulator.getScheduler().addAction(schedule, new DelayedUmdSwitch());
+	}
+
+	protected void hleDelayedUmdSwitch() {
 		int notifyArg = getNotificationArg() | PSP_UMD_CHANGED;
     	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, notifyArg);
 	}
