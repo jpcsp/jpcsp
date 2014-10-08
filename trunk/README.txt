@@ -921,6 +921,21 @@ Beta-testers:
 ...............................................................................
 
 
+			   	[Credits]
+...............................................................................
+...............................................................................
+- Chulayuth Asawaroengchai
+  the project h264j is a port of the ffmpeg H264 decoder to Java.
+  This project has been developed by Chulayuth Asawaroengchai
+  (twilightdema@gmail.com). He allowed us to integrate his work
+  in Jpcsp for the video decoding.
+- Maxim Poliakovski
+  the Atrac3+ decoder has been initially implemented by Maxim Poliakovski
+  and integrated into the ffmpeg project. The decoder has been ported by
+  gid15 to Java and integrated into Jpcsp.
+
+...............................................................................
+
 
 
 			   	[Copyright]
