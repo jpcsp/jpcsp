@@ -74,6 +74,7 @@ public class AutoTestsRunner {
 		@Override public void startBackgroundWindowDialog(Window window) { }
 		@Override public Rectangle getCaptureRectangle() { return null; }
 		@Override public void onUmdChange() { }
+		@Override public void onMemoryStickChange() { }
 		@Override public void setDisplayMinimumSize(int width, int height) { }
 		@Override public void setDisplaySize(int width, int height) { }
 	}

@@ -34,6 +34,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNSUPPORTED_OP
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_IO;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK_FAT;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 import jpcsp.HLE.CanBeNull;
@@ -233,6 +234,7 @@ public class IoFileMgrForUser extends HLEModule {
     private UmdIsoReader iso;
     private IoWaitStateChecker ioWaitStateChecker;
     private String host0Path;
+    private int previousFatMsState;
 
     private int defaultAsyncPriority;
     private final static int asyncThreadRegisterArgument = _s0; // $s0 is preserved across calls
@@ -665,6 +667,7 @@ public class IoFileMgrForUser extends HLEModule {
         host0Path = null;
         noDelayIoOperation = false;
         stdRedirects = new SceKernelMppInfo[3];
+        previousFatMsState = MemoryStick.PSP_FAT_MEMORYSTICK_STATE_UNASSIGNED;
 
         vfsManager = new VirtualFileSystemManager();
     	vfsManager.register(new TmpLocalVirtualFileSystem());
@@ -2740,6 +2743,23 @@ public class IoFileMgrForUser extends HLEModule {
     	}
 
     	stdRedirects[id] = msgPipeInfo;
+    }
+
+    public void hleEjectMemoryStick() {
+    	if (MemoryStick.isInserted()) {
+	    	previousFatMsState = MemoryStick.getStateFatMs();
+	    	MemoryStick.setStateFatMs(MemoryStick.PSP_FAT_MEMORYSTICK_STATE_REMOVED);
+	        Modules.ThreadManForUserModule.hleKernelNotifyCallback(THREAD_CALLBACK_MEMORYSTICK_FAT, -1, MemoryStick.getStateFatMs());
+	    	Emulator.getMainGUI().onMemoryStickChange();
+    	}
+    }
+
+    public void hleInsertMemoryStick() {
+    	if (!MemoryStick.isInserted()) {
+	    	MemoryStick.setStateFatMs(previousFatMsState);
+	        Modules.ThreadManForUserModule.hleKernelNotifyCallback(THREAD_CALLBACK_MEMORYSTICK_FAT, -1, MemoryStick.getStateFatMs());
+	    	Emulator.getMainGUI().onMemoryStickChange();
+    	}
     }
 
     /**

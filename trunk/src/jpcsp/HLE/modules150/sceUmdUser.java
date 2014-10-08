@@ -207,9 +207,13 @@ public class sceUmdUser extends HLEModule {
     }
 
     protected int getNotificationArg() {
+    	return getNotificationArg(iso != null);
+    }
+
+    protected int getNotificationArg(boolean umdPresent) {
     	int notifyArg;
 
-    	if (iso != null) {
+    	if (umdPresent) {
         	notifyArg = PSP_UMD_PRESENT | PSP_UMD_READABLE;
         	// The PSP is returning 0x32 instead of 0x22 when
         	//     sceKernelSetCompiledSdkVersion()

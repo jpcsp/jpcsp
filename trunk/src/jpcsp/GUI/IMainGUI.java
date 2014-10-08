@@ -41,6 +41,7 @@ public interface IMainGUI {
 
 	Rectangle getCaptureRectangle();
 	void onUmdChange();
+	void onMemoryStickChange();
 
 	public void setDisplayMinimumSize(int width, int height);
 	public void setDisplaySize(int width, int height);
