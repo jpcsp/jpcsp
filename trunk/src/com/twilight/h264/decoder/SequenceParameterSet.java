@@ -80,6 +80,10 @@ public class SequenceParameterSet {
     public int residual_color_transform_flag; ///< residual_colour_transform_flag
     
     public void copyTo(SequenceParameterSet sps) {
+    	if (this == sps) {
+    		// Do not copy to myself
+    		return;
+    	}
         sps.profile_idc = profile_idc;
         sps.level_idc = level_idc;
         sps.chroma_format_idc = chroma_format_idc;
