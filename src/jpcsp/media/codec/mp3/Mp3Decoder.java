@@ -83,18 +83,8 @@ public class Mp3Decoder implements ICodec {
 	private static final int scale_factor_modshift[] = new int[64];
 	/* [i][j]:  2^(-j/3) * FRAC_ONE * 2^(i+2) / (2^(i+2) - 1) */
 	private static final int scale_factor_mult[][] = new int[15][3];
-	/* mult table for layer 2 group quantization */
-	private static final int scale_factor_mult2[][] = new int[][] {
-		{ FIXR_OLD(1.0f * 4.0f / 3.0f), FIXR_OLD(0.7937005259f * 4.0f / 3.0f), FIXR_OLD(0.6299605249f * 4.0f / 3.0f) },
-		{ FIXR_OLD(1.0f * 4.0f / 5.0f), FIXR_OLD(0.7937005259f * 4.0f / 5.0f), FIXR_OLD(0.6299605249f * 4.0f / 5.0f) },
-		{ FIXR_OLD(1.0f * 4.0f / 9.0f), FIXR_OLD(0.7937005259f * 4.0f / 9.0f), FIXR_OLD(0.6299605249f * 4.0f / 9.0f) }
-	};
 	private static final double ISQRT2 = 0.70710678118654752440;
 	private static final int idxtab[] = { 3,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0 };
-
-	private static int FIXR_OLD(float value) {
-		return (int) (value * FRAC_ONE + 0.5f);
-	}
 
 	private void initStatic() {
 		if (initializedTables) {
@@ -320,13 +310,11 @@ public class Mp3Decoder implements ICodec {
 
 	private int decodeLayer1() {
 		log.warn("Unimplemented MP3 Layer-1");
-		// TODO
 		return 0;
 	}
 
 	private int decodeLayer2() {
 		log.warn("Unimplemented MP3 Layer-2");
-		// TODO
 		return 0;
 	}
 
@@ -556,17 +544,30 @@ public class Mp3Decoder implements ICodec {
 
     	// high frequencies
     	VLC vlc = huff_quad_vlc[g.count1tableSelect];
+    	int lastPos = 0;
     	while (sIndex <= 572) {
-    		if (bb.getBitsRead() >= g.granuleStartPosition + g.part23Length) {
+    		int pos = bb.getBitsRead();
+    		if (pos >= g.granuleStartPosition + g.part23Length) {
+    			int overread = pos - (g.granuleStartPosition + g.part23Length);
+    			if (overread > 0 && lastPos > 0) {
+    				// Some encoders generate an incorrect size for this part.
+    				// We must go back to the last valid position.
+    				sIndex -= 4;
+    				bb.skip(lastPos - pos);
+    				if (log.isDebugEnabled()) {
+    					log.debug(String.format("Overread part23 by %d bits", overread));
+    				}
+    			}
     			break;
     		}
+    		lastPos = pos;
     		int code = vlc.getVLC2(bb);
     		g.sbHybrid[sIndex + 0] = 0;
     		g.sbHybrid[sIndex + 1] = 0;
     		g.sbHybrid[sIndex + 2] = 0;
     		g.sbHybrid[sIndex + 3] = 0;
     		while (code != 0) {
-    			int pos = sIndex + idxtab[code];
+    			pos = sIndex + idxtab[code];
     			code ^= 8 >> idxtab[code];
     			float v = exp_table[exponents[pos]];
     			if (bb.readBool()) {
