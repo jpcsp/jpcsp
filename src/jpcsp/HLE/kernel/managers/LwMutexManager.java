@@ -168,7 +168,14 @@ public class LwMutexManager {
     private int hleKernelLockLwMutex(int uid, int count, TPointer32 timeoutAddr, boolean wait, boolean doCallbacks) {
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
-            log.warn(String.format("hleKernelLockLwMutex uid=%d, count=%d, timeout_addr=%s, wait=%b, doCallbacks=%b -  - unknown UID", uid, count, timeoutAddr, wait, doCallbacks));
+        	if (uid == 0) {
+        		// Avoid spamming messages for uid==0
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("hleKernelLockLwMutex uid=%d, count=%d, timeout_addr=%s, wait=%b, doCallbacks=%b -  - unknown UID", uid, count, timeoutAddr, wait, doCallbacks));
+        		}
+        	} else {
+    			log.warn(String.format("hleKernelLockLwMutex uid=%d, count=%d, timeout_addr=%s, wait=%b, doCallbacks=%b -  - unknown UID", uid, count, timeoutAddr, wait, doCallbacks));
+        	}
             return ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         }
 
@@ -243,7 +250,14 @@ public class LwMutexManager {
         int uid = workAreaAddr.getValue32();
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
-            log.warn("sceKernelUnlockLwMutex unknown uid");
+        	if (uid == 0) {
+        		// Avoid spamming messages for uid==0
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("sceKernelUnlockLwMutex unknown uid=0x%X", uid));
+        		}
+        	} else {
+        		log.warn(String.format("sceKernelUnlockLwMutex unknown uid=0x%X", uid));
+        	}
             return ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         }
         if (info.lockedCount == 0) {
