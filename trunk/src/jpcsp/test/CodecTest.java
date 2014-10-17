@@ -136,7 +136,7 @@ public class CodecTest {
 					length += bytesPerFrame;
 				}
 				codecType = PSP_CODEC_AT3PLUS;
-			} else if (mem.read32(inputAddr) == 0x02334449) { // ID3v2
+			} else if (mem.read32(inputAddr) == 0x02334449 || mem.read32(inputAddr) == 0x03334449 || mem.read32(inputAddr) == 0x04334449) { // ID3v2, ID3v3, ID3v4
 				int headerLength = 0;
 				for (int i = 0; i < 4; i++) {
 					headerLength = (headerLength << 7) + (mem.read8(inputAddr + 6 + i) & 0x7F);
