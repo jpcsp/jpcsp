@@ -20,10 +20,10 @@ import static jpcsp.HLE.VFS.AbstractVirtualFileSystem.IO_ERROR;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractProxyVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
-import jpcsp.media.MediaEngine;
 
 /**
  * Provides a IVirtualFile interface to read only the audio from a PSMF file.
@@ -32,7 +32,7 @@ import jpcsp.media.MediaEngine;
  *
  */
 public class PsmfAudioDemuxVirtualFile extends AbstractProxyVirtualFile {
-	private static Logger log = MediaEngine.log;
+	private static Logger log = Emulator.log;
     public static final int PACKET_START_CODE_MASK   = 0xffffff00;
     public static final int PACKET_START_CODE_PREFIX = 0x00000100;
 

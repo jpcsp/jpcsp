@@ -33,6 +33,12 @@ public class PesHeader {
 		setChannel(channel);
 	}
 
+	public PesHeader(PesHeader pesHeader) {
+		pts = pesHeader.pts;
+		dts = pesHeader.dts;
+		channel = pesHeader.channel;
+	}
+
 	public long getPts() {
 		return pts;
 	}

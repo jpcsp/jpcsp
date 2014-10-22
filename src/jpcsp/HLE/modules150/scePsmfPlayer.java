@@ -25,8 +25,6 @@ import static jpcsp.HLE.modules150.sceMpeg.PSMF_MAGIC;
 import static jpcsp.HLE.modules150.sceMpeg.PSMF_MAGIC_OFFSET;
 import static jpcsp.HLE.modules150.sceMpeg.PSMF_STREAM_OFFSET_OFFSET;
 import static jpcsp.HLE.modules150.sceMpeg.PSMF_STREAM_SIZE_OFFSET;
-import static jpcsp.HLE.modules150.sceMpeg.convertTimestampToDate;
-import static jpcsp.HLE.modules150.sceMpeg.mpegAudioOutputChannels;
 import static jpcsp.HLE.modules150.sceMpeg.read32;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
@@ -44,15 +42,10 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Random;
-import java.util.TimeZone;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
@@ -62,10 +55,7 @@ import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.ISectorDevice;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.Screen;
-import jpcsp.media.MediaEngine;
-import jpcsp.media.PacketChannel;
-import jpcsp.settings.AbstractBoolSettingsListener;
-import jpcsp.util.Debug;
+import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -74,34 +64,15 @@ import org.apache.log4j.Logger;
 public class scePsmfPlayer extends HLEModule {
     public static Logger log = Modules.getLogger("scePsmfPlayer");
 
-    private class EnableMediaEngineSettingsListener extends AbstractBoolSettingsListener {
-		@Override
-		protected void settingsValueChanged(boolean value) {
-			setEnableMediaEngine(value);
-		}
-    }
-
     @Override
     public String getName() {
         return "scePsmfPlayer";
     }
 
-	@Override
-	public void start() {
-		setSettingsListener("emu.useMediaEngine", new EnableMediaEngineSettingsListener());
-
-		super.start();
-	}
-
     // PSMF Player timing management.
     protected static final int psmfPlayerVideoTimestampStep = sceMpeg.videoTimestampStep;
     protected static final int psmfPlayerAudioTimestampStep = sceMpeg.audioTimestampStep;
     protected static final int psmfTimestampPerSecond = sceMpeg.mpegTimestampPerSecond;
-    protected int psmfMaxAheadTimestamp = 40000;
-
-    // PSMF Player timestamp vars.
-    protected SceMpegAu psmfPlayerAvcAu;
-    protected SceMpegAu psmfPlayerAtracAu;
 
     // PSMF Player status.
     protected static final int PSMF_PLAYER_STATUS_NONE = 0x0;
@@ -151,7 +122,6 @@ public class scePsmfPlayer extends HLEModule {
     protected byte[] pmfFileData;
 
     // PMSF info.
-    // TODO: Parse the right values from the PSMF file.
     protected int psmfAvcStreamNum = 1;
     protected int psmfAtracStreamNum = 1;
     protected int psmfPcmStreamNum = 0;
@@ -169,6 +139,7 @@ public class scePsmfPlayer extends HLEModule {
     protected int audioStreamNum;
     protected int playMode;
     protected int playSpeed;
+    protected int initPts;
 
     // PSMF Player video data.
     protected int videoDataFrameWidth = 512;  // Default.
@@ -180,68 +151,14 @@ public class scePsmfPlayer extends HLEModule {
     protected int videoLoopStatus = PSMF_PLAYER_CONFIG_NO_LOOP;  // Default.
 
     // PSMF Player audio size
-    protected final int audioSamples = 2048;  // Default.
+    protected final int audioSamples = Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES;
     protected final int audioSamplesBytes = audioSamples * 4;
 
-    // Media Engine vars.
-    protected PacketChannel pmfFileChannel;
-    protected MediaEngine me;
-    protected boolean useMediaEngine = false;
-    protected byte[] audioDecodeBuffer;
+    // Internal vars.
     protected SysMemInfo mpegMem;
     protected SysMemInfo ringbufferMem;
-    protected int pmfFileDataAudioPosition;
-
-    protected boolean checkMediaEngineState() {
-        return useMediaEngine;
-    }
-
-    private void setEnableMediaEngine(boolean state) {
-        useMediaEngine = state;
-    }
-
-    private void generateFakePSMFVideo(int dest_addr, int frameWidth) {
-        Memory mem = Memory.getInstance();
-
-        Random random = new Random();
-        final int pixelSize = 3;
-        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
-        for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
-            int address = dest_addr + y * frameWidth * bytesPerPixel;
-            final int width = Math.min(480, frameWidth);
-            for (int x = 0; x < width; x += pixelSize) {
-                int n = random.nextInt(256);
-                int color = 0xFF000000 | (n << 16) | (n << 8) | n;
-                int pixelColor = Debug.getPixelColor(color, videoPixelMode);
-                if (bytesPerPixel == 4) {
-                    for (int i = 0; i < pixelSize; i++) {
-                        for (int j = 0; j < pixelSize; j++) {
-                            mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
-                        }
-                    }
-                } else if (bytesPerPixel == 2) {
-                    for (int i = 0; i < pixelSize; i++) {
-                        for (int j = 0; j < pixelSize; j++) {
-                            mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
-                        }
-                    }
-                }
-                address += pixelSize * bytesPerPixel;
-            }
-        }
-
-        Date currentDate = convertTimestampToDate(psmfPlayerAvcAu.pts);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-
-        Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked PSMF Player video. ");
-
-        String displayedString;
-        if (Modules.sceMpegModule.psmfHeader.mpegLastDate != null) {
-            displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(Modules.sceMpegModule.psmfHeader.mpegLastDate));
-            Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-        }
-    }
+    protected int pmfFileDataRingbufferPosition;
+    private static final int MAX_TIMESTAMP_DIFFERENCE = sceMpeg.audioTimestampStep * 2;
 
     public int checkPlayerInitialized(int psmfPlayer) {
     	if (psmfPlayerStatus == PSMF_PLAYER_STATUS_NONE) {
@@ -266,29 +183,12 @@ public class scePsmfPlayer extends HLEModule {
     	return psmfPlayer;
     }
 
-    protected void startMediaEngine() {
-    	if (checkMediaEngineState()) {
-	        if (pmfFileChannel != null && me == null) {
-	            me = new MediaEngine();
-	            audioDecodeBuffer = new byte[audioSamplesBytes];
-	            me.init(pmfFileData);
-	            me.init(pmfFileChannel, Modules.sceMpegModule.hasPsmfVideoStream(), false, Modules.sceMpegModule.getRegisteredVideoChannel(), Modules.sceMpegModule.getRegisteredAudioChannel());
-
-	            if (psmfPlayerAvcAu.pts != 0) {
-	            	// Set the starting PTS
-	            	me.setStartPts(psmfPlayerAvcAu.pts);
-	            }
-	        }
-    	}
+    public long getCurrentVideoTimestamp() {
+    	return Modules.sceMpegModule.getCurrentVideoTimestamp();
     }
 
-    public static void synchronizeVideoWithAudio(SceMpegAu avcAu, SceMpegAu audioAu) {
-    	long delayPts = avcAu.pts - audioAu.pts;
-        if (delayPts > 0) {
-        	long delayMicros = delayPts * 1000000 / sceMpeg.mpegTimestampPerSecond;
-        	delayMicros = Math.min(delayMicros, 200000);
-        	Modules.ThreadManForUserModule.hleKernelDelayThread((int) delayMicros, false);
-        }
+    public long getCurrentAudioTimestamp() {
+    	return Modules.sceMpegModule.getCurrentAudioTimestamp();
     }
 
     protected int hlePsmfPlayerSetPsmf(int psmfPlayer, PspString fileAddr, int offset, boolean doCallbacks) {
@@ -331,11 +231,7 @@ public class scePsmfPlayer extends HLEModule {
             psmfFile.close();
 
             Modules.sceMpegModule.analyseMpeg(0, pmfFileData);
-            pmfFileDataAudioPosition = Modules.sceMpegModule.getPsmfHeader().mpegOffset;
-
-            if (checkMediaEngineState()) {
-                pmfFileChannel = new PacketChannel(pmfFileData);
-            }
+            pmfFileDataRingbufferPosition = Modules.sceMpegModule.getPsmfHeader().mpegOffset;
         } catch (OutOfMemoryError e) {
         	log.error("hlePsmfPlayerSetPsmf", e);
         } catch (IOException e) {
@@ -351,6 +247,28 @@ public class scePsmfPlayer extends HLEModule {
         return 0;
     }
 
+    protected void hlePsmfFillRingbuffer(Memory mem) {
+        SceMpegRingbuffer ringbuffer = Modules.sceMpegModule.getMpegRingbuffer();
+        ringbuffer.notifyConsumed();
+        if (ringbuffer.getPutSequentialPackets() > 0) {
+        	int packetSize = ringbuffer.getPacketSize();
+        	int addr = ringbuffer.getPutDataAddr();
+        	int size = ringbuffer.getPutSequentialPackets() * packetSize;
+        	size = Math.min(size, pmfFileData.length - pmfFileDataRingbufferPosition);
+
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("Filling ringbuffer at 0x%08X, size=0x%X with file data from offset 0x%X", addr, size, pmfFileDataRingbufferPosition));
+        	}
+        	for (int i = 0; i < size; i++) {
+        		mem.write8(addr + i, pmfFileData[pmfFileDataRingbufferPosition + i]);
+        	}
+        	ringbuffer.addPackets((size + packetSize - 1) / packetSize);
+        	pmfFileDataRingbufferPosition += size;
+
+        	Modules.sceMpegModule.hleMpegNotifyVideoDecoderThread();
+        }
+    }
+
     @HLEFunction(nid = 0x235D8787, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerCreate(int psmfPlayer, TPointer32 psmfPlayerDataAddr) {
         // The psmfDataAddr contains three fields that are manually set before
@@ -361,9 +279,6 @@ public class scePsmfPlayer extends HLEModule {
         if (log.isInfoEnabled()) {
         	log.info(String.format("PSMF Player Data: displayBuffer=0x%08X, displayBufferSize=0x%X, playbackThreadPriority=%d", displayBuffer, displayBufferSize, playbackThreadPriority));
         }
-
-        psmfPlayerAtracAu = new SceMpegAu();
-        psmfPlayerAvcAu = new SceMpegAu();
 
         // Allocate memory for the MPEG structure
         Memory mem = Memory.getInstance();
@@ -378,11 +293,9 @@ public class scePsmfPlayer extends HLEModule {
         ringbufferMem = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, getName() + "-Ringbuffer", PSP_SMEM_Low, packets * ringbufferPacketSize, 0);
         Modules.sceMpegModule.hleCreateRingbuffer(packets, ringbufferMem.addr, ringbufferMem.size);
         SceMpegRingbuffer ringbuffer = Modules.sceMpegModule.getMpegRingbuffer();
-        // This ringbuffer is only used for audio
+        // This ringbuffer is used both for audio and video
         ringbuffer.setHasAudio(true);
-        ringbuffer.setHasVideo(false);
-
-        psmfMaxAheadTimestamp = sceMpeg.getMaxAheadTimestamp(packets);
+        ringbuffer.setHasVideo(true);
 
         // Start with INIT.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_INIT;
@@ -392,15 +305,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x9B71A274, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerDelete(@CheckArgument("checkPlayerInitialized") int psmfPlayer) {
-        if (checkMediaEngineState()) {
-            if (me != null) {
-                me.finish();
-                me = null;
-            }
-            if (pmfFileChannel != null) {
-            	pmfFileChannel = null;
-            }
-        }
         VideoEngine.getInstance().resetVideoTextures();
 
         if (ringbufferMem != null) {
@@ -434,15 +338,8 @@ public class scePsmfPlayer extends HLEModule {
     		return ERROR_PSMFPLAYER_NOT_INITIALIZED;
     	}
 
-    	if (checkMediaEngineState()) {
-            if (me != null) {
-                me.finish();
-                me = null;
-            }
-            if (pmfFileChannel != null) {
-            	pmfFileChannel = null;
-            }
-        }
+        Modules.sceMpegModule.finishMpeg();
+
         VideoEngine.getInstance().resetVideoTextures();
 
         // Go back to INIT, because some applications recognize that another file can be
@@ -473,13 +370,7 @@ public class scePsmfPlayer extends HLEModule {
 	        }
         }
 
-        // Initialize the current PTS and DTS with the given timestamp (mostly set to 0).
-        psmfPlayerAtracAu.dts = initPts;
-        psmfPlayerAtracAu.pts = initPts;
-        psmfPlayerAvcAu.dts = initPts;
-        psmfPlayerAvcAu.pts = initPts;
-
-        startMediaEngine();
+        this.initPts = initPts;
 
         // Switch to PLAYING.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_PLAYING;
@@ -494,15 +385,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x1078C008, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerStop(@CheckArgument("checkPlayerInitialized") int psmfPlayer) {
-        if (checkMediaEngineState()) {
-            if (me != null) {
-                me.finish();
-                me = null;
-            }
-            if (pmfFileChannel != null) {
-            	pmfFileChannel = null;
-            }
-        }
         VideoEngine.getInstance().resetVideoTextures();
 
         // Always switch to STANDBY, because this PSMF can still be resumed.
@@ -517,11 +399,9 @@ public class scePsmfPlayer extends HLEModule {
     public int scePsmfPlayerUpdate(@CheckArgument("checkPlayerPlaying") int psmfPlayer) {
         // Can be called from interrupt.
         // Check playback status.
-        if (psmfPlayerAvcAu.pts > 0) {
-            if (psmfPlayerAvcAu.pts > Modules.sceMpegModule.psmfHeader.mpegLastTimestamp) {
-                // If we've reached the last timestamp, change the status to PLAYING_FINISHED.
-                psmfPlayerStatus = PSMF_PLAYER_STATUS_PLAYING_FINISHED;
-            }
+        if (getCurrentVideoTimestamp() > Modules.sceMpegModule.psmfHeader.mpegLastTimestamp) {
+            // If we've reached the last timestamp, change the status to PLAYING_FINISHED.
+            psmfPlayerStatus = PSMF_PLAYER_STATUS_PLAYING_FINISHED;
         }
 
         return 0;
@@ -541,16 +421,6 @@ public class scePsmfPlayer extends HLEModule {
     		}
     		return result;
     	}
-
-    	if (psmfPlayerAtracAu.pts != 0 && psmfPlayerAvcAu.pts > psmfPlayerAtracAu.pts + psmfMaxAheadTimestamp) {
-            // If we're ahead of audio, return an error.
-        	result = SceKernelErrors.ERROR_PSMFPLAYER_NO_MORE_DATA;
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("scePsmfPlayerGetVideoData avcAu=[%s], returning 0x%08X", psmfPlayerAvcAu, result));
-            }
-            sceMpeg.delayThread(sceMpeg.mpegDecodeErrorDelay);
-            return result;
-        }
 
         if (videoDataAddr.isNotNull()) {
             videoDataFrameWidth = videoDataAddr.getValue(0);
@@ -574,38 +444,28 @@ public class scePsmfPlayer extends HLEModule {
             }
         }
 
-        long startTime = Emulator.getClock().microTime();
+    	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentVideoTimestamp() > getCurrentAudioTimestamp() + MAX_TIMESTAMP_DIFFERENCE) {
+    		//result = SceKernelErrors.ERROR_PSMFPLAYER_AUDIO_VIDEO_OUT_OF_SYNC;
+    		Modules.sceMpegModule.writeLastFrameABGR(displayBuffer, videoDataFrameWidth);
+    	} else {
+	        // Check if the ringbuffer needs additional data
+	    	hlePsmfFillRingbuffer(Emulator.getMemory());
 
-    	// Write video data.
-        if (checkMediaEngineState() && pmfFileChannel != null) {
-        	startMediaEngine();
-            if (me.stepVideo(mpegAudioOutputChannels)) {
-            	me.writeVideoImage(displayBuffer, videoDataFrameWidth, videoPixelMode);
-	            me.getCurrentVideoAu(psmfPlayerAvcAu);
-            } else {
-	        	psmfPlayerAvcAu.pts += psmfPlayerVideoTimestampStep;
-	        	psmfPlayerAvcAu.dts = psmfPlayerAvcAu.pts - psmfPlayerVideoTimestampStep;
-            }
-        } else {
-        	psmfPlayerAvcAu.pts += psmfPlayerVideoTimestampStep;
-        	psmfPlayerAvcAu.dts = psmfPlayerAvcAu.pts - psmfPlayerVideoTimestampStep;
-            generateFakePSMFVideo(displayBuffer, videoDataFrameWidth);
-        }
+	    	// Retrieve the video Au
+	        result = Modules.sceMpegModule.hleMpegGetAvcAu(null);
+
+	    	// Write the video data
+	    	result = Modules.sceMpegModule.hleMpegAvcDecode(displayBuffer, videoDataFrameWidth, null, true);
+    	}
 
         // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
         VideoEngine.getInstance().addVideoTexture(displayBuffer, displayBuffer + 272 * videoDataFrameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
 
         // Return updated timestamp
-    	videoDataAddr.setValue(8, (int) psmfPlayerAvcAu.dts);
+    	videoDataAddr.setValue(8, (int) getCurrentVideoTimestamp());
 
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerGetVideoData avcAu=[%s], returning 0x%08X", psmfPlayerAvcAu, result));
-        }
-
-        if (psmfPlayerAtracAu.pts != 0) {
-        	synchronizeVideoWithAudio(psmfPlayerAvcAu, psmfPlayerAtracAu);
-        } else {
-        	sceMpeg.delayThread(startTime, sceMpeg.avcDecodeDelay);
+    	if (log.isDebugEnabled()) {
+            log.debug(String.format("scePsmfPlayerGetVideoData currentVideoTimestamp=%d, returning 0x%08X", getCurrentVideoTimestamp(), result));
         }
 
         return result;
@@ -624,45 +484,21 @@ public class scePsmfPlayer extends HLEModule {
     		return result;
     	}
 
-        if (psmfPlayerAvcAu.pts != 0 && psmfPlayerAtracAu.pts > psmfPlayerAvcAu.pts + psmfMaxAheadTimestamp) {
-            // If we're ahead of video, return an error.
-        	result = SceKernelErrors.ERROR_PSMFPLAYER_NO_MORE_DATA;
-            if (log.isDebugEnabled()) {
-            	log.debug(String.format("scePsmfPlayerGetAudioData atracAu=[%s], avcAu=[%s], returning 0x%08X", psmfPlayerAtracAu, psmfPlayerAvcAu, result));
-            }
-            sceMpeg.delayThread(sceMpeg.mpegDecodeErrorDelay);
-            return result;
-        }
+    	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentAudioTimestamp() > getCurrentVideoTimestamp() + MAX_TIMESTAMP_DIFFERENCE) {
+    		result = SceKernelErrors.ERROR_PSMFPLAYER_AUDIO_VIDEO_OUT_OF_SYNC;
+    	} else {
+	        // Check if the ringbuffer needs additional data
+	    	hlePsmfFillRingbuffer(audioDataAddr.getMemory());
 
-        // Check if the ringbuffer needs additional data
-        SceMpegRingbuffer ringbuffer = Modules.sceMpegModule.getMpegRingbuffer();
-        if (ringbuffer.getPutSequentialPackets() > 0) {
-        	Memory mem = audioDataAddr.getMemory();
-        	int packetSize = ringbuffer.getPacketSize();
-        	int addr = ringbuffer.getPutDataAddr();
-        	int size = ringbuffer.getPutSequentialPackets() * packetSize;
-        	size = Math.min(size, pmfFileData.length - pmfFileDataAudioPosition);
+	    	// Retrieve the audio Au
+	        result = Modules.sceMpegModule.hleMpegGetAtracAu(null);
 
-        	if (log.isTraceEnabled()) {
-        		log.trace(String.format("Filling ringbuffer at 0x%08X, size=0x%X with file data from offset 0x%X", addr, size, pmfFileDataAudioPosition));
-        	}
-        	for (int i = 0; i < size; i++) {
-        		mem.write8(addr + i, pmfFileData[pmfFileDataAudioPosition + i]);
-        	}
-        	ringbuffer.addPackets((size + packetSize - 1) / packetSize);
-        	pmfFileDataAudioPosition += size;
-        }
-
-        result = Modules.sceMpegModule.hleMpegGetAtracAu(null);
-
-    	// Write audio data
-    	result = Modules.sceMpegModule.hleMpegAtracDecode(null, audioDataAddr, audioSamplesBytes);
-
-    	psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
-		psmfPlayerAtracAu.dts = -1;
+	    	// Write the audio data
+	    	result = Modules.sceMpegModule.hleMpegAtracDecode(null, audioDataAddr, audioSamplesBytes);
+    	}
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("scePsmfPlayerGetAudioData atracAu=[%s], avcAu=[%s], returning 0x%08X", psmfPlayerAtracAu, psmfPlayerAvcAu, result));
+        	log.debug(String.format("scePsmfPlayerGetAudioData currentAudioTimestamp=%d, returning 0x%08X", getCurrentAudioTimestamp(), result));
         }
 
         return result;
@@ -765,7 +601,7 @@ public class scePsmfPlayer extends HLEModule {
     	}
 
         // Write our current video presentation timestamp.
-        currentPtsAddr.setValue((int) psmfPlayerAvcAu.pts);
+        currentPtsAddr.setValue((int) getCurrentVideoTimestamp());
 
         return 0;
     }

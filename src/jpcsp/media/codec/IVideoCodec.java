@@ -14,11 +14,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.media;
+package jpcsp.media.codec;
 
-import com.xuggle.xuggler.io.IURLProtocolHandler;
-
-public interface IMediaChannel extends IURLProtocolHandler {
-	public int getReadLength();
-	public void setReadLength(int readLength);
+public interface IVideoCodec {
+	public int init();
+	public int decode(int input[], int inputOffset, int inputLength);
+	public boolean hasImage();
+	public int getImageWidth();
+	public int getImageHeight();
+	public int getImage(int luma[], int cb[], int cr[]);
 }

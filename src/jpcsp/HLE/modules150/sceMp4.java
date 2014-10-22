@@ -28,7 +28,6 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.IAction;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.util.Utilities;
@@ -127,7 +126,7 @@ public class sceMp4 extends HLEModule {
 
         if (bytesRead > 0) {
         	readSize += bytesRead;
-        	Modules.sceMpegModule.hleAddVideoData(readBufferAddr, bytesRead);
+//        	Modules.sceMpegModule.hleAddVideoData(readBufferAddr, bytesRead);
 
 	        if (log.isDebugEnabled()) {
 	        	log.debug(String.format("hleAfterReadCallback bytesRead=0x%X, totalRead=0x%X", bytesRead, readSize));
@@ -161,8 +160,8 @@ public class sceMp4 extends HLEModule {
 
 	protected void initMpegModule(int mp4FileSize) {
 		sceMpeg sceMpegModule = Modules.sceMpegModule;
-		sceMpegModule.hleSetTotalStreamSize(mp4FileSize);
-		sceMpegModule.hleSetChannelBufferLength(mp4FileSize);
+//		sceMpegModule.hleSetTotalStreamSize(mp4FileSize);
+//		sceMpegModule.hleSetChannelBufferLength(mp4FileSize);
 		sceMpegModule.hleCreateRingbuffer();
 	}
 
@@ -214,7 +213,7 @@ public class sceMp4 extends HLEModule {
 		readSize = 0;
 		fileReadingInProgress = false;
 		fileReadingCompleted = false;
-		Modules.sceMpegModule.hleSetFirstTimestamp(0);
+//		Modules.sceMpegModule.hleSetFirstTimestamp(0);
 	}
 
 	@HLEUnimplemented
@@ -415,7 +414,8 @@ public class sceMp4 extends HLEModule {
     	}
 
     	// unknown4: pointer to a 40-bytes structure
-        return Modules.sceMpegModule.hleMpegGetAtracAuME(auAddr);
+//        return Modules.sceMpegModule.hleMpegGetAtracAuME(auAddr);
+    	return 0;
     }
 
     /**
@@ -455,7 +455,8 @@ public class sceMp4 extends HLEModule {
     		return readFile();
     	}
 
-    	return Modules.sceMpegModule.hleMpegGetAvcAu(auAddr, SceKernelErrors.ERROR_MP4_NO_MORE_DATA);
+//    	return Modules.sceMpegModule.hleMpegGetAvcAuME(auAddr, SceKernelErrors.ERROR_MP4_NO_MORE_DATA);
+    	return 0;
     }
 
     @HLEUnimplemented
