@@ -42,8 +42,9 @@ public class sceVaudio extends HLEModule {
 	public void start() {
 		SoundChannel.init();
 
-		// The PSP is using the same channel as the SRC channel
-        pspVaudioChannel = Modules.sceAudioModule.pspSRCChannel;
+		// The PSP is using the same channel as the SRC channel(s)
+        pspVaudio1Channel = Modules.sceAudioModule.pspSRC1Channel;
+        pspVaudio2Channel = Modules.sceAudioModule.pspSRC2Channel;
         pspVaudioChannelReserved = false;
 
         super.start();
@@ -64,7 +65,8 @@ public class sceVaudio extends HLEModule {
     protected static final int PSP_VAUDIO_ALC_MODE_NONE = 0;
     protected static final int PSP_VAUDIO_ALC_MODE_1 = 1;
 
-    protected SoundChannel pspVaudioChannel;
+    protected SoundChannel pspVaudio1Channel;
+    protected SoundChannel pspVaudio2Channel;
     protected boolean pspVaudioChannelReserved;
 
     public int checkSampleCount(int sampleCount) {
@@ -123,13 +125,15 @@ public class sceVaudio extends HLEModule {
 
     @HLEFunction(nid = 0x67585DFD, version = 150, checkInsideInterrupt = true)
     public int sceVaudioChRelease() {
-        if (!pspVaudioChannel.isReserved()) {
+        if (!pspVaudio1Channel.isReserved()) {
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
 
         pspVaudioChannelReserved = false;
-        pspVaudioChannel.release();
-        pspVaudioChannel.setReserved(false);
+        pspVaudio1Channel.release();
+        pspVaudio1Channel.setReserved(false);
+        pspVaudio2Channel.release();
+        pspVaudio2Channel.setReserved(false);
 
         return 0;
     }
@@ -140,17 +144,22 @@ public class sceVaudio extends HLEModule {
     	if (pspVaudioChannelReserved) {
         	return SceKernelErrors.ERROR_BUSY;
     	}
-        if (pspVaudioChannel.isReserved()) {
+        if (pspVaudio1Channel.isReserved()) {
         	// PSP is yielding in this error case
             Modules.ThreadManForUserModule.hleYieldCurrentThread();
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_ALREADY_RESERVED;
         }
 
         pspVaudioChannelReserved = true;
-        pspVaudioChannel.setReserved(true);
-        pspVaudioChannel.setSampleLength(sampleCount);
-        pspVaudioChannel.setSampleRate(freq);
-        pspVaudioChannel.setFormat(format == PSP_VAUDIO_FORMAT_MONO ? sceAudio.PSP_AUDIO_FORMAT_MONO : sceAudio.PSP_AUDIO_FORMAT_STEREO);
+        pspVaudio1Channel.setReserved(true);
+        pspVaudio1Channel.setSampleLength(sampleCount);
+        pspVaudio1Channel.setSampleRate(freq);
+        pspVaudio1Channel.setFormat(format == PSP_VAUDIO_FORMAT_MONO ? sceAudio.PSP_AUDIO_FORMAT_MONO : sceAudio.PSP_AUDIO_FORMAT_STEREO);
+
+        pspVaudio2Channel.setReserved(true);
+        pspVaudio2Channel.setSampleLength(sampleCount);
+        pspVaudio2Channel.setSampleRate(freq);
+        pspVaudio2Channel.setFormat(format == PSP_VAUDIO_FORMAT_MONO ? sceAudio.PSP_AUDIO_FORMAT_MONO : sceAudio.PSP_AUDIO_FORMAT_STEREO);
 
         Modules.ThreadManForUserModule.hleYieldCurrentThread();
 
@@ -161,6 +170,7 @@ public class sceVaudio extends HLEModule {
     public int sceVaudioOutputBlocking(int vol, TPointer buf) {
     	int result = 0;
 
+    	SoundChannel pspVaudioChannel = Modules.sceAudioModule.getFreeSRCChannel();
     	if (!pspVaudioChannel.isOutputBlocking()) {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceVaudioOutputBlocking[not blocking] %s", pspVaudioChannel));

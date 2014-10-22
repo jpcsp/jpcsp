@@ -59,6 +59,7 @@ public class SoundChannel {
     private int sampleLength;
     private int format;
     private int numberBlockingBuffers;
+    private boolean busy;
 
     public static void init() {
 		if (!AL.isCreated()) {
@@ -307,6 +308,14 @@ public class SoundChannel {
     	data[index + 1] = (byte) (sample >> 8);
     }
 
+	public boolean isBusy() {
+		return busy;
+	}
+
+	public void setBusy(boolean busy) {
+		this.busy = busy;
+	}
+
     @Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
@@ -321,6 +330,7 @@ public class SoundChannel {
 			s.append(String.format(", reserved=%b", reserved));
 			s.append(String.format(", sampleLength=%d", getSampleLength()));
 			s.append(String.format(", sampleRate=%d", getSampleRate()));
+			s.append(String.format(", busy=%b", busy));
 		}
 		s.append(")");
 
