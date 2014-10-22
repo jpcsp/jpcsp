@@ -88,7 +88,8 @@ public class sceAudio extends HLEModule {
         for (int channel = 0; channel < pspPCMChannels.length; channel++) {
             pspPCMChannels[channel] = new SoundChannel(channel);
         }
-        pspSRCChannel = new SoundChannel(8);  // Use a special channel 8 to handle SRC functions.
+        pspSRC1Channel = new SoundChannel(8);  // Use a special channel 8 to handle SRC functions (first channel).
+        pspSRC2Channel = new SoundChannel(9);  // Use a special channel 9 to handle SRC functions (second channel).
 
         setSettingsListener("emu.disablesceAudio", new DisableAudioSettingsListerner());
         setSettingsListener("emu.disableblockingaudio", new DisableBlockingAudioSettingsListerner());
@@ -116,7 +117,10 @@ public class sceAudio extends HLEModule {
     protected static final int PSP_AUDIO_FORMAT_MONO = 0x10;
 
     protected SoundChannel[] pspPCMChannels;
-    protected SoundChannel pspSRCChannel;
+    // Two different threads can output audio on the SRC channel
+    // without interfering with each others.
+    protected SoundChannel pspSRC1Channel;
+    protected SoundChannel pspSRC2Channel;
 
     protected boolean disableChReserve;
     protected boolean disableBlockingAudio;
@@ -202,6 +206,7 @@ public class sceAudio extends HLEModule {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
     	blockThreadOutput(threadMan.getCurrentThreadID(), channel, addr, leftVolume, rightVolume);
     	threadMan.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_AUDIO);
+    	channel.setBusy(true);
     }
 
     protected static void blockThreadOutput(int threadId, SoundChannel channel, int addr, int leftVolume, int rightVolume) {
@@ -228,6 +233,7 @@ public class sceAudio extends HLEModule {
             	thread.cpuContext._v0 = channel.getSampleLength();
                 threadMan.hleUnblockThread(threadId);
             }
+            channel.setBusy(false);
     	} else if (!channel.isOutputBlocking()) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo thread = threadMan.getThreadById(threadId);
@@ -237,6 +243,7 @@ public class sceAudio extends HLEModule {
                 thread.cpuContext._v0 = ret;
                 threadMan.hleUnblockThread(threadId);
             }
+            channel.setBusy(false);
         } else {
         	blockThreadOutput(threadId, channel, addr, leftVolume, rightVolume);
         }
@@ -276,23 +283,39 @@ public class sceAudio extends HLEModule {
         return len;
     }
 
+    protected SoundChannel getFreeSRCChannel() {
+    	if (!pspSRC1Channel.isBusy()) {
+    		return pspSRC1Channel;
+    	}
+    	if (!pspSRC2Channel.isBusy()) {
+    		return pspSRC2Channel;
+    	}
+    	return null;
+    }
+
     protected int hleAudioSRCChReserve(int sampleCount, int freq, int format) {
         if (disableChReserve) {
             log.warn(String.format("IGNORED hleAudioSRCChReserve sampleCount=%d, freq=%d, format=%d", sampleCount, freq, format));
             return -1;
         }
 
-        if (pspSRCChannel.isReserved()) {
+        if (pspSRC1Channel.isReserved()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("hleAudioSRCChReserve returning ERROR_AUDIO_CHANNEL_ALREADY_RESERVED"));
         	}
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_ALREADY_RESERVED;
         }
 
-        pspSRCChannel.setSampleRate(freq);
-        pspSRCChannel.setReserved(true);
-        pspSRCChannel.setSampleLength(sampleCount);
-        pspSRCChannel.setFormat(format);
+        // Reserve both SRC channels
+        pspSRC1Channel.setSampleRate(freq);
+        pspSRC1Channel.setReserved(true);
+        pspSRC1Channel.setSampleLength(sampleCount);
+        pspSRC1Channel.setFormat(format);
+
+        pspSRC2Channel.setSampleRate(freq);
+        pspSRC2Channel.setReserved(true);
+        pspSRC2Channel.setSampleLength(sampleCount);
+        pspSRC2Channel.setFormat(format);
 
         return 0;
     }
@@ -750,26 +773,27 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x647CEF33, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutput2GetRestSample() {
-    	if (!pspSRCChannel.isReserved()) {
+    	if (!pspSRC1Channel.isReserved()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("sceAudioOutput2GetRestSample returning ERROR_AUDIO_CHANNEL_NOT_RESERVED"));
         	}
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
 
-        return hleAudioGetChannelRestLength(pspSRCChannel);
+        return hleAudioGetChannelRestLength(pspSRC1Channel) + hleAudioGetChannelRestLength(pspSRC2Channel);
     }
 
     @HLEFunction(nid = 0x63F2889C, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutput2ChangeLength(@CheckArgument("checkSmallSampleCount") int sampleCount) {
-    	if (!pspSRCChannel.isReserved()) {
+    	if (!pspSRC1Channel.isReserved()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("sceAudioOutput2ChangeLength returning ERROR_AUDIO_CHANNEL_NOT_RESERVED"));
         	}
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
 
-        pspSRCChannel.setSampleLength(sampleCount);
+        pspSRC1Channel.setSampleLength(sampleCount);
+        pspSRC2Channel.setSampleLength(sampleCount);
 
         return 0;
     }
@@ -781,15 +805,18 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x5C37C0AE, version = 150, checkInsideInterrupt = true)
     public int sceAudioSRCChRelease() {
-    	if (!pspSRCChannel.isReserved()) {
+    	if (!pspSRC1Channel.isReserved()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("sceAudioSRCChRelease returning ERROR_AUDIO_CHANNEL_NOT_RESERVED"));
         	}
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
 
-        pspSRCChannel.release();
-        pspSRCChannel.setReserved(false);
+        pspSRC1Channel.release();
+        pspSRC1Channel.setReserved(false);
+
+        pspSRC2Channel.release();
+        pspSRC2Channel.setReserved(false);
 
         return 0;
     }
@@ -798,6 +825,12 @@ public class sceAudio extends HLEModule {
     public int sceAudioSRCOutputBlocking(@CheckArgument("checkVolume2") int vol, @CanBeNull TPointer buf) {
     	// Tested on PSP: any sound volume above MAX_VOLUME has the same effect as MAX_VOLUME.
     	int channelVolume = min(SoundChannel.MAX_VOLUME, vol);
+
+    	SoundChannel pspSRCChannel = getFreeSRCChannel();
+    	if (pspSRCChannel == null) {
+    		return SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
+    	}
+
     	pspSRCChannel.setVolume(channelVolume);
 
         if (buf.isNull()) {
@@ -813,12 +846,13 @@ public class sceAudio extends HLEModule {
             } else {
             	Modules.ThreadManForUserModule.hleYieldCurrentThread();
             }
-        } else if (!pspSRCChannel.isReserved() && !disableChReserve) {
+        } else if (!pspSRC1Channel.isReserved() && !disableChReserve) {
         	// Channel is automatically reserved. The audio data (buf) is not used in this case.
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceAudioSRCOutputBlocking automatically reserving channel %s", pspSRCChannel));
             }
-            pspSRCChannel.setReserved(true);
+            pspSRC1Channel.setReserved(true);
+            pspSRC2Channel.setReserved(true);
         } else {
             if (!pspSRCChannel.isOutputBlocking() || disableBlockingAudio) {
                 if (log.isDebugEnabled()) {
