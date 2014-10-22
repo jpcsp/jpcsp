@@ -20,10 +20,10 @@ import static jpcsp.HLE.VFS.AbstractVirtualFileSystem.IO_ERROR;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractProxyVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
-import jpcsp.media.MediaEngine;
 
 /**
  * Provides a IVirtualFile interface to convert the audio from an Mpeg to OMA.
@@ -32,7 +32,7 @@ import jpcsp.media.MediaEngine;
  *
  */
 public class PsmfAudioOMAVirtualFile extends AbstractProxyVirtualFile {
-	private static Logger log = MediaEngine.log;
+	private static Logger log = Emulator.log;
 	private int remainingFrameLength;
 	private final byte[] header = new byte[8];
 

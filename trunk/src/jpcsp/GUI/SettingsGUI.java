@@ -114,13 +114,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolFromSettings(useDebugFont, "emu.useDebugFont");
         setBoolFromSettings(useDebugMemory, "emu.useDebuggerMemory");
-        setBoolFromSettings(useExternalDecoder, "emu.useExternalDecoder");
-        setBoolFromSettings(useMediaEngine, "emu.useMediaEngine");
         setBoolFromSettings(useVertexCache, "emu.useVertexCache");
         setBoolFromSettings(invalidMemoryCheck, "emu.ignoreInvalidMemoryAccess");
-        setBoolFromSettings(DisableSceAudioCheck, "emu.disablesceAudio");
-        setBoolFromSettings(IgnoreAudioThreadsCheck, "emu.ignoreaudiothreads");
-        setBoolFromSettings(disableBlockingAudioCheck, "emu.disableblockingaudio");
         setBoolFromSettings(ignoreUnmappedImports, "emu.ignoreUnmappedImports");
         setIntAsStringFromSettings(methodMaxInstructionsBox, "emu.compiler.methodMaxInstructions", 3000);
         setBoolFromSettings(extractEboot, "emu.extractEboot");
@@ -242,13 +237,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolToSettings(useDebugFont, "emu.useDebugFont");
         setBoolToSettings(useDebugMemory, "emu.useDebuggerMemory");
-        setBoolToSettings(useExternalDecoder, "emu.useExternalDecoder");
-        setBoolToSettings(useMediaEngine, "emu.useMediaEngine");
         setBoolToSettings(useVertexCache, "emu.useVertexCache");
         setBoolToSettings(invalidMemoryCheck, "emu.ignoreInvalidMemoryAccess");
-        setBoolToSettings(DisableSceAudioCheck, "emu.disablesceAudio");
-        setBoolToSettings(IgnoreAudioThreadsCheck, "emu.ignoreaudiothreads");
-        setBoolToSettings(disableBlockingAudioCheck, "emu.disableblockingaudio");
         setBoolToSettings(ignoreUnmappedImports, "emu.ignoreUnmappedImports");
         setIntAsStringToSettings(methodMaxInstructionsBox, "emu.compiler.methodMaxInstructions", 3000);
         setBoolToSettings(extractEboot, "emu.extractEboot");
@@ -493,10 +483,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         useOpenglRenderer = new javax.swing.JRadioButton();
         useSoftwareRenderer = new javax.swing.JRadioButton();
         useExternalSoftwareRenderer = new javax.swing.JRadioButton();
-        AudioPanel = new javax.swing.JPanel();
-        IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
-        disableBlockingAudioCheck = new javax.swing.JCheckBox();
-        DisableSceAudioCheck = new javax.swing.JCheckBox();
         MemoryPanel = new javax.swing.JPanel();
         invalidMemoryCheck = new javax.swing.JCheckBox();
         ignoreUnmappedImports = new javax.swing.JCheckBox();
@@ -513,8 +499,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         resolutionBox = new javax.swing.JComboBox();
         fullscreenCheck = new javax.swing.JCheckBox();
         MiscPanel = new javax.swing.JPanel();
-        useMediaEngine = new javax.swing.JCheckBox();
-        useExternalDecoder = new javax.swing.JCheckBox();
         useDebugFont = new javax.swing.JCheckBox();
         CryptoPanel = new javax.swing.JPanel();
         extractEboot = new javax.swing.JCheckBox();
@@ -975,42 +959,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.VideoPanel.title"), VideoPanel); // NOI18N
 
-        IgnoreAudioThreadsCheck.setText(bundle.getString("SettingsGUI.IgnoreAudioThreadsCheck.text")); // NOI18N
-
-        disableBlockingAudioCheck.setText(bundle.getString("SettingsGUI.disableBlockingAudioCheck.text")); // NOI18N
-
-        DisableSceAudioCheck.setText(bundle.getString("SettingsGUI.DisableSceAudioCheck.text")); // NOI18N
-
-        javax.swing.GroupLayout AudioPanelLayout = new javax.swing.GroupLayout(AudioPanel);
-        AudioPanel.setLayout(AudioPanelLayout);
-        AudioPanelLayout.setHorizontalGroup(
-            AudioPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(AudioPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(AudioPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(AudioPanelLayout.createSequentialGroup()
-                        .addComponent(IgnoreAudioThreadsCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(150, 150, 150))
-                    .addComponent(DisableSceAudioCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(AudioPanelLayout.createSequentialGroup()
-                        .addComponent(disableBlockingAudioCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(147, 147, 147)))
-                .addGap(405, 405, 405))
-        );
-        AudioPanelLayout.setVerticalGroup(
-            AudioPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(AudioPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(IgnoreAudioThreadsCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(DisableSceAudioCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(disableBlockingAudioCheck)
-                .addContainerGap(414, Short.MAX_VALUE))
-        );
-
-        jTabbedPane1.addTab(bundle.getString("SettingsGUI.AudioPanel.title"), AudioPanel); // NOI18N
-
         invalidMemoryCheck.setText(bundle.getString("SettingsGUI.invalidMemoryCheck.text")); // NOI18N
 
         ignoreUnmappedImports.setText(bundle.getString("SettingsGUI.ignoreUnmappedImports.text")); // NOI18N
@@ -1130,10 +1078,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.DisplayPanel.title"), DisplayPanel); // NOI18N
 
-        useMediaEngine.setText(bundle.getString("SettingsGUI.useMediaEngine.text")); // NOI18N
-
-        useExternalDecoder.setText(bundle.getString("SettingsGUI.useExternalDecoder.text")); // NOI18N
-
         useDebugFont.setText(bundle.getString("SettingsGUI.useDebugFont.text")); // NOI18N
 
         javax.swing.GroupLayout MiscPanelLayout = new javax.swing.GroupLayout(MiscPanel);
@@ -1143,8 +1087,6 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(MiscPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(useExternalDecoder, javax.swing.GroupLayout.DEFAULT_SIZE, 1535, Short.MAX_VALUE)
-                    .addComponent(useMediaEngine, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(useDebugFont, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -1152,10 +1094,6 @@ public class SettingsGUI extends javax.swing.JFrame {
             MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(MiscPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(useMediaEngine)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useExternalDecoder)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useDebugFont)
                 .addContainerGap(368, Short.MAX_VALUE))
         );
@@ -1398,13 +1336,10 @@ public class SettingsGUI extends javax.swing.JFrame {
         super.dispose();
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JPanel AudioPanel;
     private javax.swing.JPanel CompilerPanel;
     private javax.swing.JPanel CryptoPanel;
-    private javax.swing.JCheckBox DisableSceAudioCheck;
     private javax.swing.JPanel DisplayPanel;
     private javax.swing.JPanel GeneralPanel;
-    private javax.swing.JCheckBox IgnoreAudioThreadsCheck;
     private javax.swing.JPanel MemoryPanel;
     private javax.swing.JPanel MiscPanel;
     private javax.swing.JPanel RegionPanel;
@@ -1430,7 +1365,6 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel dateFormatLabel;
     private javax.swing.JComboBox daylightBox;
     private javax.swing.JLabel daylightLabel;
-    private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableDLC;
     private javax.swing.JCheckBox disableOptimizedVertexInfoReading;
     private javax.swing.JCheckBox disableUBOCheck;
@@ -1502,9 +1436,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JCheckBox useCompiler;
     private javax.swing.JCheckBox useDebugFont;
     private javax.swing.JCheckBox useDebugMemory;
-    private javax.swing.JCheckBox useExternalDecoder;
     private javax.swing.JRadioButton useExternalSoftwareRenderer;
-    private javax.swing.JCheckBox useMediaEngine;
     private javax.swing.JRadioButton useOpenglRenderer;
     private javax.swing.JRadioButton useSoftwareRenderer;
     private javax.swing.JCheckBox useVertexCache;

@@ -518,7 +518,7 @@ public class SceKernelErrors {
     public final static int ERROR_PSMFPLAYER_NOT_INITIALIZED                    = 0x80616001;
     public final static int ERROR_PSMFPLAYER_INVALID_CONFIG_MODE                = 0x80616006;
     public final static int ERROR_PSMFPLAYER_INVALID_CONFIG_VALUE               = 0x80616008;
-    public final static int ERROR_PSMFPLAYER_NO_MORE_DATA                       = 0x8061600c;
+    public final static int ERROR_PSMFPLAYER_AUDIO_VIDEO_OUT_OF_SYNC            = 0x8061600c;
 
     public final static int ERROR_MP4_NO_MORE_DATA                              = 0x8061700a;
 

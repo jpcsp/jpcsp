@@ -2271,11 +2271,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("SettingsGUI.enableShaderColorMaskCheck.text", "emu.enableshadercolormask", false, true);
         logConfigurationSettingBool("SettingsGUI.disableOptimizedVertexInfoReading.text", "emu.disableoptimizedvertexinforeading", false, true);
         logConfigurationSettingBool("SettingsGUI.saveStencilToMemory.text", "emu.saveStencilToMemory", false, true);
-        
-        logConfigurationPanel("SettingsGUI.AudioPanel.title");
-        logConfigurationSettingBool("SettingsGUI.IgnoreAudioThreadsCheck.text", "emu.ignoreaudiothreads", false, true);
-        logConfigurationSettingBool("SettingsGUI.DisableSceAudioCheck.text", "emu.disablesceAudio", false, true);
-        logConfigurationSettingBool("SettingsGUI.disableBlockingAudioCheck.text", "emu.disableblockingaudio", false, true);
 
         logConfigurationPanel("SettingsGUI.MemoryPanel.title");
         logConfigurationSettingBool("SettingsGUI.invalidMemoryCheck.text", "emu.ignoreInvalidMemoryAccess", false, true);
@@ -2293,8 +2288,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("SettingsGUI.fullscreenCheck.text", "gui.fullscreen", false, true);
 
         logConfigurationPanel("SettingsGUI.MiscPanel.title");
-        logConfigurationSettingBool("SettingsGUI.useMediaEngine.text", "emu.useMediaEngine", false, true);
-        logConfigurationSettingBool("SettingsGUI.useExternalDecoder.text", "emu.useExternalDecoder", false, true);
         logConfigurationSettingBool("SettingsGUI.useDebugFont.text", "emu.useDebugFont", false, true);
 
         logConfigurationPanel("SettingsGUI.CryptoPanel.title");

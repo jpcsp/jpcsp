@@ -92,6 +92,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     public static final int JPCSP_WAIT_DISPLAY_VBLANK = JPCSP_WAIT_AUDIO + 1; // Wait on Display Vblank.
     public static final int JPCSP_WAIT_CTRL = JPCSP_WAIT_DISPLAY_VBLANK + 1; // Wait on Control
     public static final int JPCSP_WAIT_USB = JPCSP_WAIT_CTRL + 1; // Wait on USB
+    public static final int JPCSP_WAIT_VIDEO_DECODER = JPCSP_WAIT_USB + 1; // Wait for sceMpeg video decoder
     // SceKernelThreadInfo.
     public final String name;
     public int attr;
@@ -579,6 +580,9 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         		break;
         	case JPCSP_WAIT_USB:
         		s.append(String.format("Usb"));
+        		break;
+        	case JPCSP_WAIT_VIDEO_DECODER:
+        		s.append(String.format("VideoDecoder"));
         		break;
         	default:
         		s.append(String.format("Unknown waitType=%d", waitType));

@@ -22,6 +22,7 @@ import jpcsp.HLE.modules.sceAudiocodec;
 import jpcsp.media.codec.aac.AacDecoder;
 import jpcsp.media.codec.atrac3.Atrac3Decoder;
 import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
+import jpcsp.media.codec.h264.H264Decoder;
 import jpcsp.media.codec.mp3.Mp3Decoder;
 
 public class CodecFactory {
@@ -44,6 +45,12 @@ public class CodecFactory {
 				codec = new AacDecoder();
 				break;
 		}
+
+		return codec;
+	}
+
+	public static IVideoCodec getVideoCodec() {
+		IVideoCodec codec = new H264Decoder();
 
 		return codec;
 	}

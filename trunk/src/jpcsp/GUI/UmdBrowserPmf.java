@@ -16,8 +16,6 @@
  */
 package jpcsp.GUI;
 
-import static jpcsp.media.MediaEngine.streamCoderOpen;
-
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
@@ -31,8 +29,8 @@ import javax.swing.JLabel;
 import jpcsp.Emulator;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
-import jpcsp.media.MediaEngine;
 
+import com.xuggle.ferry.Logger;
 import com.xuggle.xuggler.Global;
 import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IContainer;
@@ -49,7 +47,7 @@ import jpcsp.util.Constants;
 import jpcsp.util.Utilities;
 
 public class UmdBrowserPmf {
-
+	private static org.apache.log4j.Logger log = Emulator.log;
     private UmdIsoReader iso;
     private UmdIsoFile isoFile;
     private String fileName;
@@ -68,6 +66,7 @@ public class UmdBrowserPmf {
     private JLabel display;
     private PmfDisplayThread displayThread;
     private PmfByteChannel byteChannel;
+    private static boolean initialized = false;
 
     public UmdBrowserPmf(UmdIsoReader iso, String fileName, JLabel display) {
         this.iso = iso;
@@ -78,12 +77,42 @@ public class UmdBrowserPmf {
         initVideo();
     }
 
+    private static void initXuggler() {
+        if (!initialized) {
+            try {
+                // Disable Xuggler's logging, since we do our own.
+                Logger.setGlobalIsLogging(Logger.Level.LEVEL_DEBUG, false);
+                Logger.setGlobalIsLogging(Logger.Level.LEVEL_ERROR, false);
+                Logger.setGlobalIsLogging(Logger.Level.LEVEL_INFO, false);
+                Logger.setGlobalIsLogging(Logger.Level.LEVEL_TRACE, false);
+                Logger.setGlobalIsLogging(Logger.Level.LEVEL_WARN, false);
+            } catch (NoClassDefFoundError e) {
+                log.warn("Xuggler is not available on your platform");
+            }
+            initialized = true;
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static int streamCoderOpen(IStreamCoder streamCoder) {
+        try {
+            if (streamCoder.isOpen()) {
+                return 0;
+            }
+            // This method is not available in Xuggle 3.4
+            return streamCoder.open(null, null);
+        } catch (NoSuchMethodError e) {
+            // We are using Xuggle 3.4, try the old (deprecated) method.
+            return streamCoder.open();
+        }
+    }
+
     private void init() {
         image = null;
         done = false;
         threadExit = false;
 
-        MediaEngine.initXuggler();
+        initXuggler();
         isoFile = null;
         try {
             isoFile = iso.getFile(fileName);

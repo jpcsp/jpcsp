@@ -36,8 +36,10 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
     // Internal info
     private pspFileBuffer videoBuffer;
     private pspFileBuffer audioBuffer;
-    private boolean hasAudio;
-    private boolean hasVideo;
+    private boolean hasAudio = false;
+    private boolean hasVideo = true;
+    private int writePacketOffset;
+    private int internalPacketsInRingbuffer;
 
     public SceMpegRingbuffer(int packets, int data, int size, int callbackAddr, int callbackArgs) {
         this.packets = packets;
@@ -48,8 +50,6 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
         dataUpperBound = data + packets * ringbufferPacketSize;
         semaID = -1;
         mpeg = 0;
-        hasVideo = true;
-        hasAudio = false;
         initBuffer();
 
         if (dataUpperBound > data + size) {
@@ -69,6 +69,8 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
         // No check on file size for MPEG.
         videoBuffer.setFileMaxSize(Integer.MAX_VALUE);
         audioBuffer.setFileMaxSize(Integer.MAX_VALUE);
+
+        writePacketOffset = 0;
     }
 
     public static SceMpegRingbuffer fromMem(TPointer address) {
@@ -83,6 +85,8 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
     	packetsRead = 0;
     	packetsWritten = 0;
     	packetsInRingbuffer = 0;
+    	internalPacketsInRingbuffer = 0;
+    	writePacketOffset = 0;
 		videoBuffer.reset(0, 0);
 		audioBuffer.reset(0, 0);
     }
@@ -127,39 +131,29 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 		packetsRead += packetsAdded;
 		packetsWritten += packetsAdded;
 		packetsInRingbuffer += packetsAdded;
+		internalPacketsInRingbuffer += packetsAdded;
+
+		writePacketOffset += packetsAdded;
+		if (writePacketOffset >= packets) {
+			// Wrap around
+			writePacketOffset -= packets;
+		}
 	}
 
 	public void consumeAllPackets() {
 		videoBuffer.notifyReadAll();
 		audioBuffer.notifyReadAll();
 		packetsInRingbuffer = 0;
+		internalPacketsInRingbuffer = 0;
 	}
 
 	public int getPacketsInRingbuffer() {
-		if (hasAudio()) {
-			int n = (audioBuffer.getCurrentSize() + packetSize - 1) / packetSize;
-			if (hasVideo()) {
-				n = Math.max(packetsInRingbuffer, n);
-			}
-			return n;
-		}
-
 		return packetsInRingbuffer;
 	}
 
     public boolean isEmpty() {
     	return getPacketsInRingbuffer() == 0;
     }
-
-	public void consumePackets(int consumedPackets) {
-		if (consumedPackets > 0) {
-			videoBuffer.notifyRead(consumedPackets * packetSize);
-			packetsInRingbuffer -= consumedPackets;
-			if (packetsInRingbuffer < 0) {
-				packetsInRingbuffer = 0;
-			}
-		}
-	}
 
 	public int getReadPackets() {
 		return packetsRead;
@@ -173,10 +167,6 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 		this.packetsRead = packetsRead;
 	}
 
-	public int getProcessedPackets() {
-		return getReadPackets() - getPacketsInRingbuffer();
-	}
-
 	public int getTotalPackets() {
 		return packets;
 	}
@@ -186,17 +176,11 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 	}
 
 	public int getPutDataAddr() {
-		if (hasVideo()) {
-			return videoBuffer.getWriteAddr();
-		}
-		return audioBuffer.getWriteAddr();
+		return data + writePacketOffset * packetSize;
 	}
 
 	public int getPutSequentialPackets() {
-		if (hasVideo()) {
-			return videoBuffer.getWriteSize() / packetSize;
-		}
-		return audioBuffer.getWriteSize() / packetSize;
+		return Math.min(getFreePackets(), packets - writePacketOffset);
 	}
 
 	public int getTmpAddress(int length) {
@@ -223,6 +207,29 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 		return audioBuffer;
 	}
 
+	public pspFileBuffer getVideoBuffer() {
+		return videoBuffer;
+	}
+
+	public void notifyRead() {
+		int remainingLength = 0;
+		if (hasAudio()) {
+			remainingLength = Math.max(remainingLength, audioBuffer.getCurrentSize());
+		}
+		if (hasVideo()) {
+			remainingLength = Math.max(remainingLength, videoBuffer.getCurrentSize());
+		}
+		int remainingPackets = (remainingLength + packetSize - 1) / packetSize;
+
+		if (internalPacketsInRingbuffer > remainingPackets) {
+			internalPacketsInRingbuffer = remainingPackets;
+		}
+	}
+
+	public void notifyConsumed() {
+		packetsInRingbuffer = internalPacketsInRingbuffer;
+	}
+
 	public boolean hasAudio() {
 		return hasAudio;
 	}
@@ -246,6 +253,6 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("SceMpegRingbuffer(packets=0x%X, packetsRead=0x%X, packetsWritten=0x%X, packetsFree=0x%X, packetSize=0x%X, videoBuffer=%s, audioBuffer=%s)", packets, packetsRead, packetsWritten, getFreePackets(), packetSize, videoBuffer, audioBuffer);
+		return String.format("SceMpegRingbuffer(packets=0x%X, packetsRead=0x%X, packetsWritten=0x%X, packetsFree=0x%X, packetSize=0x%X, hasVideo=%b, videoBuffer=%s, hasAudio=%b, audioBuffer=%s)", packets, packetsRead, packetsWritten, getFreePackets(), packetSize, hasVideo, videoBuffer, hasAudio, audioBuffer);
 	}
 }

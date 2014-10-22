@@ -83,7 +83,6 @@ public class scePsmf extends HLEModule {
     @HLELogging(level="info")
     @HLEFunction(nid = 0xC22C8327, version = 150, checkInsideInterrupt = true, stackUsage = 0x50)
     public int scePsmfSetPsmf(TPointer32 psmf, TPointer bufferAddr) {
-        Modules.sceMpegModule.setCurrentMpegAnalyzed(false);
         Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
         PSMFHeader header = Modules.sceMpegModule.psmfHeader;
         psmfHeaderMap.put(bufferAddr.getAddress(), header);

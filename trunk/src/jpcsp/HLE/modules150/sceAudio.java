@@ -40,7 +40,6 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
-import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.sound.AudioBlockingOutputAction;
 import jpcsp.sound.SoundChannel;
 import jpcsp.util.Utilities;
@@ -55,20 +54,6 @@ import org.lwjgl.openal.ALCdevice;
 @HLELogging
 public class sceAudio extends HLEModule {
     public static Logger log = Modules.getLogger("sceAudio");
-
-	private class DisableAudioSettingsListerner extends AbstractBoolSettingsListener {
-		@Override
-		protected void settingsValueChanged(boolean value) {
-			setChReserveEnabled(!value);
-		}
-	}
-
-	private class DisableBlockingAudioSettingsListerner extends AbstractBoolSettingsListener {
-		@Override
-		protected void settingsValueChanged(boolean value) {
-			setBlockingEnabled(!value);
-		}
-	}
 
     @Override
     public String getName() {
@@ -90,9 +75,6 @@ public class sceAudio extends HLEModule {
         }
         pspSRC1Channel = new SoundChannel(8);  // Use a special channel 8 to handle SRC functions (first channel).
         pspSRC2Channel = new SoundChannel(9);  // Use a special channel 9 to handle SRC functions (second channel).
-
-        setSettingsListener("emu.disablesceAudio", new DisableAudioSettingsListerner());
-        setSettingsListener("emu.disableblockingaudio", new DisableBlockingAudioSettingsListerner());
 
         super.start();
 	}
@@ -122,9 +104,6 @@ public class sceAudio extends HLEModule {
     protected SoundChannel pspSRC1Channel;
     protected SoundChannel pspSRC2Channel;
 
-    protected boolean disableChReserve;
-    protected boolean disableBlockingAudio;
-
 	protected ALCdevice inputDevice;
 	protected ByteBuffer captureBuffer;
 	protected IntBuffer samplesBuffer;
@@ -148,16 +127,6 @@ public class sceAudio extends HLEModule {
 			Modules.sceAudioModule.hleAudioBlockingInput(threadId, addr, samples, frequency);
 		}
 	}
-
-    private void setChReserveEnabled(boolean enabled) {
-        disableChReserve = !enabled;
-        log.info("Audio ChReserve disabled: " + disableChReserve);
-    }
-
-    private void setBlockingEnabled(boolean enabled) {
-        disableBlockingAudio = !enabled;
-        log.info("Audio Blocking disabled: " + disableBlockingAudio);
-    }
 
     protected static int doAudioOutput(SoundChannel channel, int pvoid_buf) {
         int ret = -1;
@@ -294,11 +263,6 @@ public class sceAudio extends HLEModule {
     }
 
     protected int hleAudioSRCChReserve(int sampleCount, int freq, int format) {
-        if (disableChReserve) {
-            log.warn(String.format("IGNORED hleAudioSRCChReserve sampleCount=%d, freq=%d, format=%d", sampleCount, freq, format));
-            return -1;
-        }
-
         if (pspSRC1Channel.isReserved()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("hleAudioSRCChReserve returning ERROR_AUDIO_CHANNEL_ALREADY_RESERVED"));
@@ -601,7 +565,7 @@ public class sceAudio extends HLEModule {
                 blockThreadOutput(pspPCMChannels[channel], pvoid_buf.getAddress(), vol, vol);
             }
             result = pspPCMChannels[channel].getSampleLength();
-        } else if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
+        } else if (!pspPCMChannels[channel].isOutputBlocking()) {
             if (log.isDebugEnabled()) {
                 log.debug("sceAudioOutputBlocking[not blocking] " + pspPCMChannels[channel].toString());
             }
@@ -656,7 +620,7 @@ public class sceAudio extends HLEModule {
                 blockThreadOutput(pspPCMChannels[channel], pvoid_buf.getAddress(), leftvol, rightvol);
             }
             result = pspPCMChannels[channel].getSampleLength();
-        } else if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
+        } else if (!pspPCMChannels[channel].isOutputBlocking()) {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceAudioOutputPannedBlocking[not blocking] leftVol=%d, rightVol=%d, channel=%s", leftvol, rightvol, pspPCMChannels[channel].toString()));
             }
@@ -675,11 +639,6 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x5EC81C55, version = 150, checkInsideInterrupt = true)
     public int sceAudioChReserve(int channel, int sampleCount, int format) {
-        if (disableChReserve) {
-            log.warn(String.format("IGNORED sceAudioChReserve channel=%d, sampleCount=%d, format=%d", channel, sampleCount, format));
-            return SceKernelErrors.ERROR_AUDIO_NO_CHANNELS_AVAILABLE;
-        }
-
         if (channel >= 0) {
         	channel = checkChannel(channel);
             if (pspPCMChannels[channel].isReserved()) {
@@ -846,7 +805,7 @@ public class sceAudio extends HLEModule {
             } else {
             	Modules.ThreadManForUserModule.hleYieldCurrentThread();
             }
-        } else if (!pspSRC1Channel.isReserved() && !disableChReserve) {
+        } else if (!pspSRC1Channel.isReserved()) {
         	// Channel is automatically reserved. The audio data (buf) is not used in this case.
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceAudioSRCOutputBlocking automatically reserving channel %s", pspSRCChannel));
@@ -854,7 +813,7 @@ public class sceAudio extends HLEModule {
             pspSRC1Channel.setReserved(true);
             pspSRC2Channel.setReserved(true);
         } else {
-            if (!pspSRCChannel.isOutputBlocking() || disableBlockingAudio) {
+            if (!pspSRCChannel.isOutputBlocking()) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("sceAudioSRCOutputBlocking[not blocking] %s to %s", buf, pspSRCChannel.toString()));
                 }

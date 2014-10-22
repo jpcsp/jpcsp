@@ -125,7 +125,6 @@ import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.scheduler.Scheduler;
-import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.DurationStatistics;
 
 import org.apache.log4j.Logger;
@@ -201,7 +200,6 @@ public class ThreadManForUser extends HLEModule {
     public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x80;
     public static final int UTILITY_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x90;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
-    private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
     private static final boolean LOG_INSTRUCTIONS = false;
     public boolean exitCalled = false;
@@ -231,13 +229,6 @@ public class ThreadManForUser extends HLEModule {
     protected WaitThreadEndWaitStateChecker waitThreadEndWaitStateChecker;
     protected TimeoutThreadWaitStateChecker timeoutThreadWaitStateChecker;
     protected SleepThreadWaitStateChecker sleepThreadWaitStateChecker;
-
-	private class EnableThreadBanningSettingsListerner extends AbstractBoolSettingsListener {
-		@Override
-		protected void settingsValueChanged(boolean value) {
-			setThreadBanningEnabled(value);
-		}
-	}
 
     public ThreadManForUser() {
     }
@@ -278,8 +269,6 @@ public class ThreadManForUser extends HLEModule {
 		waitThreadEndWaitStateChecker = new WaitThreadEndWaitStateChecker();
 		timeoutThreadWaitStateChecker = new TimeoutThreadWaitStateChecker();
 		sleepThreadWaitStateChecker = new SleepThreadWaitStateChecker();
-
-		setSettingsListener("emu.ignoreaudiothreads", new EnableThreadBanningSettingsListerner());
 
 		super.start();
     }
@@ -1100,8 +1089,6 @@ public class ThreadManForUser extends HLEModule {
         Managers.vpl.onThreadDeleted(thread);
         Modules.sceUmdUserModule.onThreadDeleted(thread);
         RuntimeContext.onThreadDeleted(thread);
-        // TODO blocking audio?
-        // TODO async io?
 
         cancelThreadWait(thread);
         threadMap.remove(thread.uid);
@@ -1248,11 +1235,10 @@ public class ThreadManForUser extends HLEModule {
                 log.warn("changeThreadState thread '" + thread.name + "' => PSP_THREAD_WAITING. waitType should NOT be PSP_WAIT_NONE. caller:" + getCallingFunction());
             }
         } else if (thread.isStopped()) {
-            // TODO check if stopped threads eventually get automatically deleted on a real psp
             // HACK auto delete module mgr threads
             if (thread.name.equals("root") || // should probably find the real name and change it
-                    thread.name.equals("SceModmgrStart") ||
-                    thread.name.equals("SceModmgrStop")) {
+                thread.name.equals("SceModmgrStart") ||
+                thread.name.equals("SceModmgrStop")) {
                 thread.doDelete = true;
             }
 
@@ -1704,56 +1690,6 @@ public class ThreadManForUser extends HLEModule {
         return thread;
     }
 
-    private void setThreadBanningEnabled(boolean enabled) {
-        USE_THREAD_BANLIST = enabled;
-        log.info("Audio threads disabled: " + USE_THREAD_BANLIST);
-    }
-
-    /** use lower case in this list */
-    private final String[] threadNameBanList = new String[]{
-        "bgm thread", "sgx-psp-freq-thr", "sgx-psp-pcm-th", "ss playthread",
-        "spcbgm", "scemainsamplebgmmp3", "se thread"
-    };
-    /* suspected sound thread names:
-     * SndMain, SoundThread, At3Main, Atrac3PlayThread,
-     * bgm thread, SceWaveMain, SasCore thread, soundThread,
-     * ATRAC3 play thread, SAS Thread, XomAudio, sgx-psp-freq-thr,
-     * sgx-psp-at3-th, sgx-psp-pcm-th, sgx-psp-sas-th, snd_tick_timer_thread,
-     * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread,
-     * snd_stream_service_thread_0, sound_poll_thread, stream_sound_poll_thread,
-     * sndp thread, SndpThread, Ss PlayThread, SndSsThread, SPCBGM,
-     * SE Thread, FMOD Software Mixer thread
-     *
-     * keywords:
-     * snd, sound, at3, atrac3, sas, wave, pcm, audio, mpeg, fmod
-     *
-     * false positives:
-     * pcm: SPCMain (Skate Park City Main)
-     *
-     * ambiguous keywords:
-     * bgm, freq, sgx
-     */
-
-    private boolean isBannedThread(SceKernelThreadInfo thread) {
-        if (USE_THREAD_BANLIST) {
-            String name = thread.name.toLowerCase();
-            if (name.contains("snd") || name.contains("sound") ||
-                    name.contains("at3") || name.contains("atrac") ||
-                    name.contains("sas") || name.contains("wave") ||
-                    name.contains("audio") || name.contains("mpeg") ||
-                    name.contains("fmod") || name.contains("mp3")) {
-                return true;
-            }
-
-            for (String threadName : threadNameBanList) {
-                if (name.equals(threadName)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     public void hleKernelStartThread(SceKernelThreadInfo thread, int userDataLength, int userDataAddr, int gp) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("hleKernelStartThread SceUID=0x%X, name='%s', dataLen=0x%X, data=0x%08X, gp=0x%08X", thread.uid, thread.name, userDataLength, userDataAddr, gp));
@@ -1810,8 +1746,6 @@ public class ThreadManForUser extends HLEModule {
             if (log.isDebugEnabled()) {
             	log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + "), incrementing wakeupCount to " + thread.wakeupCount);
             }
-        } else if (isBannedThread(thread)) {
-            log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not waking up");
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
@@ -1836,10 +1770,7 @@ public class ThreadManForUser extends HLEModule {
         }
 
         int result = 0;
-        if (isBannedThread(thread)) {
-            log.warn(String.format("hleKernelWaitThreadEnd %s banned, not waiting", thread));
-            hleRescheduleCurrentThread();
-        } else if (thread.isStopped()) {
+        if (thread.isStopped()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("hleKernelWaitThreadEnd %s thread already stopped, not waiting, exitStatus=0x%08X", thread, thread.exitStatus));
         	}
@@ -1888,7 +1819,11 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    public int hleKernelDelayThread(int micros, boolean doCallbacks) {
+    public void hleKernelDelayThread(int micros, boolean doCallbacks) {
+    	hleKernelDelayThread(currentThread.uid, micros, doCallbacks);
+    }
+
+    public void hleKernelDelayThread(int uid, int micros, boolean doCallbacks) {
         if (micros < THREAD_DELAY_MINIMUM_MICROS) {
         	micros = THREAD_DELAY_MINIMUM_MICROS;
         }
@@ -1897,9 +1832,10 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("hleKernelDelayThread micros=%d, callbacks=%b", micros, doCallbacks));
         }
 
-    	hleKernelThreadEnterWaitState(currentThread, PSP_WAIT_DELAY, 0, null, micros, false, doCallbacks);
-
-        return 0;
+        SceKernelThreadInfo thread = getThreadById(uid);
+        if (thread != null) {
+        	hleKernelThreadEnterWaitState(thread, PSP_WAIT_DELAY, 0, null, micros, false, doCallbacks);
+        }
     }
 
     public SceKernelCallbackInfo hleKernelCreateCallback(String name, int func_addr, int user_arg_addr) {
@@ -2464,10 +2400,6 @@ public class ThreadManForUser extends HLEModule {
             log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " not suspended (status=" + thread.status + ")");
             return ERROR_KERNEL_THREAD_IS_NOT_SUSPEND;
         }
-        if (isBannedThread(thread)) {
-            log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not resuming");
-            return 0;
-        }
 
         if (thread.isWaiting()) {
             hleChangeThreadState(thread, PSP_THREAD_WAITING);
@@ -2494,13 +2426,15 @@ public class ThreadManForUser extends HLEModule {
     /** wait the current thread for a certain number of microseconds */
     @HLEFunction(nid = 0xCEADEB47, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelDelayThread(int micros) {
-        return hleKernelDelayThread(micros, /* doCallbacks = */ false);
+        hleKernelDelayThread(micros, /* doCallbacks = */ false);
+        return 0;
     }
 
     /** wait the current thread for a certain number of microseconds */
     @HLEFunction(nid = 0x68DA9E36, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelDelayThreadCB(int micros) {
-        return hleKernelDelayThread(micros, /* doCallbacks = */ true);
+        hleKernelDelayThread(micros, /* doCallbacks = */ true);
+        return 0;
     }
 
     /**
@@ -2514,7 +2448,8 @@ public class ThreadManForUser extends HLEModule {
     public int sceKernelDelaySysClockThread(TPointer64 sysclocksPointer) {
         long sysclocks = sysclocksPointer.getValue();
         int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
-        return hleKernelDelayThread(micros, false);
+        hleKernelDelayThread(micros, false);
+        return 0;
     }
 
     /**
@@ -2529,7 +2464,8 @@ public class ThreadManForUser extends HLEModule {
     public int sceKernelDelaySysClockThreadCB(TPointer64 sysclocksAddr) {
         long sysclocks = sysclocksAddr.getValue();
         int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
-        return hleKernelDelayThread(micros, true);
+        hleKernelDelayThread(micros, true);
+        return 0;
     }
 
     @HLEFunction(nid = 0xD6DA4BA1, version = 150, checkInsideInterrupt = true)
@@ -3187,12 +3123,7 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0xF475845D, version = 150, checkInsideInterrupt = true)
     public int sceKernelStartThread(@CheckArgument("checkThreadID") int uid, int len, int data_addr) {
         SceKernelThreadInfo thread = threadMap.get(uid);
-        if (isBannedThread(thread)) {
-            log.warn(String.format("sceKernelStartThread %s banned, not starting", thread));
-            // Banned, fake start.
-            hleRescheduleCurrentThread();
-            return 0;
-        }
+
         if (!thread.isStopped()) {
             return ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         }
