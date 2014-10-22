@@ -25,15 +25,18 @@ public:
 	CPMFPlayer(void);
 	~CPMFPlayer(void);
 
-	char*				CPMFPlayer::GetLastError();
-	SceInt32			CPMFPlayer::Initialize(SceInt32 nPackets = 0x3C0);
-	SceInt32			CPMFPlayer::Load(char* pFileName);
-	SceInt32			CPMFPlayer::Play(JpcspConnector *Connector);
-	SceVoid				CPMFPlayer::Shutdown();
+	char*				GetLastError();
+	SceInt32			Initialize(SceInt32 nPackets = 0x3C0);
+	SceInt32			Load(char* pFileName);
+	SceInt32			Play(JpcspConnector *Connector);
+	SceVoid				Shutdown();
+
+	SceUID                          getFileHandle() { return m_FileHandle; }
+	SceMpegRingbuffer*              getRingbuffer() { return &m_Ringbuffer; }
 
 private:
 
-	SceInt32 			CPMFPlayer::ParseHeader();
+	SceInt32 			ParseHeader();
 
 	char				m_LastError[256];
 
@@ -64,20 +67,20 @@ private:
 	SceInt32			m_iLastTimeStamp;
 
 	DecoderThreadData	Decoder;
-	SceInt32			CPMFPlayer::InitDecoder(JpcspConnector *Connector);
-	SceInt32			CPMFPlayer::ShutdownDecoder();
+	SceInt32			InitDecoder(JpcspConnector *Connector);
+	SceInt32			ShutdownDecoder();
 
 	ReaderThreadData	Reader;
-	SceInt32			CPMFPlayer::InitReader();
-	SceInt32			CPMFPlayer::ShutdownReader();
+	SceInt32			InitReader();
+	SceInt32			ShutdownReader();
 
 	VideoThreadData		Video;
-	SceInt32			CPMFPlayer::InitVideo();
-	SceInt32			CPMFPlayer::ShutdownVideo();
+	SceInt32			InitVideo();
+	SceInt32			ShutdownVideo();
 
 	AudioThreadData		Audio;
-	SceInt32			CPMFPlayer::InitAudio();
-	SceInt32			CPMFPlayer::ShutdownAudio();
+	SceInt32			InitAudio();
+	SceInt32			ShutdownAudio();
 };
 
 #define SWAPINT(x) (((x)<<24) | (((uint)(x)) >> 24) | (((x) & 0x0000FF00) << 8) | (((x) & 0x00FF0000) >> 8))

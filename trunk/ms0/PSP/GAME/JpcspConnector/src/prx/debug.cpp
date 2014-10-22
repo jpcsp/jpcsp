@@ -12,14 +12,15 @@
 #define DEBUG_BUFFER_LENGTH	9000
 char debugBuffer[DEBUG_BUFFER_LENGTH];
 int debugBufferIndex = 0;
-int inDebug = 0;
+volatile int inDebug = 0;
 #endif
 
 extern "C" void debug(char *s)
 {
 #if DEBUG
-    while (inDebug)
+	while (inDebug)
 	{
+		sceKernelDelayThread(1000);
 	}
 
 	inDebug = 1;
@@ -54,3 +55,20 @@ extern "C" void debugFlush()
 	debugBufferIndex = 0;
 #endif
 }
+
+void debug(SceMpegRingbuffer *ringbuffer)
+{
+	char s[300];
+	sprintf(s, "Ringbuffer iPackets=%d, iUnk0=%d, iUnk1=%d, iUnk2=%d, iUnk3=%d, pData=0x%08X, Callback=0x%08X", ringbuffer->iPackets, ringbuffer->iUnk0, ringbuffer->iUnk1, ringbuffer->iUnk2, ringbuffer->iUnk3, u32(ringbuffer->pData), u32(ringbuffer->Callback));
+	debug(s);
+	sprintf(s, "           pCBparam=0x%08X, iUnk4=0x%08X, iUnk5=%d, pSceMpeg=0x%08X", u32(ringbuffer->pCBparam), ringbuffer->iUnk4, ringbuffer->iUnk5, u32(ringbuffer->pSceMpeg));
+	debug(s);
+}
+
+void debug(SceMpegAu *mpegAu)
+{
+	char s[300];
+	sprintf(s, "Au iPts=%d, iDts=%d, iEsBuffer=%d, iAuSize=%d", mpegAu->iPts, mpegAu->iDts, mpegAu->iEsBuffer, mpegAu->iAuSize);
+	debug(s);
+}
+

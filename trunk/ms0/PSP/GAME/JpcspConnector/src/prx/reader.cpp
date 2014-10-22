@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define DEBUG_RINGBUFFER	1
+
 int T_Reader(SceSize _args, void *_argp)
 {
 	ReaderThreadData* D = *((ReaderThreadData**)_argp);
@@ -37,23 +39,17 @@ int T_Reader(SceSize _args, void *_argp)
 				if( iPacketsLeft < iReadPackets )
 					iReadPackets = iPacketsLeft;
 
-#if 1
+#if DEBUG_RINGBUFFER
+				char s[200];
+				sprintf(s, "Before sceMpegRingbufferPut freePackets=%d", iFreePackets);
+				debug(s);
+				debug(D->m_Ringbuffer);
+#endif
 				iPackets = sceMpegRingbufferPut(D->m_Ringbuffer, iReadPackets, iFreePackets);
-#else
-				int a0 = D->m_Ringbuffer->iUnk0;
-				int b0 = D->m_Ringbuffer->iUnk1;
-				int c0 = D->m_Ringbuffer->iUnk2;
-				int d0 = sceMpegRingbufferAvailableSize(D->m_Ringbuffer);
-				iPackets = sceMpegRingbufferPut(D->m_Ringbuffer, iReadPackets, iFreePackets);
-				int a1 = D->m_Ringbuffer->iUnk0;
-				int b1 = D->m_Ringbuffer->iUnk1;
-				int c1 = D->m_Ringbuffer->iUnk2;
-				int d1 = sceMpegRingbufferAvailableSize(D->m_Ringbuffer);
-				char s[1000];
-				sprintf(s, "%d %d %d %d - %d %d %d %d\n", a0, b0, c0, d0, a1, b1, c1, d1);
-				SceUID fd = sceIoOpen("ms0:/sceMpegRingbufferPut.log", PSP_O_APPEND | PSP_O_WRONLY, 0777);
-				sceIoWrite(fd, s, strlen(s));
-				sceIoClose(fd);
+#if DEBUG_RINGBUFFER
+				sprintf(s, "After sceMpegRingbufferPut new freePackets=%d", sceMpegRingbufferAvailableSize(D->m_Ringbuffer));
+				debug(s);
+				debug(D->m_Ringbuffer);
 #endif
 
 				if(iPackets < 0)

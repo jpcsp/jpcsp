@@ -7,12 +7,13 @@
 #include <pspctrl.h>
 #include <pspusb.h>
 #include <pspusbstor.h>
+#include "debug.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-#define DEBUG_TIMING	0
+#define DEBUG_TIMING	1
 
 SceInt32 IsRingbufferFull(ReaderThreadData* D)
 {
@@ -109,12 +110,8 @@ int T_Decoder(SceSize _args, void *_argp)
 			end = sceKernelGetSystemTimeLow();
 			sprintf(s, "Duration sceMpegGetAtracAu %d, return %X, presentation timeStamp %d (%d), decode timeStamp %d", end - start, retVal, D->m_MpegAuAtrac->iPts, m_iAudioCurrentTimeStamp + D->m_iAudioFrameDuration, D->m_MpegAuAtrac->iDts);
 			debug(s);
-			sprintf(s, "sceMpegGetAtracAu Pts %08X %08X", D->m_MpegAuAtrac->iPtsMSB, D->m_MpegAuAtrac->iPts);
-			debug(s);
-			sprintf(s, "sceMpegGetAtracAu Dts %08X %08X", D->m_MpegAuAtrac->iDtsMSB, D->m_MpegAuAtrac->iDts);
-			debug(s);
-			sprintf(s, "sceMpegGetAtracAu EsBuffer %08X AuSize %08X", D->m_MpegAuAtrac->iEsBuffer, D->m_MpegAuAtrac->iAuSize);
-			debug(s);
+			debug(D->m_MpegAuAtrac);
+			debug(D->Reader->m_Ringbuffer);
 #endif
 			if(retVal != 0)
 			{
@@ -139,6 +136,7 @@ int T_Decoder(SceSize _args, void *_argp)
 				end = sceKernelGetSystemTimeLow();
 				sprintf(s, "Duration sceMpegAtracDecode %d, return %X", end - start, retVal);
 				debug(s);
+				debug(D->Reader->m_Ringbuffer);
 #endif
 				if(retVal != 0)
 				{
@@ -192,12 +190,8 @@ int T_Decoder(SceSize _args, void *_argp)
 			end = sceKernelGetSystemTimeLow();
 			sprintf(s, "Duration sceMpegGetAvcAu %d, return %X, presentation timeStamp %d (%d), decode timeStamp %d", end - start, retVal, D->m_MpegAuAVC->iPts, m_iVideoCurrentTimeStamp + 3004, D->m_MpegAuAVC->iDts);
 			debug(s);
-			sprintf(s, "sceMpegGetAvcAu Pts %08X %08X", D->m_MpegAuAVC->iPtsMSB, D->m_MpegAuAVC->iPts);
-			debug(s);
-			sprintf(s, "sceMpegGetAvcAu Dts %08X %08X", D->m_MpegAuAVC->iDtsMSB, D->m_MpegAuAVC->iDts);
-			debug(s);
-			sprintf(s, "sceMpegGetAvcAu EsBuffer %08X AuSize %08X", D->m_MpegAuAVC->iEsBuffer, D->m_MpegAuAVC->iAuSize);
-			debug(s);
+			debug(D->m_MpegAuAVC);
+			debug(D->Reader->m_Ringbuffer);
 #endif
 			if((SceUInt32)retVal == 0x80618001)
 			{
@@ -227,6 +221,7 @@ int T_Decoder(SceSize _args, void *_argp)
 				end = sceKernelGetSystemTimeLow();
 				sprintf(s, "Duration sceMpegAvcDecode %d, return %X", end - start, retVal);
 				debug(s);
+				debug(D->Reader->m_Ringbuffer);
 #endif
 				if(retVal != 0)
 				{
