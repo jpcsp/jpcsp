@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "pmfplayer.h"
+#include "debug.h"
 
 CPMFPlayer::CPMFPlayer(void)
 {
@@ -37,7 +38,15 @@ char *CPMFPlayer::GetLastError()
 SceInt32 RingbufferCallback(ScePVoid pData, SceInt32 iNumPackets, ScePVoid pParam)
 {
 	int retVal, iPackets;
-	SceUID hFile = *(SceUID*)pParam;
+	CPMFPlayer *pPlayer = (CPMFPlayer *) pParam;
+	SceUID hFile = pPlayer->getFileHandle();
+
+#if DEBUG
+	char s[100];
+	sprintf(s, "Inside RingbufferCallback pData=0x%08X, iNumPackets=%d", u32(pData), iNumPackets);
+	debug(s);
+	debug(pPlayer->getRingbuffer());
+#endif
 
 	retVal = sceIoRead(hFile, pData, iNumPackets * 2048);
 	if(retVal < 0)
@@ -93,7 +102,7 @@ SceInt32 CPMFPlayer::Initialize(SceInt32 nPackets)
 		goto freeringbuffer;
 	}
 
-	retVal = sceMpegRingbufferConstruct(&m_Ringbuffer, m_RingbufferPackets, m_RingbufferData, m_RingbufferSize, &RingbufferCallback, &m_FileHandle);
+	retVal = sceMpegRingbufferConstruct(&m_Ringbuffer, m_RingbufferPackets, m_RingbufferData, m_RingbufferSize, &RingbufferCallback, this);
 	if(retVal != 0)
 	{
 		sprintf(m_LastError, "sceMpegRingbufferConstruct() failed: 0x%08X", retVal);
@@ -160,6 +169,7 @@ SceInt32 CPMFPlayer::Load(char* pFileName)
 	}
 
 	m_pEsBufferAVC = sceMpegMallocAvcEsBuf(&m_Mpeg);
+
 	if(m_pEsBufferAVC == NULL)
 	{
 		sprintf(m_LastError, "sceMpegMallocAvcEsBuf() failed!");
@@ -273,6 +283,9 @@ SceInt32 CPMFPlayer::Play(JpcspConnector *Connector)
 {
 	int retVal, fail = 0;
 
+	ReaderThreadData* TDR = &Reader;
+	DecoderThreadData* TDD = &Decoder;
+
 	retVal = InitReader();
 	if(retVal < 0)
 	{
@@ -300,9 +313,6 @@ SceInt32 CPMFPlayer::Play(JpcspConnector *Connector)
 		fail++;
 		goto exit_decoder;
 	}
-
-	ReaderThreadData* TDR = &Reader;
-	DecoderThreadData* TDD = &Decoder;
 
 	sceKernelStartThread(Reader.m_ThreadID,  sizeof(void*), &TDR);
 	sceKernelStartThread(Audio.m_ThreadID,   sizeof(void*), &TDD);

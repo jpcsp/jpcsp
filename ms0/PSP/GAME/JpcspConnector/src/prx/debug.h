@@ -7,6 +7,7 @@
 
 #include <pspkernel.h>
 #include <psptypes.h>
+#include <pspmpeg.h>
 
 #define DEBUG	1
 
@@ -19,6 +20,11 @@ void debug(char *s);
 void debugFlush();
 #ifdef __cplusplus
 }
+#endif 
+
+#ifdef __cplusplus
+void debug(SceMpegRingbuffer *ringbuffer);
+void debug(SceMpegAu *mpegAu);
 #endif 
 #endif
 
