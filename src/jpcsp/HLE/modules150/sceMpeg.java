@@ -64,6 +64,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.format.psmf.PesHeader;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.hardware.Screen;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.IVideoCodec;
@@ -104,7 +105,6 @@ public class sceMpeg extends HLEModule {
         intBuffers = new HashSet<int[]>();
         lastFrameABGR = null;
 
-        encodedVideoFramesYCbCr = new HashMap<Integer, byte[]>();
         audioDecodeBuffer = new byte[MPEG_ATRAC_ES_OUTPUT_SIZE];
         allocatedEsBuffers = new boolean[2];
         streamMap = new HashMap<Integer, StreamInfo>();
@@ -118,7 +118,6 @@ public class sceMpeg extends HLEModule {
     	intBuffers.clear();
 
     	// Free objects no longer used
-    	encodedVideoFramesYCbCr = null;
     	audioDecodeBuffer = null;
     	allocatedEsBuffers = null;
     	streamMap = null;
@@ -140,7 +139,7 @@ public class sceMpeg extends HLEModule {
     public static final int PSMF_STREAM_SIZE_OFFSET = 0xC;
     public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 0x56;
     public static final int PSMF_LAST_TIMESTAMP_OFFSET = 0x5C;
-    public static final int PSMF_NUMBER_STREAMS = 0x80;
+    public static final int PSMF_NUMBER_STREAMS_OFFSET = 0x80;
     public static final int PSMF_FRAME_WIDTH_OFFSET = 0x8E;
     public static final int PSMF_FRAME_HEIGHT_OFFSET = 0x8F;
     protected static final int MPEG_MEMSIZE = 0x10000;      // 64k.
@@ -152,9 +151,6 @@ public class sceMpeg extends HLEModule {
     public static final int mpegTimestampPerSecond = 90000; // How many MPEG Timestamp units in a second.
     public static final int videoTimestampStep = 3003;      // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
     public static final int audioTimestampStep = 4180;      // For audio play at 44100 Hz (2048 samples / 44100 * mpegTimestampPerSecond == 4180)
-    //public static final int audioFirstTimestamp = 89249;  // The first MPEG audio AU has always this timestamp
-    public static final int audioFirstTimestamp = 90000;    // The first MPEG audio AU has always this timestamp
-    public static final int videoFirstTimestamp = 90000;
     public static final long UNKNOWN_TIMESTAMP = -1;
     public static final int PSMF_AVC_STREAM = 0;
     public static final int PSMF_ATRAC_STREAM = 1;
@@ -163,6 +159,8 @@ public class sceMpeg extends HLEModule {
     public static final int PSMF_AUDIO_STREAM = 15;
     public static final int PSMF_VIDEO_STREAM_ID = 0xE0;
     public static final int PSMF_AUDIO_STREAM_ID = 0xBD;
+    // The YCbCr buffer is starting with 128 bytes of unknown data
+    protected static final int YCBCR_DATA_OFFSET = 128;
 
     // At least 2048 bytes of MPEG data is provided when analysing the MPEG header
     public static final int MPEG_HEADER_BUFFER_MINIMUM_SIZE = 2048;
@@ -209,7 +207,6 @@ public class sceMpeg extends HLEModule {
     protected int avcDecodeResult;
     protected int avcGotFrame;
     protected boolean startedMpeg;
-    protected HashMap<Integer, byte[]> encodedVideoFramesYCbCr;
     protected byte[] audioDecodeBuffer;
     protected boolean[] allocatedEsBuffers;
     protected HashMap<Integer, StreamInfo> streamMap;
@@ -540,7 +537,7 @@ public class sceMpeg extends HLEModule {
             int unk = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, 0x60));
             int streamDataNextBlockSize = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, 0x6A));      // General stream information block size.
             int streamDataNextInnerBlockSize = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, 0x7C)); // Inner stream information block size.
-            streamNum = endianSwap16(read16(mem, bufferAddr, mpegHeader, PSMF_NUMBER_STREAMS));                  // Number of total registered streams.
+            streamNum = endianSwap16(read16(mem, bufferAddr, mpegHeader, PSMF_NUMBER_STREAMS_OFFSET));                  // Number of total registered streams.
 
             mpegMagic = read32(mem, bufferAddr, mpegHeader, PSMF_MAGIC_OFFSET);
             mpegRawVersion = read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_VERSION_OFFSET);
@@ -628,7 +625,7 @@ public class sceMpeg extends HLEModule {
             return avcDetailFrameWidth;
         }
 
-        public int getVideoHeigth() {
+        public int getVideoHeight() {
             return avcDetailFrameHeight;
         }
 
@@ -797,7 +794,7 @@ public class sceMpeg extends HLEModule {
     }
 
     public static int getPsmfNumStreams(Memory mem, int addr, byte[] mpegHeader) {
-    	return endianSwap16(read16(mem, addr, mpegHeader, sceMpeg.PSMF_NUMBER_STREAMS));    	
+    	return endianSwap16(read16(mem, addr, mpegHeader, sceMpeg.PSMF_NUMBER_STREAMS_OFFSET));    	
     }
 
     public static LinkedList<PSMFStream> readPsmfStreams(Memory mem, int addr, byte[] mpegHeader, PSMFHeader psmfHeader) {
@@ -944,6 +941,7 @@ public class sceMpeg extends HLEModule {
     	private int threadUid = -1;
     	private int buffer;
     	private int frameWidth;
+    	private int pixelMode;
     	private TPointer32 gotFrameAddr;
     	private boolean writeAbgr;
     	private long threadWakeupMicroTime;
@@ -952,7 +950,7 @@ public class sceMpeg extends HLEModule {
 		public void run() {
     		while (!exit) {
     			if (waitForTrigger(100) && !exit) {
-					hleVideoDecoderStep(threadUid, buffer, frameWidth, gotFrameAddr, writeAbgr, threadWakeupMicroTime);
+					hleVideoDecoderStep(threadUid, buffer, frameWidth, pixelMode, gotFrameAddr, writeAbgr, threadWakeupMicroTime);
     			}
     		}
 
@@ -961,17 +959,18 @@ public class sceMpeg extends HLEModule {
 
     	public void exit() {
     		exit = true;
-    		trigger(-1, 0, 0, null, false, 0L);
+    		trigger(-1, 0, 0, -1, null, false, 0L);
 
     		while (!done) {
     			Utilities.sleep(1);
     		}
     	}
 
-    	public void trigger(int threadUid, int buffer, int frameWidth, TPointer32 gotFrameAddr, boolean writeAbgr, long threadWakeupMicroTime) {
+    	public void trigger(int threadUid, int buffer, int frameWidth, int pixelMode, TPointer32 gotFrameAddr, boolean writeAbgr, long threadWakeupMicroTime) {
 			this.threadUid = threadUid;
 			this.buffer = buffer;
 			this.frameWidth = frameWidth;
+			this.pixelMode = pixelMode;
 			this.gotFrameAddr = gotFrameAddr;
 			this.writeAbgr = writeAbgr;
 			this.threadWakeupMicroTime = threadWakeupMicroTime;
@@ -983,6 +982,7 @@ public class sceMpeg extends HLEModule {
 			threadUid = -1;
 			buffer = 0;
 			frameWidth = 0;
+			pixelMode = -1;
 			gotFrameAddr = null;
 			threadWakeupMicroTime = 0;
     	}
@@ -1053,13 +1053,13 @@ public class sceMpeg extends HLEModule {
     	}
     }
 
-    public void writeLastFrameABGR(int buffer, int frameWidth) {
+    public void writeLastFrameABGR(int buffer, int frameWidth, int pixelMode) {
     	if (lastFrameABGR != null) {
-    		writeImageABGR(buffer, frameWidth, lastFrameWidth, lastFrameHeight, lastFrameABGR);
+    		writeImageABGR(buffer, frameWidth, lastFrameWidth, lastFrameHeight, pixelMode, lastFrameABGR);
     	}
     }
 
-    private boolean decodeImage(int buffer, int frameWidth, TPointer32 gotFrameAddr, boolean writeAbgr) {
+    private boolean decodeImage(int buffer, int frameWidth, int pixelMode, TPointer32 gotFrameAddr, boolean writeAbgr) {
     	DecodedImageInfo decodedImageInfo;
     	synchronized (decodedImages) {
         	decodedImageInfo = decodedImages.pollFirst();
@@ -1080,7 +1080,7 @@ public class sceMpeg extends HLEModule {
 
     	if (decodedImageInfo.gotFrame) {
     		if (writeAbgr) {
-    			writeImageABGR(buffer, frameWidth, decodedImageInfo.imageWidth, decodedImageInfo.imageHeight, decodedImageInfo.abgr);
+    			writeImageABGR(buffer, frameWidth, decodedImageInfo.imageWidth, decodedImageInfo.imageHeight, pixelMode, decodedImageInfo.abgr);
     		} else {
     			writeImageYCbCr(buffer, decodedImageInfo.imageWidth, decodedImageInfo.imageHeight, decodedImageInfo.luma, decodedImageInfo.cb, decodedImageInfo.cr);
     		}
@@ -1102,12 +1102,12 @@ public class sceMpeg extends HLEModule {
     	return true;
     }
 
-    private void restartThread(int threadUid, int buffer, int frameWidth, TPointer32 gotFrameAddr, boolean writeAbgr, long threadWakeupMicroTime) {
+    private void restartThread(int threadUid, int buffer, int frameWidth, int pixelMode, TPointer32 gotFrameAddr, boolean writeAbgr, long threadWakeupMicroTime) {
     	if (threadUid < 0) {
     		return;
     	}
 
-    	if (!decodeImage(buffer, frameWidth, gotFrameAddr, writeAbgr)) {
+    	if (!decodeImage(buffer, frameWidth, pixelMode, gotFrameAddr, writeAbgr)) {
     		return;
     	}
 
@@ -1220,16 +1220,16 @@ public class sceMpeg extends HLEModule {
     	}
     }
 
-    private void hleVideoDecoderStep(int threadUid, int buffer, int frameWidth, TPointer32 gotFrameAddr, boolean writeAbgr, long threadWakeupMicroTime) {
+    private void hleVideoDecoderStep(int threadUid, int buffer, int frameWidth, int pixelMode, TPointer32 gotFrameAddr, boolean writeAbgr, long threadWakeupMicroTime) {
     	if (log.isDebugEnabled()) {
     		if (threadUid >= 0) {
-    			log.debug(String.format("hleVideoDecoderStep threadUid=0x%X, buffer=0x%08X, frameWidth=%d, gotFrameAddr=%s, writeAbgr=%b, %d decoded images", threadUid, buffer, frameWidth, gotFrameAddr, writeAbgr, decodedImages.size()));
+    			log.debug(String.format("hleVideoDecoderStep threadUid=0x%X, buffer=0x%08X, frameWidth=%d, pixelMode=%d, gotFrameAddr=%s, writeAbgr=%b, %d decoded images", threadUid, buffer, frameWidth, pixelMode, gotFrameAddr, writeAbgr, decodedImages.size()));
     		} else {
     			log.debug(String.format("hleVideoDecoderStep %d decoded images", decodedImages.size()));
     		}
     	}
 
-    	restartThread(threadUid, buffer, frameWidth, gotFrameAddr, writeAbgr, threadWakeupMicroTime);
+    	restartThread(threadUid, buffer, frameWidth, pixelMode, gotFrameAddr, writeAbgr, threadWakeupMicroTime);
 
     	// Always decode one frame in advance
 		if (decodedImages.size() <= 1 || isDecoderInErrorCondition()) {
@@ -1565,24 +1565,24 @@ public class sceMpeg extends HLEModule {
     	return frameEnd;
     }
 
-    private void writeImageABGR(int addr, int frameWidth, int imageWidth, int imageHeight, int[] abgr) {
+    private void writeImageABGR(int addr, int frameWidth, int imageWidth, int imageHeight, int pixelMode, int[] abgr) {
     	int frameHeight = imageHeight;
 		if (psmfHeader != null) {
 			// The decoded image height can be 290 while the header
 			// gives an height of 272.
-			frameHeight = Math.min(frameHeight, psmfHeader.getVideoHeigth());
+			frameHeight = Math.min(frameHeight, psmfHeader.getVideoHeight());
 		}
-		int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
+		int bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelMode);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("writeImageABGR addr=0x%08X-0x%08X, frameWidth=%d, width=%d, height=%d", addr, addr + frameWidth * frameHeight * bytesPerPixel, frameWidth, imageWidth, imageHeight));
+			log.debug(String.format("writeImageABGR addr=0x%08X-0x%08X, frameWidth=%d, width=%d, height=%d, pixelMode=%d", addr, addr + frameWidth * frameHeight * bytesPerPixel, frameWidth, imageWidth, imageHeight, pixelMode));
 		}
 
 		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, frameWidth * frameHeight * bytesPerPixel, bytesPerPixel);
 		int lineWidth = Math.min(imageWidth, frameWidth);
 		int lineSkip = frameWidth - lineWidth;
 
-		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && memoryInt != null) {
+		if (pixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && memoryInt != null) {
 			// Optimize the most common case
 			int offset = 0;
 			int memoryIntOffset = addr >> 2;
@@ -1596,7 +1596,7 @@ public class sceMpeg extends HLEModule {
 			for (int y = 0; y < frameHeight; y++) {
 				int offset = y * imageWidth;
 				for (int x = 0; x < lineWidth; x++, offset++) {
-	                int pixelColor = Debug.getPixelColor(abgr[offset], videoPixelMode);
+	                int pixelColor = Debug.getPixelColor(abgr[offset], pixelMode);
 					memoryWriter.writeNext(pixelColor);
 				}
 				memoryWriter.skip(lineSkip);
@@ -1611,7 +1611,7 @@ public class sceMpeg extends HLEModule {
 		if (psmfHeader != null) {
 			// The decoded image height can be 290 while the header
 			// gives an height of 272.
-			frameHeight = Math.min(frameHeight, psmfHeader.getVideoHeigth());
+			frameHeight = Math.min(frameHeight, psmfHeader.getVideoHeight());
 		}
 
 		int width2 = frameWidth >> 1;
@@ -2057,10 +2057,10 @@ public class sceMpeg extends HLEModule {
     	return 0;
     }
 
-    public int hleMpegAvcDecode(int buffer, int frameWidth, TPointer32 gotFrameAddr, boolean writeAbgr) {
+    public int hleMpegAvcDecode(int buffer, int frameWidth, int pixelMode, TPointer32 gotFrameAddr, boolean writeAbgr) {
 		int threadUid = Modules.ThreadManForUserModule.getCurrentThreadID();
 		Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_VIDEO_DECODER);
-		videoDecoderThread.trigger(threadUid, buffer, frameWidth, gotFrameAddr, writeAbgr, Emulator.getClock().microTime() + avcDecodeDelay);
+		videoDecoderThread.trigger(threadUid, buffer, frameWidth, pixelMode, gotFrameAddr, writeAbgr, Emulator.getClock().microTime() + avcDecodeDelay);
 
 		return 0;
     }
@@ -2313,6 +2313,17 @@ public class sceMpeg extends HLEModule {
             delayThread(mpegDecodeErrorDelay);
             throw new SceKernelErrorException(SceKernelErrors.ERROR_MPEG_NO_DATA); // No more data in ringbuffer.
         }
+    }
+
+    protected int getYCbCrSize() {
+    	int width  = psmfHeader == null ? Screen.width  : psmfHeader.getVideoWidth();
+        int height = psmfHeader == null ? Screen.height : psmfHeader.getVideoHeight();
+
+        return getYCbCrSize(width, height);
+    }
+
+    protected int getYCbCrSize(int width, int height) {
+        return (width / 2) * (height / 2) * 6; // 12 bits per pixel
     }
 
     /**
@@ -2883,12 +2894,12 @@ public class sceMpeg extends HLEModule {
             log.debug(String.format("sceMpegAvcDecode *au=0x%08X, *buffer=0x%08X", au, buffer));
         }
 
-        hleMpegAvcDecode(buffer, frameWidth, gotFrameAddr, true);
+        hleMpegAvcDecode(buffer, frameWidth, videoPixelMode, gotFrameAddr, true);
 
     	startedMpeg = true;
 
         // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
-    	final int height = psmfHeader != null ? psmfHeader.getVideoHeigth() : 272;
+    	final int height = psmfHeader != null ? psmfHeader.getVideoHeight() : 272;
         VideoEngine.getInstance().addVideoTexture(buffer, buffer + height * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
 
         if (log.isDebugEnabled()) {
@@ -2918,7 +2929,7 @@ public class sceMpeg extends HLEModule {
         detailPointer.setValue32( 0, avcDecodeResult); // Stores the result
         detailPointer.setValue32( 4, videoFrameCount); // Last decoded frame
         detailPointer.setValue32( 8, psmfHeader == null ? 0 : psmfHeader.getVideoWidth() ); // Frame width
-        detailPointer.setValue32(12, psmfHeader == null ? 0 : psmfHeader.getVideoHeigth()); // Frame height
+        detailPointer.setValue32(12, psmfHeader == null ? 0 : psmfHeader.getVideoHeight()); // Frame height
         detailPointer.setValue32(16, 0              ); // Frame crop rect (left)
         detailPointer.setValue32(20, 0              ); // Frame crop rect (right)
         detailPointer.setValue32(24, 0              ); // Frame crop rect (top)
@@ -2968,7 +2979,7 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0x740FCCD1, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeStop(@CheckArgument("checkMpegHandle") int mpeg, int frameWidth, TPointer32 bufferAddr, TPointer32 gotFrameAddr) {
     	// Decode any pending image
-    	decodeImage(bufferAddr.getValue(), frameWidth, gotFrameAddr, true);
+    	decodeImage(bufferAddr.getValue(), frameWidth, videoPixelMode, gotFrameAddr, true);
 
         return 0;
     }
@@ -3011,7 +3022,7 @@ public class sceMpeg extends HLEModule {
         }
 
     	// Write the size of the buffer used by sceMpegAvcDecodeYCbCr
-		int size = (width / 2) * (height / 2) * 6 + 128;
+		int size = YCBCR_DATA_OFFSET + getYCbCrSize(width, height);
         resultAddr.setValue(size);
 
         return 0;
@@ -3029,9 +3040,10 @@ public class sceMpeg extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x67179B1B, version = 150, checkInsideInterrupt = true)
-    public int sceMpegAvcInitYCbCr(@CheckArgument("checkMpegHandle") int mpeg, int mode, int width, int height, int ycbcr_addr) {
-        encodedVideoFramesYCbCr.remove(ycbcr_addr);
-        return 0;
+    public int sceMpegAvcInitYCbCr(@CheckArgument("checkMpegHandle") int mpeg, int mode, int width, int height, TPointer yCbCrBuffer) {
+    	yCbCrBuffer.memset((byte) 0, YCBCR_DATA_OFFSET);
+
+    	return 0;
     }
 
     /**
@@ -3057,7 +3069,7 @@ public class sceMpeg extends HLEModule {
 
         // sceMpegAvcDecodeYCbCr() is performing the video decoding and
         // sceMpegAvcCsc() is transforming the YCbCr image into ABGR.
-        hleMpegAvcDecode(bufferAddr.getValue(), 0, gotFrameAddr, false);
+        hleMpegAvcDecode(bufferAddr.getValue() + YCBCR_DATA_OFFSET, 0, videoPixelMode, gotFrameAddr, false);
 
     	startedMpeg = true;
 
@@ -3088,7 +3100,7 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0xF2930C9C, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeStopYCbCr(@CheckArgument("checkMpegHandle") int mpeg, TPointer32 bufferAddr, TPointer32 gotFrameAddr) {
     	// Decode any pending image
-    	decodeImage(bufferAddr.getValue(), 0, gotFrameAddr, false);
+    	decodeImage(bufferAddr.getValue(), 0, videoPixelMode, gotFrameAddr, false);
 
         return 0;
     }
@@ -3125,8 +3137,8 @@ public class sceMpeg extends HLEModule {
 
         // sceMpegAvcDecodeYCbCr() is performing the video decoding and
         // sceMpegAvcCsc() is transforming the YCbCr image into ABGR.
-        int width = psmfHeader == null ? 480 : psmfHeader.getVideoWidth();
-        int height = psmfHeader == null ? 272 : psmfHeader.getVideoHeigth();
+        int width  = psmfHeader == null ? Screen.width  : psmfHeader.getVideoWidth();
+        int height = psmfHeader == null ? Screen.height : psmfHeader.getVideoHeight();
         int width2 = width >> 1;
     	int height2 = height >> 1;
         int length = width * height;
@@ -3136,10 +3148,11 @@ public class sceMpeg extends HLEModule {
         int[] luma = getIntBuffer(length);
         int[] cb = getIntBuffer(length2);
         int[] cr = getIntBuffer(length2);
+        int dataAddr = sourceAddr.getAddress() + YCBCR_DATA_OFFSET;
         if (memoryInt != null) {
         	// Optimize the most common case
         	int length4 = length >> 2;
-            int offset = sourceAddr.getAddress() >> 2;
+            int offset = dataAddr >> 2;
             for (int i = 0, j = 0; i < length4; i++) {
             	int value = memoryInt[offset++];
             	luma[j++] = (value      ) & 0xFF;
@@ -3163,7 +3176,7 @@ public class sceMpeg extends HLEModule {
             	cr[j++] = (value >> 24) & 0xFF;
             }
         } else {
-	        IMemoryReader memoryReader = MemoryReader.getMemoryReader(sourceAddr.getAddress(), length + length2 + length2, 1);
+	        IMemoryReader memoryReader = MemoryReader.getMemoryReader(dataAddr, length + length2 + length2, 1);
 	        for (int i = 0; i < length; i++) {
 	        	luma[i] = memoryReader.readNext();
 	        }
@@ -3416,9 +3429,16 @@ public class sceMpeg extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x0558B075, version = 150)
-    public int sceMpegAvcCopyYCbCr(@CheckArgument("checkMpegHandle") int mpeg, TPointer sourceAddr, TPointer YCbCrAddr) {
+    public int sceMpegAvcCopyYCbCr(@CheckArgument("checkMpegHandle") int mpeg, TPointer destinationAddr, TPointer sourceAddr) {
+        int size = getYCbCrSize() + YCBCR_DATA_OFFSET;
+
+        destinationAddr.getMemory().memcpy(destinationAddr.getAddress(), sourceAddr.getAddress(), size);
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceMpegAvcCopyYCbCr from 0x%08X-0x%08X to 0x%08X-0x%08X", sourceAddr.getAddress(), sourceAddr.getAddress() + size, destinationAddr.getAddress(), destinationAddr.getAddress() + size));
+        }
+
         return 0;
     }
 
@@ -3452,24 +3472,17 @@ public class sceMpeg extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xF5E7EA31, version = 150)
-    public int sceMpegAvcConvertToYuv420(int mpeg, TPointer yCbCrBuffer, TPointer unknown1, int unknown2) {
-    	// The image will be decoded and saved to memory by sceJpegCsc
-//        if (checkMediaEngineState()) {
-//            if (me.getContainer() != null) {
-//            	BufferedImage bufferedImage = me.getCurrentImg();
-//            	if (bufferedImage == null) {
-//            		if (log.isDebugEnabled()) {
-//            			log.debug(String.format("sceMpegAvcConvertToYuv420 returning ERROR_AVC_NO_IMAGE_AVAILABLE"));
-//            		}
-//            		return SceKernelErrors.ERROR_AVC_NO_IMAGE_AVAILABLE;
-//            	}
-//        		// Store the current image so that sceJpegCsc can retrieve it
-//        		int yCbCrBufferSize = Modules.sceJpegModule.hleGetYCbCrBufferSize(bufferedImage);
-//        		Modules.sceJpegModule.hleJpegDecodeYCbCr(bufferedImage, yCbCrBuffer, yCbCrBufferSize, 0);
-//            }
-//        }
+    public int sceMpegAvcConvertToYuv420(int mpeg, TPointer yuv420Buffer, TPointer yCbCrBuffer, int unknown2) {
+        int size = getYCbCrSize();
+
+        yCbCrBuffer.getMemory().memcpy(yuv420Buffer.getAddress(), yCbCrBuffer.getAddress() + YCBCR_DATA_OFFSET, size);
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceMpegAvcConvertToYuv420 from 0x%08X-0x%08X to 0x%08X-0x%08X", yCbCrBuffer.getAddress(), yCbCrBuffer.getAddress() + size, yuv420Buffer.getAddress(), yuv420Buffer.getAddress() + size));
+        }
+
+        // The YUV420 image will be decoded and saved to memory by sceJpegCsc
 
         return 0;
     }
