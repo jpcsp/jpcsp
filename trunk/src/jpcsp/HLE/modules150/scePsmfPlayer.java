@@ -446,7 +446,7 @@ public class scePsmfPlayer extends HLEModule {
 
     	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentVideoTimestamp() > getCurrentAudioTimestamp() + MAX_TIMESTAMP_DIFFERENCE) {
     		//result = SceKernelErrors.ERROR_PSMFPLAYER_AUDIO_VIDEO_OUT_OF_SYNC;
-    		Modules.sceMpegModule.writeLastFrameABGR(displayBuffer, videoDataFrameWidth);
+    		Modules.sceMpegModule.writeLastFrameABGR(displayBuffer, videoDataFrameWidth, videoPixelMode);
     	} else {
 	        // Check if the ringbuffer needs additional data
 	    	hlePsmfFillRingbuffer(Emulator.getMemory());
@@ -455,7 +455,7 @@ public class scePsmfPlayer extends HLEModule {
 	        result = Modules.sceMpegModule.hleMpegGetAvcAu(null);
 
 	    	// Write the video data
-	    	result = Modules.sceMpegModule.hleMpegAvcDecode(displayBuffer, videoDataFrameWidth, null, true);
+	    	result = Modules.sceMpegModule.hleMpegAvcDecode(displayBuffer, videoDataFrameWidth, videoPixelMode, null, true);
     	}
 
         // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering

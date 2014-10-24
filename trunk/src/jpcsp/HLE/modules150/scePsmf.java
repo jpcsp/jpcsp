@@ -197,7 +197,7 @@ public class scePsmf extends HLEModule {
         	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
         }
         videoInfoAddr.setValue(0, header.getVideoWidth());
-        videoInfoAddr.setValue(4, header.getVideoHeigth());
+        videoInfoAddr.setValue(4, header.getVideoHeight());
 
         return 0;
     }
