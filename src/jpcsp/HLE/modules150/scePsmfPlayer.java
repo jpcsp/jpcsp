@@ -191,6 +191,18 @@ public class scePsmfPlayer extends HLEModule {
     	return Modules.sceMpegModule.getCurrentAudioTimestamp();
     }
 
+    protected int getMaxTimestampDifference() {
+    	int maxTimestampDifference = MAX_TIMESTAMP_DIFFERENCE;
+
+    	// At video startup, allow for a longer timestamp difference to avoid audio stuttering.
+    	int firstTimestamp = Modules.sceMpegModule.getPsmfHeader().mpegFirstTimestamp;
+    	if (getCurrentVideoTimestamp() < firstTimestamp + sceMpeg.videoTimestampStep * 10) {
+    		maxTimestampDifference *= 2;
+    	}
+
+    	return maxTimestampDifference;
+    }
+
     protected int hlePsmfPlayerSetPsmf(int psmfPlayer, PspString fileAddr, int offset, boolean doCallbacks) {
     	if (psmfPlayerStatus != PSMF_PLAYER_STATUS_INIT) {
     		return ERROR_PSMFPLAYER_NOT_INITIALIZED;
@@ -444,7 +456,7 @@ public class scePsmfPlayer extends HLEModule {
             }
         }
 
-    	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentVideoTimestamp() > getCurrentAudioTimestamp() + MAX_TIMESTAMP_DIFFERENCE) {
+    	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentVideoTimestamp() > getCurrentAudioTimestamp() + getMaxTimestampDifference()) {
     		//result = SceKernelErrors.ERROR_PSMFPLAYER_AUDIO_VIDEO_OUT_OF_SYNC;
     		Modules.sceMpegModule.writeLastFrameABGR(displayBuffer, videoDataFrameWidth, videoPixelMode);
     	} else {
@@ -484,7 +496,7 @@ public class scePsmfPlayer extends HLEModule {
     		return result;
     	}
 
-    	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentAudioTimestamp() > getCurrentVideoTimestamp() + MAX_TIMESTAMP_DIFFERENCE) {
+    	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentAudioTimestamp() > getCurrentVideoTimestamp() + getMaxTimestampDifference()) {
     		result = SceKernelErrors.ERROR_PSMFPLAYER_AUDIO_VIDEO_OUT_OF_SYNC;
     	} else {
 	        // Check if the ringbuffer needs additional data
