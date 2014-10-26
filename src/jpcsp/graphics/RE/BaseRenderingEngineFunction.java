@@ -28,6 +28,8 @@ import static jpcsp.graphics.RE.software.PixelColor.getGreen;
 import static jpcsp.graphics.RE.software.PixelColor.getRed;
 import static jpcsp.util.Utilities.matrixMult;
 
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import jpcsp.graphics.GeCommands;
@@ -124,6 +126,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     protected boolean bboxVisible;
     protected int activeTextureUnit = 0;
     private boolean[] colorMask = new boolean[4];
+    private static ByteBuffer emptyBuffer;
 
     public BaseRenderingEngineFunction(IRenderingEngine proxy) {
         super(proxy);
@@ -136,6 +139,22 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
             log.info("Using VAO (Vertex Array Object)");
         }
     }
+
+	/**
+	 * Allocate an empty direct buffer of at least the given capacity.
+	 * 
+	 * @param capacity  the minimum required buffer capacity
+	 * @return          an empty direct buffer of the given capacity
+	 */
+	private static ByteBuffer getEmptyBuffer(int capacity) {
+		if (emptyBuffer == null || emptyBuffer.capacity() < capacity) {
+			emptyBuffer = ByteBuffer.allocateDirect(capacity);
+		}
+
+		emptyBuffer.clear();
+
+		return emptyBuffer;
+	}
 
     @Override
     public void setRenderingEngine(IRenderingEngine re) {
@@ -829,5 +848,22 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         for (int i = 1; i < primitiveCount; i++) {
             re.drawElementsBurstMode(primitive, count.get(positionCount + i), indexType, indicesOffset + first.get(positionFirst + i) * bytesPerIndex);
         }
+	}
+
+	@Override
+	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
+		// When specifying no texture buffer, garbage data is used by some OpenGL drivers for
+		// the initial texture content. This can result in a short display of garbage data on screen.
+		// Avoid this by setting the texture content to an empty buffer (i.e. all black).
+		if (buffer == null) {
+			textureSize = width * height * sizeOfTextureType[format];
+			buffer = getEmptyBuffer(textureSize);
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("setTexImage using an empty buffer of size 0x%X", textureSize));
+			}
+		}
+
+		super.setTexImage(level, internalFormat, width, height, format, type, textureSize, buffer);
 	}
 }
