@@ -108,7 +108,7 @@ public class Debug {
         		} else {
         			newColor = (oldColor & 0xF0) | pixelColor;
         		}
-        		mem.write8(framebufferAddr, (byte) Math.max(newColor, oldColor));
+        		mem.write8(framebufferAddr, (byte) newColor);
         		break;
         	}
         	case sceFont.PSP_FONT_PIXELFORMAT_8: {
@@ -122,6 +122,56 @@ public class Debug {
         		break;
         	}
         	case sceFont.PSP_FONT_PIXELFORMAT_32: {
+        		mem.write32(framebufferAddr, pixelColor);
+        		break;
+        	}
+        }
+	}
+
+    public static void addFontPixel(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelColor, int pixelformat) {
+    	if (x < 0 || x >= bufWidth || y < 0 || y >= bufHeight) {
+    		return;
+    	}
+
+		int pixelBytes = getFontPixelBytes(pixelformat);
+		// pixelBytes == 0 means 2 pixels per byte
+		int bufMaxWidth = (pixelBytes == 0 ? bpl * 2 : bpl / pixelBytes);
+		if (x >= bufMaxWidth) {
+			return;
+		}
+
+		int framebufferAddr = base + (y * bpl) + (pixelBytes == 0 ? x / 2 : x * pixelBytes);
+
+    	Memory mem = Memory.getInstance();
+        switch (pixelformat) {
+        	case sceFont.PSP_FONT_PIXELFORMAT_4:
+        	case sceFont.PSP_FONT_PIXELFORMAT_4_REV: {
+        		int oldColor = mem.read8(framebufferAddr);
+        		int newColor = oldColor;
+        		if ((x & 1) != pixelformat) {
+        			newColor |= (pixelColor << 4);
+        		} else {
+        			newColor |= (pixelColor     );
+        		}
+        		mem.write8(framebufferAddr, (byte) newColor);
+        		break;
+        	}
+        	case sceFont.PSP_FONT_PIXELFORMAT_8: {
+        		pixelColor |= mem.read8(framebufferAddr);
+        		mem.write8(framebufferAddr, (byte) pixelColor);
+        		break;
+        	}
+        	case sceFont.PSP_FONT_PIXELFORMAT_24: {
+        		pixelColor |= (mem.read8(framebufferAddr + 0) <<  0);
+        		pixelColor |= (mem.read8(framebufferAddr + 1) <<  8);
+        		pixelColor |= (mem.read8(framebufferAddr + 2) << 16);
+        		mem.write8(framebufferAddr + 0, (byte) (pixelColor >>  0));
+        		mem.write8(framebufferAddr + 1, (byte) (pixelColor >>  8));
+        		mem.write8(framebufferAddr + 2, (byte) (pixelColor >> 16));
+        		break;
+        	}
+        	case sceFont.PSP_FONT_PIXELFORMAT_32: {
+        		pixelColor |= mem.read32(framebufferAddr);
         		mem.write32(framebufferAddr, pixelColor);
         		break;
         	}
