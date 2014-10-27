@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.format.PGF;
 import jpcsp.util.Debug;
 import jpcsp.HLE.modules150.sceFont;
@@ -26,7 +28,11 @@ import jpcsp.HLE.modules150.sceFont;
  */
 
 public class SceFontInfo {
-    // Statics based on intraFont's findings.
+	private static final Logger log = sceFont.log;
+
+	private static final boolean dumpGlyphs = false;
+
+	// Statics based on intraFont's findings.
     public static final int FONT_FILETYPE_PGF = 0x00;
     public static final int FONT_FILETYPE_BWFON = 0x01;
     public static final int FONT_PGF_BMP_H_ROWS = 0x01;
@@ -50,6 +56,8 @@ public class SceFontInfo {
     protected int advancey;
     protected int charmap_compr_len;
     protected int[] charmap_compr;
+    protected int shadow_compr_len;
+    protected int[] shadow_compr;
     protected int[] charmap;
     protected Glyph[] glyphs;
     protected int firstGlyph;
@@ -78,6 +86,8 @@ public class SceFontInfo {
     	protected int xAdjustH, xAdjustV;
     	protected int yAdjustH, yAdjustV;
     	protected long ptr;
+    	// Internal debugging data
+    	protected long glyphPtr;
 
         public boolean hasFlag(int flag) {
         	return (flags & flag) == flag;
@@ -108,8 +118,6 @@ public class SceFontInfo {
 
         // Characters/Shadow characters' variables.
         charmap = new int[fontFile.getCharMapLength() * 2];
-        charmap_compr_len = (fontFile.getRevision() == 3) ? 7 : 1;
-        charmap_compr = new int[charmap_compr_len * 4];
         advancex = fontFile.getMaxAdvance()[0]/16;
         advancey = fontFile.getMaxAdvance()[1]/16;
         shadowScaleX = fontFile.getShadowScale()[0];
@@ -117,6 +125,38 @@ public class SceFontInfo {
         glyphs = new Glyph[fontFile.getCharPointerLength()];
         shadowGlyphs = new Glyph[fontFile.getShadowMapLength()];
         firstGlyph = fontFile.getFirstGlyphInCharMap();
+
+        // Charmap compression tables
+        int[][] charmapCompressionTable1 = fontFile.getCharMapCompressionTable1();
+        int[][] charmapCompressionTable2 = fontFile.getCharMapCompressionTable2();
+        if (charmapCompressionTable1 == null || charmapCompressionTable2 == null) {
+        	charmap_compr_len = 1;
+        	charmap_compr = new int[2];
+        	charmap_compr[0] = firstGlyph;
+        	charmap_compr[1] = fontFile.getLastGlyphInCharMap() - firstGlyph + 1;
+
+        	shadow_compr_len = 1;
+        	shadow_compr = new int[2];
+        	shadow_compr[0] = charmap_compr[0];
+        	shadow_compr[1] = charmap_compr[1];
+        } else {
+        	charmap_compr_len = charmapCompressionTable1[0].length;
+            charmap_compr = new int[charmap_compr_len * 2];
+            for (int j = 0, i = 0; j < charmapCompressionTable1[0].length; j++) {
+            	charmap_compr[i++] = charmapCompressionTable1[0][j];
+            	charmap_compr[i++] = charmapCompressionTable1[1][j];
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("CharMap Compression Table #%d: 0x%X, length=%d", j, charmapCompressionTable1[0][j], charmapCompressionTable1[1][j]));
+            	}
+            }
+
+            shadow_compr_len = charmapCompressionTable2[0].length;
+            shadow_compr = new int[shadow_compr_len * 2];
+            for (int j = 0, i = 0; j < charmapCompressionTable2[0].length; j++) {
+            	shadow_compr[i++] = charmapCompressionTable2[0][j];
+            	shadow_compr[i++] = charmapCompressionTable2[1][j];
+            }
+        }
 
         // Get char map.
         int[] rawCharMap = fontFile.getCharMap();
@@ -153,6 +193,22 @@ public class SceFontInfo {
 	        	}
 	        }
         }
+
+        // Dump all glyphs for debugging purpose
+        if (dumpGlyphs && log.isTraceEnabled()) {
+            for (int i = 0; i < glyphs.length; i++) {
+        		int endPtr = (int) (i + 1 < glyphs.length ? glyphs[i + 1].glyphPtr : glyphs[i].ptr);
+        		log.trace(String.format("charCode=0x%04X: 0x%X-0x%X-0x%X", getCharCode(i, charmap_compr), glyphs[i].glyphPtr, glyphs[i].ptr, endPtr));
+        		for (int j = (int) glyphs[i].ptr; j < endPtr; j++) {
+        			log.trace(String.format("  0x%X: 0x%02X", j, fontdata[j]));
+        		}
+            }
+            for (int i = 0; i < shadowGlyphs.length; i++) {
+            	if (shadowGlyphs[i] != null) {
+            		log.trace(String.format("shadowGlyphs#%d: 0x%X-0x%X", i, shadowGlyphs[i].glyphPtr, shadowGlyphs[i].ptr));
+            	}
+            }
+        }
     }
 
     // Retrieve bits from a byte buffer based on bpe.
@@ -175,7 +231,8 @@ public class SceFontInfo {
     // Create and retrieve a glyph from the font data.
     private Glyph getGlyph(int[] fontdata, long charPtr, int glyphType, PGF fontFile) {
     	Glyph glyph = new Glyph();
-        if (glyphType == FONT_PGF_GLYPH_TYPE_SHADOW) {
+
+    	if (glyphType == FONT_PGF_GLYPH_TYPE_SHADOW) {
             if (charPtr + 96 > fontdataBits) {
         		return null;
         	}
@@ -186,7 +243,9 @@ public class SceFontInfo {
     		return null;
     	}
 
-        charPtr += 14;
+    	glyph.glyphPtr = charPtr / 8;
+
+    	charPtr += 14;
 
         glyph.w = getBits(7, fontdata, charPtr);
         charPtr += 7;
@@ -217,8 +276,8 @@ public class SceFontInfo {
 	        charPtr += 2;
 	        int unknown3 = getBits(3, fontdata, charPtr);
 	        charPtr += 3;
-	        if (sceFont.log.isTraceEnabled()) {
-	        	sceFont.log.trace(String.format("unknown1=%d, unknown2=%d, unknown3=%d", unknown1, unknown2, unknown3));
+	        if (log.isTraceEnabled()) {
+	        	log.trace(String.format("unknown1=%d, unknown2=%d, unknown3=%d", unknown1, unknown2, unknown3));
 	        }
 
 	        glyph.shadowID = getBits(9, fontdata, charPtr);
@@ -329,39 +388,30 @@ public class SceFontInfo {
     		return null;
     	}
 
-    	charCode = getCharID(charCode);
-        if (charCode < 0 || charCode >= glyphs.length) {
+    	int charIndex = getCharIndex(charCode, charmap_compr);
+        if (charIndex < 0 || charIndex >= glyphs.length) {
             return null;
         }
 
-        Glyph glyph = glyphs[charCode];
+        Glyph glyph = glyphs[charIndex];
+
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("charCode=0x%04X mapped to glyph#%d", charCode, charIndex));
+        }
 
         if (glyphType == FONT_PGF_GLYPH_TYPE_SHADOW) {
         	int shadowID = glyph.shadowID;
-            if (shadowID < 0 || shadowID >= shadowGlyphs.length) {
+        	int shadowIndex = getCharIndex(shadowID, shadow_compr);
+            if (shadowIndex < 0 || shadowIndex >= shadowGlyphs.length) {
                 return null;
             }
-            glyph = shadowGlyphs[shadowID];
+            glyph = shadowGlyphs[shadowIndex];
         }
 
         return glyph;
     }
 
-    // Generate a 4bpp texture for the given char id.
-    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType) {
-    	Glyph glyph = getCharGlyph(charCode, glyphType);
-    	if (glyph == null) {
-    		// No Glyph available for this charCode, try to use the alternate char.
-            charCode = altCharCode;
-            glyph = getCharGlyph(charCode, glyphType);
-            if (glyph == null) {
-            	return;
-            }
-    	}
-
-        if (glyph.w <= 0 || glyph.h <= 0) {
-        	return;
-        }
+    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, Glyph glyph, int glyphType, boolean addColor) {
         if (((glyph.flags & FONT_PGF_BMP_OVERLAY) != FONT_PGF_BMP_H_ROWS) &&
             ((glyph.flags & FONT_PGF_BMP_OVERLAY) != FONT_PGF_BMP_V_ROWS)) {
         	return;
@@ -435,13 +485,69 @@ public class SceFontInfo {
 
                     for (int yyy = 0; yyy < scaleY; yyy++) {
                     	for (int xxx = 0; xxx < scaleX; xxx++) {
-                        	Debug.setFontPixel(base, bpl, bufWidth, bufHeight, pixelX + xxx, pixelY + yyy, pixelColor, pixelformat);
+                    		if (addColor) {
+                    			Debug.addFontPixel(base, bpl, bufWidth, bufHeight, pixelX + xxx, pixelY + yyy, pixelColor, pixelformat);
+                    		} else {
+                    			Debug.setFontPixel(base, bpl, bufWidth, bufHeight, pixelX + xxx, pixelY + yyy, pixelColor, pixelformat);
+                    		}
                     	}
                     }
                 }
 
                 pixelIndex++;
             }
+        }
+    }
+
+    // Generate a 4bpp texture for the given char id.
+    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType) {
+    	Glyph glyph = getCharGlyph(charCode, glyphType);
+    	if (glyph == null) {
+    		// No Glyph available for this charCode, try to use the alternate char.
+            charCode = altCharCode;
+            glyph = getCharGlyph(charCode, glyphType);
+            if (glyph == null) {
+            	return;
+            }
+    	}
+
+        if (glyph.w <= 0 || glyph.h <= 0) {
+        	return;
+        }
+
+    	// Overlay glyph?
+        if ((glyph.flags & FONT_PGF_BMP_OVERLAY) == FONT_PGF_BMP_OVERLAY) {
+        	// First clear the bitmap area of the main glyph.
+        	// Sub-glyphs will just add colors.
+        	int pixelColor = 0; // Set to black
+        	for (int pixelY = 0; pixelY < glyph.h; pixelY++) {
+        		for (int pixelX = 0; pixelX < glyph.w; pixelX++) {
+        			Debug.setFontPixel(base, bpl, bufWidth, bufHeight, x + pixelX, y + pixelY, pixelColor, pixelformat);
+        		}
+        	}
+
+        	// 1 to 3 sub-glyphs can be mixed together to form the main glyph
+        	for (int i = 0; i < 3; i++) {
+        		// The character code of each sub-glyph is stored into the glyph font data
+        		int subCharCode = fontdata[(int) glyph.ptr + i * 2] | (fontdata[(int) glyph.ptr + i * 2 + 1] << 8);
+        		if (subCharCode != 0) {
+        			if (log.isTraceEnabled()) {
+        				log.trace(String.format("generateFontTexture charCode=0x%04X, subCharCode=0x%04X (@ptr=0x%X)", charCode, subCharCode, glyph.ptr + i * 2));
+        			}
+
+        			Glyph subGlyph = getCharGlyph(subCharCode, glyphType);
+        			if (subGlyph != null) {
+        				// Draw the sub-glyph relative to the main glyph
+            	        int left = subGlyph.left - glyph.left;
+            	        int top = glyph.top - subGlyph.top;
+
+        	        	generateFontTexture(base, bpl, bufWidth, bufHeight, x + left, y + top, clipX, clipY, clipWidth, clipHeight, pixelformat, subGlyph, glyphType, true);
+        			}
+        		}
+        	}
+        } else {
+        	// Regular glyph rendering
+        	generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, clipX, clipY, clipWidth, clipHeight, pixelformat, glyph, glyphType, false);
         }
     }
 
@@ -496,11 +602,28 @@ public class SceFontInfo {
 		this.fontStyle = fontStyle;
 	}
 
+	private int getCharCode(int charIndex, int[] charmapCompressed) {
+		for (int i = 0; i < charmapCompressed.length; i += 2) {
+			if (charIndex > charmapCompressed[i + 1]) {
+				charIndex -= charmapCompressed[i + 1];
+			} else {
+				return charmapCompressed[i] + charIndex;
+			}
+		}
+
+		return -1;
+	}
+
 	public int getCharIndex(int charCode, int[] charmapCompressed) {
 		int charIndex = 0;
 		for (int i = 0; i < charmapCompressed.length; i += 2) {
 			if (charCode >= charmapCompressed[i] && charCode < charmapCompressed[i] + charmapCompressed[i + 1]) {
 				charIndex += charCode - charmapCompressed[i];
+
+				if (charmap != null && charIndex >= 0 && charIndex < charmap.length) {
+					charIndex = charmap[charIndex];
+		    	}
+
 				return charIndex;
 			}
 			charIndex += charmapCompressed[i + 1];

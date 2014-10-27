@@ -32,12 +32,11 @@ import jpcsp.util.Debug;
  */
 public class SceFontInfoBW extends SceFontInfo {
 	private short[][] charBitmapData;
-	private int[] charmapCompressed;
 	private static final int[] pixelColors = new int[] { 0x00000000, 0xFFFFFFFF };
 
 	public SceFontInfoBW(BWFont fontFile) {
 		byte[] fontData = fontFile.getFontData();
-		charmapCompressed = fontFile.getCharmapCompressed();
+		charmap_compr = fontFile.getCharmapCompressed();
 		int numberCharBitmaps = fontData.length / charBitmapBytes;
 		charBitmapData = new short[numberCharBitmaps][charBitmapHeight];
 		shadowScaleX = 24;
@@ -58,7 +57,7 @@ public class SceFontInfoBW extends SceFontInfo {
 			return;
 		}
 
-		int charIndex = getCharIndex(charCode, charmapCompressed);
+		int charIndex = getCharIndex(charCode, charmap_compr);
 		if (charIndex < 0 || charIndex >= charBitmapData.length) {
 			return;
 		}
