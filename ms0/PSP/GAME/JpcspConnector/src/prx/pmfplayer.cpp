@@ -168,6 +168,13 @@ SceInt32 CPMFPlayer::Load(char* pFileName)
 		return -1;
 	}
 
+	m_MpegStreamUserdata = sceMpegRegistStream(&m_Mpeg, 3, 0);
+	if(m_MpegStreamUserdata == NULL)
+	{
+		sprintf(m_LastError, "sceMpegRegistStream() failed!");
+		return -1;
+	}
+
 	m_pEsBufferAVC = sceMpegMallocAvcEsBuf(&m_Mpeg);
 
 	if(m_pEsBufferAVC == NULL)
@@ -198,6 +205,27 @@ SceInt32 CPMFPlayer::Load(char* pFileName)
 	}
 
 	retVal = sceMpegInitAu(&m_Mpeg, m_pEsBufferAtrac, &m_MpegAuAtrac);
+	if(retVal != 0)
+	{
+		sprintf(m_LastError, "sceMpegInitAu() failed: 0x%08X", retVal);
+		return -1;
+	}
+
+	retVal = sceMpegQueryUserdataEsSize(&m_Mpeg, &m_MpegUserdataEsSize, &m_MpegUserdataOutSize);
+	if(retVal != 0)
+	{
+		sprintf(m_LastError, "sceMpegQueryUserdataEsSize() failed: 0x%08X", retVal);
+		return -1;
+	}
+
+	m_pEsBufferUserdata = memalign(64, m_MpegUserdataEsSize);
+	if(m_pEsBufferUserdata == NULL)
+	{
+		sprintf(m_LastError, "malloc() failed!");
+		return -1;
+	}
+
+	retVal = sceMpegInitAu(&m_Mpeg, m_pEsBufferUserdata, &m_MpegAuUserdata);
 	if(retVal != 0)
 	{
 		sprintf(m_LastError, "sceMpegInitAu() failed: 0x%08X", retVal);
