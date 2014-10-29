@@ -100,6 +100,7 @@ public class sceMpeg extends HLEModule {
         atracAuAddr = 0;
         mpegAtracAu = new SceMpegAu();
         mpegAvcAu = new SceMpegAu();
+        mpegUserDataAu = new SceMpegAu();
         psmfHeader = null;
 
         intBuffers = new HashSet<int[]>();
@@ -171,6 +172,7 @@ public class sceMpeg extends HLEModule {
     protected TPointer mpegRingbufferAddr;
     protected SceMpegAu mpegAtracAu;
     protected SceMpegAu mpegAvcAu;
+    protected SceMpegAu mpegUserDataAu;
     protected long lastAtracSystemTime;
     protected long lastAvcSystemTime;
     protected int avcAuAddr;
@@ -231,6 +233,9 @@ public class sceMpeg extends HLEModule {
     private int lastFrameABGR[];
     private int lastFrameWidth;
     private int lastFrameHeight;
+    private PesHeader userDataPesHeader;
+    private UserDataBuffer userDataBuffer;
+    private final int userDataHeader[] = new int[8];
 
     private static class DecodedImageInfo {
     	public PesHeader pesHeader;
@@ -374,6 +379,46 @@ public class sceMpeg extends HLEModule {
     		}
 
     		return -1;
+    	}
+    }
+
+    private static class UserDataBuffer {
+    	private int addr;
+    	private int size;
+    	private int length;
+
+    	public UserDataBuffer(int addr, int size) {
+    		this.addr = addr;
+    		this.size = size;
+    		length = 0;
+    	}
+
+    	public int write(Memory mem, int dataAddr, int size) {
+    		size = Math.min(size, getFreeLength());
+    		mem.memcpy(addr + length, dataAddr, size);
+    		length += size;
+
+    		return size;
+    	}
+
+    	public int getLength() {
+    		return length;
+    	}
+
+    	public int getFreeLength() {
+    		return size - length;
+    	}
+
+    	public int notifyRead(Memory mem, int size) {
+    		size = Math.min(size, length);
+    		length -= size;
+    		mem.memcpy(addr, addr + size, length);
+
+    		return size;
+    	}
+
+    	public boolean isEmpty() {
+    		return length == 0;
     	}
     }
 
@@ -810,10 +855,11 @@ public class sceMpeg extends HLEModule {
             PSMFStream stream = null;
             int currentStreamOffset = 0x82 + i * 16;
             int streamID = read8(mem, addr, mpegHeader, currentStreamOffset);
+            int subStreamID = read8(mem, addr, mpegHeader, currentStreamOffset + 1);
             if ((streamID & 0xF0) == PSMF_VIDEO_STREAM_ID) {
                 stream = new PSMFStream(numberOfStreams);
                 stream.readMPEGVideoStreamParams(mem, addr, mpegHeader, currentStreamOffset, psmfHeader);
-            } else if (streamID == PSMF_AUDIO_STREAM_ID) {
+            } else if (streamID == PSMF_AUDIO_STREAM_ID && subStreamID < 0x20) {
                 stream = new PSMFStream(numberOfStreams);
                 stream.readPrivateAudioStreamParams(mem, addr, mpegHeader, currentStreamOffset, psmfHeader);
             } else {
@@ -1039,6 +1085,7 @@ public class sceMpeg extends HLEModule {
     		}
         	mpegRingbuffer.setHasAudio(isRegisteredAudioChannel());
         	mpegRingbuffer.setHasVideo(isRegisteredVideoChannel());
+        	mpegRingbuffer.setHasUserData(isRegisteredUserDataChannel());
     	}
     }
 
@@ -1353,6 +1400,16 @@ public class sceMpeg extends HLEModule {
     	}
     }
 
+    private void addToUserDataBuffer(Memory mem, pspFileBuffer buffer, int length) {
+    	while (length > 0) {
+    		int readLength = Math.min(length, buffer.getReadSize());
+    		int addr = buffer.getReadAddr();
+    		userDataBuffer.write(mem, addr, readLength);
+    		buffer.notifyRead(readLength);
+    		length -= readLength;
+    	}
+    }
+
     private long readPts(Memory mem, pspFileBuffer buffer) {
 		return readPts(mem, buffer, read8(mem, buffer));
 	}
@@ -1437,6 +1494,10 @@ public class sceMpeg extends HLEModule {
 					skip(buffer, 1);
 					length--;
 				}
+			} else if (channel >= 0x20) {
+				// Userdata
+				skip(buffer, 1);
+				length--;
 			} else {
 				// PSP audio has additional 3 bytes in header
 				skip(buffer, 3);
@@ -1454,7 +1515,9 @@ public class sceMpeg extends HLEModule {
 
     	Memory mem = Memory.getInstance();
     	pspFileBuffer buffer = mpegRingbuffer.getAudioBuffer();
-    	log.debug(String.format("readNextAudioFrame %s", mpegRingbuffer));
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("readNextAudioFrame %s", mpegRingbuffer));
+    	}
     	int audioChannel = getRegisteredAudioChannel();
 
     	while (!buffer.isEmpty() && (audioFrameLength == 0 || audioBuffer.getLength() < audioFrameLength)) {
@@ -1506,7 +1569,9 @@ public class sceMpeg extends HLEModule {
 
     	Memory mem = Memory.getInstance();
     	pspFileBuffer buffer = mpegRingbuffer.getVideoBuffer();
-    	log.debug(String.format("readNextVideoFrame %s", mpegRingbuffer));
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("readNextVideoFrame %s", mpegRingbuffer));
+    	}
     	int videoChannel = getRegisteredVideoChannel();
 
     	int frameEnd = videoBuffer.findFrameEnd();
@@ -1563,6 +1628,73 @@ public class sceMpeg extends HLEModule {
     	}
 
     	return frameEnd;
+    }
+
+    private void readNextUserDataFrame(PesHeader pesHeader) {
+    	if (mpegRingbuffer == null) {
+    		return;
+    	}
+
+    	Memory mem = Memory.getInstance();
+    	pspFileBuffer buffer = mpegRingbuffer.getUserDataBuffer();
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("readNextUserDataFrame %s", mpegRingbuffer));
+    	}
+    	int userDataChannel = 0x20 + getRegisteredUserDataChannel();
+    	int userDataLength = 0;
+
+    	while (!buffer.isEmpty() && (userDataLength == 0 || userDataBuffer.getLength() < userDataLength)) {
+    		int startCode = read32(mem, buffer);
+    		int codeLength;
+    		switch (startCode) {
+    			case PACK_START_CODE:
+    				skip(buffer, 10);
+    				break;
+    			case SYSTEM_HEADER_START_CODE:
+    				skip(buffer, 14);
+    				break;
+				case PADDING_STREAM:
+				case PRIVATE_STREAM_2:
+				case 0x1E0: case 0x1E1: case 0x1E2: case 0x1E3: // Video streams
+				case 0x1E4: case 0x1E5: case 0x1E6: case 0x1E7:
+				case 0x1E8: case 0x1E9: case 0x1EA: case 0x1EB:
+				case 0x1EC: case 0x1ED: case 0x1EE: case 0x1EF:
+					codeLength = read16(mem, buffer);
+					skip(buffer, codeLength);
+					break;
+				case PRIVATE_STREAM_1:
+					// Audio/Userdata stream
+					codeLength = read16(mem, buffer);
+					codeLength = readPesHeader(mem, buffer, pesHeader, codeLength, startCode);
+					if (pesHeader.getChannel() == userDataChannel) {
+						if (userDataLength == 0) {
+							for (int i = 0; i < userDataHeader.length; i++) {
+								userDataHeader[i] = read8(mem, buffer);
+								codeLength--;
+							}
+							userDataLength = ((userDataHeader[0] << 24) |
+							                  (userDataHeader[1] << 16) |
+							                  (userDataHeader[2] <<  8) |
+							                  (userDataHeader[3] <<  0)) - 4;
+						}
+						addToUserDataBuffer(mem, buffer, codeLength);
+			    		// Ignore next PES headers for this user data
+			    		pesHeader = dummyPesHeader;
+					} else {
+						skip(buffer, codeLength);
+					}
+					break;
+				default:
+					log.warn(String.format("Unknown StartCode 0x%08X at 0x%08X", startCode, buffer.getReadAddr() - 4));
+					break;
+    		}
+    	}
+
+    	mpegRingbufferNotifyRead();
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("After readNextUserDataFrame %s", mpegRingbuffer));
+    	}
     }
 
     private void writeImageABGR(int addr, int frameWidth, int imageWidth, int imageHeight, int pixelMode, int[] abgr) {
@@ -1861,11 +1993,15 @@ public class sceMpeg extends HLEModule {
     	return getRegisteredVideoChannel() >= 0;
     }
 
+    public boolean isRegisteredUserDataChannel() {
+    	return getRegisteredUserDataChannel() >= 0;
+    }
+
     public int getRegisteredPcmChannel() {
     	return getRegisteredChannel(PSMF_PCM_STREAM, -1);
     }
 
-    public int getRegisteredDataChannel() {
+    public int getRegisteredUserDataChannel() {
     	return getRegisteredChannel(PSMF_DATA_STREAM, -1);
     }
 
@@ -2283,10 +2419,12 @@ public class sceMpeg extends HLEModule {
         if (videoBuffer != null) {
         	videoBuffer.reset();
         }
+        userDataBuffer = null;
         audioFrameLength = 0;
         frameHeaderLength = 0;
         audioPesHeader = null;
         videoPesHeader = null;
+        userDataPesHeader = null;
 
         if (decodedImages != null) {
         	synchronized (decodedImages) {
@@ -3406,21 +3544,61 @@ public class sceMpeg extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x01977054, version = 150)
-    public int sceMpegGetUserdataAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid, TPointer auAddr, @CanBeNull TPointer32 resultAddr) {
+    public int sceMpegGetUserdataAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid, TPointer auAddr, @CanBeNull TPointer headerAddr) {
     	if (!hasPsmfUserdataStream()) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("sceMpegGetUserdataAu no registered user data stream, returning 0x%08X", SceKernelErrors.ERROR_MPEG_NO_DATA));
+    		}
     		return SceKernelErrors.ERROR_MPEG_NO_DATA;
     	}
 
-    	// 2 Unknown result values
-    	resultAddr.setValue(0, 0);
-    	resultAddr.setValue(4, 0);
+    	if (userDataPesHeader == null) {
+    		userDataPesHeader = new PesHeader(getRegisteredUserDataChannel());
+    		userDataPesHeader.setDtsPts(UNKNOWN_TIMESTAMP);
+    	}
+
+    	mpegUserDataAu.read(auAddr);
+
+    	if (userDataBuffer == null) {
+    		userDataBuffer = new UserDataBuffer(mpegUserDataAu.esBuffer, MPEG_DATA_ES_SIZE);
+    	}
+
+        readNextUserDataFrame(userDataPesHeader);
+    	if (userDataBuffer.isEmpty()) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("sceMpegGetUserdataAu no user data available, returning 0x%08X", SceKernelErrors.ERROR_MPEG_NO_DATA));
+    		}
+    		return SceKernelErrors.ERROR_MPEG_NO_DATA;
+    	}
+
+    	Memory mem = auAddr.getMemory();
+    	mpegUserDataAu.pts = userDataPesHeader.getPts();
+    	mpegUserDataAu.dts = UNKNOWN_TIMESTAMP; // dts is always -1
+    	mpegUserDataAu.esSize = userDataBuffer.getLength();
+    	mpegUserDataAu.write(auAddr);
+    	userDataBuffer.notifyRead(mem, mpegUserDataAu.esSize);
+
+    	if (headerAddr.isNotNull()) {
+	    	// First 8 bytes of the user data header
+	    	for (int i = 0; i < userDataHeader.length; i++) {
+	    		headerAddr.setValue8(i, (byte) userDataHeader[i]);
+	    	}
+    	}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceMpegGetUserdataAu returning au=%s", mpegUserDataAu));
+    		if (log.isTraceEnabled()) {
+    			log.trace(String.format("mpegUserDataAu.esBuffer: %s", Utilities.getMemoryDump(mpegUserDataAu.esBuffer, mpegUserDataAu.esSize)));
+    			if (headerAddr.isNotNull()) {
+    				log.trace(String.format("headerAddr: %s", Utilities.getMemoryDump(headerAddr.getAddress(), 8)));
+    			}
+    		}
+    	}
 
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xC45C99CC, version = 150)
     public int sceMpegQueryUserdataEsSize(@CheckArgument("checkMpegHandle") int mpeg, TPointer32 esSizeAddr, TPointer32 outSizeAddr) {
     	esSizeAddr.setValue(MPEG_DATA_ES_SIZE);
