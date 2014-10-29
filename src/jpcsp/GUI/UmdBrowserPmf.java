@@ -17,56 +17,41 @@
 package jpcsp.GUI;
 
 import java.awt.Image;
-import java.awt.image.BufferedImage;
+import java.awt.image.MemoryImageSource;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
+import java.io.InputStream;
 
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 import jpcsp.Emulator;
-import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
+import jpcsp.media.codec.CodecFactory;
+import jpcsp.media.codec.IVideoCodec;
+import jpcsp.media.codec.h264.H264Utils;
 
-import com.xuggle.ferry.Logger;
-import com.xuggle.xuggler.Global;
-import com.xuggle.xuggler.ICodec;
-import com.xuggle.xuggler.IContainer;
-import com.xuggle.xuggler.IPacket;
-import com.xuggle.xuggler.IPixelFormat;
-import com.xuggle.xuggler.IStream;
-import com.xuggle.xuggler.IStreamCoder;
-import com.xuggle.xuggler.IVideoPicture;
-import com.xuggle.xuggler.IVideoResampler;
-import com.xuggle.xuggler.video.ConverterFactory;
-import com.xuggle.xuggler.video.IConverter;
+import com.twilight.h264.decoder.H264Context;
 
-import jpcsp.util.Constants;
 import jpcsp.util.Utilities;
 
 public class UmdBrowserPmf {
 	private static org.apache.log4j.Logger log = Emulator.log;
     private UmdIsoReader iso;
-    private UmdIsoFile isoFile;
     private String fileName;
-    private IContainer container;
-    private IVideoResampler videoResampler;
-    private int videoStreamId;
-    private IStreamCoder videoCoder;
-    private IPacket packet;
-    private long firstTimestampInStream;
-    private long systemClockStartTime;
-    private IConverter converter;
-    private BufferedImage image;
+    private long startTime;
+    private Image image;
     private boolean done;
     private boolean endOfVideo;
     private boolean threadExit;
     private JLabel display;
     private PmfDisplayThread displayThread;
-    private PmfByteChannel byteChannel;
-    private static boolean initialized = false;
+    private IVideoCodec videoCodec;
+	private int[] videoData = new int[0x10000];
+	private int videoDataOffset;
+	private InputStream is;
+	private int videoChannel = 0;
+	private int frame;
 
     public UmdBrowserPmf(UmdIsoReader iso, String fileName, JLabel display) {
         this.iso = iso;
@@ -77,49 +62,184 @@ public class UmdBrowserPmf {
         initVideo();
     }
 
-    private static void initXuggler() {
-        if (!initialized) {
-            try {
-                // Disable Xuggler's logging, since we do our own.
-                Logger.setGlobalIsLogging(Logger.Level.LEVEL_DEBUG, false);
-                Logger.setGlobalIsLogging(Logger.Level.LEVEL_ERROR, false);
-                Logger.setGlobalIsLogging(Logger.Level.LEVEL_INFO, false);
-                Logger.setGlobalIsLogging(Logger.Level.LEVEL_TRACE, false);
-                Logger.setGlobalIsLogging(Logger.Level.LEVEL_WARN, false);
-            } catch (NoClassDefFoundError e) {
-                log.warn("Xuggler is not available on your platform");
-            }
-            initialized = true;
-        }
-    }
+	private int read8(InputStream is) {
+		try {
+			return is.read();
+		} catch (IOException e) {
+			// Ignore exception
+		}
 
-    @SuppressWarnings("deprecation")
-    private static int streamCoderOpen(IStreamCoder streamCoder) {
-        try {
-            if (streamCoder.isOpen()) {
-                return 0;
-            }
-            // This method is not available in Xuggle 3.4
-            return streamCoder.open(null, null);
-        } catch (NoSuchMethodError e) {
-            // We are using Xuggle 3.4, try the old (deprecated) method.
-            return streamCoder.open();
-        }
-    }
+		return -1;
+	}
 
-    private void init() {
+	private int read16(InputStream is) {
+		return (read8(is) << 8) | read8(is);
+	}
+
+	private int read32(InputStream is) {
+		return (read8(is) << 24) | (read8(is) << 16) | (read8(is) << 8) | read8(is);
+	}
+
+	private void skip(InputStream is, int n) {
+		if (n > 0) {
+			try {
+				is.skip(n);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private int skipPesHeader(InputStream is, int startCode) {
+		int pesLength = 0;
+		int c = read8(is);
+		pesLength++;
+		while (c == 0xFF) {
+			c = read8(is);
+			pesLength++;
+		}
+
+		if ((c & 0xC0) == 0x40) {
+			skip(is, 1);
+			c = read8(is);
+			pesLength += 2;
+		}
+
+		if ((c & 0xE0) == 0x20) {
+			skip(is, 4);
+			pesLength += 4;
+			if ((c & 0x10) != 0) {
+				skip(is, 5);
+				pesLength += 5;
+			}
+		} else if ((c & 0xC0) == 0x80) {
+			skip(is, 1);
+			int headerLength = read8(is);
+			pesLength += 2;
+			skip(is, headerLength);
+			pesLength += headerLength;
+		}
+
+		if (startCode == 0x1BD) { // PRIVATE_STREAM_1
+			int channel = read8(is);
+			pesLength++;
+			if (channel >= 0x80 && channel <= 0xCF) {
+				skip(is, 3);
+				pesLength += 3;
+				if (channel >= 0xB0 && channel <= 0xBF) {
+					skip(is, 1);
+					pesLength++;
+				}
+			} else {
+				skip(is, 3);
+				pesLength += 3;
+			}
+		}
+
+		return pesLength;
+	}
+
+	private void addVideoData(InputStream is, int length) {
+		if (videoDataOffset + length > videoData.length) {
+			// Extend the inputBuffer
+			int[] newVideoData = new int[videoDataOffset + length];
+			System.arraycopy(videoData, 0, newVideoData, 0, videoDataOffset);
+			videoData = newVideoData;
+		}
+
+		for (int i = 0; i < length; i++) {
+			videoData[videoDataOffset++] = read8(is);
+		}
+	}
+
+	private boolean readPsmfHeader() {
+		try {
+            is = iso.getFile(fileName);
+		} catch (FileNotFoundException e) {
+			return false;
+		} catch (IOException e) {
+			log.error("readPsmfHeader", e);
+			return false;
+		}
+
+		if (read32(is) != 0x50534D46) { // PSMF
+			return false;
+		}
+
+		skip(is, 4);
+		int mpegOffset = read32(is);
+		skip(is, mpegOffset - 12);
+
+		return true;
+	}
+
+	private boolean readPsmfPacket(int videoChannel) {
+		while (true) {
+			int startCode = read32(is);
+			if (startCode == -1) {
+				// End of file
+				return false;
+			}
+			int codeLength;
+			switch (startCode) {
+				case 0x1BA: // PACK_START_CODE
+					skip(is, 10);
+					break;
+				case 0x1BB: // SYSTEM_HEADER_START_CODE
+					skip(is, 14);
+					break;
+				case 0x1BE: // PADDING_STREAM
+				case 0x1BF: // PRIVATE_STREAM_2
+				case 0x1BD: // PRIVATE_STREAM_1, Audio stream
+					codeLength = read16(is);
+					skip(is, codeLength);
+					break;
+				case 0x1E0: case 0x1E1: case 0x1E2: case 0x1E3: // Video streams
+				case 0x1E4: case 0x1E5: case 0x1E6: case 0x1E7:
+				case 0x1E8: case 0x1E9: case 0x1EA: case 0x1EB:
+				case 0x1EC: case 0x1ED: case 0x1EE: case 0x1EF:
+					codeLength = read16(is);
+					if (videoChannel < 0 || startCode - 0x1E0 == videoChannel) {
+						int pesLength = skipPesHeader(is, startCode);
+						codeLength -= pesLength;
+						addVideoData(is, codeLength);
+						return true;
+					}
+					skip(is, codeLength);
+					break;
+			}
+		}
+	}
+
+	private void consumeVideoData(int length) {
+		if (length >= videoDataOffset) {
+			videoDataOffset = 0;
+		} else {
+			System.arraycopy(videoData, length, videoData, 0, videoDataOffset - length);
+			videoDataOffset -= length;
+		}
+	}
+
+	private int findFrameEnd() {
+		for (int i = 5; i < videoDataOffset; i++) {
+			if (videoData[i - 4] == 0x00 &&
+			    videoData[i - 3] == 0x00 &&
+			    videoData[i - 2] == 0x00 &&
+			    videoData[i - 1] == 0x01) {
+				int naluType = videoData[i] & 0x1F;
+				if (naluType == H264Context.NAL_AUD) {
+					return i - 4;
+				}
+			}
+		}
+
+		return -1;
+	}
+
+	private void init() {
         image = null;
         done = false;
         threadExit = false;
-
-        initXuggler();
-        isoFile = null;
-        try {
-            isoFile = iso.getFile(fileName);
-        } catch (FileNotFoundException e) {
-        } catch (IOException e) {
-            Emulator.log.error(e);
-        }
     }
 
     private Image getImage() {
@@ -127,10 +247,6 @@ public class UmdBrowserPmf {
     }
 
     final public boolean initVideo() {
-        if (isoFile == null) {
-            return false;
-        }
-
         if (!startVideo()) {
             return false;
         }
@@ -146,102 +262,29 @@ public class UmdBrowserPmf {
     private boolean startVideo() {
         endOfVideo = false;
 
-        try {
-            container = IContainer.make();
-        } catch (Throwable e) {
-            // The xuggler libraries are probably not available
-            Emulator.log.error(e);
-            return false;
+        if (!readPsmfHeader()) {
+        	return false;
         }
 
-        try {
-            isoFile.seek(0);
-        } catch (IOException e) {
-            Emulator.log.error(e);
-            return false;
-        }
-        byteChannel = new PmfByteChannel(isoFile);
+        videoCodec = CodecFactory.getVideoCodec();
+        videoCodec.init();
 
-        if (container.open(byteChannel, null) < 0) {
-            Emulator.log.error("could not open file: " + fileName);
-            return false;
-        }
-
-        // query how many streams the call to open found
-        int numStreams = container.getNumStreams();
-
-        // and iterate through the streams to find the first video stream
-        videoStreamId = -1;
-        videoCoder = null;
-        for (int i = 0; i < numStreams; i++) {
-            // Find the stream object
-            IStream stream = container.getStream(i);
-            // Get the pre-configured decoder that can decode this stream;
-            IStreamCoder coder = stream.getStreamCoder();
-
-            if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
-                videoStreamId = i;
-                videoCoder = coder;
-            }
-        }
-
-        /*
-         * Now we have found the video stream in this file.
-         * Let's open up our decoder so it can do work.
-         */
-        if (videoCoder != null && streamCoderOpen(videoCoder) < 0) {
-            Emulator.log.error("could not open video decoder for container: " + fileName);
-            return false;
-        }
-
-        videoResampler = null;
-        if (videoCoder != null) {
-            converter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, IPixelFormat.Type.BGR24, videoCoder.getWidth(), videoCoder.getHeight());
-
-            if (videoCoder.getPixelType() != IPixelFormat.Type.BGR24 || videoCoder.getWidth() != Constants.ICON0_WIDTH || videoCoder.getHeight() != Constants.ICON0_HEIGHT) {
-                // if this stream is not in BGR24, we're going to need to
-                // convert it.  The VideoResampler does that for us.
-                videoResampler = IVideoResampler.make(Constants.ICON0_WIDTH, Constants.ICON0_HEIGHT, IPixelFormat.Type.BGR24,
-                        videoCoder.getWidth(), videoCoder.getHeight(), videoCoder.getPixelType());
-
-                if (videoResampler == null) {
-                    Emulator.log.error("could not create color space resampler for: " + fileName);
-                    return false;
-                }
-            }
-        }
-
-        packet = IPacket.make();
-        firstTimestampInStream = Global.NO_PTS;
-        systemClockStartTime = 0;
+        startTime = System.currentTimeMillis();
+        frame = 0;
 
         return true;
     }
 
     private void closeVideo() {
-        if (container != null) {
-            container.close();
-            container = null;
-        }
+    	videoCodec = null;
 
-        if (videoCoder != null) {
-            videoCoder.close();
-            videoCoder = null;
-        }
-        
-        if (videoResampler != null) {
-            videoResampler.delete();
-            videoResampler = null;
-        }
-
-        if (converter != null) {
-            converter.delete();
-            converter = null;
-        }
-
-        if (packet != null) {
-            packet.delete();
-            packet = null;
+        if (is != null) {
+            try {
+                is.close();
+            } catch (IOException e) {
+                // Ignore Exception
+            }
+            is = null;
         }
     }
 
@@ -261,112 +304,66 @@ public class UmdBrowserPmf {
     public void stopVideo() {
         stopDisplayThread();
         closeVideo();
-
-        if (isoFile != null) {
-            try {
-                isoFile.close();
-            } catch (IOException e) {
-                // Ignore Exception
-            }
-        }
     }
 
     public void stepVideo() {
-        if (container.readNextPacket(packet) >= 0) {
-            /*
-             * Now we have a packet, let's see if it belongs to our video stream
-             */
-            if (packet.getStreamIndex() == videoStreamId && videoCoder != null) {
-                /*
-                 * We allocate a new picture to get the data out of Xuggler
-                 */
-                IVideoPicture picture = IVideoPicture.make(videoCoder.getPixelType(),
-                        videoCoder.getWidth(), videoCoder.getHeight());
+    	image = null;
 
-                int offset = 0;
-                while (offset < packet.getSize()) {
-                    /*
-                     * Now, we decode the video, checking for any errors.
-                     *
-                     */
-                    int bytesDecoded = videoCoder.decodeVideo(picture, packet, offset);
-                    if (bytesDecoded < 0) {
-                        throw new RuntimeException("got error decoding video in: " + fileName);
-                    }
-                    offset += bytesDecoded;
+    	int frameSize = -1;
+	    do {
+	    	if (!readPsmfPacket(videoChannel)) {
+	    		if (videoDataOffset <= 0) {
+	    			// Enf of file reached
+	    			break;
+	    		}
+	    		frameSize = findFrameEnd();
+	    		if (frameSize < 0) {
+		    		// Process pending last frame
+	    			frameSize = videoDataOffset;
+	    		}
+	    	} else {
+	    		frameSize = findFrameEnd();
+	    	}
+	    } while (frameSize <= 0);
 
-                    /*
-                     * Some decoders will consume data in a packet, but will not be able to construct
-                     * a full video picture yet.  Therefore you should always check if you
-                     * got a complete picture from the decoder
-                     */
-                    if (picture.isComplete()) {
-                        IVideoPicture newPic = picture;
-                        /*
-                         * If the resampler is not null, that means we didn't get the
-                         * video in BGR24 format and
-                         * need to convert it into BGR24 format.
-                         */
-                        if (videoResampler != null) {
-                            // we must resample
-                            newPic = IVideoPicture.make(videoResampler.getOutputPixelFormat(), videoResampler.getOutputWidth(), videoResampler.getOutputHeight());
-                            if (videoResampler.resample(newPic, picture) < 0) {
-                                throw new RuntimeException("could not resample video from: " + fileName);
-                            }
-                        }
-                        if (newPic.getPixelType() != IPixelFormat.Type.BGR24) {
-                            throw new RuntimeException("could not decode video BGR 24 bit data in: " + fileName);
-                        }
+	    if (frameSize <= 0) {
+	    	endOfVideo = true;
+	    	return;
+	    }
 
-                        /**
-                         * We could just display the images as quickly as we
-                         * decode them, but it turns out we can decode a lot
-                         * faster than you think.
-                         *
-                         * So instead, the following code does a poor-man's
-                         * version of trying to match up the frame-rate
-                         * requested for each IVideoPicture with the system
-                         * clock time on your computer.
-                         *
-                         * Remember that all Xuggler IAudioSamples and
-                         * IVideoPicture objects always give timestamps in
-                         * Microseconds, relative to the first decoded item. If
-                         * instead you used the packet timestamps, they can be
-                         * in different units depending on your IContainer, and
-                         * IStream and things can get hairy quickly.
-                         */
-                        if (firstTimestampInStream == Global.NO_PTS) {
-                            // This is our first time through
-                            firstTimestampInStream = picture.getTimeStamp();
-                            // get the starting clock time so we can hold up frames
-                            // until the right time.
-                            systemClockStartTime = System.currentTimeMillis();
-                        } else {
-                            long systemClockCurrentTime = System.currentTimeMillis();
-                            long millisecondsClockTimeSinceStartofVideo = systemClockCurrentTime - systemClockStartTime;
-                            // compute how long for this frame since the first frame in the
-                            // stream.
-                            // remember that IVideoPicture and IAudioSamples timestamps are
-                            // always in MICROSECONDS,
-                            // so we divide by 1000 to get milliseconds.
-                            long millisecondsStreamTimeSinceStartOfVideo = (picture.getTimeStamp() - firstTimestampInStream) / 1000;
-                            final long millisecondsTolerance = 50; // and we give ourselfs 50 ms of tolerance
-                            final long millisecondsToSleep = (millisecondsStreamTimeSinceStartOfVideo - (millisecondsClockTimeSinceStartofVideo + millisecondsTolerance));
-                            Utilities.sleep((int) millisecondsToSleep, 0);
-                        }
+	    int consumedLength = videoCodec.decode(videoData, 0, frameSize);
+	    if (consumedLength < 0) {
+	    	endOfVideo = true;
+	    	return;
+	    }
+	    consumeVideoData(consumedLength);
 
-                        // And finally, convert the BGR24 to an Java buffered image
-                        image = converter.toImage(newPic);
-                    }
-                }
-            }
-        } else {
-            endOfVideo = true;
-        }
+	    if (videoCodec.hasImage()) {
+	    	int width = videoCodec.getImageWidth();
+	    	int height = videoCodec.getImageHeight();
+	    	int size = width * height;
+	    	int size2 = size >> 2;
+	    	int luma[] = new int[size];
+	    	int cr[] = new int[size2];
+	    	int cb[] = new int[size2];
+	    	if (videoCodec.getImage(luma, cb, cr) == 0) {
+	    		int abgr[] = new int[size];
+	    		H264Utils.YUV2ABGR(width, height, luma, cb, cr, abgr);
+	    		image = display.createImage(new MemoryImageSource(width, height, abgr, 0, width));
+
+	    		frame++;
+
+	    		long now = System.currentTimeMillis();
+			    long currentDuration = now - startTime;
+			    long videoDuration = frame * 100000L / 3003L;
+			    if (currentDuration < videoDuration) {
+			    	Utilities.sleep((int) (videoDuration - currentDuration), 0);
+			    }
+	    	}
+	    }
     }
 
     private class PmfDisplayThread extends Thread {
-
         @Override
         public void run() {
             while (!done) {
@@ -384,42 +381,6 @@ public class UmdBrowserPmf {
             }
 
             threadExit = true;
-        }
-    }
-
-    private static class PmfByteChannel implements ReadableByteChannel {
-
-        private UmdIsoFile file;
-        private byte[] buffer;
-
-        public PmfByteChannel(UmdIsoFile file) {
-            this.file = file;
-        }
-
-        @Override
-        public int read(ByteBuffer dst) throws IOException {
-            int available = dst.remaining();
-            if (buffer == null || buffer.length < available) {
-                buffer = new byte[available];
-            }
-
-            int length = file.read(buffer, 0, available);
-            if (length > 0) {
-                dst.put(buffer, 0, length);
-            }
-
-            return length;
-        }
-
-        @Override
-        public void close() throws IOException {
-            file.close();
-            file = null;
-        }
-
-        @Override
-        public boolean isOpen() {
-            return file != null;
         }
     }
 }
