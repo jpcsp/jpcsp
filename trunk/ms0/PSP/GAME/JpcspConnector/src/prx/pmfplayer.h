@@ -61,8 +61,15 @@ private:
 	ScePVoid			m_pEsBufferAtrac;
 	SceMpegAu			m_MpegAuAtrac;
 
+	SceMpegStream*		m_MpegStreamUserdata;
+	ScePVoid			m_pEsBufferUserdata;
+	SceMpegAu			m_MpegAuUserdata;
+
 	SceInt32			m_MpegAtracEsSize;
 	SceInt32			m_MpegAtracOutSize;
+
+	SceInt32			m_MpegUserdataEsSize;
+	SceInt32			m_MpegUserdataOutSize;
 
 	SceInt32			m_iLastTimeStamp;
 

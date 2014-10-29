@@ -119,3 +119,9 @@
 #ifdef F_sceMpeg_0038
 	IMPORT_FUNC	"sceMpeg",0x988E9E12,sceMpeg_988E9E12
 #endif
+#ifdef F_sceMpeg_0039
+	IMPORT_FUNC	"sceMpeg",0xC45C99CC,sceMpegQueryUserdataEsSize
+#endif
+#ifdef F_sceMpeg_0040
+	IMPORT_FUNC	"sceMpeg",0x01977054,sceMpegGetUserdataAu
+#endif

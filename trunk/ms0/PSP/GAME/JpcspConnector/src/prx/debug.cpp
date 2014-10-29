@@ -25,20 +25,16 @@ extern "C" void debug(char *s)
 
 	inDebug = 1;
 
-#if BUFFERED_DEBUG
 	int length = strlen(s);
 	if (debugBufferIndex + length >= DEBUG_BUFFER_LENGTH - 5)
 	{
 		debugFlush();
 	}
 
-	strcpy(debugBuffer + debugBufferIndex, s);
+	memcpy(debugBuffer + debugBufferIndex, s, length);
 	debugBufferIndex += length;
-	strcpy(debugBuffer + debugBufferIndex, "\n");
-	debugBufferIndex += 1;
-#else
-	strcpy(debugBuffer, s);
-	strcat(debugBuffer, "\n");
+	debugBuffer[debugBufferIndex++] = '\n';
+#if !BUFFERED_DEBUG
 	debugFlush();
 #endif
 
@@ -68,7 +64,7 @@ void debug(SceMpegRingbuffer *ringbuffer)
 void debug(SceMpegAu *mpegAu)
 {
 	char s[300];
-	sprintf(s, "Au iPts=%d, iDts=%d, iEsBuffer=%d, iAuSize=%d", mpegAu->iPts, mpegAu->iDts, mpegAu->iEsBuffer, mpegAu->iAuSize);
+	sprintf(s, "Au iPts=%d, iDts=%d, iEsBuffer=0x%08X, iAuSize=0x%X", mpegAu->iPts, mpegAu->iDts, mpegAu->iEsBuffer, mpegAu->iAuSize);
 	debug(s);
 }
 

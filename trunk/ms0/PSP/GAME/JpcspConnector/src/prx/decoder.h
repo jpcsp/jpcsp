@@ -32,6 +32,8 @@ typedef struct DecoderThreadData
 	SceMpegStream*		m_MpegStreamAtrac;
 	SceMpegAu*			m_MpegAuAtrac;
 	SceInt32			m_MpegAtracOutSize;
+	SceMpegStream*		m_MpegStreamUserdata;
+	SceMpegAu*			m_MpegAuUserdata;
 
 	SceInt32			m_iAudioFrameDuration;
 	SceInt32			m_iVideoFrameDuration;

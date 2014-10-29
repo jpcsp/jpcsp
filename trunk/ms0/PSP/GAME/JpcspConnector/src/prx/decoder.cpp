@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 #define DEBUG_TIMING	1
+#define DEBUG_USERDATA	1
 
 SceInt32 IsRingbufferFull(ReaderThreadData* D)
 {
@@ -34,7 +35,7 @@ int T_Decoder(SceSize _args, void *_argp)
 	SceCtrlData pad;
 #if DEBUG_TIMING
 	int start, end;
-	char s[100];
+	char s[200];
 #endif
 
 	int iInitAudio = 1;
@@ -98,6 +99,33 @@ int T_Decoder(SceSize _args, void *_argp)
 
 			if(D->Reader->m_Status == ReaderThreadData::READER_ABORT)
 				break;
+		}
+
+		if (DEBUG_USERDATA)
+		{
+			SceInt32 unknown2[2];
+			SceUInt32 i;
+			unknown2[0] = 0x12345678;
+			unknown2[1] = 0xABCDEF98;
+			retVal = sceMpegGetUserdataAu(&D->m_Mpeg, D->m_MpegStreamUserdata, D->m_MpegAuUserdata, unknown2);
+
+			u8 *esBuffer = (u8 *) D->m_MpegAuUserdata->iEsBuffer;
+			SceUInt32 esSize = D->m_MpegAuUserdata->iAuSize;
+
+			sprintf(s, "sceMpegGetUserdataAu result 0x%08X", retVal);
+			debug(s);
+
+			if (retVal == 0)
+			{
+				sprintf(s, "sceMpegGetUserdataAu unknown[0]=0x%08X, unknown[1]=0x%08X, esBuffer=0x%08X, esSize=0x%X", unknown2[0], unknown2[1], D->m_MpegAuUserdata->iEsBuffer, esSize);
+				debug(s);
+				debug(D->m_MpegAuUserdata);
+				for (i = 0; i < esSize; i += 8)
+				{
+					sprintf(s, "0x%08X: %02X %02X %02X %02X %02X %02X %02X %02X", D->m_MpegAuUserdata->iEsBuffer + i, esBuffer[i], esBuffer[i+1], esBuffer[i+2], esBuffer[i+3], esBuffer[i+4], esBuffer[i+5], esBuffer[i+6], esBuffer[i+7]);
+					debug(s);
+				}
+			}
 		}
 
 		if(D->Audio->m_iFullBuffers < D->Audio->m_iNumBuffers)
@@ -332,6 +360,8 @@ SceInt32 CPMFPlayer::InitDecoder(JpcspConnector *Connector)
 	Decoder.m_MpegAuAtrac		= &m_MpegAuAtrac;
 	Decoder.m_LastError			= m_LastError;
 	Decoder.m_MpegAtracOutSize  = m_MpegAtracOutSize;
+	Decoder.m_MpegStreamUserdata	= m_MpegStreamUserdata;
+	Decoder.m_MpegAuUserdata		= &m_MpegAuUserdata;
 
 	Decoder.m_iAudioFrameDuration = 4180; // ??
 	Decoder.m_iVideoFrameDuration = (int)(90000 / 29.97);

@@ -322,6 +322,9 @@ SceInt32 sceMpegGetAtracAu(SceMpeg* Mpeg, SceMpegStream* pStream, SceMpegAu* pAu
  */
 SceInt32 sceMpegAtracDecode(SceMpeg* Mpeg, SceMpegAu* pAu, ScePVoid pBuffer, SceInt32 iInit);
 
+SceInt32 sceMpegQueryUserdataEsSize(SceMpeg* Mpeg, SceInt32* iEsSize, SceInt32* iOutSize);
+SceInt32 sceMpegGetUserdataAu(SceMpeg* Mpeg, SceMpegStream* pStream, SceMpegAu* pAu, ScePVoid pUnk);
+
 #ifdef __cplusplus
 }
 #endif
