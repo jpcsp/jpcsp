@@ -236,6 +236,7 @@ public class sceMpeg extends HLEModule {
     private PesHeader userDataPesHeader;
     private UserDataBuffer userDataBuffer;
     private final int userDataHeader[] = new int[8];
+    private int userDataLength;
 
     private static class DecodedImageInfo {
     	public PesHeader pesHeader;
@@ -415,10 +416,6 @@ public class sceMpeg extends HLEModule {
     		mem.memcpy(addr, addr + size, length);
 
     		return size;
-    	}
-
-    	public boolean isEmpty() {
-    		return length == 0;
     	}
     }
 
@@ -1641,7 +1638,6 @@ public class sceMpeg extends HLEModule {
     		log.debug(String.format("readNextUserDataFrame %s", mpegRingbuffer));
     	}
     	int userDataChannel = 0x20 + getRegisteredUserDataChannel();
-    	int userDataLength = 0;
 
     	while (!buffer.isEmpty() && (userDataLength == 0 || userDataBuffer.getLength() < userDataLength)) {
     		int startCode = read32(mem, buffer);
@@ -1664,6 +1660,10 @@ public class sceMpeg extends HLEModule {
 					break;
 				case PRIVATE_STREAM_1:
 					// Audio/Userdata stream
+					if (userDataLength > 0) {
+			    		// Keep only the PES header of the first data chunk
+			    		pesHeader = dummyPesHeader;
+					}
 					codeLength = read16(mem, buffer);
 					codeLength = readPesHeader(mem, buffer, pesHeader, codeLength, startCode);
 					if (pesHeader.getChannel() == userDataChannel) {
@@ -1678,8 +1678,6 @@ public class sceMpeg extends HLEModule {
 							                  (userDataHeader[3] <<  0)) - 4;
 						}
 						addToUserDataBuffer(mem, buffer, codeLength);
-			    		// Ignore next PES headers for this user data
-			    		pesHeader = dummyPesHeader;
 					} else {
 						skip(buffer, codeLength);
 					}
@@ -2425,6 +2423,7 @@ public class sceMpeg extends HLEModule {
         audioPesHeader = null;
         videoPesHeader = null;
         userDataPesHeader = null;
+        userDataLength = 0;
 
         if (decodedImages != null) {
         	synchronized (decodedImages) {
@@ -3565,9 +3564,15 @@ public class sceMpeg extends HLEModule {
     	}
 
         readNextUserDataFrame(userDataPesHeader);
-    	if (userDataBuffer.isEmpty()) {
+    	if (userDataLength == 0) {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("sceMpegGetUserdataAu no user data available, returning 0x%08X", SceKernelErrors.ERROR_MPEG_NO_DATA));
+    		}
+    		return SceKernelErrors.ERROR_MPEG_NO_DATA;
+    	}
+    	if (userDataBuffer.getLength() < userDataLength) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("sceMpegGetUserdataAu no enough user data available (0x%X from 0x%X), returning 0x%08X", userDataBuffer.getLength(), userDataLength, SceKernelErrors.ERROR_MPEG_NO_DATA));
     		}
     		return SceKernelErrors.ERROR_MPEG_NO_DATA;
     	}
@@ -3575,9 +3580,10 @@ public class sceMpeg extends HLEModule {
     	Memory mem = auAddr.getMemory();
     	mpegUserDataAu.pts = userDataPesHeader.getPts();
     	mpegUserDataAu.dts = UNKNOWN_TIMESTAMP; // dts is always -1
-    	mpegUserDataAu.esSize = userDataBuffer.getLength();
+    	mpegUserDataAu.esSize = userDataLength;
     	mpegUserDataAu.write(auAddr);
     	userDataBuffer.notifyRead(mem, mpegUserDataAu.esSize);
+		userDataLength = 0;
 
     	if (headerAddr.isNotNull()) {
 	    	// First 8 bytes of the user data header
