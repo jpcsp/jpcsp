@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.externalge;
 
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_PROJECTION;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
@@ -447,8 +449,23 @@ public class ExternalGE {
 	}
 
 	public static float[] getMatrix(int mtxType) {
-		// TODO Not implemented
-		return null;
+		int size = 12;
+		int offset = mtxType * size;
+
+		if (mtxType == PSP_GE_MATRIX_PROJECTION) {
+			// Projection matrix has 16 elements
+			size = 16;
+		} else if (mtxType > PSP_GE_MATRIX_PROJECTION) {
+			// Projection matrix has 4 elements more
+			offset += 4;
+		}
+
+		float mtx[] = new float[size];
+		for (int i = 0; i < size; i++) {
+			mtx[i] = NativeUtils.getCoreMtxArray(offset + i);
+		}
+
+		return mtx;
 	}
 
 	public static int getScreenScale() {
