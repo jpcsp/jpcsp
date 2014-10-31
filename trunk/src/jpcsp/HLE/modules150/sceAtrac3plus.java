@@ -397,8 +397,10 @@ public class sceAtrac3plus extends HLEModule {
         	this.codecType = codecType;
         	if (codecType == PSP_CODEC_AT3) {
         		maxSamples = Atrac3Decoder.SAMPLES_PER_FRAME;
-        	} else {
+        	} else if (codecType == PSP_CODEC_AT3PLUS) {
         		maxSamples = Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES;
+        	} else {
+        		maxSamples = 0;
         	}
         }
 
@@ -697,6 +699,10 @@ public class sceAtrac3plus extends HLEModule {
     	}
     	for (int j = 0; j < numAT3IdCount && i < atracIDs.length; j++, i++) {
     		atracIDs[i].setCodecType(PSP_CODEC_AT3);
+    	}
+    	// The rest is unused
+    	for (; i < atracIDs.length; i++) {
+    		atracIDs[i].setCodecType(0);
     	}
 
     	return 0;
