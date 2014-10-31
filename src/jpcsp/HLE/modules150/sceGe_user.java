@@ -482,6 +482,11 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x57C8945B, version = 150)
     public int sceGeGetMtx(int mtxType, TPointer mtxAddr) {
+    	if (mtxType < 0 || mtxType > PSP_GE_MATRIX_TEXGEN) {
+        	log.warn(String.format("sceGeGetMtx invalid type mtxType=%d", mtxType));
+        	return SceKernelErrors.ERROR_INVALID_INDEX;
+    	}
+
     	float[] mtx;
     	if (ExternalGE.isActive()) {
     		mtx = ExternalGE.getMatrix(mtxType);
@@ -489,13 +494,9 @@ public class sceGe_user extends HLEModule {
     		mtx = VideoEngine.getInstance().getMatrix(mtxType);
     	}
 
-        if (mtx == null) {
-        	log.warn(String.format("sceGeGetMtx invalid type mtxType=%d", mtxType));
-        	return -1;
-        }
-
         for (int i = 0; i < mtx.length; i++) {
-        	mtxAddr.setFloat(i << 2, mtx[i]);
+        	// Float value is returned in lower 24 bits.
+        	mtxAddr.setValue32(i << 2, Float.floatToRawIntBits(mtx[i]) >>> 8);
         }
 
         if (log.isInfoEnabled()) {
