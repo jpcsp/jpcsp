@@ -322,7 +322,7 @@ public class sceFont extends HLEModule {
                 x += linePrefix.length() * jpcsp.util.Debug.Font.charWidth;
         	}
 
-        	fontInfo.printFont(addr, fontBpl, fontBufWidth, fontBufHeight, x, y, 0, 0, fontBufWidth, fontBufHeight, fontPixelFormat, charCode, ' ', SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
+        	fontInfo.printFont(addr, fontBpl, fontBufWidth, fontBufHeight, x, y, 0, 0, fontBufWidth, fontBufHeight, fontPixelFormat, charCode, ' ', SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR, true);
 
             x += maxGlyphWidth;
             if (x + maxGlyphWidth > fontBufWidth) {
@@ -907,7 +907,7 @@ public class sceFont extends HLEModule {
                     buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI,
                     0, 0, bufWidth, bufHeight,
-                    pixelFormat, charCode, font.fontLib.getAltCharCode(), SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
+                    pixelFormat, charCode, font.fontLib.getAltCharCode(), SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR, false);
         } else {
             // Font adjustment.
             // TODO: Instead of using the loaded PGF, figure out
@@ -1047,7 +1047,7 @@ public class sceFont extends HLEModule {
                     buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI,
                     clipXPos, clipYPos, clipWidth, clipHeight,
-                    pixelFormat, charCode, font.fontLib.getAltCharCode(), SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
+                    pixelFormat, charCode, font.fontLib.getAltCharCode(), SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR, false);
         } else {
             // Font adjustment.
             // TODO: Instead of using the loaded PGF, figure out

@@ -401,11 +401,10 @@ public class SceFontInfo {
 
         if (glyphType == FONT_PGF_GLYPH_TYPE_SHADOW) {
         	int shadowID = glyph.shadowID;
-        	int shadowIndex = getCharIndex(shadowID, shadow_compr);
-            if (shadowIndex < 0 || shadowIndex >= shadowGlyphs.length) {
+            if (shadowID < 0 || shadowID >= shadowGlyphs.length) {
                 return null;
             }
-            glyph = shadowGlyphs[shadowIndex];
+            glyph = shadowGlyphs[shadowID];
         }
 
         return glyph;
@@ -500,7 +499,7 @@ public class SceFontInfo {
     }
 
     // Generate a 4bpp texture for the given char id.
-    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType) {
+    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType, boolean addColor) {
     	Glyph glyph = getCharGlyph(charCode, glyphType);
     	if (glyph == null) {
     		// No Glyph available for this charCode, try to use the alternate char.
@@ -517,13 +516,15 @@ public class SceFontInfo {
 
     	// Overlay glyph?
         if ((glyph.flags & FONT_PGF_BMP_OVERLAY) == FONT_PGF_BMP_OVERLAY) {
-        	// First clear the bitmap area of the main glyph.
-        	// Sub-glyphs will just add colors.
-        	int pixelColor = 0; // Set to black
-        	for (int pixelY = 0; pixelY < glyph.h; pixelY++) {
-        		for (int pixelX = 0; pixelX < glyph.w; pixelX++) {
-        			Debug.setFontPixel(base, bpl, bufWidth, bufHeight, x + pixelX, y + pixelY, pixelColor, pixelformat);
-        		}
+        	if (!addColor) {
+	        	// First clear the bitmap area of the main glyph.
+	        	// Sub-glyphs will just add colors.
+	        	int pixelColor = 0; // Set to black
+	        	for (int pixelY = 0; pixelY < glyph.h; pixelY++) {
+	        		for (int pixelX = 0; pixelX < glyph.w; pixelX++) {
+	        			Debug.setFontPixel(base, bpl, bufWidth, bufHeight, x + pixelX, y + pixelY, pixelColor, pixelformat);
+	        		}
+	        	}
         	}
 
         	// 1 to 3 sub-glyphs can be mixed together to form the main glyph
@@ -547,12 +548,12 @@ public class SceFontInfo {
         	}
         } else {
         	// Regular glyph rendering
-        	generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, clipX, clipY, clipWidth, clipHeight, pixelformat, glyph, glyphType, false);
+        	generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, clipX, clipY, clipWidth, clipHeight, pixelformat, glyph, glyphType, addColor);
         }
     }
 
-    public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType) {
-        generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, clipX, clipY, clipWidth, clipHeight, pixelformat, charCode, altCharCode, glyphType);
+    public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType, boolean addColor) {
+        generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, clipX, clipY, clipWidth, clipHeight, pixelformat, charCode, altCharCode, glyphType, addColor);
     }
 
     public pspCharInfo getCharInfo(int charCode, int glyphType) {
