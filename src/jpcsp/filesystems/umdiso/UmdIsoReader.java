@@ -293,6 +293,20 @@ public class UmdIsoReader {
         return new UmdIsoFile(this, fileStart, fileLength, timestamp, fileName);
     }
 
+    public boolean hasFile(String filePath) {
+    	try {
+			UmdIsoFile umdIsoFile = getFile(filePath);
+			if (umdIsoFile != null) {
+				umdIsoFile.close();
+				return true;
+			}
+		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
+		}
+
+    	return false;
+    }
+
     public String resolveSectorPath(int start, long length) {
         String fileName = null;
         // Scroll back through the sectors until the file's start sector is reached

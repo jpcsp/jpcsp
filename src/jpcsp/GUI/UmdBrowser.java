@@ -4,6 +4,7 @@
  */
 package jpcsp.GUI;
 
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
 import static jpcsp.util.Utilities.endianSwap32;
 
 import java.awt.Color;
@@ -45,9 +46,13 @@ import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.Memory;
 import jpcsp.WindowPropSaver;
+import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
+import jpcsp.HLE.modules150.sceAtrac3plus.AtracFileInfo;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
+import jpcsp.format.psmf.PsmfAudioDemuxVirtualFile;
 import jpcsp.settings.Settings;
 import jpcsp.util.Constants;
 
@@ -537,7 +542,19 @@ public class UmdBrowser extends javax.swing.JDialog {
             if (lastRowIndex != rowIndex) {
                 stopVideo();
                 umdBrowserPmf = new UmdBrowserPmf(iso, "PSP_GAME/ICON1.PMF", icon0Label);
-                umdBrowserSound = new UmdBrowserSound(Memory.getInstance(), iso, "PSP_GAME/SND0.AT3");
+                if (iso.hasFile("PSP_GAME/SND0.AT3")) {
+                	umdBrowserSound = new UmdBrowserSound(Memory.getInstance(), iso, "PSP_GAME/SND0.AT3");
+                } else {
+                	IVirtualFile pmf = new UmdIsoVirtualFile(iso.getFile("PSP_GAME/ICON1.PMF"));
+                	IVirtualFile audio = new PsmfAudioDemuxVirtualFile(pmf, 0x800, 0);
+                	AtracFileInfo atracFileInfo = new AtracFileInfo();
+                	atracFileInfo.inputFileDataOffset = 0;
+                	atracFileInfo.atracChannels = 2;
+                	atracFileInfo.atracCodingMode = 0;
+                	umdBrowserSound = new UmdBrowserSound(Memory.getInstance(), audio, PSP_CODEC_AT3PLUS, atracFileInfo);
+                	audio.ioClose();
+                	pmf.ioClose();
+                }
             }
 
             lastRowIndex = rowIndex;
