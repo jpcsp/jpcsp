@@ -2372,7 +2372,7 @@ public class sceUtility extends HLEModule {
                 return;
             }
 
-            fontInfo.printFont(textAddr, textWidth / 2, textWidth, textHeight, x - textX + charInfo.bitmapLeft, y - textY + baseAscender - charInfo.bitmapTop, 0, 0, textWidth, textHeight, PSP_FONT_PIXELFORMAT_4, c, ' ', glyphType);
+            fontInfo.printFont(textAddr, textWidth / 2, textWidth, textHeight, x - textX + charInfo.bitmapLeft, y - textY + baseAscender - charInfo.bitmapTop, 0, 0, textWidth, textHeight, PSP_FONT_PIXELFORMAT_4, c, ' ', glyphType, true);
 
             if (glyphType != SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR) {
                 // Take the advanceH from the character, not from the shadow

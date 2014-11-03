@@ -52,7 +52,7 @@ public class SceFontInfoBW extends SceFontInfo {
 	}
 
 	@Override
-	public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType) {
+	public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType, boolean addColor) {
 		if (glyphType != FONT_PGF_GLYPH_TYPE_CHAR) {
 			return;
 		}
@@ -70,7 +70,11 @@ public class SceFontInfoBW extends SceFontInfo {
 				int pixelY = y + yy;
                 if (pixelX >= clipX && pixelX < clipX + clipWidth && pixelY >= clipY && pixelY < clipY + clipHeight) {
     				int pixelColor = pixelColors[bitmapRow & 1];
-                	Debug.setFontPixel(base, bpl, bufWidth, bufHeight, pixelX, pixelY, pixelColor, pixelformat);
+    				if (addColor) {
+    					Debug.addFontPixel(base, bpl, bufWidth, bufHeight, pixelX, pixelY, pixelColor, pixelformat);
+    				} else {
+    					Debug.setFontPixel(base, bpl, bufWidth, bufHeight, pixelX, pixelY, pixelColor, pixelformat);
+    				}
                 }
 			}
 		}
