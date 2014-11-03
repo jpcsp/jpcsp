@@ -545,7 +545,7 @@ public class sceMpeg extends HLEModule {
 		}
     }
 
-    protected static class PSMFHeader {
+    public static class PSMFHeader {
         private static final int size = 2048;
 
         // Header vars.
