@@ -49,6 +49,8 @@ import jpcsp.WindowPropSaver;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
 import jpcsp.HLE.modules150.sceAtrac3plus.AtracFileInfo;
+import jpcsp.HLE.modules150.sceMpeg;
+import jpcsp.HLE.modules150.sceMpeg.PSMFHeader;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -546,13 +548,19 @@ public class UmdBrowser extends javax.swing.JDialog {
                 	umdBrowserSound = new UmdBrowserSound(Memory.getInstance(), iso, "PSP_GAME/SND0.AT3");
                 } else {
                 	IVirtualFile pmf = new UmdIsoVirtualFile(iso.getFile("PSP_GAME/ICON1.PMF"));
-                	IVirtualFile audio = new PsmfAudioDemuxVirtualFile(pmf, 0x800, 0);
-                	AtracFileInfo atracFileInfo = new AtracFileInfo();
-                	atracFileInfo.inputFileDataOffset = 0;
-                	atracFileInfo.atracChannels = 2;
-                	atracFileInfo.atracCodingMode = 0;
-                	umdBrowserSound = new UmdBrowserSound(Memory.getInstance(), audio, PSP_CODEC_AT3PLUS, atracFileInfo);
-                	audio.ioClose();
+                	byte mpegHeader[] = new byte[sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE];
+                	if (pmf.ioRead(mpegHeader, 0, mpegHeader.length) == mpegHeader.length) {
+	                	PSMFHeader psmfHeader = new PSMFHeader(0, mpegHeader);
+	                	if (psmfHeader.getSpecificStreamNum(sceMpeg.PSMF_ATRAC_STREAM) > 0) {
+		                	IVirtualFile audio = new PsmfAudioDemuxVirtualFile(pmf, psmfHeader.mpegOffset, 0);
+		                	AtracFileInfo atracFileInfo = new AtracFileInfo();
+		                	atracFileInfo.inputFileDataOffset = 0;
+		                	atracFileInfo.atracChannels = 2;
+		                	atracFileInfo.atracCodingMode = 0;
+		                	umdBrowserSound = new UmdBrowserSound(Memory.getInstance(), audio, PSP_CODEC_AT3PLUS, atracFileInfo);
+		                	audio.ioClose();
+	                	}
+                	}
                 	pmf.ioClose();
                 }
             }
