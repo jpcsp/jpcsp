@@ -65,10 +65,27 @@ public class UmdBrowserSound {
 		this.mem = mem;
 
 		if (read(iso, fileName)) {
-			Thread soundPlayThread = new SoundPlayThread();
-			soundPlayThread.setDaemon(true);
-			soundPlayThread.setName("Umd Browser Sound Play Thread");
-			soundPlayThread.start();
+			startThread();
+		} else {
+			threadExit = true;
+		}
+	}
+
+	public UmdBrowserSound(Memory mem, IVirtualFile vFile, int codecType, AtracFileInfo atracFileInfo) {
+		this.mem = mem;
+
+		byte[] audioData = Utilities.readCompleteFile(vFile);
+		int atracBytesPerFrame = (((audioData[2] & 0x03) << 8) | ((audioData[3] & 0xFF) << 3)) + 8;
+		int headerLength = 8;
+		inputLength = 0;
+		for (int i = 0; i < audioData.length; i += headerLength + atracBytesPerFrame) {
+			write(mem, inputAddr + inputLength, audioData, i + headerLength, atracBytesPerFrame);
+			inputLength += atracBytesPerFrame;
+		}
+		atracFileInfo.atracBytesPerFrame = atracBytesPerFrame;
+
+		if (read(vFile, codecType, atracFileInfo)) {
+			startThread();
 		} else {
 			threadExit = true;
 		}
@@ -85,6 +102,20 @@ public class UmdBrowserSound {
 		}
 	}
 
+	private static void write(Memory mem, int addr, byte[] data, int offset, int length) {
+		length = Math.min(length, data.length - offset);
+		for (int i = 0; i < length; i++) {
+			mem.write8(addr + i, data[offset + i]);
+		}
+	}
+
+	private void startThread() {
+		Thread soundPlayThread = new SoundPlayThread();
+		soundPlayThread.setDaemon(true);
+		soundPlayThread.setName("Umd Browser Sound Play Thread");
+		soundPlayThread.start();
+	}
+
 	private boolean read(UmdIsoReader iso, String fileName) {
 		IVirtualFileSystem vfs = new UmdIsoVirtualFileSystem(iso);
 		IVirtualFile vFile = vfs.ioOpen(fileName, PSP_O_RDONLY, 0);
@@ -95,6 +126,7 @@ public class UmdBrowserSound {
 		inputLength = (int) vFile.length();
 		inputLength = vFile.ioRead(new TPointer(mem, inputAddr), inputLength);
 		vfs.ioClose(vFile);
+
 		if (inputLength <= 0) {
 			return false;
 		}
@@ -105,6 +137,12 @@ public class UmdBrowserSound {
 			return false;
 		}
 
+		boolean result = read(vFile, codecType, atracFileInfo);
+
+		return result;
+	}
+
+	private boolean read(IVirtualFile vFile, int codecType, AtracFileInfo atracFileInfo) {
 		codec = CodecFactory.getCodec(codecType);
 		if (codec == null) {
 			return false;
