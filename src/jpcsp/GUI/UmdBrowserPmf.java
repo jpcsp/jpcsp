@@ -26,6 +26,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 import jpcsp.Emulator;
+import jpcsp.HLE.modules600.sceMpeg;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.IVideoCodec;
@@ -52,6 +53,8 @@ public class UmdBrowserPmf {
 	private InputStream is;
 	private int videoChannel = 0;
 	private int frame;
+	private int videoWidth;
+	private int videoHeight;
 
     public UmdBrowserPmf(UmdIsoReader iso, String fileName, JLabel display) {
         this.iso = iso;
@@ -168,7 +171,10 @@ public class UmdBrowserPmf {
 
 		skip(is, 4);
 		int mpegOffset = read32(is);
-		skip(is, mpegOffset - 12);
+		skip(is, sceMpeg.PSMF_FRAME_WIDTH_OFFSET - sceMpeg.PSMF_STREAM_SIZE_OFFSET);
+		videoWidth = read8(is) << 4;
+		videoHeight = read8(is) << 4;
+		skip(is, mpegOffset - sceMpeg.PSMF_FRAME_HEIGHT_OFFSET - 1);
 
 		return true;
 	}
@@ -348,8 +354,8 @@ public class UmdBrowserPmf {
 	    	int cb[] = new int[size2];
 	    	if (videoCodec.getImage(luma, cb, cr) == 0) {
 	    		int abgr[] = new int[size];
-	    		H264Utils.YUV2ABGR(width, height, luma, cb, cr, abgr);
-	    		image = display.createImage(new MemoryImageSource(width, height, abgr, 0, width));
+	    		H264Utils.YUV2ARGB(width, height, luma, cb, cr, abgr);
+	    		image = display.createImage(new MemoryImageSource(videoWidth, videoHeight, abgr, 0, width));
 
 	    		frame++;
 
