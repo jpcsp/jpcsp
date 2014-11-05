@@ -85,6 +85,18 @@ public class H264Utils {
 		}
 	}
 
+	public static void YUV2ARGB(int width, int height, int luma[], int cb[], int cr[], int argb[]) {
+		// Convert YUV to ABGR
+		YUV2ABGR(width, height, luma, cb, cr, argb);
+
+		// Convert ABGR to ARGB (i.e. switch blue and red color components)
+		for (int i = 0; i < argb.length; i++) {
+			int color = argb[i];
+			color = (color & 0xFF00FF00) | ((color & 0x00FF0000) >> 16) | ((color & 0x000000FF) << 16);
+			argb[i] = color;
+		}
+	}
+
 	public static void YUV2ABGR(int width, int height, int luma[], int cb[], int cr[], int abgr[]) {
 		final int width2 = width >> 1;
 
