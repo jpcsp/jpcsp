@@ -20,12 +20,20 @@ import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.SceModule;
 
 public class DeferredVStubHI16 extends DeferredStub {
+	private boolean hasSavedValue;
+	private short savedValue;
+
 	public DeferredVStubHI16(SceModule sourceModule, String moduleName, int importAddress, int nid) {
 		super(sourceModule, moduleName, importAddress, nid);
 	}
 
 	@Override
 	public void resolve(Memory mem, int address) {
+		if (!hasSavedValue) {
+			savedValue = (short) mem.read16(getImportAddress());
+			hasSavedValue = true;
+		}
+
 		// Perform a R_MIPS_HI16 relocation
 
 		// Retrieve the current address from hi16
@@ -41,7 +49,20 @@ public class DeferredVStubHI16 extends DeferredStub {
 		if (relocatedLoValue < 0) {
 			relocatedHiValue++;
 		}
+
 		mem.write16(getImportAddress(), relocatedHiValue);
+	}
+
+	@Override
+	public void unresolve(Memory mem) {
+		if (hasSavedValue) {
+			mem.write16(getImportAddress(), savedValue);
+		}
+
+    	if (sourceModule != null) {
+    		// Add this stub back to the list of unresolved imports from the source module
+    		sourceModule.unresolvedImports.add(this);
+    	}
 	}
 
 	@Override

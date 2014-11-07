@@ -20,12 +20,20 @@ import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.SceModule;
 
 public class DeferredVStub32 extends DeferredStub {
+	private boolean hasSavedValue;
+	private int savedValue;
+
 	public DeferredVStub32(SceModule sourceModule, String moduleName, int importAddress, int nid) {
 		super(sourceModule, moduleName, importAddress, nid);
 	}
 
 	@Override
 	public void resolve(Memory mem, int address) {
+		if (!hasSavedValue) {
+			savedValue = mem.read32(getImportAddress());
+			hasSavedValue = true;
+		}
+
 		// Perform a R_MIPS_32 relocation
 
 		// Retrieve the current 32bit value
@@ -36,6 +44,18 @@ public class DeferredVStub32 extends DeferredStub {
 
 		// Write back the relocated 32bit value
 		mem.write32(getImportAddress(), value);
+	}
+
+	@Override
+	public void unresolve(Memory mem) {
+		if (hasSavedValue) {
+			mem.write32(getImportAddress(), savedValue);
+		}
+
+    	if (sourceModule != null) {
+    		// Add this stub back to the list of unresolved imports from the source module
+    		sourceModule.unresolvedImports.add(this);
+    	}
 	}
 
 	@Override

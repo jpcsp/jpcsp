@@ -22,7 +22,7 @@ import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.types.SceModule;
 
 public class DeferredStub {
-    private SceModule sourceModule;
+    protected SceModule sourceModule;
     private String moduleName;
     private int importAddress;
     private int nid;
