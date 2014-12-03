@@ -502,6 +502,9 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	@Override
 	public SocketAddress getSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
 		InetAddress inetAddress = getInetAddress(macAddress);
+		if (inetAddress == null && sceNetAdhoc.isMyMacAddress(macAddress)) {
+			inetAddress = localHostInetAddress;
+		}
 		if (inetAddress == null) {
 			throw new UnknownHostException(String.format("ProOnline: unknown MAC address %s", sceNet.convertMacAddressToString(macAddress)));
 		}

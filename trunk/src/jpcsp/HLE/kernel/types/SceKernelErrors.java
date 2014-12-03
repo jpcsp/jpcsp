@@ -411,6 +411,7 @@ public class SceKernelErrors {
     public final static int ERROR_NET_ADHOC_INVALID_ADDR                        = 0x80410702;
     public final static int ERROR_NET_ADHOC_NO_DATA_AVAILABLE                   = 0x80410709;
     public final static int ERROR_NET_ADHOC_PORT_IN_USE                         = 0x8041070a;
+    public final static int ERROR_NET_ADHOC_INVALID_ARG                         = 0x80410711;
     public final static int ERROR_NET_ADHOC_NOT_INITIALIZED                     = 0x80410712;
     public final static int ERROR_NET_ADHOC_ALREADY_INITIALIZED                 = 0x80410713;
     public final static int ERROR_NET_ADHOC_DISCONNECTED                        = 0x8041070c;
