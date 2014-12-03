@@ -18,6 +18,7 @@ package jpcsp.network.adhoc;
 
 import java.io.IOException;
 import java.net.BindException;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
@@ -188,6 +189,9 @@ public abstract class PtpObject extends PdpObject {
 			if (getDestMacAddress() != null) {
 				int realDestPort = Modules.sceNetAdhocModule.getRealPortFromClientPort(getDestMacAddress().macAddress, getDestPort());
 				SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(getDestMacAddress().macAddress, realDestPort);
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("Ptp openSocket address=%s, port=%d", socketAddress, realDestPort));
+				}
 				socket.connect(socketAddress, realDestPort);
 			}
 		}
@@ -203,12 +207,20 @@ public abstract class PtpObject extends PdpObject {
 				log.debug("open", e);
 			}
 			result = SceKernelErrors.ERROR_NET_ADHOC_PORT_IN_USE;
+		} catch (ConnectException e) {
+			if (log.isDebugEnabled()) {
+				log.debug("open", e);
+			}
+			result = SceKernelErrors.ERROR_NET_ADHOC_INVALID_ARG;
 		} catch (SocketException e) {
 			log.error("open", e);
+			result = SceKernelErrors.ERROR_NET_ADHOC_INVALID_ARG;
 		} catch (UnknownHostException e) {
 			log.error("open", e);
+			result = SceKernelErrors.ERROR_NET_ADHOC_INVALID_ARG;
 		} catch (IOException e) {
 			log.error("open", e);
+			result = SceKernelErrors.ERROR_NET_ADHOC_INVALID_ARG;
 		}
 
 		return result;
