@@ -19,11 +19,14 @@ package jpcsp.graphics.RE.externalge;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.Logger;
+
 /**
  * @author gid15
  *
  */
 public class RendererThread extends Thread {
+	private static final Logger log = ExternalGE.log;
 	private int lineMask;
 	private Semaphore sync;
 	private volatile boolean exit;
@@ -39,10 +42,17 @@ public class RendererThread extends Thread {
 		while (!exit) {
 			if (waitForSync(100)) {
 				if (lineMask != 0) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Starting async rendering lineMask=0x%08X", lineMask));
+					}
 					NativeUtils.rendererRender(lineMask);
 				}
+
 				if (response != null) {
-					response.release();
+					// Be careful to clear the response before releasing it!
+					Semaphore responseToBeReleased = response;
+					response = null;
+					responseToBeReleased.release();
 				}
 			}
 		}
@@ -63,11 +73,6 @@ public class RendererThread extends Thread {
 	private boolean waitForSync(int millis) {
 		while (true) {
 	    	try {
-	    		int availablePermits = sync.drainPermits();
-	    		if (availablePermits > 0) {
-	    			break;
-	    		}
-
     			if (sync.tryAcquire(millis, TimeUnit.MILLISECONDS)) {
     				break;
     			}
