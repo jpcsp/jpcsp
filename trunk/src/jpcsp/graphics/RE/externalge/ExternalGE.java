@@ -44,7 +44,7 @@ import jpcsp.util.Utilities;
  *
  */
 public class ExternalGE {
-	public static final boolean enableAsyncRendering = false;
+	public static final int numberRendererThread = 4;
 	public static       boolean activateWhenAvailable = false;
 	public static final boolean useUnsafe = false;
 	public static Logger log = Logger.getLogger("externalge");
@@ -90,17 +90,63 @@ public class ExternalGE {
 		setLogLevelThread.setDaemon(true);
 		setLogLevelThread.start();
 
-		if (enableAsyncRendering) {
-			rendererThreads = new RendererThread[2];
-			rendererThreads[0] = new RendererThread(0xFF00FF00);
-			rendererThreads[1] = new RendererThread(0x00FF00FF);
+		if (numberRendererThread > 0) {
+			rendererThreads = new RendererThread[numberRendererThread];
+			int[] lineMasks = new int[numberRendererThread];
+			switch (numberRendererThread) {
+				case 1:
+					lineMasks[0] = 0xFFFFFFFF;
+					break;
+				case 2:
+					lineMasks[0] = 0xFF00FF00;
+					lineMasks[1] = 0x00FF00FF;
+					break;
+				case 3:
+					lineMasks[0] = 0xF801F001;
+					lineMasks[1] = 0x07C00F80;
+					lineMasks[3] = 0x003E007E;
+					break;
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+					lineMasks[0] = 0xF000F000;
+					lineMasks[1] = 0x0F000F00;
+					lineMasks[2] = 0x00F000F0;
+					lineMasks[3] = 0x000F000F;
+					break;
+				case 8:
+				default:
+					lineMasks[0] = 0xC000C000;
+					lineMasks[1] = 0x30003000;
+					lineMasks[2] = 0x0C000C00;
+					lineMasks[3] = 0x03000300;
+					lineMasks[4] = 0x00C000C0;
+					lineMasks[5] = 0x00300030;
+					lineMasks[6] = 0x000C000C;
+					lineMasks[7] = 0x00030003;
+					break;
+			}
+
+			int allLineMasks = 0;
 			for (int i = 0; i < rendererThreads.length; i++) {
+				int lineMask = lineMasks[i];
+				rendererThreads[i] = new RendererThread(lineMask);
 				rendererThreads[i].setName(String.format("Renderer Thread #%d", i));
 				rendererThreads[i].start();
+
+				if ((allLineMasks & lineMask) != 0) {
+					log.error(String.format("Incorrect line masks for the renderer threads (number=%d)", numberRendererThread));
+				}
+				allLineMasks |= lineMask;
 			}
+			if (allLineMasks != 0xFFFFFFFF) {
+				log.error(String.format("Incorrect line masks for the renderer threads (number=%d)", numberRendererThread));
+			}
+
 			rendererThreadsDone = new Semaphore(0);
 		}
-		NativeUtils.setRendererAsyncRendering(enableAsyncRendering);
+		NativeUtils.setRendererAsyncRendering(numberRendererThread > 0);
 		setScreenScale(sceDisplay.getResizedWidthPow2(1));
 		synchronized (screenScaleLock) {
 			NativeUtils.setScreenScale(getScreenScale());
@@ -159,7 +205,7 @@ public class ExternalGE {
 			NativeCallbacks.exit();
 			CoreThread.exit();
 			setLogLevelThread.exit();
-			if (enableAsyncRendering) {
+			if (numberRendererThread > 0) {
 				for (int i = 0; i < rendererThreads.length; i++) {
 					rendererThreads[i].exit();
 				}
@@ -398,9 +444,16 @@ public class ExternalGE {
 		}
 
 		try {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Waiting for async rendering completion"));
+			}
 			rendererThreadsDone.acquire(rendererThreads.length);
 		} catch (InterruptedException e) {
 			log.error("render", e);
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Async rendering completion"));
 		}
 
 		NativeUtils.rendererTerminate();

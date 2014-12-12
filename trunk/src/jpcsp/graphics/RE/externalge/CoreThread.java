@@ -98,7 +98,7 @@ public class CoreThread extends Thread {
 						log.debug(String.format("CoreThread looping %s", list));
 					}
 
-					if (ExternalGE.enableAsyncRendering && NativeUtils.getRendererIndexCount() > 0) {
+					if (ExternalGE.numberRendererThread > 0 && NativeUtils.getRendererIndexCount() > 0) {
 						break;
 					}
 				}
@@ -117,7 +117,7 @@ public class CoreThread extends Thread {
 					NativeUtils.setCoreIntrStat(intrStat);
 				}
 
-				if (ExternalGE.enableAsyncRendering && NativeUtils.getRendererIndexCount() > 0) {
+				if (ExternalGE.numberRendererThread > 0 && NativeUtils.getRendererIndexCount() > 0) {
 					ExternalGE.render();
 					doCoreInterpret = true;
 				}
