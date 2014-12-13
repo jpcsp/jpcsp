@@ -6912,6 +6912,9 @@ public class VideoEngine {
             return;
         }
 
+        ucount = Math.max(ucount, 4);
+        vcount = Math.max(vcount, 4);
+
         initRendering();
         boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
         boolean useNormal = context.lightingFlag.isEnabled();
