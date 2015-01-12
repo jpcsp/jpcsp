@@ -133,6 +133,11 @@ public class sceAac extends HLEModule {
         		Memory mem = Memory.getInstance();
         		mem.memset(decodeOutputAddr, (byte) 0, outputBytes);
         		result = outputBytes;
+        	} else if (inputBuffer.getCurrentSize() <= 0) {
+        		int outputBytes = outputSize >> 1;
+	    		Memory mem = Memory.getInstance();
+	    		mem.memset(decodeOutputAddr, (byte) 0, outputBytes);
+	    		result = outputBytes;
         	} else {
 	        	int decodeInputAddr = inputBuffer.getReadAddr();
 	        	int decodeInputLength = inputBuffer.getReadSize();
