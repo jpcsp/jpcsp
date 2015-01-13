@@ -74,6 +74,9 @@ public class EventFlagManager {
 
         event.threadWaitingList.removeWaitingThread(thread);
 
+        // Store the currentPattern at the outBits address, even in case of error
+        thread.wait.EventFlag_outBits_addr.setValue(event.currentPattern);
+
         return true;
     }
 
