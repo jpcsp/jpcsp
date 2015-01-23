@@ -2004,7 +2004,7 @@ public class AacDecoder implements ICodec {
 				res = decodeDynamicRange(ac.cheDrc);
 				break;
 			case EXT_FILL:
-				res = decodeFill(8 * cnt - 4);
+				decodeFill(8 * cnt - 4);
 				break;
 			case EXT_FILL_DATA:
 			case EXT_DATA_ELEMENT:
