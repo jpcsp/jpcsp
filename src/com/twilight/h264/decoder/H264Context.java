@@ -7419,9 +7419,13 @@ public class H264Context {
 	             && this.default_ref_list[0][i].data_offset[0] == this.default_ref_list[1][i].data_offset[0] && i<lens[0]; i++);
 	            if(i == lens[0]) {
 	                //FFSWAP(Picture, this.default_ref_list[1][0], this.default_ref_list[1][1]);
-	            	AVFrame tmp = this.default_ref_list[1][0];
-	            	this.default_ref_list[1][0] = this.default_ref_list[1][1];
-	            	this.default_ref_list[1][1] = tmp;
+//	            	AVFrame tmp = this.default_ref_list[1][0];
+//	            	this.default_ref_list[1][0] = this.default_ref_list[1][1];
+//	            	this.default_ref_list[1][1] = tmp;
+	            	AVFrame tmp = new AVFrame();
+	            	this.default_ref_list[1][0].copyTo(tmp);
+	            	this.default_ref_list[1][1].copyTo(this.default_ref_list[1][0]);
+	            	tmp.copyTo(this.default_ref_list[1][1]);
 	            }
 	        }
 	    }else{
@@ -7543,7 +7547,8 @@ public class H264Context {
 	                                break;
 	                        }
 	                        for(; i > index; i--){
-	                            this.ref_list[list][i]= this.ref_list[list][i-1];
+	                            //this.ref_list[list][i]= this.ref_list[list][i-1];
+	                        	this.ref_list[list][i-1].copyTo(this.ref_list[list][i]);
 	                        }
 	                        ref.copyTo(this.ref_list[list][index]);
 	                        if ((s.picture_structure != MpegEncContext.PICT_FRAME)){
@@ -7562,7 +7567,8 @@ public class H264Context {
 	            if(null==this.ref_list[list][index].data_base[0]){
 	                //av_log(this.s.avctx, AV_LOG_ERROR, "Missing reference picture\n");
 	                if(null!=this.default_ref_list[list][0].data_base[0])
-	                    this.ref_list[list][index]= this.default_ref_list[list][0];
+	                    //this.ref_list[list][index]= this.default_ref_list[list][0];
+	                	this.default_ref_list[list][0].copyTo(this.ref_list[list][index]);
 	                else
 	                    return -1;
 	            }
@@ -7752,7 +7758,8 @@ public class H264Context {
 	                field_base[field_offset + 0].linesize[j] <<= 1;
 	            field_base[field_offset + 0].reference = MpegEncContext.PICT_TOP_FIELD;
 	            field_base[field_offset + 0].poc= field_base[field_offset + 0].field_poc[0];
-	            field_base[field_offset + 1] = field_base[field_offset + 0];
+	            //field_base[field_offset + 1] = field_base[field_offset + 0];
+	            field_base[field_offset + 0].copyTo(field_base[field_offset + 1]);
 	            for(j=0; j<3; j++)
 	                field_base[field_offset + 1].data_offset[j] += frame.linesize[j];
 	            field_base[field_offset + 1].reference = MpegEncContext.PICT_BOTTOM_FIELD;
@@ -8486,7 +8493,7 @@ public class H264Context {
 	        p_offset += 6;
 	        for (i = 0; i < cnt; i++) {
 	            //nalsize = AV_RB16(p) + 2;
-	        	nalsize = ((p_base[p_offset] & 0x0ff) | ((p_base[p_offset+1] & 0x0ff) << 8))+2;
+	        	nalsize = ((p_base[p_offset+1] & 0x0ff) | ((p_base[p_offset] & 0x0ff) << 8))+2;
 	            if(decode_nal_units(p_base, p_offset, nalsize) < 0) {
 	                //av_log(avctx, AV_LOG_ERROR, "Decoding sps %d from avcC failed\n", i);
 	                return -1;
@@ -8497,7 +8504,7 @@ public class H264Context {
 	        cnt = p_base[p_offset++]; // Number of pps
 	        for (i = 0; i < cnt; i++) {
 	            //nalsize = AV_RB16(p) + 2;
-	        	nalsize = ((p_base[p_offset] & 0x0ff) | ((p_base[p_offset+1] & 0x0ff) << 8))+2;
+	        	nalsize = ((p_base[p_offset+1] & 0x0ff) | ((p_base[p_offset] & 0x0ff) << 8))+2;
 	            if(decode_nal_units(p_base, p_offset, nalsize)  != nalsize) {
 	                //av_log(avctx, AV_LOG_ERROR, "Decoding pps %d from avcC failed\n", i);
 	                return -1;
