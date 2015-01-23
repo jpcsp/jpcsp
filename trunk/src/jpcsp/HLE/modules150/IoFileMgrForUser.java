@@ -1373,7 +1373,7 @@ public class IoFileMgrForUser extends HLEModule {
                         Memory mem = Memory.getInstance();
                         if (Memory.isAddressGood(thread.wait.Io_resultAddr)) {
                         	if (log.isDebugEnabled()) {
-                        		log.debug("IoFileMgrForUser.doStepAsync - storing result 0x" + Long.toHexString(info.result));
+                        		log.debug(String.format("IoFileMgrForUser.doStepAsync - storing result 0x%X", info.result));
                         	}
                             mem.write64(thread.wait.Io_resultAddr, info.result);
                         }
@@ -1574,7 +1574,7 @@ public class IoFileMgrForUser extends HLEModule {
             Memory mem = Memory.getInstance();
             if (Memory.isAddressGood(res_addr)) {
             	if (log.isDebugEnabled()) {
-            		log.debug("hleIoWaitAsync - storing result 0x" + Long.toHexString(info.result));
+            		log.debug(String.format("hleIoWaitAsync - storing result 0x%X", info.result));
             	}
                 mem.write64(res_addr, info.result);
             }

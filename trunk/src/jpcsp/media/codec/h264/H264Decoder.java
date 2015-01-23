@@ -32,13 +32,21 @@ public class H264Decoder implements IVideoCodec {
 	private final int gotPicture[] = new int[1];
 
 	@Override
-	public int init() {
+	public int init(int extraData[]) {
 		context = MpegEncContext.avcodec_alloc_context();
 
 		picture = AVFrame.avcodec_alloc_frame();
 
 		packet = new AVPacket();
 		packet.av_init_packet();
+
+		if (extraData != null) {
+			context.extradata_size = extraData.length;
+			// Add 4 additional values to avoid exceptions while parsing
+			int[] extraDataPlus4 = new int[context.extradata_size + 4];
+			System.arraycopy(extraData, 0, extraDataPlus4, 0, context.extradata_size);
+			context.extradata = extraDataPlus4;
+		}
 
 		int result = context.avcodec_open(new com.twilight.h264.decoder.H264Decoder());
 		if (result < 0) {

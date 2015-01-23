@@ -273,7 +273,7 @@ public class UmdBrowserPmf {
         }
 
         videoCodec = CodecFactory.getVideoCodec();
-        videoCodec.init();
+        videoCodec.init(null);
 
         startTime = System.currentTimeMillis();
         frame = 0;

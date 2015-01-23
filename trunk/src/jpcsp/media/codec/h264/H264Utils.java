@@ -129,4 +129,8 @@ public class H264Utils {
 			}
 		}
 	}
+
+	public static void setAlpha(int alpha) {
+		initRedMap(alpha & 0xFF);
+	}
 }

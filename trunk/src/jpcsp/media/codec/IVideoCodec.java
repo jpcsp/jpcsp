@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.media.codec;
 
 public interface IVideoCodec {
-	public int init();
+	public int init(int extraData[]);
 	public int decode(int input[], int inputOffset, int inputLength);
 	public boolean hasImage();
 	public int getImageWidth();
