@@ -127,26 +127,35 @@ u32 parseHex(const char *s) {
 	return hex;
 }
 
-u32 parseParamTypes(const char *s) {
+u32 parseParamTypes(const char *s, u32 *pflags) {
 	u32 paramTypes = 0;
 	int paramType;
 	int i;
 
-	for (i = 0; *s != '\0' && i < 32; i += 4) {
-		paramType = TYPE_HEX32;
-		switch (*s++) {
-			case 'x': paramType = TYPE_HEX32; break;
-			case 'd': paramType = TYPE_INT32; break;
-			case 's': paramType = TYPE_STRING; break;
-			case 'p': paramType = TYPE_POINTER32; break;
-			case 'P': paramType = TYPE_POINTER64; break;
-			case 'v': paramType = TYPE_VARSTRUCT; break;
-			case 'F': paramType = TYPE_FONT_INFO; break;
-			case 'f': paramType = TYPE_FONT_CHAR_INFO; break;
-			case 'e': paramType = TYPE_MPEG_EP; break;
-			case 'a': paramType = TYPE_MPEG_AU; break;
+	*pflags = FLAG_LOG_AFTER_CALL;
+
+	for (i = 0; *s != '\0' && i < 32;) {
+		char c = *s++;
+		if (c == '!') {
+			*pflags |= FLAG_LOG_BEFORE_CALL;
+		} else {
+			paramType = TYPE_HEX32;
+			switch (c) {
+				case 'x': paramType = TYPE_HEX32; break;
+				case 'd': paramType = TYPE_INT32; break;
+				case 's': paramType = TYPE_STRING; break;
+				case 'p': paramType = TYPE_POINTER32; break;
+				case 'P': paramType = TYPE_POINTER64; break;
+				case 'v': paramType = TYPE_VARSTRUCT; break;
+				case 'F': paramType = TYPE_FONT_INFO; break;
+				case 'f': paramType = TYPE_FONT_CHAR_INFO; break;
+				case 'e': paramType = TYPE_MPEG_EP; break;
+				case 'a': paramType = TYPE_MPEG_AU; break;
+				case 't': paramType = TYPE_MP4_TRACK; break;
+			}
+			paramTypes |= paramType << i;
+			i += 4;
 		}
-		paramTypes |= paramType << i;
 	}
 
 	return paramTypes;
@@ -210,11 +219,10 @@ void mutexPreLog(const SyscallInfo *syscallInfo, const u32 *parameters) {
 }
 #endif
 
-u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra, u32 sp) {
+u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra, u32 sp, u32 gp) {
 	u32 parameters[8];
 	int k1;
 	u64 result;
-	int log = 1;
 
 	parameters[0] = a0;
 	parameters[1] = a1;
@@ -240,20 +248,17 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	if (syscallInfo->flags & FLAG_LOG_BEFORE_CALL) {
 		commonInfo->inWriteLog++;
 		k1 = pspSdkSetK1(0);
-		syscallLog(syscallInfo, parameters, 0, ra, sp);
+		syscallLog(syscallInfo, parameters, 0, ra, sp, gp);
 		pspSdkSetK1(k1);
 		commonInfo->inWriteLog--;
-
-		log = 0;
 	}
 
 	// Remark: the stackUsage doesn't make sense here for syscalls, only for user libraries
-
 	result = syscallInfo->originalEntry(a0, a1, a2, a3, t0, t1, t2, t3);
 
-	if (log) {
+	if (syscallInfo->flags & FLAG_LOG_AFTER_CALL) {
 		k1 = pspSdkSetK1(0);
-		syscallLog(syscallInfo, parameters, result, ra, sp);
+		syscallLog(syscallInfo, parameters, result, ra, sp, gp);
 		pspSdkSetK1(k1);
 	}
 
@@ -311,8 +316,8 @@ void *getEntryByNID(int nid) {
 	return NULL;
 }
 
-void patchSyscall(char *module, char *library, const char *name, u32 nid, int numParams, u32 paramTypes) {
-	int asmBlocks = 10;
+void patchSyscall(char *module, char *library, const char *name, u32 nid, int numParams, u32 paramTypes, u32 flags) {
+	int asmBlocks = 11;
 
 	// Allocate memory for the patch code and SyscallInfo
 	int memSize = asmBlocks * 4 + sizeof(SyscallInfo) + strlen(name) + 1;
@@ -335,6 +340,7 @@ void patchSyscall(char *module, char *library, const char *name, u32 nid, int nu
 	asmblock[i++] = 0x27BDFFF0; // addiu $sp, $sp, -16
 	asmblock[i++] = 0xAFBF0004; // sw $ra, 4($sp)
 	asmblock[i++] = 0xAFBD0008; // sw $sp, 8($sp)
+	asmblock[i++] = 0xAFBC000C; // sw $gp, 12($sp)
 	asmblock[i++] = 0x3C0C0000 | syscallInfoAddrHi; // lui $t4, syscallInfoAddr
 	asmblock[i++] = 0x358C0000 | syscallInfoAddrLo; // ori $t4, $t4, syscallInfoAddr
 	callSyscallPluginOffset = i * 4;
@@ -354,7 +360,7 @@ void patchSyscall(char *module, char *library, const char *name, u32 nid, int nu
 	}
 	syscallInfo->nid = nid;
 	syscallInfo->numParams = numParams;
-	syscallInfo->flags = 0;
+	syscallInfo->flags = flags;
 	syscallInfo->paramTypes = paramTypes;
 	syscallInfo->name = nameCopy;
 	syscallInfo->next = NULL;
@@ -462,7 +468,8 @@ void patchSyscalls(char *filePath) {
 
 		u32 nid = parseHex(hexNid);
 		u32 numParams = parseHex(hexNumParams);
-		u32 paramTypes = parseParamTypes(strParamTypes);
+		u32 flags = 0;
+		u32 paramTypes = parseParamTypes(strParamTypes, &flags);
 
 		if (strcmp(name, "LogBufferLength") == 0) {
 			commonInfo->maxLogBufferLength = nid;
@@ -472,7 +479,7 @@ void patchSyscalls(char *filePath) {
 				numParams = 8;
 			}
 
-			patchSyscall(NULL, NULL, name, nid, numParams, paramTypes);
+			patchSyscall(NULL, NULL, name, nid, numParams, paramTypes, flags);
 		}
 	}
 
@@ -482,6 +489,14 @@ void patchSyscalls(char *filePath) {
 void patchModule(SceModule *module) {
 	SyscallInfo *syscallInfo;
 	int i, j;
+
+	if (module != NULL && module->modname != NULL) {
+		char *name = module->modname;
+		if ((name[0] == 'S' || name[0] == 's') && name[1] == 'c' && name[2] == 'e') {
+			// Do not patch PSP modules ("Sce" or "sce")
+//			return;
+		}
+	}
 
 	for (syscallInfo = moduleSyscalls; syscallInfo != NULL; syscallInfo = syscallInfo->next) {
 		if (syscallInfo->originalEntry != NULL) {

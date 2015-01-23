@@ -553,21 +553,10 @@ int maxStackUsage = 0x1000;
 int stackValue = 0xABCD1234;
 int stackBase;
 
-u32 getStackBase(u32 sp) {
-	int a = 0;
-	u32 stackBase = (u32) &a;
-
-	if (stackBase >= sp || stackBase < sp - 0x200) {
-		stackBase = sp;
-	}
-
-	return stackBase;
-}
-
 void prepareStackUsage(u32 sp) {
-	stackBase = getStackBase(sp);
-
 	int i;
+	stackBase = (u32) &i;
+
 	for (i = 4; i <= maxStackUsage; i += 4) {
 		_sw(stackValue, stackBase - i);
 	}
@@ -591,7 +580,7 @@ void logStackUsage(const SyscallInfo *syscallInfo) {
 #endif
 
 
-void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra, u32 sp) {
+void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra, u32 sp, u32 gp) {
 	char buffer[200];
 	char *s = buffer;
 	int i;
@@ -684,6 +673,9 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 				break;
 			case TYPE_MPEG_AU:
 				s = syscallLogMem(buffer, s, parameter, 24);
+				break;
+			case TYPE_MP4_TRACK:
+				s = syscallLogMem(buffer, s, parameter, 240);
 				break;
 		}
 	}
