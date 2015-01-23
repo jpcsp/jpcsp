@@ -477,18 +477,52 @@ public class DSPContext {
 	    	    break;
 	    } // switch
 	}
-	
-	public static long rnd_avg32(long a, long b) {
+
+	public static int rnd_avg32(int a, int b) {
 	    //return (long)( ((a | b)&0xffffffffl) - (( ((a ^ b)&0xffffffffl) & ((~((0x01)*0xffffffff01010101l)) >>> 1))) );
-		a = a&0xffffffffl;
-		b = b&0xffffffffl;
+		long aa = a&0xffffffffl;
+		long bb = b&0xffffffffl;
 		long remainder = (a^b) & 0x01010101l;
-		a = a & (~remainder);
-		b = b & (~remainder);		
-		long ret = ( (a + b) >>> 1 ) + remainder;
-		return ret;
+		aa = aa & (~remainder);
+		bb = bb & (~remainder);		
+		long ret = ( (aa + bb) >>> 1 ) + remainder;
+		return (int) (ret & 0xFFFFFFFFL);
 	}
 	
+	private static int makeU32(int b1, int b2, int b3, int b4) {
+		b1 &= 0xFF;
+		b2 &= 0xFF;
+		b3 &= 0xFF;
+		b4 &= 0xFF;
+		return b1 | (b2 << 8) | (b3 << 16) | (b4 << 24);
+	}
+
+	private static int makeU32(int[] b, int b_offset) {
+		return makeU32(b[b_offset], b[b_offset + 1], b[b_offset + 2], b[b_offset + 3]);
+	}
+
+	private static int makeU16(int b1, int b2) {
+		b1 &= 0xFF;
+		b2 &= 0xFF;
+		return b1 | (b2 << 8);
+	}
+
+	private static int makeU16(int[] b, int b_offset) {
+		return makeU16(b[b_offset], b[b_offset + 1]);
+	}
+
+	private static void storeU32(int[] b, int b_offset, int u32) {
+		b[b_offset    ] = (u32      ) & 0xFF;
+		b[b_offset + 1] = (u32 >>  8) & 0xFF;
+		b[b_offset + 2] = (u32 >> 16) & 0xFF;
+		b[b_offset + 3] = (u32 >> 24) & 0xFF;
+	}
+
+	private static void storeU16(int[] b, int b_offset, int u16) {
+		b[b_offset    ] = (u16      ) & 0xFF;
+		b[b_offset + 1] = (u16 >>  8) & 0xFF;
+	}
+
 	public static void pixels_l2(int opcode, int size, int[] dst_base, int dst_offset
 			, int[] src1_base, int src1_offset, 
 			int[] src2_base, int src2_offset,
@@ -498,70 +532,59 @@ public class DSPContext {
 		
 		if(size==8) {
 			for(i=0; i<h; i++){
-				long a,b,c;
+				int a,b,c;
 				//a= AV_RN32(&src1[i*src_stride1  ]);
 				//b= AV_RN32(&src2[i*src_stride2  ]);
-				a = ((long)src1_base[src1_offset + i*src_stride1] << 0)|((long)src1_base[src1_offset + i*src_stride1 +1] << 8)|((long)src1_base[src1_offset + i*src_stride1 +2] << 16)|((long)src1_base[src1_offset + i*src_stride1 +3] << 24);
-				b = ((long)src2_base[src2_offset + i*src_stride2] << 0)|((long)src2_base[src2_offset + i*src_stride2 +1] << 8)|((long)src2_base[src2_offset + i*src_stride2 +2] << 16)|((long)src2_base[src2_offset + i*src_stride2 +3] << 24);
-				c = ((long)dst_base[dst_offset + i*dst_stride] << 0)|((long)dst_base[dst_offset + i*dst_stride +1] << 8)|((long)dst_base[dst_offset + i*dst_stride +2] << 16)|((long)dst_base[dst_offset + i*dst_stride +3] << 24);
+				a = makeU32(src1_base, src1_offset + i*src_stride1);
+				b = makeU32(src2_base, src2_offset + i*src_stride2);
+				c = makeU32( dst_base,  dst_offset + i*dst_stride);
 				if(opcode==0) // PUT
 					c = rnd_avg32(a, b);
-				
 				else // AVG
 					c = rnd_avg32(c, rnd_avg32(a, b));
-								
-				dst_base[dst_offset + i*dst_stride] = (int)(c & 0x000000ffl);
-				dst_base[dst_offset + i*dst_stride +1] = (int)((c & 0x0000ff00l)>>>8);
-				dst_base[dst_offset + i*dst_stride +2] = (int)((c & 0x00ff0000l)>>>16);
-				dst_base[dst_offset + i*dst_stride +3] = (int)((c & 0xff000000l)>>>24);
+
+				storeU32(dst_base, dst_offset + i*dst_stride, c);
 				//a= AV_RN32(&src1[i*src_stride1+4]);
 				//b= AV_RN32(&src2[i*src_stride2+4]);
-				a = ((long)src1_base[4+ src1_offset + i*src_stride1] << 0)|((long)src1_base[4+ src1_offset + i*src_stride1 +1] << 8)|((long)src1_base[4+ src1_offset + i*src_stride1 +2] << 16)|((long)src1_base[4+ src1_offset + i*src_stride1 +3] << 24);
-				b = ((long)src2_base[4+ src2_offset + i*src_stride2] << 0)|((long)src2_base[4+ src2_offset + i*src_stride2 +1] << 8)|((long)src2_base[4+ src2_offset + i*src_stride2 +2] << 16)|((long)src2_base[4+ src2_offset + i*src_stride2 +3] << 24);
-				c = ((long)dst_base[4+ dst_offset + i*dst_stride] << 0)|((long)dst_base[4+ dst_offset + i*dst_stride +1] << 8)|((long)dst_base[4+ dst_offset + i*dst_stride +2] << 16)|((long)dst_base[4+ dst_offset + i*dst_stride +3] << 24);
+				a = makeU32(src1_base, 4+ src1_offset + i*src_stride1);
+				b = makeU32(src2_base, 4+ src2_offset + i*src_stride2);
+				c = makeU32( dst_base, 4+  dst_offset + i*dst_stride);
 				if(opcode==0) // PUT
 					c = rnd_avg32(a, b);
 				else // AVG
 					c = rnd_avg32(c, rnd_avg32(a, b));
-				
-				dst_base[4+ dst_offset + i*dst_stride] = (int)(c & 0x000000ffl);
-				dst_base[4+ dst_offset + i*dst_stride +1] = (int)((c & 0x0000ff00l)>>>8);
-				dst_base[4+ dst_offset + i*dst_stride +2] = (int)((c & 0x00ff0000l)>>>16);
-				dst_base[4+ dst_offset + i*dst_stride +3] = (int)((c & 0xff000000l)>>>24);
+
+				storeU32(dst_base, 4+ dst_offset + i*dst_stride, c);
 			} // for
 		} // if
 		else if(size==4) {
 			for(i=0; i<h; i++){
-				long a,b,c;
+				int a,b,c;
 				//a= AV_RN32(&src1[i*src_stride1  ]);
 				//b= AV_RN32(&src2[i*src_stride2  ]);
-				a = (src1_base[src1_offset + i*src_stride1] << 0)|(src1_base[src1_offset + i*src_stride1 +1] << 8)|(src1_base[src1_offset + i*src_stride1 +2] << 16)|(src1_base[src1_offset + i*src_stride1 +3] << 24);
-				b = (src2_base[src2_offset + i*src_stride2] << 0)|(src2_base[src2_offset + i*src_stride2 +1] << 8)|(src2_base[src2_offset + i*src_stride2 +2] << 16)|(src2_base[src2_offset + i*src_stride2 +3] << 24);
-				c = (dst_base[dst_offset + i*dst_stride] << 0)|(dst_base[dst_offset + i*dst_stride +1] << 8)|(dst_base[dst_offset + i*dst_stride +2] << 16)|(dst_base[dst_offset + i*dst_stride +3] << 24);
+				a = makeU32(src1_base, src1_offset + i*src_stride1);
+				b = makeU32(src2_base, src2_offset + i*src_stride2);
+				c = makeU32( dst_base,  dst_offset + i*dst_stride);
 				if(opcode==0) // PUT
 					c = rnd_avg32(a, b);
 				else // AVG
 					c = rnd_avg32(c, rnd_avg32(a, b));
-				dst_base[dst_offset + i*dst_stride] = (int)(c & 0x000000ffl);
-				dst_base[dst_offset + i*dst_stride +1] = (int)((c & 0x0000ff00l)>>>8);
-				dst_base[dst_offset + i*dst_stride +2] = (int)((c & 0x00ff0000l)>>>16);
-				dst_base[dst_offset + i*dst_stride +3] = (int)((c & 0xff000000l)>>>24);
+				storeU32(dst_base, dst_offset + i*dst_stride, c);
 			}			
 		} // if
 		else if(size==2) {
 			for(i=0; i<h; i++){
-				long a,b,c;
+				int a,b,c;
 				//a= AV_RN16(&src1[i*src_stride1  ]);
 				//b= AV_RN16(&src2[i*src_stride2  ]);
-				a = (src1_base[src1_offset + i*src_stride1] << 0)|(src1_base[src1_offset + i*src_stride1 +1] << 8);
-				b = (src2_base[src2_offset + i*src_stride2] << 0)|(src2_base[src2_offset + i*src_stride2 +1] << 8);				
-				c = (dst_base[dst_offset + i*dst_stride] << 0)|(dst_base[dst_offset + i*dst_stride +1] << 8);
+				a = makeU16(src1_base, src1_offset + i*src_stride1);
+				b = makeU16(src2_base, src2_offset + i*src_stride2);				
+				c = makeU16( dst_base,  dst_offset + i*dst_stride);
 				if(opcode==0) // PUT
 					c = rnd_avg32(a, b);
 				else // AVG
 					c = rnd_avg32(c, rnd_avg32(a, b));
-				dst_base[dst_offset + i*dst_stride] = (int)(c & 0x000000ffl);
-				dst_base[dst_offset + i*dst_stride +1] = (int)((c & 0x0000ff00l)>>>8);
+				storeU16(dst_base, dst_offset + i*dst_stride, c);
 			}			
 		} // if
 		else if(size==16) {
@@ -584,11 +607,10 @@ public class DSPContext {
 					} // for
 				} else { // AVG
 					for(int i=0;i<height;i++) {
-						long a = (src_base[src_offset] << 0)|(src_base[src_offset+1] << 8);
-						long b = (dst_base[dst_offset] << 0)|(dst_base[dst_offset+1] << 8);
+						int a = makeU16(src_base, src_offset);
+						int b = makeU16(dst_base, dst_offset);
 						b = rnd_avg32(b, a);
-						dst_base[dst_offset] = (int)(b & 0x000000ffl);
-						dst_base[dst_offset+1] = (int)((b & 0x0000ff00l)>>>8);
+						storeU16(dst_base, dst_offset, b);
 						dst_offset += stride;
 						src_offset += stride;
 					} // for
@@ -603,13 +625,10 @@ public class DSPContext {
 					} // for
 				} else { // AVG
 					for(int i=0;i<height;i++) {
-						long a = (src_base[src_offset] << 0)|(src_base[src_offset+1] << 8)|(src_base[src_offset+2] << 16)|(src_base[src_offset+3] << 24);
-						long b = (dst_base[dst_offset] << 0)|(dst_base[dst_offset+1] << 8)|(dst_base[dst_offset+2] << 16)|(dst_base[dst_offset+3] << 24);
+						int a = makeU32(src_base, src_offset);
+						int b = makeU32(dst_base, dst_offset);
 						b = rnd_avg32(b, a);
-						dst_base[dst_offset] = (int)(b & 0x000000ffl);
-						dst_base[dst_offset+1] = (int)((b & 0x0000ff00l)>>>8);
-						dst_base[dst_offset+2] = (int)((b & 0x00ff0000l)>>>16);
-						dst_base[dst_offset+3] = (int)((b & 0xff000000l)>>>24);
+						storeU32(dst_base, dst_offset, b);
 						dst_offset += stride;
 						src_offset += stride;
 					} // for
@@ -625,22 +644,16 @@ public class DSPContext {
 					} // for
 				} else { // AVG
 					for(int i=0;i<height;i++) {
-						long a = (src_base[src_offset] << 0)|(src_base[src_offset+1] << 8)|(src_base[src_offset+2] << 16)|(src_base[src_offset+3] << 24);
-						long b = (dst_base[dst_offset] << 0)|(dst_base[dst_offset+1] << 8)|(dst_base[dst_offset+2] << 16)|(dst_base[dst_offset+3] << 24);
+						int a = makeU32(src_base, src_offset);
+						int b = makeU32(dst_base, dst_offset);
 						b = rnd_avg32(b, a);
-						dst_base[dst_offset] = (int)(b & 0x000000ff);
-						dst_base[dst_offset+1] = (int)((b & 0x0000ff00l)>>>8);
-						dst_base[dst_offset+2] = (int)((b & 0x00ff0000l)>>>16);
-						dst_base[dst_offset+3] = (int)((b & 0xff000000l)>>>24);
-						
-						a = (src_base[4+ src_offset] << 0)|(src_base[4+ src_offset+1] << 8)|(src_base[4+ src_offset+2] << 16)|(src_base[4+ src_offset+3] << 24);
-						b = (dst_base[4+ dst_offset] << 0)|(dst_base[4+ dst_offset+1] << 8)|(dst_base[4+ dst_offset+2] << 16)|(dst_base[4+ dst_offset+3] << 24);
+						storeU32(dst_base, dst_offset, b);
+
+						a = makeU32(src_base, 4+ src_offset);
+						b = makeU32(dst_base, 4+ dst_offset);
 						b = rnd_avg32(b, a);
-						dst_base[4+ dst_offset] = (int)(b & 0x000000ffl);
-						dst_base[4+ dst_offset+1] = (int)((b & 0x0000ff00l)>>>8);
-						dst_base[4+ dst_offset+2] = (int)((b & 0x00ff0000l)>>>16);
-						dst_base[4+ dst_offset+3] = (int)((b & 0xff000000l)>>>24);						
-						
+						storeU32(dst_base, 4+ dst_offset, b);
+
 						dst_offset += stride;
 						src_offset += stride;
 					} // for
@@ -676,7 +689,7 @@ public class DSPContext {
 		    for(i=0; i<h; i++)
 		    {
 		    	if(opcode == 0) { // PUT
-		    		dst_base[dst_offset + 0] =  op_put(dst_base[dst_offset + 0], (src_base[src_offset + 0]+src_base[src_offset + 1])*20 - (src_base[src_offset + -1]+src_base[src_offset + 2])*5 + (src_base[src_offset + -2]+src_base[src_offset + 3]), cm_base, cm_offset);
+		    		dst_base[dst_offset + 0] = op_put(dst_base[dst_offset + 0], (src_base[src_offset + 0]+src_base[src_offset + 1])*20 - (src_base[src_offset + -1]+src_base[src_offset + 2])*5 + (src_base[src_offset + -2]+src_base[src_offset + 3]), cm_base, cm_offset);
 		    		dst_base[dst_offset + 1] = op_put(dst_base[dst_offset + 1], (src_base[src_offset + 1]+src_base[src_offset + 2])*20 - (src_base[src_offset + 0 ]+src_base[src_offset + 3])*5 + (src_base[src_offset + -1]+src_base[src_offset + 4]), cm_base, cm_offset);
 			        dst_offset+=dstStride;
 		    	} else { // AVG
@@ -723,12 +736,12 @@ public class DSPContext {
 		    	if(opcode == 0) { // PUT
 		    		dst_base[dst_offset + 0] = op_put(dst_base[dst_offset + 0], (src_base[src_offset + 0]+src_base[src_offset + 1])*20 - (src_base[src_offset + -1]+src_base[src_offset + 2])*5 + (src_base[src_offset + -2]+src_base[src_offset + 3 ]), cm_base, cm_offset);
 		    		dst_base[dst_offset + 1] = op_put(dst_base[dst_offset + 1], (src_base[src_offset + 1]+src_base[src_offset + 2])*20 - (src_base[src_offset + 0 ]+src_base[src_offset + 3])*5 + (src_base[src_offset + -1]+src_base[src_offset + 4 ]), cm_base, cm_offset);
-			        dst_base[dst_offset + 2] =  op_put(dst_base[dst_offset + 2], (src_base[src_offset + 2]+src_base[src_offset + 3])*20 - (src_base[src_offset + 1 ]+src_base[src_offset + 4])*5 + (src_base[src_offset + 0 ]+src_base[src_offset + 5 ]), cm_base, cm_offset);
-			        dst_base[dst_offset + 3] =  op_put(dst_base[dst_offset + 3], (src_base[src_offset + 3]+src_base[src_offset + 4])*20 - (src_base[src_offset + 2 ]+src_base[src_offset + 5])*5 + (src_base[src_offset + 1 ]+src_base[src_offset + 6 ]), cm_base, cm_offset);
-			        dst_base[dst_offset + 4] =  op_put(dst_base[dst_offset + 4], (src_base[src_offset + 4]+src_base[src_offset + 5])*20 - (src_base[src_offset + 3 ]+src_base[src_offset + 6])*5 + (src_base[src_offset + 2 ]+src_base[src_offset + 7 ]), cm_base, cm_offset);
-			        dst_base[dst_offset + 5] =  op_put(dst_base[dst_offset + 5], (src_base[src_offset + 5]+src_base[src_offset + 6])*20 - (src_base[src_offset + 4 ]+src_base[src_offset + 7])*5 + (src_base[src_offset + 3 ]+src_base[src_offset + 8 ]), cm_base, cm_offset);
-			        dst_base[dst_offset + 6] =  op_put(dst_base[dst_offset + 6], (src_base[src_offset + 6]+src_base[src_offset + 7])*20 - (src_base[src_offset + 5 ]+src_base[src_offset + 8])*5 + (src_base[src_offset + 4 ]+src_base[src_offset + 9 ]), cm_base, cm_offset);
-			        dst_base[dst_offset + 7] =  op_put(dst_base[dst_offset + 7], (src_base[src_offset + 7]+src_base[src_offset + 8])*20 - (src_base[src_offset + 6 ]+src_base[src_offset + 9])*5 + (src_base[src_offset + 5 ]+src_base[src_offset + 10]), cm_base, cm_offset);
+			        dst_base[dst_offset + 2] = op_put(dst_base[dst_offset + 2], (src_base[src_offset + 2]+src_base[src_offset + 3])*20 - (src_base[src_offset + 1 ]+src_base[src_offset + 4])*5 + (src_base[src_offset + 0 ]+src_base[src_offset + 5 ]), cm_base, cm_offset);
+			        dst_base[dst_offset + 3] = op_put(dst_base[dst_offset + 3], (src_base[src_offset + 3]+src_base[src_offset + 4])*20 - (src_base[src_offset + 2 ]+src_base[src_offset + 5])*5 + (src_base[src_offset + 1 ]+src_base[src_offset + 6 ]), cm_base, cm_offset);
+			        dst_base[dst_offset + 4] = op_put(dst_base[dst_offset + 4], (src_base[src_offset + 4]+src_base[src_offset + 5])*20 - (src_base[src_offset + 3 ]+src_base[src_offset + 6])*5 + (src_base[src_offset + 2 ]+src_base[src_offset + 7 ]), cm_base, cm_offset);
+			        dst_base[dst_offset + 5] = op_put(dst_base[dst_offset + 5], (src_base[src_offset + 5]+src_base[src_offset + 6])*20 - (src_base[src_offset + 4 ]+src_base[src_offset + 7])*5 + (src_base[src_offset + 3 ]+src_base[src_offset + 8 ]), cm_base, cm_offset);
+			        dst_base[dst_offset + 6] = op_put(dst_base[dst_offset + 6], (src_base[src_offset + 6]+src_base[src_offset + 7])*20 - (src_base[src_offset + 5 ]+src_base[src_offset + 8])*5 + (src_base[src_offset + 4 ]+src_base[src_offset + 9 ]), cm_base, cm_offset);
+			        dst_base[dst_offset + 7] = op_put(dst_base[dst_offset + 7], (src_base[src_offset + 7]+src_base[src_offset + 8])*20 - (src_base[src_offset + 6 ]+src_base[src_offset + 9])*5 + (src_base[src_offset + 5 ]+src_base[src_offset + 10]), cm_base, cm_offset);
 		    	} else { // AVG
 			        dst_base[dst_offset + 0] = op_avg(dst_base[dst_offset + 0], (src_base[src_offset + 0]+src_base[src_offset + 1])*20 - (src_base[src_offset + -1]+src_base[src_offset + 2])*5 + (src_base[src_offset + -2]+src_base[src_offset + 3 ]), cm_base, cm_offset);
 			        dst_base[dst_offset + 1] = op_avg(dst_base[dst_offset + 1], (src_base[src_offset + 1]+src_base[src_offset + 2])*20 - (src_base[src_offset + 0 ]+src_base[src_offset + 3])*5 + (src_base[src_offset + -1]+src_base[src_offset + 4 ]), cm_base, cm_offset);
