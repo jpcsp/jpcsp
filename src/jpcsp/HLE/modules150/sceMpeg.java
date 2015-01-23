@@ -110,6 +110,8 @@ public class sceMpeg extends HLEModule {
         allocatedEsBuffers = new boolean[2];
         streamMap = new HashMap<Integer, StreamInfo>();
 
+        videoCodecExtraData = null;
+
         super.start();
     }
 
@@ -223,6 +225,7 @@ public class sceMpeg extends HLEModule {
     private ICodec audioCodec;
     private VideoBuffer videoBuffer;
     private IVideoCodec videoCodec;
+    private int videoCodecExtraData[];
     private static final int MAX_INT_BUFFERS_SIZE = 12;
     private Set<int[]> intBuffers;
     private PesHeader audioPesHeader;
@@ -237,6 +240,7 @@ public class sceMpeg extends HLEModule {
     private UserDataBuffer userDataBuffer;
     private final int userDataHeader[] = new int[8];
     private int userDataLength;
+    private int videoFrameHeight;
 
     private static class DecodedImageInfo {
     	public PesHeader pesHeader;
@@ -307,9 +311,13 @@ public class sceMpeg extends HLEModule {
     	private int buffer[] = new int[10000];
     	private int length;
     	private static int quickSearch[];
+    	private int frameSizes[];
+    	private int frame;
 
     	public VideoBuffer() {
     		length = 0;
+    		frame = 0;
+    		frameSizes = null;
 
     		initQuickSearch();
     	}
@@ -325,7 +333,7 @@ public class sceMpeg extends HLEModule {
     		quickSearch[1] = 1;
     	}
 
-    	public void write(Memory mem, int dataAddr, int size) {
+    	public synchronized void write(Memory mem, int dataAddr, int size) {
     		if (size + length > buffer.length) {
     			int extendedBuffer[] = new int[size + length];
     			System.arraycopy(buffer, 0, extendedBuffer, 0, length);
@@ -346,13 +354,15 @@ public class sceMpeg extends HLEModule {
     		return 0;
     	}
 
-    	public void notifyRead(int size) {
+    	public synchronized void notifyRead(int size) {
     		size = Math.min(size, length);
     		length -= size;
     		System.arraycopy(buffer, size, buffer, 0, length);
+
+    		frame++;
     	}
 
-    	public void reset() {
+    	public synchronized void reset() {
     		length = 0;
     	}
 
@@ -365,6 +375,10 @@ public class sceMpeg extends HLEModule {
     	}
 
     	public int findFrameEnd() {
+    		if (frameSizes != null && frame < frameSizes.length) {
+    			return frameSizes[frame];
+    		}
+
     		for (int i = 5; i < length; ) {
     			int value = buffer[i];
     			if (buffer[i - 4] == 0x00 &&
@@ -380,6 +394,11 @@ public class sceMpeg extends HLEModule {
     		}
 
     		return -1;
+    	}
+
+    	public void setFrameSizes(int frameSizes[]) {
+    		this.frameSizes = frameSizes;
+    		frame = 0;
     	}
     }
 
@@ -1212,7 +1231,7 @@ public class sceMpeg extends HLEModule {
 		if (decodedImageInfo.frameEnd >= 0) {
     		if (videoCodec == null) {
     			videoCodec = CodecFactory.getVideoCodec();
-    			videoCodec.init();
+    			videoCodec.init(videoCodecExtraData);
     		}
 
     		int result = videoCodec.decode(videoBuffer.getBuffer(), videoBuffer.getBufferOffset(), decodedImageInfo.frameEnd);
@@ -1224,7 +1243,7 @@ public class sceMpeg extends HLEModule {
 				for (int i = 0; i < decodedImageInfo.frameEnd; i++) {
 					bytes[i] = (byte) inputBuffer[inputOffset + i];
 				}
-				log.trace(String.format("sceMpegAvcDecoded codec returned 0x%X. Decoding from %s", result, Utilities.getMemoryDump(bytes, 0, decodedImageInfo.frameEnd)));
+				log.trace(String.format("sceMpegAvcDecode codec returned 0x%X. Decoding from %s", result, Utilities.getMemoryDump(bytes, 0, decodedImageInfo.frameEnd)));
 			}
 
 			if (result < 0) {
@@ -1391,10 +1410,14 @@ public class sceMpeg extends HLEModule {
     	while (length > 0) {
     		int readLength = Math.min(length, buffer.getReadSize());
     		int addr = buffer.getReadAddr();
-    		videoBuffer.write(mem, addr, readLength);
+    		addToVideoBuffer(mem, addr, readLength);
     		buffer.notifyRead(readLength);
     		length -= readLength;
     	}
+    }
+
+    public void addToVideoBuffer(Memory mem, int addr, int length) {
+		videoBuffer.write(mem, addr, length);
     }
 
     private void addToUserDataBuffer(Memory mem, pspFileBuffer buffer, int length) {
@@ -1695,12 +1718,20 @@ public class sceMpeg extends HLEModule {
     	}
     }
 
+    public void setVideoFrameHeight(int videoFrameHeight) {
+    	this.videoFrameHeight = videoFrameHeight;
+    }
+
     private void writeImageABGR(int addr, int frameWidth, int imageWidth, int imageHeight, int pixelMode, int[] abgr) {
     	int frameHeight = imageHeight;
 		if (psmfHeader != null) {
 			// The decoded image height can be 290 while the header
 			// gives an height of 272.
 			frameHeight = Math.min(frameHeight, psmfHeader.getVideoHeight());
+		} else if (videoFrameHeight >= 0) {
+			// The decoded image height can be 290 while the MP4 header
+			// gives an height of 272.
+			frameHeight = Math.min(frameHeight, videoFrameHeight);
 		}
 		int bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelMode);
 
@@ -1936,9 +1967,16 @@ public class sceMpeg extends HLEModule {
     public void hleCreateRingbuffer() {
     	if (mpegRingbuffer == null) {
     		mpegRingbuffer = new SceMpegRingbuffer(0, 0, 0, 0, 0);
-    		mpegRingbuffer.setReadPackets(1);
     		mpegRingbufferAddr = null;
     	}
+    }
+
+    public void setVideoCodecExtraData(int videoCodecExtraData[]) {
+    	this.videoCodecExtraData = videoCodecExtraData;
+    }
+
+    public void setVideoFrameSizes(int videoFrameSizes[]) {
+    	videoBuffer.setFrameSizes(videoFrameSizes);
     }
 
     public void hleCreateRingbuffer(int packets, int data, int size) {
@@ -2371,10 +2409,6 @@ public class sceMpeg extends HLEModule {
     	}
     }
 
-    protected void updateAvcDts() {
-        mpegAvcAu.dts = mpegAvcAu.pts - videoTimestampStep; // DTS is always 1 frame before PTS
-    }
-
     protected void finishStreams() {
     	if (log.isDebugEnabled()) {
     		log.debug("finishStreams");
@@ -2424,6 +2458,7 @@ public class sceMpeg extends HLEModule {
         videoPesHeader = null;
         userDataPesHeader = null;
         userDataLength = 0;
+        videoFrameHeight = -1;
 
         if (decodedImages != null) {
         	synchronized (decodedImages) {
@@ -2461,6 +2496,11 @@ public class sceMpeg extends HLEModule {
 
     protected int getYCbCrSize(int width, int height) {
         return (width / 2) * (height / 2) * 6; // 12 bits per pixel
+    }
+
+    public void setMpegAvcAu(SceMpegAu au) {
+    	mpegAvcAu.esBuffer = au.esBuffer;
+    	mpegAvcAu.esSize = au.esSize;
     }
 
     /**

@@ -37,6 +37,7 @@ import java.util.logging.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.filesystems.SeekableDataInput;
@@ -635,6 +636,10 @@ public class Utilities {
         return value & ~alignment;
     }
 
+    public static long alignDown(long value, long alignment) {
+    	return value & ~alignment;
+    }
+
     public static int endianSwap32(int x) {
         return Integer.reverseBytes(x);
     }
@@ -1207,5 +1212,11 @@ public class Utilities {
     	for (int i = 0; i < a.length; i++) {
     		fill(a[i], value);
     	}
+    }
+
+    public static long getReturnValue64(CpuState cpu) {
+    	long low = cpu._v0;
+    	long high = cpu._v1;
+    	return (low & 0xFFFFFFFFL) | (high << 32);
     }
 }
