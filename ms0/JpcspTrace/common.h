@@ -20,7 +20,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define DEBUG_UTILITY_SAVEDATA		1
 #define DEBUG_UTILITY_OSK			1
 #define DEBUG_UTILITY_MSG			1
-#define DEBUG_STACK_USAGE	1
+#define DEBUG_STACK_USAGE	0
 #define DEFAULT_LOG_BUFFER_SIZE		1024
 
 #define ALIGN_UP(n, alignment) (((n) + ((alignment) - 1)) & ~((alignment) - 1))
@@ -35,6 +35,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define TYPE_FONT_CHAR_INFO	7
 #define TYPE_MPEG_EP	8
 #define TYPE_MPEG_AU	9
+#define TYPE_MP4_TRACK	10
 
 typedef struct {
 	SceUID logFd;
@@ -48,6 +49,7 @@ typedef struct {
 } CommonInfo;
 
 #define FLAG_LOG_BEFORE_CALL	(1 << 0)
+#define FLAG_LOG_AFTER_CALL	(1 << 1)
 
 typedef struct SyscallInfo {
 	u64 (*originalEntry)(u32, u32, u32, u32, u32, u32, u32, u32);
@@ -81,7 +83,7 @@ void printLogSH(const char *s1, const char *s2, const char *s3, int hex, const c
 void printLogHS(const char *s1, int hex, const char *s2, const char *s3, const char *s4);
 void printLogSS(const char *s1, const char *s2, const char *s3, const char *s4, const char *s5);
 void printLogMem(const char *s1, int addr, int length);
-void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra, u32 sp);
+void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra, u32 sp, u32 gp);
 int userIoOpen(const char *s, int flags, int permissions);
 int userIoWrite(SceUID id, const void *data, int size);
 int userIoClose(SceUID id);

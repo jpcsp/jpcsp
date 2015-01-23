@@ -26,10 +26,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 PSP_MODULE_INFO("JpcspTraceUser", PSP_MODULE_USER, 1, 0);
 
-u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra, u32 sp) {
+u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra, u32 sp, u32 gp) {
 	u32 parameters[8];
 	u64 result;
-	int log = 1;
 
 	parameters[0] = a0;
 	parameters[1] = a1;
@@ -47,8 +46,7 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	#endif
 
 	if (syscallInfo->flags & FLAG_LOG_BEFORE_CALL) {
-		syscallLog(syscallInfo, parameters, 0, ra, sp);
-		log = 0;
+		syscallLog(syscallInfo, parameters, 0, ra, sp, gp);
 	}
 
 	#if DEBUG_STACK_USAGE
@@ -62,8 +60,8 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	logStackUsage(syscallInfo);
 	#endif
 
-	if (log) {
-		syscallLog(syscallInfo, parameters, result, ra, sp);
+	if (syscallInfo->flags & FLAG_LOG_AFTER_CALL) {
+		syscallLog(syscallInfo, parameters, result, ra, sp, gp);
 	}
 
 	return result;
