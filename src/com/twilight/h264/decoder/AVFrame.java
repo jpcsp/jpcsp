@@ -263,8 +263,10 @@ public class AVFrame {
      public int b_frame_score;          /* */
 
      public AVFrame copyTo(AVFrame ret) {
-    	 /////////////???????????????????????????
-    	 //To do: Implement this method! 
+    	 if (this == ret) {
+     		// Do not copy to myself
+    		 return ret;
+    	 }
     	 ret.age = age;
     	 ret.b_frame_score = b_frame_score;
     	 for(int i=0;i<base.length;i++)
