@@ -23,10 +23,12 @@ import jpcsp.HLE.TPointer;
 @HLELogging
 public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
 	protected UtilityDialogState storeCheckoutState;
+	protected UtilityDialogState psnState;
 
 	@Override
 	public void start() {
 		storeCheckoutState = new NotImplementedUtilityDialogState("sceUtilityStoreCheckout");
+		psnState = new NotImplementedUtilityDialogState("sceUtilityPsn");
 
 		super.start();
 	}
@@ -49,5 +51,25 @@ public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
 	@HLEFunction(nid = 0x3AAD51DC, version = 500)
 	public int sceUtilityStoreCheckoutGetStatus() {
 		return storeCheckoutState.executeGetStatus();
+	}
+
+	@HLEFunction(nid = 0xA7BB7C67, version = 500)
+	public int sceUtilityPsnInitStart(TPointer paramsAddr) {
+		return psnState.executeInitStart(paramsAddr);
+	}
+
+	@HLEFunction(nid = 0xC130D441, version = 500)
+	public int sceUtilityPsnShutdownStart() {
+		return psnState.executeShutdownStart();
+	}
+
+	@HLEFunction(nid = 0x0940A1B9, version = 500)
+	public int sceUtilityPsnUpdate(int drawSpeed) {
+		return psnState.executeUpdate(drawSpeed);
+	}
+
+	@HLEFunction(nid = 0x094198B8, version = 500)
+	public int sceUtilityPsnGetStatus() {
+		return psnState.executeGetStatus();
 	}
 }
