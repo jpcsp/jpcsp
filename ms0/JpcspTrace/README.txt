@@ -68,12 +68,20 @@ The format of the file JpcspTrace.config is the following:
   - s: log the parameter value as a pointer to a zero-terminated string, e.g.
        0x08812345('This is a string')
   - p: log the parameter value as a pointer to a 32-bit value, e.g.
-       0x08812345(0x12345)    (when the 32-bit value at address 0x08812345 is 0x00012345)
+       0x08812340(0x00012345)    (when the 32-bit value at address 0x08812340 is 0x00012345)
+  - P: log the parameter value as a pointer to a 64-bit value, e.g.
+       0x08812340(0x00012345 0x6789ABCD)    (when the 64-bit value at address 0x08812340 is 0x6789ABCD00012345)
   - v: log the parameter value as a pointer to a variable-length structure.
        The first 32-bit value is the total length of the structure. E.g.:
-       0x08812345(0x00000008 0x00012345)
+       0x08812340(0x00000008 0x00012345)
   - F: log the parameter value as a FontInfo structure (see sceFontGetFontInfo)
   - f: log the parameter value as a pspCharInfo structure (see sceFontGetCharInfo)
+  - e: log the parameter value as a Mpeg EP structure (16 bytes long)
+  - a: log the parameter value as a SceMpegAu structure (24 bytes long, see sceMpeg)
+  - t: log the parameter value as a SceMp4TrackSampleBuf structure (240 bytes long, see sceMp4)
+  - !: this flag is not a parameter type but indicates that the syscall parameters have
+       to be logged before and after the syscall (i.e. twice). By default, the parameters
+       are only logged after the syscall.
   All the parameter types are concatenated into one string, starting with
   the type of the first parameter ($a0). Unspecified parameter types default to "x".
 
