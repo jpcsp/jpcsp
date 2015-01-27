@@ -521,6 +521,7 @@ public class SceKernelErrors {
     public final static int ERROR_PSMFPLAYER_INVALID_CONFIG_VALUE               = 0x80616008;
     public final static int ERROR_PSMFPLAYER_AUDIO_VIDEO_OUT_OF_SYNC            = 0x8061600c;
 
+    public final static int ERROR_MP4_INVALID_SAMPLE_NUMBER                     = 0x80617006;
     public final static int ERROR_MP4_NO_AVAILABLE_SIZE                         = 0x80617009;
     public final static int ERROR_MP4_NO_MORE_DATA                              = 0x8061700a;
     public final static int ERROR_MP4_AAC_DECODE_ERROR                          = 0x80617141;

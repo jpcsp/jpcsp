@@ -1722,7 +1722,7 @@ public class sceMpeg extends HLEModule {
     	this.videoFrameHeight = videoFrameHeight;
     }
 
-    private void writeImageABGR(int addr, int frameWidth, int imageWidth, int imageHeight, int pixelMode, int[] abgr) {
+    private int getFrameHeight(int imageHeight) {
     	int frameHeight = imageHeight;
 		if (psmfHeader != null) {
 			// The decoded image height can be 290 while the header
@@ -1733,10 +1733,16 @@ public class sceMpeg extends HLEModule {
 			// gives an height of 272.
 			frameHeight = Math.min(frameHeight, videoFrameHeight);
 		}
+
+		return frameHeight;
+    }
+
+    private void writeImageABGR(int addr, int frameWidth, int imageWidth, int imageHeight, int pixelMode, int[] abgr) {
+    	int frameHeight = getFrameHeight(imageHeight);
 		int bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelMode);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("writeImageABGR addr=0x%08X-0x%08X, frameWidth=%d, width=%d, height=%d, pixelMode=%d", addr, addr + frameWidth * frameHeight * bytesPerPixel, frameWidth, imageWidth, imageHeight, pixelMode));
+			log.debug(String.format("writeImageABGR addr=0x%08X-0x%08X, frameWidth=%d, frameHeight=%d, width=%d, height=%d, pixelMode=%d", addr, addr + frameWidth * frameHeight * bytesPerPixel, frameWidth, frameHeight, imageWidth, imageHeight, pixelMode));
 		}
 
 		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, frameWidth * frameHeight * bytesPerPixel, bytesPerPixel);
@@ -1967,6 +1973,7 @@ public class sceMpeg extends HLEModule {
     public void hleCreateRingbuffer() {
     	if (mpegRingbuffer == null) {
     		mpegRingbuffer = new SceMpegRingbuffer(0, 0, 0, 0, 0);
+    		mpegRingbuffer.setReadPackets(1);
     		mpegRingbufferAddr = null;
     	}
     }
@@ -3067,6 +3074,10 @@ public class sceMpeg extends HLEModule {
 
         checkEmptyVideoRingbuffer();
 
+    	if (auAddr != null && auAddr.isNotNull()) {
+    		mpegAvcAu.read(auAddr);
+    	}
+
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceMpegAvcDecode *au=0x%08X, *buffer=0x%08X", au, buffer));
         }
@@ -3105,8 +3116,8 @@ public class sceMpeg extends HLEModule {
     public int sceMpegAvcDecodeDetail(@CheckArgument("checkMpegHandle") int mpeg, TPointer detailPointer) {
         detailPointer.setValue32( 0, avcDecodeResult); // Stores the result
         detailPointer.setValue32( 4, videoFrameCount); // Last decoded frame
-        detailPointer.setValue32( 8, psmfHeader == null ? 0 : psmfHeader.getVideoWidth() ); // Frame width
-        detailPointer.setValue32(12, psmfHeader == null ? 0 : psmfHeader.getVideoHeight()); // Frame height
+        detailPointer.setValue32( 8, psmfHeader != null ? psmfHeader.getVideoWidth()  : 0); // Frame width
+        detailPointer.setValue32(12, psmfHeader != null ? psmfHeader.getVideoHeight() : (videoFrameHeight < 0 ? 0 : videoFrameHeight)); // Frame height
         detailPointer.setValue32(16, 0              ); // Frame crop rect (left)
         detailPointer.setValue32(20, 0              ); // Frame crop rect (right)
         detailPointer.setValue32(24, 0              ); // Frame crop rect (top)

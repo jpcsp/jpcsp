@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class SceMp4DecodeInfo extends pspAbstractMemoryMappedStructure {
+public class SceMp4SampleInfo extends pspAbstractMemoryMappedStructure {
 	public int sample;
 	public int sampleSize;
 	public int sampleOffset;
@@ -42,16 +42,16 @@ public class SceMp4DecodeInfo extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
-		write32(sample);
-		write32(sampleSize);
-		write32(sampleOffset);
-		write32(unknown1);
-		write32(frameDuration);
-		write32(unknown2);
-		write32(0); // Always 0
-		write32(timestamp1);
-		write32(0); // Always 0
-		write32(timestamp2);
+		write32(sample);         // Offset 0
+		write32(sampleSize);     // Offset 4
+		write32(sampleOffset);   // Offset 8
+		write32(unknown1);       // Offset 12
+		write32(frameDuration);  // Offset 16
+		write32(unknown2);       // Offset 20
+		write32(0);              // Offset 24, always 0
+		write32(timestamp1);     // Offset 28
+		write32(0);              // Offset 32, always 0
+		write32(timestamp2);     // Offset 36
 	}
 
 	@Override
@@ -61,6 +61,6 @@ public class SceMp4DecodeInfo extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("SceMp4DecodeInfo sample=0x%X, sampleSize=0x%X, sampleOffset=0x%X, unknown1=0x%X, frameDuration=0x%X, unknown2=0x%X, timestamp1=0x%X, timestamp2=0x%X", sample, sampleSize, sampleOffset, unknown1, frameDuration, unknown2, timestamp1, timestamp2);
+		return String.format("SceMp4SampleInfo sample=0x%X, sampleSize=0x%X, sampleOffset=0x%X, unknown1=0x%X, frameDuration=0x%X, unknown2=0x%X, timestamp1=0x%X, timestamp2=0x%X", sample, sampleSize, sampleOffset, unknown1, frameDuration, unknown2, timestamp1, timestamp2);
 	}
 }
