@@ -1229,7 +1229,12 @@ public class sceMpeg extends HLEModule {
     	decodedImageInfo.frameEnd = readNextVideoFrame(pesHeader);
 
 		if (decodedImageInfo.frameEnd >= 0) {
-    		if (videoCodec == null) {
+			if (videoBuffer.getLength() < decodedImageInfo.frameEnd) {
+				// The content of the frame is not yet completely available in the videoBuffer
+				return;
+			}
+
+			if (videoCodec == null) {
     			videoCodec = CodecFactory.getVideoCodec();
     			videoCodec.init(videoCodecExtraData);
     		}
@@ -3078,10 +3083,6 @@ public class sceMpeg extends HLEModule {
     		mpegAvcAu.read(auAddr);
     	}
 
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceMpegAvcDecode *au=0x%08X, *buffer=0x%08X", au, buffer));
-        }
-
         hleMpegAvcDecode(buffer, frameWidth, videoPixelMode, gotFrameAddr, true);
 
     	startedMpeg = true;
@@ -3091,7 +3092,7 @@ public class sceMpeg extends HLEModule {
         VideoEngine.getInstance().addVideoTexture(buffer, buffer + height * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceMpegAvcDecode currentTimestamp=%d, gotFrame=%d", mpegAvcAu.pts, avcGotFrame));
+            log.debug(String.format("sceMpegAvcDecode buffer=0x%08X, dts=0x%X, pts=0x%X, gotFrame=%d", buffer, mpegAvcAu.dts, mpegAvcAu.pts, avcGotFrame));
         }
 
         // Correct decoding.

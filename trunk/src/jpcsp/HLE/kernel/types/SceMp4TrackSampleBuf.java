@@ -101,7 +101,7 @@ public class SceMp4TrackSampleBuf extends pspAbstractMemoryMappedStructure {
 
 		@Override
 		public String toString() {
-			return String.format("SceMp4TrackSampleBufInfo[totalSize=0x%X, readOffset=0x%X, writeOffset=0x%X, sizeAvailableForRead=0x%X, bufferAddr=0x%08X", totalSize, readOffset, writeOffset, sizeAvailableForRead, bufferAddr);
+			return String.format("SceMp4TrackSampleBufInfo[totalSize=0x%X, readOffset=0x%X, writeOffset=0x%X, sizeAvailableForRead=0x%X, bufferAddr=0x%08X]", totalSize, readOffset, writeOffset, sizeAvailableForRead, bufferAddr);
 		}
 	}
 

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MUTEX;
 import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_SET;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AAC;
 import static jpcsp.HLE.modules150.sceMpeg.mpegTimestampPerSecond;
@@ -25,6 +26,8 @@ import static jpcsp.util.Utilities.getReturnValue64;
 import static jpcsp.util.Utilities.readUnaligned32;
 
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -37,6 +40,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceMp4SampleInfo;
 import jpcsp.HLE.kernel.types.SceMp4TrackSampleBuf;
 import jpcsp.HLE.kernel.types.SceMp4TrackSampleBuf.SceMp4TrackSampleBufInfo;
@@ -61,17 +65,24 @@ public class sceMp4 extends HLEModule {
 	// Values for video track
 	protected int[] videoSamplesOffset;
 	protected int[] videoSamplesSize;
+	protected int[] videoSamplesDuration;
+	protected int[] videoSamplesPresentationOffset;
 	protected int videoDuration;
 	protected int videoTimeScale;
+	protected long videoCurrentTimestamp;
 	// Values for audio track
 	protected int[] audioSamplesOffset;
 	protected int[] audioSamplesSize;
+	protected int[] audioSamplesDuration;
+	protected int[] audioSamplesPresentationOffset;
 	protected int audioDuration;
 	protected int audioTimeScale;
+	protected long audioCurrentTimestamp;
 
 	protected int[] numberOfSamplesPerChunk;
 	protected int[] samplesSize;
 	protected long parseOffset;
+	protected int timeScale;
 	protected int duration;
 	protected int numberOfTracks;
 	protected int trackType;
@@ -84,10 +95,14 @@ public class sceMp4 extends HLEModule {
 	protected int[] videoCodecExtraData;
 	protected SceMp4TrackSampleBuf currentTrack;
 	protected TPointer currentTracAddr;
+	protected boolean bufferPutInProgress;
 	protected int bufferPutSamples;
 	protected int bufferPutCurrentSampleRemainingBytes;
+	protected int bufferPutSamplesPut;
+	protected SceKernelThreadInfo bufferPutThread;
     protected ICodec audioCodec;
     protected int audioChannels;
+    protected List<Integer> threadsWaitingOnBufferPut;
 
 	public static final int TRACK_TYPE_VIDEO = 0x10;
 	public static final int TRACK_TYPE_AUDIO = 0x20;
@@ -102,11 +117,14 @@ public class sceMp4 extends HLEModule {
 	protected static final int ATOM_MVHD = 0x6D766864; // "mvhd"
 	protected static final int ATOM_STSC = 0x73747363; // "stsc"
 	protected static final int ATOM_STSZ = 0x7374737A; // "stsz"
+	protected static final int ATOM_STTS = 0x73747473; // "stts"
+	protected static final int ATOM_CTTS = 0x63747473; // "ctts"
 	protected static final int ATOM_STCO = 0x7374636F; // "stco"
 	protected static final int ATOM_MDHD = 0x6D646864; // "mdhd"
 	protected static final int ATOM_AVCC = 0x61766343; // "avcC"
 	protected static final int FILE_TYPE_MSNV = 0x4D534E56; // "MSNV"
 	protected static final int FILE_TYPE_ISOM = 0x69736F6D; // "isom"
+	protected static final int FILE_TYPE_MP42 = 0x6D703432; // "mp42"
 	protected static final int DATA_FORMAT_AVC1 = 0x61766331; // "avc1"
 	protected static final int DATA_FORMAT_MP4A = 0x6D703461; // "mp4a"
 
@@ -134,6 +152,8 @@ public class sceMp4 extends HLEModule {
 			case ATOM_STSD:
 			case ATOM_STSC:
 			case ATOM_STSZ:
+			case ATOM_STTS:
+			case ATOM_CTTS:
 			case ATOM_STCO:
 			case ATOM_MDHD:
 			case ATOM_AVCC:
@@ -212,6 +232,7 @@ public class sceMp4 extends HLEModule {
 		switch (atom) {
 			case ATOM_MVHD:
 				if (size >= 20) {
+					timeScale = read32(content, 12);
 					duration = read32(content, 16);
 				}
 				break;
@@ -320,6 +341,62 @@ public class sceMp4 extends HLEModule {
 						break;
 					default:
 						log.error(String.format("processAtom 'stsz' unknown track type %d", trackType));
+						break;
+				}
+				break;
+			}
+			case ATOM_STTS: {
+				int[] samplesDuration = null;
+				if (size >= 8) {
+					int numberOfEntries = read32(content, 4);
+					int offset = 8;
+					int sample = 0;
+					for (int i = 0; i < numberOfEntries; i++, offset += 8) {
+						int sampleCount = read32(content, offset);
+						int sampleDuration = read32(content, offset + 4);
+						samplesDuration = extend(samplesDuration, sample + sampleCount);
+						Arrays.fill(samplesDuration, sample, sample + sampleCount, sampleDuration);
+						sample += sampleCount;
+					}
+				}
+
+				switch (trackType) {
+					case TRACK_TYPE_VIDEO:
+						videoSamplesDuration = samplesDuration;
+						break;
+					case TRACK_TYPE_AUDIO:
+						audioSamplesDuration = samplesDuration;
+						break;
+					default:
+						log.error(String.format("processAtom 'stts' unknown track type %d", trackType));
+						break;
+				}
+				break;
+			}
+			case ATOM_CTTS: {
+				int samplesPresentationOffset[] = null;
+				if (size >= 8) {
+					int numberOfEntries = read32(content, 4);
+					int offset = 8;
+					int sample = 0;
+					for (int i = 0; i < numberOfEntries; i++, offset += 8) {
+						int sampleCount = read32(content, offset);
+						int samplePresentationOffset = read32(content, offset + 4);
+						samplesPresentationOffset = extend(samplesPresentationOffset, sample + sampleCount);
+						Arrays.fill(samplesPresentationOffset, sample, sample + sampleCount, samplePresentationOffset);
+						sample += sampleCount;
+					}
+				}
+
+				switch (trackType) {
+					case TRACK_TYPE_VIDEO:
+						videoSamplesPresentationOffset = samplesPresentationOffset;
+						break;
+					case TRACK_TYPE_AUDIO:
+						audioSamplesPresentationOffset = samplesPresentationOffset;
+						break;
+					default:
+						log.error(String.format("processAtom 'ctts' unknown track type %d", trackType));
 						break;
 				}
 				break;
@@ -488,7 +565,7 @@ public class sceMp4 extends HLEModule {
 			int header1 = read32(mem, readBufferAddr);
 			int header2 = read32(mem, readBufferAddr + 4);
 			int header3 = read32(mem, readBufferAddr + 8);
-			if (header1 < 12 || header2 != ATOM_FTYP || (header3 != FILE_TYPE_MSNV && header3 != FILE_TYPE_ISOM)) {
+			if (header1 < 12 || header2 != ATOM_FTYP || (header3 != FILE_TYPE_MSNV && header3 != FILE_TYPE_ISOM && header3 != FILE_TYPE_MP42)) {
 				log.warn(String.format("Invalid MP4 file header 0x%08X 0x%08X 0x%08X: %s", header1, header2, header3, Utilities.getMemoryDump(readBufferAddr, Math.min(16, readSize))));
 				readSize = 0;
 			}
@@ -580,6 +657,52 @@ public class sceMp4 extends HLEModule {
 		return -1;
 	}
 
+	protected int getSampleDuration(int sample) {
+		return getSampleDuration(currentTrack.trackType, sample);
+	}
+
+	protected int getSampleDuration(int trackType, int sample) {
+		if ((trackType & TRACK_TYPE_AUDIO) != 0) {
+			if (audioSamplesDuration == null || sample >= audioSamplesDuration.length) {
+				return -1;
+			}
+			return audioSamplesDuration[sample];
+		}
+		if ((trackType & TRACK_TYPE_VIDEO) != 0) {
+			if (videoSamplesDuration == null || sample >= videoSamplesDuration.length) {
+				return -1;
+			}
+			return videoSamplesDuration[sample];
+		}
+
+		log.error(String.format("getSampleDuration unknown trackType=0x%X", trackType));
+
+		return -1;
+	}
+
+	protected int getSamplePresentationOffset(int sample) {
+		return getSamplePresentationOffset(currentTrack.trackType, sample);
+	}
+
+	protected int getSamplePresentationOffset(int trackType, int sample) {
+		if ((trackType & TRACK_TYPE_AUDIO) != 0) {
+			if (audioSamplesPresentationOffset == null || sample >= audioSamplesPresentationOffset.length) {
+				return 0;
+			}
+			return audioSamplesPresentationOffset[sample];
+		}
+		if ((trackType & TRACK_TYPE_VIDEO) != 0) {
+			if (videoSamplesPresentationOffset == null || sample >= videoSamplesPresentationOffset.length) {
+				return 0;
+			}
+			return videoSamplesPresentationOffset[sample];
+		}
+
+		log.error(String.format("getSamplePresentationOffset unknown trackType=0x%X", trackType));
+
+		return 0;
+	}
+
 	private class AfterBufferPutSeek implements IAction {
 		@Override
 		public void execute() {
@@ -642,6 +765,7 @@ public class sceMp4 extends HLEModule {
 
 				currentTrack.addSamplesToTrack(1);
 				bufferPutSamples--;
+				bufferPutSamplesPut++;
 			} else {
 				// Read one sample
 				int sample = currentTrack.currentSample;
@@ -677,6 +801,7 @@ public class sceMp4 extends HLEModule {
 						currentTrack.addSamplesToTrack(1);
 	
 						bufferPutSamples--;
+						bufferPutSamplesPut++;
 					} else {
 						// Sample partially available in the read buffer
 						int availableSampleLength = currentTrack.sizeAvailableInReadBuffer - sampleReadBufferOffset;
@@ -693,21 +818,68 @@ public class sceMp4 extends HLEModule {
 			}
 		}
 
-		if (bufferPutSamples <= 0) {
-			// sceMp4TrackSampleBufPut is now completed, write the current track back to memory
+		if (bufferPutSamples <= 0 && bufferPutInProgress) {
+			// sceMp4TrackSampleBufPut is now completed, write the current track back to memory...
 			currentTrack.write(currentTracAddr);
 
+			// ... and return the number of samples put
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("bufferPut returning 0x%X for thread %s", bufferPutSamplesPut, bufferPutThread));
+			}
+			bufferPutThread.cpuContext._v0 = bufferPutSamplesPut;
+
 			Modules.sceMpegModule.hleMpegNotifyVideoDecoderThread();
+
+			bufferPutInProgress = false;
+
+			if (!threadsWaitingOnBufferPut.isEmpty()) {
+				int threadUid = threadsWaitingOnBufferPut.remove(0).intValue();
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("bufferPut unblocking thread %s", Modules.ThreadManForUserModule.getThreadById(threadUid)));
+				}
+				Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
+			}
 		}
 	}
 
-	protected void bufferPut(SceMp4TrackSampleBuf track, TPointer trackAddr, int samples) {
-		currentTrack = track;
-		currentTracAddr = trackAddr;
-		bufferPutSamples = samples;
-		bufferPutCurrentSampleRemainingBytes = 0;
+	private class BufferPutUnblock implements IAction {
+		private SceMp4TrackSampleBuf track;
+		private TPointer trackAddr;
+		private int samples;
+		private SceKernelThreadInfo thread;
 
-		bufferPut();
+		public BufferPutUnblock(SceMp4TrackSampleBuf track, TPointer trackAddr, int samples, SceKernelThreadInfo thread) {
+			this.track = track;
+			this.trackAddr = trackAddr;
+			this.samples = samples;
+			this.thread = thread;
+		}
+
+		@Override
+		public void execute() {
+			bufferPut(thread, track, trackAddr, samples);
+		}
+	}
+
+	protected void bufferPut(SceKernelThreadInfo thread, SceMp4TrackSampleBuf track, TPointer trackAddr, int samples) {
+		if (bufferPutInProgress) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("bufferPut blocking thread %s", thread));
+			}
+			BufferPutUnblock bufferPutUnblock = new BufferPutUnblock(track, trackAddr, samples, thread);
+			threadsWaitingOnBufferPut.add(thread.uid);
+			Modules.ThreadManForUserModule.hleBlockCurrentThread(PSP_WAIT_MUTEX, bufferPutUnblock);
+		} else {
+			bufferPutInProgress = true;
+			currentTrack = track;
+			currentTracAddr = trackAddr;
+			bufferPutSamples = samples;
+			bufferPutCurrentSampleRemainingBytes = 0;
+			bufferPutSamplesPut = 0;
+			bufferPutThread = thread;
+
+			bufferPut();
+		}
 	}
 
 	protected void callReadCallback(IAction afterAction, int readAddr, int readBytes) {
@@ -736,9 +908,17 @@ public class sceMp4 extends HLEModule {
 		readBufferSize = 0;
 		videoSamplesOffset = null;
 		videoSamplesSize = null;
+		videoSamplesDuration = null;
+		videoSamplesPresentationOffset = null;
+		videoCurrentTimestamp = 0L;
 		audioSamplesOffset = null;
 		audioSamplesSize = null;
+		audioSamplesDuration = null;
+		audioSamplesPresentationOffset = null;
+		audioCurrentTimestamp = 0L;
 		trackType = 0;
+		threadsWaitingOnBufferPut = new LinkedList<Integer>();
+		bufferPutInProgress = false;
 
 		// TODO MP4 videos seem to decode with no alpha... or does it depend on the movie data?
 		H264Utils.setAlpha(0x00);
@@ -754,7 +934,26 @@ public class sceMp4 extends HLEModule {
     	}
 	}
 
-	@HLEUnimplemented
+	protected long sampleToFrameDuration(long sampleDuration, SceMp4TrackSampleBuf track) {
+		return sampleToFrameDuration(sampleDuration, track.timeScale);
+	}
+
+	protected long sampleToFrameDuration(long sampleDuration, int timeScale) {
+		return sampleDuration * mpegTimestampPerSecond / timeScale;
+	}
+
+	protected long getTotalFrameDuration(SceMp4TrackSampleBuf track) {
+    	long totalSampleDuration = 0L;
+    	for (int sample = 0; sample < track.totalNumberSamples; sample++) {
+    		int sampleDuration = getSampleDuration(track.trackType, sample);
+    		totalSampleDuration += sampleDuration;
+    	}
+
+    	long totalFrameDuration = sampleToFrameDuration(totalSampleDuration, track);
+
+    	return totalFrameDuration;
+	}
+
     @HLEFunction(nid = 0x68651CBC, version = 150, checkInsideInterrupt = true)
     public int sceMp4Init(boolean unk1, boolean unk2) {
 		hleMp4Init();
@@ -762,7 +961,6 @@ public class sceMp4 extends HLEModule {
 		return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x9042B257, version = 150, checkInsideInterrupt = true)
     public int sceMp4Finish() {
 		videoSamplesOffset = null;
@@ -773,7 +971,7 @@ public class sceMp4 extends HLEModule {
 		return 0;
     }
 
-    @HLEUnimplemented
+    @HLELogging(level="info")
     @HLEFunction(nid = 0xB1221EE7, version = 150, checkInsideInterrupt = true)
     public int sceMp4Create(int mp4, TPointer32 callbacks, TPointer readBufferAddr, int readBufferSize) {
     	this.readBufferAddr = readBufferAddr.getAddress();
@@ -788,7 +986,6 @@ public class sceMp4 extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x538C2057, version = 150)
     public int sceMp4Delete() {
 		// Reset default alpha
@@ -803,17 +1000,19 @@ public class sceMp4 extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x7443AF1D, version = 150)
     public int sceMp4GetMovieInfo(int mp4, @CanBeNull TPointer32 movieInfo) {
     	movieInfo.setValue(0, numberOfTracks);
     	movieInfo.setValue(4, 0); // Always 0
-    	movieInfo.setValue(8, duration);
+    	movieInfo.setValue(8, (int) sampleToFrameDuration(duration, timeScale));
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceMp4GetMovieInfo returning numberOfTracks=%d, duration=0x%X", movieInfo.getValue(0), movieInfo.getValue(8)));
+    	}
 
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x5EB65F26, version = 150)
     public int sceMp4GetNumberOfSpecificTrack(int mp4, int trackType) {
     	if ((trackType & TRACK_TYPE_VIDEO) != 0) {
@@ -828,7 +1027,6 @@ public class sceMp4 extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x7ADFD01C, version = 150)
     public int sceMp4RegistTrack(int mp4, int trackType, int unknown, TPointer32 callbacks, TPointer trackAddr) {
     	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
@@ -870,7 +1068,6 @@ public class sceMp4 extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xBCA9389C, version = 150)
     public int sceMp4TrackSampleBufQueryMemSize(int trackType, int numSamples, int sampleSize, int unknown, int readBufferSize) {
         int value = Math.max(numSamples * sampleSize, unknown << 1) + (numSamples << 6) + readBufferSize + 256;
@@ -881,7 +1078,6 @@ public class sceMp4 extends HLEModule {
         return value;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x9C8F4FC1, version = 150)
     public int sceMp4TrackSampleBufConstruct(int mp4, TPointer trackAddr, TPointer buffer, int sampleBufQueyMemSize, int numSamples, int sampleSize, int unknown, int readBufferSize) {
     	// sampleBufQueyMemSize is the value returned by sceMp4TrackSampleBufQueryMemSize
@@ -932,7 +1128,6 @@ public class sceMp4 extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x0F0187D2, version = 150)
     public int sceMp4GetAvcTrackInfoData(int mp4, TPointer trackAddr, @CanBeNull TPointer32 infoAddr) {
     	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
@@ -942,9 +1137,11 @@ public class sceMp4 extends HLEModule {
     		log.trace(String.format("sceMp4GetAvcTrackInfoData track %s", track));
     	}
 
+    	long totalFrameDuration = getTotalFrameDuration(track);
+
     	// Returning 3 32-bit values in infoAddr
     	infoAddr.setValue(0, 0); // Always 0
-    	infoAddr.setValue(4, track.totalNumberSamples * 3600);
+    	infoAddr.setValue(4, (int) totalFrameDuration);
     	infoAddr.setValue(8, track.totalNumberSamples);
 
     	if (log.isTraceEnabled()) {
@@ -954,7 +1151,6 @@ public class sceMp4 extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x9CE6F5CF, version = 150)
     public int sceMp4GetAacTrackInfoData(int mp4, TPointer trackAddr, @CanBeNull TPointer32 infoAddr) {
     	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
@@ -964,9 +1160,11 @@ public class sceMp4 extends HLEModule {
     		log.trace(String.format("sceMp4GetAacTrackInfoData track %s", track));
     	}
 
+    	long totalFrameDuration = getTotalFrameDuration(track);
+
     	// Returning 5 32-bit values in infoAddr
     	infoAddr.setValue(0, 0); // Always 0
-    	infoAddr.setValue(4, track.totalNumberSamples * 1920);
+    	infoAddr.setValue(4, (int) totalFrameDuration);
     	infoAddr.setValue(8, track.totalNumberSamples);
     	infoAddr.setValue(12, track.timeScale);
     	infoAddr.setValue(16, audioChannels);
@@ -984,7 +1182,6 @@ public class sceMp4 extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x10EE0D2C, version = 150)
     public int sceMp4AacDecodeInit(TPointer32 aac) {
     	aac.setValue(0); // Always 0?
@@ -1021,7 +1218,6 @@ public class sceMp4 extends HLEModule {
     	return sample;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xF7C51EC1, version = 150)
     public int sceMp4GetSampleInfo(int mp4, TPointer trackAddr, int sample, TPointer infoAddr) {
     	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
@@ -1036,12 +1232,14 @@ public class sceMp4 extends HLEModule {
     	}
 
     	SceMp4SampleInfo info = new SceMp4SampleInfo();
+    	int sampleDuration = getSampleDuration(track.trackType, sample);
+    	long frameDuration = sampleToFrameDuration(sampleDuration, track);
 
     	info.sample = sample;
     	info.sampleOffset = getSampleOffset(track.trackType, sample);
     	info.sampleSize = getSampleSize(track.trackType, sample);
     	info.unknown1 = 0;
-    	info.frameDuration = mpegTimestampPerSecond / track.timeScale;
+    	info.frameDuration = (int) frameDuration;
     	info.unknown2 = 0;
     	info.timestamp1 = sample * info.frameDuration;
     	info.timestamp2 = sample * info.frameDuration;
@@ -1063,7 +1261,6 @@ public class sceMp4 extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xD8250B75, version = 150)
     public int sceMp4PutSampleNum(int mp4, TPointer trackAddr, int sample) {
     	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
@@ -1092,7 +1289,6 @@ public class sceMp4 extends HLEModule {
      * @param writableBytesAddr
      * @return
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x8754ECB8, version = 150)
     public int sceMp4TrackSampleBufAvailableSize(int mp4, TPointer trackAddr, @CanBeNull TPointer32 writableSamplesAddr, @CanBeNull TPointer32 writableBytesAddr) {
     	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
@@ -1120,7 +1316,6 @@ public class sceMp4 extends HLEModule {
      * @param writableSamples
      * @return
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x31BCD7E0, version = 150)
     public int sceMp4TrackSampleBufPut(int mp4, TPointer trackAddr, int writableSamples) {
     	readHeaders();
@@ -1129,7 +1324,8 @@ public class sceMp4 extends HLEModule {
         	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
         	track.read(trackAddr);
 
-        	bufferPut(track, trackAddr, writableSamples);
+        	SceKernelThreadInfo currentThread = Modules.ThreadManForUserModule.getCurrentThread();
+        	bufferPut(currentThread, track, trackAddr, writableSamples);
     	}
 
     	return 0;
@@ -1144,7 +1340,6 @@ public class sceMp4 extends HLEModule {
      * @param infoAddr
      * @return
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x5601A6F0, version = 150)
     public int sceMp4GetAacAu(int mp4, TPointer trackAddr, TPointer auAddr, @CanBeNull TPointer infoAddr) {
     	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
@@ -1166,17 +1361,21 @@ public class sceMp4 extends HLEModule {
 
     	int sample = track.bufSamples.readOffset;
     	int sampleSize = getSampleSize(track.trackType, sample);
+    	int sampleDuration = getSampleDuration(track.trackType, sample);
+    	int samplePresentationOffset = getSamplePresentationOffset(track.trackType, sample);
+    	long frameDuration = sampleToFrameDuration(sampleDuration, track);
+    	long framePresentationOffset = sampleToFrameDuration(samplePresentationOffset, track);
 
     	// Consume one frame
-    	track.bufSamples.readOffset++;
-    	track.bufSamples.sizeAvailableForRead--;
+    	track.bufSamples.notifyRead(1);
     	track.readBytes(au.esBuffer, sampleSize);
     	au.esSize = sampleSize;
-    	au.dts = sample * ((long) mpegTimestampPerSecond) * (2048 / audioChannels) / track.timeScale;
-    	au.pts = au.dts;
+    	au.dts = audioCurrentTimestamp;
+    	audioCurrentTimestamp += frameDuration;
+    	au.pts = au.dts + framePresentationOffset;
 
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceMp4GetAacAu consuming one frame of size=0x%X, track %s", sampleSize, track));
+    		log.trace(String.format("sceMp4GetAacAu consuming one frame of size=0x%X, duration=0x%X, track %s", sampleSize, frameDuration, track));
     	}
 
     	au.write(auAddr);
@@ -1189,10 +1388,10 @@ public class sceMp4 extends HLEModule {
         	info.sampleOffset = getSampleOffset(track.trackType, sample);
         	info.sampleSize = getSampleSize(track.trackType, sample);
         	info.unknown1 = 0;
-        	info.frameDuration = (int) (((long) mpegTimestampPerSecond) * (2048 / audioChannels) / track.timeScale);
+        	info.frameDuration = (int) frameDuration;
         	info.unknown2 = 0;
         	info.timestamp1 = (int) au.dts;
-        	info.timestamp2 = info.timestamp1;
+        	info.timestamp2 = (int) au.pts;
 
         	info.write(infoAddr);
 
@@ -1214,7 +1413,6 @@ public class sceMp4 extends HLEModule {
      * @param frequency	44100
      * @return
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x7663CB5C, version = 150)
     public int sceMp4AacDecode(TPointer32 aac, TPointer auAddr, TPointer bufferAddr, int init, int frequency) {
     	SceMpegAu au = new SceMpegAu();
@@ -1250,7 +1448,6 @@ public class sceMp4 extends HLEModule {
      * @param infoAddr
      * @return
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x503A3CBA, version = 150)
     public int sceMp4GetAvcAu(int mp4, TPointer trackAddr, TPointer auAddr, @CanBeNull TPointer infoAddr) {
     	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
@@ -1273,17 +1470,21 @@ public class sceMp4 extends HLEModule {
 
     	int sample = track.bufSamples.readOffset;
     	int sampleSize = getSampleSize(track.trackType, sample);
+    	int sampleDuration = getSampleDuration(track.trackType, sample);
+    	int samplePresentationOffset = getSamplePresentationOffset(track.trackType, sample);
+    	long frameDuration = sampleToFrameDuration(sampleDuration, track);
+    	long framePresentationOffset = sampleToFrameDuration(samplePresentationOffset, track);
 
     	// Consume one frame
-    	track.bufSamples.readOffset++;
-    	track.bufSamples.sizeAvailableForRead--;
+    	track.bufSamples.notifyRead(1);
     	track.bufBytes.notifyRead(sampleSize);
 
-    	au.dts = sample * ((long) mpegTimestampPerSecond) / track.timeScale;
-    	au.pts = au.dts;
+    	au.dts = videoCurrentTimestamp;
+    	videoCurrentTimestamp += frameDuration;
+    	au.pts = au.dts + framePresentationOffset;
 
 		if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceMp4GetAvcAu consuming one frame of size=0x%X, track %s", sampleSize, track));
+    		log.trace(String.format("sceMp4GetAvcAu consuming one frame of size=0x%X, duration=0x%X, track %s", sampleSize, frameDuration, track));
     	}
 
     	au.write(auAddr);
@@ -1296,10 +1497,10 @@ public class sceMp4 extends HLEModule {
         	info.sampleOffset = getSampleOffset(track.trackType, sample);
         	info.sampleSize = getSampleSize(track.trackType, sample);
         	info.unknown1 = 0;
-        	info.frameDuration = mpegTimestampPerSecond / track.timeScale;
+        	info.frameDuration = (int) frameDuration;
         	info.unknown2 = 0;
         	info.timestamp1 = (int) au.dts;
-        	info.timestamp2 = info.timestamp1;
+        	info.timestamp2 = (int) au.pts;
 
         	info.write(infoAddr);
 
@@ -1335,7 +1536,6 @@ public class sceMp4 extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x131BDE57, version = 150)
     public int sceMp4InitAu(int mp4, TPointer bufferAddr, TPointer auAddr) {
     	SceMpegAu au = new SceMpegAu();
