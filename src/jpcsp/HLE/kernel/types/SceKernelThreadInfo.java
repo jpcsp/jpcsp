@@ -138,6 +138,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     public final static int THREAD_CALLBACK_SIZE = 7;
     private RegisteredCallbacks[] registeredCallbacks;
     public Queue<Callback> pendingCallbacks = new LinkedList<Callback>();
+    public Queue<IAction> pendingActions = new LinkedList<IAction>();
     // Used by sceKernelExtendThreadStack
     private SysMemInfo extendedStackSysMemInfo;
 
