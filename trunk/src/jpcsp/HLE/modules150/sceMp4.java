@@ -39,12 +39,14 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceMp4SampleInfo;
 import jpcsp.HLE.kernel.types.SceMp4TrackSampleBuf;
 import jpcsp.HLE.kernel.types.SceMp4TrackSampleBuf.SceMp4TrackSampleBufInfo;
 import jpcsp.HLE.kernel.types.SceMpegAu;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
@@ -576,7 +578,7 @@ public class sceMp4 extends HLEModule {
 		// Continue reading?
 		if (readSize > 0) {
 			// Seek to the next atom
-			callSeekCallback(new AfterReadHeadersSeek(), parseOffset, PSP_SEEK_SET);
+			callSeekCallback(null, new AfterReadHeadersSeek(), parseOffset, PSP_SEEK_SET);
 		} else {
 			if (log.isTraceEnabled() && currentTrack != null) {
 				log.trace(String.format("afterReadHeadersRead updated track %s", currentTrack));
@@ -593,7 +595,7 @@ public class sceMp4 extends HLEModule {
 			log.debug(String.format("afterReadHeadersSeek seek=0x%X", seek));
 		}
 
-		callReadCallback(new AfterReadHeadersRead(), readBufferAddr, readBufferSize);
+		callReadCallback(null, new AfterReadHeadersRead(), readBufferAddr, readBufferSize);
 	}
 
 	protected void readHeaders() {
@@ -608,7 +610,7 @@ public class sceMp4 extends HLEModule {
 
 		// Start reading all the atoms.
 		// First seek to the beginning of the file.
-		callSeekCallback(new AfterReadHeadersSeek(), parseOffset, PSP_SEEK_SET);
+		callSeekCallback(null, new AfterReadHeadersSeek(), parseOffset, PSP_SEEK_SET);
 	}
 
 	protected int getSampleOffset(int sample) {
@@ -719,7 +721,7 @@ public class sceMp4 extends HLEModule {
 
 	private void afterBufferPutSeek(long seek) {
 		currentTrack.currentFileOffset = seek;
-		callReadCallback(new AfterBufferPutRead(), currentTrack.readBufferAddr, currentTrack.readBufferSize);
+		callReadCallback(bufferPutThread, new AfterBufferPutRead(), currentTrack.readBufferAddr, currentTrack.readBufferSize);
 	}
 
 	private void afterBufferPutRead(int size) {
@@ -731,7 +733,7 @@ public class sceMp4 extends HLEModule {
 		// PSP is always reading in multiples of readBufferSize
 		seek = Utilities.alignDown(seek, currentTrack.readBufferSize - 1);
 
-		callSeekCallback(new AfterBufferPutSeek(), seek, PSP_SEEK_SET);
+		callSeekCallback(bufferPutThread, new AfterBufferPutSeek(), seek, PSP_SEEK_SET);
 	}
 
 	private void addBytesToTrack(Memory mem, int addr, int length) {
@@ -842,6 +844,25 @@ public class sceMp4 extends HLEModule {
 		}
 	}
 
+	private class StartBufferPut implements IAction {
+		private SceMp4TrackSampleBuf track;
+		private TPointer trackAddr;
+		private int samples;
+		private SceKernelThreadInfo thread;
+
+		public StartBufferPut(SceMp4TrackSampleBuf track, TPointer trackAddr, int samples, SceKernelThreadInfo thread) {
+			this.track = track;
+			this.trackAddr = trackAddr;
+			this.samples = samples;
+			this.thread = thread;
+		}
+
+		@Override
+		public void execute() {
+			bufferPut(thread, track, trackAddr, samples);
+		}
+	}
+
 	private class BufferPutUnblock implements IAction {
 		private SceMp4TrackSampleBuf track;
 		private TPointer trackAddr;
@@ -857,7 +878,23 @@ public class sceMp4 extends HLEModule {
 
 		@Override
 		public void execute() {
-			bufferPut(thread, track, trackAddr, samples);
+			// Start bufferPut in the thread context when it will be scheduled
+			Modules.ThreadManForUserModule.pushActionForThread(thread, new StartBufferPut(track, trackAddr, samples, thread));
+		}
+	}
+
+	private class BufferPutWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("BufferPutWaitStateChecker.continueWaitState for thread %s returning %b", thread, threadsWaitingOnBufferPut.contains(thread.uid)));
+			}
+
+			if (threadsWaitingOnBufferPut.contains(thread.uid)) {
+				return true;
+			}
+
+			return false;
 		}
 	}
 
@@ -868,8 +905,11 @@ public class sceMp4 extends HLEModule {
 			}
 			BufferPutUnblock bufferPutUnblock = new BufferPutUnblock(track, trackAddr, samples, thread);
 			threadsWaitingOnBufferPut.add(thread.uid);
-			Modules.ThreadManForUserModule.hleBlockCurrentThread(PSP_WAIT_MUTEX, bufferPutUnblock);
+			Modules.ThreadManForUserModule.hleBlockThread(thread, PSP_WAIT_MUTEX, 0, false, bufferPutUnblock, new BufferPutWaitStateChecker());
 		} else {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("bufferPut starting samples=0x%X, thread=%s", samples, thread));
+			}
 			bufferPutInProgress = true;
 			currentTrack = track;
 			currentTracAddr = trackAddr;
@@ -882,25 +922,25 @@ public class sceMp4 extends HLEModule {
 		}
 	}
 
-	protected void callReadCallback(IAction afterAction, int readAddr, int readBytes) {
+	protected void callReadCallback(SceKernelThreadInfo thread, IAction afterAction, int readAddr, int readBytes) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("callReadCallback readAddr=0x%08X, readBytes=0x%X", readAddr, readBytes));
 		}
-    	Modules.ThreadManForUserModule.executeCallback(null, callbackRead, afterAction, false, callbackParam, readAddr, readBytes);
+    	Modules.ThreadManForUserModule.executeCallback(thread, callbackRead, afterAction, false, callbackParam, readAddr, readBytes);
 	}
 
-	protected void callGetCurrentPositionCallback(IAction afterAction) {
+	protected void callGetCurrentPositionCallback(SceKernelThreadInfo thread, IAction afterAction) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("callGetCurrentPositionCallback"));
 		}
-		Modules.ThreadManForUserModule.executeCallback(null, callbackGetCurrentPosition, afterAction, false, callbackParam);
+		Modules.ThreadManForUserModule.executeCallback(thread, callbackGetCurrentPosition, afterAction, false, callbackParam);
 	}
 
-	protected void callSeekCallback(IAction afterAction, long offset, int whence) {
+	protected void callSeekCallback(SceKernelThreadInfo thread, IAction afterAction, long offset, int whence) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("callSeekCallback offset=0x%X, whence=%s", offset, IoFileMgrForUser.getWhenceName(whence)));
 		}
-		Modules.ThreadManForUserModule.executeCallback(null, callbackSeek, afterAction, false, callbackParam, 0, (int) (offset & 0xFFFFFFFF), (int) (offset >>> 32), whence);
+		Modules.ThreadManForUserModule.executeCallback(thread, callbackSeek, afterAction, false, callbackParam, 0, (int) (offset & 0xFFFFFFFF), (int) (offset >>> 32), whence);
 	}
 
 	protected void hleMp4Init() {
@@ -1313,19 +1353,20 @@ public class sceMp4 extends HLEModule {
      * 
      * @param mp4
      * @param track
-     * @param writableSamples
+     * @param samples
      * @return
      */
     @HLEFunction(nid = 0x31BCD7E0, version = 150)
-    public int sceMp4TrackSampleBufPut(int mp4, TPointer trackAddr, int writableSamples) {
+    public int sceMp4TrackSampleBufPut(int mp4, TPointer trackAddr, int samples) {
     	readHeaders();
 
-    	if (writableSamples > 0) {
+    	if (samples > 0) {
         	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
         	track.read(trackAddr);
 
+			// Start bufferPut in the thread context when it will be scheduled
         	SceKernelThreadInfo currentThread = Modules.ThreadManForUserModule.getCurrentThread();
-        	bufferPut(currentThread, track, trackAddr, writableSamples);
+			Modules.ThreadManForUserModule.pushActionForThread(currentThread, new StartBufferPut(track, trackAddr, samples, currentThread));
     	}
 
     	return 0;
@@ -1359,7 +1400,7 @@ public class sceMp4 extends HLEModule {
     		return SceKernelErrors.ERROR_MP4_NO_MORE_DATA;
     	}
 
-    	int sample = track.bufSamples.readOffset;
+    	int sample = track.currentSample - track.bufSamples.sizeAvailableForRead;
     	int sampleSize = getSampleSize(track.trackType, sample);
     	int sampleDuration = getSampleDuration(track.trackType, sample);
     	int samplePresentationOffset = getSamplePresentationOffset(track.trackType, sample);
@@ -1468,7 +1509,7 @@ public class sceMp4 extends HLEModule {
     	au.read(auAddr);
     	Modules.sceMpegModule.setMpegAvcAu(au);
 
-    	int sample = track.bufSamples.readOffset;
+    	int sample = track.currentSample - track.bufSamples.sizeAvailableForRead;
     	int sampleSize = getSampleSize(track.trackType, sample);
     	int sampleDuration = getSampleDuration(track.trackType, sample);
     	int samplePresentationOffset = getSamplePresentationOffset(track.trackType, sample);
