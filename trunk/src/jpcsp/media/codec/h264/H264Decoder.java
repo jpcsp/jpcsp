@@ -64,9 +64,17 @@ public class H264Decoder implements IVideoCodec {
 		packet.data_offset = inputOffset;
 		packet.size = inputLength;
 
-		int consumedLength = context.avcodec_decode_video2(picture, gotPicture, packet);
+		int consumedLength;
+		try {
+			consumedLength = context.avcodec_decode_video2(picture, gotPicture, packet);
+		} catch (ArrayIndexOutOfBoundsException e) {
+			log.error("H264Decoder.decode", e);
+			return -1;
+		}
+
 		if (consumedLength < 0) {
 			log.error(String.format("H264 decode error 0x%08X", consumedLength));
+			gotPicture[0] = 0;
 			return consumedLength;
 		}
 
