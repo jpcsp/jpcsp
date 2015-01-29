@@ -331,6 +331,14 @@ public class RuntimeContext {
     }
 
     private static void checkPendingCallbacks() {
+    	if (Modules.ThreadManForUserModule.checkPendingActions()) {
+        	// if some action has been executed, the current thread might be changed. Resync.
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("A pending action has been executed for the thread"));
+    		}
+    		wantSync = true;
+    	}
+
     	Modules.ThreadManForUserModule.checkPendingCallbacks();
     }
 

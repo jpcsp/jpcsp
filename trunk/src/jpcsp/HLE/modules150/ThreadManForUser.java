@@ -660,6 +660,31 @@ public class ThreadManForUser extends HLEModule {
     	executePendingCallbacks(currentThread);
     }
 
+    private boolean executePendingActions(SceKernelThreadInfo thread) {
+    	boolean actionExecuted = false;
+        if (!thread.pendingActions.isEmpty()) {
+        	if (currentThread == thread) {
+	    		IAction action = thread.pendingActions.poll();
+	        	if (log.isDebugEnabled()) {
+	        		log.debug(String.format("Executing pending action '%s' for thread '%s'", action, thread));
+	        	}
+	    		action.execute();
+
+	    		actionExecuted = true;
+        	}
+        }
+
+        return actionExecuted;
+    }
+
+    public boolean checkPendingActions() {
+    	return executePendingActions(currentThread);
+    }
+
+    public void pushActionForThread(SceKernelThreadInfo thread, IAction action) {
+		thread.pendingActions.add(action);
+    }
+
     /** This function must have the property of never returning currentThread,
      * unless currentThread is already null.
      * @return The next thread to schedule (based on thread priorities). */
@@ -863,7 +888,7 @@ public class ThreadManForUser extends HLEModule {
         hleRescheduleCurrentThread(callbacks);
     }
 
-    private void hleBlockThread(SceKernelThreadInfo thread, int waitType, int waitId, boolean doCallbacks, IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
+    public void hleBlockThread(SceKernelThreadInfo thread, int waitType, int waitId, boolean doCallbacks, IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
         if (!thread.isWaiting()) {
 	    	thread.doCallbacks = doCallbacks;
 	    	thread.wait.onUnblockAction = onUnblockAction;
@@ -873,6 +898,8 @@ public class ThreadManForUser extends HLEModule {
 	    	thread.wait.forever = true;
 	        hleChangeThreadState(thread, thread.isSuspended() ? PSP_THREAD_WAITING_SUSPEND : PSP_THREAD_WAITING);
         }
+
+        hleRescheduleCurrentThread(doCallbacks);
     }
 
     public void hleBlockCurrentThread(int waitType, int waitId, boolean doCallbacks, IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
@@ -881,7 +908,6 @@ public class ThreadManForUser extends HLEModule {
         }
 
     	hleBlockThread(currentThread, waitType, waitId, doCallbacks, onUnblockAction, waitStateChecker);
-        hleRescheduleCurrentThread(doCallbacks);
     }
 
     public void hleBlockCurrentThread(int waitType) {
@@ -1337,6 +1363,7 @@ public class ThreadManForUser extends HLEModule {
 
             // Terminate the thread wait state
             thread.waitType = PSP_WAIT_NONE;
+            thread.wait.onUnblockAction = null;
 
             hleChangeThreadState(thread, PSP_THREAD_READY);
         }
@@ -3794,7 +3821,7 @@ public class ThreadManForUser extends HLEModule {
 
 		@Override
         public String toString() {
-            return String.format("Callback address=0x%08X,id=%d,returnVoid=%b", address, getId(), returnVoid);
+            return String.format("Callback address=0x%08X, id=%d, returnVoid=%b, preserveCpuState=%b", address, getId(), returnVoid, preserveCpuState);
         }
     }
 
@@ -3844,16 +3871,21 @@ public class ThreadManForUser extends HLEModule {
                 thread.wait.copy(threadWaitInfo);
 
                 hleChangeThreadState(thread, status);
-            } else if (thread.status != PSP_THREAD_READY) {
+            } else if (thread.isRunning()) {
                 if (log.isDebugEnabled()) {
-                    log.debug("AfterCallAction: set thread to READY state: " + thread.toString());
+                    log.debug(String.format("AfterCallAction: leaving thread in RUNNING state: %s", thread));
+                }
+                doCallbacks = false;
+            } else if (!thread.isReady()) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("AfterCallAction: set thread to READY state: %s", thread));
                 }
 
                 hleChangeThreadState(thread, PSP_THREAD_READY);
                 doCallbacks = false;
             } else {
                 if (log.isDebugEnabled()) {
-                    log.debug("AfterCallAction: leaving thread in READY state: " + thread.toString());
+                    log.debug(String.format("AfterCallAction: leaving thread in READY state: %s", thread));
                 }
                 doCallbacks = false;
             }
