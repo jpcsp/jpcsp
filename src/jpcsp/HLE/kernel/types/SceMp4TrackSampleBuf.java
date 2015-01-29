@@ -23,10 +23,10 @@ import static jpcsp.util.Utilities.alignUp;
 public class SceMp4TrackSampleBuf extends pspAbstractMemoryMappedStructure {
 	public int mp4;
 	public int baseBufferAddr;
-	public int samplesPut; // Incremented at each sceMp4TrackSamplePutBuf by the number of samples put
+	public int samplesPut;
 	public int sampleSize;
 	public int unknown;
-	public int currentSample;
+	public int currentSample; // Incremented at each sceMp4TrackSamplePutBuf by the number of samples put
 	public int timeScale;
 	public int duration;
 	public int totalNumberSamples;
