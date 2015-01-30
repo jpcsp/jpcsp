@@ -334,6 +334,10 @@ public class sceMpeg extends HLEModule {
     	}
 
     	public synchronized void write(Memory mem, int dataAddr, int size) {
+    		if (log.isTraceEnabled()) {
+    			log.trace(String.format("VideoBuffer.write addr=0x%08X, size=0x%X, %s", dataAddr, size, this));
+    		}
+
     		if (size + length > buffer.length) {
     			int extendedBuffer[] = new int[size + length];
     			System.arraycopy(buffer, 0, extendedBuffer, 0, length);
@@ -355,6 +359,10 @@ public class sceMpeg extends HLEModule {
     	}
 
     	public synchronized void notifyRead(int size) {
+    		if (log.isTraceEnabled()) {
+    			log.trace(String.format("VideoBuffer.notifyRead size=0x%X, %s", size, this));
+    		}
+
     		size = Math.min(size, length);
     		length -= size;
     		System.arraycopy(buffer, size, buffer, 0, length);
@@ -374,8 +382,12 @@ public class sceMpeg extends HLEModule {
     		return length == 0;
     	}
 
-    	public int findFrameEnd() {
+    	public synchronized int findFrameEnd() {
     		if (frameSizes != null && frame < frameSizes.length) {
+    			if (log.isTraceEnabled()) {
+    				log.trace(String.format("VideoBuffer.findFrameEnd frameSize=0x%X, %s", frameSizes[frame], this));
+    			}
+
     			return frameSizes[frame];
     		}
 
@@ -400,6 +412,29 @@ public class sceMpeg extends HLEModule {
     		this.frameSizes = frameSizes;
     		frame = 0;
     	}
+
+    	public synchronized void setFrame(int newFrame) {
+    		if (frameSizes != null) {
+    			if (log.isTraceEnabled()) {
+    				log.trace(String.format("VideoBuffer.setFrame newFrame=0x%X, %s", newFrame, this));
+    			}
+
+    			if (newFrame < frame) {
+    				reset();
+    			} else {
+	    			// Skip frames up to new frame
+	    			while (frame < newFrame && !isEmpty()) {
+	    				notifyRead(frameSizes[frame]);
+	    			}
+    			}
+    		}
+    		this.frame = newFrame;
+    	}
+
+		@Override
+		public String toString() {
+			return String.format("VideoBuffer[length=0x%X, frame=0x%X]", length, frame);
+		}
     }
 
     private static class UserDataBuffer {
@@ -1239,29 +1274,34 @@ public class sceMpeg extends HLEModule {
     			videoCodec.init(videoCodecExtraData);
     		}
 
-    		int result = videoCodec.decode(videoBuffer.getBuffer(), videoBuffer.getBufferOffset(), decodedImageInfo.frameEnd);
+			synchronized (videoBuffer) {
+				int result = videoCodec.decode(videoBuffer.getBuffer(), videoBuffer.getBufferOffset(), decodedImageInfo.frameEnd);
 
-    		if (log.isTraceEnabled()) {
-				byte bytes[] = new byte[decodedImageInfo.frameEnd];
-				int inputBuffer[] = videoBuffer.getBuffer();
-				int inputOffset = videoBuffer.getBufferOffset();
-				for (int i = 0; i < decodedImageInfo.frameEnd; i++) {
-					bytes[i] = (byte) inputBuffer[inputOffset + i];
+	    		if (log.isTraceEnabled()) {
+					byte bytes[] = new byte[decodedImageInfo.frameEnd];
+					int inputBuffer[] = videoBuffer.getBuffer();
+					int inputOffset = videoBuffer.getBufferOffset();
+					for (int i = 0; i < decodedImageInfo.frameEnd; i++) {
+						bytes[i] = (byte) inputBuffer[inputOffset + i];
+					}
+					log.trace(String.format("decodeNextImage codec returned 0x%X. Decoding 0x%X bytes from %s", result, decodedImageInfo.frameEnd, Utilities.getMemoryDump(bytes, 0, decodedImageInfo.frameEnd)));
 				}
-				log.trace(String.format("sceMpegAvcDecode codec returned 0x%X. Decoding from %s", result, Utilities.getMemoryDump(bytes, 0, decodedImageInfo.frameEnd)));
-			}
 
-			if (result < 0) {
-				log.error(String.format("sceMpegAvcDecode codec returned 0x%08X", result));
-			} else {
-				videoBuffer.notifyRead(result);
+				if (result < 0) {
+					log.error(String.format("decodeNextImage codec returned 0x%08X", result));
+					// Skip this incorrect frame
+					videoBuffer.notifyRead(decodedImageInfo.frameEnd);
+					decodedImageInfo.gotFrame = false;
+				} else {
+					videoBuffer.notifyRead(result);
 
-				decodedImageInfo.gotFrame = videoCodec.hasImage();
-				if (decodedImageInfo.gotFrame) {
-					decodedImageInfo.imageWidth = videoCodec.getImageWidth();
-					decodedImageInfo.imageHeight = videoCodec.getImageHeight();
-					if (!getImage(decodedImageInfo)) {
-						return;
+					decodedImageInfo.gotFrame = videoCodec.hasImage();
+					if (decodedImageInfo.gotFrame) {
+						decodedImageInfo.imageWidth = videoCodec.getImageWidth();
+						decodedImageInfo.imageHeight = videoCodec.getImageHeight();
+						if (!getImage(decodedImageInfo)) {
+							return;
+						}
 					}
 				}
 			}
@@ -1976,11 +2016,9 @@ public class sceMpeg extends HLEModule {
     }
 
     public void hleCreateRingbuffer() {
-    	if (mpegRingbuffer == null) {
-    		mpegRingbuffer = new SceMpegRingbuffer(0, 0, 0, 0, 0);
-    		mpegRingbuffer.setReadPackets(1);
-    		mpegRingbufferAddr = null;
-    	}
+		mpegRingbuffer = new SceMpegRingbuffer(0, 0, 0, 0, 0);
+		mpegRingbuffer.setReadPackets(1);
+		mpegRingbufferAddr = null;
     }
 
     public void setVideoCodecExtraData(int videoCodecExtraData[]) {
@@ -1989,6 +2027,14 @@ public class sceMpeg extends HLEModule {
 
     public void setVideoFrameSizes(int videoFrameSizes[]) {
     	videoBuffer.setFrameSizes(videoFrameSizes);
+    }
+
+    public void flushVideoFrameData() {
+    	videoBuffer.reset();
+    }
+
+    public void setVideoFrame(int frame) {
+    	videoBuffer.setFrame(frame);
     }
 
     public void hleCreateRingbuffer(int packets, int data, int size) {

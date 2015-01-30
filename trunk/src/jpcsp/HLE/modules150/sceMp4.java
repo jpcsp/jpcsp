@@ -69,6 +69,7 @@ public class sceMp4 extends HLEModule {
 	protected int[] videoSamplesSize;
 	protected int[] videoSamplesDuration;
 	protected int[] videoSamplesPresentationOffset;
+	protected int[] videoSyncSamples;
 	protected int videoDuration;
 	protected int videoTimeScale;
 	protected long videoCurrentTimestamp;
@@ -77,6 +78,7 @@ public class sceMp4 extends HLEModule {
 	protected int[] audioSamplesSize;
 	protected int[] audioSamplesDuration;
 	protected int[] audioSamplesPresentationOffset;
+	protected int[] audioSyncSamples;
 	protected int audioDuration;
 	protected int audioTimeScale;
 	protected long audioCurrentTimestamp;
@@ -109,6 +111,9 @@ public class sceMp4 extends HLEModule {
 	public static final int TRACK_TYPE_VIDEO = 0x10;
 	public static final int TRACK_TYPE_AUDIO = 0x20;
 
+	protected static final int SEARCH_BACKWARDS = 0;
+	protected static final int SEARCH_FORWARDS  = 1;
+
 	protected static final int ATOM_FTYP = 0x66747970; // "ftyp"
 	protected static final int ATOM_MOOV = 0x6D6F6F76; // "moov"
 	protected static final int ATOM_TRAK = 0x7472616B; // "trak"
@@ -122,6 +127,7 @@ public class sceMp4 extends HLEModule {
 	protected static final int ATOM_STTS = 0x73747473; // "stts"
 	protected static final int ATOM_CTTS = 0x63747473; // "ctts"
 	protected static final int ATOM_STCO = 0x7374636F; // "stco"
+	protected static final int ATOM_STSS = 0x73747373; // "stss"
 	protected static final int ATOM_MDHD = 0x6D646864; // "mdhd"
 	protected static final int ATOM_AVCC = 0x61766343; // "avcC"
 	protected static final int FILE_TYPE_MSNV = 0x4D534E56; // "MSNV"
@@ -157,6 +163,7 @@ public class sceMp4 extends HLEModule {
 			case ATOM_STTS:
 			case ATOM_CTTS:
 			case ATOM_STCO:
+			case ATOM_STSS:
 			case ATOM_MDHD:
 			case ATOM_AVCC:
 				return true;
@@ -469,6 +476,33 @@ public class sceMp4 extends HLEModule {
 				}
 				break;
 			}
+			case ATOM_STSS: {
+				int[] syncSamples = null;
+				if (size >= 8) {
+					int numberOfEntries = read32(content, 4);
+					syncSamples = new int[numberOfEntries];
+					int offset = 8;
+					for (int i = 0; i < numberOfEntries; i++, offset += 4) {
+						syncSamples[i] = read32(content, offset) - 1; // Sync samples are numbered starting at 1
+						if (log.isTraceEnabled()) {
+							log.trace(String.format("Sync sample#%d=0x%X", i, syncSamples[i]));
+						}
+					}
+				}
+
+				switch (trackType) {
+					case TRACK_TYPE_VIDEO:
+						videoSyncSamples = syncSamples;
+						break;
+					case TRACK_TYPE_AUDIO:
+						audioSyncSamples = syncSamples;
+						break;
+					default:
+						log.error(String.format("processAtom 'stss' unknown track type %d", trackType));
+						break;
+				}
+				break;
+			}
 		}
 	}
 
@@ -598,7 +632,7 @@ public class sceMp4 extends HLEModule {
 		callReadCallback(null, new AfterReadHeadersRead(), readBufferAddr, readBufferSize);
 	}
 
-	protected void readHeaders() {
+	protected void readHeaders(SceMp4TrackSampleBuf track, TPointer trackAddr) {
 		if (videoSamplesOffset != null && videoSamplesSize != null) {
 			return;
 		}
@@ -607,6 +641,8 @@ public class sceMp4 extends HLEModule {
 		duration = 0;
 		currentAtom = 0;
 		numberOfTracks = 0;
+		currentTrack = track;
+		currentTracAddr = trackAddr;
 
 		// Start reading all the atoms.
 		// First seek to the beginning of the file.
@@ -619,13 +655,13 @@ public class sceMp4 extends HLEModule {
 
 	protected int getSampleOffset(int trackType, int sample) {
 		if ((trackType & TRACK_TYPE_AUDIO) != 0) {
-			if (audioSamplesOffset == null || sample >= audioSamplesOffset.length) {
+			if (audioSamplesOffset == null || sample < 0 || sample >= audioSamplesOffset.length) {
 				return -1;
 			}
 			return audioSamplesOffset[sample];
 		}
 		if ((trackType & TRACK_TYPE_VIDEO) != 0) {
-			if (videoSamplesOffset == null || sample >= videoSamplesOffset.length) {
+			if (videoSamplesOffset == null || sample < 0 || sample >= videoSamplesOffset.length) {
 				return -1;
 			}
 			return videoSamplesOffset[sample];
@@ -642,13 +678,13 @@ public class sceMp4 extends HLEModule {
 
 	protected int getSampleSize(int trackType, int sample) {
 		if ((trackType & TRACK_TYPE_AUDIO) != 0) {
-			if (audioSamplesSize == null || sample >= audioSamplesSize.length) {
+			if (audioSamplesSize == null || sample < 0 || sample >= audioSamplesSize.length) {
 				return -1;
 			}
 			return audioSamplesSize[sample];
 		}
 		if ((trackType & TRACK_TYPE_VIDEO) != 0) {
-			if (videoSamplesSize == null || sample >= videoSamplesSize.length) {
+			if (videoSamplesSize == null || sample < 0 || sample >= videoSamplesSize.length) {
 				return -1;
 			}
 			return videoSamplesSize[sample];
@@ -665,13 +701,13 @@ public class sceMp4 extends HLEModule {
 
 	protected int getSampleDuration(int trackType, int sample) {
 		if ((trackType & TRACK_TYPE_AUDIO) != 0) {
-			if (audioSamplesDuration == null || sample >= audioSamplesDuration.length) {
+			if (audioSamplesDuration == null || sample < 0 || sample >= audioSamplesDuration.length) {
 				return -1;
 			}
 			return audioSamplesDuration[sample];
 		}
 		if ((trackType & TRACK_TYPE_VIDEO) != 0) {
-			if (videoSamplesDuration == null || sample >= videoSamplesDuration.length) {
+			if (videoSamplesDuration == null || sample < 0 || sample >= videoSamplesDuration.length) {
 				return -1;
 			}
 			return videoSamplesDuration[sample];
@@ -688,13 +724,13 @@ public class sceMp4 extends HLEModule {
 
 	protected int getSamplePresentationOffset(int trackType, int sample) {
 		if ((trackType & TRACK_TYPE_AUDIO) != 0) {
-			if (audioSamplesPresentationOffset == null || sample >= audioSamplesPresentationOffset.length) {
+			if (audioSamplesPresentationOffset == null || sample < 0 || sample >= audioSamplesPresentationOffset.length) {
 				return 0;
 			}
 			return audioSamplesPresentationOffset[sample];
 		}
 		if ((trackType & TRACK_TYPE_VIDEO) != 0) {
-			if (videoSamplesPresentationOffset == null || sample >= videoSamplesPresentationOffset.length) {
+			if (videoSamplesPresentationOffset == null || sample < 0 || sample >= videoSamplesPresentationOffset.length) {
 				return 0;
 			}
 			return videoSamplesPresentationOffset[sample];
@@ -979,6 +1015,9 @@ public class sceMp4 extends HLEModule {
 	}
 
 	protected long sampleToFrameDuration(long sampleDuration, int timeScale) {
+		if (timeScale == 0) {
+			return sampleDuration;
+		}
 		return sampleDuration * mpegTimestampPerSecond / timeScale;
 	}
 
@@ -1007,6 +1046,8 @@ public class sceMp4 extends HLEModule {
 		videoSamplesSize = null;
 		audioSamplesOffset = null;
 		audioSamplesSize = null;
+		currentTrack = null;
+		currentTracAddr = null;
 
 		return 0;
     }
@@ -1021,7 +1062,7 @@ public class sceMp4 extends HLEModule {
 
     	readCallbacks(callbacks);
 
-    	readHeaders();
+    	readHeaders(null, null);
 
     	return 0;
     }
@@ -1096,14 +1137,12 @@ public class sceMp4 extends HLEModule {
     	readCallbacks(callbacks);
 
     	track.write(trackAddr);
-    	currentTrack = track;
-    	currentTracAddr = trackAddr;
 
     	if (log.isTraceEnabled()) {
     		log.trace(String.format("sceMp4RegistTrack track %s", track));
     	}
 
-    	readHeaders();
+    	readHeaders(track, trackAddr);
 
     	return 0;
     }
@@ -1234,10 +1273,21 @@ public class sceMp4 extends HLEModule {
 		return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x496E8A65, version = 150)
     public int sceMp4TrackSampleBufFlush(int mp4, TPointer trackAddr) {
-        return 0;
+    	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
+    	track.read(trackAddr);
+
+    	track.bufBytes.flush();
+    	track.bufSamples.flush();
+
+    	track.write(trackAddr);
+
+		if (track.isOfType(TRACK_TYPE_VIDEO)) {
+			Modules.sceMpegModule.flushVideoFrameData();
+		}
+
+		return 0;
     }
 
     @HLEUnimplemented
@@ -1267,7 +1317,7 @@ public class sceMp4 extends HLEModule {
     		log.trace(String.format("sceMp4GetSampleInfo track %s", track));
     	}
 
-    	if (sample == 0) {
+    	if (sample == -1) {
     		sample = track.currentSample;
     	}
 
@@ -1295,10 +1345,49 @@ public class sceMp4 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x74A1CA3E, version = 150)
-    public int sceMp4SearchSyncSampleNum(int mp4, TPointer trackAddr, int unknown3, int unknown4) {
-    	// unknown3: value 0 or 1
+    public int sceMp4SearchSyncSampleNum(int mp4, TPointer trackAddr, int searchDirection, int sample) {
+    	if (searchDirection != SEARCH_BACKWARDS && searchDirection != SEARCH_FORWARDS) {
+    		return SceKernelErrors.ERROR_MP4_INVALID_VALUE;
+    	}
 
-        return 0;
+    	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
+    	track.read(trackAddr);
+
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("sceMp4SearchSyncSampleNum track %s", track));
+    	}
+
+    	int[] syncSamples;
+    	if (track.isOfType(TRACK_TYPE_AUDIO)) {
+    		syncSamples = audioSyncSamples;
+    	} else if (track.isOfType(TRACK_TYPE_VIDEO)) {
+    		syncSamples = videoSyncSamples;
+    	} else {
+    		log.error(String.format("sceMp4SearchSyncSampleNum unknown track type 0x%X", track.trackType));
+    		return -1;
+    	}
+
+    	int syncSample = 0;
+    	if (syncSamples != null) {
+    		for (int i = 0; i < syncSamples.length; i++) {
+    			if (sample > syncSamples[i]) {
+    				syncSample = syncSamples[i];
+    			} else if (sample == syncSamples[i] && searchDirection == SEARCH_FORWARDS) {
+    				syncSample = syncSamples[i];
+    			} else {
+    				if (searchDirection == SEARCH_FORWARDS) {
+    					syncSample = syncSamples[i];
+    				}
+    				break;
+    			}
+    		}
+    	}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceMp4SearchSyncSampleNum returning 0x%X", syncSample));
+    	}
+
+    	return syncSample;
     }
 
     @HLEFunction(nid = 0xD8250B75, version = 150)
@@ -1310,14 +1399,18 @@ public class sceMp4 extends HLEModule {
     		log.trace(String.format("sceMp4PutSampleNum track %s", track));
     	}
 
-    	if (sample < 0 || sample > track.totalNumberSamples) {
+    	if (sample < 0 || sample >= track.totalNumberSamples) {
     		return SceKernelErrors.ERROR_MP4_INVALID_SAMPLE_NUMBER;
     	}
 
     	track.currentSample = sample;
     	track.write(trackAddr);
 
-    	return 0;
+		if (track.isOfType(TRACK_TYPE_VIDEO)) {
+			Modules.sceMpegModule.setVideoFrame(sample);
+		}
+
+		return 0;
     }
 
     /**
@@ -1358,12 +1451,12 @@ public class sceMp4 extends HLEModule {
      */
     @HLEFunction(nid = 0x31BCD7E0, version = 150)
     public int sceMp4TrackSampleBufPut(int mp4, TPointer trackAddr, int samples) {
-    	readHeaders();
+    	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
+    	track.read(trackAddr);
+
+    	readHeaders(track, trackAddr);
 
     	if (samples > 0) {
-        	SceMp4TrackSampleBuf track = new SceMp4TrackSampleBuf();
-        	track.read(trackAddr);
-
 			// Start bufferPut in the thread context when it will be scheduled
         	SceKernelThreadInfo currentThread = Modules.ThreadManForUserModule.getCurrentThread();
 			Modules.ThreadManForUserModule.pushActionForThread(currentThread, new StartBufferPut(track, trackAddr, samples, currentThread));

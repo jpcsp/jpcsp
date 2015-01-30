@@ -94,6 +94,12 @@ public class SceMp4TrackSampleBuf extends pspAbstractMemoryMappedStructure {
 			}
 		}
 
+		public void flush() {
+			readOffset = 0;
+			writeOffset = 0;
+			sizeAvailableForRead = 0;
+		}
+
 		@Override
 		public int sizeof() {
 			return 40;
