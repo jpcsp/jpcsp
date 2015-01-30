@@ -941,7 +941,9 @@ public class sceAtrac3plus extends HLEModule {
 
     public int checkAtracID(int atID) {
     	if (atID < 0 || atID >= atracIDs.length || !atracIDs[atID].isInUse()) {
-    		log.warn(String.format("Invalid atracID=0x%X", atID));
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("checkAtracID invalid atracID=0x%X", atID));
+    		}
             throw new SceKernelErrorException(ERROR_ATRAC_BAD_ID);
     	}
 
