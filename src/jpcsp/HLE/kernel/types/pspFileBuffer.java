@@ -69,11 +69,15 @@ public class pspFileBuffer {
 	}
 
 	public int getWriteSize() {
-		return min(maxSize - currentSize, maxSize - writePosition, fileMaxSize - filePosition);
+		return min(getNoFileWriteSize(), getFileWriteSize());
 	}
 
 	public int getFileWriteSize() {
 		return fileMaxSize - filePosition;
+	}
+
+	public int getNoFileWriteSize() {
+		return min(maxSize - currentSize, maxSize - writePosition);
 	}
 
 	public int getFilePosition() {

@@ -188,7 +188,7 @@ public class sceMp3 extends HLEModule {
 
         public int notifyAddStream(int bytesToAdd) {
             if (log.isTraceEnabled()) {
-                log.trace(String.format("notifyAddStream: %s", Utilities.getMemoryDump(inputBuffer.getWriteAddr(), bytesToAdd)));
+                log.trace(String.format("notifyAddStream inputBuffer %s: %s", inputBuffer, Utilities.getMemoryDump(inputBuffer.getWriteAddr(), bytesToAdd)));
             }
 
             inputBuffer.notifyWrite(bytesToAdd);
@@ -201,21 +201,9 @@ public class sceMp3 extends HLEModule {
         }
 
         public boolean isStreamDataNeeded() {
-        	int writeSize = inputBuffer.getWriteSize();
+        	boolean isDataNeeded = getWritableBytes() > 0;
 
-        	if (writeSize <= 0) {
-        		return false;
-        	}
-
-        	if (writeSize >= halfBufferSize) {
-            	return true;
-            }
-
-            if (writeSize >= inputBuffer.getFileWriteSize()) {
-            	return true;
-            }
-
-            return false;
+        	return isDataNeeded;
         }
 
         public int getSumDecodedSamples() {
@@ -247,7 +235,7 @@ public class sceMp3 extends HLEModule {
 	        	}
 
 	        	if (log.isDebugEnabled()) {
-	            	log.debug(String.format("Decoding from 0x%08X, length=0x%X to 0x%08X", decodeInputAddr, decodeInputLength, decodeOutputAddr));
+	            	log.debug(String.format("Decoding from 0x%08X, length=0x%X to 0x%08X, inputBuffer %s", decodeInputAddr, decodeInputLength, decodeOutputAddr, inputBuffer));
 	            }
 
 	        	result = codec.decode(decodeInputAddr, decodeInputLength, decodeOutputAddr);
@@ -293,17 +281,13 @@ public class sceMp3 extends HLEModule {
         }
 
         public int getWritableBytes() {
-        	int writeSize = inputBuffer.getWriteSize();
+        	int writeSize = inputBuffer.getNoFileWriteSize();
 
         	if (writeSize >= 2 * halfBufferSize) {
         		return 2 * halfBufferSize;
         	}
 
         	if (writeSize >= halfBufferSize) {
-        		return halfBufferSize;
-        	}
-
-        	if (writeSize >= inputBuffer.getFileWriteSize()) {
         		return halfBufferSize;
         	}
 
