@@ -3433,12 +3433,12 @@ public class sceMpeg extends HLEModule {
 			// Optimize the most common case
 			int pixelIndex = (rangeY * frameWidth + rangeX) * bytesPerPixel;
 	        for (int i = 0; i < rangeHeight; i++) {
-	        	int addr = destAddr.getAddress() + ((i + rangeY) * frameWidth + rangeX) * bytesPerPixel;
+	        	int addr = destAddr.getAddress() + (i * frameWidth) * bytesPerPixel;
 	        	System.arraycopy(abgr, pixelIndex, memoryInt, addr >> 2, rangeWidth);
 	        	pixelIndex += width;
 	        }
 		} else {
-        	int addr = destAddr.getAddress() + (rangeY * frameWidth + rangeX) * bytesPerPixel;
+        	int addr = destAddr.getAddress();
 	        for (int i = 0; i < rangeHeight; i++) {
 	        	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, rangeWidth * bytesPerPixel, bytesPerPixel);
 	        	int pixelIndex = (i + rangeY) * width + rangeX;
