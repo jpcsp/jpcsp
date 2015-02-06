@@ -110,10 +110,10 @@ public class ExternalGE {
 				case 5:
 				case 6:
 				case 7:
-					lineMasks[0] = 0xF000F000;
-					lineMasks[1] = 0x0F000F00;
-					lineMasks[2] = 0x00F000F0;
-					lineMasks[3] = 0x000F000F;
+					lineMasks[0] = 0xFF000000;
+					lineMasks[1] = 0x00FF0000;
+					lineMasks[2] = 0x0000FF00;
+					lineMasks[3] = 0x000000FF;
 					break;
 				case 8:
 				default:

@@ -356,14 +356,9 @@ public class GeCommands {
         public final static int PSM_16BIT_ABGR4444 = 0X02;
         public final static int PSM_32BIT_ABGR8888 = 0X03;
     public final static int CLEAR = 0xD3;// 	CLEAR 	Clear Flags
-        public final static int CLEAR_UNKNOW1 = 0X00;
         public final static int CLEAR_COLOR_BUFFER = 0X01;
         public final static int CLEAR_STENCIL_OR_ALPHA_BUFFER = 0X02;
-        public final static int CLEAR_UNKNOW2 = 0X03;
         public final static int CLEAR_DEPTH_BUFFER = 0X04;
-        public final static int CLEAR_UNKNOW3 = 0X05;
-        public final static int CLEAR_UNKNOW4 = 0X06;
-        public final static int CLEAR_UNKNOW5 = 0X07;
     public final static int SCISSOR1 = 0xD4;// 	SCISSOR1 	Scissor Region Start
     public final static int SCISSOR2 = 0xD5;// 	SCISSOR2 	Scissor Region End
     public final static int NEARZ = 0xD6;// 	NEARZ 	Near Depth Range
