@@ -329,9 +329,9 @@ public class sceGu {
 		sceGuDrawArray(GeCommands.PRIM_SPRITES, (VTYPE_TRANSFORM_PIPELINE_RAW_COORD << 23) | (VTYPE_COLOR_FORMAT_32BIT_ABGR_8888 << 2) | (VTYPE_POSITION_FORMAT_16_BIT << 7), numberOfVertex, 0, lineVertexAddr);
 	}
 
-	public void sceGuClear(int color) {
-		sendCommandi(GeCommands.CLEAR, 0x701);
+	public void sceGuClear(int mode, int color) {
+		sendCommandi(GeCommands.CLEAR, ((mode & 0x7) << 8) | 0x01);
 		sceGuDrawRectangle(0, 0, Screen.width, Screen.height, color);
-		sendCommandi(GeCommands.CLEAR, 0);
+		sendCommandi(GeCommands.CLEAR, 0x00);
 	}
 }
