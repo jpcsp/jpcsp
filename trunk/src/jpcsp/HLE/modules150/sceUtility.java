@@ -26,6 +26,7 @@ import static jpcsp.HLE.modules150.sceFont.PSP_FONT_PIXELFORMAT_4;
 import static jpcsp.graphics.GeCommands.ALPHA_ONE_MINUS_SOURCE_ALPHA;
 import static jpcsp.graphics.GeCommands.ALPHA_SOURCE_ALPHA;
 import static jpcsp.graphics.GeCommands.ALPHA_SOURCE_BLEND_OPERATION_ADD;
+import static jpcsp.graphics.GeCommands.CLEAR_COLOR_BUFFER;
 import static jpcsp.graphics.GeCommands.CMODE_FORMAT_32BIT_ABGR8888;
 import static jpcsp.graphics.GeCommands.PRIM_SPRITES;
 import static jpcsp.graphics.GeCommands.TFLT_LINEAR;
@@ -3283,8 +3284,8 @@ public class sceUtility extends HLEModule {
             // Shadows are softer in MsgDialog
             setSoftShadows(true);
 
-            // Clear screen in light gray color
-            gu.sceGuClear(0xFF968681);
+            // Clear screen in light gray color. Do not clear depth and stencil values.
+            gu.sceGuClear(CLEAR_COLOR_BUFFER, 0x968681);
 
             int buttonY = 192;
             String message = getMessage();
