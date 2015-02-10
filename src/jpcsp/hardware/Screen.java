@@ -27,6 +27,7 @@ public class Screen {
     private static DisableScreenSaverThread disableScreenSaverThread;
     public static final int width = 480;
     public static final int height = 272;
+    private static int brightnessLevel = 100;
     private static long lastPowerTick;
     private static boolean hasScreen = true;
 
@@ -102,5 +103,13 @@ public class Screen {
 
 	public static void setHasScreen(boolean hasScreen) {
 		Screen.hasScreen = hasScreen;
+	}
+
+	public static int getBrightnessLevel() {
+		return brightnessLevel;
+	}
+
+	public static void setBrightnessLevel(int brightnessLevel) {
+		Screen.brightnessLevel = brightnessLevel;
 	}
 }
