@@ -2193,11 +2193,14 @@ public class sceDisplay extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0xEEDA2E54, version = 150)
-    public int sceDisplayGetFrameBuf(TPointer32 topaddrAddr, TPointer32 bufferwidthAddr, TPointer32 pixelformatAddr, int syncType) {
+    public int sceDisplayGetFrameBuf(TPointer32 topaddrAddr, @CanBeNull TPointer32 bufferwidthAddr, @CanBeNull TPointer32 pixelformatAddr, int syncType) {
         topaddrAddr.setValue(fb.getTopAddr());
         bufferwidthAddr.setValue(fb.getBufferWidth());
         pixelformatAddr.setValue(fb.getPixelFormat());
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceDisplayGetFrameBuf returning topaddr=0x%08X, bufferwidth=0x%X, pixelformat=0x%X", fb.getTopAddr(), fb.getBufferWidth(), fb.getPixelFormat()));
+        }
         return 0;
     }
 
@@ -2206,10 +2209,26 @@ public class sceDisplay extends HLEModule {
         return isFbShowing;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x31C4BAA8, version = 150)
-    public int sceDisplayGetBrightness(int leveladdr, int unkaddr) {
-        return 0;
+    public int sceDisplayGetBrightness(@CanBeNull TPointer32 levelAddr, @CanBeNull TPointer32 unknownAddr) {
+    	levelAddr.setValue(Screen.getBrightnessLevel());
+    	unknownAddr.setValue(0); // Always 0
+
+    	return 0;
+    }
+
+    @HLEFunction(nid = 0x9E3C6DC6, version = 150)
+    public int sceDisplaySetBrightness(int level, int syncType) {
+    	if (level < 0 || level > 100) {
+    		return SceKernelErrors.ERROR_INVALID_ARGUMENT;
+    	}
+    	if (syncType != 0 && syncType != 1) {
+    		return SceKernelErrors.ERROR_INVALID_MODE;
+    	}
+
+    	Screen.setBrightnessLevel(level);
+
+    	return 0;
     }
 
     @HLEFunction(nid = 0x9C6EAAD7, version = 150)
