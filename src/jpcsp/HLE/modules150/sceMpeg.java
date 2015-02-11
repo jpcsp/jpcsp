@@ -3431,7 +3431,7 @@ public class sceMpeg extends HLEModule {
 		final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
 		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && memoryInt != null) {
 			// Optimize the most common case
-			int pixelIndex = (rangeY * frameWidth + rangeX) * bytesPerPixel;
+			int pixelIndex = rangeY * width + rangeX;
 	        for (int i = 0; i < rangeHeight; i++) {
 	        	int addr = destAddr.getAddress() + (i * frameWidth) * bytesPerPixel;
 	        	System.arraycopy(abgr, pixelIndex, memoryInt, addr >> 2, rangeWidth);
