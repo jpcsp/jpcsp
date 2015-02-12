@@ -31,6 +31,7 @@ import jpcsp.HLE.modules.SysMemForKernel;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.UtilsForUser;
 import jpcsp.HLE.modules.sceAac;
+import jpcsp.HLE.modules.sceAdler;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceAudio;
 import jpcsp.HLE.modules.sceAudioRouting;
@@ -169,6 +170,7 @@ public class Modules {
     public static sceAudioRouting sceAudioRoutingModule = new sceAudioRouting();
     public static sceUsbGps sceUsbGpsModule = new sceUsbGps();
     public static sceAudiocodec sceAudiocodecModule = new sceAudiocodec();
+    public static sceAdler sceAdlerModule = new sceAdler();
 
     public static Logger log = Logger.getLogger("hle");
 
