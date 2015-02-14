@@ -35,7 +35,6 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
         return 0;
     }
     
-    @HLEUnimplemented
     @HLEFunction(nid = 0xF2D8D1B4, version = 271)
     // sceKernelLoadModuleNpDrm
     public int ModuleMgrForUser_F2D8D1B4(PspString path, int flags, @CanBeNull TPointer optionAddr) {

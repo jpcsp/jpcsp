@@ -78,6 +78,8 @@ import jpcsp.HLE.modules.scePspNpDrm_user;
 import jpcsp.HLE.modules.sceRtc;
 import jpcsp.HLE.modules.sceSasCore;
 import jpcsp.HLE.modules.sceSfmt19937;
+import jpcsp.HLE.modules.sceSha1;
+import jpcsp.HLE.modules.sceSha256;
 import jpcsp.HLE.modules.sceSsl;
 import jpcsp.HLE.modules.sceSuspendForUser;
 import jpcsp.HLE.modules.sceUmdUser;
@@ -171,6 +173,8 @@ public class Modules {
     public static sceUsbGps sceUsbGpsModule = new sceUsbGps();
     public static sceAudiocodec sceAudiocodecModule = new sceAudiocodec();
     public static sceAdler sceAdlerModule = new sceAdler();
+    public static sceSha1 sceSha1Module = new sceSha1();
+    public static sceSha256 sceSha256Module = new sceSha256();
 
     public static Logger log = Logger.getLogger("hle");
 
