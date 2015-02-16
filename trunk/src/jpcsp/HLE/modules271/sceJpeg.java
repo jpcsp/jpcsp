@@ -518,7 +518,6 @@ public class sceJpeg extends HLEModule {
      * @param colorInfo
      * @return
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x67F0ED84, version = 271)
     public int sceJpegCsc(TPointer imageBuffer, TPointer yCbCrBuffer, int widthHeight, int bufferWidth, int colorInfo) {
     	return hleJpegCsc(imageBuffer, yCbCrBuffer, widthHeight, bufferWidth);
