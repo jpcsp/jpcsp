@@ -91,6 +91,12 @@ public class SampleSourceAtrac3 implements ISampleSource {
 
 	@Override
 	public void setSampleIndex(int index) {
+		if (index != currentSampleIndex) {
+			if (index != 0 || currentSampleIndex >= 0) {
+				currentSampleIndex = index;
+				id.setPlayPosition(index);
+			}
+		}
 	}
 
 	@Override
