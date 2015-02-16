@@ -164,6 +164,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private static boolean jideInitialized;
     // map to hold action listeners for menu entries in fullscreen mode
     private HashMap<KeyStroke, ActionListener[]> actionListenerMap;
+    private boolean doUmdBuffering = false;
 
     @Override
     public DisplayMode getDisplayMode() {
@@ -1643,7 +1644,11 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     }
 
     private void addRecentUMD(File file, String title) {
-        try {
+    	if (file == null) {
+    		return;
+    	}
+
+    	try {
             String s = file.getCanonicalPath();
             for (int i = 0; i < recentUMD.size(); ++i) {
                 if (recentUMD.get(i).path.equals(s)) {
@@ -1881,7 +1886,11 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
      * Don't call this directly, see loadUMD(File file)
      */
     private boolean loadUnpackedUMD(String filename) throws IOException, GeneralJpcspException {
-        // Load unpacked BOOT.BIN as if it came from the umd
+    	if (doUmdBuffering) {
+    		return false;
+    	}
+
+    	// Load unpacked BOOT.BIN as if it came from the umd
         File file = new File(filename);
         if (file.exists()) {
             RandomAccessFile raf = new RandomAccessFile(file, "r");
@@ -1896,22 +1905,25 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     }
 
     public void loadUMD(File file) {
+    	String filePath = file == null ? null : file.getPath();
+        UmdIsoReader.setDoIsoBuffering(doUmdBuffering);
+
         try {
             // Raising an exception here means the ISO/CSO is not a PSP_GAME.
             // Try checking if it's a UMD_VIDEO or a UMD_AUDIO.
-            UmdIsoReader iso = new UmdIsoReader(file.getPath());
+            UmdIsoReader iso = new UmdIsoReader(filePath);
             iso.getFile("PSP_GAME/param.sfo");
             loadUMDGame(file);
         } catch (FileNotFoundException e) {
             try {
                 // Try loading it as a UMD_VIDEO.
-                UmdIsoReader iso = new UmdIsoReader(file.getPath());
+                UmdIsoReader iso = new UmdIsoReader(filePath);
                 iso.getFile("UMD_VIDEO/param.sfo");
                 loadUMDVideo(file);
             } catch (FileNotFoundException ve) {
                 try {
                     // Try loading it as a UMD_AUDIO.
-                    UmdIsoReader iso = new UmdIsoReader(file.getPath());
+                    UmdIsoReader iso = new UmdIsoReader(filePath);
                     iso.getFile("UMD_AUDIO/param.sfo");
                     loadUMDAudio(file);
                 } catch (FileNotFoundException ae) {
@@ -1949,6 +1961,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
     public void loadUMDGame(File file) {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        String filePath = file == null ? null : file.getPath();
         try {
             if (State.logWindow != null) {
                 State.logWindow.clearScreenMessages();
@@ -1962,7 +1975,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             umdLoaded = true;
             loadedFile = file;
 
-            UmdIsoReader iso = new UmdIsoReader(file.getPath());
+            UmdIsoReader iso = new UmdIsoReader(filePath);
             UmdIsoFile psfFile = iso.getFile("PSP_GAME/param.sfo");
 
             PSF psf = new PSF();
@@ -2051,7 +2064,9 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                     instructioncounter.RefreshWindow();
                 }
                 StepLogger.clear();
-                StepLogger.setName(file.getPath());
+                if (filePath != null) {
+                	StepLogger.setName(filePath);
+                }
             } else {
                 State.discId = State.DISCID_UNKNOWN_NOTHING_LOADED;
                 throw new GeneralJpcspException(bundle.getString("MainGUI.strEncryptedBoot.text"));
@@ -2835,6 +2850,12 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                     printUsage();
                     break;
                 }
+            } else if (args[i].equals("--bufferumd")) {
+            	doUmdBuffering = true;
+            } else if (args[i].equals("--loadbufferedumd")) {
+            	doUmdBuffering = true;
+            	Modules.sceDisplayModule.setCalledFromCommandLine();
+            	loadUMD(null);
             } else if (args[i].equals("-r") || args[i].equals("--run")) {
                 RunEmu();
             } else if (args[i].equals("--netClientPortShift")) {
