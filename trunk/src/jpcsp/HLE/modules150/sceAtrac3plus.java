@@ -550,7 +550,7 @@ public class sceAtrac3plus extends HLEModule {
     		return info.inputFileDataOffset + sample / maxSamples * info.atracBytesPerFrame;
         }
 
-        private void setPlayPosition(int sample) {
+        public void setPlayPosition(int sample) {
         	if ((sample / maxSamples * maxSamples) != getAtracCurrentSample()) {
 	            if (inputBufferContainsAllData()) {
 	            	getInputBuffer().reset(inputBuffer.getFilePosition(), 0);
