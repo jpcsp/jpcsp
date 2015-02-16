@@ -1173,6 +1173,13 @@ public class sceDisplay extends HLEModule {
             forceLoadGEToScreen = false;
         }
 
+        // The lower 2 bits of the bufferwidth are ignored.
+        // E.g., the following bufferwidth values are valid: 120, 240, 480, 256, 512...
+        bufferwidth = bufferwidth & ~0x3;
+
+        // The lower 3 bits of FBP are ignored and the upper 8 bits are forced to VRAM.
+        topaddr = (topaddr & 0x00FFFFF0) | MemoryMap.START_VRAM;
+
         if (topaddr == ge.getTopAddr() && bufferwidth == ge.getBufferWidth()
                 && pixelformat == ge.getPixelFormat()
                 && width == ge.getWidth() && height == ge.getHeight()) {
@@ -1184,10 +1191,6 @@ public class sceDisplay extends HLEModule {
 
             return;
         }
-
-        // The lower 2 bits of the bufferwidth are ignored.
-        // E.g., the following bufferwidth values are valid: 120, 240, 480, 256, 512...
-        bufferwidth = bufferwidth & ~0x3;
 
         if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM
                 || bufferwidth <= 0
