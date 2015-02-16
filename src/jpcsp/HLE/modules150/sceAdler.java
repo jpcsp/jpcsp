@@ -21,7 +21,6 @@ import org.bolet.jgz.Adler32;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.HLEModule;
@@ -31,7 +30,7 @@ import jpcsp.util.Utilities;
 
 @HLELogging
 public class sceAdler extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceAdler");
+    public static Logger log = Modules.getLogger("sceAdler");
     // Do not user the JDK Adler32 implementation as we need to specify the initial checksum value.
     // This value is always forced to 1 in the JDK Adler32 implementation.
     protected Adler32 adler32;
@@ -56,7 +55,6 @@ public class sceAdler extends HLEModule {
 		super.stop();
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x9702EF11, version = 150)
     public int sceAdler32(int adler, TPointer data, int length) {
 		if (log.isTraceEnabled()) {
