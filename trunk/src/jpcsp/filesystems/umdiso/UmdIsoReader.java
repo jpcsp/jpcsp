@@ -31,6 +31,7 @@ import jpcsp.Emulator;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660Directory;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660File;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660Handler;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 /**
@@ -41,25 +42,36 @@ public class UmdIsoReader {
 
     public static final int startSector = 16;
     private static final int headerLength = 24;
-    private final ISectorDevice sectorDevice;
+    private ISectorDevice sectorDevice;
     private final HashMap<String, Iso9660File> fileCache = new HashMap<String, Iso9660File>();
     private final HashMap<String, Iso9660Directory> dirCache = new HashMap<String, Iso9660Directory>();
     private final int numSectors;
+    private static boolean doIsoBuffering = false;
 
     public UmdIsoReader(String umdFilename) throws IOException, FileNotFoundException {
-        RandomAccessFile fileReader = new RandomAccessFile(umdFilename, "r");
+    	if (umdFilename == null && doIsoBuffering) {
+    		sectorDevice = null;
+    	} else {
+    		RandomAccessFile fileReader = new RandomAccessFile(umdFilename, "r");
 
-        byte[] header = new byte[headerLength];
-        fileReader.seek(0);
-        fileReader.read(header);
+	        byte[] header = new byte[headerLength];
+	        fileReader.seek(0);
+	        fileReader.read(header);
 
-        if (header[0] == 'C' && header[1] == 'I' && header[2] == 'S' && header[3] == 'O') {
-            sectorDevice = new CSOFileSectorDevice(fileReader, header);
-        } else if (header[0] == 0 && header[1] == 'P' && header[2] == 'B' && header[3] == 'P') {
-        	sectorDevice = new PBPFileSectorDevice(fileReader);
-        } else {
-            sectorDevice = new ISOFileSectorDevice(fileReader);
+	        if (header[0] == 'C' && header[1] == 'I' && header[2] == 'S' && header[3] == 'O') {
+	            sectorDevice = new CSOFileSectorDevice(fileReader, header);
+	        } else if (header[0] == 0 && header[1] == 'P' && header[2] == 'B' && header[3] == 'P') {
+	        	sectorDevice = new PBPFileSectorDevice(fileReader);
+	        } else {
+	            sectorDevice = new ISOFileSectorDevice(fileReader);
+	        }
+    	}
+
+    	if (doIsoBuffering) {
+    		String tmp = Settings.getInstance().getTmpDirectory();
+        	sectorDevice = new BufferedFileSectorDevice(new RandomAccessFile(tmp + "umdbuffer.toc", "rw"), new RandomAccessFile(tmp + "umdbuffer.iso", "rw"), sectorDevice);
         }
+
         numSectors = sectorDevice.getNumSectors();
 
         if (!hasIsoHeader()) {
@@ -451,4 +463,8 @@ public class UmdIsoReader {
         out.println(String.format("Missing    %10d (%d sectors)", imageSize - totalSize, numSectors - (totalSize / sectorLength)));
         out.close();
     }
+
+	public static void setDoIsoBuffering(boolean doIsoBuffering) {
+		UmdIsoReader.doIsoBuffering = doIsoBuffering;
+	}
 }
