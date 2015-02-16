@@ -3427,8 +3427,12 @@ public class sceMpeg extends HLEModule {
         int[] abgr = getIntBuffer(length);
         H264Utils.YUV2ABGR(width, height, luma, cb, cr, abgr);
 
-        // Write the ABGR image
 		final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
+
+		// Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
+        VideoEngine.getInstance().addVideoTexture(destAddr.getAddress(), destAddr.getAddress() + (rangeY + rangeHeight) * frameWidth * bytesPerPixel);
+
+        // Write the ABGR image
 		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && memoryInt != null) {
 			// Optimize the most common case
 			int pixelIndex = rangeY * width + rangeX;
@@ -3455,9 +3459,6 @@ public class sceMpeg extends HLEModule {
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceMpegAvcCsc writing to 0x%08X-0x%08X, vcount=%d", destAddr.getAddress(), destAddr.getAddress() + (rangeY + rangeHeight) * frameWidth * bytesPerPixel, Modules.sceDisplayModule.getVcount()));
         }
-
-        // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
-        VideoEngine.getInstance().addVideoTexture(destAddr.getAddress(), destAddr.getAddress() + (rangeY + rangeHeight) * frameWidth * bytesPerPixel);
 
         delayThread(avcDecodeDelay);
 
