@@ -241,7 +241,10 @@ public class sceAudio extends HLEModule {
         // To avoid small "clicks" in the sound, simulate a rest length of 0
         // when approaching the end of the buffered samples.
         // 2048 is an empirical value.
-        if (len <= 2048) {
+        if (len > 0 && len <= 2048) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("hleAudioGetChannelRestLength truncating rest length %d to 0", len));
+        	}
         	len = 0;
         }
 
