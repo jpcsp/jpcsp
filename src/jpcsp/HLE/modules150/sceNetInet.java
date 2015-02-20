@@ -2025,7 +2025,7 @@ public class sceNetInet extends HLEModule {
 		}
 		sockets.clear();
 
-        super.start();
+        super.stop();
 	}
 
 	/**

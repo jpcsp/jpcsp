@@ -492,10 +492,12 @@ public class HLEModuleManager {
 					installFunctionWithAnnotations(hleFunction, method, hleModule);
 				}
 			}
-			installedModules.add(hleModule);
 		} catch (Exception e) {
 			log.error("installModuleWithAnnotations", e);
 		}
+
+		installedModules.add(hleModule);
+		hleModule.load();
 	}
 	
 	/**
@@ -514,5 +516,6 @@ public class HLEModuleManager {
 		}
 
 		installedModules.remove(hleModule);
+		hleModule.unload();
 	}
 }
