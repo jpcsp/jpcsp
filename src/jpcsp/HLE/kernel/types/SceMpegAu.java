@@ -69,8 +69,15 @@ public class SceMpegAu extends pspAbstractMemoryMappedStructure {
 		return 24;
 	}
 
+	private static String formatTimestamp(long timestamp) {
+		if (timestamp == -1L) {
+			return "-1";
+		}
+		return String.format("0x%X", timestamp);
+	}
+
 	@Override
 	public String toString() {
-		return String.format("pts=0x%X, dts=0x%X, esBuffer=0x%08X, esSize=0x%X", pts, dts, esBuffer, esSize);
+		return String.format("pts=%s, dts=%s, esBuffer=0x%08X, esSize=0x%X", formatTimestamp(pts), formatTimestamp(dts), esBuffer, esSize);
 	}
 }

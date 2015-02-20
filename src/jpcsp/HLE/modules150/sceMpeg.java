@@ -1907,6 +1907,33 @@ public class sceMpeg extends HLEModule {
 		return true;
     }
 
+    private void resetMpegRingbuffer() {
+    	if (mpegRingbuffer != null) {
+    		mpegRingbuffer.reset();
+    	}
+
+    	if (videoBuffer != null) {
+        	videoBuffer.reset();
+        }
+    	if (audioBuffer != null) {
+    		audioBuffer.reset();
+    	}
+
+        userDataBuffer = null;
+        audioPesHeader = null;
+        videoPesHeader = null;
+        userDataPesHeader = null;
+        audioFrameLength = 0;
+        frameHeaderLength = 0;
+        userDataLength = 0;
+
+        if (decodedImages != null) {
+        	synchronized (decodedImages) {
+        		decodedImages.clear();
+        	}
+        }
+    }
+
     public int hleMpegCreate(TPointer mpeg, TPointer data, int size, @CanBeNull TPointer ringbufferAddr, int frameWidth, int mode, int ddrtop) {
         Memory mem = data.getMemory();
 
@@ -1921,7 +1948,7 @@ public class sceMpeg extends HLEModule {
         // Update the ring buffer struct.
         if (ringbufferAddr != null && ringbufferAddr.isNotNull()) {
         	mpegRingbuffer = SceMpegRingbuffer.fromMem(ringbufferAddr);
-        	mpegRingbuffer.reset();
+        	resetMpegRingbuffer();
 	        mpegRingbuffer.setMpeg(mpeg.getAddress());
 	    	mpegRingbufferWrite();
         }
@@ -2240,7 +2267,7 @@ public class sceMpeg extends HLEModule {
         }
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("hleMpegGetAtracAu returning result=0x%08X, pts=%d, dts=%d", result, mpegAtracAu.pts, mpegAtracAu.dts));
+        	log.debug(String.format("hleMpegGetAtracAu returning result=0x%08X, %s", result, mpegAtracAu));
         }
 
         return result;
@@ -2370,7 +2397,7 @@ public class sceMpeg extends HLEModule {
         avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
         avcGotFrame = 0;
         if (mpegRingbuffer != null) {
-            mpegRingbuffer.reset();
+        	resetMpegRingbuffer();
         	mpegRingbufferWrite();
         }
         mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
@@ -2485,10 +2512,8 @@ public class sceMpeg extends HLEModule {
     		log.debug("finishMpeg");
     	}
 
-        if (mpegRingbuffer != null) {
-        	mpegRingbuffer.reset();
-        	mpegRingbufferWrite();
-        }
+    	resetMpegRingbuffer();
+    	mpegRingbufferWrite();
         VideoEngine.getInstance().resetVideoTextures();
 
         registeredVideoChannel = -1;
@@ -2503,26 +2528,8 @@ public class sceMpeg extends HLEModule {
         currentAudioTimestamp = 0;
         startedMpeg = false;
 
-        if (audioBuffer != null) {
-        	audioBuffer.reset();
-        }
-        if (videoBuffer != null) {
-        	videoBuffer.reset();
-        }
-        userDataBuffer = null;
-        audioFrameLength = 0;
-        frameHeaderLength = 0;
-        audioPesHeader = null;
-        videoPesHeader = null;
-        userDataPesHeader = null;
-        userDataLength = 0;
         videoFrameHeight = -1;
 
-        if (decodedImages != null) {
-        	synchronized (decodedImages) {
-        		decodedImages.clear();
-        	}
-        }
         if (videoDecoderThread != null) {
         	videoDecoderThread.resetWaitingThreadInfo();
         }
@@ -3546,7 +3553,7 @@ public class sceMpeg extends HLEModule {
     public int sceMpegRingbufferDestruct(TPointer ringbufferAddr) {
     	if (mpegRingbuffer != null) {
 	    	mpegRingbuffer.read(ringbufferAddr);
-	    	mpegRingbuffer.reset();
+	    	resetMpegRingbuffer();
 	    	mpegRingbuffer.write(ringbufferAddr);
 	    	mpegRingbuffer = null;
 	    	mpegRingbufferAddr = null;
