@@ -83,9 +83,16 @@ public class sceAtrac3plus extends HLEModule {
     		Modules.SysMemUserForUserModule.free(temporaryDecodeArea);
     		temporaryDecodeArea = null;
     	}
+
+    	super.stop();
     }
 
-    public    static final int AT3_MAGIC      = 0x0270; // "AT3"
+	@Override
+	public int getMemoryUsage() {
+		return 0x8000;
+	}
+
+	public    static final int AT3_MAGIC      = 0x0270; // "AT3"
     public    static final int AT3_PLUS_MAGIC = 0xFFFE; // "AT3PLUS"
     public    static final int RIFF_MAGIC = 0x46464952; // "RIFF"
     public    static final int WAVE_MAGIC = 0x45564157; // "WAVE"

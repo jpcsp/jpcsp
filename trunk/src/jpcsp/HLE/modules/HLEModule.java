@@ -19,6 +19,7 @@ package jpcsp.HLE.modules;
 import java.util.HashMap;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.settings.ISettingsListener;
 import jpcsp.settings.Settings;
 
@@ -29,6 +30,7 @@ import jpcsp.settings.Settings;
 abstract public class HLEModule {
     /** @return Example: StdioForUser */
 	abstract public String getName();
+	private SysMemInfo memory;
 
 	public HashMap<String, HLEModuleFunction> installedHLEModuleFunctions = new HashMap<String, HLEModuleFunction>();
 
@@ -64,4 +66,32 @@ abstract public class HLEModule {
     	StackTraceElement[] stack = Thread.currentThread().getStackTrace();
     	return stack[index + 1].getMethodName();
     }
+
+	public int getMemoryUsage() {
+		return 0;
+	}
+
+	public void load() {
+		int memoryUsage = getMemoryUsage();
+		if (memoryUsage > 0) {
+			if (Modules.log.isDebugEnabled()) {
+				Modules.log.debug(String.format("Allocating 0x%X bytes for HLE module %s", memoryUsage, getName()));
+			}
+
+			memory = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("Module-%s", getName()), SysMemUserForUser.PSP_SMEM_Low, memoryUsage, 0);
+		} else {
+			memory = null;
+		}
+	}
+
+	public void unload() {
+		if (memory != null) {
+			if (Modules.log.isDebugEnabled()) {
+				Modules.log.debug(String.format("Freeing 0x%X bytes for HLE module %s", memory.size, getName()));
+			}
+
+			Modules.SysMemUserForUserModule.free(memory);
+			memory = null;
+		}
+	}
 }
