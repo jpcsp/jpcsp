@@ -3350,6 +3350,9 @@ public class sceMpeg extends HLEModule {
     /**
      * sceMpegAvcCsc
      * 
+     * sceMpegAvcDecodeYCbCr() is performing the video decoding and
+     * sceMpegAvcCsc() is transforming the YCbCr image into ABGR.
+     * 
      * @param mpeg          -
      * @param source_addr   - YCbCr data.
      * @param range_addr    - YCbCr range.
@@ -3377,10 +3380,32 @@ public class sceMpeg extends HLEModule {
             log.debug(String.format("sceMpegAvcCsc range x=%d, y=%d, width=%d, height=%d", rangeX, rangeY, rangeWidth, rangeHeight));
         }
 
-        // sceMpegAvcDecodeYCbCr() is performing the video decoding and
-        // sceMpegAvcCsc() is transforming the YCbCr image into ABGR.
+        if (((rangeX | rangeY | rangeWidth | rangeHeight) & 0xF) != 0) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceMpegAvcCsc returning ERROR_MPEG_INVALID_VALUE"));
+        	}
+        	return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
+        }
+
+        if (rangeX < 0 || rangeY < 0 || rangeWidth < 0 || rangeHeight < 0) {
+        	// Returning ERROR_INVALID_VALUE and not ERROR_MPEG_INVALID_VALUE
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceMpegAvcCsc returning ERROR_INVALID_VALUE"));
+        	}
+        	return SceKernelErrors.ERROR_INVALID_VALUE;
+        }
+
         int width  = psmfHeader == null ? Screen.width  : psmfHeader.getVideoWidth();
         int height = psmfHeader == null ? Screen.height : psmfHeader.getVideoHeight();
+
+        if (rangeX + rangeWidth > width || rangeY + rangeHeight > height) {
+        	// Returning ERROR_INVALID_VALUE and not ERROR_MPEG_INVALID_VALUE
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceMpegAvcCsc returning ERROR_INVALID_VALUE"));
+        	}
+        	return SceKernelErrors.ERROR_INVALID_VALUE;
+        }
+
         int width2 = width >> 1;
     	int height2 = height >> 1;
         int length = width * height;
