@@ -31,7 +31,7 @@ import jpcsp.util.Utilities;
 @HLELogging
 public class sceAdler extends HLEModule {
     public static Logger log = Modules.getLogger("sceAdler");
-    // Do not user the JDK Adler32 implementation as we need to specify the initial checksum value.
+    // Do not use the JDK Adler32 implementation as we need to specify the initial checksum value.
     // This value is always forced to 1 in the JDK Adler32 implementation.
     protected Adler32 adler32;
 

@@ -181,6 +181,9 @@ public class EventFlagManager {
         if (matched) {
             // Write current pattern.
             outBitsAddr.setValue(event.currentPattern);
+        	if (log.isDebugEnabled() && outBitsAddr.isNotNull()) {
+        		log.debug(String.format("checkEventFlag returning outBits=0x%X at %s", outBitsAddr.getValue(), outBitsAddr));
+        	}
 
             if ((wait & PSP_EVENT_WAITCLEARALL) == PSP_EVENT_WAITCLEARALL) {
                 event.currentPattern = 0;
