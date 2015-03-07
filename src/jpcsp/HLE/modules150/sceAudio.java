@@ -742,7 +742,15 @@ public class sceAudio extends HLEModule {
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
 
-        return hleAudioGetChannelRestLength(pspSRC1Channel) + hleAudioGetChannelRestLength(pspSRC2Channel);
+    	int rest1 = pspSRC1Channel.isBusy() ? pspSRC1Channel.getSampleLength() : 0;
+    	int rest2 = pspSRC2Channel.isBusy() ? pspSRC2Channel.getSampleLength() : 0;
+    	int rest = rest1 + rest2;
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAudioOutput2GetRestSample returning 0x%X (rest1=0x%X, rest2=0x%X)", rest, rest1, rest2));
+    	}
+
+    	return rest;
     }
 
     @HLEFunction(nid = 0x63F2889C, version = 150, checkInsideInterrupt = true)
