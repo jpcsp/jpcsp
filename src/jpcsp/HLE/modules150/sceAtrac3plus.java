@@ -593,6 +593,9 @@ public class sceAtrac3plus extends HLEModule {
         }
 
         public boolean hasLoop() {
+        	if (info == null) {
+        		return false;
+        	}
         	return info.numLoops > 0;
         }
 
