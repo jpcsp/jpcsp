@@ -149,6 +149,7 @@ public class Compiler implements ICompiler {
     public int defaultMethodMaxInstructions = 3000;
     private static final int maxRecompileExecutable = 50;
     private CompilerTypeManager compilerTypeManager;
+    private HashSet<Integer> interpretedAddresses = new HashSet<Integer>();
 
 	private class IgnoreInvalidMemoryAccessSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -547,37 +548,48 @@ public class Compiler implements ICompiler {
     		compilationStartMicros = System.nanoTime() / 1000;
     	}
 
-    	compileDuration.start();
-        CompilerContext context = new CompilerContext(classLoader, instanceIndex);
+    	CompilerContext context = null;
+        CompilerContext lastContext = null;
         IExecutable executable = null;
         ClassFormatError error = null;
         RuntimeException exception = null;
-        for (int retries = 2; retries > 0; retries--) {
-            try {
-                executable = analyse(context, address, false, instanceIndex);
-                break;
-            } catch (ClassFormatError e) {
-                // Catch exception
-                //     java.lang.ClassFormatError: Invalid method Code length nnnnnn in class file XXXX
-                //
-                error = e;
 
-                context = retryCompilation(context, instanceIndex, retries, e);
-            } catch (NullPointerException e) {
-            	log.error(String.format("Catched exception '%s' while compiling 0x%08X (0x%08X-0x%08X)", e.toString(), address, context.getCodeBlock().getLowestAddress(), context.getCodeBlock().getHighestAddress()));
-            	break;
-            } catch (VerifyError e) {
-            	log.error(String.format("Catched exception '%s' while compiling 0x%08X (0x%08X-0x%08X)", e.toString(), address, context.getCodeBlock().getLowestAddress(), context.getCodeBlock().getHighestAddress()));
-            	break;
-            } catch (RuntimeException e) {
-            	// Catch exception
-            	//     java.lang.RuntimeException: Method code too large!
-                exception = e;
+        if (interpretedAddresses.contains(address)) {
+    		// Force an interpreter call
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Forcing an interpreter call for address 0x%08X", address));
+        	}
+    	} else {
+	    	compileDuration.start();
+	        context = new CompilerContext(classLoader, instanceIndex);
+	        for (int retries = 2; retries > 0; retries--) {
+	            try {
+	            	lastContext = context;
+	                executable = analyse(context, address, false, instanceIndex);
+	                break;
+	            } catch (ClassFormatError e) {
+	                // Catch exception
+	                //     java.lang.ClassFormatError: Invalid method Code length nnnnnn in class file XXXX
+	                //
+	                error = e;
 
-                context = retryCompilation(context, instanceIndex, retries, e);
-            }
-        }
-        compileDuration.end();
+	                context = retryCompilation(context, instanceIndex, retries, e);
+	            } catch (NullPointerException e) {
+	            	log.error(String.format("Catched exception '%s' while compiling 0x%08X (0x%08X-0x%08X)", e.toString(), address, context.getCodeBlock().getLowestAddress(), context.getCodeBlock().getHighestAddress()));
+	            	break;
+	            } catch (VerifyError e) {
+	            	log.error(String.format("Catched exception '%s' while compiling 0x%08X (0x%08X-0x%08X)", e.toString(), address, context.getCodeBlock().getLowestAddress(), context.getCodeBlock().getHighestAddress()));
+	            	break;
+	            } catch (RuntimeException e) {
+	            	// Catch exception
+	            	//     java.lang.RuntimeException: Method code too large!
+	                exception = e;
+
+	                context = retryCompilation(context, instanceIndex, retries, e);
+	            }
+	        }
+	        compileDuration.end();
+    	}
 
         if (Profiler.isProfilerEnabled()) {
         	long compilationEndMicros = System.nanoTime() / 1000;
@@ -585,7 +597,12 @@ public class Compiler implements ICompiler {
         }
 
         if (executable == null) {
-            Compiler.log.debug("Compilation failed with maxInstruction=" + context.getMethodMaxInstructions());
+        	if (log.isDebugEnabled() && context != null) {
+        		log.debug(String.format("Compilation failed with maxInstruction=%d", context.getMethodMaxInstructions()));
+        	}
+            if (lastContext != null) {
+            	interpretedAddresses.addAll(lastContext.analysedAddresses);
+            }
             context = new CompilerContext(classLoader, instanceIndex);
             executable = interpret(context, address, instanceIndex);
             if (executable == null) {
@@ -597,7 +614,9 @@ public class Compiler implements ICompiler {
             	}
             }
         } else if (error != null) {
-            Compiler.log.debug("Compilation was now correct with maxInstruction=" + context.getMethodMaxInstructions());
+        	if (log.isDebugEnabled() && context != null) {
+        		log.debug(String.format("Compilation was now correct with maxInstruction=%d", context.getMethodMaxInstructions()));
+        	}
         }
 
         // Resume the PSP clock after compilation
