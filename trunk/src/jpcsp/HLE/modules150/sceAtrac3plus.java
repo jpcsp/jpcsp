@@ -166,6 +166,8 @@ public class sceAtrac3plus extends HLEModule {
         protected AtracFileInfo info;
         protected int atracCurrentSample;
         protected int maxSamples;
+        protected int skippedSamples;
+        private   int startSkippedSamples;
         protected int lastDecodedSamples;
         protected int channels;
     	protected int outputChannels = 2; // Always default with 2 output channels
@@ -276,6 +278,20 @@ public class sceAtrac3plus extends HLEModule {
         		outEndAddr.setValue(false);
         	}
         	setAtracCurrentSample(nextCurrentSample);
+
+        	if (currentSample == 0) {
+        		skippedSamples = startSkippedSamples;
+        	} else {
+        		skippedSamples = 0;
+        	}
+
+        	if (skippedSamples > 0) {
+        		Memory mem = Memory.getInstance();
+        		int bytesPerSample = 2 * getOutputChannels();
+        		int returnedSamples = getNumberOfSamples();
+        		// Move the sample buffer to skip the needed samples
+        		mem.memmove(samplesAddr, samplesAddr + skippedSamples * bytesPerSample, returnedSamples * bytesPerSample);
+        	}
 
         	for (int i = 0; i < info.numLoops; i++) {
         		LoopInfo loop = info.loops[i];
@@ -404,10 +420,13 @@ public class sceAtrac3plus extends HLEModule {
         	this.codecType = codecType;
         	if (codecType == PSP_CODEC_AT3) {
         		maxSamples = Atrac3Decoder.SAMPLES_PER_FRAME;
+        		startSkippedSamples = 69;
         	} else if (codecType == PSP_CODEC_AT3PLUS) {
         		maxSamples = Atrac3plusDecoder.ATRAC3P_FRAME_SAMPLES;
+        		startSkippedSamples = 368;
         	} else {
         		maxSamples = 0;
+        		startSkippedSamples = 0;
         	}
         }
 
@@ -654,7 +673,7 @@ public class sceAtrac3plus extends HLEModule {
 		}
 
 		public int getNumberOfSamples() {
-			return codec.getNumberOfSamples();
+			return codec.getNumberOfSamples() - skippedSamples;
 		}
 
 		public boolean isInUse() {
