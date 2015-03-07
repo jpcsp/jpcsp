@@ -80,6 +80,13 @@ public class SysMemUserForUser extends HLEModule {
 	protected boolean started = false;
 
 	@Override
+	public void load() {
+		reset();
+
+		super.load();
+	}
+
+	@Override
 	public void start() {
 		if (!started) {
 			reset();
