@@ -266,18 +266,10 @@ public class ChatGUI extends JFrame {
         membersList.setText(label.toString());
     }
 
-    public void addMember(String nickName) {
-        if (!members.contains(nickName) && !nickName.equals(getMyNickName())) {
-            members.add(nickName);
-            updateMembersLabel();
-        }
-    }
-
-    public void removeMember(String nickName) {
-        if (members.contains(nickName)) {
-            members.remove(nickName);
-            updateMembersLabel();
-        }
+    public void updateMembers(List<String> members) {
+    	this.members.clear();
+    	this.members.addAll(members);
+    	updateMembersLabel();
     }
 
     private static String getMyNickName() {

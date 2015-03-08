@@ -176,9 +176,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		if (chatGUI == null || !chatGUI.isVisible()) {
 			chatGUI = new ChatGUI();
 			Emulator.getMainGUI().startBackgroundWindowDialog(chatGUI);
-			for (String nickName : Modules.sceNetAdhocctlModule.getPeersNickName()) {
-				chatGUI.addMember(nickName);
-			}
+			chatGUI.updateMembers(Modules.sceNetAdhocctlModule.getPeersNickName());
 		}
 	}
 
@@ -425,10 +423,10 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			log.debug(String.format("Adding friend nickName='%s', mac=%s, ip=%s", nickName, mac, convertIpToString(ip)));
 		}
 
-		if (chatGUI != null) {
-			chatGUI.addMember(nickName);
-		}
 		Modules.sceNetAdhocctlModule.hleNetAdhocctlAddPeer(nickName, mac);
+		if (chatGUI != null) {
+			chatGUI.updateMembers(Modules.sceNetAdhocctlModule.getPeersNickName());
+		}
 
 		boolean found = false;
 		for (MacIp macIp : macIps) {
@@ -454,19 +452,16 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 		for (MacIp macIp : macIps) {
 			if (macIp.ip == ip) {
-				// Delete the nickName from the Chat members
-				if (chatGUI != null) {
-					String nickName = Modules.sceNetAdhocctlModule.getPeerNickName(macIp.mac);
-					if (nickName != null) {
-						chatGUI.removeMember(nickName);
-					}
-				}
 				// Delete the MacIp mapping
 				macIps.remove(macIp);
 				// Delete the peer
 				Modules.sceNetAdhocctlModule.hleNetAdhocctlDeletePeer(macIp.mac);
 				// Delete the router ports
 				portManager.removeHost(convertIpToString(ip));
+				// Delete the nickName from the Chat members
+				if (chatGUI != null) {
+					chatGUI.updateMembers(Modules.sceNetAdhocctlModule.getPeersNickName());
+				}
 				break;
 			}
 		}
