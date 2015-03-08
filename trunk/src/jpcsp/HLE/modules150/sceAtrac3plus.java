@@ -189,6 +189,7 @@ public class sceAtrac3plus extends HLEModule {
 
         public AtracID(int id) {
         	this.id = id;
+        	info = new AtracFileInfo();
         }
 
         public void release() {
@@ -593,9 +594,6 @@ public class sceAtrac3plus extends HLEModule {
         }
 
         public boolean hasLoop() {
-        	if (info == null) {
-        		return false;
-        	}
         	return info.numLoops > 0;
         }
 
