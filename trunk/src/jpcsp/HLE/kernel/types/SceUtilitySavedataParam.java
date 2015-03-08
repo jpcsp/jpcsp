@@ -662,22 +662,29 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
             return 0;
         }
 
-        SeekableDataInput fileInput = getDataInput(path, name);
-        if (fileInput == null) {
-            throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
-        }
+        int fileSize = 0;
+        SeekableDataInput fileInput = null;
+        try {
+	        fileInput = getDataInput(path, name);
+	        if (fileInput == null) {
+	            throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
+	        }
 
-        // Some applications set dataBufSize to -1 on purpose. The reason behind this
-        // is still unknown, but, for these cases, ignore maxLength.
-        int fileSize = (int) fileInput.length();
-        if (fileSize > maxLength && maxLength > 0) {
-            fileSize = maxLength;
-        } else if (address == 0) {
-        	fileSize = 0;
-        }
+	        // Some applications set dataBufSize to -1 on purpose. The reason behind this
+	        // is still unknown, but, for these cases, ignore maxLength.
+	        fileSize = (int) fileInput.length();
+	        if (fileSize > maxLength && maxLength > 0) {
+	            fileSize = maxLength;
+	        } else if (address == 0) {
+	        	fileSize = 0;
+	        }
 
-        Utilities.readFully(fileInput, address, fileSize);
-        fileInput.close();
+	        Utilities.readFully(fileInput, address, fileSize);
+        } finally {
+        	if (fileInput != null) {
+        		fileInput.close();
+        	}
+        }
 
         return fileSize;
     }
@@ -687,25 +694,29 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
             return;
         }
 
-        SeekableRandomFile fileOutput = getDataOutput(path, name);
-        CryptoEngine crypto = new CryptoEngine();
-        if (fileOutput == null) {
-            return;
+        SeekableRandomFile fileOutput = null;
+        try {
+	        fileOutput = getDataOutput(path, name);
+	        if (fileOutput != null) {
+	        	byte[] inBuf = new byte[length + 0x10];
+
+		        IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, 1);
+		        for (int i = 0; i < length; i++) {
+		            inBuf[i] = (byte) memoryReader.readNext();
+		        }
+
+		        // Replace the key with the generated hash.
+		        CryptoEngine crypto = new CryptoEngine();
+		        this.key = crypto.getSAVEDATAEngine().EncryptSavedata(inBuf, length, key);
+
+		        fileOutput.getChannel().truncate(inBuf.length);  // Avoid writing leftover bytes from previous encryption.
+		        fileOutput.write(inBuf, 0, inBuf.length);
+	        }
+        } finally {
+        	if (fileOutput != null) {
+        		fileOutput.close();
+        	}
         }
-
-        byte[] inBuf = new byte[length + 0x10];
-
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, 1);
-        for (int i = 0; i < length; i++) {
-            inBuf[i] = (byte) memoryReader.readNext();
-        }
-
-        // Replace the key with the generated hash.
-        this.key = crypto.getSAVEDATAEngine().EncryptSavedata(inBuf, length, key);
-
-        fileOutput.getChannel().truncate(inBuf.length);  // Avoid writing leftover bytes from previous encryption.
-        fileOutput.write(inBuf, 0, inBuf.length);
-        fileOutput.close();
     }
 
     private int loadEncryptedFile(Memory mem, String path, String name, int address, int maxLength, byte[] key) throws IOException {
@@ -713,25 +724,32 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
             return 0;
         }
 
-        SeekableDataInput fileInput = getDataInput(path, name);
-        CryptoEngine crypto = new CryptoEngine();
-        if (fileInput == null) {
-            throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
+        int length = 0;
+        SeekableDataInput fileInput = null;
+        try {
+	        fileInput = getDataInput(path, name);
+	        if (fileInput == null) {
+	            throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
+	        }
+
+	        int fileSize = (int) fileInput.length();
+	        byte[] inBuf = new byte[fileSize];
+	        fileInput.readFully(inBuf);
+
+	        CryptoEngine crypto = new CryptoEngine();
+	        byte[] outBuf = crypto.getSAVEDATAEngine().DecryptSavedata(inBuf, fileSize, key);
+
+	        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 1);
+	        length = Math.min(outBuf.length, maxLength);
+	        for (int i = 0; i < length; i++) {
+	            memoryWriter.writeNext(outBuf[i]);
+	        }
+	        memoryWriter.flush();
+        } finally {
+        	if (fileInput != null) {
+        		fileInput.close();
+        	}
         }
-
-        int fileSize = (int) fileInput.length();
-        byte[] inBuf = new byte[fileSize];
-        fileInput.readFully(inBuf);
-
-        byte[] outBuf = crypto.getSAVEDATAEngine().DecryptSavedata(inBuf, fileSize, key);
-
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 1);
-        int length = Math.min(outBuf.length, maxLength);
-        for (int i = 0; i < length; i++) {
-            memoryWriter.writeNext(outBuf[i]);
-        }
-        memoryWriter.flush();
-        fileInput.close();
 
         return length;
     }
@@ -741,47 +759,66 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
             return;
         }
 
-        SeekableRandomFile fileOutput = getDataOutput(path, name);
-        if (fileOutput == null) {
-            return;
+        SeekableRandomFile fileOutput = null;
+        try {
+        	fileOutput = getDataOutput(path, name);
+	        if (fileOutput != null) {
+	        	fileOutput.getChannel().truncate(length);  // Avoid writing leftover bytes from previous encryption.
+	        	Utilities.write(fileOutput, address, length);
+	        }
+        } finally {
+        	if (fileOutput != null) {
+        		fileOutput.close();
+        	}
         }
-        fileOutput.getChannel().truncate(length);  // Avoid writing leftover bytes from previous encryption.
-        Utilities.write(fileOutput, address, length);
-        fileOutput.close();
     }
 
     private boolean checkParamSFOEncryption(String path, String name) throws IOException {
-        SeekableDataInput fileInput = getDataInput(path, name);
         boolean isEncrypted = false;
-        if (fileInput != null && fileInput.length() > 0) {
-            byte[] buffer = new byte[(int) fileInput.length()];
-            fileInput.readFully(buffer);
-            fileInput.close();
-
-            // SAVEDATA PARAM.SFO has a fixed size of 0x1330 bytes.
-            // In order to determine if the SAVEDATA is encrypted or not,
-            // we must check if the check bit at 0x11B0 is set (an identical check
-            // is performed on a real PSP).
-            if (buffer.length == 0x1330) {
-                if (buffer[0x11B0] != 0) {
-                    isEncrypted = true;
-                }
-            }
-        }
+    	SeekableDataInput fileInput = null;
+    	try {
+	        fileInput = getDataInput(path, name);
+	        if (fileInput != null && fileInput.length() > 0) {
+	            byte[] buffer = new byte[(int) fileInput.length()];
+	            fileInput.readFully(buffer);
+	            fileInput.close();
+	
+	            // SAVEDATA PARAM.SFO has a fixed size of 0x1330 bytes.
+	            // In order to determine if the SAVEDATA is encrypted or not,
+	            // we must check if the check bit at 0x11B0 is set (an identical check
+	            // is performed on a real PSP).
+	            if (buffer.length == 0x1330) {
+	                if (buffer[0x11B0] != 0) {
+	                    isEncrypted = true;
+	                }
+	            }
+	        }
+    	} finally {
+    		if (fileInput != null) {
+    			fileInput.close();
+    		}
+    	}
 
         return isEncrypted;
     }
 
     private PSF readPsf(String path, String name) throws IOException {
         PSF psf = null;
-        SeekableDataInput fileInput = getDataInput(path, name);
-        if (fileInput != null && fileInput.length() > 0) {
-            byte[] buffer = new byte[(int) fileInput.length()];
-            fileInput.readFully(buffer);
-            fileInput.close();
+        SeekableDataInput fileInput = null;
+        try {
+	        fileInput = getDataInput(path, name);
+	        if (fileInput != null && fileInput.length() > 0) {
+	            byte[] buffer = new byte[(int) fileInput.length()];
+	            fileInput.readFully(buffer);
+	            fileInput.close();
 
-            psf = new PSF();
-            psf.read(ByteBuffer.wrap(buffer));
+	            psf = new PSF();
+	            psf.read(ByteBuffer.wrap(buffer));
+	        }
+        } finally {
+        	if (fileInput != null) {
+        		fileInput.close();
+        	}
         }
 
         return psf;
@@ -798,102 +835,107 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
     }
 
     private void writePsf(Memory mem, String path, String psfName, PspUtilitySavedataSFOParam sfoParam, boolean cryptoMode, String dataName, byte[] key, byte[] hash) throws IOException {
-        SeekableRandomFile psfOutput = getDataOutput(path, psfName);
-        if (psfOutput == null) {
-            return;
-        }
+    	SeekableRandomFile psfOutput = null;
+    	try {
+	        psfOutput = getDataOutput(path, psfName);
+	        if (psfOutput == null) {
+	            return;
+	        }
 
-        // Generate different PSF instances for plain PSF and encrypted PSF (with hashes).
-        PSF psf = new PSF();
-        PSF encryptedPsf = new PSF();
+	        // Generate different PSF instances for plain PSF and encrypted PSF (with hashes).
+	        PSF psf = new PSF();
+	        PSF encryptedPsf = new PSF();
 
-        // Test if a PARAM.SFO already exists and save it's SAVEDATA_PARAMS.
-        byte[] savedata_params_old = new byte[128];
-        PSF oldPsf = readPsf(path, psfName);
-        if (oldPsf != null) {
-            savedata_params_old = (byte[]) oldPsf.get("SAVEDATA_PARAMS");
-        }
+	        // Test if a PARAM.SFO already exists and save it's SAVEDATA_PARAMS.
+	        byte[] savedata_params_old = new byte[128];
+	        PSF oldPsf = readPsf(path, psfName);
+	        if (oldPsf != null) {
+	            savedata_params_old = (byte[]) oldPsf.get("SAVEDATA_PARAMS");
+	        }
 
-        // Insert CATEGORY.
-        psf.put("CATEGORY", "MS", 4);
-        encryptedPsf.put("CATEGORY", "MS", 4);
+	        // Insert CATEGORY.
+	        psf.put("CATEGORY", "MS", 4);
+	        encryptedPsf.put("CATEGORY", "MS", 4);
 
-        // Insert PARENTAL_LEVEL.
-        psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
-        encryptedPsf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
+	        // Insert PARENTAL_LEVEL.
+	        psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
+	        encryptedPsf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
 
-        // Insert SAVEDATA_DETAIL.
-        psf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
-        encryptedPsf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
+	        // Insert SAVEDATA_DETAIL.
+	        psf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
+	        encryptedPsf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
 
-        // Insert SAVEDATA_DIRECTORY.
-        if (saveName.equals("<>")) {
-            // Do not write the saveName if it's "<>".
-            psf.put("SAVEDATA_DIRECTORY", gameName, 64);
-            encryptedPsf.put("SAVEDATA_DIRECTORY", gameName, 64);
-        } else {
-            psf.put("SAVEDATA_DIRECTORY", gameName + saveName, 64);
-            encryptedPsf.put("SAVEDATA_DIRECTORY", gameName + saveName, 64);
-        }
+	        // Insert SAVEDATA_DIRECTORY.
+	        if (saveName.equals("<>")) {
+	            // Do not write the saveName if it's "<>".
+	            psf.put("SAVEDATA_DIRECTORY", gameName, 64);
+	            encryptedPsf.put("SAVEDATA_DIRECTORY", gameName, 64);
+	        } else {
+	            psf.put("SAVEDATA_DIRECTORY", gameName + saveName, 64);
+	            encryptedPsf.put("SAVEDATA_DIRECTORY", gameName + saveName, 64);
+	        }
 
-        // Insert SAVEDATA_FILE_LIST.
-        PspUtilitySavedataSecureFileList secureFileList = getSecureFileList(null);
-        // Even if the main data file is not being saved by a secure method, if the
-        // hash is not null then the file is saved in the file list.
-        if (hash != null) {
-            // Add the current dataName as a secure file name
-            if (secureFileList == null) {
-                secureFileList = new PspUtilitySavedataSecureFileList();
-            }
-            // Only add the file hash if using encryption.
-            if (cryptoMode) {
-                secureFileList.update(dataName, hash);
-            } else {
-                byte[] clearHash = new byte[0x10];
-                secureFileList.update(dataName, clearHash);
-            }
-        }
-        if (secureFileList != null) {
-            psf.put("SAVEDATA_FILE_LIST", secureFileList.getBytes());
-            encryptedPsf.put("SAVEDATA_FILE_LIST", secureFileList.getBytes());
-        }
+	        // Insert SAVEDATA_FILE_LIST.
+	        PspUtilitySavedataSecureFileList secureFileList = getSecureFileList(null);
+	        // Even if the main data file is not being saved by a secure method, if the
+	        // hash is not null then the file is saved in the file list.
+	        if (hash != null) {
+	            // Add the current dataName as a secure file name
+	            if (secureFileList == null) {
+	                secureFileList = new PspUtilitySavedataSecureFileList();
+	            }
+	            // Only add the file hash if using encryption.
+	            if (cryptoMode) {
+	                secureFileList.update(dataName, hash);
+	            } else {
+	                byte[] clearHash = new byte[0x10];
+	                secureFileList.update(dataName, clearHash);
+	            }
+	        }
+	        if (secureFileList != null) {
+	            psf.put("SAVEDATA_FILE_LIST", secureFileList.getBytes());
+	            encryptedPsf.put("SAVEDATA_FILE_LIST", secureFileList.getBytes());
+	        }
 
-        // Generate blank SAVEDATA_PARAMS for plain PSF.
-        byte[] savedata_params = new byte[128];
-        psf.put("SAVEDATA_PARAMS", savedata_params);
+	        // Generate blank SAVEDATA_PARAMS for plain PSF.
+	        byte[] savedata_params = new byte[128];
+	        psf.put("SAVEDATA_PARAMS", savedata_params);
 
-        // Insert the remaining params for plain PSF.
-        psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
-        psf.put("TITLE", sfoParam.title, 128);
+	        // Insert the remaining params for plain PSF.
+	        psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
+	        psf.put("TITLE", sfoParam.title, 128);
 
-        // Setup a temporary buffer for encryption (PARAM.SFO size is 0x1330).
-        ByteBuffer buf = ByteBuffer.allocate(0x1330);
+	        // Setup a temporary buffer for encryption (PARAM.SFO size is 0x1330).
+	        ByteBuffer buf = ByteBuffer.allocate(0x1330);
 
-        // Save back the PARAM.SFO data to be encrypted.
-        psf.write(buf);
+	        // Save back the PARAM.SFO data to be encrypted.
+	        psf.write(buf);
 
-        // Generate a new PARAM.SFO and update file hashes.
-        if (cryptoMode) {
-            CryptoEngine crypto = new CryptoEngine();
-            int sfoSize = buf.array().length;
-            byte[] sfoData = buf.array();
+	        // Generate a new PARAM.SFO and update file hashes.
+	        if (cryptoMode) {
+	            CryptoEngine crypto = new CryptoEngine();
+	            int sfoSize = buf.array().length;
+	            byte[] sfoData = buf.array();
 
-            // Generate the final SAVEDATA_PARAMS (encrypted).
-            crypto.getSAVEDATAEngine().UpdateSavedataHashes(encryptedPsf, sfoData, sfoSize, savedata_params_old, key);
+	            // Generate the final SAVEDATA_PARAMS (encrypted).
+	            crypto.getSAVEDATAEngine().UpdateSavedataHashes(encryptedPsf, sfoData, sfoSize, savedata_params_old, key);
 
-            // Insert the remaining params for encrypted PSF.
-            encryptedPsf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
-            encryptedPsf.put("TITLE", sfoParam.title, 128);
+	            // Insert the remaining params for encrypted PSF.
+	            encryptedPsf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
+	            encryptedPsf.put("TITLE", sfoParam.title, 128);
 
-            // Write the new encrypted PARAM.SFO (with hashes) from the encrypted PSF.
-            encryptedPsf.write(psfOutput);
-        } else {
-            // Write the new PARAM.SFO (without hashes) from the plain PSF.
-            psf.write(psfOutput);
-        }
-
-        // Close the PARAM.SFO file stream.
-        psfOutput.close();
+	            // Write the new encrypted PARAM.SFO (with hashes) from the encrypted PSF.
+	            encryptedPsf.write(psfOutput);
+	        } else {
+	            // Write the new PARAM.SFO (without hashes) from the plain PSF.
+	            psf.write(psfOutput);
+	        }
+    	} finally {
+    		if (psfOutput != null) {
+    	        // Close the PARAM.SFO file stream.
+    	        psfOutput.close();
+    		}
+    	}
     }
 
     public boolean test(Memory mem) throws IOException {
@@ -909,12 +951,17 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
             return false;
         }
 
-        SeekableDataInput fileInput = getDataInput(path, name);
-        if (fileInput == null) {
-            throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
+        SeekableDataInput fileInput = null;
+        try {
+	        fileInput = getDataInput(path, name);
+	        if (fileInput == null) {
+	            throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
+	        }
+        } finally {
+        	if (fileInput != null) {
+                fileInput.close();
+        	}
         }
-
-        fileInput.close();
 
         return true;
     }

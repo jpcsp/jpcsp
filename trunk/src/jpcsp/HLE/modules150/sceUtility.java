@@ -1097,58 +1097,40 @@ public class sceUtility extends HLEModule {
                 }
 
                 case SceUtilitySavedataParam.MODE_DELETE: {
-                    if (savedataParams.saveNameList != null) {
-                        for (int i = 0; i < savedataParams.saveNameList.length; i++) {
-                            String save = savedataParams.getBasePath(savedataParams.saveNameList[i]);
-                            if (savedataParams.deleteDir(save)) {
-                                log.debug("Savedata MODE_DELETE deleting " + save);
+                    if (!isDialogOpen()) {
+                        // Search for valid saves.
+                        String pattern = savedataParams.gameName + ".*";
+
+                        String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
+                        ArrayList<String> validNames = new ArrayList<String>();
+                        for (int i = 0; entries != null && i < entries.length; i++) {
+                            String saveName = entries[i].substring(savedataParams.gameName.length());
+                            if (savedataParams.isPresent(savedataParams.gameName, saveName)) {
+                                validNames.add(saveName);
                             }
                         }
-                        savedataParams.base.result = 0;
-                    } else if (savedataParams.saveName.length() > 0) {
-                        String saveDir = savedataParams.getBasePath();
-                        if (savedataParams.deleteDir(saveDir)) {
-                            savedataParams.base.result = 0;
+
+                        GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
+                        openDialog(gu);
+                    } else if (!isDialogActive()) {
+                        if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+                            // Dialog cancelled
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
+                        } else if (saveListSelection == null) {
+                            log.warn("Savedata MODE_DELETE no save selected");
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
                         } else {
-                            log.warn("Savedata MODE_DELETE directory not found!");
-                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
-                        }
-                    } else {
-                        if (!isDialogOpen()) {
-                            // Search for valid saves.
-                            String pattern = savedataParams.gameName + ".*";
-
-                            String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
-                            ArrayList<String> validNames = new ArrayList<String>();
-                            for (int i = 0; entries != null && i < entries.length; i++) {
-                                String saveName = entries[i].substring(savedataParams.gameName.length());
-                                if (savedataParams.isPresent(savedataParams.gameName, saveName)) {
-                                    validNames.add(saveName);
-                                }
-                            }
-
-                            GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
-                            openDialog(gu);
-                        } else if (!isDialogActive()) {
-                            if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
-                                // Dialog cancelled
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
-                            } else if (saveListSelection == null) {
-                                log.warn("Savedata MODE_DELETE no save selected");
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
+                            String dirName = savedataParams.getBasePath(saveListSelection);
+                            if (savedataParams.deleteDir(dirName)) {
+                                log.debug("Savedata MODE_DELETE deleting " + dirName);
+                                savedataParams.base.result = 0;
                             } else {
-                                String dirName = savedataParams.getBasePath(saveListSelection);
-                                if (savedataParams.deleteDir(dirName)) {
-                                    log.debug("Savedata MODE_DELETE deleting " + dirName);
-                                    savedataParams.base.result = 0;
-                                } else {
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_ACCESS_ERROR;
-                                }
+                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_ACCESS_ERROR;
                             }
-                            quitDialog(savedataParams.base.result);
-                        } else {
-                            updateDialog();
                         }
+                        quitDialog(savedataParams.base.result);
+                    } else {
+                        updateDialog();
                     }
                     break;
                 }
