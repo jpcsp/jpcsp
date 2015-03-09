@@ -1769,7 +1769,7 @@ public class sceMpeg extends HLEModule {
 
     private int getFrameHeight(int imageHeight) {
     	int frameHeight = imageHeight;
-		if (psmfHeader != null) {
+		if (psmfHeader != null && psmfHeader.isValid()) {
 			// The decoded image height can be 290 while the header
 			// gives an height of 272.
 			frameHeight = Math.min(frameHeight, psmfHeader.getVideoHeight());
@@ -1777,6 +1777,10 @@ public class sceMpeg extends HLEModule {
 			// The decoded image height can be 290 while the MP4 header
 			// gives an height of 272.
 			frameHeight = Math.min(frameHeight, videoFrameHeight);
+		} else if (imageHeight == 290) {
+			// No valid PSMF header is available, but a decoded image height
+			// of 290 usually means an height of 272.
+			frameHeight = Screen.height;
 		}
 
 		return frameHeight;
