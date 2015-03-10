@@ -26,7 +26,7 @@ import jpcsp.Emulator;
  * @author hli, gid15
  */
 public class FpuState extends BcuState {
-	private static final boolean IMPLEMENT_ROUNDING_MODES = true;
+	public static final boolean IMPLEMENT_ROUNDING_MODES = true;
 	private static final String roundingModeNames[] = {
 		"Round to neareast number",
 		"Round toward zero",

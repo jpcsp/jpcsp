@@ -1994,7 +1994,19 @@ public class CompilerContext implements ICompilerContext {
         loadRegisterIndex(getRdRegisterIndex());
     }
 
-	@Override
+    public void loadFdIndex() {
+    	loadRegisterIndex(getFdRegisterIndex());
+    }
+
+    public void loadFsIndex() {
+    	loadRegisterIndex(getFsRegisterIndex());
+    }
+
+    public void loadFtIndex() {
+    	loadRegisterIndex(getFtRegisterIndex());
+    }
+
+    @Override
     public int getImm16(boolean signedImm) {
 		return codeInstruction.getImm16(signedImm);
     }
@@ -2059,6 +2071,15 @@ public class CompilerContext implements ICompilerContext {
 		loadRdIndex();
 		loadRtIndex();
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, method, "(II)V");
+	}
+
+	@Override
+	public void compileFDFSFT(String method) {
+		loadCpu();
+		loadFdIndex();
+		loadFsIndex();
+		loadFtIndex();
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, method, "(III)V");
 	}
 
 	@Override
