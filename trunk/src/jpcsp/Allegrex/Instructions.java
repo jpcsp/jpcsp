@@ -30,6 +30,7 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXS;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
+import static jpcsp.Allegrex.FpuState.IMPLEMENT_ROUNDING_MODES;
 import jpcsp.Emulator;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common.Instruction;
@@ -4915,14 +4916,18 @@ public void interpret(Processor processor, int insn) {
                 processor.cpu.doMULS(fd, fs, ft);
             
 }
-//@Override
-//public void compile(ICompilerContext context, int insn) {
-//	context.prepareFdForStore();
-//	context.loadFs();
-//	context.loadFt();
-//	context.getMethodVisitor().visitInsn(Opcodes.FMUL);
-//	context.storeFd();
-//}
+@Override
+public void compile(ICompilerContext context, int insn) {
+	if (IMPLEMENT_ROUNDING_MODES) {
+		context.compileFDFSFT("doMULS");
+	} else {
+		context.prepareFdForStore();
+		context.loadFs();
+		context.loadFt();
+		context.getMethodVisitor().visitInsn(Opcodes.FMUL);
+		context.storeFd();
+	}
+}
 @Override
 public String disasm(int address, int insn) {
 	int fd = (insn>>6)&31;

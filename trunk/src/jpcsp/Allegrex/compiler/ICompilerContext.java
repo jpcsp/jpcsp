@@ -26,6 +26,7 @@ public interface ICompilerContext {
 	public void compileInterpreterInstruction();
 	public void compileRTRSIMM(String method, boolean signedImm);
 	public void compileRDRT(String method);
+	public void compileFDFSFT(String method);
 	public void compileSyscall();
     public void loadRs();
     public void loadRt();
