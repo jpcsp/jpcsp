@@ -18,12 +18,25 @@ package jpcsp.Allegrex;
 
 import java.util.Arrays;
 
+import jpcsp.Emulator;
+
 /**
  * Floating Point Unit, handles floating point operations, including BCU and LSU
  *
- * @author hli
+ * @author hli, gid15
  */
 public class FpuState extends BcuState {
+	private static final boolean IMPLEMENT_ROUNDING_MODES = true;
+	private static final String roundingModeNames[] = {
+		"Round to neareast number",
+		"Round toward zero",
+		"Round toward positive infinity",
+		"Round toward negative infinity"
+	};
+	public static final int ROUNDING_MODE_NEAREST             = 0;
+	public static final int ROUNDING_MODE_TOWARD_ZERO         = 1;
+	public static final int ROUNDING_MODE_TOWARD_POSITIVE_INF = 2;
+	public static final int ROUNDING_MODE_TOWARD_NEGATIVE_INF = 3;
 
     public static final class Fcr0 {
 
@@ -94,6 +107,54 @@ public class FpuState extends BcuState {
         fcr31 = new Fcr31(that.fcr31);
     }
 
+    public float round(double d) {
+    	float f = (float) d;
+
+    	if (Float.isInfinite(f) || Float.isNaN(f)) {
+    		return f;
+    	}
+
+    	if (fcr31.fs) {
+    		// Flush-to-zero for denormalized numbers
+			int exp = Math.getExponent(f);
+			if (exp < Float.MIN_EXPONENT) {
+				return 0f;
+			}
+    	}
+
+    	switch (fcr31.rm) {
+			case ROUNDING_MODE_NEAREST:
+				// This is the java default rounding mode, nothing more to do.
+				break;
+    		case ROUNDING_MODE_TOWARD_ZERO:
+    			if (d < 0.0) {
+    				if (d > f) {
+    					f = Math.nextUp(f);
+    				}
+    			} else {
+    				if (d < f) {
+    					f = Math.nextAfter(f, 0.0);
+    				}
+    			}
+    			break;
+    		case ROUNDING_MODE_TOWARD_POSITIVE_INF:
+    			if (d > f) {
+    				f = Math.nextUp(f);
+    			}
+    			break;
+    		case ROUNDING_MODE_TOWARD_NEGATIVE_INF:
+    			if (d < f) {
+    				f = Math.nextAfter(f, Double.NEGATIVE_INFINITY);
+    			}
+    			break;
+			default:
+				Emulator.log.error(String.format("Unknown rounding mode %d", fcr31.rm));
+				break;
+    	}
+
+    	return f;
+    }
+
     public void doMFC1(int rt, int c1dr) {
     	if (rt != 0) {
     		setRegister(rt, Float.floatToRawIntBits(fpr[c1dr]));
@@ -112,7 +173,7 @@ public class FpuState extends BcuState {
                     break;
 
                 default:
-                    doUNK("Unsupported cfc1 instruction for fcr" + Integer.toString(c1cr));
+                    doUNK(String.format("Unsupported cfc1 instruction for fcr%d", c1cr));
             }
         }
     }
@@ -128,10 +189,18 @@ public class FpuState extends BcuState {
                 fcr31.rm = bits & 3;
                 fcr31.fs = ((bits >> 24) & 1) != 0;
                 fcr31.c  = ((bits >> 23) & 1) != 0;
+                if (fcr31.rm != ROUNDING_MODE_NEAREST) {
+                	// Only rounding mode 0 is supported in Java
+                	Emulator.log.warn(String.format("CTC1 unsupported rounding mode '%s' (rm=%d)", roundingModeNames[fcr31.rm], fcr31.rm));
+                }
+                if (fcr31.fs) {
+                	// Flush-to-zero is not supported in Java
+                	Emulator.log.warn(String.format("CTC1 unsupported flush-to-zero fs=%b", fcr31.fs));
+                }
                 break;
 
             default:
-                doUNK("Unsupported ctc1 instruction for fcr" + Integer.toString(c1cr));
+                doUNK(String.format("Unsupported ctc1 instruction for fcr%d", c1cr));
         }
     }
 
@@ -172,7 +241,11 @@ public class FpuState extends BcuState {
     }
 
     public void doMULS(int fd, int fs, int ft) {
-        fpr[fd] = fpr[fs] * fpr[ft];
+    	if (IMPLEMENT_ROUNDING_MODES) {
+    		fpr[fd] = round(fpr[fs] * (double) fpr[ft]);
+    	} else {
+    		fpr[fd] = fpr[fs] * fpr[ft];
+    	}
     }
 
     public void doDIVS(int fd, int fs, int ft) {
@@ -217,13 +290,13 @@ public class FpuState extends BcuState {
 
     public void doCVTWS(int fd, int fs) {
         switch (fcr31.rm) {
-            case 1:
+            case ROUNDING_MODE_TOWARD_ZERO:
                 fpr[fd] = Float.intBitsToFloat((int) (fpr[fs]));
                 break;
-            case 2:
+            case ROUNDING_MODE_TOWARD_POSITIVE_INF:
                 fpr[fd] = Float.intBitsToFloat((int) Math.ceil(fpr[fs]));
                 break;
-            case 3:
+            case ROUNDING_MODE_TOWARD_NEGATIVE_INF:
                 fpr[fd] = Float.intBitsToFloat((int) Math.floor(fpr[fs]));
                 break;
             default:
