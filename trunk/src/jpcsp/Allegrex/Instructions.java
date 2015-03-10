@@ -4915,14 +4915,14 @@ public void interpret(Processor processor, int insn) {
                 processor.cpu.doMULS(fd, fs, ft);
             
 }
-@Override
-public void compile(ICompilerContext context, int insn) {
-	context.prepareFdForStore();
-	context.loadFs();
-	context.loadFt();
-	context.getMethodVisitor().visitInsn(Opcodes.FMUL);
-	context.storeFd();
-}
+//@Override
+//public void compile(ICompilerContext context, int insn) {
+//	context.prepareFdForStore();
+//	context.loadFs();
+//	context.loadFt();
+//	context.getMethodVisitor().visitInsn(Opcodes.FMUL);
+//	context.storeFd();
+//}
 @Override
 public String disasm(int address, int insn) {
 	int fd = (insn>>6)&31;
