@@ -255,15 +255,40 @@ public class sceAtrac3plus extends HLEModule {
         		}
         	}
 
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("decodeData from 0x%08X(0x%X) to 0x%08X(0x%X), outputChannels=%d", readAddr, info.atracBytesPerFrame, samplesAddr, maxSamples, outputChannels));
+        	int currentSample = getAtracCurrentSample();
+        	if (currentSample == 0) {
+        		skippedSamples = startSkippedSamples;
+        	} else {
+        		skippedSamples = 0;
         	}
-        	int result = codec.decode(readAddr, info.atracBytesPerFrame, samplesAddr);
+
+        	SysMemInfo tempBuffer = null;
+        	int decodedSamplesAddr = samplesAddr;
+    		int bytesPerSample = 2 * getOutputChannels();
+        	if (skippedSamples > 0) {
+        		// Decode to a temporary buffer if we need to skip the first samples.
+        		int tempBufferSize = getMaxSamples() * bytesPerSample;
+        		tempBuffer = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceAtrac3plus-temp-decode-buffer", SysMemUserForUser.PSP_SMEM_Low, tempBufferSize, 0);
+        		if (tempBuffer == null) {
+        			log.warn(String.format("decodeData cannot allocate required temporary buffer of size=0x%X", tempBufferSize));
+        		} else {
+        			decodedSamplesAddr = tempBuffer.addr;
+        		}
+        	}
+
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("decodeData from 0x%08X(0x%X) to 0x%08X(0x%X), outputChannels=%d", readAddr, info.atracBytesPerFrame, decodedSamplesAddr, maxSamples, outputChannels));
+        	}
+
+        	int result = codec.decode(readAddr, info.atracBytesPerFrame, decodedSamplesAddr);
         	if (result < 0) {
         		if (log.isDebugEnabled()) {
         			log.debug(String.format("decodeData received codec decode error 0x%08X", result));
         		}
             	outEndAddr.setValue(false);
+            	if (tempBuffer != null) {
+            		Modules.SysMemUserForUserModule.free(tempBuffer);
+            	}
         		return ERROR_ATRAC_API_FAIL;
         	}
 
@@ -271,7 +296,6 @@ public class sceAtrac3plus extends HLEModule {
         	currentReadPosition += info.atracBytesPerFrame;
 
         	int samples = codec.getNumberOfSamples();
-        	int currentSample = getAtracCurrentSample();
         	int nextCurrentSample = currentSample + samples;
         	if (nextCurrentSample > info.atracEndSample) {
             	outEndAddr.setValue(info.loopNum == 0);
@@ -280,18 +304,16 @@ public class sceAtrac3plus extends HLEModule {
         	}
         	setAtracCurrentSample(nextCurrentSample);
 
-        	if (currentSample == 0) {
-        		skippedSamples = startSkippedSamples;
-        	} else {
-        		skippedSamples = 0;
-        	}
-
         	if (skippedSamples > 0) {
         		Memory mem = Memory.getInstance();
-        		int bytesPerSample = 2 * getOutputChannels();
         		int returnedSamples = getNumberOfSamples();
         		// Move the sample buffer to skip the needed samples
-        		mem.memmove(samplesAddr, samplesAddr + skippedSamples * bytesPerSample, returnedSamples * bytesPerSample);
+        		mem.memmove(samplesAddr, decodedSamplesAddr + skippedSamples * bytesPerSample, returnedSamples * bytesPerSample);
+        	}
+
+        	if (tempBuffer != null) {
+        		Modules.SysMemUserForUserModule.free(tempBuffer);
+        		tempBuffer = null;
         	}
 
         	for (int i = 0; i < info.numLoops; i++) {
@@ -507,6 +529,9 @@ public class sceAtrac3plus extends HLEModule {
         }
 
         public int getRemainFrames() {
+        	if (inputBuffer == null) {
+        		return 0;
+        	}
         	if (inputBufferContainsAllData()) {
         		return PSP_ATRAC_ALLDATA_IS_ON_MEMORY;
         	}
@@ -564,7 +589,7 @@ public class sceAtrac3plus extends HLEModule {
         }
 
         private boolean inputBufferContainsAllData() {
-        	if (inputBuffer.getMaxSize() >= info.inputFileSize) {
+        	if (inputBuffer != null && inputBuffer.getMaxSize() >= info.inputFileSize) {
         		if (inputBuffer.getReadSize() + currentReadPosition >= info.inputFileSize) {
         			return true;
         		}
