@@ -138,6 +138,8 @@ u32 parseParamTypes(const char *s, u32 *pflags) {
 		char c = *s++;
 		if (c == '!') {
 			*pflags |= FLAG_LOG_BEFORE_CALL;
+		} else if (c == '$') {
+			*pflags |= FLAG_LOG_FREEMEM;
 		} else {
 			paramType = TYPE_HEX32;
 			switch (c) {

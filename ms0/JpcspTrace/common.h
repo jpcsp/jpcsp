@@ -37,6 +37,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define TYPE_MPEG_AU	9
 #define TYPE_MP4_TRACK	10
 
+#define FLAG_LOG_BEFORE_CALL	(1 << 0)
+#define FLAG_LOG_AFTER_CALL	(1 << 1)
+#define FLAG_LOG_FREEMEM	(1 << 2)
+
 typedef struct {
 	SceUID logFd;
 	int logKeepOpen;
@@ -47,9 +51,6 @@ typedef struct {
 	int freeSize;
 	volatile int inWriteLog;
 } CommonInfo;
-
-#define FLAG_LOG_BEFORE_CALL	(1 << 0)
-#define FLAG_LOG_AFTER_CALL	(1 << 1)
 
 typedef struct SyscallInfo {
 	u64 (*originalEntry)(u32, u32, u32, u32, u32, u32, u32, u32);

@@ -20,6 +20,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #include <psploadcore.h>
 #include <psputilsforkernel.h>
 #include <pspsysmem_kernel.h>
+#include <pspsysmem.h>
 #include <psprtc.h>
 #include <string.h>
 #include "common.h"
@@ -178,11 +179,15 @@ void closeLogFile() {
 	commonInfo->logFd = -1;
 }
 
-void appendToLogBuffer(const char *s, int length) {
+void allocLogBuffer() {
 	// Allocate a buffer if not yet allocated
 	if (commonInfo->logBuffer == NULL) {
 		commonInfo->logBuffer = alloc(commonInfo->maxLogBufferLength);
 	}
+}
+
+void appendToLogBuffer(const char *s, int length) {
+	allocLogBuffer();
 
 	if (commonInfo->logBuffer != NULL) {
 		int restLength = commonInfo->maxLogBufferLength - commonInfo->logBufferLength;
@@ -585,6 +590,16 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 	char *s = buffer;
 	int i;
 	int length;
+
+	if (syscallInfo->flags & FLAG_LOG_FREEMEM) {
+		// Allocate the logBuffer first to report a proper free mem size
+		allocLogBuffer();
+
+		u32 maxFreeMem = sceKernelMaxFreeMemSize();
+		u32 totalFreeMem = sceKernelTotalFreeMemSize();
+
+		printLogHH("TotalFreeMem=", totalFreeMem, ", MaxFreeMem=", maxFreeMem, "\n");
+	}
 
 	if (logTimestamp) {
 		pspTime time;

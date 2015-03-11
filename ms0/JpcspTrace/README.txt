@@ -82,6 +82,9 @@ The format of the file JpcspTrace.config is the following:
   - !: this flag is not a parameter type but indicates that the syscall parameters have
        to be logged before and after the syscall (i.e. twice). By default, the parameters
        are only logged after the syscall.
+  - $: this flag is not a parameter type but indicates that the total free memory
+       and maximum free memory have to be logged with the syscall. In combination with
+       the '!' flag, the free memory before and after the syscall can be logged.
   All the parameter types are concatenated into one string, starting with
   the type of the first parameter ($a0). Unspecified parameter types default to "x".
 
