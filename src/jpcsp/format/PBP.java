@@ -189,28 +189,6 @@ public class PBP {
         return dir.delete();
     }
     
-    public static void decryptPBPData(ByteBuffer f) throws IOException {
-        f.position(0);
-        PBP pbp = new PBP(f);
-        if (!pbp.isValid()) {
-            return;
-        }
-        if (pbp.size_psp_data > 0) {
-            byte[] data = new byte[pbp.size_psp_data];
-            f.position(pbp.p_offset_psp_data);
-            f.get(data);
-            
-            ByteBuffer d = ByteBuffer.wrap(data);
-            d.position(0);
-            
-            PSP psp = new PSP(d);
-            if (!psp.isValid()) {
-                return;
-            }
-            psp.decrypt(d);
-        }
-    }
-    
     public static void unpackPBP(ByteBuffer f) throws IOException {
         f.position(0);//seek to 0
         PBP pbp = new PBP(f);

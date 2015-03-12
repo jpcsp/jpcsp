@@ -5,7 +5,6 @@
 package jpcsp.GUI;
 
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
-import static jpcsp.util.Utilities.endianSwap32;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -35,6 +34,8 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.border.AbstractBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
@@ -69,7 +70,6 @@ public class UmdBrowser extends javax.swing.JDialog {
 
         private static final long serialVersionUID = -1675488447176776560L;
         private UmdInfoLoader umdInfoLoader;
-        private String pathPrefix;
 
         public MemStickTableModel(File[] paths) {
             // Default values in case we return an error
@@ -84,9 +84,9 @@ public class UmdBrowser extends javax.swing.JDialog {
                 }
 
                 try {
-                    this.pathPrefix = path.getCanonicalPath();
+                    pathPrefix = path.getCanonicalPath();
                 } catch (IOException e) {
-                    this.pathPrefix = path.getPath();
+                    pathPrefix = path.getPath();
                 }
 
                 File[] pathPrograms = path.listFiles(new FileFilter() {
@@ -118,12 +118,6 @@ public class UmdBrowser extends javax.swing.JDialog {
 								}
 								// PBP header?
 								if (header[0] != 0 || header[1] != 'P' || header[2] != 'B' || header[3] != 'P') {
-									return false;
-								}
-								int psarDataOffset = endianSwap32(is.readInt());
-								// Homebrews have a PSAR data offset equal to the file length
-								if (psarDataOffset >= eboot[0].length()) {
-									// Homebrew
 									return false;
 								}
 							} catch (IOException e) {
@@ -166,7 +160,7 @@ public class UmdBrowser extends javax.swing.JDialog {
                     return name1.compareTo(name2);
                 }
             });
-            
+
             programs = programList.toArray(new File[programList.size()]);
 
             // The UMD informations are loaded asynchronously
@@ -176,13 +170,16 @@ public class UmdBrowser extends javax.swing.JDialog {
             icons = new ImageIcon[programs.length];
             psfs = new PSF[programs.length];
             umdInfoLoaded = new boolean[programs.length];
-            
+            filteredItems = new int[programs.length];
+            numberFilteredItems = programs.length;
+
             for (int i = 0; i < programs.length; ++i) {
                 umdInfoLoaded[i] = false;
+            	filteredItems[i] = i;
             }
             // load the first row: its size is used to compute the table size
             loadUmdInfo(0);
-            
+
             umdInfoLoader = new UmdInfoLoader();
             umdInfoLoader.setName("Umd Browser - Umd Info Loader");
             umdInfoLoader.setPriority(Thread.MIN_PRIORITY);
@@ -214,55 +211,45 @@ public class UmdBrowser extends javax.swing.JDialog {
                     throw new IndexOutOfBoundsException("column index out of range");
             }
         }
-        
+
         @Override
         public int getColumnCount() {
             return 2;
         }
-        
+
         @Override
         public int getRowCount() {
-            return (programs != null) ? programs.length : 0;
+        	if (programs == null) {
+        		return 0;
+        	}
+        	if (numberFilteredItems >= 0) {
+        		return numberFilteredItems;
+        	}
+            return programs.length;
         }
-        
+
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
-            if (rowIndex >= umdInfoLoaded.length) {
+        	if (rowIndex >= numberFilteredItems) {
+        		return null;
+        	}
+        	rowIndex = filteredItems[rowIndex];
+
+        	if (rowIndex >= umdInfoLoaded.length) {
                 return null;
             }
-            
+
             try {
-                // The UMD info is loaded asynchronously.
-                // Wait for the information to be loaded.
-                while (!umdInfoLoaded[rowIndex]) {
-                    sleep(1);
-                }
-                
+            	waitForUmdInfoLoaded(rowIndex);
+
                 switch (columnIndex) {
                     case 0:
                         return icons[rowIndex];
                     case 1:
                         String title = getTitle(rowIndex);
-                        
-                        String discid;
-                        if (psfs[rowIndex] == null || (discid = psfs[rowIndex].getString("DISC_ID")) == null) {
-                            discid = "No ID";
-                        }
-                        
-                        String firmware;
-                        if (psfs[rowIndex] == null || (firmware = psfs[rowIndex].getString("PSP_SYSTEM_VER")) == null) {
-                            firmware = "Not found";
-                        }
-                        
-                        String prgPath = programs[rowIndex].getCanonicalPath();
-                        if (prgPath.startsWith(pathPrefix)) {
-                            prgPath = prgPath.substring(pathPrefix.length() + 1);
-                        } else {
-                            String cwdPath = new File(".").getCanonicalPath();
-                            if (prgPath.startsWith(cwdPath)) {
-                                prgPath = prgPath.substring(cwdPath.length() + 1);
-                            }
-                        }
+                        String discid = getDiscId(rowIndex);
+                        String firmware = getFirmware(rowIndex);
+                        String prgPath = getProgramPath(rowIndex);
                         
                         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
                         String text = String.format(
@@ -291,6 +278,9 @@ public class UmdBrowser extends javax.swing.JDialog {
     private boolean isSwitchingUmd;
     private MainGUI gui;
     private File[] paths;
+    private int[] filteredItems;
+    private int numberFilteredItems = -1;
+    private String pathPrefix;
 
     /**
      * Creates new form UmdBrowser
@@ -349,7 +339,35 @@ public class UmdBrowser extends javax.swing.JDialog {
             }
         });
 
+        // update the filtering on filter change
+        filterField.getDocument().addDocumentListener(new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				onFilterChanged();
+			}
+			
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				onFilterChanged();
+			}
+			
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				onFilterChanged();
+			}
+		});
+
+        filterField.requestFocus();
+
         WindowPropSaver.loadWindowProperties(this);
+    }
+
+    private void waitForUmdInfoLoaded(int rowIndex) {
+        // The UMD info is loaded asynchronously.
+        // Wait for the information to be loaded.
+        while (!umdInfoLoaded[rowIndex]) {
+            sleep(1);
+        }
     }
 
     private void initPNG() {
@@ -432,21 +450,23 @@ public class UmdBrowser extends javax.swing.JDialog {
 
                     UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
 
-                    UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
-                    byte[] sfo = new byte[(int) paramSfo.length()];
-                    paramSfo.read(sfo);
-                    paramSfo.close();
+                    byte[] sfo = iso.readParamSFO();
+                    if (sfo == null) {
+                    	throw new FileNotFoundException();
+                    }
                     writeUmdBrowseCacheFile(cacheDirectory, "param.sfo", sfo);
                     ByteBuffer buf = ByteBuffer.wrap(sfo);
                     psfs[rowIndex] = new PSF();
                     psfs[rowIndex].read(buf);
 
-                    UmdIsoFile icon0umd = iso.getFile("PSP_GAME/ICON0.PNG");
-                    byte[] icon0 = new byte[(int) icon0umd.length()];
-                    icon0umd.read(icon0);
-                    icon0umd.close();
-                    writeUmdBrowseCacheFile(cacheDirectory, "ICON0.PNG", icon0);
-                    icons[rowIndex] = new ImageIcon(icon0);
+                    byte[] icon0 = iso.readIcon0();
+                    if (icon0 == null) {
+                        // default icon
+                        icons[rowIndex] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
+                    } else {
+                    	writeUmdBrowseCacheFile(cacheDirectory, "ICON0.PNG", icon0);
+                    	icons[rowIndex] = new ImageIcon(icon0);
+                    }
                 }
             }
         } catch (FileNotFoundException e) {
@@ -496,44 +516,38 @@ public class UmdBrowser extends javax.swing.JDialog {
         ImageIcon pic1Icon = null;
         ImageIcon icon0Icon = null;
         try {
-            int rowIndex = table.getSelectedRow();
+            int rowIndex = getSelectedRowIndex();
             UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
 
             // Read PIC0.PNG
             try {
-                UmdIsoFile pic0umd = iso.getFile("PSP_GAME/PIC0.PNG");
-                byte[] pic0 = new byte[(int) pic0umd.length()];
-                pic0umd.read(pic0);
-                pic0umd.close();
-                pic0Icon = new ImageIcon(pic0);
-            } catch (FileNotFoundException e) {
-                // Ignore exception
+                byte[] pic0 = iso.readPic0();
+                if (pic0 != null) {
+                	pic0Icon = new ImageIcon(pic0);
+                }
             } catch (IOException e) {
                 log.error(e);
             }
 
             // Read PIC1.PNG
             try {
-                UmdIsoFile pic1umd = iso.getFile("PSP_GAME/PIC1.PNG");
-                byte[] pic1 = new byte[(int) pic1umd.length()];
-                pic1umd.read(pic1);
-                pic1umd.close();
-                pic1Icon = new ImageIcon(pic1);
-            } catch (FileNotFoundException e) {
-                // Check if we're dealing with a UMD_VIDEO.
-                try {
-                    UmdIsoFile pic1umd = iso.getFile("UMD_VIDEO/PIC1.PNG");
-                    byte[] pic1 = new byte[(int) pic1umd.length()];
-                    pic1umd.read(pic1);
-                    pic1umd.close();
-                    pic1Icon = new ImageIcon(pic1);
-                } catch (FileNotFoundException ve) {
-                    // Generate an empty image
-                    pic1Icon = new ImageIcon();
-                    BufferedImage image = new BufferedImage(Constants.PSPSCREEN_WIDTH, Constants.PSPSCREEN_HEIGHT, BufferedImage.TYPE_INT_ARGB);
-                    pic1Icon.setImage(image);
-                } catch (IOException ve) {
-                    log.error(ve);
+                byte[] pic1 = iso.readPic1();
+                if (pic1 != null) {
+                	pic1Icon = new ImageIcon(pic1);
+                } else {
+                    // Check if we're dealing with a UMD_VIDEO.
+                    try {
+                        UmdIsoFile pic1umd = iso.getFile("UMD_VIDEO/PIC1.PNG");
+                        pic1 = new byte[(int) pic1umd.length()];
+                        pic1umd.read(pic1);
+                        pic1umd.close();
+                        pic1Icon = new ImageIcon(pic1);
+                    } catch (FileNotFoundException ve) {
+                        // Generate an empty image
+                        pic1Icon = new ImageIcon();
+                        BufferedImage image = new BufferedImage(Constants.PSPSCREEN_WIDTH, Constants.PSPSCREEN_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+                        pic1Icon.setImage(image);
+                    }
                 }
             } catch (IOException e) {
                 log.error(e);
@@ -545,7 +559,7 @@ public class UmdBrowser extends javax.swing.JDialog {
                 stopVideo();
                 umdBrowserPmf = new UmdBrowserPmf(iso, "PSP_GAME/ICON1.PMF", icon0Label);
                 if (iso.hasFile("PSP_GAME/SND0.AT3")) {
-                	umdBrowserSound = new UmdBrowserSound(Memory.getInstance(), iso, "PSP_GAME/SND0.AT3");
+                	umdBrowserSound = new UmdBrowserSound(Memory.getInstance(), iso.readSnd0());
                 } else {
                 	IVirtualFile pmf = new UmdIsoVirtualFile(iso.getFile("PSP_GAME/ICON1.PMF"));
                 	byte mpegHeader[] = new byte[sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE];
@@ -586,6 +600,38 @@ public class UmdBrowser extends javax.swing.JDialog {
         return title;
     }
 
+    private String getDiscId(int rowIndex) {
+    	String discId;
+        if (psfs[rowIndex] == null || (discId = psfs[rowIndex].getString("DISC_ID")) == null) {
+            discId = "No ID";
+        }
+
+        return discId;
+    }
+
+    private String getProgramPath(int rowIndex) throws IOException {
+        String programPath = programs[rowIndex].getCanonicalPath();
+        if (programPath.startsWith(pathPrefix)) {
+            programPath = programPath.substring(pathPrefix.length() + 1);
+        } else {
+            String cwdPath = new File(".").getCanonicalPath();
+            if (programPath.startsWith(cwdPath)) {
+                programPath = programPath.substring(cwdPath.length() + 1);
+            }
+        }
+
+        return programPath;
+    }
+
+    private String getFirmware(int rowIndex) {
+        String firmware;
+        if (psfs[rowIndex] == null || (firmware = psfs[rowIndex].getString("PSP_SYSTEM_VER")) == null) {
+            firmware = "Not found";
+        }
+
+        return firmware;
+    }
+
     private void scrollTo(char c) {
         c = Character.toLowerCase(c);
         int scrollToRow = -1;
@@ -617,10 +663,63 @@ public class UmdBrowser extends javax.swing.JDialog {
         }
     }
 
+    private boolean filter(String filter, String text) {
+    	text = text.toLowerCase();
+
+    	return text.contains(filter);
+    }
+
+    private void filterItems(String filter) {
+    	filter = filter.toLowerCase();
+
+    	filteredItems = new int[programs.length];
+    	numberFilteredItems = 0;
+
+    	for (int rowIndex = 0; rowIndex < programs.length; rowIndex++) {
+    		waitForUmdInfoLoaded(rowIndex);
+
+    		boolean show = false;
+    		try {
+        		String title = getTitle(rowIndex);
+        		String discId = getDiscId(rowIndex);
+				String programPath = getProgramPath(rowIndex);
+
+				if (filter(filter, title) || filter(filter, discId) || filter(filter, programPath)) {
+					show = true;
+				}
+    		} catch (IOException e) {
+				show = true;
+			}
+
+    		if (show) {
+    			filteredItems[numberFilteredItems] = rowIndex;
+    			numberFilteredItems++;
+    		}
+    	}
+    }
+
+    private void onFilterChanged() {
+    	String filter = filterField.getText();
+    	log.info(String.format("onFilterChanged '%s'", filter));
+
+    	filterItems(filter);
+
+    	((AbstractTableModel) table.getModel()).fireTableDataChanged();
+    }
+
+    private int getSelectedRowIndex() {
+        int rowIndex = table.getSelectedRow();
+        if (rowIndex < numberFilteredItems) {
+        	rowIndex = filteredItems[rowIndex];
+        }
+
+        return rowIndex;
+    }
+
     private void loadSelectedfile() {
         stopVideo();
 
-        File selectedFile = programs[table.getSelectedRow()];
+        File selectedFile = programs[getSelectedRowIndex()];
         if (isSwitchingUmd()) {
             gui.switchUMD(selectedFile);
             setVisible(false);
@@ -795,6 +894,8 @@ public class UmdBrowser extends javax.swing.JDialog {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
+        filterLabel = new javax.swing.JLabel();
+        filterField = new javax.swing.JTextField();
         loadButton = new javax.swing.JButton();
         cancelButton = new jpcsp.GUI.CancelButton();
         jScrollPane1 = new javax.swing.JScrollPane();
@@ -808,6 +909,10 @@ public class UmdBrowser extends javax.swing.JDialog {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         setTitle(bundle.getString("UmdBrowser.title")); // NOI18N
         setModalityType(java.awt.Dialog.ModalityType.APPLICATION_MODAL);
+
+        filterLabel.setText(bundle.getString("FilterLabel.text")); // NOI18N
+
+        filterField.setText(""); // NOI18N
 
         loadButton.setText(bundle.getString("LoadButton.text")); // NOI18N
         loadButton.setEnabled(false);
@@ -887,6 +992,10 @@ public class UmdBrowser extends javax.swing.JDialog {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(filterLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(filterField, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(loadButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(cancelButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -905,6 +1014,8 @@ public class UmdBrowser extends javax.swing.JDialog {
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                	.addComponent(filterLabel)
+                	.addComponent(filterField)
                     .addComponent(loadButton)
                     .addComponent(cancelButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
@@ -939,6 +1050,8 @@ public class UmdBrowser extends javax.swing.JDialog {
     private javax.swing.JLabel icon0Label;
     private javax.swing.JPanel imagePanel;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JLabel filterLabel;
+    private javax.swing.JTextField filterField;
     private javax.swing.JButton loadButton;
     private javax.swing.JLabel pic0Label;
     private javax.swing.JLabel pic1Label;

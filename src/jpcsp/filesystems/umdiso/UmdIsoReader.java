@@ -38,11 +38,11 @@ import jpcsp.util.Utilities;
  *
  * @author gigaherz, gid15
  */
-public class UmdIsoReader {
-
+public class UmdIsoReader implements IBrowser {
     public static final int startSector = 16;
     private static final int headerLength = 24;
     private ISectorDevice sectorDevice;
+    private IBrowser browser;
     private final HashMap<String, Iso9660File> fileCache = new HashMap<String, Iso9660File>();
     private final HashMap<String, Iso9660Directory> dirCache = new HashMap<String, Iso9660Directory>();
     private final int numSectors;
@@ -57,6 +57,7 @@ public class UmdIsoReader {
 	        byte[] header = new byte[headerLength];
 	        fileReader.seek(0);
 	        fileReader.read(header);
+	        fileReader.seek(0);
 
 	        if (header[0] == 'C' && header[1] == 'I' && header[2] == 'S' && header[3] == 'O') {
 	            sectorDevice = new CSOFileSectorDevice(fileReader, header);
@@ -74,7 +75,9 @@ public class UmdIsoReader {
 
         numSectors = sectorDevice.getNumSectors();
 
-        if (!hasIsoHeader()) {
+        setBrowser();
+
+        if (browser == null && !hasIsoHeader()) {
             throw new IOException(String.format("Unsupported file format or corrupted file '%s'.", umdFilename));
         }
     }
@@ -82,6 +85,15 @@ public class UmdIsoReader {
     public UmdIsoReader(ISectorDevice sectorDevice) throws IOException {
         this.sectorDevice = sectorDevice;
         numSectors = sectorDevice.getNumSectors();
+        setBrowser();
+    }
+
+    private void setBrowser() {
+        if (sectorDevice instanceof IBrowser) {
+        	browser = (IBrowser) sectorDevice;
+        } else {
+        	browser = null;
+        }
     }
 
     public void close() throws IOException {
@@ -258,6 +270,9 @@ public class UmdIsoReader {
     }
 
     public UmdIsoFile getFile(String filePath) throws IOException, FileNotFoundException {
+    	if (numSectors == 0) {
+    		throw new FileNotFoundException(filePath);
+    	}
         int fileStart;
         long fileLength;
         Date timestamp;
@@ -466,5 +481,94 @@ public class UmdIsoReader {
 
 	public static void setDoIsoBuffering(boolean doIsoBuffering) {
 		UmdIsoReader.doIsoBuffering = doIsoBuffering;
+	}
+
+	private byte[] readFile(String fileName) throws IOException {
+		if (!hasFile(fileName)) {
+			return null;
+		}
+
+		UmdIsoFile file = getFile(fileName);
+		int length = (int) file.length();
+		byte[] buffer = new byte[length];
+		int read = file.read(buffer);
+
+		if (read < 0) {
+			return null;
+		}
+
+		// Read less than expected?
+		if (read < length) {
+			// Shrink the buffer to the read size
+			byte[] newBuffer = new byte[read];
+			System.arraycopy(buffer, 0, newBuffer, 0, read);
+			buffer = newBuffer;
+		}
+
+		return buffer;
+	}
+
+	@Override
+	public byte[] readParamSFO() throws IOException {
+		if (browser != null) {
+			return browser.readParamSFO();
+		}
+		return readFile("PSP_GAME/PARAM.SFO");
+	}
+
+	@Override
+	public byte[] readIcon0() throws IOException {
+		if (browser != null) {
+			return browser.readIcon0();
+		}
+		return readFile("PSP_GAME/ICON0.PNG");
+	}
+
+	@Override
+	public byte[] readIcon1() throws IOException {
+		if (browser != null) {
+			return browser.readIcon1();
+		}
+		return readFile("PSP_GAME/ICON1.PNG");
+	}
+
+	@Override
+	public byte[] readPic0() throws IOException {
+		if (browser != null) {
+			return browser.readPic0();
+		}
+		return readFile("PSP_GAME/PIC0.PNG");
+	}
+
+	@Override
+	public byte[] readPic1() throws IOException {
+		if (browser != null) {
+			return browser.readPic1();
+		}
+		return readFile("PSP_GAME/PIC1.PNG");
+	}
+
+	@Override
+	public byte[] readSnd0() throws IOException {
+		if (browser != null) {
+			return browser.readSnd0();
+		}
+		return readFile("PSP_GAME/SND0.AT3");
+	}
+
+	@Override
+	public byte[] readPspData() throws IOException {
+		if (browser != null) {
+			return browser.readPspData();
+		}
+		return null;
+	}
+
+	@Override
+	public byte[] readPsarData() throws IOException {
+		if (browser != null) {
+			return browser.readPsarData();
+		}
+		return null;
 	}
 }

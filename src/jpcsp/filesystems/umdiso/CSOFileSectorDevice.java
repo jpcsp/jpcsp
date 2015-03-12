@@ -51,6 +51,7 @@ public class CSOFileSectorDevice extends AbstractFileSectorDevice {
 		sectorOffsets = new long[numSectors + 1];
 
 		byte[] offsetData = new byte[(numSectors + 1) * 4];
+		fileAccess.seek(24);
 		fileAccess.readFully(offsetData);
 		ByteBuffer offsetBuffer = ByteBuffer.wrap(offsetData).order(ByteOrder.LITTLE_ENDIAN);
 

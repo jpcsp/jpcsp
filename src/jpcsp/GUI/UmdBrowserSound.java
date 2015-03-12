@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.GUI;
 
-import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_RDONLY;
-
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
@@ -26,15 +24,13 @@ import javax.sound.sampled.SourceDataLine;
 
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFile;
-import jpcsp.HLE.VFS.IVirtualFileSystem;
-import jpcsp.HLE.VFS.iso.UmdIsoVirtualFileSystem;
 import jpcsp.HLE.modules150.sceAtrac3plus;
 import jpcsp.HLE.modules150.sceAtrac3plus.AtracFileInfo;
-import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 public class UmdBrowserSound {
@@ -61,10 +57,10 @@ public class UmdBrowserSound {
 		}
 	}
 
-	public UmdBrowserSound(Memory mem, UmdIsoReader iso, String fileName) {
+	public UmdBrowserSound(Memory mem, byte[] data) {
 		this.mem = mem;
 
-		if (read(iso, fileName)) {
+		if (read(data)) {
 			startThread();
 		} else {
 			threadExit = true;
@@ -84,7 +80,7 @@ public class UmdBrowserSound {
 		}
 		atracFileInfo.atracBytesPerFrame = atracBytesPerFrame;
 
-		if (read(vFile, codecType, atracFileInfo)) {
+		if (read(codecType, atracFileInfo)) {
 			startThread();
 		} else {
 			threadExit = true;
@@ -116,20 +112,17 @@ public class UmdBrowserSound {
 		soundPlayThread.start();
 	}
 
-	private boolean read(UmdIsoReader iso, String fileName) {
-		IVirtualFileSystem vfs = new UmdIsoVirtualFileSystem(iso);
-		IVirtualFile vFile = vfs.ioOpen(fileName, PSP_O_RDONLY, 0);
-		if (vFile == null) {
+	private boolean read(byte[] data) {
+		if (data == null || data.length == 0) {
 			return false;
 		}
 
-		inputLength = (int) vFile.length();
-		inputLength = vFile.ioRead(new TPointer(mem, inputAddr), inputLength);
-		vfs.ioClose(vFile);
-
-		if (inputLength <= 0) {
-			return false;
+		inputLength = data.length;
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(inputAddr, inputLength, 1);
+		for (int i = 0; i < data.length; i++) {
+			memoryWriter.writeNext(data[i] & 0xFF);
 		}
+		memoryWriter.flush();
 
 		AtracFileInfo atracFileInfo = new AtracFileInfo();
 		int codecType = sceAtrac3plus.analyzeRiffFile(mem, inputAddr, inputLength, atracFileInfo);
@@ -137,12 +130,12 @@ public class UmdBrowserSound {
 			return false;
 		}
 
-		boolean result = read(vFile, codecType, atracFileInfo);
+		boolean result = read(codecType, atracFileInfo);
 
 		return result;
 	}
 
-	private boolean read(IVirtualFile vFile, int codecType, AtracFileInfo atracFileInfo) {
+	private boolean read(int codecType, AtracFileInfo atracFileInfo) {
 		codec = CodecFactory.getCodec(codecType);
 		if (codec == null) {
 			return false;

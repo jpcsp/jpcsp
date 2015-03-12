@@ -25,7 +25,6 @@ import jpcsp.Debugger.InstructionCounter;
 import jpcsp.GUI.CheatsGUI;
 import jpcsp.GUI.ControlsGUI;
 import jpcsp.GUI.LogGUI;
-import jpcsp.GUI.MemStickBrowser;
 import jpcsp.GUI.SettingsGUI;
 import jpcsp.log.LogWindow;
 
@@ -47,7 +46,6 @@ public class State extends jpcsp.HLE.Modules {
     public static LogGUI logGUI;
     public static ElfHeaderInfo elfHeader;
     public static SettingsGUI settingsGUI;
-    public static MemStickBrowser memStickBrowser;
     public static LogWindow logWindow;
     public static InstructionCounter instructionCounter;
     // disc related
