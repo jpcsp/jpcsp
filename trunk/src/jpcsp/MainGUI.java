@@ -72,7 +72,6 @@ import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.DisassemblerModule.VfpuFrame;
 import jpcsp.GUI.CheatsGUI;
 import jpcsp.GUI.IMainGUI;
-import jpcsp.GUI.MemStickBrowser;
 import jpcsp.GUI.RecentElement;
 import jpcsp.GUI.SettingsGUI;
 import jpcsp.GUI.ControlsGUI;
@@ -306,7 +305,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         FileMenu = new javax.swing.JMenu();
         openUmd = new javax.swing.JMenuItem();
         OpenFile = new javax.swing.JMenuItem();
-        OpenMemStick = new javax.swing.JMenuItem();
         RecentMenu = new javax.swing.JMenu();
         switchUmd = new javax.swing.JMenuItem();
         ejectMs = new javax.swing.JMenuItem();
@@ -470,16 +468,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         FileMenu.add(OpenFile);
-
-        OpenMemStick.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.SHIFT_MASK));
-        OpenMemStick.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadMemoryStick.png"))); // NOI18N
-        OpenMemStick.setText(bundle.getString("MainGUI.OpenMemStick.text")); // NOI18N
-        OpenMemStick.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OpenMemStickActionPerformed(evt);
-            }
-        });
-        FileMenu.add(OpenMemStick);
 
         RecentMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/RecentIcon.png"))); // NOI18N
         RecentMenu.setText(bundle.getString("MainGUI.RecentMenu.text")); // NOI18N
@@ -1757,16 +1745,6 @@ private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         exitEmu();
 }//GEN-LAST:event_ExitEmuActionPerformed
 
-private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMemStickActionPerformed
-        PauseEmu();
-        if (State.memStickBrowser == null) {
-            State.memStickBrowser = new MemStickBrowser(this, new File("ms0/PSP/GAME"));
-        } else {
-            State.memStickBrowser.refreshFiles();
-        }
-        State.memStickBrowser.setVisible(true);
-}//GEN-LAST:event_OpenMemStickActionPerformed
-
 private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         // this is only needed for the main screen, as it can be closed without
         // being deactivated first
@@ -1908,35 +1886,33 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     	String filePath = file == null ? null : file.getPath();
         UmdIsoReader.setDoIsoBuffering(doUmdBuffering);
 
-        try {
-            // Raising an exception here means the ISO/CSO is not a PSP_GAME.
-            // Try checking if it's a UMD_VIDEO or a UMD_AUDIO.
-            UmdIsoReader iso = new UmdIsoReader(filePath);
-            iso.getFile("PSP_GAME/param.sfo");
-            loadUMDGame(file);
-        } catch (FileNotFoundException e) {
-            try {
-                // Try loading it as a UMD_VIDEO.
-                UmdIsoReader iso = new UmdIsoReader(filePath);
-                iso.getFile("UMD_VIDEO/param.sfo");
-                loadUMDVideo(file);
-            } catch (FileNotFoundException ve) {
-                try {
-                    // Try loading it as a UMD_AUDIO.
-                    UmdIsoReader iso = new UmdIsoReader(filePath);
-                    iso.getFile("UMD_AUDIO/param.sfo");
-                    loadUMDAudio(file);
-                } catch (FileNotFoundException ae) {
-                    // No more formats to check.
-                } catch (IOException aioe) {
-                    // Ignore.
-                }
-            } catch (IOException vioe) {
-                // Ignore.
-            }
-        } catch (IOException ioe) {
-            // Ignore.
-        }
+        UmdIsoReader iso = null;
+		try {
+			iso = new UmdIsoReader(filePath);
+	        if (iso.hasFile("PSP_GAME/param.sfo")) {
+	        	loadUMDGame(file);
+	        } else if (iso.hasFile("UMD_VIDEO/param.sfo")) {
+	        	loadUMDVideo(file);
+	        } else if (iso.hasFile("UMD_AUDIO/param.sfo")) {
+	        	loadUMDAudio(file);
+	        } else {
+	        	// EBOOT.PBP contains an ELF file?
+	        	byte[] pspData = iso.readPspData();
+	        	if (pspData != null) {
+	        		loadFile(file);
+	        	}
+	        }
+		} catch (IOException e) {
+			// Ignore exception
+		} finally {
+			if (iso != null) {
+				try {
+					iso.close();
+				} catch (IOException e) {
+					// Ignore exception
+				}
+			}
+		}
         RefreshUI();
     }
 
@@ -2999,7 +2975,6 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuBar MenuBar;
     private javax.swing.JCheckBoxMenuItem MuteOpt;
     private javax.swing.JMenuItem OpenFile;
-    private javax.swing.JMenuItem OpenMemStick;
     private javax.swing.JMenu OptionsMenu;
     private javax.swing.JToggleButton PauseButton;
     private javax.swing.JMenu PluginsMenu;
