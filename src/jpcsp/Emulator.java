@@ -73,7 +73,7 @@ public class Emulator implements Runnable {
     private InstructionCounter instructionCounter;
     public static Logger log = Logger.getLogger("emu");
     private SceModule module;
-    private int firmwareVersion = 150;
+    private int firmwareVersion = 999;
     private String[] bootModuleBlackList = {"Prometheus Loader"};
 
     public Emulator(IMainGUI gui) {

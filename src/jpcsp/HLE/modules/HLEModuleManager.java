@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -190,7 +191,7 @@ public class HLEModuleManager {
 
     /** (String)"2.71" to (int)271 */
     public static int psfFirmwareVersionToInt(String firmwareVersion) {
-        int version = 150;
+        int version = Emulator.getInstance().getFirmwareVersion();
 
         if (firmwareVersion != null) {
         	// Some games have firmwareVersion = "5.00?", keep only the digits
