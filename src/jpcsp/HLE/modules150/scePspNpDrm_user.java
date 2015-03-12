@@ -318,12 +318,12 @@ public class scePspNpDrm_user extends HLEModule {
 
     @HLEFunction(nid = 0xC618D0B1, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModuleNpDrm(PspString path, int flags, @CanBeNull TPointer optionAddr) {
-        SceKernelLMOption lmOption;
+        SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
             lmOption.read(optionAddr);
             if (log.isInfoEnabled()) {
-                log.info(String.format("sceKernelLoadModuleNpDrm partition=%d, position=%d", lmOption.mpidText, lmOption.position));
+                log.info(String.format("sceKernelLoadModuleNpDrm options: %s", lmOption));
             }
         }
 
@@ -333,7 +333,7 @@ public class scePspNpDrm_user extends HLEModule {
             return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, false);
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, lmOption, false);
     }
 
     @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)

@@ -38,12 +38,12 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
     @HLEFunction(nid = 0xF2D8D1B4, version = 271)
     // sceKernelLoadModuleNpDrm
     public int ModuleMgrForUser_F2D8D1B4(PspString path, int flags, @CanBeNull TPointer optionAddr) {
-        SceKernelLMOption lmOption;
+        SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
             lmOption.read(optionAddr);
             if (log.isInfoEnabled()) {
-                log.info(String.format("ModuleMgrForUser_F2D8D1B4 partition=%d, position=%d", lmOption.mpidText, lmOption.position));
+                log.info(String.format("ModuleMgrForUser_F2D8D1B4 options: %s", lmOption));
             }
         }
 
@@ -53,6 +53,6 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
             return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, false);
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, lmOption, false);
     }
 }

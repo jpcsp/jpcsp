@@ -234,7 +234,7 @@ public class ModuleMgrForUser extends HLEModule {
     	return result;
     }
 
-    public int hleKernelLoadModule(String name, int flags, int uid, boolean byUid) {
+    public int hleKernelLoadModule(String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid) {
         StringBuilder prxname = new StringBuilder();
         int result = hleKernelLoadHLEModule(name, prxname);
         if (result >= 0) {
@@ -271,8 +271,8 @@ public class ModuleMgrForUser extends HLEModule {
                 // some space for the module header itself.
                 // We allocate the estimated size and free it immediately so that
                 // we know the load address.
-                final int partitionId = 2;
-                final int allocType = SysMemUserForUser.PSP_SMEM_Low;
+                final int partitionId = lmOption != null ? lmOption.mpidText : SysMemUserForUser.USER_PARTITION_ID;
+                final int allocType = lmOption != null ? lmOption.position : SysMemUserForUser.PSP_SMEM_Low;
                 final int moduleHeaderSize = 256;
 
                 // Load the module in analyze mode to find out its required memory size
@@ -358,7 +358,7 @@ public class ModuleMgrForUser extends HLEModule {
             lmOption = new SceKernelLMOption();
             lmOption.read(optionAddr);
             if (log.isInfoEnabled()) {
-            	log.info(String.format("sceKernelLoadModule: partition=%d, position=%d", lmOption.mpidText, lmOption.position));
+            	log.info(String.format("sceKernelLoadModuleByID options: %s", lmOption));
             }
         }
 
@@ -367,7 +367,7 @@ public class ModuleMgrForUser extends HLEModule {
         	return result;
         }
 
-        return hleKernelLoadModule(name, 0, uid, true);
+        return hleKernelLoadModule(name, 0, uid, lmOption, true);
     }
 
     @HLEFunction(nid = 0x977DE386, version = 150, checkInsideInterrupt = true)
@@ -377,11 +377,11 @@ public class ModuleMgrForUser extends HLEModule {
             lmOption = new SceKernelLMOption();
             lmOption.read(optionAddr);
             if (log.isInfoEnabled()) {
-            	log.info(String.format("sceKernelLoadModule: partition=%d, position=%d", lmOption.mpidText, lmOption.position));
+            	log.info(String.format("sceKernelLoadModule options: %s", lmOption));
             }
         }
 
-        return hleKernelLoadModule(path.getString(), flags, 0, false);
+        return hleKernelLoadModule(path.getString(), flags, 0, lmOption, false);
     }
 
     @HLEUnimplemented
