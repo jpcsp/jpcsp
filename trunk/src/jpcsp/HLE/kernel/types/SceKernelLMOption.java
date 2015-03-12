@@ -45,4 +45,9 @@ public class SceKernelLMOption extends pspAbstractMemoryMappedStructureVariableL
         write8((byte)access);
         write16((short)creserved);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("mpidText=0x%X, mpidData=0x%X, flags=0x%X, position=0x%X, access=0x%X, creserved=0x%X", mpidText, mpidData, flags, position, access, creserved);
+	}
 }
