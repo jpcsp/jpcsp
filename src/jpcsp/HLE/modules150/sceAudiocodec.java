@@ -70,6 +70,9 @@ public class sceAudiocodec extends HLEModule {
 			id = null;
 		}
 		atID = Modules.sceAtrac3plusModule.hleGetAtracID(codecType);
+		if (atID < 0) {
+			return atID;
+		}
 		id = Modules.sceAtrac3plusModule.getAtracID(atID);
 
 		return 0;
