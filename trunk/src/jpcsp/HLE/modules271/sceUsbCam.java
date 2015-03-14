@@ -427,11 +427,15 @@ public class sceUsbCam extends HLEModule {
 		IContainerFormat format = IContainerFormat.make();
 		int ret = format.setInputFormat("vfwcap");
 		if (ret < 0) {
+			container.close();
+			format.delete();
 			log.error(String.format("USB Cam: cannot open WebCam ('vfwcap' device)"));
 			return false;
 		}
 		ret = container.open("0", IContainer.Type.READ, format);
 		if (ret < 0) {
+			container.close();
+			format.delete();
 			log.error(String.format("USB Cam: cannot open WebCam ('0')"));
 			return false;
 		}
@@ -500,6 +504,11 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x17F7B2FB, version = 271)
 	public int sceUsbCamSetupVideo(pspUsbCamSetupVideoParam usbCamSetupVideoParam, TPointer workArea, int workAreaSize) {
+		if (!setupVideo()) {
+			log.warn(String.format("Cannot find webcam"));
+			return SceKernelErrors.ERROR_USBCAM_NOT_READY;
+		}
+
 		this.workArea = workArea.getAddress();
 		this.workAreaSize = workAreaSize;
 		resolution = usbCamSetupVideoParam.resolution;
@@ -781,6 +790,11 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xCFE9E999, version = 271)
 	public int sceUsbCamSetupVideoEx(pspUsbCamSetupVideoExParam usbCamSetupVideoExParam, TPointer workArea, int workAreaSize) {
+		if (!setupVideo()) {
+			log.warn(String.format("Cannot find webcam"));
+			return SceKernelErrors.ERROR_USBCAM_NOT_READY;
+		}
+
 		this.workArea = workArea.getAddress();
 		this.workAreaSize = workAreaSize;
 		resolution = convertResolutionExToResolution(usbCamSetupVideoExParam.resolution);
