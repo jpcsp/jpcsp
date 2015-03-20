@@ -256,10 +256,19 @@ public class sceAtrac3plus extends HLEModule {
         	}
 
         	int currentSample = getAtracCurrentSample();
+        	int nextCurrentSample = currentSample;
         	if (currentSample == 0) {
-        		skippedSamples = startSkippedSamples;
+        		skippedSamples = startSkippedSamples + info.atracSampleOffset;
         	} else {
-        		skippedSamples = 0;
+        		skippedSamples = currentSample % maxSamples;
+        	}
+
+        	// Skip complete frames
+        	while (skippedSamples >= maxSamples) {
+        		inputBuffer.notifyRead(info.atracBytesPerFrame);
+        		currentReadPosition += info.atracBytesPerFrame;
+        		skippedSamples -= maxSamples;
+        		nextCurrentSample += maxSamples;
         	}
 
         	SysMemInfo tempBuffer = null;
@@ -277,7 +286,7 @@ public class sceAtrac3plus extends HLEModule {
         	}
 
         	if (log.isDebugEnabled()) {
-        		log.debug(String.format("decodeData from 0x%08X(0x%X) to 0x%08X(0x%X), outputChannels=%d", readAddr, info.atracBytesPerFrame, decodedSamplesAddr, maxSamples, outputChannels));
+        		log.debug(String.format("decodeData from 0x%08X(0x%X) to 0x%08X(0x%X), skippedSamples=0x%X, outputChannels=%d", readAddr, info.atracBytesPerFrame, decodedSamplesAddr, maxSamples, skippedSamples, outputChannels));
         	}
 
         	int result = codec.decode(readAddr, info.atracBytesPerFrame, decodedSamplesAddr);
@@ -295,8 +304,8 @@ public class sceAtrac3plus extends HLEModule {
         	inputBuffer.notifyRead(info.atracBytesPerFrame);
         	currentReadPosition += info.atracBytesPerFrame;
 
-        	int samples = codec.getNumberOfSamples();
-        	int nextCurrentSample = currentSample + samples;
+        	nextCurrentSample += codec.getNumberOfSamples() - skippedSamples;
+
         	if (nextCurrentSample > info.atracEndSample) {
             	outEndAddr.setValue(info.loopNum == 0);
         	} else {
@@ -866,9 +875,14 @@ public class sceAtrac3plus extends HLEModule {
         				if (info.atracEndSample > 0) {
         					info.atracEndSample -= 1;
         				}
-        				info.atracSampleOffset = readUnaligned32(mem, currentAddr + 4); // The loop samples are offset by this value
+        				if (chunkSize >= 12) {
+        					// Is the value at offset 4 ignored?
+        					info.atracSampleOffset = readUnaligned32(mem, currentAddr + 8); // The loop samples are offset by this value
+        				} else {
+        					info.atracSampleOffset = readUnaligned32(mem, currentAddr + 4); // The loop samples are offset by this value
+        				}
                         if (log.isDebugEnabled()) {
-                        	log.debug(String.format("FACT Chunk: endSample=%d, sampleOffset=%d", info.atracEndSample, info.atracSampleOffset));
+                        	log.debug(String.format("FACT Chunk: endSample=%d, sampleOffset=%d, size=%d", info.atracEndSample, info.atracSampleOffset, chunkSize));
                         }
         			}
         			break;
@@ -1069,7 +1083,7 @@ public class sceAtrac3plus extends HLEModule {
         remainFramesAddr.setValue(id.getRemainFrames());
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracDecodeData returning 0x%08X, samples=%d, end=%d, remainFrames=%d, currentSample=%d/%d, %s", result, samplesNbrAddr.getValue(), outEndAddr.getValue(), remainFramesAddr.getValue(), id.getAtracCurrentSample(), id.getAtracEndSample(), id));
+            log.debug(String.format("sceAtracDecodeData returning 0x%08X, samples=0x%X, end=%d, remainFrames=%d, currentSample=0x%X/0x%X, %s", result, samplesNbrAddr.getValue(), outEndAddr.getValue(), remainFramesAddr.getValue(), id.getAtracCurrentSample(), id.getAtracEndSample(), id));
         }
 
         // Delay the thread decoding the Atrac data,
