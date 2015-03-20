@@ -385,15 +385,17 @@ public class sceGe_user extends HLEModule {
 	        }
     	}
 
-        boolean isBusy;
-    	if (ExternalGE.isActive()) {
-    		isBusy = ExternalGE.hasDrawList(listAddr.getAddress(), stackAddr);
-    	} else {
-    		isBusy = VideoEngine.getInstance().hasDrawList(listAddr.getAddress(), stackAddr);
-    	}
-    	if (isBusy) {
-    		log.warn(String.format("hleGeListEnQueue can't enqueue duplicate list address %s, stack 0x%08X", listAddr, stackAddr));
-    		return SceKernelErrors.ERROR_BUSY;
+    	if (Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() >= 0x02000000) {
+	        boolean isBusy;
+	    	if (ExternalGE.isActive()) {
+	    		isBusy = ExternalGE.hasDrawList(listAddr.getAddress(), stackAddr);
+	    	} else {
+	    		isBusy = VideoEngine.getInstance().hasDrawList(listAddr.getAddress(), stackAddr);
+	    	}
+	    	if (isBusy) {
+	    		log.warn(String.format("hleGeListEnQueue can't enqueue duplicate list address %s, stack 0x%08X", listAddr, stackAddr));
+	    		return SceKernelErrors.ERROR_BUSY;
+	    	}
     	}
 
         int result;
