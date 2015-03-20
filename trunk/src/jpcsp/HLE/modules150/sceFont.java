@@ -91,6 +91,11 @@ public class sceFont extends HLEModule {
         return "sceFont";
     }
 
+	@Override
+	public int getMemoryUsage() {
+		return 0x7D00;
+	}
+
     @Override
     public void start() {
     	setSettingsListener("emu.useDebugFont", new UseDebugFontSettingsListerner());
