@@ -271,7 +271,7 @@ public class ModuleMgrForUser extends HLEModule {
                 // some space for the module header itself.
                 // We allocate the estimated size and free it immediately so that
                 // we know the load address.
-                final int partitionId = lmOption != null ? lmOption.mpidText : SysMemUserForUser.USER_PARTITION_ID;
+                final int partitionId = lmOption != null && lmOption.mpidText != 0 ? lmOption.mpidText : SysMemUserForUser.USER_PARTITION_ID;
                 final int allocType = lmOption != null ? lmOption.position : SysMemUserForUser.PSP_SMEM_Low;
                 final int moduleHeaderSize = 256;
 
