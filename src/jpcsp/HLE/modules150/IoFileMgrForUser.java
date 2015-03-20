@@ -2381,8 +2381,11 @@ public class IoFileMgrForUser extends HLEModule {
                         if (info.isUmdFile()) {
                             try {
                                 int fPointer = (int) info.readOnlyFile.getFilePointer();
+                                // TODO for block files, does it return a number of blocks or a number of bytes?
                                 mem.write32(outdata_addr, fPointer);
-                                log.debug("hleIoIoctl umd file get file pointer " + fPointer);
+                                if (log.isDebugEnabled()) {
+                                	log.debug(String.format("hleIoIoctl umd file get file pointer 0x%X", fPointer));
+                                }
                                 result = 0;
                             } catch (IOException e) {
                                 log.warn("hleIoIoctl cmd=0x01020004 exception: " + e.getMessage());

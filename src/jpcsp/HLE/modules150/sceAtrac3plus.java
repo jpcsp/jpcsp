@@ -89,7 +89,7 @@ public class sceAtrac3plus extends HLEModule {
 
 	@Override
 	public int getMemoryUsage() {
-		return 0x8000;
+		return 0x4000;
 	}
 
 	public    static final int AT3_MAGIC      = 0x0270; // "AT3"
