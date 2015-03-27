@@ -187,6 +187,8 @@ public class sceMp3 extends HLEModule {
         }
 
         public int notifyAddStream(int bytesToAdd) {
+        	bytesToAdd = Math.min(bytesToAdd, getWritableBytes());
+
             if (log.isTraceEnabled()) {
                 log.trace(String.format("notifyAddStream inputBuffer %s: %s", inputBuffer, Utilities.getMemoryDump(inputBuffer.getWriteAddr(), bytesToAdd)));
             }
@@ -283,10 +285,8 @@ public class sceMp3 extends HLEModule {
         public int getWritableBytes() {
         	int writeSize = inputBuffer.getNoFileWriteSize();
 
-        	if (writeSize >= 2 * halfBufferSize) {
-        		return 2 * halfBufferSize;
-        	}
-
+        	// Never return more than halfBufferSize (tested on PSP using JpcspTrace),
+        	// even when 2*halfBufferSize would be free.
         	if (writeSize >= halfBufferSize) {
         		return halfBufferSize;
         	}
