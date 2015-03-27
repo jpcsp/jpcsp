@@ -91,7 +91,12 @@ public class sceMpeg extends HLEModule {
         return "sceMpeg";
     }
 
-    @Override
+	@Override
+	public int getMemoryUsage() {
+		return 0x8500;
+	}
+
+	@Override
     public void start() {
         mpegHandle = 0;
         mpegRingbuffer = null;

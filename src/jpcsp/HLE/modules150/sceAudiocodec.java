@@ -48,6 +48,11 @@ public class sceAudiocodec extends HLEModule {
 	}
 
 	@Override
+	public int getMemoryUsage() {
+		return 0x4000;
+	}
+
+	@Override
 	public void start() {
 		id = null;
 		edramAllocated = false;
