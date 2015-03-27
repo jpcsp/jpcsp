@@ -59,6 +59,7 @@ public class SoundChannel {
     private int sampleLength;
     private int format;
     private int numberBlockingBuffers;
+    private int minimumNumberBuffers;
     private boolean busy;
 
     public static void init() {
@@ -102,6 +103,14 @@ public class SoundChannel {
 
     	// At least 1 blocking buffer
     	numberBlockingBuffers = Math.max(numberBlockingBuffers, 1);
+
+    	// For very small sample length, wait for a minimum number of buffers
+    	// before starting playing the audio otherwise, small cracks can be produced.
+    	if (getSampleLength() <= 0x40) {
+    		minimumNumberBuffers = 10;
+    	} else {
+    		minimumNumberBuffers = 0;
+    	}
     }
 
     public int getIndex() {
@@ -178,7 +187,9 @@ public class SoundChannel {
 	private void alSourcePlay() {
 		int state = AL10.alGetSourcei(alSource, AL10.AL_SOURCE_STATE);
 		if (state != AL10.AL_PLAYING) {
-			AL10.alSourcePlay(alSource);
+			if (minimumNumberBuffers <= 0 || getWaitingBuffers() >= minimumNumberBuffers) {
+				AL10.alSourcePlay(alSource);
+			}
 		}
     }
 
