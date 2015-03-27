@@ -39,17 +39,12 @@ public class SampleSourceMono implements ISampleSource {
 	}
 
 	@Override
-	public void setSampleIndex(int index) {
-		sampleSource.setSampleIndex(index);
+	public void resetToStart() {
+		sampleSource.resetToStart();
 	}
 
 	@Override
-	public int getSampleIndex() {
-		return sampleSource.getSampleIndex();
-	}
-
-	@Override
-	public int getNumberSamples() {
-		return sampleSource.getNumberSamples();
+	public boolean isEnded() {
+		return sampleSource.isEnded();
 	}
 }

@@ -248,7 +248,7 @@ public class sceSasCore extends HLEModule {
         if ((flag & 0x8) != 0) envelope.ReleaseRate = release;
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("__sceSasSetADSR voice=%d: %s", voice, envelope.toString()));
+            log.debug(String.format("__sceSasSetADSR voice=0x%X: %s", voice, envelope.toString()));
         }
 
         return 0;
@@ -588,7 +588,7 @@ public class sceSasCore extends HLEModule {
         if ((flag & 0x8) != 0) envelope.ReleaseCurveType = releaseType;
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("__sceSasSetADSRmode voice=%d: %s", voice, envelope.toString()));
+            log.debug(String.format("__sceSasSetADSRmode voice=0x%X: %s", voice, envelope.toString()));
         }
 
         return 0;
@@ -831,7 +831,7 @@ public class sceSasCore extends HLEModule {
         envelope.SustainCurveType = getSimpleSustainCurveType(env2Bitfield);
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("__sceSasSetSimpleADSR voice=%d: %s", voice, envelope.toString()));
+            log.debug(String.format("__sceSasSetSimpleADSR voice=0x%X: %s", voice, envelope.toString()));
         }
 
         return 0;

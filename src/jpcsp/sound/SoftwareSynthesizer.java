@@ -55,10 +55,8 @@ public class SoftwareSynthesizer {
 				sampleSource = new SampleSourceEmpty();
 			}
 
-			if (voice.getPitch() != sceSasCore.PSP_SAS_PITCH_BASE) {
-				// Modify the sample according to the pitch (only if not the default pitch)
-				sampleSource = new SampleSourceWithPitch(sampleSource, voice.getPitch());
-			}
+			// Modify the sample according to the pitch (even if we use the default pitch as it can change on the fly)
+			sampleSource = new SampleSourceWithPitch(sampleSource, voice);
 
 			sampleSource = new SampleSourceWithADSR(sampleSource, voice, voice.getEnvelope());
 

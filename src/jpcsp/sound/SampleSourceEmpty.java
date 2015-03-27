@@ -27,16 +27,11 @@ public class SampleSourceEmpty implements ISampleSource {
 	}
 
 	@Override
-	public void setSampleIndex(int index) {
+	public void resetToStart() {
 	}
 
 	@Override
-	public int getSampleIndex() {
-		return 0;
-	}
-
-	@Override
-	public int getNumberSamples() {
-		return 0;
+	public boolean isEnded() {
+		return true;
 	}
 }

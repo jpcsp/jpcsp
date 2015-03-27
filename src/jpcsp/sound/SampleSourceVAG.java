@@ -67,6 +67,10 @@ public class SampleSourceVAG implements ISampleSource {
 			numberSamples = numberVGABlocks * 28;
 			currentSampleIndex = -1;
 			setSampleIndex(0);
+
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("VAG numberVGABlocks=%d, numberSamples=%d", numberVGABlocks, numberSamples));
+			}
 		}
 	}
 
@@ -88,6 +92,9 @@ public class SampleSourceVAG implements ISampleSource {
 
 	private boolean unpackNextVAGBlock() {
 		if (currentVAGBlock >= numberVGABlocks) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("VAG reached end of blocks currentVAGBlock=%d, numberVAGBlocks=%d", currentVAGBlock, numberVGABlocks));
+			}
 			return false;
 		}
 
@@ -105,6 +112,9 @@ public class SampleSourceVAG implements ISampleSource {
             // the final block of the loop.
         	// Do not loop if the voice has been keyed Off.
         	if (loopMode && voice.isOn()) {
+        		if (log.isTraceEnabled()) {
+        			log.trace(String.format("SampleSourceVAG loop at next VAG Block[%d], voice=0x%X", currentVAGBlock, voice.getIndex()));
+        		}
         		loopAtNextVAGBlock = true;
         	}
         } else if (flag == 0x06) {
@@ -113,6 +123,9 @@ public class SampleSourceVAG implements ISampleSource {
             // TODO: Implement loop processing by decoding
             // the same samples within the loop flags
             // when loop mode is on.
+    		if (log.isTraceEnabled()) {
+    			log.trace(String.format("SampleSourceVAG loop start VAG Block[%d], voice=0x%X", currentVAGBlock, voice.getIndex()));
+    		}
         	loopStartVAGBlock = currentVAGBlock;
         } else if (flag == 0x07) {
         	numberVGABlocks = currentVAGBlock;
@@ -157,7 +170,7 @@ public class SampleSourceVAG implements ISampleSource {
 
 		short sample = samples[sampleIndex];
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("SampleSourceVAG.getNextSample[%d/%d]=0x%04X, voice=%d", sampleIndex, currentVAGBlock, sample & 0xFFFF, voice.getIndex()));
+			log.trace(String.format("SampleSourceVAG.getNextSample[%d/%d]=0x%04X, voice=0x%X", sampleIndex, currentVAGBlock, sample & 0xFFFF, voice.getIndex()));
 		}
 
 		sampleIndex++;
@@ -171,18 +184,7 @@ public class SampleSourceVAG implements ISampleSource {
 		return sample & 0x0000FFFF;
 	}
 
-	@Override
-	public int getNumberSamples() {
-		return numberSamples;
-	}
-
-	@Override
-	public void setSampleIndex(int index) {
-		if (index == currentSampleIndex) {
-			// Reading in sequence, nothing to do
-			return;
-		}
-
+	private void setSampleIndex(int index) {
 		currentSampleIndex = index;
 		currentVAGBlock = index / 28;
 
@@ -197,13 +199,19 @@ public class SampleSourceVAG implements ISampleSource {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("SampleSourceVAG.setSampleIndex %d = %d/%d, voice=%d", index, sampleIndex, currentVAGBlock, voice.getIndex()));
+			log.trace(String.format("SampleSourceVAG.setSampleIndex %d = %d/%d, voice=0x%X", index, sampleIndex, currentVAGBlock, voice.getIndex()));
 		}
 	}
 
 	@Override
-	public int getSampleIndex() {
-		return currentSampleIndex;
+	public void resetToStart() {
+		currentSampleIndex = -1;
+		setSampleIndex(0);
+	}
+
+	@Override
+	public boolean isEnded() {
+		return currentVAGBlock >= numberVGABlocks;
 	}
 
 	@Override

@@ -21,6 +21,8 @@ import static jpcsp.sound.SoundChannel.MAX_VOLUME;
 
 import java.util.Arrays;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.Modules;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.IMemoryReader;
@@ -29,6 +31,7 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 
 public class SoundMixer {
+	private static Logger log = SoftwareSynthesizer.log;
     private SoundVoice[] voices;
     private SoftwareSynthesizer[] synthesizers;
 
@@ -53,7 +56,9 @@ public class SoundMixer {
 
     private void mixStereo(int[] stereoSamples, ISampleSource sampleSource, int startIndex, int length, int leftVol, int rightVol) {
     	int endIndex = startIndex + length;
-    	sampleSource.setSampleIndex(startIndex);
+    	if (startIndex == 0) {
+    		sampleSource.resetToStart();
+    	}
     	for (int i = startIndex, j = 0; i < endIndex; i++, j += 2) {
     		int sample = sampleSource.getNextSample();
     		stereoSamples[j] += SoundChannel.adjustSample(getSampleLeft(sample), leftVol);
@@ -63,7 +68,9 @@ public class SoundMixer {
 
     private void mixMono(int[] monoSamples, ISampleSource sampleSource, int startIndex, int length, int monoVol) {
     	int endIndex = startIndex + length;
-    	sampleSource.setSampleIndex(startIndex);
+    	if (startIndex == 0) {
+    		sampleSource.resetToStart();
+    	}
     	for (int i = startIndex, j = 0; i < endIndex; i++, j++) {
     		int sample = sampleSource.getNextSample();
     		monoSamples[j] += SoundChannel.adjustSample(getSampleLeft(sample), monoVol);
@@ -127,20 +134,21 @@ public class SoundMixer {
             if (voice.isPlaying() && !voice.isPaused()) {
             	ISampleSource sampleSource = synthesizers[i].getSampleSource();
             	int playSample = voice.getPlaySample();
-            	int restPlay = sampleSource.getNumberSamples() - playSample;
-            	if (restPlay <= 0) {
+            	if (sampleSource.isEnded()) {
             		// End of voice sample reached
+            		if (log.isTraceEnabled()) {
+            			log.trace(String.format("Reaching end of sample source for voice %s", voice));
+            		}
             		voice.setPlaying(false);
             	} else {
-            		int numSamples = Math.min(samples, restPlay);
             		if (isStereo) {
-            			mixStereo(mixedSamples, sampleSource, playSample, numSamples, voice.getLeftVolume(), voice.getRightVolume());
+            			mixStereo(mixedSamples, sampleSource, playSample, samples, voice.getLeftVolume(), voice.getRightVolume());
             		} else {
-            			mixMono(mixedSamples, sampleSource, playSample, numSamples, voice.getLeftVolume());
+            			mixMono(mixedSamples, sampleSource, playSample, samples, voice.getLeftVolume());
             		}
             		writeSamples = true;
 
-            		voice.setPlaySample(sampleSource.getSampleIndex());
+            		voice.setPlaySample(1);
             	}
             }
         }

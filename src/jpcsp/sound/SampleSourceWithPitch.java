@@ -24,68 +24,43 @@ import jpcsp.HLE.modules.sceSasCore;
  */
 public class SampleSourceWithPitch implements ISampleSource {
 	private ISampleSource sampleSource;
-	private int pitch;
-	private int sampleSourceIndex = -1;
-	private int sampleIndex;
+	private SoundVoice voice;
+	private int pitchRest;
 	private int currentSample;
 
-	public SampleSourceWithPitch(ISampleSource sampleSource, int pitch) {
+	public SampleSourceWithPitch(ISampleSource sampleSource, SoundVoice voice) {
 		this.sampleSource = sampleSource;
-		this.pitch = pitch;
+		this.voice = voice;
 	}
 
-	private int getSampleSourceIndexFromSampleIndex(int index) {
-		return (int) (index * (long) pitch / sceSasCore.PSP_SAS_PITCH_BASE);
+	private int getPitch() {
+		return voice.getPitch();
 	}
 
 	@Override
 	public int getNextSample() {
-		int nextSampleSourceIndex = getSampleSourceIndexFromSampleIndex(sampleIndex);
-		while (nextSampleSourceIndex > sampleSourceIndex) {
+		while (pitchRest <= 0) {
 			currentSample = sampleSource.getNextSample();
-			sampleSourceIndex++;
+			pitchRest += sceSasCore.PSP_SAS_PITCH_BASE;
 		}
-		sampleIndex++;
+		pitchRest -= getPitch();
 
 		return currentSample;
 	}
 
-	private int getSampleIndexFromSampleSourceIndex(int index) {
-		return (int) (index * (long) sceSasCore.PSP_SAS_PITCH_BASE / pitch);
+	@Override
+	public void resetToStart() {
+		sampleSource.resetToStart();
+		pitchRest = 0;
 	}
 
 	@Override
-	public int getNumberSamples() {
-		if (pitch <= 0) {
-			return 0;
-		}
-
-		return getSampleIndexFromSampleSourceIndex(sampleSource.getNumberSamples());
-	}
-
-	@Override
-	public void setSampleIndex(int index) {
-		if (index != sampleIndex) {
-			sampleIndex = index;
-			sampleSourceIndex = getSampleSourceIndexFromSampleIndex(sampleIndex);
-			sampleSource.setSampleIndex(sampleSourceIndex);
-			currentSample = sampleSource.getNextSample();
-		}
-	}
-
-	@Override
-	public int getSampleIndex() {
-		int realSampleSourceIndex = sampleSource.getSampleIndex();
-		if (realSampleSourceIndex == sampleSourceIndex + 1) {
-			// The sampleSource is not looping, return our sampleIndex
-			return sampleIndex;
-		}
-		// The sampleSource is looping, compute the new sampleIndex
-		return getSampleIndexFromSampleSourceIndex(realSampleSourceIndex);
+	public boolean isEnded() {
+		return sampleSource.isEnded();
 	}
 
 	@Override
 	public String toString() {
-		return String.format("SampleSourceWithPitch[index=%d, pitch=%d, %s]", sampleIndex, pitch, sampleSource.toString());
+		return String.format("SampleSourceWithPitch[pitchRest=0x%X, pitch=0x%X, %s]", pitchRest, getPitch(), sampleSource.toString());
 	}
 }

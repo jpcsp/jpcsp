@@ -29,9 +29,8 @@ public class SampleSourcePCM implements ISampleSource {
 	private int size;
 	private IMemoryReader memoryReader;
 	private int sampleIndex;
-	private int currentSampleIndex;
 	private int samples;
-	private int numberSamples;
+	private boolean looping;
 
 	public SampleSourcePCM(SoundVoice voice, int addr, int samples, int loopMode) {
 		this.voice = voice;
@@ -40,13 +39,7 @@ public class SampleSourcePCM implements ISampleSource {
 		size = samples << 1;
 		sampleIndex = samples;
 
-		if (loopMode < 0) {
-			// Playing only once
-			numberSamples = samples;
-		} else {
-			// Looping until the voice is off.
-			numberSamples = 0x10000000;
-		}
+		looping = loopMode >= 0;
 	}
 
 	@Override
@@ -54,29 +47,28 @@ public class SampleSourcePCM implements ISampleSource {
 		if (sampleIndex >= samples) {
 			if (!voice.isOn()) {
 				// Voice is off, stop playing
-				numberSamples = currentSampleIndex;
+				looping = false;
 				return 0;
 			}
-			memoryReader = MemoryReader.getMemoryReader(addr, size, 2);
-			sampleIndex = 0;
+			resetToStart();
 		}
-		currentSampleIndex++;
 		sampleIndex++;
 
 		return memoryReader.readNext();
 	}
 
 	@Override
-	public void setSampleIndex(int index) {
+	public void resetToStart() {
+		memoryReader = MemoryReader.getMemoryReader(addr, size, 2);
+		sampleIndex = 0;
 	}
 
 	@Override
-	public int getSampleIndex() {
-		return currentSampleIndex;
-	}
-
-	@Override
-	public int getNumberSamples() {
-		return numberSamples;
+	public boolean isEnded() {
+		if (looping) {
+			// Never ending
+			return false;
+		}
+		return sampleIndex >= samples;
 	}
 }

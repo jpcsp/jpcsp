@@ -67,7 +67,7 @@ public class SampleSourceAtrac3 implements ISampleSource {
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("SampleSourceAtrac3 decode: bufferedSamples=%d, currentSample=%d, endSample=%d", bufferedSamples, getSampleIndex(), id.getAtracEndSample()));
+			log.debug(String.format("SampleSourceAtrac3 decode: bufferedSamples=%d, currentSample=%d, endSample=%d", bufferedSamples, currentSampleIndex, id.getAtracEndSample()));
 		}
 
 		sampleIndex = 0;
@@ -90,22 +90,13 @@ public class SampleSourceAtrac3 implements ISampleSource {
 	}
 
 	@Override
-	public void setSampleIndex(int index) {
-		if (index != currentSampleIndex) {
-			if (index != 0 || currentSampleIndex >= 0) {
-				currentSampleIndex = index;
-				id.setPlayPosition(index);
-			}
-		}
+	public void resetToStart() {
+		currentSampleIndex = 0;
+		id.setPlayPosition(0);
 	}
 
 	@Override
-	public int getSampleIndex() {
-		return currentSampleIndex;
-	}
-
-	@Override
-	public int getNumberSamples() {
-		return id.getAtracEndSample();
+	public boolean isEnded() {
+		return currentSampleIndex >= id.getAtracEndSample();
 	}
 }

@@ -26,6 +26,9 @@ import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ENVELOPE_FREQ_MAX;
 import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ENVELOPE_HEIGHT_MAX;
 import static jpcsp.sound.SoundMixer.getSampleLeft;
 import static jpcsp.sound.SoundMixer.getSampleRight;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.modules.sceSasCore;
 import jpcsp.sound.SoundVoice.VoiceADSREnvelope;
 
@@ -34,93 +37,42 @@ import jpcsp.sound.SoundVoice.VoiceADSREnvelope;
  *
  */
 public class SampleSourceWithADSR implements ISampleSource {
+	private static Logger log = SoftwareSynthesizer.log;
 	private ISampleSource sampleSource;
 	private SoundVoice voice;
 	private EnvelopeState envelopeState;
 	private final boolean tracing;
+	private static final int ATTACK_CURVE_STATE  = 0;
+	private static final int DECAY_CURVE_STATE   = 1;
+	private static final int SUSTAIN_CURVE_STATE = 2;
+	private static final int RELEASE_CURVE_STATE = 3;
 
 	/**
-	 * Default state for an unknown curve type
-	 *
+	 * Keep track of an envelope state:
+	 * - the 4 defined curve types (attack, decay, sustain, release)
+	 * - the current active curve
+	 * - the current envelope height
 	 */
-	private static class CurveState {
-		protected int rate;
+	private static class EnvelopeState {
+		private VoiceADSREnvelope envelope;
+		// It really makes life easier to use a "long" value and not have to
+		// handle with overflows while doing "int" arithmetic.
+		private long envelopeHeight;
+		private int curveState;
+		private int indexExp;
+		private final boolean tracing;
 
-		public CurveState(int rate) {
-			this.rate = rate;
+		public EnvelopeState(VoiceADSREnvelope envelope) {
+			this.envelope = envelope;
+			tracing = sceSasCore.log.isTraceEnabled();
 		}
 
-		public long getNextCurveValue(long currentCurveValue) {
-			return currentCurveValue;
-		}
-	}
-
-	/**
-	 * State for a curve type PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE.
-	 *
-	 * The curve value will increase linearly according to its rate.
-	 */
-	private static class LinearIncrease extends CurveState {
-		protected int step;
-
-		public LinearIncrease(int rate) {
-			super(rate);
-			step = rate;
+		public void resetToStart() {
+			indexExp = 0;
+			envelopeHeight = 0;
+			curveState = ATTACK_CURVE_STATE;
 		}
 
-		@Override
-		public long getNextCurveValue(long currentCurveValue) {
-			return currentCurveValue + step;
-		}
-	}
-
-	/**
-	 * State for a curve type PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE.
-	 *
-	 * The curve value will decrease linearly according to its rate.
-	 */
-	private static class LinearDecrease extends LinearIncrease {
-		public LinearDecrease(int rate) {
-			super(rate);
-			step = -step;
-		}
-	}
-
-	/**
-	 * State for a curve type PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT.
-	 *
-	 * The curve value will increase linearly according to its rate up to 75%
-	 * of the maximum envelope value. Over 75%, the curve value will
-	 * increase linearly according to 1/4th of its rate.
-	 */
-	private static class LinearBent extends LinearIncrease {
-		public LinearBent(int rate) {
-			super(rate);
-		}
-
-		@Override
-		public long getNextCurveValue(long currentCurveValue) {
-			// Between 0% and 75%: linear increase with given rate.
-			// Between 75% and 100%: linear increase with 1/4th of the rate.
-			if (currentCurveValue <= (PSP_SAS_ENVELOPE_HEIGHT_MAX / 4 * 3)) {
-				step = rate;
-			} else {
-				step = rate >> 2;
-			}
-			return super.getNextCurveValue(currentCurveValue);
-		}
-	}
-
-	/**
-	 * State for a curve type PSP_SAS_ADSR_CURVE_MODE_EXPONENT_INCREASE.
-	 *
-	 * The curve value will increase exponentially according to its rate.
-	 * The exact curve algorithm is still unknown. An empirical approximation
-	 * is used.
-	 */
-	private static class ExponentIncrease extends CurveState {
-		private int duration;
-		private int index;
 		private static final short[] expCurve = new short[] {
 			0x0000, 0x0380, 0x06E4, 0x0A2D, 0x0D5B, 0x1072, 0x136F, 0x1653,
 			0x1921, 0x1BD9, 0x1E7B, 0x2106, 0x237F, 0x25E4, 0x2835, 0x2A73,
@@ -156,14 +108,25 @@ public class SampleSourceWithADSR implements ISampleSource {
 		};
 		private static final short expCurveReference = 0x7000;
 
-		public ExponentIncrease(int rate) {
-			super(rate);
-			duration = getDuration();
+		private static short extrapolateSample(short[] curve, int index, int duration) {
+			float curveIndex = (index * curve.length) / (float) duration;
+			int curveIndex1 = (int) curveIndex;
+			int curveIndex2 = curveIndex1 + 1;
+			float curveIndexFraction = curveIndex - curveIndex1;
+
+			if (curveIndex1 < 0) {
+				return curve[0];
+			} else if (curveIndex2 >= curve.length || curveIndex2 < 0) {
+				return curve[curve.length - 1];
+			}
+
+			float sample = curve[curveIndex1] * (1.f - curveIndexFraction) + curve[curveIndex2] * curveIndexFraction;
+
+			return (short) Math.round(sample);
 		}
 
-		private int getDuration() {
+		private long stepCurveExp(int rate) {
 			int duration;
-
 			if (rate == 0) {
 				duration = PSP_SAS_ENVELOPE_FREQ_MAX;
 			} else {
@@ -181,198 +144,117 @@ public class SampleSourceWithADSR implements ISampleSource {
 				duration = PSP_SAS_ENVELOPE_FREQ_MAX / rate * 0x10;
 			}
 
-			return duration;
-		}
+			short expFactor = extrapolateSample(expCurve, indexExp, duration);
 
-		private short extrapolateSample(short[] curve, int index, int duration) {
-			float curveIndex = (index * curve.length) / (float) duration;
-			int curveIndex1 = (int) curveIndex;
-			int curveIndex2 = curveIndex1 + 1;
-			float curveIndexFraction = curveIndex - curveIndex1;
-
-			if (curveIndex1 < 0) {
-				return curve[0];
-			} else if (curveIndex2 >= curve.length || curveIndex2 < 0) {
-				return curve[curve.length - 1];
-			}
-
-			float sample = curve[curveIndex1] * (1.f - curveIndexFraction) + curve[curveIndex2] * curveIndexFraction;
-
-			return (short) Math.round(sample);
-		}
-
-		@Override
-		public long getNextCurveValue(long currentCurveValue) {
-			short expFactor = extrapolateSample(expCurve, index, duration);
-
-			index++;
+			indexExp++;
 
 			return ((long) expFactor) * PSP_SAS_ENVELOPE_HEIGHT_MAX / expCurveReference;
 		}
-	}
 
-	/**
-	 * State for a curve type PSP_SAS_ADSR_CURVE_MODE_EXPONENT_DECREASE.
-	 *
-	 * The curve value will decrease exponentially according to its rate.
-	 * The exact curve algorithm is still unknown. The same empirical approximation
-	 * as for the curve type PSP_SAS_ADSR_CURVE_MODE_EXPONENT_INCREASE is used.
-	 */
-	private static class ExponentDecrease extends ExponentIncrease {
-		public ExponentDecrease(int rate) {
-			super(rate);
-		}
-
-		@Override
-		public long getNextCurveValue(long currentCurveValue) {
-			return PSP_SAS_ENVELOPE_HEIGHT_MAX - super.getNextCurveValue(currentCurveValue);
-		}
-	}
-
-	/**
-	 * State for a curve type PSP_SAS_ADSR_CURVE_MODE_DIRECT.
-	 *
-	 * The curve value is directly set to its rate.
-	 */
-	private static class Direct extends CurveState {
-		public Direct(int rate) {
-			super(rate);
-		}
-
-		@Override
-		public long getNextCurveValue(long currentCurveValue) {
-			return rate;
-		}
-	}
-
-	/**
-	 * Keep track of an envelope state:
-	 * - the 4 defined curve types (attack, decay, sustain, release)
-	 * - the current active curve
-	 * - the current envelope height
-	 */
-	private static class EnvelopeState {
-		private VoiceADSREnvelope envelope;
-		// It really makes life easier to use a "long" value and not have to
-		// handle with overflows while doing "int" arithmetic.
-		private long nextEnvelopeValue;
-		private final CurveState[] curveStates = new CurveState[4];
-		private int curve;
-		private final boolean tracing;
-		private static final int ATTACK_CURVE_STATE = 0;
-		private static final int DECAY_CURVE_STATE = 1;
-		private static final int SUSTAIN_CURVE_STATE = 2;
-		private static final int RELEASE_CURVE_STATE = 3;
-
-		public EnvelopeState(VoiceADSREnvelope envelope) {
-			this.envelope = envelope;
-			tracing = sceSasCore.log.isTraceEnabled();
-			curveStates[ATTACK_CURVE_STATE] = createCurveState(envelope.AttackRate, envelope.AttackCurveType);
-			curveStates[DECAY_CURVE_STATE] = createCurveState(envelope.DecayRate, envelope.DecayCurveType);
-			curveStates[SUSTAIN_CURVE_STATE] = createCurveState(envelope.SustainRate, envelope.SustainCurveType);
-			curveStates[RELEASE_CURVE_STATE] = createCurveState(envelope.ReleaseRate, envelope.ReleaseCurveType);
+		private void setCurve(int curve) {
+			if (this.curveState != curve) {
+				this.curveState = curve;
+				indexExp = 0;
+			}
 		}
 
 		/**
-		 * Create the CurveState object corresponding to the given curve type.
-		 * @param rate        the rate to be used for the CurveState
-		 * @param curveType   the curve type, [0..5]
-		 * @return            the CurveState corresponding to the curve type,
-		 *                    properly initialized with the rate.
-		 */
-		private CurveState createCurveState(int rate, int curveType) {
-			if (rate < 0) {
-				// For example, 0x80000000 is replaced by 0x7FFFFFFF
-				rate = PSP_SAS_ENVELOPE_FREQ_MAX;
-			}
-
-			switch (curveType) {
-				case PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE:
-					return new LinearIncrease(rate);
-				case PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE:
-					return new LinearDecrease(rate);
-				case PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT:
-					return new LinearBent(rate);
-				case PSP_SAS_ADSR_CURVE_MODE_EXPONENT_DECREASE:
-					return new ExponentDecrease(rate);
-				case PSP_SAS_ADSR_CURVE_MODE_EXPONENT_INCREASE:
-					return new ExponentIncrease(rate);
-				case PSP_SAS_ADSR_CURVE_MODE_DIRECT:
-					return new Direct(rate);
-			}
-
-			sceSasCore.log.warn(String.format("Unimplemented curve type %d", curveType));
-			return new CurveState(rate);
-		}
-
-		/**
-		 * Check if the envelope has to switch to next curve.
-		 * The following rules are used for switching:
-		 * - Attack to Decay: when the envelope height gets over the upper limit
-		 *                    or under the lower limit
-		 * - Decay to Sustain: when the envelope height gets over the upper limit
-		 *                     or under the sustain level
-		 * - Sustain to Release: this switch only happen setting the key off.
-		 * 
-		 * @return true    if the envelope has to switch to the next curve
-		 *         false   if the envelope has to stay in the current curve
-		 */
-		private boolean switchToNextCurve() {
-			if (curve >= SUSTAIN_CURVE_STATE) {
-				return false;
-			}
-
-			if (nextEnvelopeValue > PSP_SAS_ENVELOPE_HEIGHT_MAX) {
-				nextEnvelopeValue = PSP_SAS_ENVELOPE_HEIGHT_MAX;
-				return true;
-			}
-			if (nextEnvelopeValue < 0) {
-				nextEnvelopeValue = 0;
-				return true;
-			}
-
-			if (curve == DECAY_CURVE_STATE && nextEnvelopeValue < envelope.SustainLevel) {
-				return true;
-			}
-
-			return false;
-		}
-
-		/**
-		 * Return the given envelope value as a 32-bit integer value by
+		 * Return the given envelope height as a 32-bit integer value by
 		 * cutting the value to the allowed range [0..0x40000000].
 		 *
-		 * @param envelopeValue     33-bit integer value
+		 * @param envelopeHeight    33-bit integer value
 		 * @return                  32-bit integer value [0..0x40000000]
 		 */
-		private int getIntEnvelopeValue(long envelopeValue) {
-			if (envelopeValue <= 0) {
+		private int getIntEnvelopeHeight(long envelopeHeight) {
+			if (envelopeHeight <= 0) {
 				return 0;
 			}
-			if (envelopeValue >= PSP_SAS_ENVELOPE_HEIGHT_MAX) {
+			if (envelopeHeight >= PSP_SAS_ENVELOPE_HEIGHT_MAX) {
 				return PSP_SAS_ENVELOPE_HEIGHT_MAX;
 			}
-			return (int) envelopeValue;
+			return (int) envelopeHeight;
+		}
+
+		private void stepCurve(int type, int rate) {
+			switch (type) {
+				case PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE:
+					// The curve value will increase linearly according to its rate.
+					envelopeHeight += rate;
+					break;
+				case PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE:
+					// The curve value will decrease linearly according to its rate.
+					envelopeHeight -= rate;
+					break;
+				case PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT:
+					// The curve value will increase linearly according to its rate up to 75%
+					// of the maximum envelope value. Over 75%, the curve value will
+					// increase linearly according to 1/4th of its rate.
+					// Between 0% and 75%: linear increase with given rate.
+					// Between 75% and 100%: linear increase with 1/4th of the rate.
+					if (envelopeHeight <= (PSP_SAS_ENVELOPE_HEIGHT_MAX / 4 * 3)) {
+						envelopeHeight += rate;
+					} else {
+						envelopeHeight += rate >> 2;
+					}
+					break;
+				case PSP_SAS_ADSR_CURVE_MODE_EXPONENT_DECREASE:
+					// The curve value will decrease exponentially according to its rate.
+					// The exact curve algorithm is still unknown. The same empirical approximation
+					// as for the curve type PSP_SAS_ADSR_CURVE_MODE_EXPONENT_INCREASE is used.
+					envelopeHeight = PSP_SAS_ENVELOPE_HEIGHT_MAX - stepCurveExp(rate);
+					break;
+				case PSP_SAS_ADSR_CURVE_MODE_EXPONENT_INCREASE:
+					// The curve value will increase exponentially according to its rate.
+					// The exact curve algorithm is still unknown. An empirical approximation
+					// is used.
+					envelopeHeight = stepCurveExp(rate);
+					break;
+				case PSP_SAS_ADSR_CURVE_MODE_DIRECT:
+					// The curve value is directly set to its rate.
+					envelopeHeight = rate;
+					break;
+			}
 		}
 
 		/**
-		 * Return the next envelope value. Switch to the next curve if required.
+		 * Return the next envelope height. Switch to the next curve if required.
 		 * 
-		 * @return     the next envelope value in the range [0..0x40000000]
+		 * @return     the next envelope height in the range [0..0x40000000]
 		 */
-		public int getNextEnvelopeValue() {
-			if (switchToNextCurve()) {
-				curve++;
-			}
+		public int getNextEnvelopeHeight() {
+			long currentEnvelopeHeight = envelopeHeight;
 
-			long currentEnvelopeValue = nextEnvelopeValue;
-			nextEnvelopeValue = curveStates[curve].getNextCurveValue(currentEnvelopeValue);
+			switch (curveState) {
+				case ATTACK_CURVE_STATE:
+					stepCurve(envelope.AttackCurveType, envelope.AttackRate);
+					// Switch Attack to Decay: when the envelope height gets over the upper limit
+					//                         or under the lower limit
+					if (envelopeHeight >= PSP_SAS_ENVELOPE_HEIGHT_MAX || envelopeHeight < 0) {
+						setCurve(DECAY_CURVE_STATE);
+					}
+					break;
+				case DECAY_CURVE_STATE:
+					stepCurve(envelope.DecayCurveType, envelope.DecayRate);
+					// Switch Decay to Sustain: when the envelope height gets over the upper limit
+					//                          or under the sustain level
+					if (envelopeHeight >= PSP_SAS_ENVELOPE_HEIGHT_MAX || envelopeHeight < envelope.SustainLevel) {
+						setCurve(SUSTAIN_CURVE_STATE);
+					}
+					break;
+				case SUSTAIN_CURVE_STATE:
+					stepCurve(envelope.SustainCurveType, envelope.SustainRate);
+					// Switch Sustain to Release: this switch only happens setting the key off.
+					break;
+				case RELEASE_CURVE_STATE:
+					stepCurve(envelope.ReleaseCurveType, envelope.ReleaseRate);
+					break;
+			}
 
 			if (tracing) {
-				sceSasCore.log.trace(String.format("getNextEnvelopeValue curve=%d, current=0x%08X, next=0x%08X", curve, currentEnvelopeValue, nextEnvelopeValue));
+				sceSasCore.log.trace(String.format("getNextEnvelopeHeight curve=%d, current=0x%08X, next=0x%08X", curveState, currentEnvelopeHeight, envelopeHeight));
 			}
 
-			return getIntEnvelopeValue(currentEnvelopeValue);
+			return getIntEnvelopeHeight(currentEnvelopeHeight);
 		}
 
 		/**
@@ -381,7 +263,7 @@ public class SampleSourceWithADSR implements ISampleSource {
 		 */
 		public void setKeyOff() {
 			// Switch to the release curve
-			curve = RELEASE_CURVE_STATE;
+			setCurve(RELEASE_CURVE_STATE);
 		}
 
 		/**
@@ -393,7 +275,7 @@ public class SampleSourceWithADSR implements ISampleSource {
 		 *            false   if the voice is not ended
 		 */
 		public boolean isEnded() {
-			return curve >= SUSTAIN_CURVE_STATE && nextEnvelopeValue <= 0;
+			return curveState >= SUSTAIN_CURVE_STATE && envelopeHeight <= 0;
 		}
 	}
 
@@ -413,6 +295,10 @@ public class SampleSourceWithADSR implements ISampleSource {
 	 */
 	@Override
 	public int getNextSample() {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("SampleSourceWithADSR.getNextSample height=0x%X, state=%d", envelopeState.envelopeHeight, envelopeState.curveState));
+		}
+
 		if (!voice.isOn()) {
 			// The voice has been keyed Off, process the Release part of the wave
 			envelopeState.setKeyOff();
@@ -424,48 +310,44 @@ public class SampleSourceWithADSR implements ISampleSource {
 			return 0;
 		}
 
-		int envelopeValue = envelopeState.getNextEnvelopeValue();
+		int envelopeHeight = envelopeState.getNextEnvelopeHeight();
 		int sample = sampleSource.getNextSample();
-		// envelopeValue: [0..0x40000000]
+		// envelopeHeight: [0..0x40000000]
 		// sample: [-0x8000..0x7FFF]
 		// Modulate the sample by the envelope value, assuming the envelope value
 		// is ranging from 0.0f to 1.0f (0x40000000).
 		//
 		// First reduce the envelope value to a 16 bit value,
 		// with rounding: [0..0x8000].
-		int envelopeValue16 = ((envelopeValue >> 14) + 1) >> 1;
+		int envelopeHeight16 = ((envelopeHeight >> 14) + 1) >> 1;
 		// Multiply the sample by the envelope value with rounding
-		short modulatedSampleLeft = modulate(getSampleLeft(sample), envelopeValue16);
-		short modulatedSampleRight = modulate(getSampleRight(sample), envelopeValue16);
+		short modulatedSampleLeft = modulate(getSampleLeft(sample), envelopeHeight16);
+		short modulatedSampleRight = modulate(getSampleRight(sample), envelopeHeight16);
 		int modulatedSample = SoundMixer.getSampleStereo(modulatedSampleLeft, modulatedSampleRight);
 
 		if (tracing) {
-			sceSasCore.log.trace(String.format("getNextSample voice=%d, sample=0x%08X, envelopeValue=0x%08X, modulatedSample=0x%08X", voice.getIndex(), sample, envelopeValue, modulatedSample));
+			sceSasCore.log.trace(String.format("getNextSample voice=%d, sample=0x%08X, envelopeHeight=0x%08X, modulatedSample=0x%08X", voice.getIndex(), sample, envelopeHeight, modulatedSample));
 		}
 
 		// Store the current envelope height
 		// (can be retrieved by the application using __sceSasGetEnvelopeHeight)
-		voice.getEnvelope().height = envelopeValue;
+		voice.getEnvelope().height = envelopeHeight;
 
 		return modulatedSample;
 	}
 
-	private short modulate(short sample, int envelopeValue16) {
-		return (short) ((sample * envelopeValue16 + 0x4000) >> 15);
+	private short modulate(short sample, int envelopeHeight16) {
+		return (short) ((sample * envelopeHeight16 + 0x4000) >> 15);
 	}
 
 	@Override
-	public int getNumberSamples() {
-		return sampleSource.getNumberSamples();
+	public void resetToStart() {
+		sampleSource.resetToStart();
+		envelopeState.resetToStart();
 	}
 
 	@Override
-	public int getSampleIndex() {
-		return sampleSource.getSampleIndex();
-	}
-
-	@Override
-	public void setSampleIndex(int index) {
-		sampleSource.setSampleIndex(index);
+	public boolean isEnded() {
+		return sampleSource.isEnded();
 	}
 }

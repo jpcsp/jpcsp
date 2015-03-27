@@ -45,27 +45,13 @@ public class SampleSourceWithDelay implements ISampleSource {
 	}
 
 	@Override
-	public int getNumberSamples() {
-		return delay + sampleSource.getNumberSamples();
+	public void resetToStart() {
+		sampleSource.resetToStart();
+		sampleIndex = 0;
 	}
 
 	@Override
-	public int getSampleIndex() {
-		if (sampleIndex < delay) {
-			return sampleIndex;
-		}
-
-		return delay + sampleSource.getSampleIndex();
-	}
-
-	@Override
-	public void setSampleIndex(int index) {
-		if (index < delay) {
-			sampleIndex = index;
-			sampleSource.setSampleIndex(0);
-		} else {
-			sampleIndex = delay;
-			sampleSource.setSampleIndex(index - delay);
-		}
+	public boolean isEnded() {
+		return sampleSource.isEnded();
 	}
 }

@@ -95,7 +95,7 @@ public class SoundVoice {
         atracId = null;
 	}
 
-    private void onVoiceChanged() {
+    public void onVoiceChanged() {
     	changed = true;
     	if (isOn() && !isPlaying()) {
     		// A parameter was changed while the voice was ON but no longer playing.
@@ -190,10 +190,7 @@ public class SoundVoice {
 	}
 
 	public void setPitch(int pitch) {
-		if (this.pitch != pitch) {
-			this.pitch = pitch;
-			onVoiceChanged();
-		}
+		this.pitch = pitch;
 	}
 
 	public int getNoise() {
