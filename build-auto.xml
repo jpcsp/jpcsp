@@ -28,22 +28,14 @@
 		<pathelement location="lib/bcprov-jdk16-145.jar" />
 	</path>
 
-	<macrodef name="svnversion" description="Get last subversion commit version.">
+	<macrodef name="gitversion" description="Get last git commit version.">
 		<attribute name="dir" default="" />
 		<attribute name="outputproperty" />
 		<attribute name="unversionedDefault" default="" />
 		<attribute name="failonerror" default="true" />
 		<sequential>
-			<exec outputproperty="@{outputproperty}" executable="svnversion" failonerror="@{failonerror}" failifexecutionfails="@{failonerror}">
-				<arg line="-n -c @{dir}" />
-				<redirector>
-					<outputfilterchain>
-						<tokenfilter>
-							<replaceregex pattern="^[0-9]*:" replace="" flags="g" />
-							<replaceregex pattern="exported" replace="@{unversionedDefault}" flags="g" />
-						</tokenfilter>
-					</outputfilterchain>
-				</redirector>
+			<exec outputproperty="@{outputproperty}" executable="git" failonerror="@{failonerror}" failifexecutionfails="@{failonerror}">
+				<arg line="describe --always" />
 			</exec>
 		</sequential>
 	</macrodef>
@@ -53,7 +45,7 @@
 		<attribute name="platform.name" />
 		<attribute name="basedir" default="jpcsp-@{platform.name}" />
 		<sequential>
-			<svnversion outputproperty="jpcsp.revision" />
+			<gitversion outputproperty="jpcsp.revision" />
 			<exec executable="7z" dir="@{dir}">
 				<arg line="a -t7z -m0=lzma -mx=9 -mfb=64 -md=8m -ms=on" />
 				<arg line="jpcsp-${jpcsp.revision}-@{platform.name}.7z" />
@@ -101,8 +93,8 @@
 		<manifestclasspath property="jar.classpath" jarfile="bin/jpcsp.jar">
 			<classpath refid="Jpcsp.classpath" />
 		</manifestclasspath>
-		<exec executable="svnversion" output="bin/class/jpcsp/title.txt" failifexecutionfails="no">
-			<arg value="-n" />
+		<exec executable="git" output="bin/class/jpcsp/title.txt" failifexecutionfails="no">
+			<arg line="describe --always" />
 		</exec>
 		<jar destfile="bin/jpcsp.jar" basedir="bin/class">
 			<manifest>
@@ -177,7 +169,7 @@
 			<path location="${basedir}/bin/jpcsp.jar" />
 			<path refid="Jpcsp.classpath" />
 		</pathconvert>
-		<svnversion outputproperty="jpcsp.revision" />
+		<gitversion outputproperty="jpcsp.revision" />
 		<copy file="distsupport/macosx/Contents/Info.plist"
 			tofile="dist/jpcsp-macosx/Jpcsp.app/Contents/Info.plist" >
 			<filterchain>

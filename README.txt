@@ -961,7 +961,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses>.
 			   	[Links]
 ...............................................................................
 ...............................................................................
-JPCSP's Google Code repository:
+JPCSP's Github Code repository:
 - https://github.com/gid15/jpcsp
 
 JPCSP's Official Website:
