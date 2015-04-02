@@ -1,0 +1,16 @@
+#Build cache
+bin/
+#Distribution
+dist/
+#Settings
+Settings.properties
+#External software renderer dynamic link libraries
+lib/windows-x86/software-ge-renderer*.dll
+lib/windows-amd64/software-ge-renderer*.dll
+#Virtual memory stick
+ms0/PSP/GAME/*
+!ms0/PSP/GAME/JpcspConnector/
+!ms0/PSP/GAME/pong/
+!ms0/PSP/GAME/SavedataTool/
+#UMD images
+umdimages/
