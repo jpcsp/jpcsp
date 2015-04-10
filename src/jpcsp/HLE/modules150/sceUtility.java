@@ -65,6 +65,7 @@ import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 
 import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
@@ -116,7 +117,9 @@ import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.capture.CaptureImage;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Screen;
+import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.Settings;
 import jpcsp.util.MemoryInputStream;
@@ -610,7 +613,7 @@ public class sceUtility extends HLEModule {
         protected String getDialogTitle(String key, String defaultTitle) {
             String title;
             try {
-                java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
+                ResourceBundle bundle = ResourceBundle.getBundle("jpcsp/languages/jpcsp");
                 if (key == null) {
                     title = bundle.getString(name);
                 } else {
@@ -2277,10 +2280,10 @@ public class sceUtility extends HLEModule {
         protected int drawSpeed;
         private boolean buttonsSwapped;
         private boolean hasNoButtons;
-        final private String strEnter = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strEnter.text");
-        final private String strBack = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strBack.text");
-        final private String strYes = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strYes.text");
-        final private String strNo = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNo.text");
+        final private String strEnter = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strEnter.text");
+        final private String strBack = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strBack.text");
+        final private String strYes = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strYes.text");
+        final private String strNo = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNo.text");
 
         protected GuUtilityDialog(pspUtilityDialogCommon utilityDialogCommon) {
             buttonsSwapped = (utilityDialogCommon.buttonSwap == pspUtilityDialogCommon.BUTTON_ACCEPT_CIRCLE);
@@ -2858,8 +2861,8 @@ public class sceUtility extends HLEModule {
         protected final SavedataUtilityDialogState savedataDialogState;
         protected final SceUtilitySavedataParam savedataParams;
         protected boolean isYesSelected;
-        final private String strAskSaveData = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strAskSaveData.text");
-        final private String strAskOverwriteData = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strAskOverwriteData.text");
+        final private String strAskSaveData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strAskSaveData.text");
+        final private String strAskOverwriteData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strAskOverwriteData.text");
 
         protected GuSavedataDialogSave(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState) {
             super(savedataParams.base);
@@ -2921,8 +2924,8 @@ public class sceUtility extends HLEModule {
         protected final SceUtilitySavedataParam savedataParams;
         protected boolean isYesSelected;
         protected boolean hasYesNo;
-        final private String strNoData = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNoData.text");
-        final private String strAskLoadData = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strAskLoadData.text");
+        final private String strNoData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNoData.text");
+        final private String strAskLoadData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strAskLoadData.text");
 
         protected GuSavedataDialogLoad(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState) {
             super(savedataParams.base);
@@ -2980,7 +2983,7 @@ public class sceUtility extends HLEModule {
         protected final SavedataUtilityDialogState savedataDialogState;
         protected final SceUtilitySavedataParam savedataParams;
         protected boolean isYesSelected;
-        final private String strCompleted = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strCompleted.text");
+        final private String strCompleted = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strCompleted.text");
 
         protected GuSavedataDialogCompleted(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState) {
             super(savedataParams.base);
@@ -3025,14 +3028,22 @@ public class sceUtility extends HLEModule {
         private final String[] saveNames;
         private final int numberRows;
         private int selectedRow;
-        final private String strNewData = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNewData.text");
-        final private String strNoData = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNoData.text");
+        private String strNewData; 
+        final private String strNoData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNoData.text");
 
         public GuSavedataDialog(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState, final String[] saveNames) {
             super(savedataParams.base);
             this.savedataDialogState = savedataDialogState;
             this.savedataParams = savedataParams;
             this.saveNames = saveNames;
+
+            if (savedataParams.newData != null && savedataParams.newData.title != null) {
+            	// the PspUtilitySavedataListSaveNewData structure contains the title
+            	// to be used for new data.
+            	strNewData = savedataParams.newData.title;
+            } else {
+            	strNewData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNewData.text");
+            }
 
             createDialog(savedataDialogState);
 
@@ -3121,6 +3132,19 @@ public class sceUtility extends HLEModule {
                 } catch (IOException e) {
                     log.debug("getIcon0", e);
                 }
+            } else if (savedataParams.newData != null && savedataParams.newData.icon0 != null) {
+            	// the PspUtilitySavedataListSaveNewData structure contains the default
+            	// icon to be used for new data.
+            	int addr = savedataParams.newData.icon0.buf;
+            	int size = savedataParams.newData.icon0.size;
+            	if (addr != 0 && size > 0) {
+            		byte[] iconBuffer = new byte[size];
+            		IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, size, 1);
+            		for (int i = 0; i < size; i++) {
+            			iconBuffer[i] = (byte) memoryReader.readNext();
+            		}
+            		iconStream = new ByteArrayInputStream(iconBuffer);
+            	}
             }
 
             return readIcon(iconStream);
