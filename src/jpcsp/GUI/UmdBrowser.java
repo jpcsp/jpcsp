@@ -670,7 +670,7 @@ public class UmdBrowser extends javax.swing.JDialog {
     }
 
     private void filterItems(String filter) {
-    	filter = filter.toLowerCase();
+    	filter = filter.trim().toLowerCase();
 
     	filteredItems = new int[programs.length];
     	numberFilteredItems = 0;
