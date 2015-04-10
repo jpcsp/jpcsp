@@ -74,6 +74,7 @@ import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -1081,8 +1082,16 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void deleteAllThreads() {
-    	// Copy the list of threads into a new list to avoid ConcurrentListModificationException
-    	List<SceKernelThreadInfo> threadsToBeDeleted = new LinkedList<SceKernelThreadInfo>(threadMap.values());
+    	// Copy the list of threads into a new list to avoid ConcurrentModificationException
+    	List<SceKernelThreadInfo> threadsToBeDeleted = null;
+    	do {
+    		try {
+    			threadsToBeDeleted = new LinkedList<SceKernelThreadInfo>(threadMap.values());
+    		} catch (ConcurrentModificationException e) {
+    			// Exception occurred in LinkedList.addAll() method, retry
+    			threadsToBeDeleted = null;
+    		}
+    	} while (threadsToBeDeleted == null);
 
     	for (SceKernelThreadInfo thread : threadsToBeDeleted) {
     		hleDeleteThread(thread);
