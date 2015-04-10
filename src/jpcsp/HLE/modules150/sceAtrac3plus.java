@@ -306,7 +306,7 @@ public class sceAtrac3plus extends HLEModule {
         	inputBuffer.notifyRead(info.atracBytesPerFrame);
         	currentReadPosition += info.atracBytesPerFrame;
 
-        	nextCurrentSample += codec.getNumberOfSamples() - skippedSamples;
+        	nextCurrentSample += codec.getNumberOfSamples();
 
         	if (nextCurrentSample > info.atracEndSample) {
             	outEndAddr.setValue(info.loopNum == 0);
