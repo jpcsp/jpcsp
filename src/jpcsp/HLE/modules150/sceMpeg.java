@@ -1026,9 +1026,14 @@ public class sceMpeg extends HLEModule {
 		}
 
 		public void addPacketsAdded(int packetsAdded) {
-			if (packetsAdded > 0) {
+			// Add only if we don't return an error code
+			if (packetsAdded > 0 && totalPacketsAdded >= 0) {
 				totalPacketsAdded += packetsAdded;
 			}
+		}
+
+		public void setErrorCode(int errorCode) {
+			totalPacketsAdded = errorCode;
 		}
     }
 
@@ -2028,6 +2033,14 @@ public class sceMpeg extends HLEModule {
             afterRingbufferPutCallback.addPacketsAdded(packetsAdded);
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceMpegRingbufferPut packetsAdded=0x%X, packetsRead=0x%X, new availableSize=0x%X", packetsAdded, mpegRingbuffer.getReadPackets(), mpegRingbuffer.getFreePackets()));
+            }
+
+            int dataSizeInRingbuffer = mpegRingbuffer.getPacketsInRingbuffer() * mpegRingbuffer.getPacketSize();
+            if (dataSizeInRingbuffer > psmfHeader.mpegStreamSize) {
+            	log.debug(String.format("sceMpegRingbufferPut returning ERROR_MPEG_INVALID_VALUE, size of data in ringbuffer=0x%X, mpegStreamSize=0x%X", dataSizeInRingbuffer, psmfHeader.mpegStreamSize));
+            	afterRingbufferPutCallback.setErrorCode(SceKernelErrors.ERROR_MPEG_INVALID_VALUE);
+            	// No further callbacks
+            	remainingPackets = 0;
             }
 
             removeErrorImages();
