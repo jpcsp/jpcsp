@@ -260,7 +260,9 @@ public class sceAtrac3plus extends HLEModule {
         	if (currentSample == 0) {
         		skippedSamples = startSkippedSamples + info.atracSampleOffset;
         	} else {
-        		skippedSamples = currentSample % maxSamples;
+        		// When looping or changing the play position, the PSP re-aligns
+        		// on multiples of maxSamples
+        		skippedSamples = (currentSample + startSkippedSamples + info.atracSampleOffset) % maxSamples;
         	}
 
         	// Skip complete frames
