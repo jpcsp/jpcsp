@@ -18,6 +18,7 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
 import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.TPointer;
@@ -63,5 +64,10 @@ public class SysMemForKernel extends HLEModule {
     @HLEFunction(nid = 0xC0AB8932, version = 150)
     public int SysclibForKernel_strcmp(@CanBeNull TPointer src1Addr, @CanBeNull TPointer src2Addr) {
 		return AbstractNativeCodeSequence.strcmp(src1Addr.getAddress(), src2Addr.getAddress());
+    }
+	
+	@HLEFunction(nid = 0x52DF196C, version = 150)
+    public int SysclibForKernel_strlen(@CanBeNull PspString srcAddr) {
+		return AbstractNativeCodeSequence.getStrlen(srcAddr.getAddress());
     }
 }
