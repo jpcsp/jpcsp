@@ -150,8 +150,8 @@ public class HLEModuleManager {
         sceAdler(Modules.sceAdlerModule, new String[] { "libadler" }),
         sceSha1(Modules.sceSha1Module, new String[] { "libsha1" }),
         sceSha256(Modules.sceSha256Module, new String[] { "libsha256" }),
-		SystemCtrlForKernel(Modules.SystemCtrlForKernelModule),
-		ModuleMgrForKernel(Modules.ModuleMgrForKernelModule);
+        SystemCtrlForKernel(Modules.SystemCtrlForKernelModule),
+        ModuleMgrForKernel(Modules.ModuleMgrForKernelModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
