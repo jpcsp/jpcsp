@@ -94,6 +94,7 @@ import jpcsp.HLE.modules.sceUtility;
 import jpcsp.HLE.modules.sceVaudio;
 import jpcsp.HLE.modules.sceWlan;
 import jpcsp.HLE.modules.SystemCtrlForKernel;
+import jpcsp.HLE.modules.ModuleMgrForKernel;
 
 import org.apache.log4j.Logger;
 import org.lwjgl.LWJGLException;
@@ -178,6 +179,7 @@ public class Modules {
     public static sceSha1 sceSha1Module = new sceSha1();
     public static sceSha256 sceSha256Module = new sceSha256();
 	public static SystemCtrlForKernel SystemCtrlForKernelModule = new SystemCtrlForKernel();
+	public static ModuleMgrForKernel ModuleMgrForKernelModule = new ModuleMgrForKernel();
 
     public static Logger log = Logger.getLogger("hle");
 
