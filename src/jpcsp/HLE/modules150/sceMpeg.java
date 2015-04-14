@@ -1595,7 +1595,8 @@ public class sceMpeg extends HLEModule {
     	}
     	int audioChannel = getRegisteredAudioChannel();
 
-    	while (!buffer.isEmpty() && (audioFrameLength == 0 || audioBuffer.getLength() < audioFrameLength)) {
+    	boolean endOfAudio = false;
+    	while (!endOfAudio && !buffer.isEmpty() && (audioFrameLength == 0 || audioBuffer.getLength() < audioFrameLength)) {
     		int startCode = read32(mem, buffer);
     		int codeLength;
     		switch (startCode) {
@@ -1625,7 +1626,10 @@ public class sceMpeg extends HLEModule {
 					}
 					break;
 				default:
-					log.warn(String.format("Unknown StartCode 0x%08X at 0x%08X", startCode, buffer.getReadAddr() - 4));
+					endOfAudio = true;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Unknown StartCode 0x%08X at 0x%08X", startCode, buffer.getReadAddr() - 4));
+					}
 					break;
     		}
     	}
@@ -1635,6 +1639,19 @@ public class sceMpeg extends HLEModule {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("After readNextAudioFrame %s", mpegRingbuffer));
     	}
+    }
+
+    private boolean reachedEndOfVideo() {
+    	if (psmfHeader == null) {
+    		return true;
+    	}
+
+    	int pendingVideoFrame = decodedImages.size() + (videoBuffer.getLength() > 0 ? 1 : 0);
+    	if (currentVideoTimestamp + pendingVideoFrame * videoTimestampStep >= psmfHeader.mpegLastTimestamp) {
+    		return true;
+    	}
+
+    	return false;
     }
 
     private int readNextVideoFrame(PesHeader pesHeader) {
@@ -1650,7 +1667,8 @@ public class sceMpeg extends HLEModule {
     	int videoChannel = getRegisteredVideoChannel();
 
     	int frameEnd = videoBuffer.findFrameEnd();
-    	while (!buffer.isEmpty() && frameEnd < 0) {
+    	boolean endOfVideo = false;
+    	while (!endOfVideo && !buffer.isEmpty() && frameEnd < 0) {
     		int startCode = read32(mem, buffer);
     		int codeLength;
     		switch (startCode) {
@@ -1682,14 +1700,17 @@ public class sceMpeg extends HLEModule {
 					skip(buffer, codeLength);
 					break;
 				default:
-					log.warn(String.format("Unknown StartCode 0x%08X at 0x%08X", startCode, buffer.getReadAddr() - 4));
+					endOfVideo = true;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Unknown StartCode 0x%08X at 0x%08X", startCode, buffer.getReadAddr() - 4));
+					}
 					break;
     		}
     	}
 
     	// Reaching the last frame?
-    	if (frameEnd < 0 && buffer.isEmpty() && !videoBuffer.isEmpty()) {
-    		if (psmfHeader == null || currentVideoTimestamp >= psmfHeader.mpegLastTimestamp) {
+    	if (frameEnd < 0 && (buffer.isEmpty() || endOfVideo) && !videoBuffer.isEmpty()) {
+    		if (endOfVideo || reachedEndOfVideo()) {
 	    		// There is no next frame any more but the video buffer is not yet empty,
     			// so use the rest of the video buffer
 	    		frameEnd = videoBuffer.getLength();
