@@ -26,6 +26,7 @@ import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 
+import org.apache.log4j.Logger;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -35,6 +36,7 @@ import org.objectweb.asm.Opcodes;
  *
  */
 public class CodeInstruction {
+	private static Logger log = Compiler.log;
 	private static final boolean interpretAllVfpuInstructions = false;
 	protected int address;
 	private int opcode;
@@ -159,8 +161,8 @@ public class CodeInstruction {
     }
 
     protected void startCompile(CompilerContext context, MethodVisitor mv) {
-        if (Compiler.log.isDebugEnabled()) {
-            Compiler.log.debug("CodeInstruction.compile " + toString());
+        if (log.isDebugEnabled()) {
+            log.debug("CodeInstruction.compile " + toString());
         }
 
         context.setCodeInstruction(this);
@@ -224,8 +226,8 @@ public class CodeInstruction {
             	if (nativeCodeInstruction != null && nativeCodeInstruction instanceof NativeCodeInstruction) {
             		NativeCodeSequence nativeCodeSequence = ((NativeCodeInstruction) nativeCodeInstruction).getNativeCodeSequence();
             		if (getDelaySlotCodeInstruction(context).getOpcode() == nativeCodeSequence.getFirstOpcode()) {
-            			if (Compiler.log.isDebugEnabled()) {
-            				Compiler.log.debug(String.format("0x%08X: branching to the 2nd instruction of a native code sequence, assuming the 1st instruction", getAddress()));
+            			if (log.isDebugEnabled()) {
+            				log.debug(String.format("0x%08X: branching to the 2nd instruction of a native code sequence, assuming the 1st instruction", getAddress()));
             			}
             			branchingToCodeInstruction = nativeCodeInstruction;
             		}
@@ -249,8 +251,8 @@ public class CodeInstruction {
                 if (branchingToCodeInstruction.getInsn() == Instructions.NOP) {
                 	CodeInstruction beforeBranchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() - 4);
                 	if (beforeBranchingToCodeInstruction != null && beforeBranchingToCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
-    	            	if (Compiler.log.isDebugEnabled()) {
-    	            		Compiler.log.debug(String.format("0x%08X: branching to a NOP in a delay slot, correcting to the next instruction", getAddress()));
+    	            	if (log.isDebugEnabled()) {
+    	            		log.debug(String.format("0x%08X: branching to a NOP in a delay slot, correcting to the next instruction", getAddress()));
     	            	}
     	            	branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() + 4);
                 	}
@@ -273,15 +275,19 @@ public class CodeInstruction {
 
     private void compileDelaySlot(CompilerContext context, MethodVisitor mv) {
         CodeInstruction delaySlotCodeInstruction = getDelaySlotCodeInstruction(context);
+        compileDelaySlot(context, mv, delaySlotCodeInstruction);
+    }
+
+    private void compileDelaySlot(CompilerContext context, MethodVisitor mv, CodeInstruction delaySlotCodeInstruction) {
         if (delaySlotCodeInstruction == null) {
-            Compiler.log.error(String.format("Cannot find delay slot instruction at 0x%08X", getAddress() + 4));
+            log.error(String.format("Cannot find delay slot instruction at 0x%08X", getAddress() + 4));
             return;
         }
 
         if (delaySlotCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
         	// Issue a warning when compiling an instruction having a delay slot inside a delay slot.
         	// See http://code.google.com/p/pcsx2/source/detail?r=5541
-        	Compiler.log.warn(String.format("Instruction in a delay slot having a delay slot: %s", toString()));
+        	log.warn(String.format("Instruction in a delay slot having a delay slot:%s%s%s%s", System.lineSeparator(), this, System.lineSeparator(), delaySlotCodeInstruction));
         }
 
         delaySlotCodeInstruction.setIsDelaySlot(true);
@@ -430,7 +436,22 @@ public class CodeInstruction {
     	// the delay slot instruction, as it might theoretically modify the
     	// content of these registers.
     	branchingOpcode = loadRegistersForBranchingOpcodeBranch2(context, mv, branchingOpcode);
-		compileDelaySlot(context, mv);
+
+    	CodeInstruction delaySlotCodeInstruction = getDelaySlotCodeInstruction(context);
+        if (delaySlotCodeInstruction != null && delaySlotCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+        	// We are compiling a sequence where the delay instruction has itself a delay slot:
+        	//    beq $reg1, $reg2, label
+        	//    jr  $ra
+        	//    nop
+        	// Handle the sequence by inserting one nop between the instructions:
+        	//    bne $reg1, $reg2, label
+        	//    nop
+        	//    jr  $ra
+        	//    nop
+        	log.warn(String.format("Instruction in a delay slot having a delay slot:%s%s%s%s", System.lineSeparator(), this, System.lineSeparator(), delaySlotCodeInstruction));
+        } else {
+        	compileDelaySlot(context, mv, delaySlotCodeInstruction);
+        }
 
     	if (branchingOpcode == Opcodes.GOTO && getBranchingTo() == getAddress()) {
     		context.visitLogInfo(mv, String.format("Pausing emulator - branch to self (death loop) at 0x%08X", getAddress()));
@@ -492,7 +513,7 @@ public class CodeInstruction {
         	//    bvt 3, label
         	//    nop
         } else {
-        	compileDelaySlot(context, mv);
+        	compileDelaySlot(context, mv, delaySlotCodeInstruction);
         }
 
         return branchingOpcode;
@@ -563,7 +584,7 @@ public class CodeInstruction {
         } else if (insn == Instructions.BVTL) {
             branchingOpcode = getBranchingOpcodeBVL(context, mv, Opcodes.IFNE, Opcodes.IFEQ);
         } else {
-            Compiler.log.error("CodeInstruction.getBranchingOpcode: unknown instruction " + insn.disasm(getAddress(), getOpcode()));
+            log.error("CodeInstruction.getBranchingOpcode: unknown instruction " + insn.disasm(getAddress(), getOpcode()));
         }
 
         return branchingOpcode;
