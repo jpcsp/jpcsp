@@ -16,9 +16,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.Allegrex.Common._a0;
+import static jpcsp.Allegrex.Common._a1;
+import static jpcsp.Allegrex.Common._ra;
+import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNKNOWN_MODULE;
-
+import static jpcsp.HLE.modules150.ThreadManForUser.ADDIU;
+import static jpcsp.HLE.modules150.ThreadManForUser.J;
+import static jpcsp.HLE.modules150.ThreadManForUser.JAL;
+import static jpcsp.HLE.modules150.ThreadManForUser.LUI;
+import static jpcsp.HLE.modules150.ThreadManForUser.LW;
+import static jpcsp.HLE.modules150.ThreadManForUser.SW;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -30,11 +40,13 @@ import jpcsp.HLE.TPointer32;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import jpcsp.Emulator;
 import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelModuleInfo;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
@@ -48,6 +60,8 @@ import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.format.PSP;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -75,13 +89,44 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     public static final int loadHLEModuleDelay = 50000; // 50 ms delay
+    protected int startModuleHandler;
 
     @Override
     public String getName() {
         return "ModuleMgrForUser";
     }
 
-    //
+	@Override
+	public void start() {
+		startModuleHandler = 0;
+
+		super.start();
+	}
+
+	private class LoadModuleAction implements IAction {
+		private SceKernelThreadInfo thread;
+		private String name;
+		private int flags;
+		private int uid;
+		private SceKernelLMOption lmOption;
+		private boolean byUid;
+
+		public LoadModuleAction(SceKernelThreadInfo thread, String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid) {
+			this.thread = thread;
+			this.name = name;
+			this.flags = flags;
+			this.uid = uid;
+			this.lmOption = lmOption;
+			this.byUid = byUid;
+		}
+
+		@Override
+		public void execute() {
+			hleKernelLoadModule(thread, name, flags, uid, lmOption, byUid);
+		}
+	}
+
+	//
     // When an HLE module is loaded using sector syntax, with no file corresponding to the
     // referenced sector, try searching for the real module's name inside the file itself.
     // For encrypted modules, the real name can be found in the first sector of the file.
@@ -235,6 +280,21 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     public int hleKernelLoadModule(String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid) {
+    	IAction delayedLoadModule = new LoadModuleAction(Modules.ThreadManForUserModule.getCurrentThread(), name, flags, uid, lmOption, byUid);
+
+    	Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_IO);
+    	Emulator.getScheduler().addAction(Emulator.getClock().microTime() + 100000, delayedLoadModule);
+
+    	return 0;
+    }
+
+    private void hleKernelLoadModule(SceKernelThreadInfo thread, String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid) {
+    	int result = delayedKernelLoadModule(name, flags, uid, lmOption, byUid);
+    	thread.cpuContext._v0 = result;
+    	Modules.ThreadManForUserModule.hleUnblockThread(thread.uid);
+    }
+
+    private int delayedKernelLoadModule(String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid) {
         StringBuilder prxname = new StringBuilder();
         int result = hleKernelLoadHLEModule(name, prxname);
         if (result >= 0) {
@@ -410,6 +470,10 @@ public class ModuleMgrForUser extends HLEModule {
             return ERROR_KERNEL_UNKNOWN_MODULE;
         }
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelStartModule starting module '%s'", sceModule.modname));
+        }
+
         statusAddr.setValue(0);
 
         if (sceModule.isFlashModule) {
@@ -469,6 +533,40 @@ public class ModuleMgrForUser extends HLEModule {
             // Store the thread exit status into statusAddr when the thread terminates
             thread.exitStatusAddr = statusAddr;
             sceModule.start();
+
+            if (startModuleHandler != 0) {
+            	// Install the start module handler so that it is called before the module entry point.
+            	final int numberInstructions = 12;
+            	final int newEntryAddr = thread.getStackAddr() + thread.stackSize - numberInstructions * 4;
+            	int moduleAddr1 = sceModule.address >>> 16;
+            	int moduleAddr2 = sceModule.address & 0xFFFF;
+            	if (moduleAddr2 >= 0x8000) {
+            		moduleAddr1 += 1;
+            		moduleAddr2 = (moduleAddr2 - 0x10000) & 0xFFFF;
+            	}
+            	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(newEntryAddr, numberInstructions * 4, 4);
+            	memoryWriter.writeNext(ADDIU(_sp, _sp, -16));
+            	memoryWriter.writeNext(SW   (_a0, _sp, 0));
+            	memoryWriter.writeNext(SW   (_a1, _sp, 4));
+            	memoryWriter.writeNext(SW   (_ra, _sp, 8));
+            	memoryWriter.writeNext(LUI  (_a0, moduleAddr1));
+            	memoryWriter.writeNext(JAL  (startModuleHandler));
+            	memoryWriter.writeNext(ADDIU(_a0, _a0, moduleAddr2));
+            	memoryWriter.writeNext(LW   (_a0, _sp, 0));
+            	memoryWriter.writeNext(LW   (_a1, _sp, 4));
+            	memoryWriter.writeNext(LW   (_ra, _sp, 8));
+            	memoryWriter.writeNext(J    (thread.entry_addr));
+            	memoryWriter.writeNext(ADDIU(_sp, _sp, 16));
+            	memoryWriter.flush();
+            	thread.entry_addr = newEntryAddr;
+            	thread.preserveStack = true; // Do not overwrite above code
+
+            	RuntimeContext.invalidateRange(newEntryAddr, numberInstructions * 4);
+
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("sceKernelStartModule installed hook to call startModuleHandler 0x%08X from 0x%08X for sceModule 0x%08X", startModuleHandler, newEntryAddr, sceModule.address));
+            	}
+            }
 
             // Start the module start thread
             threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
@@ -751,5 +849,67 @@ public class ModuleMgrForUser extends HLEModule {
         }
 
         return module.modid;
+    }
+
+    @HLEFunction(nid = 0xA1A78C58, version = 150)
+    public int sceKernelLoadModuleDisc(PspString path, int flags, @CanBeNull TPointer optionAddr) {
+        SceKernelLMOption lmOption = null;
+        if (optionAddr.isNotNull()) {
+            lmOption = new SceKernelLMOption();
+            lmOption.read(optionAddr);
+            if (log.isInfoEnabled()) {
+            	log.info(String.format("sceKernelLoadModuleDisc options: %s", lmOption));
+            }
+        }
+
+        return hleKernelLoadModule(path.getString(), flags, 0, lmOption, false);
+    }
+
+    /**
+     * Sets a function to be called just before module_start of a module is gonna be called (useful for patching purposes)
+     *
+     * @param startModuleHandler - The function, that will receive the module structure before the module is started.
+     *
+     * @returns - The previous set function (NULL if none);
+     * @Note: because only one handler function is handled by HEN, you should
+     *        call the previous function in your code.
+     *
+     * @Example: 
+     *
+     * STMOD_HANDLER previous = NULL;
+     *
+     * int OnModuleStart(SceModule2 *mod);
+     *
+     * void somepointofmycode()
+     * {
+     *     previous = sctrlHENSetStartModuleHandler(OnModuleStart);
+     * }
+     *
+     * int OnModuleStart(SceModule2 *mod)
+     * {
+     *     if (strcmp(mod->modname, "vsh_module") == 0)
+     *     {
+     *         // Do something with vsh module here
+     *     }
+     *
+     *     if (!previous)
+     *         return 0;
+     *
+     *     // Call previous handler
+     *
+     *     return previous(mod);
+     * }
+     *
+     * @Note2: The above example should be compiled with the flag -fno-pic
+     *         in order to avoid problems with gp register that may lead to a crash.
+     *
+    */
+    @HLEFunction(nid = 0x1C90BECB, version = 150)
+    public int sctrlHENSetStartModuleHandler(TPointer startModuleHandler) {
+    	int previousStartModuleHandler = this.startModuleHandler;
+
+    	this.startModuleHandler = startModuleHandler.getAddress();
+
+    	return previousStartModuleHandler;
     }
 }

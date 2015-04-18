@@ -2995,7 +2995,7 @@ public class IoFileMgrForUser extends HLEModule {
         if (id != STDOUT_ID && id != STDERR_ID) {
         	delayIoOperation(IoOperation.write);
         }
-        
+
         return result;
     }
 

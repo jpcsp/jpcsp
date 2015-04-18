@@ -97,7 +97,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     public final String name;
     public int attr;
     public int status; // it's a bitfield but I don't think we ever use more than 1 bit at once
-    public final int entry_addr;
+    public int entry_addr;
     private int stackAddr; // using low address, no need to add stackSize to the pointer returned by malloc
     public int stackSize;
     public int gpReg_addr;
@@ -141,6 +141,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     public Queue<IAction> pendingActions = new LinkedList<IAction>();
     // Used by sceKernelExtendThreadStack
     private SysMemInfo extendedStackSysMemInfo;
+    public boolean preserveStack;
 
     public static class RegisteredCallbacks {
     	private int type;
@@ -281,7 +282,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
 
         int k0 = stackAddr + stackSize - 0x100; // setup k0
         Memory mem = Memory.getInstance();
-        if (stackAddr != 0 && stackSize > 0) {
+        if (stackAddr != 0 && stackSize > 0 && !preserveStack) {
             // set stack to 0xFF
             if ((attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK) {
                 mem.memset(stackAddr, (byte) 0xFF, stackSize);

@@ -390,14 +390,38 @@ public class ThreadManForUser extends HLEModule {
         return address;
     }
 
-    private static int NOP() {
+    public static int NOP() {
     	// sll $zr, $zr, 0 <=> nop
     	return (AllegrexOpcodes.SLL << 26) | (_zr << 16) | (_zr << 11) | (0 << 6);
     }
 
-    private static int MOVE(int rd, int rs) {
+    public static int MOVE(int rd, int rs) {
     	// addu rd, rs, $zr <=> move rd, rs
     	return AllegrexOpcodes.ADDU | (rd << 11) | (_zr << 16) | (rs << 21);
+    }
+
+    public static int LUI(int rd, int imm16) {
+    	return (AllegrexOpcodes.LUI << 26) | (rd << 16) | (imm16 & 0xFFFF);
+    }
+
+    public static int ADDIU(int rs, int rt, int imm16) {
+    	return (AllegrexOpcodes.ADDIU << 26) | (rs << 21) | (rt << 16) | (imm16 & 0xFFFF);
+    }
+
+    public static int SW(int rt, int base, int imm16) {
+    	return (AllegrexOpcodes.SW << 26) | (base << 21) | (rt << 16) | (imm16 & 0xFFFF);
+    }
+
+    public static int LW(int rt, int base, int imm16) {
+    	return (AllegrexOpcodes.LW << 26) | (base << 21) | (rt << 16) | (imm16 & 0xFFFF);
+    }
+
+    public static int JAL(int address) {
+    	return (AllegrexOpcodes.JAL << 26) | ((address >> 2) & 0x03FFFFFF);
+    }
+
+    public static int J(int address) {
+    	return (AllegrexOpcodes.J << 26) | ((address >> 2) & 0x03FFFFFF);
     }
 
     private int SYSCALL(String functionName) {
@@ -405,12 +429,12 @@ public class ThreadManForUser extends HLEModule {
     	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (getHleFunctionByName(functionName).getSyscallCode() << 6);
     }
 
-    private static int JR() {
+    public static int JR() {
     	// jr $ra
     	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.JR | (_ra << 21);
     }
 
-    private static int B(int destination) {
+    public static int B(int destination) {
     	// beq $zr, $zr, destination <=> b destination
     	return (AllegrexOpcodes.BEQ << 26) | (_zr << 21) | (_zr << 16) | (destination & 0x0000FFFF);
     }
