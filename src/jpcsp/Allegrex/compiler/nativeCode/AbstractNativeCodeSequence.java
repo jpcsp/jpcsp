@@ -179,7 +179,7 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 		return 0;
 	}
 
-	static protected int getStrlen(int srcAddr) {
+	static public int getStrlen(int srcAddr) {
 		int srcAddr3 = srcAddr & 3;
 		// Reading 32-bit values is much faster
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr - srcAddr3, 4);

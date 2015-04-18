@@ -149,7 +149,9 @@ public class HLEModuleManager {
         sceAudiocodec(Modules.sceAudiocodecModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec" }),
         sceAdler(Modules.sceAdlerModule, new String[] { "libadler" }),
         sceSha1(Modules.sceSha1Module, new String[] { "libsha1" }),
-        sceSha256(Modules.sceSha256Module, new String[] { "libsha256" });
+        sceSha256(Modules.sceSha256Module, new String[] { "libsha256" }),
+        SystemCtrlForKernel(Modules.SystemCtrlForKernelModule),
+        ModuleMgrForKernel(Modules.ModuleMgrForKernelModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
