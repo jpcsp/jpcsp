@@ -287,7 +287,8 @@ public class CodeInstruction {
         if (delaySlotCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
         	// Issue a warning when compiling an instruction having a delay slot inside a delay slot.
         	// See http://code.google.com/p/pcsx2/source/detail?r=5541
-        	log.warn(String.format("Instruction in a delay slot having a delay slot:%s%s%s%s", System.lineSeparator(), this, System.lineSeparator(), delaySlotCodeInstruction));
+		String lineSeparator = System.getProperty("line.separator");
+        	log.warn(String.format("Instruction in a delay slot having a delay slot:%s%s%s%s", lineSeparator, this, lineSeparator, delaySlotCodeInstruction));
         }
 
         delaySlotCodeInstruction.setIsDelaySlot(true);
@@ -448,7 +449,8 @@ public class CodeInstruction {
         	//    nop
         	//    jr  $ra
         	//    nop
-        	log.warn(String.format("Instruction in a delay slot having a delay slot:%s%s%s%s", System.lineSeparator(), this, System.lineSeparator(), delaySlotCodeInstruction));
+		String lineSeparator = System.getProperty("line.separator");
+        	log.warn(String.format("Instruction in a delay slot having a delay slot:%s%s%s%s", lineSeparator, this, lineSeparator, delaySlotCodeInstruction));
         } else {
         	compileDelaySlot(context, mv, delaySlotCodeInstruction);
         }
