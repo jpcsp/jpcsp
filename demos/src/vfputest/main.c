@@ -619,7 +619,7 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    ".set pop\n"
    : "+m" (v) : "m" (v));
 
-   v0->x = v.x;
+   v0->x = v.x; /* expected result: 1 */
 
 	asm volatile (
    ".set push\n"
@@ -634,7 +634,7 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    ".set pop\n"
    : "+m" (v) : "m" (v));
 
-   v0->y = v.x;
+   v0->y = v.x; /* expected result: 1 */
 
    asm volatile (
    ".set push\n"
@@ -649,8 +649,11 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    ".set pop\n"
    : "+m" (v) : "m" (v));
 
-   v0->z = v.x;
+   v0->z = v.x; /* expected result: 1 */
 
+   /*
+    * S000 == S100, S001 != S101
+    */
    asm volatile (
    ".set push\n"
    ".set noreorder\n"
@@ -659,17 +662,20 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    "vzero.s  S100\n"
    "vone.s   S101\n"
    "vcmp.p   EQ, C000, C100\n"
-   "bvt      0, skip4\n"
-   "bvt      1, skip5\n"
-   "vadd.s   S000, S000, S101\n"
-   "skip4: vadd.s   S000, S000, S101\n"
-   "skip5: vadd.s   S000, S000, S101\n"
+   "bvt      0, skip4\n" /* true  */ /* branch taken */
+   "bvt      1, skip5\n" /* false */
+   "vadd.s   S000, S000, S101\n"        /* not executed */
+   "skip4: vadd.s   S000, S000, S101\n" /*     executed */
+   "skip5: vadd.s   S000, S000, S101\n" /*     executed */
    "sv.s     S000, %0\n"
    ".set pop\n"
    : "+m" (v) : "m" (v));
 
-   v0->w = v.x;
+   v0->w = v.x; /* expected result: 2 */
 
+   /*
+    * S000 == S100, S001 == S101
+    */
    asm volatile (
    ".set push\n"
    ".set noreorder\n"
@@ -678,16 +684,16 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    "vzero.s  S100\n"
    "vone.s   S101\n"
    "vcmp.p   EQ, C000, C100\n"
-   "bvt      0, skip6\n"
-   "bvt      1, skip7\n"
-   "vadd.s   S000, S000, S101\n"
-   "skip6: vadd.s   S000, S000, S101\n"
-   "skip7: vadd.s   S000, S000, S101\n"
+   "bvt      0, skip6\n" /* true  */
+   "bvt      1, skip7\n" /* true  */ /* branch taken */
+   "vadd.s   S000, S000, S101\n"        /* not executed */
+   "skip6: vadd.s   S000, S000, S101\n" /* not executed */
+   "skip7: vadd.s   S000, S000, S101\n" /*     executed */
    "sv.s     S000, %0\n"
    ".set pop\n"
    : "+m" (v) : "m" (v));
 
-   v1->x = v.x;
+   v1->x = v.x; /* expected result: 1 */
 
    /*
     * S000 == S100, S001 == S101, S002 == S102, S003 == S103
@@ -704,20 +710,20 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    "vzero.s  S102\n"
    "vzero.s  S103\n"
    "vcmp.q   EQ, C000, C100\n"
-   "bvt      0, skip8\n"
-   "bvt      1, skip9\n"
-   "bvt      2, skip10\n"
-   "bvt      3, skip11\n"
-   "vadd.s   S000, S000, S101\n"
-   "skip8: vadd.s   S000, S000, S101\n"
-   "skip9: vadd.s   S000, S000, S101\n"
-   "skip10: vadd.s   S000, S000, S101\n"
-   "skip11: vadd.s   S000, S000, S101\n"
+   "bvt      0, skip8\n"  /* true  */
+   "bvt      1, skip9\n"  /* true  */ /* branch taken */
+   "bvt      2, skip10\n" /* true  */
+   "bvt      3, skip11\n" /* true  */
+   "vadd.s   S000, S000, S101\n"         /* not executed */
+   "skip8: vadd.s   S000, S000, S101\n"  /* not executed */
+   "skip9: vadd.s   S000, S000, S101\n"  /*     executed */
+   "skip10: vadd.s   S000, S000, S101\n" /*     executed */
+   "skip11: vadd.s   S000, S000, S101\n" /*     executed */
    "sv.s     S000, %0\n"
    ".set pop\n"
    : "+m" (v) : "m" (v));
 
-   v1->y = v.x;
+   v1->y = v.x; /* expected result: 3 */
 
    /*
     * S000 != S100, S001 == S101, S002 == S102, S003 == S103
@@ -734,20 +740,20 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    "vzero.s  S102\n"
    "vzero.s  S103\n"
    "vcmp.q   EQ, C000, C100\n"
-   "bvt      0, skip12\n"
-   "bvt      1, skip13\n"
-   "bvt      2, skip14\n"
-   "bvt      3, skip15\n"
-   "vadd.s   S000, S000, S101\n"
-   "skip12: vadd.s   S000, S000, S101\n"
-   "skip13: vadd.s   S000, S000, S101\n"
-   "skip14: vadd.s   S000, S000, S101\n"
-   "skip15: vadd.s   S000, S000, S101\n"
+   "bvt      0, skip12\n" /* false */
+   "bvt      1, skip13\n" /* true  */
+   "bvt      2, skip14\n" /* true  */ /* branch taken */
+   "bvt      3, skip15\n" /* true  */
+   "vadd.s   S000, S000, S101\n"         /* not executed */
+   "skip12: vadd.s   S000, S000, S101\n" /* not executed */
+   "skip13: vadd.s   S000, S000, S101\n" /* not executed */
+   "skip14: vadd.s   S000, S000, S101\n" /*     executed */
+   "skip15: vadd.s   S000, S000, S101\n" /*     executed */
    "sv.s     S000, %0\n"
    ".set pop\n"
    : "+m" (v) : "m" (v));
 
-   v1->z = v.x;
+   v1->z = v.x; /* expected result: 2 */
 
    /*
     * S000 != S100, S001 != S101, S002 == S102, S003 == S103
@@ -764,20 +770,20 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    "vzero.s  S102\n"
    "vzero.s  S103\n"
    "vcmp.q   EQ, C000, C100\n"
-   "bvt      0, skip16\n"
-   "bvt      1, skip17\n"
-   "bvt      2, skip18\n"
-   "bvt      3, skip19\n"
-   "vadd.s   S000, S000, S101\n"
-   "skip16: vadd.s   S000, S000, S101\n"
-   "skip17: vadd.s   S000, S000, S101\n"
-   "skip18: vadd.s   S000, S000, S101\n"
-   "skip19: vadd.s   S000, S000, S101\n"
+   "bvt      0, skip16\n" /* false */
+   "bvt      1, skip17\n" /* false */
+   "bvt      2, skip18\n" /* true  */
+   "bvt      3, skip19\n" /* true  */ /* branch taken */
+   "vadd.s   S000, S000, S101\n"         /* not executed */
+   "skip16: vadd.s   S000, S000, S101\n" /* not executed */
+   "skip17: vadd.s   S000, S000, S101\n" /* not executed */
+   "skip18: vadd.s   S000, S000, S101\n" /* not executed */
+   "skip19: vadd.s   S000, S000, S101\n" /*     executed */
    "sv.s     S000, %0\n"
    ".set pop\n"
    : "+m" (v) : "m" (v));
 
-   v1->w = v.x;
+   v1->w = v.x; /* expected result: 1 */
 
    /*
     * S000 != S100, S001 != S101, S002 != S102, S003 == S103
@@ -794,20 +800,20 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    "vone.s   S102\n"
    "vzero.s  S103\n"
    "vcmp.q   EQ, C000, C100\n"
-   "bvt      0, skip20\n"
-   "bvt      1, skip21\n"
-   "bvt      2, skip22\n"
-   "bvt      3, skip23\n"
-   "vadd.s   S000, S000, S101\n"
-   "skip20: vadd.s   S000, S000, S101\n"
-   "skip21: vadd.s   S000, S000, S101\n"
-   "skip22: vadd.s   S000, S000, S101\n"
-   "skip23: vadd.s   S000, S000, S101\n"
+   "bvt      0, skip20\n" /* false */
+   "bvt      1, skip21\n" /* false */
+   "bvt      2, skip22\n" /* false */ /* branch taken */
+   "bvt      3, skip23\n" /* true  */
+   "vadd.s   S000, S000, S101\n"         /* not executed */
+   "skip20: vadd.s   S000, S000, S101\n" /* not executed */
+   "skip21: vadd.s   S000, S000, S101\n" /* not executed */
+   "skip22: vadd.s   S000, S000, S101\n" /*     executed */
+   "skip23: vadd.s   S000, S000, S101\n" /*     executed */
    "sv.s     S000, %0\n"
    ".set pop\n"
    : "+m" (v) : "m" (v));
 
-   v2->x = v.x;
+   v2->x = v.x; /* expected result: 2 */
 
    /*
     * S000 != S100, S001 != S101, S002 != S102, S003 != S103
@@ -824,20 +830,50 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    "vone.s   S102\n"
    "vone.s   S103\n"
    "vcmp.q   EQ, C000, C100\n"
-   "bvt      0, skip24\n"
-   "bvt      1, skip25\n"
-   "bvt      2, skip26\n"
-   "bvt      3, skip27\n"
-   "vadd.s   S000, S000, S101\n"
-   "skip24: vadd.s   S000, S000, S101\n"
-   "skip25: vadd.s   S000, S000, S101\n"
-   "skip26: vadd.s   S000, S000, S101\n"
-   "skip27: vadd.s   S000, S000, S101\n"
+   "bvt      0, skip24\n" /* false */
+   "bvt      1, skip25\n" /* false */
+   "bvt      2, skip26\n" /* false */
+   "bvt      3, skip27\n" /* false */
+   "vadd.s   S000, S000, S101\n"         /*     executed */
+   "skip24: vadd.s   S000, S000, S101\n" /*     executed */
+   "skip25: vadd.s   S000, S000, S101\n" /*     executed */
+   "skip26: vadd.s   S000, S000, S101\n" /*     executed */
+   "skip27: vadd.s   S000, S000, S101\n" /*     executed */
    "sv.s     S000, %0\n"
    ".set pop\n"
    : "+m" (v) : "m" (v));
 
-   v2->y = v.x;
+   v2->y = v.x; /* expected result: 5 */
+
+   /*
+    * S000 != S100, S001 == S101, S002 != S102, S003 != S103
+    */
+   asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vone.s   S001\n"
+   "vzero.s  S002\n"
+   "vzero.s  S003\n"
+   "vone.s   S100\n"
+   "vone.s   S101\n"
+   "vone.s   S102\n"
+   "vone.s   S103\n"
+   "vcmp.q   EQ, C000, C100\n"
+   "bvt      0, skip28\n" /* false */
+   "bvt      1, skip29\n" /* true  */
+   "bvt      2, skip30\n" /* false */
+   "bvt      3, skip31\n" /* false */
+   "vadd.s   S000, S000, S101\n"         /* not executed */
+   "skip28: vadd.s   S000, S000, S101\n" /* not executed */
+   "skip29: vadd.s   S000, S000, S101\n" /*     executed */
+   "skip30: vadd.s   S000, S000, S101\n" /*     executed */
+   "skip31: vadd.s   S000, S000, S101\n" /*     executed */
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v2->z = v.x; /* expected result: 3 */
 }
 
 void __attribute__((noinline)) svlq(int address, ScePspFVector4 *v1)
@@ -1722,7 +1758,7 @@ int main(int argc, char *argv[])
 			printf("vsrt3.q: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			bvt(&v0, &v1, &v2);
-			printf("bvt: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f", v0.x, v0.y, v0.z, v0.w, v1.x, v1.y, v1.z, v1.w, v2.x, v2.y);
+			printf("bvt: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f", v0.x, v0.y, v0.z, v0.w, v1.x, v1.y, v1.z, v1.w, v2.x, v2.y, v2.z);
 		}
 
 		if (buttonDown & PSP_CTRL_SQUARE)
