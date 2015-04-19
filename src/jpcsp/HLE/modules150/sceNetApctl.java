@@ -401,7 +401,7 @@ public class sceNetApctl extends HLEModule {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 			sceNetApctlThread = threadMan.hleKernelCreateThread("SceNetApctl",
 					ThreadManForUser.NET_APCTL_LOOP_ADDRESS, initPriority, stackSize,
-					threadMan.getCurrentThread().attr, 0);
+					threadMan.getCurrentThread().attr, 0, SysMemUserForUser.USER_PARTITION_ID);
 			sceNetApctlThreadTerminate = false;
 			threadMan.hleKernelStartThread(sceNetApctlThread, 0, 0, sceNetApctlThread.gpReg_addr);
 		}

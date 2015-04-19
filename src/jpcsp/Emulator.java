@@ -16,6 +16,8 @@
  */
 package jpcsp;
 
+import static jpcsp.HLE.modules150.SysMemUserForUser.USER_PARTITION_ID;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -155,7 +157,7 @@ public class Emulator implements Runnable {
 
         initNewPsp(fromSyscall);
 
-        module = jpcsp.Loader.getInstance().LoadModule(pspfilename, f, MemoryMap.START_USERSPACE + 0x4000, false);
+        module = Loader.getInstance().LoadModule(pspfilename, f, MemoryMap.START_USERSPACE + 0x4000, USER_PARTITION_ID, USER_PARTITION_ID, false);
 
         if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
             throw new GeneralJpcspException("File format not supported!");

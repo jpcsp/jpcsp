@@ -44,6 +44,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.sceNetAdhocMatching;
+import jpcsp.HLE.modules150.SysMemUserForUser;
 import jpcsp.HLE.modules150.sceNetAdhoc;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.IMemoryReader;
@@ -183,14 +184,14 @@ public abstract class MatchingObject extends AdhocObject {
 			if (eventThread == null) {
 	            eventThread = threadMan.hleKernelCreateThread("SceNetAdhocMatchingEvent",
 	                          ThreadManForUser.NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS,
-				              evthPri, evthStack, threadMan.getCurrentThread().attr, 0);
+				              evthPri, evthStack, threadMan.getCurrentThread().attr, 0, SysMemUserForUser.USER_PARTITION_ID);
 				threadMan.hleKernelStartThread(eventThread, 0, 0, eventThread.gpReg_addr);
 	            eventThread.cpuContext.setRegister(sceNetAdhocMatching.loopThreadRegisterArgument, getId());
 			}
 			if (inputThread == null) {
 				inputThread = threadMan.hleKernelCreateThread("SceNetAdhocMatchingInput",
 				              ThreadManForUser.NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS,
-				              inthPri, inthStack, threadMan.getCurrentThread().attr, 0);
+				              inthPri, inthStack, threadMan.getCurrentThread().attr, 0, SysMemUserForUser.USER_PARTITION_ID);
 				threadMan.hleKernelStartThread(inputThread, 0, 0, inputThread.gpReg_addr);
 				inputThread.cpuContext.setRegister(sceNetAdhocMatching.loopThreadRegisterArgument, getId());
 			}

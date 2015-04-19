@@ -246,13 +246,17 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
 		}
     }
 
-    public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
+    public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr, int mpidStack) {
         if (stackSize < 512) {
             // 512 byte min. (required for interrupts)
             stackSize = 512;
         } else {
             // 256 byte size alignment.
             stackSize = (stackSize + 0xFF) & ~0xFF;
+        }
+
+        if (mpidStack == 0) {
+        	mpidStack = SysMemUserForUser.USER_PARTITION_ID;
         }
 
         this.name = name;
@@ -262,7 +266,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         this.attr = attr;
         uid = SceUidManager.getNewUid("ThreadMan-thread");
         // Setup the stack.
-    	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("ThreadMan-Stack-0x%x-%s", uid, name), SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
+    	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(mpidStack, String.format("ThreadMan-Stack-0x%x-%s", uid, name), SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
     	if (stackSysMemInfo == null) {
     		stackAddr = 0;
     	} else {

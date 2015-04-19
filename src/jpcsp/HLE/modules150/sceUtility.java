@@ -497,7 +497,7 @@ public class sceUtility extends HLEModule {
             status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
 
             // Execute the shutdown thread, it will set the status to 0.
-            SceKernelThreadInfo shutdownThread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceUtilityShutdown", ThreadManForUser.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0);
+            SceKernelThreadInfo shutdownThread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceUtilityShutdown", ThreadManForUser.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0, SysMemUserForUser.USER_PARTITION_ID);
             Modules.ThreadManForUserModule.hleKernelStartThread(shutdownThread, 0, 0, shutdownThread.gpReg_addr);
             shutdownThread.cpuContext.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN);
 

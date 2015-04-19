@@ -67,6 +67,8 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MBX;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SEMA;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_VPL;
 import static jpcsp.HLE.modules.HLEModuleManager.HLESyscallNid;
+import static jpcsp.HLE.modules150.SysMemUserForUser.KERNEL_PARTITION_ID;
+import static jpcsp.HLE.modules150.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.util.Utilities.writeStringZ;
 
 import java.lang.management.ManagementFactory;
@@ -319,7 +321,7 @@ public class ThreadManForUser extends HLEModule {
         if (log.isDebugEnabled()) {
         	log.debug(String.format("Creating root thread: entry=0x%08X, priority=%d, stackSize=0x%X, attr=0x%X", entry_addr, rootInitPriority, rootStackSize, attr));
         }
-        currentThread = new SceKernelThreadInfo("root", entry_addr, rootInitPriority, rootStackSize, attr);
+        currentThread = new SceKernelThreadInfo("root", entry_addr, rootInitPriority, rootStackSize, attr, USER_PARTITION_ID);
         currentThread.moduleid = moduleid;
         threadMap.put(currentThread.uid, currentThread);
 
@@ -458,14 +460,14 @@ public class ThreadManForUser extends HLEModule {
         // Allocate a stack because interrupts can be processed by the
         // idle thread, using its stack.
         // The stack is allocated into the reservedMem area.
-        idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL);
+        idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL, KERNEL_PARTITION_ID);
         idle0.setSystemStack(reservedMem, 0x2000);
         idle0.reset();
         idle0.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         threadMap.put(idle0.uid, idle0);
         hleChangeThreadState(idle0, PSP_THREAD_READY);
 
-        idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL);
+        idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL, KERNEL_PARTITION_ID);
         idle1.setSystemStack(reservedMem + 0x2000, 0x2000);
         idle1.reset();
         idle1.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
@@ -1728,14 +1730,14 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public SceKernelThreadInfo hleKernelCreateThread(String name, int entry_addr,
-            int initPriority, int stackSize, int attr, int option_addr) {
+            int initPriority, int stackSize, int attr, int option_addr, int mpidStack) {
 
         if (option_addr != 0) {
             Modules.log.warn("hleKernelCreateThread unhandled SceKernelThreadOptParam: " +
                     "option_addr=0x" + Integer.toHexString(option_addr));
         }
 
-        SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);
+        SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr, mpidStack);
         threadMap.put(thread.uid, thread);
 
         // inherit module id
@@ -3134,7 +3136,7 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x446D8DE6, version = 150)
     public int sceKernelCreateThread(@StringInfo(maxLength = 32) String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr) {
-        SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr);
+        SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr, USER_PARTITION_ID);
 
         if (thread.stackSize > 0 && thread.getStackAddr() == 0) {
             log.warn("sceKernelCreateThread not enough memory to create the stack");

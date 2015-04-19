@@ -111,12 +111,14 @@ public class Loader {
      *                      fileFormat member against the FORMAT_* bits.
      *                      Example: (fileFormat & FORMAT_ELF) == FORMAT_ELF
      **/
-    public SceModule LoadModule(String pspfilename, ByteBuffer f, int baseAddress, boolean analyzeOnly) throws IOException {
+    public SceModule LoadModule(String pspfilename, ByteBuffer f, int baseAddress, int mpidText, int mpidData, boolean analyzeOnly) throws IOException {
         SceModule module = new SceModule(false);
 
         int currentOffset = f.position();
         module.fileFormat = FORMAT_UNKNOWN;
         module.pspfilename = pspfilename;
+        module.mpidtext = mpidText;
+        module.mpiddata = mpidData;
 
         // The PSP startup code requires a ":" into the argument passed to the root thread.
         // On Linux, there is no ":" in the file name when loading a .pbp file;
@@ -660,7 +662,8 @@ public class Loader {
         int address = module.loadAddressLow & ~(SysMemUserForUser.defaultSizeAlignment - 1); // Round down to match sysmem allocations
         int size = module.loadAddressHigh - address;
 
-        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, module.modname, SysMemUserForUser.PSP_SMEM_Addr, size, address);
+        int partition = module.mpidtext > 0 ? module.mpidtext : SysMemUserForUser.USER_PARTITION_ID;
+        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(partition, module.modname, SysMemUserForUser.PSP_SMEM_Addr, size, address);
         if (info == null || info.addr != address) {
             log.warn(String.format("Failed to properly reserve memory consumed by module %s at address 0x%08X, size 0x%X: allocated %s", module.modname, address, size, info));
         }

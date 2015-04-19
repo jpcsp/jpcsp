@@ -331,19 +331,20 @@ public class ModuleMgrForUser extends HLEModule {
                 // some space for the module header itself.
                 // We allocate the estimated size and free it immediately so that
                 // we know the load address.
-                final int partitionId = lmOption != null && lmOption.mpidText != 0 ? lmOption.mpidText : SysMemUserForUser.USER_PARTITION_ID;
+                final int mpidText = lmOption != null && lmOption.mpidText != 0 ? lmOption.mpidText : SysMemUserForUser.USER_PARTITION_ID;
+                final int mpidData = lmOption != null && lmOption.mpidData != 0 ? lmOption.mpidData : SysMemUserForUser.USER_PARTITION_ID;
                 final int allocType = lmOption != null ? lmOption.position : SysMemUserForUser.PSP_SMEM_Low;
                 final int moduleHeaderSize = 256;
 
                 // Load the module in analyze mode to find out its required memory size
-                SceModule testModule = Loader.getInstance().LoadModule(name, moduleBuffer, MemoryMap.START_USERSPACE, true);
+                SceModule testModule = Loader.getInstance().LoadModule(name, moduleBuffer, MemoryMap.START_USERSPACE, mpidText, mpidData, true);
                 moduleBuffer.rewind();
                 int totalAllocSize = moduleHeaderSize + testModule.loadAddressHigh - testModule.loadAddressLow;
                 if (log.isDebugEnabled()) {
                 	log.debug(String.format("Module '%s' requires %d bytes memory", name, totalAllocSize));
                 }
 
-                SysMemInfo testInfo = Modules.SysMemUserForUserModule.malloc(partitionId, "ModuleMgr-TestInfo", allocType, totalAllocSize, 0);
+                SysMemInfo testInfo = Modules.SysMemUserForUserModule.malloc(mpidText, "ModuleMgr-TestInfo", allocType, totalAllocSize, 0);
                 if (testInfo == null) {
                     log.error(String.format("Failed module allocation of size 0x%08X for '%s' (maxFreeMemSize=0x%08X)", totalAllocSize, name, Modules.SysMemUserForUserModule.maxFreeMemSize()));
                     return -1;
@@ -353,7 +354,7 @@ public class ModuleMgrForUser extends HLEModule {
 
                 // Allocate the memory for the memory header itself,
                 // the space required by the module will be allocated by the Loader.
-                SysMemInfo moduleInfo = Modules.SysMemUserForUserModule.malloc(partitionId, "ModuleMgr", SysMemUserForUser.PSP_SMEM_Addr, moduleHeaderSize, testBase);
+                SysMemInfo moduleInfo = Modules.SysMemUserForUserModule.malloc(mpidText, "ModuleMgr", SysMemUserForUser.PSP_SMEM_Addr, moduleHeaderSize, testBase);
                 if (moduleInfo == null) {
                     log.error(String.format("Failed module allocation 0x%08X != null for '%s'", testBase, name));
                     return -1;
@@ -365,7 +366,7 @@ public class ModuleMgrForUser extends HLEModule {
                 int moduleBase = moduleInfo.addr;
 
                 // Load the module
-                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, moduleBase + moduleHeaderSize, false);
+                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, moduleBase + moduleHeaderSize, mpidText, mpidData, false);
                 module.load();
 
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
@@ -520,6 +521,11 @@ public class ModuleMgrForUser extends HLEModule {
                 stackSize = sceModule.module_start_thread_stacksize;
             }
 
+            int mpidStack = sceModule.mpiddata;
+            if (smOption != null && smOption.mpidStack > 0) {
+            	mpidStack = smOption.mpidStack;
+            }
+
             if (smOption != null) {
                 attribute = smOption.attribute;
             }
@@ -527,7 +533,7 @@ public class ModuleMgrForUser extends HLEModule {
             // Remember the current thread as it can be changed by hleKernelStartThread.
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
-            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart", entryAddr, priority, stackSize, attribute, 0);
+            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart", entryAddr, priority, stackSize, attribute, 0, mpidStack);
             // override inherited module id with the new module we are starting
             thread.moduleid = sceModule.modid;
             // Store the thread exit status into statusAddr when the thread terminates
@@ -630,6 +636,11 @@ public class ModuleMgrForUser extends HLEModule {
                 stackSize = sceModule.module_stop_thread_stacksize;
             }
 
+            int mpidStack = sceModule.mpiddata;
+            if (smOption != null && smOption.mpidStack > 0) {
+            	mpidStack = smOption.mpidStack;
+            }
+
             int attribute = sceModule.module_stop_thread_attr;
             if (smOption != null) {
                 attribute = smOption.attribute;
@@ -640,7 +651,7 @@ public class ModuleMgrForUser extends HLEModule {
 
             SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, priority,
-                    stackSize, attribute, 0);
+                    stackSize, attribute, 0, mpidStack);
 
             thread.moduleid = sceModule.modid;
             // Store the thread exit status into statusAddr when the thread terminates
@@ -695,7 +706,7 @@ public class ModuleMgrForUser extends HLEModule {
             // Start the module stop thread function.
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
-                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, 0);
+                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, 0, sceModule.mpiddata);
             thread.moduleid = sceModule.modid;
             // Unload the module when the stop thread will be deleted
             thread.unloadModuleAtDeletion = true;
@@ -730,7 +741,7 @@ public class ModuleMgrForUser extends HLEModule {
 
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
-                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, optionAddr.getAddress());
+                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, optionAddr.getAddress(), sceModule.mpiddata);
             thread.moduleid = sceModule.modid;
             // Store the thread exit status into statusAddr when the thread terminates
             thread.exitStatusAddr = statusAddr;
@@ -766,7 +777,7 @@ public class ModuleMgrForUser extends HLEModule {
             // Start the module stop thread function.
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
-                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, optionAddr.getAddress());
+                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, optionAddr.getAddress(), sceModule.mpiddata);
             thread.moduleid = sceModule.modid;
             // Store the thread exit status into statusAddr when the thread terminates
             thread.exitStatusAddr = statusAddr;
