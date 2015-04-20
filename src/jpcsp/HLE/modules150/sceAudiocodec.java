@@ -25,7 +25,6 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
 import jpcsp.media.codec.ICodec;
 import jpcsp.util.Utilities;
 
@@ -38,8 +37,32 @@ public class sceAudiocodec extends HLEModule {
 	public static final int PSP_CODEC_MP3     = 0x00001002;
 	public static final int PSP_CODEC_AAC     = 0x00001003;
 
-	private AtracID id;
-	private int atID;
+	public static abstract class AudiocodecInfo {
+		protected ICodec codec;
+		protected boolean codecInitialized;
+
+		public ICodec getCodec() {
+			return codec;
+		}
+
+		public boolean isCodecInitialized() {
+			return codecInitialized;
+		}
+
+		public void setCodecInitialized(boolean codecInitialized) {
+			this.codecInitialized = codecInitialized;
+		}
+
+		public void setCodecInitialized() {
+			setCodecInitialized(true);
+		}
+
+		public abstract void release();
+		public abstract void initCodec();
+	}
+
+	private int id;
+	private AudiocodecInfo info;
 	private boolean edramAllocated;
 
 	@Override
@@ -54,7 +77,8 @@ public class sceAudiocodec extends HLEModule {
 
 	@Override
 	public void start() {
-		id = null;
+		id = -1;
+		info = null;
 		edramAllocated = false;
 
 		super.start();
@@ -69,16 +93,42 @@ public class sceAudiocodec extends HLEModule {
 	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x5B37EB1D, version = 150)
 	public int sceAudiocodecInit(TPointer workArea, int codecType) {
-		if (id != null) {
-			Modules.sceAtrac3plusModule.hleReleaseAtracID(atID);
-			atID = -1;
-			id = null;
+		if (info != null) {
+			info.release();
+			info = null;
 		}
-		atID = Modules.sceAtrac3plusModule.hleGetAtracID(codecType);
-		if (atID < 0) {
-			return atID;
+		id = -1;
+
+		switch (codecType) {
+			case PSP_CODEC_AT3:
+			case PSP_CODEC_AT3PLUS:
+				id = Modules.sceAtrac3plusModule.hleGetAtracID(codecType);
+				if (id < 0) {
+					return id;
+				}
+				info = Modules.sceAtrac3plusModule.getAtracID(id);
+				break;
+			case PSP_CODEC_AAC:
+				Modules.sceAacModule.hleAacInit(1);
+				id = Modules.sceAacModule.getFreeAacId();
+				if (id < 0) {
+					return id;
+				}
+				info = Modules.sceAacModule.getAacInfo(id);
+				info.initCodec();
+				break;
+			case PSP_CODEC_MP3:
+				id = Modules.sceMp3Module.getFreeMp3Id();
+				if (id < 0) {
+					return id;
+				}
+				info = Modules.sceMp3Module.getMp3Info(id);
+				info.initCodec();
+				break;
+			default:
+				log.warn(String.format("sceAudiocodecInit unimplemented codecType=0x%X", codecType));
+				return -1;
 		}
-		id = Modules.sceAtrac3plusModule.getAtracID(atID);
 
 		return 0;
 	}
@@ -159,13 +209,21 @@ public class sceAudiocodec extends HLEModule {
 			}
 		}
 
-        ICodec codec = id.getCodec();
-
-    	if (!id.isCodecInitialized()) {
+		ICodec codec = info.getCodec();
+    	if (!info.isCodecInitialized()) {
     		codec.init(inputBufferSize, channels, outputChannels, codingMode);
-    		id.setCodecInitialized();
+    		info.setCodecInitialized();
     	}
-    	codec.decode(inputBuffer, inputBufferSize, outputBuffer);
+
+		if (codec == null) {
+			log.warn(String.format("sceAudiocodecDecode no codec available for codecType=0x%X", codecType));
+			return -1;
+		}
+
+		int bytesConsumed = codec.decode(inputBuffer, inputBufferSize, outputBuffer);
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceAudiocodecDecode bytesConsumed=0x%X", bytesConsumed));
+		}
 
 		workArea.setValue32(28, inputBufferSize);
 

@@ -35,8 +35,8 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspFileBuffer;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules150.sceAudiocodec.AudiocodecInfo;
 import jpcsp.media.codec.CodecFactory;
-import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.mp3.Mp3Decoder;
 import jpcsp.media.codec.mp3.Mp3Header;
 import jpcsp.util.Utilities;
@@ -95,7 +95,7 @@ public class sceMp3 extends HLEModule {
     	return (magic & 0xE0FF) == 0xE0FF;
     }
 
-    protected class Mp3Info {
+    public static class Mp3Info extends AudiocodecInfo {
         //
         // The Buffer layout is the following:
         // - mp3BufSize: maximum buffer size, cannot be changed
@@ -151,7 +151,6 @@ public class sceMp3 extends HLEModule {
         private int outputAddr;
         private int outputSize;
         private int sumDecodedSamples;
-        private ICodec codec;
         private int halfBufferSize;
         private int outputIndex;
         private int loopNum;
@@ -177,13 +176,19 @@ public class sceMp3 extends HLEModule {
             inputBuffer = new pspFileBuffer(bufferAddr + reservedBufferSize, bufferSize - reservedBufferSize, 0, this.startPos);
             inputBuffer.setFileMaxSize((int) endPos);
             loopNum = -1; // Looping indefinitely by default
-            codec = CodecFactory.getCodec(PSP_CODEC_MP3);
+            initCodec();
 
             halfBufferSize = (bufferSize - reservedBufferSize) >> 1;
         }
 
-        public void release() {
+        @Override
+		public void release() {
             reserved = false;
+        }
+
+        @Override
+		public void initCodec() {
+            codec = CodecFactory.getCodec(PSP_CODEC_MP3);
         }
 
         public int notifyAddStream(int bytesToAdd) {
@@ -417,13 +422,24 @@ public class sceMp3 extends HLEModule {
         	return version;
         }
 
-        public ICodec getCodec() {
-        	return codec;
-        }
-
         public int getNumberOfFrames() {
         	return numberOfFrames;
         }
+    }
+
+    public int getFreeMp3Id() {
+        int id = -1;
+        for (int i = 0; i < ids.length; i++) {
+            if (!ids[i].isReserved()) {
+                id = i;
+                break;
+            }
+        }
+        if (id < 0) {
+            return -1;
+        }
+
+        return id;
     }
 
     @HLEFunction(nid = 0x07EC321A, version = 150, checkInsideInterrupt = true)
@@ -459,15 +475,9 @@ public class sceMp3 extends HLEModule {
                     startPos, endPos, bufferAddr, bufferSize, outputAddr, outputSize));
         }
 
-        int id = -1;
-        for (int i = 0; i < ids.length; i++) {
-            if (!ids[i].isReserved()) {
-                id = i;
-                break;
-            }
-        }
+        int id = getFreeMp3Id();
         if (id < 0) {
-            return -1;
+        	return id;
         }
 
         ids[id].reserve(bufferAddr, bufferSize, outputAddr, outputSize, startPos, endPos);

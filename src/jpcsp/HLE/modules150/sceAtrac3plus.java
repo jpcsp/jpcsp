@@ -46,8 +46,8 @@ import jpcsp.HLE.kernel.types.pspFileBuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules150.sceAudiocodec.AudiocodecInfo;
 import jpcsp.media.codec.CodecFactory;
-import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.atrac3.Atrac3Decoder;
 import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
 import jpcsp.util.Utilities;
@@ -151,12 +151,10 @@ public class sceAtrac3plus extends HLEModule {
     	public LoopInfo[] loops;
     }
 
-    public static class AtracID {
+    public static class AtracID extends AudiocodecInfo {
         // Internal info.
     	private final int id;
         protected int codecType;
-        protected ICodec codec;
-        protected boolean codecInitialized;
         protected boolean inUse;
         protected int currentReadPosition;
         // Context (used only from firmware 6.00)
@@ -192,7 +190,8 @@ public class sceAtrac3plus extends HLEModule {
         	info = new AtracFileInfo();
         }
 
-        public void release() {
+        @Override
+		public void release() {
         	setInUse(false);
         	releaseContext();
         	releaseInternalBuffer();
@@ -689,26 +688,6 @@ public class sceAtrac3plus extends HLEModule {
 			this.outputChannels = outputChannels;
 		}
 
-		public ICodec getCodec() {
-			return codec;
-		}
-
-		public void setCodec(ICodec codec) {
-			this.codec = codec;
-		}
-
-		public boolean isCodecInitialized() {
-			return codecInitialized;
-		}
-
-		public void setCodecInitialized(boolean codecInitialized) {
-			this.codecInitialized = codecInitialized;
-		}
-
-		public void setCodecInitialized() {
-			setCodecInitialized(true);
-		}
-
 		public int getNumberOfSamples() {
 			return codec.getNumberOfSamples() - skippedSamples;
 		}
@@ -721,10 +700,15 @@ public class sceAtrac3plus extends HLEModule {
 			this.inUse = inUse;
 
 			if (inUse) {
-				codec = CodecFactory.getCodec(getCodecType());
+				initCodec();
 			} else {
 				codec = null;
 			}
+		}
+
+		@Override
+		public void initCodec() {
+			codec = CodecFactory.getCodec(getCodecType());
 		}
 
         @Override

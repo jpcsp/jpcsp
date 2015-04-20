@@ -2091,6 +2091,13 @@ public class sceMpeg extends HLEModule {
 		mpegRingbufferAddr = null;
     }
 
+    public void hleMpegNotifyRingbufferRead() {
+    	if (!mpegRingbuffer.hasReadPackets()) {
+    		mpegRingbuffer.setReadPackets(1);
+    		mpegRingbufferWrite();
+    	}
+    }
+
     public void setVideoCodecExtraData(int videoCodecExtraData[]) {
     	this.videoCodecExtraData = videoCodecExtraData;
     }

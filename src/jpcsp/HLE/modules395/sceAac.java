@@ -40,8 +40,8 @@ import jpcsp.HLE.kernel.types.pspFileBuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules150.sceAudiocodec.AudiocodecInfo;
 import jpcsp.media.codec.CodecFactory;
-import jpcsp.media.codec.ICodec;
 import jpcsp.util.Utilities;
 
 @HLELogging
@@ -50,7 +50,7 @@ public class sceAac extends HLEModule {
     protected SysMemInfo resourceMem;
     protected AacInfo[] ids;
 
-    protected static class AacInfo {
+    public static class AacInfo extends AudiocodecInfo {
     	// The PSP is always reserving this size at the beginning of the input buffer
     	private static final int reservedBufferSize = 1600;
     	private static final int minimumInputBufferSize = reservedBufferSize;
@@ -60,7 +60,6 @@ public class sceAac extends HLEModule {
         private int outputAddr;
         private int outputSize;
         private int sumDecodedSamples;
-        private ICodec codec;
         private int halfBufferSize;
         private int outputIndex;
         private int loopNum;
@@ -71,7 +70,6 @@ public class sceAac extends HLEModule {
         }
 
         public void init(int bufferAddr, int bufferSize, int outputAddr, int outputSize, long startPos, long endPos) {
-            init = true;
             this.bufferAddr = bufferAddr;
             this.outputAddr = outputAddr;
             this.outputSize = outputSize;
@@ -79,13 +77,20 @@ public class sceAac extends HLEModule {
             inputBuffer = new pspFileBuffer(bufferAddr + reservedBufferSize, bufferSize - reservedBufferSize, 0, this.startPos);
             inputBuffer.setFileMaxSize((int) endPos);
             loopNum = -1; // Looping indefinitely by default
-            codec = CodecFactory.getCodec(PSP_CODEC_AAC);
-            codec.init(0, 2, 2, 0); // TODO How to find out correct parameter values?
+            initCodec();
 
             halfBufferSize = (bufferSize - reservedBufferSize) >> 1;
         }
 
-        public void exit() {
+        @Override
+		public void initCodec() {
+            init = true;
+            codec = CodecFactory.getCodec(PSP_CODEC_AAC);
+            codec.init(0, 2, 2, 0); // TODO How to find out correct parameter values?
+        }
+
+        @Override
+		public void release() {
             init = false;
         }
 
@@ -266,8 +271,30 @@ public class sceAac extends HLEModule {
         return id;
     }
 
-    protected AacInfo getAacInfo(int id) {
+    public int getFreeAacId() {
+        int id = -1;
+        for (int i = 0; i < ids.length; i++) {
+            if (!ids[i].isInit()) {
+                id = i;
+                break;
+            }
+        }
+        if (id < 0) {
+            return SceKernelErrors.ERROR_AAC_NO_MORE_FREE_ID;
+        }
+
+        return id;
+    }
+
+    public AacInfo getAacInfo(int id) {
         return ids[id];
+    }
+
+    public void hleAacInit(int numberIds) {
+        ids = new AacInfo[numberIds];
+        for (int i = 0; i < numberIds; i++) {
+            ids[i] = new AacInfo();
+        }
     }
 
     @HLEFunction(nid = 0xE0C89ACA, version = 395)
@@ -304,15 +331,9 @@ public class sceAac extends HLEModule {
             return ERROR_AAC_INVALID_PARAMETER;
         }
 
-        int id = -1;
-        for (int i = 0; i < ids.length; i++) {
-            if (!ids[i].isInit()) {
-                id = i;
-                break;
-            }
-        }
+        int id = getFreeAacId();
         if (id < 0) {
-            return SceKernelErrors.ERROR_AAC_NO_MORE_FREE_ID;
+        	return id;
         }
 
         ids[id].init(bufferAddr, bufferSize, outputAddr, outputSize, startPos, endPos);
@@ -322,7 +343,7 @@ public class sceAac extends HLEModule {
 
     @HLEFunction(nid = 0x33B8C009, version = 395)
     public int sceAacExit(@CheckArgument("checkId") int id) {
-        getAacInfo(id).exit();
+        getAacInfo(id).release();
 
         return 0;
     }
@@ -338,10 +359,7 @@ public class sceAac extends HLEModule {
 
         Memory.getInstance().memset(resourceMem.addr, (byte) 0, memSize);
 
-        ids = new AacInfo[numberIds];
-        for (int i = 0; i < numberIds; i++) {
-            ids[i] = new AacInfo();
-        }
+        hleAacInit(numberIds);
 
         return 0;
     }

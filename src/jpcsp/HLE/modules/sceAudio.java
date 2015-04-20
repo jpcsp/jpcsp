@@ -16,5 +16,5 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class sceAudio extends jpcsp.HLE.modules150.sceAudio {
+public class sceAudio extends jpcsp.HLE.modules500.sceAudio {
 }

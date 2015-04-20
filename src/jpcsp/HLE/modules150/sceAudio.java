@@ -508,18 +508,18 @@ public class sceAudio extends HLEModule {
 	}
 
 	@HLEUnimplemented
-    @HLEFunction(nid = 0x80F1F7E0, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x80F1F7E0, version = 150, checkInsideInterrupt = true)
     public int sceAudioInit() {
         return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x210567F7, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x210567F7, version = 150, checkInsideInterrupt = true)
     public int sceAudioEnd() {
         return 0;
     }
 
-    @HLEFunction(nid = 0xA2BEAA6C, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xA2BEAA6C, version = 150, checkInsideInterrupt = true)
     public int sceAudioSetFrequency(int frequency) {
     	if (frequency != 44100 && frequency != 48000) {
         	return SceKernelErrors.ERROR_AUDIO_INVALID_FREQUENCY;
@@ -533,13 +533,13 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xB61595C0, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xB61595C0, version = 150, checkInsideInterrupt = true)
     public int sceAudioLoopbackTest() {
         return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x927AC32B, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x927AC32B, version = 150, checkInsideInterrupt = true)
     public int sceAudioSetVolumeOffset() {
         return 0;
     }

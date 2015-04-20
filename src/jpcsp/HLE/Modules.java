@@ -52,9 +52,11 @@ import jpcsp.HLE.modules.sceHttps;
 import jpcsp.HLE.modules.sceImpose;
 import jpcsp.HLE.modules.sceJpeg;
 import jpcsp.HLE.modules.sceMd5;
+import jpcsp.HLE.modules.sceMeCore_driver;
 import jpcsp.HLE.modules.sceMp3;
 import jpcsp.HLE.modules.sceMp4;
 import jpcsp.HLE.modules.sceMpeg;
+import jpcsp.HLE.modules.sceMpegbase;
 import jpcsp.HLE.modules.sceMt19937;
 import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhoc;
@@ -119,6 +121,7 @@ public class Modules {
     public static Kernel_Library Kernel_LibraryModule = new Kernel_Library();
     public static ModuleMgrForUser ModuleMgrForUserModule = new ModuleMgrForUser();
     public static sceMpeg sceMpegModule = new sceMpeg();
+    public static sceMpegbase sceMpegbaseModule = new sceMpegbase();
     public static LoadCoreForKernel LoadCoreForKernelModule = new LoadCoreForKernel();
     public static sceAtrac3plus sceAtrac3plusModule = new sceAtrac3plus();
     public static sceAudio sceAudioModule = new sceAudio();
@@ -175,6 +178,7 @@ public class Modules {
     public static sceAdler sceAdlerModule = new sceAdler();
     public static sceSha1 sceSha1Module = new sceSha1();
     public static sceSha256 sceSha256Module = new sceSha256();
+    public static sceMeCore_driver sceMeCore_driverModule = new sceMeCore_driver();
 
     public static Logger log = Logger.getLogger("hle");
 
