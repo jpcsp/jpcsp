@@ -31,6 +31,8 @@ import jpcsp.format.PSPModuleInfo;
 import jpcsp.util.Utilities;
 
 public class SceModule {
+	public static final int PSP_MODULE_VSH    = 0x0800;
+	public static final int PSP_MODULE_KERNEL = 0x1000;
     // PSP info
     public int next; // should be handled by a manager
     public short attribute;

@@ -42,6 +42,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.DeferredVStub32;
@@ -346,6 +347,14 @@ public class Loader {
             if (!elf.getHeader().isMIPSExecutable()) {
                 log.error("Loader NOT a MIPS executable");
                 return false;
+            }
+
+            if (elf.isKernelMode()) {
+                module.mpidtext = SysMemUserForUser.KERNEL_PARTITION_ID;
+                module.mpiddata = SysMemUserForUser.KERNEL_PARTITION_ID;
+                if (!analyzeOnly && baseAddress == MemoryMap.START_USERSPACE + 0x4000) {
+                	baseAddress = MemoryMap.START_RAM + Utilities.alignUp(ThreadManForUser.INTERNAL_THREAD_ADDRESS_SIZE, SysMemUserForUser.defaultSizeAlignment - 1);
+                }
             }
 
             if (elf.getHeader().isPRXDetected()) {
@@ -707,10 +716,10 @@ public class Loader {
         	log.info(String.format("Found ModuleInfo at 0x%08X, name:'%s', version: %02X%02X, attr: 0x%08X, gp: 0x%08X", moduleInfoAddr, module.modname, module.version[1], module.version[0], module.attribute, module.gp_value));
         }
 
-        if ((module.attribute & 0x1000) != 0) {
+        if ((module.attribute & SceModule.PSP_MODULE_KERNEL) != 0) {
             log.warn("Kernel mode module detected");
         }
-        if ((module.attribute & 0x0800) != 0) {
+        if ((module.attribute & SceModule.PSP_MODULE_VSH) != 0) {
             log.warn("VSH mode module detected");
         }
     }

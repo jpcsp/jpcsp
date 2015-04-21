@@ -200,8 +200,9 @@ public class ThreadManForUser extends HLEModule {
     public static final int NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x50;
     public static final int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x60;
     public static final int NET_ADHOC_CTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x70;
-    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x80;
-    public static final int UTILITY_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x90;
+    public static final int UTILITY_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x80;
+    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x90;
+    public static final int INTERNAL_THREAD_ADDRESS_SIZE = INTERNAL_THREAD_ADDRESS_END - INTERNAL_THREAD_ADDRESS_START;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
     private static final boolean LOG_INSTRUCTIONS = false;
@@ -247,7 +248,7 @@ public class ThreadManForUser extends HLEModule {
         callbackManager.Initialize();
 
         // Reserve the memory user the internal handlers
-        Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-InternalHandlers", SysMemUserForUser.PSP_SMEM_Addr, 0x100, MemoryMap.START_RAM);
+        Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-InternalHandlers", SysMemUserForUser.PSP_SMEM_Addr, INTERNAL_THREAD_ADDRESS_SIZE, INTERNAL_THREAD_ADDRESS_START);
         installIdleThreads();
         installThreadExitHandler();
         installCallbackExitHandler();
@@ -313,6 +314,9 @@ public class ThreadManForUser extends HLEModule {
             rootStackSize = module.module_start_thread_stacksize;
         }
 
+        // For a kernel module, the stack is allocated in the kernel partition
+        int rootMpidStack = module.mpiddata > 0 ? module.mpiddata : USER_PARTITION_ID;
+
         int rootInitPriority = 0x20;
         // Use the module_start_thread_priority when this information was present in the ELF file
         if (module != null && module.module_start_thread_priority > 0) {
@@ -321,7 +325,7 @@ public class ThreadManForUser extends HLEModule {
         if (log.isDebugEnabled()) {
         	log.debug(String.format("Creating root thread: entry=0x%08X, priority=%d, stackSize=0x%X, attr=0x%X", entry_addr, rootInitPriority, rootStackSize, attr));
         }
-        currentThread = new SceKernelThreadInfo("root", entry_addr, rootInitPriority, rootStackSize, attr, USER_PARTITION_ID);
+        currentThread = new SceKernelThreadInfo("root", entry_addr, rootInitPriority, rootStackSize, attr, rootMpidStack);
         currentThread.moduleid = moduleid;
         threadMap.put(currentThread.uid, currentThread);
 
@@ -3136,18 +3140,20 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x446D8DE6, version = 150)
     public int sceKernelCreateThread(@StringInfo(maxLength = 32) String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr) {
-        SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr, USER_PARTITION_ID);
+    	int mpidStack = USER_PARTITION_ID;
+        // Inherit kernel mode if user mode bit is not set
+    	if (currentThread.isKernelMode() && !SceKernelThreadInfo.isUserMode(attr)) {
+            log.debug("sceKernelCreateThread inheriting kernel mode");
+            attr |= PSP_THREAD_ATTR_KERNEL;
+            mpidStack = KERNEL_PARTITION_ID;
+    	}
+
+    	SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr, mpidStack);
 
         if (thread.stackSize > 0 && thread.getStackAddr() == 0) {
             log.warn("sceKernelCreateThread not enough memory to create the stack");
             hleDeleteThread(thread);
             return SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
-        }
-
-        // Inherit kernel mode if user mode bit is not set
-        if (currentThread.isKernelMode() && !SceKernelThreadInfo.isUserMode(thread.attr)) {
-            log.debug("sceKernelCreateThread inheriting kernel mode");
-            thread.attr |= PSP_THREAD_ATTR_KERNEL;
         }
 
         // Inherit user mode

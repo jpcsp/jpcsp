@@ -28,6 +28,7 @@ import jpcsp.util.Utilities;
 public class Elf32 {
     // File offset
     private int elfOffset;
+    private boolean kernelMode;
 
     // Headers
     private Elf32Header header;
@@ -72,7 +73,8 @@ public class Elf32 {
 
             // yapspd: if the PRX file is a kernel module then the most significant
             // bit must be set in the phsyical address of the first program header.
-            if (i == 0 && (phdr.getP_paddr() & 0x80000000L) == 0x80000000L) {
+            if (i == 0 && (phdr.getP_paddr() & 0x80000000) != 0) {
+            	kernelMode = true;
                 Emulator.log.debug("Kernel mode PRX detected");
             }
         }
@@ -186,4 +188,8 @@ public class Elf32 {
     public String getSectInfo() {
         return SectInfo;
     }
+
+	public boolean isKernelMode() {
+		return kernelMode;
+	}
 }

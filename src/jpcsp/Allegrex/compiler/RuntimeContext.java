@@ -791,7 +791,9 @@ public class RuntimeContext {
 	    		computeCodeBlocksRange();
 
 	    		int fastExecutableLoopukIndex = (address - MemoryMap.START_USERSPACE) >> 2;
-	    		fastExecutableLookup[fastExecutableLoopukIndex] = null;
+	    		if (fastExecutableLoopukIndex >= 0 && fastExecutableLoopukIndex < fastExecutableLookup.length) {
+	    			fastExecutableLookup[fastExecutableLoopukIndex] = null;
+	    		}
 	    	} else {
 	    		// One new code block has been added, update the code blocks range
 	    		codeBlocksLowestAddress = Math.min(codeBlocksLowestAddress, codeBlock.getLowestAddress());
@@ -815,11 +817,11 @@ public class RuntimeContext {
     public static IExecutable getExecutable(int address) {
     	// Check if we have already the executable in the fastExecutableLookup array
 		int fastExecutableLoopukIndex = (address - MemoryMap.START_USERSPACE) >> 2;
-		IExecutable executable = null;
-		try {
+		IExecutable executable;
+		if (fastExecutableLoopukIndex >= 0 && fastExecutableLoopukIndex < fastExecutableLookup.length) {
 			executable = fastExecutableLookup[fastExecutableLoopukIndex];
-		} catch (ArrayIndexOutOfBoundsException e) {
-			// Ignore exception
+		} else {
+			executable = null;
 		}
 
 		if (executable == null) {
@@ -831,11 +833,9 @@ public class RuntimeContext {
 	        }
 
 	        // Store the executable in the fastExecutableLookup array
-	        try {
+			if (fastExecutableLoopukIndex >= 0 && fastExecutableLoopukIndex < fastExecutableLookup.length) {
 	    		fastExecutableLookup[fastExecutableLoopukIndex] = executable;
-	    	} catch (ArrayIndexOutOfBoundsException e) {
-	    		// Ignore exception
-	    	}
+			}
 		}
 
         return executable;
