@@ -571,9 +571,9 @@ public class SceFontInfo {
     	charInfo.bitmapTop = glyph.top;
     	charInfo.sfp26Width = glyph.dimensionWidth;
     	charInfo.sfp26Height = glyph.dimensionHeight;
-    	// TODO the Ascender and Descender values are still not matching the PSP.
-    	charInfo.sfp26Ascender = glyph.top << 6;
-    	charInfo.sfp26Descender = (glyph.h - glyph.top) << 6;
+    	// TODO Test if the Ascender and Descender values are now matching the PSP
+    	charInfo.sfp26Ascender = glyph.yAdjustH;
+    	charInfo.sfp26Descender = charInfo.sfp26Ascender - charInfo.sfp26Height;
     	charInfo.sfp26BearingHX = glyph.xAdjustH;
     	charInfo.sfp26BearingHY = glyph.yAdjustH;
     	charInfo.sfp26BearingVX = glyph.xAdjustV;
