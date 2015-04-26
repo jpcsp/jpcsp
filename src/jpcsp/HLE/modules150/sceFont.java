@@ -41,7 +41,10 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -66,7 +69,10 @@ import jpcsp.format.BWFont;
 import jpcsp.format.PGF;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.capture.CaptureImage;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
@@ -78,6 +84,7 @@ import org.apache.log4j.Logger;
 @HLELogging
 public class sceFont extends HLEModule {
     public static Logger log = Modules.getLogger("sceFont");
+    private static final boolean dumpUserFont = false;
 
 	private class UseDebugFontSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -327,7 +334,7 @@ public class sceFont extends HLEModule {
                 x += linePrefix.length() * jpcsp.util.Debug.Font.charWidth;
         	}
 
-        	fontInfo.printFont(addr, fontBpl, fontBufWidth, fontBufHeight, x, y, 0, 0, fontBufWidth, fontBufHeight, fontPixelFormat, charCode, ' ', SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR, true);
+        	fontInfo.printFont(addr, fontBpl, fontBufWidth, fontBufHeight, x, y, 0, 0, 0, 0, fontBufWidth, fontBufHeight, fontPixelFormat, charCode, ' ', SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR, true);
 
             x += maxGlyphWidth;
             if (x + maxGlyphWidth > fontBufWidth) {
@@ -411,6 +418,18 @@ public class sceFont extends HLEModule {
     }
     
     protected Font openFontFile(int addr, int length) {
+    	if (dumpUserFont) {
+			try {
+				OutputStream os = new FileOutputStream(String.format("%suserFont-0x%08X.pgf", Settings.getInstance().getTmpDirectory(), addr));
+	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, length, 1);
+	    		for (int i = 0; i < length; i++) {
+	    			os.write(memoryReader.readNext());
+	    		}
+				os.close();
+			} catch (FileNotFoundException e) {
+			} catch (IOException e) {
+			}
+    	}
         ByteBuffer pgfBuffer = ByteBuffer.allocate(length);
         Buffer memBuffer = Memory.getInstance().getBuffer(addr, length);
         Utilities.putBuffer(pgfBuffer, memBuffer, ByteOrder.LITTLE_ENDIAN, length);
@@ -911,6 +930,7 @@ public class sceFont extends HLEModule {
             font.fontInfo.printFont(
                     buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI,
+                    xPos64 % 64, yPos64 % 64,
                     0, 0, bufWidth, bufHeight,
                     pixelFormat, charCode, font.fontLib.getAltCharCode(), SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR, false);
         } else {
@@ -1042,7 +1062,7 @@ public class sceFont extends HLEModule {
         int yPosI = yPos64 >> 6;
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontGetCharGlyphImage_Clip charCode=%04X (%c), xPos=%d, yPos=%d, buffer=0x%08X, bufWidth=%d, bufHeight=%d, bytesPerLine=%d, pixelFormat=%d", charCode, (charCode <= 0xFF ? (char) charCode : '?'), xPosI, yPosI, buffer, bufWidth, bufHeight, bytesPerLine, pixelFormat));
+            log.debug(String.format("sceFontGetCharGlyphImage_Clip charCode=%04X (%c), xPos=%d(%d), yPos=%d(%d), buffer=0x%08X, bufWidth=%d, bufHeight=%d, bytesPerLine=%d, pixelFormat=%d", charCode, (charCode <= 0xFF ? (char) charCode : '?'), xPosI, xPos64, yPosI, yPos64, buffer, bufWidth, bufHeight, bytesPerLine, pixelFormat));
         }
 
         // If there's an internal font loaded, use it to display the text.
@@ -1051,6 +1071,7 @@ public class sceFont extends HLEModule {
             font.fontInfo.printFont(
                     buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI,
+                    xPos64 % 64, yPos64 % 64,
                     clipXPos, clipYPos, clipWidth, clipHeight,
                     pixelFormat, charCode, font.fontLib.getAltCharCode(), SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR, false);
         } else {

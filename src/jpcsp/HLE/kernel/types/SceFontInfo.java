@@ -410,7 +410,32 @@ public class SceFontInfo {
         return glyph;
     }
 
-    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, Glyph glyph, int glyphType, boolean addColor) {
+    private int sample(int[][] bitmap, int x, int y, int factor4096) {
+    	if (factor4096 == 0 || y < 0 || x < 0 || y >= bitmap.length || x >= bitmap[y].length) {
+    		return 0;
+    	}
+
+    	return bitmap[y][x] * factor4096;
+    }
+
+    private int sample(int[][] bitmap, int x, int y, int x64, int y64) {
+    	int color = 0;
+
+    	// PSP is not interpolating on the y-axis, i.e. y64 is ignored
+    	color += sample(bitmap, x    , y, 64 - x64);
+    	color += sample(bitmap, x - 1, y,      x64);
+
+    	// This seems to be the rule used by the PSP to round up or down
+    	if (color >= 0x1E0) {
+    		// Round up
+    		color += 0x20;
+    	}
+    	color = color >> 6;
+
+    	return color;
+    }
+
+    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int x64, int y64, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, Glyph glyph, int glyphType, boolean addColor) {
         if (((glyph.flags & FONT_PGF_BMP_OVERLAY) != FONT_PGF_BMP_H_ROWS) &&
             ((glyph.flags & FONT_PGF_BMP_OVERLAY) != FONT_PGF_BMP_V_ROWS)) {
         	return;
@@ -418,12 +443,8 @@ public class SceFontInfo {
 
         long bitPtr = glyph.ptr * 8;
         final int nibbleBits = 4;
-        int nibble;
-        int value = 0;
-        int xx, yy, count;
         boolean bitmapHorizontalRows = (glyph.flags & FONT_PGF_BMP_OVERLAY) == FONT_PGF_BMP_H_ROWS;
         int numberPixels = glyph.w * glyph.h;
-        int pixelIndex = 0;
 
         int scaleX = 1;
         int scaleY = 1;
@@ -432,10 +453,14 @@ public class SceFontInfo {
         	scaleY = 64 / shadowScaleY;
         }
 
+        int[][] bitmap = new int[glyph.h][glyph.w];
+        int pixelIndex = 0;
         while (pixelIndex < numberPixels && bitPtr + 8 < fontdataBits) {
-            nibble = getBits(nibbleBits, fontdata, bitPtr);
+            int nibble = getBits(nibbleBits, fontdata, bitPtr);
             bitPtr += nibbleBits;
 
+            int count;
+            int value = 0;
             if (nibble < 8) {
                 value = getBits(nibbleBits, fontdata, bitPtr);
                 bitPtr += nibbleBits;
@@ -450,6 +475,7 @@ public class SceFontInfo {
                     bitPtr += nibbleBits;
                 }
 
+                int xx, yy;
                 if (bitmapHorizontalRows) {
                     xx = pixelIndex % glyph.w;
                     yy = pixelIndex / glyph.w;
@@ -457,49 +483,58 @@ public class SceFontInfo {
                     xx = pixelIndex / glyph.h;
                     yy = pixelIndex % glyph.h;
                 }
-
-                int pixelX = x + xx * scaleX;
-                int pixelY = y + yy * scaleY;
-                if (pixelX >= clipX && pixelX < clipX + clipWidth && pixelY >= clipY && pixelY < clipY + clipHeight) {
-                    // 4-bit color value
-                    int pixelColor = value;
-                    switch (pixelformat) {
-                    	case sceFont.PSP_FONT_PIXELFORMAT_8:
-                            // 8-bit color value
-                    		pixelColor |= pixelColor << 4;
-                    		break;
-                    	case sceFont.PSP_FONT_PIXELFORMAT_24:
-                            // 24-bit color value
-                    		pixelColor |= pixelColor << 4;
-                    		pixelColor |= pixelColor << 8;
-                    		pixelColor |= pixelColor << 8;
-                    		break;
-                    	case sceFont.PSP_FONT_PIXELFORMAT_32:
-                            // 32-bit color value
-        					pixelColor |= pixelColor << 4;
-        					pixelColor |= pixelColor << 8;
-        					pixelColor |= pixelColor << 16;
-        					break;
-                    }
-
-                    for (int yyy = 0; yyy < scaleY; yyy++) {
-                    	for (int xxx = 0; xxx < scaleX; xxx++) {
-                    		if (addColor) {
-                    			Debug.addFontPixel(base, bpl, bufWidth, bufHeight, pixelX + xxx, pixelY + yyy, pixelColor, pixelformat);
-                    		} else {
-                    			Debug.setFontPixel(base, bpl, bufWidth, bufHeight, pixelX + xxx, pixelY + yyy, pixelColor, pixelformat);
-                    		}
-                    	}
-                    }
-                }
+                bitmap[yy][xx] = value;
 
                 pixelIndex++;
             }
         }
+
+        for (int yy = 0; yy <= glyph.h; yy++) {
+        	for (int xx = 0; xx <= glyph.w; xx++) {
+        		int sample = sample(bitmap, xx, yy, x64, y64);
+                // A pixel with value 0 is not changing the value in the buffer (tested on PSP)
+                if (sample != 0) {
+                    int pixelX = x + xx * scaleX;
+                    int pixelY = y + yy * scaleY;
+                    if (pixelX >= clipX && pixelX < clipX + clipWidth && pixelY >= clipY && pixelY < clipY + clipHeight) {
+                        // 4-bit color value
+                        int pixelColor = sample;
+                        switch (pixelformat) {
+                        	case sceFont.PSP_FONT_PIXELFORMAT_8:
+                                // 8-bit color value
+                        		pixelColor |= pixelColor << 4;
+                        		break;
+                        	case sceFont.PSP_FONT_PIXELFORMAT_24:
+                                // 24-bit color value
+                        		pixelColor |= pixelColor << 4;
+                        		pixelColor |= pixelColor << 8;
+                        		pixelColor |= pixelColor << 8;
+                        		break;
+                        	case sceFont.PSP_FONT_PIXELFORMAT_32:
+                                // 32-bit color value
+            					pixelColor |= pixelColor << 4;
+            					pixelColor |= pixelColor << 8;
+            					pixelColor |= pixelColor << 16;
+            					break;
+                        }
+
+                        for (int yyy = 0; yyy < scaleY; yyy++) {
+                        	for (int xxx = 0; xxx < scaleX; xxx++) {
+                        		if (addColor) {
+                        			Debug.addFontPixel(base, bpl, bufWidth, bufHeight, pixelX + xxx, pixelY + yyy, pixelColor, pixelformat);
+                        		} else {
+                        			Debug.setFontPixel(base, bpl, bufWidth, bufHeight, pixelX + xxx, pixelY + yyy, pixelColor, pixelformat);
+                        		}
+                        	}
+                        }
+                    }
+                }
+        	}
+        }
     }
 
     // Generate a 4bpp texture for the given char id.
-    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType, boolean addColor) {
+    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int x64, int y64, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType, boolean addColor) {
     	Glyph glyph = getCharGlyph(charCode, glyphType);
     	if (glyph == null) {
     		// No Glyph available for this charCode, try to use the alternate char.
@@ -542,18 +577,18 @@ public class SceFontInfo {
             	        int left = subGlyph.left - glyph.left;
             	        int top = glyph.top - subGlyph.top;
 
-        	        	generateFontTexture(base, bpl, bufWidth, bufHeight, x + left, y + top, clipX, clipY, clipWidth, clipHeight, pixelformat, subGlyph, glyphType, true);
+        	        	generateFontTexture(base, bpl, bufWidth, bufHeight, x + left, y + top, x64, y64, clipX, clipY, clipWidth, clipHeight, pixelformat, subGlyph, glyphType, true);
         			}
         		}
         	}
         } else {
         	// Regular glyph rendering
-        	generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, clipX, clipY, clipWidth, clipHeight, pixelformat, glyph, glyphType, addColor);
+        	generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, x64, y64, clipX, clipY, clipWidth, clipHeight, pixelformat, glyph, glyphType, addColor);
         }
     }
 
-    public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType, boolean addColor) {
-        generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, clipX, clipY, clipWidth, clipHeight, pixelformat, charCode, altCharCode, glyphType, addColor);
+    public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int x64, int y64, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType, boolean addColor) {
+        generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, x64, y64, clipX, clipY, clipWidth, clipHeight, pixelformat, charCode, altCharCode, glyphType, addColor);
     }
 
     public pspCharInfo getCharInfo(int charCode, int glyphType) {

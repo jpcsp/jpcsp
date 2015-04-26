@@ -52,7 +52,7 @@ public class SceFontInfoBW extends SceFontInfo {
 	}
 
 	@Override
-	public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType, boolean addColor) {
+	public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int x64, int y64, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType, boolean addColor) {
 		if (glyphType != FONT_PGF_GLYPH_TYPE_CHAR) {
 			return;
 		}
