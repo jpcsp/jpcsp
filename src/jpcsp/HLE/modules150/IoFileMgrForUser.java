@@ -1165,8 +1165,7 @@ public class IoFileMgrForUser extends HLEModule {
     	if (info != null && result != ERROR_KERNEL_ASYNC_BUSY) {
             if (async) {
                 if (!info.asyncPending) {
-                    startIoAsync(info, result, ioOperation, asyncAction, size);
-                    result = 0;
+                    result = startIoAsync(info, result, ioOperation, asyncAction, size);
                 }
             } else {
                 info.result = ERROR_KERNEL_NO_ASYNC_OP;
@@ -1292,9 +1291,10 @@ public class IoFileMgrForUser extends HLEModule {
      * @param info   the file
      * @param result the result the async IO should return
      */
-    private void startIoAsync(IoInfo info, long result, IoOperation ioOperation, IAction asyncAction, int size) {
+    private int startIoAsync(IoInfo info, long result, IoOperation ioOperation, IAction asyncAction, int size) {
+        int startResult = 0;
         if (info == null) {
-            return;
+            return startResult;
         }
         info.asyncPending = true;
         info.asyncResultPending = false;
@@ -1322,19 +1322,29 @@ public class IoFileMgrForUser extends HLEModule {
             info.asyncThread = threadMan.hleKernelCreateThread("SceIofileAsync",
                     ThreadManForUser.ASYNC_LOOP_ADDRESS, asyncPriority, stackSize,
                     threadMan.getCurrentThread().attr, 0, SysMemUserForUser.USER_PARTITION_ID);
-            if (log.isDebugEnabled()) {
-            	log.debug(String.format("Starting Async IO thread %s", info.asyncThread));
-            }
-            // This must be the last action of the hleIoXXX call because it can context-switch
-            // Inherit $gp from this process ($gp can be used by interrupts)
-            threadMan.hleKernelStartThread(info.asyncThread, 0, 0, info.asyncThread.gpReg_addr);
 
-            // Copy uid to Async Thread argument register after starting the thread
-            // (all registers are reset when starting the thread).
-            info.asyncThread.cpuContext.setRegister(asyncThreadRegisterArgument, info.uid);
+            if (info.asyncThread.getStackAddr() == 0) {
+        		log.warn(String.format("Cannot start the Async IO thread, not enough memory to create its stack"));
+            	threadMan.hleDeleteThread(info.asyncThread);
+            	info.asyncThread = null;
+            	startResult = SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
+            } else {
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("Starting Async IO thread %s", info.asyncThread));
+                }
+	            // This must be the last action of the hleIoXXX call because it can context-switch
+	            // Inherit $gp from this process ($gp can be used by interrupts)
+	            threadMan.hleKernelStartThread(info.asyncThread, 0, 0, info.asyncThread.gpReg_addr);
+
+	            // Copy uid to Async Thread argument register after starting the thread
+	            // (all registers are reset when starting the thread).
+	            info.asyncThread.cpuContext.setRegister(asyncThreadRegisterArgument, info.uid);
+            }
         } else {
             triggerAsyncThread(info);
         }
+
+        return startResult;
     }
 
     private boolean doStepAsync(IoInfo info) {
@@ -1517,7 +1527,7 @@ public class IoFileMgrForUser extends HLEModule {
             return ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         }
 
-        if (info.result == ERROR_KERNEL_NO_ASYNC_OP) {
+        if (info.result == ERROR_KERNEL_NO_ASYNC_OP || info.asyncThread == null) {
             log.debug("hleIoWaitAsync - PSP_ERROR_NO_ASYNC_OP");
             return ERROR_KERNEL_NO_ASYNC_OP;
         }
@@ -1807,7 +1817,10 @@ public class IoFileMgrForUser extends HLEModule {
                 result = info.id;
             }
 
-            startIoAsync(info, realResult, IoOperation.open, null, 0);
+            int startResult = startIoAsync(info, realResult, IoOperation.open, null, 0);
+            if (startResult < 0) {
+            	result = startResult;
+            }
         }
 
         return result;
