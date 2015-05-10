@@ -59,6 +59,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     public static final int PSP_THREAD_ATTR_SCRATCH_SRAM = 0x00008000;
     public static final int PSP_THREAD_ATTR_NO_FILLSTACK = 0x00100000; // Disables filling the stack with 0xFF on creation.
     public static final int PSP_THREAD_ATTR_CLEAR_STACK = 0x00200000; // Clear the stack when the thread is deleted.
+    public static final int PSP_THREAD_ATTR_LOW_MEM_STACK = 0x00400000; // Allocate the stack in low memory instead of high memory
     // PspThreadStatus
     public static final int PSP_THREAD_RUNNING = 0x00000001;
     public static final int PSP_THREAD_READY = 0x00000002;
@@ -266,7 +267,8 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         this.attr = attr;
         uid = SceUidManager.getNewUid("ThreadMan-thread");
         // Setup the stack.
-    	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(mpidStack, String.format("ThreadMan-Stack-0x%x-%s", uid, name), SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
+        int stackMemoryType = (attr & PSP_THREAD_ATTR_LOW_MEM_STACK) != 0 ? SysMemUserForUser.PSP_SMEM_Low : SysMemUserForUser.PSP_SMEM_High;
+    	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(mpidStack, String.format("ThreadMan-Stack-0x%x-%s", uid, name), stackMemoryType, stackSize, 0);
     	if (stackSysMemInfo == null) {
     		stackAddr = 0;
     	} else {
