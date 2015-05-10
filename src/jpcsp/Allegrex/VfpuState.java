@@ -1868,7 +1868,13 @@ public class VfpuState extends FpuState {
     public void doVCOS(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = (float) Math.cos(PI_2 * v1[i]);
+        	float value = v1[i];
+        	// Handling of specific values first to avoid precision loss in float value
+        	if (value == 1f || value == -1f) {
+        		v3[i] = 0f;
+        	} else {
+        		v3[i] = (float) Math.cos(PI_2 * v1[i]);
+        	}
         }
         saveVd(vsize, vd, v3);
     }
@@ -2996,9 +3002,22 @@ public class VfpuState extends FpuState {
     public void doVROT(int vsize, int vd, int vs, int imm5) {
         loadVs(1, vs);
 
-        float a = PI_2 * v1[0];
-        float ca = (float) Math.cos(a);
-        float sa = (float) Math.sin(a);
+        float value = v1[0];
+        float ca, sa;
+
+        // Handling of specific values first to avoid precision loss in float value
+        if (value == 1f) {
+        	ca = 0f;
+        	sa = 1f;
+        } else if (value == -1f) {
+        	ca = 0f;
+        	sa = -1f;
+        } else {
+        	// General case
+            float a = PI_2 * value;
+        	ca = (float) Math.cos(a);
+        	sa = (float) Math.sin(a);
+        }
 
         int i;
         int si = (imm5 >>> 2) & 3;

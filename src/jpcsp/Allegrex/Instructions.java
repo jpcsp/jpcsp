@@ -9986,8 +9986,38 @@ public void compile(ICompilerContext context, int insn) {
     int ci = (imm5 >>> 0) & 3;
     MethodVisitor mv = context.getMethodVisitor();
 
-    // Compute angle
+    Label isNotOne = new Label();
+    Label computeAngle = new Label();
+    Label computeResult = new Label();
+
     context.loadVs(1, 0);
+    // Special case 1.0
+    mv.visitInsn(Opcodes.DUP);
+    mv.visitInsn(Opcodes.FCONST_1);
+    mv.visitInsn(Opcodes.FCMPG);
+    mv.visitJumpInsn(Opcodes.IFNE, isNotOne);
+    mv.visitInsn(Opcodes.POP);
+    mv.visitInsn(Opcodes.FCONST_0);
+    context.storeFTmp1();
+    mv.visitInsn(Opcodes.FCONST_1);
+    context.storeFTmp2();
+    mv.visitJumpInsn(Opcodes.GOTO, computeResult);
+    // Special case -1.0
+    mv.visitLabel(isNotOne);
+    mv.visitInsn(Opcodes.DUP);
+    mv.visitInsn(Opcodes.FCONST_1);
+    mv.visitInsn(Opcodes.FNEG);
+    mv.visitInsn(Opcodes.FCMPG);
+    mv.visitJumpInsn(Opcodes.IFNE, computeAngle);
+    mv.visitInsn(Opcodes.POP);
+    mv.visitInsn(Opcodes.FCONST_0);
+    context.storeFTmp1();
+    mv.visitInsn(Opcodes.FCONST_1);
+    mv.visitInsn(Opcodes.FNEG);
+    context.storeFTmp2();
+    mv.visitJumpInsn(Opcodes.GOTO, computeResult);
+    // Compute angle
+    mv.visitLabel(computeAngle);
     mv.visitInsn(Opcodes.F2D);
     mv.visitLdcInsn(Math.PI * 0.5);
     mv.visitInsn(Opcodes.DMUL);
@@ -10006,6 +10036,7 @@ public void compile(ICompilerContext context, int insn) {
     }
     context.storeFTmp2();
 
+    mv.visitLabel(computeResult);
 	for (int n = 0; n < vsize; n++) {
 		context.prepareVdForStore(n);
 		if (n == ci) {
