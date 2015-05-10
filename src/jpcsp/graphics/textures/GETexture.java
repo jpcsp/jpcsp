@@ -35,6 +35,7 @@ import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
+import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.util.Utilities;
 
 /**
@@ -446,6 +447,25 @@ public class GETexture {
 
 		// Success
 		return true;
+	}
+
+	public void capture(IRenderingEngine re) {
+		if (textureId == -1) {
+			// Texture not yet created... nothing to capture
+			return;
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("GETexture.capture %s", toString()));
+		}
+
+    	prepareBuffer();
+        re.bindTexture(textureId);
+		re.setTextureFormat(pixelFormat, false);
+        re.setPixelStore(bufferWidth, sceDisplay.getPixelFormatBytes(pixelFormat));
+        re.getTexImage(0, pixelFormat, pixelFormat, buffer);
+
+        CaptureManager.captureImage(address, 0, buffer, width, height, bufferWidth, pixelFormat, false, 0, true, false);
 	}
 
 	@Override
