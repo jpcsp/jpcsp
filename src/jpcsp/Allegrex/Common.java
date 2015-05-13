@@ -870,8 +870,9 @@ public class Common {
         int e = ((imm16 >> 10) & 0x1f);
         int m = (e == 0) ? ((imm16 & 0x3ff) << 1) : ((imm16 & 0x3ff) | 0x400);
 
-        s = s * ((float) m) / ((float) (1 << (15 - e))) / ((float) (1 << 10));
-        return String.format("%1$-10s %2$s, %3$1.8f", opcode + vsuffix[vsize - 1], vprNames[0][vd], s);
+        float v = (e >= 15) ? (1 << (e - 15)) : 1.0f / (1 << (15 - e));
+        v = s * m * v / 1024f;
+        return String.format("%1$-10s %2$s, %3$1.8f", opcode + vsuffix[vsize - 1], vprNames[0][vd], v);
     }
 
     public static String disasmVDMVSMVTM(String opname, int vsize, int vd, int vs, int vt) {
