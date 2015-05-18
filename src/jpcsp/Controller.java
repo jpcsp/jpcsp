@@ -726,20 +726,28 @@ public class Controller {
             if (value == POV.CENTER) {
                 Buttons &= ~(PSP_CTRL_RIGHT | PSP_CTRL_LEFT | PSP_CTRL_DOWN | PSP_CTRL_UP);
             } else if (value == POV.UP) {
+                Buttons &= ~(PSP_CTRL_RIGHT | PSP_CTRL_LEFT | PSP_CTRL_DOWN | PSP_CTRL_UP);
                 Buttons |= PSP_CTRL_UP;
             } else if (value == POV.RIGHT) {
+                Buttons &= ~(PSP_CTRL_RIGHT | PSP_CTRL_LEFT | PSP_CTRL_DOWN | PSP_CTRL_UP);
                 Buttons |= PSP_CTRL_RIGHT;
             } else if (value == POV.DOWN) {
+                Buttons &= ~(PSP_CTRL_RIGHT | PSP_CTRL_LEFT | PSP_CTRL_DOWN | PSP_CTRL_UP);
                 Buttons |= PSP_CTRL_DOWN;
             } else if (value == POV.LEFT) {
+                Buttons &= ~(PSP_CTRL_RIGHT | PSP_CTRL_LEFT | PSP_CTRL_DOWN | PSP_CTRL_UP);
                 Buttons |= PSP_CTRL_LEFT;
             } else if (value == POV.DOWN_LEFT) {
+                Buttons &= ~(PSP_CTRL_RIGHT | PSP_CTRL_LEFT | PSP_CTRL_DOWN | PSP_CTRL_UP);
                 Buttons |= PSP_CTRL_DOWN | PSP_CTRL_LEFT;
             } else if (value == POV.DOWN_RIGHT) {
+                Buttons &= ~(PSP_CTRL_RIGHT | PSP_CTRL_LEFT | PSP_CTRL_DOWN | PSP_CTRL_UP);
                 Buttons |= PSP_CTRL_DOWN | PSP_CTRL_RIGHT;
             } else if (value == POV.UP_LEFT) {
+                Buttons &= ~(PSP_CTRL_RIGHT | PSP_CTRL_LEFT | PSP_CTRL_DOWN | PSP_CTRL_UP);
                 Buttons |= PSP_CTRL_UP | PSP_CTRL_LEFT;
             } else if (value == POV.UP_RIGHT) {
+                Buttons &= ~(PSP_CTRL_RIGHT | PSP_CTRL_LEFT | PSP_CTRL_DOWN | PSP_CTRL_UP);
                 Buttons |= PSP_CTRL_UP | PSP_CTRL_RIGHT;
             } else {
                 log.warn(String.format("Unknown Controller Arrows Event on %s(%s): %f", component.getName(), id.getName(), value));
