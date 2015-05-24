@@ -10000,6 +10000,9 @@ public void compile(ICompilerContext context, int insn) {
     mv.visitInsn(Opcodes.FCONST_0);
     context.storeFTmp1();
     mv.visitInsn(Opcodes.FCONST_1);
+    if ((imm5 & 16) != 0) {
+    	mv.visitInsn(Opcodes.FNEG);
+    }
     context.storeFTmp2();
     mv.visitJumpInsn(Opcodes.GOTO, computeResult);
     // Special case -1.0
@@ -10013,7 +10016,9 @@ public void compile(ICompilerContext context, int insn) {
     mv.visitInsn(Opcodes.FCONST_0);
     context.storeFTmp1();
     mv.visitInsn(Opcodes.FCONST_1);
-    mv.visitInsn(Opcodes.FNEG);
+    if ((imm5 & 16) == 0) {
+    	mv.visitInsn(Opcodes.FNEG);
+    }
     context.storeFTmp2();
     mv.visitJumpInsn(Opcodes.GOTO, computeResult);
     // Compute angle
