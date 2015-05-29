@@ -209,6 +209,7 @@ public class VideoEngine {
     private boolean isGeProfilerEnabled;
     private int primCount;
     private int nopCount;
+    private long listCount;
     private boolean viewportChanged;
     public MatrixUpload projectionMatrixUpload;
     public MatrixUpload modelMatrixUpload;
@@ -625,6 +626,7 @@ public class VideoEngine {
         depthChanged = true;
         materialChanged = true;
         previousPrim = PRIM_SPRITES;
+        listCount = 0;
 
         cachedInstructions = new HashMap<Integer, int[]>();
     }
@@ -809,6 +811,7 @@ public class VideoEngine {
         maxSpriteWidth = 0;
         primCount = 0;
         nopCount = 0;
+        listCount++;
 
         resetCurrentListCMDValues();
 
@@ -3389,7 +3392,9 @@ public class VideoEngine {
         }
 
         nopCount++;
-        if (nopCount > 3000) {
+    	// Some application do have more than 3000 NOP instructions inside the first 2 lists
+    	// (i.e. at application initialization), so exclude these lists.
+        if (listCount > 2 && nopCount > 3000) {
         	// More than 3000 NOP instructions executed during this list,
             // something must be wrong...
             error(String.format("Too many NOP instructions executed (%d) at 0x%08X, list %s", nopCount, currentList.getPc(), currentList));
