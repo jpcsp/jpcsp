@@ -40,8 +40,6 @@ public enum SyscallIgnore {
 	sceDisplayDisable(0x681EE6A7),
 	sceDisplayEnable(0x432D133F),
 	sceHprmEnd(0x588845DA),
-	sceImposeGetParam(0x531C9778),
-	sceImposeSetParam(0x810FB7FB),
 	sceKernelCallSubIntrHandler(0xCDC86B64),
 	sceKernelCallUserIntrHandler(0xF4454E44),
 	sceKernelCpuEnableIntr(0x02314986),
