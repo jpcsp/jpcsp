@@ -232,12 +232,18 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         pack();
         
         // Check if any plugins are available.
-        File plugins = new File(System.getProperty("java.library.path"));
         xbrzCheck.setEnabled(false);
-        for (String list : plugins.list()) {
-            if (list.contains("XBRZ4JPCSP")) {
-                xbrzCheck.setEnabled(true);
-            }
+        String path = System.getProperty("java.library.path");
+        if (path != null && path.length() > 0) {
+	        File plugins = new File(path);
+	        String[] pluginList = plugins.list();
+	        if (pluginList != null) {
+		        for (String list : pluginList) {
+		            if (list.contains("XBRZ4JPCSP")) {
+		                xbrzCheck.setEnabled(true);
+		            }
+		        }
+	        }
         }
 
         SwingUtilities.invokeLater(new Runnable() {
