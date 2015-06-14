@@ -47,6 +47,13 @@
             <key>java.library.path</key>
             <string>$JAVAROOT/lib/macosx</string>
 		</dict>
+		<key>VMOptions</key>
+		<array>
+			<string>-Xmx1024m</string>
+			<string>-Xss2m</string>
+			<string>-XX:MaxPermSize=128m</string>
+			<string>-XX:ReservedCodeCacheSize=64m</string>
+		</array>
 	</dict>
 </dict>
 </plist>
