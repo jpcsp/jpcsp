@@ -260,13 +260,24 @@ public class sceUtility extends HLEModule {
     private static final String dummyNetParamName = "NetConf #%d";
     private int lastNetParamID;
     private final static int utilityThreadActionRegister = _s0; // $s0 is preserved across calls
-    private final static int UTILITY_THREAD_ACTION_SHUTDOWN = 0;
+    private final static int UTILITY_THREAD_ACTION_SHUTDOWN_START = 0;
+    private final static int UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE = 1;
 
     public void hleUtilityThread(Processor processor) {
     	int action = processor.cpu.getRegister(utilityThreadActionRegister);
-    	log.debug(String.format("hleUtilityThread action=%d", action));
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleUtilityThread action=%d", action));
+    	}
+
     	switch (action) {
-	    	case UTILITY_THREAD_ACTION_SHUTDOWN:
+    		case UTILITY_THREAD_ACTION_SHUTDOWN_START:
+    			// Starting the shutdown action.
+    			// Wait a very short time before completing the shutdown.
+    			processor.cpu.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE);
+    			Modules.ThreadManForUserModule.hleKernelDelayThread(200, false);
+    			break;
+	    	case UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE:
+	    		// Completing the shutdown action.
 	    		startedDialogState.status = PSP_UTILITY_DIALOG_STATUS_NONE;
 	    		processor.cpu._v0 = 0;
 	    		Modules.ThreadManForUserModule.hleKernelExitDeleteThread();
@@ -501,7 +512,7 @@ public class sceUtility extends HLEModule {
             // Execute the shutdown thread, it will set the status to 0.
             SceKernelThreadInfo shutdownThread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceUtilityShutdown", ThreadManForUser.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0, SysMemUserForUser.USER_PARTITION_ID);
             Modules.ThreadManForUserModule.hleKernelStartThread(shutdownThread, 0, 0, shutdownThread.gpReg_addr);
-            shutdownThread.cpuContext.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN);
+            shutdownThread.cpuContext.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN_START);
 
             return 0;
         }
