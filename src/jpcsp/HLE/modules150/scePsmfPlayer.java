@@ -285,9 +285,9 @@ public class scePsmfPlayer extends HLEModule {
     public int scePsmfPlayerCreate(int psmfPlayer, TPointer32 psmfPlayerDataAddr) {
         // The psmfDataAddr contains three fields that are manually set before
         // scePsmfPlayerCreate is called.
-        displayBuffer = psmfPlayerDataAddr.getValue(0);          // The buffer allocated for scePsmf, which is ported into scePsmfPlayer.
-        displayBufferSize = psmfPlayerDataAddr.getValue(4);      // The buffer's size.
-        playbackThreadPriority = psmfPlayerDataAddr.getValue(8); // Priority of the "START" thread.
+        displayBuffer = psmfPlayerDataAddr.getValue(0) & Memory.addressMask; // The buffer allocated for scePsmf, which is ported into scePsmfPlayer.
+        displayBufferSize = psmfPlayerDataAddr.getValue(4);                  // The buffer's size.
+        playbackThreadPriority = psmfPlayerDataAddr.getValue(8);             // Priority of the "START" thread.
         if (log.isInfoEnabled()) {
         	log.info(String.format("PSMF Player Data: displayBuffer=0x%08X, displayBufferSize=0x%X, playbackThreadPriority=%d", displayBuffer, displayBufferSize, playbackThreadPriority));
         }
@@ -436,7 +436,7 @@ public class scePsmfPlayer extends HLEModule {
 
         if (videoDataAddr.isNotNull()) {
             videoDataFrameWidth = videoDataAddr.getValue(0);
-            videoDataDisplayBuffer = videoDataAddr.getValue(4);
+            videoDataDisplayBuffer = videoDataAddr.getValue(4) & Memory.addressMask;
             videoDataDisplayPts = videoDataAddr.getValue(8);
             if (log.isDebugEnabled()) {
                 log.debug(String.format("scePsmfPlayerGetVideoData videoDataFrameWidth=%d, videoDataDisplayBuffer=0x%08X, videoDataDisplayPts=%d", videoDataFrameWidth, videoDataDisplayBuffer, videoDataDisplayPts));
