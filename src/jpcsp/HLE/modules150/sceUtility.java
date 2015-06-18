@@ -272,9 +272,9 @@ public class sceUtility extends HLEModule {
     	switch (action) {
     		case UTILITY_THREAD_ACTION_SHUTDOWN_START:
     			// Starting the shutdown action.
-    			// Wait a very short time before completing the shutdown.
+    			// Wait a short time before completing the shutdown.
     			processor.cpu.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE);
-    			Modules.ThreadManForUserModule.hleKernelDelayThread(1000, false);
+    			Modules.ThreadManForUserModule.hleKernelDelayThread(2000, false);
     			break;
 	    	case UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE:
 	    		// Completing the shutdown action.
