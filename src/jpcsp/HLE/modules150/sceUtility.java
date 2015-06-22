@@ -66,6 +66,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
@@ -262,6 +263,27 @@ public class sceUtility extends HLEModule {
     private final static int utilityThreadActionRegister = _s0; // $s0 is preserved across calls
     private final static int UTILITY_THREAD_ACTION_SHUTDOWN_START = 0;
     private final static int UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE = 1;
+
+    private static Locale getUtilityLocale(int language) {
+    	Locale utilityLocale = Locale.getDefault();
+
+    	switch (language) {
+	    	case PSP_SYSTEMPARAM_LANGUAGE_JAPANESE:            utilityLocale = Locale.JAPANESE;            break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_ENGLISH:             utilityLocale = Locale.ENGLISH;             break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_FRENCH:              utilityLocale = Locale.FRENCH;              break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_SPANISH:             utilityLocale = new Locale("es");           break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_GERMAN:              utilityLocale = Locale.GERMAN;              break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_ITALIAN:             utilityLocale = Locale.ITALIAN;             break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_DUTCH:               utilityLocale = new Locale("nl");           break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_PORTUGUESE:          utilityLocale = new Locale("pt");           break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_RUSSIAN:             utilityLocale = new Locale("ru");           break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_KOREAN:              utilityLocale = Locale.KOREAN;              break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_CHINESE_TRADITIONAL: utilityLocale = Locale.TRADITIONAL_CHINESE; break;
+	    	case PSP_SYSTEMPARAM_LANGUAGE_CHINESE_SIMPLIFIED:  utilityLocale = Locale.CHINESE;             break;
+    	}
+
+    	return utilityLocale;
+    }
 
     public void hleUtilityThread(Processor processor) {
     	int action = processor.cpu.getRegister(utilityThreadActionRegister);
@@ -623,10 +645,10 @@ public class sceUtility extends HLEModule {
             this.minimumVisibleDurationMillis = minimumVisibleDurationMillis;
         }
 
-        protected String getDialogTitle(String key, String defaultTitle) {
+        protected String getDialogTitle(String key, String defaultTitle, Locale utilityLocale) {
             String title;
             try {
-                ResourceBundle bundle = ResourceBundle.getBundle("jpcsp/languages/jpcsp");
+                ResourceBundle bundle = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale);
                 if (key == null) {
                     title = bundle.getString(name);
                 } else {
@@ -2293,14 +2315,20 @@ public class sceUtility extends HLEModule {
         protected int drawSpeed;
         private boolean buttonsSwapped;
         private boolean hasNoButtons;
-        final private String strEnter = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strEnter.text");
-        final private String strBack = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strBack.text");
-        final private String strYes = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strYes.text");
-        final private String strNo = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNo.text");
+        final protected Locale utilityLocale;
+        final private String strEnter;
+        final private String strBack;
+        final private String strYes;
+        final private String strNo;
 
         protected GuUtilityDialog(pspUtilityDialogCommon utilityDialogCommon) {
+        	utilityLocale = getUtilityLocale(utilityDialogCommon.language);
             buttonsSwapped = (utilityDialogCommon.buttonSwap == pspUtilityDialogCommon.BUTTON_ACCEPT_CIRCLE);
             hasNoButtons = false;
+            strEnter = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strEnter.text");
+            strBack = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strBack.text");
+            strYes = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strYes.text");
+            strNo = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strNo.text");
         }
 
         protected void createDialog(final UtilityDialogState utilityDialogState) {
@@ -2718,24 +2746,46 @@ public class sceUtility extends HLEModule {
             return buttonsSwapped;
         }
 
+        // Cross is always displayed to the left (even when the buttons are swapped)
+        private int getCrossX() {
+        	return 183;
+        }
+
+        // Circle is always displayed to the right (even when the buttons are swapped)
+        private int getCircleX() {
+        	return 260;
+        }
+
+        private int getEnterX() {
+            return areButtonsSwapped() ? getCircleX() : getCrossX();
+        }
+
+        private int getBackX() {
+            return areButtonsSwapped() ? getCrossX() : getCircleX();
+        }
+
+        private String getConfirmString() {
+            return areButtonsSwapped() ? getCircle() : getCross();
+        }
+
+        private String getCancelString() {
+            return areButtonsSwapped() ? getCross() : getCircle();
+        }
+
         protected void drawEnter() {
-            String confirm = areButtonsSwapped() ? getCircle() : getCross();
-            drawTextWithShadow(183, 254, 0.75f, String.format("%s %s", confirm, strEnter));
+            drawTextWithShadow(getEnterX(), 254, 0.75f, String.format("%s %s", getConfirmString(), strEnter));
         }
 
         protected void drawBack() {
-            String cancel = areButtonsSwapped() ? getCross() : getCircle();
-            drawTextWithShadow(260, 254, 0.75f, String.format("%s %s", cancel, strBack));
+            drawTextWithShadow(getBackX(), 254, 0.75f, String.format("%s %s", getCancelString(), strBack));
         }
 
         protected void drawEnterWithString(String str) {
-            String confirm = areButtonsSwapped() ? getCircle() : getCross();
-            drawTextWithShadow(183, 254, 0.75f, String.format("%s %s", confirm, str));
+            drawTextWithShadow(getEnterX(), 254, 0.75f, String.format("%s %s", getConfirmString(), str));
         }
 
         protected void drawBackWithString(String str) {
-            String cancel = areButtonsSwapped() ? getCross() : getCircle();
-            drawTextWithShadow(260, 254, 0.75f, String.format("%s %s", cancel, str));
+            drawTextWithShadow(getBackX(), 254, 0.75f, String.format("%s %s", getCancelString(), str));
         }
 
         protected void drawHeader(String title) {
@@ -2874,20 +2924,23 @@ public class sceUtility extends HLEModule {
         protected final SavedataUtilityDialogState savedataDialogState;
         protected final SceUtilitySavedataParam savedataParams;
         protected boolean isYesSelected;
-        final private String strAskSaveData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strAskSaveData.text");
-        final private String strAskOverwriteData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strAskOverwriteData.text");
+        final private String strAskSaveData;
+        final private String strAskOverwriteData;
 
         protected GuSavedataDialogSave(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState) {
             super(savedataParams.base);
             this.savedataDialogState = savedataDialogState;
             this.savedataParams = savedataParams;
 
+            strAskSaveData = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strAskSaveData.text");
+            strAskOverwriteData = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strAskOverwriteData.text");
+
             createDialog(savedataDialogState);
         }
 
         @Override
         protected void updateDialog() {
-            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Save");
+            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Save", utilityLocale);
             Calendar savedTime = savedataParams.getSavedTime();
 
             drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
@@ -2937,8 +2990,8 @@ public class sceUtility extends HLEModule {
         protected final SceUtilitySavedataParam savedataParams;
         protected boolean isYesSelected;
         protected boolean hasYesNo;
-        final private String strNoData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNoData.text");
-        final private String strAskLoadData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strAskLoadData.text");
+        final private String strNoData;
+        final private String strAskLoadData;
 
         protected GuSavedataDialogLoad(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState) {
             super(savedataParams.base);
@@ -2947,12 +3000,15 @@ public class sceUtility extends HLEModule {
 
             hasYesNo = savedataParams.isPresent();
 
+            strNoData = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strNoData.text");
+            strAskLoadData = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strAskLoadData.text");
+
             createDialog(savedataDialogState);
         }
 
         @Override
         protected void updateDialog() {
-            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Load");
+            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Load", utilityLocale);
             Calendar savedTime = savedataParams.getSavedTime();
 
             drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
@@ -2996,25 +3052,31 @@ public class sceUtility extends HLEModule {
         protected final SavedataUtilityDialogState savedataDialogState;
         protected final SceUtilitySavedataParam savedataParams;
         protected boolean isYesSelected;
-        final private String strCompleted = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strCompleted.text");
+        private String strCompleted;
 
         protected GuSavedataDialogCompleted(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState) {
             super(savedataParams.base);
             this.savedataDialogState = savedataDialogState;
             this.savedataParams = savedataParams;
+            try {
+            	strCompleted = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString(String.format("sceUtilitySavedata.%s.strCompleted.text", savedataParams.getModeName()));
+            } catch (MissingResourceException e) {
+            	// Ignore exception and provide a default
+            	strCompleted = "Completed";
+            }
 
             createDialog(savedataDialogState);
         }
 
         @Override
         protected void updateDialog() {
-            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Save");
+            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Save", utilityLocale);
             Calendar savedTime = savedataParams.getSavedTime();
 
             drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
 
             gu.sceGuDrawHorizontalLine(201, 464, 114, 0xFF000000 | textColor);
-            drawTextWithShadow(270, 131, 0.75f, String.format("%s %s.", dialogTitle, strCompleted));
+            drawTextWithShadow(270, 131, 0.75f, strCompleted);
             gu.sceGuDrawHorizontalLine(201, 464, 157, 0xFF000000 | textColor);
 
             drawTextWithShadow(6, 202, 0.75f, savedataParams.sfoParam.savedataTitle);
@@ -3041,8 +3103,8 @@ public class sceUtility extends HLEModule {
         private final String[] saveNames;
         private final int numberRows;
         private int selectedRow;
-        private String strNewData; 
-        final private String strNoData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNoData.text");
+        private String strNewData;
+        final private String strNoData;
 
         public GuSavedataDialog(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState, final String[] saveNames) {
             super(savedataParams.base);
@@ -3050,12 +3112,14 @@ public class sceUtility extends HLEModule {
             this.savedataParams = savedataParams;
             this.saveNames = saveNames;
 
+            strNoData = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strNoData.text");
+
             if (savedataParams.newData != null && savedataParams.newData.title != null) {
             	// the PspUtilitySavedataListSaveNewData structure contains the title
             	// to be used for new data.
             	strNewData = savedataParams.newData.title;
             } else {
-            	strNewData = ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("sceUtilitySavedata.strNewData.text");
+            	strNewData = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString("sceUtilitySavedata.strNewData.text");
             }
 
             createDialog(savedataDialogState);
@@ -3266,7 +3330,7 @@ public class sceUtility extends HLEModule {
                 drawBack();
             }
 
-            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Savedata List");
+            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Savedata List", utilityLocale);
             drawHeader(dialogTitle);
         }
 
