@@ -590,12 +590,14 @@ public class sceAtrac3plus extends HLEModule {
         		log.trace(String.format("sceAtracResetPlayPosition: %s", Utilities.getMemoryDump(inputBuffer.getWriteAddr(), bytesWrittenFirstBuf)));
         	}
 
-        	currentReadPosition = getFilePositionFromSample(sample);
-        	// Do not change the position of the inputBuffer when it contains all the Atrac data
-        	if (!inputBufferContainsAllData()) {
-        		inputBuffer.reset(bytesWrittenFirstBuf, currentReadPosition);
+        	if (sample != atracCurrentSample) {
+	        	currentReadPosition = getFilePositionFromSample(sample);
+	        	// Do not change the position of the inputBuffer when it contains all the Atrac data
+	        	if (!inputBufferContainsAllData()) {
+	        		inputBuffer.reset(bytesWrittenFirstBuf, currentReadPosition);
+	        	}
+	        	setAtracCurrentSample(sample);
         	}
-        	setAtracCurrentSample(sample);
         }
 
         private boolean inputBufferContainsAllData() {
