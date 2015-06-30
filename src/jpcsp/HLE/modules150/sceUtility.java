@@ -285,6 +285,45 @@ public class sceUtility extends HLEModule {
     	return utilityLocale;
     }
 
+    private static String getDateTimeFormatString() {
+    	StringBuilder dateTimeFormat = new StringBuilder();
+
+    	switch (getSystemParamDateFormat()) {
+	    	case PSP_SYSTEMPARAM_DATE_FORMAT_DDMMYYYY:
+	    		dateTimeFormat.append("%te/%<tm/%<tY");
+	    		break;
+	    	case PSP_SYSTEMPARAM_DATE_FORMAT_MMDDYYYY:
+	    		dateTimeFormat.append("%tm/%<te/%<tY");
+	    		break;
+	    	case PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD:
+	    		dateTimeFormat.append("%tY/%<tm/%<te");
+	    		break;
+    		default:
+    			dateTimeFormat.append("%tF");
+    			break;
+    	}
+
+    	dateTimeFormat.append(" ");
+
+    	switch (getSystemParamTimeFormat()) {
+	    	case PSP_SYSTEMPARAM_TIME_FORMAT_12HR:
+	    		dateTimeFormat.append("%<tl:%<tM %<Tp");
+	    		break;
+	    	case PSP_SYSTEMPARAM_TIME_FORMAT_24HR:
+	    		dateTimeFormat.append("%<tk:%<tM");
+	    		break;
+    		default:
+    			dateTimeFormat.append("%<tR");
+    			break;
+    	}
+
+    	return dateTimeFormat.toString();
+    }
+
+    private static String formatDateTime(Calendar dateTime) {
+    	return String.format(getDateTimeFormatString(), dateTime);
+    }
+
     public void hleUtilityThread(Processor processor) {
     	int action = processor.cpu.getRegister(utilityThreadActionRegister);
     	if (log.isDebugEnabled()) {
@@ -2305,6 +2344,7 @@ public class sceUtility extends HLEModule {
         private int textLineHeight;
         private int textAddr;
         private SceFontInfo defaultFontInfo;
+        protected static final float defaultFontScale = 0.75f;
         protected static final int baseAscender = 15;
         protected static final int defaultTextWidth = 512;
         protected static final int defaultTextHeight = 32;
@@ -2406,6 +2446,36 @@ public class sceUtility extends HLEModule {
                 charInfo = fontInfo.getCharInfo(c, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
             }
             x += charInfo.sfp26AdvanceH >> 6;
+        }
+
+        protected int getTextLines(String s) {
+        	int lines = 1;
+        	int index = 0;
+        	while (index < s.length()) {
+        		int newLine = s.indexOf("\n", index);
+        		if (newLine < 0) {
+        			break;
+        		}
+        		lines++;
+        		index = newLine + 1;
+        	}
+
+        	return lines;
+        }
+
+        protected int centerText(SceFontInfo fontInfo, String s, int x0, int x1, float scale) {
+        	int textLength = getTextLength(fontInfo, s, scale);
+        	int width = x1 - x0 + 1;
+        	if (textLength >= width) {
+        		return x0;
+        	}
+        	return x0 + (width - textLength) / 2;
+        }
+
+        protected int getTextLength(SceFontInfo fontInfo, String s, float scale) {
+        	int textLength = getTextLength(fontInfo, s);
+        	textLength = (int) (scale * textLength);
+        	return textLength;
         }
 
         protected int getTextLength(SceFontInfo fontInfo, String s) {
@@ -2773,19 +2843,19 @@ public class sceUtility extends HLEModule {
         }
 
         protected void drawEnter() {
-            drawTextWithShadow(getEnterX(), 254, 0.75f, String.format("%s %s", getConfirmString(), strEnter));
+            drawTextWithShadow(getEnterX(), 254, defaultFontScale, String.format("%s %s", getConfirmString(), strEnter));
         }
 
         protected void drawBack() {
-            drawTextWithShadow(getBackX(), 254, 0.75f, String.format("%s %s", getCancelString(), strBack));
+            drawTextWithShadow(getBackX(), 254, defaultFontScale, String.format("%s %s", getCancelString(), strBack));
         }
 
         protected void drawEnterWithString(String str) {
-            drawTextWithShadow(getEnterX(), 254, 0.75f, String.format("%s %s", getConfirmString(), str));
+            drawTextWithShadow(getEnterX(), 254, defaultFontScale, String.format("%s %s", getConfirmString(), str));
         }
 
         protected void drawBackWithString(String str) {
-            drawTextWithShadow(getBackX(), 254, 0.75f, String.format("%s %s", getCancelString(), str));
+            drawTextWithShadow(getBackX(), 254, defaultFontScale, String.format("%s %s", getCancelString(), str));
         }
 
         protected void drawHeader(String title) {
@@ -2945,22 +3015,26 @@ public class sceUtility extends HLEModule {
 
             drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
 
+        	String text = getText(dialogTitle);
+        	boolean multiLines = getTextLines(text) > 1;
             if (hasYesNo()) {
-                gu.sceGuDrawHorizontalLine(201, 464, 87, 0xFF000000 | textColor);
-                drawTextWithShadow(236, 105, 0.75f, getText(dialogTitle));
-                drawYesNo(278, 349, 154);
-                gu.sceGuDrawHorizontalLine(201, 464, 184, 0xFF000000 | textColor);
+            	int textX = multiLines ? 236 : centerText(getDefaultFontInfo(), text, 201, 464, defaultFontScale);
+                gu.sceGuDrawHorizontalLine(201, 464, multiLines ? 87 : 97, 0xFF000000 | textColor);
+                drawTextWithShadow(textX, multiLines ? 105 : 113, defaultFontScale, text);
+                drawYesNo(278, 349, multiLines ? 154 : 145);
+                gu.sceGuDrawHorizontalLine(201, 464, multiLines ? 184 : 174, 0xFF000000 | textColor);
             } else {
+            	int textX = multiLines ? 270 : centerText(getDefaultFontInfo(), text, 201, 464, defaultFontScale);
                 gu.sceGuDrawHorizontalLine(201, 464, 114, 0xFF000000 | textColor);
-                drawTextWithShadow(270, 131, 0.75f, getText(dialogTitle));
+                drawTextWithShadow(textX, 131, defaultFontScale, text);
                 gu.sceGuDrawHorizontalLine(201, 464, 157, 0xFF000000 | textColor);
             }
 
-            drawTextWithShadow(6, 202, 0.75f, savedataParams.sfoParam.savedataTitle);
+            drawTextWithShadow(6, 202, defaultFontScale, savedataParams.sfoParam.savedataTitle);
             if (savedTime != null) {
-                drawTextWithShadow(6, 219, 0.7f, String.format("%tF %tR", savedTime, savedTime));
+                drawTextWithShadow(6, 219, 0.7f, formatDateTime(savedTime));
             }
-            drawTextWithShadow(6, 237, 0.75f, MemoryStick.getSizeKbString(savedataParams.getRequiredSizeKb()));
+            drawTextWithShadow(6, 237, defaultFontScale, MemoryStick.getSizeKbString(savedataParams.getRequiredSizeKb()));
 
             if (hasEnter()) {
                 drawEnter();
@@ -3015,19 +3089,19 @@ public class sceUtility extends HLEModule {
 
             if (!hasYesNo()) {
                 gu.sceGuDrawHorizontalLine(201, 464, 114, 0xFF000000 | textColor);
-                drawTextWithShadow(270, 131, 0.75f, strNoData);
+                drawTextWithShadow(270, 131, defaultFontScale, strNoData);
                 gu.sceGuDrawHorizontalLine(201, 464, 157, 0xFF000000 | textColor);
             } else {
                 gu.sceGuDrawHorizontalLine(201, 464, 87, 0xFF000000 | textColor);
-                drawTextWithShadow(236, 105, 0.75f, strAskLoadData);
+                drawTextWithShadow(236, 105, defaultFontScale, strAskLoadData);
                 drawYesNo(278, 349, 154);
                 gu.sceGuDrawHorizontalLine(201, 464, 184, 0xFF000000 | textColor);
 
-                drawTextWithShadow(6, 202, 0.75f, savedataParams.sfoParam.savedataTitle);
+                drawTextWithShadow(6, 202, defaultFontScale, savedataParams.sfoParam.savedataTitle);
                 if (savedTime != null) {
-                    drawTextWithShadow(6, 219, 0.7f, String.format("%tF %tR", savedTime, savedTime));
+                    drawTextWithShadow(6, 219, 0.7f, formatDateTime(savedTime));
                 }
-                drawTextWithShadow(6, 237, 0.75f, MemoryStick.getSizeKbString(savedataParams.getRequiredSizeKb()));
+                drawTextWithShadow(6, 237, defaultFontScale, MemoryStick.getSizeKbString(savedataParams.getRequiredSizeKb()));
 
                 drawEnter();
             }
@@ -3076,14 +3150,14 @@ public class sceUtility extends HLEModule {
             drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
 
             gu.sceGuDrawHorizontalLine(201, 464, 114, 0xFF000000 | textColor);
-            drawTextWithShadow(270, 131, 0.75f, strCompleted);
+            drawTextWithShadow(270, 131, defaultFontScale, strCompleted);
             gu.sceGuDrawHorizontalLine(201, 464, 157, 0xFF000000 | textColor);
 
-            drawTextWithShadow(6, 202, 0.75f, savedataParams.sfoParam.savedataTitle);
+            drawTextWithShadow(6, 202, defaultFontScale, savedataParams.sfoParam.savedataTitle);
             if (savedTime != null) {
-                drawTextWithShadow(6, 219, 0.7f, String.format("%tF %tR", savedTime, savedTime));
+                drawTextWithShadow(6, 219, 0.7f, formatDateTime(savedTime));
             }
-            drawTextWithShadow(6, 237, 0.75f, MemoryStick.getSizeKbString(savedataParams.getRequiredSizeKb()));
+            drawTextWithShadow(6, 237, defaultFontScale, MemoryStick.getSizeKbString(savedataParams.getRequiredSizeKb()));
 
             drawBack();
 
@@ -3294,7 +3368,10 @@ public class sceUtility extends HLEModule {
 
                     textY += 22;
                     if (savedTime != null) {
-                        drawTextWithShadow(textX, textY, 0.7f, String.format("%tF %tR", savedTime, savedTime));
+                    	String text = formatDateTime(savedTime);
+                    	int sizeKb = savedataParams.getSizeKb(savedataParams.gameName, saveNames[selectedRow]);
+                    	text += " " + MemoryStick.getSizeKbString(sizeKb);
+                        drawTextWithShadow(textX, textY, 0.7f, text);
                     }
 
                     // Draw horizontal line below title
@@ -3307,7 +3384,7 @@ public class sceUtility extends HLEModule {
                     textY += 24;
                     drawTextWithShadow(textX, textY, 0.7f, detail);
                 } else {
-                    drawTextWithShadow(180, 130, 0.75f, strNewData);
+                    drawTextWithShadow(180, 130, defaultFontScale, strNewData);
                 }
 
                 drawEnter();
@@ -3326,7 +3403,9 @@ public class sceUtility extends HLEModule {
                     }
                 }
             } else {
-                drawTextWithShadow(180, 230, 0.75f, strNoData);
+                gu.sceGuDrawHorizontalLine(201, 464, 114, 0xFF000000 | textColor);
+                drawTextWithShadow(centerText(getDefaultFontInfo(), strNoData, 201, 464, defaultFontScale), 131, defaultFontScale, strNoData);
+                gu.sceGuDrawHorizontalLine(201, 464, 157, 0xFF000000 | textColor);
                 drawBack();
             }
 
