@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules620;
 
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.TPointer;
@@ -25,25 +26,27 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 @HLELogging
 public class sceMp3 extends jpcsp.HLE.modules150.sceMp3 {
 	@HLEFunction(nid = 0x1B839B83 , version = 620)
-    public int sceMp3LowLevelInit(Mp3Info mp3Stream, int unknown) {
+    public int sceMp3LowLevelInit(@CheckArgument("checkInitId") int id, int unknown) {
+    	Mp3Info mp3Info = getMp3Info(id);
     	// Always output in stereo, even if the input is mono
-		mp3Stream.getCodec().init(0, 2, 2, 0);
+    	mp3Info.getCodec().init(0, 2, 2, 0);
 
 		return 0;
 	}
 
 	@HLEFunction(nid = 0xE3EE2C81, version = 620)
-    public int sceMp3LowLevelDecode(Mp3Info mp3Stream, TPointer sourceAddr, TPointer32 sourceBytesConsumedAddr, TPointer samplesAddr, TPointer32 sampleBytesAddr) {
-		int result = mp3Stream.getCodec().decode(sourceAddr.getAddress(), 10000, samplesAddr.getAddress());
+    public int sceMp3LowLevelDecode(@CheckArgument("checkInitId") int id, TPointer sourceAddr, TPointer32 sourceBytesConsumedAddr, TPointer samplesAddr, TPointer32 sampleBytesAddr) {
+    	Mp3Info mp3Info = getMp3Info(id);
+		int result = mp3Info.getCodec().decode(sourceAddr.getAddress(), 10000, samplesAddr.getAddress());
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceMp3LowLevelDecode result=0x%08X, samples=0x%X", result, mp3Stream.getCodec().getNumberOfSamples()));
+			log.debug(String.format("sceMp3LowLevelDecode result=0x%08X, samples=0x%X", result, mp3Info.getCodec().getNumberOfSamples()));
 		}
 		if (result < 0) {
 			return SceKernelErrors.ERROR_MP3_LOW_LEVEL_DECODING_ERROR;
 		}
 
 		sourceBytesConsumedAddr.setValue(result);
-		sampleBytesAddr.setValue(mp3Stream.getCodec().getNumberOfSamples() * 4);
+		sampleBytesAddr.setValue(mp3Info.getCodec().getNumberOfSamples() * 4);
 
 		return 0;
 	}
