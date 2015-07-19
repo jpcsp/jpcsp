@@ -1015,6 +1015,10 @@ public class VideoEngine {
         waitStallStatistics.end();
     }
 
+    public boolean isWaitingOnStall() {
+    	return currentList != null && currentList.status == PSP_GE_LIST_STALL_REACHED && waitForSyncCount > 0;
+    }
+
     private boolean executeListPaused() {
         if (isLogDebugEnabled) {
             log.debug(String.format("FINISH / SIGNAL / END reached, waiting for Sync (%s)", currentList.toString()));

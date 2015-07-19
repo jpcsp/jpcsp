@@ -1991,8 +1991,19 @@ public class sceDisplay extends HLEModule {
      * @param address the address to be checked.
      */
     public void waitForRenderingCompletion(int address) {
+    	int countWaitingOnStall = 0;
         while (isInsideRendering() && isGeAddress(address)) {
-            // Sleep 10 microseconds for polling...
+        	// Do not wait too long when the VideoEngine is also waiting on a stalled list...
+        	if (VideoEngine.getInstance().isWaitingOnStall()) {
+        		countWaitingOnStall++;
+        		if (countWaitingOnStall > 10) {
+        			break;
+        		}
+        	} else {
+        		countWaitingOnStall = 0;
+        	}
+
+        	// Sleep 10 microseconds for polling...
             Utilities.sleep(10);
         }
     }
