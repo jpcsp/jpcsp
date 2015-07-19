@@ -92,6 +92,9 @@ public class RuntimeContext {
 	private static int codeBlocksHighestAddress = Integer.MIN_VALUE;
 	// A fast lookup array for executables (to improve the performance of the Allegrex instruction jalr)
 	private static IExecutable[] fastExecutableLookup;
+	// A fast lookup for the Allegrex instruction ICACHE HIT INVALIDATE
+	private static Map<Integer, List<CodeBlock>> fastCodeBlockLookup = Collections.synchronizedMap(new HashMap<Integer, List<CodeBlock>>());
+	private static final int fastCodeBlockSize = 64; // Matching the size used by the Allegrex instruction ICACHE HIT INVALIDATE
 	private static final Map<SceKernelThreadInfo, RuntimeThread> threads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	private static final Map<SceKernelThreadInfo, RuntimeThread> toBeStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	private static final Map<SceKernelThreadInfo, RuntimeThread> alreadyStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
@@ -799,6 +802,16 @@ public class RuntimeContext {
 	    		codeBlocksLowestAddress = Math.min(codeBlocksLowestAddress, codeBlock.getLowestAddress());
 	    		codeBlocksHighestAddress = Math.max(codeBlocksHighestAddress, codeBlock.getHighestAddress());
 	    	}
+
+	    	for (int addr : fastCodeBlockLookup.keySet()) {
+	    		List<CodeBlock> codeBlocks = fastCodeBlockLookup.get(addr);
+	    		if (previousCodeBlock != null) {
+	    			codeBlocks.remove(previousCodeBlock);
+	    		}
+	    		if (codeBlock.isOverlappingWithAddressRange(addr, fastCodeBlockSize)) {
+	    			codeBlocks.add(codeBlock);
+	    		}
+	    	}
     	}
     }
 
@@ -1064,6 +1077,19 @@ public class RuntimeContext {
     	}
     }
 
+    private static void invalidateRangeFullCheck(int addr, int size) {
+		Compiler compiler = Compiler.getInstance();
+    	for (CodeBlock codeBlock : codeBlocks.values()) {
+			if (size == 0x4000 && codeBlock.getHighestAddress() >= addr) {
+    			// Some applications do not clear more than 16KB as this is the size of the complete Instruction Cache.
+    			// Be conservative in this case and check any code block above the given address.
+				compiler.checkCodeBlockValidity(codeBlock);
+			} else if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
+				compiler.checkCodeBlockValidity(codeBlock);
+    		}
+    	}
+    }
+
     public static void invalidateRange(int addr, int size) {
         if (compilerEnabled) {
         	addr &= Memory.addressMask;
@@ -1079,15 +1105,26 @@ public class RuntimeContext {
         	}
 
         	// Check if the code blocks located in the given range have to be invalidated
-    		Compiler compiler = Compiler.getInstance();
-        	for (CodeBlock codeBlock : codeBlocks.values()) {
-    			if (size == 0x4000 && codeBlock.getHighestAddress() >= addr) {
-	    			// Some applications do not clear more than 16KB as this is the size of the complete Instruction Cache.
-	    			// Be conservative in this case and check any code block above the given address.
-    				compiler.checkCodeBlockValidity(codeBlock);
-    			} else if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
-    				compiler.checkCodeBlockValidity(codeBlock);
+        	if (size == fastCodeBlockSize) {
+        		List<CodeBlock> fastCodeBlocks = fastCodeBlockLookup.get(addr);
+        		if (fastCodeBlocks == null) {
+        			fastCodeBlocks = new LinkedList<CodeBlock>();
+        			for (CodeBlock codeBlock : codeBlocks.values()) {
+        				if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
+        					fastCodeBlocks.add(codeBlock);
+        				}
+        			}
+        			fastCodeBlockLookup.put(addr, fastCodeBlocks);
         		}
+
+        		Compiler compiler = Compiler.getInstance();
+        		for (CodeBlock codeBlock : fastCodeBlocks) {
+        			if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
+        				compiler.checkCodeBlockValidity(codeBlock);
+        			}
+        		}
+        	} else {
+        		invalidateRangeFullCheck(addr, size);
         	}
     	}
     }

@@ -347,6 +347,8 @@ public class Compiler implements ICompiler {
         startAddress = startAddress & Memory.addressMask;
         CodeBlock codeBlock = new CodeBlock(startAddress, instanceIndex);
 
+        codeBlock.addCodeBlock();
+
         IExecutable executable = codeBlock.getInterpretedExecutable(context);
         if (log.isDebugEnabled()) {
             log.debug("Executable: " + executable);
@@ -471,6 +473,8 @@ public class Compiler implements ICompiler {
             	codeBlock.setIsBranchTarget(branchingTo);
             }
         }
+
+        codeBlock.addCodeBlock();
 
         IExecutable executable;
         if (RuntimeContext.isCompilerEnabled() || codeBlock.hasFlags(FLAG_SYSCALL)) {

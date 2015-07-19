@@ -152,10 +152,6 @@ public void interpret(Processor processor, int insn) {
 
 	int addr = processor.cpu.getRegister(rs) + (short) imm16;
 	int size = 64;
-	if (Emulator.log.isInfoEnabled()) {
-		Emulator.log.info(String.format("%s addr=0x%08X, size=%d", name(), addr, size));
-	}
-
 	RuntimeContext.invalidateRange(addr, size);
 }
 @Override

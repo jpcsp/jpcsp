@@ -69,8 +69,6 @@ public class CodeBlock {
 		this.instanceIndex = instanceCount;
 		lowestAddress = startAddress;
 		highestAddress = startAddress;
-
-		RuntimeContext.addCodeBlock(startAddress, this);
 	}
 
 	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo) {
@@ -629,6 +627,10 @@ public class CodeBlock {
 
     public boolean hasFlags(int testFlags) {
         return (flags & testFlags) == testFlags;
+    }
+
+    public void addCodeBlock() {
+		RuntimeContext.addCodeBlock(startAddress, this);
     }
 
     @Override
