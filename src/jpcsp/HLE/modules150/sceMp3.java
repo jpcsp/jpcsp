@@ -62,7 +62,10 @@ public class sceMp3 extends HLEModule {
 
     @Override
     public void start() {
-        ids = null;
+    	ids = new Mp3Info[2];
+    	for (int i = 0; i < ids.length; i++) {
+    		ids[i] = new Mp3Info();
+    	}
 
         super.start();
     }
@@ -189,6 +192,7 @@ public class sceMp3 extends HLEModule {
         @Override
 		public void initCodec() {
             codec = CodecFactory.getCodec(PSP_CODEC_MP3);
+            setCodecInitialized(false);
         }
 
         public int notifyAddStream(int bytesToAdd) {
@@ -498,11 +502,6 @@ public class sceMp3 extends HLEModule {
     @HLELogging(level="info")
     @HLEFunction(nid = 0x35750070, version = 150, checkInsideInterrupt = true)
     public int sceMp3InitResource() {
-    	ids = new Mp3Info[2];
-    	for (int i = 0; i < ids.length; i++) {
-    		ids[i] = new Mp3Info();
-    	}
-
         return 0;
     }
 
