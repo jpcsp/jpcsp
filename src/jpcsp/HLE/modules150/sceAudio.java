@@ -378,6 +378,11 @@ public class sceAudio extends HLEModule {
     }
 
     public int checkFrequency(int frequency) {
+    	// No change in frequency (e.g. default frequency 44100) is accepted
+    	if (pspSRC1Channel.getSampleRate() == frequency) {
+    		return frequency;
+    	}
+
     	switch (frequency) {
 	    	case 0:
 	    	case 8000:
