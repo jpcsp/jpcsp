@@ -93,7 +93,8 @@ public class RuntimeContext {
 	// A fast lookup array for executables (to improve the performance of the Allegrex instruction jalr)
 	private static IExecutable[] fastExecutableLookup;
 	// A fast lookup for the Allegrex instruction ICACHE HIT INVALIDATE
-	private static Map<Integer, List<CodeBlock>> fastCodeBlockLookup = Collections.synchronizedMap(new HashMap<Integer, List<CodeBlock>>());
+	private static CodeBlockList[] fastCodeBlockLookup;
+	private static final int fastCodeBlockLookupShift = 8;
 	private static final int fastCodeBlockSize = 64; // Matching the size used by the Allegrex instruction ICACHE HIT INVALIDATE
 	private static final Map<SceKernelThreadInfo, RuntimeThread> threads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	private static final Map<SceKernelThreadInfo, RuntimeThread> toBeStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
@@ -120,6 +121,10 @@ public class RuntimeContext {
 		protected void settingsValueChanged(boolean value) {
 			setCompilerEnabled(value);
 		}
+	}
+
+	private static class CodeBlockList extends LinkedList<CodeBlock> {
+		private static final long serialVersionUID = 7370950118403866860L;
 	}
 
 	private static void setCompilerEnabled(boolean enabled) {
@@ -304,6 +309,7 @@ public class RuntimeContext {
         sceDisplayModule = Modules.sceDisplayModule;
 
         fastExecutableLookup = new IExecutable[(MemoryMap.END_USERSPACE - MemoryMap.START_USERSPACE + 1) >> 2];
+        fastCodeBlockLookup = new CodeBlockList[(MemoryMap.END_USERSPACE - MemoryMap.START_USERSPACE + 1) >> fastCodeBlockLookupShift];
 
 		return true;
     }
@@ -803,15 +809,23 @@ public class RuntimeContext {
 	    		codeBlocksHighestAddress = Math.max(codeBlocksHighestAddress, codeBlock.getHighestAddress());
 	    	}
 
-	    	for (int addr : fastCodeBlockLookup.keySet()) {
-	    		List<CodeBlock> codeBlocks = fastCodeBlockLookup.get(addr);
-	    		if (previousCodeBlock != null) {
-	    			codeBlocks.remove(previousCodeBlock);
-	    		}
-	    		if (codeBlock.isOverlappingWithAddressRange(addr, fastCodeBlockSize)) {
-	    			codeBlocks.add(codeBlock);
-	    		}
-	    	}
+	    	int startIndex = (codeBlock.getLowestAddress() - MemoryMap.START_USERSPACE) >> fastCodeBlockLookupShift;
+    		int endIndex = (codeBlock.getHighestAddress() - MemoryMap.START_USERSPACE) >> fastCodeBlockLookupShift;
+    		for (int i = startIndex; i <= endIndex; i++) {
+    			if (i >= 0 && i < fastCodeBlockLookup.length) {
+    				CodeBlockList codeBlockList = fastCodeBlockLookup[i];
+    				if (codeBlockList != null) {
+    					if (previousCodeBlock != null) {
+    						codeBlockList.remove(previousCodeBlock);
+    					}
+    					int addr = (i << fastCodeBlockLookupShift) + MemoryMap.START_USERSPACE;
+    					int size = 1 << fastCodeBlockLookupShift;
+    					if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
+    						codeBlockList.add(codeBlock);
+    					}
+    				}
+    			}
+    		}
     	}
     }
 
@@ -1039,6 +1053,9 @@ public class RuntimeContext {
     		if (fastExecutableLookup != null) {
     			Arrays.fill(fastExecutableLookup, null);
     		}
+    		if (fastCodeBlockLookup != null) {
+    			Arrays.fill(fastCodeBlockLookup, null);
+    		}
     		currentThread = null;
     		currentRuntimeThread = null;
     		reset = true;
@@ -1057,6 +1074,7 @@ public class RuntimeContext {
         		log.debug("RuntimeContext.invalidateAll simple");
                 codeBlocks.clear();
         		Arrays.fill(fastExecutableLookup, null);
+    			Arrays.fill(fastCodeBlockLookup, null);
                 Compiler.getInstance().invalidateAll();
     		} else {
     			// Advanced method: check all the code blocks for a modification
@@ -1090,6 +1108,24 @@ public class RuntimeContext {
     	}
     }
 
+    private static CodeBlockList fillFastCodeBlockList(int index) {
+		int startAddr = (index << fastCodeBlockLookupShift)  + MemoryMap.START_USERSPACE;
+		int size = 1 << fastCodeBlockLookupShift;
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Creating new fastCodeBlockList for 0x%08X", startAddr));
+		}
+
+		CodeBlockList codeBlockList = new CodeBlockList();
+		for (CodeBlock codeBlock : codeBlocks.values()) {
+			if (codeBlock.isOverlappingWithAddressRange(startAddr, size)) {
+				codeBlockList.add(codeBlock);
+			}
+		}
+		fastCodeBlockLookup[index] = codeBlockList;
+
+		return codeBlockList;
+    }
+
     public static void invalidateRange(int addr, int size) {
         if (compilerEnabled) {
         	addr &= Memory.addressMask;
@@ -1106,22 +1142,29 @@ public class RuntimeContext {
 
         	// Check if the code blocks located in the given range have to be invalidated
         	if (size == fastCodeBlockSize) {
-        		List<CodeBlock> fastCodeBlocks = fastCodeBlockLookup.get(addr);
-        		if (fastCodeBlocks == null) {
-        			fastCodeBlocks = new LinkedList<CodeBlock>();
-        			for (CodeBlock codeBlock : codeBlocks.values()) {
-        				if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
-        					fastCodeBlocks.add(codeBlock);
-        				}
-        			}
-        			fastCodeBlockLookup.put(addr, fastCodeBlocks);
-        		}
+        		// This is a fast track to avoid checking all the code blocks
+        		int startIndex = (addr - MemoryMap.START_USERSPACE) >> fastCodeBlockLookupShift;
+				int endIndex = (addr + size - MemoryMap.START_USERSPACE) >> fastCodeBlockLookupShift;
+				if (startIndex >= 0 && endIndex <= fastCodeBlockLookup.length) {
+					for (int index = startIndex; index <= endIndex; index++) {
+	        			CodeBlockList codeBlockList = fastCodeBlockLookup[index];
+	        			if (codeBlockList == null) {
+	        				codeBlockList = fillFastCodeBlockList(index);
+	        			} else {
+	        				if (log.isDebugEnabled()) {
+	        					log.debug(String.format("Reusing fastCodeBlockList for 0x%08X (size=%d)", addr, codeBlockList.size()));
+	        				}
+	        			}
 
-        		Compiler compiler = Compiler.getInstance();
-        		for (CodeBlock codeBlock : fastCodeBlocks) {
-        			if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
-        				compiler.checkCodeBlockValidity(codeBlock);
-        			}
+	            		Compiler compiler = Compiler.getInstance();
+	            		for (CodeBlock codeBlock : codeBlockList) {
+	            			if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
+	            				compiler.checkCodeBlockValidity(codeBlock);
+	            			}
+	            		}
+					}
+        		} else {
+            		invalidateRangeFullCheck(addr, size);
         		}
         	} else {
         		invalidateRangeFullCheck(addr, size);

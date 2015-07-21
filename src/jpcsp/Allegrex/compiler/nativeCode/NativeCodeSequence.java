@@ -37,6 +37,7 @@ public class NativeCodeSequence {
 	private String methodName = "call";
 	private List<CodeInstruction> beforeCodeInstructions;
 	private boolean isHook = false;
+	private boolean isMethodReturning = false;
 
 	private static class NativeOpcodeInfo {
 		private int opcode;
@@ -271,5 +272,13 @@ public class NativeCodeSequence {
 
 	public void setHook(boolean isHook) {
 		this.isHook = isHook;
+	}
+
+	public boolean isMethodReturning() {
+		return isMethodReturning;
+	}
+
+	public void setMethodReturning(boolean isMethodReturning) {
+		this.isMethodReturning = isMethodReturning;
 	}
 }

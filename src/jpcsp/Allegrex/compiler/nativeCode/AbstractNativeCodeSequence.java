@@ -21,6 +21,8 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.memory.IMemoryReader;
@@ -314,5 +316,10 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	static protected int getRelocatedAddress(int address1, int address2) {
 		int address = (address1 << 16) + (short) address2;
 		return address & Memory.addressMask;
+	}
+
+	static protected void interpret(int opcode) {
+		Instruction insn = Decoder.instruction(opcode);
+		insn.interpret(RuntimeContext.processor, opcode);
 	}
 }

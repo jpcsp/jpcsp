@@ -10109,6 +10109,27 @@
 08806FCC:[27BD0010]: addiu      $sp, $sp, 16
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="PatchCallingJAL">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.PatchCallingJAL</Class>
+		<Method>call</Method>
+		<IsReturning>false</IsReturning>
+		<Parameters>$v0</Parameters>
+		<IsHook>false</IsHook>
+		<IsMethodReturning>true</IsMethodReturning>
+		<CodeInstructions><![CDATA[
+089F729C:[00021082]: srl        $v0, $v0, 0x0002
+089F72A0:[3C010C00]: lui        $at, 0x0C00 <=> li $at, 0x0C000000
+089F72A4:[7C41C804]: ins        $at, $v0, 0, 26
+089F72A8:[27FFFFF8]: addiu      $ra, $ra, -8
+089F72AC:[AFE10000]: sw         $at, 0($ra)
+089F72B0:[BFFA0000]: cache      0x1A, 0($ra)
+089F72B4:[BFE80000]: cache      0x08, 0($ra)
+089F72B8:[BFFA0000]: cache      0x1A, 0($ra)
+089F72BC:[BFE80000]: cache      0x08, 0($ra)
+089F72C0:[03E00008]: jr         $ra
+089F72C4:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
@@ -10116,6 +10137,7 @@
 		<IsReturning>true</IsReturning>
 		<Parameters>$a0,$a1,@01234567</Parameters>
 		<IsHook>false</IsHook>
+		<IsMethodReturning>false</IsMethodReturning>
 		<CodeInstructions><![CDATA[
 ]]></CodeInstructions>
 	</NativeCodeSequence>
