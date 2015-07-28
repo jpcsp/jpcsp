@@ -404,6 +404,8 @@ public class sceMp3 extends HLEModule {
         	outputChannels = 2;
 
             codec.init(0, channels, outputChannels, 0);
+
+            sumDecodedSamples = 0;
         }
 
         public int getChannelNum() {
@@ -508,8 +510,6 @@ public class sceMp3 extends HLEModule {
     @HLELogging(level="info")
     @HLEFunction(nid = 0x3C2FA058, version = 150, checkInsideInterrupt = true)
     public int sceMp3TermResource() {
-    	ids = null;
-
         return 0;
     }
 
