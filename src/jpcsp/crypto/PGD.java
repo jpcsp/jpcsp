@@ -17,19 +17,16 @@
 package jpcsp.crypto;
 
 public class PGD {
-    
     private static AMCTRL amctrl;
-    private static DRM drm;
     private static AMCTRL.BBCipher_Ctx pgdCipherContext;
     private static AMCTRL.BBMac_Ctx pgdMacContext;
-    
+
     public PGD() {
         amctrl = new AMCTRL();
-        drm = new DRM();
     }
-    
+
     // Plain PGD handling functions.
-    public byte[] DecryptPGD(byte[] inbuf, int size, byte[] key) {
+    public byte[] DecryptPGD(byte[] inbuf, int size, byte[] key, int seed) {
         // Setup the crypto and keygen modes and initialize both context structs.
         int sdEncMode = 1;
         int sdGenMode = 2;
@@ -45,7 +42,7 @@ public class PGD {
         System.arraycopy(inbuf, 0, dataBuf, 0, size);
 
         amctrl.hleDrmBBMacInit(pgdMacContext, sdEncMode);
-        amctrl.hleDrmBBCipherInit(pgdCipherContext, sdEncMode, sdGenMode, dataBuf, key);
+        amctrl.hleDrmBBCipherInit(pgdCipherContext, sdEncMode, sdGenMode, dataBuf, key, seed);
         amctrl.hleDrmBBMacUpdate(pgdMacContext, dataBuf, 0x10);
         System.arraycopy(dataBuf, 0x10, outbuf, 0, alignedSize - 0x10);
         amctrl.hleDrmBBMacUpdate(pgdMacContext, outbuf, alignedSize - 0x10);
@@ -59,7 +56,7 @@ public class PGD {
         int alignedSize = ((size + 0xF) >> 4) << 4;
         byte[] outbuf = new byte[alignedSize - 0x10];
         byte[] dataBuf = new byte[alignedSize];
-        
+
         System.arraycopy(inbuf, 0, dataBuf, 0, size);
         System.arraycopy(dataBuf, 0x10, outbuf, 0, alignedSize - 0x10);
         amctrl.hleDrmBBCipherUpdate(pgdCipherContext, outbuf, alignedSize - 0x10);
@@ -69,97 +66,6 @@ public class PGD {
 
     public void FinishPGDCipher() {
         amctrl.hleDrmBBCipherFinal(pgdCipherContext);
-    }
-    
-    // PGD with EDAT header handling functions.
-    public byte[] DecryptEDATPGD(byte[] inbuf, int size, int hashOffset, int chunkSize, byte[] key) {
-        // Setup the crypto and keygen modes and initialize both context structs.
-        int macEncMode;
-        int cipherEncMode;
-        int genMode = 2;
-        pgdMacContext = new AMCTRL.BBMac_Ctx();
-        pgdCipherContext = new AMCTRL.BBCipher_Ctx();
-
-        // Align the buffers to 16-bytes and calculate offsets.
-        int alignedSize = ((size + 0xF) >> 4) << 4;
-        int hashTableOffset = hashOffset + alignedSize;
-        int chunkNum = ((alignedSize + chunkSize - 1) & ~(chunkSize - 1)) / chunkSize;
-
-        int keyIndex = inbuf[0x4];
-        int drmType = inbuf[0x8];
-
-        if ((drmType & 0x1) == 0x1) {
-            macEncMode = 1;
-            if (keyIndex > 0x1) {
-                macEncMode = 3;
-            }
-            cipherEncMode = 1;
-        } else {
-            macEncMode = 2;
-            cipherEncMode = 2;
-        }
-
-        byte[] hashTable = new byte[chunkNum * 16];
-        System.arraycopy(inbuf, hashTableOffset, hashTable, 0, hashTable.length);
-
-        byte[] macKey60 = new byte[0x10];
-        System.arraycopy(inbuf, 0x60, macKey60, 0, 0x10);
-
-        // MAC_0x60
-        amctrl.hleDrmBBMacInit(pgdMacContext, macEncMode);
-        amctrl.hleDrmBBMacUpdate(pgdMacContext, hashTable, hashTable.length);
-        amctrl.hleDrmBBMacFinal2(pgdMacContext, macKey60, key);
-
-        // Decrypt all the data.
-        byte[] decDataBuf = new byte[inbuf.length - 0x30];
-        System.arraycopy(inbuf, 0x30, decDataBuf, 0, decDataBuf.length);
-
-        byte[] updateDecDataBuf = new byte[inbuf.length - 0x90];
-        System.arraycopy(inbuf, 0x90, updateDecDataBuf, 0, updateDecDataBuf.length);
-
-        amctrl.hleDrmBBCipherInit(pgdCipherContext, cipherEncMode, genMode, decDataBuf, key);
-        amctrl.hleDrmBBCipherUpdate(pgdCipherContext, updateDecDataBuf, alignedSize);
-        amctrl.hleDrmBBCipherFinal(pgdCipherContext);
-
-        byte[] outbuf = new byte[size];
-        System.arraycopy(updateDecDataBuf, 0, outbuf, 0, outbuf.length);
-
-        return outbuf;
-    }
-
-    public byte[] DecryptEDATPGDHeader(byte[] inbuf, int size, byte[] key) {
-        // Setup the crypto and keygen modes and initialize both context structs.
-        int cipherEncMode;
-        int genMode = 2;
-        pgdCipherContext = new AMCTRL.BBCipher_Ctx();
-
-        // Align the buffers to 16-bytes.
-        int alignedSize = ((size + 0xF) >> 4) << 4;
-        byte[] dataBuf = new byte[alignedSize];
-
-        // Fully copy the contents of the encrypted file.
-        System.arraycopy(inbuf, 0, dataBuf, 0, size);
-
-        int drmType = dataBuf[0x8];
-
-        if ((drmType & 0x1) == 0x1) {
-            cipherEncMode = 1;
-        } else {
-            cipherEncMode = 2;
-        }
-
-        // Decrypt the PGD data with the given key.
-        byte[] cipherBuf = new byte[dataBuf.length - 0x10];
-        byte[] pgdDataBuf = new byte[0x30];
-
-        System.arraycopy(dataBuf, 0x10, cipherBuf, 0, dataBuf.length - 0x10);
-        System.arraycopy(dataBuf, 0x30, pgdDataBuf, 0, 0x30);
-
-        amctrl.hleDrmBBCipherInit(pgdCipherContext, cipherEncMode, genMode, cipherBuf, key);
-        amctrl.hleDrmBBCipherUpdate(pgdCipherContext, pgdDataBuf, 0x30);
-        amctrl.hleDrmBBCipherFinal(pgdCipherContext);
-
-        return pgdDataBuf;
     }
 
     public byte[] GetEDATPGDKey(byte[] inbuf, int size) {
@@ -223,7 +129,7 @@ public class PGD {
         // Get the decryption key from BBMAC.
         return amctrl.GetKeyFromBBMac(pgdMacContext, macKey70);
     }
-    
+
     public boolean CheckEDATRenameKey(byte[] fileName, byte[] hash, byte[] data) {
         // Set up MAC context.
         pgdMacContext = new AMCTRL.BBMac_Ctx();

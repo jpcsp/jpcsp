@@ -20,7 +20,6 @@ import java.util.HashMap;
 
 public class VirtualFileSystemManager {
 	protected HashMap<String, IVirtualFileSystem> virtualFileSystems = new HashMap<String, IVirtualFileSystem>();
-	protected ITmpVirtualFileSystem tmpVfs;
 
 	public void register(String name, IVirtualFileSystem vfs) {
 		name = name.toLowerCase();
@@ -30,10 +29,6 @@ public class VirtualFileSystemManager {
 	public void unregister(String name) {
 		name = name.toLowerCase();
 		virtualFileSystems.remove(name);
-	}
-
-	public void register(ITmpVirtualFileSystem tmpVfs) {
-		this.tmpVfs = tmpVfs;
 	}
 
 	public IVirtualFileSystem getVirtualFileSystem(String absoluteFileName, StringBuilder localFileName) {
@@ -53,10 +48,6 @@ public class VirtualFileSystemManager {
 		}
 
 		return virtualFileSystems.get(name);
-	}
-
-	public ITmpVirtualFileSystem getTmpVirtualFileSystem() {
-		return tmpVfs;
 	}
 
 	/**

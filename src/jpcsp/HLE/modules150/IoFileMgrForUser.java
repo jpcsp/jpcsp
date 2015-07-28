@@ -49,8 +49,6 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -63,15 +61,14 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.VFS.ITmpVirtualFileSystem;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.VFS.SeekableDataInputVirtualFile;
 import jpcsp.HLE.VFS.VirtualFileSystemManager;
+import jpcsp.HLE.VFS.crypto.PGDVirtualFile;
 import jpcsp.HLE.VFS.emulator.EmulatorVirtualFileSystem;
-import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
-import jpcsp.HLE.VFS.local.TmpLocalVirtualFileSystem;
 import jpcsp.HLE.VFS.memoryStick.MemoryStickVirtualFileSystem;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.MsgPipeManager;
@@ -87,8 +84,6 @@ import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
-import jpcsp.connector.PGDFileConnector;
-import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -240,7 +235,6 @@ public class IoFileMgrForUser extends HLEModule {
     private final static int asyncThreadRegisterArgument = _s0; // $s0 is preserved across calls
     private boolean noDelayIoOperation;
 
-    private PGDFileConnector pgdFileConnector;
     private boolean allowExtractPGD;
 
     // Implement the list of IIoListener as an array to improve the performance
@@ -670,7 +664,6 @@ public class IoFileMgrForUser extends HLEModule {
         previousFatMsState = MemoryStick.PSP_FAT_MEMORYSTICK_STATE_UNASSIGNED;
 
         vfsManager = new VirtualFileSystemManager();
-    	vfsManager.register(new TmpLocalVirtualFileSystem());
         vfsManager.register("emulator", new EmulatorVirtualFileSystem());
         vfsManager.register("kemulator", new EmulatorVirtualFileSystem());
         if (useVirtualFileSystem) {
@@ -1464,10 +1457,6 @@ public class IoFileMgrForUser extends HLEModule {
 
     public VirtualFileSystemManager getVirtualFileSystemManager() {
     	return vfsManager;
-    }
-
-    public ITmpVirtualFileSystem getTmpVirtualFileSystem() {
-    	return vfsManager.getTmpVirtualFileSystem();
     }
 
     public IVirtualFileSystem getVirtualFileSystem(String pspfilename, StringBuilder localFileName) {
@@ -2571,151 +2560,25 @@ public class IoFileMgrForUser extends HLEModule {
                 // Define decryption key (DRM by amctrl.prx).
                 case 0x04100001: {
                     if (Memory.isAddressGood(indata_addr) && inlen == 16) {
-                        CryptoEngine crypto = new CryptoEngine();
-                        String keyHex = "";
-
-                        if (pgdFileConnector == null) {
-                            pgdFileConnector = new PGDFileConnector();
-                        }
-
                         // Store the key.
                         byte[] keyBuf = new byte[0x10];
+                        StringBuilder keyHex = new StringBuilder();
                         for (int i = 0; i < 0x10; i++) {
                             keyBuf[i] = (byte) mem.read8(indata_addr + i);
-                            keyHex += String.format("%02x", keyBuf[i] & 0xFF);
+                            keyHex.append(String.format("%02X", keyBuf[i] & 0xFF));
                         }
 
                         if (log.isDebugEnabled()) {
-                            log.debug("hleIoIoctl get AES key " + keyHex);
+                            log.debug(String.format("hleIoIoctl get AES key %s", keyHex.toString()));
                         }
 
-                        if (getAllowExtractPGDStatus() && info.readOnlyFile != null) {
-                            // Extract the encrypted PGD file for external decryption.
-                            pgdFileConnector.extractPGDFile(info.filename, info.readOnlyFile, keyHex);
-                        }
-
-                        IVirtualFile decInput = null;
-                        result = 0;
-                        // Try to decrypt this PGD file with the Crypto Engine.
-                        try {
-                            // Maximum 16-byte aligned block size to use during stream read/write.
-                            int maxAlignedChunkSize = 0x800;
-
-                            // PGD hash header size.
-                            int pgdHeaderSize = 0x90;
-
-                            // Setup the buffers.
-                            byte[] inBuf = new byte[maxAlignedChunkSize + pgdHeaderSize];
-                            byte[] outBuf = new byte[maxAlignedChunkSize + 0x10];
-                            byte[] headerBuf = new byte[0x30 + 0x10];
-
-                            // Read the encrypted PGD header.
-                            if (info.vFile != null) {
-                                info.vFile.ioRead(inBuf, 0, pgdHeaderSize);
-                            } else {
-                                info.readOnlyFile.readFully(inBuf, 0, pgdHeaderSize);
-                            }
-
-                            // Check if the "PGD" header is present
-                            if (inBuf[0] != 0 || inBuf[1] != 'P' || inBuf[2] != 'G' || inBuf[3] != 'D') {
-                                // No "PGD" found in the header,
-                                // abort the decryption and leave the file unchanged
-                                log.warn(String.format("No PGD header detected %02X %02X %02X %02X ('%c%c%c%c') detected in file '%s'", inBuf[0] & 0xFF, inBuf[1] & 0xFF, inBuf[2] & 0xFF, inBuf[3] & 0xFF, (char) inBuf[0], (char) inBuf[1], (char) inBuf[2], (char) inBuf[3], info.filename));
-                            } else {
-                                // Decrypt 0x30 bytes at offset 0x30 to expose the first header.
-                                System.arraycopy(inBuf, 0x10, headerBuf, 0, 0x10);
-                                System.arraycopy(inBuf, 0x30, headerBuf, 0x10, 0x30);
-                                byte headerBufDec[] = crypto.getPGDEngine().DecryptPGD(headerBuf, 0x30 + 0x10, keyBuf);
-
-                                // Extract the decrypting parameters.
-                                IntBuffer decryptedHeader = ByteBuffer.wrap(headerBufDec).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
-                                int dataSize = decryptedHeader.get(5);
-                                int chunkSize = decryptedHeader.get(6);
-                                int hashOffset = decryptedHeader.get(7);
-                                if (log.isDebugEnabled()) {
-                                    log.debug(String.format("PGD dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
-                                    if (log.isTraceEnabled()) {
-                                        log.trace(String.format("PGD Header: %s", Utilities.getMemoryDump(inBuf, 0, pgdHeaderSize)));
-                                        log.trace(String.format("Decrypted PGD Header: %s", Utilities.getMemoryDump(headerBufDec, 0, headerBufDec.length)));
-                                    }
-                                }
-
-                                long fileLength = (info.vFile != null) ? info.vFile.length() : info.readOnlyFile.length();
-                                if (hashOffset < 0 || hashOffset > fileLength || dataSize < 0) {
-                                    // The decrypted PGD header is incorrect...
-                                    // abort the decryption and leave the file unchanged
-                                    log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
-                                    result = SceKernelErrors.ERROR_PGD_INVALID_HEADER;
-                                } else {
-                                	// Remember the PGD original file to perform ioctl operations on it (and not on the decrypted file)
-                                    IVirtualFile originalFile = null;
-                                    if (info.vFile != null) {
-                                    	originalFile = info.vFile;
-                                    } else if (info.readOnlyFile instanceof UmdIsoFile) {
-                                    	UmdIsoFile umdIsoFile = (UmdIsoFile) info.readOnlyFile;
-                                    	originalFile = new UmdIsoVirtualFile(umdIsoFile);
-                                    }
-
-                                    // Check for an already decrypted file with the correct size
-                                    decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, info.flags, 0, ITmpVirtualFileSystem.tmpPurposePGD, originalFile);
-                                    if (decInput == null || decInput.length() < dataSize) {
-                                        // Create a new decrypted file
-                                        decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, PSP_O_CREAT | PSP_O_WRONLY, 0777, ITmpVirtualFileSystem.tmpPurposePGD);
-
-                                        // Write the newly extracted hash at the top of the output buffer,
-                                        // locate the data hash at hashOffset and start decrypting until
-                                        // dataSize is reached.
-                                        if (info.vFile != null) {
-                                            info.vFile.ioLseek(hashOffset);
-                                        } else {
-                                            info.readOnlyFile.seek(hashOffset);
-                                        }
-                                        int readLength;
-                                        byte[] decryptedBytes;
-                                        for (int i = 0; i < dataSize; i += readLength) {
-                                            readLength = Math.min(dataSize - i, maxAlignedChunkSize);
-                                            if (info.vFile != null) {
-                                                info.vFile.ioRead(inBuf, pgdHeaderSize, readLength);
-                                            } else {
-                                                info.readOnlyFile.readFully(inBuf, pgdHeaderSize, readLength);
-                                            }
-
-                                            System.arraycopy(headerBufDec, 0, outBuf, 0, 0x10);
-                                            System.arraycopy(inBuf, pgdHeaderSize, outBuf, 0x10, readLength);
-                                            if (i == 0) {
-                                                decryptedBytes = crypto.getPGDEngine().DecryptPGD(outBuf, readLength + 0x10, keyBuf);
-                                            } else {
-                                                decryptedBytes = crypto.getPGDEngine().UpdatePGDCipher(outBuf, readLength + 0x10);
-                                            }
-                                            decInput.ioWrite(decryptedBytes, 0, decryptedBytes.length);
-                                        }
-
-                                        // Finish the PGD cipher operations
-                                        crypto.getPGDEngine().FinishPGDCipher();
-
-                                        // Reuse the created file (re-open it in read-only mode)
-                                        decInput.ioClose();
-                                        decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, info.flags, 0, ITmpVirtualFileSystem.tmpPurposePGD, originalFile);
-                                    }
-                                }
-                            }
-                        } catch (Exception e) {
-                            log.error("Error while decrypting PGD file", e);
-                        }
-
-                        try {
-                            if (info.vFile != null) {
-                                info.vFile.ioLseek(info.position);
-                            } else {
-                                info.readOnlyFile.seek(info.position);
-                            }
-                        } catch (IOException e) {
-                            log.error(e);
-                        }
-
-                        if (decInput != null) {
-                            info.vFile = decInput;
-                        }
+                    	PGDVirtualFile pgdFile = new PGDVirtualFile(keyBuf, new SeekableDataInputVirtualFile(info.readOnlyFile));
+                    	if (pgdFile.isValid()) {
+                    		info.vFile = pgdFile;
+                    		result = 0;
+                    	} else {
+                            result = SceKernelErrors.ERROR_PGD_INVALID_HEADER;
+                    	}
                     } else {
                         log.warn(String.format("hleIoIoctl cmd=0x04100001 indata=0x%08X inlen=%d unsupported parameters", indata_addr, inlen));
                         result = ERROR_INVALID_ARGUMENT;
@@ -3538,7 +3401,8 @@ public class IoFileMgrForUser extends HLEModule {
 
                 if ((bits & 0x0001) != 0) {	// Others execute permission
                     if (!file.setExecutable((mode & 0x0001) != 0)) {
-                        successful = false;
+                    	// This always fails under Windows
+                        // successful = false;
                     }
                 }
                 if ((bits & 0x0002) != 0) {	// Others write permission
@@ -3548,13 +3412,15 @@ public class IoFileMgrForUser extends HLEModule {
                 }
                 if ((bits & 0x0004) != 0) {	// Others read permission
                     if (!file.setReadable((mode & 0x0004) != 0)) {
-                        successful = false;
+                    	// This always fails under Windows
+                        // successful = false;
                     }
                 }
 
                 if ((bits & 0x0040) != 0) {	// User execute permission
                     if (!file.setExecutable((mode & 0x0040) != 0, true)) {
-                        successful = false;
+                    	// This always fails under Windows
+                        // successful = false;
                     }
                 }
                 if ((bits & 0x0080) != 0) {	// User write permission
@@ -3564,7 +3430,8 @@ public class IoFileMgrForUser extends HLEModule {
                 }
                 if ((bits & 0x0100) != 0) {	// User read permission
                     if (!file.setReadable((mode & 0x0100) != 0, true)) {
-                        successful = false;
+                    	// This always fails under Windows
+                        // successful = false;
                     }
                 }
 
@@ -3580,6 +3447,11 @@ public class IoFileMgrForUser extends HLEModule {
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoChstat(result, filename.getAddress(), filename.getString(), statAddr.getAddress(), bits);
         }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceIoChstat returning 0x%08X", result));
+        }
+
         return result;
     }
 

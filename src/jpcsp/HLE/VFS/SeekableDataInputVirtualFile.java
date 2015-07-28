@@ -14,14 +14,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.connector;
+package jpcsp.HLE.VFS;
 
-/**
- * @author gid15
- *
- */
-public class Connector {
-	public static final String basePSPDirectory = "ms0:/tmp/";
-	public static final String jpcspConnectorName = "Jpcsp Connector 3xx";
-	public static final String commandFileName = "command.txt";
+import jpcsp.filesystems.SeekableDataInput;
+
+public class SeekableDataInputVirtualFile extends AbstractVirtualFile {
+	public SeekableDataInputVirtualFile(SeekableDataInput file) {
+		super(file);
+	}
 }

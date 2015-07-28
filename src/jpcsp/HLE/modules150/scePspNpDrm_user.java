@@ -16,7 +16,6 @@
  */
 package jpcsp.HLE.modules150;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,10 +30,12 @@ import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.Emulator;
 import jpcsp.Loader;
-import jpcsp.connector.DLCConnector;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.HLE.VFS.SeekableDataInputVirtualFile;
+import jpcsp.HLE.VFS.crypto.EDATVirtualFile;
+import jpcsp.HLE.VFS.crypto.PGDVirtualFile;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -64,7 +65,6 @@ public class scePspNpDrm_user extends HLEModule {
     public static final int PSP_NPDRM_KEY_LENGHT = 0x10;
     private byte npDrmKey[] = new byte[PSP_NPDRM_KEY_LENGHT];
     private boolean isNpDrmKeySet = false;
-    private DLCConnector dlcConnector;
     private boolean disableDLCDecryption;
     
     public void setDisableDLCStatus(boolean status) {
@@ -98,11 +98,8 @@ public class scePspNpDrm_user extends HLEModule {
             key.append(String.format("%02X", npDrmKey[i] & 0xFF));
         }
         setNpDrmKeyStatus(true);
-        log.info(String.format("NPDRM Encryption key detected: 0x%s", key.toString()));
-
-        // Start the DLC connector.
-        if (dlcConnector == null) {
-            dlcConnector = new DLCConnector();
+        if (log.isInfoEnabled()) {
+        	log.info(String.format("NPDRM Encryption key detected: 0x%s", key.toString()));
         }
 
         return 0;
@@ -193,96 +190,17 @@ public class scePspNpDrm_user extends HLEModule {
 
         IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd);
         if (info == null) {
-            return 0;
+            return -1;
         }
 
-        CryptoEngine crypto = new CryptoEngine();
         int result = 0;
 
-        // Generate the necessary directories and file paths.
-        String dlcPath = dlcConnector.getDLCPath(info.filename);
-        String decFileName = dlcConnector.getDecryptedDLCPath(info.filename);
-
-        // Check we're using already decrypted DLC.
+        // Check if the DLC decryption is enabled
         if (!getDisableDLCStatus()) {
-            // Try to decrypt the data with the Crypto Engine.
-            try {
-                // PGD header size.
-                int pgdHeaderSize = 0x90;
-
-                // PGD data header offset.
-                int pgdHeaderDataOffset = 0x30;
-
-                // PGD data offset in EDAT file.
-                int edatPGDOffset = 0x90;
-
-                // Setup the buffers.
-                byte[] fileBuf = new byte[(int) info.readOnlyFile.length()];
-                byte[] encHeaderBuf = new byte[pgdHeaderSize];
-
-                // Read the encrypted file.
-                long startPosition = info.readOnlyFile.getFilePointer();
-                info.readOnlyFile.readFully(fileBuf);
-                info.readOnlyFile.seek(startPosition);
-
-                // Check if the "PSPEDAT" header is present
-                if (fileBuf[0] != 0 || fileBuf[1] != 'P' || fileBuf[2] != 'S' || fileBuf[3] != 'P'
-                        || fileBuf[4] != 'E' || fileBuf[5] != 'D' || fileBuf[6] != 'A' || fileBuf[7] != 'T') {
-                    // No "EDAT" found in the header,
-                    // abort the decryption and leave the file unchanged
-                    log.warn("PSPEDAT header not found!");
-                    return 0;
-                }
-
-                // Extract the encrypted PGD header.
-                System.arraycopy(fileBuf, edatPGDOffset, encHeaderBuf, 0, pgdHeaderSize);
-
-                // Get the decryption key from the PGD header and then decrypt the header.
-                byte[] decKey = crypto.getPGDEngine().GetEDATPGDKey(encHeaderBuf, pgdHeaderSize);
-                byte[] decHeader = crypto.getPGDEngine().DecryptEDATPGDHeader(encHeaderBuf, pgdHeaderSize, decKey);
-
-                // Copy back the decrypted header.
-                System.arraycopy(decHeader, 0, fileBuf, edatPGDOffset + pgdHeaderDataOffset, decHeader.length);
-
-                // Extract the decrypting parameters.
-                int dataSize = (decHeader[0x14] & 0xFF) | ((decHeader[0x15] & 0xFF) << 8)
-                        | ((decHeader[0x16] & 0xFF) << 16) | ((decHeader[0x17] & 0xFF) << 24);
-                int chunkSize = (decHeader[0x18] & 0xFF) | ((decHeader[0x19] & 0xFF) << 8)
-                        | ((decHeader[0x1A] & 0xFF) << 16) | ((decHeader[0x1B] & 0xFF) << 24);
-                int hashOffset = (decHeader[0x1C] & 0xFF) | ((decHeader[0x1D] & 0xFF) << 8)
-                        | ((decHeader[0x1E] & 0xFF) << 16) | ((decHeader[0x1F] & 0xFF) << 24);
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("PGD dataSize=0x%08x, chunkSize=0x%08x, hashOffset=0x%08x", dataSize, chunkSize, hashOffset));
-                }
-
-                byte[] inBuf = new byte[fileBuf.length - edatPGDOffset];
-                System.arraycopy(fileBuf, edatPGDOffset, inBuf, 0, inBuf.length);
-
-                byte[] outBuf = crypto.getPGDEngine().DecryptEDATPGD(inBuf, dataSize, hashOffset, chunkSize, decKey);
-
-                if (hashOffset < 0 || dataSize < 0) {
-                    log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
-                    result = SceKernelErrors.ERROR_PGD_INVALID_HEADER;
-                } else {
-                    // Create a new file for decryption.
-                    new File(dlcPath).mkdirs();
-                    SeekableRandomFile decFile = new SeekableRandomFile(decFileName, "rw");
-
-                    decFile.write(outBuf);
-                    decFile.close();
-                }
-            } catch (Exception e) {
-                // Ignore.
-            }
-
-            try {
-                info.readOnlyFile.seek(info.position);
-            } catch (Exception e) {
-                // Ignore.
-            }
-
-            // Load the manually decrypted file generated just now.
-            info.readOnlyFile = dlcConnector.loadDecryptedDLCFile(decFileName);
+    		PGDVirtualFile pgdFile = new EDATVirtualFile(new SeekableDataInputVirtualFile(info.readOnlyFile));
+    		if (pgdFile.isValid()) {
+    			info.vFile = pgdFile;
+    		}
         }
 
         return result;
@@ -293,7 +211,9 @@ public class scePspNpDrm_user extends HLEModule {
         IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd);
         int size = 0;
         if (info != null) {
-            if (info.readOnlyFile != null) {
+        	if (info.vFile != null) {
+        		size = (int) info.vFile.length();
+        	} else if (info.readOnlyFile != null) {
                 try {
                     size = (int) info.readOnlyFile.length();
                 } catch (IOException e) {

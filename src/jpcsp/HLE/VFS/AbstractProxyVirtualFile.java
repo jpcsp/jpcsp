@@ -16,7 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.TPointer;
+import jpcsp.util.Utilities;
 
 /**
  * Proxy all the IVirtualFile interface calls to another virtual file.
@@ -25,6 +28,7 @@ import jpcsp.HLE.TPointer;
  *
  */
 public abstract class AbstractProxyVirtualFile implements IVirtualFile {
+	protected static Logger log = AbstractVirtualFileSystem.log;
 	protected IVirtualFile vFile;
 
 	protected AbstractProxyVirtualFile() {
@@ -46,6 +50,21 @@ public abstract class AbstractProxyVirtualFile implements IVirtualFile {
 	@Override
 	public int ioRead(TPointer outputPointer, int outputLength) {
 		return vFile.ioRead(outputPointer, outputLength);
+	}
+
+	/*
+	 * Perform the ioRead in PSP memory using the ioRead for a byte array.
+	 */
+	protected int ioReadBuf(TPointer outputPointer, int outputLength) {
+		if (outputLength <= 0) {
+			return 0;
+		}
+
+		byte[] outputBuffer = new byte[outputLength];
+		int readLength = ioRead(outputBuffer, 0, outputLength);
+		Utilities.writeBytes(outputPointer.getAddress(), readLength, outputBuffer, 0);
+
+		return readLength;
 	}
 
 	@Override

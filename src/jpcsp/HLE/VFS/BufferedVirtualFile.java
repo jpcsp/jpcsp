@@ -33,9 +33,18 @@ public class BufferedVirtualFile extends AbstractProxyVirtualFile {
 	private int bufferIndex;
 	private int bufferLength;
 
+	protected BufferedVirtualFile() {
+	}
+
 	public BufferedVirtualFile(IVirtualFile vFile, int bufferSize) {
-		super(vFile);
+		setBufferedVirtualFile(vFile, bufferSize);
+	}
+
+	protected void setBufferedVirtualFile(IVirtualFile vFile, int bufferSize) {
+		setProxyVirtualFile(vFile);
 		buffer = new byte[bufferSize];
+		bufferIndex = 0;
+		bufferLength = 0;
 	}
 
 	private void copyFromBuffer(int outputAddr, int length) {
@@ -61,8 +70,10 @@ public class BufferedVirtualFile extends AbstractProxyVirtualFile {
 			return;
 		}
 
+		if (bufferLength > 0) {
+			bufferIndex = 0;
+		}
 		bufferLength = vFile.ioRead(buffer, 0, buffer.length);
-		bufferIndex = 0;
 	}
 
 	@Override
@@ -124,7 +135,6 @@ public class BufferedVirtualFile extends AbstractProxyVirtualFile {
 		bufferLength = 0;
 		bufferIndex = 0;
 		if (offset > virtualFileOffset) {
-			checkPopulateBuffer();
 			bufferIndex = (int) (offset - virtualFileOffset);
 		}
 
