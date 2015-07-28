@@ -32,8 +32,10 @@ import static jpcsp.util.Utilities.endianSwap32;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -60,6 +62,7 @@ import jpcsp.util.Utilities;
 
 public class CodecTest {
 	private static Logger log = Atrac3plusDecoder.log;
+	private static final boolean dumpRawAudio = false;
 
 	private static void write(Memory mem, int addr, byte[] data, int offset, int length) {
 		length = Math.min(length, data.length - offset);
@@ -174,6 +177,11 @@ public class CodecTest {
 			inputAddr += dataOffset;
 			length -= dataOffset;
 
+			OutputStream os = null;
+			if (dumpRawAudio) {
+				os = new FileOutputStream("sample.raw");
+			}
+
 			for (int frameNbr = 0; true; frameNbr++) {
 				int result = codec.decode(inputAddr, length, samplesAddr);
 				if (result < 0) {
@@ -201,10 +209,18 @@ public class CodecTest {
 					bytes[i] = (byte) mem.read8(samplesAddr + i);
 				}
 				mLine.write(bytes, 0, bytes.length);
+
+				if (dumpRawAudio) {
+					os.write(bytes);
+				}
 			}
 
             mLine.drain();
             mLine.close();
+
+			if (os != null) {
+				os.close();
+			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
