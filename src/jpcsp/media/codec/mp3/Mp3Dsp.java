@@ -28,38 +28,38 @@ public class Mp3Dsp {
 	public static final int MDCT_BUF_SIZE = 36;
 	public static final float mdct_win[][] = new float[8][MDCT_BUF_SIZE];
 	public static final float mpa_synth_window[] = new float[512 + 256];
-	private static final double C1 = 0.98480775301220805936/2;
-	private static final double C2 = 0.93969262078590838405/2;
-	private static final double C3 = 0.86602540378443864676/2;
-	private static final double C4 = 0.76604444311897803520/2;
-	private static final double C5 = 0.64278760968653932632/2;
-	//private static final double C6 = 0.5/2;
-	private static final double C7 = 0.34202014332566873304/2;
-	private static final double C8 = 0.17364817766693034885/2;
+	private static final float C1 = (float) (0.98480775301220805936/2);
+	private static final float C2 = (float) (0.93969262078590838405/2);
+	private static final float C3 = (float) (0.86602540378443864676/2);
+	private static final float C4 = (float) (0.76604444311897803520/2);
+	private static final float C5 = (float) (0.64278760968653932632/2);
+	//private static final float C6 = 0.5/2;
+	private static final float C7 = (float) (0.34202014332566873304/2);
+	private static final float C8 = (float) (0.17364817766693034885/2);
 
 	/* 0.5 / cos(pi*(2*i+1)/36) */
-	private static final double icos36[] = new double[] {
-	    0.50190991877167369479,
-	    0.51763809020504152469, //0
-	    0.55168895948124587824,
-	    0.61038729438072803416,
-	    0.70710678118654752439, //1
-	    0.87172339781054900991,
-	    1.18310079157624925896,
-	    1.93185165257813657349, //2
-	    5.73685662283492756461
+	private static final float icos36[] = new float[] {
+		(float) (0.50190991877167369479),
+		(float) (0.51763809020504152469), //0
+		(float) (0.55168895948124587824),
+		(float) (0.61038729438072803416),
+		(float) (0.70710678118654752439), //1
+		(float) (0.87172339781054900991),
+		(float) (1.18310079157624925896),
+		(float) (1.93185165257813657349), //2
+		(float) (5.73685662283492756461)
 	};
 
 	/* 0.5 / cos(pi*(2*i+1)/36) */
-	private static final double icos36h[] = new double[] {
-	    0.50190991877167369479/2,
-	    0.51763809020504152469/2, //0
-	    0.55168895948124587824/2,
-	    0.61038729438072803416/2,
-	    0.70710678118654752439/2, //1
-	    0.87172339781054900991/2,
-	    1.18310079157624925896/4,
-	    1.93185165257813657349/4, //2
+	private static final float icos36h[] = new float[] {
+		(float) (0.50190991877167369479/2),
+		(float) (0.51763809020504152469/2), //0
+		(float) (0.55168895948124587824/2),
+		(float) (0.61038729438072803416/2),
+		(float) (0.70710678118654752439/2), //1
+		(float) (0.87172339781054900991/2),
+		(float) (1.18310079157624925896/4),
+		(float) (1.93185165257813657349/4)  //2
 //	    5.73685662283492756461),
 	};
 
@@ -259,20 +259,20 @@ public class Mp3Dsp {
 			tmp[tmp1 +  6] = t1 - t2 * 0.5f;
 			tmp[tmp1 + 16] = t1 + t2;
 
-			t0 = (float) ((in[in1 + 2 * 2] + in[in1 + 2 * 4]) * C2 *  2f);
-			t1 = (float) ((in[in1 + 2 * 4] - in[in1 + 2 * 8]) * C8 * -2f);
-			t2 = (float) ((in[in1 + 2 * 2] + in[in1 + 2 * 8]) * C4 * -2f);
+			t0 = (in[in1 + 2 * 2] + in[in1 + 2 * 4]) * C2 *  2f;
+			t1 = (in[in1 + 2 * 4] - in[in1 + 2 * 8]) * C8 * -2f;
+			t2 = (in[in1 + 2 * 2] + in[in1 + 2 * 8]) * C4 * -2f;
 
 			tmp[tmp1 + 10] = t3 - t0 - t2;
 			tmp[tmp1 +  2] = t3 + t0 + t1;
 			tmp[tmp1 + 14] = t3 + t2 - t1;
 
-			tmp[tmp1 +  4] = (float) ((in[in1 + 2 * 5] + in[in1 + 2 * 7] - in[in1 + 2 * 1]) * C3 * -2f);
-			t2 = (float) ((in[in1 + 2 * 1] + in[in1 + 2 * 5]) * C1 *  2f);
-			t3 = (float) ((in[in1 + 2 * 5] - in[in1 + 2 * 7]) * C7 * -2f);
-			t0 = (float) ( in[in1 + 2 * 3]                    * C3 *  2f);
+			tmp[tmp1 +  4] = (in[in1 + 2 * 5] + in[in1 + 2 * 7] - in[in1 + 2 * 1]) * C3 * -2f;
+			t2 = (in[in1 + 2 * 1] + in[in1 + 2 * 5]) * C1 *  2f;
+			t3 = (in[in1 + 2 * 5] - in[in1 + 2 * 7]) * C7 * -2f;
+			t0 =  in[in1 + 2 * 3]                    * C3 *  2f;
 
-			t1 = (float) ((in[in1 + 2 * 1] + in[in1 + 2 * 7]) * C5 * -2f);
+			t1 = (in[in1 + 2 * 1] + in[in1 + 2 * 7]) * C5 * -2f;
 
 			tmp[tmp1 +  0] = t2 + t3 + t0;
 			tmp[tmp1 + 12] = t2 + t1 - t0;
@@ -288,8 +288,8 @@ public class Mp3Dsp {
 
 			float t2 = tmp[i + 1];
 			float t3 = tmp[i + 3];
-			float s1 = (float) ((t3 + t2) * icos36h[j] * 2f);
-			float s3 = (float) ((t3 - t2) * icos36[8 - j]);
+			float s1 = (t3 + t2) * icos36h[j] * 2f;
+			float s3 = (t3 - t2) * icos36[8 - j];
 
 			t0 = s0 + s1;
 			t1 = s0 - s1;
@@ -308,7 +308,7 @@ public class Mp3Dsp {
 		}
 
 		float s0 = tmp[16];
-		float s1 = (float) (tmp[17] * icos36h[4] * 2f);
+		float s1 = tmp[17] * icos36h[4] * 2f;
 		float t0 = s0 + s1;
 		float t1 = s0 - s1;
 		out[outOffset + (9 + 4) * SBLIMIT] = t1 * win[9 + 4] + buf[bufOffset + 4 * (9 + 4)];
