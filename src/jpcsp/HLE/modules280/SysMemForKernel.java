@@ -27,7 +27,7 @@ public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel {
 		int result = Model.getModel(); // <= 0 original, 1 slim
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceKernelGetModel returning %d", result));
+			log.debug(String.format("sceKernelGetModel returning %d(%s)", result, Model.getModelName(result)));
 		}
 
 		return result;

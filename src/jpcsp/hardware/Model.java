@@ -19,10 +19,17 @@ package jpcsp.hardware;
 public class Model {
 	public static final int MODEL_PSP_FAT = 0;
 	public static final int MODEL_PSP_SLIM = 1;
-        public static final int MODEL_PSP_BRITE = 2;
-        public static final int MODEL_PSP_BRITE2 = 3;
-        public static final int MODEL_PSP_GO = 4;
+    public static final int MODEL_PSP_BRITE = 2;
+    public static final int MODEL_PSP_BRITE2 = 3;
+    public static final int MODEL_PSP_GO = 4;
 	private static int model = MODEL_PSP_FAT;
+	private static final String[] modelNames = new String[] {
+		"MODEL_PSP_FAT",
+		"MODEL_PSP_SLIM",
+		"MODEL_PSP_BRITE",
+		"MODEL_PSP_BRITE2",
+		"MODEL_PSP_GO"
+	};
 
 	public static int getModel() {
 		return model;
@@ -30,5 +37,13 @@ public class Model {
 
 	public static void setModel(int model) {
 		Model.model = model;
+	}
+
+	public static String getModelName(int model) {
+		if (model >= 0 && model < modelNames.length) {
+			return modelNames[model];
+		}
+
+		return String.format("Unknown Model %d", model);
 	}
 }

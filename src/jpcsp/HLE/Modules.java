@@ -20,6 +20,7 @@ package jpcsp.HLE;
 import jpcsp.HLE.modules.InterruptManager;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.KDebugForKernel;
+import jpcsp.HLE.modules.KUBridge;
 import jpcsp.HLE.modules.Kernel_Library;
 import jpcsp.HLE.modules.LoadCoreForKernel;
 import jpcsp.HLE.modules.LoadExecForUser;
@@ -179,6 +180,7 @@ public class Modules {
     public static sceSha1 sceSha1Module = new sceSha1();
     public static sceSha256 sceSha256Module = new sceSha256();
     public static sceMeCore_driver sceMeCore_driverModule = new sceMeCore_driver();
+    public static KUBridge KUBridgeModule = new KUBridge();
 
     public static Logger log = Logger.getLogger("hle");
 

@@ -146,7 +146,6 @@ public enum SyscallIgnore {
 	WlanGPUnRegisterCallback(0x4c7f62e0),
 
 	// CFW
-	kuKernelLoadModule(0x4C25EA72),
 	systemctrl_user_577AF198(0x577AF198),
 	systemctrl_user_75643FCA(0x75643FCA),
 	systemctrl_user_ABA7F1B0(0xABA7F1B0),
