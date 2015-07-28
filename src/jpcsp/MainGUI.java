@@ -63,6 +63,7 @@ import javax.swing.UIManager;
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.autotests.AutoTestsRunner;
+import jpcsp.crypto.AES128;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.ImageViewer;
 import jpcsp.Debugger.InstructionCounter;
@@ -174,7 +175,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
      * Creates new form MainGUI
      */
     public MainGUI() {
-        DOMConfigurator.configure("LogSettings.xml");
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("emu"), Level.INFO)));
 
         actionListenerMap = new HashMap<KeyStroke, ActionListener[]>();
@@ -2871,6 +2871,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
      * @param args the command line arguments
      */
     public static void main(String args[]) {
+        DOMConfigurator.configure("LogSettings.xml");
+
+        AES128.init();
+
         // prepare i18n
         String locale = Settings.getInstance().readString("emu.language");
         if (!locale.equals("systemLocale")) {
