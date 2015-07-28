@@ -331,8 +331,8 @@ public class ModuleMgrForUser extends HLEModule {
                 // some space for the module header itself.
                 // We allocate the estimated size and free it immediately so that
                 // we know the load address.
-                final int mpidText = lmOption != null && lmOption.mpidText != 0 ? lmOption.mpidText : SysMemUserForUser.USER_PARTITION_ID;
-                final int mpidData = lmOption != null && lmOption.mpidData != 0 ? lmOption.mpidData : SysMemUserForUser.USER_PARTITION_ID;
+                int mpidText = lmOption != null && lmOption.mpidText != 0 ? lmOption.mpidText : SysMemUserForUser.USER_PARTITION_ID;
+                int mpidData = lmOption != null && lmOption.mpidData != 0 ? lmOption.mpidData : SysMemUserForUser.USER_PARTITION_ID;
                 final int allocType = lmOption != null ? lmOption.position : SysMemUserForUser.PSP_SMEM_Low;
                 final int moduleHeaderSize = 256;
 
@@ -342,6 +342,18 @@ public class ModuleMgrForUser extends HLEModule {
                 int totalAllocSize = moduleHeaderSize + testModule.loadAddressHigh - testModule.loadAddressLow;
                 if (log.isDebugEnabled()) {
                 	log.debug(String.format("Module '%s' requires %d bytes memory", name, totalAllocSize));
+                }
+
+                // Take the partition IDs from the module information, if available
+                if (lmOption == null || lmOption.mpidText == 0) {
+                	if (testModule.mpidtext != 0) {
+                		mpidText = testModule.mpidtext;
+                	}
+                }
+                if (lmOption == null || lmOption.mpidData == 0) {
+                	if (testModule.mpiddata != 0) {
+                		mpidData = testModule.mpiddata;
+                	}
                 }
 
                 SysMemInfo testInfo = Modules.SysMemUserForUserModule.malloc(mpidText, "ModuleMgr-TestInfo", allocType, totalAllocSize, 0);
