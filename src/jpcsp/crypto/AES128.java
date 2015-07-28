@@ -16,35 +16,58 @@
  */
 package jpcsp.crypto;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.Security;
+
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import jpcsp.HLE.Modules;
 
+import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class AES128 {
-
-    private static byte[] const_Zero = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    private static byte[] const_Rb = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x87};
+	private static Logger log = Modules.log;
+    private static final byte[] const_Zero = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    private static final byte[] const_Rb = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x87};
     private byte[] contentKey;
     private ByteArrayOutputStream barros;
     private static Cipher cipher;
+    private static final byte[] iv0 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    // Do not use Bouncy Castle as the default implementation is much faster
+    private static final boolean useBouncyCastle = false;
+
+    public static void init() {
+    	// Run in a background thread as the initialization is taking around 300 milliseconds
+    	Thread staticInit = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				init("AES/CBC/NoPadding");
+			}
+		});
+    	staticInit.start();
+    }
 
     private static void init(String mode) {
         if (cipher == null) {
-            Security.addProvider(new BouncyCastleProvider());
+        	if (useBouncyCastle) {
+        		Security.addProvider(new BouncyCastleProvider());
+        	}
             try {
-                cipher = Cipher.getInstance(mode, "BC");
+            	if (useBouncyCastle) {
+            		cipher = Cipher.getInstance(mode, "BC");
+            	} else {
+            		cipher = Cipher.getInstance(mode);
+            	}
             } catch (Exception e) {
-                Modules.log.error("AES128 Cipher", e);
+                log.error("AES128 Cipher", e);
             }
         }
     }
@@ -52,63 +75,60 @@ public class AES128 {
     public AES128(String mode) {
         init(mode);
     }
-    
+
+    private Key getKeySpec(byte[] encKey) {
+    	return new SecretKeySpec(encKey, "AES");
+    }
+
     // Private encrypting method for CMAC (IV == 0).
-    private static byte[] encryptCMAC(byte[] in, byte[] encKey) {
-        Key keySpec = new SecretKeySpec(encKey, "AES");
-        byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-        IvParameterSpec ivec = new IvParameterSpec(iv);
-        try {
-            Cipher c = cipher;
-            c.init(Cipher.ENCRYPT_MODE, keySpec, ivec);
-            ByteArrayInputStream inStream = new ByteArrayInputStream(in);
-            CipherInputStream cIn = new CipherInputStream(inStream, c);
-            DataInputStream dIn = new DataInputStream(cIn);
-            byte[] bytes = new byte[in.length];
-            for (int i = 0; i < bytes.length; i++) {
-                bytes[i] = (byte) dIn.read();
-            }
-            dIn.close();
-            return bytes;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+    private byte[] encryptCMAC(byte[] in, byte[] encKey) {
+        return encryptCMAC(in, getKeySpec(encKey));
+    }
+
+    // Private encrypting method for CMAC (IV == 0).
+    private byte[] encryptCMAC(byte[] in, Key keySpec) {
+    	return encrypt(in, keySpec, iv0);
     }
 
     // Public encrypting/decrypting methods (for CryptoEngine calls).
     public byte[] encrypt(byte[] in, byte[] encKey, byte[] iv) {
-        Key keySpec = new SecretKeySpec(encKey, "AES");
+    	return encrypt(in, getKeySpec(encKey), iv);
+    }
+
+    // Public encrypting/decrypting methods (for CryptoEngine calls).
+    public byte[] encrypt(byte[] in, Key keySpec, byte[] iv) {
         IvParameterSpec ivec = new IvParameterSpec(iv);
+        byte[] result = null;
         try {
             Cipher c = cipher;
             c.init(Cipher.ENCRYPT_MODE, keySpec, ivec);
-            ByteArrayInputStream inStream = new ByteArrayInputStream(in);
-            CipherInputStream cIn = new CipherInputStream(inStream, c);
-            DataInputStream dIn = new DataInputStream(cIn);
-            byte[] bytes = new byte[in.length];
-            for (int i = 0; i < bytes.length; i++) {
-                bytes[i] = (byte) dIn.read();
-            }
-            dIn.close();
-            return bytes;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+            result = c.doFinal(in);
+        } catch (InvalidKeyException e) {
+        	log.error("encrypt", e);
+        } catch (InvalidAlgorithmParameterException e) {
+        	log.error("encrypt", e);
+		} catch (IllegalBlockSizeException e) {
+			log.error("encrypt", e);
+		} catch (BadPaddingException e) {
+			log.error("encrypt", e);
+		}
+
+        return result;
     }
 
     public byte[] decrypt(byte[] in, byte[] decKey, byte[] iv) {
         Key keySpec = new SecretKeySpec(decKey, "AES");
         IvParameterSpec ivec = new IvParameterSpec(iv);
+        byte[] result = null;
         try {
             Cipher c = cipher;
             c.init(Cipher.DECRYPT_MODE, keySpec, ivec);
-            return c.doFinal(in);
+            result = c.doFinal(in);
         } catch (Exception e) {
-            Modules.log.error("decrypt", e);
-            return null;
+            log.error("decrypt", e);
         }
+
+        return result;
     }
 
     public void doInitCMAC(byte[] contentKey) {
@@ -165,12 +185,13 @@ public class AES128 {
         byte[] partInput = new byte[16];
         byte[] Y;
 
+        Key keySpec = getKeySpec(contentKey);
         for (int i = 0; i < numberOfRounds - 1; i++) {
             srcPos = 16 * i;
             System.arraycopy(input, srcPos, partInput, 0, 16);
 
             Y = xor128(partInput, X); /* Y := Mi (+) X */
-            X = encryptCMAC(Y, contentKey);
+            X = encryptCMAC(Y, keySpec);
         }
 
         Y = xor128(X, M_last);
@@ -211,7 +232,7 @@ public class AES128 {
         return padded;
     }
 
-    private static Object[] generateSubKey(byte[] key) {
+    private Object[] generateSubKey(byte[] key) {
         byte[] L = encryptCMAC(const_Zero, key);
 
         byte[] K1 = null;

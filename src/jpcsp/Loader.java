@@ -328,8 +328,11 @@ public class Loader {
             module.fileFormat |= FORMAT_PSP;
             log.warn("Encrypted file detected! (~PSP)");
             if(!loadedFirstModule) {
-                log.info("Calling crypto engine for PRX.");
-                LoadELF(psp.decrypt(f), module, baseAddress, analyzeOnly);
+            	long start = System.currentTimeMillis();
+            	ByteBuffer decryptedPrx = psp.decrypt(f);
+            	long end = System.currentTimeMillis();
+                log.info(String.format("Called crypto engine for PRX (duration=%d ms)", end - start));
+                LoadELF(decryptedPrx, module, baseAddress, analyzeOnly);
             }
             return true;
         }
