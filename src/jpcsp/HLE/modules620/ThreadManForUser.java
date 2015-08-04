@@ -110,6 +110,23 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
         return 0;
     }
 
+    @HLEFunction(nid = 0xBC31C1B9, version = 620, checkInsideInterrupt = true)
+    public int sceKernelExtendKernelStack(CpuState cpu, @CheckArgument("checkStackSize") int size, TPointer entryAddr, int entryParameter) {
+        // sceKernelExtendKernelStack executes the code at entryAddr using a larger
+        // stack. The entryParameter is  passed as the only parameter ($a0) to
+        // the code at entryAddr.
+        // When the code at entryAddr returns, sceKernelExtendKernelStack also returns
+        // with the return value of entryAddr.
+        SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+        int extendedStackAddr = thread.extendStack(size);
+        IAction afterAction = new AfterSceKernelExtendThreadStackAction(thread, cpu.pc, cpu._sp, cpu._ra);
+        cpu._a0 = entryParameter;
+        cpu._sp = extendedStackAddr + size;
+        Modules.ThreadManForUserModule.callAddress(entryAddr.getAddress(), afterAction, false);
+
+        return 0;
+    }
+
     @HLEFunction(nid = 0x8DAFF657, version = 620)
     public int sceKernelCreateTlspl(PspString name, int partitionId, int attr, int blockSize, int numberBlocks, @CanBeNull TPointer optionsAddr) {
         int alignment = 0;
