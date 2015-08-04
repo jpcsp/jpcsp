@@ -43,6 +43,7 @@ import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer64;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -1504,16 +1505,23 @@ public class IoFileMgrForUser extends HLEModule {
     /*
      * HLE functions.
      */
-    public int hleIoWaitAsync(int id, int res_addr, boolean wait, boolean callbacks) {
+    public int hleIoWaitAsync(int id, TPointer64 resAddr, boolean wait, boolean callbacks) {
         if (log.isDebugEnabled()) {
-            log.debug("hleIoWaitAsync(id=" + Integer.toHexString(id) + ",res=0x" + Integer.toHexString(res_addr) + ") wait=" + wait + " callbacks=" + callbacks);
+            log.debug(String.format("hleIoWaitAsync id=0x%X, res=%s, wait=%b, callbacks=%b", id, resAddr, wait, callbacks));
         }
 
         IoInfo info = fileIds.get(id);
 
         if (info == null) {
-            log.warn("hleIoWaitAsync - unknown id " + Integer.toHexString(id));
-            return ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+        	if (id == 0) {
+        		// Avoid WARN spam messages
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("hleIoWaitAsync - unknown id 0x%X", id));
+        		}
+        	} else {
+        		log.warn(String.format("hleIoWaitAsync - unknown id 0x%X", id));
+        	}
+            return ERROR_KERNEL_NO_ASYNC_OP;
         }
 
         if (info.result == ERROR_KERNEL_NO_ASYNC_OP || info.asyncThread == null) {
@@ -1525,7 +1533,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Polling returns 1 when async is busy.
             log.debug("hleIoWaitAsync - poll return = 1(busy)");
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("hleIoWaitAsync info.result=%d", info.result));
+            	log.debug(String.format("hleIoWaitAsync info.result=0x%X", info.result));
             }
             return 1;
         }
@@ -1560,22 +1568,21 @@ public class IoFileMgrForUser extends HLEModule {
         if (waitForAsync) {
             // Call the ioListeners.
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoWaitAsync(0, id, res_addr);
+                ioListener.sceIoWaitAsync(0, id, resAddr.getAddress());
             }
             // Start the waiting mode.
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
             currentThread.wait.Io_id = info.id;
-            currentThread.wait.Io_resultAddr = res_addr;
+            currentThread.wait.Io_resultAddr = resAddr.getAddress();
             threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, info.id, ioWaitStateChecker, callbacks);
         } else {
-            // Always store the result.
-            Memory mem = Memory.getInstance();
-            if (Memory.isAddressGood(res_addr)) {
+            // Store the result
+            if (resAddr.isNotNull()) {
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("hleIoWaitAsync - storing result 0x%X", info.result));
             	}
-                mem.write64(res_addr, info.result);
+                resAddr.setValue(info.result);
             }
 
             // Async result can only be retrieved once
@@ -1584,7 +1591,7 @@ public class IoFileMgrForUser extends HLEModule {
 
             // For sceIoPollAsync, only call the ioListeners.
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoPollAsync(0, id, res_addr);
+                ioListener.sceIoPollAsync(0, id, resAddr.getAddress());
             }
         }
 
@@ -2645,39 +2652,39 @@ public class IoFileMgrForUser extends HLEModule {
      * sceIoPollAsync
      * 
      * @param id
-     * @param res_addr
+     * @param resAddr
      * 
      * @return
      */
     @HLEFunction(nid = 0x3251EA56, version = 150, checkInsideInterrupt = true)
-    public int sceIoPollAsync(int id, int res_addr) {
-        return hleIoWaitAsync(id, res_addr, false, false);
+    public int sceIoPollAsync(int id, @CanBeNull TPointer64 resAddr) {
+        return hleIoWaitAsync(id, resAddr, false, false);
     }
 
     /**
      * sceIoWaitAsync
      * 
      * @param id
-     * @param res_addr
+     * @param resAddr
      * 
      * @return
      */
     @HLEFunction(nid = 0xE23EEC33, version = 150, checkInsideInterrupt = true)
-    public int sceIoWaitAsync(int id, int res_addr) {
-        return hleIoWaitAsync(id, res_addr, true, false);
+    public int sceIoWaitAsync(int id, @CanBeNull TPointer64 resAddr) {
+        return hleIoWaitAsync(id, resAddr, true, false);
     }
 
     /**
      * sceIoWaitAsyncCB
      * 
      * @param id
-     * @param res_addr
+     * @param resAddr
      * 
      * @return
      */
     @HLEFunction(nid = 0x35DBD746, version = 150, checkInsideInterrupt = true)
-    public int sceIoWaitAsyncCB(int id, int res_addr) {
-        return hleIoWaitAsync(id, res_addr, true, true);
+    public int sceIoWaitAsyncCB(int id, @CanBeNull TPointer64 resAddr) {
+        return hleIoWaitAsync(id, resAddr, true, true);
     }
 
     /**
@@ -2690,7 +2697,7 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0xCB05F8D6, version = 150, checkInsideInterrupt = true)
-    public int sceIoGetAsyncStat(int id, int poll, int res_addr) {
+    public int sceIoGetAsyncStat(int id, int poll, @CanBeNull TPointer64 res_addr) {
         return hleIoWaitAsync(id, res_addr, (poll == 0), false);
     }
 
