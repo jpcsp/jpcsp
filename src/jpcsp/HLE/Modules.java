@@ -29,6 +29,7 @@ import jpcsp.HLE.modules.StdioForKernel;
 import jpcsp.HLE.modules.StdioForUser;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemForKernel;
+import jpcsp.HLE.modules.SysclibForKernel;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.UtilsForUser;
 import jpcsp.HLE.modules.sceAac;
@@ -181,6 +182,7 @@ public class Modules {
     public static sceSha256 sceSha256Module = new sceSha256();
     public static sceMeCore_driver sceMeCore_driverModule = new sceMeCore_driver();
     public static KUBridge KUBridgeModule = new KUBridge();
+    public static SysclibForKernel SysclibForKernelModule = new SysclibForKernel();
 
     public static Logger log = Logger.getLogger("hle");
 

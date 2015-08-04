@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
-import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.TPointer;
@@ -40,33 +38,5 @@ public class SysMemForKernel extends HLEModule {
         destAddr.memset((byte) data, size);
 
         return 0;
-    }
-
-    @HLEFunction(nid = 0x10F3BB61, version = 150)
-    public int SysclibForKernel_memset(@CanBeNull TPointer destAddr, int data, int size) {
-    	if (destAddr.isNotNull()) {
-    		destAddr.memset((byte) data, size);
-    	}
-
-        return 0;
-    }
-
-    @HLEFunction(nid = 0xEC6F1CF2, version = 150)
-    public int SysclibForKernel_strcpy(@CanBeNull TPointer destAddr, @CanBeNull TPointer srcAddr) {
-    	if (destAddr.isNotNull() && srcAddr.isNotNull()) {
-    		AbstractNativeCodeSequence.strcpy(destAddr.getAddress(), srcAddr.getAddress());
-    	}
-
-        return 0;
-    }
-
-    @HLEFunction(nid = 0xC0AB8932, version = 150)
-    public int SysclibForKernel_strcmp(@CanBeNull TPointer src1Addr, @CanBeNull TPointer src2Addr) {
-		return AbstractNativeCodeSequence.strcmp(src1Addr.getAddress(), src2Addr.getAddress());
-    }
-
-    @HLEFunction(nid = 0x52DF196C, version = 150)
-    public int SysclibForKernel_strlen(@CanBeNull TPointer srcAddr) {
-    	return AbstractNativeCodeSequence.getStrlen(srcAddr.getAddress());
     }
 }

@@ -152,7 +152,8 @@ public class HLEModuleManager {
         sceSha1(Modules.sceSha1Module, new String[] { "libsha1" }),
         sceSha256(Modules.sceSha256Module, new String[] { "libsha256" }),
         sceMeCore_driver(Modules.sceMeCore_driverModule),
-        KUBridge(Modules.KUBridgeModule);
+        KUBridge(Modules.KUBridgeModule),
+        SysclibForKernel(Modules.SysclibForKernelModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
