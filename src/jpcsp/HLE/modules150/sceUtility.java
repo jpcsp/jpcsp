@@ -579,8 +579,7 @@ public class sceUtility extends HLEModule {
         }
 
         /**
-         * @param drawSpeed FPS used for internal animation sync (1 = 60 FPS; 2
-         * = 30 FPS; 3 = 15 FPS)
+         * @param drawSpeed FPS used for internal animation sync (1 = 60 FPS; 2 = 30 FPS; 3 = 15 FPS)
          * @return
          */
         public final int executeUpdate(int drawSpeed) {
@@ -2423,6 +2422,51 @@ public class sceUtility extends HLEModule {
             checkController();
         }
 
+        private String wrapText(String text, int width, float scale) {
+        	SceFontInfo fontInfo = getDefaultFontInfo();
+        	int glyphType = SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR;
+
+        	StringBuilder wrappedText = new StringBuilder();
+        	float x = 0f;
+        	int lastSpaceStart = -1;
+        	int lastSpaceEnd = -1;
+        	boolean isSpace = false;
+            for (int i = 0; i < text.length(); i++) {
+            	char c = text.charAt(i);
+            	pspCharInfo charInfo = fontInfo.getCharInfo(c, glyphType);
+
+            	if (c == ' ') {
+            		if (!isSpace) {
+            			lastSpaceStart = i;
+                		isSpace = true;
+            		}
+        			lastSpaceEnd = i + 1;
+            	} else if (isSpace) {
+            		lastSpaceEnd = i;
+            		isSpace = false;
+            	}
+
+                float nextX = x + charInfo.sfp26AdvanceH * scale / 64f;
+                if (nextX > width) {
+            		x = 0f;
+            		if (lastSpaceStart >= 0) {
+        				wrappedText.replace(lastSpaceStart, lastSpaceEnd, "\n");
+            		} else {
+            			wrappedText.append('\n');
+            		}
+
+            		if (!isSpace) {
+            			wrappedText.append(c);
+            		}
+            	} else {
+            		x = nextX;
+                	wrappedText.append(c);
+            	}
+            }
+
+            return wrappedText.toString();
+        }
+
         private void drawText(SceFontInfo fontInfo, int baseAscender, char c, int glyphType) {
             pspCharInfo charInfo = fontInfo.getCharInfo(c, glyphType);
             if (log.isTraceEnabled()) {
@@ -2501,6 +2545,8 @@ public class sceUtility extends HLEModule {
         }
 
         protected void drawTextWithShadow(int textX, int textY, int textColor, float scale, String s) {
+        	s = wrapText(s, Screen.width - textX, scale);
+
             int txtHeight = defaultTextHeight;
             if (s.contains("\n")) {
                 txtHeight = Screen.height - textY;
