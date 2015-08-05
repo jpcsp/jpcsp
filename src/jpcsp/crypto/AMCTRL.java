@@ -143,12 +143,12 @@ public class AMCTRL {
         if (ctx.mode == 0x2) {
             // Decryption mode 0x02: XOR the hash with AMCTRL keys and decrypt with KIRK CMD8.
             dataBuf = xorHash(dataBuf, 0x14, KeyVault.amHashKey5, 0, 0x10);
-            ScrambleBB(dataBuf, 0x10, 0x100, 5, 0x08);
+            ScrambleBB(dataBuf, 0x10, 0x100, 5, KIRK.PSP_KIRK_CMD_DECRYPT_FUSE);
             dataBuf = xorHash(dataBuf, 0, KeyVault.amHashKey4, 0, 0x10);
         } else {
             // Decryption mode 0x01: XOR the hash with AMCTRL keys and decrypt with KIRK CMD7.
             dataBuf = xorHash(dataBuf, 0x14, KeyVault.amHashKey5, 0, 0x10);
-            ScrambleBB(dataBuf, 0x10, 0x39, 5, 0x07);
+            ScrambleBB(dataBuf, 0x10, 0x39, 5, KIRK.PSP_KIRK_CMD_DECRYPT);
             dataBuf = xorHash(dataBuf, 0, KeyVault.amHashKey4, 0, 0x10);
         }
 
@@ -180,7 +180,7 @@ public class AMCTRL {
         System.arraycopy(dataBuf, length + 0x04, hashBuf, 0, 0x10);
 
         // Decrypt the hash with KIRK CMD7 and seed 0x63.
-        ScrambleBB(dataBuf, length, 0x63, 5, 0x07);
+        ScrambleBB(dataBuf, length, 0x63, 5, KIRK.PSP_KIRK_CMD_DECRYPT);
 
         // XOR the first 16-bytes of data with the saved key to generate a new hash.
         dataBuf = xorKey(dataBuf, 0, keyBuf1, 0, 0x10);
@@ -249,7 +249,7 @@ public class AMCTRL {
                 if (nLen == blockSize) {
                     // XOR with result and encrypt with KIRK CMD 4.
                     scrambleBuf = xorKey(scrambleBuf, 0x14, ctx.key, 0, 0x10);
-                    ScrambleBB(scrambleBuf, blockSize, seed, 0x4, 0x04);
+                    ScrambleBB(scrambleBuf, blockSize, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
                     System.arraycopy(scrambleBuf, (blockSize + 0x4) - 0x14, ctx.key, 0, 0x10);
                     // Reset length.
                     nLen = 0;
@@ -262,7 +262,7 @@ public class AMCTRL {
             // Process any leftover data.
             if (nLen > 0) {
                 scrambleBuf = xorKey(scrambleBuf, 0x14, ctx.key, 0, 0x10);
-                ScrambleBB(scrambleBuf, nLen, seed, 0x4, 0x04);
+                ScrambleBB(scrambleBuf, nLen, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
                 System.arraycopy(scrambleBuf, (nLen + 0x4) - 0x14, ctx.key, 0, 0x10);
             }
 
@@ -287,7 +287,7 @@ public class AMCTRL {
         byte[] resultBuf = new byte[0x10];
 
         // Encrypt the buffer with KIRK CMD 4.
-        ScrambleBB(scrambleBuf, 0x10, seed, 0x4, 0x04);
+        ScrambleBB(scrambleBuf, 0x10, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
 
         // Store the generated key.
         System.arraycopy(scrambleBuf, 0, keyBuf, 0, 0x10);
@@ -331,7 +331,7 @@ public class AMCTRL {
         scrambleBuf = xorKey(scrambleBuf, 0x14, resultBuf, 0, 0x10);
 
         // Encrypt the key with KIRK CMD 4.
-        ScrambleBB(scrambleBuf, 0x10, seed, 0x4, 0x04);
+        ScrambleBB(scrambleBuf, 0x10, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
 
         // Copy back the key into the result buffer.
         System.arraycopy(scrambleBuf, 0, resultBuf, 0, 0x10);
@@ -345,13 +345,13 @@ public class AMCTRL {
             System.arraycopy(resultBuf, 0, scrambleBuf, 0x14, 0x10);
 
             // Encrypt with KIRK CMD 5 (seed is always 0x100).
-            ScrambleBB(scrambleBuf, 0x10, 0x100, 0x4, 0x05);
+            ScrambleBB(scrambleBuf, 0x10, 0x100, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE);
 
             // Copy the encrypted key to the data area of the buffer.
             System.arraycopy(scrambleBuf, 0, scrambleBuf, 0x14, 0x10);
 
             // Encrypt again with KIRK CMD 4.
-            ScrambleBB(scrambleBuf, 0x10, seed, 0x4, 0x04);
+            ScrambleBB(scrambleBuf, 0x10, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
 
             // Copy back into result buffer.
             System.arraycopy(scrambleBuf, 0, resultBuf, 0, 0x10);
@@ -366,7 +366,7 @@ public class AMCTRL {
             System.arraycopy(resultBuf, 0, scrambleBuf, 0x14, 0x10);
 
             // Encrypt with KIRK CMD 4.
-            ScrambleBB(scrambleBuf, 0x10, seed, 0x4, 0x04);
+            ScrambleBB(scrambleBuf, 0x10, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
 
             // Copy back into the result buffer.
             System.arraycopy(scrambleBuf, 0, resultBuf, 0, 0x10);
@@ -435,7 +435,7 @@ public class AMCTRL {
 
             // Generate SHA-1 to act as seed for encryption.
             ByteBuffer bSeed = ByteBuffer.wrap(rseed);
-            kirk.hleUtilsBufferCopyWithRange(bSeed, 0x14, null, 0, 0xE);
+            kirk.hleUtilsBufferCopyWithRange(bSeed, 0x14, null, 0, KIRK.PSP_KIRK_CMD_PRNG);
 
             // Propagate SHA-1 in kirk header.
             System.arraycopy(bSeed.array(), 0, header, 0, 0x14);
@@ -447,7 +447,7 @@ public class AMCTRL {
 
             if (ctx.mode == 0x2) { // Encryption mode 0x2: XOR with AMCTRL keys, encrypt with KIRK CMD5 and XOR with the given key.
                 header = xorHash(header, 0x14, KeyVault.amHashKey4, 0, 0x10);
-                ScrambleBB(header, 0x10, 0x100, 0x4, 0x05);
+                ScrambleBB(header, 0x10, 0x100, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE);
                 header = xorHash(header, 0, KeyVault.amHashKey5, 0, 0x10);
                 System.arraycopy(header, 0, ctx.buf, 0, 0x10);
                 System.arraycopy(header, 0, data, 0, 0x10);
@@ -457,7 +457,7 @@ public class AMCTRL {
                 }
             } else { // Encryption mode 0x1: XOR with AMCTRL keys, encrypt with KIRK CMD4 and XOR with the given key.
                 header = xorHash(header, 0x14, KeyVault.amHashKey4, 0, 0x10);
-                ScrambleBB(header, 0x10, 0x39, 0x4, 0x04);
+                ScrambleBB(header, 0x10, 0x39, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
                 header = xorHash(header, 0, KeyVault.amHashKey5, 0, 0x10);
                 System.arraycopy(header, 0, ctx.buf, 0, 0x10);
                 System.arraycopy(header, 0, data, 0, 0x10);
@@ -520,7 +520,7 @@ public class AMCTRL {
         byte[] decKey = new byte[0x10];
 
         System.arraycopy(key, 0, scrambleBuf, 0x14, 0x10);
-        ScrambleBB(scrambleBuf, 0x10, seed, 0x5, 0x07);
+        ScrambleBB(scrambleBuf, 0x10, seed, 0x5, KIRK.PSP_KIRK_CMD_DECRYPT);
         System.arraycopy(scrambleBuf, 0, decKey, 0, 0x10);
 
         return decKey;

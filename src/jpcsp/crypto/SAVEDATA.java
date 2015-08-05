@@ -165,34 +165,34 @@ public class SAVEDATA {
 
         if (ctx.mode == 0x1) {
             // Decryption mode 0x01: decrypt the hash directly with KIRK CMD7.
-            ScrambleSD(dataBuf, 0x10, 0x4, 5, 0x07);
+            ScrambleSD(dataBuf, 0x10, 0x4, 5, KIRK.PSP_KIRK_CMD_DECRYPT);
             finalSeed = 0x53;
         } else if (ctx.mode == 0x2) {
             // Decryption mode 0x02: decrypt the hash directly with KIRK CMD8.
-            ScrambleSD(dataBuf, 0x10, 0x100, 5, 0x08);
+            ScrambleSD(dataBuf, 0x10, 0x100, 5, KIRK.PSP_KIRK_CMD_DECRYPT_FUSE);
             finalSeed = 0x53;
         } else if (ctx.mode == 0x3) {
             // Decryption mode 0x03: XOR the hash with SD keys and decrypt with KIRK CMD7.
             dataBuf = xorHash(dataBuf, 0x14, KeyVault.sdHashKey4, 0, 0x10);
-            ScrambleSD(dataBuf, 0x10, 0xE, 5, 0x07);
+            ScrambleSD(dataBuf, 0x10, 0xE, 5, KIRK.PSP_KIRK_CMD_DECRYPT);
             dataBuf = xorHash(dataBuf, 0, KeyVault.sdHashKey3, 0, 0x10);
             finalSeed = 0x57;
         } else if (ctx.mode == 0x4) {
             // Decryption mode 0x04: XOR the hash with SD keys and decrypt with KIRK CMD8.
             dataBuf = xorHash(dataBuf, 0x14, KeyVault.sdHashKey4, 0, 0x10);
-            ScrambleSD(dataBuf, 0x10, 0x100, 5, 0x08);
+            ScrambleSD(dataBuf, 0x10, 0x100, 5, KIRK.PSP_KIRK_CMD_DECRYPT_FUSE);
             dataBuf = xorHash(dataBuf, 0, KeyVault.sdHashKey3, 0, 0x10);
             finalSeed = 0x57;
         } else if (ctx.mode == 0x6) {
             // Decryption mode 0x06: XOR the hash with new SD keys and decrypt with KIRK CMD8.
             dataBuf = xorHash(dataBuf, 0x14, KeyVault.sdHashKey7, 0, 0x10);
-            ScrambleSD(dataBuf, 0x10, 0x100, 5, 0x08);
+            ScrambleSD(dataBuf, 0x10, 0x100, 5, KIRK.PSP_KIRK_CMD_DECRYPT_FUSE);
             dataBuf = xorHash(dataBuf, 0, KeyVault.sdHashKey6, 0, 0x10);
             finalSeed = 0x64;
         } else {
             // Decryption mode 0x05: XOR the hash with new SD keys and decrypt with KIRK CMD7.
             dataBuf = xorHash(dataBuf, 0x14, KeyVault.sdHashKey7, 0, 0x10);
-            ScrambleSD(dataBuf, 0x10, 0x12, 5, 0x07);
+            ScrambleSD(dataBuf, 0x10, 0x12, 5, KIRK.PSP_KIRK_CMD_DECRYPT);
             dataBuf = xorHash(dataBuf, 0, KeyVault.sdHashKey6, 0, 0x10);
             finalSeed = 0x64;
         }
@@ -225,7 +225,7 @@ public class SAVEDATA {
         System.arraycopy(dataBuf, length + 0x04, hashBuf, 0, 0x10);
 
         // Decrypt the hash with KIRK CMD7.
-        ScrambleSD(dataBuf, length, finalSeed, 5, 0x07);
+        ScrambleSD(dataBuf, length, finalSeed, 5, KIRK.PSP_KIRK_CMD_DECRYPT);
 
         // XOR the first 16-bytes of data with the saved key to generate a new hash.
         dataBuf = xorKey(dataBuf, 0, keyBuf1, 0, 0x10);
@@ -294,7 +294,7 @@ public class SAVEDATA {
                 if (nLen == blockSize) {
                     // XOR with result and encrypt with KIRK CMD 4.
                     scrambleBuf = xorKey(scrambleBuf, 0x14, ctx.key, 0, 0x10);
-                    ScrambleSD(scrambleBuf, blockSize, seed, 0x4, 0x04);
+                    ScrambleSD(scrambleBuf, blockSize, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
                     System.arraycopy(scrambleBuf, (blockSize + 0x4) - 0x14, ctx.key, 0, 0x10);
                     // Reset length.
                     nLen = 0;
@@ -307,7 +307,7 @@ public class SAVEDATA {
             // Process any leftover data.
             if (nLen > 0) {
                 scrambleBuf = xorKey(scrambleBuf, 0x14, ctx.key, 0, 0x10);
-                ScrambleSD(scrambleBuf, nLen, seed, 0x4, 0x04);
+                ScrambleSD(scrambleBuf, nLen, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
                 System.arraycopy(scrambleBuf, (nLen + 0x4) - 0x14, ctx.key, 0, 0x10);
             }
 
@@ -332,7 +332,7 @@ public class SAVEDATA {
         byte[] resultBuf = new byte[0x10];
 
         // Encrypt the buffer with KIRK CMD 4.
-        ScrambleSD(scrambleBuf, 0x10, seed, 0x4, 0x04);
+        ScrambleSD(scrambleBuf, 0x10, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
 
         // Store the generated key.
         System.arraycopy(scrambleBuf, 0, keyBuf, 0, 0x10);
@@ -376,7 +376,7 @@ public class SAVEDATA {
         scrambleBuf = xorKey(scrambleBuf, 0x14, resultBuf, 0, 0x10);
 
         // Encrypt the key with KIRK CMD 4.
-        ScrambleSD(scrambleBuf, 0x10, seed, 0x4, 0x04);
+        ScrambleSD(scrambleBuf, 0x10, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
 
         // Copy back the key into the result buffer.
         System.arraycopy(scrambleBuf, 0, resultBuf, 0, 0x10);
@@ -394,13 +394,13 @@ public class SAVEDATA {
             System.arraycopy(resultBuf, 0, scrambleBuf, 0x14, 0x10);
 
             // Encrypt with KIRK CMD 5 (seed is always 0x100).
-            ScrambleSD(scrambleBuf, 0x10, 0x100, 0x4, 0x05);
+            ScrambleSD(scrambleBuf, 0x10, 0x100, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE);
 
             // Copy the encrypted key to the data area of the buffer.
             System.arraycopy(scrambleBuf, 0, scrambleBuf, 0x14, 0x10);
 
             // Encrypt again with KIRK CMD 4.
-            ScrambleSD(scrambleBuf, 0x10, seed, 0x4, 0x04);
+            ScrambleSD(scrambleBuf, 0x10, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
 
             // Copy back into result buffer.
             System.arraycopy(scrambleBuf, 0, resultBuf, 0, 0x10);
@@ -415,7 +415,7 @@ public class SAVEDATA {
             System.arraycopy(resultBuf, 0, scrambleBuf, 0x14, 0x10);
 
             // Encrypt with KIRK CMD 4.
-            ScrambleSD(scrambleBuf, 0x10, seed, 0x4, 0x04);
+            ScrambleSD(scrambleBuf, 0x10, seed, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
 
             // Copy back into the result buffer.
             System.arraycopy(scrambleBuf, 0, resultBuf, 0, 0x10);
@@ -463,7 +463,7 @@ public class SAVEDATA {
 
             // Generate SHA-1 to act as seed for encryption.
             ByteBuffer bSeed = ByteBuffer.wrap(seed);
-            kirk.hleUtilsBufferCopyWithRange(bSeed, 0x14, null, 0, 0xE);
+            kirk.hleUtilsBufferCopyWithRange(bSeed, 0x14, null, 0, KIRK.PSP_KIRK_CMD_PRNG);
 
             // Propagate SHA-1 in kirk header.
             System.arraycopy(bSeed.array(), 0, header, 0, 0x14);
@@ -475,7 +475,7 @@ public class SAVEDATA {
 
             // Encryption mode 0x1: encrypt with KIRK CMD4 and XOR with the given key.
             if (ctx.mode == 0x1) {
-                ScrambleSD(header, 0x10, 0x4, 0x4, 0x04);
+                ScrambleSD(header, 0x10, 0x4, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
                 System.arraycopy(header, 0, ctx.buf, 0, 0x10);
                 System.arraycopy(header, 0, data, 0, 0x10);
                 // If the key is not null, XOR the hash with it.
@@ -484,7 +484,7 @@ public class SAVEDATA {
                 }
                 return 0;
             } else if (ctx.mode == 0x2) { // Encryption mode 0x2: encrypt with KIRK CMD5 and XOR with the given key.
-                ScrambleSD(header, 0x10, 0x100, 0x4, 0x05);
+                ScrambleSD(header, 0x10, 0x100, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE);
                 System.arraycopy(header, 0, ctx.buf, 0, 0x10);
                 System.arraycopy(header, 0, data, 0, 0x10);
                 // If the key is not null, XOR the hash with it.
@@ -494,7 +494,7 @@ public class SAVEDATA {
                 return 0;
             } else if (ctx.mode == 0x3) { // Encryption mode 0x3: XOR with SD keys, encrypt with KIRK CMD4 and XOR with the given key.
                 header = xorHash(header, 0x14, KeyVault.sdHashKey3, 0, 0x10);
-                ScrambleSD(header, 0x10, 0xE, 0x4, 0x04);
+                ScrambleSD(header, 0x10, 0xE, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
                 header = xorHash(header, 0, KeyVault.sdHashKey4, 0, 0x10);
                 System.arraycopy(header, 0, ctx.buf, 0, 0x10);
                 System.arraycopy(header, 0, data, 0, 0x10);
@@ -505,7 +505,7 @@ public class SAVEDATA {
                 return 0;
             } else if (ctx.mode == 0x4) { // Encryption mode 0x4: XOR with SD keys, encrypt with KIRK CMD5 and XOR with the given key.
                 header = xorHash(header, 0x14, KeyVault.sdHashKey3, 0, 0x10);
-                ScrambleSD(header, 0x10, 0x100, 0x4, 0x05);
+                ScrambleSD(header, 0x10, 0x100, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE);
                 header = xorHash(header, 0, KeyVault.sdHashKey4, 0, 0x10);
                 System.arraycopy(header, 0, ctx.buf, 0, 0x10);
                 System.arraycopy(header, 0, data, 0, 0x10);
@@ -516,7 +516,7 @@ public class SAVEDATA {
                 return 0;
             } else if (ctx.mode == 0x6) { // Encryption mode 0x6: XOR with new SD keys, encrypt with KIRK CMD5 and XOR with the given key.
                 header = xorHash(header, 0x14, KeyVault.sdHashKey6, 0, 0x10);
-                ScrambleSD(header, 0x10, 0x100, 0x4, 0x05);
+                ScrambleSD(header, 0x10, 0x100, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE);
                 header = xorHash(header, 0, KeyVault.sdHashKey7, 0, 0x10);
                 System.arraycopy(header, 0, ctx.buf, 0, 0x10);
                 System.arraycopy(header, 0, data, 0, 0x10);
@@ -527,7 +527,7 @@ public class SAVEDATA {
                 return 0;
             } else { // Encryption mode 0x5: XOR with new SD keys, encrypt with KIRK CMD4 and XOR with the given key.
                 header = xorHash(header, 0x14, KeyVault.sdHashKey6, 0, 0x10);
-                ScrambleSD(header, 0x10, 0x12, 0x4, 0x04);
+                ScrambleSD(header, 0x10, 0x12, 0x4, KIRK.PSP_KIRK_CMD_ENCRYPT);
                 header = xorHash(header, 0, KeyVault.sdHashKey7, 0, 0x10);
                 System.arraycopy(header, 0, ctx.buf, 0, 0x10);
                 System.arraycopy(header, 0, data, 0, 0x10);

@@ -96,6 +96,7 @@ import jpcsp.HLE.modules.sceUsbMic;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.HLE.modules.sceVaudio;
 import jpcsp.HLE.modules.sceWlan;
+import jpcsp.HLE.modules.semaphore;
 
 import org.apache.log4j.Logger;
 import org.lwjgl.LWJGLException;
@@ -183,6 +184,7 @@ public class Modules {
     public static sceMeCore_driver sceMeCore_driverModule = new sceMeCore_driver();
     public static KUBridge KUBridgeModule = new KUBridge();
     public static SysclibForKernel SysclibForKernelModule = new SysclibForKernel();
+    public static semaphore semaphoreModule = new semaphore();
 
     public static Logger log = Logger.getLogger("hle");
 

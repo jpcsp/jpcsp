@@ -17,6 +17,7 @@
 package jpcsp.crypto;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class PRX {
     
@@ -253,7 +254,7 @@ public class PRX {
         buf[19] = (byte) (size & 0xFF);
 
         ByteBuffer bBuf = ByteBuffer.wrap(buf);
-        kirk.hleUtilsBufferCopyWithRange(bBuf, size, bBuf, size, 0x07);
+        kirk.hleUtilsBufferCopyWithRange(bBuf, size, bBuf, size, KIRK.PSP_KIRK_CMD_DECRYPT);
     }
   
     private static boolean isNullKey(byte[] key) {
@@ -397,7 +398,7 @@ public class PRX {
             ByteBuffer bScrambleOut = ByteBuffer.allocate(oldbuf.length);
             ByteBuffer bScrambleIn = ByteBuffer.wrap(oldbuf);
             bScrambleIn.position(0x2C);
-            kirk.hleUtilsBufferCopyWithRange(bScrambleOut, 0x70, bScrambleIn, 0x70, 7);
+            kirk.hleUtilsBufferCopyWithRange(bScrambleOut, 0x70, bScrambleIn, 0x70, KIRK.PSP_KIRK_CMD_DECRYPT);
             System.arraycopy(bScrambleOut.array(), 0, oldbuf, 0x2C, 0x70);
 
             for (int iXOR = 0x6F; iXOR >= 0; iXOR--) {
@@ -419,9 +420,9 @@ public class PRX {
 
             // Call KIRK CMD1 for final decryption.
             ByteBuffer bDataOut = ByteBuffer.wrap(oldbuf);
-            ByteBuffer bHeaderIn = bDataOut.duplicate();
+            ByteBuffer bHeaderIn = bDataOut.duplicate().order(ByteOrder.LITTLE_ENDIAN);
             bHeaderIn.position(0x40);
-            kirk.hleUtilsBufferCopyWithRange(bDataOut, size, bHeaderIn, size, 0x1);
+            kirk.hleUtilsBufferCopyWithRange(bDataOut, size, bHeaderIn, size, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
             
             // Copy back the decrypted file.
             System.arraycopy(oldbuf, 0, buf, 0, size);
@@ -744,7 +745,7 @@ public class PRX {
 
             // Call KIRK CMD1 for final decryption.
             ByteBuffer bDataOut = ByteBuffer.wrap(buf);
-            ByteBuffer bHeaderIn = bDataOut.duplicate();
+            ByteBuffer bHeaderIn = bDataOut.duplicate().order(ByteOrder.LITTLE_ENDIAN);
             bHeaderIn.position(0x40);
             kirk.hleUtilsBufferCopyWithRange(bDataOut, size, bHeaderIn, size, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
 

@@ -18,6 +18,8 @@ package jpcsp.crypto;
 
 import java.nio.ByteBuffer;
 
+import jpcsp.util.Utilities;
+
 public class KIRK {
 
     // PSP specific values.
@@ -128,7 +130,7 @@ public class KIRK {
             buf.get(CMACHeaderHash, 0, 16);
             buf.get(CMACDataHash, 0, 16);
             buf.get(unk1, 0, 32);
-            mode = buf.getInt();
+            mode = Integer.reverseBytes(buf.getInt());
             useECDSAhash = buf.get();
             buf.get(unk2, 0, 11);
             dataSize = buf.getInt();
@@ -417,11 +419,11 @@ public class KIRK {
         int headerOffset = 0x40;
 
         // Extract the final ELF params.
-        int elfDataSize = Integer.reverseBytes(header.dataSize);
-        int elfDataOffset = Integer.reverseBytes(header.dataOffset);
+        int elfDataSize = header.dataSize;
+        int elfDataOffset = header.dataOffset;
 
         // Input buffer for decryption must have a length aligned on 16 bytes
-        int paddedElfDataSize = (elfDataSize + 15) & -16;
+        int paddedElfDataSize = Utilities.alignUp(elfDataSize, 15);
 
         // Decrypt all the ELF data.
         byte[] inBuf = new byte[paddedElfDataSize];
@@ -652,14 +654,14 @@ public class KIRK {
         aes.doUpdateCMAC(inBuf, 0, 0x30);
         cmacHeaderHash = aes.doFinalCMAC();
 
-        int blockSize = Integer.reverseBytes(header.dataSize);
+        int blockSize = header.dataSize;
         if ((blockSize % 16) != 0) {
             blockSize += (16 - (blockSize % 16));
         }
 
         // Calculate CMAC data hash.
         aes.doInitCMAC(cmacBuf);
-        aes.doUpdateCMAC(inBuf, 0, 0x30 + blockSize + Integer.reverseBytes(header.dataOffset));
+        aes.doUpdateCMAC(inBuf, 0, 0x30 + blockSize + header.dataOffset);
         cmacDataHash = aes.doFinalCMAC();
 
         if (cmacHeaderHash != header.CMACHeaderHash) {
