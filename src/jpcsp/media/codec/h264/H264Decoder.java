@@ -101,6 +101,11 @@ public class H264Decoder implements IVideoCodec {
 	}
 
 	@Override
+	public boolean isKeyFrame() {
+		return picture.key_frame != 0;
+	}
+
+	@Override
 	public int getImage(int[] luma, int[] cb, int[] cr) {
 		int width = getImageWidth();
 		int height = getImageHeight();

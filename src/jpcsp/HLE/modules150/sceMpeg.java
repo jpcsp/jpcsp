@@ -191,7 +191,7 @@ public class sceMpeg extends HLEModule {
     protected int videoPixelMode;
     protected int defaultFrameWidth;
     // MPEG AVC elementary stream.
-    protected static final int MPEG_AVC_ES_SIZE = 2048;          // MPEG packet size.
+    public static final int MPEG_AVC_ES_SIZE = 2048;          // MPEG packet size.
     // MPEG ATRAC elementary stream.
     protected static final int MPEG_ATRAC_ES_SIZE = 2112;
     public    static final int MPEG_ATRAC_ES_OUTPUT_SIZE = 8192;

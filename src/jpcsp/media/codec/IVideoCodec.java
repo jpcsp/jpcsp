@@ -23,4 +23,5 @@ public interface IVideoCodec {
 	public int getImageWidth();
 	public int getImageHeight();
 	public int getImage(int luma[], int cb[], int cr[]);
+	public boolean isKeyFrame();
 }

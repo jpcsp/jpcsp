@@ -16,8 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.GUI;
 
-import static java.lang.Math.max;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
 import static jpcsp.HLE.modules150.sceMpeg.mpegTimestampPerSecond;
+import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PACK_START_CODE;
+import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PADDING_STREAM;
+import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PRIVATE_STREAM_1;
+import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PRIVATE_STREAM_2;
+import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.SYSTEM_HEADER_START_CODE;
+import static jpcsp.util.Utilities.endianSwap16;
+import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.sleep;
 
 import java.awt.BorderLayout;
@@ -26,6 +33,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.awt.image.MemoryImageSource;
 import java.awt.Insets;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -46,82 +54,86 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
+import jpcsp.MemoryMap;
 import jpcsp.State;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
-import jpcsp.settings.Settings;
+import jpcsp.hardware.Screen;
+import jpcsp.media.codec.CodecFactory;
+import jpcsp.media.codec.ICodec;
+import jpcsp.media.codec.IVideoCodec;
+import jpcsp.media.codec.h264.H264Utils;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.sceMpeg;
 
-import com.xuggle.xuggler.Global;
-import com.xuggle.xuggler.IAudioSamples;
-import com.xuggle.xuggler.ICodec;
-import com.xuggle.xuggler.IContainer;
-import com.xuggle.xuggler.IError;
-import com.xuggle.xuggler.IPacket;
-import com.xuggle.xuggler.IPixelFormat;
-import com.xuggle.xuggler.IRational;
-import com.xuggle.xuggler.IStream;
-import com.xuggle.xuggler.IStreamCoder;
-import com.xuggle.xuggler.IVideoPicture;
-import com.xuggle.xuggler.IVideoResampler;
-import com.xuggle.xuggler.io.IURLProtocolHandler;
-import com.xuggle.xuggler.video.ConverterFactory;
-import com.xuggle.xuggler.video.IConverter;
+import com.twilight.h264.decoder.H264Context;
 
 public class UmdVideoPlayer implements KeyListener {
-
 	private static Logger log = Logger.getLogger("videoplayer");
-    private static final int BASE_VIDEO_WIDTH = 480;
-    private static final int BASE_VIDEO_HEIGTH = 272;
 
-    // ISO file vars.
+    // ISO file
     private String fileName;
     private UmdIsoReader iso;
     private UmdIsoFile isoFile;
 
-    // Stream storage vars.
+    // Stream storage
     private List<MpsStreamInfo> mpsStreams;
     private int currentStreamIndex;
 
-    // Display related vars.
+    // Display
     private JLabel display;
     private int screenWidth;
     private int screenHeigth;
+    private Image image;
 
-    // MediaEngine vars.
-    private IContainer container;
-    private IVideoResampler resampler;
-    private int videoStreamId;
-    private IStreamCoder videoCoder;
-    private int audioStreamId;
-    private IStreamCoder audioCoder;
-    private IPacket packet;
-    private long firstTimestampInStream;
-    private long systemClockStartTime;
-    private IConverter converter;
-    private BufferedImage image;
-    private volatile boolean seekFrameFastForward;
-    private volatile boolean seekFrameRewind;
-    private volatile FrameSeekState frameSeekState;
-    private volatile boolean startNewPicture;
+    // Video
+    private IVideoCodec videoCodec;
+	private int[] videoData = new int[0x10000];
+	private int videoDataOffset;
+	private int videoChannel = 0;
+	private int frame;
+	private int videoWidth;
+	private int videoHeight;
+	private int[] luma;
+	private int[] cr;
+	private int[] cb;
+	private int[] abgr;
+	private boolean foundFrameStart;
+	// Audio
+    private ICodec audioCodec;
+    private boolean audioCodecInitialized;
+	private int[] audioData = new int[0x10000];
+	private int audioDataOffset;
+    private int audioFrameLength;
+    private int audioChannels;
+    private final int frameHeader[] = new int[8];
+    private int frameHeaderLength;
+	private int audioChannel = 0;
+	private int samplesAddr = MemoryMap.START_USERSPACE;
+	private int audioBufferAddr = MemoryMap.START_USERSPACE + 0x10000;
+	private byte[] audioBytes;
+	// Time synchronization
+	private int pesHeaderChannel;
+	private long startTime;
+    private int fastForwardSpeed;
+    private int fastRewindSpeed;
+    private static final int fastForwardSpeeds[] = new int[] { 1, 50, 100, 200, 400 };
+    private static final int fastRewindSpeeds[] = new int[] { 1, 50, 100, 200, 400 };
 
-    // State vars (for sync thread).
+    // State (for sync thread).
     private volatile boolean videoPaused;
     private volatile boolean done;
     private volatile boolean endOfVideo;
     private volatile boolean threadExit;
 
-    // Internal data related vars.
+    // Internal data
     private MpsDisplayThread displayThread;
-    private MpsInput mpsInput;
     private SourceDataLine mLine;
-
-    private enum FrameSeekState {
-    	noSeek,
-    	waitForKeyFrameStart,
-    	waitForKeyFrameEnd
-    }
 
     // MPS stream class.
     protected class MpsStreamInfo {
@@ -259,7 +271,6 @@ public class UmdVideoPlayer implements KeyListener {
     }
 
     private void init() {
-        image = null;
         done = false;
         threadExit = false;
         isoFile = null;
@@ -291,21 +302,13 @@ public class UmdVideoPlayer implements KeyListener {
     }
 
     public void setVideoPlayerResizeScaleFactor(MainGUI gui, int factor) {
-        screenWidth = BASE_VIDEO_WIDTH * factor;
-        screenHeigth = BASE_VIDEO_HEIGTH * factor;
+        screenWidth = Screen.width * factor;
+        screenHeigth = Screen.height * factor;
         Insets insets = gui.getInsets();
         Dimension minSize = new Dimension(
                 screenWidth + insets.left + insets.right,
                 screenHeigth + insets.top + insets.bottom);
         gui.setMinimumSize(minSize);
-    }
-
-    private int endianSwap32(int x) {
-        return Integer.reverseBytes(x);
-    }
-
-    private short endianSwap16(short x) {
-        return Short.reverseBytes(x);
     }
 
     @SuppressWarnings("unused")
@@ -461,130 +464,331 @@ public class UmdVideoPlayer implements KeyListener {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("Resume video"));
     	}
-        firstTimestampInStream = Global.NO_PTS;
         videoPaused = false;
-        seekFrameFastForward = false;
-        seekFrameRewind = false;
-        frameSeekState = FrameSeekState.noSeek;
+        fastForwardSpeed = 0;
+        fastRewindSpeed = 0;
 	}
 
     public void fastForward() {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("Fast forward"));
+    	if (fastRewindSpeed > 0) {
+    		fastRewindSpeed--;
+    	} else {
+    		fastForwardSpeed = Math.min(fastForwardSpeeds.length - 1, fastForwardSpeed + 1);
     	}
-        seekFrameFastForward = true;
-        seekFrameRewind = false;
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("Fast forward %d, fast rewind %d", fastForwardSpeed, fastRewindSpeed));
+    	}
     }
 
     public void rewind() {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("Rewind"));
+    	if (fastForwardSpeed > 0) {
+    		fastForwardSpeed--;
+    	} else {
+    		fastRewindSpeed = Math.min(fastRewindSpeeds.length - 1, fastRewindSpeed + 1);
     	}
-    	seekFrameFastForward = false;
-        seekFrameRewind = true;
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("Fast forward %d, fast rewind %d", fastForwardSpeed, fastRewindSpeed));
+    	}
     }
 
-    public boolean startVideo() {
+	private int read8() {
+		try {
+			return isoFile.read();
+		} catch (IOException e) {
+			// Ignore exception
+		}
+
+		return -1;
+	}
+
+	private int read16() {
+		return (read8() << 8) | read8();
+	}
+
+	private int read32() {
+		return (read8() << 24) | (read8() << 16) | (read8() << 8) | read8();
+	}
+
+	private void skip(int n) {
+		if (n > 0) {
+			try {
+				isoFile.skip(n);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private int skipPesHeader(int startCode) {
+		int pesLength = 0;
+		int c = read8();
+		pesLength++;
+		while (c == 0xFF) {
+			c = read8();
+			pesLength++;
+		}
+
+		if ((c & 0xC0) == 0x40) {
+			skip(1);
+			c = read8();
+			pesLength += 2;
+		}
+
+		if ((c & 0xE0) == 0x20) {
+			skip(4);
+			pesLength += 4;
+			if ((c & 0x10) != 0) {
+				skip(5);
+				pesLength += 5;
+			}
+		} else if ((c & 0xC0) == 0x80) {
+			skip(1);
+			int headerLength = read8();
+			pesLength += 2;
+			skip(headerLength);
+			pesLength += headerLength;
+		}
+
+		if (startCode == 0x1BD) { // PRIVATE_STREAM_1
+			int channel = read8();
+			pesHeaderChannel = channel;
+			pesLength++;
+			if (channel >= 0x80 && channel <= 0xCF) {
+				skip(3);
+				pesLength += 3;
+				if (channel >= 0xB0 && channel <= 0xBF) {
+					skip(1);
+					pesLength++;
+				}
+			} else {
+				skip(3);
+				pesLength += 3;
+			}
+		}
+
+		return pesLength;
+	}
+
+	private byte[] resize(byte[] array, int size) {
+		if (array == null) {
+			return new byte[size];
+		}
+
+		if (size <= array.length) {
+			return array;
+		}
+
+		byte[] newArray = new byte[size];
+		System.arraycopy(array, 0, newArray, 0, array.length);
+
+		return newArray;
+	}
+
+	private int[] resize(int[] array, int size) {
+		if (array == null) {
+			return new int[size];
+		}
+
+		if (size <= array.length) {
+			return array;
+		}
+
+		int[] newArray = new int[size];
+		System.arraycopy(array, 0, newArray, 0, array.length);
+
+		return newArray;
+	}
+
+	private void addVideoData(int length, long position) {
+		videoData = resize(videoData, videoDataOffset + length);
+
+		for (int i = 0; i < length; i++) {
+			videoData[videoDataOffset++] = read8();
+		}
+	}
+
+	private void addAudioData(int length) {
+		audioData = resize(audioData, audioDataOffset + length);
+
+		while (length > 0) {
+    		int currentFrameLength = audioFrameLength == 0 ? 0 : audioDataOffset % audioFrameLength;
+    		if (currentFrameLength == 0) {
+    			// 8 bytes header:
+    			// - byte 0: 0x0F
+    			// - byte 1: 0xD0
+    			// - byte 2: 0x28
+    			// - byte 3: (frameLength - 8) / 8
+    			// - bytes 4-7: 0x00
+    			while (frameHeaderLength < frameHeader.length && length > 0) {
+    				frameHeader[frameHeaderLength++] = read8();
+    				length--;
+    			}
+    			if (frameHeaderLength < frameHeader.length) {
+    				// Frame header not yet complete
+    				break;
+    			}
+    			if (length == 0) {
+    				// Frame header is complete but no data is following the header.
+    				// Retry when some data is available
+    				break;
+    			}
+
+    			int frameHeader23 = (frameHeader[2] << 8) | frameHeader[3];
+    			audioFrameLength = ((frameHeader23 & 0x3FF) << 3) + 8;
+    			if (frameHeader[0] != 0x0F || frameHeader[1] != 0xD0) {
+    				if (log.isInfoEnabled()) {
+    					log.warn(String.format("Audio frame length 0x%X with incorrect header (header: %02X %02X %02X %02X %02X %02X %02X %02X)", audioFrameLength, frameHeader[0], frameHeader[1], frameHeader[2], frameHeader[3], frameHeader[4], frameHeader[5], frameHeader[6], frameHeader[7]));
+    				}
+    			} else if (log.isTraceEnabled()) {
+    				log.trace(String.format("Audio frame length 0x%X (header: %02X %02X %02X %02X %02X %02X %02X %02X)", audioFrameLength, frameHeader[0], frameHeader[1], frameHeader[2], frameHeader[3], frameHeader[4], frameHeader[5], frameHeader[6], frameHeader[7]));
+    			}
+
+    			frameHeaderLength = 0;
+    		}
+    		int lengthToNextFrame = audioFrameLength - currentFrameLength;
+    		int readLength = Utilities.min(length, lengthToNextFrame);
+    		for (int i = 0; i < readLength; i++) {
+    			audioData[audioDataOffset++] = read8();
+    		}
+    		length -= readLength;
+		}
+	}
+
+	private long getCurrentFilePosition() {
+		try {
+			return isoFile.getFilePointer();
+		} catch (IOException e) {
+		}
+
+		return -1L;
+	}
+
+	private boolean readPsmfPacket(int videoChannel, int audioChannel) {
+		while (true) {
+			int startCode = read32();
+			if (startCode == -1) {
+				// End of file
+				return false;
+			}
+			int codeLength, pesLength;
+			switch (startCode) {
+				case PACK_START_CODE:
+					skip(10);
+					break;
+				case SYSTEM_HEADER_START_CODE:
+					skip(14);
+					break;
+				case PADDING_STREAM:
+				case PRIVATE_STREAM_2:
+					codeLength = read16();
+					skip(codeLength);
+					break;
+				case PRIVATE_STREAM_1: // Audio stream
+					codeLength = read16();
+					pesHeaderChannel = audioChannel;
+					pesLength = skipPesHeader(startCode);
+					codeLength -= pesLength;
+					if (pesHeaderChannel == audioChannel || audioChannel < 0) {
+						addAudioData(codeLength);
+						return true;
+					}
+					skip(codeLength);
+					break;
+				case 0x1E0: case 0x1E1: case 0x1E2: case 0x1E3: // Video streams
+				case 0x1E4: case 0x1E5: case 0x1E6: case 0x1E7:
+				case 0x1E8: case 0x1E9: case 0x1EA: case 0x1EB:
+				case 0x1EC: case 0x1ED: case 0x1EE: case 0x1EF:
+					codeLength = read16();
+					if (videoChannel < 0 || startCode - 0x1E0 == videoChannel) {
+						pesLength = skipPesHeader(startCode);
+						codeLength -= pesLength;
+						addVideoData(codeLength, getCurrentFilePosition());
+						return true;
+					}
+					skip(codeLength);
+					break;
+			}
+		}
+	}
+
+	private void consumeVideoData(int length) {
+		if (length >= videoDataOffset) {
+			videoDataOffset = 0;
+		} else {
+			System.arraycopy(videoData, length, videoData, 0, videoDataOffset - length);
+			videoDataOffset -= length;
+		}
+	}
+
+	private void consumeAudioData(int length) {
+		if (length >= audioDataOffset) {
+			audioDataOffset = 0;
+		} else {
+			System.arraycopy(audioData, length, audioData, 0, audioDataOffset - length);
+			audioDataOffset -= length;
+		}
+	}
+
+	private int findVideoFrameEnd() {
+		for (int i = 5; i < videoDataOffset; i++) {
+			if (videoData[i - 4] == 0x00 &&
+			    videoData[i - 3] == 0x00 &&
+			    videoData[i - 2] == 0x00 &&
+			    videoData[i - 1] == 0x01) {
+				int naluType = videoData[i] & 0x1F;
+				if (naluType == H264Context.NAL_AUD) {
+					foundFrameStart = false;
+					return i - 4;
+				}
+				if (naluType == H264Context.NAL_SLICE || naluType == H264Context.NAL_IDR_SLICE) {
+					if (foundFrameStart) {
+						return i - 4;
+					}
+					foundFrameStart = true;
+				} else {
+					foundFrameStart = false;
+				}
+			}
+		}
+
+		return -1;
+	}
+
+	public boolean startVideo() {
         endOfVideo = false;
         videoPaused = false;
 
-        closeVideo();
-        closeAudio();
+        videoCodec = CodecFactory.getVideoCodec();
+        videoCodec.init(null);
+        videoDataOffset = 0;
+        videoWidth = 0;
+        videoHeight = 0;
 
-        try {
-            container = IContainer.make();
-        } catch (Throwable e) {
-            Emulator.log.error(e);
-            return false;
-        }
+        audioCodec = CodecFactory.getCodec(PSP_CODEC_AT3PLUS);
+        audioCodecInitialized = false;
+        audioChannels = 2;
+        audioDataOffset = 0;
+        audioFrameLength = 0;
+        frameHeaderLength = 0;
+        foundFrameStart = false;
 
-        try {
-            isoFile.seek(0);
-        } catch (IOException e) {
-            Emulator.log.error(e);
-            return false;
-        }
-        mpsInput = new MpsInput(isoFile);
-
-        if (container.open(mpsInput, IContainer.Type.READ, null) < 0) {
-            Emulator.log.error("could not open file: " + fileName);
-            return false;
-        }
-
-        int numStreams = container.getNumStreams();
-        videoStreamId = -1;
-        videoCoder = null;
-        audioStreamId = -1;
-        audioCoder = null;
-        boolean audioMuted = Settings.getInstance().readBool("emu.mutesound");
-        for (int i = 0; i < numStreams; i++) {
-            IStream stream = container.getStream(i);
-            IStreamCoder coder = stream.getStreamCoder();
-
-            if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
-                videoStreamId = i;
-                videoCoder = coder;
-            } else if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO && !audioMuted) {
-                audioStreamId = i;
-                audioCoder = coder;
-            }
-        }
-
-        if (videoCoder != null && videoCoder.open(null, null) < 0) {
-            Emulator.log.error("could not open video decoder for container: " + fileName);
-            return false;
-        }
-        if (audioCoder != null && audioCoder.open(null, null) < 0) {
-            Emulator.log.info("AT3+ audio format is not yet supported by Jpcsp (file=" + fileName + ")");
-            return false;
-        }
-
-        resampler = null;
-        if (videoCoder != null) {
-            converter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, IPixelFormat.Type.BGR24, videoCoder.getWidth(), videoCoder.getHeight());
-            if (videoCoder.getPixelType() != IPixelFormat.Type.BGR24) {
-                resampler = IVideoResampler.make(screenWidth,
-                        screenHeigth, IPixelFormat.Type.BGR24,
-                        videoCoder.getWidth(), videoCoder.getHeight(), videoCoder.getPixelType());
-                if (resampler == null) {
-                    Emulator.log.error("could not create color space resampler for: " + fileName);
-                    return false;
-                }
-            }
-        }
-        if (audioCoder != null) {
-            openAudio(audioCoder);
-        }
-        packet = IPacket.make();
-        firstTimestampInStream = Global.NO_PTS;
-        systemClockStartTime = 0;
+        startTime = System.currentTimeMillis();
+        frame = 0;
 
         return true;
     }
 
     private void closeVideo() {
-        if (container != null) {
-            container.close();
-            container = null;
-        }
-        if (videoCoder != null) {
-            videoCoder.close();
-            videoCoder = null;
-        }
-        if (resampler != null) {
-            resampler.delete();
-            resampler = null;
-        }
-        if (converter != null) {
-            converter.delete();
-            converter = null;
-        }
-        if (packet != null) {
-            packet.delete();
-            packet = null;
-        }
-        frameSeekState = FrameSeekState.noSeek;
-        startNewPicture = false;
+    	videoCodec = null;
+    	if (isoFile != null) {
+    		try {
+				isoFile.seek(0);
+			} catch (IOException e) {
+				// Ignore exception
+			}
+    	}
     }
 
     private void stopDisplayThread() {
@@ -609,156 +813,116 @@ public class UmdVideoPlayer implements KeyListener {
     }
 
     public void stepVideo() {
-        if (container.readNextPacket(packet) >= 0) {
-            if (packet.getStreamIndex() == videoStreamId && videoCoder != null) {
-                IVideoPicture picture = IVideoPicture.make(videoCoder.getPixelType(),
-                        videoCoder.getWidth(), videoCoder.getHeight());
-                int offset = 0;
-                while (offset < packet.getSize()) {
-                    int bytesDecoded = videoCoder.decodeVideo(picture, packet, offset);
-                    if (bytesDecoded < 0) {
-                        return;
-                    }
-                    offset += bytesDecoded;
+    	image = null;
 
-                    if (startNewPicture && frameSeekState == FrameSeekState.waitForKeyFrameStart && picture.isKeyFrame()) {
-                    	if (log.isDebugEnabled()) {
-                    		log.debug(String.format("Start of key frame detected"));
-                    	}
-                    	frameSeekState = FrameSeekState.waitForKeyFrameEnd;
-                    }
+    	int frameSize = -1;
+	    do {
+	    	if (!readPsmfPacket(videoChannel, audioChannel)) {
+	    		if (videoDataOffset <= 0) {
+	    			// Enf of file reached
+	    			break;
+	    		}
+	    		frameSize = findVideoFrameEnd();
+	    		if (frameSize < 0) {
+		    		// Process pending last frame
+	    			frameSize = videoDataOffset;
+	    		}
+	    	} else {
+	    		frameSize = findVideoFrameEnd();
+	    	}
+	    } while (frameSize <= 0);
 
-                    if (log.isTraceEnabled()) {
-                    	log.trace(String.format("startNewPicture=%b, isKeyFrame=%b, isComplete=%b, frameSeekState=%s, timestamp=%d", startNewPicture, picture.isKey(), picture.isComplete(), frameSeekState, picture.getTimeStamp() > 0 ? picture.getTimeStamp() : 0));
-                    }
+	    if (frameSize <= 0) {
+	    	endOfVideo = true;
+	    	return;
+	    }
 
-                    if (picture.isComplete()) {
-                    	startNewPicture = true;
-                    	if (frameSeekState == FrameSeekState.waitForKeyFrameEnd) {
-                        	if (log.isDebugEnabled()) {
-                        		log.debug(String.format("End of key frame detected"));
-                        	}
-                    		frameSeekState = FrameSeekState.noSeek;
-                    	}
+	    int consumedLength = videoCodec.decode(videoData, 0, frameSize);
+	    if (consumedLength < 0) {
+	    	endOfVideo = true;
+	    	return;
+	    }
 
-                    	if (frameSeekState == FrameSeekState.noSeek) {
-	                        IVideoPicture newPic = picture;
-	                        if (resampler != null) {
-	                            newPic = IVideoPicture.make(resampler.getOutputPixelFormat(),
-	                                    screenWidth, screenHeigth);
-	                            if (resampler.resample(newPic, picture) < 0) {
-	                                return;
-	                            }
-	                        }
-	                        if (newPic.getPixelType() != IPixelFormat.Type.BGR24) {
-	                            return;
-	                        }
-	                        if (firstTimestampInStream == Global.NO_PTS) {
-	                            firstTimestampInStream = picture.getTimeStamp();
-	                            systemClockStartTime = System.currentTimeMillis();
-	                        } else {
-	                            long systemClockCurrentTime = System.currentTimeMillis();
-	                            long millisecondsClockTimeSinceStartofVideo = systemClockCurrentTime - systemClockStartTime;
-	                            long millisecondsStreamTimeSinceStartOfVideo = (picture.getTimeStamp() - firstTimestampInStream) / 1000;
-	                            final long millisecondsTolerance = 50;
-	                            final long millisecondsToSleep = (millisecondsStreamTimeSinceStartOfVideo - (millisecondsClockTimeSinceStartofVideo + millisecondsTolerance));
-	                            // Don't sleep when fast-forwarding, rewinding or pausing.
-	                            if (!seekFrameFastForward && !seekFrameRewind && !videoPaused && millisecondsToSleep > 0) {
-	                                sleep((int) millisecondsToSleep, 0);
-	                            }
-	                        }
-	                        if ((converter != null) && (newPic != null)) {
-	                        	if (log.isTraceEnabled()) {
-	                        		log.trace(String.format("Displaying picture"));
-	                        	}
-	                            image = converter.toImage(newPic);
-	                        }
-                    	}
-                    } else {
-                    	startNewPicture = false;
-                    }
-                }
-            } else if (packet.getStreamIndex() == audioStreamId && audioCoder != null) {
-                IAudioSamples samples = IAudioSamples.make(1024, audioCoder.getChannels());
-                int offset = 0;
-                while (offset < packet.getSize()) {
-                    int bytesDecoded = audioCoder.decodeAudio(samples, packet, offset);
-                    if (bytesDecoded < 0) {
-                        return;
-                    }
-                    offset += bytesDecoded;
-                    if (samples.isComplete()) {
-                        playAudio(samples);
-                    }
-                }
-            }
+	    if (videoCodec.hasImage()) {
+	    	frame++;
+	    }
 
-            if (frameSeekState == FrameSeekState.noSeek) {
-	            if (seekFrameFastForward) {
-	            	int fastForwardMillis = 50;
-	            	IRational timestamp = IRational.make(fastForwardMillis, 1000);
-	            	IStream stream = container.getStream(videoStreamId);
-	            	long currentDts = stream.getCurrentDts();
-	            	IRational timeBase = stream.getTimeBase();
-	            	long seekTimestamp = (long) timestamp.divide(timeBase).getValue();
-	            	long seekDts = currentDts + seekTimestamp;
-	            	if (log.isDebugEnabled()) {
-	            		log.debug(String.format("FastForward %d ms from %d to %d", fastForwardMillis, currentDts, seekDts));
-	            	}
-	            	int result = container.seekKeyFrame(videoStreamId, seekDts, 0);
-	            	if (result < 0) {
-	            		log.debug(String.format("seekKeyFrame returned %s", IError.make(result)));
-	            	}
-	            	frameSeekState = FrameSeekState.waitForKeyFrameStart;
-	            	startNewPicture = false;
-	            } else if (seekFrameRewind) {
-	            	int rewindMillis = 250;
-	            	IRational timestamp = IRational.make(rewindMillis, 1000);
-	            	IStream stream = container.getStream(videoStreamId);
-	            	long currentDts = stream.getCurrentDts();
-	            	IRational timeBase = stream.getTimeBase();
-	            	long seekTimestamp = (long) timestamp.divide(timeBase).getValue();
-	            	long seekDts = max(currentDts - seekTimestamp, 0);
-	            	if (log.isDebugEnabled()) {
-	            		log.debug(String.format("Rewind %d ms from %d to %d", rewindMillis, currentDts, seekDts));
-	            	}
-	            	container.seekKeyFrame(videoStreamId, 0, IContainer.SEEK_FLAG_BACKWARDS);
-        			int result = container.seekKeyFrame(videoStreamId, seekDts, IContainer.SEEK_FLAG_BACKWARDS);
-	            	if (result < 0) {
-	            		log.debug(String.format("seekKeyFrame returned %s", IError.make(result)));
-	            	}
-	            	frameSeekState = FrameSeekState.waitForKeyFrameStart;
-	            	startNewPicture = false;
-	            }
-            }
-        } else {
-            endOfVideo = true;
-        }
-    }
+	    consumeVideoData(consumedLength);
 
-    private void openAudio(IStreamCoder aAudioCoder) {
-        AudioFormat audioFormat = new AudioFormat(aAudioCoder.getSampleRate(),
-                (int) IAudioSamples.findSampleBitDepth(aAudioCoder.getSampleFormat()),
-                aAudioCoder.getChannels(),
-                true,
-                false);
-        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-        try {
-            mLine = (SourceDataLine) AudioSystem.getLine(info);
-            mLine.open(audioFormat);
-            mLine.start();
-        } catch (IllegalArgumentException iae) {
-            // Some streams use a NULL PCM format.
-            // Ignore the audio handling in these cases, for now.
-            audioCoder = null;
-        } catch (LineUnavailableException e) {
-            return;
-        }
-    }
+	    boolean skipFrame = false;
+		if ((frame % fastForwardSpeeds[fastForwardSpeed]) != 0) {
+			skipFrame = true;
+			startTime -= sceMpeg.videoTimestampStep;
+		}
 
-    private void playAudio(IAudioSamples aSamples) {
-        byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
-        mLine.write(rawBytes, 0, aSamples.getSize());
+	    if (videoCodec.hasImage() && !skipFrame) {
+	    	int width = videoCodec.getImageWidth();
+	    	int height = videoCodec.getImageHeight();
+	    	if (videoWidth <= 0) {
+	    		videoWidth = width;
+	    	}
+	    	if (videoHeight <= 0) {
+	    		videoHeight = height;
+	    	}
+
+	    	int size = width * height;
+	    	int size2 = size >> 2;
+	    	luma = resize(luma, size);
+	    	cr = resize(cr, size2);
+	    	cb = resize(cb, size2);
+
+	    	if (videoCodec.getImage(luma, cb, cr) == 0) {
+	    		abgr = resize(abgr, size);
+	    		H264Utils.YUV2ARGB(width, height, luma, cb, cr, abgr);
+	    		image = display.createImage(new MemoryImageSource(videoWidth, videoHeight, abgr, 0, width));
+
+	    		long now = System.currentTimeMillis();
+			    long currentDuration = now - startTime;
+			    long videoDuration = frame * 100000L / sceMpeg.videoTimestampStep;
+			    if (currentDuration < videoDuration) {
+			    	Utilities.sleep((int) (videoDuration - currentDuration), 0);
+			    }
+	    	}
+	    }
+
+	    if (audioFrameLength > 0 && audioDataOffset >= audioFrameLength) {
+	    	if (!audioCodecInitialized) {
+	    		audioCodec.init(audioFrameLength, audioChannels, audioChannels, 0);
+
+	    		AudioFormat audioFormat = new AudioFormat(44100, 16, audioChannels, true, false);
+	            DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+	    		try {
+	    			mLine = (SourceDataLine) AudioSystem.getLine(info);
+	    	        mLine.open(audioFormat);
+	    		} catch (LineUnavailableException e) {
+	    			// Ignore error
+	    		}
+	            mLine.start();
+
+	    		audioCodecInitialized = true;
+	    	}
+
+	    	int result = -1;
+	    	if (fastForwardSpeed == 0) {
+		    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(audioBufferAddr, audioFrameLength, 1);
+		    	for (int i = 0; i < audioFrameLength; i++) {
+		    		memoryWriter.writeNext(audioData[i]);
+		    	}
+		    	memoryWriter.flush();
+		    	result = audioCodec.decode(audioBufferAddr, audioFrameLength, samplesAddr);
+	    	}
+    		consumeAudioData(audioFrameLength);
+
+	    	if (result > 0) {
+	    		int audioBytesLength = audioCodec.getNumberOfSamples() * 2 * audioChannels;
+	    		audioBytes = resize(audioBytes, audioBytesLength);
+		    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(samplesAddr, audioBytesLength, 1);
+				for (int i = 0; i < audioBytesLength; i++) {
+					audioBytes[i] = (byte) memoryReader.readNext();
+				}
+				mLine.write(audioBytes, 0, audioBytesLength);
+	    	}
+	    }
     }
 
     private void closeAudio() {
@@ -830,96 +994,5 @@ public class UmdVideoPlayer implements KeyListener {
             	log.trace(String.format("Exiting Mps Display thread"));
             }
         }
-    }
-
-    private static class MpsInput implements IURLProtocolHandler {
-        private UmdIsoFile file;
-
-        public MpsInput(UmdIsoFile file) {
-            this.file = file;
-        }
-
-		@Override
-		public boolean isStreamed(String url, int flags) {
-			return false;
-		}
-
-		@Override
-		public int open(String url, int flags) {
-			return 0;
-		}
-
-		@Override
-		public int read(byte[] buf, int size) {
-			int length = -1;
-			try {
-				length = file.read(buf, 0, size);
-				if (length == 0 && size > 0) {
-					// EOF
-					length = -1;
-				}
-			} catch (IOException e) {
-				log.error("read", e);
-			}
-
-            if (log.isTraceEnabled()) {
-            	log.trace(String.format("MpsInput read %d bytes, %d requested", length, size));
-            }
-
-            return length;
-		}
-
-		@Override
-		public long seek(long offset, int whence) {
-            long seek = -1;
-    		try {
-    			switch (whence) {
-    				case SEEK_SET:
-    					seek = offset;
-    					break;
-    				case SEEK_CUR:
-    					seek = file.getFilePointer() + offset;
-    					break;
-    				case SEEK_END:
-    					seek = file.length() + offset;
-    					break;
-    				case SEEK_SIZE:
-    		            if (log.isTraceEnabled()) {
-    		            	log.trace(String.format("MpsInput seek SEEK_SIZE returning %d", file.length()));
-    		            }
-    					return file.length();
-    				default:
-    					log.error(String.format("Unknown seek whence %d", whence));
-    					return -1;
-    			}
-    			file.seek(seek);
-    		} catch (IOException e) {
-    			log.error(e);
-    		}
-
-            if (log.isTraceEnabled()) {
-            	log.trace(String.format("MpsInput seek offset=%d, whence=%d, returning %d", offset, whence, seek));
-            }
-
-            return seek;
-		}
-
-		@Override
-		public int write(byte[] buf, int size) {
-			return -1;
-		}
-
-		@Override
-		public int close() {
-			try {
-				file.close();
-			} catch (IOException e) {
-				log.error("close", e);
-			}
-
-			file = null;
-
-			return 0;
-		}
     }
 }
