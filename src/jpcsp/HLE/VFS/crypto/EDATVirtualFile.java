@@ -28,7 +28,9 @@ public class EDATVirtualFile extends PGDVirtualFile {
 	@Override
 	protected boolean isHeaderValid(IVirtualFile pgdFile) {
 		byte[] header = new byte[edatHeaderSize];
+		long position = pgdFile.getPosition();
 		int length = pgdFile.ioRead(header, 0, edatHeaderSize);
+		pgdFile.ioLseek(position);
 
 		if (length != edatHeaderSize) {
 			return false;
