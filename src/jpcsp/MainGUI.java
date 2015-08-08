@@ -2116,8 +2116,10 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
             logConfigurationSettings();
 
-            UmdVideoPlayer vp = new UmdVideoPlayer(this, iso);
-            umdvideoplayer = vp;
+            umdvideoplayer = new UmdVideoPlayer(this, iso);
+
+            Modules.IoFileMgrForUserModule.setfilepath("disc0/");
+            Modules.IoFileMgrForUserModule.setIsoReader(iso);
         } catch (Exception ex) {
             ex.printStackTrace();
             if (ex.getMessage() != null) {

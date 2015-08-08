@@ -814,7 +814,7 @@ public class IoFileMgrForUser extends HLEModule {
         // Fire Up:
         //     sceIoAssign alias=0x0898EFC0('pfat0:'), physicalDev=0x0898F000('msstor0p1:/'), filesystemDev=0x0898F00C('fatms0:'), mode=0x0, arg_addr=0x0, argSize=0x0
         //     sceIoOpen filename='pfat0:PSP/SAVEDATA/PPCD00001DLS001/DATA2.BIN'
-        if (assignedDevices.containsKey(device)) {
+        if (assignedDevices != null && assignedDevices.containsKey(device)) {
         	device = assignedDevices.get(device);
         }
 
