@@ -1189,10 +1189,10 @@ public class CAVLCContext {
 
 	        s.qscale += dquant;
 
-	        if((/*(unsigned)*/s.qscale) > 51){
+	        if((/*(unsigned)*/s.qscale) > 51 || s.qscale < 0){
 	            if(s.qscale<0) s.qscale+= 52;
 	            else            s.qscale-= 52;
-	            if((/*(unsigned)*/s.qscale) > 51){
+	            if((/*(unsigned)*/s.qscale) > 51 || s.qscale < 0){
 	                //av_log(h.s.avctx, AV_LOG_ERROR, "dquant out of range (%d) at %d %d\n", dquant, s.mb_x, s.mb_y);
 	                return -1;
 	            }

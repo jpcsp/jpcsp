@@ -3469,9 +3469,9 @@ public class H264Context {
 	                val= -((val + 1)>>1);
 	            last_qscale_diff = val;
 	            s.qscale += val;
-	            if(((int)s.qscale) > 51){
+	            if(/*(unsigned)*/s.qscale > 51 || s.qscale < 0) {
 	                if(s.qscale<0) s.qscale+= 52;
-	                else            s.qscale-= 52;
+	                else           s.qscale-= 52;
 	            }
 	            chroma_qp[0] = pps.chroma_qp_table[0][s.qscale]; // get_chroma_qp(0, s.qscale);
 	            chroma_qp[1] = pps.chroma_qp_table[1][s.qscale]; // get_chroma_qp(1, s.qscale);
