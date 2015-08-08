@@ -34,7 +34,12 @@ public class Iso9660Handler extends Iso9660Directory {
     {
         super(r, 0, 0);
 
-        byte[] sector = r.readSector(UmdIsoReader.startSector);
+        byte[] sector;
+        if (r.hasJolietExtension()) {
+        	sector = r.readSector(UmdIsoReader.startSectorJoliet);
+        } else {
+        	sector = r.readSector(UmdIsoReader.startSector);
+        }
         ByteArrayInputStream byteStream = new ByteArrayInputStream(sector);
 
         byteStream.skip(157); // reach rootDirTocHeader
@@ -42,7 +47,7 @@ public class Iso9660Handler extends Iso9660Directory {
         byte[] b = new byte[38];
 
         byteStream.read(b);
-        Iso9660File rootDirEntry = new Iso9660File(b,b.length);
+        Iso9660File rootDirEntry = new Iso9660File(b, b.length, r.hasJolietExtension());
 
         int rootLBA = rootDirEntry.getLBA();
         long rootSize = rootDirEntry.getSize();

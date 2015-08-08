@@ -50,7 +50,7 @@ public class Iso9660Directory {
 
             directorySize -= entryLength;
             int readLength = dataStream.read(b, 0, entryLength - 1);
-            Iso9660File file = new Iso9660File(b, readLength);
+            Iso9660File file = new Iso9660File(b, readLength, r.hasJolietExtension());
 
             files.add(file);
         }

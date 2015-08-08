@@ -40,6 +40,7 @@ import jpcsp.util.Utilities;
  */
 public class UmdIsoReader implements IBrowser {
     public static final int startSector = 16;
+    public static final int startSectorJoliet = 17;
     private static final int headerLength = 24;
     private ISectorDevice sectorDevice;
     private IBrowser browser;
@@ -47,6 +48,7 @@ public class UmdIsoReader implements IBrowser {
     private final HashMap<String, Iso9660Directory> dirCache = new HashMap<String, Iso9660Directory>();
     private final int numSectors;
     private static boolean doIsoBuffering = false;
+    private boolean hasJolietExtension;
 
     public UmdIsoReader(String umdFilename) throws IOException, FileNotFoundException {
     	if (umdFilename == null && doIsoBuffering) {
@@ -117,7 +119,21 @@ public class UmdIsoReader implements IBrowser {
             return false;
         }
 
+        hasJolietExtension = false;
+        f = new UmdIsoFile(this, startSectorJoliet, sectorLength, null, null);
+        length = f.read(header);
+        f.close();
+        if (length == header.length) {
+            if (header[0] == 2 && header[1] == 'C' && header[2] == 'D' && header[3] == '0' && header[4] == '0' && header[5] == '1') {
+            	hasJolietExtension = true;
+            }
+        }
+
         return true;
+    }
+
+    public boolean hasJolietExtension() {
+    	return hasJolietExtension;
     }
 
     public int getNumSectors() {

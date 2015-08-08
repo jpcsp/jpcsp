@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.filesystems.umdiso.iso9660;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
@@ -34,30 +35,28 @@ public class Iso9660File {
     private String fileName; //[128+1];
     //Iso9660Date date; // byte[7]
     private Date timestamp;
+    private static final Charset jolietCharset = Charset.forName("UTF-16BE");
+    private static final Charset normalCharset = Charset.forName("US-ASCII");
 
-    private int Ubyte(byte b)
-    {
-        return (b)&255;
+    private static int Ubyte(byte b) {
+        return b & 0xFF;
     }
 
-    public Iso9660File(byte[] data, int length) throws IOException
-    {
-
+    public Iso9660File(byte[] data, int length, boolean jolietExtension) throws IOException {
         /*
- -- 1           Length of Directory Record (LEN-DR) -- read by the Iso9660Directory
-2           Extended Attribute Record Length
-3 to 10     Location of Extent
-11 to 18    Data Length
-19 to 25    Recording Date and Time
-26          File Flags
-27          File Unit Size
-28          Interleave Gap Size
-29 to 32    Volume Sequence Number
-33          Length of File Identifier (LEN_FI)
-34 to (33+LEN_FI)   File Identifier
-(34 + LEN_FI)   Padding Field
-
-*/
+           1           Length of Directory Record (LEN-DR) -- read by the Iso9660Directory
+           2           Extended Attribute Record Length
+           3 to 10     Location of Extent
+           11 to 18    Data Length
+           19 to 25    Recording Date and Time
+           26          File Flags
+           27          File Unit Size
+           28          Interleave Gap Size
+           29 to 32    Volume Sequence Number
+           33          Length of File Identifier (LEN_FI)
+           34 to (33+LEN_FI)   File Identifier
+           (34 + LEN_FI)   Padding Field
+         */
 
         fileLBA = Ubyte(data[1]) | (Ubyte(data[2])<<8) | (Ubyte(data[3])<<16) | (data[4]<<24);
         fileSize = Ubyte(data[9]) | (Ubyte(data[10])<<8) | (Ubyte(data[11])<<16) | (((long) Ubyte(data[12]))<<24);
@@ -92,22 +91,35 @@ public class Iso9660File {
 
         fileProperties = data[24];
 
-        if((fileLBA<0)||(fileSize<0))
-        {
-            throw new IOException("WTF?! Size or lba < 0?!");
+        if (fileLBA < 0 || fileSize < 0) {
+            throw new IOException("Invalid ISO, size or lba < 0");
         }
 
         int fileNameLength = data[31];
 
-        fileName="";
-        for(int i=0;i<fileNameLength;i++)
-        {
-            char c =(char)(data[32+i]);
-            if(c==0) c='.';
-
-            fileName += c;
+        if (jolietExtension) {
+        	if (fileNameLength == 1) {
+        		char c = (char) data[32];
+        		if (c == 0) {
+        			c = '.';
+        		}
+        		fileName = Character.toString(c);
+        	} else {
+	        	fileName = new String(data, 32, fileNameLength, jolietCharset);
+	        	int end = fileName.indexOf(';');
+	        	if (end >= 0) {
+	        		fileName = fileName.substring(0, end);
+	        	}
+        	}
+        } else {
+        	// Replace all '\0' bytes by '.' in the filename
+        	for (int i = 0; i < fileNameLength; i++) {
+        		if (data[32 + i] == (byte) 0) {
+        			data[32 + i] = (byte) '.';
+        		}
+        	}
+        	fileName = new String(data, 32, fileNameLength, normalCharset);
         }
-
     }
 
     public int getLBA()
