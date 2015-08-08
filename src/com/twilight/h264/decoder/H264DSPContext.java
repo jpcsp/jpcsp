@@ -1,16 +1,23 @@
 package com.twilight.h264.decoder;
 
 public class H264DSPContext {
-	
+
 	public static final int MAX_NEG_CROP = 1024;
+	public static final int MAX_NEG_CLIP = 32768;
 	public static int[] ff_cropTbl = new int[256 + 2 * MAX_NEG_CROP];
-	
+	public static int[] av_clip_pixelTbl = new int[256 + 2 * MAX_NEG_CLIP];
+
 	static {
 	    int i;
 	    for(i=0;i<256;i++) ff_cropTbl[i + MAX_NEG_CROP] = i;
 	    for(i=0;i<MAX_NEG_CROP;i++) {
 	        ff_cropTbl[i] = 0;
 	        ff_cropTbl[i + MAX_NEG_CROP + 256] = 255;
+	    }
+	    for(i=0;i<256;i++) av_clip_pixelTbl[i + MAX_NEG_CLIP] = i;
+	    for(i=0;i<MAX_NEG_CLIP;i++) {
+	    	av_clip_pixelTbl[i] = 0;
+	    	av_clip_pixelTbl[i + MAX_NEG_CLIP + 256] = 255;
 	    }
 	}
 	
@@ -391,7 +398,7 @@ public class H264DSPContext {
     
     public void idct_internal(int[] dst/*align 4*/,int offset, short[] block/*align 16*/, int block_offset, int stride, int block_stride, int shift, int add){
         int i;
-        int cm_pos = MAX_NEG_CROP;
+        final int cm_pos = MAX_NEG_CLIP;
 
         block[block_offset + 0] += 1<<(shift-1);
 
@@ -413,17 +420,17 @@ public class H264DSPContext {
              int z2= (block[block_offset + 1 + block_stride*i]>>1) -  block[block_offset + 3 + block_stride*i];
              int z3=  block[block_offset + 1 + block_stride*i]     + (block[block_offset + 3 + block_stride*i]>>1);
 
-            dst[offset + i + 0*stride]= ff_cropTbl[cm_pos + add*dst[offset + i + 0*stride] + ((z0 + z3) >> shift) ];
-            dst[offset + i + 1*stride]= ff_cropTbl[cm_pos + add*dst[offset + i + 1*stride] + ((z1 + z2) >> shift) ];
-            dst[offset + i + 2*stride]= ff_cropTbl[cm_pos + add*dst[offset + i + 2*stride] + ((z1 - z2) >> shift) ];
-            dst[offset + i + 3*stride]= ff_cropTbl[cm_pos + add*dst[offset + i + 3*stride] + ((z0 - z3) >> shift) ];
+            dst[offset + i + 0*stride]= av_clip_pixelTbl[cm_pos + add*dst[offset + i + 0*stride] + ((z0 + z3) >> shift) ];
+            dst[offset + i + 1*stride]= av_clip_pixelTbl[cm_pos + add*dst[offset + i + 1*stride] + ((z1 + z2) >> shift) ];
+            dst[offset + i + 2*stride]= av_clip_pixelTbl[cm_pos + add*dst[offset + i + 2*stride] + ((z1 - z2) >> shift) ];
+            dst[offset + i + 3*stride]= av_clip_pixelTbl[cm_pos + add*dst[offset + i + 3*stride] + ((z0 - z3) >> shift) ];
         }
     }
     
     
     public void h264_idct8_add(int[] dst/*align 8*/, int offset, short[] block/*align 16*/, int block_offset, int stride) {
         int i;
-        int cm_pos = MAX_NEG_CROP;
+        final int cm_pos = MAX_NEG_CLIP;
 
         block[block_offset + 0] += 32;
 
@@ -480,14 +487,14 @@ public class H264DSPContext {
              int b5 = (a3>>2) - a5;
              int b7 =  a7 - (a1>>2);
 
-            dst[offset + i + 0*stride] = ff_cropTbl[cm_pos + dst[offset + i + 0*stride] + ((b0 + b7) >> 6) ];
-            dst[offset + i + 1*stride] = ff_cropTbl[cm_pos + dst[offset + i + 1*stride] + ((b2 + b5) >> 6) ];
-            dst[offset + i + 2*stride] = ff_cropTbl[cm_pos + dst[offset + i + 2*stride] + ((b4 + b3) >> 6) ];
-            dst[offset + i + 3*stride] = ff_cropTbl[cm_pos + dst[offset + i + 3*stride] + ((b6 + b1) >> 6) ];
-            dst[offset + i + 4*stride] = ff_cropTbl[cm_pos + dst[offset + i + 4*stride] + ((b6 - b1) >> 6) ];
-            dst[offset + i + 5*stride] = ff_cropTbl[cm_pos + dst[offset + i + 5*stride] + ((b4 - b3) >> 6) ];
-            dst[offset + i + 6*stride] = ff_cropTbl[cm_pos + dst[offset + i + 6*stride] + ((b2 - b5) >> 6) ];
-            dst[offset + i + 7*stride] = ff_cropTbl[cm_pos + dst[offset + i + 7*stride] + ((b0 - b7) >> 6) ];
+            dst[offset + i + 0*stride] = av_clip_pixelTbl[cm_pos + dst[offset + i + 0*stride] + ((b0 + b7) >> 6) ];
+            dst[offset + i + 1*stride] = av_clip_pixelTbl[cm_pos + dst[offset + i + 1*stride] + ((b2 + b5) >> 6) ];
+            dst[offset + i + 2*stride] = av_clip_pixelTbl[cm_pos + dst[offset + i + 2*stride] + ((b4 + b3) >> 6) ];
+            dst[offset + i + 3*stride] = av_clip_pixelTbl[cm_pos + dst[offset + i + 3*stride] + ((b6 + b1) >> 6) ];
+            dst[offset + i + 4*stride] = av_clip_pixelTbl[cm_pos + dst[offset + i + 4*stride] + ((b6 - b1) >> 6) ];
+            dst[offset + i + 5*stride] = av_clip_pixelTbl[cm_pos + dst[offset + i + 5*stride] + ((b4 - b3) >> 6) ];
+            dst[offset + i + 6*stride] = av_clip_pixelTbl[cm_pos + dst[offset + i + 6*stride] + ((b2 - b5) >> 6) ];
+            dst[offset + i + 7*stride] = av_clip_pixelTbl[cm_pos + dst[offset + i + 7*stride] + ((b0 - b7) >> 6) ];
         }    	
     }
     
