@@ -7129,7 +7129,7 @@ public class H264Context {
 	    //FF_ALLOCZ_OR_GOTO(this.s.avctx, this.list_counts, big_mb_num * sizeof(uint8_t), fail)
 	    this.list_counts = new int[big_mb_num];
 
-	    Arrays.fill(this.slice_table_base, -1);
+	    Arrays.fill(this.slice_table_base, 0xFFFF);
 	    //memset(this.slice_table_base, -1, (big_mb_num+s.mb_stride)  * sizeof(*this.slice_table_base));
 	    this.slice_table_offset = s.mb_stride*2 + 1;
 
@@ -7208,7 +7208,7 @@ public class H264Context {
 	            this.thread_context[i].s.obmc_scratchpad = new int[16*2*s.linesize + 8*2*s.uvlinesize];
 
 	    /* some macroblocks can be accessed before they're available in case of lost slices, mbaff or threading*/
-	    Arrays.fill(slice_table_base, slice_table_offset, slice_table_offset + (s.mb_height*s.mb_stride-1), -1);
+	    //Arrays.fill(slice_table_base, slice_table_offset, slice_table_offset + (s.mb_height*s.mb_stride-1), 0xFFFF);
 	    //memset(this.slice_table, -1, (s.mb_height*s.mb_stride-1) * sizeof(*this.slice_table));
 
 //	    s.decode= (s.flags&CODEC_FLAG_PSNR) || !s.encoding || s.current_picture.reference /*|| this.contains_intra*/ || 1;
@@ -8180,6 +8180,16 @@ public class H264Context {
 		    	// DebugTool.printDebugString("   --- decode_slide_header error case 9\n");
 
 	            return -1;
+	        }
+
+	        // ffmpeg commit 746016598d1885afd1fee976b6d315ed7eeefa68: h264: Move slice_table clean out of frame_start
+	        /* some macroblocks can be accessed before they're available in case of lost slices, mbaff or threading*/
+	        if (s.picture_structure != MpegEncContext.PICT_FRAME) {
+	        	for (i = (s.picture_structure == MpegEncContext.PICT_BOTTOM_FIELD ? 1 : 0); i < s.mb_height; i++) {
+		        	Arrays.fill(h.slice_table_base, h.slice_table_offset + i * s.mb_stride, h.slice_table_offset + i * s.mb_stride + (s.mb_stride - (i + 1 == s.mb_height ? 1 : 0)), 0xFFFF);
+	        	}
+	        } else {
+	        	Arrays.fill(h.slice_table_base, h.slice_table_offset, h.slice_table_offset + (s.mb_height*s.mb_stride-1), 0xFFFF);
 	        }
 	    }
 	    if(h != h0)

@@ -993,7 +993,7 @@ public class CABACContext {
 	    }else{
 	        int mb_xy = h.mb_xy;
 	        mba_xy = mb_xy - 1;
-	        mbb_xy = mb_xy - (h.s.mb_stride << 0);
+	        mbb_xy = mb_xy - (h.s.mb_stride << (h.s.picture_structure != MpegEncContext.PICT_FRAME ? 1 : 0));
 	    }
 
 	    if( h.slice_table_base[h.slice_table_offset + mba_xy] == h.slice_num && ( (h.s.current_picture.mb_type_base[h.s.current_picture.mb_type_offset + mba_xy] & H264Context.MB_TYPE_SKIP) == 0 ))
