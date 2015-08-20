@@ -22,11 +22,13 @@ public class H264Utils {
 	private static final int clamp[] = new int[CLAMP_BASE * 2 + 256];
 	private static final int redMap[][] = new int[256][256];
 	private static final int blueMap[][] = new int[256][256];
+	private static final int lumaYuvjToYuvTable[] = new int[256];
 
 	static {
 		initClamp();
 		initRedMap(0xFF);
 		initBlueMap();
+		initYuvj();
 	}
 
 	/**
@@ -85,6 +87,12 @@ public class H264Utils {
 		}
 	}
 
+	private static void initYuvj() {
+		for (int i = 0; i < 256; i++) {
+			lumaYuvjToYuvTable[i] = Math.round(i / 255f * 224f + 16f);
+		}
+	}
+
 	public static void YUV2ARGB(int width, int height, int luma[], int cb[], int cr[], int argb[]) {
 		// Convert YUV to ABGR
 		YUV2ABGR(width, height, luma, cb, cr, argb);
@@ -132,5 +140,39 @@ public class H264Utils {
 
 	public static void setAlpha(int alpha) {
 		initRedMap(alpha & 0xFF);
+	}
+
+	public static void YUVJ2YUV(int lumaYuvj[], int lumaYuv[], int size) {
+		for (int i = 0; i < size; i++) {
+			lumaYuv[i] = lumaYuvjToYuvTable[lumaYuvj[i]];
+		}
+	}
+
+	public static int findExtradata(int input[], int inputOffset, int inputLength) {
+		int state = -1;
+		boolean hasSps = false;
+		for (int i = 0; i <= inputLength; i++) {
+	        if ((state & 0xFFFFFF1F) == 0x107) {
+	            hasSps = true;
+	        }
+	        /*  if ((state&0xFFFFFF1F) == 0x101 ||
+	         *     (state&0xFFFFFF1F) == 0x102 ||
+	         *     (state&0xFFFFFF1F) == 0x105) {
+	         *  }
+	         */
+	        if ((state & 0xFFFFFF00) == 0x100 && (state & 0xFFFFFF1F) != 0x107 &&
+	            (state & 0xFFFFFF1F) != 0x108 && (state & 0xFFFFFF1F) != 0x109) {
+	            if (hasSps) {
+	                while (i > 4 && input[inputOffset + i - 5] == 0)
+	                    i--;
+	                return i - 4;
+	            }
+	        }
+	        if (i < inputLength) {
+	            state = (state << 8) | input[inputOffset + i];
+	        }
+		}
+
+		return 0;
 	}
 }

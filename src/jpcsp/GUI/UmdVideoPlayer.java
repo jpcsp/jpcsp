@@ -37,7 +37,9 @@ import java.awt.image.MemoryImageSource;
 import java.awt.Insets;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -71,6 +73,7 @@ import jpcsp.util.Utilities;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceMpeg;
 
+import com.twilight.h264.decoder.GetBitContext;
 import com.twilight.h264.decoder.H264Context;
 
 public class UmdVideoPlayer implements KeyListener {
@@ -93,10 +96,11 @@ public class UmdVideoPlayer implements KeyListener {
 
     // Video
     private IVideoCodec videoCodec;
+    private boolean videoCodecInit;
 	private int[] videoData = new int[0x10000];
 	private int videoDataOffset;
 	private int videoChannel = 0;
-	private int frame;
+	public static int frame;
 	private int videoWidth;
 	private int videoHeight;
 	private int[] luma;
@@ -104,6 +108,14 @@ public class UmdVideoPlayer implements KeyListener {
 	private int[] cb;
 	private int[] abgr;
 	private boolean foundFrameStart;
+	private boolean foundFrameStartOld;
+	private int parseState;
+	private int[] parseHistory = new int[6];
+	private int parseHistoryCount;
+	private int parseLastMb;
+	private int nalLengthSize = 0;
+	private boolean isAvc = false;
+	private int lastParsePosition;
 	// Audio
     private ICodec audioCodec;
     private boolean audioCodecInitialized;
@@ -716,9 +728,11 @@ public class UmdVideoPlayer implements KeyListener {
 	private void consumeVideoData(int length) {
 		if (length >= videoDataOffset) {
 			videoDataOffset = 0;
+			lastParsePosition = 0;
 		} else {
 			System.arraycopy(videoData, length, videoData, 0, videoDataOffset - length);
 			videoDataOffset -= length;
+			lastParsePosition -= length;
 		}
 	}
 
@@ -731,24 +745,34 @@ public class UmdVideoPlayer implements KeyListener {
 		}
 	}
 
-	private int findVideoFrameEnd() {
+	private int startCodeFindCandidate(int offset, int size) {
+		for (int i = 0; i < size; i++) {
+			if (videoData[offset + i] == 0x00) {
+				return i;
+			}
+		}
+
+		return size;
+	}
+
+	private int findVideoFrameEndOld() {
 		for (int i = 5; i < videoDataOffset; i++) {
 			if (videoData[i - 4] == 0x00 &&
-			    videoData[i - 3] == 0x00 &&
-			    videoData[i - 2] == 0x00 &&
-			    videoData[i - 1] == 0x01) {
+		        videoData[i - 3] == 0x00 &&
+		        videoData[i - 2] == 0x00 &&
+		        videoData[i - 1] == 0x01) {
 				int naluType = videoData[i] & 0x1F;
 				if (naluType == H264Context.NAL_AUD) {
-					foundFrameStart = false;
+					foundFrameStartOld = false;
 					return i - 4;
 				}
 				if (naluType == H264Context.NAL_SLICE || naluType == H264Context.NAL_IDR_SLICE) {
-					if (foundFrameStart) {
+					if (foundFrameStartOld) {
 						return i - 4;
 					}
-					foundFrameStart = true;
+					foundFrameStartOld = true;
 				} else {
-					foundFrameStart = false;
+					foundFrameStartOld = false;
 				}
 			}
 		}
@@ -756,12 +780,101 @@ public class UmdVideoPlayer implements KeyListener {
 		return -1;
 	}
 
+	private int findVideoFrameEnd() {
+		if (parseState > 13) {
+			parseState = 7;
+		}
+
+		if (lastParsePosition < 0) {
+			lastParsePosition = 0;
+		}
+
+		int nextAvc = isAvc ? 0 : videoDataOffset;
+		int found = -1;
+		for (int i = lastParsePosition; i < videoDataOffset; i++) {
+			if (i >= nextAvc) {
+				int nalSize = 0;
+				i = nextAvc;
+				for (int j = 0; j < nalLengthSize; j++) {
+					nalSize = (nalSize << 8) | videoData[i++];
+				}
+				if (nalSize <= 0 || nalSize > videoDataOffset - 1) {
+					return videoDataOffset;
+				}
+				nextAvc = i + nalLengthSize;
+				parseState = 5;
+			}
+
+			if (parseState == 7) {
+				i += startCodeFindCandidate(i, nextAvc - i);
+				if (i < nextAvc) {
+					parseState = 2;
+				}
+			} else if (parseState <= 2) {
+				if (videoData[i] == 1) {
+					parseState ^= 5; // 2->7, 1->4, 0->5
+				} else if (videoData[i] != 0) {
+					parseState = 7;
+				} else {
+					parseState >>= 1; // 2->1, 1->0, 0->0
+				}
+			} else if (parseState <= 5) {
+				int naluType = videoData[i] & 0x1F;
+				if (naluType == H264Context.NAL_SEI || naluType == H264Context.NAL_SPS ||
+				    naluType == H264Context.NAL_PPS || naluType == H264Context.NAL_AUD) {
+					if (foundFrameStart) {
+						found = i + 1;
+						break;
+					}
+				} else if (naluType == H264Context.NAL_SLICE || naluType == H264Context.NAL_DPA ||
+				           naluType == H264Context.NAL_IDR_SLICE) {
+					parseState += 8;
+					continue;
+				}
+				parseState = 7;
+			} else {
+				parseHistory[parseHistoryCount++] = videoData[i];
+				if (parseHistoryCount > 5) {
+					int lastMb = parseLastMb;
+					GetBitContext gb = new GetBitContext();
+					gb.init_get_bits(parseHistory, 0, 8 * parseHistoryCount);
+					parseHistoryCount = 0;
+					int mb = gb.get_ue_golomb("UmdVideoPlayer.findVideoFrameEnd");
+					parseLastMb = mb;
+					if (foundFrameStart) {
+						if (mb <= lastMb) {
+							found = i;
+							break;
+						}
+					} else {
+						foundFrameStart = true;
+					}
+					parseState = 7;
+				}
+			}
+		}
+
+		if (found >= 0) {
+			foundFrameStart = false;
+			found -= (parseState & 5);
+			if (parseState > 7) {
+				found -= 5;
+			}
+			parseState = 7;
+			lastParsePosition = found;
+		} else {
+			lastParsePosition = videoDataOffset;
+		}
+
+		return found;
+	}
+
 	public boolean startVideo() {
         endOfVideo = false;
         videoPaused = false;
 
         videoCodec = CodecFactory.getVideoCodec();
-        videoCodec.init(null);
+        videoCodecInit = false;
         videoDataOffset = 0;
         videoWidth = 0;
         videoHeight = 0;
@@ -782,6 +895,7 @@ public class UmdVideoPlayer implements KeyListener {
 
     private void closeVideo() {
     	videoCodec = null;
+    	videoCodecInit = false;
     	if (isoFile != null) {
     		try {
 				isoFile.seek(0);
@@ -812,6 +926,20 @@ public class UmdVideoPlayer implements KeyListener {
         }
     }
 
+    private void writeFile(int[] values, int size, String name) {
+    	try {
+			OutputStream os = new FileOutputStream(name);
+			byte[] bytes = new byte[size];
+			for (int i = 0; i < size; i++) {
+				bytes[i] = (byte) values[i];
+			}
+			os.write(bytes);
+			os.close();
+		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
+		}
+    }
+
     public void stepVideo() {
     	image = null;
 
@@ -835,6 +963,22 @@ public class UmdVideoPlayer implements KeyListener {
 	    if (frameSize <= 0) {
 	    	endOfVideo = true;
 	    	return;
+	    }
+
+	    if (!videoCodecInit) {
+	    	int[] extraData = null;
+	    	int extraDataLength = H264Utils.findExtradata(videoData, 0, frameSize);
+	    	if (extraDataLength > 0) {
+	    		extraData = new int[extraDataLength];
+	    		System.arraycopy(videoData, 0, extraData, 0, extraDataLength);
+	    	}
+
+	    	if (videoCodec.init(extraData) == 0) {
+	    		videoCodecInit = true;
+	    	} else {
+	    		endOfVideo = true;
+	    		return;
+	    	}
 	    }
 
 	    int consumedLength = videoCodec.decode(videoData, 0, frameSize);
@@ -872,7 +1016,12 @@ public class UmdVideoPlayer implements KeyListener {
 	    	cb = resize(cb, size2);
 
 	    	if (videoCodec.getImage(luma, cb, cr) == 0) {
+	    		//writeFile(luma, size, String.format("Frame%d.y", frame));
+	    		//writeFile(cb, size2, String.format("Frame%d.cb", frame));
+	    		//writeFile(cr, size2, String.format("Frame%d.cr", frame));
 	    		abgr = resize(abgr, size);
+	    		// TODO How to find out if we have a YUVJ image?
+	    		// H264Utils.YUVJ2YUV(luma, luma, size);
 	    		H264Utils.YUV2ARGB(width, height, luma, cb, cr, abgr);
 	    		image = display.createImage(new MemoryImageSource(videoWidth, videoHeight, abgr, 0, width));
 
