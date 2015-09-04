@@ -473,7 +473,7 @@ public class sceUtility extends HLEModule {
         }
 
         public int executeInitStart(TPointer paramsAddr) {
-            if (status != PSP_UTILITY_DIALOG_STATUS_NONE && status != PSP_UTILITY_DIALOG_STATUS_FINISHED) {
+            if (status != PSP_UTILITY_DIALOG_STATUS_NONE) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%sInitStart already started status=%d", name, status));
                 }
