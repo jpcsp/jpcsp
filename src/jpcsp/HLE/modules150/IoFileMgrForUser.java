@@ -2580,7 +2580,10 @@ public class IoFileMgrForUser extends HLEModule {
                         }
 
                     	PGDVirtualFile pgdFile = new PGDVirtualFile(keyBuf, new SeekableDataInputVirtualFile(info.readOnlyFile));
-                    	if (pgdFile.isValid()) {
+                    	if (!pgdFile.isHeaderPresent()) {
+                            // No "PGD" found in the header, leave the file unchanged
+                    		result = 0;
+                    	} else if (pgdFile.isValid()) {
                     		info.vFile = pgdFile;
                     		result = 0;
                     	} else {

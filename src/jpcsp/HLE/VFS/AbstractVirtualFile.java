@@ -162,4 +162,9 @@ public abstract class AbstractVirtualFile implements IVirtualFile {
 	public IVirtualFile duplicate() {
 		return null;
 	}
+
+    @Override
+	public String toString() {
+    	return file == null ? null : file.toString();
+	}
 }

@@ -21,6 +21,7 @@ import jpcsp.HLE.VFS.IVirtualFile;
 
 public class PGDVirtualFile extends BufferedVirtualFile {
 	private boolean isValid;
+	private boolean isHeaderPresent;
 
 	public PGDVirtualFile(byte[] key, IVirtualFile pgdFile) {
 		init(key, pgdFile, 0);
@@ -37,6 +38,7 @@ public class PGDVirtualFile extends BufferedVirtualFile {
 		if (isHeaderValid(pgdFile)) {
 			PGDBlockVirtualFile pgdBlockFile = new PGDBlockVirtualFile(pgdFile, key, dataOffset);
 
+			isHeaderPresent = pgdBlockFile.isHeaderPresent();
 			if (pgdBlockFile.isHeaderValid()) {
 				setBufferedVirtualFile(pgdBlockFile, pgdBlockFile.getBlockSize());
 				isValid = true;
@@ -55,5 +57,9 @@ public class PGDVirtualFile extends BufferedVirtualFile {
 
 	public boolean isValid() {
 		return isValid;
+	}
+
+	public boolean isHeaderPresent() {
+		return isHeaderPresent;
 	}
 }

@@ -34,6 +34,7 @@ public class PGDBlockVirtualFile extends AbstractProxyVirtualFile {
 	private int dataSize;
 	private int blockSize;
 	private boolean headerValid;
+	private boolean headerPresent;
 	private byte[] buffer;
 	private byte[] header;
 	private PGD pgd;
@@ -58,16 +59,17 @@ public class PGDBlockVirtualFile extends AbstractProxyVirtualFile {
 
 	private void readHeader() {
 		headerValid = false;
+		headerPresent = false;
 		byte[] inBuf = new byte[pgdHeaderSize];
 		super.ioRead(inBuf, 0, pgdHeaderSize);
 
 		// Check if the "PGD" header is present
         if (inBuf[0] != 0 || inBuf[1] != 'P' || inBuf[2] != 'G' || inBuf[3] != 'D') {
             // No "PGD" found in the header,
-            // abort the decryption and leave the file unchanged
             log.warn(String.format("No PGD header detected %02X %02X %02X %02X ('%c%c%c%c') detected in file '%s'", inBuf[0] & 0xFF, inBuf[1] & 0xFF, inBuf[2] & 0xFF, inBuf[3] & 0xFF, (char) inBuf[0], (char) inBuf[1], (char) inBuf[2], (char) inBuf[3], vFile));
             return;
         }
+        headerPresent = true;
 
         // Decrypt 0x30 bytes at offset 0x30 to expose the first header.
         byte[] headerBuf = new byte[0x30 + 0x10];
@@ -93,7 +95,6 @@ public class PGDBlockVirtualFile extends AbstractProxyVirtualFile {
 
         if (dataOffset < 0 || dataOffset > super.length() || dataSize < 0) {
             // The decrypted PGD header is incorrect...
-            // abort the decryption and leave the file unchanged
             log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, blockSize, dataOffset));
             return;
         }
@@ -110,6 +111,10 @@ public class PGDBlockVirtualFile extends AbstractProxyVirtualFile {
 
 	public boolean isHeaderValid() {
 		return headerValid;
+	}
+
+	public boolean isHeaderPresent() {
+		return headerPresent;
 	}
 
 	@Override
