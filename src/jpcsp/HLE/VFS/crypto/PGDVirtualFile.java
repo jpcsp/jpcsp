@@ -33,6 +33,7 @@ public class PGDVirtualFile extends BufferedVirtualFile {
 	private void init(byte[] key, IVirtualFile pgdFile, int dataOffset) {
 		isValid = false;
 
+		long position = pgdFile.getPosition();
 		if (isHeaderValid(pgdFile)) {
 			PGDBlockVirtualFile pgdBlockFile = new PGDBlockVirtualFile(pgdFile, key, dataOffset);
 
@@ -43,6 +44,7 @@ public class PGDVirtualFile extends BufferedVirtualFile {
 		}
 
 		if (!isValid) {
+			pgdFile.ioLseek(position);
 			setBufferedVirtualFile(pgdFile, 0x1000);
 		}
 	}
