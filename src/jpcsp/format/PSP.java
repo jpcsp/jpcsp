@@ -70,6 +70,7 @@ public class PSP {
     private int[] sig_check = new int[88];
     private int[] sha1_hash = new int[20];
     private int[] key_data = new int[16];
+    private static final int PSP_HEADER_SIZE = 336;
 
     public PSP(ByteBuffer f) throws IOException {
         read(f);
@@ -149,11 +150,11 @@ public class PSP {
 
         CryptoEngine crypto = new CryptoEngine();
         byte[] inBuf;
-        if (f.hasArray()) {
-        	inBuf = f.array();
+        if (f.hasArray() && f.position() <= PSP_HEADER_SIZE) {
+    		inBuf = f.array();
         } else {
         	int currentPosition = f.position();
-        	f.position(currentPosition - 336);
+        	f.position(currentPosition - PSP_HEADER_SIZE);
         	inBuf = new byte[f.remaining()];
         	f.get(inBuf);
         	f.position(currentPosition);
