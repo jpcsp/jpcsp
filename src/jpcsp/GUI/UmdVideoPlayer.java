@@ -93,6 +93,8 @@ public class UmdVideoPlayer implements KeyListener {
     private int screenWidth;
     private int screenHeigth;
     private Image image;
+    private int resizeScaleFactor;
+    private MainGUI gui;
 
     // Video
     private IVideoCodec videoCodec;
@@ -313,10 +315,23 @@ public class UmdVideoPlayer implements KeyListener {
         }
     }
 
-    public void setVideoPlayerResizeScaleFactor(MainGUI gui, int factor) {
-        screenWidth = Screen.width * factor;
-        screenHeigth = Screen.height * factor;
-        Insets insets = gui.getInsets();
+    public void setVideoPlayerResizeScaleFactor(MainGUI gui, int resizeScaleFactor) {
+    	this.resizeScaleFactor = resizeScaleFactor;
+    	this.gui = gui;
+
+    	resizeVideoPlayer();
+    }
+
+    private void resizeVideoPlayer() {
+    	if (videoWidth <= 0 || videoHeight <= 0) {
+	        screenWidth = Screen.width * resizeScaleFactor;
+	        screenHeigth = Screen.height * resizeScaleFactor;
+    	} else {
+	        screenWidth = videoWidth * resizeScaleFactor;
+	        screenHeigth = videoHeight * resizeScaleFactor;
+    	}
+
+    	Insets insets = gui.getInsets();
         Dimension minSize = new Dimension(
                 screenWidth + insets.left + insets.right,
                 screenHeigth + insets.top + insets.bottom);
@@ -1002,11 +1017,17 @@ public class UmdVideoPlayer implements KeyListener {
 	    if (videoCodec.hasImage() && !skipFrame) {
 	    	int width = videoCodec.getImageWidth();
 	    	int height = videoCodec.getImageHeight();
+	    	boolean resized = false;
 	    	if (videoWidth <= 0) {
 	    		videoWidth = width;
+	    		resized = true;
 	    	}
 	    	if (videoHeight <= 0) {
 	    		videoHeight = height;
+	    		resized = true;
+	    	}
+	    	if (resized) {
+	    		resizeVideoPlayer();
 	    	}
 
 	    	int size = width * height;
@@ -1121,7 +1142,11 @@ public class UmdVideoPlayer implements KeyListener {
                     if (!videoPaused) {
                         stepVideo();
                         if (display != null && image != null) {
-                            display.setIcon(new ImageIcon(getImage()));
+                        	Image scaledImage = getImage();
+                        	if (videoWidth != screenWidth || videoHeight != screenHeigth) {
+                        		scaledImage = scaledImage.getScaledInstance(screenWidth, screenHeigth, Image.SCALE_SMOOTH);
+                        	}
+                            display.setIcon(new ImageIcon(scaledImage));
                         }
                     } else {
                     	Utilities.sleep(10, 0);
