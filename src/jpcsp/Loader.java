@@ -1379,7 +1379,7 @@ public class Loader {
                         // Only accept exports with valid export addresses and
 	                    // from custom modules (attr != 0x4000) unless the module is a homebrew (loaded from MemoryStick).
                         if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000) || module.pspfilename.startsWith("ms0:")) {
-                            nidMapper.addModuleNid(moduleName, nid, exportAddress);
+                            nidMapper.addModuleNid(module, moduleName, nid, exportAddress);
                             entCount++;
                             if (log.isDebugEnabled()) {
                                 log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
@@ -1425,7 +1425,7 @@ public class Loader {
 	                        default:
 	                            // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
 	                            if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
-	                                nidMapper.addModuleNid(moduleName, nid, exportAddress);
+	                                nidMapper.addModuleNid(module, moduleName, nid, exportAddress);
 	                                entCount++;
 	                                if (log.isDebugEnabled()) {
 	                                    log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
@@ -1483,7 +1483,7 @@ public class Loader {
                         default:
                             // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
                             if (Memory.isAddressGood(variableAddr) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
-                                nidMapper.addModuleNid(moduleName, nid, variableAddr);
+                                nidMapper.addModuleNid(module, moduleName, nid, variableAddr);
                                 entCount++;
                                 if (log.isDebugEnabled()) {
                                     log.debug(String.format("Export found at 0x%08X [0x%08X]", variableAddr, nid));

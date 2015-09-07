@@ -19,6 +19,7 @@ package jpcsp;
 import java.util.HashMap;
 
 import jpcsp.HLE.SyscallIgnore;
+import jpcsp.HLE.kernel.types.SceModule;
 
 public class NIDMapper {
     private static NIDMapper instance;
@@ -63,13 +64,14 @@ public class NIDMapper {
 
     /** @param modulename Example: sceRtc
      * @param address Address of export (example: start of function). */
-    public void addModuleNid(String modulename, int nid, int address) {
+    public void addModuleNid(SceModule module, String modulename, int nid, int address) {
         HashMap<Integer, Integer> nidToAddress;
 
         nidToAddress = moduleToNidTable.get(modulename);
         if (nidToAddress == null) {
             nidToAddress = new HashMap<Integer, Integer>();
             moduleToNidTable.put(modulename, nidToAddress);
+            module.addModuleName(modulename);
         }
 
         nidToAddress.put(nid, address);

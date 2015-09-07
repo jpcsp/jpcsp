@@ -103,6 +103,7 @@ public class SceModule {
     public List<DeferredStub> unresolvedImports;
     public int importFixupAttempts;
     public List<DeferredStub> resolvedImports;
+    private List<String> moduleNames = new LinkedList<String>();
 
     private static int sceModuleAddressOffset = 0x08400000; // reset this when we reset the emu
     public static void ResetAllocator() {
@@ -134,6 +135,12 @@ public class SceModule {
         allocatedMemory = new LinkedList<SysMemInfo>();
     }
 
+    public void addModuleName(String moduleName) {
+    	if (!moduleNames.contains(moduleName)) {
+    		moduleNames.add(moduleName);
+    	}
+    }
+
     // State control methods.
     public void load() {
         isLoaded = true;
@@ -151,6 +158,9 @@ public class SceModule {
 
     	// Remove all the NID's mapped from this module
     	NIDMapper.getInstance().removeModuleNids(modname);
+    	for (String moduleName : moduleNames) {
+    		NIDMapper.getInstance().removeModuleNids(moduleName);
+    	}
 
     	isLoaded = false;
         free();
