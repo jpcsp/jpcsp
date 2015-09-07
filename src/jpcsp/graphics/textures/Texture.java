@@ -164,7 +164,7 @@ public class Texture {
 
 		// Do not compute the hashCode of the new texture if it has already
 		// been checked during this display cycle
-		if (!textureCache.textureAlreadyHashed(addr, clutAddr)) {
+		if (!textureCache.textureAlreadyHashed(addr, clutAddr, clutStart, clutMode)) {
 			if (values16 != null) {
 				return equals(values16);
 			}
@@ -175,7 +175,7 @@ public class Texture {
 			if (hashCode != hashCode()) {
 				return false;
 			}
-			textureCache.setTextureAlreadyHashed(addr, clutAddr);
+			textureCache.setTextureAlreadyHashed(addr, clutAddr, clutStart, clutMode);
 		}
 
 		return true;
@@ -247,6 +247,14 @@ public class Texture {
 
 	public int getClutAddr() {
 		return clutAddr;
+	}
+
+	public int getClutMode() {
+		return clutMode;
+	}
+
+	public int getClutStart() {
+		return clutStart;
 	}
 
 	public int getGlId() {

@@ -27,6 +27,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
+import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.util.CacheStatistics;
@@ -63,22 +64,24 @@ public class TextureCache {
 		textureAlreadyHashed = new HashSet<Integer>();
 	}
 
-	private Integer getKey(int addr, int clutAddr) {
+	private Integer getKey(int addr, int clutAddr, int clutStart, int clutMode) {
 		// Some games use the same texture address with different cluts.
-		// Keep a combination of both texture address and clut address in the cache
-		return new Integer(addr + clutAddr);
+		// Keep a combination of both texture address and clut address in the cache.
+		// Also, use the clutStart as this parameter can be used to offset the clut address.
+		int clutEntrySize = clutMode == GeCommands.CMODE_FORMAT_32BIT_ABGR8888 ? 4 : 2;
+		return new Integer(addr + clutAddr + (clutStart << 4) * clutEntrySize);
 	}
 
-	public boolean hasTexture(int addr, int clutAddr) {
-		return cache.containsKey(getKey(addr, clutAddr));
+	public boolean hasTexture(int addr, int clutAddr, int clutStart, int clutMode) {
+		return cache.containsKey(getKey(addr, clutAddr, clutStart, clutMode));
 	}
 
-	private Texture getTexture(int addr, int clutAddr) {
-		return cache.get(getKey(addr, clutAddr));
+	private Texture getTexture(int addr, int clutAddr, int clutStart, int clutMode) {
+		return cache.get(getKey(addr, clutAddr, clutStart, clutMode));
 	}
 
 	public void addTexture(IRenderingEngine re, Texture texture) {
-		Integer key = getKey(texture.getAddr(), texture.getClutAddr());
+		Integer key = getKey(texture.getAddr(), texture.getClutAddr(), texture.getClutStart(), texture.getClutMode());
 		Texture previousTexture = cache.get(key);
 		if (previousTexture != null) {
 		    previousTexture.deleteTexture(re);
@@ -112,7 +115,7 @@ public class TextureCache {
 
 	public Texture getTexture(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut, short[] values16, int[] values32) {
 		statistics.totalHits++;
-		Texture texture = getTexture(addr, clutAddr);
+		Texture texture = getTexture(addr, clutAddr, clutStart, clutMode);
 
 		if (texture == null) {
 			statistics.notPresentHits++;
@@ -132,16 +135,16 @@ public class TextureCache {
 		textureAlreadyHashed.clear();
 	}
 
-	public boolean textureAlreadyHashed(int addr, int clutAddr) {
-		return textureAlreadyHashed.contains(getKey(addr, clutAddr));
+	public boolean textureAlreadyHashed(int addr, int clutAddr, int clutStart, int clutMode) {
+		return textureAlreadyHashed.contains(getKey(addr, clutAddr, clutStart, clutMode));
 	}
 
-	public void setTextureAlreadyHashed(int addr, int clutAddr) {
-		textureAlreadyHashed.add(getKey(addr, clutAddr));
+	public void setTextureAlreadyHashed(int addr, int clutAddr, int clutStart, int clutMode) {
+		textureAlreadyHashed.add(getKey(addr, clutAddr, clutStart, clutMode));
 	}
 
-	public void resetTextureAlreadyHashed(int addr, int clutAddr) {
-		textureAlreadyHashed.remove(getKey(addr, clutAddr));
+	public void resetTextureAlreadyHashed(int addr, int clutAddr, int clutStart, int clutMode) {
+		textureAlreadyHashed.remove(getKey(addr, clutAddr, clutStart, clutMode));
 	}
 
 	public void reset(IRenderingEngine re) {
@@ -165,7 +168,7 @@ public class TextureCache {
 				}
 				texture.deleteTexture(re);
 				lit.remove();
-				Integer key = getKey(texture.getAddr(), texture.getClutAddr());
+				Integer key = getKey(texture.getAddr(), texture.getClutAddr(), texture.getClutStart(), texture.getClutMode());
 				cache.remove(key);
 				statistics.entriesRemoved++;
 			}

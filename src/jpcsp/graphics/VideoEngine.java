@@ -3133,8 +3133,8 @@ public class VideoEngine {
             // Remove the destination address from the texture cache
             if (canCacheTexture(context.textureTx_destinationAddress)) {
                 TextureCache textureCache = TextureCache.getInstance();
-                textureCache.resetTextureAlreadyHashed(context.textureTx_destinationAddress, context.tex_clut_addr);
-                textureCache.resetTextureAlreadyHashed(context.textureTx_destinationAddress, 0);
+                textureCache.resetTextureAlreadyHashed(context.textureTx_destinationAddress, context.tex_clut_addr, context.tex_clut_start, context.tex_clut_mode);
+                textureCache.resetTextureAlreadyHashed(context.textureTx_destinationAddress, 0, 0, 0);
             }
             if (context.textureTx_destinationAddress == (context.texture_base_pointer[0] & Memory.addressMask)) {
                 textureChanged = true;
