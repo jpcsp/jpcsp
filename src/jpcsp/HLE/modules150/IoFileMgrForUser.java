@@ -1744,7 +1744,10 @@ public class IoFileMgrForUser extends HLEModule {
                         } catch (IOException e) {
                             log.error("hleIoOpen - error opening umd media: " + e.getMessage());
                             result = -1;
-                        }
+                        } catch (NumberFormatException e) {
+                            log.error("hleIoOpen - error opening umd media: " + e.getMessage());
+                            result = -1;
+                        }			
                     }
                 } else {
                     // First check if the file already exists
