@@ -298,16 +298,21 @@ public class UmdIsoReader implements IBrowser {
             //
             // Direct sector access on UMD is using the following file name syntax:
             //     sce_lbnSSSS_sizeLLLL
-            // where SSSS is the index of the first sector (in base 16)
-            //       LLLL is the length in bytes (in base 16)
+            // where SSSS is the index of the first sector (in hexadecimal)
+            //       LLLL is the length in bytes (in hexadecimal)
+        	// The prefix "0x" before each hexadecimal value is optional.
+        	//
             // E.g.
             //       disc0:/sce_lbn0x5fa0_size0x1428
             //       disc0:/sce_lbn7050_sizeee850
+        	//
+        	// Remark: SSSS and LLLL can be followed by any non-hex characters.
+        	//         These additional characters are simply ignored.
             //
             filePath = filePath.substring(7);
             int sep = filePath.indexOf("_size");
-            fileStart = (int) Utilities.parseHexLong(filePath.substring(0, sep));
-            fileLength = Utilities.parseHexLong(filePath.substring(sep + 5));
+            fileStart = (int) Utilities.parseHexLong(filePath.substring(0, sep), true);
+            fileLength = Utilities.parseHexLong(filePath.substring(sep + 5), true);
             timestamp = new Date();
             fileName = null;
             if (fileStart < 0 || fileStart >= numSectors) {

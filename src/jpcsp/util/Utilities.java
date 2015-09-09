@@ -308,9 +308,11 @@ public class Utilities {
      * parsed in base 16. The string can start as an option with "0x".
      *
      * @param s the string to be parsed in base 16
+     * @param ignoreTrailingChars true if trailing (i.e. non-hex characters) have to be ignored
+     *                            false if non-hex characters have to raise an exception NumberFormatException
      * @return the numeric value represented by the string.
      */
-    public static long parseHexLong(String s) {
+    public static long parseHexLong(String s, boolean ignoreTrailingChars) {
         long value = 0;
 
         if (s == null) {
@@ -320,6 +322,19 @@ public class Utilities {
         if (s.startsWith("0x")) {
             s = s.substring(2);
         }
+
+        if (ignoreTrailingChars && s.length() > 0) {
+        	for (int i = 0; i < s.length(); i++) {
+        		char c = s.charAt(i);
+        		// Is it an hexadecimal character?
+            	if ("0123456789abcdefABCDEF".indexOf(c) < 0) {
+            		// Delete the trailing non-hex characters
+            		s = s.substring(0, i);
+            		break;
+            	}
+        	}
+        }
+
         value = Long.parseLong(s, 16);
         return value;
     }

@@ -141,7 +141,7 @@ public class ModuleMgrForUser extends HLEModule {
     private String extractHLEModuleName(String path) {
         String result = "UNKNOWN";
         String sectorString = path.substring(path.indexOf("sce_lbn") + 7, path.indexOf("_size"));
-        int PRXStartSector = (int) Utilities.parseHexLong(sectorString);
+        int PRXStartSector = (int) Utilities.parseHexLong(sectorString, true);
 
         try {
             byte[] buffer = Modules.IoFileMgrForUserModule.getIsoReader().readSector(PRXStartSector);

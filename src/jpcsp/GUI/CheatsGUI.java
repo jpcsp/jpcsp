@@ -138,8 +138,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                     }
                     
                     int value;
-                    int comm = (int) parseHexLong(parts[0].trim());
-                    int arg = (int) parseHexLong(parts[1].trim());
+                    int comm = (int) parseHexLong(parts[0].trim(), false);
+                    int arg = (int) parseHexLong(parts[1].trim(), false);
                     int addr = getAddress(comm & 0x0FFFFFFF);
                     
                     switch (comm >>> 28) {
@@ -180,7 +180,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                                     code = getNextCode();
                                     parts = code.split(" ");
                                     if (parts != null && parts.length >= 1) {
-                                        increment = (int) parseHexLong(parts[0].trim());
+                                        increment = (int) parseHexLong(parts[0].trim(), false);
                                     }
                                     break;
                             }
@@ -217,8 +217,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                             code = getNextCode();
                             parts = code.split(" ");
                             if (parts != null && parts.length >= 1) {
-                                int data = (int) parseHexLong(parts[0].trim());
-                                int dataAdd = (int) parseHexLong(parts[1].trim());
+                                int data = (int) parseHexLong(parts[0].trim(), false);
+                                int dataAdd = (int) parseHexLong(parts[1].trim(), false);
                                 
                                 int maxAddr = (arg >> 16) & 0xFFFF;
                                 int stepAddr = (arg & 0xFFFF) * 4;
@@ -235,7 +235,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                             code = getNextCode();
                             parts = code.split(" ");
                             if (parts != null && parts.length >= 1) {
-                                int destAddr = (int) parseHexLong(parts[0].trim());
+                                int destAddr = (int) parseHexLong(parts[0].trim(), false);
                                 if (Memory.isAddressGood(addr) && Memory.isAddressGood(destAddr)) {
                                     mem.memcpy(destAddr, addr, arg);
                                 }
@@ -245,8 +245,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                             code = getNextCode();
                             parts = code.split(" ");
                             if (parts != null && parts.length >= 2) {
-                                int arg2 = (int) parseHexLong(parts[0].trim());
-                                int offset = (int) parseHexLong(parts[1].trim());
+                                int arg2 = (int) parseHexLong(parts[0].trim(), false);
+                                int offset = (int) parseHexLong(parts[1].trim(), false);
                                 int baseOffset = (arg2 >>> 20) * 4;
                                 int base = mem.read32(addr + baseOffset);
                                 int count = arg2 & 0xFFFF;
@@ -256,8 +256,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                                         code = getNextCode();
                                         parts = code.split(" ");
                                         if (parts != null && parts.length >= 2) {
-                                            int arg3 = (int) parseHexLong(parts[0].trim());
-                                            int arg4 = (int) parseHexLong(parts[1].trim());
+                                            int arg3 = (int) parseHexLong(parts[0].trim(), false);
+                                            int arg4 = (int) parseHexLong(parts[1].trim(), false);
                                             int comm3 = arg3 >>> 28;
                                             switch (comm3) {
                                                 case 0x1: // type copy byte
@@ -368,8 +368,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                             code = getNextCode();
                             parts = code.split(" ");
                             if (parts != null && parts.length >= 1) {
-                                int data = (int) parseHexLong(parts[0].trim());
-                                int dataAdd = (int) parseHexLong(parts[1].trim());
+                                int data = (int) parseHexLong(parts[0].trim(), false);
+                                int dataAdd = (int) parseHexLong(parts[1].trim(), false);
                                 
                                 boolean is8Bit = (data >> 16) == 0x0000;
                                 int maxAddr = (arg >> 16) & 0xFFFF;
@@ -436,8 +436,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                                         code = getNextCode();
                                         parts = code.split(" ");
                                         if (parts != null && parts.length >= 1) {
-                                            int skip = (int) parseHexLong(parts[0].trim());
-                                            int type = (int) parseHexLong(parts[1].trim());
+                                            int skip = (int) parseHexLong(parts[0].trim(), false);
+                                            int type = (int) parseHexLong(parts[1].trim(), false);
                                             int value1 = 0;
                                             int value2 = 0;
                                             switch (type & 0xF) {
