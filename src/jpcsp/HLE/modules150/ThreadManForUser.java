@@ -2449,10 +2449,18 @@ public class ThreadManForUser extends HLEModule {
         	return ERROR_KERNEL_THREAD_ALREADY_DORMANT;
         }
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelSuspendThread thread before suspend: %s", thread));
+        }
+
         if (thread.isWaiting()) {
         	hleChangeThreadState(thread, PSP_THREAD_WAITING_SUSPEND);
         } else {
         	hleChangeThreadState(thread, PSP_THREAD_SUSPEND);
+        }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelSuspendThread thread after suspend: %s", thread));
         }
 
         return 0;
@@ -2467,10 +2475,18 @@ public class ThreadManForUser extends HLEModule {
             return ERROR_KERNEL_THREAD_IS_NOT_SUSPEND;
         }
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelResumeThread thread before resume: %s", thread));
+        }
+
         if (thread.isWaiting()) {
             hleChangeThreadState(thread, PSP_THREAD_WAITING);
         } else {
         	hleChangeThreadState(thread, PSP_THREAD_READY);
+        }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelResumeThread thread after resume: %s", thread));
         }
 
         return 0;
