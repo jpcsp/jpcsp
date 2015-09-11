@@ -23,6 +23,7 @@ import jpcsp.HLE.modules.KDebugForKernel;
 import jpcsp.HLE.modules.KUBridge;
 import jpcsp.HLE.modules.Kernel_Library;
 import jpcsp.HLE.modules.LoadCoreForKernel;
+import jpcsp.HLE.modules.LoadExecForKernel;
 import jpcsp.HLE.modules.LoadExecForUser;
 import jpcsp.HLE.modules.ModuleMgrForUser;
 import jpcsp.HLE.modules.StdioForKernel;
@@ -111,6 +112,7 @@ public class Modules {
     public static SysMemForKernel SysMemForKernelModule = new SysMemForKernel();
     public static InterruptManager InterruptManagerModule = new InterruptManager();
     public static LoadExecForUser LoadExecForUserModule = new LoadExecForUser();
+    public static LoadExecForKernel LoadExecForKernelModule = new LoadExecForKernel();
     public static StdioForUser StdioForUserModule = new StdioForUser();
     public static StdioForKernel StdioForKernelModule = new StdioForKernel();
     public static sceCtrl sceCtrlModule = new sceCtrl();

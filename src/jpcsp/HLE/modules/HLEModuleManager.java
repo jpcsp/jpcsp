@@ -81,6 +81,7 @@ public class HLEModuleManager {
     	ThreadManForUser(Modules.ThreadManForUserModule),
     	InterruptManager(Modules.InterruptManagerModule),
     	LoadExecForUser(Modules.LoadExecForUserModule),
+    	LoadExecForKernel(Modules.LoadExecForKernelModule),
         StdioForUser(Modules.StdioForUserModule),
         StdioForKernel(Modules.StdioForKernelModule),
         sceUmdUser(Modules.sceUmdUserModule),
