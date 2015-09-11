@@ -453,6 +453,11 @@ public class Controller {
             default:
                 return;
         }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("keyPressed %s", key.toString()));
+        }
+
         lastKey = key;
     }
 
@@ -547,6 +552,11 @@ public class Controller {
             default:
                 return;
         }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("keyReleased %s", key.toString()));
+        }
+
         lastKey = keyCode.RELEASED;
     }
 
