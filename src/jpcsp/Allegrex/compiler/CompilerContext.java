@@ -1817,21 +1817,14 @@ public class CompilerContext implements ICompilerContext {
             loadImm(address);
             visitJump();
         } else {
-            log.error("Not implemented: branching to an unknown address");
-            if (opcode == Opcodes.IF_ACMPEQ ||
-                opcode == Opcodes.IF_ACMPNE ||
-                opcode == Opcodes.IF_ICMPEQ ||
-                opcode == Opcodes.IF_ICMPNE ||
-                opcode == Opcodes.IF_ICMPGE ||
-                opcode == Opcodes.IF_ICMPGT ||
-                opcode == Opcodes.IF_ICMPLE ||
-                opcode == Opcodes.IF_ICMPLT) {
-                // 2 Arguments to POP
-                mv.visitInsn(Opcodes.POP);
-            }
-            mv.visitInsn(Opcodes.POP);
-            loadImm(address);
-            visitJump();
+        	Label jumpTarget = new Label();
+        	Label notJumpTarget = new Label();
+        	mv.visitJumpInsn(opcode, jumpTarget);
+        	mv.visitJumpInsn(Opcodes.GOTO, notJumpTarget);
+        	mv.visitLabel(jumpTarget);
+        	loadImm(address);
+        	visitJump();
+        	mv.visitLabel(notJumpTarget);
         }
     }
 

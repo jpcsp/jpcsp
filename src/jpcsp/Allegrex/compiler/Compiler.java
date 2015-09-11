@@ -385,6 +385,7 @@ public class Compiler implements ICompiler {
         if (log.isTraceEnabled()) {
             log.trace(String.format("Compiler.analyse Block 0x%08X", startAddress));
         }
+        int maxBranchInstructions = Integer.MAX_VALUE; // 5 for FRONTIER_1337 homebrew
         MemorySections memorySections = MemorySections.getInstance();
         startAddress = startAddress & Memory.addressMask;
         CodeBlock codeBlock = new CodeBlock(startAddress, instanceIndex);
@@ -446,19 +447,26 @@ public class Compiler implements ICompiler {
                         }
                     } else if (isBranching) {
                         if (branchingTo != 0) {  // Ignore "J 0x00000000" instruction
-                        	if (checkDynamicBranching) {
-	                        	// Analyse only the jump instructions that are jumping to
+                    		boolean analyseBranch = true;
+                    		if (maxBranchInstructions < 0) {
+                    			analyseBranch = false;
+                    		} else {
+                        		maxBranchInstructions--;
+
+                        		// Analyse only the jump instructions that are jumping to
 	                        	// non-writable memory sections. A jump to a writable memory
 	                        	// section has to be interpreted at runtime to check if the
 	                        	// reached code has not been changed (i.e. invalidated).
-                        		if (!memorySections.canWrite(branchingTo, false)) {
-	                        		pendingBlockAddresses.push(branchingTo);
-	                        	} else {
-	                        		branchingToAddresses.add(branchingTo);
-	                        	}
-                        	} else {
+                    			if (checkDynamicBranching && memorySections.canWrite(branchingTo, false)) {
+                        			analyseBranch = false;
+                    			}
+                    		}
+
+                    		if (analyseBranch) {
                         		pendingBlockAddresses.push(branchingTo);
-                        	}
+                    		} else {
+                        		branchingToAddresses.add(branchingTo);
+                    		}
                         }
                     }
 
