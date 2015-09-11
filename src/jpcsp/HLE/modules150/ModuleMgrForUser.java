@@ -110,19 +110,21 @@ public class ModuleMgrForUser extends HLEModule {
 		private int uid;
 		private SceKernelLMOption lmOption;
 		private boolean byUid;
+		private boolean needModuleInfo;
 
-		public LoadModuleAction(SceKernelThreadInfo thread, String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid) {
+		public LoadModuleAction(SceKernelThreadInfo thread, String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo) {
 			this.thread = thread;
 			this.name = name;
 			this.flags = flags;
 			this.uid = uid;
 			this.lmOption = lmOption;
 			this.byUid = byUid;
+			this.needModuleInfo = needModuleInfo;
 		}
 
 		@Override
 		public void execute() {
-			hleKernelLoadModule(thread, name, flags, uid, lmOption, byUid);
+			hleKernelLoadModule(thread, name, flags, uid, lmOption, byUid, needModuleInfo);
 		}
 	}
 
@@ -279,8 +281,8 @@ public class ModuleMgrForUser extends HLEModule {
     	return result;
     }
 
-    public int hleKernelLoadModule(String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid) {
-    	IAction delayedLoadModule = new LoadModuleAction(Modules.ThreadManForUserModule.getCurrentThread(), name, flags, uid, lmOption, byUid);
+    public int hleKernelLoadModule(String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo) {
+    	IAction delayedLoadModule = new LoadModuleAction(Modules.ThreadManForUserModule.getCurrentThread(), name, flags, uid, lmOption, byUid, needModuleInfo);
 
     	Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_IO);
     	Emulator.getScheduler().addAction(Emulator.getClock().microTime() + 100000, delayedLoadModule);
@@ -288,13 +290,13 @@ public class ModuleMgrForUser extends HLEModule {
     	return 0;
     }
 
-    private void hleKernelLoadModule(SceKernelThreadInfo thread, String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid) {
-    	int result = delayedKernelLoadModule(name, flags, uid, lmOption, byUid);
+    private void hleKernelLoadModule(SceKernelThreadInfo thread, String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo) {
+    	int result = delayedKernelLoadModule(name, flags, uid, lmOption, byUid, needModuleInfo);
     	thread.cpuContext._v0 = result;
     	Modules.ThreadManForUserModule.hleUnblockThread(thread.uid);
     }
 
-    private int delayedKernelLoadModule(String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid) {
+    private int delayedKernelLoadModule(String name, int flags, int uid, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo) {
         StringBuilder prxname = new StringBuilder();
         int result = hleKernelLoadHLEModule(name, prxname);
         if (result >= 0) {
@@ -366,19 +368,25 @@ public class ModuleMgrForUser extends HLEModule {
 
                 // Allocate the memory for the memory header itself,
                 // the space required by the module will be allocated by the Loader.
-                SysMemInfo moduleInfo = Modules.SysMemUserForUserModule.malloc(mpidText, "ModuleMgr", SysMemUserForUser.PSP_SMEM_Addr, moduleHeaderSize, testBase);
-                if (moduleInfo == null) {
-                    log.error(String.format("Failed module allocation 0x%08X != null for '%s'", testBase, name));
-                    return -1;
+                SysMemInfo moduleInfo = null;
+                int moduleBase;
+                if (needModuleInfo) {
+                	moduleInfo = Modules.SysMemUserForUserModule.malloc(mpidText, "ModuleMgr", SysMemUserForUser.PSP_SMEM_Addr, moduleHeaderSize, testBase);
+                    if (moduleInfo == null) {
+                        log.error(String.format("Failed module allocation 0x%08X != null for '%s'", testBase, name));
+                        return -1;
+                    }
+                    if (moduleInfo.addr != testBase) {
+                        log.error(String.format("Failed module allocation 0x%08X != 0x%08X for '%s'", testBase, moduleInfo.addr, name));
+                        return -1;
+                    }
+                    moduleBase = moduleInfo.addr + moduleHeaderSize;
+                } else {
+                	moduleBase = testBase;
                 }
-                if (moduleInfo.addr != testBase) {
-                    log.error(String.format("Failed module allocation 0x%08X != 0x%08X for '%s'", testBase, moduleInfo.addr, name));
-                    return -1;
-                }
-                int moduleBase = moduleInfo.addr;
 
                 // Load the module
-                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, moduleBase + moduleHeaderSize, mpidText, mpidData, false);
+                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, moduleBase, mpidText, mpidData, false);
                 module.load();
 
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
@@ -386,13 +394,15 @@ public class ModuleMgrForUser extends HLEModule {
                     // Simulate a successful loading
                     log.info("hleKernelLoadModule(path='" + name + "') encrypted module not loaded");
                     SceModule fakeModule = new SceModule(true);
-                    fakeModule.addAllocatedMemory(moduleInfo);
                     fakeModule.modname = prxname.toString();
-                    fakeModule.write(Memory.getInstance(), moduleInfo.addr);
+                	fakeModule.addAllocatedMemory(moduleInfo);
+                    if (moduleInfo != null) {
+                        fakeModule.write(Memory.getInstance(), moduleInfo.addr);
+                    }
                     Managers.modules.addModule(fakeModule);
                     result = fakeModule.modid;
                 } else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
-                    module.addAllocatedMemory(moduleInfo);
+            		module.addAllocatedMemory(moduleInfo);
                     result = module.modid;
                 	if (log.isDebugEnabled()) {
                 		log.debug(String.format("hleKernelLoadModule returning uid=0x%X", result));
@@ -440,7 +450,7 @@ public class ModuleMgrForUser extends HLEModule {
         	return result;
         }
 
-        return hleKernelLoadModule(name, 0, uid, lmOption, true);
+        return hleKernelLoadModule(name, 0, uid, lmOption, true, true);
     }
 
     @HLEFunction(nid = 0x977DE386, version = 150, checkInsideInterrupt = true)
@@ -454,7 +464,7 @@ public class ModuleMgrForUser extends HLEModule {
             }
         }
 
-        return hleKernelLoadModule(path.getString(), flags, 0, lmOption, false);
+        return hleKernelLoadModule(path.getString(), flags, 0, lmOption, false, true);
     }
 
     @HLEUnimplemented
@@ -885,7 +895,7 @@ public class ModuleMgrForUser extends HLEModule {
             }
         }
 
-        return hleKernelLoadModule(path.getString(), flags, 0, lmOption, false);
+        return hleKernelLoadModule(path.getString(), flags, 0, lmOption, false, false);
     }
 
     /**

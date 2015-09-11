@@ -51,7 +51,7 @@ public class KUBridge extends HLEModule {
             }
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, lmOption, false);
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, lmOption, false, true);
     }
 
     /*
