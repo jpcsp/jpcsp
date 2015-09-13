@@ -48,4 +48,16 @@ public class LoadExecForKernel extends HLEModule {
 		Modules.ThreadManForUserModule.stop();
 		return 0;
 	}
+
+    @HLEFunction(nid = 0x6D302D3D, version = 150, checkInsideInterrupt = true)
+    public int sceKernelExitVSHKernel(@CanBeNull TPointer param) {
+		//  Test in real PSP in  "Hatsune Miku Project Diva Extend" chinese patched version,same effect that sceKernelExitGame
+		if (param.isNotNull()) {
+			log.info(String.format("sceKernelExitVSHKernel param=%s", Utilities.getMemoryDump(param.getAddress(), 36)));
+		}
+		Emulator.PauseEmu();
+		RuntimeContext.reset();
+		Modules.ThreadManForUserModule.stop();
+		return 0;
+	}
 }
