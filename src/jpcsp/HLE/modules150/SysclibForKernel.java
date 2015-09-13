@@ -89,7 +89,7 @@ public class SysclibForKernel extends HLEModule {
 	@HLEFunction(nid = 0xAB7592FF, version = 150)
     public int memcpy(TPointer src1Addr, TPointer src2Addr, int size) {
 		Memory mem = Memory.getInstance();
-		mem.memcpy(src2Addr.getAddress(), src1Addr.getAddress(), size);
+		mem.memcpy(src1Addr.getAddress(), src2Addr.getAddress(), size);
     	return 0;
     }
 }
