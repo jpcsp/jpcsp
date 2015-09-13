@@ -21,11 +21,12 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.util.Utilities;
+import jpcsp.Emulator;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 
 @HLELogging
 public class LoadExecForKernel extends HLEModule {
@@ -36,13 +37,27 @@ public class LoadExecForKernel extends HLEModule {
 		return "LoadExecForKernel";
 	}
 
-	@HLEUnimplemented
     @HLEFunction(nid = 0xA3D5E142, version = 150, checkInsideInterrupt = true)
     public int sceKernelExitVSHVSH(@CanBeNull TPointer param) {
+		// when called in game mode it will have the same effect that sceKernelExitGame 
 		if (param.isNotNull()) {
 			log.info(String.format("sceKernelExitVSHVSH param=%s", Utilities.getMemoryDump(param.getAddress(), 36)));
 		}
+		Emulator.PauseEmu();
+		RuntimeContext.reset();
+		Modules.ThreadManForUserModule.stop();
+		return 0;
+	}
 
+    @HLEFunction(nid = 0x6D302D3D, version = 150, checkInsideInterrupt = true)
+    public int sceKernelExitVSHKernel(@CanBeNull TPointer param) {
+		//  Test in real PSP in  "Hatsune Miku Project Diva Extend" chinese patched version,same effect that sceKernelExitGame
+		if (param.isNotNull()) {
+			log.info(String.format("sceKernelExitVSHKernel param=%s", Utilities.getMemoryDump(param.getAddress(), 36)));
+		}
+		Emulator.PauseEmu();
+		RuntimeContext.reset();
+		Modules.ThreadManForUserModule.stop();
 		return 0;
 	}
 }
