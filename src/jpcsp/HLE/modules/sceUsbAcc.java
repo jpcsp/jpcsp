@@ -16,5 +16,36 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class sceUsbAcc extends jpcsp.HLE.modules260.sceUsbAcc {
+import org.apache.log4j.Logger;
+
+import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+
+@HLELogging
+public class sceUsbAcc extends HLEModule {
+    public static Logger log = Modules.getLogger("sceUsbAcc");
+
+	@Override
+	public String getName() {
+		return "sceUsbAcc";
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0CD7D4AA, version = 260)
+	public int sceUsbAccGetInfo(TPointer resultAddr) {
+		// resultAddr is pointing to an 8-byte area.
+		// Not sure about the content...
+		resultAddr.clear(8);
+
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x79A1C743, version = 260)
+	public int sceUsbAccGetAuthStat() {
+		return 0;
+	}
 }
