@@ -46,11 +46,6 @@ import org.apache.log4j.Logger;
 public class sceNetAdhocctl extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetAdhocctl");
 
-    @Override
-    public String getName() {
-        return "sceNetAdhocctl";
-    }
-
     public static final int PSP_ADHOCCTL_EVENT_ERROR = 0;
     public static final int PSP_ADHOCCTL_EVENT_CONNECTED = 1;
     public static final int PSP_ADHOCCTL_EVENT_DISCONNECTED = 2;

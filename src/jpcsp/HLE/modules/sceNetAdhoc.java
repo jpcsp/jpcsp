@@ -265,11 +265,6 @@ public class sceNetAdhoc extends HLEModule {
 		}
 	}
 
-	@Override
-    public String getName() {
-        return "sceNetAdhoc";
-    }
-
     @Override
 	public void start() {
     	setSettingsListener("emu.netClientPortShift", new ClientPortShiftSettingsListener());

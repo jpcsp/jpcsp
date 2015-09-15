@@ -27,11 +27,6 @@ import jpcsp.HLE.PspString;
 public class StdioForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("StdioForKernel");
 
-    @Override
-    public String getName() {
-        return "StdioForKernel";
-    }
-
     @HLEFunction(nid = 0xCAB439DF, version = 150)
     public int StdioForKernel_printf(CpuState cpu, PspString formatString) {
     	return Modules.SysMemUserForUserModule.hleKernelPrintf(cpu, formatString, log, "StdioForKernel_printf");

@@ -31,11 +31,6 @@ import org.apache.log4j.Logger;
 public class LoadCoreForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("LoadCoreForKernel");
 
-	@Override
-	public String getName() {
-		return "LoadCoreForKernel";
-	}
-
     @HLEUnimplemented
 	@HLEFunction(nid = 0xACE23476, version = 150)
 	public int sceKernelCheckPspConfig() {

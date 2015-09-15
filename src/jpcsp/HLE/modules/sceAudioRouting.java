@@ -31,11 +31,6 @@ public class sceAudioRouting extends HLEModule {
 	protected int audioRoutingMode = AUDIO_ROUTING_SPEAKER_ON;
 	protected int audioRoutineVolumeMode = AUDIO_ROUTING_SPEAKER_ON;
 
-	@Override
-	public String getName() {
-		return "sceAudioRouting";
-	}
-
 	/**
 	 * Set routing mode.
 	 *

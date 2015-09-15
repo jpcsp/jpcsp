@@ -36,11 +36,6 @@ import jpcsp.util.Utilities;
 public class semaphore extends HLEModule {
 	public static Logger log = Modules.getLogger("semaphore");
 
-	@Override
-	public String getName() {
-		return "semaphore";
-	}
-
 	@HLELogging(level = "info")
     @HLEFunction(nid = 0x4C537C72, version = 150)
     public int sceUtilsBufferCopyWithRange(TPointer outAddr, int outSize, TPointer inAddr, int inSize, int cmd) {

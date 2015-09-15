@@ -38,11 +38,6 @@ import jpcsp.hardware.Usb;
 public class sceUsb extends HLEModule {
     public static Logger log = Modules.getLogger("sceUsb");
 
-	@Override
-	public String getName() {
-		return "sceUsb";
-	}
-
 	public static final String PSP_USBBUS_DRIVERNAME = "USBBusDriver";
 
 	public static final int PSP_USB_CONNECTION_NOT_ESTABLISHED = 0x001;

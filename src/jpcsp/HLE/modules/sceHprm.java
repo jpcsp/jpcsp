@@ -28,11 +28,6 @@ import org.apache.log4j.Logger;
 public class sceHprm extends HLEModule {
     public static Logger log = Modules.getLogger("sceHprm");
 
-    @Override
-    public String getName() {
-    	return "sceHprm";
-	}
-    
     private boolean enableRemote = false;
     private boolean enableHeadphone = false;
     private boolean enableMicrophone = false;

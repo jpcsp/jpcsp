@@ -53,11 +53,6 @@ import org.lwjgl.openal.ALCdevice;
 public class sceAudio extends HLEModule {
     public static Logger log = Modules.getLogger("sceAudio");
 
-    @Override
-    public String getName() {
-        return "sceAudio";
-    }
-
 	@Override
 	public void start() {
 		SoundChannel.init();

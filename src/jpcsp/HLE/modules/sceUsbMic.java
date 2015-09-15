@@ -30,11 +30,6 @@ import jpcsp.HLE.kernel.types.pspUsbMicInputInitExParam;
 public class sceUsbMic extends HLEModule {
 	public static Logger log = Modules.getLogger("sceUsbMic");
 
-	@Override
-	public String getName() {
-		return "sceUsbMic";
-	}
-
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x06128E42, version = 260)
 	public int sceUsbMicPollInputEnd() {

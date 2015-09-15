@@ -139,11 +139,6 @@ public class sceUtility extends HLEModule {
     public static Logger log = Modules.getLogger("sceUtility");
 
     @Override
-    public String getName() {
-        return "sceUtility";
-    }
-
-    @Override
     public void start() {
         gameSharingState = new GameSharingUtilityDialogState("sceUtilityGameSharing");
         netplayDialogState = new NotImplementedUtilityDialogState("sceNetplayDialog");

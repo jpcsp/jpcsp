@@ -31,11 +31,6 @@ import org.apache.log4j.Logger;
 public class scePower extends HLEModule {
     public static Logger log = Modules.getLogger("scePower");
 
-    @Override
-    public String getName() {
-        return "scePower";
-    }
-
     /**
      * Power callback flags
      */

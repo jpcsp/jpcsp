@@ -341,11 +341,6 @@ public class sceHttp extends HLEModule {
 		}
     }
 
-    @Override
-    public String getName() {
-        return "sceHttp";
-    }
-
     public void checkHttpInit() {
     	if (!isHttpInit) {
     		throw(new SceKernelErrorException(SceKernelErrors.ERROR_HTTP_NOT_INIT));

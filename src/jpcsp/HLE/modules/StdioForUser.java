@@ -29,11 +29,6 @@ import org.apache.log4j.Logger;
 public class StdioForUser extends HLEModule {
     public static Logger log = Modules.getLogger("StdioForUser");
 
-    @Override
-    public String getName() {
-        return "StdioForUser";
-    }
-
     @HLEUnimplemented
     @HLEFunction(nid = 0x3054D478, version = 150)
     public int sceKernelStdioRead() {

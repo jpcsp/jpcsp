@@ -54,11 +54,6 @@ public class sceMp3 extends HLEModule {
     private static final int mp3DecodeDelay = 4000; // Microseconds
 	private static final int maxSamplesBytesStereo = 0x1200;
 
-	@Override
-    public String getName() {
-        return "sceMp3";
-    }
-
     @Override
     public void start() {
     	ids = new Mp3Info[2];

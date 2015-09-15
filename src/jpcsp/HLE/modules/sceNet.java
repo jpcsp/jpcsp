@@ -39,11 +39,6 @@ public class sceNet extends HLEModule {
     private INetworkAdapter networkAdapter;
 	protected int netMemSize;
 
-    @Override
-    public String getName() {
-        return "sceNet";
-    }
-
 	@Override
 	public void start() {
 		networkAdapter = NetworkAdapterFactory.createNetworkAdapter();

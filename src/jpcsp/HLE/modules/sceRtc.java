@@ -38,11 +38,6 @@ import org.apache.log4j.Logger;
 public class sceRtc extends HLEModule {
     public static Logger log = Modules.getLogger("sceRtc");
 
-    @Override
-    public String getName() {
-    	return "sceRtc";
-	}
-
     final static int PSP_TIME_INVALID_YEAR = -1;
     final static int PSP_TIME_INVALID_MONTH = -2;
     final static int PSP_TIME_INVALID_DAY = -3;

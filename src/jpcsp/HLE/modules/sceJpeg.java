@@ -55,11 +55,6 @@ import jpcsp.util.Utilities;
 public class sceJpeg extends HLEModule {
     public static Logger log = Modules.getLogger("sceJpeg");
 
-    @Override
-    public String getName() {
-        return "sceJpeg";
-    }
-
     protected static final int PSP_JPEG_MJPEG_DHT_MODE = 0;
     protected static final int PSP_JPEG_MJPEG_NO_DHT_MODE = 1;
 

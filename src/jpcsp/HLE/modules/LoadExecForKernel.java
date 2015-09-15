@@ -30,11 +30,6 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 public class LoadExecForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("LoadExecForKernel");
 
-	@Override
-	public String getName() {
-		return "LoadExecForKernel";
-	}
-
     @HLEFunction(nid = 0xA3D5E142, version = 150, checkInsideInterrupt = true)
     public int sceKernelExitVSHVSH(@CanBeNull TPointer param) {
 		// when called in game mode it will have the same effect that sceKernelExitGame 

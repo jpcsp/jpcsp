@@ -29,11 +29,6 @@ import org.apache.log4j.Logger;
 public class sceNpService extends HLEModule {
     public static Logger log = Modules.getLogger("sceNpService");
 
-    @Override
-    public String getName() {
-        return "sceNpService";
-    }
-
     private boolean initialized;
     private int npManagerMemSize;     // Memory allocated by the NP Manager utility.
     private int npManagerMaxMemSize;  // Maximum memory used by the NP Manager utility.

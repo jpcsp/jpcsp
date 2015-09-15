@@ -39,11 +39,6 @@ import org.apache.log4j.Logger;
 public class sceHeap extends HLEModule {
     public static Logger log = Modules.getLogger("sceHeap");
 
-    @Override
-    public String getName() {
-        return "sceHeap";
-    }
-
     protected final static int PSP_HEAP_ATTR_ADDR_HIGH = 0x4000;       // Create the heap in high memory.
     protected final static int PSP_HEAP_ATTR_EXT =       0x8000;       // Automatically extend the heap's memory.
     private HashMap<Integer, HeapInfo> heapMap;

@@ -30,11 +30,6 @@ public class KDebugForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("KDebugForKernel");
     protected static Logger kprintf = Logger.getLogger("kprintf");
 
-    @Override
-	public String getName() {
-    	return "KDebugForKernel";
-	}
-
     @HLEUnimplemented
 	@HLEFunction(nid = 0xE7A3874D, version = 150)
 	public int sceKernelRegisterAssertHandler() {

@@ -66,11 +66,6 @@ public class sceUsbCam extends HLEModule {
     public static Logger log = Modules.getLogger("sceUsbCam");
     private static final boolean dumpJpeg = false;
 
-	@Override
-	public String getName() {
-		return "sceUsbCam";
-	}
-
 	public static final int PSP_USBCAM_PID = 0x282;
 	public static final String PSP_USBCAM_DRIVERNAME = "USBCamDriver";
 	public static final String PSP_USBCAMMIC_DRIVERNAME = "USBCamMicDriver";

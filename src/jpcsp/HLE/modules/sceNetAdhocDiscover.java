@@ -37,11 +37,6 @@ public class sceNetAdhocDiscover extends HLEModule {
     protected long discoverStartMillis;
     protected static final int DISCOVER_DURATION_MILLIS = 2000;
 
-    @Override
-    public String getName() {
-        return "sceNetAdhocDiscover";
-    }
-
 	@Override
 	public void start() {
 		status = NET_ADHOC_DISCOVER_STATUS_NONE;

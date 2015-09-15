@@ -28,11 +28,6 @@ public class InterruptManager extends HLEModule {
     public static Logger log = Modules.getLogger("InterruptManager");
 
 	@Override
-	public String getName() {
-		return "InterruptManager";
-	}
-
-	@Override
 	public void stop() {
 		Managers.intr.stop();
 		super.stop();

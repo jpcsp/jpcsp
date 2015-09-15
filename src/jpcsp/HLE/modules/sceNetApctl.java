@@ -117,11 +117,6 @@ public class sceNetApctl extends HLEModule {
 	private static final String dummySubnetMask = "255.255.255.0";
 	private static final int dummySubnetMaskInt = 0xFFFFFF00;
 
-	@Override
-	public String getName() {
-		return "sceNetApctl";
-	}
-
     protected static final String uidPurpose = "sceNetApctl";
     protected int state = PSP_NET_APCTL_STATE_DISCONNECTED;
 	private static String localHostIP;

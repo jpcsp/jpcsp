@@ -27,11 +27,6 @@ import jpcsp.HLE.TPointer;
 public class sceUsbAcc extends HLEModule {
     public static Logger log = Modules.getLogger("sceUsbAcc");
 
-	@Override
-	public String getName() {
-		return "sceUsbAcc";
-	}
-
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x0CD7D4AA, version = 260)
 	public int sceUsbAccGetInfo(TPointer resultAddr) {

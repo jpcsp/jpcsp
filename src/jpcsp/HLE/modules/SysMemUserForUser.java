@@ -75,11 +75,6 @@ public class SysMemUserForUser extends HLEModule {
     public static final int KERNEL_PARTITION_ID = 1;
     public static final int USER_PARTITION_ID = 2;
 
-    @Override
-	public String getName() {
-    	return "SysMemUserForUser";
-	}
-
 	protected boolean started = false;
     private int compiledSdkVersion;
     protected int compilerVersion;

@@ -39,11 +39,6 @@ public class scePsmf extends HLEModule {
     public static Logger log = Modules.getLogger("scePsmf");
 
     @Override
-    public String getName() {
-        return "scePsmf";
-    }
-
-    @Override
     public void start() {
         psmfHeaderMap = new HashMap<Integer, PSMFHeader>();
 

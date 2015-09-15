@@ -605,11 +605,6 @@ public class IoFileMgrForUser extends HLEModule {
 		}
 	}
 
-    @Override
-    public String getName() {
-        return "IoFileMgrForUser";
-    }
-
     public void registerUmdIso() {
     	if (vfsManager != null && useVirtualFileSystem) {
     		if (iso != null && Modules.sceUmdUserModule.isUmdActivated()) {

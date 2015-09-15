@@ -26,11 +26,6 @@ import org.apache.log4j.Logger;
 public class sceNp extends HLEModule {
     public static Logger log = Modules.getLogger("sceNp");
 
-    @Override
-    public String getName() {
-        return "sceNp";
-    }
-
     protected boolean initialized;
 
 	@Override

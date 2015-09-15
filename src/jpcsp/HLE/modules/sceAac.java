@@ -237,11 +237,6 @@ public class sceAac extends HLEModule {
     }
 
     @Override
-    public String getName() {
-        return "sceAac";
-    }
-
-    @Override
     public void start() {
         ids = null;
 

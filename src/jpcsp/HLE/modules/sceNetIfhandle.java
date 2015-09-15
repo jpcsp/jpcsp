@@ -29,11 +29,6 @@ public class sceNetIfhandle extends HLEModule {
     private int netDropRate;
     private int netDropDuration;
 
-    @Override
-    public String getName() {
-        return "sceNetIfhandle";
-    }
-
     @HLEFunction(nid = 0xC80181A2, version = 150, checkInsideInterrupt = true)
     public int sceNetGetDropRate(@CanBeNull TPointer32 dropRateAddr, @CanBeNull TPointer32 dropDurationAddr) {
         dropRateAddr.setValue(netDropRate);

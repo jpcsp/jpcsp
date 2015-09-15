@@ -29,11 +29,6 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 public class sceMpegbase extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMpegbase");
 
-	@Override
-	public String getName() {
-		return "sceMpegbase";
-	}
-
     @HLEUnimplemented
     @HLEFunction(nid = 0xBEA18F91, version = 150)
     public int sceMpegBasePESpacketCopy(TPointer32 packetInfo) {

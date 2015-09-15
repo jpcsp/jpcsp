@@ -34,11 +34,6 @@ import jpcsp.memory.MemoryReaderWriter;
 public class sceP3da extends HLEModule {
     public static Logger log = Modules.getLogger("sceP3da");
 
-    @Override
-	public String getName() {
-		return "sceP3da";
-	}
-
     public static final int PSP_P3DA_SAMPLES_NUM_STEP = 32;
     public static final int PSP_P3DA_SAMPLES_NUM_MIN = 64;
     public static final int PSP_P3DA_SAMPLES_NUM_DEFAULT = 256;

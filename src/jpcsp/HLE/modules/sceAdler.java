@@ -34,12 +34,6 @@ public class sceAdler extends HLEModule {
     protected Adler32 adler32;
 
 	@Override
-	public String getName() {
-		return "sceAdler";
-	}
-
-
-	@Override
 	public void start() {
 		adler32 = new Adler32();
 

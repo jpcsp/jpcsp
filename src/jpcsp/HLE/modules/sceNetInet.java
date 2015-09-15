@@ -164,11 +164,6 @@ public class sceNetInet extends HLEModule {
 
     private static InetAddress[] broadcastAddresses;
 
-    @Override
-	public String getName() {
-    	return "sceNetInet";
-	}
-
     private static class BroadcastAddressSettingsListener extends AbstractStringSettingsListener {
 		@Override
 		protected void settingsValueChanged(String value) {

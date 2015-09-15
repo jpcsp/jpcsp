@@ -46,11 +46,6 @@ public class sceSasCore extends HLEModule {
     public static Logger log = Modules.getLogger("sceSasCore");
 
     @Override
-    public String getName() {
-        return "sceSasCore";
-    }
-
-    @Override
     public void start() {
         sasCoreUid = -1;
         voices = new SoundVoice[32];

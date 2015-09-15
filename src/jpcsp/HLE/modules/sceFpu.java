@@ -26,11 +26,6 @@ import jpcsp.HLE.Modules;
 public class sceFpu extends HLEModule {
     public static Logger log = Modules.getLogger("sceFpu");
 
-	@Override
-	public String getName() {
-		return "sceFpu";
-	}
-
 	private int getCfc1_31(CpuState cpu) {
 		return (cpu.fcr31.fs ? (1 << 24) : 0) | (cpu.fcr31.c ? (1 << 23) : 0) | (cpu.fcr31.rm & 3);
 	}

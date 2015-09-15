@@ -51,11 +51,6 @@ public class scePspNpDrm_user extends HLEModule {
     public static Logger log = Modules.getLogger("scePspNpDrm_user");
 
     @Override
-    public String getName() {
-        return "scePspNpDrm_user";
-    }
-    
-    @Override
     public void start() {
         setSettingsListener("emu.disableDLC", new DisableDLCSettingsListerner());
         super.start();

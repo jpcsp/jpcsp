@@ -31,11 +31,6 @@ import org.apache.log4j.Logger;
 public class Kernel_Library extends HLEModule {
     public static Logger log = Modules.getLogger("Kernel_Library");
 
-    @Override
-    public String getName() {
-        return "Kernel_Library";
-    }
-
     private final int flagInterruptsEnabled = 1;
     private final int flagInterruptsDisabled = 0;
 

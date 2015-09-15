@@ -28,11 +28,6 @@ import jpcsp.HLE.kernel.types.SceMT19937;
 public class sceMt19937 extends HLEModule {
     public static Logger log = Modules.getLogger("sceMt19937");
 
-    @Override
-	public String getName() {
-		return "sceMt19937";
-	}
-
     // Based on http://beam.acclab.helsinki.fi/~knordlun/mc/mt19937.c
     /* A C-program for MT19937: Real number version                */
     /*   genrand() generates one pseudorandom real number (double) */

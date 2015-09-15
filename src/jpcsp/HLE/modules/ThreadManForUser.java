@@ -171,11 +171,6 @@ import jpcsp.HLE.CheckArgument;;
 public class ThreadManForUser extends HLEModule {
     public static Logger log = Modules.getLogger("ThreadManForUser");
 
-    @Override
-    public String getName() {
-        return "ThreadManForUser";
-    }
-
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
     private HashMap<Integer, SceKernelThreadEventHandlerInfo> threadEventHandlers;
     private LinkedList<SceKernelThreadInfo> readyThreads;

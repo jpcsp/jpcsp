@@ -65,11 +65,6 @@ public class sceAudiocodec extends HLEModule {
 	private boolean edramAllocated;
 
 	@Override
-	public String getName() {
-		return "sceAudiocodec";
-	}
-
-	@Override
 	public int getMemoryUsage() {
 		return 0x4000;
 	}

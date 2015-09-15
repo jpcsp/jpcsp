@@ -29,11 +29,6 @@ import org.apache.log4j.Logger;
 public class sceNpAuth extends HLEModule {
     public static Logger log = Modules.getLogger("sceNpAuth");
 
-    @Override
-    public String getName() {
-        return "sceNpAuth";
-    }
-
     private boolean initialized;
     private int npMemSize;     // Memory allocated by the NP utility.
     private int npMaxMemSize;  // Maximum memory used by the NP utility.

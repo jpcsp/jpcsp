@@ -32,11 +32,6 @@ public class sceVaudio extends HLEModule {
     public static Logger log = Modules.getLogger("sceVaudio");
 
     @Override
-    public String getName() {
-        return "sceVaudio";
-    }
-
-    @Override
 	public void start() {
 		SoundChannel.init();
 

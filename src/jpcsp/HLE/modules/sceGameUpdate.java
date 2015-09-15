@@ -26,11 +26,6 @@ import org.apache.log4j.Logger;
 public class sceGameUpdate extends HLEModule {
     public static Logger log = Modules.getLogger("sceGameUpdate");
 
-    @Override
-    public String getName() {
-        return "sceGameUpdate";
-    }
-
     @HLEUnimplemented
     @HLEFunction(nid = 0xCBE69FB3, version = 150)
     public int sceGameUpdateInit() {

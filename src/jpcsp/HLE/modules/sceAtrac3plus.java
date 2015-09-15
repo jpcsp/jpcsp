@@ -62,11 +62,6 @@ public class sceAtrac3plus extends HLEModule {
     public static Logger log = Modules.getLogger("sceAtrac3plus");
 
     @Override
-    public String getName() {
-        return "sceAtrac3plus";
-    }
-
-    @Override
     public void start() {
     	for (int i = 0; i < atracIDs.length; i++) {
     		atracIDs[i] = new AtracID(i);

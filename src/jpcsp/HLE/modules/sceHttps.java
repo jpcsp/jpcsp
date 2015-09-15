@@ -36,10 +36,6 @@ import org.apache.log4j.Logger;
 public class sceHttps extends HLEModule {
     public static Logger log = Modules.getLogger("sceHttps");
 
-    @Override
-    public String getName() {
-        return "sceHttps";
-    }
     // Certificate related statics (guessed from a PSP's certificates' list).
     // The PSP currently handles certificates for the following issuers:
     //   - RSA: 2 certificates (resolved);

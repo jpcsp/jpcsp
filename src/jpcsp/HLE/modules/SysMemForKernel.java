@@ -102,11 +102,6 @@ public class SysMemForKernel extends HLEModule {
     	}
     }
 
-    @Override
-    public String getName() {
-        return "SysMemForKernel";
-    }
-
 	@Override
 	public void start() {
 		heaps = new HashMap<Integer, SysMemForKernel.HeapInformation>();

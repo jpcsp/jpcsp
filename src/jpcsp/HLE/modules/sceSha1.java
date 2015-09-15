@@ -34,11 +34,6 @@ public class sceSha1 extends HLEModule {
     public static Logger log = Modules.getLogger("sceSha1");
 
     @Override
-    public String getName() {
-	return "sceSha1";
-    }
-
-    @Override
     public void start() {
         super.start();
     }

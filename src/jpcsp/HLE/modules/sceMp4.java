@@ -135,11 +135,6 @@ public class sceMp4 extends HLEModule {
 	protected static final int DATA_FORMAT_AVC1 = 0x61766331; // "avc1"
 	protected static final int DATA_FORMAT_MP4A = 0x6D703461; // "mp4a"
 
-	@Override
-    public String getName() {
-        return "sceMp4";
-    }
-
 	private static boolean isContainerAtom(int atom) {
 		switch (atom) {
 			case ATOM_MOOV:

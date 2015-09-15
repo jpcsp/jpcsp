@@ -30,11 +30,6 @@ import jpcsp.hardware.Model;
 public class KUBridge extends HLEModule {
     public static Logger log = Modules.getLogger("KUBridge");
 
-    @Override
-    public String getName() {
-        return "KUBridge";
-    }
-
     /*
      * Equivalent to sceKernelLoadModule()
      */

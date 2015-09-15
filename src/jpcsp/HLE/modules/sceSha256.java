@@ -33,11 +33,6 @@ import jpcsp.util.Utilities;
 public class sceSha256 extends HLEModule {
     public static Logger log = Modules.getLogger("sceSha256");
 
-    @Override
-    public String getName() {
-    	return "sceSha256";
-    }
-
     @HLEUnimplemented
     @HLEFunction(nid = 0x5368F1BC, version = 370)
     public int sceSha256BlockInit(TPointer sha) {

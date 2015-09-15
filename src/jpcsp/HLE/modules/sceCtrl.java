@@ -141,11 +141,6 @@ public class sceCtrl extends HLEModule {
     }
 
     @Override
-    public String getName() {
-        return "sceCtrl";
-    }
-
-    @Override
     public void start() {
         uiMake = 0;
         uiBreak = 0;

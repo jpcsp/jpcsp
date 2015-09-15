@@ -89,11 +89,6 @@ public class ModuleMgrForUser extends HLEModule {
     public static final int loadHLEModuleDelay = 50000; // 50 ms delay
     protected int startModuleHandler;
 
-    @Override
-    public String getName() {
-        return "ModuleMgrForUser";
-    }
-
 	@Override
 	public void start() {
 		startModuleHandler = 0;

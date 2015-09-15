@@ -40,11 +40,6 @@ public class sceSuspendForUser extends HLEModule {
     protected static final int volatileMemSignal = 1;
 
     @Override
-    public String getName() {
-        return "sceSuspendForUser";
-    }
-
-    @Override
     public void start() {
     	super.start();
 

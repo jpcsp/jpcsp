@@ -61,11 +61,6 @@ import org.apache.log4j.Logger;
 public class scePsmfPlayer extends HLEModule {
     public static Logger log = Modules.getLogger("scePsmfPlayer");
 
-    @Override
-    public String getName() {
-        return "scePsmfPlayer";
-    }
-
     // PSMF Player timing management.
     protected static final int psmfPlayerVideoTimestampStep = sceMpeg.videoTimestampStep;
     protected static final int psmfPlayerAudioTimestampStep = sceMpeg.audioTimestampStep;

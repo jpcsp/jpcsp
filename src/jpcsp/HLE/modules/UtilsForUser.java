@@ -171,11 +171,6 @@ public class UtilsForUser extends HLEModule {
     }
 
 	@Override
-	public String getName() {
-		return "UtilsForUser";
-	}
-
-	@Override
 	public void start() {
         Mt19937List = new HashMap<Integer, SceKernelUtilsMt19937Context>();
 

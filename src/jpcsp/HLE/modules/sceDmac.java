@@ -28,11 +28,6 @@ import org.apache.log4j.Logger;
 public class sceDmac extends HLEModule {
     public static Logger log = Modules.getLogger("sceDmac");
 
-	@Override
-	public String getName() {
-		return "sceDmac";
-	}
-
     @HLEFunction(nid = 0x617F3FE6, version = 150)
     public int sceDmacMemcpy(TPointer dest, TPointer source, int size) {
         Memory.getInstance().memcpyWithVideoCheck(dest.getAddress(), source.getAddress(), size);

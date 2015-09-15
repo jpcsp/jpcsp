@@ -53,11 +53,6 @@ public class LoadExecForUser extends HLEModule {
     protected static final String encryptedBootPath = "disc0:/PSP_GAME/SYSDIR/EBOOT.BIN";
     protected static final String unencryptedBootPath = "disc0:/PSP_GAME/SYSDIR/BOOT.BIN";
 
-    @Override
-    public String getName() {
-        return "LoadExecForUser";
-    }
-
     public void triggerExitCallback() {
         Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, 0);
     }

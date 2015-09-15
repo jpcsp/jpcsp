@@ -121,11 +121,6 @@ public class sceGe_user extends HLEModule {
     public int eDRAMMemoryWidth;
 
     @Override
-    public String getName() {
-        return "sceGe_user";
-    }
-
-    @Override
     public void start() {
     	log.debug(String.format("Starting %s", getName()));
 

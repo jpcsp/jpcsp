@@ -31,11 +31,6 @@ public class sceImpose extends HLEModule {
     public static Logger log = Modules.getLogger("sceImpose");
 
 	@Override
-	public String getName() {
-		return "sceImpose";
-	}
-
-	@Override
     public void start() {
         languageMode_language = Settings.getInstance().readInt("emu.impose.language", PSP_LANGUAGE_ENGLISH);
         languageMode_button = Settings.getInstance().readInt("emu.impose.button", PSP_CONFIRM_BUTTON_CROSS);

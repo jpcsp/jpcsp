@@ -31,11 +31,6 @@ import org.apache.log4j.Logger;
 public class sceSsl extends HLEModule {
     public static Logger log = Modules.getLogger("sceSsl");
 
-    @Override
-    public String getName() {
-        return "sceSsl";
-    }
-
     private boolean isSslInit;
     private int maxMemSize;
     private int currentMemSize;

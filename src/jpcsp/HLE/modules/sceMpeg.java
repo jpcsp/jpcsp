@@ -86,11 +86,6 @@ import com.twilight.h264.decoder.H264Context;
 public class sceMpeg extends HLEModule {
     public static Logger log = Modules.getLogger("sceMpeg");
 
-    @Override
-    public String getName() {
-        return "sceMpeg";
-    }
-
 	@Override
 	public int getMemoryUsage() {
 		return 0x8500;

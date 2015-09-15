@@ -37,11 +37,6 @@ public class sceMd5 extends HLEModule {
     protected MessageDigest md5;
 
 	@Override
-	public String getName() {
-		return "sceMd5";
-	}
-
-	@Override
 	public void start() {
 		try {
 			md5 = MessageDigest.getInstance("MD5");

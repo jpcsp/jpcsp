@@ -41,11 +41,6 @@ public class sceNetResolver extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetResolver");
     private static final String uidPurpose = "sceNetResolver-NetResolver";
 
-    @Override
-	public String getName() {
-		return "sceNetResolver";
-	}
-
     protected static class ResolverID {
         private int id;
         private boolean isRunning;

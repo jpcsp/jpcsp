@@ -28,11 +28,17 @@ import jpcsp.settings.Settings;
  * @author fiveofhearts
  */
 abstract public class HLEModule {
-    /** @return Example: StdioForUser */
-	abstract public String getName();
 	private SysMemInfo memory;
+	private String name;
 
 	public HashMap<String, HLEModuleFunction> installedHLEModuleFunctions = new HashMap<String, HLEModuleFunction>();
+
+	public final String getName() {
+		if (name == null) {
+			name = getClass().getSimpleName();
+		}
+		return name;
+	}
 
 	/**
 	 * Returns an installed hle function by name.

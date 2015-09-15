@@ -37,11 +37,6 @@ import jpcsp.settings.Settings;
 public class scePauth extends HLEModule {
     public static Logger log = Modules.getLogger("scePauth");
 
-    @Override
-	public String getName() {
-		return "scePauth";
-	}
-
     @HLEUnimplemented
     @HLEFunction(nid = 0xF7AA47F6, version = 500)
     public int scePauth_F7AA47F6(TPointer inputAddr, int inputLength, @CanBeNull TPointer32 resultLengthAddr, TPointer keyAddr) {

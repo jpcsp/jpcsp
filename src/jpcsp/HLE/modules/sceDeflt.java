@@ -44,11 +44,6 @@ public class sceDeflt extends HLEModule {
     public static Logger log = Modules.getLogger("sceDeflt");
     protected static final int GZIP_MAGIC = 0x8B1F;
 
-	@Override
-	public String getName() {
-		return "sceDeflt";
-	}
-
     @HLEUnimplemented
 	@HLEFunction(nid = 0x2EE39A64, version = 150)
 	public int sceZlibAdler32() {

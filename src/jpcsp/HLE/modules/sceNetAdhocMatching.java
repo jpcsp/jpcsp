@@ -90,11 +90,6 @@ public class sceNetAdhocMatching extends HLEModule {
     /** Peer to peer */
     public static final int PSP_ADHOC_MATCHING_MODE_PTP = 3;
 
-    @Override
-    public String getName() {
-        return "sceNetAdhocMatching";
-    }
-
 	@Override
 	public void start() {
 		matchingObjects = new HashMap<Integer, MatchingObject>();

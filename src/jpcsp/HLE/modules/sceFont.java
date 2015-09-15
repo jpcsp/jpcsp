@@ -90,11 +90,6 @@ public class sceFont extends HLEModule {
 		}
 	}
 
-    @Override
-    public String getName() {
-        return "sceFont";
-    }
-
 	@Override
 	public int getMemoryUsage() {
 		return 0x7D00;

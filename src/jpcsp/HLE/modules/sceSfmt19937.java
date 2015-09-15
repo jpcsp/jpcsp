@@ -29,11 +29,6 @@ import jpcsp.HLE.TPointer;
 public class sceSfmt19937 extends HLEModule {
     public static Logger log = Modules.getLogger("sceSfmt19937");
 
-    @Override
-    public String getName() {
-        return "sceSfmt19937";
-    }
-    
     protected final static int PSP_SFMT19937_LENGTH = 156;
     private HashMap<TPointer, sfmt19937Ctx> ctxMap = new HashMap<TPointer, sfmt19937Ctx>();
     

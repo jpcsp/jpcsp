@@ -35,11 +35,6 @@ import jpcsp.memory.MemoryWriter;
 public class sceCcc extends HLEModule {
     public static Logger log = Modules.getLogger("sceCcc");
 
-	@Override
-	public String getName() {
-		return "sceCcc";
-	}
-
 	protected static final Charset charsetUTF8 = getCharset("UTF-8");
 	protected static final Charset charsetUTF16 = getCharset("UTF-16LE");
 	protected static final Charset charsetSJIS = getCharset("Shift_JIS");

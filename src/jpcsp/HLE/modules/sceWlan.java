@@ -28,11 +28,6 @@ import org.apache.log4j.Logger;
 public class sceWlan extends HLEModule {
     public static Logger log = Modules.getLogger("sceWlan");
 
-    @Override
-    public String getName() {
-        return "sceWlan";
-    }
-
     /**
      * Get the Ethernet Address of the wlan controller
      *

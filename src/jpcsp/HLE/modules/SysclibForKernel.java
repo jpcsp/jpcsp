@@ -30,11 +30,6 @@ import jpcsp.memory.MemoryReader;
 public class SysclibForKernel extends HLEModule {
 	public static Logger log = Modules.getLogger("SysclibForKernel");
 
-	@Override
-	public String getName() {
-		return "SysclibForKernel";
-	}
-
     @HLEFunction(nid = 0x10F3BB61, version = 150)
     public int memset(@CanBeNull TPointer destAddr, int data, int size) {
     	if (destAddr.isNotNull()) {

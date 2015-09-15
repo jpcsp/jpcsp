@@ -751,11 +751,6 @@ public class sceDisplay extends HLEModule {
         }
     }
 
-    @Override
-    public String getName() {
-        return "sceDisplay";
-    }
-
     public sceDisplay() throws LWJGLException {
         setSettingsListener("emu.graphics.antialias", new AntiAliasSettingsListerner());
 

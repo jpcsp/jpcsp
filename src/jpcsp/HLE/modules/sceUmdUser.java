@@ -49,11 +49,6 @@ public class sceUmdUser extends HLEModule {
     private boolean umdAllowReplace;
 
     @Override
-    public String getName() {
-        return "sceUmdUser";
-    }
-
-    @Override
     public void start() {
     	// Remember if the UMD was activated even after a call to sceKernelLoadExec()
     	setUmdActivated();

@@ -43,11 +43,6 @@ public class sceUsbGps extends HLEModule {
 	protected int gpsState;
 
 	@Override
-	public String getName() {
-		return "sceUsbGps";
-	}
-
-	@Override
 	public void start() {
 		gpsState = GPS_STATE_ON;
 		super.start();
