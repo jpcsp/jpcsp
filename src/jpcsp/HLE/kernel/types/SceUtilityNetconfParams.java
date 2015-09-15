@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import static jpcsp.HLE.modules150.sceNetAdhocctl.GROUP_NAME_LENGTH;
+import static jpcsp.HLE.modules.sceNetAdhocctl.GROUP_NAME_LENGTH;
 
 public class SceUtilityNetconfParams extends pspUtilityBaseDialog {
     public int netAction;           // The netconf action (PSPSDK): sets how to connect.

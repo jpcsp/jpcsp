@@ -21,7 +21,7 @@ import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 
-import jpcsp.HLE.modules150.sceNetAdhoc;
+import jpcsp.HLE.modules.sceNetAdhoc;
 
 import org.apache.log4j.Logger;
 

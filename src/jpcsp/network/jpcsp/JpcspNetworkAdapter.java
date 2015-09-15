@@ -18,7 +18,7 @@ package jpcsp.network.jpcsp;
 
 import static jpcsp.HLE.Modules.sceNetAdhocModule;
 import static jpcsp.HLE.Modules.sceNetAdhocctlModule;
-import static jpcsp.HLE.modules150.sceNetAdhocctl.PSP_ADHOCCTL_MODE_GAMEMODE;
+import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_GAMEMODE;
 import static jpcsp.network.jpcsp.JpcspAdhocPtpMessage.PTP_MESSAGE_TYPE_DATA;
 
 import java.io.IOException;
@@ -32,11 +32,11 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
+import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.HLE.modules.sceNetAdhocctl;
+import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.HLE.modules.sceUtility;
-import jpcsp.HLE.modules150.sceNetAdhoc;
-import jpcsp.HLE.modules150.sceNetInet;
-import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
+import jpcsp.HLE.modules.sceNetAdhoc.GameModeArea;
 import jpcsp.hardware.Wlan;
 import jpcsp.network.BaseNetworkAdapter;
 import jpcsp.network.adhoc.AdhocMatchingEventMessage;

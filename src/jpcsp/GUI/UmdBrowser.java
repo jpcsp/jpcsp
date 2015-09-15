@@ -4,7 +4,7 @@
  */
 package jpcsp.GUI;
 
-import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
+import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
 
 import java.awt.Color;
 import java.awt.Component;

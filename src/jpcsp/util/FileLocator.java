@@ -30,7 +30,7 @@ import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceMpeg;
-import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
+import jpcsp.HLE.modules.IoFileMgrForUser.IIoListener;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;

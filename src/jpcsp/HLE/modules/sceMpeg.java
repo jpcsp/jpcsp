@@ -19,7 +19,7 @@ package jpcsp.HLE.modules;
 import static jpcsp.Allegrex.compiler.RuntimeContext.memoryInt;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_High;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
-import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
+import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
 import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PACK_START_CODE;
 import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PADDING_STREAM;
 import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PRIVATE_STREAM_1;

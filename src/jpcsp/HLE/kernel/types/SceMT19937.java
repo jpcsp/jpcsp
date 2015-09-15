@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.HLE.modules150.sceMt19937;
+import jpcsp.HLE.modules.sceMt19937;
 
 public class SceMT19937 extends pspAbstractMemoryMappedStructure {
 	public int mti = sceMt19937.MT19937.N + 1;

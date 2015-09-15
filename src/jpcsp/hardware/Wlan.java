@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.hardware;
 
-import static jpcsp.HLE.modules150.sceNet.convertStringToMacAddress;
+import static jpcsp.HLE.modules.sceNet.convertStringToMacAddress;
 
 import java.util.Random;
 

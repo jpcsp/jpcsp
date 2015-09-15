@@ -16,5 +16,38 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class sceNetIfhandle extends jpcsp.HLE.modules150.sceNetIfhandle {
+import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.Modules;
+
+import org.apache.log4j.Logger;
+
+@HLELogging
+public class sceNetIfhandle extends HLEModule {
+    public static Logger log = Modules.getLogger("sceNetIfhandle");
+    private int netDropRate;
+    private int netDropDuration;
+
+    @Override
+    public String getName() {
+        return "sceNetIfhandle";
+    }
+
+    @HLEFunction(nid = 0xC80181A2, version = 150, checkInsideInterrupt = true)
+    public int sceNetGetDropRate(@CanBeNull TPointer32 dropRateAddr, @CanBeNull TPointer32 dropDurationAddr) {
+        dropRateAddr.setValue(netDropRate);
+        dropRateAddr.setValue(netDropDuration);
+
+        return 0;
+    }
+
+    @HLEFunction(nid = 0xFD8585E1, version = 150, checkInsideInterrupt = true)
+    public int sceNetSetDropRate(int dropRate, int dropDuration) {
+        netDropRate = dropRate;
+        netDropDuration = dropDuration;
+
+        return 0;
+    }
 }

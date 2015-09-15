@@ -20,7 +20,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.format.PGF;
 import jpcsp.util.Debug;
-import jpcsp.HLE.modules150.sceFont;
+import jpcsp.HLE.modules.sceFont;
 
 /*
  * SceFontInfo struct based on BenHur's intraFont application.

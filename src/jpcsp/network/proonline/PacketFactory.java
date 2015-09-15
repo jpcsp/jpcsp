@@ -16,9 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.proonline;
 
-import static jpcsp.HLE.modules150.sceNetAdhocctl.ADHOC_ID_LENGTH;
-import static jpcsp.HLE.modules150.sceNetAdhocctl.GROUP_NAME_LENGTH;
-import static jpcsp.HLE.modules150.sceNetAdhocctl.NICK_NAME_LENGTH;
+import static jpcsp.HLE.modules.sceNetAdhocctl.ADHOC_ID_LENGTH;
+import static jpcsp.HLE.modules.sceNetAdhocctl.GROUP_NAME_LENGTH;
+import static jpcsp.HLE.modules.sceNetAdhocctl.NICK_NAME_LENGTH;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.network.proonline.ProOnlineNetworkAdapter.convertIpToString;
 

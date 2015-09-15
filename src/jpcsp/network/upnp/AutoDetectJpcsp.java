@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.upnp;
 
-import static jpcsp.HLE.modules150.sceNetApctl.getLocalHostIP;
+import static jpcsp.HLE.modules.sceNetApctl.getLocalHostIP;
 import static jpcsp.network.upnp.UPnP.discoveryPort;
 import static jpcsp.network.upnp.UPnP.discoveryTimeoutMillis;
 import static jpcsp.network.upnp.UPnP.multicastIp;

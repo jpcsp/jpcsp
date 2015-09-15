@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.jpcsp;
 
-import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
+import jpcsp.HLE.modules.sceNetAdhoc.GameModeArea;
 
 /**
  * @author gid15

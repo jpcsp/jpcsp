@@ -19,7 +19,7 @@ package jpcsp.network;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 
-import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
+import jpcsp.HLE.modules.sceNetAdhoc.GameModeArea;
 import jpcsp.network.adhoc.AdhocMatchingEventMessage;
 import jpcsp.network.adhoc.AdhocMessage;
 import jpcsp.network.adhoc.MatchingObject;

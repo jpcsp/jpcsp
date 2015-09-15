@@ -22,7 +22,7 @@ import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules150.sceFont;
+import jpcsp.HLE.modules.sceFont;
 
 /**
  * @author gid15

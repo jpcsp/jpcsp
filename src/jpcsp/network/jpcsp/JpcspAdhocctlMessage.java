@@ -17,16 +17,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.jpcsp;
 
 import static jpcsp.HLE.Modules.sceNetAdhocctlModule;
-import static jpcsp.HLE.modules150.sceNetAdhocctl.GROUP_NAME_LENGTH;
-import static jpcsp.HLE.modules150.sceNetAdhocctl.IBSS_NAME_LENGTH;
-import static jpcsp.HLE.modules150.sceNetAdhocctl.MAX_GAME_MODE_MACS;
-import static jpcsp.HLE.modules150.sceNetAdhocctl.NICK_NAME_LENGTH;
+import static jpcsp.HLE.modules.sceNetAdhocctl.GROUP_NAME_LENGTH;
+import static jpcsp.HLE.modules.sceNetAdhocctl.IBSS_NAME_LENGTH;
+import static jpcsp.HLE.modules.sceNetAdhocctl.MAX_GAME_MODE_MACS;
+import static jpcsp.HLE.modules.sceNetAdhocctl.NICK_NAME_LENGTH;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 
 import java.util.List;
 
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
-import jpcsp.HLE.modules150.sceNet;
+import jpcsp.HLE.modules.sceNet;
 
 /**
  * @author gid15

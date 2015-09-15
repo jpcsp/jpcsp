@@ -16,8 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import static jpcsp.HLE.modules150.sceMp4.TRACK_TYPE_AUDIO;
-import static jpcsp.HLE.modules150.sceMp4.TRACK_TYPE_VIDEO;
+import static jpcsp.HLE.modules.sceMp4.TRACK_TYPE_AUDIO;
+import static jpcsp.HLE.modules.sceMp4.TRACK_TYPE_VIDEO;
 import static jpcsp.util.Utilities.alignUp;
 
 public class SceMp4TrackSampleBuf extends pspAbstractMemoryMappedStructure {

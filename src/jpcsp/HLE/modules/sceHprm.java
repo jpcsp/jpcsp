@@ -16,5 +16,87 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class sceHprm extends jpcsp.HLE.modules150.sceHprm {
+import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.Modules;
+
+import org.apache.log4j.Logger;
+
+@HLELogging
+public class sceHprm extends HLEModule {
+    public static Logger log = Modules.getLogger("sceHprm");
+
+    @Override
+    public String getName() {
+    	return "sceHprm";
+	}
+    
+    private boolean enableRemote = false;
+    private boolean enableHeadphone = false;
+    private boolean enableMicrophone = false;
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC7154136, version = 150)
+    public int sceHprmRegisterCallback() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x444ED0B7, version = 150)
+    public int sceHprmUnregisterCallback() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x71B5FB67, version = 150)
+    public int sceHprmGetHpDetect() {
+    	return 0;
+    }
+
+    @HLEFunction(nid = 0x208DB1BD, version = 150)
+    public boolean sceHprmIsRemoteExist() {
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceHprmIsRemoteExist returning %b", enableRemote));
+        }
+
+        return enableRemote;
+    }
+
+    @HLEFunction(nid = 0x7E69EDA4, version = 150)
+    public boolean sceHprmIsHeadphoneExist() {
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceHprmIsHeadphoneExist returning %b", enableHeadphone));
+        }
+
+        return enableHeadphone;
+    }
+
+    @HLEFunction(nid = 0x219C58F1, version = 150)
+    public boolean sceHprmIsMicrophoneExist() {
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceHprmIsMicrophoneExist returning %b", enableMicrophone));
+        }
+
+        return enableMicrophone;
+    }
+
+    @HLEFunction(nid = 0x1910B327, version = 150)
+    public int sceHprmPeekCurrentKey(TPointer32 keyAddr) {
+        keyAddr.setValue(0); // fake
+
+        return 0; // check
+    }
+
+    @HLEFunction(nid = 0x2BCEC83E, version = 150)
+    public int sceHprmPeekLatch(TPointer latchAddr) {
+        return 0;
+    }
+
+    @HLEFunction(nid = 0x40D2F9F0, version = 150)
+    public int sceHprmReadLatch(TPointer latchAddr) {
+        return 0;
+    }
 }

@@ -27,11 +27,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+
 import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
-
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
@@ -41,7 +41,7 @@ import javax.swing.table.TableColumnModel;
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.IVirtualFile;
-import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
+import jpcsp.HLE.modules.IoFileMgrForUser.IIoListener;
 import jpcsp.State;
 import jpcsp.WindowPropSaver;
 import jpcsp.filesystems.SeekableDataInput;
@@ -734,11 +734,11 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
     
     private String getWhenceName(int whence) {
         switch (whence) {
-            case jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_SET:
+            case jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_SET:
                 return whence + "(set)";
-            case jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_CUR:
+            case jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_CUR:
                 return whence + "(cur)";
-            case jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_END:
+            case jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_END:
                 return whence + "(end)";
             default:
                 return "" + whence;

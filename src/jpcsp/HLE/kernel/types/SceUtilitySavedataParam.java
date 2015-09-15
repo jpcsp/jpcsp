@@ -531,13 +531,13 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
     }
 
     private SeekableDataInput getDataInput(String path, String name) {
-        SeekableDataInput fileInput = Modules.IoFileMgrForUserModule.getFile(path + name, jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_RDONLY);
+        SeekableDataInput fileInput = Modules.IoFileMgrForUserModule.getFile(path + name, jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_RDONLY);
 
         return fileInput;
     }
 
     private SeekableRandomFile getDataOutput(String path, String name) {
-        SeekableDataInput fileInput = Modules.IoFileMgrForUserModule.getFile(path + name, jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_RDWR | jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_CREAT);
+        SeekableDataInput fileInput = Modules.IoFileMgrForUserModule.getFile(path + name, jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_RDWR | jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_CREAT);
 
         if (fileInput instanceof SeekableRandomFile) {
             return (SeekableRandomFile) fileInput;

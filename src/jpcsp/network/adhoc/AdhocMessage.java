@@ -16,10 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.adhoc;
 
-import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
-import static jpcsp.HLE.modules150.sceNetAdhoc.ANY_MAC_ADDRESS;
-import static jpcsp.HLE.modules150.sceNetAdhoc.isAnyMacAddress;
-import static jpcsp.HLE.modules150.sceNetAdhoc.isSameMacAddress;
+import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
+import static jpcsp.HLE.modules.sceNetAdhoc.ANY_MAC_ADDRESS;
+import static jpcsp.HLE.modules.sceNetAdhoc.isAnyMacAddress;
+import static jpcsp.HLE.modules.sceNetAdhoc.isSameMacAddress;
 import static jpcsp.util.Utilities.writeBytes;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.IMemoryReader;

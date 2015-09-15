@@ -17,11 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.VFS.local;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
-import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_CREAT;
-import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_EXCL;
-import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_RDWR;
-import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_TRUNC;
-import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_WRONLY;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_CREAT;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_EXCL;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_RDWR;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_TRUNC;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_WRONLY;
 
 import java.io.File;
 import java.io.FileNotFoundException;

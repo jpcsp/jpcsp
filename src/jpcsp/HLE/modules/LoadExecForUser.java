@@ -39,7 +39,6 @@ import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
-import jpcsp.HLE.modules150.IoFileMgrForUser;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;

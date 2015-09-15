@@ -16,5 +16,34 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class sceDmac extends jpcsp.HLE.modules150.sceDmac {
+import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
+import jpcsp.Memory;
+import jpcsp.HLE.Modules;
+
+import org.apache.log4j.Logger;
+
+@HLELogging
+public class sceDmac extends HLEModule {
+    public static Logger log = Modules.getLogger("sceDmac");
+
+	@Override
+	public String getName() {
+		return "sceDmac";
+	}
+
+    @HLEFunction(nid = 0x617F3FE6, version = 150)
+    public int sceDmacMemcpy(TPointer dest, TPointer source, int size) {
+        Memory.getInstance().memcpyWithVideoCheck(dest.getAddress(), source.getAddress(), size);
+
+        return 0;
+    }
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xD97F94D8, version = 150)
+	public int sceDmacTryMemcpy() {
+    	return 0;
+	}
 }

@@ -19,9 +19,9 @@ package jpcsp.HLE.VFS.iso;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_FILE_READ_ERROR;
-import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_CUR;
-import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_END;
-import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_SET;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_CUR;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_END;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_SET;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

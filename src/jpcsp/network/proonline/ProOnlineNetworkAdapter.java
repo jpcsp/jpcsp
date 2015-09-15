@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.proonline;
 
-import static jpcsp.HLE.modules150.sceNetAdhoc.isSameMacAddress;
+import static jpcsp.HLE.modules.sceNetAdhoc.isSameMacAddress;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -32,10 +32,10 @@ import jpcsp.Emulator;
 import jpcsp.GUI.ChatGUI;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
+import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.HLE.modules.sceNetApctl;
-import jpcsp.HLE.modules150.sceNet;
-import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
+import jpcsp.HLE.modules.sceNetAdhoc.GameModeArea;
 import jpcsp.network.BaseNetworkAdapter;
 import jpcsp.network.INetworkAdapter;
 import jpcsp.network.adhoc.AdhocMatchingEventMessage;

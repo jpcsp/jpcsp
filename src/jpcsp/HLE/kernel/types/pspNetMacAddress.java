@@ -16,8 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.HLE.modules150.sceNet;
-import jpcsp.HLE.modules150.sceNetAdhoc;
+import jpcsp.HLE.modules.sceNet;
+import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.hardware.Wlan;
 
 public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {

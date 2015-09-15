@@ -40,8 +40,7 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules150.IoFileMgrForUser;
-import jpcsp.HLE.modules150.IoFileMgrForUser.IoInfo;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoInfo;
 import jpcsp.settings.AbstractBoolSettingsListener;
 
 import org.apache.log4j.Logger;

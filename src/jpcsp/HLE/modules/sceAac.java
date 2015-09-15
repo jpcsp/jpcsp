@@ -21,7 +21,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AAC_INVALID_ADDRESS;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AAC_INVALID_ID;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AAC_INVALID_PARAMETER;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AAC_RESOURCE_NOT_INITIALIZED;
-import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AAC;
+import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AAC;
 
 import org.apache.log4j.Logger;
 
@@ -38,7 +38,7 @@ import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspFileBuffer;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
-import jpcsp.HLE.modules150.sceAudiocodec.AudiocodecInfo;
+import jpcsp.HLE.modules.sceAudiocodec.AudiocodecInfo;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.util.Utilities;
 
