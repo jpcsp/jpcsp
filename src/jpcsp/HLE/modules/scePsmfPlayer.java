@@ -49,7 +49,6 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
-import jpcsp.HLE.modules150.sceDisplay;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.ISectorDevice;
 import jpcsp.graphics.VideoEngine;

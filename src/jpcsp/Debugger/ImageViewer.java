@@ -21,12 +21,14 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.event.KeyEvent;
+
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules150.sceDisplay;
+import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.WindowPropSaver;

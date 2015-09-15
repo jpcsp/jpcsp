@@ -64,6 +64,7 @@ import jpcsp.HLE.kernel.types.pspCharInfo;
 import jpcsp.HLE.kernel.types.pspFontStyle;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.BWFont;
 import jpcsp.format.PGF;

@@ -249,7 +249,7 @@ public class Debug {
 
 	private static void setPixel(int base, int bufferwidth, int x, int y, int color, int pixelformat, int size) {
 		Memory mem = Memory.getInstance();
-		int pixelBytes = jpcsp.HLE.modules150.sceDisplay.getPixelFormatBytes(pixelformat);
+		int pixelBytes = jpcsp.HLE.modules.sceDisplay.getPixelFormatBytes(pixelformat);
 		int framebufferAddr = base + (y * bufferwidth + x) * pixelBytes;
 		int pixelColor = getPixelColor(color, pixelformat);
 		for (int i = 0; i < size; i++) {

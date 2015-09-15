@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
-import static jpcsp.HLE.modules150.sceDisplay.getTexturePixelFormat;
+import static jpcsp.HLE.modules.sceDisplay.getTexturePixelFormat;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
 
 import java.io.IOException;

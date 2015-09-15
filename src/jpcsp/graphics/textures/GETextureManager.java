@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.textures;
 
-import static jpcsp.HLE.modules150.sceDisplay.getTexturePixelFormat;
+import static jpcsp.HLE.modules.sceDisplay.getTexturePixelFormat;
 
 import java.util.HashMap;
 

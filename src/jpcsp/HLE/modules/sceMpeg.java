@@ -62,7 +62,6 @@ import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.kernel.types.pspFileBuffer;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
-import jpcsp.HLE.modules150.sceDisplay;
 import jpcsp.format.psmf.PesHeader;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.Screen;
