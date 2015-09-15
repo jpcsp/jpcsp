@@ -32,6 +32,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jpcsp.HLE.Modules;
+import jpcsp.network.proonline.ProOnlineNetworkAdapter;
+import jpcsp.network.proonline.ProOnlineServer;
 
 import org.apache.log4j.Logger;
 
@@ -40,6 +42,13 @@ public class AutoDetectJpcsp {
 	private static AutoDetectJpcsp instance = null;
 	private ListenerThread listenerThread;
 	private static final String deviceName = "Jpcsp";
+
+	private class DiscoverThread extends Thread {
+		@Override
+		public void run() {
+			discover();
+		}
+	}
 
 	public static AutoDetectJpcsp getInstance() {
 		if (instance == null) {
@@ -51,7 +60,26 @@ public class AutoDetectJpcsp {
 	private AutoDetectJpcsp() {
 	}
 
-	public boolean isOtherJpcspAvailable() {
+	public void discoverOtherJpcspInBackground() {
+		DiscoverThread discoverThread = new DiscoverThread();
+		discoverThread.setName("Auto Detect Jpcsp Discover Thread");
+		discoverThread.setDaemon(true);
+		discoverThread.start();
+	}
+
+	private void discover() {
+		if (isOtherJpcspAvailable()) {
+			log.debug(String.format("Other Jpcsp is running"));
+		} else {
+			startDaemon();
+
+			if (ProOnlineNetworkAdapter.isEnabled() && ProOnlineNetworkAdapter.getMetaServer().equalsIgnoreCase("localhost")) {
+				ProOnlineServer.getInstance().start();
+			}
+		}
+	}
+
+	private boolean isOtherJpcspAvailable() {
 		boolean found = false;
 		try {
 			DatagramSocket socket = new DatagramSocket();

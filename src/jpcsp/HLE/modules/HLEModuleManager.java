@@ -412,7 +412,15 @@ public class HLEModuleManager {
 		this.startFromSyscall = startFromSyscall;
 
 		for (DefaultModule defaultModule : DefaultModule.values()) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Starting module %s", defaultModule.module.getName()));
+			}
+
 			defaultModule.module.start();
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Started module %s", defaultModule.module.getName()));
+			}
 		}
 
 		this.startFromSyscall = false;
