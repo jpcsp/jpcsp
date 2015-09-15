@@ -16,25 +16,24 @@
  */
 package jpcsp;
 
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_CIRCLE;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_CROSS;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_DOWN;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_HOLD;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_HOME;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_LEFT;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_LTRIGGER;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_NOTE;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_RIGHT;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_RTRIGGER;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_SCREEN;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_SELECT;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_SQUARE;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_START;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_TRIANGLE;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_UP;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLDOWN;
-import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLUP;
-
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_CIRCLE;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_CROSS;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_DOWN;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_HOLD;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_HOME;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_LEFT;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_LTRIGGER;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_NOTE;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_RIGHT;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_RTRIGGER;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_SCREEN;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_SELECT;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_SQUARE;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_START;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_TRIANGLE;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_UP;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_VOLDOWN;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_VOLUP;
 import jpcsp.hardware.Audio;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
