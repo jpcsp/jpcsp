@@ -20,8 +20,6 @@ import jpcsp.Emulator;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.format.DeferredStub;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;

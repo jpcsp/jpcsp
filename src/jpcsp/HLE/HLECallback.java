@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.modules;
+package jpcsp.HLE;
 
 import jpcsp.Processor;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;

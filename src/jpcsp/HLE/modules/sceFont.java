@@ -31,6 +31,7 @@ import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_REGULAR;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUidClass;
 import jpcsp.HLE.HLEUidObjectMapping;
 import jpcsp.HLE.HLEUnimplemented;

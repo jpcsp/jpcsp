@@ -14,11 +14,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.modules;
+package jpcsp.HLE;
 
 import java.util.HashMap;
 
-import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.settings.ISettingsListener;
 import jpcsp.settings.Settings;

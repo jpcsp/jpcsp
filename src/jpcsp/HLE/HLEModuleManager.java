@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.modules;
+package jpcsp.HLE;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -29,10 +29,6 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 

@@ -19,9 +19,9 @@ package jpcsp.Allegrex;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.ICompilerContext;
+import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallIgnore;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.util.Utilities;
 
 /**
