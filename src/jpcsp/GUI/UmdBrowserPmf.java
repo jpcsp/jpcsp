@@ -26,7 +26,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 import jpcsp.Emulator;
-import jpcsp.HLE.modules600.sceMpeg;
+import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.IVideoCodec;
@@ -171,7 +171,7 @@ public class UmdBrowserPmf {
 
 		skip(is, 4);
 		int mpegOffset = read32(is);
-		skip(is, sceMpeg.PSMF_FRAME_WIDTH_OFFSET - sceMpeg.PSMF_STREAM_SIZE_OFFSET);
+		skip(is, jpcsp.HLE.modules.sceMpeg.PSMF_FRAME_WIDTH_OFFSET - sceMpeg.PSMF_STREAM_SIZE_OFFSET);
 		videoWidth = read8(is) << 4;
 		videoHeight = read8(is) << 4;
 		skip(is, mpegOffset - sceMpeg.PSMF_FRAME_HEIGHT_OFFSET - 1);

@@ -17,9 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MUTEX;
+import static jpcsp.HLE.modules.sceMpeg.mpegTimestampPerSecond;
 import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_SET;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AAC;
-import static jpcsp.HLE.modules150.sceMpeg.mpegTimestampPerSecond;
 import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.getReturnValue64;
