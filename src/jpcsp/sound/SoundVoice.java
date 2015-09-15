@@ -21,7 +21,7 @@ import static jpcsp.HLE.modules.sceSasCore.getSasADSRCurveTypeName;
 import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
 import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE;
 import static jpcsp.hardware.Audio.PSP_AUDIO_VOLUME_MAX;
-import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
+import jpcsp.HLE.modules.sceAtrac3plus.AtracID;
 
 public class SoundVoice {
 	private boolean changed;

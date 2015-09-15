@@ -22,7 +22,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
-import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
+import jpcsp.HLE.modules.sceAtrac3plus.AtracID;
 
 @HLELogging
 public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {

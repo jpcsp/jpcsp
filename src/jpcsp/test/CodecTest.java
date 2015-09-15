@@ -16,10 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.test;
 
-import static jpcsp.HLE.modules150.sceAtrac3plus.AT3_MAGIC;
-import static jpcsp.HLE.modules150.sceAtrac3plus.AT3_PLUS_MAGIC;
-import static jpcsp.HLE.modules150.sceAtrac3plus.FMT_CHUNK_MAGIC;
-import static jpcsp.HLE.modules150.sceAtrac3plus.RIFF_MAGIC;
+import static jpcsp.HLE.modules.sceAtrac3plus.AT3_MAGIC;
+import static jpcsp.HLE.modules.sceAtrac3plus.AT3_PLUS_MAGIC;
+import static jpcsp.HLE.modules.sceAtrac3plus.FMT_CHUNK_MAGIC;
+import static jpcsp.HLE.modules.sceAtrac3plus.RIFF_MAGIC;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AAC;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
 import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;

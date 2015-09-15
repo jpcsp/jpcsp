@@ -49,7 +49,7 @@ import jpcsp.Memory;
 import jpcsp.WindowPropSaver;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
-import jpcsp.HLE.modules150.sceAtrac3plus.AtracFileInfo;
+import jpcsp.HLE.modules.sceAtrac3plus.AtracFileInfo;
 import jpcsp.HLE.modules150.sceMpeg;
 import jpcsp.HLE.modules150.sceMpeg.PSMFHeader;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
