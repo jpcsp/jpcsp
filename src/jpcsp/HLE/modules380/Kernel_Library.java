@@ -21,7 +21,6 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
-import jpcsp.Processor;
 import jpcsp.HLE.kernel.Managers;
 
 @HLELogging
@@ -58,7 +57,9 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 
     @HLEFunction(nid = 0x1839852A, version = 380)
     public int sceKernelMemcpy(TPointer dst, TPointer src, int length) {
-		Processor.memory.memcpyWithVideoCheck(dst.getAddress(), src.getAddress(), length);
+    	if (dst.getAddress() != src.getAddress()) {
+    		dst.getMemory().memcpyWithVideoCheck(dst.getAddress(), src.getAddress(), length);
+    	}
 
 		return dst.getAddress();
 	}

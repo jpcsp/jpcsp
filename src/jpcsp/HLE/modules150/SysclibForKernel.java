@@ -18,7 +18,6 @@ package jpcsp.HLE.modules150;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
@@ -85,11 +84,13 @@ public class SysclibForKernel extends HLEModule {
 
 		return result;
 	}
-	
+
 	@HLEFunction(nid = 0xAB7592FF, version = 150)
-    public int memcpy(TPointer src1Addr, TPointer src2Addr, int size) {
-		Memory mem = Memory.getInstance();
-		mem.memcpy(src1Addr.getAddress(), src2Addr.getAddress(), size);
-    	return 0;
+    public int memcpy(@CanBeNull TPointer destAddr, TPointer srcAddr, int size) {
+		if (destAddr.isNotNull() && destAddr.getAddress() != srcAddr.getAddress()) {
+			destAddr.getMemory().memcpyWithVideoCheck(destAddr.getAddress(), destAddr.getAddress(), size);
+		}
+
+		return destAddr.getAddress();
     }
 }
