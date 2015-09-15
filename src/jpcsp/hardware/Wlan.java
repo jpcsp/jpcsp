@@ -23,7 +23,7 @@ import java.util.Random;
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
-import jpcsp.HLE.modules150.sceUtility;
+import jpcsp.HLE.modules.sceUtility;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
 

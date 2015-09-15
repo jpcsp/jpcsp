@@ -47,6 +47,7 @@ import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructureVariableLength;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.sceUtility;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;

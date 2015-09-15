@@ -33,9 +33,9 @@ import java.net.UnknownHostException;
 
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhocctl;
+import jpcsp.HLE.modules.sceUtility;
 import jpcsp.HLE.modules150.sceNetAdhoc;
 import jpcsp.HLE.modules150.sceNetInet;
-import jpcsp.HLE.modules150.sceUtility;
 import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
 import jpcsp.hardware.Wlan;
 import jpcsp.network.BaseNetworkAdapter;
