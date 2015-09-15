@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.HLE.modules271.sceJpeg.clamp8bit;
+import static jpcsp.HLE.modules.sceJpeg.clamp8bit;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
