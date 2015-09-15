@@ -16,5 +16,70 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class sceSha256 extends jpcsp.HLE.modules370.sceSha256 {
+import org.apache.log4j.Logger;
+
+import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+import jpcsp.crypto.SHA256;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
+import jpcsp.util.Utilities;
+
+@HLELogging
+public class sceSha256 extends HLEModule {
+    public static Logger log = Modules.getLogger("sceSha256");
+
+    @Override
+    public String getName() {
+    	return "sceSha256";
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x5368F1BC, version = 370)
+    public int sceSha256BlockInit(TPointer sha) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7310DDCF, version = 370)
+    public int sceSha256BlockUpdate(TPointer sha, TPointer data, int length) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x82C67FB3, version = 370)
+    public int sceSha256BlockResult(TPointer sha, TPointer digest) {
+    	return 0;
+    }
+
+    @HLEFunction(nid = 0x318A350C, version = 370)
+    public int sceSha256Digest(TPointer data, int length, TPointer digest) {
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("sceSha256Digest data:%s", Utilities.getMemoryDump(data.getAddress(), length)));
+        }
+
+        // Read in the source data.
+        byte[] b = new byte[length];
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(data.getAddress(), length, 1);
+		for (int i = 0; i < length; i++) {
+			b[i] = (byte) memoryReader.readNext();
+		}
+
+        // Calculate SHA-256.
+        SHA256 sha256 = new SHA256();
+        byte[] d = sha256.doSHA256(b, length);
+        
+        // Write back the resulting digest.
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(digest.getAddress(), 0x20, 1);
+        for (int i = 0; i < 0x20; i++) {
+            memoryWriter.writeNext((byte) d[i]);
+        }
+
+        return 0;
+    }
 }
