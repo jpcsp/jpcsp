@@ -20,7 +20,6 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
@@ -28,7 +27,6 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.hardware.Model;
 
-@HLELogging
 public class KUBridge extends HLEModule {
     public static Logger log = Modules.getLogger("KUBridge");
 

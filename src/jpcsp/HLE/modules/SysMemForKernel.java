@@ -32,7 +32,6 @@ import jpcsp.hardware.Model;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class SysMemForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("SysMemForKernel");
     protected HashMap<Integer, HeapInformation> heaps;

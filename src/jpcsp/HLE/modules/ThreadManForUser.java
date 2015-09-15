@@ -96,7 +96,6 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
@@ -169,7 +168,6 @@ import jpcsp.HLE.CheckArgument;;
  *                      lower or the same priority.
  *                      The clock precision of 200us on the PSP can be observed here.
  */
-@HLELogging
 public class ThreadManForUser extends HLEModule {
     public static Logger log = Modules.getLogger("ThreadManForUser");
 

@@ -25,7 +25,6 @@ import java.util.TimeZone;
 import jpcsp.Clock.TimeNanos;
 import jpcsp.Emulator;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
@@ -36,7 +35,6 @@ import jpcsp.HLE.kernel.types.ScePspDateTime;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceRtc extends HLEModule {
     public static Logger log = Modules.getLogger("sceRtc");
 

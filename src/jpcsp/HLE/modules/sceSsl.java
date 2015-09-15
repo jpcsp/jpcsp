@@ -28,7 +28,6 @@ import jpcsp.HLE.Modules;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceSsl extends HLEModule {
     public static Logger log = Modules.getLogger("sceSsl");
 

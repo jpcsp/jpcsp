@@ -28,7 +28,6 @@ import jpcsp.hardware.Model;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class scePower extends HLEModule {
     public static Logger log = Modules.getLogger("scePower");
 

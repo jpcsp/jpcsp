@@ -18,7 +18,6 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.kernel.types.SceNetAdhocDiscoverParam.NET_ADHOC_DISCOVER_RESULT_PEER_FOUND;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.Emulator;
@@ -28,7 +27,6 @@ import jpcsp.HLE.kernel.types.SceNetAdhocDiscoverParam;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceNetAdhocDiscover extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetAdhocDiscover");
     protected static final int NET_ADHOC_DISCOVER_STATUS_NONE = 0;

@@ -17,14 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceOpenPSID extends HLEModule {
     public static Logger log = Modules.getLogger("sceOpenPSID");
 

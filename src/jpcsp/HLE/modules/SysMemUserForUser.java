@@ -19,7 +19,6 @@ package jpcsp.HLE.modules;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
@@ -58,7 +57,6 @@ import org.apache.log4j.Logger;
  * 2. Implement format string parsing and reading variable number of parameters
  * in sceKernelPrintf.
  */
-@HLELogging
 public class SysMemUserForUser extends HLEModule {
     public static Logger log = Modules.getLogger("SysMemUserForUser");
     protected static Logger stdout = Logger.getLogger("stdout");

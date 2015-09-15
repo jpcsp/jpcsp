@@ -20,14 +20,12 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 
-@HLELogging
 public class sceMpegbase extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMpegbase");
 

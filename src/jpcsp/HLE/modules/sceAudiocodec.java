@@ -28,7 +28,6 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.media.codec.ICodec;
 import jpcsp.util.Utilities;
 
-@HLELogging
 public class sceAudiocodec extends HLEModule {
 	public static Logger log = Modules.getLogger("sceAudiocodec");
 

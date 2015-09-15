@@ -43,7 +43,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceMp3 extends HLEModule {
     public static Logger log = Modules.getLogger("sceMp3");
     private Mp3Info[] ids;

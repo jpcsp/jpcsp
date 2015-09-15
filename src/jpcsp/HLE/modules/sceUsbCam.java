@@ -62,7 +62,6 @@ import jpcsp.HLE.kernel.types.pspUsbCamSetupVideoParam;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 
-@HLELogging
 public class sceUsbCam extends HLEModule {
     public static Logger log = Modules.getLogger("sceUsbCam");
     private static final boolean dumpJpeg = false;

@@ -19,13 +19,11 @@ package jpcsp.HLE.modules;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 
-@HLELogging
 public class sceUsbAcc extends HLEModule {
     public static Logger log = Modules.getLogger("sceUsbAcc");
 

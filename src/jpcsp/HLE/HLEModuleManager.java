@@ -39,6 +39,7 @@ import jpcsp.HLE.kernel.types.SceModule;
  * 
  * @author fiveofhearts
  */
+@HLELogging
 public class HLEModuleManager {
 	private static Logger log = Modules.log;
     private static HLEModuleManager instance;
@@ -57,6 +58,8 @@ public class HLEModuleManager {
 
     private HashMap<String, List<HLEModule>> flash0prxMap;
     private Set<HLEModule> installedModules = new HashSet<HLEModule>();
+
+    private HLELogging defaultHLEFunctionLogging;
 
     /**
      * The current firmware version as an integer value in this format:
@@ -189,6 +192,10 @@ public class HLEModuleManager {
             instance = new HLEModuleManager();
         }
         return instance;
+    }
+
+    private HLEModuleManager() {
+		defaultHLEFunctionLogging = HLEModuleManager.class.getAnnotation(HLELogging.class);
     }
 
     /** (String)"2.71" to (int)271 */
@@ -455,6 +462,8 @@ public class HLEModuleManager {
 			if (hleModuleLogging != null) {
 				// Take the module default logging
 				hleLogging = hleModuleLogging;
+			} else {
+				hleLogging = defaultHLEFunctionLogging;
 			}
 		}
 

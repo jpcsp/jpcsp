@@ -18,14 +18,12 @@ package jpcsp.HLE.modules;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceNetIfhandle extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetIfhandle");
     private int netDropRate;

@@ -18,7 +18,6 @@ package jpcsp.HLE.modules;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
@@ -41,7 +40,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceDeflt extends HLEModule {
     public static Logger log = Modules.getLogger("sceDeflt");
     protected static final int GZIP_MAGIC = 0x8B1F;

@@ -24,7 +24,6 @@ import java.nio.IntBuffer;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
@@ -51,7 +50,6 @@ import org.lwjgl.openal.ALC10;
 import org.lwjgl.openal.ALC11;
 import org.lwjgl.openal.ALCdevice;
 
-@HLELogging
 public class sceAudio extends HLEModule {
     public static Logger log = Modules.getLogger("sceAudio");
 

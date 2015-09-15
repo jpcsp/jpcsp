@@ -20,7 +20,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_HTTP_NOT_INIT;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
@@ -34,7 +33,6 @@ import jpcsp.HLE.Modules;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceHttps extends HLEModule {
     public static Logger log = Modules.getLogger("sceHttps");
 

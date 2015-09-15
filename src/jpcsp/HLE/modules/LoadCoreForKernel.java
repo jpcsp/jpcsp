@@ -28,7 +28,6 @@ import jpcsp.HLE.kernel.types.SceModule;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class LoadCoreForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("LoadCoreForKernel");
 

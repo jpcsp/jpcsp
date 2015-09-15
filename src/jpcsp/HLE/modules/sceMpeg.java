@@ -83,7 +83,6 @@ import org.apache.log4j.Logger;
 
 import com.twilight.h264.decoder.H264Context;
 
-@HLELogging
 public class sceMpeg extends HLEModule {
     public static Logger log = Modules.getLogger("sceMpeg");
 

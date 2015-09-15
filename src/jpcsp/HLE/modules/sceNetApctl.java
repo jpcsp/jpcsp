@@ -20,7 +20,6 @@ import static jpcsp.HLE.modules.sceNetAdhocctl.IBSS_NAME_LENGTH;
 import static jpcsp.HLE.modules.sceNetAdhocctl.fillNextPointersInLinkedList;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
@@ -42,7 +41,6 @@ import jpcsp.settings.Settings;
 import jpcsp.Emulator;
 import jpcsp.Processor;
 
-@HLELogging
 public class sceNetApctl extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetApctl");
 

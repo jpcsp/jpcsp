@@ -26,7 +26,6 @@ import java.util.List;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
@@ -42,7 +41,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceNetAdhocMatching extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetAdhocMatching");
     protected HashMap<Integer, MatchingObject> matchingObjects;

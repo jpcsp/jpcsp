@@ -96,7 +96,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class IoFileMgrForUser extends HLEModule {
     public static Logger log = Modules.getLogger("IoFileMgrForUser");
     private static Logger stdout = Logger.getLogger("stdout");

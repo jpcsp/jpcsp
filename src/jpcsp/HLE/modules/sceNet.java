@@ -34,7 +34,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceNet extends HLEModule {
     public static Logger log = Modules.getLogger("sceNet");
     private INetworkAdapter networkAdapter;

@@ -19,7 +19,6 @@ package jpcsp.HLE.modules;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
@@ -75,7 +74,6 @@ import jpcsp.util.Utilities;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 
-@HLELogging
 public class sceNetInet extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetInet");
 

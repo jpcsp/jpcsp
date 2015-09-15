@@ -65,7 +65,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class ModuleMgrForUser extends HLEModule {
     public static Logger log = Modules.getLogger("ModuleMgrForUser");
 

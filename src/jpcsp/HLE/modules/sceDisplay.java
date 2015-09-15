@@ -28,7 +28,6 @@ import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 import static jpcsp.util.Utilities.makePow2;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.HLEUnimplemented;
@@ -101,9 +100,7 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.PixelFormat;
 
-@HLELogging
 public class sceDisplay extends HLEModule {
-
     public static Logger log = Modules.getLogger("sceDisplay");
 
     @SuppressWarnings("serial")

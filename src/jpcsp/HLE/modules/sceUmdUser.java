@@ -23,7 +23,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UMD_NOT_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_UMD;
 import jpcsp.Emulator;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
@@ -45,7 +44,6 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceUmdUser extends HLEModule {
     public static Logger log = Modules.getLogger("sceUmdUser");
     private boolean umdAllowReplace;

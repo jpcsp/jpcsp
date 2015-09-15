@@ -46,7 +46,6 @@ import jpcsp.settings.AbstractBoolSettingsListener;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class scePspNpDrm_user extends HLEModule {
 
     public static Logger log = Modules.getLogger("scePspNpDrm_user");

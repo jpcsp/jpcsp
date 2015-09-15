@@ -24,7 +24,6 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 
-@HLELogging
 public class sceAudioRouting extends HLEModule {
 	public static Logger log = Modules.getLogger("sceAudioRouting");
 	protected static final int AUDIO_ROUTING_SPEAKER_OFF = 0;

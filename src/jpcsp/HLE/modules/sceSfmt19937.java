@@ -22,12 +22,10 @@ import java.util.HashMap;
 import java.util.Random;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 
-@HLELogging
 public class sceSfmt19937 extends HLEModule {
     public static Logger log = Modules.getLogger("sceSfmt19937");
 

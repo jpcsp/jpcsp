@@ -21,14 +21,12 @@ import org.apache.log4j.Logger;
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
-@HLELogging
 public class SysclibForKernel extends HLEModule {
 	public static Logger log = Modules.getLogger("SysclibForKernel");
 

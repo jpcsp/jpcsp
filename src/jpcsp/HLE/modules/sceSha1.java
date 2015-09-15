@@ -19,7 +19,6 @@ package jpcsp.HLE.modules;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
@@ -31,7 +30,6 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
-@HLELogging
 public class sceSha1 extends HLEModule {
     public static Logger log = Modules.getLogger("sceSha1");
 

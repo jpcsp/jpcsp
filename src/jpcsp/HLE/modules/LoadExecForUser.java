@@ -47,7 +47,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class LoadExecForUser extends HLEModule {
     public static Logger log = Modules.getLogger("LoadExecForUser");
     protected int registeredExitCallbackUid;

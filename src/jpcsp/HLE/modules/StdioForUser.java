@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
@@ -27,7 +26,6 @@ import jpcsp.HLE.kernel.types.SceKernelMppInfo;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class StdioForUser extends HLEModule {
     public static Logger log = Modules.getLogger("StdioForUser");
 

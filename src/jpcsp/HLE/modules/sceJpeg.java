@@ -52,7 +52,6 @@ import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
-@HLELogging
 public class sceJpeg extends HLEModule {
     public static Logger log = Modules.getLogger("sceJpeg");
 

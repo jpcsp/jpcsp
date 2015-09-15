@@ -35,7 +35,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class scePsmf extends HLEModule {
     public static Logger log = Modules.getLogger("scePsmf");
 

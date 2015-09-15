@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
@@ -26,7 +25,6 @@ import jpcsp.hardware.Wlan;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceWlan extends HLEModule {
     public static Logger log = Modules.getLogger("sceWlan");
 

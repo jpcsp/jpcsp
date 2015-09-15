@@ -31,7 +31,6 @@ import jpcsp.hardware.Screen;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceSuspendForUser extends HLEModule {
     public static Logger log = Modules.getLogger("sceSuspendForUser");
     public static final int KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY = 0;

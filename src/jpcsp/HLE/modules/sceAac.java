@@ -29,7 +29,6 @@ import jpcsp.Memory;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
@@ -43,7 +42,6 @@ import jpcsp.HLE.modules.sceAudiocodec.AudiocodecInfo;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.util.Utilities;
 
-@HLELogging
 public class sceAac extends HLEModule {
     public static Logger log = Modules.getLogger("sceAac");
     protected SysMemInfo resourceMem;

@@ -58,7 +58,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceAtrac3plus extends HLEModule {
     public static Logger log = Modules.getLogger("sceAtrac3plus");
 

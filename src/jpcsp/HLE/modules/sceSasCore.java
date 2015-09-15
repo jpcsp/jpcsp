@@ -42,7 +42,6 @@ import jpcsp.sound.SoundVoice.VoiceADSREnvelope;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceSasCore extends HLEModule {
     public static Logger log = Modules.getLogger("sceSasCore");
 

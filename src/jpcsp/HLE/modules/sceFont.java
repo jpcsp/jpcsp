@@ -30,7 +30,6 @@ import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_ITALIC;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_REGULAR;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUidClass;
 import jpcsp.HLE.HLEUidObjectMapping;
@@ -80,7 +79,6 @@ import org.apache.log4j.Logger;
 //
 // The stackUsage values are based on tests performed using JpcspTrace
 //
-@HLELogging
 public class sceFont extends HLEModule {
     public static Logger log = Modules.getLogger("sceFont");
     private static final boolean dumpUserFont = false;

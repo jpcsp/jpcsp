@@ -23,7 +23,6 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
@@ -34,7 +33,6 @@ import jpcsp.HLE.kernel.types.pspUsbGpsData;
 import jpcsp.HLE.kernel.types.pspUsbGpsSatData;
 import jpcsp.hardware.GPS;
 
-@HLELogging
 public class sceUsbGps extends HLEModule {
 	public static Logger log = Modules.getLogger("sceUsbGps");
 	public static final int GPS_STATE_OFF = 0;

@@ -20,7 +20,6 @@ import java.util.HashMap;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.HLEUnimplemented;
@@ -36,7 +35,6 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.hardware.Usb;
 
-@HLELogging
 public class sceUsb extends HLEModule {
     public static Logger log = Modules.getLogger("sceUsb");
 

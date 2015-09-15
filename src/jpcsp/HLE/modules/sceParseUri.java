@@ -23,7 +23,6 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
@@ -36,7 +35,6 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
-@HLELogging
 public class sceParseUri extends HLEModule {
 	public static Logger log = Modules.getLogger("sceParseUri");
 	private static final boolean[] escapeCharTable = new boolean[] {

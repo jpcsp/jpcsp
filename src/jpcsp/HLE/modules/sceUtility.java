@@ -135,7 +135,6 @@ import jpcsp.util.sceGu;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceUtility extends HLEModule {
     public static Logger log = Modules.getLogger("sceUtility");
 

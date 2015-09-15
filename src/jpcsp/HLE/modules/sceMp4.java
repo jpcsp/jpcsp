@@ -55,7 +55,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class sceMp4 extends HLEModule {
     public static Logger log = Modules.getLogger("sceMp4");
     protected int callbackParam;

@@ -19,7 +19,6 @@ package jpcsp.HLE.modules;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NET_RESOLVER_BAD_ID;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
@@ -38,7 +37,6 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.Processor;
 
-@HLELogging
 public class sceNetResolver extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetResolver");
     private static final String uidPurpose = "sceNetResolver-NetResolver";

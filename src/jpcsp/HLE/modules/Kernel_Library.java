@@ -18,7 +18,6 @@ package jpcsp.HLE.modules;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
@@ -29,7 +28,6 @@ import jpcsp.hardware.Interrupts;
 
 import org.apache.log4j.Logger;
 
-@HLELogging
 public class Kernel_Library extends HLEModule {
     public static Logger log = Modules.getLogger("Kernel_Library");
 
