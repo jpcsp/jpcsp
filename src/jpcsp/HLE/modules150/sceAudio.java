@@ -35,6 +35,7 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;

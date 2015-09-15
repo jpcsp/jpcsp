@@ -38,6 +38,7 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.ThreadManForUser;
 
 import org.apache.log4j.Logger;
 

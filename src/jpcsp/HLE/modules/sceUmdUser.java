@@ -40,7 +40,6 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.kernel.types.pspUmdInfo;
-import jpcsp.HLE.modules150.ThreadManForUser;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 
 import org.apache.log4j.Logger;

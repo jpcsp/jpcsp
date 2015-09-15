@@ -22,7 +22,6 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules150.ThreadManForUser;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Model;
 

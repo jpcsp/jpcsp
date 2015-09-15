@@ -35,8 +35,8 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.SysMemUserForUser;
+import jpcsp.HLE.modules.ThreadManForUser.Callback;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
-import jpcsp.HLE.modules150.ThreadManForUser.Callback;
 
 public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariableLength implements Comparator<SceKernelThreadInfo> {
 
@@ -356,7 +356,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
 
         // We'll hook "jr $ra" where $ra == address of HLE syscall hleKernelExitThread
         // when the thread is exiting
-        cpuContext._ra = jpcsp.HLE.modules150.ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS;
+        cpuContext._ra = jpcsp.HLE.modules.ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS;
 
         doDelete = false;
         doCallbacks = false;

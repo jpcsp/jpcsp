@@ -20,7 +20,7 @@ import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
 import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_HighAligned;
 import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
 import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_LowAligned;
-import static jpcsp.HLE.modules620.ThreadManForUser.PSP_ATTR_ADDR_HIGH;
+import static jpcsp.HLE.modules.ThreadManForUser.PSP_ATTR_ADDR_HIGH;
 import static jpcsp.util.Utilities.alignUp;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;

@@ -17,8 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex.compiler;
 
 import static jpcsp.Allegrex.compiler.CompilerContext.executableDescriptor;
-import static jpcsp.HLE.modules150.ThreadManForUser.INTERNAL_THREAD_ADDRESS_END;
-import static jpcsp.HLE.modules150.ThreadManForUser.INTERNAL_THREAD_ADDRESS_START;
+import static jpcsp.HLE.modules.ThreadManForUser.INTERNAL_THREAD_ADDRESS_END;
+import static jpcsp.HLE.modules.ThreadManForUser.INTERNAL_THREAD_ADDRESS_START;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.scheduler;
 
-import static jpcsp.HLE.modules150.ThreadManForUser.log;
+import static jpcsp.HLE.modules.ThreadManForUser.log;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
