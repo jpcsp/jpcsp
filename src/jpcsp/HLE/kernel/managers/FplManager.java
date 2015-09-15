@@ -28,8 +28,8 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_FPL;
-import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
-import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_High;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
 
 import java.util.HashMap;
 import java.util.Iterator;

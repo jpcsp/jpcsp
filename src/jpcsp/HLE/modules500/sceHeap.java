@@ -26,15 +26,15 @@ import jpcsp.HLE.TPointer32;
 
 import java.util.HashMap;
 
-import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
-import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_High;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
 import jpcsp.HLE.kernel.types.MemoryChunk;
 import jpcsp.HLE.kernel.types.MemoryChunkList;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 
 import org.apache.log4j.Logger;
 

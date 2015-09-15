@@ -16,9 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules600;
 
-import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
-import static jpcsp.HLE.modules150.SysMemUserForUser.USER_PARTITION_ID;
-
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_High;
+import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import jpcsp.Processor;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;

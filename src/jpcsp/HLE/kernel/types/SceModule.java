@@ -24,7 +24,7 @@ import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.PSF;
 import jpcsp.format.PSPModuleInfo;

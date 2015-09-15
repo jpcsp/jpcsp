@@ -25,9 +25,9 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.sceNetAdhoc;
-import jpcsp.HLE.modules150.SysMemUserForUser;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.network.INetworkAdapter;
 
 /**

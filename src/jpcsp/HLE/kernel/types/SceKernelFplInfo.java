@@ -20,7 +20,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.FplManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.managers.ThreadWaitingList;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
 public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLength {

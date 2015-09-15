@@ -16,16 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
-import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_HighAligned;
-import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
-import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_LowAligned;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_High;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_HighAligned;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_LowAligned;
 import static jpcsp.HLE.modules.ThreadManForUser.PSP_ATTR_ADDR_HIGH;
 import static jpcsp.util.Utilities.alignUp;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 
 /**
  * Thread-local storage introduced in PSP 6.20.

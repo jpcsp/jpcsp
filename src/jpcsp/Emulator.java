@@ -16,7 +16,7 @@
  */
 package jpcsp;
 
-import static jpcsp.HLE.modules150.SysMemUserForUser.USER_PARTITION_ID;
+import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -19,7 +19,7 @@ package jpcsp.HLE.modules;
 import java.util.HashMap;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.settings.ISettingsListener;
 import jpcsp.settings.Settings;
 

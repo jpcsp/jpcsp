@@ -35,8 +35,8 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.SysMemUserForUser;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.modules.ThreadManForUser.Callback;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 
 public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariableLength implements Comparator<SceKernelThreadInfo> {
 

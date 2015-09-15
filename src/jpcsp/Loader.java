@@ -43,7 +43,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.ThreadManForUser;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.DeferredVStub32;
 import jpcsp.format.DeferredVStubHI16;

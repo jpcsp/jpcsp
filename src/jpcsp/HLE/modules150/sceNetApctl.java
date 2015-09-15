@@ -37,10 +37,10 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.hardware.Wlan;
 import jpcsp.settings.Settings;
-
 import jpcsp.Emulator;
 import jpcsp.Processor;
 

@@ -21,7 +21,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.MsgPipeManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.managers.ThreadWaitingList;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 
 public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLength {
 

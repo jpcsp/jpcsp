@@ -110,6 +110,7 @@ import jpcsp.HLE.kernel.types.pspUtilityDialogCommon;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams.SceUtilityOskData;
 import jpcsp.HLE.kernel.types.pspCharInfo;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.sceCtrl;
 import jpcsp.HLE.modules.sceNetApctl;

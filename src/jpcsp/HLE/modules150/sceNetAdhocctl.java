@@ -39,6 +39,7 @@ import jpcsp.HLE.kernel.types.SceNetAdhocctlPeerInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.hardware.Wlan;
 import jpcsp.network.INetworkAdapter;
