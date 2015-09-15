@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
-import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_OUTPUTMODE_STEREO;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_OUTPUTMODE_STEREO;
 import static jpcsp.sound.SoundChannel.MAX_VOLUME;
 
 import java.util.Arrays;

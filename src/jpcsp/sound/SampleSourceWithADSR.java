@@ -16,14 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
-import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_DIRECT;
-import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_EXPONENT_INCREASE;
-import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_EXPONENT_DECREASE;
-import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT;
-import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
-import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE;
-import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ENVELOPE_FREQ_MAX;
-import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ENVELOPE_HEIGHT_MAX;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_DIRECT;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_EXPONENT_DECREASE;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_EXPONENT_INCREASE;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ENVELOPE_FREQ_MAX;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ENVELOPE_HEIGHT_MAX;
 import static jpcsp.sound.SoundMixer.getSampleLeft;
 import static jpcsp.sound.SoundMixer.getSampleRight;
 
