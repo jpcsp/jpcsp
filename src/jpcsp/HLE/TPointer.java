@@ -16,10 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import jpcsp.Memory;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
@@ -31,33 +27,6 @@ final public class TPointer implements ITPointerBase {
 	private Memory memory;
 	private int address;
 	public static final TPointer NULL = new TPointer(null, 0);
-
-	private class TPointerOutputStream extends OutputStream {
-		private int offset = 0;
-		
-		public TPointerOutputStream(int offset) {
-			this.offset = offset;
-		}
-		
-		@Override
-		public void write(int b) throws IOException {
-			setValue8(offset++, (byte)b);
-		}
-	}
-	
-	private class TPointerInputStream extends InputStream {
-		private int offset = 0;
-		
-		public TPointerInputStream(int offset) {
-			this.offset = offset;
-		}
-		
-		@Override
-		public int read() throws IOException {
-			return getValue8(offset++);
-		}
-		
-	}
 
 	public TPointer(Memory memory, int address) {
 		this.memory = memory;
@@ -151,14 +120,6 @@ final public class TPointer implements ITPointerBase {
 		Utilities.writeStringZ(memory, address, s);
 	}
 
-	public void setObject(int offset, Object object) {
-		SerializeMemory.serialize(object, new TPointerOutputStream(offset));
-	}
-	
-	public <T> T getObject(Class<T> objectClass, int offset) {
-		return SerializeMemory.unserialize(objectClass, new TPointerInputStream(offset));
-	}
-
 	public byte[] getArray8(int n) {
 		return getArray8(0, n);
 	}
@@ -241,49 +202,4 @@ final public class TPointer implements ITPointerBase {
 	public String toString() {
 		return String.format("0x%08X", getAddress());
 	}
-
-	/*
-	public T getValue() {
-		return getValue(0);
-	}
-	
-	public void setValue(T value) {
-		setValue(value, 0);
-	}
-
-	@SuppressWarnings("unchecked")
-	public T getValue(int offset) {
-		if (this.genericClass == Byte.class) {
-			return (T)(Integer)this.memory.read8(this.address + offset);
-		}
-		else if (this.genericClass == Short.class) {
-			return (T)(Integer)this.memory.read16(this.address + offset);
-		}
-		else if (this.genericClass == Integer.class) {
-			return (T)(Integer)this.memory.read32(this.address + offset);
-		}
-		else if (this.genericClass == Long.class) {
-			return (T)(Long)this.memory.read64(this.address + offset);
-		}
-
-		throw(new RuntimeException("Unknown type to get the value from '" + this.genericClass + "'"));	
-	}
-	
-	public void setValue(T value, int offset) {
-		if (this.genericClass == Byte.class) {
-			this.memory.write8(this.address + offset, (byte)(int)(Integer)value);
-		}
-		else if (this.genericClass == Short.class) {
-			this.memory.write16(this.address + offset, (short)(int)(Integer)value);
-		}
-		else if (this.genericClass == Integer.class) {
-			this.memory.write32(this.address + offset, (int)(Integer)value);
-		}
-		else if (this.genericClass == Long.class) {
-			this.memory.write64(this.address + offset, (long)(Long)value);
-		}
-
-		throw(new RuntimeException("Unknown type to set the value to '" + this.genericClass + "'"));	
-	}
-	*/
 }

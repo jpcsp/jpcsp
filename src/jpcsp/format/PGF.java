@@ -26,12 +26,9 @@ import static jpcsp.util.Utilities.skipUnknown;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import jpcsp.HLE.ISerializeString;
-import jpcsp.HLE.ISerializeStruct;
 import jpcsp.HLE.kernel.types.SceFontInfo;
 
 public class PGF {
-	@ISerializeStruct(size = 168)
 	static public class FontStyle {
 		public static final int FONT_FAMILY_SANS_SERIF = 1;
 		public static final int FONT_FAMILY_SERIF      = 2;
@@ -57,12 +54,11 @@ public class PGF {
 		public short fontLanguage;
 		public short fontRegion;
 		public short fontCountry;
-		@ISerializeString(size = 64) String fontName;
+		public String fontName;
 		public int fontAttributes;
 		public int fontExpire;
 	}
 	
-	@ISerializeStruct(size = 264)
 	static public class Info {
 		// Glyph metrics
 		public int maxGlyphWidthI;
