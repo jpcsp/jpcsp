@@ -81,7 +81,7 @@ public class SysclibForKernel extends HLEModule {
 	@HLEFunction(nid = 0xAB7592FF, version = 150)
     public int memcpy(@CanBeNull TPointer destAddr, TPointer srcAddr, int size) {
 		if (destAddr.isNotNull() && destAddr.getAddress() != srcAddr.getAddress()) {
-			destAddr.getMemory().memcpyWithVideoCheck(destAddr.getAddress(), destAddr.getAddress(), size);
+			destAddr.getMemory().memcpyWithVideoCheck(destAddr.getAddress(), srcAddr.getAddress(), size);
 		}
 
 		return destAddr.getAddress();
