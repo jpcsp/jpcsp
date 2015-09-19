@@ -78,6 +78,7 @@ import com.twilight.h264.decoder.H264Context;
 
 public class UmdVideoPlayer implements KeyListener {
 	private static Logger log = Logger.getLogger("videoplayer");
+	private static final boolean dumpFrames = false;
 
     // ISO file
     private String fileName;
@@ -110,7 +111,6 @@ public class UmdVideoPlayer implements KeyListener {
 	private int[] cb;
 	private int[] abgr;
 	private boolean foundFrameStart;
-	private boolean foundFrameStartOld;
 	private int parseState;
 	private int[] parseHistory = new int[6];
 	private int parseHistoryCount;
@@ -338,12 +338,19 @@ public class UmdVideoPlayer implements KeyListener {
         gui.setMinimumSize(minSize);
     }
 
-    @SuppressWarnings("unused")
-	private void parsePlaylistFile() {
+    private int readByteHexTo10(UmdIsoFile file) throws IOException {
+    	int hex = file.readByte() & 0xFF;
+    	return (hex >> 4) * 10 + (hex & 0x0F);
+    }
+
+    private void parsePlaylistFile() {
         try {
             UmdIsoFile file = iso.getFile("UMD_VIDEO/PLAYLIST.UMD");
             int umdvMagic = file.readInt();
             int umdvVersion = file.readInt();
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("Magic 0x%08X,  version 0x%08X", umdvMagic, umdvVersion));
+            }
             int globalDataOffset = endianSwap32(file.readInt());
             file.seek(globalDataOffset);
             int playListSize = endianSwap32(file.readInt());
@@ -352,7 +359,7 @@ public class UmdVideoPlayer implements KeyListener {
             if (umdvMagic != 0x56444D55) { // UMDV
                 log.warn("Accessing invalid PLAYLIST.UMD file!");
             } else {
-                log.info("Accessing valid PLAYLIST.UMD file: playListSize=" + playListSize + ", playListTracksNum=" + playListTracksNum);
+                log.info(String.format("Accessing valid PLAYLIST.UMD file: playListSize=%d, playListTracksNum=%d", playListSize, playListTracksNum));
             }
             for (int i = 0; i < playListTracksNum; i++) {
                 file.skipBytes(2);   // 0x035C.
@@ -361,13 +368,16 @@ public class UmdVideoPlayer implements KeyListener {
                 file.skipBytes(30);  // NULL.
                 file.skipBytes(2);   // 0x02E8.
                 file.skipBytes(2);   // 0x0000/0x1000.
-                int releaseDateYear = endianSwap16(file.readShort());
+                int releaseDateYear = readByteHexTo10(file) * 100 + readByteHexTo10(file);
                 int releaseDateDay = file.readByte();
                 int releaseDateMonth = file.readByte();
                 file.skipBytes(4);   // NULL.
                 file.skipBytes(4);   // Unknown (found 0x00000900).
-                file.skipBytes(1);   // Unknown size.
-                file.skipBytes(732); // Unknown NULL area with size 0x2DC.
+                int nameLength = file.readByte() & 0xFF;
+                byte[] nameBuffer = new byte[nameLength];
+                file.read(nameBuffer);
+                String name = new String(nameBuffer);
+                file.skipBytes(732 - nameLength); // Unknown NULL area with size 0x2DC.
                 int streamHeight = (int) (file.readByte() * 0x10); // Stream's original height.
                 file.skipBytes(2);   // NULL.
                 file.skipBytes(4);   // 0x00010000.
@@ -375,42 +385,47 @@ public class UmdVideoPlayer implements KeyListener {
                 int streamWidth = (int) (file.readByte() * 0x10); // Stream's original width.
                 file.skipBytes(1);   // NULL.
                 int streamNameCharsNum = (int) file.readByte();   // Stream's name non null characters count.
-                byte[] stringBuf = new byte[5];
-                file.read(stringBuf, 0, 5);
+                byte[] stringBuf = new byte[streamNameCharsNum];
+                file.read(stringBuf);
                 String streamName = new String(stringBuf);
-                file.skipBytes(3); // NULL chars.
+                file.skipBytes(8 - streamNameCharsNum); // NULL chars.
                 file.skipBytes(2); // NULL.
                 int streamFirstTimestamp = endianSwap32(file.readInt());
                 file.skipBytes(2); // NULL.
                 int streamLastTimestamp = endianSwap32(file.readInt());
                 file.skipBytes(2); // NULL.
                 int streamMarkerDataLength = endianSwap16(file.readShort());  // Stream's markers' data length.
-                int streamMarkersNum = endianSwap16(file.readShort());  // Stream's number of markers.
-                MpsStreamMarkerInfo[] streamMarkers = new MpsStreamMarkerInfo[streamMarkersNum];
-                for (int j = 0; j < streamMarkersNum; j++) {
-                    file.skipBytes(1); // 0x05.
-                    int streamMarkerCharsNum = (int) file.readByte(); // Marker name length.
-                    file.skipBytes(4); // NULL.
-                    int streamMarkerTimestamp = endianSwap32(file.readInt());
-                    file.skipBytes(2); // NULL.
-                    file.skipBytes(4); // NULL.
-                    byte[] markerBuf = new byte[24];
-                    file.read(markerBuf, 0, 24);
-                    String markerName = new String(markerBuf, 0, streamMarkerCharsNum);
-                    if ((j + 1) == streamMarkersNum) {
-                        file.skip(2); // Skip terminator (NULL).
-                    }
-                    streamMarkers[j] = new MpsStreamMarkerInfo(markerName, streamMarkerTimestamp);
+                MpsStreamMarkerInfo[] streamMarkers;
+                if (streamMarkerDataLength > 0) {
+	                int streamMarkersNum = endianSwap16(file.readShort());  // Stream's number of markers.
+	                streamMarkers = new MpsStreamMarkerInfo[streamMarkersNum];
+	                for (int j = 0; j < streamMarkersNum; j++) {
+	                    file.skipBytes(1); // 0x05.
+	                    int streamMarkerCharsNum = (int) file.readByte(); // Marker name length.
+	                    file.skipBytes(4); // NULL.
+	                    int streamMarkerTimestamp = endianSwap32(file.readInt());
+	                    file.skipBytes(2); // NULL.
+	                    file.skipBytes(4); // NULL.
+	                    byte[] markerBuf = new byte[streamMarkerCharsNum];
+	                    file.read(markerBuf);
+	                    String markerName = new String(markerBuf);
+	                    file.skipBytes(24 - streamMarkerCharsNum);
+	                    streamMarkers[j] = new MpsStreamMarkerInfo(markerName, streamMarkerTimestamp);
+	                }
+	                file.skip(2); // NULL
+                } else {
+                	streamMarkers = new MpsStreamMarkerInfo[0];
                 }
                 // Map this stream.
                 MpsStreamInfo info = new MpsStreamInfo(streamName, streamWidth, streamHeight, streamFirstTimestamp, streamLastTimestamp, streamMarkers);
                 if (log.isDebugEnabled()) {
+                	log.debug(String.format("Release date %d-%d-%d, name '%s'", releaseDateYear, releaseDateMonth, releaseDateDay, name));
                 	log.debug(String.format("StreamInfo #%d: %s", i, info));
                 }
                 mpsStreams.add(info);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+        	log.error("parsePlaylistFile", e);
         }
     }
 
@@ -770,31 +785,6 @@ public class UmdVideoPlayer implements KeyListener {
 		return size;
 	}
 
-	private int findVideoFrameEndOld() {
-		for (int i = 5; i < videoDataOffset; i++) {
-			if (videoData[i - 4] == 0x00 &&
-		        videoData[i - 3] == 0x00 &&
-		        videoData[i - 2] == 0x00 &&
-		        videoData[i - 1] == 0x01) {
-				int naluType = videoData[i] & 0x1F;
-				if (naluType == H264Context.NAL_AUD) {
-					foundFrameStartOld = false;
-					return i - 4;
-				}
-				if (naluType == H264Context.NAL_SLICE || naluType == H264Context.NAL_IDR_SLICE) {
-					if (foundFrameStartOld) {
-						return i - 4;
-					}
-					foundFrameStartOld = true;
-				} else {
-					foundFrameStartOld = false;
-				}
-			}
-		}
-
-		return -1;
-	}
-
 	private int findVideoFrameEnd() {
 		if (parseState > 13) {
 			parseState = 7;
@@ -1037,9 +1027,12 @@ public class UmdVideoPlayer implements KeyListener {
 	    	cb = resize(cb, size2);
 
 	    	if (videoCodec.getImage(luma, cb, cr) == 0) {
-	    		//writeFile(luma, size, String.format("Frame%d.y", frame));
-	    		//writeFile(cb, size2, String.format("Frame%d.cb", frame));
-	    		//writeFile(cr, size2, String.format("Frame%d.cr", frame));
+	    		if (dumpFrames) {
+		    		writeFile(luma, size, String.format("Frame%d.y", frame));
+		    		writeFile(cb, size2, String.format("Frame%d.cb", frame));
+		    		writeFile(cr, size2, String.format("Frame%d.cr", frame));
+	    		}
+
 	    		abgr = resize(abgr, size);
 	    		// TODO How to find out if we have a YUVJ image?
 	    		// H264Utils.YUVJ2YUV(luma, luma, size);
