@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format.rco.type;
 
 public class BaseType {
-	public int value;
+	protected int value;
 
 	public int size() {
 		return 4;
@@ -41,8 +41,16 @@ public class BaseType {
 		return offset + 4;
 	}
 
+	public int getIntValue() {
+		return value;
+	}
+
+	public float getFloatValue() {
+		return (float) value;
+	}
+
 	@Override
 	public String toString() {
-		return String.format("value=0x%X", value);
+		return String.format("value=0x%X", getIntValue());
 	}
 }

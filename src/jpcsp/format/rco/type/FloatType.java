@@ -17,4 +17,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format.rco.type;
 
 public class FloatType extends BaseType {
+	@Override
+	public float getFloatValue() {
+		return Float.intBitsToFloat(super.getIntValue());
+	}
+
+	@Override
+	public int getIntValue() {
+		return (int) getFloatValue();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("value=%f", getFloatValue());
+	}
 }
