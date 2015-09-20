@@ -44,12 +44,15 @@ public class RCO {
 	private int offset;
 	private boolean valid;
 	public byte[] VSMX;
+	private int pLabelData;
+	private int lLabelData;
 
 	private class RCOEntry {
 		private static final int RCO_ENTRY_SIZE = 40;
 		public int type; // main table uses 0x01; may be used as a current entry depth value
 		public int id;
 		public int labelOffset;
+		public String label;
 		public int eHeadSize;
 		public int entrySize;
 		public int numSubEntries;
@@ -74,6 +77,10 @@ public class RCO {
 			parentTblOffset = read32();
 			skip32();
 			skip32();
+
+			if (labelOffset != RCO_NULL_PTR) {
+				label = readLabel(labelOffset);
+			}
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("RCO entry at offset 0x%X: %s", entryOffset, toString()));
@@ -157,8 +164,8 @@ public class RCO {
 						if (entrySize > RCO_ENTRY_SIZE) {
 							int dataLength = entrySize - RCO_ENTRY_SIZE;
 							data = readBytes(dataLength);
-							if (log.isDebugEnabled()) {
-								log.debug(String.format("OBJ data at 0x%X: %s", entryOffset + RCO_ENTRY_SIZE, Utilities.getMemoryDump(data, 0, dataLength)));
+							if (log.isTraceEnabled()) {
+								log.trace(String.format("OBJ data at 0x%X: %s", entryOffset + RCO_ENTRY_SIZE, Utilities.getMemoryDump(data, 0, dataLength)));
 							}
 
 							if (obj != null) {
@@ -184,8 +191,8 @@ public class RCO {
 						if (entrySize > RCO_ENTRY_SIZE) {
 							int dataLength = entrySize - RCO_ENTRY_SIZE;
 							data = readBytes(dataLength);
-							if (log.isDebugEnabled()) {
-								log.debug(String.format("ANIM data at 0x%X: %s", entryOffset + RCO_ENTRY_SIZE, Utilities.getMemoryDump(data, 0, dataLength)));
+							if (log.isTraceEnabled()) {
+								log.trace(String.format("ANIM data at 0x%X: %s", entryOffset + RCO_ENTRY_SIZE, Utilities.getMemoryDump(data, 0, dataLength)));
 							}
 
 							if (obj != null) {
@@ -237,7 +244,7 @@ public class RCO {
 
 		@Override
 		public String toString() {
-			return String.format("RCOEntry[type=0x%X, id=%s, labelOffset=0x%X, eHeadSize=0x%X, entrySize=0x%X, numSubEntries=%d, nextEntryOffset=0x%X, prevEntryOffset=0x%X, parentTblOffset=0x%X", type, getIdName(id), labelOffset, eHeadSize, entrySize, numSubEntries, nextEntryOffset, prevEntryOffset, parentTblOffset);
+			return String.format("RCOEntry[type=0x%X, id=%s, labelOffset=0x%X('%s'), eHeadSize=0x%X, entrySize=0x%X, numSubEntries=%d, nextEntryOffset=0x%X, prevEntryOffset=0x%X, parentTblOffset=0x%X", type, getIdName(id), labelOffset, label != null ? label : "", eHeadSize, entrySize, numSubEntries, nextEntryOffset, prevEntryOffset, parentTblOffset);
 		}
 	}
 
@@ -328,6 +335,23 @@ public class RCO {
 		return readBytes(lengthVSMX);
 	}
 
+	private String readLabel(int labelOffset) {
+		StringBuilder s = new StringBuilder();
+
+		int currentPosition = tell();
+		seek(pLabelData + labelOffset);
+		while (true) {
+			int b = read8();
+			if (b == 0) {
+				break;
+			}
+			s.append((char) b);
+		}
+		seek(currentPosition);
+
+		return s.toString();
+	}
+
 	/**
 	 * Read a RCO file.
 	 * See description of an RCO file structure in
@@ -371,8 +395,8 @@ public class RCO {
 		int pAnimTable = read32();
 		int pTextData = read32();
 		int lTextData = read32();
-		int pLabelData = read32();
-		int lLabelData = read32();
+		pLabelData = read32();
+		lLabelData = read32();
 		int pEventData = read32();
 		int lEventData = read32();
 		int pTextPtrs = read32();
