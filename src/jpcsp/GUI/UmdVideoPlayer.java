@@ -60,6 +60,7 @@ import jpcsp.MemoryMap;
 import jpcsp.State;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
+import jpcsp.format.RCO;
 import jpcsp.hardware.Screen;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
@@ -291,6 +292,7 @@ public class UmdVideoPlayer implements KeyListener {
         mpsStreams = new LinkedList<UmdVideoPlayer.MpsStreamInfo>();
         currentStreamIndex = 0;
         parsePlaylistFile();
+        parseRCO();
         log.info("Setting aspect ratio to 16:9");
         if (currentStreamIndex < mpsStreams.size()) {
             MpsStreamInfo info = mpsStreams.get(currentStreamIndex);
@@ -427,6 +429,22 @@ public class UmdVideoPlayer implements KeyListener {
         } catch (Exception e) {
         	log.error("parsePlaylistFile", e);
         }
+    }
+
+    private void parseRCO() {
+        try {
+			UmdIsoFile file = iso.getFile("UMD_VIDEO/RESOURCE/EN100000.RCO");
+			byte[] buffer = new byte[(int) file.length()];
+			file.read(buffer);
+			RCO rco = new RCO(buffer);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("RCO: %s", rco));
+			}
+		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
+			log.error("parse RCO", e);
+		}
+        
     }
 
     private boolean goToNextMpsStream() {
