@@ -73,6 +73,7 @@ import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceMpeg;
+import jpcsp.HLE.modules.sceUtility;
 
 import com.twilight.h264.decoder.GetBitContext;
 import com.twilight.h264.decoder.H264Context;
@@ -433,13 +434,53 @@ public class UmdVideoPlayer implements KeyListener {
 
     private void parseRCO() {
         try {
-			UmdIsoFile file = iso.getFile("UMD_VIDEO/RESOURCE/EN100000.RCO");
-			byte[] buffer = new byte[(int) file.length()];
-			file.read(buffer);
-			RCO rco = new RCO(buffer);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("RCO: %s", rco));
-			}
+        	String[] resources = iso.listDirectory("UMD_VIDEO/RESOURCE");
+        	if (resources == null || resources.length <= 0) {
+        		return;
+        	}
+
+        	int preferredLanguage = sceUtility.getSystemParamLanguage();
+    		String languagePrefix = "EN";
+    		switch (preferredLanguage) {
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_JAPANESE: languagePrefix = "JA"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_ENGLISH: languagePrefix = "EN"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_FRENCH: languagePrefix = "FR"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_SPANISH: languagePrefix = "ES"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_GERMAN: languagePrefix = "DE"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_ITALIAN: languagePrefix = "IT"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_DUTCH: languagePrefix = "NL"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_PORTUGUESE: languagePrefix = "PO"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_RUSSIAN: languagePrefix = "RU"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_KOREAN: languagePrefix = "KO"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_CHINESE_TRADITIONAL: languagePrefix = "CN"; break;
+    			case sceUtility.PSP_SYSTEMPARAM_LANGUAGE_CHINESE_SIMPLIFIED: languagePrefix = "CN"; break;
+    		}
+
+    		String resourceFileName = null;
+    		for (String resource : resources) {
+    			resource = resource.toUpperCase();
+    			if (resource.endsWith(".RCO")) {
+        			if (resource.startsWith(languagePrefix)) {
+        				resourceFileName = resource;
+        				break;
+        			} else if (resourceFileName == null) {
+        				resourceFileName = resource;
+        			}
+    			}
+    		}
+
+    		if (resourceFileName != null) {
+	        	if (log.isDebugEnabled()) {
+	        		log.debug(String.format("Reading RCO file '%s'", resourceFileName));
+	        	}
+				UmdIsoFile file = iso.getFile("UMD_VIDEO/RESOURCE/" + resourceFileName);
+				byte[] buffer = new byte[(int) file.length()];
+				file.read(buffer);
+				RCO rco = new RCO(buffer);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("RCO: %s", rco));
+				}
+    		}
 		} catch (FileNotFoundException e) {
 		} catch (IOException e) {
 			log.error("parse RCO", e);
