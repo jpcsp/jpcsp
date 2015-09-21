@@ -86,4 +86,35 @@ public class SysclibForKernel extends HLEModule {
 
 		return destAddr.getAddress();
     }
+	
+	@HLEFunction(nid = 0x7AB35214, version = 150)
+    public int strncmp(@CanBeNull TPointer src1Addr, TPointer src2Addr, int size) {
+		int result = 0;
+		if (size > 0) {
+			IMemoryReader memoryReader1 = MemoryReader.getMemoryReader(src1Addr.getAddress(), size, 1);
+			IMemoryReader memoryReader2 = MemoryReader.getMemoryReader(src2Addr.getAddress(), size, 1);
+
+			if (memoryReader1 != null && memoryReader2 != null) {
+				for (int i = 0; i < size; i++) {
+					int c1 = memoryReader1.readNext();
+					int c2 = memoryReader2.readNext();
+					if (c1 != c2) {
+						result = c1 - c2;
+						break;
+					} else if (c1 == 0) {
+						// c1 == 0 and c2 == 0
+						break;
+					}
+				}
+			}
+		}
+		return result;
+    }
+	
+	@HLEFunction(nid = 0xA48D2592, version = 150)
+    public int memmove(@CanBeNull TPointer destAddr, TPointer srcAddr, int size) {
+		destAddr.getMemory().memmove(destAddr.getAddress(), srcAddr.getAddress(), size);
+		return 0;
+    }
+
 }
