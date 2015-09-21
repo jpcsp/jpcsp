@@ -33,7 +33,7 @@ public abstract class BaseObject {
 				return 0;
 			}
 
-			return Integer.compare(o1.order(), o2.order());
+			return o1.order() - o2.order();
 		}
 		
 	}
