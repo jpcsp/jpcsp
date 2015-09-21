@@ -421,6 +421,19 @@ public class Loader {
 	            // Debug
 	            LoadELFDebuggerInfo(f, module, baseAddress, elf, elfOffset);
 
+	            // If no text_addr is available up to now, use the lowest program header address
+	            if (module.text_addr == 0) {
+	                for (Elf32ProgramHeader phdr : elf.getProgramHeaderList()) {
+	                	if (module.text_addr == 0 || phdr.getP_vaddr() < module.text_addr) {
+	                		module.text_addr = phdr.getP_vaddr();
+	                		// Align the text_addr if an alignment has been specified
+	                		if (phdr.getP_align() > 0) {
+	                			module.text_addr = Utilities.alignDown(module.text_addr, phdr.getP_align() - 1);
+	                		}
+	                	}
+	                }
+	            }
+
 	            // Flush module struct to psp mem
 	            module.write(Memory.getInstance(), module.address);
 
