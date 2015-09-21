@@ -94,19 +94,19 @@ public class SysclibForKernel extends HLEModule {
 			IMemoryReader memoryReader1 = MemoryReader.getMemoryReader(src1Addr.getAddress(), size, 1);
 			IMemoryReader memoryReader2 = MemoryReader.getMemoryReader(src2Addr.getAddress(), size, 1);
 
-		if (memoryReader1 != null && memoryReader2 != null) {
-			for (int i = 0; i < size; i++) {
-				int c1 = memoryReader1.readNext();
-				int c2 = memoryReader2.readNext();
-				if (c1 != c2) {
-					result = c1 - c2;
-					break;
-				} else if (c1 == 0) {
-					// c1 == 0 and c2 == 0
-					break;
+			if (memoryReader1 != null && memoryReader2 != null) {
+				for (int i = 0; i < size; i++) {
+					int c1 = memoryReader1.readNext();
+					int c2 = memoryReader2.readNext();
+					if (c1 != c2) {
+						result = c1 - c2;
+						break;
+					} else if (c1 == 0) {
+						// c1 == 0 and c2 == 0
+						break;
+					}
 				}
 			}
-		}
 		}
 		return result;
     }
