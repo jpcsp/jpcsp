@@ -29,7 +29,7 @@ public class VSMXReference extends VSMXBaseObject {
 		refObject.setPropertyValue(refProperty, value.getValue());
 	}
 
-	private VSMXBaseObject getRef() {
+	protected VSMXBaseObject getRef() {
 		return refObject.getPropertyValue(refProperty);
 	}
 

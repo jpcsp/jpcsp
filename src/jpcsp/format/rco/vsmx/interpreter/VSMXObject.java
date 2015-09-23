@@ -19,6 +19,7 @@ package jpcsp.format.rco.vsmx.interpreter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class VSMXObject extends VSMXBaseObject {
 	protected Map<String, VSMXBaseObject> properties = new HashMap<String, VSMXBaseObject>();
@@ -31,6 +32,10 @@ public class VSMXObject extends VSMXBaseObject {
 			properties.put(name, value);
 		}
 		return value;
+	}
+
+	public Set<String> getPropertyNames() {
+		return properties.keySet();
 	}
 
 	@Override
@@ -49,7 +54,7 @@ public class VSMXObject extends VSMXBaseObject {
 		for (String key : keys) {
 			VSMXBaseObject value = properties.get(key);
 			if (s.length() > 1) {
-				s.append(", ");
+				s.append(",\n");
 			}
 			s.append(String.format("%s=%s", key, value));
 		}

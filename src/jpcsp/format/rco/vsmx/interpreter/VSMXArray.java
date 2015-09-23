@@ -20,6 +20,18 @@ public class VSMXArray extends VSMXObject {
 	private static final String lengthName = "length";
 	private int length;
 
+	public VSMXArray() {
+	}
+
+	public VSMXArray(int size) {
+		if (size > 0) {
+			length = size;
+			for (int i = 0; i < size; i++) {
+				create(i);
+			}
+		}
+	}
+
 	@Override
 	public int getLength() {
 		return length;
@@ -135,6 +147,14 @@ public class VSMXArray extends VSMXObject {
 				create(index);
 			}
 		}
+	}
+
+	@Override
+	public boolean getBooleanValue() {
+		// "if" on an empty array seems to return false. E.g.
+		//     x = {};
+		//     if (x) { notexecuted; }
+		return length > 0;
 	}
 
 	@Override

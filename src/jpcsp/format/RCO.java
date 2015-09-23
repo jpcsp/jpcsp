@@ -17,11 +17,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import static jpcsp.util.Utilities.endianSwap32;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import jpcsp.format.rco.AnimFactory;
 import jpcsp.format.rco.ObjectFactory;
 import jpcsp.format.rco.object.BaseObject;
 import jpcsp.format.rco.vsmx.VSMX;
+import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXFunction;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
+import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -457,7 +464,15 @@ public class RCO {
 		VSMX vsmx = new VSMX(readVSMX(pVSMXTable));
 		if (false) {
 			VSMXInterpreter interpreter = new VSMXInterpreter(vsmx);
-			interpreter.run();
+			Map<String, VSMXBaseObject> context = new HashMap<String, VSMXBaseObject>();
+			context.put("controller", new VSMXObject());
+			context.put("movieplayer", new VSMXObject());
+			context.put("resource", new VSMXObject());
+			interpreter.run(context);
+			VSMXBaseObject function = context.get("controller").getPropertyValue("onAutoPlay");
+			if (function instanceof VSMXFunction) {
+				interpreter.callFunction((VSMXFunction) function, null);
+			}
 		}
 
 		return true;
