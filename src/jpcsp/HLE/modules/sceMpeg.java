@@ -1856,6 +1856,9 @@ public class sceMpeg extends HLEModule {
 			// The decoded image height can be 290 while the header
 			// gives an height of 272.
 			frameHeight = Math.min(frameHeight, psmfHeader.getVideoHeight());
+		} else {
+			// No PSMF header is available assume the video is not higher than the PSP screen height
+			frameHeight = Math.min(frameHeight, Screen.height);
 		}
 
 		int width2 = frameWidth >> 1;
@@ -2054,8 +2057,10 @@ public class sceMpeg extends HLEModule {
             }
 
             int dataSizeInRingbuffer = mpegRingbuffer.getPacketsInRingbuffer() * mpegRingbuffer.getPacketSize();
-            if (dataSizeInRingbuffer > psmfHeader.mpegStreamSize) {
-            	log.debug(String.format("sceMpegRingbufferPut returning ERROR_MPEG_INVALID_VALUE, size of data in ringbuffer=0x%X, mpegStreamSize=0x%X", dataSizeInRingbuffer, psmfHeader.mpegStreamSize));
+            if (psmfHeader != null && dataSizeInRingbuffer > psmfHeader.mpegStreamSize) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("sceMpegRingbufferPut returning ERROR_MPEG_INVALID_VALUE, size of data in ringbuffer=0x%X, mpegStreamSize=0x%X", dataSizeInRingbuffer, psmfHeader.mpegStreamSize));
+            	}
             	afterRingbufferPutCallback.setErrorCode(SceKernelErrors.ERROR_MPEG_INVALID_VALUE);
             	// No further callbacks
             	remainingPackets = 0;
@@ -3217,8 +3222,8 @@ public class sceMpeg extends HLEModule {
     public int sceMpegAvcDecodeDetail(@CheckArgument("checkMpegHandle") int mpeg, TPointer detailPointer) {
         detailPointer.setValue32( 0, avcDecodeResult); // Stores the result
         detailPointer.setValue32( 4, videoFrameCount); // Last decoded frame
-        detailPointer.setValue32( 8, psmfHeader != null ? psmfHeader.getVideoWidth()  : 0); // Frame width
-        detailPointer.setValue32(12, psmfHeader != null ? psmfHeader.getVideoHeight() : (videoFrameHeight < 0 ? 0 : videoFrameHeight)); // Frame height
+        detailPointer.setValue32( 8, psmfHeader != null ? psmfHeader.getVideoWidth()  : lastFrameWidth); // Frame width
+        detailPointer.setValue32(12, psmfHeader != null ? psmfHeader.getVideoHeight() : (videoFrameHeight < 0 ? Math.min(lastFrameHeight, Screen.height) : videoFrameHeight)); // Frame height
         detailPointer.setValue32(16, 0              ); // Frame crop rect (left)
         detailPointer.setValue32(20, 0              ); // Frame crop rect (right)
         detailPointer.setValue32(24, 0              ); // Frame crop rect (top)
