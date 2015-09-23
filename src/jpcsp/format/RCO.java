@@ -20,6 +20,8 @@ import static jpcsp.util.Utilities.endianSwap32;
 import jpcsp.format.rco.AnimFactory;
 import jpcsp.format.rco.ObjectFactory;
 import jpcsp.format.rco.object.BaseObject;
+import jpcsp.format.rco.vsmx.VSMX;
+import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -43,7 +45,6 @@ public class RCO {
 	private byte[] buffer;
 	private int offset;
 	private boolean valid;
-	public byte[] VSMX;
 	private int pLabelData;
 	private int lLabelData;
 
@@ -207,6 +208,39 @@ public class RCO {
 						}
 					}
 					break;
+				case RCO_TABLE_FONT:
+					if (type == 1) {
+						int format = read16();
+						int compression = read16();
+						int unknown1 = read32();
+						int unknown2 = read32();
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("RCO entry FONT: format=%d, compression=%d, unknown1=0x%X, unknown2=0x%X", format, compression, unknown1, unknown2));
+						}
+					} else if (type != 0) {
+						log.warn(String.format("Unknown RCO FONT entry type 0x%X at offset 0x%X", type, entryOffset));
+					}
+					break;
+				case RCO_TABLE_TEXT:
+					if (type == 1) {
+						int lang = read16();
+						int format = read16();
+						int numIndexes = read32();
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("RCO entry TEXT: lang=%d, format=%d, numIndexes=0x%X", lang, format, numIndexes));
+						}
+						for (int i = 0; i < numIndexes; i++) {
+							int labelOffset = read32();
+							int length = read32();
+							int offset = read32();
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("RCO entry TEXT Index#%d: labelOffset=%d, length=%d, offset=0x%X", i, labelOffset, length, offset));
+							}
+						}
+					} else if (type != 0) {
+						log.warn(String.format("Unknown RCO TEXT entry type 0x%X at offset 0x%X", type, entryOffset));
+					}
+					break;
 				default:
 					log.warn(String.format("Unknown RCO entry %s at offset 0x%X", getIdName(id), entryOffset));
 					break;
@@ -324,15 +358,8 @@ public class RCO {
 		}
 
 		RCOEntry entry = readRCOEntry(offset);
-		int offsetVSMX = read32();
-		int lengthVSMX = read32();
-		skip(offsetVSMX);
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("VSMX at 0x%X: entry=%s, offset=0x%X, length=0x%X", offset, entry, offsetVSMX, lengthVSMX));
-		}
-
-		return readBytes(lengthVSMX);
+		return entry.data;
 	}
 
 	private String readLabel(int labelOffset) {
@@ -340,7 +367,7 @@ public class RCO {
 
 		int currentPosition = tell();
 		seek(pLabelData + labelOffset);
-		while (true) {
+		for (int maxLength = lLabelData - labelOffset; maxLength > 0; maxLength--) {
 			int b = read8();
 			if (b == 0) {
 				break;
@@ -427,7 +454,11 @@ public class RCO {
 			log.debug(String.format("mainTable: %s", mainTable));
 		}
 
-		VSMX = readVSMX(pVSMXTable);
+		VSMX vsmx = new VSMX(readVSMX(pVSMXTable));
+		if (false) {
+			VSMXInterpreter interpreter = new VSMXInterpreter(vsmx);
+			interpreter.run();
+		}
 
 		return true;
 	}
