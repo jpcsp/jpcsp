@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.vsmx.interpreter;
 
+import jpcsp.format.rco.vsmx.INativeFunction;
+import jpcsp.format.rco.vsmx.objects.NativeFunctionFactory;
+
 public class VSMXMethod extends VSMXBaseObject {
 	private VSMXBaseObject object;
 	private String name;
@@ -32,6 +35,30 @@ public class VSMXMethod extends VSMXBaseObject {
 
 	public String getName() {
 		return name;
+	}
+
+	public VSMXFunction getFunction() {
+		if (object instanceof VSMXNativeObject) {
+			VSMXNativeObject nativeObject = (VSMXNativeObject) object;
+			INativeFunction nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, name);
+			if (nativeFunction != null) {
+				return new VSMXNativeFunction(nativeFunction);
+			}
+		}
+
+		VSMXBaseObject function = object.getPropertyValue(name).getValue();
+		if (function != null && function instanceof VSMXFunction) {
+			return (VSMXFunction) function;
+		}
+		return null;
+	}
+
+	public void call(VSMXBaseObject arguments[]) {
+	}
+
+	@Override
+	public String typeOf() {
+		return "function";
 	}
 
 	@Override

@@ -16,25 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.vsmx.interpreter;
 
-public class VSMXUndefined extends VSMXBaseObject {
-	public static final VSMXUndefined singleton = new VSMXUndefined();
+import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
 
-	private VSMXUndefined() {
+public class VSMXNativeObject extends VSMXObject {
+	private BaseNativeObject object;
+
+	public VSMXNativeObject(BaseNativeObject object) {
+		this.object = object;
 	}
 
-	@Override
-	public boolean equals(VSMXBaseObject value) {
-		// null == undefined
-		return this == value || value == VSMXNull.singleton;
-	}
-
-	@Override
-	public String typeOf() {
-		return "undefined";
-	}
-
-	@Override
-	public String toString() {
-		return "undefined";
+	public BaseNativeObject getObject() {
+		return object;
 	}
 }

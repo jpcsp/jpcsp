@@ -16,9 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.object;
 
+import jpcsp.format.RCO.RCOEntry;
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.type.EventType;
 import jpcsp.format.rco.type.IntType;
+import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
 
 public class PageObject extends BaseObject {
 	@ObjectField(order = 1)
@@ -31,4 +34,16 @@ public class PageObject extends BaseObject {
 	public EventType onContextMenu;
 	@ObjectField(order = 5)
 	public EventType onActivate;
+
+	@Override
+	public VSMXBaseObject createVSMXObject(VSMXBaseObject parent, RCOEntry entry) {
+		VSMXBaseObject object = super.createVSMXObject(parent, entry);
+
+		VSMXObject root = new VSMXObject();
+		object.setPropertyValue("root", root);
+		VSMXObject children = new VSMXObject();
+		root.setPropertyValue("children", children);
+
+		return children;
+	}
 }

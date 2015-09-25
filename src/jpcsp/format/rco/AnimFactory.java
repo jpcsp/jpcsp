@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format.rco;
 
 import jpcsp.format.RCO;
+import jpcsp.format.rco.anim.Anim;
 import jpcsp.format.rco.anim.BaseAnim;
 import jpcsp.format.rco.anim.DelayAnim;
 import jpcsp.format.rco.anim.FadeAnim;
@@ -32,6 +33,7 @@ import jpcsp.format.rco.anim.UnlockAnim;
 public class AnimFactory {
 	public static BaseAnim newAnim(int type) {
 		switch (type) {
+			case  1: return new Anim();
 			case  2: return new MoveToAnim();
 			case  3: return new RecolourAnim();
 			case  4: return new RotateAnim();

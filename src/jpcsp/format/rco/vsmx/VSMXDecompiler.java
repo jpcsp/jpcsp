@@ -294,7 +294,7 @@ public class VSMXDecompiler {
 			case VSMXCode.VID_CALL_NEW:
 				args = code.value;
 				ops = new StringBuilder[args];
-				for (int n = 0; n < args; n++) {
+				for (int n = args - 1; n >= 0; n--) {
 					ops[n] = new StringBuilder();
 					decompileOp(ops[n]);
 				}
@@ -312,7 +312,7 @@ public class VSMXDecompiler {
 			case VSMXCode.VID_CALL_METHOD:
 				args = code.value;
 				ops = new StringBuilder[args];
-				for (int n = 0; n < args; n++) {
+				for (int n = args - 1; n >= 0; n--) {
 					ops[n] = new StringBuilder();
 					decompileOp(ops[n]);
 				}
@@ -332,7 +332,7 @@ public class VSMXDecompiler {
 			case VSMXCode.VID_CALL_FUNC:
 				args = code.value;
 				ops = new StringBuilder[args];
-				for (int n = 0; n < args; n++) {
+				for (int n = args - 1; n >= 0; n--) {
 					ops[n] = new StringBuilder();
 					decompileOp(ops[n]);
 				}

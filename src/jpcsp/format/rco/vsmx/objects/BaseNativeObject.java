@@ -14,27 +14,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.format.rco.vsmx.interpreter;
+package jpcsp.format.rco.vsmx.objects;
 
-public class VSMXUndefined extends VSMXBaseObject {
-	public static final VSMXUndefined singleton = new VSMXUndefined();
-
-	private VSMXUndefined() {
-	}
-
-	@Override
-	public boolean equals(VSMXBaseObject value) {
-		// null == undefined
-		return this == value || value == VSMXNull.singleton;
-	}
-
-	@Override
-	public String typeOf() {
-		return "undefined";
-	}
-
+public class BaseNativeObject {
 	@Override
 	public String toString() {
-		return "undefined";
+		return getClass().getSimpleName();
 	}
 }

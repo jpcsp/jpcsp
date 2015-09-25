@@ -20,8 +20,11 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import jpcsp.format.RCO.RCOEntry;
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.type.BaseType;
+import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
 
 public abstract class BaseObject {
 	private static class FieldComparator implements Comparator<Field> {
@@ -91,6 +94,13 @@ public abstract class BaseObject {
 		}
 
 		return size;
+	}
+
+	public VSMXBaseObject createVSMXObject(VSMXBaseObject parent, RCOEntry entry) {
+		VSMXObject object = new VSMXObject();
+		parent.setPropertyValue(entry.label, object);
+
+		return object;
 	}
 
 	@Override

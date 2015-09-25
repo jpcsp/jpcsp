@@ -74,13 +74,13 @@ public class VSMXReference extends VSMXBaseObject {
 	}
 
 	@Override
-	public int getLength() {
-		return getRef().getLength();
+	public void setFloatValue(float value) {
+		getRef().setFloatValue(value);
 	}
 
 	@Override
-	public void setFloatValue(float value) {
-		getRef().setFloatValue(value);
+	public String typeOf() {
+		return getRef().typeOf();
 	}
 
 	@Override

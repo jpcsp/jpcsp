@@ -16,43 +16,34 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.vsmx.interpreter;
 
-public class VSMXFunction extends VSMXBaseObject {
-	private int args;
-	private int localVars;
-	private int startLine;
+import jpcsp.format.rco.vsmx.INativeFunction;
 
-	public VSMXFunction(int args, int localVars, int startLine) {
-		this.args = args;
-		this.localVars = localVars;
-		this.startLine = startLine;
-	}
+public class VSMXNativeFunction extends VSMXFunction {
+	private INativeFunction nativeFunction;
+	private VSMXBaseObject returnValue;
+	private VSMXBaseObject arguments[];
 
-	public int getArgs() {
-		return args;
-	}
-
-	public int getLocalVars() {
-		return localVars;
-	}
-
-	public int getStartLine() {
-		return startLine;
-	}
-
-	public void call(VSMXCallState callState) {
-	}
-
-	public VSMXBaseObject getReturnValue() {
-		return null;
+	public VSMXNativeFunction(INativeFunction nativeFunction) {
+		super(nativeFunction.getArgs(), 0, -1);
+		this.nativeFunction = nativeFunction;
+		arguments = new VSMXBaseObject[nativeFunction.getArgs() + 1];
 	}
 
 	@Override
-	public String typeOf() {
-		return "function";
+	public void call(VSMXCallState callState) {
+		for (int i = 0; i < arguments.length; i++) {
+			arguments[i] = callState.getLocalVar(i);
+		}
+		returnValue = nativeFunction.call(arguments);
+	}
+
+	@Override
+	public VSMXBaseObject getReturnValue() {
+		return returnValue;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("Function(args=%d, localVars=%d, startLine=%d)", args, localVars, startLine);
+		return String.format("VSMXNativeFunction[%s, returnValue=%s]", nativeFunction, returnValue);
 	}
 }

@@ -14,27 +14,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.format.rco.vsmx.interpreter;
+package jpcsp.format.rco;
 
-public class VSMXUndefined extends VSMXBaseObject {
-	public static final VSMXUndefined singleton = new VSMXUndefined();
+import jpcsp.format.rco.sound.Sound;
 
-	private VSMXUndefined() {
-	}
-
-	@Override
-	public boolean equals(VSMXBaseObject value) {
-		// null == undefined
-		return this == value || value == VSMXNull.singleton;
-	}
-
-	@Override
-	public String typeOf() {
-		return "undefined";
-	}
-
-	@Override
-	public String toString() {
-		return "undefined";
+public class SoundFactory {
+	public static Sound newSound(int format, int channels, int[] channelSize, int[] channelOffset) {
+		return new Sound(format, channels, channelSize, channelOffset);
 	}
 }

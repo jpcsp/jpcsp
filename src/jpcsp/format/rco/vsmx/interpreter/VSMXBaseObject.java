@@ -16,7 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.vsmx.interpreter;
 
-public class VSMXBaseObject {
+public abstract class VSMXBaseObject {
+	protected static final String lengthName = "length";
+
 	public VSMXBaseObject getValue() {
 		return this;
 	}
@@ -33,8 +35,16 @@ public class VSMXBaseObject {
 		return getFloatValue() != 0f;
 	}
 
+	public String getStringValue() {
+		return toString();
+	}
+
 	public boolean equals(VSMXBaseObject value) {
 		return getFloatValue() == value.getFloatValue();
+	}
+
+	public boolean identity(VSMXBaseObject value) {
+		return this == value;
 	}
 
 	public VSMXBaseObject getPropertyValue(String name) {
@@ -60,15 +70,13 @@ public class VSMXBaseObject {
 		deletePropertyValue(Integer.toString(index));
 	}
 
-	public int getLength() {
-		return 0;
-	}
-
 	public void setFloatValue(float value) {
 	}
 
+	public abstract String typeOf();
+
 	@Override
 	public String toString() {
-		return String.format("%f", getFloatValue());
+		return Float.toString(getFloatValue());
 	}
 }

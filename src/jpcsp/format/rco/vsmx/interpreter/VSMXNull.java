@@ -23,6 +23,17 @@ public class VSMXNull extends VSMXBaseObject {
 	}
 
 	@Override
+	public boolean equals(VSMXBaseObject value) {
+		// null == undefined
+		return this == value || value == VSMXUndefined.singleton;
+	}
+
+	@Override
+	public String typeOf() {
+		return "undefined";
+	}
+
+	@Override
 	public String toString() {
 		return "null";
 	}

@@ -23,9 +23,18 @@ public class VSMXNumber extends VSMXBaseObject {
 		this.value = value;
 	}
 
+	public VSMXNumber(int value) {
+		this.value = (float) value;
+	}
+
 	@Override
 	public float getFloatValue() {
 		return value;
+	}
+
+	@Override
+	public String typeOf() {
+		return "number";
 	}
 
 	@Override

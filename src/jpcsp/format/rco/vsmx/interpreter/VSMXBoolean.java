@@ -29,6 +29,10 @@ public class VSMXBoolean extends VSMXBaseObject {
 		return value ? singletonTrue : singletonFalse;
 	}
 
+	public static VSMXBoolean getValue(int value) {
+		return getValue(value != 0);
+	}
+
 	@Override
 	public float getFloatValue() {
 		return value ? 1f : 0f;
@@ -42,6 +46,11 @@ public class VSMXBoolean extends VSMXBaseObject {
 	@Override
 	public boolean getBooleanValue() {
 		return value;
+	}
+
+	@Override
+	public String typeOf() {
+		return "boolean";
 	}
 
 	@Override

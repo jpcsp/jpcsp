@@ -34,6 +34,41 @@ public class VSMXString extends VSMXBaseObject {
 	}
 
 	@Override
+	public String getStringValue() {
+		return value;
+	}
+
+	@Override
+	public VSMXBaseObject getPropertyValue(String name) {
+		if (lengthName.equals(name)) {
+			return new VSMXNumber(value.length());
+		}
+
+		return super.getPropertyValue(name);
+	}
+
+	@Override
+	public boolean equals(VSMXBaseObject value) {
+		if (value instanceof VSMXString) {
+			return getStringValue().equals(value.getStringValue());
+		}
+		return super.equals(value);
+	}
+
+	@Override
+	public boolean identity(VSMXBaseObject value) {
+		if (value instanceof VSMXString) {
+			return getStringValue().equals(value.getStringValue());
+		}
+		return super.identity(value);
+	}
+
+	@Override
+	public String typeOf() {
+		return "string";
+	}
+
+	@Override
 	public String toString() {
 		return String.format("\"%s\"", value);
 	}

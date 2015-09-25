@@ -23,12 +23,15 @@ import java.util.Map;
 
 import jpcsp.format.rco.AnimFactory;
 import jpcsp.format.rco.ObjectFactory;
+import jpcsp.format.rco.SoundFactory;
 import jpcsp.format.rco.object.BaseObject;
 import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXFunction;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
-import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
+import jpcsp.format.rco.vsmx.objects.Controller;
+import jpcsp.format.rco.vsmx.objects.MoviePlayer;
+import jpcsp.format.rco.vsmx.objects.Resource;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -37,25 +40,25 @@ public class RCO {
 	public static final Logger log = Logger.getLogger("rco");
 	private static final int RCO_MAGIC = 0x00505246;
 	private static final int RCO_NULL_PTR = 0xFFFFFFFF;
-	private static final int RCO_TABLE_MAIN = 1;
-	private static final int RCO_TABLE_VSMX = 2;
-	private static final int RCO_TABLE_TEXT = 3;
-	private static final int RCO_TABLE_IMG = 4;
-	private static final int RCO_TABLE_MODEL = 5;
-	private static final int RCO_TABLE_SOUND = 6;
-	private static final int RCO_TABLE_FONT = 7;
-	private static final int RCO_TABLE_OBJ = 8;
-	private static final int RCO_TABLE_ANIM = 9;
-	private static final int RCO_DATA_COMPRESSION_NONE = 0;
-	private static final int RCO_DATA_COMPRESSION_ZLIB = 1;
-	private static final int RCO_DATA_COMPRESSION_RLZ = 2;
+	public static final int RCO_TABLE_MAIN = 1;
+	public static final int RCO_TABLE_VSMX = 2;
+	public static final int RCO_TABLE_TEXT = 3;
+	public static final int RCO_TABLE_IMG = 4;
+	public static final int RCO_TABLE_MODEL = 5;
+	public static final int RCO_TABLE_SOUND = 6;
+	public static final int RCO_TABLE_FONT = 7;
+	public static final int RCO_TABLE_OBJ = 8;
+	public static final int RCO_TABLE_ANIM = 9;
+	public static final int RCO_DATA_COMPRESSION_NONE = 0;
+	public static final int RCO_DATA_COMPRESSION_ZLIB = 1;
+	public static final int RCO_DATA_COMPRESSION_RLZ = 2;
 	private byte[] buffer;
 	private int offset;
 	private boolean valid;
 	private int pLabelData;
 	private int lLabelData;
 
-	private class RCOEntry {
+	public class RCOEntry {
 		private static final int RCO_ENTRY_SIZE = 40;
 		public int type; // main table uses 0x01; may be used as a current entry depth value
 		public int id;
@@ -136,17 +139,22 @@ public class RCO {
 						int channels = read16(); // 1 or 2 channels
 						int sizeTotal = read32();
 						int offset = read32();
+						int[] channelSize = new int[channels];
+						int[] channelOffset = new int[channels];
 						// now pairs of size/offset for each channel
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("RCO entry SOUND: format=%d, channels=%d, sizeTotal=0x%X, offset=0x%X", format, channels, sizeTotal, offset));
 						}
 						for (int channel = 0; channel < channels; channel++) {
-							int channelSize = read32();
-							int channelOffset = read32();
+							channelSize[channel] = read32();
+							channelOffset[channel] = read32();
 							if (log.isDebugEnabled()) {
-								log.debug(String.format("Channel %d: size=0x%X, offset=0x%X", channel, channelSize, channelOffset));
+								log.debug(String.format("Channel %d: size=0x%X, offset=0x%X", channel, channelSize[channel], channelOffset[channel]));
 							}
 						}
+
+						obj = SoundFactory.newSound(format, channels, channelSize, channelOffset);
+
 						// there _must_ be two channels defined (no clear indication of size otherwise)
 						if (channels < 2) {
 							for (int i = channels; i < 2; i++) {
@@ -189,7 +197,7 @@ public class RCO {
 					}
 					break;
 				case RCO_TABLE_ANIM:
-					if (type > 1) {
+					if (type > 0) {
 						obj = AnimFactory.newAnim(type);
 
 						if (obj != null && entrySize == 0) {
@@ -465,13 +473,14 @@ public class RCO {
 		if (false) {
 			VSMXInterpreter interpreter = new VSMXInterpreter(vsmx);
 			Map<String, VSMXBaseObject> context = new HashMap<String, VSMXBaseObject>();
-			context.put("controller", new VSMXObject());
-			context.put("movieplayer", new VSMXObject());
-			context.put("resource", new VSMXObject());
+			context.put(Controller.objectName, Controller.create());
+			context.put(MoviePlayer.objectName, MoviePlayer.create());
+			context.put(Resource.objectName, Resource.create(mainTable));
 			interpreter.run(context);
+
 			VSMXBaseObject function = context.get("controller").getPropertyValue("onAutoPlay");
 			if (function instanceof VSMXFunction) {
-				interpreter.callFunction((VSMXFunction) function, null);
+				interpreter.interpretFunction((VSMXFunction) function, null);
 			}
 		}
 

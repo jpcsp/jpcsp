@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format.rco.vsmx.interpreter;
 
 public class VSMXArray extends VSMXObject {
-	private static final String lengthName = "length";
 	private int length;
 
 	public VSMXArray() {
@@ -32,7 +31,6 @@ public class VSMXArray extends VSMXObject {
 		}
 	}
 
-	@Override
 	public int getLength() {
 		return length;
 	}

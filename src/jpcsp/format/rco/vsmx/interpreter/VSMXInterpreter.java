@@ -49,10 +49,11 @@ public class VSMXInterpreter {
 			case VSMXCode.VID_NOTHING:
 				break;
 			case VSMXCode.VID_OPERATOR_ASSIGN:
-				o1 = stack.pop();
+				o1 = stack.pop().getValue();
 				o2 = stack.pop();
 				if (o2 instanceof VSMXReference) {
 					((VSMXReference) o2).assign(o1);
+					stack.push(o1);
 				} else {
 					log.warn(String.format("Line#%d non-ref assignment %s", pc - 4, code));
 				}
@@ -129,27 +130,27 @@ public class VSMXInterpreter {
 				stack.push(new VSMXNumber(f));
 				break;
 			case VSMXCode.VID_OPERATOR_EQUAL:
-				o1 = stack.pop();
-				o2 = stack.pop();
+				o1 = stack.pop().getValue();
+				o2 = stack.pop().getValue();
 				b = o1.equals(o2);
 				stack.push(VSMXBoolean.getValue(b));
 				break;
 			case VSMXCode.VID_OPERATOR_NOT_EQUAL:
-				o1 = stack.pop();
-				o2 = stack.pop();
+				o1 = stack.pop().getValue();
+				o2 = stack.pop().getValue();
 				b = !o1.equals(o2);
 				stack.push(VSMXBoolean.getValue(b));
 				break;
 			case VSMXCode.VID_OPERATOR_IDENTITY:
-				o1 = stack.pop();
-				o2 = stack.pop();
-				b = o1 == o2;
+				o1 = stack.pop().getValue();
+				o2 = stack.pop().getValue();
+				b = o1.identity(o2);
 				stack.push(VSMXBoolean.getValue(b));
 				break;
 			case VSMXCode.VID_OPERATOR_NON_IDENTITY:
-				o1 = stack.pop();
-				o2 = stack.pop();
-				b = o1 != o2;
+				o1 = stack.pop().getValue();
+				o2 = stack.pop().getValue();
+				b = !o1.identity(o2);
 				stack.push(VSMXBoolean.getValue(b));
 				break;
 			case VSMXCode.VID_OPERATOR_LT:
@@ -183,7 +184,9 @@ public class VSMXInterpreter {
 				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
 				break;
 			case VSMXCode.VID_OPERATOR_TYPEOF:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				o = stack.pop().getValue();
+				String typeOf = o.typeOf();
+				stack.push(new VSMXString(typeOf));
 				break;
 			case VSMXCode.VID_OPERATOR_B_AND:
 				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
@@ -227,14 +230,10 @@ public class VSMXInterpreter {
 				stack.push(o);
 				break;
 			case VSMXCode.VID_CONST_BOOL:
-				if (code.value == 0) {
-					stack.push(VSMXBoolean.singletonFalse);
-				} else {
-					stack.push(VSMXBoolean.singletonTrue);
-				}
+				stack.push(VSMXBoolean.getValue(code.value));
 				break;
 			case VSMXCode.VID_CONST_INT:
-				stack.push(new VSMXNumber((float) code.value));
+				stack.push(new VSMXNumber(code.value));
 				break;
 			case VSMXCode.VID_CONST_FLOAT:
 				stack.push(new VSMXNumber(code.getFloatValue()));
@@ -258,19 +257,27 @@ public class VSMXInterpreter {
 				break;
 			case VSMXCode.VID_VARIABLE:
 				stack.push(new VSMXReference(globalVariables, mem.names[code.value]));
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("%s '%s'", VSMXCode.VsmxDecOps[code.getOpcode()], mem.names[code.value]));
+				}
 				break;
 			case VSMXCode.VID_PROPERTY:
 				o1 = stack.pop().getValue();
 				if (o1 instanceof VSMXObject) {
 					stack.push(new VSMXReference((VSMXObject) o1, mem.properties[code.value]));
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("%s '%s'", VSMXCode.VsmxDecOps[code.getOpcode()], mem.properties[code.value]));
+					}
 				} else {
-					stack.push(VSMXUndefined.singleton);
-					log.warn(String.format("Line#%d non-object property %s", pc - 4, code));
+					stack.push(o1.getPropertyValue(mem.properties[code.value]));
 				}
 				break;
 			case VSMXCode.VID_METHOD:
 				o = stack.pop().getValue();
 				stack.push(new VSMXMethod(o, mem.properties[code.value]));
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("%s '%s'", VSMXCode.VsmxDecOps[code.getOpcode()], mem.properties[code.value]));
+				}
 				break;
 			case VSMXCode.VID_SET_ATTR:
 				o1 = stack.pop();
@@ -295,11 +302,11 @@ public class VSMXInterpreter {
 				stack.push(o);
 				break;
 			case VSMXCode.VID_ARRAY_INDEX_ASSIGN:
-				o1 = stack.pop();
+				o1 = stack.pop().getValue();
 				o2 = stack.pop();
 				o3 = stack.pop().getValue();
 				if (o3 instanceof VSMXArray) {
-					o3.setPropertyValue(o2.getIntValue(), o3);
+					o3.setPropertyValue(o2.getIntValue(), o1);
 				} else {
 					log.warn(String.format("Line#%d non-array index assignment %s", pc - 4, code));
 				}
@@ -317,7 +324,7 @@ public class VSMXInterpreter {
 				o1 = stack.pop().getValue();
 				o2 = stack.pop().getValue();
 				if (o2 instanceof VSMXArray) {
-					int length = o2.getLength();
+					int length = ((VSMXArray) o2).getLength();
 					o2.setPropertyValue(length, o1);
 					stack.push(o2);
 				} else {
@@ -350,18 +357,31 @@ public class VSMXInterpreter {
 				o = stack.pop().getValue();
 				if (o instanceof VSMXFunction) {
 					VSMXFunction function = (VSMXFunction) o;
-					callStates.push(callState);
-					callState = new VSMXCallState(VSMXNull.singleton, function.getLocalVars() + function.getArgs() + 1, pc);
-					for (int i = 0; i <= function.getArgs() && i <= code.value; i++) {
-						callState.setLocalVar(i, arguments[i]);
-					}
-					pc = function.getStartLine();
+
+					callFunction(function, arguments, code.value);
 				} else {
 					log.warn(String.format("Line#%d non-function call %s", pc - 4, code));
 				}
 				break;
 			case VSMXCode.VID_CALL_METHOD:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				arguments = new VSMXBaseObject[code.value + 1];
+				for (int i = 0; i < code.value; i++) {
+					arguments[code.value - i] = stack.pop().getValue();
+				}
+				o = stack.pop().getValue();
+				if (o instanceof VSMXMethod) {
+					VSMXMethod method = (VSMXMethod) o;
+					arguments[0] = method.getObject().getValue();
+					VSMXFunction function = method.getFunction();
+
+					if (function == null) {
+						log.warn(String.format("Line#%d non existing method %s()", pc - 4, method.getName()));
+					} else {
+						callFunction(function, arguments, code.value);
+					}
+				} else {
+					log.warn(String.format("Line#%d non-method call %s", pc - 4, code));
+				}
 				break;
 			case VSMXCode.VID_CALL_NEW:
 				arguments = new VSMXBaseObject[code.value];
@@ -470,7 +490,29 @@ public class VSMXInterpreter {
 		}
 	}
 
-	public void callFunction(VSMXFunction function, VSMXBaseObject[] arguments) {
+	private void callFunction(VSMXFunction function, VSMXBaseObject[] arguments, int numberArguments) {
+		callStates.push(callState);
+		callState = new VSMXCallState(VSMXNull.singleton, function.getLocalVars() + function.getArgs() + 1, pc);
+		for (int i = 0; i <= function.getArgs() && i <= numberArguments; i++) {
+			callState.setLocalVar(i, arguments[i]);
+		}
+
+		function.call(callState);
+
+		VSMXBaseObject returnValue = function.getReturnValue();
+		if (returnValue != null) {
+			stack.push(returnValue);
+		}
+
+		int startLine = function.getStartLine();
+		if (startLine >= 0 && startLine < mem.codes.length) {
+			pc = startLine;
+		} else {
+			callState = callStates.pop();
+		}
+	}
+
+	public void interpretFunction(VSMXFunction function, VSMXBaseObject[] arguments) {
 		if (callState != null) {
 			callStates.push(callState);
 		}

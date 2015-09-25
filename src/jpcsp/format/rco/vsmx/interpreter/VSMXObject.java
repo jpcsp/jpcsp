@@ -48,6 +48,20 @@ public class VSMXObject extends VSMXBaseObject {
 		properties.remove(name);
 	}
 
+	@Override
+	public boolean equals(VSMXBaseObject value) {
+		if (value instanceof VSMXObject) {
+			// Return true if both values refer to the same object
+			return this == value;
+		}
+		return super.equals(value);
+	}
+
+	@Override
+	public String typeOf() {
+		return "object";
+	}
+
 	protected void toString(StringBuilder s) {
 		String[] keys = properties.keySet().toArray(new String[0]);
 		Arrays.sort(keys);
