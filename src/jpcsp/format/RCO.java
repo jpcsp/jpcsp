@@ -29,6 +29,7 @@ import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXFunction;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
+import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.objects.Controller;
 import jpcsp.format.rco.vsmx.objects.MoviePlayer;
 import jpcsp.format.rco.vsmx.objects.Resource;
@@ -109,6 +110,8 @@ public class RCO {
 						int lengthVSMX = read32();
 						skip(offsetVSMX);
 						data = readBytes(lengthVSMX);
+						// 4-bytes alignment
+						skip(Utilities.alignUp(lengthVSMX, 3) - lengthVSMX);
 					} else {
 						log.warn(String.format("Unknown RCO entry type 0x%X at offset 0x%X", type, entryOffset));
 					}
@@ -329,10 +332,10 @@ public class RCO {
 		return offset;
 	}
 
-	public RCO(byte[] buffer) {
+	public RCO(byte[] buffer, String resourceName) {
 		this.buffer = buffer;
 
-		valid = read();
+		valid = read(resourceName);
 	}
 
 	public boolean isValid() {
@@ -402,7 +405,7 @@ public class RCO {
 	 * @return true  RCO file is valid
 	 *         false RCO file is invalid
 	 */
-	private boolean read() {
+	private boolean read(String resourceName) {
 		int magic = endianSwap32(read32());
 		if (magic != RCO_MAGIC) {
 			log.warn(String.format("Invalid RCO magic 0x%08X", magic));
@@ -473,15 +476,13 @@ public class RCO {
 		if (false) {
 			VSMXInterpreter interpreter = new VSMXInterpreter(vsmx);
 			Map<String, VSMXBaseObject> context = new HashMap<String, VSMXBaseObject>();
-			context.put(Controller.objectName, Controller.create());
+			VSMXNativeObject controller = Controller.create(resourceName);
+			context.put(Controller.objectName, controller);
 			context.put(MoviePlayer.objectName, MoviePlayer.create());
 			context.put(Resource.objectName, Resource.create(mainTable));
 			interpreter.run(context);
 
-			VSMXBaseObject function = context.get("controller").getPropertyValue("onAutoPlay");
-			if (function instanceof VSMXFunction) {
-				interpreter.interpretFunction((VSMXFunction) function, null);
-			}
+			controller.getObject().callCallback(interpreter, "onAutoPlay", null);
 		}
 
 		return true;

@@ -38,9 +38,10 @@ public class MoviePlayer extends BaseNativeObject {
 	private int subtitleNumber;
 	private int subtitleFlag;
 
-	public static VSMXObject create() {
+	public static VSMXNativeObject create() {
 		MoviePlayer moviePlayer = new MoviePlayer();
-		VSMXObject object = new VSMXNativeObject(moviePlayer);
+		VSMXNativeObject object = new VSMXNativeObject(moviePlayer);
+		moviePlayer.setObject(object);
 
 		object.setPropertyValue("audioLanguageCode", new VSMXString("en"));
 		object.setPropertyValue("subtitleLanguageCode", new VSMXString("en"));

@@ -22,16 +22,26 @@ import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXArray;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
-import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXNull;
 
 public class Controller extends BaseNativeObject {
 	private static final Logger log = VSMX.log;
 	public static final String objectName = "controller";
 	private VSMXBaseObject userData = new VSMXArray();
+	private String resource; // E.g. "EN100000"
 
-	public static VSMXObject create() {
+	public static VSMXNativeObject create(String resource) {
 		Controller controller = new Controller();
-		VSMXObject object = new VSMXNativeObject(controller);
+		VSMXNativeObject object = new VSMXNativeObject(controller);
+		controller.setObject(object);
+		controller.resource = resource;
+
+		// Callbacks
+		object.setPropertyValue("onChangeResource", VSMXNull.singleton);
+		object.setPropertyValue("onMenu", VSMXNull.singleton);
+		object.setPropertyValue("onExit", VSMXNull.singleton);
+		object.setPropertyValue("onAutoPlay", VSMXNull.singleton);
+		object.setPropertyValue("onContinuePlay", VSMXNull.singleton);
 
 		return object;
 	}
@@ -50,5 +60,16 @@ public class Controller extends BaseNativeObject {
 		}
 
 		this.userData = userData;
+	}
+
+	public String getResource() {
+		return resource;
+	}
+
+	public void changeResource(VSMXBaseObject object, VSMXBaseObject resource) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Controller.changeResource(%s)", resource));
+		}
+		this.resource = resource.getStringValue();
 	}
 }

@@ -25,9 +25,10 @@ import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
 public class Resource extends BaseNativeObject {
 	public static final String objectName = "resource";
 
-	public static VSMXObject create(RCOEntry mainTable) {
+	public static VSMXNativeObject create(RCOEntry mainTable) {
 		Resource resource = new Resource();
-		VSMXObject object = new VSMXNativeObject(resource);
+		VSMXNativeObject object = new VSMXNativeObject(resource);
+		resource.setObject(object);
 
 		createTable(object, mainTable, RCO.RCO_TABLE_OBJ, "pagetable");
 		createTable(object, mainTable, RCO.RCO_TABLE_ANIM, "animtable");
