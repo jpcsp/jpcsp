@@ -2070,6 +2070,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
     public void loadUMDVideo(File file) {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        String filePath = file == null ? null : file.getPath();
         try {
             if (State.logWindow != null) {
                 State.logWindow.clearScreenMessages();
@@ -2080,7 +2081,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             umdLoaded = true;
             loadedFile = file;
 
-            UmdIsoReader iso = new UmdIsoReader(file.getPath());
+            UmdIsoReader iso = new UmdIsoReader(filePath);
             UmdIsoFile psfFile = iso.getFile("UMD_VIDEO/param.sfo");
             UmdIsoFile umdDataFile = iso.getFile("UMD_DATA.BIN");
 
