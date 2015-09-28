@@ -22,42 +22,23 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
-import jpcsp.hardware.Model;
 
-public class KUBridge extends HLEModule {
-    public static Logger log = Modules.getLogger("KUBridge");
+public class ModuleMgrForKernel extends HLEModule {
+	public static Logger log = Modules.getLogger("ModuleMgrForKernel");
 
-    /*
-     * Equivalent to sceKernelLoadModule()
-     */
-    @HLEFunction(nid = 0x4C25EA72, version = 150)
-    public int kuKernelLoadModule(PspString path, int flags, @CanBeNull TPointer optionAddr) {
+	@HLEFunction(nid = 0xBA889C07, version = 150)
+    public int sceKernelLoadModuleBuffer(TPointer buffer, int bufSize, int flags, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
             lmOption.read(optionAddr);
             if (log.isInfoEnabled()) {
-            	log.info(String.format("kuKernelLoadModule options: %s", lmOption));
+                log.info(String.format("sceKernelLoadModuleBuffer options: %s", lmOption));
             }
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true);
-    }
-
-    /*
-     * Equivalent to sceKernelGetModel()
-     */
-    @HLEFunction(nid = 0x24331850, version = 150)
-    public int kuKernelGetModel() {
-		int result = Model.getModel();
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("kuKernelGetModel returning %d(%s)", result, Model.getModelName(result)));
-		}
-
-		return result;
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(buffer.toString(), flags, 0, buffer.getAddress(), bufSize, lmOption, false, true);
     }
 }

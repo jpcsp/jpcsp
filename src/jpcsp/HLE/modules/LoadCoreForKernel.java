@@ -187,6 +187,10 @@ public class LoadCoreForKernel extends HLEModule {
             log.warn("kernel mode required (sceKernelFindModuleByName)");
         }
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelFindModuleByName returning 0x%08X", module.address));
+        }
+
         return module.address;
     }
 

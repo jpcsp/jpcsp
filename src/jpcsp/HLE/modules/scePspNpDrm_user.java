@@ -247,7 +247,7 @@ public class scePspNpDrm_user extends HLEModule {
             return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, lmOption, false, true);
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true);
     }
 
     @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)
