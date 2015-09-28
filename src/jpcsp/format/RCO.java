@@ -18,16 +18,17 @@ package jpcsp.format;
 
 import static jpcsp.util.Utilities.endianSwap32;
 
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
 import jpcsp.format.rco.AnimFactory;
+import jpcsp.format.rco.LZR;
 import jpcsp.format.rco.ObjectFactory;
 import jpcsp.format.rco.SoundFactory;
 import jpcsp.format.rco.object.BaseObject;
 import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
-import jpcsp.format.rco.vsmx.interpreter.VSMXFunction;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.objects.Controller;
@@ -39,6 +40,7 @@ import org.apache.log4j.Logger;
 
 public class RCO {
 	public static final Logger log = Logger.getLogger("rco");
+	private static final int RCO_HEADER_SIZE = 164;
 	private static final int RCO_MAGIC = 0x00505246;
 	private static final int RCO_NULL_PTR = 0xFFFFFFFF;
 	public static final int RCO_TABLE_MAIN = 1;
@@ -53,11 +55,15 @@ public class RCO {
 	public static final int RCO_DATA_COMPRESSION_NONE = 0;
 	public static final int RCO_DATA_COMPRESSION_ZLIB = 1;
 	public static final int RCO_DATA_COMPRESSION_RLZ = 2;
+	private static final Charset textDataCharset = Charset.forName("UTF-16LE");
 	private byte[] buffer;
 	private int offset;
 	private boolean valid;
+	private int pTextData;
+	private int lTextData;
 	private int pLabelData;
 	private int lLabelData;
+	private int[] compressedTextDataOffset;
 
 	public class RCOEntry {
 		private static final int RCO_ENTRY_SIZE = 40;
@@ -74,6 +80,7 @@ public class RCO {
 		public RCOEntry subEntries[];
 		public byte data[];
 		public BaseObject obj;
+		public String[] texts;
 
 		public void read() {
 			int entryOffset = tell();
@@ -247,12 +254,14 @@ public class RCO {
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("RCO entry TEXT: lang=%d, format=%d, numIndexes=0x%X", lang, format, numIndexes));
 						}
+						texts = new String[numIndexes];
 						for (int i = 0; i < numIndexes; i++) {
 							int labelOffset = read32();
 							int length = read32();
 							int offset = read32();
+							texts[i] = readText(lang, offset, length);
 							if (log.isDebugEnabled()) {
-								log.debug(String.format("RCO entry TEXT Index#%d: labelOffset=%d, length=%d, offset=0x%X", i, labelOffset, length, offset));
+								log.debug(String.format("RCO entry TEXT Index#%d: labelOffset=%d, length=%d, offset=0x%X; '%s'", i, labelOffset, length, offset, texts[i]));
 							}
 						}
 					} else if (type != 0) {
@@ -260,7 +269,7 @@ public class RCO {
 					}
 					break;
 				default:
-					log.warn(String.format("Unknown RCO entry %s at offset 0x%X", getIdName(id), entryOffset));
+					log.warn(String.format("Unknown RCO entry id 0x%X at offset 0x%X", id, entryOffset));
 					break;
 			}
 
@@ -397,6 +406,73 @@ public class RCO {
 		return s.toString();
 	}
 
+	private String readText(int lang, int offset, int length) {
+		if (offset == RCO_NULL_PTR) {
+			return null;
+		}
+
+		int currentPosition = tell();
+		if (compressedTextDataOffset != null) {
+			seek(compressedTextDataOffset[lang] + offset);
+		} else {
+			seek(pTextData + offset);
+		}
+		byte[] buffer = readBytes(length);
+		seek(currentPosition);
+
+		// Trailing null bytes?
+		if (length >= 2 && buffer[length - 1] == (byte) 0 && buffer[length - 2] == (byte) 0) {
+			// Remove trailing null bytes
+			length -= 2;
+		}
+
+		return new String(buffer, 0, length, textDataCharset);
+	}
+
+	private static byte[] append(byte[] a, byte[] b) {
+		if (a == null || a.length == 0) {
+			return b;
+		}
+		if (b == null || b.length == 0) {
+			return a;
+		}
+
+		byte[] ab = new byte[a.length + b.length];
+		System.arraycopy(a, 0, ab, 0, a.length);
+		System.arraycopy(b, 0, ab, a.length, b.length);
+
+		return ab;
+	}
+
+	private static byte[] append(byte[] a, int length, byte[] b) {
+		if (a == null || a.length == 0 || length <= 0) {
+			return b;
+		}
+		if (b == null || b.length == 0) {
+			return a;
+		}
+		length = Math.min(a.length, length);
+
+		byte[] ab = new byte[length + b.length];
+		System.arraycopy(a, 0, ab, 0, length);
+		System.arraycopy(b, 0, ab, length, b.length);
+
+		return ab;
+	}
+
+	private static int[] extend(int[] a, int length) {
+		if (a == null) {
+			return new int[length];
+		}
+		if (a.length >= length) {
+			return a;
+		}
+		int[] b = new int[length];
+		System.arraycopy(a, 0, b, 0, a.length);
+
+		return b;
+	}
+
 	/**
 	 * Read a RCO file.
 	 * See description of an RCO file structure in
@@ -420,10 +496,6 @@ public class RCO {
 		int compression = read32();
 		int umdFlag = compression & 0x0F;
 		int headerCompression = (compression & 0xF0) >> 4;
-		if (headerCompression != 0) {
-			log.warn(String.format("Unimplemented RCO compression 0x%02X", compression));
-			return false;
-		}
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("umdFlag=0x%X, headerCompression=0x%X", umdFlag, headerCompression));
 		}
@@ -438,8 +510,8 @@ public class RCO {
 		int pFontTable = read32();
 		int pObjTable = read32();
 		int pAnimTable = read32();
-		int pTextData = read32();
-		int lTextData = read32();
+		pTextData = read32();
+		lTextData = read32();
 		pLabelData = read32();
 		lLabelData = read32();
 		int pEventData = read32();
@@ -467,22 +539,92 @@ public class RCO {
 		skip32(); // Always 0xFFFFFFFF
 		skip32(); // Always 0xFFFFFFFF
 
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("pMainTable=0x%X, pVSMXTable=0x%X, pTextTable=0x%X, pSoundTable=0x%X, pModelTable=0x%X, pImgTable=0x%X, pFontTable=0x%X, pObjTable=0x%X, pAnimTable=0x%X", pMainTable, pVSMXTable, pTextTable, pSoundTable, pModelTable, pImgTable, pFontTable, pObjTable, pAnimTable));
+			log.debug(String.format("TextData=0x%X[0x%X], LabelData=0x%X[0x%X], EventData=0x%X[0x%X]", pTextData, lTextData, pLabelData, lLabelData, pEventData, lEventData));
+			log.debug(String.format("TextPtrs=0x%X[0x%X], ImgPtrs=0x%X[0x%X], ModelPtrs=0x%X[0x%X], SoundPtrs=0x%X[0x%X], ObjPtrs=0x%X[0x%X], AnimPtrs=0x%X[0x%X]", pTextPtrs, lTextPtrs, pImgPtrs, lImgPtrs, pModelPtrs, lModelPtrs, pSoundPtrs, lSoundPtrs, pObjPtrs, lObjPtrs, pAnimPtrs, lAnimPtrs));
+			log.debug(String.format("ImgData=0x%X[0x%X], SoundData=0x%X[0x%X], ModelData=0x%X[0x%X]", pImgData, lImgData, pSoundData, lSoundData, pModelData, lModelData));
+		}
+
+		if (headerCompression != 0) {
+			int lenPacked = read32();
+			int lenUnpacked = read32();
+			int lenLongestText = read32();
+			byte[] packedBuffer = readBytes(lenPacked);
+			byte[] unpackedBuffer = new byte[lenUnpacked];
+			int result;
+
+			if (headerCompression == RCO_DATA_COMPRESSION_RLZ) {
+				result = LZR.decompress(unpackedBuffer, lenUnpacked, packedBuffer);
+			} else {
+				log.warn(String.format("Unimplemented compression %d", headerCompression));
+				result = -1;
+			}
+
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Unpack header longestText=0x%X, result=0x%X: %s", lenLongestText, result, Utilities.getMemoryDump(unpackedBuffer, 0, lenUnpacked)));
+			}
+
+			if (pTextData != RCO_NULL_PTR && lTextData > 0) {
+				seek(pTextData);
+				int nextOffset;
+				do {
+					int textLang = read16();
+					skip16();
+					nextOffset = read32();
+					int textLenPacked = read32();
+					int textLenUnpacked = read32();
+
+					byte[] textPackedBuffer = readBytes(textLenPacked);
+					byte[] textUnpackedBuffer = new byte[textLenUnpacked];
+
+					if (headerCompression == RCO_DATA_COMPRESSION_RLZ) {
+						result = LZR.decompress(textUnpackedBuffer, textLenUnpacked, textPackedBuffer);
+					} else {
+						log.warn(String.format("Unimplemented compression %d", headerCompression));
+						result = -1;
+					}
+
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("Unpack text lang=%d, result=0x%X: %s", textLang, result, Utilities.getMemoryDump(textUnpackedBuffer, 0, textLenUnpacked)));
+					}
+
+					if (result >= 0) {
+						compressedTextDataOffset = extend(compressedTextDataOffset, textLang + 1);
+						compressedTextDataOffset[textLang] = unpackedBuffer.length + RCO_HEADER_SIZE;
+						unpackedBuffer = append(unpackedBuffer, textUnpackedBuffer);
+					}
+
+					if (nextOffset == 0) {
+						break;
+					}
+					skip(nextOffset - 16 - textLenPacked);
+				} while (nextOffset != 0);
+			}
+
+			if (result >= 0) {
+				buffer = append(buffer, RCO_HEADER_SIZE, unpackedBuffer);
+			}
+		}
+
 		RCOEntry mainTable = readRCOEntry(pMainTable);
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("mainTable: %s", mainTable));
 		}
 
-		VSMX vsmx = new VSMX(readVSMX(pVSMXTable));
-		if (false) {
-			VSMXInterpreter interpreter = new VSMXInterpreter(vsmx);
-			Map<String, VSMXBaseObject> context = new HashMap<String, VSMXBaseObject>();
-			VSMXNativeObject controller = Controller.create(resourceName);
-			context.put(Controller.objectName, controller);
-			context.put(MoviePlayer.objectName, MoviePlayer.create());
-			context.put(Resource.objectName, Resource.create(mainTable));
-			interpreter.run(context);
-
-			controller.getObject().callCallback(interpreter, "onAutoPlay", null);
+		if (pVSMXTable != RCO_NULL_PTR) {
+			VSMX vsmx = new VSMX(readVSMX(pVSMXTable));
+			if (false) {
+				VSMXInterpreter interpreter = new VSMXInterpreter(vsmx);
+				Map<String, VSMXBaseObject> context = new HashMap<String, VSMXBaseObject>();
+				VSMXNativeObject controller = Controller.create(resourceName);
+				context.put(Controller.objectName, controller);
+				context.put(MoviePlayer.objectName, MoviePlayer.create());
+				context.put(Resource.objectName, Resource.create(mainTable));
+				interpreter.run(context);
+	
+				controller.getObject().callCallback(interpreter, "onAutoPlay", null);
+			}
 		}
 
 		return true;

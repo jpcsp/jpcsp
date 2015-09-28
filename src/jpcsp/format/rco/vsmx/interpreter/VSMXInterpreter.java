@@ -44,6 +44,7 @@ public class VSMXInterpreter {
 		VSMXBaseObject o1, o2, o3, o;
 		VSMXBaseObject arguments[];
 		float f1, f2, f;
+		String s1, s2, s;
 		boolean b;
 		switch (code.getOpcode()) {
 			case VSMXCode.VID_NOTHING:
@@ -55,14 +56,23 @@ public class VSMXInterpreter {
 					((VSMXReference) o2).assign(o1);
 					stack.push(o1);
 				} else {
-					log.warn(String.format("Line#%d non-ref assignment %s", pc - 4, code));
+					log.warn(String.format("Line#%d non-ref assignment %s", pc - 1, code));
 				}
 				break;
 			case VSMXCode.VID_OPERATOR_ADD:
-				f1 = stack.pop().getFloatValue();
-				f2 = stack.pop().getFloatValue();
-				f = f1 + f2;
-				stack.push(new VSMXNumber(f));
+				o1 = stack.pop().getValue();
+				o2 = stack.pop().getValue();
+				if (o1 instanceof VSMXString || o2 instanceof VSMXString) {
+					s1 = o1.getStringValue();
+					s2 = o2.getStringValue();
+					s = s1 + s2;
+					stack.push(new VSMXString(s));
+				} else {
+					f1 = o1.getFloatValue();
+					f2 = o2.getFloatValue();
+					f = f1 + f2;
+					stack.push(new VSMXNumber(f));
+				}
 				break;
 			case VSMXCode.VID_OPERATOR_SUBTRACT:
 				f1 = stack.pop().getFloatValue();
@@ -178,10 +188,10 @@ public class VSMXInterpreter {
 				stack.push(VSMXBoolean.getValue(b));
 				break;
 			case VSMXCode.VID_OPERATOR_INSTANCEOF:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_OPERATOR_IN:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_OPERATOR_TYPEOF:
 				o = stack.pop().getValue();
@@ -189,25 +199,25 @@ public class VSMXInterpreter {
 				stack.push(new VSMXString(typeOf));
 				break;
 			case VSMXCode.VID_OPERATOR_B_AND:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_OPERATOR_B_XOR:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_OPERATOR_B_OR:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_OPERATOR_B_NOT:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_OPERATOR_LSHIFT:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_OPERATOR_RSHIFT:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_OPERATOR_URSHIFT:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_STACK_COPY:
 				o1 = stack.peek();
@@ -289,7 +299,7 @@ public class VSMXInterpreter {
 				o1.deletePropertyValue(mem.properties[code.value]);
 				break;
 			case VSMXCode.VID_OBJ_ADD_ATTR:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_ARRAY_INDEX:
 				o1 = stack.pop();
@@ -308,7 +318,7 @@ public class VSMXInterpreter {
 				if (o3 instanceof VSMXArray) {
 					o3.setPropertyValue(o2.getIntValue(), o1);
 				} else {
-					log.warn(String.format("Line#%d non-array index assignment %s", pc - 4, code));
+					log.warn(String.format("Line#%d non-array index assignment %s", pc - 1, code));
 				}
 				break;
 			case VSMXCode.VID_ARRAY_DELETE:
@@ -317,7 +327,7 @@ public class VSMXInterpreter {
 				if (o2 instanceof VSMXArray) {
 					o2.deletePropertyValue(o1.getIntValue());
 				} else {
-					log.warn(String.format("Line#%d non-array delete %s", pc - 4, code));
+					log.warn(String.format("Line#%d non-array delete %s", pc - 1, code));
 				}
 				break;
 			case VSMXCode.VID_ARRAY_PUSH:
@@ -328,7 +338,7 @@ public class VSMXInterpreter {
 					o2.setPropertyValue(length, o1);
 					stack.push(o2);
 				} else {
-					log.warn(String.format("Line#%d non-array push %s", pc - 4, code));
+					log.warn(String.format("Line#%d non-array push %s", pc - 1, code));
 				}
 				break;
 			case VSMXCode.VID_JUMP:
@@ -360,7 +370,8 @@ public class VSMXInterpreter {
 
 					callFunction(function, arguments, code.value);
 				} else {
-					log.warn(String.format("Line#%d non-function call %s", pc - 4, code));
+					stack.push(VSMXNull.singleton);
+					log.warn(String.format("Line#%d non-function call %s", pc - 1, code));
 				}
 				break;
 			case VSMXCode.VID_CALL_METHOD:
@@ -375,12 +386,14 @@ public class VSMXInterpreter {
 					VSMXFunction function = method.getFunction();
 
 					if (function == null) {
-						log.warn(String.format("Line#%d non existing method %s()", pc - 4, method.getName()));
+						stack.push(VSMXNull.singleton);
+						log.warn(String.format("Line#%d non existing method %s()", pc - 1, method.getName()));
 					} else {
 						callFunction(function, arguments, code.value);
 					}
 				} else {
-					log.warn(String.format("Line#%d non-method call %s", pc - 4, code));
+					stack.push(VSMXNull.singleton);
+					log.warn(String.format("Line#%d non-method call %s", pc - 1, code));
 				}
 				break;
 			case VSMXCode.VID_CALL_NEW:
@@ -390,13 +403,16 @@ public class VSMXInterpreter {
 				}
 				o = stack.pop().getValue();
 				if (o instanceof VSMXArray) {
-					if (code.value == 1) {
+					if (code.value == 0) {
+						stack.push(new VSMXArray());
+					} else if (code.value == 1) {
 						stack.push(new VSMXArray(arguments[0].getIntValue()));
 					} else {
-						log.warn(String.format("Line#%d wrong number of arguments for new Array %s", pc - 4, code));
+						log.warn(String.format("Line#%d wrong number of arguments for new Array %s", pc - 1, code));
 					}
 				} else {
-					log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+					stack.push(new VSMXArray());
+					log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				}
 				break;
 			case VSMXCode.VID_RETURN:
@@ -409,34 +425,38 @@ public class VSMXInterpreter {
 				}
 				break;
 			case VSMXCode.VID_THROW:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_TRY_BLOCK_IN:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_TRY_BLOCK_OUT:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_CATCH_FINALLY_BLOCK_IN:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_CATCH_FINALLY_BLOCK_OUT:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			case VSMXCode.VID_END:
 				exit = true;
 				break;
 			case VSMXCode.VID_DEBUG_FILE:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("debug file '%s'", mem.texts[code.value]));
+				}
 				break;
 			case VSMXCode.VID_DEBUG_LINE:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("debug line %d", code.value));
+				}
 				break;
 			case VSMXCode.VID_MAKE_FLOAT_ARRAY:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 			default:
-				log.warn(String.format("Line#%d unimplemented %s", pc - 4, code));
+				log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));
 				break;
 		}
 	}

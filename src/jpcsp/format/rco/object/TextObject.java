@@ -41,43 +41,49 @@ public class TextObject extends BasePositionObject {
 	@ObjectField(order = 208)
 	public FloatType topBlue;
 	@ObjectField(order = 209)
-	public FloatType spacingHorizontal;
+	public FloatType bottomRed;
 	@ObjectField(order = 210)
-	public UnknownType unknown30;
+	public FloatType bottomGreen;
 	@ObjectField(order = 211)
-	public UnknownType unknown31;
+	public FloatType bottomBlue;
 	@ObjectField(order = 212)
-	public UnknownType unknown32;
+	public FloatType spacingHorizontal;
 	@ObjectField(order = 213)
-	public FloatType spacingVertical;
+	public UnknownType unknown30;
 	@ObjectField(order = 214)
-	public FloatType shadowX;
+	public UnknownType unknown31;
 	@ObjectField(order = 215)
-	public FloatType shadowY;
+	public UnknownType unknown32;
 	@ObjectField(order = 216)
-	public FloatType shadowPerspective;
+	public FloatType spacingVertical;
 	@ObjectField(order = 217)
-	public FloatType shadowRed;
+	public FloatType shadowX;
 	@ObjectField(order = 218)
-	public FloatType shadowGreen;
+	public FloatType shadowY;
 	@ObjectField(order = 219)
-	public FloatType shadowBlue;
+	public FloatType shadowPerspective;
 	@ObjectField(order = 220)
-	public FloatType shadowAlpha;
+	public FloatType shadowRed;
 	@ObjectField(order = 221)
-	public UnknownType unknown41;
+	public FloatType shadowGreen;
 	@ObjectField(order = 222)
-	public UnknownType unknown42;
+	public FloatType shadowBlue;
 	@ObjectField(order = 223)
-	public UnknownType unknown43;
+	public FloatType shadowAlpha;
 	@ObjectField(order = 224)
-	public FloatType unknownFloat44;
+	public UnknownType unknown41;
 	@ObjectField(order = 225)
-	public FloatType unknownFloat45;
+	public UnknownType unknown42;
 	@ObjectField(order = 226)
-	public FloatType unknownFloat46;
+	public UnknownType unknown43;
 	@ObjectField(order = 227)
-	public FloatType unknownFloat47;
+	public FloatType unknownFloat44;
 	@ObjectField(order = 228)
+	public FloatType unknownFloat45;
+	@ObjectField(order = 229)
+	public FloatType unknownFloat46;
+	@ObjectField(order = 230)
+	public FloatType unknownFloat47;
+	@ObjectField(order = 231)
 	public UnknownType unknown48;
 }
