@@ -17,12 +17,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format.rco.vsmx.interpreter;
 
 public class VSMXArray extends VSMXObject {
+	private static final String className = "Array";
 	private int length;
 
-	public VSMXArray() {
+	public VSMXArray(VSMXInterpreter interpreter) {
+		super(interpreter, className);
 	}
 
-	public VSMXArray(int size) {
+	public VSMXArray(VSMXInterpreter interpreter, int size) {
+		super(interpreter, className);
+
 		if (size > 0) {
 			length = size;
 			for (int i = 0; i < size; i++) {
@@ -66,7 +70,7 @@ public class VSMXArray extends VSMXObject {
 	@Override
 	public VSMXBaseObject getPropertyValue(String name) {
 		if (lengthName.equals(name)) {
-			return new VSMXNumber(length);
+			return new VSMXNumber(interpreter, length);
 		}
 
 		int index = getIndex(name);

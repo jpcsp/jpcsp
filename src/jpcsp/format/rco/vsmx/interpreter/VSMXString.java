@@ -19,7 +19,8 @@ package jpcsp.format.rco.vsmx.interpreter;
 public class VSMXString extends VSMXBaseObject {
 	private String value;
 
-	public VSMXString(String value) {
+	public VSMXString(VSMXInterpreter interpreter, String value) {
+		super(interpreter);
 		this.value = value;
 	}
 
@@ -41,7 +42,7 @@ public class VSMXString extends VSMXBaseObject {
 	@Override
 	public VSMXBaseObject getPropertyValue(String name) {
 		if (lengthName.equals(name)) {
-			return new VSMXNumber(value.length());
+			return new VSMXNumber(interpreter, value.length());
 		}
 
 		return super.getPropertyValue(name);
@@ -49,10 +50,7 @@ public class VSMXString extends VSMXBaseObject {
 
 	@Override
 	public boolean equals(VSMXBaseObject value) {
-		if (value instanceof VSMXString) {
-			return getStringValue().equals(value.getStringValue());
-		}
-		return super.equals(value);
+		return getStringValue().equals(value.getStringValue());
 	}
 
 	@Override
@@ -66,6 +64,11 @@ public class VSMXString extends VSMXBaseObject {
 	@Override
 	public String typeOf() {
 		return "string";
+	}
+
+	@Override
+	public String getClassName() {
+		return "String";
 	}
 
 	@Override

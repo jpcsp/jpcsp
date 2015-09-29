@@ -21,7 +21,8 @@ import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
 public class VSMXNativeObject extends VSMXObject {
 	private BaseNativeObject object;
 
-	public VSMXNativeObject(BaseNativeObject object) {
+	public VSMXNativeObject(VSMXInterpreter interpreter, BaseNativeObject object) {
+		super(interpreter, null);
 		this.object = object;
 	}
 

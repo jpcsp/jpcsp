@@ -23,8 +23,8 @@ public class VSMXMethod extends VSMXBaseObject {
 	private VSMXBaseObject object;
 	private String name;
 
-	public VSMXMethod(VSMXBaseObject object, String name) {
-		super();
+	public VSMXMethod(VSMXInterpreter interpreter, VSMXBaseObject object, String name) {
+		super(interpreter);
 		this.object = object;
 		this.name = name;
 	}
@@ -38,18 +38,19 @@ public class VSMXMethod extends VSMXBaseObject {
 	}
 
 	public VSMXFunction getFunction() {
-		if (object instanceof VSMXNativeObject) {
-			VSMXNativeObject nativeObject = (VSMXNativeObject) object;
-			INativeFunction nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, name);
-			if (nativeFunction != null) {
-				return new VSMXNativeFunction(nativeFunction);
-			}
-		}
-
 		VSMXBaseObject function = object.getPropertyValue(name).getValue();
 		if (function != null && function instanceof VSMXFunction) {
 			return (VSMXFunction) function;
 		}
+
+		if (object instanceof VSMXNativeObject) {
+			VSMXNativeObject nativeObject = (VSMXNativeObject) object;
+			INativeFunction nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, name);
+			if (nativeFunction != null) {
+				return new VSMXNativeFunction(interpreter, nativeFunction);
+			}
+		}
+
 		return null;
 	}
 
@@ -59,6 +60,11 @@ public class VSMXMethod extends VSMXBaseObject {
 	@Override
 	public String typeOf() {
 		return "function";
+	}
+
+	@Override
+	public String getClassName() {
+		return name;
 	}
 
 	@Override

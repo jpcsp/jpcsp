@@ -16,8 +16,27 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.vsmx.interpreter;
 
+import jpcsp.format.rco.vsmx.VSMX;
+
+import org.apache.log4j.Logger;
+
 public abstract class VSMXBaseObject {
+	public static final Logger log = VSMX.log;
 	protected static final String lengthName = "length";
+	protected static final String prototypeName = "prototype";
+	protected VSMXInterpreter interpreter;
+
+	public VSMXBaseObject(VSMXInterpreter interpreter) {
+		setInterpreter(interpreter);
+	}
+
+	protected void setInterpreter(VSMXInterpreter interpreter) {
+		this.interpreter = interpreter;
+	}
+
+	public VSMXInterpreter getInterpreter() {
+		return interpreter;
+	}
 
 	public VSMXBaseObject getValue() {
 		return this;
@@ -48,6 +67,12 @@ public abstract class VSMXBaseObject {
 	}
 
 	public VSMXBaseObject getPropertyValue(String name) {
+		if (prototypeName.equals(name)) {
+			VSMXObject prototype = getPrototype();
+			if (prototype != null) {
+				return prototype;
+			}
+		}
 		return VSMXUndefined.singleton;
 	}
 
@@ -70,10 +95,31 @@ public abstract class VSMXBaseObject {
 		deletePropertyValue(Integer.toString(index));
 	}
 
+	public boolean hasPropertyValue(String name) {
+		return !VSMXUndefined.singleton.equals(getPropertyValue(name));
+	}
+
 	public void setFloatValue(float value) {
 	}
 
 	public abstract String typeOf();
+
+	public abstract String getClassName();
+
+	protected VSMXObject getPrototype() {
+		String className = getClassName();
+		if (className == null) {
+			return null;
+		}
+
+		VSMXBaseObject classObject = interpreter.getGlobalVariables().getPropertyValue(className).getPrototype();
+		if (!(classObject instanceof VSMXObject)) {
+			classObject = new VSMXObject(interpreter, className);
+			interpreter.getGlobalVariables().setPropertyValue(className, classObject);
+		}
+
+		return (VSMXObject) classObject;
+	}
 
 	@Override
 	public String toString() {

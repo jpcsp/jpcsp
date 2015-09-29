@@ -19,23 +19,29 @@ package jpcsp.format.rco.vsmx.objects;
 import jpcsp.format.RCO;
 import jpcsp.format.RCO.RCOEntry;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
 
 public class Resource extends BaseNativeObject {
 	public static final String objectName = "resource";
+	public static final String rootName = "root";
+	public static final String childrenName = "children";
 
-	public static VSMXNativeObject create(RCOEntry mainTable) {
-		Resource resource = new Resource();
-		VSMXNativeObject object = new VSMXNativeObject(resource);
+	public static VSMXNativeObject create(VSMXInterpreter interpreter, RCOEntry mainTable) {
+		Resource resource = new Resource(interpreter);
+		VSMXNativeObject object = new VSMXNativeObject(interpreter, resource);
 		resource.setObject(object);
 
-		createTable(object, mainTable, RCO.RCO_TABLE_OBJ, "pagetable");
-		createTable(object, mainTable, RCO.RCO_TABLE_ANIM, "animtable");
-		createTable(object, mainTable, RCO.RCO_TABLE_SOUND, "soundtable");
-		createTable(object, mainTable, RCO.RCO_TABLE_IMG, "texturetable");
+		createTable(interpreter, object, mainTable, RCO.RCO_TABLE_OBJ, "pagetable");
+		createTable(interpreter, object, mainTable, RCO.RCO_TABLE_ANIM, "animtable");
+		createTable(interpreter, object, mainTable, RCO.RCO_TABLE_SOUND, "soundtable");
+		createTable(interpreter, object, mainTable, RCO.RCO_TABLE_IMG, "texturetable");
 
 		return object;
+	}
+
+	private Resource(VSMXInterpreter interpreter) {
 	}
 
 	private static RCOEntry[] findEntries(RCOEntry mainTable, int id) {
@@ -48,34 +54,36 @@ public class Resource extends BaseNativeObject {
 		return null;
 	}
 
-	private static void createObjectFromEntry(VSMXBaseObject parent, RCOEntry entry) {
+	private static void createObjectFromEntry(VSMXInterpreter interpreter, VSMXBaseObject parent, RCOEntry entry) {
 		if (entry.label == null || entry.obj == null) {
 			return;
 		}
 
 		VSMXBaseObject object;
 		if (entry.obj != null) {
-			object = entry.obj.createVSMXObject(parent, entry);
+			object = entry.obj.createVSMXObject(interpreter, parent, entry);
 		} else {
 			object = parent;
 		}
 
 		if (entry.subEntries != null) {
+			VSMXObject children = new VSMXObject(interpreter, null);
+			object.setPropertyValue(childrenName, children);
 			for (RCOEntry subEntry : entry.subEntries) {
-				createObjectFromEntry(object, subEntry);
+				createObjectFromEntry(interpreter, children, subEntry);
 			}
 		}
 	}
 
-	private static void createTable(VSMXObject parent, RCOEntry mainTable, int id, String name) {
-		VSMXBaseObject table = new VSMXObject();
+	private static void createTable(VSMXInterpreter interpreter, VSMXObject parent, RCOEntry mainTable, int id, String name) {
+		VSMXBaseObject table = new VSMXObject(interpreter, null);
 		parent.setPropertyValue(name, table);
 
 		RCOEntry entries[] = findEntries(mainTable, id);
 
 		if (entries != null) {
 			for (RCOEntry entry : entries) {
-				createObjectFromEntry(table, entry);
+				createObjectFromEntry(interpreter, table, entry);
 			}
 		}
 	}

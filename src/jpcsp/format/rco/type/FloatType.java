@@ -23,8 +23,18 @@ public class FloatType extends BaseType {
 	}
 
 	@Override
+	public void setFloatValue(float value) {
+		super.setIntValue(Float.floatToRawIntBits(value));
+	}
+
+	@Override
 	public int getIntValue() {
 		return (int) getFloatValue();
+	}
+
+	@Override
+	public void setIntValue(int value) {
+		setFloatValue((float) value);
 	}
 
 	@Override

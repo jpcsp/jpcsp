@@ -19,8 +19,6 @@ package jpcsp.format;
 import static jpcsp.util.Utilities.endianSwap32;
 
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
 
 import jpcsp.format.rco.AnimFactory;
 import jpcsp.format.rco.LZR;
@@ -28,10 +26,10 @@ import jpcsp.format.rco.ObjectFactory;
 import jpcsp.format.rco.SoundFactory;
 import jpcsp.format.rco.object.BaseObject;
 import jpcsp.format.rco.vsmx.VSMX;
-import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.objects.Controller;
+import jpcsp.format.rco.vsmx.objects.GlobalVariables;
 import jpcsp.format.rco.vsmx.objects.MoviePlayer;
 import jpcsp.format.rco.vsmx.objects.Resource;
 import jpcsp.util.Utilities;
@@ -616,12 +614,12 @@ public class RCO {
 			VSMX vsmx = new VSMX(readVSMX(pVSMXTable));
 			if (false) {
 				VSMXInterpreter interpreter = new VSMXInterpreter(vsmx);
-				Map<String, VSMXBaseObject> context = new HashMap<String, VSMXBaseObject>();
-				VSMXNativeObject controller = Controller.create(resourceName);
-				context.put(Controller.objectName, controller);
-				context.put(MoviePlayer.objectName, MoviePlayer.create());
-				context.put(Resource.objectName, Resource.create(mainTable));
-				interpreter.run(context);
+				VSMXNativeObject globalVariables = GlobalVariables.create(interpreter);
+				VSMXNativeObject controller = Controller.create(interpreter, resourceName);
+				globalVariables.setPropertyValue(Controller.objectName, controller);
+				globalVariables.setPropertyValue(MoviePlayer.objectName, MoviePlayer.create(interpreter));
+				globalVariables.setPropertyValue(Resource.objectName, Resource.create(interpreter, mainTable));
+				interpreter.run(globalVariables);
 	
 				controller.getObject().callCallback(interpreter, "onAutoPlay", null);
 			}

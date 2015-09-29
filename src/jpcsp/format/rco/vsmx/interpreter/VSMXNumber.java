@@ -19,11 +19,13 @@ package jpcsp.format.rco.vsmx.interpreter;
 public class VSMXNumber extends VSMXBaseObject {
 	private float value;
 
-	public VSMXNumber(float value) {
+	public VSMXNumber(VSMXInterpreter interpreter, float value) {
+		super(interpreter);
 		this.value = value;
 	}
 
-	public VSMXNumber(int value) {
+	public VSMXNumber(VSMXInterpreter interpreter, int value) {
+		super(interpreter);
 		this.value = (float) value;
 	}
 
@@ -35,6 +37,11 @@ public class VSMXNumber extends VSMXBaseObject {
 	@Override
 	public String typeOf() {
 		return "number";
+	}
+
+	@Override
+	public String getClassName() {
+		return "Number";
 	}
 
 	@Override

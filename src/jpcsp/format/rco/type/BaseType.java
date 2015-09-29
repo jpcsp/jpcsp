@@ -45,8 +45,16 @@ public class BaseType {
 		return value;
 	}
 
+	public void setIntValue(int value) {
+		this.value = value;
+	}
+
 	public float getFloatValue() {
 		return (float) value;
+	}
+
+	public void setFloatValue(float value) {
+		this.value = (int) value;
 	}
 
 	@Override

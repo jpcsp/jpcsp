@@ -20,13 +20,20 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.format.RCO.RCOEntry;
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.type.BaseType;
+import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
-import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
+import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
+import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
 
-public abstract class BaseObject {
+public abstract class BaseObject extends BaseNativeObject {
+	protected Logger log = VSMX.log;
+
 	private static class FieldComparator implements Comparator<Field> {
 		@Override
 		public int compare(Field f1, Field f2) {
@@ -96,8 +103,9 @@ public abstract class BaseObject {
 		return size;
 	}
 
-	public VSMXBaseObject createVSMXObject(VSMXBaseObject parent, RCOEntry entry) {
-		VSMXObject object = new VSMXObject();
+	public VSMXBaseObject createVSMXObject(VSMXInterpreter interpreter, VSMXBaseObject parent, RCOEntry entry) {
+		VSMXNativeObject object = new VSMXNativeObject(interpreter, this);
+		setObject(object);
 		parent.setPropertyValue(entry.label, object);
 
 		return object;

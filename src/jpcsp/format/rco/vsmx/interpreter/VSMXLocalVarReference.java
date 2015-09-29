@@ -20,8 +20,8 @@ public class VSMXLocalVarReference extends VSMXReference {
 	private VSMXCallState callState;
 	private int index;
 
-	public VSMXLocalVarReference(VSMXCallState callState, int index) {
-		super(null, null);
+	public VSMXLocalVarReference(VSMXInterpreter interpreter, VSMXCallState callState, int index) {
+		super(interpreter, null, null);
 		this.callState = callState;
 		this.index = index;
 	}

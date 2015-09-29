@@ -20,6 +20,11 @@ public class VSMXNull extends VSMXBaseObject {
 	public static final VSMXNull singleton = new VSMXNull();
 
 	private VSMXNull() {
+		super(null);
+	}
+
+	public static void init(VSMXInterpreter interpreter) {
+		singleton.setInterpreter(interpreter);
 	}
 
 	@Override
@@ -31,6 +36,11 @@ public class VSMXNull extends VSMXBaseObject {
 	@Override
 	public String typeOf() {
 		return "undefined";
+	}
+
+	@Override
+	public String getClassName() {
+		return "Null";
 	}
 
 	@Override

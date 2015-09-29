@@ -17,17 +17,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format.rco.vsmx.interpreter;
 
 import java.util.Arrays;
+import java.util.Stack;
 
 public class VSMXCallState {
 	private VSMXBaseObject thisObject;
 	private VSMXBaseObject[] localVariables;
+	private Stack<VSMXBaseObject> stack;
 	private int returnPc;
+	private boolean returnThis;
 
-	public VSMXCallState(VSMXBaseObject thisObject, int numberOfLocalVariables, int returnPc) {
+	public VSMXCallState(VSMXBaseObject thisObject, int numberOfLocalVariables, int returnPc, boolean returnThis) {
 		this.thisObject = thisObject;
 		localVariables = new VSMXBaseObject[numberOfLocalVariables];
 		Arrays.fill(localVariables, VSMXUndefined.singleton);
+		stack = new Stack<VSMXBaseObject>();
 		this.returnPc = returnPc;
+		this.returnThis = returnThis;
 	}
 
 	public int getReturnPc() {
@@ -39,16 +44,37 @@ public class VSMXCallState {
 	}
 
 	public VSMXBaseObject getLocalVar(int i) {
-		if (i < 0 || i >= localVariables.length) {
+		if (i <= 0 || i > localVariables.length) {
 			return VSMXUndefined.singleton;
 		}
 
-		return localVariables[i];
+		return localVariables[i - 1];
 	}
 
 	public void setLocalVar(int i, VSMXBaseObject value) {
-		if (i >= 0 && i < localVariables.length) {
-			localVariables[i] = value;
+		if (i > 0 && i <= localVariables.length) {
+			localVariables[i - 1] = value;
 		}
+	}
+
+	public Stack<VSMXBaseObject> getStack() {
+		return stack;
+	}
+
+	public boolean getReturnThis() {
+		return returnThis;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder s = new StringBuilder();
+
+		s.append(String.format("CallState[returnPc=%d, this=%s", returnPc, thisObject));
+		for (int i = 1; i <= localVariables.length; i++) {
+			s.append(String.format(", var%d=%s", i, getLocalVar(i)));
+		}
+		s.append("]");
+
+		return s.toString();
 	}
 }

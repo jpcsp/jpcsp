@@ -16,11 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.vsmx.interpreter;
 
+import jpcsp.format.rco.vsmx.INativeFunction;
+import jpcsp.format.rco.vsmx.objects.NativeFunctionFactory;
+
 public class VSMXReference extends VSMXBaseObject {
 	private VSMXObject refObject;
 	private String refProperty;
 
-	public VSMXReference(VSMXObject refObject, String refProperty) {
+	public VSMXReference(VSMXInterpreter interpreter, VSMXObject refObject, String refProperty) {
+		super(interpreter);
 		this.refObject = refObject;
 		this.refProperty = refProperty;
 	}
@@ -29,7 +33,19 @@ public class VSMXReference extends VSMXBaseObject {
 		refObject.setPropertyValue(refProperty, value.getValue());
 	}
 
+	public String getRefProperty() {
+		return refProperty;
+	}
+
 	protected VSMXBaseObject getRef() {
+		if (!refObject.hasPropertyValue(refProperty) && refObject instanceof VSMXNativeObject) {
+			VSMXNativeObject nativeObject = (VSMXNativeObject) refObject;
+			INativeFunction nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, refProperty);
+			if (nativeFunction != null) {
+				return new VSMXNativeFunction(interpreter, nativeFunction);
+			}
+		}
+
 		return refObject.getPropertyValue(refProperty);
 	}
 
@@ -81,6 +97,11 @@ public class VSMXReference extends VSMXBaseObject {
 	@Override
 	public String typeOf() {
 		return getRef().typeOf();
+	}
+
+	@Override
+	public String getClassName() {
+		return getRef().getClassName();
 	}
 
 	@Override

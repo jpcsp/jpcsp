@@ -20,6 +20,11 @@ public class VSMXUndefined extends VSMXBaseObject {
 	public static final VSMXUndefined singleton = new VSMXUndefined();
 
 	private VSMXUndefined() {
+		super(null);
+	}
+
+	public static void init(VSMXInterpreter interpreter) {
+		singleton.setInterpreter(interpreter);
 	}
 
 	@Override
@@ -31,6 +36,11 @@ public class VSMXUndefined extends VSMXBaseObject {
 	@Override
 	public String typeOf() {
 		return "undefined";
+	}
+
+	@Override
+	public String getClassName() {
+		return "Undefined";
 	}
 
 	@Override

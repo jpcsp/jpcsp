@@ -23,8 +23,8 @@ public class VSMXNativeFunction extends VSMXFunction {
 	private VSMXBaseObject returnValue;
 	private VSMXBaseObject arguments[];
 
-	public VSMXNativeFunction(INativeFunction nativeFunction) {
-		super(nativeFunction.getArgs(), 0, -1);
+	public VSMXNativeFunction(VSMXInterpreter interpreter, INativeFunction nativeFunction) {
+		super(interpreter, nativeFunction.getArgs(), 0, -1);
 		this.nativeFunction = nativeFunction;
 		arguments = new VSMXBaseObject[nativeFunction.getArgs() + 1];
 	}

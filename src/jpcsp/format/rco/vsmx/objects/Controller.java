@@ -21,18 +21,19 @@ import org.apache.log4j.Logger;
 import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXArray;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNull;
 
 public class Controller extends BaseNativeObject {
 	private static final Logger log = VSMX.log;
 	public static final String objectName = "controller";
-	private VSMXBaseObject userData = new VSMXArray();
+	private VSMXBaseObject userData;
 	private String resource; // E.g. "EN100000"
 
-	public static VSMXNativeObject create(String resource) {
-		Controller controller = new Controller();
-		VSMXNativeObject object = new VSMXNativeObject(controller);
+	public static VSMXNativeObject create(VSMXInterpreter interpreter, String resource) {
+		Controller controller = new Controller(interpreter);
+		VSMXNativeObject object = new VSMXNativeObject(interpreter, controller);
 		controller.setObject(object);
 		controller.resource = resource;
 
@@ -44,6 +45,10 @@ public class Controller extends BaseNativeObject {
 		object.setPropertyValue("onContinuePlay", VSMXNull.singleton);
 
 		return object;
+	}
+
+	private Controller(VSMXInterpreter interpreter) {
+		userData = new VSMXArray(interpreter);
 	}
 
 	public VSMXBaseObject getUserData(VSMXBaseObject object) {

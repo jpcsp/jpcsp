@@ -17,6 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format.rco.anim;
 
 import jpcsp.format.rco.object.BaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 
 public class BaseAnim extends BaseObject {
+	public void play(VSMXBaseObject thisObject, VSMXBaseObject object) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("BaseAnim.play %s, %s", thisObject, object));
+		}
+	}
 }

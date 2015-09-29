@@ -21,7 +21,9 @@ import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.type.EventType;
 import jpcsp.format.rco.type.IntType;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
+import jpcsp.format.rco.vsmx.objects.Resource;
 
 public class PageObject extends BaseObject {
 	@ObjectField(order = 1)
@@ -36,14 +38,28 @@ public class PageObject extends BaseObject {
 	public EventType onActivate;
 
 	@Override
-	public VSMXBaseObject createVSMXObject(VSMXBaseObject parent, RCOEntry entry) {
-		VSMXBaseObject object = super.createVSMXObject(parent, entry);
+	public VSMXBaseObject createVSMXObject(VSMXInterpreter interpreter, VSMXBaseObject parent, RCOEntry entry) {
+		VSMXBaseObject object = super.createVSMXObject(interpreter, parent, entry);
 
-		VSMXObject root = new VSMXObject();
-		object.setPropertyValue("root", root);
-		VSMXObject children = new VSMXObject();
-		root.setPropertyValue("children", children);
+		VSMXObject root = new VSMXObject(interpreter, null);
+		object.setPropertyValue(Resource.rootName, root);
 
-		return children;
+		return root;
+	}
+
+	public VSMXBaseObject open(VSMXBaseObject object) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("PageObject.open"));
+		}
+
+		return object;
+	}
+
+	public VSMXBaseObject activate(VSMXBaseObject object) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("PageObject.activate"));
+		}
+
+		return object;
 	}
 }

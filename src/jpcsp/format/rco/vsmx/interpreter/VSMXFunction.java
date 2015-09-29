@@ -20,11 +20,14 @@ public class VSMXFunction extends VSMXBaseObject {
 	private int args;
 	private int localVars;
 	private int startLine;
+	private VSMXObject prototype;
 
-	public VSMXFunction(int args, int localVars, int startLine) {
+	public VSMXFunction(VSMXInterpreter interpreter, int args, int localVars, int startLine) {
+		super(interpreter);
 		this.args = args;
 		this.localVars = localVars;
 		this.startLine = startLine;
+		prototype = new VSMXObject(interpreter, "Function");
 	}
 
 	public int getArgs() {
@@ -49,6 +52,16 @@ public class VSMXFunction extends VSMXBaseObject {
 	@Override
 	public String typeOf() {
 		return "function";
+	}
+
+	@Override
+	public String getClassName() {
+		return "Function";
+	}
+
+	@Override
+	protected VSMXObject getPrototype() {
+		return prototype;
 	}
 
 	@Override

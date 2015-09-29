@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNumber;
 import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
@@ -29,6 +30,7 @@ import jpcsp.format.rco.vsmx.interpreter.VSMXUndefined;
 public class MoviePlayer extends BaseNativeObject {
 	private static final Logger log = VSMX.log;
 	public static final String objectName = "movieplayer";
+	private VSMXInterpreter interpreter;
 	private boolean playing = false;
 	private int playListNumber;
 	private int chapterNumber;
@@ -38,15 +40,19 @@ public class MoviePlayer extends BaseNativeObject {
 	private int subtitleNumber;
 	private int subtitleFlag;
 
-	public static VSMXNativeObject create() {
-		MoviePlayer moviePlayer = new MoviePlayer();
-		VSMXNativeObject object = new VSMXNativeObject(moviePlayer);
+	public static VSMXNativeObject create(VSMXInterpreter interpreter) {
+		MoviePlayer moviePlayer = new MoviePlayer(interpreter);
+		VSMXNativeObject object = new VSMXNativeObject(interpreter, moviePlayer);
 		moviePlayer.setObject(object);
 
-		object.setPropertyValue("audioLanguageCode", new VSMXString("en"));
-		object.setPropertyValue("subtitleLanguageCode", new VSMXString("en"));
+		object.setPropertyValue("audioLanguageCode", new VSMXString(interpreter, "en"));
+		object.setPropertyValue("subtitleLanguageCode", new VSMXString(interpreter, "en"));
 
 		return object;
+	}
+
+	private MoviePlayer(VSMXInterpreter interpreter) {
+		this.interpreter = interpreter;
 	}
 
 	public void play(VSMXBaseObject object,
@@ -87,8 +93,8 @@ public class MoviePlayer extends BaseNativeObject {
 	public VSMXBaseObject getResumeInfo(VSMXBaseObject object) {
 		VSMXBaseObject resumeInfo;
 		if (playing) {
-			resumeInfo = new VSMXObject();
-			resumeInfo.setPropertyValue("playListNumber", new VSMXNumber(playListNumber));
+			resumeInfo = new VSMXObject(interpreter, "ResumeInfo");
+			resumeInfo.setPropertyValue("playListNumber", new VSMXNumber(interpreter, playListNumber));
 		} else {
 			resumeInfo = VSMXUndefined.singleton;
 		}
@@ -114,14 +120,14 @@ public class MoviePlayer extends BaseNativeObject {
 	public VSMXBaseObject getPlayerStatus(VSMXBaseObject object) {
 		VSMXBaseObject playerStatus;
 		if (playing) {
-			playerStatus = new VSMXObject();
-			playerStatus.setPropertyValue("playListNumber", new VSMXNumber(playListNumber));
-			playerStatus.setPropertyValue("chapterNumber", new VSMXNumber(chapterNumber));
-			playerStatus.setPropertyValue("videoNumber", new VSMXNumber(videoNumber));
-			playerStatus.setPropertyValue("audioNumber", new VSMXNumber(audioNumber));
-			playerStatus.setPropertyValue("audioFlag", new VSMXNumber(audioFlag));
-			playerStatus.setPropertyValue("subtitleNumber", new VSMXNumber(subtitleNumber));
-			playerStatus.setPropertyValue("subtitleFlag", new VSMXNumber(subtitleFlag));
+			playerStatus = new VSMXObject(interpreter, "PlayerStatus");
+			playerStatus.setPropertyValue("playListNumber", new VSMXNumber(interpreter, playListNumber));
+			playerStatus.setPropertyValue("chapterNumber", new VSMXNumber(interpreter, chapterNumber));
+			playerStatus.setPropertyValue("videoNumber", new VSMXNumber(interpreter, videoNumber));
+			playerStatus.setPropertyValue("audioNumber", new VSMXNumber(interpreter, audioNumber));
+			playerStatus.setPropertyValue("audioFlag", new VSMXNumber(interpreter, audioFlag));
+			playerStatus.setPropertyValue("subtitleNumber", new VSMXNumber(interpreter, subtitleNumber));
+			playerStatus.setPropertyValue("subtitleFlag", new VSMXNumber(interpreter, subtitleFlag));
 		} else {
 			playerStatus = VSMXUndefined.singleton;
 		}

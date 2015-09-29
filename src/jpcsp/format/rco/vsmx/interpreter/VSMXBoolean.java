@@ -22,7 +22,13 @@ public class VSMXBoolean extends VSMXBaseObject {
 	private boolean value;
 
 	private VSMXBoolean(boolean value) {
+		super(null);
 		this.value = value;
+	}
+
+	public static void init(VSMXInterpreter interpreter) {
+		singletonTrue.setInterpreter(interpreter);
+		singletonFalse.setInterpreter(interpreter);
 	}
 
 	public static VSMXBoolean getValue(boolean value) {
@@ -51,6 +57,11 @@ public class VSMXBoolean extends VSMXBaseObject {
 	@Override
 	public String typeOf() {
 		return "boolean";
+	}
+
+	@Override
+	public String getClassName() {
+		return "Boolean";
 	}
 
 	@Override

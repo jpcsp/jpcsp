@@ -22,14 +22,34 @@ import java.util.Map;
 import java.util.Set;
 
 public class VSMXObject extends VSMXBaseObject {
-	protected Map<String, VSMXBaseObject> properties = new HashMap<String, VSMXBaseObject>();
+	protected final Map<String, VSMXBaseObject> properties;
+	private String className;
+
+	public VSMXObject(VSMXInterpreter interpreter, String className) {
+		super(interpreter);
+		this.className = className;
+		properties = new HashMap<String, VSMXBaseObject>();
+	}
 
 	@Override
 	public VSMXBaseObject getPropertyValue(String name) {
+		if (prototypeName.equals(name)) {
+			VSMXObject prototype = getPrototype();
+			if (prototype != null) {
+				return prototype;
+			}
+			return VSMXUndefined.singleton;
+		}
+
 		VSMXBaseObject value = properties.get(name);
 		if (value == null) {
-			value = VSMXUndefined.singleton;
-			properties.put(name, value);
+			VSMXObject prototype = getPrototype();
+			if (prototype != null && prototype.hasPropertyValue(name)) {
+				value = prototype.getPropertyValue(name);
+			} else {
+				value = VSMXUndefined.singleton;
+				properties.put(name, value);
+			}
 		}
 		return value;
 	}
@@ -49,6 +69,11 @@ public class VSMXObject extends VSMXBaseObject {
 	}
 
 	@Override
+	public boolean hasPropertyValue(String name) {
+		return properties.containsKey(name);
+	}
+
+	@Override
 	public boolean equals(VSMXBaseObject value) {
 		if (value instanceof VSMXObject) {
 			// Return true if both values refer to the same object
@@ -60,6 +85,19 @@ public class VSMXObject extends VSMXBaseObject {
 	@Override
 	public String typeOf() {
 		return "object";
+	}
+
+	@Override
+	public String getClassName() {
+		return className;
+	}
+
+	@Override
+	public String getStringValue() {
+		if (hasPropertyValue("toString")) {
+			log.warn(String.format("getStringValue on VSMXObject should be calling existing toString: %s", getPropertyValue("toString")));
+		}
+		return super.getStringValue();
 	}
 
 	protected void toString(StringBuilder s) {
