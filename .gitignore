@@ -14,3 +14,9 @@ ms0/PSP/GAME/*
 !ms0/PSP/GAME/SavedataTool/
 #UMD images
 umdimages/
+#7-Zip binaries
+7-zip.dll
+7z.dll
+7z.exe
+7zFM.exe
+7zG.exe
