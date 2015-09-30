@@ -965,6 +965,20 @@ public class ModuleMgrForUser extends HLEModule {
     	return previousStartModuleHandler;
     }
 
+    /** 
+     * Finds a driver 
+     * 
+     * @param drvname - The name of the driver (without ":" or numbers) 
+     * 
+     * @returns the driver if found, NULL otherwise 
+     * 
+     */ 
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x78E46415, version = 150)
+    public int sctrlHENFindDriver(String drvname) {
+    	return 0;
+    }
+
     @HLEUnimplemented
     @HLEFunction(nid = 0xFEF27DC1, version = 271)
     // sceKernelLoadModuleDNAS
