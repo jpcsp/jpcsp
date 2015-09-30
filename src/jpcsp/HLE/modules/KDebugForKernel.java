@@ -62,7 +62,7 @@ public class KDebugForKernel extends HLEModule {
 
 	@HLEFunction(nid = 0x84F370BC, version = 150)
 	public int Kprintf(CpuState cpu, PspString formatString) {
-		return Modules.SysMemUserForUserModule.hleKernelPrintf(cpu, formatString, kprintf, "Kprintf");
+		return Modules.SysMemUserForUserModule.hleKernelPrintf(cpu, formatString, kprintf);
 	}
 
     @HLEUnimplemented

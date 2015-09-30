@@ -16,8 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.Common._a2;
+
 import org.apache.log4j.Logger;
 
+import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
@@ -26,6 +29,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.util.Utilities;
 
 public class SysclibForKernel extends HLEModule {
 	public static Logger log = Modules.getLogger("SysclibForKernel");
@@ -50,6 +54,9 @@ public class SysclibForKernel extends HLEModule {
 
     @HLEFunction(nid = 0xC0AB8932, version = 150)
     public int strcmp(@CanBeNull TPointer src1Addr, @CanBeNull TPointer src2Addr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("strcmp '%s', '%s'", Utilities.readStringZ(src1Addr.getAddress()), Utilities.readStringZ(src2Addr.getAddress())));
+    	}
 		return AbstractNativeCodeSequence.strcmp(src1Addr.getAddress(), src2Addr.getAddress());
     }
 
@@ -86,7 +93,7 @@ public class SysclibForKernel extends HLEModule {
 
 		return destAddr.getAddress();
     }
-	
+
 	@HLEFunction(nid = 0x7AB35214, version = 150)
     public int strncmp(@CanBeNull TPointer src1Addr, TPointer src2Addr, int size) {
 		int result = 0;
@@ -110,11 +117,22 @@ public class SysclibForKernel extends HLEModule {
 		}
 		return result;
     }
-	
+
 	@HLEFunction(nid = 0xA48D2592, version = 150)
     public int memmove(@CanBeNull TPointer destAddr, TPointer srcAddr, int size) {
 		destAddr.getMemory().memmove(destAddr.getAddress(), srcAddr.getAddress(), size);
 		return 0;
     }
 
+	@HLEFunction(nid = 0x7661E728, version = 150)
+    public int sprintf(CpuState cpu, TPointer buffer, String format) {
+		String formattedString = Modules.SysMemUserForUserModule.hleKernelSprintf(cpu, format, _a2);
+		Utilities.writeStringZ(buffer.getMemory(), buffer.getAddress(), formattedString);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sprintf returning '%s'", formattedString));
+		}
+
+		return formattedString.length();
+    }
 }

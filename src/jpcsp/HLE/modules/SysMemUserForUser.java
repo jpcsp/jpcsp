@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.Common._a1;
+import static jpcsp.Allegrex.Common._t3;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -397,52 +399,53 @@ public class SysMemUserForUser extends HLEModule {
         DumpDebugState.log("Allocated blocks:\n" + getDebugAllocatedMem() + "\n");
     }
 
-    public int hleKernelPrintf(CpuState cpu, PspString formatString, Logger logger, String sceFunctionName) {
-        // Format and print the message to stdout
+    public String hleKernelSprintf(CpuState cpu, String format, int firstRegister) {
+    	String formattedMsg = format;
+    	try {
+        	// For now, use only the 7 register parameters: $a1-$a3, $t0-$t3
+        	// Further parameters should be retrieved from the stack.
+    		Object[] formatParameters = new Object[_t3 - firstRegister + 1];
+    		for (int i = 0; i < formatParameters.length; i++) {
+    			formatParameters[i] = cpu.getRegister(firstRegister + i);
+    		}
+
+    		// Translate the C-like format string to a Java format string:
+    		// - %u or %i -> %d
+    		// - %4u -> %4d
+    		// - %lld or %ld -> %d
+    		// - %p -> %08X
+    		String javaMsg = format;
+    		javaMsg = javaMsg.replaceAll("\\%(\\d*)l?l?[uid]", "%$1d");
+    		javaMsg = javaMsg.replaceAll("\\%p", "%08X");
+
+    		// Support for "%s" (at any place and can occur multiple times)
+    		int index = -1;
+    		for (int parameterIndex = 0; parameterIndex < formatParameters.length; parameterIndex++) {
+				index = javaMsg.indexOf('%', index + 1);
+				if (index < 0) {
+					break;
+				}
+				String parameterFormat = javaMsg.substring(index);
+				if (parameterFormat.startsWith("%s")) {
+					// Convert an integer address to a String by reading
+					// the String at the given address
+					formatParameters[parameterIndex] = Utilities.readStringZ(((Integer) formatParameters[parameterIndex]).intValue());
+				}
+    		}
+
+    		// String.format: If there are more arguments than format specifiers, the extra arguments are ignored.
+    		formattedMsg = String.format(javaMsg, formatParameters);
+    	} catch (Exception e) {
+    		// Ignore formatting exception
+    	}
+
+    	return formattedMsg;
+    }
+
+    public int hleKernelPrintf(CpuState cpu, PspString formatString, Logger logger) {
+        // Format and print the message to the logger
         if (logger.isInfoEnabled()) {
-        	String formattedMsg = formatString.getString();
-        	try {
-            	// For now, use only the 7 register parameters: $a1-$a3, $t0-$t3
-            	// Further parameters should be retrieved from the stack.
-        		Object[] formatParameters = new Object[] {
-        				cpu._a1,
-        				cpu._a2,
-        				cpu._a3,
-        				cpu._t0,
-        				cpu._t1,
-        				cpu._t2,
-        				cpu._t3
-        		};
-
-        		// Translate the C-like format string to a Java format string:
-        		// - %u or %i -> %d
-        		// - %4u -> %4d
-        		// - %lld or %ld -> %d
-        		// - %p -> %08X
-        		String javaMsg = formatString.getString();
-        		javaMsg = javaMsg.replaceAll("\\%(\\d*)l?l?[uid]", "%$1d");
-        		javaMsg = javaMsg.replaceAll("\\%p", "%08X");
-
-        		// Support for "%s" (at any place and can occur multiple times)
-        		int index = -1;
-        		for (int parameterIndex = 0; parameterIndex < formatParameters.length; parameterIndex++) {
-    				index = javaMsg.indexOf('%', index + 1);
-    				if (index < 0) {
-    					break;
-    				}
-    				String parameterFormat = javaMsg.substring(index);
-    				if (parameterFormat.startsWith("%s")) {
-    					// Convert an integer address to a String by reading
-    					// the String at the given address
-    					formatParameters[parameterIndex] = Utilities.readStringZ(((Integer) formatParameters[parameterIndex]).intValue());
-    				}
-        		}
-
-        		// String.format: If there are more arguments than format specifiers, the extra arguments are ignored.
-        		formattedMsg = String.format(javaMsg, formatParameters);
-        	} catch (Exception e) {
-        		// Ignore formatting exception
-        	}
+        	String formattedMsg = hleKernelSprintf(cpu, formatString.getString(), _a1);
         	logger.info(formattedMsg);
         }
 
@@ -527,7 +530,7 @@ public class SysMemUserForUser extends HLEModule {
 
 	@HLEFunction(nid = 0x13A5ABEF, version = 150)
 	public int sceKernelPrintf(CpuState cpu, PspString formatString) {
-		return hleKernelPrintf(cpu, formatString, stdout, "sceKernelPrintf");
+		return hleKernelPrintf(cpu, formatString, stdout);
 	}
 
 	@HLEFunction(nid = 0x3FC9AE6A, version = 150)

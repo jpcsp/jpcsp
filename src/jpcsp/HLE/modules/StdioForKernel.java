@@ -29,6 +29,6 @@ public class StdioForKernel extends HLEModule {
 
     @HLEFunction(nid = 0xCAB439DF, version = 150)
     public int StdioForKernel_printf(CpuState cpu, PspString formatString) {
-    	return Modules.SysMemUserForUserModule.hleKernelPrintf(cpu, formatString, log, "StdioForKernel_printf");
+    	return Modules.SysMemUserForUserModule.hleKernelPrintf(cpu, formatString, log);
     }
 }
