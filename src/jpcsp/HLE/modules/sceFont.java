@@ -106,7 +106,6 @@ public class sceFont extends HLEModule {
         fontsMap = new HashMap<Integer, Font>();
         loadFontRegistry();
         loadDefaultSystemFont();
-        loadAllFonts();
 
         super.start();
     }
@@ -174,8 +173,7 @@ public class sceFont extends HLEModule {
         }
     }
 
-    public class FontRegistryEntry {
-
+    public static class FontRegistryEntry {
         public int h_size;
         public int v_size;
         public int h_resolution;
@@ -215,9 +213,11 @@ public class sceFont extends HLEModule {
             this.expire_date = expire_date;
             this.shadow_option = shadow_option;
         }
+
+        public FontRegistryEntry() {
+        }
     }
     public static final int PGF_MAGIC = 'P' << 24 | 'G' << 16 | 'F' << 8 | '0';
-    public static final String fontDirPath = "flash0:/font";
     public static final String customFontFile = "debug.jpft";
     public static final int PSP_FONT_PIXELFORMAT_4 = 0; // 2 pixels packed in 1 byte (natural order)
     public static final int PSP_FONT_PIXELFORMAT_4_REV = 1; // 2 pixels packed in 1 byte (reversed order)
@@ -232,6 +232,7 @@ public class sceFont extends HLEModule {
     private HashMap<Integer, FontLib> fontLibsMap;
     private HashMap<Integer, Font> fontsMap;
     protected String uidPurpose = "sceFont";
+    private String fontDirPath = "flash0:/font";
     private List<FontRegistryEntry> fontRegistry;
     protected static final float pointDPI = 72.f;
 
@@ -241,6 +242,18 @@ public class sceFont extends HLEModule {
 
     private void setUseDebugFont(boolean status) {
         useDebugFont = status;
+    }
+
+    public List<FontRegistryEntry> getFontRegistry() {
+    	return fontRegistry;
+    }
+
+    public String getFontDirPath() {
+    	return fontDirPath;
+    }
+
+    public void setFontDirPath(String fontDirPath) {
+    	this.fontDirPath = fontDirPath;
     }
 
     protected void loadFontRegistry() {
@@ -775,11 +788,15 @@ public class sceFont extends HLEModule {
     }
 
     public Font getFont(int index) {
+    	if (internalFonts.size() == 0) {
+    		loadAllFonts();
+    	}
     	return internalFonts.get(index);
     }
 
     @HLEFunction(nid = 0x67F17ED7, version = 150, checkInsideInterrupt = true, stackUsage = 0x590)
     public int sceFontNewLib(TPointer paramsPtr, @CanBeNull TErrorPointer32 errorCodePtr) {
+    	loadAllFonts();
         errorCodePtr.setValue(0);
         FontLib fontLib = new FontLib(paramsPtr);
         fontLibsMap.put(fontLib.getHandle(), fontLib);

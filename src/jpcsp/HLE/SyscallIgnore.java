@@ -28,12 +28,7 @@ public enum SyscallIgnore {
 	InterruptManagerForKernel_53991063(0x53991063),
 	Kprintf(0x84F370BC),
 	QueryInterruptManCB(0x00B6B0F3),
-	RegCloseRegistry(0xfa8a5739),
-	RegExit(0x9b25edf1),
-	RegFlushRegistry(0x39461b4d),
 	RegisterContextHooks(0x2CD783A1),
-	RegOpenRegistry(0x92e41280),
-	RegRemoveRegistry(0xdeda92bf),
 	ReleaseContextHooks(0x55242A8B),
 	ReturnToThread(0x43CD40EF),
 	SaveThreadContext(0x85F7766D),
@@ -71,19 +66,6 @@ public enum SyscallIgnore {
 	sceNetApDialogDummyTerm(0xF213BE65),
 	sceParseHttpResponseHeader(0xAD7BFDEF),//1.00+
 	sceParseHttpStatusLine(0x8077a433),//1.00+
-	sceRegCloseCategory(0x0cae832b),//1.00+
-	sceRegCreateKey(0x57641a81),//1.00+
-	sceRegFlushCategory(0x0d69bf40),//1.00+
-	sceRegGetKeyInfo(0xd4475aa8),//1.00+
-	sceRegGetKeys(0x2d211135),//1.00+
-	sceRegGetKeysNum(0x2c0db9dd),//1.00+
-	sceRegGetKeyValue(0x28a8e98a),//1.00+
-	sceRegGetKeyValueByName(0x30be0259),//1.00+
-	sceRegKickBackDiscover(0xc5768d02),//1.00+
-	sceRegOpenCategory(0x1d8a762e),//1.00+
-	sceRegRemoveCategory(0x4ca16893),//1.00+
-	sceRegRemoveKey(0x3615bc87),//1.00+
-	sceRegSetKeyValue(0x17768e14),//1.00+
 	sceSysconCtrlHRPower(0x44439604),//1.00+
 	sceSysregMeBusClockDisable(0x158AD4FC), //1.00+
 	sceSysregMeBusClockEnable(0x44F6CDA7),//1.00+

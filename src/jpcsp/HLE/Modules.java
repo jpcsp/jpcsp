@@ -81,6 +81,7 @@ import jpcsp.HLE.modules.scePower;
 import jpcsp.HLE.modules.scePsmf;
 import jpcsp.HLE.modules.scePsmfPlayer;
 import jpcsp.HLE.modules.scePspNpDrm_user;
+import jpcsp.HLE.modules.sceReg;
 import jpcsp.HLE.modules.sceRtc;
 import jpcsp.HLE.modules.sceSasCore;
 import jpcsp.HLE.modules.sceSfmt19937;
@@ -189,6 +190,7 @@ public class Modules {
     public static SysclibForKernel SysclibForKernelModule = new SysclibForKernel();
     public static semaphore semaphoreModule = new semaphore();
     public static ModuleMgrForKernel ModuleMgrForKernelModule = new ModuleMgrForKernel();
+    public static sceReg sceRegModule = new sceReg();
 
     public static Logger log = Logger.getLogger("hle");
 

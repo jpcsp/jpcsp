@@ -155,7 +155,8 @@ public class HLEModuleManager {
         KUBridge(Modules.KUBridgeModule),
         SysclibForKernel(Modules.SysclibForKernelModule),
         semaphore(Modules.semaphoreModule),
-        ModuleMgrForKernel(Modules.ModuleMgrForKernelModule);
+        ModuleMgrForKernel(Modules.ModuleMgrForKernelModule),
+        sceReg(Modules.sceRegModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
