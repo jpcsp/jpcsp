@@ -89,7 +89,6 @@ public class SceFontInfoBW extends SceFontInfo {
 
     	charInfo.bitmapWidth = charBitmapWidth;
     	charInfo.bitmapHeight = charBitmapHeight + 1;
-    	charInfo.bitmapTop = charBitmapWidth;
     	charInfo.sfp26Width = charBitmapWidth << 6;
     	charInfo.sfp26Height = (charBitmapHeight + 1) << 6;
     	charInfo.sfp26Ascender = charBitmapHeight << 6;
