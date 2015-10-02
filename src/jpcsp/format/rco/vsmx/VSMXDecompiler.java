@@ -386,6 +386,9 @@ public class VSMXDecompiler {
 			case VSMXCode.VID_OPERATOR_MOD:
 				operator2(s, " % ");
 				break;
+			case VSMXCode.VID_OPERATOR_B_XOR:
+				operator2(s, " ^ ");
+				break;
 			case VSMXCode.VID_ARRAY_PUSH:
 				op1 = new StringBuilder();
 				decompileOp(op1);
@@ -416,6 +419,12 @@ public class VSMXDecompiler {
 				op2 = new StringBuilder();
 				decompileOp(op2);
 				s.append(String.format("%s = %s", op2, op1));
+				break;
+			case VSMXCode.VID_STACK_COPY:
+				i = stack.pop();
+				stack.push(i);
+				stack.push(i);
+				decompileOp(s);
 				break;
 			default:
 				log.warn(String.format("Line #%d: decompileOp(%s) unimplemented", i, VSMXCode.VsmxDecOps[opcode]));

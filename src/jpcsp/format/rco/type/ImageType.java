@@ -16,5 +16,29 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.type;
 
+import java.awt.image.BufferedImage;
+
+import jpcsp.format.rco.RCOContext;
+
 public class ImageType extends BaseReferenceType {
+	public BufferedImage image;
+
+	@Override
+	public void read(RCOContext context) {
+		super.read(context);
+
+		if (referenceType == REFERENCE_TYPE_IMAGE) {
+			image = context.images.get(value);
+		} else if (referenceType != REFERENCE_TYPE_NONE) {
+			log.warn(String.format("ImageType unknown referenceType 0x%X", referenceType));
+		}
+	}
+
+	@Override
+	public String toString() {
+		if (image == null) {
+			return super.toString();
+		}
+		return String.format("%s, image=%dx%d", super.toString(), image.getWidth(), image.getHeight());
+	}
 }

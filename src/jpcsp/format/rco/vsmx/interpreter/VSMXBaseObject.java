@@ -121,8 +121,20 @@ public abstract class VSMXBaseObject {
 		return (VSMXObject) classObject;
 	}
 
+	public VSMXBaseObject toString(VSMXBaseObject object) {
+		return new VSMXString(getInterpreter(), getStringValue());
+	}
+
+	public VSMXBaseObject toString(VSMXBaseObject object, VSMXBaseObject radix) {
+		String s = Integer.toString(getIntValue(), radix.getIntValue());
+		return new VSMXString(getInterpreter(), s);
+	}
+
 	@Override
 	public String toString() {
+		if (getFloatValue() == (float) getIntValue()) {
+			return Integer.toString(getIntValue());
+		}
 		return Float.toString(getFloatValue());
 	}
 }

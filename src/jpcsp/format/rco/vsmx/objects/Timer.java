@@ -41,14 +41,45 @@ public class Timer extends BaseNativeObject {
 		this.interpreter = interpreter;
 	}
 
-	public VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval) {
+	private VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval, VSMXBaseObject... parameters) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Timer.setInterval function=%s, interval=%d", function, interval.getIntValue()));
+			log.debug(String.format("Timer.setInterval function=%s, interval=%d, numberOfParameters=%d", function, interval.getIntValue(), parameters.length));
+			for (int i = 0; i < parameters.length; i++) {
+				log.debug(String.format("Timer.setInterval param%d=%s", i, parameters[i]));
+			}
 		}
 
 		int id = currentTimerId++;
 
 		return new VSMXNumber(interpreter, id);
+	}
+
+	public VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval) {
+		return setInterval(object, function, interval, new VSMXBaseObject[0]);
+	}
+
+	public VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval, VSMXBaseObject param1) {
+		return setInterval(object, function, interval, new VSMXBaseObject[] { param1 });
+	}
+
+	public VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval, VSMXBaseObject param1, VSMXBaseObject param2) {
+		return setInterval(object, function, interval, new VSMXBaseObject[] { param1, param2 });
+	}
+
+	public VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval, VSMXBaseObject param1, VSMXBaseObject param2, VSMXBaseObject param3) {
+		return setInterval(object, function, interval, new VSMXBaseObject[] { param1, param2, param3 });
+	}
+
+	public VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval, VSMXBaseObject param1, VSMXBaseObject param2, VSMXBaseObject param3, VSMXBaseObject param4) {
+		return setInterval(object, function, interval, new VSMXBaseObject[] { param1, param2, param3, param4 });
+	}
+
+	public VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval, VSMXBaseObject param1, VSMXBaseObject param2, VSMXBaseObject param3, VSMXBaseObject param4, VSMXBaseObject param5) {
+		return setInterval(object, function, interval, new VSMXBaseObject[] { param1, param2, param3, param4, param5 });
+	}
+
+	public VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval, VSMXBaseObject param1, VSMXBaseObject param2, VSMXBaseObject param3, VSMXBaseObject param4, VSMXBaseObject param5, VSMXBaseObject param6) {
+		return setInterval(object, function, interval, new VSMXBaseObject[] { param1, param2, param3, param4, param5, param6 });
 	}
 
 	public void clearInterval(VSMXBaseObject id) {

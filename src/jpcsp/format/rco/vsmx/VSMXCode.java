@@ -74,7 +74,7 @@ public class VSMXCode {
 	// item
 	public static final int VID_OBJ_ADD_ATTR = 0x33;
 	public static final int VID_ARRAY_INDEX = 0x34;
-
+	public static final int VID_ARRAY_INDEX_KEEP_OBJ = 0x35;
 	public static final int VID_ARRAY_INDEX_ASSIGN = 0x36;
 	public static final int VID_ARRAY_DELETE = 0x37;
 	public static final int VID_ARRAY_PUSH = 0x38;	    // push something into array constant
@@ -154,7 +154,7 @@ public class VSMXCode {
 		"UNSET",
 		"OBJECT_ADD_ATTRIBUTE",
 		"ARRAY_INDEX",
-		"UNKNOWN_35",
+		"ARRAY_INDEX_KEEP_OBJ",
 		"ARRAY_INDEX_ASSIGN",
 		"ARRAY_DELETE",
 		"ARRAY_PUSH",

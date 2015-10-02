@@ -61,6 +61,7 @@ import jpcsp.State;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.RCO;
+import jpcsp.format.rco.vsmx.objects.MoviePlayer;
 import jpcsp.hardware.Screen;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
@@ -151,6 +152,9 @@ public class UmdVideoPlayer implements KeyListener {
     private MpsDisplayThread displayThread;
     private SourceDataLine mLine;
 
+    // RCO MoviePlayer
+    private MoviePlayer moviePlayer;
+
     // MPS stream class.
     protected class MpsStreamInfo {
         private String streamName;
@@ -159,6 +163,7 @@ public class UmdVideoPlayer implements KeyListener {
         private int streamFirstTimestamp;
         private int streamLastTimestamp;
         private MpsStreamMarkerInfo[] streamMarkers;
+        private int playListNumber;
 
         public MpsStreamInfo(String name, int width, int heigth, int firstTimestamp, int lastTimestamp, MpsStreamMarkerInfo[] markers) {
             streamName = name;
@@ -167,6 +172,7 @@ public class UmdVideoPlayer implements KeyListener {
             streamFirstTimestamp = firstTimestamp;
             streamLastTimestamp = lastTimestamp;
             streamMarkers = markers;
+            playListNumber = Integer.parseInt(name);
         }
 
         public String getName() {
@@ -193,7 +199,11 @@ public class UmdVideoPlayer implements KeyListener {
             return streamMarkers;
         }
 
-		@Override
+        public int getPlayListNumber() {
+        	return playListNumber;
+        }
+
+        @Override
 		public String toString() {
 			StringBuilder s = new StringBuilder();
 			s.append(String.format("name='%s', %dx%d, %s(%d to %d), markers=[", getName(), getWidth(), getHeigth(), getTimestampString(getLastTimestamp() - getFirstTimestamp()), getFirstTimestamp(), getLastTimestamp()));
@@ -291,30 +301,13 @@ public class UmdVideoPlayer implements KeyListener {
         threadExit = false;
         isoFile = null;
         mpsStreams = new LinkedList<UmdVideoPlayer.MpsStreamInfo>();
+        pauseVideo();
         currentStreamIndex = 0;
         parsePlaylistFile();
         parseRCO();
-        log.info("Setting aspect ratio to 16:9");
-        if (currentStreamIndex < mpsStreams.size()) {
-            MpsStreamInfo info = mpsStreams.get(currentStreamIndex);
-            fileName = "UMD_VIDEO/STREAM/" + info.getName() + ".MPS";
-            log.info("Loading stream: " + fileName);
-            try {
-                isoFile = iso.getFile(fileName);
-                // Look for valid CLIPINF files (contain the ripped off PSMF header from the
-                // MPS streams).
-                String cpiFileName = "UMD_VIDEO/CLIPINF/" + info.getName() + ".CLP";
-                UmdIsoFile cpiFile = iso.getFile(cpiFileName);
-                if (cpiFile != null) {
-                    log.info("Found CLIPINF data for this stream: " + cpiFileName);
-                }
-            } catch (FileNotFoundException e) {
-            } catch (IOException e) {
-                Emulator.log.error(e);
-            }
-        }
-        if (isoFile != null) {
-            startVideo();
+
+        if (videoPaused) {
+        	goToMpsStream(currentStreamIndex);
         }
     }
 
@@ -476,10 +469,12 @@ public class UmdVideoPlayer implements KeyListener {
 				UmdIsoFile file = iso.getFile("UMD_VIDEO/RESOURCE/" + resourceFileName);
 				byte[] buffer = new byte[(int) file.length()];
 				file.read(buffer);
-				RCO rco = new RCO(buffer, resourceFileName.replace(".RCO", ""));
+				RCO rco = new RCO(buffer);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("RCO: %s", rco));
 				}
+
+				rco.execute(this, resourceFileName.replace(".RCO", ""));
     		}
 		} catch (FileNotFoundException e) {
 		} catch (IOException e) {
@@ -488,12 +483,33 @@ public class UmdVideoPlayer implements KeyListener {
         
     }
 
-    private boolean goToNextMpsStream() {
-    	if (currentStreamIndex + 1 >= mpsStreams.size()) {
+    private int getStreamIndexFromPlayListNumber(int playListNumber) {
+    	for (int i = 0; i < mpsStreams.size(); i++) {
+    		MpsStreamInfo info = mpsStreams.get(i);
+    		if (info.getPlayListNumber() == playListNumber) {
+    			return i;
+    		}
+    	}
+
+    	return playListNumber;
+    }
+
+    public void setMoviePlayer(MoviePlayer moviePlayer) {
+    	this.moviePlayer = moviePlayer;
+    }
+
+    public void play(int playListNumber, int chapterNumber, int videoNumber, int audioNumber, int audioFlag, int subtitleNumber, int subtitleFlag) {
+    	done = false;
+    	int streamIndex = getStreamIndexFromPlayListNumber(playListNumber);
+    	goToMpsStream(streamIndex);
+    }
+
+    private boolean goToMpsStream(int streamIndex) {
+    	if (streamIndex < 0 || streamIndex >= mpsStreams.size()) {
     		return false;
     	}
 
-    	currentStreamIndex++;
+    	currentStreamIndex = streamIndex;
         MpsStreamInfo info = mpsStreams.get(currentStreamIndex);
         fileName = "UMD_VIDEO/STREAM/" + info.getName() + ".MPS";
         log.info("Loading stream: " + fileName);
@@ -517,33 +533,12 @@ public class UmdVideoPlayer implements KeyListener {
         return true;
     }
 
+    private boolean goToNextMpsStream() {
+    	return goToMpsStream(currentStreamIndex + 1);
+    }
+
     private boolean goToPreviousMpsStream() {
-    	if (currentStreamIndex <= 0) {
-    		return false;
-    	}
-
-    	currentStreamIndex--;
-        MpsStreamInfo info = mpsStreams.get(currentStreamIndex);
-        fileName = "UMD_VIDEO/STREAM/" + info.getName() + ".MPS";
-        log.info("Loading stream: " + fileName);
-        try {
-            isoFile = iso.getFile(fileName);
-            String cpiFileName = "UMD_VIDEO/CLIPINF/" + info.getName() + ".CLP";
-            UmdIsoFile cpiFile = iso.getFile(cpiFileName);
-            if (cpiFile != null) {
-                log.info("Found CLIPINF data for this stream: " + cpiFileName);
-            }
-        } catch (FileNotFoundException e) {
-        } catch (IOException e) {
-            Emulator.log.error(e);
-        }
-
-        if (isoFile != null) {
-            startVideo();
-            initVideo();
-        }
-
-        return true;
+    	return goToMpsStream(currentStreamIndex - 1);
     }
 
     public void initVideo() {
@@ -1205,11 +1200,16 @@ public class UmdVideoPlayer implements KeyListener {
                     }
                 }
                 if (!done) {
-                    if (log.isTraceEnabled()) {
-                    	log.trace(String.format("Switching to next stream"));
-                    }
-                	if (!goToNextMpsStream()) {
+                	if (moviePlayer != null) {
                 		done = true;
+                		moviePlayer.onPlayListEnd(currentStreamIndex);
+                	} else {
+	                    if (log.isTraceEnabled()) {
+	                    	log.trace(String.format("Switching to next stream"));
+	                    }
+	                	if (!goToNextMpsStream()) {
+	                		done = true;
+	                	}
                 	}
                 }
             }

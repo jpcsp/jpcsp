@@ -37,8 +37,9 @@ public class ReadRCO {
 			byte[] buffer = new byte[(int) file.length()];
 			is.read(buffer);
 			is.close();
-			RCO rco = new RCO(buffer, "UNKNOWN");
+			RCO rco = new RCO(buffer);
 			log.info(String.format("Read RCO: %s", rco));
+			rco.execute(null, "UNKNOWN");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {

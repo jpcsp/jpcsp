@@ -302,14 +302,14 @@ public class VSMXInterpreter {
 				}
 				break;
 			case VSMXCode.VID_PROPERTY:
-				o1 = stack.pop().getValue();
-				if (o1 instanceof VSMXObject) {
-					stack.push(new VSMXReference(this, (VSMXObject) o1, mem.properties[code.value]));
+				o = stack.pop().getValue();
+				if (o instanceof VSMXObject) {
+					stack.push(new VSMXReference(this, (VSMXObject) o, mem.properties[code.value]));
 					if (log.isTraceEnabled()) {
 						log.trace(String.format("%s '%s'", VSMXCode.VsmxDecOps[code.getOpcode()], mem.properties[code.value]));
 					}
 				} else {
-					stack.push(o1.getPropertyValue(mem.properties[code.value]));
+					stack.push(o.getPropertyValue(mem.properties[code.value]));
 				}
 				break;
 			case VSMXCode.VID_METHOD:
@@ -337,7 +337,17 @@ public class VSMXInterpreter {
 				if (o2 instanceof VSMXArray) {
 					o = o2.getPropertyValue(o1.getIntValue());
 				} else {
-					o = VSMXUndefined.singleton;
+					o = o2.getPropertyValue(o1.getStringValue());
+				}
+				stack.push(o);
+				break;
+			case VSMXCode.VID_ARRAY_INDEX_KEEP_OBJ:
+				o1 = stack.pop();
+				o2 = stack.peek().getValue();
+				if (o2 instanceof VSMXArray) {
+					o = o2.getPropertyValue(o1.getIntValue());
+				} else {
+					o = o2.getPropertyValue(o1.getStringValue());
 				}
 				stack.push(o);
 				break;
@@ -405,7 +415,7 @@ public class VSMXInterpreter {
 				o = stack.pop().getValue();
 				if (o instanceof VSMXMethod) {
 					VSMXMethod method = (VSMXMethod) o;
-					VSMXFunction function = method.getFunction();
+					VSMXFunction function = method.getFunction(code.value);
 
 					if (function == null) {
 						stack.push(VSMXNull.singleton);
@@ -413,6 +423,10 @@ public class VSMXInterpreter {
 					} else {
 						callFunction(function, method.getObject().getValue(), arguments, code.value, false);
 					}
+				} else if (o instanceof VSMXFunction) {
+					VSMXFunction function = (VSMXFunction) o;
+					o = stack.pop().getValue();
+					callFunction(function, o, arguments, code.value, false);
 				} else {
 					stack.push(VSMXNull.singleton);
 					log.warn(String.format("Line#%d non-method call %s", pc - 1, code));
@@ -513,7 +527,6 @@ public class VSMXInterpreter {
 		callStates = new Stack<VSMXCallState>();
 		pushCallState(VSMXNull.singleton, 0, false);
 		this.globalVariables = globalVariables;
-		globalVariables.setPropertyValue("Array", new VSMXArray(this));
 
 		VSMXBoolean.init(this);
 

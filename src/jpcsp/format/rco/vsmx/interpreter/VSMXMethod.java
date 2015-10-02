@@ -37,18 +37,24 @@ public class VSMXMethod extends VSMXBaseObject {
 		return name;
 	}
 
-	public VSMXFunction getFunction() {
-		VSMXBaseObject function = object.getPropertyValue(name).getValue();
-		if (function != null && function instanceof VSMXFunction) {
-			return (VSMXFunction) function;
+	public VSMXFunction getFunction(int numberOfArguments) {
+		if (object.hasPropertyValue(name)) {
+			VSMXBaseObject function = object.getPropertyValue(name).getValue();
+			if (function != null && function instanceof VSMXFunction) {
+				return (VSMXFunction) function;
+			}
 		}
 
+		INativeFunction nativeFunction = null;
 		if (object instanceof VSMXNativeObject) {
 			VSMXNativeObject nativeObject = (VSMXNativeObject) object;
-			INativeFunction nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, name);
-			if (nativeFunction != null) {
-				return new VSMXNativeFunction(interpreter, nativeFunction);
-			}
+			nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, name, numberOfArguments);
+		} else if (object instanceof VSMXBaseObject) {
+			nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(object, name, numberOfArguments);
+		}
+
+		if (nativeFunction != null) {
+			return new VSMXNativeFunction(interpreter, nativeFunction);
 		}
 
 		return null;

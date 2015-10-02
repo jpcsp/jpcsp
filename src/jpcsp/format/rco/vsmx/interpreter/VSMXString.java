@@ -71,6 +71,14 @@ public class VSMXString extends VSMXBaseObject {
 		return "String";
 	}
 
+	public VSMXBaseObject toUpperCase(VSMXBaseObject object) {
+		return new VSMXString(getInterpreter(), getStringValue().toUpperCase());
+	}
+
+	public VSMXBaseObject toLowerCase(VSMXBaseObject object) {
+		return new VSMXString(getInterpreter(), getStringValue().toLowerCase());
+	}
+
 	@Override
 	public String toString() {
 		return String.format("\"%s\"", value);

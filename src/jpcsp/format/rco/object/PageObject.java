@@ -49,7 +49,7 @@ public class PageObject extends BaseObject {
 
 	public VSMXBaseObject open(VSMXBaseObject object) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("PageObject.open"));
+			log.debug(String.format("PageObject.open %s, children: %s", this, object.getPropertyValue("root").getPropertyValue("children")));
 		}
 
 		return object;
@@ -61,5 +61,11 @@ public class PageObject extends BaseObject {
 		}
 
 		return object;
+	}
+
+	public void close(VSMXBaseObject object) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("PageObject.close"));
+		}
 	}
 }

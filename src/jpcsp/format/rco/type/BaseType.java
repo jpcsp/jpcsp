@@ -16,29 +16,33 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.type;
 
+import jpcsp.format.rco.RCOContext;
+import jpcsp.format.rco.vsmx.VSMX;
+
+import org.apache.log4j.Logger;
+
 public class BaseType {
+	protected static final Logger log = VSMX.log;
 	protected int value;
 
 	public int size() {
 		return 4;
 	}
 
-	protected int read8(byte[] buffer, int offset) {
-		return buffer[offset] & 0xFF;
+	protected int read8(RCOContext context) {
+		return context.buffer[context.offset++] & 0xFF;
 	}
 
-	protected int read16(byte[] buffer, int offset) {
-		return read8(buffer, offset) | (read8(buffer, offset + 1) << 8);
+	protected int read16(RCOContext context) {
+		return read8(context) | (read8(context) << 8);
 	}
 
-	protected int read32(byte[] buffer, int offset) {
-		return read16(buffer, offset) | (read16(buffer, offset + 2) << 16);
+	protected int read32(RCOContext context) {
+		return read16(context) | (read16(context) << 16);
 	}
 
-	public int read(byte[] buffer, int offset) {
-		value = read32(buffer, offset);
-
-		return offset + 4;
+	public void read(RCOContext context) {
+		value = read32(context);
 	}
 
 	public int getIntValue() {

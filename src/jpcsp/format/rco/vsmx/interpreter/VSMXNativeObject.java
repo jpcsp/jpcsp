@@ -29,4 +29,10 @@ public class VSMXNativeObject extends VSMXObject {
 	public BaseNativeObject getObject() {
 		return object;
 	}
+
+	@Override
+	protected void toString(StringBuilder s) {
+		s.append(object.toString());
+		super.toString(s);
+	}
 }

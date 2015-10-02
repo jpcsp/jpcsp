@@ -40,7 +40,7 @@ public class VSMXReference extends VSMXBaseObject {
 	protected VSMXBaseObject getRef() {
 		if (!refObject.hasPropertyValue(refProperty) && refObject instanceof VSMXNativeObject) {
 			VSMXNativeObject nativeObject = (VSMXNativeObject) refObject;
-			INativeFunction nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, refProperty);
+			INativeFunction nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, refProperty, 0);
 			if (nativeFunction != null) {
 				return new VSMXNativeFunction(interpreter, nativeFunction);
 			}

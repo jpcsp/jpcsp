@@ -19,10 +19,13 @@ package jpcsp.format.rco.vsmx.objects;
 import org.apache.log4j.Logger;
 
 import jpcsp.format.rco.vsmx.VSMX;
+import jpcsp.format.rco.vsmx.interpreter.VSMXArray;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNumber;
+import jpcsp.format.rco.vsmx.interpreter.VSMXUndefined;
+import jpcsp.hardware.Screen;
 
 public class GlobalVariables extends BaseNativeObject {
 	private static final Logger log = VSMX.log;
@@ -33,7 +36,15 @@ public class GlobalVariables extends BaseNativeObject {
 		VSMXNativeObject object = new VSMXNativeObject(interpreter, globalVariables);
 		globalVariables.setObject(object);
 
+		object.setPropertyValue("undefined", VSMXUndefined.singleton);
+		object.setPropertyValue("Array", new VSMXArray(interpreter));
+
 		object.setPropertyValue("timer", Timer.create(interpreter));
+
+		object.setPropertyValue("x", new VSMXNumber(interpreter, 0));
+		object.setPropertyValue("y", new VSMXNumber(interpreter, 0));
+		object.setPropertyValue("width", new VSMXNumber(interpreter, Screen.width));
+		object.setPropertyValue("height", new VSMXNumber(interpreter, Screen.height));
 
 		return object;
 	}
@@ -41,11 +52,39 @@ public class GlobalVariables extends BaseNativeObject {
 	private GlobalVariables(VSMXInterpreter interpreter) {
 	}
 
-	public void writeln(VSMXBaseObject object, VSMXBaseObject s) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("writeln: '%s'", s.getStringValue()));
+	private void writeln(VSMXBaseObject object, VSMXBaseObject... strings) {
+		String s = "";
+		for (int i = 0; i < strings.length; i++) {
+			s += strings[i].getStringValue();
 		}
-		logWriteln.debug(s.getStringValue());
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("writeln: '%s'", s));
+		}
+		logWriteln.debug(s);
+	}
+
+	public void writeln(VSMXBaseObject object, VSMXBaseObject s1) {
+		writeln(object, new VSMXBaseObject[] { s1 });
+	}
+
+	public void writeln(VSMXBaseObject object, VSMXBaseObject s1, VSMXBaseObject s2) {
+		writeln(object, new VSMXBaseObject[] { s1, s2 });
+	}
+
+	public void writeln(VSMXBaseObject object, VSMXBaseObject s1, VSMXBaseObject s2, VSMXBaseObject s3) {
+		writeln(object, new VSMXBaseObject[] { s1, s3 });
+	}
+
+	public void writeln(VSMXBaseObject object, VSMXBaseObject s1, VSMXBaseObject s2, VSMXBaseObject s3, VSMXBaseObject s4) {
+		writeln(object, new VSMXBaseObject[] { s1, s3, s4 });
+	}
+
+	public void writeln(VSMXBaseObject object, VSMXBaseObject s1, VSMXBaseObject s2, VSMXBaseObject s3, VSMXBaseObject s4, VSMXBaseObject s5) {
+		writeln(object, new VSMXBaseObject[] { s1, s3, s4, s5 });
+	}
+
+	public void writeln(VSMXBaseObject object, VSMXBaseObject s1, VSMXBaseObject s2, VSMXBaseObject s3, VSMXBaseObject s4, VSMXBaseObject s5, VSMXBaseObject s6) {
+		writeln(object, new VSMXBaseObject[] { s1, s3, s4, s5, s6 });
 	}
 
 	public VSMXBaseObject parseFloat(VSMXBaseObject object, VSMXBaseObject value) {

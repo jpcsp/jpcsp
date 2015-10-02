@@ -152,6 +152,15 @@ public class VSMXArray extends VSMXObject {
 	}
 
 	@Override
+	public boolean hasPropertyValue(String name) {
+		if (lengthName.equals(name)) {
+			return true;
+		}
+
+		return super.hasPropertyValue(name);
+	}
+
+	@Override
 	public boolean getBooleanValue() {
 		// "if" on an empty array seems to return false. E.g.
 		//     x = {};

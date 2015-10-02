@@ -44,7 +44,7 @@ public class VSMXObject extends VSMXBaseObject {
 		VSMXBaseObject value = properties.get(name);
 		if (value == null) {
 			VSMXObject prototype = getPrototype();
-			if (prototype != null && prototype.hasPropertyValue(name)) {
+			if (prototype != null && prototype.properties.containsKey(name)) {
 				value = prototype.getPropertyValue(name);
 			} else {
 				value = VSMXUndefined.singleton;
@@ -70,7 +70,20 @@ public class VSMXObject extends VSMXBaseObject {
 
 	@Override
 	public boolean hasPropertyValue(String name) {
-		return properties.containsKey(name);
+		if (prototypeName.equals(name)) {
+			return true;
+		}
+
+		if (properties.containsKey(name)) {
+			return true;
+		}
+
+		VSMXObject prototype = getPrototype();
+		if (prototype != null) {
+			return prototype.hasPropertyValue(name);
+		}
+
+		return false;
 	}
 
 	@Override

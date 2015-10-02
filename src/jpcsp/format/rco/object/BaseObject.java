@@ -24,6 +24,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.format.RCO.RCOEntry;
 import jpcsp.format.rco.ObjectField;
+import jpcsp.format.rco.RCOContext;
 import jpcsp.format.rco.type.BaseType;
 import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
@@ -59,7 +60,7 @@ public abstract class BaseObject extends BaseNativeObject {
 		return fields;
 	}
 
-	public int read(byte[] buffer, int offset) {
+	public void read(RCOContext context) {
 		Field[] fields = getSortedFields();
 		for (Field field : fields) {
 			if (BaseType.class.isAssignableFrom(field.getType())) {
@@ -69,7 +70,7 @@ public abstract class BaseObject extends BaseNativeObject {
 						baseType = (BaseType) field.getType().newInstance();
 						field.set(this, baseType);
 					}
-					offset = baseType.read(buffer, offset);
+					baseType.read(context);
 				} catch (InstantiationException e) {
 					// Ignore error
 				} catch (IllegalAccessException e) {
@@ -77,8 +78,6 @@ public abstract class BaseObject extends BaseNativeObject {
 				}
 			}
 		}
-
-		return offset;
 	}
 
 	public int size() {

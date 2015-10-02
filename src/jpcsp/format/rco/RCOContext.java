@@ -14,29 +14,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.format.rco.type;
+package jpcsp.format.rco;
 
-import jpcsp.format.rco.RCOContext;
+import java.awt.image.BufferedImage;
+import java.util.Map;
 
-public class EventType extends BaseReferenceType {
-	public String event;
+public class RCOContext {
+	public byte[] buffer;
+	public int offset;
+	public Map<Integer, String> events;
+	public Map<Integer, BufferedImage> images;
 
-	@Override
-	public void read(RCOContext context) {
-		super.read(context);
-
-		if (referenceType == REFERENCE_TYPE_EVENT) {
-			event = context.events.get(value);
-		} else if (referenceType != REFERENCE_TYPE_NONE) {
-			log.warn(String.format("EventType unknown referenceType 0x%X", referenceType));
-		}
-	}
-
-	@Override
-	public String toString() {
-		if (event == null) {
-			return super.toString();
-		}
-		return String.format("%s, event='%s'", super.toString(), event);
+	public RCOContext(byte[] buffer, int offset, Map<Integer, String> events, Map<Integer, BufferedImage> images) {
+		this.buffer = buffer;
+		this.offset = offset;
+		this.events = events;
+		this.images = images;
 	}
 }

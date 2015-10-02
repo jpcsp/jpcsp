@@ -32,10 +32,10 @@ public class NativeFunctionFactory {
 
 	private static class NativeFunction implements INativeFunction {
 		private Method method;
-		private BaseNativeObject object;
+		private Object object;
 		private int args;
 
-		public NativeFunction(BaseNativeObject object, Method method, int args) {
+		public NativeFunction(Object object, Method method, int args) {
 			this.object = object;
 			this.method = method;
 			this.args = args;
@@ -75,11 +75,11 @@ public class NativeFunctionFactory {
 	private NativeFunctionFactory() {
 	}
 
-	private INativeFunction getNativeFunction(BaseNativeObject object, String name) {
+	private INativeFunction getNativeFunctionInterface(Object object, String name, int numberOfArguments) {
 		INativeFunction nativeFunction = null;
 
 		// movieplayer.play has as much as 10 parameters
-		for (int args = 1; args < 12; args++) {
+		for (int args = numberOfArguments + 1; args < 12; args++) {
 			Class<?>[] arguments = new Class<?>[args];
 			for (int i = 0; i < arguments.length; i++) {
 				arguments[i] = VSMXBaseObject.class;
@@ -96,15 +96,21 @@ public class NativeFunctionFactory {
 		}
 
 		if (nativeFunction == null) {
-			log.warn(String.format("Not finding native function %s.%s", object, name));
+			log.warn(String.format("Not finding native function %s.%s(args=%d)", object, name, numberOfArguments + 1));
 		}
 
 		return nativeFunction;
 	}
 
-	public INativeFunction getNativeFunction(VSMXNativeObject object, String name) {
+	public INativeFunction getNativeFunction(VSMXNativeObject object, String name, int numberOfArguments) {
 		BaseNativeObject nativeObject = object.getObject();
-		INativeFunction nativeFunction = getNativeFunction(nativeObject, name);
+		INativeFunction nativeFunction = getNativeFunctionInterface(nativeObject, name, numberOfArguments);
+
+		return nativeFunction;
+	}
+
+	public INativeFunction getNativeFunction(VSMXBaseObject object, String name, int numberOfArguments) {
+		INativeFunction nativeFunction = getNativeFunctionInterface(object, name, numberOfArguments);
 
 		return nativeFunction;
 	}

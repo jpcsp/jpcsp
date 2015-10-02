@@ -31,7 +31,8 @@ public class VSMXNativeFunction extends VSMXFunction {
 
 	@Override
 	public void call(VSMXCallState callState) {
-		for (int i = 0; i < arguments.length; i++) {
+		arguments[0] = callState.getThisObject();
+		for (int i = 1; i < arguments.length; i++) {
 			arguments[i] = callState.getLocalVar(i);
 		}
 		returnValue = nativeFunction.call(arguments);

@@ -16,9 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.type;
 
+import jpcsp.format.rco.RCOContext;
+
 public class BaseReferenceType extends BaseType {
-	public int unknownShort0;
-	public int unknownShort1;
+	protected static final int REFERENCE_TYPE_NONE = 0xFFFF;
+	protected static final int REFERENCE_TYPE_EVENT = 0x400;
+	protected static final int REFERENCE_TYPE_IMAGE = 0x402;
+	public int referenceType;
+	public int unknownShort;
 
 	@Override
 	public int size() {
@@ -26,17 +31,15 @@ public class BaseReferenceType extends BaseType {
 	}
 
 	@Override
-	public int read(byte[] buffer, int offset) {
-		unknownShort0 = read16(buffer, offset);
-		offset += 2;
-		unknownShort1 = read16(buffer, offset);
-		offset += 2;
+	public void read(RCOContext context) {
+		referenceType = read16(context);
+		unknownShort = read16(context);
 
-		return super.read(buffer, offset);
+		super.read(context);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("short0=0x%X, short1=0x%X, value=0x%X", unknownShort0, unknownShort1, value);
+		return String.format("referenceType=0x%X, short1=0x%X, value=0x%X", referenceType, unknownShort, value);
 	}
 }
