@@ -543,6 +543,11 @@ public class sceCtrl extends HLEModule {
 
     @HLEFunction(nid = 0xC4AAD55F, version = 371)
 	public int sceCtrlPeekBufferPositive371(TPointer dataAddr, int numBuf) {
-        return hleCtrlReadBufferImmediately(dataAddr.getAddress(), numBuf, true, true);
+    	return hleCtrlReadBufferImmediately(dataAddr.getAddress(), numBuf, true, true);
+	}
+
+    @HLEFunction(nid = 0x454455AC, version = 371)
+	public int sceCtrlReadBufferPositive371(TPointer dataAddr, int numBuf) {
+    	return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
 	}
 }
