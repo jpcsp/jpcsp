@@ -41,6 +41,7 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -4098,5 +4099,20 @@ public class IoFileMgrForUser extends HLEModule {
     	fdNumAddr.setValue(fileIds.size());
 
         return count;
+    }
+
+    /**
+     * Reopens an existing file descriptor.
+     *
+     * @param filename    the new file to open.
+     * @param flags       the open flags.
+     * @param permissions the open mode.
+     * @param id          the old file descriptor to reopen.
+     * @return            < 0 on error, otherwise the reopened file descriptor.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3C54E908, version = 150)
+    public int sceIoReopen(PspString filename, int flags, int permissions, int id) {
+    	return -1;
     }
 }
