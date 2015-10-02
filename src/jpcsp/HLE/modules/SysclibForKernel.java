@@ -26,6 +26,7 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
@@ -134,5 +135,22 @@ public class SysclibForKernel extends HLEModule {
 		}
 
 		return formattedString.length();
+    }
+
+	/**
+	 * Returns a pointer to the first occurence of s2 in s1, or a null pointer if s2 is not part of s1.
+	 * The matching process does not include the terminating null-characters, but it stops there.
+	 * @param  s1 string to be scanned
+	 * @param  s2 string containing the sequence of characters to match
+	 * @return a pointer to the first occurence in s1 or the entire sequence of characters specified in s2,
+	 *         or a null pointer if the sequence is not present in s1.
+	 */
+	@HLEFunction(nid = 0x0D188658, version = 150)
+    public int strstr(PspString s1, PspString s2) {
+		int index = s1.getString().indexOf(s2.getString());
+		if (index < 0) {
+			return 0;
+		}
+		return s1.getAddress() + index;
     }
 }
