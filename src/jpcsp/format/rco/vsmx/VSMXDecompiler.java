@@ -113,7 +113,14 @@ public class VSMXDecompiler {
 	}
 
 	private boolean detectSwitch(StringBuilder s, int i) {
+		if (mem.codes[i + 1].isOpcode(VSMXCode.VID_DEBUG_LINE)) {
+			i++;
+		}
 		if (!mem.codes[i + 1].isOpcode(VSMXCode.VID_JUMP)) {
+			return false;
+		}
+
+		if (blockEnd.size() > 0 && blockEnd.peek().intValue() == i) {
 			return false;
 		}
 
@@ -153,6 +160,9 @@ public class VSMXDecompiler {
 			case SWITCH_STATE_VALUE:
 				op = new StringBuilder();
 				decompileOp(op);
+				if (mem.codes[i + 1].isOpcode(VSMXCode.VID_DEBUG_LINE)) {
+					i++;
+				}
 				if (mem.codes[i + 1].isOpcode(VSMXCode.VID_JUMP)) {
 					s.append(String.format("%scase %s:\n", prefix, op));
 					switchState = SWITCH_STATE_MULTI_VALUE;
@@ -194,6 +204,11 @@ public class VSMXDecompiler {
 		}
 
 		VSMXGroup prePrevCode = mem.codes[prev - 1];
+		if (prePrevCode.isOpcode(VSMXCode.VID_PROPERTY)) {
+			prev--;
+			prePrevCode = mem.codes[prev - 1];
+		}
+
 		if (!prePrevCode.isOpcode(VSMXCode.VID_VARIABLE)) {
 			return false;
 		}

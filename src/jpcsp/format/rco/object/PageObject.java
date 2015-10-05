@@ -16,6 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.object;
 
+import static jpcsp.format.rco.vsmx.objects.Resource.childrenName;
+import static jpcsp.format.rco.vsmx.objects.Resource.rootName;
+
+import java.util.Set;
+
 import jpcsp.format.RCO.RCOEntry;
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.type.EventType;
@@ -47,9 +52,33 @@ public class PageObject extends BaseObject {
 		return root;
 	}
 
+	private void display(VSMXBaseObject object) {
+		if (object.hasPropertyValue(childrenName)) {
+			VSMXBaseObject children = object.getPropertyValue(childrenName);
+			Set<String> childrenNames = children.getPropertyNames();
+			for (String childName : childrenNames) {
+				VSMXBaseObject child = children.getPropertyValue(childName);
+				display.add(child);
+				display(child);
+			}
+		}
+	}
+
+	private void hide(VSMXBaseObject object) {
+		if (object.hasPropertyValue(childrenName)) {
+			VSMXBaseObject children = object.getPropertyValue(childrenName);
+			Set<String> childrenNames = children.getPropertyNames();
+			for (String childName : childrenNames) {
+				VSMXBaseObject child = children.getPropertyValue(childName);
+				display.remove(child);
+				hide(child);
+			}
+		}
+	}
+
 	public VSMXBaseObject open(VSMXBaseObject object) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("PageObject.open %s, children: %s", this, object.getPropertyValue("root").getPropertyValue("children")));
+			log.debug(String.format("PageObject.open %s, children: %s", this, object.getPropertyValue(rootName).getPropertyValue(childrenName)));
 		}
 
 		return object;
@@ -60,12 +89,20 @@ public class PageObject extends BaseObject {
 			log.debug(String.format("PageObject.activate"));
 		}
 
+		if (display != null) {
+			display(object.getPropertyValue(rootName));
+		}
+
 		return object;
 	}
 
 	public void close(VSMXBaseObject object) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("PageObject.close"));
+		}
+
+		if (display != null) {
+			hide(object.getPropertyValue(rootName));
 		}
 	}
 }

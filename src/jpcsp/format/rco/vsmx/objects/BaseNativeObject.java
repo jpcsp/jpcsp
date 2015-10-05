@@ -16,12 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.vsmx.objects;
 
+import org.apache.log4j.Logger;
+
+import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXFunction;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
 
 public class BaseNativeObject {
+	protected static Logger log = VSMX.log;
 	private VSMXObject object;
 
 	public VSMXObject getObject() {
@@ -35,7 +39,11 @@ public class BaseNativeObject {
 	public void callCallback(VSMXInterpreter interpreter, String name, VSMXBaseObject[] arguments) {
 		VSMXBaseObject function = getObject().getPropertyValue(name);
 		if (function instanceof VSMXFunction) {
-			interpreter.interpretFunction((VSMXFunction) function, null);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("callCallback %s, arguments=%s", name, arguments));
+			}
+
+			interpreter.interpretFunction((VSMXFunction) function, null, arguments);
 		}
 	}
 

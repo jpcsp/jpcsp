@@ -14,22 +14,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.format.rco.anim;
+package jpcsp.format.rco;
 
-import jpcsp.format.rco.ObjectField;
-import jpcsp.format.rco.type.FloatType;
-import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import java.awt.image.BufferedImage;
 
-public class DelayAnim extends BaseAnim {
-	@ObjectField(order = 1)
-	public FloatType time;
-
-	@Override
-	protected long doPlay(VSMXBaseObject object) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("DelayAnim %d", time.getIntValue()));
-		}
-
-		return time.getIntValue();
-	}
+public interface IDisplay {
+	public int getX();
+	public int getY();
+	public int getWidth();
+	public int getHeight();
+	public BufferedImage getImage();
 }

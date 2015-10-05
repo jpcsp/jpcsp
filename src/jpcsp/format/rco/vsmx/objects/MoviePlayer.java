@@ -34,7 +34,9 @@ public class MoviePlayer extends BaseNativeObject {
 	public static final String objectName = "movieplayer";
 	private VSMXInterpreter interpreter;
 	private UmdVideoPlayer umdVideoPlayer;
+	private VSMXNativeObject controller;
 	private boolean playing = false;
+	private boolean menuMode;
 	private int playListNumber;
 	private int chapterNumber;
 	private int videoNumber;
@@ -43,8 +45,8 @@ public class MoviePlayer extends BaseNativeObject {
 	private int subtitleNumber;
 	private int subtitleFlag;
 
-	public static VSMXNativeObject create(VSMXInterpreter interpreter, UmdVideoPlayer umdVideoPlayer) {
-		MoviePlayer moviePlayer = new MoviePlayer(interpreter, umdVideoPlayer);
+	public static VSMXNativeObject create(VSMXInterpreter interpreter, UmdVideoPlayer umdVideoPlayer, VSMXNativeObject controller) {
+		MoviePlayer moviePlayer = new MoviePlayer(interpreter, umdVideoPlayer, controller);
 		VSMXNativeObject object = new VSMXNativeObject(interpreter, moviePlayer);
 		moviePlayer.setObject(object);
 
@@ -54,9 +56,10 @@ public class MoviePlayer extends BaseNativeObject {
 		return object;
 	}
 
-	private MoviePlayer(VSMXInterpreter interpreter, UmdVideoPlayer umdVideoPlayer) {
+	private MoviePlayer(VSMXInterpreter interpreter, UmdVideoPlayer umdVideoPlayer, VSMXNativeObject controller) {
 		this.interpreter = interpreter;
 		this.umdVideoPlayer = umdVideoPlayer;
+		this.controller = controller;
 
 		if (umdVideoPlayer != null) {
 			umdVideoPlayer.setMoviePlayer(this);
@@ -65,7 +68,7 @@ public class MoviePlayer extends BaseNativeObject {
 
 	public void play(VSMXBaseObject object,
 	                 VSMXBaseObject unknownInt1,
-	                 VSMXBaseObject unknownInt2,
+	                 VSMXBaseObject menuMode,
 	                 VSMXBaseObject playListNumber,
 	                 VSMXBaseObject chapterNumber,
 	                 VSMXBaseObject videoNumber,
@@ -75,9 +78,10 @@ public class MoviePlayer extends BaseNativeObject {
 	                 VSMXBaseObject subtitleFlag,
 	                 VSMXBaseObject unknownBool) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MoviePlayer.play unknownInt1=%d, unknownInt2=%d, playListNumber=%d, chapterNumber=%d, videoNumber=0x%X, audioNumber=0x%X, audioFlag=0x%X, subtitleNumber=%d, subtitleFlag=0x%X, unknownBool=%b", unknownInt1.getIntValue(), unknownInt2.getIntValue(), playListNumber.getIntValue(), chapterNumber.getIntValue(), videoNumber.getIntValue(), audioNumber.getIntValue(), audioFlag.getIntValue(), subtitleNumber.getIntValue(), subtitleFlag.getIntValue(), unknownBool.getBooleanValue()));
+			log.debug(String.format("MoviePlayer.play unknownInt1=%d, menuMode=%d, playListNumber=%d, chapterNumber=%d, videoNumber=0x%X, audioNumber=0x%X, audioFlag=0x%X, subtitleNumber=%d, subtitleFlag=0x%X, unknownBool=%b", unknownInt1.getIntValue(), menuMode.getIntValue(), playListNumber.getIntValue(), chapterNumber.getIntValue(), videoNumber.getIntValue(), audioNumber.getIntValue(), audioFlag.getIntValue(), subtitleNumber.getIntValue(), subtitleFlag.getIntValue(), unknownBool.getBooleanValue()));
 		}
 		playing = true;
+		this.menuMode = menuMode.getBooleanValue();
 		this.playListNumber = playListNumber.getIntValue();
 		this.chapterNumber = chapterNumber.getIntValue();
 		this.videoNumber = videoNumber.getIntValue();
@@ -88,6 +92,14 @@ public class MoviePlayer extends BaseNativeObject {
 
 		if (umdVideoPlayer != null) {
 			umdVideoPlayer.play(this.playListNumber, this.chapterNumber, this.videoNumber, this.audioNumber, this.audioFlag, this.subtitleNumber, this.subtitleFlag);
+		}
+
+		if (this.menuMode) {
+			VSMXBaseObject callback = controller.getPropertyValue("onMenu");
+			if (callback instanceof VSMXFunction) {
+				VSMXBaseObject arguments[] = new VSMXBaseObject[0];
+				interpreter.interpretFunction((VSMXFunction) callback, null, arguments);
+			}
 		}
 	}
 
@@ -152,11 +164,51 @@ public class MoviePlayer extends BaseNativeObject {
 	}
 
 	public void onPlayListEnd(int unknown) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("MoviePlayer.onPlayListEnd unknown=%d", unknown));
+		}
+
 		VSMXBaseObject callback = getObject().getPropertyValue("onPlayListEnd");
 		if (callback instanceof VSMXFunction) {
 			VSMXBaseObject arguments[] = new VSMXBaseObject[1];
 			arguments[0] = new VSMXNumber(interpreter, unknown);
-			interpreter.interpretFunction((VSMXFunction) callback, arguments);
+			interpreter.interpretFunction((VSMXFunction) callback, null, arguments);
 		}
+	}
+
+	public void onChapter(int chapterNumber) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("MoviePlayer.onChapter chapterNumber=%d", chapterNumber));
+		}
+
+		VSMXBaseObject callback = getObject().getPropertyValue("onChapter");
+		if (callback instanceof VSMXFunction) {
+			VSMXBaseObject argument = new VSMXObject(interpreter, null);
+			argument.setPropertyValue("chapterNumber", new VSMXNumber(interpreter, chapterNumber));
+
+			VSMXBaseObject arguments[] = new VSMXBaseObject[1];
+			arguments[0] = argument;
+			interpreter.interpretFunction((VSMXFunction) callback, null, arguments);
+		}
+	}
+
+	public void onUp() {
+		((Controller) controller.getObject()).onUp();
+	}
+
+	public void onDown() {
+		((Controller) controller.getObject()).onDown();
+	}
+
+	public void onLeft() {
+		((Controller) controller.getObject()).onLeft();
+	}
+
+	public void onRight() {
+		((Controller) controller.getObject()).onRight();
+	}
+
+	public void onPush() {
+		((Controller) controller.getObject()).onPush();
 	}
 }

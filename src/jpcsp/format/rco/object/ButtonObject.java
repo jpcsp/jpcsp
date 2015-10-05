@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.object;
 
+import java.awt.image.BufferedImage;
+
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.type.EventType;
 import jpcsp.format.rco.type.ImageType;
@@ -49,4 +51,9 @@ public class ButtonObject extends BasePositionObject {
 	public EventType onContextMenu;
 	@ObjectField(order = 213)
 	public IntType unknownInt40;
+
+	@Override
+	public BufferedImage getImage() {
+		return image.image;
+	}
 }

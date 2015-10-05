@@ -18,8 +18,20 @@ package jpcsp.format.rco.anim;
 
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.type.EventType;
+import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 
 public class FireEventAnim extends BaseAnim {
 	@ObjectField(order = 1)
 	public EventType event;
+
+	@Override
+	protected long doPlay(VSMXBaseObject object) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("FireEventAnim %s", event.getEvent()));
+		}
+
+		object.getInterpreter().interpretScript(object, event.getEvent());
+
+		return 0;
+	}
 }

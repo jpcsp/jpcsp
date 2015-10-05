@@ -16,18 +16,45 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.vsmx.objects;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.format.rco.vsmx.VSMX;
+import jpcsp.format.rco.vsmx.interpreter.VSMXArray;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXFunction;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNumber;
+import jpcsp.scheduler.Scheduler;
 
 public class Timer extends BaseNativeObject {
 	private static final Logger log = VSMX.log;
 	private int currentTimerId = 0;
 	private VSMXInterpreter interpreter;
+	private Map<Integer, TimerAction> timers;
+
+	private class TimerAction implements IAction {
+		private int id;
+		private VSMXBaseObject object;
+		private VSMXBaseObject function;
+		private VSMXBaseObject[] parameters;
+
+		public TimerAction(int id, VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject[] parameters) {
+			this.id = id;
+			this.object = object;
+			this.function = function;
+			this.parameters = parameters;
+		}
+
+		@Override
+		public void execute() {
+			onTimer(id, object, function, parameters);
+		}
+	}
 
 	public static VSMXNativeObject create(VSMXInterpreter interpreter) {
 		Timer timer = new Timer(interpreter);
@@ -39,6 +66,17 @@ public class Timer extends BaseNativeObject {
 
 	private Timer(VSMXInterpreter interpreter) {
 		this.interpreter = interpreter;
+		timers = new HashMap<Integer, Timer.TimerAction>();
+	}
+
+	private void onTimer(int id, VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject[] parameters) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Timer.onTimer id=%d, object=%s, function=%s, parameters=%s", id, object, function, parameters));
+		}
+
+		if (function instanceof VSMXFunction) {
+			interpreter.interpretFunction((VSMXFunction) function, object, parameters);
+		}
 	}
 
 	private VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval, VSMXBaseObject... parameters) {
@@ -50,8 +88,17 @@ public class Timer extends BaseNativeObject {
 		}
 
 		int id = currentTimerId++;
+		long schedule = Scheduler.getNow() + interval.getIntValue() * 1000;
 
-		return new VSMXNumber(interpreter, id);
+		TimerAction timerAction = new TimerAction(id, object, function, parameters);
+		timers.put(id, timerAction);
+		Scheduler.getInstance().addAction(schedule, timerAction);
+
+		// setInterval seems to return an array object. Not sure how to fill it.
+		VSMXArray result = new VSMXArray(interpreter, 1);
+		result.setPropertyValue(0, new VSMXNumber(interpreter, id));
+
+		return result;
 	}
 
 	public VSMXBaseObject setInterval(VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject interval) {
@@ -82,9 +129,9 @@ public class Timer extends BaseNativeObject {
 		return setInterval(object, function, interval, new VSMXBaseObject[] { param1, param2, param3, param4, param5, param6 });
 	}
 
-	public void clearInterval(VSMXBaseObject id) {
+	public void clearInterval(VSMXBaseObject object, VSMXBaseObject id) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Timer.clearInterval %d", id.getIntValue()));
+			log.debug(String.format("Timer.clearInterval %d", id.getPropertyValue(0).getIntValue()));
 		}
 	}
 }

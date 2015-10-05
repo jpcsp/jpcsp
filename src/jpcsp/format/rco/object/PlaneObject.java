@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.object;
 
+import java.awt.image.BufferedImage;
+
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.type.ImageType;
 import jpcsp.format.rco.type.IntType;
@@ -25,4 +27,9 @@ public class PlaneObject extends BasePositionObject {
 	public ImageType image;
 	@ObjectField(order = 202)
 	public IntType unknownInt18;
+
+	@Override
+	public BufferedImage getImage() {
+		return image.image;
+	}
 }

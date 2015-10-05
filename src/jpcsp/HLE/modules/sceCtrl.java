@@ -312,7 +312,7 @@ public class sceCtrl extends HLEModule {
     	return cycle;
     }
 
-    protected void hleCtrlExecuteSampling() {
+    public void hleCtrlExecuteSampling() {
         if (log.isDebugEnabled()) {
             log.debug("hleCtrlExecuteSampling");
         }

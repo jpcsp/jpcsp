@@ -54,6 +54,7 @@ public class VSMXObject extends VSMXBaseObject {
 		return value;
 	}
 
+	@Override
 	public Set<String> getPropertyNames() {
 		return properties.keySet();
 	}

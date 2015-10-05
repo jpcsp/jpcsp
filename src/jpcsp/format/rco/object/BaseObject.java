@@ -22,18 +22,26 @@ import java.util.Comparator;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.format.RCO.RCOEntry;
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.RCOContext;
+import jpcsp.format.rco.Display;
 import jpcsp.format.rco.type.BaseType;
 import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXString;
 import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
+import jpcsp.format.rco.vsmx.objects.Controller;
+import jpcsp.scheduler.Scheduler;
 
 public abstract class BaseObject extends BaseNativeObject {
 	protected Logger log = VSMX.log;
+	protected Display display;
+	protected Controller controller;
+	private String name;
 
 	private static class FieldComparator implements Comparator<Field> {
 		@Override
@@ -105,9 +113,25 @@ public abstract class BaseObject extends BaseNativeObject {
 	public VSMXBaseObject createVSMXObject(VSMXInterpreter interpreter, VSMXBaseObject parent, RCOEntry entry) {
 		VSMXNativeObject object = new VSMXNativeObject(interpreter, this);
 		setObject(object);
-		parent.setPropertyValue(entry.label, object);
+		if (entry.label != null) {
+			name = entry.label;
+			object.setPropertyValue("name", new VSMXString(interpreter, entry.label));
+			parent.setPropertyValue(entry.label, object);
+		}
 
 		return object;
+	}
+
+	public void setDisplay(Display display) {
+		this.display = display;
+	}
+
+	public void setController(Controller controller) {
+		this.controller = controller;
+	}
+
+	protected static Scheduler getScheduler() {
+		return Emulator.getScheduler();
 	}
 
 	@Override
@@ -115,8 +139,8 @@ public abstract class BaseObject extends BaseNativeObject {
 		StringBuilder s = new StringBuilder();
 
 		Field[] fields = getSortedFields();
-		s.append(String.format("%s[", getClass().getSimpleName()));
-		boolean firstField = true;
+		s.append(String.format("%s[name=%s", getClass().getSimpleName(), name));
+		boolean firstField = false;
 		for (Field field : fields) {
 			if (BaseType.class.isAssignableFrom(field.getType())) {
 				try {

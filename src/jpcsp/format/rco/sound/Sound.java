@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format.rco.sound;
 
 import jpcsp.format.rco.object.BaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 
 public class Sound extends BaseObject {
 	private int format;
@@ -45,5 +46,11 @@ public class Sound extends BaseObject {
 
 	public int getChannelOffset(int channel) {
 		return channelOffset[channel];
+	}
+
+	public void play(VSMXBaseObject object) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Sound.play"));
+		}
 	}
 }

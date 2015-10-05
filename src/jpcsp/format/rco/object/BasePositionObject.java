@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.object;
 
+import java.awt.image.BufferedImage;
+
+import jpcsp.format.rco.IDisplay;
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.type.EventType;
 import jpcsp.format.rco.type.FloatType;
@@ -25,7 +28,7 @@ import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNumber;
 
-public class BasePositionObject extends BaseObject {
+public class BasePositionObject extends BaseObject implements IDisplay {
 	@ObjectField(order = 101)
 	public FloatType posX;
 	@ObjectField(order = 102)
@@ -57,6 +60,37 @@ public class BasePositionObject extends BaseObject {
 	@ObjectField(order = 115)
 	public EventType onInit;
 
+	@Override
+	public int getWidth() {
+		if (getImage() != null) {
+			return getImage().getWidth();
+		}
+		return width.getIntValue();
+	}
+
+	@Override
+	public int getHeight() {
+		if (getImage() != null) {
+			return getImage().getHeight();
+		}
+		return height.getIntValue();
+	}
+
+	@Override
+	public BufferedImage getImage() {
+		return null;
+	}
+
+	@Override
+	public int getX() {
+		return posX.getIntValue();
+	}
+
+	@Override
+	public int getY() {
+		return posY.getIntValue();
+	}
+
 	public void setPos(VSMXBaseObject object, VSMXBaseObject posX, VSMXBaseObject posY) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("setPos(%s, %s)", posX, posY));
@@ -72,6 +106,20 @@ public class BasePositionObject extends BaseObject {
 		this.posX.setFloatValue(posX.getFloatValue());
 		this.posY.setFloatValue(posY.getFloatValue());
 		this.posZ.setFloatValue(posZ.getFloatValue());
+	}
+
+	public VSMXBaseObject getPos(VSMXBaseObject object) {
+		VSMXInterpreter interpreter = object.getInterpreter();
+		VSMXArray pos = new VSMXArray(interpreter, 3);
+		pos.setPropertyValue(0, new VSMXNumber(interpreter, posX.getFloatValue()));
+		pos.setPropertyValue(1, new VSMXNumber(interpreter, posY.getFloatValue()));
+		pos.setPropertyValue(2, new VSMXNumber(interpreter, posZ.getFloatValue()));
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("getPos() returning %s", pos));
+		}
+
+		return pos;
 	}
 
 	public void setRotate(VSMXBaseObject object, VSMXBaseObject x, VSMXBaseObject y, VSMXBaseObject rotationRads) {
@@ -122,5 +170,47 @@ public class BasePositionObject extends BaseObject {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("animScale(%s, %s, %s, %s)", width, height, depth, duration));
 		}
+	}
+
+	public void animPos(VSMXBaseObject object, VSMXBaseObject x, VSMXBaseObject y, VSMXBaseObject z, VSMXBaseObject duration) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("animPos(%s, %s, %s, %s)", x, y, z, duration));
+		}
+		posX.setFloatValue(x.getFloatValue());
+		posY.setFloatValue(y.getFloatValue());
+		posZ.setFloatValue(z.getFloatValue());
+	}
+
+	public void animRotate(VSMXBaseObject object, VSMXBaseObject rotX, VSMXBaseObject rotY, VSMXBaseObject rotZ, VSMXBaseObject duration) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("animRotate(%s, %s, %s, %s)", rotX, rotY, rotZ, duration));
+		}
+	}
+
+	public void setFocus(VSMXBaseObject object) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setFocus()"));
+		}
+		if (display != null) {
+			display.setFocus(getObject());
+		}
+		if (controller != null) {
+			controller.setFocus(this);
+		}
+	}
+
+	public void onUp() {
+	}
+
+	public void onDown() {
+	}
+
+	public void onLeft() {
+	}
+
+	public void onRight() {
+	}
+
+	public void onPush() {
 	}
 }

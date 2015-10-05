@@ -177,4 +177,16 @@ public class VSMXArray extends VSMXObject {
 
 		return s.toString();
 	}
+
+	@Override
+	public boolean equals(VSMXBaseObject value) {
+		if (value instanceof VSMXArray) {
+			// Empty arrays are always equal
+			if (getLength() == 0 && ((VSMXArray) value).getLength() == 0) {
+				return true;
+			}
+		}
+
+		return super.equals(value);
+	}
 }

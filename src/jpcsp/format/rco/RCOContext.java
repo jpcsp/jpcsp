@@ -19,16 +19,20 @@ package jpcsp.format.rco;
 import java.awt.image.BufferedImage;
 import java.util.Map;
 
+import jpcsp.format.rco.object.BaseObject;
+
 public class RCOContext {
 	public byte[] buffer;
 	public int offset;
 	public Map<Integer, String> events;
 	public Map<Integer, BufferedImage> images;
+	public Map<Integer, BaseObject> objects;
 
-	public RCOContext(byte[] buffer, int offset, Map<Integer, String> events, Map<Integer, BufferedImage> images) {
+	public RCOContext(byte[] buffer, int offset, Map<Integer, String> events, Map<Integer, BufferedImage> images, Map<Integer, BaseObject> objects) {
 		this.buffer = buffer;
 		this.offset = offset;
 		this.events = events;
 		this.images = images;
+		this.objects = objects;
 	}
 }

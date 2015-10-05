@@ -16,13 +16,77 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.anim;
 
+import java.util.Arrays;
+import java.util.Set;
+
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.format.rco.object.BaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
+import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
+import jpcsp.format.rco.vsmx.objects.Resource;
+import jpcsp.scheduler.Scheduler;
 
 public class BaseAnim extends BaseObject {
+	private static class PlayAnimAction implements IAction {
+		private BaseAnim[] children;
+		private int index;
+		private int length;
+		private VSMXBaseObject object;
+
+		public PlayAnimAction(BaseAnim[] children, int index, int length, VSMXBaseObject object) {
+			this.children = children;
+			this.index = index;
+			this.length = length;
+			this.object = object;
+		}
+
+		@Override
+		public void execute() {
+			while (index < length) {
+				long delay = children[index++].doPlay(object);
+				if (delay > 0) {
+					getScheduler().addAction(Scheduler.getNow() + delay * 1000, this);
+					return;
+				}
+			}
+		}
+	}
+
+	protected long doPlay(VSMXBaseObject object) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("BaseAnim play on %s", object));
+		}
+
+		return 0;
+	}
+
 	public void play(VSMXBaseObject thisObject, VSMXBaseObject object) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("BaseAnim.play %s, %s", thisObject, object));
+		}
+
+		if (thisObject.hasPropertyValue(Resource.childrenName)) {
+			VSMXBaseObject children = thisObject.getPropertyValue(Resource.childrenName);
+			Set<String> names = children.getPropertyNames();
+			String[] sortedNames = names.toArray(new String[names.size()]);
+			Arrays.sort(sortedNames);
+			BaseAnim baseAnims[] = new BaseAnim[sortedNames.length + 1];
+			int numberBaseAnims = 0;
+			baseAnims[numberBaseAnims++] = this;
+			for (String name : sortedNames) {
+				VSMXBaseObject child = children.getPropertyValue(name);
+				if (child instanceof VSMXNativeObject) {
+					BaseNativeObject baseNativeObject = ((VSMXNativeObject) child).getObject();
+					if (baseNativeObject instanceof BaseAnim) {
+						baseAnims[numberBaseAnims++] = (BaseAnim) baseNativeObject;
+					}
+				}
+			}
+
+			if (numberBaseAnims > 0) {
+				getScheduler().addAction(new PlayAnimAction(baseAnims, 0, numberBaseAnims, object));
+			}
 		}
 	}
 }

@@ -95,8 +95,8 @@ public class NativeFunctionFactory {
 			}
 		}
 
-		if (nativeFunction == null) {
-			log.warn(String.format("Not finding native function %s.%s(args=%d)", object, name, numberOfArguments + 1));
+		if (nativeFunction == null && log.isDebugEnabled()) {
+			log.debug(String.format("Not finding native function %s.%s(args=%d)", object, name, numberOfArguments + 1));
 		}
 
 		return nativeFunction;

@@ -22,6 +22,7 @@ public class BaseReferenceType extends BaseType {
 	protected static final int REFERENCE_TYPE_NONE = 0xFFFF;
 	protected static final int REFERENCE_TYPE_EVENT = 0x400;
 	protected static final int REFERENCE_TYPE_IMAGE = 0x402;
+	protected static final int REFERENCE_TYPE_OBJECT = 0x407;
 	public int referenceType;
 	public int unknownShort;
 
@@ -38,8 +39,19 @@ public class BaseReferenceType extends BaseType {
 		super.read(context);
 	}
 
+	private static String getReferenceTypeString(int referenceType) {
+		switch (referenceType) {
+			case REFERENCE_TYPE_NONE: return "NONE";
+			case REFERENCE_TYPE_EVENT: return "EVENT";
+			case REFERENCE_TYPE_IMAGE: return "IMAGE";
+			case REFERENCE_TYPE_OBJECT: return "OBJECT";
+		}
+
+		return "UNKNOWN";
+	}
+
 	@Override
 	public String toString() {
-		return String.format("referenceType=0x%X, short1=0x%X, value=0x%X", referenceType, unknownShort, value);
+		return String.format("referenceType=0x%X(%s), short1=0x%X, value=0x%X", referenceType, getReferenceTypeString(referenceType), unknownShort, value);
 	}
 }

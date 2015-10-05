@@ -78,6 +78,7 @@ public class RCO {
 	private int[] compressedTextDataOffset;
 	private Map<Integer, String> events;
 	private Map<Integer, BufferedImage> images;
+	private Map<Integer, BaseObject> objects;
 
 	public class RCOEntry {
 		private static final int RCO_ENTRY_SIZE = 40;
@@ -217,11 +218,14 @@ public class RCO {
 							}
 
 							if (obj != null) {
-								RCOContext context = new RCOContext(data, 0, events, images);
+								RCOContext context = new RCOContext(data, 0, events, images, objects);
 								obj.read(context);
 								if (context.offset != dataLength) {
 									log.warn(String.format("Incorrect length data for ANIM"));
 								}
+
+								objects.put(entryOffset, obj);
+
 								if (log.isDebugEnabled()) {
 									log.debug(String.format("OBJ: %s", obj));
 								}
@@ -245,11 +249,14 @@ public class RCO {
 							}
 
 							if (obj != null) {
-								RCOContext context = new RCOContext(data, 0, events, images);
+								RCOContext context = new RCOContext(data, 0, events, images, objects);
 								obj.read(context);
 								if (context.offset != dataLength) {
 									log.warn(String.format("Incorrect length data for ANIM"));
 								}
+
+								objects.put(entryOffset, obj);
+
 								if (log.isDebugEnabled()) {
 									log.debug(String.format("ANIM: %s", obj));
 								}
@@ -675,6 +682,7 @@ public class RCO {
 		}
 
 		images = new HashMap<Integer, BufferedImage>();
+		objects = new HashMap<Integer, BaseObject>();
 
 		mainTable = readRCOEntry(pMainTable);
 		if (log.isDebugEnabled()) {
@@ -691,11 +699,15 @@ public class RCO {
 			VSMXNativeObject globalVariables = GlobalVariables.create(interpreter);
 			VSMXNativeObject controller = Controller.create(interpreter, resourceName);
 			globalVariables.setPropertyValue(Controller.objectName, controller);
-			globalVariables.setPropertyValue(MoviePlayer.objectName, MoviePlayer.create(interpreter, umdVideoPlayer));
-			globalVariables.setPropertyValue(Resource.objectName, Resource.create(interpreter, mainTable));
+			globalVariables.setPropertyValue(MoviePlayer.objectName, MoviePlayer.create(interpreter, umdVideoPlayer, controller));
+			globalVariables.setPropertyValue(Resource.objectName, Resource.create(interpreter, umdVideoPlayer.getRCODisplay(), controller, mainTable));
+			globalVariables.setPropertyValue(jpcsp.format.rco.vsmx.objects.Math.objectName, jpcsp.format.rco.vsmx.objects.Math.create(interpreter));
 			interpreter.run(globalVariables);
 
+//			globalVariables.getObject().callCallback(interpreter, "initResource", null);
+//			globalVariables.getObject().callCallback(interpreter, "playIntro", null);
 			controller.getObject().callCallback(interpreter, "onAutoPlay", null);
+//			controller.getObject().callCallback(interpreter, "onMenu", null);
 		}
 	}
 

@@ -79,6 +79,37 @@ public class VSMXString extends VSMXBaseObject {
 		return new VSMXString(getInterpreter(), getStringValue().toLowerCase());
 	}
 
+	public VSMXBaseObject substring(VSMXBaseObject object, VSMXBaseObject start) {
+		String s = getStringValue();
+
+		int beginIndex = start.getIntValue();
+		beginIndex = Math.max(beginIndex, 0);
+		beginIndex = Math.min(beginIndex, s.length());
+
+		return new VSMXString(getInterpreter(), s.substring(beginIndex));
+	}
+
+	public VSMXBaseObject substring(VSMXBaseObject object, VSMXBaseObject start, VSMXBaseObject end) {
+		String s = getStringValue();
+
+		int beginIndex = start.getIntValue();
+		beginIndex = Math.max(beginIndex, 0);
+		beginIndex = Math.min(beginIndex, s.length());
+
+		int endIndex = end.getIntValue();
+		endIndex = Math.max(endIndex, 0);
+		endIndex = Math.min(endIndex, s.length());
+
+		// The substring method uses the lower value of start and end as the beginning point of the substring.
+		if (beginIndex > endIndex) {
+			int tmp = beginIndex;
+			beginIndex = endIndex;
+			endIndex = tmp;
+		}
+
+		return new VSMXString(getInterpreter(), s.substring(beginIndex, endIndex));
+	}
+
 	@Override
 	public String toString() {
 		return String.format("\"%s\"", value);
