@@ -32,6 +32,7 @@
   <appender name="TxtAppender" class="org.apache.log4j.FileAppender">
     <param name="File" value="log.txt" />
     <param name="Append" value="false" />
+    <param name="Encoding" value="UTF-8" />
     <layout class="org.apache.log4j.PatternLayout">
       <param name="ConversionPattern" value="%d{HH:mm:ss} %5p %8c - %t - %m%n" />
     </layout>
