@@ -1165,6 +1165,10 @@ public class sceMpeg extends HLEModule {
     }
 
     private boolean decodeImage(int buffer, int frameWidth, int pixelMode, TPointer32 gotFrameAddr, boolean writeAbgr) {
+    	if (pixelMode < 0) {
+    		return false;
+    	}
+
     	DecodedImageInfo decodedImageInfo;
     	synchronized (decodedImages) {
         	decodedImageInfo = decodedImages.pollFirst();
