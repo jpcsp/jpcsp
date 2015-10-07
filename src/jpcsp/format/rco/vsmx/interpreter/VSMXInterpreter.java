@@ -485,6 +485,12 @@ public class VSMXInterpreter {
 					}
 					VSMXObject thisObject = new VSMXObject(this, className);
 					callFunction(function, thisObject, arguments, code.value, true);
+				} else if (o instanceof VSMXObject) {
+					if (code.value == 0) {
+						stack.push(new VSMXObject(this, null));
+					} else {
+						log.warn(String.format("Line#%d wrong number of arguments for new Object %s", pc - 1, code));
+					}
 				} else {
 					stack.push(new VSMXArray(this));
 					log.warn(String.format("Line#%d unimplemented %s", pc - 1, code));

@@ -21,6 +21,8 @@ import java.util.Set;
 
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.format.rco.object.BaseObject;
+import jpcsp.format.rco.object.BasePositionObject;
+import jpcsp.format.rco.type.ObjectType;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
@@ -51,6 +53,48 @@ public class BaseAnim extends BaseObject {
 				}
 			}
 		}
+	}
+
+	protected long doPlayReference(BasePositionObject object) {
+		return 0;
+	}
+
+	protected long doPlayReference(BaseNativeObject object) {
+		if (object instanceof BasePositionObject) {
+			return doPlayReference((BasePositionObject) object);
+		}
+
+		return 0;
+	}
+
+	private long doPlayReference(VSMXBaseObject object) {
+		if (object instanceof VSMXNativeObject) {
+			return doPlayReference(((VSMXNativeObject) object).getObject());
+		}
+
+		return 0;
+	}
+
+	protected long doPlayReference(ObjectType ref) {
+		BasePositionObject positionObject = ref.getPositionObject();
+		if (positionObject == null) {
+			return 0;
+		}
+
+		VSMXBaseObject object = positionObject.getObject();
+		long delay = doPlayReference(object);
+		if (object.hasPropertyValue(Resource.childrenName)) {
+			VSMXBaseObject children = object.getPropertyValue(Resource.childrenName);
+			Set<String> names = children.getPropertyNames();
+			if (names != null) {
+				for (String name : names) {
+					VSMXBaseObject child = children.getPropertyValue(name);
+					delay = Math.max(delay, doPlayReference(child));
+				}
+			}
+		}
+
+		return delay;
 	}
 
 	protected long doPlay(VSMXBaseObject object) {

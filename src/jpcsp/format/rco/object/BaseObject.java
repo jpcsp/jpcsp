@@ -134,6 +134,10 @@ public abstract class BaseObject extends BaseNativeObject {
 		return Emulator.getScheduler();
 	}
 
+	public String getName() {
+		return name;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();

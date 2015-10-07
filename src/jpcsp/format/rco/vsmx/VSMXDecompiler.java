@@ -306,6 +306,15 @@ public class VSMXDecompiler {
 				decompileOp(op2);
 				s.append(String.format("%s[%s]", op2, op1));
 				break;
+			case VSMXCode.VID_ARRAY_INDEX_KEEP_OBJ:
+				op1 = new StringBuilder();
+				decompileOp(op1);
+				i = stack.peek();
+				op2 = new StringBuilder();
+				decompileOp(op2);
+				stack.push(i);
+				s.append(String.format("%s[%s]", op2, op1));
+				break;
 			case VSMXCode.VID_CALL_NEW:
 				args = code.value;
 				ops = new StringBuilder[args];
@@ -403,6 +412,18 @@ public class VSMXDecompiler {
 				break;
 			case VSMXCode.VID_OPERATOR_B_XOR:
 				operator2(s, " ^ ");
+				break;
+			case VSMXCode.VID_INCREMENT:
+				operatorPost1(s, "++");
+				break;
+			case VSMXCode.VID_DECREMENT:
+				operatorPost1(s, "--");
+				break;
+			case VSMXCode.VID_P_INCREMENT:
+				operatorPre1(s, "++");
+				break;
+			case VSMXCode.VID_P_DECREMENT:
+				operatorPre1(s, "--");
 				break;
 			case VSMXCode.VID_ARRAY_PUSH:
 				op1 = new StringBuilder();
@@ -552,6 +573,9 @@ public class VSMXDecompiler {
 				s.append(prefix);
 				operatorPre1(s, "--");
 				break;
+			case VSMXCode.VID_OPERATOR_EQUAL:
+				operator2(s, " == ");
+				break;
 			case VSMXCode.VID_JUMP:
 				if (code.value > i) {
 					increaseIndent(code.value);
@@ -559,6 +583,16 @@ public class VSMXDecompiler {
 					// Backward loop
 					s.append(String.format("%sgoto %d", prefix, code.value));
 				}
+				break;
+			case VSMXCode.VID_VARIABLE:
+				s.append(prefix);
+				s.append(mem.names[code.value]);
+				break;
+			case VSMXCode.VID_UNNAMED_VAR:
+				s.append(prefix);
+				s.append(String.format("var%d", code.value));
+				break;
+			case VSMXCode.VID_DEBUG_LINE:
 				break;
 			default:
 				log.warn(String.format("Line #%d: decompileStmt(%s) unimplemented", i, VSMXCode.VsmxDecOps[opcode]));

@@ -45,22 +45,15 @@ public class Display extends JComponent {
 	protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
 
-		if (objects.size() > 0 && log.isDebugEnabled()) {
-			log.debug(String.format("Starting to paint Display with %d objects", objects.size()));
+		if (objects.size() > 0 && log.isTraceEnabled()) {
+			log.trace(String.format("Starting to paint Display with %d objects", objects.size()));
 		}
 
 		for (IDisplay object : objects) {
 			paint(g, object);
 		}
-
-		g.setColor(Color.BLACK);
-		g.drawRect(10, 10, 100, 100);
 	}
 
-int minX = Integer.MAX_VALUE;
-int minY = Integer.MAX_VALUE;
-int maxX = Integer.MIN_VALUE;
-int maxY = Integer.MIN_VALUE;
 	private void paint(Graphics g, IDisplay object) {
 		int cx = object.getX();
 		int cy = object.getY();
@@ -68,18 +61,16 @@ int maxY = Integer.MIN_VALUE;
 		int height = object.getHeight();
 		int x = cx - width / 2;
 		int y = cy - height / 2;
-		BufferedImage image = object.getImage();
+		BufferedImage image = object.getAnimImage();
 
-x += 854/2;
-y = 180/2 - y;
+		// TODO How to find correct mapping???
+		x = Math.round(x / 1.8f) + 283;
+		y = Math.round(-y / 1.6f) + 133;
+		width = Math.round(width / 1.17f);
+		height = Math.round(height / 1.19f);
 
-minX = Math.min(x, minX);
-minY = Math.min(y, minY);
-maxX = Math.max(x + width, maxX);
-maxY = Math.max(y + height, maxY);
-log.debug(String.format("minX=%d, minY=%d, maxX=%d, maxY=%d", minX, minY, maxX, maxY));
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("paint at (%d,%d) %dx%d - image=%s, object=%s", x, y, width, height, image, object));
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("paint at (%d,%d) %dx%d - image=%s, object=%s", x, y, width, height, image, object));
 		}
 
 		if (image != null) {

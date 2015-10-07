@@ -24,4 +24,5 @@ public interface IDisplay {
 	public int getWidth();
 	public int getHeight();
 	public BufferedImage getImage();
+	public BufferedImage getAnimImage();
 }

@@ -16,42 +16,5 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.type;
 
-import jpcsp.format.rco.RCOContext;
-import jpcsp.format.rco.object.BaseObject;
-
 public class EventType extends BaseReferenceType {
-	private String event;
-	private BaseObject object;
-
-	@Override
-	public void read(RCOContext context) {
-		super.read(context);
-
-		if (referenceType == REFERENCE_TYPE_EVENT) {
-			event = context.events.get(value);
-		} else if (referenceType == REFERENCE_TYPE_OBJECT) {
-			object = context.objects.get(value);
-		} else if (referenceType != REFERENCE_TYPE_NONE) {
-			log.warn(String.format("EventType unknown referenceType 0x%X", referenceType));
-		}
-	}
-
-	public String getEvent() {
-		return event;
-	}
-
-	public BaseObject getObject() {
-		return object;
-	}
-
-	@Override
-	public String toString() {
-		if (event != null) {
-			return String.format("%s, event='%s'", super.toString(), event);
-		}
-		if (object != null) {
-			return String.format("%s, object='%s'", super.toString(), object);
-		}
-		return super.toString();
-	}
 }

@@ -24,6 +24,7 @@ import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNumber;
+import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXUndefined;
 import jpcsp.hardware.Screen;
 
@@ -38,6 +39,7 @@ public class GlobalVariables extends BaseNativeObject {
 
 		object.setPropertyValue("undefined", VSMXUndefined.singleton);
 		object.setPropertyValue("Array", new VSMXArray(interpreter));
+		object.setPropertyValue("Object", new VSMXObject(interpreter, null));
 
 		object.setPropertyValue("timer", Timer.create(interpreter));
 

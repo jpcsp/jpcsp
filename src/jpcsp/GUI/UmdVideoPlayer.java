@@ -89,7 +89,6 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.sceCtrl;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceUtility;
 
@@ -185,14 +184,14 @@ public class UmdVideoPlayer implements KeyListener {
         private MpsStreamMarkerInfo[] streamMarkers;
         private int playListNumber;
 
-        public MpsStreamInfo(String name, int width, int heigth, int firstTimestamp, int lastTimestamp, MpsStreamMarkerInfo[] markers) {
+        public MpsStreamInfo(String name, int width, int heigth, int firstTimestamp, int lastTimestamp, MpsStreamMarkerInfo[] markers, int playListNumber) {
             streamName = name;
             streamWidth = width;
             streamHeigth = heigth;
             streamFirstTimestamp = firstTimestamp;
             streamLastTimestamp = lastTimestamp;
             streamMarkers = markers;
-            playListNumber = Integer.parseInt(name);
+            this.playListNumber = playListNumber;
         }
 
         public String getName() {
@@ -497,7 +496,7 @@ public class UmdVideoPlayer implements KeyListener {
                 	streamMarkers = new MpsStreamMarkerInfo[0];
                 }
                 // Map this stream.
-                MpsStreamInfo info = new MpsStreamInfo(streamName, streamWidth, streamHeight, streamFirstTimestamp, streamLastTimestamp, streamMarkers);
+                MpsStreamInfo info = new MpsStreamInfo(streamName, streamWidth, streamHeight, streamFirstTimestamp, streamLastTimestamp, streamMarkers, i + 1);
                 if (log.isDebugEnabled()) {
                 	log.debug(String.format("Release date %d-%d-%d, name '%s'", releaseDateYear, releaseDateMonth, releaseDateDay, name));
                 	log.debug(String.format("StreamInfo #%d: %s", i, info));
@@ -1349,7 +1348,7 @@ public class UmdVideoPlayer implements KeyListener {
                 if (!done) {
                 	if (moviePlayer != null) {
                 		done = true;
-                		moviePlayer.onPlayListEnd(currentStreamIndex);
+                		moviePlayer.onPlayListEnd(mpsStreams.get(currentStreamIndex).getPlayListNumber());
                 	} else {
 	                    if (log.isTraceEnabled()) {
 	                    	log.trace(String.format("Switching to next stream"));

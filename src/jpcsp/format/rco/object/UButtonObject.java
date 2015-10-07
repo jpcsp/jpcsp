@@ -45,7 +45,7 @@ public class UButtonObject extends BasePositionObject {
 
 	@Override
 	public BufferedImage getImage() {
-		return image.image;
+		return image.getImage();
 	}
 
 	@Override
