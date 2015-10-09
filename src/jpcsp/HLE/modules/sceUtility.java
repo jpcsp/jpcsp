@@ -1540,6 +1540,8 @@ public class sceUtility extends HLEModule {
                                 stat.mtime.write(mem, entryAddr + 36);
                             }
                             String entryName = entries[i].substring(savedataParams.gameName.length());
+                            // File names are always returned in upper case
+                            entryName = entryName.toUpperCase();
                             Utilities.writeStringNZ(mem, entryAddr + 52, 20, entryName);
 
                             if (log.isDebugEnabled()) {
@@ -1581,7 +1583,8 @@ public class sceUtility extends HLEModule {
 
                         // List all files in the savedata (normal and/or encrypted).
                         for (int i = 0; i < maxNumEntries; i++) {
-                            String entry = entries[i];
+                            // File names are always returned in upper case
+                            String entry = entries[i].toUpperCase();
                             String filePath = path + "/" + entry;
                             SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
 
@@ -1596,8 +1599,7 @@ public class sceUtility extends HLEModule {
                                         stat.atime.write(mem, entryAddr + 32);
                                         stat.mtime.write(mem, entryAddr + 48);
                                     }
-                                    String entryName = entries[i];
-                                    Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                                    Utilities.writeStringNZ(mem, entryAddr + 64, 16, entry);
                                     systemFileNumEntries++;
                                 }
                             } else if (savedataParams.isSecureFile(entry)) {
@@ -1617,8 +1619,7 @@ public class sceUtility extends HLEModule {
                                         stat.atime.write(mem, entryAddr + 32);
                                         stat.mtime.write(mem, entryAddr + 48);
                                     }
-                                    String entryName = entries[i];
-                                    Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                                    Utilities.writeStringNZ(mem, entryAddr + 64, 16, entry);
                                     saveFileSecureNumEntries++;
                                 }
                             } else {
@@ -1632,8 +1633,7 @@ public class sceUtility extends HLEModule {
                                         stat.atime.write(mem, entryAddr + 32);
                                         stat.mtime.write(mem, entryAddr + 48);
                                     }
-                                    String entryName = entries[i];
-                                    Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                                    Utilities.writeStringNZ(mem, entryAddr + 64, 16, entry);
                                     saveFileNumEntries++;
                                 }
                             }
