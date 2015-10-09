@@ -689,6 +689,10 @@ public class RCO {
 			log.debug(String.format("mainTable: %s", mainTable));
 		}
 
+		RCOContext context = new RCOContext(null, 0, events, images, objects);
+		for (BaseObject object : objects.values()) {
+			object.init(context);
+		}
 		return true;
 	}
 

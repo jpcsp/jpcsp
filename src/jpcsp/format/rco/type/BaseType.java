@@ -45,6 +45,9 @@ public class BaseType {
 		value = read32(context);
 	}
 
+	public void init(RCOContext context) {
+	}
+
 	public int getIntValue() {
 		return value;
 	}

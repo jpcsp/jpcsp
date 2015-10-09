@@ -46,7 +46,7 @@ public class Display extends JComponent {
 		super.paintComponent(g);
 
 		if (objects.size() > 0 && log.isTraceEnabled()) {
-			log.trace(String.format("Starting to paint Display with %d objects", objects.size()));
+			log.trace(String.format("Starting to paint Display with %d objects, focus=%s", objects.size(), focus));
 		}
 
 		for (IDisplay object : objects) {

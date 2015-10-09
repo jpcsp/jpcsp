@@ -457,10 +457,12 @@ public class VSMXDecompiler {
 				s.append(String.format("%s = %s", op2, op1));
 				break;
 			case VSMXCode.VID_STACK_COPY:
-				i = stack.pop();
-				stack.push(i);
-				stack.push(i);
-				decompileOp(s);
+				if (!stack.isEmpty()) {
+					i = stack.pop();
+					stack.push(i);
+					stack.push(i);
+					decompileOp(s);
+				}
 				break;
 			default:
 				log.warn(String.format("Line #%d: decompileOp(%s) unimplemented", i, VSMXCode.VsmxDecOps[opcode]));

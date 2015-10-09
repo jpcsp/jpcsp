@@ -446,7 +446,7 @@ public class UmdVideoPlayer implements KeyListener {
                 file.skipBytes(2);   // 0x0332.
                 file.skipBytes(30);  // NULL.
                 file.skipBytes(2);   // 0x02E8.
-                file.skipBytes(2);   // 0x0000/0x1000.
+                int unknown = endianSwap16(file.readShort());
                 int releaseDateYear = readByteHexTo10(file) * 100 + readByteHexTo10(file);
                 int releaseDateDay = file.readByte();
                 int releaseDateMonth = file.readByte();
@@ -498,7 +498,7 @@ public class UmdVideoPlayer implements KeyListener {
                 // Map this stream.
                 MpsStreamInfo info = new MpsStreamInfo(streamName, streamWidth, streamHeight, streamFirstTimestamp, streamLastTimestamp, streamMarkers, i + 1);
                 if (log.isDebugEnabled()) {
-                	log.debug(String.format("Release date %d-%d-%d, name '%s'", releaseDateYear, releaseDateMonth, releaseDateDay, name));
+                	log.debug(String.format("Release date %d-%d-%d, name '%s', unknown=0x%04X", releaseDateYear, releaseDateMonth, releaseDateDay, name, unknown));
                 	log.debug(String.format("StreamInfo #%d: %s", i, info));
                 }
                 mpsStreams.add(info);

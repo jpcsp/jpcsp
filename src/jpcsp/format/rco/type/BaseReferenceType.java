@@ -25,7 +25,10 @@ import jpcsp.format.rco.object.BasePositionObject;
 public class BaseReferenceType extends BaseType {
 	protected static final int REFERENCE_TYPE_NONE = 0xFFFF;
 	protected static final int REFERENCE_TYPE_EVENT = 0x400;
+	protected static final int REFERENCE_TYPE_TEXT = 0x401;
 	protected static final int REFERENCE_TYPE_IMAGE = 0x402;
+	protected static final int REFERENCE_TYPE_MODEL = 0x403;
+	protected static final int REFERENCE_TYPE_FONT = 0x405;
 	protected static final int REFERENCE_TYPE_OBJECT = 0x407;
 	protected static final int REFERENCE_TYPE_ANIM = 0x408;
 	protected static final int REFERENCE_TYPE_POSITION_OBJECT = 0x409;
@@ -46,8 +49,13 @@ public class BaseReferenceType extends BaseType {
 		unknownShort = read16(context);
 
 		super.read(context);
+	}
 
+	@Override
+	public void init(RCOContext context) {
 		switch (referenceType) {
+			case REFERENCE_TYPE_NONE:
+				break;
 			case REFERENCE_TYPE_EVENT:
 				event = context.events.get(value);
 				break;
@@ -55,24 +63,28 @@ public class BaseReferenceType extends BaseType {
 			case REFERENCE_TYPE_POSITION_OBJECT:
 			case REFERENCE_TYPE_ANIM:
 				object = context.objects.get(value);
+				break;
 			case REFERENCE_TYPE_IMAGE:
 				image = context.images.get(value);
-			case REFERENCE_TYPE_NONE:
 				break;
 			default:
 				log.warn(String.format("BaseReferenceType: unknown referenceType 0x%X(%s)", referenceType, getReferenceTypeString(referenceType)));
 				break;
 		}
+		super.init(context);
 	}
 
 	private static String getReferenceTypeString(int referenceType) {
 		switch (referenceType) {
 			case REFERENCE_TYPE_NONE: return "NONE";
 			case REFERENCE_TYPE_EVENT: return "EVENT";
+			case REFERENCE_TYPE_TEXT: return "TEXT";
 			case REFERENCE_TYPE_IMAGE: return "IMAGE";
+			case REFERENCE_TYPE_MODEL: return "MODEL";
+			case REFERENCE_TYPE_FONT: return "FONT";
 			case REFERENCE_TYPE_OBJECT: return "OBJECT";
-			case REFERENCE_TYPE_POSITION_OBJECT: return "POSITION_OBJECT";
 			case REFERENCE_TYPE_ANIM: return "ANIM";
+			case REFERENCE_TYPE_POSITION_OBJECT: return "POSITION_OBJECT";
 		}
 
 		return "UNKNOWN";
@@ -106,7 +118,7 @@ public class BaseReferenceType extends BaseType {
 			s.append(String.format(", event='%s'", event));
 		}
 		if (object != null) {
-			s.append(String.format(", object='%s'", object));
+			s.append(String.format(", object='%s'", object.getName()));
 		}
 		if (image != null) {
 			s.append(String.format(", image=%dx%d", image.getWidth(), image.getHeight()));

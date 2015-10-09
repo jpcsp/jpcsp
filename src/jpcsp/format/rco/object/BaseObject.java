@@ -28,6 +28,7 @@ import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.RCOContext;
 import jpcsp.format.rco.Display;
 import jpcsp.format.rco.type.BaseType;
+import jpcsp.format.rco.type.EventType;
 import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
@@ -57,8 +58,12 @@ public abstract class BaseObject extends BaseNativeObject {
 		
 	}
 
+	private Field[] getFields() {
+		return getClass().getFields();
+	}
+
 	private Field[] getSortedFields() {
-		Field fields[] = getClass().getFields();
+		Field fields[] = getFields();
 
 		// According the definition of getFields():
 		//   The elements in the array returned are not sorted and are not in any particular order.
@@ -136,6 +141,30 @@ public abstract class BaseObject extends BaseNativeObject {
 
 	public String getName() {
 		return name;
+	}
+
+	protected void trigger(EventType event) {
+		if (event.getEvent() != null) {
+			controller.getInterpreter().interpretScript(getObject(), event.getEvent());
+		} else if (event.getObject() != null && event.getObject() instanceof BasePositionObject) {
+			controller.setFocus((BasePositionObject) event.getObject());
+		}
+	}
+
+	public void init(RCOContext context) {
+		Field[] fields = getFields();
+		for (Field field : fields) {
+			if (BaseType.class.isAssignableFrom(field.getType())) {
+				try {
+					BaseType baseType = (BaseType) field.get(this);
+					if (baseType != null) {
+						baseType.init(context);
+					}
+				} catch (IllegalAccessException e) {
+					// Ignore error
+				}
+			}
+		}
 	}
 
 	@Override

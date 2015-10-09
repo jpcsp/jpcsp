@@ -50,26 +50,26 @@ public class UButtonObject extends BasePositionObject {
 
 	@Override
 	public void onUp() {
-		controller.getInterpreter().interpretScript(getObject(), onUp.getEvent());
+		trigger(onUp);
 	}
 
 	@Override
 	public void onDown() {
-		controller.getInterpreter().interpretScript(getObject(), onDown.getEvent());
+		trigger(onDown);
 	}
 
 	@Override
 	public void onLeft() {
-		controller.getInterpreter().interpretScript(getObject(), onLeft.getEvent());
+		trigger(onLeft);
 	}
 
 	@Override
 	public void onRight() {
-		controller.getInterpreter().interpretScript(getObject(), onRight.getEvent());
+		trigger(onRight);
 	}
 
 	@Override
 	public void onPush() {
-		controller.getInterpreter().interpretScript(getObject(), onPush.getEvent());
+		trigger(onPush);
 	}
 }
