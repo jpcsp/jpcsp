@@ -613,10 +613,14 @@ public class IoFileMgrForUser extends HLEModule {
 	        	vfsManager.register("disc0", vfsIso);
 	        	vfsManager.register("umd0", vfsIso);
 	        	vfsManager.register("umd1", vfsIso);
+	        	vfsManager.register("umd", vfsIso);
+	        	vfsManager.register("isofs", vfsIso);
     		} else {
     			vfsManager.unregister("disc0");
     			vfsManager.unregister("umd0");
     			vfsManager.unregister("umd1");
+    			vfsManager.unregister("umd");
+    			vfsManager.unregister("isofs");
 
     			// Register the local path if the application has been loaded as a file (and not as an UMD).
     			if (filepath != null) {
@@ -857,13 +861,15 @@ public class IoFileMgrForUser extends HLEModule {
         return filename;
     }
 
-    private final String[] umdPrefixes = new String[] {
-        "disc", "umd"
+    private static final String[] umdPrefixes = new String[] {
+        "disc[0-9]+", "umd[0-9]+", "umd", "isofs"
     };
 
     private boolean isUmdPath(String deviceFilePath) {
-        for (int i = 0; i < umdPrefixes.length; i++) {
-            if (deviceFilePath.matches("^" + umdPrefixes[i] + "[0-9]+.*")) {
+        for (String umdPrefix : umdPrefixes) {
+            if (deviceFilePath.matches(umdPrefix)) {
+                return true;
+            } else if (deviceFilePath.matches(umdPrefix + "/.*")) {
                 return true;
             }
         }
@@ -873,15 +879,15 @@ public class IoFileMgrForUser extends HLEModule {
 
     private String trimUmdPrefix(String pcfilename) {
         // Assume the device name is always lower case (ensured by getDeviceFilePath)
-        // Assume there is always a device number
         // Handle case where file path is blank so there is no slash after the device name
-        for (int i = 0; i < umdPrefixes.length; i++) {
-            if (pcfilename.matches("^" + umdPrefixes[i] + "[0-9]+/.*")) {
+        for (String umdPrefix : umdPrefixes) {
+        	if (pcfilename.matches(umdPrefix)) {
+        		return "";
+        	} else if (pcfilename.matches(umdPrefix + "/.*")) {
                 return pcfilename.substring(pcfilename.indexOf("/") + 1);
-            } else if (pcfilename.matches("^" + umdPrefixes[i] + "[0-9]+")) {
-                return "";
             }
         }
+
         return pcfilename;
     }
 
@@ -1466,6 +1472,8 @@ public class IoFileMgrForUser extends HLEModule {
 	        	vfsManager.register("disc0", vfsIso);
 	        	vfsManager.register("umd0", vfsIso);
 	        	vfsManager.register("umd1", vfsIso);
+	        	vfsManager.register("umd", vfsIso);
+	        	vfsManager.register("isofs", vfsIso);
 	        	umdRegistered = true;
 			}
 
@@ -1484,6 +1492,8 @@ public class IoFileMgrForUser extends HLEModule {
 			vfsManager.unregister("disc0");
 			vfsManager.unregister("umd0");
 			vfsManager.unregister("umd1");
+			vfsManager.unregister("umd");
+			vfsManager.unregister("isofs");
         }
         if (msRegistered) {
 			vfsManager.unregister("ms0");
@@ -3984,16 +3994,25 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x08BD7374, version = 150, checkInsideInterrupt = true)
     public int sceIoGetDevType(int id) {
-        IoInfo info = fileIds.get(id);
         int result;
-        if (info == null) {
-            log.warn("sceIoGetDevType - unknown id " + Integer.toHexString(id));
-            result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
-        } else {
-            // For now, return alias type, since it's the most used.
-            result = PSP_DEV_TYPE_ALIAS;
+
+        if (id == STDIN_ID || id == STDOUT_ID || id == STDERR_ID) {
+    		result = PSP_DEV_TYPE_FILESYSTEM;
+    	} else {
+	    	IoInfo info = fileIds.get(id);
+	        if (info == null) {
+	            log.warn("sceIoGetDevType - unknown id " + Integer.toHexString(id));
+	            result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+	        } else {
+	            // For now, return alias type, since it's the most used.
+	            result = PSP_DEV_TYPE_ALIAS;
+	        }
+    	}
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceIoGetDevType id=0x%X returning 0x%X", id, result));
         }
-        
+
         return result;
     }
 
