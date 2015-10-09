@@ -562,8 +562,10 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
     public void load(Memory mem) throws IOException {
         String path = getBasePath();
 
-        // Read main data.
-        if (checkParamSFOEncryption(path, paramSfoFileName)) {
+        // Read the main data.
+        // The data has to be decrypted if the SFO is marked for encryption and
+        // the file is listed in the SFO as a secure file (SAVEDATA_FILE_LIST).
+        if (checkParamSFOEncryption(path, paramSfoFileName) && isSecureFile(fileName)) {
             dataSize = loadEncryptedFile(mem, path, fileName, dataBuf, dataBufSize, key);
         } else {
             dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
@@ -1088,42 +1090,6 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         return false;
     }
 
-    /**
-     * Check if the given file has been created before r3306.
-     *
-     * @return true if the file exists and has been created before r3306. false
-     * otherwise.
-     */
-    private boolean isPreR3306(String fileName) {
-        SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(getBasePath() + fileName);
-        if (stat == null) {
-            return false;
-        }
-        ScePspDateTime mtime = stat.mtime;
-        if (mtime == null) {
-            return false;
-        }
-
-        // r3306 has been released on Jul 12, 2013
-        if (mtime.year < 2013) {
-            return true;
-        }
-        if (mtime.year > 2013) {
-            return false;
-        }
-        // mtime.year == 2013
-
-        if (mtime.month < 7) {
-            return true;
-        }
-        if (mtime.month > 7) {
-            return false;
-        }
-        // mtime.year == 2013 && mtime.month == 7
-
-        return mtime.day < 12;
-    }
-
     private PspUtilitySavedataSecureFileList getSecureFileList(String fileName) {
         PSF psf = null;
         try {
@@ -1136,35 +1102,14 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         }
 
         Object savedataFileList = psf.get("SAVEDATA_FILE_LIST");
-
-        boolean addFileName = false;
-        if (fileName != null && isPreR3306(fileName)) {
-            // Before r3306, there was no SAVEDATA_FILE_LIST and all files were considered as secure.
-            addFileName = true;
+        if (savedataFileList == null || !(savedataFileList instanceof byte[])) {
+            return null;
         }
 
         PspUtilitySavedataSecureFileList fileList = null;
-        if (savedataFileList == null) {
-            if (!addFileName) {
-                return null;
-            }
-        } else {
-            if (!(savedataFileList instanceof byte[])) {
-                return null;
-            }
-        }
-
         if (savedataFileList != null) {
             fileList = new PspUtilitySavedataSecureFileList();
             fileList.read((byte[]) savedataFileList);
-        }
-
-        // Do we need to add the current fileName to the secure file list?
-        if (addFileName) {
-            if (fileList == null) {
-                fileList = new PspUtilitySavedataSecureFileList();
-            }
-            fileList.add(fileName, null);
         }
 
         return fileList;
