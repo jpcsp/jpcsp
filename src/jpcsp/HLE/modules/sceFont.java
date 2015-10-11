@@ -99,8 +99,6 @@ public class sceFont extends HLEModule {
     public void start() {
     	setSettingsListener("emu.useDebugFont", new UseDebugFontSettingsListerner());
 
-    	fontIndex = -1;
-        fontLibIndex = -1;
         internalFonts = new LinkedList<Font>();
         fontLibsMap = new HashMap<Integer, FontLib>();
         fontsMap = new HashMap<Integer, Font>();
@@ -109,9 +107,6 @@ public class sceFont extends HLEModule {
 
         super.start();
     }
-
-    public int fontIndex;
-    public int fontLibIndex;
 
     @HLEUidClass(errorValueOnNotFound = SceKernelErrors.ERROR_FONT_INVALID_LIBID)
     public class Font {
@@ -478,6 +473,8 @@ public class sceFont extends HLEModule {
     }
 
     protected void loadAllFonts() {
+        internalFonts.clear();
+
         // Load the fonts in the same order as on a PSP.
         // Some applications are always using the first font returned by
         // sceFontGetFontList.
