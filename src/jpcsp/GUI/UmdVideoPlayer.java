@@ -40,13 +40,11 @@ import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.sleep;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.image.MemoryImageSource;
-import java.awt.Insets;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -406,15 +404,14 @@ public class UmdVideoPlayer implements KeyListener {
 	        screenWidth = Screen.width * resizeScaleFactor;
 	        screenHeigth = Screen.height * resizeScaleFactor;
     	} else {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("video size %dx%d", videoWidth, videoHeight));
+    		}
 	        screenWidth = videoWidth * resizeScaleFactor;
 	        screenHeigth = videoHeight * resizeScaleFactor;
     	}
 
-    	Insets insets = gui.getInsets();
-        Dimension minSize = new Dimension(
-                screenWidth + insets.left + insets.right,
-                screenHeigth + insets.top + insets.bottom);
-        gui.setMinimumSize(minSize);
+        gui.setDisplayMinimumSize(screenWidth, screenHeigth);
     }
 
     private int readByteHexTo10(UmdIsoFile file) throws IOException {

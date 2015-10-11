@@ -30,12 +30,15 @@ import jpcsp.format.RCO;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
+import jpcsp.format.rco.vsmx.objects.MoviePlayer;
 
 public class Display extends JComponent {
 	private static final long serialVersionUID = 5488196052725313236L;
 	private static final Logger log = RCO.log;
 	private List<IDisplay> objects;
 	private IDisplay focus;
+	private float moviePlayerWidth = (float) MoviePlayer.DEFAULT_WIDTH;
+	private float moviePlayerHeight = (float) MoviePlayer.DEFAULT_HEIGHT;
 
 	public Display() {
 		objects = new LinkedList<IDisplay>();
@@ -47,6 +50,7 @@ public class Display extends JComponent {
 
 		if (objects.size() > 0 && log.isTraceEnabled()) {
 			log.trace(String.format("Starting to paint Display with %d objects, focus=%s", objects.size(), focus));
+			log.trace(String.format("display %dx%d", getWidth(), getHeight()));
 		}
 
 		for (IDisplay object : objects) {
@@ -60,17 +64,19 @@ public class Display extends JComponent {
 		int width = object.getWidth();
 		int height = object.getHeight();
 		int x = cx - width / 2;
-		int y = cy - height / 2;
+		int y = cy + height / 2;
+
 		BufferedImage image = object.getAnimImage();
 
-		// TODO How to find correct mapping???
-		x = Math.round(x / 1.8f) + 283;
-		y = Math.round(-y / 1.6f) + 133;
-		width = Math.round(width / 1.17f);
-		height = Math.round(height / 1.19f);
+		float displayWidth = getWidth();
+		float displayHeight = getHeight();
+		x = Math.round(x / (moviePlayerWidth / 2f) * (displayWidth / 2f) + (displayWidth / 2f));
+		y = Math.round(-y / (moviePlayerHeight / 2f) * (displayHeight / 2f) + (displayHeight / 2f));
+		width = Math.round(width / (moviePlayerWidth / displayWidth));
+		height = Math.round(height / (moviePlayerWidth / displayWidth));
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("paint at (%d,%d) %dx%d - image=%s, object=%s", x, y, width, height, image, object));
+			log.trace(String.format("paint at (%d,%d) %dx%d - image=%dx%d, object=%s", x, y, width, height, image == null ? 0 : image.getWidth(), image == null ? 0 : image.getHeight(), object));
 		}
 
 		if (image != null) {

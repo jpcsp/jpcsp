@@ -46,19 +46,19 @@ public class MoveToAnim extends BaseAnim {
 		public MoveToAnimAction(int duration, BasePositionObject positionObject) {
 			super(duration);
 			this.positionObject = positionObject;
-			startX = positionObject.posX.getFloatValue();
-			startY = positionObject.posY.getFloatValue();
-			startZ = positionObject.posZ.getFloatValue();
+			startX = positionObject.animX;
+			startY = positionObject.animY;
+			startZ = positionObject.animZ;
 		}
 
 		@Override
 		protected void anim(float step) {
-			positionObject.posX.setFloatValue(startX + x.getFloatValue() * step);
-			positionObject.posY.setFloatValue(startY + y.getFloatValue() * step);
-			positionObject.posZ.setFloatValue(startZ + z.getFloatValue() * step);
+			positionObject.animX = interpolate(startX, x.getFloatValue(), step);
+			positionObject.animY = interpolate(startY, y.getFloatValue(), step);
+			positionObject.animZ = interpolate(startZ, z.getFloatValue(), step);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("MoveToAnim '%s' from (%f,%f,%f) to (%f,%f,%f)", positionObject.getName(), startX, startY, startZ, positionObject.posX.getFloatValue(), positionObject.posY.getFloatValue(), positionObject.posZ.getFloatValue()));
+				log.debug(String.format("MoveToAnim '%s' from (%f,%f,%f) to (%f,%f,%f)", positionObject.getName(), startX, startY, startZ, positionObject.animX, positionObject.animY, positionObject.animZ));
 			}
 		}
 	}

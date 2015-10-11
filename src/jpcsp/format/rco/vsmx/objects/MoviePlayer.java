@@ -31,8 +31,9 @@ import jpcsp.format.rco.vsmx.interpreter.VSMXString;
 import jpcsp.format.rco.vsmx.interpreter.VSMXUndefined;
 
 public class MoviePlayer extends BaseNativeObject {
-	private static final int DEFAULT_WIDTH = 854;
-	private static final int DEFAULT_HEIGHT = 480;
+	// FWVGA display resolution as default (854x480)
+	public static final int DEFAULT_WIDTH = 854;
+	public static final int DEFAULT_HEIGHT = 480;
 	private static final Logger log = VSMX.log;
 	public static final String objectName = "movieplayer";
 	private VSMXInterpreter interpreter;

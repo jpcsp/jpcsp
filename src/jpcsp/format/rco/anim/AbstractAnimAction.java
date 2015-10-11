@@ -56,7 +56,7 @@ public abstract class AbstractAnimAction implements IAction {
 		}
 	}
 
-	protected float interpolate(float start, float end, float step) {
+	static protected float interpolate(float start, float end, float step) {
 		return start + (end - start) * step;
 	}
 

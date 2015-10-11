@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.object;
 
+import static java.lang.Math.round;
+
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -66,6 +68,9 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 	public float rotateX;
 	public float rotateY;
 	public float rotateAngle;
+	public float animX;
+	public float animY;
+	public float animZ;
 
 	private class AnimRotateAction extends AbstractAnimAction {
 		private float angle;
@@ -110,6 +115,10 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 			posX.setFloatValue(interpolate(startX, x, step));
 			posY.setFloatValue(interpolate(startY, y, step));
 			posZ.setFloatValue(interpolate(startZ, z, step));
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("AnimPosAction from (%f,%f,%f) to (%f,%f,%f)", startX, startY, startZ, posX.getFloatValue(), posY.getFloatValue(), posZ.getFloatValue()));
+			}
 		}
 	}
 
@@ -167,12 +176,12 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 
 	@Override
 	public int getX() {
-		return posX.getIntValue();
+		return posX.getIntValue() + round(animX);
 	}
 
 	@Override
 	public int getY() {
-		return posY.getIntValue();
+		return posY.getIntValue() + round(animY);
 	}
 
 	@Override
