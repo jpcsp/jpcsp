@@ -96,6 +96,7 @@ JPCSP v0.8 (???):
 
 -> Added an experimental xBRZ plugin for improved 2D texture scaling
 
+-> Added support of kernel module so that many chinese patched game are worked
 
 
 
