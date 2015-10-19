@@ -2296,7 +2296,12 @@ public class sceMpeg extends HLEModule {
 	        	}
 
 	        	if (audioBuffer.getLength() < audioFrameLength) {
-	        		result = SceKernelErrors.ERROR_MPEG_NO_DATA;
+	        		// It seems that sceMpegGetAtracAu returns ERROR_MPEG_NO_DATA only when both
+	        		// the audio and the video have reached the end of the stream.
+	        		// No error is returned when only the audio has reached the end of the stream.
+	        		if (psmfHeader == null || currentVideoTimestamp > psmfHeader.mpegLastTimestamp) {
+	        			result = SceKernelErrors.ERROR_MPEG_NO_DATA;
+	        		}
 	        	} else {
 	        		// Update the ringbuffer only in case of no error
 	        		mpegRingbufferWrite();
