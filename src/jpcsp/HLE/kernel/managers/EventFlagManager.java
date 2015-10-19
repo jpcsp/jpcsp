@@ -321,6 +321,9 @@ public class EventFlagManager {
 
     public int sceKernelReferEventFlagStatus(int uid, TPointer addr) {
         SceKernelEventFlagInfo event = eventMap.get(uid);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelReferEventFlagStatus event=%s", event));
+        }
         event.write(addr);
 
         return 0;
