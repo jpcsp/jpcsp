@@ -28,6 +28,7 @@ public class Resource extends BaseNativeObject {
 	public static final String objectName = "resource";
 	public static final String rootName = "root";
 	public static final String childrenName = "children";
+	public static final String textureName = "texture";
 
 	public static VSMXNativeObject create(VSMXInterpreter interpreter, Display display, VSMXNativeObject vsmxController, RCOEntry mainTable) {
 		Resource resource = new Resource(interpreter);

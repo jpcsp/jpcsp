@@ -20,6 +20,8 @@ import java.util.Stack;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.VSMXCode;
 import jpcsp.format.rco.vsmx.VSMXGroup;
@@ -36,7 +38,27 @@ public class VSMXInterpreter {
 	private VSMXObject globalVariables;
 	private String prefix;
 
-	public VSMXInterpreter(VSMX vsmx) {
+	private class InterpretFunctionAction implements IAction {
+		private VSMXFunction function;
+		private VSMXBaseObject object;
+		private VSMXBaseObject[] arguments;
+
+		public InterpretFunctionAction(VSMXFunction function, VSMXBaseObject object, VSMXBaseObject[] arguments) {
+			this.function = function;
+			this.object = object;
+			this.arguments = arguments;
+		}
+
+		@Override
+		public void execute() {
+			interpretFunction(function, object, arguments);
+		}
+	}
+
+	public VSMXInterpreter() {
+	}
+
+	public void setVSMX(VSMX vsmx) {
 		mem = vsmx.getMem();
 	}
 
@@ -615,6 +637,11 @@ public class VSMXInterpreter {
 		pc = function.getStartLine();
 
 		interpret();
+	}
+
+	public synchronized void delayInterpretFunction(VSMXFunction function, VSMXBaseObject object, VSMXBaseObject[] arguments) {
+		IAction action = new InterpretFunctionAction(function, object, arguments);
+		Emulator.getScheduler().addAction(action);
 	}
 
 	public synchronized void interpretScript(VSMXBaseObject object, String script) {

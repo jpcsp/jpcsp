@@ -22,6 +22,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 
+import jpcsp.format.RCO.RCOEntry;
 import jpcsp.format.rco.IDisplay;
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.anim.AbstractAnimAction;
@@ -31,7 +32,10 @@ import jpcsp.format.rco.type.IntType;
 import jpcsp.format.rco.vsmx.interpreter.VSMXArray;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
+import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNumber;
+import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
+import jpcsp.format.rco.vsmx.objects.Resource;
 
 public class BasePositionObject extends BaseObject implements IDisplay {
 	@ObjectField(order = 101)
@@ -155,23 +159,29 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 
 	@Override
 	public int getWidth() {
-//		if (getImage() != null) {
-//			return Math.round(getImage().getWidth() * scaleWidth.getFloatValue());
-//		}
 		return Math.round(width.getFloatValue() * scaleWidth.getFloatValue());
 	}
 
 	@Override
 	public int getHeight() {
-//		if (getImage() != null) {
-//			return Math.round(getImage().getHeight() * scaleHeight.getFloatValue());
-//		}
 		return Math.round(height.getFloatValue() * scaleHeight.getFloatValue());
 	}
 
 	@Override
 	public BufferedImage getImage() {
-		return null;
+		BufferedImage image = null;
+
+		if (getObject().hasPropertyValue(Resource.textureName)) {
+			VSMXBaseObject textureObject = getObject().getPropertyValue(Resource.textureName);
+			if (textureObject instanceof VSMXNativeObject) {
+				BaseNativeObject texture = ((VSMXNativeObject) textureObject).getObject();
+				if (texture instanceof ImageObject) {
+					image = ((ImageObject) texture).getImage();
+				}
+			}
+		}
+
+		return image;
 	}
 
 	@Override
@@ -342,5 +352,17 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 	}
 
 	public void onPush() {
+	}
+
+	@Override
+	public VSMXBaseObject createVSMXObject(VSMXInterpreter interpreter, VSMXBaseObject parent, RCOEntry entry) {
+		VSMXBaseObject object = super.createVSMXObject(interpreter, parent, entry);
+
+		BufferedImage image = getImage();
+		if (image != null) {
+			object.setPropertyValue(Resource.textureName, new VSMXNativeObject(interpreter, new ImageObject(image)));
+		}
+
+		return object;
 	}
 }

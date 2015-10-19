@@ -75,6 +75,7 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.RCO;
 import jpcsp.format.psmf.PesHeader;
 import jpcsp.format.rco.Display;
+import jpcsp.format.rco.RCOState;
 import jpcsp.format.rco.vsmx.objects.MoviePlayer;
 import jpcsp.hardware.Screen;
 import jpcsp.media.codec.CodecFactory;
@@ -171,6 +172,8 @@ public class UmdVideoPlayer implements KeyListener {
 
     // RCO MoviePlayer
     private MoviePlayer moviePlayer;
+    private RCOState rcoState;
+    private DisplayControllerThread displayControllerThread;
 
     // MPS stream class.
     protected class MpsStreamInfo {
@@ -378,6 +381,11 @@ public class UmdVideoPlayer implements KeyListener {
     	Emulator.getScheduler().reset();
     	Emulator.getClock().resume();
 
+    	displayControllerThread = new DisplayControllerThread();
+    	displayControllerThread.setName("Display Controller Thread");
+    	displayControllerThread.setDaemon(true);
+    	displayControllerThread.start();
+
     	done = false;
         threadExit = false;
         isoFile = null;
@@ -554,13 +562,30 @@ public class UmdVideoPlayer implements KeyListener {
 					log.debug(String.format("RCO: %s", rco));
 				}
 
-				rco.execute(this, resourceFileName.replace(".RCO", ""));
+				rcoState = rco.execute(this, resourceFileName.replace(".RCO", ""));
     		}
 		} catch (FileNotFoundException e) {
 		} catch (IOException e) {
 			log.error("parse RCO", e);
 		}
         
+    }
+
+    public void changeResource(String resourceName) {
+    	try {
+			UmdIsoFile file = iso.getFile(String.format("UMD_VIDEO/RESOURCE/%s.RCO", resourceName));
+			byte[] buffer = new byte[(int) file.length()];
+			file.read(buffer);
+			RCO rco = new RCO(buffer);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("RCO: %s", rco));
+			}
+
+			rcoState = rco.execute(rcoState, this, resourceName);
+		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
+			log.error("changeResource", e);
+		}
     }
 
     private int getStreamIndexFromPlayListNumber(int playListNumber) {
@@ -1077,36 +1102,10 @@ public class UmdVideoPlayer implements KeyListener {
         return true;
     }
 
-    private void closeVideo() {
-    	videoCodec = null;
-    	videoCodecInit = false;
-    	if (isoFile != null) {
-    		try {
-				isoFile.seek(0);
-			} catch (IOException e) {
-				// Ignore exception
-			}
-    	}
-    }
-
     private void stopDisplayThread() {
     	done = true;
         while (displayThread != null && !threadExit) {
             sleep(1, 0);
-        }
-        displayThread = null;
-    }
-
-    public void stopVideo() {
-        stopDisplayThread();
-        closeVideo();
-        closeAudio();
-        if (isoFile != null) {
-            try {
-                isoFile.close();
-            } catch (IOException e) {
-                // Ignore Exception
-            }
         }
     }
 
@@ -1125,9 +1124,6 @@ public class UmdVideoPlayer implements KeyListener {
     }
 
     public void stepVideo() {
-    	Emulator.getScheduler().step();
-    	State.controller.hleControllerPoll();
-
     	image = null;
 
     	int frameSize = -1;
@@ -1281,14 +1277,6 @@ public class UmdVideoPlayer implements KeyListener {
 	    }
     }
 
-    private void closeAudio() {
-        if (mLine != null) {
-            mLine.drain();
-            mLine.close();
-            mLine = null;
-        }
-    }
-
     public void takeScreenshot() {
         int tag = 0;
         String screenshotName = State.title + "-" + "Shot" + "-" + tag + ".png";
@@ -1317,8 +1305,20 @@ public class UmdVideoPlayer implements KeyListener {
     	return rcoDisplay;
     }
 
-    private class MpsDisplayThread extends Thread {
+    private class DisplayControllerThread extends Thread {
+    	private volatile boolean done = false;
 
+        @Override
+        public void run() {
+        	while (!done) {
+        		Emulator.getScheduler().step();
+        		jpcsp.State.controller.hleControllerPoll();
+        		Utilities.sleep(10, 0);
+        	}
+        }
+    }
+
+    private class MpsDisplayThread extends Thread {
         @Override
         public void run() {
             if (log.isTraceEnabled()) {
@@ -1329,7 +1329,7 @@ public class UmdVideoPlayer implements KeyListener {
 
             while (!done) {
                 while (!endOfVideo && !done) {
-                    if (!videoPaused) {
+                	if (!videoPaused) {
                         stepVideo();
                         if (display != null && image != null) {
                         	Image scaledImage = getImage();
@@ -1358,6 +1358,7 @@ public class UmdVideoPlayer implements KeyListener {
             }
 
             threadExit = true;
+            displayThread = null;
 
             if (log.isTraceEnabled()) {
             	log.trace(String.format("Exiting Mps Display thread"));

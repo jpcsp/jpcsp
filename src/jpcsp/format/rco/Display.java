@@ -125,7 +125,13 @@ public class Display extends JComponent {
 	}
 
 	public void setFocus(IDisplay focus) {
-		this.focus = focus;
+		if (this.focus != focus) {
+			this.focus = focus;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Display.setFocus %s", focus));
+			}
+			repaint();
+		}
 	}
 
 	public void setFocus(BaseNativeObject focus) {

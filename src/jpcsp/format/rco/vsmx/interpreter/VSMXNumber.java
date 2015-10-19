@@ -48,4 +48,13 @@ public class VSMXNumber extends VSMXBaseObject {
 	public void setFloatValue(float value) {
 		this.value = value;
 	}
+
+	@Override
+	public boolean identity(VSMXBaseObject value) {
+		if (value instanceof VSMXNumber) {
+			return getFloatValue() == value.getFloatValue();
+		}
+
+		return super.identity(value);
+	}
 }

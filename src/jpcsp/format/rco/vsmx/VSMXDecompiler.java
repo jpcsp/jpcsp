@@ -258,7 +258,6 @@ public class VSMXDecompiler {
 				}
 				break;
 			case VSMXCode.VID_CONST_INT:
-			case VSMXCode.VID_DEBUG_LINE:
 				s.append(String.format("%d", code.value));
 				break;
 			case VSMXCode.VID_CONST_FLOAT:
@@ -463,6 +462,10 @@ public class VSMXDecompiler {
 					stack.push(i);
 					decompileOp(s);
 				}
+				break;
+			case VSMXCode.VID_DEBUG_LINE:
+				// Ignore debug line
+				decompileOp(s);
 				break;
 			default:
 				log.warn(String.format("Line #%d: decompileOp(%s) unimplemented", i, VSMXCode.VsmxDecOps[opcode]));

@@ -33,11 +33,12 @@ import jpcsp.format.rco.AnimFactory;
 import jpcsp.format.rco.LZR;
 import jpcsp.format.rco.ObjectFactory;
 import jpcsp.format.rco.RCOContext;
+import jpcsp.format.rco.RCOState;
 import jpcsp.format.rco.SoundFactory;
 import jpcsp.format.rco.object.BaseObject;
+import jpcsp.format.rco.object.ImageObject;
 import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
-import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.objects.Controller;
 import jpcsp.format.rco.vsmx.objects.GlobalVariables;
 import jpcsp.format.rco.vsmx.objects.MoviePlayer;
@@ -155,6 +156,7 @@ public class RCO {
 						if (id == RCO_TABLE_IMG) {
 							BufferedImage image = readImage(offset, sizePacked);
 							if (image != null) {
+								obj = new ImageObject(image);
 								images.put(entryOffset, image);
 							}
 						}
@@ -689,6 +691,26 @@ public class RCO {
 			log.debug(String.format("mainTable: %s", mainTable));
 		}
 
+		if (pObjPtrs != RCO_NULL_PTR) {
+			seek(pObjPtrs);
+			for (int i = 0; i < lObjPtrs; i += 4) {
+				int objPtr = read32();
+				if (objPtr != 0 && !objects.containsKey(objPtr)) {
+					log.warn(String.format("Object 0x%X not read", objPtr));
+				}
+			}
+		}
+
+		if (pImgPtrs != RCO_NULL_PTR) {
+			seek(pImgPtrs);
+			for (int i = 0; i < lImgPtrs; i += 4) {
+				int imgPtr = read32();
+				if (imgPtr != 0 && !images.containsKey(imgPtr)) {
+					log.warn(String.format("Image 0x%X not read", imgPtr));
+				}
+			}
+		}
+
 		RCOContext context = new RCOContext(null, 0, events, images, objects);
 		for (BaseObject object : objects.values()) {
 			object.init(context);
@@ -696,23 +718,36 @@ public class RCO {
 		return true;
 	}
 
-	public void execute(UmdVideoPlayer umdVideoPlayer, String resourceName) {
+	public RCOState execute(UmdVideoPlayer umdVideoPlayer, String resourceName) {
+		RCOState state = null;
 		if (pVSMXTable != RCO_NULL_PTR) {
-			VSMX vsmx = new VSMX(readVSMX(pVSMXTable));
-			VSMXInterpreter interpreter = new VSMXInterpreter(vsmx);
-			VSMXNativeObject globalVariables = GlobalVariables.create(interpreter);
-			VSMXNativeObject controller = Controller.create(interpreter, resourceName);
-			globalVariables.setPropertyValue(Controller.objectName, controller);
-			globalVariables.setPropertyValue(MoviePlayer.objectName, MoviePlayer.create(interpreter, umdVideoPlayer, controller));
-			globalVariables.setPropertyValue(Resource.objectName, Resource.create(interpreter, umdVideoPlayer.getRCODisplay(), controller, mainTable));
-			globalVariables.setPropertyValue(jpcsp.format.rco.vsmx.objects.Math.objectName, jpcsp.format.rco.vsmx.objects.Math.create(interpreter));
-			interpreter.run(globalVariables);
+			state = new RCOState();
+			state.interpreter = new VSMXInterpreter();
+			state.controller = Controller.create(state.interpreter, umdVideoPlayer, resourceName);
+			state = execute(state, umdVideoPlayer, resourceName);
 
 //			globalVariables.getObject().callCallback(interpreter, "initResource", null);
 //			globalVariables.getObject().callCallback(interpreter, "playIntro", null);
-			controller.getObject().callCallback(interpreter, "onAutoPlay", null);
+			state.controller.getObject().callCallback(state.interpreter, "onAutoPlay", null);
 //			controller.getObject().callCallback(interpreter, "onMenu", null);
 		}
+
+		return state;
+	}
+
+	public RCOState execute(RCOState state, UmdVideoPlayer umdVideoPlayer, String resourceName) {
+		if (pVSMXTable != RCO_NULL_PTR) {
+			VSMX vsmx = new VSMX(readVSMX(pVSMXTable));
+			state.interpreter.setVSMX(vsmx);
+			state.globalVariables = GlobalVariables.create(state.interpreter);
+			state.globalVariables.setPropertyValue(Controller.objectName, state.controller);
+			state.globalVariables.setPropertyValue(MoviePlayer.objectName, MoviePlayer.create(state.interpreter, umdVideoPlayer, state.controller));
+			state.globalVariables.setPropertyValue(Resource.objectName, Resource.create(state.interpreter, umdVideoPlayer.getRCODisplay(), state.controller, mainTable));
+			state.globalVariables.setPropertyValue(jpcsp.format.rco.vsmx.objects.Math.objectName, jpcsp.format.rco.vsmx.objects.Math.create(state.interpreter));
+			state.interpreter.run(state.globalVariables);
+		}
+
+		return state;
 	}
 
 	@Override

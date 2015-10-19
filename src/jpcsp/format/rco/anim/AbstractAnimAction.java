@@ -36,7 +36,7 @@ public abstract class AbstractAnimAction implements IAction {
 	}
 
 	private long getNextSchedule(long now) {
-		return now + Math.max(duration / 100, 1);
+		return now + Math.max(duration / 10000, 1000);
 	}
 
 	@Override
