@@ -449,6 +449,7 @@ public class SceKernelErrors {
     public final static int ERROR_SAS_INVALID_FX_DELAY                          = 0x80420022;
     public final static int ERROR_SAS_INVALID_FX_VOLUME_VAL                     = 0x80420023;
     public final static int ERROR_SAS_BUSY                                      = 0x80420030;
+    public final static int ERROR_SAS_CANNOT_CONCATENATE_ATRA3                  = 0x80420042;
     public final static int ERROR_SAS_NOT_INIT                                  = 0x80420100;
     public final static int ERROR_SAS_ALREADY_INIT                              = 0x80420101;
 

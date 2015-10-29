@@ -61,7 +61,7 @@ public class SampleSourceAtrac3 implements ISampleSource {
 
 		if (!id.getInputBuffer().isFileEnd()) {
 			int requestedSize = min(id.getInputFileSize() - id.getInputBuffer().getFilePosition(), id.getInputBuffer().getMaxSize());
-			id.setContextDecodeResult(-1, requestedSize);
+			id.setContextDecodeResult(0, requestedSize);
 		} else {
 			id.setContextDecodeResult(0, 0);
 		}

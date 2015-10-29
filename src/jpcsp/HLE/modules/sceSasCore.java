@@ -1019,7 +1019,10 @@ public class sceSasCore extends HLEModule {
 
         int atrac3Context = getSasCoreAtrac3Context(sasCore, voice);
         AtracID atracID = Modules.sceAtrac3plusModule.getAtracIdFromContext(atrac3Context);
-        atracID.addStreamData(atrac3DataAddr.getAddress(), atrac3DataLength);
+        if (atracID.getSecondBufferAddr() != -1) {
+        	return SceKernelErrors.ERROR_SAS_CANNOT_CONCATENATE_ATRA3;
+        }
+        atracID.setSecondBuffer(atrac3DataAddr.getAddress(), atrac3DataLength);
 
         return 0;
     }
