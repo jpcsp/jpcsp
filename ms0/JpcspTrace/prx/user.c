@@ -49,16 +49,16 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 		syscallLog(syscallInfo, parameters, 0, ra, sp, gp);
 	}
 
-	#if DEBUG_STACK_USAGE
-	// Collect stackUsage information for user libraries
-	prepareStackUsage(sp);
-	#endif
+	if (syscallInfo->flags & FLAG_LOG_STACK_USAGE) {
+		// Collect stackUsage information for user libraries
+		prepareStackUsage(sp);
+	}
 
 	result = syscallInfo->originalEntry(a0, a1, a2, a3, t0, t1, t2, t3);
 
-	#if DEBUG_STACK_USAGE
-	logStackUsage(syscallInfo);
-	#endif
+	if (syscallInfo->flags & FLAG_LOG_STACK_USAGE) {
+		logStackUsage(syscallInfo);
+	}
 
 	if (syscallInfo->flags & FLAG_LOG_AFTER_CALL) {
 		syscallLog(syscallInfo, parameters, result, ra, sp, gp);

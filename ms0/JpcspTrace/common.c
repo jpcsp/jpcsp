@@ -231,7 +231,13 @@ void flushLogBuffer() {
 }
 
 void writeLog(const char *s, int length) {
-	if (commonInfo->inWriteLog) {
+	int bufferLogWrites = commonInfo->bufferLogWrites;
+	int restLogBufferLength = commonInfo->maxLogBufferLength - commonInfo->logBufferLength;
+	if (restLogBufferLength < length) {
+		bufferLogWrites = 0;
+	}
+
+	if (commonInfo->inWriteLog || bufferLogWrites) {
 		appendToLogBuffer(s, length);
 		return;
 	}
@@ -552,8 +558,6 @@ char *syscallLogMem(char *buffer, char *s, int addr, int length) {
 	return s;
 }
 
-#if DEBUG_STACK_USAGE
-
 int maxStackUsage = 0x1000;
 int stackValue = 0xABCD1234;
 int stackBase;
@@ -582,14 +586,16 @@ void logStackUsage(const SyscallInfo *syscallInfo) {
 	printLogSH("Stack usage ", syscallInfo->name, ": ", stackUsage, "\n");
 }
 
-#endif
-
-
 void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra, u32 sp, u32 gp) {
 	char buffer[200];
 	char *s = buffer;
 	int i;
 	int length;
+
+	// Don't log our own sceIoWrites
+	if (syscallInfo->nid == NID_sceIoWrite && parameters[0] == commonInfo->logFd) {
+		return;
+	}
 
 	if (syscallInfo->flags & FLAG_LOG_FREEMEM) {
 		// Allocate the logBuffer first to report a proper free mem size
@@ -609,6 +615,8 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 			s = appendInt(s, time.minutes, 2);
 			*s++ = ':';
 			s = appendInt(s, time.seconds, 2);
+			*s++ = '.';
+			s = appendInt(s, time.microseconds, 6);
 			*s++ = ' ';
 		}
 	}

@@ -20,8 +20,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define DEBUG_UTILITY_SAVEDATA		1
 #define DEBUG_UTILITY_OSK			1
 #define DEBUG_UTILITY_MSG			1
-#define DEBUG_STACK_USAGE	0
-#define DEFAULT_LOG_BUFFER_SIZE		1024
+#define DEFAULT_LOG_BUFFER_SIZE		8*1024
 
 #define ALIGN_UP(n, alignment) (((n) + ((alignment) - 1)) & ~((alignment) - 1))
 
@@ -40,6 +39,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define FLAG_LOG_BEFORE_CALL	(1 << 0)
 #define FLAG_LOG_AFTER_CALL	(1 << 1)
 #define FLAG_LOG_FREEMEM	(1 << 2)
+#define FLAG_LOG_STACK_USAGE	(1 << 3)
+
+#define NID_sceIoWrite	0x42EC03AC
+#define NID_sceIoOpen	0x109F50BC
 
 typedef struct {
 	SceUID logFd;
@@ -50,6 +53,7 @@ typedef struct {
 	void *freeAddr;
 	int freeSize;
 	volatile int inWriteLog;
+	int bufferLogWrites;
 } CommonInfo;
 
 typedef struct SyscallInfo {
@@ -75,6 +79,7 @@ char *appendHex(char *dst, u32 hex, int numDigits);
 char *appendInt(char *dst, s32 n, int numDigits);
 void openLogFile();
 void closeLogFile();
+void flushLogBuffer();
 void writeLog(const char *s, int length);
 void printLog(const char *s);
 void printLogH(const char *s1, int hex, const char *s2);
@@ -88,8 +93,5 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 int userIoOpen(const char *s, int flags, int permissions);
 int userIoWrite(SceUID id, const void *data, int size);
 int userIoClose(SceUID id);
-
-#if DEBUG_STACK_USAGE
 void prepareStackUsage(u32 sp);
 void logStackUsage(const SyscallInfo *syscallInfo);
-#endif

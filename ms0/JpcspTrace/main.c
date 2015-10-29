@@ -140,6 +140,8 @@ u32 parseParamTypes(const char *s, u32 *pflags) {
 			*pflags |= FLAG_LOG_BEFORE_CALL;
 		} else if (c == '$') {
 			*pflags |= FLAG_LOG_FREEMEM;
+		} else if (c == '>') {
+			*pflags |= FLAG_LOG_STACK_USAGE;
 		} else {
 			paramType = TYPE_HEX32;
 			switch (c) {
@@ -235,7 +237,7 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	parameters[6] = t2;
 	parameters[7] = t3;
 
-	if (syscallInfo->nid == 0x109F50BC) {
+	if (syscallInfo->nid == NID_sceIoOpen) {
 		commonInfo->inWriteLog++;
 	}
 
@@ -475,6 +477,8 @@ void patchSyscalls(char *filePath) {
 
 		if (strcmp(name, "LogBufferLength") == 0) {
 			commonInfo->maxLogBufferLength = nid;
+		} else if (strcmp(name, "BufferLogWrites") == 0) {
+			commonInfo->bufferLogWrites = 1;
 		} else {
 			// If no numParams specified, take maximum number of params
 			if (strlen(hexNumParams) == 0) {
@@ -535,14 +539,13 @@ void patchModule(SceModule *module) {
 int startModuleHandler(SceModule2 *startingModule) {
 	SyscallInfo *syscallInfo;
 	int i;
-	int id[100];
+	int id[200];
 	int idcount = 0;
 
-	#if DEBUG
-	commonInfo->logKeepOpen = 1;
-	openLogFile();
-	printLogS("Starting module ", startingModule->modname, "\n");
-	#endif
+	printLogSH("Starting module '", startingModule->modname, "' at ", startingModule->text_addr, "\n");
+	u32 maxFreeMem = sceKernelMaxFreeMemSize();
+	u32 totalFreeMem = sceKernelTotalFreeMemSize();
+	printLogHH("TotalFreeMem=", totalFreeMem, ", MaxFreeMem=", maxFreeMem, "\n");
 
 	// Do not patch myself...
 	if (strcmp(startingModule->modname, "JpcspTraceUser") != 0) {
@@ -681,18 +684,28 @@ void printAllModules() {
 int loadUserModule(SceSize args, void * argp) {
 	int userModuleId = -1;
 
+	// Make sure we are running in user mode (required by sceKernelLoadModule)
+	int k1 = pspSdkSetK1(0x100000);
+
 	// Load the user module JpcspTraceUser.prx.
 	// Retry to load it several times if the module manager is currently busy.
 	while (1) {
 		if (userModuleId < 0) {
-			// Load the user module in high memory
-			SceKernelLMOption loadModuleOptions;
-			memset(&loadModuleOptions, 0, sizeof(loadModuleOptions));
-			loadModuleOptions.size = sizeof(loadModuleOptions);
-			loadModuleOptions.mpidtext = PSP_MEMORY_PARTITION_USER;
-			loadModuleOptions.position = PSP_SMEM_High;
+			// We need to copy all parameter values from kernel memory to user memory
+			// (this is required by sceKernelLoadModule)
+			void *mem = alloc(sizeof(SceKernelLMOption) + 40);
 
-			userModuleId = sceKernelLoadModule("ms0:/seplugins/JpcspTraceUser.prx", 0, &loadModuleOptions);
+			SceKernelLMOption *pOptions = mem;
+			memset(pOptions, 0, sizeof(*pOptions));
+			// Load the user module in high memory
+			pOptions->size = sizeof(*pOptions);
+			pOptions->mpidtext = PSP_MEMORY_PARTITION_USER;
+			pOptions->position = PSP_SMEM_High;
+
+			char *fileName = mem + sizeof(*pOptions);
+			strcpy(fileName, "ms0:/seplugins/JpcspTraceUser.prx");
+
+			userModuleId = sceKernelLoadModule(fileName, 0, pOptions);
 			#if DEBUG
 			printLogH("JpcspTraceUser moduleId ", userModuleId, "\n");
 			#endif
@@ -729,6 +742,8 @@ int loadUserModule(SceSize args, void * argp) {
 		}
 	}
 
+	pspSdkSetK1(k1);
+
 	sceKernelExitDeleteThread(0);
 
 	return 0;
@@ -755,6 +770,7 @@ int module_start(SceSize args, void * argp) {
 	commonInfo->freeAddr = NULL;
 	commonInfo->freeSize = 0;
 	commonInfo->inWriteLog = 0;
+	commonInfo->bufferLogWrites = 0;
 
 	sceIoRemove("ms0:/log.txt");
 
@@ -796,6 +812,7 @@ int module_stop(SceSize args, void * argp) {
 
 	printLog("JpcspTrace - module_stop\n");
 
+	flushLogBuffer();
 	closeLogFile();
 
 	return 0;

@@ -46,6 +46,14 @@ The format of the file JpcspTrace.config is the following:
 - the file is processed line by line
 - leading spaces or tabs in a line are ignored
 - an empty line or a line starting with a "#" is a comment
+- the log buffer length can be set using a line starting with
+    LogBufferLength 0xNNNN
+- the log buffer is written to the log.txt file at each output line
+  unless the following line is present:
+    BufferLogWrites
+  In this case, the log buffer is written to the log.txt file only when
+  the buffer is full. This method has a better performance but some log data
+  could be lost in case JpcspTrace is crashing.
 - one syscall to be traced is described in a single line:
 	<syscall-name> <nid> <number-of-parameters> <parameter-types>
 
@@ -85,6 +93,8 @@ The format of the file JpcspTrace.config is the following:
   - $: this flag is not a parameter type but indicates that the total free memory
        and maximum free memory have to be logged with the syscall. In combination with
        the '!' flag, the free memory before and after the syscall can be logged.
+  - >: this flag is not a parameter type but indicates that the stack usage
+       of the function has to logged.
   All the parameter types are concatenated into one string, starting with
   the type of the first parameter ($a0). Unspecified parameter types default to "x".
 
