@@ -563,7 +563,11 @@ public class sceAtrac3plus extends HLEModule {
         	} else {
         		writableBytes = inputBuffer.getMaxSize();
         		minimumWriteBytes = info.atracBytesPerFrame * 2;
-        		readPosition = getFilePositionFromSample(sample);
+            	if (sample == 0) {
+            		readPosition = 0;
+            	} else {
+            		readPosition = getFilePositionFromSample(sample);
+            	}
         	}
         	// Holds buffer related parameters.
             // Main buffer.
@@ -589,10 +593,14 @@ public class sceAtrac3plus extends HLEModule {
         	}
 
         	if (sample != atracCurrentSample) {
-	        	currentReadPosition = getFilePositionFromSample(sample);
 	        	// Do not change the position of the inputBuffer when it contains all the Atrac data
 	        	if (!inputBufferContainsAllData()) {
+		        	currentReadPosition = getFilePositionFromSample(sample);
 	        		inputBuffer.reset(bytesWrittenFirstBuf, currentReadPosition);
+	        	} else {
+		        	currentReadPosition = getFilePositionFromSample(sample);
+		        	inputBuffer.reset(inputBuffer.getFilePosition(), 0);
+		        	inputBuffer.notifyRead(currentReadPosition);
 	        	}
 	        	setAtracCurrentSample(sample);
         	}
@@ -926,6 +934,10 @@ public class sceAtrac3plus extends HLEModule {
     protected int hleSetHalfwayBuffer(int atID, TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput) {
         if (readSize > bufferSize) {
         	return SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
+        }
+
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("hleSetHalfwayBuffer buffer: %s", Utilities.getMemoryDump(buffer.getAddress(), readSize)));
         }
 
         AtracFileInfo info = new AtracFileInfo();
