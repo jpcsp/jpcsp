@@ -171,7 +171,7 @@ public class sceAtrac3plus extends HLEModule {
         protected pspFileBuffer inputBuffer;
         protected boolean reloadingFromLoopStart;
         // Second buffer.
-        protected int secondBufferAddr;
+        protected int secondBufferAddr = -1;
         protected int secondBufferSize;
         // Input file.
         protected int secondInputFileSize;
@@ -228,11 +228,15 @@ public class sceAtrac3plus extends HLEModule {
         	}
 
         	if (inputBuffer.getCurrentSize() < info.atracBytesPerFrame) {
-        		if (log.isDebugEnabled()) {
-        			log.debug(String.format("decodeData returning ERROR_ATRAC_BUFFER_IS_EMPTY"));
+        		if (getSecondBufferAddr() > 0 && getSecondBufferSize() >= info.atracBytesPerFrame) {
+        			addSecondBufferStreamData();
+        		} else {
+	        		if (log.isDebugEnabled()) {
+	        			log.debug(String.format("decodeData returning ERROR_ATRAC_BUFFER_IS_EMPTY"));
+	        		}
+	        		outEndAddr.setValue(false);
+	        		return ERROR_ATRAC_BUFFER_IS_EMPTY;
         		}
-        		outEndAddr.setValue(false);
-        		return ERROR_ATRAC_BUFFER_IS_EMPTY;
         	}
 
         	int readAddr = inputBuffer.getReadAddr();
@@ -366,13 +370,27 @@ public class sceAtrac3plus extends HLEModule {
         }
 
         protected void addStreamData(int length) {
-            addStreamData(inputBuffer.getWriteAddr(), length);
-        }
-
-        public void addStreamData(int address, int length) {
         	if (length > 0) {
         		inputBuffer.notifyWrite(length);
         	}
+        }
+
+        private void addSecondBufferStreamData() {
+        	while (inputBuffer.getWriteSize() > 0 && secondBufferSize > 0) {
+        		int length = Math.min(inputBuffer.getWriteSize(), secondBufferSize);
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("addSecondBufferStreamData from 0x%08X to 0x%08X, length=0x%X", secondBufferAddr, inputBuffer.getWriteAddr(), length));
+        		}
+        		Memory.getInstance().memcpy(inputBuffer.getWriteAddr(), secondBufferAddr, length);
+        		addStreamData(length);
+        		secondBufferAddr += length;
+        		secondBufferSize -= length;
+        	}
+
+        	if (secondBufferSize <= 0) {
+    			secondBufferAddr = -1;
+    			secondBufferSize = 0;
+    		}
         }
 
         public void setSecondBuffer(int address, int size) {
@@ -401,9 +419,13 @@ public class sceAtrac3plus extends HLEModule {
 	        		int contextAddr = atracContext.addr;
 	            	mem.memset(contextAddr, (byte) 0, atracContext.size);
 
-	            	mem.write32(contextAddr + 140, 0); // Unknown
-	    	        mem.write8(contextAddr + 149, (byte) 2); // Unknown.
-	    	        mem.write8(contextAddr + 151, (byte) 1); // Unknown.
+	            	if (hasLoop()) {
+	            		mem.write32(contextAddr + 140, info.loops[0].endSample); // loop end
+	            	} else {
+	            		mem.write32(contextAddr + 140, 0); // no loop
+	            	}
+	    	        mem.write8(contextAddr + 149, (byte) 2); // state
+	    	        mem.write8(contextAddr + 151, (byte) getChannels()); // number of channels
 	    	        mem.write16(contextAddr + 154, (short) getCodecType());
 	    	        //mem.write32(contextAddr + 168, 0); // Voice associated to this Atrac context using __sceSasSetVoiceATRAC3?
 
