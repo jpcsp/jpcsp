@@ -779,7 +779,9 @@ int module_start(SceSize args, void * argp) {
 
 	printLog("JpcspTrace - module_start\n");
 
-	if (sceKernelInitKeyConfig() != PSP_INIT_KEYCONFIG_GAME) {
+	int initKeyConfig = sceKernelInitKeyConfig();
+	if (initKeyConfig != PSP_INIT_KEYCONFIG_GAME) {
+		printLogH("sceKernelInitKeyConfig returned ", initKeyConfig, "\n");
 		return 1;
 	}
 
