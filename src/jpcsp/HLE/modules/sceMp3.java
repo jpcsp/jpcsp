@@ -152,6 +152,7 @@ public class sceMp3 extends HLEModule {
         private int outputIndex;
         private int loopNum;
         private int startPos;
+        private long endPos;
         private int sampleRate;
         private int bitRate;
         private int maxSamples;
@@ -170,6 +171,7 @@ public class sceMp3 extends HLEModule {
             this.outputAddr = outputAddr;
             this.outputSize = outputSize;
             this.startPos = (int) startPos;
+            this.endPos = endPos;
             inputBuffer = new pspFileBuffer(bufferAddr + reservedBufferSize, bufferSize - reservedBufferSize, 0, this.startPos);
             inputBuffer.setFileMaxSize((int) endPos);
             loopNum = -1; // Looping indefinitely by default
@@ -206,7 +208,12 @@ public class sceMp3 extends HLEModule {
         }
 
         public boolean isStreamDataNeeded() {
-        	boolean isDataNeeded = getWritableBytes() > 0;
+        	boolean isDataNeeded;
+        	if (inputBuffer.isFileEnd()) {
+        		isDataNeeded = false;
+        	} else {
+        		isDataNeeded = getWritableBytes() > 0;
+        	}
 
         	return isDataNeeded;
         }
@@ -267,16 +274,18 @@ public class sceMp3 extends HLEModule {
 		            result = outputBytes;
 	            }
 
-	            if (inputBuffer.getCurrentSize() < minimumInputBufferSize && inputBuffer.isFileEnd() && loopNum != 0) {
-	            	if (log.isDebugEnabled()) {
-	            		log.debug(String.format("Looping loopNum=%d", loopNum));
-	            	}
+	            if (inputBuffer.isFileEnd() && loopNum != 0) {
+	            	if (inputBuffer.getCurrentSize() < minimumInputBufferSize || (inputBuffer.getFilePosition() - inputBuffer.getCurrentSize()) > endPos) {
+		            	if (log.isDebugEnabled()) {
+		            		log.debug(String.format("Looping loopNum=%d", loopNum));
+		            	}
 
-	            	if (loopNum > 0) {
-	            		loopNum--;
-	            	}
+		            	if (loopNum > 0) {
+		            		loopNum--;
+		            	}
 
-	            	resetPlayPosition(0);
+		            	resetPlayPosition(0);
+	            	}
 	            }
         	}
 
