@@ -20,6 +20,7 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 
@@ -372,6 +373,7 @@ public class sceGe_user extends HLEModule {
 	    	optParams = new pspGeListOptParam();
 	        optParams.read(argAddr);
 	        stackAddr = optParams.stackAddr;
+	        saveContextAddr = optParams.contextAddr;
 	        if (log.isDebugEnabled()) {
 	        	log.debug(String.format("hleGeListEnQueue optParams=%s", optParams));
 	        }
@@ -733,5 +735,18 @@ public class sceGe_user extends HLEModule {
         SceUidManager.releaseId(cbid, geCallbackPurpose);
 
         return 0;
+    }
+
+    /**
+     * Sets the EDRAM size.
+     *
+     * @param size The size (0x200000 or 0x400000).
+     *
+     * @return Zero on success, otherwise less than zero.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x5BAA5439, version = 150)
+    public int sceGeEdramSetSize(int size) {
+    	return 0;
     }
 }
