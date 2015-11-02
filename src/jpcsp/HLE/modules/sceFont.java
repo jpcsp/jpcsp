@@ -913,6 +913,7 @@ public class sceFont extends HLEModule {
 
     @HLEFunction(nid = 0x980F4895, version = 150, checkInsideInterrupt = true)
     public int sceFontGetCharGlyphImage(int fontHandle, int charCode, TPointer glyphImagePtr) {
+        charCode&= 0xffff;
         Font font = getFont(fontHandle, false);     
 
         // Read GlyphImage data.
@@ -950,7 +951,6 @@ public class sceFont extends HLEModule {
                     buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI, pixelFormat, charCode, font.fontLib.getAltCharCode());
         }
-        charCode&= 0xffff;
         return 0;
     }
 
@@ -1050,6 +1050,7 @@ public class sceFont extends HLEModule {
 
     @HLEFunction(nid = 0xCA1E6945, version = 150, checkInsideInterrupt = true, stackUsage = 0x120)
     public int sceFontGetCharGlyphImage_Clip(int fontHandle, int charCode, TPointer glyphImagePtr, int clipXPos, int clipYPos, int clipWidth, int clipHeight) {
+        charCode&= 0xffff;
         Font font = getFont(fontHandle, false);
         // Identical to sceFontGetCharGlyphImage, but uses a clipping
         // rectangle over the char.
@@ -1093,7 +1094,6 @@ public class sceFont extends HLEModule {
                     buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI, pixelFormat, charCode, font.fontLib.getAltCharCode());
         }
-        charCode&= 0xffff;
         return 0;
     }
 
