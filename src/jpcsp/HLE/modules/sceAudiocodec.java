@@ -89,6 +89,7 @@ public class sceAudiocodec extends HLEModule {
 	public int sceAudiocodecInit(TPointer workArea, int codecType) {
 		if (info != null) {
 			info.release();
+			info.setCodecInitialized(false);
 			info = null;
 		}
 		id = -1;
