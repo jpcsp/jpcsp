@@ -93,4 +93,16 @@ public class sceHprm extends HLEModule {
     public int sceHprmReadLatch(TPointer latchAddr) {
         return 0;
     }
+
+    /**
+     * @return 0 - Cable not connected
+     * @return 1 - S-Video Cable / AV (composite) cable
+     * @return 2 - D Terminal Cable / Component Cable
+     * @return < 0 - Error
+     **/
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1528D408, version = 150)
+    public int sceHprm_driver_1528D408() {
+        return 1;
+    }
 }

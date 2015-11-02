@@ -45,6 +45,7 @@ import jpcsp.HLE.modules.sceCtrl;
 import jpcsp.HLE.modules.sceDeflt;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceDmac;
+import jpcsp.HLE.modules.sceDve;
 import jpcsp.HLE.modules.sceFont;
 import jpcsp.HLE.modules.sceFpu;
 import jpcsp.HLE.modules.sceGameUpdate;
@@ -191,6 +192,7 @@ public class Modules {
     public static semaphore semaphoreModule = new semaphore();
     public static ModuleMgrForKernel ModuleMgrForKernelModule = new ModuleMgrForKernel();
     public static sceReg sceRegModule = new sceReg();
+    public static sceDve sceDveModule = new sceDve();
 
     public static Logger log = Logger.getLogger("hle");
 

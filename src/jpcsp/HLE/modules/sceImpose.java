@@ -214,4 +214,10 @@ public class sceImpose extends HLEModule {
 
 		return 0;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x116DDED6, version = 150)
+	public int sceImposeSetVideoOutMode(int mode, int width, int height) {
+		return 0;
+	}
 }
