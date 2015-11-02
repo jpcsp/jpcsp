@@ -85,6 +85,7 @@ import jpcsp.HLE.kernel.types.SceKernelMppInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
+import jpcsp.HLE.kernel.types.pspIoDrv;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -1313,9 +1314,10 @@ public class IoFileMgrForUser extends HLEModule {
             	stackSize = 0x800;
             }
 
+            // The stack of the async thread is always allocated in the kernel partition
             info.asyncThread = threadMan.hleKernelCreateThread("SceIofileAsync",
                     ThreadManForUser.ASYNC_LOOP_ADDRESS, asyncPriority, stackSize,
-                    threadMan.getCurrentThread().attr, 0, SysMemUserForUser.USER_PARTITION_ID);
+                    threadMan.getCurrentThread().attr, 0, SysMemUserForUser.KERNEL_PARTITION_ID);
 
             if (info.asyncThread.getStackAddr() == 0) {
         		log.warn(String.format("Cannot start the Async IO thread, not enough memory to create its stack"));
@@ -4133,5 +4135,22 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0x3C54E908, version = 150)
     public int sceIoReopen(PspString filename, int flags, int permissions, int id) {
     	return -1;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC7F35804, version = 150)
+    public int sceIoDelDrv(PspString driverName) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8E982A74, version = 150)
+    public int sceIoAddDrv(TPointer pspIoDrvAddr) {
+    	pspIoDrv pspIoDrv = new pspIoDrv();
+    	pspIoDrv.read(pspIoDrvAddr);
+
+    	log.warn(String.format("sceIoAddDrv pspIoDrv=%s", pspIoDrv));
+
+    	return 0;
     }
 }
