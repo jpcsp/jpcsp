@@ -2317,6 +2317,20 @@ public class IoFileMgrForUser extends HLEModule {
                     }
                     break;
                 }
+                // UMD file ahead (from info listed in the log file of "The Legend of Heroes: Trails in the Sky SC")
+                case 0x0101000A: {
+                    if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
+                    	int length = mem.read32(indata_addr);
+                    	if (log.isInfoEnabled()) {
+                    		log.info(String.format("hleIoIoctl cmd=0x%08X length=0x%X", cmd, length));
+                    	}
+                    	result = 0;
+                    } else {
+                        log.warn(String.format("hleIoIoctl cmd=0x%08X 0x%08X %d unsupported parameters", cmd, indata_addr, inlen));
+                        result = ERROR_INVALID_ARGUMENT;
+                    }
+                    break;
+                }
 	            // Get UMD Primary Volume Descriptor
 	            case 0x01020001: {
 	                if (Memory.isAddressGood(outdata_addr) && outlen == UmdIsoFile.sectorLength) {
@@ -3060,7 +3074,13 @@ public class IoFileMgrForUser extends HLEModule {
                 }
                 File f = new File(pcfilename);
                 if (f.isDirectory()) {
-                    IoDirInfo info = new IoDirInfo(pcfilename, f.list());
+                	String files[] = f.list();
+                	if (files != null) {
+	                	for (int i = 0; i < files.length; i++) {
+	                		files[i] = files[i].toUpperCase();
+	                	}
+                	}
+                    IoDirInfo info = new IoDirInfo(pcfilename, files);
                     result = info.id;
                 } else {
                     log.warn("sceIoDopen '" + pcfilename + "' not a directory! (could be missing)");
