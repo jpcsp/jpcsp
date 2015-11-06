@@ -857,7 +857,11 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 		// Avoid this by setting the texture content to an empty buffer (i.e. all black).
 		if (buffer == null) {
 			textureSize = width * height * sizeOfTextureType[format];
-			buffer = getEmptyBuffer(textureSize);
+			// Some video drivers sometimes crash when allocating a buffer exactly of the textureSize.
+			// Allocating double the required size seems to workaround this issue...
+			// This memory waste has no real negative impact on the memory usage
+			// as we have only a single instance of the empty buffer.
+			buffer = getEmptyBuffer(textureSize * 2);
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("setTexImage using an empty buffer of size 0x%X", textureSize));
