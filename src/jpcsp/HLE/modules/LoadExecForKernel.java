@@ -20,9 +20,12 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.kernel.types.SceKernelLoadExecVSHParam;
 import jpcsp.util.Utilities;
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -30,7 +33,7 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 public class LoadExecForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("LoadExecForKernel");
 
-    @HLEFunction(nid = 0xA3D5E142, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xA3D5E142, version = 150)
     public int sceKernelExitVSHVSH(@CanBeNull TPointer param) {
 		// when called in game mode it will have the same effect that sceKernelExitGame 
 		if (param.isNotNull()) {
@@ -42,7 +45,7 @@ public class LoadExecForKernel extends HLEModule {
 		return 0;
 	}
 
-    @HLEFunction(nid = 0x6D302D3D, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x6D302D3D, version = 150)
     public int sceKernelExitVSHKernel(@CanBeNull TPointer param) {
 		//  Test in real PSP in  "Hatsune Miku Project Diva Extend" chinese patched version,same effect that sceKernelExitGame
 		if (param.isNotNull()) {
@@ -53,4 +56,23 @@ public class LoadExecForKernel extends HLEModule {
 		Modules.ThreadManForUserModule.stop();
 		return 0;
 	}
+
+    @HLELogging(level="info")
+    @HLEFunction(nid = 0x28D0D249, version = 150)
+    public int sceKernelLoadExecVSHMs2(PspString filename, TPointer param) {
+    	SceKernelLoadExecVSHParam loadExecVSHParam = new SceKernelLoadExecVSHParam();
+    	loadExecVSHParam.read(param);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceKernelLoadExecVSHMs2 param: %s", loadExecVSHParam));
+    		if (loadExecVSHParam.args > 0) {
+    			log.debug(String.format("sceKernelLoadExecVSHMs2 argp: %s", Utilities.getMemoryDump(loadExecVSHParam.argp, loadExecVSHParam.args)));
+    		}
+    		if (loadExecVSHParam.vshmainArgsSize > 0) {
+    			log.debug(String.format("sceKernelLoadExecVSHMs2 vshmainArgs: %s", Utilities.getMemoryDump(loadExecVSHParam.vshmainArgs, loadExecVSHParam.vshmainArgsSize)));
+    		}
+    	}
+
+    	return Modules.LoadExecForUserModule.hleKernelLoadExec(filename, loadExecVSHParam.args, loadExecVSHParam.argp);
+    }
 }

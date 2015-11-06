@@ -57,9 +57,7 @@ public class LoadExecForUser extends HLEModule {
         Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, 0);
     }
 
-    @HLELogging(level="info")
-    @HLEFunction(nid = 0xBD2F1094, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadExec(PspString filename, @CanBeNull TPointer32 optionAddr) {
+    public int hleKernelLoadExec(PspString filename, int argSize, int argAddr) {
         String name = filename.getString();
 
         // The PSP is replacing a loadexec of disc0:/PSP_GAME/SYSDIR/BOOT.BIN with EBOOT.BIN
@@ -72,25 +70,13 @@ public class LoadExecForUser extends HLEModule {
         Modules.SysMemUserForUserModule.reset();
 
         byte[] arguments = null;
-        int argSize = 0;
-        if (optionAddr.isNotNull()) {
-            int optSize = optionAddr.getValue(0);   // Size of the option struct.
-            if (optSize >= 16) {
-	            argSize = optionAddr.getValue(4);       // Size of memory required for arguments.
-	            int argAddr = optionAddr.getValue(8);   // Arguments (memory area of size argSize).
-	            int keyAddr = optionAddr.getValue(12);  // Pointer to an encryption key (may not be used).
-
-	            if (log.isDebugEnabled()) {
-	            	log.debug(String.format("sceKernelLoadExec params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X: %s", optSize, argSize, argAddr, keyAddr, Utilities.getMemoryDump(argAddr, argSize)));
-	            }
-
-	            // Save the memory content for the arguments because
-	            // the memory would be overwritten by the loading of the new module.
-	            arguments = new byte[argSize];
-	            IMemoryReader memoryReader = MemoryReader.getMemoryReader(argAddr, argSize, 1);
-	            for (int i = 0; i < argSize; i++) {
-	            	arguments[i] = (byte) memoryReader.readNext();
-	            }
+        if (argSize > 0) {
+            // Save the memory content for the arguments because
+            // the memory would be overwritten by the loading of the new module.
+            arguments = new byte[argSize];
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(argAddr, argSize, 1);
+            for (int i = 0; i < argSize; i++) {
+            	arguments[i] = (byte) memoryReader.readNext();
             }
         }
 
@@ -138,6 +124,28 @@ public class LoadExecForUser extends HLEModule {
         }
 
         return 0;
+    }
+
+    @HLELogging(level="info")
+    @HLEFunction(nid = 0xBD2F1094, version = 150, checkInsideInterrupt = true)
+    public int sceKernelLoadExec(PspString filename, @CanBeNull TPointer32 optionAddr) {
+        int argSize = 0;
+        int argAddr = 0;
+        if (optionAddr.isNotNull()) {
+            int optSize = optionAddr.getValue(0);      // Size of the option struct.
+            if (optSize >= 16) {
+	            argSize = optionAddr.getValue(4);      // Size of memory required for arguments.
+	            argAddr = optionAddr.getValue(8);      // Arguments (memory area of size argSize).
+	            int keyAddr = optionAddr.getValue(12); // Pointer to an encryption key (may not be used).
+
+	            if (log.isDebugEnabled()) {
+	            	log.debug(String.format("sceKernelLoadExec params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X: %s", optSize, argSize, argAddr, keyAddr, Utilities.getMemoryDump(argAddr, argSize)));
+	            }
+
+            }
+        }
+
+        return hleKernelLoadExec(filename, argSize, argAddr);
     }
 
     @HLELogging(level="info")
