@@ -159,7 +159,7 @@ public class SparseNativeMemory extends Memory {
 
 		destination &= addressMask;
 		source &= addressMask;
-        Modules.sceDisplayModule.write8(destination);
+        Modules.sceDisplayModule.write(destination);
 
         if (!checkOverlap || source >= destination || !areOverlapping(destination, source, length)) {
         	while (length > 0) {

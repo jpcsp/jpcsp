@@ -143,7 +143,7 @@ public class NativeMemory extends Memory {
 
 		destination &= addressMask;
 		source &= addressMask;
-        Modules.sceDisplayModule.write8(destination);
+        Modules.sceDisplayModule.write(destination);
 
         if (!checkOverlap || source >= destination || !areOverlapping(destination, source, length)) {
         	NativeMemoryUtils.memcpy(memory, destination, memory, source, length);

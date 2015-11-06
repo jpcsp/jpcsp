@@ -234,7 +234,7 @@ public class FastMemory extends Memory {
 	public void memset(int address, byte data, int length) {
 		address = normalizeAddress(address);
 
-        Modules.sceDisplayModule.write8(address);
+        Modules.sceDisplayModule.write(address);
 
         for (; !isIntAligned(address) && length > 0; address++, length--) {
 			write8(address, data);
@@ -326,7 +326,7 @@ public class FastMemory extends Memory {
     	destination = normalizeAddress(destination);
 		source = normalizeAddress(source);
 
-        Modules.sceDisplayModule.write8(destination);
+        Modules.sceDisplayModule.write(destination);
 
         if (isIntAligned(source) && isIntAligned(destination) && isIntAligned(length)) {
 			// Source, destination and length are "int"-aligned
