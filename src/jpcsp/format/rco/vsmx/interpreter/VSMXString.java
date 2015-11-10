@@ -110,6 +110,37 @@ public class VSMXString extends VSMXBaseObject {
 		return new VSMXString(getInterpreter(), s.substring(beginIndex, endIndex));
 	}
 
+	public VSMXBaseObject lastIndexOf(VSMXBaseObject object, VSMXBaseObject substring) {
+		return lastIndexOf(object, substring, new VSMXNumber(interpreter, object.getStringValue().length()));
+	}
+
+	public VSMXBaseObject lastIndexOf(VSMXBaseObject object, VSMXBaseObject substring, VSMXBaseObject startIndex) {
+		int startIndexInt = startIndex.getIntValue();
+		String substringString = substring.getStringValue();
+		String s = getStringValue();
+
+		if (startIndexInt < 0) {
+			startIndexInt = 0;
+		} else if (startIndexInt > s.length()) {
+			startIndexInt = s.length();
+		}
+
+		int lastIndexOfInt = s.lastIndexOf(substringString, startIndexInt);
+
+		return new VSMXNumber(interpreter, lastIndexOfInt);
+	}
+
+	public VSMXBaseObject charAt(VSMXBaseObject object, VSMXBaseObject index) {
+		String s = getStringValue();
+		int i = index.getIntValue();
+		if (i < 0 || i >= s.length()) {
+			return new VSMXString(interpreter, "");
+		}
+
+		char c = s.charAt(i);
+		return new VSMXString(interpreter, "" + c);
+	}
+
 	@Override
 	public String toString() {
 		return String.format("\"%s\"", value);

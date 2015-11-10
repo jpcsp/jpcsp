@@ -92,6 +92,8 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("AnimRotateAction to angle=%f", rotateAngle));
 			}
+
+			onDisplayUpdated();
 		}
 	}
 
@@ -123,6 +125,8 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("AnimPosAction from (%f,%f,%f) to (%f,%f,%f)", startX, startY, startZ, posX.getFloatValue(), posY.getFloatValue(), posZ.getFloatValue()));
 			}
+
+			onDisplayUpdated();
 		}
 	}
 
@@ -154,17 +158,39 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("AnimScaleAction scaling from (%f,%f,%f) to (%f,%f,%f)", startWidth, startHeight, startDepth, scaleWidth.getFloatValue(), scaleHeight.getFloatValue(), scaleDepth.getFloatValue()));
 			}
+
+			onDisplayUpdated();
 		}
+	}
+
+	private void onDisplayUpdated() {
+		display.repaint();
 	}
 
 	@Override
 	public int getWidth() {
-		return Math.round(width.getFloatValue() * scaleWidth.getFloatValue());
+		float w = width.getFloatValue();
+		if (w == 0f) {
+			BufferedImage image = getImage();
+			if (image != null) {
+				w = (float) image.getWidth();
+			}
+		}
+
+		return Math.round(w * scaleWidth.getFloatValue());
 	}
 
 	@Override
 	public int getHeight() {
-		return Math.round(height.getFloatValue() * scaleHeight.getFloatValue());
+		float h = height.getFloatValue();
+		if (h == 0f) {
+			BufferedImage image = getImage();
+			if (image != null) {
+				h = (float) image.getHeight();
+			}
+		}
+
+		return Math.round(h * scaleHeight.getFloatValue());
 	}
 
 	@Override
@@ -317,7 +343,7 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 		getScheduler().addAction(action);
 	}
 
-	public void setFocus(VSMXBaseObject object) {
+	public void setFocus() {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("setFocus()"));
 		}
@@ -327,6 +353,13 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 		if (controller != null) {
 			controller.setFocus(this);
 		}
+	}
+
+	public void setFocus(VSMXBaseObject object) {
+		setFocus();
+	}
+
+	public void focusOut() {
 	}
 
 	public void setSize(VSMXBaseObject object, VSMXBaseObject width, VSMXBaseObject height, VSMXBaseObject depth) {

@@ -132,9 +132,12 @@ public class Controller extends BaseNativeObject {
 		return VSMXBoolean.singletonTrue;
 	}
 
-	public void setFocus(BasePositionObject focus) {
-		this.focus = focus;
-		umdVideoPlayer.getRCODisplay().setFocus((IDisplay) focus);
+	public void setFocus(BasePositionObject newFocus) {
+		if (focus != null) {
+			focus.focusOut();
+		}
+		focus = newFocus;
+		umdVideoPlayer.getRCODisplay().setFocus((IDisplay) newFocus);
 	}
 
 	public void onUp() {

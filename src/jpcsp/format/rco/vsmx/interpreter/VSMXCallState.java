@@ -25,14 +25,16 @@ public class VSMXCallState {
 	private Stack<VSMXBaseObject> stack;
 	private int returnPc;
 	private boolean returnThis;
+	private boolean exitAfterCall;
 
-	public VSMXCallState(VSMXBaseObject thisObject, int numberOfLocalVariables, int returnPc, boolean returnThis) {
+	public VSMXCallState(VSMXBaseObject thisObject, int numberOfLocalVariables, int returnPc, boolean returnThis, boolean exitAfterCall) {
 		this.thisObject = thisObject;
 		localVariables = new VSMXBaseObject[numberOfLocalVariables];
 		Arrays.fill(localVariables, VSMXUndefined.singleton);
 		stack = new Stack<VSMXBaseObject>();
 		this.returnPc = returnPc;
 		this.returnThis = returnThis;
+		this.exitAfterCall = exitAfterCall;
 	}
 
 	public int getReturnPc() {
@@ -63,6 +65,10 @@ public class VSMXCallState {
 
 	public boolean getReturnThis() {
 		return returnThis;
+	}
+
+	public boolean getExitAfterCall() {
+		return exitAfterCall;
 	}
 
 	@Override

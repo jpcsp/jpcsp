@@ -53,8 +53,10 @@ public class Display extends JComponent {
 			log.trace(String.format("display %dx%d", getWidth(), getHeight()));
 		}
 
-		for (IDisplay object : objects) {
-			paint(g, object);
+		synchronized (objects) {
+			for (IDisplay object : objects) {
+				paint(g, object);
+			}
 		}
 	}
 
@@ -93,7 +95,9 @@ public class Display extends JComponent {
 	}
 
 	public void add(IDisplay object) {
-		objects.add(object);
+		synchronized (objects) {
+			objects.add(object);
+		}
 	}
 
 	public void add(BaseNativeObject object) {
@@ -109,7 +113,9 @@ public class Display extends JComponent {
 	}
 
 	public void remove(IDisplay object) {
-		objects.remove(object);
+		synchronized (objects) {
+			objects.remove(object);
+		}
 	}
 
 	public void remove(BaseNativeObject object) {

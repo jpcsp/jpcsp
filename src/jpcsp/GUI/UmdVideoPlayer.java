@@ -577,6 +577,9 @@ public class UmdVideoPlayer implements KeyListener {
     public void changeResource(String resourceName) {
     	try {
 			UmdIsoFile file = iso.getFile(String.format("UMD_VIDEO/RESOURCE/%s.RCO", resourceName));
+	    	if (log.isDebugEnabled()) {
+	    		log.debug(String.format("Reading RCO file '%s.RCO'", resourceName));
+	    	}
 			byte[] buffer = new byte[(int) file.length()];
 			file.read(buffer);
 			RCO rco = new RCO(buffer);

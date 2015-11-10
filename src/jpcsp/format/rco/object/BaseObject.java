@@ -147,7 +147,7 @@ public abstract class BaseObject extends BaseNativeObject {
 		if (event.getEvent() != null) {
 			controller.getInterpreter().interpretScript(getObject(), event.getEvent());
 		} else if (event.getObject() != null && event.getObject() instanceof BasePositionObject) {
-			controller.setFocus((BasePositionObject) event.getObject());
+			((BasePositionObject) event.getObject()).setFocus();
 		}
 	}
 

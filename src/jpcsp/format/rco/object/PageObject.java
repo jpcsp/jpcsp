@@ -81,6 +81,8 @@ public class PageObject extends BaseObject {
 			log.debug(String.format("PageObject.open %s, children: %s", this, object.getPropertyValue(rootName).getPropertyValue(childrenName)));
 		}
 
+		trigger(onInit);
+
 		return object;
 	}
 
@@ -92,6 +94,8 @@ public class PageObject extends BaseObject {
 		if (display != null) {
 			display(object.getPropertyValue(rootName));
 		}
+
+		trigger(onActivate);
 
 		return object;
 	}

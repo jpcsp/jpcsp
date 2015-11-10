@@ -72,4 +72,18 @@ public class UButtonObject extends BasePositionObject {
 	public void onPush() {
 		trigger(onPush);
 	}
+
+	@Override
+	public void setFocus() {
+		trigger(onFocusIn);
+
+		super.setFocus();
+	}
+
+	@Override
+	public void focusOut() {
+		trigger(onFocusOut);
+
+		super.focusOut();
+	}
 }

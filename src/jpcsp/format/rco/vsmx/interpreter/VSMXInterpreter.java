@@ -75,11 +75,11 @@ public class VSMXInterpreter {
 		return values;
 	}
 
-	private void pushCallState(VSMXBaseObject thisObject, int numberOfLocalVariables, boolean returnThis) {
+	private void pushCallState(VSMXBaseObject thisObject, int numberOfLocalVariables, boolean returnThis, boolean exitAfterCall) {
 		if (callState != null) {
 			callStates.push(callState);
 		}
-		callState = new VSMXCallState(thisObject, numberOfLocalVariables, pc, returnThis);
+		callState = new VSMXCallState(thisObject, numberOfLocalVariables, pc, returnThis, exitAfterCall);
 		stack = callState.getStack();
 		prefix += "  ";
 	}
@@ -524,6 +524,9 @@ public class VSMXInterpreter {
 					o = callState.getThisObject();
 				}
 				pc = callState.getReturnPc();
+				if (callState.getExitAfterCall()) {
+					exit = true;
+				}
 				popCallState();
 				if (callState == null) {
 					exit = true;
@@ -579,6 +582,8 @@ public class VSMXInterpreter {
 			pc++;
 			interpret(code);
 		}
+
+		exit = false;
 	}
 
 	public synchronized void run(VSMXObject globalVariables) {
@@ -586,7 +591,7 @@ public class VSMXInterpreter {
 		pc = 0;
 		exit = false;
 		callStates = new Stack<VSMXCallState>();
-		pushCallState(VSMXNull.singleton, 0, false);
+		pushCallState(VSMXNull.singleton, 0, false, true);
 		this.globalVariables = globalVariables;
 
 		VSMXBoolean.init(this);
@@ -603,7 +608,7 @@ public class VSMXInterpreter {
 	}
 
 	private void callFunction(VSMXFunction function, VSMXBaseObject thisObject, VSMXBaseObject[] arguments, int numberArguments, boolean returnThis) {
-		pushCallState(thisObject, function.getLocalVars() + function.getArgs(), returnThis);
+		pushCallState(thisObject, function.getLocalVars() + function.getArgs(), returnThis, false);
 		for (int i = 1; i <= function.getArgs() && i <= numberArguments; i++) {
 			callState.setLocalVar(i, arguments[i - 1]);
 		}
@@ -626,7 +631,7 @@ public class VSMXInterpreter {
 	}
 
 	public synchronized void interpretFunction(VSMXFunction function, VSMXBaseObject object, VSMXBaseObject[] arguments) {
-		pushCallState(object, function.getLocalVars(), false);
+		pushCallState(object, function.getLocalVars(), false, true);
 		for (int i = 1; i <= function.getArgs(); i++) {
 			if (arguments == null || i > arguments.length) {
 				callState.setLocalVar(i, VSMXNull.singleton);
