@@ -544,7 +544,9 @@ public class ModuleMgrForUser extends HLEModule {
         if (Memory.isAddressGood(sceModule.module_start_func)) {
         	// Always take the module start function if one is defined.
             entryAddr = sceModule.module_start_func;
-            attribute = sceModule.module_start_thread_attr;
+            if (sceModule.module_start_thread_attr != 0) {
+            	attribute = sceModule.module_start_thread_attr;
+            }
         }
 
         if (Memory.isAddressGood(entryAddr)) {

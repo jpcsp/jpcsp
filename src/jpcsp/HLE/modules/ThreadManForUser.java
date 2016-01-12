@@ -4292,4 +4292,26 @@ public class ThreadManForUser extends HLEModule {
     public int sceKernelReferTlsplStatus() {
         return 0;
     }
+
+    /*
+     * Suspend all user mode threads in the system.
+     */
+    @HLEFunction(nid = 0x8FD9F70C, version = 150)
+    public int sceKernelSuspendAllUserThreads() {
+    	for (SceKernelThreadInfo thread : threadMap.values()) {
+    		if (thread != currentThread && thread.isUserMode()) {
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("sceKernelSuspendAllUserThreads suspending %s", thread));
+    			}
+
+    			if (thread.isWaiting()) {
+	    			hleChangeThreadState(thread, PSP_THREAD_WAITING_SUSPEND);
+	    		} else {
+	    			hleChangeThreadState(thread, PSP_THREAD_SUSPEND);
+	    		}
+    		}
+    	}
+
+    	return 0;
+    }
 }
