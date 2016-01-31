@@ -968,7 +968,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         State.controller.loadKeyConfig(currentKeys);
         State.controller.loadControllerConfig(currentController);
 
-        setVisible(false);
+        dispose();
 }//GEN-LAST:event_jButtonOKActionPerformed
 
     private void fieldAnalogRightMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogRightMouseClicked
