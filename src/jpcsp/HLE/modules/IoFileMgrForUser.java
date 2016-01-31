@@ -70,6 +70,7 @@ import jpcsp.HLE.VFS.SeekableDataInputVirtualFile;
 import jpcsp.HLE.VFS.VirtualFileSystemManager;
 import jpcsp.HLE.VFS.crypto.PGDVirtualFile;
 import jpcsp.HLE.VFS.emulator.EmulatorVirtualFileSystem;
+import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.memoryStick.MemoryStickVirtualFileSystem;
@@ -2599,7 +2600,11 @@ public class IoFileMgrForUser extends HLEModule {
                             log.debug(String.format("hleIoIoctl get AES key %s", keyHex.toString()));
                         }
 
-                    	PGDVirtualFile pgdFile = new PGDVirtualFile(keyBuf, new SeekableDataInputVirtualFile(info.readOnlyFile));
+                        IVirtualFile ioctlFile = null;
+                        if (info.readOnlyFile instanceof UmdIsoFile) {
+                        	ioctlFile = new UmdIsoVirtualFile((UmdIsoFile) info.readOnlyFile);
+                        }
+                    	PGDVirtualFile pgdFile = new PGDVirtualFile(keyBuf, new SeekableDataInputVirtualFile(info.readOnlyFile, ioctlFile));
                     	if (!pgdFile.isHeaderPresent()) {
                             // No "PGD" found in the header, leave the file unchanged
                     		result = 0;

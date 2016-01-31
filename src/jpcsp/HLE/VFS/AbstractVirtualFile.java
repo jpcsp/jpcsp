@@ -31,9 +31,16 @@ public abstract class AbstractVirtualFile implements IVirtualFile {
 	protected static Logger log = AbstractVirtualFileSystem.log;
 	protected final SeekableDataInput file;
 	protected static final int IO_ERROR = AbstractVirtualFileSystem.IO_ERROR;
+	private final IVirtualFile ioctlFile;
 
 	public AbstractVirtualFile(SeekableDataInput file) {
 		this.file = file;
+		ioctlFile = null;
+	}
+
+	public AbstractVirtualFile(SeekableDataInput file, IVirtualFile ioctlFile) {
+		this.file = file;
+		this.ioctlFile = ioctlFile;
 	}
 
 	@Override
@@ -127,6 +134,10 @@ public abstract class AbstractVirtualFile implements IVirtualFile {
 
 	@Override
 	public int ioIoctl(int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength) {
+		if (ioctlFile != null) {
+			return ioctlFile.ioIoctl(command, inputPointer, inputLength, outputPointer, outputLength);
+		}
+
 		if (log.isEnabledFor(Level.WARN)) {
 	        log.warn(String.format("ioIoctl 0x%08X unsupported command, inlen=%d, outlen=%d", command, inputLength, outputLength));
 	        if (inputPointer.isAddressGood()) {

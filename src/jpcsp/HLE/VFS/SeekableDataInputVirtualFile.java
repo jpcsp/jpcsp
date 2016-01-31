@@ -22,4 +22,8 @@ public class SeekableDataInputVirtualFile extends AbstractVirtualFile {
 	public SeekableDataInputVirtualFile(SeekableDataInput file) {
 		super(file);
 	}
+
+	public SeekableDataInputVirtualFile(SeekableDataInput file, IVirtualFile ioctlFile) {
+		super(file, ioctlFile);
+	}
 }
