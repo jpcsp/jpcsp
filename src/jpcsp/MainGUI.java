@@ -2570,10 +2570,7 @@ private void GreekActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:e
 }//GEN-LAST:event_GreekActionPerformed
 
 private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ControlsConfActionPerformed
-        if (State.controlsGUI == null) {
-            State.controlsGUI = new ControlsGUI();
-        }
-        startWindowDialog(State.controlsGUI);
+        startWindowDialog(new ControlsGUI());
 }//GEN-LAST:event_ControlsConfActionPerformed
 
 private void MuteOptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MuteOptActionPerformed
