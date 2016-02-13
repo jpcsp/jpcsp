@@ -32,7 +32,7 @@ public class sceNetIfhandle extends HLEModule {
     @HLEFunction(nid = 0xC80181A2, version = 150, checkInsideInterrupt = true)
     public int sceNetGetDropRate(@CanBeNull TPointer32 dropRateAddr, @CanBeNull TPointer32 dropDurationAddr) {
         dropRateAddr.setValue(netDropRate);
-        dropRateAddr.setValue(netDropDuration);
+        dropDurationAddr.setValue(netDropDuration);
 
         return 0;
     }
