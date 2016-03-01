@@ -957,7 +957,7 @@ public class ModuleMgrForUser extends HLEModule {
      * @Note2: The above example should be compiled with the flag -fno-pic
      *         in order to avoid problems with gp register that may lead to a crash.
      *
-    */
+     */
     @HLEFunction(nid = 0x1C90BECB, version = 150)
     public int sctrlHENSetStartModuleHandler(TPointer startModuleHandler) {
     	int previousStartModuleHandler = this.startModuleHandler;
@@ -1007,5 +1007,11 @@ public class ModuleMgrForUser extends HLEModule {
         }
 
         return hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE4C4211C, version = 150, checkInsideInterrupt = true)
+    public int sceKernelLoadModuleWithBlockOffset(PspString path, int memoryBlockId, int memoryBlockOffset, int flags) {
+    	return 0;
     }
 }
