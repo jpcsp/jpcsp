@@ -1404,8 +1404,10 @@ public class Loader {
 	                    int nid = nidReader.readNext();
 	                    int exportAddress = exportReader.readNext();
                         // Only accept exports with valid export addresses and
-	                    // from custom modules (attr != 0x4000) unless the module is a homebrew (loaded from MemoryStick).
-                        if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000) || module.pspfilename.startsWith("ms0:")) {
+	                    // from custom modules (attr != 0x4000) unless
+	                    // the module is a homebrew (loaded from MemoryStick) or
+	                    // this is the EBOOT module.
+                        if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000) || module.pspfilename.startsWith("ms0:") || module.pspfilename.startsWith("disc0:/PSP_GAME/SYSDIR/EBOOT.")) {
                             nidMapper.addModuleNid(module, moduleName, nid, exportAddress);
                             entCount++;
                             if (log.isDebugEnabled()) {
