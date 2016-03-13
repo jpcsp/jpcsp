@@ -256,6 +256,17 @@ public class scePsmfPlayer extends HLEModule {
         return 0;
     }
 
+    protected int getRemainingFileData() {
+        SceMpegRingbuffer ringbuffer = Modules.sceMpegModule.getMpegRingbuffer();
+    	int packetSize = ringbuffer.getPacketSize();
+    	int packetsInRingbuffer = ringbuffer.getPacketsInRingbuffer();
+    	int bytesInRingbuffer = packetsInRingbuffer * packetSize;
+    	int bytesRemainingInFileData = pmfFileData.length - pmfFileDataRingbufferPosition;
+    	int bytesRemaining = bytesRemainingInFileData + bytesInRingbuffer;
+
+    	return bytesRemaining;
+    }
+
     protected void hlePsmfFillRingbuffer(Memory mem) {
         SceMpegRingbuffer ringbuffer = Modules.sceMpegModule.getMpegRingbuffer();
         ringbuffer.notifyConsumed();
@@ -408,8 +419,15 @@ public class scePsmfPlayer extends HLEModule {
     public int scePsmfPlayerUpdate(@CheckArgument("checkPlayerPlaying") int psmfPlayer) {
         // Can be called from interrupt.
         // Check playback status.
-        if (getCurrentVideoTimestamp() > Modules.sceMpegModule.psmfHeader.mpegLastTimestamp) {
-            // If we've reached the last timestamp, change the status to PLAYING_FINISHED.
+    	int remainingFileData = getRemainingFileData();
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePsmfPlayerUpdate remainingFileData=0x%X", remainingFileData));
+    	}
+
+    	if (remainingFileData <= 0) {
+            // If we've reached the end of the file data, change the status to PLAYING_FINISHED.
+    		// Remark: do not use the PSMF header last timestamp as it may contain an incorrect
+    		//         value which seems to be ignored by the PSP.
             psmfPlayerStatus = PSMF_PLAYER_STATUS_PLAYING_FINISHED;
         }
 
