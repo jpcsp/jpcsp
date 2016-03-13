@@ -195,7 +195,7 @@ public class scePsmfPlayer extends HLEModule {
     	return maxTimestampDifference;
     }
 
-    protected int hlePsmfPlayerSetPsmf(int psmfPlayer, PspString fileAddr, int offset, boolean doCallbacks) {
+    protected int hlePsmfPlayerSetPsmf(int psmfPlayer, PspString fileAddr, int offset, boolean doCallbacks, boolean useSizeFromPsmfHeader) {
     	if (psmfPlayerStatus != PSMF_PLAYER_STATUS_INIT) {
     		return ERROR_PSMFPLAYER_NOT_INITIALIZED;
     	}
@@ -215,18 +215,23 @@ public class scePsmfPlayer extends HLEModule {
             SeekableDataInput psmfFile = Modules.IoFileMgrForUserModule.getFile(pmfFilePath, 0);
             psmfFile.seek(offset);
 
-            // Try to find the length of the PSMF file by reading the PSMF header
             int length = (int) psmfFile.length() - offset;
-            byte[] header = new byte[ISectorDevice.sectorLength];
-            psmfFile.readFully(header);
-            int psmfMagic = read32(null, 0, header, PSMF_MAGIC_OFFSET);
-            if (psmfMagic == PSMF_MAGIC) {
-            	// Found the PSMF header, extract the file size from the stream size and offset.
-            	length = endianSwap32(read32(null, 0, header, PSMF_STREAM_SIZE_OFFSET));
-            	length += endianSwap32(read32(null, 0, header, PSMF_STREAM_OFFSET_OFFSET));
-            	if (log.isDebugEnabled()) {
-            		log.debug(String.format("PSMF length=0x%X, header: %s", length, Utilities.getMemoryDump(header, 0, header.length)));
-            	}
+            // Some PSMF files have an incorrect size stored into their header.
+            // It seems that the PSP is ignoring this size when using scePsmfPlayerSetPsmf().
+            // However, the size is probably not ignored when using scePsmfPlayerSetPsmfOffset().
+            if (useSizeFromPsmfHeader) {
+                // Try to find the length of the PSMF file by reading the PSMF header
+	            byte[] header = new byte[ISectorDevice.sectorLength];
+	            psmfFile.readFully(header);
+	            int psmfMagic = read32(null, 0, header, PSMF_MAGIC_OFFSET);
+	            if (psmfMagic == PSMF_MAGIC) {
+	            	// Found the PSMF header, extract the file size from the stream size and offset.
+	            	length = endianSwap32(read32(null, 0, header, PSMF_STREAM_SIZE_OFFSET));
+	            	length += endianSwap32(read32(null, 0, header, PSMF_STREAM_OFFSET_OFFSET));
+	            	if (log.isDebugEnabled()) {
+	            		log.debug(String.format("PSMF length=0x%X, header: %s", length, Utilities.getMemoryDump(header, 0, header.length)));
+	            	}
+	            }
             }
 
             psmfFile.seek(offset);
@@ -328,12 +333,12 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x3D6D25A9, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerSetPsmf(@CheckArgument("checkPlayerInitialized") int psmfPlayer, PspString fileAddr) {
-    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, 0, false);
+    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, 0, false, false);
     }
 
     @HLEFunction(nid = 0x58B83577, version = 150)
     public int scePsmfPlayerSetPsmfCB(@CheckArgument("checkPlayerInitialized") int psmfPlayer, PspString fileAddr) {
-    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, 0, true);
+    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, 0, true, false);
     }
 
     @HLEFunction(nid = 0xE792CD94, version = 150, checkInsideInterrupt = true)
@@ -631,12 +636,12 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x76C0F4AE, version = 150)
     public int scePsmfPlayerSetPsmfOffset(@CheckArgument("checkPlayerInitialized") int psmfPlayer, PspString fileAddr, int offset) {
-    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, offset, false);
+    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, offset, false, true);
     }
 
     @HLEFunction(nid = 0xA72DB4F9, version = 150)
     public int scePsmfPlayerSetPsmfOffsetCB(@CheckArgument("checkPlayerInitialized") int psmfPlayer, PspString fileAddr, int offset) {
-    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, offset, true);
+    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, offset, true, true);
     }
 
     @HLEUnimplemented
