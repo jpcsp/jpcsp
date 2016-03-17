@@ -182,6 +182,8 @@ public class sceAtrac3plus extends HLEModule {
         protected int currentLoopNum = -1;
         // LowLevel decoding
         protected int sourceBufferLength;
+        // AddStreamData
+        protected int getStreamDataInfoCurrentSample;
 
         public AtracID(int id) {
         	this.id = id;
@@ -364,6 +366,9 @@ public class sceAtrac3plus extends HLEModule {
         		reloadingFromLoopStart = true;
         	}
 
+        	// Remember the CurrentSample at the time of the getStreamDataInfo
+        	getStreamDataInfoCurrentSample = getAtracCurrentSample();
+
         	writeAddr.setValue(inputBuffer.getWriteAddr());
         	writableBytesAddr.setValue(inputBuffer.getWriteSize());
         	readOffsetAddr.setValue(inputBuffer.getFilePosition());
@@ -371,7 +376,15 @@ public class sceAtrac3plus extends HLEModule {
 
         protected void addStreamData(int length) {
         	if (length > 0) {
-        		inputBuffer.notifyWrite(length);
+        		if (getAtracCurrentSample() < getStreamDataInfoCurrentSample) {
+        			// The atrac has looped since sceAtracGetStreamDataInfo() has been called.
+        			// Ignore sceAtracAddStreamData as we now need atrac data from the loop start.
+        			if (log.isDebugEnabled()) {
+        				log.debug(String.format("addStreamData ignored as the atrac has looped inbetween: sample 0x%X -> 0x%X", getStreamDataInfoCurrentSample, getAtracCurrentSample()));
+        			}
+        		} else {
+        			inputBuffer.notifyWrite(length);
+        		}
         	}
         }
 
