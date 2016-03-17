@@ -239,6 +239,10 @@ public class SampleSourceWithADSR implements ISampleSource {
 					//                          or under the sustain level
 					if (envelopeHeight >= PSP_SAS_ENVELOPE_HEIGHT_MAX || envelopeHeight < envelope.SustainLevel) {
 						setCurve(SUSTAIN_CURVE_STATE);
+
+						// When switching from Decay to Sustain, directly step into the Sustain
+						// curve to avoid stopping the voice if the Decay envelope had reach 0.
+						stepCurve(envelope.SustainCurveType, envelope.SustainRate);
 					}
 					break;
 				case SUSTAIN_CURVE_STATE:
