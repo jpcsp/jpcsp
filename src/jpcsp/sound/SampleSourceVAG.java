@@ -211,7 +211,14 @@ public class SampleSourceVAG implements ISampleSource {
 
 	@Override
 	public boolean isEnded() {
-		return currentVAGBlock >= numberVGABlocks;
+		if (currentVAGBlock > numberVGABlocks) {
+			return true;
+		}
+		if (currentVAGBlock == numberVGABlocks && sampleIndex >= samples.length) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
