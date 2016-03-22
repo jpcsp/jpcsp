@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.sound;
 
 import static java.lang.Math.min;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
 
 import org.apache.log4j.Logger;
 
@@ -52,7 +53,12 @@ public class SampleSourceAtrac3 implements ISampleSource {
 
 	private void decode() {
 		int result = id.decodeData(buffer, TPointer32.NULL);
-		if (result < 0) {
+		if (result == ERROR_ATRAC_ALL_DATA_DECODED) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("SampleSourceAtrac3 decodeData returned 0x%08X", result));
+			}
+			bufferedSamples = 0;
+		} else if (result < 0) {
 			log.error(String.format("SampleSourceAtrac3 decodeData returned 0x%08X", result));
 			bufferedSamples = 0;
 		} else {
@@ -76,6 +82,9 @@ public class SampleSourceAtrac3 implements ISampleSource {
 	@Override
 	public int getNextSample() {
 		if (sampleIndex >= bufferedSamples) {
+			if (isEnded()) {
+				return 0;
+			}
 			decode();
 			if (bufferedSamples <= 0) {
 				return 0;
