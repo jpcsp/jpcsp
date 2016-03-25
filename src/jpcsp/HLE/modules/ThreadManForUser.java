@@ -734,17 +734,8 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, String argument) {
-    	// The game "Kamen Rider Climax Heroes OOO - ULJS00331" is expecting to receive
-    	// an argumentSize 1 byte (0x00) larger than the real string...
-    	// But this is breaking several other games: "Burnout Legends - ULES00125",
-    	// "Assassin's Creed: Bloodlines - USA - ULUS10455"...
-    	// So, keep the change now specific to ULJS00331 until we find out what is going on...
-    	int extraBytes = "ULJS00331".equals(State.discId) ? 1 : 0;
-    	int address = prepareThreadArguments(thread, argument.length() + 1 + extraBytes);
+    	int address = prepareThreadArguments(thread, argument.length() + 1);
     	writeStringZ(Memory.getInstance(), address, argument);
-    	if (extraBytes > 0) {
-    		Memory.getInstance().memset(address + argument.length() + 1, (byte) 0, extraBytes);
-    	}
     }
 
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, byte[] argument, int argumentSize) {
