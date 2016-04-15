@@ -27,6 +27,7 @@ import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
 public class BaseNativeObject {
 	protected static Logger log = VSMX.log;
 	private VSMXObject object;
+	private BaseNativeObject parent;
 
 	public VSMXObject getObject() {
 		return object;
@@ -34,6 +35,14 @@ public class BaseNativeObject {
 
 	public void setObject(VSMXObject object) {
 		this.object = object;
+	}
+
+	public BaseNativeObject getParent() {
+		return parent;
+	}
+
+	public void setParent(BaseNativeObject parent) {
+		this.parent = parent;
 	}
 
 	public void callCallback(VSMXInterpreter interpreter, String name, VSMXBaseObject[] arguments) {

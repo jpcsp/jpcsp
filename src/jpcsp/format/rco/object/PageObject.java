@@ -83,16 +83,16 @@ public class PageObject extends BaseObject {
 
 		trigger(onInit);
 
+		if (display != null) {
+			display(object.getPropertyValue(rootName));
+		}
+
 		return object;
 	}
 
 	public VSMXBaseObject activate(VSMXBaseObject object) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("PageObject.activate"));
-		}
-
-		if (display != null) {
-			display(object.getPropertyValue(rootName));
 		}
 
 		trigger(onActivate);

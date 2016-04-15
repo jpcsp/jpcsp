@@ -18,8 +18,10 @@ package jpcsp.format;
 
 import static jpcsp.util.Utilities.endianSwap32;
 
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -38,6 +40,7 @@ import jpcsp.format.rco.SoundFactory;
 import jpcsp.format.rco.object.BaseObject;
 import jpcsp.format.rco.object.ImageObject;
 import jpcsp.format.rco.vsmx.VSMX;
+import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.objects.Controller;
 import jpcsp.format.rco.vsmx.objects.GlobalVariables;
@@ -49,6 +52,7 @@ import org.apache.log4j.Logger;
 
 public class RCO {
 	public static final Logger log = Logger.getLogger("rco");
+	private static final boolean dumpImages = false;
 	private static final int RCO_HEADER_SIZE = 164;
 	private static final int RCO_MAGIC = 0x00505246;
 	private static final int RCO_NULL_PTR = 0xFFFFFFFF;
@@ -77,6 +81,7 @@ public class RCO {
 	private int lImgData;
 	private RCOEntry mainTable;
 	private int[] compressedTextDataOffset;
+	private Map<Integer, RCOEntry> entries;
 	private Map<Integer, String> events;
 	private Map<Integer, BufferedImage> images;
 	private Map<Integer, BaseObject> objects;
@@ -94,9 +99,11 @@ public class RCO {
 		public int prevEntryOffset;
 		public int parentTblOffset;
 		public RCOEntry subEntries[];
+		public RCOEntry parent;
 		public byte data[];
 		public BaseObject obj;
 		public String[] texts;
+		public VSMXBaseObject vsmxBaseObject;
 
 		public void read() {
 			int entryOffset = tell();
@@ -112,6 +119,12 @@ public class RCO {
 			parentTblOffset = read32();
 			skip32();
 			skip32();
+
+			entries.put(entryOffset, this);
+
+			if (parentTblOffset != 0) {
+				parent = entries.get(entryOffset - parentTblOffset);
+			}
 
 			if (labelOffset != RCO_NULL_PTR) {
 				label = readLabel(labelOffset);
@@ -412,12 +425,14 @@ public class RCO {
 		return bytes;
 	}
 
-	private byte[] readVSMX(int offset) {
+	private byte[] readVSMX(int offset, StringBuilder name) {
 		if (isNull(offset)) {
 			return null;
 		}
 
 		RCOEntry entry = readRCOEntry(offset);
+
+		name.append(entry.label);
 
 		return entry.data;
 	}
@@ -473,6 +488,19 @@ public class RCO {
 		try {
 			bufferedImage = ImageIO.read(imageInputStream);
 			imageInputStream.close();
+
+			// Add an alpha color channel if not available
+			if (!bufferedImage.getColorModel().hasAlpha()) {
+				BufferedImage bufferedImageWithAlpha = new BufferedImage(bufferedImage.getWidth(), bufferedImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+				Graphics2D g = bufferedImageWithAlpha.createGraphics();
+				g.drawImage(bufferedImage, 0, 0, null);
+				g.dispose();
+				bufferedImage = bufferedImageWithAlpha;
+			}
+
+			if (dumpImages) {
+				ImageIO.write(bufferedImage, "png", new File(String.format("tmp/Image0x%X.png", offset)));
+			}
 		} catch (IOException e) {
 			log.error(String.format("Error reading image from RCO at 0x%X, length=0x%X", offset, length), e);
 		}
@@ -683,6 +711,7 @@ public class RCO {
 			}
 		}
 
+		entries = new HashMap<Integer, RCO.RCOEntry>();
 		images = new HashMap<Integer, BufferedImage>();
 		objects = new HashMap<Integer, BaseObject>();
 
@@ -726,10 +755,7 @@ public class RCO {
 			state.controller = Controller.create(state.interpreter, umdVideoPlayer, resourceName);
 			state = execute(state, umdVideoPlayer, resourceName);
 
-//			globalVariables.getObject().callCallback(interpreter, "initResource", null);
-//			globalVariables.getObject().callCallback(interpreter, "playIntro", null);
 			state.controller.getObject().callCallback(state.interpreter, "onAutoPlay", null);
-//			controller.getObject().callCallback(interpreter, "onMenu", null);
 		}
 
 		return state;
@@ -737,7 +763,8 @@ public class RCO {
 
 	public RCOState execute(RCOState state, UmdVideoPlayer umdVideoPlayer, String resourceName) {
 		if (pVSMXTable != RCO_NULL_PTR) {
-			VSMX vsmx = new VSMX(readVSMX(pVSMXTable));
+			StringBuilder vsmxName = new StringBuilder();
+			VSMX vsmx = new VSMX(readVSMX(pVSMXTable, vsmxName), vsmxName.toString());
 			state.interpreter.setVSMX(vsmx);
 			state.globalVariables = GlobalVariables.create(state.interpreter);
 			state.globalVariables.setPropertyValue(Controller.objectName, state.controller);

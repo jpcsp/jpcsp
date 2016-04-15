@@ -16,8 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
 import java.util.List;
@@ -76,13 +78,18 @@ public class Display extends JComponent {
 		y = Math.round(-y / (moviePlayerHeight / 2f) * (displayHeight / 2f) + (displayHeight / 2f));
 		width = Math.round(width / (moviePlayerWidth / displayWidth));
 		height = Math.round(height / (moviePlayerWidth / displayWidth));
+		float alpha = object.getAlpha();
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("paint at (%d,%d) %dx%d - image=%dx%d, object=%s", x, y, width, height, image == null ? 0 : image.getWidth(), image == null ? 0 : image.getHeight(), object));
+			log.trace(String.format("paint at (%d,%d) %dx%d alpha=%f - image=%dx%d, object=%s", x, y, width, height, alpha, image == null ? 0 : image.getWidth(), image == null ? 0 : image.getHeight(), object));
 		}
 
 		if (image != null) {
-			g.drawImage(image, x, y, width, height, null);
+			if (g instanceof Graphics2D) {
+				AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, alpha);
+				((Graphics2D) g).setComposite(ac);
+			}
+			g.drawImage(image, x, y, x + width - 1, y + height - 1, 0, 0, image.getWidth() - 1, image.getHeight() - 1, null);
 		} else {
 			g.setColor(Color.BLACK);
 			g.drawRect(x, y, width, height);

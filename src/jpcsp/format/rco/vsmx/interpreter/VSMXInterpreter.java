@@ -37,6 +37,7 @@ public class VSMXInterpreter {
 	private VSMXCallState callState;
 	private VSMXObject globalVariables;
 	private String prefix;
+	private String name;
 
 	private class InterpretFunctionAction implements IAction {
 		private VSMXFunction function;
@@ -60,6 +61,7 @@ public class VSMXInterpreter {
 
 	public void setVSMX(VSMX vsmx) {
 		mem = vsmx.getMem();
+		name = vsmx.getName();
 	}
 
 	public VSMXObject getGlobalVariables() {
@@ -662,8 +664,9 @@ public class VSMXInterpreter {
 			object = VSMXNull.singleton;
 		}
 
-		if (script.startsWith("script:/main/")) {
-			String functionName = script.substring(13);
+		String scriptPrefix = String.format("script:/%s/", name);
+		if (script.startsWith(scriptPrefix)) {
+			String functionName = script.substring(scriptPrefix.length());
 			VSMXBaseObject functionObject = globalVariables.getPropertyValue(functionName);
 			if (functionObject instanceof VSMXFunction) {
 				VSMXFunction function = (VSMXFunction) functionObject;

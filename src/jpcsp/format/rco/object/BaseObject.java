@@ -118,10 +118,15 @@ public abstract class BaseObject extends BaseNativeObject {
 	public VSMXBaseObject createVSMXObject(VSMXInterpreter interpreter, VSMXBaseObject parent, RCOEntry entry) {
 		VSMXNativeObject object = new VSMXNativeObject(interpreter, this);
 		setObject(object);
+		entry.vsmxBaseObject = object;
 		if (entry.label != null) {
 			name = entry.label;
 			object.setPropertyValue("name", new VSMXString(interpreter, entry.label));
 			parent.setPropertyValue(entry.label, object);
+		}
+
+		if (entry.parent != null && entry.parent.vsmxBaseObject instanceof VSMXNativeObject) {
+			setParent(((VSMXNativeObject) entry.parent.vsmxBaseObject).getObject());
 		}
 
 		return object;

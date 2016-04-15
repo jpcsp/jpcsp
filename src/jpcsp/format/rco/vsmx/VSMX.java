@@ -28,6 +28,7 @@ public class VSMX {
 	private int offset;
 	private VSMXHeader header;
 	private VSMXMem mem;
+	private String name;
 
 	public VSMXMem getMem() {
 		return mem;
@@ -55,10 +56,15 @@ public class VSMX {
 		this.offset = offset;
 	}
 
-	public VSMX(byte[] buffer) {
+	public VSMX(byte[] buffer, String name) {
 		this.buffer = buffer;
+		this.name = name;
 
 		read();
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	private void readHeader() {

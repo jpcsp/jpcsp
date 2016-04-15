@@ -21,6 +21,8 @@ import static java.lang.Math.round;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.awt.image.IndexColorModel;
+import java.awt.image.RescaleOp;
 
 import jpcsp.format.RCO.RCOEntry;
 import jpcsp.format.rco.IDisplay;
@@ -75,6 +77,10 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 	public float animX;
 	public float animY;
 	public float animZ;
+	public float animRed   = 1f;
+	public float animGreen = 1f;
+	public float animBlue  = 1f;
+	public float animAlpha = 1f;
 
 	private class AnimRotateAction extends AbstractAnimAction {
 		private float angle;
@@ -212,29 +218,56 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 
 	@Override
 	public int getX() {
-		return posX.getIntValue() + round(animX);
+		int parentX = 0;
+		if (getParent() instanceof BasePositionObject) {
+			parentX = ((BasePositionObject) getParent()).getX();
+		}
+
+		return parentX + posX.getIntValue() + round(animX);
 	}
 
 	@Override
 	public int getY() {
-		return posY.getIntValue() + round(animY);
+		int parentY = 0;
+		if (getParent() instanceof BasePositionObject) {
+			parentY = ((BasePositionObject) getParent()).getY();
+		}
+
+		return parentY + posY.getIntValue() + round(animY);
+	}
+
+	@Override
+	public float getAlpha() {
+		return alphaScale.getFloatValue() * animAlpha;
 	}
 
 	@Override
 	public BufferedImage getAnimImage() {
 		BufferedImage image = getImage();
-		if (image == null || rotateAngle == 0f) {
+		if (image == null) {
 			return image;
 		}
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Rotating image at (%f,%f) by %f", rotateX, rotateY, rotateAngle));
+		if (image.getColorModel() instanceof IndexColorModel) {
+			// Cannot rescale colors on an indexed image
+		} else {
+			float[] scales = { redScale.getFloatValue(), greenScale.getFloatValue(), blueScale.getFloatValue(), alphaScale.getFloatValue() };
+			float[] offsets = { 0f, 0f, 0f, 0f };
+			RescaleOp colorRescale = new RescaleOp(scales, offsets, null);
+			image = colorRescale.filter(image, null);
 		}
-		AffineTransform rotation = new AffineTransform();
-		rotation.rotate(-rotateAngle, rotateX + image.getWidth() / 2, rotateY + image.getHeight() / 2);
-		AffineTransformOp op = new AffineTransformOp(rotation, AffineTransformOp.TYPE_BILINEAR);
 
-		return op.filter(image, null);
+		if (rotateAngle != 0f) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Rotating image at (%f,%f) by %f", rotateX, rotateY, rotateAngle));
+			}
+			AffineTransform rotation = new AffineTransform();
+			rotation.rotate(-rotateAngle, rotateX + image.getWidth() / 2, rotateY + image.getHeight() / 2);
+			AffineTransformOp op = new AffineTransformOp(rotation, AffineTransformOp.TYPE_BILINEAR);
+			image = op.filter(image, null);
+		}
+
+		return image;
 	}
 
 	public void setPos(VSMXBaseObject object, VSMXBaseObject posX, VSMXBaseObject posY) {
