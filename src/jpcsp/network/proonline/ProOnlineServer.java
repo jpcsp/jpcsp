@@ -165,7 +165,7 @@ public class ProOnlineServer {
 			serverSocket = new ServerSocket(port);
 			serverSocket.setSoTimeout(1);
 		} catch (IOException e) {
-			log.error(String.format("Server sockert at port %d not available: %s", port, e));
+			log.error(String.format("Server socket at port %d not available: %s", port, e));
 			return;
 		}
 

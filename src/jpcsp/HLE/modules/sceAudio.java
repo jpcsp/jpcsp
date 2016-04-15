@@ -52,6 +52,7 @@ import org.lwjgl.openal.ALCdevice;
 
 public class sceAudio extends HLEModule {
     public static Logger log = Modules.getLogger("sceAudio");
+    public byte[] audioData;
 
 	@Override
 	public void start() {
@@ -156,6 +157,7 @@ public class sceAudio extends HLEModule {
                     SoundChannel.storeSample(rsample, data, i + 2);
                 }
             }
+            Modules.sceAudioModule.audioData = data;
             channel.play(data);
             ret = channel.getSampleLength();
         } else {

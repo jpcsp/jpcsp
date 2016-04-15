@@ -97,6 +97,7 @@ import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
+import jpcsp.remote.HTTPServer;
 import jpcsp.settings.Settings;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
@@ -2874,6 +2875,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         DOMConfigurator.configure("LogSettings.xml");
 
         AES128.init();
+
+        HTTPServer.getInstance();
 
         // prepare i18n
         String locale = Settings.getInstance().readString("emu.language");
