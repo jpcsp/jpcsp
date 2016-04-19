@@ -31,6 +31,7 @@ import jpcsp.hardware.Screen;
 public class GlobalVariables extends BaseNativeObject {
 	private static final Logger log = VSMX.log;
 	private static final Logger logWriteln = Logger.getLogger("writeln");
+	private StringBuilder writeBuffer = new StringBuilder();
 
 	public static VSMXNativeObject create(VSMXInterpreter interpreter) {
 		GlobalVariables globalVariables = new GlobalVariables(interpreter);
@@ -54,15 +55,31 @@ public class GlobalVariables extends BaseNativeObject {
 	private GlobalVariables(VSMXInterpreter interpreter) {
 	}
 
+	private void writeln() {
+		logWriteln.debug(writeBuffer.toString());
+		writeBuffer.setLength(0);
+	}
+
 	private void writeln(VSMXBaseObject object, VSMXBaseObject... strings) {
-		String s = "";
+		write(object, strings);
+		writeln();
+	}
+
+	private void write(VSMXBaseObject object, VSMXBaseObject... strings) {
 		for (int i = 0; i < strings.length; i++) {
-			s += strings[i].getStringValue();
+			writeBuffer.append(strings[i].getStringValue());
 		}
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("writeln: '%s'", s));
+			log.debug(String.format("write: '%s'", writeBuffer.toString()));
 		}
-		logWriteln.debug(s);
+	}
+
+	public void write(VSMXBaseObject object, VSMXBaseObject s1) {
+		write(object, new VSMXBaseObject[] { s1 });
+	}
+
+	public void writeln(VSMXBaseObject object) {
+		writeln();
 	}
 
 	public void writeln(VSMXBaseObject object, VSMXBaseObject s1) {
