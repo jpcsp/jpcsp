@@ -3985,12 +3985,13 @@ public class sceUtility extends HLEModule {
         HLEModuleManager moduleManager = HLEModuleManager.getInstance();
     	if (loadedModules.containsKey(module) || waitingModules.containsKey(module)) { // Module already loaded.
     		return SceKernelErrors.ERROR_MODULE_ALREADY_LOADED;
-    	//} else if (!moduleManager.hasFlash0Module(moduleName)) { // Can't load flash0 module.
-        //    waitingModules.put(module, moduleName); // Always save a load attempt.
-        //    return SceKernelErrors.ERROR_MODULE_BAD_ID;
     	} else if ((module == UtilityModule.PSP_MODULE_NET_HTTPSTORAGE.id) && (!loadedModules.containsKey(UtilityModule.PSP_MODULE_NET_HTTP.id))) {
             log.error("Library not find");
     		return SceKernelErrors.ERROR_KERNEL_LIBRARY_NOT_FOUND;
+    	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Can't load flash0 module.
+            waitingModules.put(module, moduleName); // Always save a load attempt.
+            log.error("Can't load flash0 module");
+           return SceKernelErrors.ERROR_MODULE_BAD_ID;           
     	} else {
             // Load and save it in loadedModules.
             int sceModuleId = moduleManager.LoadFlash0Module(moduleName);
@@ -4012,6 +4013,7 @@ public class sceUtility extends HLEModule {
             waitingModules.remove(module);
             return 0;
         } else {
+            log.error("Not yet loaded");
             return SceKernelErrors.ERROR_MODULE_NOT_LOADED;
         }
     }
