@@ -137,6 +137,13 @@ public class Display extends JComponent {
 		}
 	}
 
+	public void changeResource() {
+		synchronized (objects) {
+			objects.clear();
+		}
+		focus = null;
+	}
+
 	public void setFocus(IDisplay focus) {
 		if (this.focus != focus) {
 			this.focus = focus;

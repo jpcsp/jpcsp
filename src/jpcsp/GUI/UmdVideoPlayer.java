@@ -587,6 +587,7 @@ public class UmdVideoPlayer implements KeyListener {
 				log.debug(String.format("RCO: %s", rco));
 			}
 
+			getRCODisplay().changeResource();
 			rcoState = rco.execute(rcoState, this, resourceName);
 		} catch (FileNotFoundException e) {
 		} catch (IOException e) {
