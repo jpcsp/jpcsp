@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.vsmx.interpreter;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
 
 public class VSMXNativeObject extends VSMXObject {
@@ -28,6 +31,30 @@ public class VSMXNativeObject extends VSMXObject {
 
 	public BaseNativeObject getObject() {
 		return object;
+	}
+
+	@Override
+	public void setPropertyValue(String name, VSMXBaseObject value) {
+		if (object != null && name != null && name.length() >= 1 && value instanceof VSMXNativeObject) {
+			String setterName = "set" + Character.toUpperCase(name.charAt(0)) + name.substring(1);
+			try {
+				Method setterMethod = object.getClass().getMethod(setterName, BaseNativeObject.class);
+				setterMethod.invoke(object, ((VSMXNativeObject) value).getObject());
+				return;
+			} catch (NoSuchMethodException e) {
+				// Ignore exception
+			} catch (SecurityException e) {
+				// Ignore exception
+			} catch (IllegalAccessException e) {
+				// Ignore exception
+			} catch (IllegalArgumentException e) {
+				// Ignore exception
+			} catch (InvocationTargetException e) {
+				// Ignore exception
+			}
+		}
+
+		super.setPropertyValue(name, value);
 	}
 
 	@Override

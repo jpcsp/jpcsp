@@ -19,7 +19,7 @@ package jpcsp.format.rco.object;
 import static jpcsp.format.rco.vsmx.objects.Resource.childrenName;
 import static jpcsp.format.rco.vsmx.objects.Resource.rootName;
 
-import java.util.Set;
+import java.util.List;
 
 import jpcsp.format.RCO.RCOEntry;
 import jpcsp.format.rco.ObjectField;
@@ -27,7 +27,9 @@ import jpcsp.format.rco.type.EventType;
 import jpcsp.format.rco.type.IntType;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
+import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXObject;
+import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
 import jpcsp.format.rco.vsmx.objects.Resource;
 
 public class PageObject extends BaseObject {
@@ -55,7 +57,7 @@ public class PageObject extends BaseObject {
 	private void display(VSMXBaseObject object) {
 		if (object.hasPropertyValue(childrenName)) {
 			VSMXBaseObject children = object.getPropertyValue(childrenName);
-			Set<String> childrenNames = children.getPropertyNames();
+			List<String> childrenNames = children.getPropertyNames();
 			for (String childName : childrenNames) {
 				VSMXBaseObject child = children.getPropertyValue(childName);
 				display.add(child);
@@ -64,10 +66,32 @@ public class PageObject extends BaseObject {
 		}
 	}
 
+	private BasePositionObject getFirstButton(VSMXBaseObject object) {
+		if (object.hasPropertyValue(childrenName)) {
+			VSMXBaseObject children = object.getPropertyValue(childrenName);
+			List<String> childrenNames = children.getPropertyNames();
+			for (String childName : childrenNames) {
+				VSMXBaseObject child = children.getPropertyValue(childName);
+				if (child instanceof VSMXNativeObject) {
+					BaseNativeObject childObject = ((VSMXNativeObject) child).getObject();
+					if (childObject instanceof UButtonObject) {
+						return (BasePositionObject) childObject;
+					}
+				}
+				BasePositionObject button = getFirstButton(child);
+				if (button != null) {
+					return button;
+				}
+			}
+		}
+
+		return null;
+	}
+
 	private void hide(VSMXBaseObject object) {
 		if (object.hasPropertyValue(childrenName)) {
 			VSMXBaseObject children = object.getPropertyValue(childrenName);
-			Set<String> childrenNames = children.getPropertyNames();
+			List<String> childrenNames = children.getPropertyNames();
 			for (String childName : childrenNames) {
 				VSMXBaseObject child = children.getPropertyValue(childName);
 				display.remove(child);
@@ -85,6 +109,11 @@ public class PageObject extends BaseObject {
 
 		if (display != null) {
 			display(object.getPropertyValue(rootName));
+
+			BasePositionObject button = getFirstButton(object.getPropertyValue(rootName));
+			if (button != null) {
+				button.setFocus();
+			}
 		}
 
 		return object;

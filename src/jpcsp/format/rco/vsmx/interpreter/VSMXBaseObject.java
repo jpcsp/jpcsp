@@ -16,8 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.vsmx.interpreter;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.LinkedList;
+import java.util.List;
 
 import jpcsp.format.rco.vsmx.VSMX;
 
@@ -102,8 +102,8 @@ public abstract class VSMXBaseObject {
 		return !VSMXUndefined.singleton.equals(getPropertyValue(name));
 	}
 
-	public Set<String> getPropertyNames() {
-		return new HashSet<String>();
+	public List<String> getPropertyNames() {
+		return new LinkedList<String>();
 	}
 
 	public void setFloatValue(float value) {

@@ -172,6 +172,9 @@ public abstract class BaseObject extends BaseNativeObject {
 		}
 	}
 
+	protected void toString(StringBuilder s) {
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
@@ -194,6 +197,7 @@ public abstract class BaseObject extends BaseNativeObject {
 				}
 			}
 		}
+		toString(s);
 		s.append("]");
 
 		return s.toString();

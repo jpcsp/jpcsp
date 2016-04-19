@@ -16,8 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format.rco.anim;
 
-import java.util.Arrays;
-import java.util.Set;
+import java.util.List;
 
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.format.rco.object.BaseObject;
@@ -85,7 +84,7 @@ public class BaseAnim extends BaseObject {
 		long delay = doPlayReference(object);
 		if (object.hasPropertyValue(Resource.childrenName)) {
 			VSMXBaseObject children = object.getPropertyValue(Resource.childrenName);
-			Set<String> names = children.getPropertyNames();
+			List<String> names = children.getPropertyNames();
 			if (names != null) {
 				for (String name : names) {
 					VSMXBaseObject child = children.getPropertyValue(name);
@@ -112,13 +111,11 @@ public class BaseAnim extends BaseObject {
 
 		if (thisObject.hasPropertyValue(Resource.childrenName)) {
 			VSMXBaseObject children = thisObject.getPropertyValue(Resource.childrenName);
-			Set<String> names = children.getPropertyNames();
-			String[] sortedNames = names.toArray(new String[names.size()]);
-			Arrays.sort(sortedNames);
-			BaseAnim baseAnims[] = new BaseAnim[sortedNames.length + 1];
+			List<String> names = children.getPropertyNames();
+			BaseAnim baseAnims[] = new BaseAnim[names.size() + 1];
 			int numberBaseAnims = 0;
 			baseAnims[numberBaseAnims++] = this;
-			for (String name : sortedNames) {
+			for (String name : names) {
 				VSMXBaseObject child = children.getPropertyValue(name);
 				if (child instanceof VSMXNativeObject) {
 					BaseNativeObject baseNativeObject = ((VSMXNativeObject) child).getObject();

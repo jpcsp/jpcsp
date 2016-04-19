@@ -65,7 +65,7 @@ public class RecolourAnim extends BaseAnim {
 			positionObject.animAlpha = interpolate(startAlpha, alpha.getFloatValue(), step);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("RecolourAnimn '%s' from (%f,%f,%f,%f) to (%f,%f,%f,%f)", positionObject.getName(), startRed, startGreen, startBlue, startAlpha, positionObject.animRed, positionObject.animGreen, positionObject.animBlue, positionObject.animAlpha));
+				log.debug(String.format("RecolourAnim '%s' from (%f,%f,%f,%f) to (%f,%f,%f,%f)", positionObject.getName(), startRed, startGreen, startBlue, startAlpha, positionObject.animRed, positionObject.animGreen, positionObject.animBlue, positionObject.animAlpha));
 			}
 		}
 	}

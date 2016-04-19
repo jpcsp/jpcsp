@@ -21,15 +21,38 @@ import java.awt.image.BufferedImage;
 import jpcsp.format.rco.ObjectField;
 import jpcsp.format.rco.type.ImageType;
 import jpcsp.format.rco.type.IntType;
+import jpcsp.format.rco.vsmx.objects.BaseNativeObject;
 
 public class PlaneObject extends BasePositionObject {
 	@ObjectField(order = 201)
 	public ImageType image;
 	@ObjectField(order = 202)
 	public IntType unknownInt18;
+	// Will be set by setTexture()
+	private ImageObject texture;
 
 	@Override
 	public BufferedImage getImage() {
+		if (texture != null) {
+			return texture.getImage();
+		}
 		return image.getImage();
+	}
+
+	public void setTexture(BaseNativeObject texture) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("PlaneObject.setTexture %s", texture));
+		}
+		if (texture instanceof ImageObject) {
+			this.texture = (ImageObject) texture;
+		}
+	}
+
+	@Override
+	protected void toString(StringBuilder s) {
+		if (texture != null) {
+			s.append(String.format(", texture=%s", texture));
+		}
+		super.toString(s);
 	}
 }

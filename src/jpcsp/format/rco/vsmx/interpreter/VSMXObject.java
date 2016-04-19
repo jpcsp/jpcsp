@@ -18,17 +18,25 @@ package jpcsp.format.rco.vsmx.interpreter;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class VSMXObject extends VSMXBaseObject {
 	protected final Map<String, VSMXBaseObject> properties;
 	private String className;
+	private final List<String> sortedPropertyNames;
 
 	public VSMXObject(VSMXInterpreter interpreter, String className) {
 		super(interpreter);
 		this.className = className;
 		properties = new HashMap<String, VSMXBaseObject>();
+		sortedPropertyNames = new LinkedList<String>();
+	}
+
+	private void addProperty(String name, VSMXBaseObject value) {
+		properties.put(name, value);
+		sortedPropertyNames.add(name);
 	}
 
 	@Override
@@ -48,25 +56,30 @@ public class VSMXObject extends VSMXBaseObject {
 				value = prototype.getPropertyValue(name);
 			} else {
 				value = VSMXUndefined.singleton;
-				properties.put(name, value);
+				addProperty(name, value);
 			}
 		}
 		return value;
 	}
 
 	@Override
-	public Set<String> getPropertyNames() {
-		return properties.keySet();
+	public List<String> getPropertyNames() {
+		return sortedPropertyNames;
 	}
 
 	@Override
 	public void setPropertyValue(String name, VSMXBaseObject value) {
-		properties.put(name, value);
+		if (properties.containsKey(name)) {
+			properties.put(name, value);
+		} else {
+			addProperty(name, value);
+		}
 	}
 
 	@Override
 	public void deletePropertyValue(String name) {
 		properties.remove(name);
+		sortedPropertyNames.remove(name);
 	}
 
 	@Override
