@@ -153,6 +153,7 @@ public class UmdVideoPlayer implements KeyListener {
 	// Time synchronization
 	private PesHeader pesHeaderAudio;
 	private PesHeader pesHeaderVideo;
+	private long currentVideoTimestamp;
 	private int currentChapterNumber;
 	private long startTime;
     private int fastForwardSpeed;
@@ -280,16 +281,18 @@ public class UmdVideoPlayer implements KeyListener {
 
     private static String getTimestampString(long timestamp) {
     	int seconds = (int) (timestamp / mpegTimestampPerSecond);
+    	int micros = (int) (timestamp - ((long) seconds) * mpegTimestampPerSecond);
+    	micros = 1000 * micros / mpegTimestampPerSecond;
     	int minutes = seconds / 60;
     	seconds -= minutes * 60;
     	int hours = minutes / 60;
     	minutes -= hours * 60;
 
     	if (hours == 0) {
-    		return String.format("%02d:%02d", minutes, seconds);
+    		return String.format("%02d:%02d.%03d", minutes, seconds, micros);
     	}
 
-    	return String.format("%d:%02d:%02d", hours, minutes, seconds);
+    	return String.format("%d:%02d:%02d.%03d", hours, minutes, seconds, micros);
     }
 
     public UmdVideoPlayer(MainGUI gui, UmdIsoReader iso) {
@@ -413,7 +416,7 @@ public class UmdVideoPlayer implements KeyListener {
 	        screenHeigth = Screen.height * resizeScaleFactor;
     	} else {
     		if (log.isDebugEnabled()) {
-    			log.debug(String.format("video size %dx%d", videoWidth, videoHeight));
+    			log.debug(String.format("video size %dx%d resizeScaleFactor=%d", videoWidth, videoHeight, resizeScaleFactor));
     		}
 	        screenWidth = videoWidth * resizeScaleFactor;
 	        screenHeigth = videoHeight * resizeScaleFactor;
@@ -1201,6 +1204,9 @@ public class UmdVideoPlayer implements KeyListener {
 	    		videoHeight = height;
 	    		resized = true;
 	    	}
+	    	if (log.isTraceEnabled()) {
+	    		log.trace(String.format("Decoded video frame %dx%d (video %dx%d), pes=%s", width, height, videoWidth, videoHeight, pesHeaderVideo));
+	    	}
 	    	if (resized) {
 	    		resizeVideoPlayer();
 	    	}
@@ -1233,7 +1239,19 @@ public class UmdVideoPlayer implements KeyListener {
 	    	}
 	    }
 
-	    if (pesHeaderVideo.getPts() != UNKNOWN_TIMESTAMP) {
+	    if (videoCodec.hasImage()) {
+	    	if (pesHeaderVideo.getPts() != UNKNOWN_TIMESTAMP) {
+	    		currentVideoTimestamp = pesHeaderVideo.getPts();
+	    	} else {
+	    		currentVideoTimestamp += sceMpeg.videoTimestampStep;
+	    	}
+	    	if (log.isTraceEnabled()) {
+	    		MpsStreamInfo streamInfo = mpsStreams.get(currentStreamIndex);
+	    		log.trace(String.format("Playing stream %d: %s / %s", currentStreamIndex, getTimestampString(currentVideoTimestamp - streamInfo.streamFirstTimestamp), getTimestampString(streamInfo.streamLastTimestamp - streamInfo.streamFirstTimestamp)));
+	    	}
+	    }
+
+    	if (pesHeaderVideo.getPts() != UNKNOWN_TIMESTAMP) {
 		    int chapterNumber = mpsStreams.get(currentStreamIndex).getChapterNumber(pesHeaderVideo.getPts());
 		    if (chapterNumber != currentChapterNumber) {
 		    	if (moviePlayer != null) {
@@ -1341,6 +1359,9 @@ public class UmdVideoPlayer implements KeyListener {
                         if (display != null && image != null) {
                         	Image scaledImage = getImage();
                         	if (videoWidth != screenWidth || videoHeight != screenHeigth) {
+                        		if (log.isTraceEnabled()) {
+                        			log.trace(String.format("Scaling video image from %dx%d to %dx%d", videoWidth, videoHeight, screenWidth, screenHeigth));
+                        		}
                         		scaledImage = scaledImage.getScaledInstance(screenWidth, screenHeigth, Image.SCALE_SMOOTH);
                         	}
                             display.setIcon(new ImageIcon(scaledImage));
