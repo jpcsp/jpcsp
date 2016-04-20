@@ -391,9 +391,20 @@ public class VSMXInterpreter {
 				o1 = stack.pop();
 				o2 = stack.pop().getValue();
 				if (o2 instanceof VSMXArray) {
-					o = o2.getPropertyValue(o1.getIntValue());
+					o = new VSMXReference(this, (VSMXObject) o2, o1.getIntValue());
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("%s VSMXArray %s[%d] = %s", VSMXCode.VsmxDecOps[code.getOpcode()], o2, o1.getIntValue(), o));
+					}
+				} else if (o2 instanceof VSMXObject) {
+					o = new VSMXReference(this, (VSMXObject) o2, o1.getStringValue());
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("%s VSMXObject %s[%s] = %s", VSMXCode.VsmxDecOps[code.getOpcode()], o2, o1.getStringValue(), o));
+					}
 				} else {
 					o = o2.getPropertyValue(o1.getStringValue());
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("%s %s[%s] = %s", VSMXCode.VsmxDecOps[code.getOpcode()], o2, o1.getStringValue(), o));
+					}
 				}
 				stack.push(o);
 				break;

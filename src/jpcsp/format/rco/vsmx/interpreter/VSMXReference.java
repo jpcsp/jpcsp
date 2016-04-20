@@ -22,6 +22,7 @@ import jpcsp.format.rco.vsmx.objects.NativeFunctionFactory;
 public class VSMXReference extends VSMXBaseObject {
 	private VSMXObject refObject;
 	private String refProperty;
+	private int refIndex;
 
 	public VSMXReference(VSMXInterpreter interpreter, VSMXObject refObject, String refProperty) {
 		super(interpreter);
@@ -29,15 +30,33 @@ public class VSMXReference extends VSMXBaseObject {
 		this.refProperty = refProperty;
 	}
 
+	public VSMXReference(VSMXInterpreter interpreter, VSMXObject refObject, int refIndex) {
+		super(interpreter);
+		this.refObject = refObject;
+		this.refIndex = refIndex;
+	}
+
 	public void assign(VSMXBaseObject value) {
-		refObject.setPropertyValue(refProperty, value.getValue());
+		if (refProperty == null) {
+			refObject.setPropertyValue(refIndex, value.getValue());
+		} else {
+			refObject.setPropertyValue(refProperty, value.getValue());
+		}
 	}
 
 	public String getRefProperty() {
+		if (refProperty == null) {
+			return Integer.toString(refIndex);
+		}
+
 		return refProperty;
 	}
 
 	protected VSMXBaseObject getRef() {
+		if (refProperty == null) {
+			return refObject.getPropertyValue(refIndex);
+		}
+
 		if (!refObject.hasPropertyValue(refProperty) && refObject instanceof VSMXNativeObject) {
 			VSMXNativeObject nativeObject = (VSMXNativeObject) refObject;
 			INativeFunction nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, refProperty, 0);
@@ -67,6 +86,11 @@ public class VSMXReference extends VSMXBaseObject {
 	@Override
 	public boolean getBooleanValue() {
 		return getRef().getBooleanValue();
+	}
+
+	@Override
+	public String getStringValue() {
+		return getRef().getStringValue();
 	}
 
 	@Override
@@ -106,6 +130,9 @@ public class VSMXReference extends VSMXBaseObject {
 
 	@Override
 	public String toString() {
+		if (refProperty == null) {
+			return String.format("@OBJ[%d]=%s", refIndex, getRef());
+		}
 		return String.format("@OBJ.%s=%s", refProperty, getRef());
 	}
 }

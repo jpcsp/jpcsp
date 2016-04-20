@@ -24,4 +24,5 @@ public interface IVideoCodec {
 	public int getImageHeight();
 	public int getImage(int luma[], int cb[], int cr[]);
 	public boolean isKeyFrame();
+	public void getAspectRatio(int numDen[]);
 }

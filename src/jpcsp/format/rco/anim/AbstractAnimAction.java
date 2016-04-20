@@ -47,7 +47,7 @@ public abstract class AbstractAnimAction implements IAction {
 			log.debug(String.format("BaseAnimAction duration=%d/%d", currentDuration, duration));
 		}
 		currentDuration = Math.min(currentDuration, duration);
-		float step = currentDuration / (float) duration;
+		float step = currentDuration == duration ? 1f : currentDuration / (float) duration;
 
 		anim(step);
 

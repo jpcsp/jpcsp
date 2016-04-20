@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 
 import com.twilight.h264.decoder.AVFrame;
 import com.twilight.h264.decoder.AVPacket;
+import com.twilight.h264.decoder.AVRational;
 import com.twilight.h264.decoder.MpegEncContext;
 
 import jpcsp.media.codec.IVideoCodec;
@@ -30,6 +31,7 @@ public class H264Decoder implements IVideoCodec {
 	private AVFrame picture;
 	private AVPacket packet;
 	private final int gotPicture[] = new int[1];
+	private AVRational aspectRatio;
 
 	@Override
 	public int init(int extraData[]) {
@@ -80,6 +82,7 @@ public class H264Decoder implements IVideoCodec {
 
 		if (hasImage()) {
 			picture = context.priv_data.displayPicture;
+			aspectRatio = context.sample_aspect_ratio;
 		}
 
 		return consumedLength;
@@ -103,6 +106,12 @@ public class H264Decoder implements IVideoCodec {
 	@Override
 	public boolean isKeyFrame() {
 		return picture.key_frame != 0;
+	}
+
+	@Override
+	public void getAspectRatio(int[] numDen) {
+		numDen[0] = aspectRatio.num;
+		numDen[1] = aspectRatio.den;
 	}
 
 	@Override

@@ -75,7 +75,7 @@ public class MoviePlayer extends BaseNativeObject {
 	}
 
 	public void play(VSMXBaseObject object,
-	                 VSMXBaseObject unknownInt1,
+	                 VSMXBaseObject pauseMode,
 	                 VSMXBaseObject menuMode,
 	                 VSMXBaseObject playListNumber,
 	                 VSMXBaseObject chapterNumber,
@@ -86,7 +86,7 @@ public class MoviePlayer extends BaseNativeObject {
 	                 VSMXBaseObject subtitleFlag,
 	                 VSMXBaseObject unknownBool) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MoviePlayer.play unknownInt1=%d, menuMode=%d, playListNumber=%d, chapterNumber=%d, videoNumber=0x%X, audioNumber=0x%X, audioFlag=0x%X, subtitleNumber=%d, subtitleFlag=0x%X, unknownBool=%b", unknownInt1.getIntValue(), menuMode.getIntValue(), playListNumber.getIntValue(), chapterNumber.getIntValue(), videoNumber.getIntValue(), audioNumber.getIntValue(), audioFlag.getIntValue(), subtitleNumber.getIntValue(), subtitleFlag.getIntValue(), unknownBool.getBooleanValue()));
+			log.debug(String.format("MoviePlayer.play pauseMode=%d, menuMode=%d, playListNumber=%d, chapterNumber=%d, videoNumber=0x%X, audioNumber=0x%X, audioFlag=0x%X, subtitleNumber=%d, subtitleFlag=0x%X, unknownBool=%b", pauseMode.getIntValue(), menuMode.getIntValue(), playListNumber.getIntValue(), chapterNumber.getIntValue(), videoNumber.getIntValue(), audioNumber.getIntValue(), audioFlag.getIntValue(), subtitleNumber.getIntValue(), subtitleFlag.getIntValue(), unknownBool.getBooleanValue()));
 		}
 		playing = true;
 		boolean previousMenuMode = this.menuMode;

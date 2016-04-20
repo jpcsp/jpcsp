@@ -125,6 +125,8 @@ public class UmdVideoPlayer implements KeyListener {
 	public static int frame;
 	private int videoWidth;
 	private int videoHeight;
+	private int videoAspectRatioNum;
+	private int videoAspectRatioDen;
 	private int[] luma;
 	private int[] cr;
 	private int[] cb;
@@ -281,18 +283,14 @@ public class UmdVideoPlayer implements KeyListener {
 
     private static String getTimestampString(long timestamp) {
     	int seconds = (int) (timestamp / mpegTimestampPerSecond);
-    	int micros = (int) (timestamp - ((long) seconds) * mpegTimestampPerSecond);
-    	micros = 1000 * micros / mpegTimestampPerSecond;
+    	int hundredth = (int) (timestamp - ((long) seconds) * mpegTimestampPerSecond);
+    	hundredth = 100 * hundredth / mpegTimestampPerSecond;
     	int minutes = seconds / 60;
     	seconds -= minutes * 60;
     	int hours = minutes / 60;
     	minutes -= hours * 60;
 
-    	if (hours == 0) {
-    		return String.format("%02d:%02d.%03d", minutes, seconds, micros);
-    	}
-
-    	return String.format("%d:%02d:%02d.%03d", hours, minutes, seconds, micros);
+    	return String.format("%02d:%02d:%02d.%02d", hours, minutes, seconds, hundredth);
     }
 
     public UmdVideoPlayer(MainGUI gui, UmdIsoReader iso) {
@@ -418,7 +416,7 @@ public class UmdVideoPlayer implements KeyListener {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("video size %dx%d resizeScaleFactor=%d", videoWidth, videoHeight, resizeScaleFactor));
     		}
-	        screenWidth = videoWidth * resizeScaleFactor;
+	        screenWidth = videoWidth * videoAspectRatioNum / videoAspectRatioDen * resizeScaleFactor;
 	        screenHeigth = videoHeight * resizeScaleFactor;
     	}
 
@@ -1181,7 +1179,12 @@ public class UmdVideoPlayer implements KeyListener {
 	    }
 
 	    if (videoCodec.hasImage()) {
-	    	frame++;
+    		int[] aspectRatio = new int[2];
+    		videoCodec.getAspectRatio(aspectRatio);
+    		videoAspectRatioNum = aspectRatio[0];
+    		videoAspectRatioDen = aspectRatio[1];
+
+    		frame++;
 	    }
 
 	    consumeVideoData(consumedLength);
@@ -1205,7 +1208,7 @@ public class UmdVideoPlayer implements KeyListener {
 	    		resized = true;
 	    	}
 	    	if (log.isTraceEnabled()) {
-	    		log.trace(String.format("Decoded video frame %dx%d (video %dx%d), pes=%s", width, height, videoWidth, videoHeight, pesHeaderVideo));
+	    		log.trace(String.format("Decoded video frame %dx%d (video %dx%d), pes=%s, SAR %d:%d", width, height, videoWidth, videoHeight, pesHeaderVideo, videoAspectRatioNum, videoAspectRatioDen));
 	    	}
 	    	if (resized) {
 	    		resizeVideoPlayer();
