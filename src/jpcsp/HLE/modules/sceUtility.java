@@ -3985,9 +3985,13 @@ public class sceUtility extends HLEModule {
         HLEModuleManager moduleManager = HLEModuleManager.getInstance();
     	if (loadedModules.containsKey(module) || waitingModules.containsKey(module)) { // Module already loaded.
     		return SceKernelErrors.ERROR_MODULE_ALREADY_LOADED;
+    	} else if ((module == UtilityModule.PSP_MODULE_NET_HTTPSTORAGE.id) && (!loadedModules.containsKey(UtilityModule.PSP_MODULE_NET_HTTP.id))) {
+            log.error("Library not find");
+    		return SceKernelErrors.ERROR_KERNEL_LIBRARY_NOT_FOUND;
     	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Can't load flash0 module.
             waitingModules.put(module, moduleName); // Always save a load attempt.
-            return SceKernelErrors.ERROR_MODULE_BAD_ID;
+            log.error("Can't load flash0 module");
+           return SceKernelErrors.ERROR_MODULE_BAD_ID;           
     	} else {
             // Load and save it in loadedModules.
             int sceModuleId = moduleManager.LoadFlash0Module(moduleName);
@@ -4009,6 +4013,7 @@ public class sceUtility extends HLEModule {
             waitingModules.remove(module);
             return 0;
         } else {
+            log.error("Not yet loaded");
             return SceKernelErrors.ERROR_MODULE_NOT_LOADED;
         }
     }
@@ -4701,18 +4706,11 @@ public class sceUtility extends HLEModule {
     @HLEFunction(nid = 0x2A2B3DE0, version = 303, checkInsideInterrupt = true)
     public int sceUtilityLoadModule(int module) {
         String moduleName = getModuleName(module);
+        log.info(String.format("Loading: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
         int result = hleUtilityLoadModule(module, moduleName);
         if (result == SceKernelErrors.ERROR_MODULE_BAD_ID) {
             log.info(String.format("IGNORING: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
             result = 0;
-
-            if (module == UtilityModule.PSP_MODULE_NET_HTTPSTORAGE.id && "ULJS00331".equals(State.discId)) {
-            	// The game "Kamen Rider Climax Heroes OOO - ULJS00331" is checking that the return value of
-            	//     sceUtilityLoadModule(PSP_MODULE_NET_HTTPSTORAGE)
-            	// has a defined value.
-            	// The return value must match: result * 100 / 6532 == 0x00B99F84
-            	result = 0x2F5CE6C3;
-            }
 
         	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
 
