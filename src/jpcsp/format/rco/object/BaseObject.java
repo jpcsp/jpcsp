@@ -136,6 +136,10 @@ public abstract class BaseObject extends BaseNativeObject {
 		this.display = display;
 	}
 
+	public void onDisplayUpdated() {
+		display.repaint();
+	}
+
 	public void setController(Controller controller) {
 		this.controller = controller;
 	}

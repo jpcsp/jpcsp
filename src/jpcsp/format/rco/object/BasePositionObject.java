@@ -77,10 +77,6 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 	public float animX;
 	public float animY;
 	public float animZ;
-	public float animRed   = 1f;
-	public float animGreen = 1f;
-	public float animBlue  = 1f;
-	public float animAlpha = 1f;
 
 	private class AnimRotateAction extends AbstractAnimAction {
 		private float angle;
@@ -169,8 +165,42 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 		}
 	}
 
-	private void onDisplayUpdated() {
-		display.repaint();
+	private class AnimColorAction extends AbstractAnimAction {
+		private float red;
+		private float green;
+		private float blue;
+		private float alpha;
+		private float startRed;
+		private float startGreen;
+		private float startBlue;
+		private float startAlpha;
+
+		public AnimColorAction(float red, float green, float blue, float alpha, int duration) {
+			super(duration);
+			this.red = red;
+			this.green = green;
+			this.blue = blue;
+			this.alpha = alpha;
+
+			startRed = redScale.getFloatValue();
+			startGreen = greenScale.getFloatValue();
+			startBlue = blueScale.getFloatValue();
+			startAlpha = alphaScale.getFloatValue();
+		}
+
+		@Override
+		protected void anim(float step) {
+			redScale.setFloatValue(interpolate(startRed  , red  , step));
+			greenScale.setFloatValue(interpolate(startGreen, green, step));
+			blueScale.setFloatValue(interpolate(startBlue , blue , step));
+			alphaScale.setFloatValue(interpolate(startAlpha, alpha, step));
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("AnimColorAction scaling from (%f,%f,%f,%f) to (%f,%f,%f,%f)", startRed, startGreen, startBlue, startAlpha, red, green, blue, alpha));
+			}
+
+			onDisplayUpdated();
+		}
 	}
 
 	@Override
@@ -238,7 +268,7 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 
 	@Override
 	public float getAlpha() {
-		return alphaScale.getFloatValue() * animAlpha;
+		return alphaScale.getFloatValue();
 	}
 
 	@Override
@@ -335,18 +365,26 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 		greenScale.setFloatValue(green.getFloatValue());
 		blueScale.setFloatValue(blue.getFloatValue());
 		alphaScale.setFloatValue(alpha.getFloatValue());
+
+		onDisplayUpdated();
 	}
 
 	public void animColor(VSMXBaseObject object, VSMXBaseObject red, VSMXBaseObject green, VSMXBaseObject blue, VSMXBaseObject alpha, VSMXBaseObject duration) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("animColor(%s, %s, %s, %s, %s)", red, green, blue, alpha, duration));
 		}
+
+		AnimColorAction action = new AnimColorAction(red.getFloatValue(), green.getFloatValue(), blue.getFloatValue(), alpha.getFloatValue(), duration.getIntValue());
+		getScheduler().addAction(action);
 	}
 
 	public void setScale(VSMXBaseObject object, VSMXBaseObject width, VSMXBaseObject height, VSMXBaseObject depth) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("setScale(%s, %s, %s)", width, height, depth));
 		}
+
+		// TODO To be implemented
+		onDisplayUpdated();
 	}
 
 	public void animScale(VSMXBaseObject object, VSMXBaseObject width, VSMXBaseObject height, VSMXBaseObject depth, VSMXBaseObject duration) {
@@ -403,6 +441,8 @@ public class BasePositionObject extends BaseObject implements IDisplay {
 		this.width.setFloatValue(width.getFloatValue());
 		this.height.setFloatValue(height.getFloatValue());
 		this.depth.setFloatValue(depth.getFloatValue());
+
+		onDisplayUpdated();
 	}
 
 	public void onUp() {

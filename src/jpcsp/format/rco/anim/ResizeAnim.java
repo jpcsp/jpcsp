@@ -58,6 +58,8 @@ public class ResizeAnim extends BaseAnim {
 			positionObject.scaleHeight.setFloatValue(startHeight + height.getFloatValue() * step);
 			positionObject.scaleDepth.setFloatValue(startDepth + depth.getFloatValue() * step);
 
+			positionObject.onDisplayUpdated();
+
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("ResizeAnim '%s' from (%f,%f,%f) to (%f,%f,%f)", positionObject.getName(), startWidth, startHeight, startDepth, positionObject.scaleWidth.getFloatValue(), positionObject.scaleHeight.getFloatValue(), positionObject.scaleDepth.getFloatValue()));
 			}

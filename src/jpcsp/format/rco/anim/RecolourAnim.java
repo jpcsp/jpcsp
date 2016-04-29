@@ -51,21 +51,23 @@ public class RecolourAnim extends BaseAnim {
 		public RecolourAnimAction(int duration, BasePositionObject positionObject) {
 			super(duration);
 			this.positionObject = positionObject;
-			startRed   = positionObject.animRed;
-			startGreen = positionObject.animGreen;
-			startBlue  = positionObject.animBlue;
-			startAlpha = positionObject.animAlpha;
+			startRed   = positionObject.redScale.getFloatValue();
+			startGreen = positionObject.greenScale.getFloatValue();
+			startBlue  = positionObject.blueScale.getFloatValue();
+			startAlpha = positionObject.alphaScale.getFloatValue();
 		}
 
 		@Override
 		protected void anim(float step) {
-			positionObject.animRed   = interpolate(startRed  , red.getFloatValue()  , step);
-			positionObject.animGreen = interpolate(startGreen, green.getFloatValue(), step);
-			positionObject.animBlue  = interpolate(startBlue , blue.getFloatValue() , step);
-			positionObject.animAlpha = interpolate(startAlpha, alpha.getFloatValue(), step);
+			positionObject.redScale.setFloatValue(interpolate(startRed, red.getFloatValue(), step));
+			positionObject.greenScale.setFloatValue(interpolate(startGreen, green.getFloatValue(), step));
+			positionObject.blueScale.setFloatValue(interpolate(startBlue, blue.getFloatValue(), step));
+			positionObject.alphaScale.setFloatValue(interpolate(startAlpha, alpha.getFloatValue(), step));
+
+			positionObject.onDisplayUpdated();
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("RecolourAnim '%s' from (%f,%f,%f,%f) to (%f,%f,%f,%f)", positionObject.getName(), startRed, startGreen, startBlue, startAlpha, positionObject.animRed, positionObject.animGreen, positionObject.animBlue, positionObject.animAlpha));
+				log.debug(String.format("RecolourAnim '%s' from (%f,%f,%f,%f) to (%f,%f,%f,%f)", positionObject.getName(), startRed, startGreen, startBlue, startAlpha, positionObject.redScale.getFloatValue(), positionObject.greenScale.getFloatValue(), positionObject.blueScale.getFloatValue(), positionObject.alphaScale.getFloatValue()));
 			}
 		}
 	}

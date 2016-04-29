@@ -57,6 +57,8 @@ public class MoveToAnim extends BaseAnim {
 			positionObject.animY = interpolate(startY, y.getFloatValue(), step);
 			positionObject.animZ = interpolate(startZ, z.getFloatValue(), step);
 
+			positionObject.onDisplayUpdated();
+
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("MoveToAnim '%s' from (%f,%f,%f) to (%f,%f,%f)", positionObject.getName(), startX, startY, startZ, positionObject.animX, positionObject.animY, positionObject.animZ));
 			}

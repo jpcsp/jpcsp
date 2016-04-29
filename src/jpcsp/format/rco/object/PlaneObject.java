@@ -46,6 +46,8 @@ public class PlaneObject extends BasePositionObject {
 		if (texture instanceof ImageObject) {
 			this.texture = (ImageObject) texture;
 		}
+
+		onDisplayUpdated();
 	}
 
 	@Override
