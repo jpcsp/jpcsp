@@ -187,7 +187,7 @@ public class scePsmfPlayer extends HLEModule {
     	int maxTimestampDifference = MAX_TIMESTAMP_DIFFERENCE;
 
     	// At video startup, allow for a longer timestamp difference to avoid audio stuttering.
-    	int firstTimestamp = Modules.sceMpegModule.getPsmfHeader().mpegFirstTimestamp;
+    	long firstTimestamp = Modules.sceMpegModule.getPsmfHeader().mpegFirstTimestamp;
     	if (getCurrentVideoTimestamp() < firstTimestamp + sceMpeg.videoTimestampStep * 10) {
     		maxTimestampDifference *= 2;
     	}

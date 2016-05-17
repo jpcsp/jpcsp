@@ -140,8 +140,8 @@ public class sceMpeg extends HLEModule {
     public static final int PSMF_STREAM_VERSION_OFFSET = 0x4;
     public static final int PSMF_STREAM_OFFSET_OFFSET = 0x8;
     public static final int PSMF_STREAM_SIZE_OFFSET = 0xC;
-    public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 0x56;
-    public static final int PSMF_LAST_TIMESTAMP_OFFSET = 0x5C;
+    public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 0x54;
+    public static final int PSMF_LAST_TIMESTAMP_OFFSET = 0x5A;
     public static final int PSMF_NUMBER_STREAMS_OFFSET = 0x80;
     public static final int PSMF_FRAME_WIDTH_OFFSET = 0x8E;
     public static final int PSMF_FRAME_HEIGHT_OFFSET = 0x8F;
@@ -610,8 +610,8 @@ public class sceMpeg extends HLEModule {
         public int mpegVersion;
         public int mpegOffset;
         public int mpegStreamSize;
-        public int mpegFirstTimestamp;
-        public int mpegLastTimestamp;
+        public long mpegFirstTimestamp;
+        public long mpegLastTimestamp;
         public Date mpegFirstDate;
         public Date mpegLastDate;
         private int streamNum;
@@ -642,8 +642,8 @@ public class sceMpeg extends HLEModule {
             mpegVersion = getMpegVersion(mpegRawVersion);
             mpegOffset = endianSwap32(read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_OFFSET_OFFSET));
             mpegStreamSize = endianSwap32(read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_SIZE_OFFSET));
-            mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_FIRST_TIMESTAMP_OFFSET));
-            mpegLastTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_LAST_TIMESTAMP_OFFSET));
+            mpegFirstTimestamp = readTimestamp(mem, bufferAddr, mpegHeader, PSMF_FIRST_TIMESTAMP_OFFSET);
+            mpegLastTimestamp = readTimestamp(mem, bufferAddr, mpegHeader, PSMF_LAST_TIMESTAMP_OFFSET);
             avcDetailFrameWidth = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_WIDTH_OFFSET) << 4;
             avcDetailFrameHeight = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_HEIGHT_OFFSET) << 4;
 
@@ -685,6 +685,14 @@ public class sceMpeg extends HLEModule {
 		            }
 	            }
             }
+        }
+
+        private long readTimestamp(Memory mem, int bufferAddr, byte[] mpegHeader, int offset) {
+            long timestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, offset + 2)) & 0xFFFFFFFFL;
+            timestamp |= ((long) read8(mem, bufferAddr, mpegHeader, offset + 1)) << 32;
+            timestamp |= ((long) read8(mem, bufferAddr, mpegHeader, offset + 0)) << 40;
+
+            return timestamp;
         }
 
         public boolean isValid() {
