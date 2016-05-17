@@ -1762,16 +1762,7 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
         PauseEmu();
         if (Settings.getInstance().readBool("emu.umdbrowser")) {
-            List<File> umdPaths = new LinkedList<File>();
-            umdPaths.add(new File(Settings.getInstance().readString("emu.umdpath") + "/"));
-            for (int i = 1; true; i++) {
-                String umdPath = Settings.getInstance().readString(String.format("emu.umdpath.%d", i), null);
-                if (umdPath == null) {
-                    break;
-                }
-                umdPaths.add(new File(umdPath + "/"));
-            }
-            umdbrowser = new UmdBrowser(this, umdPaths.toArray(new File[umdPaths.size()]));
+            umdbrowser = new UmdBrowser(this, getUmdPaths());
             umdbrowser.setVisible(true);
         } else {
             final JFileChooser fc = makeJFileChooser();
@@ -1794,16 +1785,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_switchUmdActionPerformed
         if (Settings.getInstance().readBool("emu.umdbrowser")) {
-            List<File> umdPaths = new LinkedList<File>();
-            umdPaths.add(new File(Settings.getInstance().readString("emu.umdpath") + "/"));
-            for (int i = 1; true; i++) {
-                String umdPath = Settings.getInstance().readString(String.format("emu.umdpath.%d", i), null);
-                if (umdPath == null) {
-                    break;
-                }
-                umdPaths.add(new File(umdPath + "/"));
-            }
-            umdbrowser = new UmdBrowser(this, umdPaths.toArray(new File[umdPaths.size()]));
+            umdbrowser = new UmdBrowser(this, getUmdPaths());
             umdbrowser.setSwitchingUmd(true);
             umdbrowser.setVisible(true);
         } else {
@@ -2782,6 +2764,20 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         } else {
             setTitle(oldtitle + " " + message);
         }
+    }
+
+    public static File[] getUmdPaths() {
+        List<File> umdPaths = new LinkedList<File>();
+        umdPaths.add(new File(Settings.getInstance().readString("emu.umdpath") + "/"));
+        for (int i = 1; true; i++) {
+            String umdPath = Settings.getInstance().readString(String.format("emu.umdpath.%d", i), null);
+            if (umdPath == null) {
+                break;
+            }
+            umdPaths.add(new File(umdPath + "/"));
+        }
+
+        return umdPaths.toArray(new File[umdPaths.size()]);
     }
 
     private void printUsage() {

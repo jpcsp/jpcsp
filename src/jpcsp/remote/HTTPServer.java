@@ -16,12 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.remote;
 
+import static jpcsp.filesystems.umdiso.UmdIsoFile.sectorLength;
+
 import java.awt.AWTException;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,6 +36,9 @@ import java.util.HashMap;
 import javax.imageio.ImageIO;
 
 import jpcsp.Emulator;
+import jpcsp.MainGUI;
+import jpcsp.filesystems.umdiso.UmdIsoFile;
+import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
@@ -44,11 +50,15 @@ public class HTTPServer {
 	private static final int port = 30005;
 	private static final String method = "method";
 	private static final String path = "path";
+	private static final String parameters = "parameters";
 	private static final String version = "version";
 	private static final String eol = "\r\n";
 	private static final String boundary = "--boundarybetweensingleimages";
+	private static final String isoDirectory = "/iso/";
 	private HTTPServerThread serverThread;
 	private Robot captureRobot;
+	private UmdIsoReader previousUmdIsoReader;
+	private String previousIsoFilename;
 
 	public static HTTPServer getInstance() {
 		if (instance == null) {
@@ -130,6 +140,25 @@ public class HTTPServer {
 		}
 	}
 
+	private static String decodePath(String path) {
+		StringBuilder decoded = new StringBuilder();
+
+		for (int i = 0; i < path.length(); i++) {
+			char c = path.charAt(i);
+			if (c == '+') {
+				decoded.append(' ');
+			} else if (c == '%') {
+				int hex = Integer.parseInt(path.substring(i + 1, i + 3), 16);
+				i += 2;
+				decoded.append((char) hex);
+			} else {
+				decoded.append(c);
+			}
+		}
+
+		return decoded.toString();
+	}
+
 	private void process(Socket socket) {
 		InputStream is = null;
 		try {
@@ -192,7 +221,14 @@ public class HTTPServer {
 					headers.put(method, words[0]);
 				}
 				if (words.length >= 2) {
-					headers.put(path, words[1]);
+					String completePath = words[1];
+					int parametersIndex = completePath.indexOf("?");
+					if (parametersIndex >= 0) {
+						headers.put(path, decodePath(completePath.substring(0, parametersIndex)));
+						headers.put(parameters, completePath.substring(parametersIndex + 1));
+					} else {
+						headers.put(path, decodePath(completePath));
+					}
 				}
 				if (words.length >= 3) {
 					headers.put(version, words[2]);
@@ -210,29 +246,38 @@ public class HTTPServer {
 	}
 
 	private void process(HashMap<String, String> request, OutputStream os) throws IOException {
+		String pathValue = request.get(path);
 		if ("GET".equals(request.get(method))) {
-			if ("/".equals(request.get(path))) {
+			if ("/".equals(pathValue)) {
 				sendHTMLResponse(os, "<h1>Welcome to Jpcsp!</h1>You can stream the <a href=\"video\">Video</a>, or display a single <a href=\"screenshot\">Screenshot</a>.");
-			} else if ("/hello".equals(request.get(path))) {
+			} else if ("/hello".equals(pathValue)) {
 				sendHTMLResponse(os, "Hello from Jpcsp!");
-			} else if ("/screenshot".equals(request.get(path))) {
+			} else if ("/screenshot".equals(pathValue)) {
 				sendHTMLResponse(os, "<img src=\"screen.png\" /></br><a href=\"screenshot\">Refresh</a>");
-			} else if ("/screen.png".equals(request.get(path))) {
+			} else if ("/screen.png".equals(pathValue)) {
 				sendScreenImage(os, "png");
-			} else if ("/screen.jpg".equals(request.get(path))) {
+			} else if ("/screen.jpg".equals(pathValue)) {
 				sendScreenImage(os, "jpg");
-			} else if ("/video".equals(request.get(path))) {
+			} else if ("/video".equals(pathValue)) {
 //				sendHTMLResponse(os, "<img src=\"screen.mjpg\" /><audio controls><source src=\"audio.l16\" type=\"audio/l16; rate=44100; channels=2\"></audio>");
 				sendHTMLResponse(os, "<img src=\"screen.mjpg\" /><audio controls><source src=\"audio.l16\" type=\"audio/mp3\"></audio>");
-			} else if ("/screen.mjpg".equals(request.get(path))) {
+			} else if ("/screen.mjpg".equals(pathValue)) {
 				sendScreenVideo(os);
-			} else if ("/audio.l16".equals(request.get(path))) {
+			} else if ("/audio.l16".equals(pathValue)) {
 				sendAudioL16(os);
+			} else if (pathValue.startsWith(isoDirectory)) {
+				sendIso(request, os, pathValue, true);
 			} else {
-				sendError(os, 404, "Not Found");
+				sendErrorNotFound(os);
+			}
+		} else if ("HEAD".equals(request.get(method))) {
+			if (pathValue.startsWith(isoDirectory)) {
+				sendIso(request, os, pathValue, false);
+			} else {
+				sendErrorNotFound(os);
 			}
 		} else {
-			sendError(os, 405, "Method Now Allowed");
+			sendError(os, 405, "Method Not Allowed");
 		}
 	}
 
@@ -262,6 +307,10 @@ public class HTTPServer {
 		sendResponseHeader(os, name, String.valueOf(value));
 	}
 
+	private void sendResponseHeader(OutputStream os, String name, long value) throws IOException {
+		sendResponseHeader(os, name, String.valueOf(value));
+	}
+
 	private void sendEndOfHeaders(OutputStream os) throws IOException {
 		sendResponseLine(os, "");
 	}
@@ -269,6 +318,10 @@ public class HTTPServer {
 	private void sendError(OutputStream os, int code, String msg) throws IOException {
 		sendHTTPResponseCode(os, code, msg);
 		sendEndOfHeaders(os);
+	}
+
+	private void sendErrorNotFound(OutputStream os) throws IOException {
+		sendError(os, 404, "Not Found");
 	}
 
 	private void sendScreenImage(OutputStream os, String fileFormat) throws IOException {
@@ -302,7 +355,7 @@ public class HTTPServer {
 	        is.close();
 	        os.write(buffer, 0, length);
     	} else {
-			sendError(os, 404, "Not Found");
+			sendErrorNotFound(os);
     	}
 	}
 
@@ -382,5 +435,105 @@ public class HTTPServer {
         		is.close();
         	}
         }
+	}
+
+	private void sendIso(HashMap<String, String> request, OutputStream os, String pathValue, boolean sendContent) throws IOException {
+		String isoFileName = pathValue.substring(isoDirectory.length());
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sendIso '%s'", isoFileName));
+		}
+
+		boolean contentSent = false;
+		try {
+			UmdIsoReader iso = getIso(isoFileName);
+			if (iso != null) {
+				if (sendContent) {
+					String range = request.get("range");
+					if (range != null) {
+						if (range.startsWith("bytes=")) {
+							String rangeValues = range.substring(6);
+							String[] ranges = rangeValues.split("-");
+							if (ranges != null && ranges.length == 2) {
+								long from = Long.parseLong(ranges[0]);
+								long to = Long.parseLong(ranges[1]);
+								if (log.isDebugEnabled()) {
+									log.debug(String.format("sendIso bytes from=0x%X, to=0x%X, length=0x%X", from, to, to - from + 1));
+								}
+
+								sendHTTPResponseCode(os, 206, "Partial Content");
+								sendResponseHeader(os, "Content-Range", String.format("bytes %d-%d", from, to));
+								sendEndOfHeaders(os);
+								sendIsoContent(os, iso, from, to);
+								contentSent = true;
+							} else {
+								log.warn(String.format("sendIso: unsupported range format '%s'", range));
+							}
+						} else {
+							log.warn(String.format("sendIso: unsupported range format '%s'", range));
+						}
+					}
+				} else {
+					sendHTTPResponseCode(os, 200, "OK");
+
+					long isoLength = iso.getNumSectors() * (long) sectorLength;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("sendIso returning content-length=0x%X", isoLength));
+					}
+					sendResponseHeader(os, "Content-Length", isoLength);
+					sendResponseHeader(os, "Accept-Ranges", "bytes");
+					sendEndOfHeaders(os);
+					contentSent = true;
+				}
+			}
+		} catch (IOException e) {
+			contentSent = false;
+		}
+
+		if (!contentSent) {
+			sendErrorNotFound(os);
+		}
+	}
+
+	private UmdIsoReader getIso(String isoFileName) throws FileNotFoundException, IOException {
+		UmdIsoReader iso = null;
+		if (isoFileName.equals(previousIsoFilename)) {
+			iso = previousUmdIsoReader;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Reusing previous UmdIsoReader for '%s'", isoFileName));
+			}
+		} else {
+			if ("umdbuffer.iso".equals(isoFileName)) {
+				iso = new UmdIsoReader((String) null, true);
+			} else {
+				File[] umdPaths = MainGUI.getUmdPaths();
+				for (int i = 0; i < umdPaths.length; i++) {
+					File isoPath = new File(String.format("%s%s%s", umdPaths[i], File.separator, isoFileName));
+					if (isoPath.exists()) {
+						iso = new UmdIsoReader(isoPath.getPath(), false);
+						break;
+					}
+				}
+			}
+
+			if (previousUmdIsoReader != null) {
+				previousUmdIsoReader.close();
+			}
+			previousIsoFilename = isoFileName;
+			previousUmdIsoReader = iso;
+		}
+
+		return iso;
+	}
+
+	private void sendIsoContent(OutputStream os, UmdIsoReader iso, long from, long to) throws IOException {
+		int startSector = (int) (from / sectorLength);
+		int endSector = (int) ((to + sectorLength) / sectorLength);
+		int numberSectors = endSector - startSector;
+		byte[] buffer = new byte[numberSectors * UmdIsoFile.sectorLength];
+		iso.readSectors(startSector, numberSectors, buffer, 0);
+
+		int startSectorOffset = (int) (from - startSector * (long) sectorLength);
+		int length = (int) (to - from + 1);
+		os.write(buffer, startSectorOffset, length);
 	}
 }

@@ -46,11 +46,19 @@ public class UmdIsoReader implements IBrowser {
     private IBrowser browser;
     private final HashMap<String, Iso9660File> fileCache = new HashMap<String, Iso9660File>();
     private final HashMap<String, Iso9660Directory> dirCache = new HashMap<String, Iso9660Directory>();
-    private final int numSectors;
+    private int numSectors;
     private static boolean doIsoBuffering = false;
     private boolean hasJolietExtension;
 
     public UmdIsoReader(String umdFilename) throws IOException, FileNotFoundException {
+    	init(umdFilename, doIsoBuffering);
+    }
+
+    public UmdIsoReader(String umdFilename, boolean doIsoBuffering) throws IOException, FileNotFoundException {
+    	init(umdFilename, doIsoBuffering);
+    }
+
+    private void init(String umdFilename, boolean doIsoBuffering) throws IOException, FileNotFoundException {
     	if (umdFilename == null && doIsoBuffering) {
     		sectorDevice = null;
     	} else {
