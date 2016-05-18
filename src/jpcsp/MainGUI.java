@@ -1452,10 +1452,7 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_EnterDebuggerActionPerformed
 
 private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunButtonActionPerformed
-        if (umdvideoplayer != null) {
-            umdvideoplayer.initVideo();
-        }
-        RunEmu();
+		run();
 }//GEN-LAST:event_RunButtonActionPerformed
 
     private JFileChooser makeJFileChooser() {
@@ -1675,10 +1672,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     }
 
 private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
-        if (umdvideoplayer != null) {
-            umdvideoplayer.pauseVideo();
-        }
-        TogglePauseEmu();
+		pause();
 }//GEN-LAST:event_PauseButtonActionPerformed
 
 private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ElfHeaderViewerActionPerformed
@@ -2296,7 +2290,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     }
 
     private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetButtonActionPerformed
-        resetEmu();
+    	reset();
 }//GEN-LAST:event_ResetButtonActionPerformed
 
     private void resetEmu() {
@@ -3158,4 +3152,25 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 
         return new Rectangle(getX() + insets.left + contentBounds.x + canvasBounds.x, getY() + insets.top + contentBounds.y + canvasBounds.y, canvasBounds.width, canvasBounds.height);
     }
+
+	@Override
+	public void run() {
+        if (umdvideoplayer != null) {
+            umdvideoplayer.initVideo();
+        }
+        RunEmu();
+	}
+
+	@Override
+	public void pause() {
+        if (umdvideoplayer != null) {
+            umdvideoplayer.pauseVideo();
+        }
+        TogglePauseEmu();
+	}
+
+	@Override
+	public void reset() {
+        resetEmu();
+	}
 }

@@ -1,0 +1,61 @@
+<html>
+	<!-- Style for the Run/Pause/Reset buttons -->
+	<style type="text/css">
+	a {
+		text-decoration: none;
+		font-family: Arial, Helvetica, sans-serif;
+		font-size: 16px;
+	}
+	</style>
+
+	<!-- Intercept all key up/down events and send them to Jpcsp -->
+	<script>
+		document.onkeydown = keyHandler;
+		document.onkeyup = keyHandler;
+
+		function keyHandler(e) {
+			var url = "controls";
+			url += "?type=" + e.type;
+			url += "&altKey=" + e.altKey;
+			url += "&ctrlKey=" + e.ctrlKey;
+			url += "&charCode=" + e.charCode;
+			url += "&key=" + encodeURIComponent(e.key);
+			url += "&keyCode=" + e.keyCode;
+			url += "&location=" + e.location;
+			url += "&metaKey=" + e.metaKey;
+			url += "&shiftKey=" + e.shiftKey;
+			url += "&which=" + e.which;
+			url += "&date=" + Date.now();
+
+			// Send the event to Jpcsp
+			document.getElementById("controls").src = url;
+		}
+
+		function pressButton(type) {
+			var url = "controls";
+			url += "?type=" + type;
+			url += "&date=" + Date.now();
+
+			// Send the event to Jpcsp
+			document.getElementById("controls").src = url;
+
+			// Do not follow the link
+			return false;
+		}
+	</script>
+
+	<a onclick="pressButton('run')" href="#"><img src="icon/PlayIcon.png">Run</a>
+	<a onclick="pressButton('pause')" href="#"><img src="icon/PauseIcon.png">Pause</a>
+	<a onclick="pressButton('reset')" href="#"><img src="icon/StopIcon.png">Reset</a>
+	<br/>
+
+	<!-- Display Jpcsp screen content from a video stream -->
+	<img src="screen.mjpg" />
+
+	<!-- Dummy image to send key up/down events to Jpcsp -->
+	<img id="controls" src="controls" height="0" width="0" />
+
+	<!-- Audio stream -->
+	<audio controls><source src="audio.l16" type="audio/mp3"></audio>
+	<!-- <audio controls><source src="audio.l16" type="audio/l16; rate=44100; channels=2"></audio> -->
+</html>

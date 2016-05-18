@@ -362,7 +362,11 @@ public class Controller {
     }
 
     public void keyPressed(KeyEvent keyEvent) {
-        keyCode key = keys.get(keyEvent.getKeyCode());
+    	keyPressed(keyEvent.getKeyCode());
+    }
+
+    public void keyPressed(int keyCode) {
+        keyCode key = keys.get(keyCode);
         if (key == null || key == lastKey) {
             return;
         }
@@ -461,7 +465,11 @@ public class Controller {
     }
 
     public void keyReleased(KeyEvent keyEvent) {
-        keyCode key = keys.get(keyEvent.getKeyCode());
+    	keyReleased(keyEvent.getKeyCode());
+    }
+
+    public void keyReleased(int keyCode) {
+        keyCode key = keys.get(keyCode);
         if (key == null) {
             return;
         }
@@ -556,7 +564,7 @@ public class Controller {
         	log.debug(String.format("keyReleased %s", key.toString()));
         }
 
-        lastKey = keyCode.RELEASED;
+        lastKey = Controller.keyCode.RELEASED;
     }
 
     private void processSpecialKeys() {

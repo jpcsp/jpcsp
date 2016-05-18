@@ -5,6 +5,9 @@ import java.awt.Rectangle;
 import java.awt.Window;
 
 public interface IMainGUI {
+	void run();
+	void pause();
+	void reset();
 	void setMainTitle(String title);
 	void RefreshButtons();
 	void setLocation();

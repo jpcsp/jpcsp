@@ -77,6 +77,9 @@ public class AutoTestsRunner {
 		@Override public void onMemoryStickChange() { }
 		@Override public void setDisplayMinimumSize(int width, int height) { }
 		@Override public void setDisplaySize(int width, int height) { }
+		@Override public void run() { }
+		@Override public void pause() { }
+		@Override public void reset() { }
 	}
 	
 	public AutoTestsRunner() {

@@ -32,11 +32,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
+import jpcsp.State;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.settings.Settings;
@@ -55,6 +57,7 @@ public class HTTPServer {
 	private static final String eol = "\r\n";
 	private static final String boundary = "--boundarybetweensingleimages";
 	private static final String isoDirectory = "/iso/";
+	private static final String iconDirectory = "/icon/";
 	private HTTPServerThread serverThread;
 	private Robot captureRobot;
 	private UmdIsoReader previousUmdIsoReader;
@@ -215,7 +218,7 @@ public class HTTPServer {
 
 		for (int i = 0; i < lines.length; i++) {
 			if (i == 0) {
-				// Parse e.g. "GET / HTTP/1.1"
+				// Parse e.g. "GET / HTTP/1.1" into 3 words: "GET", "/" and "HTTP/1.1"
 				String[] words = lines[i].split(" ");
 				if (words.length >= 1) {
 					headers.put(method, words[0]);
@@ -234,7 +237,7 @@ public class HTTPServer {
 					headers.put(version, words[2]);
 				}
 			} else {
-				// Parse e.g. "Host: localhost:30005"
+				// Parse e.g. "Host: localhost:30005" into 2 words: "Host" and "localhost:30005"
 				String[] words = lines[i].split(": *", 2);
 				if (words.length >= 2) {
 					headers.put(words[0].toLowerCase(), words[1]);
@@ -249,22 +252,21 @@ public class HTTPServer {
 		String pathValue = request.get(path);
 		if ("GET".equals(request.get(method))) {
 			if ("/".equals(pathValue)) {
-				sendHTMLResponse(os, "<h1>Welcome to Jpcsp!</h1>You can stream the <a href=\"video\">Video</a>, or display a single <a href=\"screenshot\">Screenshot</a>.");
-			} else if ("/hello".equals(pathValue)) {
-				sendHTMLResponse(os, "Hello from Jpcsp!");
-			} else if ("/screenshot".equals(pathValue)) {
-				sendHTMLResponse(os, "<img src=\"screen.png\" /></br><a href=\"screenshot\">Refresh</a>");
+				sendHTMLResponseFile(os, "html/index.html");
+			} else if (pathValue.endsWith(".html")) {
+				sendHTMLResponseFile(os, "html" + pathValue);
 			} else if ("/screen.png".equals(pathValue)) {
 				sendScreenImage(os, "png");
 			} else if ("/screen.jpg".equals(pathValue)) {
 				sendScreenImage(os, "jpg");
-			} else if ("/video".equals(pathValue)) {
-//				sendHTMLResponse(os, "<img src=\"screen.mjpg\" /><audio controls><source src=\"audio.l16\" type=\"audio/l16; rate=44100; channels=2\"></audio>");
-				sendHTMLResponse(os, "<img src=\"screen.mjpg\" /><audio controls><source src=\"audio.l16\" type=\"audio/mp3\"></audio>");
 			} else if ("/screen.mjpg".equals(pathValue)) {
 				sendScreenVideo(os);
 			} else if ("/audio.l16".equals(pathValue)) {
 				sendAudioL16(os);
+			} else if ("/controls".equals(pathValue)) {
+				processControls(os, request.get(parameters));
+			} else if (pathValue.startsWith(iconDirectory)) {
+				sendIcon(os, pathValue);
 			} else if (pathValue.startsWith(isoDirectory)) {
 				sendIso(request, os, pathValue, true);
 			} else {
@@ -281,13 +283,27 @@ public class HTTPServer {
 		}
 	}
 
-	private void sendHTMLResponse(OutputStream os, String html) throws IOException {
+	private void sendResource(OutputStream os, String name) throws IOException {
+		InputStream input = getClass().getResourceAsStream(name);
+
+		if (input != null) {
+			byte[] buffer = new byte[1000];
+			while (true) {
+				int length = input.read(buffer);
+				if (length < 0) {
+					break;
+				}
+				os.write(buffer, 0, length);
+			}
+			input.close();
+		}
+	}
+
+	private void sendHTMLResponseFile(OutputStream os, String fileName) throws IOException {
 		sendHTTPResponseCode(os, 200, "OK");
 		sendResponseHeader(os, "Content-Type", "text/html");
 		sendEndOfHeaders(os);
-		os.write("<html>".getBytes());
-		os.write(html.getBytes());
-		os.write("</html>".getBytes());
+		sendResource(os, fileName);
 	}
 
 	private void sendResponseLine(OutputStream os, String line) throws IOException {
@@ -407,8 +423,6 @@ public class HTTPServer {
 	    		}
 	    		break;
 	    	}
-
-	    	// Utilities.sleep(33, 0);
     	}
 	}
 
@@ -535,5 +549,56 @@ public class HTTPServer {
 		int startSectorOffset = (int) (from - startSector * (long) sectorLength);
 		int length = (int) (to - from + 1);
 		os.write(buffer, startSectorOffset, length);
+	}
+
+	private void processControls(OutputStream os, String parameters) throws IOException {
+		if (parameters != null) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("processControls %s", parameters));
+			}
+
+			Map<String, String> event = parseParameters(parameters);
+
+			String type = event.get("type");
+			if ("keyup".equals(type)) {
+				State.controller.keyReleased(Integer.parseInt(event.get("keyCode")));
+			} else if ("keydown".equals(type)) {
+				State.controller.keyPressed(Integer.parseInt(event.get("keyCode")));
+			} else if ("run".equals(type)) {
+				Emulator.getMainGUI().run();
+			} else if ("pause".equals(type)) {
+				Emulator.getMainGUI().pause();
+			} else if ("reset".equals(type)) {
+				Emulator.getMainGUI().reset();
+			} else {
+				log.warn(String.format("processControls unknown type '%s'", type));
+			}
+		}
+
+		sendHTTPResponseCode(os, 200, "OK");
+		sendEndOfHeaders(os);
+	}
+
+	private void sendIcon(OutputStream os, String pathValue) throws IOException {
+		sendHTTPResponseCode(os, 200, "OK");
+		sendResponseHeader(os, "Content-Type", "image/png");
+		sendEndOfHeaders(os);
+
+		sendResource(os, "/jpcsp/icons/" + pathValue.substring(iconDirectory.length()));
+	}
+
+	private static Map<String, String> parseParameters(String parameters) {
+		Map<String, String> result = new HashMap<String, String>();
+		String[] nvpairs = parameters.split("&");
+		for (String nvpair : nvpairs) {
+			String[] nv = nvpair.split("=", 2);
+			if (nv != null && nv.length >= 2) {
+				String name = nv[0];
+				String value = decodePath(nv[1]);
+				result.put(name, value);
+			}
+		}
+
+		return result;
 	}
 }
