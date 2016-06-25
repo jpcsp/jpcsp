@@ -40,8 +40,6 @@ import static jpcsp.graphics.GeCommands.VTYPE_TRANSFORM_PIPELINE_RAW_COORD;
 import static jpcsp.graphics.RE.IRenderingEngine.GU_TEXTURE_2D;
 import static jpcsp.graphics.VideoEngine.alignBufferWidth;
 import static jpcsp.memory.ImageReader.colorARGBtoABGR;
-import static jpcsp.util.Utilities.endianSwap32;
-import static jpcsp.util.Utilities.readUnaligned32;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
@@ -119,6 +117,7 @@ import jpcsp.HLE.kernel.types.SceUtilityOskParams.SceUtilityOskData;
 import jpcsp.HLE.kernel.types.pspCharInfo;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.format.PNG;
 import jpcsp.format.PSF;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.capture.CaptureImage;
@@ -3511,26 +3510,10 @@ public class sceUtility extends HLEModule {
             	int addr = savedataParams.newData.icon0.buf;
             	int size = savedataParams.newData.icon0.size;
             	if (addr != 0 && size > 0) {
-            		// An incorrect size for the icon0 is accepted
-            		if (Memory.isAddressGood(addr) && !Memory.isAddressGood(addr + size - 1)) {
-            			// Find the correct icon0 size
-            			int chunkAddr = addr + 8;
-            			Memory mem = Memory.getInstance();
-            			while (chunkAddr + 12 <= addr + size) {
-            				int chunkLength = endianSwap32(readUnaligned32(mem, chunkAddr));
-            				int chunkType = endianSwap32(readUnaligned32(mem, chunkAddr + 4));
-            				if (chunkAddr + chunkLength + 12 > addr + size) {
-            					break;
-            				}
-            				// "IEND"
-            				if (chunkType == 0x49454E44) {
-            					size = chunkAddr - addr + chunkLength + 12;
-            					break;
-            				}
-            				chunkAddr += chunkLength + 12;
-            			}
-            		}
-            		byte[] iconBuffer = new byte[size];
+            		// An incorrect size for the icon0 is accepted, look for the end of the PNG
+        			size = PNG.getEndOfPNG(Memory.getInstance(), addr, size);
+
+        			byte[] iconBuffer = new byte[size];
             		IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, size, 1);
             		for (int i = 0; i < size; i++) {
             			iconBuffer[i] = (byte) memoryReader.readNext();

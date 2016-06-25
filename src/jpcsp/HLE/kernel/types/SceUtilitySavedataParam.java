@@ -36,6 +36,7 @@ import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.format.PNG;
 import jpcsp.format.PSF;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.settings.Settings;
@@ -637,7 +638,7 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         }
 
         // Write ICON0.PNG
-        writeFile(mem, path, icon0FileName, icon0FileData.buf, icon0FileData.size);
+        writePNG(mem, path, icon0FileName, icon0FileData.buf, icon0FileData.size);
 
         // Check and write ICON1.PMF or ICON1.PNG
         IMemoryReader memoryReader = MemoryReader.getMemoryReader(icon1FileData.buf, 1);
@@ -647,10 +648,10 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         } else {
             icon1FileName = icon1PNGFileName;
         }
-        writeFile(mem, path, icon1FileName, icon1FileData.buf, icon1FileData.size);
+        writePNG(mem, path, icon1FileName, icon1FileData.buf, icon1FileData.size);
 
         // Write PIC1.PNG
-        writeFile(mem, path, pic1FileName, pic1FileData.buf, pic1FileData.size);
+        writePNG(mem, path, pic1FileName, pic1FileData.buf, pic1FileData.size);
 
         // Write SND0.AT3
         writeFile(mem, path, snd0FileName, snd0FileData.buf, snd0FileData.size);
@@ -773,6 +774,14 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         		fileOutput.close();
         	}
         }
+    }
+
+    private void writePNG(Memory mem, String path, String name, int address, int length) throws IOException {
+		// The PSP is saving only the real size of the PNG file,
+    	// which could be smaller than the buffer size
+		length = PNG.getEndOfPNG(mem, address, length);
+
+    	writeFile(mem, path, name, address, length);
     }
 
     private boolean checkParamSFOEncryption(String path, String name) throws IOException {
