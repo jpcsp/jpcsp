@@ -166,9 +166,9 @@ public class IoFileMgrForUser extends HLEModule {
     protected Map<String, String> assignedDevices;
 
     public static enum IoOperation {
-        open(5), close(1), seek(1), ioctl(20), remove, rename, mkdir, dread, iodevctl(2),
-        // Duration of read operation: approx. 4 ms per 0x10000 bytes (tested on real PSP)
-        read(4, 0x10000),
+        open(5), close(1), seek(0), ioctl(20), remove, rename, mkdir, dread, iodevctl(2),
+        // Duration of read operation: approx. 7 ms per 0x10000 bytes (tested on real PSP)
+        read(7, 0x10000),
         // Duration of write operation: approx. 5 ms per 0x10000 bytes
         write(5, 0x10000);
 
