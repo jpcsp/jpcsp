@@ -58,16 +58,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 			// Do not follow the link
 			return false;
 		}
-
-		function updateVideo() {
-			var img = document.getElementById("video");
-			if (img.complete) {
-				img.src = "screen.jpg#" + new Date().getTime();
-			}
-		}
-
-		// Update the video image 30 times per second
-		setInterval(updateVideo, 1000 / 30);
 	</script>
 
 	<a onclick="pressButton('run')" href="#"><img src="icon/PlayIcon.png">Run</a>
@@ -75,14 +65,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 	<a onclick="pressButton('reset')" href="#"><img src="icon/StopIcon.png">Reset</a>
 	<br/>
 
-	<!-- Display Jpcsp screen content as an image which will be updated up to 30 times per second -->
-	<img id="video" src="screen.jpg" />
+	<!-- Display Jpcsp screen content from a MJPG video stream -->
+	<img src="screen.mjpg" />
 
 	<!-- Dummy image to send key up/down events to Jpcsp -->
 	<img id="controls" src="controls" height="0" width="0" />
 
 	<!-- Audio stream -->
-	<!-- <audio controls><source src="audio.l16" type="audio/mp3"></audio> -->
-	<!-- <audio controls><source src="audio.l16" type="audio/l16; rate=44100; channels=2"></audio> -->
 	<audio autoplay><source src="audio.wav" type="audio/wav"></audio>
 </html>
