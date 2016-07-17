@@ -47,7 +47,7 @@ public class CSOFileSectorDevice extends AbstractFileSectorDevice {
 		int lengthInBytes = byteBuffer.getInt(8);
 		int sectorSize = byteBuffer.getInt(16);
 		offsetShift = byteBuffer.get(21) & 0xFF;
-		numSectors = lengthInBytes / sectorSize;
+		numSectors = getNumSectors(lengthInBytes, sectorSize);
 		sectorOffsets = new long[numSectors + 1];
 
 		byte[] offsetData = new byte[(numSectors + 1) * 4];
@@ -59,7 +59,7 @@ public class CSOFileSectorDevice extends AbstractFileSectorDevice {
 			sectorOffsets[i] = offsetBuffer.getInt(i * 4) & 0xFFFFFFFFL;
 			if (i > 0) {
 				if ((sectorOffsets[i] & sectorOffsetMask) < (sectorOffsets[i - 1] & sectorOffsetMask)) {
-                    throw new IOException(String.format("Invalid offset [%d]: 0x%08X < 0x%08X", i, sectorOffsets[i], sectorOffsets[i - 1]));
+					log.error(String.format("Corrupted CISO - Invalid offset [%d]: 0x%08X < 0x%08X", i, sectorOffsets[i], sectorOffsets[i - 1]));
 				}
 			}
 		}
