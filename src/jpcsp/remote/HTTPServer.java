@@ -582,6 +582,10 @@ public class HTTPServer {
         }
 	}
 
+	private BufferedImage getScreenImage(Rectangle rect) {
+        return captureRobot.createScreenCapture(rect);
+	}
+
 	private void sendVideoRAW(OutputStream os) throws IOException {
 		Rectangle rect = Emulator.getMainGUI().getCaptureRectangle();
     	if (log.isDebugEnabled()) {
@@ -596,7 +600,7 @@ public class HTTPServer {
 
         byte[] pixels = new byte[rect.width * rect.height * 3];
         while (true) {
-	        BufferedImage img = captureRobot.createScreenCapture(rect);
+            BufferedImage img = getScreenImage(rect);
 
 	        int i = 0;
 	        for (int y = 0; y < img.getHeight(); y++) {
@@ -738,7 +742,7 @@ public class HTTPServer {
         byte[] buffer = new byte[rect.width * rect.height * 4 + 4];
 
         while (true) {
-	        BufferedImage img = captureRobot.createScreenCapture(rect);
+            BufferedImage img = getScreenImage(rect);
 
 	        int width = img.getWidth();
 	        int height = img.getHeight();
