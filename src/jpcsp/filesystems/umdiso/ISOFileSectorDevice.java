@@ -46,6 +46,11 @@ public class ISOFileSectorDevice extends AbstractFileSectorDevice {
 
     	fileAccess.seek(((long) sectorLength) * sectorNumber);
     	int length = fileAccess.read(buffer, offset, numberSectors * sectorLength);
+    	int lastSectorGap = length % sectorLength;
+    	if (lastSectorGap > 0) {
+    		Arrays.fill(buffer, length, length + lastSectorGap, (byte) 0);
+    		length += lastSectorGap;
+    	}
 
     	return length / sectorLength;
 	}

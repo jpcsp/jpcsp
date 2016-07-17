@@ -31,9 +31,14 @@ public abstract class AbstractFileSectorDevice implements ISectorDevice {
 		this.fileAccess = fileAccess;
 	}
 
+	protected int getNumSectors(long lengthInBytes, int sectorLength) {
+		// Allow a last sector only partially available
+		return (int) ((lengthInBytes + sectorLength - 1) / sectorLength);
+	}
+
 	@Override
 	public int getNumSectors() throws IOException {
-		return (int) (fileAccess.length() / sectorLength);
+		return getNumSectors(fileAccess.length(), sectorLength);
 	}
 
 	@Override
