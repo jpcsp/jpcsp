@@ -86,6 +86,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected boolean useShaderAlphaTest = true;
 	protected boolean useShaderBlendTest = false;
 	protected boolean useRenderToTexture = false;
+	protected boolean useTextureBarrier = false;
 	protected int clutTextureId = -1;
 	protected ByteBuffer clutBuffer;
     protected DurationStatistics textureCacheLookupStatistics = new CpuDurationStatistics("Lookup in TextureCache for CLUTs");
@@ -101,6 +102,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected int viewportWidth;
 	protected int viewportHeight;
 	protected FBTexture renderTexture;
+	protected FBTexture copyOfRenderTexture;
 	protected int pixelFormat;
 
 	public REShader(IRenderingEngine proxy) {
@@ -174,7 +176,8 @@ public class REShader extends BaseRenderingEngineFunction {
 			// as a texture, activate the rendering to a texture if available.
 			if (re.isFramebufferObjectAvailable()) {
 				useRenderToTexture = true;
-				log.info("Rendering to a texture");
+				useTextureBarrier = re.isTextureBarrierAvailable();
+				log.info(String.format("Rendering to a texture with %s", useTextureBarrier ? "texture barrier" : "texture blit (slow)"));
 			} else {
 				log.info("Not rendering to a texture, FBO's are not supported by your graphics card. This will have a negative performance impact.");
 			}
@@ -731,6 +734,10 @@ public class REShader extends BaseRenderingEngineFunction {
 			if (renderTexture != null && !renderTexture.isCompatible(width, height, bufferWidth, pixelFormat)) {
 				renderTexture.delete(re);
 				renderTexture = null;
+				if (copyOfRenderTexture != null) {
+					copyOfRenderTexture.delete(re);
+					copyOfRenderTexture = null;
+				}
 			}
 
 			// Activate the rendering to a texture
@@ -971,8 +978,27 @@ public class REShader extends BaseRenderingEngineFunction {
 		if (useRenderToTexture) {
 			// Use the render texture if it is compatible with the current GE settings.
 			if (renderTexture.getResizedWidth() >= width && renderTexture.getResizedHeight() >= height && renderTexture.getBufferWidth() >= bufferWidth) {
-				// Tell the shader which texture has to be used for the fbTex sampler.
-				re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, renderTexture.getTextureId());
+				if (useTextureBarrier) {
+					// The shader can use as input the texture used as output for the frame buffer.
+					// For this feature, the texture barrier extension is required.
+					renderTexture.bind(re, false);
+
+					// Tell the shader which texture has to be used for the fbTex sampler.
+					re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, renderTexture.getTextureId());
+
+					re.textureBarrier();
+				} else {
+					// The shader cannot use as input the texture used as output for the frame buffer,
+					// we need to copy the output texture to another texture and use the copy
+					// as input for the shader.
+					if (copyOfRenderTexture == null) {
+						copyOfRenderTexture = new FBTexture(renderTexture);
+					}
+					copyOfRenderTexture.blitFrom(re, renderTexture);
+
+					// Tell the shader which texture has to be used for the fbTex sampler.
+					re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, copyOfRenderTexture.getTextureId());
+				}
 				return;
 			}
 			// If the render texture is not compatible with the current GE settings,

@@ -839,4 +839,13 @@ public class NullRenderingEngine implements IRenderingEngine {
 	public boolean setCopyRedToAlpha(boolean copyRedToAlpha) {
 		return false;
 	}
+
+	@Override
+	public void textureBarrier() {
+	}
+
+	@Override
+	public boolean isTextureBarrierAvailable() {
+		return false;
+	}
 }

@@ -1021,4 +1021,14 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
 		proxy.drawElementsBurstMode(primitive, count, indexType, indicesOffset);
 	}
+
+	@Override
+	public void textureBarrier() {
+		proxy.textureBarrier();
+	}
+
+	@Override
+	public boolean isTextureBarrierAvailable() {
+		return proxy.isTextureBarrierAvailable();
+	}
 }

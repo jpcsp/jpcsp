@@ -48,6 +48,7 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GLContext;
+import org.lwjgl.opengl.NVTextureBarrier;
 
 /**
  * @author gid15
@@ -1642,4 +1643,14 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
         drawElements(primitive, count, indexType, indicesOffset);
     }
+
+	@Override
+	public void textureBarrier() {
+		NVTextureBarrier.glTextureBarrierNV();
+	}
+
+	@Override
+	public boolean isTextureBarrierAvailable() {
+		return GLContext.getCapabilities().GL_NV_texture_barrier;
+	}
 }

@@ -112,6 +112,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected boolean useTextureAnisotropicFilter;
 	protected int dfix;
 	protected int sfix;
+	protected int bindFramebufferRead;
+	protected int bindFramebufferDraw;
 
 	protected static class StateBoolean {
 		private boolean undefined = true;
@@ -313,6 +315,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		colorMaterialDiffuse.setUndefined();
 		colorMaterialSpecular.setUndefined();
 		bindVertexArray = 0;
+		bindFramebufferRead = -1;
+		bindFramebufferDraw = -1;
 
 		if (VideoEngine.getInstance().isUseTextureAnisotropicFilter() != useTextureAnisotropicFilter) {
 			// The texture anisotropic filter has been changed,
@@ -1167,6 +1171,34 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		// id==-1 is a non-existing vertex attrib
 		if (id >= 0) {
 			super.setVertexAttribPointer(id, size, type, normalized, stride, bufferSize, buffer);
+		}
+	}
+
+	@Override
+	public void bindFramebuffer(int target, int framebuffer) {
+		switch (target) {
+			case RE_FRAMEBUFFER:
+				if (framebuffer != bindFramebufferRead || framebuffer != bindFramebufferDraw) {
+					super.bindFramebuffer(target, framebuffer);
+					bindFramebufferRead = framebuffer;
+					bindFramebufferDraw = framebuffer;
+				}
+				break;
+			case RE_READ_FRAMEBUFFER:
+				if (framebuffer != bindFramebufferRead) {
+					super.bindFramebuffer(target, framebuffer);
+					bindFramebufferRead = framebuffer;
+				}
+				break;
+			case RE_DRAW_FRAMEBUFFER:
+				if (framebuffer != bindFramebufferDraw) {
+					super.bindFramebuffer(target, framebuffer);
+					bindFramebufferDraw = framebuffer;
+				}
+				break;
+			default:
+				super.bindFramebuffer(target, framebuffer);
+				break;
 		}
 	}
 }

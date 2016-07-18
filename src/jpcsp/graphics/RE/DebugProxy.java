@@ -810,4 +810,62 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.drawElementsBurstMode(primitive, count, indexType, indicesOffset);
 	}
+
+	@Override
+	public int genFramebuffer() {
+		int value = super.genFramebuffer();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("genFramebuffer %d", value));
+		}
+		return value;
+	}
+
+	@Override
+	public int genRenderbuffer() {
+		int value = super.genRenderbuffer();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("genRenderbuffer %d", value));
+		}
+		return value;
+	}
+
+	@Override
+	public void bindRenderbuffer(int renderbuffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindRenderbuffer renderbuffer=%d", renderbuffer));
+		}
+		super.bindRenderbuffer(renderbuffer);
+	}
+
+	@Override
+	public void setRenderbufferStorage(int internalFormat, int width, int height) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setRenderbufferStorage internalFormat=%d, width=%d, height=%d", internalFormat, width, height));
+		}
+		super.setRenderbufferStorage(internalFormat, width, height);
+	}
+
+	@Override
+	public void setFramebufferRenderbuffer(int target, int attachment, int renderbuffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setFramebufferRenderbuffer target=%d, attachment=%d, renderbuffer=%d", target, attachment, renderbuffer));
+		}
+		super.setFramebufferRenderbuffer(target, attachment, renderbuffer);
+	}
+
+	@Override
+	public void setFramebufferTexture(int target, int attachment, int texture, int level) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setFramebufferTexture target=%d, attachment=%d, texture=%d, level=%d", target, attachment, texture, level));
+		}
+		super.setFramebufferTexture(target, attachment, texture, level);
+	}
+
+	@Override
+	public void textureBarrier() {
+		if (isLogDebugEnabled) {
+			log.debug("textureBarrier");
+		}
+		super.textureBarrier();
+	}
 }
