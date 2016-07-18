@@ -1528,7 +1528,7 @@ public class IoFileMgrForUser extends HLEModule {
         	} else {
         		log.warn(String.format("hleIoWaitAsync - unknown id 0x%X", id));
         	}
-            return ERROR_KERNEL_NO_ASYNC_OP;
+            return ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         }
 
         if (info.result == ERROR_KERNEL_NO_ASYNC_OP || info.asyncThread == null) {
