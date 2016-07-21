@@ -26,6 +26,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -39,6 +40,7 @@ import org.apache.log4j.xml.DOMConfigurator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.modules.sceAudiocodec;
+import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.util.Utilities;
@@ -53,6 +55,7 @@ import com.twilight.h264.util.FrameUtils;
 
 public class PSMFPlayer implements Runnable {
 	private static Logger log = Logger.getLogger("PSMFPlayer");
+	private static final int progressHeight = 2;
 
 	private PlayerFrame displayPanel;
 	private String fileName;
@@ -65,6 +68,7 @@ public class PSMFPlayer implements Runnable {
     private final int frameHeader[] = new int[8];
     private int frameHeaderLength;
 	private InputStream is;
+	private int totalNumberOfFrames;
 
 	public static void main(String[] args) {
 		new PSMFPlayer(args);
@@ -90,7 +94,7 @@ public class PSMFPlayer implements Runnable {
 		});
 		displayPanel.setVisible(true);
 		// Standard PSP screen dimensions
-		displayPanel.setPreferredSize(new Dimension(480, 272));
+		displayPanel.setPreferredSize(new Dimension(480, 272 + progressHeight));
 		frame.pack();
 		frame.setVisible(true);
 		
@@ -121,6 +125,13 @@ public class PSMFPlayer implements Runnable {
 
 	private int read32(InputStream is) {
 		return (read8(is) << 24) | (read8(is) << 16) | (read8(is) << 8) | read8(is);
+	}
+
+	private long readTimestamp(InputStream is) {
+		long timestamp = (read16(is) & 0xFFFFL) << 32;
+		timestamp |= read32(is) & 0xFFFFFFFFL;
+
+		return timestamp;
 	}
 
 	private void skip(InputStream is, int n) {
@@ -258,7 +269,11 @@ public class PSMFPlayer implements Runnable {
 
 		skip(is, 4);
 		int mpegOffset = read32(is);
-		skip(is, mpegOffset - 12);
+		skip(is, sceMpeg.PSMF_FIRST_TIMESTAMP_OFFSET - 12);
+		long firstTimestamp = readTimestamp(is);
+		long lastTimestamp = readTimestamp(is);
+		totalNumberOfFrames = (int) ((lastTimestamp - firstTimestamp) / sceMpeg.videoTimestampStep);
+		skip(is, mpegOffset - (sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET + 6));
 	}
 
 	private boolean readPsmfPacket(int videoChannel, int audioChannel) {
@@ -378,12 +393,16 @@ public class PSMFPlayer implements Runnable {
 	        System.exit(1);
 	    }
 
+	    boolean showProgress = true;
+	    int frame = 0;
 	    try {
 	    	readPsmfHeader(f);
+	    	if (totalNumberOfFrames <= 0) {
+	    		showProgress = false;
+	    	}
 	    	int videoChannel = 0;
 	    	int audioChannel = 0;
 	    	int audioChannels = 2;
-		    int frame = 0;
 
 			Memory mem = Memory.getInstance();
 			int audioInputAddr = MemoryMap.START_USERSPACE + 0x10000;
@@ -446,6 +465,15 @@ public class PSMFPlayer implements Runnable {
 							buffer = new int[bufferSize];
 						}
 						FrameUtils.YUV2RGB_WOEdge(picture, buffer);
+
+						int progress = showProgress ? imageWidth * frame / totalNumberOfFrames : 0;
+						int y = Math.min(272, imageHeight);
+						int offset = y * imageWidth;
+						for (int i = 0; i < progressHeight; i++, offset += imageWidth) {
+							Arrays.fill(buffer, offset, offset + progress, 0xFFFFFFFF);
+							Arrays.fill(buffer, offset + progress, offset + imageWidth, 0xFF000000);
+						}
+
 						displayPanel.lastFrame = displayPanel.createImage(new MemoryImageSource(imageWidth
 								, imageHeight, buffer, 0, imageWidth));
 						displayPanel.invalidate();
@@ -518,7 +546,7 @@ public class PSMFPlayer implements Runnable {
 	    c.avcodec_close();
 	    c = null;
 	    picture = null;
-	    System.out.println("Stop playing video.");
+	    System.out.println(String.format("Stop playing video (%d frames).", frame));
 
 	    return true;
 	}
