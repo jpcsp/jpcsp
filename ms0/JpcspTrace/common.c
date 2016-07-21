@@ -32,6 +32,7 @@ int logRa = 0;
 CommonInfo *commonInfo;
 void *freeAddr = NULL;
 int freeSize = 0;
+char *logFilename = "ms0:/log.txt";
 
 #if DEBUG_MUTEX
 typedef struct {
@@ -170,7 +171,7 @@ char *appendInt(char *dst, s32 n, int numDigits) {
 
 void openLogFile() {
 	if (commonInfo->logFd < 0) {
-		commonInfo->logFd = ioOpen("ms0:/log.txt", PSP_O_WRONLY | PSP_O_CREAT | PSP_O_APPEND, 0777);
+		commonInfo->logFd = ioOpen(logFilename, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_APPEND, 0777);
 	}
 }
 
@@ -592,8 +593,12 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 	int i;
 	int length;
 
-	// Don't log our own sceIoWrites
-	if (syscallInfo->nid == NID_sceIoWrite && parameters[0] == commonInfo->logFd) {
+	// Don't log our own sceIoWrite and sceIoClose
+	if ((syscallInfo->nid == NID_sceIoWrite || IS_sceIoClose_NID(syscallInfo->nid)) && parameters[0] == commonInfo->logFd) {
+		return;
+	}
+	// Don't log our own sceIoOpen
+	if (IS_sceIoOpen_NID(syscallInfo->nid) && strcmp((const char *) parameters[0], logFilename) == 0) {
 		return;
 	}
 
@@ -616,7 +621,7 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 			*s++ = ':';
 			s = appendInt(s, time.seconds, 2);
 			*s++ = '.';
-			s = appendInt(s, time.microseconds, 6);
+			s = appendInt(s, time.microseconds / 1000, 3); // Log only milliseconds
 			*s++ = ' ';
 		}
 	}

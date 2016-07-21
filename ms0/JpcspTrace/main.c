@@ -67,28 +67,44 @@ typedef struct {
         unsigned int *vars;
 } PspModuleImport;
 
+struct syscallTableHeader {
+	// Pointer to the next syscall table
+	struct syscallTableHeader *next;
+	// Set at each power on to a random value
+	u32 baseSyscallIndex;
+	// Size in bytes of the syscalls table. Usually, 0x4000
+	u32 tableSize;
+	// Size in bytes of the total size (header and syscalls table). Usually, 0x4000
+	u32 totalSize; // 0x4010
+	// The syscalls table is following the header
+	u32 syscalls[0];
+};
+
 int changeSyscallAddr(void *addr, void *newaddr) {
-	void *ptr;
-	u32 *syscalls;
 	int i;
-	u32 _addr = (u32)addr;
 	int found = 0;
 
-	// Retrieve the syscall arrays from the cop0
-	asm("cfc0 %0, $12\n" : "=r"(ptr));
+	// Retrieve the syscall table from the cop0
+	struct syscallTableHeader *header;
+	asm("cfc0 %0, $12\n" : "=r"(header));
 
-	if (ptr == NULL) {
-		return 0;
+	if (header == NULL) {
+		return found;
 	}
 
-	syscalls = (u32*) (ptr + 0x10);
-
-	for (i = 0; i < 0xFF4; ++i) {
-		if ((syscalls[i] & 0x3FFFFFFF) == (_addr & 0x3FFFFFFF)) {
-			printLogHH("Patching syscall from ", syscalls[i], " to ", (int) newaddr, "\n");
-			syscalls[i] = (u32)newaddr | (syscalls[i] & 0xC0000000);
-			found = 1;
+	u32 _addr = ((u32) addr) & 0x3FFFFFFF;
+	while (header != NULL && header->baseSyscallIndex != 0) {
+		int numberSyscalls = header->tableSize >> 2;
+		u32 *syscalls = header->syscalls;
+		for (i = 0; i < numberSyscalls; i++, syscalls++) {
+			if ((*syscalls & 0x3FFFFFFF) == _addr) {
+				printLogHH("Patching syscall from ", *syscalls, " to ", (int) newaddr, "\n");
+				*syscalls = ((u32) newaddr) | (*syscalls & 0xC0000000);
+				found = 1;
+			}
 		}
+
+		header = header->next;
 	}
 
 	sceKernelDcacheWritebackAll();
@@ -237,7 +253,7 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	parameters[6] = t2;
 	parameters[7] = t3;
 
-	if (syscallInfo->nid == NID_sceIoOpen) {
+	if (IS_sceIoOpen_NID(syscallInfo->nid)) {
 		commonInfo->inWriteLog++;
 	}
 
@@ -270,14 +286,14 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	ioWrite = userIoWrite;
 	ioClose = userIoClose;
 
-	if (syscallInfo->nid == 0x109F50BC) {
+	if (IS_sceIoOpen_NID(syscallInfo->nid)) {
 		commonInfo->inWriteLog--;
 	}
 
 	return result;
 }
 
-void *getEntryByModule(SceModule *module, int nid) {
+void *getEntryByModule(SceModule2 *module, int nid) {
 	struct SceLibraryEntryTable *entry;
 	int i;
 	int j;
@@ -310,7 +326,7 @@ void *getEntryByNID(int nid) {
 	}
 
 	for (i = 0; i < idcount; i++) {
-		SceModule *module = sceKernelFindModuleByUID(id[i]);
+		SceModule2 *module = (SceModule2 *) sceKernelFindModuleByUID(id[i]);
 		void *entry = getEntryByModule(module, nid);
 		if (entry != NULL) {
 			return entry;
@@ -554,7 +570,7 @@ int startModuleHandler(SceModule2 *startingModule) {
 		SyscallInfo **pLastSyscallInfo = &moduleSyscalls;
 		for (syscallInfo = moduleSyscalls; syscallInfo != NULL; syscallInfo = syscallInfo->next) {
 			if (syscallInfo->originalEntry == NULL) {
-				syscallInfo->originalEntry = getEntryByModule((SceModule *) startingModule, syscallInfo->nid);
+				syscallInfo->originalEntry = getEntryByModule(startingModule, syscallInfo->nid);
 				if (syscallInfo->originalEntry != NULL) {
 					sceKernelDcacheWritebackInvalidateRange(&(syscallInfo->originalEntry), 4);
 					sceKernelIcacheInvalidateRange(&(syscallInfo->originalEntry), 4);
@@ -754,9 +770,9 @@ int module_start(SceSize args, void * argp) {
 	// Find Allocator Functions in Memory
 	allocFunc = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x237DBD4F);
 	getHeadFunc = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x9D9A5BA1);
-	originalIoOpen = (void *) sctrlHENFindFunction("sceIOFileManager", "IoFileMgrForUser", 0x109F50BC);
-	originalIoWrite = (void *) sctrlHENFindFunction("sceIOFileManager", "IoFileMgrForUser", 0x42EC03AC);
-	originalIoClose = (void *) sctrlHENFindFunction("sceIOFileManager", "IoFileMgrForUser", 0x810C4BC3);
+	originalIoOpen = (void *) sctrlHENFindFunction("sceIOFileManager", "IoFileMgrForUser", NID_sceIoOpen);
+	originalIoWrite = (void *) sctrlHENFindFunction("sceIOFileManager", "IoFileMgrForUser", NID_sceIoWrite);
+	originalIoClose = (void *) sctrlHENFindFunction("sceIOFileManager", "IoFileMgrForUser", NID_sceIoClose);
 
 	syscallPluginUser = 0;
 	callSyscallPluginOffset = -1;
@@ -772,7 +788,7 @@ int module_start(SceSize args, void * argp) {
 	commonInfo->inWriteLog = 0;
 	commonInfo->bufferLogWrites = 0;
 
-	sceIoRemove("ms0:/log.txt");
+	sceIoRemove(logFilename);
 
 	commonInfo->logKeepOpen = 1;
 	openLogFile();

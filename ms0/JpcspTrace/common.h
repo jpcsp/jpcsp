@@ -43,6 +43,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 #define NID_sceIoWrite	0x42EC03AC
 #define NID_sceIoOpen	0x109F50BC
+#define NID_sceIoClose	0x810C4BC3
+#define NID_sceIoOpen_stargate	0x7C8EFE7D
+#define NID_sceIoClose_stargate	0x747A373E
+
+#define IS_sceIoOpen_NID(nid) ((nid) == NID_sceIoOpen || (nid) == NID_sceIoOpen_stargate)
+#define IS_sceIoClose_NID(nid) ((nid) == NID_sceIoClose || (nid) == NID_sceIoClose_stargate)
 
 typedef struct {
 	SceUID logFd;
@@ -68,6 +74,7 @@ typedef struct SyscallInfo {
 	CommonInfo *commonInfo;
 } SyscallInfo;
 
+extern char *logFilename;
 extern CommonInfo *commonInfo;
 extern int (* ioOpen)(const char *s, int flags, int permissions);
 extern int (* ioWrite)(SceUID id, const void *data, int size);
