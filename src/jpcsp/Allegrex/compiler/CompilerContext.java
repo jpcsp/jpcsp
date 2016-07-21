@@ -462,6 +462,7 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
+    @Override
     public void storeRegister(int reg, int constantValue) {
     	if (preparedRegisterForStore == reg) {
     		preparedRegisterForStore = -1;

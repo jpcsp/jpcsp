@@ -77,6 +77,7 @@ public interface ICompilerContext {
     public void storeVtInt(int n);
     public void storeVtInt(int vsize, int n);
     public void storeVtInt(int vsize, int vt, int n);
+    public void storeRegister(int reg, int constantValue);
     public void storeHilo();
     public void storeFCr();
     public void storeFcr31c();
