@@ -21,17 +21,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.HttpURLConnection;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,6 +44,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import jpcsp.State;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
@@ -54,6 +58,7 @@ public class UPnP {
 	protected IGD igd;
 	public  static final int discoveryTimeoutMillis = 2000;
 	public  static final int discoveryPort = 1900;
+	public  static final int discoverySearchPort = 1901;
 	public  static final String multicastIp = "239.255.255.250";
 	private static final String[] deviceList = new String[] {
 			"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
@@ -61,11 +66,6 @@ public class UPnP {
 			"urn:schemas-upnp-org:service:WANPPPConnection:1",
 			"upnp:rootdevice"
 	};
-
-	protected static class Device {
-		public String descURL;
-		public String st;
-	}
 
 	private class DiscoverThread extends Thread {
 		@Override
@@ -81,71 +81,155 @@ public class UPnP {
 		discoverThread.start();
 	}
 
+	private static class ListenerThread extends Thread {
+		private UPnP upnp;
+    	private IGD igd;
+    	private boolean done;
+    	private volatile boolean ready;
+
+		public ListenerThread(UPnP upnp, IGD igd) {
+			this.upnp = upnp;
+			this.igd = igd;
+		}
+
+		@Override
+		public void run() {
+			MulticastSocket sockets[] = new MulticastSocket[100];
+			int numberSockets = 0;
+			try {
+		    	Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+		    	while (networkInterfaces.hasMoreElements() && numberSockets < sockets.length) {
+		    		NetworkInterface networkInterface = networkInterfaces.nextElement();
+		    		if (networkInterface.isUp() && networkInterface.supportsMulticast() && !networkInterface.isLoopback()) {
+		    			for (Enumeration<InetAddress> addresses = networkInterface.getInetAddresses(); addresses.hasMoreElements() && numberSockets < sockets.length; ) {
+		    				InetAddress address = addresses.nextElement();
+		    				if (address instanceof Inet4Address && !address.isLoopbackAddress()) {
+		    					sockets[numberSockets] = new MulticastSocket(new InetSocketAddress(address, discoverySearchPort));
+				    		    sockets[numberSockets].setSoTimeout(1);
+				    		    numberSockets++;
+		    				}
+		    			}
+		    		}
+		    	}
+			} catch (SocketException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			Set<String> processedUrls = new HashSet<String>();
+			ready = true;
+			byte[] buffer = new byte[1536];
+	    	while (!isDone()) {
+	    		for (int i = 0; i < numberSockets && !isDone(); i++) {
+		            try {
+		                DatagramPacket responsePacket = new DatagramPacket(buffer, buffer.length);
+		                sockets[i].receive(responsePacket);
+						if (responsePacket.getLength() > 0) {
+							String reply = new String(responsePacket.getData(), responsePacket.getOffset(), responsePacket.getLength());
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Discovery: %s", reply));
+							}
+
+							String location = null;
+							Pattern pLocation = Pattern.compile("^location: *(\\S+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
+							Matcher mLocation = pLocation.matcher(reply);
+							if (mLocation.find()) {
+								location = mLocation.group(1);
+							}
+
+							String st = null;
+							Pattern pSt = Pattern.compile("^st: *(\\S+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
+							Matcher mSt = pSt.matcher(reply);
+							if (mSt.find()) {
+								st = mSt.group(1);
+							}
+
+							if (location != null && st != null) {
+								log.debug(String.format("Location: '%s', st: '%s'", location, st));
+								if (!processedUrls.contains(location)) {
+									igd.discover(location);
+									processedUrls.add(location);
+									if (igd.isValid() && igd.isConnected(upnp)) {
+										log.info(String.format("IGD connected with external IP: %s", igd.getExternalIPAddress(upnp)));
+										setDone(true);
+									}
+								}
+							} else {
+								log.error(String.format("Could not parse discovery response: %s", reply));
+							}
+						}
+		            } catch (SocketTimeoutException e) {
+		            } catch (IOException e) {
+					}
+	    		}
+			}
+
+	    	for (int i = 0; i < numberSockets; i++) {
+	    		sockets[i].disconnect();
+	    		sockets[i].close();
+	    	}
+	    	ready = true;
+		}
+
+		public boolean isDone() {
+			return done;
+		}
+
+		public void setDone(boolean done) {
+			this.done = done;
+			ready = false;
+		}
+
+		public boolean isReady() {
+			return ready;
+		}
+	}
+
 	public void discover() {
 		try {
-			DatagramSocket socket = new DatagramSocket();
-			socket.setSoTimeout(discoveryTimeoutMillis);
-			socket.setReuseAddress(true);
-			byte[] response = new byte[1536];
-			DatagramPacket responsePacket = new DatagramPacket(response, response.length);
-			List<Device> devices = new LinkedList<Device>();
-			for (String device : deviceList) {
-				if (responsePacket.getPort() == -1) {
-					String discoveryRequest = String.format("M-SEARCH * HTTP/1.1\r\nHOST: %s:%d\r\nST: %s\r\nMAN: \"ssdp:discover\"\r\nMX: %d\r\n\r\n", multicastIp, discoveryPort, device, discoveryTimeoutMillis / 1000);
-					DatagramPacket packet = new DatagramPacket(discoveryRequest.getBytes(), discoveryRequest.length(), new InetSocketAddress(multicastIp, discoveryPort));
-					socket.send(packet);
-				}
-				try {
-					socket.receive(responsePacket);
-					if (responsePacket.getLength() > 0) {
-						String reply = new String(responsePacket.getData(), responsePacket.getOffset(), responsePacket.getLength());
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("Discovery %s: %s", device, reply));
-						}
-
-						String location = null;
-						Pattern pLocation = Pattern.compile("^location: *(\\S+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
-						Matcher mLocation = pLocation.matcher(reply);
-						if (mLocation.find()) {
-							location = mLocation.group(1);
-						}
-
-						String st = null;
-						Pattern pSt = Pattern.compile("^st: *(\\S+)$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
-						Matcher mSt = pSt.matcher(reply);
-						if (mSt.find()) {
-							st = mSt.group(1);
-						}
-
-						if (location != null && st != null) {
-							log.debug(String.format("Location: '%s', st: '%s'", location, st));
-							Device newDevice = new Device();
-							newDevice.descURL = location;
-							newDevice.st = st;
-							devices.add(newDevice);
-						} else {
-							log.error(String.format("Could not parse discovery response for %s: %s", device, reply));
-						}
-					}
-					responsePacket = new DatagramPacket(response, response.length);
-				} catch (SocketTimeoutException e) {
-					log.info(String.format("Timeout while discovering %s", device));
-				}
-			}
-			socket.close();
-
 			igd = new IGD();
-			Set<String> processedUrls = new HashSet<String>();
-			for (Device device : devices) {
-				if (!processedUrls.contains(device.descURL)) {
-					igd.discover(device.descURL);
-					processedUrls.add(device.descURL);
-					if (igd.isValid() && igd.isConnected(this)) {
-						log.info(String.format("IGD connected with external IP: %s", igd.getExternalIPAddress(this)));
-						break;
-					}
-				}
+			ListenerThread listener = new ListenerThread(this, igd);
+			listener.setDaemon(true);
+			listener.setName("UPnP Discovery Listener");
+			listener.start();
+			while (!listener.isReady()) {
+				Utilities.sleep(100);
 			}
+
+			for (String device : deviceList) {
+				String discoveryRequest = String.format("M-SEARCH * HTTP/1.1\r\nHOST: %s:%d\r\nST: %s\r\nMAN: \"ssdp:discover\"\r\nMX: %d\r\n\r\n", multicastIp, discoveryPort, device, discoveryTimeoutMillis / 1000);
+		    	Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+		    	while (networkInterfaces.hasMoreElements()) {
+		    		NetworkInterface networkInterface = networkInterfaces.nextElement();
+		    		if (networkInterface.isUp() && networkInterface.supportsMulticast()) {
+		    			for (Enumeration<InetAddress> addresses = networkInterface.getInetAddresses(); addresses.hasMoreElements(); ) {
+		    				InetAddress address = addresses.nextElement();
+		    				if (address instanceof Inet4Address && !address.isLoopbackAddress()) {
+				    		    MulticastSocket socket = new MulticastSocket(new InetSocketAddress(address, discoverySearchPort));
+				    			InetSocketAddress socketAddress = new InetSocketAddress(multicastIp, discoveryPort);
+				    			DatagramPacket packet = new DatagramPacket(discoveryRequest.getBytes(), discoveryRequest.length(), socketAddress);
+				    			socket.send(packet);
+			    	    		socket.disconnect();
+			    	    		socket.close();
+		    				}
+		    			}
+		    		}
+		    	}
+			}
+
+			for (int i = 0; i < discoveryTimeoutMillis / 10; i++) {
+				if (listener.isDone()) {
+					break;
+				}
+				Utilities.sleep(10, 0);
+			}
+
+			listener.setDone(true);
+			while (!listener.isReady()) {
+				Utilities.sleep(100);
+			}
+
 		} catch (IOException e) {
 			log.error("discover", e);
 		}
@@ -167,7 +251,7 @@ public class UPnP {
 		if (arguments != null) {
 			for (String name : arguments.keySet()) {
 				String value = arguments.get(name);
-				if (value == null) {
+				if (value == null || value.isEmpty()) {
 					body.append(String.format("    <%s />\r\n", name));
 				} else {
 					body.append(String.format("    <%s>%s</%s>\r\n", name, value, name));
@@ -182,6 +266,8 @@ public class UPnP {
 			log.trace(String.format("Sending UPnP command: %s", body.toString()));
 		}
 
+		byte[] bodyBytes = body.toString().getBytes();
+
 		try {
 			URL url = new URL(controlUrl);
 			URLConnection connection = url.openConnection();
@@ -191,9 +277,10 @@ public class UPnP {
 			}
 			connection.setRequestProperty("SOAPAction", String.format("%s#%s", serviceType, action));
 			connection.setRequestProperty("Content-Type", "text/xml");
+			connection.setRequestProperty("Content-Length", Integer.toString(bodyBytes.length));
 			connection.setDoOutput(true);
 			OutputStream output = connection.getOutputStream();
-			output.write(body.toString().getBytes());
+			output.write(bodyBytes);
 			output.flush();
 			output.close();
 
