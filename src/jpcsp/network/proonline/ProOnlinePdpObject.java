@@ -30,7 +30,7 @@ import jpcsp.network.adhoc.PdpObject;
  */
 public class ProOnlinePdpObject extends PdpObject {
 	final protected ProOnlineNetworkAdapter proOnline;
-	final private static String socketProtocol = "UCP";
+	final private static String socketProtocol = "UDP";
 
 	public ProOnlinePdpObject(INetworkAdapter networkAdapter) {
 		super(networkAdapter);
