@@ -33,6 +33,8 @@ public class PortManager {
 	private String localIPAddress;
 	private final static int portLeaseDuration = 0;
 	private final static String portDescription = "Jpcsp ProOnline Network";
+	private final static boolean SUPPORTS_MAPPING_FOR_MULTIPLE_REMOTE_HOSTS = false;
+	private final static String ALL_REMOTE_HOSTS = "";
 
 	private static class PortInfo {
 		int port;
@@ -67,9 +69,17 @@ public class PortManager {
 			return;
 		}
 
-		// Open all the ports to this new host
-		for (PortInfo portInfo : portInfos) {
-			upnp.getIGD().addPortMapping(upnp, host, portInfo.port, portInfo.protocol, portInfo.port, getLocalIPAddress(), portDescription, portLeaseDuration);
+		if (SUPPORTS_MAPPING_FOR_MULTIPLE_REMOTE_HOSTS) {
+			// Open all the ports to this new host
+			for (PortInfo portInfo : portInfos) {
+				upnp.getIGD().addPortMapping(upnp, host, portInfo.port, portInfo.protocol, portInfo.port, getLocalIPAddress(), portDescription, portLeaseDuration);
+			}
+		} else {
+			if (hosts.isEmpty()) {
+				for (PortInfo portInfo : portInfos) {
+					upnp.getIGD().addPortMapping(upnp, ALL_REMOTE_HOSTS, portInfo.port, portInfo.protocol, portInfo.port, getLocalIPAddress(), portDescription, portLeaseDuration);
+				}
+			}
 		}
 
 		hosts.add(host);
@@ -80,12 +90,20 @@ public class PortManager {
 			return;
 		}
 
-		// Remove all the port mappings from this host
-		for (PortInfo portInfo : portInfos) {
-			upnp.getIGD().deletePortMapping(upnp, host, portInfo.port, portInfo.protocol);
-		}
-
 		hosts.remove(host);
+
+		if (SUPPORTS_MAPPING_FOR_MULTIPLE_REMOTE_HOSTS) {
+			// Remove all the port mappings from this host
+			for (PortInfo portInfo : portInfos) {
+				upnp.getIGD().deletePortMapping(upnp, host, portInfo.port, portInfo.protocol);
+			}
+		} else {
+			if (hosts.isEmpty()) {
+				for (PortInfo portInfo : portInfos) {
+					upnp.getIGD().deletePortMapping(upnp, ALL_REMOTE_HOSTS, portInfo.port, portInfo.protocol);
+				}
+			}
+		}
 	}
 
 	public synchronized void addPort(int port, String protocol) {
@@ -94,9 +112,13 @@ public class PortManager {
 			return;
 		}
 
-		// All the new port mapping for all the hosts
-		for (String host : hosts) {
-			upnp.getIGD().addPortMapping(upnp, host, port, protocol, port, getLocalIPAddress(), portDescription, portLeaseDuration);
+		if (SUPPORTS_MAPPING_FOR_MULTIPLE_REMOTE_HOSTS) {
+			// All the new port mapping for all the hosts
+			for (String host : hosts) {
+				upnp.getIGD().addPortMapping(upnp, host, port, protocol, port, getLocalIPAddress(), portDescription, portLeaseDuration);
+			}
+		} else {
+			upnp.getIGD().addPortMapping(upnp, ALL_REMOTE_HOSTS, port, protocol, port, getLocalIPAddress(), portDescription, portLeaseDuration);
 		}
 
 		portInfos.add(portInfo);
@@ -108,9 +130,13 @@ public class PortManager {
 			return;
 		}
 
-		// Remove the port mapping for all the hosts
-		for (String host : hosts) {
-			upnp.getIGD().deletePortMapping(upnp, host, port, protocol);
+		if (SUPPORTS_MAPPING_FOR_MULTIPLE_REMOTE_HOSTS) {
+			// Remove the port mapping for all the hosts
+			for (String host : hosts) {
+				upnp.getIGD().deletePortMapping(upnp, host, port, protocol);
+			}
+		} else {
+			upnp.getIGD().deletePortMapping(upnp, ALL_REMOTE_HOSTS, port, protocol);
 		}
 
 		portInfos.remove(portInfo);
