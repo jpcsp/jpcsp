@@ -34,6 +34,8 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import javax.imageio.ImageIO;
 
@@ -42,6 +44,7 @@ import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.settings.Settings;
@@ -70,6 +73,10 @@ public class HTTPServer {
 	private int pauseMapping = -1;
 	private int resetMapping = -1;
 	private static final int MAX_COMPRESSED_COUNT = 0x7F;
+	private DisplayAction displayAction;
+	private int displayActionUsageCount = 0;
+	private BufferedImage currentDisplayImage;
+	private boolean currentDisplayImageHasAlpha = false;
 
 	public static HTTPServer getInstance() {
 		if (instance == null) {
@@ -134,6 +141,14 @@ public class HTTPServer {
 		@Override
 		public void run() {
 			process(socket);
+		}
+	}
+
+	private class DisplayAction implements IAction {
+		@Override
+		public void execute() {
+			currentDisplayImage = Modules.sceDisplayModule.getCurrentDisplayAsBufferedImage(false);
+			currentDisplayImageHasAlpha = false;
 		}
 	}
 
@@ -263,9 +278,7 @@ public class HTTPServer {
 			String pathValue = request.get(path);
 			if ("GET".equals(request.get(method))) {
 				if ("/".equals(pathValue)) {
-					sendHTMLResponseFile(os, "html/index.html");
-				} else if (pathValue.endsWith(".html")) {
-					sendHTMLResponseFile(os, "html" + pathValue);
+					sendResponseFile(os, "html/index.html");
 				} else if ("/screen.png".equals(pathValue)) {
 					sendScreenImage(os, "png");
 				} else if ("/screen.jpg".equals(pathValue)) {
@@ -287,9 +300,13 @@ public class HTTPServer {
 				} else if (pathValue.startsWith(isoDirectory)) {
 					sendIso(request, os, pathValue, true);
 				} else if ("/widgetlist.xml".equals(pathValue)) {
-					sendResponseFile(os, "html/widgetlist.xml", "text/xml");
+					sendResponseFile(os, "html/widgetlist.xml");
 				} else if (pathValue.startsWith("/Widget/")) {
-					sendResponseFile(os, "html" + pathValue, "application/octet-stream");
+					sendResponseFile(os, "html" + pathValue);
+				} else if (pathValue.startsWith("/nacl/")) {
+					sendNaClResponse(os, pathValue.substring(6));
+				} else if (pathValue.endsWith(".html")) {
+					sendResponseFile(os, "html" + pathValue);
 				} else {
 					sendErrorNotFound(os);
 				}
@@ -300,40 +317,59 @@ public class HTTPServer {
 					sendErrorNotFound(os);
 				}
 			} else {
-				sendError(os, 405, "Method Not Allowed");
+				sendError(os, 405);
 			}
 		} catch (SocketException e) {
 			// Ignore exception (e.g. Connection reset by peer)
 		}
 	}
 
-	private void sendResource(OutputStream os, String name) throws IOException {
-		InputStream input = getClass().getResourceAsStream(name);
+	private static String guessMimeType(String fileName) {
+		if (fileName != null) {
+			if (fileName.endsWith(".js")) {
+				return "application/javascript";
+			} else if (fileName.endsWith(".html")) {
+				return "text/html";
+			} else if (fileName.endsWith(".png")) {
+				return "image/png";
+			} else if (fileName.endsWith(".xml")) {
+				return "text/xml";
+			} else if (fileName.endsWith(".zip")) {
+				return "application/zip";
+			}
+		}
 
-		if (input != null) {
+		return "application/octet-stream";
+	}
+
+	private void sendRedirect(OutputStream os, String redirect) throws IOException {
+		sendHTTPResponseCode(os, 302);
+		sendResponseHeader(os, "Location", redirect);
+		sendEndOfHeaders(os);
+	}
+
+	private void sendResponseFile(OutputStream os, String fileName) throws IOException {
+		sendResponseFile(os, getClass().getResourceAsStream(fileName), guessMimeType(fileName));
+	}
+
+	private void sendResponseFile(OutputStream os, InputStream is, String contentType) throws IOException {
+		sendOK(os);
+		if (contentType != null) {
+			sendResponseHeader(os, "Content-Type", contentType);
+		}
+		sendEndOfHeaders(os);
+
+		if (is != null) {
 			byte[] buffer = new byte[1000];
 			while (true) {
-				int length = input.read(buffer);
+				int length = is.read(buffer);
 				if (length < 0) {
 					break;
 				}
 				os.write(buffer, 0, length);
 			}
-			input.close();
+			is.close();
 		}
-	}
-
-	private void sendResponseFile(OutputStream os, String fileName, String contentType) throws IOException {
-		sendHTTPResponseCode(os, 200, "OK");
-		if (contentType != null) {
-			sendResponseHeader(os, "Content-Type", contentType);
-		}
-		sendEndOfHeaders(os);
-		sendResource(os, fileName);
-	}
-
-	private void sendHTMLResponseFile(OutputStream os, String fileName) throws IOException {
-		sendResponseFile(os, fileName, "text/html");
 	}
 
 	private void sendResponseLine(OutputStream os, String line) throws IOException {
@@ -344,8 +380,24 @@ public class HTTPServer {
 		os.write(eol.getBytes());
 	}
 
-	private void sendHTTPResponseCode(OutputStream os, int code, String msg) throws IOException {
-		sendResponseLine(os, String.format("HTTP/1.1 %d %s", code, msg));
+	private static String guessHTTPResponseCodeMsg(int code) {
+		switch (code) {
+			case 200: return "OK";
+			case 206: return "Partial Content";
+			case 302: return "Found";
+			case 404: return "Not Found";
+			case 405: return "Method Not Allowed";
+		}
+
+		return "";
+	}
+
+	private void sendHTTPResponseCode(OutputStream os, int code) throws IOException {
+		sendResponseLine(os, String.format("HTTP/1.1 %d %s", code, guessHTTPResponseCodeMsg(code)));
+	}
+
+	private void sendOK(OutputStream os) throws IOException {
+		sendHTTPResponseCode(os, 200);
 	}
 
 	private void sendResponseHeader(OutputStream os, String name, String value) throws IOException {
@@ -360,17 +412,22 @@ public class HTTPServer {
 		sendResponseHeader(os, name, String.valueOf(value));
 	}
 
+	private void sendNoCache(OutputStream os) throws IOException {
+        sendResponseHeader(os, "Cache-Control", "no-cache");
+        sendResponseHeader(os, "Cache-Control", "private");
+	}
+
 	private void sendEndOfHeaders(OutputStream os) throws IOException {
 		sendResponseLine(os, "");
 	}
 
-	private void sendError(OutputStream os, int code, String msg) throws IOException {
-		sendHTTPResponseCode(os, code, msg);
+	private void sendError(OutputStream os, int code) throws IOException {
+		sendHTTPResponseCode(os, code);
 		sendEndOfHeaders(os);
 	}
 
 	private void sendErrorNotFound(OutputStream os) throws IOException {
-		sendError(os, 404, "Not Found");
+		sendError(os, 404);
 	}
 
 	private void sendScreenImage(OutputStream os, String fileFormat) throws IOException {
@@ -392,9 +449,8 @@ public class HTTPServer {
 
     	if (file.canRead()) {
 	        int length = (int) file.length();
-	        sendHTTPResponseCode(os, 200, "OK");
-	        sendResponseHeader(os, "Cache-Control", "no-cache");
-	        sendResponseHeader(os, "Cache-Control", "private");
+	        sendOK(os);
+	        sendNoCache(os);
 	        sendResponseHeader(os, "Content-Type", String.format("image/%s", fileFormat));
 	        sendResponseHeader(os, "Content-Length", length);
 	        sendEndOfHeaders(os);
@@ -417,45 +473,50 @@ public class HTTPServer {
     		log.debug(String.format("Capturing screen from %s to %s", rect, fileName));
     	}
 
-        sendHTTPResponseCode(os, 200, "OK");
-        sendResponseHeader(os, "Cache-Control", "no-cache");
-        sendResponseHeader(os, "Cache-Control", "private");
-        sendResponseHeader(os, "Content-Type", String.format("multipart/x-mixed-replace; boundary=%s", boundary));
-        sendEndOfHeaders(os);
+    	startDisplayAction();
 
-        while (true) {
-	        BufferedImage img = captureRobot.createScreenCapture(rect);
-	    	try {
-	    		file.delete();
-	            ImageIO.write(img, fileFormat, file);
-	            img.flush();
-	        } catch (IOException e) {
-	            log.error("Error saving screenshot", e);
-	        }
+    	try {
+	    	sendOK(os);
+	    	sendNoCache(os);
+	        sendResponseHeader(os, "Content-Type", String.format("multipart/x-mixed-replace; boundary=%s", boundary));
+	        sendEndOfHeaders(os);
 
-	    	if (file.canRead()) {
-		        int length = (int) file.length();
-		        if (log.isDebugEnabled()) {
-		        	log.debug(String.format("Sending video image length=%d", length));
+	        while (true) {
+		        BufferedImage img = getScreenImage(rect);
+		    	try {
+		    		file.delete();
+		            ImageIO.write(img, fileFormat, file);
+		            img.flush();
+		        } catch (IOException e) {
+		            log.error("Error saving screenshot", e);
 		        }
-		        byte[] buffer = new byte[length];
-		        InputStream is = new FileInputStream(file);
-		        length = is.read(buffer);
-		        is.close();
 
-		        sendResponseLine(os, boundary);
-		        sendResponseHeader(os, "Content-Type", "image/jpeg");
-		        sendResponseHeader(os, "Content-Length", length);
-		        sendEndOfHeaders(os);
-		        os.write(buffer, 0, length);
-		        sendEndOfHeaders(os);
-		        os.flush();
-	    	} else {
-	    		if (log.isDebugEnabled()) {
-	    			log.debug(String.format("Cannot read capture file %s", file));
-	    		}
-	    		break;
+		    	if (file.canRead()) {
+			        int length = (int) file.length();
+			        if (log.isDebugEnabled()) {
+			        	log.debug(String.format("Sending video image length=%d", length));
+			        }
+			        byte[] buffer = new byte[length];
+			        InputStream is = new FileInputStream(file);
+			        length = is.read(buffer);
+			        is.close();
+
+			        sendResponseLine(os, boundary);
+			        sendResponseHeader(os, "Content-Type", "image/jpeg");
+			        sendResponseHeader(os, "Content-Length", length);
+			        sendEndOfHeaders(os);
+			        os.write(buffer, 0, length);
+			        sendEndOfHeaders(os);
+			        os.flush();
+		    	} else {
+		    		if (log.isDebugEnabled()) {
+		    			log.debug(String.format("Cannot read capture file %s", file));
+		    		}
+		    		break;
+		    	}
 	    	}
+    	} finally {
+    		stopDisplayAction();
     	}
 	}
 
@@ -463,7 +524,7 @@ public class HTTPServer {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sendAudioWAV"));
 		}
-        sendHTTPResponseCode(os, 200, "OK");
+		sendOK(os);
         sendResponseHeader(os, "Content-Type", "audio/wav");
         sendEndOfHeaders(os);
 
@@ -554,7 +615,7 @@ public class HTTPServer {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sendAudioRAW"));
 		}
-        sendHTTPResponseCode(os, 200, "OK");
+		sendOK(os);
         sendResponseHeader(os, "Content-Type", "audio/raw");
         sendEndOfHeaders(os);
 
@@ -583,6 +644,11 @@ public class HTTPServer {
 	}
 
 	private BufferedImage getScreenImage(Rectangle rect) {
+		if (currentDisplayImage != null) {
+			return currentDisplayImage;
+		}
+
+		currentDisplayImageHasAlpha = true;
         return captureRobot.createScreenCapture(rect);
 	}
 
@@ -592,30 +658,35 @@ public class HTTPServer {
     		log.debug(String.format("Capturing RAW screen from %s", rect));
     	}
 
-        sendHTTPResponseCode(os, 200, "OK");
-        sendResponseHeader(os, "Cache-Control", "no-cache");
-        sendResponseHeader(os, "Cache-Control", "private");
-        sendResponseHeader(os, "Content-Type", "video/raw");
-        sendEndOfHeaders(os);
+    	startDisplayAction();
 
-        byte[] pixels = new byte[rect.width * rect.height * 3];
-        while (true) {
-            BufferedImage img = getScreenImage(rect);
+    	try {
+	    	sendOK(os);
+	    	sendNoCache(os);
+	        sendResponseHeader(os, "Content-Type", "video/raw");
+	        sendEndOfHeaders(os);
 
-	        int i = 0;
-	        for (int y = 0; y < img.getHeight(); y++) {
-	        	for (int x = 0; x < img.getWidth(); x++, i+= 3) {
-	        		int color = img.getRGB(x, y);
-	        		pixels[i + 0] = (byte) ((color >> 16) & 0xFF);
-	        		pixels[i + 1] = (byte) ((color >>  8) & 0xFF);
-	        		pixels[i + 2] = (byte) ((color >>  0) & 0xFF);
+	        byte[] pixels = new byte[rect.width * rect.height * 3];
+	        while (true) {
+	            BufferedImage img = getScreenImage(rect);
+
+		        int i = 0;
+		        for (int y = 0; y < img.getHeight(); y++) {
+		        	for (int x = 0; x < img.getWidth(); x++, i+= 3) {
+		        		int color = img.getRGB(x, y);
+		        		pixels[i + 0] = (byte) ((color >> 16) & 0xFF);
+		        		pixels[i + 1] = (byte) ((color >>  8) & 0xFF);
+		        		pixels[i + 2] = (byte) ((color >>  0) & 0xFF);
+		        	}
+		        }
+		        os.write(pixels);
+	        	if (log.isDebugEnabled()) {
+	        		log.debug(String.format("sendVideoRAW sent %dx%d image (%d bytes)", rect.width, rect.height, pixels.length));
 	        	}
-	        }
-	        os.write(pixels);
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("sendVideoRAW sent %dx%d image (%d bytes)", rect.width, rect.height, pixels.length));
-        	}
-	        os.flush();
+		        os.flush();
+	    	}
+    	} finally {
+    		stopDisplayAction();
     	}
 	}
 
@@ -725,54 +796,82 @@ public class HTTPServer {
 		return compressedLength;
 	}
 
+	private static void write32(byte[] buffer, int offset, int value) {
+        buffer[offset + 0] = (byte) ((value >>  0) & 0xFF);
+        buffer[offset + 1] = (byte) ((value >>  8) & 0xFF);
+        buffer[offset + 2] = (byte) ((value >> 16) & 0xFF);
+        buffer[offset + 3] = (byte) ((value >> 24) & 0xFF);
+	}
+
 	private void sendVideoCompressedRAW(OutputStream os) throws IOException {
 		Rectangle rect = Emulator.getMainGUI().getCaptureRectangle();
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("Capturing compressed RAW screen from %s", rect));
     	}
 
-        sendHTTPResponseCode(os, 200, "OK");
-        sendResponseHeader(os, "Cache-Control", "no-cache");
-        sendResponseHeader(os, "Cache-Control", "private");
-        sendResponseHeader(os, "Content-Type", "video/compressed-raw");
-        sendEndOfHeaders(os);
+    	startDisplayAction();
 
-        int[] image = new int[rect.width * rect.height];
-        int[] previousImage = new int[rect.width * rect.height];
-        byte[] buffer = new byte[rect.width * rect.height * 4 + 4];
+    	try {
+	    	sendOK(os);
+	    	sendNoCache(os);
+	        sendResponseHeader(os, "Content-Type", "video/compressed-raw");
+	        sendEndOfHeaders(os);
 
-        while (true) {
-            BufferedImage img = getScreenImage(rect);
+	        int[] image = new int[0];
+	        int[] previousImage = null;
+	        byte[] buffer = null;
 
-	        int width = img.getWidth();
-	        int height = img.getHeight();
-	        int i = 0;
-	        for (int y = 0; y < height; y++) {
-	        	for (int x = 0; x < width; x++, i++) {
-	        		int color = img.getRGB(x, y);
-	        		image[i] = color & 0x00FFFFFF;
-	        	}
+	        while (true) {
+	            BufferedImage img = getScreenImage(rect);
+
+	            if (img != null) {
+			        int width = img.getWidth();
+			        int height = img.getHeight();
+			        int imageSize = width * height;
+
+			        // Is the image now larger?
+			        if (image.length < imageSize) {
+			        	// Resize the buffers
+			        	image = new int[imageSize];
+			        	previousImage = new int[imageSize];
+			        	buffer = new byte[imageSize * 4 + 12];
+			        }
+
+			        img.getRGB(0, 0, width, height, image, 0, width);
+
+	            	if (currentDisplayImageHasAlpha) {
+	            		for (int i = 0; i < imageSize; i++) {
+	            			image[i] &= 0x00FFFFFF;
+	            		}
+	            	}
+
+			        // The first 12 bytes of the buffer will contain
+	            	// - the length of the compressed image (including the 12 bytes header)
+	            	// - the image width in pixels
+	            	// - the image height in pixels
+			        int compressedLength = compressImage(width, height, image, previousImage, buffer, 12);
+			        // Store the length of the compressed image and its size
+			        write32(buffer, 0, compressedLength);
+	            	write32(buffer, 4, width);
+	            	write32(buffer, 8, height);
+
+			        os.write(buffer, 0, compressedLength);
+		        	if (log.isDebugEnabled()) {
+		        		log.debug(String.format("sendVideoCompressedRAW sent %dx%d image (%d bytes, compression rate %.1f%%)", width, height, compressedLength, 100f * compressedLength / (image.length * 3)));
+		        	}
+			        os.flush();
+
+			        // Swap previous and current image buffers
+			        int[] swapImage = image;
+			        image = previousImage;
+			        previousImage = swapImage;
+	            } else {
+	            	Utilities.sleep(10, 0);
+	            }
 	        }
-
-	        // The first 4 bytes of the buffer will contain the length of the compressed image
-	        int compressedLength = compressImage(width, height, image, previousImage, buffer, 4);
-	        // Store the length of the compressed image
-	        buffer[0] = (byte) ((compressedLength >>  0) & 0xFF);
-	        buffer[1] = (byte) ((compressedLength >>  8) & 0xFF);
-	        buffer[2] = (byte) ((compressedLength >> 16) & 0xFF);
-	        buffer[3] = (byte) ((compressedLength >> 24) & 0xFF);
-
-	        os.write(buffer, 0, compressedLength);
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("sendVideoCompressedRAW sent %dx%d image (%d bytes, compression rate %.1f%%)", width, height, compressedLength, 100f * compressedLength / (image.length * 3)));
-        	}
-	        os.flush();
-
-	        // Swap previous and current image buffers
-	        int[] swapImage = image;
-	        image = previousImage;
-	        previousImage = swapImage;
-        }
+    	} finally {
+    		stopDisplayAction();
+    	}
 	}
 
 	private void sendIso(HashMap<String, String> request, OutputStream os, String pathValue, boolean sendContent) throws IOException {
@@ -798,7 +897,7 @@ public class HTTPServer {
 									log.debug(String.format("sendIso bytes from=0x%X, to=0x%X, length=0x%X", from, to, to - from + 1));
 								}
 
-								sendHTTPResponseCode(os, 206, "Partial Content");
+								sendHTTPResponseCode(os, 206);
 								sendResponseHeader(os, "Content-Range", String.format("bytes %d-%d", from, to));
 								sendEndOfHeaders(os);
 								sendIsoContent(os, iso, from, to);
@@ -811,7 +910,7 @@ public class HTTPServer {
 						}
 					}
 				} else {
-					sendHTTPResponseCode(os, 200, "OK");
+					sendOK(os);
 
 					long isoLength = iso.getNumSectors() * (long) sectorLength;
 					if (log.isDebugEnabled()) {
@@ -875,6 +974,21 @@ public class HTTPServer {
 		os.write(buffer, startSectorOffset, length);
 	}
 
+	private static Map<String, String> parseParameters(String parameters) {
+		Map<String, String> result = new HashMap<String, String>();
+		String[] nvpairs = parameters.split("&");
+		for (String nvpair : nvpairs) {
+			String[] nv = nvpair.split("=", 2);
+			if (nv != null && nv.length >= 2) {
+				String name = nv[0];
+				String value = decodePath(nv[1]);
+				result.put(name, value);
+			}
+		}
+
+		return result;
+	}
+
 	private void processControls(OutputStream os, String parameters) throws IOException {
 		if (parameters != null) {
 			if (log.isDebugEnabled()) {
@@ -917,22 +1031,25 @@ public class HTTPServer {
 			}
 		}
 
-		sendHTTPResponseCode(os, 200, "OK");
+		sendOK(os);
 		sendEndOfHeaders(os);
 	}
 
 	private void processKeyMapping(Map<String, String> event) {
 		for (String key : event.keySet()) {
-			if ("run".equals(key)) {
-				runMapping = Integer.parseInt(event.get(key));
+			String value = event.get(key);
+			if (value.length() == 0) {
+				// Silently ignore empty values
+			} else if ("run".equals(key)) {
+				runMapping = Integer.parseInt(value);
 			} else if ("pause".equals(key)) {
-				pauseMapping = Integer.parseInt(event.get(key));
+				pauseMapping = Integer.parseInt(value);
 			} else if ("reset".equals(key)) {
-				resetMapping = Integer.parseInt(event.get(key));
+				resetMapping = Integer.parseInt(value);
 			} else if (!"type".equals(key)) {
 				try {
 					keyCode code = keyCode.valueOf(key);
-					keyMapping.put(Integer.parseInt(event.get(key)), code);
+					keyMapping.put(Integer.parseInt(value), code);
 				} catch (IllegalArgumentException e) {
 					// Ignore exception
 				}
@@ -941,25 +1058,64 @@ public class HTTPServer {
 	}
 
 	private void sendIcon(OutputStream os, String pathValue) throws IOException {
-		sendHTTPResponseCode(os, 200, "OK");
-		sendResponseHeader(os, "Content-Type", "image/png");
-		sendEndOfHeaders(os);
-
-		sendResource(os, "/jpcsp/icons/" + pathValue.substring(iconDirectory.length()));
+		sendResponseFile(os, "/jpcsp/icons/" + pathValue.substring(iconDirectory.length()));
 	}
 
-	private static Map<String, String> parseParameters(String parameters) {
-		Map<String, String> result = new HashMap<String, String>();
-		String[] nvpairs = parameters.split("&");
-		for (String nvpair : nvpairs) {
-			String[] nv = nvpair.split("=", 2);
-			if (nv != null && nv.length >= 2) {
-				String name = nv[0];
-				String value = decodePath(nv[1]);
-				result.put(name, value);
+	private void sendNaClResponse(OutputStream os, String pathValue) throws IOException {
+		int sepIndex = pathValue.indexOf("/");
+		if (sepIndex < 0) {
+			sendRedirect(os, pathValue + "/index.html");
+			return;
+		}
+		String zipFileName = pathValue.substring(0, sepIndex);
+		String resourceFileName = pathValue.substring(sepIndex + 1);
+
+		if (resourceFileName.startsWith("$MANAGER_WIDGET/")) {
+			// Sending dummy Widget.js and TVKeyValue.js
+			sendResponseFile(os, "html/" + resourceFileName.substring(1));
+		} else {
+			if (File.separatorChar != '/') {
+				resourceFileName = resourceFileName.replace('/', File.separatorChar);
+			}
+			zipFileName = String.format("html/Widget/%s.zip", zipFileName);
+			InputStream zipInput = getClass().getResourceAsStream(zipFileName);
+			boolean found = false;
+			if (zipInput != null) {
+				ZipInputStream zipContent = new ZipInputStream(zipInput);
+				while (true) {
+					ZipEntry entry = zipContent.getNextEntry();
+					if (entry == null) {
+						break;
+					}
+					if (resourceFileName.equalsIgnoreCase(entry.getName())) {
+						sendResponseFile(os, zipContent, guessMimeType(resourceFileName));
+						found = true;
+						break;
+					}
+				}
+			}
+
+			if (!found) {
+				sendError(os, 404);
 			}
 		}
+	}
 
-		return result;
+	private void startDisplayAction() {
+		displayActionUsageCount++;
+
+		if (displayAction == null) {
+			displayAction = new DisplayAction();
+			Modules.sceDisplayModule.addDisplayAction(displayAction);
+		}
+	}
+
+	private void stopDisplayAction() {
+		displayActionUsageCount--;
+
+		if (displayAction != null && displayActionUsageCount <= 0) {
+			Modules.sceDisplayModule.removeDisplayAction(displayAction);
+			displayAction = null;
+		}
 	}
 }

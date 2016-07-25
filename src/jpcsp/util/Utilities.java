@@ -1234,4 +1234,8 @@ public class Utilities {
     	long high = cpu._v1;
     	return (low & 0xFFFFFFFFL) | (high << 32);
     }
+
+    public static int convertABGRtoARGB(int abgr) {
+    	return (abgr & 0xFF00FF00) | ((abgr & 0x00FF0000) >> 16) | ((abgr & 0x000000FF) << 16);
+    }
 }
