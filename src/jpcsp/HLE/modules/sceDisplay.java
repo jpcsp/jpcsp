@@ -1480,7 +1480,7 @@ public class sceDisplay extends HLEModule {
 
 	    	Buffer buffer = Memory.getInstance().getBuffer(fb.getTopAddr(), imageSize * getPixelFormatBytes(pixelFormat));
             if (buffer instanceof IntBuffer) {
-    	    	image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+    	    	image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
             	((IntBuffer) buffer).get(abgr, 0, imageSize);
 		    	convertABGRtoARGB(abgr, imageSize, needAlpha);
             } else {
@@ -1493,7 +1493,7 @@ public class sceDisplay extends HLEModule {
 	    	height = getResizedHeight(height);
 	    	bufferWidth = getResizedWidthPow2(bufferWidth);
 	    	int imageSize = bufferWidth * height;
-	    	image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+	    	image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 
 	        if (ExternalGE.isActive()) {
 			    ByteBuffer scaledScreen = ExternalGE.getScaledScreen(fb.getTopAddr(), fb.getBufferWidth(), fb.getHeight(), pixelFormat);

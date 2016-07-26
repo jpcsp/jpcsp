@@ -22,20 +22,30 @@ import java.awt.AWTException;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import javax.imageio.ImageIO;
 
@@ -47,6 +57,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
+import jpcsp.format.Elf32Header;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
@@ -64,6 +75,12 @@ public class HTTPServer {
 	private static final String boundary = "--boundarybetweensingleimages";
 	private static final String isoDirectory = "/iso/";
 	private static final String iconDirectory = "/icon/";
+	private static final String htmlDirectory = "html";
+	private static final String widgetDirectory = "Widget";
+	private static final String widgetPath = htmlDirectory + "/" + widgetDirectory;
+	private static final String indexFile = "index.html";
+	private static final String naclDirectory = "nacl";
+	private static final String widgetlistFile = "/widgetlist.xml";
 	private HTTPServerThread serverThread;
 	private Robot captureRobot;
 	private UmdIsoReader previousUmdIsoReader;
@@ -278,7 +295,7 @@ public class HTTPServer {
 			String pathValue = request.get(path);
 			if ("GET".equals(request.get(method))) {
 				if ("/".equals(pathValue)) {
-					sendResponseFile(os, "html/index.html");
+					sendResponseFile(os, htmlDirectory + "/" + indexFile);
 				} else if ("/screen.png".equals(pathValue)) {
 					sendScreenImage(os, "png");
 				} else if ("/screen.jpg".equals(pathValue)) {
@@ -299,14 +316,14 @@ public class HTTPServer {
 					sendIcon(os, pathValue);
 				} else if (pathValue.startsWith(isoDirectory)) {
 					sendIso(request, os, pathValue, true);
-				} else if ("/widgetlist.xml".equals(pathValue)) {
-					sendResponseFile(os, "html/widgetlist.xml");
-				} else if (pathValue.startsWith("/Widget/")) {
-					sendResponseFile(os, "html" + pathValue);
-				} else if (pathValue.startsWith("/nacl/")) {
+				} else if (widgetlistFile.equals(pathValue)) {
+					sendWidgetlist(request, os, pathValue);
+				} else if (pathValue.startsWith("/" + widgetDirectory + "/")) {
+					sendWidget(os, request.get(parameters), htmlDirectory + pathValue);
+				} else if (pathValue.startsWith("/" + naclDirectory + "/")) {
 					sendNaClResponse(os, pathValue.substring(6));
 				} else if (pathValue.endsWith(".html")) {
-					sendResponseFile(os, "html" + pathValue);
+					sendResponseFile(os, htmlDirectory + pathValue);
 				} else {
 					sendErrorNotFound(os);
 				}
@@ -330,8 +347,12 @@ public class HTTPServer {
 				return "application/javascript";
 			} else if (fileName.endsWith(".html")) {
 				return "text/html";
+			} else if (fileName.endsWith(".css")) {
+				return "text/css";
 			} else if (fileName.endsWith(".png")) {
 				return "image/png";
+			} else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+				return "image/jpeg";
 			} else if (fileName.endsWith(".xml")) {
 				return "text/xml";
 			} else if (fileName.endsWith(".zip")) {
@@ -433,6 +454,7 @@ public class HTTPServer {
 	private void sendScreenImage(OutputStream os, String fileFormat) throws IOException {
         String fileName = String.format("%s%cscreen.%s", Settings.getInstance().readString("emu.tmppath"), File.separatorChar, fileFormat);
 		File file = new File(fileName);
+		file.deleteOnExit();
 		Rectangle rect = Emulator.getMainGUI().getCaptureRectangle();
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("Capturing screen from %s to %s", rect, fileName));
@@ -458,6 +480,7 @@ public class HTTPServer {
 	        InputStream is = new FileInputStream(file);
 	        length = is.read(buffer);
 	        is.close();
+	        file.delete();
 	        os.write(buffer, 0, length);
     	} else {
 			sendErrorNotFound(os);
@@ -468,6 +491,7 @@ public class HTTPServer {
 		String fileFormat = "jpg";
         String fileName = String.format("%s%cscreen.%s", Settings.getInstance().readString("emu.tmppath"), File.separatorChar, fileFormat);
 		File file = new File(fileName);
+		file.deleteOnExit();
 		Rectangle rect = Emulator.getMainGUI().getCaptureRectangle();
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("Capturing screen from %s to %s", rect, fileName));
@@ -517,6 +541,7 @@ public class HTTPServer {
 	    	}
     	} finally {
     		stopDisplayAction();
+    		file.delete();
     	}
 	}
 
@@ -530,6 +555,7 @@ public class HTTPServer {
 
         int channels = 2;
         int sampleRate = 44100;
+        byte[] silenceBuffer = new byte[1024 * channels * 2];
 
         byte[] header = new byte[100];
         int n = 0;
@@ -597,6 +623,9 @@ public class HTTPServer {
         		now = System.currentTimeMillis();
         	}
         	byte[] buffer = Modules.sceAudioModule.audioData;
+        	if (buffer == null) {
+        		buffer = silenceBuffer;
+        	}
         	int length = buffer.length;
         	dataHeader[4] = (byte) ((length      ) & 0xFF);
         	dataHeader[5] = (byte) ((length >>  8) & 0xFF);
@@ -1061,10 +1090,102 @@ public class HTTPServer {
 		sendResponseFile(os, "/jpcsp/icons/" + pathValue.substring(iconDirectory.length()));
 	}
 
+	private String readInputStream(InputStream is) throws IOException {
+		byte[] buffer = new byte[100000];
+		int length = is.read(buffer);
+		return new String(buffer, 0, length);
+	}
+
+	private String readResource(String name) throws IOException {
+		InputStream is = getClass().getResourceAsStream(name);
+		return readInputStream(is);
+	}
+
+	private String extractTemplateRepeat(String template) {
+		int repeat = template.indexOf("$REPEAT");
+		int end = template.indexOf("$END");
+		if (repeat < 0 || end < 0 || end < repeat) {
+			return "";
+		}
+
+		return template.substring(repeat + 7, end);
+	}
+
+	private String replaceTemplate(String template, String name, String value) {
+		return template.replace(name, value);
+	}
+
+	private String replaceTemplateRepeat(String template, String value) {
+		int repeat = template.indexOf("$REPEAT");
+		int end = template.indexOf("$END");
+		if (repeat < 0 || end < 0 || end < repeat) {
+			return template;
+		}
+
+		return template.substring(0, repeat) + value + template.substring(end + 4);
+	}
+
+	private String[] getWidgetList() throws IOException {
+		List<String> list = new LinkedList<String>();
+		BufferedReader dir = null;
+		try {
+			dir = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(widgetPath)));
+			while (true) {
+				String entry = dir.readLine();
+				if (entry == null) {
+					break;
+				}
+				list.add(entry);
+			}
+		} finally {
+			if (dir != null) {
+				dir.close();
+			}
+		}
+
+		return list.toArray(new String[list.size()]);
+	}
+
+	private InputStream getFileFromZip(String zipFileName, String fileName) throws IOException {
+		if (File.separatorChar != '/') {
+			fileName = fileName.replace('/', File.separatorChar);
+		}
+
+		InputStream zipInput = getClass().getResourceAsStream(zipFileName);
+		if (zipInput != null) {
+			ZipInputStream zipContent = new ZipInputStream(zipInput);
+			while (true) {
+				ZipEntry entry = zipContent.getNextEntry();
+				if (entry == null) {
+					break;
+				}
+				if (fileName.equalsIgnoreCase(entry.getName())) {
+					return zipContent;
+				}
+			}
+		}
+
+		return null;
+	}
+
 	private void sendNaClResponse(OutputStream os, String pathValue) throws IOException {
 		int sepIndex = pathValue.indexOf("/");
 		if (sepIndex < 0) {
-			sendRedirect(os, pathValue + "/index.html");
+			if (pathValue.isEmpty() || indexFile.equals(pathValue)) {
+				String template = readResource(htmlDirectory + "/" + naclDirectory + "/" + indexFile);
+				String repeat = extractTemplateRepeat(template);
+				StringBuilder lines = new StringBuilder();
+				for (String widget : getWidgetList()) {
+					lines.append(replaceTemplate(repeat, "$NAME", widget.replace(".zip", "")));
+				}
+				String html = replaceTemplateRepeat(template, lines.toString());
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sendNaClResponse returning:\n%s", html));
+				}
+				sendResponseFile(os, new ByteArrayInputStream(html.getBytes()), guessMimeType(indexFile));
+			} else {
+				sendRedirect(os, pathValue + "/" + indexFile);
+			}
 			return;
 		}
 		String zipFileName = pathValue.substring(0, sepIndex);
@@ -1072,30 +1193,14 @@ public class HTTPServer {
 
 		if (resourceFileName.startsWith("$MANAGER_WIDGET/")) {
 			// Sending dummy Widget.js and TVKeyValue.js
-			sendResponseFile(os, "html/" + resourceFileName.substring(1));
+			sendResponseFile(os, htmlDirectory + "/" + resourceFileName.substring(1));
 		} else {
-			if (File.separatorChar != '/') {
-				resourceFileName = resourceFileName.replace('/', File.separatorChar);
-			}
-			zipFileName = String.format("html/Widget/%s.zip", zipFileName);
-			InputStream zipInput = getClass().getResourceAsStream(zipFileName);
-			boolean found = false;
-			if (zipInput != null) {
-				ZipInputStream zipContent = new ZipInputStream(zipInput);
-				while (true) {
-					ZipEntry entry = zipContent.getNextEntry();
-					if (entry == null) {
-						break;
-					}
-					if (resourceFileName.equalsIgnoreCase(entry.getName())) {
-						sendResponseFile(os, zipContent, guessMimeType(resourceFileName));
-						found = true;
-						break;
-					}
-				}
-			}
+			zipFileName = String.format("%s/%s.zip", widgetPath, zipFileName);
+			InputStream zipContent = getFileFromZip(zipFileName, resourceFileName);
 
-			if (!found) {
+			if (zipContent != null) {
+				sendResponseFile(os, zipContent, guessMimeType(resourceFileName));
+			} else {
 				sendError(os, 404);
 			}
 		}
@@ -1116,6 +1221,155 @@ public class HTTPServer {
 		if (displayAction != null && displayActionUsageCount <= 0) {
 			Modules.sceDisplayModule.removeDisplayAction(displayAction);
 			displayAction = null;
+		}
+	}
+
+	private static int getDefaultPortForProtocol(String protocol) {
+		if ("http".equals(protocol)) {
+			return 80;
+		}
+		if ("https".equals(protocol)) {
+			return 443;
+		}
+
+		return -1;
+	}
+
+	private static String getBaseUrl(HashMap<String, String> request) {
+		String hostName = request.get("host");
+		int port = HTTPServer.port;
+		String protocol = request.get("x-forwarded-proto");
+		if (protocol == null) {
+			protocol = "http";
+		}
+
+		StringBuilder baseUrl = new StringBuilder();
+		baseUrl.append(protocol);
+		baseUrl.append("://");
+		baseUrl.append(hostName);
+
+		// Add the port if this is not the default one
+		if (port != getDefaultPortForProtocol(protocol)) {
+			baseUrl.append(":");
+			baseUrl.append(port);
+		}
+		baseUrl.append("/");
+
+		return baseUrl.toString();
+	}
+
+	private static String getArchitecture(HashMap<String, String> request) {
+		String architecture = null;
+
+		String userAgent = request.get("user-agent");
+		if (userAgent != null && userAgent.indexOf("SmartTV") > 0) {
+			// Samsung Smart TV is using the ARM architecture
+			architecture = Integer.toString(Elf32Header.E_MACHINE_ARM);
+		}
+
+		return architecture;
+	}
+
+	/*
+	 * Send the widgetlist.xml as expected by a Samsung Smart TV.
+	 *
+	 * The XML response is build dynamically, based on the packages available
+	 * under the Widget directory.
+	 */
+	private void sendWidgetlist(HashMap<String, String> request, OutputStream os, String pathValue) throws IOException {
+		String template = readResource(htmlDirectory + widgetlistFile + ".template");
+		String repeat = extractTemplateRepeat(template);
+
+		String architecture = getArchitecture(request);
+		String architectureParam = "";
+		if (architecture != null) {
+			architectureParam = "?architecture=" + architecture;
+		}
+
+		StringBuilder list = new StringBuilder();
+		Pattern pattern = Pattern.compile("<widgetname(\\s+itemtype=\"string\")?>(.*)</widgetname>", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+		for (String widget : getWidgetList()) {
+			String zipFileName = String.format("%s/%s", widgetPath, widget);
+			InputStream configXml = getFileFromZip(zipFileName, "config.xml");
+			if (configXml != null) {
+				String xml = readInputStream(configXml);
+				Matcher matcher = pattern.matcher(xml);
+				if (matcher.find()) {
+					String widgetName = matcher.group(2);
+					String downloadUrl = String.format("%s%s/%s%s", getBaseUrl(request), widgetDirectory, widget, architectureParam);
+					String entry = replaceTemplate(repeat, "$WIDGETNAME", widgetName);
+					entry = replaceTemplate(entry, "$DOWNLOADURL", downloadUrl);
+					list.append(entry);
+				}
+			}
+		}
+		String xml = replaceTemplateRepeat(template, list.toString());
+
+		sendResponseFile(os, new ByteArrayInputStream(xml.getBytes()), guessMimeType(pathValue));
+	}
+
+	private boolean isMatchingELFArchitecture(byte[] header, int length, int machineArchitecture) throws IOException {
+		ByteBuffer byteBuffer = ByteBuffer.wrap(header, 0, length);
+		Elf32Header elfHeader = new Elf32Header(byteBuffer);
+
+		return elfHeader.isValid() && elfHeader.getE_machine() == machineArchitecture;
+	}
+
+	private void sendWidget(OutputStream os, String parameters, String pathValue) throws IOException {
+		String architecture = null;
+		if (parameters != null) {
+			Map<String, String> map = parseParameters(parameters);
+			architecture = map.get("architecture");
+		}
+
+		if (architecture == null) {
+			sendResponseFile(os, pathValue);
+		} else {
+			// Filter the Widget zip file to only include the ELF files
+			// matching the given architecture.
+			// The Samsung Smart TV is rejecting the installation of a Widget
+			// containing code for another architecture.
+			int machineArchitecture = Integer.parseInt(architecture);
+			ZipInputStream zin = new ZipInputStream(getClass().getResourceAsStream(pathValue));
+			ByteArrayOutputStream out = new ByteArrayOutputStream(1000000);
+			ZipOutputStream zout = new ZipOutputStream(out);
+			byte[] buffer = new byte[100000];
+			byte[] header = new byte[0x40];
+
+			while (true) {
+				ZipEntry entry = zin.getNextEntry();
+				if (entry == null) {
+					break;
+				}
+
+				int length = 0;
+				boolean doCopy = true;
+				if (entry.getName().endsWith(".nexe")) {
+					length = zin.read(header);
+					if (!isMatchingELFArchitecture(header, length, machineArchitecture)) {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Skipping the Widget entry '%s' because it is not matching the architecture 0x%X", entry.getName(), machineArchitecture));
+						}
+						doCopy = false;
+					}
+				}
+
+				if (doCopy) {
+					zout.putNextEntry(entry);
+					zout.write(header, 0, length);
+					while (true) {
+						length = zin.read(buffer);
+						if (length <= 0) {
+							break;
+						}
+						zout.write(buffer, 0, length);
+					}
+				}
+			}
+			zin.close();
+			zout.close();
+
+			sendResponseFile(os, new ByteArrayInputStream(out.toByteArray()), guessMimeType(pathValue));
 		}
 	}
 }

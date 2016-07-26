@@ -15,6 +15,10 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 -->
 <html>
+<header>
+	<title>Video</title>
+</header>
+<body>
 	<!-- Style for the Run/Pause/Reset buttons -->
 	<style type="text/css">
 	a {
@@ -62,7 +66,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 		function updateVideo() {
 			var img = document.getElementById("video");
 			if (img.complete) {
-				img.src = "screen.jpg#" + new Date().getTime();
+				img.src = "screen.jpg?date=" + Date.now();
 			}
 		}
 
@@ -85,4 +89,5 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 	<!-- <audio controls><source src="audio.l16" type="audio/mp3"></audio> -->
 	<!-- <audio controls><source src="audio.l16" type="audio/l16; rate=44100; channels=2"></audio> -->
 	<audio autoplay><source src="audio.wav" type="audio/wav"></audio>
+</body>
 </html>
