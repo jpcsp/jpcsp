@@ -1447,14 +1447,18 @@ public class sceMpeg extends HLEModule {
     				break;
     			}
 
-    			int frameHeader23 = (frameHeader[2] << 8) | frameHeader[3];
-    			audioFrameLength = ((frameHeader23 & 0x3FF) << 3) + 8;
     			if (frameHeader[0] != 0x0F || frameHeader[1] != 0xD0) {
     				if (log.isInfoEnabled()) {
     					log.warn(String.format("Audio frame length 0x%X with incorrect header (header: %02X %02X %02X %02X %02X %02X %02X %02X)", audioFrameLength, frameHeader[0], frameHeader[1], frameHeader[2], frameHeader[3], frameHeader[4], frameHeader[5], frameHeader[6], frameHeader[7]));
     				}
-    			} else if (log.isTraceEnabled()) {
-    				log.trace(String.format("Audio frame length 0x%X (header: %02X %02X %02X %02X %02X %02X %02X %02X)", audioFrameLength, frameHeader[0], frameHeader[1], frameHeader[2], frameHeader[3], frameHeader[4], frameHeader[5], frameHeader[6], frameHeader[7]));
+    			} else {
+    				// Use values from the frame header only if it is valid
+        			int frameHeader23 = (frameHeader[2] << 8) | frameHeader[3];
+        			audioFrameLength = ((frameHeader23 & 0x3FF) << 3) + frameHeader.length;
+
+        			if (log.isTraceEnabled()) {
+    					log.trace(String.format("Audio frame length 0x%X (header: %02X %02X %02X %02X %02X %02X %02X %02X)", audioFrameLength, frameHeader[0], frameHeader[1], frameHeader[2], frameHeader[3], frameHeader[4], frameHeader[5], frameHeader[6], frameHeader[7]));
+    				}
     			}
 
     			frameHeaderLength = 0;
