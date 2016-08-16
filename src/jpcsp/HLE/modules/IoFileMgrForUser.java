@@ -1560,6 +1560,8 @@ public class IoFileMgrForUser extends HLEModule {
         // The file was marked as closePending, so close it right away to avoid delays.
         if (info.closePending) {
             log.debug("hleIoWaitAsync - file marked with closePending, calling hleIoClose, not waiting");
+            info.asyncPending = false;
+            info.asyncResultPending = false;
             hleIoClose(info.id, false);
             waitForAsync = false;
         }
