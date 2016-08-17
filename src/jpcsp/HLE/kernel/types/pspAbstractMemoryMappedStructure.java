@@ -64,7 +64,9 @@ public abstract class pspAbstractMemoryMappedStructure {
 
     public void read(Memory mem, int address) {
         start(mem, address);
-        read();
+        if (address != 0) {
+        	read();
+        }
     }
 
     public void read(ITPointerBase pointer) {
@@ -472,6 +474,14 @@ public abstract class pspAbstractMemoryMappedStructure {
 
     public int getBaseAddress() {
     	return baseAddress;
+    }
+
+    public boolean isNull() {
+    	return baseAddress == 0;
+    }
+
+    public boolean isNotNull() {
+    	return baseAddress != 0;
     }
 
     protected int endianSwap16(short data) {

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
@@ -137,22 +138,24 @@ public class sceNet extends HLEModule {
     }
 
     @HLEFunction(nid = 0x89360950, version = 150, checkInsideInterrupt = true)
-    public int sceNetEtherNtostr(pspNetMacAddress macAddress, TPointer strAddr) {
-        // Convert 6-byte Mac address into string representation (XX:XX:XX:XX:XX:XX).
-        Utilities.writeStringZ(Memory.getInstance(), strAddr.getAddress(), convertMacAddressToString(macAddress.macAddress));
-
-        return 0;
+    public void sceNetEtherNtostr(@CanBeNull pspNetMacAddress macAddress, @CanBeNull TPointer strAddr) {
+    	// This syscall is only doing something when both parameters are not 0.
+    	if (macAddress.isNotNull() && strAddr.isNotNull()) {
+	        // Convert 6-byte Mac address into string representation (XX:XX:XX:XX:XX:XX).
+	        Utilities.writeStringZ(Memory.getInstance(), strAddr.getAddress(), convertMacAddressToString(macAddress.macAddress));
+    	}
     }
 
     @HLEFunction(nid = 0xD27961C9, version = 150, checkInsideInterrupt = true)
-    public int sceNetEtherStrton(@StringInfo(maxLength=17) PspString str, TPointer etherAddr) {
-        // Convert string Mac address string representation (XX:XX:XX:XX:XX:XX)
-    	// into 6-byte representation.
-    	pspNetMacAddress macAddress = new pspNetMacAddress();
-    	macAddress.setMacAddress(convertStringToMacAddress(str.getString()));
-        macAddress.write(etherAddr);
-
-        return 0;
+    public void sceNetEtherStrton(@StringInfo(maxLength=17) @CanBeNull PspString str, @CanBeNull TPointer etherAddr) {
+    	// This syscall is only doing something when both parameters are not 0.
+    	if (str.isNotNull() && etherAddr.isNotNull()) {
+	        // Convert string Mac address string representation (XX:XX:XX:XX:XX:XX)
+	    	// into 6-byte representation.
+	    	pspNetMacAddress macAddress = new pspNetMacAddress();
+	    	macAddress.setMacAddress(convertStringToMacAddress(str.getString()));
+	        macAddress.write(etherAddr);
+    	}
     }
 
     @HLEFunction(nid = 0xF5805EFE, version = 150, checkInsideInterrupt = true)

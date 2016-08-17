@@ -63,6 +63,10 @@ public class PspString {
 		return address == 0;
 	}
 
+	public boolean isNotNull() {
+		return address != 0;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("0x%08X('%s')", getAddress(), getString());
