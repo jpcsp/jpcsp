@@ -2199,6 +2199,16 @@ public class VideoEngine {
             return;
         }
 
+        if (type == GeCommands.PRIM_LINE || type == GeCommands.PRIM_LINES_STRIPS) {
+        	if (context.lineSmoothFlag.isEnabled() && context.textureFunc == TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE) {
+        		if (isLogDebugEnabled) {
+        			log.debug(String.format("The drawing of antialiasing lines is not supported, discarding them"));
+        		}
+        		endRendering(numberOfVertex);
+        		return;
+        	}
+        }
+
         if (context.textureFlag.isEnabled() && !context.clearMode) {
             int textureAddr = context.texture_base_pointer[0] & Memory.addressMask;
             if (textureAddr > MemoryMap.END_VRAM && textureAddr < MemoryMap.START_VRAM + 0x800000) {
