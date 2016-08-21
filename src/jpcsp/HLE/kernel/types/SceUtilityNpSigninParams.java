@@ -17,7 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 public class SceUtilityNpSigninParams extends pspUtilityBaseDialog {
-	public int unknown1;
+	public static final int NP_SIGNING_STATUS_OK = 1;
+	public static final int NP_SIGNING_STATUS_CANCEL = 2;
+	public int signinStatus;
 	public int unknown2;
 	public int unknown3;
 	public int unknown4;
@@ -28,7 +30,7 @@ public class SceUtilityNpSigninParams extends pspUtilityBaseDialog {
 		read(base);
 		setMaxSize(base.totalSizeof());
 
-		unknown1 = read32();
+		signinStatus = read32();
 		unknown2 = read32();
 		unknown3 = read32();
 		unknown4 = read32();
@@ -39,7 +41,7 @@ public class SceUtilityNpSigninParams extends pspUtilityBaseDialog {
 	    write(base);
         setMaxSize(base.totalSizeof());
 
-	    write32(unknown1);
+	    write32(signinStatus);
 	    write32(unknown2);
 	    write32(unknown3);
 	    write32(unknown4);

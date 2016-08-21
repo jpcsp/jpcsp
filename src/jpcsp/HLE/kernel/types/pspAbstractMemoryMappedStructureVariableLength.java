@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.util.Utilities;
+
 /**
  * Abstract class representing a memory based structure starting
  * with a 32-bit value indicating the maximum memory length available
@@ -45,5 +47,10 @@ public abstract class pspAbstractMemoryMappedStructureVariableLength extends psp
 	@Override
 	public int sizeof() {
 		return length;
+	}
+
+	@Override
+	public String toString() {
+		return Utilities.getMemoryDump(getBaseAddress(), length);
 	}
 }

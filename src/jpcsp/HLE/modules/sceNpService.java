@@ -56,7 +56,7 @@ public class sceNpService extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x0F8F5821, version = 150, checkInsideInterrupt = true)
-    public int sceNpService_0F8F5821(int poolSize, int stackSize, int threadPriority) {
+    public int sceNpServiceInit(int poolSize, int stackSize, int threadPriority) {
         npManagerMemSize = poolSize;
         npManagerMaxMemSize = poolSize / 2;    // Dummy
         npManagerFreeMemSize = poolSize - 16;  // Dummy.
@@ -72,14 +72,14 @@ public class sceNpService extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x00ACFAC3, version = 150, checkInsideInterrupt = true)
-    public int sceNpService_00ACFAC3() {
+    public int sceNpServiceTerm() {
     	initialized = false;
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x250488F9, version = 150, checkInsideInterrupt = true)
-    public int sceNpService_250488F9(TPointer32 memStatAddr) {
+    public int sceNpServiceGetMemoryStat(TPointer32 memStatAddr) {
     	checkInitialized();
 
     	memStatAddr.setValue(0, npManagerMemSize);
@@ -87,5 +87,113 @@ public class sceNpService extends HLEModule {
         memStatAddr.setValue(8, npManagerFreeMemSize);
 
         return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBE22EEA3, version = 150)
+    public int sceNpRosterCreateRequest() {
+    	int requestId = 0x1234; // Dummy value for testing purpose
+
+    	return requestId;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x66C64821, version = 150)
+    public int sceNpRosterDeleteRequest(int requestId) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x58251346, version = 150)
+    public int sceNpRosterGetFriendListEntryCount(int requestId, TPointer32 unknown) {
+    	log.info(String.format("unknown value: 0x%08X", unknown.getValue()));
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4E851B10, version = 150)
+    public int sceNpRosterGetFriendListEntry(int requestId, int unknown1, int unknown2, int unknown3, int unknown4, int unknown5) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x72A1CE0D, version = 150)
+    public int sceNpRosterDeleteFriendListEntry() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x75DACB57, version = 150)
+    public int sceNpRosterAcceptFriendListEntry() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x788F2B5E, version = 150)
+    public int sceNpRosterAddFriendListEntry() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA01443AA, version = 150)
+    public int sceNpRosterGetBlockListEntryCount(int requestId, TPointer32 unknown) {
+    	log.info(String.format("unknown value: 0x%08X", unknown.getValue()));
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x506C318D, version = 150)
+    public int sceNpRosterGetBlockListEntry(int requestId, int unknown1, int unknown2, int unknown3, int unknown4, int unknown5) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x174D0D24, version = 150)
+    public int sceNpRosterDeleteBlockListEntry() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xFC0BC8DB, version = 150)
+    public int sceNpRosterAddBlockListEntry() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1DA3E950, version = 150)
+    public int sceNpManagerSigninUpdateInitStart() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x168B8DE5, version = 150)
+    public int sceNpManagerSigninUpdateGetStatus() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x78802D5F, version = 150)
+    public int sceNpManagerSigninUpdateShutdownStart() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x5494274B, version = 150)
+    public int sceNpLookupCreateTransactionCtx() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA670D3A3, version = 150)
+    public int sceNpLookupDestroyTransactionCtx() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x90E4DB6A, version = 150)
+    public int sceNpLookupUserProfile() {
+    	return 0;
     }
 }

@@ -2229,6 +2229,11 @@ public class sceUtility extends HLEModule {
 
         @Override
         protected boolean executeUpdateVisible() {
+            Memory mem = Processor.memory;
+
+            npSigninParams.signinStatus = SceUtilityNpSigninParams.NP_SIGNING_STATUS_OK;
+            npSigninParams.write(mem);
+
             return false;
         }
 

@@ -16,13 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.THREAD_CALLBACK_USER_DEFINED;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceNpAuthRequestParameter;
 
 import org.apache.log4j.Logger;
 
@@ -33,6 +37,7 @@ public class sceNpAuth extends HLEModule {
     private int npMemSize;     // Memory allocated by the NP utility.
     private int npMaxMemSize;  // Maximum memory used by the NP utility.
     private int npFreeMemSize; // Free memory available to use by the NP utility.
+    private SceKernelCallbackInfo npAuthCreateTicketCallback;
 
 	@Override
 	public void start() {
@@ -56,7 +61,7 @@ public class sceNpAuth extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0xA1DE86F8, version = 150, checkInsideInterrupt = true)
-    public int sceNpAuth_A1DE86F8(int poolSize, int stackSize, int threadPriority) {
+    public int sceNpAuthInit(int poolSize, int stackSize, int threadPriority) {
         npMemSize = poolSize;
         npMaxMemSize = poolSize / 2;    // Dummy
         npFreeMemSize = poolSize - 16;  // Dummy.
@@ -73,7 +78,7 @@ public class sceNpAuth extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x4EC1F667, version = 150, checkInsideInterrupt = true)
-    public int sceNpAuth_4EC1F667() {
+    public int sceNpAuthTerm() {
     	initialized = false;
 
     	return 0;
@@ -81,7 +86,7 @@ public class sceNpAuth extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xF4531ADC, version = 150, checkInsideInterrupt = true)
-    public int sceNpAuth_F4531ADC(TPointer32 memStatAddr) {
+    public int sceNpAuthGetMemoryStat(TPointer32 memStatAddr) {
     	checkInitialized();
 
     	memStatAddr.setValue(0, npMemSize);
@@ -89,5 +94,33 @@ public class sceNpAuth extends HLEModule {
         memStatAddr.setValue(8, npFreeMemSize);
 
         return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xCD86A656, version = 150)
+    public int sceNpAuthCreateStartRequest(TPointer paramAddr) {
+    	SceNpAuthRequestParameter param = new SceNpAuthRequestParameter();
+    	param.read(paramAddr);
+    	if (log.isInfoEnabled()) {
+    		log.info(String.format("sceNpAuthCreateStartRequest param: %s", param));
+    	}
+
+    	if (param.ticketCallback != 0) {
+    		int ticketLength = 100;
+    		npAuthCreateTicketCallback = Modules.ThreadManForUserModule.hleKernelCreateCallback("sceNpAuthCreateStartRequest", param.ticketCallback, param.callbackArgument);
+    		if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(THREAD_CALLBACK_USER_DEFINED, npAuthCreateTicketCallback.uid)) {
+    			Modules.ThreadManForUserModule.hleKernelNotifyCallback(THREAD_CALLBACK_USER_DEFINED, npAuthCreateTicketCallback.uid, ticketLength);
+    		}
+    	}
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3F1C1F70, version = 150)
+    public int sceNpAuthGetTicket(int id, TPointer buffer, int length) {
+    	buffer.clear(length);
+
+    	return 0;
     }
 }
