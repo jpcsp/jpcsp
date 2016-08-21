@@ -1503,6 +1503,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 
     public void loadFile(File file) {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        Model.setModel(Settings.getInstance().readInt("emu.model"));
 
         //This is where a real application would open the file.
         try {
@@ -1868,6 +1869,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     public void loadUMD(File file) {
     	String filePath = file == null ? null : file.getPath();
         UmdIsoReader.setDoIsoBuffering(doUmdBuffering);
+        Model.setModel(Settings.getInstance().readInt("emu.model"));
 
         UmdIsoReader iso = null;
 		try {
@@ -1961,8 +1963,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
             }
             RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
-            
-            Model.setModel(Settings.getInstance().readInt("emu.model"));
 
             State.discId = discId;
 
