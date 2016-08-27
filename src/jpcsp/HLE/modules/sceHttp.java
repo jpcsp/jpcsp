@@ -65,6 +65,7 @@ public class sceHttp extends HLEModule {
     	private byte[] data;
     	private int dataOffset;
     	private int dataLength;
+    	private HashMap<String, String> headers = new HashMap<String, String>();
 
     	public HttpRequest() {
     		id = SceUidManager.getNewUid(uidPurpose);
@@ -125,6 +126,14 @@ public class sceHttp extends HLEModule {
 
 			try {
 				urlConnection = new URL(getUrl()).openConnection();
+
+				for (String header : headers.keySet()) {
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("Adding header '%s': '%s'", header, headers.get(header)));
+					}
+					urlConnection.setRequestProperty(header, headers.get(header));
+				}
+
 				if (urlConnection instanceof HttpURLConnection) {
 					httpUrlConnection = (HttpURLConnection) urlConnection;
 				} else {
@@ -214,6 +223,10 @@ public class sceHttp extends HLEModule {
 			}
 
 			return statusCode;
+		}
+
+		private void addHeader(String name, String value) {
+			headers.put(name, value);
 		}
 
 		@Override
@@ -386,9 +399,11 @@ public class sceHttp extends HLEModule {
         if (isHttpInit) {
             return SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
         }
-        
+
         maxMemSize = heapSize;
         isHttpInit = true;
+
+		Utilities.disableSslCertificateChecks();
 
         return 0;
     }
@@ -571,7 +586,10 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x3EABA285, version = 150)
-    public int sceHttpAddExtraHeader(int templateId, PspString name, PspString value, int unknown1) {
+    public int sceHttpAddExtraHeader(int requestId, PspString name, PspString value, int unknown1) {
+    	HttpRequest httpRequest = getHttpRequest(requestId);
+    	httpRequest.addHeader(name.getString(), value.getString());
+
     	return 0;
     }
 

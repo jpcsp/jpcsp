@@ -47,6 +47,7 @@ import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.security.Security;
 import java.text.MessageFormat;
 import java.util.LinkedList;
 import java.util.List;
@@ -2863,6 +2864,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
      */
     public static void main(String args[]) {
         DOMConfigurator.configure("LogSettings.xml");
+
+		// Re-enable all disabled algorithms as the PSP is allowing them
+		Security.setProperty("jdk.certpath.disabledAlgorithms", "");
+		Security.setProperty("jdk.tls.disabledAlgorithms", "");
 
         AES128.init();
 

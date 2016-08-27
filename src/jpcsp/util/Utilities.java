@@ -30,9 +30,20 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -716,6 +727,13 @@ public class Utilities {
         }
     }
 
+    public static void writeUnaligned32(byte[] buffer, int offset, int data) {
+    	buffer[offset + 0] = (byte) data;
+    	buffer[offset + 1] = (byte) (data >> 8);
+    	buffer[offset + 2] = (byte) (data >> 16);
+    	buffer[offset + 3] = (byte) (data >> 24);
+    }
+
     public static int min(int a, int b) {
         return Math.min(a, b);
     }
@@ -1237,5 +1255,34 @@ public class Utilities {
 
     public static int convertABGRtoARGB(int abgr) {
     	return (abgr & 0xFF00FF00) | ((abgr & 0x00FF0000) >> 16) | ((abgr & 0x000000FF) << 16);
+    }
+
+    public static void disableSslCertificateChecks() {
+		try {
+			TrustManager[] trustAllCerts = new TrustManager[] {
+					new X509TrustManager() {
+						@Override
+						public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
+						@Override
+						public void checkClientTrusted(X509Certificate[] certs, String authType) {  }
+						@Override
+						public void checkServerTrusted(X509Certificate[] certs, String authType) {  }
+					}
+			};
+			SSLContext sc = SSLContext.getInstance("SSL");
+			sc.init(null, trustAllCerts, new SecureRandom());
+			HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+			HostnameVerifier allHostsValid = new HostnameVerifier() {
+				@Override
+				public boolean verify(String hostname, SSLSession session) {
+					return true;
+				}
+			};
+			HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+		} catch (NoSuchAlgorithmException e) {
+			Emulator.log.error(e);
+		} catch (KeyManagementException e) {
+			Emulator.log.error(e);
+		}
     }
 }
