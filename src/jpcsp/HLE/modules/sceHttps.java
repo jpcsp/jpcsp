@@ -185,6 +185,8 @@ public class sceHttps extends HLEModule {
             return ERROR_HTTP_ALREADY_INIT;
         }
 
+        isHttpsInit = true;
+
         return 0;
     }
 
@@ -194,6 +196,8 @@ public class sceHttps extends HLEModule {
         if (isHttpsInit) {
         	return ERROR_HTTP_ALREADY_INIT;
         }
+
+        isHttpsInit = true;
 
         return 0;
     }
