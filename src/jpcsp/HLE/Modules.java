@@ -74,6 +74,7 @@ import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.HLE.modules.sceNetResolver;
 import jpcsp.HLE.modules.sceNp;
 import jpcsp.HLE.modules.sceNpAuth;
+import jpcsp.HLE.modules.sceNpCommerce2;
 import jpcsp.HLE.modules.sceNpService;
 import jpcsp.HLE.modules.sceOpenPSID;
 import jpcsp.HLE.modules.sceP3da;
@@ -157,6 +158,7 @@ public class Modules {
     public static sceNp sceNpModule = new sceNp();
     public static sceNpAuth sceNpAuthModule = new sceNpAuth();
     public static sceNpService sceNpServiceModule = new sceNpService();
+    public static sceNpCommerce2 sceNpCommerce2Module = new sceNpCommerce2();
     public static scePspNpDrm_user scePspNpDrm_userModule = new scePspNpDrm_user();
     public static sceVaudio sceVaudioModule = new sceVaudio();
     public static sceMp4 sceMp4Module = new sceMp4();

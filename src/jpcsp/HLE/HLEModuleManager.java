@@ -122,6 +122,7 @@ public class HLEModuleManager {
         sceNp(Modules.sceNpModule, new String[] { "PSP_MODULE_NP_COMMON" }),
         sceNpAuth(Modules.sceNpAuthModule, new String[] { "PSP_MODULE_NP_COMMON" }),
         sceNpService(Modules.sceNpServiceModule, new String[] { "PSP_MODULE_NP_SERVICE" }),
+        sceNpCommerce2(Modules.sceNpCommerce2Module, new String[] { "PSP_MODULE_NP_COMMERCE2" }),
         scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM" }),
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
         sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4" }),
