@@ -180,6 +180,12 @@ public class sceNpService extends HLEModule {
     }
 
     @HLEUnimplemented
+    @HLEFunction(nid = 0x268C009D, version = 150)
+    public int sceNpManagerSigninUpdateAbort() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
     @HLEFunction(nid = 0x5494274B, version = 150)
     public int sceNpLookupCreateTransactionCtx() {
     	return 0;
@@ -194,6 +200,36 @@ public class sceNpService extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x90E4DB6A, version = 150)
     public int sceNpLookupUserProfile() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x389A0D44, version = 150)
+    public int sceNpLookupNpId() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4B4E4E71, version = 150)
+    public int sceNpLookupAbortTransaction() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x5F5E32AF, version = 150)
+    public int sceNpRosterAbort() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA164CACC, version = 150)
+    public int sceNpRosterGetFriendListMessage() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC76F55ED, version = 150)
+    public int sceNpLookupTitleSmallStorage() {
     	return 0;
     }
 }

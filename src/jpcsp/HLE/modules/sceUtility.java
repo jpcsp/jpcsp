@@ -894,28 +894,28 @@ public class sceUtility extends HLEModule {
 
         @Override
         public int executeInitStart(TPointer paramsAddr) {
-            log.warn(String.format("Unimplemented: %sInitStart params=%s", name, paramsAddr));
+            log.warn(String.format("Unimplemented: %sInitStart params: %s", name, Utilities.getMemoryDump(paramsAddr.getAddress(), paramsAddr.getValue32())));
 
             return SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
 
         @Override
         public int executeShutdownStart() {
-            log.warn("Unimplemented: " + name + "ShutdownStart");
+            log.warn(String.format("Unimplemented: %sShutdownStart", name));
 
             return SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
 
         @Override
         public int executeGetStatus() {
-            log.warn("Unimplemented: " + name + "GetStatus");
+            log.warn(String.format("Unimplemented: %sGetStatus", name));
 
             return SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
 
         @Override
         protected boolean executeUpdateVisible() {
-            log.warn("Unimplemented: " + name + "Update");
+            log.warn(String.format("Unimplemented: %sUpdate", name));
 
             return false;
         }
