@@ -29,7 +29,7 @@ public class MemoryMap {
 
     public static final int START_RAM                = 0x08000000;
     public static final int END_RAM_32MB             = 0x09FFFFFF;
-    public static final int END_RAM_64MB             = 0x0BBFFFFF;
+    public static final int END_RAM_64MB             = 0x0BFFFFFF;
     public static       int END_RAM                  = END_RAM_32MB;
     public static       int SIZE_RAM                 = END_RAM - START_RAM + 1;
 
@@ -47,7 +47,7 @@ public class MemoryMap {
 
     public static final int START_USERSPACE          = 0x08800000; // KU0
     public static final int END_USERSPACE_32MB       = 0x09FFFFFF;
-    public static final int END_USERSPACE_64MB       = 0x0BBFFFFF;
+    public static final int END_USERSPACE_64MB       = 0x0BFFFFFF;
     public static       int END_USERSPACE            = END_USERSPACE_32MB; // KU0
 
     public static final int START_UNCACHED_RAM_VIDEO = 0x44000000;
