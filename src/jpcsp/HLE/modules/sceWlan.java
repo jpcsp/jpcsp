@@ -41,6 +41,10 @@ public class sceWlan extends HLEModule {
     	macAddress.setMacAddress(Wlan.getMacAddress());
     	macAddress.write(etherAddr);
 
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceWlanGetEtherAddr returning %s", macAddress));
+    	}
+
     	return 0;
     }
 

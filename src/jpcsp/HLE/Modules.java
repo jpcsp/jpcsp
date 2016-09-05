@@ -72,9 +72,11 @@ import jpcsp.HLE.modules.sceNetApctl;
 import jpcsp.HLE.modules.sceNetIfhandle;
 import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.HLE.modules.sceNetResolver;
+import jpcsp.HLE.modules.sceNetUpnp;
 import jpcsp.HLE.modules.sceNp;
 import jpcsp.HLE.modules.sceNpAuth;
 import jpcsp.HLE.modules.sceNpCommerce2;
+import jpcsp.HLE.modules.sceNpMatching2;
 import jpcsp.HLE.modules.sceNpService;
 import jpcsp.HLE.modules.sceOpenPSID;
 import jpcsp.HLE.modules.sceP3da;
@@ -159,6 +161,7 @@ public class Modules {
     public static sceNpAuth sceNpAuthModule = new sceNpAuth();
     public static sceNpService sceNpServiceModule = new sceNpService();
     public static sceNpCommerce2 sceNpCommerce2Module = new sceNpCommerce2();
+    public static sceNpMatching2 sceNpMatching2Module = new sceNpMatching2();
     public static scePspNpDrm_user scePspNpDrm_userModule = new scePspNpDrm_user();
     public static sceVaudio sceVaudioModule = new sceVaudio();
     public static sceMp4 sceMp4Module = new sceMp4();
@@ -195,6 +198,7 @@ public class Modules {
     public static ModuleMgrForKernel ModuleMgrForKernelModule = new ModuleMgrForKernel();
     public static sceReg sceRegModule = new sceReg();
     public static sceDve sceDveModule = new sceDve();
+    public static sceNetUpnp sceNetUpnpModule = new sceNetUpnp();
 
     public static Logger log = Logger.getLogger("hle");
 

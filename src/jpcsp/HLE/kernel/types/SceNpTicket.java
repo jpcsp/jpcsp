@@ -88,11 +88,22 @@ public class SceNpTicket extends pspAbstractMemoryMappedStructure {
 					buffer.setValue32(getIntValue());
 					break;
 				case PARAM_TYPE_DATE:
+				case PARAM_TYPE_UNKNOWN:
 					// This value is written in PSP endianness
 					buffer.setValue64(getLongValue());
 					break;
+				case PARAM_TYPE_STRING:
+				case PARAM_TYPE_STRING_ASCII:
+					int length = value.length;
+					if (length >= 256) {
+						length = 255; // PSP returns maximum 255 bytes
+					}
+			    	Utilities.writeBytes(buffer.getAddress(), length, value, 0);
+			    	// Add trailing 0
+			    	buffer.setValue8(length, (byte) 0);
+					break;
 				default:
-			    	Utilities.writeBytes(buffer.getAddress(), value.length, value, 0);
+					// Copy nothing
 			    	break;
 			}
 		}
@@ -100,11 +111,17 @@ public class SceNpTicket extends pspAbstractMemoryMappedStructure {
 		@Override
 		public String toString() {
 			switch (type) {
-				case PARAM_TYPE_INT: return String.format("0x%X", getIntValue());
-				case PARAM_TYPE_STRING: return getStringValue();
-				case PARAM_TYPE_DATE: return getDateValue().toString();
-				case PARAM_TYPE_STRING_ASCII: return getStringValue();
-				case PARAM_TYPE_NULL: return "null";
+				case PARAM_TYPE_INT:
+					return String.format("0x%X", getIntValue());
+				case PARAM_TYPE_STRING_ASCII:
+				case PARAM_TYPE_STRING:
+					return getStringValue();
+				case PARAM_TYPE_DATE:
+					return getDateValue().toString();
+				case PARAM_TYPE_NULL:
+					return "null";
+				case PARAM_TYPE_UNKNOWN:
+					return String.format("0x%16X", getLongValue());
 			}
 			return String.format("type=%d, value=%s", type, Utilities.getMemoryDump(value, 0, value.length));
 		}
