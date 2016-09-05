@@ -994,6 +994,10 @@ public class sceNetInet extends HLEModule {
 
 				// Nothing received on a non-blocking stream, return EAGAIN in errno
 				if (length == 0 && !isBlocking(flags)) {
+					if (bufferLength == 0) {
+						clearError();
+						return 0;
+					}
 					setErrno(EAGAIN);
 					return -1;
 				}
@@ -1462,6 +1466,10 @@ public class sceNetInet extends HLEModule {
 
 				// Nothing received on a non-blocking stream, return EAGAIN in errno
 				if (length == 0 && !isBlocking(flags)) {
+					if (bufferLength == 0) {
+						clearError();
+						return 0;
+					}
 					setErrno(EAGAIN);
 					return -1;
 				}
