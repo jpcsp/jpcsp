@@ -18,6 +18,7 @@ package jpcsp.HLE.modules;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -57,6 +58,7 @@ public class sceHttp extends HLEModule {
     	private static final String uidPurpose = "sceHttp-HttpRequest";
     	private int id;
     	private String url;
+    	private String path;
     	private int method;
     	private long contentLength;
     	private HttpConnection httpConnection;
@@ -83,7 +85,14 @@ public class sceHttp extends HLEModule {
     	}
 
 		public String getUrl() {
-			return url;
+			if (url != null) {
+				return url;
+			}
+			if (path != null) {
+				return getHttpConnection().getUrl() + path;
+			}
+
+			return null;
 		}
 
 		public void setUrl(String url) {
@@ -91,7 +100,7 @@ public class sceHttp extends HLEModule {
 		}
 
 		public void setPath(String path) {
-			this.url = path;
+			this.path = path;
 		}
 
 		public int getMethod() {
@@ -127,6 +136,14 @@ public class sceHttp extends HLEModule {
 			try {
 				urlConnection = new URL(getUrl()).openConnection();
 
+				String agent = getHttpConnection().getHttpTemplate().getAgent();
+				if (agent != null) {
+					if (log.isTraceEnabled()) {
+						log.trace((String.format("Adding header '%s': '%s'", "User-Agent", agent)));
+					}
+					urlConnection.setRequestProperty("User-Agent", agent);
+				}
+
 				for (String header : headers.keySet()) {
 					if (log.isTraceEnabled()) {
 						log.trace(String.format("Adding header '%s': '%s'", header, headers.get(header)));
@@ -136,6 +153,20 @@ public class sceHttp extends HLEModule {
 
 				if (urlConnection instanceof HttpURLConnection) {
 					httpUrlConnection = (HttpURLConnection) urlConnection;
+					if (method != 0) {
+						httpUrlConnection.setRequestMethod("POST");
+						if (data != 0 && dataSize > 0) {
+							byte[] postData = new byte[dataSize];
+							Utilities.readBytes(data, dataSize, postData, 0);
+
+							httpUrlConnection.setDoOutput(true);
+							OutputStream os = httpUrlConnection.getOutputStream();
+							os.write(postData);
+							os.close();
+						}
+					} else {
+						httpUrlConnection.setRequestMethod("GET");
+					}
 				} else {
 					httpUrlConnection = null;
 				}
@@ -231,7 +262,7 @@ public class sceHttp extends HLEModule {
 
 		@Override
 		public String toString() {
-			return String.format("HttpRequest id=%d, url='%s', method=%d, contentLength=%d", getId(), getUrl(), getMethod(), getContentLength());
+			return String.format("HttpRequest id=%d, url='%s', method=%d, contentLength=%d", getId(), getUrl(), getMethod(), contentLength);
 		}
     }
 
@@ -604,7 +635,7 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x47347B50, version = 150)
-    public int sceHttpCreateRequest(int connectionId, int method, PspString path, int contentLength) {
+    public int sceHttpCreateRequest(int connectionId, int method, PspString path, long contentLength) {
     	HttpConnection httpConnection = getHttpConnection(connectionId);
     	HttpRequest httpRequest = new HttpRequest();
     	httpRequest.setMethod(method);
