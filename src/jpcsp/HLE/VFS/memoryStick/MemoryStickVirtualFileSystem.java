@@ -77,7 +77,7 @@ public class MemoryStickVirtualFileSystem extends AbstractVirtualFileSystem {
 	            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 	            if (inputPointer.isAddressGood() && inputLength == 4) {
 	                int cbid = inputPointer.getValue32();
-	                if (threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid) != null) {
+	                if (threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid)) {
 	                	result = 0; // Success.
 	                } else {
 	                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS; // No such callback.

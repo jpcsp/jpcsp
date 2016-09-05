@@ -146,8 +146,8 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
 
     public static class RegisteredCallbacks {
     	private int type;
-    	private List<SceKernelCallbackInfo> callbacks;
-    	private List<SceKernelCallbackInfo> readyCallbacks;
+    	private List<pspBaseCallback> callbacks;
+    	private List<pspBaseCallback> readyCallbacks;
     	// THREAD_CALLBACK_MEMORYSTICK and THREAD_CALLBACK_MEMORYSTICK_FAT have
     	// a maximum of 32 registered callbacks each.
     	// Don't know yet for the other types, assuming also 32.
@@ -157,17 +157,17 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
 
     	public RegisteredCallbacks(int type) {
     		this.type = type;
-    		callbacks = new LinkedList<SceKernelCallbackInfo>();
-    		readyCallbacks = new LinkedList<SceKernelCallbackInfo>();
+    		callbacks = new LinkedList<pspBaseCallback>();
+    		readyCallbacks = new LinkedList<pspBaseCallback>();
     	}
 
 		public boolean hasCallbacks() {
 			return !callbacks.isEmpty();
 		}
 
-		public SceKernelCallbackInfo getCallbackByUid(int cbid) {
-    		for (SceKernelCallbackInfo callback : callbacks) {
-    			if (callback.uid == cbid) {
+		public pspBaseCallback getCallbackInfoByUid(int cbid) {
+    		for (pspBaseCallback callback : callbacks) {
+    			if (callback.getUid() == cbid) {
     				return callback;
     			}
     		}
@@ -176,14 +176,14 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
 		}
 
 		public boolean hasCallback(int cbid) {
-			return getCallbackByUid(cbid) != null;
+			return getCallbackInfoByUid(cbid) != null;
     	}
 
-		public boolean hasCallback(SceKernelCallbackInfo callback) {
+		public boolean hasCallback(pspBaseCallback callback) {
 			return callbacks.contains(callback);
 		}
 
-		public boolean addCallback(SceKernelCallbackInfo callback) {
+		public boolean addCallback(pspBaseCallback callback) {
 			if (hasCallback(callback)) {
 				return true;
 			}
@@ -201,17 +201,17 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
 			return true;
 		}
 
-    	public void setCallbackReady(SceKernelCallbackInfo callback) {
+    	public void setCallbackReady(pspBaseCallback callback) {
     		if (hasCallback(callback) && !isCallbackReady(callback)) {
 				readyCallbacks.add(callback);
     		}
     	}
 
-    	public boolean isCallbackReady(SceKernelCallbackInfo callback) {
+    	public boolean isCallbackReady(pspBaseCallback callback) {
     		return readyCallbacks.contains(callback);
     	}
 
-    	public SceKernelCallbackInfo removeCallback(SceKernelCallbackInfo callback) {
+    	public pspBaseCallback removeCallback(pspBaseCallback callback) {
     		if (!callbacks.remove(callback)) {
     			return null;
     		}
@@ -221,7 +221,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     		return callback;
     	}
 
-    	public SceKernelCallbackInfo getNextReadyCallback() {
+    	public pspBaseCallback getNextReadyCallback() {
     		if (readyCallbacks.isEmpty()) {
     			return null;
     		}
@@ -233,7 +233,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     		return callbacks.size();
     	}
 
-    	public SceKernelCallbackInfo getCallbackByIndex(int index) {
+    	public pspBaseCallback getCallbackByIndex(int index) {
     		return callbacks.get(index);
     	}
 

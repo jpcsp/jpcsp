@@ -191,7 +191,7 @@ public class LoadExecForUser extends HLEModule {
         	}
     		return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_CALLBACK;
     	}
-    	int callbackArgument = callbackInfo.callback_arg_addr;
+    	int callbackArgument = callbackInfo.getCallbackArgument();
     	if (!Memory.isAddressGood(callbackArgument)) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("LoadExecForUser_362A956B invalid address for callbackArgument=0x%08X", callbackArgument));

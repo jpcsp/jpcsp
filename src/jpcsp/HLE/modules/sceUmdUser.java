@@ -35,7 +35,6 @@ import java.util.ListIterator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
-import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
@@ -379,8 +378,7 @@ public class sceUmdUser extends HLEModule {
 
     @HLEFunction(nid = 0xBD2BDE07, version = 150)
     public int sceUmdUnRegisterUMDCallBack(int uid) {
-        SceKernelCallbackInfo info = Modules.ThreadManForUserModule.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid);
-        if (info == null) {
+        if (!Modules.ThreadManForUserModule.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
         	return -1;
         }
 

@@ -120,6 +120,7 @@ import jpcsp.HLE.kernel.types.SceKernelTls;
 import jpcsp.HLE.kernel.types.SceKernelVTimerInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
+import jpcsp.HLE.kernel.types.pspBaseCallback;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo.RegisteredCallbacks;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Interrupts;
@@ -197,7 +198,7 @@ public class ThreadManForUser extends HLEModule {
     public static final int UTILITY_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x80;
     public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x90;
     public static final int INTERNAL_THREAD_ADDRESS_SIZE = INTERNAL_THREAD_ADDRESS_END - INTERNAL_THREAD_ADDRESS_START;
-    private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
+    private HashMap<Integer, pspBaseCallback> callbackMap;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
     private static final boolean LOG_INSTRUCTIONS = false;
     public boolean exitCalled = false;
@@ -625,7 +626,7 @@ public class ThreadManForUser extends HLEModule {
         readyThreads = new LinkedList<SceKernelThreadInfo>();
         statistics = new Statistics();
 
-        callbackMap = new HashMap<Integer, SceKernelCallbackInfo>();
+        callbackMap = new HashMap<Integer, pspBaseCallback>();
         callbackManager.Initialize();
 
         // Reserve the memory user the internal handlers
@@ -1194,7 +1195,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public SceKernelCallbackInfo getCallbackInfo(int uid) {
-    	return callbackMap.get(uid);
+    	pspBaseCallback callback = callbackMap.get(uid);
+    	if (callback != null && callback instanceof SceKernelCallbackInfo) {
+    		return (SceKernelCallbackInfo) callback;
+    	}
+
+    	return null;
     }
 
     public boolean isCurrentThreadStackAddress(int address) {
@@ -1534,6 +1540,7 @@ public class ThreadManForUser extends HLEModule {
         if (thread.unloadModuleAtDeletion) {
         	SceModule module = Managers.modules.getModuleByUID(thread.moduleid);
         	if (module != null) {
+        		module.stop();
         		module.unload();
         	}
         }
@@ -1965,6 +1972,26 @@ public class ThreadManForUser extends HLEModule {
         callAddress(thread, address, afterAction, returnVoid, false, new int[]{registerA0, registerA1, registerA2, registerA3, registerT0});
     }
 
+    /**
+     * Trigger a call to a callback in the context of a thread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param thread      the callback has to be executed by this thread (null means the currentThread)
+     * @param address     address of the callback
+     * @param afterAction action to be executed after the completion of the callback
+     * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
+     * @param registers   parameters of the callback
+     */
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, int[] registers) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X, afterAction=%s, returnVoid=%b", address, afterAction, returnVoid));
+        }
+
+        callAddress(thread, address, afterAction, returnVoid, false, registers);
+    }
+
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleKernelExitThread(int exitStatus) {
         if (log.isDebugEnabled()) {
@@ -2285,19 +2312,32 @@ public class ThreadManForUser extends HLEModule {
         	log.debug(String.format("hleKernelCreateCallback %s", callback));
         }
 
-        callbackMap.put(callback.uid, callback);
+        callbackMap.put(callback.getUid(), callback);
+
+        return callback;
+    }
+
+    public pspBaseCallback hleKernelCreateCallback(int callbackFunction, int numberArguments) {
+    	pspBaseCallback callback = new pspBaseCallback(callbackFunction, numberArguments);
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("hleKernelCreateCallback %s", callback));
+        }
+
+        callbackMap.put(callback.getUid(), callback);
 
         return callback;
     }
 
     /** @return true if successful. */
     public void hleKernelDeleteCallback(int uid) {
-        SceKernelCallbackInfo callback = callbackMap.remove(uid);
+    	SceKernelCallbackInfo callback = getCallbackInfo(uid);
         if (callback != null) {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("hleKernelDeleteCallback %s", callback));
             }
-            SceKernelThreadInfo thread = getThreadById(callback.threadId);
+            callbackMap.remove(uid);
+            SceKernelThreadInfo thread = getThreadById(callback.getThreadId());
             if (thread != null) {
             	thread.deleteCallback(callback);
             }
@@ -2333,18 +2373,28 @@ public class ThreadManForUser extends HLEModule {
     	}
     }
 
+    public boolean hleKernelRegisterCallback(int callbackType, pspBaseCallback callback) {
+    	return hleKernelRegisterCallback(getCurrentThread(), callbackType, callback);
+    }
+
+    public boolean hleKernelRegisterCallback(SceKernelThreadInfo thread, int callbackType, pspBaseCallback callback) {
+        RegisteredCallbacks registeredCallbacks = thread.getRegisteredCallbacks(callbackType);
+
+        return registeredCallbacks.addCallback(callback);
+    }
+
     /** Registers a callback on the thread that created the callback.
      * @return true on success (the cbid was a valid callback uid) */
     public boolean hleKernelRegisterCallback(int callbackType, int cbid) {
-        SceKernelCallbackInfo callback = callbackMap.get(cbid);
+        SceKernelCallbackInfo callback = getCallbackInfo(cbid);
         if (callback == null) {
             log.warn("hleKernelRegisterCallback(type=" + callbackType + ") unknown uid " + Integer.toHexString(cbid));
             return false;
         }
 
-        SceKernelThreadInfo thread = getThreadById(callback.threadId);
+        SceKernelThreadInfo thread = getThreadById(callback.getThreadId());
         if (thread == null) {
-            log.warn("hleKernelRegisterCallback(type=" + callbackType + ") unknown thread uid " + Integer.toHexString(callback.threadId));
+            log.warn("hleKernelRegisterCallback(type=" + callbackType + ") unknown thread uid " + Integer.toHexString(callback.getThreadId()));
         	return false;
         }
         RegisteredCallbacks registeredCallbacks = thread.getRegisteredCallbacks(callbackType);
@@ -2358,16 +2408,17 @@ public class ThreadManForUser extends HLEModule {
     /** Unregisters a callback by type and cbid. May not be on the current thread.
      * @param callbackType See SceKernelThreadInfo.
      * @param cbid The UID of the callback to unregister.
-     * @return SceKernelCallbackInfo of the removed callback, or null if it
-     * couldn't be found. */
-    public SceKernelCallbackInfo hleKernelUnRegisterCallback(int callbackType, int cbid) {
-        SceKernelCallbackInfo callback = null;
+     * @return true if the callback has been removed, or false if it couldn't be found.
+     **/
+    public boolean hleKernelUnRegisterCallback(int callbackType, int cbid) {
+    	boolean found = false;
 
         for (SceKernelThreadInfo thread : threadMap.values()) {
         	RegisteredCallbacks registeredCallbacks = thread.getRegisteredCallbacks(callbackType);
 
-        	callback = registeredCallbacks.getCallbackByUid(cbid);
+        	pspBaseCallback callback = registeredCallbacks.getCallbackInfoByUid(cbid);
             if (callback != null) {
+            	found = true;
                 // Warn if we are removing a pending callback, this a callback
                 // that has been pushed but not yet executed.
                 if (registeredCallbacks.isCallbackReady(callback)) {
@@ -2379,11 +2430,23 @@ public class ThreadManForUser extends HLEModule {
             }
         }
 
-        if (callback == null) {
+        if (!found) {
             log.warn("hleKernelUnRegisterCallback(type=" + callbackType + ") cbid=" + Integer.toHexString(cbid) + " no matching callbacks found");
         }
 
-        return callback;
+        return found;
+    }
+
+    public void hleKernelNotifyCallback(int callbackType, pspBaseCallback callback) {
+    	hleKernelNotifyCallback(callbackType, callback, getCurrentThread());
+    }
+
+    public void hleKernelNotifyCallback(int callbackType, pspBaseCallback callback, SceKernelThreadInfo thread) {
+    	RegisteredCallbacks registeredCallbacks = thread.getRegisteredCallbacks(callbackType);
+
+    	if (registeredCallbacks.hasCallback(callback)) {
+    		registeredCallbacks.setCallbackReady(callback);
+    	}
     }
 
     /** push callback to all threads */
@@ -2392,12 +2455,11 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void notifyCallback(SceKernelThreadInfo thread, SceKernelCallbackInfo callback, int callbackType, int notifyArg) {
-        if (callback.notifyCount != 0) {
-            log.warn("hleKernelNotifyCallback(type=" + callbackType + ") thread:'" + thread.name + "' overwriting previous notifyArg 0x" + Integer.toHexString(callback.notifyArg) + " -> 0x" + Integer.toHexString(notifyArg) + ", newCount=" + (callback.notifyCount + 1));
+        if (callback.getNotifyCount() > 0) {
+            log.warn("hleKernelNotifyCallback(type=" + callbackType + ") thread:'" + thread.name + "' overwriting previous notifyArg 0x" + Integer.toHexString(callback.getNotifyArg()) + " -> 0x" + Integer.toHexString(notifyArg) + ", newCount=" + (callback.getNotifyCount() + 1));
         }
 
-        callback.notifyCount++; // keep increasing this until we actually enter the callback
-        callback.notifyArg = notifyArg;
+        callback.setNotifyArg(notifyArg);
         thread.getRegisteredCallbacks(callbackType).setCallbackReady(callback);
     }
 
@@ -2415,17 +2477,19 @@ public class ThreadManForUser extends HLEModule {
             }
 
             if (cbid != -1) {
-                SceKernelCallbackInfo callback = registeredCallbacks.getCallbackByUid(cbid);
-                if (callback == null) {
+                pspBaseCallback callback = registeredCallbacks.getCallbackInfoByUid(cbid);
+                if (callback == null || !(callback instanceof SceKernelCallbackInfo)) {
                 	continue;
                 }
 
-                notifyCallback(thread, callback, callbackType, notifyArg);
+                notifyCallback(thread, (SceKernelCallbackInfo) callback, callbackType, notifyArg);
             } else {
             	int numberOfCallbacks = registeredCallbacks.getNumberOfCallbacks();
             	for (int i = 0; i < numberOfCallbacks; i++) {
-            		SceKernelCallbackInfo callback = registeredCallbacks.getCallbackByIndex(i);
-            		notifyCallback(thread, callback, callbackType, notifyArg);
+            		pspBaseCallback callback = registeredCallbacks.getCallbackByIndex(i);
+            		if (callback instanceof SceKernelCallbackInfo) {
+            			notifyCallback(thread, (SceKernelCallbackInfo) callback, callbackType, notifyArg);
+            		}
             	}
             }
 
@@ -2458,14 +2522,14 @@ public class ThreadManForUser extends HLEModule {
 
         for (int callbackType = 0; callbackType < SceKernelThreadInfo.THREAD_CALLBACK_SIZE; callbackType++) {
         	RegisteredCallbacks registeredCallbacks = thread.getRegisteredCallbacks(callbackType);
-        	SceKernelCallbackInfo callback = registeredCallbacks.getNextReadyCallback();
+        	pspBaseCallback callback = registeredCallbacks.getNextReadyCallback();
             if (callback != null) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("Entering callback type %d %s for thread %s (current thread is %s)", callbackType, callback.toString(), thread.toString(), currentThread.toString()));
                 }
 
-                CheckCallbackReturnValue checkCallbackReturnValue = new CheckCallbackReturnValue(thread, callback.uid);
-                callback.startContext(thread, checkCallbackReturnValue);
+                CheckCallbackReturnValue checkCallbackReturnValue = new CheckCallbackReturnValue(thread, callback.getUid());
+                callback.call(thread, checkCallbackReturnValue);
                 handled = true;
                 break;
             }
@@ -2695,7 +2759,7 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0xE81CAF8F, version = 150, checkInsideInterrupt = true)
     public int sceKernelCreateCallback(@StringInfo(maxLength = 32) String name, int func_addr, int user_arg_addr) {
     	SceKernelCallbackInfo callback = hleKernelCreateCallback(name, func_addr, user_arg_addr);
-        return callback.uid;
+        return callback.getUid();
     }
 
     @HLEFunction(nid = 0xEDBA5844, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
@@ -2735,7 +2799,7 @@ public class ThreadManForUser extends HLEModule {
     public int sceKernelCancelCallback(@CheckArgument("checkCallbackID") int uid) {
         SceKernelCallbackInfo callback = getCallbackInfo(uid);
 
-        callback.notifyArg = 0;
+        callback.cancel();
 
         return 0;
     }
@@ -2746,10 +2810,10 @@ public class ThreadManForUser extends HLEModule {
         SceKernelCallbackInfo callback = getCallbackInfo(uid);
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetCallbackCount returning count=%d", callback.notifyCount));
+            log.debug(String.format("sceKernelGetCallbackCount returning count=%d", callback.getNotifyCount()));
         }
 
-        return callback.notifyCount;
+        return callback.getNotifyCount();
     }
 
     /** Check callbacks, only on the current thread. */

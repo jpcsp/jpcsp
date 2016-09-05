@@ -3845,7 +3845,7 @@ public class IoFileMgrForUser extends HLEModule {
                 	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
-                    if (threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid) != null) {
+                    if (threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid)) {
                     	result = 0; // Success.
                     } else {
                     	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS; // No such callback.
