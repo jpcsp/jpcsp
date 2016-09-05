@@ -16,10 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -33,6 +35,8 @@ public class sceNpService extends HLEModule {
     private int npManagerMemSize;     // Memory allocated by the NP Manager utility.
     private int npManagerMaxMemSize;  // Maximum memory used by the NP Manager utility.
     private int npManagerFreeMemSize; // Free memory available to use by the NP Manager utility.
+    private int dummyNumberFriends = 5;
+    private int dummyNumberBlockList = 2;
 
 	@Override
 	public void start() {
@@ -105,15 +109,28 @@ public class sceNpService extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x58251346, version = 150)
-    public int sceNpRosterGetFriendListEntryCount(int requestId, TPointer32 unknown) {
-    	log.info(String.format("unknown value: 0x%08X", unknown.getValue()));
+    public int sceNpRosterGetFriendListEntryCount(int requestId, @CanBeNull TPointer32 options) {
+    	if (options.isNotNull() && options.getValue() != 4) {
+    		return -1;
+    	}
 
-    	return 0;
+    	return dummyNumberFriends;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x4E851B10, version = 150)
-    public int sceNpRosterGetFriendListEntry(int requestId, int unknown1, int unknown2, int unknown3, int unknown4, int unknown5) {
+    public int sceNpRosterGetFriendListEntry(int requestId, int numEntries, int startIndex, TPointer32 countAddr, TPointer32 numberRetrieved, TPointer buffer, @CanBeNull TPointer32 options) {
+    	if (options.isNotNull() && options.getValue() != 4) {
+    		return -1;
+    	}
+
+    	countAddr.setValue(dummyNumberFriends);
+    	numberRetrieved.setValue(dummyNumberFriends);
+
+    	for (int i = 0; i < dummyNumberFriends; i++) {
+    		buffer.setStringNZ(i * 36, 16, String.format("DummyFriend#%d", i));
+    	}
+
     	return 0;
     }
 
@@ -137,15 +154,28 @@ public class sceNpService extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA01443AA, version = 150)
-    public int sceNpRosterGetBlockListEntryCount(int requestId, TPointer32 unknown) {
-    	log.info(String.format("unknown value: 0x%08X", unknown.getValue()));
+    public int sceNpRosterGetBlockListEntryCount(int requestId, TPointer32 options) {
+    	if (options.isNotNull() && options.getValue() != 4) {
+    		return -1;
+    	}
 
-    	return 0;
+    	return dummyNumberBlockList;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x506C318D, version = 150)
-    public int sceNpRosterGetBlockListEntry(int requestId, int unknown1, int unknown2, int unknown3, int unknown4, int unknown5) {
+    public int sceNpRosterGetBlockListEntry(int requestId, int numEntries, int startIndex, TPointer32 countAddr, TPointer32 numberRetrieved, TPointer buffer, @CanBeNull TPointer32 options) {
+    	if (options.isNotNull() && options.getValue() != 4) {
+    		return -1;
+    	}
+
+    	countAddr.setValue(dummyNumberBlockList);
+    	numberRetrieved.setValue(dummyNumberBlockList);
+
+    	for (int i = 0; i < dummyNumberBlockList; i++) {
+    		buffer.setStringNZ(i * 36, 16, String.format("DummyBlocked#%d", i));
+    	}
+
     	return 0;
     }
 
