@@ -47,6 +47,8 @@ import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -744,7 +746,6 @@ public class ModuleMgrForUser extends HLEModule {
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
-        sceModule.stop();
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             // Start the module stop thread function.
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
@@ -754,7 +755,8 @@ public class ModuleMgrForUser extends HLEModule {
             // Unload the module when the stop thread will be deleted
             thread.unloadModuleAtDeletion = true;
         } else {
-        	// Unload the module immediately
+        	// Stop and unload the module immediately
+            sceModule.stop();
         	sceModule.unload();
         }
 
@@ -777,7 +779,6 @@ public class ModuleMgrForUser extends HLEModule {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
         statusAddr.setValue(0);
-        sceModule.stop();
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             // Start the module stop thread function.
             statusAddr.setValue(0); // TODO set to return value of the thread (when it exits, of course)
@@ -792,7 +793,8 @@ public class ModuleMgrForUser extends HLEModule {
             // Unload the module when the stop thread will be deleted
             thread.unloadModuleAtDeletion = true;
         } else {
-        	// Unload the module immediately
+        	// Stop and unload the module immediately
+            sceModule.stop();
         	sceModule.unload();
         }
 
@@ -815,7 +817,6 @@ public class ModuleMgrForUser extends HLEModule {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
         statusAddr.setValue(0);
-    	sceModule.stop();
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             // Start the module stop thread function.
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
@@ -827,7 +828,8 @@ public class ModuleMgrForUser extends HLEModule {
             // Unload the module when the stop thread will be deleted
             thread.unloadModuleAtDeletion = true;
         } else {
-        	// Unload the module immediately
+        	// Stop and unload the module immediately
+        	sceModule.stop();
         	sceModule.unload();
         }
 
@@ -982,27 +984,45 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xFEF27DC1, version = 271)
-    // sceKernelLoadModuleDNAS
-    public int ModuleMgrForUser_FEF27DC1() {
-        return 0;
-    }
-
-    @HLEFunction(nid = 0xF2D8D1B4, version = 271)
-    // sceKernelLoadModuleNpDrm
-    public int ModuleMgrForUser_F2D8D1B4(PspString path, int flags, @CanBeNull TPointer optionAddr) {
+    @HLEFunction(nid = 0xFEF27DC1, version = 271, checkInsideInterrupt = true)
+    public int sceKernelLoadModuleDNAS(PspString path, TPointer key, int unknown, @CanBeNull TPointer32 optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
             lmOption.read(optionAddr);
             if (log.isInfoEnabled()) {
-                log.info(String.format("ModuleMgrForUser_F2D8D1B4 options: %s", lmOption));
+                log.info(String.format("sceKernelLoadModuleDNAS options: %s", lmOption));
+            }
+        }
+
+        StringBuilder localFileName = new StringBuilder();
+        IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(path.getString(), localFileName);
+        if (vfs != null) {
+        	IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), IoFileMgrForUser.PSP_O_RDONLY, 0);
+        	if (vFile == null) {
+        		return ERROR_ERRNO_FILE_NOT_FOUND;
+        	}
+        } else {
+        	return SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
+        }
+
+        return 0;
+    }
+
+    @HLEFunction(nid = 0xF2D8D1B4, version = 271)
+    public int sceKernelLoadModuleNpDrm(PspString path, int flags, @CanBeNull TPointer optionAddr) {
+        SceKernelLMOption lmOption = null;
+        if (optionAddr.isNotNull()) {
+            lmOption = new SceKernelLMOption();
+            lmOption.read(optionAddr);
+            if (log.isInfoEnabled()) {
+                log.info(String.format("sceKernelLoadModuleNpDrm options: %s", lmOption));
             }
         }
 
         // SPRX modules can't be decrypted yet.
         if (!Modules.scePspNpDrm_userModule.getDisableDLCStatus()) {
-            log.warn(String.format("ModuleMgrForUser_F2D8D1B4 detected encrypted DLC module: %s", path.getString()));
+            log.warn(String.format("sceKernelLoadModuleNpDrm detected encrypted DLC module: %s", path.getString()));
             return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
         }
 
