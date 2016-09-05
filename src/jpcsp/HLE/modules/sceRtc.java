@@ -512,4 +512,16 @@ public class sceRtc extends HLEModule {
 	public int sceRtcRegisterCallback(int callbackId) {
 		return 0;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF5FCC995 , version = 150)
+	public int sceRtcGetCurrentNetworkTick(TPointer64 networkTick) {
+		networkTick.setValue(hleGetCurrentTick());
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceRtcGetCurrentNetworkTick returning %d", networkTick.getValue()));
+        }
+
+        return 0;
+	}
 }
