@@ -517,15 +517,18 @@ public class scePower extends HLEModule {
         return (float) pllClock;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x737486F2, version = 150)
     public int scePowerSetClockFrequency(int pllClock, int cpuClock, int busClock) {
         this.pllClock = pllClock;
         this.cpuClock = cpuClock;
         this.busClock = busClock;
 
+        Modules.ThreadManForUserModule.hleKernelDelayThread(150000, false);
         return 0;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0xEBD177D6, version = 150)
     public int scePower_EBD177D6(int pllClock, int cpuClock, int busClock) {
         // Identical to scePowerSetClockFrequency.
@@ -533,9 +536,11 @@ public class scePower extends HLEModule {
         this.cpuClock = cpuClock;
         this.busClock = busClock;
 
+        Modules.ThreadManForUserModule.hleKernelDelayThread(150000, false);
         return 0;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x469989AD, version = 630)
     public int scePower_469989AD(int pllClock, int cpuClock, int busClock) {
         // Identical to scePowerSetClockFrequency.
@@ -543,6 +548,7 @@ public class scePower extends HLEModule {
         this.cpuClock = cpuClock;
         this.busClock = busClock;
 
+        Modules.ThreadManForUserModule.hleKernelDelayThread(150000, false);
         return 0;
     }
 
