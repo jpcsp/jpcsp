@@ -89,7 +89,7 @@ public class SyscallHandler {
 	                	break;
 	                }
 	            }
-	            Modules.log.warn(String.format("Unsupported syscall %X %s $a0=0x%08X $a1=0x%08X $a2=0x%08X", code, name, cpu._a0, cpu._a1, cpu._a2));
+	            Modules.log.warn(String.format("Unsupported syscall 0x%X %s $a0=0x%08X $a1=0x%08X $a2=0x%08X", code, name, cpu._a0, cpu._a1, cpu._a2));
         	}
         }
     }

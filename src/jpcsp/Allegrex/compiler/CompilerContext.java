@@ -68,6 +68,7 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
+import jpcsp.HLE.TPointer8;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -846,6 +847,7 @@ public class CompilerContext implements ICompilerContext {
      * long:      parameterValue = (cpu.gpr[paramIndex++] & 0xFFFFFFFFL) + ((long) cpu.gpr[paramIndex++]) << 32)
      * boolean:   parameterValue = cpu.gpr[paramIndex++]
      * TPointer,
+     * TPointer8,
      * TPointer16,
      * TPointer32,
      * TPointer64,
@@ -950,7 +952,7 @@ public class CompilerContext implements ICompilerContext {
 				"readPspStringNZ", "(IIZ)" + Type.getDescriptor(PspString.class)
    			);
     		parameterReader.incrementCurrentStackSize();
-    	} else if (parameterType == TPointer.class || parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class) {
+    	} else if (parameterType == TPointer.class || parameterType == TPointer8.class || parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class) {
     		// if (checkMemoryAccess()) {
     		//     if (canBeNullParam && address == 0) {
     		//         goto addressGood;
@@ -995,7 +997,7 @@ public class CompilerContext implements ICompilerContext {
     			mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
     			mv.visitLabel(addressGood);
     		}
-    		if (parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class) {
+    		if (parameterType == TPointer8.class || parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class) {
     			loadImm(canBeNull);
     			mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(parameterType), "<init>", "(" + memoryDescriptor + "IZ)V");
     		} else {
