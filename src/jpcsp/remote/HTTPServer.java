@@ -25,6 +25,7 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -32,11 +33,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.nio.ByteBuffer;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,6 +57,9 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import javax.imageio.ImageIO;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
 
 import jpcsp.Controller.keyCode;
 import jpcsp.Emulator;
@@ -66,22 +78,28 @@ import org.apache.log4j.Logger;
 public class HTTPServer {
 	private static Logger log = Logger.getLogger("http");
 	private static HTTPServer instance;
-	private static final int port = 80;
+	private static final HTTPServerDescriptor[] serverDescriptors = new HTTPServerDescriptor[] {
+		new HTTPServerDescriptor(0, 80, false),
+		new HTTPServerDescriptor(1, 443, true)
+	};
 	private static final String method = "method";
 	private static final String path = "path";
+	private static final String host = "host";
 	private static final String parameters = "parameters";
 	private static final String version = "version";
+	private static final String data = "data";
+	private static final String contentLength = "content-length";
 	private static final String eol = "\r\n";
 	private static final String boundary = "--boundarybetweensingleimages";
 	private static final String isoDirectory = "/iso/";
 	private static final String iconDirectory = "/icon/";
-	private static final String htmlDirectory = "html";
+	private static final String rootDirectory = "root";
 	private static final String widgetDirectory = "Widget";
-	private static final String widgetPath = htmlDirectory + "/" + widgetDirectory;
+	private static final String widgetPath = rootDirectory + "/" + widgetDirectory;
 	private static final String indexFile = "index.html";
 	private static final String naclDirectory = "nacl";
 	private static final String widgetlistFile = "/widgetlist.xml";
-	private HTTPServerThread serverThread;
+	private HTTPServerThread[] serverThreads;
 	private Robot captureRobot;
 	private UmdIsoReader previousUmdIsoReader;
 	private String previousIsoFilename;
@@ -97,31 +115,76 @@ public class HTTPServer {
 
 	public static HTTPServer getInstance() {
 		if (instance == null) {
+			Utilities.disableSslCertificateChecks();
 			instance = new HTTPServer();
 		}
 		return instance;
 	}
 
+	private static class HTTPServerDescriptor {
+		private int index;
+		private int port;
+		private boolean ssl;
+
+		public HTTPServerDescriptor(int index, int port, boolean ssl) {
+			this.index = index;
+			this.port = port;
+			this.ssl = ssl;
+		}
+
+		public int getIndex() {
+			return index;
+		}
+
+		public int getPort() {
+			return port;
+		}
+
+		public boolean isSsl() {
+			return ssl;
+		}
+	}
+
 	private class HTTPServerThread extends Thread {
 		private boolean exit;
 		private ServerSocket serverSocket;
+		private HTTPServerDescriptor descriptor;
+
+		public HTTPServerThread(HTTPServerDescriptor descriptor) {
+			this.descriptor = descriptor;
+		}
 
 		@Override
 		public void run() {
 			try {
-				serverSocket = new ServerSocket(port);
+				if (descriptor.isSsl()) {
+					SSLServerSocketFactory factory = getSSLServerSocketFactory();
+					serverSocket = factory.createServerSocket(descriptor.getPort());
+				} else {
+					serverSocket = new ServerSocket(descriptor.getPort());
+				}
 				serverSocket.setSoTimeout(1);
 			} catch (IOException e) {
-				log.error(String.format("Server socket at port %d not available: %s", port, e));
+				log.error(String.format("Server socket at port %d not available: %s", descriptor.getPort(), e));
 				exit();
+			} catch (KeyStoreException e) {
+				log.error(String.format("SSL Server socket at port %d not available: %s", descriptor.getPort(), e));
+			} catch (NoSuchAlgorithmException e) {
+				log.error(String.format("SSL Server socket at port %d not available: %s", descriptor.getPort(), e));
+			} catch (CertificateException e) {
+				log.error(String.format("SSL Server socket at port %d not available: %s", descriptor.getPort(), e));
+			} catch (UnrecoverableKeyException e) {
+				log.error(String.format("SSL Server socket at port %d not available: %s", descriptor.getPort(), e));
+			} catch (KeyManagementException e) {
+				log.error(String.format("SSL Server socket at port %d not available: %s", descriptor.getPort(), e));
 			}
 
 			while (!exit) {
 				try {
 					Socket socket = serverSocket.accept();
 					socket.setSoTimeout(1);
-					HTTPSocketHandlerThread handlerThread = new HTTPSocketHandlerThread(socket);
-					handlerThread.setName(String.format("HTTP Handler %d", socket.getPort()));
+					HTTPSocketHandlerThread handlerThread = new HTTPSocketHandlerThread(descriptor, socket);
+					handlerThread.setName(String.format("HTTP Handler %d/%d", descriptor.getPort(), socket.getPort()));
 					handlerThread.start();
 				} catch (SocketTimeoutException e) {
 					// Ignore timeout
@@ -140,7 +203,24 @@ public class HTTPServer {
 				}
 			}
 
-			serverThread = null;
+			serverThreads[descriptor.getIndex()] = null;
+		}
+
+		private SSLServerSocketFactory getSSLServerSocketFactory() throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, UnrecoverableKeyException, KeyManagementException {
+			char[] password = "changeit".toCharArray();
+			FileInputStream keyStoreInputStream = new FileInputStream("jpcsp.jks");
+
+			KeyStore keyStore = KeyStore.getInstance("JKS");
+			keyStore.load(keyStoreInputStream, password);
+
+			String defaultAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
+			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(defaultAlgorithm);
+			keyManagerFactory.init(keyStore, password);
+
+			SSLContext sslContext = SSLContext.getInstance("TLS");
+			sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+
+			return sslContext.getServerSocketFactory();
 		}
 
 		public void exit() {
@@ -149,15 +229,17 @@ public class HTTPServer {
 	}
 
 	private class HTTPSocketHandlerThread extends Thread {
-		Socket socket;
+		private HTTPServerDescriptor descriptor;
+		private Socket socket;
 
-		public HTTPSocketHandlerThread(Socket socket) {
+		public HTTPSocketHandlerThread(HTTPServerDescriptor descriptor, Socket socket) {
+			this.descriptor = descriptor;
 			this.socket = socket;
 		}
 
 		@Override
 		public void run() {
-			process(socket);
+			process(descriptor, socket);
 		}
 	}
 
@@ -172,10 +254,14 @@ public class HTTPServer {
 	private HTTPServer() {
 		keyMapping = new HashMap<Integer, keyCode>();
 
-		serverThread = new HTTPServerThread();
-		serverThread.setDaemon(true);
-		serverThread.setName("HTTP Server");
-		serverThread.start();
+		serverThreads = new HTTPServerThread[serverDescriptors.length];
+		for (HTTPServerDescriptor descriptor : serverDescriptors) {
+			HTTPServerThread serverThread = new HTTPServerThread(descriptor);
+			serverThreads[descriptor.getIndex()] = serverThread;
+			serverThread.setDaemon(true);
+			serverThread.setName("HTTP Server");
+			serverThread.start();
+		}
 
 		try {
 			captureRobot = new Robot();
@@ -204,7 +290,7 @@ public class HTTPServer {
 		return decoded.toString();
 	}
 
-	private void process(Socket socket) {
+	private void process(HTTPServerDescriptor descriptor, Socket socket) {
 		InputStream is = null;
 		try {
 			is = socket.getInputStream();
@@ -230,18 +316,23 @@ public class HTTPServer {
 					bufferLength += length;
 					String request = new String(buffer, 0, bufferLength);
 					HashMap<String, String> requestHeaders = parseRequest(request);
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Received request: '%s', headers: %s", request, requestHeaders));
+					if (requestHeaders != null) {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Received request: '%s', headers: %s", request, requestHeaders));
+						}
+						process(descriptor, requestHeaders, os);
+						os.flush();
+						break;
 					}
-					process(requestHeaders, os);
-					os.flush();
-					break;
 				}
 			} catch (SocketTimeoutException e) {
 				// Ignore timeout
 			} catch (IOException e) {
-				if (log.isDebugEnabled()) {
-					log.debug("Receive socket", e);
+				// Do not log the exception when the remote client has closed the connection
+				if (!(e.getCause() instanceof EOFException)) {
+					if (log.isDebugEnabled()) {
+						log.debug("Receive socket", e);
+					}
 				}
 				break;
 			}
@@ -256,12 +347,14 @@ public class HTTPServer {
 
 	private HashMap<String, String> parseRequest(String request) {
 		HashMap<String, String> headers = new HashMap<String, String>();
-		String[] lines = request.split(eol);
+		String[] lines = request.split(eol, -1); // Do not loose trailing empty strings
+		boolean header = true;
 
 		for (int i = 0; i < lines.length; i++) {
+			String line = lines[i];
 			if (i == 0) {
 				// Parse e.g. "GET / HTTP/1.1" into 3 words: "GET", "/" and "HTTP/1.1"
-				String[] words = lines[i].split(" ");
+				String[] words = line.split(" ");
 				if (words.length >= 1) {
 					headers.put(method, words[0]);
 				}
@@ -278,11 +371,37 @@ public class HTTPServer {
 				if (words.length >= 3) {
 					headers.put(version, words[2]);
 				}
-			} else {
-				// Parse e.g. "Host: localhost:30005" into 2 words: "Host" and "localhost:30005"
-				String[] words = lines[i].split(": *", 2);
-				if (words.length >= 2) {
-					headers.put(words[0].toLowerCase(), words[1]);
+			} else if (header) {
+				if (line.length() == 0) {
+					// End of header
+					header = false;
+				} else {
+					// Parse e.g. "Host: localhost:30005" into 2 words: "Host" and "localhost:30005"
+					String[] words = line.split(": *", 2);
+					if (words.length >= 2) {
+						headers.put(words[0].toLowerCase(), words[1]);
+					}
+				}
+			} else if (line.length() > 0) {
+				String previousData = headers.get(data);
+				if (previousData != null) {
+					headers.put(data, previousData + "\n" + line);
+				} else {
+					headers.put(data, line);
+				}
+			}
+		}
+
+		if (header) {
+			return null;
+		}
+
+		if (headers.get(contentLength) != null) {
+			int headerContentLength = Integer.parseInt(headers.get(contentLength));
+			if (headerContentLength > 0) {
+				String additionalData = headers.get(data);
+				if (additionalData == null || additionalData.length() < headerContentLength) {
+					return null;
 				}
 			}
 		}
@@ -290,12 +409,79 @@ public class HTTPServer {
 		return headers;
 	}
 
-	private void process(HashMap<String, String> request, OutputStream os) throws IOException {
+	private void doProxy(HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os, String pathValue, int forcedPort) throws IOException {
+		String remoteUrl = getUrl(descriptor, request, pathValue, forcedPort);
+
+		HttpURLConnection connection = (HttpURLConnection) new URL(remoteUrl).openConnection();
+		for (String key : request.keySet()) {
+			if (!data.equals(key) && !method.equals(key) && !version.equals(key)) {
+				connection.setRequestProperty(key, request.get(key));
+			}
+		}
+		connection.setRequestMethod(request.get(method));
+		String additionalData = request.get(data);
+		if (additionalData != null) {
+			connection.setDoOutput(true);
+			OutputStream dataStream = connection.getOutputStream();
+			dataStream.write(additionalData.getBytes());
+			dataStream.close();
+		}
+		connection.connect();
+
+		int dataLength = connection.getContentLength();
+
+		InputStream in = connection.getInputStream();
+		byte[] buffer = new byte[100000];
+		int length = 0;
+		while (true) {
+			int l = in.read(buffer, length, buffer.length - length);
+			if (l < 0) {
+				break;
+			}
+			length += l;
+		}
+		in.close();
+
+		sendHTTPResponseCode(os, connection.getResponseCode(), connection.getResponseMessage());
+
+		if (dataLength >= 0) {
+			sendResponseHeader(os, contentLength, dataLength);
+		} else {
+			sendResponseHeader(os, contentLength, length);
+		}
+		for (Map.Entry<String, List<String>> entry : connection.getHeaderFields().entrySet()) {
+			String key = entry.getKey();
+			if (key != null && !"transfer-encoding".equals(key.toLowerCase())) {
+				for (String value : entry.getValue()) {
+					sendResponseHeader(os, key, value);
+				}
+			}
+		}
+		sendEndOfHeaders(os);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("doProxy:\n%s", Utilities.getMemoryDump(buffer, 0, length)));
+		}
+
+		os.write(buffer, 0, length);
+	}
+
+	private void process(HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os) throws IOException {
 		try {
 			String pathValue = request.get(path);
-			if ("GET".equals(request.get(method))) {
+			String baseUrl = getBaseUrl(descriptor, request, 0);
+			if (pathValue.startsWith(baseUrl)) {
+				pathValue = pathValue.substring(baseUrl.length() - 1);
+			}
+			if ("fe01.psp.update.playstation.org".equals(request.get(host))) {
+				doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("native.np.ac.playstation.net".equals(request.get(host))) {
+				doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("nsx.sec.np.dl.playstation.net".equals(request.get(host))) {
+				sendResponseFile(os, rootDirectory + "/psp.xml");
+			} else if ("GET".equals(request.get(method))) {
 				if ("/".equals(pathValue)) {
-					sendResponseFile(os, htmlDirectory + "/" + indexFile);
+					sendResponseFile(os, rootDirectory + "/" + indexFile);
 				} else if ("/screen.png".equals(pathValue)) {
 					sendScreenImage(os, "png");
 				} else if ("/screen.jpg".equals(pathValue)) {
@@ -317,13 +503,15 @@ public class HTTPServer {
 				} else if (pathValue.startsWith(isoDirectory)) {
 					sendIso(request, os, pathValue, true);
 				} else if (widgetlistFile.equals(pathValue)) {
-					sendWidgetlist(request, os, pathValue);
+					sendWidgetlist(descriptor, request, os, pathValue);
 				} else if (pathValue.startsWith("/" + widgetDirectory + "/")) {
-					sendWidget(os, request.get(parameters), htmlDirectory + pathValue);
+					sendWidget(os, request.get(parameters), rootDirectory + pathValue);
 				} else if (pathValue.startsWith("/" + naclDirectory + "/")) {
 					sendNaClResponse(os, pathValue.substring(6));
 				} else if (pathValue.endsWith(".html")) {
-					sendResponseFile(os, htmlDirectory + pathValue);
+					sendResponseFile(os, rootDirectory + pathValue);
+				} else if (pathValue.endsWith(".xml")) {
+					sendResponseFile(os, rootDirectory + pathValue);
 				} else {
 					sendErrorNotFound(os);
 				}
@@ -374,22 +562,33 @@ public class HTTPServer {
 	}
 
 	private void sendResponseFile(OutputStream os, InputStream is, String contentType) throws IOException {
+		byte[] buffer = new byte[1000];
+		int contentLength = 0;
+		if (is != null) {
+			while (true) {
+				if (buffer.length - contentLength < 1000) {
+					buffer = Utilities.extendArray(buffer, 1000);
+				}
+				int length = is.read(buffer, contentLength, buffer.length - contentLength);
+				if (length < 0) {
+					break;
+				}
+				contentLength += length;
+			}
+			is.close();
+		}
+
 		sendOK(os);
 		if (contentType != null) {
 			sendResponseHeader(os, "Content-Type", contentType);
 		}
+		if (contentLength > 0) {
+			sendResponseHeader(os, "Content-Length", contentLength);
+		}
 		sendEndOfHeaders(os);
 
-		if (is != null) {
-			byte[] buffer = new byte[1000];
-			while (true) {
-				int length = is.read(buffer);
-				if (length < 0) {
-					break;
-				}
-				os.write(buffer, 0, length);
-			}
-			is.close();
+		if (contentLength > 0) {
+			os.write(buffer, 0, contentLength);
 		}
 	}
 
@@ -413,8 +612,12 @@ public class HTTPServer {
 		return "";
 	}
 
+	private void sendHTTPResponseCode(OutputStream os, int code, String msg) throws IOException {
+		sendResponseLine(os, String.format("HTTP/1.1 %d %s", code, msg));
+	}
+
 	private void sendHTTPResponseCode(OutputStream os, int code) throws IOException {
-		sendResponseLine(os, String.format("HTTP/1.1 %d %s", code, guessHTTPResponseCodeMsg(code)));
+		sendHTTPResponseCode(os, code, guessHTTPResponseCodeMsg(code));
 	}
 
 	private void sendOK(OutputStream os) throws IOException {
@@ -1172,7 +1375,7 @@ public class HTTPServer {
 		int sepIndex = pathValue.indexOf("/");
 		if (sepIndex < 0) {
 			if (pathValue.isEmpty() || indexFile.equals(pathValue)) {
-				String template = readResource(htmlDirectory + "/" + naclDirectory + "/" + indexFile);
+				String template = readResource(rootDirectory + "/" + naclDirectory + "/" + indexFile);
 				String repeat = extractTemplateRepeat(template);
 				StringBuilder lines = new StringBuilder();
 				for (String widget : getWidgetList()) {
@@ -1193,7 +1396,7 @@ public class HTTPServer {
 
 		if (resourceFileName.startsWith("$MANAGER_WIDGET/")) {
 			// Sending dummy Widget.js and TVKeyValue.js
-			sendResponseFile(os, htmlDirectory + "/" + resourceFileName.substring(1));
+			sendResponseFile(os, rootDirectory + "/" + resourceFileName.substring(1));
 		} else {
 			zipFileName = String.format("%s/%s.zip", widgetPath, zipFileName);
 			InputStream zipContent = getFileFromZip(zipFileName, resourceFileName);
@@ -1235,12 +1438,16 @@ public class HTTPServer {
 		return -1;
 	}
 
-	private static String getBaseUrl(HashMap<String, String> request) {
-		String hostName = request.get("host");
-		int port = HTTPServer.port;
+	private static String getBaseUrl(HTTPServerDescriptor descriptor, HashMap<String, String> request, int forcedPort) {
+		String hostName = request.get(host);
+		int port = forcedPort > 0 ? forcedPort : descriptor.getPort();
 		String protocol = request.get("x-forwarded-proto");
 		if (protocol == null) {
-			protocol = "http";
+			if (forcedPort > 0) {
+				protocol = forcedPort == 443 ? "https" : "http";
+			} else {
+				protocol = descriptor.isSsl() ? "https" : "http";
+			}
 		}
 
 		StringBuilder baseUrl = new StringBuilder();
@@ -1256,6 +1463,20 @@ public class HTTPServer {
 		baseUrl.append("/");
 
 		return baseUrl.toString();
+	}
+
+	private static String getUrl(HTTPServerDescriptor descriptor, HashMap<String, String> request, String pathValue, int forcedPort) {
+		String baseUrl = getBaseUrl(descriptor, request, forcedPort);
+
+		if (pathValue == null) {
+			return baseUrl;
+		}
+
+		if (pathValue.startsWith("/")) {
+			pathValue = pathValue.substring(1);
+		}
+
+		return baseUrl + pathValue;
 	}
 
 	private static String getArchitecture(HashMap<String, String> request) {
@@ -1276,8 +1497,8 @@ public class HTTPServer {
 	 * The XML response is build dynamically, based on the packages available
 	 * under the Widget directory.
 	 */
-	private void sendWidgetlist(HashMap<String, String> request, OutputStream os, String pathValue) throws IOException {
-		String template = readResource(htmlDirectory + widgetlistFile + ".template");
+	private void sendWidgetlist(HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os, String pathValue) throws IOException {
+		String template = readResource(rootDirectory + widgetlistFile + ".template");
 		String repeat = extractTemplateRepeat(template);
 
 		String architecture = getArchitecture(request);
@@ -1296,7 +1517,7 @@ public class HTTPServer {
 				Matcher matcher = pattern.matcher(xml);
 				if (matcher.find()) {
 					String widgetName = matcher.group(2);
-					String downloadUrl = String.format("%s%s/%s%s", getBaseUrl(request), widgetDirectory, widget, architectureParam);
+					String downloadUrl = String.format("%s%s/%s%s", getBaseUrl(descriptor, request, 0), widgetDirectory, widget, architectureParam);
 					String entry = replaceTemplate(repeat, "$WIDGETNAME", widgetName);
 					entry = replaceTemplate(entry, "$DOWNLOADURL", downloadUrl);
 					list.append(entry);

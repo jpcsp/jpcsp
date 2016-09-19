@@ -1135,6 +1135,17 @@ public class Utilities {
         return newArray;
     }
 
+    public static byte[] extendArray(byte[] array, int extend) {
+        if (array == null) {
+            return new byte[extend];
+        }
+
+        byte[] newArray = new byte[array.length + extend];
+        System.arraycopy(array, 0, newArray, 0, array.length);
+
+        return newArray;
+    }
+
     public static byte[] readCompleteFile(IVirtualFile vFile) {
         if (vFile == null) {
             return null;
