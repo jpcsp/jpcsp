@@ -42,6 +42,7 @@ public class sceReg extends HLEModule {
     protected static final int REG_MODE_READ_ONLY = 2;
     private Map<Integer, RegistryHandle> registryHandles;
     private Map<Integer, CategoryHandle> categoryHandles;
+    private Map<Integer, KeyHandle> keyHandles;
 
     protected static class RegistryHandle {
     	private static final String registryHandlePurpose = "sceReg.RegistryHandle";
@@ -89,10 +90,339 @@ public class sceReg extends HLEModule {
     	}
     }
 
-	@Override
+    protected static class KeyHandle {
+    	private static int index = 0;
+    	public int uid;
+    	public String name;
+
+    	public KeyHandle(String name) {
+    		this.name = name;
+			uid = index++;
+    	}
+    }
+
+    private int getKey(CategoryHandle categoryHandle, String name, TPointer32 ptype, TPointer32 psize, TPointer buf, int size) {
+    	if ("/system/DATA/FONT".equals(categoryHandle.getFullName()) || "/DATA/FONT".equals(categoryHandle.getFullName())) {
+    		List<sceFont.FontRegistryEntry> fontRegistry = Modules.sceFontModule.getFontRegistry();
+    		if ("path_name".equals(name)) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(Modules.sceFontModule.getFontDirPath().length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, Modules.sceFontModule.getFontDirPath());
+    			}
+    		} else if ("num_fonts".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(fontRegistry.size());
+    			}
+    		} else {
+    			log.warn(String.format("Unknown font registry entry '%s'", name));
+    		}
+    	} else if (categoryHandle.getFullName().startsWith("/system/DATA/FONT/PROPERTY/INFO") || categoryHandle.getFullName().startsWith("/DATA/FONT/PROPERTY/INFO")) {
+    		List<sceFont.FontRegistryEntry> fontRegistry = Modules.sceFontModule.getFontRegistry();
+    		int index = Integer.parseInt(categoryHandle.getFullName().substring(categoryHandle.getFullName().indexOf("INFO") + 4));
+    		if (index < 0 || index >= fontRegistry.size()) {
+    			return -1;
+    		}
+    		FontRegistryEntry entry = fontRegistry.get(index);
+    		if ("h_size".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(entry.h_size);
+    			}
+    		} else if ("v_size".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(entry.v_size);
+    			}
+    		} else if ("h_resolution".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.h_resolution);
+    			}
+    		} else if ("v_resolution".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.v_resolution);
+    			}
+    		} else if ("extra_attributes".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.extra_attributes);
+    			}
+    		} else if ("weight".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.weight);
+    			}
+    		} else if ("family_code".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.family_code);
+    			}
+    		} else if ("style".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.style);
+    			}
+    		} else if ("sub_style".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.sub_style);
+    			}
+    		} else if ("language_code".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.language_code);
+    			}
+    		} else if ("region_code".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.region_code);
+    			}
+    		} else if ("country_code".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.country_code);
+    			}
+    		} else if ("file_name".equals(name)) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(entry.file_name == null ? 0 : entry.file_name.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, entry.file_name);
+    			}
+    		} else if ("font_name".equals(name)) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(entry.font_name == null ? 0 : entry.font_name.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, entry.font_name);
+    			}
+    		} else if ("expire_date".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.expire_date);
+    			}
+    		} else if ("shadow_option".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(entry.shadow_option);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown font registry entry '%s'", name));
+    		}
+    	} else if ("/CONFIG/DATE".equals(categoryHandle.getFullName())) {
+    		if ("date_format".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(2);
+    			}
+    		} else if ("time_format".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/CONFIG/NP".equals(categoryHandle.getFullName())) {
+    		if ("account_id".equals(name)) {
+    			ptype.setValue(REG_TYPE_BIN);
+    			psize.setValue(16);
+    			if (size >= 16) {
+    				buf.clear(16);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/CONFIG/PREMO".equals(categoryHandle.getFullName())) {
+    		if ("ps3_mac".equals(name)) {
+    			ptype.setValue(REG_TYPE_BIN);
+    			psize.setValue(6);
+    			if (size >= 6) {
+    				buf.clear(6);
+    			}
+    		} else if ("ps3_name".equals(name)) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(1);
+    			if (size >= 1) {
+        			buf.clear(1);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/CONFIG/SYSTEM".equals(categoryHandle.getFullName())) {
+    		if ("exh_mode".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if ("umd_autoboot".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(0);
+    			}
+    		} else if ("usb_auto_connect".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(1);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/CONFIG/SYSTEM/SOUND".equals(categoryHandle.getFullName())) {
+    		if ("dynamic_normalizer".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if ("operation_sound_mode".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(1);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/CONFIG/SYSTEM/CHARACTER_SET".equals(categoryHandle.getFullName())) {
+    		if ("oem".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(5);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/CONFIG/SYSTEM/XMB".equals(categoryHandle.getFullName())) {
+    		if ("language".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(1);
+    			}
+    		} else if ("button_assign".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(1);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/CONFIG/SYSTEM/XMB/THEME".equals(categoryHandle.getFullName())) {
+    		if ("wallpaper_mode".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if ("custom_theme_mode".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if ("color_mode".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if ("system_color".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/SYSPROFILE/RESOLUTION".equals(categoryHandle.getFullName())) {
+    		if ("horizontal".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(8210);
+    			}
+    		} else if ("vertical".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(8210);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/CONFIG/ALARM".equals(categoryHandle.getFullName())) {
+    		if (name.matches("alarm_\\d+_time")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(-1);
+    			}
+    		} else if (name.matches("alarm_\\d+_property")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("flash1:/registry/system/REGISTRY".equals(categoryHandle.getFullName())) {
+    		if ("category_version".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0x66);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("flash1:/registry/system/CONFIG/SYSTEM/LOCK".equals(categoryHandle.getFullName())) {
+    		if ("parental_level".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else {
+			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    	}
+
+    	return 0;
+    }
+
+    @Override
 	public void start() {
 		registryHandles = new HashMap<Integer, sceReg.RegistryHandle>();
 		categoryHandles = new HashMap<Integer, sceReg.CategoryHandle>();
+		keyHandles = new HashMap<Integer, sceReg.KeyHandle>();
 
 		super.start();
 	}
@@ -144,9 +474,8 @@ public class sceReg extends HLEModule {
     	CategoryHandle categoryHandle = new CategoryHandle(registryHandle, name, mode);
     	categoryHandles.put(categoryHandle.uid, categoryHandle);
     	hd.setValue(categoryHandle.uid);
-    	if ("/system/DATA/FONT".equals(categoryHandle.getFullName())) {
-    		// OK
-    	} else if (categoryHandle.getFullName().startsWith("/system/DATA/FONT/PROPERTY/INFO")) {
+
+    	if (categoryHandle.getFullName().startsWith("/system/DATA/FONT/PROPERTY/INFO")) {
     		List<sceFont.FontRegistryEntry> fontRegistry = Modules.sceFontModule.getFontRegistry();
     		int index = Integer.parseInt(categoryHandle.getFullName().substring(31));
     		if (index < 0 || index >= fontRegistry.size()) {
@@ -154,10 +483,9 @@ public class sceReg extends HLEModule {
     				return -1;
     			}
     		}
-    	} else {
-			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
     	}
-     	return 0;
+
+    	return 0;
     }
 
     @HLEFunction(nid = 0x0CAE832B, version = 150)
@@ -332,25 +660,34 @@ public class sceReg extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xD4475AA8, version = 150)
     public int sceRegGetKeyInfo(int hd, String name, TPointer32 hk, TPointer32 ptype, TPointer32 psize) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
     		return -1;
     	}
-    	hk.setValue(0x55667788);
-    	return 0;
+
+    	KeyHandle keyHandle = new KeyHandle(name);
+    	keyHandles.put(keyHandle.uid, keyHandle);
+
+    	hk.setValue(keyHandle.uid);
+
+    	return getKey(categoryHandle, name, ptype, psize, TPointer.NULL, 0);
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x28A8E98A, version = 150)
     public int sceRegGetKeyValue(int hd, int hk, TPointer buf, int size) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
     		return -1;
     	}
-    	return 0;
+
+    	KeyHandle keyHandle = keyHandles.get(hk);
+    	if (keyHandle == null) {
+    		return -1;
+    	}
+
+    	return getKey(categoryHandle, keyHandle.name, TPointer32.NULL, TPointer32.NULL, buf, size);
     }
 
     @HLEUnimplemented
@@ -390,79 +727,7 @@ public class sceReg extends HLEModule {
     		log.debug(String.format("sceRegGetKeyInfoByName fullName='%s/%s'", categoryHandle.getFullName(), name));
     	}
 
-    	if ("/system/DATA/FONT".equals(categoryHandle.getFullName())) {
-    		if ("path_name".equals(name)) {
-    			ptype.setValue(REG_TYPE_STR);
-    			psize.setValue(Modules.sceFontModule.getFontDirPath().length());
-    		} else if ("num_fonts".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else {
-    			log.warn(String.format("Unknown font registry entry '%s'", name));
-    		}
-    	} else if (categoryHandle.getFullName().startsWith("/system/DATA/FONT/PROPERTY/INFO")) {
-    		List<sceFont.FontRegistryEntry> fontRegistry = Modules.sceFontModule.getFontRegistry();
-    		int index = Integer.parseInt(categoryHandle.getFullName().substring(31));
-    		if (index < 0 || index >= fontRegistry.size()) {
-    			return -1;
-    		}
-    		FontRegistryEntry entry = fontRegistry.get(index);
-    		if ("h_size".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("v_size".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("h_resolution".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("v_resolution".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("extra_attributes".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("weight".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("family_code".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("style".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("sub_style".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("language_code".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("region_code".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("country_code".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("file_name".equals(name)) {
-    			ptype.setValue(REG_TYPE_STR);
-    			psize.setValue(entry.file_name == null ? 0 : entry.file_name.length());
-    		} else if ("font_name".equals(name)) {
-    			ptype.setValue(REG_TYPE_STR);
-    			psize.setValue(entry.font_name == null ? 0 : entry.font_name.length());
-    		} else if ("expire_date".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else if ("shadow_option".equals(name)) {
-    			ptype.setValue(REG_TYPE_INT);
-    			psize.setValue(4);
-    		} else {
-    			log.warn(String.format("Unknown font registry entry '%s'", name));
-    		}
-    	} else {
-			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
-    	}
-
-    	return 0;
+    	return getKey(categoryHandle, name, ptype, psize, TPointer.NULL, 0);
     }
 
     @HLEFunction(nid = 0x30BE0259, version = 150)
@@ -476,56 +741,6 @@ public class sceReg extends HLEModule {
     		log.debug(String.format("sceRegGetKeyValueByName fullName='%s/%s'", categoryHandle.getFullName(), name));
     	}
 
-    	if ("/system/DATA/FONT".equals(categoryHandle.getFullName())) {
-    		List<sceFont.FontRegistryEntry> fontRegistry = Modules.sceFontModule.getFontRegistry();
-    		if ("num_fonts".equals(name) && size >= 4) {
-    			buf.setValue32(fontRegistry.size());
-    		} else {
-    			log.warn(String.format("Unknown font registry entry '%s'", name));
-    		}
-    	} else if (categoryHandle.getFullName().startsWith("/system/DATA/FONT/PROPERTY/INFO")) {
-    		List<sceFont.FontRegistryEntry> fontRegistry = Modules.sceFontModule.getFontRegistry();
-    		int index = Integer.parseInt(categoryHandle.getFullName().substring(31));
-    		FontRegistryEntry entry = fontRegistry.get(index);
-    		if ("h_size".equals(name) && size >= 4) {
-    			buf.setValue32(entry.h_size);
-    		} else if ("v_size".equals(name) && size >= 4) {
-    			buf.setValue32(entry.v_size);
-    		} else if ("h_resolution".equals(name) && size >= 4) {
-    			buf.setValue32(entry.h_resolution);
-    		} else if ("v_resolution".equals(name) && size >= 4) {
-    			buf.setValue32(entry.v_resolution);
-    		} else if ("extra_attributes".equals(name) && size >= 4) {
-    			buf.setValue32(entry.extra_attributes);
-    		} else if ("weight".equals(name) && size >= 4) {
-    			buf.setValue32(entry.weight);
-    		} else if ("family_code".equals(name) && size >= 4) {
-    			buf.setValue32(entry.family_code);
-    		} else if ("style".equals(name) && size >= 4) {
-    			buf.setValue32(entry.style);
-    		} else if ("sub_style".equals(name) && size >= 4) {
-    			buf.setValue32(entry.sub_style);
-    		} else if ("language_code".equals(name) && size >= 4) {
-    			buf.setValue32(entry.language_code);
-    		} else if ("region_code".equals(name) && size >= 4) {
-    			buf.setValue32(entry.region_code);
-    		} else if ("country_code".equals(name) && size >= 4) {
-    			buf.setValue32(entry.country_code);
-    		} else if ("file_name".equals(name)) {
-    			Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, entry.file_name);
-    		} else if ("font_name".equals(name)) {
-    			Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, entry.font_name);
-    		} else if ("expire_date".equals(name) && size >= 4) {
-    			buf.setValue32(entry.expire_date);
-    		} else if ("shadow_option".equals(name) && size >= 4) {
-    			buf.setValue32(entry.shadow_option);
-    		} else {
-    			log.warn(String.format("Unknown font registry entry '%s'", name));
-    		}
-    	} else {
-			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
-    	}
-
-    	return 0;
+    	return getKey(categoryHandle, name, TPointer32.NULL, TPointer32.NULL, buf, size);
     }
 }
