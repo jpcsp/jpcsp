@@ -1407,7 +1407,7 @@ public class Loader {
 	                    // from custom modules (attr != 0x4000) unless
 	                    // the module is a homebrew (loaded from MemoryStick) or
 	                    // this is the EBOOT module.
-                        if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000) || module.pspfilename.startsWith("ms0:") || module.pspfilename.startsWith("disc0:/PSP_GAME/SYSDIR/EBOOT.")) {
+                        if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000) || module.pspfilename.startsWith("ms0:") || module.pspfilename.startsWith("disc0:/PSP_GAME/SYSDIR/EBOOT.") || module.pspfilename.startsWith("flash0:")) {
                             nidMapper.addModuleNid(module, moduleName, nid, exportAddress);
                             entCount++;
                             if (log.isDebugEnabled()) {

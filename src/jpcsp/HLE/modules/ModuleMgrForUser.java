@@ -51,6 +51,7 @@ import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelModuleInfo;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
@@ -212,8 +213,12 @@ public class ModuleMgrForUser extends HLEModule {
 
         // Ban flash0 modules
         if (name.startsWith("flash0:")) {
-            log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
-            return moduleManager.LoadFlash0Module(prxname.toString());
+        	StringBuilder localFileName = new StringBuilder();
+        	IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(name, localFileName);
+        	if (vfs.ioGetstat(localFileName.toString(), new SceIoStat()) < 0) {
+        		log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
+        		return moduleManager.LoadFlash0Module(prxname.toString());
+        	}
         }
 
         // Check if the PRX name matches an HLE module
@@ -289,6 +294,13 @@ public class ModuleMgrForUser extends HLEModule {
     	Emulator.getScheduler().addAction(Emulator.getClock().microTime() + 100000, delayedLoadModule);
 
     	return 0;
+    }
+
+    public void hleKernelLoadAndStartModule(String name, int flags, int uid, int buffer, int bufferSize, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo) {
+    	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+    	hleKernelLoadModule(thread, name, flags, uid, buffer, bufferSize, lmOption, byUid, needModuleInfo);
+    	int moduleUid = thread.cpuContext._v0;
+    	sceKernelStartModule(moduleUid, 0, TPointer.NULL, TPointer32.NULL, TPointer.NULL);
     }
 
     private void hleKernelLoadModule(SceKernelThreadInfo thread, String name, int flags, int uid, int buffer, int bufferSize, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo) {

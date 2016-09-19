@@ -2852,6 +2852,16 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 }
             } else if (args[i].equals("--ProOnline")) {
                 ProOnlineNetworkAdapter.setEnabled(true);
+            } else if (args[i].equals("--vsh")) {
+                Modules.sceDisplayModule.setCalledFromCommandLine();
+            	loadFile(new File("flash0/vsh/module/vshmain.prx"));
+            	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0://kd/vshbridge.prx", 0, 0, 0, 0, null, false, false);
+            	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0://vsh/module/paf.prx", 0, 0, 0, 0, null, false, false);
+            	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0://vsh/module/common_util.prx", 0, 0, 0, 0, null, false, false);
+            	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0://vsh/module/common_gui.prx", 0, 0, 0, 0, null, false, false);
+            	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0://kd/mesg_led_01g.prx", 0, 0, 0, 0, null, false, false);
+            	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_VAUDIO");
+            	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_ATRAC3PLUS");
             } else {
                 printUsage();
                 break;
