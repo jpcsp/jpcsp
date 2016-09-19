@@ -23,6 +23,8 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -32,8 +34,8 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.pspBaseCallback;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
 // Information based on
@@ -41,15 +43,18 @@ import jpcsp.util.Utilities;
 public class sceNpMatching2 extends HLEModule {
     public static Logger log = Modules.getLogger("sceNpMatching2");
     private static final String idContextPurpose = "sceNpMatching2Context";
-    private int defaultRequestCallbackFunction;
-    private int defaultRequestCallbackArgument;
-    private int defaultRequestTimeout;
-    private int defaultRequestAppReqId;
-    private int defaultRoomEventCallbackFunction;
-    private int defaultRoomEventCallbackArgument;
-    private int defaultRoomMessageCallbackFunction;
-    private int defaultRoomMessageCallbackArgument;
-    private Map<Integer, MatchingContext> contextMap = new HashMap<Integer, sceNpMatching2.MatchingContext>();
+    protected int defaultRequestCallbackFunction;
+    protected int defaultRequestCallbackArgument;
+    protected int defaultRequestTimeout;
+    protected int defaultRequestAppReqId;
+    protected int defaultRoomEventCallbackFunction;
+    protected int defaultRoomEventCallbackArgument;
+    protected int defaultRoomMessageCallbackFunction;
+    protected int defaultRoomMessageCallbackArgument;
+    protected int signalingCallbackFunction;
+    protected int signalingCallbackArgument;
+    protected Map<Integer, MatchingContext> contextMap = new HashMap<Integer, sceNpMatching2.MatchingContext>();
+    protected SysMemInfo dataBuffer;
 
     private static class MatchingContext {
     	private boolean started;
@@ -71,10 +76,85 @@ public class sceNpMatching2 extends HLEModule {
 
 		pspBaseCallback requestCallback = Modules.ThreadManForUserModule.hleKernelCreateCallback(defaultRequestCallbackFunction, 6);
 		if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(THREAD_CALLBACK_USER_DEFINED, requestCallback)) {
-			int reqId = 0x14567; // Dummy value for debugging
-			int event = 0x9876; // Dummy value for debugging
-			int data = 0xDEADBEEF; // Dummy value for debugging
+			if (dataBuffer == null) {
+				dataBuffer = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceNpMatching2-DataBuffer", SysMemUserForUser.PSP_SMEM_Low, 128, 0);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNpMatching2.notifyRequestCallback allocated dataBuffer %s", dataBuffer));
+				}
+			}
+			Memory mem = Emulator.getMemory();
+			mem.memset(dataBuffer.addr, (byte) 0, dataBuffer.size);
+
+			int reqId = 0x00011111; // Dummy value for debugging
+			int event = 0x2222; // Dummy value for debugging
+			int data = dataBuffer.addr;
 			int errorCode = 0;
+
+			// Write unknown values to data buffer for debugging
+			// The reqId contains a special value in the upper 16-bit
+			// which seems to be in range [0..16].
+			switch (reqId >>> 16) {
+				case 0:
+				case 6:
+				case 7:
+				case 9:
+				case 10:
+				case 11:
+				case 13:
+				case 16: {
+					// In those cases, the data buffer doesn't seem to be used
+					data = 0;
+					break;
+				}
+				case 1: {
+					mem.write16(data, (short) 0x3333);
+					mem.write8(data + 2, (byte) 0x44);
+					break;
+				}
+				case 2: {
+					int ptr = data + 8;
+					mem.write32(data, ptr); // Pointer to 64 bytes
+					mem.write32(data + 4, 0);
+					mem.write32(ptr, 0); // Pointer to next 64 bytes or NULL
+					for (int i = 4; i < 64; i += 4) {
+						mem.write32(ptr + i, 0x12345600 + i);
+					}
+					break;
+				}
+				case 3: {
+					mem.write32(data +  0, 0x33333333);
+					mem.write32(data +  4, 0x44444444);
+					mem.write32(data +  8, 0x55555555);
+					mem.write32(data + 12, 0x66666666);
+					break;
+				}
+				case 4:
+				case 5: {
+					int ptr = data + 4;
+					mem.write32(data, ptr); // Pointer to 64 bytes
+					mem.write16(ptr, (short) 0x3333);
+					for (int i = 4; i < 64; i += 4) {
+						mem.write32(ptr + i, 0x12345600 + i);
+					}
+					int ptr2 = ptr + 64;
+					mem.write32(ptr + 44, ptr2); // Pointer to 58 bytes
+					mem.write16(ptr2 + 56, (short) 0x4444);
+					break;
+				}
+				case 8: {
+					mem.write32(data, 1); // Seems to be a flag having value 0 or 1
+					break;
+				}
+				case 12:
+				case 14:
+				case 15: {
+					// Two 32-bit values (a 64-bit timestamp maybe?)
+					mem.write32(data + 0, 0x12345678);
+					mem.write32(data + 4, 0x9ABCDEF0);
+					break;
+				}
+			}
+
 			requestCallback.setArgument(0, ctxId);
 			requestCallback.setArgument(1, reqId);
 			requestCallback.setArgument(2, event);
@@ -83,6 +163,90 @@ public class sceNpMatching2 extends HLEModule {
 			requestCallback.setArgument(5, defaultRequestCallbackArgument);
 			Modules.ThreadManForUserModule.hleKernelNotifyCallback(THREAD_CALLBACK_USER_DEFINED, requestCallback);
 		}
+    }
+
+    private void notifySignalingCallback(int ctxId) {
+    	MatchingContext context = contextMap.get(ctxId);
+    	if (context == null || !context.isStarted() || signalingCallbackFunction == 0) {
+    		return;
+    	}
+
+		pspBaseCallback signalingCallback = Modules.ThreadManForUserModule.hleKernelCreateCallback(signalingCallbackFunction, 8);
+		if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(THREAD_CALLBACK_USER_DEFINED, signalingCallback)) {
+			long roomId = 0x123456789ABCDEF0L;
+			int peerMemberId = 0x1111;
+			int event = 0x5101; // 0x5101 - 0x5106
+			int errorCode = 0;
+			signalingCallback.setArgument(0, ctxId);
+			signalingCallback.setArgument(2, (int) roomId);
+			signalingCallback.setArgument(3, (int) (roomId >>> 32));
+			signalingCallback.setArgument(4, peerMemberId);
+			signalingCallback.setArgument(5, event);
+			signalingCallback.setArgument(6, errorCode);
+			signalingCallback.setArgument(7, signalingCallbackArgument);
+			Modules.ThreadManForUserModule.hleKernelNotifyCallback(THREAD_CALLBACK_USER_DEFINED, signalingCallback);
+		}    	
+    }
+
+    private void notifyRoomEventCallback(int ctxId) {
+    	MatchingContext context = contextMap.get(ctxId);
+    	if (context == null || !context.isStarted() || defaultRoomEventCallbackFunction == 0) {
+    		return;
+    	}
+
+    	pspBaseCallback roomEventCallback = Modules.ThreadManForUserModule.hleKernelCreateCallback(defaultRoomEventCallbackFunction, 7);
+    	if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(THREAD_CALLBACK_USER_DEFINED, roomEventCallback)) {
+    		long roomId = 0x123456789ABCDEF0L;
+    		int event = 0x1101; // 0x1101 - 0x1109
+    		int errorCode = 0;
+    		roomEventCallback.setArgument(0, ctxId);
+    		roomEventCallback.setArgument(2, (int) roomId);
+    		roomEventCallback.setArgument(3, (int) (roomId >>> 32));
+    		roomEventCallback.setArgument(4, event);
+    		roomEventCallback.setArgument(5, errorCode);
+    		roomEventCallback.setArgument(6, defaultRoomEventCallbackArgument);
+    		Modules.ThreadManForUserModule.hleKernelNotifyCallback(THREAD_CALLBACK_USER_DEFINED, roomEventCallback);
+    	}
+    }
+
+    private void notifyRoomMessageCallback(int ctxId) {
+    	MatchingContext context = contextMap.get(ctxId);
+    	if (context == null || !context.isStarted() || defaultRoomMessageCallbackFunction == 0) {
+    		return;
+    	}
+
+    	pspBaseCallback roomMessageCallback = Modules.ThreadManForUserModule.hleKernelCreateCallback(defaultRoomMessageCallbackFunction, 8);
+    	if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(THREAD_CALLBACK_USER_DEFINED, roomMessageCallback)) {
+    		if (dataBuffer == null) {
+				dataBuffer = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceNpMatching2-DataBuffer", SysMemUserForUser.PSP_SMEM_Low, 128, 0);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNpMatching2.notifyRoomMessageCallback allocated dataBuffer %s", dataBuffer));
+				}
+    		}
+    		Memory mem = Emulator.getMemory();
+    		mem.memset(dataBuffer.addr, (byte) 0, dataBuffer.size);
+
+    		long roomId = 0x123456789ABCDEF0L;
+    		int srcMemberId = 0x1111;
+    		int event = 0x2101; // 0x2101, 0x2102
+    		int data = dataBuffer.addr;
+    		String dummyString = "Hello, world!";
+
+    		int stringData = data + 24;
+    		mem.write32(data + 12, stringData);
+    		mem.write32(data + 16, dummyString.length());
+    		mem.write32(data + 20, 1); // Seems to be a flag having value 0 or 1
+    		Utilities.writeStringZ(mem, stringData, dummyString);
+
+    		roomMessageCallback.setArgument(0, ctxId);
+    		roomMessageCallback.setArgument(2, (int) roomId);
+    		roomMessageCallback.setArgument(3, (int) (roomId >>> 32));
+    		roomMessageCallback.setArgument(4, srcMemberId);
+    		roomMessageCallback.setArgument(5, event);
+    		roomMessageCallback.setArgument(6, data);
+    		roomMessageCallback.setArgument(7, defaultRoomMessageCallbackArgument);
+    		Modules.ThreadManForUserModule.hleKernelNotifyCallback(THREAD_CALLBACK_USER_DEFINED, roomMessageCallback);
+    	}
     }
 
     @HLEUnimplemented
@@ -121,6 +285,8 @@ public class sceNpMatching2 extends HLEModule {
     	defaultRoomEventCallbackFunction = callbackFunction;
     	defaultRoomEventCallbackArgument = callbackArgument;
 
+    	notifyRoomEventCallback(ctxId);
+
     	return 0;
     }
 
@@ -135,6 +301,9 @@ public class sceNpMatching2 extends HLEModule {
     	context.setStarted(true);
 
     	notifyRequestCallback(ctxId);
+    	notifySignalingCallback(ctxId);
+    	notifyRoomEventCallback(ctxId);
+    	notifyRoomMessageCallback(ctxId);
 
     	return 0;
     }
@@ -167,6 +336,11 @@ public class sceNpMatching2 extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x3DE70241, version = 150)
     public int sceNpMatching2DestroyContext(int ctxId) {
+    	if (dataBuffer != null) {
+    		Modules.SysMemUserForUserModule.free(dataBuffer);
+    		dataBuffer = null;
+    	}
+
     	if (!SceUidManager.releaseId(ctxId, idContextPurpose)) {
     		return -1;
     	}
@@ -314,6 +488,11 @@ public class sceNpMatching2 extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xA3C298D1, version = 150)
     public int sceNpMatching2RegisterSignalingCallback(int ctxId, TPointer callbackFunction, int callbackArgument) {
+    	signalingCallbackFunction = callbackFunction.getAddress();
+    	signalingCallbackArgument = callbackArgument;
+
+    	notifySignalingCallback(ctxId);
+
     	return 0;
     }
 
@@ -382,6 +561,8 @@ public class sceNpMatching2 extends HLEModule {
 
     	defaultRoomMessageCallbackFunction = callbackFunction;
     	defaultRoomMessageCallbackArgument = callbackArgument;
+
+    	notifyRoomMessageCallback(ctxId);
 
     	return 0;
     }
