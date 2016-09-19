@@ -2478,6 +2478,12 @@ public class sceDisplay extends HLEModule {
 		return hleDisplayWaitVblankStart(cycleNum, true);
 	}
 
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x996881D2, version = 660)
+	public int sceDisplay_driver_996881D2() {
+		return 1;
+	}
+
 	public static class BufferInfo {
 
         public int topAddr;

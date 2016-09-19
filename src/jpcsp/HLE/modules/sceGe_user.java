@@ -749,4 +749,14 @@ public class sceGe_user extends HLEModule {
     public int sceGeEdramSetSize(int size) {
     	return 0;
     }
+
+    /**
+     * Gets the EDRAM physical size.
+     *
+     * @return The EDRAM physical size.
+     */
+    @HLEFunction(nid = 0x547EC5F0, version = 660)
+    public int sceGeEdramGetHwSize() {
+    	return MemoryMap.SIZE_VRAM;
+    }
 }

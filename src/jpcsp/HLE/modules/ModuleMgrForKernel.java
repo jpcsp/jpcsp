@@ -22,6 +22,7 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
 
@@ -41,4 +42,26 @@ public class ModuleMgrForKernel extends HLEModule {
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(buffer.toString(), flags, 0, buffer.getAddress(), bufSize, lmOption, false, true);
     }
+
+	/**
+	 * Load a module with the VSH apitype.
+	 *
+	 * @param path        The path to the module to load.
+	 * @param flags       Unused, always 0 . 
+	 * @param optionAddr  Pointer to a mod_param_t structure. Can be NULL.
+	 * @return
+	 */
+	@HLEFunction(nid = 0xD5DDAB1F, version = 150)
+	public int sceKernelLoadModuleVSH(PspString path, int flags, @CanBeNull TPointer optionAddr) {
+        SceKernelLMOption lmOption = null;
+        if (optionAddr.isNotNull()) {
+            lmOption = new SceKernelLMOption();
+            lmOption.read(optionAddr);
+            if (log.isInfoEnabled()) {
+                log.info(String.format("sceKernelLoadModuleVSH options: %s", lmOption));
+            }
+        }
+
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true);
+	}
 }

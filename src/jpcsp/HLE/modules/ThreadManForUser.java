@@ -130,6 +130,7 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -2134,12 +2135,13 @@ public class ThreadManForUser extends HLEModule {
     	return id;
     }
 
-    public SceKernelThreadInfo hleKernelCreateThread(String name, int entry_addr,
-            int initPriority, int stackSize, int attr, int option_addr, int mpidStack) {
-
+    public SceKernelThreadInfo hleKernelCreateThread(String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr, int mpidStack) {
         if (option_addr != 0) {
-            Modules.log.warn("hleKernelCreateThread unhandled SceKernelThreadOptParam: " +
-                    "option_addr=0x" + Integer.toHexString(option_addr));
+        	Memory mem = Emulator.getMemory();
+        	int length = mem.read32(option_addr);
+        	if (length > 4) {
+        		log.warn(String.format("hleKernelCreateThread unhandled SceKernelThreadOptParam option_addr=0x%08X: %s", option_addr, Utilities.getMemoryDump(option_addr, length)));
+        	}
         }
 
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr, mpidStack);
@@ -4367,5 +4369,10 @@ public class ThreadManForUser extends HLEModule {
     	}
 
     	return 0;
+    }
+
+    @HLEFunction(nid = 0xF6427665, version = 150)
+    public int sceKernelGetUserLevel() {
+    	return 4;
     }
 }

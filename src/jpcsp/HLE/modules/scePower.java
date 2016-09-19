@@ -565,4 +565,10 @@ public class scePower extends HLEModule {
 
         return result;
     }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xBA566CD0, version = 660)
+    public int scePowerSetWakeupCondition(int condition) {
+        return 0;
+    }
 }

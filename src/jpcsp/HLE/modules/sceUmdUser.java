@@ -414,4 +414,10 @@ public class sceUmdUser extends HLEModule {
     public int sceUmdUseUMDInMsUsbWlan() {
         return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x816E656B, version = 660)
+    public int sceUmdSetSuspendResumeMode(int mode) {
+        return 0;
+    }
 }

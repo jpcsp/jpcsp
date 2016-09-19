@@ -550,4 +550,19 @@ public class sceCtrl extends HLEModule {
 	public int sceCtrlReadBufferPositive371(TPointer dataAddr, int numBuf) {
     	return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
 	}
+
+    @HLEFunction(nid = 0xD073ECA4, version = 620)
+	public int sceCtrlReadBufferPositive_620(TPointer dataAddr, int numBuf) {
+    	return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
+	}
+
+    @HLEFunction(nid = 0x9F3038AC, version = 639)
+	public int sceCtrlReadBufferPositive_639(TPointer dataAddr, int numBuf) {
+    	return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
+	}
+
+    @HLEFunction(nid = 0xBE30CED0, version = 660)
+	public int sceCtrlReadBufferPositive_660(TPointer dataAddr, int numBuf) {
+    	return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
+	}
 }

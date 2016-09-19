@@ -463,6 +463,9 @@ public class sceRtc extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x7D1FBED3, version = 150)
     public int sceRtcSetAlarmTick(TPointer64 srcPtr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceRtcSetAlarmTick src=0x%X", srcPtr.getValue()));
+    	}
     	return 0;
     }
 
@@ -524,4 +527,18 @@ public class sceRtc extends HLEModule {
 
         return 0;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC2DDBEB5, version = 150)
+	public int sceRtcGetAlarmTick(TPointer64 alarmTick) {
+		alarmTick.setValue(0L);
+
+		return 0;
+	}
+
+	@HLEUnimplemented
+    @HLEFunction(nid = 0xE09880CF, version = 600)
+    public int sceRtcSetAlarmTick_660(TPointer64 srcPtr) {
+		return sceRtcSetAlarmTick(srcPtr);
+    }
 }

@@ -90,8 +90,14 @@ public class sceHprm extends HLEModule {
     }
 
     @HLEFunction(nid = 0x40D2F9F0, version = 150)
-    public int sceHprmReadLatch(TPointer latchAddr) {
-        return 0;
+    public int sceHprmReadLatch(TPointer32 latchAddr) {
+    	// Return dummy values
+    	latchAddr.setValue( 0, 0);
+    	latchAddr.setValue( 4, 0);
+    	latchAddr.setValue( 8, 0);
+    	latchAddr.setValue(12, 0);
+
+    	return 0;
     }
 
     /**
@@ -104,5 +110,16 @@ public class sceHprm extends HLEModule {
     @HLEFunction(nid = 0x1528D408, version = 150)
     public int sceHprm_driver_1528D408() {
         return 1;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xDC895B2B, version = 660)
+    public int sceHprm_driver_DC895B2B() {
+    	return 0;
+    }
+
+    @HLEFunction(nid = 0xE9B776BE, version = 660)
+    public int sceHprmReadLatch_660(TPointer32 latchAddr) {
+    	return sceHprmReadLatch(latchAddr);
     }
 }

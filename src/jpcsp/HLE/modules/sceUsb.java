@@ -230,4 +230,10 @@ public class sceUsb extends HLEModule {
 	public int sceUsbWaitCancel() {
 		return 0;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8BFC3DE8, version = 150)
+	public int sceUsb_8BFC3DE8(int callbackId, int unknown1, int unknown2) {
+		return 0;
+	}
 }
