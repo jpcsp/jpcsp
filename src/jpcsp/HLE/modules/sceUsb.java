@@ -234,6 +234,14 @@ public class sceUsb extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x8BFC3DE8, version = 150)
 	public int sceUsb_8BFC3DE8(int callbackId, int unknown1, int unknown2) {
+		// Registering a callback?
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x89DE0DC5, version = 150)
+	public int sceUsb_89DE0DC5(int callbackId) {
+		// Unregistering a callback?
 		return 0;
 	}
 }
