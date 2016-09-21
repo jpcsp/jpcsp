@@ -296,11 +296,11 @@ public class ModuleMgrForUser extends HLEModule {
     	return 0;
     }
 
-    public void hleKernelLoadAndStartModule(String name, int flags, int uid, int buffer, int bufferSize, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo) {
+    public void hleKernelLoadAndStartModule(String name, int flags, int uid, int buffer, int bufferSize, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo, int argSize, TPointer argPp, TPointer startOptions) {
     	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
     	hleKernelLoadModule(thread, name, flags, uid, buffer, bufferSize, lmOption, byUid, needModuleInfo);
     	int moduleUid = thread.cpuContext._v0;
-    	sceKernelStartModule(moduleUid, 0, TPointer.NULL, TPointer32.NULL, TPointer.NULL);
+    	hleKernelStartModule(moduleUid, 0, TPointer.NULL, TPointer32.NULL, startOptions, false);
     }
 
     private void hleKernelLoadModule(SceKernelThreadInfo thread, String name, int flags, int uid, int buffer, int bufferSize, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo) {
@@ -456,64 +456,7 @@ public class ModuleMgrForUser extends HLEModule {
     	return result;
 	}
 
-    protected int getSelfModuleId() {
-        return Modules.ThreadManForUserModule.getCurrentThread().moduleid;
-    }
-
-    @HLEFunction(nid = 0xB7F46618, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadModuleByID(int uid, @CanBeNull TPointer optionAddr) {
-        String name = Modules.IoFileMgrForUserModule.getFileFilename(uid);
-        SeekableDataInput file = Modules.IoFileMgrForUserModule.getFile(uid);
-
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelLoadModuleByID name='%s'", name));
-        }
-
-        SceKernelLMOption lmOption = null;
-        if (optionAddr.isNotNull()) {
-            lmOption = new SceKernelLMOption();
-            lmOption.read(optionAddr);
-            if (log.isInfoEnabled()) {
-            	log.info(String.format("sceKernelLoadModuleByID options: %s", lmOption));
-            }
-        }
-
-        int result = detectHleModule(name, null, file);
-        if (result >= 0) {
-        	return result;
-        }
-
-        return hleKernelLoadModule(name, 0, uid, 0, 0, lmOption, true, true);
-    }
-
-    @HLEFunction(nid = 0x977DE386, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadModule(PspString path, int flags, @CanBeNull TPointer optionAddr) {
-        SceKernelLMOption lmOption = null;
-        if (optionAddr.isNotNull()) {
-            lmOption = new SceKernelLMOption();
-            lmOption.read(optionAddr);
-            if (log.isInfoEnabled()) {
-            	log.info(String.format("sceKernelLoadModule options: %s", lmOption));
-            }
-        }
-
-        return hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true);
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x710F61B5, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadModuleMs() {
-        return 0;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0xF9275D98, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadModuleBufferUsbWlan() {
-        return 0;
-    }
-
-    @HLEFunction(nid = 0x50F0C1EC, version = 150, checkInsideInterrupt = true)
-    public int sceKernelStartModule(int uid, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
+    public int hleKernelStartModule(int uid, int argSize, TPointer argp, TPointer32 statusAddr, TPointer optionAddr, boolean waitForThreadEnd) {
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         SceKernelSMOption smOption = null;
         if (optionAddr.isNotNull()) {
@@ -583,7 +526,7 @@ public class ModuleMgrForUser extends HLEModule {
             	mpidStack = smOption.mpidStack;
             }
 
-            if (smOption != null) {
+            if (smOption != null && smOption.attribute != 0) {
                 attribute = smOption.attribute;
             }
 
@@ -634,10 +577,12 @@ public class ModuleMgrForUser extends HLEModule {
             // Start the module start thread
             threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
 
-            // Wait for the end of the module start thread.
-            // Do no return the thread exit status as the result of this call,
-            // return the module ID.
-            threadMan.hleKernelWaitThreadEnd(currentThread, thread.uid, TPointer32.NULL, false, false);
+            if (waitForThreadEnd) {
+	            // Wait for the end of the module start thread.
+	            // Do no return the thread exit status as the result of this call,
+	            // return the module ID.
+	            threadMan.hleKernelWaitThreadEnd(currentThread, thread.uid, TPointer32.NULL, false, false);
+            }
         } else if (entryAddr == 0 || entryAddr == -1) {
             Modules.log.info("sceKernelStartModule - no entry address");
             sceModule.start();
@@ -647,6 +592,67 @@ public class ModuleMgrForUser extends HLEModule {
         }
 
         return sceModule.modid;
+    }
+
+    protected int getSelfModuleId() {
+        return Modules.ThreadManForUserModule.getCurrentThread().moduleid;
+    }
+
+    @HLEFunction(nid = 0xB7F46618, version = 150, checkInsideInterrupt = true)
+    public int sceKernelLoadModuleByID(int uid, @CanBeNull TPointer optionAddr) {
+        String name = Modules.IoFileMgrForUserModule.getFileFilename(uid);
+        SeekableDataInput file = Modules.IoFileMgrForUserModule.getFile(uid);
+
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelLoadModuleByID name='%s'", name));
+        }
+
+        SceKernelLMOption lmOption = null;
+        if (optionAddr.isNotNull()) {
+            lmOption = new SceKernelLMOption();
+            lmOption.read(optionAddr);
+            if (log.isInfoEnabled()) {
+            	log.info(String.format("sceKernelLoadModuleByID options: %s", lmOption));
+            }
+        }
+
+        int result = detectHleModule(name, null, file);
+        if (result >= 0) {
+        	return result;
+        }
+
+        return hleKernelLoadModule(name, 0, uid, 0, 0, lmOption, true, true);
+    }
+
+    @HLEFunction(nid = 0x977DE386, version = 150, checkInsideInterrupt = true)
+    public int sceKernelLoadModule(PspString path, int flags, @CanBeNull TPointer optionAddr) {
+        SceKernelLMOption lmOption = null;
+        if (optionAddr.isNotNull()) {
+            lmOption = new SceKernelLMOption();
+            lmOption.read(optionAddr);
+            if (log.isInfoEnabled()) {
+            	log.info(String.format("sceKernelLoadModule options: %s", lmOption));
+            }
+        }
+
+        return hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x710F61B5, version = 150, checkInsideInterrupt = true)
+    public int sceKernelLoadModuleMs() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF9275D98, version = 150, checkInsideInterrupt = true)
+    public int sceKernelLoadModuleBufferUsbWlan() {
+        return 0;
+    }
+
+    @HLEFunction(nid = 0x50F0C1EC, version = 150, checkInsideInterrupt = true)
+    public int sceKernelStartModule(int uid, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
+    	return hleKernelStartModule(uid, argSize, argp, statusAddr, optionAddr, true);
     }
 
     @HLELogging(level="info")
@@ -665,6 +671,10 @@ public class ModuleMgrForUser extends HLEModule {
         }
 
         statusAddr.setValue(0);
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelStopModule '%s'", sceModule.modname));
+        }
 
         if (sceModule.isFlashModule) {
             // Trying to stop a module loaded from flash0:
@@ -745,6 +755,10 @@ public class ModuleMgrForUser extends HLEModule {
         if (sceModule.isModuleStarted() && !sceModule.isModuleStopped()) {
             log.warn(String.format("sceKernelUnloadModule module 0x%X is still running!", uid));
             return SceKernelErrors.ERROR_KERNEL_MODULE_CANNOT_REMOVE;
+        }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelUnloadModule '%s'", sceModule.modname));
         }
 
         sceModule.unload();
