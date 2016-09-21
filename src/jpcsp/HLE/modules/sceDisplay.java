@@ -2185,6 +2185,12 @@ public class sceDisplay extends HLEModule {
     }
 
     @HLEUnimplemented
+    @HLEFunction(nid = 0x3552AB11, version = 660, checkInsideInterrupt = true)
+    public int sceDisplaySetHoldMode_660(int holdMode) {
+        return 0;
+    }
+
+    @HLEUnimplemented
     @HLEFunction(nid = 0xA544C486, version = 150, checkInsideInterrupt = true)
     public int sceDisplaySetResumeMode(int resumeMode) {
         return 0;
@@ -2481,7 +2487,8 @@ public class sceDisplay extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x996881D2, version = 660)
 	public int sceDisplay_driver_996881D2() {
-		return 1;
+		// Has no parameters
+		return 0;
 	}
 
 	public static class BufferInfo {
