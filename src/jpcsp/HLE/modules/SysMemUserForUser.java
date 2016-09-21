@@ -579,8 +579,20 @@ public class SysMemUserForUser extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x2A3E5280, version = 280)
-	public int sceKernelQueryMemoryInfo() {
-		return 0;
+	public int sceKernelQueryMemoryInfo(int address, @CanBeNull TPointer32 partitionId, @CanBeNull TPointer32 memoryBlockId) {
+		int result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
+
+		for (Integer key : blockList.keySet()) {
+			SysMemInfo info = blockList.get(key);
+			if (info != null && info.addr <= address && address < info.addr + info.size) {
+				partitionId.setValue(info.partitionid);
+				memoryBlockId.setValue(info.uid);
+				result = 0;
+				break;
+			}
+		}
+
+		return result;
 	}
 
 	@HLEUnimplemented
@@ -609,10 +621,9 @@ public class SysMemUserForUser extends HLEModule {
         return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xACBD88CA, version = 352)
-	public int SysMemUserForUser_ACBD88CA() {
-		return 0;
+	public int sceKernelTotalMemSize() {
+		return MemoryMap.SIZE_RAM;
 	}
 
     // sceKernelGetMemoryBlockAddr (internal name)
