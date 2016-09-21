@@ -4005,6 +4005,17 @@ public class IoFileMgrForUser extends HLEModule {
                 }
                 break;
             }
+            case 0x02425856: {
+            	if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
+            		// This is the value contained in the registry entry
+            		//	"/CONFIG/SYSTEM/CHARACTER_SET/oem"
+            		int characterSet = mem.read32(indata_addr);
+            		if (log.isDebugEnabled()) {
+            			log.debug(String.format("sceIoDevctl '%s' set character set to 0x%X", devicename.getString(), characterSet));
+            		}
+            	}
+            	break;
+            }
             default:
                 log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown command");
                 if (Memory.isAddressGood(indata_addr)) {
