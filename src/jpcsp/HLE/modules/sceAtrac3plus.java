@@ -999,6 +999,9 @@ public class sceAtrac3plus extends HLEModule {
 
     protected int hleSetHalfwayBufferAndGetID(TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput) {
         if (readSize > bufferSize) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("hleSetHalfwayBufferAndGetID returning 0x%X", ERROR_ATRAC_INCORRECT_READ_SIZE));
+        	}
         	return ERROR_ATRAC_INCORRECT_READ_SIZE;
         }
 
@@ -1009,11 +1012,17 @@ public class sceAtrac3plus extends HLEModule {
         AtracFileInfo info = new AtracFileInfo();
         int codecType = analyzeRiffFile(buffer.getMemory(), buffer.getAddress(), readSize, info);
         if (codecType < 0) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("hleSetHalfwayBufferAndGetID returning 0x%X", codecType));
+        	}
         	return codecType;
         }
 
         int atID = hleGetAtracID(codecType);
         if (atID < 0) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("hleSetHalfwayBufferAndGetID returning 0x%X", atID));
+        	}
         	return atID;
         }
 
@@ -1021,6 +1030,9 @@ public class sceAtrac3plus extends HLEModule {
     	int result = id.setHalfwayBuffer(buffer.getAddress(), readSize, bufferSize, isMonoOutput, info);
     	if (result < 0) {
     		hleReleaseAtracID(atID);
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("hleSetHalfwayBufferAndGetID returning 0x%X", result));
+        	}
     		return result;
     	}
 
@@ -1489,10 +1501,14 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x132F1ECA, version = 250, checkInsideInterrupt = true)
     public int sceAtracReinit(int at3IDNum, int at3plusIDNum) {
-		int result = hleAtracReinit(at3IDNum, at3plusIDNum);
+    	int result = 0;
 
-    	if (result >= 0) {
-    		Modules.ThreadManForUserModule.hleYieldCurrentThread();
+    	if (at3IDNum != 0 || at3plusIDNum != 0) {
+    		result = hleAtracReinit(at3IDNum, at3plusIDNum);
+
+    		if (result >= 0) {
+        		Modules.ThreadManForUserModule.hleYieldCurrentThread();
+        	}
     	}
 
     	return result;
