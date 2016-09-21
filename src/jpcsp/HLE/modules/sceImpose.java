@@ -22,6 +22,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.hardware.Audio;
 import jpcsp.hardware.Battery;
 import jpcsp.settings.Settings;
 
@@ -70,6 +71,7 @@ public class sceImpose extends HLEModule {
 	public static final int PSP_IMPOSE_TIME_FORMAT            = 0x20;
 	public static final int PSP_IMPOSE_DATE_FORMAT            = 0x40;
 	public static final int PSP_IMPOSE_LANGUAGE               = 0x80;
+	public static final int PSP_IMPOSE_00000100               = 0x100;
 	public static final int PSP_IMPOSE_BACKLIGHT_OFF_INTERVAL = 0x200;
 	public static final int PSP_IMPOSE_SOUND_REDUCTION        = 0x400;
 	public static final int PSP_IMPOSE_UMD_POPUP_ENABLED      = 1;
@@ -87,9 +89,9 @@ public class sceImpose extends HLEModule {
 	public static final int PSP_IMPOSE_8000000A               = 0x8000000A;
 	public static final int PSP_IMPOSE_8000000B               = 0x8000000B;
 
+	private int imposeChanges = 0;
 	private int impose80000004 = 0;
 	private int impose80000007 = 0;
-	private int imposeMute = 0;
 	private int imposeAvls = 1;
 
     @HLEUnimplemented
@@ -188,13 +190,17 @@ public class sceImpose extends HLEModule {
 		switch (param) {
 			case PSP_IMPOSE_MAIN_VOLUME:
 				// Return value [0..30]?
-				value = 30;
+				if (Audio.isMuted()) {
+					value = 0;
+				} else {
+					value = 30;
+				}
 				break;
 			case PSP_IMPOSE_SOUND_REDUCTION:
 				value = 0;
 				break;
 			case PSP_IMPOSE_MUTE:
-				value = imposeMute;
+				value = Audio.isMuted() ? 1 : 0;
 				break;
 			case PSP_IMPOSE_AVLS:
 				value = imposeAvls;
@@ -216,6 +222,7 @@ public class sceImpose extends HLEModule {
 			case PSP_IMPOSE_TIME_FORMAT:
 			case PSP_IMPOSE_DATE_FORMAT:
 			case PSP_IMPOSE_LANGUAGE:
+			case PSP_IMPOSE_00000100:
 			case PSP_IMPOSE_80000001:
 			case PSP_IMPOSE_80000002:
 			case PSP_IMPOSE_80000003:
@@ -238,17 +245,42 @@ public class sceImpose extends HLEModule {
 	@HLEFunction(nid = 0x810FB7FB, version = 352)
 	public int sceImposeSetParam(int param, int value) {
 		switch (param) {
+			case PSP_IMPOSE_MAIN_VOLUME:
+				if (value < 0 || value >= 31) {
+					return SceKernelErrors.ERROR_INVALID_VALUE;
+				}
+				break;
 			case PSP_IMPOSE_MUTE:
 				if (value < 0 || value > 1) {
 					return SceKernelErrors.ERROR_INVALID_VALUE;
 				}
-				imposeMute = value;
+				Audio.setMuted(value != 0);
+				imposeChanges |= PSP_IMPOSE_MUTE | PSP_IMPOSE_MAIN_VOLUME;
 				break;
 			case PSP_IMPOSE_AVLS:
 				if (value < 0 || value > 1) {
 					return SceKernelErrors.ERROR_INVALID_VALUE;
 				}
 				imposeAvls = value;
+				imposeChanges |= PSP_IMPOSE_AVLS | PSP_IMPOSE_MAIN_VOLUME;
+				break;
+			case PSP_IMPOSE_TIME_FORMAT:
+				imposeChanges |= PSP_IMPOSE_TIME_FORMAT;
+				break;
+			case PSP_IMPOSE_DATE_FORMAT:
+				imposeChanges |= PSP_IMPOSE_DATE_FORMAT;
+				break;
+			case PSP_IMPOSE_LANGUAGE:
+				if (value < 0 || value >= 12) {
+					return SceKernelErrors.ERROR_INVALID_VALUE;
+				}
+				imposeChanges |= PSP_IMPOSE_LANGUAGE;
+				break;
+			case PSP_IMPOSE_00000100:
+				if (value < 0 || value > 1) {
+					return SceKernelErrors.ERROR_INVALID_VALUE;
+				}
+				imposeChanges |= PSP_IMPOSE_00000100;
 				break;
 			case PSP_IMPOSE_80000004:
 				if (value < 0 || value > 1) {
@@ -259,12 +291,8 @@ public class sceImpose extends HLEModule {
 			case PSP_IMPOSE_80000007:
 				impose80000007 = value;
 				break;
-			case PSP_IMPOSE_MAIN_VOLUME:
 			case PSP_IMPOSE_BACKLIGHT_BRIGHTNESS:
 			case PSP_IMPOSE_EQUALIZER_MODE:
-			case PSP_IMPOSE_TIME_FORMAT:
-			case PSP_IMPOSE_DATE_FORMAT:
-			case PSP_IMPOSE_LANGUAGE:
 			case PSP_IMPOSE_BACKLIGHT_OFF_INTERVAL:
 			case PSP_IMPOSE_SOUND_REDUCTION:
 			case PSP_IMPOSE_80000001:
@@ -311,7 +339,14 @@ public class sceImpose extends HLEModule {
 	@HLEFunction(nid = 0xB415FC59, version = 150)
 	public int sceImposeChanges() {
 		// Has no parameters
-		return 0;
+		int result = imposeChanges;
+		imposeChanges = 0;
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceImposeChanges returning 0x%X", result));
+		}
+
+		return result;
 	}
 
 	@HLEFunction(nid = 0x0F067E16, version = 660)
