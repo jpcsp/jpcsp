@@ -215,10 +215,13 @@ public class ModuleMgrForUser extends HLEModule {
         if (name.startsWith("flash0:")) {
         	StringBuilder localFileName = new StringBuilder();
         	IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(name, localFileName);
-        	if (vfs.ioGetstat(localFileName.toString(), new SceIoStat()) < 0) {
-        		log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
-        		return moduleManager.LoadFlash0Module(prxname.toString());
+        	if (vfs.ioGetstat(localFileName.toString(), new SceIoStat()) == 0) {
+        		// The flash0 file is available, load it
+        		return -1;
         	}
+
+        	log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
+    		return moduleManager.LoadFlash0Module(prxname.toString());
         }
 
         // Check if the PRX name matches an HLE module
