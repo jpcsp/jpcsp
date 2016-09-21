@@ -22,6 +22,7 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
@@ -47,9 +48,12 @@ public class LoadExecForKernel extends HLEModule {
 
     @HLEFunction(nid = 0x6D302D3D, version = 150)
     public int sceKernelExitVSHKernel(@CanBeNull TPointer param) {
-		//  Test in real PSP in  "Hatsune Miku Project Diva Extend" chinese patched version,same effect that sceKernelExitGame
+    	SceKernelLoadExecVSHParam loadExecVSHParam = new SceKernelLoadExecVSHParam();
+    	loadExecVSHParam.read(param);
+
+    	//  Test in real PSP in  "Hatsune Miku Project Diva Extend" chinese patched version, same effect as sceKernelExitGame
 		if (param.isNotNull()) {
-			log.info(String.format("sceKernelExitVSHKernel param=%s", Utilities.getMemoryDump(param.getAddress(), 36)));
+			log.info(String.format("sceKernelExitVSHKernel param=%s", loadExecVSHParam));
 		}
 		Emulator.PauseEmu();
 		RuntimeContext.reset();
@@ -74,5 +78,18 @@ public class LoadExecForKernel extends HLEModule {
     	}
 
     	return Modules.LoadExecForUserModule.hleKernelLoadExec(filename, loadExecVSHParam.args, loadExecVSHParam.argp);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x08F7166C, version = 660, checkInsideInterrupt = true)
+    public int sceKernelExitVSHVSH_660(TPointer param) {
+    	SceKernelLoadExecVSHParam loadExecVSHParam = new SceKernelLoadExecVSHParam();
+    	loadExecVSHParam.read(param);
+
+    	if (param.isNotNull()) {
+			log.info(String.format("sceKernelExitVSHVSH_660 param=%s", loadExecVSHParam));
+		}
+
+    	return 0;
     }
 }
