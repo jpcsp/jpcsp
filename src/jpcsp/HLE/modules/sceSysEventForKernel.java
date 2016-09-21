@@ -24,6 +24,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.kernel.types.pspSysEventHandler;
 
 public class sceSysEventForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("sceSysEventForKernel");
@@ -43,6 +44,13 @@ public class sceSysEventForKernel extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xCD9E4BB5, version = 150)
     public int sceKernelRegisterSysEventHandler(TPointer handler) {
+    	pspSysEventHandler sysEventHandler = new pspSysEventHandler();
+    	sysEventHandler.read(handler);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceKernelRegisterSysEventHandler handler: %s", sysEventHandler));
+    	}
+
     	return 0;
     }
 
