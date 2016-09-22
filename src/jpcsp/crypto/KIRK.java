@@ -92,7 +92,7 @@ public class KIRK {
         }
     }
 
-    private class AES128_CBC_Header {
+    private static class AES128_CBC_Header {
 
         private int mode;
         private int unk1;
@@ -109,7 +109,7 @@ public class KIRK {
         }
     }
 
-    private class AES128_CMAC_Header {
+    private static class AES128_CMAC_Header {
 
         private byte[] AES128Key = new byte[16];
         private byte[] CMACKey = new byte[16];
@@ -130,17 +130,27 @@ public class KIRK {
             buf.get(CMACHeaderHash, 0, 16);
             buf.get(CMACDataHash, 0, 16);
             buf.get(unk1, 0, 32);
-            mode = Integer.reverseBytes(buf.getInt());
+            mode = buf.getInt();
             useECDSAhash = buf.get();
             buf.get(unk2, 0, 11);
             dataSize = buf.getInt();
             dataOffset = buf.getInt();
             buf.get(unk3, 0, 8);
             buf.get(unk4, 0, 16);
+
+            // For PRX, the mode is big-endian, for direct sceKernelUtilsCopyWithRange,
+            // the mode is little-endian. I don't know how to better differentiate these cases.
+            if ((mode & 0x00FFFFFF) == 0x000000) {
+            	mode = Integer.reverseBytes(mode);
+            }
+        }
+
+        static public int SIZEOF() {
+        	return 144;
         }
     }
 
-    private class AES128_CMAC_ECDSA_Header {
+    private static class AES128_CMAC_ECDSA_Header {
 
         private byte[] AES128Key = new byte[16];
         private byte[] ECDSAHeaderSig_r = new byte[20];
@@ -171,7 +181,7 @@ public class KIRK {
         }
     }
 
-    private class ECDSASig {
+    private static class ECDSASig {
 
         private byte[] r = new byte[0x14];
         private byte[] s = new byte[0x14];
@@ -180,7 +190,7 @@ public class KIRK {
         }
     }
 
-    private class ECDSAPoint {
+    private static class ECDSAPoint {
 
         private byte[] x = new byte[0x14];
         private byte[] y = new byte[0x14];
@@ -201,7 +211,7 @@ public class KIRK {
         }
     }
 
-    private class ECDSAKeygenCtx {
+    private static class ECDSAKeygenCtx {
 
         private byte[] private_key = new byte[0x14];
         private ECDSAPoint public_key;
@@ -218,7 +228,7 @@ public class KIRK {
         }
     }
 
-    private class ECDSAMultiplyCtx {
+    private static class ECDSAMultiplyCtx {
 
         private byte[] multiplier = new byte[0x14];
         private ECDSAPoint public_key = new ECDSAPoint();
@@ -237,7 +247,7 @@ public class KIRK {
         }
     }
 
-    private class ECDSASignCtx {
+    private static class ECDSASignCtx {
 
         private byte[] enc = new byte[0x20];
         private byte[] hash = new byte[0x14];
@@ -248,7 +258,7 @@ public class KIRK {
         }
     }
 
-    private class ECDSAVerifyCtx {
+    private static class ECDSAVerifyCtx {
 
         private ECDSAPoint public_key;
         private byte[] hash = new byte[0x14];
@@ -264,7 +274,7 @@ public class KIRK {
     }
 
     // Helper functions.
-    private int[] getAESKeyFromSeed(int seed) {
+    private static int[] getAESKeyFromSeed(int seed) {
         switch (seed) {
             case (0x02):
                 return KeyVault.kirkAESKey20;
@@ -377,6 +387,10 @@ public class KIRK {
 
         // Copy the input for sig check.
         ByteBuffer sigIn = in.duplicate();
+        sigIn.order(in.order()); // duplicate() does not copy the order()
+
+        int headerSize = AES128_CMAC_Header.SIZEOF();
+        int headerOffset = in.position();
 
         // Read in the CMD1 format header.
         AES128_CMAC_Header header = new AES128_CMAC_Header(in);
@@ -414,9 +428,6 @@ public class KIRK {
         // full data decryption.
         byte[] aesBuf = new byte[16];
         System.arraycopy(decryptedKeys, 0, aesBuf, 0, aesBuf.length);
-        // Skip the CMD1 header.
-        int headerSize = 0x90;
-        int headerOffset = 0x40;
 
         // Extract the final ELF params.
         int elfDataSize = header.dataSize;
@@ -613,6 +624,8 @@ public class KIRK {
             return PSP_KIRK_NOT_INIT;
         }
 
+        int headerOffset = in.position();
+
         // Read in the CMD10 format header.
         AES128_CMAC_Header header = new AES128_CMAC_Header(in);
         if ((header.mode != PSP_KIRK_CMD_MODE_CMD1)
@@ -646,8 +659,8 @@ public class KIRK {
         System.arraycopy(decryptedKeys, 16, cmacBuf, 0, cmacBuf.length);
 
         // Position the buffer at the CMAC keys offset.
-        byte[] inBuf = new byte[in.capacity() - 0x60];
-        System.arraycopy(in.array(), 0x60, inBuf, 0, inBuf.length);
+        byte[] inBuf = new byte[in.capacity() - 0x60 - headerOffset];
+        System.arraycopy(in.array(), headerOffset + 0x60, inBuf, 0, inBuf.length);
 
         // Calculate CMAC header hash.
         aes.doInitCMAC(cmacBuf);
@@ -664,12 +677,16 @@ public class KIRK {
         aes.doUpdateCMAC(inBuf, 0, 0x30 + blockSize + header.dataOffset);
         cmacDataHash = aes.doFinalCMAC();
 
-        if (cmacHeaderHash != header.CMACHeaderHash) {
-            return PSP_KIRK_INVALID_HEADER_HASH;
+        for (int i = 0; i < cmacHeaderHash.length; i++) {
+        	if (cmacHeaderHash[i] != header.CMACHeaderHash[i]) {
+        		return PSP_KIRK_INVALID_HEADER_HASH;
+        	}
         }
 
-        if (cmacDataHash != header.CMACDataHash) {
-            return PSP_KIRK_INVALID_DATA_HASH;
+        for (int i = 0; i < cmacDataHash.length; i++) {
+        	if (cmacDataHash[i] != header.CMACDataHash[i]) {
+        		return PSP_KIRK_INVALID_DATA_HASH;
+        	}
         }
 
         return 0;
