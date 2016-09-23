@@ -45,6 +45,8 @@ import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.PspString;
+import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
@@ -273,7 +275,6 @@ public class sceUtility extends HLEModule {
 	protected UtilityDialogState psnState;
     protected UtilityDialogState startedDialogState;
     private static final String dummyNetParamName = "NetConf #%d";
-    private int lastNetParamID;
     private final static int utilityThreadActionRegister = _s0; // $s0 is preserved across calls
     private final static int UTILITY_THREAD_ACTION_SHUTDOWN_START = 0;
     private final static int UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE = 1;
@@ -4578,8 +4579,6 @@ public class sceUtility extends HLEModule {
                 return SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
         }
 
-        lastNetParamID = id;
-
         return 0;
     }
 
@@ -4593,7 +4592,7 @@ public class sceUtility extends HLEModule {
     public int sceUtilityGetNetParamLatestID(TPointer32 idAddr) {
         // This function is saving the last net param ID and not
         // the number of net configurations.
-        idAddr.setValue(lastNetParamID);
+    	idAddr.setValue(Modules.sceRegModule.getNetworkLatestId());
 
         return 0;
     }
@@ -4767,4 +4766,58 @@ public class sceUtility extends HLEModule {
     public int sceUtilityGamedataInstallAbort() {
         return gamedataInstallState.executeAbort();
     }
+
+	@HLEFunction(nid = 0xECE1D3E5, version = 150)
+    public int sceUtility_ECE1D3E5_setAuthName(@StringInfo(maxLength = 64) PspString authName) {
+		Modules.sceRegModule.setAuthName(authName.getString());
+
+		return 0;
+    }
+
+	@HLEFunction(nid = 0x28D35634, version = 150)
+    public int sceUtility_28D35634_getAuthName(TPointer authNameAddr) {
+		String authName = Modules.sceRegModule.getAuthName();
+
+		authNameAddr.setStringNZ(64, authName);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceUtility_28D35634_getAuthName returning '%s'", authName));
+		}
+
+		return 0;
+    }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x70267ADF, version = 150)
+    public int sceUtility_70267ADF_setAuthKey(@StringInfo(maxLength = 64) PspString authKey) {
+		Modules.sceRegModule.setAuthKey(authKey.getString());
+
+		return 0;
+    }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xEF3582B2, version = 150)
+    public int sceUtility_EF3582B2_getAuthKey(TPointer authKeyAddr) {
+		String authKey = Modules.sceRegModule.getAuthKey();
+
+		authKeyAddr.setStringNZ(64, authKey);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceUtility_EF3582B2_getAuthKey returning '%s'", authKey));
+		}
+
+		return 0;
+    }
+
+	@HLEFunction(nid = 0x67C2105B, version = 150)
+    public int sceUtilityGetNetParamInternal(int id, int param, TPointer data) {
+		return sceUtilityGetNetParam(id, param, data);
+	}
+
+	@HLEFunction(nid = 0x6D77B975, version = 150)
+    public int sceUtilitySetNetParamLatestID(int id) {
+		Modules.sceRegModule.setNetworkLatestId(id);
+
+		return 0;
+	}
 }

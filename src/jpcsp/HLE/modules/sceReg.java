@@ -43,6 +43,9 @@ public class sceReg extends HLEModule {
     private Map<Integer, RegistryHandle> registryHandles;
     private Map<Integer, CategoryHandle> categoryHandles;
     private Map<Integer, KeyHandle> keyHandles;
+    private String authName;
+    private String authKey;
+    private int networkLatestId;
 
     protected static class RegistryHandle {
     	private static final String registryHandlePurpose = "sceReg.RegistryHandle";
@@ -100,6 +103,30 @@ public class sceReg extends HLEModule {
 			uid = index++;
     	}
     }
+
+	public String getAuthName() {
+		return authName;
+	}
+
+	public void setAuthName(String authName) {
+		this.authName = authName;
+	}
+
+	public String getAuthKey() {
+		return authKey;
+	}
+
+	public void setAuthKey(String authKey) {
+		this.authKey = authKey;
+	}
+
+	public int getNetworkLatestId() {
+		return networkLatestId;
+	}
+
+	public void setNetworkLatestId(int networkLatestId) {
+		this.networkLatestId = networkLatestId;
+	}
 
     private int getKey(CategoryHandle categoryHandle, String name, TPointer32 ptype, TPointer32 psize, TPointer buf, int size) {
     	if ("/system/DATA/FONT".equals(categoryHandle.getFullName()) || "/DATA/FONT".equals(categoryHandle.getFullName())) {
@@ -391,6 +418,32 @@ public class sceReg extends HLEModule {
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
     		}
+    	} else if ("/CONFIG/NETWORK/GO_MESSENGER".equals(categoryHandle.getFullName())) {
+    		if (name.equals("auth_name")) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(authName.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, authName);
+    			}
+    		} else if (name.equals("auth_key")) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(authKey.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, authKey);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/CONFIG/NETWORK/INFRASTRUCTURE".equals(categoryHandle.getFullName())) {
+    		if ("latest_id".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(networkLatestId);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
     	} else if ("flash1:/registry/system/REGISTRY".equals(categoryHandle.getFullName())) {
     		if ("category_version".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
@@ -423,6 +476,11 @@ public class sceReg extends HLEModule {
 		registryHandles = new HashMap<Integer, sceReg.RegistryHandle>();
 		categoryHandles = new HashMap<Integer, sceReg.CategoryHandle>();
 		keyHandles = new HashMap<Integer, sceReg.KeyHandle>();
+
+		// TODO Read these values from the configuration file
+		authName = "";
+		authKey = "";
+		networkLatestId = 0;
 
 		super.start();
 	}
