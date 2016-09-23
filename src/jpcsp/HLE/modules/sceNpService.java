@@ -24,6 +24,7 @@ import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 import org.apache.log4j.Logger;
@@ -260,6 +261,22 @@ public class sceNpService extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xC76F55ED, version = 150)
     public int sceNpLookupTitleSmallStorage() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB2EA4530, version = 150)
+    public int sceNpService_B2EA4530(TPointer64 unknown) {
+    	// The returned value seems to be the ticket validity duration
+    	unknown.setValue(10 * 60 * 1000);
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x63644C02, version = 150)
+    public int sceNpService_63644C02() {
+    	// Has no parameters
     	return 0;
     }
 }
