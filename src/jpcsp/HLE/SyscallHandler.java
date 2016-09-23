@@ -17,12 +17,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE;
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
+import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.Decoder;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.format.DeferredStub;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
+import jpcsp.util.Utilities;
 
 public class SyscallHandler {
     public static boolean ignoreUnmappedImports = false;
@@ -45,6 +50,12 @@ public class SyscallHandler {
         if (enable) {
             Modules.log.info("Ignore Unmapped Imports enabled");
         }
+    }
+
+    private static void logMem(Memory mem, int address, String registerName) {
+    	if (Memory.isAddressGood(address)) {
+    		Modules.log.error(String.format("Memory at %s:%s", registerName, Utilities.getMemoryDump(address, 64)));
+    	}
     }
 
     private static void unsupportedSyscall(int code) {
@@ -70,7 +81,27 @@ public class SyscallHandler {
             if (isEnableIgnoreUnmappedImports()) {
 	            Modules.log.warn(String.format("IGNORING: Unmapped import at %s - $a0=0x%08X $a1=0x%08X $a2=0x%08X", description, cpu._a0, cpu._a1, cpu._a2));
 	        } else {
-		        Modules.log.error(String.format("Unmapped import at %s - $a0=0x%08X $a1=0x%08X $a2=0x%08X", description, cpu._a0, cpu._a1, cpu._a2));
+		        Modules.log.error(String.format("Unmapped import at %s:", description));
+		        Modules.log.error(String.format("Registers: $a0=0x%08X, $a1=0x%08X, $a2=0x%08X, $a3=0x%08X", cpu._a0, cpu._a1, cpu._a2, cpu._a3));
+		        Modules.log.error(String.format("           $t0=0x%08X, $t1=0x%08X, $t2=0x%08X, $t3=0x%08X", cpu._t0, cpu._t1, cpu._t2, cpu._t3));
+		        Modules.log.error(String.format("           $ra=0x%08X, $sp=0x%08X", cpu._ra, cpu._sp));
+		        Memory mem = Emulator.getMemory();
+		        Modules.log.error(String.format("Caller code:"));
+		        for (int i = -48; i <= 20; i += 4) {
+		        	int address = cpu._ra + i;
+		        	int opcode = mem.read32(address);
+		        	Instruction insn = Decoder.instruction(opcode);
+		        	String disasm = insn.disasm(address, opcode);
+		        	Modules.log.error(String.format("%c 0x%08X:[%08X]: %s", i == -8 ? '>' : ' ', address, opcode, disasm));
+		        }
+		        logMem(mem, cpu._a0, Common.gprNames[Common._a0]);
+		        logMem(mem, cpu._a1, Common.gprNames[Common._a1]);
+		        logMem(mem, cpu._a2, Common.gprNames[Common._a2]);
+		        logMem(mem, cpu._a3, Common.gprNames[Common._a3]);
+		        logMem(mem, cpu._t0, Common.gprNames[Common._t0]);
+		        logMem(mem, cpu._t1, Common.gprNames[Common._t1]);
+		        logMem(mem, cpu._t2, Common.gprNames[Common._t2]);
+		        logMem(mem, cpu._t3, Common.gprNames[Common._t3]);
 		        Emulator.PauseEmu();
 	        }
             cpu._v0 = 0;
