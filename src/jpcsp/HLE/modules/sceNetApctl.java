@@ -118,7 +118,9 @@ public class sceNetApctl extends HLEModule {
 	private static final int dummySubnetMaskInt = 0xFFFFFF00;
 
     protected static final String uidPurpose = "sceNetApctl";
+    protected static final String uidHandlerPurpose = "sceNetApctlHandler";
     protected int state = PSP_NET_APCTL_STATE_DISCONNECTED;
+    protected int connectionIndex = 0;
 	private static String localHostIP;
     private HashMap<Integer, ApctlHandler> apctlHandlers = new HashMap<Integer, ApctlHandler>();
     protected static final int stateTransitionDelay = 100000; // 100ms
@@ -313,6 +315,7 @@ public class sceNetApctl extends HLEModule {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("hleNetApctlConnect index=%d", index));
 		}
+		connectionIndex = index;
 
 		changeState(PSP_NET_APCTL_STATE_JOINING);
 	}
@@ -450,10 +453,18 @@ public class sceNetApctl extends HLEModule {
 	@HLEFunction(nid = 0x2BEFDF23, version = 150)
 	public int sceNetApctlGetInfo(int code, TPointer pInfo) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetApctlGetInfo code%s", getApctlInfoName(code)));
+			log.debug(String.format("sceNetApctlGetInfo code=0x%X(%s)", code, getApctlInfoName(code)));
 		}
 
 		switch (code) {
+			case PSP_NET_APCTL_INFO_PROFILE_NAME: {
+				String name = sceUtility.getNetParamName(connectionIndex);
+				pInfo.setStringNZ(128, name);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetApctlGetInfo returning Profile name '%s'", name));
+				}
+				break;
+			}
 			case PSP_NET_APCTL_INFO_IP: {
 				String ip = getLocalHostIP();
 				pInfo.setStringNZ(16, ip);
@@ -507,11 +518,17 @@ public class sceNetApctl extends HLEModule {
 				break;
 			}
 			case PSP_NET_APCTL_INFO_USE_PROXY: {
-				pInfo.setValue32(0); // Don't use proxy
+				pInfo.setValue32(false); // Don't use proxy
+				break;
+			}
+			case PSP_NET_APCTL_INFO_START_BROWSER: {
+				// Is it needed to start the browser to login/authenticate
+				// this connection?
+				pInfo.setValue32(false); // Do not start the browser
 				break;
 			}
 			default: {
-				log.warn(String.format("sceNetApctlGetInfo unimplemented code=%d(%s)", code, getApctlInfoName(code)));
+				log.warn(String.format("sceNetApctlGetInfo unimplemented code=0x%X(%s)", code, getApctlInfoName(code)));
 				return -1;
 			}
 		}
@@ -684,5 +701,21 @@ public class sceNetApctl extends HLEModule {
 		}
 
 		return 0;
+	}
+
+	@HLEFunction(nid = 0x7CFAB990, version = 150)
+	public int sceNetApctlAddInternalHandler(TPointer handler, int handlerArg) {
+		return sceNetApctlAddHandler(handler, handlerArg);
+	}
+
+	@HLEFunction(nid = 0xE11BAFAB, version = 150)
+	public int sceNetApctlDelInternalHandler(int handlerId) {
+		return sceNetApctlDelHandler(handlerId);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA7BB73DF, version = 150)
+	public int sceNetApctl_A7BB73DF(TPointer handler, int handlerArg) {
+		return sceNetApctlAddHandler(handler, handlerArg);
 	}
 }
