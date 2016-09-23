@@ -723,7 +723,8 @@ public class CompilerContext implements ICompilerContext {
     	mv.visitFieldInsn(Opcodes.GETSTATIC, classInternalName, insn.name().replace('.', '_').replace(' ', '_'), instructionDescriptor);
     }
 
-    private void storePc() {
+    @Override
+    public void storePc() {
     	loadCpu();
     	loadImm(codeInstruction.getAddress());
         mv.visitFieldInsn(Opcodes.PUTFIELD, cpuInternalName, "pc", "I");

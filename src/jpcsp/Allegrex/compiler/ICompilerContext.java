@@ -173,4 +173,5 @@ public interface ICompilerContext {
     public void skipInstructions(int numberInstructionsToBeSkipped, boolean skipDelaySlot);
     public boolean compileSWsequence(int baseRegister, int[] offsets, int[] registers);
     public boolean compileLWsequence(int baseRegister, int[] offsets, int[] registers);
+    public void storePc();
 }
