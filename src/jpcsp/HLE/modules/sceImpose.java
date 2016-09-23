@@ -209,7 +209,7 @@ public class sceImpose extends HLEModule {
 				value = 0;
 				break;
 			case PSP_IMPOSE_20000000:
-				value = 1;
+				value = 0;
 				break;
 			case PSP_IMPOSE_80000004:
 				value = impose80000004;
