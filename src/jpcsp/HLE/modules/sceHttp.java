@@ -584,7 +584,7 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x267618F4, version = 150)
-    public int sceHttpSetAuthInfoCallback() {
+    public int sceHttpSetAuthInfoCallback(int templateId, TPointer callback, int callbackArg) {
         return 0;
     }
 
@@ -1071,6 +1071,18 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xFCF8C055, version = 150)
     public int sceHttpDeleteTemplate(int templateId) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x87F1E666, version = 150)
+    public int sceHttp_87F1E666(int templateId, int unknown) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3C478044, version = 150)
+    public int sceHttp_3C478044(int templateId, int unknown) {
     	return 0;
     }
 }
