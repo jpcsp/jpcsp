@@ -124,7 +124,7 @@ public class SyscallHandler {
             	}
         	}
 
-        	RuntimeContext.executeInterpreter(address);
+        	RuntimeContext.executeFunction(address);
         } else {
         	// Check if this is the syscall
         	// for an HLE function currently being uninstalled

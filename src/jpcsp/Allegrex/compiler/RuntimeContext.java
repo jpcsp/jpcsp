@@ -371,21 +371,7 @@ public class RuntimeContext {
 		// Switch to the real active thread, even if it is an idle thread
 		switchRealThread(Modules.ThreadManForUserModule.getCurrentThread());
 
-		IExecutable executable = getExecutable(pc);
-        int newPc = 0;
-        int returnAddress = cpu._ra;
-        boolean callbackExited = false;
-		try {
-			execWithReturnAddress(executable, returnAddress);
-			newPc = returnAddress;
-		} catch (StopThreadException e) {
-			// Ignore exception
-		} catch (Exception e) {
-			log.error("Catched Throwable in executeCallback:", e);
-			callbackExited = true;
-		}
-    	cpu.pc = newPc;
-    	cpu.npc = newPc; // npc is used when context switching
+        boolean callbackExited = executeFunction(pc);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("End of Callback 0x%08X", pc));
@@ -705,6 +691,26 @@ public class RuntimeContext {
 				}
 			}
 		}
+    }
+
+    public static boolean executeFunction(int address) {
+		IExecutable executable = getExecutable(address);
+        int newPc = 0;
+        int returnAddress = cpu._ra;
+        boolean exception = false;
+		try {
+			execWithReturnAddress(executable, returnAddress);
+			newPc = returnAddress;
+		} catch (StopThreadException e) {
+			// Ignore exception
+		} catch (Exception e) {
+			log.error("Catched Throwable in executeCallback:", e);
+			exception = true;
+		}
+    	cpu.pc = newPc;
+    	cpu.npc = newPc; // npc is used when context switching
+
+    	return exception;
     }
 
     public static void runThread(RuntimeThread thread) {
