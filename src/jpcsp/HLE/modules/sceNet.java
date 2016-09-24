@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -202,5 +203,38 @@ public class sceNet extends HLEModule {
         statAddr.setValue(8, freeSize);               // Free size.
 
         return 0;
+    }
+
+    @HLEFunction(nid = 0xD8722983, version = 150)
+    public int sceNetStrlen(@CanBeNull TPointer srcAddr) {
+    	return Modules.SysclibForKernelModule.strlen(srcAddr);
+    }
+
+    @HLEFunction(nid = 0x80C9F02A, version = 150)
+    public int sceNetStrcpy(@CanBeNull TPointer destAddr, @CanBeNull TPointer srcAddr) {
+    	return Modules.SysclibForKernelModule.strcpy(destAddr, srcAddr);
+    }
+
+    @HLEFunction(nid = 0xA0F16ABD, version = 150)
+    public int sceNetStrcmp(@CanBeNull TPointer src1Addr, @CanBeNull TPointer src2Addr) {
+    	return Modules.SysclibForKernelModule.strcmp(src1Addr, src2Addr);
+    }
+
+    @HLEFunction(nid = 0x94DCA9F0, version = 150)
+    public int sceNetStrncmp(@CanBeNull TPointer src1Addr, @CanBeNull TPointer src2Addr, int size) {
+    	return Modules.SysclibForKernelModule.strncmp(src1Addr, src2Addr, size);
+    }
+
+    @HLEFunction(nid = 0xB5CE388A, version = 150)
+    public int sceNetStrncpy(@CanBeNull TPointer destAddr, @CanBeNull TPointer srcAddr, int size) {
+    	int srcLength = AbstractNativeCodeSequence.getStrlen(srcAddr.getAddress());
+		if (srcLength < size) {
+			destAddr.memcpy(srcAddr.getAddress(), srcLength + 1);
+			destAddr.clear(srcLength + 1, size - srcLength - 1);
+		} else {
+			destAddr.memcpy(srcAddr.getAddress(), size);
+		}
+
+		return destAddr.getAddress();
     }
 }

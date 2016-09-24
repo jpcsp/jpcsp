@@ -100,6 +100,10 @@ final public class TPointer implements ITPointerBase {
 		setValue32(offset, Float.floatToRawIntBits(value));
 	}
 
+	public String getStringZ() {
+		return Utilities.readStringZ(memory, address);
+	}
+
 	public String getStringNZ(int n) {
 		return getStringNZ(0, n);
 	}
@@ -144,6 +148,16 @@ final public class TPointer implements ITPointerBase {
 			memoryWriter.writeNext(bytes[i] & 0xFF);
 		}
 		memoryWriter.flush();
+	}
+
+	public void memcpy(int src, int length) {
+		memcpy(0, src, length);
+	}
+
+	public void memcpy(int offset, int src, int length) {
+		if (isNotNull()) {
+			memory.memcpy(getAddress() + offset, src, length);
+		}
 	}
 
 	/**
