@@ -46,6 +46,7 @@ public class sceReg extends HLEModule {
     private String authName;
     private String authKey;
     private int networkLatestId;
+    private int wifiConnectCount;
 
     protected static class RegistryHandle {
     	private static final String registryHandlePurpose = "sceReg.RegistryHandle";
@@ -275,6 +276,12 @@ public class sceReg extends HLEModule {
     			if (size >= 16) {
     				buf.clear(16);
     			}
+    		} else if ("nav_only".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(0);
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
     		}
@@ -441,6 +448,34 @@ public class sceReg extends HLEModule {
     			if (size >= 4) {
     				buf.setValue32(networkLatestId);
     			}
+    		} else if (name.equals("eap_md5")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if (name.equals("auto_setting")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if (name.equals("wifisvc_setting")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/DATA/COUNT".equals(categoryHandle.getFullName())) {
+    		if ("wifi_connect_count".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(wifiConnectCount);
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
     		}
@@ -450,6 +485,16 @@ public class sceReg extends HLEModule {
     			psize.setValue(4);
     			if (size >= 4) {
     				buf.setValue32(0);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
+    	} else if ("/TOOL/CONFIG".equals(categoryHandle.getFullName())) {
+    		if ("np_debug".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(1);
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
@@ -491,6 +536,7 @@ public class sceReg extends HLEModule {
 		authName = "";
 		authKey = "";
 		networkLatestId = 0;
+		wifiConnectCount = 0;
 
 		super.start();
 	}
@@ -718,6 +764,12 @@ public class sceReg extends HLEModule {
     			entry.h_size = buf.getValue32();
     		} else if ("shadow_option".equals(name) && size >= 4) {
     			entry.h_size = buf.getValue32();
+    		} else {
+    			log.warn(String.format("Unknown font registry entry '%s'", name));
+    		}
+    	} else if ("/DATA/COUNT".equals(categoryHandle.getFullName())) {
+    		if ("wifi_connect_count".equals(name) && size >= 4) {
+    			wifiConnectCount = buf.getValue32();
     		} else {
     			log.warn(String.format("Unknown font registry entry '%s'", name));
     		}
