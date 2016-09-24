@@ -489,9 +489,11 @@ public final String category() { return "MIPS I"; }
 public void interpret(Processor processor, int insn) {
 	int imm20 = (insn>>6)&1048575;
 
-
-                SyscallHandler.syscall(imm20);
-            
+	try {
+		SyscallHandler.syscall(imm20);
+	} catch (Exception e) {
+		Emulator.log.error("syscall", e);
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {

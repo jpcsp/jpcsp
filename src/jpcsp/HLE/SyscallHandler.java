@@ -16,9 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.NIDMapper;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
@@ -30,6 +34,7 @@ import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 public class SyscallHandler {
+	private static Logger log = Modules.log;
     public static boolean ignoreUnmappedImports = false;
     public static final int syscallUnmappedImport = 0xFFFFF;
     private static IgnoreUnmappedImportsSettingsListerner ignoreUnmappedImportsSettingsListerner;
@@ -48,21 +53,23 @@ public class SyscallHandler {
     private static void setEnableIgnoreUnmappedImports(boolean enable){
         ignoreUnmappedImports = enable;
         if (enable) {
-            Modules.log.info("Ignore Unmapped Imports enabled");
+            log.info("Ignore Unmapped Imports enabled");
         }
     }
 
     private static void logMem(Memory mem, int address, String registerName) {
     	if (Memory.isAddressGood(address)) {
-    		Modules.log.error(String.format("Memory at %s:%s", registerName, Utilities.getMemoryDump(address, 64)));
+    		log.error(String.format("Memory at %s:%s", registerName, Utilities.getMemoryDump(address, 64)));
     	}
     }
 
-    private static void unsupportedSyscall(int code) {
+    private static void unsupportedSyscall(int code) throws Exception {
     	if (ignoreUnmappedImportsSettingsListerner == null) {
     		ignoreUnmappedImportsSettingsListerner = new IgnoreUnmappedImportsSettingsListerner();
     		Settings.getInstance().registerSettingsListener("SyscallHandler", "emu.ignoreUnmappedImports", ignoreUnmappedImportsSettingsListerner);
     	}
+
+    	NIDMapper nidMapper = NIDMapper.getInstance();
 
     	if (code == syscallUnmappedImport) { // special code for unmapped imports
             CpuState cpu = Emulator.getProcessor().cpu;
@@ -79,20 +86,20 @@ public class SyscallHandler {
             }
 
             if (isEnableIgnoreUnmappedImports()) {
-	            Modules.log.warn(String.format("IGNORING: Unmapped import at %s - $a0=0x%08X $a1=0x%08X $a2=0x%08X", description, cpu._a0, cpu._a1, cpu._a2));
+	            log.warn(String.format("IGNORING: Unmapped import at %s - $a0=0x%08X $a1=0x%08X $a2=0x%08X", description, cpu._a0, cpu._a1, cpu._a2));
 	        } else {
-		        Modules.log.error(String.format("Unmapped import at %s:", description));
-		        Modules.log.error(String.format("Registers: $a0=0x%08X, $a1=0x%08X, $a2=0x%08X, $a3=0x%08X", cpu._a0, cpu._a1, cpu._a2, cpu._a3));
-		        Modules.log.error(String.format("           $t0=0x%08X, $t1=0x%08X, $t2=0x%08X, $t3=0x%08X", cpu._t0, cpu._t1, cpu._t2, cpu._t3));
-		        Modules.log.error(String.format("           $ra=0x%08X, $sp=0x%08X", cpu._ra, cpu._sp));
+		        log.error(String.format("Unmapped import at %s:", description));
+		        log.error(String.format("Registers: $a0=0x%08X, $a1=0x%08X, $a2=0x%08X, $a3=0x%08X", cpu._a0, cpu._a1, cpu._a2, cpu._a3));
+		        log.error(String.format("           $t0=0x%08X, $t1=0x%08X, $t2=0x%08X, $t3=0x%08X", cpu._t0, cpu._t1, cpu._t2, cpu._t3));
+		        log.error(String.format("           $ra=0x%08X, $sp=0x%08X", cpu._ra, cpu._sp));
 		        Memory mem = Emulator.getMemory();
-		        Modules.log.error(String.format("Caller code:"));
+		        log.error(String.format("Caller code:"));
 		        for (int i = -48; i <= 20; i += 4) {
 		        	int address = cpu._ra + i;
 		        	int opcode = mem.read32(address);
 		        	Instruction insn = Decoder.instruction(opcode);
 		        	String disasm = insn.disasm(address, opcode);
-		        	Modules.log.error(String.format("%c 0x%08X:[%08X]: %s", i == -8 ? '>' : ' ', address, opcode, disasm));
+		        	log.error(String.format("%c 0x%08X:[%08X]: %s", i == -8 ? '>' : ' ', address, opcode, disasm));
 		        }
 		        logMem(mem, cpu._a0, Common.gprNames[Common._a0]);
 		        logMem(mem, cpu._a1, Common.gprNames[Common._a1]);
@@ -105,12 +112,25 @@ public class SyscallHandler {
 		        Emulator.PauseEmu();
 	        }
             cpu._v0 = 0;
+        } else if (nidMapper.isOverwrittenSyscall(code)) {
+        	int address = nidMapper.overwrittenSyscallToAddress(code);
+
+        	if (log.isDebugEnabled()) {
+            	HLEModuleFunction hleModuleFunction = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
+            	if (hleModuleFunction != null) {
+            		log.debug(String.format("Jumping to 0x%08X instead of overwritten syscall %s", address, hleModuleFunction.getFunctionName()));
+            	} else {
+            		log.debug(String.format("Jumping to 0x%08X instead of overwritten syscall NID[0x%08X]", address, nidMapper.syscallToNid(code)));
+            	}
+        	}
+
+        	RuntimeContext.executeInterpreter(address);
         } else {
         	// Check if this is the syscall
         	// for an HLE function currently being uninstalled
         	HLEModuleFunction hleModuleFunction = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
         	if (hleModuleFunction != null) {
-        		Modules.log.error(String.format("HLE Function %s(%s) not activated by default for Firmware Version %d", hleModuleFunction.getFunctionName(), hleModuleFunction.getModuleName(), Emulator.getInstance().getFirmwareVersion()));
+        		log.error(String.format("HLE Function %s(%s) not activated by default for Firmware Version %d", hleModuleFunction.getFunctionName(), hleModuleFunction.getModuleName(), Emulator.getInstance().getFirmwareVersion()));
         	} else {
 	            CpuState cpu = Emulator.getProcessor().cpu;
 	            String name = "";
@@ -120,12 +140,20 @@ public class SyscallHandler {
 	                	break;
 	                }
 	            }
-	            Modules.log.warn(String.format("Unsupported syscall 0x%X %s $a0=0x%08X $a1=0x%08X $a2=0x%08X", code, name, cpu._a0, cpu._a1, cpu._a2));
+
+	            if (name.length() == 0) {
+		            int nid = nidMapper.syscallToNid(code);
+		            if (nid != 0) {
+		            	name = String.format("NID[0x%08X]", nid);
+		            }
+	            }
+
+	            log.warn(String.format("Unsupported syscall 0x%X %s $a0=0x%08X, $a1=0x%08X, $a2=0x%08X", code, name, cpu._a0, cpu._a1, cpu._a2));
         	}
         }
     }
 
-    public static void syscall(int code) {
+    public static void syscall(int code) throws Exception {
     	// All syscalls are now implemented natively in the compiler
     	unsupportedSyscall(code);
     }

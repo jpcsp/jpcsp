@@ -667,13 +667,13 @@ public class RuntimeContext {
     	syncFast();
     }
 
-    public static void syscallFast(int code) {
+    public static void syscallFast(int code) throws Exception {
 		// Fast syscall: no context switching
     	SyscallHandler.syscall(code);
     	postSyscallFast();
     }
 
-    public static void syscall(int code) throws StopThreadException {
+    public static void syscall(int code) throws Exception {
     	preSyscall();
     	SyscallHandler.syscall(code);
     	postSyscall();
