@@ -444,6 +444,16 @@ public class sceReg extends HLEModule {
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
     		}
+    	} else if ("/CONFIG/SYSTEM/LOCK".equals(categoryHandle.getFullName())) {
+    		if ("parental_level".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", categoryHandle.getFullName(), name));
+    		}
     	} else if ("flash1:/registry/system/REGISTRY".equals(categoryHandle.getFullName())) {
     		if ("category_version".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
