@@ -33,6 +33,7 @@ import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemForKernel;
 import jpcsp.HLE.modules.SysclibForKernel;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.HLE.modules.UtilsForKernel;
 import jpcsp.HLE.modules.UtilsForUser;
 import jpcsp.HLE.modules.sceAac;
 import jpcsp.HLE.modules.sceAdler;
@@ -215,6 +216,7 @@ public class Modules {
     public static sceMsAudio_Service sceMsAudio_ServiceModule = new sceMsAudio_Service();
     public static sceMePower sceMePowerModule = new sceMePower();
     public static sceResmgr sceResmgrModule = new sceResmgr();
+    public static UtilsForKernel UtilsForKernelModule = new UtilsForKernel();
 
     public static Logger log = Logger.getLogger("hle");
 

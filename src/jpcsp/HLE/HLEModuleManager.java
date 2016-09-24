@@ -168,7 +168,8 @@ public class HLEModuleManager {
         sceChkreg(Modules.sceChkregModule),
         sceMsAudio_Service(Modules.sceMsAudio_ServiceModule),
         sceMePower(Modules.sceMePowerModule),
-        sceResmgr(Modules.sceResmgrModule);
+        sceResmgr(Modules.sceResmgrModule),
+        UtilsForKernel(Modules.UtilsForKernelModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
