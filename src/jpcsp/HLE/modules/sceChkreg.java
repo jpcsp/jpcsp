@@ -36,10 +36,11 @@ public class sceChkreg extends HLEModule {
     public static final int PS_CODE_RUSSIA = 12;
     public static final int PS_CODE_CHINA = 13;
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x54495B19, version = 150)
-    public int sceChkregCheckRegion() {
-    	return 0;
+    public int sceChkregCheckRegion(int unknown1, int unknown2) {
+    	// 0: region is not correct
+    	// 1: region is correct
+    	return 1;
     }
 
     @HLEFunction(nid = 0x59F8491D, version = 150)
