@@ -30,8 +30,6 @@ public class sceNpCore extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x52440ABF, version = 150)
     public int sceNpCore_52440ABF(TPointer unknown) {
-    	unknown.setStringNZ(9, "XXXXXXXX");
-
-    	return 0;
+    	return Modules.SysMemForKernelModule.SysMemForKernel_7FF2F35A(unknown);
     }
 }

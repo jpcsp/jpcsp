@@ -22,6 +22,7 @@ import jpcsp.Memory;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -217,4 +218,18 @@ public class SysMemForKernel extends HLEModule {
 
 		return result;
 	}
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x945E45DA, version = 150)
+    public int SysMemUserForUser_945E45DA(TPointer unknown) {
+    	unknown.setStringNZ(9, "XXXXXXXX");
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7FF2F35A, version = 660)
+    public int SysMemForKernel_7FF2F35A(TPointer unknown) {
+    	return SysMemUserForUser_945E45DA(unknown);
+    }
 }
