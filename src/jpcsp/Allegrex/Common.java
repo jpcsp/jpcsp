@@ -675,9 +675,9 @@ public class Common {
     }
 
     public static String disasmSYSCALL(int code) {
-    	String functionName = HLEModuleManager.getInstance().functionName(code);
-    	
-    	if(functionName == null) {
+    	String functionName = HLEModuleManager.getInstance().getAllFunctionNameFromSyscallCode(code);
+
+    	if (functionName == null) {
 	        for (SyscallIgnore c : SyscallIgnore.values()) {
 	            if (c.getSyscall() == code) {
 	                functionName = c.toString();
@@ -685,10 +685,11 @@ public class Common {
 	            }
 	        }
     	}
-    	
-    	if(functionName == null)
+
+    	if (functionName == null) {
     		functionName = "unknown";
-    	
+    	}
+
         return String.format("%1$-10s 0x%2$05X [%3$s]", "syscall", code, functionName);
     }
 

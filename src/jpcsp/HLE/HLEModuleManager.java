@@ -51,6 +51,7 @@ public class HLEModuleManager {
      * so that SyscallHandler can output an appropriate message when trying
      * to execute an uninstalled syscall.
      */
+    private HLEModuleFunction[] allSyscallCodeToFunction;
     private HLEModuleFunction[] syscallCodeToFunction;
     private int syscallCodeAllocator;
     private boolean modulesStarted = false;
@@ -241,6 +242,7 @@ public class HLEModuleManager {
     		syscallCodeAllocator = 0x4000;
 
     		syscallCodeToFunction = new HLEModuleFunction[syscallCodeAllocator];
+    		allSyscallCodeToFunction = new HLEModuleFunction[syscallCodeAllocator];
     	} else {
     		// Remove all the functions.
     		// Do not reset the syscall codes, they still might be in use in
@@ -374,12 +376,18 @@ public class HLEModuleManager {
 
     private void addSyscallCodeToFunction(int code, HLEModuleFunction func) {
     	if (code >= syscallCodeToFunction.length) {
-    		// Extend the array
+    		// Extend the syscallCodeToFunction array
     		HLEModuleFunction[] extendedArray = new HLEModuleFunction[code + 100];
     		System.arraycopy(syscallCodeToFunction, 0, extendedArray, 0, syscallCodeToFunction.length);
     		syscallCodeToFunction = extendedArray;
+
+    		// Also extend allSyscallCodeToFunction
+    		extendedArray = new HLEModuleFunction[syscallCodeToFunction.length];
+    		System.arraycopy(allSyscallCodeToFunction, 0, extendedArray, 0, allSyscallCodeToFunction.length);
+    		allSyscallCodeToFunction = extendedArray;
     	}
     	syscallCodeToFunction[code] = func;
+    	allSyscallCodeToFunction[code] = func;
     }
 
     public void addFunction(int nid, HLEModuleFunction func) {
@@ -405,6 +413,14 @@ public class HLEModuleManager {
         }
     }
 
+    public HLEModuleFunction getAllFunctionFromSyscallCode(int code) {
+    	if (code < 0 || code >= allSyscallCodeToFunction.length) {
+    		return null;
+    	}
+
+    	return allSyscallCodeToFunction[code];
+    }
+
     public HLEModuleFunction getFunctionFromSyscallCode(int code) {
     	if (code < 0 || code >= syscallCodeToFunction.length) {
     		return null;
@@ -413,8 +429,8 @@ public class HLEModuleManager {
     	return syscallCodeToFunction[code];
     }
 
-    public String functionName(int code) {
-    	HLEModuleFunction func = getFunctionFromSyscallCode(code);
+    public String getAllFunctionNameFromSyscallCode(int code) {
+    	HLEModuleFunction func = getAllFunctionFromSyscallCode(code);
     	if (func == null) {
     		return null;
     	}
@@ -422,7 +438,16 @@ public class HLEModuleManager {
         return func.getFunctionName();
     }
 
-	public void startModules(boolean startFromSyscall) {
+    public String getAllFunctionNameFromAddress(int address) {
+    	int code = NIDMapper.getInstance().overwrittenSyscallAddressToCode(address);
+    	if (code == -1) {
+    		return null;
+    	}
+
+    	return getAllFunctionNameFromSyscallCode(code);
+    }
+
+    public void startModules(boolean startFromSyscall) {
 		if (modulesStarted) {
 			return;
 		}

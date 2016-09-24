@@ -33,7 +33,9 @@ import jpcsp.Allegrex.compiler.nativeCode.HookCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
+import jpcsp.HLE.HLEModuleManager;
 
+import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
@@ -48,6 +50,7 @@ import org.objectweb.asm.util.TraceClassVisitor;
  *
  */
 public class CodeBlock {
+	private static Logger log = Compiler.log;
 	private int startAddress;
 	private int lowestAddress;
 	private int highestAddress;
@@ -72,8 +75,8 @@ public class CodeBlock {
 	}
 
 	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo) {
-		if (Compiler.log.isTraceEnabled()) {
-			Compiler.log.trace(String.format("CodeBlock.addInstruction 0x%X - %s", address, insn.disasm(address, opcode)));
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("CodeBlock.addInstruction 0x%X - %s", address, insn.disasm(address, opcode)));
 		}
 
 		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo);
@@ -107,8 +110,8 @@ public class CodeBlock {
 	}
 
 	public void setIsBranchTarget(int address) {
-		if (Compiler.log.isTraceEnabled()) {
-			Compiler.log.trace("CodeBlock.setIsBranchTarget 0x" + Integer.toHexString(address).toUpperCase());
+		if (log.isTraceEnabled()) {
+			log.trace("CodeBlock.setIsBranchTarget 0x" + Integer.toHexString(address).toUpperCase());
 		}
 
 		CodeInstruction codeInstruction = getCodeInstruction(address);
@@ -299,8 +302,8 @@ public class CodeBlock {
         List<CodeSequence> sequencesToBeSplit = new ArrayList<CodeSequence>();
         for (CodeSequence codeSequence : codeSequences) {
             sequencesToBeSplit.add(codeSequence);
-            if (Compiler.log.isDebugEnabled()) {
-                Compiler.log.debug("Sequence to be split: " + codeSequence.toString());
+            if (log.isDebugEnabled()) {
+                log.debug("Sequence to be split: " + codeSequence.toString());
             }
             currentMethodInstructions -= codeSequence.getLength();
             if (currentMethodInstructions <= methodMaxInstructions) {
@@ -385,8 +388,8 @@ public class CodeBlock {
     	scanNativeCodeSequences(context);
 
     	if (codeInstructions.size() > methodMaxInstructions) {
-            if (Compiler.log.isInfoEnabled()) {
-                Compiler.log.info("Splitting " + getClassName() + " (" + codeInstructions.size() + "/" + methodMaxInstructions + ")");
+            if (log.isInfoEnabled()) {
+                log.info("Splitting " + getClassName() + " (" + codeInstructions.size() + "/" + methodMaxInstructions + ")");
             }
             splitCodeSequences(context, methodMaxInstructions);
         }
@@ -418,8 +421,8 @@ public class CodeBlock {
     	
 		context.setCodeBlock(this);
 		String className = getInternalClassName();
-		if (Compiler.log.isInfoEnabled()) {
-		    Compiler.log.info("Compiling for Interpreter " + className);
+		if (log.isInfoEnabled()) {
+		    log.info("Compiling for Interpreter " + className);
 		}
 
         int computeFlag = ClassWriter.COMPUTE_FRAMES;
@@ -428,12 +431,12 @@ public class CodeBlock {
 		}
     	ClassWriter cw = new ClassWriter(computeFlag);
     	ClassVisitor cv = cw;
-    	if (Compiler.log.isDebugEnabled()) {
+    	if (log.isDebugEnabled()) {
     		cv = new CheckClassAdapter(cv);
     	}
 
     	StringWriter debugOutput = null;
-    	if (Compiler.log.isDebugEnabled()) {
+    	if (log.isDebugEnabled()) {
     	    debugOutput = new StringWriter();
     	    PrintWriter debugPrintWriter = new PrintWriter(debugOutput);
     	    cv = new TraceClassVisitor(cv, debugPrintWriter);
@@ -457,7 +460,7 @@ public class CodeBlock {
         cv.visitEnd();
 
     	if (debugOutput != null) {
-    	    Compiler.log.debug(debugOutput.toString());
+    	    log.debug(debugOutput.toString());
     	}
 
 	    compiledClass = loadExecutable(context, className, cw.toByteArray());
@@ -470,8 +473,13 @@ public class CodeBlock {
 
 		context.setCodeBlock(this);
 		String className = getInternalClassName();
-		if (Compiler.log.isDebugEnabled()) {
-		    Compiler.log.debug("Compiling " + className);
+		if (log.isDebugEnabled()) {
+			String hleFunctionName = HLEModuleManager.getInstance().getAllFunctionNameFromAddress(getStartAddress());
+			if (hleFunctionName != null) {
+				log.debug(String.format("Compiling %s (%s)", className, hleFunctionName));
+			} else {
+				log.debug(String.format("Compiling %s", className));
+			}
 		}
 
         prepare(context, context.getMethodMaxInstructions());
@@ -483,11 +491,11 @@ public class CodeBlock {
 		}
     	ClassWriter cw = new ClassWriter(computeFlag);
     	ClassVisitor cv = cw;
-    	if (Compiler.log.isDebugEnabled()) {
+    	if (log.isDebugEnabled()) {
     		cv = new CheckClassAdapter(cv);
     	}
         StringWriter debugOutput = null;
-    	if (Compiler.log.isTraceEnabled()) {
+    	if (log.isTraceEnabled()) {
     	    debugOutput = new StringWriter();
     	    PrintWriter debugPrintWriter = new PrintWriter(debugOutput);
     	    cv = new TraceClassVisitor(cv, debugPrintWriter);
@@ -513,8 +521,8 @@ public class CodeBlock {
         mv.visitEnd();
 
         for (SequenceCodeInstruction sequenceCodeInstruction : sequenceCodeInstructions) {
-            if (Compiler.log.isDebugEnabled()) {
-                Compiler.log.debug("Compiling Sequence " + sequenceCodeInstruction.getMethodName(context));
+            if (log.isDebugEnabled()) {
+                log.debug("Compiling Sequence " + sequenceCodeInstruction.getMethodName(context));
             }
             currentSequence = sequenceCodeInstruction;
             mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, sequenceCodeInstruction.getMethodName(context), "()V", null, exceptions);
@@ -533,13 +541,13 @@ public class CodeBlock {
         cv.visitEnd();
 
     	if (debugOutput != null) {
-    	    Compiler.log.trace(debugOutput.toString());
+    	    log.trace(debugOutput.toString());
     	}
 
     	try {
     		compiledClass = loadExecutable(context, className, cw.toByteArray());
     	} catch (NullPointerException e) {
-    		Compiler.log.error("Error while compiling " + className + ": " + e);
+    		log.error("Error while compiling " + className + ": " + e);
     	}
 
     	return compiledClass;
@@ -556,9 +564,9 @@ public class CodeBlock {
 	            try {
                     executable = classExecutable.newInstance();
                 } catch (InstantiationException e) {
-                    Compiler.log.error(e);
+                    log.error(e);
                 } catch (IllegalAccessException e) {
-                    Compiler.log.error(e);
+                    log.error(e);
                 }
 	        }
 	    }
@@ -573,9 +581,9 @@ public class CodeBlock {
 	            try {
                     executable = classExecutable.newInstance();
                 } catch (InstantiationException e) {
-                    Compiler.log.error(e);
+                    log.error(e);
                 } catch (IllegalAccessException e) {
-                    Compiler.log.error(e);
+                    log.error(e);
                 }
 	        }
     	}

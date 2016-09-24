@@ -231,6 +231,16 @@ public class RuntimeContext {
 		while (interpret) {
 			int opcode = cpu.fetchOpcode();
 			Instruction insn = Decoder.instruction(opcode);
+
+			if (Compiler.log.isDebugEnabled()) {
+				Compiler.log.debug(String.format("Interpreting 0x%X - %s", cpu.pc - 4, insn.disasm(cpu.pc - 4, opcode)));
+				if (insn.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+					int opcodeDelaySlot = memory.read32(cpu.pc);
+					Instruction insnDelaySlot = Decoder.instruction(opcodeDelaySlot);
+					Compiler.log.debug(String.format("Interpreting 0x%X - %s", cpu.pc, insnDelaySlot.disasm(cpu.pc, opcodeDelaySlot)));
+				}
+			}
+
 			insn.interpret(processor, opcode);
 			if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
 				cpu.pc = jumpCall(cpu.pc);

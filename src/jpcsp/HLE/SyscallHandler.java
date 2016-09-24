@@ -116,9 +116,9 @@ public class SyscallHandler {
         	int address = nidMapper.overwrittenSyscallToAddress(code);
 
         	if (log.isDebugEnabled()) {
-            	HLEModuleFunction hleModuleFunction = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
+            	HLEModuleFunction hleModuleFunction = HLEModuleManager.getInstance().getAllFunctionFromSyscallCode(code);
             	if (hleModuleFunction != null) {
-            		log.debug(String.format("Jumping to 0x%08X instead of overwritten syscall %s", address, hleModuleFunction.getFunctionName()));
+            		log.debug(String.format("Jumping to 0x%08X(%s) instead of overwritten syscall", address, hleModuleFunction.getFunctionName()));
             	} else {
             		log.debug(String.format("Jumping to 0x%08X instead of overwritten syscall NID[0x%08X]", address, nidMapper.syscallToNid(code)));
             	}
@@ -128,7 +128,7 @@ public class SyscallHandler {
         } else {
         	// Check if this is the syscall
         	// for an HLE function currently being uninstalled
-        	HLEModuleFunction hleModuleFunction = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
+        	HLEModuleFunction hleModuleFunction = HLEModuleManager.getInstance().getAllFunctionFromSyscallCode(code);
         	if (hleModuleFunction != null) {
         		log.error(String.format("HLE Function %s(%s) not activated by default for Firmware Version %d", hleModuleFunction.getFunctionName(), hleModuleFunction.getModuleName(), Emulator.getInstance().getFirmwareVersion()));
         	} else {

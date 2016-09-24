@@ -97,6 +97,19 @@ public class NIDMapper {
     	return 0;
     }
 
+    public int overwrittenSyscallAddressToCode(int address) {
+    	for (String moduleName : moduleToNidTable.keySet()) {
+    		HashMap<Integer, Integer> nidToAddress = moduleToNidTable.get(moduleName);
+    		for (int nid : nidToAddress.keySet()) {
+    			if (address == nidToAddress.get(nid).intValue()) {
+    				return nidToSyscallInternal(nid);
+    			}
+    		}
+    	}
+
+    	return 0;
+    }
+
     /**
      * This function is only for the HLE. It allows us to HLE modules, normally
      * a module would be loaded into memory, so imports would jump to the
