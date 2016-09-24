@@ -121,10 +121,12 @@ public class sceParseUri extends HLEModule {
 		String userInfo = uri.getUserInfo();
 		String userInfoUserName = userInfo;
 		String userInfoPassword = "";
-		int userInfoColon = userInfo.indexOf(":");
-		if (userInfoColon >= 0) {
-			userInfoUserName = userInfo.substring(0, userInfoColon);
-			userInfoPassword = userInfo.substring(userInfoColon + 1);
+		if (userInfo != null) {
+			int userInfoColon = userInfo.indexOf(":");
+			if (userInfoColon >= 0) {
+				userInfoUserName = userInfo.substring(0, userInfoColon);
+				userInfoPassword = userInfo.substring(userInfoColon + 1);
+			}
 		}
 
 		pspParsedUri parsedUri = new pspParsedUri();
