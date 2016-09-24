@@ -76,6 +76,7 @@ public class SysMemUserForUser extends HLEModule {
 
     public static final int KERNEL_PARTITION_ID = 1;
     public static final int USER_PARTITION_ID = 2;
+    public static final int VSHELL_PARTITION_ID = 5;
 
 	protected boolean started = false;
     private int compiledSdkVersion;
@@ -119,10 +120,12 @@ public class SysMemUserForUser extends HLEModule {
 	public void reset() {
 		blockList = new HashMap<Integer, SysMemInfo>();
 
+		int vshellSize = 0x400000;
         // free memory chunks for each partition
-        freeMemoryChunks = new MemoryChunkList[3];
+        freeMemoryChunks = new MemoryChunkList[6];
         freeMemoryChunks[USER_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_USERSPACE, MemoryMap.END_USERSPACE);
-        freeMemoryChunks[KERNEL_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_KERNEL, MemoryMap.END_KERNEL);
+        freeMemoryChunks[KERNEL_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_KERNEL, MemoryMap.END_KERNEL - vshellSize);
+        freeMemoryChunks[VSHELL_PARTITION_ID] = createMemoryChunkList(MemoryMap.END_KERNEL + 1 - vshellSize, MemoryMap.END_KERNEL);
 	}
 
     public void setMemory64MB(boolean isMemory64MB) {
