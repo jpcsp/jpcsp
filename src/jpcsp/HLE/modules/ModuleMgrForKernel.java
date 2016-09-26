@@ -22,6 +22,7 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
@@ -65,5 +66,11 @@ public class ModuleMgrForKernel extends HLEModule {
         }
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xD86DD11B, version = 150)
+	public int sceKernelSearchModuleByName(PspString name) {
+		return 0;
 	}
 }

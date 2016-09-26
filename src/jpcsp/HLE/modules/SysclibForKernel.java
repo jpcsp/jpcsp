@@ -153,4 +153,17 @@ public class SysclibForKernel extends HLEModule {
 		}
 		return s1.getAddress() + index;
     }
+
+	@HLEFunction(nid = 0x476FD94A, version = 150)
+    public int strcat(@CanBeNull TPointer destAddr, @CanBeNull TPointer srcAddr) {
+		if (destAddr.isNull() || srcAddr.isNull()) {
+			return 0;
+		}
+
+		int dstLength = AbstractNativeCodeSequence.getStrlen(destAddr.getAddress());
+		int srcLength = AbstractNativeCodeSequence.getStrlen(srcAddr.getAddress());
+		destAddr.memcpy(dstLength, srcAddr.getAddress(), srcLength + 1);
+
+        return destAddr.getAddress();
+    }
 }

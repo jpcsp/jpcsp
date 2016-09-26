@@ -4820,4 +4820,11 @@ public class sceUtility extends HLEModule {
 
 		return 0;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5DCBD3C0, version = 150)
+    public int sceUtility_private_5DCBD3C0() {
+		// Has no parameters
+		return 0;
+	}
 }

@@ -705,17 +705,27 @@ public class sceNetApctl extends HLEModule {
 
 	@HLEFunction(nid = 0x7CFAB990, version = 150)
 	public int sceNetApctlAddInternalHandler(TPointer handler, int handlerArg) {
+		// This seems to be a 2nd kind of handler
 		return sceNetApctlAddHandler(handler, handlerArg);
 	}
 
 	@HLEFunction(nid = 0xE11BAFAB, version = 150)
 	public int sceNetApctlDelInternalHandler(int handlerId) {
+		// This seems to be a 2nd kind of handler
 		return sceNetApctlDelHandler(handlerId);
 	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xA7BB73DF, version = 150)
 	public int sceNetApctl_A7BB73DF(TPointer handler, int handlerArg) {
+		// This seems to be a 3rd kind of handler
 		return sceNetApctlAddHandler(handler, handlerArg);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x6F5D2981, version = 150)
+	public int sceNetApctl_6F5D2981(int handlerId) {
+		// This seems to be a 3rd kind of handler
+		return sceNetApctlDelHandler(handlerId);
 	}
 }

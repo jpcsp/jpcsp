@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
@@ -30,6 +31,8 @@ import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.hardware.Wlan;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.network.INetworkAdapter;
 import jpcsp.network.NetworkAdapterFactory;
 import jpcsp.util.Utilities;
@@ -207,6 +210,9 @@ public class sceNet extends HLEModule {
 
     @HLEFunction(nid = 0xD8722983, version = 150)
     public int sceNetStrlen(@CanBeNull TPointer srcAddr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceNetStrlen '%s'", srcAddr.getStringZ()));
+    	}
     	return Modules.SysclibForKernelModule.strlen(srcAddr);
     }
 
@@ -236,5 +242,86 @@ public class sceNet extends HLEModule {
 		}
 
 		return destAddr.getAddress();
+    }
+
+    @HLEFunction(nid = 0xBCBE14CF, version = 150)
+    public int sceNetStrchr(@CanBeNull TPointer srcAddr, int c1) {
+    	if (srcAddr.isNull()) {
+    		return 0;
+    	}
+    	c1 = c1 & 0xFF;
+
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr.getAddress(), 1);
+		for (int i = 0; true; i++) {
+			int c2 = memoryReader.readNext();
+			if (c1 == c2) {
+				// Character found
+				return srcAddr.getAddress() + i;
+			} else if (c2 == 0) {
+				// End of string
+				break;
+			}
+		}
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x750F705D, version = 150)
+    public int sceNetLook_ctype_table(int c) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceNetLook_ctype_table c='%c'", (char) c));
+    	}
+
+    	int type = 0;
+    	if (Character.isAlphabetic(c)) {
+    		if (Character.isUpperCase(c)) {
+    			type |= 0x01;
+    		}
+    		if (Character.isLowerCase(c)) {
+    			type |= 0x02;
+    		}
+    	}
+    	if (Character.isDigit(c)) {
+    		type |= 0x04;
+    	}
+    	if (Character.isSpaceChar(c)) {
+    		type |= 0x08;
+    	}
+
+    	return type;
+    }
+
+    @HLEFunction(nid = 0x5705F6F9, version = 150)
+    public int sceNetStrcat(@CanBeNull TPointer destAddr, @CanBeNull TPointer srcAddr) {
+    	return Modules.SysclibForKernelModule.strcat(destAddr, srcAddr);
+    }
+
+    @HLEFunction(nid = 0x9CFBC7E3, version = 150)
+    public int sceNetStrcasecmp(@CanBeNull PspString src1Addr, @CanBeNull PspString src2Addr) {
+    	if (src1Addr.isNull() || src2Addr.isNull()) {
+    		if (src1Addr.getAddress() == src2Addr.getAddress()) {
+    			return 0;
+    		}
+    		if (src1Addr.isNotNull()) {
+    			return 1;
+    		}
+    		return -1;
+    	}
+
+    	return src1Addr.getString().compareToIgnoreCase(src2Addr.getString());
+    }
+
+    @HLEFunction(nid = 0x96EF9DA1, version = 150)
+    public int sceNetTolower(int c) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceNetTolower c='%c'", (char) c));
+    	}
+    	return Character.toLowerCase(c);
+    }
+
+    @HLEFunction(nid = 0xCF705E46, version = 150)
+    public int sceNetSprintf(CpuState cpu, TPointer buffer, String format) {
+    	return Modules.SysclibForKernelModule.sprintf(cpu, buffer, format);
     }
 }

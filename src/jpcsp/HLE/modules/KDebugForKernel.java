@@ -154,4 +154,10 @@ public class KDebugForKernel extends HLEModule {
 	public int KDebugForKernel_B7251823() {
 		return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x47570AC5, version = 150)
+	public int sceKernelIsToolMode() {
+		return 0;
+	}
 }

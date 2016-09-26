@@ -36,6 +36,7 @@ import org.apache.log4j.Logger;
 public class SysMemForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("SysMemForKernel");
     protected HashMap<Integer, HeapInformation> heaps;
+    private String npEnv;
 
     protected static class HeapInformation {
     	private static final String uidPurpose = "SysMemForKernel-Heap";
@@ -106,6 +107,7 @@ public class SysMemForKernel extends HLEModule {
 	@Override
 	public void start() {
 		heaps = new HashMap<Integer, SysMemForKernel.HeapInformation>();
+		npEnv = "np"; // Used in URLs to connect to the playstation sites
 
 		super.start();
 	}
@@ -115,6 +117,11 @@ public class SysMemForKernel extends HLEModule {
         destAddr.memset((byte) data, size);
 
         return 0;
+    }
+
+	@HLEFunction(nid = 0x8AE776AF, version = 660)
+    public int sceKernelMemset_660(TPointer destAddr, int data, int size) {
+		return sceKernelMemset(destAddr, data, size);
     }
 
     /**
@@ -222,7 +229,7 @@ public class SysMemForKernel extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x945E45DA, version = 150)
     public int SysMemUserForUser_945E45DA(TPointer unknown) {
-    	unknown.setStringNZ(9, "XXXXXXXX");
+    	unknown.setStringNZ(9, npEnv);
 
     	return 0;
     }
@@ -231,5 +238,16 @@ public class SysMemForKernel extends HLEModule {
     @HLEFunction(nid = 0x7FF2F35A, version = 660)
     public int SysMemForKernel_7FF2F35A(TPointer unknown) {
     	return SysMemUserForUser_945E45DA(unknown);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA03CB480, version = 660)
+    public int SysMemForKernel_A03CB480(TPointer unknown) {
+    	npEnv = unknown.getStringNZ(8);
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("SysMemForKernel_A03CB480 setting unknownString='%s'", npEnv));
+    	}
+
+    	return 0;
     }
 }
