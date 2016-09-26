@@ -21,10 +21,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import jpcsp.Memory;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -37,9 +41,11 @@ import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.remote.HTTPServer;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -50,6 +56,7 @@ public class sceHttp extends HLEModule {
     private boolean isHttpInit;
     private boolean isSystemCookieLoaded;
     private int maxMemSize;
+    private SysMemInfo memInfo;
     protected HashMap<Integer, HttpTemplate> httpTemplates = new HashMap<Integer, HttpTemplate>();
     protected HashMap<Integer, HttpConnection> httpConnections = new HashMap<Integer, HttpConnection>();
     protected HashMap<Integer, HttpRequest> httpRequests = new HashMap<Integer, HttpRequest>();
@@ -68,6 +75,8 @@ public class sceHttp extends HLEModule {
     	private int dataOffset;
     	private int dataLength;
     	private HashMap<String, String> headers = new HashMap<String, String>();
+    	private byte[] sendData;
+    	private int sendDataLength;
 
     	public HttpRequest() {
     		id = SceUidManager.getNewUid(uidPurpose);
@@ -84,11 +93,14 @@ public class sceHttp extends HLEModule {
     		return id;
     	}
 
-		public String getUrl() {
+    	public String getUrl() {
 			if (url != null) {
 				return url;
 			}
 			if (path != null) {
+				if (path.startsWith("http:") || path.startsWith("https:")) {
+					return path;
+				}
 				return getHttpConnection().getUrl() + path;
 			}
 
@@ -129,12 +141,39 @@ public class sceHttp extends HLEModule {
 		}
 
 		public void send(int data, int dataSize) {
+			if (dataSize > 0) {
+				sendData = Utilities.extendArray(sendData, dataSize);
+				Utilities.readBytes(data, dataSize, sendData, sendDataLength);
+				sendDataLength += dataSize;
+			}
+		}
+
+		public void connect() {
+			if (urlConnection != null) {
+				// Already connected
+				return;
+			}
+
 			if (log.isTraceEnabled()) {
-				log.trace(String.format("HttpRequest %s send: %s", this, Utilities.getMemoryDump(data, dataSize)));
+				log.trace(String.format("HttpRequest %s send: %s", this, Utilities.getMemoryDump(sendData, 0, sendDataLength)));
+			}
+
+			String sendUrl = getUrl();
+			Proxy proxy = getProxyForUrl(sendUrl);
+
+			// Replace https with http when using a proxy
+			if (proxy != null) {
+				if (sendUrl.startsWith("https:")) {
+					sendUrl = "http:" + sendUrl.substring(6);
+				}
 			}
 
 			try {
-				urlConnection = new URL(getUrl()).openConnection();
+				if (proxy != null) {
+					urlConnection = new URL(sendUrl).openConnection(proxy);
+				} else {
+					urlConnection = new URL(sendUrl).openConnection();
+				}
 
 				String agent = getHttpConnection().getHttpTemplate().getAgent();
 				if (agent != null) {
@@ -150,18 +189,16 @@ public class sceHttp extends HLEModule {
 					}
 					urlConnection.setRequestProperty(header, headers.get(header));
 				}
+				urlConnection.setRequestProperty("Host", "patched-host");
 
 				if (urlConnection instanceof HttpURLConnection) {
 					httpUrlConnection = (HttpURLConnection) urlConnection;
 					if (method != 0) {
 						httpUrlConnection.setRequestMethod("POST");
-						if (data != 0 && dataSize > 0) {
-							byte[] postData = new byte[dataSize];
-							Utilities.readBytes(data, dataSize, postData, 0);
-
+						if (sendDataLength > 0) {
 							httpUrlConnection.setDoOutput(true);
 							OutputStream os = httpUrlConnection.getOutputStream();
-							os.write(postData);
+							os.write(sendData, 0, sendDataLength);
 							os.close();
 						}
 					} else {
@@ -239,6 +276,25 @@ public class sceHttp extends HLEModule {
 			}
 
 			return readSize;
+		}
+
+		public String getAllHeaders() {
+			if (urlConnection == null) {
+				return null;
+			}
+
+			StringBuilder allHeaders = new StringBuilder();
+			Map<String, List<String>> properties = urlConnection.getHeaderFields();
+			for (String key : properties.keySet()) {
+				if (key != null) {
+					List<String> values = properties.get(key);
+					for (String value : values) {
+						allHeaders.append(String.format("%s: %s\n", key, value));
+					}
+				}
+			}
+
+			return allHeaders.toString();
 		}
 
 		public int getStatusCode() {
@@ -391,6 +447,19 @@ public class sceHttp extends HLEModule {
     	}
     }
 
+	private static Proxy getProxyForUrl(String url) {
+		Proxy proxy = null;
+
+		if (url != null) {
+			if (url.startsWith("http://fe01.psp.update.playstation.org/") ||
+			    url.startsWith("https://native.np.ac.playstation.net/")) {
+				proxy = HTTPServer.getInstance().getProxy();
+			}
+		}
+
+		return proxy;
+	}
+
     protected HttpRequest getHttpRequest(int requestId) {
     	HttpRequest httpRequest = httpRequests.get(requestId);
     	if (httpRequest == null) {
@@ -418,6 +487,17 @@ public class sceHttp extends HLEModule {
     	return httpTemplate;
     }
 
+    private int getTempMemory() {
+    	if (memInfo == null) {
+    		memInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "sceHttp", SysMemUserForUser.PSP_SMEM_Low, maxMemSize, 0);
+    		if (memInfo == null) {
+    			return 0;
+    		}
+    	}
+
+    	return memInfo.addr;
+    }
+
     /**
      * Init the http library.
      *
@@ -433,6 +513,7 @@ public class sceHttp extends HLEModule {
 
         maxMemSize = heapSize;
         isHttpInit = true;
+        memInfo = null;
 
 		Utilities.disableSslCertificateChecks();
 
@@ -452,6 +533,11 @@ public class sceHttp extends HLEModule {
         isSystemCookieLoaded = false;
         isHttpInit = false;
 
+        if (memInfo != null) {
+        	Modules.SysMemUserForUserModule.free(memInfo);
+        	memInfo = null;
+        }
+
         return 0;
     }
 
@@ -466,6 +552,7 @@ public class sceHttp extends HLEModule {
     @HLEFunction(nid = 0x0282A3BD, version = 150)
     public int sceHttpGetContentLength(int requestId, TPointer64 contentLength){
     	HttpRequest httpRequest = getHttpRequest(requestId);
+    	httpRequest.connect();
     	contentLength.setValue(httpRequest.getContentLength());
 
     	if (log.isDebugEnabled()) {
@@ -670,6 +757,7 @@ public class sceHttp extends HLEModule {
     @HLEFunction(nid = 0x4CC7D78F, version = 150)
     public int sceHttpGetStatusCode(int requestId, TPointer32 statusCode) {
     	HttpRequest httpRequest = getHttpRequest(requestId);
+    	httpRequest.connect();
     	statusCode.setValue(httpRequest.getStatusCode());
 
     	if (log.isDebugEnabled()) {
@@ -1000,9 +1088,22 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDB266CCF, version = 150)
-    public int sceHttpGetAllHeader(int requestId, TPointer32 unknownAddr1, TPointer32 unknownAddr2) {
-    	unknownAddr1.setValue(0);
-    	unknownAddr2.setValue(0);
+    public int sceHttpGetAllHeader(int requestId, TPointer32 headerAddr, TPointer32 headerLengthAddr) {
+    	HttpRequest httpRequest = getHttpRequest(requestId);
+    	httpRequest.connect();
+    	String allHeaders = httpRequest.getAllHeaders();
+    	if (allHeaders == null) {
+    		return -1;
+    	}
+
+    	int addr = getTempMemory();
+    	Utilities.writeStringZ(Memory.getInstance(), addr, allHeaders);
+    	headerAddr.setValue(addr);
+    	headerLengthAddr.setValue(allHeaders.length());
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceHttpGetAllHeader returning at 0x%08X: %s", addr, allHeaders));
+    	}
 
     	return 0;
     }
@@ -1027,6 +1128,10 @@ public class sceHttp extends HLEModule {
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	int readSize = httpRequest.readData(data.getAddress(), dataSize);
 
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceHttpReadData returning 0x%X: %s", readSize, Utilities.getMemoryDump(data.getAddress(), readSize)));
+    	}
+
     	return readSize;
     }
 
@@ -1048,7 +1153,7 @@ public class sceHttp extends HLEModule {
 
         if (isSystemCookieLoaded) { // The system's cookie list can only be loaded once per session.
             return SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
-        } else if (maxMemSize <  PSP_HTTP_SYSTEM_COOKIE_HEAP_SIZE){
+        } else if (maxMemSize < PSP_HTTP_SYSTEM_COOKIE_HEAP_SIZE){
             return SceKernelErrors.ERROR_HTTP_NO_MEMORY;
         } else {
             isSystemCookieLoaded = true;

@@ -34,6 +34,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -82,6 +84,7 @@ public class HTTPServer {
 		new HTTPServerDescriptor(0, 80, false),
 		new HTTPServerDescriptor(1, 443, true)
 	};
+	private static final boolean processProxyRequestLocally = true;
 	private static final String method = "method";
 	private static final String path = "path";
 	private static final String host = "host";
@@ -112,6 +115,7 @@ public class HTTPServer {
 	private int displayActionUsageCount = 0;
 	private BufferedImage currentDisplayImage;
 	private boolean currentDisplayImageHasAlpha = false;
+	private Proxy proxy;
 
 	public static HTTPServer getInstance() {
 		if (instance == null) {
@@ -256,6 +260,9 @@ public class HTTPServer {
 
 		serverThreads = new HTTPServerThread[serverDescriptors.length];
 		for (HTTPServerDescriptor descriptor : serverDescriptors) {
+			if (descriptor.getIndex() == 0) {
+				proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("localhost", descriptor.getPort()));
+			}
 			HTTPServerThread serverThread = new HTTPServerThread(descriptor);
 			serverThreads[descriptor.getIndex()] = serverThread;
 			serverThread.setDaemon(true);
@@ -473,11 +480,12 @@ public class HTTPServer {
 			if (pathValue.startsWith(baseUrl)) {
 				pathValue = pathValue.substring(baseUrl.length() - 1);
 			}
-			if ("fe01.psp.update.playstation.org".equals(request.get(host))) {
+
+			if (!processProxyRequestLocally && "fe01.psp.update.playstation.org".equals(request.get(host))) {
 				doProxy(descriptor, request, os, pathValue, 0);
 			} else if ("native.np.ac.playstation.net".equals(request.get(host))) {
 				doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("nsx.sec.np.dl.playstation.net".equals(request.get(host))) {
+			} else if (!processProxyRequestLocally && "nsx.sec.np.dl.playstation.net".equals(request.get(host))) {
 				sendResponseFile(os, rootDirectory + "/psp.xml");
 			} else if ("GET".equals(request.get(method))) {
 				if ("/".equals(pathValue)) {
@@ -509,6 +517,8 @@ public class HTTPServer {
 				} else if (pathValue.startsWith("/" + naclDirectory + "/")) {
 					sendNaClResponse(os, pathValue.substring(6));
 				} else if (pathValue.endsWith(".html")) {
+					sendResponseFile(os, rootDirectory + pathValue);
+				} else if (pathValue.endsWith(".txt")) {
 					sendResponseFile(os, rootDirectory + pathValue);
 				} else if (pathValue.endsWith(".xml")) {
 					sendResponseFile(os, rootDirectory + pathValue);
@@ -1592,5 +1602,9 @@ public class HTTPServer {
 
 			sendResponseFile(os, new ByteArrayInputStream(out.toByteArray()), guessMimeType(pathValue));
 		}
+	}
+
+	public Proxy getProxy() {
+		return proxy;
 	}
 }
