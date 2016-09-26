@@ -58,6 +58,7 @@ import jpcsp.HLE.modules.sceHttp;
 import jpcsp.HLE.modules.sceHttps;
 import jpcsp.HLE.modules.sceImpose;
 import jpcsp.HLE.modules.sceJpeg;
+import jpcsp.HLE.modules.sceLibUpdateDL;
 import jpcsp.HLE.modules.sceMd5;
 import jpcsp.HLE.modules.sceMeCore_driver;
 import jpcsp.HLE.modules.sceMePower;
@@ -87,6 +88,7 @@ import jpcsp.HLE.modules.sceNpMatching2;
 import jpcsp.HLE.modules.sceNpService;
 import jpcsp.HLE.modules.sceOpenPSID;
 import jpcsp.HLE.modules.sceP3da;
+import jpcsp.HLE.modules.sceParseHttp;
 import jpcsp.HLE.modules.scePauth;
 import jpcsp.HLE.modules.scePower;
 import jpcsp.HLE.modules.scePsmf;
@@ -217,6 +219,8 @@ public class Modules {
     public static sceMePower sceMePowerModule = new sceMePower();
     public static sceResmgr sceResmgrModule = new sceResmgr();
     public static UtilsForKernel UtilsForKernelModule = new UtilsForKernel();
+    public static sceLibUpdateDL sceLibUpdateDLModule = new sceLibUpdateDL();
+    public static sceParseHttp sceParseHttpModule = new sceParseHttp();
 
     public static Logger log = Logger.getLogger("hle");
 
