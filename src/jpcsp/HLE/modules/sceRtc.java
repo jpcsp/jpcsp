@@ -545,8 +545,14 @@ public class sceRtc extends HLEModule {
 	}
 
 	@HLEUnimplemented
-    @HLEFunction(nid = 0xE09880CF, version = 600)
+    @HLEFunction(nid = 0xE09880CF, version = 660)
     public int sceRtcSetAlarmTick_660(@CanBeNull TPointer64 srcPtr) {
 		return sceRtcSetAlarmTick(srcPtr);
+    }
+
+	@HLEUnimplemented
+    @HLEFunction(nid = 0xCEEF238F, version = 150)
+    public int sceRtcGetCurrentSecureTick(TPointer64 currentTick) {
+		return sceRtcGetCurrentTick(currentTick);
     }
 }

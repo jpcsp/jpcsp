@@ -114,6 +114,9 @@ public class LoadExecForUser extends HLEModule {
             	// Do not pass the file name as first parameter (tested on PSP).
             	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getCurrentThread();
             	Modules.ThreadManForUserModule.hleKernelSetThreadArguments(rootThread, arguments, argSize);
+
+            	// The memory model (32MB / 64MB) could have been changed, update the RuntimeContext
+            	RuntimeContext.updateMemory();
             }
         } catch (GeneralJpcspException e) {
             log.error("General Error", e);

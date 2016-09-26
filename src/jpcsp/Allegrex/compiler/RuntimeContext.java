@@ -301,12 +301,7 @@ public class RuntimeContext {
         	runtimeSyncThread.start();
         }
 
-        memory = Emulator.getMemory();
-		if (memory instanceof FastMemory) {
-			memoryInt = ((FastMemory) memory).getAll();
-		} else {
-		    memoryInt = null;
-		}
+        updateMemory();
 
         if (State.debugger != null || (memory instanceof DebuggerMemory) || debugMemoryRead || debugMemoryWrite) {
         	enableDebugger = true;
@@ -395,6 +390,15 @@ public class RuntimeContext {
 		    fpr = processor.cpu.fpr;
 		    vprFloat = processor.cpu.vprFloat;
 		    vprInt = processor.cpu.vprInt;
+		}
+    }
+
+    public static void updateMemory() {
+        memory = Emulator.getMemory();
+		if (memory instanceof FastMemory) {
+			memoryInt = ((FastMemory) memory).getAll();
+		} else {
+		    memoryInt = null;
 		}
     }
 

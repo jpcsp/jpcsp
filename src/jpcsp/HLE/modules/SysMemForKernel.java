@@ -23,6 +23,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -248,6 +249,12 @@ public class SysMemForKernel extends HLEModule {
     		log.debug(String.format("SysMemForKernel_A03CB480 setting unknownString='%s'", npEnv));
     	}
 
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x807179E7, version = 150)
+    public int sceKernelSetParamSfo(PspString discId, int unknown1, int unknown2, PspString unknown3, int unknown4, int unknown5, PspString pspVersion) {
     	return 0;
     }
 }
