@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -2610,6 +2613,8 @@ public class sceNetInet extends HLEModule {
 			return -1;
 		}
 
+		sceHttp.getProxyForSockAddrInternet(sockAddrInternet);
+
 		pspInetSocket inetSocket = sockets.get(socket);
 		int result = inetSocket.connect(sockAddrInternet);
 
@@ -2867,14 +2872,14 @@ public class sceNetInet extends HLEModule {
 
 	// size_t  sceNetInetRecv(int s, void *buf, size_t len, int flags);
 	@HLEFunction(nid = 0xCDA85C99, version = 150)
-	public int sceNetInetRecv(@CheckArgument("checkSocket") int socket, TPointer buffer, int bufferLength, int flags) {
+	public int sceNetInetRecv(@CheckArgument("checkSocket") int socket, @BufferInfo(lengthInfo=LengthInfo.returnValue, usage=Usage.out) TPointer buffer, int bufferLength, int flags) {
 		pspInetSocket inetSocket = sockets.get(socket);
 		return inetSocket.recv(buffer.getAddress(), bufferLength, flags);
 	}
 
 	// size_t  sceNetInetRecvfrom(int socket, void *buffer, size_t bufferLength, int flags, struct sockaddr *from, socklen_t *fromlen);
 	@HLEFunction(nid = 0xC91142E4, version = 150)
-	public int sceNetInetRecvfrom(@CheckArgument("checkSocket") int socket, TPointer buffer, int bufferLength, int flags, TPointer from, TPointer32 fromLengthAddr) {
+	public int sceNetInetRecvfrom(@CheckArgument("checkSocket") int socket, @BufferInfo(lengthInfo=LengthInfo.returnValue, usage=Usage.out) TPointer buffer, int bufferLength, int flags, TPointer from, TPointer32 fromLengthAddr) {
 		pspInetSocket inetSocket = sockets.get(socket);
 		pspNetSockAddrInternet fromAddrInternet = new pspNetSockAddrInternet();
 
@@ -2961,7 +2966,7 @@ public class sceNetInet extends HLEModule {
 
 	// size_t sceNetInetSend(int socket, const void *buffer, size_t bufferLength, int flags);
 	@HLEFunction(nid = 0x7AA671BC, version = 150)
-	public int sceNetInetSend(@CheckArgument("checkSocket") int socket, TPointer buffer, int bufferLength, int flags) {
+	public int sceNetInetSend(@CheckArgument("checkSocket") int socket, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buffer, int bufferLength, int flags) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("Send data: %s", Utilities.getMemoryDump(buffer.getAddress(), bufferLength)));
 		}
@@ -2972,7 +2977,7 @@ public class sceNetInet extends HLEModule {
 
 	// size_t sceNetInetSendto(int socket, const void *buffer, size_t bufferLength, int flags, const struct sockaddr *to, socklen_t tolen);
 	@HLEFunction(nid = 0x05038FC7, version = 150)
-	public int sceNetInetSendto(@CheckArgument("checkSocket") int socket, TPointer buffer, int bufferLength, int flags, pspNetSockAddrInternet toSockAddress, @CheckArgument("checkAddressLength") int toLength) {
+	public int sceNetInetSendto(@CheckArgument("checkSocket") int socket, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buffer, int bufferLength, int flags, pspNetSockAddrInternet toSockAddress, @CheckArgument("checkAddressLength") int toLength) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("Sendto data: %s", Utilities.getMemoryDump(buffer.getAddress(), bufferLength)));
 		}
@@ -3088,7 +3093,7 @@ public class sceNetInet extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x80A21ABD, version = 150)
-	public int sceNetInetSocketAbort() {
+	public int sceNetInetSocketAbort(@CheckArgument("checkSocket") int socket) {
 		return 0;
 	}
 
