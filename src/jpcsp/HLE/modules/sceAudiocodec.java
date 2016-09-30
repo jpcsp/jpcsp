@@ -196,6 +196,8 @@ public class sceAudiocodec extends HLEModule {
 				return -1;
 		}
 
+		workArea.setValue32(36, outputBufferSize);
+
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceAudiocodecDecode inputBuffer=0x%08X, outputBuffer=0x%08X, inputBufferSize=0x%X, outputBufferSize=0x%X", inputBuffer, outputBuffer, inputBufferSize, outputBufferSize));
 			log.debug(String.format("sceAudiocodecDecode unknown1=0x%08X, unknown2=0x%08X, unknown3=0x%08X, unknown4=0x%08X", unknown1, unknown2, unknown3, unknown4));
