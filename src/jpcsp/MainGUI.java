@@ -2892,6 +2892,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_VAUDIO");
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_ATRAC3PLUS");
+            	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_AVCODEC");
 
             	Modules.SysMemUserForUserModule.free(startOptionsMem);
             } else {
