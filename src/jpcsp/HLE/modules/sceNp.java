@@ -138,4 +138,166 @@ public class sceNp extends HLEModule {
     public int sceNpGetMyLanguages() {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x02CA8CAA, version = 150)
+    public int sceNp_02CA8CAA() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0B8BEE48, version = 150)
+    public int sceNp_0B8BEE48() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1916432C, version = 150)
+    public int sceNp_1916432C() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2D8E93D2, version = 150)
+    public int sceNp_2D8E93D2() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2E4769C3, version = 150)
+    public int sceNp_2E4769C3() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4556A257, version = 150)
+    public int sceNp_4556A257() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4B09907A, version = 150)
+    public int sceNp_4B09907A() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x5FA879D8, version = 150)
+    public int sceNp_5FA879D8() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x60A4791A, version = 150)
+    public int sceNp_60A4791A() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x64F72B22, version = 150)
+    public int sceNp_64F72B22() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x66B86876, version = 150)
+    public int sceNp_66B86876() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x67BCF9E3, version = 150)
+    public int sceNp_67BCF9E3() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x6999EDC4, version = 150)
+    public int sceNp_6999EDC4() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x6CBB0614, version = 150)
+    public int sceNp_6CBB0614() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9A264EF2, version = 150)
+    public int sceNp_9A264EF2() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9B87B19B, version = 150)
+    public int sceNp_9B87B19B() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB2BFADB2, version = 150)
+    public int sceNp_B2BFADB2() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB4063F7A, version = 150)
+    public int sceNp_B4063F7A() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB819A0C8, version = 150)
+    public int sceNp_B819A0C8() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC0B3616C, version = 150)
+    public int sceNp_C0B3616C() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC250A650, version = 150)
+    public int sceNp_C250A650() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC48F2847, version = 150)
+    public int sceNp_C48F2847() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xCF83CC3B, version = 150)
+    public int sceNp_CF83CC3B() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE24DA399, version = 150)
+    public int sceNp_E24DA399() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE41288E7, version = 150)
+    public int sceNp_E41288E7() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE90DFBC4, version = 150)
+    public int sceNp_E90DFBC4() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF2B95034, version = 150)
+    public int sceNp_F2B95034() {
+    	return 0;
+    }
 }

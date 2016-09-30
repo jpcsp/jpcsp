@@ -384,4 +384,28 @@ public class sceNpAuth extends HLEModule {
     public int sceNpAuthGetEntitlementIdList() {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x61BB18B3, version = 150)
+    public int sceNpAuth_61BB18B3() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB714FBDD, version = 150)
+    public int sceNpAuth_B714FBDD() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xCE85B3B8, version = 150)
+    public int sceNpAuth_CE85B3B8() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xDAD65284, version = 150)
+    public int sceNpAuth_DAD65284() {
+    	return 0;
+    }
 }

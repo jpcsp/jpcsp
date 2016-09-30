@@ -728,4 +728,10 @@ public class sceNetApctl extends HLEModule {
 		// This seems to be a 3rd kind of handler
 		return sceNetApctlDelHandler(handlerId);
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x69745F0A, version = 150)
+	public int sceNetApctl_lib2_69745F0A(int handlerId) {
+		return 0;
+	}
 }

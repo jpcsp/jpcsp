@@ -129,4 +129,16 @@ public class sceLibUpdateDL extends HLEModule {
     public int  sceUpdateDownloadSetServerRegion(int serverRegion1, int serverRegion2) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x36D8F34B, version = 150)
+    public int sceUpdate_36D8F34B() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF7E66CB4, version = 150)
+    public int sceUpdate_F7E66CB4() {
+    	return 0;
+    }
 }
