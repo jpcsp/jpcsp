@@ -54,6 +54,10 @@ public class sceReg extends HLEModule {
     private int oskKeytopIndex;
     private String npEnv;
     private String adhocSsidPrefix;
+    private int themeCustomThemeCode;
+    private int themeColorMode;
+    private int themeWallpaperMode;
+    private int themeSystemColor;
 
     protected static class RegistryHandle {
     	private static final String registryHandlePurpose = "sceReg.RegistryHandle";
@@ -386,25 +390,25 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(themeWallpaperMode);
     			}
     		} else if ("custom_theme_mode".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(themeCustomThemeCode);
     			}
     		} else if ("color_mode".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(themeColorMode);
     			}
     		} else if ("system_color".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(themeSystemColor);
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -594,6 +598,10 @@ public class sceReg extends HLEModule {
 	    oskKeytopIndex = 0x5;
 	    npEnv = "np"; // Max length 8
 	    adhocSsidPrefix = "XXX"; // Must be of length 3
+	    themeWallpaperMode = 0;
+	    themeColorMode = 0;
+	    themeCustomThemeCode = 0;
+	    themeSystemColor = 0;
 
 		super.start();
 	}
@@ -855,6 +863,18 @@ public class sceReg extends HLEModule {
     	} else if ("/CONFIG/NETWORK/ADHOC".equals(fullName)) {
     		if ("ssid_prefix".equals(name)) {
     			adhocSsidPrefix = buf.getStringNZ(size);
+    		} else {
+    			log.warn(String.format("Unknown font registry entry '%s'", name));
+    		}
+    	} else if ("/CONFIG/SYSTEM/XMB/THEME".equals(fullName)) {
+    		if ("custom_theme_mode".equals(name)) {
+    			themeCustomThemeCode = buf.getValue32();
+    		} else if ("color_mode".equals(name)) {
+    			themeColorMode = buf.getValue32();
+    		} else if ("wallpaper_mode".equals(name)) {
+    			themeWallpaperMode = buf.getValue32();
+    		} else if ("system_color".equals(name)) {
+    			themeSystemColor = buf.getValue32();
     		} else {
     			log.warn(String.format("Unknown font registry entry '%s'", name));
     		}
