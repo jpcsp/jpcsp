@@ -19,6 +19,9 @@ package jpcsp.HLE.modules;
 import java.util.HashMap;
 
 import jpcsp.Memory;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
@@ -114,7 +117,7 @@ public class SysMemForKernel extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0xA089ECA4, version = 150)
-    public int sceKernelMemset(TPointer destAddr, int data, int size) {
+    public int sceKernelMemset(@BufferInfo(lengthInfo=LengthInfo.nextNextParameter, usage=Usage.out) TPointer destAddr, int data, int size) {
         destAddr.memset((byte) data, size);
 
         return 0;

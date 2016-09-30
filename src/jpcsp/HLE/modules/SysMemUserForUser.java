@@ -557,6 +557,9 @@ public class SysMemUserForUser extends HLEModule {
 
 	@HLEFunction(nid = 0xFC114573, version = 200)
 	public int sceKernelGetCompiledSdkVersion() {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceKernelGetCompiledSdkVersion returning 0x%08X", compiledSdkVersion));
+		}
 		return compiledSdkVersion;
 	}
 

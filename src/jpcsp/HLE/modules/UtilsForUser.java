@@ -36,6 +36,7 @@ import jpcsp.State;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -204,7 +205,11 @@ public class UtilsForUser extends HLEModule {
     @HLELogging(level="info")
 	@HLEFunction(nid = 0xC8186A58, version = 150)
 	public int sceKernelUtilsMd5Digest(TPointer inAddr, int inSize, TPointer outAddr) {
-    	return SceKernelUtilsMd5Context.digest(inAddr, inSize, outAddr);
+    	int result = SceKernelUtilsMd5Context.digest(inAddr, inSize, outAddr);
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceKernelUtilsMd5Digest input:%s, output:%s", Utilities.getMemoryDump(inAddr.getAddress(), inSize), Utilities.getMemoryDump(outAddr.getAddress(), 16)));
+    	}
+    	return result;
 	}
 
     @HLELogging(level="info")
