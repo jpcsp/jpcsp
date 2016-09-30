@@ -37,14 +37,12 @@ public class CSOFileSectorDevice extends AbstractFileSectorDevice {
 
         /*
 	        u32 'CISO'
-	        u32 0?
-	        u32 image size in bytes (why? it could have been sectors and make things simpler!)
+	        u64 image size in bytes (first u32 is highest 32-bit, second u32 is lowest 32-bit)
 	        u32 sector size? (00000800 = 2048 = sector size)
 	        u32 ? (1)
 	        u32[] sector offsets (as many as image size / sector size, I guess)
          */
-
-		int lengthInBytes = byteBuffer.getInt(8);
+		long lengthInBytes = (((long) byteBuffer.getInt(4)) << 32) | (byteBuffer.getInt(8) & 0xFFFFFFFFL);
 		int sectorSize = byteBuffer.getInt(16);
 		offsetShift = byteBuffer.get(21) & 0xFF;
 		numSectors = getNumSectors(lengthInBytes, sectorSize);
