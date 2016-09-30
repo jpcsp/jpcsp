@@ -324,4 +324,86 @@ public class sceNet extends HLEModule {
     public int sceNetSprintf(CpuState cpu, TPointer buffer, String format) {
     	return Modules.SysclibForKernelModule.sprintf(cpu, buffer, format);
     }
+
+    @HLEFunction(nid = 0xB9085A96, version = 150)
+    public int sceNetStrncasecmp(@CanBeNull TPointer src1Addr, @CanBeNull TPointer src2Addr, int size) {
+    	if (src1Addr.isNull() || src2Addr.isNull()) {
+    		if (src1Addr.getAddress() == src2Addr.getAddress()) {
+    			return 0;
+    		}
+    		if (src1Addr.isNotNull()) {
+    			return 1;
+    		}
+    		return -1;
+    	}
+
+    	String s1 = src1Addr.getStringNZ(size);
+    	String s2 = src2Addr.getStringNZ(size);
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceNetStrncasecmp s1='%s', s2='%s'", s1, s2));
+    	}
+
+    	return s1.compareToIgnoreCase(s2);
+    }
+
+    /**
+     * Convert a string to an integer. The base is 10.
+     * 
+     * @param string   the string to be converted
+     * @return         the integer value represented by the string
+     */
+    @HLEFunction(nid = 0x1FB2FDDD, version = 150)
+    public long sceNetAtoi(@CanBeNull PspString string) {
+    	return Integer.parseInt(string.getString());
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2A73ADDC, version = 150)
+    public long sceNetStrtoul(@CanBeNull PspString string, TPointer32 endString, int base) {
+    	return Integer.parseInt(string.getString(), base);
+    }
+
+    @HLEFunction(nid = 0xE0A81C7C, version = 150)
+    public int sceNetMemcmp(@CanBeNull TPointer src1Addr, @CanBeNull TPointer src2Addr, int size) {
+    	return Modules.SysclibForKernelModule.memcmp(src1Addr, src2Addr, size);
+    }
+
+    @HLEFunction(nid = 0xF48963C6, version = 150)
+    public int sceNetStrrchr(@CanBeNull TPointer srcAddr, int c1) {
+    	if (srcAddr.isNull()) {
+    		return 0;
+    	}
+    	c1 = c1 & 0xFF;
+
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr.getAddress(), 1);
+    	int lastOccurence = -1;
+		for (int i = 0; true; i++) {
+			int c2 = memoryReader.readNext();
+			if (c1 == c2) {
+				// Character found
+				lastOccurence = i;
+			} else if (c2 == 0) {
+				// End of string
+				break;
+			}
+		}
+
+		if (lastOccurence < 0) {
+			return 0;
+		}
+
+		return srcAddr.getAddress() + lastOccurence;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC13C9307, version = 150)
+    public int sceNet_lib_C13C9307() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x384EFE14, version = 150)
+    public int sceNet_lib_384EFE14() {
+    	return 0;
+    }
 }
