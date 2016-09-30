@@ -1580,6 +1580,10 @@ public class Loader {
     		patch(mem, module, 0x00012058, 0x1440003B, NOP());
     		patch(mem, module, 0x00012060, 0x14400039, NOP());
     	}
+    	if ("sceNpCommerce2".equals(module.modname)) {
+    		patch(mem, module, 0x0000A598, 0x00000073, 0x00000000); // replace "https" with "http"
+    		patch(mem, module, 0x00003A60, 0x240701BB, 0x24070050); // replace port 443 with 80
+    	}
     }
 
     private void patch(Memory mem, SceModule module, int offset, int oldValue, int newValue) {
