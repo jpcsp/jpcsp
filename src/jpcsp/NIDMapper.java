@@ -107,7 +107,7 @@ public class NIDMapper {
     		}
     	}
 
-    	return 0;
+    	return -1;
     }
 
     /**
@@ -124,21 +124,23 @@ public class NIDMapper {
     /** @param modulename Example: sceRtc
      * @param address Address of export (example: start of function). */
     public void addModuleNid(SceModule module, String modulename, int nid, int address) {
-        HashMap<Integer, Integer> nidToAddress;
+        int syscall = nidToSyscall(nid);
+        if (syscall != -1) {
+    		// Only modules from flash0 are allowed to overwrite NIDs from syscalls
+        	if (module.pspfilename == null || !module.pspfilename.startsWith("flash0:")) {
+        		return;
+        	}
+        	if (log.isInfoEnabled()) {
+        		log.info(String.format("NID 0x%08X at address 0x%08X from module '%s' overwriting an HLE syscall", nid, address, modulename));
+        	}
+    		overwrittenSyscalls.add(syscall);
+        }
 
-        nidToAddress = moduleToNidTable.get(modulename);
+        HashMap<Integer, Integer> nidToAddress = moduleToNidTable.get(modulename);
         if (nidToAddress == null) {
             nidToAddress = new HashMap<Integer, Integer>();
             moduleToNidTable.put(modulename, nidToAddress);
             module.addModuleName(modulename);
-        }
-
-        int syscall = nidToSyscall(nid);
-        if (syscall != -1) {
-        	if (log.isInfoEnabled()) {
-        		log.info(String.format("NID 0x%08X at address 0x%08X from module '%s' overwriting an HLE syscall", nid, address, modulename));
-        	}
-        	overwrittenSyscalls.add(syscall);
         }
 
         nidToAddress.put(nid, address);
