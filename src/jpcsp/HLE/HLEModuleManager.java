@@ -25,12 +25,14 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.ThreadManForUser;
 
 /**
  * Manager for the HLE modules.
@@ -131,7 +133,7 @@ public class HLEModuleManager {
         sceNpMatching2(Modules.sceNpMatching2Module, new String[] { "np_matching2", "PSP_MODULE_NP_MATCHING2" }),
         scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM" }),
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
-        sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4" }),
+        sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4", "mp4msv" }),
         sceHttp(Modules.sceHttpModule, new String[] { "libhttp", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceHttps(Modules.sceHttpsModule),
         sceSsl(Modules.sceSslModule, new String[] { "libssl", "PSP_NET_MODULE_SSL", "PSP_MODULE_NET_SSL" }),
@@ -440,13 +442,47 @@ public class HLEModuleManager {
         return func.getFunctionName();
     }
 
-    public String getAllFunctionNameFromAddress(int address) {
+    public int getAllFunctionSyscallCodeFromAddress(int address) {
     	int code = NIDMapper.getInstance().overwrittenSyscallAddressToCode(address);
+
+    	if (code == -1) {
+    		// Verify if this not the address of a stub call:
+    		//   J   realAddress
+    		//   NOP
+        	Memory mem = Memory.getInstance();
+        	if ((mem.read32(address) >>> 26) == AllegrexOpcodes.J) {
+        		if (mem.read32(address + 4) == ThreadManForUser.NOP()) {
+        			int jumpAddress = (mem.read32(address) & 0x03FFFFFF) << 2;
+
+        			code = NIDMapper.getInstance().overwrittenSyscallAddressToCode(jumpAddress);
+        		}
+        	}
+    	}
+
+    	HLEModuleFunction func = getAllFunctionFromSyscallCode(code);
+    	if (func == null) {
+    		return -1;
+    	}
+
+    	return code;
+    }
+
+    public HLEModuleFunction getAllFunctionFromAddress(int address) {
+    	int code = getAllFunctionSyscallCodeFromAddress(address);
     	if (code == -1) {
     		return null;
     	}
 
-    	return getAllFunctionNameFromSyscallCode(code);
+    	return getAllFunctionFromSyscallCode(code);
+    }
+
+    public String getAllFunctionNameFromAddress(int address) {
+    	HLEModuleFunction func = getAllFunctionFromAddress(address);
+    	if (func == null) {
+    		return null;
+    	}
+
+    	return func.getFunctionName();
     }
 
     public void startModules(boolean startFromSyscall) {
@@ -499,13 +535,19 @@ public class HLEModuleManager {
 		// Take the module default logging if no HLELogging has been
 		// defined at the function level and if the function is not
 		// unimplemented (which will produce it's own logging).
-		if (hleLogging == null && hleUnimplemented == null) {
-			HLELogging hleModuleLogging = method.getDeclaringClass().getAnnotation(HLELogging.class);
-			if (hleModuleLogging != null) {
-				// Take the module default logging
-				hleLogging = hleModuleLogging;
+		if (hleLogging == null) {
+			if (hleUnimplemented != null) {
+				// Take the logging level of the HLEUnimplemented class
+				// as default value for unimplemented functions
+				hleLogging = HLEUnimplemented.class.getAnnotation(HLELogging.class);
 			} else {
-				hleLogging = defaultHLEFunctionLogging;
+				HLELogging hleModuleLogging = method.getDeclaringClass().getAnnotation(HLELogging.class);
+				if (hleModuleLogging != null) {
+					// Take the module default logging
+					hleLogging = hleModuleLogging;
+				} else {
+					hleLogging = defaultHLEFunctionLogging;
+				}
 			}
 		}
 

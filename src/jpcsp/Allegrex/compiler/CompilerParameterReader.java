@@ -81,6 +81,22 @@ public class CompilerParameterReader extends ParameterReader {
 		loadParameterLongAt(moveParameterIndex(2));
 	}
 
+	public void skipNextInt() {
+		moveParameterIndex(1);
+	}
+
+	public void skipNextFloat() {
+		moveParameterIndexFloat(1);
+	}
+
+	public void skipNextLong() {
+		moveParameterIndex(2);
+	}
+
+	public void rewindPreviousInt() {
+		moveParameterIndex(-1);
+	}
+
 	public void popAllStack(int additionalCount) {
 		final MethodVisitor mv = compilerContext.getMethodVisitor();
 

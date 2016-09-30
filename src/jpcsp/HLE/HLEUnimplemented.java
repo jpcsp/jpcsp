@@ -28,6 +28,8 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
+// The default logging for unimplemented function is the "warn" level
+@HLELogging(level = "warn")
 public @interface HLEUnimplemented {
 	public boolean partial() default false;
 }

@@ -52,6 +52,9 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 import jpcsp.Allegrex.compiler.nativeCode.Nop;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEModuleFunction;
@@ -80,6 +83,7 @@ import jpcsp.memory.SafeFastMemory;
 import jpcsp.util.ClassAnalyzer;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.ClassAnalyzer.ParameterInfo;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassVisitor;
@@ -1190,23 +1194,18 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
-    private void loadModuleLoggger(HLEModuleFunction func, boolean useDirectModuleLogger) {
-    	if (useDirectModuleLogger) {
-        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(func.getHLEModuleMethod().getDeclaringClass()), "log", Type.getDescriptor(Logger.class));
-    	} else {
-			mv.visitLdcInsn(func.getModuleName());
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Modules.class), "getLogger", "(" + Type.getDescriptor(String.class) + ")" + Type.getDescriptor(Logger.class));
-    	}
+    private void loadModuleLoggger(HLEModuleFunction func) {
+    	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(func.getHLEModuleMethod().getDeclaringClass()), "log", Type.getDescriptor(Logger.class));
     }
 
-    private void logSyscall(HLEModuleFunction func, String logPrefix, String logCheckFunction, String logFunction, boolean useDirectModuleLogger) {
+    private void logSyscall(HLEModuleFunction func, String logPrefix, String logCheckFunction, String logFunction) {
 		// Modules.getLogger(func.getModuleName()).warn("Unimplemented...");
-    	loadModuleLoggger(func, useDirectModuleLogger);
+    	loadModuleLoggger(func);
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logCheckFunction, "()Z");
 		Label loggingDisabled = new Label();
 		mv.visitJumpInsn(Opcodes.IFEQ, loggingDisabled);
 
-		loadModuleLoggger(func, useDirectModuleLogger);
+		loadModuleLoggger(func);
 
 		StringBuilder formatString = new StringBuilder();
 		if (logPrefix != null) {
@@ -1234,9 +1233,9 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
             CompilerParameterReader parameterReader = new CompilerParameterReader(this);
             Annotation[][] paramsAnotations = func.getHLEModuleMethod().getParameterAnnotations();
-            int paramIndex = 0;
             int objectArrayIndex = 0;
-            for (ParameterInfo parameter : parameters) {
+            for (int paramIndex = 0; paramIndex < parameters.length; paramIndex++) {
+            	ParameterInfo parameter = parameters[paramIndex];
             	Class<?> parameterType = parameter.type;
             	CompilerTypeInformation typeInformation = compilerTypeManager.getCompilerTypeInformation(parameterType);
 
@@ -1260,18 +1259,277 @@ public class CompilerContext implements ICompilerContext {
             	}
             	mv.visitInsn(Opcodes.AASTORE);
 
-            	paramIndex++;
             	objectArrayIndex++;
             }
 			mv.visitLdcInsn(formatString.toString());
 			mv.visitInsn(Opcodes.SWAP);
         	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
+    		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logFunction, "(" + Type.getDescriptor(Object.class) + ")V");
+
+            parameterReader = new CompilerParameterReader(this);
+            for (int paramIndex = 0; paramIndex < parameters.length; paramIndex++) {
+            	ParameterInfo parameter = parameters[paramIndex];
+            	Class<?> parameterType = parameter.type;
+
+        		LengthInfo lengthInfo = LengthInfo.unknown;
+        		int length = -1;
+        		Usage usage = Usage.in;
+        		for (Annotation parameterAnnotation : paramsAnotations[paramIndex]) {
+        			if (parameterAnnotation instanceof BufferInfo) {
+        				BufferInfo bufferInfo = (BufferInfo) parameterAnnotation;
+        				lengthInfo = bufferInfo.lengthInfo();
+        				length = bufferInfo.length();
+        				usage = bufferInfo.usage();
+        			}
+        		}
+
+        		boolean parameterRead = false;
+        		if (lengthInfo != LengthInfo.unknown && (usage == Usage.in || usage == Usage.inout)) {
+    				loadModuleLoggger(func);
+    				loadImm(1);
+    				mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
+        			mv.visitInsn(Opcodes.DUP);
+                	loadImm(0);
+
+    				Label done = new Label();
+                	Label addressNull = new Label();
+    				parameterReader.loadNextInt();
+    				parameterRead = true;
+        			mv.visitInsn(Opcodes.DUP);
+    				mv.visitJumpInsn(Opcodes.IFEQ, addressNull);
+
+    				switch (lengthInfo) {
+	        			case fixedLength:
+	        				loadImm(length);
+	        				break;
+	        			case nextNextParameter:
+	                    	parameterReader.skipNextInt();
+	                    	paramIndex++;
+	                    	parameterReader.loadNextInt();
+	                    	paramIndex++;
+	        				break;
+	        			case nextParameter:
+	                    	parameterReader.loadNextInt();
+	                    	paramIndex++;
+	        				break;
+	        			case previousParameter:
+	        				// Go back to the address parameter
+	        				parameterReader.rewindPreviousInt();
+	        				// Go back to the previous parameter
+	        				parameterReader.rewindPreviousInt();
+	        				// Load the length from the previous parameter
+	        				parameterReader.loadNextInt();
+	        				// Skip again the address parameter
+	        				// to come back to the above situation
+	        				parameterReader.skipNextInt();
+	        				break;
+	        			case variableLength:
+	                    	mv.visitInsn(Opcodes.DUP);
+	        		    	loadMemory();
+	                    	mv.visitInsn(Opcodes.SWAP);
+	        		        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
+	        				break;
+        				default:
+	        				log.error(String.format("Unimplemented lengthInfo=%s", lengthInfo));
+	        				break;
+	        		}
+
+    				mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Utilities.class), "getMemoryDump", "(II)" + Type.getDescriptor(String.class));
+                	mv.visitInsn(Opcodes.AASTORE);
+
+                	String format = String.format("%s[%s]:%%s", parameter.name, usage);
+        			mv.visitLdcInsn(format);
+                	mv.visitInsn(Opcodes.SWAP);
+                	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
+            		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logFunction, "(" + Type.getDescriptor(Object.class) + ")V");
+            		mv.visitJumpInsn(Opcodes.GOTO, done);
+
+        			mv.visitLabel(addressNull);
+        			mv.visitInsn(Opcodes.POP);
+        			mv.visitInsn(Opcodes.POP2);
+        			mv.visitInsn(Opcodes.POP2);
+                	mv.visitLabel(done);
+        		}
+
+        		if (!parameterRead) {
+        			if (parameterType == long.class) {
+        				parameterReader.skipNextLong();
+        			} else if (parameterType == float.class) {
+        				parameterReader.skipNextFloat();
+        			} else {
+        				parameterReader.skipNextInt();
+        			}
+        		}
+        	}
 		} else {
 			mv.visitLdcInsn(formatString.toString());
+			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logFunction, "(" + Type.getDescriptor(Object.class) + ")V");
 		}
-		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logFunction, "(" + Type.getDescriptor(Object.class) + ")V");
 
 		mv.visitLabel(loggingDisabled);
+    }
+
+    private String getLogCheckFunction(HLEModuleFunction func) {
+		String logCheckFunction = "isInfoEnabled";
+		if ("trace".equals(func.getLoggingLevel())) {
+			logCheckFunction = "isTraceEnabled";
+		} else if ("debug".equals(func.getLoggingLevel())) {
+			logCheckFunction = "isDebugEnabled";
+		}
+		return logCheckFunction;
+    }
+
+    private void logSyscallStart(HLEModuleFunction func) {
+    	if (func.getLoggingLevel() != null) {
+    		String prefix = null;
+    		if (func.isUnimplemented()) {
+    			prefix = "Unimplemented ";
+    		}
+    		logSyscall(func, prefix, getLogCheckFunction(func), func.getLoggingLevel());
+    	}
+    }
+
+    private void logSyscallEnd(HLEModuleFunction func, boolean isErrorCode) {
+    	if (func.getLoggingLevel() == null) {
+    		return;
+    	}
+    	String logFunction = func.getLoggingLevel();
+		String logCheckFunction = getLogCheckFunction(func);
+
+    	// if (Modules.getLogger(func.getModuleName()).isDebugEnabled()) {
+    	//     Modules.getLogger(func.getModuleName()).debug(String.format("<function name> returning 0x%X", new Object[1] { new Integer(returnValue) }));
+    	// }
+    	loadModuleLoggger(func);
+    	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logCheckFunction, "()Z");
+    	Label notDebug = new Label();
+    	mv.visitJumpInsn(Opcodes.IFEQ, notDebug);
+
+    	mv.visitInsn(Opcodes.DUP);
+		mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Integer.class));
+		mv.visitInsn(Opcodes.DUP_X1);
+		mv.visitInsn(Opcodes.SWAP);
+		mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Integer.class), "<init>", "(I)V");
+		loadImm(1);
+		mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
+    	mv.visitInsn(Opcodes.DUP_X1);
+    	mv.visitInsn(Opcodes.SWAP);
+		loadImm(0);
+		mv.visitInsn(Opcodes.SWAP);
+		mv.visitInsn(Opcodes.AASTORE);
+		String prefix = func.isUnimplemented() ? "Unimplemented " : "";
+    	mv.visitLdcInsn(String.format("%s%s returning %s0x%%X", prefix, func.getFunctionName(), isErrorCode ? "errorCode " : ""));
+    	mv.visitInsn(Opcodes.SWAP);
+    	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
+    	loadModuleLoggger(func);
+    	mv.visitInsn(Opcodes.SWAP);
+    	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logFunction, "(" + Type.getDescriptor(Object.class) + ")V");
+
+    	if (!isErrorCode) {
+			ParameterInfo[] parameters = new ClassAnalyzer().getParameters(func.getFunctionName(), func.getHLEModuleMethod().getDeclaringClass());
+			if (parameters != null) {
+	            CompilerParameterReader parameterReader = new CompilerParameterReader(this);
+	            Annotation[][] paramsAnotations = func.getHLEModuleMethod().getParameterAnnotations();
+	            for (int paramIndex = 0; paramIndex < parameters.length; paramIndex++) {
+	            	ParameterInfo parameter = parameters[paramIndex];
+	            	Class<?> parameterType = parameter.type;
+
+	        		LengthInfo lengthInfo = LengthInfo.unknown;
+	        		int length = -1;
+	        		Usage usage = Usage.in;
+	        		for (Annotation parameterAnnotation : paramsAnotations[paramIndex]) {
+	        			if (parameterAnnotation instanceof BufferInfo) {
+	        				BufferInfo bufferInfo = (BufferInfo) parameterAnnotation;
+	        				lengthInfo = bufferInfo.lengthInfo();
+	        				length = bufferInfo.length();
+	        				usage = bufferInfo.usage();
+	        			}
+	        		}
+
+	        		boolean parameterRead = false;
+	        		if (lengthInfo != LengthInfo.unknown && (usage == Usage.out || usage == Usage.inout)) {
+	    				loadModuleLoggger(func);
+	    				loadImm(1);
+	    				mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
+	        			mv.visitInsn(Opcodes.DUP);
+	                	loadImm(0);
+
+	    				Label done = new Label();
+	                	Label addressNull = new Label();
+	    				parameterReader.loadNextInt();
+	    				parameterRead = true;
+	        			mv.visitInsn(Opcodes.DUP);
+	    				mv.visitJumpInsn(Opcodes.IFEQ, addressNull);
+
+	    				switch (lengthInfo) {
+		        			case fixedLength:
+		        				loadImm(length);
+		        				break;
+		        			case nextNextParameter:
+		                    	parameterReader.skipNextInt();
+		                    	paramIndex++;
+		                    	parameterReader.loadNextInt();
+		                    	paramIndex++;
+		        				break;
+		        			case nextParameter:
+		                    	parameterReader.loadNextInt();
+		                    	paramIndex++;
+		        				break;
+		        			case previousParameter:
+		        				// Go back to the address parameter
+		        				parameterReader.rewindPreviousInt();
+		        				// Go back to the previous parameter
+		        				parameterReader.rewindPreviousInt();
+		        				// Load the length from the previous parameter
+		        				parameterReader.loadNextInt();
+		        				// Skip again the address parameter
+		        				// to come back to the above situation
+		        				parameterReader.skipNextInt();
+		        				break;
+		        			case variableLength:
+		                    	mv.visitInsn(Opcodes.DUP);
+		        		    	loadMemory();
+		                    	mv.visitInsn(Opcodes.SWAP);
+		        		        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
+		        				break;
+		        			case returnValue:
+		        				loadRegister(_v0);
+		        				break;
+	        				default:
+		        				log.error(String.format("Unimplemented lengthInfo=%s", lengthInfo));
+		        				break;
+		        		}
+
+	    				mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Utilities.class), "getMemoryDump", "(II)" + Type.getDescriptor(String.class));
+	                	mv.visitInsn(Opcodes.AASTORE);
+
+	                	String format = String.format("%s[%s]:%%s", parameter.name, usage);
+	        			mv.visitLdcInsn(format);
+	                	mv.visitInsn(Opcodes.SWAP);
+	                	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
+	            		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logFunction, "(" + Type.getDescriptor(Object.class) + ")V");
+	            		mv.visitJumpInsn(Opcodes.GOTO, done);
+
+	        			mv.visitLabel(addressNull);
+	        			mv.visitInsn(Opcodes.POP);
+	        			mv.visitInsn(Opcodes.POP2);
+	        			mv.visitInsn(Opcodes.POP2);
+	                	mv.visitLabel(done);
+	        		}
+
+	        		if (!parameterRead) {
+	        			if (parameterType == long.class) {
+	        				parameterReader.skipNextLong();
+	        			} else if (parameterType == float.class) {
+	        				parameterReader.skipNextFloat();
+	        			} else {
+	        				parameterReader.skipNextInt();
+	        			}
+	        		}
+	        	}
+			}
+    	}
+
+    	mv.visitLabel(notDebug);
     }
 
     /**
@@ -1309,8 +1567,8 @@ public class CompilerContext implements ICompilerContext {
      *         }
      *     } catch (SceKernelErrorException e) {
      *         errorCode = e.errorCode;
-     *         if (Modules.log.isDebugEnabled()) {
-     *             Modules.log.debug(String.format("<function name> return errorCode 0x%08X", errorCode));
+     *         if (Modules.getLogger(func.getModuleName()).isDebugEnabled()) {
+     *             Modules.getLogger(func.getModuleName()).debug(String.format("<function name> return errorCode 0x%08X", errorCode));
      *         }
      *         if (parameterReader.hasErrorPointer()) {
      *             errorPointer.setValue(errorCode);
@@ -1343,8 +1601,8 @@ public class CompilerContext implements ICompilerContext {
 
     	if (func.checkInsideInterrupt()) {
     		// if (IntrManager.getInstance().isInsideInterrupt()) {
-    		//     if (Modules.log.isDebugEnabled()) {
-    		//         Modules.log.debug("<function name> return errorCode 0x80020064 (ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT)");
+    		//     if (Modules.getLogger(func.getModuleName()).isDebugEnabled()) {
+    		//         Modules.getLogger(func.getModuleName()).debug("<function name> return errorCode 0x80020064 (ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT)");
     		//     }
     		//     cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
     		//     goto afterSyscall
@@ -1354,11 +1612,11 @@ public class CompilerContext implements ICompilerContext {
     		Label notInsideInterrupt = new Label();
     		mv.visitJumpInsn(Opcodes.IFEQ, notInsideInterrupt);
 
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
+    		loadModuleLoggger(func);
         	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "isDebugEnabled", "()Z");
         	Label notDebug = new Label();
         	mv.visitJumpInsn(Opcodes.IFEQ, notDebug);
-        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
+        	loadModuleLoggger(func);
         	mv.visitLdcInsn(String.format("%s returning errorCode 0x%08X (ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT)", func.getFunctionName(), SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT));
         	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "debug", "(" + Type.getDescriptor(Object.class) + ")V");
         	mv.visitLabel(notDebug);
@@ -1370,8 +1628,8 @@ public class CompilerContext implements ICompilerContext {
 
     	if (func.checkDispatchThreadEnabled()) {
     		// if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled() || !Interrupts.isInterruptsEnabled()) {
-    		//     if (Modules.log.isDebugEnabled()) {
-    		//         Modules.log.debug("<function name> return errorCode 0x800201A7 (ERROR_KERNEL_WAIT_CAN_NOT_WAIT)");
+    		//     if (Modules.getLogger(func.getModuleName()).isDebugEnabled()) {
+    		//         Modules.getLogger(func.getModuleName()).debug("<function name> return errorCode 0x800201A7 (ERROR_KERNEL_WAIT_CAN_NOT_WAIT)");
     		//     }
     		//     cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
     		//     goto afterSyscall
@@ -1385,11 +1643,11 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitJumpInsn(Opcodes.IFNE, noError);
 
     		mv.visitLabel(returnError);
-        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
+    		loadModuleLoggger(func);
         	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "isDebugEnabled", "()Z");
         	Label notDebug = new Label();
         	mv.visitJumpInsn(Opcodes.IFEQ, notDebug);
-        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
+        	loadModuleLoggger(func);
         	mv.visitLdcInsn(String.format("%s returning errorCode 0x%08X (ERROR_KERNEL_WAIT_CAN_NOT_WAIT)", func.getFunctionName(), SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT));
         	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "debug", "(" + Type.getDescriptor(Object.class) + ")V");
         	mv.visitLabel(notDebug);
@@ -1399,19 +1657,7 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitLabel(noError);
     	}
 
-    	if (func.isUnimplemented()) {
-    		logSyscall(func, "Unimplemented ", "isInfoEnabled", "warn", false);
-    	}
-
-    	if (func.getLoggingLevel() != null) {
-    		String logCheckFunction = "isInfoEnabled";
-    		if ("trace".equals(func.getLoggingLevel())) {
-    			logCheckFunction = "isTraceEnabled";
-    		} else if ("debug".equals(func.getLoggingLevel())) {
-    			logCheckFunction = "isDebugEnabled";
-    		}
-    		logSyscall(func, null, logCheckFunction, func.getLoggingLevel(), true);
-    	}
+    	logSyscallStart(func);
 
     	if (func.hasStackUsage()) {
     		loadMemory();
@@ -1438,7 +1684,7 @@ public class CompilerContext implements ICompilerContext {
         Class<?> returnType = func.getHLEModuleMethod().getReturnType();
         StringBuilder methodDescriptor = new StringBuilder();
         methodDescriptor.append("(");
-        
+
         Annotation[][] paramsAnotations = func.getHLEModuleMethod().getParameterAnnotations();
         int paramIndex = 0;
         for (Class<?> parameterType : parameterTypes) {
@@ -1462,6 +1708,10 @@ public class CompilerContext implements ICompilerContext {
         	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(TErrorPointer32.class), "setValue", "(I)V");
     	}
 
+        loadRegister(_v0);
+        logSyscallEnd(func, false);
+        mv.visitInsn(Opcodes.POP);
+
         mv.visitLabel(tryEnd);
         mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
 
@@ -1479,34 +1729,7 @@ public class CompilerContext implements ICompilerContext {
         // }
         mv.visitLabel(catchSceKernelErrorException);
         mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(SceKernelErrorException.class), "errorCode", "I");
-        {
-        	// if (Modules.log.isDebugEnabled()) {
-        	//     Modules.log.debug(String.format("<function name> returning errorCode 0x%08X", new Object[1] { new Integer(errorCode) }));
-        	// }
-        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
-        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "isDebugEnabled", "()Z");
-        	Label notDebug = new Label();
-        	mv.visitJumpInsn(Opcodes.IFEQ, notDebug);
-        	mv.visitInsn(Opcodes.DUP);
-    		mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Integer.class));
-    		mv.visitInsn(Opcodes.DUP_X1);
-    		mv.visitInsn(Opcodes.SWAP);
-    		mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Integer.class), "<init>", "(I)V");
-    		loadImm(1);
-    		mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
-        	mv.visitInsn(Opcodes.DUP_X1);
-        	mv.visitInsn(Opcodes.SWAP);
-    		loadImm(0);
-    		mv.visitInsn(Opcodes.SWAP);
-    		mv.visitInsn(Opcodes.AASTORE);
-        	mv.visitLdcInsn(String.format("%s returning errorCode 0x%%08X", func.getFunctionName()));
-        	mv.visitInsn(Opcodes.SWAP);
-        	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
-        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
-        	mv.visitInsn(Opcodes.SWAP);
-        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "debug", "(" + Type.getDescriptor(Object.class) + ")V");
-        	mv.visitLabel(notDebug);
-        }
+    	logSyscallEnd(func, true);
         if (parameterReader.hasErrorPointer()) {
         	// errorPointer.setValue(errorCode);
         	// cpu.gpr[_v0] = 0;
@@ -1613,6 +1836,22 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
+    private void startHLEMethod() {
+        HLEModuleFunction func = HLEModuleManager.getInstance().getAllFunctionFromAddress(codeBlock.getStartAddress());
+        if (func != null) {
+	        logSyscallStart(func);
+        }
+    }
+
+    private void endHLEMethod() {
+        HLEModuleFunction func = HLEModuleManager.getInstance().getAllFunctionFromAddress(codeBlock.getStartAddress());
+        if (func != null) {
+	        loadRegister(_v0);
+	        logSyscallEnd(func, false);
+	        mv.visitInsn(Opcodes.POP);
+        }
+    }
+
     private void startInternalMethod() {
     	// if (e != null)
     	Label notReplacedLabel = new Label();
@@ -1634,12 +1873,13 @@ public class CompilerContext implements ICompilerContext {
     	if (RuntimeContext.debugCodeBlockCalls) {
         	loadImm(getCodeBlock().getStartAddress());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeBlockStart, "(I)V");
-        }
+    	}
     }
 
     public void startMethod() {
     	startInternalMethod();
     	startSequenceMethod();
+    	startHLEMethod();
     }
 
     private void flushInstructionCount(boolean local, boolean last) {
@@ -1685,6 +1925,7 @@ public class CompilerContext implements ICompilerContext {
 
     public void endMethod() {
     	endInternalMethod();
+    	endHLEMethod();
     	flushInstructionCount(false, true);
     }
 

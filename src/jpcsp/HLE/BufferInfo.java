@@ -16,21 +16,37 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
-* Annotation for a PspString type, that indicates the maximum length of the string. 
-*/
+ * Annotation for the TPointer type, giving indications on the length
+ * of the buffer and if the buffer is used as input and/or input.
+ *
+ */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface StringInfo {
-	/**
-	 * Maximum length that the will be read from the memory address. 
-	 */
-	public int maxLength() default -1;
+@Target(ElementType.PARAMETER)
+public @interface BufferInfo {
+	public static enum LengthInfo {
+		unknown,
+		nextParameter,
+		nextNextParameter,
+		previousParameter,
+		variableLength,
+		fixedLength,
+		returnValue
+	}
+	public static enum Usage {
+		in,
+		out,
+		inout
+	}
 
-	/**
-	 * Encoding of the string.
-	 */
-	public String encoding() default "UTF-8";
+	public LengthInfo lengthInfo() default LengthInfo.unknown;
+
+	public int length() default -1;
+
+	public Usage usage() default Usage.in;
 }

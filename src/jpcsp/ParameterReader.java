@@ -68,7 +68,7 @@ public class ParameterReader {
 	}
 
 	protected int moveParameterIndex(int size) {
-		while ((parameterIndex % size) != 0) {
+		while (size > 0 && (parameterIndex % size) != 0) {
 			parameterIndex++;
 		}
 		int retParameterIndex = parameterIndex;
