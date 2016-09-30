@@ -20,15 +20,20 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import jpcsp.Memory;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -41,6 +46,7 @@ import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.pspNetSockAddrInternet;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.memory.IMemoryWriter;
@@ -71,9 +77,6 @@ public class sceHttp extends HLEModule {
     	private HttpConnection httpConnection;
     	private URLConnection urlConnection;
     	private HttpURLConnection httpUrlConnection;
-    	private byte[] data;
-    	private int dataOffset;
-    	private int dataLength;
     	private HashMap<String, String> headers = new HashMap<String, String>();
     	private byte[] sendData;
     	private int sendDataLength;
@@ -124,7 +127,6 @@ public class sceHttp extends HLEModule {
 		}
 
 		public long getContentLength() {
-			readData();
 			return contentLength;
 		}
 
@@ -189,7 +191,6 @@ public class sceHttp extends HLEModule {
 					}
 					urlConnection.setRequestProperty(header, headers.get(header));
 				}
-				urlConnection.setRequestProperty("Host", "patched-host");
 
 				if (urlConnection instanceof HttpURLConnection) {
 					httpUrlConnection = (HttpURLConnection) urlConnection;
@@ -216,40 +217,17 @@ public class sceHttp extends HLEModule {
 			}
 		}
 
-		private void addData(byte[] buffer, int bufferLength) {
-			if (dataOffset + dataLength + bufferLength > data.length) {
-				byte[] newData = new byte[dataLength + bufferLength];
-				System.arraycopy(data, dataOffset, newData, 0, dataLength);
-				dataOffset = 0;
-				data = newData;
-			}
-			System.arraycopy(buffer, 0, data, dataOffset + dataLength, bufferLength);
-			dataLength += bufferLength;
-		}
+		public int readData(int data, int dataSize) {
+			byte buffer[] = new byte[dataSize];
+			int bufferLength = 0;
 
-		private void readData() {
-			if (urlConnection == null) {
-				// Request not yet sent
-				return;
-			}
-
-			if (data != null) {
-				// Data already read
-				return;
-			}
-
-			dataOffset = 0;
-			dataLength = 0;
-			data = new byte[1024];
-			byte[] buffer = new byte[1024];
 			try {
-				while (true) {
-					int readSize = urlConnection.getInputStream().read(buffer);
-					if (readSize > 0) {
-						addData(buffer, readSize);
-					} else if (readSize < 0) {
+				while (bufferLength < dataSize) {
+					int readSize = urlConnection.getInputStream().read(buffer, bufferLength, dataSize - bufferLength);
+					if (readSize < 0) {
 						break;
 					}
+					bufferLength += readSize;
 				}
 			} catch (FileNotFoundException e) {
 				log.debug("HttpRequest.readData", e);
@@ -257,25 +235,15 @@ public class sceHttp extends HLEModule {
 				log.error("HttpRequest.readData", e);
 			}
 
-			setContentLength(dataLength);
-		}
-
-		public int readData(int data, int dataSize) {
-			readData();
-
-			int readSize = Math.min(dataSize, dataLength);
-			if (readSize > 0) {
-				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(data, readSize, 1);
-				for (int i = 0; i < readSize; i++) {
-					memoryWriter.writeNext(this.data[dataOffset + i] & 0xFF);
+			if (bufferLength > 0) {
+				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(data, bufferLength, 1);
+				for (int i = 0; i < bufferLength; i++) {
+					memoryWriter.writeNext(buffer[i] & 0xFF);
 				}
 				memoryWriter.flush();
-
-				dataOffset += readSize;
-				dataLength -= readSize;
 			}
 
-			return readSize;
+			return bufferLength;
 		}
 
 		public String getAllHeaders() {
@@ -300,7 +268,6 @@ public class sceHttp extends HLEModule {
 		public int getStatusCode() {
 			int statusCode = 0;
 
-			readData();
 			if (httpUrlConnection != null) {
 				try {
 					statusCode = httpUrlConnection.getResponseCode();
@@ -460,7 +427,38 @@ public class sceHttp extends HLEModule {
 		return proxy;
 	}
 
-    protected HttpRequest getHttpRequest(int requestId) {
+	private static boolean isSameAddress(String name, pspNetSockAddrInternet sockAddrInternet) {
+		InetAddress inetAddresses[] = null;
+		try {
+			inetAddresses = (InetAddress[]) InetAddress.getAllByName(name);
+		} catch (UnknownHostException e) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("isSameAddress cannot resolve '%s': %s", name, e.toString()));
+			}
+		}
+
+		if (inetAddresses != null) {
+			for (int i = 0; i < inetAddresses.length; i++) {
+				byte[] addrBytes = inetAddresses[i].getAddress();
+				int addr = (addrBytes[0] & 0xFF) | ((addrBytes[1] & 0xFF) << 8) | ((addrBytes[2] & 0xFF) << 16) | ((addrBytes[3] & 0xFF) << 24);
+				if (addr == sockAddrInternet.sin_addr) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	public static void getProxyForSockAddrInternet(pspNetSockAddrInternet sockAddrInternet) {
+		if (isSameAddress("fe01.psp.update.playstation.org", sockAddrInternet) ||
+		    isSameAddress("native.np.ac.playstation.net", sockAddrInternet)) {
+			sockAddrInternet.sin_addr = HTTPServer.getInstance().getProxyAddress();
+			sockAddrInternet.sin_port = HTTPServer.getInstance().getProxyPort();
+		}
+	}
+
+	protected HttpRequest getHttpRequest(int requestId) {
     	HttpRequest httpRequest = httpRequests.get(requestId);
     	if (httpRequest == null) {
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_ARGUMENT);
@@ -998,7 +996,7 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0xBB70706F, version = 150)
-    public int sceHttpSendRequest(int requestId, @CanBeNull TPointer data, int dataSize) {
+    public int sceHttpSendRequest(int requestId, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer data, int dataSize) {
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	httpRequest.send(data.getAddress(), dataSize);
 
@@ -1124,8 +1122,9 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0xEDEEB999, version = 150)
-    public int sceHttpReadData(int requestId, TPointer data, int dataSize) {
+    public int sceHttpReadData(int requestId, @BufferInfo(lengthInfo=LengthInfo.returnValue, usage=Usage.out) TPointer data, int dataSize) {
     	HttpRequest httpRequest = getHttpRequest(requestId);
+    	httpRequest.connect();
     	int readSize = httpRequest.readData(data.getAddress(), dataSize);
 
     	if (log.isDebugEnabled()) {

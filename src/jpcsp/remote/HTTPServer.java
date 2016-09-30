@@ -116,6 +116,8 @@ public class HTTPServer {
 	private BufferedImage currentDisplayImage;
 	private boolean currentDisplayImageHasAlpha = false;
 	private Proxy proxy;
+	private int proxyPort;
+	private int proxyAddress;
 
 	public static HTTPServer getInstance() {
 		if (instance == null) {
@@ -261,7 +263,14 @@ public class HTTPServer {
 		serverThreads = new HTTPServerThread[serverDescriptors.length];
 		for (HTTPServerDescriptor descriptor : serverDescriptors) {
 			if (descriptor.getIndex() == 0) {
-				proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("localhost", descriptor.getPort()));
+				String addressName = "localhost";
+				proxyPort = descriptor.getPort();
+
+				InetSocketAddress socketAddress = new InetSocketAddress(addressName, proxyPort);
+				proxy = new Proxy(Proxy.Type.HTTP, socketAddress);
+
+				byte addrBytes[] = socketAddress.getAddress().getAddress();
+				proxyAddress = (addrBytes[0] & 0xFF) | ((addrBytes[1] & 0xFF) << 8) | ((addrBytes[2] & 0xFF) << 16) | ((addrBytes[3] & 0xFF) << 24);
 			}
 			HTTPServerThread serverThread = new HTTPServerThread(descriptor);
 			serverThreads[descriptor.getIndex()] = serverThread;
@@ -1606,5 +1615,13 @@ public class HTTPServer {
 
 	public Proxy getProxy() {
 		return proxy;
+	}
+
+	public int getProxyPort() {
+		return proxyPort;
+	}
+
+	public int getProxyAddress() {
+		return proxyAddress;
 	}
 }
