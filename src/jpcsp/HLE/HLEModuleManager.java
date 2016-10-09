@@ -174,7 +174,8 @@ public class HLEModuleManager {
         sceResmgr(Modules.sceResmgrModule),
         UtilsForKernel(Modules.UtilsForKernelModule),
         sceLibUpdateDL(Modules.sceLibUpdateDLModule, new String[] { "libupdown" }),
-        sceParseHttp(Modules.sceParseHttpModule, new String[] { "libparse_http" });
+        sceParseHttp(Modules.sceParseHttpModule, new String[] { "libparse_http" }),
+        sceMgr_driver(Modules.sceMgr_driverModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
