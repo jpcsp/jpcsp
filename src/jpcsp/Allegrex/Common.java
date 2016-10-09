@@ -704,6 +704,10 @@ public class Common {
         // If we think the target is a stub, try and append the syscall name
         if ((opname.equals("jal") || opname.equals("j")) && jump != 0 &&
                 jumpToSyscall != opcode_address && Memory.isAddressGood(jumpToSyscall)) {
+        	String hleFunctionName = HLEModuleManager.getInstance().getAllFunctionNameFromAddress(jump);
+        	if (hleFunctionName != null) {
+                return String.format("%1$-10s 0x%2$08X %3$s", opname, jump, hleFunctionName);
+        	}
             int nextOpcode = jpcsp.Memory.getInstance().read32(jumpToSyscall);
             Instruction nextInsn = Decoder.instruction(nextOpcode);
             String secondTarget = nextInsn.disasm(jumpToSyscall, nextOpcode);
