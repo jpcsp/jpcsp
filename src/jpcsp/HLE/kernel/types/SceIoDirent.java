@@ -45,10 +45,44 @@ public class SceIoDirent extends pspAbstractMemoryMappedStructure {
 	// Convert a "long" file name into a 8.3 file name.
 	// TODO Implement correct 8.3 truncation.
 	private static String convertFileNameTo83(String fileName) {
-		if (fileName == null || fileName.length() <= 12) {
-			return fileName.toUpperCase();
+		if (fileName == null) {
+			return null;
 		}
-		return fileName.substring(0, 12).toUpperCase();
+
+		// Special character '+' is turned into '_'
+		fileName = fileName.replace("+", "_");
+		// File name is upper-cased
+		fileName = fileName.toUpperCase();
+
+		// Split into the name and extension parts
+		int lastDot = fileName.lastIndexOf(".");
+		String name;
+		String ext;
+		if (lastDot < 0) {
+			name = fileName;
+			ext = "";
+		} else {
+			name = fileName.substring(0, lastDot);
+			ext = fileName.substring(lastDot + 1);
+		}
+
+		// All dots in name part are dropped
+		name = name.replace(".", "");
+
+		// The file extension is truncated to 3 characters
+		if (ext.length() > 3) {
+			ext = ext.substring(0, 3);
+		}
+
+		// The name is truncated to 6 characters (if longer than 8 characters)
+		// followed by "~1"
+		if (name.length() > 8) {
+			name = name.substring(0, 6) + "~1";
+		}
+
+		// TODO Check if there is a name collision with "~1"
+
+		return name + "." + ext;
 	}
 
 	@Override
