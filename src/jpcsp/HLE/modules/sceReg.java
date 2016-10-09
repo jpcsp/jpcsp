@@ -47,6 +47,7 @@ public class sceReg extends HLEModule {
     private String authKey;
     private int networkLatestId;
     private int wifiConnectCount;
+    private int usbConnectCount;
     private int oskVersionId;
     private int oskDispLocale;
     private int oskWritingLocale;
@@ -58,6 +59,8 @@ public class sceReg extends HLEModule {
     private int themeColorMode;
     private int themeWallpaperMode;
     private int themeSystemColor;
+    private int musicVisualizerMode;
+    private int musicTrackInfoMode;
 
     protected static class RegistryHandle {
     	private static final String registryHandlePurpose = "sceReg.RegistryHandle";
@@ -366,6 +369,12 @@ public class sceReg extends HLEModule {
     			if (size >= 4) {
     				buf.setValue32(5);
     			}
+    		} else if ("ansi".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(0x13);
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
@@ -506,6 +515,12 @@ public class sceReg extends HLEModule {
     			if (size >= 4) {
     				buf.setValue32(wifiConnectCount);
     			}
+    		} else if (name.equals("usb_connect_count")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(usbConnectCount);
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
@@ -573,6 +588,79 @@ public class sceReg extends HLEModule {
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
+    	} else if ("/CONFIG/MUSIC".equals(fullName)) {
+    		if ("visualizer_mode".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(musicVisualizerMode);
+    			}
+    		} else if (name.equals("track_info_mode")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(musicTrackInfoMode);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
+    		}
+    	} else if ("/CONFIG/PHOTO".equals(fullName)) {
+    		if ("slideshow_speed".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(1);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
+    		}
+    	} else if ("/CONFIG/VIDEO".equals(fullName)) {
+    		if ("lr_button_enable".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(1);
+    			}
+    		} else if ("list_play_mode".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(1);
+    			}
+    		} else if ("title_display_mode".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if ("sound_language".equals(name)) {
+    			ptype.setValue(REG_TYPE_BIN);
+    			psize.setValue(2);
+    			if (size >= 2) {
+    				buf.setValue8(0, (byte) 0x30);
+    				buf.setValue8(1, (byte) 0x30);
+    			}
+    		} else if ("subtitle_language".equals(name)) {
+    			ptype.setValue(REG_TYPE_BIN);
+    			psize.setValue(2);
+    			if (size >= 2) {
+    				buf.setValue8(0, (byte) 0x65);
+    				buf.setValue8(1, (byte) 0x6E);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
+    		}
+    	} else if ("/CONFIG/INFOBOARD".equals(fullName)) {
+    		if ("locale_lang".equals(name)) {
+    			String localeLang = "en/en/rss.xml";
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(localeLang.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, localeLang);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
+    		}
     	} else {
 			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     	}
@@ -591,6 +679,7 @@ public class sceReg extends HLEModule {
 		authKey = "";
 		networkLatestId = 0;
 		wifiConnectCount = 0;
+		usbConnectCount = 0;
 	    oskVersionId = 0x226;
 	    oskDispLocale = 0x1;
 	    oskWritingLocale = 0x1;
@@ -602,6 +691,8 @@ public class sceReg extends HLEModule {
 	    themeColorMode = 0;
 	    themeCustomThemeCode = 0;
 	    themeSystemColor = 0;
+	    musicVisualizerMode = 0;
+	    musicTrackInfoMode = 1;
 
 		super.start();
 	}
@@ -837,6 +928,8 @@ public class sceReg extends HLEModule {
     	} else if ("/DATA/COUNT".equals(fullName)) {
     		if ("wifi_connect_count".equals(name) && size >= 4) {
     			wifiConnectCount = buf.getValue32();
+    		} else if ("usb_connect_count".equals(name) && size >= 4) {
+    			usbConnectCount = buf.getValue32();
     		} else {
     			log.warn(String.format("Unknown font registry entry '%s'", name));
     		}
@@ -867,16 +960,24 @@ public class sceReg extends HLEModule {
     			log.warn(String.format("Unknown font registry entry '%s'", name));
     		}
     	} else if ("/CONFIG/SYSTEM/XMB/THEME".equals(fullName)) {
-    		if ("custom_theme_mode".equals(name)) {
+    		if ("custom_theme_mode".equals(name) && size >= 4) {
     			themeCustomThemeCode = buf.getValue32();
-    		} else if ("color_mode".equals(name)) {
+    		} else if ("color_mode".equals(name) && size >= 4) {
     			themeColorMode = buf.getValue32();
-    		} else if ("wallpaper_mode".equals(name)) {
+    		} else if ("wallpaper_mode".equals(name) && size >= 4) {
     			themeWallpaperMode = buf.getValue32();
-    		} else if ("system_color".equals(name)) {
+    		} else if ("system_color".equals(name) && size >= 4) {
     			themeSystemColor = buf.getValue32();
     		} else {
     			log.warn(String.format("Unknown font registry entry '%s'", name));
+    		}
+    	} else if ("/CONFIG/MUSIC".equals(fullName)) {
+    		if ("visualizer_mode".equals(name) && size >= 4) {
+    			musicVisualizerMode = buf.getValue32();
+    		} else if (name.equals("track_info_mode") && size >= 4) {
+    			musicTrackInfoMode = buf.getValue32();
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
     	} else {
 			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
