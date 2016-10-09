@@ -18,6 +18,9 @@ package jpcsp.HLE.modules;
 
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -232,7 +235,7 @@ public class sceNet extends HLEModule {
     }
 
     @HLEFunction(nid = 0xB5CE388A, version = 150)
-    public int sceNetStrncpy(@CanBeNull TPointer destAddr, @CanBeNull TPointer srcAddr, int size) {
+    public int sceNetStrncpy(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextNextParameter, usage=Usage.out) TPointer destAddr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer srcAddr, int size) {
     	int srcLength = AbstractNativeCodeSequence.getStrlen(srcAddr.getAddress());
 		if (srcLength < size) {
 			destAddr.memcpy(srcAddr.getAddress(), srcLength + 1);

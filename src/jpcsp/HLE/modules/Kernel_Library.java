@@ -16,12 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelTls;
 import jpcsp.hardware.Interrupts;
@@ -135,7 +138,7 @@ public class Kernel_Library extends HLEModule {
 	}
 
     @HLEFunction(nid = 0x1839852A, version = 380)
-    public int sceKernelMemcpy(TPointer dst, TPointer src, int length) {
+    public int sceKernelMemcpy(@BufferInfo(lengthInfo=LengthInfo.nextNextParameter, usage=Usage.out) TPointer dst, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer src, int length) {
     	if (dst.getAddress() != src.getAddress()) {
     		dst.getMemory().memcpyWithVideoCheck(dst.getAddress(), src.getAddress(), length);
     	}

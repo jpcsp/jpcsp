@@ -16,10 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer8;
 
 import org.apache.log4j.Logger;
 
@@ -468,7 +474,7 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC27FEAB1, version = 150)
-    public int sceNpCommerce2_C27FEAB1() {
+    public int sceNpCommerce2_C27FEAB1(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=1096, usage=Usage.in) TPointer unknown1, int unknown2, int unknown3, TPointer8 unknown4, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=60, usage=Usage.out) TPointer unknown5, int unknown6) {
     	return 0;
     }
 
@@ -492,7 +498,7 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD4C319C6, version = 150)
-    public int sceNpCommerce2_D4C319C6() {
+    public int sceNpCommerce2_D4C319C6(int unknown1, int unknown2, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer unknown3, int unknown4, TPointer32 unknown5) {
     	return 0;
     }
 
