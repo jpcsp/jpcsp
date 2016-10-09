@@ -33,6 +33,7 @@ import jpcsp.Allegrex.compiler.nativeCode.HookCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
+import jpcsp.HLE.HLEModuleFunction;
 import jpcsp.HLE.HLEModuleManager;
 
 import org.apache.log4j.Logger;
@@ -66,6 +67,7 @@ public class CodeBlock {
 	private int[] interpretedOpcodes;
 	private MemoryRanges memoryRanges = new MemoryRanges();
 	private int flags;
+	private HLEModuleFunction hleFunction;
 
 	public CodeBlock(int startAddress, int instanceCount) {
 		this.startAddress = startAddress;
@@ -641,7 +643,19 @@ public class CodeBlock {
 		RuntimeContext.addCodeBlock(startAddress, this);
     }
 
-    @Override
+	public HLEModuleFunction getHLEFunction() {
+		return hleFunction;
+	}
+
+	public void setHLEFunction(HLEModuleFunction hleFunction) {
+		this.hleFunction = hleFunction;
+	}
+
+	public boolean isHLEFunction() {
+		return hleFunction != null;
+	}
+
+	@Override
 	public String toString() {
 		return String.format("CodeBlock 0x%08X[0x%08X-0x%08X]", getStartAddress(), getLowestAddress(), getHighestAddress());
 	}

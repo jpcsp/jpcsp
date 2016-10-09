@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex.compiler;
 
 import static java.lang.Math.min;
+import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._f0;
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
@@ -117,6 +118,9 @@ public class CompilerContext implements ICompilerContext {
     private static final int LOCAL_TMP_VD1 = 8;
     private static final int LOCAL_TMP_VD2 = 9;
     private static final int LOCAL_MAX = 10;
+    private static final int LOCAL_HLE_PARAMETERS = LOCAL_MAX;
+    private static final int LOCAL_HLE_NUMBER_PARAMETERS = 8;
+    private static final int LOCAL_HLE_MAX = LOCAL_HLE_PARAMETERS + LOCAL_HLE_NUMBER_PARAMETERS;
     private static final int DEFAULT_MAX_STACK_SIZE = 11;
     private static final int SYSCALL_MAX_STACK_SIZE = 100;
     private static final int LOCAL_ERROR_POINTER = LOCAL_TMP3;
@@ -712,8 +716,13 @@ public class CompilerContext implements ICompilerContext {
     	mv.visitInsn(Opcodes.BALOAD);
     }
 
-    private void loadLocalVar(int localVar) {
+	@Override
+    public void loadLocalVar(int localVar) {
         mv.visitVarInsn(Opcodes.ILOAD, localVar);
+    }
+
+    private void storeLocalVar(int localVar) {
+        mv.visitVarInsn(Opcodes.ISTORE, localVar);
     }
 
     private void loadInstruction(Instruction insn) {
@@ -1389,7 +1398,7 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
-    private void logSyscallEnd(HLEModuleFunction func, boolean isErrorCode) {
+    private void logSyscallEnd(HLEModuleFunction func, boolean isErrorCode, int localVarForParameters) {
     	if (func.getLoggingLevel() == null) {
     		return;
     	}
@@ -1427,7 +1436,13 @@ public class CompilerContext implements ICompilerContext {
     	if (!isErrorCode) {
 			ParameterInfo[] parameters = new ClassAnalyzer().getParameters(func.getFunctionName(), func.getHLEModuleMethod().getDeclaringClass());
 			if (parameters != null) {
-	            CompilerParameterReader parameterReader = new CompilerParameterReader(this);
+	            CompilerParameterReader parameterReader;
+	            if (localVarForParameters >= 0) {
+	            	parameterReader = new CompilerLocalVarParameterReader(this, localVarForParameters);
+	            } else {
+	            	parameterReader = new CompilerParameterReader(this);
+	            }
+
 	            Annotation[][] paramsAnotations = func.getHLEModuleMethod().getParameterAnnotations();
 	            for (int paramIndex = 0; paramIndex < parameters.length; paramIndex++) {
 	            	ParameterInfo parameter = parameters[paramIndex];
@@ -1709,7 +1724,7 @@ public class CompilerContext implements ICompilerContext {
     	}
 
         loadRegister(_v0);
-        logSyscallEnd(func, false);
+        logSyscallEnd(func, false, -1);
         mv.visitInsn(Opcodes.POP);
 
         mv.visitLabel(tryEnd);
@@ -1729,7 +1744,7 @@ public class CompilerContext implements ICompilerContext {
         // }
         mv.visitLabel(catchSceKernelErrorException);
         mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(SceKernelErrorException.class), "errorCode", "I");
-    	logSyscallEnd(func, true);
+    	logSyscallEnd(func, true, -1);
         if (parameterReader.hasErrorPointer()) {
         	// errorPointer.setValue(errorCode);
         	// cpu.gpr[_v0] = 0;
@@ -1815,7 +1830,7 @@ public class CompilerContext implements ICompilerContext {
         if (enableIntructionCounting) {
             currentInstructionCount = 0;
             mv.visitInsn(Opcodes.ICONST_0);
-            mv.visitVarInsn(Opcodes.ISTORE, LOCAL_INSTRUCTION_COUNT);
+            storeLocalVar(LOCAL_INSTRUCTION_COUNT);
         }
 
         startNonBranchingCodeSequence();
@@ -1838,16 +1853,24 @@ public class CompilerContext implements ICompilerContext {
 
     private void startHLEMethod() {
         HLEModuleFunction func = HLEModuleManager.getInstance().getAllFunctionFromAddress(codeBlock.getStartAddress());
-        if (func != null) {
-	        logSyscallStart(func);
+        codeBlock.setHLEFunction(func);
+
+        if (codeBlock.isHLEFunction()) {
+        	// Store all register parameters ($a0..$a3, $t0..$t3) in local variables.
+        	// These values will be used at the end of the HLE method for debugging buffers.
+        	for (int i = 0; i < LOCAL_HLE_NUMBER_PARAMETERS; i++) {
+	        	loadRegister(_a0 + i);
+	    		storeLocalVar(LOCAL_HLE_PARAMETERS + i);
+        	}
+
+        	logSyscallStart(codeBlock.getHLEFunction());
         }
     }
 
     private void endHLEMethod() {
-        HLEModuleFunction func = HLEModuleManager.getInstance().getAllFunctionFromAddress(codeBlock.getStartAddress());
-        if (func != null) {
+        if (codeBlock.isHLEFunction()) {
 	        loadRegister(_v0);
-	        logSyscallEnd(func, false);
+	        logSyscallEnd(codeBlock.getHLEFunction(), false, LOCAL_HLE_PARAMETERS);
 	        mv.visitInsn(Opcodes.POP);
         }
     }
@@ -1892,7 +1915,7 @@ public class CompilerContext implements ICompilerContext {
 		        mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "currentThread", sceKernalThreadInfoDescriptor);
 		        mv.visitInsn(Opcodes.DUP);
 		        mv.visitFieldInsn(Opcodes.GETFIELD, sceKernalThreadInfoInternalName, "runClocks", "J");
-		        mv.visitVarInsn(Opcodes.ILOAD, LOCAL_INSTRUCTION_COUNT);
+		        loadLocalVar(LOCAL_INSTRUCTION_COUNT);
 		        if (currentInstructionCount > 0) {
 		        	loadImm(currentInstructionCount);
 			        mv.visitInsn(Opcodes.IADD);
@@ -1907,7 +1930,7 @@ public class CompilerContext implements ICompilerContext {
 		        mv.visitFieldInsn(Opcodes.PUTFIELD, sceKernalThreadInfoInternalName, "runClocks", "J");
 		        if (!last) {
 		        	mv.visitInsn(Opcodes.ICONST_0);
-		        	mv.visitVarInsn(Opcodes.ISTORE, LOCAL_INSTRUCTION_COUNT);
+		        	storeLocalVar(LOCAL_INSTRUCTION_COUNT);
 		        }
         	}
 	        currentInstructionCount = 0;
@@ -2132,6 +2155,9 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public int getMaxLocals() {
+    	if (codeBlock.isHLEFunction()) {
+    		return LOCAL_HLE_MAX;
+    	}
         return LOCAL_MAX;
     }
 
@@ -3378,12 +3404,12 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public void storeTmp1() {
-		mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP1);
+		storeLocalVar(LOCAL_TMP1);
 	}
 
 	@Override
 	public void storeTmp2() {
-		mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP2);
+		storeLocalVar(LOCAL_TMP2);
 	}
 
 	@Override

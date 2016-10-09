@@ -174,4 +174,5 @@ public interface ICompilerContext {
     public boolean compileSWsequence(int baseRegister, int[] offsets, int[] registers);
     public boolean compileLWsequence(int baseRegister, int[] offsets, int[] registers);
     public void storePc();
+    public void loadLocalVar(int localVar);
 }

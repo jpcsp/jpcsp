@@ -28,7 +28,7 @@ import jpcsp.ParameterReader;
  *
  */
 public class CompilerParameterReader extends ParameterReader {
-	final private ICompilerContext compilerContext;
+	final protected ICompilerContext compilerContext;
 	private boolean hasErrorPointer = false;
 	private int currentParameterIndex = 0;
 	private int currentStackPopIndex = 0;
@@ -39,11 +39,19 @@ public class CompilerParameterReader extends ParameterReader {
 		this.compilerContext = compilerContext;
 	}
 
+	private void loadParameterIntFromMemory(int index) {
+		compilerContext.memRead32(_sp, (index - maxParameterInGprRegisters) << 2);
+	}
+
+	protected void loadParameterIntFromRegister(int index) {
+		compilerContext.loadRegister(firstParameterInGpr + index);
+	}
+
 	private void loadParameterIntAt(int index) {
 		if (index >= maxParameterInGprRegisters) {
-			compilerContext.memRead32(_sp, (index - maxParameterInGprRegisters) << 2);
+			loadParameterIntFromMemory(index);
 		} else {
-			compilerContext.loadRegister(firstParameterInGpr + index);
+			loadParameterIntFromRegister(index);
 		}
 	}
 
