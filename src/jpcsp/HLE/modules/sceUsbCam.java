@@ -54,6 +54,7 @@ import com.xuggle.xuggler.video.IConverter;
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.pspUsbCamSetupMicExParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupMicParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupStillExParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupStillParam;
@@ -175,6 +176,7 @@ public class sceUsbCam extends HLEModule {
 	protected TPointer jpegBuffer;
 	protected int jpegBufferSize;
 	protected BufferedImage currentVideoImage;
+	protected byte[] currentVideoImageBytes;
 	protected int currentVideoFrameCount;
 	protected int lastVideoFrameCount;
 	protected VideoListener videoListener;
@@ -377,23 +379,16 @@ public class sceUsbCam extends HLEModule {
 		return framerateFrameDurationMillis[frameRate];
 	}
 
-	protected int readFakeVideoFrame() {
-		if (jpegBuffer == null) {
-			return 0;
-		}
-
-		// Image has to be stored in Jpeg format in buffer
-		jpegBuffer.clear(jpegBufferSize);
-
-		return jpegBufferSize;
-	}
-
-	@Override
-	public void stop() {
+	private void stopVideo() {
 		if (videoListener != null) {
 			videoListener.stop();
 			videoListener = null;
 		}
+	}
+
+	@Override
+	public void stop() {
+		stopVideo();
 
 		super.stop();
 	}
@@ -441,49 +436,78 @@ public class sceUsbCam extends HLEModule {
 	}
 
 	protected void setCurrentVideoImage(BufferedImage image) {
+		byte[] newVideoImageBytes = null;
+		if (image != null) {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream(jpegBufferSize);
+			try {
+				if (ImageIO.write(image, "jpeg", outputStream)) {
+					outputStream.close();
+					newVideoImageBytes = outputStream.toByteArray();
+
+					if (dumpJpeg) {
+						FileOutputStream dumpFile = new FileOutputStream("dumpUsbCam.jpeg");
+						dumpFile.write(newVideoImageBytes);
+						dumpFile.close();
+					}
+				}
+			} catch (IOException e) {
+				log.error("setCurrentVideoImage", e);
+			}
+
+			currentVideoFrameCount++;
+		}
+
 		currentVideoImage = image;
-		currentVideoFrameCount++;
+		currentVideoImageBytes = newVideoImageBytes;
 	}
 
 	public BufferedImage getCurrentVideoImage() {
 		return currentVideoImage;
 	}
 
+	private int getCurrentVideoImageSize() {
+		if (currentVideoImageBytes == null) {
+			return jpegBufferSize;
+		}
+
+		return currentVideoImageBytes.length;
+	}
+
 	public int writeCurrentVideoImage(TPointer jpegBuffer, int jpegBufferSize) {
 		lastVideoFrameCount = currentVideoFrameCount;
 
-		if (getCurrentVideoImage() == null) {
-			return readFakeVideoFrame();
-		}
-
-		int length = -1;
-		try {
-			ByteArrayOutputStream outputStream = new ByteArrayOutputStream(jpegBufferSize);
-			if (ImageIO.write(getCurrentVideoImage(), "jpeg", outputStream)) {
-				outputStream.close();
-				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(jpegBuffer.getAddress(), jpegBufferSize, 1);
-				byte[] bytes = outputStream.toByteArray();
-				length = Math.min(bytes.length, jpegBufferSize);
-				for (int i = 0; i < length; i++) {
-					memoryWriter.writeNext(bytes[i] & 0xFF);
-				}
-				memoryWriter.flush();
-
-				if (dumpJpeg) {
-					FileOutputStream dumpFile = new FileOutputStream("dumpUsbCam.jpeg");
-					dumpFile.write(bytes);
-					dumpFile.close();
-				}
+		if (currentVideoImageBytes == null) {
+			if (jpegBuffer == null) {
+				return 0;
 			}
-		} catch (IOException e) {
-			log.error("writeCurrentVideoImage", e);
+
+			// Image has to be stored in Jpeg format in buffer
+			jpegBuffer.clear(jpegBufferSize);
+
+			return jpegBufferSize;
 		}
 
-		if (length < 0) {
-			return readFakeVideoFrame();
+		int length = Math.min(currentVideoImageBytes.length, jpegBufferSize);
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(jpegBuffer.getAddress(), length, 1);
+		for (int i = 0; i < length; i++) {
+			memoryWriter.writeNext(currentVideoImageBytes[i] & 0xFF);
 		}
+		memoryWriter.flush();
 
 		return length;
+	}
+
+	private void waitForNextVideoFrame() {
+		long now = Emulator.getClock().currentTimeMillis();
+		int millisSinceLastFrame = (int) (now - lastVideoFrameMillis);
+		int frameDurationMillis = getFramerateFrameDurationMillis();
+		if (millisSinceLastFrame >= 0 && millisSinceLastFrame < frameDurationMillis) {
+			int delayMillis = frameDurationMillis - millisSinceLastFrame;
+			Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
+			lastVideoFrameMillis = now + delayMillis;
+		} else {
+			lastVideoFrameMillis = now;
+		}
 	}
 
 	/**
@@ -498,11 +522,6 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x17F7B2FB, version = 271)
 	public int sceUsbCamSetupVideo(pspUsbCamSetupVideoParam usbCamSetupVideoParam, TPointer workArea, int workAreaSize) {
-		if (!setupVideo()) {
-			log.warn(String.format("Cannot find webcam"));
-			return SceKernelErrors.ERROR_USBCAM_NOT_READY;
-		}
-
 		this.workArea = workArea.getAddress();
 		this.workAreaSize = workAreaSize;
 		resolution = usbCamSetupVideoParam.resolution;
@@ -515,6 +534,11 @@ public class sceUsbCam extends HLEModule {
 		imageEffectMode = usbCamSetupVideoParam.effectmode;
 		frameSize = usbCamSetupVideoParam.framesize;
 		evLevel = usbCamSetupVideoParam.evlevel;
+
+		if (!setupVideo()) {
+			log.warn(String.format("Cannot find webcam"));
+			return SceKernelErrors.ERROR_USBCAM_NOT_READY;
+		}
 
 		return 0;
 	}
@@ -559,6 +583,8 @@ public class sceUsbCam extends HLEModule {
 	@HLEFunction(nid = 0x6CF32CB9, version = 271)
 	public int sceUsbCamStopVideo() {
 		// No parameters
+		stopVideo();
+
 		return 0;
 	}
 
@@ -591,16 +617,7 @@ public class sceUsbCam extends HLEModule {
 		this.jpegBuffer = jpegBuffer;
 		this.jpegBufferSize = jpegBufferSize;
 
-		long now = Emulator.getClock().currentTimeMillis();
-		int millisSinceLastFrame = (int) (now - lastVideoFrameMillis);
-		int frameDurationMillis = getFramerateFrameDurationMillis();
-		if (millisSinceLastFrame >= 0 && millisSinceLastFrame < frameDurationMillis) {
-			int delayMillis = frameDurationMillis - millisSinceLastFrame;
-			Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
-			lastVideoFrameMillis = now + delayMillis;
-		} else {
-			lastVideoFrameMillis = now;
-		}
+		waitForNextVideoFrame();
 
 		return writeCurrentVideoImage(jpegBuffer, jpegBufferSize);
 	}
@@ -621,7 +638,7 @@ public class sceUsbCam extends HLEModule {
 		this.jpegBuffer = jpegBuffer;
 		this.jpegBufferSize = jpegBufferSize;
 
-		return 0;
+		return writeCurrentVideoImage(jpegBuffer, jpegBufferSize);
 	}
 
 	/**
@@ -655,7 +672,9 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xF90B2293, version = 271)
 	public int sceUsbCamWaitReadVideoFrameEnd() {
-		return readFakeVideoFrame();
+		waitForNextVideoFrame();
+		
+		return getCurrentVideoImageSize();
 	}
 
 	/**
@@ -784,11 +803,6 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xCFE9E999, version = 271)
 	public int sceUsbCamSetupVideoEx(pspUsbCamSetupVideoExParam usbCamSetupVideoExParam, TPointer workArea, int workAreaSize) {
-		if (!setupVideo()) {
-			log.warn(String.format("Cannot find webcam"));
-			return SceKernelErrors.ERROR_USBCAM_NOT_READY;
-		}
-
 		this.workArea = workArea.getAddress();
 		this.workAreaSize = workAreaSize;
 		resolution = convertResolutionExToResolution(usbCamSetupVideoExParam.resolution);
@@ -801,6 +815,11 @@ public class sceUsbCam extends HLEModule {
 		imageEffectMode = usbCamSetupVideoExParam.effectmode;
 		frameSize = usbCamSetupVideoExParam.framesize;
 		evLevel = usbCamSetupVideoExParam.evlevel;
+
+		if (!setupVideo()) {
+			log.warn(String.format("Cannot find webcam"));
+			return SceKernelErrors.ERROR_USBCAM_NOT_READY;
+		}
 
 		return 0;
 	}
@@ -1084,7 +1103,10 @@ public class sceUsbCam extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x2E930264, version = 271)
-	public int sceUsbCamSetupMicEx() {
+	public int sceUsbCamSetupMicEx(pspUsbCamSetupMicExParam camSetupMicExParam, TPointer workArea, int workAreaSize) {
+		micFrequency = camSetupMicExParam.frequency;
+		micGain = camSetupMicExParam.gain;
+
 		return 0;
 	}
 
@@ -1148,6 +1170,18 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xF8847F60, version = 271)
 	public int sceUsbCamPollReadMicEnd() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x1E958148, version = 271)
+	public int sceUsbCamIoctl() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x00631D06, version = 271)
+	public int sceUsbCam_00631D06() {
 		return 0;
 	}
 }
