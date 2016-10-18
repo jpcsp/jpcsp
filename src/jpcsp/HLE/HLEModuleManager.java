@@ -117,6 +117,7 @@ public class HLEModuleManager {
         sceNetAdhocctl(Modules.sceNetAdhocctlModule, new String[] { "pspnet_adhocctl", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
         sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule, new String[] { "pspnet_adhoc_discover", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
         sceNetAdhocMatching(Modules.sceNetAdhocMatchingModule, new String[] { "pspnet_adhoc_matching", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
+        sceNetAdhocTransInt(Modules.sceNetAdhocTransIntModule, new String[] { "pspnet_adhoc_transfer_int" }),
         sceNetIfhandle(Modules.sceNetIfhandleModule, new String[] { "ifhandle", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
         sceNetApctl(Modules.sceNetApctlModule, new String[] { "pspnet_apctl", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
         sceNetInet(Modules.sceNetInetModule, new String[] { "pspnet_inet", "PSP_NET_MODULE_INET", "PSP_MODULE_NET_INET" }),
@@ -175,7 +176,8 @@ public class HLEModuleManager {
         UtilsForKernel(Modules.UtilsForKernelModule),
         sceLibUpdateDL(Modules.sceLibUpdateDLModule, new String[] { "libupdown" }),
         sceParseHttp(Modules.sceParseHttpModule, new String[] { "libparse_http" }),
-        sceMgr_driver(Modules.sceMgr_driverModule);
+        sceMgr_driver(Modules.sceMgr_driverModule),
+        sceChnnlsv(Modules.sceChnnlsvModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default

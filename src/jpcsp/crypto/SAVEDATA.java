@@ -19,7 +19,9 @@ package jpcsp.crypto;
 import java.nio.ByteBuffer;
 import jpcsp.Emulator;
 import jpcsp.State;
+import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.format.PSF;
+import jpcsp.util.Utilities;
 
 public class SAVEDATA {
 
@@ -37,19 +39,37 @@ public class SAVEDATA {
     }
 
     // CHNNLSV SD context structs.
-    private class SD_Ctx1 {
+    public static class SD_Ctx1 extends pspAbstractMemoryMappedStructure {
+        public int mode;
+        public byte[] pad = new byte[16];
+        public byte[] key = new byte[16];
+        public int padSize;
 
-        private int mode;
-        private byte[] key;
-        private byte[] pad;
-        private int padSize;
+    	@Override
+    	protected void read() {
+    		mode = read32();
+    		read8Array(pad);
+    		read8Array(key);
+    		padSize = read32();
+    	}
 
-        public SD_Ctx1() {
-            mode = 0;
-            padSize = 0;
-            key = new byte[16];
-            pad = new byte[16];
-        }
+    	@Override
+    	protected void write() {
+    		write32(mode);
+    		write8Array(pad);
+    		write8Array(key);
+    		write32(padSize);
+    	}
+
+    	@Override
+    	public int sizeof() {
+    		return 40;
+    	}
+
+		@Override
+		public String toString() {
+			return String.format("mode=0x%X, pad=%s, key=%s, padSize=0x%X", mode, Utilities.getMemoryDump(pad, 0, pad.length), Utilities.getMemoryDump(key, 0, key.length), padSize);
+		}
     }
 
     private class SD_Ctx2 {
@@ -240,7 +260,7 @@ public class SAVEDATA {
     /*
      * sceSd - chnnlsv.prx
      */
-    private int hleSdSetIndex(SD_Ctx1 ctx, int encMode) {
+    public int hleSdSetIndex(SD_Ctx1 ctx, int encMode) {
         // Set all parameters to 0 and assign the encMode.
         ctx.mode = encMode;
         ctx.padSize = 0;
@@ -253,7 +273,7 @@ public class SAVEDATA {
         return 0;
     }
 
-    private int hleSdRemoveValue(SD_Ctx1 ctx, byte[] data, int length) {
+    public int hleSdRemoveValue(SD_Ctx1 ctx, byte[] data, int length) {
         if (ctx.padSize > 0x10 || (length < 0)) {
             // Invalid key or length.
             return -1;
@@ -315,7 +335,7 @@ public class SAVEDATA {
         }
     }
 
-    private int hleSdGetLastIndex(SD_Ctx1 ctx, byte[] hash, byte[] key) {
+    public int hleSdGetLastIndex(SD_Ctx1 ctx, byte[] hash, byte[] key) {
         if (ctx.padSize > 0x10) {
             // Invalid key length.
             return -1;

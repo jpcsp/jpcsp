@@ -125,6 +125,8 @@ public class Modules {
     public static sceLibUpdateDL sceLibUpdateDLModule = new sceLibUpdateDL();
     public static sceParseHttp sceParseHttpModule = new sceParseHttp();
     public static sceMgr_driver sceMgr_driverModule = new sceMgr_driver();
+    public static sceChnnlsv sceChnnlsvModule = new sceChnnlsv();
+    public static sceNetAdhocTransInt sceNetAdhocTransIntModule = new sceNetAdhocTransInt();
 
     public static Logger log = Logger.getLogger("hle");
 
