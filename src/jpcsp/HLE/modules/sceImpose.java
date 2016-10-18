@@ -354,4 +354,23 @@ public class sceImpose extends HLEModule {
 		// Has no parameters
 		return sceImposeChanges();
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9BA61B49, version = 150)
+	public int sceImpose_9BA61B49() {
+		// Possible return values: 0 or 1
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9DBCE0C4, version = 150)
+	public int sceImpose_9DBCE0C4(int unknown) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xBCF1D254, version = 660)
+	public int sceImpose_BCF1D254_660(int unknown) {
+		return sceImpose_9DBCE0C4(unknown);
+	}
 }
