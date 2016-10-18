@@ -114,12 +114,14 @@ public class UtilsForUser extends HLEModule {
 
         public int result(TPointer ctxAddr, TPointer resultAddr) {
             byte[] hash = null;
-            try {
-                MessageDigest md = MessageDigest.getInstance(algorithm);
-                hash = md.digest(input);
-            } catch (Exception e) {
-                // Ignore...
-            	log.warn(String.format("SceKernelUtilsContext(%s).result", algorithm), e);
+            if (input != null) {
+	            try {
+	                MessageDigest md = MessageDigest.getInstance(algorithm);
+	                hash = md.digest(input);
+	            } catch (Exception e) {
+	                // Ignore...
+	            	log.warn(String.format("SceKernelUtilsContext(%s).result", algorithm), e);
+	            }
             }
 
             if (hash != null) {
