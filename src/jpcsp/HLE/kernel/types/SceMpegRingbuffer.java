@@ -223,6 +223,10 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 	}
 
 	public void notifyRead() {
+		if (packetSize == 0) {
+			return;
+		}
+
 		int remainingLength = 0;
 		if (hasAudio()) {
 			remainingLength = Math.max(remainingLength, audioBuffer.getCurrentSize());

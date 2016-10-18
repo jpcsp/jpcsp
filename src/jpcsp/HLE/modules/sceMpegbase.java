@@ -19,12 +19,17 @@ package jpcsp.HLE.modules;
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceMp4AvcCscStruct;
 
 public class sceMpegbase extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMpegbase");
@@ -64,8 +69,34 @@ public class sceMpegbase extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7AC0321A, version = 150)
-    public int sceMpegBaseYCrCbCopy() {
-        return 0;
+    public int sceMpegBaseYCrCbCopy(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=48, usage=Usage.in) TPointer dst, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=48, usage=Usage.in) TPointer src, int flags) {
+    	SceMp4AvcCscStruct dstStruct = new SceMp4AvcCscStruct();
+    	dstStruct.read(dst);
+    	SceMp4AvcCscStruct srcStruct = new SceMp4AvcCscStruct();
+    	srcStruct.read(src);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceMpegBaseYCrCbCopy dstStruct: %s", dstStruct));
+    		log.debug(String.format("sceMpegBaseYCrCbCopy srcStruct: %s", srcStruct));
+    	}
+
+    	int size1 = ((srcStruct.width + 16) >> 5) * ((srcStruct.height << 4) >> 1);
+    	int size2 = (srcStruct.width >> 5) * ((srcStruct.height << 4) >> 1);
+    	Memory mem = Memory.getInstance();
+    	if ((flags & 1) != 0) {
+    		mem.memcpy(dstStruct.buffer0, srcStruct.buffer0, size1);
+    		mem.memcpy(dstStruct.buffer1, srcStruct.buffer1, size2);
+    		mem.memcpy(dstStruct.buffer4, srcStruct.buffer4, size1 << 1);
+    		mem.memcpy(dstStruct.buffer5, srcStruct.buffer5, size2 << 1);
+    	}
+    	if ((flags & 2) != 0) {
+    		mem.memcpy(dstStruct.buffer2, srcStruct.buffer2, size1);
+    		mem.memcpy(dstStruct.buffer3, srcStruct.buffer3, size2);
+    		mem.memcpy(dstStruct.buffer6, srcStruct.buffer6, size1 << 1);
+    		mem.memcpy(dstStruct.buffer7, srcStruct.buffer7, size2 << 1);
+    	}
+
+    	return 0;
     }
 
     @HLEUnimplemented
@@ -76,19 +107,32 @@ public class sceMpegbase extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x492B5E4B, version = 150)
-    public int sceMpegBaseCscInit() {
+    public int sceMpegBaseCscInit(int unknown) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x91929A21, version = 150)
-    public int sceMpegBaseCscAvc() {
+    public int sceMpegBaseCscAvc(int mpeg, int unknown1, int unknown2, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=48, usage=Usage.in) TPointer mp4AvcCscStructAddr) {
+    	SceMp4AvcCscStruct mp4AvcCscStruct = new SceMp4AvcCscStruct();
+    	mp4AvcCscStruct.read(mp4AvcCscStructAddr);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceMpegBaseCscAvc %s", mp4AvcCscStruct));
+    	}
+
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x0530BE4E, version = 150)
     public int sceMpegbase_0530BE4E() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xAC9E717E, version = 150)
+    public int sceMpegbase_AC9E717E() {
         return 0;
     }
 }
