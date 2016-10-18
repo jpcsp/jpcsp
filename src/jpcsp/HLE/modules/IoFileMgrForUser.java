@@ -73,6 +73,7 @@ import jpcsp.HLE.VFS.emulator.EmulatorVirtualFileSystem;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
+import jpcsp.HLE.VFS.memoryStick.MemoryStickStorageVirtualFileSystem;
 import jpcsp.HLE.VFS.memoryStick.MemoryStickVirtualFileSystem;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.MsgPipeManager;
@@ -637,6 +638,16 @@ public class IoFileMgrForUser extends HLEModule {
     	}
     }
 
+    private void registerVfsMs0() {
+        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/", true));
+        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/", true));
+        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/", false));
+        vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/", false));
+        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
+        vfsManager.register("msstor0p1", new MemoryStickStorageVirtualFileSystem());
+        vfsManager.register("msstor0", new MemoryStickStorageVirtualFileSystem());
+    }
+
     @Override
     public void start() {
         if (fileIds != null) {
@@ -668,11 +679,7 @@ public class IoFileMgrForUser extends HLEModule {
         vfsManager.register("emulator", new EmulatorVirtualFileSystem());
         vfsManager.register("kemulator", new EmulatorVirtualFileSystem());
         if (useVirtualFileSystem) {
-	        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/", true));
-	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/", true));
-	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/", false));
-	        vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/", false));
-	        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
+        	registerVfsMs0();
 	        registerUmdIso();
         }
 
@@ -1480,11 +1487,7 @@ public class IoFileMgrForUser extends HLEModule {
 	        	umdRegistered = true;
 			}
 
-			vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/", true));
-	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/", true));
-	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/", false));
-	        vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/", false));
-	        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
+			registerVfsMs0();
 	        msRegistered = true;
     	}
 
@@ -4013,6 +4016,7 @@ public class IoFileMgrForUser extends HLEModule {
             		if (log.isDebugEnabled()) {
             			log.debug(String.format("sceIoDevctl '%s' set character set to 0x%X", devicename.getString(), characterSet));
             		}
+            		result = 0;
             	}
             	break;
             }
