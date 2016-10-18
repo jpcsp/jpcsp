@@ -40,6 +40,7 @@ import static jpcsp.graphics.GeCommands.VTYPE_TRANSFORM_PIPELINE_RAW_COORD;
 import static jpcsp.graphics.RE.IRenderingEngine.GU_TEXTURE_2D;
 import static jpcsp.graphics.VideoEngine.alignBufferWidth;
 import static jpcsp.memory.ImageReader.colorARGBtoABGR;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
@@ -101,6 +102,7 @@ import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.SceFontInfo;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.SceUtilityGamedataInstallParams;
@@ -159,6 +161,17 @@ public class sceUtility extends HLEModule {
 		psnState = new NotImplementedUtilityDialogState("sceUtilityPsn");
 		installState = new InstallUtilityDialogState("sceUtilityInstall");
         startedDialogState = null;
+
+        utilityPrivateModules = new HashMap<String, String>();
+        utilityPrivateModules.put("htmlviewer_ui", "flash0:/vsh/module/htmlviewer_ui.prx");
+        utilityPrivateModules.put("hvauth_r", "flash0:/vsh/module/hvauth_r.prx");
+        utilityPrivateModules.put("hvauth_t", "flash0:/vsh/module/hvauth_t.prx");
+        utilityPrivateModules.put("netfront", "flash0:/vsh/module/netfront.prx");
+        utilityPrivateModules.put("mgvideo", "flash0:/kd/mgvideo.prx");
+        utilityPrivateModules.put("mm_flash", "flash0:/vsh/module/mm_flash.prx");
+        utilityPrivateModules.put("libslim", "flash0:/vsh/module/libslim.prx");
+        utilityPrivateModules.put("libwww", "flash0:/vsh/module/libwww.prx");
+        utilityPrivateModules.put("libfont_hv", "flash0:/vsh/module/libfont_hv.prx");
 
         super.start();
     }
@@ -303,6 +316,7 @@ public class sceUtility extends HLEModule {
         "PSP_USB_MODULE_CAM",
         "PSP_USB_MODULE_GPS"
     };
+    private static HashMap<String, String> utilityPrivateModules;
 
     public static final int PSP_AV_MODULE_AVCODEC = 0;
     public static final int PSP_AV_MODULE_SASCORE = 1;
@@ -4825,6 +4839,50 @@ public class sceUtility extends HLEModule {
 	@HLEFunction(nid = 0x5DCBD3C0, version = 150)
     public int sceUtility_private_5DCBD3C0() {
 		// Has no parameters
+		return 0;
+	}
+
+	@HLEFunction(nid = 0x048BFC46, version = 150)
+    public int sceUtility_private_048BFC46(PspString libraryName, int unknown1, @CanBeNull TPointer optionAddr) {
+		String path = utilityPrivateModules.get(libraryName.getString());
+		if (path == null) {
+			return -1;
+		}
+
+        SceKernelLMOption lmOption = null;
+        if (optionAddr.isNotNull()) {
+            lmOption = new SceKernelLMOption();
+            lmOption.read(optionAddr);
+            if (log.isInfoEnabled()) {
+            	log.info(String.format("sceUtility_private_048BFC46 options: %s", lmOption));
+            }
+        }
+
+        int result = Modules.ModuleMgrForUserModule.hleKernelLoadModule(path, 0, 0, 0, 0, lmOption, false, false);
+
+		return result;
+	}
+
+	@HLEFunction(nid = 0x78A2FE0C, version = 150)
+    public int sceUtility_private_78A2FE0C(int uid) {
+        return Modules.ModuleMgrForUserModule.hleKernelUnloadModule(uid);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x031D0944, version = 150)
+    public int sceUtility_private_031D0944(int unknown) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xB9D9C78F, version = 150)
+    public int sceUtility_private_B9D9C78F(int unknown) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x61D0686E, version = 150)
+    public int sceUtility_netparam_internal_61D0686E(int unknown) {
 		return 0;
 	}
 }

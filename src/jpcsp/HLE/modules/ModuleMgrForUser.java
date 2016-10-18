@@ -601,6 +601,27 @@ public class ModuleMgrForUser extends HLEModule {
         return Modules.ThreadManForUserModule.getCurrentThread().moduleid;
     }
 
+    public int hleKernelUnloadModule(int uid) {
+        SceModule sceModule = Managers.modules.getModuleByUID(uid);
+        if (sceModule == null) {
+            log.warn(String.format("hleKernelUnloadModule unknown module UID 0x%X", uid));
+            return -1;
+        }
+        if (sceModule.isModuleStarted() && !sceModule.isModuleStopped()) {
+            log.warn(String.format("hleKernelUnloadModule module 0x%X is still running!", uid));
+            return SceKernelErrors.ERROR_KERNEL_MODULE_CANNOT_REMOVE;
+        }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("hleKernelUnloadModule '%s'", sceModule.modname));
+        }
+
+        sceModule.unload();
+        HLEModuleManager.getInstance().UnloadFlash0Module(sceModule);
+
+        return sceModule.modid;
+    }
+
     @HLEFunction(nid = 0xB7F46618, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModuleByID(int uid, @CanBeNull TPointer optionAddr) {
         String name = Modules.IoFileMgrForUserModule.getFileFilename(uid);
@@ -750,24 +771,7 @@ public class ModuleMgrForUser extends HLEModule {
     @HLELogging(level="info")
     @HLEFunction(nid = 0x2E0911AA, version = 150, checkInsideInterrupt = true)
     public int sceKernelUnloadModule(int uid) {
-        SceModule sceModule = Managers.modules.getModuleByUID(uid);
-        if (sceModule == null) {
-            log.warn(String.format("sceKernelUnloadModule unknown module UID 0x%X", uid));
-            return -1;
-        }
-        if (sceModule.isModuleStarted() && !sceModule.isModuleStopped()) {
-            log.warn(String.format("sceKernelUnloadModule module 0x%X is still running!", uid));
-            return SceKernelErrors.ERROR_KERNEL_MODULE_CANNOT_REMOVE;
-        }
-
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelUnloadModule '%s'", sceModule.modname));
-        }
-
-        sceModule.unload();
-        HLEModuleManager.getInstance().UnloadFlash0Module(sceModule);
-
-        return sceModule.modid;
+    	return hleKernelUnloadModule(uid);
     }
 
     @HLEFunction(nid = 0xD675EBB8, version = 150, checkInsideInterrupt = true)
