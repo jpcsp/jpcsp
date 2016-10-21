@@ -46,6 +46,16 @@ public class sceNet extends HLEModule {
     public static Logger log = Modules.getLogger("sceNet");
     private INetworkAdapter networkAdapter;
 	protected int netMemSize;
+	private static final int[] look_ctype_table = new int[] {
+		0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x08, 0x08, 0x08, 0x08, 0x08, 0x20, 0x20,
+		0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+		0x18, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+		0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+		0x10, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x10, 0x10, 0x10, 0x10, 0x10,
+		0x10, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
+		0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x10, 0x10, 0x10, 0x10, 0x20
+	};
 
 	@Override
 	public void start() {
@@ -272,27 +282,13 @@ public class sceNet extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x750F705D, version = 150)
     public int sceNetLook_ctype_table(int c) {
+    	int ctype = look_ctype_table[c & 0xFF];
+
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceNetLook_ctype_table c='%c'", (char) c));
+    		log.debug(String.format("sceNetLook_ctype_table c='%c' = 0x%02X", (char) c, ctype));
     	}
 
-    	int type = 0;
-    	if (Character.isAlphabetic(c)) {
-    		if (Character.isUpperCase(c)) {
-    			type |= 0x01;
-    		}
-    		if (Character.isLowerCase(c)) {
-    			type |= 0x02;
-    		}
-    	}
-    	if (Character.isDigit(c)) {
-    		type |= 0x04;
-    	}
-    	if (Character.isSpaceChar(c)) {
-    		type |= 0x08;
-    	}
-
-    	return type;
+    	return ctype;
     }
 
     @HLEFunction(nid = 0x5705F6F9, version = 150)
@@ -317,10 +313,22 @@ public class sceNet extends HLEModule {
 
     @HLEFunction(nid = 0x96EF9DA1, version = 150)
     public int sceNetTolower(int c) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceNetTolower c='%c'", (char) c));
+    	int ctype = look_ctype_table[c & 0xFF];
+    	if ((ctype & 0x01) != 0) {
+    		c += 0x20;
     	}
-    	return Character.toLowerCase(c);
+
+    	return c;
+    }
+
+    @HLEFunction(nid = 0xC13C9307, version = 150)
+    public int sceNetToupper(int c) {
+    	int ctype = look_ctype_table[c & 0xFF];
+    	if ((ctype & 0x02) != 0) {
+    		c -= 0x20;
+    	}
+
+    	return c;
     }
 
     @HLEFunction(nid = 0xCF705E46, version = 150)
@@ -396,12 +404,6 @@ public class sceNet extends HLEModule {
 		}
 
 		return srcAddr.getAddress() + lastOccurence;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0xC13C9307, version = 150)
-    public int sceNet_lib_C13C9307() {
-    	return 0;
     }
 
     @HLEUnimplemented
