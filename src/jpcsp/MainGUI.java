@@ -82,12 +82,9 @@ import jpcsp.GUI.UmdBrowser;
 import jpcsp.GUI.UmdVideoPlayer;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.TPointer;
-import jpcsp.HLE.kernel.types.SceKernelSMOption;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
-import jpcsp.HLE.modules.SysMemUserForUser;
-import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.ModuleMgrForUser;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.filesystems.SeekableDataInput;
@@ -2858,43 +2855,22 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 ProOnlineNetworkAdapter.setEnabled(true);
             } else if (args[i].equals("--vsh")) {
                 Modules.sceDisplayModule.setCalledFromCommandLine();
-            	loadFile(new File("flash0/vsh/module/vshmain.prx"));
+            	loadFile(new File("flash0/kd/mesg_led_01g.prx"));
 
-            	final int startOptionsSize = 20;
-            	SysMemInfo startOptionsMem = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ModuleStartOptions", SysMemUserForUser.PSP_SMEM_Low, startOptionsSize, 0);
-            	TPointer startOptions = new TPointer(Memory.getInstance(), startOptionsMem.addr);
-            	startOptions.setValue32(startOptionsSize);
-            	SceKernelSMOption sceKernelSMOption = new SceKernelSMOption();
-            	sceKernelSMOption.mpidStack = 0;
-            	sceKernelSMOption.stackSize = 0;
-            	sceKernelSMOption.attribute = 0;
+            	ModuleMgrForUser moduleMgr = Modules.ModuleMgrForUserModule;
 
-            	// Use different start thread priorities to enforce the start order
-            	sceKernelSMOption.priority = 0x12;
-            	sceKernelSMOption.write(startOptions);
-            	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/kd/vshbridge.prx", 0, 0, 0, 0, null, false, false, 0, TPointer.NULL, startOptions);
-
-            	sceKernelSMOption.priority = 0x14;
-            	sceKernelSMOption.write(startOptions);
-            	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/vsh/module/paf.prx", 0, 0, 0, 0, null, false, false, 0, TPointer.NULL, startOptions);
-
-            	sceKernelSMOption.priority = 0x16;
-            	sceKernelSMOption.write(startOptions);
-            	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/vsh/module/common_gui.prx", 0, 0, 0, 0, null, false, false, 0, TPointer.NULL, startOptions);
-
-            	sceKernelSMOption.priority = 0x18;
-            	sceKernelSMOption.write(startOptions);
-            	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/vsh/module/common_util.prx", 0, 0, 0, 0, null, false, false, 0, TPointer.NULL, startOptions);
-
-            	sceKernelSMOption.priority = 0x1A;
-            	sceKernelSMOption.write(startOptions);
-            	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/kd/mesg_led_01g.prx", 0, 0, 0, 0, null, false, false, 0, TPointer.NULL, startOptions);
+            	// Use increasing start thread priorities to enforce the start order
+            	int startPriority = 0x11;
+            	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/registry.prx", startPriority++);
+            	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/vshbridge.prx", startPriority++);
+            	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/paf.prx", startPriority++);
+            	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/common_gui.prx", startPriority++);
+            	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/common_util.prx", startPriority++);
+            	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/vshmain.prx", startPriority++);
 
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_VAUDIO");
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_ATRAC3PLUS");
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_AVCODEC");
-
-            	Modules.SysMemUserForUserModule.free(startOptionsMem);
             } else {
                 printUsage();
                 break;

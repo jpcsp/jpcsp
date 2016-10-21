@@ -93,10 +93,14 @@ public class ModuleMgrForUser extends HLEModule {
 
     public static final int loadHLEModuleDelay = 50000; // 50 ms delay
     protected int startModuleHandler;
+	private SysMemInfo startOptionsMem;
+	private TPointer startOptions;
 
 	@Override
 	public void start() {
 		startModuleHandler = 0;
+		startOptionsMem = null;
+		startOptions = null;
 
 		super.start();
 	}
@@ -304,6 +308,23 @@ public class ModuleMgrForUser extends HLEModule {
     	hleKernelLoadModule(thread, name, flags, uid, buffer, bufferSize, lmOption, byUid, needModuleInfo);
     	int moduleUid = thread.cpuContext._v0;
     	hleKernelStartModule(moduleUid, 0, TPointer.NULL, TPointer32.NULL, startOptions, false);
+    }
+
+    public void hleKernelLoadAndStartModule(String name, int startPriority) {
+    	if (startOptionsMem == null) {
+        	final int startOptionsSize = 20;
+        	startOptionsMem = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ModuleStartOptions", SysMemUserForUser.PSP_SMEM_Low, startOptionsSize, 0);
+        	startOptions = new TPointer(Memory.getInstance(), startOptionsMem.addr);
+        	startOptions.setValue32(startOptionsSize);
+    	}
+
+    	SceKernelSMOption sceKernelSMOption = new SceKernelSMOption();
+    	sceKernelSMOption.mpidStack = 0;
+    	sceKernelSMOption.stackSize = 0;
+    	sceKernelSMOption.attribute = 0;
+    	sceKernelSMOption.priority = startPriority;
+    	sceKernelSMOption.write(startOptions);
+    	hleKernelLoadAndStartModule(name, 0, 0, 0, 0, null, false, false, 0, TPointer.NULL, startOptions);
     }
 
     private void hleKernelLoadModule(SceKernelThreadInfo thread, String name, int flags, int uid, int buffer, int bufferSize, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo) {
@@ -1066,5 +1087,19 @@ public class ModuleMgrForUser extends HLEModule {
     @HLEFunction(nid = 0xE4C4211C, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModuleWithBlockOffset(PspString path, int memoryBlockId, int memoryBlockOffset, int flags) {
     	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD2FBC957, version = 150)
+    public int sceKernelGetModuleGPByAddress(int address, TPointer32 gpAddr) {
+        SceModule module = Managers.modules.getModuleByAddress(address);
+        if (module == null) {
+            log.warn(String.format("sceKernelGetModuleGPByAddress not found module address=0x%08X", address));
+            return -1;
+        }
+
+        gpAddr.setValue(module.gp_value);
+
+        return 0;
     }
 }
