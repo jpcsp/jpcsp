@@ -270,7 +270,7 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x3546C737, version = 150)
-    public int sceNpCommerce2_3546C737() {
+    public int sceNpCommerce2_3546C737(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5, int unknown6) {
     	return 0;
     }
 
@@ -294,7 +294,7 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x3F6D413C, version = 150)
-    public int sceNpCommerce2_3F6D413C() {
+    public int sceNpCommerce2_3F6D413C(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5) {
     	return 0;
     }
 
@@ -306,7 +306,7 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x44B8A9A9, version = 150)
-    public int sceNpCommerce2_44B8A9A9() {
+    public int sceNpCommerce2_44B8A9A9(int unknown1, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buffer, int bufferSize) {
     	return 0;
     }
 
@@ -456,7 +456,7 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xAE614CC6, version = 150)
-    public int sceNpCommerce2_AE614CC6() {
+    public int sceNpCommerce2_AE614CC6(int unknown1, int unknown2, int unknown3) {
     	return 0;
     }
 
@@ -474,7 +474,7 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC27FEAB1, version = 150)
-    public int sceNpCommerce2_C27FEAB1(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=1096, usage=Usage.in) TPointer unknown1, int unknown2, int unknown3, TPointer8 unknown4, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=60, usage=Usage.out) TPointer unknown5, int unknown6) {
+    public int sceNpCommerce2_C27FEAB1(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=1096, usage=Usage.in) TPointer unknown1, int httpRequestId, int unknown3, TPointer8 unknown4, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=60, usage=Usage.out) TPointer unknown5, int unknown6) {
     	return 0;
     }
 
@@ -498,7 +498,7 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD4C319C6, version = 150)
-    public int sceNpCommerce2_D4C319C6(int unknown1, int unknown2, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer unknown3, int unknown4, TPointer32 unknown5) {
+    public int sceNpCommerce2_D4C319C6(int httpRequestId, int unknown2, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer unknown3, int unknown4, TPointer32 unknown5) {
     	return 0;
     }
 
@@ -552,7 +552,7 @@ public class sceNpCommerce2 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xFC687AC7, version = 150)
-    public int sceNpCommerce2_FC687AC7() {
+    public int sceNpCommerce2_FC687AC7(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5, int unknown6) {
     	return 0;
     }
 }

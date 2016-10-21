@@ -358,7 +358,7 @@ public class sceNpCommerce2RegCam extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x49967C41, version = 150)
-    public int sceNpCommerce2RegCam_49967C41() {
+    public int sceNpCommerce2RegCam_49967C41(int unknown1, int unknown2, int unknown3) {
     	return 0;
     }
 
