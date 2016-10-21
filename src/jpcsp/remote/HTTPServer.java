@@ -463,7 +463,7 @@ public class HTTPServer {
 		if (dataLength >= 0) {
 			sendResponseHeader(os, contentLength, dataLength);
 		} else {
-			sendResponseHeader(os, contentLength, length);
+//			sendResponseHeader(os, contentLength, length);
 		}
 		for (Map.Entry<String, List<String>> entry : connection.getHeaderFields().entrySet()) {
 			String key = entry.getKey();
