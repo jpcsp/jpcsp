@@ -22,6 +22,9 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -963,6 +966,16 @@ public class sceReg extends HLEModule {
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
+    	} else if ("/CONFIG/RSS".equals(fullName)) {
+    		if ("download_items".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(5);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
+    		}
     	} else {
 			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     	}
@@ -1291,7 +1304,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0xD4475AA8, version = 150)
-    public int sceRegGetKeyInfo(int hd, String name, TPointer32 hk, TPointer32 ptype, TPointer32 psize) {
+    public int sceRegGetKeyInfo(int hd, String name, TPointer32 hk, @BufferInfo(usage=Usage.out) TPointer32 ptype, @BufferInfo(usage=Usage.out) TPointer32 psize) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
     		return -1;
@@ -1306,7 +1319,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x28A8E98A, version = 150)
-    public int sceRegGetKeyValue(int hd, int hk, TPointer buf, int size) {
+    public int sceRegGetKeyValue(int hd, int hk, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buf, int size) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
     		return -1;
@@ -1347,7 +1360,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0xC5768D02, version = 150)
-    public int sceRegGetKeyInfoByName(int hd, String name, TPointer32 ptype, TPointer32 psize) {
+    public int sceRegGetKeyInfoByName(int hd, String name, @BufferInfo(usage=Usage.out) TPointer32 ptype, @BufferInfo(usage=Usage.out) TPointer32 psize) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
     		return -1;
@@ -1361,7 +1374,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x30BE0259, version = 150)
-    public int sceRegGetKeyValueByName(int hd, String name, TPointer buf, int size) {
+    public int sceRegGetKeyValueByName(int hd, String name, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buf, int size) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
     		return -1;
