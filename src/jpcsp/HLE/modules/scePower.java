@@ -571,4 +571,16 @@ public class scePower extends HLEModule {
     public int scePowerSetWakeupCondition(int condition) {
         return 0;
     }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3234844A, version = 150)
+    public int scePower_driver_3234844A() {
+        return 0;
+    }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5F5006D2, version = 660)
+    public int scePower_driver_5F5006D2() {
+        return scePower_driver_3234844A();
+    }
 }
