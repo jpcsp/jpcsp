@@ -46,4 +46,11 @@ public class sceMsAudio_Service extends HLEModule {
     public int sceMSAudio_driver_59B4EE6D(int unknown) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB7DB5AC6, version = 150)
+    public int sceMSAudio_driver_B7DB5AC6() {
+    	// Has no parameters
+    	return 0;
+    }
 }
