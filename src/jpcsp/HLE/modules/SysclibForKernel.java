@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.Common._a2;
+import static jpcsp.Allegrex.Common._a3;
 
 import org.apache.log4j.Logger;
 
@@ -165,5 +166,21 @@ public class SysclibForKernel extends HLEModule {
 		destAddr.memcpy(dstLength, srcAddr.getAddress(), srcLength + 1);
 
         return destAddr.getAddress();
+    }
+
+	@HLEFunction(nid = 0xC2145E80, version = 150)
+    public int snprintf(CpuState cpu, TPointer buffer, int n, String format) {
+		String formattedString = Modules.SysMemUserForUserModule.hleKernelSprintf(cpu, format, _a3);
+		if (formattedString.length() >= n) {
+			formattedString = formattedString.substring(0, n - 1);
+		}
+
+		Utilities.writeStringZ(buffer.getMemory(), buffer.getAddress(), formattedString);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("snprintf returning '%s'", formattedString));
+		}
+
+		return formattedString.length();
     }
 }
