@@ -176,9 +176,7 @@ public class sceUsb extends HLEModule {
 	 */
 	@HLEFunction(nid = 0x586DB82C, version = 150)
 	public int sceUsbActivate(int pid) {
-		usbActivated = true;
-
-		return 0;
+		return sceUsbActivateWithCharging(pid, false);
 	}
 
 	/**
@@ -242,6 +240,21 @@ public class sceUsb extends HLEModule {
 	@HLEFunction(nid = 0x89DE0DC5, version = 150)
 	public int sceUsb_89DE0DC5(int callbackId) {
 		// Unregistering a callback?
+		return 0;
+	}
+
+	/**
+	 * Activate a USB driver.
+	 *
+	 * @param pid      - Product ID for the default USB Driver
+	 * @param charging - charging the PSP while the USB is connected?
+	 *
+	 * @return 0 on success
+	 */
+	@HLEFunction(nid = 0xE20B23A6, version = 150)
+	public int sceUsbActivateWithCharging(int pid, boolean charging) {
+		usbActivated = true;
+
 		return 0;
 	}
 }
