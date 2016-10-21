@@ -416,9 +416,11 @@ public class SysMemUserForUser extends HLEModule {
     		// - %u or %i -> %d
     		// - %4u -> %4d
     		// - %lld or %ld -> %d
+    		// - %llx or %lx -> %x
     		// - %p -> %08X
     		String javaMsg = format;
     		javaMsg = javaMsg.replaceAll("\\%(\\d*)l?l?[uid]", "%$1d");
+    		javaMsg = javaMsg.replaceAll("\\%(\\d*)l?l?([xX])", "%$1$2");
     		javaMsg = javaMsg.replaceAll("\\%p", "%08X");
 
     		// Support for "%s" (at any place and can occur multiple times)
