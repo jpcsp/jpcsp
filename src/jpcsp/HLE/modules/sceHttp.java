@@ -548,7 +548,7 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x0282A3BD, version = 150)
-    public int sceHttpGetContentLength(int requestId, TPointer64 contentLength){
+    public int sceHttpGetContentLength(int requestId, @BufferInfo(usage=Usage.out) TPointer64 contentLength){
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	httpRequest.connect();
     	contentLength.setValue(httpRequest.getContentLength());
