@@ -65,6 +65,7 @@ public class UtilsForUser extends HLEModule {
 
     private static class SceKernelUtilsContext {
     	private final String algorithm;
+    	private final int hashLength;
         // Context vars.
         private int part1;
         private int part2;
@@ -79,8 +80,9 @@ public class UtilsForUser extends HLEModule {
         // Internal vars.
         private byte[] input;
 
-        protected SceKernelUtilsContext(String algorithm) {
+        protected SceKernelUtilsContext(String algorithm, int hashLength) {
         	this.algorithm = algorithm;
+        	this.hashLength = hashLength;
             part1 = 0;
             part2 = 0;
             part3 = 0;
@@ -125,13 +127,13 @@ public class UtilsForUser extends HLEModule {
             }
 
             if (hash != null) {
-            	resultAddr.setArray(hash, 16);
+            	resultAddr.setArray(hash, hashLength);
             }
 
             return 0;
         }
 
-        protected static int digest(TPointer inAddr, int inSize, TPointer outAddr, String algorithm) {
+        protected static int digest(TPointer inAddr, int inSize, TPointer outAddr, String algorithm, int hashLength) {
             byte[] input = inAddr.getArray8(inSize);
             byte[] hash = null;
             try {
@@ -142,7 +144,7 @@ public class UtilsForUser extends HLEModule {
             	log.warn(String.format("SceKernelUtilsContext(%s).digest", algorithm), e);
             }
             if (hash != null) {
-            	outAddr.setArray(hash, 16);
+            	outAddr.setArray(hash, hashLength);
             }
 
             return 0;
@@ -153,11 +155,11 @@ public class UtilsForUser extends HLEModule {
     	private static final String algorithm = "MD5";
 
     	public SceKernelUtilsMd5Context() {
-        	super(algorithm);
+        	super(algorithm, 16);
         }
 
     	public static int digest(TPointer inAddr, int inSize, TPointer outAddr) {
-    		return digest(inAddr, inSize, outAddr, algorithm);
+    		return digest(inAddr, inSize, outAddr, algorithm, 16);
     	}
     }
 
@@ -165,11 +167,11 @@ public class UtilsForUser extends HLEModule {
     	private static final String algorithm = "SHA-1";
 
     	public SceKernelUtilsSha1Context() {
-			super(algorithm);
+			super(algorithm, 20);
 		}
 
     	public static int digest(TPointer inAddr, int inSize, TPointer outAddr) {
-    		return digest(inAddr, inSize, outAddr, algorithm);
+    		return digest(inAddr, inSize, outAddr, algorithm, 20);
     	}
     }
 
