@@ -20,9 +20,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Annotation for a TPointer type, that indicates that the pointer can be null and that's not an error. 
+ * Annotation for a TPointer type, indicating that the pointed memory
+ * should be monitored for read/write events when using the DebuggerMemory.
  */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface CanBeNull {
-
+public @interface DebugMemory {
 }

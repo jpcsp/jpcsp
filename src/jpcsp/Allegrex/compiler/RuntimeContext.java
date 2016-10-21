@@ -1407,4 +1407,11 @@ public class RuntimeContext {
     	log.error(String.format("Code instruction at 0x%08X has been modified, expected 0x%08X, current 0x%08X", pc, opcode, memory.read32(pc)));
     	Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
     }
+
+    public static void debugMemory(int address, int length) {
+    	if (memory instanceof DebuggerMemory) {
+    		DebuggerMemory debuggerMemory = (DebuggerMemory) memory;
+    		debuggerMemory.addRangeReadWriteBreakpoint(address, address + length - 1);
+    	}
+    }
 }

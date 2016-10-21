@@ -423,7 +423,7 @@ public class DebuggerMemory extends Memory {
     protected void memcpy(int destination, int source, int length, boolean checkOverlap) {
         // Perform memcpy using read8/write8 to check memory access
         for (int i = 0; i < length; i++) {
-            write8(destination + i, (byte) mem.read8(source + i));
+            write8(destination + i, (byte) read8(source + i));
         }
     }
 

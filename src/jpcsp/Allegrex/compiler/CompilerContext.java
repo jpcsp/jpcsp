@@ -58,6 +58,7 @@ import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
+import jpcsp.HLE.DebugMemory;
 import jpcsp.HLE.HLEModuleFunction;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.HLEUidClass;
@@ -1280,9 +1281,9 @@ public class CompilerContext implements ICompilerContext {
             	ParameterInfo parameter = parameters[paramIndex];
             	Class<?> parameterType = parameter.type;
 
-        		LengthInfo lengthInfo = LengthInfo.unknown;
-        		int length = -1;
-        		Usage usage = Usage.in;
+        		LengthInfo lengthInfo = BufferInfo.defaultLengthInfo;
+        		int length = BufferInfo.defaultLength;
+        		Usage usage = BufferInfo.defaultUsage;
         		for (Annotation parameterAnnotation : paramsAnotations[paramIndex]) {
         			if (parameterAnnotation instanceof BufferInfo) {
         				BufferInfo bufferInfo = (BufferInfo) parameterAnnotation;
@@ -1293,7 +1294,7 @@ public class CompilerContext implements ICompilerContext {
         		}
 
         		boolean parameterRead = false;
-        		if (lengthInfo != LengthInfo.unknown && (usage == Usage.in || usage == Usage.inout)) {
+        		if ((usage == Usage.in || usage == Usage.inout) && (lengthInfo != LengthInfo.unknown || parameterType == TPointer32.class || parameterType == TPointer64.class)) {
     				loadModuleLoggger(func);
     				loadImm(1);
     				mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
@@ -1307,7 +1308,10 @@ public class CompilerContext implements ICompilerContext {
         			mv.visitInsn(Opcodes.DUP);
     				mv.visitJumpInsn(Opcodes.IFEQ, addressNull);
 
-    				switch (lengthInfo) {
+                	String format = String.format("%s[%s]:%%s", parameter.name, usage);
+                	boolean useMemoryDump = true;
+
+                	switch (lengthInfo) {
 	        			case fixedLength:
 	        				loadImm(length);
 	        				break;
@@ -1338,15 +1342,36 @@ public class CompilerContext implements ICompilerContext {
 	                    	mv.visitInsn(Opcodes.SWAP);
 	        		        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
 	        				break;
+	        			case unknown:
+	        				useMemoryDump = false;
+	        				format = String.format("%s[%s]: 0x%%X", parameter.name, usage);
+	        		    	loadMemory();
+	                    	mv.visitInsn(Opcodes.SWAP);
+	        		    	if (parameterType == TPointer64.class) {
+		        		        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read64", "(I)J");
+		        				mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Long.class));
+		        				mv.visitInsn(Opcodes.DUP);
+		        				mv.visitInsn(Opcodes.DUP2_X2);
+		        				mv.visitInsn(Opcodes.POP2);
+		        				mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Long.class), "<init>", "(J)V");
+	        		    	} else {
+		        		        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
+		        				mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Integer.class));
+		        				mv.visitInsn(Opcodes.DUP_X1);
+		        				mv.visitInsn(Opcodes.SWAP);
+		        				mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Integer.class), "<init>", "(I)V");
+	        		    	}
+	        		        break;
         				default:
 	        				log.error(String.format("Unimplemented lengthInfo=%s", lengthInfo));
 	        				break;
 	        		}
 
-    				mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Utilities.class), "getMemoryDump", "(II)" + Type.getDescriptor(String.class));
-                	mv.visitInsn(Opcodes.AASTORE);
+                	if (useMemoryDump) {
+                		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Utilities.class), "getMemoryDump", "(II)" + Type.getDescriptor(String.class));
+                	}
+            		mv.visitInsn(Opcodes.AASTORE);
 
-                	String format = String.format("%s[%s]:%%s", parameter.name, usage);
         			mv.visitLdcInsn(format);
                 	mv.visitInsn(Opcodes.SWAP);
                 	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
@@ -1448,20 +1473,23 @@ public class CompilerContext implements ICompilerContext {
 	            	ParameterInfo parameter = parameters[paramIndex];
 	            	Class<?> parameterType = parameter.type;
 
-	        		LengthInfo lengthInfo = LengthInfo.unknown;
-	        		int length = -1;
-	        		Usage usage = Usage.in;
+	        		LengthInfo lengthInfo = BufferInfo.defaultLengthInfo;
+	        		int length = BufferInfo.defaultLength;
+	        		Usage usage = BufferInfo.defaultUsage;
+	        		boolean debugMemory = false;
 	        		for (Annotation parameterAnnotation : paramsAnotations[paramIndex]) {
 	        			if (parameterAnnotation instanceof BufferInfo) {
 	        				BufferInfo bufferInfo = (BufferInfo) parameterAnnotation;
 	        				lengthInfo = bufferInfo.lengthInfo();
 	        				length = bufferInfo.length();
 	        				usage = bufferInfo.usage();
+	        			} else if (parameterAnnotation instanceof DebugMemory) {
+	        				debugMemory = true;
 	        			}
 	        		}
 
 	        		boolean parameterRead = false;
-	        		if (lengthInfo != LengthInfo.unknown && (usage == Usage.out || usage == Usage.inout)) {
+	        		if ((usage == Usage.out || usage == Usage.inout) && (lengthInfo != LengthInfo.unknown || parameterType == TPointer32.class || parameterType == TPointer64.class)) {
 	    				loadModuleLoggger(func);
 	    				loadImm(1);
 	    				mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
@@ -1475,7 +1503,10 @@ public class CompilerContext implements ICompilerContext {
 	        			mv.visitInsn(Opcodes.DUP);
 	    				mv.visitJumpInsn(Opcodes.IFEQ, addressNull);
 
-	    				switch (lengthInfo) {
+	                	String format = String.format("%s[%s]:%%s", parameter.name, usage);
+	                	boolean useMemoryDump = true;
+
+	                	switch (lengthInfo) {
 		        			case fixedLength:
 		        				loadImm(length);
 		        				break;
@@ -1509,15 +1540,50 @@ public class CompilerContext implements ICompilerContext {
 		        			case returnValue:
 		        				loadRegister(_v0);
 		        				break;
+		        			case unknown:
+		        				useMemoryDump = false;
+		        				format = String.format("%s[%s]: 0x%%X", parameter.name, usage);
+		        		    	loadMemory();
+		                    	mv.visitInsn(Opcodes.SWAP);
+		        		    	if (parameterType == TPointer64.class) {
+			                		if (debugMemory) {
+			                    		mv.visitInsn(Opcodes.DUP);
+			                    		loadImm(8);
+				                		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemory", "(II)V");
+			                		}
+			        		        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read64", "(I)J");
+			        				mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Long.class));
+			        				mv.visitInsn(Opcodes.DUP);
+			        				mv.visitInsn(Opcodes.DUP2_X2);
+			        				mv.visitInsn(Opcodes.POP2);
+			        				mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Long.class), "<init>", "(J)V");
+		        		    	} else {
+			                		if (debugMemory) {
+			                    		mv.visitInsn(Opcodes.DUP);
+			                    		loadImm(4);
+				                		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemory", "(II)V");
+			                		}
+			        		        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
+			        				mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Integer.class));
+			        				mv.visitInsn(Opcodes.DUP_X1);
+			        				mv.visitInsn(Opcodes.SWAP);
+			        				mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Integer.class), "<init>", "(I)V");
+		        		    	}
+		        				break;
 	        				default:
 		        				log.error(String.format("Unimplemented lengthInfo=%s", lengthInfo));
 		        				break;
 		        		}
 
-	    				mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Utilities.class), "getMemoryDump", "(II)" + Type.getDescriptor(String.class));
-	                	mv.visitInsn(Opcodes.AASTORE);
+	                	if (useMemoryDump) {
+	                		if (debugMemory) {
+	                    		mv.visitInsn(Opcodes.DUP2);
+		                		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemory", "(II)V");
+	                		}
+	                		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Utilities.class), "getMemoryDump", "(II)" + Type.getDescriptor(String.class));
+	                	}
+                		mv.visitInsn(Opcodes.AASTORE);
 
-	                	String format = String.format("%s[%s]:%%s", parameter.name, usage);
 	        			mv.visitLdcInsn(format);
 	                	mv.visitInsn(Opcodes.SWAP);
 	                	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));

@@ -29,6 +29,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
 public @interface BufferInfo {
+	public static final Usage defaultUsage = Usage.unknown;
+	public static final LengthInfo defaultLengthInfo = LengthInfo.unknown;
+	public static final int defaultLength = -1;
+
 	public static enum LengthInfo {
 		unknown,
 		nextParameter,
@@ -39,6 +43,7 @@ public @interface BufferInfo {
 		returnValue
 	}
 	public static enum Usage {
+		unknown,
 		in,
 		out,
 		inout
@@ -46,7 +51,7 @@ public @interface BufferInfo {
 
 	public LengthInfo lengthInfo() default LengthInfo.unknown;
 
-	public int length() default -1;
+	public int length() default defaultLength;
 
-	public Usage usage() default Usage.in;
+	public Usage usage() default Usage.unknown;
 }

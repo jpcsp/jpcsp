@@ -1207,8 +1207,7 @@ public class Loader {
                 } else {
                     // Attempt to fixup stub to known syscalls
                     int code = nidMapper.nidToSyscall(nid);
-                    if (code != -1)
-                    {
+                    if (code != -1) {
                         // Fixup stub, replacing nop with syscall
                     	int returnInstruction = // jr $ra
                     	    (AllegrexOpcodes.SPECIAL << 26)
