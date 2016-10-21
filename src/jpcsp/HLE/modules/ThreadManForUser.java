@@ -2129,7 +2129,10 @@ public class ThreadManForUser extends HLEModule {
     	}
 
     	if (id != SysMemUserForUser.USER_PARTITION_ID && id != SysMemUserForUser.VSHELL_PARTITION_ID) {
-    		throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_ILLEGAL_PERMISSION);
+    		// Accept KERNEL_PARTITION_ID for threads running in kernel mode.
+    		if (id != SysMemUserForUser.KERNEL_PARTITION_ID || !currentThread.isKernelMode()) {
+    			throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_ILLEGAL_PERMISSION);
+    		}
     	}
 
     	return id;
