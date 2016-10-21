@@ -370,6 +370,14 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 	            }
 	            break;
 	        }
+	        case 0x00005802: {
+	        	if (!"flash1:".equals(deviceName) || inputLength != 0 || outputLength != 0) {
+	        		result = IO_ERROR;
+	        	} else {
+	        		result = 0;
+	        	}
+	        	break;
+	        }
 	        default: {
 	        	result = super.ioDevctl(deviceName, command, inputPointer, inputLength, outputPointer, outputLength);
 	        }

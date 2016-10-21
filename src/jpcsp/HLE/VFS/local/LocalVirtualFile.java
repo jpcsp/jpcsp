@@ -67,6 +67,25 @@ public class LocalVirtualFile extends AbstractVirtualFile {
 		return inputLength;
 	}
 
+	@Override
+	public int ioIoctl(int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength) {
+		int result;
+		switch (command) {
+			case 0x00005001:
+	        	if (inputLength != 0 || outputLength != 0) {
+	        		result = IO_ERROR;
+	        	} else {
+	        		result = 0;
+	        	}
+				break;
+			default:
+				result = super.ioIoctl(command, inputPointer, inputLength, outputPointer, outputLength);
+				break;
+		}
+
+		return result;
+	}
+
 	public boolean isTruncateAtNextWrite() {
 		return truncateAtNextWrite;
 	}

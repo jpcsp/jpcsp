@@ -642,6 +642,7 @@ public class IoFileMgrForUser extends HLEModule {
         vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/", true));
         vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/", true));
         vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/", false));
+        vfsManager.register("flash1", new LocalVirtualFileSystem("flash1/", false));
         vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/", false));
         vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
         vfsManager.register("msstor0p1", new MemoryStickStorageVirtualFileSystem());
