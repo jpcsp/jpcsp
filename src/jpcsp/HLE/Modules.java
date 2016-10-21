@@ -127,6 +127,8 @@ public class Modules {
     public static sceMgr_driver sceMgr_driverModule = new sceMgr_driver();
     public static sceChnnlsv sceChnnlsvModule = new sceChnnlsv();
     public static sceNetAdhocTransInt sceNetAdhocTransIntModule = new sceNetAdhocTransInt();
+    public static sceUsbstor sceUsbstorModule = new sceUsbstor();
+    public static sceIdStorage sceIdStorageModule = new sceIdStorage();
 
     public static Logger log = Logger.getLogger("hle");
 
