@@ -1416,7 +1416,7 @@ public class CompilerContext implements ICompilerContext {
     private void logSyscallStart(HLEModuleFunction func) {
     	if (func.getLoggingLevel() != null) {
     		String prefix = null;
-    		if (func.isUnimplemented()) {
+    		if (func.isUnimplemented() && !codeBlock.isHLEFunction()) {
     			prefix = "Unimplemented ";
     		}
     		logSyscall(func, prefix, getLogCheckFunction(func), func.getLoggingLevel());
@@ -1450,7 +1450,7 @@ public class CompilerContext implements ICompilerContext {
 		loadImm(0);
 		mv.visitInsn(Opcodes.SWAP);
 		mv.visitInsn(Opcodes.AASTORE);
-		String prefix = func.isUnimplemented() ? "Unimplemented " : "";
+		String prefix = func.isUnimplemented() && !codeBlock.isHLEFunction() ? "Unimplemented " : "";
     	mv.visitLdcInsn(String.format("%s%s returning %s0x%%X", prefix, func.getFunctionName(), isErrorCode ? "errorCode " : ""));
     	mv.visitInsn(Opcodes.SWAP);
     	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
