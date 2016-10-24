@@ -16,11 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.modules.sceNetAdhocctl.fillNextPointersInLinkedList;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
+import jpcsp.HLE.DebugMemory;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -63,6 +65,7 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.SceNetInetTcpcbstat;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.kernel.types.pspNetSockAddrInternet;
 import jpcsp.memory.IMemoryReader;
@@ -164,6 +167,19 @@ public class sceNetInet extends HLEModule {
     public static final int MSG_DONTWAIT = 0x80; // Doesn't wait until all data can be returned (non-blocking).
     public static final int MSG_BCAST = 0x100;   // Message received by link-level broadcast.
     public static final int MSG_MCAST = 0x200;   // Message received by link-level multicast.
+
+    // TCP FSM state definitions. Per RFC793, September, 1981.
+    public static final int TCPS_CLOSED			= 0; // closed
+    public static final int TCPS_LISTEN			= 1; // listening for connection
+    public static final int TCPS_SYN_SENT		= 2; // active, have sent syn
+    public static final int TCPS_SYN_RECEIVED	= 3; // have send and received syn
+    public static final int TCPS_ESTABLISHED	= 4; // established
+    public static final int TCPS_CLOSE_WAIT		= 5; // rcvd fin, waiting for close
+    public static final int TCPS_FIN_WAIT_1		= 6; // have closed, sent fin
+    public static final int TCPS_CLOSING		= 7; // closed xchd FIN; await FIN ACK
+    public static final int TCPS_LAST_ACK		= 8; // had fin and close; await FIN ACK
+    public static final int TCPS_FIN_WAIT_2		= 9; // have closed, fin is acked
+    public static final int TCPS_TIME_WAIT		= 10; // in 2*msl quiet wait after close
 
     private static InetAddress[] broadcastAddresses;
 
@@ -422,6 +438,8 @@ public class sceNetInet extends HLEModule {
 		protected boolean lingerEnabled;
 		protected int linger;
 		protected boolean tcpNoDelay;
+		private pspNetSockAddrInternet localAddr;
+		private pspNetSockAddrInternet remoteAddr;
 
 		public pspInetSocket(int uid) {
 			this.uid = uid;
@@ -458,12 +476,20 @@ public class sceNetInet extends HLEModule {
 		}
 
 		public boolean isBlocking(int flags) {
+			boolean blocking;
+
 			// Flag MSG_DONTWAIT set: the IO operation is non-blocking
 			if ((flags & MSG_DONTWAIT) != 0) {
-				return false;
+				blocking = false;
+			} else {
+				blocking = isBlocking();
 			}
 
-			return isBlocking();
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("isBlocking(0x%X)=%b", flags, blocking));
+			}
+
+			return blocking;
 		}
 
 		protected SocketAddress getSocketAddress(int address, int port) throws UnknownHostException {
@@ -496,6 +522,19 @@ public class sceNetInet extends HLEModule {
 
 		protected SocketAddress getSocketAddress(pspNetSockAddrInternet addr) throws UnknownHostException {
 			return getSocketAddress(addr.sin_addr, addr.sin_port);
+		}
+
+		protected pspNetSockAddrInternet getNetSockAddrInternet(SocketAddress socketAddress) {
+			pspNetSockAddrInternet addr = null;
+
+			if (socketAddress != null) {
+				if (socketAddress instanceof InetSocketAddress) {
+					addr = new pspNetSockAddrInternet();
+					addr.readFromInetSocketAddress((InetSocketAddress) socketAddress);
+				}
+			}
+
+			return addr;
 		}
 
 		protected SocketAddress[] getMultiSocketAddress(pspNetSockAddrInternet addr) throws UnknownHostException {
@@ -583,6 +622,9 @@ public class sceNetInet extends HLEModule {
 		}
 
 		public int getReceiveTimeout() {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("receiveTimeout=%d", receiveTimeout));
+			}
 			return receiveTimeout;
 		}
 
@@ -728,7 +770,7 @@ public class sceNetInet extends HLEModule {
 		public void blockedRecv(BlockingReceiveState blockingState) {
 			if (blockingState.isTimeout()) {
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecv socket=%d returning %d (timeout)", getUid(), blockingState.receivedLength));
+					log.debug(String.format("sceNetInetRecv socket=0x%X returning %d (timeout)", getUid(), blockingState.receivedLength));
 				}
 				setErrno(EAGAIN);
 				unblockThread(blockingState, blockingState.receivedLength);
@@ -750,7 +792,7 @@ public class sceNetInet extends HLEModule {
 		public void blockedSend(BlockingSendState blockingState) {
 			if (blockingState.isTimeout()) {
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetSend socket=%d returning %d (timeout)", getUid(), blockingState.sentLength));
+					log.debug(String.format("sceNetInetSend socket=0x%X returning %d (timeout)", getUid(), blockingState.sentLength));
 				}
 				setErrno(EAGAIN);
 				unblockThread(blockingState, blockingState.sentLength);
@@ -772,7 +814,7 @@ public class sceNetInet extends HLEModule {
 		public void blockedSendto(BlockingSendToState blockingState) {
 			if (blockingState.isTimeout()) {
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetSendto socket=%d returning %d (timeout)", getUid(), blockingState.sentLength));
+					log.debug(String.format("sceNetInetSendto socket=0x%X returning %d (timeout)", getUid(), blockingState.sentLength));
 				}
 				setErrno(EAGAIN);
 				unblockThread(blockingState, blockingState.sentLength);
@@ -794,7 +836,7 @@ public class sceNetInet extends HLEModule {
 		public void blockedRecvfrom(BlockingReceiveFromState blockingState) {
 			if (blockingState.isTimeout()) {
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecvfrom socket=%d returning %d (timeout)", getUid(), blockingState.receivedLength));
+					log.debug(String.format("sceNetInetRecvfrom socket=0x%X returning %d (timeout)", getUid(), blockingState.receivedLength));
 				}
 				setErrno(EAGAIN);
 				unblockThread(blockingState, blockingState.receivedLength);
@@ -815,6 +857,22 @@ public class sceNetInet extends HLEModule {
 			if (socketUid >= 0) {
 				unblockThread(blockingState, socketUid);
 			}
+		}
+
+		pspNetSockAddrInternet getLocalAddr() {
+			return localAddr;
+		}
+
+		public void setLocalAddr(pspNetSockAddrInternet localAddr) {
+			this.localAddr = localAddr;
+		}
+
+		pspNetSockAddrInternet getRemoteAddr() {
+			return remoteAddr;
+		}
+
+		public void setRemoteAddr(pspNetSockAddrInternet remoteAddr) {
+			this.remoteAddr = remoteAddr;
 		}
 	}
 
@@ -890,7 +948,11 @@ public class sceNetInet extends HLEModule {
 			if (!isBlocking() && socketChannel.isConnectionPending()) {
 				// Try to finish the connection
 				try {
-					return socketChannel.finishConnect();
+					boolean connected = socketChannel.finishConnect();
+					if (connected) {
+						setLocalAddr(getNetSockAddrInternet(socketChannel.getLocalAddress()));
+					}
+					return connected;
 				} catch (IOException e) {
 					log.error(e);
 					setSocketError(e);
@@ -924,6 +986,7 @@ public class sceNetInet extends HLEModule {
 				}
 
 				boolean connected = socketChannel.connect(getSocketAddress(addr));
+				setRemoteAddr(addr);
 
 				if (isBlocking()) {
 					// blocking mode: wait for the connection to complete
@@ -983,8 +1046,8 @@ public class sceNetInet extends HLEModule {
 				storeBytes(buffer, length, bytes);
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecv socket=%d received %d bytes", getUid(), length));
-					if (log.isTraceEnabled()) {
+					log.debug(String.format("sceNetInetRecv socket=0x%X received 0x%X bytes", getUid(), length));
+					if (log.isTraceEnabled() && length > 0) {
 						log.trace(String.format("Received data: %s", Utilities.getMemoryDump(buffer, length)));
 					}
 				}
@@ -1044,7 +1107,7 @@ public class sceNetInet extends HLEModule {
 				ByteBuffer byteBuffer = getByteBuffer(buffer, bufferLength);
 				int length = socketChannel.write(byteBuffer);
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetSend socket=%d successfully sent %d bytes", getUid(), length));
+					log.debug(String.format("sceNetInetSend socket=0x%X successfully sent 0x%X bytes", getUid(), length));
 				}
 
 				// Nothing sent on a non-blocking stream, return EAGAIN in errno
@@ -1195,7 +1258,7 @@ public class sceNetInet extends HLEModule {
 			}
 
 			InetAddress inetAddress = socketChannel.socket().getInetAddress();
-			sockAddrInternet.readFromInetAddress(inetAddress);
+			sockAddrInternet.readFromInetAddress(inetAddress, getRemoteAddr());
 
 			return 0;
 		}
@@ -1207,7 +1270,7 @@ public class sceNetInet extends HLEModule {
 			}
 
 			InetAddress inetAddress = socketChannel.socket().getLocalAddress();
-			sockAddrInternet.readFromInetAddress(inetAddress);
+			sockAddrInternet.readFromInetAddress(inetAddress, getLocalAddr());
 
 			return 0;
 		}
@@ -1403,6 +1466,7 @@ public class sceNetInet extends HLEModule {
 			try {
 				openChannel();
 				datagramChannel.connect(getSocketAddress(addr));
+				setRemoteAddr(addr);
 			} catch (IOException e) {
 				log.error(e);
 				setError(e);
@@ -1455,8 +1519,8 @@ public class sceNetInet extends HLEModule {
 				storeBytes(buffer, length, bytes);
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecv socket=%d received %d bytes from %s", getUid(), length, socketAddress));
-					if (log.isTraceEnabled()) {
+					log.debug(String.format("sceNetInetRecv socket=0x%X received 0x%X bytes from %s", getUid(), length, socketAddress));
+					if (log.isTraceEnabled() && length > 0) {
 						log.trace(String.format("Received data: %s", Utilities.getMemoryDump(buffer, length)));
 					}
 				}
@@ -1521,8 +1585,8 @@ public class sceNetInet extends HLEModule {
 				storeBytes(buffer, length, bytes);
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecvfrom socket=%d received %d bytes from %s", getUid(), length, socketAddress));
-					if (log.isTraceEnabled()) {
+					log.debug(String.format("sceNetInetRecvfrom socket=0x%X received 0x%X bytes from %s", getUid(), length, socketAddress));
+					if (log.isTraceEnabled() && length > 0) {
 						log.trace(String.format("Received data: %s", Utilities.getMemoryDump(buffer, length)));
 					}
 				}
@@ -1565,7 +1629,7 @@ public class sceNetInet extends HLEModule {
 				SocketAddress socketAddress = getSocketAddress(toAddr);
 				int length = datagramChannel.send(byteBuffer, socketAddress);
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetSendto socket=%d successfully sent %d bytes", getUid(), length));
+					log.debug(String.format("sceNetInetSendto socket=0x%X successfully sent 0x%X bytes", getUid(), length));
 				}
 
 				// Nothing sent on a non-blocking stream, return EAGAIN in errno
@@ -1664,7 +1728,7 @@ public class sceNetInet extends HLEModule {
 			}
 
 			InetAddress inetAddress = datagramChannel.socket().getInetAddress();
-			sockAddrInternet.readFromInetAddress(inetAddress);
+			sockAddrInternet.readFromInetAddress(inetAddress, getRemoteAddr());
 
 			return 0;
 		}
@@ -1676,7 +1740,7 @@ public class sceNetInet extends HLEModule {
 			}
 
 			InetAddress inetAddress = datagramChannel.socket().getLocalAddress();
-			sockAddrInternet.readFromInetAddress(inetAddress);
+			sockAddrInternet.readFromInetAddress(inetAddress, getLocalAddr());
 
 			return 0;
 		}
@@ -1889,8 +1953,8 @@ public class sceNetInet extends HLEModule {
 				fromAddr.write(Memory.getInstance());
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecvfrom socket=%d received %d bytes from %s", getUid(), length, fromAddr));
-					if (log.isTraceEnabled()) {
+					log.debug(String.format("sceNetInetRecvfrom socket=0x%X received 0x%X bytes from %s", getUid(), length, fromAddr));
+					if (log.isTraceEnabled() && length > 0) {
 						log.trace(String.format("Received data: %s", Utilities.getMemoryDump(buffer, length)));
 					}
 				}
@@ -1942,7 +2006,7 @@ public class sceNetInet extends HLEModule {
 				byte[] data = getByteArray(buffer, bufferLength);
 				int length = rawChannel.socket().write(inetAddress, data);
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetSendto socket=%d successfully sent %d bytes", getUid(), length));
+					log.debug(String.format("sceNetInetSendto socket=0x%X successfully sent 0x%X bytes", getUid(), length));
 				}
 
 				if (blockingState != null) {
@@ -3108,8 +3172,72 @@ public class sceNetInet extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xB3888AD4, version = 150)
-	public int sceNetInetGetTcpcbstat() {
-		return 0;
+	public int sceNetInetGetTcpcbstat(TPointer32 sizeAddr, @DebugMemory @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.out) TPointer buf) {
+		int tcpCount = 0;
+    	for (pspInetSocket socket : sockets.values()) {
+    		if (socket instanceof pspInetStreamSocket) {
+    			tcpCount++;
+    		}
+    	}
+
+        int size = sizeAddr.getValue();
+		SceNetInetTcpcbstat stat = new SceNetInetTcpcbstat();
+    	sizeAddr.setValue(stat.sizeof() * tcpCount);
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceNetInetGetTcpcbstat returning size=%d", sizeAddr.getValue()));
+    	}
+
+    	if (buf.isNotNull()) {
+        	int offset = 0;
+        	for (pspInetSocket socket : sockets.values()) {
+        		if (socket instanceof pspInetStreamSocket) {
+	        		// Check if enough space available to write the next structure
+	        		if (offset + stat.sizeof() > size || socket == null) {
+	        			break;
+	        		}
+
+	        		if (log.isDebugEnabled()) {
+	        			log.debug(String.format("sceNetInetGetTcpcbstat returning %s at 0x%08X", socket, buf.getAddress() + offset));
+	        		}
+
+	        		stat.ts_so_snd_sb_cc = 0;
+	        		stat.ts_so_rcv_sb_cc = 0;
+
+	        		pspNetSockAddrInternet localAddr = socket.getLocalAddr();
+	        		if (localAddr == null) {
+		        		stat.ts_inp_laddr = 0;
+		        		stat.ts_inp_lport = 0;
+	        		} else {
+	        			stat.ts_inp_laddr = localAddr.sin_addr;
+	        			stat.ts_inp_lport = localAddr.sin_port;
+	        		}
+
+	        		pspNetSockAddrInternet remoteAddr = socket.getRemoteAddr();
+	        		if (remoteAddr == null) {
+		        		stat.ts_inp_faddr = 0;
+		        		stat.ts_inp_fport = 0;
+	        		} else {
+	        			stat.ts_inp_faddr = remoteAddr.sin_addr;
+	        			stat.ts_inp_fport = remoteAddr.sin_port;
+	        		}
+
+	        		// TODO Find the correct socket state
+	        		stat.ts_t_state = TCPS_ESTABLISHED;
+
+	        		stat.write(buf, offset);
+
+	        		offset += stat.sizeof();
+        		}
+        	}
+
+        	fillNextPointersInLinkedList(buf, offset, stat.sizeof());
+
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceNetInetGetTcpcbstat returning %s", Utilities.getMemoryDump(buf.getAddress(), offset)));
+        	}
+    	}
+
+    	return 0;
 	}
 
 	@HLEUnimplemented
