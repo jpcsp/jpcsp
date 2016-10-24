@@ -84,7 +84,7 @@ public class HTTPServer {
 		new HTTPServerDescriptor(0, 80, false),
 		new HTTPServerDescriptor(1, 443, true)
 	};
-	private static final boolean processProxyRequestLocally = true;
+	public static boolean processProxyRequestLocally = false;
 	private static final String method = "method";
 	private static final String path = "path";
 	private static final String host = "host";
@@ -434,9 +434,16 @@ public class HTTPServer {
 				connection.setRequestProperty(key, request.get(key));
 			}
 		}
+
 		connection.setRequestMethod(request.get(method));
 		String additionalData = request.get(data);
 		if (additionalData != null) {
+			if ("/nav/auth".equals(request.get(path)) && additionalData.contains("&consoleid=")) {
+				// Remove the "consoleid" parameter as it is recognized as invalid.
+				// The dummy value returned by sceOpenPSIDGetPSID is not valid.
+				additionalData = additionalData.replaceAll("\\&consoleid=[0-9a-fA-F]*", "");
+			}
+
 			connection.setDoOutput(true);
 			OutputStream dataStream = connection.getOutputStream();
 			dataStream.write(additionalData.getBytes());
@@ -446,29 +453,56 @@ public class HTTPServer {
 
 		int dataLength = connection.getContentLength();
 
-		InputStream in = connection.getInputStream();
 		byte[] buffer = new byte[100000];
 		int length = 0;
-		while (true) {
-			int l = in.read(buffer, length, buffer.length - length);
-			if (l < 0) {
-				break;
+		try {
+			InputStream in = connection.getInputStream();
+			while (true) {
+				int l = in.read(buffer, length, buffer.length - length);
+				if (l < 0) {
+					break;
+				}
+				length += l;
 			}
-			length += l;
+			in.close();
+		} catch (IOException e) {
+			log.debug("doProxy", e);
 		}
-		in.close();
+
+		String bufferString = new String(buffer, 0, length);
+		boolean bufferPatched = false;
+		if (bufferString.contains("https://legaldoc.dl.playstation.net")) {
+			bufferString = bufferString.replace("https://legaldoc.dl.playstation.net", "http://legaldoc.dl.playstation.net");
+			bufferPatched = true;
+		}
+
+		if (bufferPatched) {
+			buffer = bufferString.getBytes();
+			length = buffer.length;
+
+			// Also update the "Content-Length" header if it was specified
+			if (dataLength >= 0) {
+				dataLength = length;
+			}
+		}
 
 		sendHTTPResponseCode(os, connection.getResponseCode(), connection.getResponseMessage());
 
+		// Only send a "Content-Length" header if the remote server did send it
 		if (dataLength >= 0) {
 			sendResponseHeader(os, contentLength, dataLength);
-		} else {
-//			sendResponseHeader(os, contentLength, length);
 		}
+
 		for (Map.Entry<String, List<String>> entry : connection.getHeaderFields().entrySet()) {
 			String key = entry.getKey();
 			if (key != null && !"transfer-encoding".equals(key.toLowerCase())) {
 				for (String value : entry.getValue()) {
+					// If we changed "https" into "http", remove the information that the cookie can
+					// only be sent over https, otherwise, it will be lost.
+					if (forcedPort == 443 && "Set-Cookie".equalsIgnoreCase(key)) {
+						value = value.replace("; Secure", "");
+					}
+
 					sendResponseHeader(os, key, value);
 				}
 			}
@@ -476,7 +510,7 @@ public class HTTPServer {
 		sendEndOfHeaders(os);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("doProxy:\n%s", Utilities.getMemoryDump(buffer, 0, length)));
+			log.debug(String.format("doProxy%s:\n%s", (bufferPatched ? " (response patched)" : ""), Utilities.getMemoryDump(buffer, 0, length)));
 		}
 
 		os.write(buffer, 0, length);
@@ -493,6 +527,12 @@ public class HTTPServer {
 			if (!processProxyRequestLocally && "fe01.psp.update.playstation.org".equals(request.get(host))) {
 				doProxy(descriptor, request, os, pathValue, 0);
 			} else if ("native.np.ac.playstation.net".equals(request.get(host))) {
+				doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("legaldoc.dl.playstation.net".equals(request.get(host))) {
+				doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("auth.np.ac.playstation.net".equals(request.get(host))) {
+				doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("getprof.gb.np.community.playstation.net".equals(request.get(host))) {
 				doProxy(descriptor, request, os, pathValue, 443);
 			} else if (!processProxyRequestLocally && "nsx.sec.np.dl.playstation.net".equals(request.get(host))) {
 				sendResponseFile(os, rootDirectory + "/psp.xml");
@@ -1485,6 +1525,10 @@ public class HTTPServer {
 	}
 
 	private static String getUrl(HTTPServerDescriptor descriptor, HashMap<String, String> request, String pathValue, int forcedPort) {
+		if (pathValue.startsWith("https://") || pathValue.startsWith("http://")) {
+			return pathValue;
+		}
+		
 		String baseUrl = getBaseUrl(descriptor, request, forcedPort);
 
 		if (pathValue == null) {

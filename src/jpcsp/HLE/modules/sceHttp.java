@@ -452,7 +452,10 @@ public class sceHttp extends HLEModule {
 
 	public static void getProxyForSockAddrInternet(pspNetSockAddrInternet sockAddrInternet) {
 		if (isSameAddress("fe01.psp.update.playstation.org", sockAddrInternet) ||
-		    isSameAddress("native.np.ac.playstation.net", sockAddrInternet)) {
+		    isSameAddress("native.np.ac.playstation.net", sockAddrInternet) ||
+		    isSameAddress("legaldoc.dl.playstation.net", sockAddrInternet) ||
+		    isSameAddress("auth.np.ac.playstation.net", sockAddrInternet) ||
+		    isSameAddress("getprof.gb.np.community.playstation.net", sockAddrInternet)) {
 			sockAddrInternet.sin_addr = HTTPServer.getInstance().getProxyAddress();
 			sockAddrInternet.sin_port = HTTPServer.getInstance().getProxyPort();
 		}
@@ -753,7 +756,7 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x4CC7D78F, version = 150)
-    public int sceHttpGetStatusCode(int requestId, TPointer32 statusCode) {
+    public int sceHttpGetStatusCode(int requestId, @BufferInfo(usage=Usage.out) TPointer32 statusCode) {
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	httpRequest.connect();
     	statusCode.setValue(httpRequest.getStatusCode());

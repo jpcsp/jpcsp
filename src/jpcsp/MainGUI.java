@@ -2855,13 +2855,14 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 ProOnlineNetworkAdapter.setEnabled(true);
             } else if (args[i].equals("--vsh")) {
                 Modules.sceDisplayModule.setCalledFromCommandLine();
+                HTTPServer.processProxyRequestLocally = true;
             	loadFile(new File("flash0/kd/mesg_led_01g.prx"));
 
             	ModuleMgrForUser moduleMgr = Modules.ModuleMgrForUserModule;
 
             	// Use increasing start thread priorities to enforce the start order
             	int startPriority = 0x11;
-            	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/registry.prx", startPriority++);
+//            	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/registry.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/vshbridge.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/paf.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/common_gui.prx", startPriority++);

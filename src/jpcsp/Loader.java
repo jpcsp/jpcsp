@@ -1553,8 +1553,7 @@ public class Loader {
         }
 
         shdr = elf.getSectionHeader(".sceStub.text");
-        if (shdr != null)
-        {
+        if (shdr != null) {
             module.stubtextsection[0] = shdr.getSh_addr(baseAddress);
             module.stubtextsection[1] = shdr.getSh_size();
         }
@@ -1583,6 +1582,12 @@ public class Loader {
     		patch(mem, module, 0x0000A598, 0x00000073, 0x00000000); // replace "https" with "http"
     		patch(mem, module, 0x00003A60, 0x240701BB, 0x24070050); // replace port 443 with 80
     	}
+    	if ("sceNpCore".equals(module.modname)) {
+    		patchRemoveStringChar(mem, module, 0x00000D50, 's'); // replace "https" with "http"
+    	}
+    	if ("sceNpService".equals(module.modname)) {
+    		patch(mem, module, 0x0001075C, 0x00000073, 0x00000000); // replace "https" with "http"
+    	}
     }
 
     private void patch(Memory mem, SceModule module, int offset, int oldValue, int newValue) {
@@ -1591,6 +1596,18 @@ public class Loader {
     		log.error(String.format("Patching of module '%s' failed at offset 0x%X, 0x%08X found instead of 0x%08X", module.modname, offset, checkValue, oldValue));
     	} else {
     		mem.write32(module.baseAddress + offset, newValue);
+    	}
+    }
+
+    private void patchRemoveStringChar(Memory mem, SceModule module, int offset, int oldChar) {
+    	int address = module.baseAddress + offset;
+    	int checkChar = mem.read8(address);
+    	if (checkChar != oldChar) {
+    		log.error(String.format("Patching of module '%s' failed at offset 0x%X, 0x%02X found instead of 0x%02X", module.modname, offset, checkChar, oldChar));
+    	} else {
+    		String s = Utilities.readStringZ(address);
+    		s = s.substring(1);
+    		Utilities.writeStringZ(mem, address, s);
     	}
     }
 }
