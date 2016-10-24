@@ -66,6 +66,10 @@ public class sceReg extends HLEModule {
     private int musicTrackInfoMode;
     private String lockPassword;
     private String browserHomeUri;
+    private String npAccountId;
+    private String npLoginId;
+    private String npPassword;
+    private int npAutoSignInEnable;
 
     protected static class RegistryHandle {
     	private static final String registryHandlePurpose = "sceReg.RegistryHandle";
@@ -435,8 +439,26 @@ public class sceReg extends HLEModule {
     		if ("account_id".equals(name)) {
     			ptype.setValue(REG_TYPE_BIN);
     			psize.setValue(16);
-    			if (size >= 16) {
-    				buf.clear(16);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, npAccountId);
+    			}
+    		} else if ("login_id".equals(name)) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(npLoginId.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, npLoginId);
+    			}
+    		} else if ("password".equals(name)) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(npPassword.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, npPassword);
+    			}
+    		} else if ("auto_sign_in_enable".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(npAutoSignInEnable);
     			}
     		} else if ("nav_only".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
@@ -449,6 +471,13 @@ public class sceReg extends HLEModule {
     			psize.setValue(npEnv.length() + 1);
     			if (size > 0) {
     				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, npEnv);
+    			}
+    		} else if ("guest_country".equals(name)) {
+    			String guestCount = "";
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(guestCount.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, guestCount);
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -465,6 +494,13 @@ public class sceReg extends HLEModule {
     			psize.setValue(1);
     			if (size >= 1) {
         			buf.clear(1);
+    			}
+    		} else if ("login_id".equals(name)) {
+    			String loginId = "";
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(loginId.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, loginId);
     			}
     		} else if ("guide_page".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
@@ -553,6 +589,18 @@ public class sceReg extends HLEModule {
     			psize.setValue(4);
     			if (size >= 4) {
         			buf.setValue32(1);
+    			}
+    		} else if ("owner_mob".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(0);
+    			}
+    		} else if ("owner_dob".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(0);
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -1010,6 +1058,10 @@ public class sceReg extends HLEModule {
 	    musicTrackInfoMode = 1;
 	    lockPassword = "0000"; // 4-digit password
 	    browserHomeUri = "";
+	    npAccountId = "";
+	    npLoginId = "";
+	    npPassword = "";
+	    npAutoSignInEnable = 0;
 
 		super.start();
 	}
@@ -1248,7 +1300,7 @@ public class sceReg extends HLEModule {
     		} else if ("usb_connect_count".equals(name) && size >= 4) {
     			usbConnectCount = buf.getValue32();
     		} else {
-    			log.warn(String.format("Unknown font registry entry '%s'", name));
+    			log.warn(String.format("Unknown registry entry '%s'", name));
     		}
     	} else if ("/CONFIG/OSK".equals(fullName)) {
     		if ("version_id".equals(name) && size >= 4) {
@@ -1262,19 +1314,27 @@ public class sceReg extends HLEModule {
     		} else if (name.equals("keytop_index") && size >= 4) {
     			oskKeytopIndex = buf.getValue32();
     		} else {
-    			log.warn(String.format("Unknown font registry entry '%s'", name));
+    			log.warn(String.format("Unknown registry entry '%s'", name));
     		}
     	} else if ("/CONFIG/NP".equals(fullName)) {
     		if ("env".equals(name)) {
     			npEnv = buf.getStringNZ(size);
+    		} else if ("account_id".equals(name)) {
+    			npAccountId = buf.getStringNZ(size);
+    		} else if ("login_id".equals(name)) {
+    			npLoginId = buf.getStringNZ(size);
+    		} else if ("password".equals(name)) {
+    			npPassword = buf.getStringNZ(size);
+    		} else if ("auto_sign_in_enable".equals(name) && size >= 4) {
+    			npAutoSignInEnable = buf.getValue32();
     		} else {
-    			log.warn(String.format("Unknown font registry entry '%s'", name));
+    			log.warn(String.format("Unknown registry entry '%s'", name));
     		}
     	} else if ("/CONFIG/NETWORK/ADHOC".equals(fullName)) {
     		if ("ssid_prefix".equals(name)) {
     			adhocSsidPrefix = buf.getStringNZ(size);
     		} else {
-    			log.warn(String.format("Unknown font registry entry '%s'", name));
+    			log.warn(String.format("Unknown registry entry '%s'", name));
     		}
     	} else if ("/CONFIG/SYSTEM/XMB/THEME".equals(fullName)) {
     		if ("custom_theme_mode".equals(name) && size >= 4) {
@@ -1286,7 +1346,7 @@ public class sceReg extends HLEModule {
     		} else if ("system_color".equals(name) && size >= 4) {
     			themeSystemColor = buf.getValue32();
     		} else {
-    			log.warn(String.format("Unknown font registry entry '%s'", name));
+    			log.warn(String.format("Unknown registry entry '%s'", name));
     		}
     	} else if ("/CONFIG/MUSIC".equals(fullName)) {
     		if ("visualizer_mode".equals(name) && size >= 4) {
