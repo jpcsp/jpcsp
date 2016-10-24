@@ -29,12 +29,14 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
 
 public class SysclibForKernel extends HLEModule {
 	public static Logger log = Modules.getLogger("SysclibForKernel");
+	private static final String validNumberCharacters = "0123456789ABCDEF";
 
     @HLEFunction(nid = 0x10F3BB61, version = 150)
     public int memset(@CanBeNull TPointer destAddr, int data, int size) {
@@ -122,7 +124,9 @@ public class SysclibForKernel extends HLEModule {
 
 	@HLEFunction(nid = 0xA48D2592, version = 150)
     public int memmove(@CanBeNull TPointer destAddr, TPointer srcAddr, int size) {
-		destAddr.getMemory().memmove(destAddr.getAddress(), srcAddr.getAddress(), size);
+		if (destAddr.isNotNull() && destAddr.getAddress() != srcAddr.getAddress()) {
+			destAddr.getMemory().memmove(destAddr.getAddress(), srcAddr.getAddress(), size);
+		}
 		return 0;
     }
 
@@ -139,11 +143,11 @@ public class SysclibForKernel extends HLEModule {
     }
 
 	/**
-	 * Returns a pointer to the first occurence of s2 in s1, or a null pointer if s2 is not part of s1.
+	 * Returns a pointer to the first occurrence of s2 in s1, or a null pointer if s2 is not part of s1.
 	 * The matching process does not include the terminating null-characters, but it stops there.
 	 * @param  s1 string to be scanned
 	 * @param  s2 string containing the sequence of characters to match
-	 * @return a pointer to the first occurence in s1 or the entire sequence of characters specified in s2,
+	 * @return a pointer to the first occurrence in s1 or the entire sequence of characters specified in s2,
 	 *         or a null pointer if the sequence is not present in s1.
 	 */
 	@HLEFunction(nid = 0x0D188658, version = 150)
@@ -182,5 +186,45 @@ public class SysclibForKernel extends HLEModule {
 		}
 
 		return formattedString.length();
+    }
+
+	private boolean isNumberValidCharacter(int c, int base) {
+		if (base > validNumberCharacters.length()) {
+			base = validNumberCharacters.length();
+		}
+
+		if (validNumberCharacters.substring(0, base).indexOf(c) < 0) {
+			return false;
+		}
+
+		return true;
+	}
+
+	@HLEFunction(nid = 0x47DD934D, version = 150)
+    public int strtol(@CanBeNull PspString string, @CanBeNull TPointer32 endString, int base) {
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(string.getAddress(), 1);
+		String s = string.getString();
+		for (int i = 0; true; i++) {
+			int c = memoryReader.readNext();
+			if (c == 0 || !isNumberValidCharacter(c, base)) {
+				endString.setValue(memoryReader.getCurrentAddress());
+				s = s.substring(0, i);
+				break;
+			}
+		}
+
+		int result = Integer.parseInt(s, base);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("strtol on '%s' returning 0x%X", s, result));
+		}
+
+		return result;
+    }
+
+	@HLEFunction(nid = 0x6A7900E1, version = 150)
+    public int strtoul(@CanBeNull PspString string, @CanBeNull TPointer32 endString, int base) {
+		// Assume same as strtol
+		return strtol(string, endString, base);
     }
 }

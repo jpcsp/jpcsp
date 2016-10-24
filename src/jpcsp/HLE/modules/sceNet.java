@@ -279,7 +279,6 @@ public class sceNet extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x750F705D, version = 150)
     public int sceNetLook_ctype_table(int c) {
     	int ctype = look_ctype_table[c & 0xFF];
@@ -370,8 +369,8 @@ public class sceNet extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2A73ADDC, version = 150)
-    public long sceNetStrtoul(@CanBeNull PspString string, TPointer32 endString, int base) {
-    	return Integer.parseInt(string.getString(), base);
+    public long sceNetStrtoul(@CanBeNull PspString string, @CanBeNull TPointer32 endString, int base) {
+    	return Modules.SysclibForKernelModule.strtoul(string, endString, base);
     }
 
     @HLEFunction(nid = 0xE0A81C7C, version = 150)
@@ -410,5 +409,28 @@ public class sceNet extends HLEModule {
     @HLEFunction(nid = 0x384EFE14, version = 150)
     public int sceNet_lib_384EFE14() {
     	return 0;
+    }
+
+    @HLEFunction(nid = 0x4753D878, version = 150)
+    public int sceNetMemmove(@CanBeNull TPointer dstAddr, TPointer srcAddr, int size) {
+    	return Modules.SysclibForKernelModule.memmove(dstAddr, srcAddr, size);
+    }
+
+    @HLEFunction(nid = 0x8687B5AB, version = 150)
+    public int sceNetVsprintf(CpuState cpu, TPointer buffer, String format, TPointer32 parameters) {
+    	Object[] formatParameters = new Object[10]; // Assume max. 10 parameters
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(parameters.getAddress(), 4 * formatParameters.length, 4);
+    	for (int i = 0; i < formatParameters.length; i++) {
+    		formatParameters[i] = memoryReader.readNext();
+    	}
+
+    	String formattedString = Modules.SysMemUserForUserModule.hleKernelSprintf(cpu, format, formatParameters);
+		Utilities.writeStringZ(buffer.getMemory(), buffer.getAddress(), formattedString);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetVsprintf returning '%s'", formattedString));
+		}
+
+		return formattedString.length();
     }
 }
