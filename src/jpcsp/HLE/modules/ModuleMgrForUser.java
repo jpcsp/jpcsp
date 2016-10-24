@@ -1089,7 +1089,6 @@ public class ModuleMgrForUser extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xD2FBC957, version = 150)
     public int sceKernelGetModuleGPByAddress(int address, TPointer32 gpAddr) {
         SceModule module = Managers.modules.getModuleByAddress(address);
