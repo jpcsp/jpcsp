@@ -129,6 +129,7 @@ public class Modules {
     public static sceNetAdhocTransInt sceNetAdhocTransIntModule = new sceNetAdhocTransInt();
     public static sceUsbstor sceUsbstorModule = new sceUsbstor();
     public static sceIdStorage sceIdStorageModule = new sceIdStorage();
+    public static sceCertLoader sceCertLoaderModule = new sceCertLoader();
 
     public static Logger log = Logger.getLogger("hle");
 

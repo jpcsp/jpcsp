@@ -136,7 +136,7 @@ public class HLEModuleManager {
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
         sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4", "mp4msv" }),
         sceHttp(Modules.sceHttpModule, new String[] { "libhttp", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
-        sceHttps(Modules.sceHttpsModule),
+        sceHttps(Modules.sceHttpsModule, new String[] { "libhttp", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceSsl(Modules.sceSslModule, new String[] { "libssl", "PSP_NET_MODULE_SSL", "PSP_MODULE_NET_SSL" }),
         sceP3da(Modules.sceP3daModule),
         sceGameUpdate(Modules.sceGameUpdateModule),
@@ -179,7 +179,8 @@ public class HLEModuleManager {
         sceMgr_driver(Modules.sceMgr_driverModule),
         sceChnnlsv(Modules.sceChnnlsvModule),
         sceUsbstor(Modules.sceUsbstorModule),
-        sceIdStorage(Modules.sceIdStorageModule);
+        sceIdStorage(Modules.sceIdStorageModule),
+        sceCertLoader(Modules.sceCertLoaderModule, new String[] { "cert_loader" });
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
