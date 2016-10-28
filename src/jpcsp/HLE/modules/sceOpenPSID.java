@@ -16,8 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 
@@ -45,5 +49,188 @@ public class sceOpenPSID extends HLEModule {
         }
 
         return 0;
+    }
+
+    /**
+     * Encrypt the provided data. It will be encrypted using AES.
+     *
+     * @note The used key is provided by the PSP.
+     * 
+     * @param pSrcData Pointer to data to encrypt. The encrypted data will be written 
+     *                 back into this buffer.
+     * @param size The size of the data to encrypt. The size needs to be a multiple of ::KIRK_AES_BLOCK_LEN. \n
+                   Max size: ::SCE_DNAS_USER_DATA_MAX_LEN.
+     *
+     * @return 0 on success, otherwise < 0.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x05D50F41, version = 150)
+    public int sceDdrdbEncrypt(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer srcData, int size) {
+    	return 0;
+    }
+
+    /**
+     * Verify a certificate.
+     *
+     * @param pCert Pointer to the certificate to verify. Certificate length: ::KIRK_CERT_LEN.
+     *
+     * @return 0 on success, otherwise < 0.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x370F456A, version = 150)
+    public int sceDdrdbCertvry(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=184, usage=Usage.in) TPointer cert) {
+    	return 0;
+    }
+
+    /** 
+     * Generate a SHA-1 hash value of the provided data.
+     * 
+     * @param pSrcData Pointer to data to generate the hash for.
+     * @param size The size of the source data. Max size: ::SCE_DNAS_USER_DATA_MAX_LEN.
+     * @param pDigest Pointer to buffer receiving the hash. Size: ::KIRK_SHA1_DIGEST_LEN.
+     *
+     * @return 0 on success, otherwise < 0.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x40CB752A, version = 150)
+    public int sceDdrdbHash(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer srcData, int size, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.out) TPointer digest) {
+    	return 0;
+    }
+
+    /**
+     * Generate a valid signature for the specified data using the specified private key.
+     *
+     * @note The ECDSA algorithm is used to generate a signature.
+     *
+     * @param pPrivKey Pointer to the private key used to generate the signature. \n
+     *                 CONFIRM: The key has to be AES encrypted before.
+     * @param pData Pointer to data a signature has to be computed for. Data length: ::KIRK_ECDSA_SRC_DATA_LEN
+     * @param pSig Pointer to a buffer receiving the signature. Signature length: ::KIRK_ECDSA_SIG_LEN
+     *
+     * @return 0 on success, otherwise < 0.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB24E1391, version = 150)
+    public int sceDdrdbSiggen(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer privKey, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer srcData, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.out) TPointer sig) {
+    	return 0;
+    }
+
+    /**
+     * Decrypt the provided data. The data has to be AES encrypted. 
+     *
+     * @note The used key is provided by the PSP.
+     * 
+     * @param pSrcData Pointer to data to decrypt. The decrypted data will be written \n
+     *                 back into this buffer.
+     * @param size The size of the data to decrypt. The size needs to be a multiple of ::KIRK_AES_BLOCK_LEN. \n
+                   Max size: ::SCE_DNAS_USER_DATA_MAX_LEN.
+     *
+     * @return 0 on success, otherwise < 0.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB33ACB44, version = 150)
+    public int sceDdrdbDecrypt(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer srcData, int size) {
+    	return 0;
+    }
+
+    /**
+     * Generate a ::KIRK_PRN_LEN large pseudorandom number (PRN). 
+     * 
+     * @note The seed is automatically set by the system software.
+     * 
+     * @param pDstData Pointer to buffer receiving the PRN. Size has to be ::KIRK_PRN_LEN.
+     *
+     * @return 0 on success, otherwise < 0.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB8218473, version = 150)
+    public int sceDdrdbPrngen(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.out) TPointer dstData) {
+    	return 0;
+    }
+
+    /**
+     * Verify if the provided signature is valid for the specified data given the public key. 
+     *
+     * @note The ECDSA algorithm is used to verify a signature.
+     *
+     * @param pPubKey The public key used for validating the (data,signature) pair. \n
+     *                Size has to be ::KIRK_ECDSA_PUBLIC_KEY_LEN.
+     * @param pData Pointer to data the signature has to be verified for. \n
+                    Data length: ::KIRK_ECDSA_SRC_DATA_LEN \n
+     * @param pSig Pointer to the signature to verify. Signature length: ::KIRK_ECDSA_SIG_LEN
+     *
+     * @return 0 on success, otherwise < 0.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE27CE4CB, version = 150)
+    public int sceDdrdbSigvry(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer pubKey, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer data, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer sig) {
+    	return 0;
+    }
+
+    /**
+    *
+    * Compute a new elliptic curve point by multiplying the provided private key with the \n
+    * provided base point of the elliptic curve.
+    *
+    * @param pPrivKey Pointer to the private key of a (public,private) key pair usable for ECDSA.
+    *                 
+    * @param pBasePoint Pointer to a base point of the elliptic curve. Point size: ::KIRK_ECDSA_POINT_LEN
+    * @param pNewPoint Pointer to a buffer receiving the new curve point. Buffer size: ::KIRK_ECDSA_POINT_LEN
+    *
+    * @return 0 on success, otherwise < 0.
+    */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEC05300A, version = 150)
+    public int sceDdrdbMul2(TPointer privKey, TPointer basePoint, TPointer newPoint) {
+    	return 0;
+    }
+
+    /**
+     * Generate a new (public,private) key pair to use with ECDSA.
+     *
+     * @param pKeyData Pointer to buffer receiving the computed key pair. \n
+     *                 The first ::KIRK_ECDSA_PRIVATE_KEY_LEN byte will contain the private key. \n
+     *                 The rest of the bytes will contain the public key (elliptic curve) point p = (x,y), \n
+     *                 with the x-value being first. Both coordinates have size ::KIRK_ECDSA_POINT_LEN / 2.
+     *
+     * @return 0 on success, otherwise < 0.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF970D54E, version = 150)
+    public int sceDdrdbMul1(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=60, usage=Usage.out) TPointer keyData) {
+    	return 0;
+    }
+
+    /**
+     * Verify if the provided signature is valid for the specified data. The public key\n
+     * is provided by the system software.
+     *
+     * @note The ECDSA algorithm is used to verify a signature.
+     *
+     * @param pData Pointer to data the signature has to be verified for. \n
+     *              Data length: ::KIRK_ECDSA_SRC_DATA_LEN.
+     * @param pSig Pointer to the signature to verify. Signature length: ::KIRK_ECDSA_SIG_LEN.
+     *
+     * @return 0 on success, otherwise < 0.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF013F8BF, version = 150)
+    public int sceDdrdb_F013F8BF(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer data, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer sig) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8523E178, version = 150)
+    public int sceMlnpsnlAuth1BB(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.in) TPointer unknown2, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=128, usage=Usage.out) TPointer unknown3, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=64, usage=Usage.out) TPointer unknown4) {
+    	unknown3.clear(128);
+    	unknown4.clear(64);
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x6885F392, version = 150)
+    public int  sceMlnpsnlAuth2BB() {
+    	return 0;
     }
 }
