@@ -16,7 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.remote;
 
+import static jpcsp.HLE.modules.sceNpAuth.STATUS_ACCOUNT_PARENTAL_CONTROL_ENABLED;
+import static jpcsp.HLE.modules.sceNpAuth.addTicketParam;
 import static jpcsp.filesystems.umdiso.UmdIsoFile.sectorLength;
+import static jpcsp.util.Utilities.getDefaultPortForProtocol;
 
 import java.awt.AWTException;
 import java.awt.Rectangle;
@@ -33,8 +36,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.Authenticator;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.PasswordAuthentication;
 import java.net.Proxy;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -69,6 +74,9 @@ import jpcsp.MainGUI;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceNpTicket;
+import jpcsp.HLE.kernel.types.SceNpTicket.TicketParam;
+import jpcsp.HLE.modules.sceNp;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.Elf32Header;
@@ -191,6 +199,7 @@ public class HTTPServer {
 					socket.setSoTimeout(1);
 					HTTPSocketHandlerThread handlerThread = new HTTPSocketHandlerThread(descriptor, socket);
 					handlerThread.setName(String.format("HTTP Handler %d/%d", descriptor.getPort(), socket.getPort()));
+					handlerThread.setDaemon(true);
 					handlerThread.start();
 				} catch (SocketTimeoutException e) {
 					// Ignore timeout
@@ -279,6 +288,39 @@ public class HTTPServer {
 			serverThread.start();
 		}
 
+		Authenticator.setDefault(new Authenticator() {
+			@Override
+			protected PasswordAuthentication getPasswordAuthentication() {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("getPasswordAuthentication called for scheme='%s', prompt='%s'", getRequestingScheme(), getRequestingPrompt()));
+				}
+
+				if ("digest".equals(getRequestingScheme())) {
+					return new PasswordAuthentication("c7y-basic01", "A9QTbosh0W0D^{7467l-n_>2Y%JG^v>o".toCharArray());
+				} else if ("c7y-basic".equals(getRequestingPrompt())) {
+					// This is the PSP authentication, but it seems to no longer be accepted...
+					char[] pwd = new char[] {
+						(char) 0x35, (char) 0x03, (char) 0x0f, (char) 0x19, (char) 0x40, (char) 0x16, (char) 0x49, (char) 0x04,
+						(char) 0x1c, (char) 0x35, (char) 0x03, (char) 0x1e, (char) 0x21, (char) 0x48, (char) 0x2d, (char) 0x4e,
+						(char) 0x07, (char) 0x1c, (char) 0x5a, (char) 0x36, (char) 0x0e, (char) 0x3f, (char) 0x0c, (char) 0x18,
+						(char) 0x49, (char) 0x15, (char) 0x4e, (char) 0x21, (char) 0x14, (char) 0x36, (char) 0x1d, (char) 0x16
+					};
+					return new PasswordAuthentication("c7y-basic02", pwd);
+				} else if ("c7y-ranking".equals(getRequestingPrompt())) {
+					// This is the PSP authentication, but it seems to no longer be accepted...
+					char[] pwd = new char[] {
+						(char) 0x21, (char) 0x2D, (char) 0x18, (char) 0x1B, (char) 0x1D, (char) 0x0E, (char) 0x2A, (char) 0x23,
+						(char) 0x04, (char) 0x4C, (char) 0x4B, (char) 0x19, (char) 0x4F, (char) 0x25, (char) 0x26, (char) 0x3F,
+						(char) 0x4B, (char) 0x4D, (char) 0x4C, (char) 0x44, (char) 0x58, (char) 0x3C, (char) 0x31, (char) 0x4C,
+						(char) 0x15, (char) 0x4C, (char) 0x5C, (char) 0x41, (char) 0x32, (char) 0x38, (char) 0x1E, (char) 0x08
+					};
+					return new PasswordAuthentication("c7y-ranking01", pwd);
+				}
+
+				return super.getPasswordAuthentication();
+			}
+		});
+
 		try {
 			captureRobot = new Robot();
 			captureRobot.setAutoDelay(0);
@@ -336,9 +378,14 @@ public class HTTPServer {
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("Received request: '%s', headers: %s", request, requestHeaders));
 						}
-						process(descriptor, requestHeaders, os);
+						boolean keepAlive = process(descriptor, requestHeaders, os);
 						os.flush();
-						break;
+
+						if (keepAlive) {
+							bufferLength = 0;
+						} else {
+							break;
+						}
 					}
 				}
 			} catch (SocketTimeoutException e) {
@@ -425,7 +472,9 @@ public class HTTPServer {
 		return headers;
 	}
 
-	private void doProxy(HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os, String pathValue, int forcedPort) throws IOException {
+	private boolean doProxy(HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os, String pathValue, int forcedPort) throws IOException {
+		boolean keepAlive = false;
+
 		String remoteUrl = getUrl(descriptor, request, pathValue, forcedPort);
 
 		HttpURLConnection connection = (HttpURLConnection) new URL(remoteUrl).openConnection();
@@ -504,6 +553,10 @@ public class HTTPServer {
 					}
 
 					sendResponseHeader(os, key, value);
+
+					if ("connection".equalsIgnoreCase(key) && "keep-alive".equalsIgnoreCase(value)) {
+						keepAlive = true;
+					}
 				}
 			}
 		}
@@ -514,9 +567,12 @@ public class HTTPServer {
 		}
 
 		os.write(buffer, 0, length);
+
+		return keepAlive;
 	}
 
-	private void process(HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os) throws IOException {
+	private boolean process(HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os) throws IOException {
+		boolean keepAlive = false;
 		try {
 			String pathValue = request.get(path);
 			String baseUrl = getBaseUrl(descriptor, request, 0);
@@ -530,10 +586,37 @@ public class HTTPServer {
 				doProxy(descriptor, request, os, pathValue, 443);
 			} else if ("legaldoc.dl.playstation.net".equals(request.get(host))) {
 				doProxy(descriptor, request, os, pathValue, 0);
+//			} else if ("auth.np.ac.playstation.net".equals(request.get(host)) && "/nav/auth".equals(pathValue)) {
+//				sendNpNavAuth(request.get(data), os);
+//			} else if ("getprof.gb.np.community.playstation.net".equals(request.get(host)) && "/basic_view/sec/get_self_profile".equals(pathValue)) {
+//				sendNpGetSelfProfile(request.get(data), os);
 			} else if ("auth.np.ac.playstation.net".equals(request.get(host))) {
 				doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("getprof.gb.np.community.playstation.net".equals(request.get(host)) && ("/basic_view/func/get_avatar_category".equals(pathValue) || "/basic_view/func/get_avatar_list".equals(pathValue))) {
+				doProxy(descriptor, request, os, pathValue, 0);
 			} else if ("getprof.gb.np.community.playstation.net".equals(request.get(host))) {
 				doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("profile.gb.np.community.playstation.net".equals(request.get(host))) {
+				doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("commerce.np.ac.playstation.net".equals(request.get(host))) {
+				doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("account.np.ac.playstation.net".equals(request.get(host))) {
+				doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("mds.np.ac.playstation.net".equals(request.get(host))) {
+				doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("nsx.sec.np.dl.playstation.net".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("nsx-e.sec.np.dl.playstation.net".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("nsx-e.np.dl.playstation.net".equals(request.get(host))) {
+				doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("video.dl.playstation.net".equals(request.get(host))) {
+				doProxy(descriptor, request, os, "/cdn/video/DE/g", 0);
+			} else if ("apollo.dl.playstation.net".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("static-resource.np.community.playstation.net".equals(request.get(host))) {
+				// Keep-alive is required for downloading the avatar static images
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
 			} else if (!processProxyRequestLocally && "nsx.sec.np.dl.playstation.net".equals(request.get(host))) {
 				sendResponseFile(os, rootDirectory + "/psp.xml");
 			} else if ("GET".equals(request.get(method))) {
@@ -585,7 +668,10 @@ public class HTTPServer {
 			}
 		} catch (SocketException e) {
 			// Ignore exception (e.g. Connection reset by peer)
+			keepAlive = false;
 		}
+
+		return keepAlive;
 	}
 
 	private static String guessMimeType(String fileName) {
@@ -1486,17 +1572,6 @@ public class HTTPServer {
 		}
 	}
 
-	private static int getDefaultPortForProtocol(String protocol) {
-		if ("http".equals(protocol)) {
-			return 80;
-		}
-		if ("https".equals(protocol)) {
-			return 443;
-		}
-
-		return -1;
-	}
-
 	private static String getBaseUrl(HTTPServerDescriptor descriptor, HashMap<String, String> request, int forcedPort) {
 		String hostName = request.get(host);
 		int port = forcedPort > 0 ? forcedPort : descriptor.getPort();
@@ -1667,5 +1742,71 @@ public class HTTPServer {
 
 	public int getProxyAddress() {
 		return proxyAddress;
+	}
+
+	public void sendNpNavAuth(String data, OutputStream os) throws IOException {
+		Map<String, String> parameters = parseParameters(data);
+
+		SceNpTicket ticket = new SceNpTicket();
+		ticket.version = 0x00000121;
+		ticket.size = 0xF0;
+		ticket.unknown = 0x3000;
+		ticket.sizeParams = 0xA4;
+		addTicketParam(ticket, "XXXXXXXXXXXXXXXXXXXX", 20);
+		addTicketParam(ticket, 0);
+		long now = System.currentTimeMillis();
+		addTicketParam(ticket, now);
+		addTicketParam(ticket, now + 10 * 60 * 1000); // now + 10 minutes
+		addTicketParam(ticket, new byte[8]);
+		addTicketParam(ticket, TicketParam.PARAM_TYPE_STRING, "DummyOnlineID", 32);
+		addTicketParam(ticket, "gb", 4);
+		addTicketParam(ticket, TicketParam.PARAM_TYPE_STRING, "XX", 4);
+		addTicketParam(ticket, parameters.get("serviceid"), 24);
+		int status = 0;
+		if (Modules.sceNpModule.parentalControl == sceNp.PARENTAL_CONTROL_ENABLED) {
+			status |= STATUS_ACCOUNT_PARENTAL_CONTROL_ENABLED;
+		}
+		status |= (Modules.sceNpModule.userAge & 0x7F) << 24;
+		addTicketParam(ticket, status);
+		addTicketParam(ticket);
+		addTicketParam(ticket);
+		ticket.unknownBytes = new byte[72];
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sendNpNavAuth returning dummy ticket: %s", ticket));
+		}
+		byte[] response = ticket.toByteArray();
+
+		sendOK(os);
+		sendResponseHeader(os, "X-I-5-Status", "OK");
+		sendResponseHeader(os, "X-I-5-Version", "2.1");
+		sendResponseHeader(os, "Content-Length", response.length);
+		sendResponseHeader(os, "Content-Type", "application/x-i-5-ticket");
+		sendEndOfHeaders(os);
+		os.write(response);
+	}
+
+	public void sendNpGetSelfProfile(String data, OutputStream os) throws IOException {
+		String xml = "<profile result=\"00\">";
+		xml += "<jid>DummyOnlineID@a8.gb.np.playstation.net</jid>";
+		xml += "<onlinename upd=\"0\">DummyOnlineID</onlinename>";
+		xml += "<country>gb</country>";
+		xml += "<language1>1</language1>";
+		xml += "<language2 />";
+		xml += "<language3 />";
+		xml += "<aboutme />";
+		xml += "<avatarurl id=\"0\">http://static-resource.np.community.playstation.net/avatar_s/default/DefaultAvatar_s.png</avatarurl>";
+		xml += "<ptlp>0</ptlp>";
+		xml += "</profile>";
+		byte[] response = xml.getBytes();
+
+		sendOK(os);
+		sendResponseHeader(os, "Content-Length", response.length);
+		sendResponseHeader(os, "Content-Type", "text/xml;charset=UTF-8");
+		sendEndOfHeaders(os);
+		os.write(response);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Response: %s", xml));
+		}
 	}
 }
