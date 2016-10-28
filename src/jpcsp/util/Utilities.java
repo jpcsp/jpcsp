@@ -1296,4 +1296,15 @@ public class Utilities {
 			Emulator.log.error(e);
 		}
     }
+
+    public static int getDefaultPortForProtocol(String protocol) {
+		if ("http".equals(protocol)) {
+			return 80;
+		}
+		if ("https".equals(protocol)) {
+			return 443;
+		}
+
+		return -1;
+	}
 }

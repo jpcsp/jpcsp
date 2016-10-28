@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 public class pspParsedUri extends pspAbstractMemoryMappedStructure {
-	public int unknown;
+	public int noSlash;
 	public int schemeAddr;
 	public int userInfoUserNameAddr;
 	public int userInfoPasswordAddr;
@@ -29,7 +29,7 @@ public class pspParsedUri extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
-		unknown = read32();
+		noSlash = read32();
 		schemeAddr = read32();
 		userInfoUserNameAddr = read32();
 		userInfoPasswordAddr = read32();
@@ -43,7 +43,7 @@ public class pspParsedUri extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
-		write32(unknown);
+		write32(noSlash);
 		write32(schemeAddr);
 		write32(userInfoUserNameAddr);
 		write32(userInfoPasswordAddr);
