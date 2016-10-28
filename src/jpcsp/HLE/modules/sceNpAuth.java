@@ -32,6 +32,9 @@ import java.util.Map;
 
 import javax.swing.JOptionPane;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -81,35 +84,35 @@ public class sceNpAuth extends HLEModule {
     	}
     }
 
-    private void addTicketParam(SceNpTicket ticket, int type, String value, int length) {
+    public static void addTicketParam(SceNpTicket ticket, int type, String value, int length) {
     	byte[] stringBytes = value.getBytes(Charset.forName("ASCII"));
     	byte[] bytes = new byte[length];
     	System.arraycopy(stringBytes, 0, bytes, 0, Math.min(length, stringBytes.length));
     	ticket.parameters.add(new TicketParam(type, bytes));
     }
 
-    private void addTicketParam(SceNpTicket ticket, String value, int length) {
+    public static void addTicketParam(SceNpTicket ticket, String value, int length) {
     	addTicketParam(ticket, TicketParam.PARAM_TYPE_STRING_ASCII, value, length);
     }
 
-    private void addTicketParam(SceNpTicket ticket, int value) {
+    public static void addTicketParam(SceNpTicket ticket, int value) {
     	byte bytes[] = new byte[4];
     	Utilities.writeUnaligned32(bytes, 0, Utilities.endianSwap32(value));
     	ticket.parameters.add(new TicketParam(TicketParam.PARAM_TYPE_INT, bytes));
     }
 
-    private void addTicketParam(SceNpTicket ticket, long time) {
+    public static void addTicketParam(SceNpTicket ticket, long time) {
     	byte bytes[] = new byte[8];
     	Utilities.writeUnaligned32(bytes, 0, Utilities.endianSwap32((int) (time >> 32)));
     	Utilities.writeUnaligned32(bytes, 4, Utilities.endianSwap32((int) time));
     	ticket.parameters.add(new TicketParam(TicketParam.PARAM_TYPE_DATE, bytes));
     }
 
-    private void addTicketParam(SceNpTicket ticket, byte[] value) {
+    public static void addTicketParam(SceNpTicket ticket, byte[] value) {
     	ticket.parameters.add(new TicketParam(TicketParam.PARAM_TYPE_UNKNOWN, value));
     }
 
-    private void addTicketParam(SceNpTicket ticket) {
+    public static void addTicketParam(SceNpTicket ticket) {
     	ticket.parameters.add(new TicketParam(TicketParam.PARAM_TYPE_NULL, new byte[0]));
     }
 
@@ -352,7 +355,7 @@ public class sceNpAuth extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5A3CB57A, version = 150)
-    public int sceNpAuthGetTicketParam(TPointer ticketBuffer, int ticketLength, int paramNumber, TPointer buffer) {
+    public int sceNpAuthGetTicketParam(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer ticketBuffer, int ticketLength, int paramNumber, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.out) TPointer buffer) {
     	// This clear is always done, even when an error is returned
     	buffer.clear(256);
 

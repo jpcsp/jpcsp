@@ -20,6 +20,7 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -312,7 +313,7 @@ public class sceNpService extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5B74DE06, version = 150)
-    public int sceNpService_5B74DE06() {
+    public int sceNpService_5B74DE06(PspString onlineId) {
     	return 0;
     }
 

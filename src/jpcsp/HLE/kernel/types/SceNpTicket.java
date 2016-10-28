@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +30,7 @@ public class SceNpTicket extends pspAbstractMemoryMappedStructure {
 	public int version;
 	public int size;
 	public int unknown;
+	public int sizeParams;
 	public List<TicketParam> parameters = new LinkedList<SceNpTicket.TicketParam>();
 	public byte[] unknownBytes;
 
@@ -131,7 +134,8 @@ public class SceNpTicket extends pspAbstractMemoryMappedStructure {
 	protected void read() {
 		version = read32();
 		size = endianSwap32(read32());
-		unknown = read32();
+		unknown = endianSwap16((short) read16());
+		sizeParams = endianSwap16((short) read16());
 
 		parameters.clear();
 		for (int i = 0; i < NUMBER_PARAMETERS; i++) {
@@ -153,7 +157,8 @@ public class SceNpTicket extends pspAbstractMemoryMappedStructure {
 	protected void write() {
 		write32(version);
 		write32(endianSwap32(size));
-		write32(unknown);
+		write16((short) endianSwap16((short) unknown));
+		write16((short) endianSwap16((short) sizeParams));
 
 		for (TicketParam ticketParam : parameters) {
 			write16((short) endianSwap16((short) ticketParam.getType()));
@@ -163,6 +168,27 @@ public class SceNpTicket extends pspAbstractMemoryMappedStructure {
 		}
 
 		write8Array(unknownBytes);
+	}
+
+	public byte[] toByteArray() {
+		byte[] bytes = new byte[sizeof()];
+		ByteBuffer b = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+
+		b.putInt(version);
+		b.putInt(endianSwap32(size));
+		b.putShort((short) endianSwap16((short) unknown));
+		b.putShort((short) endianSwap16((short) sizeParams));
+
+		for (TicketParam ticketParam : parameters) {
+			b.putShort((short) endianSwap16((short) ticketParam.getType()));
+			byte[] value = ticketParam.getBytesValue();
+			b.putShort((short) endianSwap16((short) value.length));
+			b.put(value);
+		}
+
+		b.put(unknownBytes);
+
+		return bytes;
 	}
 
 	@Override

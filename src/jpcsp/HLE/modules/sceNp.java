@@ -16,11 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
@@ -183,7 +187,7 @@ public class sceNp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5FA879D8, version = 150)
-    public int sceNp_5FA879D8() {
+    public int sceNp_5FA879D8(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer unknown1, PspString unknown2, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.out) TPointer unknown3, int unknown4, @CanBeNull TPointer32 unknown5) {
     	return 0;
     }
 
@@ -255,7 +259,7 @@ public class sceNp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC0B3616C, version = 150)
-    public int sceNp_C0B3616C() {
+    public int sceNp_C0B3616C(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.inout) TPointer unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.in) TPointer unknown2) {
     	return 0;
     }
 
