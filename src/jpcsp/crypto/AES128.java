@@ -42,7 +42,7 @@ public class AES128 {
     private static Cipher cipher;
     private static final byte[] iv0 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     // Do not use Bouncy Castle as the default implementation is much faster
-    private static final boolean useBouncyCastle = false;
+    public static final boolean useBouncyCastle = false;
 
     public static void init() {
     	// Run in a background thread as the initialization is taking around 300 milliseconds

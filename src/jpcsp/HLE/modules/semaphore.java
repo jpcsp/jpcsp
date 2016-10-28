@@ -21,6 +21,9 @@ import java.nio.ByteOrder;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -150,7 +153,7 @@ public class semaphore extends HLEModule {
 
 	@HLELogging(level = "info")
     @HLEFunction(nid = 0x4C537C72, version = 150)
-    public int sceUtilsBufferCopyWithRange(@CanBeNull TPointer outAddr, int outSize, @CanBeNull TPointer inAddr, int inSize, int cmd) {
+    public int sceUtilsBufferCopyWithRange(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outAddr, int outSize, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer inAddr, int inSize, int cmd) {
 		int originalInSize = inSize;
 
 		// The input size needs for some KIRK commands to be 16-bytes aligned
@@ -181,7 +184,10 @@ public class semaphore extends HLEModule {
     	if (!preDecrypt(outBytes, outSize, inBytes, originalInSize, cmd)) {
 	    	// Call the KIRK engine to perform the given command
 	    	CryptoEngine crypto = new CryptoEngine();
-	    	crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, outSize, inBuffer, inSize, cmd);
+	    	int result = crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, outSize, inBuffer, inSize, cmd);
+	    	if (result != 0) {
+	    		log.warn(String.format("hleUtilsBufferCopyWithRange cmd=0x%X returned 0x%X", cmd, result));
+	    	}
     	}
 
     	// Write back the whole output buffer to the memory.
