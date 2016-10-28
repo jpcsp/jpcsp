@@ -640,10 +640,10 @@ public class sceNetInet extends HLEModule {
 			this.sendTimeout = sendTimeout;
 		}
 
-		public int getErrorAndClear() {
+		public int getErrorAndClearToSelf() {
 			int value = error;
 			// clear error and errno
-			clearError();
+			clearErrorToSelf();
 
 			return value;
 		}
@@ -670,19 +670,31 @@ public class sceNetInet extends HLEModule {
 			}
 		}
 
-		protected void setError(IOException e) {
+		protected void setError(IOException e, BlockingState blockingState) {
 			setSocketError(e);
-			setErrno(error);
+			setErrno(error, blockingState);
 		}
 
-		protected void setError(int error) {
+		protected void setErrorToSelf(IOException e) {
+			setError(e, null);
+		}
+
+		protected void setError(int error, BlockingState blockingState) {
 			setSocketError(error);
-			setErrno(this.error);
+			setErrno(this.error, blockingState);
 		}
 
-		protected void clearError() {
+		protected void setErrorToSelf(int error) {
+			setError(error, null);
+		}
+
+		protected void clearErrorToSelf() {
+			clearError(null);
+		}
+
+		protected void clearError(BlockingState blockingState) {
 			error = 0;
-			setErrno(0);
+			setErrno(0, blockingState);
 		}
 
 		public int getReceiveBufferSize() {
@@ -772,7 +784,7 @@ public class sceNetInet extends HLEModule {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sceNetInetRecv socket=0x%X returning %d (timeout)", getUid(), blockingState.receivedLength));
 				}
-				setErrno(EAGAIN);
+				setErrno(EAGAIN, blockingState);
 				unblockThread(blockingState, blockingState.receivedLength);
 			} else {
 				int length = recv(blockingState.buffer + blockingState.receivedLength, blockingState.bufferLength - blockingState.receivedLength, blockingState.flags, blockingState);
@@ -794,7 +806,7 @@ public class sceNetInet extends HLEModule {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sceNetInetSend socket=0x%X returning %d (timeout)", getUid(), blockingState.sentLength));
 				}
-				setErrno(EAGAIN);
+				setErrno(EAGAIN, blockingState);
 				unblockThread(blockingState, blockingState.sentLength);
 			} else {
 				int length = send(blockingState.buffer + blockingState.sentLength, blockingState.bufferLength - blockingState.sentLength, blockingState.flags, blockingState);
@@ -816,7 +828,7 @@ public class sceNetInet extends HLEModule {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sceNetInetSendto socket=0x%X returning %d (timeout)", getUid(), blockingState.sentLength));
 				}
-				setErrno(EAGAIN);
+				setErrno(EAGAIN, blockingState);
 				unblockThread(blockingState, blockingState.sentLength);
 			} else {
 				int length = sendto(blockingState.buffer + blockingState.sentLength, blockingState.bufferLength - blockingState.sentLength, blockingState.flags, blockingState.toAddr, blockingState);
@@ -838,7 +850,7 @@ public class sceNetInet extends HLEModule {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sceNetInetRecvfrom socket=0x%X returning %d (timeout)", getUid(), blockingState.receivedLength));
 				}
-				setErrno(EAGAIN);
+				setErrno(EAGAIN, blockingState);
 				unblockThread(blockingState, blockingState.receivedLength);
 			} else {
 				int length = recvfrom(blockingState.buffer + blockingState.receivedLength, blockingState.bufferLength - blockingState.receivedLength, blockingState.flags, blockingState.fromAddr, blockingState);
@@ -976,12 +988,12 @@ public class sceNetInet extends HLEModule {
 				// On non-blocking, the connect might still be in progress
 				if (!finishConnect()) {
 					// Connect already in progress
-					setErrno(EALREADY);
+					setErrnoToSelf(EALREADY);
 					return -1;
 				}
 				if (socketChannel.isConnected()) {
 					// Already connected
-					setErrno(EISCONN);
+					setErrnoToSelf(EISCONN);
 					return -1;
 				}
 
@@ -999,21 +1011,22 @@ public class sceNetInet extends HLEModule {
 					}
 				} else if (!connected) {
 					// non-blocking mode: return EINPROGRESS
-					setErrno(EINPROGRESS);
+					setErrnoToSelf(EINPROGRESS);
 					return -1;
 				}
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setErrorToSelf(e);
 				return -1;
 			}
 
-			clearError();
+			clearErrorToSelf();
 			return 0;
 		}
 
 		@Override
 		public int bind(pspNetSockAddrInternet addr) {
+			BlockingState blockingState = null;
 			try {
 				openChannel();
 				if (isServerSocket) {
@@ -1024,11 +1037,11 @@ public class sceNetInet extends HLEModule {
 				}
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setError(e, blockingState);
 				return -1;
 			}
 
-			clearError();
+			clearError(blockingState);
 			return 0;
 		}
 
@@ -1037,7 +1050,7 @@ public class sceNetInet extends HLEModule {
 			try {
 				// On non-blocking, the connect might still be in progress
 				if (!finishConnect()) {
-					setErrno(EAGAIN);
+					setErrno(EAGAIN, blockingState);
 					return -1;
 				}
 
@@ -1054,17 +1067,17 @@ public class sceNetInet extends HLEModule {
 
 				// end of stream
 				if (length < 0) {
-					clearError();
+					clearError(blockingState);
 					return 0;
 				}
 
 				// Nothing received on a non-blocking stream, return EAGAIN in errno
 				if (length == 0 && !isBlocking(flags)) {
 					if (bufferLength == 0) {
-						clearError();
+						clearError(blockingState);
 						return 0;
 					}
-					setErrno(EAGAIN);
+					setErrno(EAGAIN, blockingState);
 					return -1;
 				}
 
@@ -1086,11 +1099,11 @@ public class sceNetInet extends HLEModule {
 					}
 				}
 
-				clearError();
+				clearError(blockingState);
 				return length;
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setError(e, blockingState);
 				return -1;
 			}
 		}
@@ -1100,7 +1113,7 @@ public class sceNetInet extends HLEModule {
 			try {
 				// On non-blocking, the connect might still be in progress
 				if (!finishConnect()) {
-					setError(ENOTCONN);
+					setError(ENOTCONN, blockingState);
 					return -1;
 				}
 
@@ -1112,7 +1125,7 @@ public class sceNetInet extends HLEModule {
 
 				// Nothing sent on a non-blocking stream, return EAGAIN in errno
 				if (length == 0 && !isBlocking(flags)) {
-					setErrno(EAGAIN);
+					setErrno(EAGAIN, blockingState);
 					return -1;
 				}
 
@@ -1134,24 +1147,26 @@ public class sceNetInet extends HLEModule {
 					}
 				}
 
-				clearError();
+				clearError(blockingState);
 				return length;
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setError(e, blockingState);
 				return -1;
 			}
 		}
 
 		@Override
 		public int close() {
+			BlockingState blockingState = null;
+
 			if (socketChannel != null) {
 				try {
 					socketChannel.close();
 					socketChannel = null;
 				} catch (IOException e) {
 					log.error(e);
-					setError(e);
+					setError(e, blockingState);
 					return -1;
 				}
 			}
@@ -1162,26 +1177,26 @@ public class sceNetInet extends HLEModule {
 					serverSocketChannel = null;
 				} catch (IOException e) {
 					log.error(e);
-					setError(e);
+					setError(e, blockingState);
 					return -1;
 				}
 			}
 
-			clearError();
+			clearError(blockingState);
 			return 0;
 		}
 
 		@Override
 		public int recvfrom(int buffer, int bufferLength, int flags, pspNetSockAddrInternet fromAddr, BlockingReceiveFromState blockingState) {
 			log.warn("sceNetInetRecvfrom not supported on stream socket");
-			setError(-1);
+			setError(-1, blockingState);
 			return -1;
 		}
 
 		@Override
 		public int sendto(int buffer, int bufferLength, int flags, pspNetSockAddrInternet toAddr, BlockingSendToState blockingState) {
 			log.warn("sceNetInetSendto not supported on stream socket");
-			setError(-1);
+			setError(-1, blockingState);
 			return -1;
 		}
 
@@ -1228,7 +1243,7 @@ public class sceNetInet extends HLEModule {
 				try {
 					socketChannel.socket().setReceiveBufferSize(receiveBufferSize);
 				} catch (SocketException e) {
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
@@ -1243,7 +1258,7 @@ public class sceNetInet extends HLEModule {
 				try {
 					socketChannel.socket().setSendBufferSize(sendBufferSize);
 				} catch (SocketException e) {
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
@@ -1283,7 +1298,7 @@ public class sceNetInet extends HLEModule {
 					socketChannel.socket().setKeepAlive(keepAlive);
 				} catch (SocketException e) {
 					log.error(e);
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
@@ -1299,7 +1314,7 @@ public class sceNetInet extends HLEModule {
 					socketChannel.socket().setSoLinger(enabled, linger);
 				} catch (SocketException e) {
 					log.error(e);
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
@@ -1315,7 +1330,7 @@ public class sceNetInet extends HLEModule {
 					socketChannel.socket().setReuseAddress(reuseAddress);
 				} catch (SocketException e) {
 					log.error(e);
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
@@ -1331,7 +1346,7 @@ public class sceNetInet extends HLEModule {
 					socketChannel.socket().setTcpNoDelay(tcpNoDelay);
 				} catch (SocketException e) {
 					log.error(e);
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
@@ -1357,7 +1372,7 @@ public class sceNetInet extends HLEModule {
 					}
 				} catch (IOException e) {
 					log.error(e);
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
@@ -1374,7 +1389,7 @@ public class sceNetInet extends HLEModule {
 				bindChannel();
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setErrorToSelf(e);
 				return -1;
 			}
 
@@ -1399,7 +1414,7 @@ public class sceNetInet extends HLEModule {
 				socketChannel = serverSocketChannel.accept();
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setError(e, blockingState);
 				return -1;
 			}
 
@@ -1412,7 +1427,7 @@ public class sceNetInet extends HLEModule {
 					return -1;
 				}
 
-				setErrno(EWOULDBLOCK);
+				setErrno(EWOULDBLOCK, blockingState);
 				return -1;
 			}
 
@@ -1469,11 +1484,11 @@ public class sceNetInet extends HLEModule {
 				setRemoteAddr(addr);
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setErrorToSelf(e);
 				return -1;
 			}
 
-			clearError();
+			clearErrorToSelf();
 			return 0;
 		}
 
@@ -1484,11 +1499,11 @@ public class sceNetInet extends HLEModule {
 				datagramChannel.socket().bind(getSocketAddress(addr));
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setErrorToSelf(e);
 				return -1;
 			}
 
-			clearError();
+			clearErrorToSelf();
 			return 0;
 		}
 
@@ -1500,12 +1515,12 @@ public class sceNetInet extends HLEModule {
 					datagramChannel = null;
 				} catch (IOException e) {
 					log.error(e);
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
 
-			clearError();
+			clearErrorToSelf();
 			return 0;
 		}
 
@@ -1527,17 +1542,17 @@ public class sceNetInet extends HLEModule {
 
 				if (length < 0) {
 					// end of stream
-					clearError();
+					clearError(blockingState);
 					return 0;
 				}
 
 				// Nothing received on a non-blocking stream, return EAGAIN in errno
 				if (length == 0 && !isBlocking(flags)) {
 					if (bufferLength == 0) {
-						clearError();
+						clearError(blockingState);
 						return 0;
 					}
-					setErrno(EAGAIN);
+					setErrno(EAGAIN, blockingState);
 					return -1;
 				}
 
@@ -1559,11 +1574,11 @@ public class sceNetInet extends HLEModule {
 					}
 				}
 
-				clearError();
+				clearError(blockingState);
 				return length;
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setError(e, blockingState);
 				return -1;
 			}
 		}
@@ -1571,7 +1586,7 @@ public class sceNetInet extends HLEModule {
 		@Override
 		public int send(int buffer, int bufferLength, int flags, BlockingSendState blockingState) {
 			log.warn("sceNetInetSend not supported on datagram socket");
-			setError(-1);
+			setError(-1, blockingState);
 			return -1;
 		}
 
@@ -1594,7 +1609,7 @@ public class sceNetInet extends HLEModule {
 				if (socketAddress == null) {
 					// Nothing received on a non-blocking datagram, return EAGAIN in errno
 					if (!isBlocking(flags)) {
-						setErrno(EAGAIN);
+						setErrno(EAGAIN, blockingState);
 						return -1;
 					}
 
@@ -1612,11 +1627,11 @@ public class sceNetInet extends HLEModule {
 					fromAddr.write(Memory.getInstance());
 				}
 
-				clearError();
+				clearError(blockingState);
 				return length;
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setError(e, blockingState);
 				return -1;
 			}
 		}
@@ -1634,7 +1649,7 @@ public class sceNetInet extends HLEModule {
 
 				// Nothing sent on a non-blocking stream, return EAGAIN in errno
 				if (length == 0 && !isBlocking(flags)) {
-					setErrno(EAGAIN);
+					setErrno(EAGAIN, blockingState);
 					return -1;
 				}
 
@@ -1656,11 +1671,11 @@ public class sceNetInet extends HLEModule {
 					}
 				}
 
-				clearError();
+				clearError(blockingState);
 				return length;
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setError(e, blockingState);
 				return -1;
 			}
 		}
@@ -1673,11 +1688,11 @@ public class sceNetInet extends HLEModule {
 				datagramChannel.socket().setBroadcast(broadcast);
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setErrorToSelf(e);
 				return -1;
 			}
 
-			clearError();
+			clearErrorToSelf();
 			return 0;
 		}
 
@@ -1698,7 +1713,7 @@ public class sceNetInet extends HLEModule {
 				try {
 					datagramChannel.socket().setReceiveBufferSize(receiveBufferSize);
 				} catch (SocketException e) {
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
@@ -1713,7 +1728,7 @@ public class sceNetInet extends HLEModule {
 				try {
 					datagramChannel.socket().setSendBufferSize(sendBufferSize);
 				} catch (SocketException e) {
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
@@ -1753,7 +1768,7 @@ public class sceNetInet extends HLEModule {
 					datagramChannel.socket().setReuseAddress(reuseAddress);
 				} catch (SocketException e) {
 					log.error(e);
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				}
 			}
@@ -1839,11 +1854,11 @@ public class sceNetInet extends HLEModule {
 				return -1;
 			} catch (UnknownHostException e) {
 				log.error(e);
-				setError(e);
+				setErrorToSelf(e);
 				return -1;
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setErrorToSelf(e);
 				return -1;
 			}
 
@@ -1857,7 +1872,7 @@ public class sceNetInet extends HLEModule {
 					rawChannel.close();
 				} catch (IOException e) {
 					log.error(e);
-					setError(e);
+					setErrorToSelf(e);
 					return -1;
 				} finally {
 					rawChannel = null;
@@ -1926,7 +1941,7 @@ public class sceNetInet extends HLEModule {
 				if (!rawChannel.socket().isSelectedForRead()) {
 					if (!isBlocking(flags)) {
 						// Nothing received on a non-blocking stream, return EAGAIN in errno
-						setErrno(EAGAIN);
+						setErrno(EAGAIN, blockingState);
 						return -1;
 					}
 
@@ -1962,11 +1977,11 @@ public class sceNetInet extends HLEModule {
 				return length;
 			} catch (InterruptedIOException e) {
 				log.error(e);
-				setError(e);
+				setError(e, blockingState);
 				return -1;
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setError(e, blockingState);
 				return -1;
 			}
 		}
@@ -1988,7 +2003,7 @@ public class sceNetInet extends HLEModule {
 				if (!rawChannel.socket().isSelectedForWrite()) {
 					if (!isBlocking(flags)) {
 						// Nothing sent on a non-blocking stream, return EAGAIN in errno
-						setErrno(EAGAIN);
+						setErrno(EAGAIN, blockingState);
 						return -1;
 					}
 
@@ -2019,7 +2034,7 @@ public class sceNetInet extends HLEModule {
 				return -1;
 			} catch (IOException e) {
 				log.error(e);
-				setError(e);
+				setError(e, blockingState);
 				return -1;
 			}
 		}
@@ -2101,8 +2116,20 @@ public class sceNetInet extends HLEModule {
 	 *
 	 * @param errno
 	 */
-	public static void setErrno(int errno) {
-		Modules.ThreadManForUserModule.getCurrentThread().errno = errno;
+	public static void setErrnoToSelf(int errno) {
+		setErrno(errno, Modules.ThreadManForUserModule.getCurrentThread());
+	}
+
+	private static void setErrno(int errno, SceKernelThreadInfo thread) {
+		thread.errno = errno;
+	}
+
+	private static void setErrno(int errno, BlockingState blockingState) {
+		if (blockingState == null) {
+			setErrnoToSelf(errno);
+		} else {
+			setErrno(errno, Modules.ThreadManForUserModule.getThreadById(blockingState.threadId));
+		}
 	}
 
 	/**
@@ -2736,7 +2763,7 @@ public class sceNetInet extends HLEModule {
 		pspInetSocket inetSocket = sockets.get(socket);
 
 		if (optionName == SO_ERROR && optionLength >= 4) {
-			optionValue.setValue32(inetSocket.getErrorAndClear());
+			optionValue.setValue32(inetSocket.getErrorAndClearToSelf());
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("sceNetInetGetsockopt SO_ERROR returning %d", optionValue.getValue32()));
 			}
@@ -2920,14 +2947,14 @@ public class sceNetInet extends HLEModule {
 
 			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
 			thread.cpuContext._v0 = 0; // This will be overwritten by the execution of the blockingState
-			setErrno(0);
+			setErrno(0, blockingState);
 
 			// Check if there are ready operations, otherwise, block the thread
 			blockingState.execute();
 			result = thread.cpuContext._v0;
 		} catch (IOException e) {
 			log.error("sceNetInetPoll", e);
-			setErrno(-1);
+			setErrnoToSelf(-1);
 			return -1;
 		}
 
@@ -3012,7 +3039,7 @@ public class sceNetInet extends HLEModule {
 
 			BlockingSelectState blockingState = new BlockingSelectState(selector, rawSelector, numberSockets, readSocketsAddr, writeSocketsAddr, outOfBandSocketsAddr, timeoutUsec, count);
 
-			setErrno(0);
+			setErrno(0, blockingState);
 			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
 			thread.cpuContext._v0 = 0; // This will be overwritten by the execution of the blockingState
 
@@ -3021,7 +3048,7 @@ public class sceNetInet extends HLEModule {
 			result = thread.cpuContext._v0;
 		} catch (IOException e) {
 			log.error(e);
-			setErrno(-1);
+			setErrnoToSelf(-1);
 			return -1;
 		}
 
