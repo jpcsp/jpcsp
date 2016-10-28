@@ -32,6 +32,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.MemoryChunk;
 import jpcsp.HLE.kernel.types.MemoryChunkList;
+import jpcsp.HLE.kernel.types.SceKernelGameInfo;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Model;
 
@@ -41,6 +42,9 @@ public class SysMemForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("SysMemForKernel");
     protected HashMap<Integer, HeapInformation> heaps;
     private String npEnv;
+    private int dnas;
+    private SysMemInfo gameInfoMem;
+    private SceKernelGameInfo gameInfo;
 
     protected static class HeapInformation {
     	private static final String uidPurpose = "SysMemForKernel-Heap";
@@ -112,6 +116,9 @@ public class SysMemForKernel extends HLEModule {
 	public void start() {
 		heaps = new HashMap<Integer, SysMemForKernel.HeapInformation>();
 		npEnv = "np"; // Used in URLs to connect to the playstation sites
+		dnas = 0;
+		gameInfoMem = null;
+		gameInfo = new SceKernelGameInfo();
 
 		super.start();
 	}
@@ -259,5 +266,31 @@ public class SysMemForKernel extends HLEModule {
     @HLEFunction(nid = 0x807179E7, version = 150)
     public int sceKernelSetParamSfo(PspString discId, int unknown1, int unknown2, PspString unknown3, int unknown4, int unknown5, PspString pspVersion) {
     	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBFD53FB7, version = 150)
+    public int sceKernelGetDNAS() {
+    	return dnas;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x982A4779, version = 150)
+    public int sceKernelSetDNAS(int dnas) {
+    	this.dnas = dnas;
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEF29061C, version = 150)
+    public int sceKernelGetGameInfo() {
+    	// Has no parameters
+    	if (gameInfoMem == null) {
+    		gameInfoMem = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "SceKernelGameInfo", SysMemUserForUser.PSP_SMEM_Low, SceKernelGameInfo.SIZEOF, 0);
+    	}
+    	gameInfo.write(Memory.getInstance(), gameInfoMem.addr);
+
+    	return gameInfoMem.addr;
     }
 }
