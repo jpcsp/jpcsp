@@ -130,6 +130,11 @@ public class Modules {
     public static sceUsbstor sceUsbstorModule = new sceUsbstor();
     public static sceIdStorage sceIdStorageModule = new sceIdStorage();
     public static sceCertLoader sceCertLoaderModule = new sceCertLoader();
+    public static sceDNAS sceDNASModule = new sceDNAS();
+    public static sceDNASCore sceDNASCoreModule = new sceDNASCore();
+    public static sceMcctrl sceMcctrlModule = new sceMcctrl();
+    public static sceNpInstall sceNpInstallModule = new sceNpInstall();
+    public static sceNpCamp sceNpCampModule = new sceNpCamp();
 
     public static Logger log = Logger.getLogger("hle");
 

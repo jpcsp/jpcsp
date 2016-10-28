@@ -132,6 +132,8 @@ public class HLEModuleManager {
         sceNpCommerce2Store(Modules.sceNpCommerce2StoreModule, new String[] { "np_commerce2_store" }),
         sceNpCommerce2RegCam(Modules.sceNpCommerce2RegCamModule, new String[] { "np_commerce2_regcam" }),
         sceNpMatching2(Modules.sceNpMatching2Module, new String[] { "np_matching2", "PSP_MODULE_NP_MATCHING2" }),
+        sceNpInstall(Modules.sceNpInstallModule, new String[] { "np_inst" }),
+        sceNpCamp(Modules.sceNpCampModule, new String[] { "np_campaign" }),
         scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM" }),
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
         sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4", "mp4msv" }),
@@ -180,7 +182,10 @@ public class HLEModuleManager {
         sceChnnlsv(Modules.sceChnnlsvModule),
         sceUsbstor(Modules.sceUsbstorModule),
         sceIdStorage(Modules.sceIdStorageModule),
-        sceCertLoader(Modules.sceCertLoaderModule, new String[] { "cert_loader" });
+        sceCertLoader(Modules.sceCertLoaderModule, new String[] { "cert_loader" }),
+        sceDNAS(Modules.sceDNASModule, new String[] { "libdnas" }),
+        sceDNASCore(Modules.sceDNASCoreModule, new String[] { "libdnas_core" }),
+        sceMcctrl(Modules.sceMcctrlModule, new String[] { "mcctrl" });
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
