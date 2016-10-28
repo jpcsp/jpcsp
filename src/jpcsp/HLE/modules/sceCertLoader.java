@@ -30,8 +30,10 @@ public class sceCertLoader extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDD629A24, version = 150)
-    public int sceLoadCertFromFlash(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5, @CanBeNull TPointer32 unknown6) {
-    	unknown6.setValue(0);
+    public int sceLoadCertFromFlash(int unknown1, int unknown2, @CanBeNull TPointer32 unknown3, int unknown4, int unknown5, @CanBeNull TPointer32 unknown6) {
+    	unknown3.setValue(0);
+    	unknown6.setValue(7100);
+
     	return 0;
     }
 }
