@@ -1504,6 +1504,10 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     }
 
     public void loadFile(File file) {
+    	loadFile(file, false);
+    }
+
+    public void loadFile(File file, boolean isInternal) {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         Model.setModel(Settings.getInstance().readInt("emu.model"));
 
@@ -1547,23 +1551,31 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             }
             raf.close();
 
-            PSF psf = module.psf;
-            String title;
-            String discId = State.DISCID_UNKNOWN_FILE;
             boolean isHomebrew;
-            if (psf != null) {
-                title = psf.getPrintableString("TITLE");
-                discId = psf.getString("DISC_ID");
-                if (discId == null) {
-                    discId = State.DISCID_UNKNOWN_FILE;
-                }
-                isHomebrew = psf.isLikelyHomebrew();
+            if (isInternal) {
+            	isHomebrew = false;
             } else {
-                title = file.getParentFile().getName();
-                isHomebrew = true; // missing psf, assume homebrew
+	            PSF psf = module.psf;
+	            String title;
+	            String discId = State.DISCID_UNKNOWN_FILE;
+	            if (psf != null) {
+	                title = psf.getPrintableString("TITLE");
+	                discId = psf.getString("DISC_ID");
+	                if (discId == null) {
+	                    discId = State.DISCID_UNKNOWN_FILE;
+	                }
+	                isHomebrew = psf.isLikelyHomebrew();
+	            } else {
+	                title = file.getParentFile().getName();
+	                isHomebrew = true; // missing psf, assume homebrew
+	            }
+	            setTitle(MetaInformation.FULL_NAME + " - " + title);
+	            addRecentFile(file, title);
+
+	            RuntimeContext.setIsHomebrew(isHomebrew);
+	            State.discId = discId;
+	            State.title = title;
             }
-            setTitle(MetaInformation.FULL_NAME + " - " + title);
-            addRecentFile(file, title);
 
             // Strip off absolute file path if the file is inside our ms0 directory
             String filepath = file.getParent();
@@ -1576,11 +1588,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             Modules.IoFileMgrForUserModule.setIsoReader(null);
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
 
-            RuntimeContext.setIsHomebrew(isHomebrew);
-            State.discId = discId;
-            State.title = title;
-
-            if (!isHomebrew) {
+            if (!isHomebrew && !isInternal) {
                 Settings.getInstance().loadPatchSettings();
             }
             logConfigurationSettings();
@@ -2854,15 +2862,17 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             } else if (args[i].equals("--ProOnline")) {
                 ProOnlineNetworkAdapter.setEnabled(true);
             } else if (args[i].equals("--vsh")) {
+	            setTitle(MetaInformation.FULL_NAME + " - VSH");
                 Modules.sceDisplayModule.setCalledFromCommandLine();
                 HTTPServer.processProxyRequestLocally = true;
-            	loadFile(new File("flash0/kd/mesg_led_01g.prx"));
+            	loadFile(new File("flash0/kd/mesg_led_01g.prx"), true);
 
             	ModuleMgrForUser moduleMgr = Modules.ModuleMgrForUserModule;
 
             	// Use increasing start thread priorities to enforce the start order
             	int startPriority = 0x11;
 //            	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/registry.prx", startPriority++);
+//            	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/openpsid.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/vshbridge.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/paf.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/common_gui.prx", startPriority++);
