@@ -336,7 +336,7 @@ public class sceNet extends HLEModule {
     }
 
     @HLEFunction(nid = 0xB9085A96, version = 150)
-    public int sceNetStrncasecmp(@CanBeNull TPointer src1Addr, @CanBeNull TPointer src2Addr, int size) {
+    public int sceNetStrncasecmp(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextNextParameter, usage=Usage.in) TPointer src1Addr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer src2Addr, int size) {
     	if (src1Addr.isNull() || src2Addr.isNull()) {
     		if (src1Addr.getAddress() == src2Addr.getAddress()) {
     			return 0;
