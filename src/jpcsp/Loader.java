@@ -1583,10 +1583,24 @@ public class Loader {
     		patch(mem, module, 0x00003A60, 0x240701BB, 0x24070050); // replace port 443 with 80
     	}
     	if ("sceNpCore".equals(module.modname)) {
-    		patchRemoveStringChar(mem, module, 0x00000D50, 's'); // replace "https" with "http"
+    		patchRemoveStringChar(mem, module, 0x00000D50, 's'); // replace "https" with "http" in "https://auth.%s.ac.playstation.net/nav/auth"
     	}
     	if ("sceNpService".equals(module.modname)) {
-    		patch(mem, module, 0x0001075C, 0x00000073, 0x00000000); // replace "https" with "http"
+    		patch(mem, module, 0x0001075C, 0x00000073, 0x00000000); // replace "https" with "http" for "https://getprof.%s.np.community.playstation.net/basic_view/sec/get_self_profile"
+    	}
+    	if ("sceVshNpInstaller_Module".equals(module.modname)) {
+    		patchRemoveStringChar(mem, module, 0x00016F90, 's'); // replace "https" with "http" in "https://commerce.%s.ac.playstation.net/cap.m"
+    		patchRemoveStringChar(mem, module, 0x00016FC0, 's'); // replace "https" with "http" in "https://commerce.%s.ac.playstation.net/cdp.m"
+    		patchRemoveStringChar(mem, module, 0x00016FF0, 's'); // replace "https" with "http" in "https://commerce.%s.ac.playstation.net/kdp.m"
+    		patchRemoveStringChar(mem, module, 0x00017020, 's'); // replace "https" with "http" in "https://account.%s.ac.playstation.net/ecomm/ingame/startDownloadDRM"
+    		patchRemoveStringChar(mem, module, 0x00017064, 's'); // replace "https" with "http" in "https://account.%s.ac.playstation.net/ecomm/ingame/finishDownloadDRM"
+    	}
+    	if ("marlindownloader".equals(module.modname)) {
+    		patchRemoveStringChar(mem, module, 0x000046C8, 's'); // replace "https" with "http" in "https://mds.%s.ac.playstation.net/"
+    	}
+    	if ("sceVshStoreBrowser_Module".equals(module.modname)) {
+    		patchRemoveStringChar(mem, module, 0x0005A244, 's'); // replace "https" with "http" in "https://nsx-e.sec.%s.dl.playstation.net/nsx/sec/..."
+    		patchRemoveStringChar(mem, module, 0x0005A2D8, 's'); // replace "https" with "http" in "https://nsx.sec.%s.dl.playstation.net/nsx/sec/..."
     	}
     }
 
