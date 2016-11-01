@@ -90,11 +90,4 @@ public class sceDNAS extends HLEModule {
 
     	return 0;
     }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x2B6C67EA, version = 150)
-    public int sceDNASCoreCheckGameInfoFlag() {
-    	// Has no parameters
-    	return 0;
-    }
 }
