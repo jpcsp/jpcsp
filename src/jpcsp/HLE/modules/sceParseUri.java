@@ -112,10 +112,15 @@ public class sceParseUri extends HLEModule {
 			return 0;
 		}
 
+		String urlString = sceHttp.patchUrl(url.getString());
+		if (!urlString.equals(url.getString())) {
+			log.info(String.format("sceUriParse patched URL '%s' into '%s'", url.getString(), urlString));
+		}
+
 		// Parse the URL into URI components
 		URI uri;
 		try {
-			uri = new URI(url.getString());
+			uri = new URI(urlString);
 		} catch (URISyntaxException e) {
 			log.error("parsedUriArea", e);
 			return -1;
@@ -136,7 +141,7 @@ public class sceParseUri extends HLEModule {
 		pspParsedUri parsedUri = new pspParsedUri();
 		int offset = 0;
 
-		if (uri.getAuthority() != null && uri.getAuthority().startsWith("//")) {
+		if (uri.getSchemeSpecificPart() != null && uri.getSchemeSpecificPart().startsWith("//")) {
 			parsedUri.noSlash = 0;
 		} else {
 			parsedUri.noSlash = 1;
@@ -163,6 +168,8 @@ public class sceParseUri extends HLEModule {
 
 		parsedUri.fragmentAddr = workArea.getAddress() + offset;
 		offset = addString(workArea, workAreaSize, offset, uri.getFragment());
+
+		parsedUri.port = uri.getPort() < 0 ? 0 : uri.getPort();
 
 		workAreaSizeAddr.setValue(offset);
 		parsedUri.write(parsedUriArea);

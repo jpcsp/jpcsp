@@ -463,10 +463,22 @@ public class sceHttp extends HLEModule {
 		    isSameAddress("nsx.sec.np.dl.playstation.net", sockAddrInternet) ||
 		    isSameAddress("nsx-e.sec.np.dl.playstation.net", sockAddrInternet) ||
 		    isSameAddress("video.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("apollo.dl.playstation.net", sockAddrInternet)) {
+		    isSameAddress("apollo.dl.playstation.net", sockAddrInternet) ||
+		    isSameAddress("poseidon.dl.playstation.net", sockAddrInternet)) {
 			sockAddrInternet.sin_addr = HTTPServer.getInstance().getProxyAddress();
 			sockAddrInternet.sin_port = HTTPServer.getInstance().getProxyPort();
 		}
+	}
+
+	public static String patchUrl(String url) {
+		if (url != null) {
+			if (url.startsWith("https://native.np.ac.playstation.net")) {
+				// Replace https with http
+				url = "http" + url.substring(5);
+			}
+		}
+
+		return url;
 	}
 
 	protected HttpRequest getHttpRequest(int requestId) {

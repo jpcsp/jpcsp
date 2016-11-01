@@ -504,16 +504,17 @@ public class HTTPServer {
 
 		byte[] buffer = new byte[100000];
 		int length = 0;
+		boolean endOfInputReached = false;
+		InputStream in = connection.getInputStream();
 		try {
-			InputStream in = connection.getInputStream();
-			while (true) {
+			while (length < buffer.length) {
 				int l = in.read(buffer, length, buffer.length - length);
 				if (l < 0) {
+					endOfInputReached = true;
 					break;
 				}
 				length += l;
 			}
-			in.close();
 		} catch (IOException e) {
 			log.debug("doProxy", e);
 		}
@@ -568,6 +569,24 @@ public class HTTPServer {
 
 		os.write(buffer, 0, length);
 
+		while (!endOfInputReached) {
+			length = 0;
+			try {
+				while (length < buffer.length) {
+					int l = in.read(buffer, length, buffer.length - length);
+					if (l < 0) {
+						endOfInputReached = true;
+						break;
+					}
+					length += l;
+				}
+				os.write(buffer, 0, length);
+			} catch (IOException e) {
+				log.debug("doProxy", e);
+			}
+		}
+		in.close();
+
 		return keepAlive;
 	}
 
@@ -613,6 +632,8 @@ public class HTTPServer {
 			} else if ("video.dl.playstation.net".equals(request.get(host))) {
 				doProxy(descriptor, request, os, "/cdn/video/DE/g", 0);
 			} else if ("apollo.dl.playstation.net".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("poseidon.dl.playstation.net".equals(request.get(host))) {
 				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
 			} else if ("static-resource.np.community.playstation.net".equals(request.get(host))) {
 				// Keep-alive is required for downloading the avatar static images
