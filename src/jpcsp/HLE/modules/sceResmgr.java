@@ -18,21 +18,15 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.TPointer;
-import jpcsp.HLE.TPointer32;
-import jpcsp.util.Utilities;
 
 public class sceResmgr extends HLEModule {
     public static Logger log = Modules.getLogger("sceResmgr");
 
 //    @HLEUnimplemented
-//    @HLEFunction(nid = 0x9DC14891, version = 150)
-//    public int sceResmgr_9DC14891(TPointer buffer, int bufferSize, TPointer32 resultAddr) {
-//    	log.info(String.format("sceResmgr_9DC14891 buffer: %s", Utilities.getMemoryDump(buffer.getAddress(), bufferSize)));
+//    @HLEFunction(nid = 0x9DC14891, version = 990)
+//    public int sceResmgr_9DC14891(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultAddr) {
 //    	resultAddr.setValue(0);
 //
 //    	return 0;

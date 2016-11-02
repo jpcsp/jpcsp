@@ -205,7 +205,7 @@ public class sceNp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x66B86876, version = 150)
-    public int sceNp_66B86876() {
+    public int sceNp_66B86876(int unknown1, int unknown2, int unknown3, int unknown4) {
     	return 0;
     }
 
@@ -253,7 +253,7 @@ public class sceNp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xB819A0C8, version = 150)
-    public int sceNp_B819A0C8() {
+    public int sceNp_B819A0C8(TPointer unknown1, TPointer unknown2, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.out) TPointer unknown3) {
     	return 0;
     }
 
