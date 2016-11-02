@@ -303,4 +303,16 @@ public class scePspNpDrm_user extends HLEModule {
 
         return result;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEBB198ED, version = 150)
+    public int sceNpDrmDecActivation(TPointer unknown1, TPointer unknown2) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x17E3F4BB, version = 150)
+    public int sceNpDrmVerifyAct(TPointer unknown) {
+        return 0;
+    }
 }

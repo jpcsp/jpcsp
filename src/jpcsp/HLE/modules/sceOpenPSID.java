@@ -233,4 +233,16 @@ public class sceOpenPSID extends HLEModule {
     public int  sceMlnpsnlAuth2BB() {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF9ECFDDD, version = 150)
+    public int  scePcactAuth1BB() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x08BB9677, version = 150)
+    public int  scePcactAuth2BB() {
+    	return 0;
+    }
 }
