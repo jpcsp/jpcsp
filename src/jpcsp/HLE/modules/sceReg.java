@@ -51,6 +51,7 @@ public class sceReg extends HLEModule {
     private int networkLatestId;
     private int wifiConnectCount;
     private int usbConnectCount;
+    private int psnAccountCount;
     private int oskVersionId;
     private int oskDispLocale;
     private int oskWritingLocale;
@@ -479,6 +480,12 @@ public class sceReg extends HLEModule {
     			if (size > 0) {
     				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, guestCount);
     			}
+    		} else if ("view_mode".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(0);
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
@@ -779,6 +786,12 @@ public class sceReg extends HLEModule {
     			psize.setValue(4);
     			if (size >= 4) {
     				buf.setValue32(usbConnectCount);
+    			}
+    		} else if (name.equals("psn_access_count")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(psnAccountCount);
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -1299,6 +1312,8 @@ public class sceReg extends HLEModule {
     			wifiConnectCount = buf.getValue32();
     		} else if ("usb_connect_count".equals(name) && size >= 4) {
     			usbConnectCount = buf.getValue32();
+    		} else if ("psn_access_count".equals(name) && size >= 4) {
+    			psnAccountCount = buf.getValue32();
     		} else {
     			log.warn(String.format("Unknown registry entry '%s'", name));
     		}
