@@ -184,7 +184,7 @@ public class semaphore extends HLEModule {
     	if (!preDecrypt(outBytes, outSize, inBytes, originalInSize, cmd)) {
 	    	// Call the KIRK engine to perform the given command
 	    	CryptoEngine crypto = new CryptoEngine();
-	    	int result = crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, outSize, inBuffer, inSize, cmd);
+	    	int result = crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, outSize, inBuffer, inSize, originalInSize, cmd);
 	    	if (result != 0) {
 	    		log.warn(String.format("hleUtilsBufferCopyWithRange cmd=0x%X returned 0x%X", cmd, result));
 	    	}

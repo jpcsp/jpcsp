@@ -260,9 +260,9 @@ public class KIRK {
 
     private static class ECDSAVerifyCtx {
 
-        private ECDSAPoint public_key;
+        private ECDSAPoint public_key = new ECDSAPoint();
         private byte[] hash = new byte[0x14];
-        private ECDSASig sig;
+        private ECDSASig sig = new ECDSASig();
 
         private ECDSAVerifyCtx(ByteBuffer buf) {
             buf.get(public_key.x, 0, 0x14);
@@ -469,7 +469,7 @@ public class KIRK {
 
         int[] key = getAESKeyFromSeed(header.keySeed);
         if (key == null) {
-            return PSP_KIRK_INVALID_SIZE; // Dummy.
+            return PSP_KIRK_INVALID_SEED;
         }
 
         byte[] encKey = new byte[16];
@@ -553,7 +553,7 @@ public class KIRK {
 
         int[] key = getAESKeyFromSeed(header.keySeed);
         if (key == null) {
-            return PSP_KIRK_INVALID_SIZE; // Dummy.
+            return PSP_KIRK_INVALID_SEED;
         }
 
         byte[] decKey = new byte[16];
@@ -873,27 +873,31 @@ public class KIRK {
     }
 
     public int hleUtilsBufferCopyWithRange(ByteBuffer out, int outsize, ByteBuffer in, int insize, int cmd) {
+    	return hleUtilsBufferCopyWithRange(out, outsize, in, insize, insize, cmd);
+    }
+
+    public int hleUtilsBufferCopyWithRange(ByteBuffer out, int outsize, ByteBuffer in, int insizeAligned, int insize, int cmd) {
         switch (cmd) {
             case PSP_KIRK_CMD_DECRYPT_PRIVATE:
-                return executeKIRKCmd1(out, in, insize);
+                return executeKIRKCmd1(out, in, insizeAligned);
             case PSP_KIRK_CMD_ENCRYPT:
-                return executeKIRKCmd4(out, in, insize);
+                return executeKIRKCmd4(out, in, insizeAligned);
             case PSP_KIRK_CMD_ENCRYPT_FUSE:
-                return executeKIRKCmd5(out, in, insize);
+                return executeKIRKCmd5(out, in, insizeAligned);
             case PSP_KIRK_CMD_DECRYPT:
-                return executeKIRKCmd7(out, in, insize);
+                return executeKIRKCmd7(out, in, insizeAligned);
             case PSP_KIRK_CMD_DECRYPT_FUSE:
-                return executeKIRKCmd8(out, in, insize);
+                return executeKIRKCmd8(out, in, insizeAligned);
             case PSP_KIRK_CMD_PRIV_SIG_CHECK:
-                return executeKIRKCmd10(in, insize);
+                return executeKIRKCmd10(in, insizeAligned);
             case PSP_KIRK_CMD_SHA1_HASH:
-                return executeKIRKCmd11(out, in, insize);
+                return executeKIRKCmd11(out, in, insizeAligned);
             case PSP_KIRK_CMD_ECDSA_GEN_KEYS:
                 return executeKIRKCmd12(out, outsize);
             case PSP_KIRK_CMD_ECDSA_MULTIPLY_POINT:
                 return executeKIRKCmd13(out, outsize, in, insize);
             case PSP_KIRK_CMD_PRNG:
-                return executeKIRKCmd14(out, insize);
+                return executeKIRKCmd14(out, insizeAligned);
             case PSP_KIRK_CMD_ECDSA_SIGN:
                 return executeKIRKCmd16(out, outsize, in, insize);
             case PSP_KIRK_CMD_ECDSA_VERIFY:
