@@ -20,3 +20,9 @@ umdimages/
 7z.exe
 7zFM.exe
 7zG.exe
+/nbproject/private/
+/build/
+profiler.txt
+tmp/*
+kprintf.txt
+log.txt
