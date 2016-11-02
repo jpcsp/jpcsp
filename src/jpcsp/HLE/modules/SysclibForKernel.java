@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
+import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -30,6 +31,8 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
@@ -226,5 +229,28 @@ public class SysclibForKernel extends HLEModule {
     public int strtoul(@CanBeNull PspString string, @CanBeNull TPointer32 endString, int base) {
 		// Assume same as strtol
 		return strtol(string, endString, base);
+    }
+
+	@HLEFunction(nid = 0xB49A7697, version = 150)
+    public int strncpy(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextNextParameter, usage=Usage.out) TPointer destAddr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer srcAddr, int size) {
+    	int srcLength = AbstractNativeCodeSequence.getStrlen(srcAddr.getAddress());
+		if (srcLength < size) {
+			destAddr.memcpy(srcAddr.getAddress(), srcLength + 1);
+			destAddr.clear(srcLength + 1, size - srcLength - 1);
+		} else {
+			destAddr.memcpy(srcAddr.getAddress(), size);
+		}
+
+		return destAddr.getAddress();
+    }
+
+	@HLEFunction(nid = 0x7DEE14DE, version = 150)
+    public long __udivdi3(long a, long b) {
+		return a / b;
+    }
+
+	@HLEFunction(nid = 0x5E8E5F42, version = 150)
+    public long __umoddi3(long a, long b) {
+		return a % b;
     }
 }
