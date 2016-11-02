@@ -2375,6 +2375,9 @@ public class sceMpeg extends HLEModule {
 	        		if (psmfHeader == null || currentVideoTimestamp > psmfHeader.mpegLastTimestamp) {
 	        			result = SceKernelErrors.ERROR_MPEG_NO_DATA;
 	        		}
+	        	} else if (audioFrameLength <= 0 && psmfHeader.getSpecificStreamNum(PSMF_AUDIO_STREAM) <= 0) {
+        			// There is no audio stream, return ERROR_MPEG_NO_DATA
+        			result = SceKernelErrors.ERROR_MPEG_NO_DATA;
 	        	} else {
 	        		// Update the ringbuffer only in case of no error
 	        		mpegRingbufferWrite();
