@@ -456,6 +456,7 @@ public class sceHttp extends HLEModule {
 		    isSameAddress("legaldoc.dl.playstation.net", sockAddrInternet) ||
 		    isSameAddress("auth.np.ac.playstation.net", sockAddrInternet) ||
 		    isSameAddress("getprof.gb.np.community.playstation.net", sockAddrInternet) ||
+		    isSameAddress("getprof.us.np.community.playstation.net", sockAddrInternet) ||
 		    isSameAddress("static-resource.np.community.playstation.net", sockAddrInternet) ||
 		    isSameAddress("commerce.np.ac.playstation.net", sockAddrInternet) ||
 		    isSameAddress("account.np.ac.playstation.net", sockAddrInternet) ||
@@ -464,7 +465,10 @@ public class sceHttp extends HLEModule {
 		    isSameAddress("nsx-e.sec.np.dl.playstation.net", sockAddrInternet) ||
 		    isSameAddress("video.dl.playstation.net", sockAddrInternet) ||
 		    isSameAddress("apollo.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("poseidon.dl.playstation.net", sockAddrInternet)) {
+		    isSameAddress("poseidon.dl.playstation.net", sockAddrInternet) ||
+		    isSameAddress("zeus.dl.playstation.net", sockAddrInternet) ||
+		    isSameAddress("comic.dl.playstation.net", sockAddrInternet) ||
+		    isSameAddress("infoboard.ww.dl.playstation.net", sockAddrInternet)) {
 			sockAddrInternet.sin_addr = HTTPServer.getInstance().getProxyAddress();
 			sockAddrInternet.sin_port = HTTPServer.getInstance().getProxyPort();
 		}
