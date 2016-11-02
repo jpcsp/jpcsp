@@ -124,7 +124,7 @@ public class SysMemForKernel extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0xA089ECA4, version = 150)
-    public int sceKernelMemset(@BufferInfo(lengthInfo=LengthInfo.nextNextParameter, usage=Usage.out) TPointer destAddr, int data, int size) {
+    public int sceKernelMemset(TPointer destAddr, int data, int size) {
         destAddr.memset((byte) data, size);
 
         return 0;
