@@ -101,15 +101,18 @@ public class sceNpAuth extends HLEModule {
     	ticket.parameters.add(new TicketParam(TicketParam.PARAM_TYPE_INT, bytes));
     }
 
-    public static void addTicketParam(SceNpTicket ticket, long time) {
+    public static void addTicketDateParam(SceNpTicket ticket, long time) {
     	byte bytes[] = new byte[8];
     	Utilities.writeUnaligned32(bytes, 0, Utilities.endianSwap32((int) (time >> 32)));
     	Utilities.writeUnaligned32(bytes, 4, Utilities.endianSwap32((int) time));
     	ticket.parameters.add(new TicketParam(TicketParam.PARAM_TYPE_DATE, bytes));
     }
 
-    public static void addTicketParam(SceNpTicket ticket, byte[] value) {
-    	ticket.parameters.add(new TicketParam(TicketParam.PARAM_TYPE_UNKNOWN, value));
+    public static void addTicketLongParam(SceNpTicket ticket, long value) {
+    	byte bytes[] = new byte[8];
+    	Utilities.writeUnaligned32(bytes, 0, Utilities.endianSwap32((int) (value >> 32)));
+    	Utilities.writeUnaligned32(bytes, 4, Utilities.endianSwap32((int) value));
+    	ticket.parameters.add(new TicketParam(TicketParam.PARAM_TYPE_LONG, bytes));
     }
 
     public static void addTicketParam(SceNpTicket ticket) {
@@ -291,9 +294,9 @@ public class sceNpAuth extends HLEModule {
     		addTicketParam(ticket, "XXXXXXXXXXXXXXXXXXXX", 20);
     		addTicketParam(ticket, 0);
     		long now = System.currentTimeMillis();
-    		addTicketParam(ticket, now);
-    		addTicketParam(ticket, now + 10 * 60 * 1000); // now + 10 minutes
-    		addTicketParam(ticket, new byte[8]);
+    		addTicketDateParam(ticket, now);
+    		addTicketDateParam(ticket, now + 10 * 60 * 1000); // now + 10 minutes
+    		addTicketLongParam(ticket, 0L);
     		addTicketParam(ticket, TicketParam.PARAM_TYPE_STRING, "DummyOnlineID", 32);
     		addTicketParam(ticket, "gb", 4);
     		addTicketParam(ticket, TicketParam.PARAM_TYPE_STRING, "XX", 4);

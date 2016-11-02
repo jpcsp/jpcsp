@@ -37,7 +37,7 @@ public class SceNpTicket extends pspAbstractMemoryMappedStructure {
 	public static class TicketParam {
 		public static final int PARAM_TYPE_NULL = 0;
 		public static final int PARAM_TYPE_INT = 1;
-		public static final int PARAM_TYPE_UNKNOWN = 2;
+		public static final int PARAM_TYPE_LONG = 2;
 		public static final int PARAM_TYPE_STRING = 4;
 		public static final int PARAM_TYPE_DATE = 7;
 		public static final int PARAM_TYPE_STRING_ASCII = 8;
@@ -91,7 +91,7 @@ public class SceNpTicket extends pspAbstractMemoryMappedStructure {
 					buffer.setValue32(getIntValue());
 					break;
 				case PARAM_TYPE_DATE:
-				case PARAM_TYPE_UNKNOWN:
+				case PARAM_TYPE_LONG:
 					// This value is written in PSP endianness
 					buffer.setValue64(getLongValue());
 					break;
@@ -123,7 +123,7 @@ public class SceNpTicket extends pspAbstractMemoryMappedStructure {
 					return getDateValue().toString();
 				case PARAM_TYPE_NULL:
 					return "null";
-				case PARAM_TYPE_UNKNOWN:
+				case PARAM_TYPE_LONG:
 					return String.format("0x%16X", getLongValue());
 			}
 			return String.format("type=%d, value=%s", type, Utilities.getMemoryDump(value, 0, value.length));
@@ -189,6 +189,32 @@ public class SceNpTicket extends pspAbstractMemoryMappedStructure {
 		b.put(unknownBytes);
 
 		return bytes;
+	}
+
+	public void read(byte[] bytes, int offset, int length) {
+		ByteBuffer b = ByteBuffer.wrap(bytes, offset, length).order(ByteOrder.LITTLE_ENDIAN);
+
+		version = b.getInt();
+		size = endianSwap32(b.getInt());
+		unknown = endianSwap16(b.getShort());
+		sizeParams = endianSwap16(b.getShort());
+		int readSize = 12;
+
+		parameters.clear();
+		for (int i = 0; i < NUMBER_PARAMETERS; i++) {
+			int type = endianSwap16(b.getShort());
+			int valueLength = endianSwap16(b.getShort());
+			byte[] value = new byte[valueLength];
+			b.get(value);
+
+			readSize += 4 + valueLength;
+
+			TicketParam ticketParam = new TicketParam(type, value);
+			parameters.add(ticketParam);
+		}
+
+		unknownBytes = new byte[size - readSize + 8];
+		b.get(unknownBytes);
 	}
 
 	@Override

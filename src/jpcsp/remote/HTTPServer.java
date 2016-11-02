@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.remote;
 
 import static jpcsp.HLE.modules.sceNpAuth.STATUS_ACCOUNT_PARENTAL_CONTROL_ENABLED;
+import static jpcsp.HLE.modules.sceNpAuth.addTicketDateParam;
+import static jpcsp.HLE.modules.sceNpAuth.addTicketLongParam;
 import static jpcsp.HLE.modules.sceNpAuth.addTicketParam;
 import static jpcsp.filesystems.umdiso.UmdIsoFile.sectorLength;
 import static jpcsp.util.Utilities.getDefaultPortForProtocol;
@@ -126,6 +128,7 @@ public class HTTPServer {
 	private Proxy proxy;
 	private int proxyPort;
 	private int proxyAddress;
+	private SceNpTicket ticket;
 
 	public static HTTPServer getInstance() {
 		if (instance == null) {
@@ -505,8 +508,9 @@ public class HTTPServer {
 		byte[] buffer = new byte[100000];
 		int length = 0;
 		boolean endOfInputReached = false;
-		InputStream in = connection.getInputStream();
+		InputStream in = null;
 		try {
+			in = connection.getInputStream();
 			while (length < buffer.length) {
 				int l = in.read(buffer, length, buffer.length - length);
 				if (l < 0) {
@@ -558,6 +562,10 @@ public class HTTPServer {
 					if ("connection".equalsIgnoreCase(key) && "keep-alive".equalsIgnoreCase(value)) {
 						keepAlive = true;
 					}
+					if ("content-type".equalsIgnoreCase(key) && "application/x-i-5-ticket".equalsIgnoreCase(value) && length > 0) {
+						ticket = new SceNpTicket();
+						ticket.read(buffer, 0, length);
+					}
 				}
 			}
 		}
@@ -569,23 +577,25 @@ public class HTTPServer {
 
 		os.write(buffer, 0, length);
 
-		while (!endOfInputReached) {
-			length = 0;
-			try {
-				while (length < buffer.length) {
-					int l = in.read(buffer, length, buffer.length - length);
-					if (l < 0) {
-						endOfInputReached = true;
-						break;
+		if (in != null) {
+			while (!endOfInputReached) {
+				length = 0;
+				try {
+					while (length < buffer.length) {
+						int l = in.read(buffer, length, buffer.length - length);
+						if (l < 0) {
+							endOfInputReached = true;
+							break;
+						}
+						length += l;
 					}
-					length += l;
+				} catch (IOException e) {
+					log.debug("doProxy", e);
 				}
 				os.write(buffer, 0, length);
-			} catch (IOException e) {
-				log.debug("doProxy", e);
 			}
+			in.close();
 		}
-		in.close();
 
 		return keepAlive;
 	}
@@ -611,12 +621,16 @@ public class HTTPServer {
 //				sendNpGetSelfProfile(request.get(data), os);
 			} else if ("auth.np.ac.playstation.net".equals(request.get(host))) {
 				doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("getprof.gb.np.community.playstation.net".equals(request.get(host)) && ("/basic_view/func/get_avatar_category".equals(pathValue) || "/basic_view/func/get_avatar_list".equals(pathValue))) {
+			} else if (request.get(host).matches("getprof....np.community.playstation.net") && ("/basic_view/func/get_avatar_category".equals(pathValue) || "/basic_view/func/get_avatar_list".equals(pathValue))) {
 				doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("getprof.gb.np.community.playstation.net".equals(request.get(host))) {
+			} else if (request.get(host).matches("getprof....np.community.playstation.net")) {
 				doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("profile.gb.np.community.playstation.net".equals(request.get(host))) {
+			} else if (request.get(host).matches("profile....np.community.playstation.net")) {
 				doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("commerce.np.ac.playstation.net".equals(request.get(host)) && "/cap.m".equals(pathValue)) {
+				sendCapM(request.get(data), os);
+			} else if ("commerce.np.ac.playstation.net".equals(request.get(host)) && "/kdp.m".equals(pathValue)) {
+				sendKdpM(request.get(data), os);
 			} else if ("commerce.np.ac.playstation.net".equals(request.get(host))) {
 				doProxy(descriptor, request, os, pathValue, 443);
 			} else if ("account.np.ac.playstation.net".equals(request.get(host))) {
@@ -628,12 +642,18 @@ public class HTTPServer {
 			} else if ("nsx-e.sec.np.dl.playstation.net".equals(request.get(host))) {
 				keepAlive = doProxy(descriptor, request, os, pathValue, 443);
 			} else if ("nsx-e.np.dl.playstation.net".equals(request.get(host))) {
-				doProxy(descriptor, request, os, pathValue, 0);
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
 			} else if ("video.dl.playstation.net".equals(request.get(host))) {
 				doProxy(descriptor, request, os, "/cdn/video/DE/g", 0);
 			} else if ("apollo.dl.playstation.net".equals(request.get(host))) {
 				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
 			} else if ("poseidon.dl.playstation.net".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("zeus.dl.playstation.net".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("comic.dl.playstation.net".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("infoboard.ww.dl.playstation.net".equals(request.get(host))) {
 				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
 			} else if ("static-resource.np.community.playstation.net".equals(request.get(host))) {
 				// Keep-alive is required for downloading the avatar static images
@@ -1776,9 +1796,9 @@ public class HTTPServer {
 		addTicketParam(ticket, "XXXXXXXXXXXXXXXXXXXX", 20);
 		addTicketParam(ticket, 0);
 		long now = System.currentTimeMillis();
-		addTicketParam(ticket, now);
-		addTicketParam(ticket, now + 10 * 60 * 1000); // now + 10 minutes
-		addTicketParam(ticket, new byte[8]);
+		addTicketDateParam(ticket, now);
+		addTicketDateParam(ticket, now + 10 * 60 * 1000); // now + 10 minutes
+		addTicketLongParam(ticket, 0L); // Used by DRM
 		addTicketParam(ticket, TicketParam.PARAM_TYPE_STRING, "DummyOnlineID", 32);
 		addTicketParam(ticket, "gb", 4);
 		addTicketParam(ticket, TicketParam.PARAM_TYPE_STRING, "XX", 4);
@@ -1829,5 +1849,47 @@ public class HTTPServer {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Response: %s", xml));
 		}
+	}
+
+	public void sendCapM(String data, OutputStream os) throws IOException {
+		int responseLength = 4240;
+		byte[] response = new byte[responseLength];
+
+		if (ticket != null) {
+			TicketParam ticketParam = ticket.parameters.get(4);
+			for (int i = 0; i < 8; i++) {
+				response[i + 80] = ticketParam.getBytesValue()[7 - i];
+			}
+		}
+
+		sendOK(os);
+		sendResponseHeader(os, "X-I-5-DRM-Version", "1.0");
+		sendResponseHeader(os, "X-I-5-DRM-Status", "OK; max_console=1; current_console=0");
+		sendResponseHeader(os, "Content-Length", responseLength);
+		sendResponseHeader(os, "Content-Type", "application/x-i-5-drm");
+		sendEndOfHeaders(os);
+
+		os.write(response, 0, responseLength);
+	}
+
+	public void sendKdpM(String data, OutputStream os) throws IOException {
+		int responseLength = 4240;
+		byte[] response = new byte[responseLength];
+
+		if (ticket != null) {
+			TicketParam ticketParam = ticket.parameters.get(4);
+			for (int i = 0; i < 8; i++) {
+				response[i + 80] = ticketParam.getBytesValue()[7 - i];
+			}
+		}
+
+		sendOK(os);
+		sendResponseHeader(os, "X-I-5-DRM-Version", "1.0");
+		sendResponseHeader(os, "X-I-5-DRM-Status", "OK");
+		sendResponseHeader(os, "Content-Length", responseLength);
+		sendResponseHeader(os, "Content-Type", "application/x-i-5-drm");
+		sendEndOfHeaders(os);
+
+		os.write(response, 0, responseLength);
 	}
 }
