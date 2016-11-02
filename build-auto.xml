@@ -2,8 +2,8 @@
 <project basedir="." default="build" name="Jpcsp">
 	<property environment="env" />
 	<property name="debuglevel" value="source,lines,vars" />
-	<property name="target" value="1.6" />
-	<property name="source" value="1.6" />
+	<property name="target" value="1.8.0_112" />
+	<property name="source" value="1.8.0_112" />
 	<property name="source.encoding" value="UTF-8" />
 
 	<property name="jpcsp.mainclass" value="jpcsp.MainGUI" />
