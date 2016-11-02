@@ -33,6 +33,7 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.sceFont.FontRegistryEntry;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 public class sceReg extends HLEModule {
@@ -1051,6 +1052,7 @@ public class sceReg extends HLEModule {
 		keyHandles = new HashMap<Integer, sceReg.KeyHandle>();
 
 		// TODO Read these values from the configuration file
+		Settings settings = Settings.getInstance();
 		authName = "";
 		authKey = "";
 		networkLatestId = 0;
@@ -1071,10 +1073,10 @@ public class sceReg extends HLEModule {
 	    musicTrackInfoMode = 1;
 	    lockPassword = "0000"; // 4-digit password
 	    browserHomeUri = "";
-	    npAccountId = "";
-	    npLoginId = "";
-	    npPassword = "";
-	    npAutoSignInEnable = 0;
+	    npAccountId = settings.readString("registry.npAccountId");
+	    npLoginId = settings.readString("registry.npLoginId");
+	    npPassword = settings.readString("registry.npPassword");
+	    npAutoSignInEnable = settings.readInt("registry.npAutoSignInEnable");
 
 		super.start();
 	}
@@ -1247,6 +1249,7 @@ public class sceReg extends HLEModule {
     	}
     	fullName = fullName.replace("flash1:/registry/system", "");
 
+    	Settings settings = Settings.getInstance();
     	if ("/system/DATA/FONT".equals(fullName)) {
     		if ("path_name".equals(name)) {
     			String fontDirPath = buf.getStringNZ(size);
@@ -1336,12 +1339,16 @@ public class sceReg extends HLEModule {
     			npEnv = buf.getStringNZ(size);
     		} else if ("account_id".equals(name)) {
     			npAccountId = buf.getStringNZ(size);
+    			settings.writeString("registry.npAccountId", npAccountId);
     		} else if ("login_id".equals(name)) {
     			npLoginId = buf.getStringNZ(size);
+    			settings.writeString("registry.npLoginId", npLoginId);
     		} else if ("password".equals(name)) {
     			npPassword = buf.getStringNZ(size);
+    			settings.writeString("registry.npPassword", npPassword);
     		} else if ("auto_sign_in_enable".equals(name) && size >= 4) {
     			npAutoSignInEnable = buf.getValue32();
+    			settings.writeInt("registry.npAutoSignInEnable", npAutoSignInEnable);
     		} else {
     			log.warn(String.format("Unknown registry entry '%s'", name));
     		}
