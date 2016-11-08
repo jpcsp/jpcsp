@@ -103,7 +103,7 @@ public class sceUmdUser extends HLEModule {
         this.iso = iso;
         setUmdActivated();
     }
-    
+
     public void setUmdErrorStat(int stat) {
         umdErrorStat = stat;
     }

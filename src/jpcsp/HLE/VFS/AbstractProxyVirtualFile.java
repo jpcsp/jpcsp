@@ -16,9 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
+import java.util.Map;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
 import jpcsp.util.Utilities;
 
 /**
@@ -110,5 +114,10 @@ public abstract class AbstractProxyVirtualFile implements IVirtualFile {
 	@Override
 	public IVirtualFile duplicate() {
 		return vFile.duplicate();
+	}
+
+	@Override
+	public Map<IoOperation, IoOperationTiming> getTimings() {
+		return vFile.getTimings();
 	}
 }

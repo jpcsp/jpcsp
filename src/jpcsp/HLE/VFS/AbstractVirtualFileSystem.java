@@ -18,12 +18,15 @@ package jpcsp.HLE.VFS;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNSUPPORTED_OPERATION;
 
+import java.util.Map;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.util.Utilities;
 
 public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
@@ -158,5 +161,10 @@ public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 		}
 
 		return ERROR_KERNEL_UNSUPPORTED_OPERATION;
+	}
+
+	@Override
+	public Map<IoFileMgrForUser.IoOperation, IoFileMgrForUser.IoOperationTiming> getTimings() {
+		return IoFileMgrForUser.defaultTimings;
 	}
 }

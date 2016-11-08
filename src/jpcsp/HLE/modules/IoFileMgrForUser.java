@@ -166,26 +166,20 @@ public class IoFileMgrForUser extends HLEModule {
     protected VirtualFileSystemManager vfsManager;
     protected Map<String, String> assignedDevices;
 
-    public static enum IoOperation {
-        open(5), close(1), seek(0), ioctl(20), remove, rename, mkdir, dread, iodevctl(2),
-        // Duration of read operation: approx. 7 ms per 0x10000 bytes (tested on real PSP)
-        read(7, 0x10000),
-        // Duration of write operation: approx. 5 ms per 0x10000 bytes
-        write(5, 0x10000);
-
+    public static class IoOperationTiming {
         private int delayMillis;
         private int sizeUnit;
 
-        IoOperation() {
+        public IoOperationTiming() {
             this.delayMillis = 0;
         }
 
-        IoOperation(int delayMillis) {
+        public IoOperationTiming(int delayMillis) {
             this.delayMillis = delayMillis;
             this.sizeUnit = 0;
         }
 
-        IoOperation(int delayMillis, int sizeUnit) {
+        public IoOperationTiming(int delayMillis, int sizeUnit) {
             this.delayMillis = delayMillis;
             this.sizeUnit = sizeUnit;
         }
@@ -222,7 +216,14 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    // modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
+    public static enum IoOperation {
+        open, close, seek, ioctl, remove, rename, mkdir, dread, iodevctl, read, write
+    }
+
+	public static final Map<IoOperation, IoOperationTiming> defaultTimings = new HashMap<IoFileMgrForUser.IoOperation, IoFileMgrForUser.IoOperationTiming>();
+	public static final Map<IoOperation, IoOperationTiming> noDelayTimings = new HashMap<IoFileMgrForUser.IoOperation, IoFileMgrForUser.IoOperationTiming>();
+
+	// modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
     // SeekableRandomFile doesn't support write only: take "rw",
     private final static String[] modeStrings = {"r", "r", "rw", "rw"};
     public HashMap<Integer, IoInfo> fileIds;
@@ -688,7 +689,33 @@ public class IoFileMgrForUser extends HLEModule {
 
         setSettingsListener("emu.extractPGD", new ExtractPGDSettingsListerner());
 
-        super.start();
+		defaultTimings.put(IoOperation.open, new IoFileMgrForUser.IoOperationTiming(5));
+		defaultTimings.put(IoOperation.close, new IoFileMgrForUser.IoOperationTiming(1));
+		defaultTimings.put(IoOperation.seek, new IoFileMgrForUser.IoOperationTiming());
+		defaultTimings.put(IoOperation.ioctl, new IoFileMgrForUser.IoOperationTiming(20));
+		defaultTimings.put(IoOperation.remove, new IoFileMgrForUser.IoOperationTiming());
+		defaultTimings.put(IoOperation.rename, new IoFileMgrForUser.IoOperationTiming());
+		defaultTimings.put(IoOperation.mkdir, new IoFileMgrForUser.IoOperationTiming());
+		defaultTimings.put(IoOperation.dread, new IoFileMgrForUser.IoOperationTiming());
+		defaultTimings.put(IoOperation.iodevctl, new IoFileMgrForUser.IoOperationTiming(2));
+		// Duration of read operation: approx. 7 ms per 0x10000 bytes (tested on real PSP)
+		defaultTimings.put(IoOperation.read, new IoFileMgrForUser.IoOperationTiming(7, 0x10000));
+		// Duration of write operation: approx. 5 ms per 0x10000 bytes
+		defaultTimings.put(IoOperation.write, new IoFileMgrForUser.IoOperationTiming(5, 0x10000));
+
+		noDelayTimings.put(IoOperation.open, new IoFileMgrForUser.IoOperationTiming());
+		noDelayTimings.put(IoOperation.close, new IoFileMgrForUser.IoOperationTiming());
+		noDelayTimings.put(IoOperation.seek, new IoFileMgrForUser.IoOperationTiming());
+		noDelayTimings.put(IoOperation.ioctl, new IoFileMgrForUser.IoOperationTiming());
+		noDelayTimings.put(IoOperation.remove, new IoFileMgrForUser.IoOperationTiming());
+		noDelayTimings.put(IoOperation.rename, new IoFileMgrForUser.IoOperationTiming());
+		noDelayTimings.put(IoOperation.mkdir, new IoFileMgrForUser.IoOperationTiming());
+		noDelayTimings.put(IoOperation.dread, new IoFileMgrForUser.IoOperationTiming());
+		noDelayTimings.put(IoOperation.iodevctl, new IoFileMgrForUser.IoOperationTiming());
+		noDelayTimings.put(IoOperation.read, new IoFileMgrForUser.IoOperationTiming());
+		noDelayTimings.put(IoOperation.write, new IoFileMgrForUser.IoOperationTiming());
+
+		super.start();
     }
 
     public void setHost0Path(String path) {
@@ -1081,6 +1108,17 @@ public class IoFileMgrForUser extends HLEModule {
         return stat;
     }
 
+    public IVirtualFile getVirtualFile(String filename, int flags, int permissions) {
+    	String absoluteFileName = getAbsoluteFileName(filename);
+    	StringBuilder localFileName = new StringBuilder();
+    	IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+    	if (vfs != null) {
+    		return vfs.ioOpen(localFileName.toString(), flags, permissions);
+    	}
+
+    	return null;
+    }
+
     public SeekableDataInput getFile(String filename, int flags) {
         SeekableDataInput resultFile = null;
         String pcfilename = getDeviceFilePath(filename);
@@ -1159,17 +1197,17 @@ public class IoFileMgrForUser extends HLEModule {
         return modeStrings[flags & PSP_O_RDWR];
     }
 
-    private long updateResult(IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation) {
-    	return updateResult(info, result, async, resultIs64bit, ioOperation, null, 0);
+    private long updateResult(IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperationTiming ioOperationTiming) {
+    	return updateResult(info, result, async, resultIs64bit, ioOperationTiming, null, 0);
     }
 
     // Handle returning/storing result for sync/async operations
-    private long updateResult(IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation, IAction asyncAction, int size) {
+    private long updateResult(IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperationTiming ioOperationTiming, IAction asyncAction, int size) {
     	// No async IO is started when returning error code ERROR_KERNEL_ASYNC_BUSY
     	if (info != null && result != ERROR_KERNEL_ASYNC_BUSY) {
             if (async) {
                 if (!info.asyncPending) {
-                    result = startIoAsync(info, result, ioOperation, asyncAction, size);
+                    result = startIoAsync(info, result, ioOperationTiming, asyncAction, size);
                 }
             } else {
                 info.result = ERROR_KERNEL_NO_ASYNC_OP;
@@ -1227,9 +1265,9 @@ public class IoFileMgrForUser extends HLEModule {
         return iso;
     }
 
-    protected void delayIoOperation(IoOperation ioOperation) {
-        if (!noDelayIoOperation && ioOperation.delayMillis > 0) {
-            Modules.ThreadManForUserModule.hleKernelDelayThread(ioOperation.delayMillis * 1000, false);
+    protected void delayIoOperation(IoOperationTiming ioOperationTiming) {
+        if (!noDelayIoOperation && ioOperationTiming.delayMillis > 0) {
+            Modules.ThreadManForUserModule.hleKernelDelayThread(ioOperationTiming.delayMillis * 1000, false);
         }
     }
 
@@ -1295,7 +1333,7 @@ public class IoFileMgrForUser extends HLEModule {
      * @param info   the file
      * @param result the result the async IO should return
      */
-    private int startIoAsync(IoInfo info, long result, IoOperation ioOperation, IAction asyncAction, int size) {
+    private int startIoAsync(IoInfo info, long result, IoOperationTiming ioOperationTiming, IAction asyncAction, int size) {
         int startResult = 0;
         if (info == null) {
             return startResult;
@@ -1303,7 +1341,7 @@ public class IoFileMgrForUser extends HLEModule {
         info.asyncPending = true;
         info.asyncResultPending = false;
         long now = Emulator.getClock().currentTimeMillis();
-        info.asyncDoneMillis = now + ioOperation.getDelayMillis(size);
+        info.asyncDoneMillis = now + ioOperationTiming.getDelayMillis(size);
         info.asyncAction = asyncAction;
         info.result = result;
         if (info.asyncThread == null) {
@@ -1616,7 +1654,9 @@ public class IoFileMgrForUser extends HLEModule {
     }
 
     public int hleIoOpen(int filename_addr, String filename, int flags, int permissions, boolean async) {
-        if (log.isInfoEnabled()) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
+
+    	if (log.isInfoEnabled()) {
             log.info("hleIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
         }
         if (log.isDebugEnabled()) {
@@ -1685,6 +1725,7 @@ public class IoFileMgrForUser extends HLEModule {
         	StringBuilder localFileName = new StringBuilder();
         	IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
         	if (vfs != null) {
+        		timings = vfs.getTimings();
         		IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), flags, permissions);
         		if (vFile == null) {
         			result = ERROR_ERRNO_FILE_NOT_FOUND;
@@ -1826,16 +1867,19 @@ public class IoFileMgrForUser extends HLEModule {
                 result = info.id;
             }
 
-            int startResult = startIoAsync(info, realResult, IoOperation.open, null, 0);
+            int startResult = startIoAsync(info, realResult, timings.get(IoOperation.open), null, 0);
             if (startResult < 0) {
             	result = startResult;
             }
+        } else {
+        	delayIoOperation(timings.get(IoOperation.open));
         }
 
         return result;
     }
 
     private int hleIoClose(int id, boolean async) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         int result;
 
         IoInfo info = fileIds.get(id);
@@ -1854,7 +1898,7 @@ public class IoFileMgrForUser extends HLEModule {
                 	}
                 } else {
                     info.closePending = true;
-                    result = (int) updateResult(info, 0, true, false, IoOperation.close);
+                    result = (int) updateResult(info, 0, true, false, timings.get(IoOperation.close));
                 }
             } else {
                 result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
@@ -1897,10 +1941,15 @@ public class IoFileMgrForUser extends HLEModule {
             }
         }
 
+        if (!async) {
+            delayIoOperation(timings.get(IoOperation.close));
+        }
+
         return result;
     }
 
     private int hleIoWrite(int id, TPointer dataAddr, int size, boolean async) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         IoInfo info = null;
         int result;
 
@@ -1998,15 +2047,23 @@ public class IoFileMgrForUser extends HLEModule {
                 result = -1;
             }
         }
-        result = (int) updateResult(info, result, async, false, IoOperation.write, null, size);
+        result = (int) updateResult(info, result, async, false, timings.get(IoOperation.write), null, size);
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoWrite(result, id, dataAddr.getAddress(), size, size);
+        }
+
+        if (!async) {
+            // Do not delay output on stdout/stderr
+            if (id != STDOUT_ID && id != STDERR_ID) {
+            	delayIoOperation(timings.get(IoOperation.write));
+            }
         }
 
         return result;
     }
 
     public int hleIoRead(int id, int data_addr, int size, boolean async) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         IoInfo info = null;
         int result;
         long position = 0;
@@ -2122,18 +2179,25 @@ public class IoFileMgrForUser extends HLEModule {
                 result = ERROR_KERNEL_FILE_READ_ERROR;
             }
         }
-        result = (int) updateResult(info, result, async, false, IoOperation.read, asyncAction, size);
+        result = (int) updateResult(info, result, async, false, timings.get(IoOperation.read), asyncAction, size);
         // Call the IO listeners (performed in the async action if one is provided, otherwise call them here)
         if (asyncAction == null) {
             for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoRead(result, id, data_addr, requestedSize, size, position, dataInput, vFile);
             }
         }
-        
+
+        if (!async) {
+            if (size > 0x100) {
+            	delayIoOperation(timings.get(IoOperation.read));
+            }
+        }
+
         return result;
     }
 
     private long hleIoLseek(int id, long offset, int whence, boolean resultIs64bit, boolean async) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         IoInfo info = null;
         long result;
 
@@ -2260,7 +2324,7 @@ public class IoFileMgrForUser extends HLEModule {
                 result = -1;
             }
         }
-        result = updateResult(info, result, async, resultIs64bit, IoOperation.seek);
+        result = updateResult(info, result, async, resultIs64bit, timings.get(IoOperation.seek));
 
         if (resultIs64bit) {
             for (IIoListener ioListener : ioListeners) {
@@ -2276,10 +2340,15 @@ public class IoFileMgrForUser extends HLEModule {
         	log.debug(String.format("hleIoLseek returning 0x%X", result));
         }
 
+        if (!async) {
+            delayIoOperation(timings.get(IoOperation.seek));
+        }
+
         return result;
     }
 
     public int hleIoIoctl(int id, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen, boolean async) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         IoInfo info = null;
         int result;
         Memory mem = Memory.getInstance();
@@ -2657,13 +2726,13 @@ public class IoFileMgrForUser extends HLEModule {
             }
         }
 
-        result = (int) updateResult(info, result, async, false, IoOperation.ioctl);
+        result = (int) updateResult(info, result, async, false, timings.get(IoOperation.ioctl));
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoIoctl(result, id, cmd, indata_addr, inlen, outdata_addr, outlen);
         }
 
         if (needDelayIoOperation && !async) {
-        	delayIoOperation(IoOperation.ioctl);
+        	delayIoOperation(timings.get(IoOperation.ioctl));
         }
 
         return result;
@@ -2827,10 +2896,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x810C4BC3, version = 150, checkInsideInterrupt = true)
     public int sceIoClose(int id) {
-        int result = hleIoClose(id, false);
-        delayIoOperation(IoOperation.close);
-
-        return result;
+        return hleIoClose(id, false);
     }
 
     /**
@@ -2856,9 +2922,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x109F50BC, version = 150, checkInsideInterrupt = true)
     public int sceIoOpen(PspString filename, int flags, int permissions) {
-        int result = hleIoOpen(filename, flags, permissions, /* async = */ false);
-        delayIoOperation(IoOperation.open);
-        return result;
+        return hleIoOpen(filename, flags, permissions, /* async = */ false);
     }
 
     /**
@@ -2886,11 +2950,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x6A638D83, version = 150, checkInsideInterrupt = true)
     public int sceIoRead(int id, int data_addr, int size) {
-        int result = hleIoRead(id, data_addr, size, false);
-        if (size > 0x100) {
-        	delayIoOperation(IoOperation.read);
-        }
-        return result;
+        return hleIoRead(id, data_addr, size, false);
     }
 
     /**
@@ -2918,14 +2978,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x42EC03AC, version = 150, checkInsideInterrupt = true)
     public int sceIoWrite(int id, TPointer dataAddr, int size) {
-        int result = hleIoWrite(id, dataAddr, size, false);
-
-        // Do not delay output on stdout/stderr
-        if (id != STDOUT_ID && id != STDERR_ID) {
-        	delayIoOperation(IoOperation.write);
-        }
-
-        return result;
+        return hleIoWrite(id, dataAddr, size, false);
     }
 
     /**
@@ -2953,9 +3006,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x27EB27B8, version = 150, checkInsideInterrupt = true)
     public long sceIoLseek(int id, long offset, int whence) {
-        long result = hleIoLseek(id, offset, whence, true, false);
-        delayIoOperation(IoOperation.seek);
-        return result;
+        return hleIoLseek(id, offset, whence, true, false);
     }
 
     /**
@@ -2983,9 +3034,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x68963324, version = 150, checkInsideInterrupt = true)
     public int sceIoLseek32(int id, int offset, int whence) {
-        int result = (int) hleIoLseek(id, (long) offset, whence, false, false);
-        delayIoOperation(IoOperation.seek);
-        return result;
+        return (int) hleIoLseek(id, (long) offset, whence, false, false);
     }
 
     /**
@@ -3043,12 +3092,15 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xB29DDF9C, version = 150, checkInsideInterrupt = true)
     public int sceIoDopen(PspString dirname) {
-        String pcfilename = getDeviceFilePath(dirname.getString());
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         int result;
+
+        String pcfilename = getDeviceFilePath(dirname.getString());
         String absoluteFileName = getAbsoluteFileName(dirname.getString());
         StringBuilder localFileName = new StringBuilder();
         IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
         if (vfs != null) {
+        	timings = vfs.getTimings();
         	String[] fileNames = vfs.ioDopen(localFileName.toString());
         	if (fileNames == null) {
         		result = ERROR_ERRNO_FILE_NOT_FOUND;
@@ -3116,7 +3168,9 @@ public class IoFileMgrForUser extends HLEModule {
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoDopen(result, dirname.getAddress(), dirname.getString());
         }
-        delayIoOperation(IoOperation.open);
+
+        delayIoOperation(timings.get(IoOperation.open));
+
         return result;
     }
 
@@ -3130,6 +3184,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xE3EB004C, version = 150, checkInsideInterrupt = true)
     public int sceIoDread(int id, TPointer direntAddr) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         IoDirInfo info = dirIds.get(id);
 
         int result;
@@ -3141,6 +3196,7 @@ public class IoFileMgrForUser extends HLEModule {
 
             SceIoDirent dirent = null;
             if (info.vfs != null) {
+            	timings = info.vfs.getTimings();
             	SceIoStat stat = new SceIoStat();
             	dirent = new SceIoDirent(stat, filename);
             	result = info.vfs.ioDread(info.path, dirent);
@@ -3176,7 +3232,9 @@ public class IoFileMgrForUser extends HLEModule {
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoDread(result, id, direntAddr.getAddress());
         }
-        delayIoOperation(IoOperation.dread);
+
+        delayIoOperation(timings.get(IoOperation.dread));
+
         return result;
     }
 
@@ -3189,8 +3247,10 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xEB092469, version = 150, checkInsideInterrupt = true)
     public int sceIoDclose(int id) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         IoDirInfo info = dirIds.get(id);
         int result;
+
         if (info == null) {
             log.warn("sceIoDclose - unknown id " + Integer.toHexString(id));
             result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
@@ -3205,7 +3265,9 @@ public class IoFileMgrForUser extends HLEModule {
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoDclose(result, id);
         }
-        delayIoOperation(IoOperation.close);
+
+        delayIoOperation(timings.get(IoOperation.close));
+
         return result;
     }
 
@@ -3218,6 +3280,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xF27A9C51, version = 150, checkInsideInterrupt = true)
     public int sceIoRemove(PspString filename) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         String pcfilename = getDeviceFilePath(filename.getString());
         int result;
 
@@ -3251,7 +3314,8 @@ public class IoFileMgrForUser extends HLEModule {
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoRemove(result, filename.getAddress(), filename.getString());
         }
-        delayIoOperation(IoOperation.remove);
+
+        delayIoOperation(timings.get(IoOperation.remove));
 
         return result;
     }
@@ -3266,6 +3330,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x06A70004, version = 150, checkInsideInterrupt = true)
     public int sceIoMkdir(PspString dirname, int permissions) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
 
@@ -3288,7 +3353,8 @@ public class IoFileMgrForUser extends HLEModule {
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoMkdir(result, dirname.getAddress(), dirname.getString(), permissions);
         }
-        delayIoOperation(IoOperation.mkdir);
+
+        delayIoOperation(timings.get(IoOperation.mkdir));
 
         return result;
     }
@@ -3302,6 +3368,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x1117C65F, version = 150, checkInsideInterrupt = true)
     public int sceIoRmdir(PspString dirname) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
 
@@ -3324,7 +3391,8 @@ public class IoFileMgrForUser extends HLEModule {
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoRmdir(result, dirname.getAddress(), dirname.getString());
         }
-        delayIoOperation(IoOperation.remove);
+
+        delayIoOperation(timings.get(IoOperation.remove));
 
         return result;
     }
@@ -3524,6 +3592,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x779103A0, version = 150, checkInsideInterrupt = true)
     public int sceIoRename(PspString pspOldFileName, PspString pspNewFileName) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
     	String oldFileName = pspOldFileName.getString();
     	String newFileName = pspNewFileName.getString();
 
@@ -3585,7 +3654,9 @@ public class IoFileMgrForUser extends HLEModule {
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoRename(result, pspOldFileName.getAddress(), pspOldFileName.getString(), pspNewFileName.getAddress(), pspNewFileName.getString());
         }
-        delayIoOperation(IoOperation.rename);
+
+        delayIoOperation(timings.get(IoOperation.rename));
+
         return result;
     }
 
@@ -3603,6 +3674,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x54F5FB11, version = 150, checkInsideInterrupt = true)
     public int sceIoDevctl(PspString devicename, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
         Memory mem = Processor.memory;
         int result = -1;
 
@@ -3626,7 +3698,7 @@ public class IoFileMgrForUser extends HLEModule {
         	for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoDevctl(result, devicename.getAddress(), devicename.getString(), cmd, indata_addr, inlen, outdata_addr, outlen);
             }
-            delayIoOperation(IoOperation.iodevctl);
+            delayIoOperation(timings.get(IoOperation.iodevctl));
 
             return result;
     	} else if (useVirtualFileSystem) {
@@ -3636,7 +3708,7 @@ public class IoFileMgrForUser extends HLEModule {
             for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoDevctl(result, devicename.getAddress(), devicename.getString(), cmd, indata_addr, inlen, outdata_addr, outlen);
             }
-            delayIoOperation(IoOperation.iodevctl);
+            delayIoOperation(timings.get(IoOperation.iodevctl));
 
             return result;
         }
@@ -4036,7 +4108,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         if (needDelayIoOperation) {
-        	delayIoOperation(IoOperation.iodevctl);
+        	delayIoOperation(timings.get(IoOperation.iodevctl));
         }
 
         return result;

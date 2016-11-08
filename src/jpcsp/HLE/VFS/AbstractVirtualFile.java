@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.VFS;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -24,6 +25,9 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.util.Utilities;
 
@@ -172,6 +176,11 @@ public abstract class AbstractVirtualFile implements IVirtualFile {
 	@Override
 	public IVirtualFile duplicate() {
 		return null;
+	}
+
+	@Override
+	public Map<IoOperation, IoOperationTiming> getTimings() {
+		return IoFileMgrForUser.defaultTimings;
 	}
 
     @Override

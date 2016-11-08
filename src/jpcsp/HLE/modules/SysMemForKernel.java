@@ -19,9 +19,6 @@ package jpcsp.HLE.modules;
 import java.util.HashMap;
 
 import jpcsp.Memory;
-import jpcsp.HLE.BufferInfo;
-import jpcsp.HLE.BufferInfo.LengthInfo;
-import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;

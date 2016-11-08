@@ -16,9 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
+import java.util.Map;
+
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 
 public interface IVirtualFileSystem {
 	public void ioInit();
@@ -42,4 +45,5 @@ public interface IVirtualFileSystem {
 	public int ioMount();
 	public int ioUmount();
 	public int ioDevctl(String deviceName, int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength);
+	public Map<IoFileMgrForUser.IoOperation, IoFileMgrForUser.IoOperationTiming> getTimings();
 }

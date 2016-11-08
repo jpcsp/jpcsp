@@ -91,7 +91,7 @@ public class AutoTestsRunner {
         DOMConfigurator.configure("LogSettings.xml");
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("emu"), Level.INFO)));
         Screen.setHasScreen(false);
-        IoFileMgrForUser.IoOperation.iodevctl.setDelayMillis(0);
+        IoFileMgrForUser.defaultTimings.get(IoFileMgrForUser.IoOperation.iodevctl).setDelayMillis(0);
         Modules.sceDisplayModule.setCalledFromCommandLine();
 
 		try {

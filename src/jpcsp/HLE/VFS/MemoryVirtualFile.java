@@ -17,7 +17,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.VFS;
 
 import static jpcsp.HLE.VFS.AbstractVirtualFileSystem.IO_ERROR;
+
+import java.util.Map;
+
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
 import jpcsp.util.Utilities;
 
 /**
@@ -114,6 +120,11 @@ public class MemoryVirtualFile implements IVirtualFile {
 		vFile.ioLseek(getPosition());
 
 		return vFile;
+	}
+
+	@Override
+	public Map<IoOperation, IoOperationTiming> getTimings() {
+		return IoFileMgrForUser.defaultTimings;
 	}
 
 	@Override

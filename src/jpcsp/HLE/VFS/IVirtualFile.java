@@ -16,7 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
+import java.util.Map;
+
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 
 public interface IVirtualFile {
 	public int ioClose();
@@ -30,4 +33,5 @@ public interface IVirtualFile {
 	public boolean isSectorBlockMode();
 	public long getPosition();
 	public IVirtualFile duplicate();
+	public Map<IoFileMgrForUser.IoOperation, IoFileMgrForUser.IoOperationTiming> getTimings();
 }
