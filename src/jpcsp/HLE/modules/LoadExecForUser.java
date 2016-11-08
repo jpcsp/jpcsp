@@ -36,11 +36,14 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.xmb.XmbIsoVirtualFile;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
@@ -80,14 +83,43 @@ public class LoadExecForUser extends HLEModule {
             }
         }
 
-        try {
-            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(name, IoFileMgrForUser.PSP_O_RDONLY);
-            if (moduleInput != null) {
-                byte[] moduleBytes = new byte[(int) moduleInput.length()];
-                moduleInput.readFully(moduleBytes);
-                moduleInput.close();
-                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+        ByteBuffer moduleBuffer = null;
 
+        IVirtualFile vFile = Modules.IoFileMgrForUserModule.getVirtualFile(name, IoFileMgrForUser.PSP_O_RDONLY, 0);
+        UmdIsoReader iso = null;
+    	if (vFile instanceof XmbIsoVirtualFile) {
+    		IVirtualFile vFileLoadExec = ((XmbIsoVirtualFile) vFile).ioReadForLoadExec();
+    		if (vFileLoadExec != null) {
+    			iso = ((XmbIsoVirtualFile) vFile).getIsoReader();
+
+        		vFile.ioClose();
+    			vFile = vFileLoadExec;
+    		}
+    	}
+
+    	if (vFile != null) {
+        	byte[] moduleBytes = Utilities.readCompleteFile(vFile);
+        	vFile.ioClose();
+        	if (moduleBytes != null) {
+        		moduleBuffer = ByteBuffer.wrap(moduleBytes);
+        	}
+        } else {
+	        SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(name, IoFileMgrForUser.PSP_O_RDONLY);
+	        if (moduleInput != null) {
+				try {
+					byte[] moduleBytes = new byte[(int) moduleInput.length()];
+		            moduleInput.readFully(moduleBytes);
+		            moduleInput.close();
+		            moduleBuffer = ByteBuffer.wrap(moduleBytes);
+				} catch (IOException e) {
+		            log.error(String.format("sceKernelLoadExec - Error while loading module '%s'", name), e);
+		            return ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+				}
+	        }
+        }
+
+        try {
+            if (moduleBuffer != null) {
                 SceModule module = Emulator.getInstance().load(name, moduleBuffer, true);
                 Emulator.getClock().resume();
 
@@ -117,6 +149,11 @@ public class LoadExecForUser extends HLEModule {
 
             	// The memory model (32MB / 64MB) could have been changed, update the RuntimeContext
             	RuntimeContext.updateMemory();
+
+            	if (iso != null) {
+            		Modules.IoFileMgrForUserModule.setIsoReader(iso);
+            		Modules.sceUmdUserModule.setIsoReader(iso);
+            	}
             }
         } catch (GeneralJpcspException e) {
             log.error("General Error", e);

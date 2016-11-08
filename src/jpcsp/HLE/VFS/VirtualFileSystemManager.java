@@ -16,10 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
+import static jpcsp.HLE.VFS.xmb.XmbVirtualFileSystem.PSP_GAME;
+
 import java.util.HashMap;
+
+import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
+import jpcsp.HLE.VFS.xmb.XmbVirtualFileSystem;
 
 public class VirtualFileSystemManager {
 	protected HashMap<String, IVirtualFileSystem> virtualFileSystems = new HashMap<String, IVirtualFileSystem>();
+	private IVirtualFileSystem xmbVfs;
 
 	public void register(String name, IVirtualFileSystem vfs) {
 		name = name.toLowerCase();
@@ -45,6 +51,13 @@ public class VirtualFileSystemManager {
 			localFileName.append(absoluteFileName.substring(colon + 1));
 
 			normalizeLocalFileName(localFileName);
+
+			if ("ms0".equals(name) && localFileName.toString().startsWith(PSP_GAME)) {
+				if (xmbVfs == null) {
+					xmbVfs = new XmbVirtualFileSystem(new LocalVirtualFileSystem("ms0/", true));
+				}
+				return xmbVfs;
+			}
 		}
 
 		return virtualFileSystems.get(name);

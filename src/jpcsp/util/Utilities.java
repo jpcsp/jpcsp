@@ -1146,6 +1146,36 @@ public class Utilities {
         return newArray;
     }
 
+    public static String[] add(String[] array, String s) {
+    	if (s == null) {
+    		return array;
+    	}
+    	if (array == null) {
+    		return new String[] { s };
+    	}
+
+    	String[] newArray = new String[array.length + 1];
+    	System.arraycopy(array, 0, newArray, 0, array.length);
+    	newArray[array.length] = s;
+
+    	return newArray;
+    }
+
+    public static File[] add(File[] array, File f) {
+    	if (f == null) {
+    		return array;
+    	}
+    	if (array == null) {
+    		return new File[] { f };
+    	}
+
+    	File[] newArray = new File[array.length + 1];
+    	System.arraycopy(array, 0, newArray, 0, array.length);
+    	newArray[array.length] = f;
+
+    	return newArray;
+    }
+
     public static byte[] readCompleteFile(IVirtualFile vFile) {
         if (vFile == null) {
             return null;
@@ -1306,5 +1336,20 @@ public class Utilities {
 		}
 
 		return -1;
+	}
+
+	public static String[] merge(String[] a1, String[] a2) {
+		if (a1 == null) {
+			return a2;
+		}
+		if (a2 == null) {
+			return a1;
+		}
+
+		String[] a = new String[a1.length + a2.length];
+		System.arraycopy(a1, 0, a, 0, a1.length);
+		System.arraycopy(a2, 0, a, a1.length, a2.length);
+
+		return a;
 	}
 }

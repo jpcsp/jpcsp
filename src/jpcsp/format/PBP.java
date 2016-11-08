@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class PBP {
-    private static final long PBP_MAGIC = 0x50425000L;
+    public  static final int PBP_MAGIC = 0x50425000;
     private static final String PBP_UNPACK_PATH_PREFIX = "unpacked-pbp/";
     private String info;
     private int size_pbp;

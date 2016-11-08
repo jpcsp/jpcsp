@@ -66,6 +66,56 @@ public class UmdBrowser extends javax.swing.JDialog {
     private static final long serialVersionUID = 7788144302296106541L;
     private static Logger log = Emulator.log;
 
+    public static class UmdFileFilter implements FileFilter {
+        @Override
+        public boolean accept(File file) {
+            String lower = file.getName().toLowerCase();
+            if (lower.endsWith(".cso") || lower.endsWith(".iso")) {
+                return true;
+            }
+            if (file.isDirectory()) {
+                File eboot[] = file.listFiles(new FileFilter() {
+                    @Override
+                    public boolean accept(File file) {
+                        return file.getName().equalsIgnoreCase("eboot.pbp");
+                    }
+                });
+                if (eboot.length != 1) {
+                	return false;
+                }
+
+                // Basic sanity checks on EBOOT.PBP
+                DataInputStream is = null;
+                try {
+					is = new DataInputStream(new FileInputStream(eboot[0]));
+					byte[] header = new byte[0x24];
+					int length = is.read(header);
+					if (length != header.length) {
+						return false;
+					}
+					// PBP header?
+					if (header[0] != 0 || header[1] != 'P' || header[2] != 'B' || header[3] != 'P') {
+						return false;
+					}
+				} catch (IOException e) {
+					return false;
+				} finally {
+					if (is != null) {
+						try {
+							is.close();
+						} catch (IOException e) {
+							// Ignore exception
+						}
+					}
+				}
+
+                // Valid EBOOT.PBP
+                return true;
+            }
+            return false;
+        }
+    }
+
     private final class MemStickTableModel extends AbstractTableModel {
 
         private static final long serialVersionUID = -1675488447176776560L;
@@ -89,56 +139,8 @@ public class UmdBrowser extends javax.swing.JDialog {
                     pathPrefix = path.getPath();
                 }
 
-                File[] pathPrograms = path.listFiles(new FileFilter() {
-                    @Override
-                    public boolean accept(File file) {
-                        String lower = file.getName().toLowerCase();
-                        if (lower.endsWith(".cso") || lower.endsWith(".iso")) {
-                            return true;
-                        }
-                        if (file.isDirectory()) {
-                            File eboot[] = file.listFiles(new FileFilter() {
-                                @Override
-                                public boolean accept(File file) {
-                                    return file.getName().equalsIgnoreCase("eboot.pbp");
-                                }
-                            });
-                            if (eboot.length != 1) {
-                            	return false;
-                            }
+                File[] pathPrograms = path.listFiles(new UmdFileFilter());
 
-                            // Basic sanity checks on EBOOT.PBP
-                            DataInputStream is = null;
-                            try {
-								is = new DataInputStream(new FileInputStream(eboot[0]));
-								byte[] header = new byte[0x24];
-								int length = is.read(header);
-								if (length != header.length) {
-									return false;
-								}
-								// PBP header?
-								if (header[0] != 0 || header[1] != 'P' || header[2] != 'B' || header[3] != 'P') {
-									return false;
-								}
-							} catch (IOException e) {
-								return false;
-							} finally {
-								if (is != null) {
-									try {
-										is.close();
-									} catch (IOException e) {
-										// Ignore exception
-									}
-								}
-							}
-
-                            // Valid EBOOT.PBP
-                            return true;
-                        }
-                        return false;
-                    }
-                });
-                
                 programList.addAll(Arrays.asList(pathPrograms));
             }
 

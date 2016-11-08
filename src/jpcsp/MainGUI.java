@@ -1767,7 +1767,7 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
         PauseEmu();
         if (Settings.getInstance().readBool("emu.umdbrowser")) {
-            umdbrowser = new UmdBrowser(this, getUmdPaths());
+            umdbrowser = new UmdBrowser(this, getUmdPaths(false));
             umdbrowser.setVisible(true);
         } else {
             final JFileChooser fc = makeJFileChooser();
@@ -1790,7 +1790,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_switchUmdActionPerformed
         if (Settings.getInstance().readBool("emu.umdbrowser")) {
-            umdbrowser = new UmdBrowser(this, getUmdPaths());
+            umdbrowser = new UmdBrowser(this, getUmdPaths(false));
             umdbrowser.setSwitchingUmd(true);
             umdbrowser.setVisible(true);
         } else {
@@ -2027,7 +2027,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 Modules.IoFileMgrForUserModule.setfilepath("disc0/");
 
                 Modules.IoFileMgrForUserModule.setIsoReader(iso);
-                jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
+                Modules.sceUmdUserModule.setIsoReader(iso);
 
                 if (instructioncounter != null) {
                     instructioncounter.RefreshWindow();
@@ -2770,7 +2770,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         }
     }
 
-    public static File[] getUmdPaths() {
+    public static File[] getUmdPaths(boolean ignorePSPGame) {
         List<File> umdPaths = new LinkedList<File>();
         umdPaths.add(new File(Settings.getInstance().readString("emu.umdpath") + "/"));
         for (int i = 1; true; i++) {
@@ -2778,7 +2778,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             if (umdPath == null) {
                 break;
             }
-            umdPaths.add(new File(umdPath + "/"));
+
+            if (!ignorePSPGame || !umdPath.equals("ms0\\PSP\\GAME")) {
+            	umdPaths.add(new File(umdPath + "/"));
+            }
         }
 
         return umdPaths.toArray(new File[umdPaths.size()]);

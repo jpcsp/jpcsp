@@ -1360,7 +1360,7 @@ public class HTTPServer {
 			if ("umdbuffer.iso".equals(isoFileName)) {
 				iso = new UmdIsoReader((String) null, true);
 			} else {
-				File[] umdPaths = MainGUI.getUmdPaths();
+				File[] umdPaths = MainGUI.getUmdPaths(false);
 				for (int i = 0; i < umdPaths.length; i++) {
 					File isoPath = new File(String.format("%s%s%s", umdPaths[i], File.separator, isoFileName));
 					if (isoPath.exists()) {

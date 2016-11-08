@@ -227,4 +227,14 @@ public class UmdIsoVirtualFileSystem extends AbstractVirtualFileSystem {
 
 		return result;
 	}
+
+	@Override
+	public void ioExit() {
+		try {
+			iso.close();
+		} catch (IOException e) {
+		}
+
+		super.ioExit();
+	}
 }
