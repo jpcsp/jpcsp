@@ -16,9 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.local;
 
+import java.util.Map;
+
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractProxyVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
 
 public class TmpLocalVirtualFile extends AbstractProxyVirtualFile {
 	protected IVirtualFile ioctl;
@@ -42,5 +47,10 @@ public class TmpLocalVirtualFile extends AbstractProxyVirtualFile {
 			ioctl.ioClose();
 		}
 		return super.ioClose();
+	}
+
+	@Override
+	public Map<IoOperation, IoOperationTiming> getTimings() {
+		return IoFileMgrForUser.noDelayTimings;
 	}
 }

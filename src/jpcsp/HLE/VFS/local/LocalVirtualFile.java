@@ -18,10 +18,14 @@ package jpcsp.HLE.VFS.local;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Map;
 
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
+import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.util.Utilities;
 
@@ -102,6 +106,11 @@ public class LocalVirtualFile extends AbstractVirtualFile {
 		}
 
 		return super.duplicate();
+	}
+
+	@Override
+	public Map<IoOperation, IoOperationTiming> getTimings() {
+		return IoFileMgrForUser.noDelayTimings;
 	}
 
 	@Override
