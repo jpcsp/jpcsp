@@ -16,10 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 
 import org.apache.log4j.Logger;
 
@@ -47,6 +51,18 @@ public class sceGameUpdate extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x5F5D98A6, version = 150)
     public int sceGameUpdateAbort() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x381CB9B3, version = 150)
+    public int sceGameUpdate_381CB9B3(int unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=36, usage=Usage.in) TPointer unknown2) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3EBB6055, version = 150)
+    public int sceGameUpdate_3EBB6055(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=152, usage=Usage.out) TPointer unknown2) {
     	return 0;
     }
 }

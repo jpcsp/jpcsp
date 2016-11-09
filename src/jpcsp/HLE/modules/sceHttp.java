@@ -468,7 +468,8 @@ public class sceHttp extends HLEModule {
 		    isSameAddress("poseidon.dl.playstation.net", sockAddrInternet) ||
 		    isSameAddress("zeus.dl.playstation.net", sockAddrInternet) ||
 		    isSameAddress("comic.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("infoboard.ww.dl.playstation.net", sockAddrInternet)) {
+		    isSameAddress("infoboard.ww.dl.playstation.net", sockAddrInternet) ||
+		    isSameAddress("a0.ww.np.dl.playstation.net", sockAddrInternet)) {
 			sockAddrInternet.sin_addr = HTTPServer.getInstance().getProxyAddress();
 			sockAddrInternet.sin_port = HTTPServer.getInstance().getProxyPort();
 		}

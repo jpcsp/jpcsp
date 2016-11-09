@@ -658,6 +658,8 @@ public class HTTPServer {
 			} else if ("static-resource.np.community.playstation.net".equals(request.get(host))) {
 				// Keep-alive is required for downloading the avatar static images
 				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("a0.ww.np.dl.playstation.net".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 443);
 			} else if (!processProxyRequestLocally && "nsx.sec.np.dl.playstation.net".equals(request.get(host))) {
 				sendResponseFile(os, rootDirectory + "/psp.xml");
 			} else if ("GET".equals(request.get(method))) {
@@ -1873,8 +1875,17 @@ public class HTTPServer {
 	}
 
 	public void sendKdpM(String data, OutputStream os) throws IOException {
+		Map<String, String> parameters = parseParameters(data);
+		String productId = parameters.get("productid");
+
 		int responseLength = 4240;
 		byte[] response = new byte[responseLength];
+
+		if (productId != null) {
+			ByteBuffer buffer = ByteBuffer.wrap(response);
+			buffer.position(16);
+			Utilities.writeStringZ(buffer, productId);
+		}
 
 		if (ticket != null) {
 			TicketParam ticketParam = ticket.parameters.get(4);
