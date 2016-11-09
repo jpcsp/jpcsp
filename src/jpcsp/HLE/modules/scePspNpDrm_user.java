@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import jpcsp.GeneralJpcspException;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -34,6 +36,7 @@ import jpcsp.Loader;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.VFS.SeekableDataInputVirtualFile;
 import jpcsp.HLE.VFS.crypto.EDATVirtualFile;
 import jpcsp.HLE.VFS.crypto.PGDVirtualFile;
@@ -313,6 +316,18 @@ public class scePspNpDrm_user extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x17E3F4BB, version = 150)
     public int sceNpDrmVerifyAct(TPointer unknown) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9A34AC9F, version = 150)
+    public int sceNpDrm_9A34AC9F(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=152, usage=Usage.in) TPointer rifAddr) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0F9547E6, version = 150)
+    public int sceNpDrmGetVersionKey(TPointer unknown1, @CanBeNull TPointer unknown2, TPointer unknown3, int unknown4) {
         return 0;
     }
 }

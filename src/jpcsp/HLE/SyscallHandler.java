@@ -94,7 +94,7 @@ public class SyscallHandler {
 		        log.error(String.format("           $ra=0x%08X, $sp=0x%08X", cpu._ra, cpu._sp));
 		        Memory mem = Emulator.getMemory();
 		        log.error(String.format("Caller code:"));
-		        for (int i = -48; i <= 20; i += 4) {
+		        for (int i = -96; i <= 40; i += 4) {
 		        	int address = cpu._ra + i;
 		        	int opcode = mem.read32(address);
 		        	Instruction insn = Decoder.instruction(opcode);
