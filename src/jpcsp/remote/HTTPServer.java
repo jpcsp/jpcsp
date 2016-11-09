@@ -482,10 +482,13 @@ public class HTTPServer {
 
 		HttpURLConnection connection = (HttpURLConnection) new URL(remoteUrl).openConnection();
 		for (String key : request.keySet()) {
-			if (!data.equals(key) && !method.equals(key) && !version.equals(key)) {
+			if (!data.equals(key) && !method.equals(key) && !version.equals(key) && !path.equals(key) && !parameters.equals(key)) {
 				connection.setRequestProperty(key, request.get(key));
 			}
 		}
+
+		// Do not follow HTTP redirects
+		connection.setInstanceFollowRedirects(false);
 
 		connection.setRequestMethod(request.get(method));
 		String additionalData = request.get(data);
@@ -555,6 +558,14 @@ public class HTTPServer {
 					// only be sent over https, otherwise, it will be lost.
 					if (forcedPort == 443 && "Set-Cookie".equalsIgnoreCase(key)) {
 						value = value.replace("; Secure", "");
+					}
+
+					// If we changed "https" into "http", keep redirecting to the
+					// http address instead of https.
+					if (forcedPort == 443 && "Location".equalsIgnoreCase(key)) {
+						if (value.startsWith("https:")) {
+							value = value.replaceFirst("https:", "http:");
+						}
 					}
 
 					sendResponseHeader(os, key, value);
@@ -660,6 +671,16 @@ public class HTTPServer {
 				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
 			} else if ("a0.ww.np.dl.playstation.net".equals(request.get(host))) {
 				keepAlive = doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("www.playstation.com".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 443);
+			} else if ("radio.psp.dl.playstation.net".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("api.shoutcast.com".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("yp.shoutcast.com".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
+			} else if ("www.shoutcast.com".equals(request.get(host))) {
+				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
 			} else if (!processProxyRequestLocally && "nsx.sec.np.dl.playstation.net".equals(request.get(host))) {
 				sendResponseFile(os, rootDirectory + "/psp.xml");
 			} else if ("GET".equals(request.get(method))) {
@@ -1646,7 +1667,7 @@ public class HTTPServer {
 		if (pathValue.startsWith("https://") || pathValue.startsWith("http://")) {
 			return pathValue;
 		}
-		
+
 		String baseUrl = getBaseUrl(descriptor, request, forcedPort);
 
 		if (pathValue == null) {
@@ -1657,7 +1678,12 @@ public class HTTPServer {
 			pathValue = pathValue.substring(1);
 		}
 
-		return baseUrl + pathValue;
+		String query = "";
+		if (request.containsKey(parameters)) {
+			query = "?" + request.get(parameters);
+		}
+
+		return baseUrl + pathValue + query;
 	}
 
 	private static String getArchitecture(HashMap<String, String> request) {
