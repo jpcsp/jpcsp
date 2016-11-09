@@ -135,6 +135,8 @@ public class Modules {
     public static sceMcctrl sceMcctrlModule = new sceMcctrl();
     public static sceNpInstall sceNpInstallModule = new sceNpInstall();
     public static sceNpCamp sceNpCampModule = new sceNpCamp();
+    public static sceNetAdhocAuth sceNetAdhocAuthModule = new sceNetAdhocAuth();
+    public static sceNetAdhocDownload sceNetAdhocDownloadModule = new sceNetAdhocDownload();
 
     public static Logger log = Logger.getLogger("hle");
 
