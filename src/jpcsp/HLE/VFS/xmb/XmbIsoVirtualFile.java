@@ -16,8 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.xmb;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
@@ -27,27 +32,28 @@ import jpcsp.HLE.VFS.AbstractVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFileSystem;
+import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PBP;
-import jpcsp.format.PSF;
-import jpcsp.util.Utilities;
+import jpcsp.settings.Settings;
 
 public class XmbIsoVirtualFile extends AbstractVirtualFile {
 	protected static class PbpSection {
-		IVirtualFile vFile;
 		int size;
+		int offset;
+		boolean availableInContents;
+		String umdFilename;
+		File cacheFile;
 	}
-	private UmdIsoReader iso;
-	protected IVirtualFileSystem vfs;
-	protected PbpSection[] sections;
-	protected int[] header;
-	protected byte[] headerBytes;
+
+	private String umdFilename;
+	private String umdName;
 	protected long filePointer;
 	protected long totalLength;
-	protected static final String[] isoFileNames = new String [] {
+	protected static final String[] umdFilenames = new String [] {
 		"PSP_GAME/PARAM.SFO",
 		"PSP_GAME/ICON0.PNG",
 		"PSP_GAME/ICON1.PMF",
@@ -55,90 +61,75 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 		"PSP_GAME/PIC1.PNG",
 		"PSP_GAME/SND0.AT3"
 	};
-	protected byte[] virtualSfo = {
-        (byte) 0x00, (byte) 0x50, (byte) 0x53, (byte) 0x46, (byte) 0x01, (byte) 0x01, (byte) 0x00, (byte) 0x00,
-        (byte) 0x94, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xE8, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x08, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x04,
-        (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x09, (byte) 0x00, (byte) 0x04, (byte) 0x02,
-        (byte) 0x03, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x12, (byte) 0x00, (byte) 0x04, (byte) 0x02,
-        (byte) 0x0A, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x10, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x08, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x1A, (byte) 0x00, (byte) 0x04, (byte) 0x02,
-        (byte) 0x05, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x18, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x27, (byte) 0x00, (byte) 0x04, (byte) 0x04,
-        (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x20, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x36, (byte) 0x00, (byte) 0x04, (byte) 0x02,
-        (byte) 0x05, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x24, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x45, (byte) 0x00, (byte) 0x04, (byte) 0x04,
-        (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x2C, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x4C, (byte) 0x00, (byte) 0x04, (byte) 0x02,
-        (byte) 0x40, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x80, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x30, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x42, (byte) 0x4F, (byte) 0x4F, (byte) 0x54,
-        (byte) 0x41, (byte) 0x42, (byte) 0x4C, (byte) 0x45, (byte) 0x00, (byte) 0x43, (byte) 0x41, (byte) 0x54,
-        (byte) 0x45, (byte) 0x47, (byte) 0x4F, (byte) 0x52, (byte) 0x59, (byte) 0x00, (byte) 0x44, (byte) 0x49,
-        (byte) 0x53, (byte) 0x43, (byte) 0x5F, (byte) 0x49, (byte) 0x44, (byte) 0x00, (byte) 0x44, (byte) 0x49,
-        (byte) 0x53, (byte) 0x43, (byte) 0x5F, (byte) 0x56, (byte) 0x45, (byte) 0x52, (byte) 0x53, (byte) 0x49,
-        (byte) 0x4F, (byte) 0x4E, (byte) 0x00, (byte) 0x50, (byte) 0x41, (byte) 0x52, (byte) 0x45, (byte) 0x4E,
-        (byte) 0x54, (byte) 0x41, (byte) 0x4C, (byte) 0x5F, (byte) 0x4C, (byte) 0x45, (byte) 0x56, (byte) 0x45,
-        (byte) 0x4C, (byte) 0x00, (byte) 0x50, (byte) 0x53, (byte) 0x50, (byte) 0x5F, (byte) 0x53, (byte) 0x59,
-        (byte) 0x53, (byte) 0x54, (byte) 0x45, (byte) 0x4D, (byte) 0x5F, (byte) 0x56, (byte) 0x45, (byte) 0x52,
-        (byte) 0x00, (byte) 0x52, (byte) 0x45, (byte) 0x47, (byte) 0x49, (byte) 0x4F, (byte) 0x4E, (byte) 0x00,
-        (byte) 0x54, (byte) 0x49, (byte) 0x54, (byte) 0x4C, (byte) 0x45, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x4D, (byte) 0x47, (byte) 0x00, (byte) 0x00,
-        (byte) 0x55, (byte) 0x43, (byte) 0x4A, (byte) 0x53, (byte) 0x31, (byte) 0x30, (byte) 0x30, (byte) 0x34,
-        (byte) 0x31, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x31, (byte) 0x2E, (byte) 0x30, (byte) 0x30, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x31, (byte) 0x2E, (byte) 0x30, (byte) 0x30,
-        (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x80, (byte) 0x00, (byte) 0x00,
-        (byte) 0x31, (byte) 0x32, (byte) 0x33, (byte) 0x34, (byte) 0x35, (byte) 0x36, (byte) 0x37, (byte) 0x38,
-        (byte) 0x39, (byte) 0x30, (byte) 0x31, (byte) 0x32, (byte) 0x33, (byte) 0x34, (byte) 0x35, (byte) 0x36,
-        (byte) 0x37, (byte) 0x38, (byte) 0x39, (byte) 0x30, (byte) 0x31, (byte) 0x32, (byte) 0x33, (byte) 0x34,
-        (byte) 0x35, (byte) 0x36, (byte) 0x37, (byte) 0x38, (byte) 0x39, (byte) 0x30, (byte) 0x31, (byte) 0x32,
-        (byte) 0x33, (byte) 0x34, (byte) 0x35, (byte) 0x36, (byte) 0x37, (byte) 0x38, (byte) 0x39, (byte) 0x30,
-        (byte) 0x31, (byte) 0x32, (byte) 0x33, (byte) 0x34, (byte) 0x35, (byte) 0x36, (byte) 0x37, (byte) 0x38,
-        (byte) 0x39, (byte) 0x30, (byte) 0x31, (byte) 0x32, (byte) 0x33, (byte) 0x34, (byte) 0x35, (byte) 0x36,
-        (byte) 0x37, (byte) 0x38, (byte) 0x39, (byte) 0x30, (byte) 0x31, (byte) 0x32, (byte) 0x33, (byte) 0x34,
-        (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
-        (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00
-	};
+	protected byte[] contents;
+	protected PbpSection[] sections;
 
 	public XmbIsoVirtualFile(String umdFilename) {
 		super(null);
 
+		this.umdFilename = umdFilename;
+		umdName = new File(umdFilename).getName();
+
+		File cacheDirectory = new File(getCacheDirectory());
+		boolean createCacheFiles = !cacheDirectory.isDirectory();
+		if (createCacheFiles) {
+			cacheDirectory.mkdirs();
+		}
+
 		try {
-			iso = new UmdIsoReader(umdFilename);
-			vfs = new UmdIsoVirtualFileSystem(iso);
-			sections = new PbpSection[isoFileNames.length];
-			header = new int[10];
-			header[0] = PBP.PBP_MAGIC;
-			header[1] = 0x10000; // version
+			UmdIsoReader iso = new UmdIsoReader(umdFilename);
+			IVirtualFileSystem vfs = new UmdIsoVirtualFileSystem(iso);
+			sections = new PbpSection[umdFilenames.length + 1];
+			sections[0] = new PbpSection();
+			sections[0].offset = 0;
+			sections[0].size = 0x28;
+			sections[0].availableInContents = true;
 			int offset = 0x28;
-			for (int i = 0; i < isoFileNames.length; i++) {
+			SceIoStat stat = new SceIoStat();
+			for (int i = 0; i < umdFilenames.length; i++) {
 				PbpSection section = new PbpSection();
-				section.vFile = vfs.ioOpen(isoFileNames[i], IoFileMgrForUser.PSP_O_RDONLY, 0);
-				if (section.vFile != null) {
-					section.size = (int) section.vFile.length();
+				section.offset = offset;
+				section.umdFilename = umdFilenames[i];
+				if (vfs.ioGetstat(section.umdFilename, stat) >= 0) {
+					section.size = (int) stat.size;
 				}
 
-				sections[i] = section;
-				header[i + 2] = offset;
-				if (i == 0) {
-					offset += virtualSfo.length;
-				} else {
-					offset += section.size;
+				String cacheFileName = getCacheFileName(section);
+				File cacheFile = new File(cacheFileName);
+
+				// Create only cache files for PARAM.SFO and ICON0.PNG
+				if (createCacheFiles && i < 2) {
+					IVirtualFile vFile = vfs.ioOpen(section.umdFilename, IoFileMgrForUser.PSP_O_RDONLY, 0);
+					if (vFile != null) {
+						section.size = (int) vFile.length();
+						byte[] buffer = new byte[section.size];
+						int length = vFile.ioRead(buffer, 0, buffer.length);
+						vFile.ioClose();
+
+						OutputStream os = new FileOutputStream(cacheFile);
+						os.write(buffer, 0, length);
+						os.close();
+					}
 				}
+
+				if (cacheFile.canRead()) {
+					section.cacheFile = cacheFile;
+				}
+
+				sections[i + 1] = section;
+				offset += section.size;
 			}
 			totalLength = offset;
 
-			headerBytes = new byte[header.length * 4];
-			ByteBuffer.wrap(headerBytes).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(header);
+			contents = new byte[offset];
+			ByteBuffer buffer = ByteBuffer.wrap(contents).order(ByteOrder.LITTLE_ENDIAN);
+			buffer.putInt(PBP.PBP_MAGIC);
+			buffer.putInt(0x10000); // version
+			for (int i = 1; i < sections.length; i++) {
+				buffer.putInt(sections[i].offset);
+			}
+
+			vfs.ioExit();
 		} catch (FileNotFoundException e) {
 			log.debug("XmbIsoVirtualFile", e);
 		} catch (IOException e) {
@@ -146,82 +137,59 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 		}
 	}
 
-	protected int getHeaderSection(int remaining, TPointer outputPointer, int offset) {
-		int length = (int) Math.min(remaining, header[2] - filePointer);
-
-		outputPointer.setArray(offset, headerBytes, (int) filePointer, length);
-
-		return length;
+	protected String getCacheDirectory() {
+        return String.format("%1$s%2$cUmdBrowserCache%2$c%3$s", Settings.getInstance().readString("emu.tmppath"), File.separatorChar, umdName);
 	}
 
-	protected int getSfoSection(int remaining, TPointer outputPointer, int offset) {
-		if (sections[0].vFile != null) {
-			byte[] buffer = new byte[sections[0].size];
-			sections[0].vFile.ioLseek(0L);
-			int length = sections[0].vFile.ioRead(buffer, 0, buffer.length);
+	protected String getCacheFileName(PbpSection section) {
+        return String.format("%s%c%s", getCacheDirectory(), File.separatorChar, section.umdFilename.substring(9));
+	}
 
-			PSF psf = new PSF();
+	protected void readSection(PbpSection section) {
+		if (section.size > 0) {
 			try {
-				psf.read(ByteBuffer.wrap(buffer, 0, length));
-			} catch (IOException e) {
-				return IO_ERROR;
-			}
+				if (section.cacheFile != null) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("XmbIsoVirtualFile.readSection from Cache %s", section.cacheFile));
+					}
 
-			String title = psf.getString("TITLE");
-			String discId = psf.getString("DISC_ID");
-			int parentalLevel = psf.getNumeric("PARENTAL_LEVEL");
-			ByteBuffer sfoBuffer = ByteBuffer.wrap(virtualSfo);
-			sfoBuffer.position(0x118);
-			Utilities.writeStringZ(sfoBuffer, title);
-			sfoBuffer.position(0xF0);
-			Utilities.writeStringZ(sfoBuffer, discId);
-			Utilities.writeUnaligned32(virtualSfo, 0x108, parentalLevel);
+					InputStream is = new FileInputStream(section.cacheFile);
+					is.read(contents, section.offset, section.size);
+					is.close();
+				} else {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("XmbIsoVirtualFile.readSection from UMD %s", section.umdFilename));
+					}
+
+					UmdIsoReader iso = new UmdIsoReader(umdFilename);
+					IVirtualFileSystem vfs = new UmdIsoVirtualFileSystem(iso);
+					IVirtualFile vFile = vfs.ioOpen(section.umdFilename, IoFileMgrForUser.PSP_O_RDONLY, 0);
+					if (vFile != null) {
+						vFile.ioRead(contents, section.offset, section.size);
+						vFile.ioClose();
+					}
+					vfs.ioExit();
+				}
+			} catch (IOException e) {
+				log.debug("readSection", e);
+			}
 		}
 
-		int virtualSfoOffset = (int) (filePointer - header[2]);
-		int length = (int) Math.min(remaining, virtualSfo.length - virtualSfoOffset);
-		outputPointer.setArray(offset, virtualSfo, virtualSfoOffset, length);
-
-		return length;
+		section.availableInContents = true;
 	}
 
-	protected int getPbpSection(int remaining, int idx, TPointer outputPointer, int offset) {
-		int length = 0;
-
-		if (remaining <= 0) {
-			return length;
+	protected int ioRead(PbpSection section, TPointer outputPointer, int offset, int length) {
+		if (filePointer < section.offset || filePointer >= section.offset + section.size) {
+			return 0;
 		}
 
-		if (idx < 0) {
-			if (filePointer < header[2]) {
-				return getHeaderSection(remaining, outputPointer, offset);
-			}
-			return length;
-		}
-
-		if (filePointer < header[3]) {
-			return getSfoSection(remaining, outputPointer, offset);
-		}
-
-		if (filePointer < header[2 + idx] || filePointer >= header[2 + idx + 1]) {
-			return length;
-		}
-
-		long sectionPointer = filePointer - header[2 + idx];
-		remaining = (int) Math.min(remaining, sections[idx].size - sectionPointer);
-
-		while (remaining > 0) {
-			TPointer data = new TPointer(outputPointer.getMemory(), outputPointer.getAddress() + offset);
-			sections[idx].vFile.ioLseek(sectionPointer);
-			int result = sections[idx].vFile.ioRead(data, remaining);
-			if (result < 0) {
-				return result;
+		length = Math.min(length, section.size - (int) (filePointer - section.offset));
+		if (length > 0) {
+			if (!section.availableInContents) {
+				readSection(section);
 			}
 
-			remaining -= result;
-			length += result;
-			offset += result;
-			sectionPointer += result;
+			outputPointer.setArray(offset, contents, (int) filePointer, length);
 		}
 
 		return length;
@@ -229,18 +197,12 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 
 	@Override
 	public int ioRead(TPointer outputPointer, int outputLength) {
-		int remaining = outputLength;
-
+		int remaining = (int) Math.min(outputLength, contents.length - filePointer);
 		int offset = 0;
-		for (int i = -1; i < sections.length && remaining > 0; i++) {
-			int length = getPbpSection(remaining, i, outputPointer, offset);
-
-			if (length < 0) {
-				return length;
-			}
-
-			offset += length;
+		for (int i = 0; remaining > 0 && i < sections.length; i++) {
+			int length = ioRead(sections[i], outputPointer, offset, remaining);
 			filePointer += length;
+			offset += length;
 			remaining -= length;
 		}
 
@@ -266,17 +228,7 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 
 	@Override
 	public int ioClose() {
-		if (sections != null) {
-			for (int i = 0; i < sections.length; i++) {
-				if (sections[i].vFile != null) {
-					sections[i].vFile.ioClose();
-					sections[i].vFile = null;
-				}
-			}
-			sections = null;
-		}
-
-		totalLength = 0L;
+		filePointer = 0L;
 
 		return 0;
 	}
@@ -287,11 +239,13 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 		return IoFileMgrForUser.noDelayTimings;
 	}
 
-	public IVirtualFile ioReadForLoadExec() {
+	public IVirtualFile ioReadForLoadExec() throws FileNotFoundException, IOException {
+		UmdIsoReader iso = getIsoReader();
+		IVirtualFileSystem vfs = new UmdIsoVirtualFileSystem(iso);
 		return vfs.ioOpen("PSP_GAME/SYSDIR/EBOOT.BIN", IoFileMgrForUser.PSP_O_RDONLY, 0);
 	}
 
-	public UmdIsoReader getIsoReader() {
-		return iso;
+	public UmdIsoReader getIsoReader() throws FileNotFoundException, IOException {
+		return new UmdIsoReader(umdFilename);
 	}
 }

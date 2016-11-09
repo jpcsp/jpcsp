@@ -88,12 +88,16 @@ public class LoadExecForUser extends HLEModule {
         IVirtualFile vFile = Modules.IoFileMgrForUserModule.getVirtualFile(name, IoFileMgrForUser.PSP_O_RDONLY, 0);
         UmdIsoReader iso = null;
     	if (vFile instanceof XmbIsoVirtualFile) {
-    		IVirtualFile vFileLoadExec = ((XmbIsoVirtualFile) vFile).ioReadForLoadExec();
-    		if (vFileLoadExec != null) {
-    			iso = ((XmbIsoVirtualFile) vFile).getIsoReader();
-
-        		vFile.ioClose();
-    			vFile = vFileLoadExec;
+    		try {
+	    		IVirtualFile vFileLoadExec = ((XmbIsoVirtualFile) vFile).ioReadForLoadExec();
+	    		if (vFileLoadExec != null) {
+	    			iso = ((XmbIsoVirtualFile) vFile).getIsoReader();
+	
+	        		vFile.ioClose();
+	    			vFile = vFileLoadExec;
+	    		}
+    		} catch (IOException e) {
+    			log.debug("hleKernelLoadExec", e);
     		}
     	}
 

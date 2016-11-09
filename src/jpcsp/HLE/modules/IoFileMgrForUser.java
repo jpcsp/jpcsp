@@ -1921,6 +1921,7 @@ public class IoFileMgrForUser extends HLEModule {
                 	}
                 } else {
                 	if (info.vFile != null) {
+                		timings = info.vFile.getTimings();
                 		info.vFile.ioClose();
                 	} else if (info.readOnlyFile != null) {
                         // Can be just closing an empty handle, because hleIoOpen(async==true)
@@ -1987,6 +1988,7 @@ public class IoFileMgrForUser extends HLEModule {
                 } else if ((info.flags & PSP_O_RDWR) == PSP_O_RDONLY) {
                 	result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else if (info.vFile != null) {
+            		timings = info.vFile.getTimings();
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
                         info.vFile.ioLseek(info.vFile.length());
                         info.position = info.vFile.length();
@@ -2090,6 +2092,7 @@ public class IoFileMgrForUser extends HLEModule {
                 } else if ((info.flags & PSP_O_RDWR) == PSP_O_WRONLY) {
                 	result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else if (info.vFile != null) {
+            		timings = info.vFile.getTimings();
                     if (info.sectorBlockMode) {
                         // In sectorBlockMode, the size is a number of sectors
                         size *= UmdIsoFile.sectorLength;
@@ -2214,6 +2217,7 @@ public class IoFileMgrForUser extends HLEModule {
                     log.warn("seek - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
                 } else if (info.vFile != null) {
+            		timings = info.vFile.getTimings();
                     if (info.sectorBlockMode) {
                         // In sectorBlockMode, the offset is a sector number
                         offset *= UmdIsoFile.sectorLength;
@@ -2377,6 +2381,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.warn("hleIoIoctl - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
             result = ERROR_KERNEL_ASYNC_BUSY;
         } else if (info.vFile != null && cmd != 0x04100001) {
+    		timings = info.vFile.getTimings();
         	result = info.vFile.ioIoctl(cmd, new TPointer(mem, indata_addr), inlen, new TPointer(mem, outdata_addr), outlen);
         } else {
             switch (cmd) {
@@ -3622,6 +3627,7 @@ public class IoFileMgrForUser extends HLEModule {
                 log.error(String.format("sceIoRename - renaming across devices not allowed '%s' - '%s'", oldFileName, newFileName));
                 result = ERROR_ERRNO_DEVICE_NOT_FOUND;
             } else {
+        		timings = oldVfs.getTimings();
             	result = oldVfs.ioRename(localOldFileName.toString(), localNewFileName.toString());
             }
     	} else if (useVirtualFileSystem) {

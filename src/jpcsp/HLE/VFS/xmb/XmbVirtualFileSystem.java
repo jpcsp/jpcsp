@@ -22,9 +22,12 @@ import static jpcsp.util.Utilities.merge;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import jpcsp.GUI.UmdBrowser;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
@@ -42,7 +45,12 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 	private IVirtualFileSystem vfs;
 	private File[] umdPaths;
 	private Map<String, IVirtualFileSystem> umdVfs;
-	private String[] umdFiles;
+	private List<VirtualPBP> umdFiles;
+
+	private static class VirtualPBP {
+		String umdFile;
+		IVirtualFile vFile;
+	}
 
 	public XmbVirtualFileSystem(IVirtualFileSystem vfs) {
 		this.vfs = vfs;
@@ -58,6 +66,8 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 			IVirtualFileSystem localVfs = new LocalVirtualFileSystem(umdPaths[i].getAbsolutePath() + "/", false);
 			umdVfs.put(umdPaths[i].getAbsolutePath(), localVfs);
 		}
+
+		umdFiles = new LinkedList<XmbVirtualFileSystem.VirtualPBP>();
 	}
 
 	private String[] addUmdFileNames(String dirName, File[] files) {
@@ -67,8 +77,11 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 
 		String[] fileNames = new String[files.length];
 		for (int i = 0; i < files.length; i++) {
-			umdFiles = add(umdFiles, files[i].getAbsolutePath());
-			int umdIndex = umdFiles.length - 1;
+			VirtualPBP virtualPBP = new VirtualPBP();
+			virtualPBP.umdFile = files[i].getAbsolutePath();
+
+			int umdIndex = umdFiles.size();
+			umdFiles.add(virtualPBP);
 			fileNames[i] = String.format("@UMD%d", umdIndex);
 
 			if (log.isDebugEnabled()) {
@@ -79,7 +92,7 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 		return fileNames;
 	}
 
-	private String getUmdFileName(String fileName, StringBuilder restFileName) {
+	private VirtualPBP getVirtualPBP(String fileName, StringBuilder restFileName) {
 		if (fileName != null) {
 			int umdMarkerIndex = fileName.indexOf("@UMD");
 			if (umdMarkerIndex >= 0) {
@@ -93,13 +106,22 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 				}
 
 				int umdIndex = Integer.parseInt(umdIndexString);
-				if (umdIndex >= 0 && umdIndex < umdFiles.length) {
-					return umdFiles[umdIndex];
+				if (umdIndex >= 0 && umdIndex < umdFiles.size()) {
+					return umdFiles.get(umdIndex);
 				}
 			}
 		}
 
 		return null;
+	}
+
+	private String getUmdFileName(String fileName, StringBuilder restFileName) {
+		VirtualPBP virtualPBP = getVirtualPBP(fileName, restFileName);
+		if (virtualPBP == null) {
+			return null;
+		}
+
+		return virtualPBP.umdFile;
 	}
 
 	private IVirtualFileSystem getUmdVfs(String umdFileName, StringBuilder localFileName) {
@@ -119,13 +141,7 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 		StringBuilder localFileName = new StringBuilder();
 		IVirtualFileSystem vfs = getUmdVfs(umdFileName, localFileName);
 		if (vfs != null) {
-			int result = vfs.ioGetstat(localFileName.toString(), stat);
-			if (result == 0) {
-				// Change attribute from "file" to "directory"
-				stat.attr = (stat.attr & ~0x20) | 0x10;
-				stat.mode = (stat.mode & ~0x2000) | 0x1000;
-			}
-			return result;
+			return vfs.ioGetstat(localFileName.toString(), stat);
 		}
 
 		return IO_ERROR;
@@ -177,6 +193,10 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 				return result;
 			}
 
+			// Change attribute from "file" to "directory"
+			dir.stat.attr = (dir.stat.attr & ~0x20) | 0x10;
+			dir.stat.mode = (dir.stat.mode & ~0x2000) | 0x1000;
+
 			return 1;
 		}
 
@@ -197,8 +217,9 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 	@Override
 	public IVirtualFile ioOpen(String fileName, int flags, int mode) {
 		StringBuilder restFileName = new StringBuilder();
-		String umdFileName = getUmdFileName(fileName, restFileName);
-		if (umdFileName != null && EBOOT_PBP.equals(restFileName.toString())) {
+		VirtualPBP virtualPBP = getVirtualPBP(fileName, restFileName);
+		if (virtualPBP != null && EBOOT_PBP.equals(restFileName.toString())) {
+			String umdFileName = virtualPBP.umdFile;
 			File umdFile = new File(umdFileName);
 
 			// Is it a directory containing an EBOOT.PBP file?
@@ -212,15 +233,16 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 			}
 
 			// Map the ISO/CSO file into a virtual PBP file
-			IVirtualFile vFile = new XmbIsoVirtualFile(umdFileName);
-			if (vFile.length() > 0) {
-				return vFile;
+			if (virtualPBP.vFile == null) {
+				virtualPBP.vFile = new XmbIsoVirtualFile(umdFileName);
+			}
+			if (virtualPBP.vFile.length() > 0) {
+				return virtualPBP.vFile;
 			}
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("XmbVirtualFileSystem.ioOpen could not open UMD file '%s'", umdFileName));
 			}
-			vFile.ioClose();
 		}
 
 		return vfs.ioOpen(fileName, flags, mode);
@@ -230,5 +252,50 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 	public Map<IoOperation, IoOperationTiming> getTimings() {
 		// Do not delay IO operations on faked EBOOT.PBP files
 		return IoFileMgrForUser.noDelayTimings;
+	}
+
+	@Override
+	public int ioRename(String oldFileName, String newFileName) {
+		return vfs.ioRename(oldFileName, newFileName);
+	}
+
+	@Override
+	public int ioChstat(String fileName, SceIoStat stat, int bits) {
+		return vfs.ioChstat(fileName, stat, bits);
+	}
+
+	@Override
+	public int ioRemove(String name) {
+		return vfs.ioRemove(name);
+	}
+
+	@Override
+	public int ioMkdir(String name, int mode) {
+		return vfs.ioMkdir(name, mode);
+	}
+
+	@Override
+	public int ioRmdir(String name) {
+		return vfs.ioRmdir(name);
+	}
+
+	@Override
+	public int ioChdir(String directoryName) {
+		return vfs.ioChdir(directoryName);
+	}
+
+	@Override
+	public int ioMount() {
+		return vfs.ioMount();
+	}
+
+	@Override
+	public int ioUmount() {
+		return vfs.ioUmount();
+	}
+
+	@Override
+	public int ioDevctl(String deviceName, int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength) {
+		return vfs.ioDevctl(deviceName, command, inputPointer, inputLength, outputPointer, outputLength);
 	}
 }
