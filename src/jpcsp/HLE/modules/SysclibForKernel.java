@@ -205,6 +205,11 @@ public class SysclibForKernel extends HLEModule {
 
 	@HLEFunction(nid = 0x47DD934D, version = 150)
     public int strtol(@CanBeNull PspString string, @CanBeNull TPointer32 endString, int base) {
+		// base == 0 seems to be handled as base == 10.
+		if (base == 0) {
+			base = 10;
+		}
+
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(string.getAddress(), 1);
 		String s = string.getString();
 		for (int i = 0; true; i++) {
