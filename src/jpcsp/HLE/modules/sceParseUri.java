@@ -138,6 +138,11 @@ public class sceParseUri extends HLEModule {
 			}
 		}
 
+		String query = uri.getQuery();
+		if (query != null && query.length() > 0) {
+			query = "?" + query;
+		}
+
 		pspParsedUri parsedUri = new pspParsedUri();
 		int offset = 0;
 
@@ -164,12 +169,22 @@ public class sceParseUri extends HLEModule {
 		offset = addString(workArea, workAreaSize, offset, uri.getPath());
 
 		parsedUri.queryAddr = workArea.getAddress() + offset;
-		offset = addString(workArea, workAreaSize, offset, uri.getQuery());
+		offset = addString(workArea, workAreaSize, offset, query);
 
 		parsedUri.fragmentAddr = workArea.getAddress() + offset;
 		offset = addString(workArea, workAreaSize, offset, uri.getFragment());
 
-		parsedUri.port = uri.getPort() < 0 ? 0 : uri.getPort();
+		if (uri.getPort() < 0) {
+			if ("http".equals(uri.getScheme())) {
+				parsedUri.port = 80;
+			} else if ("https".equals(uri.getScheme())) {
+				parsedUri.port = 443;
+			} else {
+				parsedUri.port = 0;
+			}
+		} else {
+			parsedUri.port = uri.getPort();
+		}
 
 		workAreaSizeAddr.setValue(offset);
 		parsedUri.write(parsedUriArea);
