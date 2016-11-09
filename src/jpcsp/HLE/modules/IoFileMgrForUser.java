@@ -2768,6 +2768,74 @@ public class IoFileMgrForUser extends HLEModule {
     	}
     }
 
+    private int hleIoRename(int oldFileNameAddr, String oldFileName, int newFileNameAddr, String newFileName) {
+    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
+
+    	// The new file name can omit the file directory, in which case the directory
+    	// of the old file name is used.
+    	// I.e., when renaming "ms0:/PSP/SAVEDATA/xxxx" into "yyyy",
+    	// actually rename into "ms0:/PSP/SAVEDATA/yyyy".
+    	if (!newFileName.contains("/")) {
+    		int prefixOffset = oldFileName.lastIndexOf("/");
+    		if (prefixOffset >= 0) {
+    			newFileName = oldFileName.substring(0, prefixOffset + 1) + newFileName;
+    		}
+    	}
+
+    	String oldpcfilename = getDeviceFilePath(oldFileName);
+        String newpcfilename = getDeviceFilePath(newFileName);
+        int result;
+
+        String absoluteOldFileName = getAbsoluteFileName(oldFileName);
+        StringBuilder localOldFileName = new StringBuilder();
+        IVirtualFileSystem oldVfs = vfsManager.getVirtualFileSystem(absoluteOldFileName, localOldFileName);
+        if (oldVfs != null) {
+            String absoluteNewFileName = getAbsoluteFileName(newFileName);
+            StringBuilder localNewFileName = new StringBuilder();
+            IVirtualFileSystem newVfs = vfsManager.getVirtualFileSystem(absoluteNewFileName, localNewFileName);
+            if (oldVfs != newVfs) {
+                log.error(String.format("sceIoRename - renaming across devices not allowed '%s' - '%s'", oldFileName, newFileName));
+                result = ERROR_ERRNO_DEVICE_NOT_FOUND;
+            } else {
+        		timings = oldVfs.getTimings();
+            	result = oldVfs.ioRename(localOldFileName.toString(), localNewFileName.toString());
+            }
+    	} else if (useVirtualFileSystem) {
+            log.error(String.format("sceIoRename - device not found '%s'", oldFileName));
+            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
+        } else if (oldpcfilename != null) {
+            if (isUmdPath(oldpcfilename)) {
+                result = -1;
+            } else {
+                File file = new File(oldpcfilename);
+                File newfile = new File(newpcfilename);
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("sceIoRename: renaming file '%s' to '%s'", oldpcfilename, newpcfilename));
+                }
+                if (file.renameTo(newfile)) {
+                	result = 0;
+                } else {
+                	log.warn(String.format("sceIoRename failed: %s(%s) to %s(%s)", oldFileName, oldpcfilename, newFileName, newpcfilename));
+                	if (file.exists()) {
+                		result = -1;
+                	} else {
+                		result = ERROR_ERRNO_FILE_NOT_FOUND;
+                	}
+                }
+            }
+        } else {
+        	result = -1;
+        }
+
+        for (IIoListener ioListener : ioListeners) {
+            ioListener.sceIoRename(result, oldFileNameAddr, oldFileName, newFileNameAddr, newFileName);
+        }
+
+        delayIoOperation(timings.get(IoOperation.rename));
+
+        return result;
+    }
+
     /**
      * sceIoPollAsync
      * 
@@ -3387,8 +3455,11 @@ public class IoFileMgrForUser extends HLEModule {
             result = ERROR_ERRNO_DEVICE_NOT_FOUND;
         } else if (pcfilename != null) {
             File f = new File(pcfilename);
-            f.delete();
-            result = 0;
+            if (f.delete()) {
+            	result = 0;
+            } else {
+            	result = -1;
+            }
         } else {
         	result = -1;
         }
@@ -3597,73 +3668,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x779103A0, version = 150, checkInsideInterrupt = true)
     public int sceIoRename(PspString pspOldFileName, PspString pspNewFileName) {
-    	Map<IoOperation, IoOperationTiming> timings = defaultTimings;
-    	String oldFileName = pspOldFileName.getString();
-    	String newFileName = pspNewFileName.getString();
-
-    	// The new file name can omit the file directory, in which case the directory
-    	// of the old file name is used.
-    	// I.e., when renaming "ms0:/PSP/SAVEDATA/xxxx" into "yyyy",
-    	// actually rename into "ms0:/PSP/SAVEDATA/yyyy".
-    	if (!newFileName.contains("/")) {
-    		int prefixOffset = oldFileName.lastIndexOf("/");
-    		if (prefixOffset >= 0) {
-    			newFileName = oldFileName.substring(0, prefixOffset + 1) + newFileName;
-    		}
-    	}
-
-    	String oldpcfilename = getDeviceFilePath(oldFileName);
-        String newpcfilename = getDeviceFilePath(newFileName);
-        int result;
-
-        String absoluteOldFileName = getAbsoluteFileName(oldFileName);
-        StringBuilder localOldFileName = new StringBuilder();
-        IVirtualFileSystem oldVfs = vfsManager.getVirtualFileSystem(absoluteOldFileName, localOldFileName);
-        if (oldVfs != null) {
-            String absoluteNewFileName = getAbsoluteFileName(newFileName);
-            StringBuilder localNewFileName = new StringBuilder();
-            IVirtualFileSystem newVfs = vfsManager.getVirtualFileSystem(absoluteNewFileName, localNewFileName);
-            if (oldVfs != newVfs) {
-                log.error(String.format("sceIoRename - renaming across devices not allowed '%s' - '%s'", oldFileName, newFileName));
-                result = ERROR_ERRNO_DEVICE_NOT_FOUND;
-            } else {
-        		timings = oldVfs.getTimings();
-            	result = oldVfs.ioRename(localOldFileName.toString(), localNewFileName.toString());
-            }
-    	} else if (useVirtualFileSystem) {
-            log.error(String.format("sceIoRename - device not found '%s'", oldFileName));
-            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
-        } else if (oldpcfilename != null) {
-            if (isUmdPath(oldpcfilename)) {
-                result = -1;
-            } else {
-                File file = new File(oldpcfilename);
-                File newfile = new File(newpcfilename);
-                if (log.isDebugEnabled()) {
-                	log.debug(String.format("sceIoRename: renaming file '%s' to '%s'", oldpcfilename, newpcfilename));
-                }
-                if (file.renameTo(newfile)) {
-                	result = 0;
-                } else {
-                	log.warn(String.format("sceIoRename failed: %s(%s) to %s(%s)", oldFileName, oldpcfilename, newFileName, newpcfilename));
-                	if (file.exists()) {
-                		result = -1;
-                	} else {
-                		result = ERROR_ERRNO_FILE_NOT_FOUND;
-                	}
-                }
-            }
-        } else {
-        	result = -1;
-        }
-
-        for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoRename(result, pspOldFileName.getAddress(), pspOldFileName.getString(), pspNewFileName.getAddress(), pspNewFileName.getString());
-        }
-
-        delayIoOperation(timings.get(IoOperation.rename));
-
-        return result;
+    	return hleIoRename(pspOldFileName.getAddress(), pspOldFileName.getString(), pspNewFileName.getAddress(), pspNewFileName.getString());
     }
 
     /**
@@ -4099,12 +4104,25 @@ public class IoFileMgrForUser extends HLEModule {
             	}
             	break;
             }
+            case 0x02415830: {
+            	if (Memory.isAddressGood(indata_addr) && inlen >= 8) {
+            		int oldFileNameAddr = mem.read32(indata_addr);
+            		int newFileNameAddr = mem.read32(indata_addr + 4);
+            		String oldFileName = Utilities.readStringZ(mem, oldFileNameAddr);
+            		String newFileName = Utilities.readStringZ(mem, newFileNameAddr);
+
+            		result = hleIoRename(oldFileNameAddr, devicename.getString() + oldFileName, newFileNameAddr, devicename.getString() + newFileName);
+
+            		if (log.isDebugEnabled()) {
+            			log.debug(String.format("sceIoDevctl file rename oldFileName='%s', newFileName='%s', result=0x%X", oldFileName, newFileName, result));
+            		}
+            	}
+            	break;
+            }
             default:
-                log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown command");
+                log.warn(String.format("sceIoDevctl 0x%08X unknown command", cmd));
                 if (Memory.isAddressGood(indata_addr)) {
-                    for (int i = 0; i < inlen; i += 4) {
-                        log.warn("sceIoDevctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
-                    }
+                    log.warn(String.format("sceIoDevctl indata: %s", Utilities.getMemoryDump(indata_addr, inlen)));
                 }
                 result = SceKernelErrors.ERROR_ERRNO_INVALID_IODEVCTL_CMD;
                 break;
