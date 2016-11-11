@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -164,7 +167,7 @@ public class sceVaudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x8986295E, version = 150, checkInsideInterrupt = true)
-    public int sceVaudioOutputBlocking(int vol, TPointer buf) {
+    public int sceVaudioOutputBlocking(int vol, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer buf) {
     	int result = 0;
 
     	SoundChannel pspVaudioChannel = Modules.sceAudioModule.getFreeSRCChannel();
