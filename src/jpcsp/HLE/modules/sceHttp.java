@@ -840,8 +840,14 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7774BF4C, version = 150)
-    public int sceHttpAddCookie() {
-        return 0;
+    public int sceHttpAddCookie(PspString url, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer cookieAddr, int length) {
+    	String cookie = cookieAddr.getStringNZ(length);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceHttpAddCookie for URL '%s': '%s'", url.getString(), cookie));
+    	}
+
+    	return 0;
     }
 
     @HLEUnimplemented
