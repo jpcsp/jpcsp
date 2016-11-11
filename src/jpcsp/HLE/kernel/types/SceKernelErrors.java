@@ -455,6 +455,7 @@ public class SceKernelErrors {
 
     public final static int ERROR_HTTP_NOT_INIT                                 = 0x80431001;
     public final static int ERROR_HTTP_ALREADY_INIT                             = 0x80431020;
+    public final static int ERROR_HTTP_NO_CONTENT_LENGTH                        = 0x80431071;
     public final static int ERROR_HTTP_NO_MEMORY                                = 0x80431077;
     public final static int ERROR_HTTP_SYSTEM_COOKIE_NOT_LOADED                 = 0x80431078;
     public final static int ERROR_HTTP_INVALID_PARAMETER                        = 0x804311FE;

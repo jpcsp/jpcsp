@@ -1649,22 +1649,27 @@ public class HTTPServer {
 
 	private static String getUrl(HTTPServerDescriptor descriptor, HashMap<String, String> request, String pathValue, int forcedPort) {
 		if (pathValue.startsWith("https://") || pathValue.startsWith("http://")) {
-			return pathValue;
+			int endOfPath = pathValue.indexOf("/", 8);
+			if (endOfPath >= 0) {
+				pathValue = pathValue.substring(endOfPath);
+			} else {
+				pathValue = "";
+			}
 		}
 
 		String baseUrl = getBaseUrl(descriptor, request, forcedPort);
 
+		String query = "";
+		if (request.containsKey(parameters)) {
+			query = "?" + request.get(parameters);
+		}
+
 		if (pathValue == null) {
-			return baseUrl;
+			return baseUrl + query;
 		}
 
 		if (pathValue.startsWith("/")) {
 			pathValue = pathValue.substring(1);
-		}
-
-		String query = "";
-		if (request.containsKey(parameters)) {
-			query = "?" + request.get(parameters);
 		}
 
 		return baseUrl + pathValue + query;

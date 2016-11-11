@@ -47,6 +47,50 @@ public class HTTPConfiguration {
 			this.doKeepAlive = doKeepAlive;
 			this.fakedPaths = fakedPaths;
 		}
+
+		public String getBaseUrl() {
+			return getBaseUrl(isHttps());
+		}
+
+		private String getBaseUrl(boolean isHttps) {
+			StringBuilder baseUrl = new StringBuilder();
+
+			if (isHttps) {
+				baseUrl.append("https");
+			} else {
+				baseUrl.append("http");
+			}
+			baseUrl.append("://");
+			baseUrl.append(serverName);
+			if (serverPort != 80 && serverPort != 443) {
+				baseUrl.append(":");
+				baseUrl.append(serverPort);
+			}
+			baseUrl.append("/");
+
+			return baseUrl.toString();
+		}
+
+		public boolean isMatchingUrl(String url) {
+			if (url == null) {
+				return false;
+			}
+
+			if (url.startsWith(getBaseUrl())) {
+				return true;
+			}
+
+			// The URL could have already been patched and "https" replaced with "http"
+			if (isHttps() && url.startsWith(getBaseUrl(false))) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public boolean isHttps() {
+			return serverPort == 443;
+		}
 	}
 
 	public static HttpServerConfiguration[] doProxyServers = {

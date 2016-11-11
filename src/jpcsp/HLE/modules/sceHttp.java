@@ -48,6 +48,8 @@ import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.remote.HTTPConfiguration;
+import jpcsp.remote.HTTPConfiguration.HttpServerConfiguration;
 import jpcsp.remote.HTTPServer;
 import jpcsp.util.Utilities;
 
@@ -412,23 +414,22 @@ public class sceHttp extends HLEModule {
     }
 
 	private static Proxy getProxyForUrl(String url) {
-		Proxy proxy = null;
-
-		if (url != null) {
-			if (url.startsWith("http://fe01.psp.update.playstation.org/") ||
-			    url.startsWith("https://native.np.ac.playstation.net/")) {
-				proxy = HTTPServer.getInstance().getProxy();
+		for (HttpServerConfiguration httpServerConfiguration : HTTPConfiguration.doProxyServers) {
+			if (httpServerConfiguration.isMatchingUrl(url)) {
+				return HTTPServer.getInstance().getProxy();
 			}
 		}
 
-		return proxy;
+		return null;
 	}
 
 	public static String patchUrl(String url) {
-		if (url != null) {
-			if (url.startsWith("https://native.np.ac.playstation.net")) {
-				// Replace https with http
-				url = "http" + url.substring(5);
+		for (HttpServerConfiguration httpServerConfiguration : HTTPConfiguration.doProxyServers) {
+			if (httpServerConfiguration.isHttps()) {
+				if (httpServerConfiguration.isMatchingUrl(url)) {
+					// Replace https with http
+					return url.replaceFirst("https", "http");
+				}
 			}
 		}
 
@@ -525,16 +526,25 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x0282A3BD, version = 150)
-    public int sceHttpGetContentLength(int requestId, @BufferInfo(usage=Usage.out) TPointer64 contentLength){
+    public int sceHttpGetContentLength(int requestId, @BufferInfo(usage=Usage.out) TPointer64 contentLengthAddr){
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	httpRequest.connect();
-    	contentLength.setValue(httpRequest.getContentLength());
+    	long contentLength = httpRequest.getContentLength();
 
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceHttpGetContentLength request %s returning contentLength=%d", httpRequest, contentLength.getValue()));
+    	int result;
+    	if (contentLength < 0) {
+    		contentLengthAddr.setValue(0L);
+    		result = SceKernelErrors.ERROR_HTTP_NO_CONTENT_LENGTH;
+    	} else {
+    		contentLengthAddr.setValue(contentLength);
+    		result = 0;
     	}
 
-    	return 0;
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceHttpGetContentLength request %s returning 0x%X, contentLength=0x%X", httpRequest, result, contentLengthAddr.getValue()));
+    	}
+
+    	return result;
     }
 
     /**
@@ -962,6 +972,7 @@ public class sceHttp extends HLEModule {
     public int sceHttpCreateRequestWithURL(int connectionId, int method, PspString url, long contentLength) {
     	HttpConnection httpConnection = getHttpConnection(connectionId);
     	HttpRequest httpRequest = new HttpRequest();
+    	httpRequest.setMethod(method);
     	httpRequest.setUrl(url.getString());
     	httpRequest.setContentLength(contentLength);
     	httpConnection.addHttpRequest(httpRequest);
