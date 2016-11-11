@@ -20,12 +20,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +44,6 @@ import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.kernel.types.pspNetSockAddrInternet;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.memory.IMemoryWriter;
@@ -425,59 +422,6 @@ public class sceHttp extends HLEModule {
 		}
 
 		return proxy;
-	}
-
-	private static boolean isSameAddress(String name, pspNetSockAddrInternet sockAddrInternet) {
-		InetAddress inetAddresses[] = null;
-		try {
-			inetAddresses = (InetAddress[]) InetAddress.getAllByName(name);
-		} catch (UnknownHostException e) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("isSameAddress cannot resolve '%s': %s", name, e.toString()));
-			}
-		}
-
-		if (inetAddresses != null) {
-			for (int i = 0; i < inetAddresses.length; i++) {
-				byte[] addrBytes = inetAddresses[i].getAddress();
-				int addr = (addrBytes[0] & 0xFF) | ((addrBytes[1] & 0xFF) << 8) | ((addrBytes[2] & 0xFF) << 16) | ((addrBytes[3] & 0xFF) << 24);
-				if (addr == sockAddrInternet.sin_addr) {
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	public static void getProxyForSockAddrInternet(pspNetSockAddrInternet sockAddrInternet) {
-		if (isSameAddress("fe01.psp.update.playstation.org", sockAddrInternet) ||
-		    isSameAddress("native.np.ac.playstation.net", sockAddrInternet) ||
-		    isSameAddress("legaldoc.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("auth.np.ac.playstation.net", sockAddrInternet) ||
-		    isSameAddress("getprof.gb.np.community.playstation.net", sockAddrInternet) ||
-		    isSameAddress("getprof.us.np.community.playstation.net", sockAddrInternet) ||
-		    isSameAddress("static-resource.np.community.playstation.net", sockAddrInternet) ||
-		    isSameAddress("commerce.np.ac.playstation.net", sockAddrInternet) ||
-		    isSameAddress("account.np.ac.playstation.net", sockAddrInternet) ||
-		    isSameAddress("mds.np.ac.playstation.net", sockAddrInternet) ||
-		    isSameAddress("nsx.sec.np.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("nsx-e.sec.np.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("video.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("apollo.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("poseidon.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("zeus.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("comic.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("infoboard.ww.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("a0.ww.np.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("www.playstation.com", sockAddrInternet) ||
-		    isSameAddress("radio.psp.dl.playstation.net", sockAddrInternet) ||
-		    isSameAddress("api.shoutcast.com", sockAddrInternet) ||
-		    isSameAddress("yp.shoutcast.com", sockAddrInternet) ||
-		    isSameAddress("www.shoutcast.com", sockAddrInternet)) {
-			sockAddrInternet.sin_addr = HTTPServer.getInstance().getProxyAddress();
-			sockAddrInternet.sin_port = HTTPServer.getInstance().getProxyPort();
-		}
 	}
 
 	public static String patchUrl(String url) {

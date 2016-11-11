@@ -74,6 +74,9 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.network.RawChannel;
 import jpcsp.network.RawSelector;
+import jpcsp.remote.HTTPConfiguration;
+import jpcsp.remote.HTTPConfiguration.HttpServerConfiguration;
+import jpcsp.remote.HTTPServer;
 import jpcsp.settings.AbstractStringSettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
@@ -2089,6 +2092,7 @@ public class sceNetInet extends HLEModule {
 
 	protected HashMap<Integer, pspInetSocket> sockets;
 	protected static final String idPurpose = "sceNetInet-socket";
+	private InetAddress[] doProxyInetAddresses;
 
 	@Override
 	public void start() {
@@ -2096,7 +2100,19 @@ public class sceNetInet extends HLEModule {
 
 		sockets = new HashMap<Integer, pspInetSocket>();
 
-        super.start();
+		for (HttpServerConfiguration doProxyServer : HTTPConfiguration.doProxyServers) {
+			InetAddress inetAddresses[] = null;
+			try {
+				inetAddresses = (InetAddress[]) InetAddress.getAllByName(doProxyServer.serverName);
+				doProxyInetAddresses = Utilities.merge(doProxyInetAddresses, inetAddresses);
+			} catch (UnknownHostException e) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetInet cannot resolve '%s': %s", doProxyServer, e.toString()));
+				}
+			}
+		}
+
+		super.start();
 	}
 
 	@Override
@@ -2625,6 +2641,16 @@ public class sceNetInet extends HLEModule {
 		return addressLength;
 	}
 
+	private void getProxyForSockAddrInternet(pspNetSockAddrInternet sockAddrInternet) {
+		for (InetAddress inetAddress : doProxyInetAddresses) {
+			if (sockAddrInternet.equals(inetAddress)) {
+				sockAddrInternet.sin_addr = HTTPServer.getInstance().getProxyAddress();
+				sockAddrInternet.sin_port = HTTPServer.getInstance().getProxyPort();
+				break;
+			}
+		}
+	}
+
 	// int sceNetInetInit(void);
 	@HLEFunction(nid = 0x17943399, version = 150)
 	public int sceNetInetInit() {
@@ -2704,7 +2730,7 @@ public class sceNetInet extends HLEModule {
 			return -1;
 		}
 
-		sceHttp.getProxyForSockAddrInternet(sockAddrInternet);
+		getProxyForSockAddrInternet(sockAddrInternet);
 
 		pspInetSocket inetSocket = sockets.get(socket);
 		int result = inetSocket.connect(sockAddrInternet);

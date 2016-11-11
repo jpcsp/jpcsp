@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -1347,6 +1348,21 @@ public class Utilities {
 		}
 
 		String[] a = new String[a1.length + a2.length];
+		System.arraycopy(a1, 0, a, 0, a1.length);
+		System.arraycopy(a2, 0, a, a1.length, a2.length);
+
+		return a;
+	}
+
+	public static InetAddress[] merge(InetAddress[] a1, InetAddress[] a2) {
+		if (a1 == null) {
+			return a2;
+		}
+		if (a2 == null) {
+			return a1;
+		}
+
+		InetAddress[] a = new InetAddress[a1.length + a2.length];
 		System.arraycopy(a1, 0, a, 0, a1.length);
 		System.arraycopy(a2, 0, a, a1.length, a2.length);
 

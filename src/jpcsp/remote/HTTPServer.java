@@ -82,6 +82,7 @@ import jpcsp.HLE.modules.sceNp;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.Elf32Header;
+import jpcsp.remote.HTTPConfiguration.HttpServerConfiguration;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
@@ -475,6 +476,20 @@ public class HTTPServer {
 		return headers;
 	}
 
+	private boolean doProxy(HttpServerConfiguration httpServerConfiguration, HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os, String pathValue) throws IOException {
+		int forcedPort = 0;
+		if (httpServerConfiguration.serverPort != descriptor.port) {
+			forcedPort = httpServerConfiguration.serverPort;
+		}
+
+		boolean keepAlive = doProxy(descriptor, request, os, pathValue, forcedPort);
+		if (!httpServerConfiguration.doKeepAlive) {
+			keepAlive = false;
+		}
+
+		return keepAlive;
+	}
+
 	private boolean doProxy(HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os, String pathValue, int forcedPort) throws IOException {
 		boolean keepAlive = false;
 
@@ -611,6 +626,30 @@ public class HTTPServer {
 		return keepAlive;
 	}
 
+	private HttpServerConfiguration getHttpServerConfiguration(String serverName, String pathValue) {
+		if (serverName != null) {
+			for (HttpServerConfiguration httpServerConfiguration : HTTPConfiguration.doProxyServers) {
+				if (httpServerConfiguration.serverName.equals(serverName)) {
+					boolean found = true;
+					if (httpServerConfiguration.fakedPaths != null) {
+						for (String fakedPath : httpServerConfiguration.fakedPaths) {
+							if (fakedPath.equals(pathValue)) {
+								found = false;
+								break;
+							}
+						}
+					}
+
+					if (found) {
+						return httpServerConfiguration;
+					}
+				}
+			}
+		}
+
+		return null;
+	}
+
 	private boolean process(HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os) throws IOException {
 		boolean keepAlive = false;
 		try {
@@ -620,69 +659,14 @@ public class HTTPServer {
 				pathValue = pathValue.substring(baseUrl.length() - 1);
 			}
 
-			if (!processProxyRequestLocally && "fe01.psp.update.playstation.org".equals(request.get(host))) {
-				doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("native.np.ac.playstation.net".equals(request.get(host))) {
-				doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("legaldoc.dl.playstation.net".equals(request.get(host))) {
-				doProxy(descriptor, request, os, pathValue, 0);
+			HttpServerConfiguration httpServerConfiguration = getHttpServerConfiguration(request.get(host), pathValue);
+
+			if (httpServerConfiguration != null) {
+				keepAlive = doProxy(httpServerConfiguration, descriptor, request, os, pathValue);
 //			} else if ("auth.np.ac.playstation.net".equals(request.get(host)) && "/nav/auth".equals(pathValue)) {
 //				sendNpNavAuth(request.get(data), os);
 //			} else if ("getprof.gb.np.community.playstation.net".equals(request.get(host)) && "/basic_view/sec/get_self_profile".equals(pathValue)) {
 //				sendNpGetSelfProfile(request.get(data), os);
-			} else if ("auth.np.ac.playstation.net".equals(request.get(host))) {
-				doProxy(descriptor, request, os, pathValue, 443);
-			} else if (request.get(host).matches("getprof....np.community.playstation.net") && ("/basic_view/func/get_avatar_category".equals(pathValue) || "/basic_view/func/get_avatar_list".equals(pathValue))) {
-				doProxy(descriptor, request, os, pathValue, 0);
-			} else if (request.get(host).matches("getprof....np.community.playstation.net")) {
-				doProxy(descriptor, request, os, pathValue, 443);
-			} else if (request.get(host).matches("profile....np.community.playstation.net")) {
-				doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("commerce.np.ac.playstation.net".equals(request.get(host)) && "/cap.m".equals(pathValue)) {
-				sendCapM(request.get(data), os);
-			} else if ("commerce.np.ac.playstation.net".equals(request.get(host)) && "/kdp.m".equals(pathValue)) {
-				sendKdpM(request.get(data), os);
-			} else if ("commerce.np.ac.playstation.net".equals(request.get(host))) {
-				doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("account.np.ac.playstation.net".equals(request.get(host))) {
-				doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("mds.np.ac.playstation.net".equals(request.get(host))) {
-				doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("nsx.sec.np.dl.playstation.net".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("nsx-e.sec.np.dl.playstation.net".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("nsx-e.np.dl.playstation.net".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("video.dl.playstation.net".equals(request.get(host))) {
-				doProxy(descriptor, request, os, "/cdn/video/DE/g", 0);
-			} else if ("apollo.dl.playstation.net".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("poseidon.dl.playstation.net".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("zeus.dl.playstation.net".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("comic.dl.playstation.net".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("infoboard.ww.dl.playstation.net".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("static-resource.np.community.playstation.net".equals(request.get(host))) {
-				// Keep-alive is required for downloading the avatar static images
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("a0.ww.np.dl.playstation.net".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("www.playstation.com".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 443);
-			} else if ("radio.psp.dl.playstation.net".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("api.shoutcast.com".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("yp.shoutcast.com".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if ("www.shoutcast.com".equals(request.get(host))) {
-				keepAlive = doProxy(descriptor, request, os, pathValue, 0);
-			} else if (!processProxyRequestLocally && "nsx.sec.np.dl.playstation.net".equals(request.get(host))) {
-				sendResponseFile(os, rootDirectory + "/psp.xml");
 			} else if ("GET".equals(request.get(method))) {
 				if ("/".equals(pathValue)) {
 					sendResponseFile(os, rootDirectory + "/" + indexFile);
