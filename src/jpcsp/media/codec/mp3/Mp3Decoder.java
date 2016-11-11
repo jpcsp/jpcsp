@@ -241,11 +241,13 @@ public class Mp3Decoder implements ICodec {
 			s.lsf = 1;
 			mpeg25 = 1;
 		}
+		s.mpeg25 = mpeg25;
 
         s.version = (header >> 19) & 0x3;
 		s.layer = 4 - ((header >> 17) & 3);
 		// extract frequency
 		int sampleRateIndex = (header >> 10) & 3;
+		s.rawSampleRateIndex = sampleRateIndex;
 		if (sampleRateIndex >= mp3_freq_tab.length) {
 			sampleRateIndex = 0;
 		}
@@ -256,6 +258,7 @@ public class Mp3Decoder implements ICodec {
 		s.sampleRate = sampleRate;
 
 		int bitrateIndex = (header >> 12) & 0xF;
+		s.bitrateIndex = bitrateIndex;
 		int padding = (header >> 9) & 1;
 		//extension = (header >> 8) & 1;
 		s.mode = (header >> 6) & 3;
@@ -1182,8 +1185,10 @@ public class Mp3Decoder implements ICodec {
 		br = new BitReader(inputAddr, inputLength);
 		ctx.br = br;
 
+		int skippedBytes = 0;
 		while (br.peek(8) == 0) {
 			br.skip(8);
+			skippedBytes++;
 		}
 
 		if (br.getBitsLeft() < HEADER_SIZE * 8) {
@@ -1210,11 +1215,15 @@ public class Mp3Decoder implements ICodec {
 
 		CodecUtils.writeOutput(ctx.samples, outputAddr, ctx.header.maxSamples, ctx.header.nbChannels, ctx.outputChannels);
 
-		return ctx.header.frameSize;
+		return ctx.header.frameSize + skippedBytes;
 	}
 
 	@Override
 	public int getNumberOfSamples() {
 		return ctx.header.maxSamples;
+	}
+
+	public Mp3Header getMp3Header() {
+		return ctx.header;
 	}
 }
