@@ -101,6 +101,7 @@ import jpcsp.log.LoggingOutputStream;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.remote.HTTPServer;
 import jpcsp.settings.Settings;
+import jpcsp.util.FileUtil;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
 import jpcsp.util.Utilities;
@@ -1476,7 +1477,15 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         if (userChooseSomething(returnVal)) {
             Settings.getInstance().writeString("gui.lastOpenedFileFolder", fc.getSelectedFile().getParent());
             File file = fc.getSelectedFile();
-            loadFile(file);
+            switch (FileUtil.getExtension(file)) {
+                case "iso":
+                case "cso":
+                    loadUMD(file);
+                    break;
+                default:
+                    loadFile(file);
+                    break;
+            }
         }
 }//GEN-LAST:event_OpenFileActionPerformed
 
