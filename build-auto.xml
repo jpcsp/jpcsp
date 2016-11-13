@@ -26,6 +26,7 @@
 		<pathelement location="lib/logback-core.jar" />
 		<pathelement location="lib/slf4j-api.jar" />
 		<pathelement location="lib/bcprov-jdk16-145.jar" />
+		<pathelement location="lib/jna-4.2.2.jar" />
 	</path>
 
 	<macrodef name="gitversion" description="Get last git commit version.">

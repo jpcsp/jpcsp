@@ -235,12 +235,16 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         WindowPropSaver.loadWindowProperties(this);
 
-        Image iconImage = new ImageIcon(ClassLoader.getSystemClassLoader().getResource("icon.png")).getImage();
-        this.setIconImages(Arrays.asList(
-                iconImage.getScaledInstance(16, 16, Image.SCALE_SMOOTH),
-                iconImage.getScaledInstance(32, 32, Image.SCALE_SMOOTH),
-                iconImage
-        ));
+        try {
+            Image iconImage = new ImageIcon(ClassLoader.getSystemClassLoader().getResource("icon.png")).getImage();
+            this.setIconImages(Arrays.asList(
+                    iconImage.getScaledInstance(16, 16, Image.SCALE_SMOOTH),
+                    iconImage.getScaledInstance(32, 32, Image.SCALE_SMOOTH),
+                    iconImage
+            ));
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
 
     private Dimension getDimensionFromDisplay(int width, int height) {

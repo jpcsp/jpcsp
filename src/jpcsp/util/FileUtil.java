@@ -36,6 +36,7 @@ public class FileUtil {
     }
 
     static public String getURLBaseName(URL url) {
+        if (url == null) return null;
         String path = url.getPath();
         int i = path.lastIndexOf('/');
         if (i >= 0) {
