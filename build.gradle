@@ -64,31 +64,13 @@ dependencies {
     testCompile "junit:junit:4.12"
 }
 
-/*
-def platforms = ['windows', 'linux', 'osx']
-platforms.each { platform ->
-    task "${platform}Natives" {
-        def outputDir = "$buildDir/natives/$platform"
-        inputs.files(configurations.compile)
-        outputs.dir(outputDir)
-        doLast {
-            copy {
-                def artifacts = configurations.compile.resolvedConfiguration.resolvedArtifacts
-                        .findAll { it.classifier == "natives-$platform" }
-                artifacts.each {
-                    from zipTree(it.file)
-                }
-                into outputDir
-            }
-        }
+jar {
+    manifest {
+        attributes("Main-Class": "jpcsp.MainGUI")
+    }
+    from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
     }
 }
-task natives {
-    description "Copies native libraries to an appropriate directory."
-    dependsOn platforms.collect { "${it}Natives" }.findAll { tasks[it] }
-}
-
-run {
-    jvmArgs = ['-Djava.library.path=../natives/windows']
-}
-*/
