@@ -44,15 +44,10 @@ public class Battery {
     private static boolean charging = false;
 
     public static void initialize() {
-        BatteryDrainThread.initialize();
+        BatteryUpdateThread.initialize();
     }
 
     public static int getLifeTime() {
-        if (OS.isWindows) {
-            int batteryLifeTimeInSeconds = BatteryWindows.status().BatteryLifeTime;
-            if (batteryLifeTimeInSeconds < 0) batteryLifeTimeInSeconds = 5 * 3600; // Unknown lifetime
-            return batteryLifeTimeInSeconds / 60;
-        }
         return lifeTime;
     }
 
@@ -77,9 +72,6 @@ public class Battery {
     }
 
     public static boolean isPluggedIn() {
-        if (OS.isWindows) {
-            return BatteryWindows.status().ACLineStatus == 1;
-        }
         return pluggedIn;
     }
 
@@ -88,9 +80,6 @@ public class Battery {
     }
 
     public static boolean isPresent() {
-        if (OS.isWindows) {
-            return (BatteryWindows.status().BatteryFlag & 128) != 0;
-        }
         return present;
     }
 
@@ -99,14 +88,6 @@ public class Battery {
     }
 
     public static int getCurrentPowerPercent() {
-        if (OS.isWindows) {
-            int percent = BatteryWindows.status().BatteryLifePercent;
-            if (percent >= 0 && percent <= 100) {
-                return percent;
-            } else {
-                return currentPowerPercent; // Invalid value, provide fallback!
-            }
-        }
         return currentPowerPercent;
     }
 
@@ -115,9 +96,6 @@ public class Battery {
     }
 
     public static boolean isCharging() {
-        if (OS.isWindows) {
-            return (BatteryWindows.status().BatteryFlag & 8) != 0;
-        }
         return charging;
     }
 
@@ -135,35 +113,5 @@ public class Battery {
 
     public static int getFullCapacity() {
         return fullCapacity;
-    }
-
-    static class BatteryWindows {
-        static public Kernel32.SYSTEM_POWER_STATUS status() {
-            Kernel32.SYSTEM_POWER_STATUS out = new Kernel32.SYSTEM_POWER_STATUS();
-            Kernel32.INSTANCE.GetSystemPowerStatus(out);
-            return out;
-        }
-
-        // http://stackoverflow.com/questions/3434719/how-to-get-the-remaining-battery-life-in-a-windows-system
-        // http://msdn2.microsoft.com/en-us/library/aa373232.aspx
-        public interface Kernel32 extends StdCallLibrary {
-            Kernel32 INSTANCE = (Kernel32) Native.loadLibrary("Kernel32", Kernel32.class);
-
-            class SYSTEM_POWER_STATUS extends Structure {
-                public byte ACLineStatus; // 0 = Offline, 1 = Online, other = Unknown
-                public byte BatteryFlag; // 1 = High (more than 66%), 2 = Low (less than 33%), 4 = Critical (less than 5%), 8 = Charging, 128 = No system battery
-                public byte BatteryLifePercent; // 0-100 (-1 on desktop)
-                public byte Reserved1;
-                public int BatteryLifeTime; // Estimated Lifetime in seconds
-                public int BatteryFullLifeTime; // Estimated Lifetime in seconds on full charge
-
-                @Override
-                protected List<String> getFieldOrder() {
-                    return Arrays.asList("ACLineStatus", "BatteryFlag", "BatteryLifePercent", "Reserved1", "BatteryLifeTime", "BatteryFullLifeTime");
-                }
-            }
-
-            int GetSystemPowerStatus(SYSTEM_POWER_STATUS result);
-        }
     }
 }
