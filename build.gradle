@@ -56,6 +56,8 @@ dependencies {
     compile "org.bouncycastle:bcprov-jdk16:1.46"
     compile "org.lwjgl.lwjgl:lwjgl:${lwjglVersion}"
 
+    compile "net.java.dev.jna:jna:4.2.2"
+
     //compile "jaxen:jaxen:1.1.6" // not used?
     //compile "javassist:javasist:3.11.0.GA" // not used?
 

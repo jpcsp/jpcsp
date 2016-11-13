@@ -16,11 +16,6 @@ import java.util.zip.CRC32;
 // This is not required on lwjgl3 since SharedLibraryLoader takes care of it and allows fatjars and launch4j executables
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class LWJGLFixer {
-    static public boolean isWindows = System.getProperty("os.name").contains("Windows");
-    static public boolean isLinux = System.getProperty("os.name").contains("Linux");
-    static public boolean isMac = System.getProperty("os.name").contains("Mac");
-    static public boolean is64Bit = System.getProperty("os.arch").equals("amd64") || System.getProperty("os.arch").equals("x86_64");
-
     static public void fix() {
         try {
             fixInternal();
@@ -30,7 +25,7 @@ public class LWJGLFixer {
     }
 
     static private String[] getLibrariesToLoad() {
-        if (isWindows) {
+        if (OS.isWindows) {
             return new String[]{
                     "lwjgl.dll", "lwjgl64.dll",
                     "OpenAL32.dll", "OpenAL64.dll",
@@ -38,13 +33,13 @@ public class LWJGLFixer {
                     "jinput-raw.dll", "jinput-raw_64.dll",
                     "jinput-wintab.dll"
             };
-        } else if (isLinux) {
+        } else if (OS.isLinux) {
             return new String[]{
                     "liblwjgl.so", "liblwjgl64.so",
                     "libopenal.so", "libopenal64.so",
                     "libjinput-linux.so", "libjinput-linux64.so"
             };
-        } else if (isMac) {
+        } else if (OS.isMac) {
             return new String[]{
                     "liblwjgl.dylib", "openal.dylib",
                     "libjinput-osx.jnilib",
