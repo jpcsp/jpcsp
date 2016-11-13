@@ -468,35 +468,39 @@ public class RuntimeContext {
 
             log.debug("Starting Idle State...");
             idleDuration.start();
-            while (isIdle) {
-            	checkStoppedThread();
-            	{
-            		// Do not take the duration of sceDisplay into idleDuration
-            		idleDuration.end();
-            		syncEmulator(true);
-            		idleDuration.start();
-            	}
-                syncPause();
-                checkPendingCallbacks();
-                scheduler.step();
-                if (threadMan.isIdleThread(threadMan.getCurrentThread())) {
-                	threadMan.checkCallbacks();
-                	threadMan.hleRescheduleCurrentThread();
-                }
+			try {
+				while (isIdle) {
+					checkStoppedThread();
+					{
+						// Do not take the duration of sceDisplay into idleDuration
+						idleDuration.end();
+						syncEmulator(true);
+						idleDuration.start();
+					}
+					syncPause();
+					checkPendingCallbacks();
+					scheduler.step();
+					if (threadMan.isIdleThread(threadMan.getCurrentThread())) {
+						threadMan.checkCallbacks();
+						threadMan.hleRescheduleCurrentThread();
+					}
 
-                if (isIdle) {
-                	long delay = scheduler.getNextActionDelay(idleSleepMicros);
-                	if (delay > 0) {
-                		int intDelay;
-	                	if (delay >= idleSleepMicros) {
-	                		intDelay = idleSleepMicros;
-	                	} else {
-	                		intDelay = (int) delay;
-	                	}
-                		sleep(intDelay / 1000, intDelay % 1000);
-                	}
-                }
-            }
+					if (isIdle) {
+						long delay = scheduler.getNextActionDelay(idleSleepMicros);
+						if (delay > 0) {
+							int intDelay;
+							if (delay >= idleSleepMicros) {
+								intDelay = idleSleepMicros;
+							} else {
+								intDelay = (int) delay;
+							}
+							Thread.sleep(intDelay / 1000, intDelay % 1000);
+							//Utilities.sleep(intDelay / 1000, intDelay % 1000);
+						}
+					}
+				}
+			} catch (Throwable e) {
+			}
             idleDuration.end();
             log.debug("Ending Idle State");
         }
