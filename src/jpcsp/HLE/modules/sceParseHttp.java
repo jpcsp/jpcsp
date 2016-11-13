@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import jpcsp.Memory;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -24,6 +27,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
@@ -37,7 +41,7 @@ public class sceParseHttp extends HLEModule {
 		StringBuilder line = new StringBuilder();
 		while (true) {
 			int c = memoryReader.readNext();
-			if (c == '\n') {
+			if (c == '\n' || c == '\r') {
 				break;
 			}
 			line.append((char) c);
@@ -48,10 +52,11 @@ public class sceParseHttp extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xAD7BFDEF, version = 150)
-	public int sceParseHttpResponseHeader(TPointer header, int headerLength, PspString fieldName, TPointer32 valueAddr, TPointer32 valueLength) {
+	public int sceParseHttpResponseHeader(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer header, int headerLength, PspString fieldName, @BufferInfo(usage=Usage.out) TPointer32 valueAddr, @BufferInfo(usage=Usage.out) TPointer32 valueLength) {
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(header.getAddress(), headerLength, 1);
 		int endAddress = header.getAddress() + headerLength;
 
+		boolean found = false;
 		while (memoryReader.getCurrentAddress() < endAddress) {
 			int addr = memoryReader.getCurrentAddress();
 			String headerString = getHeaderString(memoryReader);
@@ -80,6 +85,7 @@ public class sceParseHttp extends HLEModule {
 
 						valueLength.setValue(memoryReader.getCurrentAddress() - addr - 1);
 						valueAddr.setValue(addr);
+						found = true;
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("sceParseHttpResponseHeader returning valueLength=0x%X: %s", valueLength.getValue(), Utilities.getMemoryDump(valueAddr.getValue(), valueLength.getValue())));
 						}
@@ -89,7 +95,13 @@ public class sceParseHttp extends HLEModule {
 			}
 		}
 
-		return 0;
+		if (!found) {
+			valueAddr.setValue(0);
+			valueLength.setValue(0);
+			return SceKernelErrors.ERROR_PARSE_HTTP_NOT_FOUND;
+		}
+
+		return memoryReader.getCurrentAddress() - 1 - header.getAddress();
 	}
 
 	@HLEUnimplemented

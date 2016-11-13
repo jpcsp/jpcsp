@@ -18,11 +18,14 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer8;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 
 public class sceChkreg extends HLEModule {
     public static Logger log = Modules.getLogger("sceChkreg");
@@ -44,7 +47,7 @@ public class sceChkreg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x59F8491D, version = 150)
-    public int sceChkregGetPsCode(TPointer8 psCode) {
+    public int sceChkregGetPsCode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.out) TPointer8 psCode) {
     	psCode.setValue(0, 1);
     	psCode.setValue(1, 0);
     	psCode.setValue(2, PS_CODE_EUROPE);

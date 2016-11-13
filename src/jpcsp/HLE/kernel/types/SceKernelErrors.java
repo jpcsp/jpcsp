@@ -460,6 +460,8 @@ public class SceKernelErrors {
     public final static int ERROR_HTTP_SYSTEM_COOKIE_NOT_LOADED                 = 0x80431078;
     public final static int ERROR_HTTP_INVALID_PARAMETER                        = 0x804311FE;
 
+    public final static int ERROR_PARSE_HTTP_NOT_FOUND                          = 0x80432025;
+
     public final static int ERROR_SSL_NOT_INIT                                  = 0x80435001;
     public final static int ERROR_SSL_ALREADY_INIT                              = 0x80435020;
     public final static int ERROR_SSL_OUT_OF_MEMORY                             = 0x80435022;
