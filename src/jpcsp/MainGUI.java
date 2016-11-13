@@ -16,17 +16,7 @@
  */
 package jpcsp;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.DisplayMode;
-import java.awt.EventQueue;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Window;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
@@ -49,17 +39,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.Security;
 import java.text.MessageFormat;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.List;
 
-import javax.swing.JComponent;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
-import javax.swing.ToolTipManager;
-import javax.swing.UIManager;
+import javax.swing.*;
 
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -108,21 +91,6 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 
 import com.jidesoft.plaf.LookAndFeelFactory;
-
-import java.awt.AWTEvent;
-import java.awt.Component;
-import java.awt.Toolkit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
-
-import javax.swing.JMenu;
-import javax.swing.KeyStroke;
-import javax.swing.MenuElement;
-import javax.swing.SwingUtilities;
 
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
 import jpcsp.hardware.Model;
@@ -266,6 +234,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
 
         WindowPropSaver.loadWindowProperties(this);
+
+        Image iconImage = new ImageIcon(ClassLoader.getSystemClassLoader().getResource("icon.png")).getImage();
+        this.setIconImages(Arrays.asList(
+                iconImage.getScaledInstance(16, 16, Image.SCALE_SMOOTH),
+                iconImage.getScaledInstance(32, 32, Image.SCALE_SMOOTH),
+                iconImage
+        ));
     }
 
     private Dimension getDimensionFromDisplay(int width, int height) {

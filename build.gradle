@@ -38,6 +38,7 @@ dependencies {
     )
 
     //compile "org.ow2.asm:asm-all:4.0" // DO NOT SEEMS TO WORK! Does it includes a modified 4.0-RC1 version or something?
+    //compile "org.ow2.asm:asm-all:4.1" // DO NOT SEEMS TO WORK! Does it includes a modified 4.0-RC1 version or something?
     //compile "org.ow2.asm:asm-all:5.1" // DO NOT SEEMS TO WORK! Does it includes a modified 4.0-RC1 version or something?
 
     compile "commons-cli:commons-cli:20040117.000000"
@@ -57,6 +58,8 @@ dependencies {
 
     //compile "jaxen:jaxen:1.1.6" // not used?
     //compile "javassist:javasist:3.11.0.GA" // not used?
+
+    testCompile "junit:junit:4.12"
 }
 
 /*
