@@ -569,6 +569,11 @@ public class HTTPServer {
 			String key = entry.getKey();
 			if (key != null && !"transfer-encoding".equals(key.toLowerCase())) {
 				for (String value : entry.getValue()) {
+					// Ignore "Set-Cookie" with an empty value
+					if ("Set-Cookie".equalsIgnoreCase(key) && value.length() == 0) {
+						continue;
+					}
+
 					// If we changed "https" into "http", remove the information that the cookie can
 					// only be sent over https, otherwise, it will be lost.
 					if (forcedPort == 443 && "Set-Cookie".equalsIgnoreCase(key)) {

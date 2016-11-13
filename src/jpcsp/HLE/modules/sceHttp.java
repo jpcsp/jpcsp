@@ -19,6 +19,8 @@ package jpcsp.HLE.modules;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.CookieHandler;
+import java.net.CookieManager;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.Proxy;
@@ -51,6 +53,7 @@ import jpcsp.memory.MemoryWriter;
 import jpcsp.remote.HTTPConfiguration;
 import jpcsp.remote.HTTPConfiguration.HttpServerConfiguration;
 import jpcsp.remote.HTTPServer;
+import jpcsp.util.ThreadLocalCookieManager;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -65,6 +68,7 @@ public class sceHttp extends HLEModule {
     protected HashMap<Integer, HttpTemplate> httpTemplates = new HashMap<Integer, HttpTemplate>();
     protected HashMap<Integer, HttpConnection> httpConnections = new HashMap<Integer, HttpConnection>();
     protected HashMap<Integer, HttpRequest> httpRequests = new HashMap<Integer, HttpRequest>();
+    private CookieManager cookieManager;
 
     protected static class HttpRequest {
     	private static final String uidPurpose = "sceHttp-HttpRequest";
@@ -154,6 +158,8 @@ public class sceHttp extends HLEModule {
 				// Already connected
 				return;
 			}
+
+	    	ThreadLocalCookieManager.setCookieManager(Modules.sceHttpModule.cookieManager);
 
 			if (log.isTraceEnabled()) {
 				log.trace(String.format("HttpRequest %s send: %s", this, Utilities.getMemoryDump(sendData, 0, sendDataLength)));
@@ -407,7 +413,15 @@ public class sceHttp extends HLEModule {
 		}
     }
 
-    public void checkHttpInit() {
+	@Override
+	public void start() {
+		CookieHandler.setDefault(new ThreadLocalCookieManager());
+		cookieManager = new CookieManager();
+
+		super.start();
+	}
+
+	public void checkHttpInit() {
     	if (!isHttpInit) {
     		throw(new SceKernelErrorException(SceKernelErrors.ERROR_HTTP_NOT_INIT));
     	}
