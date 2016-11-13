@@ -2,6 +2,8 @@ group 'com.jpcsp'
 version '0.7'
 
 buildscript {
+    ext.launch4j_version = '1.6.2'
+
     repositories {
         maven { url "https://plugins.gradle.org/m2/" }
         mavenLocal()
@@ -9,6 +11,7 @@ buildscript {
     }
     dependencies {
         classpath "gradle.plugin.com.stehno:gradle-natives:0.3.0"
+        classpath "gradle.plugin.edu.sc.seis.gradle:launch4j:$launch4j_version"
     }
 }
 
@@ -16,6 +19,7 @@ apply plugin: "com.stehno.natives"
 
 apply plugin: 'java'
 apply plugin: 'application'
+apply plugin: 'edu.sc.seis.launch4j'
 
 mainClassName = "jpcsp.MainGUI"
 
@@ -73,4 +77,16 @@ jar {
         exclude "META-INF/*.DSA"
         exclude "META-INF/*.RSA"
     }
+}
+
+launch4j {
+    opt = "-Xmx768m"
+    print "version: $version"
+    outfile = "../../build/libs/jpcsp-${project.version}.exe"
+    icon = "../../resources/icon.ico"
+    mainClassName = project.mainClassName
+    //copyConfigurable = project.tasks.fatJar.outputs.files
+    //jar = "lib/${project.tasks.fatJar.archiveName}"
+    maxHeapSize = 1024
+    jar = "../../build/libs/jpcsp-${project.version}.jar"
 }
