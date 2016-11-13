@@ -71,6 +71,13 @@
 				<exclude name="**/*.disabled" />
 				<exclude name="**/*.form" />
 			</fileset>
+			<fileset dir="resources">
+				<exclude name="**/*.launch" />
+				<exclude name="**/*.java" />
+				<exclude name="**/*.awk" />
+				<exclude name="**/*.disabled" />
+				<exclude name="**/*.form" />
+			</fileset>
 		</copy>
 	</target>
 	<target name="clean">
