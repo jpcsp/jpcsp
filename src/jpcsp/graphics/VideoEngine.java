@@ -247,7 +247,7 @@ public class VideoEngine {
     private float[] floatBufferArray;
     private List<Integer> buffersToBeDeleted = new LinkedList<Integer>();
     float[][] bboxVertices;
-    private ConcurrentLinkedQueue<PspGeList> drawListQueue;
+    final private LinkedList<PspGeList> drawListQueue = new LinkedList<PspGeList>();
     private boolean somethingDisplayed;
     private boolean forceLoadGEToScreen;
     private boolean geBufChanged;
@@ -396,8 +396,6 @@ public class VideoEngine {
             commandStatistics[i] = new DurationStatistics(String.format("%-11s", helper.getCommandString(i)));
         }
 
-        drawListQueue = new ConcurrentLinkedQueue<PspGeList>();
-
         bboxVertices = new float[8][3];
         for (int i = 0; i < 8; i++) {
             bboxVertices[i] = new float[3];
@@ -419,7 +417,7 @@ public class VideoEngine {
      */
     public void pushDrawList(PspGeList list) {
         synchronized (drawListQueue) {
-            drawListQueue.add(list);
+            drawListQueue.addLast(list);
         }
     }
 
@@ -427,52 +425,21 @@ public class VideoEngine {
      * Called from pspge module
      */
     public void pushDrawListHead(PspGeList list) {
-        // The ConcurrentLinkedQueue type doesn't allow adding
-        // objects directly at the head of the queue.
-
-        // This function creates a new array using the given list as it's head
-        // and constructs a new ConcurrentLinkedQueue based on it.
-        // The actual drawListQueue is then replaced by this new one.
         synchronized (drawListQueue) {
-            int arraySize = drawListQueue.size();
-
-            if (arraySize > 0) {
-                PspGeList[] array = drawListQueue.toArray(new PspGeList[arraySize]);
-
-                ConcurrentLinkedQueue<PspGeList> newQueue = new ConcurrentLinkedQueue<PspGeList>();
-                PspGeList[] newArray = new PspGeList[arraySize + 1];
-
-                newArray[0] = list;
-                for (int i = 0; i < arraySize; i++) {
-                    newArray[i + 1] = array[i];
-                    newQueue.add(newArray[i]);
-                }
-
-                drawListQueue = newQueue;
-            } else {    // If the queue is empty.
-                drawListQueue.add(list);
-            }
+            drawListQueue.addFirst(list);
         }
     }
 
     public int numberDrawLists() {
-        int size;
-
         synchronized (drawListQueue) {
-            size = drawListQueue.size();
+            return drawListQueue.size();
         }
-
-        return size;
     }
 
     public boolean hasDrawLists() {
-        boolean isEmpty;
-
         synchronized (drawListQueue) {
-            isEmpty = drawListQueue.isEmpty();
+            return !drawListQueue.isEmpty();
         }
-
-        return !isEmpty;
     }
 
     public boolean hasDrawList(int listAddr, int stackAddr) {
