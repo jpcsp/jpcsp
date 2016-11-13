@@ -10,9 +10,15 @@
 	<property name="jpcsp.version" value="0.7" />
 
 	<path id="Jpcsp.classpath">
-		<pathelement location="lib/jinput.jar" />
-		<pathelement location="lib/lwjgl_util.jar" />
-		<pathelement location="lib/lwjgl.jar" />
+		<pathelement location="lib/jinput-2.0.5.jar" />
+		<pathelement location="lib/jinput-platform-2.0.5-natives-linux.jar" />
+		<pathelement location="lib/jinput-platform-2.0.5-natives-osx.jar" />
+		<pathelement location="lib/jinput-platform-2.0.5-natives-windows.jar" />
+		<pathelement location="lib/lwjgl-2.9.3.jar" />
+		<pathelement location="lib/lwjgl-platform-2.9.3-natives-linux.jar" />
+		<pathelement location="lib/lwjgl-platform-2.9.3-natives-osx.jar" />
+		<pathelement location="lib/lwjgl-platform-2.9.3-natives-windows.jar" />
+		<pathelement location="lib/lwjgl_util-2.9.3.jar" />
 		<pathelement location="lib/javassist.jar" />
 		<pathelement location="lib/jgz-0.2.jar" />
 		<pathelement location="lib/jide-oss-2.8.4.jar" />
