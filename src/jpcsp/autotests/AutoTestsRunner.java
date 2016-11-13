@@ -39,6 +39,10 @@ import java.util.concurrent.TimeoutException;
 
 import javax.imageio.ImageIO;
 
+import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.util.FileUtil;
+import jpcsp.util.LWJGLFixer;
+import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
@@ -49,16 +53,39 @@ import jpcsp.GUI.IMainGUI;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.emulator.EmulatorVirtualFileSystem;
-import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LoggingOutputStream;
 
 public class AutoTestsRunner {
-	Emulator emulator;
-	private static final String rootDirectory = "../pspautotests";
 	private static final Logger log = Logger.getLogger("pspautotests");
 	private static final int FAIL_TIMEOUT = 10; // in seconds
+
+	static {
+		LWJGLFixer.fixOnce();
+		log.addAppender(new ConsoleAppender());
+	}
+
+	static public void main(String[] args) {
+		new AutoTestsRunner().run();
+	}
+
+	Emulator emulator;
+
+	static private void debug(String str) {
+		//log.info(str);
+		System.err.println(str);
+	}
+
+	static private void info(String str) {
+		//log.info(str);
+		System.out.println(str);
+	}
+
+	static private void error(String str) {
+		//log.error(str);
+		System.err.println(str);
+	}
 
 	class DummyGUI implements IMainGUI {
 		@Override public void setMainTitle(String title) { }
@@ -91,7 +118,7 @@ public class AutoTestsRunner {
         DOMConfigurator.configure("LogSettings.xml");
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("emu"), Level.INFO)));
         Screen.setHasScreen(false);
-        IoFileMgrForUser.defaultTimings.get(IoFileMgrForUser.IoOperation.iodevctl).setDelayMillis(0);
+        //IoFileMgrForUser.defaultTimings.get(IoFileMgrForUser.IoOperation.iodevctl).setDelayMillis(0);
         Modules.sceDisplayModule.setCalledFromCommandLine();
 
 		try {
@@ -103,30 +130,36 @@ public class AutoTestsRunner {
 		System.exit(0);
 	}
 
+	static private File rootDirectory = FileUtil.findFolderNameInAncestors(new File("."), "pspautotests");
+
 	protected void runImpl() throws Throwable {
-		runTestFolder(rootDirectory + "/tests");
+		File folder = rootDirectory;
+		if (folder != null) {
+			runTestFolder(new File(folder, "/tests"));
+		} else {
+			error("Can't find pspautotests folder");
+		}
 //		runTest(rootDirectory + "/tests/cpu/vfpu/vector");
 //		runTestFolder(rootDirectory + "/tests/cpu");
 	}
 
-	protected void runTestFolder(String folderPath) throws Throwable {
-		for (File file : new File(folderPath).listFiles()) {
-			if (file.getName().charAt(0) == '.') {
-				continue;
-			}
-			if (file.isDirectory()) {
-				runTestFolder(file.getPath());
-			} else if (file.isFile()) {
-				String name = file.getPath();
-				if (name.substring(name.length() - 9).equals(".expected")) {
-					runTest(name.substring(0, name.length() - 9));
+	protected void runTestFolder(File folder) throws Throwable {
+		File[] files = folder.listFiles();
+		if (files != null) {
+			for (File file : files) {
+				if (file.getName().charAt(0) == '.') {
+					continue;
+				}
+				if (file.isDirectory()) {
+					runTestFolder(file);
+				} else if (file.isFile()) {
+					String name = file.getPath();
+					if (name.substring(name.length() - 9).equals(".expected")) {
+						runTest(name.substring(0, name.length() - 9));
+					}
 				}
 			}
 		}
-	}
-
-	protected boolean isWindows() {
-		return (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0);
 	}
 
 	protected void runTest(String baseFileName) throws Throwable {
@@ -212,7 +245,7 @@ public class AutoTestsRunner {
 			}
 			ImageIO.write(compareImg, "bmp", compare);
 		} catch (IOException e) {
-			log.error("comparing screenshots", e);
+			error(String.format("comparing screenshots %s", e));
 		}
 
 		return equals;
@@ -222,12 +255,12 @@ public class AutoTestsRunner {
 		String actualOutput = AutoTestsOutput.getOutput().trim();
 		String expectedOutput = readFileAsString(fileName).trim();
 		if (actualOutput.equals(expectedOutput)) {
-			log.info(String.format("%s: OK", baseFileName));
+			info(String.format("%s: OK", baseFileName));
 		} else {
 			if (timeout) {
-				log.error(String.format("%s: FAIL, TIMEOUT", baseFileName));
+				error(String.format("%s: FAIL, TIMEOUT", baseFileName));
 			} else {
-				log.error(String.format("%s: FAIL", baseFileName));
+				error(String.format("%s: FAIL", baseFileName));
 			}
 			diff(expectedOutput, actualOutput);
 		}
@@ -239,19 +272,19 @@ public class AutoTestsRunner {
 				File savedScreenshotResult = new File(baseFileName + ".result.bmp");
 				savedScreenshotResult.delete();
 				if (screenshotResult.renameTo(savedScreenshotResult)) {
-					log.info(String.format("%s: saved screenshot under '%s'", baseFileName, savedScreenshotResult));
+					info(String.format("%s: saved screenshot under '%s'", baseFileName, savedScreenshotResult));
 
 					File compareScreenshot = new File(baseFileName + ".compare.bmp");
 					if (compareScreenshots(screenshotExpected, savedScreenshotResult, compareScreenshot)) {
-						log.info(String.format("%s: screenshots are identical", baseFileName));
+						info(String.format("%s: screenshots are identical", baseFileName));
 					} else {
-						log.error(String.format("%s: screenshots differ, see '%s'", baseFileName, compareScreenshot));
+						error(String.format("%s: screenshots differ, see '%s'", baseFileName, compareScreenshot));
 					}
 				} else {
-					log.error(String.format("%s: cannot save screenshot from '%s' to '%s'", baseFileName, screenshotResult, savedScreenshotResult));
+					error(String.format("%s: cannot save screenshot from '%s' to '%s'", baseFileName, screenshotResult, savedScreenshotResult));
 				}
 			} else {
-				log.error(String.format("%s: FAIL, no result screenshot found", baseFileName));
+				error(String.format("%s: FAIL, no result screenshot found", baseFileName));
 			}
 		}
 	}
@@ -282,22 +315,22 @@ public class AutoTestsRunner {
         int i = 0, j = 0;
         while (i < M && j < N) {
             if (x[i].equals(y[j])) {
-                log.debug("  " + x[i]);
+                debug("  " + x[i]);
                 i++;
                 j++;
             } else if (opt[i+1][j] >= opt[i][j+1]) {
-            	log.info("- " + x[i++]);
+            	info("- " + x[i++]);
             } else {
-            	log.info("+ " + y[j++]);
+            	info("+ " + y[j++]);
             }
         }
 
         // dump out one remainder of one string if the other is exhausted
         while (i < M || j < N) {
             if (i == M) {
-            	log.info("+ " + y[j++]);
+            	info("+ " + y[j++]);
             } else if (j == N) {
-            	log.info("- " + x[i++]);
+            	info("- " + x[i++]);
             }
         }
     }
@@ -340,7 +373,7 @@ public class AutoTestsRunner {
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(umdIsoReader);
         Modules.IoFileMgrForUserModule.setfilepath(file.getParent());
 
-		log.debug(String.format("Running: %s...", fileName));
+		debug(String.format("Running: %s...", fileName));
         {
             RuntimeContext.setIsHomebrew(false);
 

@@ -65,4 +65,14 @@ public class FileUtil {
             }
         }
     }
+
+    public static File findFolderNameInAncestors(File base, String name) {
+        File current = base;
+        while (current != null) {
+            File file = new File(current, name);
+            if (file.exists()) return file.getAbsoluteFile();
+            current = current.getParentFile();
+        }
+        return null;
+    }
 }

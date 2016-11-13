@@ -7,12 +7,16 @@ import java.nio.IntBuffer;
 
 import javax.swing.JFrame;
 
+import jpcsp.util.LWJGLFixer;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.AWTGLCanvas;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
 public class OpenGL extends JFrame {
+	static {
+		LWJGLFixer.fixOnce();
+	}
 	private static final long serialVersionUID = -2382484285518105610L;
 	private static Window window;
 

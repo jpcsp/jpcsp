@@ -23,11 +23,15 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
+import jpcsp.util.LWJGLFixer;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.openal.AL;
 import org.lwjgl.openal.AL10;
 
 public class OpenAL {
+	static {
+		LWJGLFixer.fixOnce();
+	}
 	private static Set<Integer> freeBuffers = new HashSet<Integer>();
 	private static boolean isRawFile = false;
 	private static int sampleRate = 48000; // 44100 or 48000

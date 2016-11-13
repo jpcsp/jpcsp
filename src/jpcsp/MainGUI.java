@@ -101,7 +101,7 @@ import jpcsp.hardware.Model;
  */
 public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener, MouseListener, IMainGUI {
     static {
-        LWJGLFixer.fix();
+        LWJGLFixer.fixOnce();
     }
 
     private static final long serialVersionUID = -3647025845406693230L;
@@ -236,7 +236,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         WindowPropSaver.loadWindowProperties(this);
 
         try {
-            Image iconImage = new ImageIcon(ClassLoader.getSystemClassLoader().getResource("icon.png")).getImage();
+            Image iconImage = new ImageIcon(ClassLoader.getSystemClassLoader().getResource("jpcsp/icon.png")).getImage();
             this.setIconImages(Arrays.asList(
                     iconImage.getScaledInstance(16, 16, Image.SCALE_SMOOTH),
                     iconImage.getScaledInstance(32, 32, Image.SCALE_SMOOTH),

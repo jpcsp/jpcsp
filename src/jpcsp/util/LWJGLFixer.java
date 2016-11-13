@@ -16,7 +16,16 @@ import java.util.zip.CRC32;
 // This is not required on lwjgl3 since SharedLibraryLoader takes care of it and allows fatjars and launch4j executables
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class LWJGLFixer {
-    static public void fix() {
+    static private boolean fixed = false;
+
+    static public void fixOnce() {
+        if (!fixed) {
+            fixed = true;
+            fix();
+        }
+    }
+
+    static private void fix() {
         try {
             fixInternal();
         } catch (Throwable e) {
