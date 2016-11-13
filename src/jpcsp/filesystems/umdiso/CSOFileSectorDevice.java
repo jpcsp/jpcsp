@@ -16,14 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.filesystems.umdiso;
 
+import jpcsp.util.FileUtil;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-
-import org.bolet.jgz.Inflater;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 public class CSOFileSectorDevice extends AbstractFileSectorDevice {
 	protected int offsetShift;
@@ -90,10 +93,10 @@ public class CSOFileSectorDevice extends AbstractFileSectorDevice {
 		        fileAccess.read(compressedData);
 
 		        try {
-		            Inflater inf = new Inflater();
-		            ByteArrayInputStream b = new ByteArrayInputStream(compressedData);
-		            inf.reset(b);
-		            inf.readAll(buffer, offset, sectorLength);
+		            Inflater inf = new Inflater(true);
+					try (InputStream s = new InflaterInputStream(new ByteArrayInputStream(compressedData), inf)) {
+						FileUtil.readAll(s, buffer, offset, sectorLength);
+					}
 		        } catch (IOException e) {
 		            throw new IOException(String.format("Exception while uncompressing sector %d", sectorNumber));
 		        }

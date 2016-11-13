@@ -14,6 +14,10 @@ ms0/PSP/GAME/*
 !ms0/PSP/GAME/SavedataTool/
 #UMD images
 umdimages/
+.idea
+*.iml
+*.ipr
+*.iws
 #7-Zip binaries
 7-zip.dll
 7z.dll
@@ -26,3 +30,7 @@ profiler.txt
 tmp/*
 kprintf.txt
 log.txt
+export
+ms0
+.gradle
+step-trace.txt

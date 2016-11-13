@@ -1,0 +1,92 @@
+group 'com.jpcsp'
+version '0.7'
+
+buildscript {
+    ext.launch4j_version = '1.6.2'
+
+    repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "gradle.plugin.com.stehno:gradle-natives:0.3.0"
+        classpath "gradle.plugin.edu.sc.seis.gradle:launch4j:$launch4j_version"
+    }
+}
+
+apply plugin: "com.stehno.natives"
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'edu.sc.seis.launch4j'
+
+mainClassName = "jpcsp.MainGUI"
+
+sourceSets {
+    main.java.srcDirs = ['src']
+    test.java.srcDirs = ['test']
+    main.resources.srcDirs = ['resources', 'src']
+    //jniLibs.srcDir = 'lib'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile files(
+            'lib/asm-all-4.0_RC1.jar',
+            'lib/xuggle-xuggler-noarch-5.4.jar',
+    )
+
+    //compile "org.ow2.asm:asm-all:4.0" // DO NOT SEEMS TO WORK! Does it includes a modified 4.0-RC1 version or something?
+    //compile "org.ow2.asm:asm-all:4.1" // DO NOT SEEMS TO WORK! Does it includes a modified 4.0-RC1 version or something?
+    //compile "org.ow2.asm:asm-all:5.1" // DO NOT SEEMS TO WORK! Does it includes a modified 4.0-RC1 version or something?
+
+    compile "commons-cli:commons-cli:20040117.000000"
+
+    compile "ch.qos.logback:logback-core:1.0.0" // Last version: 1.1.7
+    compile "ch.qos.logback:logback-classic:1.0.0"
+
+    compile "com.jidesoft:jide-oss:2.8.4"
+
+    compile "jdom:jdom:1.1"
+
+    compile "log4j:log4j:1.2.17"
+    compile "org.slf4j:slf4j-api:1.6.4"
+
+    compile "org.bouncycastle:bcprov-jdk16:1.46"
+    compile "org.lwjgl.lwjgl:lwjgl:${lwjglVersion}"
+
+    compile "net.java.dev.jna:jna:4.2.2"
+
+    //compile "jaxen:jaxen:1.1.6" // not used?
+    //compile "javassist:javasist:3.11.0.GA" // not used?
+
+    testCompile "junit:junit:4.12"
+}
+
+jar {
+    manifest {
+        attributes("Main-Class": "jpcsp.MainGUI")
+    }
+    from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+}
+
+launch4j {
+    opt = "-Xmx768m"
+    print "version: $version"
+    outfile = "../../build/libs/jpcsp-${project.version}.exe"
+    icon = "../../resources/icon.ico"
+    mainClassName = project.mainClassName
+    //copyConfigurable = project.tasks.fatJar.outputs.files
+    //jar = "lib/${project.tasks.fatJar.archiveName}"
+    maxHeapSize = 1024
+    jar = "../../build/libs/jpcsp-${project.version}.jar"
+}
