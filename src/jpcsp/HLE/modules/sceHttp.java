@@ -69,6 +69,16 @@ public class sceHttp extends HLEModule {
     protected HashMap<Integer, HttpConnection> httpConnections = new HashMap<Integer, HttpConnection>();
     protected HashMap<Integer, HttpRequest> httpRequests = new HashMap<Integer, HttpRequest>();
     private CookieManager cookieManager;
+    private static final String httpMethods[] = {
+    	"GET",
+    	"POST",
+    	"HEAD",
+    	"OPTIONS",
+    	"PUT",
+    	"DELETE",
+    	"TRACE",
+    	"CONNECT"
+    };
 
     protected static class HttpRequest {
     	private static final String uidPurpose = "sceHttp-HttpRequest";
@@ -199,16 +209,12 @@ public class sceHttp extends HLEModule {
 
 				if (urlConnection instanceof HttpURLConnection) {
 					httpUrlConnection = (HttpURLConnection) urlConnection;
-					if (method != 0) {
-						httpUrlConnection.setRequestMethod("POST");
-						if (sendDataLength > 0) {
-							httpUrlConnection.setDoOutput(true);
-							OutputStream os = httpUrlConnection.getOutputStream();
-							os.write(sendData, 0, sendDataLength);
-							os.close();
-						}
-					} else {
-						httpUrlConnection.setRequestMethod("GET");
+					httpUrlConnection.setRequestMethod(httpMethods[method]);
+					if (sendDataLength > 0) {
+						httpUrlConnection.setDoOutput(true);
+						OutputStream os = httpUrlConnection.getOutputStream();
+						os.write(sendData, 0, sendDataLength);
+						os.close();
 					}
 				} else {
 					httpUrlConnection = null;
@@ -262,7 +268,7 @@ public class sceHttp extends HLEModule {
 				if (key != null) {
 					List<String> values = properties.get(key);
 					for (String value : values) {
-						allHeaders.append(String.format("%s: %s\n", key, value));
+						allHeaders.append(String.format("%s: %s\r\n", key, value));
 					}
 				}
 			}
@@ -1094,7 +1100,7 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDB266CCF, version = 150)
-    public int sceHttpGetAllHeader(int requestId, TPointer32 headerAddr, TPointer32 headerLengthAddr) {
+    public int sceHttpGetAllHeader(int requestId, @BufferInfo(usage=Usage.out) TPointer32 headerAddr, @BufferInfo(usage=Usage.out) TPointer32 headerLengthAddr) {
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	httpRequest.connect();
     	String allHeaders = httpRequest.getAllHeaders();
@@ -1108,7 +1114,7 @@ public class sceHttp extends HLEModule {
     	headerLengthAddr.setValue(allHeaders.length());
 
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceHttpGetAllHeader returning at 0x%08X: %s", addr, allHeaders));
+    		log.debug(String.format("sceHttpGetAllHeader returning at 0x%08X: %s", addr, Utilities.getMemoryDump(addr, headerLengthAddr.getValue())));
     	}
 
     	return 0;
