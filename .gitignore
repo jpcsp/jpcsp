@@ -35,3 +35,8 @@ ms0
 .gradle
 step-trace.txt
 .settings
+capture.bin
+hs*.log
+/pspautotests
+*Shot*.png
+PARAM.SFO

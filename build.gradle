@@ -27,7 +27,8 @@ mainClassName = "jpcsp.MainGUI"
 sourceSets {
     main.java.srcDirs = ['src']
     test.java.srcDirs = ['test']
-    main.resources.srcDirs = ['resources', 'src']
+    main.resources.srcDirs = ['resources', 'testresources', 'src']
+    test.resources.srcDirs = ['testresources']
     //jniLibs.srcDir = 'lib'
 }
 
@@ -84,7 +85,7 @@ launch4j {
     opt = "-Xmx768m"
     print "version: $version"
     outfile = "../../build/libs/jpcsp-${project.version}.exe"
-    icon = "../../resources/icon.ico"
+    icon = "../../resources/jpcsp/icon.ico"
     mainClassName = project.mainClassName
     //copyConfigurable = project.tasks.fatJar.outputs.files
     //jar = "lib/${project.tasks.fatJar.archiveName}"
