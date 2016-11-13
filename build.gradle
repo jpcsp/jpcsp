@@ -20,6 +20,7 @@ apply plugin: "com.stehno.natives"
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'edu.sc.seis.launch4j'
+apply plugin: "eclipse"
 
 mainClassName = "jpcsp.MainGUI"
 

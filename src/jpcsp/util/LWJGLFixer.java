@@ -53,20 +53,24 @@ public class LWJGLFixer {
         ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
         String[] libraries = getLibrariesToLoad();
 
-        File folder = new File(System.getProperty("java.io.tmpdir") + "/lwgl-2.9.3/" + System.getProperty("user.name"));
-        folder.mkdirs();
+        try {
+            File folder = new File(System.getProperty("java.io.tmpdir") + "/lwgl-2.9.3/" + System.getProperty("user.name"));
+            folder.mkdirs();
 
-        for (String library : libraries) {
-            URL libUrl = systemClassLoader.getResource(library);
-            String basename = FileUtil.getURLBaseName(libUrl);
-            File outFile = new File(folder, basename);
+            for (String library : libraries) {
+                URL libUrl = systemClassLoader.getResource(library);
+                String basename = FileUtil.getURLBaseName(libUrl);
+                File outFile = new File(folder, basename);
 
-            if (!outFile.exists()) {
-                FileUtil.writeBytes(outFile, FileUtil.readURL(libUrl));
+                if (!outFile.exists()) {
+                    FileUtil.writeBytes(outFile, FileUtil.readURL(libUrl));
+                }
             }
-        }
 
-        System.setProperty("org.lwjgl.librarypath", folder.getAbsolutePath());
-        System.setProperty("net.java.games.input.librarypath", folder.getAbsolutePath());
+            System.setProperty("org.lwjgl.librarypath", folder.getAbsolutePath());
+            System.setProperty("net.java.games.input.librarypath", folder.getAbsolutePath());
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 }
