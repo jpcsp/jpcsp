@@ -101,10 +101,7 @@ import jpcsp.log.LoggingOutputStream;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.remote.HTTPServer;
 import jpcsp.settings.Settings;
-import jpcsp.util.FileUtil;
-import jpcsp.util.JpcspDialogManager;
-import jpcsp.util.MetaInformation;
-import jpcsp.util.Utilities;
+import jpcsp.util.*;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -135,6 +132,10 @@ import jpcsp.hardware.Model;
  * @author shadow
  */
 public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener, MouseListener, IMainGUI {
+    static {
+        LWJGLFixer.fix();
+    }
+
     private static final long serialVersionUID = -3647025845406693230L;
     private static Logger log = Emulator.log;
     public static final int MAX_RECENT = 10;

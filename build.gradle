@@ -1,0 +1,86 @@
+group 'com.jpcsp'
+version '0.7'
+
+buildscript {
+    repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "gradle.plugin.com.stehno:gradle-natives:0.3.0"
+    }
+}
+
+apply plugin: "com.stehno.natives"
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+mainClassName = "jpcsp.MainGUI"
+
+sourceSets {
+    main.java.srcDirs = ['src']
+    test.java.srcDirs = ['test']
+    main.resources.srcDirs = ['resources', 'src']
+    //jniLibs.srcDir = 'lib'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile files(
+            'lib/javassist.jar',
+            'lib/jgz-0.2.jar',
+            'lib/jide-oss-2.8.4.jar',
+            'lib/log4j-1.2.15.jar',
+            'lib/asm-all-4.0_RC1.jar',
+            'lib/jaxen-1.1.1.jar',
+            'lib/jdom1.1.jar',
+            'lib/commons-cli.jar',
+            'lib/logback-classic.jar',
+            'lib/logback-core.jar',
+            'lib/slf4j-api.jar',
+            //'lib/jinput.jar',
+            //'lib/lwjgl_util.jar',
+            //'lib/lwjgl.jar',
+            'lib/bcprov-jdk16-145.jar',
+            'lib/xuggle-xuggler-noarch-5.4.jar',
+
+    )
+
+    compile "org.lwjgl.lwjgl:lwjgl:${lwjglVersion}"
+    //compile "net.java.jinput:jinput:2.0.6"
+}
+
+/*
+def platforms = ['windows', 'linux', 'osx']
+platforms.each { platform ->
+    task "${platform}Natives" {
+        def outputDir = "$buildDir/natives/$platform"
+        inputs.files(configurations.compile)
+        outputs.dir(outputDir)
+        doLast {
+            copy {
+                def artifacts = configurations.compile.resolvedConfiguration.resolvedArtifacts
+                        .findAll { it.classifier == "natives-$platform" }
+                artifacts.each {
+                    from zipTree(it.file)
+                }
+                into outputDir
+            }
+        }
+    }
+}
+task natives {
+    description "Copies native libraries to an appropriate directory."
+    dependsOn platforms.collect { "${it}Natives" }.findAll { tasks[it] }
+}
+
+run {
+    jvmArgs = ['-Djava.library.path=../natives/windows']
+}
+*/
