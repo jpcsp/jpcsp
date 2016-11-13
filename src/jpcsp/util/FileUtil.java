@@ -52,4 +52,16 @@ public class FileUtil {
             e.printStackTrace();
         }
     }
+
+    public static void readAll(InputStream is, byte[] buffer, int offset, int len) throws IOException {
+        int aoffset = offset;
+        int remaining = len;
+        while (remaining > 0) {
+            int read = is.read(buffer, aoffset, remaining);
+            if (read > 0) {
+                remaining -= read;
+                aoffset += read;
+            }
+        }
+    }
 }

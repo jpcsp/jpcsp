@@ -34,7 +34,7 @@ repositories {
 dependencies {
     compile files(
             //'lib/javassist.jar',
-            'lib/jgz-0.2.jar',
+            //'lib/jgz-0.2.jar',
             'lib/asm-all-4.0_RC1.jar',
             'lib/xuggle-xuggler-noarch-5.4.jar',
 
