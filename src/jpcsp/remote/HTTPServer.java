@@ -672,6 +672,12 @@ public class HTTPServer {
 //				sendNpNavAuth(request.get(data), os);
 //			} else if ("getprof.gb.np.community.playstation.net".equals(request.get(host)) && "/basic_view/sec/get_self_profile".equals(pathValue)) {
 //				sendNpGetSelfProfile(request.get(data), os);
+			} else if ("commerce.np.ac.playstation.net".equals(request.get(host)) && "/cap.m".equals(pathValue)) {
+				sendCapM(request.get(data), os);
+			} else if ("commerce.np.ac.playstation.net".equals(request.get(host)) && "/kdp.m".equals(pathValue)) {
+				sendKdpM(request.get(data), os);
+			} else if ("video.dl.playstation.net".equals(request.get(host)) && pathValue.matches("/cdn/video/[A-Z][A-Z]/g")) {
+				sendVideoStore(os);
 			} else if ("GET".equals(request.get(method))) {
 				if ("/".equals(pathValue)) {
 					sendResponseFile(os, rootDirectory + "/" + indexFile);
@@ -1891,6 +1897,10 @@ public class HTTPServer {
 		sendResponseHeader(os, "Content-Type", "application/x-i-5-drm");
 		sendEndOfHeaders(os);
 
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Response:%s", Utilities.getMemoryDump(response, 0, responseLength)));
+		}
+
 		os.write(response, 0, responseLength);
 	}
 
@@ -1920,6 +1930,26 @@ public class HTTPServer {
 		sendResponseHeader(os, "Content-Length", responseLength);
 		sendResponseHeader(os, "Content-Type", "application/x-i-5-drm");
 		sendEndOfHeaders(os);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Response:%s", Utilities.getMemoryDump(response, 0, responseLength)));
+		}
+
+		os.write(response, 0, responseLength);
+	}
+
+	public void sendVideoStore(OutputStream os) throws IOException {
+		byte[] response = new byte[1];
+		response[0] = (byte) '3';
+		int responseLength = response.length;
+
+		sendOK(os);
+		sendResponseHeader(os, "Content-Length", responseLength);
+		sendEndOfHeaders(os);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Response:%s", Utilities.getMemoryDump(response, 0, responseLength)));
+		}
 
 		os.write(response, 0, responseLength);
 	}

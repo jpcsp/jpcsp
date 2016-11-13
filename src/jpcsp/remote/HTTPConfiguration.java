@@ -111,7 +111,7 @@ public class HTTPConfiguration {
 		new HttpServerConfiguration("nsx.sec.np.dl.playstation.net", 443, true, new String[] { "/" }),
 		new HttpServerConfiguration("nsx-e.sec.np.dl.playstation.net", 443),
 		new HttpServerConfiguration("nsx-e.np.dl.playstation.net"),
-		new HttpServerConfiguration("video.dl.playstation.net"),
+		new HttpServerConfiguration("video.dl.playstation.net", 80, true, new String[] { "/cdn/video/US/g" }),
 		new HttpServerConfiguration("apollo.dl.playstation.net"),
 		new HttpServerConfiguration("poseidon.dl.playstation.net"),
 		new HttpServerConfiguration("zeus.dl.playstation.net"),
