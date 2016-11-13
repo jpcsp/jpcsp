@@ -33,11 +33,8 @@ repositories {
 
 dependencies {
     compile files(
-            //'lib/javassist.jar',
-            //'lib/jgz-0.2.jar',
             'lib/asm-all-4.0_RC1.jar',
             'lib/xuggle-xuggler-noarch-5.4.jar',
-
     )
 
     //compile "org.ow2.asm:asm-all:4.0" // DO NOT SEEMS TO WORK! Does it includes a modified 4.0-RC1 version or something?
@@ -52,12 +49,14 @@ dependencies {
 
     compile "jdom:jdom:1.1"
 
-    compile "log4j:log4j:1.2.15"
+    compile "log4j:log4j:1.2.17"
     compile "org.slf4j:slf4j-api:1.6.4"
 
-    //compile "jaxen:jaxen:1.1.6" // not used?
     compile "org.bouncycastle:bcprov-jdk16:1.46"
     compile "org.lwjgl.lwjgl:lwjgl:${lwjglVersion}"
+
+    //compile "jaxen:jaxen:1.1.6" // not used?
+    //compile "javassist:javasist:3.11.0.GA" // not used?
 }
 
 /*
