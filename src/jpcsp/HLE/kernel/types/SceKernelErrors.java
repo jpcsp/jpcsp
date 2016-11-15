@@ -508,6 +508,8 @@ public class SceKernelErrors {
     public final static int ERROR_NPDRM_NO_K_LICENSEE_SET                       = 0x80550916;
     public final static int ERROR_NPDRM_NO_FILENAME_MATCH                       = 0x80550917;
 
+    public final static int ERROR_LIB_UPDATE_LATEST_VERSION_INSTALLED           = 0x805F0004;
+
     public final static int ERROR_MPEG_BAD_VERSION                              = 0x80610002;
     public final static int ERROR_MPEG_NO_MEMORY                                = 0x80610022;
     public final static int ERROR_MPEG_INVALID_ADDR                             = 0x80610103;

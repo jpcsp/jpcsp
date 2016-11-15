@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -23,6 +26,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 import org.apache.log4j.Logger;
 
@@ -55,11 +59,11 @@ public class sceLibUpdateDL extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xFD675E8D, version = 150)
-    public int sceUpdateDownloadConnectServer(TPointer32 unknown1, TPointer32 unknown2) {
-    	unknown1.setValue(1);
-    	unknown2.setValue(1);
+    public int sceUpdateDownloadConnectServer(@CanBeNull @BufferInfo(usage=Usage.out) TPointer32 unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
+    	unknown1.setValue(0);
+    	unknown2.setValue(0);
 
-    	return 0;
+    	return SceKernelErrors.ERROR_LIB_UPDATE_LATEST_VERSION_INSTALLED;
     }
 
     @HLEUnimplemented
@@ -132,7 +136,7 @@ public class sceLibUpdateDL extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x36D8F34B, version = 150)
-    public int sceUpdate_36D8F34B() {
+    public int sceUpdate_36D8F34B(int unknown) {
     	return 0;
     }
 
