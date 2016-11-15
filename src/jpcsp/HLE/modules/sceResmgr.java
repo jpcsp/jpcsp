@@ -18,17 +18,31 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 
 public class sceResmgr extends HLEModule {
     public static Logger log = Modules.getLogger("sceResmgr");
 
-//    @HLEUnimplemented
-//    @HLEFunction(nid = 0x9DC14891, version = 990)
-//    public int sceResmgr_9DC14891(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultAddr) {
-//    	resultAddr.setValue(0);
-//
-//    	return 0;
-//    }
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9DC14891, version = 990)
+    public int sceResmgr_9DC14891(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultLengthAddr) {
+    	String result = "release:6.60:\n";
+    	result += "build:5455,0,3,1,0:builder@vsh-build6\n";
+    	result += "system:57716@release_660,0x06060010:\n";
+    	result += "vsh:p6616@release_660,v58533@release_660,20110727:\n";
+    	result += "target:1:WorldWide\n";
+
+    	buffer.setStringZ(result);
+    	resultLengthAddr.setValue(result.length());
+
+    	return 0;
+    }
 }

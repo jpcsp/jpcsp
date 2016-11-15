@@ -2857,19 +2857,16 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 	            setTitle(MetaInformation.FULL_NAME + " - VSH");
                 Modules.sceDisplayModule.setCalledFromCommandLine();
                 HTTPServer.processProxyRequestLocally = true;
-            	loadFile(new File("flash0/kd/mesg_led_01g.prx"), true);
+                loadFile(new File("flash0/vsh/module/vshmain.prx"), true);
 
             	ModuleMgrForUser moduleMgr = Modules.ModuleMgrForUserModule;
 
             	// Use increasing start thread priorities to enforce the start order
             	int startPriority = 0x11;
-//            	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/registry.prx", startPriority++);
-//            	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/openpsid.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/vshbridge.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/paf.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/common_gui.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/common_util.prx", startPriority++);
-            	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/vshmain.prx", startPriority++);
 
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_VAUDIO");
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_ATRAC3PLUS");
