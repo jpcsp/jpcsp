@@ -138,6 +138,7 @@ public class Modules {
     public static sceNetAdhocAuth sceNetAdhocAuthModule = new sceNetAdhocAuth();
     public static sceNetAdhocDownload sceNetAdhocDownloadModule = new sceNetAdhocDownload();
     public static sceHttpStorage sceHttpStorageModule = new sceHttpStorage();
+    public static sceVideocodec sceVideocodecModule = new sceVideocodec();
 
     public static Logger log = Logger.getLogger("hle");
 

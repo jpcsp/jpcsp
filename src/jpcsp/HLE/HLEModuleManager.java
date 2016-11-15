@@ -163,6 +163,7 @@ public class HLEModuleManager {
         sceAudioRouting(Modules.sceAudioRoutingModule),
         sceUsbGps(Modules.sceUsbGpsModule, new String[] { "PSP_USB_MODULE_GPS", "PSP_MODULE_USB_GPS", "usbgps" }),
         sceAudiocodec(Modules.sceAudiocodecModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec" }),
+        sceVideocodec(Modules.sceVideocodecModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec" }),
         sceAdler(Modules.sceAdlerModule, new String[] { "libadler" }),
         sceSha1(Modules.sceSha1Module, new String[] { "libsha1" }),
         sceSha256(Modules.sceSha256Module, new String[] { "libsha256" }),
