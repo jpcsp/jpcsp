@@ -34,11 +34,9 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
-import java.awt.Dimension;
+import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
-import java.awt.Rectangle;
-import java.awt.Robot;
 import java.io.File;
 import java.io.IOException;
 import java.nio.Buffer;
@@ -94,7 +92,7 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 import org.lwjgl.LWJGLException;
-import org.lwjgl.opengl.AWTGLCanvas;
+import org.lwjgl.opengl.AWTGLCanvasForJpcsp;
 import org.lwjgl.opengl.ContextAttribs;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
@@ -104,7 +102,7 @@ public class sceDisplay extends HLEModule {
     public static Logger log = Modules.getLogger("sceDisplay");
 
     @SuppressWarnings("serial")
-    class AWTGLCanvas_sceDisplay extends AWTGLCanvas {
+    class AWTGLCanvas_sceDisplay extends AWTGLCanvasForJpcsp {
 
         public AWTGLCanvas_sceDisplay() throws LWJGLException {
             super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(antiAliasSamplesNum), null, new ContextAttribs().withDebug(useDebugGL));
@@ -473,7 +471,7 @@ public class sceDisplay extends HLEModule {
     }
     protected AWTGLCanvas_sceDisplay canvas;
 
-    public AWTGLCanvas getCanvas() {
+    public AWTGLCanvasForJpcsp getCanvas() {
         return canvas;
     }
     private boolean onlyGEGraphics = false;

@@ -41,6 +41,7 @@ dependencies {
     compile files(
             'lib/asm-all-4.0_RC1.jar',
             'lib/xuggle-xuggler-noarch-5.4.jar',
+            'lib/lwjgl-2.9.3.jar',
     )
 
     //compile "org.ow2.asm:asm-all:4.0" // DO NOT SEEMS TO WORK! Does it includes a modified 4.0-RC1 version or something?
@@ -60,7 +61,12 @@ dependencies {
     compile "org.slf4j:slf4j-api:1.6.4"
 
     compile "org.bouncycastle:bcprov-jdk16:1.46"
-    compile "org.lwjgl.lwjgl:lwjgl:${lwjglVersion}"
+    //compile "org.lwjgl.lwjgl:lwjgl:${lwjglVersion}"
+    compile "net.java.jinput:jinput:2.0.5"
+    compile "org.lwjgl.lwjgl:lwjgl-platform:${lwjglVersion}"
+    compile "org.lwjgl.lwjgl:lwjgl-platform:${lwjglVersion}:natives-linux"
+    compile "org.lwjgl.lwjgl:lwjgl-platform:${lwjglVersion}:natives-osx"
+    compile "org.lwjgl.lwjgl:lwjgl-platform:${lwjglVersion}:natives-windows"
 
     compile "net.java.dev.jna:jna:4.2.2"
 

@@ -9,7 +9,7 @@ import javax.swing.JFrame;
 
 import jpcsp.util.LWJGLFixer;
 import org.lwjgl.LWJGLException;
-import org.lwjgl.opengl.AWTGLCanvas;
+import org.lwjgl.opengl.AWTGLCanvasForJpcsp;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
@@ -49,7 +49,7 @@ public class OpenGL extends JFrame {
 		}
 	}
 
-	private static class Window extends AWTGLCanvas {
+	private static class Window extends AWTGLCanvasForJpcsp {
 		private static final long serialVersionUID = -2905423386357820220L;
 		private int texture1Id = -1;
 		private int texture2Id = -1;
