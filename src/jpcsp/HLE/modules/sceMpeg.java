@@ -234,7 +234,7 @@ public class sceMpeg extends HLEModule {
     private IVideoCodec videoCodec;
     private int videoCodecExtraData[];
     private static final int MAX_INT_BUFFERS_SIZE = 12;
-    private Set<int[]> intBuffers;
+    private static Set<int[]> intBuffers;
     private PesHeader audioPesHeader;
     private PesHeader videoPesHeader;
     private final PesHeader dummyPesHeader = new PesHeader(0);
@@ -1945,7 +1945,7 @@ public class sceMpeg extends HLEModule {
 		memoryWriter.flush();
     }
 
-    private int[] getIntBuffer(int length) {
+    public static int[] getIntBuffer(int length) {
     	synchronized (intBuffers) {
         	for (int[] intBuffer : intBuffers) {
         		if (intBuffer.length >= length) {
@@ -1958,7 +1958,7 @@ public class sceMpeg extends HLEModule {
     	return new int[length];
     }
 
-    private void releaseIntBuffer(int[] intBuffer) {
+    public static void releaseIntBuffer(int[] intBuffer) {
     	if (intBuffer == null) {
     		return;
     	}
@@ -3623,7 +3623,11 @@ public class sceMpeg extends HLEModule {
         int[] abgr = getIntBuffer(length);
         H264Utils.YUV2ABGR(width, height, luma, cb, cr, abgr);
 
-		final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
+        releaseIntBuffer(luma);
+        releaseIntBuffer(cb);
+        releaseIntBuffer(cr);
+
+        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
 
 		// Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
         VideoEngine.getInstance().addVideoTexture(destAddr.getAddress(), destAddr.getAddress() + (rangeY + rangeHeight) * frameWidth * bytesPerPixel);
@@ -3651,6 +3655,7 @@ public class sceMpeg extends HLEModule {
 	        	addr += frameWidth * bytesPerPixel;
 	        }
 		}
+		releaseIntBuffer(abgr);
 
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceMpegAvcCsc writing to 0x%08X-0x%08X, vcount=%d", destAddr.getAddress(), destAddr.getAddress() + (rangeY + rangeHeight) * frameWidth * bytesPerPixel, Modules.sceDisplayModule.getVcount()));

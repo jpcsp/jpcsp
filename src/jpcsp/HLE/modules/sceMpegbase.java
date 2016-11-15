@@ -16,9 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.memoryInt;
+import static jpcsp.HLE.modules.sceMpeg.getIntBuffer;
+import static jpcsp.HLE.modules.sceMpeg.releaseIntBuffer;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -30,6 +36,15 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceMp4AvcCscStruct;
+import jpcsp.HLE.kernel.types.SceMpegYCrCbBuffer;
+import jpcsp.HLE.kernel.types.SceMpegYCrCbBufferSrc;
+import jpcsp.graphics.VideoEngine;
+import jpcsp.media.codec.h264.H264Utils;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
+import jpcsp.util.Debug;
 
 public class sceMpegbase extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMpegbase");
@@ -63,8 +78,30 @@ public class sceMpegbase extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xBE45C284, version = 150)
-    public int sceMpegBaseYCrCbCopyVme() {
-        return 0;
+    public int sceMpegBaseYCrCbCopyVme(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.in) TPointer destBufferYCrCb, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer32 srcBufferYCrCb, int type) {
+    	SceMpegYCrCbBuffer destMpegYCrCbBuffer = new SceMpegYCrCbBuffer();
+    	destMpegYCrCbBuffer.read(destBufferYCrCb);
+
+    	SceMpegYCrCbBufferSrc srcMpegYCrCbBuffer = new SceMpegYCrCbBufferSrc();
+    	srcMpegYCrCbBuffer.read(srcBufferYCrCb);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceMpegBaseYCrCbCopyVme destMpegYCrCbBuffer: %s", destMpegYCrCbBuffer));
+    		log.debug(String.format("sceMpegBaseYCrCbCopyVme srcMpegYCrCbBuffer: %s", srcMpegYCrCbBuffer));
+    	}
+
+    	Memory mem = destBufferYCrCb.getMemory();
+    	int sizeY = srcMpegYCrCbBuffer.frameWidth * srcMpegYCrCbBuffer.frameHeight;
+    	int sizeCrCb = sizeY >> 2;
+    	int baseAddr = MemoryMap.START_RAM;
+    	mem.memcpy(destMpegYCrCbBuffer.bufferY, srcMpegYCrCbBuffer.bufferY | baseAddr, sizeY);
+    	mem.memcpy(destMpegYCrCbBuffer.bufferY2, srcMpegYCrCbBuffer.bufferY2 | baseAddr, sizeY);
+    	mem.memcpy(destMpegYCrCbBuffer.bufferCr, srcMpegYCrCbBuffer.bufferCr | baseAddr, sizeCrCb);
+    	mem.memcpy(destMpegYCrCbBuffer.bufferCb, srcMpegYCrCbBuffer.bufferCb | baseAddr, sizeCrCb);
+    	mem.memcpy(destMpegYCrCbBuffer.bufferCr2, srcMpegYCrCbBuffer.bufferCr2 | baseAddr, sizeCrCb);
+    	mem.memcpy(destMpegYCrCbBuffer.bufferCb2, srcMpegYCrCbBuffer.bufferCb2 | baseAddr, sizeCrCb);
+
+    	return 0;
     }
 
     @HLEUnimplemented
@@ -101,8 +138,121 @@ public class sceMpegbase extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xCE8EB837, version = 150)
-    public int sceMpegBaseCscVme() {
-        return 0;
+    public int sceMpegBaseCscVme(TPointer bufferRGB, TPointer bufferRGB2, int bufferWidth, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.in) TPointer32 bufferYCrCb) {
+    	SceMpegYCrCbBuffer sceMpegYCrCbBuffer = new SceMpegYCrCbBuffer();
+    	sceMpegYCrCbBuffer.read(bufferYCrCb);
+
+    	int width = sceMpegYCrCbBuffer.frameBufferWidth16 << 4;
+    	int height = sceMpegYCrCbBuffer.frameBufferHeight16 << 4;
+
+    	int videoPixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+		int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
+        int rangeX = 0;
+        int rangeY = 0;
+        int rangeWidth = width;
+        int rangeHeight = height;
+        int destAddr = bufferRGB.getAddress();
+
+        if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceMpegBaseCscVme sceMpegYCrCbBuffer: %s", sceMpegYCrCbBuffer));
+    	}
+
+        int width2 = width >> 1;
+    	int height2 = height >> 1;
+        int length = width * height;
+        int length2 = width2 * height2;
+
+        // Read the YCbCr image
+        int[] luma = getIntBuffer(length);
+        int[] cb = getIntBuffer(length2);
+        int[] cr = getIntBuffer(length2);
+        int dataAddrY = sceMpegYCrCbBuffer.bufferY;
+        int dataAddrCr = sceMpegYCrCbBuffer.bufferCr;
+        int dataAddrCb = sceMpegYCrCbBuffer.bufferCb;
+        if (memoryInt != null) {
+        	// Optimize the most common case
+        	int length4 = length >> 2;
+            int offset = dataAddrY >> 2;
+            for (int i = 0, j = 0; i < length4; i++) {
+            	int value = memoryInt[offset++];
+            	luma[j++] = (value      ) & 0xFF;
+            	luma[j++] = (value >>  8) & 0xFF;
+            	luma[j++] = (value >> 16) & 0xFF;
+            	luma[j++] = (value >> 24) & 0xFF;
+            }
+
+            int length16 = length2 >> 2;
+            offset = dataAddrCb >> 2;
+            for (int i = 0, j = 0; i < length16; i++) {
+            	int value = memoryInt[offset++];
+            	cb[j++] = (value      ) & 0xFF;
+            	cb[j++] = (value >>  8) & 0xFF;
+            	cb[j++] = (value >> 16) & 0xFF;
+            	cb[j++] = (value >> 24) & 0xFF;
+            }
+
+            offset = dataAddrCr >> 2;
+            for (int i = 0, j = 0; i < length16; i++) {
+            	int value = memoryInt[offset++];
+            	cr[j++] = (value      ) & 0xFF;
+            	cr[j++] = (value >>  8) & 0xFF;
+            	cr[j++] = (value >> 16) & 0xFF;
+            	cr[j++] = (value >> 24) & 0xFF;
+            }
+        } else {
+	        IMemoryReader memoryReader = MemoryReader.getMemoryReader(dataAddrY, length, 1);
+	        for (int i = 0; i < length; i++) {
+	        	luma[i] = memoryReader.readNext();
+	        }
+
+	        memoryReader = MemoryReader.getMemoryReader(dataAddrCb, 1);
+	        for (int i = 0; i < length2; i++) {
+	        	cb[i] = memoryReader.readNext();
+	        }
+
+	        memoryReader = MemoryReader.getMemoryReader(dataAddrCr, 1);
+	        for (int i = 0; i < length2; i++) {
+	        	cr[i] = memoryReader.readNext();
+	        }
+        }
+
+        // Convert YCbCr to ABGR
+        int[] abgr = getIntBuffer(length);
+        H264Utils.YUV2ABGR(width, height, luma, cb, cr, abgr);
+
+        releaseIntBuffer(luma);
+        releaseIntBuffer(cb);
+        releaseIntBuffer(cr);
+
+		// Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
+        VideoEngine.getInstance().addVideoTexture(destAddr, destAddr + (rangeY + rangeHeight) * bufferWidth * bytesPerPixel);
+
+        // Write the ABGR image
+		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && memoryInt != null) {
+			// Optimize the most common case
+			int pixelIndex = rangeY * width + rangeX;
+	        for (int i = 0; i < rangeHeight; i++) {
+	        	int addr = destAddr + (i * bufferWidth) * bytesPerPixel;
+	        	System.arraycopy(abgr, pixelIndex, memoryInt, addr >> 2, rangeWidth);
+	        	pixelIndex += width;
+	        }
+		} else {
+        	int addr = destAddr;
+	        for (int i = 0; i < rangeHeight; i++) {
+	        	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, rangeWidth * bytesPerPixel, bytesPerPixel);
+	        	int pixelIndex = (i + rangeY) * width + rangeX;
+	        	for (int j = 0; j < rangeWidth; j++, pixelIndex++) {
+	        		int abgr8888 = abgr[pixelIndex];
+	        		int pixelColor = Debug.getPixelColor(abgr8888, videoPixelMode);
+	        		memoryWriter.writeNext(pixelColor);
+	        	}
+	        	memoryWriter.flush();
+	        	addr += bufferWidth * bytesPerPixel;
+	        }
+		}
+		releaseIntBuffer(abgr);
+
+		return 0;
     }
 
     @HLEUnimplemented
