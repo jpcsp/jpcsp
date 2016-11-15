@@ -1,14 +1,7 @@
 package jpcsp.util;
 
-import org.bouncycastle.util.Strings;
-import org.lwjgl.LWJGLUtil;
-import org.lwjgl.Sys;
-
 import java.io.File;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.zip.CRC32;
 
 // References:
 // https://github.com/libgdx/libgdx/blob/master/gdx/src/com/badlogic/gdx/utils/SharedLibraryLoader.java
