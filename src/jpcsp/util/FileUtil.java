@@ -7,11 +7,10 @@ public class FileUtil {
     static public String getExtension(File file) {
         String base = file.getName();
         int index = base.lastIndexOf('.');
-        if (index >= 0) {
-            return base.substring(index + 1).toLowerCase();
-        } else {
-            return "";
+        if (index < 0) {
+        	return "";
         }
+        return base.substring(index + 1).toLowerCase();
     }
 
     static public void copyStream(InputStream is, OutputStream os) throws IOException {
@@ -39,11 +38,10 @@ public class FileUtil {
         if (url == null) return null;
         String path = url.getPath();
         int i = path.lastIndexOf('/');
-        if (i >= 0) {
-            return path.substring(i + 1);
-        } else {
-            return path;
+        if (i < 0) {
+        	return path;
         }
+        return path.substring(i + 1);
     }
 
     static public void writeBytes(File file, byte[] data) throws FileNotFoundException {
