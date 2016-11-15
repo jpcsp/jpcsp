@@ -16,14 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.hardware;
 
-import com.sun.jna.Native;
-import com.sun.jna.Structure;
-import com.sun.jna.win32.StdCallLibrary;
-import jpcsp.util.OS;
-
-import java.util.Arrays;
-import java.util.List;
-
 public class Battery {
     //battery life time in minutes
     private static int lifeTime = (5 * 60);        // 5 hours
