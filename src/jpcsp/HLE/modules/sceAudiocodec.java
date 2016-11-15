@@ -27,6 +27,7 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.mp3.Mp3Decoder;
@@ -86,6 +87,25 @@ public class sceAudiocodec extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x9D3F790C, version = 150)
 	public int sceAudiocodecCheckNeedMem(TPointer workArea, int codecType) {
+		workArea.setValue32(0, 0x05100601);
+
+		switch (codecType) {
+			case PSP_CODEC_AT3:
+				workArea.setValue32(16, 0x3DE0);
+				break;
+			case PSP_CODEC_AT3PLUS:
+				workArea.setValue32(16, 0x7BC0);
+				workArea.setValue32(52, 44100);
+				workArea.setValue32(60, 2);
+				workArea.setValue32(64, 0x2E8);
+				break;
+			case PSP_CODEC_MP3:
+				break;
+			case PSP_CODEC_AAC:
+				workArea.setValue32(16, 0x658C);
+				break;
+		}
+
 		return 0;
 	}
 
@@ -135,13 +155,46 @@ public class sceAudiocodec extends HLEModule {
 		return 0;
 	}
 
+	private int getOutputBufferSize(TPointer workArea, int codecType) {
+		int outputBufferSize;
+		switch (codecType) {
+			case PSP_CODEC_AT3PLUS:
+				if (workArea.getValue32(56) == 1 && workArea.getValue32(72) != workArea.getValue32(56)) {
+					outputBufferSize = 0x2000;
+				} else {
+					outputBufferSize = workArea.getValue32(72) << 12;
+				}
+				break;
+			case PSP_CODEC_AT3:
+				outputBufferSize = 0x1000;
+				break;
+			case PSP_CODEC_MP3:
+				if (workArea.getValue32(56) == 1) {
+					outputBufferSize = 0x1200;
+				} else {
+					outputBufferSize = 0x900;
+				}
+				break;
+			case PSP_CODEC_AAC:
+				if (workArea.getValue8(45) == 0) {
+					outputBufferSize = 0x1000;
+				} else {
+					outputBufferSize = 0x2000;
+				}
+				break;
+			case 0x1004:
+				outputBufferSize = 0x1200;
+				break;
+			default:
+				outputBufferSize = 0x1000;
+		}
+
+		return outputBufferSize;
+	}
+
 	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x70A703F8, version = 150)
 	public int sceAudiocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
-		if (!edramAllocated) {
-			return SceKernelErrors.ERROR_INVALID_POINTER;
-		}
-
 		workArea.setValue32(8, 0); // err field
 
 		int inputBuffer = workArea.getValue32(24);
@@ -155,7 +208,6 @@ public class sceAudiocodec extends HLEModule {
 		int codingMode = 0;		// How to find out correct value?
 
 		int inputBufferSize;
-		int outputBufferSize;
 		switch (codecType) {
 			case PSP_CODEC_AT3PLUS:
 				if (workArea.getValue32(48) == 0) {
@@ -163,23 +215,12 @@ public class sceAudiocodec extends HLEModule {
 				} else {
 					inputBufferSize = 0x100A;
 				}
-				if (workArea.getValue32(56) == 1 && workArea.getValue32(72) != workArea.getValue32(56)) {
-					outputBufferSize = 0x2000;
-				} else {
-					outputBufferSize = workArea.getValue32(72) << 12;
-				}
 				break;
 			case PSP_CODEC_AT3:
 				inputBufferSize = workArea.getValue32(40) == 6 ? 0x130 : 0x180;
-				outputBufferSize = 0x1000;
 				break;
 			case PSP_CODEC_MP3:
 				inputBufferSize = workArea.getValue32(40);
-				if (workArea.getValue32(56) == 1) {
-					outputBufferSize = 0x1200;
-				} else {
-					outputBufferSize = 0x900;
-				}
 				break;
 			case PSP_CODEC_AAC:
 				if (workArea.getValue8(44) == 0) {
@@ -187,20 +228,15 @@ public class sceAudiocodec extends HLEModule {
 				} else {
 					inputBufferSize = 0x609;
 				}
-				if (workArea.getValue8(45) == 0) {
-					outputBufferSize = 0x1000;
-				} else {
-					outputBufferSize = 0x2000;
-				}
 				break;
 			case 0x1004:
 				inputBufferSize = workArea.getValue32(40);
-				outputBufferSize = 0x1200;
 				break;
 			default:
 				return -1;
 		}
 
+		int outputBufferSize = getOutputBufferSize(workArea, codecType);
 		workArea.setValue32(36, outputBufferSize);
 
 		if (log.isDebugEnabled()) {
@@ -263,7 +299,11 @@ public class sceAudiocodec extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x59176A0F, version = 150)
-	public int sceAudiocodecAlcExtendParameter() {
+	public int sceAudiocodecAlcExtendParameter(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType, @BufferInfo(usage=Usage.out) TPointer32 sizeAddr) {
+		int outputBufferSize = getOutputBufferSize(workArea, codecType);
+
+		sizeAddr.setValue(outputBufferSize);
+
 		return 0;
 	}
 
