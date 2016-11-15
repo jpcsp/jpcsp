@@ -39,7 +39,6 @@ import java.util.concurrent.TimeoutException;
 
 import javax.imageio.ImageIO;
 
-import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.util.FileUtil;
 import jpcsp.util.LWJGLFixer;
 import org.apache.log4j.ConsoleAppender;
