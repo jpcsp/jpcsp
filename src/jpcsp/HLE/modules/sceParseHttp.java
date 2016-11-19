@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import jpcsp.Memory;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -106,7 +109,26 @@ public class sceParseHttp extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x8077A433, version = 150)
-	public int sceParseHttpStatusLine() {
+	public int sceParseHttpStatusLine(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer header, int headerLength, @BufferInfo(usage=Usage.out) TPointer32 httpVersionMajorAddr, @BufferInfo(usage=Usage.out) TPointer32 httpVersionMinorAddr, @BufferInfo(usage=Usage.out) TPointer32 httpStatusCodeAddr, @BufferInfo(usage=Usage.out) TPointer32 httpStatusCommentAddr, @BufferInfo(usage=Usage.out) TPointer32 httpStatusCommentLengthAddr) {
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(header.getAddress(), headerLength, 1);
+		String headerString = getHeaderString(memoryReader);
+		Pattern pattern = Pattern.compile("HTTP/(\\d)\\.(\\d)\\s+(\\d+)(.*)");
+		Matcher matcher = pattern.matcher(headerString);
+		if (!matcher.matches()) {
+			return -1;
+		}
+
+		int httpVersionMajor = Integer.parseInt(matcher.group(1));
+		int httpVersionMinor = Integer.parseInt(matcher.group(2));
+		int httpStatusCode = Integer.parseInt(matcher.group(3));
+		String httpStatusComment = matcher.group(4);
+
+		httpVersionMajorAddr.setValue(httpVersionMajor);
+		httpVersionMinorAddr.setValue(httpVersionMinor);
+		httpStatusCodeAddr.setValue(httpStatusCode);
+		httpStatusCommentAddr.setValue(header.getAddress() + headerString.indexOf(httpStatusComment));
+		httpStatusCommentLengthAddr.setValue(httpStatusComment.length());
+
 		return 0;
 	}
 }
