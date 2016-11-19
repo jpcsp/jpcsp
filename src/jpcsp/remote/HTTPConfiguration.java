@@ -123,6 +123,8 @@ public class HTTPConfiguration {
 		new HttpServerConfiguration("api.shoutcast.com"),
 		new HttpServerConfiguration("yp.shoutcast.com"),
 		new HttpServerConfiguration("www.shoutcast.com"),
-		new HttpServerConfiguration("cdn-a.sonyentertainmentnetwork.com", 443)
+		new HttpServerConfiguration("cdn-a.sonyentertainmentnetwork.com", 443),
+		new HttpServerConfiguration("boxreg.trendmicro.com", 443),
+		new HttpServerConfiguration("eu.playstation.com", 443, false)
 	};
 }
