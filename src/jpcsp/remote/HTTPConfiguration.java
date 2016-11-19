@@ -122,6 +122,7 @@ public class HTTPConfiguration {
 		new HttpServerConfiguration("radio.psp.dl.playstation.net"),
 		new HttpServerConfiguration("api.shoutcast.com"),
 		new HttpServerConfiguration("yp.shoutcast.com"),
-		new HttpServerConfiguration("www.shoutcast.com")
+		new HttpServerConfiguration("www.shoutcast.com"),
+		new HttpServerConfiguration("cdn-a.sonyentertainmentnetwork.com", 443)
 	};
 }
