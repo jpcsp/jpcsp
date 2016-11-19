@@ -83,6 +83,7 @@ public class sceNetApctl extends HLEModule {
 	public static final int PSP_NET_APCTL_INFO_8021_EAP_TYPE = 16;
 	public static final int PSP_NET_APCTL_INFO_START_BROWSER = 17;
 	public static final int PSP_NET_APCTL_INFO_WIFISP        = 18;
+	public static final int PSP_NET_APCTL_INFO_UNKNOWN19     = 19;
 	private static final String[] apctlInfoNames = new String[] {
 		"PROFILE_NAME",
 		"BSSID",
@@ -527,6 +528,11 @@ public class sceNetApctl extends HLEModule {
 				pInfo.setValue32(false); // Do not start the browser
 				break;
 			}
+			case PSP_NET_APCTL_INFO_UNKNOWN19: {
+				// The PSP is returning value 1 (tested with JpcspTrace)
+				pInfo.setValue32(1);
+				break;
+			}
 			default: {
 				log.warn(String.format("sceNetApctlGetInfo unimplemented code=0x%X(%s)", code, getApctlInfoName(code)));
 				return -1;
@@ -733,5 +739,11 @@ public class sceNetApctl extends HLEModule {
 	@HLEFunction(nid = 0x69745F0A, version = 150)
 	public int sceNetApctl_lib2_69745F0A(int handlerId) {
 		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x4C19731F, version = 150)
+	public int sceNetApctl_lib2_4C19731F(int code, TPointer pInfo) {
+		return sceNetApctlGetInfo(code, pInfo);
 	}
 }
