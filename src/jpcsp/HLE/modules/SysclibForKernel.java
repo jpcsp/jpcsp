@@ -39,7 +39,8 @@ import jpcsp.util.Utilities;
 
 public class SysclibForKernel extends HLEModule {
 	public static Logger log = Modules.getLogger("SysclibForKernel");
-	private static final String validNumberCharacters = "0123456789ABCDEF";
+	private static final String validNumberCharactersUpperCase = "0123456789ABCDEF";
+	private static final String validNumberCharactersLowerCase = "0123456789abcdef";
 
     @HLEFunction(nid = 0x10F3BB61, version = 150)
     public int memset(@CanBeNull TPointer destAddr, int data, int size) {
@@ -192,15 +193,19 @@ public class SysclibForKernel extends HLEModule {
     }
 
 	private boolean isNumberValidCharacter(int c, int base) {
-		if (base > validNumberCharacters.length()) {
-			base = validNumberCharacters.length();
+		if (base > validNumberCharactersUpperCase.length()) {
+			base = validNumberCharactersUpperCase.length();
 		}
 
-		if (validNumberCharacters.substring(0, base).indexOf(c) < 0) {
-			return false;
+		if (validNumberCharactersUpperCase.substring(0, base).indexOf(c) >= 0) {
+			return true;
 		}
 
-		return true;
+		if (validNumberCharactersLowerCase.substring(0, base).indexOf(c) >= 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@HLEFunction(nid = 0x47DD934D, version = 150)
