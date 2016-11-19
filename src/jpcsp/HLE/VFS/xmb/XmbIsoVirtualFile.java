@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.xmb;
 
+import static jpcsp.util.Utilities.readUnaligned16;
+import static jpcsp.util.Utilities.readUnaligned32;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -39,9 +42,11 @@ import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PBP;
 import jpcsp.settings.Settings;
+import jpcsp.util.Utilities;
 
 public class XmbIsoVirtualFile extends AbstractVirtualFile {
 	protected static class PbpSection {
+		int index;
 		int size;
 		int offset;
 		boolean availableInContents;
@@ -81,6 +86,7 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 			IVirtualFileSystem vfs = new UmdIsoVirtualFileSystem(iso);
 			sections = new PbpSection[umdFilenames.length + 1];
 			sections[0] = new PbpSection();
+			sections[0].index = 0;
 			sections[0].offset = 0;
 			sections[0].size = 0x28;
 			sections[0].availableInContents = true;
@@ -88,6 +94,7 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 			SceIoStat stat = new SceIoStat();
 			for (int i = 0; i < umdFilenames.length; i++) {
 				PbpSection section = new PbpSection();
+				section.index = i + 1;
 				section.offset = offset;
 				section.umdFilename = umdFilenames[i];
 				if (vfs.ioGetstat(section.umdFilename, stat) >= 0) {
@@ -116,7 +123,7 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 					section.cacheFile = cacheFile;
 				}
 
-				sections[i + 1] = section;
+				sections[section.index] = section;
 				offset += section.size;
 			}
 			totalLength = offset;
@@ -172,6 +179,32 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 				}
 			} catch (IOException e) {
 				log.debug("readSection", e);
+			}
+
+			// PARAM.SFO?
+			if (section.index == 1) {
+				// Patch the CATEGORY in the PARAM.SFO:
+				// the VSH is checking that the CATEGORY value is starting
+				// with 'M' (meaning MemoryStick) and not 'U' (UMD).
+				// Change the first letter 'U' into 'M'.
+				int offset = section.offset;
+				int keyTableOffset = readUnaligned32(contents, offset + 8) + offset;
+				int valueTableOffset = readUnaligned32(contents, offset + 12) + offset;
+				int numberKeys = readUnaligned32(contents, offset + 16);
+				for (int i = 0; i < numberKeys; i++) {
+					int keyOffset = readUnaligned16(contents, offset + 20 + i * 16);
+					String key = Utilities.readStringZ(contents, keyTableOffset + keyOffset);
+					if ("CATEGORY".equals(key)) {
+						int valueOffset = readUnaligned32(contents, offset + 20 + i * 16 + 12);
+						char valueFirstChar = (char) contents[valueTableOffset + valueOffset];
+
+						// Change the first letter 'U' into 'M'.
+						if (valueFirstChar == 'U') {
+							contents[valueTableOffset + valueOffset] = 'M';
+						}
+						break;
+					}
+				}
 			}
 		}
 

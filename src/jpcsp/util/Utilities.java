@@ -200,6 +200,19 @@ public class Utilities {
         return readStringZ(Memory.getInstance(), address);
     }
 
+    public static String readStringZ(byte[] buffer, int offset) {
+    	StringBuilder s = new StringBuilder();
+    	while (offset < buffer.length) {
+    		byte b = buffer[offset++];
+    		if (b == (byte) 0) {
+    			break;
+    		}
+    		s.append((char) b);
+    	}
+
+    	return s.toString();
+    }
+
     public static String readStringNZ(int address, int n) {
         return readStringNZ(Memory.getInstance(), address, n);
     }
