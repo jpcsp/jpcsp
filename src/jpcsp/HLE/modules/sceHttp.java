@@ -210,6 +210,7 @@ public class sceHttp extends HLEModule {
 				if (urlConnection instanceof HttpURLConnection) {
 					httpUrlConnection = (HttpURLConnection) urlConnection;
 					httpUrlConnection.setRequestMethod(httpMethods[method]);
+					httpUrlConnection.setInstanceFollowRedirects(getHttpConnection().getHttpTemplate().isEnableRedirect());
 					if (sendDataLength > 0) {
 						httpUrlConnection.setDoOutput(true);
 						OutputStream os = httpUrlConnection.getOutputStream();
@@ -378,6 +379,7 @@ public class sceHttp extends HLEModule {
     	private int id;
     	private HashMap<Integer, HttpConnection> httpConnections = new HashMap<Integer, sceHttp.HttpConnection>();
     	private String agent;
+    	private boolean enableRedirect;
 
     	public HttpTemplate() {
     		id = SceUidManager.getNewUid(uidPurpose);
@@ -411,6 +413,14 @@ public class sceHttp extends HLEModule {
 
 		public void setAgent(String agent) {
 			this.agent = agent;
+		}
+
+		public boolean isEnableRedirect() {
+			return enableRedirect;
+		}
+
+		public void setEnableRedirect(boolean enableRedirect) {
+			this.enableRedirect = enableRedirect;
 		}
 
 		@Override
@@ -602,6 +612,9 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x0809C831, version = 150)
     public int sceHttpEnableRedirect(int templateId) {
+    	HttpTemplate httpTemplate = getHttpTemplate(templateId);
+    	httpTemplate.setEnableRedirect(true);
+
         return 0;
     }
 
@@ -651,6 +664,9 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x1A0EBB69, version = 150)
     public int sceHttpDisableRedirect(int templateId) {
+    	HttpTemplate httpTemplate = getHttpTemplate(templateId);
+    	httpTemplate.setEnableRedirect(false);
+
         return 0;
     }
 
