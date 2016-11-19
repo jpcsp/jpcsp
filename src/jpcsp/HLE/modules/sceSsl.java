@@ -133,4 +133,24 @@ public class sceSsl extends HLEModule {
     public int sceSslGetKeyUsage() {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9266C0D5, version = 150)
+    public int sceSsl_9266C0D5() {
+    	// Has no parameters
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB40D11EA, version = 150)
+    public int SSLv3_client_method() {
+    	// Has no parameters
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xFB8273FE, version = 150)
+    public int SSL_CTX_new(int size) {
+    	return 0;
+    }
 }
