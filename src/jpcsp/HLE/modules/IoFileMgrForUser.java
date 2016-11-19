@@ -2836,6 +2836,42 @@ public class IoFileMgrForUser extends HLEModule {
         return result;
     }
 
+    public int hleIoGetstat(int filenameAddr, String filename, TPointer statAddr) {
+        int result;
+        SceIoStat stat = null;
+
+        String absoluteFileName = getAbsoluteFileName(filename);
+    	StringBuilder localFileName = new StringBuilder();
+    	IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+    	if (vfs != null) {
+    		stat = new SceIoStat();
+    		result = vfs.ioGetstat(localFileName.toString(), stat);
+    	} else if (useVirtualFileSystem) {
+            log.error(String.format("sceIoGetstat - device not found '%s'", filename));
+            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
+    	} else {
+    		String pcfilename = getDeviceFilePath(filename);
+    		stat = stat(pcfilename);
+    		result = (stat != null) ? 0 : ERROR_ERRNO_FILE_NOT_FOUND;
+    	}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceIoGetstat returning 0x%08X, %s", result, stat));
+    	}
+
+    	if (stat != null && result == 0) {
+            stat.write(statAddr);
+        }
+
+    	if (filenameAddr != 0) {
+	        for (IIoListener ioListener : ioListeners) {
+	            ioListener.sceIoGetStat(result, filenameAddr, filename, statAddr.getAddress());
+	        }
+    	}
+        
+        return result;
+    }
+
     /**
      * sceIoPollAsync
      * 
@@ -3022,8 +3058,8 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x6A638D83, version = 150, checkInsideInterrupt = true)
-    public int sceIoRead(int id, int data_addr, int size) {
-        return hleIoRead(id, data_addr, size, false);
+    public int sceIoRead(int id, TPointer data_addr, int size) {
+        return hleIoRead(id, data_addr.getAddress(), size, false);
     }
 
     /**
@@ -3036,8 +3072,8 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0xA0B5A7C2, version = 150, checkInsideInterrupt = true)
-    public int sceIoReadAsync(int id, int data_addr, int size) {
-        return hleIoRead(id, data_addr, size, true);
+    public int sceIoReadAsync(int id, TPointer data_addr, int size) {
+        return hleIoRead(id, data_addr.getAddress(), size, true);
     }
 
     /**
@@ -3535,37 +3571,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xACE946E8, version = 150, checkInsideInterrupt = true)
     public int sceIoGetstat(PspString filename, TPointer statAddr) {
-        int result;
-        SceIoStat stat = null;
-
-        String absoluteFileName = getAbsoluteFileName(filename.getString());
-    	StringBuilder localFileName = new StringBuilder();
-    	IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
-    	if (vfs != null) {
-    		stat = new SceIoStat();
-    		result = vfs.ioGetstat(localFileName.toString(), stat);
-    	} else if (useVirtualFileSystem) {
-            log.error(String.format("sceIoGetstat - device not found '%s'", filename));
-            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
-    	} else {
-    		String pcfilename = getDeviceFilePath(filename.getString());
-    		stat = stat(pcfilename);
-    		result = (stat != null) ? 0 : ERROR_ERRNO_FILE_NOT_FOUND;
-    	}
-
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceIoGetstat returning 0x%08X, %s", result, stat));
-    	}
-
-    	if (stat != null && result == 0) {
-            stat.write(statAddr);
-        }
-
-        for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoGetStat(result, filename.getAddress(), filename.getString(), statAddr.getAddress());
-        }
-        
-        return result;
+    	return hleIoGetstat(filename.getAddress(), filename.getString(), statAddr);
     }
 
     /**
