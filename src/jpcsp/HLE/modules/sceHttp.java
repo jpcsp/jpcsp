@@ -485,7 +485,7 @@ public class sceHttp extends HLEModule {
 
     private int getTempMemory() {
     	if (memInfo == null) {
-    		memInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "sceHttp", SysMemUserForUser.PSP_SMEM_Low, maxMemSize, 0);
+    		memInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.VSHELL_PARTITION_ID, "sceHttp", SysMemUserForUser.PSP_SMEM_Low, maxMemSize, 0);
     		if (memInfo == null) {
     			return 0;
     		}
@@ -510,6 +510,13 @@ public class sceHttp extends HLEModule {
         maxMemSize = heapSize;
         isHttpInit = true;
         memInfo = null;
+
+        // Allocate memory during sceHttpInit
+        int addr = getTempMemory();
+        if (addr == 0) {
+        	log.warn(String.format("sceHttpInit cannot allocate 0x%X bytes", maxMemSize));
+        	return -1;
+        }
 
 		Utilities.disableSslCertificateChecks();
 
@@ -553,7 +560,7 @@ public class sceHttp extends HLEModule {
 
     	int result;
     	if (contentLength < 0) {
-    		contentLengthAddr.setValue(0L);
+    		contentLengthAddr.setValue(-1L);
     		result = SceKernelErrors.ERROR_HTTP_NO_CONTENT_LENGTH;
     	} else {
     		contentLengthAddr.setValue(contentLength);
@@ -786,7 +793,7 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x54E7DF75, version = 150)
-    public int sceHttpIsRequestInCache() {
+    public int sceHttpIsRequestInCache(int requestId, int unknown1, int unknown2) {
         return 0;
     }
 
@@ -896,8 +903,8 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x96F16D3E, version = 150)
-    public int sceHttpGetCookie() {
-        return 0;
+    public int sceHttpGetCookie(PspString url, @BufferInfo(lengthInfo=LengthInfo.nextNextParameter, usage=Usage.out) TPointer cookie, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 cookieLengthAddr, int prepare, int secure) {
+        return SceKernelErrors.ERROR_HTTP_NOT_FOUND;
     }
 
     /**
@@ -1201,6 +1208,54 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x3C478044, version = 150)
     public int sceHttp_3C478044(int templateId, int unknown) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x739C2D79, version = 150)
+    public int sceHttpInitExternalCache() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA461A167, version = 150)
+    public int sceHttpEndExternalCache() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8046E250, version = 150)
+    public int sceHttpEnableExternalCache() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB0257723, version = 150)
+    public int sceHttpFlushExternalCache() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x457D221D, version = 150)
+    public int sceHttpFlushCookie() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4E4A284A, version = 150)
+    public int sceHttpCloneTemplate() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD80BE761, version = 150)
+    public int sceHttp_D80BE761(int templateId) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA909F2AE, version = 150)
+    public int sceHttp_A909F2AE1() {
     	return 0;
     }
 }
