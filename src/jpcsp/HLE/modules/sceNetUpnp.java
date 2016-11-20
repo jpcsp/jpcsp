@@ -62,4 +62,17 @@ public class sceNetUpnp extends HLEModule {
 
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8513C6D1, version = 150)
+    public int sceNetUpnp_8513C6D1(TPointer unknown1, TPointer unknown2, TPointer unknown3) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xFDA78483, version = 150)
+    public int sceNetUpnp_FDA78483() {
+    	// Has no parameters
+    	return 0;
+    }
 }
