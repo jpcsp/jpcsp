@@ -72,6 +72,7 @@ public class sceReg extends HLEModule {
     private String npLoginId;
     private String npPassword;
     private int npAutoSignInEnable;
+    private String ownerName;
 
     protected static class RegistryHandle {
     	private static final String registryHandlePurpose = "sceReg.RegistryHandle";
@@ -289,6 +290,25 @@ public class sceReg extends HLEModule {
     				buf.setValue32(2);
     			}
     		} else if ("time_format".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if ("time_zone_offset".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if ("time_zone_area".equals(name)) {
+    			String timeZoneArea = "united_kingdom";
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(timeZoneArea.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, timeZoneArea);
+    			}
+    		} else if ("summer_time".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
@@ -610,6 +630,12 @@ public class sceReg extends HLEModule {
     			if (size >= 4) {
         			buf.setValue32(0);
     			}
+    		} else if ("owner_name".equals(name)) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(ownerName.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, ownerName);
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
@@ -625,6 +651,12 @@ public class sceReg extends HLEModule {
     			psize.setValue(4);
     			if (size >= 4) {
         			buf.setValue32(1);
+    			}
+    		} else if ("avls".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(0);
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -819,6 +851,28 @@ public class sceReg extends HLEModule {
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
+    	} else if ("/CONFIG/SYSTEM/POWER_SAVING".equals(fullName)) {
+    		if ("backlight_off_interval".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if ("suspend_interval".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else if ("wlan_mode".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
+    			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
+    		}
     	} else if ("/TOOL/CONFIG".equals(fullName)) {
     		if ("np_debug".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
@@ -886,6 +940,12 @@ public class sceReg extends HLEModule {
     			if (size >= 4) {
     				buf.setValue32(musicTrackInfoMode);
     			}
+    		} else if (name.equals("wma_play")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(1);
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
@@ -922,15 +982,28 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_BIN);
     			psize.setValue(2);
     			if (size >= 2) {
-    				buf.setValue8(0, (byte) 0x30);
-    				buf.setValue8(1, (byte) 0x30);
+    				buf.setValue8(0, (byte) '0');
+    				buf.setValue8(1, (byte) '0');
     			}
     		} else if ("subtitle_language".equals(name)) {
     			ptype.setValue(REG_TYPE_BIN);
     			psize.setValue(2);
     			if (size >= 2) {
-    				buf.setValue8(0, (byte) 0x65);
-    				buf.setValue8(1, (byte) 0x6E);
+    				buf.setValue8(0, (byte) 'e');
+    				buf.setValue8(1, (byte) 'n');
+    			}
+    		} else if ("menu_language".equals(name)) {
+    			ptype.setValue(REG_TYPE_BIN);
+    			psize.setValue(2);
+    			if (size >= 2) {
+    				buf.setValue8(0, (byte) 'e');
+    				buf.setValue8(1, (byte) 'n');
+    			}
+    		} else if ("appended_volume".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(0);
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -1077,6 +1150,7 @@ public class sceReg extends HLEModule {
 	    npLoginId = settings.readString("registry.npLoginId");
 	    npPassword = settings.readString("registry.npPassword");
 	    npAutoSignInEnable = settings.readInt("registry.npAutoSignInEnable");
+		ownerName = "Jpcsp";
 
 		super.start();
 	}
@@ -1357,6 +1431,10 @@ public class sceReg extends HLEModule {
     			adhocSsidPrefix = buf.getStringNZ(size);
     		} else {
     			log.warn(String.format("Unknown registry entry '%s'", name));
+    		}
+    	} else if ("/CONFIG/SYSTEM".equals(fullName)) {
+    		if ("owner_name".equals(name)) {
+    			ownerName = buf.getStringNZ(size);
     		}
     	} else if ("/CONFIG/SYSTEM/XMB/THEME".equals(fullName)) {
     		if ("custom_theme_mode".equals(name) && size >= 4) {
