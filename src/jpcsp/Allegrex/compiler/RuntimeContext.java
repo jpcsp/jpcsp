@@ -115,6 +115,7 @@ public class RuntimeContext {
 	private static RuntimeSyncThread runtimeSyncThread = null;
 	private static RuntimeThread syscallRuntimeThread;
 	private static sceDisplay sceDisplayModule;
+	private static final Object idleSyncObject = new Object();
 
 	private static class CompilerEnabledSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -468,38 +469,53 @@ public class RuntimeContext {
 
             log.debug("Starting Idle State...");
             idleDuration.start();
-			try {
-				while (isIdle) {
-					checkStoppedThread();
-					{
-						// Do not take the duration of sceDisplay into idleDuration
-						idleDuration.end();
-						syncEmulator(true);
-						idleDuration.start();
-					}
-					syncPause();
-					checkPendingCallbacks();
-					scheduler.step();
-					if (threadMan.isIdleThread(threadMan.getCurrentThread())) {
-						threadMan.checkCallbacks();
-						threadMan.hleRescheduleCurrentThread();
-					}
+			while (isIdle) {
+				checkStoppedThread();
+				{
+					// Do not take the duration of sceDisplay into idleDuration
+					idleDuration.end();
+					syncEmulator(true);
+					idleDuration.start();
+				}
+				syncPause();
+				checkPendingCallbacks();
+				scheduler.step();
+				if (threadMan.isIdleThread(threadMan.getCurrentThread())) {
+					threadMan.checkCallbacks();
+					threadMan.hleRescheduleCurrentThread();
+				}
 
-					if (isIdle) {
-						long delay = scheduler.getNextActionDelay(idleSleepMicros);
-						if (delay > 0) {
-							int intDelay;
-							if (delay >= idleSleepMicros) {
-								intDelay = idleSleepMicros;
-							} else {
-								intDelay = (int) delay;
+				if (isIdle) {
+					// While being idle, try to reduce the load on the host CPU
+					// by sleeping as much as possible.
+					// We can now sleep until the next scheduler action need to be executed.
+					//
+					// If the scheduler is receiving from another thread, a new action
+					// to be executed earlier, the wait state of this thread
+					// will be interrupted (see onNextScheduleModified()).
+					// This is for example the case when a GE list is ending (FINISH/SIGNAL + END)
+					// and a GE callback has to be executed immediately.
+					long delay = scheduler.getNextActionDelay(idleSleepMicros);
+					if (delay > 0) {
+						int intDelay;
+						if (delay >= idleSleepMicros) {
+							intDelay = idleSleepMicros;
+						} else {
+							intDelay = (int) delay;
+						}
+
+						try {
+							// Wait for intDelay milliseconds.
+							// The wait state will be terminated whenever the scheduler
+							// is receiving a new scheduler action (see onNextScheduleModified()).
+							synchronized (idleSyncObject) {
+								idleSyncObject.wait(intDelay / 1000, intDelay % 1000);
 							}
-							Thread.sleep(intDelay / 1000, intDelay % 1000);
-							//Utilities.sleep(intDelay / 1000, intDelay % 1000);
+						} catch (InterruptedException e) {
+							// Ignore exception
 						}
 					}
 				}
-			} catch (Throwable e) {
 			}
             idleDuration.end();
             log.debug("Ending Idle State");
@@ -1374,6 +1390,12 @@ public class RuntimeContext {
 
     public static void onNextScheduleModified() {
     	checkSync(false);
+
+    	// Notify the thread waiting on the idleSyncObject that
+    	// the scheduler has now received a new schedule.
+    	synchronized (idleSyncObject) {
+        	idleSyncObject.notifyAll();
+		}
     }
 
     private static void checkSync(boolean sleep) {
