@@ -4885,4 +4885,62 @@ public class sceUtility extends HLEModule {
     public int sceUtility_netparam_internal_61D0686E(int unknown) {
 		return 0;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x4CB183A4, version = 150)
+    public int sceUtility_netparam_internal_4CB183A4(int unknown1, int unknown2) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x239F260D, version = 150)
+    public int sceUtility_netparam_internal_239F260D(int type, TPointer value) {
+		switch (type) {
+			case 0:
+				String configurationName = value.getStringZ();
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceUtility_netparam_internal_239F260D configurationName='%s'", configurationName));
+				}
+				break;
+			case 1:
+				String ssid = value.getStringZ();
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceUtility_netparam_internal_239F260D SSID='%s'", ssid));
+				}
+				break;
+			case 2:
+				int security = value.getValue32(); // One of PSP_NET_APCTL_INFO_SECURITY_TYPE_*
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceUtility_netparam_internal_239F260D security=%d", security));
+				}
+				break;
+			case 3:
+			case 4:
+			case 8:
+			case 13:
+			case 17:
+			case 21:
+			case 23:
+			case 24:
+			case 25:
+			case 26:
+			case 27:
+			case 29:
+			case 30:
+			case 31:
+				// ?
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceUtility_netparam_internal_239F260D unknown value: %s", Utilities.getMemoryDump(value.getAddress(), 16)));
+				}
+				break;
+			case 22:
+				String wepKey = value.getStringZ();
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceUtility_netparam_internal_239F260D wepKey='%s'", wepKey));
+				}
+				break;
+		}
+
+		return 0;
+	}
 }
