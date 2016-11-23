@@ -19,6 +19,7 @@ package jpcsp.HLE.VFS.memoryStick;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_ARGUMENT;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFile;
+import jpcsp.hardware.MemoryStick;
 
 public class MemoryStickStorageVirtualFile extends AbstractVirtualFile {
 	public MemoryStickStorageVirtualFile() {
@@ -31,24 +32,38 @@ public class MemoryStickStorageVirtualFile extends AbstractVirtualFile {
 
 		switch (command) {
 			case 0x02125009:
+				// Is the memory stick locked?
 				if (outputPointer.isNotNull() && outputLength >= 4) {
                     if (log.isDebugEnabled()) {
                     	log.debug(String.format("ioIoctl msstor cmd 0x%08X", command));
                     }
-                    // Unknown output value
-					outputPointer.setValue32(0);
+					outputPointer.setValue32(MemoryStick.isLocked());
 					result = 0;
 				} else {
 	                result = ERROR_INVALID_ARGUMENT;
 				}
 				break;
 			case 0x02125008:
+				// Is the memory stick inserted?
 				if (outputPointer.isNotNull() && outputLength >= 4) {
                     if (log.isDebugEnabled()) {
                     	log.debug(String.format("ioIoctl msstor cmd 0x%08X", command));
                     }
                     // Unknown output value
-					outputPointer.setValue32(1);
+					outputPointer.setValue32(MemoryStick.isInserted());
+					result = 0;
+				} else {
+	                result = ERROR_INVALID_ARGUMENT;
+				}
+				break;
+			case 0x02125803:
+				if (outputPointer.isNotNull() && outputLength >= 96) {
+                    if (log.isDebugEnabled()) {
+                    	log.debug(String.format("ioIoctl msstor cmd 0x%08X", command));
+                    }
+                    // Unknown output values
+                    outputPointer.clear(96);
+                    outputPointer.setStringNZ(12, 16, ""); // This value will be set in registry as /CONFIG/CAMERA/msid
 					result = 0;
 				} else {
 	                result = ERROR_INVALID_ARGUMENT;

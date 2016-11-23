@@ -44,7 +44,7 @@ public class MemoryStickStorageVirtualFileSystem extends AbstractVirtualFileSyst
                     	log.debug(String.format("ioIoctl msstor cmd 0x%08X", command));
                     }
 					// Output value 0x11 or 0x41: the Memory Stick is locked
-					outputPointer.setValue32(0x0);
+					outputPointer.setValue32(0);
 					result = 0;
 				} else {
 	                result = ERROR_INVALID_ARGUMENT;

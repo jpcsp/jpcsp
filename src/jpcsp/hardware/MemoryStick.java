@@ -36,6 +36,8 @@ public class MemoryStick {
     private static long freeSize = 1L * 1024 * 1024 * 1024;	// 1GB
     private static int sectorSize = 32 * 1024; // 32KB
 
+    private static boolean locked = false;
+
 	public static int getStateMs() {
 		return msState;
 	}
@@ -90,5 +92,13 @@ public class MemoryStick {
 		}
 		sizeKb /= 1024;
 		return String.format("%d GB", sizeKb);
+	}
+
+	public static boolean isLocked() {
+		return locked;
+	}
+
+	public static void setLocked(boolean locked) {
+		MemoryStick.locked = locked;
 	}
 }
