@@ -1024,7 +1024,7 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(1);
     			}
     		} else if ("still_quality".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
@@ -1036,7 +1036,7 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(1);
     			}
     		} else if ("movie_quality".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
@@ -1066,19 +1066,19 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(0x65);
     			}
     		} else if ("file_number".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(1);
     			}
     		} else if ("movie_fps".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(1);
     			}
     		} else if ("shutter_sound_mode".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
@@ -1090,13 +1090,20 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(1);
     			}
     		} else if ("folder_number_eflash".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(0x65);
+    			}
+    		} else if ("msid".equals(name)) {
+    			String msid = "1234567890123456";
+    			ptype.setValue(REG_TYPE_BIN);
+    			psize.setValue(16);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, msid);
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -1453,6 +1460,40 @@ public class sceReg extends HLEModule {
     			musicVisualizerMode = buf.getValue32();
     		} else if (name.equals("track_info_mode") && size >= 4) {
     			musicTrackInfoMode = buf.getValue32();
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
+    		}
+    	} else if ("/CONFIG/CAMERA".equals(fullName)) {
+    		if ("msid".equals(name) && size >= 0) {
+    			String msid = buf.getStringNZ(16);
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("sceRegSetKeyValue msid='%s'", msid));
+    			}
+    		} else if (name.equals("file_folder") && size >= 4) {
+    			int fileFolder = buf.getValue32();
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("sceRegSetKeyValue fileFolder=0x%X", fileFolder));
+    			}
+    		} else if (name.equals("file_number") && size >= 4) {
+    			int fileNumber = buf.getValue32();
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("sceRegSetKeyValue fileNumber=0x%X", fileNumber));
+    			}
+    		} else if (name.equals("movie_quality") && size >= 4) {
+    			int movieQuality = buf.getValue32();
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("sceRegSetKeyValue movieQuality=0x%X", movieQuality));
+    			}
+    		} else if (name.equals("movie_size") && size >= 4) {
+    			int movieSize = buf.getValue32();
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("sceRegSetKeyValue movieSize=0x%X", movieSize));
+    			}
+    		} else if (name.equals("movie_fps") && size >= 4) {
+    			int movieFps = buf.getValue32();
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("sceRegSetKeyValue movieFps=0x%X", movieFps));
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
