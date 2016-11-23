@@ -126,6 +126,7 @@ public class HTTPConfiguration {
 		new HttpServerConfiguration("cdn-a.sonyentertainmentnetwork.com", 443),
 		new HttpServerConfiguration("boxreg.trendmicro.com", 443),
 		new HttpServerConfiguration("eu.playstation.com", 443, false),
-		new HttpServerConfiguration("fj00.psp.update.playstation.org")
+		new HttpServerConfiguration("fj00.psp.update.playstation.org"),
+		new HttpServerConfiguration("sensme.dl.playstation.net")
 	};
 }
