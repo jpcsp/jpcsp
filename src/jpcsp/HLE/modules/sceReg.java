@@ -1099,7 +1099,7 @@ public class sceReg extends HLEModule {
     				buf.setValue32(0x65);
     			}
     		} else if ("msid".equals(name)) {
-    			String msid = "1234567890123456";
+    			String msid = "";
     			ptype.setValue(REG_TYPE_BIN);
     			psize.setValue(16);
     			if (size > 0) {
