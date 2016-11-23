@@ -210,7 +210,7 @@ public class sceHttp extends HLEModule {
 				if (urlConnection instanceof HttpURLConnection) {
 					httpUrlConnection = (HttpURLConnection) urlConnection;
 					httpUrlConnection.setRequestMethod(httpMethods[method]);
-					httpUrlConnection.setInstanceFollowRedirects(getHttpConnection().getHttpTemplate().isEnableRedirect());
+					httpUrlConnection.setInstanceFollowRedirects(getHttpConnection().isEnableRedirect());
 					if (sendDataLength > 0) {
 						httpUrlConnection.setDoOutput(true);
 						OutputStream os = httpUrlConnection.getOutputStream();
@@ -307,6 +307,7 @@ public class sceHttp extends HLEModule {
     	private HashMap<Integer, HttpRequest> httpRequests = new HashMap<Integer, sceHttp.HttpRequest>();
     	private String url;
     	private HttpTemplate httpTemplate;
+    	private boolean enableRedirect;
 
     	public HttpConnection() {
     		id = SceUidManager.getNewUid(uidPurpose);
@@ -368,6 +369,14 @@ public class sceHttp extends HLEModule {
 			this.httpTemplate = httpTemplate;
 		}
 
+		public boolean isEnableRedirect() {
+			return enableRedirect;
+		}
+
+		public void setEnableRedirect(boolean enableRedirect) {
+			this.enableRedirect = enableRedirect;
+		}
+
 		@Override
 		public String toString() {
 			return String.format("HttpConnection id=%d, url='%s'", getId(), getUrl());
@@ -400,6 +409,7 @@ public class sceHttp extends HLEModule {
 
     	public void addHttpConnection(HttpConnection httpConnection) {
     		httpConnection.setHttpTemplate(this);
+    		httpConnection.setEnableRedirect(isEnableRedirect());
     		httpConnections.put(httpConnection.getId(), httpConnection);
     	}
 
@@ -482,6 +492,10 @@ public class sceHttp extends HLEModule {
     	}
 
     	return httpConnection;
+    }
+
+    protected boolean isHttpTemplateId(int templateId) {
+    	return httpTemplates.containsKey(templateId);
     }
 
     protected HttpTemplate getHttpTemplate(int templateId) {
@@ -611,9 +625,14 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x0809C831, version = 150)
-    public int sceHttpEnableRedirect(int templateId) {
-    	HttpTemplate httpTemplate = getHttpTemplate(templateId);
-    	httpTemplate.setEnableRedirect(true);
+    public int sceHttpEnableRedirect(int id) {
+    	if (isHttpTemplateId(id)) {
+    		HttpTemplate httpTemplate = getHttpTemplate(id);
+    		httpTemplate.setEnableRedirect(true);
+    	} else {
+    		HttpConnection httpConnection = getHttpConnection(id);
+    		httpConnection.setEnableRedirect(true);
+    	}
 
         return 0;
     }
@@ -663,9 +682,14 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x1A0EBB69, version = 150)
-    public int sceHttpDisableRedirect(int templateId) {
-    	HttpTemplate httpTemplate = getHttpTemplate(templateId);
-    	httpTemplate.setEnableRedirect(false);
+    public int sceHttpDisableRedirect(int id) {
+    	if (isHttpTemplateId(id)) {
+    		HttpTemplate httpTemplate = getHttpTemplate(id);
+    		httpTemplate.setEnableRedirect(false);
+    	} else {
+    		HttpConnection httpConnection = getHttpConnection(id);
+    		httpConnection.setEnableRedirect(false);
+    	}
 
         return 0;
     }
@@ -967,7 +991,7 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA4496DE5, version = 150)
-    public int sceHttpSetRedirectCallback(int templateId, TPointer callbackAddr, int callbackArg) {
+    public int sceHttpSetRedirectCallback(int templateId, @CanBeNull TPointer callbackAddr, int callbackArg) {
         return 0;
     }
 
@@ -1259,8 +1283,12 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x4E4A284A, version = 150)
-    public int sceHttpCloneTemplate() {
-    	return 0;
+    public int sceHttpCloneTemplate(int templateId) {
+    	HttpTemplate clonedHttpTemplate = new HttpTemplate();
+    	HttpTemplate httpTemplate = getHttpTemplate(templateId);
+    	clonedHttpTemplate.setAgent(httpTemplate.getAgent());
+
+    	return clonedHttpTemplate.getId();
     }
 
     @HLEUnimplemented
