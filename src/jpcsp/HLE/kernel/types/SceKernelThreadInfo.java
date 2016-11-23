@@ -135,8 +135,9 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     public final static int THREAD_CALLBACK_MEMORYSTICK_FAT = 3;
     public final static int THREAD_CALLBACK_POWER = 4;
     public final static int THREAD_CALLBACK_EXIT = 5;
-    public final static int THREAD_CALLBACK_USER_DEFINED = 6;
-    public final static int THREAD_CALLBACK_SIZE = 7;
+    public final static int THREAD_CALLBACK_USB = 6;
+    public final static int THREAD_CALLBACK_USER_DEFINED = 7;
+    public final static int THREAD_CALLBACK_SIZE = 8;
     private RegisteredCallbacks[] registeredCallbacks;
     public Queue<Callback> pendingCallbacks = new LinkedList<Callback>();
     public Queue<IAction> pendingActions = new LinkedList<IAction>();

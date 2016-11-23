@@ -53,6 +53,7 @@ public class sceUsb extends HLEModule {
 	protected boolean usbActivated = false;
 	protected boolean usbStarted = false;
 	protected HashMap<String, SceModule> loadedModules;
+	protected int callbackId = -1;
 
 	@Override
 	public void start() {
@@ -85,6 +86,12 @@ public class sceUsb extends HLEModule {
 		return (state & waitState) != 0;
 	}
 
+	protected void notifyCallback() {
+		if (callbackId >= 0) {
+			Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_USB, getUsbState());
+		}
+	}
+
 	/**
 	 * Start a USB driver.
 	 *
@@ -106,6 +113,8 @@ public class sceUsb extends HLEModule {
 			SceModule module = Managers.modules.getModuleByUID(sceModuleId);
 			loadedModules.put(driverName, module);
 		}
+
+		notifyCallback();
 
 		return 0;
 	}
@@ -129,6 +138,8 @@ public class sceUsb extends HLEModule {
 			HLEModuleManager moduleManager = HLEModuleManager.getInstance();
 			moduleManager.UnloadFlash0Module(module);
 		}
+
+		notifyCallback();
 
 		return 0;
 	}
@@ -189,6 +200,7 @@ public class sceUsb extends HLEModule {
 	@HLEFunction(nid = 0xC572A9C8, version = 150)
 	public int sceUsbDeactivate(int pid) {
 		usbActivated = false;
+		notifyCallback();
 
 		return 0;
 	}
@@ -233,13 +245,22 @@ public class sceUsb extends HLEModule {
 	@HLEFunction(nid = 0x8BFC3DE8, version = 150)
 	public int sceUsb_8BFC3DE8(int callbackId, int unknown1, int unknown2) {
 		// Registering a callback?
-		return 0;
+		if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_USB, callbackId)) {
+			this.callbackId = callbackId;
+			notifyCallback();
+		}
+
+    	return 0;
 	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x89DE0DC5, version = 150)
 	public int sceUsb_89DE0DC5(int callbackId) {
 		// Unregistering a callback?
+		if (this.callbackId == callbackId) {
+			this.callbackId = -1;
+		}
+
 		return 0;
 	}
 
@@ -254,6 +275,7 @@ public class sceUsb extends HLEModule {
 	@HLEFunction(nid = 0xE20B23A6, version = 150)
 	public int sceUsbActivateWithCharging(int pid, boolean charging) {
 		usbActivated = true;
+		notifyCallback();
 
 		return 0;
 	}

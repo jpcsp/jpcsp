@@ -40,6 +40,7 @@ public class sceUsbAcc extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x79A1C743, version = 260)
 	public int sceUsbAccGetAuthStat() {
+		// Has no parameters
 		return 0;
 	}
 }
