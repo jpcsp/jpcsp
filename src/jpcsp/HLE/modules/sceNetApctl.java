@@ -36,6 +36,7 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.hardware.Wlan;
 import jpcsp.settings.Settings;
 import jpcsp.Emulator;
@@ -780,5 +781,11 @@ public class sceNetApctl extends HLEModule {
 	@HLEFunction(nid = 0x96BEB231, version = 150)
 	public int sceNetApctlGetBSSDescEntry(int entryId, int infoId, TPointer result) {
 		return sceNetApctlGetBSSDescEntryUser(entryId, infoId, result);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC20A144C, version = 150)
+	public int sceNetApctl_lib2_C20A144C(int connIndex, pspNetMacAddress ps3MacAddress) {
+		return sceNetApctlConnect(connIndex);
 	}
 }
