@@ -512,23 +512,24 @@ public class sceReg extends HLEModule {
     		}
     	} else if ("/CONFIG/PREMO".equals(fullName)) {
     		if ("ps3_mac".equals(name)) {
+    			byte ps3Mac[] = new byte[6];
+    			ps3Mac[0] = 0x11;
+    			ps3Mac[1] = 0x22;
+    			ps3Mac[2] = 0x33;
+    			ps3Mac[3] = 0x44;
+    			ps3Mac[4] = 0x55;
+    			ps3Mac[5] = 0x66;
     			ptype.setValue(REG_TYPE_BIN);
-    			psize.setValue(6);
-    			if (size >= 6) {
-    				buf.clear(6);
+    			psize.setValue(ps3Mac.length);
+    			if (size > 0) {
+    				buf.setArray(ps3Mac, ps3Mac.length);
     			}
     		} else if ("ps3_name".equals(name)) {
+    			String ps3Name = "My PS3";
     			ptype.setValue(REG_TYPE_STR);
-    			psize.setValue(1);
-    			if (size >= 1) {
-        			buf.clear(1);
-    			}
-    		} else if ("login_id".equals(name)) {
-    			String loginId = "";
-    			ptype.setValue(REG_TYPE_STR);
-    			psize.setValue(loginId.length() + 1);
+    			psize.setValue(ps3Name.length() + 1);
     			if (size > 0) {
-    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, loginId);
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, ps3Name);
     			}
     		} else if ("guide_page".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
@@ -595,6 +596,24 @@ public class sceReg extends HLEModule {
     			psize.setValue(4);
     			if (size >= 4) {
         			buf.setValue32(0);
+    			}
+    		} else if ("account_id".equals(name)) {
+    			ptype.setValue(REG_TYPE_BIN);
+    			psize.setValue(16);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, npAccountId);
+    			}
+    		} else if ("login_id".equals(name)) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(npLoginId.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, npLoginId);
+    			}
+    		} else if ("password".equals(name)) {
+    			ptype.setValue(REG_TYPE_STR);
+    			psize.setValue(npPassword.length() + 1);
+    			if (size > 0) {
+    				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, npPassword);
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
