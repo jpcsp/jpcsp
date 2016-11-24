@@ -495,6 +495,10 @@ public class HTTPServer {
 
 		String remoteUrl = getUrl(descriptor, request, pathValue, forcedPort);
 
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("doProxy connecting to '%s'", remoteUrl));
+		}
+
 		HttpURLConnection connection = (HttpURLConnection) new URL(remoteUrl).openConnection();
 		for (String key : request.keySet()) {
 			if (!data.equals(key) && !method.equals(key) && !version.equals(key) && !path.equals(key) && !parameters.equals(key)) {

@@ -127,6 +127,9 @@ public class HTTPConfiguration {
 		new HttpServerConfiguration("boxreg.trendmicro.com", 443),
 		new HttpServerConfiguration("eu.playstation.com", 443, false),
 		new HttpServerConfiguration("fj00.psp.update.playstation.org"),
-		new HttpServerConfiguration("sensme.dl.playstation.net")
+		new HttpServerConfiguration("sensme.dl.playstation.net"),
+		new HttpServerConfiguration("ps-devices.qriocity.com"),
+		new HttpServerConfiguration("www.playstationmusic.com", 443),
+		new HttpServerConfiguration("uploader.us.np.community.playstation.net", 443)
 	};
 }
