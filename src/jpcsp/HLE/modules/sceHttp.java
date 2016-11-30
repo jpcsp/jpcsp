@@ -584,7 +584,7 @@ public class sceHttp extends HLEModule {
 
     	int result;
     	if (contentLength < 0) {
-    		contentLengthAddr.setValue(-1L);
+    		// Value in contentLengthAddr is left unchanged when returning an error, checked on PSP.
     		result = SceKernelErrors.ERROR_HTTP_NO_CONTENT_LENGTH;
     	} else {
     		contentLengthAddr.setValue(contentLength);
