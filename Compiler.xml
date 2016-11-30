@@ -4714,6 +4714,88 @@
     088D5560:[0083100A]: movz       $v0, $a0, $v1
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="strchr">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strchr</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0899EE44:[27BDFFF0]: addiu      $sp, $sp, -16
+0899EE48:[AFB00000]: sw         $s0, 0($sp)
+0899EE4C:[00808021]: addu       $s0, $a0, $zr <=> move $s0, $a0
+0899EE50:[10A00044]: beq        $a1, $zr, 0x0899EF64
+0899EE54:[AFBF0004]: sw         $ra, 4($sp)
+0899EE58:[00804021]: addu       $t0, $a0, $zr <=> move $t0, $a0
+0899EE5C:[24020002]: addiu      $v0, $zr, 2 <=> li $v0, 2
+0899EE60:[30840003]: andi       $a0, $a0, 3
+0899EE64:[1082002D]: beq        $a0, $v0, 0x0899EF1C
+0899EE68:[28820003]: slti       $v0, $a0, 3
+0899EE6C:[10400039]: beq        $v0, $zr, 0x0899EF54
+0899EE70:[24020003]: addiu      $v0, $zr, 3 <=> li $v0, 3
+0899EE74:[24020001]: addiu      $v0, $zr, 1 <=> li $v0, 1
+0899EE78:[50820023]: beql       $a0, $v0, 0x0899EF08
+0899EE7C:[82020000]: lb         $v0, 0($s0)
+0899EE80:[00051200]: sll        $v0, $a1, 0x0008
+0899EE84:[00A22825]: or         $a1, $a1, $v0
+0899EE88:[00051C00]: sll        $v1, $a1, 0x0010
+0899EE8C:[3C077F7F]: lui        $a3, 0x7F7F <=> li $a3, 0x7F7F0000
+0899EE90:[00A32825]: or         $a1, $a1, $v1
+0899EE94:[34E77F7F]: ori        $a3, $a3, 32639
+0899EE98:[8D020000]: lw         $v0, 0($t0)
+0899EE9C:[00471824]: and        $v1, $v0, $a3
+0899EEA0:[00671821]: addu       $v1, $v1, $a3
+0899EEA4:[00622025]: or         $a0, $v1, $v0
+0899EEA8:[00451026]: xor        $v0, $v0, $a1
+0899EEAC:[00471824]: and        $v1, $v0, $a3
+0899EEB0:[00673021]: addu       $a2, $v1, $a3
+0899EEB4:[00C21025]: or         $v0, $a2, $v0
+0899EEB8:[00871827]: nor        $v1, $a0, $a3
+0899EEBC:[00473027]: nor        $a2, $v0, $a3
+0899EEC0:[00031842]: srl        $v1, $v1, 0x0001
+0899EEC4:[00661825]: or         $v1, $v1, $a2
+0899EEC8:[14600003]: bne        $v1, $zr, 0x0899EED8
+0899EECC:[00000000]: nop
+0899EED0:[0A267BA6/FC000000]: j          0x0899EE98
+0899EED4:[25080004]: addiu      $t0, $t0, 4
+0899EED8:[7C0318E0]: wsbw       $v1, $v1
+0899EEDC:[00602016]: clz        $a0, $v1
+0899EEE0:[30820001]: andi       $v0, $a0, 1
+0899EEE4:[14400003]: bne        $v0, $zr, 0x0899EEF4
+0899EEE8:[00001821]: addu       $v1, $zr, $zr <=> li $v1, 0
+0899EEEC:[000410C3]: sra        $v0, $a0, 0x0003
+0899EEF0:[01021821]: addu       $v1, $t0, $v0
+0899EEF4:[8FBF0004]: lw         $ra, 4($sp)
+0899EEF8:[8FB00000]: lw         $s0, 0($sp)
+0899EEFC:[00601021]: addu       $v0, $v1, $zr <=> move $v0, $v1
+0899EF00:[03E00008]: jr         $ra
+0899EF04:[27BD0010]: addiu      $sp, $sp, 16
+0899EF08:[1045FFFA]: beq        $v0, $a1, 0x0899EEF4
+0899EF0C:[02001821]: addu       $v1, $s0, $zr <=> move $v1, $s0
+0899EF10:[26080001]: addiu      $t0, $s0, 1
+0899EF14:[1040FFF7]: beq        $v0, $zr, 0x0899EEF4
+0899EF18:[00001821]: addu       $v1, $zr, $zr <=> li $v1, 0
+0899EF1C:[81020000]: lb         $v0, 0($t0)
+0899EF20:[1045FFF4]: beq        $v0, $a1, 0x0899EEF4
+0899EF24:[01001821]: addu       $v1, $t0, $zr <=> move $v1, $t0
+0899EF28:[25080001]: addiu      $t0, $t0, 1
+0899EF2C:[1040FFF1]: beq        $v0, $zr, 0x0899EEF4
+0899EF30:[00001821]: addu       $v1, $zr, $zr <=> li $v1, 0
+0899EF34:[81020000]: lb         $v0, 0($t0)
+0899EF38:[1045FFEE]: beq        $v0, $a1, 0x0899EEF4
+0899EF3C:[01001821]: addu       $v1, $t0, $zr <=> move $v1, $t0
+0899EF40:[25080001]: addiu      $t0, $t0, 1
+0899EF44:[1440FFCE]: bne        $v0, $zr, 0x0899EE80
+0899EF48:[00001821]: addu       $v1, $zr, $zr <=> li $v1, 0
+0899EF4C:[0A267BBE/FC000000]: j          0x0899EEF8
+0899EF50:[8FBF0004]: lw         $ra, 4($sp)
+0899EF54:[5482FFCB]: bnel       $a0, $v0, 0x0899EE84
+0899EF58:[00051200]: sll        $v0, $a1, 0x0008
+0899EF5C:[0A267BCE/FC000000]: j          0x0899EF38
+0899EF60:[81020000]: lb         $v0, 0($t0)
+0899EF64:[0E267C37]: jal        0x0899F0DC
+0899EF68:[00000000]: nop
+0899EF6C:[0A267BBD/FC000000]: j          0x0899EEF4
+0899EF70:[02021821]: addu       $v1, $s0, $v0
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strrchr">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strrchr</Class>
 		<IsReturning>true</IsReturning>
