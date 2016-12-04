@@ -295,7 +295,7 @@ public class sceUtility extends HLEModule {
     protected HashMap<Integer, String> waitingAvModules = new HashMap<Integer, String>();
     protected HashMap<Integer, SceModule> loadedUsbModules = new HashMap<Integer, SceModule>();
     protected HashMap<Integer, String> waitingUsbModules = new HashMap<Integer, String>();
-    protected HashMap<Integer, SceModule> loadedModules = new HashMap<Integer, SceModule>();
+    protected HashMap<Integer, List<SceModule>> loadedModules = new HashMap<Integer, List<SceModule>>();
     protected HashMap<Integer, String> waitingModules = new HashMap<Integer, String>();
     public static final String[] utilityAvModuleNames = new String[] {
         "PSP_AV_MODULE_AVCODEC",
@@ -3958,59 +3958,88 @@ public class sceUtility extends HLEModule {
         PSP_MODULE_AV_AAC(0x0306),
         PSP_MODULE_AV_G729(0x0307),
         PSP_MODULE_AV_MP4(0x0308),
-        PSP_MODULE_NP_COMMON(0x0400),
-        PSP_MODULE_NP_SERVICE(0x0401),
-        PSP_MODULE_NP_MATCHING2(0x0402),
-        PSP_MODULE_NP_COMMERCE2(0x0403),
+        PSP_MODULE_NP_COMMON(0x0400, new String[] { "flash0:/kd/np.prx", "flash0:/kd/np_core.prx", "flash0:/kd/np_auth.prx" }),
+        PSP_MODULE_NP_SERVICE(0x0401, "flash0:/kd/np_service.prx"),
+        PSP_MODULE_NP_MATCHING2(0x0402, "flash0:/kd/np_matching2.prx"),
+        PSP_MODULE_NP_COMMERCE2(0x0403, "flash0:/kd/np_commerce2.prx"),
         PSP_MODULE_NP_DRM(0x0500),
         PSP_MODULE_IRDA(0x0600);
 
         private int id;
+        private String[] prxNames;
 
         private UtilityModule(int id) {
             this.id = id;
         }
 
+        private UtilityModule(int id, String prxName) {
+            this.id = id;
+            prxNames = new String[] { prxName };
+        }
+
+        private UtilityModule(int id, String[] prxNames) {
+            this.id = id;
+            this.prxNames = prxNames;
+        }
+
         public int getID() {
             return id;
         }
+
+        public String[] getPrxNames() {
+        	if (prxNames == null) {
+        		return new String[] { toString() };
+        	}
+        	return prxNames;
+        }
     }
 
-    protected String getModuleName(int module) {
-        for (UtilityModule m : UtilityModule.values()) {
+    protected String[] getModuleNames(int module) {
+    	for (UtilityModule m : UtilityModule.values()) {
             if (m.getID() == module) {
-                return m.toString();
+            	return m.getPrxNames();
             }
         }
-        return "PSP_MODULE_UNKNOWN_" + Integer.toHexString(module);
+        return new String[] { String.format("PSP_MODULE_UNKNOWN_%X", module) };
     }
 
     protected int hleUtilityLoadModule(int module, String moduleName) {
+        // Extract the PRX name from the module name
+        String prxName = moduleName;
+        if (moduleName.endsWith(".prx")) {
+            prxName = moduleName.substring(moduleName.lastIndexOf("/") + 1, moduleName.length() - 4);
+        }
+
         HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-    	if (loadedModules.containsKey(module) || waitingModules.containsKey(module)) { // Module already loaded.
-    		return SceKernelErrors.ERROR_MODULE_ALREADY_LOADED;
-    	} else if ((module == UtilityModule.PSP_MODULE_NET_HTTPSTORAGE.id) && (!loadedModules.containsKey(UtilityModule.PSP_MODULE_NET_HTTP.id))) {
-            log.error("Library not find");
-    		return SceKernelErrors.ERROR_KERNEL_LIBRARY_NOT_FOUND;
-    	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Can't load flash0 module.
+    	if (!moduleManager.hasFlash0Module(prxName)) { // Can't load flash0 module.
             waitingModules.put(module, moduleName); // Always save a load attempt.
             log.error("Can't load flash0 module");
            return SceKernelErrors.ERROR_MODULE_BAD_ID;           
-    	} else {
-            // Load and save it in loadedModules.
-            int sceModuleId = moduleManager.LoadFlash0Module(moduleName);
-            SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
-            loadedModules.put(module, sceModule);
-            return 0;
+    	}
+
+    	// Load and save it in loadedModules.
+		int sceModuleId;
+		if (moduleName.equals(prxName)) {
+			sceModuleId = moduleManager.LoadFlash0Module(moduleName);
+		} else {
+			sceModuleId = Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(moduleName, 0x10);
+		}
+        SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
+        if (!loadedModules.containsKey(module)) {
+        	loadedModules.put(module, new LinkedList<SceModule>());
         }
+        loadedModules.get(module).add(sceModule);
+
+        return 0;
     }
 
     protected int hleUtilityUnloadModule(int module) {
         if (loadedModules.containsKey(module)) {
             // Unload the module.
             HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-            SceModule sceModule = loadedModules.remove(module);
-            moduleManager.UnloadFlash0Module(sceModule);
+            for (SceModule sceModule : loadedModules.remove(module)) {
+            	moduleManager.UnloadFlash0Module(sceModule);
+            }
             return 0;
         } else if (waitingModules.containsKey(module)) {
             // Simulate a successful unload.
@@ -4707,19 +4736,28 @@ public class sceUtility extends HLEModule {
 
     @HLEFunction(nid = 0x2A2B3DE0, version = 303, checkInsideInterrupt = true)
     public int sceUtilityLoadModule(int module) {
-        String moduleName = getModuleName(module);
-        log.info(String.format("Loading: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
-        int result = hleUtilityLoadModule(module, moduleName);
-        if (result == SceKernelErrors.ERROR_MODULE_BAD_ID) {
-            log.info(String.format("IGNORING: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
-            result = 0;
+    	if (loadedModules.containsKey(module) || waitingModules.containsKey(module)) { // Module already loaded.
+    		return SceKernelErrors.ERROR_MODULE_ALREADY_LOADED;
+    	} else if ((module == UtilityModule.PSP_MODULE_NET_HTTPSTORAGE.id) && (!loadedModules.containsKey(UtilityModule.PSP_MODULE_NET_HTTP.id))) {
+            log.error("Library not find");
+    		return SceKernelErrors.ERROR_KERNEL_LIBRARY_NOT_FOUND;
+    	}
 
-        	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
+    	String[] moduleNames = getModuleNames(module);
+        int result = 0;
+        for (String moduleName : moduleNames) {
+        	log.info(String.format("Loading: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
+	        int loadResult = hleUtilityLoadModule(module, moduleName);
 
-        	return result;
+	        if (loadResult == SceKernelErrors.ERROR_MODULE_BAD_ID) {
+	            log.info(String.format("IGNORING: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
+	        } else {
+	        	if (loadResult < 0) {
+	        		result = loadResult;
+	        	}
+	        	log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
+	        }
         }
-
-        log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
 
         if (result >= 0) {
         	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
@@ -4730,10 +4768,17 @@ public class sceUtility extends HLEModule {
 
     @HLEFunction(nid = 0xE49BFE92, version = 303, checkInsideInterrupt = true)
     public int sceUtilityUnloadModule(int module) {
-        String moduleName = getModuleName(module);
-        log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
+        String[] moduleNames = getModuleNames(module);
+        int result = 0;
+        for (String moduleName : moduleNames) {
+        	log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
+        	int unloadResult = hleUtilityUnloadModule(module);
+        	if (unloadResult < 0) {
+        		result = unloadResult;
+        	}
+        }
 
-        return hleUtilityUnloadModule(module);
+        return result;
     }
 
     @HLEFunction(nid = 0xDA97F1AA, version = 500)

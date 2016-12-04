@@ -243,7 +243,7 @@ public class SysMemForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x7FF2F35A, version = 660)
+    @HLEFunction(nid = 0x7FF2F35A, version = 150)
     public int SysMemForKernel_7FF2F35A(TPointer unknown) {
     	return SysMemUserForUser_945E45DA(unknown);
     }

@@ -303,14 +303,16 @@ public class ModuleMgrForUser extends HLEModule {
     	return 0;
     }
 
-    public void hleKernelLoadAndStartModule(String name, int flags, int uid, int buffer, int bufferSize, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo, int argSize, TPointer argPp, TPointer startOptions) {
+    public int hleKernelLoadAndStartModule(String name, int flags, int uid, int buffer, int bufferSize, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo, int argSize, TPointer argPp, TPointer startOptions) {
     	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
     	hleKernelLoadModule(thread, name, flags, uid, buffer, bufferSize, lmOption, byUid, needModuleInfo);
     	int moduleUid = thread.cpuContext._v0;
     	hleKernelStartModule(moduleUid, 0, TPointer.NULL, TPointer32.NULL, startOptions, false);
+
+    	return moduleUid;
     }
 
-    public void hleKernelLoadAndStartModule(String name, int startPriority) {
+    public int hleKernelLoadAndStartModule(String name, int startPriority) {
     	if (startOptionsMem == null) {
         	final int startOptionsSize = 20;
         	startOptionsMem = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ModuleStartOptions", SysMemUserForUser.PSP_SMEM_Low, startOptionsSize, 0);
@@ -324,7 +326,7 @@ public class ModuleMgrForUser extends HLEModule {
     	sceKernelSMOption.attribute = 0;
     	sceKernelSMOption.priority = startPriority;
     	sceKernelSMOption.write(startOptions);
-    	hleKernelLoadAndStartModule(name, 0, 0, 0, 0, null, false, false, 0, TPointer.NULL, startOptions);
+    	return hleKernelLoadAndStartModule(name, 0, 0, 0, 0, null, false, false, 0, TPointer.NULL, startOptions);
     }
 
     private void hleKernelLoadModule(SceKernelThreadInfo thread, String name, int flags, int uid, int buffer, int bufferSize, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo) {
