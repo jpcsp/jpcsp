@@ -76,7 +76,7 @@ public class sceNp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x633B5F71, version = 150)
-    public int sceNpGetNpId(TPointer buffer) {
+    public int sceNpGetNpId(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=36, usage=Usage.out) TPointer buffer) {
     	// The first 20 bytes are the onlineId
     	buffer.setStringNZ(0, 20, onlineId);
     	// The next 16 bytes are unknown
@@ -109,7 +109,7 @@ public class sceNp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7E0864DF, version = 150)
-    public int sceNpGetUserProfile(TPointer buffer) {
+    public int sceNpGetUserProfile(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=216, usage=Usage.out) TPointer buffer) {
     	// The first 20 bytes are the onlineId
     	buffer.setStringNZ(0, 20, onlineId);
     	// The next 16 bytes are unknown
@@ -125,7 +125,7 @@ public class sceNp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x4B5C71C8, version = 150)
-    public int sceNpGetOnlineId(TPointer buffer) {
+    public int sceNpGetOnlineId(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.out) TPointer buffer) {
     	buffer.setStringNZ(0, 20, onlineId);
 
     	return 0;
