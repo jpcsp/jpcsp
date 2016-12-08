@@ -1438,7 +1438,9 @@ public class CompilerContext implements ICompilerContext {
     	Label notDebug = new Label();
     	mv.visitJumpInsn(Opcodes.IFEQ, notDebug);
 
-    	mv.visitInsn(Opcodes.DUP);
+    	boolean isReturningVoid = func.getHLEModuleMethod().getReturnType() == void.class;
+
+        mv.visitInsn(Opcodes.DUP);
 		mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Integer.class));
 		mv.visitInsn(Opcodes.DUP_X1);
 		mv.visitInsn(Opcodes.SWAP);
@@ -1451,7 +1453,7 @@ public class CompilerContext implements ICompilerContext {
 		mv.visitInsn(Opcodes.SWAP);
 		mv.visitInsn(Opcodes.AASTORE);
 		String prefix = func.isUnimplemented() && !codeBlock.isHLEFunction() ? "Unimplemented " : "";
-    	mv.visitLdcInsn(String.format("%s%s returning %s0x%%X", prefix, func.getFunctionName(), isErrorCode ? "errorCode " : ""));
+    	mv.visitLdcInsn(String.format("%s%s returning %s%s", prefix, func.getFunctionName(), isErrorCode ? "errorCode " : "", isReturningVoid ? "void" : "0x%X"));
     	mv.visitInsn(Opcodes.SWAP);
     	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
     	loadModuleLoggger(func);
