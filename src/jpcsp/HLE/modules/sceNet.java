@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Random;
+
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -365,7 +369,7 @@ public class sceNet extends HLEModule {
     }
 
     @HLEFunction(nid = 0xE0A81C7C, version = 150)
-    public int sceNetMemcmp(@CanBeNull TPointer src1Addr, @CanBeNull TPointer src2Addr, int size) {
+    public int sceNetMemcmp(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextNextParameter, usage=Usage.in) TPointer src1Addr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer src2Addr, int size) {
     	return Modules.SysclibForKernelModule.memcmp(src1Addr, src2Addr, size);
     }
 
@@ -398,8 +402,42 @@ public class sceNet extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x384EFE14, version = 150)
-    public int sceNet_lib_384EFE14() {
-    	return 0;
+    public int sceNet_lib_384EFE14(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer in1Addr, int in1Size, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer in2Addr, int in2Size, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.out) TPointer outAddr) {
+    	if (in2Size > 64) {
+    		log.warn(String.format("sceNet_lib_384EFE14 not implemented for size=0x%X", in2Size));
+    	}
+
+    	MessageDigest md;
+        try {
+			md = MessageDigest.getInstance("SHA-1");
+		} catch (NoSuchAlgorithmException e) {
+			log.error("sceNet_lib_384EFE14", e);
+			return -1;
+		}
+
+    	byte[] in1 = in1Addr.getArray8(in1Size);
+    	byte[] in2 = in2Addr.getArray8(in2Size);
+
+    	byte[] tmp1 = new byte[64];
+    	byte[] tmp2 = new byte[64];
+    	System.arraycopy(in2, 0, tmp1, 0, Math.min(in2Size, tmp1.length));
+    	System.arraycopy(in2, 0, tmp2, 0, Math.min(in2Size, tmp2.length));
+    	for (int i = 0; i < tmp1.length; i++) {
+    		tmp1[i] = (byte) (tmp1[i] ^ 0x36);
+    		tmp2[i] = (byte) (tmp2[i] ^ 0x5C);
+    	}
+
+		md.update(tmp1);
+		md.update(in1);
+		byte[] tmp3 = md.digest();
+		md.reset();
+		md.update(tmp2);
+		md.update(tmp3);
+		byte[] result = md.digest();
+
+		outAddr.setArray(result, 20);
+
+		return 0;
     }
 
     @HLEFunction(nid = 0x4753D878, version = 150)
@@ -424,4 +462,23 @@ public class sceNet extends HLEModule {
 
 		return formattedString.length();
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1858883D, version = 150)
+    public int sceNetRand() {
+    	// Has no parameters
+    	return new Random().nextInt();
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA93A93E9, version = 150)
+    public int _sce_pspnet_callout_stop(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.inout) TPointer unknown) {
+    	return 0;
+    }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA8B6205A, version = 150)
+	public int sceNet_lib_A8B6205A(TPointer unknown1, int unknown2, TPointer unknown3, int unknown4) {
+		return 0;
+	}
 }
