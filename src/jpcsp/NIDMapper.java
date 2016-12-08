@@ -110,6 +110,11 @@ public class NIDMapper {
     	return -1;
     }
 
+    public int overwrittenNidToAddress(int nid) {
+    	int code = nidToSyscallInternal(nid);
+    	return overwrittenSyscallToAddress(code);
+    }
+
     /**
      * This function is only for the HLE. It allows us to HLE modules, normally
      * a module would be loaded into memory, so imports would jump to the

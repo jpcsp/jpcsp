@@ -24,6 +24,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.Modules;
 
 import org.apache.log4j.Logger;
@@ -34,6 +35,7 @@ public class sceSsl extends HLEModule {
     private boolean isSslInit;
     private int maxMemSize;
     private int currentMemSize;
+    private SysMemInfo cryptoMalloc;
 
     @HLELogging(level="info")
     @HLEFunction(nid = 0x957ECBE2, version = 150)
@@ -150,7 +152,92 @@ public class sceSsl extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xFB8273FE, version = 150)
-    public int SSL_CTX_new(int size) {
+    public int SSL_CTX_new(int method) {
+    	return 0x12345678;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x588F2FE8, version = 150)
+    public int SSL_CTX_free(int ctx) {
     	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB4D78E98, version = 150)
+    public int SSL_CTX_ctrl(int ctx, int cmd, int larg, int parg) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xAEBF278B, version = 150)
+    public int SSL_CTX_set_verify(int ctx, int mode, @CanBeNull TPointer verify_callback) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x529A9477, version = 150)
+    public int sceSsl_lib_529A9477(int ctx, TPointer unknown1, int unknown2) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBF55C31C, version = 150)
+    public int SSL_CTX_set_client_cert_cb(int ctx, @CanBeNull TPointer client_cert_cb) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0861D934, version = 150)
+    public int CRYPTO_malloc(int size) {
+    	cryptoMalloc = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "CRYPTO_malloc", SysMemUserForUser.PSP_SMEM_Low, size, 0);
+    	if (cryptoMalloc == null) {
+    		return 0;
+    	}
+    	return cryptoMalloc.addr;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x5E5C873A, version = 150)
+    public int CRYPTO_free(int allocatedAddress) {
+    	if (cryptoMalloc != null && cryptoMalloc.addr == allocatedAddress) {
+    		Modules.SysMemUserForUserModule.free(cryptoMalloc);
+    		cryptoMalloc = null;
+    	}
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEBFB0E3C, version = 150)
+    public int SSL_new(int ctx) {
+    	return 1;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x84833472, version = 150)
+    public int SSL_free(int ssl) {
+    	return 1;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x28B4DE33, version = 150)
+    public int BIO_new_socket(int socket, int closeFlag) {
+    	return 1;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB9C8CCE6, version = 150)
+    public void SSL_set_bio(int ssl, int rbio, int wbio) {
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xECE07B61, version = 150)
+    public int sceSsl_lib_ECE07B61(int bio, int unknown) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x80608663, version = 150)
+    public void SSL_set_connect_state(int ssl) {
     }
 }
