@@ -96,6 +96,7 @@ public class SceKernelErrors {
     public static final int ERROR_NOSPC                                         = 0x8000021C;
     public static final int ERROR_DFUNC                                         = 0x800002FF;
 
+    public final static int ERROR_ERRNO_BASE                                    = 0x80010000;
     public final static int ERROR_ERRNO_OPERATION_NOT_PERMITTED                 = 0x80010001;
     public final static int ERROR_ERRNO_FILE_NOT_FOUND                          = 0x80010002;
     public final static int ERROR_ERRNO_FILE_OPEN_ERROR                         = 0x80010003;

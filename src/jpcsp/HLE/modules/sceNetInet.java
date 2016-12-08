@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_BASE;
 import static jpcsp.HLE.modules.sceNetAdhocctl.fillNextPointersInLinkedList;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -92,8 +93,9 @@ public class sceNetInet extends HLEModule {
     public static final int SOCK_DGRAM = 2; // Datagram socket
     public static final int SOCK_RAW = 3; // Raw socket
     public static final int SOCK_STREAM_UNKNOWN_10 = 10; // Looks like a SOCK_STREAM, but specifics unknown
+    public static final int SOCK_DGRAM_UNKNOWN_6 = 6; // Looks like a SOCK_DGRAM, but specifics unknown
     private static final String[] socketTypeNames = new String[] {
-    	"Unknown0", "SOCK_STREAM", "SOCK_DGRAM", "SOCK_RAW", "Unknown4", "Unknown5", "Unknown6", "Unknown7", "Unknown8", "Unknown9", "SOCK_STREAM_UNKNOWN_10"
+    	"Unknown0", "SOCK_STREAM", "SOCK_DGRAM", "SOCK_RAW", "Unknown4", "Unknown5", "SOCK_DGRAM_UNKNOWN_6", "Unknown7", "Unknown8", "Unknown9", "SOCK_STREAM_UNKNOWN_10"
     };
 
     public static final int SOL_SOCKET = 0xFFFF; // Socket level
@@ -2174,6 +2176,8 @@ public class sceNetInet extends HLEModule {
     		inetSocket = new pspInetDatagramSocket(uid);
     	} else if (type == SOCK_RAW) {
     		inetSocket = new pspInetRawSocket(uid, protocol);
+    	} else if (type == SOCK_DGRAM_UNKNOWN_6) {
+    		inetSocket = new pspInetDatagramSocket(uid);
     	} else if (type == SOCK_STREAM_UNKNOWN_10) {
     		inetSocket = new pspInetStreamSocket(uid);
     	}
@@ -3195,7 +3199,7 @@ public class sceNetInet extends HLEModule {
 			log.warn(String.format("sceNetInetSocket unsupported domain=0x%X, type=0x%X(%s), protocol=0x%X", domain, type, getSocketTypeNameString(type), protocol));
 			return -1;
 		}
-		if (type != SOCK_DGRAM && type != SOCK_STREAM && type != SOCK_RAW && type != SOCK_STREAM_UNKNOWN_10) {
+		if (type != SOCK_DGRAM && type != SOCK_STREAM && type != SOCK_RAW && type != SOCK_DGRAM_UNKNOWN_6 && type != SOCK_STREAM_UNKNOWN_10) {
 			log.warn(String.format("sceNetInetSocket unsupported type=0x%X(%s), domain=0x%X, protocol=0x%X", type, getSocketTypeNameString(type), domain, protocol));
 			return -1;
 		}
@@ -3386,6 +3390,12 @@ public class sceNetInet extends HLEModule {
 			log.debug(String.format("sceNetInetGetPspError returning 0x%08X(%1$d)", getErrno()));
 		}
 
-		return getErrno();
+		return ERROR_ERRNO_BASE | (getErrno() & 0xFFFF);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xAEE60F84, version = 150)
+	public int sceNetInet_lib_AEE60F84(@CheckArgument("checkSocket") int socket, int unknown1, int unknown2) {
+		return 0;
 	}
 }
