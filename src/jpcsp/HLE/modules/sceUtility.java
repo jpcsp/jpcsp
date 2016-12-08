@@ -92,6 +92,7 @@ import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.Loader;
 import jpcsp.Memory;
+import jpcsp.NIDMapper;
 import jpcsp.Processor;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
@@ -119,6 +120,7 @@ import jpcsp.HLE.kernel.types.pspUtilityBaseDialog;
 import jpcsp.HLE.kernel.types.pspUtilityDialogCommon;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams.SceUtilityOskData;
 import jpcsp.HLE.kernel.types.pspCharInfo;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PNG;
@@ -2249,6 +2251,45 @@ public class sceUtility extends HLEModule {
             npSigninParams.signinStatus = SceUtilityNpSigninParams.NP_SIGNING_STATUS_OK;
             npSigninParams.write(mem);
 
+            int sceNp_E24DA399 = NIDMapper.getInstance().overwrittenNidToAddress(0xE24DA399);
+            if (sceNp_E24DA399 != 0) {
+            	int address = mem.read16(sceNp_E24DA399 + 0) << 16;
+            	address += (short) mem.read16(sceNp_E24DA399 + 8);
+            	if (Memory.isAddressGood(address)) {
+            		if (log.isDebugEnabled()) {
+            			log.debug(String.format("sceNp_E24DA399 Address 0x%08X", address));
+            		}
+            		mem.write32(address, 1);
+            	}
+            }
+            int sceNp_C48F2847 = NIDMapper.getInstance().overwrittenNidToAddress(0xC48F2847);
+            if (sceNp_C48F2847 != 0) {
+            	int address = mem.read16(sceNp_C48F2847 + 0x74) << 16;
+            	address += (short) mem.read16(sceNp_C48F2847 + 0x78);
+            	if (Memory.isAddressGood(address)) {
+            		if (log.isDebugEnabled()) {
+            			log.debug(String.format("sceNp_C48F2847 Address 0x%08X", address));
+            		}
+            		Utilities.writeStringZ(mem, address, Modules.sceNpModule.onlineId);
+            	}
+            }
+            int sceNpService_7EF4312E = NIDMapper.getInstance().overwrittenNidToAddress(0x7EF4312E);
+            if (sceNpService_7EF4312E != 0) {
+            	int subAddress = (mem.read32(sceNpService_7EF4312E + 0x78) & 0x3FFFFFF) << 2;
+            	int address = mem.read16(subAddress + 0x14) << 16;
+            	address += (short) mem.read16(subAddress + 0x38);
+            	if (Memory.isAddressGood(address)) {
+            		if (log.isDebugEnabled()) {
+            			log.debug(String.format("sceNpService_7EF4312E Address 0x%08X", address));
+            		}
+            		SysMemInfo memInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceNpService_7EF4312E", SysMemUserForUser.PSP_SMEM_Low, 100, 0);
+            		mem.write32(address, memInfo.addr);
+            		mem.memset(memInfo.addr, (byte) 0, 100);
+            		Utilities.writeStringZ(mem, memInfo.addr + 12, Modules.sceNpModule.onlineId);
+            		Modules.SysMemForKernelModule.SysMemUserForUser_945E45DA(new TPointer(mem, memInfo.addr + 64));
+            	}
+            }
+
             return false;
         }
 
@@ -4003,35 +4044,35 @@ public class sceUtility extends HLEModule {
         return new String[] { String.format("PSP_MODULE_UNKNOWN_%X", module) };
     }
 
-    protected int hleUtilityLoadModule(int module, String moduleName) {
-        // Extract the PRX name from the module name
-        String prxName = moduleName;
-        if (moduleName.endsWith(".prx")) {
-            prxName = moduleName.substring(moduleName.lastIndexOf("/") + 1, moduleName.length() - 4);
-        }
+	protected int hleUtilityLoadModule(int module, String moduleName) {
+		// Extract the PRX name from the module name
+		String prxName = moduleName;
+		if (moduleName.endsWith(".prx")) {
+			prxName = moduleName.substring(moduleName.lastIndexOf("/") + 1, moduleName.length() - 4);
+		}
 
-        HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-    	if (!moduleManager.hasFlash0Module(prxName)) { // Can't load flash0 module.
-            waitingModules.put(module, moduleName); // Always save a load attempt.
-            log.error("Can't load flash0 module");
-           return SceKernelErrors.ERROR_MODULE_BAD_ID;           
-    	}
+		HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+		if (!moduleManager.hasFlash0Module(prxName)) { // Can't load flash0 module.
+			waitingModules.put(module, moduleName); // Always save a load attempt.
+			log.error("Can't load flash0 module");
+			return SceKernelErrors.ERROR_MODULE_BAD_ID;           
+		}
 
-    	// Load and save it in loadedModules.
+		// Load and save it in loadedModules.
 		int sceModuleId;
 		if (moduleName.equals(prxName)) {
 			sceModuleId = moduleManager.LoadFlash0Module(moduleName);
 		} else {
 			sceModuleId = Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(moduleName, 0x10);
 		}
-        SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
-        if (!loadedModules.containsKey(module)) {
-        	loadedModules.put(module, new LinkedList<SceModule>());
-        }
-        loadedModules.get(module).add(sceModule);
+		SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
+		if (!loadedModules.containsKey(module)) {
+			loadedModules.put(module, new LinkedList<SceModule>());
+		}
+		loadedModules.get(module).add(sceModule);
 
-        return 0;
-    }
+		return 0;
+	}
 
     protected int hleUtilityUnloadModule(int module) {
         if (loadedModules.containsKey(module)) {

@@ -51,4 +51,9 @@ public class SceUtilityNpSigninParams extends pspUtilityBaseDialog {
 	public int sizeof() {
 		return base.totalSizeof();
 	}
+
+	@Override
+	public String toString() {
+		return String.format("signinStatus=%d, unknown2=0x%X, unknown3=0x%X, unknown4=0x%X", signinStatus, unknown2, unknown3, unknown4);
+	}
 }
