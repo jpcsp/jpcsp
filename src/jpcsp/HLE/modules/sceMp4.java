@@ -31,6 +31,7 @@ import java.util.List;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -39,6 +40,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -1746,6 +1748,43 @@ public class sceMp4 extends HLEModule {
 
     	// mp4msv_9CA13D1A is called by sceMp4Init
     	hleMp4Init();
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF595F917, version = 150)
+    public int mp4msv_F595F917(@BufferInfo(usage=Usage.out) TPointer32 unknown) {
+    	unknown.setValue(0);
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3D8D41A0, version = 150)
+    public int mp4msv_3D8D41A0(int unknown1, int unknown2) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x67AF9E0F, version = 150)
+    public int mp4msv_67AF9E0F(int unknown) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x07C60A23, version = 150)
+    public int mp4msv_07C60A23(@BufferInfo(usage=Usage.out) TPointer32 unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
+    	unknown1.setValue(0);
+    	unknown2.setValue(0);
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0D32271B, version = 150)
+    public int mp4msv_0D32271B(int unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
+    	unknown2.setValue(0);
 
     	return 0;
     }
