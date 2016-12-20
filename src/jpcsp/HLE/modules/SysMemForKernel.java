@@ -290,4 +290,9 @@ public class SysMemForKernel extends HLEModule {
 
     	return gameInfoMem.addr;
     }
+
+    @HLEFunction(nid = 0xB4F00CB5, version = 150)
+    public int sceKernelGetCompiledSdkVersion_660() {
+    	return Modules.SysMemUserForUserModule.sceKernelGetCompiledSdkVersion();
+    }
 }
