@@ -21,6 +21,6 @@ import jpcsp.HLE.Modules;
 public class Mpeg {
 	public static void soundDelayHack() {
 		// See comment in sceDisplay.sceDisplayGetFramePerSec()
-		Modules.sceDisplayModule.setFramePerSecFactor(3);
+		Modules.sceDisplayModule.setFramePerSecFactor(1);
 	}
 }
