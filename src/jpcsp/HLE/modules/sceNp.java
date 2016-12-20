@@ -35,9 +35,6 @@ public class sceNp extends HLEModule {
     public static final int PARENTAL_CONTROL_DISABLED = 0;
     public static final int PARENTAL_CONTROL_ENABLED = 1;
     public int parentalControl = PARENTAL_CONTROL_ENABLED;
-    public int userAge = 13;
-    public String onlineId = "DummyOnlineId";
-    public String avatarUrl = "http://DummyAvatarUrl";
     protected boolean initialized;
 
 	@Override
@@ -46,7 +43,21 @@ public class sceNp extends HLEModule {
 		super.start();
 	}
 
-    /**
+	public String getOnlineId() {
+		String onlineId = "DummyOnlineId";
+
+		return onlineId;
+	}
+
+	public String getAvatarUrl() {
+		return "http://DummyAvatarUrl";
+	}
+
+	public int getUserAge() {
+		return 13;
+	}
+
+	/**
      * Initialization.
      * 
      * @return
@@ -78,7 +89,7 @@ public class sceNp extends HLEModule {
     @HLEFunction(nid = 0x633B5F71, version = 150)
     public int sceNpGetNpId(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=36, usage=Usage.out) TPointer buffer) {
     	// The first 20 bytes are the onlineId
-    	buffer.setStringNZ(0, 20, onlineId);
+    	buffer.setStringNZ(0, 20, getOnlineId());
     	// The next 16 bytes are unknown
     	buffer.clear(20, 16);
 
@@ -102,7 +113,7 @@ public class sceNp extends HLEModule {
     @HLEFunction(nid = 0xBB069A87, version = 150)
     public int sceNpGetContentRatingFlag(@CanBeNull TPointer32 parentalControlAddr, @CanBeNull TPointer32 userAgeAddr) {
     	parentalControlAddr.setValue(parentalControl);
-    	userAgeAddr.setValue(userAge);
+    	userAgeAddr.setValue(getUserAge());
 
     	return 0;
     }
@@ -111,11 +122,11 @@ public class sceNp extends HLEModule {
     @HLEFunction(nid = 0x7E0864DF, version = 150)
     public int sceNpGetUserProfile(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=216, usage=Usage.out) TPointer buffer) {
     	// The first 20 bytes are the onlineId
-    	buffer.setStringNZ(0, 20, onlineId);
+    	buffer.setStringNZ(0, 20, getOnlineId());
     	// The next 16 bytes are unknown
     	buffer.clear(20, 16);
     	// The next 127 bytes are the avatar URL
-    	buffer.setStringNZ(36, 128, avatarUrl);
+    	buffer.setStringNZ(36, 128, getAvatarUrl());
     	// The next 52 bytes are unknown
     	buffer.clear(164, 52);
     	// Total size 216 bytes
@@ -126,7 +137,7 @@ public class sceNp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x4B5C71C8, version = 150)
     public int sceNpGetOnlineId(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.out) TPointer buffer) {
-    	buffer.setStringNZ(0, 20, onlineId);
+    	buffer.setStringNZ(0, 20, getOnlineId());
 
     	return 0;
     }

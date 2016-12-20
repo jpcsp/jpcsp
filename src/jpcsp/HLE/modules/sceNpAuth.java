@@ -305,7 +305,7 @@ public class sceNpAuth extends HLEModule {
 			if (Modules.sceNpModule.parentalControl == sceNp.PARENTAL_CONTROL_ENABLED) {
 				status |= STATUS_ACCOUNT_PARENTAL_CONTROL_ENABLED;
 			}
-			status |= (Modules.sceNpModule.userAge & 0x7F) << 24;
+			status |= (Modules.sceNpModule.getUserAge() & 0x7F) << 24;
     		addTicketParam(ticket, status);
     		addTicketParam(ticket);
     		addTicketParam(ticket);

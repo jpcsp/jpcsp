@@ -155,7 +155,15 @@ public class sceReg extends HLEModule {
 		this.networkLatestId = networkLatestId;
 	}
 
-    private int getKey(CategoryHandle categoryHandle, String name, TPointer32 ptype, TPointer32 psize, TPointer buf, int size) {
+	public String getNpLoginId() {
+		return npLoginId;
+	}
+
+	public String getNpPassword() {
+		return npPassword;
+	}
+
+	private int getKey(CategoryHandle categoryHandle, String name, TPointer32 ptype, TPointer32 psize, TPointer buf, int size) {
     	String fullName = categoryHandle.getFullName();
     	fullName = fullName.replace("flash1:/registry/system", "");
 
