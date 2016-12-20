@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -239,5 +242,23 @@ public class sceSsl extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x80608663, version = 150)
     public void SSL_set_connect_state(int ssl) {
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB7CA8717, version = 150)
+    public int SSL_write(int ssl, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buffer, int length) {
+    	return length;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB3B04C58, version = 150)
+    public int SSL_get_error(int ssl, int returnValue) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE7C29542, version = 150)
+    public int SSL_read(int ssl, @BufferInfo(lengthInfo=LengthInfo.returnValue, usage=Usage.out) TPointer buffer, int size) {
+    	return 0;
     }
 }

@@ -18,6 +18,8 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -30,7 +32,7 @@ public class sceCertLoader extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDD629A24, version = 150)
-    public int sceLoadCertFromFlash(int unknown1, int unknown2, @CanBeNull TPointer32 unknown3, int unknown4, int unknown5, @CanBeNull TPointer32 unknown6) {
+    public int sceLoadCertFromFlash(int unknown1, int unknown2, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 unknown3, int unknown4, int unknown5, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 unknown6) {
     	unknown3.setValue(0);
     	unknown6.setValue(7100);
 

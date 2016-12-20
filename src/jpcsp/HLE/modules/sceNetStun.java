@@ -52,7 +52,7 @@ public class sceNetStun extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xEBF3C24D, version = 150)
-    public int sceNetStun_EBF3C24D(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5, int unknown6, int unknown7) {
+    public int sceNetStun_EBF3C24D(int unknown1, int unknown2, int unknown3, int port, int unknown5, int unknown6, int unknown7) {
     	return 0;
     }
 
