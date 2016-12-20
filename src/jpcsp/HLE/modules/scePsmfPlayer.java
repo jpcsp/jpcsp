@@ -482,7 +482,7 @@ public class scePsmfPlayer extends HLEModule {
 	        result = Modules.sceMpegModule.hleMpegGetAvcAu(null);
 
 	    	// Write the video data
-	    	result = Modules.sceMpegModule.hleMpegAvcDecode(displayBuffer, videoDataFrameWidth, videoPixelMode, null, true);
+	    	result = Modules.sceMpegModule.hleMpegAvcDecode(displayBuffer, videoDataFrameWidth, videoPixelMode, null, true, TPointer.NULL);
     	}
 
         // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering

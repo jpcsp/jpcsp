@@ -21,9 +21,9 @@ public class SceMpegAu extends pspAbstractMemoryMappedStructure {
 	public long pts;
 	// Decode TimeStamp
 	public long dts;
-	// Es buffer handle?
+	// Es buffer address
 	public int esBuffer;
-	// Es size?
+	// Size of data in esBuffer
 	public int esSize;
 
 	public SceMpegAu() {
