@@ -2262,6 +2262,7 @@ public class sceUtility extends HLEModule {
             		mem.write32(address, 1);
             	}
             }
+
             int sceNp_C48F2847 = NIDMapper.getInstance().overwrittenNidToAddress(0xC48F2847);
             if (sceNp_C48F2847 != 0) {
             	int address = mem.read16(sceNp_C48F2847 + 0x74) << 16;
@@ -2270,9 +2271,10 @@ public class sceUtility extends HLEModule {
             		if (log.isDebugEnabled()) {
             			log.debug(String.format("sceNp_C48F2847 Address 0x%08X", address));
             		}
-            		Utilities.writeStringZ(mem, address, Modules.sceNpModule.onlineId);
+            		Utilities.writeStringZ(mem, address, Modules.sceNpModule.getOnlineId());
             	}
             }
+
             int sceNpService_7EF4312E = NIDMapper.getInstance().overwrittenNidToAddress(0x7EF4312E);
             if (sceNpService_7EF4312E != 0) {
             	int subAddress = (mem.read32(sceNpService_7EF4312E + 0x78) & 0x3FFFFFF) << 2;
@@ -2285,8 +2287,20 @@ public class sceUtility extends HLEModule {
             		SysMemInfo memInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceNpService_7EF4312E", SysMemUserForUser.PSP_SMEM_Low, 100, 0);
             		mem.write32(address, memInfo.addr);
             		mem.memset(memInfo.addr, (byte) 0, 100);
-            		Utilities.writeStringZ(mem, memInfo.addr + 12, Modules.sceNpModule.onlineId);
+            		Utilities.writeStringZ(mem, memInfo.addr + 12, Modules.sceNpModule.getOnlineId());
             		Modules.SysMemForKernelModule.SysMemUserForUser_945E45DA(new TPointer(mem, memInfo.addr + 64));
+            	}
+            }
+
+            int sceNp_02CA8CAA = NIDMapper.getInstance().overwrittenNidToAddress(0x02CA8CAA);
+            if (sceNp_02CA8CAA != 0) {
+            	int address = mem.read16(sceNp_02CA8CAA + 0x8C) << 16;
+            	address += (short) mem.read16(sceNp_02CA8CAA + 0x90);
+            	if (Memory.isAddressGood(address)) {
+            		if (log.isDebugEnabled()) {
+            			log.debug(String.format("sceNp_02CA8CAA Address 0x%08X", address));
+            		}
+            		mem.write64(address, Modules.sceRtcModule.hleGetCurrentTick());
             	}
             }
 
@@ -3983,7 +3997,7 @@ public class sceUtility extends HLEModule {
         PSP_MODULE_NET_PARSEURI(0x0103),
         PSP_MODULE_NET_PARSEHTTP(0x0104),
         PSP_MODULE_NET_HTTP(0x0105),
-        PSP_MODULE_NET_SSL(0x0106),
+        PSP_MODULE_NET_SSL(0x0106, new String[] { "flash0:/kd/libssl.prx", "flash0:/kd/cert_loader.prx" }),
         PSP_MODULE_NET_UPNP(0x0107),
         PSP_MODULE_NET_HTTPSTORAGE(0x0108),
         PSP_MODULE_USB_PSPCM(0x0200),
@@ -3993,7 +4007,7 @@ public class sceUtility extends HLEModule {
         PSP_MODULE_AV_AVCODEC(0x0300),
         PSP_MODULE_AV_SASCORE(0x0301),
         PSP_MODULE_AV_ATRAC3PLUS(0x0302),
-        PSP_MODULE_AV_MPEGBASE(0x0303),
+        PSP_MODULE_AV_MPEGBASE(0x0303, "flash0:/kd/mpeg.prx"),
         PSP_MODULE_AV_MP3(0x0304),
         PSP_MODULE_AV_VAUDIO(0x0305),
         PSP_MODULE_AV_AAC(0x0306),

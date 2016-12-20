@@ -105,7 +105,7 @@ public class HLEModuleManager {
         sceAtrac3plus(Modules.sceAtrac3plusModule, new String[] { "libatrac3plus", "PSP_AV_MODULE_ATRAC3PLUS", "PSP_MODULE_AV_ATRAC3PLUS", "sceATRAC3plus_Library" }),
         sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_AV_MODULE_SASCORE", "PSP_MODULE_AV_SASCORE", "sceSAScore" } ),
         sceMpeg    (Modules.sceMpegModule,     new String[] { "mpeg", "mpeg_vsh", "mpeg_vsh370", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE", "sceMpeg_library" }),
-        sceMpegbase(Modules.sceMpegbaseModule, new String[] { "mpeg", "mpeg_vsh", "mpeg_vsh370", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE", "sceMpeg_library" }),
+        sceMpegbase(Modules.sceMpegbaseModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec" }),
         sceFont(Modules.sceFontModule, new String[] { "libfont", "sceFont_Library" }),
         scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer", "psmf_jk", "scePsmfP_library" }),
         scePsmf(Modules.scePsmfModule, new String[] { "psmf", "scePsmf_library" }),
@@ -385,10 +385,9 @@ public class HLEModuleManager {
     	int code = NIDMapper.getInstance().nidToSyscall(nid);
         if (code == -1) {
             // Allocate an arbitrary syscall code to the function
-            code = syscallCodeAllocator;
+            code = syscallCodeAllocator++;
             // Add the new code to the NIDMapper
-            NIDMapper.getInstance().addSyscallNid(nid, syscallCodeAllocator);
-            syscallCodeAllocator++;
+            NIDMapper.getInstance().addSyscallNid(nid, code);
         }
 
         return code;

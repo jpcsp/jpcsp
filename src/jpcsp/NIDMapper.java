@@ -30,6 +30,7 @@ public class NIDMapper {
 	private static Logger log = Modules.log;
     private static NIDMapper instance;
     private HashMap<Integer, Integer> nidToSyscall;
+    private HashMap<Integer, Integer> syscallToNid;
     private HashMap<String, HashMap<Integer, Integer>> moduleToNidTable;
     private Set<Integer> overwrittenSyscalls;
 
@@ -43,6 +44,7 @@ public class NIDMapper {
     public void Initialise() {
         moduleToNidTable = new HashMap<String, HashMap<Integer, Integer>>();
         nidToSyscall = new HashMap<Integer, Integer>();
+        syscallToNid = new HashMap<Integer, Integer>();
         overwrittenSyscalls = new HashSet<Integer>();
 
         for (SyscallIgnore c : SyscallIgnore.values()) {
@@ -70,13 +72,12 @@ public class NIDMapper {
     }
 
     public int syscallToNid(int code) {
-    	for (int nid : nidToSyscall.keySet()) {
-    		if (nidToSyscall.get(nid) == code) {
-    			return nid;
-    		}
+    	Integer nid = syscallToNid.get(code);
+    	if (nid == null) {
+    		return 0;
     	}
 
-    	return 0;
+    	return nid.intValue();
     }
 
     public boolean isOverwrittenSyscall(int code) {
@@ -123,6 +124,7 @@ public class NIDMapper {
      * @param code The syscall code. This must come from the unallocated set.
      * @param nid The NID the syscall will map to. */
     public void addSyscallNid(int nid, int code) {
+    	syscallToNid.put(code, nid);
         nidToSyscall.put(nid, code);
     }
 

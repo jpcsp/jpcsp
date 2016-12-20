@@ -512,14 +512,6 @@ public class ModuleMgrForUser extends HLEModule {
             sceModule.start();
             return sceModule.modid; // return the module id
         }
-        if (HLEModuleManager.getInstance().hasFlash0Module(sceModule.modname)) {
-        	if (log.isInfoEnabled()) {
-        		log.info(String.format("sceKernelStartModule - loading missing HLE module '%s' (was loaded as ELF)", sceModule.modname));
-        	}
-            HLEModuleManager.getInstance().LoadFlash0Module(sceModule.modname);
-            sceModule.start();
-            return sceModule.modid; // return the module id
-        }
 
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         int attribute = sceModule.attribute;
