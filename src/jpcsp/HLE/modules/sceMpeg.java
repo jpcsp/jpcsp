@@ -3387,7 +3387,7 @@ public class sceMpeg extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0xA11C7026, version = 150, checkInsideInterrupt = true)
-    public int sceMpegAvcDecodeMode(@CheckArgument("checkMpegHandle") int mpeg, TPointer32 modeAddr) {
+    public int sceMpegAvcDecodeMode(@CheckArgument("checkMpegHandle") int mpeg, @BufferInfo(usage=Usage.in) TPointer32 modeAddr) {
         // -1 is a default value.
         int mode = modeAddr.getValue(0);
         int pixelMode = modeAddr.getValue(4);
@@ -3970,7 +3970,6 @@ public class sceMpeg extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x11F95CF1, version = 150)
     public int sceMpegGetAvcNalAu(int mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer mp4AvcNalStructAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.out) TPointer auAddr) {
     	// Based on information found in
@@ -4082,7 +4081,7 @@ public class sceMpeg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD1CE4950, version = 150)
-    public int sceMpegAvcCscMode() {
+    public int sceMpegAvcCscMode(int mpeg, @BufferInfo(usage=Usage.in) TPointer32 modeAddr) {
         return 0;
     }
 
