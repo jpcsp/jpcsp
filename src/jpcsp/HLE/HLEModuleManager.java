@@ -190,7 +190,8 @@ public class HLEModuleManager {
         sceDNAS(Modules.sceDNASModule, new String[] { "libdnas" }),
         sceDNASCore(Modules.sceDNASCoreModule, new String[] { "libdnas_core" }),
         sceMcctrl(Modules.sceMcctrlModule, new String[] { "mcctrl" }),
-        sceNetStun(Modules.sceNetStunModule);
+        sceNetStun(Modules.sceNetStunModule),
+        sceMeMemory(Modules.sceMeMemoryModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default

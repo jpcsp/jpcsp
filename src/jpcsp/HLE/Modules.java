@@ -140,6 +140,7 @@ public class Modules {
     public static sceHttpStorage sceHttpStorageModule = new sceHttpStorage();
     public static sceVideocodec sceVideocodecModule = new sceVideocodec();
     public static sceNetStun sceNetStunModule = new sceNetStun();
+    public static sceMeMemory sceMeMemoryModule = new sceMeMemory();
 
     public static Logger log = Logger.getLogger("hle");
 
