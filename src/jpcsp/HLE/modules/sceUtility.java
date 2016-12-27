@@ -4005,7 +4005,7 @@ public class sceUtility extends HLEModule {
         PSP_MODULE_USB_CAM(0x0202),
         PSP_MODULE_USB_GPS(0x0203),
         PSP_MODULE_AV_AVCODEC(0x0300),
-        PSP_MODULE_AV_SASCORE(0x0301),
+        PSP_MODULE_AV_SASCORE(0x0301, "flash0:/kd/sc_sascore.prx"),
         PSP_MODULE_AV_ATRAC3PLUS(0x0302),
         PSP_MODULE_AV_MPEGBASE(0x0303, "flash0:/kd/mpeg.prx"),
         PSP_MODULE_AV_MP3(0x0304),
