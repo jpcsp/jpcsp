@@ -43,4 +43,10 @@ public class sceMePower extends HLEModule {
     public int sceMePowerControlAvcPower(int unknown) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x984E2608, version = 150)
+    public int sceMePower_driver_984E2608(int unknown) {
+    	return 0;
+    }
 }
