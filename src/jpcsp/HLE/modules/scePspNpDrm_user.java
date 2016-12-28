@@ -37,6 +37,7 @@ import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.SeekableDataInputVirtualFile;
 import jpcsp.HLE.VFS.crypto.EDATVirtualFile;
 import jpcsp.HLE.VFS.crypto.PGDVirtualFile;
@@ -123,7 +124,7 @@ public class scePspNpDrm_user extends HLEModule {
                 SeekableRandomFile file = new SeekableRandomFile(pcfilename, "r");
 
                 String[] name = pcfilename.split("/");
-                String fName = "";
+                String fName = name[name.length - 1];
                 for (int i = 0; i < name.length; i++) {
                     if (name[i].toUpperCase().contains("EDAT")) {
                         fName = name[i];
@@ -194,7 +195,11 @@ public class scePspNpDrm_user extends HLEModule {
 
         // Check if the DLC decryption is enabled
         if (!getDisableDLCStatus()) {
-    		PGDVirtualFile pgdFile = new EDATVirtualFile(new SeekableDataInputVirtualFile(info.readOnlyFile));
+        	IVirtualFile vFile = info.vFile;
+        	if (vFile == null && info.readOnlyFile != null) {
+        		vFile = new SeekableDataInputVirtualFile(info.readOnlyFile);
+        	}
+    		PGDVirtualFile pgdFile = new EDATVirtualFile(vFile);
     		if (pgdFile.isValid()) {
     			info.vFile = pgdFile;
     		}
