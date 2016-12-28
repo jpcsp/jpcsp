@@ -142,6 +142,7 @@ public class Modules {
     public static sceNetStun sceNetStunModule = new sceNetStun();
     public static sceMeMemory sceMeMemoryModule = new sceMeMemory();
     public static sceMeBoot sceMeBootModule = new sceMeBoot();
+    public static sceMeVideo sceMeVideoModule = new sceMeVideo();
 
     public static Logger log = Logger.getLogger("hle");
 
