@@ -80,7 +80,7 @@ public class sceVideocodec extends HLEModule {
     }
 
     @HLEFunction(nid = 0xC01EC829, version = 150)
-    public int sceVideocodecOpen(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=384, usage=Usage.inout) TPointer buffer, int type) {
+    public int sceVideocodecOpen(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
     	TPointer buffer2 = new TPointer(buffer.getMemory(), buffer.getValue32(16));
 
     	buffer.setValue32(0, 0x05100601);
@@ -109,19 +109,19 @@ public class sceVideocodec extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA2F0564E, version = 150)
-    public int sceVideocodecStop(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=384, usage=Usage.inout) TPointer buffer, int type) {
+    public int sceVideocodecStop(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
     	return 0;
     }
 
     @HLEFunction(nid = 0x17099F0A, version = 150)
-    public int sceVideocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=384, usage=Usage.inout) TPointer buffer, int type) {
+    public int sceVideocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
     	buffer.setValue32(12, buffer.getValue32(20) + 8);
 
     	return 0;
     }
 
     @HLEFunction(nid = 0x2D31F5B1, version = 150)
-    public int sceVideocodecGetEDRAM(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=384, usage=Usage.inout) TPointer buffer, int type) {
+    public int sceVideocodecGetEDRAM(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
     	int size = (buffer.getValue32(24) + 63) | 0x3F;
     	edramInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecEDRAM", SysMemUserForUser.PSP_SMEM_Low, size, 0);
     	if (edramInfo == null) {
@@ -136,7 +136,7 @@ public class sceVideocodec extends HLEModule {
     }
 
     @HLEFunction(nid = 0x4F160BF4, version = 150)
-    public int sceVideocodecReleaseEDRAM(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=384, usage=Usage.inout) TPointer buffer) {
+    public int sceVideocodecReleaseEDRAM(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer) {
     	buffer.setValue32(20, 0);
     	buffer.setValue32(92, 0);
 
@@ -149,7 +149,7 @@ public class sceVideocodec extends HLEModule {
     }
 
     @HLEFunction(nid = 0xDBA273FA, version = 150)
-    public int sceVideocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=384, usage=Usage.inout) TPointer buffer, int type) {
+    public int sceVideocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
     	int mp4Data = buffer.getValue32(36) | MemoryMap.START_RAM;
     	int mp4Size = buffer.getValue32(40);
 
@@ -320,7 +320,7 @@ public class sceVideocodec extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x26927D19, version = 150)
-    public int sceVideocodecGetVersion(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=384, usage=Usage.inout) TPointer buffer, int type) {
+    public int sceVideocodecGetVersion(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
     	return 0;
     }
 
@@ -358,7 +358,7 @@ public class sceVideocodec extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x745A7B7A, version = 150)
-    public int sceVideocodecSetMemory(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=384, usage=Usage.inout) TPointer buffer, int type) {
+    public int sceVideocodecSetMemory(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
     	return 0;
     }
 
