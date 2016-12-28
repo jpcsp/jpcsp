@@ -108,7 +108,7 @@ public class Modules {
     public static sceAdler sceAdlerModule = new sceAdler();
     public static sceSha1 sceSha1Module = new sceSha1();
     public static sceSha256 sceSha256Module = new sceSha256();
-    public static sceMeCore_driver sceMeCore_driverModule = new sceMeCore_driver();
+    public static sceMeCore sceMeCoreModule = new sceMeCore();
     public static KUBridge KUBridgeModule = new KUBridge();
     public static SysclibForKernel SysclibForKernelModule = new SysclibForKernel();
     public static semaphore semaphoreModule = new semaphore();
@@ -141,6 +141,7 @@ public class Modules {
     public static sceVideocodec sceVideocodecModule = new sceVideocodec();
     public static sceNetStun sceNetStunModule = new sceNetStun();
     public static sceMeMemory sceMeMemoryModule = new sceMeMemory();
+    public static sceMeBoot sceMeBootModule = new sceMeBoot();
 
     public static Logger log = Logger.getLogger("hle");
 
