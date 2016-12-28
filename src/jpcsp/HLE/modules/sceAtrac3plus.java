@@ -745,6 +745,7 @@ public class sceAtrac3plus extends HLEModule {
 			if (inUse) {
 				initCodec();
 			} else {
+				setCodecInitialized(false);
 				codec = null;
 			}
 		}
@@ -752,6 +753,7 @@ public class sceAtrac3plus extends HLEModule {
 		@Override
 		public void initCodec() {
 			codec = CodecFactory.getCodec(getCodecType());
+			setCodecInitialized(false);
 		}
 
         @Override

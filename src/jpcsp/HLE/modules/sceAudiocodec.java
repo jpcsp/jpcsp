@@ -339,6 +339,13 @@ public class sceAudiocodec extends HLEModule {
 		Modules.SysMemUserForUserModule.free(edramInfo);
 		edramInfo = null;
 
+		if (info != null) {
+			info.release();
+			info.setCodecInitialized(false);
+			info = null;
+		}
+		id = -1;
+
 		return 0;
 	}
 
