@@ -30,7 +30,46 @@ public class sceMeVideo extends HLEModule {
     // Called by sceVideocodecOpen
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xC441994C, version = 150)
-	public int sceMeVideo_driver_C441994C(int unknown1, TPointer unknown2) {
+	public int sceMeVideo_driver_C441994C(int type, TPointer buffer) {
+		return 0;
+	}
+
+	// Called by sceVideocodecInit
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xE8CD3C75, version = 150)
+	public int sceMeVideo_driver_E8CD3C75(int type, TPointer buffer) {
+		return 0;
+	}
+
+	// Called by sceVideocodecGetVersion (=> unknown == 3)
+	// Called by sceVideocodecSetMemory (=> unknown == 1)
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x6D68B223, version = 150)
+	public int sceMeVideo_driver_6D68B223(int type, int unknown, TPointer buffer) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x21521BE5, version = 150)
+	public int sceMeVideo_driver_21521BE5() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x4D78330C, version = 150)
+	public int sceMeVideo_driver_4D78330C() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8768915D, version = 150)
+	public int sceMeVideo_driver_8768915D() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8DD56014, version = 150)
+	public int sceMeVideo_driver_8DD56014() {
 		return 0;
 	}
 }
