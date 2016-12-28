@@ -4798,6 +4798,8 @@ public class sceUtility extends HLEModule {
     		return SceKernelErrors.ERROR_KERNEL_LIBRARY_NOT_FOUND;
     	}
 
+    	int currentThreadID = Modules.ThreadManForUserModule.getCurrentThreadID();
+
     	String[] moduleNames = getModuleNames(module);
         int result = 0;
         for (String moduleName : moduleNames) {
@@ -4815,7 +4817,12 @@ public class sceUtility extends HLEModule {
         }
 
         if (result >= 0) {
-        	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
+        	int newCurrentThreadID = Modules.ThreadManForUserModule.getCurrentThreadID();
+        	// Do not delay the current thread if a context switching has already happened,
+        	// the thread is already delayed.
+        	if (currentThreadID == newCurrentThreadID) {
+        		Modules.ThreadManForUserModule.hleKernelDelayThread(currentThreadID, ModuleMgrForUser.loadHLEModuleDelay, false);
+        	}
         }
 
         return result;
