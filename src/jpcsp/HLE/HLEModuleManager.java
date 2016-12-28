@@ -193,7 +193,8 @@ public class HLEModuleManager {
         sceMcctrl(Modules.sceMcctrlModule, new String[] { "mcctrl" }),
         sceNetStun(Modules.sceNetStunModule),
         sceMeMemory(Modules.sceMeMemoryModule),
-        sceMeVideo(Modules.sceMeVideoModule);
+        sceMeVideo(Modules.sceMeVideoModule),
+        sceMeAudio(Modules.sceMeAudioModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default

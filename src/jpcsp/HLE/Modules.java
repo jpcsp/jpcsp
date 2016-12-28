@@ -143,6 +143,7 @@ public class Modules {
     public static sceMeMemory sceMeMemoryModule = new sceMeMemory();
     public static sceMeBoot sceMeBootModule = new sceMeBoot();
     public static sceMeVideo sceMeVideoModule = new sceMeVideo();
+    public static sceMeAudio sceMeAudioModule = new sceMeAudio();
 
     public static Logger log = Logger.getLogger("hle");
 
