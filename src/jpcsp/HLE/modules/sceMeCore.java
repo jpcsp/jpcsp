@@ -68,4 +68,10 @@ public class sceMeCore extends HLEModule {
 		}
 		return 0;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x905A7500, version = 150)
+	public int sceMeCore_driver_905A7500() {
+		return 0;
+	}
 }
