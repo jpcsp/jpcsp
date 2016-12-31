@@ -517,38 +517,59 @@ public class scePower extends HLEModule {
         return (float) pllClock;
     }
 
-    @HLELogging(level="info")
     @HLEFunction(nid = 0x737486F2, version = 150)
     public int scePowerSetClockFrequency(int pllClock, int cpuClock, int busClock) {
-        this.pllClock = pllClock;
+        if (cpuClock == 0 || cpuClock > 333) {
+        	log.warn(String.format("scePowerSetClockFrequency invalid frequency pllClock %d cpuClock %d busClock %d",pllClock,cpuClock,busClock));
+        	return SceKernelErrors.ERROR_INVALID_VALUE;
+        }
+
+        log.info(String.format("scePowerSetClockFrequency pllClock %d cpuClock %d busClock %d",pllClock,cpuClock,busClock));
         this.cpuClock = cpuClock;
         this.busClock = busClock;
+        if (this.pllClock != pllClock) {
+        	this.pllClock = pllClock;
 
-        Modules.ThreadManForUserModule.hleKernelDelayThread(150000, false);
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(150000, false);
+        }
         return 0;
     }
 
-    @HLELogging(level="info")
     @HLEFunction(nid = 0xEBD177D6, version = 150)
     public int scePower_EBD177D6(int pllClock, int cpuClock, int busClock) {
         // Identical to scePowerSetClockFrequency.
-        this.pllClock = pllClock;
+        if (cpuClock == 0 || cpuClock > 333) {
+        	log.warn(String.format("scePower_EBD177D6 invalid frequency pllClock %d cpuClock %d busClock %d",pllClock,cpuClock,busClock));
+        	return SceKernelErrors.ERROR_INVALID_VALUE;
+        }
+
+        log.info(String.format("scePower_EBD177D6 pllClock %d cpuClock %d busClock %d",pllClock,cpuClock,busClock));
         this.cpuClock = cpuClock;
         this.busClock = busClock;
+        if (this.pllClock != pllClock) {
+        	this.pllClock = pllClock;
 
-        Modules.ThreadManForUserModule.hleKernelDelayThread(150000, false);
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(150000, false);
+        }
         return 0;
     }
 
-    @HLELogging(level="info")
     @HLEFunction(nid = 0x469989AD, version = 630)
     public int scePower_469989AD(int pllClock, int cpuClock, int busClock) {
         // Identical to scePowerSetClockFrequency.
-        this.pllClock = pllClock;
+        if (cpuClock == 0 || cpuClock > 333) {
+        	log.warn(String.format("scePower_469989AD invalid frequency pllClock %d cpuClock %d busClock %d",pllClock,cpuClock,busClock));
+        	return SceKernelErrors.ERROR_INVALID_VALUE;
+        }
+
+        log.info(String.format("scePower_469989AD pllClock %d cpuClock %d busClock %d",pllClock,cpuClock,busClock));
         this.cpuClock = cpuClock;
         this.busClock = busClock;
+        if (this.pllClock != pllClock) {
+        	this.pllClock = pllClock;
 
-        Modules.ThreadManForUserModule.hleKernelDelayThread(150000, false);
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(150000, false);
+        }
         return 0;
     }
 
