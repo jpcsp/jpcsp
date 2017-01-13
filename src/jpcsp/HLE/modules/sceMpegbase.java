@@ -49,6 +49,7 @@ import jpcsp.util.Utilities;
 
 public class sceMpegbase extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMpegbase");
+	private int count;
 
 	private static void read(int addr, int length, int[] buffer, int offset) {
 		addr |= MemoryMap.START_RAM;
@@ -142,6 +143,10 @@ public class sceMpegbase extends HLEModule {
 	        }
 		}
 		releaseIntBuffer(abgr);
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("hleMpegBaseCscAvcRange.%d bufferRGB:%s", count++, Utilities.getMemoryDump(destAddr + rangeY * bufferWidth * 4, rangeHeight * bufferWidth * 4)));
+		}
 
 		return 0;
     }
@@ -306,7 +311,10 @@ public class sceMpegbase extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x492B5E4B, version = 150)
     public int sceMpegBaseCscInit(int unknown) {
-        return 0;
+    	// sceMpegBaseCscAvc is decoding with no alpha
+    	H264Utils.setAlpha(0x00);
+
+    	return 0;
     }
 
     @HLEFunction(nid = 0x91929A21, version = 150)
@@ -351,7 +359,7 @@ public class sceMpegbase extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xAC9E717E, version = 150)
-    public int sceMpegbase_AC9E717E() {
+    public int sceMpegbase_AC9E717E(int unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=22, usage=Usage.in) TPointer unknown2) {
         return 0;
     }
 }
