@@ -45,6 +45,10 @@ public abstract class VSMXBaseObject {
 		return this;
 	}
 
+	public VSMXBaseObject getValueWithArguments(int numberOfArguments) {
+		return getValue();
+	}
+
 	public float getFloatValue() {
 		return 0f;
 	}

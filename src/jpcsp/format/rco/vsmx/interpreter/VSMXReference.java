@@ -53,13 +53,17 @@ public class VSMXReference extends VSMXBaseObject {
 	}
 
 	protected VSMXBaseObject getRef() {
+		return getRef(0);
+	}
+
+	protected VSMXBaseObject getRef(int numberOfArguments) {
 		if (refProperty == null) {
 			return refObject.getPropertyValue(refIndex);
 		}
 
 		if (!refObject.hasPropertyValue(refProperty) && refObject instanceof VSMXNativeObject) {
 			VSMXNativeObject nativeObject = (VSMXNativeObject) refObject;
-			INativeFunction nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, refProperty, 0);
+			INativeFunction nativeFunction = NativeFunctionFactory.getInstance().getNativeFunction(nativeObject, refProperty, numberOfArguments);
 			if (nativeFunction != null) {
 				return new VSMXNativeFunction(interpreter, nativeFunction);
 			}
@@ -71,6 +75,11 @@ public class VSMXReference extends VSMXBaseObject {
 	@Override
 	public VSMXBaseObject getValue() {
 		return getRef();
+	}
+
+	@Override
+	public VSMXBaseObject getValueWithArguments(int numberOfArguments) {
+		return getRef(numberOfArguments);
 	}
 
 	@Override

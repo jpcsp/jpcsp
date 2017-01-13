@@ -467,7 +467,7 @@ public class VSMXInterpreter {
 				break;
 			case VSMXCode.VID_CALL_FUNC:
 				arguments = popValues(code.value);
-				o = stack.pop().getValue();
+				o = stack.pop().getValueWithArguments(code.value);
 				if (o instanceof VSMXFunction) {
 					VSMXFunction function = (VSMXFunction) o;
 
@@ -479,7 +479,7 @@ public class VSMXInterpreter {
 				break;
 			case VSMXCode.VID_CALL_METHOD:
 				arguments = popValues(code.value);
-				o = stack.pop().getValue();
+				o = stack.pop().getValueWithArguments(code.value);
 				if (o instanceof VSMXMethod) {
 					VSMXMethod method = (VSMXMethod) o;
 					VSMXFunction function = method.getFunction(code.value);

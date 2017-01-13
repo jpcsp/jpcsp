@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 import jpcsp.format.rco.vsmx.VSMX;
 import jpcsp.format.rco.vsmx.interpreter.VSMXArray;
 import jpcsp.format.rco.vsmx.interpreter.VSMXBaseObject;
+import jpcsp.format.rco.vsmx.interpreter.VSMXBoolean;
 import jpcsp.format.rco.vsmx.interpreter.VSMXInterpreter;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNativeObject;
 import jpcsp.format.rco.vsmx.interpreter.VSMXNumber;
@@ -120,5 +121,15 @@ public class GlobalVariables extends BaseNativeObject {
 		}
 
 		return new VSMXNumber(object.getInterpreter(), value.getIntValue());
+	}
+
+	public VSMXBaseObject isNaN(VSMXBaseObject object, VSMXBaseObject value) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("isNaN: %s", value));
+		}
+
+		boolean isNaN = Float.isNaN(value.getFloatValue());
+
+		return VSMXBoolean.getValue(isNaN);
 	}
 }

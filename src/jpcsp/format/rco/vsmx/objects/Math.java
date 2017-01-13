@@ -58,4 +58,8 @@ public class Math extends BaseNativeObject {
 	public VSMXBaseObject floor(VSMXBaseObject object, VSMXBaseObject value) {
 		return new VSMXNumber(interpreter, (float) java.lang.Math.floor(value.getFloatValue()));
 	}
+
+	public VSMXBaseObject abs(VSMXBaseObject object, VSMXBaseObject value) {
+		return new VSMXNumber(interpreter, (float) java.lang.Math.abs(value.getFloatValue()));
+	}
 }
