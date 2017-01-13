@@ -49,6 +49,14 @@ int (* referMutex)(SceUID, SceKernelMutexInfo *) = NULL;
 SceKernelMutexInfo mutexInfo;
 #endif
 
+#if DUMP_VIDEOCODEC_FRAMES
+int videocodecFrame = 0;
+#endif
+
+#if DUMP_sceMpegBaseCscAvc_CALLS
+int sceMpegBaseCscAvcCall = 0;
+#endif
+
 int (* ioOpen)(const char *s, int flags, int permissions) = userIoOpen;
 int (* ioWrite)(SceUID id, const void *data, int size) = userIoWrite;
 int (* ioClose)(SceUID id) = userIoClose;
@@ -338,6 +346,13 @@ void printLogSS(const char *s1, const char *s2, const char *s3, const char *s4, 
 	writeLog(buffer, s - buffer);
 }
 
+char *flushBuffer(char *buffer, char *s) {
+	*s++ = '\n';
+	writeLog(buffer, s - buffer);
+
+	return buffer;
+}
+
 void printLogMem(const char *s1, int addr, int length) {
 	int i, j;
 	int lineStart;
@@ -360,9 +375,8 @@ void printLogMem(const char *s1, int addr, int length) {
 						}
 						*s++ = c;
 					}
-					s = append(s, "<\n");
-					writeLog(buffer, s - buffer);
-					s = buffer;
+					*s++ = '<';
+					s = flushBuffer(buffer, s);
 					lineStart = i;
 				} else {
 					s = append(s, " ");
@@ -371,8 +385,7 @@ void printLogMem(const char *s1, int addr, int length) {
 			s = appendHexNoPrefix(s, _lb(addr + i), 2);
 		}
 	}
-	s = append(s, "\n");
-	writeLog(buffer, s - buffer);
+	flushBuffer(buffer, s);
 }
 
 #ifdef DEBUG_UTILITY_SAVEDATA
@@ -467,9 +480,7 @@ void utilityOskLog(char *buffer, const SyscallInfo *syscallInfo, u32 param) {
 		s = append(s, ", result=");
 		s = appendHex(s, _lw((int) utilityOskParams + 28), 8);
 	}
-	s = append(s, "\n");
-	writeLog(buffer, s - buffer);
-	s = buffer;
+	s = flushBuffer(buffer, s);
 
 	printLogMem("Params ", (int) utilityOskParams, _lw((int) utilityOskParams + 0));
 }
@@ -503,8 +514,7 @@ void utilityMsgLog(char *buffer, const SyscallInfo *syscallInfo, u32 param) {
 		s = append(s, ", result=");
 		s = appendHex(s, _lw((int) utilityMsgParams + 28), 8);
 	}
-	s = append(s, "\n");
-	writeLog(buffer, s - buffer);
+	flushBuffer(buffer, s);
 
 #if 0
 	s = buffer;
@@ -541,9 +551,8 @@ char *syscallLogMem(char *buffer, char *s, int addr, int length) {
 						}
 						*s++ = c;
 					}
-					s = append(s, "<\n");
-					writeLog(buffer, s - buffer);
-					s = buffer;
+	 				*s++ = '<';
+					s = flushBuffer(buffer, s);
 					lineStart = i;
 				} else {
 					*s++ = ' ';
@@ -587,11 +596,14 @@ void logStackUsage(const SyscallInfo *syscallInfo) {
 	printLogSH("Stack usage ", syscallInfo->name, ": ", stackUsage, "\n");
 }
 
-void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra, u32 sp, u32 gp) {
-	char buffer[200];
+
+void syscallLog(const SyscallInfo *syscallInfo, int inOut, const u32 *parameters, u64 result, u32 ra, u32 sp, u32 gp) {
+	char buffer[250];
 	char *s = buffer;
 	int i;
 	int length;
+	int videocodec = 0;
+	int videocodecType = -1;
 
 	// Don't log our own sceIoWrite and sceIoClose
 	if ((syscallInfo->nid == NID_sceIoWrite || IS_sceIoClose_NID(syscallInfo->nid)) && parameters[0] == commonInfo->logFd) {
@@ -636,6 +648,12 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 		*s++ = ' ';
 		*s++ = '-';
 		*s++ = ' ';
+	}
+
+	if (inOut < 0) {
+		s = append(s, "IN  ");
+	} else if (inOut > 0) {
+		s = append(s, "OUT ");
 	}
 
 	if (logRa) {
@@ -703,21 +721,164 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 				s = syscallLogMem(buffer, s, parameter, 24);
 				break;
 			case TYPE_MP4_TRACK:
-				s = syscallLogMem(buffer, s, parameter, 240);
+				s = syscallLogMem(buffer, s, parameter, 384);
+				break;
+			case TYPE_SOCK_ADDR_INTERNET:
+				// the address is not 32-bit aligned
+				s = appendHex(s, parameter, 8);
+				if (parameter != 0) {
+					*s++ = '(';
+					s = append(s, "len=");
+					s = appendInt(s, _lb(parameter), 0);
+					s = append(s, ", family=");
+					s = appendInt(s, _lb(parameter + 1), 0);
+					s = append(s, ", port=");
+					s = appendInt(s, (_lb(parameter + 2) << 8) | _lb(parameter + 3), 0);
+					s = append(s, ", addr=");
+					s = appendInt(s, _lb(parameter + 4), 0);
+					s = append(s, ".");
+					s = appendInt(s, _lb(parameter + 5), 0);
+					s = append(s, ".");
+					s = appendInt(s, _lb(parameter + 6), 0);
+					s = append(s, ".");
+					s = appendInt(s, _lb(parameter + 7), 0);
+					*s++ = ')';
+				}
+#if 0
+// sceNetInetConnect on port 80 ?
+if (syscallInfo->nid == 0x410B34AA && _lb(parameter + 2) == 0 && _lb(parameter + 3) == 80) {
+	_sb(192, parameter + 4);
+	_sb(168, parameter + 5);
+	_sb(  1, parameter + 6);
+	_sb(  3, parameter + 7);
+}
+#endif
+				break;
+			case TYPE_BUFFER_AND_LENGTH:
+				if (i + 1 < syscallInfo->numParams) {
+					s = syscallLogMem(buffer, s, parameter, parameters[i + 1]);
+				}
+				break;
+			case TYPE_VIDEOCODEC:
+				s = appendHex(s, parameter, 8);
+				videocodec = parameter;
+				if (i + 1 < syscallInfo->numParams) {
+					videocodecType = parameters[i + 1];
+				}
 				break;
 		}
 	}
-	*s++ = ' ';
-	*s++ = '=';
-	*s++ = ' ';
-	s = appendHex(s, (int) result, 0);
+
+	// Do not log the result at "IN" when logging before and after the syscall
+	if (inOut >= 0) {
+		*s++ = ' ';
+		*s++ = '=';
+		*s++ = ' ';
+		s = appendHex(s, (int) result, 0);
+	}
 
 	#if DEBUG_MUTEX
 	s = mutexLog(s, syscallInfo, parameters, result);
 	#endif
 
-	*s++ = '\n';
-	writeLog(buffer, s - buffer);
+	s = flushBuffer(buffer, s);
+
+#if DUMP_sceMpegBaseCscAvc_CALLS
+	if (syscallInfo->nid == NID_sceMpegBaseCscAvc) {
+		char *fileName = buffer;
+		s = append(buffer, "ms0:/tmp/sceMpegBaseCscAvc.");
+		s = appendInt(s, sceMpegBaseCscAvcCall, 0);
+		SceUID fd = ioOpen(fileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+		if (fd >= 0) {
+			int bufferWidth = parameters[2];
+			int height = _lw(parameters[3] + 0);
+			int size = (bufferWidth * (height << 4)) << 2;
+			int addr = parameters[0] | 0x40000000; // Uncached video memory
+			while (size > 0) {
+				int length = commonInfo->maxLogBufferLength;
+				if (length > size) {
+					length = size;
+				}
+				memcpy(commonInfo->logBuffer, (void *) addr, length);
+				length = ioWrite(fd, commonInfo->logBuffer, length);
+				if (length <= 0) {
+					break;
+				}
+				size -= length;
+				addr += length;
+			}
+			ioClose(fd);
+		}
+		s = flushBuffer(buffer, s);
+		sceMpegBaseCscAvcCall++;
+	}
+#endif
+
+	if (videocodec != 0) {
+		s = syscallLogMem(buffer, s, videocodec, 96);
+		s = flushBuffer(buffer, s);
+
+		int buffer2 = _lw(videocodec + 16);
+		if (buffer2 != 0) {
+			s = append(s, "Buffer2 Offset 16 ");
+			s = syscallLogMem(buffer, s, buffer2, 40);
+			s = flushBuffer(buffer, s);
+		}
+
+		if (videocodecType == 0) {
+			int yuv = _lw(videocodec + 44);
+			if (yuv != 0) {
+				s = append(s, "Yuv Offset 44 ");
+				s = syscallLogMem(buffer, s, yuv, 44);
+				s = flushBuffer(buffer, s);
+
+#if DUMP_VIDEOCODEC_FRAMES
+				// Has video frame?
+				if (syscallInfo->nid == NID_sceVideocodecDecode && _lw(yuv + 32)) {
+					char *fileName = buffer;
+					s = append(buffer, "ms0:/tmp/videocodecFrame.");
+					s = appendInt(s, videocodecFrame, 0);
+					SceUID fd = ioOpen(fileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+					if (fd >= 0) {
+						int size = _lw(yuv + 28) + (_lw(yuv + 28) - _lw(yuv + 20)) - _lw(yuv + 0);
+						ioWrite(fd, (void *) (_lw(yuv + 0) | 0x80000000), size);
+						ioClose(fd);
+					}
+					s = buffer;
+					videocodecFrame++;
+				}
+#endif
+
+				int buffer1 = _lw(yuv + 36);
+				if (buffer1 != 0) {
+					s = append(s, "Yuv.buffer1 Offset 36 ");
+					s = syscallLogMem(buffer, s, buffer1, 36);
+					s = flushBuffer(buffer, s);
+				}
+
+				int buffer2 = _lw(yuv + 40);
+				if (buffer2 != 0) {
+					s = append(s, "Yuv.buffer2 Offset 40 ");
+					s = syscallLogMem(buffer, s, buffer2, 32);
+					s = flushBuffer(buffer, s);
+				}
+			}
+
+			int buffer3 = _lw(videocodec + 48);
+			if (buffer3 != 0) {
+				s = append(s, "Buffer3 Offset 48 ");
+				s = syscallLogMem(buffer, s, buffer3, 40);
+				s = flushBuffer(buffer, s);
+			}
+
+			int decodeSEI = _lw(videocodec + 80);
+			if (decodeSEI != 0) {
+				s = append(s, "DecodeSEI Offset 80 ");
+				s = syscallLogMem(buffer, s, decodeSEI, 36);
+				s = flushBuffer(buffer, s);
+			}
+		}
+	}
 
 	#if DEBUG_UTILITY_SAVEDATA
 	utilitySavedataLog(buffer, syscallInfo, parameters[0]);

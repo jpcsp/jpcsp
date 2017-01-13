@@ -172,6 +172,9 @@ u32 parseParamTypes(const char *s, u32 *pflags) {
 				case 'e': paramType = TYPE_MPEG_EP; break;
 				case 'a': paramType = TYPE_MPEG_AU; break;
 				case 't': paramType = TYPE_MP4_TRACK; break;
+				case 'I': paramType = TYPE_SOCK_ADDR_INTERNET; break;
+				case 'B': paramType = TYPE_BUFFER_AND_LENGTH; break;
+				case 'V': paramType = TYPE_VIDEOCODEC; break;
 			}
 			paramTypes |= paramType << i;
 			i += 4;
@@ -239,10 +242,11 @@ void mutexPreLog(const SyscallInfo *syscallInfo, const u32 *parameters) {
 }
 #endif
 
-u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra, u32 sp, u32 gp) {
+u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra, u32 sp, u32 gp, u32 dummy0, u32 dummy4, u32 dummy8, u32 realRa) {
 	u32 parameters[8];
 	int k1;
 	u64 result;
+	int inOut = 0;
 
 	parameters[0] = a0;
 	parameters[1] = a1;
@@ -266,9 +270,15 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	#endif
 
 	if (syscallInfo->flags & FLAG_LOG_BEFORE_CALL) {
+		if (syscallInfo->flags & FLAG_LOG_AFTER_CALL) {
+			// Display "IN" and "OUT" in front of syscall
+			// when it is logged both before and after.
+			inOut = 1;
+		}
+
 		commonInfo->inWriteLog++;
 		k1 = pspSdkSetK1(0);
-		syscallLog(syscallInfo, parameters, 0, ra, sp, gp);
+		syscallLog(syscallInfo, -inOut, parameters, 0, realRa, sp, gp);
 		pspSdkSetK1(k1);
 		commonInfo->inWriteLog--;
 	}
@@ -278,7 +288,7 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 
 	if (syscallInfo->flags & FLAG_LOG_AFTER_CALL) {
 		k1 = pspSdkSetK1(0);
-		syscallLog(syscallInfo, parameters, result, ra, sp, gp);
+		syscallLog(syscallInfo, inOut, parameters, result, realRa, sp, gp);
 		pspSdkSetK1(k1);
 	}
 
@@ -796,7 +806,9 @@ int module_start(SceSize args, void * argp) {
 	printLog("JpcspTrace - module_start\n");
 
 	int initKeyConfig = sceKernelInitKeyConfig();
-	if (initKeyConfig != PSP_INIT_KEYCONFIG_GAME) {
+	if (initKeyConfig == PSP_INIT_KEYCONFIG_VSH) {
+		printLog("JpcspTrace enabled for VSH\n");
+	} else if (initKeyConfig != PSP_INIT_KEYCONFIG_GAME) {
 		printLogH("sceKernelInitKeyConfig returned ", initKeyConfig, "\n");
 		return 1;
 	}

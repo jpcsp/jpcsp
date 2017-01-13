@@ -29,6 +29,17 @@ PSP_MODULE_INFO("JpcspTraceUser", PSP_MODULE_USER, 1, 0);
 u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra, u32 sp, u32 gp) {
 	u32 parameters[8];
 	u64 result;
+	int inOut = 0;
+
+#if 0
+if (syscallInfo->nid == 0x8EEFD953 && a3 == 443) {
+  a2 = (u32) "http";
+  a3 = 80;
+} else if (syscallInfo->nid == 0xCDF8ECB9 && strncmp((char *) a1, "https", 5) == 0) {
+  // Replace https with http
+  strcpy((char *) a1 + 4, (char *) a1 + 5);
+}
+#endif
 
 	parameters[0] = a0;
 	parameters[1] = a1;
@@ -46,7 +57,13 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	#endif
 
 	if (syscallInfo->flags & FLAG_LOG_BEFORE_CALL) {
-		syscallLog(syscallInfo, parameters, 0, ra, sp, gp);
+                if (syscallInfo->flags & FLAG_LOG_AFTER_CALL) {
+                        // Display "IN" and "OUT" in front of syscall
+                        // when it is logged both before and after.
+                        inOut = 1;
+                }
+
+		syscallLog(syscallInfo, -inOut, parameters, 0, ra, sp, gp);
 	}
 
 	if (syscallInfo->flags & FLAG_LOG_STACK_USAGE) {
@@ -61,7 +78,7 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	}
 
 	if (syscallInfo->flags & FLAG_LOG_AFTER_CALL) {
-		syscallLog(syscallInfo, parameters, result, ra, sp, gp);
+		syscallLog(syscallInfo, inOut, parameters, result, ra, sp, gp);
 	}
 
 	return result;

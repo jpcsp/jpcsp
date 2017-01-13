@@ -87,6 +87,10 @@ The format of the file JpcspTrace.config is the following:
   - e: log the parameter value as a Mpeg EP structure (16 bytes long)
   - a: log the parameter value as a SceMpegAu structure (24 bytes long, see sceMpeg)
   - t: log the parameter value as a SceMp4TrackSampleBuf structure (240 bytes long, see sceMp4)
+  - I: log the parameter value as a pspNetSockAddrInternet structure (8 bytes long, see sceNetInet)
+  - B: log the parameter value as a pointer to a memory buffer having its length
+       stored into the next parameter value
+  - V: log the parameter value as a video codec structure as used in sceVideocodec
   - !: this flag is not a parameter type but indicates that the syscall parameters have
        to be logged before and after the syscall (i.e. twice). By default, the parameters
        are only logged after the syscall.
