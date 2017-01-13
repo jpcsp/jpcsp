@@ -4036,7 +4036,8 @@ public class sceMpeg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x6F314410, version = 150)
-    public int sceMpegAvcDecodeGetDecodeSEI() {
+    public int sceMpegAvcDecodeGetDecodeSEI(int mpeg, @BufferInfo(usage=Usage.out) TPointer32 decodeSEIAddr) {
+    	decodeSEIAddr.setValue(0);
         return 0;
     }
 
