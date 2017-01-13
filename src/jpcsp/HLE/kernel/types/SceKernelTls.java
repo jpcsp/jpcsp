@@ -109,12 +109,14 @@ public class SceKernelTls {
 			}
 		}
 
+		boolean needsClear = false;
 		if (block < 0) {
 			// Return the first free block
 			for (int i = 0; i < threadIds.length; i++) {
 				if (threadIds[i] == 0) {
 					block = i;
 					threadIds[block] = currentThreadId;
+					needsClear = true;
 					break;
 				}
 			}
@@ -124,6 +126,12 @@ public class SceKernelTls {
 			}
 		}
 
-		return sysMemInfo.addr + block * alignedBlockSize;
+		int address = sysMemInfo.addr + block * alignedBlockSize;
+
+		if (needsClear) {
+			Memory.getInstance().memset(address, (byte) 0, blockSize);
+		}
+
+		return address;
 	}
 }
