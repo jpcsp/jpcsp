@@ -3733,6 +3733,26 @@ public class IoFileMgrForUser extends HLEModule {
         boolean needDelayIoOperation = true;
 
         switch (cmd) {
+        	// Check disk region
+        	case 0x01E18030:
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("sceIoDevctl 0x%08X check disk region", cmd));
+        		}
+        		if (inlen >= 16) {
+        			int unknown1 = mem.read32(indata_addr + 0);
+        			int unknown2 = mem.read32(indata_addr + 4);
+        			int unknown3 = mem.read32(indata_addr + 8);
+        			int unknown4 = mem.read32(indata_addr + 12);
+            		if (log.isDebugEnabled()) {
+            			log.debug(String.format("sceIoDevctl 0x%08X check disk region unknown1=0x%X, unknown2=0x%X, unknown3=0x%X, unknown4=0x%X", cmd, unknown1, unknown2, unknown3, unknown4));
+            		}
+            		// Return 0 if the disk region is not matching,
+            		// return 1 if the disk region is matching.
+            		result = 1;
+        		} else {
+        			result = -1;
+        		}
+        		break;
             // Get UMD disc type.
             case 0x01F20001: {
                 if (log.isDebugEnabled()) {
@@ -3746,9 +3766,34 @@ public class IoFileMgrForUser extends HLEModule {
                     // 0x80 = Cleaning disc.
                     int out;
                     if (iso == null) {
-                    	out = 0;
+                    	out = 0; // No disc
                     } else {
-                    	out = 0x10;  // Always return game disc (if present).
+                    	out = 0x10;  // Return game disc by default
+
+                    	// Retrieve the disc type from the UMD_DATA.BIN file
+                    	IVirtualFileSystem vfsIso = new UmdIsoVirtualFileSystem(iso);
+            			IVirtualFile vfsUmdData = vfsIso.ioOpen("UMD_DATA.BIN", 0, PSP_O_RDONLY);
+            			if (vfsUmdData != null) {
+            				byte buffer[] = new byte[(int) vfsUmdData.length()];
+            				int length = vfsUmdData.ioRead(buffer, 0, buffer.length);
+            				if (length > 0) {
+            					String umdData = new String(buffer);
+            					String[] umdDataParts = umdData.split("\\|");
+            					if (umdDataParts != null && umdDataParts.length >= 4) {
+            						String umdType = umdDataParts[3];
+            						if (umdType != null && umdType.length() > 0) {
+	            						switch (umdType.charAt(0)) {
+	            							case 'G': out = 0x10; break; // Game disc
+	            							case 'V': out = 0x20; break; // Video disc
+	            							default:
+	            								log.warn(String.format("Unknown disc type '%s' in UMD_DATA.BIN", umdType));
+	            								break;
+	            						}
+            						}
+            					}
+            				}
+            				vfsUmdData.ioClose();
+            			}
                     }
                     mem.write32(outdata_addr + 4, out);
                     result = 0;
