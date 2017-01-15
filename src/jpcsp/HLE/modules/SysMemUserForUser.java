@@ -222,7 +222,11 @@ public class SysMemUserForUser extends HLEModule {
 
     // Allocates to 256-byte alignment
     public SysMemInfo malloc(int partitionid, String name, int type, int size, int addr) {
-        int allocatedAddress = 0;
+    	if (freeMemoryChunks == null) {
+    		return null;
+    	}
+
+    	int allocatedAddress = 0;
         int allocatedSize = 0;
 
         if (partitionid >= 0 && partitionid < freeMemoryChunks.length && freeMemoryChunks[partitionid] != null) {

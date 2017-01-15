@@ -138,6 +138,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     // map to hold action listeners for menu entries in fullscreen mode
     private HashMap<KeyStroke, ActionListener[]> actionListenerMap;
     private boolean doUmdBuffering = false;
+    private boolean runFromVsh = false;
 
     @Override
     public DisplayMode getDisplayMode() {
@@ -1754,7 +1755,10 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 }//GEN-LAST:event_formWindowClosing
 
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
-        PauseEmu();
+		if (!runFromVsh) {
+			PauseEmu();
+		}
+
         if (Settings.getInstance().readBool("emu.umdbrowser")) {
             umdbrowser = new UmdBrowser(this, getUmdPaths(false));
             umdbrowser.setVisible(true);
@@ -1771,8 +1775,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             if (userChooseSomething(returnVal)) {
                 Settings.getInstance().writeString("gui.lastOpenedUmdFolder", fc.getSelectedFile().getParent());
                 File file = fc.getSelectedFile();
-                loadUMD(file);
-                loadAndRun();
+                loadAndRunUMD(file);
             }
         }
 }//GEN-LAST:event_openUmdActionPerformed
@@ -1865,31 +1868,48 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         return false;
     }
 
+    public void loadAndRunUMD(File file) {
+		loadUMD(file);
+
+		if (!runFromVsh) {
+    		loadAndRun();
+    	}
+    }
+
     public void loadUMD(File file) {
     	String filePath = file == null ? null : file.getPath();
         UmdIsoReader.setDoIsoBuffering(doUmdBuffering);
         Model.setModel(Settings.getInstance().readInt("emu.model"));
 
         UmdIsoReader iso = null;
+        boolean closeIso = false;
 		try {
 			iso = new UmdIsoReader(filePath);
-	        if (iso.hasFile("PSP_GAME/param.sfo")) {
-	        	loadUMDGame(file);
-	        } else if (iso.hasFile("UMD_VIDEO/param.sfo")) {
-	        	loadUMDVideo(file);
-	        } else if (iso.hasFile("UMD_AUDIO/param.sfo")) {
-	        	loadUMDAudio(file);
-	        } else {
-	        	// EBOOT.PBP contains an ELF file?
-	        	byte[] pspData = iso.readPspData();
-	        	if (pspData != null) {
-	        		loadFile(file);
-	        	}
-	        }
+			if (runFromVsh) {
+	            Modules.IoFileMgrForUserModule.setIsoReader(iso);
+	            Modules.sceUmdUserModule.setIsoReader(iso);
+
+	            Modules.sceUmdUserModule.hleUmdSwitch();
+			} else {
+				closeIso = true;
+		        if (iso.hasFile("PSP_GAME/param.sfo")) {
+		        	loadUMDGame(file);
+		        } else if (iso.hasFile("UMD_VIDEO/param.sfo")) {
+		        	loadUMDVideo(file);
+		        } else if (iso.hasFile("UMD_AUDIO/param.sfo")) {
+		        	loadUMDAudio(file);
+		        } else {
+		        	// EBOOT.PBP contains an ELF file?
+		        	byte[] pspData = iso.readPspData();
+		        	if (pspData != null) {
+		        		loadFile(file);
+		        	}
+		        }
+			}
 		} catch (IOException e) {
 			// Ignore exception
 		} finally {
-			if (iso != null) {
+			if (closeIso) {
 				try {
 					iso.close();
 				} catch (IOException e) {
@@ -2854,6 +2874,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             } else if (args[i].equals("--ProOnline")) {
                 ProOnlineNetworkAdapter.setEnabled(true);
             } else if (args[i].equals("--vsh")) {
+            	runFromVsh = true;
 	            setTitle(MetaInformation.FULL_NAME + " - VSH");
                 Modules.sceDisplayModule.setCalledFromCommandLine();
                 HTTPServer.processProxyRequestLocally = true;

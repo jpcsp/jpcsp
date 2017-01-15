@@ -727,9 +727,8 @@ public class UmdBrowser extends javax.swing.JDialog {
             setVisible(false);
             dispose();
         } else {
-            gui.loadUMD(selectedFile);
+            gui.loadAndRunUMD(selectedFile);
             dispose();
-            gui.loadAndRun();
         }
     }
 

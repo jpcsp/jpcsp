@@ -40,6 +40,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.kernel.types.pspUmdInfo;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
+import jpcsp.scheduler.Scheduler;
 
 import org.apache.log4j.Logger;
 
@@ -79,6 +80,13 @@ public class sceUmdUser extends HLEModule {
     }
 
     private static class DelayedUmdSwitch implements IAction {
+		@Override
+		public void execute() {
+			Modules.sceUmdUserModule.hleDelayedUmdSwitch();
+		}
+    }
+
+    private static class DelayedUmdRemoved implements IAction {
 		@Override
 		public void execute() {
 			Modules.sceUmdUserModule.hleDelayedUmdSwitch();
@@ -245,13 +253,23 @@ public class sceUmdUser extends HLEModule {
 	}
 
 	public void hleUmdSwitch() {
-		// First notify that the UMD has been removed
+		Scheduler scheduler = Scheduler.getInstance();
+
+		if (iso != null) {
+			// First notify that the UMD has been removed
+			scheduler.addAction(new DelayedUmdRemoved());
+
+	    	// After 100ms delay, notify that a new UMD has been inserted
+	    	long schedule = Scheduler.getNow() + 100 * 1000;
+	    	scheduler.addAction(schedule, new DelayedUmdSwitch());
+		} else {
+	    	scheduler.addAction(new DelayedUmdSwitch());
+		}
+	}
+
+	protected void hleDelayedUmdRemoved() {
 		int notifyArg = getNotificationArg(false);
     	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, notifyArg);
-
-    	// After 100ms delay, notify that a new UMD has been inserted
-    	long schedule = Emulator.getClock().microTime() + 100 * 1000;
-    	Emulator.getScheduler().addAction(schedule, new DelayedUmdSwitch());
 	}
 
 	protected void hleDelayedUmdSwitch() {
