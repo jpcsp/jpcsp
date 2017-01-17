@@ -104,4 +104,10 @@ public class LoadExecForKernel extends HLEModule {
     public int sceKernelLoadExec_F9CFCF2F(PspString filename, TPointer param) {
     	return sceKernelLoadExecVSHMs2(filename, param);
     }
+
+    @HLELogging(level="info")
+    @HLEFunction(nid = 0xD8320A28, version = 660)
+    public int sceKernelLoadExecVSHDisc_660(PspString filename, TPointer param) {
+    	return sceKernelLoadExecVSHMs2(filename, param);
+    }
 }
