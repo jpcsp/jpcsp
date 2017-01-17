@@ -214,7 +214,7 @@ public class RuntimeContext {
 
     public static int call(int address) throws Exception {
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.call address=0x%08X", address));
+			log.debug(String.format("RuntimeContext.call address=0x%08X, $ra=0x%08X", address, cpu._ra));
 		}
         int returnValue = jumpCall(address);
 
