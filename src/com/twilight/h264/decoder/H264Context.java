@@ -6555,6 +6555,7 @@ public class H264Context {
 		        case NAL_DPC:
 		        	// DebugTool.printDebugString("Decoding NAL_DPC...\n");
 
+		        	hx.inter_gb = new GetBitContext();
 		        	hx.inter_gb.init_get_bits(ptr_base, ptr_offset, bit_length);
 		            hx.inter_gb_ptr= hx.inter_gb;
 	
