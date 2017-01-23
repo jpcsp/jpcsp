@@ -16,16 +16,37 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode;
 
+import jpcsp.Emulator;
+import jpcsp.Memory;
+
 /**
  * @author gid15
  *
  */
 public class Strcmp extends AbstractNativeCodeSequence {
 	static public void call() {
+		if (!Memory.isAddressGood(getGprA0())) {
+			getMemory().invalidMemoryAddress(getGprA0(), "strcmp", Emulator.EMU_STATUS_MEM_READ);
+			return;
+		}
+		if (!Memory.isAddressGood(getGprA1())) {
+			getMemory().invalidMemoryAddress(getGprA1(), "strcmp", Emulator.EMU_STATUS_MEM_READ);
+			return;
+		}
+
 		setGprV0(strcmp(getGprA0(), getGprA1()));
 	}
 
 	static public void call(int valueEqual, int valueLower, int valueHigher) {
+		if (!Memory.isAddressGood(getGprA0())) {
+			getMemory().invalidMemoryAddress(getGprA0(), "strcmp", Emulator.EMU_STATUS_MEM_READ);
+			return;
+		}
+		if (!Memory.isAddressGood(getGprA1())) {
+			getMemory().invalidMemoryAddress(getGprA1(), "strcmp", Emulator.EMU_STATUS_MEM_READ);
+			return;
+		}
+
 		int cmp = strcmp(getGprA0(), getGprA1());
 		if (cmp < 0) {
 			setGprV0(valueLower);
