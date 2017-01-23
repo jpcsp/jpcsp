@@ -95,12 +95,12 @@ public class H264Decoder implements IVideoCodec {
 
 	@Override
 	public int getImageWidth() {
-		return picture.imageWidthWOEdge;
+		return context.width;
 	}
 
 	@Override
 	public int getImageHeight() {
-		return picture.imageHeightWOEdge;
+		return context.height;
 	}
 
 	@Override

@@ -49,10 +49,12 @@ import jpcsp.util.Utilities;
 
 public class sceMpegbase extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMpegbase");
-	private int count;
 
 	private static void read(int addr, int length, int[] buffer, int offset) {
 		addr |= MemoryMap.START_RAM;
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("read addr=0x%08X, length=0x%X", addr, length));
+		}
 
     	// Optimize the most common case
         if (memoryInt != null) {
@@ -74,6 +76,9 @@ public class sceMpegbase extends HLEModule {
     }
 
 	private static void copy(Memory mem, int dst, int src, int length) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("copy dst=0x%08X, src=0x%08X, length=0x%X", dst, src, length));
+		}
 		mem.memcpy(dst | MemoryMap.START_RAM, src | MemoryMap.START_RAM, length);
 	}
 
@@ -85,6 +90,7 @@ public class sceMpegbase extends HLEModule {
     	int width = mp4AvcCscStruct.width << 4;
     	int height = mp4AvcCscStruct.height << 4;
 
+    	// It seems that the pixel output format is always ABGR8888.
     	int videoPixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 		int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         int destAddr = bufferRGB.getAddress();
@@ -94,18 +100,86 @@ public class sceMpegbase extends HLEModule {
         int length = width * height;
         int length2 = width2 * height2;
 
-        // Read the YCbCr image
+        // Read the YCbCr image.
+        // See the description of the format used by the PSP in sceVideocodecDecode().
         int[] luma = getIntBuffer(length);
         int[] cb = getIntBuffer(length2);
         int[] cr = getIntBuffer(length2);
-        read(mp4AvcCscStruct.buffer0, length / 4, luma, 0);
-        read(mp4AvcCscStruct.buffer1, length / 4, luma, 1 * length / 4);
-        read(mp4AvcCscStruct.buffer2, length / 4, luma, 2 * length / 4);
-        read(mp4AvcCscStruct.buffer3, length / 4, luma, 3 * length / 4);
-        read(mp4AvcCscStruct.buffer4, length2 / 2, cr, 0);
-        read(mp4AvcCscStruct.buffer5, length2 / 2, cr, length2 / 2);
-        read(mp4AvcCscStruct.buffer6, length2 / 2, cb, 0);
-        read(mp4AvcCscStruct.buffer7, length2 / 2, cb, length2 / 2);
+		int sizeY1 = ((width + 16) >> 5) * (height >> 1) * 16;
+		int sizeY2 = (width >> 5) * (height >> 1) * 16;
+		int sizeCrCb1 = sizeY1 >> 1;
+		int sizeCrCb2 = sizeY1 >> 1;
+		int[] bufferY1 = getIntBuffer(sizeY1);
+		int[] bufferY2 = getIntBuffer(sizeY2);
+		int[] bufferCrCb1 = getIntBuffer(sizeCrCb1);
+		int[] bufferCrCb2 = getIntBuffer(sizeCrCb2);
+
+		read(mp4AvcCscStruct.buffer0, sizeY1, bufferY1, 0);
+		read(mp4AvcCscStruct.buffer1, sizeY2, bufferY2, 0);
+		read(mp4AvcCscStruct.buffer4, sizeCrCb1, bufferCrCb1, 0);
+		read(mp4AvcCscStruct.buffer5, sizeCrCb2, bufferCrCb2, 0);
+		for (int x = 0, j = 0; x < width; x += 32) {
+			for (int y = 0, i = x; y < height; y += 2, i += 2 * width, j += 16) {
+				System.arraycopy(bufferY1, j, luma, i, 16);
+			}
+		}
+		for (int x = 16, j = 0; x < width; x += 32) {
+			for (int y = 0, i = x; y < height; y += 2, i += 2 * width, j += 16) {
+				System.arraycopy(bufferY2, j, luma, i, 16);
+			}
+		}
+		for (int x = 0, j = 0; x < width2; x += 16) {
+			for (int y = 0; y < height2; y += 2) {
+				for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
+					cb[i] = bufferCrCb1[j++];
+					cr[i] = bufferCrCb1[j++];
+				}
+			}
+		}
+		for (int x = 0, j = 0; x < width2; x += 16) {
+			for (int y = 1; y < height2; y += 2) {
+				for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
+					cb[i] = bufferCrCb2[j++];
+					cr[i] = bufferCrCb2[j++];
+				}
+			}
+		}
+
+		read(mp4AvcCscStruct.buffer2, sizeY1, bufferY1, 0);
+		read(mp4AvcCscStruct.buffer3, sizeY2, bufferY2, 0);
+		read(mp4AvcCscStruct.buffer6, sizeCrCb1, bufferCrCb1, 0);
+		read(mp4AvcCscStruct.buffer7, sizeCrCb2, bufferCrCb2, 0);
+		for (int x = 0, j = 0; x < width; x += 32) {
+			for (int y = 1, i = x + width; y < height; y += 2, i += 2 * width, j += 16) {
+				System.arraycopy(bufferY1, j, luma, i, 16);
+			}
+		}
+		for (int x = 16, j = 0; x < width; x += 32) {
+			for (int y = 1, i = x + width; y < height; y += 2, i += 2 * width, j += 16) {
+				System.arraycopy(bufferY2, j, luma, i, 16);
+			}
+		}
+		for (int x = 8, j = 0; x < width2; x += 16) {
+			for (int y = 0; y < height2; y += 2) {
+				for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
+					cb[i] = bufferCrCb1[j++];
+					cr[i] = bufferCrCb1[j++];
+				}
+			}
+		}
+		for (int x = 8, j = 0; x < width2; x += 16) {
+			for (int y = 1; y < height2; y += 2) {
+				for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
+					cb[i] = bufferCrCb2[j++];
+					cr[i] = bufferCrCb2[j++];
+				}
+			}
+		}
+
+        releaseIntBuffer(bufferY1);
+        releaseIntBuffer(bufferY2);
+        releaseIntBuffer(bufferCrCb1);
+        releaseIntBuffer(bufferCrCb2);
 
         // Convert YCbCr to ABGR
         int[] abgr = getIntBuffer(length);
@@ -143,10 +217,6 @@ public class sceMpegbase extends HLEModule {
 	        }
 		}
 		releaseIntBuffer(abgr);
-
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("hleMpegBaseCscAvcRange.%d bufferRGB:%s", count++, Utilities.getMemoryDump(destAddr + rangeY * bufferWidth * 4, rangeHeight * bufferWidth * 4)));
-		}
 
 		return 0;
     }

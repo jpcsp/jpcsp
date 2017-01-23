@@ -467,7 +467,7 @@ public class PSMFPlayer implements Runnable {
 						FrameUtils.YUV2RGB_WOEdge(picture, buffer);
 
 						int progress = showProgress ? imageWidth * frame / totalNumberOfFrames : 0;
-						int y = Math.min(272, imageHeight);
+						int y = Math.min(272, imageHeight - progressHeight);
 						int offset = y * imageWidth;
 						for (int i = 0; i < progressHeight; i++, offset += imageWidth) {
 							Arrays.fill(buffer, offset, offset + progress, 0xFFFFFFFF);
