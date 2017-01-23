@@ -62,17 +62,7 @@ public class UmdBrowserSound {
 	}
 
 	public UmdBrowserSound(Memory mem, byte[] data) {
-		this.mem = mem;
-
-		memInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "UmdBrowserSound", SysMemUserForUser.PSP_SMEM_Low, 0x20000, 0);
-		if (memInfo != null) {
-			samplesAddr = memInfo.addr;
-			inputAddr = memInfo.addr + 0x10000;
-		} else {
-			// PSP not yet initialized, use any memory space
-			samplesAddr = MemoryMap.START_USERSPACE;
-			inputAddr = MemoryMap.START_USERSPACE + 0x10000;
-		}
+		initMemory(mem);
 
 		if (read(data)) {
 			startThread();
@@ -82,7 +72,7 @@ public class UmdBrowserSound {
 	}
 
 	public UmdBrowserSound(Memory mem, IVirtualFile vFile, int codecType, AtracFileInfo atracFileInfo) {
-		this.mem = mem;
+		initMemory(mem);
 
 		byte[] audioData = Utilities.readCompleteFile(vFile);
 		int atracBytesPerFrame = (((audioData[2] & 0x03) << 8) | ((audioData[3] & 0xFF) << 3)) + 8;
@@ -98,6 +88,20 @@ public class UmdBrowserSound {
 			startThread();
 		} else {
 			threadExit = true;
+		}
+	}
+
+	private void initMemory(Memory mem) {
+		this.mem = mem;
+
+		memInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "UmdBrowserSound", SysMemUserForUser.PSP_SMEM_Low, 0x20000, 0);
+		if (memInfo != null) {
+			samplesAddr = memInfo.addr;
+			inputAddr = memInfo.addr + 0x10000;
+		} else {
+			// PSP not yet initialized, use any memory space
+			samplesAddr = MemoryMap.START_USERSPACE;
+			inputAddr = MemoryMap.START_USERSPACE + 0x10000;
 		}
 	}
 
