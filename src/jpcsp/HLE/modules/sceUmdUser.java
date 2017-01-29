@@ -46,8 +46,10 @@ import org.apache.log4j.Logger;
 
 public class sceUmdUser extends HLEModule {
     public static Logger log = Modules.getLogger("sceUmdUser");
-    private boolean umdAllowReplace;
-
+    private boolean umdAllowReplace = false;
+    private boolean umdNeedModify = false;
+    private boolean umdLastMediumStatus = false;
+    
     @Override
     public void start() {
     	// Remember if the UMD was activated even after a call to sceKernelLoadExec()
@@ -258,6 +260,7 @@ public class sceUmdUser extends HLEModule {
 		if (iso != null) {
 			// First notify that the UMD has been removed
 			scheduler.addAction(new DelayedUmdRemoved());
+			umdNeedModify = true;
 
 	    	// After 100ms delay, notify that a new UMD has been inserted
 	    	long schedule = Scheduler.getNow() + 100 * 1000;
@@ -274,12 +277,19 @@ public class sceUmdUser extends HLEModule {
 
 	protected void hleDelayedUmdSwitch() {
 		int notifyArg = getNotificationArg() | PSP_UMD_CHANGED;
+		umdNeedModify = true;
     	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, notifyArg);
 	}
 
     @HLEFunction(nid = 0x46EBB729, version = 150)
     public boolean sceUmdCheckMedium() {
-        return iso != null;
+    	boolean result = umdLastMediumStatus;
+    	if (umdNeedModify) {
+    		result = !result;
+    		umdNeedModify = false;
+    		umdLastMediumStatus = false;
+    	}
+    	return result;
     }
 
     @HLEFunction(nid = 0xC6183D47, version = 150, checkInsideInterrupt = true)
