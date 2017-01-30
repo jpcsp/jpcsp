@@ -49,6 +49,7 @@ public class sceUmdUser extends HLEModule {
     private boolean umdAllowReplace = false;
     private boolean umdNeedModify = false;
     private boolean umdLastMediumStatus = false;
+    private boolean useumdreplacelogic = false;
     
     @Override
     public void start() {
@@ -207,6 +208,10 @@ public class sceUmdUser extends HLEModule {
     }
 
     protected int hleUmdWaitDriveStat(int wantedStat, boolean doCallbacks, boolean doTimeout, int timeout) {
+    	if (useumdreplacelogic & !umdLastMediumStatus) {
+    		log.warn(String.format("sceUmdWaitDriveStatCB: UMD is taking out for switch UMD"));
+    		return PSP_UMD_NOT_PRESENT;
+    	}
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         if (!checkDriveStat(wantedStat)) {
@@ -256,11 +261,10 @@ public class sceUmdUser extends HLEModule {
 
 	public void hleUmdSwitch() {
 		Scheduler scheduler = Scheduler.getInstance();
-
+		umdNeedModify = true;
 		if (iso != null) {
 			// First notify that the UMD has been removed
 			scheduler.addAction(new DelayedUmdRemoved());
-			umdNeedModify = true;
 
 	    	// After 100ms delay, notify that a new UMD has been inserted
 	    	long schedule = Scheduler.getNow() + 100 * 1000;
@@ -283,13 +287,16 @@ public class sceUmdUser extends HLEModule {
 
     @HLEFunction(nid = 0x46EBB729, version = 150)
     public boolean sceUmdCheckMedium() {
+    	if (useumdreplacelogic){
     	boolean result = umdLastMediumStatus;
     	if (umdNeedModify) {
     		result = !result;
     		umdNeedModify = false;
-    		umdLastMediumStatus = false;
+    		umdLastMediumStatus = result;
     	}
     	return result;
+    	}
+    	return iso != null;
     }
 
     @HLEFunction(nid = 0xC6183D47, version = 150, checkInsideInterrupt = true)
@@ -369,6 +376,11 @@ public class sceUmdUser extends HLEModule {
 
     @HLEFunction(nid = 0x6B4A146C, version = 150)
     public int sceUmdGetDriveStat() {
+    	if (useumdreplacelogic & !umdLastMediumStatus) {
+    		log.warn(String.format("sceUmdGetDriveStat: UMD is taking out for switch UMD"));
+    		useumdreplacelogic = false;
+    		return PSP_UMD_NOT_PRESENT;
+    	}
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceUmdGetDriveStat returning 0x%X", getUmdStat()));
         }
@@ -419,6 +431,7 @@ public class sceUmdUser extends HLEModule {
             return ERROR_UMD_NOT_READY;
         }
 
+        useumdreplacelogic = false;
         setUmdAllowReplace(false);
 
         return 0;
@@ -428,6 +441,7 @@ public class sceUmdUser extends HLEModule {
     public int sceUmdReplacePermit() {
     	setUmdAllowReplace(true);
 
+    	useumdreplacelogic = true;
         return 0;
     }
 
