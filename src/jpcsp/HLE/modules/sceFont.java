@@ -28,6 +28,7 @@ import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_BOLD_ITALIC;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_DB;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_ITALIC;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_REGULAR;
+import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -39,6 +40,7 @@ import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TErrorPointer32;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
+import jpcsp.HLE.TPointer32;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -56,10 +58,13 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceFontInfo;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspCharInfo;
 import jpcsp.HLE.kernel.types.pspFontStyle;
 import jpcsp.filesystems.SeekableDataInput;
@@ -114,19 +119,22 @@ public class sceFont extends HLEModule {
         public SceFontInfo fontInfo;
         public FontLib fontLib;
         private final int handle;
+        private int fontFileSize;
 
-        public Font(PGF pgf, SceFontInfo fontInfo) {
+        public Font(PGF pgf, SceFontInfo fontInfo, int fontFileSize) {
             this.pgf = pgf;
             this.fontInfo = fontInfo;
             fontLib = null;
             this.handle = 0;
+            this.fontFileSize = fontFileSize;
         }
 
-        public Font(Font font, FontLib fontLib, int handle) {
+        public Font(Font font, FontLib fontLib, int handle, int fontFileSize) {
             this.pgf = font.pgf;
             this.fontInfo = font.fontInfo;
             this.fontLib = fontLib;
             this.handle = handle;
+            this.fontFileSize = fontFileSize;
         }
         
         public pspFontStyle getFontStyle() {
@@ -383,7 +391,7 @@ public class sceFont extends HLEModule {
 
             SceFontInfo fontInfo = pgfFile.createFontInfo();
 
-            font = new Font(pgfFile, fontInfo);
+            font = new Font(pgfFile, fontInfo, pgfBuffer.capacity());
 
             if (dumpFonts) {
                 dumpFont(font);
@@ -530,9 +538,13 @@ public class sceFont extends HLEModule {
         protected float fontVRes = 128.f;
         protected int handle;
         protected int[] fonts;
-        protected int allocatedAddr;
+        protected int[] allocatedSizes = new int[] { 0x4C, 0x130, 0x8C0, 0xC78 };
+        protected int[] allocatedAddresses = new int[allocatedSizes.length];
+        protected int allocatedAddressIndex;
+        protected int[] openAllocatedAddresses;
+        protected int charInfoBitmapAddress;
 
-        public FontLib(TPointer params) {
+        public FontLib(TPointer32 params) {
             read(params);
 
             // On a PSP, FontLib handle and Font handles are addresses pointing to memory
@@ -549,14 +561,26 @@ public class sceFont extends HLEModule {
             //    mem.read32(fontHandle) == FONT_IS_OPEN: font is already open
             //    mem.read32(fontHandle) == FONT_IS_CLOSED: font is not open
             //
-            triggerAllocCallback(numFonts * 4 + 4, new AfterCreateAllocCallback());
+            openAllocatedAddresses = new int[numFonts];
+
+            allocateAddresses();
+        }
+
+        private void allocateAddresses() {
+        	int minimumSize = numFonts * 4 + 4;
+        	if (allocatedSizes[0] < minimumSize) {
+        		allocatedSizes[0] = minimumSize;
+        	}
+
+        	allocatedAddressIndex = 0;
+        	triggerAllocCallback(allocatedSizes[allocatedAddressIndex], new AfterCreateAllocCallback());
         }
 
         public int getNumFonts() {
             return numFonts;
         }
 
-        private Font openFont(Font font) {
+        private Font openFont(Font font, boolean needAllocForFontFile) {
             if (font == null) {
                 throw (new SceKernelErrorException(SceKernelErrors.ERROR_FONT_INVALID_PARAMETER));
             }
@@ -574,9 +598,16 @@ public class sceFont extends HLEModule {
                 throw (new SceKernelErrorException(SceKernelErrors.ERROR_FONT_TOO_MANY_OPEN_FONTS));
             }
 
-            font = new Font(font, this, fonts[freeFontIndex]);
+            font = new Font(font, this, fonts[freeFontIndex], font.fontFileSize);
             mem.write32(fonts[freeFontIndex], FONT_IS_OPEN);
             fontsMap.put(font.getHandle(), font);
+
+            int allocSize = 12;
+            if (needAllocForFontFile) {
+            	allocSize += font.fontFileSize;
+            }
+
+            triggerAllocCallback(allocSize, new AfterOpenAllocCallback(freeFontIndex));
 
             return font;
         }
@@ -588,8 +619,18 @@ public class sceFont extends HLEModule {
             	if (fonts[i] == font.getHandle()) {
             		Memory mem = Memory.getInstance();
             		mem.write32(fonts[i], FONT_IS_CLOSED);
+
+            		if (openAllocatedAddresses[i] != 0) {
+            			triggerFreeCallback(openAllocatedAddresses[i], null);
+            			openAllocatedAddresses[i] = 0;
+            		}
             		break;
             	}
+            }
+
+            if (charInfoBitmapAddress != 0) {
+            	triggerFreeCallback(charInfoBitmapAddress, null);
+            	charInfoBitmapAddress = 0;
             }
 
             font.close();
@@ -603,11 +644,31 @@ public class sceFont extends HLEModule {
         		}
         		fontsMap.remove(fonts[i]);
         	}
-        	triggerFreeCallback(allocatedAddr);
-        	allocatedAddr = 0;
+        	triggerFreeCallback(allocatedAddresses[--allocatedAddressIndex], new AfterFreeCallback());
         	fonts = null;
         }
-        
+
+        public int triggetGetCharInfo(pspCharInfo charInfo) {
+        	int result = 0;
+
+        	// The callbacks are not triggered by characters not present in the font
+        	if (charInfo.sfp26AdvanceH != 0 || charInfo.sfp26AdvanceV != 0) {
+        		SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+
+	        	if (charInfoBitmapAddress != 0) {
+	        		triggerFreeCallback(charInfoBitmapAddress, new AfterCharInfoFreeCallback(thread, charInfo));
+	        	} else {
+	        		triggerAllocCallback(charInfo.bitmapWidth * charInfo.bitmapHeight, new AfterCharInfoAllocCallback(thread));
+	        	}
+
+	        	if (charInfoBitmapAddress == 0) {
+	        		result = SceKernelErrors.ERROR_FONT_OUT_OF_MEMORY;
+	        	}
+        	}
+
+        	return result;
+        }
+
         public int getHandle() {
             return handle;
         }
@@ -616,9 +677,12 @@ public class sceFont extends HLEModule {
             Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, afterAllocCallback, true, userDataAddr, size);
         }
 
-        protected void triggerFreeCallback(int addr) {
+        protected void triggerFreeCallback(int addr, IAction afterFreeCallback) {
             if (Memory.isAddressGood(addr)) {
-                Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, true, userDataAddr, addr);
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Calling free callback on 0x%08X", addr));
+            	}
+                Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, afterFreeCallback, true, userDataAddr, addr);
             }
         }
 
@@ -632,18 +696,18 @@ public class sceFont extends HLEModule {
             }
         }
 
-        private void read(TPointer params) {
-            userDataAddr = params.getValue32(0);
-            numFonts = params.getValue32(4);
-            cacheDataAddr = params.getValue32(8);
-            allocFuncAddr = params.getValue32(12);
-            freeFuncAddr = params.getValue32(16);
-            openFuncAddr = params.getValue32(20);
-            closeFuncAddr = params.getValue32(24);
-            readFuncAddr = params.getValue32(28);
-            seekFuncAddr = params.getValue32(32);
-            errorFuncAddr = params.getValue32(36);
-            ioFinishFuncAddr = params.getValue32(40);
+        private void read(TPointer32 params) {
+            userDataAddr = params.getValue(0);
+            numFonts = params.getValue(4);
+            cacheDataAddr = params.getValue(8);
+            allocFuncAddr = params.getValue(12);
+            freeFuncAddr = params.getValue(16);
+            openFuncAddr = params.getValue(20);
+            closeFuncAddr = params.getValue(24);
+            readFuncAddr = params.getValue(28);
+            seekFuncAddr = params.getValue(32);
+            errorFuncAddr = params.getValue(36);
+            ioFinishFuncAddr = params.getValue(40);
 
             if (log.isDebugEnabled()) {
             	log.debug(String.format("userDataAddr 0x%08X, numFonts=%d, cacheDataAddr=0x%08X, allocFuncAddr=0x%08X, freeFuncAddr=0x%08X, openFuncAddr=0x%08X, closeFuncAddr=0x%08X, readFuncAddr=0x%08X, seekFuncAddr=0x%08X, errorFuncAddr=0x%08X, ioFinishFuncAddr=0x%08X", userDataAddr, numFonts, cacheDataAddr, allocFuncAddr, freeFuncAddr, openFuncAddr, closeFuncAddr, readFuncAddr, seekFuncAddr, errorFuncAddr, ioFinishFuncAddr));
@@ -665,23 +729,58 @@ public class sceFont extends HLEModule {
         private class AfterCreateAllocCallback implements IAction {
 			@Override
             public void execute() {
-                allocatedAddr = Emulator.getProcessor().cpu._v0;
-
-                int addr = allocatedAddr;
-                handle = addr;
-                addr += 4;
-                fonts = new int[numFonts];
-                Memory mem = Memory.getInstance();
-                for (int i = 0; i < numFonts; i++) {
-                	mem.write32(addr, FONT_IS_CLOSED);
-                	fonts[i] = addr;
-                	addr += 4;
-                }
+                int allocatedAddr = Emulator.getProcessor().cpu._v0;
 
                 if (log.isDebugEnabled()) {
-                	log.debug(String.format("FontLib's allocation callback returned 0x%08X", allocatedAddr));
+                	log.debug(String.format("FontLib's allocation callback#%d returned 0x%08X for size 0x%X", allocatedAddressIndex, allocatedAddr, allocatedSizes[allocatedAddressIndex]));
+                }
+
+                if (allocatedAddressIndex == 0) {
+	                int addr = allocatedAddr;
+	                handle = addr;
+	                addr += 4;
+	                fonts = new int[numFonts];
+	                Memory mem = Memory.getInstance();
+	                for (int i = 0; i < numFonts; i++) {
+	                	mem.write32(addr, FONT_IS_CLOSED);
+	                	fonts[i] = addr;
+	                	addr += 4;
+	                }
+                }
+
+                allocatedAddresses[allocatedAddressIndex++] = allocatedAddr;
+                if (allocatedAddressIndex < allocatedSizes.length) {
+                	triggerAllocCallback(allocatedSizes[allocatedAddressIndex], this);
                 }
             }
+        }
+
+        private class AfterFreeCallback implements IAction {
+			@Override
+			public void execute() {
+				if (allocatedAddressIndex > 0) {
+					triggerFreeCallback(allocatedAddresses[--allocatedAddressIndex], this);
+				}
+			}
+        }
+
+        private class AfterOpenAllocCallback implements IAction {
+        	private int fontIndex;
+
+        	public AfterOpenAllocCallback(int fontIndex) {
+				this.fontIndex = fontIndex;
+			}
+
+			@Override
+			public void execute() {
+                int allocatedAddr = Emulator.getProcessor().cpu._v0;
+
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("FontLib's allocation callback on open#%d returned 0x%08X", fontIndex, allocatedAddr));
+                }
+
+                openAllocatedAddresses[fontIndex] = allocatedAddr;
+			}
         }
 
         private class AfterOpenCallback implements IAction {
@@ -689,10 +788,49 @@ public class sceFont extends HLEModule {
             public void execute() {
                 fileFontHandle = Emulator.getProcessor().cpu._v0;
 
-                log.info("FontLib's file open callback returned 0x" + Integer.toHexString(fileFontHandle));
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("FontLib's file open callback returned 0x%X", fileFontHandle));
+                }
             }
         }
-        
+
+        private class AfterCharInfoFreeCallback implements IAction {
+        	private SceKernelThreadInfo thread;
+        	private pspCharInfo charInfo;
+
+            public AfterCharInfoFreeCallback(SceKernelThreadInfo thread, pspCharInfo charInfo) {
+            	this.thread = thread;
+				this.charInfo = charInfo;
+			}
+
+			@Override
+            public void execute() {
+				charInfoBitmapAddress = 0;
+            	triggerAllocCallback(charInfo.bitmapWidth * charInfo.bitmapHeight, new AfterCharInfoAllocCallback(thread));
+            }
+        }
+
+        private class AfterCharInfoAllocCallback implements IAction {
+        	private SceKernelThreadInfo thread;
+
+        	public AfterCharInfoAllocCallback(SceKernelThreadInfo thread) {
+				this.thread = thread;
+			}
+
+			@Override
+            public void execute() {
+                charInfoBitmapAddress = Emulator.getProcessor().cpu._v0;
+
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("FontLib's allocation callback on getCharInfo returned 0x%08X", charInfoBitmapAddress));
+                }
+
+                if (charInfoBitmapAddress == 0) {
+                	thread.cpuContext._v0 = SceKernelErrors.ERROR_FONT_OUT_OF_MEMORY;
+                }
+			}
+        }
+
         @Override
         public String toString() {
             return String.format("FontLib - Handle: '0x%08X', Fonts: '%d'", getHandle(), getNumFonts());
@@ -792,7 +930,7 @@ public class sceFont extends HLEModule {
     }
 
     @HLEFunction(nid = 0x67F17ED7, version = 150, checkInsideInterrupt = true, stackUsage = 0x590)
-    public int sceFontNewLib(TPointer paramsPtr, @CanBeNull TErrorPointer32 errorCodePtr) {
+    public int sceFontNewLib(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=44, usage=Usage.in) TPointer32 paramsPtr, @CanBeNull TErrorPointer32 errorCodePtr) {
     	loadAllFonts();
         errorCodePtr.setValue(0);
         FontLib fontLib = new FontLib(paramsPtr);
@@ -814,14 +952,14 @@ public class sceFont extends HLEModule {
         	return 0;
         }
 
-        return fontLib.openFont(font).getHandle();
+        return fontLib.openFont(font, true).getHandle();
     }
 
     @HLEFunction(nid = 0xBB8E7FE6, version = 150, checkInsideInterrupt = true, stackUsage = 0x440)
     public int sceFontOpenUserMemory(int fontLibHandle, TPointer memoryFontPtr, int memoryFontLength, @CanBeNull TErrorPointer32 errorCodePtr) {
         FontLib fontLib = getFontLib(fontLibHandle);    
         errorCodePtr.setValue(0);
-        return fontLib.openFont(openFontFile(memoryFontPtr.getAddress(), memoryFontLength)).getHandle();
+        return fontLib.openFont(openFontFile(memoryFontPtr.getAddress(), memoryFontLength), false).getHandle();
     }
 
     @HLEFunction(nid = 0x0DA7535E, version = 150, checkInsideInterrupt = true, stackUsage = 0x0)
@@ -883,12 +1021,12 @@ public class sceFont extends HLEModule {
     }
 
     @HLEFunction(nid = 0xDCC80C2F, version = 150, checkInsideInterrupt = true, stackUsage = 0x100)
-    public int sceFontGetCharInfo(int fontHandle, int charCode, TPointer charInfoPtr) {
+    public int sceFontGetCharInfo(int fontHandle, int charCode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=60, usage=Usage.out) TPointer charInfoPtr) {
         Font font = getFont(fontHandle, false);       
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceFontGetCharInfo charCode=%04X (%c)", charCode, (charCode <= 0xFF ? (char) charCode : '?')));
         }
-        charCode&= 0xffff;
+        charCode &= 0xFFFF;
         pspCharInfo pspCharInfo = null;
         if (!getUseDebugFont()) {
             pspCharInfo = font.fontInfo.getCharInfo(charCode, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
@@ -902,13 +1040,13 @@ public class sceFont extends HLEModule {
             pspCharInfo.sfp26AdvanceH = pspCharInfo.bitmapWidth << 6;
             pspCharInfo.sfp26AdvanceV = pspCharInfo.bitmapHeight << 6;
         }
-        pspCharInfo.write(charInfoPtr);    
+        int result = font.fontLib.triggetGetCharInfo(pspCharInfo);
 
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceFontGetCharInfo returning %s%s", pspCharInfo, Utilities.getMemoryDump(charInfoPtr.getAddress(), pspCharInfo.sizeof())));
+        if (result == 0) {
+        	pspCharInfo.write(charInfoPtr);
         }
 
-        return 0;
+        return result;
     }
 
     @HLEFunction(nid = 0x980F4895, version = 150, checkInsideInterrupt = true)
@@ -1039,7 +1177,7 @@ public class sceFont extends HLEModule {
         	return 0;
         }
 
-        Font font = fontLib.openFont(internalFonts.get(index));
+        Font font = fontLib.openFont(internalFonts.get(index), true);
         if (log.isDebugEnabled()) {
             log.debug(String.format("Opening '%s' - '%s', font=%s", font.pgf.getFontName(), font.pgf.getFontType(), font));
         }

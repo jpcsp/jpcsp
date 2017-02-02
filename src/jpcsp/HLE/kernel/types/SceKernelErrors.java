@@ -480,6 +480,7 @@ public class SceKernelErrors {
     public final static int ERROR_WAVE_INVALID_CHANNEL                          = 0x80440010;
     public final static int ERROR_WAVE_INVALID_SAMPLE_COUNT                     = 0x80440011;
 
+    public final static int ERROR_FONT_OUT_OF_MEMORY                            = 0x80460001;
     public final static int ERROR_FONT_INVALID_LIBID                            = 0x80460002;
     public final static int ERROR_FONT_INVALID_PARAMETER                        = 0x80460003;
     public final static int ERROR_FONT_FILE_NOT_FOUND                           = 0x80460005;
