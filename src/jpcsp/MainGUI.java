@@ -1886,10 +1886,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 		try {
 			iso = new UmdIsoReader(filePath);
 			if (runFromVsh) {
-	            Modules.IoFileMgrForUserModule.setIsoReader(iso);
-	            Modules.sceUmdUserModule.setIsoReader(iso);
-
-	            Modules.sceUmdUserModule.hleUmdSwitch();
+	            Modules.sceUmdUserModule.hleUmdSwitch(iso);
 			} else {
 				closeIso = true;
 		        if (iso.hasFile("PSP_GAME/param.sfo")) {
@@ -1928,10 +1925,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
             log.info(String.format("Switching to the UMD %s", file));
 
-            Modules.IoFileMgrForUserModule.setIsoReader(iso);
-            Modules.sceUmdUserModule.setIsoReader(iso);
-
-            Modules.sceUmdUserModule.hleUmdSwitch();
+            Modules.sceUmdUserModule.hleUmdSwitch(iso);
         } catch (FileNotFoundException e) {
             // Ignore.
         } catch (IOException ioe) {
