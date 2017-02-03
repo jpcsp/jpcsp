@@ -157,7 +157,7 @@ public class NativeUtils {
 			    	addressSize = unsafe.addressSize();
 
 			    	if (log.isInfoEnabled()) {
-			    		log.info(String.format("Unsafe address information: addressSize=%d, arrayBase=%d, indexScale=%d", addressSize, arrayObjectBaseOffset, arrayObjectIndexScale));
+			    		log.info(String.format("Unsafe address information: addressSize=%d, arrayBaseOffset=%d, indexScale=%d", addressSize, arrayObjectBaseOffset, arrayObjectIndexScale));
 			    	}
 
 			    	if (addressSize != 4 && addressSize != 8) {
