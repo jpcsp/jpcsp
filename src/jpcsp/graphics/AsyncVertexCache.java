@@ -70,10 +70,12 @@ public class AsyncVertexCache extends VertexCache {
 		if (useVertexArray) {
 			int address = vinfo.ptr_vertex;
 			int length = vinfo.vertexSize * asyncEntry.count;
-			VertexBuffer vertexBuffer = VertexBufferManager.getInstance().getVertexBuffer(null, address, length, vinfo.vertexSize, useVertexArray);
-			if (vertexBuffer != null) {
-				Buffer buffer = Memory.getInstance().getBuffer(address, length);
-				vertexBuffer.preLoad(buffer, address, length);
+			if (length > 0) {
+				VertexBuffer vertexBuffer = VertexBufferManager.getInstance().getVertexBuffer(null, address, length, vinfo.vertexSize, useVertexArray);
+				if (vertexBuffer != null) {
+					Buffer buffer = Memory.getInstance().getBuffer(address, length);
+					vertexBuffer.preLoad(buffer, address, length);
+				}
 			}
 		} else {
 			VertexInfo vertex = getVertex(vinfo);
