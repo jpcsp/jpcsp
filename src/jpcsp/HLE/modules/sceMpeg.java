@@ -2903,6 +2903,8 @@ public class sceMpeg extends HLEModule {
         finishMpeg();
         finishStreams();
 
+        Modules.ThreadManForUserModule.hleKernelDelayThread(sceVideocodec.videocodecDeleteDelay, false);
+
         return 0;
     }
 

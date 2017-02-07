@@ -45,6 +45,8 @@ import jpcsp.util.Utilities;
 public class sceVideocodec extends HLEModule {
     public static Logger log = Modules.getLogger("sceVideocodec");
     private static final int videocodecDecodeDelay = 4000;
+    // Based on JpcspTrace tests, sceVideocodecDelete delays for 40ms
+    public static final int videocodecDeleteDelay = 40000;
     public static final int EDRAM_MEMORY_MASK = 0x03FFFFFF;
     protected SysMemInfo memoryInfo;
     protected SysMemInfo edramInfo;
@@ -593,6 +595,8 @@ public class sceVideocodec extends HLEModule {
     		Modules.SysMemUserForUserModule.free(edramInfo);
     		edramInfo = null;
     	}
+
+    	Modules.ThreadManForUserModule.hleKernelDelayThread(videocodecDeleteDelay, false);
 
     	return 0;
     }
