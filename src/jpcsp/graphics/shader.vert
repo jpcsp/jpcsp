@@ -176,7 +176,7 @@ void ApplyLighting(inout vec4 Cp, inout vec4 Cs, in vec3 V, in vec3 N)
 ///////////////////////////////////////////////////////////////
 
 #if !USE_DYNAMIC_DEFINES || TEX_ENABLE
-void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N)
+void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N, in vec3 Ne)
 {
     T.xy /= textureScale;
 
@@ -196,17 +196,17 @@ void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N)
             case 1: // Texture Coordinate Projection (UV0)
                 T.xyz = vec3(gl_TextureMatrix[0] * vec4(T.st, 0.0, 1.0));
                 break;
-            case 2: // Normalized Normal Coordinate projection (N/|N|)
+            case 2: // Normalized Normal Coordinate projection (N/|N|), using the Normal from the vertex data
                 T.xyz = vec3(gl_TextureMatrix[0] * vec4(normalize(N.xyz), 1.0));
                 break;
-            case 3: // Non-normalized Normal Coordinate projection (N)
+            case 3: // Non-normalized Normal Coordinate projection (N), using the Normal from the vertex data
                 T.xyz = vec3(gl_TextureMatrix[0] * vec4(N.xyz, 1.0));
                 break;
             }
             break;
 
-        case 2: // Shade mapping
-            vec3  Nn = normalize(N);
+        case 2: // Shade mapping, using the Normal in eye coordinates
+            vec3  Nn = normalize(Ne);
             vec3  Ve = vec3(gl_ModelViewMatrix * V);
             float k  = gl_FrontMaterial.shininess;
             vec3  Lu = gl_LightSource[texShade.x].position.xyz - Ve.xyz * gl_LightSource[texShade.x].position.w;
@@ -233,7 +233,7 @@ void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N)
         T.xyz = vec3(gl_TextureMatrix[0] * vec4(N.xyz, 1.0));
     #elif TEX_MAP_MODE == 2
         // Shade mapping
-        vec3  Nn = normalize(N);
+        vec3  Nn = normalize(Ne);
         vec3  Ve = vec3(gl_ModelViewMatrix * V);
         float k  = gl_FrontMaterial.shininess;
         vec3  Lu = gl_LightSource[TEX_SHADE0].position.xyz - Ve.xyz * gl_LightSource[TEX_SHADE0].position.w;
@@ -560,19 +560,21 @@ void main()
     vec3 Ve = vec3(gl_ModelViewMatrix * V);
 
     #if !USE_DYNAMIC_DEFINES || VINFO_NORMAL != 0
-        N  = gl_NormalMatrix * N;
+        vec3 Ne = gl_NormalMatrix * N;
+    #else
+		vec3 Ne = vec3(1.0, 0.0, 0.0);
     #endif
 
     #if !USE_DYNAMIC_DEFINES
-        if (lightingEnable) ApplyLighting(Cp, Cs, Ve, normalize(N));
+        if (lightingEnable) ApplyLighting(Cp, Cs, Ve, normalize(Ne));
     #elif LIGHTING_ENABLE
-        ApplyLighting(Cp, Cs, Ve, normalize(N));
+        ApplyLighting(Cp, Cs, Ve, normalize(Ne));
     #endif
 
     #if !USE_DYNAMIC_DEFINES
-        if (texEnable) ApplyTexture(T, V, N);
+        if (texEnable) ApplyTexture(T, V, N, Ne);
     #elif TEX_ENABLE
-        ApplyTexture(T, V, N);
+        ApplyTexture(T, V, N, Ne);
     #endif
 
     gl_Position            = gl_ModelViewProjectionMatrix * V;
