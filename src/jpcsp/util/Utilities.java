@@ -642,7 +642,10 @@ public class Utilities {
     }
 
     public static String getMemoryDump(int address, int length, int step, int bytesPerLine) {
-        if (!Memory.isAddressGood(address) || length <= 0 || bytesPerLine <= 0 || step <= 0) {
+    	if (!Memory.isAddressGood(address)) {
+    		return String.format("Invalid memory address 0x%08X", address);
+    	}
+        if (length <= 0 || bytesPerLine <= 0 || step <= 0) {
             return "";
         }
 

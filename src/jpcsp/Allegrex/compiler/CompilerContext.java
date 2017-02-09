@@ -119,9 +119,9 @@ public class CompilerContext implements ICompilerContext {
     private static final int LOCAL_TMP_VD1 = 8;
     private static final int LOCAL_TMP_VD2 = 9;
     private static final int LOCAL_MAX = 10;
-    private static final int LOCAL_HLE_PARAMETERS = LOCAL_MAX;
-    private static final int LOCAL_HLE_NUMBER_PARAMETERS = 8;
-    private static final int LOCAL_HLE_MAX = LOCAL_HLE_PARAMETERS + LOCAL_HLE_NUMBER_PARAMETERS;
+    private static final int LOCAL_FIRST_SAVED_PARAMETER = LOCAL_MAX;
+    private static final int LOCAL_NUMBER_SAVED_PARAMETERS = 8;
+    private static final int LOCAL_MAX_WITH_SAVED_PARAMETERS = LOCAL_FIRST_SAVED_PARAMETER + LOCAL_NUMBER_SAVED_PARAMETERS;
     private static final int DEFAULT_MAX_STACK_SIZE = 11;
     private static final int SYSCALL_MAX_STACK_SIZE = 100;
     private static final int LOCAL_ERROR_POINTER = LOCAL_TMP3;
@@ -159,6 +159,8 @@ public class CompilerContext implements ICompilerContext {
 	private int instanceIndex;
 	private NativeCodeSequence preparedCallNativeCodeBlock = null;
 	private int maxStackSize = DEFAULT_MAX_STACK_SIZE;
+	private int maxLocalSize = LOCAL_MAX;
+	private boolean parametersSavedToLocals;
 	private CompilerTypeManager compilerTypeManager;
 
 	public CompilerContext(CompilerClassLoader classLoader, int instanceIndex) {
@@ -1423,7 +1425,7 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
-    private void logSyscallEnd(HLEModuleFunction func, boolean isErrorCode, int localVarForParameters) {
+    private void logSyscallEnd(HLEModuleFunction func, boolean isErrorCode) {
     	if (func.getLoggingLevel() == null) {
     		return;
     	}
@@ -1464,8 +1466,8 @@ public class CompilerContext implements ICompilerContext {
 			ParameterInfo[] parameters = new ClassAnalyzer().getParameters(func.getFunctionName(), func.getHLEModuleMethod().getDeclaringClass());
 			if (parameters != null) {
 	            CompilerParameterReader parameterReader;
-	            if (localVarForParameters >= 0) {
-	            	parameterReader = new CompilerLocalVarParameterReader(this, localVarForParameters);
+	            if (parametersSavedToLocals) {
+	            	parameterReader = new CompilerLocalVarParameterReader(this, LOCAL_FIRST_SAVED_PARAMETER);
 	            } else {
 	            	parameterReader = new CompilerParameterReader(this);
 	            }
@@ -1676,6 +1678,11 @@ public class CompilerContext implements ICompilerContext {
     	// The compilation of a syscall requires more stack size than usual
     	maxStackSize = SYSCALL_MAX_STACK_SIZE;
 
+    	// Save the syscall parameter to locals for debugging
+    	if (!fastSyscall) {
+    		saveParametersToLocals();
+    	}
+
     	if (!fastSyscall) {
     		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "preSyscall", "()V");
     	}
@@ -1792,7 +1799,7 @@ public class CompilerContext implements ICompilerContext {
     	}
 
         loadRegister(_v0);
-        logSyscallEnd(func, false, -1);
+        logSyscallEnd(func, false);
         mv.visitInsn(Opcodes.POP);
 
         mv.visitLabel(tryEnd);
@@ -1812,7 +1819,7 @@ public class CompilerContext implements ICompilerContext {
         // }
         mv.visitLabel(catchSceKernelErrorException);
         mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(SceKernelErrorException.class), "errorCode", "I");
-    	logSyscallEnd(func, true, -1);
+    	logSyscallEnd(func, true);
         if (parameterReader.hasErrorPointer()) {
         	// errorPointer.setValue(errorCode);
         	// cpu.gpr[_v0] = 0;
@@ -1919,18 +1926,23 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
+    private void saveParametersToLocals() {
+    	// Store all register parameters ($a0..$a3, $t0..$t3) in local variables.
+    	// These values will be used at the end of the HLE method for debugging buffers.
+    	for (int i = 0; i < LOCAL_NUMBER_SAVED_PARAMETERS; i++) {
+        	loadRegister(_a0 + i);
+    		storeLocalVar(LOCAL_FIRST_SAVED_PARAMETER + i);
+    	}
+    	maxLocalSize = LOCAL_MAX_WITH_SAVED_PARAMETERS;
+    	parametersSavedToLocals = true;
+    }
+
     private void startHLEMethod() {
         HLEModuleFunction func = HLEModuleManager.getInstance().getAllFunctionFromAddress(codeBlock.getStartAddress());
         codeBlock.setHLEFunction(func);
 
         if (codeBlock.isHLEFunction()) {
-        	// Store all register parameters ($a0..$a3, $t0..$t3) in local variables.
-        	// These values will be used at the end of the HLE method for debugging buffers.
-        	for (int i = 0; i < LOCAL_HLE_NUMBER_PARAMETERS; i++) {
-	        	loadRegister(_a0 + i);
-	    		storeLocalVar(LOCAL_HLE_PARAMETERS + i);
-        	}
-
+        	saveParametersToLocals();
         	logSyscallStart(codeBlock.getHLEFunction());
         }
     }
@@ -1938,7 +1950,7 @@ public class CompilerContext implements ICompilerContext {
     private void endHLEMethod() {
         if (codeBlock.isHLEFunction()) {
 	        loadRegister(_v0);
-	        logSyscallEnd(codeBlock.getHLEFunction(), false, LOCAL_HLE_PARAMETERS);
+	        logSyscallEnd(codeBlock.getHLEFunction(), false);
 	        mv.visitInsn(Opcodes.POP);
         }
     }
@@ -2223,10 +2235,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public int getMaxLocals() {
-    	if (codeBlock.isHLEFunction()) {
-    		return LOCAL_HLE_MAX;
-    	}
-        return LOCAL_MAX;
+    	return maxLocalSize;
     }
 
     public boolean isAutomaticMaxStack() {
