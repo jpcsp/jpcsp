@@ -1581,7 +1581,9 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             if (!isHomebrew && !isInternal) {
                 Settings.getInstance().loadPatchSettings();
             }
-            logConfigurationSettings();
+            if (!runFromVsh) {
+            	logStart();
+            }
 
             if (instructioncounter != null) {
                 instructioncounter.RefreshWindow();
@@ -1885,6 +1887,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         boolean closeIso = false;
 		try {
 			iso = new UmdIsoReader(filePath);
+			logStartIso(iso);
 			if (runFromVsh) {
 	            Modules.sceUmdUserModule.hleUmdSwitch(iso);
 			} else {
@@ -1940,8 +1943,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             if (State.logWindow != null) {
                 State.logWindow.clearScreenMessages();
             }
-            log.info(String.format("Java version: %s (%s)", System.getProperty("java.version"), System.getProperty("java.runtime.version")));
-            log.info(String.format("Java library path: %s", System.getProperty("java.library.path")));
+            logStart();
 
             Modules.SysMemUserForUserModule.reset();
             log.info(MetaInformation.FULL_NAME);
@@ -1950,6 +1952,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             loadedFile = file;
 
             UmdIsoReader iso = new UmdIsoReader(filePath);
+
             UmdIsoFile psfFile = iso.getFile("PSP_GAME/param.sfo");
 
             PSF psf = new PSF();
@@ -1957,7 +1960,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             psfFile.read(data);
             psf.read(ByteBuffer.wrap(data));
 
-            log.info("UMD param.sfo :\n" + psf);
             String title = psf.getPrintableString("TITLE");
             String discId = psf.getString("DISC_ID");
             String titleFormat = "%s - %s";
@@ -1987,7 +1989,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                     umdDataBin.readFully(buffer);
                     umdDataBin.close();
                     String umdDataBinContent = new String(buffer).replace((char) 0, ' ');
-                    log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
 
                     String[] parts = umdDataBinContent.split("\\|");
                     if (parts != null && parts.length >= 2) {
@@ -2024,8 +2025,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                     loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN")) {
 
                 State.title = title;
-
-                logConfigurationSettings();
 
                 Modules.IoFileMgrForUserModule.setfilepath("disc0/");
 
@@ -2065,6 +2064,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             if (State.logWindow != null) {
                 State.logWindow.clearScreenMessages();
             }
+            logStart();
             Modules.SysMemUserForUserModule.reset();
             log.info(MetaInformation.FULL_NAME);
 
@@ -2080,7 +2080,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             psfFile.read(data);
             psf.read(ByteBuffer.wrap(data));
 
-            log.info("UMD param.sfo :\n" + psf);
             String title = psf.getPrintableString("TITLE");
             String discId = psf.getString("DISC_ID");
             if (discId == null) {
@@ -2105,8 +2104,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             State.discId = discId;
             State.title = title;
 
-            logConfigurationSettings();
-
             umdvideoplayer = new UmdVideoPlayer(this, iso);
 
             Modules.IoFileMgrForUserModule.setfilepath("disc0/");
@@ -2127,6 +2124,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             if (State.logWindow != null) {
                 State.logWindow.clearScreenMessages();
             }
+            logStart();
             Modules.SysMemUserForUserModule.reset();
             log.info(MetaInformation.FULL_NAME);
 
@@ -2141,7 +2139,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             psfFile.read(data);
             psf.read(ByteBuffer.wrap(data));
 
-            log.info("UMD param.sfo :\n" + psf);
             String title = psf.getPrintableString("TITLE");
             String discId = psf.getString("DISC_ID");
             if (discId == null) {
@@ -2157,8 +2154,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
             State.discId = discId;
             State.title = title;
-
-            logConfigurationSettings();
         } catch (IllegalArgumentException iae) {
             // Ignore...
         } catch (Exception ex) {
@@ -2222,6 +2217,55 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         // jog here only in the English locale
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp", new Locale("en"));
         log.info(String.format("%s / %s", bundle.getString("SettingsGUI.title"), bundle.getString(resourceKey)));
+    }
+
+    private void logStart() {
+        log.info(String.format("Java version: %s (%s)", System.getProperty("java.version"), System.getProperty("java.runtime.version")));
+        log.info(String.format("Java library path: %s", System.getProperty("java.library.path")));
+
+        logConfigurationSettings();
+    }
+
+    private void logStartIso(UmdIsoReader iso) {
+    	if (!log.isInfoEnabled()) {
+    		return;
+    	}
+
+    	String[] paramSfoFiles = new String[] {
+        		"PSP_GAME/param.sfo",
+        		"UMD_VIDEO/param.sfo",
+        		"UMD_AUDIO/param.sfo"
+        };
+        for (String paramSfoFile : paramSfoFiles) {
+        	if (iso.hasFile(paramSfoFile)) {
+        		try {
+	    			UmdIsoFile psfFile = iso.getFile(paramSfoFile);
+	    	        PSF psf = new PSF();
+	    	        byte[] data = new byte[(int) psfFile.length()];
+	    	        psfFile.read(data);
+	    	        psf.read(ByteBuffer.wrap(data));
+
+	    	        log.info(String.format("Content of %s:\n%s", paramSfoFile, psf));
+        		} catch (IOException e) {
+        			// Ignore exception
+        		}
+        	}
+        }
+
+        try {
+            UmdIsoFile umdDataBin = iso.getFile("UMD_DATA.BIN");
+            if (umdDataBin != null) {
+                byte[] buffer = new byte[(int) umdDataBin.length()];
+                umdDataBin.readFully(buffer);
+                umdDataBin.close();
+                String umdDataBinContent = new String(buffer).replace((char) 0, ' ');
+                log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
+            }
+        } catch (FileNotFoundException e) {
+            // Ignore exception
+		} catch (IOException e) {
+            // Ignore exception
+        }
     }
 
     private void logConfigurationSettings() {
@@ -2869,6 +2913,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 ProOnlineNetworkAdapter.setEnabled(true);
             } else if (args[i].equals("--vsh")) {
             	runFromVsh = true;
+            	logStart();
 	            setTitle(MetaInformation.FULL_NAME + " - VSH");
                 Modules.sceDisplayModule.setCalledFromCommandLine();
                 HTTPServer.processProxyRequestLocally = true;
