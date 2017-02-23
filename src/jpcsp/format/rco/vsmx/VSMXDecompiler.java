@@ -409,8 +409,26 @@ public class VSMXDecompiler {
 			case VSMXCode.VID_OPERATOR_MOD:
 				operator2(s, " % ");
 				break;
+			case VSMXCode.VID_OPERATOR_B_AND:
+				operator2(s, " & ");
+				break;
 			case VSMXCode.VID_OPERATOR_B_XOR:
 				operator2(s, " ^ ");
+				break;
+			case VSMXCode.VID_OPERATOR_B_OR:
+				operator2(s, " | ");
+				break;
+			case VSMXCode.VID_OPERATOR_B_NOT:
+				operatorPre1(s, "~");
+				break;
+			case VSMXCode.VID_OPERATOR_LSHIFT:
+				operator2(s, " << ");
+				break;
+			case VSMXCode.VID_OPERATOR_RSHIFT:
+				operator2(s, " >> ");
+				break;
+			case VSMXCode.VID_OPERATOR_URSHIFT:
+				operator2(s, " >>> ");
 				break;
 			case VSMXCode.VID_INCREMENT:
 				operatorPost1(s, "++");
