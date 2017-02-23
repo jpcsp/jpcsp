@@ -39,8 +39,23 @@ public class VSMXObject extends VSMXBaseObject {
 		sortedPropertyNames.add(name);
 	}
 
+	protected static int getIndex(String name) {
+		int index;
+		try {
+			index = Integer.parseInt(name);
+		} catch (NumberFormatException e) {
+			index = -1;
+		}
+
+		return index;
+	}
+
 	@Override
 	public VSMXBaseObject getPropertyValue(String name) {
+		if (lengthName.equals(name)) {
+			return new VSMXNumber(interpreter, properties.size());
+		}
+
 		if (prototypeName.equals(name)) {
 			VSMXObject prototype = getPrototype();
 			if (prototype != null) {
@@ -51,14 +66,24 @@ public class VSMXObject extends VSMXBaseObject {
 
 		VSMXBaseObject value = properties.get(name);
 		if (value == null) {
-			VSMXObject prototype = getPrototype();
-			if (prototype != null && prototype.properties.containsKey(name)) {
-				value = prototype.getPropertyValue(name);
+			int index = getIndex(name);
+			if (index >= 0) {
+				if (index < properties.size()) {
+					value = properties.get(sortedPropertyNames.get(index));
+				} else {
+					value = VSMXUndefined.singleton;
+				}
 			} else {
-				value = VSMXUndefined.singleton;
-				addProperty(name, value);
+				VSMXObject prototype = getPrototype();
+				if (prototype != null && prototype.properties.containsKey(name)) {
+					value = prototype.getPropertyValue(name);
+				} else {
+					value = VSMXUndefined.singleton;
+					addProperty(name, value);
+				}
 			}
 		}
+
 		return value;
 	}
 

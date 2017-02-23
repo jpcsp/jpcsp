@@ -39,17 +39,6 @@ public class VSMXArray extends VSMXObject {
 		return length;
 	}
 
-	private int getIndex(String name) {
-		int index;
-		try {
-			index = Integer.parseInt(name);
-		} catch (NumberFormatException e) {
-			index = -1;
-		}
-
-		return index;
-	}
-
 	private void create(int index) {
 		super.setPropertyValue(Integer.toString(index), VSMXUndefined.singleton);
 	}
