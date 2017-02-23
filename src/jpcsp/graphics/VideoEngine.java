@@ -7092,7 +7092,21 @@ public class VideoEngine {
             int bufferSizeInFloats = ii;
 
             if (useVertexCache) {
-                cachedVertexInfo = new VertexInfo(context.vinfo);
+                cachedVertexInfo = new VertexInfo();
+                int vtype = context.vinfo.vtype;
+                if (useTexture) {
+                	// Float texture values
+                	vtype = (vtype & ~(0x3 << 0)) | VTYPE_TEXTURE_FORMAT_32_BIT;
+                }
+                if (useVertexColor) {
+                	// 8888 color values
+                	vtype = (vtype & ~(0x7 << 2)) | VTYPE_COLOR_FORMAT_32BIT_ABGR_8888;
+                }
+                if (useNormal) {
+                	// Float normal values
+                	vtype = (vtype & ~(0x3 << 5)) | VTYPE_NORMAL_FORMAT_32_BIT;
+                }
+                cachedVertexInfo.processType(vtype);
                 int numberOfVertex = numberOfVertexPerRow * context.patch_div_t;
                 VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, 0);
                 needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBufferArray, bufferSizeInFloats);
