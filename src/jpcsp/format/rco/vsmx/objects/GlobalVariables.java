@@ -132,4 +132,20 @@ public class GlobalVariables extends BaseNativeObject {
 
 		return VSMXBoolean.getValue(isNaN);
 	}
+
+	public VSMXBaseObject Float(VSMXBaseObject object, VSMXBaseObject value) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Float: %s", value));
+		}
+
+		return new VSMXNumber(object.getInterpreter(), value.getFloatValue());
+	}
+
+	public VSMXBaseObject Int(VSMXBaseObject object, VSMXBaseObject value) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Int: %s", value));
+		}
+
+		return new VSMXNumber(object.getInterpreter(), value.getIntValue());
+	}
 }

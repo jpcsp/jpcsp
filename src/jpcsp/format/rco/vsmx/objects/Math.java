@@ -37,6 +37,8 @@ public class Math extends BaseNativeObject {
 		VSMXNativeObject object = new VSMXNativeObject(interpreter, math);
 		math.setObject(object);
 
+		object.setPropertyValue("PI", new VSMXNumber(interpreter, (float) java.lang.Math.PI));
+
 		return object;
 	}
 
@@ -61,5 +63,13 @@ public class Math extends BaseNativeObject {
 
 	public VSMXBaseObject abs(VSMXBaseObject object, VSMXBaseObject value) {
 		return new VSMXNumber(interpreter, (float) java.lang.Math.abs(value.getFloatValue()));
+	}
+
+	public VSMXBaseObject sin(VSMXBaseObject object, VSMXBaseObject value) {
+		return new VSMXNumber(interpreter, (float) java.lang.Math.sin(value.getFloatValue()));
+	}
+
+	public VSMXBaseObject cos(VSMXBaseObject object, VSMXBaseObject value) {
+		return new VSMXNumber(interpreter, (float) java.lang.Math.cos(value.getFloatValue()));
 	}
 }
