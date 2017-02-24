@@ -22,6 +22,9 @@ import jpcsp.format.rco.vsmx.objects.NativeFunctionFactory;
 public class VSMXMethod extends VSMXBaseObject {
 	private VSMXBaseObject object;
 	private String name;
+	private VSMXBaseObject thisObject;
+	private int numberOfArguments;
+	private VSMXBaseObject[] arguments;
 
 	public VSMXMethod(VSMXInterpreter interpreter, VSMXBaseObject object, String name) {
 		super(interpreter);
@@ -37,12 +40,42 @@ public class VSMXMethod extends VSMXBaseObject {
 		return name;
 	}
 
-	public VSMXFunction getFunction(int numberOfArguments) {
+	public VSMXBaseObject getThisObject() {
+		return thisObject;
+	}
+
+	public VSMXBaseObject[] getArguments() {
+		return arguments;
+	}
+
+	public int getNumberOfArguments() {
+		return numberOfArguments;
+	}
+
+	public VSMXFunction getFunction(int numberOfArguments, VSMXBaseObject[] arguments) {
+		this.numberOfArguments = numberOfArguments;
+		this.arguments = arguments;
+		thisObject = object.getValue();
+
 		if (object.hasPropertyValue(name)) {
 			VSMXBaseObject function = object.getPropertyValue(name).getValue();
 			if (function != null && function instanceof VSMXFunction) {
 				return (VSMXFunction) function;
 			}
+		}
+
+		if (object instanceof VSMXFunction && callName.equals(name)) {
+			// The first argument of the "call()" function call is the "this" object.
+			if (numberOfArguments > 0) {
+				this.numberOfArguments--;
+				if (arguments.length > 0) {
+					thisObject = arguments[0];
+					this.arguments = new VSMXBaseObject[this.numberOfArguments];
+					System.arraycopy(arguments, 1, this.arguments, 0, this.numberOfArguments);
+				}
+			}
+
+			return (VSMXFunction) object;
 		}
 
 		INativeFunction nativeFunction = null;

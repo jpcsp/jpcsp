@@ -503,13 +503,13 @@ public class VSMXInterpreter {
 				o = stack.pop().getValueWithArguments(code.value);
 				if (o instanceof VSMXMethod) {
 					VSMXMethod method = (VSMXMethod) o;
-					VSMXFunction function = method.getFunction(code.value);
+					VSMXFunction function = method.getFunction(code.value, arguments);
 
 					if (function == null) {
 						stack.push(VSMXNull.singleton);
 						log.warn(String.format("Line#%d non existing method %s()", pc - 1, method.getName()));
 					} else {
-						callFunction(function, method.getObject().getValue(), arguments, code.value, false);
+						callFunction(function, method.getThisObject(), method.getArguments(), method.getNumberOfArguments(), false);
 					}
 				} else if (o instanceof VSMXFunction) {
 					VSMXFunction function = (VSMXFunction) o;

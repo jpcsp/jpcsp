@@ -27,6 +27,7 @@ public abstract class VSMXBaseObject {
 	public static final Logger log = VSMX.log;
 	protected static final String lengthName = "length";
 	protected static final String prototypeName = "prototype";
+	protected static final String callName = "call";
 	protected VSMXInterpreter interpreter;
 
 	public VSMXBaseObject(VSMXInterpreter interpreter) {
