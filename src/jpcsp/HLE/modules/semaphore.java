@@ -168,10 +168,6 @@ public class semaphore extends HLEModule {
     		inBytes[i] = (byte) memoryReaderIn.readNext();
     	}
 
-    	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceUtilsBufferCopyWithRange inAddr: %s", Utilities.getMemoryDump(inAddr.getAddress(), originalInSize)));
-    	}
-
     	// Some KIRK commands (e.g. PSP_KIRK_CMD_SHA1_HASH) only update a part of the output buffer.
     	// Read the whole output buffer so that it can be updated completely after the KIRK call.
     	byte[] outBytes = new byte[Utilities.alignUp(outSize, 15)];
@@ -181,7 +177,11 @@ public class semaphore extends HLEModule {
     		outBytes[i] = (byte) memoryReaderOut.readNext();
     	}
 
-    	if (!preDecrypt(outBytes, outSize, inBytes, originalInSize, cmd)) {
+    	if (preDecrypt(outBytes, outSize, inBytes, originalInSize, cmd)) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("sceUtilsBufferCopyWithRange using pre-decrypted data"));
+    		}
+    	} else {
 	    	// Call the KIRK engine to perform the given command
 	    	CryptoEngine crypto = new CryptoEngine();
 	    	int result = crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, outSize, inBuffer, inSize, originalInSize, cmd);
@@ -196,10 +196,6 @@ public class semaphore extends HLEModule {
     		memoryWriter.writeNext(outBytes[i] & 0xFF);
     	}
     	memoryWriter.flush();
-
-    	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceUtilsBufferCopyWithRange outAddr: %s", Utilities.getMemoryDump(outAddr.getAddress(), outSize)));
-    	}
 
     	return 0;
     }
