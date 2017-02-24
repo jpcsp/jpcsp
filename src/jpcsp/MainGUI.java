@@ -2749,6 +2749,9 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }//GEN-LAST:event_xbrzCheckActionPerformed
 
     private void exitEmu() {
+    	if (umdvideoplayer != null) {
+    		umdvideoplayer.exit();
+    	}
         ProOnlineNetworkAdapter.exit();
         Modules.ThreadManForUserModule.exit();
         Modules.sceDisplayModule.exit();

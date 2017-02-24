@@ -310,6 +310,10 @@ public class UmdVideoPlayer implements KeyListener {
         init();
     }
 
+    public void exit() {
+    	stopDisplayThread();
+    }
+
     @Override
     public void keyPressed(KeyEvent event) {
     	State.controller.keyPressed(event);
@@ -917,12 +921,13 @@ public class UmdVideoPlayer implements KeyListener {
 	}
 
 	private boolean readPsmfPacket(int videoChannel, int audioChannel) {
-		while (true) {
+		while (!done) {
 			int startCode = read32();
 			if (startCode == -1) {
 				// End of file
-				return false;
+				break;
 			}
+
 			int codeLength, pesLength;
 			switch (startCode) {
 				case PACK_START_CODE:
@@ -961,6 +966,8 @@ public class UmdVideoPlayer implements KeyListener {
 					break;
 			}
 		}
+
+		return false;
 	}
 
 	private void consumeVideoData(int length) {
@@ -1149,7 +1156,7 @@ public class UmdVideoPlayer implements KeyListener {
 	    	} else {
 	    		frameSize = findVideoFrameEnd();
 	    	}
-	    } while (frameSize <= 0);
+	    } while (frameSize <= 0 && !done);
 
 	    if (frameSize <= 0) {
 	    	endOfVideo = true;
