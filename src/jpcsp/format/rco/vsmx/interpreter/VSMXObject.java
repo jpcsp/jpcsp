@@ -131,7 +131,7 @@ public class VSMXObject extends VSMXBaseObject {
 			// Return true if both values refer to the same object
 			return this == value;
 		}
-		return super.equals(value);
+		return false;
 	}
 
 	@Override
