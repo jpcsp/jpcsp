@@ -248,14 +248,21 @@ public class CodeInstruction {
             	//    0x00000014    nop
             	//    0x00000018    something
             	//
-                if (branchingToCodeInstruction.getInsn() == Instructions.NOP) {
-                	CodeInstruction beforeBranchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() - 4);
-                	if (beforeBranchingToCodeInstruction != null && beforeBranchingToCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+            	CodeInstruction beforeBranchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() - 4);
+            	if (beforeBranchingToCodeInstruction != null && beforeBranchingToCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+            		if (branchingToCodeInstruction.getInsn() == Instructions.NOP) {
     	            	if (log.isDebugEnabled()) {
     	            		log.debug(String.format("0x%08X: branching to a NOP in a delay slot, correcting to the next instruction", getAddress()));
     	            	}
-    	            	branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() + 4);
-                	}
+            		} else {
+    	            	if (log.isDebugEnabled()) {
+    	            		log.debug(String.format("0x%08X: branching to an instruction in a delay slot, emitting the delay slot instruction and correcting to the next instruction", getAddress()));
+    	            	}
+            			branchingToCodeInstruction.compile(context, mv);
+            	        context.setCodeInstruction(this);
+            	        context.skipInstructions(1, false);
+            		}
+	            	branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() + 4);
                 }
 
                 context.visitJump(branchingOpcode, branchingToCodeInstruction);
@@ -287,7 +294,7 @@ public class CodeInstruction {
         if (delaySlotCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
         	// Issue a warning when compiling an instruction having a delay slot inside a delay slot.
         	// See http://code.google.com/p/pcsx2/source/detail?r=5541
-		String lineSeparator = System.getProperty("line.separator");
+        	String lineSeparator = System.getProperty("line.separator");
         	log.warn(String.format("Instruction in a delay slot having a delay slot:%s%s%s%s", lineSeparator, this, lineSeparator, delaySlotCodeInstruction));
         }
 
