@@ -458,10 +458,6 @@ public class sceSasCore extends HLEModule {
             }
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("__sceSasGetEndFlag returning 0x%08X", endFlag));
-        }
-
         return endFlag;
     }
 

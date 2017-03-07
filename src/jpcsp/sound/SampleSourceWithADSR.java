@@ -230,24 +230,22 @@ public class SampleSourceWithADSR implements ISampleSource {
 					// Switch Attack to Decay: when the envelope height gets over the upper limit
 					//                         or under the lower limit
 					if (envelopeHeight >= PSP_SAS_ENVELOPE_HEIGHT_MAX || envelopeHeight < 0) {
+						if (envelopeHeight >= PSP_SAS_ENVELOPE_HEIGHT_MAX) {
+							envelopeHeight = PSP_SAS_ENVELOPE_HEIGHT_MAX;
+						}
 						setCurve(DECAY_CURVE_STATE);
 					}
 					break;
 				case DECAY_CURVE_STATE:
 					stepCurve(envelope.DecayCurveType, envelope.DecayRate);
-					// Switch Decay to Sustain: when the envelope height gets over the upper limit
-					//                          or under the sustain level
-					if (envelopeHeight >= PSP_SAS_ENVELOPE_HEIGHT_MAX || envelopeHeight < envelope.SustainLevel) {
+					// Switch Decay to Sustain: when the envelope height gets under the sustain level
+					if (envelopeHeight < envelope.SustainLevel) {
 						setCurve(SUSTAIN_CURVE_STATE);
-
-						// When switching from Decay to Sustain, directly step into the Sustain
-						// curve to avoid stopping the voice if the Decay envelope had reach 0.
-						stepCurve(envelope.SustainCurveType, envelope.SustainRate);
 					}
 					break;
 				case SUSTAIN_CURVE_STATE:
 					stepCurve(envelope.SustainCurveType, envelope.SustainRate);
-					// Switch Sustain to Release: this switch only happens setting the key off.
+					// Switch Sustain to Release: this switch only happens when setting the key off.
 					break;
 				case RELEASE_CURVE_STATE:
 					stepCurve(envelope.ReleaseCurveType, envelope.ReleaseRate);
@@ -330,7 +328,7 @@ public class SampleSourceWithADSR implements ISampleSource {
 		int modulatedSample = SoundMixer.getSampleStereo(modulatedSampleLeft, modulatedSampleRight);
 
 		if (tracing) {
-			sceSasCore.log.trace(String.format("getNextSample voice=%d, sample=0x%08X, envelopeHeight=0x%08X, modulatedSample=0x%08X", voice.getIndex(), sample, envelopeHeight, modulatedSample));
+			sceSasCore.log.trace(String.format("getNextSample voice=0x%X, sample=0x%08X, envelopeHeight=0x%08X, modulatedSample=0x%08X", voice.getIndex(), sample, envelopeHeight, modulatedSample));
 		}
 
 		// Store the current envelope height
