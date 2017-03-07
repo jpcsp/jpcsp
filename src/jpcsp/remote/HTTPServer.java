@@ -512,7 +512,7 @@ public class HTTPServer {
 		connection.setRequestMethod(request.get(method));
 		String additionalData = request.get(data);
 		if (additionalData != null) {
-			if ("/nav/auth".equals(request.get(path)) && additionalData.contains("&consoleid=")) {
+			if ("/nav/auth".equals(pathValue) && additionalData.contains("&consoleid=")) {
 				// Remove the "consoleid" parameter as it is recognized as invalid.
 				// The dummy value returned by sceOpenPSIDGetPSID is not valid.
 				additionalData = additionalData.replaceAll("\\&consoleid=[0-9a-fA-F]*", "");
