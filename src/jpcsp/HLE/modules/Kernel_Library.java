@@ -139,7 +139,7 @@ public class Kernel_Library extends HLEModule {
 	}
 
     @HLELogging(level="trace")
-    @HLEFunction(nid = 0x1839852A, version = 380)
+    @HLEFunction(nid = 0x1839852A, version = 150)
     public int sceKernelMemcpy(@BufferInfo(lengthInfo=LengthInfo.nextNextParameter, usage=Usage.out) TPointer dst, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer src, int length) {
     	if (dst.getAddress() != src.getAddress()) {
     		dst.getMemory().memcpyWithVideoCheck(dst.getAddress(), src.getAddress(), length);
