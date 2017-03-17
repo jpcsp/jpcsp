@@ -19,6 +19,7 @@ package jpcsp.HLE.modules;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static jpcsp.Allegrex.Common._s0;
+import static jpcsp.Allegrex.Common._s1;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_JPEG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_PNG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_NAMERULE_AUTONUM;
@@ -40,6 +41,9 @@ import static jpcsp.graphics.GeCommands.VTYPE_TRANSFORM_PIPELINE_RAW_COORD;
 import static jpcsp.graphics.RE.IRenderingEngine.GU_TEXTURE_2D;
 import static jpcsp.graphics.VideoEngine.alignBufferWidth;
 import static jpcsp.memory.ImageReader.colorARGBtoABGR;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -291,6 +295,7 @@ public class sceUtility extends HLEModule {
     protected UtilityDialogState startedDialogState;
     private static final String dummyNetParamName = "NetConf #%d";
     private final static int utilityThreadActionRegister = _s0; // $s0 is preserved across calls
+    private final static int utilityThreadDelayRegister = _s1; // $s1 is preserved across calls
     private final static int UTILITY_THREAD_ACTION_SHUTDOWN_START = 0;
     private final static int UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE = 1;
     protected HashMap<Integer, SceModule> loadedAvModules = new HashMap<Integer, SceModule>();
@@ -518,8 +523,9 @@ public class sceUtility extends HLEModule {
 
     public void hleUtilityThread(Processor processor) {
     	int action = processor.cpu.getRegister(utilityThreadActionRegister);
+    	int delay = processor.cpu.getRegister(utilityThreadDelayRegister);
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("hleUtilityThread action=%d", action));
+    		log.debug(String.format("hleUtilityThread action=%d, delay=%d", action, delay));
     	}
 
     	switch (action) {
@@ -527,7 +533,7 @@ public class sceUtility extends HLEModule {
     			// Starting the shutdown action.
     			// Wait a short time before completing the shutdown.
     			processor.cpu.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE);
-    			Modules.ThreadManForUserModule.hleKernelDelayThread(50000, false);
+    			Modules.ThreadManForUserModule.hleKernelDelayThread(delay, false);
     			break;
 	    	case UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE:
 	    		// Completing the shutdown action.
@@ -766,6 +772,7 @@ public class sceUtility extends HLEModule {
             SceKernelThreadInfo shutdownThread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceUtilityShutdown", ThreadManForUser.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0, SysMemUserForUser.USER_PARTITION_ID);
             Modules.ThreadManForUserModule.hleKernelStartThread(shutdownThread, 0, 0, shutdownThread.gpReg_addr);
             shutdownThread.cpuContext.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN_START);
+            shutdownThread.cpuContext.setRegister(utilityThreadDelayRegister, getShutdownDelay());
 
             return 0;
         }
@@ -900,6 +907,16 @@ public class sceUtility extends HLEModule {
 
         public void setYesSelected(boolean isYesSelected) {
             this.isYesSelected = isYesSelected;
+        }
+
+        protected int getShutdownDelay() {
+        	if (hasDialog()) {
+        		// The shutdown is taking some time to complete
+        		// when a dialog has been shown to the user.
+            	return 50000;
+        	}
+
+        	return 0;
         }
     }
 
@@ -2623,7 +2640,8 @@ public class sceUtility extends HLEModule {
         protected void createDialog(final UtilityDialogState utilityDialogState) {
             this.utilityDialogState = utilityDialogState;
             if (log.isDebugEnabled()) {
-                log.debug(String.format("Free memory total=0x%X, max=0x%X", Modules.SysMemUserForUserModule.totalFreeMemSize(), Modules.SysMemUserForUserModule.maxFreeMemSize()));
+            	int partitionId = SysMemUserForUser.USER_PARTITION_ID;
+                log.debug(String.format("Free memory total=0x%X, max=0x%X", Modules.SysMemUserForUserModule.totalFreeMemSize(partitionId), Modules.SysMemUserForUserModule.maxFreeMemSize(partitionId)));
             }
 
             startDialogMillis = Emulator.getClock().milliTime();
@@ -4012,7 +4030,7 @@ public class sceUtility extends HLEModule {
         PSP_MODULE_AV_VAUDIO(0x0305),
         PSP_MODULE_AV_AAC(0x0306),
         PSP_MODULE_AV_G729(0x0307),
-        PSP_MODULE_AV_MP4(0x0308),
+        PSP_MODULE_AV_MP4(0x0308, new String[] { "flash0:/kd/libmp4.prx", "flash0:/kd/mp4msv.prx" } ),
         PSP_MODULE_NP_COMMON(0x0400, new String[] { "flash0:/kd/np.prx", "flash0:/kd/np_core.prx", "flash0:/kd/np_auth.prx" }),
         PSP_MODULE_NP_SERVICE(0x0401, "flash0:/kd/np_service.prx"),
         PSP_MODULE_NP_MATCHING2(0x0402, "flash0:/kd/np_matching2.prx"),
@@ -4229,7 +4247,7 @@ public class sceUtility extends HLEModule {
     }
 
     @HLEFunction(nid = 0x50C4CD57, version = 150)
-    public int sceUtilitySavedataInitStart(TPointer paramsAddr) {
+    public int sceUtilitySavedataInitStart(@BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.inout) TPointer paramsAddr) {
         return savedataState.executeInitStart(paramsAddr);
     }
 
@@ -4965,7 +4983,7 @@ public class sceUtility extends HLEModule {
             }
         }
 
-        int result = Modules.ModuleMgrForUserModule.hleKernelLoadModule(path, 0, 0, 0, 0, lmOption, false, false);
+        int result = Modules.ModuleMgrForUserModule.hleKernelLoadModule(path, 0, 0, 0, 0, lmOption, false, false, true, 0);
 
 		return result;
 	}
