@@ -52,6 +52,34 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
     // SeekableRandomFile doesn't support write only: take "rw",
     private final static String[] modeStrings = {"r", "r", "rw", "rw"};
 
+    /**
+     * Get the file name as returned from the memory stick.
+     * In some cases, the name is uppercased.
+     *
+     * The following cases have been tested:
+     * - "a"                => "A"
+     * - "B"                => "B"
+     * - "b.txt"            => "B.TXT"
+     * - "cC"               => "cC"
+     * - "LongFileName.txt" => "LongFileName.txt"
+     * - "aaaaaaaa"         => "AAAAAAAA"
+     * - "aaaaaaaa.aaa"     => "AAAAAAAA.AAA"
+     * - "aaaaaaaaa"        => "aaaaaaaaa"
+     * - "aaaaaaaa.aaaa"    => "aaaaaaaa.aaaa"
+     *
+     * It seems that file names in the format 8.3 only containing lowercase characters
+     * are converted to uppercase characters.
+     */
+    public static String getMsFileName(String fileName) {
+    	if (fileName == null) {
+    		return fileName;
+    	}
+    	if (fileName.matches("[^A-Z]{1,8}(\\.[^A-Z]{1,3})?")) {
+    		return fileName.toUpperCase();
+    	}
+    	return fileName;
+    }
+
 	public LocalVirtualFileSystem(String localPath, boolean useDirExtendedInfo) {
 		this.localPath = localPath;
 		this.useDirExtendedInfo = useDirExtendedInfo;
@@ -158,7 +186,14 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 			return null;
 		}
 
-		return file.list();
+    	String files[] = file.list();
+    	if (files != null) {
+        	for (int i = 0; i < files.length; i++) {
+        		files[i] = getMsFileName(files[i]);
+        	}
+    	}
+
+    	return files;
 	}
 
 	@Override

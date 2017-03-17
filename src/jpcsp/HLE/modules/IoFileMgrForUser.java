@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.Common._s0;
+import static jpcsp.HLE.VFS.local.LocalVirtualFileSystem.getMsFileName;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_ALREADY_EXISTS;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
@@ -3264,7 +3265,7 @@ public class IoFileMgrForUser extends HLEModule {
                 	String files[] = f.list();
                 	if (files != null) {
 	                	for (int i = 0; i < files.length; i++) {
-	                		files[i] = files[i].toUpperCase();
+	                		files[i] = getMsFileName(files[i]);
 	                	}
                 	}
                     IoDirInfo info = new IoDirInfo(pcfilename, files);
