@@ -92,7 +92,7 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
     public static SceKernelVplInfo tryCreateVpl(String name, int partitionid, int attr, int size, int memType) {
         SceKernelVplInfo info = null;
         int totalVplSize = Utilities.alignUp(size, vplAddrAlignment); // 8-byte align
-        int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
+        int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize(partitionid);
 
         if (totalVplSize <= maxFreeSize) {
             info = new SceKernelVplInfo(name, partitionid, attr, totalVplSize, memType);

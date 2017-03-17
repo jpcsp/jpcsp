@@ -77,7 +77,7 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
         SceKernelFplInfo info = null;
         int alignedBlockSize = memAlign == 0 ? blockSize : Utilities.alignUp(blockSize, memAlign - 1);
         int totalFplSize = alignedBlockSize * numBlocks;
-        int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
+        int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize(partitionid);
 
         if (totalFplSize <= maxFreeSize) {
             info = new SceKernelFplInfo(name, partitionid, attr, blockSize, numBlocks, memType, memAlign);

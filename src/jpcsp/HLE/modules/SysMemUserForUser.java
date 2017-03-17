@@ -262,7 +262,7 @@ public class SysMemUserForUser extends HLEModule {
 
         SysMemInfo sysMemInfo;
 		if (allocatedAddress == 0) {
-            log.warn(String.format("malloc cannot allocate partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X, maxFreeMem=0x%X, totalFreeMem=0x%X", partitionid, name, getTypeName(type), size, addr, maxFreeMemSize(), totalFreeMemSize()));
+            log.warn(String.format("malloc cannot allocate partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X, maxFreeMem=0x%X, totalFreeMem=0x%X", partitionid, name, getTypeName(type), size, addr, maxFreeMemSize(partitionid), totalFreeMemSize(partitionid)));
 			if (log.isTraceEnabled()) {
 				log.trace("Free list: " + getDebugFreeMem());
 				log.trace("Allocated blocks:\n" + getDebugAllocatedMem() + "\n");
@@ -320,9 +320,9 @@ public class SysMemUserForUser extends HLEModule {
     	}
     }
 
-    public int maxFreeMemSize() {
+    public int maxFreeMemSize(int partitionid) {
     	int maxFreeMemSize = 0;
-    	for (MemoryChunk memoryChunk = freeMemoryChunks[USER_PARTITION_ID].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
+    	for (MemoryChunk memoryChunk = freeMemoryChunks[partitionid].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
     		if (memoryChunk.size > maxFreeMemSize) {
     			maxFreeMemSize = memoryChunk.size;
     		}
@@ -330,9 +330,9 @@ public class SysMemUserForUser extends HLEModule {
 		return maxFreeMemSize;
     }
 
-    public int totalFreeMemSize() {
+    public int totalFreeMemSize(int partitionid) {
         int totalFreeMemSize = 0;
-    	for (MemoryChunk memoryChunk = freeMemoryChunks[USER_PARTITION_ID].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
+    	for (MemoryChunk memoryChunk = freeMemoryChunks[partitionid].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
     		totalFreeMemSize += memoryChunk.size;
     	}
 
@@ -480,7 +480,7 @@ public class SysMemUserForUser extends HLEModule {
 
     @HLEFunction(nid = 0xA291F107, version = 150)
     public int sceKernelMaxFreeMemSize() {
-		int maxFreeMemSize = maxFreeMemSize();
+		int maxFreeMemSize = maxFreeMemSize(USER_PARTITION_ID);
 
         // Some games expect size to be rounded down in 16 bytes block
         maxFreeMemSize &= ~15;
@@ -494,7 +494,7 @@ public class SysMemUserForUser extends HLEModule {
 
 	@HLEFunction(nid = 0xF919F628, version = 150)
 	public int sceKernelTotalFreeMemSize() {
-		int totalFreeMemSize = totalFreeMemSize();
+		int totalFreeMemSize = totalFreeMemSize(USER_PARTITION_ID);
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceKernelTotalFreeMemSize returning %d(hex=0x%1$X)", totalFreeMemSize));
     	}
