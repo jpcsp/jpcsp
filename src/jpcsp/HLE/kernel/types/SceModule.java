@@ -120,8 +120,9 @@ public class SceModule {
         address = sceModuleAddressOffset;
 
         // Link SceModule structs together
-        if (previousModule != null)
+        if (previousModule != null) {
             previousModule.next = address;
+        }
         previousModule = this;
 
         // Internal context
