@@ -30,7 +30,9 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 
@@ -70,6 +72,14 @@ public class HLEModuleManager {
      * where A = major and B = minor, for example 271.
      */
     private int firmwareVersion;
+
+    /**
+     * List of PSP modules that can be loaded when they are available.
+     * They will then replace the HLE equivalent.
+     */
+	private static final String[] moduleFileNamesToBeLoaded = {
+			"flash0:/kd/utility.prx"
+	};
 
     /**
      * List of modules that can be loaded
@@ -138,7 +148,7 @@ public class HLEModuleManager {
         sceNpCamp(Modules.sceNpCampModule, new String[] { "np_campaign" }),
         scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM" }),
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
-        sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4", "mp4msv" }),
+        sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4", "mp4msv", "libmp4" }),
         sceHttp(Modules.sceHttpModule, new String[] { "libhttp", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceHttps(Modules.sceHttpsModule, new String[] { "libhttp", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceHttpStorage(Modules.sceHttpStorageModule, new String[] { "http_storage" }),
@@ -194,7 +204,8 @@ public class HLEModuleManager {
         sceNetStun(Modules.sceNetStunModule),
         sceMeMemory(Modules.sceMeMemoryModule),
         sceMeVideo(Modules.sceMeVideoModule),
-        sceMeAudio(Modules.sceMeAudioModule);
+        sceMeAudio(Modules.sceMeAudioModule),
+        InitForKernel(Modules.InitForKernelModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
@@ -512,14 +523,20 @@ public class HLEModuleManager {
 		this.startFromSyscall = startFromSyscall;
 
 		for (DefaultModule defaultModule : DefaultModule.values()) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Starting module %s", defaultModule.module.getName()));
-			}
+			if (defaultModule.module.isStarted()) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Module %s already started", defaultModule.module.getName()));
+				}
+			} else {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Starting module %s", defaultModule.module.getName()));
+				}
 
-			defaultModule.module.start();
+				defaultModule.module.start();
 
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Started module %s", defaultModule.module.getName()));
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Started module %s", defaultModule.module.getName()));
+				}
 			}
 		}
 
@@ -640,5 +657,35 @@ public class HLEModuleManager {
 
 		installedModules.remove(hleModule);
 		hleModule.unload();
+	}
+
+	public void loadAvailableFlash0Modules() {
+		List<String> availableModuleFileNames = new LinkedList<>();
+		for (String moduleFileName : moduleFileNamesToBeLoaded) {
+			StringBuilder localFileName = new StringBuilder();
+			IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(moduleFileName, localFileName);
+			if (vfs != null && vfs.ioGetstat(localFileName.toString(), new SceIoStat()) == 0) {
+				// The module is available, load it
+				availableModuleFileNames.add(moduleFileName);
+			}
+		}
+
+		if (availableModuleFileNames.isEmpty()) {
+			// No module available, do nothing
+			return;
+		}
+
+		// These 2 HLE modules need to be started in order
+		// to be able to load and start the available modules.
+		Modules.ModuleMgrForUserModule.start();
+    	Modules.ThreadManForUserModule.start();
+
+    	int startPriority = 0x10;
+    	for (String moduleFileName : availableModuleFileNames) {
+        	if (log.isInfoEnabled()) {
+        		log.info(String.format("Loading and starting the module '%s', it will replace the equivalent HLE functions", moduleFileName));
+        	}
+    		Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(moduleFileName, startPriority++);
+    	}
 	}
 }

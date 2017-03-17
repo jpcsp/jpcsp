@@ -622,6 +622,7 @@ public class ThreadManForUser extends HLEModule {
 
     @Override
     public void start() {
+    	currentThread = null;
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
         threadEventHandlers = new HashMap<Integer, SceKernelThreadEventHandlerInfo>();
         readyThreads = new LinkedList<SceKernelThreadInfo>();
@@ -630,7 +631,7 @@ public class ThreadManForUser extends HLEModule {
         callbackMap = new HashMap<Integer, pspBaseCallback>();
         callbackManager.Initialize();
 
-        // Reserve the memory user the internal handlers
+        // Reserve the memory used by the internal handlers
         Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-InternalHandlers", SysMemUserForUser.PSP_SMEM_Addr, INTERNAL_THREAD_ADDRESS_SIZE, INTERNAL_THREAD_ADDRESS_START);
         installIdleThreads();
         installThreadExitHandler();
@@ -707,31 +708,29 @@ public class ThreadManForUser extends HLEModule {
         if (module != null && module.module_start_thread_priority > 0) {
             rootInitPriority = module.module_start_thread_priority;
         }
+        SceKernelThreadInfo rootThread = new SceKernelThreadInfo("root", entry_addr, rootInitPriority, rootStackSize, attr, rootMpidStack);
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("Creating root thread: entry=0x%08X, priority=%d, stackSize=0x%X, attr=0x%X", entry_addr, rootInitPriority, rootStackSize, attr));
+        	log.debug(String.format("Creating root thread: uid=0x%X, entry=0x%08X, priority=%d, stackSize=0x%X, attr=0x%X", rootThread.uid, entry_addr, rootInitPriority, rootStackSize, attr));
         }
-        currentThread = new SceKernelThreadInfo("root", entry_addr, rootInitPriority, rootStackSize, attr, rootMpidStack);
-        currentThread.moduleid = moduleid;
-        threadMap.put(currentThread.uid, currentThread);
+        rootThread.moduleid = moduleid;
+        threadMap.put(rootThread.uid, rootThread);
 
         // Set user mode bit if kernel mode bit is not present
-        if (!currentThread.isKernelMode()) {
-            currentThread.attr |= PSP_THREAD_ATTR_USER;
+        if (!rootThread.isKernelMode()) {
+        	rootThread.attr |= PSP_THREAD_ATTR_USER;
         }
 
         // Setup args by copying them onto the stack
-        hleKernelSetThreadArguments(currentThread, pspfilename);
+        hleKernelSetThreadArguments(rootThread, pspfilename);
 
         // Setup threads $gp
-        currentThread.cpuContext._gp = gp;
+        rootThread.cpuContext._gp = gp;
         idle0.cpuContext._gp = gp;
         idle1.cpuContext._gp = gp;
 
-        currentThread.status = PSP_THREAD_READY;
+        hleChangeThreadState(rootThread, PSP_THREAD_READY);
 
-        // Switch in the thread
-        currentThread.status = PSP_THREAD_RUNNING;
-        currentThread.restoreContext();
+        hleRescheduleCurrentThread();
     }
 
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, String argument) {
@@ -2192,7 +2191,7 @@ public class ThreadManForUser extends HLEModule {
 
         RuntimeContext.onThreadStart(thread);
 
-        if (thread.currentPriority < currentThread.currentPriority) {
+        if (currentThread == null || thread.currentPriority < currentThread.currentPriority) {
             if (log.isDebugEnabled()) {
                 log.debug("hleKernelStartThread switching in thread immediately");
             }
@@ -4273,7 +4272,7 @@ public class ThreadManForUser extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xBC31C1B9, version = 620, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xBC31C1B9, version = 150, checkInsideInterrupt = true)
     public int sceKernelExtendKernelStack(CpuState cpu, @CheckArgument("checkStackSize") int size, TPointer entryAddr, int entryParameter) {
         // sceKernelExtendKernelStack executes the code at entryAddr using a larger
         // stack. The entryParameter is  passed as the only parameter ($a0) to

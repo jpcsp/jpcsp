@@ -255,7 +255,7 @@ public class scePspNpDrm_user extends HLEModule {
             return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true);
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true, true, 0);
     }
 
     @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)
@@ -333,6 +333,12 @@ public class scePspNpDrm_user extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x0F9547E6, version = 150)
     public int sceNpDrmGetVersionKey(TPointer unknown1, @CanBeNull TPointer unknown2, TPointer unknown3, int unknown4) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2D88879A, version = 150)
+    public int sceNpDrm_2D88879A() {
         return 0;
     }
 }

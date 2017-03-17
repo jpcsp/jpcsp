@@ -69,7 +69,6 @@ import jpcsp.util.Utilities;
 
 public class Loader {
     private static Loader instance;
-    private boolean loadedFirstModule;
     private static Logger log = Logger.getLogger("loader");
 
     public final static int SCE_MAGIC = 0x4543537E;
@@ -94,10 +93,6 @@ public class Loader {
     private Loader() {
     }
 
-    public void reset() {
-        loadedFirstModule = false;
-    }
-
     /**
      * @param pspfilename   Example:
      *                      ms0:/PSP/GAME/xxx/EBOOT.PBP
@@ -114,7 +109,7 @@ public class Loader {
      *                      fileFormat member against the FORMAT_* bits.
      *                      Example: (fileFormat & FORMAT_ELF) == FORMAT_ELF
      **/
-    public SceModule LoadModule(String pspfilename, ByteBuffer f, int baseAddress, int mpidText, int mpidData, boolean analyzeOnly) throws IOException {
+    public SceModule LoadModule(String pspfilename, ByteBuffer f, int baseAddress, int mpidText, int mpidData, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
         SceModule module = new SceModule(false);
 
         int currentOffset = f.position();
@@ -139,20 +134,20 @@ public class Loader {
         // chain loaders
         do {
             f.position(currentOffset);
-            if (LoadPBP(f, module, baseAddress, analyzeOnly)) {
+            if (LoadPBP(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall)) {
                 currentOffset = f.position();
 
                 // probably kxploit stub
                 if (currentOffset == f.limit())
                     break;
-            } else if (!loadedFirstModule) {
-                loadPSF(module, analyzeOnly);
+            } else if (!fromSyscall) {
+                loadPSF(module, analyzeOnly, allocMem, fromSyscall);
             }
 
             if (module.psf != null) {
                 log.info("PBP meta data :\n" + module.psf);
 
-                if (!loadedFirstModule) {
+                if (!fromSyscall) {
                     // Set firmware version from PSF embedded in PBP
                 	if (module.psf.isLikelyHomebrew()) {
                 		Emulator.getInstance().setFirmwareVersion(FIRMWAREVERSION_HOMEBREW);
@@ -164,23 +159,23 @@ public class Loader {
             }
             
             f.position(currentOffset);
-            if (LoadSPRX(f, module, baseAddress, analyzeOnly))
+            if (LoadSPRX(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall))
                 break;
 
             f.position(currentOffset);
-            if (LoadSCE(f, module, baseAddress, analyzeOnly))
+            if (LoadSCE(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall))
                 break;
 
             f.position(currentOffset);
-            if (LoadPSP(f, module, baseAddress, analyzeOnly))
+            if (LoadPSP(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall))
                 break;
 
             f.position(currentOffset);
-            if (LoadELF(f, module, baseAddress, analyzeOnly))
+            if (LoadELF(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall))
                 break;
 
             f.position(currentOffset);
-            LoadUNK(f, module, baseAddress, analyzeOnly);
+            LoadUNK(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall);
         } while(false);
 
         patchModule(module);
@@ -188,7 +183,7 @@ public class Loader {
         return module;
     }
 
-    private void loadPSF(SceModule module, boolean analyzeOnly) {
+    private void loadPSF(SceModule module, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) {
         if (module.psf != null)
             return;
 
@@ -272,7 +267,7 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadPBP(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
+    private boolean LoadPBP(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
         PBP pbp = new PBP(f);
         if (pbp.isValid()) {
             module.fileFormat |= FORMAT_PBP;
@@ -299,14 +294,14 @@ public class Loader {
     }
     
     /** @return true on success */
-    private boolean LoadSPRX(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
+    private boolean LoadSPRX(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
         int magicPSP = Utilities.readWord(f);
         int magicEDAT = Utilities.readWord(f);
         if ((magicPSP == PSP_MAGIC) && (magicEDAT == EDAT_MAGIC)) {
             log.warn("Encrypted file detected! (.PSPEDAT)");
             // Skip the EDAT header and load as a regular ~PSP prx.
             f.position(0x90);
-            LoadPSP(f.slice(), module, baseAddress, analyzeOnly);
+            LoadPSP(f.slice(), module, baseAddress, analyzeOnly, allocMem, fromSyscall);
             return true;
         }
         // Not a valid SPRX
@@ -314,7 +309,7 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadSCE(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
+    private boolean LoadSCE(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
         int magic = Utilities.readWord(f);
         if (magic == SCE_MAGIC) {
             module.fileFormat |= FORMAT_SCE;
@@ -326,26 +321,27 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadPSP(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
+    private boolean LoadPSP(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
         PSP psp = new PSP(f);
-        if (psp.isValid()) {
-            module.fileFormat |= FORMAT_PSP;
-            log.warn("Encrypted file detected! (~PSP)");
-            if(!loadedFirstModule) {
-            	long start = System.currentTimeMillis();
-            	ByteBuffer decryptedPrx = psp.decrypt(f);
-            	long end = System.currentTimeMillis();
-                log.info(String.format("Called crypto engine for PRX (duration=%d ms)", end - start));
-                LoadELF(decryptedPrx, module, baseAddress, analyzeOnly);
-            }
-            return true;
+        if (!psp.isValid()) {
+            // Not a valid PSP
+        	return false;
         }
-        // Not a valid PSP
-        return false;
+        module.fileFormat |= FORMAT_PSP;
+
+        long start = System.currentTimeMillis();
+    	ByteBuffer decryptedPrx = psp.decrypt(f);
+    	long end = System.currentTimeMillis();
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("Called crypto engine for PRX (duration=%d ms)", end - start));
+    	}
+
+    	return LoadELF(decryptedPrx, module, baseAddress, analyzeOnly, allocMem, fromSyscall);
     }
 
     /** @return true on success */
-    private boolean LoadELF(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
+    private boolean LoadELF(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
         int elfOffset = f.position();
         Elf32 elf = new Elf32(f);
         if (elf.getHeader().isValid()) {
@@ -412,18 +408,20 @@ public class Loader {
 	            // The following can only be done after relocation
 	            // Load .rodata.sceModuleInfo
 	            LoadELFModuleInfo(f, module, baseAddress, elf, elfOffset);
-	            // After LoadELFModuleInfo so the we can name the memory allocation after the module name
-	            LoadELFReserveMemory(module);
+	            if (allocMem) {
+		            // After LoadELFModuleInfo so the we can name the memory allocation after the module name
+		            LoadELFReserveMemory(module);
+	            }
 	            // Save imports
 	            LoadELFImports(module);
 	            // Save exports
 	            LoadELFExports(module);
 	            // Try to fixup imports for ALL modules
 	            Managers.modules.addModule(module);
-	            ProcessUnresolvedImports(module);
+	            ProcessUnresolvedImports(module, fromSyscall);
 
 	            // Debug
-	            LoadELFDebuggerInfo(f, module, baseAddress, elf, elfOffset);
+	            LoadELFDebuggerInfo(f, module, baseAddress, elf, elfOffset, fromSyscall);
 
 	            // If no text_addr is available up to now, use the lowest program header address
 	            if (module.text_addr == 0) {
@@ -440,8 +438,6 @@ public class Loader {
 
 	            // Flush module struct to psp mem
 	            module.write(Memory.getInstance(), module.address);
-
-	            loadedFirstModule = true;
             }
             return true;
         }
@@ -452,7 +448,7 @@ public class Loader {
 
     /** Dummy loader for unrecognized file formats, put at the end of a loader chain.
      * @return true on success */
-    private boolean LoadUNK(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
+    private boolean LoadUNK(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
 
         byte m0 = f.get();
         byte m1 = f.get();
@@ -1165,7 +1161,7 @@ public class Loader {
         }
     }
 
-    private void ProcessUnresolvedImports(SceModule sourceModule) {
+    private void ProcessUnresolvedImports(SceModule sourceModule, boolean fromSyscall) {
         Memory mem = Memory.getInstance();
         NIDMapper nidMapper = NIDMapper.getInstance();
         int numberoffailedNIDS = 0;
@@ -1226,7 +1222,7 @@ public class Loader {
                         it.remove();
                         numberofmappedNIDS++;
 
-                        if (loadedFirstModule && log.isDebugEnabled()) {
+                        if (fromSyscall && log.isDebugEnabled()) {
                             log.debug(String.format("Mapped import at 0x%08X to syscall 0x%05X [0x%08X] (attempt %d)",
                                 importAddress, code, nid, module.importFixupAttempts));
                         }
@@ -1536,7 +1532,7 @@ public class Loader {
     }
 
     private void LoadELFDebuggerInfo(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset) throws IOException {
+        Elf32 elf, int elfOffset, boolean fromSyscall) throws IOException {
         // Save executable section address/size for the debugger/instruction counter
         Elf32SectionHeader shdr;
 
@@ -1558,7 +1554,7 @@ public class Loader {
             module.stubtextsection[1] = shdr.getSh_size();
         }
 
-        if (!loadedFirstModule) {
+        if (!fromSyscall) {
             ElfHeaderInfo.ElfInfo = elf.getElfInfo();
             ElfHeaderInfo.ProgInfo = elf.getProgInfo();
             ElfHeaderInfo.SectInfo = elf.getSectInfo();
