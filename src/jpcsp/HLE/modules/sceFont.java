@@ -580,7 +580,7 @@ public class sceFont extends HLEModule {
             return numFonts;
         }
 
-        private Font openFont(Font font, boolean needAllocForFontFile) {
+        private Font openFont(Font font, int mode, boolean needAllocForFontFile) {
             if (font == null) {
                 throw (new SceKernelErrorException(SceKernelErrors.ERROR_FONT_INVALID_PARAMETER));
             }
@@ -604,7 +604,16 @@ public class sceFont extends HLEModule {
 
             int allocSize = 12;
             if (needAllocForFontFile) {
-            	allocSize += font.fontFileSize;
+            	if (mode == 0) {
+            		// mode == 0: only parts of the font file are read.
+            		// For jpn0.pgf, the alloc callback is called multiple times:
+            		//     0x7F8, 0x7F8, 0x7F8, 0x350, 0x3FC, 0x0, 0x0, 0x1BFC8, 0x5AB8
+            		// in total: 0x239B4
+            		allocSize = 0x239B4;
+            	} else if (mode == 1) {
+            		// mode == 1: the whole font file is read in memory
+            		allocSize += font.fontFileSize;
+            	}
             }
 
             triggerAllocCallback(allocSize, new AfterOpenAllocCallback(freeFontIndex));
@@ -952,14 +961,14 @@ public class sceFont extends HLEModule {
         	return 0;
         }
 
-        return fontLib.openFont(font, true).getHandle();
+        return fontLib.openFont(font, mode, true).getHandle();
     }
 
     @HLEFunction(nid = 0xBB8E7FE6, version = 150, checkInsideInterrupt = true, stackUsage = 0x440)
     public int sceFontOpenUserMemory(int fontLibHandle, TPointer memoryFontPtr, int memoryFontLength, @CanBeNull TErrorPointer32 errorCodePtr) {
         FontLib fontLib = getFontLib(fontLibHandle);    
         errorCodePtr.setValue(0);
-        return fontLib.openFont(openFontFile(memoryFontPtr.getAddress(), memoryFontLength), false).getHandle();
+        return fontLib.openFont(openFontFile(memoryFontPtr.getAddress(), memoryFontLength), 0, false).getHandle();
     }
 
     @HLEFunction(nid = 0x0DA7535E, version = 150, checkInsideInterrupt = true, stackUsage = 0x0)
@@ -1177,7 +1186,7 @@ public class sceFont extends HLEModule {
         	return 0;
         }
 
-        Font font = fontLib.openFont(internalFonts.get(index), true);
+        Font font = fontLib.openFont(internalFonts.get(index), mode, true);
         if (log.isDebugEnabled()) {
             log.debug(String.format("Opening '%s' - '%s', font=%s", font.pgf.getFontName(), font.pgf.getFontType(), font));
         }
