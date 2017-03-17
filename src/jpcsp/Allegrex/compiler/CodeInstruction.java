@@ -249,7 +249,7 @@ public class CodeInstruction {
             	//    0x00000018    something
             	//
             	CodeInstruction beforeBranchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() - 4);
-            	if (beforeBranchingToCodeInstruction != null && beforeBranchingToCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+            	if (beforeBranchingToCodeInstruction != null && beforeBranchingToCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT) && !branchingToCodeInstruction.isDelaySlot()) {
             		if (branchingToCodeInstruction.getInsn() == Instructions.NOP) {
     	            	if (log.isDebugEnabled()) {
     	            		log.debug(String.format("0x%08X: branching to a NOP in a delay slot, correcting to the next instruction", getAddress()));
