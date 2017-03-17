@@ -640,6 +640,9 @@ public class IoFileMgrForUser extends HLEModule {
     }
 
     private void registerVfsMs0() {
+    	if (vfsManager == null) {
+            vfsManager = new VirtualFileSystemManager();
+    	}
         vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/", true));
         vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/", true));
         vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/", false));
@@ -3993,6 +3996,31 @@ public class IoFileMgrForUser extends HLEModule {
                 }
                 break;
             }
+            // ???
+            case 0x02015807: {
+                log.debug("sceIoDevctl ??? (mscmhc0)");
+                if (!devicename.getString().equals("mscmhc0:")) {
+                	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+                } else if (Memory.isAddressGood(outdata_addr) && outlen == 4) {
+                	mem.write32(outdata_addr, 0); // Unknown value: seems to be 0 or 1?
+                	result = 0; // Success.
+                } else {
+                	result = -1; // Invalid parameters.
+                }
+                break;
+            }
+            // ???
+            case 0x0201580B: {
+                log.debug("sceIoDevctl ??? (mscmhc0)");
+                if (!devicename.getString().equals("mscmhc0:")) {
+                	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+                } else if (Memory.isAddressGood(indata_addr) && inlen == 20) {
+                	result = 0; // Success.
+                } else {
+                	result = -1; // Invalid parameters.
+                }
+                break;
+            }
             // Check if the device is inserted (mscmhc0).
             case 0x02025806: {
                 log.debug("sceIoDevctl check ms inserted (mscmhc0)");
@@ -4002,6 +4030,22 @@ public class IoFileMgrForUser extends HLEModule {
                     // 0 = Not inserted.
                     // 1 = Inserted.
                     mem.write32(outdata_addr, 1);
+                    result = 0;
+                } else {
+                	result = -1;
+                }
+                break;
+            }
+            // ???
+            case 0x0202580A: {
+                log.debug("sceIoDevctl ??? (mscmhc0)");
+                if (!devicename.getString().equals("mscmhc0:")) {
+                	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+                } else if (Memory.isAddressGood(outdata_addr)) {
+                    mem.write32(outdata_addr +  0, 0x12345678);
+                    mem.write32(outdata_addr +  4, 0x12345678);
+                    mem.write32(outdata_addr +  8, 0x12345678);
+                    mem.write32(outdata_addr + 12, 0x12345678);
                     result = 0;
                 } else {
                 	result = -1;
