@@ -228,9 +228,10 @@ public class sceHeap extends HLEModule {
         SysMemInfo info = null;
         int alignment = 4;
         int totalHeapSize = (heapSize + (alignment - 1)) & (~(alignment - 1));
-        int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
+        int partitionId = SysMemUserForUser.USER_PARTITION_ID;
+        int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize(partitionId);
         if (totalHeapSize <= maxFreeSize) {
-            info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, name.getString(), memType, totalHeapSize, 0);
+            info = Modules.SysMemUserForUserModule.malloc(partitionId, name.getString(), memType, totalHeapSize, 0);
         } else {
             log.warn(String.format("sceHeapCreateHeap not enough free mem (want=%d, free=%d, diff=%d)", totalHeapSize, maxFreeSize, totalHeapSize - maxFreeSize));
         }
