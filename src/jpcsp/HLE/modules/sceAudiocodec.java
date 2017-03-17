@@ -73,11 +73,6 @@ public class sceAudiocodec extends HLEModule {
 	private SysMemInfo edramInfo;
 
 	@Override
-	public int getMemoryUsage() {
-		return 0x4000;
-	}
-
-	@Override
 	public void start() {
 		id = -1;
 		info = null;

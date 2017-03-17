@@ -96,7 +96,15 @@ public class sceMpeg extends HLEModule {
 
 	@Override
 	public int getMemoryUsage() {
-		return 0x8500;
+		// No need to allocate additional memory when the module has been
+		// loaded using sceKernelLoadModuleToBlock()
+		// by the PSP "flash0:/kd/utility.prx".
+		// The memory has already been allocated in that case.
+		if (Modules.ModuleMgrForKernelModule.isMemoryAllocatedForModule("flash0:/kd/mpeg.prx")) {
+			return 0;
+		}
+
+		return 0xC000;
 	}
 
 	@Override
@@ -1393,7 +1401,7 @@ public class sceMpeg extends HLEModule {
 					}
 				}
 			}
-    	} else if (mpegRingbuffer.getPacketSize() == 0) {
+    	} else if (mpegRingbuffer != null && mpegRingbuffer.getPacketSize() == 0) {
     		// Do not add a new decoded image when we are decoding in low level mode
     		return;
     	}
@@ -1746,12 +1754,8 @@ public class sceMpeg extends HLEModule {
     }
 
     private int readNextVideoFrame(PesHeader pesHeader, TPointer auAddr) {
-    	if (mpegRingbuffer == null) {
-    		return -1;
-    	}
-
     	Memory mem = Memory.getInstance();
-    	if (mpegRingbuffer.getPacketSize() == 0) {
+    	if (mpegRingbuffer == null || mpegRingbuffer.getPacketSize() == 0) {
     		if (mpegAvcAu.esSize <= 0) {
     			return -1;
     		}
@@ -2726,7 +2730,12 @@ public class sceMpeg extends HLEModule {
     		return;
     	}
 
-    	if (!mpegRingbuffer.hasReadPackets() || (mpegRingbuffer.isEmpty() && videoBuffer.isEmpty() && decodedImages.isEmpty())) {
+        if (mpegRingbuffer == null) {
+            log.warn("ringbuffer not created");
+            throw new SceKernelErrorException(SceKernelErrors.ERROR_MPEG_NO_DATA); // No more data in ringbuffer.
+        }
+
+        if (!mpegRingbuffer.hasReadPackets() || (mpegRingbuffer.isEmpty() && videoBuffer.isEmpty() && decodedImages.isEmpty())) {
             delayThread(mpegDecodeErrorDelay);
             log.debug("ringbuffer and video buffer are empty");
             throw new SceKernelErrorException(SceKernelErrors.ERROR_MPEG_NO_DATA); // No more data in ringbuffer.
@@ -3323,14 +3332,14 @@ public class sceMpeg extends HLEModule {
         }
         mpegRingbufferRead();
 
-        if (mpegRingbuffer == null) {
-            log.warn("sceMpegAvcDecode ringbuffer not created");
-            return -1;
-        }
-
     	if (auAddr.isNotNull()) {
     		mpegAvcAu.read(auAddr);
     	}
+
+        if (mpegRingbuffer == null && mpegAvcAu.esSize == 0) {
+        	gotFrameAddr.setValue(false);
+        	return 0;
+        }
 
         checkEmptyVideoRingbuffer();
 
@@ -3428,6 +3437,11 @@ public class sceMpeg extends HLEModule {
         // Decode any pending image
     	decodeImage(buffer, frameWidth, videoPixelMode, gotFrameAddr, true);
 
+        if (videoDecoderThread != null) {
+        	videoDecoderThread.exit();
+        	videoDecoderThread = null;
+        }
+
         return 0;
     }
 
@@ -3506,11 +3520,6 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0xF0EB1125, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeYCbCr(@CheckArgument("checkMpegHandle") int mpeg, TPointer auAddr, TPointer32 bufferAddr, TPointer32 gotFrameAddr) {
         mpegRingbufferRead();
-
-        if (mpegRingbuffer == null) {
-            log.warn("sceMpegAvcDecodeYCbCr ringbuffer not created");
-            return -1;
-        }
 
     	if (auAddr.isNotNull()) {
     		mpegAvcAu.read(auAddr);

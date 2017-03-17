@@ -87,7 +87,15 @@ public class sceAtrac3plus extends HLEModule {
 
 	@Override
 	public int getMemoryUsage() {
-		return 0x4000;
+		// No need to allocate additional memory when the module has been
+		// loaded using sceKernelLoadModuleToBlock()
+		// by the PSP "flash0:/kd/utility.prx".
+		// The memory has already been allocated in that case.
+		if (Modules.ModuleMgrForKernelModule.isMemoryAllocatedForModule("flash0:/kd/libatrac3plus.prx")) {
+			return 0;
+		}
+
+		return 0x8000;
 	}
 
 	public    static final int AT3_MAGIC      = 0x0270; // "AT3"
