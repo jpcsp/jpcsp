@@ -43,6 +43,25 @@ public class Memcmp extends AbstractNativeCodeSequence {
 		setGprV0(0);
 	}
 
+	static public void callOneMinusOne() {
+		int src1Addr = getGprA0();
+		int src2Addr = getGprA1();
+		int n = getGprA2();
+
+		IMemoryReader memoryReader1 = MemoryReader.getMemoryReader(src1Addr, n, 1);
+		IMemoryReader memoryReader2 = MemoryReader.getMemoryReader(src2Addr, n, 1);
+		for (int i = 0; i < n; i++) {
+			int c1 = memoryReader1.readNext();
+			int c2 = memoryReader2.readNext();
+			if (c1 != c2) {
+				setGprV0(c1 < c2 ? -1 : 1);
+				return;
+			}
+		}
+
+		setGprV0(0);
+	}
+
 	static public void call(int src1AddrReg, int src2AddrReg, int n, int resultReg, int equalValue, int notEqualValue) {
 		int src1Addr = getRegisterValue(src1AddrReg);
 		int src2Addr = getRegisterValue(src2AddrReg);
