@@ -566,16 +566,9 @@ public class sceCtrl extends HLEModule {
     	return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
 	}
 
-    @HLEFunction(nid = 0xF6E94EA3, version = 660, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xF6E94EA3, version = 150, checkInsideInterrupt = true)
     public int sceCtrlSetSamplingMode_660(@CheckArgument("checkMode") int newMode) {
-        int oldMode = mode;
-        this.mode = newMode;
-
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceCtrlSetSamplingMode_660 mode=%d returning %d", newMode, oldMode));
-        }
-
-        return oldMode;
+    	return sceCtrlSetSamplingMode(newMode);
     }
 
     @HLEUnimplemented
@@ -583,4 +576,14 @@ public class sceCtrl extends HLEModule {
 	public int sceCtrl_driver_6C86AF22(int unknown) {
     	return 0;
 	}
+
+    @HLEFunction(nid = 0x2BA616AF, version = 150)
+	public int sceCtrlPeekBufferPositive_660(TPointer dataAddr, int numBuf) {
+    	return sceCtrlPeekBufferPositive371(dataAddr, numBuf);
+	}
+
+    @HLEFunction(nid = 0xF8EC18BD, version = 150)
+    public int sceCtrlGetSamplingMode_660(TPointer32 modeAddr) {
+    	return sceCtrlGetSamplingMode(modeAddr);
+    }
 }

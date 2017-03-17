@@ -604,4 +604,16 @@ public class scePower extends HLEModule {
     public int scePower_driver_5F5006D2() {
         return scePower_driver_3234844A();
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x315B8CB6, version = 150)
+    public int scePowerUnregisterCallback_660() {
+    	return 0;
+    }
+
+    @HLELogging(level="info")
+    @HLEFunction(nid = 0x766CD857, version = 150)
+    public int scePowerRegisterCallback_660(int slot, int uid) {
+    	return scePowerRegisterCallback(slot, uid);
+    }
 }

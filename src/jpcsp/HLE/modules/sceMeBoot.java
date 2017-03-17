@@ -27,7 +27,7 @@ public class sceMeBoot extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMeBoot");
 
 	@HLEUnimplemented
-    @HLEFunction(nid = 0x5DFF5C50, version = 660)
+    @HLEFunction(nid = 0x5DFF5C50, version = 150)
     public int sceMeBootStart660(int unknown) {
     	return 0;
     }
