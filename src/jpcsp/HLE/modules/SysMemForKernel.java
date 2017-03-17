@@ -19,6 +19,9 @@ package jpcsp.HLE.modules;
 import java.util.HashMap;
 
 import jpcsp.Memory;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
@@ -32,6 +35,8 @@ import jpcsp.HLE.kernel.types.MemoryChunkList;
 import jpcsp.HLE.kernel.types.SceKernelGameInfo;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Model;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 
 import org.apache.log4j.Logger;
 
@@ -223,7 +228,7 @@ public class SysMemForKernel extends HLEModule {
 		return result;
 	}
 
-    @HLEFunction(nid = 0x07C586A1, version = 660)
+    @HLEFunction(nid = 0x07C586A1, version = 150)
     public int sceKernelGetModel_660() {
 		int result = Model.getModel(); // <= 0 original, 1 slim
 
@@ -295,4 +300,39 @@ public class SysMemForKernel extends HLEModule {
     public int sceKernelGetCompiledSdkVersion_660() {
     	return Modules.SysMemUserForUserModule.sceKernelGetCompiledSdkVersion();
     }
+
+	@HLEFunction(nid = 0x7158CE7E, version = 150)
+	public int sceKernelAllocPartitionMemory_660(int partitionid, String name, int type, int size, int addr) {
+		return Modules.SysMemUserForUserModule.sceKernelAllocPartitionMemory(partitionid, name, type, size, addr);
+	}
+
+	@HLEFunction(nid = 0xC1A26C6F, version = 150)
+	public int sceKernelFreePartitionMemory_660(int uid) {
+		return Modules.SysMemUserForUserModule.sceKernelFreePartitionMemory(uid);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x1AB50974, version = 150)
+	public int sceKernelJointMemoryBlock(int id1, int id2) {
+		return 0;
+	}
+
+	@HLEFunction(nid = 0x22A114DC, version = 150)
+    public int sceKernelMemset32(TPointer destAddr, int data, int size) {
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(destAddr.getAddress(), size, 4);
+		for (int i = 0; i < size; i += 4) {
+			memoryWriter.writeNext(data);
+		}
+		memoryWriter.flush();
+
+        return 0;
+    }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xE860BE8F, version = 150)
+	public int sceKernelQueryMemoryBlockInfo(int id, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=56, usage=Usage.out) TPointer infoPtr) {
+		infoPtr.clear(56);
+
+		return 0;
+	}
 }
