@@ -72,8 +72,7 @@ public class SAVEDATA {
 		}
     }
 
-    private class SD_Ctx2 {
-
+    public static class SD_Ctx2 extends pspAbstractMemoryMappedStructure {
         private int mode;
         private int unk;
         private byte[] buf;
@@ -83,6 +82,30 @@ public class SAVEDATA {
             unk = 0;
             buf = new byte[16];
         }
+
+		@Override
+		protected void read() {
+			mode = read32();
+			unk = read32();
+			read8Array(buf);
+		}
+
+		@Override
+		protected void write() {
+			write32(mode);
+			write32(unk);
+			write8Array(buf);
+		}
+
+		@Override
+		public int sizeof() {
+			return 24;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("mode=0x%X, unk=0x%X, buf=%s", mode, unk, Utilities.getMemoryDump(buf, 0, buf.length));
+		}
     }
 
     private static boolean isNullKey(byte[] key) {
@@ -457,7 +480,7 @@ public class SAVEDATA {
         return 0;
     }
 
-    private int hleChnnlsv_21BE78B4(SD_Ctx2 ctx) {
+    public int hleSdCleanList(SD_Ctx2 ctx) {
         ctx.mode = 0;
         ctx.unk = 0;
         for (int i = 0; i < 0x10; i++) {
@@ -466,7 +489,7 @@ public class SAVEDATA {
         return 0;
     }
 
-    private int hleSdCreateList(SD_Ctx2 ctx, int encMode, int genMode, byte[] data, byte[] key) {
+    public int hleSdCreateList(SD_Ctx2 ctx, int encMode, int genMode, byte[] data, byte[] key) {
         // If the key is not a 16-byte key, return an error.
         if (key.length < 0x10) {
             return -1;
@@ -571,7 +594,7 @@ public class SAVEDATA {
         }
     }
 
-    private int hleSdSetMember(SD_Ctx2 ctx, byte[] data, int length) {
+    public int hleSdSetMember(SD_Ctx2 ctx, byte[] data, int length) {
         if (length == 0) {
             return 0;
         }
@@ -603,7 +626,7 @@ public class SAVEDATA {
         SD_Ctx2 ctx2 = new SD_Ctx2();
 
         // Setup the buffers.
-        int alignedSize = ((size + 0xF) >> 4) << 4;
+        int alignedSize = (((size + 0xF) >> 4) << 4) - 0x10;
         byte[] decbuf = new byte[size - 0x10];
         byte[] tmpbuf = new byte[alignedSize];
 
@@ -636,7 +659,7 @@ public class SAVEDATA {
         hleSdSetMember(ctx2, tmpbuf, alignedSize);
 
         // Clear context 2.
-        hleChnnlsv_21BE78B4(ctx2);
+        hleSdCleanList(ctx2);
 
         // Copy back the data.
         System.arraycopy(tmpbuf, 0, decbuf, 0, size - 0x10);
@@ -701,7 +724,7 @@ public class SAVEDATA {
         System.arraycopy(tmpbuf1, 0, buf, 0, buf.length);
 
         // Clear context 2.
-        hleChnnlsv_21BE78B4(ctx2);
+        hleSdCleanList(ctx2);
 
         // Generate a file hash for this data.
         hleSdGetLastIndex(ctx1, hash, key);

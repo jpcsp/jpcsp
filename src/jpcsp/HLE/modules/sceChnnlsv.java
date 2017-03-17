@@ -24,7 +24,6 @@ import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer8;
@@ -70,7 +69,6 @@ public class sceChnnlsv extends HLEModule{
      * @return SCE_CHNNLSV_ERROR_ILLEGAL_SIZE if ctx->size > 16
      *
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0xF21A1FCA, version = 150)
     public int sceSdRemoveValue(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.inout) TPointer ctx2Addr, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer data, int size) {
     	SAVEDATA.SD_Ctx1 ctx = new SAVEDATA.SD_Ctx1();
@@ -99,23 +97,124 @@ public class sceChnnlsv extends HLEModule{
      * @return SCE_CHNNLSV_ERROR_ILLEGAL_SIZE if ctx->size > 16
      *
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0xC4C494F8, version = 150)
-    public int sceSdGetLastIndex(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.inout) TPointer ctx2Addr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer8 hash, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer8 key) {
+    public int sceSdGetLastIndex(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.inout) TPointer ctx2Addr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer8 hash, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer8 key) {
     	SAVEDATA.SD_Ctx1 ctx = new SAVEDATA.SD_Ctx1();
     	ctx.read(ctx2Addr);
 
-    	byte[] hashBytes = hash.isNull() ? null : new byte[16];
-    	byte[] keyBytes = key.isNull() ? null : new byte[16];
+    	byte[] hashBytes = new byte[16];
+
+    	byte[] keyBytes;
+    	if (key.isNull()) {
+    		keyBytes = null;
+    	} else {
+    		keyBytes = new byte[16];
+        	Utilities.readBytes(key.getAddress(), keyBytes.length, keyBytes, 0);
+    	}
 
     	int result = crypto.getSAVEDATAEngine().hleSdGetLastIndex(ctx, hashBytes, keyBytes);
 
-    	if (hashBytes != null) {
-    		Utilities.writeBytes(hash.getAddress(), hashBytes.length, hashBytes, 0);
+		Utilities.writeBytes(hash.getAddress(), hashBytes.length, hashBytes, 0);
+
+    	ctx.write(ctx2Addr);
+
+    	return result;
+    }
+
+    /**
+     * The main key generating function, 1 for encryption, 2 for decryption
+     *
+     * @param ctx Pointer to the SceSdCtx1 struct
+     * @param mode Different public keys/kirk commands will be used depending on the mode specified
+     * @param genMode Specify whether encryption (1) or decryption (1) should be used
+     * @param data Pointer to some data used for encryption/decryption
+     * @param key If specified, this key will be used as the private key for encryption/decryption
+     *
+     * @return SCE_ERROR_OK on success
+     * @return SCE_CHNNLSV_ERROR_ILLEGAL_ADDR if ctx/data/key cannot be accessed from the current context.
+     * @return SCE_CHNNLSV_ERROR_SEMA_ERROR wait/signal sema error
+     *
+     */
+    @HLEFunction(nid = 0xABFDFC8B, version = 150)
+    public int sceSdCreateList(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer ctx2Addr, int encMode, int genMode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.inout) TPointer8 data, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer8 key) {
+    	SAVEDATA.SD_Ctx2 ctx = new SAVEDATA.SD_Ctx2();
+    	ctx.read(ctx2Addr);
+
+    	byte[] dataBytes;
+    	if (data.isNull()) {
+    		dataBytes = null;
+    	} else {
+    		dataBytes = new byte[16];
+        	Utilities.readBytes(data.getAddress(), dataBytes.length, dataBytes, 0);
+    	}
+
+    	byte[] keyBytes;
+    	if (key.isNull()) {
+    		keyBytes = null;
+    	} else {
+    		keyBytes = new byte[16];
+        	Utilities.readBytes(key.getAddress(), keyBytes.length, keyBytes, 0);
+    	}
+
+    	int result = crypto.getSAVEDATAEngine().hleSdCreateList(ctx, encMode, genMode, dataBytes, keyBytes);
+
+    	if (dataBytes != null) {
+    		Utilities.writeBytes(data.getAddress(), dataBytes.length, dataBytes, 0);
     	}
     	if (keyBytes != null) {
     		Utilities.writeBytes(key.getAddress(), keyBytes.length, keyBytes, 0);
     	}
+
+    	ctx.write(ctx2Addr);
+
+    	return result;
+    }
+
+    /**
+     * The main encryption/decryption function, the size of "data" must be 16 byte aligned
+     *
+     * @param ctx Pointer to the SceSdCtx1 struct
+     * @param data Pointer to the data used in the encryption/decryption process
+     * @param size The size of "data"
+     *
+     * @return SCE_ERROR_OK on success
+     * @return SCE_CHNNLSV_ERROR_ILLEGAL_ADDR if ctx/data cannot be accessed from the current context.
+     * @return SCE_CHNNLSV_ERROR_SEMA_ERROR wait/signal sema error
+     * @return SCE_CHNNLSV_ERROR_ILLEGAL_ALIGNMENT_SIZE if the size of "data" is not 16 byte aligned
+     *
+     */
+    @HLEFunction(nid = 0x850A7FA1, version = 150)
+    public int sceSdSetMember(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer ctx2Addr, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer8 data, int dataLength) {
+    	SAVEDATA.SD_Ctx2 ctx = new SAVEDATA.SD_Ctx2();
+    	ctx.read(ctx2Addr);
+
+		byte[] dataBytes = new byte[dataLength];
+    	Utilities.readBytes(data.getAddress(), dataLength, dataBytes, 0);
+
+    	int result = crypto.getSAVEDATAEngine().hleSdSetMember(ctx, dataBytes, dataLength);
+
+		Utilities.writeBytes(data.getAddress(), dataBytes.length, dataBytes, 0);
+
+    	ctx.write(ctx2Addr);
+
+    	return result;
+    }
+
+    /**
+     * Initialize the SceSdCtx1 struct.
+     *
+     * @param ctx Pointer to the SceSdCtx1 struct
+     *
+     * @return SCE_ERROR_OK on initialization success.
+     * @return SCE_CHNNLSV_ERROR_ILLEGAL_ADDR if ctx cannot be accessed from the current context.
+     *
+     */
+    @HLEFunction(nid = 0x21BE78B4, version = 150)
+    public int sceSdCleanList(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.out) TPointer ctx2Addr) {
+    	SAVEDATA.SD_Ctx2 ctx = new SAVEDATA.SD_Ctx2();
+    	ctx.read(ctx2Addr);
+
+    	int result = crypto.getSAVEDATAEngine().hleSdCleanList(ctx);
 
     	ctx.write(ctx2Addr);
 
