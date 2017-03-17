@@ -144,6 +144,7 @@ public class Modules {
     public static sceMeBoot sceMeBootModule = new sceMeBoot();
     public static sceMeVideo sceMeVideoModule = new sceMeVideo();
     public static sceMeAudio sceMeAudioModule = new sceMeAudio();
+    public static InitForKernel InitForKernelModule = new InitForKernel();
 
     public static Logger log = Logger.getLogger("hle");
 
