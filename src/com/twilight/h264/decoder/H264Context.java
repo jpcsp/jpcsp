@@ -3926,7 +3926,7 @@ public class H264Context {
     }
     
     private static int av_clip_uint8(int a) {
-        if ((a&(~0x000000FF)) != 0) return (-a)>>31;
+        if ((a&(~0x000000FF)) != 0) return ((-a)>>31) & 0xFF;
         else           return a;
     }    
 
