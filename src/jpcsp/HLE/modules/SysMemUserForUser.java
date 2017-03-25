@@ -80,7 +80,7 @@ public class SysMemUserForUser extends HLEModule {
 
 	protected boolean started = false;
     private int compiledSdkVersion;
-    protected int compilerVersion;
+    private int compilerVersion;
 
 	@Override
 	public void load() {
@@ -97,6 +97,7 @@ public class SysMemUserForUser extends HLEModule {
 		}
 
 		compiledSdkVersion = 0;
+		compilerVersion = 0;
 
 		super.start();
 	}
@@ -161,6 +162,7 @@ public class SysMemUserForUser extends HLEModule {
         public final int size;
         public final int allocatedSize;
         public final int addr;
+        public SysMemInfo separatedFromSysMemInfo;
 
         public SysMemInfo(int partitionid, String name, int type, int size, int allocatedSize, int addr) {
             this.partitionid = partitionid;
@@ -220,6 +222,10 @@ public class SysMemUserForUser extends HLEModule {
         return typeName;
     }
 
+    private boolean isValidPartitionId(int partitionid) {
+    	return partitionid >= 0 && partitionid < freeMemoryChunks.length && freeMemoryChunks[partitionid] != null;    	
+    }
+
     // Allocates to 256-byte alignment
     public SysMemInfo malloc(int partitionid, String name, int type, int size, int addr) {
     	if (freeMemoryChunks == null) {
@@ -229,7 +235,7 @@ public class SysMemUserForUser extends HLEModule {
     	int allocatedAddress = 0;
         int allocatedSize = 0;
 
-        if (partitionid >= 0 && partitionid < freeMemoryChunks.length && freeMemoryChunks[partitionid] != null) {
+        if (isValidPartitionId(partitionid)) {
         	MemoryChunkList freeMemoryChunk = freeMemoryChunks[partitionid];
         	int alignment = defaultSizeAlignment - 1;
 
@@ -322,18 +328,22 @@ public class SysMemUserForUser extends HLEModule {
 
     public int maxFreeMemSize(int partitionid) {
     	int maxFreeMemSize = 0;
-    	for (MemoryChunk memoryChunk = freeMemoryChunks[partitionid].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
-    		if (memoryChunk.size > maxFreeMemSize) {
-    			maxFreeMemSize = memoryChunk.size;
-    		}
+    	if (isValidPartitionId(partitionid)) {
+	    	for (MemoryChunk memoryChunk = freeMemoryChunks[partitionid].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
+	    		if (memoryChunk.size > maxFreeMemSize) {
+	    			maxFreeMemSize = memoryChunk.size;
+	    		}
+	    	}
     	}
 		return maxFreeMemSize;
     }
 
     public int totalFreeMemSize(int partitionid) {
         int totalFreeMemSize = 0;
-    	for (MemoryChunk memoryChunk = freeMemoryChunks[partitionid].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
-    		totalFreeMemSize += memoryChunk.size;
+    	if (isValidPartitionId(partitionid)) {
+	    	for (MemoryChunk memoryChunk = freeMemoryChunks[partitionid].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
+	    		totalFreeMemSize += memoryChunk.size;
+	    	}
     	}
 
     	return totalFreeMemSize;
@@ -341,6 +351,16 @@ public class SysMemUserForUser extends HLEModule {
 
     public SysMemInfo getSysMemInfo(int uid) {
     	return blockList.get(uid);
+    }
+
+    public SysMemInfo separateMemoryBlock(SysMemInfo info, int size) {
+    	int newAddr = info.addr + size;
+    	int newSize = info.size - size;
+    	int newAllocatedSize = info.allocatedSize - size;
+    	SysMemInfo newSysMemInfo = new SysMemInfo(info.partitionid, info.name, info.type, newSize, newAllocatedSize, newAddr);
+    	newSysMemInfo.separatedFromSysMemInfo = info;
+
+    	return newSysMemInfo;
     }
 
     /** @param firmwareVersion : in this format: ABB, where A = major and B = minor, for example 271 */
@@ -476,6 +496,10 @@ public class SysMemUserForUser extends HLEModule {
 
 	protected void hleSetCompiledSdkVersion(int sdkVersion) {
 		compiledSdkVersion = sdkVersion;
+	}
+
+	public int hleKernelGetCompilerVersion() {
+		return compilerVersion;
 	}
 
     @HLEFunction(nid = 0xA291F107, version = 150)
@@ -738,5 +762,10 @@ public class SysMemUserForUser extends HLEModule {
         hleSetCompiledSdkVersion(sdkVersion);
 
         return 0;
+	}
+
+	@HLEFunction(nid = 0xC886B169, version = 150)
+	public int sceKernelDevkitVersion_660() {
+		return sceKernelDevkitVersion();
 	}
 }
