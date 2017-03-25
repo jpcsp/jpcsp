@@ -67,9 +67,16 @@ public abstract class Memory {
             // 2) StandardMemory when available memory is not sufficient for 1st choice
             //
 
+        	boolean useDebuggerMemory = false;
+            if (Settings.getInstance().readBool("emu.useDebuggerMemory") || new File(DebuggerMemory.mBrkFilePath).exists()) {
+            	useDebuggerMemory = true;
+            	// Always use the safe memory when using the debugger memory
+            	useSafeMemory = true;
+            }
+
             // Disable address checking when the option
             // "ignoring invalid memory access" is selected.
-            if (Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess")) {
+            if (Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess") && !useDebuggerMemory) {
                 useSafeMemory = false;
             }
 
@@ -133,11 +140,13 @@ public abstract class Memory {
                 throw new OutOfMemoryError("Cannot allocate memory");
             }
 
-            if (Settings.getInstance().readBool("emu.useDebuggerMemory") || new File(DebuggerMemory.mBrkFilePath).exists()) {
+            if (useDebuggerMemory) {
                 DebuggerMemory.install();
             }
 
-            log.debug("Using " + instance.getClass().getName());
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("Using %s", instance.getClass().getName()));
+            }
         }
 
         return instance;
@@ -401,7 +410,7 @@ public abstract class Memory {
         return ignoreInvalidMemoryAccess;
     }
 
-    private void setIgnoreInvalidMemoryAccess(boolean ignoreInvalidMemoryAccess) {
+    public void setIgnoreInvalidMemoryAccess(boolean ignoreInvalidMemoryAccess) {
         this.ignoreInvalidMemoryAccess = ignoreInvalidMemoryAccess;
         log.info(String.format("Ignore invalid memory access: %b", ignoreInvalidMemoryAccess));
     }

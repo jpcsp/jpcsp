@@ -470,4 +470,12 @@ public class DebuggerMemory extends Memory {
         memoryWrite(address, data, 32, traceMemoryWrite32);
         mem.write32(address, data);
     }
+
+	@Override
+	public void setIgnoreInvalidMemoryAccess(boolean ignoreInvalidMemoryAccess) {
+		super.setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
+		if (mem != null) {
+			mem.setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
+		}
+	}
 }
