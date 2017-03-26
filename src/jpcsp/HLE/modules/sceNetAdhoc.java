@@ -28,6 +28,9 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -654,7 +657,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return Bytes sent, < 0 on error
      */
     @HLEFunction(nid = 0xABED3790, version = 150)
-    public int sceNetAdhocPdpSend(@CheckArgument("checkPdpId") int id, pspNetMacAddress destMacAddress, int port, TPointer data, int len, int timeout, int nonblock) {
+    public int sceNetAdhocPdpSend(@CheckArgument("checkPdpId") int id, pspNetMacAddress destMacAddress, int port, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer data, int len, int timeout, int nonblock) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("Send data: %s", Utilities.getMemoryDump(data.getAddress(), len)));
 		}
@@ -676,7 +679,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return Number of bytes received, < 0 on error.
      */
     @HLEFunction(nid = 0xDFE53E03, version = 150)
-    public int sceNetAdhocPdpRecv(@CheckArgument("checkPdpId") int id, TPointer srcMacAddr, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
+    public int sceNetAdhocPdpRecv(@CheckArgument("checkPdpId") int id, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=6, usage=Usage.out) TPointer srcMacAddr, @BufferInfo(usage=Usage.out) TPointer16 portAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.out) TPointer data, @BufferInfo(usage=Usage.inout) TPointer32 dataLengthAddr, int timeout, int nonblock) {
         int result = pdpObjects.get(id).recv(srcMacAddr, portAddr, data, dataLengthAddr, timeout, nonblock);
 
         return result;

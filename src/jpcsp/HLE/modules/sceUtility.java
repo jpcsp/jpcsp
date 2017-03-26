@@ -4287,7 +4287,7 @@ public class sceUtility extends HLEModule {
     }
 
     @HLEFunction(nid = 0x2AD8E239, version = 150)
-    public int sceUtilityMsgDialogInitStart(TPointer paramsAddr) {
+    public int sceUtilityMsgDialogInitStart(@BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.inout) TPointer paramsAddr) {
         return msgDialogState.executeInitStart(paramsAddr);
     }
 
@@ -4307,7 +4307,7 @@ public class sceUtility extends HLEModule {
     }
 
     @HLEFunction(nid = 0xF6269B82, version = 150)
-    public int sceUtilityOskInitStart(TPointer paramsAddr) {
+    public int sceUtilityOskInitStart(@BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.inout) TPointer paramsAddr) {
         return oskState.executeInitStart(paramsAddr);
     }
 
@@ -4505,7 +4505,7 @@ public class sceUtility extends HLEModule {
     }
 
     @HLEFunction(nid = 0xA5DA2406, version = 150)
-    public int sceUtilityGetSystemParamInt(int id, TPointer32 valueAddr) {
+    public int sceUtilityGetSystemParamInt(int id, @BufferInfo(usage=Usage.out) TPointer32 valueAddr) {
         switch (id) {
             case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
                 valueAddr.setValue(getSystemParamAdhocChannel());

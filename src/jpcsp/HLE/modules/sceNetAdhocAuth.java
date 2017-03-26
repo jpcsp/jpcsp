@@ -65,6 +65,7 @@ public class sceNetAdhocAuth extends HLEModule {
     @HLEFunction(nid = 0x2E6AA271, version = 150)
     public int sceNetAdhocAuth_2E6AA271() {
     	// Has no parameters
+    	// Termination of what has been initialized with sceNetAdhocAuth_89F2A732()
     	return 0;
     }
 
@@ -95,6 +96,7 @@ public class sceNetAdhocAuth extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x89F2A732, version = 150)
     public int sceNetAdhocAuth_89F2A732(TPointer unknown1, int threadPriority, int threadStackSize, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer32 unknown2, int unknown3, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=128, usage=Usage.in) TPointer unknown4) {
+    	// Some initialization routine
     	return 0;
     }
 

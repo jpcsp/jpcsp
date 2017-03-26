@@ -50,6 +50,7 @@ public class InitForKernel extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xA18A4A8B, version = 150)
 	public int sceKernelInitDiscImage() {
+		// Has no parameters
 		return 0;
 	}
 }

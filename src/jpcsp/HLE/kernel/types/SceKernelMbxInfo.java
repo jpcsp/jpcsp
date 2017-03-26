@@ -137,6 +137,6 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructureVariableLe
 
 	@Override
 	public String toString() {
-		return String.format("SceKernelMbxInfo[uid=0x%X, name='%s', attr=0x%X, numWaitingThreads=%d]", uid, name, attr, getNumWaitThreads());
+		return String.format("SceKernelMbxInfo[uid=0x%X, name='%s', attr=0x%X, numWaitingThreads=%d, numMessages=%d]", uid, name, attr, getNumWaitThreads(), numMessages);
 	}
 }
