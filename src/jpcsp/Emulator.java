@@ -205,6 +205,7 @@ public class Emulator implements Runnable {
         moduleLoaded = false;
 
         HLEModuleManager.getInstance().stopModules();
+        NIDMapper.getInstance().unloadAll();
         RuntimeContext.reset();
 
         if (!fromSyscall) {

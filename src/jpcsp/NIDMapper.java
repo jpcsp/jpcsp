@@ -239,13 +239,17 @@ public class NIDMapper {
      *                        false if the NID was already added
      */
     public boolean addHLENid(int nid, String name, String moduleName, int firmwareVersion) {
-    	if (getNIDInfoByNid(nid) != null) {
-    		// This NID is already added
-    		return false;
+    	NIDInfo info = getNIDInfoByNid(nid);
+    	if (info != null) {
+    		// This NID is already added, verify that we are trying to use the same data
+    		if (!name.equals(info.getName()) || !moduleName.equals(info.getModuleName()) || firmwareVersion != info.getFirmwareVersion()) {
+    			return false;
+    		}
+    		return true;
     	}
 
     	int syscall = getNewSyscallNumber();
-    	NIDInfo info = new NIDInfo(nid, syscall, name, moduleName, firmwareVersion);
+    	info = new NIDInfo(nid, syscall, name, moduleName, firmwareVersion);
 
     	addNIDInfo(info);
 
@@ -393,5 +397,14 @@ public class NIDMapper {
     	}
 
     	info.setLoaded(true);
+    }
+
+    public void unloadAll() {
+    	for (NIDInfo info : nidMap.values()) {
+    		if (info.isOverwritten()) {
+    			info.undoOverwrite();
+    		}
+    		info.setLoaded(false);
+    	}
     }
 }
