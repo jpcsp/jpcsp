@@ -146,7 +146,7 @@ public class HLEModuleManager {
         sceNpMatching2(Modules.sceNpMatching2Module, new String[] { "np_matching2", "PSP_MODULE_NP_MATCHING2" }),
         sceNpInstall(Modules.sceNpInstallModule, new String[] { "np_inst" }),
         sceNpCamp(Modules.sceNpCampModule, new String[] { "np_campaign" }),
-        scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM" }),
+        scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM", "npdrm" }),
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
         sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4", "mp4msv", "libmp4" }),
         sceHttp(Modules.sceHttpModule, new String[] { "libhttp", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
@@ -194,7 +194,7 @@ public class HLEModuleManager {
         sceLibUpdateDL(Modules.sceLibUpdateDLModule, new String[] { "libupdown" }),
         sceParseHttp(Modules.sceParseHttpModule, new String[] { "libparse_http", "PSP_MODULE_NET_PARSEHTTP" }),
         sceMgr_driver(Modules.sceMgr_driverModule),
-        sceChnnlsv(Modules.sceChnnlsvModule),
+        sceChnnlsv(Modules.sceChnnlsvModule, new String[] { "chnnlsv" }),
         sceUsbstor(Modules.sceUsbstorModule),
         sceIdStorage(Modules.sceIdStorageModule),
         sceCertLoader(Modules.sceCertLoaderModule, new String[] { "cert_loader", "PSP_MODULE_NET_SSL" }),
@@ -205,7 +205,12 @@ public class HLEModuleManager {
         sceMeMemory(Modules.sceMeMemoryModule),
         sceMeVideo(Modules.sceMeVideoModule),
         sceMeAudio(Modules.sceMeAudioModule),
-        InitForKernel(Modules.InitForKernelModule);
+        InitForKernel(Modules.InitForKernelModule),
+        sceMemab(Modules.sceMemabModule, new String[] { "memab" }),
+        DmacManForKernel(Modules.DmacManForKernelModule),
+        sceSyscon(Modules.sceSysconModule),
+        sceLed(Modules.sceLedModule),
+        sceSysreg(Modules.sceSysregModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
