@@ -404,6 +404,8 @@ public class SceKernelErrors {
 
     public final static int ERROR_NET_NO_SPACE                                  = 0x80410001;
 
+    public final static int ERROR_NET_NO_EVENT                                  = 0x80410184;
+
     public final static int ERROR_NET_RESOLVER_BAD_ID                           = 0x80410408;
     public final static int ERROR_NET_RESOLVER_ALREADY_STOPPED                  = 0x8041040a;
     public final static int ERROR_NET_RESOLVER_INVALID_HOST                     = 0x80410414;

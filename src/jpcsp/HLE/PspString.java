@@ -71,4 +71,16 @@ public class PspString {
 	public String toString() {
 		return String.format("0x%08X('%s')", getAddress(), getString());
 	}
+
+	public boolean equals(String s) {
+		if (s == null) {
+			return isNull();
+		}
+
+		if (isNull()) {
+			return false;
+		}
+
+		return s.equals(getString());
+	}
 }

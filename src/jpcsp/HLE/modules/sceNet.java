@@ -16,11 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.util.Utilities.endianSwap16;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -35,6 +40,10 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.SceNetIfMessage;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.IMemoryReader;
@@ -59,11 +68,33 @@ public class sceNet extends HLEModule {
 		0x10, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
 		0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x10, 0x10, 0x10, 0x10, 0x20
 	};
+	protected Map<Integer, Integer> allocatedThreadStructures;
+	protected final Random random = new Random();
+	protected int readCallback;
+	protected int unknownCallback1;
+	protected int unknownCallback2;
+	protected int getReadContextCallback;
+	protected TPointer32 readContextAddr;
+	protected TPointer readMessage;
+	protected Map<Integer, Integer> blockedThreads;
+
+	private class AfterReadContextCallback implements IAction {
+		@Override
+		public void execute() {
+			hleAfterReadContextCallback();
+		}
+	}
 
 	@Override
 	public void start() {
 		networkAdapter = NetworkAdapterFactory.createNetworkAdapter();
 		networkAdapter.start();
+		allocatedThreadStructures = new HashMap<Integer, Integer>();
+		readCallback = 0;
+		unknownCallback1 = 0;
+		unknownCallback2 = 0;
+		getReadContextCallback = 0;
+		blockedThreads = new HashMap<Integer, Integer>();
 
 		super.start();
 	}
@@ -131,6 +162,70 @@ public class sceNet extends HLEModule {
 
     protected int networkSwap16(int value) {
     	return Utilities.endianSwap16(value);
+    }
+
+    protected void sendDummyMessage(SceKernelThreadInfo thread) {
+    	if (readContextAddr == null) {
+    		int mem = Modules.sceNetIfhandleModule.sceNetMallocInternal(4);
+    		if (mem > 0) {
+    			readContextAddr = new TPointer32(Memory.getInstance(), mem);
+    		}
+    	}
+    	if (readContextAddr != null) {
+        	Modules.ThreadManForUserModule.executeCallback(thread, getReadContextCallback, new AfterReadContextCallback(), true, 0, 0, readContextAddr.getAddress());
+    	}
+    }
+
+    protected void hleAfterReadContextCallback() {
+    	if (readMessage == null) {
+    		int size = 256;
+    		int mem = Modules.sceNetIfhandleModule.sceNetMallocInternal(size);
+    		if (mem > 0) {
+    			readMessage = new TPointer(Memory.getInstance(), mem);
+        		readMessage.clear(size);
+        		RuntimeContext.debugMemory(mem, size);
+    		}
+    	}
+
+    	if (readMessage != null) {
+    		// Store dummy message
+    		SceNetIfMessage message = new SceNetIfMessage();
+    		TPointer data = new TPointer(Memory.getInstance(), readMessage.getAddress() + message.sizeof());
+    		TPointer header = new TPointer(data.getMemory(), data.getAddress());
+    		TPointer content = new TPointer(data.getMemory(), data.getAddress() + 60);
+    		final int contentLength = 8;
+    		// Header information:
+    		header.setArray(0, Wlan.getMacAddress(), 6); // destination MAC address
+    		header.setArray(6, new byte[] { 0x11,  0x22, 0x33, 0x44, 0x55, 0x66 }, 6); // source MAC address
+    		header.setValue8(48, (byte) 1); // 1 or 2
+    		header.setValue8(49, (byte) 0);
+    		header.setValue16(50, (short) endianSwap16(12 + contentLength)); // value must be >= 12
+    		header.setValue16(52, (short) endianSwap16(0x22C)); // source port
+    		header.setValue16(54, (short) endianSwap16(0x22C)); // destination port
+    		header.setValue8(58, (byte) 0);
+    		header.setValue8(59, (byte) 0);
+
+    		// Real message content:
+    		content.setValue8(0, (byte) 1);
+    		content.setValue8(1, (byte) 1);
+    		content.setValue16(2, (short) endianSwap16(contentLength - 4)); // endian-swapped value, length of following data
+    		content.setValue8(4, (byte) 0); // Dummy data
+    		content.setValue8(5, (byte) 0);
+    		content.setValue8(6, (byte) 0);
+    		content.setValue8(7, (byte) 0);
+
+    		message.dataAddr = data.getAddress();
+    		message.dataLength = 60 + contentLength;
+    		message.unknown24 = 60 + contentLength;
+    		message.write(readMessage);
+
+    		TPointer readContext = new TPointer(Memory.getInstance(), readContextAddr.getValue());
+    		readContext.setValue32(0, readMessage.getAddress());
+    		readContext.setValue32(8, readContext.getValue32(8) + 1);
+    	}
+
+    	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+		Modules.ThreadManForUserModule.executeCallback(thread, readCallback, null, true);
     }
 
     @HLELogging(level="info")
@@ -463,16 +558,15 @@ public class sceNet extends HLEModule {
 		return formattedString.length();
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x1858883D, version = 150)
     public int sceNetRand() {
     	// Has no parameters
-    	return new Random().nextInt();
+    	return random.nextInt();
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA93A93E9, version = 150)
-    public int _sce_pspnet_callout_stop(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.inout) TPointer unknown) {
+    public int _sce_pspnet_callout_stop(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=36, usage=Usage.inout) TPointer unknown) {
     	return 0;
     }
 
@@ -481,4 +575,239 @@ public class sceNet extends HLEModule {
 	public int sceNet_lib_A8B6205A(TPointer unknown1, int unknown2, TPointer unknown3, int unknown4) {
 		return 0;
 	}
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x94B44F26, version = 150)
+    public int _sce_pspnet_spllock() {
+    	// Has no parameters
+    	return 1;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x515B2F33, version = 150)
+    public int _sce_pspnet_splunlock(int resultFromLock) {
+    	if (resultFromLock <= 0) {
+    		return resultFromLock;
+    	}
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2E005032, version = 150)
+    public int sceNet_lib_2E005032(int unknownCallback) {
+    	this.unknownCallback2 = unknownCallback;
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB3A48B7F, version = 150)
+    public int sceNet_lib_B3A48B7F(int readCallback, int unknownCallback1) {
+    	this.readCallback = readCallback;
+    	this.unknownCallback1 = unknownCallback1;
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1F94AFD9, version = 150)
+    public int sceNet_lib_1F94AFD9(int unknownCallback) {
+    	this.getReadContextCallback = unknownCallback;
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x5216CBF5, version = 150)
+    public int sceNetConfigUpInterface(PspString interfaceName) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD2422E4D, version = 150)
+    public int sceNetConfigDownInterface(PspString interfaceName) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xAB7DD9A5, version = 150)
+    public int sceNetConfigSetIfEventFlag(PspString interfaceName, int eventFlagUid, int bitsToSet) {
+    	if (eventFlagUid == 0) {
+    		return 0;
+    	}
+    	return Modules.ThreadManForUserModule.sceKernelSetEventFlag(eventFlagUid, bitsToSet);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xDA02F383, version = 150)
+    public int sceNet_lib_DA02F383(PspString interfaceName, @BufferInfo(usage=Usage.out) TPointer32 unknown) {
+    	unknown.setValue(0); // Unknown possible values
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD5B64E37, version = 150)
+    public int sceNet_lib_D5B64E37(PspString interfaceName, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer ssid, int ssidLength, int adhocChannel) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x05D525E4, version = 150)
+    public int sceNet_lib_05D525E4() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0A5A8751, version = 150)
+    public int sceNet_lib_0A5A8751() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x25CC373A, version = 150)
+    public int _sce_pspnet_callout_init() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x33B230BD, version = 150)
+    public int sceNet_lib_33B230BD() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x6B294EE4, version = 150)
+    public int sceNet_lib_6B294EE4() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x757085B0, version = 150)
+    public int sceNet_lib_757085B0(TPointer unknown1, int unkown2) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7574FDA1, version = 150)
+    public int _sce_pspnet_wakeup(TPointer32 receivedMessage) {
+    	if (blockedThreads.containsKey(receivedMessage.getAddress())) {
+    		int threadUid = blockedThreads.get(receivedMessage.getAddress());
+    		Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
+    	}
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x949F1FBB, version = 150)
+    public int sceNet_lib_949F1FBB() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xCA3CF5EB, version = 150)
+    public int _sce_pspnet_thread_enter(@BufferInfo(usage=Usage.out) TPointer32 errorAddr) {
+    	int currentThreadId = Modules.ThreadManForUserModule.getCurrentThreadID();
+    	if (!allocatedThreadStructures.containsKey(currentThreadId)) {
+        	int size = 92;
+        	int allocateMem = Modules.sceNetIfhandleModule.sceNetMallocInternal(size);
+        	if (allocateMem < 0) {
+        		errorAddr.setValue(allocateMem);
+        		return 0;
+        	}
+
+        	RuntimeContext.debugMemory(allocateMem, size);
+
+        	Memory.getInstance().memset(allocateMem, (byte) 0, size);
+
+        	allocatedThreadStructures.put(currentThreadId, allocateMem);
+    	}
+
+    	errorAddr.setValue(0);
+
+    	return allocatedThreadStructures.get(currentThreadId);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD60225A3, version = 150)
+    public int sceNet_lib_D60225A3(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=6, usage=Usage.in) TPointer macAddr) {
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+    	macAddress.read(macAddr);
+
+    	return 0x11223344;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF6DB0A0B, version = 150)
+    public int sceNet_lib_F6DB0A0B(@BufferInfo(usage=Usage.out) TPointer32 receivedMessage, int timeout) {
+    	// Possible return values are 0, 4, 11
+    	// 4: sceNetAdhocPdpRecv will then return ERROR_NET_ADHOC_THREAD_ABORTED = 0x80410719
+    	// 11: sceNetAdhocPdpRecv will then return ERROR_NET_ADHOC_TIMEOUT = 0x80410715
+    	// 5: sceNetAdhocPdpRecv will then return ERROR_NET_ADHOC_SOCKET_ALERTED = 0x80410708
+    	// 32: sceNetAdhocPdpRecv will then return ERROR_NET_ADHOC_SOCKET_DELETED = 0x80410707
+    	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+    	thread.wait.Semaphore_id = -1;
+    	Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.PSP_WAIT_SEMA);
+    	blockedThreads.put(receivedMessage.getAddress(), thread.uid);
+
+//    	sendDummyMessage(thread);
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x03164B12, version = 150)
+    public int sceNet_lib_03164B12() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0D633F53, version = 150)
+    public int sceNet_lib_0D633F53() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x389728AB, version = 150)
+    public int sceNet_lib_389728AB() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7BA3ED91, version = 150)
+    public int sceNet_lib_7BA3ED91() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA55C914F, version = 150)
+    public int sceNet_lib_A55C914F() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xAFA11338, version = 150)
+    public int sceNet_lib_AFA11338() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB20F84F8, version = 150)
+    public int sceNet_lib_B20F84F8() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD1BE2CE9, version = 150)
+    public int sceNetConfigGetIfEvent(PspString interfaceName, @BufferInfo(usage=Usage.out) TPointer32 eventAddr, @BufferInfo(usage=Usage.out) TPointer32 unknown) {
+    	// Possible return values in eventAddr:
+    	// - 4 (WLAN switch off / 0x80410B03)
+    	// - 5 (WLAN beacon lost / 0x80410B0E)
+    	// - 7 (???)
+
+    	// Returns 0x80410184 if no event is available?
+    	return SceKernelErrors.ERROR_NET_NO_EVENT;
+    }
 }

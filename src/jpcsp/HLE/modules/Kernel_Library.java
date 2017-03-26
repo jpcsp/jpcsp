@@ -108,7 +108,7 @@ public class Kernel_Library extends HLEModule {
         return Interrupts.isInterruptsEnabled();
     }
 
-	@HLEFunction(nid = 0x15B6446B, version = 380, checkInsideInterrupt = true)
+	@HLEFunction(nid = 0x15B6446B, version = 150, checkInsideInterrupt = true)
 	public int sceKernelUnlockLwMutex(TPointer workAreaAddr, int count) {
 		return Managers.lwmutex.sceKernelUnlockLwMutex(workAreaAddr, count);
 	}
@@ -118,7 +118,7 @@ public class Kernel_Library extends HLEModule {
 		return Managers.lwmutex.sceKernelLockLwMutexCB(workAreaAddr, count, timeoutAddr);
 	}
 
-	@HLEFunction(nid = 0xBEA46419, version = 380, checkInsideInterrupt = true)
+	@HLEFunction(nid = 0xBEA46419, version = 150, checkInsideInterrupt = true)
 	public int sceKernelLockLwMutex(TPointer workAreaAddr, int count, @CanBeNull TPointer32 timeoutAddr) {
 		return Managers.lwmutex.sceKernelLockLwMutex(workAreaAddr, count, timeoutAddr);
 	}

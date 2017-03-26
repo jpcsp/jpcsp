@@ -93,6 +93,9 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -197,7 +200,10 @@ public class ThreadManForUser extends HLEModule {
     public static final int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x60;
     public static final int NET_ADHOC_CTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x70;
     public static final int UTILITY_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x80;
-    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x90;
+    public static final int WLAN_SEND_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x90;
+    public static final int WLAN_UP_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xA0;
+    public static final int WLAN_IOCTL_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xB0;
+    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0xC0;
     public static final int INTERNAL_THREAD_ADDRESS_SIZE = INTERNAL_THREAD_ADDRESS_END - INTERNAL_THREAD_ADDRESS_START;
     private HashMap<Integer, pspBaseCallback> callbackMap;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
@@ -642,6 +648,9 @@ public class ThreadManForUser extends HLEModule {
         installNetAdhocMatchingInputLoopHandler();
         installNetAdhocCtlLoopHandler();
         installUtilityLoopHandler();
+        installWlanSendCallback();
+        installWlanUpCallback();
+        installWlanIoctlCallback();
 
         alarms = new HashMap<Integer, SceKernelAlarmInfo>();
         vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
@@ -931,6 +940,45 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleKernelNetAdhocctlLoop(Processor processor) {
     	Modules.sceNetAdhocctlModule.hleNetAdhocctlThread(processor);
+    }
+
+    private void installWlanSendCallback() {
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(WLAN_SEND_CALLBACK_ADDRESS, 0x10, 4);
+        memoryWriter.writeNext(SYSCALL("hleWlanSendCallback"));
+        memoryWriter.writeNext(JR());
+        memoryWriter.writeNext(NOP());
+        memoryWriter.flush();
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleWlanSendCallback(TPointer handleAddr) {
+        return Modules.sceWlanModule.hleWlanSendCallback(handleAddr);
+    }
+
+    private void installWlanUpCallback() {
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(WLAN_UP_CALLBACK_ADDRESS, 0x10, 4);
+        memoryWriter.writeNext(SYSCALL("hleWlanUpCallback"));
+        memoryWriter.writeNext(JR());
+        memoryWriter.writeNext(NOP());
+        memoryWriter.flush();
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleWlanUpCallback(TPointer handleAddr) {
+        return Modules.sceWlanModule.hleWlanUpCallback(handleAddr);
+    }
+
+    private void installWlanIoctlCallback() {
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(WLAN_IOCTL_CALLBACK_ADDRESS, 0x10, 4);
+        memoryWriter.writeNext(SYSCALL("hleWlanIoctlCallback"));
+        memoryWriter.writeNext(JR());
+        memoryWriter.writeNext(NOP());
+        memoryWriter.flush();
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleWlanIoctlCallback(TPointer handleAddr, int cmd, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.in) TPointer32 unknown2) {
+        return Modules.sceWlanModule.hleWlanIoctlCallback(handleAddr, cmd, unknown1, unknown2);
     }
 
     /** to be called when exiting the emulation */
@@ -4210,7 +4258,7 @@ public class ThreadManForUser extends HLEModule {
         return Managers.mutex.sceKernelDeleteMutex(uid);
     }
 
-    @HLEFunction(nid = 0x19CFF145, version = 380, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x19CFF145, version = 150, checkInsideInterrupt = true)
 	public int sceKernelCreateLwMutex(TPointer workAreaAddr, String name, int attr, int count, @CanBeNull TPointer option) {
 		return Managers.lwmutex.sceKernelCreateLwMutex(workAreaAddr, name, attr, count, option);
 	}
@@ -4232,7 +4280,7 @@ public class ThreadManForUser extends HLEModule {
 		return Managers.lwmutex.sceKernelReferLwMutexStatusByID(uid, addr);
 	}
 
-	@HLEFunction(nid = 0x60107536, version = 380, checkInsideInterrupt = true)
+	@HLEFunction(nid = 0x60107536, version = 150, checkInsideInterrupt = true)
 	public int sceKernelDeleteLwMutex(TPointer workAreaAddr) {
 		return Managers.lwmutex.sceKernelDeleteLwMutex(workAreaAddr);
 	}
