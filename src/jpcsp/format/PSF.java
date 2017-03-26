@@ -347,18 +347,8 @@ public class PSF {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        /*
-        sb.append("header:\n");
-        sb.append(String.format("ident 0x%08X %d\n", ident, ident));
-        sb.append(String.format("version 0x%08X %d\n", version, version));
-        sb.append(String.format("keyTableOffset 0x%08X %d\n", keyTableOffset, keyTableOffset));
-        sb.append(String.format("valueTableOffset 0x%08X %d\n", valueTableOffset, valueTableOffset));
-        sb.append(String.format("indexEntryCount 0x%08X %d\n", indexEntryCount, indexEntryCount));
-
-        sb.append("\nentries:\n");
-        */
         for (PSFKeyValuePair pair : pairList) {
-            sb.append(pair.toString() + "\n");
+            sb.append(pair.toString() + System.lineSeparator());
         }
 
         sb.append("probably homebrew? " + isLikelyHomebrew());
