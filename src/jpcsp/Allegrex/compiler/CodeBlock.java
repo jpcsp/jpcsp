@@ -476,7 +476,13 @@ public class CodeBlock {
 		context.setCodeBlock(this);
 		String className = getInternalClassName();
 		if (log.isDebugEnabled()) {
-			String hleFunctionName = HLEModuleManager.getInstance().getAllFunctionNameFromAddress(getStartAddress());
+			String hleFunctionName = null;
+
+			HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromAddress(getStartAddress());
+			if (func != null) {
+				hleFunctionName = func.getFunctionName();
+			}
+
 			if (hleFunctionName != null) {
 				log.debug(String.format("Compiling %s (%s)", className, hleFunctionName));
 			} else {

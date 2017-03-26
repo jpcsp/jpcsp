@@ -165,7 +165,7 @@ public class sceWlan extends HLEModule {
 
     	Utilities.writeStringZ(handleAddr.getMemory(), interfaceNameAddr, "wlan");
 
-    	int sceNetAttachIfhandleEther = NIDMapper.getInstance().overwrittenNidToAddress(0xAE81C0CB);
+    	int sceNetAttachIfhandleEther = NIDMapper.getInstance().getAddressByNid(0xAE81C0CB);
     	if (sceNetAttachIfhandleEther == 0) {
     		return;
     	}
@@ -188,7 +188,7 @@ public class sceWlan extends HLEModule {
 		handle.write(handleAddr);
 		RuntimeContext.debugMemory(handleAddr.getAddress(), handle.sizeof());
 
-		int sceNetCreateIfhandleEther = NIDMapper.getInstance().overwrittenNidToAddress(0x16042084);
+		int sceNetCreateIfhandleEther = NIDMapper.getInstance().getAddressByNid(0x16042084);
 		if (sceNetCreateIfhandleEther == 0) {
 			int result = sceNetIfhandleModule.hleNetCreateIfhandleEther(handleAddr);
 			if (result < 0) {

@@ -19,9 +19,9 @@ package jpcsp.Allegrex;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.ICompilerContext;
+import jpcsp.HLE.HLEModuleFunction;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.SyscallIgnore;
 import jpcsp.util.Utilities;
 
 /**
@@ -675,15 +675,10 @@ public class Common {
     }
 
     public static String disasmSYSCALL(int code) {
-    	String functionName = HLEModuleManager.getInstance().getAllFunctionNameFromSyscallCode(code);
-
-    	if (functionName == null) {
-	        for (SyscallIgnore c : SyscallIgnore.values()) {
-	            if (c.getSyscall() == code) {
-	                functionName = c.toString();
-	                break;
-	            }
-	        }
+    	String functionName = null;
+    	HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
+    	if (func != null) {
+    		functionName = func.getFunctionName();
     	}
 
     	if (functionName == null) {
@@ -704,7 +699,11 @@ public class Common {
         // If we think the target is a stub, try and append the syscall name
         if ((opname.equals("jal") || opname.equals("j")) && jump != 0 &&
                 jumpToSyscall != opcode_address && Memory.isAddressGood(jumpToSyscall)) {
-        	String hleFunctionName = HLEModuleManager.getInstance().getAllFunctionNameFromAddress(jump);
+        	String hleFunctionName = null;
+        	HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromAddress(jump);
+        	if (func != null) {
+        		hleFunctionName = func.getFunctionName();
+        	}
         	if (hleFunctionName != null) {
                 return String.format("%1$-10s 0x%2$08X [%3$s]", opname, jump, hleFunctionName);
         	}

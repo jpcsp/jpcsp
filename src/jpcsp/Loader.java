@@ -1176,8 +1176,8 @@ public class Loader {
                 int importAddress = deferredStub.getImportAddress();
 
                 // Attempt to fixup stub to point to an already loaded module export
-                int exportAddress = nidMapper.moduleNidToAddress(moduleName, nid);
-                if (exportAddress != -1) {
+                int exportAddress = nidMapper.getAddressByNid(nid, moduleName);
+                if (exportAddress != 0) {
                 	deferredStub.resolve(mem, exportAddress);
                     it.remove();
                     sourceModule.resolvedImports.add(deferredStub);
@@ -1202,8 +1202,8 @@ public class Loader {
                     mem.write32(importAddress + 4, AllegrexOpcodes.ADDU | (2 << 11) | (0 << 16) | (0 << 21)); // addu $v0, $zr, $zr <=> li $v0, 0
                 } else {
                     // Attempt to fixup stub to known syscalls
-                    int code = nidMapper.nidToSyscall(nid);
-                    if (code != -1) {
+                    int code = nidMapper.getSyscallByNid(nid, moduleName);
+                    if (code >= 0) {
                         // Fixup stub, replacing nop with syscall
                     	int returnInstruction = // jr $ra
                     	    (AllegrexOpcodes.SPECIAL << 26)

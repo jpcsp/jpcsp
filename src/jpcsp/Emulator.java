@@ -237,7 +237,6 @@ public class Emulator implements Runnable {
         HLEUidObjectMapping.reset();
         ProOnlineNetworkAdapter.init();
 
-        NIDMapper.getInstance().Initialise();
         if (State.fileLogger != null) {
             State.fileLogger.resetLogging();
         }
@@ -408,8 +407,6 @@ public class Emulator implements Runnable {
     public void setFirmwareVersion(int firmwareVersion) {
         this.firmwareVersion = firmwareVersion;
 
-        NIDMapper.getInstance().Initialise();
-        HLEModuleManager.getInstance().Initialise(this.firmwareVersion);
         Modules.SysMemUserForUserModule.setFirmwareVersion(this.firmwareVersion);
     }
 

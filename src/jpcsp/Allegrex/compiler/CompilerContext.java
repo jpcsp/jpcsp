@@ -37,6 +37,7 @@ import java.util.TreeSet;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.NIDMapper;
 import jpcsp.Processor;
 import jpcsp.State;
 import jpcsp.Allegrex.Common;
@@ -198,7 +199,10 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void addFastSyscall(int nid) {
-        fastSyscalls.add(HLEModuleManager.getInstance().getSyscallFromNid(nid));
+    	int syscallCode = NIDMapper.getInstance().getSyscallByNid(nid);
+    	if (syscallCode >= 0) {
+    		fastSyscalls.add(syscallCode);
+    	}
     }
 
     public CompilerClassLoader getClassLoader() {
@@ -1888,7 +1892,16 @@ public class CompilerContext implements ICompilerContext {
     		storePc();
     	}
 
-    	HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
+    	HLEModuleFunction func = null;
+    	// Call the HLE method only when it has not been overwritten
+    	if (NIDMapper.getInstance().getAddressBySyscall(code) == 0) {
+    		func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
+    	} else {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Calling overwritten HLE method '%s' instead of syscall", NIDMapper.getInstance().getNameBySyscall(code)));
+    		}
+    	}
+
     	boolean fastSyscall = isFastSyscall(code);
     	if (func == null) {
 	    	loadImm(code);
@@ -1955,7 +1968,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void startHLEMethod() {
-        HLEModuleFunction func = HLEModuleManager.getInstance().getAllFunctionFromAddress(codeBlock.getStartAddress());
+        HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromAddress(codeBlock.getStartAddress());
         codeBlock.setHLEFunction(func);
 
         if (codeBlock.isHLEFunction()) {

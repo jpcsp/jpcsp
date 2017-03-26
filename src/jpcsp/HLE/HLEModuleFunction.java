@@ -35,8 +35,9 @@ public class HLEModuleFunction {
 	private boolean checkDispatchThreadEnabled;
 	private int stackUsage;
 	private HLEModule hleModule;
+	private int firmwareVersion;
 
-    public HLEModuleFunction(String moduleName, String functionName, HLEModule hleModule, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled, int stackUsage) {
+    public HLEModuleFunction(String moduleName, String functionName, HLEModule hleModule, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled, int stackUsage, int firmwareVersion) {
         this.moduleName = moduleName;
         this.functionName = functionName;
 		this.checkInsideInterrupt = checkInsideInterrupt;
@@ -44,6 +45,7 @@ public class HLEModuleFunction {
 		this.stackUsage = stackUsage;
 		this.hleModuleMethod = hleModuleMethod; 
 		this.hleModule = hleModule;
+		this.firmwareVersion = firmwareVersion;
     }
 
     public final void setSyscallCode(int syscallCode) {
@@ -110,7 +112,11 @@ public class HLEModuleFunction {
 		return hleModule;
 	}
 
-    @Override
+	public int getFirmwareVersion() {
+		return firmwareVersion;
+	}
+
+	@Override
     public String toString() {
     	return String.format("HLEModuleFunction(moduleName='%s', functionName='%s', nid=0x%08X, syscallCode=%d)", moduleName, functionName, nid, syscallCode);
     }
