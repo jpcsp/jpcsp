@@ -76,10 +76,58 @@ public class InterruptManager extends HLEModule {
 	public int QueryIntrHandlerInfo() {
 		return 0;
 	}
-    
+
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xEEE43F47, version = 150)
 	public int sceKernelRegisterUserSpaceIntrStack() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xD774BA45, version = 150)
+	public int sceKernelDisableIntr() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x4D6E7305, version = 150)
+	public int sceKernelEnableIntr() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xDB14CBE0, version = 150)
+	public int sceKernelResumeIntr() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x0C5F7AE3, version = 150)
+	public int sceKernelCallSubIntrHandler() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x4023E1A7, version = 150)
+	public int sceKernelDisableSubIntr() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x58DD8978, version = 150)
+	public int sceKernelRegisterIntrHandler() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF987B1F0, version = 150)
+	public int sceKernelReleaseIntrHandler() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xFFA8B183, version = 150)
+	public int sceKernelRegisterSubIntrHandler() {
 		return 0;
 	}
 }
