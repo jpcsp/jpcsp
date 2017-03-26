@@ -19,6 +19,7 @@ package jpcsp.HLE.modules;
 import java.util.HashMap;
 
 import jpcsp.Memory;
+import jpcsp.State;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -29,6 +30,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.MemoryChunk;
 import jpcsp.HLE.kernel.types.MemoryChunkList;
@@ -47,6 +49,7 @@ public class SysMemForKernel extends HLEModule {
     private int dnas;
     private SysMemInfo gameInfoMem;
     private SceKernelGameInfo gameInfo;
+    private SysMemInfo dummyControlBlock;
 
     protected static class HeapInformation {
     	private static final String uidPurpose = "SysMemForKernel-Heap";
@@ -291,6 +294,9 @@ public class SysMemForKernel extends HLEModule {
     	if (gameInfoMem == null) {
     		gameInfoMem = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "SceKernelGameInfo", SysMemUserForUser.PSP_SMEM_Low, SceKernelGameInfo.SIZEOF, 0);
     	}
+    	gameInfo.gameId = State.discId;
+    	gameInfo.sdkVersion = Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion();
+    	gameInfo.compilerVersion = Modules.SysMemUserForUserModule.hleKernelGetCompilerVersion();
     	gameInfo.write(Memory.getInstance(), gameInfoMem.addr);
 
     	return gameInfoMem.addr;
@@ -332,6 +338,25 @@ public class SysMemForKernel extends HLEModule {
 	@HLEFunction(nid = 0xE860BE8F, version = 150)
 	public int sceKernelQueryMemoryBlockInfo(int id, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=56, usage=Usage.out) TPointer infoPtr) {
 		infoPtr.clear(56);
+
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xC90B0992, version = 150)
+	public int sceKernelGetUIDcontrolBlock(int id, TPointer32 controlBlockAddr) {
+		if (dummyControlBlock == null) {
+			dummyControlBlock = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "DummyControlBlock", SysMemUserForUser.PSP_SMEM_Low, 36, 0);
+			if (dummyControlBlock == null) {
+				return -1;
+			}
+		}
+
+		TPointer dummyControlBlockPtr = new TPointer(Memory.getInstance(), dummyControlBlock.addr);
+		dummyControlBlockPtr.clear(36);
+		dummyControlBlockPtr.setValue32(22, 0xFF); // SceSysmemUidCB.attr
+
+		controlBlockAddr.setValue(dummyControlBlockPtr.getAddress());
 
 		return 0;
 	}

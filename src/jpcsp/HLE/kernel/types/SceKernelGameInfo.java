@@ -19,26 +19,26 @@ package jpcsp.HLE.kernel.types;
 public class SceKernelGameInfo extends pspAbstractMemoryMappedStructureVariableLength {
 	public static final int SIZEOF = 220;
 	public int flags;
-	String str8;
-	String str24;
-	int unk36;
-	String qtgp2;
-	String qtgp3;
-	int allowReplaceUmd;
-	String gameId;
-	int unk84;
-	String str88;
-	int umdCacheOn;
-	int sdkVersion;
-	int compilerVersion;
-	int dnas;
-	int unk112;
-	String str116;
-	String str180;
-	String str196;
-	String unk204;
-	int unk212;
-	int unk216;
+	public String str8;
+	public String str24;
+	public int unk36;
+	public String qtgp2;
+	public String qtgp3;
+	public int allowReplaceUmd;
+	public String gameId;
+	public int unk84;
+	public String str88;
+	public int umdCacheOn;
+	public int sdkVersion;
+	public int compilerVersion;
+	public int dnas;
+	public int unk112;
+	public String str116;
+	public String str180;
+	public String str196;
+	public String unk204;
+	public int unk212;
+	public int unk216;
 
 	@Override
 	protected void write() {
