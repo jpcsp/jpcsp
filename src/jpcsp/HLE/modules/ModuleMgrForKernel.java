@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -29,11 +30,14 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.util.Utilities;
 
 public class ModuleMgrForKernel extends HLEModule {
 	public static Logger log = Modules.getLogger("ModuleMgrForKernel");
@@ -121,7 +125,7 @@ public class ModuleMgrForKernel extends HLEModule {
     }
 
     @HLEFunction(nid = 0xD4EE2D26, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadModuleToBlock(PspString path, int blockId, TPointer32 unknown1, int unknown2, @CanBeNull TPointer optionAddr) {
+    public int sceKernelLoadModuleToBlock(PspString path, int blockId, @BufferInfo(usage=Usage.out) TPointer32 separatedBlockId, int unknown2, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
@@ -141,6 +145,24 @@ public class ModuleMgrForKernel extends HLEModule {
         }
 
         modulesWithMemoryAllocated.add(path.getString());
+
+        SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(path.getString());
+        if (stat != null) {
+	        int size = (int) stat.size;
+
+	        // Aligned on 256 bytes boundary
+	        size = Utilities.alignUp(size, 0xFF);
+
+	        SysMemInfo separatedSysMemInfo = Modules.SysMemUserForUserModule.separateMemoryBlock(sysMemInfo, size);
+	        // This is the new blockId after calling sceKernelSeparateMemoryBlock
+	        separatedBlockId.setValue(separatedSysMemInfo.uid);
+	        if (log.isDebugEnabled()) {
+	        	log.debug(String.format("sceKernelLoadModuleToBlock separatedSysMemInfo=%s", separatedSysMemInfo));
+	        }
+        } else {
+        	// We are not really loading the module file, return the same blockId
+        	separatedBlockId.setValue(blockId);
+        }
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), 0, 0, 0, 0, lmOption, false, true, false, sysMemInfo.addr);
     }
