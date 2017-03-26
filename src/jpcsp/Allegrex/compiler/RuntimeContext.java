@@ -277,7 +277,7 @@ public class RuntimeContext {
 
     public static void debugCodeBlockEnd(int address, int returnAddress) {
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("Returning from CodeBlock 0x%08X to 0x%08X, $sp=0x%08X", address, returnAddress, cpu._sp));
+    		log.debug(String.format("Returning from CodeBlock 0x%08X to 0x%08X, $sp=0x%08X, $v0=0x%08X", address, returnAddress, cpu._sp, cpu._v0));
     	}
     }
 

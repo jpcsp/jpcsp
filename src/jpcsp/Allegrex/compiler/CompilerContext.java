@@ -1296,7 +1296,7 @@ public class CompilerContext implements ICompilerContext {
         		}
 
         		boolean parameterRead = false;
-        		if ((usage == Usage.in || usage == Usage.inout) && (lengthInfo != LengthInfo.unknown || parameterType == TPointer32.class || parameterType == TPointer64.class)) {
+        		if ((usage == Usage.in || usage == Usage.inout) && (lengthInfo != LengthInfo.unknown || parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class)) {
     				loadModuleLoggger(func);
     				loadImm(1);
     				mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
@@ -1356,6 +1356,12 @@ public class CompilerContext implements ICompilerContext {
 		        				mv.visitInsn(Opcodes.DUP2_X2);
 		        				mv.visitInsn(Opcodes.POP2);
 		        				mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Long.class), "<init>", "(J)V");
+	        		    	} else if (parameterType == TPointer16.class) {
+		        		        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read16", "(I)I");
+		        				mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Integer.class));
+		        				mv.visitInsn(Opcodes.DUP_X1);
+		        				mv.visitInsn(Opcodes.SWAP);
+		        				mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Integer.class), "<init>", "(I)V");
 	        		    	} else {
 		        		        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
 		        				mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Integer.class));
@@ -1493,7 +1499,7 @@ public class CompilerContext implements ICompilerContext {
 	        		}
 
 	        		boolean parameterRead = false;
-	        		if ((usage == Usage.out || usage == Usage.inout) && (lengthInfo != LengthInfo.unknown || parameterType == TPointer32.class || parameterType == TPointer64.class)) {
+	        		if ((usage == Usage.out || usage == Usage.inout) && (lengthInfo != LengthInfo.unknown || parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class)) {
 	    				loadModuleLoggger(func);
 	    				loadImm(1);
 	    				mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
@@ -1561,6 +1567,17 @@ public class CompilerContext implements ICompilerContext {
 			        				mv.visitInsn(Opcodes.DUP2_X2);
 			        				mv.visitInsn(Opcodes.POP2);
 			        				mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Long.class), "<init>", "(J)V");
+		        		    	} else if (parameterType == TPointer16.class) {
+			                		if (debugMemory) {
+			                    		mv.visitInsn(Opcodes.DUP);
+			                    		loadImm(2);
+				                		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemory", "(II)V");
+			                		}
+			        		        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read16", "(I)I");
+			        				mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Integer.class));
+			        				mv.visitInsn(Opcodes.DUP_X1);
+			        				mv.visitInsn(Opcodes.SWAP);
+			        				mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Integer.class), "<init>", "(I)V");
 		        		    	} else {
 			                		if (debugMemory) {
 			                    		mv.visitInsn(Opcodes.DUP);
