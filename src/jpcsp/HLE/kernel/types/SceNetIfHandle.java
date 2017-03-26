@@ -19,7 +19,7 @@ package jpcsp.HLE.kernel.types;
 public class SceNetIfHandle extends pspAbstractMemoryMappedStructure {
 	public int callbackArg4;
 	public int upCallbackAddr;
-	public int callbackAddr12;
+	public int downCallbackAddr;
 	public int sendCallbackAddr;
 	public int ioctlCallbackAddr;
 	public int addrFirstMessageToBeSent;
@@ -84,7 +84,7 @@ public class SceNetIfHandle extends pspAbstractMemoryMappedStructure {
 		}
 		callbackArg4 = read32(); // Offset 4
 		upCallbackAddr = read32(); // Offset 8
-		callbackAddr12 = read32(); // Offset 12
+		downCallbackAddr = read32(); // Offset 12
 		sendCallbackAddr = read32(); // Offset 16
 		ioctlCallbackAddr = read32(); // Offset 20
 		addrFirstMessageToBeSent = read32(); // Offset 24
@@ -102,7 +102,7 @@ public class SceNetIfHandle extends pspAbstractMemoryMappedStructure {
 		}
 		write32(callbackArg4); // Offset 4
 		write32(upCallbackAddr); // Offset 8
-		write32(callbackAddr12); // Offset 12
+		write32(downCallbackAddr); // Offset 12
 		write32(sendCallbackAddr); // Offset 16
 		write32(ioctlCallbackAddr); // Offset 20
 		write32(addrFirstMessageToBeSent); // Offset 24
@@ -119,6 +119,6 @@ public class SceNetIfHandle extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("callbackArg4=0x%X, upCallbackAddr=0x%08X, callbackAddr12=0x%08X, sendCallbackAddr=0x%08X, ioctlCallbackAddr=0x%08X, firstMessage=0x%08X, lastMessage=0x%08X, nbrMessages=0x%X, unknown36=0x%X, unknown40=0x%X, internalStructure: %s", callbackArg4, upCallbackAddr, callbackAddr12, sendCallbackAddr, ioctlCallbackAddr, addrFirstMessageToBeSent, addrLastMessageToBeSent, numberOfMessagesToBeSent, unknown36, unknown40, handleInternal);
+		return String.format("callbackArg4=0x%X, upCallbackAddr=0x%08X, downCallbackAddr=0x%08X, sendCallbackAddr=0x%08X, ioctlCallbackAddr=0x%08X, firstMessage=0x%08X, lastMessage=0x%08X, nbrMessages=0x%X, unknown36=0x%X, unknown40=0x%X, internalStructure: %s", callbackArg4, upCallbackAddr, downCallbackAddr, sendCallbackAddr, ioctlCallbackAddr, addrFirstMessageToBeSent, addrLastMessageToBeSent, numberOfMessagesToBeSent, unknown36, unknown40, handleInternal);
 	}
 }

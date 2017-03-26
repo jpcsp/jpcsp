@@ -202,8 +202,9 @@ public class ThreadManForUser extends HLEModule {
     public static final int UTILITY_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x80;
     public static final int WLAN_SEND_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x90;
     public static final int WLAN_UP_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xA0;
-    public static final int WLAN_IOCTL_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xB0;
-    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0xC0;
+    public static final int WLAN_DOWN_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xB0;
+    public static final int WLAN_IOCTL_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xC0;
+    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0xD0;
     public static final int INTERNAL_THREAD_ADDRESS_SIZE = INTERNAL_THREAD_ADDRESS_END - INTERNAL_THREAD_ADDRESS_START;
     private HashMap<Integer, pspBaseCallback> callbackMap;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
@@ -650,6 +651,7 @@ public class ThreadManForUser extends HLEModule {
         installUtilityLoopHandler();
         installWlanSendCallback();
         installWlanUpCallback();
+        installWlanDownCallback();
         installWlanIoctlCallback();
 
         alarms = new HashMap<Integer, SceKernelAlarmInfo>();
@@ -966,6 +968,19 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleWlanUpCallback(TPointer handleAddr) {
         return Modules.sceWlanModule.hleWlanUpCallback(handleAddr);
+    }
+
+    private void installWlanDownCallback() {
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(WLAN_DOWN_CALLBACK_ADDRESS, 0x10, 4);
+        memoryWriter.writeNext(SYSCALL("hleWlanDownCallback"));
+        memoryWriter.writeNext(JR());
+        memoryWriter.writeNext(NOP());
+        memoryWriter.flush();
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleWlanDownCallback(TPointer handleAddr) {
+        return Modules.sceWlanModule.hleWlanDownCallback(handleAddr);
     }
 
     private void installWlanIoctlCallback() {

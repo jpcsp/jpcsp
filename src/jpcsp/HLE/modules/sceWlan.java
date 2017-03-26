@@ -78,12 +78,13 @@ public class sceWlan extends HLEModule {
     	return 0;
     }
 
+    // Called by sceNetIfhandleIfUp
     public int hleWlanUpCallback(TPointer handleAddr) {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("hleWlanUpCallback handleAddr: %s", Utilities.getMemoryDump(handleAddr.getAddress(), 44)));
     		int handleInternalAddr = handleAddr.getValue32();
     		if (handleInternalAddr != 0) {
-        		log.debug(String.format("afterNetCreateIfhandleEtherAction handleInternalAddr: %s", Utilities.getMemoryDump(handleInternalAddr, 320)));
+        		log.debug(String.format("hleWlanUpCallback handleInternalAddr: %s", Utilities.getMemoryDump(handleInternalAddr, 320)));
     		}
     	}
 
@@ -92,6 +93,28 @@ public class sceWlan extends HLEModule {
 
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("hleWlanUpCallback handleAddr=%s: %s", handleAddr, handle));
+    	}
+
+    	Modules.ThreadManForUserModule.sceKernelSignalSema(handle.handleInternal.ioctlSemaId, 1);
+
+    	return 0;
+    }
+
+    // Called by sceNetIfhandleIfDown
+    public int hleWlanDownCallback(TPointer handleAddr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleWlanDownCallback handleAddr: %s", Utilities.getMemoryDump(handleAddr.getAddress(), 44)));
+    		int handleInternalAddr = handleAddr.getValue32();
+    		if (handleInternalAddr != 0) {
+        		log.debug(String.format("hleWlanDownCallback handleInternalAddr: %s", Utilities.getMemoryDump(handleInternalAddr, 320)));
+    		}
+    	}
+
+    	SceNetIfHandle handle = new SceNetIfHandle();
+    	handle.read(handleAddr);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleWlanDownCallback handleAddr=%s: %s", handleAddr, handle));
     	}
 
     	Modules.ThreadManForUserModule.sceKernelSignalSema(handle.handleInternal.ioctlSemaId, 1);
@@ -175,9 +198,9 @@ public class sceWlan extends HLEModule {
 
     private int createWlanInterface() {
 		SceNetIfHandle handle = new SceNetIfHandle();
-		handle.callbackArg4 = 0x11040404; // dummy callback addr
+		handle.callbackArg4 = 0x11040404; // dummy callback value
 		handle.upCallbackAddr = ThreadManForUser.WLAN_UP_CALLBACK_ADDRESS;
-		handle.callbackAddr12 = 0x110C0C0C; // dummy callback addr
+		handle.downCallbackAddr = ThreadManForUser.WLAN_DOWN_CALLBACK_ADDRESS;
 		handle.sendCallbackAddr = ThreadManForUser.WLAN_SEND_CALLBACK_ADDRESS;
 		handle.ioctlCallbackAddr = ThreadManForUser.WLAN_IOCTL_CALLBACK_ADDRESS;
 		int handleMem = sceNetIfhandleModule.sceNetMallocInternal(handle.sizeof());
