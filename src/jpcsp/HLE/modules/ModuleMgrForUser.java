@@ -301,6 +301,7 @@ public class ModuleMgrForUser extends HLEModule {
     public int hleKernelLoadModule(String name, int flags, int uid, int buffer, int bufferSize, SceKernelLMOption lmOption, boolean byUid, boolean needModuleInfo, boolean allocMem, int baseAddr) {
     	IAction delayedLoadModule = new LoadModuleAction(Modules.ThreadManForUserModule.getCurrentThread(), name, flags, uid, buffer, bufferSize, lmOption, byUid, needModuleInfo, allocMem, baseAddr);
 
+    	Modules.ThreadManForUserModule.getCurrentThread().wait.Io_id = -1;
     	Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_IO);
     	Emulator.getScheduler().addAction(Emulator.getClock().microTime() + 100000, delayedLoadModule);
 
@@ -1102,5 +1103,10 @@ public class ModuleMgrForUser extends HLEModule {
         gpAddr.setValue(module.gp_value);
 
         return 0;
+    }
+
+    @HLEFunction(nid = 0x22BDBEFF, version = 150, checkInsideInterrupt = true)
+    public int sceKernelQueryModuleInfo_660(int uid, TPointer infoAddr) {
+    	return sceKernelQueryModuleInfo(uid, infoAddr);
     }
 }
