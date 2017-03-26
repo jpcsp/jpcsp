@@ -166,6 +166,7 @@ public class sceReg extends HLEModule {
 	private int getKey(CategoryHandle categoryHandle, String name, TPointer32 ptype, TPointer32 psize, TPointer buf, int size) {
     	String fullName = categoryHandle.getFullName();
     	fullName = fullName.replace("flash1:/registry/system", "");
+    	fullName = fullName.replace("flash1/registry/system", "");
 
     	if ("/system/DATA/FONT".equals(fullName) || "/DATA/FONT".equals(fullName)) {
     		List<sceFont.FontRegistryEntry> fontRegistry = Modules.sceFontModule.getFontRegistry();
@@ -515,6 +516,12 @@ public class sceReg extends HLEModule {
     			if (size >= 4) {
         			buf.setValue32(0);
     			}
+    		} else if ("check_drm".equals(name)) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+        			buf.setValue32(0);
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
@@ -802,6 +809,12 @@ public class sceReg extends HLEModule {
     			psize.setValue(adhocSsidPrefix.length() + 1);
     			if (size > 0) {
     				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, adhocSsidPrefix);
+    			}
+    		} else if (name.equals("channel")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(sceUtility.getSystemParamAdhocChannel());
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
