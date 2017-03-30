@@ -764,7 +764,7 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0x75ECD386, version = 150, checkInsideInterrupt = true)
-    public int sceNetAdhocctlGetState(TPointer32 stateAddr) {
+    public int sceNetAdhocctlGetState(@BufferInfo(usage=Usage.out) TPointer32 stateAddr) {
     	checkInitialized();
 
         stateAddr.setValue(adhocctlCurrentState);

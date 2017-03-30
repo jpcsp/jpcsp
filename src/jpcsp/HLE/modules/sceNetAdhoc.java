@@ -594,7 +594,7 @@ public class sceNetAdhoc extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x73BFD52D, version = 150)
-    public int sceNetAdhocSetSocketAlert(int id, int unknown) {
+    public int sceNetAdhocSetSocketAlert(int id, int flags) {
         return 0;
     }
 
