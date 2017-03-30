@@ -148,6 +148,7 @@ public class sceMpeg extends HLEModule {
 
     // MPEG statics.
     public static final int PSMF_MAGIC = 0x464D5350;
+    public static final int PSMF_MAGIC_LITTLE_ENDIAN = 0x50534D46;
     public static final int PSMF_VERSION_0012 = 0x32313030;
     public static final int PSMF_VERSION_0013 = 0x33313030;
     public static final int PSMF_VERSION_0014 = 0x34313030;
@@ -1724,6 +1725,12 @@ public class sceMpeg extends HLEModule {
 						skip(buffer, codeLength);
 					}
 					break;
+				case PSMF_MAGIC_LITTLE_ENDIAN:
+					// Skip any PSMF header
+					skip(buffer, PSMF_STREAM_OFFSET_OFFSET - 4);
+					int streamOffset = read32(mem, buffer);
+					skip(buffer, streamOffset - PSMF_STREAM_OFFSET_OFFSET - 4);
+					break;
 				default:
 					endOfAudio = true;
 					if (log.isDebugEnabled()) {
@@ -1808,6 +1815,12 @@ public class sceMpeg extends HLEModule {
 					codeLength = read16(mem, buffer);
 					skip(buffer, codeLength);
 					break;
+				case PSMF_MAGIC_LITTLE_ENDIAN:
+					// Skip any PSMF header
+					skip(buffer, PSMF_STREAM_OFFSET_OFFSET - 4);
+					int streamOffset = read32(mem, buffer);
+					skip(buffer, streamOffset - PSMF_STREAM_OFFSET_OFFSET - 4);
+					break;
 				default:
 					endOfVideo = true;
 					if (log.isDebugEnabled()) {
@@ -1889,6 +1902,12 @@ public class sceMpeg extends HLEModule {
 					} else {
 						skip(buffer, codeLength);
 					}
+					break;
+				case PSMF_MAGIC_LITTLE_ENDIAN:
+					// Skip any PSMF header
+					skip(buffer, PSMF_STREAM_OFFSET_OFFSET - 4);
+					int streamOffset = read32(mem, buffer);
+					skip(buffer, streamOffset - PSMF_STREAM_OFFSET_OFFSET - 4);
 					break;
 				default:
 					log.warn(String.format("Unknown StartCode 0x%08X at 0x%08X", startCode, buffer.getReadAddr() - 4));
@@ -3013,7 +3032,7 @@ public class sceMpeg extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0xF8DCB679, version = 150, checkInsideInterrupt = true, stackUsage = 0x18)
-    public int sceMpegQueryAtracEsSize(@CheckArgument("checkMpegHandle") int mpeg, @CanBeNull TPointer32 esSizeAddr, @CanBeNull TPointer32 outSizeAddr) {
+    public int sceMpegQueryAtracEsSize(@CheckArgument("checkMpegHandle") int mpeg, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 esSizeAddr, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 outSizeAddr) {
         esSizeAddr.setValue(MPEG_ATRAC_ES_SIZE);
         outSizeAddr.setValue(MPEG_ATRAC_ES_OUTPUT_SIZE);
 
@@ -3402,7 +3421,7 @@ public class sceMpeg extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0xA11C7026, version = 150, checkInsideInterrupt = true)
-    public int sceMpegAvcDecodeMode(@CheckArgument("checkMpegHandle") int mpeg, @BufferInfo(usage=Usage.in) TPointer32 modeAddr) {
+    public int sceMpegAvcDecodeMode(@CheckArgument("checkMpegHandle") int mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.in) TPointer32 modeAddr) {
         // -1 is a default value.
         int mode = modeAddr.getValue(0);
         int pixelMode = modeAddr.getValue(4);
