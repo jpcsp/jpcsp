@@ -745,7 +745,10 @@ public class KIRK {
         }
 
         if ((inSize != 0x3C) || (outSize != 0x28)) {
-            return PSP_KIRK_INVALID_SIZE;
+        	// Accept inSize==0x3C and outSize==0x3C as this is sent by sceMemab_9BF0C95D from a real PSP
+        	if (outSize != inSize) {
+        		return PSP_KIRK_INVALID_SIZE;
+        	}
         }
 
         // Start the ECDSA context.
