@@ -17,36 +17,41 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 public class SceNetWlanMessage extends pspAbstractMemoryMappedStructure {
+	public static final int[] contentLengthFromMessageType = new int[] { -1, 0, 0x80, 0x120, 0x110, 0x100, 0x60, 0x20, 0x30 };
+	public static final int maxContentLength = 0x120;
+	public static final int WLAN_PROTOCOL_TYPE_SONY = 0x88C8;
+	public static final int WLAN_PROTOCOL_SUBTYPE_CONTROL = 0x01;
+	public static final int WLAN_PROTOCOL_SUBTYPE_DATA = 0x02;
 	public pspNetMacAddress dstMacAddress;
 	public pspNetMacAddress srcMacAddress;
-	public int unknown12;
-	public int unknown14;
-	public int unknown16;
-	public int unknown17;
-	public int unknown18;
+	public int protocolType; // 0x88C8
+	public int protocolSubType; // 1 or 2
+	public int unknown16; // 1
+	public int controlType; // [1..8]
+	public int contentLength;
 
 	@Override
 	protected void read() {
 		dstMacAddress = new pspNetMacAddress();
-		read(dstMacAddress);
+		read(dstMacAddress); // Offset 0
 		srcMacAddress = new pspNetMacAddress();
-		read(srcMacAddress);
-		unknown12 = read16();
-		unknown14 = read16();
-		unknown16 = read8();
-		unknown17 = read8();
-		unknown18 = endianSwap16((short) read16());
+		read(srcMacAddress); // Offset 6
+		protocolType = endianSwap16((short) read16()); // Offset 12
+		protocolSubType = endianSwap16((short) read16()); // Offset 14
+		unknown16 = read8(); // Offset 16
+		controlType = read8(); // Offset 17
+		contentLength = endianSwap16((short) read16()); // Offset 18
 	}
 
 	@Override
 	protected void write() {
-		write(dstMacAddress);
-		write(srcMacAddress);
-		write16((short) unknown12);
-		write16((short) unknown14);
-		write8((byte) unknown16);
-		write8((byte) unknown17);
-		write16((short) endianSwap16((short) unknown18));
+		write(dstMacAddress); // Offset 0
+		write(srcMacAddress); // Offset 6
+		write16((short) endianSwap16((short) protocolType)); // Offset 12
+		write16((short) endianSwap16((short) protocolSubType)); // Offset 14
+		write8((byte) unknown16); // Offset 16
+		write8((byte) controlType); // Offset 17
+		write16((short) endianSwap16((short) contentLength)); // Offset 18
 	}
 
 	@Override
@@ -56,6 +61,6 @@ public class SceNetWlanMessage extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("dstMac=%s, srcMac=%s, unknown12=0x%X, unknown14=0x%X, unknown16=0x%X, unknown17=0x%X, unknown18=0x%X", dstMacAddress, srcMacAddress, unknown12, unknown14, unknown16, unknown17, unknown18);
+		return String.format("dstMac=%s, srcMac=%s, protocolType=0x%X, protocolSubType=0x%X, unknown16=0x%X, controlType=0x%X, contentLength=0x%X", dstMacAddress, srcMacAddress, protocolType, protocolSubType, unknown16, controlType, contentLength);
 	}
 }

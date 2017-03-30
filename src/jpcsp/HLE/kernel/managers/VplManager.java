@@ -166,8 +166,18 @@ public class VplManager {
     }
 
     /** @return the address of the allocated block or 0 if failed. */
-    private int tryAllocateVpl(SceKernelVplInfo info, int size) {
+    public int tryAllocateVpl(SceKernelVplInfo info, int size) {
     	return info.alloc(size);
+    }
+
+    public SceKernelVplInfo getVplInfoByName(String name) {
+    	for (SceKernelVplInfo info : vplMap.values()) {
+    		if (name.equals(info.name)) {
+    			return info;
+    		}
+    	}
+
+    	return null;
     }
 
     public int checkVplID(int uid) {

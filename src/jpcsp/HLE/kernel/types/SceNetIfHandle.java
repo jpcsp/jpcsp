@@ -35,33 +35,50 @@ public class SceNetIfHandle extends pspAbstractMemoryMappedStructure {
 		public int ioctlSemaId;
 		public int ioctlOKSemaId;
 		public pspNetMacAddress macAddress = new pspNetMacAddress();
+		public int unknownCallbackAddr184;
 		public int unknownCallbackAddr188;
+		public int sceNetIfhandleIfUp;
+		public int sceNetIfhandleIfDown;
+		public int sceNetIfhandleIfIoctl;
+		public int errorCode;
 
 		@Override
 		protected void read() {
 			readUnknown(20); // Offset 0
 			interfaceName = readStringNZ(16); // Offset 20
-			readUnknown(152); // Offset 36
+			readUnknown(148); // Offset 36
+			unknownCallbackAddr184 = read32(); // Offset 184
 			unknownCallbackAddr188 = read32(); // Offset 188
 			readUnknown(44); // Offset 192
 			macAddress = new pspNetMacAddress();
 			read(macAddress); // Offset 236
-			readUnknown(14); // Offset 242
+			readUnknown(2); // Offset 242
+			sceNetIfhandleIfUp = read32(); // Offset 244
+			sceNetIfhandleIfDown = read32(); // Offset 248
+			sceNetIfhandleIfIoctl = read32(); // Offset 252
 			ioctlSemaId = read32(); // Offset 256
 			ioctlOKSemaId = read32(); // Offset 260
+			readUnknown(4); // Offset 264
+			errorCode = read32(); // Offset 268
 		}
 
 		@Override
 		protected void write() {
 			writeSkip(20); // Offset 0
 			writeStringNZ(16, interfaceName); // Offset 20
-			writeSkip(152); // Offset 36
+			writeSkip(148); // Offset 36
+			write32(unknownCallbackAddr184); // Offset 184
 			write32(unknownCallbackAddr188); // Offset 188
 			writeSkip(44); // Offset 192
 			write(macAddress); // Offset 236
-			writeSkip(14); // Offset 242
+			writeSkip(2); // Offset 242
+			write32(sceNetIfhandleIfUp); // Offset 244
+			write32(sceNetIfhandleIfDown); // Offset 248
+			write32(sceNetIfhandleIfIoctl); // Offset 252
 			write32(ioctlSemaId); // Offset 256
 			write32(ioctlOKSemaId); // Offset 260
+			writeSkip(4); // Offset 264
+			write32(errorCode); // Offset 268
 		}
 
 		@Override
@@ -71,7 +88,7 @@ public class SceNetIfHandle extends pspAbstractMemoryMappedStructure {
 
 		@Override
 		public String toString() {
-			return String.format("interfaceName='%s', unknownCallbackAddr188=0x%08X, ioctlSemaId=0x%X, ioctlOKSemaId=0x%X, macAddress=%s", interfaceName, unknownCallbackAddr188, ioctlSemaId, ioctlOKSemaId, macAddress);
+			return String.format("interfaceName='%s', unknownCallbackAddr184=0x%08X, unknownCallbackAddr188=0x%08X, sceNetIfhandleIfUp=0x%08X, sceNetIfhandleIfDown=0x%08X, sceNetIfhandleIfIoctl=0x%08X, ioctlSemaId=0x%X, ioctlOKSemaId=0x%X, macAddress=%s", interfaceName, unknownCallbackAddr184, unknownCallbackAddr188, sceNetIfhandleIfUp, sceNetIfhandleIfDown, sceNetIfhandleIfIoctl, ioctlSemaId, ioctlOKSemaId, macAddress);
 		}
 	}
 

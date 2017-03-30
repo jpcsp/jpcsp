@@ -204,7 +204,8 @@ public class ThreadManForUser extends HLEModule {
     public static final int WLAN_UP_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xA0;
     public static final int WLAN_DOWN_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xB0;
     public static final int WLAN_IOCTL_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xC0;
-    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0xD0;
+    public static final int WLAN_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xD0;
+    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0xE0;
     public static final int INTERNAL_THREAD_ADDRESS_SIZE = INTERNAL_THREAD_ADDRESS_END - INTERNAL_THREAD_ADDRESS_START;
     private HashMap<Integer, pspBaseCallback> callbackMap;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
@@ -653,6 +654,7 @@ public class ThreadManForUser extends HLEModule {
         installWlanUpCallback();
         installWlanDownCallback();
         installWlanIoctlCallback();
+        installWlanLoopHandler();
 
         alarms = new HashMap<Integer, SceKernelAlarmInfo>();
         vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
@@ -994,6 +996,15 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleWlanIoctlCallback(TPointer handleAddr, int cmd, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.in) TPointer32 unknown2) {
         return Modules.sceWlanModule.hleWlanIoctlCallback(handleAddr, cmd, unknown1, unknown2);
+    }
+
+    private void installWlanLoopHandler() {
+    	installLoopHandler("hleKernelWlanLoop", WLAN_LOOP_ADDRESS);
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public void hleKernelWlanLoop() {
+        Modules.sceWlanModule.hleWlanThread();
     }
 
     /** to be called when exiting the emulation */
@@ -2063,13 +2074,17 @@ public class ThreadManForUser extends HLEModule {
         sceKernelExitThread(exitStatus);
     }
 
-    public int hleKernelExitDeleteThread() {
-    	int exitStatus = Emulator.getProcessor().cpu._v0;
+    public int hleKernelExitDeleteThread(int exitStatus) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("hleKernelExitDeleteThread SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, exitStatus));
         }
 
         return sceKernelExitDeleteThread(exitStatus);
+    }
+
+    public int hleKernelExitDeleteThread() {
+    	int exitStatus = Emulator.getProcessor().cpu._v0;
+    	return hleKernelExitDeleteThread(exitStatus);
     }
 
     /**
