@@ -1069,7 +1069,8 @@ public class sceMpeg extends HLEModule {
     private class VideoDecoderThread extends Thread {
     	private volatile boolean exit = false;
     	private volatile boolean done = false;
-    	private Semaphore sema = new Semaphore(0);
+    	// Start with one semaphore permit to not wait on the first loop
+    	private Semaphore sema = new Semaphore(1);
     	private int threadUid = -1;
     	private int buffer;
     	private int frameWidth;
@@ -1087,6 +1088,9 @@ public class sceMpeg extends HLEModule {
     			}
     		}
 
+    		if (log.isDebugEnabled()) {
+    			log.debug("Exiting the VideoDecoderThread");
+    		}
     		done = true;
     	}
 
@@ -2100,6 +2104,15 @@ public class sceMpeg extends HLEModule {
         }
     }
 
+    protected void startVideoDecoderThread() {
+        if (videoDecoderThread == null) {
+	        videoDecoderThread = new VideoDecoderThread();
+	        videoDecoderThread.setDaemon(true);
+	        videoDecoderThread.setName("Video Decoder Thread");
+	        videoDecoderThread.start();
+        }
+    }
+
     public int hleMpegCreate(TPointer mpeg, TPointer data, int size, @CanBeNull TPointer ringbufferAddr, int frameWidth, int mode, int ddrtop) {
         Memory mem = data.getMemory();
 
@@ -2147,14 +2160,8 @@ public class sceMpeg extends HLEModule {
 
         decodedImages = new LinkedList<sceMpeg.DecodedImageInfo>();
 
-        if (videoDecoderThread == null) {
-	        videoDecoderThread = new VideoDecoderThread();
-	        videoDecoderThread.setDaemon(true);
-	        videoDecoderThread.setName("Video Decoder Thread");
-	        videoDecoderThread.start();
-        } else {
-        	videoDecoderThread.resetWaitingThreadInfo();
-        }
+        startVideoDecoderThread();
+       	videoDecoderThread.resetWaitingThreadInfo();
 
         // Initialize the memory structure used by sceMpegAvcDecodeDetail2()
         mpegAvcInfoStruct = new TPointer(mem, mpegHandle + 0x200); // We need a structure of 40 bytes
@@ -2349,6 +2356,7 @@ public class sceMpeg extends HLEModule {
 
     	// Read Au of next Avc frame
         if (isRegisteredVideoChannel()) {
+        	startVideoDecoderThread();
         	DecodedImageInfo decodedImageInfo;
         	while (true) {
             	synchronized (decodedImages) {
