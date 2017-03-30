@@ -2268,7 +2268,7 @@ public class sceUtility extends HLEModule {
             npSigninParams.signinStatus = SceUtilityNpSigninParams.NP_SIGNING_STATUS_OK;
             npSigninParams.write(mem);
 
-            int sceNp_E24DA399 = NIDMapper.getInstance().getAddressByNid(0xE24DA399);
+            int sceNp_E24DA399 = NIDMapper.getInstance().getAddressByName("sceNp_E24DA399");
             if (sceNp_E24DA399 != 0) {
             	int address = mem.read16(sceNp_E24DA399 + 0) << 16;
             	address += (short) mem.read16(sceNp_E24DA399 + 8);
@@ -2280,7 +2280,7 @@ public class sceUtility extends HLEModule {
             	}
             }
 
-            int sceNp_C48F2847 = NIDMapper.getInstance().getAddressByNid(0xC48F2847);
+            int sceNp_C48F2847 = NIDMapper.getInstance().getAddressByName("sceNp_C48F2847");
             if (sceNp_C48F2847 != 0) {
             	int address = mem.read16(sceNp_C48F2847 + 0x74) << 16;
             	address += (short) mem.read16(sceNp_C48F2847 + 0x78);
@@ -2292,7 +2292,7 @@ public class sceUtility extends HLEModule {
             	}
             }
 
-            int sceNpService_7EF4312E = NIDMapper.getInstance().getAddressByNid(0x7EF4312E);
+            int sceNpService_7EF4312E = NIDMapper.getInstance().getAddressByName("sceNpService_7EF4312E");
             if (sceNpService_7EF4312E != 0) {
             	int subAddress = (mem.read32(sceNpService_7EF4312E + 0x78) & 0x3FFFFFF) << 2;
             	int address = mem.read16(subAddress + 0x14) << 16;
@@ -2309,7 +2309,7 @@ public class sceUtility extends HLEModule {
             	}
             }
 
-            int sceNp_02CA8CAA = NIDMapper.getInstance().getAddressByNid(0x02CA8CAA);
+            int sceNp_02CA8CAA = NIDMapper.getInstance().getAddressByName("sceNp_02CA8CAA");
             if (sceNp_02CA8CAA != 0) {
             	int address = mem.read16(sceNp_02CA8CAA + 0x8C) << 16;
             	address += (short) mem.read16(sceNp_02CA8CAA + 0x90);

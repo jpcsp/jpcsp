@@ -32,6 +32,7 @@ public class NIDMapper {
     private final Map<Integer, NIDInfo> syscallMap;
     private final Map<Integer, NIDInfo> nidMap;
     private final Map<Integer, NIDInfo> addressMap;
+    private final Map<String, NIDInfo> nameMap;
     private int freeSyscallNumber;
 
     protected static class NIDInfo {
@@ -108,6 +109,10 @@ public class NIDMapper {
 
 		public String getName() {
 			return name;
+		}
+
+		public boolean hasName() {
+			return name != null && name.length() > 0;
 		}
 
 		public String getModuleName() {
@@ -187,6 +192,7 @@ public class NIDMapper {
     	nidMap = new HashMap<>();
     	syscallMap = new HashMap<>();
     	addressMap = new HashMap<>();
+    	nameMap = new HashMap<>();
 		// Official syscalls start at 0x2000,
 		// so we'll put the HLE syscalls far away at 0x4000.
     	freeSyscallNumber = 0x4000;
@@ -200,6 +206,9 @@ public class NIDMapper {
     	if (info.hasSyscall()) {
     		syscallMap.put(info.getSyscall(), info);
     	}
+    	if (info.hasName()) {
+    		nameMap.put(info.getName(), info);
+    	}
     }
 
     private void removeNIDInfo(NIDInfo info) {
@@ -209,6 +218,9 @@ public class NIDMapper {
     	}
     	if (info.hasSyscall()) {
     		syscallMap.remove(info.getSyscall());
+    	}
+    	if (info.hasName()) {
+    		syscallMap.remove(info.getName());
     	}
     }
 
@@ -222,6 +234,10 @@ public class NIDMapper {
 
     private NIDInfo getNIDInfoByAddress(int address) {
     	return addressMap.get(address);
+    }
+
+    private NIDInfo getNIDInfoByName(String name) {
+    	return nameMap.get(name);
     }
 
     public int getNewSyscallNumber() {
@@ -330,6 +346,15 @@ public class NIDMapper {
 
     public int getAddressBySyscall(int syscall) {
     	NIDInfo info = getNIDInfoBySyscall(syscall);
+    	if (info == null || !info.hasAddress()) {
+    		return 0;
+    	}
+
+    	return info.getAddress();
+    }
+
+    public int getAddressByName(String name) {
+    	NIDInfo info = getNIDInfoByName(name);
     	if (info == null || !info.hasAddress()) {
     		return 0;
     	}
