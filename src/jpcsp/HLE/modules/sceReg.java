@@ -1184,7 +1184,7 @@ public class sceReg extends HLEModule {
 	    oskInputCharMask = 0xF;
 	    oskKeytopIndex = 0x5;
 	    npEnv = "np"; // Max length 8
-	    adhocSsidPrefix = "XXX"; // Must be of length 3
+	    adhocSsidPrefix = "PSP"; // Must be of length 3
 	    themeWallpaperMode = 0;
 	    themeColorMode = 0;
 	    themeCustomThemeCode = 0;
@@ -1197,7 +1197,7 @@ public class sceReg extends HLEModule {
 	    npLoginId = settings.readString("registry.npLoginId");
 	    npPassword = settings.readString("registry.npPassword");
 	    npAutoSignInEnable = settings.readInt("registry.npAutoSignInEnable");
-		ownerName = "Jpcsp";
+		ownerName = sceUtility.getSystemParamNickname();
 
 		super.start();
 	}
