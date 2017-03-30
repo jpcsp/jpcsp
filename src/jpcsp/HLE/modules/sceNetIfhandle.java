@@ -318,10 +318,10 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x0296C7D6, version = 150)
-    public void sceNetIfhandleIfIoctl(@CanBeNull @CheckArgument("checkHandleInternalAddr") @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=320, usage=Usage.inout) TPointer handleInternalAddr, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer unknown2) {
+    public void sceNetIfhandleIfIoctl(@CanBeNull @CheckArgument("checkHandleInternalAddr") @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=320, usage=Usage.inout) TPointer handleInternalAddr, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer unknown) {
     	if (log.isDebugEnabled()) {
-    		String interfaceName = unknown2.getStringNZ(16);
-    		int flags = unknown2.getValue16(16);
+    		String interfaceName = unknown.getStringNZ(16);
+    		int flags = unknown.getValue16(16);
     		log.debug(String.format("sceNetIfhandleIfIoctl interfaceName='%s' flags=0x%X", interfaceName, flags));
     	}
     }
@@ -346,7 +346,7 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x263767F6, version = 150)
-    public int sceNetFlagIfEvent() {
+    public int sceNetFlagIfEvent(@CanBeNull TPointer handleAddr, int unknown1, int unknown2) {
     	return 0;
     }
 
@@ -424,7 +424,7 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x9A6261EC, version = 150)
-    public int sceNetMCopydata(TPointer messageAddr, int dataOffset, int length, @CanBeNull TPointer destinationAddr) {
+    public int sceNetMCopydata(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=76, usage=Usage.in) TPointer messageAddr, int dataOffset, int length, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.previousParameter, usage=Usage.out) TPointer destinationAddr) {
     	if (destinationAddr.isNotNull()) {
         	SceNetIfMessage message = new SceNetIfMessage();
         	message.read(messageAddr);
@@ -443,13 +443,13 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xB1F5BB87, version = 150)
-    public int sceNetIfhandleIfStart() {
-    	return 0;
+    public void sceNetIfhandleIfStart(@CanBeNull TPointer handleInternalAddr, @CanBeNull SceNetIfMessage messageToBeSent) {
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xB8188F96, version = 150)
-    public int sceNetIfhandleGetAttachEther(@BufferInfo(usage=Usage.out) TPointer32 unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
+    public int sceNetIfhandleGetAttachEther(@BufferInfo(usage=Usage.out) TPointer32 handleInternalAddrAddr, @BufferInfo(usage=Usage.out) TPointer32 unknown) {
+    	// returns the address of handleInternal into handleInternalAddrAddr
     	return 0;
     }
 
@@ -462,8 +462,83 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xBFF3CEA5, version = 150)
-    public int sceNetMAdj() {
-    	return 0;
+    public void sceNetMAdj(@CanBeNull TPointer messageAddr, int sizeAdj) {
+    	if (messageAddr.isNull()) {
+    		return;
+    	}
+
+    	SceNetIfMessage message = new SceNetIfMessage();
+
+    	if (sizeAdj < 0) {
+    		sizeAdj = -sizeAdj;
+    		int totalSize = 0;
+	    	int currentMessageAddr = messageAddr.getAddress();
+    		do {
+    			message.read(messageAddr.getMemory(), currentMessageAddr);
+    			totalSize += message.dataLength;
+    			currentMessageAddr = message.nextMessageAddr;
+    		} while (currentMessageAddr != 0);
+
+    		if (message.dataLength < sizeAdj) {
+    			totalSize -= sizeAdj;
+    			message.read(messageAddr);
+    			totalSize = Math.max(totalSize - sizeAdj, 0);
+    	    	if ((message.unknown18 & 2) != 0) {
+    	    		message.unknown24 = totalSize;
+    	    		message.write(messageAddr);
+    	    	}
+
+    	    	currentMessageAddr = messageAddr.getAddress();
+    	    	while (currentMessageAddr != 0) {
+    	    		message.read(messageAddr.getMemory(), currentMessageAddr);
+    	    		if (message.dataLength < totalSize) {
+    	    			currentMessageAddr = message.nextMessageAddr;
+    	    			totalSize -= message.dataLength;
+    	    		} else {
+    	    			message.dataLength = totalSize;
+    	    			message.write(messageAddr.getMemory(), currentMessageAddr);
+    	    			break;
+    	    		}
+    	    	}
+
+    	    	currentMessageAddr = message.nextMessageAddr;
+    	    	while (currentMessageAddr != 0) {
+    	    		message.read(messageAddr.getMemory(), currentMessageAddr);
+    	    		message.dataLength = 0;
+    	    		message.write(messageAddr.getMemory(), currentMessageAddr);
+    	    		currentMessageAddr = message.nextMessageAddr;
+    	    	}
+    		} else {
+    	    	message.read(messageAddr);
+    	    	if ((message.unknown18 & 2) != 0) {
+    	    		message.unknown24 -= sizeAdj;
+    	    		message.write(messageAddr);
+    	    	}
+    		}
+    	} else {
+	    	int totalSizeAdj = sizeAdj;
+	    	int currentMessageAddr = messageAddr.getAddress();
+	    	do {
+	    		message.read(messageAddr.getMemory(), currentMessageAddr);
+		    	if (sizeAdj < message.dataLength) {
+		    		message.dataLength -= sizeAdj;
+		    		message.dataAddr += sizeAdj;
+		    		message.write(messageAddr);
+		    		sizeAdj = 0;
+		    	} else {
+		    		sizeAdj -= message.dataLength;
+		    		message.dataLength = 0;
+		    		message.write(messageAddr);
+		    		currentMessageAddr = message.nextMessageAddr;
+		    	}
+	    	} while (messageAddr.isNotNull() && sizeAdj > 0);
+
+	    	message.read(messageAddr);
+	    	if ((message.unknown18 & 2) != 0) {
+	    		message.unknown24 -= totalSizeAdj - sizeAdj;
+	    		message.write(messageAddr);
+	    	}
+    	}
     }
 
     @HLEUnimplemented
@@ -480,7 +555,13 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC6D14282, version = 150)
-    public int sceNetIfhandle_driver_C6D14282() {
+    public int sceNetIfhandle_driver_C6D14282(TPointer handleAddr, int callbackArg4) {
+    	SceNetIfHandle handle = new SceNetIfHandle();
+    	handle.read(handleAddr);
+
+    	handle.callbackArg4 = callbackArg4;
+    	handle.write(handleAddr);
+
     	return 0;
     }
 
@@ -517,6 +598,7 @@ public class sceNetIfhandle extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xE440A7D8, version = 150)
     public int sceNetIfhandleIfDequeue() {
+    	// Has no parameters
     	return 0;
     }
 
@@ -554,7 +636,7 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xF94BAF52, version = 150)
-    public int sceNetSendIfEvent() {
+    public int sceNetSendIfEvent(TPointer handleAddr) {
     	return 0;
     }
 
