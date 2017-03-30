@@ -72,7 +72,7 @@ public class sceNet extends HLEModule {
 	protected final Random random = new Random();
 	protected int readCallback;
 	protected int unknownCallback1;
-	protected int unknownCallback2;
+	protected int adhocSocketAlertCallback;
 	protected int getReadContextCallback;
 	protected TPointer32 readContextAddr;
 	protected TPointer readMessage;
@@ -92,7 +92,7 @@ public class sceNet extends HLEModule {
 		allocatedThreadStructures = new HashMap<Integer, Integer>();
 		readCallback = 0;
 		unknownCallback1 = 0;
-		unknownCallback2 = 0;
+		adhocSocketAlertCallback = 0;
 		getReadContextCallback = 0;
 		blockedThreads = new HashMap<Integer, Integer>();
 
@@ -596,7 +596,7 @@ public class sceNet extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x2E005032, version = 150)
     public int sceNet_lib_2E005032(int unknownCallback) {
-    	this.unknownCallback2 = unknownCallback;
+    	this.adhocSocketAlertCallback = unknownCallback;
 
     	return 0;
     }
@@ -674,12 +674,15 @@ public class sceNet extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x33B230BD, version = 150)
     public int sceNet_lib_33B230BD() {
+    	// Has no parameters
+    	adhocSocketAlertCallback = 0;
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x6B294EE4, version = 150)
-    public int sceNet_lib_6B294EE4() {
+    public int sceNet_lib_6B294EE4(int unknown1, int unknown2) {
+    	// calls adhocSocketAlertCallback
     	return 0;
     }
 
