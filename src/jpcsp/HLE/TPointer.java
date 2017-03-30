@@ -216,6 +216,12 @@ final public class TPointer implements ITPointerBase {
 		memset(offset, (byte) 0, length);
 	}
 
+	public void setUnalignedValue32(int offset, int value) {
+		if (isNotNull()) {
+			Utilities.writeUnaligned32(getMemory(), getAddress() + offset, value);
+		}
+	}
+
 	@Override
 	public String toString() {
 		return String.format("0x%08X", getAddress());

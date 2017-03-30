@@ -178,7 +178,7 @@ public class SysMemUserForUser extends HLEModule {
 
         @Override
         public String toString() {
-            return String.format("SysMemInfo[addr=0x%08X-0x%08X, uid=%x, partition=%d, name='%s', type=%s, size=0x%X (allocated=0x%X)]", addr, addr + allocatedSize, uid, partitionid, name, getTypeName(type), size, allocatedSize);
+            return String.format("SysMemInfo[addr=0x%08X-0x%08X, uid=0x%X, partition=%d, name='%s', type=%s, size=0x%X (allocated=0x%X)]", addr, addr + allocatedSize, uid, partitionid, name, getTypeName(type), size, allocatedSize);
         }
 
         public void free() {

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,8 +32,9 @@ import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.Managers;
-import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -146,22 +148,37 @@ public class ModuleMgrForKernel extends HLEModule {
 
         modulesWithMemoryAllocated.add(path.getString());
 
-        SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(path.getString());
-        if (stat != null) {
-	        int size = (int) stat.size;
+    	// If we cannot load the module file, return the same blockId
+    	separatedBlockId.setValue(blockId);
 
-	        // Aligned on 256 bytes boundary
-	        size = Utilities.alignUp(size, 0xFF);
+        StringBuilder localFileName = new StringBuilder();
+        IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(path.getString(), localFileName);
+        if (vfs != null) {
+        	IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), IoFileMgrForUser.PSP_O_RDONLY, 0);
+        	if (vFile != null) {
+	        	byte[] bytes = new byte[(int) vFile.length()];
+	        	int length = vFile.ioRead(bytes, 0, bytes.length);
+	        	ByteBuffer moduleBuffer = ByteBuffer.wrap(bytes, 0, length);
 
-	        SysMemInfo separatedSysMemInfo = Modules.SysMemUserForUserModule.separateMemoryBlock(sysMemInfo, size);
-	        // This is the new blockId after calling sceKernelSeparateMemoryBlock
-	        separatedBlockId.setValue(separatedSysMemInfo.uid);
-	        if (log.isDebugEnabled()) {
-	        	log.debug(String.format("sceKernelLoadModuleToBlock separatedSysMemInfo=%s", separatedSysMemInfo));
-	        }
-        } else {
-        	// We are not really loading the module file, return the same blockId
-        	separatedBlockId.setValue(blockId);
+	        	SceModule module = Modules.ModuleMgrForUserModule.getModuleInfo(path.getString(), moduleBuffer, sysMemInfo.partitionid, sysMemInfo.partitionid);
+	        	if (module != null) {
+	        		int size = Modules.ModuleMgrForUserModule.getModuleRequiredMemorySize(module);
+
+	        		if (log.isDebugEnabled()) {
+	        			log.debug(String.format("sceKernelLoadModuleToBlock module requiring 0x%X bytes", size));
+	        		}
+
+	        		// Aligned on 256 bytes boundary
+	    	        size = Utilities.alignUp(size, 0xFF);
+	    	        SysMemInfo separatedSysMemInfo = Modules.SysMemUserForUserModule.separateMemoryBlock(sysMemInfo, size);
+	    	        // This is the new blockId after calling sceKernelSeparateMemoryBlock
+	    	        separatedBlockId.setValue(separatedSysMemInfo.uid);
+
+	    	        if (log.isDebugEnabled()) {
+	    	        	log.debug(String.format("sceKernelLoadModuleToBlock separatedSysMemInfo=%s", separatedSysMemInfo));
+	    	        }
+	        	}
+        	}
         }
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), 0, 0, 0, 0, lmOption, false, true, false, sysMemInfo.addr);

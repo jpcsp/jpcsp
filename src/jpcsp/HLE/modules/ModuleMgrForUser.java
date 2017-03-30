@@ -343,6 +343,26 @@ public class ModuleMgrForUser extends HLEModule {
     	return result;
     }
 
+    public SceModule getModuleInfo(String name, ByteBuffer moduleBuffer, int mpidText, int mpidData) {
+        SceModule module = null;
+		try {
+			module = Loader.getInstance().LoadModule(name, moduleBuffer, MemoryMap.START_USERSPACE, mpidText, mpidData, true, false, true);
+	        moduleBuffer.rewind();
+		} catch (IOException e) {
+			log.error("getModuleRequiredMemorySize", e);
+		}
+
+        return module;
+    }
+
+    public int getModuleRequiredMemorySize(SceModule module) {
+    	if (module == null) {
+    		return 0;
+    	}
+
+    	return module.loadAddressHigh - module.loadAddressLow;
+    }
+
     private int hleKernelLoadModule(String name, StringBuilder prxname, ByteBuffer moduleBuffer, SceKernelLMOption lmOption, boolean needModuleInfo, boolean allocMem, int baseAddr) throws IOException {
     	int result;
 
@@ -358,9 +378,8 @@ public class ModuleMgrForUser extends HLEModule {
 	        final int moduleHeaderSize = 256;
 
 	        // Load the module in analyze mode to find out its required memory size
-	        SceModule testModule = Loader.getInstance().LoadModule(name, moduleBuffer, MemoryMap.START_USERSPACE, mpidText, mpidData, true, false, true);
-	        moduleBuffer.rewind();
-	        int totalAllocSize = moduleHeaderSize + testModule.loadAddressHigh - testModule.loadAddressLow;
+	        SceModule testModule = getModuleInfo(name, moduleBuffer, mpidText, mpidData);
+	        int totalAllocSize = moduleHeaderSize + getModuleRequiredMemorySize(testModule);
 	        if (log.isDebugEnabled()) {
 	        	log.debug(String.format("Module '%s' requires %d bytes memory", name, totalAllocSize));
 	        }

@@ -1549,8 +1549,11 @@ public class IoFileMgrForUser extends HLEModule {
 			vfsManager.unregister("ms0");
 	        vfsManager.unregister("fatms0");
 	        vfsManager.unregister("flash0");
+	        vfsManager.unregister("flash1");
 	        vfsManager.unregister("exdata0");
 	        vfsManager.unregister("mscmhc0");
+	        vfsManager.unregister("msstor0");
+	        vfsManager.unregister("msstor0");
         }
 
         return vfs;
