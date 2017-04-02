@@ -200,6 +200,19 @@ public class Utilities {
         return readStringZ(Memory.getInstance(), address);
     }
 
+    public static String readStringNZ(byte[] buffer, int offset, int n) {
+    	StringBuilder s = new StringBuilder();
+    	for (int i = 0; i < n; i++) {
+    		byte b = buffer[offset + i];
+    		if (b == (byte) 0) {
+    			break;
+    		}
+    		s.append((char) b);
+    	}
+
+    	return s.toString();
+    }
+
     public static String readStringZ(byte[] buffer, int offset) {
     	StringBuilder s = new StringBuilder();
     	while (offset < buffer.length) {
@@ -232,6 +245,19 @@ public class Utilities {
             offset++;
         }
         memoryWriter.flush();
+    }
+
+    public static void writeStringNZ(byte[] buffer, int offset, int n, String s) {
+        if (s != null) {
+            byte[] bytes = s.getBytes(Constants.charset);
+            int length = Math.min(n, bytes.length);
+            System.arraycopy(bytes, 0, buffer, offset, length);
+            if (length < n) {
+            	Arrays.fill(buffer, offset + length, offset + n, (byte) 0);
+            }
+        } else {
+        	Arrays.fill(buffer, offset, offset + n, (byte) 0);
+        }
     }
 
     public static void writeStringZ(Memory mem, int address, String s) {
@@ -723,6 +749,17 @@ public class Utilities {
                 | (read8(buffer, offset));
     }
 
+    public static long readUnaligned64(byte[] buffer, int offset) {
+        return (((long) read8(buffer, offset + 7)) << 56)
+        		| (((long) read8(buffer, offset + 6)) << 48)
+        		| (((long) read8(buffer, offset + 5)) << 40)
+        		| (((long) read8(buffer, offset + 4)) << 32)
+        		| (((long) read8(buffer, offset + 3)) << 24)
+                | (((long) read8(buffer, offset + 2)) << 16)
+                | (((long) read8(buffer, offset + 1)) << 8)
+                | (((long) read8(buffer, offset)));
+    }
+
     public static int readUnaligned16(byte[] buffer, int offset) {
         return (read8(buffer, offset + 1) << 8) | read8(buffer, offset);
     }
@@ -749,6 +786,17 @@ public class Utilities {
     	buffer[offset + 1] = (byte) (data >> 8);
     	buffer[offset + 2] = (byte) (data >> 16);
     	buffer[offset + 3] = (byte) (data >> 24);
+    }
+
+    public static void writeUnaligned64(byte[] buffer, int offset, long data) {
+    	buffer[offset + 0] = (byte) data;
+    	buffer[offset + 1] = (byte) (data >> 8);
+    	buffer[offset + 2] = (byte) (data >> 16);
+    	buffer[offset + 3] = (byte) (data >> 24);
+    	buffer[offset + 4] = (byte) (data >> 32);
+    	buffer[offset + 5] = (byte) (data >> 40);
+    	buffer[offset + 6] = (byte) (data >> 48);
+    	buffer[offset + 7] = (byte) (data >> 56);
     }
 
     public static int min(int a, int b) {
