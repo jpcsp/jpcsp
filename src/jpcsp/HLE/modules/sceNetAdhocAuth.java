@@ -45,7 +45,7 @@ public class sceNetAdhocAuth extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x015A8A64, version = 150)
-    public int sceNetAdhocAuth_015A8A64() {
+    public int sceNetAdhocAuth_015A8A64(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferLength) {
     	return 0;
     }
 

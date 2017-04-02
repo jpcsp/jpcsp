@@ -31,7 +31,10 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.LinkedList;
+import java.util.List;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -43,9 +46,11 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceKernelVplInfo;
 import jpcsp.HLE.kernel.types.SceNetIfHandle;
@@ -61,7 +66,7 @@ import org.apache.log4j.Logger;
 public class sceWlan extends HLEModule {
     public static Logger log = Modules.getLogger("sceWlan");
     private static int wlanSocketPort = 30010;
-    private static final int wlanThreadPollingDelayUs = 10000;
+    private static final int wlanThreadPollingDelayUs = 12000; // 12ms
     static private final byte[] dummyOtherMacAddress = new byte[] { 0x10,  0x22, 0x33, 0x44, 0x55, 0x66 };
     private String joinedSSID;
     private int dummyMessageStep;
@@ -69,18 +74,52 @@ public class sceWlan extends HLEModule {
     private DatagramSocket wlanSocket;
     private TPointer wlanHandleAddr;
     private int wlanThreadUid;
+    private int unknownValue1;
+    private int unknownValue2;
+    private int unknownValue3;
+    private boolean isGameMode;
+    private List<pspNetMacAddress> activeMacAddresses;
+    private List<GameModeState> gameModeStates;
+    private int gameModeDataLength;
 
-	@Override
+    private static class GameModeState {
+    	public long timeStamp;
+    	public boolean updated;
+    	public pspNetMacAddress macAddress;
+    	public byte[] data;
+    	public int dataLength;
+
+    	public GameModeState(pspNetMacAddress macAddress) {
+    		this.macAddress = macAddress;
+    		dataLength = Modules.sceWlanModule.gameModeDataLength;
+    		data = new byte[dataLength];
+    	}
+
+    	public void doUpdate() {
+    		updated = true;
+    		timeStamp = Emulator.getClock().microTime();
+    	}
+
+		@Override
+		public String toString() {
+			return String.format("macAddress=%s, updated=%b, timeStamp=%d, dataLength=0x%X, data=%s", macAddress, updated, timeStamp, dataLength, Utilities.getMemoryDump(data, 0, dataLength));
+		}
+    }
+
+    @Override
 	public void start() {
 		wlanThreadUid = INVALID_ID;
 		dummyMessageStep = -1;
+		activeMacAddresses = new LinkedList<pspNetMacAddress>();
+		gameModeStates = new LinkedList<GameModeState>();
+		gameModeDataLength = 256;
 
 		super.start();
 	}
 
     public void hleWlanThread() {
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("hleWlanThread"));
+    		log.trace(String.format("hleWlanThread isGameMode=%b", isGameMode));
     	}
 
     	if (wlanThreadMustExit()) {
@@ -91,13 +130,20 @@ public class sceWlan extends HLEModule {
     		return;
     	}
 
-    	while (!wlanThreadMustExit() && hleWlanReceiveMessage()) {
-    		// Receive all available messages
-    	}
+    	if (isGameMode) {
+    		hleWlanSendGameMode();
+    		while (!wlanThreadMustExit() && hleWlanReceiveGameMode()) {
+    			// Receive all available GameMode messages
+    		}
+    	} else {
+	    	while (!wlanThreadMustExit() && hleWlanReceiveMessage()) {
+	    		// Receive all available messages
+	    	}
 
-    	if (dummyMessageStep > 0) {
-    		sendDummyMessage(dummyMessageStep, dummyMessageHandleAddr);
-    		dummyMessageStep = 0;
+	    	if (dummyMessageStep > 0) {
+	    		sendDummyMessage(dummyMessageStep, dummyMessageHandleAddr);
+	    		dummyMessageStep = 0;
+	    	}
     	}
 
     	Modules.ThreadManForUserModule.hleKernelDelayThread(wlanThreadPollingDelayUs, true);
@@ -105,79 +151,6 @@ public class sceWlan extends HLEModule {
 
     private boolean wlanThreadMustExit() {
     	return wlanThreadUid != Modules.ThreadManForUserModule.getCurrentThreadID();
-    }
-
-    private boolean hleWlanReceiveMessage() {
-    	boolean packetReceived = false;
-
-    	if (!createWlanSocket()) {
-    		return packetReceived;
-    	}
-
-    	byte[] bytes = new byte[10000];
-		DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-		try {
-			wlanSocket.receive(packet);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("hleWlanReceiveMessage message: %s", Utilities.getMemoryDump(packet.getData(), packet.getOffset(), packet.getLength())));
-			}
-
-			packetReceived = true;
-
-	    	int dataLength = packet.getLength();
-	    	SceNetIfMessage message = new SceNetIfMessage();
-	    	final int size = message.sizeof() + dataLength;
-	    	int allocatedAddr;
-	    	SceKernelVplInfo vplInfo = Managers.vpl.getVplInfoByName("SceNet");
-	    	if (vplInfo != null) {
-	    		allocatedAddr = Managers.vpl.tryAllocateVpl(vplInfo, size);
-	    	} else {
-	    		allocatedAddr = Modules.sceNetIfhandleModule.sceNetMallocInternal(size);
-	    	}
-
-	    	if (allocatedAddr > 0) {
-	    		Memory mem = Memory.getInstance();
-		    	mem.memset(allocatedAddr, (byte) 0, size);
-		    	RuntimeContext.debugMemory(allocatedAddr, size);
-
-		    	TPointer messageAddr = new TPointer(mem, allocatedAddr);
-		    	TPointer data = new TPointer(mem, messageAddr.getAddress() + message.sizeof());
-
-		    	// Write the received bytes to memory
-		    	Utilities.writeBytes(data.getAddress(), dataLength, packet.getData(), packet.getOffset());
-
-		    	// Write the message header
-		    	message.dataAddr = data.getAddress();
-				message.dataLength = dataLength;
-				message.unknown16 = 1;
-				message.unknown18 = 2;
-				message.unknown24 = dataLength;
-				message.write(messageAddr);
-
-				if (dataLength > 0) {
-					if (log.isDebugEnabled()) {
-				    	SceNetWlanMessage wlanMessage = new SceNetWlanMessage();
-				    	wlanMessage.read(data);
-
-						log.debug(String.format("Notifying received message: %s", message));
-						log.debug(String.format("Message WLAN: %s", wlanMessage));
-						log.debug(String.format("Message data: %s", Utilities.getMemoryDump(data.getAddress(), dataLength)));
-					}
-
-					int sceNetIfEnqueue = NIDMapper.getInstance().getAddressByName("sceNetIfEnqueue");
-					if (sceNetIfEnqueue != 0) {
-						SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
-						Modules.ThreadManForUserModule.executeCallback(thread, sceNetIfEnqueue, null, true, wlanHandleAddr.getAddress(), messageAddr.getAddress());
-					}
-				}
-	    	}
-		} catch (SocketTimeoutException e) {
-			// Timeout can be ignored as we are polling
-		} catch (IOException e) {
-			log.error("hleWlanReceiveMessage", e);
-		}
-
-		return packetReceived;
     }
 
     private boolean createWlanSocket() {
@@ -207,6 +180,239 @@ public class sceWlan extends HLEModule {
     	return wlanSocket != null;
     }
 
+    protected void sendPacket(byte[] buffer, int bufferLength) {
+    	// Add the joined SSID in front of the data
+    	byte[] packetBuffer = new byte[bufferLength + 32];
+    	Utilities.writeStringNZ(packetBuffer, 0, 32, joinedSSID);
+    	System.arraycopy(buffer, 0, packetBuffer, 32, bufferLength);
+
+    	try {
+			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(wlanSocketPort ^ 1);
+			if (broadcastAddress != null) {
+				for (int i = 0; i < broadcastAddress.length; i++) {
+					DatagramPacket packet = new DatagramPacket(packetBuffer, packetBuffer.length, broadcastAddress[i]);
+					wlanSocket.send(packet);
+				}
+			}
+		} catch (UnknownHostException e) {
+			log.error("sendPacket", e);
+		} catch (IOException e) {
+			log.error("sendPacket", e);
+		}
+    }
+
+    private GameModeState getGameModeStat(byte[] macAddress) {
+    	GameModeState myGameModeState = null;
+    	for (GameModeState gameModeState : gameModeStates) {
+    		if (gameModeState.macAddress.equals(macAddress)) {
+    			myGameModeState = gameModeState;
+    			break;
+    		}
+    	}
+
+    	return myGameModeState;
+    }
+
+    private GameModeState getMyGameModeState() {
+    	return getGameModeStat(Wlan.getMacAddress());
+    }
+
+    private void addActiveMacAddress(pspNetMacAddress macAddress) {
+    	if (!sceNetAdhoc.isAnyMacAddress(macAddress.macAddress)) {
+    		if (!activeMacAddresses.contains(macAddress)) {
+    			activeMacAddresses.add(macAddress);
+    			gameModeStates.add(new GameModeState(macAddress));
+    		}
+    	}
+    }
+
+    private boolean hleWlanReceiveMessage() {
+    	boolean packetReceived = false;
+
+    	if (!createWlanSocket()) {
+    		return packetReceived;
+    	}
+
+    	byte[] bytes = new byte[10000];
+		DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+		try {
+			wlanSocket.receive(packet);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("hleWlanReceiveMessage message: %s", Utilities.getMemoryDump(packet.getData(), packet.getOffset(), packet.getLength())));
+			}
+
+			packetReceived = true;
+
+			byte[] dataBytes = packet.getData();
+			int dataOffset = packet.getOffset();
+			int dataLength = packet.getLength();
+
+			String ssid = Utilities.readStringNZ(dataBytes, dataOffset, 32);
+			dataOffset += 32;
+			dataLength -= 32;
+
+			if (!ssid.equals(joinedSSID)) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("hleWlanReceiveMessage message SSID('%s') not matching the joined SSID('%s')", ssid, joinedSSID));
+				}
+				return packetReceived;
+			}
+
+	    	SceNetIfMessage message = new SceNetIfMessage();
+	    	final int size = message.sizeof() + dataLength;
+	    	int allocatedAddr;
+	    	SceKernelVplInfo vplInfo = Managers.vpl.getVplInfoByName("SceNet");
+	    	if (vplInfo != null) {
+	    		allocatedAddr = Managers.vpl.tryAllocateVpl(vplInfo, size);
+	    	} else {
+	    		allocatedAddr = Modules.sceNetIfhandleModule.sceNetMallocInternal(size);
+	    	}
+
+	    	if (allocatedAddr > 0) {
+	    		Memory mem = Memory.getInstance();
+		    	mem.memset(allocatedAddr, (byte) 0, size);
+		    	RuntimeContext.debugMemory(allocatedAddr, size);
+
+		    	TPointer messageAddr = new TPointer(mem, allocatedAddr);
+		    	TPointer data = new TPointer(mem, messageAddr.getAddress() + message.sizeof());
+
+		    	// Write the received bytes to memory
+		    	Utilities.writeBytes(data.getAddress(), dataLength, dataBytes, dataOffset);
+
+		    	// Write the message header
+		    	message.dataAddr = data.getAddress();
+				message.dataLength = dataLength;
+				message.unknown16 = 1;
+				message.unknown18 = 2;
+				message.unknown24 = dataLength;
+				message.write(messageAddr);
+
+		    	SceNetWlanMessage wlanMessage = new SceNetWlanMessage();
+		    	wlanMessage.read(data);
+		    	addActiveMacAddress(wlanMessage.srcMacAddress);
+		    	addActiveMacAddress(wlanMessage.dstMacAddress);
+
+		    	if (dataLength > 0) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Notifying received message: %s", message));
+						log.debug(String.format("Message WLAN: %s", wlanMessage));
+						log.debug(String.format("Message data: %s", Utilities.getMemoryDump(data.getAddress(), dataLength)));
+					}
+
+					int sceNetIfEnqueue = NIDMapper.getInstance().getAddressByName("sceNetIfEnqueue");
+					if (sceNetIfEnqueue != 0) {
+						SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+						Modules.ThreadManForUserModule.executeCallback(thread, sceNetIfEnqueue, null, true, wlanHandleAddr.getAddress(), messageAddr.getAddress());
+					}
+				}
+	    	}
+		} catch (SocketTimeoutException e) {
+			// Timeout can be ignored as we are polling
+		} catch (IOException e) {
+			log.error("hleWlanReceiveMessage", e);
+		}
+
+		return packetReceived;
+    }
+
+    private void hleWlanSendGameMode() {
+    	GameModeState myGameModeState = getMyGameModeState();
+    	if (myGameModeState == null) {
+    		return;
+    	}
+
+    	byte[] buffer = new byte[myGameModeState.dataLength + myGameModeState.macAddress.sizeof() + 1 + 8];
+    	int offset = 0;
+
+    	System.arraycopy(myGameModeState.macAddress.macAddress, 0, buffer, offset, myGameModeState.macAddress.sizeof());
+    	offset += myGameModeState.macAddress.sizeof();
+
+    	buffer[offset] = myGameModeState.updated ? (byte) 1 : (byte) 0;
+    	offset++;
+
+    	Utilities.writeUnaligned64(buffer, offset, myGameModeState.timeStamp);
+    	offset += 8;
+
+    	System.arraycopy(myGameModeState.data, 0, buffer, offset, myGameModeState.dataLength);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleWlanSendGameMode sending packet: %s", Utilities.getMemoryDump(buffer, 0, buffer.length)));
+    	}
+
+    	sendPacket(buffer, buffer.length);
+
+    	myGameModeState.updated = false;
+    }
+
+    private boolean hleWlanReceiveGameMode() {
+    	boolean packetReceived = false;
+
+    	if (!createWlanSocket()) {
+    		return packetReceived;
+    	}
+
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+
+    	byte[] bytes = new byte[gameModeDataLength + macAddress.sizeof() + 1 + 8];
+		DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+		try {
+			wlanSocket.receive(packet);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("hleWlanReceiveGameMode message: %s", Utilities.getMemoryDump(packet.getData(), packet.getOffset(), packet.getLength())));
+			}
+
+			packetReceived = true;
+
+			byte[] dataBytes = packet.getData();
+			int dataOffset = packet.getOffset();
+			int dataLength = packet.getLength();
+
+			String ssid = Utilities.readStringNZ(dataBytes, dataOffset, 32);
+			dataOffset += 32;
+			dataLength -= 32;
+
+			if (!ssid.equals(joinedSSID)) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("hleWlanReceiveGameMode message SSID('%s') not matching the joined SSID('%s')", ssid, joinedSSID));
+				}
+				return packetReceived;
+			}
+
+			macAddress.setMacAddress(dataBytes, dataOffset);
+			dataOffset += macAddress.sizeof();
+			dataLength -= macAddress.sizeof();
+
+			GameModeState gameModeState = getGameModeStat(macAddress.macAddress);
+			if (gameModeState != null) {
+				gameModeState.updated = dataBytes[dataOffset] != (byte) 0;
+				dataOffset++;
+				dataLength--;
+
+				gameModeState.timeStamp = Utilities.readUnaligned64(dataBytes, dataOffset);
+				dataOffset += 8;
+				dataLength -= 8;
+
+				int length = Math.min(dataLength, gameModeState.dataLength);
+				System.arraycopy(dataBytes, dataOffset, gameModeState.data, 0, length);
+
+				gameModeState.doUpdate();
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("hleWlanReceiveGameMode updated GameModeState %s", gameModeState));
+				}
+			} else {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("hleWlanReceiveGameMode could not find GameModeState for MAC address %s", macAddress));
+				}
+			}
+		} catch (SocketTimeoutException e) {
+			// Timeout can be ignored as we are polling
+		} catch (IOException e) {
+			log.error("hleWlanReceiveMessage", e);
+		}
+
+		return packetReceived;
+    }
+
     protected void hleWlanSendMessage(TPointer handleAddr, SceNetIfMessage message) {
     	Memory mem = handleAddr.getMemory();
     	SceNetWlanMessage wlanMessage = new SceNetWlanMessage();
@@ -224,19 +430,7 @@ public class sceWlan extends HLEModule {
 
     	byte[] messageBytes = new byte[message.dataLength];
     	Utilities.readBytes(message.dataAddr, message.dataLength, messageBytes, 0);
-    	try {
-			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(wlanSocketPort ^ 1);
-			if (broadcastAddress != null) {
-				for (int i = 0; i < broadcastAddress.length; i++) {
-					DatagramPacket packet = new DatagramPacket(messageBytes, message.dataLength, broadcastAddress[i]);
-					wlanSocket.send(packet);
-				}
-			}
-		} catch (UnknownHostException e) {
-			log.error("hleWlanSendMessage", e);
-		} catch (IOException e) {
-			log.error("hleWlanSendMessage", e);
-		}
+    	sendPacket(messageBytes, message.dataLength);
 
     	if (false) {
     		sendDummyMessage(handleAddr, message, wlanMessage);
@@ -302,6 +496,9 @@ public class sceWlan extends HLEModule {
 
     	wlanHandleAddr = handleAddr;
 
+    	// Add my own MAC address to the active list
+    	addActiveMacAddress(new pspNetMacAddress(Wlan.getMacAddress()));
+
     	// This thread will call hleWlanThread() in a loop
     	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceWlanHal", ThreadManForUser.WLAN_LOOP_ADDRESS, 39, 2048, 0, 0, KERNEL_PARTITION_ID);
     	if (thread != null) {
@@ -364,6 +561,10 @@ public class sceWlan extends HLEModule {
     			case 0x37:
     				inputLength = 0x60;
     				break;
+    			case 0x44:
+    				inputLength = 0x50;
+    				outputLength = 0x6;
+    				break;
     		}
     		log.debug(String.format("hleWlanIoctlCallback handleAddr=%s: %s", handleAddr, handle));
     		if (inputAddr != 0 && Memory.isAddressGood(inputAddr) && inputLength > 0) {
@@ -402,6 +603,7 @@ public class sceWlan extends HLEModule {
     			Utilities.writeStringNZ(mem, ssidAddr + 8, 32, ssid);
     			type = 2;
     			mem.write32(ssidAddr + 40, type);
+    			mem.write32(ssidAddr + 44, 1000); // Unknown value, need to be != 0
     			break;
     		case 0x35: // Start joining?
     			ssidLength = mem.read8(inputAddr + 7);
@@ -413,6 +615,7 @@ public class sceWlan extends HLEModule {
     			if (log.isDebugEnabled()) {
     				log.debug(String.format("hleWlanIoctlCallback cmd=0x%X, ssid='%s', type=0x%X, unknown6=0x%X, unknown44=0x%X, unknown62=0x%X", cmd, ssid, type, unknown6, unknown44, unknown62));
     			}
+    			joinedSSID = ssid;
     			break;
     		case 0x36: // Join
     			// Receiving as input the SSID structure returned by cmd=0x34
@@ -436,7 +639,26 @@ public class sceWlan extends HLEModule {
     			Utilities.writeStringNZ(mem, inputAddr + 8, 32, joinedSSID);
     			break;
     		case 0x38: // Disconnect
+    			isGameMode = false;
+    			joinedSSID = null;
     			break;
+    		case 0x44: // Game mode?
+    			pspNetMacAddress multicastMacAddress = new pspNetMacAddress();
+    			multicastMacAddress.read(mem, inputAddr + 6);
+    			ssidLength = mem.read8(inputAddr + 12);
+    			ssid = Utilities.readStringNZ(mem,  inputAddr + 14, ssidLength);
+
+    			pspNetMacAddress macAddress = new pspNetMacAddress();
+    			macAddress.read(mem, outputAddr + 0);
+
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("hleWlanIoctlCallback cmd=0x%X, ssid='%s', multicastMacAddress=%s, macAddress=%s", cmd, ssid, multicastMacAddress, macAddress));
+    			}
+    			isGameMode = true;
+    			break;
+			default:
+				log.warn(String.format("hleWlanIoctlCallback unknown cmd=0x%X", cmd));
+				break;
     	}
     	handle.handleInternal.errorCode = errorCode;
     	handle.write(handleAddr);
@@ -804,7 +1026,7 @@ public class sceWlan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x8D5F551B, version = 150)
-    public int sceWlanDrv_8D5F551B() {
+    public int sceWlanDrv_8D5F551B(int unknown) {
         return 0;
     }
 
@@ -822,38 +1044,98 @@ public class sceWlan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5E7C8D94, version = 150)
-    public int sceWlanDevIsGameMode() {
-        return 0;
+    public boolean sceWlanDevIsGameMode() {
+        return isGameMode;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5ED4049A, version = 150)
-    public int sceWlanGPPrevEstablishActive() {
-        return 0;
+    public int sceWlanGPPrevEstablishActive(pspNetMacAddress macAddress) {
+    	int index = 0;
+    	for (pspNetMacAddress activeMacAddress : activeMacAddresses) {
+    		if (activeMacAddress.equals(macAddress.macAddress)) {
+    			return index;
+    		}
+    		index++;
+    	}
+
+    	return -1;
     }
 
+    /*
+     * Called by sceNetAdhocGameModeUpdateReplica()
+     */
     @HLEUnimplemented
     @HLEFunction(nid = 0xA447103A, version = 150)
-    public int sceWlanGPRecv() {
-        return 0;
+    public int sceWlanGPRecv(int id, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buffer, int bufferLength, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.out) TPointer updateInfoAddr) {
+    	if (!isGameMode) {
+    		return SceKernelErrors.ERROR_WLAN_NOT_IN_GAMEMODE;
+    	}
+    	if (id < 0 || id >= gameModeStates.size()) {
+    		return SceKernelErrors.ERROR_WLAN_BAD_PARAMS;
+    	}
+    	if (bufferLength < 0 || bufferLength > gameModeDataLength) {
+    		return SceKernelErrors.ERROR_WLAN_BAD_PARAMS;
+    	}
+
+    	GameModeState gameModeState = gameModeStates.get(id);
+    	int size = Math.min(gameModeState.dataLength, bufferLength);
+    	Utilities.writeBytes(buffer.getAddress(), size, gameModeState.data, 0);
+
+    	if (updateInfoAddr.isNotNull()) {
+    		sceNetAdhoc.GameModeUpdateInfo updateInfo = new sceNetAdhoc.GameModeUpdateInfo();
+    		updateInfo.read(updateInfoAddr);
+    		updateInfo.updated = gameModeState.updated ? 1 : 0;
+    		updateInfo.timeStamp = gameModeState.timeStamp;
+    		updateInfo.write(updateInfoAddr);
+    	}
+
+    	return 0;
     }
 
+    /*
+     * Called by sceNetAdhocGameModeUpdateMaster()
+     */
     @HLEUnimplemented
     @HLEFunction(nid = 0xB4D7CB74, version = 150)
-    public int sceWlanGPSend() {
-        return 0;
+    public int sceWlanGPSend(int unknown, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buffer, int bufferLength) {
+    	if (!isGameMode) {
+    		return SceKernelErrors.ERROR_WLAN_NOT_IN_GAMEMODE;
+    	}
+    	if (bufferLength < 0 || bufferLength > gameModeDataLength) {
+    		return SceKernelErrors.ERROR_WLAN_BAD_PARAMS;
+    	}
+
+    	GameModeState myGameModeState = getMyGameModeState();
+    	if (myGameModeState == null) {
+    		log.error(String.format("sceWlanGPSend not found my GameModeState!"));
+    		return -1;
+    	}
+
+    	Utilities.readBytes(buffer.getAddress(), bufferLength, myGameModeState.data, 0);
+    	myGameModeState.doUpdate();
+
+    	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2D0FAE4E, version = 150)
-    public int sceWlanDrv_lib_2D0FAE4E() {
-        return 0;
+    public int sceWlanDrv_lib_2D0FAE4E(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=6, usage=Usage.in) TPointer16 unknown) {
+    	unknownValue1 = unknown.getValue(0);
+    	unknownValue2 = unknown.getValue(2);
+    	unknownValue3 = unknown.getValue(4);
+
+    	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x56F467CA, version = 150)
-    public int sceWlanDrv_lib_56F467CA() {
-        return 0;
+    public int sceWlanDrv_lib_56F467CA(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=6, usage=Usage.out) TPointer16 unknown) {
+    	unknown.setValue(0, unknownValue1);
+    	unknown.setValue(2, unknownValue2);
+    	unknown.setValue(4, unknownValue3);
+
+    	return 0;
     }
 
     @HLEUnimplemented

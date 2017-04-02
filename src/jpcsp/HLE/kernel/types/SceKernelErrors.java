@@ -431,6 +431,7 @@ public class SceKernelErrors {
     public final static int ERROR_NET_ADHOCCTL_TOO_MANY_HANDLERS                = 0x80410b12;
 
     public final static int ERROR_WLAN_BAD_PARAMS                               = 0x80410d13;
+    public final static int ERROR_WLAN_NOT_IN_GAMEMODE                          = 0x80410d14;
 
     public final static int ERROR_SAS_INVALID_GRAIN                             = 0x80420001;
     public final static int ERROR_SAS_INVALID_MAX_VOICES                        = 0x80420002;
