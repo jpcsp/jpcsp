@@ -3389,7 +3389,8 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x6652B8CA, version = 150)
     public int sceKernelSetAlarm(int delayUsec, TPointer handlerAddress, int handlerArgument) {
-        return hleKernelSetAlarm(delayUsec, handlerAddress, handlerArgument);
+    	// delayUsec is an unsigned 32-bit value
+        return hleKernelSetAlarm(delayUsec & 0xFFFFFFFFL, handlerAddress, handlerArgument);
     }
 
     /**
