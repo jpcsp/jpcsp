@@ -29,7 +29,6 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
-import jpcsp.HLE.TPointer32;
 
 public class sceMemab extends HLEModule {
     public static Logger log = Modules.getLogger("sceMemab");
@@ -152,11 +151,29 @@ public class sceMemab extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x16594684, version = 150)
-    public int sceMemab_16594684(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer32 unknownOutput) {
-    	// Generates 4 pseudo-random numbers (KIRK cmd 14)
+    public int sceMemab_16594684(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer buffer) {
+    	// Generates 4 pseudo-random numbers (PSP_KIRK_CMD_PRNG)
     	for (int i = 0; i < 4; i++) {
-    		unknownOutput.setValue(i << 2, random.nextInt());
+    		buffer.setValue32(i << 2, random.nextInt());
     	}
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9DE8C8CD, version = 150)
+    public int sceMemab_9DE8C8CD(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer xorKey, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferLength) {
+    	// Encrypting (PSP_KIRK_CMD_ENCRYPT) the data in unknownInputOutput buffer
+    	RuntimeContext.debugMemory(buffer.getAddress(), bufferLength);
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9BF1A0A4, version = 150)
+    public int sceMemab_9BF1A0A4(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer xorKey, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferLength) {
+    	// Decrypting (PSP_KIRK_CMD_DECRYPT) the data in unknownInputOutput buffer
+    	RuntimeContext.debugMemory(buffer.getAddress(), bufferLength);
 
     	return 0;
     }
