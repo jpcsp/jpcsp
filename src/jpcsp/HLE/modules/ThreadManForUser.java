@@ -994,8 +994,8 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hleWlanIoctlCallback(TPointer handleAddr, int cmd, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.in) TPointer32 unknown2) {
-        return Modules.sceWlanModule.hleWlanIoctlCallback(handleAddr, cmd, unknown1, unknown2);
+    public int hleWlanIoctlCallback(TPointer handleAddr, int cmd, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer unknown, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.in) TPointer32 buffersAddr) {
+        return Modules.sceWlanModule.hleWlanIoctlCallback(handleAddr, cmd, unknown, buffersAddr);
     }
 
     private void installWlanLoopHandler() {

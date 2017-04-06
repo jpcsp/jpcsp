@@ -427,9 +427,24 @@ public class sceNetIfhandle extends HLEModule {
     public int sceNetMCopydata(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=76, usage=Usage.in) TPointer messageAddr, int dataOffset, int length, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.previousParameter, usage=Usage.out) TPointer destinationAddr) {
     	if (destinationAddr.isNotNull()) {
         	SceNetIfMessage message = new SceNetIfMessage();
-        	message.read(messageAddr);
+    		while (messageAddr.isNotNull()) {
+            	message.read(messageAddr);
 
-        	destinationAddr.memcpy(message.dataAddr + dataOffset, length);
+            	if (dataOffset < message.dataLength) {
+            		break;
+            	}
+        		dataOffset -= message.dataLength;
+        		messageAddr.setAddress(message.nextDataAddr);
+    		}
+
+    		while (length > 0 && messageAddr.isNotNull()) {
+    			message.read(messageAddr);
+    			int copyLength = Math.min(length, message.dataLength - dataOffset);
+            	destinationAddr.memcpy(message.dataAddr + dataOffset, copyLength);
+            	length -= copyLength;
+            	destinationAddr.add(copyLength);
+            	dataOffset = 0;
+    		}
     	}
 
     	return 0;
@@ -476,7 +491,7 @@ public class sceNetIfhandle extends HLEModule {
     		do {
     			message.read(messageAddr.getMemory(), currentMessageAddr);
     			totalSize += message.dataLength;
-    			currentMessageAddr = message.nextMessageAddr;
+    			currentMessageAddr = message.nextDataAddr;
     		} while (currentMessageAddr != 0);
 
     		if (message.dataLength < sizeAdj) {
@@ -492,7 +507,7 @@ public class sceNetIfhandle extends HLEModule {
     	    	while (currentMessageAddr != 0) {
     	    		message.read(messageAddr.getMemory(), currentMessageAddr);
     	    		if (message.dataLength < totalSize) {
-    	    			currentMessageAddr = message.nextMessageAddr;
+    	    			currentMessageAddr = message.nextDataAddr;
     	    			totalSize -= message.dataLength;
     	    		} else {
     	    			message.dataLength = totalSize;
@@ -501,12 +516,12 @@ public class sceNetIfhandle extends HLEModule {
     	    		}
     	    	}
 
-    	    	currentMessageAddr = message.nextMessageAddr;
+    	    	currentMessageAddr = message.nextDataAddr;
     	    	while (currentMessageAddr != 0) {
     	    		message.read(messageAddr.getMemory(), currentMessageAddr);
     	    		message.dataLength = 0;
     	    		message.write(messageAddr.getMemory(), currentMessageAddr);
-    	    		currentMessageAddr = message.nextMessageAddr;
+    	    		currentMessageAddr = message.nextDataAddr;
     	    	}
     		} else {
     	    	message.read(messageAddr);
@@ -529,7 +544,7 @@ public class sceNetIfhandle extends HLEModule {
 		    		sizeAdj -= message.dataLength;
 		    		message.dataLength = 0;
 		    		message.write(messageAddr);
-		    		currentMessageAddr = message.nextMessageAddr;
+		    		currentMessageAddr = message.nextDataAddr;
 		    	}
 	    	} while (messageAddr.isNotNull() && sizeAdj > 0);
 
@@ -620,7 +635,7 @@ public class sceNetIfhandle extends HLEModule {
 		SceNetIfMessage message = new SceNetIfMessage();
     	while (messageAddr.isNotNull()) {
     		message.read(messageAddr);
-    		int nextMessage = message.nextMessageAddr;
+    		int nextMessage = message.nextDataAddr;
     		sceNetFreeInternal(messageAddr.getAddress());
     		messageAddr = new TPointer(messageAddr.getMemory(), nextMessage);
     	}
