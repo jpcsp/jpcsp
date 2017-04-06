@@ -4103,10 +4103,25 @@ public class IoFileMgrForUser extends HLEModule {
                 if (!devicename.getString().equals("mscmhc0:")) {
                 	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(outdata_addr) && outlen == 16) {
-                    mem.write32(outdata_addr +  0, 0x12345678);
-                    mem.write32(outdata_addr +  4, 0x12345678);
-                    mem.write32(outdata_addr +  8, 0x12345678);
-                    mem.write32(outdata_addr + 12, 0x12345678);
+                	// When value1 or value2 are < 10000, sceUtilitySavedata is
+                	// returning an error 0x8011032C (bad status).
+                	// When value1 or value2 are > 10000, sceUtilitySavedata is
+                	// returning an error 0x8011032A (the system has been shifted to sleep mode).
+                	final int value1 = 10000;
+                	final int value2 = 10000;
+                	// When value3 or value4 are < 10000, sceUtilitySavedata is
+                	// returning an error 0x8011032C (bad status)
+                	// When value3 or value4 are > 10000, sceUtilitySavedata is
+                	// returning an error 0x80110322 (the memory stick has been removed).
+                	final int value3 = 10000;
+                	final int value4 = 10000;
+                	// No error is returned by sceUtilitySavedata only when
+                	// all 4 values are set to 10000.
+
+                    mem.write32(outdata_addr +  0, value1);
+                    mem.write32(outdata_addr +  4, value2);
+                    mem.write32(outdata_addr +  8, value3);
+                    mem.write32(outdata_addr + 12, value4);
                     result = 0;
                 } else {
                 	result = -1;
