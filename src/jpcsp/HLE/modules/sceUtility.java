@@ -41,6 +41,7 @@ import static jpcsp.graphics.GeCommands.VTYPE_TRANSFORM_PIPELINE_RAW_COORD;
 import static jpcsp.graphics.RE.IRenderingEngine.GU_TEXTURE_2D;
 import static jpcsp.graphics.VideoEngine.alignBufferWidth;
 import static jpcsp.memory.ImageReader.colorARGBtoABGR;
+import jpcsp.GUI.SettingsGUI;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -3942,7 +3943,27 @@ public class sceUtility extends HLEModule {
     }
 
     public static int getSystemParamAdhocChannel() {
-        return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, 0);
+    	int indexedValue = Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, 0);
+    	String[] guiValues = SettingsGUI.getSysparamAdhocChannels();
+
+    	int channel = 0;
+    	// Invalid value?
+    	if (guiValues == null || indexedValue < 0 || indexedValue >= guiValues.length) {
+    		return channel;
+    	}
+
+    	// Auto value?
+    	if (indexedValue == 0) {
+    		return channel;
+    	}
+
+    	try {
+    		channel = Integer.parseInt(guiValues[indexedValue]);
+    	} catch (NumberFormatException e) {
+    		log.error(String.format("Invalid channel settings value %d from %s", indexedValue, guiValues));
+    	}
+
+    	return channel;
     }
 
     public static int getSystemParamWlanPowersave() {
