@@ -248,23 +248,15 @@ public class CodeInstruction {
             	//    0x00000014    nop
             	//    0x00000018    something
             	//
-            	CodeInstruction beforeBranchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() - 4);
-            	if (beforeBranchingToCodeInstruction != null && beforeBranchingToCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT) && !branchingToCodeInstruction.isDelaySlot()) {
-            		if (branchingToCodeInstruction.getInsn() == Instructions.NOP) {
-    	            	if (log.isDebugEnabled()) {
-    	            		log.debug(String.format("0x%08X: branching to a NOP in a delay slot, correcting to the next instruction", getAddress()));
-    	            	}
-            		} else {
-    	            	if (log.isDebugEnabled()) {
-    	            		log.debug(String.format("0x%08X: branching to an instruction in a delay slot, emitting the delay slot instruction and correcting to the next instruction", getAddress()));
-    	            	}
-            			branchingToCodeInstruction.compile(context, mv);
-            	        context.setCodeInstruction(this);
-            	        context.skipInstructions(1, false);
-            		}
-	            	branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() + 4);
-                }
-
+        		if (branchingToCodeInstruction.getInsn() == Instructions.NOP) {
+        			CodeInstruction beforeBranchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() - 4);
+        			if (beforeBranchingToCodeInstruction != null && beforeBranchingToCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+		            	if (log.isDebugEnabled()) {
+		            		log.debug(String.format("0x%08X: branching to a NOP in a delay slot, correcting to the next instruction", getAddress()));
+		            	}
+		            	branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() + 4);
+	        		}
+            	}
                 context.visitJump(branchingOpcode, branchingToCodeInstruction);
             } else {
                 context.visitJump(branchingOpcode, getBranchingTo());
