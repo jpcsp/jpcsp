@@ -1415,32 +1415,48 @@ public class CompilerContext implements ICompilerContext {
 		mv.visitLabel(loggingDisabled);
     }
 
-    private String getLogCheckFunction(HLEModuleFunction func) {
+    private String getLogCheckFunction(String loggingLevel) {
 		String logCheckFunction = "isInfoEnabled";
-		if ("trace".equals(func.getLoggingLevel())) {
+		if ("trace".equals(loggingLevel)) {
 			logCheckFunction = "isTraceEnabled";
-		} else if ("debug".equals(func.getLoggingLevel())) {
+		} else if ("debug".equals(loggingLevel)) {
 			logCheckFunction = "isDebugEnabled";
 		}
 		return logCheckFunction;
     }
 
+    private String getLoggingLevel(HLEModuleFunction func) {
+    	String loggingLevel = func.getLoggingLevel();
+    	if (loggingLevel != null) {
+    		if (func.isUnimplemented() && codeBlock.isHLEFunction()) {
+				// Do not log at the WARN level HLE methods that are
+				// unimplemented but have been overwritten by real PSP modules
+				if ("warn".equals(loggingLevel)) {
+					loggingLevel = "debug";
+				}
+    		}
+    	}
+
+    	return loggingLevel;
+    }
+
     private void logSyscallStart(HLEModuleFunction func) {
-    	if (func.getLoggingLevel() != null) {
+    	String loggingLevel = getLoggingLevel(func);
+    	if (loggingLevel != null) {
     		String prefix = null;
     		if (func.isUnimplemented() && !codeBlock.isHLEFunction()) {
     			prefix = "Unimplemented ";
     		}
-    		logSyscall(func, prefix, getLogCheckFunction(func), func.getLoggingLevel());
+    		logSyscall(func, prefix, getLogCheckFunction(loggingLevel), loggingLevel);
     	}
     }
 
     private void logSyscallEnd(HLEModuleFunction func, boolean isErrorCode) {
-    	if (func.getLoggingLevel() == null) {
+    	String loggingLevel = getLoggingLevel(func);
+    	if (loggingLevel == null) {
     		return;
     	}
-    	String logFunction = func.getLoggingLevel();
-		String logCheckFunction = getLogCheckFunction(func);
+		String logCheckFunction = getLogCheckFunction(loggingLevel);
 
     	// if (Modules.getLogger(func.getModuleName()).isDebugEnabled()) {
     	//     Modules.getLogger(func.getModuleName()).debug(String.format("<function name> returning 0x%X", new Object[1] { new Integer(returnValue) }));
@@ -1470,7 +1486,7 @@ public class CompilerContext implements ICompilerContext {
     	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
     	loadModuleLoggger(func);
     	mv.visitInsn(Opcodes.SWAP);
-    	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logFunction, "(" + Type.getDescriptor(Object.class) + ")V");
+    	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), loggingLevel, "(" + Type.getDescriptor(Object.class) + ")V");
 
     	if (!isErrorCode) {
 			ParameterInfo[] parameters = new ClassAnalyzer().getParameters(func.getFunctionName(), func.getHLEModuleMethod().getDeclaringClass());
@@ -1612,7 +1628,7 @@ public class CompilerContext implements ICompilerContext {
 	        			mv.visitLdcInsn(format);
 	                	mv.visitInsn(Opcodes.SWAP);
 	                	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
-	            		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logFunction, "(" + Type.getDescriptor(Object.class) + ")V");
+	            		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), loggingLevel, "(" + Type.getDescriptor(Object.class) + ")V");
 	            		mv.visitJumpInsn(Opcodes.GOTO, done);
 
 	        			mv.visitLabel(addressNull);
