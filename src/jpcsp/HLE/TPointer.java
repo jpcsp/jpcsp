@@ -26,13 +26,33 @@ import jpcsp.util.Utilities;
 final public class TPointer implements ITPointerBase {
 	private Memory memory;
 	private int address;
-	public static final TPointer NULL = new TPointer(null, 0);
+	public static final TPointer NULL = new TPointer((Memory) null, 0);
 
 	public TPointer(Memory memory, int address) {
 		this.memory = memory;
 		this.address = address & Memory.addressMask;
 	}
-	
+
+	public TPointer(TPointer base) {
+		memory = base.getMemory();
+		address = base.getAddress();
+	}
+
+	public TPointer(TPointer base, int addressOffset) {
+		memory = base.getMemory();
+		if (base.isNull()) {
+			address = 0;
+		} else {
+			address = base.getAddress() + addressOffset;
+		}
+	}
+
+	public void add(int addressOffset) {
+		if (isNotNull()) {
+			address += addressOffset;
+		}
+	}
+
 	@Override
 	public boolean isAddressGood() {
 		return Memory.isAddressGood(address);
@@ -47,7 +67,11 @@ final public class TPointer implements ITPointerBase {
 	public int getAddress() {
 		return address;
 	}
-	
+
+	public void setAddress(int address) {
+		this.address = address & Memory.addressMask;
+	}
+
 	public Memory getMemory() {
 		return memory;
 	}
