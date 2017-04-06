@@ -426,6 +426,7 @@ public class SceKernelErrors {
     public final static int ERROR_NET_ADHOC_MATCHING_ALREADY_INITIALIZED        = 0x80410812;
     public final static int ERROR_NET_ADHOC_MATCHING_NOT_INITIALIZED            = 0x80410813;
 
+    public final static int ERROR_NET_ADHOCCTL_INVALID_PARAMETER                = 0x80410b04;
     public final static int ERROR_NET_ADHOCCTL_ALREADY_INITIALIZED              = 0x80410b07;
     public final static int ERROR_NET_ADHOCCTL_NOT_INITIALIZED                  = 0x80410b08;
     public final static int ERROR_NET_ADHOCCTL_TOO_MANY_HANDLERS                = 0x80410b12;
