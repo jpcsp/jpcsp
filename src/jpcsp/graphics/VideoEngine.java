@@ -4634,12 +4634,20 @@ public class VideoEngine {
     }
 
     private void executeCommandTBIAS() {
+    	int old_tex_mipmap_mode = context.tex_mipmap_mode;
+    	int old_tex_mipmap_bias_int = context.tex_mipmap_bias_int;
+    	float old_tex_mipmap_bias = context.tex_mipmap_bias;
+
         context.tex_mipmap_mode = normalArgument & 0x3;
         int biasValue = (int) (byte) (normalArgument >> 16); // Signed 8-bit 4.4 fixed point value
         context.tex_mipmap_bias_int = biasValue >> 4;
         context.tex_mipmap_bias = biasValue / 16.0f;
         if (isLogDebugEnabled) {
             log.debug("sceGuTexLevelMode(mode=" + context.tex_mipmap_mode + ", bias=" + context.tex_mipmap_bias + ")");
+        }
+
+        if (context.tex_mipmap_mode != old_tex_mipmap_mode || context.tex_mipmap_bias_int != old_tex_mipmap_bias_int || context.tex_mipmap_bias != old_tex_mipmap_bias) {
+        	textureChanged = true;
         }
     }
 
@@ -5604,6 +5612,437 @@ public class VideoEngine {
         return (buffer[0] & 0xFF) | ((buffer[1] & 0xFF) << 8) | ((buffer[2] & 0xFF) << 16) | ((buffer[3] & 0xFF) << 24);
     }
 
+    private void loadTexture(int level, int reTextureLevel) {
+        Buffer final_buffer;
+        int texclut = context.tex_clut_addr;
+
+        int textureByteAlignment = 4; // 32 bits
+        boolean compressedTexture = false;
+
+        // Extract texture information with the minor conversion possible
+        // TODO: Get rid of information copying, and implement all the available formats
+        int texaddr = context.texture_base_pointer[level] & Memory.addressMask;
+        int compressedTextureSize = 0;
+        int buffer_storage = context.texture_storage;
+        // The texture buffer width must be a multiple of 4, 8, 16 or 32 depending
+        // on the pixel format
+        int textureBufferWidthInPixels = alignBufferWidth(context.texture_buffer_width[level], context.texture_storage);
+
+        StringBuilder moddedTextureFileName = new StringBuilder();
+        if (enableTextureModding && hasModdedTexture(level, moddedTextureFileName)) {
+            try {
+                File moddedTextureFile = new File(moddedTextureFileName.toString());
+                int width = Math.max(textureBufferWidthInPixels, context.texture_width[level]);
+                int height = context.texture_height[level];
+                boolean readUsingImageIO = true;
+
+                // ImageIO is losing the alpha color values while reading a BMP file :-(.
+                // Read BMP files manually to retrieve the correct alpha color values.
+                if (moddedTextureFile.getName().endsWith(".bmp")) {
+                    InputStream is = new BufferedInputStream(new FileInputStream(moddedTextureFile));
+
+                    // Reading file header
+                    int magic = readLittleEndianShort(is);
+                    int fileSize = readLittleEndianInt(is);
+                    is.skip(4);
+                    int dataOffset = readLittleEndianInt(is);
+
+                    // Reading DIB header
+                    int dibHeaderLength = readLittleEndianInt(is);
+                    int imageWidth = readLittleEndianInt(is);
+                    int imageHeight = readLittleEndianInt(is);
+                    int numberPlanes = readLittleEndianShort(is);
+                    int bitsPerPixel = readLittleEndianShort(is);
+
+                    // Skip rest of DIB header until data start
+                    is.skip(dataOffset - 14 - 16);
+
+                    if (magic == (('M' << 8) | 'B') && dibHeaderLength >= 16 && fileSize >= dataOffset && numberPlanes == 1 && bitsPerPixel == 32 && imageWidth == width && imageHeight == height) {
+                        for (int y = height - 1; y >= 0; y--) {
+                            for (int x = 0, i = y * width; x < width; x++, i++) {
+                                int argb = readLittleEndianInt(is);
+                                // Convert ARGB into ABGR
+                                int abgr = (argb & 0xFF00FF00) | ((argb & 0x00FF0000) >> 16) | ((argb & 0x000000FF) << 16);
+                                tmp_texture_buffer32[i] = abgr;
+                            }
+                        }
+                        readUsingImageIO = false;
+                    }
+
+                    is.close();
+                }
+
+                if (readUsingImageIO) {
+                    BufferedImage img = ImageIO.read(moddedTextureFile);
+                    for (int y = height - 1; y >= 0; y--) {
+                        for (int x = 0, i = y * width; x < width; x++, i++) {
+                            int argb = img.getRGB(x, y);
+                            // Convert ARGB into ABGR
+                            int abgr = (argb & 0xFF00FF00) | ((argb & 0x00FF0000) >> 16) | ((argb & 0x000000FF) << 16);
+                            tmp_texture_buffer32[i] = abgr;
+                        }
+                    }
+                }
+
+                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                textureByteAlignment = 4;
+                buffer_storage = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+            } catch (IOException e) {
+                log.error("Error while reading modded texture file", e);
+                return;
+            }
+        } else {
+            switch (context.texture_storage) {
+                case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
+                    if (texclut == 0) {
+                        return;
+                    }
+
+                    buffer_storage = context.tex_clut_mode;
+                    switch (context.tex_clut_mode) {
+                        case CMODE_FORMAT_16BIT_BGR5650:
+                        case CMODE_FORMAT_16BIT_ABGR5551:
+                        case CMODE_FORMAT_16BIT_ABGR4444: {
+                            textureByteAlignment = 2;  // 16 bits
+                            short[] clut = readClut16(level);
+                            int clutSharingOffset = context.mipmapShareClut ? 0 : level * 16;
+
+                            if (!context.texture_swizzle) {
+                                int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
+                                IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
+                                for (int i = 0; i < length; i += 2) {
+                                    int index = memoryReader.readNext();
+
+                                    tmp_texture_buffer16[i] = clut[getClutIndex(index & 0xF) + clutSharingOffset];
+                                    tmp_texture_buffer16[i + 1] = clut[getClutIndex((index >> 4) & 0xF) + clutSharingOffset];
+                                }
+                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+
+                                if (State.captureGeNextFrame) {
+                                    log.info("Capture loadTexture clut 4/16 unswizzled");
+                                    CaptureManager.captureRAM(texaddr, length / 2);
+                                }
+                            } else {
+                                unswizzleTextureFromMemory(texaddr, 0, level, textureBufferWidthInPixels);
+                                int pixels = textureBufferWidthInPixels * context.texture_height[level];
+                                for (int i = 0, j = 0; i < pixels; i += 8, j++) {
+                                    int n = tmp_texture_buffer32[j];
+                                    int index = n & 0xF;
+                                    tmp_texture_buffer16[i + 0] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 4) & 0xF;
+                                    tmp_texture_buffer16[i + 1] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 8) & 0xF;
+                                    tmp_texture_buffer16[i + 2] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 12) & 0xF;
+                                    tmp_texture_buffer16[i + 3] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 16) & 0xF;
+                                    tmp_texture_buffer16[i + 4] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 20) & 0xF;
+                                    tmp_texture_buffer16[i + 5] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 24) & 0xF;
+                                    tmp_texture_buffer16[i + 6] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 28) & 0xF;
+                                    tmp_texture_buffer16[i + 7] = clut[getClutIndex(index) + clutSharingOffset];
+                                }
+                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+                                break;
+                            }
+
+                            break;
+                        }
+
+                        case CMODE_FORMAT_32BIT_ABGR8888: {
+                            int[] clut = readClut32(level);
+                            int clutSharingOffset = context.mipmapShareClut ? 0 : level * 16;
+
+                            if (!context.texture_swizzle) {
+                                int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
+                                IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
+                                for (int i = 0; i < length; i += 2) {
+                                    int index = memoryReader.readNext();
+
+                                    tmp_texture_buffer32[i + 1] = clut[getClutIndex((index >> 4) & 0xF) + clutSharingOffset];
+                                    tmp_texture_buffer32[i] = clut[getClutIndex(index & 0xF) + clutSharingOffset];
+                                }
+                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+
+                                if (State.captureGeNextFrame) {
+                                    log.info("Capture loadTexture clut 4/32 unswizzled");
+                                    CaptureManager.captureRAM(texaddr, length / 2);
+                                }
+                            } else {
+                                unswizzleTextureFromMemory(texaddr, 0, level, textureBufferWidthInPixels);
+                                int pixels = textureBufferWidthInPixels * context.texture_height[level];
+                                for (int i = pixels - 8, j = (pixels / 8) - 1; i >= 0; i -= 8, j--) {
+                                    int n = tmp_texture_buffer32[j];
+                                    int index = n & 0xF;
+                                    tmp_texture_buffer32[i + 0] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 4) & 0xF;
+                                    tmp_texture_buffer32[i + 1] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 8) & 0xF;
+                                    tmp_texture_buffer32[i + 2] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 12) & 0xF;
+                                    tmp_texture_buffer32[i + 3] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 16) & 0xF;
+                                    tmp_texture_buffer32[i + 4] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 20) & 0xF;
+                                    tmp_texture_buffer32[i + 5] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 24) & 0xF;
+                                    tmp_texture_buffer32[i + 6] = clut[getClutIndex(index) + clutSharingOffset];
+                                    index = (n >> 28) & 0xF;
+                                    tmp_texture_buffer32[i + 7] = clut[getClutIndex(index) + clutSharingOffset];
+                                }
+                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                            }
+
+                            break;
+                        }
+
+                        default: {
+                            error("Unhandled clut4 texture mode " + context.tex_clut_mode);
+                            return;
+                        }
+                    }
+
+                    break;
+                }
+                case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
+                    if (re.canNativeClut(texaddr, context.texture_swizzle)) {
+                        final_buffer = getTextureBuffer(texaddr, 1, level, textureBufferWidthInPixels);
+                        textureByteAlignment = 1; // 8 bits
+                    } else {
+                        final_buffer = readIndexedTexture(level, texaddr, texclut, 1, textureBufferWidthInPixels);
+                        buffer_storage = context.tex_clut_mode;
+                        textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
+                    }
+                    break;
+                }
+                case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED: {
+                    if (re.canNativeClut(texaddr, context.texture_swizzle)) {
+                        final_buffer = getTextureBuffer(texaddr, 2, level, textureBufferWidthInPixels);
+                        textureByteAlignment = 2; // 16 bits
+                    } else {
+                        final_buffer = readIndexedTexture(level, texaddr, texclut, 2, textureBufferWidthInPixels);
+                        buffer_storage = context.tex_clut_mode;
+                        textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
+                    }
+                    break;
+                }
+                case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED: {
+                    if (re.canNativeClut(texaddr, context.texture_swizzle)) {
+                        final_buffer = getTextureBuffer(texaddr, 4, level, textureBufferWidthInPixels);
+                        textureByteAlignment = 4; // 32 bits
+                    } else {
+                        final_buffer = readIndexedTexture(level, texaddr, texclut, 4, textureBufferWidthInPixels);
+                        buffer_storage = context.tex_clut_mode;
+                        textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
+                    }
+                    break;
+                }
+                case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
+                case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
+                case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
+                    textureByteAlignment = 2;  // 16 bits
+
+                    if (!context.texture_swizzle) {
+                        int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
+                        final_buffer = Memory.getInstance().getBuffer(texaddr, length * 2);
+                        if (final_buffer == null) {
+                            IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 2, 2);
+                            for (int i = 0; i < length; i++) {
+                                int pixel = memoryReader.readNext();
+                                tmp_texture_buffer16[i] = (short) pixel;
+                            }
+
+                            final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+                        }
+
+                        if (State.captureGeNextFrame) {
+                            log.info("Capture loadTexture 16 unswizzled");
+                            CaptureManager.captureRAM(texaddr, length * 2);
+                        }
+                    } else {
+                        final_buffer = unswizzleTextureFromMemory(texaddr, 2, level, textureBufferWidthInPixels);
+                    }
+
+                    break;
+                }
+
+                case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
+                    final_buffer = getTextureBuffer(texaddr, 4, level, textureBufferWidthInPixels);
+                    break;
+                }
+
+                case TPSM_PIXEL_STORAGE_MODE_DXT1: {
+                    if (isLogDebugEnabled) {
+                        log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT1 " + Integer.toHexString(texaddr));
+                    }
+                    compressedTexture = true;
+                    compressedTextureSize = getCompressedTextureSize(level, 8);
+                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
+                    // PSP DXT1 hardware format reverses the colors and the per-pixel
+                    // bits, and encodes the color in RGB 565 format
+                    int i = 0;
+                    int bufferWidth4 = round4(context.texture_buffer_width[level]);
+                    int width4 = round4(context.texture_width[level]);
+                    int height4 = round4(context.texture_height[level]);
+                    int readWidth = min(bufferWidth4, width4);
+                    // Skip width if the buffer width is larger than the texture width
+                    int skipWidth = max(0, (bufferWidth4 - width4) >> 1);
+                    for (int y = 0; y < height4; y += 4) {
+                        for (int x = 0; x < readWidth; x += 4, i += 2) {
+                            tmp_texture_buffer32[i + 1] = memoryReader.readNext();
+                            tmp_texture_buffer32[i + 0] = memoryReader.readNext();
+                        }
+                        memoryReader.skip(skipWidth);
+                        for (int x = readWidth; x < width4; x += 4, i += 2) {
+                            tmp_texture_buffer32[i + 0] = 0;
+                            tmp_texture_buffer32[i + 1] = 0;
+                        }
+                    }
+                    final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                    break;
+                }
+
+                case TPSM_PIXEL_STORAGE_MODE_DXT3: {
+                    if (isLogDebugEnabled) {
+                        log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT3 " + Integer.toHexString(texaddr));
+                    }
+                    compressedTexture = true;
+                    compressedTextureSize = getCompressedTextureSize(level, 4);
+                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
+                    // PSP DXT3 format reverses the alpha and color parts of each block,
+                    // and reverses the color and per-pixel terms in the color part.
+                    int i = 0;
+                    int bufferWidth4 = round4(context.texture_buffer_width[level]);
+                    int width4 = round4(context.texture_width[level]);
+                    int height4 = round4(context.texture_height[level]);
+                    int readWidth = min(bufferWidth4, width4);
+                    // Skip width if the buffer width is larger than the texture width
+                    int skipWidth = max(0, bufferWidth4 - width4);
+                    for (int y = 0; y < height4; y += 4) {
+                        for (int x = 0; x < readWidth; x += 4, i += 4) {
+                            // Color
+                            tmp_texture_buffer32[i + 3] = memoryReader.readNext();
+                            tmp_texture_buffer32[i + 2] = memoryReader.readNext();
+                            // Alpha
+                            tmp_texture_buffer32[i + 0] = memoryReader.readNext();
+                            tmp_texture_buffer32[i + 1] = memoryReader.readNext();
+                        }
+                        memoryReader.skip(skipWidth);
+                        for (int x = readWidth; x < width4; x += 4, i += 4) {
+                            tmp_texture_buffer32[i + 0] = 0;
+                            tmp_texture_buffer32[i + 1] = 0;
+                            tmp_texture_buffer32[i + 2] = 0;
+                            tmp_texture_buffer32[i + 3] = 0;
+                        }
+                    }
+                    final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                    break;
+                }
+
+                case TPSM_PIXEL_STORAGE_MODE_DXT5: {
+                    if (isLogDebugEnabled) {
+                        log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT5 " + Integer.toHexString(texaddr));
+                    }
+                    compressedTexture = true;
+                    compressedTextureSize = getCompressedTextureSize(level, 4);
+                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 2);
+                    // PSP DXT5 format reverses the alpha and color parts of each block,
+                    // and reverses the color and per-pixel terms in the color part. In
+                    // the alpha part, the 2 reference alpha values are swapped with the
+                    // alpha interpolation values.
+                    int i = 0;
+                    int bufferWidth4 = round4(context.texture_buffer_width[level]);
+                    int width4 = round4(context.texture_width[level]);
+                    int height4 = round4(context.texture_height[level]);
+                    int readWidth = min(bufferWidth4, width4);
+                    // Skip width if the buffer width is larger than the texture width
+                    int skipWidth = max(0, bufferWidth4 - width4);
+                    for (int y = 0; y < height4; y += 4) {
+                        for (int x = 0; x < readWidth; x += 4, i += 8) {
+                            // Color
+                            tmp_texture_buffer16[i + 6] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 7] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 4] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 5] = (short) memoryReader.readNext();
+                            // Alpha
+                            tmp_texture_buffer16[i + 1] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 2] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 3] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 0] = (short) memoryReader.readNext();
+                        }
+                        memoryReader.skip(skipWidth);
+                        for (int x = readWidth; x < width4; x += 4, i += 8) {
+                            tmp_texture_buffer16[i + 0] = 0;
+                            tmp_texture_buffer16[i + 1] = 0;
+                            tmp_texture_buffer16[i + 2] = 0;
+                            tmp_texture_buffer16[i + 3] = 0;
+                            tmp_texture_buffer16[i + 4] = 0;
+                            tmp_texture_buffer16[i + 5] = 0;
+                            tmp_texture_buffer16[i + 6] = 0;
+                            tmp_texture_buffer16[i + 7] = 0;
+                        }
+                    }
+                    final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+                    break;
+                }
+
+                default: {
+                    error("Unhandled texture storage " + context.texture_storage);
+                    return;
+                }
+            }
+        }
+        
+        // Check if scaling is needed for xBRZ.
+        boolean scale = isUsexBRZFilter();
+        if ((texaddr > 83886080) && (texaddr < 142606336)) {
+            scale = false;
+        }
+
+        // Upload texture to openGL.
+        re.setPixelStore(textureBufferWidthInPixels, textureByteAlignment);
+        
+        if (compressedTexture) {
+            re.setCompressedTexImage(
+                    reTextureLevel,
+                    buffer_storage,
+                    context.texture_width[level], context.texture_height[level],
+                    compressedTextureSize,
+                    final_buffer);
+        } else if (isUsexBRZFilter() && scale) {
+            int textureSize = Math.max(textureBufferWidthInPixels, this.context.texture_width[level]) * this.context.texture_height[level] * textureByteAlignment;
+            this.re.setTexImagexBRZ(
+            		reTextureLevel,
+                    buffer_storage,
+                    this.context.texture_width[level], this.context.texture_height[level],
+                    this.context.texture_buffer_width[level],
+                    buffer_storage,
+                    buffer_storage,
+                    textureSize,
+                    final_buffer);
+        } else {
+            int textureSize = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level] * textureByteAlignment;
+            re.setTexImage(
+            		reTextureLevel,
+                    buffer_storage,
+                    context.texture_width[level], context.texture_height[level],
+                    buffer_storage,
+                    buffer_storage,
+                    textureSize,
+                    final_buffer);
+        }
+
+        if (State.captureGeNextFrame) {
+            boolean vramImage = Memory.isVRAM(texaddr);
+            boolean overwriteFile = !vramImage;
+            if (vramImage || !CaptureManager.isImageCaptured(texaddr)) {
+                CaptureManager.captureImage(texaddr, level, final_buffer, context.texture_width[level], context.texture_height[level], context.texture_buffer_width[level], buffer_storage, compressedTexture, compressedTextureSize, false, overwriteFile);
+            }
+        }
+    }
+
     private void loadTexture() {
         if (display.isGeAddress(context.texture_base_pointer[0])) {
             textureChanged = true;
@@ -5628,7 +6067,21 @@ public class VideoEngine {
             return;
         }
 
-        int tex_addr = context.texture_base_pointer[0] & Memory.addressMask;
+        int mipmapIndex = 0;
+        //
+        // Basic support of mipmaps that are indexed with a constant value (TBIAS_MODE_CONST).
+        //
+        // Load such a mipmap as a stand-alone texture. Some applications do define
+        // multiple mipmap levels all having the same size (width & height).
+        // The application is then accessing each mipmap with TBIAS_MODE_CONST.
+        // Such a case is easier being implemented with independent textures
+        // instead of trying to use OpenGL texture mipmaps
+        // (which do require decreasing sizes at each level).
+        if (context.tex_mipmap_mode == TBIAS_MODE_CONST) {
+        	mipmapIndex = Math.max(context.tex_mipmap_bias_int, 0);
+        }
+
+        int tex_addr = context.texture_base_pointer[mipmapIndex] & Memory.addressMask;
         if (!Memory.isAddressGood(tex_addr)) {
             if (isLogWarnEnabled) {
                 log.warn(String.format("Invalid texture address 0x%08X for texture level 0", tex_addr));
@@ -5637,11 +6090,12 @@ public class VideoEngine {
         }
 
         re.setTextureFormat(context.texture_storage, context.texture_swizzle);
+        boolean compressedTexture = (context.texture_storage >= TPSM_PIXEL_STORAGE_MODE_DXT1 && context.texture_storage <= TPSM_PIXEL_STORAGE_MODE_DXT5);
 
         if (loadGETexture(tex_addr)) {
             re.setTextureMipmapMagFilter(context.tex_mag_filter);
             re.setTextureMipmapMinFilter(context.tex_min_filter);
-            checkTextureMinFilter(false, context.texture_num_mip_maps);
+            checkTextureMinFilter(compressedTexture, context.texture_num_mip_maps);
             textureChanged = false;
             return;
         }
@@ -5670,18 +6124,18 @@ public class VideoEngine {
             textureCacheLookupStatistics.start();
             // Check if the texture is in the cache
             if (textureRequiresClut) {
-                texture = textureCache.getTexture(context.texture_base_pointer[0], context.texture_buffer_width[0], context.texture_width[0], context.texture_height[0], context.texture_storage, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, context.tex_clut_num_blocks, context.texture_num_mip_maps, context.mipmapShareClut, null, null);
+                texture = textureCache.getTexture(context.texture_base_pointer[mipmapIndex], context.texture_buffer_width[mipmapIndex], context.texture_width[mipmapIndex], context.texture_height[mipmapIndex], context.texture_storage, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, context.tex_clut_num_blocks, context.texture_num_mip_maps, context.mipmapShareClut, null, null);
             } else {
-                texture = textureCache.getTexture(context.texture_base_pointer[0], context.texture_buffer_width[0], context.texture_width[0], context.texture_height[0], context.texture_storage, 0, 0, 0, 0, 0, 0, context.texture_num_mip_maps, false, null, null);
+                texture = textureCache.getTexture(context.texture_base_pointer[mipmapIndex], context.texture_buffer_width[mipmapIndex], context.texture_width[mipmapIndex], context.texture_height[mipmapIndex], context.texture_storage, 0, 0, 0, 0, 0, 0, context.texture_num_mip_maps, false, null, null);
             }
             textureCacheLookupStatistics.end();
 
             // Create the texture if not yet in the cache
             if (texture == null) {
                 if (textureRequiresClut) {
-                    texture = new Texture(textureCache, context.texture_base_pointer[0], context.texture_buffer_width[0], context.texture_width[0], context.texture_height[0], context.texture_storage, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, context.tex_clut_num_blocks, context.texture_num_mip_maps, context.mipmapShareClut, null, null);
+                    texture = new Texture(textureCache, context.texture_base_pointer[mipmapIndex], context.texture_buffer_width[mipmapIndex], context.texture_width[mipmapIndex], context.texture_height[mipmapIndex], context.texture_storage, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, context.tex_clut_num_blocks, context.texture_num_mip_maps, context.mipmapShareClut, null, null);
                 } else {
-                    texture = new Texture(textureCache, context.texture_base_pointer[0], context.texture_buffer_width[0], context.texture_width[0], context.texture_height[0], context.texture_storage, 0, 0, 0, 0, 0, 0, context.texture_num_mip_maps, false, null, null);
+                    texture = new Texture(textureCache, context.texture_base_pointer[mipmapIndex], context.texture_buffer_width[mipmapIndex], context.texture_width[mipmapIndex], context.texture_height[mipmapIndex], context.texture_storage, 0, 0, 0, 0, 0, 0, context.texture_num_mip_maps, false, null, null);
                 }
                 textureCache.addTexture(re, texture);
             }
@@ -5699,9 +6153,9 @@ public class VideoEngine {
         if (texture == null || !texture.isLoaded() || State.captureGeNextFrame) {
             if (isLogDebugEnabled) {
                 log(helper.getCommandString(TFLUSH)
-                        + " " + String.format("0x%08X", context.texture_base_pointer[0])
-                        + ", buffer_width=" + context.texture_buffer_width[0]
-                        + " (" + context.texture_width[0] + "," + context.texture_height[0] + ")");
+                        + " " + String.format("0x%08X", context.texture_base_pointer[mipmapIndex])
+                        + ", buffer_width=" + context.texture_buffer_width[mipmapIndex]
+                        + " (" + context.texture_width[mipmapIndex] + "," + context.texture_height[mipmapIndex] + ")");
 
                 log(helper.getCommandString(TFLUSH)
                         + " texture_storage=0x" + Integer.toHexString(context.texture_storage)
@@ -5717,18 +6171,11 @@ public class VideoEngine {
 
             // If the texture is the current GE
             // first save the GE to memory before loading the texture.
-            if (tex_addr == context.fbp && context.texture_storage == context.psm && context.texture_buffer_width[0] == context.fbw) {
+            if (tex_addr == context.fbp && context.texture_storage == context.psm && context.texture_buffer_width[mipmapIndex] == context.fbw) {
                 display.copyGeToMemory(true, false);
                 // Re-bind the texture to be loaded, as the bind might have been changed during the GE copy.
                 re.bindTexture(context.currentTextureId);
             }
-
-            Buffer final_buffer;
-            int texclut = context.tex_clut_addr;
-            int texaddr;
-
-            int textureByteAlignment = 4; // 32 bits
-            boolean compressedTexture = false;
 
             int numberMipmaps = getValidNumberMipmaps(false);
 
@@ -5738,440 +6185,22 @@ public class VideoEngine {
             re.setTextureMipmapMinFilter(context.tex_min_filter);
             checkTextureMinFilter(compressedTexture, numberMipmaps);
 
-            for (int level = 0; level <= numberMipmaps; level++) {
-                // Extract texture information with the minor conversion possible
-                // TODO: Get rid of information copying, and implement all the available formats
-                texaddr = context.texture_base_pointer[level] & Memory.addressMask;
-                compressedTexture = false;
-                int compressedTextureSize = 0;
-                int buffer_storage = context.texture_storage;
-                // The texture buffer width must be a multiple of 4, 8, 16 or 32 depending
-                // on the pixel format
-                int textureBufferWidthInPixels = alignBufferWidth(context.texture_buffer_width[level], context.texture_storage);
+            if (mipmapIndex == 0) {
+	            for (int level = 0; level <= numberMipmaps; level++) {
+	            	loadTexture(level, level);
+	            }
+            } else {
+            	// Load a single mipmap as a whole texture
+            	loadTexture(mipmapIndex, 0);
+            }
 
-                StringBuilder moddedTextureFileName = new StringBuilder();
-                if (enableTextureModding && hasModdedTexture(level, moddedTextureFileName)) {
-                    try {
-                        File moddedTextureFile = new File(moddedTextureFileName.toString());
-                        int width = Math.max(textureBufferWidthInPixels, context.texture_width[level]);
-                        int height = context.texture_height[level];
-                        boolean readUsingImageIO = true;
-
-                        // ImageIO is losing the alpha color values while reading a BMP file :-(.
-                        // Read BMP files manually to retrieve the correct alpha color values.
-                        if (moddedTextureFile.getName().endsWith(".bmp")) {
-                            InputStream is = new BufferedInputStream(new FileInputStream(moddedTextureFile));
-
-                            // Reading file header
-                            int magic = readLittleEndianShort(is);
-                            int fileSize = readLittleEndianInt(is);
-                            is.skip(4);
-                            int dataOffset = readLittleEndianInt(is);
-
-                            // Reading DIB header
-                            int dibHeaderLength = readLittleEndianInt(is);
-                            int imageWidth = readLittleEndianInt(is);
-                            int imageHeight = readLittleEndianInt(is);
-                            int numberPlanes = readLittleEndianShort(is);
-                            int bitsPerPixel = readLittleEndianShort(is);
-
-                            // Skip rest of DIB header until data start
-                            is.skip(dataOffset - 14 - 16);
-
-                            if (magic == (('M' << 8) | 'B') && dibHeaderLength >= 16 && fileSize >= dataOffset && numberPlanes == 1 && bitsPerPixel == 32 && imageWidth == width && imageHeight == height) {
-                                for (int y = height - 1; y >= 0; y--) {
-                                    for (int x = 0, i = y * width; x < width; x++, i++) {
-                                        int argb = readLittleEndianInt(is);
-                                        // Convert ARGB into ABGR
-                                        int abgr = (argb & 0xFF00FF00) | ((argb & 0x00FF0000) >> 16) | ((argb & 0x000000FF) << 16);
-                                        tmp_texture_buffer32[i] = abgr;
-                                    }
-                                }
-                                readUsingImageIO = false;
-                            }
-
-                            is.close();
-                        }
-
-                        if (readUsingImageIO) {
-                            BufferedImage img = ImageIO.read(moddedTextureFile);
-                            for (int y = height - 1; y >= 0; y--) {
-                                for (int x = 0, i = y * width; x < width; x++, i++) {
-                                    int argb = img.getRGB(x, y);
-                                    // Convert ARGB into ABGR
-                                    int abgr = (argb & 0xFF00FF00) | ((argb & 0x00FF0000) >> 16) | ((argb & 0x000000FF) << 16);
-                                    tmp_texture_buffer32[i] = abgr;
-                                }
-                            }
-                        }
-
-                        final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                        textureByteAlignment = 4;
-                        buffer_storage = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-                    } catch (IOException e) {
-                        log.error("Error while reading modded texture file", e);
-                        return;
-                    }
-                } else {
-                    switch (context.texture_storage) {
-                        case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
-                            if (texclut == 0) {
-                                return;
-                            }
-
-                            buffer_storage = context.tex_clut_mode;
-                            switch (context.tex_clut_mode) {
-                                case CMODE_FORMAT_16BIT_BGR5650:
-                                case CMODE_FORMAT_16BIT_ABGR5551:
-                                case CMODE_FORMAT_16BIT_ABGR4444: {
-                                    textureByteAlignment = 2;  // 16 bits
-                                    short[] clut = readClut16(level);
-                                    int clutSharingOffset = context.mipmapShareClut ? 0 : level * 16;
-
-                                    if (!context.texture_swizzle) {
-                                        int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
-                                        IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
-                                        for (int i = 0; i < length; i += 2) {
-                                            int index = memoryReader.readNext();
-
-                                            tmp_texture_buffer16[i] = clut[getClutIndex(index & 0xF) + clutSharingOffset];
-                                            tmp_texture_buffer16[i + 1] = clut[getClutIndex((index >> 4) & 0xF) + clutSharingOffset];
-                                        }
-                                        final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-
-                                        if (State.captureGeNextFrame) {
-                                            log.info("Capture loadTexture clut 4/16 unswizzled");
-                                            CaptureManager.captureRAM(texaddr, length / 2);
-                                        }
-                                    } else {
-                                        unswizzleTextureFromMemory(texaddr, 0, level, textureBufferWidthInPixels);
-                                        int pixels = textureBufferWidthInPixels * context.texture_height[level];
-                                        for (int i = 0, j = 0; i < pixels; i += 8, j++) {
-                                            int n = tmp_texture_buffer32[j];
-                                            int index = n & 0xF;
-                                            tmp_texture_buffer16[i + 0] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 4) & 0xF;
-                                            tmp_texture_buffer16[i + 1] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 8) & 0xF;
-                                            tmp_texture_buffer16[i + 2] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 12) & 0xF;
-                                            tmp_texture_buffer16[i + 3] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 16) & 0xF;
-                                            tmp_texture_buffer16[i + 4] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 20) & 0xF;
-                                            tmp_texture_buffer16[i + 5] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 24) & 0xF;
-                                            tmp_texture_buffer16[i + 6] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 28) & 0xF;
-                                            tmp_texture_buffer16[i + 7] = clut[getClutIndex(index) + clutSharingOffset];
-                                        }
-                                        final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-                                        break;
-                                    }
-
-                                    break;
-                                }
-
-                                case CMODE_FORMAT_32BIT_ABGR8888: {
-                                    int[] clut = readClut32(level);
-                                    int clutSharingOffset = context.mipmapShareClut ? 0 : level * 16;
-
-                                    if (!context.texture_swizzle) {
-                                        int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
-                                        IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
-                                        for (int i = 0; i < length; i += 2) {
-                                            int index = memoryReader.readNext();
-
-                                            tmp_texture_buffer32[i + 1] = clut[getClutIndex((index >> 4) & 0xF) + clutSharingOffset];
-                                            tmp_texture_buffer32[i] = clut[getClutIndex(index & 0xF) + clutSharingOffset];
-                                        }
-                                        final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-
-                                        if (State.captureGeNextFrame) {
-                                            log.info("Capture loadTexture clut 4/32 unswizzled");
-                                            CaptureManager.captureRAM(texaddr, length / 2);
-                                        }
-                                    } else {
-                                        unswizzleTextureFromMemory(texaddr, 0, level, textureBufferWidthInPixels);
-                                        int pixels = textureBufferWidthInPixels * context.texture_height[level];
-                                        for (int i = pixels - 8, j = (pixels / 8) - 1; i >= 0; i -= 8, j--) {
-                                            int n = tmp_texture_buffer32[j];
-                                            int index = n & 0xF;
-                                            tmp_texture_buffer32[i + 0] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 4) & 0xF;
-                                            tmp_texture_buffer32[i + 1] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 8) & 0xF;
-                                            tmp_texture_buffer32[i + 2] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 12) & 0xF;
-                                            tmp_texture_buffer32[i + 3] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 16) & 0xF;
-                                            tmp_texture_buffer32[i + 4] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 20) & 0xF;
-                                            tmp_texture_buffer32[i + 5] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 24) & 0xF;
-                                            tmp_texture_buffer32[i + 6] = clut[getClutIndex(index) + clutSharingOffset];
-                                            index = (n >> 28) & 0xF;
-                                            tmp_texture_buffer32[i + 7] = clut[getClutIndex(index) + clutSharingOffset];
-                                        }
-                                        final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                                    }
-
-                                    break;
-                                }
-
-                                default: {
-                                    error("Unhandled clut4 texture mode " + context.tex_clut_mode);
-                                    return;
-                                }
-                            }
-
-                            break;
-                        }
-                        case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
-                            if (re.canNativeClut(texaddr, context.texture_swizzle)) {
-                                final_buffer = getTextureBuffer(texaddr, 1, level, textureBufferWidthInPixels);
-                                textureByteAlignment = 1; // 8 bits
-                            } else {
-                                final_buffer = readIndexedTexture(level, texaddr, texclut, 1, textureBufferWidthInPixels);
-                                buffer_storage = context.tex_clut_mode;
-                                textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
-                            }
-                            break;
-                        }
-                        case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED: {
-                            if (re.canNativeClut(texaddr, context.texture_swizzle)) {
-                                final_buffer = getTextureBuffer(texaddr, 2, level, textureBufferWidthInPixels);
-                                textureByteAlignment = 2; // 16 bits
-                            } else {
-                                final_buffer = readIndexedTexture(level, texaddr, texclut, 2, textureBufferWidthInPixels);
-                                buffer_storage = context.tex_clut_mode;
-                                textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
-                            }
-                            break;
-                        }
-                        case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED: {
-                            if (re.canNativeClut(texaddr, context.texture_swizzle)) {
-                                final_buffer = getTextureBuffer(texaddr, 4, level, textureBufferWidthInPixels);
-                                textureByteAlignment = 4; // 32 bits
-                            } else {
-                                final_buffer = readIndexedTexture(level, texaddr, texclut, 4, textureBufferWidthInPixels);
-                                buffer_storage = context.tex_clut_mode;
-                                textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
-                            }
-                            break;
-                        }
-                        case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
-                        case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
-                        case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
-                            textureByteAlignment = 2;  // 16 bits
-
-                            if (!context.texture_swizzle) {
-                                int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
-                                final_buffer = Memory.getInstance().getBuffer(texaddr, length * 2);
-                                if (final_buffer == null) {
-                                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 2, 2);
-                                    for (int i = 0; i < length; i++) {
-                                        int pixel = memoryReader.readNext();
-                                        tmp_texture_buffer16[i] = (short) pixel;
-                                    }
-
-                                    final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-                                }
-
-                                if (State.captureGeNextFrame) {
-                                    log.info("Capture loadTexture 16 unswizzled");
-                                    CaptureManager.captureRAM(texaddr, length * 2);
-                                }
-                            } else {
-                                final_buffer = unswizzleTextureFromMemory(texaddr, 2, level, textureBufferWidthInPixels);
-                            }
-
-                            break;
-                        }
-
-                        case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
-                            final_buffer = getTextureBuffer(texaddr, 4, level, textureBufferWidthInPixels);
-                            break;
-                        }
-
-                        case TPSM_PIXEL_STORAGE_MODE_DXT1: {
-                            if (isLogDebugEnabled) {
-                                log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT1 " + Integer.toHexString(texaddr));
-                            }
-                            compressedTexture = true;
-                            compressedTextureSize = getCompressedTextureSize(level, 8);
-                            IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
-                            // PSP DXT1 hardware format reverses the colors and the per-pixel
-                            // bits, and encodes the color in RGB 565 format
-                            int i = 0;
-                            int bufferWidth4 = round4(context.texture_buffer_width[level]);
-                            int width4 = round4(context.texture_width[level]);
-                            int height4 = round4(context.texture_height[level]);
-                            int readWidth = min(bufferWidth4, width4);
-                            // Skip width if the buffer width is larger than the texture width
-                            int skipWidth = max(0, (bufferWidth4 - width4) >> 1);
-                            for (int y = 0; y < height4; y += 4) {
-                                for (int x = 0; x < readWidth; x += 4, i += 2) {
-                                    tmp_texture_buffer32[i + 1] = memoryReader.readNext();
-                                    tmp_texture_buffer32[i + 0] = memoryReader.readNext();
-                                }
-                                memoryReader.skip(skipWidth);
-                                for (int x = readWidth; x < width4; x += 4, i += 2) {
-                                    tmp_texture_buffer32[i + 0] = 0;
-                                    tmp_texture_buffer32[i + 1] = 0;
-                                }
-                            }
-                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                            break;
-                        }
-
-                        case TPSM_PIXEL_STORAGE_MODE_DXT3: {
-                            if (isLogDebugEnabled) {
-                                log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT3 " + Integer.toHexString(texaddr));
-                            }
-                            compressedTexture = true;
-                            compressedTextureSize = getCompressedTextureSize(level, 4);
-                            IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
-                            // PSP DXT3 format reverses the alpha and color parts of each block,
-                            // and reverses the color and per-pixel terms in the color part.
-                            int i = 0;
-                            int bufferWidth4 = round4(context.texture_buffer_width[level]);
-                            int width4 = round4(context.texture_width[level]);
-                            int height4 = round4(context.texture_height[level]);
-                            int readWidth = min(bufferWidth4, width4);
-                            // Skip width if the buffer width is larger than the texture width
-                            int skipWidth = max(0, bufferWidth4 - width4);
-                            for (int y = 0; y < height4; y += 4) {
-                                for (int x = 0; x < readWidth; x += 4, i += 4) {
-                                    // Color
-                                    tmp_texture_buffer32[i + 3] = memoryReader.readNext();
-                                    tmp_texture_buffer32[i + 2] = memoryReader.readNext();
-                                    // Alpha
-                                    tmp_texture_buffer32[i + 0] = memoryReader.readNext();
-                                    tmp_texture_buffer32[i + 1] = memoryReader.readNext();
-                                }
-                                memoryReader.skip(skipWidth);
-                                for (int x = readWidth; x < width4; x += 4, i += 4) {
-                                    tmp_texture_buffer32[i + 0] = 0;
-                                    tmp_texture_buffer32[i + 1] = 0;
-                                    tmp_texture_buffer32[i + 2] = 0;
-                                    tmp_texture_buffer32[i + 3] = 0;
-                                }
-                            }
-                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                            break;
-                        }
-
-                        case TPSM_PIXEL_STORAGE_MODE_DXT5: {
-                            if (isLogDebugEnabled) {
-                                log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT5 " + Integer.toHexString(texaddr));
-                            }
-                            compressedTexture = true;
-                            compressedTextureSize = getCompressedTextureSize(level, 4);
-                            IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 2);
-                            // PSP DXT5 format reverses the alpha and color parts of each block,
-                            // and reverses the color and per-pixel terms in the color part. In
-                            // the alpha part, the 2 reference alpha values are swapped with the
-                            // alpha interpolation values.
-                            int i = 0;
-                            int bufferWidth4 = round4(context.texture_buffer_width[level]);
-                            int width4 = round4(context.texture_width[level]);
-                            int height4 = round4(context.texture_height[level]);
-                            int readWidth = min(bufferWidth4, width4);
-                            // Skip width if the buffer width is larger than the texture width
-                            int skipWidth = max(0, bufferWidth4 - width4);
-                            for (int y = 0; y < height4; y += 4) {
-                                for (int x = 0; x < readWidth; x += 4, i += 8) {
-                                    // Color
-                                    tmp_texture_buffer16[i + 6] = (short) memoryReader.readNext();
-                                    tmp_texture_buffer16[i + 7] = (short) memoryReader.readNext();
-                                    tmp_texture_buffer16[i + 4] = (short) memoryReader.readNext();
-                                    tmp_texture_buffer16[i + 5] = (short) memoryReader.readNext();
-                                    // Alpha
-                                    tmp_texture_buffer16[i + 1] = (short) memoryReader.readNext();
-                                    tmp_texture_buffer16[i + 2] = (short) memoryReader.readNext();
-                                    tmp_texture_buffer16[i + 3] = (short) memoryReader.readNext();
-                                    tmp_texture_buffer16[i + 0] = (short) memoryReader.readNext();
-                                }
-                                memoryReader.skip(skipWidth);
-                                for (int x = readWidth; x < width4; x += 4, i += 8) {
-                                    tmp_texture_buffer16[i + 0] = 0;
-                                    tmp_texture_buffer16[i + 1] = 0;
-                                    tmp_texture_buffer16[i + 2] = 0;
-                                    tmp_texture_buffer16[i + 3] = 0;
-                                    tmp_texture_buffer16[i + 4] = 0;
-                                    tmp_texture_buffer16[i + 5] = 0;
-                                    tmp_texture_buffer16[i + 6] = 0;
-                                    tmp_texture_buffer16[i + 7] = 0;
-                                }
-                            }
-                            final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-                            break;
-                        }
-
-                        default: {
-                            error("Unhandled texture storage " + context.texture_storage);
-                            return;
-                        }
-                    }
-                }
-                
-                // Check if scaling is needed for xBRZ.
-                boolean scale = isUsexBRZFilter();
-                if ((texaddr > 83886080) && (texaddr < 142606336)) {
-                    scale = false;
-                }
-
-                // Upload texture to openGL.
-                re.setPixelStore(textureBufferWidthInPixels, textureByteAlignment);
-                
-                if (compressedTexture) {
-                    re.setCompressedTexImage(
-                            level,
-                            buffer_storage,
-                            context.texture_width[level], context.texture_height[level],
-                            compressedTextureSize,
-                            final_buffer);
-                } else if (isUsexBRZFilter() && scale) {
-                    int textureSize = Math.max(textureBufferWidthInPixels, this.context.texture_width[level]) * this.context.texture_height[level] * textureByteAlignment;
-                    this.re.setTexImagexBRZ(
-                            level,
-                            buffer_storage,
-                            this.context.texture_width[level], this.context.texture_height[level],
-                            this.context.texture_buffer_width[level],
-                            buffer_storage,
-                            buffer_storage,
-                            textureSize,
-                            final_buffer);
-                } else {
-                    int textureSize = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level] * textureByteAlignment;
-                    re.setTexImage(
-                            level,
-                            buffer_storage,
-                            context.texture_width[level], context.texture_height[level],
-                            buffer_storage,
-                            buffer_storage,
-                            textureSize,
-                            final_buffer);
-                }
-
-                if (State.captureGeNextFrame) {
-                    boolean vramImage = Memory.isVRAM(tex_addr);
-                    boolean overwriteFile = !vramImage;
-                    if (vramImage || !CaptureManager.isImageCaptured(texaddr)) {
-                        CaptureManager.captureImage(texaddr, level, final_buffer, context.texture_width[level], context.texture_height[level], context.texture_buffer_width[level], buffer_storage, compressedTexture, compressedTextureSize, false, overwriteFile);
-                    }
-                }
-
-                if (texture != null) {
-                    texture.setIsLoaded();
-                    if (isLogDebugEnabled) {
-                        log(helper.getCommandString(TFLUSH) + " Loaded texture " + texture.getGlId());
-                    }
+            if (texture != null) {
+                texture.setIsLoaded();
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(TFLUSH) + " Loaded texture " + texture.getGlId());
                 }
             }
         } else {
-            boolean compressedTexture = (context.texture_storage >= TPSM_PIXEL_STORAGE_MODE_DXT1 && context.texture_storage <= TPSM_PIXEL_STORAGE_MODE_DXT5);
             re.setTextureMipmapMagFilter(context.tex_mag_filter);
             re.setTextureMipmapMinFilter(context.tex_min_filter);
             checkTextureMinFilter(compressedTexture, context.texture_num_mip_maps);
