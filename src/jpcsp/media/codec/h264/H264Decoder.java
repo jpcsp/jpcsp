@@ -81,7 +81,7 @@ public class H264Decoder implements IVideoCodec {
 		}
 
 		if (hasImage()) {
-			picture = context.priv_data.displayPicture;
+			context.priv_data.displayPicture.copyTo(picture);
 			aspectRatio = context.sample_aspect_ratio;
 		}
 
