@@ -21,8 +21,12 @@ import static jpcsp.HLE.modules.sceMpeg.getIntBuffer;
 import static jpcsp.HLE.modules.sceMpeg.releaseIntBuffer;
 import static jpcsp.util.Utilities.alignUp;
 
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.BufferInfo;
@@ -33,6 +37,8 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.IVideoCodec;
@@ -40,6 +46,8 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.scheduler.DelayThreadAction;
+import jpcsp.scheduler.UnblockThreadAction;
 import jpcsp.util.Utilities;
 
 public class sceVideocodec extends HLEModule {
@@ -61,104 +69,81 @@ public class sceVideocodec extends HLEModule {
     protected int bufferUnknown1;
     protected int bufferUnknown2;
     protected IVideoCodec videoCodec;
+    private VideocodecDecoderThread videocodecDecoderThread;
 
-    public static void write(int addr, int length, int[] buffer, int offset) {
-    	length = Math.min(length, buffer.length - offset);
-    	if (log.isTraceEnabled()) {
-    		log.trace(String.format("write addr=0x%08X, length=0x%X", addr, length));
+    private class VideocodecDecoderThread extends Thread {
+    	private volatile boolean exit = false;
+    	private volatile boolean done = false;
+    	private Semaphore sema = new Semaphore(1);
+    	private TPointer buffer;
+    	private int type;
+    	private int threadUid;
+    	private long threadWakeupMicroTime;
+
+    	@Override
+		public void run() {
+    		while (!exit) {
+    			if (waitForTrigger(100) && !exit) {
+    				hleVideocodecDecoderStep(buffer, type, threadUid, threadWakeupMicroTime);
+    			}
+    		}
+
+    		if (log.isDebugEnabled()) {
+    			log.debug("Exiting the VideocodecDecoderThread");
+    		}
+    		done = true;
     	}
 
-    	// Optimize the most common case
-        if (memoryInt != null) {
-        	int length4 = length >> 2;
-        	int addrOffset = addr >> 2;
-	        for (int i = 0, j = offset; i < length4; i++) {
-	        	int value = buffer[j++] & 0xFF;
-	        	value += (buffer[j++] & 0xFF) << 8;
-	        	value += (buffer[j++] & 0xFF) << 16;
-	        	value += buffer[j++] << 24;
-	        	memoryInt[addrOffset++] = value;
-	        }
-        } else {
-        	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, length, 1);
-        	for (int i = 0, j = offset; i < length; i++) {
-        		memoryWriter.writeNext(buffer[j++] & 0xFF);
-        	}
-        	memoryWriter.flush();
-        }
-    }
+    	public void exit() {
+    		exit = true;
 
-    @HLEFunction(nid = 0xC01EC829, version = 150)
-    public int sceVideocodecOpen(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
-    	TPointer buffer2 = new TPointer(buffer.getMemory(), buffer.getValue32(16));
-
-    	buffer.setValue32(0, 0x05100601);
-
-    	switch (type) {
-    		case 0:
-	        	buffer.setValue32(8, 1);
-	        	buffer.setValue32(24, 0x3C2C);
-	        	buffer.setValue32(32, 0x15C00);
-
-	        	buffer2.setValue32(0, 0x1F6400);
-	        	buffer2.setValue32(4, 0x15C00);
-	        	break;
-    		case 1:
-    			buffer.setValue32(8, 0);
-            	buffer.setValue32(24, 0x264C);
-            	buffer.setValue32(32, 0xB69E3);
-    			break;
-			default:
-	    		log.warn(String.format("sceVideocodecOpen unknown type %d", type));
-	    		return -1;
+    		while (!done) {
+    			Utilities.sleep(1);
+    		}
     	}
 
-    	return 0;
-    }
+    	public void trigger(TPointer buffer, int type, int threadUid, long threadWakeupMicroTime) {
+    		this.buffer = buffer;
+    		this.type = type;
+    		this.threadUid = threadUid;
+			this.threadWakeupMicroTime = threadWakeupMicroTime;
 
-    @HLEUnimplemented
-    @HLEFunction(nid = 0xA2F0564E, version = 150)
-    public int sceVideocodecStop(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
-    	return 0;
-    }
-
-    @HLEFunction(nid = 0x17099F0A, version = 150)
-    public int sceVideocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
-    	buffer.setValue32(12, buffer.getValue32(20) + 8);
-
-    	return 0;
-    }
-
-    @HLEFunction(nid = 0x2D31F5B1, version = 150)
-    public int sceVideocodecGetEDRAM(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
-    	int size = (buffer.getValue32(24) + 63) | 0x3F;
-    	edramInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecEDRAM", SysMemUserForUser.PSP_SMEM_Low, size, 0);
-    	if (edramInfo == null) {
-    		return -1;
+			trigger();
     	}
 
-    	int addrEDRAM = edramInfo.addr & EDRAM_MEMORY_MASK;
-    	buffer.setValue32(20, alignUp(addrEDRAM, 63));
-    	buffer.setValue32(92, addrEDRAM);
-
-    	return 0;
-    }
-
-    @HLEFunction(nid = 0x4F160BF4, version = 150)
-    public int sceVideocodecReleaseEDRAM(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer) {
-    	buffer.setValue32(20, 0);
-    	buffer.setValue32(92, 0);
-
-    	if (edramInfo != null) {
-    		Modules.SysMemUserForUserModule.free(edramInfo);
-    		edramInfo = null;
+    	private void trigger() {
+    		if (sema != null) {
+    			sema.release();
+    		}
     	}
 
-    	return 0;
+    	private boolean waitForTrigger(int millis) {
+    		while (true) {
+    			try {
+    				int availablePermits = sema.drainPermits();
+    				if (availablePermits > 0) {
+    					break;
+    				}
+
+    				if (sema.tryAcquire(millis, TimeUnit.MILLISECONDS)) {
+    					break;
+    				}
+
+    				return false;
+    			} catch (InterruptedException e) {
+    				// Ignore exception and retry
+    			}
+    		}
+
+    		return true;
+    	}
     }
 
-    @HLEFunction(nid = 0xDBA273FA, version = 150)
-    public int sceVideocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
+    private void hleVideocodecDecoderStep(TPointer buffer, int type, int threadUid, long threadWakeupMicroTime) {
+    	if (buffer == null) {
+    		return;
+    	}
+
     	int mp4Data = buffer.getValue32(36) | MemoryMap.START_RAM;
     	int mp4Size = buffer.getValue32(40);
 
@@ -546,14 +531,144 @@ public class sceVideocodec extends HLEModule {
 		    	break;
 	    	default:
 	    		log.warn(String.format("sceVideocodecDecode unknown type=0x%X", type));
-	    		return -1;
+	    		break;
     	}
 
     	if (videoCodec.hasImage()) {
     		frameCount++;
     	}
 
-    	Modules.ThreadManForUserModule.hleKernelDelayThread(videocodecDecodeDelay, false);
+		IAction action;
+    	long delayMicros = threadWakeupMicroTime - Emulator.getClock().microTime();
+    	if (delayMicros > 0L) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Further delaying thread=0x%X by %d microseconds", threadUid, delayMicros));
+    		}
+    		action = new DelayThreadAction(threadUid, (int) delayMicros, false, true);
+    	} else {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Unblocking thread=0x%X", threadUid));
+    		}
+    		action = new UnblockThreadAction(threadUid);
+    	}
+    	// The action cannot be executed immediately as we are running
+    	// in a non-PSP thread. The action has to be executed by the scheduler
+    	// as soon as possible.
+		Emulator.getScheduler().addAction(action);
+    }
+
+    public static void write(int addr, int length, int[] buffer, int offset) {
+    	length = Math.min(length, buffer.length - offset);
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("write addr=0x%08X, length=0x%X", addr, length));
+    	}
+
+    	// Optimize the most common case
+        if (memoryInt != null) {
+        	int length4 = length >> 2;
+        	int addrOffset = addr >> 2;
+	        for (int i = 0, j = offset; i < length4; i++) {
+	        	int value = buffer[j++] & 0xFF;
+	        	value += (buffer[j++] & 0xFF) << 8;
+	        	value += (buffer[j++] & 0xFF) << 16;
+	        	value += buffer[j++] << 24;
+	        	memoryInt[addrOffset++] = value;
+	        }
+        } else {
+        	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, length, 1);
+        	for (int i = 0, j = offset; i < length; i++) {
+        		memoryWriter.writeNext(buffer[j++] & 0xFF);
+        	}
+        	memoryWriter.flush();
+        }
+    }
+
+    @HLEFunction(nid = 0xC01EC829, version = 150)
+    public int sceVideocodecOpen(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
+    	TPointer buffer2 = new TPointer(buffer.getMemory(), buffer.getValue32(16));
+
+    	buffer.setValue32(0, 0x05100601);
+
+    	switch (type) {
+    		case 0:
+	        	buffer.setValue32(8, 1);
+	        	buffer.setValue32(24, 0x3C2C);
+	        	buffer.setValue32(32, 0x15C00);
+
+	        	buffer2.setValue32(0, 0x1F6400);
+	        	buffer2.setValue32(4, 0x15C00);
+	        	break;
+    		case 1:
+    			buffer.setValue32(8, 0);
+            	buffer.setValue32(24, 0x264C);
+            	buffer.setValue32(32, 0xB69E3);
+    			break;
+			default:
+	    		log.warn(String.format("sceVideocodecOpen unknown type %d", type));
+	    		return -1;
+    	}
+
+    	if (videocodecDecoderThread == null) {
+	    	videocodecDecoderThread = new VideocodecDecoderThread();
+	    	videocodecDecoderThread.setDaemon(true);
+	    	videocodecDecoderThread.setName("Videocodec Decoder Thread");
+	    	videocodecDecoderThread.start();
+    	}
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA2F0564E, version = 150)
+    public int sceVideocodecStop(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
+    	return 0;
+    }
+
+    @HLEFunction(nid = 0x17099F0A, version = 150)
+    public int sceVideocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
+    	buffer.setValue32(12, buffer.getValue32(20) + 8);
+
+    	return 0;
+    }
+
+    @HLEFunction(nid = 0x2D31F5B1, version = 150)
+    public int sceVideocodecGetEDRAM(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
+    	int size = (buffer.getValue32(24) + 63) | 0x3F;
+    	edramInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecEDRAM", SysMemUserForUser.PSP_SMEM_Low, size, 0);
+    	if (edramInfo == null) {
+    		return -1;
+    	}
+
+    	int addrEDRAM = edramInfo.addr & EDRAM_MEMORY_MASK;
+    	buffer.setValue32(20, alignUp(addrEDRAM, 63));
+    	buffer.setValue32(92, addrEDRAM);
+
+    	return 0;
+    }
+
+    @HLEFunction(nid = 0x4F160BF4, version = 150)
+    public int sceVideocodecReleaseEDRAM(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer) {
+    	buffer.setValue32(20, 0);
+    	buffer.setValue32(92, 0);
+
+    	if (edramInfo != null) {
+    		Modules.SysMemUserForUserModule.free(edramInfo);
+    		edramInfo = null;
+    	}
+
+    	return 0;
+    }
+
+    @HLEFunction(nid = 0xDBA273FA, version = 150)
+    public int sceVideocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
+    	if (type != 0 && type != 1) {
+    		log.warn(String.format("sceVideocodecDecode unknown type=0x%X", type));
+    		return -1;
+    	}
+
+		int threadUid = Modules.ThreadManForUserModule.getCurrentThreadID();
+		Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_VIDEO_DECODER);
+    	videocodecDecoderThread.trigger(buffer, type, threadUid, Emulator.getClock().microTime() + videocodecDecodeDelay);
 
     	return 0;
     }
@@ -582,6 +697,11 @@ public class sceVideocodec extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x307E6E1C, version = 150)
     public int sceVideocodecDelete() {
+    	if (videocodecDecoderThread != null) {
+    		videocodecDecoderThread.exit();
+    		videocodecDecoderThread = null;
+    	}
+
     	if (videoCodec != null) {
     		videoCodec = null;
     	}

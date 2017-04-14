@@ -35,6 +35,7 @@ import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
+import jpcsp.HLE.DebugMemory;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
@@ -1313,12 +1314,12 @@ public class sceMpeg extends HLEModule {
     	videoDecoderThread.resetWaitingThreadInfo();
 
 		IAction action;
-    	int delayMicros = (int) (threadWakeupMicroTime - Emulator.getClock().microTime());
-    	if (delayMicros > 0) {
+    	long delayMicros = threadWakeupMicroTime - Emulator.getClock().microTime();
+    	if (delayMicros > 0L) {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("Further delaying thread=0x%X by %d microseconds", threadUid, delayMicros));
     		}
-    		action = new DelayThreadAction(threadUid, delayMicros, false, true);
+    		action = new DelayThreadAction(threadUid, (int) delayMicros, false, true);
     	} else {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("Unblocking thread=0x%X", threadUid));
@@ -3322,7 +3323,7 @@ public class sceMpeg extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x0E3C2E9D, version = 150, checkInsideInterrupt = true)
-    public int sceMpegAvcDecode(@CheckArgument("checkMpegHandle") int mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer auAddr, int frameWidth, @CanBeNull TPointer32 bufferAddr, @BufferInfo(usage=Usage.out) TPointer32 gotFrameAddr) {
+    public int sceMpegAvcDecode(@CheckArgument("checkMpegHandle") int mpeg, @DebugMemory @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer auAddr, int frameWidth, @CanBeNull TPointer32 bufferAddr, @BufferInfo(usage=Usage.out) TPointer32 gotFrameAddr) {
         int au = auAddr.getValue32();
         int buffer = 0;
         if (bufferAddr.isNotNull()) {
