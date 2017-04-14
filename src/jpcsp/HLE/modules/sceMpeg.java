@@ -1164,8 +1164,14 @@ public class sceMpeg extends HLEModule {
     }
 
     protected void mpegRingbufferNotifyRead() {
-		synchronized (mpegRingbuffer) {
-    		mpegRingbuffer.notifyRead();
+    	int numberDecodedImages = decodedImages.size();
+    	// Assume we have one more pending image when the videoBuffer is not empty
+    	if (!videoBuffer.isEmpty()) {
+    		numberDecodedImages++;
+    	}
+
+    	synchronized (mpegRingbuffer) {
+    		mpegRingbuffer.notifyRead(numberDecodedImages);
     	}
     }
 
@@ -1745,8 +1751,6 @@ public class sceMpeg extends HLEModule {
     		}
     	}
 
-    	mpegRingbufferNotifyRead();
-
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("After readNextAudioFrame %s", mpegRingbuffer));
     	}
@@ -1844,8 +1848,6 @@ public class sceMpeg extends HLEModule {
     		}
     	}
 
-    	mpegRingbufferNotifyRead();
-
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("After readNextVideoFrame frameEnd=0x%X, %s", frameEnd, mpegRingbuffer));
     	}
@@ -1919,8 +1921,6 @@ public class sceMpeg extends HLEModule {
 					break;
     		}
     	}
-
-    	mpegRingbufferNotifyRead();
 
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("After readNextUserDataFrame %s", mpegRingbuffer));
@@ -2382,6 +2382,11 @@ public class sceMpeg extends HLEModule {
         	if (auAddr != null && auAddr.isNotNull()) {
             	mpegAvcAu.write(auAddr);
             }
+
+        	// Packets from the ringbuffer are consumed during sceMpegGetXXXAu(),
+        	// they are not consumed during sceMpegXXXDecode().
+        	mpegRingbufferNotifyRead();
+
         	mpegRingbufferWrite();
 
         	if (decodedImageInfo.frameEnd < 0) {
@@ -2417,6 +2422,8 @@ public class sceMpeg extends HLEModule {
         int result = 0;
         if (isRegisteredAudioChannel()) {
         	mpegAtracAu.esSize = audioFrameLength == 0 ? 0 : audioFrameLength + 8;
+
+        	mpegRingbufferNotifyRead();
 
         	if (audioFrameLength == 0 || audioBuffer == null || audioBuffer.getLength() < audioFrameLength) {
         		boolean needUpdateAu;
@@ -3388,6 +3395,10 @@ public class sceMpeg extends HLEModule {
         // Correct decoding.
         avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
 
+        if (mpegRingbuffer != null && mpegRingbuffer.getPacketSize() > 0) {
+        	mpegAvcAu.esSize = 0;
+        }
+
     	if (auAddr.isNotNull()) {
     		mpegAvcAu.write(auAddr);
     	}
@@ -3963,6 +3974,8 @@ public class sceMpeg extends HLEModule {
     		}
     		return SceKernelErrors.ERROR_MPEG_NO_DATA;
     	}
+
+    	mpegRingbufferNotifyRead();
 
     	Memory mem = auAddr.getMemory();
     	mpegUserDataAu.pts = userDataPesHeader.getPts();

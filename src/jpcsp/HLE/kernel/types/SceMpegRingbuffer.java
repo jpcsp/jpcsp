@@ -222,7 +222,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 		return userDataBuffer;
 	}
 
-	public void notifyRead() {
+	public void notifyRead(int pendingImages) {
 		if (packetSize == 0) {
 			return;
 		}
@@ -232,7 +232,12 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 			remainingLength = Math.max(remainingLength, audioBuffer.getCurrentSize());
 		}
 		if (hasVideo()) {
-			remainingLength = Math.max(remainingLength, videoBuffer.getCurrentSize());
+			int videoBufferLength = videoBuffer.getCurrentSize();
+			// Do not empty completely the ringbuffer when we still have pending images
+			if (pendingImages > 1) {
+				videoBufferLength = Math.max(videoBufferLength, 1);
+			}
+			remainingLength = Math.max(remainingLength, videoBufferLength);
 		}
 		if (hasUserData()) {
 			remainingLength = Math.max(remainingLength, userDataBuffer.getCurrentSize());
