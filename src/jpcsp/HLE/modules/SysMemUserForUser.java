@@ -19,6 +19,8 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._t3;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -624,7 +626,7 @@ public class SysMemUserForUser extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x2A3E5280, version = 280)
-	public int sceKernelQueryMemoryInfo(int address, @CanBeNull TPointer32 partitionId, @CanBeNull TPointer32 memoryBlockId) {
+	public int sceKernelQueryMemoryInfo(int address, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 partitionId, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 memoryBlockId) {
 		int result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
 
 		for (Integer key : blockList.keySet()) {
