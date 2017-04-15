@@ -491,7 +491,7 @@ public class SAVEDATA {
 
     public int hleSdCreateList(SD_Ctx2 ctx, int encMode, int genMode, byte[] data, byte[] key) {
         // If the key is not a 16-byte key, return an error.
-        if (key.length < 0x10) {
+        if (!isNullKey(key) && key.length < 0x10) {
             return -1;
         }
 
