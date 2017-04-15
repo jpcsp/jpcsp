@@ -1345,7 +1345,7 @@ public class sceWlan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x8D5F551B, version = 150)
-    public int sceWlanDrv_8D5F551B(int unknown) {
+    public int sceWlanDrv_lib_8D5F551B(int unknown) {
         return 0;
     }
 
@@ -1461,8 +1461,20 @@ public class sceWlan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2519EAA7, version = 150)
-    public int sceWlanDrv_lib_2519EAA7() {
+    public int sceWlanDrv_driver_2519EAA7() {
     	// Has no parameters
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x325F7172, version = 150)
+    public int sceWlanDrv_driver_325F7172() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB6A9700D, version = 150)
+    public int sceWlanDrv_driver_B6A9700D() {
         return 0;
     }
 }
