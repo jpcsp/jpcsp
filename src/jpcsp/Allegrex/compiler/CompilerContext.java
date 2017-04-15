@@ -37,6 +37,7 @@ import java.util.TreeSet;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.NIDMapper;
 import jpcsp.Processor;
 import jpcsp.State;
@@ -1720,11 +1721,23 @@ public class CompilerContext implements ICompilerContext {
     	// The compilation of a syscall requires more stack size than usual
     	maxStackSize = SYSCALL_MAX_STACK_SIZE;
 
-    	Label afterVersionCheckLabel = new Label();
-    	Label unsupportedVersionLabel = new Label();
-    	loadImm(func.getFirmwareVersion());
-        mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "firmwareVersion", "I");
-        mv.visitJumpInsn(Opcodes.IF_ICMPGT, unsupportedVersionLabel);
+    	boolean needFirmwareVersionCheck = true;
+    	if (func.getFirmwareVersion() >= 999) {
+    		// Dummy version number meaning valid for all versions
+    		needFirmwareVersionCheck = false;
+    	} else if (codeInstruction.getAddress() < MemoryMap.START_USERSPACE) {
+    		// When compiling code in the kernel memory space, do not perform any version check.
+    		// This is used by overwritten HLE functions.
+    		needFirmwareVersionCheck = false;
+    	}
+
+    	Label unsupportedVersionLabel = null;
+    	if (needFirmwareVersionCheck) {
+    		unsupportedVersionLabel = new Label();
+    		loadImm(func.getFirmwareVersion());
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "firmwareVersion", "I");
+    		mv.visitJumpInsn(Opcodes.IF_ICMPGT, unsupportedVersionLabel);
+    	}
 
     	// Save the syscall parameter to locals for debugging
     	if (!fastSyscall) {
@@ -1895,15 +1908,18 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "postSyscall", "()V");
         }
 
-        mv.visitJumpInsn(Opcodes.GOTO, afterVersionCheckLabel);
+        if (needFirmwareVersionCheck) {
+        	Label afterVersionCheckLabel = new Label();
+        	mv.visitJumpInsn(Opcodes.GOTO, afterVersionCheckLabel);
 
-        mv.visitLabel(unsupportedVersionLabel);
-    	loadModuleLoggger(func);
-    	mv.visitLdcInsn(String.format("%s is not supported in firmware version %d, it requires at least firmware version %d", func.getFunctionName(), RuntimeContext.firmwareVersion, func.getFirmwareVersion()));
-    	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "warn", "(" + Type.getDescriptor(Object.class) + ")V");
-    	storeRegister(_v0, -1);
+        	mv.visitLabel(unsupportedVersionLabel);
+        	loadModuleLoggger(func);
+        	mv.visitLdcInsn(String.format("%s is not supported in firmware version %d, it requires at least firmware version %d", func.getFunctionName(), RuntimeContext.firmwareVersion, func.getFirmwareVersion()));
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "warn", "(" + Type.getDescriptor(Object.class) + ")V");
+        	storeRegister(_v0, -1);
 
-        mv.visitLabel(afterVersionCheckLabel);
+        	mv.visitLabel(afterVersionCheckLabel);
+        }
     }
 
     /**
