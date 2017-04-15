@@ -118,6 +118,7 @@ public class RuntimeContext {
 	private static RuntimeThread syscallRuntimeThread;
 	private static sceDisplay sceDisplayModule;
 	private static final Object idleSyncObject = new Object();
+	public static int firmwareVersion;
 
 	private static class CompilerEnabledSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -1466,5 +1467,9 @@ public class RuntimeContext {
     	if (debugCodeBlockCalls) {
     		debugCodeBlocks.put(address, numberOfArguments);
     	}
+    }
+
+    public static void setFirmwareVersion(int firmwareVersion) {
+    	RuntimeContext.firmwareVersion = firmwareVersion;
     }
 }

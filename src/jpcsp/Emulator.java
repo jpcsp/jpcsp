@@ -243,7 +243,7 @@ public class Emulator implements Runnable {
         }
         MemorySections.getInstance().reset();
 
-        HLEModuleManager.getInstance().Initialise(firmwareVersion);
+        HLEModuleManager.getInstance().init();
         Managers.reset();
         Modules.SysMemUserForUserModule.start();
         Modules.SysMemUserForUserModule.setFirmwareVersion(firmwareVersion);
@@ -409,6 +409,7 @@ public class Emulator implements Runnable {
         this.firmwareVersion = firmwareVersion;
 
         Modules.SysMemUserForUserModule.setFirmwareVersion(this.firmwareVersion);
+        RuntimeContext.setFirmwareVersion(firmwareVersion);
     }
 
     /**

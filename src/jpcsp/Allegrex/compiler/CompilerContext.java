@@ -1656,55 +1656,60 @@ public class CompilerContext implements ICompilerContext {
 
     /**
      * Generate the required Java code to call a syscall function.
-     * The code generated much match the Java behavior implemented in
+     * The code generated must match the Java behavior implemented in
      * jpcsp.HLE.modules.HLEModuleFunctionReflection
      *
      * The following code is generated:
-     *     if (!fastSyscall) {
-     *         RuntimeContext.preSyscall();
-     *     }
-     *     if (func.checkInsideInterrupt()) {
-     *         if (IntrManager.getInstance.isInsideInterrupt()) {
-     *             cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-     *             goto afterSyscall;
+     *     if (func.getFirmwareVersion() <= RuntimeContext.firmwareVersion) {
+     *         if (!fastSyscall) {
+     *             RuntimeContext.preSyscall();
      *         }
-     *     }
-     *     if (func.checkDispatchThreadEnabled()) {
-     *         if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
-     *             cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-     *             goto afterSyscall;
+     *         if (func.checkInsideInterrupt()) {
+     *             if (IntrManager.getInstance.isInsideInterrupt()) {
+     *                 cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+     *                 goto afterSyscall;
+     *             }
      *         }
-     *     }
-     *     if (func.isUnimplemented()) {
-     *         Modules.getLogger(func.getModuleName()).warn("Unimplemented <function name> parameterName1=parameterValue1, parameterName2=parameterValue2, ...");
-     *     }
-     *     foreach parameter {
-     *         loadParameter(parameter);
-     *     }
-     *     try {
-     *         returnValue = <module name>.<function name>(...parameters...);
-     *         storeReturnValue();
-     *         if (parameterReader.hasErrorPointer()) {
-     *             errorPointer.setValue(0);
+     *         if (func.checkDispatchThreadEnabled()) {
+     *             if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
+     *                 cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+     *                 goto afterSyscall;
+     *             }
      *         }
-     *     } catch (SceKernelErrorException e) {
-     *         errorCode = e.errorCode;
-     *         if (Modules.getLogger(func.getModuleName()).isDebugEnabled()) {
-     *             Modules.getLogger(func.getModuleName()).debug(String.format("<function name> return errorCode 0x%08X", errorCode));
+     *         if (func.isUnimplemented()) {
+     *             Modules.getLogger(func.getModuleName()).warn("Unimplemented <function name> parameterName1=parameterValue1, parameterName2=parameterValue2, ...");
      *         }
-     *         if (parameterReader.hasErrorPointer()) {
-     *             errorPointer.setValue(errorCode);
-     *             cpu.gpr[_v0] = 0;
+     *         foreach parameter {
+     *             loadParameter(parameter);
+     *         }
+     *         try {
+     *             returnValue = <module name>.<function name>(...parameters...);
+     *             storeReturnValue();
+     *             if (parameterReader.hasErrorPointer()) {
+     *                 errorPointer.setValue(0);
+     *             }
+     *         } catch (SceKernelErrorException e) {
+     *             errorCode = e.errorCode;
+     *             if (Modules.getLogger(func.getModuleName()).isDebugEnabled()) {
+     *                 Modules.getLogger(func.getModuleName()).debug(String.format("<function name> return errorCode 0x%08X", errorCode));
+     *             }
+     *             if (parameterReader.hasErrorPointer()) {
+     *                 errorPointer.setValue(errorCode);
+     *                 cpu.gpr[_v0] = 0;
+     *             } else {
+     *                 cpu.gpr[_v0] = errorCode;
+     *             }
+     *             reload cpu.gpr[_ra]; // an exception is always clearing the whole stack
+     *         }
+     *         afterSyscall:
+     *         if (fastSyscall) {
+     *             RuntimeContext.postSyscallFast();
      *         } else {
-     *             cpu.gpr[_v0] = errorCode;
+     *             RuntimeContext.postSyscall();
      *         }
-     *         reload cpu.gpr[_ra]; // an exception is always clearing the whole stack
-     *     }
-     *     afterSyscall:
-     *     if (fastSyscall) {
-     *         RuntimeContext.postSyscallFast();
      *     } else {
-     *         RuntimeContext.postSyscall();
+     *         Modules.getLogger(func.getModuleName()).warn("<function name> is not supported in firmware version <firmwareVersion>, it requires at least firmware version <function firmwareVersion>");
+     *         cpu.gpr[_v0] = -1;
      *     }
      *
      * @param func         the syscall function
@@ -1714,6 +1719,12 @@ public class CompilerContext implements ICompilerContext {
     private void visitSyscall(HLEModuleFunction func, boolean fastSyscall) {
     	// The compilation of a syscall requires more stack size than usual
     	maxStackSize = SYSCALL_MAX_STACK_SIZE;
+
+    	Label afterVersionCheckLabel = new Label();
+    	Label unsupportedVersionLabel = new Label();
+    	loadImm(func.getFirmwareVersion());
+        mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "firmwareVersion", "I");
+        mv.visitJumpInsn(Opcodes.IF_ICMPGT, unsupportedVersionLabel);
 
     	// Save the syscall parameter to locals for debugging
     	if (!fastSyscall) {
@@ -1883,6 +1894,16 @@ public class CompilerContext implements ICompilerContext {
         } else {
     		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "postSyscall", "()V");
         }
+
+        mv.visitJumpInsn(Opcodes.GOTO, afterVersionCheckLabel);
+
+        mv.visitLabel(unsupportedVersionLabel);
+    	loadModuleLoggger(func);
+    	mv.visitLdcInsn(String.format("%s is not supported in firmware version %d, it requires at least firmware version %d", func.getFunctionName(), RuntimeContext.firmwareVersion, func.getFirmwareVersion()));
+    	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "warn", "(" + Type.getDescriptor(Object.class) + ")V");
+    	storeRegister(_v0, -1);
+
+        mv.visitLabel(afterVersionCheckLabel);
     }
 
     /**

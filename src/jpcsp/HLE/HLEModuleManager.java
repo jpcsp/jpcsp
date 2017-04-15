@@ -64,13 +64,6 @@ public class HLEModuleManager {
     private HLELogging defaultHLEFunctionLogging;
 
     /**
-     * The current firmware version as an integer value in this format:
-     *   ABB
-     * where A = major and B = minor, for example 271.
-     */
-    private int firmwareVersion;
-
-    /**
      * List of PSP modules that can be loaded when they are available.
      * They will then replace the HLE equivalent.
      */
@@ -210,20 +203,20 @@ public class HLEModuleManager {
         sceSysreg(Modules.sceSysregModule);
 
     	private HLEModule module;
-    	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
+    	private boolean loadedByDefault;
     	private String[] prxNames;
 
     	// Module loaded by default in all Firmware versions
     	DefaultModule(HLEModule module) {
     		this.module = module;
-    		firmwareVersionAsDefault = 100;	// Loaded by default in all firmwares (from 1.00)
+    		loadedByDefault = true;
     		prxNames = null;
     	}
 
     	// Module only loaded as a PRX, under different names
     	DefaultModule(HLEModule module, String[] prxNames) {
     		this.module = module;
-    		firmwareVersionAsDefault = Integer.MAX_VALUE;	// Never loaded by default
+    		loadedByDefault = false;
     		this.prxNames = prxNames;
     	}
 
@@ -235,8 +228,8 @@ public class HLEModuleManager {
     		return prxNames;
     	}
 
-    	public boolean isLoadedByDefault(int firmwareVersion) {
-    		return firmwareVersion >= firmwareVersionAsDefault;
+    	public boolean isLoadedByDefault() {
+    		return loadedByDefault;
     	}
     };
 
@@ -275,9 +268,8 @@ public class HLEModuleManager {
         return version;
     }
 
-    public void Initialise(int firmwareVersion) {
+    public void init() {
     	installedModules.clear();
-        this.firmwareVersion = firmwareVersion;
         installDefaultModules();
         initialiseFlash0PRXMap();
     }
@@ -287,18 +279,18 @@ public class HLEModuleManager {
      */
     private void installDefaultModules() {
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("Loading HLE firmware up to version %d", firmwareVersion));
+    		log.debug(String.format("Loading default HLE modules"));
     	}
 
     	for (DefaultModule defaultModule : DefaultModule.values()) {
-        	if (defaultModule.isLoadedByDefault(firmwareVersion)) {
-        		installModuleWithAnnotations(defaultModule.getModule(), firmwareVersion);
+        	if (defaultModule.isLoadedByDefault()) {
+        		installModuleWithAnnotations(defaultModule.getModule());
         	} else {
         		// This module is not loaded by default on this firmware version.
         		// Install and Uninstall the module to register the module syscalls
         		// so that the loader can still resolve the imports for this module.
-        		installModuleWithAnnotations(defaultModule.getModule(), firmwareVersion);
-        		uninstallModuleWithAnnotations(defaultModule.getModule(), firmwareVersion);
+        		installModuleWithAnnotations(defaultModule.getModule());
+        		uninstallModuleWithAnnotations(defaultModule.getModule());
         	}
         }
     }
@@ -317,7 +309,7 @@ public class HLEModuleManager {
         flash0prxMap = new HashMap<String, List<HLEModule>>();
 
         for (DefaultModule defaultModule : DefaultModule.values()) {
-        	if (!defaultModule.isLoadedByDefault(firmwareVersion)) {
+        	if (!defaultModule.isLoadedByDefault()) {
         		String[] prxNames = defaultModule.getPrxNames();
         		for (int i = 0; prxNames != null && i < prxNames.length; i++) {
         			addToFlash0PRXMap(prxNames[i], defaultModule.getModule());
@@ -341,7 +333,7 @@ public class HLEModuleManager {
 	        List<HLEModule> modules = flash0prxMap.get(prxname.toLowerCase());
 	        if (modules != null) {
 	            for (HLEModule module : modules) {
-	            	installModuleWithAnnotations(module, firmwareVersion);
+	            	installModuleWithAnnotations(module);
 	            }
 	        }
     	}
@@ -363,7 +355,7 @@ public class HLEModuleManager {
 	    	List<HLEModule> prx = flash0prxMap.get(sceModule.modname.toLowerCase());
 	        if (prx != null) {
 	            for (HLEModule module : prx) {
-	            	uninstallModuleWithAnnotations(module, firmwareVersion);
+	            	uninstallModuleWithAnnotations(module);
 	            }
 	        }
     	}
@@ -528,13 +520,11 @@ public class HLEModuleManager {
 	}
 
 	/**
-	 * Iterates over an object fields searching for HLEFunction annotations and if the specified
-	 * version is greater than the required version for that HLEFunction, it will install it.
+	 * Iterates over an object fields searching for HLEFunction annotations and install them.
 	 * 
 	 * @param hleModule
-	 * @param version
 	 */
-	public void installModuleWithAnnotations(HLEModule hleModule, int version) {
+	public void installModuleWithAnnotations(HLEModule hleModule) {
 		if (installedModules.contains(hleModule)) {
 			return;
 		}
@@ -542,7 +532,7 @@ public class HLEModuleManager {
 		try {
 			for (Method method : hleModule.getClass().getMethods()) {
 				HLEFunction hleFunction = method.getAnnotation(HLEFunction.class);
-				if (hleFunction != null && version >= hleFunction.version()) {
+				if (hleFunction != null) {
 					installFunctionWithAnnotations(hleFunction, method, hleModule);
 				}
 			}
@@ -558,9 +548,8 @@ public class HLEModuleManager {
 	 * Same as installModuleWithAnnotations but uninstalling.
 	 * 
 	 * @param hleModule
-	 * @param version
 	 */
-	public void uninstallModuleWithAnnotations(HLEModule hleModule, int version) {
+	public void uninstallModuleWithAnnotations(HLEModule hleModule) {
 		try {
 			for (HLEModuleFunction hleModuleFunction : hleModule.installedHLEModuleFunctions.values()) {
 				this.removeFunction(hleModuleFunction);
