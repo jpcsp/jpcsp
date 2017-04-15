@@ -624,7 +624,6 @@ public class SysMemUserForUser extends HLEModule {
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x2A3E5280, version = 280)
 	public int sceKernelQueryMemoryInfo(int address, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 partitionId, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 memoryBlockId) {
 		int result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
