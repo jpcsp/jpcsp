@@ -161,10 +161,9 @@ public class SysMemUserForUser extends HLEModule {
         public final int partitionid;
         public final String name;
         public final int type;
-        public final int size;
-        public final int allocatedSize;
+        public int size;
+        public int allocatedSize;
         public final int addr;
-        public SysMemInfo separatedFromSysMemInfo;
 
         public SysMemInfo(int partitionid, String name, int type, int size, int allocatedSize, int addr) {
             this.partitionid = partitionid;
@@ -359,8 +358,13 @@ public class SysMemUserForUser extends HLEModule {
     	int newAddr = info.addr + size;
     	int newSize = info.size - size;
     	int newAllocatedSize = info.allocatedSize - size;
+
+    	// Create a new memory block
     	SysMemInfo newSysMemInfo = new SysMemInfo(info.partitionid, info.name, info.type, newSize, newAllocatedSize, newAddr);
-    	newSysMemInfo.separatedFromSysMemInfo = info;
+
+    	// Resize the previous memory block
+    	info.size -= newSize;
+    	info.allocatedSize -= newAllocatedSize;
 
     	return newSysMemInfo;
     }

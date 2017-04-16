@@ -16,9 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import org.apache.log4j.Logger;
+
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.util.Utilities;
 
 public class MemoryChunkList {
+	protected static Logger log = SysMemUserForUser.log;
 	// The MemoryChunk objects are linked and kept sorted by address.
 	//
 	// low: MemoryChunk with the lowest address.
@@ -178,6 +182,8 @@ public class MemoryChunkList {
 			addAfter(highMemoryChunk, memoryChunk);
 		}
 
+		sanityChecks();
+
 		return addr;
 	}
 
@@ -271,6 +277,8 @@ public class MemoryChunkList {
 				// add it before this element to keep the addresses in
 				// increasing order.
 				addBefore(memoryChunk, scanChunk);
+
+				sanityChecks();
 				return;
 			}
 		}
@@ -284,6 +292,8 @@ public class MemoryChunkList {
 		} else {
 			addAfter(memoryChunk, high);
 		}
+
+		sanityChecks();
 	}
 
 	public MemoryChunk getLowMemoryChunk() {
@@ -292,6 +302,21 @@ public class MemoryChunkList {
 
 	public MemoryChunk getHighMemoryChunk() {
 		return high;
+	}
+
+	private void sanityChecks() {
+		// Perform sanity checks only when the DEBUG log level is enabled
+		if (!log.isDebugEnabled()) {
+			return;
+		}
+
+		int addr = low.addr;
+		for (MemoryChunk memoryChunk = low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+			if (memoryChunk.addr < addr) {
+				log.error(String.format("MemoryChunkList has overlapping memory chunks at 0x%08X: %s", addr, memoryChunk));
+			}
+			addr = memoryChunk.addr + memoryChunk.size;
+		}
 	}
 
 	@Override
