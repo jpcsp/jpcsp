@@ -637,12 +637,16 @@ public class sceFont extends HLEModule {
             	}
             }
 
+            flushFont(font);
+
+            font.close();
+        }
+
+        public void flushFont(Font font) {
             if (charInfoBitmapAddress != 0) {
             	triggerFreeCallback(charInfoBitmapAddress, null);
             	charInfoBitmapAddress = 0;
             }
-
-            font.close();
         }
 
         public void done() {
@@ -683,6 +687,9 @@ public class sceFont extends HLEModule {
         }
 
         protected void triggerAllocCallback(int size, IAction afterAllocCallback) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("triggerAllocCallback size=0x%X", size));
+        	}
             Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, afterAllocCallback, true, userDataAddr, size);
         }
 
@@ -1334,6 +1341,9 @@ public class sceFont extends HLEModule {
 
     @HLEFunction(nid = 0x02D7F94B, version = 150, checkInsideInterrupt = true)
     public int sceFontFlush(int fontHandle) {
+        Font font = getFont(fontHandle, false);
+    	font.fontLib.flushFont(font);
+
         return 0;
     }
 
