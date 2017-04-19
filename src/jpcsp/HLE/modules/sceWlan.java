@@ -50,6 +50,7 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -100,6 +101,8 @@ public class sceWlan extends HLEModule {
     private List<GameModeState> gameModeStates;
     private int gameModeDataLength;
     private String[] channelSSIDs;
+    private int wlanDropRate;
+    private int wlanDropDuration;
 
     private static class GameModeState {
     	public long timeStamp;
@@ -116,7 +119,7 @@ public class sceWlan extends HLEModule {
 
     	public void doUpdate() {
     		updated = true;
-    		timeStamp = Emulator.getClock().microTime();
+    		timeStamp = SystemTimeManager.getSystemTime();
     	}
 
 		@Override
@@ -1455,26 +1458,36 @@ public class sceWlan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5BAA1FE5, version = 150)
-    public int sceWlanDrv_lib_5BAA1FE5() {
+    public int sceWlanDrv_lib_5BAA1FE5(int unknown1, int unknown2) {
         return 0;
     }
 
-    @HLEUnimplemented
+    /**
+     * Checks if a packet has to be dropped according
+     * to the parameters defined by sceNetSetDropRate.
+     * 
+     * @return true if the packet should be dropped
+     *         false if the packet should be processed
+     */
     @HLEFunction(nid = 0x2519EAA7, version = 150)
-    public int sceWlanDrv_driver_2519EAA7() {
+    public boolean sceWlanIsPacketToBeDropped() {
     	// Has no parameters
-        return 0;
+        return false;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x325F7172, version = 150)
-    public int sceWlanDrv_driver_325F7172() {
-        return 0;
+    public int sceWlanSetDropRate(int dropRate, int dropDuration) {
+    	wlanDropRate = dropRate;
+    	wlanDropDuration = dropDuration;
+
+    	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xB6A9700D, version = 150)
-    public int sceWlanDrv_driver_B6A9700D() {
-        return 0;
+    public int sceWlanGetDropRate(@CanBeNull TPointer32 dropRateAddr, @CanBeNull TPointer32 dropDurationAddr) {
+    	dropRateAddr.setValue(wlanDropRate);
+    	dropDurationAddr.setValue(wlanDropDuration);
+
+    	return 0;
     }
 }

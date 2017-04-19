@@ -45,8 +45,6 @@ import org.apache.log4j.Logger;
 
 public class sceNetIfhandle extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetIfhandle");
-    protected int netDropRate;
-    protected int netDropDuration;
     protected HashMap<Integer, SysMemInfo> allocatedMemory;
     protected int unknownCallback1;
     protected int unknownCallback2;
@@ -138,18 +136,12 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEFunction(nid = 0xC80181A2, version = 150, checkInsideInterrupt = true)
     public int sceNetGetDropRate(@CanBeNull TPointer32 dropRateAddr, @CanBeNull TPointer32 dropDurationAddr) {
-        dropRateAddr.setValue(netDropRate);
-        dropDurationAddr.setValue(netDropDuration);
-
-        return 0;
+    	return Modules.sceWlanModule.sceWlanGetDropRate(dropRateAddr, dropDurationAddr);
     }
 
     @HLEFunction(nid = 0xFD8585E1, version = 150, checkInsideInterrupt = true)
     public int sceNetSetDropRate(int dropRate, int dropDuration) {
-        netDropRate = dropRate;
-        netDropDuration = dropDuration;
-
-        return 0;
+    	return Modules.sceWlanModule.sceWlanSetDropRate(dropRate, dropDuration);
     }
 
     @HLEFunction(nid = 0x15CFE3C0, version = 150)
