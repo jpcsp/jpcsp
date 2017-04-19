@@ -1252,6 +1252,10 @@ public class ThreadManForUser extends HLEModule {
         return (thread == idle0 || thread == idle1);
     }
 
+    public boolean isIdleThread(int uid) {
+    	return uid == idle0.uid || uid == idle1.uid;
+    }
+
     public boolean isKernelMode() {
     	return currentThread.isKernelMode();
     }
@@ -2353,7 +2357,7 @@ public class ThreadManForUser extends HLEModule {
             thread.wait.microTimeTimeout = 0;
             thread.wait.waitTimeoutAction = null;
         } else {
-            if (micros < THREAD_DELAY_MINIMUM_MICROS) {
+            if (micros < THREAD_DELAY_MINIMUM_MICROS && !isIdleThread(thread)) {
             	micros = THREAD_DELAY_MINIMUM_MICROS * 2;
             }
 
@@ -2373,7 +2377,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public void hleKernelDelayThread(int uid, int micros, boolean doCallbacks) {
-        if (micros < THREAD_DELAY_MINIMUM_MICROS) {
+        if (micros < THREAD_DELAY_MINIMUM_MICROS && !isIdleThread(uid)) {
         	micros = THREAD_DELAY_MINIMUM_MICROS;
         }
 
