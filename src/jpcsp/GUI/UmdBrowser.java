@@ -509,6 +509,8 @@ public class UmdBrowser extends javax.swing.JDialog {
         }
 
         umdInfoLoaded[rowIndex] = true;
+
+        updateFilteredItem(rowIndex);
     }
     
     private void onSelectionChanged(ListSelectionEvent event) {
@@ -671,16 +673,51 @@ public class UmdBrowser extends javax.swing.JDialog {
     	return text.contains(filter);
     }
 
-    private void filterItems(String filter) {
+    private boolean filterItems(String filter) {
+    	synchronized (filteredItems) {
+        	numberFilteredItems = 0;
+
+        	for (int rowIndex = 0; rowIndex < programs.length; rowIndex++) {
+        		filterItem(filter, rowIndex);
+        	}
+		}
+
+    	return true;
+    }
+
+    private String getFilter() {
+    	String filter = filterField.getText();
     	filter = filter.trim().toLowerCase();
 
-    	filteredItems = new int[programs.length];
-    	numberFilteredItems = 0;
+    	return filter;
+    }
 
-    	for (int rowIndex = 0; rowIndex < programs.length; rowIndex++) {
-    		waitForUmdInfoLoaded(rowIndex);
+    private void updateFilteredItem(int rowIndex) {
+    	boolean alreadyPresent = false;
+    	for (int i = 0; i < numberFilteredItems; i++) {
+    		if (filteredItems[i] == rowIndex) {
+    			alreadyPresent = true;
+    			break;
+    		}
+    	}
 
-    		boolean show = false;
+    	boolean modified = false;
+    	if (!alreadyPresent) {
+    		String filter = getFilter();
+	    	synchronized (filteredItems) {
+	    		modified = filterItem(filter, rowIndex);
+	    	}
+    	}
+
+    	if (modified) {
+        	((AbstractTableModel) table.getModel()).fireTableDataChanged();
+    	}
+    }
+
+    private boolean filterItem(String filter, int rowIndex) {
+		boolean show = false;
+
+		if (umdInfoLoaded[rowIndex]) {
     		try {
         		String title = getTitle(rowIndex);
         		String discId = getDiscId(rowIndex);
@@ -692,21 +729,26 @@ public class UmdBrowser extends javax.swing.JDialog {
     		} catch (IOException e) {
 				show = true;
 			}
+		}
 
-    		if (show) {
-    			filteredItems[numberFilteredItems] = rowIndex;
-    			numberFilteredItems++;
-    		}
-    	}
+		if (show) {
+			filteredItems[numberFilteredItems] = rowIndex;
+			numberFilteredItems++;
+		}
+
+		return show;
     }
 
     private void onFilterChanged() {
-    	String filter = filterField.getText();
-    	log.info(String.format("onFilterChanged '%s'", filter));
+    	String filter = getFilter();
 
-    	filterItems(filter);
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("onFilterChanged '%s'", filter));
+    	}
 
-    	((AbstractTableModel) table.getModel()).fireTableDataChanged();
+    	if (filterItems(filter)) {
+    		((AbstractTableModel) table.getModel()).fireTableDataChanged();
+    	}
     }
 
     private int getSelectedRowIndex() {
