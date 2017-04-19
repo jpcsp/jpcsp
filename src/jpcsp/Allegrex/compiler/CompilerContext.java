@@ -18,9 +18,22 @@ package jpcsp.Allegrex.compiler;
 
 import static java.lang.Math.min;
 import static jpcsp.Allegrex.Common._a0;
+import static jpcsp.Allegrex.Common._a1;
+import static jpcsp.Allegrex.Common._a2;
+import static jpcsp.Allegrex.Common._a3;
 import static jpcsp.Allegrex.Common._f0;
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.Allegrex.Common._t0;
+import static jpcsp.Allegrex.Common._t1;
+import static jpcsp.Allegrex.Common._t2;
+import static jpcsp.Allegrex.Common._t3;
+import static jpcsp.Allegrex.Common._t4;
+import static jpcsp.Allegrex.Common._t5;
+import static jpcsp.Allegrex.Common._t6;
+import static jpcsp.Allegrex.Common._t7;
+import static jpcsp.Allegrex.Common._t8;
+import static jpcsp.Allegrex.Common._t9;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
 import static jpcsp.Allegrex.Common._zr;
@@ -1940,31 +1953,51 @@ public class CompilerContext implements ICompilerContext {
     	flushInstructionCount(false, false);
 
     	int code = (opcode >> 6) & 0x000FFFFF;
-
-    	if (code == SyscallHandler.syscallUnmappedImport) {
-    		storePc();
-    	}
-
-    	HLEModuleFunction func = null;
+    	int syscallAddr = NIDMapper.getInstance().getAddressBySyscall(code);
     	// Call the HLE method only when it has not been overwritten
-    	if (NIDMapper.getInstance().getAddressBySyscall(code) == 0) {
-    		func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
-    	} else {
+    	if (syscallAddr != 0) {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("Calling overwritten HLE method '%s' instead of syscall", NIDMapper.getInstance().getNameBySyscall(code)));
     		}
-    	}
-
-    	boolean fastSyscall = isFastSyscall(code);
-    	if (func == null) {
-	    	loadImm(code);
-	    	if (fastSyscall) {
-	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)V");
-	    	} else {
-	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)V");
-	    	}
+	        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(syscallAddr, instanceIndex), getStaticExecMethodName(), getStaticExecMethodDesc());
     	} else {
-    		visitSyscall(func, fastSyscall);
+        	if (code == SyscallHandler.syscallUnmappedImport) {
+        		storePc();
+        	}
+
+    		HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
+
+    		boolean fastSyscall = isFastSyscall(code);
+        	if (func == null) {
+    	    	loadImm(code);
+    	    	if (fastSyscall) {
+    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)V");
+    	    	} else {
+    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)V");
+    	    	}
+        	} else {
+        		visitSyscall(func, fastSyscall);
+        	}
+
+        	// The following registers are always set to 0xDEADBEEF after a syscall
+        	int deadbeef = 0xDEADBEEF;
+        	storeRegister(_a0, deadbeef);
+        	storeRegister(_a1, deadbeef);
+        	storeRegister(_a2, deadbeef);
+        	storeRegister(_a3, deadbeef);
+        	storeRegister(_t0, deadbeef);
+        	storeRegister(_t1, deadbeef);
+        	storeRegister(_t2, deadbeef);
+        	storeRegister(_t3, deadbeef);
+        	storeRegister(_t4, deadbeef);
+        	storeRegister(_t5, deadbeef);
+        	storeRegister(_t6, deadbeef);
+        	storeRegister(_t7, deadbeef);
+        	storeRegister(_t8, deadbeef);
+        	storeRegister(_t9, deadbeef);
+        	prepareHiloForStore();
+        	mv.visitLdcInsn(new Long(0xDEADBEEFDEADBEEFL));
+        	storeHilo();
     	}
     }
 

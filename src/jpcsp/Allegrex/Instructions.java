@@ -16,20 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
-import static jpcsp.Allegrex.Common._a0;
-import static jpcsp.Allegrex.Common._a1;
-import static jpcsp.Allegrex.Common._a2;
-import static jpcsp.Allegrex.Common._a3;
-import static jpcsp.Allegrex.Common._t0;
-import static jpcsp.Allegrex.Common._t1;
-import static jpcsp.Allegrex.Common._t2;
-import static jpcsp.Allegrex.Common._t3;
-import static jpcsp.Allegrex.Common._t4;
-import static jpcsp.Allegrex.Common._t5;
-import static jpcsp.Allegrex.Common._t6;
-import static jpcsp.Allegrex.Common._t7;
-import static jpcsp.Allegrex.Common._t8;
-import static jpcsp.Allegrex.Common._t9;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_LINK_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_CANNOT_BE_SPLIT;
@@ -498,26 +484,6 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	context.compileSyscall();
-
-	// The following registers are always set to 0xDEADBEEF after a syscall
-	int deadbeef = 0xDEADBEEF;
-	context.storeRegister(_a0, deadbeef);
-	context.storeRegister(_a1, deadbeef);
-	context.storeRegister(_a2, deadbeef);
-	context.storeRegister(_a3, deadbeef);
-	context.storeRegister(_t0, deadbeef);
-	context.storeRegister(_t1, deadbeef);
-	context.storeRegister(_t2, deadbeef);
-	context.storeRegister(_t3, deadbeef);
-	context.storeRegister(_t4, deadbeef);
-	context.storeRegister(_t5, deadbeef);
-	context.storeRegister(_t6, deadbeef);
-	context.storeRegister(_t7, deadbeef);
-	context.storeRegister(_t8, deadbeef);
-	context.storeRegister(_t9, deadbeef);
-	context.prepareHiloForStore();
-	context.getMethodVisitor().visitLdcInsn(new Long(0xDEADBEEFDEADBEEFL));
-	context.storeHilo();
 }
 @Override
 public String disasm(int address, int insn) {
