@@ -119,6 +119,7 @@ public class RuntimeContext {
 	private static sceDisplay sceDisplayModule;
 	private static final Object idleSyncObject = new Object();
 	public static int firmwareVersion;
+	private static boolean isHomebrew = false;
 
 	private static class CompilerEnabledSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -1455,7 +1456,11 @@ public class RuntimeContext {
     }
 
     public static void setIsHomebrew(boolean isHomebrew) {
-    	// Currently, nothing special to do for Homebrew's
+    	RuntimeContext.isHomebrew = isHomebrew;
+    }
+
+    public static boolean isHomebrew() {
+    	return isHomebrew;
     }
 
     public static void onCodeModification(int pc, int opcode) {

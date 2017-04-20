@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
@@ -219,6 +220,32 @@ public class LoadCoreForKernel extends HLEModule {
         if (module == null) {
             log.warn(String.format("sceKernelFindModuleByUID not found module uid=0x%X", uid));
             return 0; // return NULL
+        }
+
+        // The pspsdk is not properly handling module exports with a size > 4.
+        // See
+        //    pspSdkFindExport()
+        // in
+        //    https://github.com/pspdev/pspsdk/blob/master/src/sdk/fixup.c
+        // which is assuming that all module exports have a size==4 (i.e. 16 bytes).
+        // This code is leading to an invalid memory access when processing the exports
+        // from real PSP modules, which do have exports with a size==5.
+        // Ban these modules in a case of the homebrew.
+        if (RuntimeContext.isHomebrew()) {
+        	String[] bannedModules = {
+        			"sceNet_Library",
+        			"sceNetInet_Library",
+        			"sceNetApctl_Library",
+        			"sceNetResolver_Library"
+        	};
+        	for (String bannedModule : bannedModules) {
+        		if (bannedModule.equals(module.modname)) {
+        			if (log.isDebugEnabled()) {
+        				log.debug(String.format("sceKernelFindModuleByUID banning module '%s' for a homebrew", module.modname));
+        			}
+            		return 0; // NULL
+        		}
+        	}
         }
 
         if (log.isDebugEnabled()) {
