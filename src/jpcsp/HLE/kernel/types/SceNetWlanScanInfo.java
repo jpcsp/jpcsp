@@ -20,7 +20,7 @@ public class SceNetWlanScanInfo extends pspAbstractMemoryMappedStructure {
 	public String bssid;
 	public int channel;
 	public String ssid;
-	public int type;
+	public int mode;
 	public int unknown44;
 
 	@Override
@@ -30,7 +30,7 @@ public class SceNetWlanScanInfo extends pspAbstractMemoryMappedStructure {
 		int ssidLength = read8(); // Offset 7
 		ssid = readStringNZ(ssidLength); // Offset 8
 		readUnknown(32 - ssidLength);
-		type = read32(); // Offset 40
+		mode = read32(); // Offset 40
 		unknown44 = read32(); // Offset 44
 	}
 
@@ -44,7 +44,7 @@ public class SceNetWlanScanInfo extends pspAbstractMemoryMappedStructure {
 			write8((byte) ssid.length()); // Offset 7
 		}
 		writeStringN(32, ssid); // Offset 8
-		write32(type); // Offset 40
+		write32(mode); // Offset 40
 		write32(unknown44); // Offset 44
 		writeUnknown(44); // Offset 48
 	}
@@ -56,6 +56,6 @@ public class SceNetWlanScanInfo extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("bssid='%s', channel=%d, ssid='%s', type=0x%X, unknown44=0x%X", bssid, channel, ssid, type, unknown44);
+		return String.format("bssid='%s', channel=%d, ssid='%s', mode=0x%X, unknown44=0x%X", bssid, channel, ssid, mode, unknown44);
 	}
 }

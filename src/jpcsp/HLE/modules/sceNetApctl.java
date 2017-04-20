@@ -18,6 +18,7 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.modules.sceNetAdhocctl.IBSS_NAME_LENGTH;
 import static jpcsp.HLE.modules.sceNetAdhocctl.fillNextPointersInLinkedList;
+import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
@@ -631,7 +633,7 @@ public class sceNetApctl extends HLEModule {
 	 * @return < 0 on error.
 	 */
 	@HLEFunction(nid = 0x5DEAC81B, version = 150)
-	public int sceNetApctlGetState(TPointer32 stateAddr) {
+	public int sceNetApctlGetState(@BufferInfo(usage=Usage.out) TPointer32 stateAddr) {
 		stateAddr.setValue(state);
 
 		return 0;
