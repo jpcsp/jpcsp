@@ -592,6 +592,9 @@ public class sceAtrac3plus extends HLEModule {
         	if (inputBufferContainsAllData()) {
         		return PSP_ATRAC_ALLDATA_IS_ON_MEMORY;
         	}
+        	if ((!hasLoop() || info.loopNum == 0) && inputBuffer.getFileWriteSize() <= 0) {
+        		return PSP_ATRAC_NONLOOP_STREAM_DATA_IS_ON_MEMORY;
+        	}
         	int remainFrames = inputBuffer.getCurrentSize() / info.atracBytesPerFrame;
 
         	return remainFrames;
