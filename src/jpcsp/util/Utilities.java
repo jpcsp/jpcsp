@@ -38,6 +38,8 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -49,6 +51,7 @@ import javax.net.ssl.X509TrustManager;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.IVirtualFile;
@@ -178,9 +181,7 @@ public class Utilities {
 
             if (length >= bytes.length) {
                 // Extend the bytes array
-                byte[] newBytes = new byte[bytes.length + 10000];
-                System.arraycopy(bytes, 0, newBytes, 0, bytes.length);
-                bytes = newBytes;
+            	bytes = extendArray(bytes, 10000);
             }
 
             bytes[length] = (byte) b;
@@ -311,25 +312,126 @@ public class Utilities {
         putUnsignedByte(buf, value);
     }
 
-    public static int parseAddress(String value) throws NumberFormatException {
+    public static int parseAddress(String s) throws NumberFormatException {
         int address = 0;
-        if (value == null) {
+        if (s == null) {
             return address;
         }
 
-        value = value.trim();
+        s = s.trim();
 
-        if (value.startsWith("0x")) {
-            value = value.substring(2);
+        if (s.startsWith("0x")) {
+            s = s.substring(2);
         }
 
-        if (value.length() == 8 && value.charAt(0) >= '8') {
-            address = (int) Long.parseLong(value, 16);
+        if (s.length() == 8 && s.charAt(0) >= '8') {
+            address = (int) Long.parseLong(s, 16);
         } else {
-            address = Integer.parseInt(value, 16);
+            address = Integer.parseInt(s, 16);
         }
 
         return address;
+    }
+
+    public static int parseInteger(String s) throws NumberFormatException {
+        int value = 0;
+        if (s == null) {
+            return value;
+        }
+
+        s = s.trim();
+
+        boolean neg = false;
+        if (s.startsWith("-")) {
+        	s = s.substring(1);
+        	neg = true;
+        }
+
+        int base = 10;
+        if (s.startsWith("0x")) {
+            s = s.substring(2);
+            base = 16;
+        }
+
+        if (s.length() == 8 && s.charAt(0) >= '8') {
+            value = (int) Long.parseLong(s, base);
+        } else {
+            value = Integer.parseInt(s, base);
+        }
+
+        if (neg) {
+        	value = -value;
+        }
+
+        return value;
+    }
+
+    public static int getRegister(String s) {
+    	for (int i = 0; i < Common.gprNames.length; i++) {
+    		if (Common.gprNames[i].equalsIgnoreCase(s)) {
+    			return i;
+    		}
+    	}
+
+    	return -1;
+    }
+
+    public static int parseAddressExpression(String s) {
+    	if (s == null) {
+    		return 0;
+    	}
+
+    	s = s.trim();
+
+    	// Build a pattern matching all Gpr register names
+    	String regPattern = "";
+    	for (String gprName : Common.gprNames) {
+    		regPattern += "\\" + gprName + "|";
+    	}
+
+    	Memory mem = Emulator.getMemory();
+    	CpuState cpu = Emulator.getProcessor().cpu;
+    	Pattern p;
+    	Matcher m;
+
+    	// Parse e.g.: "$a0"
+    	p = Pattern.compile(regPattern);
+    	m = p.matcher(s);
+    	if (m.matches()) {
+    		int reg = getRegister(s);
+    		if (reg >= 0) {
+    			return cpu.getRegister(reg);
+    		}
+    	}
+
+    	// Parse e.g.: "16($a0)", "0xc($a1)"
+    	p = Pattern.compile("((0x)?\\p{XDigit}+)\\((" + regPattern + ")\\)");
+    	m = p.matcher(s);
+    	if (m.matches()) {
+    		int offset = parseInteger(m.group(1));
+    		int reg = getRegister(m.group(3));
+
+    		if (reg >= 0) {
+    			return mem.read32(cpu.getRegister(reg) + offset);
+    		}
+    	}
+
+    	// Parse e.g.: "$a0 + 16", "$a1 - 0xc"
+    	p = Pattern.compile("(" + regPattern + ")\\s*([+\\-])\\s*((0x)?\\p{XDigit}+)");
+    	m = p.matcher(s);
+    	if (m.matches()) {
+    		int reg = getRegister(m.group(1));
+    		int offset = parseInteger(m.group(3));
+    		if (m.group(2).equals("-")) {
+    			offset = -offset;
+    		}
+
+    		if (reg >= 0) {
+    			return cpu.getRegister(reg) + offset;
+    		}
+    	}
+
+    	return Utilities.parseAddress(s);
     }
 
     /**
@@ -786,6 +888,11 @@ public class Utilities {
     	buffer[offset + 1] = (byte) (data >> 8);
     	buffer[offset + 2] = (byte) (data >> 16);
     	buffer[offset + 3] = (byte) (data >> 24);
+    }
+
+    public static void writeUnaligned16(byte[] buffer, int offset, int data) {
+    	buffer[offset + 0] = (byte) data;
+    	buffer[offset + 1] = (byte) (data >> 8);
     }
 
     public static void writeUnaligned64(byte[] buffer, int offset, long data) {

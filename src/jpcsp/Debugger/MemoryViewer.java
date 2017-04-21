@@ -72,9 +72,9 @@ public class MemoryViewer extends javax.swing.JFrame {
             line[i] = safeRead8(mem, addr + i);
         }
 
-        return String.format("%08x : %02x %02x %02x %02x %02x %02x "
-                + "%02x %02x %02x %02x %02x %02x %02x %02x "
-                + "%02x %02x %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c", addr,
+        return String.format("%08X : %02X %02X %02X %02X %02X %02X "
+                + "%02X %02X %02X %02X %02X %02X %02X %02X "
+                + "%02X %02X %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c", addr,
                 line[0], line[1], line[2], line[3], line[4], line[5], line[6], line[7],
                 line[8], line[9], line[10], line[11], line[12], line[13], line[14], line[15],
                 converttochar(line[0]), converttochar(line[1]),
@@ -265,13 +265,13 @@ private void btnGoToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GE
         String gettext = AddressField.getText();
         int value;
         try {
-            value = Integer.decode(gettext);
+            value = Utilities.parseAddressExpression(gettext);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("MemoryViewer.strInvalidAddress.text"));
             return;
         }
         startaddress = value;
-        AddressField.setText(String.format("0x%08x", value));
+        AddressField.setText(String.format("0x%08X", value));
         RefreshMemory();
     }
 
