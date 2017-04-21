@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import java.util.Random;
+
 import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.hardware.Wlan;
@@ -100,6 +102,22 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 
 	public boolean equals(byte[] macAddress) {
 		return sceNetAdhoc.isSameMacAddress(macAddress, this.macAddress);
+	}
+
+	public static byte[] getRandomMacAddress() {
+		byte[] macAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
+
+		Random random = new Random();
+		for (int i = 0; i < macAddress.length; i++) {
+			macAddress[i] = (byte) random.nextInt(256);
+		}
+		// Both least significant bits of the first byte have a special meaning
+		// (see http://en.wikipedia.org/wiki/Mac_address):
+		// bit 0: 0=Unicast / 1=Multicast
+		// bit 1: 0=Globally unique / 1=Locally administered
+		macAddress[0] &= 0xFC;
+
+		return macAddress;
 	}
 
 	@Override
