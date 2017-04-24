@@ -125,7 +125,6 @@ public class sceNetApctl extends HLEModule {
 
 	private static final String dummyPrimaryDNS = "1.2.3.4";
 	private static final String dummySecondaryDNS = "1.2.3.5";
-	private static final String dummyGateway = "1.2.3.0";
 	private static final String dummySubnetMask = "255.255.255.0";
 	private static final int dummySubnetMaskInt = 0xFFFFFF00;
 
@@ -273,7 +272,16 @@ public class sceNetApctl extends HLEModule {
 	}
 
     public static String getGateway() {
-		return dummyGateway;
+    	String gateway = getLocalHostIP();
+
+    	// Replace last component of the local IP with "1".
+    	// E.g. "192.168.1.10" -> "192.168.1.1"
+    	int lastDot = gateway.lastIndexOf('.');
+    	if (lastDot >= 0) {
+    		gateway = gateway.substring(0, lastDot + 1) + "1";
+    	}
+
+    	return gateway;
 	}
 
     public static String getSubnetMask() {
