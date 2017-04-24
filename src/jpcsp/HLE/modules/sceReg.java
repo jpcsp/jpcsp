@@ -32,6 +32,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.sceFont.FontRegistryEntry;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
@@ -851,7 +852,7 @@ public class sceReg extends HLEModule {
     	} else if (fullName.matches("/CONFIG/NETWORK/INFRASTRUCTURE/\\d+")) {
     		String indexName = fullName.replace("/CONFIG/NETWORK/INFRASTRUCTURE/", "");
     		int index = Integer.parseInt(indexName);
-    		if ("cnf_name".equals(name)) {
+            if ("cnf_name".equals(name)) {
     			ptype.setValue(REG_TYPE_STR);
     			String cnfName = sceUtility.getNetParamName(index);
     			psize.setValue(cnfName.length() + 1);
@@ -1341,7 +1342,7 @@ public class sceReg extends HLEModule {
 	}
 
     @HLEFunction(nid = 0x92E41280, version = 150)
-    public int sceRegOpenRegistry(TPointer reg, int mode, TPointer32 h) {
+    public int sceRegOpenRegistry(TPointer reg, int mode, @BufferInfo(usage=Usage.out) TPointer32 h) {
     	int regType = reg.getValue32(0);
     	int nameLen = reg.getValue32(260);
     	int unknown1 = reg.getValue32(264);
@@ -1379,7 +1380,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x1D8A762E, version = 150)
-    public int sceRegOpenCategory(int h, String name, int mode, TPointer32 hd) {
+    public int sceRegOpenCategory(int h, String name, int mode, @BufferInfo(usage=Usage.out) TPointer32 hd) {
     	RegistryHandle registryHandle = registryHandles.get(h);
     	if (registryHandle == null) {
     		return -1;
@@ -1393,8 +1394,19 @@ public class sceReg extends HLEModule {
     		int index = Integer.parseInt(categoryHandle.getFullName().substring(31));
     		if (index < 0 || index >= fontRegistry.size()) {
     			if (mode != REG_MODE_READ_WRITE) {
-    				return -1;
+    				return SceKernelErrors.ERROR_REGISTRY_NOT_FOUND;
     			}
+    		}
+    	} else if (categoryHandle.getFullName().startsWith("flash2/registry/system/CONFIG/NETWORK/INFRASTRUCTURE/")) {
+    		String indexString = categoryHandle.getFullName().substring(53);
+    		int sep = indexString.indexOf('/');
+    		if (sep >= 0) {
+    			indexString = indexString.substring(0, sep);
+    		}
+    		int index = Integer.parseInt(indexString);
+    		// We do not return too many entries as some homebrew only support a limited number of entries.
+    		if (index > sceUtility.PSP_NETPARAM_MAX_NUMBER_DUMMY_ENTRIES) {
+    			return SceKernelErrors.ERROR_REGISTRY_NOT_FOUND;
     		}
     	}
 
@@ -1767,12 +1779,12 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0xDBA46704, version = 150)
-    public int sceRegOpenRegistry_660(TPointer reg, int mode, TPointer32 h) {
+    public int sceRegOpenRegistry_660(TPointer reg, int mode, @BufferInfo(usage=Usage.out) TPointer32 h) {
     	return sceRegOpenRegistry(reg, mode, h);
     }
 
     @HLEFunction(nid = 0x4F471457, version = 150)
-    public int sceRegOpenCategory_660(int h, String name, int mode, TPointer32 hd) {
+    public int sceRegOpenCategory_660(int h, String name, int mode, @BufferInfo(usage=Usage.out) TPointer32 hd) {
     	return sceRegOpenCategory(h, name, mode, hd);
     }
 

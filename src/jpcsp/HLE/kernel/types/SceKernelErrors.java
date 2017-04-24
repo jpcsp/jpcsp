@@ -293,6 +293,8 @@ public class SceKernelErrors {
     public final static int ERROR_KERNEL_NOT_CACHE_ALIGNED                      = 0x8002044c;
     public final static int ERROR_KERNEL_MAX_ERROR                              = 0x8002044d;
 
+    public final static int ERROR_REGISTRY_NOT_FOUND                            = 0x80082718;
+
     public static final int ERROR_UTILITY_INVALID_STATUS                        = 0x80110001;
     public static final int ERROR_UTILITY_INVALID_PARAM_ADDR                    = 0x80110002;
     public static final int ERROR_UTILITY_IS_UNKNOWN                            = 0x80110003;

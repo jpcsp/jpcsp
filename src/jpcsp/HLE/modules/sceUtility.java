@@ -269,6 +269,7 @@ public class sceUtility extends HLEModule {
     public static final int PSP_NETPARAM_WPA_KEY = 22; // string
     public static final int PSP_NETPARAM_BROWSER = 23; // int
     public static final int PSP_NETPARAM_WIFI_CONFIG = 24; // int
+    public static final int PSP_NETPARAM_MAX_NUMBER_DUMMY_ENTRIES = 10;
     protected static final int maxLineLengthForDialog = 40;
     protected static final int icon0Width = 144;
     protected static final int icon0Height = 80;
@@ -4596,6 +4597,11 @@ public class sceUtility extends HLEModule {
     @HLEFunction(nid = 0x5EEE6548, version = 150)
     public int sceUtilityCheckNetParam(int id) {
         boolean available = (id >= 0 && id <= 24);
+
+        // We do not return too many entries as some homebrew only support a limited number of entries.
+        if (id > PSP_NETPARAM_MAX_NUMBER_DUMMY_ENTRIES) {
+        	available = false;
+        }
 
         return available ? 0 : SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
     }
