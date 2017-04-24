@@ -2246,6 +2246,11 @@ public class sceUtility extends HLEModule {
         protected boolean hasDialog() {
             return false;
         }
+
+		@Override
+		protected int getShutdownDelay() {
+			return 50000;
+		}
     }
 
     protected static class NpSigninUtilityDialogState extends UtilityDialogState {
@@ -4632,7 +4637,7 @@ public class sceUtility extends HLEModule {
                 // 0 is DHCP.
                 // 1 is static.
                 // 2 is PPPOE.
-                data.setValue32(0);
+                data.setValue32(1);
                 break;
             case PSP_NETPARAM_IP:
                 data.setStringZ(sceNetApctl.getLocalHostIP());
