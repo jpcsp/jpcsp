@@ -62,6 +62,7 @@ import jpcsp.HLE.kernel.types.SceNetWlanScanInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
 import jpcsp.hardware.Wlan;
+import jpcsp.network.accesspoint.AccessPoint;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.Utilities;
 
@@ -86,9 +87,9 @@ public class sceWlan extends HLEModule {
     private static final int wlanConnectActionDelayUs = 50000; // 50ms
     private static final int wlanCreateActionDelayUs = 50000; // 50ms
     private static final int wlanDisconnectActionDelayUs = 50000; // 50ms
-    private static final byte WLAN_CMD_DATA          = (byte) 0;
-    private static final byte WLAN_CMD_SCAN_REQUEST  = (byte) 1;
-    private static final byte WLAN_CMD_SCAN_RESPONSE = (byte) 2;
+    public static final byte WLAN_CMD_DATA          = (byte) 0;
+    public static final byte WLAN_CMD_SCAN_REQUEST  = (byte) 1;
+    public static final byte WLAN_CMD_SCAN_RESPONSE = (byte) 2;
     static private final byte[] dummyOtherMacAddress = new byte[] { 0x10,  0x22, 0x33, 0x44, 0x55, 0x66 };
     private static final int[] channels = new int[] { 1, 6, 11 };
     private int joinedChannel;
@@ -371,13 +372,25 @@ public class sceWlan extends HLEModule {
     	return wlanSocket != null;
     }
 
+    public static int getSocketPort() {
+    	return wlanSocketPort;
+    }
+
+    private int getBroadcastPort(int channel) {
+    	if (channel >= 0 && channelModes[channel] == WLAN_MODE_INFRASTRUCTURE) {
+    		return AccessPoint.getInstance().getPort();
+    	}
+
+    	return wlanSocketPort ^ 1;
+    }
+
     protected void sendPacket(byte[] buffer, int bufferLength) {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sendPacket %s", Utilities.getMemoryDump(buffer, 0, bufferLength)));
     	}
 
     	try {
-			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(wlanSocketPort ^ 1);
+			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(getBroadcastPort(joinedChannel));
 			if (broadcastAddress != null) {
 				for (int i = 0; i < broadcastAddress.length; i++) {
 					DatagramPacket packet = new DatagramPacket(buffer, bufferLength, broadcastAddress[i]);

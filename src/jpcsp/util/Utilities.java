@@ -783,6 +783,10 @@ public class Utilities {
         return getMemoryDump(address, length, step, bytesPerLine, memoryReader, charReader);
     }
 
+    public static String getMemoryDump(byte[] bytes) {
+		return getMemoryDump(bytes, 0, bytes == null ? 0 : bytes.length);
+    }
+
     public static String getMemoryDump(byte[] bytes, int offset, int length) {
         // Convenience function using default step and bytesPerLine
         return getMemoryDump(bytes, offset, length, 1, 16);
@@ -1314,6 +1318,24 @@ public class Utilities {
 
         byte[] newArray = new byte[array.length + extend];
         System.arraycopy(array, 0, newArray, 0, array.length);
+
+        return newArray;
+    }
+
+    public static byte[] extendArray(byte[] array, byte[] extend) {
+    	if (extend == null || extend.length == 0) {
+    		return array;
+    	}
+
+    	if (array == null) {
+    		array = new byte[extend.length];
+    		System.arraycopy(extend, 0, array, 0, extend.length);
+            return array;
+        }
+
+        byte[] newArray = new byte[array.length + extend.length];
+        System.arraycopy(array, 0, newArray, 0, array.length);
+        System.arraycopy(extend, 0, newArray, array.length, extend.length);
 
         return newArray;
     }

@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NET_RESOLVER_BAD_ID;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -139,7 +141,7 @@ public class sceNetResolver extends HLEModule {
 	 * @return 0 on success, < 0 on error
 	 */
 	@HLEFunction(nid = 0x224C5F44, version = 150)
-	public int sceNetResolverStartNtoA(@CheckArgument("checkRid") int rid, PspString hostname, TPointer32 addr, int timeout, int retry) {
+	public int sceNetResolverStartNtoA(@CheckArgument("checkRid") int rid, PspString hostname, @BufferInfo(usage=Usage.out) TPointer32 addr, int timeout, int retry) {
 		try {
 			InetAddress inetAddress = InetAddress.getByName(hostname.getString());
 			int resolvedAddress = sceNetInet.bytesToInternetAddress(inetAddress.getAddress());
