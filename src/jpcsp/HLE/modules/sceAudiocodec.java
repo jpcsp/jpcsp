@@ -81,34 +81,7 @@ public class sceAudiocodec extends HLEModule {
 		super.start();
 	}
 
-	@HLEUnimplemented
-	@HLEFunction(nid = 0x9D3F790C, version = 150)
-	public int sceAudiocodecCheckNeedMem(TPointer workArea, int codecType) {
-		workArea.setValue32(0, 0x05100601);
-
-		switch (codecType) {
-			case PSP_CODEC_AT3:
-				workArea.setValue32(16, 0x3DE0);
-				break;
-			case PSP_CODEC_AT3PLUS:
-				workArea.setValue32(16, 0x7BC0);
-				workArea.setValue32(52, 44100);
-				workArea.setValue32(60, 2);
-				workArea.setValue32(64, 0x2E8);
-				break;
-			case PSP_CODEC_MP3:
-				break;
-			case PSP_CODEC_AAC:
-				workArea.setValue32(16, 0x658C);
-				break;
-		}
-
-		return 0;
-	}
-
-	@HLELogging(level = "info")
-	@HLEFunction(nid = 0x5B37EB1D, version = 150)
-	public int sceAudiocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
+	private int hleAudiocodecInit(TPointer workArea, int codecType) {
 		if (info != null) {
 			info.release();
 			info.setCodecInitialized(false);
@@ -150,6 +123,37 @@ public class sceAudiocodec extends HLEModule {
 		workArea.setValue32(8, 0); // error field
 
 		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9D3F790C, version = 150)
+	public int sceAudiocodecCheckNeedMem(TPointer workArea, int codecType) {
+		workArea.setValue32(0, 0x05100601);
+
+		switch (codecType) {
+			case PSP_CODEC_AT3:
+				workArea.setValue32(16, 0x3DE0);
+				break;
+			case PSP_CODEC_AT3PLUS:
+				workArea.setValue32(16, 0x7BC0);
+				workArea.setValue32(52, 44100);
+				workArea.setValue32(60, 2);
+				workArea.setValue32(64, 0x2E8);
+				break;
+			case PSP_CODEC_MP3:
+				break;
+			case PSP_CODEC_AAC:
+				workArea.setValue32(16, 0x658C);
+				break;
+		}
+
+		return 0;
+	}
+
+	@HLELogging(level = "info")
+	@HLEFunction(nid = 0x5B37EB1D, version = 150)
+	public int sceAudiocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
+		return hleAudiocodecInit(workArea, codecType);
 	}
 
 	private int getOutputBufferSize(TPointer workArea, int codecType) {
@@ -348,5 +352,12 @@ public class sceAudiocodec extends HLEModule {
 	@HLEFunction(nid = 0x6CD2A861, version = 150)
 	public int sceAudiocodec_6CD2A861() {
 		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3DD7EE1A, version = 150)
+	public int sceAudiocodec_3DD7EE1A(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
+		// Seems to be the same as sceAudiocodecInit, but maybe for mono audio?
+		return hleAudiocodecInit(workArea, codecType);
 	}
 }

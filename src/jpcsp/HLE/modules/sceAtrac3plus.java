@@ -853,7 +853,7 @@ public class sceAtrac3plus extends HLEModule {
         int magic = readUnaligned32(mem, currentAddr);
         int WAVEMagic = readUnaligned32(mem, currentAddr + 8);
         if (magic != RIFF_MAGIC || WAVEMagic != WAVE_MAGIC) {
-        	log.error(String.format("Not a RIFF/WAVE format! %08X %08X", magic, WAVEMagic));
+        	log.error(String.format("Not a RIFF/WAVE format! %s", Utilities.getMemoryDump(currentAddr, 16)));
         	return ERROR_ATRAC_UNKNOWN_FORMAT;
         }
 
