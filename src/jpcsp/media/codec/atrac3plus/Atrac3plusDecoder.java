@@ -72,6 +72,10 @@ public class Atrac3plusDecoder implements ICodec {
 	public int decode(int inputAddr, int inputLength, int outputAddr) {
 		int ret;
 
+		if (ctx == null) {
+			return AT3P_ERROR;
+		}
+
 		if (inputLength < 0) {
 			return AT3P_ERROR;
 		}
