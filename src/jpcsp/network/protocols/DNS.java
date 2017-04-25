@@ -238,7 +238,7 @@ public class DNS {
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 
-		s.append(String.format("identifier=0x%04X, isResponseFlag=%b, opcode=0x%X, authoritativeAnswer=%b, truncationFlag=%b, recursionDesired=%b, recursionAvailable=%b, zero=0x%X, responseCode=0x%X, questionCount=%d, answerRecordCount=%d, authorityRecordCount=%d,additionalRecordCount=%d", identifier, isResponseFlag, opcode, authoritativeAnswer, truncationFlag, recursionDesired, recursionAvailable, zero, responseCode, questionCount, answerRecordCount, authorityRecordCount, additionalRecordCount));
+		s.append(String.format("identifier=0x%04X, isResponseFlag=%b, opcode=0x%X, authoritativeAnswer=%b, truncationFlag=%b, recursionDesired=%b, recursionAvailable=%b, zero=0x%X, responseCode=0x%X, questionCount=%d, answerRecordCount=%d, authorityRecordCount=%d, additionalRecordCount=%d", identifier, isResponseFlag, opcode, authoritativeAnswer, truncationFlag, recursionDesired, recursionAvailable, zero, responseCode, questionCount, answerRecordCount, authorityRecordCount, additionalRecordCount));
 		toString(s, "question", questionCount, questions);
 		toString(s, "answerRecord", answerRecordCount, answerRecords);
 		toString(s, "authorityRecord", authorityRecordCount, authorityRecords);

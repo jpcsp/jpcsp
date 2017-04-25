@@ -444,7 +444,7 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA493AA5F, version = 150)
-    public int sceNetMGet() {
+    public int sceNetMGet(int unknown1, int unknown2) {
     	return 0;
     }
 

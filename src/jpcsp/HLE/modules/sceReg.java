@@ -890,7 +890,7 @@ public class sceReg extends HLEModule {
                     // 0 is DHCP.
                     // 1 is static.
                     // 2 is PPPOE.
-    				buf.setValue32(1);
+    				buf.setValue32(0);
     			}
     		} else if ("dns_flag".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);

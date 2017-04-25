@@ -21,6 +21,7 @@ import static jpcsp.HLE.modules.sceWlan.WLAN_CMD_DATA;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.network.protocols.ARP.ARP_OPERATION_REPLY;
 import static jpcsp.network.protocols.ARP.ARP_OPERATION_REQUEST;
+import static jpcsp.network.protocols.DHCP.DHCP_BOOT_REPLY;
 import static jpcsp.network.protocols.DNS.DNS_RESPONSE_CODE_NAME_ERROR;
 import static jpcsp.network.protocols.DNS.DNS_RESPONSE_CODE_NO_ERROR;
 import static jpcsp.network.protocols.EtherFrame.ETHER_TYPE_ARP;
@@ -52,9 +53,11 @@ import java.util.List;
 import java.util.Random;
 
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
+import jpcsp.HLE.modules.sceNetApctl;
 import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.HLE.modules.sceWlan;
 import jpcsp.network.protocols.ARP;
+import jpcsp.network.protocols.DHCP;
 import jpcsp.network.protocols.DNS;
 import jpcsp.network.protocols.DNS.DNSAnswerRecord;
 import jpcsp.network.protocols.EtherFrame;
@@ -77,6 +80,7 @@ public class AccessPoint {
     private int apSocketPort = 30020;
     private pspNetMacAddress apMacAddress;
     private byte[] apIpAddress;
+    private byte[] localIpAddress;
 	private DatagramSocket apSocket;
 	private AccessPointThread apThread;
 	private String apSsid;
@@ -179,7 +183,8 @@ public class AccessPoint {
 		// Generate a random MAC address for the Address Point
 		apMacAddress = new pspNetMacAddress(pspNetMacAddress.getRandomMacAddress());
 
-		apIpAddress = new byte[] { (byte) 192, (byte) 168, (byte) 1, (byte) 1 };
+		apIpAddress = getIpAddress(sceNetApctl.getGateway());
+		localIpAddress = getIpAddress(sceNetApctl.getLocalHostIP());
 
 		tcpConnectionStates = new LinkedList<>();
 
@@ -208,14 +213,38 @@ public class AccessPoint {
 		return apSocketPort;
 	}
 
-	public byte[] getMacAddress() {
-		return apMacAddress.macAddress;
+	public pspNetMacAddress getMacAddress() {
+		return apMacAddress;
 	}
 
 	public byte[] getIpAddress() {
 		return apIpAddress;
 	}
 
+	private byte[] getLocalIpAddress() {
+		return localIpAddress;
+	}
+
+	private static byte[] getIpAddress(String hostName) {
+		try {
+			InetAddress inetAddress = InetAddress.getByName(hostName);
+			return inetAddress.getAddress();
+		} catch (UnknownHostException e) {
+			log.error("getIpAddress", e);
+		}
+
+		return null;
+	}
+
+	private static byte[] getIpAddress(int ipAddressInt) {
+		byte[] ipAddress = new byte[IP_ADDRESS_LENGTH];
+		ipAddress[0] = (byte) (ipAddressInt >> 24);
+		ipAddress[1] = (byte) (ipAddressInt >> 16);
+		ipAddress[2] = (byte) (ipAddressInt >> 8);
+		ipAddress[3] = (byte) ipAddressInt;
+
+		return ipAddress;
+	}
 
 	private boolean createAccessPointSocket() {
     	if (apSocket == null) {
@@ -401,7 +430,7 @@ public class AccessPoint {
 	private void sendGratuitousARP() throws EOFException {
 		EtherFrame frame = new EtherFrame();
 		frame.dstMac = new pspNetMacAddress(ANY_MAC_ADDRESS);
-		frame.srcMac = apMacAddress;
+		frame.srcMac = getMacAddress();
 		frame.type = ETHER_TYPE_ARP;
 
 		ARP arp = new ARP();
@@ -410,11 +439,11 @@ public class AccessPoint {
 		arp.hardwareAddressLength = MAC_ADDRESS_LENGTH;
 		arp.protocolAddressLength = IP_ADDRESS_LENGTH;
 		arp.operation = ARP_OPERATION_REQUEST;
-		arp.senderHardwareAddress = apMacAddress;
-		arp.senderProtocolAddress = apIpAddress;
+		arp.senderHardwareAddress = getMacAddress();
+		arp.senderProtocolAddress = getIpAddress();
 		// Set the target hardware address to 00:00:00:00:00:00
 		arp.targetHardwareAddress = new pspNetMacAddress();
-		arp.targetProtocolAddress = apIpAddress;
+		arp.targetProtocolAddress = getIpAddress();
 
 		NetPacket packet = new NetPacket(EtherFrame.sizeOf() + arp.sizeOf());
 		frame.write(packet);
@@ -458,6 +487,9 @@ public class AccessPoint {
 		switch (udp.destinationPort) {
 			case UDP_PORT_DNS:
 				processMessageDNS(packet, frame, ipv4, udp);
+				break;
+			case UDP.UDP_PORT_DHCP_SERVER:
+				processMessageDHCP(packet, frame, ipv4, udp);
 				break;
 			default:
 				log.warn(String.format("processMessageUDP unknown destination port 0x%X", udp.destinationPort));
@@ -764,9 +796,86 @@ public class AccessPoint {
 				}
 			} catch (IOException e) {
 				// Ignore exceptions
+				log.error("receiveTcpMessages", e);
 			}
 		}
 
 		return received;
+	}
+
+	private void sendDHCPReply(EtherFrame frame, IPv4 ipv4, UDP udp, DHCP dhcp, int messageType) throws EOFException {
+		// Send back a DHCP offer message
+		EtherFrame answerFrame = new EtherFrame(frame);
+		answerFrame.swapSourceAndDestination();
+		answerFrame.srcMac = getMacAddress();
+
+		IPv4 answerIPv4 = new IPv4(ipv4);
+		answerIPv4.sourceIPAddress = getIpAddress();
+		answerIPv4.timeToLive--; // When a packet arrives at a router, the router decreases the TTL field.
+
+		UDP answerUdp = new UDP(udp);
+		answerUdp.swapSourceAndDestination();
+
+		DHCP answerDhcp = new DHCP(dhcp);
+		answerDhcp.opcode = DHCP_BOOT_REPLY;
+		answerDhcp.yourIPAddress = getLocalIpAddress();
+		answerDhcp.nextServerIPAddress = getIpAddress();
+
+		answerDhcp.clearOptions();
+		// The DHCP message type
+		answerDhcp.addOption(new DHCP.DHCPOption(DHCP.DHCP_OPTION_MESSAGE_TYPE, (byte) messageType));
+		// The subnet mask
+		answerDhcp.addOption(new DHCP.DHCPOption(DHCP.DHCP_OPTION_SUBNET_MASK, getIpAddress(sceNetApctl.getSubnetMaskInt())));
+		// The only router is myself
+		answerDhcp.addOption(new DHCP.DHCPOption(DHCP.DHCP_OPTION_ROUTER, getIpAddress()));
+		// The IP address lease time is forever
+		answerDhcp.addOption(new DHCP.DHCPOption(DHCP.DHCP_OPTION_IP_ADDRESS_LEASE_TIME, Integer.MAX_VALUE));
+		// The DHCP server identification is myself
+		answerDhcp.addOption(new DHCP.DHCPOption(DHCP.DHCP_OPTION_SERVER_IDENTIFIER, getIpAddress()));
+		// The only DNS server is myself
+		answerDhcp.addOption(new DHCP.DHCPOption(DHCP.DHCP_OPTION_DNS, getIpAddress()));
+		// The broadcast address
+		answerDhcp.addOption(new DHCP.DHCPOption(DHCP.DHCP_OPTION_BROADCAST_ADDRESS, DHCP.broadcastIPAddress));
+
+		// Update lengths and checksums
+		answerUdp.length = answerUdp.sizeOf() + answerDhcp.sizeOf();
+		answerUdp.computeChecksum();
+		answerIPv4.totalLength = answerIPv4.sizeOf() + answerUdp.length;
+		answerIPv4.computeChecksum();
+
+		// Write the different headers in sequence
+		NetPacket answerPacket = new NetPacket(BUFFER_SIZE);
+		answerFrame.write(answerPacket);
+		answerIPv4.write(answerPacket);
+		answerUdp.write(answerPacket);
+		answerDhcp.write(answerPacket);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sendDHCPReply frame=%s", answerFrame));
+			log.debug(String.format("sendDHCPReply IPv4=%s", answerIPv4));
+			log.debug(String.format("sendDHCPReply UDP=%s", answerUdp));
+			log.debug(String.format("sendDHCPReply messageType=%d, DHCP=%s", messageType, answerDhcp));
+		}
+
+		sendPacket(answerPacket);
+	}
+
+	private void processMessageDHCP(NetPacket packet, EtherFrame frame, IPv4 ipv4, UDP udp) throws EOFException {
+		DHCP dhcp = new DHCP();
+		dhcp.read(packet);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("processMessageDHCP %s", dhcp));
+		}
+
+		if (dhcp.isDiscovery(udp, ipv4)) {
+			// Send back a DHCP offset message
+			sendDHCPReply(frame, ipv4, udp, dhcp, DHCP.DHCP_OPTION_MESSAGE_TYPE_DHCPOFFER);
+		} else if (dhcp.isRequest(udp, ipv4, getLocalIpAddress())) {
+			// Send back a DHCP acknowledgment message
+			sendDHCPReply(frame, ipv4, udp, dhcp, DHCP.DHCP_OPTION_MESSAGE_TYPE_DHCPACK);
+		} else {
+			log.warn(String.format("Unknown DHCP request %s", dhcp));
+		}
 	}
 }

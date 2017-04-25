@@ -21,6 +21,8 @@ import java.io.EOFException;
 public class UDP {
 	// UDP packet structure, see https://en.wikipedia.org/wiki/User_Datagram_Protocol
     public static final int UDP_PORT_DNS = 53;
+    public static final int UDP_PORT_DHCP_SERVER = 67;
+    public static final int UDP_PORT_DHCP_CLIENT = 68;
 	public int sourcePort;
 	public int destinationPort;
 	public int length;

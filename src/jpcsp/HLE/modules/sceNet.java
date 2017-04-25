@@ -813,4 +813,12 @@ public class sceNet extends HLEModule {
     	// Returns 0x80410184 if no event is available?
     	return SceKernelErrors.ERROR_NET_NO_EVENT;
     }
+
+    /*
+     * Same as sceNetMemmove, but with src and dst pointers swapped
+     */
+    @HLEFunction(nid = 0x2F305274, version = 150)
+    public int sceNetBcopy(@CanBeNull TPointer srcAddr, TPointer dstAddr, int size) {
+    	return sceNetMemmove(dstAddr, srcAddr, size);
+    }
 }

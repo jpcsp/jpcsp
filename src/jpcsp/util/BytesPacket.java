@@ -186,6 +186,12 @@ public class BytesPacket {
 		buffer[offset++] = b;
 	}
 
+	public void writeBytesZero(int n) throws EOFException {
+		for (; n > 0; n--) {
+			writeByte((byte) 0);
+		}
+	}
+
 	public void write8(int n) throws EOFException {
 		writeByte((byte) (n & 0xFF));
 	}
@@ -221,9 +227,15 @@ public class BytesPacket {
 	}
 
 	public void writeBytes(byte[] dataBuffer, int dataOffset, int dataLength) throws EOFException {
-		for (int i = 0; i < dataLength; i++) {
-			writeByte(dataBuffer[dataOffset + i]);
+		if (dataBuffer != null) {
+			int copyLength = Math.min(dataLength, dataBuffer.length - dataOffset);
+			for (int i = 0; i < copyLength; i++) {
+				writeByte(dataBuffer[dataOffset + i]);
+			}
+			dataLength -= copyLength;
 		}
+
+		writeBytesZero(dataLength);
 	}
 
 	public void write1(int n) throws EOFException {
@@ -259,5 +271,17 @@ public class BytesPacket {
 			length += offset - newOffset;
 			offset = newOffset;
 		}
+	}
+
+	public void writeStringNZ(String s, int n) throws EOFException {
+		if (s != null) {
+			int copyLength = Math.min(s.length(), n);
+			for (int i = 0; i < copyLength; i++) {
+				writeAsciiChar(s.charAt(i));
+			}
+			n -= copyLength;
+		}
+
+		writeBytesZero(n);
 	}
 }
