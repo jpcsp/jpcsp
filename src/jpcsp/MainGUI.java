@@ -2918,6 +2918,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             	runFromVsh = true;
             	logStart();
 	            setTitle(MetaInformation.FULL_NAME + " - VSH");
+	            Emulator.getInstance().setFirmwareVersion(660);
                 Modules.sceDisplayModule.setCalledFromCommandLine();
                 HTTPServer.processProxyRequestLocally = true;
                 loadFile(new File("flash0/vsh/module/vshmain.prx"), true);
