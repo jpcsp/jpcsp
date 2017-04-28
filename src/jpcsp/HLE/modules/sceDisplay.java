@@ -397,6 +397,7 @@ public class sceDisplay extends HLEModule {
         private int height;
         private int pixelFormat;
         private Buffer pixels;
+        private int size;
 
         public FrameBufferSettings(int topAddr, int bufferWidth, int width, int height, int pixelFormat) {
             this.topAddr = topAddr & Memory.addressMask;
@@ -415,10 +416,11 @@ public class sceDisplay extends HLEModule {
             height = copy.height;
             pixelFormat = copy.pixelFormat;
             pixels = copy.pixels;
+            size = copy.size;
         }
 
         private void update() {
-            int size = bufferWidth * height * getPixelFormatBytes(pixelFormat);
+            size = bufferWidth * height * getPixelFormatBytes(pixelFormat);
             bottomAddr = topAddr + size;
             pixels = Memory.getInstance().getBuffer(topAddr, size);
         }
@@ -443,12 +445,23 @@ public class sceDisplay extends HLEModule {
             return pixels;
         }
 
+        public Buffer getPixels(int topAddr) {
+        	if (this.topAddr == topAddr) {
+        		return pixels;
+        	}
+        	return Memory.getInstance().getBuffer(topAddr, size);
+        }
+
         public int getWidth() {
             return width;
         }
 
         public int getHeight() {
             return height;
+        }
+
+        public int getSize() {
+        	return size;
         }
 
         public boolean isRawAddressInside(int address) {
@@ -526,6 +539,7 @@ public class sceDisplay extends HLEModule {
     private boolean initGLcalled;
     private String openGLversion;
     private boolean calledFromCommandLine;
+    private volatile boolean doneCopyGeToMemory;
     // Canvas fields
     private Buffer temp;
     private ByteBuffer tempByteBuffer;
@@ -1677,22 +1691,63 @@ public class sceDisplay extends HLEModule {
         }
     }
 
+    /**
+     * Copy the GE at from given address to memory.
+     * This is only required when saving the GE to textures.
+     * 
+     * @param geTopAddress the GE address that need to be saved to memory
+     */
+    public void copyGeToMemory(int geTopAddress) {
+    	if (isUsingSoftwareRenderer() || ExternalGE.isActive()) {
+            // GE is already in memory when using the internal/external software renderer
+    		return;
+    	}
+    	if (!saveGEToTexture) {
+    		// Copying the GE to memory is only necessary when saving the GE to textures
+    		return;
+    	}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("copyGeToMemory starting with geTopAddress=0x%08X", geTopAddress));
+    	}
+
+    	doneCopyGeToMemory = false;
+    	addDisplayActionOce(new CopyGeToMemoryAction(geTopAddress));
+
+    	geDirty = true;
+    	step(true);
+
+    	// Poll completion of copyGeToMemory action
+    	while (!doneCopyGeToMemory) {
+    		Utilities.sleep(1, 0);
+    	}
+    	doneCopyGeToMemory = false;
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("copyGeToMemory done with geTopAddress=0x%08X", geTopAddress));
+    	}
+    }
+
     public void copyGeToMemory(boolean preserveScreen, boolean forceCopyToMemory) {
+    	copyGeToMemory(ge.getTopAddr(), preserveScreen, forceCopyToMemory);
+    }
+
+    public void copyGeToMemory(int geTopAddress, boolean preserveScreen, boolean forceCopyToMemory) {
         if (isUsingSoftwareRenderer()) {
             // GE is already in memory when using the software renderer
             return;
         }
 
         if (VideoEngine.log.isDebugEnabled()) {
-            VideoEngine.log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", ge.getTopAddr(), ge.getBottomAddr()));
+            VideoEngine.log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", geTopAddress, geTopAddress + ge.getSize()));
         }
 
         if (statisticsCopyGeToMemory != null) {
             statisticsCopyGeToMemory.start();
         }
 
-        if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(ge.getTopAddr())) {
-            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, ge.getTopAddr(), ge.getBufferWidth(), ge.getWidth(), ge.getHeight(), ge.getPixelFormat(), true);
+        if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(geTopAddress)) {
+            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, geTopAddress, ge.getBufferWidth(), ge.getWidth(), ge.getHeight(), ge.getPixelFormat(), true);
             geTexture.copyScreenToTexture(re);
         } else {
         	forceCopyToMemory = true;
@@ -1709,7 +1764,7 @@ public class sceDisplay extends HLEModule {
             // Re-render GE/current texture upside down
             drawFrameBuffer(fb, true, true, ge.getBufferWidth(), ge.getPixelFormat(), ge.getWidth(), ge.getHeight());
 
-            copyScreenToPixels(ge.getPixels(), ge.getBufferWidth(), ge.getPixelFormat(), ge.getWidth(), ge.getHeight());
+            copyScreenToPixels(ge.getPixels(geTopAddress), ge.getBufferWidth(), ge.getPixelFormat(), ge.getWidth(), ge.getHeight());
 
             if (saveStencilToMemory) {
                 copyStencilToMemory();
@@ -2676,6 +2731,20 @@ public class sceDisplay extends HLEModule {
 		@Override
 		public void execute() {
             saveScreen();
+		}
+    }
+
+    private class CopyGeToMemoryAction implements IAction {
+    	private int geTopAddress;
+
+		public CopyGeToMemoryAction(int geTopAddress) {
+			this.geTopAddress = geTopAddress;
+		}
+
+		@Override
+		public void execute() {
+			copyGeToMemory(geTopAddress, true, true);
+			doneCopyGeToMemory = true;
 		}
     }
 }

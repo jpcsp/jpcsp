@@ -660,4 +660,9 @@ public class sceGu extends AbstractNativeCodeSequence {
 			VideoEngine.getInstance().addCachedInstructions(callAddr, instructions);
 		}
 	}
+
+	static public void saveGeToMemoryHook() {
+		int geTopAddress = getGprA0();
+		Modules.sceDisplayModule.copyGeToMemory(geTopAddress);
+	}
 }
