@@ -177,14 +177,17 @@ public class HTTPServer {
 			try {
 				if (descriptor.isSsl()) {
 					SSLServerSocketFactory factory = getSSLServerSocketFactory();
-					serverSocket = factory.createServerSocket(descriptor.getPort());
+					if (factory != null) {
+						serverSocket = factory.createServerSocket(descriptor.getPort());
+					}
 				} else {
 					serverSocket = new ServerSocket(descriptor.getPort());
 				}
-				serverSocket.setSoTimeout(1);
+				if (serverSocket != null) {
+					serverSocket.setSoTimeout(1);
+				}
 			} catch (IOException e) {
 				log.error(String.format("Server socket at port %d not available: %s", descriptor.getPort(), e));
-				exit();
 			} catch (KeyStoreException e) {
 				log.error(String.format("SSL Server socket at port %d not available: %s", descriptor.getPort(), e));
 			} catch (NoSuchAlgorithmException e) {
@@ -195,6 +198,10 @@ public class HTTPServer {
 				log.error(String.format("SSL Server socket at port %d not available: %s", descriptor.getPort(), e));
 			} catch (KeyManagementException e) {
 				log.error(String.format("SSL Server socket at port %d not available: %s", descriptor.getPort(), e));
+			}
+
+			if (serverSocket == null) {
+				exit();
 			}
 
 			while (!exit) {
@@ -226,8 +233,16 @@ public class HTTPServer {
 		}
 
 		private SSLServerSocketFactory getSSLServerSocketFactory() throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, UnrecoverableKeyException, KeyManagementException {
+			String jksFileName = "jpcsp.jks";
+			if (!new File(jksFileName).canRead()) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("getSSLServerSocketFactory cannot read the file '%s'", jksFileName));
+				}
+				return null;
+			}
+
 			char[] password = "changeit".toCharArray();
-			FileInputStream keyStoreInputStream = new FileInputStream("jpcsp.jks");
+			FileInputStream keyStoreInputStream = new FileInputStream(jksFileName);
 
 			KeyStore keyStore = KeyStore.getInstance("JKS");
 			keyStore.load(keyStoreInputStream, password);
