@@ -18,8 +18,8 @@ package jpcsp.crypto;
 
 public class PGD {
     private static AMCTRL amctrl;
-    private static AMCTRL.BBCipher_Ctx pgdCipherContext;
-    private static AMCTRL.BBMac_Ctx pgdMacContext;
+    private AMCTRL.BBCipher_Ctx pgdCipherContext;
+    private AMCTRL.BBMac_Ctx pgdMacContext;
 
     public PGD() {
         amctrl = new AMCTRL();
