@@ -33,6 +33,7 @@ import jpcsp.HLE.TPointer32;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.Emulator;
@@ -45,6 +46,10 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.MemoryChunk;
 import jpcsp.HLE.kernel.types.MemoryChunkList;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -121,14 +126,37 @@ public class SysMemUserForUser extends HLEModule {
 	}
 
 	public void reset() {
-		blockList = new HashMap<Integer, SysMemInfo>();
+		reset(false);
+	}
 
-		int vshellSize = 0x400000;
-        // free memory chunks for each partition
-        freeMemoryChunks = new MemoryChunkList[6];
+	public void reset(boolean preserveKernelMemory) {
+		if (blockList == null || freeMemoryChunks == null) {
+			preserveKernelMemory = false;
+		}
+
+		if (preserveKernelMemory) {
+			List<SysMemInfo> toBeFreed = new LinkedList<SysMemInfo>();
+			for (SysMemInfo sysMemInfo: blockList.values()) {
+				if (sysMemInfo.partitionid == USER_PARTITION_ID) {
+					toBeFreed.add(sysMemInfo);
+				}
+			}
+
+			for (SysMemInfo sysMemInfo : toBeFreed) {
+				sysMemInfo.free();
+			}
+		} else {
+			blockList = new HashMap<Integer, SysMemInfo>();
+		}
+
+		if (!preserveKernelMemory) {
+			int vshellSize = 0x400000;
+	        // free memory chunks for each partition
+	        freeMemoryChunks = new MemoryChunkList[6];
+	        freeMemoryChunks[KERNEL_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_KERNEL, MemoryMap.END_KERNEL - vshellSize);
+	        freeMemoryChunks[VSHELL_PARTITION_ID] = createMemoryChunkList(MemoryMap.END_KERNEL + 1 - vshellSize, MemoryMap.END_KERNEL);
+		}
         freeMemoryChunks[USER_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_USERSPACE, MemoryMap.END_USERSPACE);
-        freeMemoryChunks[KERNEL_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_KERNEL, MemoryMap.END_KERNEL - vshellSize);
-        freeMemoryChunks[VSHELL_PARTITION_ID] = createMemoryChunkList(MemoryMap.END_KERNEL + 1 - vshellSize, MemoryMap.END_KERNEL);
 	}
 
     public void setMemory64MB(boolean isMemory64MB) {
@@ -146,12 +174,24 @@ public class SysMemUserForUser extends HLEModule {
     		MemoryMap.END_USERSPACE = MemoryMap.END_RAM;
     		MemoryMap.SIZE_RAM = MemoryMap.END_RAM - MemoryMap.START_RAM + 1;
 
+    		int kernelSize32 = (MemoryMap.END_KERNEL - MemoryMap.START_KERNEL + 1) >> 2;
+    		int[] savedKernelMemory = new int[kernelSize32];
+    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(MemoryMap.START_KERNEL, 4);
+    		for (int i = 0; i < kernelSize32; i++) {
+    			savedKernelMemory[i] = memoryReader.readNext();
+    		}
+
     		if (!Memory.getInstance().allocate()) {
 				log.error(String.format("Failed to resize the PSP memory from 0x%X to 0x%X", previousMemorySize, memorySize));
 				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_ANY);
 			}
 
-			reset();
+    		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(MemoryMap.START_KERNEL, 4);
+    		for (int i = 0; i < kernelSize32; i++) {
+    			memoryWriter.writeNext(savedKernelMemory[i]);
+    		}
+
+    		reset(true);
     	}
     }
 
