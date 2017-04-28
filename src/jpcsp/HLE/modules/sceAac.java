@@ -62,6 +62,10 @@ public class sceAac extends HLEModule {
         private int loopNum;
         private int startPos;
 
+    	protected AacInfo(int id) {
+			super(id);
+		}
+
         public boolean isInit() {
             return init;
         }
@@ -83,7 +87,7 @@ public class sceAac extends HLEModule {
 		public void initCodec() {
             init = true;
             codec = CodecFactory.getCodec(PSP_CODEC_AAC);
-            codec.init(0, 2, 2, 0); // TODO How to find out correct parameter values?
+            codec.init(0, outputChannels, outputChannels, 0);
         }
 
         @Override
@@ -285,7 +289,7 @@ public class sceAac extends HLEModule {
     public void hleAacInit(int numberIds) {
         ids = new AacInfo[numberIds];
         for (int i = 0; i < numberIds; i++) {
-            ids[i] = new AacInfo();
+            ids[i] = new AacInfo(i);
         }
     }
 

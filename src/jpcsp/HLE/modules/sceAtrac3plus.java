@@ -161,7 +161,6 @@ public class sceAtrac3plus extends HLEModule {
 
     public static class AtracID extends AudiocodecInfo {
         // Internal info.
-    	private final int id;
         protected int codecType;
         protected boolean inUse;
         protected int currentReadPosition;
@@ -177,7 +176,6 @@ public class sceAtrac3plus extends HLEModule {
         private   int startSkippedSamples;
         protected int lastDecodedSamples;
         protected int channels;
-    	protected int outputChannels = 2; // Always default with 2 output channels
         // First buffer.
         protected pspFileBuffer inputBuffer;
         protected boolean reloadingFromLoopStart;
@@ -197,7 +195,7 @@ public class sceAtrac3plus extends HLEModule {
         protected int getStreamDataInfoCurrentSample;
 
         public AtracID(int id) {
-        	this.id = id;
+        	super(id);
         	info = new AtracFileInfo();
         }
 
@@ -1317,7 +1315,7 @@ public class sceAtrac3plus extends HLEModule {
     }
 
     @HLEFunction(nid = 0x5D268707, version = 150, checkInsideInterrupt = true)
-    public int sceAtracGetStreamDataInfo(@CheckArgument("checkAtracID") int atID, @CanBeNull TPointer32 writeAddr, @CanBeNull TPointer32 writableBytesAddr, @CanBeNull TPointer32 readOffsetAddr) {
+    public int sceAtracGetStreamDataInfo(@CheckArgument("checkAtracID") int atID, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 writeAddr, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 writableBytesAddr, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 readOffsetAddr) {
         AtracID id = atracIDs[atID];
         id.getStreamDataInfo(writeAddr, writableBytesAddr, readOffsetAddr);
 

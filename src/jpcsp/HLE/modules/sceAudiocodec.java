@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
@@ -47,6 +50,12 @@ public class sceAudiocodec extends HLEModule {
 	public static abstract class AudiocodecInfo {
 		protected ICodec codec;
 		protected boolean codecInitialized;
+		protected final int id;
+		protected int outputChannels = 2; // Always default with 2 output channels
+
+		protected AudiocodecInfo(int id) {
+			this.id = id;
+		}
 
 		public ICodec getCodec() {
 			return codec;
@@ -68,27 +77,26 @@ public class sceAudiocodec extends HLEModule {
 		public abstract void initCodec();
 	}
 
-	private int id;
-	private AudiocodecInfo info;
+	private Map<Integer, AudiocodecInfo> infos;
 	private SysMemInfo edramInfo;
 
 	@Override
 	public void start() {
-		id = -1;
-		info = null;
+		infos = new HashMap<Integer, sceAudiocodec.AudiocodecInfo>();
 		edramInfo = null;
 
 		super.start();
 	}
 
-	private int hleAudiocodecInit(TPointer workArea, int codecType) {
+	private int hleAudiocodecInit(TPointer workArea, int codecType, int outputChannels) {
+		AudiocodecInfo info = infos.remove(workArea.getAddress());
 		if (info != null) {
 			info.release();
 			info.setCodecInitialized(false);
 			info = null;
 		}
-		id = -1;
 
+		int id;
 		switch (codecType) {
 			case PSP_CODEC_AT3:
 			case PSP_CODEC_AT3PLUS:
@@ -97,6 +105,7 @@ public class sceAudiocodec extends HLEModule {
 					return id;
 				}
 				info = Modules.sceAtrac3plusModule.getAtracID(id);
+				info.outputChannels = outputChannels;
 				break;
 			case PSP_CODEC_AAC:
 				Modules.sceAacModule.hleAacInit(1);
@@ -105,6 +114,7 @@ public class sceAudiocodec extends HLEModule {
 					return id;
 				}
 				info = Modules.sceAacModule.getAacInfo(id);
+				info.outputChannels = outputChannels;
 				info.initCodec();
 				break;
 			case PSP_CODEC_MP3:
@@ -113,12 +123,15 @@ public class sceAudiocodec extends HLEModule {
 					return id;
 				}
 				info = Modules.sceMp3Module.getMp3Info(id);
+				info.outputChannels = outputChannels;
 				info.initCodec();
 				break;
 			default:
 				log.warn(String.format("sceAudiocodecInit unimplemented codecType=0x%X", codecType));
 				return -1;
 		}
+
+		infos.put(workArea.getAddress(), info);
 
 		workArea.setValue32(8, 0); // error field
 
@@ -153,7 +166,8 @@ public class sceAudiocodec extends HLEModule {
 	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x5B37EB1D, version = 150)
 	public int sceAudiocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
-		return hleAudiocodecInit(workArea, codecType);
+		// Same as sceAudiocodec_3DD7EE1A, but for stereo audio
+		return hleAudiocodecInit(workArea, codecType, 2);
 	}
 
 	private int getOutputBufferSize(TPointer workArea, int codecType) {
@@ -200,9 +214,7 @@ public class sceAudiocodec extends HLEModule {
 		int inputBuffer = workArea.getValue32(24);
 		int outputBuffer = workArea.getValue32(32);
 		int unknown1 = workArea.getValue32(40);
-		int channels = 2;		// How to find out correct value?
-		int outputChannels = 2;	// How to find out correct value?
-		int codingMode = 0;		// How to find out correct value?
+		int codingMode = 0; // TODO How to find out the correct value?
 
 		int inputBufferSize;
 		switch (codecType) {
@@ -253,9 +265,15 @@ public class sceAudiocodec extends HLEModule {
 			}
 		}
 
+		AudiocodecInfo info = infos.get(workArea.getAddress());
+		if (info == null) {
+			log.warn(String.format("sceAudiocodecDecode no info available for workArea=%s", workArea));
+			return -1;
+		}
+
 		ICodec codec = info.getCodec();
     	if (!info.isCodecInitialized()) {
-    		codec.init(inputBufferSize, channels, outputChannels, codingMode);
+    		codec.init(inputBufferSize, info.outputChannels, info.outputChannels, codingMode);
     		info.setCodecInitialized();
     	}
 
@@ -266,7 +284,11 @@ public class sceAudiocodec extends HLEModule {
 
 		int bytesConsumed = codec.decode(inputBuffer, inputBufferSize, outputBuffer);
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceAudiocodecDecode bytesConsumed=0x%X", bytesConsumed));
+			if (bytesConsumed < 0) {
+				log.debug(String.format("codec.decode returned error 0x%08X, data: %s", bytesConsumed, Utilities.getMemoryDump(inputBuffer, inputBufferSize)));
+			} else {
+				log.debug(String.format("sceAudiocodecDecode bytesConsumed=0x%X", bytesConsumed));
+			}
 		}
 
 		if (codec instanceof Mp3Decoder) {
@@ -338,12 +360,11 @@ public class sceAudiocodec extends HLEModule {
 		Modules.SysMemUserForUserModule.free(edramInfo);
 		edramInfo = null;
 
+		AudiocodecInfo info = infos.remove(workArea.getAddress());
 		if (info != null) {
 			info.release();
 			info.setCodecInitialized(false);
-			info = null;
 		}
-		id = -1;
 
 		return 0;
 	}
@@ -354,10 +375,10 @@ public class sceAudiocodec extends HLEModule {
 		return 0;
 	}
 
-	@HLEUnimplemented
+	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x3DD7EE1A, version = 150)
 	public int sceAudiocodec_3DD7EE1A(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
-		// Seems to be the same as sceAudiocodecInit, but maybe for mono audio?
-		return hleAudiocodecInit(workArea, codecType);
+		// Same as sceAudiocodecInit, but for mono audio
+		return hleAudiocodecInit(workArea, codecType, 1);
 	}
 }

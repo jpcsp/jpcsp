@@ -58,7 +58,7 @@ public class sceMp3 extends HLEModule {
     public void start() {
     	ids = new Mp3Info[2];
     	for (int i = 0; i < ids.length; i++) {
-    		ids[i] = new Mp3Info();
+    		ids[i] = new Mp3Info(i);
     	}
 
         super.start();
@@ -159,7 +159,10 @@ public class sceMp3 extends HLEModule {
         private int channels;
         private int version;
         private int numberOfFrames;
-        private int outputChannels;
+
+        public Mp3Info(int id) {
+        	super(id);
+        }
 
         public boolean isReserved() {
             return reserved;
@@ -402,9 +405,6 @@ public class sceMp3 extends HLEModule {
 
         public void init() {
         	parseMp3FrameHeader();
-
-        	// Always output in stereo, even if the input is mono
-        	outputChannels = 2;
 
             codec.init(0, channels, outputChannels, 0);
 
