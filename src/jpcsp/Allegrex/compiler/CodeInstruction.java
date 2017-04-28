@@ -156,7 +156,7 @@ public class CodeInstruction {
     	label = new Label();
     }
 
-    private void setLabel(Label label) {
+    protected void setLabel(Label label) {
     	this.label = label;
     }
 

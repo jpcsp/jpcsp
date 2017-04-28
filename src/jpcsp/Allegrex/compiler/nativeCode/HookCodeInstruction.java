@@ -35,6 +35,13 @@ public class HookCodeInstruction extends CodeInstruction {
 
 	@Override
 	public void compile(CompilerContext context, MethodVisitor mv) {
+		// Generate the instruction label before the hook call so that
+		// the hook is being executed when branching to the instruction.
+		if (hasLabel()) {
+			mv.visitLabel(getLabel());
+			setLabel(null);
+		}
+
 		context.visitHook(nativeCodeSequence);
 		super.compile(context, mv);
 	}
