@@ -38,6 +38,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.ModuleMgrForUser.LoadModuleContext;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
@@ -70,7 +71,16 @@ public class ModuleMgrForKernel extends HLEModule {
             }
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(buffer.toString(), flags, 0, buffer.getAddress(), bufSize, lmOption, false, true, true, 0);
+        LoadModuleContext loadModuleContext = new LoadModuleContext();
+        loadModuleContext.name = buffer.toString();
+        loadModuleContext.flags = flags;
+        loadModuleContext.buffer = buffer.getAddress();
+        loadModuleContext.bufferSize = bufSize;
+        loadModuleContext.lmOption = lmOption;
+        loadModuleContext.needModuleInfo = true;
+        loadModuleContext.allocMem = true;
+
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }
 
 	/**
@@ -93,7 +103,14 @@ public class ModuleMgrForKernel extends HLEModule {
             }
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true, true, 0);
+        LoadModuleContext loadModuleContext = new LoadModuleContext();
+        loadModuleContext.name = path.getString();
+        loadModuleContext.flags = flags;
+        loadModuleContext.lmOption = lmOption;
+        loadModuleContext.needModuleInfo = true;
+        loadModuleContext.allocMem = true;
+
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
 	}
 
 	@HLEFunction(nid = 0xD86DD11B, version = 150)
@@ -181,6 +198,14 @@ public class ModuleMgrForKernel extends HLEModule {
         	}
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), 0, 0, 0, 0, lmOption, false, true, false, sysMemInfo.addr);
+        LoadModuleContext loadModuleContext = new LoadModuleContext();
+        loadModuleContext.name = path.getString();
+        loadModuleContext.lmOption = lmOption;
+        loadModuleContext.needModuleInfo = true;
+        loadModuleContext.allocMem = false;
+        loadModuleContext.baseAddr = sysMemInfo.addr;
+        loadModuleContext.basePartition = sysMemInfo.partitionid;
+
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }
 }

@@ -125,6 +125,7 @@ import jpcsp.HLE.kernel.types.pspUtilityBaseDialog;
 import jpcsp.HLE.kernel.types.pspUtilityDialogCommon;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams.SceUtilityOskData;
 import jpcsp.HLE.kernel.types.pspCharInfo;
+import jpcsp.HLE.modules.ModuleMgrForUser.LoadModuleContext;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
@@ -2697,15 +2698,31 @@ public class sceUtility extends HLEModule {
             checkController();
         }
 
+        protected String truncateText(String text, int width, float scale) {
+        	String truncatedText = text;
+        	String truncation = "";
+        	while (true) {
+            	int textLength = getTextLength(getDefaultFontInfo(), truncatedText + truncation, scale);
+            	if (textLength <= width) {
+            		break;
+            	}
+        		truncatedText = truncatedText.substring(0, truncatedText.length() - 1);
+        		truncation = "...";
+        	}
+
+        	return truncatedText + truncation;
+        }
+
         private String wrapText(String text, int width, float scale) {
         	SceFontInfo fontInfo = getDefaultFontInfo();
         	int glyphType = SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR;
 
         	StringBuilder wrappedText = new StringBuilder();
-        	float x = 0f;
+        	int x = 0;
         	int lastSpaceStart = -1;
         	int lastSpaceEnd = -1;
         	boolean isSpace = false;
+        	int scaledWidth = (int) (width / scale);
             for (int i = 0; i < text.length(); i++) {
             	char c = text.charAt(i);
             	pspCharInfo charInfo = fontInfo.getCharInfo(c, glyphType);
@@ -2721,9 +2738,9 @@ public class sceUtility extends HLEModule {
             		isSpace = false;
             	}
 
-                float nextX = x + charInfo.sfp26AdvanceH * scale / 64f;
-                if (nextX > width) {
-            		x = 0f;
+                int nextX = x + charInfo.sfp26AdvanceH >> 6;
+                if (nextX > scaledWidth) {
+            		x = 0;
             		if (lastSpaceStart >= 0) {
         				wrappedText.replace(lastSpaceStart, lastSpaceEnd, "\n");
             		} else {
@@ -3669,7 +3686,7 @@ public class sceUtility extends HLEModule {
                     int textX = 180;
                     int textY = 119;
 
-                    drawTextWithShadow(textX, textY, 0xD1C6BA, 0.85f, title);
+                    drawTextWithShadow(textX, textY, 0xD1C6BA, 0.85f, truncateText(title, Screen.width - textX, 0.85f));
 
                     textY += 22;
                     if (savedTime != null) {
@@ -5015,9 +5032,12 @@ public class sceUtility extends HLEModule {
             }
         }
 
-        int result = Modules.ModuleMgrForUserModule.hleKernelLoadModule(path, 0, 0, 0, 0, lmOption, false, false, true, 0);
+        LoadModuleContext loadModuleContext = new LoadModuleContext();
+        loadModuleContext.name = path;
+        loadModuleContext.lmOption = lmOption;
+        loadModuleContext.allocMem = true;
 
-		return result;
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
 	}
 
 	@HLEFunction(nid = 0x78A2FE0C, version = 150)

@@ -46,6 +46,7 @@ import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoInfo;
+import jpcsp.HLE.modules.ModuleMgrForUser.LoadModuleContext;
 import jpcsp.settings.AbstractBoolSettingsListener;
 
 import org.apache.log4j.Logger;
@@ -255,7 +256,14 @@ public class scePspNpDrm_user extends HLEModule {
             return SceKernelErrors.ERROR_NPDRM_INVALID_PERM;
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true, true, 0);
+        LoadModuleContext loadModuleContext = new LoadModuleContext();
+        loadModuleContext.name = path.getString();
+        loadModuleContext.flags = flags;
+        loadModuleContext.lmOption = lmOption;
+        loadModuleContext.needModuleInfo = true;
+        loadModuleContext.allocMem = true;
+
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }
 
     @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)

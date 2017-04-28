@@ -25,6 +25,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
+import jpcsp.HLE.modules.ModuleMgrForUser.LoadModuleContext;
 import jpcsp.hardware.Model;
 
 public class KUBridge extends HLEModule {
@@ -44,7 +45,14 @@ public class KUBridge extends HLEModule {
             }
         }
 
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, 0, 0, lmOption, false, true, true, 0);
+        LoadModuleContext loadModuleContext = new LoadModuleContext();
+        loadModuleContext.name = path.getString();
+        loadModuleContext.flags = flags;
+        loadModuleContext.lmOption = lmOption;
+        loadModuleContext.needModuleInfo = true;
+        loadModuleContext.allocMem = true;
+
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }
 
     /*
