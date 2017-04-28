@@ -32,6 +32,7 @@ import java.util.List;
 import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpoint;
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.Processor;
 import jpcsp.util.Utilities;
 
 public class DebuggerMemory extends Memory {
@@ -326,7 +327,12 @@ public class DebuggerMemory extends Memory {
 
     protected String getMemoryReadMessage(int address, int width) {
         StringBuilder message = new StringBuilder();
-        message.append(String.format("0x%08X - ", Emulator.getProcessor().cpu.pc));
+
+        Processor processor = Emulator.getProcessor();
+        if (processor != null) {
+        	message.append(String.format("0x%08X - ", processor.cpu.pc));
+        }
+
         if (width == 8 || width == 16 || width == 32) {
             message.append(String.format("read%d(0x%08X)=0x", width, address));
             if (width == 8) {
@@ -361,7 +367,12 @@ public class DebuggerMemory extends Memory {
 
     protected String getMemoryWriteMessage(int address, int value, int width) {
         StringBuilder message = new StringBuilder();
-        message.append(String.format("0x%08X - ", Emulator.getProcessor().cpu.pc));
+
+        Processor processor = Emulator.getProcessor();
+        if (processor != null) {
+        	message.append(String.format("0x%08X - ", processor.cpu.pc));
+        }
+
         message.append(String.format("write%d(0x%08X, 0x", width, address));
         if (width == 8) {
             message.append(String.format("%02X", value & 0xFF));
