@@ -32,7 +32,7 @@ public class sceResmgr extends HLEModule {
     public static Logger log = Modules.getLogger("sceResmgr");
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x9DC14891, version = 990)
+    @HLEFunction(nid = 0x9DC14891, version = 150)
     public int sceResmgr_9DC14891(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultLengthAddr) {
     	String result = "release:6.60:\n";
     	result += "build:5455,0,3,1,0:builder@vsh-build6\n";
