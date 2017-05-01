@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpoint;
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -246,6 +247,7 @@ public class DebuggerMemory extends Memory {
         if (!(mem instanceof DebuggerMemory)) {
             DebuggerMemory debuggerMemory = new DebuggerMemory(mem);
             Memory.setInstance(debuggerMemory);
+            RuntimeContext.updateMemory();
         }
     }
 

@@ -23,8 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
-import jpcsp.Memory;
-import jpcsp.memory.FastMemory;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.NativeCpuInfo;
 import jpcsp.util.Utilities;
@@ -93,9 +92,7 @@ public class NativeUtils {
 					libraryExisting = true;
 					try {
 						System.loadLibrary(library);
-						if (Memory.getInstance() instanceof FastMemory) {
-							memoryInt = ((FastMemory) Memory.getInstance()).getAll();
-						}
+						RuntimeContext.updateMemory();
 						initNative();
 						log.info(String.format("Loaded %s library", library));
 						isAvailable = true;
