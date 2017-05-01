@@ -112,16 +112,16 @@ public class SceUtilityOskParams extends pspUtilityBaseDialog {
 
 		@Override
 		protected void write() {
-            write32(inputMode);
-            write32(inputAttr);
-			write32(language);
-			write32(hide);
-            write32(inputAllowCharType);
-			write32(lines);
-			write32(showInputText);
-			write32(descAddr);
+            write32(inputMode); // Offset 0
+            write32(inputAttr); // Offset 4
+			write32(language); // Offset 8
+			write32(hide); // Offset 12
+            write32(inputAllowCharType); // Offset 16
+			write32(lines); // Offset 20
+			write32(showInputText); // Offset 24
+			write32(descAddr); // Offset 28
 			writeStringUTF16Z(descAddr, desc);
-			write32(inTextAddr);
+			write32(inTextAddr); // Offset 32
 			writeStringUTF16Z(inTextAddr, inText);
 			int maxTextOutLength = outTextLength - 1;
 			if (outTextLimit > 0 && outTextLimit < maxTextOutLength) {
@@ -148,12 +148,11 @@ public class SceUtilityOskParams extends pspUtilityBaseDialog {
 				}
 				outText = s.toString();
 			}
-			int bytesLength = writeStringUTF16Z(outTextAddr, outText.substring(0, length));
-			mem.memset(outTextAddr + bytesLength, (byte) 0, (maxTextOutLength + 1) * 2 - bytesLength);
-			write32(outTextLength);
-			write32(outTextAddr);
-			write32(result);
-			write32(outTextLimit);
+			writeStringUTF16Z(outTextAddr, outText.substring(0, length));
+			write32(outTextLength); // Offset 36
+			write32(outTextAddr); // Offset 40
+			write32(result); // Offset 44
+			write32(outTextLimit); // Offset 48
 		}
 
 		@Override
