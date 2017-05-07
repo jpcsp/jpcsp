@@ -196,6 +196,24 @@ public class sceNetInet extends HLEModule {
 		}
     }
 
+    private class AsyncStartThread extends Thread {
+		@Override
+		public void run() {
+			// These DNS requests take some time to complete (1-2 seconds),
+			// this is why we execute them in a separate thread.
+			for (HttpServerConfiguration doProxyServer : HTTPConfiguration.doProxyServers) {
+				try {
+					InetAddress inetAddresses[] = (InetAddress[]) InetAddress.getAllByName(doProxyServer.serverName);
+					doProxyInetAddresses = Utilities.merge(doProxyInetAddresses, inetAddresses);
+				} catch (UnknownHostException e) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("sceNetInet cannot resolve '%s': %s", doProxyServer, e.toString()));
+					}
+				}
+			}
+		}
+    }
+
     public static InetSocketAddress[] getBroadcastInetSocketAddress(int port) throws UnknownHostException {
     	if (broadcastAddresses == null) {
         	String broadcastAddressNames = Settings.getInstance().readString("network.broadcastAddress");
@@ -2101,18 +2119,13 @@ public class sceNetInet extends HLEModule {
 		setSettingsListener("network.broadcastAddress", new BroadcastAddressSettingsListener());
 
 		sockets = new HashMap<Integer, pspInetSocket>();
+		doProxyInetAddresses = null;
 
-		for (HttpServerConfiguration doProxyServer : HTTPConfiguration.doProxyServers) {
-			InetAddress inetAddresses[] = null;
-			try {
-				inetAddresses = (InetAddress[]) InetAddress.getAllByName(doProxyServer.serverName);
-				doProxyInetAddresses = Utilities.merge(doProxyInetAddresses, inetAddresses);
-			} catch (UnknownHostException e) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInet cannot resolve '%s': %s", doProxyServer, e.toString()));
-				}
-			}
-		}
+		// Perform long running actions in a separate thread to not brake
+		// the start of the emulator
+		AsyncStartThread asyncStartThread = new AsyncStartThread();
+		asyncStartThread.setName("sceNetInet Async Start Thread");
+		asyncStartThread.start();
 
 		super.start();
 	}
