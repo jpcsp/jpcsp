@@ -32,11 +32,11 @@ import static jpcsp.memory.ImageReader.color5551to8888;
 import static jpcsp.memory.ImageReader.color565to8888;
 import static jpcsp.util.Utilities.getPower2;
 import jpcsp.Memory;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
-import jpcsp.memory.FastMemory;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.util.Utilities;
 
@@ -54,16 +54,9 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 	protected final int heightPower2;
 	protected final int offset;
 	protected int[] buffer;
-	protected static int[] memAll;
 	protected boolean useTextureClut;
 	protected int[] clut;
 	protected boolean isVRAMTexture;
-
-	static {
-		if (Memory.getInstance() instanceof FastMemory) {
-			memAll = ((FastMemory) Memory.getInstance()).getAll();
-		}
-	}
 
 	public static CachedTexture getCachedTexture(int width, int height, int pixelFormat, IMemoryReader imageReader) {
 		CachedTexture cachedTexture = getCachedTexture(width, height, pixelFormat, 0);
@@ -76,7 +69,7 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 		int offset = 0;
 		// When the texture is directly available from the memory,
 		// we can reuse the memory array and do not need to copy the whole texture.
-		if (buffer == memAll) {
+		if (buffer == RuntimeContext.getMemoryInt()) {
 			if (pixelFormat == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 || IRenderingEngine.isTextureTypeIndexed[pixelFormat]) {
 				// Do not reuse the memory buffer when the texture is inside the current GE,
 				// copy the texture (this is better matching the PSP texture cache behavior).
@@ -90,7 +83,7 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 		CachedTexture cachedTexture = getCachedTexture(width, height, pixelFormat, offset);
 		cachedTexture.setBuffer(buffer, bufferOffset, bufferLength);
 
-		if (buffer == memAll) {
+		if (buffer == RuntimeContext.getMemoryInt()) {
 			int textureAddress = bufferOffset << 2;
 			if (Memory.isVRAM(textureAddress)) {
 				cachedTexture.setVRAMTexture(true);
@@ -190,7 +183,7 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 			case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED:
 			case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED:
 				// Is the texture directly available from the memory array?
-				if (buffer == memAll && offset == bufferOffset) {
+				if (buffer == RuntimeContext.getMemoryInt() && offset == bufferOffset) {
 					// We do not need to copy the whole texture, we can reuse the memory array
 					this.buffer = buffer;
 				} else {

@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.Allegrex.compiler.RuntimeContext.memoryInt;
 import static jpcsp.HLE.modules.sceMpeg.getIntBuffer;
 import static jpcsp.HLE.modules.sceMpeg.releaseIntBuffer;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
@@ -25,6 +24,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -57,9 +57,10 @@ public class sceMpegbase extends HLEModule {
 		}
 
     	// Optimize the most common case
-        if (memoryInt != null) {
+        if (RuntimeContext.hasMemoryInt()) {
         	int length4 = length >> 2;
         	int addrOffset = addr >> 2;
+        	int[] memoryInt = RuntimeContext.getMemoryInt();
 	        for (int i = 0, j = offset; i < length4; i++) {
 	        	int value = memoryInt[addrOffset++];
 	        	buffer[j++] = (value      ) & 0xFF;
@@ -193,12 +194,12 @@ public class sceMpegbase extends HLEModule {
         VideoEngine.getInstance().addVideoTexture(destAddr, destAddr + (rangeY + rangeHeight) * bufferWidth * bytesPerPixel);
 
         // Write the ABGR image
-		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && memoryInt != null) {
+		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && RuntimeContext.hasMemoryInt()) {
 			// Optimize the most common case
 			int pixelIndex = rangeY * width + rangeX;
         	int addr = destAddr;
 	        for (int i = 0; i < rangeHeight; i++) {
-	        	System.arraycopy(abgr, pixelIndex, memoryInt, addr >> 2, rangeWidth);
+	        	System.arraycopy(abgr, pixelIndex, RuntimeContext.getMemoryInt(), addr >> 2, rangeWidth);
 	        	pixelIndex += width;
 	        	addr += bufferWidth * bytesPerPixel;
 	        }
@@ -351,12 +352,12 @@ public class sceMpegbase extends HLEModule {
         VideoEngine.getInstance().addVideoTexture(destAddr, destAddr + (rangeY + rangeHeight) * bufferWidth * bytesPerPixel);
 
         // Write the ABGR image
-		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && memoryInt != null) {
+		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && RuntimeContext.hasMemoryInt()) {
 			// Optimize the most common case
 			int pixelIndex = rangeY * width + rangeX;
 	        for (int i = 0; i < rangeHeight; i++) {
 	        	int addr = destAddr + (i * bufferWidth) * bytesPerPixel;
-	        	System.arraycopy(abgr, pixelIndex, memoryInt, addr >> 2, rangeWidth);
+	        	System.arraycopy(abgr, pixelIndex, RuntimeContext.getMemoryInt(), addr >> 2, rangeWidth);
 	        	pixelIndex += width;
 	        }
 		} else {

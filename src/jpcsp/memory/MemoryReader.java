@@ -22,6 +22,7 @@ import java.nio.IntBuffer;
 
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 
 /**
  * @author gid15
@@ -44,8 +45,8 @@ public class MemoryReader {
 		return length;
 	}
 
-	private static IMemoryReader getFastMemoryReader(FastMemory mem, int address, int step) {
-		int[] memoryInt = mem.getAll();
+	private static IMemoryReader getFastMemoryReader(int address, int step) {
+		int[] memoryInt = RuntimeContext.getMemoryInt();
 
 		switch (step) {
 		case 1: return new MemoryReaderIntArray8(memoryInt, address);
@@ -71,14 +72,12 @@ public class MemoryReader {
 	 * @return        the MemoryReader
 	 */
 	public static IMemoryReader getMemoryReader(int address, int length, int step) {
-		Memory mem = Memory.getInstance();
-
 		address &= Memory.addressMask;
-		if (mem instanceof FastMemory) {
-			return getFastMemoryReader((FastMemory) mem, address, step);
+		if (RuntimeContext.hasMemoryInt()) {
+			return getFastMemoryReader(address, step);
 		}
 
-		if (!(mem instanceof DebuggerMemory)) {
+		if (!DebuggerMemory.isInstalled()) {
 			Buffer buffer = Memory.getInstance().getBuffer(address, length);
 
 			if (buffer instanceof IntBuffer) {
@@ -115,11 +114,9 @@ public class MemoryReader {
 	 * @return        the MemoryReader
 	 */
 	public static IMemoryReader getMemoryReader(int address, int step) {
-		Memory mem = Memory.getInstance();
-
 		address &= Memory.addressMask;
-		if (mem instanceof FastMemory) {
-			return getFastMemoryReader((FastMemory) mem, address, step);
+		if (RuntimeContext.hasMemoryInt()) {
+			return getFastMemoryReader(address, step);
 		}
 		return getMemoryReader(address, getMaxLength(address), step);
 	}

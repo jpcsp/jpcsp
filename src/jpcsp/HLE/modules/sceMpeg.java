@@ -16,7 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.Allegrex.compiler.RuntimeContext.memoryInt;
+import static jpcsp.Allegrex.compiler.RuntimeContext.getMemoryInt;
+import static jpcsp.Allegrex.compiler.RuntimeContext.hasMemoryInt;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_High;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
@@ -1962,12 +1963,12 @@ public class sceMpeg extends HLEModule {
 		int lineWidth = Math.min(imageWidth, frameWidth);
 		int lineSkip = frameWidth - lineWidth;
 
-		if (pixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && memoryInt != null) {
+		if (pixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && hasMemoryInt()) {
 			// Optimize the most common case
 			int offset = 0;
 			int memoryIntOffset = addr >> 2;
 			for (int y = 0; y < frameHeight; y++) {
-				System.arraycopy(abgr, offset, memoryInt, memoryIntOffset, lineWidth);
+				System.arraycopy(abgr, offset, getMemoryInt(), memoryIntOffset, lineWidth);
 				memoryIntOffset += frameWidth;
 				offset += imageWidth;
 			}
@@ -3678,10 +3679,11 @@ public class sceMpeg extends HLEModule {
         int[] cb = getIntBuffer(length2);
         int[] cr = getIntBuffer(length2);
         int dataAddr = sourceAddr.getAddress() + YCBCR_DATA_OFFSET;
-        if (memoryInt != null) {
+        if (hasMemoryInt()) {
         	// Optimize the most common case
         	int length4 = length >> 2;
             int offset = dataAddr >> 2;
+            int[] memoryInt = getMemoryInt();
             for (int i = 0, j = 0; i < length4; i++) {
             	int value = memoryInt[offset++];
             	luma[j++] = (value      ) & 0xFF;
@@ -3731,12 +3733,12 @@ public class sceMpeg extends HLEModule {
         VideoEngine.getInstance().addVideoTexture(destAddr.getAddress(), destAddr.getAddress() + (rangeY + rangeHeight) * frameWidth * bytesPerPixel);
 
         // Write the ABGR image
-		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && memoryInt != null) {
+		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && hasMemoryInt()) {
 			// Optimize the most common case
 			int pixelIndex = rangeY * width + rangeX;
 	        for (int i = 0; i < rangeHeight; i++) {
 	        	int addr = destAddr.getAddress() + (i * frameWidth) * bytesPerPixel;
-	        	System.arraycopy(abgr, pixelIndex, memoryInt, addr >> 2, rangeWidth);
+	        	System.arraycopy(abgr, pixelIndex, getMemoryInt(), addr >> 2, rangeWidth);
 	        	pixelIndex += width;
 	        }
 		} else {

@@ -25,6 +25,7 @@ import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.util.ClassSpecializer;
@@ -76,7 +77,7 @@ public class FilterCompiler {
 
 		HashMap<String, Object> variables = new HashMap<String, Object>();
 		// All these variables have to be defined as static members in the class RendererTemplate.
-		variables.put("hasMemInt", Boolean.valueOf(renderer.memInt != null));
+		variables.put("hasMemInt", Boolean.valueOf(RuntimeContext.hasMemoryInt()));
 		variables.put("transform2D", Boolean.valueOf(renderer.transform2D));
 		variables.put("clearMode", Boolean.valueOf(renderer.clearMode));
 		variables.put("clearModeColor", Boolean.valueOf(context.clearModeColor));

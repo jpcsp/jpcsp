@@ -16,14 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory;
 
 import jpcsp.Memory;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 
 /**
  * @author gid15
  *
  */
 public class MemoryReaderWriter {
-	private static IMemoryReaderWriter getFastMemoryReaderWriter(FastMemory mem, int address, int step) {
-		int[] memoryInt = mem.getAll();
+	private static IMemoryReaderWriter getFastMemoryReaderWriter(int address, int step) {
+		int[] memoryInt = RuntimeContext.getMemoryInt();
 
 		// Implement the most common cases with dedicated classes.
 		switch (step) {
@@ -36,11 +37,9 @@ public class MemoryReaderWriter {
 	}
 
 	public static IMemoryReaderWriter getMemoryReaderWriter(int address, int length, int step) {
-		Memory mem = Memory.getInstance();
-
 		address &= Memory.addressMask;
-		if (mem instanceof FastMemory) {
-			return getFastMemoryReaderWriter((FastMemory) mem, address, step);
+		if (RuntimeContext.hasMemoryInt()) {
+			return getFastMemoryReaderWriter(address, step);
 		}
 
 		// No dedicated class available, use the generic one.
@@ -48,11 +47,9 @@ public class MemoryReaderWriter {
 	}
 
 	public static IMemoryReaderWriter getMemoryReaderWriter(int address, int step) {
-		Memory mem = Memory.getInstance();
-
 		address &= Memory.addressMask;
-		if (mem instanceof FastMemory) {
-			return getFastMemoryReaderWriter((FastMemory) mem, address, step);
+		if (RuntimeContext.hasMemoryInt()) {
+			return getFastMemoryReaderWriter(address, step);
 		}
 
 		// No dedicated class available, use the generic one.

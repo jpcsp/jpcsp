@@ -22,6 +22,7 @@ import java.nio.IntBuffer;
 
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 
 /**
  * @author gid15
@@ -44,8 +45,8 @@ public class MemoryWriter {
 		return length;
 	}
 
-	private static IMemoryWriter getFastMemoryWriter(FastMemory mem, int address, int step) {
-		int[] memoryInt = mem.getAll();
+	private static IMemoryWriter getFastMemoryWriter(int address, int step) {
+		int[] memoryInt = RuntimeContext.getMemoryInt();
 
 		switch (step) {
 		case 1: return new MemoryWriterIntArray8(memoryInt, address);
@@ -71,14 +72,12 @@ public class MemoryWriter {
 	 * @return        the MemoryWriter
 	 */
 	public static IMemoryWriter getMemoryWriter(int address, int length, int step) {
-		Memory mem = Memory.getInstance();
-
 		address &= Memory.addressMask;
-		if (mem instanceof FastMemory) {
-			return getFastMemoryWriter((FastMemory) mem, address, step);
+		if (RuntimeContext.hasMemoryInt()) {
+			return getFastMemoryWriter(address, step);
 		}
 
-		if (!(mem instanceof DebuggerMemory)) {
+		if (!DebuggerMemory.isInstalled()) {
 			Buffer buffer = Memory.getInstance().getBuffer(address, length);
 
 			if (buffer instanceof IntBuffer) {
@@ -115,11 +114,9 @@ public class MemoryWriter {
 	 * @return        the MemoryWriter
 	 */
 	public static IMemoryWriter getMemoryWriter(int address, int step) {
-		Memory mem = Memory.getInstance();
-
 		address &= Memory.addressMask;
-		if (mem instanceof FastMemory) {
-			return getFastMemoryWriter((FastMemory) mem, address, step);
+		if (RuntimeContext.hasMemoryInt()) {
+			return getFastMemoryWriter(address, step);
 		}
 		return getMemoryWriter(address, getMaxLength(address), step);
 	}

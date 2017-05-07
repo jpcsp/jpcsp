@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.Allegrex.compiler.RuntimeContext.memoryInt;
 import static jpcsp.HLE.modules.sceMpeg.getIntBuffer;
 import static jpcsp.HLE.modules.sceMpeg.releaseIntBuffer;
 import static jpcsp.util.Utilities.alignUp;
@@ -29,6 +28,7 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -564,9 +564,10 @@ public class sceVideocodec extends HLEModule {
     	}
 
     	// Optimize the most common case
-        if (memoryInt != null) {
+        if (RuntimeContext.hasMemoryInt()) {
         	int length4 = length >> 2;
         	int addrOffset = addr >> 2;
+    		int[] memoryInt = RuntimeContext.getMemoryInt();
 	        for (int i = 0, j = offset; i < length4; i++) {
 	        	int value = buffer[j++] & 0xFF;
 	        	value += (buffer[j++] & 0xFF) << 8;

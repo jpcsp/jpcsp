@@ -31,6 +31,7 @@ import static jpcsp.util.Utilities.vectorMult44;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VertexState;
@@ -661,7 +662,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	private void prepareWriters() {
         fbAddress = getTextureAddress(fbp, prim.pxMin, prim.pyMin, fbw, psm);
     	depthAddress = getTextureAddress(zbp, prim.pxMin, prim.pyMin, zbw, depthBufferPixelFormat);
-    	if (!RendererTemplate.isRendererWriterNative(memInt, psm)) {
+    	if (!RendererTemplate.isRendererWriterNative(RuntimeContext.getMemoryInt(), psm)) {
     		rendererWriter = RendererWriter.getRendererWriter(fbAddress, fbw, psm, depthAddress, zbw, depthBufferPixelFormat, needDestinationDepthRead, needDepthWrite);
     	}
         imageWriterSkipEOL = fbw - prim.destinationWidth;

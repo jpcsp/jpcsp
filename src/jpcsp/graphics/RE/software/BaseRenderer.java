@@ -29,13 +29,13 @@ import org.apache.log4j.Logger;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.State;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.capture.CaptureManager;
-import jpcsp.memory.FastMemory;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.ImageReader;
 import jpcsp.util.DurationStatistics;
@@ -61,7 +61,6 @@ public abstract class BaseRenderer implements IRenderer {
 	protected static final boolean captureZbuffer = false;
     public static final int depthBufferPixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED;
     protected static final int MAX_NUMBER_FILTERS = 15;
-	public int[] memInt;
 	public int imageWriterSkipEOL;
 	public int depthWriterSkipEOL;
 	protected RendererTemplate compiledRenderer;
@@ -132,7 +131,6 @@ public abstract class BaseRenderer implements IRenderer {
 		compiledRenderer = from.compiledRenderer;
 		lighting = from.lighting;
 		textureAccess = from.textureAccess;
-		memInt = from.memInt;
 		transform2D = from.transform2D;
 		nearZ = from.nearZ;
 		farZ = from.farZ;
@@ -276,11 +274,6 @@ public abstract class BaseRenderer implements IRenderer {
 		texMagFilter = context.tex_mag_filter;
 		primaryColor = getColor(context.vertexColor);
 
-		Memory mem = Memory.getInstance();
-		if (mem instanceof FastMemory) {
-			memInt = ((FastMemory) mem).getAll();
-		}
-
 		baseRendererKey = getBaseRendererKey(context);
 
 		if (!transform2D && context.lightingFlag.isEnabled()) {
@@ -352,7 +345,7 @@ public abstract class BaseRenderer implements IRenderer {
 	private LongLongKey getBaseRendererKey(GeContext context) {
 		LongLongKey key = new LongLongKey();
 
-		key.addKeyComponent(memInt != null);
+		key.addKeyComponent(RuntimeContext.hasMemoryInt());
 		key.addKeyComponent(transform2D);
 		key.addKeyComponent(clearMode);
 		if (clearMode) {

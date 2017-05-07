@@ -51,7 +51,7 @@ import static jpcsp.util.Utilities.max;
 import static jpcsp.util.Utilities.min;
 import static jpcsp.util.Utilities.normalize3;
 import static jpcsp.util.Utilities.round;
-
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.software.Rasterizer.Range;
@@ -317,7 +317,7 @@ public class RendererTemplate {
 		int fbIndex = 0;
 		int depthIndex = 0;
 		int depthOffset = 0;
-		final int[] memInt = renderer.memInt;
+		final int[] memInt = RuntimeContext.getMemoryInt();
 		if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 			fbIndex = renderer.fbAddress >> 2;
 			depthIndex = renderer.depthAddress >> 2;

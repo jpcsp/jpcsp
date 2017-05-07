@@ -27,8 +27,8 @@ import java.util.HashMap;
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.graphics.RE.IRenderingEngine;
-import jpcsp.memory.FastMemory;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
@@ -180,12 +180,10 @@ public class VertexBuffer {
 	}
 
 	private void copyToCachedMemory(int address, int length) {
-		Memory mem = Memory.getInstance();
 		int offset = getBufferOffset(address) >> 2;
 		int n = length >> 2;
-		if (mem instanceof FastMemory) {
-			int[] allMem = ((FastMemory) mem).getAll();
-			System.arraycopy(allMem, address >> 2, cachedMemory, offset, n);
+		if (RuntimeContext.hasMemoryInt()) {
+			System.arraycopy(RuntimeContext.getMemoryInt(), address >> 2, cachedMemory, offset, n);
 		} else {
 			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
 			for (int i = 0; i < n; i++) {

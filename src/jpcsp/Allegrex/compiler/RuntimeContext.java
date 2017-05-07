@@ -1485,4 +1485,12 @@ public class RuntimeContext {
     public static void setFirmwareVersion(int firmwareVersion) {
     	RuntimeContext.firmwareVersion = firmwareVersion;
     }
+
+    public static boolean hasMemoryInt() {
+    	return memoryInt != null;
+    }
+
+    public static int[] getMemoryInt() {
+    	return memoryInt;
+    }
 }

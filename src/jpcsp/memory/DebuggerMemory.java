@@ -241,20 +241,22 @@ public class DebuggerMemory extends Memory {
         log.info(String.format("%d memory breakpoint(s) imported", memoryBreakpoints.size()));
     }
 
+    public static boolean isInstalled() {
+    	return Memory.getInstance() instanceof DebuggerMemory;
+    }
+
     public static void install() {
-        log.info("Using DebuggerMemory");
-        Memory mem = Memory.getInstance();
-        if (!(mem instanceof DebuggerMemory)) {
-            DebuggerMemory debuggerMemory = new DebuggerMemory(mem);
+        if (!isInstalled()) {
+            log.info("Using DebuggerMemory");
+            DebuggerMemory debuggerMemory = new DebuggerMemory(Memory.getInstance());
             Memory.setInstance(debuggerMemory);
             RuntimeContext.updateMemory();
         }
     }
 
     public static void deinstall() {
-        Memory mem = Memory.getInstance();
-        if (mem instanceof DebuggerMemory) {
-            DebuggerMemory debuggerMemory = (DebuggerMemory) mem;
+        if (isInstalled()) {
+            DebuggerMemory debuggerMemory = (DebuggerMemory) Memory.getInstance();
             Memory.setInstance(debuggerMemory.mem);
         }
     }

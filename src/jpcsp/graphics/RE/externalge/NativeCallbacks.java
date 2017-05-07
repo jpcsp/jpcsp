@@ -112,8 +112,8 @@ public class NativeCallbacks {
 
 	public static void writeByteBuffer(int address, ByteBuffer source, int length) {
 		writeByteBuffer.start();
-		if (RuntimeContext.memoryInt != null && (address & 3) == 0 && (length & 3) == 0 && isAddressGood(address)) {
-			IntBuffer destination = IntBuffer.wrap(RuntimeContext.memoryInt, (address & Memory.addressMask) >> 2, length >> 2);
+		if (RuntimeContext.hasMemoryInt() && (address & 3) == 0 && (length & 3) == 0 && isAddressGood(address)) {
+			IntBuffer destination = IntBuffer.wrap(RuntimeContext.getMemoryInt(), (address & Memory.addressMask) >> 2, length >> 2);
 			source.order(ByteOrder.nativeOrder());
 			destination.put(source.asIntBuffer());
 		} else {
@@ -124,10 +124,10 @@ public class NativeCallbacks {
 
 	public static void writeByteBufferArea(int address, ByteBuffer source, int bufferWidth, int width, int height) {
 		writeByteBufferArea.start();
-		if (RuntimeContext.memoryInt != null && (address & 3) == 0 && (width & 3) == 0 && (bufferWidth & 3) == 0 && isAddressGood(address)) {
+		if (RuntimeContext.hasMemoryInt() && (address & 3) == 0 && (width & 3) == 0 && (bufferWidth & 3) == 0 && isAddressGood(address)) {
 			int length = bufferWidth * height;
 			int destinationOffset = (address & Memory.addressMask) >> 2;
-			IntBuffer destination = IntBuffer.wrap(RuntimeContext.memoryInt, destinationOffset, length >> 2);
+			IntBuffer destination = IntBuffer.wrap(RuntimeContext.getMemoryInt(), destinationOffset, length >> 2);
 			source.order(ByteOrder.nativeOrder());
 			IntBuffer sourceInt = source.asIntBuffer();
 			int width4 = width >> 2;

@@ -17,8 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import jpcsp.Memory;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.graphics.GeCommands;
-import jpcsp.memory.FastMemory;
 import jpcsp.memory.IMemoryReaderWriter;
 
 /**
@@ -27,17 +27,15 @@ import jpcsp.memory.IMemoryReaderWriter;
  */
 public class RendererWriter {
 	public static IRendererWriter getRendererWriter(int fbAddress, int fbBufferWidth, int fbPixelFormat, int depthAddress, int depthBufferWidth, int depthPixelFormat, boolean needDepthRead, boolean needDepthWrite) {
-		Memory mem = Memory.getInstance();
-
-		if (mem instanceof FastMemory) {
-			return getFastMemoryRendererWriter((FastMemory) mem, fbAddress, fbBufferWidth, fbPixelFormat, depthAddress, depthBufferWidth, depthPixelFormat, needDepthRead, needDepthWrite);
+		if (RuntimeContext.hasMemoryInt()) {
+			return getFastMemoryRendererWriter(fbAddress, fbBufferWidth, fbPixelFormat, depthAddress, depthBufferWidth, depthPixelFormat, needDepthRead, needDepthWrite);
 		}
 
 		return getRendererWriterGeneric(fbAddress, fbBufferWidth, fbPixelFormat, depthAddress, depthBufferWidth, depthPixelFormat, needDepthRead, needDepthWrite);
 	}
 
-	private static IRendererWriter getFastMemoryRendererWriter(FastMemory mem, int fbAddress, int fbBufferWidth, int fbPixelFormat, int depthAddress, int depthBufferWidth, int depthPixelFormat, boolean needDepthRead, boolean needDepthWrite) {
-		int[] memInt = mem.getAll();
+	private static IRendererWriter getFastMemoryRendererWriter(int fbAddress, int fbBufferWidth, int fbPixelFormat, int depthAddress, int depthBufferWidth, int depthPixelFormat, boolean needDepthRead, boolean needDepthWrite) {
+		int[] memInt = RuntimeContext.getMemoryInt();
 
 		if (depthPixelFormat == BaseRenderer.depthBufferPixelFormat) {
 			switch (fbPixelFormat) {

@@ -53,13 +53,13 @@ public class MemoryRange {
 	public void updateValues() {
 		values = new int[length >> 2];
 
-		if (RuntimeContext.memoryInt == null) {
+		if (!RuntimeContext.hasMemoryInt()) {
 			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
 			for (int i = 0; i < values.length; i++) {
 				values[i] = memoryReader.readNext();
 			}
 		} else {
-			System.arraycopy(RuntimeContext.memoryInt, address >> 2, values, 0, values.length);
+			System.arraycopy(RuntimeContext.getMemoryInt(), address >> 2, values, 0, values.length);
 		}
 	}
 
@@ -77,7 +77,7 @@ public class MemoryRange {
 	}
 
 	public boolean areValuesChanged() {
-		if (RuntimeContext.memoryInt == null) {
+		if (!RuntimeContext.hasMemoryInt()) {
 			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
 			for (int i = 0; i < values.length; i++) {
 				if (values[i] != memoryReader.readNext()) {
@@ -86,7 +86,7 @@ public class MemoryRange {
 			}
 		} else {
 			// Optimized for the most common case (i.e. using memoryInt)
-			int[] memoryInt = RuntimeContext.memoryInt;
+			int[] memoryInt = RuntimeContext.getMemoryInt();
 			int memoryIndex = address >> 2;
 			for (int i = 0; i < values.length; i++, memoryIndex++) {
 				if (memoryInt[memoryIndex] != values[i]) {
