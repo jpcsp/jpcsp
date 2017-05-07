@@ -293,9 +293,9 @@ public class sceGu {
         lineVertexWriter.writeNext(x1);
         lineVertexWriter.writeNext(y1);
         lineVertexWriter.writeNext(0);
-        lineVertexWriter.flush();
         // Align on 32-bit
         lineVertexWriter.writeNext(0);
+        lineVertexWriter.flush();
 
         sceGuDisable(IRenderingEngine.GU_TEXTURE_2D);
 		sceGuDrawArray(PRIM_LINE, (VTYPE_TRANSFORM_PIPELINE_RAW_COORD << 23) | (VTYPE_COLOR_FORMAT_32BIT_ABGR_8888 << 2) | (VTYPE_POSITION_FORMAT_16_BIT << 7), numberOfVertex, 0, lineVertexAddr);
