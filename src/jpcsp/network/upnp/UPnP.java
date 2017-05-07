@@ -146,12 +146,17 @@ public class UPnP {
 							}
 
 							if (location != null && st != null) {
-								log.debug(String.format("Location: '%s', st: '%s'", location, st));
+								if (log.isDebugEnabled()) {
+									log.debug(String.format("Location: '%s', st: '%s'", location, st));
+								}
+
 								if (!processedUrls.contains(location)) {
 									igd.discover(location);
 									processedUrls.add(location);
 									if (igd.isValid() && igd.isConnected(upnp)) {
-										log.info(String.format("IGD connected with external IP: %s", igd.getExternalIPAddress(upnp)));
+										if (log.isDebugEnabled()) {
+											log.debug(String.format("IGD connected with external IP: %s", igd.getExternalIPAddress(upnp)));
+										}
 										setDone(true);
 									}
 								}
@@ -306,7 +311,7 @@ public class UPnP {
 
 			if (log.isDebugEnabled()) {
 				String errorCode = result.get("errorCode");
-				if (errorCode != null) {
+				if (log.isDebugEnabled() && errorCode != null) {
 					log.debug(String.format("UPnP command %s: errorCode = %s", action, errorCode));
 				}
 			}

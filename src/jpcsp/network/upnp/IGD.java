@@ -112,7 +112,9 @@ public class IGD {
 		ipV6FC = null;
 		parseElement(description.getDocumentElement());
 
-		log.info(String.format("IGD data: %s", toString()));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("IGD data: %s", toString()));
+		}
 	}
 
 	private void parseElement(Element element) {
