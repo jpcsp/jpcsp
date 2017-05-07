@@ -148,7 +148,7 @@ public class LoadExecForUser extends HLEModule {
 
             	// Set the given arguments to the root thread.
             	// Do not pass the file name as first parameter (tested on PSP).
-            	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getCurrentThread();
+            	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getRootThread(module);
             	Modules.ThreadManForUserModule.hleKernelSetThreadArguments(rootThread, arguments, argSize);
 
             	// The memory model (32MB / 64MB) could have been changed, update the RuntimeContext
