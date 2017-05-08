@@ -311,7 +311,7 @@ public class UPnP {
 
 			if (log.isDebugEnabled()) {
 				String errorCode = result.get("errorCode");
-				if (log.isDebugEnabled() && errorCode != null) {
+				if (errorCode != null) {
 					log.debug(String.format("UPnP command %s: errorCode = %s", action, errorCode));
 				}
 			}
