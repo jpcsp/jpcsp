@@ -722,8 +722,9 @@ public class UmdBrowser extends javax.swing.JDialog {
         		String title = getTitle(rowIndex);
         		String discId = getDiscId(rowIndex);
 				String programPath = getProgramPath(rowIndex);
+				String firmware = getFirmware(rowIndex);
 
-				if (filter(filter, title) || filter(filter, discId) || filter(filter, programPath)) {
+				if (filter(filter, title) || filter(filter, discId) || filter(filter, programPath) || filter(filter, firmware)) {
 					show = true;
 				}
     		} catch (IOException e) {
