@@ -53,6 +53,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.filesystems.SeekableDataInput;
@@ -797,8 +798,8 @@ public class Utilities {
             return "";
         }
 
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(bytes, offset, length, step);
-        IMemoryReader charReader = MemoryReader.getMemoryReader(bytes, offset, length, step);
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(0, bytes, offset, length, step);
+        IMemoryReader charReader = MemoryReader.getMemoryReader(0, bytes, offset, length, step);
 
         return getMemoryDump(0, length, step, bytesPerLine, memoryReader, charReader);
     }
@@ -1290,6 +1291,22 @@ public class Utilities {
             memoryWriter.writeNext(bytes[i + offset] & 0xFF);
         }
         memoryWriter.flush();
+    }
+
+    public static int[] readInt32(int address, int length) {
+		int[] a = new int[length >> 2];
+
+		// Optimize the most common case
+		if (RuntimeContext.hasMemoryInt()) {
+			System.arraycopy(RuntimeContext.getMemoryInt(), address >> 2, a, 0, a.length);
+		} else {
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
+			for (int i = 0; i < a.length; i++) {
+				a[i] = memoryReader.readNext();
+			}
+		}
+
+		return a;
     }
 
     public static int round4(int n) {

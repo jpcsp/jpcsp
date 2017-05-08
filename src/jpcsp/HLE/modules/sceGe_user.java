@@ -47,6 +47,9 @@ import jpcsp.HLE.kernel.types.interrupts.GeInterruptHandler;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.externalge.ExternalGE;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -379,6 +382,7 @@ public class sceGe_user extends HLEModule {
 	        }
     	}
 
+    	boolean useCachedMemory = false;
     	if (Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() >= 0x02000000) {
 	        boolean isBusy;
 	    	if (ExternalGE.isActive()) {
@@ -390,9 +394,22 @@ public class sceGe_user extends HLEModule {
 	    		log.warn(String.format("hleGeListEnQueue can't enqueue duplicate list address %s, stack 0x%08X", listAddr, stackAddr));
 	    		return SceKernelErrors.ERROR_BUSY;
 	    	}
+    	} else {
+    		// Old games (i.e. having PSP SDK version < 2.00) are sometimes
+    		// reusing the same address for multiple lists, without waiting
+    		// for the previous list to complete. They assume that the lists
+    		// are being executed quite quickly, which is not the case when
+    		// using the OpenGL rendering engine. There is some delay before
+    		// the OpenGL frame refresh is being processed.
+    		useCachedMemory = true;
     	}
 
-        int result;
+    	// No need to cache any memory when using the external software renderer
+    	if (ExternalGE.isActive()) {
+    		useCachedMemory = false;
+    	}
+
+    	int result;
     	synchronized (this) {
 	    	PspGeList list = listFreeQueue.poll();
 	    	if (list == null) {
@@ -407,6 +424,9 @@ public class sceGe_user extends HLEModule {
 
 	    	list.init(listAddr.getAddress(), stallAddr.getAddress(), cbid, optParams);
 	    	list.setSaveContextAddr(saveContextAddr);
+	    	if (useCachedMemory) {
+	    		setStallAddressWithCachedMemory(list, stallAddr.getAddress());
+	    	}
 	    	if (enqueueHead) {
 	        	// Send the list to the VideoEngine at the head of the queue.
 	        	list.startListHead();
@@ -438,6 +458,38 @@ public class sceGe_user extends HLEModule {
 		}
 
     	return result;
+    }
+
+    private void setStallAddressWithCachedMemory(PspGeList list, int stallAddr) {
+		int startAddress = list.list_addr;
+		int length;
+		if (stallAddr != 0) {
+			length = stallAddr - startAddress;
+		} else {
+			// The list has no stall address, scan for the FINISH command
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(startAddress, 4);
+			length = 0;
+			while (true) {
+				int instruction = memoryReader.readNext();
+				int command = VideoEngine.command(instruction);
+				if (command == GeCommands.FINISH) {
+					// Add 4 to include the END command that follows the FINISH command
+					length = memoryReader.getCurrentAddress() - startAddress + 4;
+					break;
+				}
+			}
+		}
+
+		if (length > 0) {
+			int[] baseMemoryInts = Utilities.readInt32(startAddress, length);
+			list.setStallAddr(stallAddr, MemoryReader.getMemoryReader(startAddress, baseMemoryInts, 0, length), startAddress, startAddress + length);
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("setStallAddressWithCachedMemory [0x%08X-0x%08X] %s", startAddress, startAddress + length, list));
+			}
+		} else {
+			list.setStallAddr(stallAddr);
+		}
     }
 
     @HLEFunction(nid = 0x1F6752AD, version = 150)
@@ -552,7 +604,11 @@ public class sceGe_user extends HLEModule {
     	synchronized (this) {
         	PspGeList list = allGeLists[id];
         	if (list.getStallAddr() != stallAddr.getAddress()) {
-        		list.setStallAddr(stallAddr.getAddress());
+        		if (list.hasBaseMemoryReader()) {
+        			setStallAddressWithCachedMemory(list, stallAddr.getAddress());
+        		} else {
+        			list.setStallAddr(stallAddr.getAddress());
+        		}
                 Modules.sceDisplayModule.setGeDirty(true);
         	}
 		}

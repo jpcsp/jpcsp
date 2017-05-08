@@ -30,6 +30,7 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -652,11 +653,7 @@ public class sceGu extends AbstractNativeCodeSequence {
 				log.info(String.format("sceGuCallList Stack address 0x%08X-0x%08X", callAddr, callAddr + memorySize));
 			}
 
-			int[] instructions = new int[listSize];
-			IMemoryReader memoryReader = MemoryReader.getMemoryReader(callAddr, memorySize, 4);
-			for (int i = 0; i < listSize; i++) {
-				instructions[i] = memoryReader.readNext();
-			}
+			int[] instructions = Utilities.readInt32(callAddr, memorySize);
 			VideoEngine.getInstance().addCachedInstructions(callAddr, instructions);
 		}
 	}

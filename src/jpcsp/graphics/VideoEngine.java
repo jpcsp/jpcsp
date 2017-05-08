@@ -1994,9 +1994,8 @@ public class VideoEngine {
             log(String.format("checkMultiDraw at 0x%08X", currentList.getPc()));
         }
 
-        Memory mem = Memory.getInstance();
-        int pc = currentList.getPc();
-        int afterMultiPc = pc;
+        int beforeMultiPc = currentList.getPc();
+        int afterMultiPc = currentList.getPc();
         boolean hasMultiDraw = false;
         int initialFirst = currentFirst;
         int currentSkip = 0;
@@ -2007,8 +2006,8 @@ public class VideoEngine {
 
         // Leave at least one entry free to put the last item
         while (bufferFirst.remaining() > 1) {
-            int instruction = mem.read32(pc);
-            pc += 4;
+            int instruction = currentList.readNextInstruction();
+
             int cmd = command(instruction);
             if (cmd == PRIM) {
                 if (context.frontFaceCw != frontFaceCw) {
@@ -2032,7 +2031,7 @@ public class VideoEngine {
                 currentPtrVertex += context.vinfo.vertexSize * (numberOfVertex + currentSkip);
                 currentSkip = 0;
                 hasMultiDraw = true;
-                afterMultiPc = pc;
+                afterMultiPc = currentList.getPc();
                 if (isLogDebugEnabled) {
                     log.debug(String.format("%s type=%d, numberOfVertex=%d integrated in MultiDrawArrays", helper.getCommandString(cmd), type, numberOfVertex));
                 }
@@ -2108,6 +2107,7 @@ public class VideoEngine {
         }
 
         if (!hasMultiDraw) {
+        	currentList.setPc(beforeMultiPc);
             return -1;
         }
 
@@ -3475,7 +3475,7 @@ public class VideoEngine {
                     if (isLogInfoEnabled) {
                         log.info(String.format("call using cached instructions 0x%08X-0x%08X", newPc, newPc + memorySize));
                     }
-                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(instructions, 0, memorySize);
+                    IMemoryReader memoryReader = MemoryReader.getMemoryReader(newPc, instructions, 0, memorySize);
                     currentList.setMemoryReader(memoryReader);
                 }
             }
@@ -3496,8 +3496,7 @@ public class VideoEngine {
     }
 
     private void executeCommandEND() {
-        Memory mem = Memory.getInstance();
-        int previousCommand = command(mem.read32(currentList.getPc() - 8));
+        int previousCommand = command(currentList.readPreviousInstruction());
         // Ignore the END command if the command before was not SIGNAL or FINISH
         if (previousCommand == SIGNAL || previousCommand == FINISH) {
             // Try to end the current list.
@@ -3524,16 +3523,20 @@ public class VideoEngine {
         switch (behavior) {
             case sceGe_user.PSP_GE_SIGNAL_SYNC: {
                 // Skip END / FINISH / END
-                Memory mem = Memory.getInstance();
-                if (command(mem.read32(currentList.getPc())) == END) {
-                    currentList.readNextInstruction();
-                    if (command(mem.read32(currentList.getPc())) == FINISH) {
-                        currentList.readNextInstruction();
-                        if (command(mem.read32(currentList.getPc())) == END) {
-                            currentList.readNextInstruction();
+                if (command(currentList.readNextInstruction()) == END) {
+                    if (command(currentList.readNextInstruction()) == FINISH) {
+                        if (command(currentList.readNextInstruction()) == END) {
+                        	// OK, skipped END / FINISH / END sequence
+                        } else {
+                        	currentList.undoRead(3);
                         }
+                    } else {
+                    	currentList.undoRead(2);
                     }
+                } else {
+                	currentList.undoRead(1);
                 }
+
                 if (isLogDebugEnabled) {
                     log(String.format("PSP_GE_SIGNAL_SYNC ignored PC: 0x%08X", currentList.getPc()));
                 }
@@ -3541,11 +3544,11 @@ public class VideoEngine {
             }
             case sceGe_user.PSP_GE_SIGNAL_CALL: {
                 // Call list using absolute address from SIGNAL + END.
-                Memory mem = Memory.getInstance();
-                if (command(mem.read32(currentList.getPc())) == END) {
+            	int nextInstruction = currentList.readNextInstruction();
+                if (command(nextInstruction) == END) {
                     int hi16 = signal & 0x0FFF;
                     // Read & skip END
-                    int lo16 = (currentList.readNextInstruction() & 0xFFFF);
+                    int lo16 = nextInstruction & 0xFFFF;
                     int addr = (hi16 << 16) | lo16;
                     int oldPc = currentList.getPc();
                     currentList.callAbsolute(addr);
@@ -3553,21 +3556,24 @@ public class VideoEngine {
                     if (isLogDebugEnabled) {
                         log(String.format("PSP_GE_SIGNAL_CALL old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
                     }
+                } else {
+                	currentList.undoRead();
                 }
                 break;
             }
             case sceGe_user.PSP_GE_SIGNAL_RETURN: {
                 // Return from PSP_GE_SIGNAL_CALL.
-                Memory mem = Memory.getInstance();
-                if (command(mem.read32(currentList.getPc())) == END) {
+            	int nextInstruction = currentList.readNextInstruction();
+                if (command(nextInstruction) == END) {
                     // Skip END
-                    currentList.readNextInstruction();
                     int oldPc = currentList.getPc();
                     currentList.ret();
                     int newPc = currentList.getPc();
                     if (isLogDebugEnabled) {
                         log(String.format("PSP_GE_SIGNAL_RETURN old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
                     }
+                } else {
+                	currentList.undoRead();
                 }
                 break;
             }
@@ -3580,16 +3586,16 @@ public class VideoEngine {
             case sceGe_user.PSP_GE_SIGNAL_TBP6_REL:
             case sceGe_user.PSP_GE_SIGNAL_TBP7_REL: {
                 // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address only).
-                Memory mem = Memory.getInstance();
-                if (command(mem.read32(currentList.getPc())) == END) {
+            	int nextInstruction = currentList.readNextInstruction();
+                if (command(nextInstruction) == END) {
                     int hi16 = signal & 0xFFFF;
-                    // Read & skip END
-                    int ins = currentList.readNextInstruction();
-                    int lo16 = ins & 0xFFFF;
-                    int width = (ins >> 16) & 0xFF;
+                    int lo16 = nextInstruction & 0xFFFF;
+                    int width = (nextInstruction >> 16) & 0xFF;
                     int addr = currentList.getAddressRel((hi16 << 16) | lo16);
                     context.texture_base_pointer[behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL] = addr;
                     context.texture_buffer_width[behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL] = width;
+                } else {
+                	currentList.undoRead();
                 }
                 break;
             }
@@ -3602,16 +3608,16 @@ public class VideoEngine {
             case sceGe_user.PSP_GE_SIGNAL_TBP6_REL_OFFSET:
             case sceGe_user.PSP_GE_SIGNAL_TBP7_REL_OFFSET: {
                 // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address with offset).
-                Memory mem = Memory.getInstance();
-                if (command(mem.read32(currentList.getPc())) == END) {
+            	int nextInstruction = currentList.readNextInstruction();
+                if (command(nextInstruction) == END) {
                     int hi16 = signal & 0xFFFF;
-                    // Read & skip END
-                    int ins = currentList.readNextInstruction();
-                    int lo16 = ins & 0xFFFF;
-                    int width = (ins >> 16) & 0xFF;
+                    int lo16 = nextInstruction & 0xFFFF;
+                    int width = (nextInstruction >> 16) & 0xFF;
                     int addr = currentList.getAddressRelOffset((hi16 << 16) | lo16);
                     context.texture_base_pointer[behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL_OFFSET] = addr;
                     context.texture_buffer_width[behavior - sceGe_user.PSP_GE_SIGNAL_TBP7_REL_OFFSET] = width;
+                } else {
+                	currentList.undoRead();
                 }
                 break;
             }
