@@ -480,7 +480,7 @@ public class sceGe_user extends HLEModule {
 			}
 		}
 
-		if (length > 0) {
+		if (length >= 0) {
 			int[] baseMemoryInts = Utilities.readInt32(startAddress, length);
 			list.setStallAddr(stallAddr, MemoryReader.getMemoryReader(startAddress, baseMemoryInts, 0, length), startAddress, startAddress + length);
 
