@@ -6406,12 +6406,16 @@ public class VideoEngine {
         System.arraycopy(context.proj_uploaded_matrix, 0, flippedMatrix, 0, flippedMatrix.length);
         if (context.viewport_height > 0) {
             // Flip upside-down
+            flippedMatrix[1] = -flippedMatrix[1];
             flippedMatrix[5] = -flippedMatrix[5];
+            flippedMatrix[9] = -flippedMatrix[9];
             flippedMatrix[13] = -flippedMatrix[13];
         }
         if (context.viewport_width < 0) {
             // Flip right-to-left
             flippedMatrix[0] = -flippedMatrix[0];
+            flippedMatrix[4] = -flippedMatrix[4];
+            flippedMatrix[8] = -flippedMatrix[8];
             flippedMatrix[12] = -flippedMatrix[12];
         }
 
