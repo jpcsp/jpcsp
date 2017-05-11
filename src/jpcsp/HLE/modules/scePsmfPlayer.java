@@ -151,6 +151,7 @@ public class scePsmfPlayer extends HLEModule {
     protected SysMemInfo ringbufferMem;
     protected int pmfFileDataRingbufferPosition;
     private static final int MAX_TIMESTAMP_DIFFERENCE = sceMpeg.audioTimestampStep * 2;
+    protected int lastMpegGetAtracAuResult;
 
     public int checkPlayerInitialized(int psmfPlayer) {
     	if (psmfPlayerStatus == PSMF_PLAYER_STATUS_NONE) {
@@ -399,6 +400,8 @@ public class scePsmfPlayer extends HLEModule {
         // Switch to PLAYING.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_PLAYING;
 
+        lastMpegGetAtracAuResult = 0;
+
         return 0;
     }
 
@@ -475,7 +478,7 @@ public class scePsmfPlayer extends HLEModule {
             }
         }
 
-    	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentVideoTimestamp() > getCurrentAudioTimestamp() + getMaxTimestampDifference()) {
+    	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentVideoTimestamp() > getCurrentAudioTimestamp() + getMaxTimestampDifference() && lastMpegGetAtracAuResult == 0) {
     		//result = SceKernelErrors.ERROR_PSMFPLAYER_AUDIO_VIDEO_OUT_OF_SYNC;
     		Modules.sceMpegModule.writeLastFrameABGR(displayBuffer, videoDataFrameWidth, videoPixelMode);
     	} else {
@@ -522,7 +525,7 @@ public class scePsmfPlayer extends HLEModule {
     		return result;
     	}
 
-    	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentAudioTimestamp() > getCurrentVideoTimestamp() + getMaxTimestampDifference()) {
+    	if (getCurrentAudioTimestamp() > 0 && getCurrentVideoTimestamp() > 0 && getCurrentAudioTimestamp() > getCurrentVideoTimestamp() + getMaxTimestampDifference() && lastMpegGetAtracAuResult == 0) {
     		result = SceKernelErrors.ERROR_PSMFPLAYER_AUDIO_VIDEO_OUT_OF_SYNC;
     	} else {
 	        // Check if the ringbuffer needs additional data
@@ -530,6 +533,7 @@ public class scePsmfPlayer extends HLEModule {
 
 	    	// Retrieve the audio Au
 	        result = Modules.sceMpegModule.hleMpegGetAtracAu(null);
+	        lastMpegGetAtracAuResult = result;
 
 	    	// Write the audio data
 	    	result = Modules.sceMpegModule.hleMpegAtracDecode(null, audioDataAddr, audioSamplesBytes);
