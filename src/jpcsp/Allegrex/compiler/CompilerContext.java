@@ -89,9 +89,11 @@ import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.TPointer8;
+import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.hardware.Interrupts;
@@ -1742,6 +1744,16 @@ public class CompilerContext implements ICompilerContext {
     		// When compiling code in the kernel memory space, do not perform any version check.
     		// This is used by overwritten HLE functions.
     		needFirmwareVersionCheck = false;
+    	} else {
+    		// When compiling code loaded from flash0, do not perform any version check.
+    		// This is used by overwritten HLE functions.
+    		SceModule module = Managers.modules.getModuleByAddress(codeInstruction.getAddress());
+    		if (module != null && module.pspfilename != null && module.pspfilename.startsWith("flash0:")) {
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("syscall from a flash0 module(%s, '%s'), no firmware version check", module, module.pspfilename));
+    			}
+    			needFirmwareVersionCheck = false;
+    		}
     	}
 
     	Label unsupportedVersionLabel = null;
