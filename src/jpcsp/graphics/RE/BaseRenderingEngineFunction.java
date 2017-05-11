@@ -127,6 +127,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     protected int activeTextureUnit = 0;
     private boolean[] colorMask = new boolean[4];
     private static ByteBuffer emptyBuffer;
+	protected int logicOp = -1;
 
     public BaseRenderingEngineFunction(IRenderingEngine proxy) {
         super(proxy);
@@ -620,7 +621,14 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         if (flag == IRenderingEngine.GU_STENCIL_TEST) {
             setAlphaMask(true);
         }
-        super.enableFlag(flag);
+
+        // Setting the logical operation to LOP_COPY is equivalent
+		// to disabling the logical operation step.
+		if (flag == IRenderingEngine.GU_COLOR_LOGIC_OP && logicOp == GeCommands.LOP_COPY) {
+			disableFlag(flag);
+		} else {
+			super.enableFlag(flag);
+		}
     }
 
     private int getBlendFix(int fixColor) {
@@ -869,5 +877,19 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 		}
 
 		super.setTexImage(level, internalFormat, width, height, format, type, textureSize, buffer);
+	}
+
+	@Override
+	public void setLogicOp(int logicOp) {
+		if (this.logicOp != logicOp) {
+			// Setting the logical operation to LOP_COPY is equivalent
+			// to disabling the logical operation step.
+			if (logicOp == GeCommands.LOP_COPY) {
+				disableFlag(IRenderingEngine.GU_COLOR_LOGIC_OP);
+			} else {
+				super.setLogicOp(logicOp);
+			}
+			this.logicOp = logicOp;
+		}
 	}
 }

@@ -868,4 +868,12 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.textureBarrier();
 	}
+
+	@Override
+	public void setLogicOp(int logicOp) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setLogicOp logicOp=%d", logicOp));
+		}
+		super.setLogicOp(logicOp);
+	}
 }
