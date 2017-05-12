@@ -348,10 +348,18 @@ public class PSF {
         StringBuilder sb = new StringBuilder();
 
         for (PSFKeyValuePair pair : pairList) {
-            sb.append(pair.toString() + System.lineSeparator());
+        	if (sb.length() > 0) {
+                sb.append(System.lineSeparator());
+        	}
+            sb.append(pair.toString());
         }
 
-        sb.append("probably homebrew? " + isLikelyHomebrew());
+        if (isLikelyHomebrew()) {
+        	if (sb.length() > 0) {
+                sb.append(System.lineSeparator());
+        	}
+            sb.append("This is likely a homebrew");
+        }
 
         return sb.toString();
     }

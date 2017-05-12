@@ -2245,7 +2245,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 	    	        psfFile.read(data);
 	    	        psf.read(ByteBuffer.wrap(data));
 
-	    	        log.info(String.format("Content of %s:\n%s", paramSfoFile, psf));
+	    	        log.info(String.format("Content of %s:%s%s", paramSfoFile, System.lineSeparator(), psf));
         		} catch (IOException e) {
         			// Ignore exception
         		}

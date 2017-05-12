@@ -145,7 +145,7 @@ public class Loader {
             }
 
             if (module.psf != null) {
-                log.info("PBP meta data :\n" + module.psf);
+                log.info(String.format("PBP meta data:%s%s", System.lineSeparator(), module.psf));
 
                 if (!fromSyscall) {
                     // Set firmware version from PSF embedded in PBP
