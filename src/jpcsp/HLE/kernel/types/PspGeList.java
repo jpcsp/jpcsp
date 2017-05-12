@@ -354,23 +354,15 @@ public class PspGeList {
 		return status == PSP_GE_LIST_DRAWING;
 	}
 
-	private void resetMemoryReader() {
-		if (hasBaseMemoryReader() && baseMemoryReader.getCurrentAddress() == pc) {
-			memoryReader = baseMemoryReader;
-		} else {
-			memoryReader = MemoryReader.getMemoryReader(pc, 4);
-		}
-	}
-
 	private void resetMemoryReader(int oldPc) {
-		if (memoryReader == null || pc < oldPc) {
-			resetMemoryReader();
-		} else if (oldPc < MemoryMap.START_RAM && pc >= MemoryMap.START_RAM) {
-			// Jumping from VRAM to RAM
-			resetMemoryReader();
-		} else if (hasBaseMemoryReader() && pc >= baseMemoryReaderStartAddress && pc < baseMemoryReaderEndAddress) {
+		if (pc >= baseMemoryReaderStartAddress && pc < baseMemoryReaderEndAddress) {
 			memoryReader = baseMemoryReader;
 			memoryReader.skip((pc - baseMemoryReader.getCurrentAddress()) >> 2);
+		} else if (memoryReader == null || memoryReader == baseMemoryReader || pc < oldPc) {
+			memoryReader = MemoryReader.getMemoryReader(pc, 4);
+		} else if (oldPc < MemoryMap.START_RAM && pc >= MemoryMap.START_RAM) {
+			// Jumping from VRAM to RAM
+			memoryReader = MemoryReader.getMemoryReader(pc, 4);
 		} else {
 			memoryReader.skip((pc - oldPc) >> 2);
 		}
