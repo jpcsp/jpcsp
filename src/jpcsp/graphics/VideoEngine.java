@@ -2006,6 +2006,12 @@ public class VideoEngine {
 
         // Leave at least one entry free to put the last item
         while (bufferFirst.remaining() > 1) {
+        	if (currentList.isStallReached()) {
+                if (isLogDebugEnabled) {
+                    log.debug(String.format("Stopped integration in MultiDrawArrays at stall address 0x%08X", currentList.getPc()));
+                }
+        		break;
+        	}
             int instruction = currentList.readNextInstruction();
 
             int cmd = command(instruction);
