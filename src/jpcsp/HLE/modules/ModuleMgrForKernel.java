@@ -72,7 +72,7 @@ public class ModuleMgrForKernel extends HLEModule {
         }
 
         LoadModuleContext loadModuleContext = new LoadModuleContext();
-        loadModuleContext.name = buffer.toString();
+        loadModuleContext.fileName = buffer.toString();
         loadModuleContext.flags = flags;
         loadModuleContext.buffer = buffer.getAddress();
         loadModuleContext.bufferSize = bufSize;
@@ -104,7 +104,7 @@ public class ModuleMgrForKernel extends HLEModule {
         }
 
         LoadModuleContext loadModuleContext = new LoadModuleContext();
-        loadModuleContext.name = path.getString();
+        loadModuleContext.fileName = path.getString();
         loadModuleContext.flags = flags;
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;
@@ -199,7 +199,7 @@ public class ModuleMgrForKernel extends HLEModule {
         }
 
         LoadModuleContext loadModuleContext = new LoadModuleContext();
-        loadModuleContext.name = path.getString();
+        loadModuleContext.fileName = path.getString();
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;
         loadModuleContext.allocMem = false;

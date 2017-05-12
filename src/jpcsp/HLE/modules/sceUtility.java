@@ -5033,7 +5033,7 @@ public class sceUtility extends HLEModule {
         }
 
         LoadModuleContext loadModuleContext = new LoadModuleContext();
-        loadModuleContext.name = path;
+        loadModuleContext.fileName = path;
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.allocMem = true;
 

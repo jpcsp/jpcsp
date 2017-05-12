@@ -35,7 +35,7 @@ import jpcsp.settings.Settings;
  */
 @SuppressWarnings("unused")
 public class PSP {
-
+    public static final int PSP_HEADER_SIZE = 336;
     public static final int PSP_MAGIC = 0x5053507E;
     private int magic;
     private int mod_attr;
@@ -70,7 +70,6 @@ public class PSP {
     private int[] sig_check = new int[88];
     private int[] sha1_hash = new int[20];
     private int[] key_data = new int[16];
-    private static final int PSP_HEADER_SIZE = 336;
 
     public PSP(ByteBuffer f) throws IOException {
         read(f);
@@ -178,6 +177,10 @@ public class PSP {
     }
 
     public boolean isValid() {
-        return (magic & PSP_MAGIC) == PSP_MAGIC; // ~PSP
+        return magic == PSP_MAGIC; // ~PSP
+    }
+
+    public String getModname() {
+    	return modname;
     }
 }

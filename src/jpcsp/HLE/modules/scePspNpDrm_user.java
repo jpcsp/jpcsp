@@ -257,7 +257,7 @@ public class scePspNpDrm_user extends HLEModule {
         }
 
         LoadModuleContext loadModuleContext = new LoadModuleContext();
-        loadModuleContext.name = path.getString();
+        loadModuleContext.fileName = path.getString();
         loadModuleContext.flags = flags;
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;

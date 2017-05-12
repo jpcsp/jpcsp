@@ -60,6 +60,7 @@ public class HLEModuleManager {
     private Set<HLEModule> installedModules = new HashSet<HLEModule>();
     private Map<Integer, HLEModuleFunction> syscallToFunction;
     private Map<Integer, HLEModuleFunction> nidToFunction;
+    private Map<HLEModule, ModuleInfo> moduleInfos;
 
     private HLELogging defaultHLEFunctionLogging;
 
@@ -76,7 +77,7 @@ public class HLEModuleManager {
      * - by default in all firmwares (or only from a given FirmwareVersion)
      * - by sceKernelLoadModule/sceUtilityLoadModule from the flash0 or from the UMD (.prx)
      */
-    private enum DefaultModule {
+    private enum ModuleInfo {
     	SysMemUserForUser(Modules.SysMemUserForUserModule),
         SysMemForKernel(Modules.SysMemForKernelModule),
     	IoFileMgrForUser(Modules.IoFileMgrForUserModule),
@@ -102,51 +103,51 @@ public class HLEModuleManager {
         sceSuspendForUser(Modules.sceSuspendForUserModule),
         sceDmac(Modules.sceDmacModule),
         sceHprm(Modules.sceHprmModule),		// check if loaded by default
-        sceAtrac3plus(Modules.sceAtrac3plusModule, new String[] { "libatrac3plus", "PSP_AV_MODULE_ATRAC3PLUS", "PSP_MODULE_AV_ATRAC3PLUS", "sceATRAC3plus_Library" }),
-        sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_AV_MODULE_SASCORE", "PSP_MODULE_AV_SASCORE", "sceSAScore" } ),
-        sceMpeg    (Modules.sceMpegModule,     new String[] { "mpeg", "mpeg_vsh", "mpeg_vsh370", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE", "sceMpeg_library" }),
-        sceMpegbase(Modules.sceMpegbaseModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec" }),
+        sceAtrac3plus(Modules.sceAtrac3plusModule, new String[] { "libatrac3plus", "PSP_AV_MODULE_ATRAC3PLUS", "PSP_MODULE_AV_ATRAC3PLUS", "sceATRAC3plus_Library" }, "flash0:/kd/libatrac3plus.prx"),
+        sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_AV_MODULE_SASCORE", "PSP_MODULE_AV_SASCORE", "sceSAScore" }, "flash0:/kd/sc_sascore.prx"),
+        sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "mpeg_vsh", "mpeg_vsh370", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE", "sceMpeg_library" }, "flash0:/kd/mpeg.prx"),
+        sceMpegbase(Modules.sceMpegbaseModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec", "sceMpegbase_Driver" }, "flash0:/kd/avcodec.prx"),
         sceFont(Modules.sceFontModule, new String[] { "libfont", "sceFont_Library" }),
         scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer", "psmf_jk", "scePsmfP_library" }),
         scePsmf(Modules.scePsmfModule, new String[] { "psmf", "scePsmf_library" }),
         sceMp3(Modules.sceMp3Module, new String[] { "PSP_AV_MODULE_MP3", "PSP_MODULE_AV_MP3", "LIBMP3" }),
         sceDeflt(Modules.sceDefltModule, new String[] { "libdeflt" }),
         sceWlan(Modules.sceWlanModule),
-        sceNet(Modules.sceNetModule, new String[] { "pspnet", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
-        sceNetAdhoc(Modules.sceNetAdhocModule, new String[] { "pspnet_adhoc", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
-        sceNetAdhocctl(Modules.sceNetAdhocctlModule, new String[] { "pspnet_adhocctl", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
-        sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule, new String[] { "pspnet_adhoc_discover", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
-        sceNetAdhocMatching(Modules.sceNetAdhocMatchingModule, new String[] { "pspnet_adhoc_matching", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
-        sceNetAdhocTransInt(Modules.sceNetAdhocTransIntModule, new String[] { "pspnet_adhoc_transfer_int" }),
-        sceNetAdhocAuth(Modules.sceNetAdhocAuthModule, new String[] { "pspnet_adhoc_auth" }),
-        sceNetAdhocDownload(Modules.sceNetAdhocDownloadModule, new String[] { "pspnet_adhoc_download" }),
-        sceNetIfhandle(Modules.sceNetIfhandleModule, new String[] { "ifhandle", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
-        sceNetApctl(Modules.sceNetApctlModule, new String[] { "pspnet_apctl", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
-        sceNetInet(Modules.sceNetInetModule, new String[] { "pspnet_inet", "PSP_NET_MODULE_INET", "PSP_MODULE_NET_INET" }),
-        sceNetResolver(Modules.sceNetResolverModule, new String[] { "pspnet_resolver", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
-        sceNetUpnp(Modules.sceNetUpnpModule, new String[] { "pspnet_upnp", "PSP_MODULE_NET_UPNP" }),
+        sceNet(Modules.sceNetModule, new String[] { "pspnet", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }, "flash0:/kd/pspnet.prx"),
+        sceNetAdhoc(Modules.sceNetAdhocModule, new String[] { "pspnet_adhoc", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }, "flash0:/kd/pspnet_adhoc.prx"),
+        sceNetAdhocctl(Modules.sceNetAdhocctlModule, new String[] { "pspnet_adhocctl", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }, "flash0:/kd/pspnet_adhocctl.prx"),
+        sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule, new String[] { "pspnet_adhoc_discover", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }, "flash0:/kd/pspnet_adhoc_discover.prx"),
+        sceNetAdhocMatching(Modules.sceNetAdhocMatchingModule, new String[] { "pspnet_adhoc_matching", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }, "flash0:/kd/pspnet_adhoc_matching.prx"),
+        sceNetAdhocTransInt(Modules.sceNetAdhocTransIntModule, new String[] { "pspnet_adhoc_transfer_int" }, "flash0:/kd/pspnet_adhoc_transfer_int.prx"),
+        sceNetAdhocAuth(Modules.sceNetAdhocAuthModule, new String[] { "pspnet_adhoc_auth", "sceNetAdhocAuth_Service" }, "flash0:/kd/pspnet_adhoc_auth.prx"),
+        sceNetAdhocDownload(Modules.sceNetAdhocDownloadModule, new String[] { "pspnet_adhoc_download" }, "flash0:/kd/pspnet_adhoc_download.prx"),
+        sceNetIfhandle(Modules.sceNetIfhandleModule, new String[] { "ifhandle", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON", "sceNetIfhandle_Service" }, "flash0:/kd/ifhandle.prx"),
+        sceNetApctl(Modules.sceNetApctlModule, new String[] { "pspnet_apctl", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }, "flash0:/kd/pspnet_apctl.prx"),
+        sceNetInet(Modules.sceNetInetModule, new String[] { "pspnet_inet", "PSP_NET_MODULE_INET", "PSP_MODULE_NET_INET" }, "flash0:/kd/pspnet_inet.prx"),
+        sceNetResolver(Modules.sceNetResolverModule, new String[] { "pspnet_resolver", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }, "flash0:/kd/pspnet_resolver.prx"),
+        sceNetUpnp(Modules.sceNetUpnpModule, new String[] { "pspnet_upnp", "PSP_MODULE_NET_UPNP" }, "flash0:/kd/pspnet_upnp.prx"),
         sceOpenPSID(Modules.sceOpenPSIDModule),
-        sceNp(Modules.sceNpModule, new String[] { "np", "PSP_MODULE_NP_COMMON" }),
-        sceNpCore(Modules.sceNpCoreModule, new String[] { "np_core" }),
-        sceNpAuth(Modules.sceNpAuthModule, new String[] { "np_auth", "PSP_MODULE_NP_COMMON" }),
-        sceNpService(Modules.sceNpServiceModule, new String[] { "np_service", "PSP_MODULE_NP_SERVICE" }),
-        sceNpCommerce2(Modules.sceNpCommerce2Module, new String[] { "np_commerce2", "PSP_MODULE_NP_COMMERCE2" }),
-        sceNpCommerce2Store(Modules.sceNpCommerce2StoreModule, new String[] { "np_commerce2_store" }),
-        sceNpCommerce2RegCam(Modules.sceNpCommerce2RegCamModule, new String[] { "np_commerce2_regcam" }),
-        sceNpMatching2(Modules.sceNpMatching2Module, new String[] { "np_matching2", "PSP_MODULE_NP_MATCHING2" }),
-        sceNpInstall(Modules.sceNpInstallModule, new String[] { "np_inst" }),
-        sceNpCamp(Modules.sceNpCampModule, new String[] { "np_campaign" }),
+        sceNp(Modules.sceNpModule, new String[] { "np", "PSP_MODULE_NP_COMMON" }, "flash0:/kd/np.prx"),
+        sceNpCore(Modules.sceNpCoreModule, new String[] { "np_core" }, "flash0:/kd/np_core.prx"),
+        sceNpAuth(Modules.sceNpAuthModule, new String[] { "np_auth", "PSP_MODULE_NP_COMMON" }, "flash0:/kd/np_auth.prx"),
+        sceNpService(Modules.sceNpServiceModule, new String[] { "np_service", "PSP_MODULE_NP_SERVICE" }, "flash0:/kd/np_service.prx"),
+        sceNpCommerce2(Modules.sceNpCommerce2Module, new String[] { "np_commerce2", "PSP_MODULE_NP_COMMERCE2" }, "flash0:/kd/np_commerce2.prx"),
+        sceNpCommerce2Store(Modules.sceNpCommerce2StoreModule, new String[] { "np_commerce2_store" }, "flash0:/kd/np_commerce2_store.prx"),
+        sceNpCommerce2RegCam(Modules.sceNpCommerce2RegCamModule, new String[] { "np_commerce2_regcam" }, "flash0:/kd/np_commerce2_regcam.prx"),
+        sceNpMatching2(Modules.sceNpMatching2Module, new String[] { "np_matching2", "PSP_MODULE_NP_MATCHING2" }, "flash0:/kd/np_matching2.prx"),
+        sceNpInstall(Modules.sceNpInstallModule, new String[] { "np_inst" }, "flash0:/kd/np_inst.prx"),
+        sceNpCamp(Modules.sceNpCampModule, new String[] { "np_campaign" }, "flash0:/kd/np_campaign.prx"),
         scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM", "npdrm" }),
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
-        sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4", "mp4msv", "libmp4" }),
+        sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4", "mp4msv", "libmp4" }, "flash0:/kd/libmp4.prx"),
         sceHttp(Modules.sceHttpModule, new String[] { "libhttp", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceHttps(Modules.sceHttpsModule, new String[] { "libhttp", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceHttpStorage(Modules.sceHttpStorageModule, new String[] { "http_storage" }),
-        sceSsl(Modules.sceSslModule, new String[] { "libssl", "PSP_NET_MODULE_SSL", "PSP_MODULE_NET_SSL" }),
+        sceSsl(Modules.sceSslModule, new String[] { "libssl", "PSP_NET_MODULE_SSL", "PSP_MODULE_NET_SSL" }, "flash0:/kd/libssl.prx"),
         sceP3da(Modules.sceP3daModule),
         sceGameUpdate(Modules.sceGameUpdateModule, new String[] { "libgameupdate" }),
         sceUsbCam(Modules.sceUsbCamModule, new String[] { "PSP_USB_MODULE_CAM", "PSP_MODULE_USB_CAM", "usbcam" }),
-        sceJpeg(Modules.sceJpegModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC" }),
+        sceJpeg(Modules.sceJpegModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC" }, "flash0:/kd/avcodec.prx"),
         sceUsb(Modules.sceUsbModule),
         sceHeap(Modules.sceHeapModule, new String[] { "libheap" }),
         KDebugForKernel(Modules.KDebugForKernelModule),
@@ -162,8 +163,8 @@ public class HLEModuleManager {
         sceUsbMic(Modules.sceUsbMicModule, new String[] { "usbmic", "PSP_USB_MODULE_MIC", "PSP_MODULE_USB_MIC", "USBCamMicDriver" }),
         sceAudioRouting(Modules.sceAudioRoutingModule),
         sceUsbGps(Modules.sceUsbGpsModule, new String[] { "PSP_USB_MODULE_GPS", "PSP_MODULE_USB_GPS", "usbgps" }),
-        sceAudiocodec(Modules.sceAudiocodecModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec" }),
-        sceVideocodec(Modules.sceVideocodecModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec" }),
+        sceAudiocodec(Modules.sceAudiocodecModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec", "sceAudiocodec_Driver" }, "flash0:/kd/avcodec.prx"),
+        sceVideocodec(Modules.sceVideocodecModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec", "sceVideocodec_Driver" }, "flash0:/kd/avcodec.prx"),
         sceAdler(Modules.sceAdlerModule, new String[] { "libadler" }),
         sceSha1(Modules.sceSha1Module, new String[] { "libsha1" }),
         sceSha256(Modules.sceSha256Module, new String[] { "libsha256" }),
@@ -187,7 +188,7 @@ public class HLEModuleManager {
         sceChnnlsv(Modules.sceChnnlsvModule, new String[] { "chnnlsv" }),
         sceUsbstor(Modules.sceUsbstorModule),
         sceIdStorage(Modules.sceIdStorageModule),
-        sceCertLoader(Modules.sceCertLoaderModule, new String[] { "cert_loader", "PSP_MODULE_NET_SSL" }),
+        sceCertLoader(Modules.sceCertLoaderModule, new String[] { "cert_loader", "PSP_MODULE_NET_SSL" }, "flash0:/kd/cert_loader.prx"),
         sceDNAS(Modules.sceDNASModule, new String[] { "libdnas" }),
         sceDNASCore(Modules.sceDNASCoreModule, new String[] { "libdnas_core" }),
         sceMcctrl(Modules.sceMcctrlModule, new String[] { "mcctrl" }),
@@ -196,7 +197,7 @@ public class HLEModuleManager {
         sceMeVideo(Modules.sceMeVideoModule),
         sceMeAudio(Modules.sceMeAudioModule),
         InitForKernel(Modules.InitForKernelModule),
-        sceMemab(Modules.sceMemabModule, new String[] { "memab" }),
+        sceMemab(Modules.sceMemabModule, new String[] { "memab", "sceMemab" }),
         DmacManForKernel(Modules.DmacManForKernelModule),
         sceSyscon(Modules.sceSysconModule),
         sceLed(Modules.sceLedModule),
@@ -204,32 +205,45 @@ public class HLEModuleManager {
 
     	private HLEModule module;
     	private boolean loadedByDefault;
-    	private String[] prxNames;
+    	private String[] names;
+    	private String prxFileName;
 
     	// Module loaded by default in all Firmware versions
-    	DefaultModule(HLEModule module) {
+    	ModuleInfo(HLEModule module) {
     		this.module = module;
     		loadedByDefault = true;
-    		prxNames = null;
+    		names = null;
     	}
 
     	// Module only loaded as a PRX, under different names
-    	DefaultModule(HLEModule module, String[] prxNames) {
+    	ModuleInfo(HLEModule module, String[] prxNames) {
     		this.module = module;
     		loadedByDefault = false;
-    		this.prxNames = prxNames;
+    		this.names = prxNames;
+    	}
+
+    	// Module only loaded as a PRX, under different names
+    	ModuleInfo(HLEModule module, String[] prxNames, String prxFileName) {
+    		this.module = module;
+    		loadedByDefault = false;
+    		this.names = prxNames;
+    		this.prxFileName = prxFileName;
     	}
 
     	public HLEModule getModule() {
     		return module;
     	}
 
-    	public String[] getPrxNames() {
-    		return prxNames;
+    	public String[] getNames() {
+    		return names;
     	}
 
     	public boolean isLoadedByDefault() {
     		return loadedByDefault;
+    	}
+
+    	public String getPrxFileName() {
+    		return prxFileName;
     	}
     };
 
@@ -282,7 +296,7 @@ public class HLEModuleManager {
     		log.debug(String.format("Loading default HLE modules"));
     	}
 
-    	for (DefaultModule defaultModule : DefaultModule.values()) {
+    	for (ModuleInfo defaultModule : ModuleInfo.values()) {
         	if (defaultModule.isLoadedByDefault()) {
         		installModuleWithAnnotations(defaultModule.getModule());
         	} else {
@@ -307,12 +321,17 @@ public class HLEModuleManager {
     // Add modules in flash (or on UMD) that aren't loaded by default on this firmwareVersion
     private void initialiseFlash0PRXMap() {
         flash0prxMap = new HashMap<String, List<HLEModule>>();
+        moduleInfos = new HashMap<HLEModule, ModuleInfo>();
 
-        for (DefaultModule defaultModule : DefaultModule.values()) {
-        	if (!defaultModule.isLoadedByDefault()) {
-        		String[] prxNames = defaultModule.getPrxNames();
-        		for (int i = 0; prxNames != null && i < prxNames.length; i++) {
-        			addToFlash0PRXMap(prxNames[i], defaultModule.getModule());
+        for (ModuleInfo moduleInfo : ModuleInfo.values()) {
+        	HLEModule hleModule = moduleInfo.getModule();
+
+        	moduleInfos.put(hleModule, moduleInfo);
+
+        	if (!moduleInfo.isLoadedByDefault()) {
+        		String[] names = moduleInfo.getNames();
+        		for (int i = 0; names != null && i < names.length; i++) {
+        			addToFlash0PRXMap(names[i], hleModule);
         		}
         	}
         }
@@ -326,11 +345,27 @@ public class HLEModuleManager {
     	return flash0prxMap.containsKey(prxname.toLowerCase());
     }
 
+    public String getModulePrxFileName(String name) {
+    	if (name != null) {
+	        List<HLEModule> modules = flash0prxMap.get(name.toLowerCase());
+	        if (modules != null) {
+	            for (HLEModule module : modules) {
+	            	ModuleInfo moduleInfo = moduleInfos.get(module);
+	            	if (moduleInfo != null) {
+	            		return moduleInfo.getPrxFileName();
+	            	}
+	            }
+	        }
+    	}
+
+    	return null;
+    }
+
     /** @return the UID assigned to the module or negative on error
      * TODO need to figure out how the uids work when 1 prx contains several modules. */
-    public int LoadFlash0Module(String prxname) {
-    	if (prxname != null) {
-	        List<HLEModule> modules = flash0prxMap.get(prxname.toLowerCase());
+    public int LoadFlash0Module(String name) {
+    	if (name != null) {
+	        List<HLEModule> modules = flash0prxMap.get(name.toLowerCase());
 	        if (modules != null) {
 	            for (HLEModule module : modules) {
 	            	installModuleWithAnnotations(module);
@@ -339,7 +374,7 @@ public class HLEModuleManager {
     	}
 
         SceModule fakeModule = new SceModule(true);
-        fakeModule.modname = prxname;
+        fakeModule.modname = name;
         fakeModule.write(Memory.getInstance(), fakeModule.address);
         Managers.modules.addModule(fakeModule);
 
@@ -432,7 +467,7 @@ public class HLEModuleManager {
 
 		this.startFromSyscall = startFromSyscall;
 
-		for (DefaultModule defaultModule : DefaultModule.values()) {
+		for (ModuleInfo defaultModule : ModuleInfo.values()) {
 			if (defaultModule.module.isStarted()) {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Module %s already started", defaultModule.module.getName()));
@@ -459,7 +494,7 @@ public class HLEModuleManager {
 			return;
 		}
 
-		for (DefaultModule defaultModule : DefaultModule.values()) {
+		for (ModuleInfo defaultModule : ModuleInfo.values()) {
 			defaultModule.module.stop();
 		}
 
