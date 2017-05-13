@@ -30,6 +30,7 @@ public class NIDMapper {
 	private static Logger log = Modules.log;
     private static NIDMapper instance;
     private final Map<Integer, NIDInfo> syscallMap;
+    private final Map<String, Map<Integer, NIDInfo>> moduleNidMap;
     private final Map<Integer, NIDInfo> nidMap;
     private final Map<Integer, NIDInfo> addressMap;
     private final Map<String, NIDInfo> nameMap;
@@ -44,6 +45,7 @@ public class NIDMapper {
     	private int firmwareVersion;
     	private boolean overwritten;
     	private boolean loaded;
+    	private boolean validModuleName;
 
     	/**
     	 * New NIDInfo for a NID from a loaded module.
@@ -61,6 +63,7 @@ public class NIDMapper {
 			firmwareVersion = 999;
 			overwritten = false;
 			loaded = true;
+			validModuleName = true;
 		}
 
     	/**
@@ -81,6 +84,7 @@ public class NIDMapper {
     		address = 0;
     		overwritten = false;
 			loaded = true;
+			validModuleName = false; // the given moduleName is probably not the correct one...
     	}
 
     	public int getNid() {
@@ -149,6 +153,18 @@ public class NIDMapper {
 			return moduleName.equals(this.moduleName);
 		}
 
+		public boolean isLoaded() {
+			return loaded;
+		}
+
+		public void setLoaded(boolean loaded) {
+			this.loaded = loaded;
+		}
+
+		public boolean isValidModuleName() {
+			return validModuleName;
+		}
+
 		@Override
 		public String toString() {
 			StringBuilder s = new StringBuilder();
@@ -158,7 +174,11 @@ public class NIDMapper {
 			} else {
 				s.append(String.format("nid=0x%08X", nid));
 			}
-			s.append(String.format(", moduleName='%s', firmwareVersion=%d", moduleName, firmwareVersion));
+			s.append(String.format(", moduleName='%s'", moduleName));
+			if (!isValidModuleName()) {
+				s.append("(probably invalid)");
+			}
+			s.append(String.format(", firmwareVersion=%d", firmwareVersion));
 			if (isOverwritten()) {
 				s.append(", overwritten");
 			}
@@ -171,14 +191,6 @@ public class NIDMapper {
 
 			return s.toString();
 		}
-
-		public boolean isLoaded() {
-			return loaded;
-		}
-
-		public void setLoaded(boolean loaded) {
-			this.loaded = loaded;
-		}
     }
 
     public static NIDMapper getInstance() {
@@ -189,6 +201,7 @@ public class NIDMapper {
     }
 
     private NIDMapper() {
+    	moduleNidMap = new HashMap<>();
     	nidMap = new HashMap<>();
     	syscallMap = new HashMap<>();
     	addressMap = new HashMap<>();
@@ -199,33 +212,72 @@ public class NIDMapper {
     }
 
     private void addNIDInfo(NIDInfo info) {
-    	nidMap.put(info.getNid(), info);
+    	Map<Integer, NIDInfo> moduleMap = moduleNidMap.get(info.getModuleName());
+    	if (moduleMap == null) {
+    		moduleMap = new HashMap<Integer, NIDInfo>();
+    		moduleNidMap.put(info.getModuleName(), moduleMap);
+    	}
+    	moduleMap.put(info.getNid(), info);
+
+    	// For HLE NID's, do not trust the module names defined in Jpcsp, use only the NID.
+    	if (!info.isValidModuleName()) {
+    		nidMap.put(info.getNid(), info);
+    	}
+
     	if (info.hasAddress()) {
     		addressMap.put(info.getAddress(), info);
     	}
+
     	if (info.hasSyscall()) {
     		syscallMap.put(info.getSyscall(), info);
     	}
+
     	if (info.hasName()) {
     		nameMap.put(info.getName(), info);
     	}
     }
 
     private void removeNIDInfo(NIDInfo info) {
-    	nidMap.remove(info.getNid());
+    	Map<Integer, NIDInfo> moduleMap = moduleNidMap.get(info.getModuleName());
+    	if (moduleMap != null) {
+    		moduleMap.remove(info.getNid());
+    		if (moduleMap.isEmpty()) {
+    			moduleMap.remove(info.getModuleName());
+    		}
+    	}
+
+    	// For HLE NID's, do not trust the module names defined in Jpcsp, use only the NID.
+    	if (!info.isValidModuleName()) {
+    		nidMap.remove(info.getNid());
+    	}
+
     	if (info.hasAddress()) {
     		addressMap.remove(info.getAddress());
     	}
+
     	if (info.hasSyscall()) {
     		syscallMap.remove(info.getSyscall());
     	}
+
     	if (info.hasName()) {
     		syscallMap.remove(info.getName());
     	}
     }
 
-    private NIDInfo getNIDInfoByNid(int nid) {
-    	return nidMap.get(nid);
+    private NIDInfo getNIDInfoByNid(String moduleName, int nid) {
+    	NIDInfo info = null;
+
+    	Map<Integer, NIDInfo> moduleMap = moduleNidMap.get(moduleName);
+    	if (moduleMap != null) {
+        	info = moduleMap.get(nid);
+    	}
+
+    	// For HLE NID's, do not trust the module names defined in Jpcsp, use only the NID.
+    	if (info == null) {
+    		info = nidMap.get(nid);
+    	}
+
+    	return info;
     }
 
     private NIDInfo getNIDInfoBySyscall(int syscall) {
@@ -255,7 +307,7 @@ public class NIDMapper {
      *                        false if the NID was already added
      */
     public boolean addHLENid(int nid, String name, String moduleName, int firmwareVersion) {
-    	NIDInfo info = getNIDInfoByNid(nid);
+    	NIDInfo info = getNIDInfoByNid(moduleName, nid);
     	if (info != null) {
     		// This NID is already added, verify that we are trying to use the same data
     		if (!name.equals(info.getName()) || !moduleName.equals(info.getModuleName()) || firmwareVersion != info.getFirmwareVersion()) {
@@ -281,7 +333,7 @@ public class NIDMapper {
      * @param address    the address of the nid
      */
     public void addModuleNid(SceModule module, String moduleName, int nid, int address) {
-    	NIDInfo info = getNIDInfoByNid(nid);
+    	NIDInfo info = getNIDInfoByNid(moduleName, nid);
     	if (info != null) {
     		// Only modules from flash0 are allowed to overwrite NIDs from syscalls
         	if (module.pspfilename == null || !module.pspfilename.startsWith("flash0:")) {
@@ -328,7 +380,7 @@ public class NIDMapper {
     }
 
     public int getAddressByNid(int nid, String moduleName) {
-    	NIDInfo info = getNIDInfoByNid(nid);
+    	NIDInfo info = getNIDInfoByNid(moduleName, nid);
     	if (info == null || !info.hasAddress()) {
     		return 0;
     	}
@@ -363,7 +415,7 @@ public class NIDMapper {
     }
 
     public int getSyscallByNid(int nid, String moduleName) {
-    	NIDInfo info = getNIDInfoByNid(nid);
+    	NIDInfo info = getNIDInfoByNid(moduleName, nid);
     	if (info == null || !info.hasSyscall()) {
     		return -1;
     	}
@@ -407,29 +459,23 @@ public class NIDMapper {
     }
 
     public void unloadNid(int nid) {
-    	NIDInfo info = getNIDInfoByNid(nid);
-    	if (info == null) {
-    		return;
+    	// Search for the NID in all the modules
+    	for (String moduleName : moduleNidMap.keySet()) {
+        	NIDInfo info = getNIDInfoByNid(moduleName, nid);
+        	if (info != null) {
+            	info.setLoaded(false);
+        	}
     	}
-
-    	info.setLoaded(false);
-    }
-
-    public void loadNid(int nid) {
-    	NIDInfo info = getNIDInfoByNid(nid);
-    	if (info == null) {
-    		return;
-    	}
-
-    	info.setLoaded(true);
     }
 
     public void unloadAll() {
-    	for (NIDInfo info : nidMap.values()) {
-    		if (info.isOverwritten()) {
-    			info.undoOverwrite();
-    		}
-    		info.setLoaded(false);
+    	for (Map<Integer, NIDInfo> moduleMap : moduleNidMap.values()) {
+        	for (NIDInfo info : moduleMap.values()) {
+        		if (info.isOverwritten()) {
+        			info.undoOverwrite();
+        		}
+        		info.setLoaded(false);
+        	}
     	}
     }
 }
