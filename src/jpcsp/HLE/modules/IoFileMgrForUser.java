@@ -4182,6 +4182,17 @@ public class IoFileMgrForUser extends HLEModule {
                 }
                 break;
             }
+            case 0x02415857: {
+                if (!devicename.getString().equals("ms0:")) {
+                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+                } else if (Memory.isAddressGood(outdata_addr) && outlen == 4) {
+                	mem.write32(outdata_addr, 0); // Unknown value
+            		result = 0;
+            	} else {
+                	result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+            	}
+            	break;
+            }
             // Check if the device is write protected (fatms0).
             case 0x02425824: {
                 log.debug("sceIoDevctl check write protection (fatms0)");
@@ -4289,6 +4300,14 @@ public class IoFileMgrForUser extends HLEModule {
             		}
             	}
             	break;
+            }
+            case 0x00005802: {
+                if (!devicename.getString().equals("flash1:")) {
+                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+                } else {
+                    result = 0;
+                }
+                break;
             }
             default:
                 log.warn(String.format("sceIoDevctl 0x%08X unknown command", cmd));
