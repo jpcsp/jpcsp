@@ -373,4 +373,10 @@ public class sceImpose extends HLEModule {
 	public int sceImpose_BCF1D254_660(int unknown) {
 		return sceImpose_9DBCE0C4(unknown);
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xBB3F5DEC, version = 150)
+	public int sceImpose_BB3F5DEC(int unknown1, int unknown2, int unknown3) {
+		return 0;
+	}
 }
