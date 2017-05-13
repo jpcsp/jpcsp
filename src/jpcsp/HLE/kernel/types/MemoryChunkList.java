@@ -310,12 +310,14 @@ public class MemoryChunkList {
 			return;
 		}
 
-		int addr = low.addr;
-		for (MemoryChunk memoryChunk = low; memoryChunk != null; memoryChunk = memoryChunk.next) {
-			if (memoryChunk.addr < addr) {
-				log.error(String.format("MemoryChunkList has overlapping memory chunks at 0x%08X: %s", addr, memoryChunk));
+		if (low != null) {
+			int addr = low.addr;
+			for (MemoryChunk memoryChunk = low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+				if (memoryChunk.addr < addr) {
+					log.error(String.format("MemoryChunkList has overlapping memory chunks at 0x%08X: %s", addr, memoryChunk));
+				}
+				addr = memoryChunk.addr + memoryChunk.size;
 			}
-			addr = memoryChunk.addr + memoryChunk.size;
 		}
 	}
 
