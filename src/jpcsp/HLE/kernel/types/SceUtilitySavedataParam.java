@@ -624,7 +624,7 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         byte[] sdkey = key;
 
         // Write main data.
-        if (CryptoEngine.getSavedataCryptoStatus()) {
+        if (CryptoEngine.getSavedataCryptoStatus() && secure) {
             if (CryptoEngine.getExtractSavedataKeyStatus()) {
                 String tmpPath = Settings.getInstance().getDiscTmpDirectory();
                 new File(tmpPath).mkdirs();
