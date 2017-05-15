@@ -60,18 +60,7 @@ public class LoadExecForUser extends HLEModule {
         Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, 0);
     }
 
-    public int hleKernelLoadExec(PspString filename, int argSize, int argAddr) {
-        String name = filename.getString();
-
-        // The PSP is replacing a loadexec of disc0:/PSP_GAME/SYSDIR/BOOT.BIN with EBOOT.BIN
-        if (name.equals(unencryptedBootPath)) {
-    		log.info(String.format("sceKernelLoadExec '%s' replaced by '%s'", name, encryptedBootPath));
-    		name = encryptedBootPath;
-        }
-
-        // Flush system memory to mimic a real PSP reset.
-        Modules.SysMemUserForUserModule.reset();
-
+    public int hleKernelLoadExec(ByteBuffer moduleBuffer, int argSize, int argAddr, String moduleFileName, UmdIsoReader iso) {
         byte[] arguments = null;
         if (argSize > 0) {
             // Save the memory content for the arguments because
@@ -81,6 +70,68 @@ public class LoadExecForUser extends HLEModule {
             for (int i = 0; i < argSize; i++) {
             	arguments[i] = (byte) memoryReader.readNext();
             }
+        }
+
+        // Flush system memory to mimic a real PSP reset.
+        Modules.SysMemUserForUserModule.reset();
+
+        try {
+            if (moduleBuffer != null) {
+                SceModule module = Emulator.getInstance().load(moduleFileName, moduleBuffer, true);
+                Emulator.getClock().resume();
+
+                // After a sceKernelLoadExec, host0: is relative to the directory where
+                // the loaded file (prx) was located.
+                // E.g.:
+                //  after
+                //    sceKernelLoadExec("disc0:/PSP_GAME/USRDIR/A.PRX")
+                //  the following file access
+                //    sceIoOpen("host0:B")
+                //  is actually referencing the file
+                //    disc0:/PSP_GAME/USRDIR/B
+                if (moduleFileName != null) {
+	                int pathIndex = moduleFileName.lastIndexOf("/");
+	                if (pathIndex >= 0) {
+	                	Modules.IoFileMgrForUserModule.setHost0Path(moduleFileName.substring(0, pathIndex + 1));
+	                }
+                }
+
+                if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
+                    log.warn("sceKernelLoadExec - failed, target is not an ELF");
+                    throw new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME);
+                }
+
+            	// Set the given arguments to the root thread.
+            	// Do not pass the file name as first parameter (tested on PSP).
+            	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getRootThread(module);
+            	Modules.ThreadManForUserModule.hleKernelSetThreadArguments(rootThread, arguments, argSize);
+
+            	// The memory model (32MB / 64MB) could have been changed, update the RuntimeContext
+            	RuntimeContext.updateMemory();
+
+            	if (iso != null) {
+            		Modules.IoFileMgrForUserModule.setIsoReader(iso);
+            		Modules.sceUmdUserModule.setIsoReader(iso);
+            	}
+            }
+        } catch (GeneralJpcspException e) {
+            log.error("General Error", e);
+            Emulator.PauseEmu();
+        } catch (IOException e) {
+            log.error(String.format("sceKernelLoadExec - Error while loading module '%s'", moduleFileName), e);
+            return ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+        }
+
+        return 0;
+    }
+
+    public int hleKernelLoadExec(PspString filename, int argSize, int argAddr) {
+        String name = filename.getString();
+
+        // The PSP is replacing a loadexec of disc0:/PSP_GAME/SYSDIR/BOOT.BIN with EBOOT.BIN
+        if (name.equals(unencryptedBootPath)) {
+    		log.info(String.format("sceKernelLoadExec '%s' replaced by '%s'", name, encryptedBootPath));
+    		name = encryptedBootPath;
         }
 
         ByteBuffer moduleBuffer = null;
@@ -122,52 +173,7 @@ public class LoadExecForUser extends HLEModule {
 	        }
         }
 
-        try {
-            if (moduleBuffer != null) {
-                SceModule module = Emulator.getInstance().load(name, moduleBuffer, true);
-                Emulator.getClock().resume();
-
-                // After a sceKernelLoadExec, host0: is relative to the directory where
-                // the loaded file (prx) was located.
-                // E.g.:
-                //  after
-                //    sceKernelLoadExec("disc0:/PSP_GAME/USRDIR/A.PRX")
-                //  the following file access
-                //    sceIoOpen("host0:B")
-                //  is actually referencing the file
-                //    disc0:/PSP_GAME/USRDIR/B
-                int pathIndex = name.lastIndexOf("/");
-                if (pathIndex >= 0) {
-                	Modules.IoFileMgrForUserModule.setHost0Path(name.substring(0, pathIndex + 1));
-                }
-
-                if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
-                    log.warn("sceKernelLoadExec - failed, target is not an ELF");
-                    throw new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME);
-                }
-
-            	// Set the given arguments to the root thread.
-            	// Do not pass the file name as first parameter (tested on PSP).
-            	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getRootThread(module);
-            	Modules.ThreadManForUserModule.hleKernelSetThreadArguments(rootThread, arguments, argSize);
-
-            	// The memory model (32MB / 64MB) could have been changed, update the RuntimeContext
-            	RuntimeContext.updateMemory();
-
-            	if (iso != null) {
-            		Modules.IoFileMgrForUserModule.setIsoReader(iso);
-            		Modules.sceUmdUserModule.setIsoReader(iso);
-            	}
-            }
-        } catch (GeneralJpcspException e) {
-            log.error("General Error", e);
-            Emulator.PauseEmu();
-        } catch (IOException e) {
-            log.error(String.format("sceKernelLoadExec - Error while loading module '%s'", name), e);
-            return ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
-        }
-
-        return 0;
+    	return hleKernelLoadExec(moduleBuffer, argSize, argAddr, name, iso);
     }
 
     @HLELogging(level="info")

@@ -122,7 +122,7 @@ public class Loader {
         // On Linux, there is no ":" in the file name when loading a .pbp file;
         // on Windows, there is luckily one ":" in "C:/...".
         // Simulate a ":" by prefixing by "ms0:", as this is not really used by an application.
-        if (!module.pspfilename.contains(":")) {
+        if (module.pspfilename != null && !module.pspfilename.contains(":")) {
         	module.pspfilename = "ms0:" + module.pspfilename;
         }
 

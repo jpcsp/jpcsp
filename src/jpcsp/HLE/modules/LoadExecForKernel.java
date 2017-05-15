@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import java.nio.ByteBuffer;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.CanBeNull;
@@ -109,5 +111,29 @@ public class LoadExecForKernel extends HLEModule {
     @HLEFunction(nid = 0xD8320A28, version = 660)
     public int sceKernelLoadExecVSHDisc_660(PspString filename, TPointer param) {
     	return sceKernelLoadExecVSHMs2(filename, param);
+    }
+
+    @HLELogging(level="info")
+    @HLEFunction(nid = 0xBEF585EC, version = 150)
+    public int sceKernelLoadExecBufferVSHUsbWlan(int bufferSize, TPointer bufferAddr, TPointer param) {
+    	SceKernelLoadExecVSHParam loadExecParam = new SceKernelLoadExecVSHParam();
+    	loadExecParam.read(param);
+
+    	int argSize = 0;
+    	int argAddr = 0;
+    	if (param.isNotNull()) {
+    		argSize = loadExecParam.args;
+    		argAddr = loadExecParam.argp;
+			log.info(String.format("sceKernelLoadExecBufferVSHUsbWlan param=%s", loadExecParam));
+		}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceKernelLoadExecBufferVSHUsbWlan buffAddr: %s", Utilities.getMemoryDump(bufferAddr.getAddress(), Math.min(bufferSize, 1024))));
+    	}
+
+    	byte[] moduleBytes = bufferAddr.getArray8(bufferSize);
+    	ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+
+    	return Modules.LoadExecForUserModule.hleKernelLoadExec(moduleBuffer, argSize, argAddr, null, null);
     }
 }
