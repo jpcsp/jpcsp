@@ -968,6 +968,12 @@ public class sceReg extends HLEModule {
     			if (size > 0) {
     				Utilities.writeStringNZ(buf.getMemory(), buf.getAddress(), size, gateway);
     			}
+    		} else if (name.equals("device")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(1);
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
@@ -1622,6 +1628,12 @@ public class sceReg extends HLEModule {
     			settings.writeInt("registry.npAutoSignInEnable", npAutoSignInEnable);
     		} else {
     			log.warn(String.format("Unknown registry entry '%s'", name));
+    		}
+    	} else if ("/CONFIG/NETWORK/INFRASTRUCTURE".equals(fullName)) {
+    		if ("latest_id".equals(name) && size >= 4) {
+    			networkLatestId = buf.getValue32();
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
     	} else if ("/CONFIG/NETWORK/ADHOC".equals(fullName)) {
     		if ("ssid_prefix".equals(name)) {
