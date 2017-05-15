@@ -98,6 +98,7 @@ public class AccessPoint {
 		public int destinationSequenceNumber;
 		public SocketChannel socketChannel;
 		public byte[] pendingWriteData;
+		public boolean pendingConnection;
 
 		private void openChannel() throws IOException {
 			if (socketChannel == null) {
@@ -114,6 +115,13 @@ public class AccessPoint {
 			if (!socketChannel.isConnected() && !socketChannel.isConnectionPending()) {
 				SocketAddress socketAddress = new InetSocketAddress(InetAddress.getByAddress(destinationIPAddress), destinationPort);
 				socketChannel.connect(socketAddress);
+			}
+		}
+
+		public void close() throws IOException {
+			if (socketChannel != null) {
+				socketChannel.close();
+				socketChannel = null;
 			}
 		}
 
@@ -641,8 +649,23 @@ public class AccessPoint {
 		TcpConnectionState tcpConnectionState = getTcpConnectionState(ipv4, tcp);
 		if (tcp.flagSYN) {
 			if (tcpConnectionState != null) {
-				log.error(String.format("processMessageTCP SYN received but connection already exists: %s", tcpConnectionState));
-				return;
+				if (!tcpConnectionState.pendingConnection) {
+					log.error(String.format("processMessageTCP SYN received but connection already exists: %s", tcpConnectionState));
+					return;
+				}
+
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("processMessageTCP SYN received for a connection still pending (%s), retrying the connection", tcpConnectionState));
+				}
+
+				try {
+					tcpConnectionState.close();
+				} catch (IOException e) {
+					if (log.isDebugEnabled()) {
+						log.debug("error while closing connection", e);
+					}
+				}
+				tcpConnectionStates.remove(tcpConnectionState);
 			}
 
 			tcpConnectionState = new TcpConnectionState();
@@ -652,13 +675,10 @@ public class AccessPoint {
 			tcpConnectionState.destinationIPAddress = ipv4.destinationIPAddress;
 			tcpConnectionState.sourcePort = tcp.sourcePort;
 			tcpConnectionState.destinationPort = tcp.destinationPort;
-			tcpConnectionState.sourceSequenceNumber = tcp.sequenceNumber;
+			tcpConnectionState.sourceSequenceNumber = tcp.sequenceNumber + tcp.data.length;
 			tcpConnectionState.destinationSequenceNumber = random.nextInt();
+			tcpConnectionState.pendingConnection = true;
 			tcpConnectionStates.add(tcpConnectionState);
-
-			tcpConnectionState.sourceSequenceNumber++;
-			sendAcknowledgeTCP(frame, ipv4, tcp, tcpConnectionState);
-			tcpConnectionState.destinationSequenceNumber++;
 		} else if (tcp.flagACK) {
 			if (tcpConnectionState == null) {
 				// Acknowledge to an unknown connection, ignore
@@ -670,14 +690,15 @@ public class AccessPoint {
 
 			try {
 				if (tcp.flagFIN) {
+					tcpConnectionState.sourceSequenceNumber += tcp.data.length;
 					tcpConnectionState.sourceSequenceNumber++;
-					sendAcknowledgeTCP(frame, ipv4, tcp, tcpConnectionState);
+					sendAcknowledgeTCP(tcpConnectionState, false);
 				} else if (tcp.flagPSH) {
 					// Acknowledge the reception of the data
-					sendAcknowledgeTCP(frame, ipv4, tcp, tcpConnectionState);
+					tcpConnectionState.sourceSequenceNumber += tcp.data.length;
+					sendAcknowledgeTCP(tcpConnectionState, false);
 
-					// Connect and queue the received data for the destination
-					tcpConnectionState.connect();
+					// Queue the received data for the destination
 					tcpConnectionState.addPendingWriteData(tcp.data);
 				}
 			} catch (IOException e) {
@@ -686,23 +707,24 @@ public class AccessPoint {
 		}
 	}
 
-	private void sendAcknowledgeTCP(EtherFrame frame, IPv4 ipv4, TCP tcp, TcpConnectionState tcpConnectionState) throws EOFException {
-		tcpConnectionState.sourceSequenceNumber += tcp.data.length;
+	private void sendAcknowledgeTCP(TcpConnectionState tcpConnectionState, boolean flagSYN) throws EOFException {
+		EtherFrame answerFrame = new EtherFrame();
+		answerFrame.srcMac = tcpConnectionState.destinationMacAddress;
+		answerFrame.dstMac = tcpConnectionState.sourceMacAddress;
+		answerFrame.type = ETHER_TYPE_IPv4;
 
-		EtherFrame answerFrame = new EtherFrame(frame);
-		answerFrame.swapSourceAndDestination();
+		IPv4 answerIPv4 = new IPv4();
+		answerIPv4.protocol = IPv4_PROTOCOL_TCP;
+		answerIPv4.sourceIPAddress = tcpConnectionState.destinationIPAddress;
+		answerIPv4.destinationIPAddress = tcpConnectionState.sourceIPAddress;
 
-		IPv4 answerIPv4 = new IPv4(ipv4);
-		answerIPv4.swapSourceAndDestination();
-		answerIPv4.timeToLive--; // When a packet arrives at a router, the router decreases the TTL field.
-
-		TCP answerTcp = new TCP(tcp);
-		answerTcp.swapSourceAndDestination();
-		answerTcp.acknowledgmentNumber = tcpConnectionState.sourceSequenceNumber;
+		TCP answerTcp = new TCP();
+		answerTcp.sourcePort = tcpConnectionState.destinationPort;
+		answerTcp.destinationPort = tcpConnectionState.sourcePort;
 		answerTcp.sequenceNumber = tcpConnectionState.destinationSequenceNumber;
-		answerTcp.flagPSH = false;
+		answerTcp.acknowledgmentNumber = tcpConnectionState.sourceSequenceNumber;
 		answerTcp.flagACK = true;
-		answerTcp.data = null;
+		answerTcp.flagSYN = flagSYN;
 
 		// Update lengths and checksums
 		answerTcp.computeChecksum(answerIPv4);
@@ -716,9 +738,9 @@ public class AccessPoint {
 		answerTcp.write(answerPacket);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("processMessageTCP ACK frame=%s", answerFrame));
-			log.debug(String.format("processMessageTCP ACK IPv4=%s", answerIPv4));
-			log.debug(String.format("processMessageTCP ACK TCP=%s", answerTcp));
+			log.debug(String.format("sendAcknowledgeTCP frame=%s", answerFrame));
+			log.debug(String.format("sendAcknowledgeTCP IPv4=%s", answerIPv4));
+			log.debug(String.format("sendAcknowledgeTCP TCP=%s", answerTcp));
 		}
 
 		sendPacket(answerPacket);
@@ -767,15 +789,35 @@ public class AccessPoint {
 
 	private boolean receiveTcpMessages() {
 		boolean received = false;
+		List<TcpConnectionState> tcpConnectionStatesToBeDeleted = new LinkedList<TcpConnectionState>();
 
 		for (TcpConnectionState tcpConnectionState : tcpConnectionStates) {
 			if (log.isTraceEnabled()) {
 				log.trace(String.format("receiveTcpMessages polling %s", tcpConnectionState));
 			}
 
-			SocketChannel socketChannel = tcpConnectionState.socketChannel;
+			if (tcpConnectionState.pendingConnection) {
+				try {
+					tcpConnectionState.connect();
+					SocketChannel socketChannel = tcpConnectionState.socketChannel;
+					if (socketChannel != null && socketChannel.finishConnect()) {
+						tcpConnectionState.sourceSequenceNumber++;
+						// Send SYN-ACK acknowledge
+						sendAcknowledgeTCP(tcpConnectionState, true);
+						tcpConnectionState.destinationSequenceNumber++;
+						tcpConnectionState.pendingConnection = false;
+					}
+				} catch (IOException e) {
+					// connect failed, do not send any TCP SYN-ACK, forget the connection state
+					tcpConnectionStatesToBeDeleted.add(tcpConnectionState);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Pending TCP connection %s failed: %s", tcpConnectionState, e.toString()));
+					}
+				}
+			}
+
 			try {
-				if (socketChannel != null && socketChannel.finishConnect()) {
+				if (!tcpConnectionState.pendingConnection) {
 					// Write any pending data
 					byte[] pendingWriteData = tcpConnectionState.pendingWriteData;
 					if (pendingWriteData != null) {
@@ -799,6 +841,8 @@ public class AccessPoint {
 				log.error("receiveTcpMessages", e);
 			}
 		}
+
+		tcpConnectionStates.removeAll(tcpConnectionStatesToBeDeleted);
 
 		return received;
 	}
