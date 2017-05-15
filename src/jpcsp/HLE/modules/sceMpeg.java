@@ -3906,9 +3906,6 @@ public class sceMpeg extends HLEModule {
         mpegRingbufferAddr = ringbufferAddr;
 
         mpegRingbufferRead();
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceMpegRingbufferAvailableSize returning 0x%X, vcount=%d", mpegRingbuffer.getFreePackets(), Modules.sceDisplayModule.getVcount()));
-        }
 
         return mpegRingbuffer.getFreePackets();
     }

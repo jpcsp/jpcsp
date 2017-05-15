@@ -100,7 +100,7 @@ public class pspFileBuffer {
 		return currentSize;
 	}
 
-	public void reset(int readSize, int filePosition) {
+	public synchronized void reset(int readSize, int filePosition) {
 		currentSize = 0;
 		readPosition = 0;
 		writePosition = 0;
@@ -108,7 +108,7 @@ public class pspFileBuffer {
 		notifyWrite(readSize);
 	}
 
-	public void notifyRead(int size) {
+	public synchronized void notifyRead(int size) {
 		if (size > 0) {
 			size = min(size, currentSize);
 			readPosition = incrementPosition(readPosition, size);
@@ -116,11 +116,11 @@ public class pspFileBuffer {
 		}
 	}
 
-	public void notifyReadAll() {
+	public synchronized void notifyReadAll() {
 		notifyRead(currentSize);
 	}
 
-	public void notifyWrite(int size) {
+	public synchronized void notifyWrite(int size) {
 		if (size > 0) {
 			size = min(size, getMaxSize() - currentSize);
 			writePosition = incrementPosition(writePosition, size);
