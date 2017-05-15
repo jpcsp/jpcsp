@@ -4187,6 +4187,11 @@ public class CompilerContext implements ICompilerContext {
 				int rt = codeInstruction.getRtRegisterIndex();
 				int simm16 = codeInstruction.getImm16(true);
 				if (rt == _sp && rs == _sp && simm16 < 0) {
+					// 2 times a $sp adjustment in the same code sequence?
+					if (decreaseSpInstruction >= 0) {
+						break;
+					}
+
 					decreaseSpInstruction = currentInstructionIndex;
 					stackSize = -codeInstruction.getImm16(true);
 					storeSpInstructions = new int[stackSize >> 2];
