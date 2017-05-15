@@ -201,7 +201,8 @@ public class HLEModuleManager {
         DmacManForKernel(Modules.DmacManForKernelModule),
         sceSyscon(Modules.sceSysconModule),
         sceLed(Modules.sceLedModule),
-        sceSysreg(Modules.sceSysregModule);
+        sceSysreg(Modules.sceSysregModule),
+        scePsheet(Modules.scePsheetModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;

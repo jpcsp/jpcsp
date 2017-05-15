@@ -150,6 +150,7 @@ public class Modules {
     public static sceSyscon sceSysconModule = new sceSyscon();
     public static sceLed sceLedModule = new sceLed();
     public static sceSysreg sceSysregModule = new sceSysreg();
+    public static scePsheet scePsheetModule = new scePsheet();
 
     public static Logger log = Logger.getLogger("hle");
 
