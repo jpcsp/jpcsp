@@ -259,6 +259,8 @@ public class VideoEngine {
     private IntBuffer multiDrawFirst;
     private IntBuffer multiDrawCount;
     private static final int maxMultiDrawElements = 1000;
+    private int multiTrxkickStart;
+    private int multiTrxkickEnd;
     private static final String name = "VideoEngine";
     private int maxWaitForSyncCount;
     private VertexState v = new VertexState();
@@ -773,6 +775,8 @@ public class VideoEngine {
         scissorChanged = true;
         errorCount = 0;
         usingTRXKICK = false;
+        multiTrxkickStart = -1;
+        multiTrxkickEnd = -1;
         maxSpriteHeight = 0;
         maxSpriteWidth = 0;
         primCount = 0;
@@ -2130,6 +2134,52 @@ public class VideoEngine {
         return currentFirst + currentNumberOfVertex - initialFirst;
     }
 
+    private void checkMultiTrxkick() {
+    	int startPc = currentList.getPc();
+        if (isLogDebugEnabled) {
+            log(String.format("checkMultiTrxkick from 0x%08X", startPc));
+        }
+
+        int lastTrxkick = startPc - 4;
+    	int countTrxkick = 1; // Count the TRXKICK command that has triggered this check
+
+    	while (!currentList.isStallReached()) {
+            int instruction = currentList.readNextInstruction();
+
+            int cmd = command(instruction);
+            if (cmd == TRXKICK) {
+        		lastTrxkick = currentList.getPc() - 4;
+        		countTrxkick++;
+            } else if (cmd == TRXPOS || cmd == TRXDPOS || cmd == TRXSIZE || cmd == TRXSBP || cmd == TRXSBW || cmd == TRXDBP || cmd == TRXDBW || cmd == NOP) {
+            	// Continue the check
+            } else {
+            	// Reaching a non-trxkick command, aborting the check
+            	if (isLogDebugEnabled) {
+                    log.debug(String.format("%s 0x%06X has stopped integration in checkMultiTrxkick", helper.getCommandString(cmd), intArgument(instruction)));
+            	}
+            	break;
+            }
+    	}
+
+    	// Optimize a sequence of TRXKICK commands when there are at least 2 of them
+    	if (countTrxkick > 2) {
+    		multiTrxkickStart = startPc - 4;
+    		multiTrxkickEnd = lastTrxkick;
+    		if (isLogDebugEnabled) {
+    			log.debug(String.format("checkMultiTrxkick start=0x%08X, end=0x%08X, countTrxkick=%d", multiTrxkickStart, multiTrxkickEnd, countTrxkick));
+    		}
+    	} else {
+    		multiTrxkickStart = -1;
+    		multiTrxkickEnd = -1;
+    		if (isLogDebugEnabled) {
+    			log.debug(String.format("checkMultiTrxkick failed, countTrxkick=%d", countTrxkick));
+    		}
+    	}
+
+    	// Reset the PC to its initial value
+    	currentList.setPc(startPc);
+    }
+
     private VertexIndexInfo getVertexIndexInfo(int bytesPerIndex, int numberOfVertex) {
         int maxIndex = -1;
         int minIndex = Integer.MAX_VALUE;
@@ -3082,27 +3132,54 @@ public class VideoEngine {
         if (isGeProfilerEnabled) {
             GEProfiler.startGeCmd(TRXKICK);
         }
-        updateGeBuf();
+
+        int pc = currentList.getPc() - 4;
+        if (pc < multiTrxkickStart || pc > multiTrxkickEnd) {
+        	checkMultiTrxkick();
+        }
+
+        boolean insideMultiTrxkick = multiTrxkickStart <= pc && pc <= multiTrxkickEnd;
+        if (pc == multiTrxkickStart) {
+        	if (isLogDebugEnabled) {
+        		log.debug(String.format("Start of a TRXKICK sequence at 0x%08X", pc));
+        	}
+
+        	// These actions are only done once at the start of the TRXKICK sequence:
+        	memoryForGEUpdated();
+            re.waitForRenderingCompletion();
+            // Force a copy to the memory
+            display.copyGeToMemory(true, true);
+        } else if (insideMultiTrxkick) {
+        	if (isLogDebugEnabled) {
+        		log.debug(String.format("Inside a TRXKICK sequence [0x%08X-0x%08X] at 0x%08X", multiTrxkickStart, multiTrxkickEnd, pc));
+        	}
+        }
+
+        if (!insideMultiTrxkick) {
+        	updateGeBuf();
+        }
 
         int pixelFormatGe = context.psm;
         int bpp = (context.textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) ? 2 : 4;
         int bppGe = sceDisplay.getPixelFormatBytes(pixelFormatGe);
 
-        memoryForGEUpdated();
+        boolean transferUsingMemcpy = insideMultiTrxkick;
+        if (!insideMultiTrxkick) {
+        	memoryForGEUpdated();
 
-        boolean transferUsingMemcpy = false;
-        if (!display.isGeAddress(context.textureTx_destinationAddress) || bpp != bppGe || display.isUsingSoftwareRenderer()) {
-            transferUsingMemcpy = true;
-        }
+        	if (!display.isGeAddress(context.textureTx_destinationAddress) || bpp != bppGe || display.isUsingSoftwareRenderer()) {
+	            transferUsingMemcpy = true;
+	        }
 
-        if (display.isGeAddress(context.textureTx_sourceAddress)) {
-            re.waitForRenderingCompletion();
-            // Force a copy to the memory if performing the transfer using memcpy
-            display.copyGeToMemory(true, transferUsingMemcpy);
+	        if (display.isGeAddress(context.textureTx_sourceAddress)) {
+	            re.waitForRenderingCompletion();
+	            // Force a copy to the memory if performing the transfer using memcpy
+	            display.copyGeToMemory(true, transferUsingMemcpy);
+	        }
         }
 
         if (transferUsingMemcpy) {
-            if (isLogDebugEnabled) {
+            if (!insideMultiTrxkick && isLogDebugEnabled) {
                 if (bpp != bppGe) {
                     log(helper.getCommandString(TRXKICK) + " BPP not compatible with GE");
                 } else {
@@ -3113,7 +3190,7 @@ public class VideoEngine {
             usingTRXKICK = true;
 
             // Remove the destination address from the texture cache
-            if (canCacheTexture(context.textureTx_destinationAddress)) {
+            if (!insideMultiTrxkick && canCacheTexture(context.textureTx_destinationAddress)) {
                 TextureCache textureCache = TextureCache.getInstance();
                 textureCache.resetTextureAlreadyHashed(context.textureTx_destinationAddress, context.tex_clut_addr, context.tex_clut_start, context.tex_clut_mode);
                 textureCache.resetTextureAlreadyHashed(context.textureTx_destinationAddress, 0, 0, 0);
@@ -3249,6 +3326,18 @@ public class VideoEngine {
             re.deleteTexture(texture);
 
             somethingDisplayed = true;
+        }
+
+        if (pc == multiTrxkickEnd) {
+        	if (isLogDebugEnabled) {
+        		log.debug(String.format("End of a TRXKICK sequence at 0x%08X", pc));
+        	}
+
+        	multiTrxkickStart = -1;
+        	multiTrxkickEnd = -1;
+
+        	// Force a reload of the GE texture
+        	geBufChanged = true;
         }
     }
 
