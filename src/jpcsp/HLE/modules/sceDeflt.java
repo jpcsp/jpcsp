@@ -128,7 +128,7 @@ public class sceDeflt extends HLEModule {
 
 	@HLEFunction(nid = 0x1B5B82BC, version = 150)
 	public boolean sceGzipIsValid(TPointer gzipData) {
-    	int magic = gzipData.getValue16();
+    	int magic = gzipData.getValue16() & 0xFFFF;
     	if (log.isTraceEnabled()) {
     		log.trace(String.format("sceGzipIsValid gzipData:%s", Utilities.getMemoryDump(gzipData.getAddress(), 16)));
     	}
