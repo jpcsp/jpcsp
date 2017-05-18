@@ -1293,18 +1293,22 @@ public class Utilities {
         memoryWriter.flush();
     }
 
-    public static int[] readInt32(int address, int length) {
-		int[] a = new int[length >> 2];
-
+    public static void readInt32(int address, int length, int[] a, int offset) {
+    	final int length4 = length >> 2;
 		// Optimize the most common case
 		if (RuntimeContext.hasMemoryInt()) {
-			System.arraycopy(RuntimeContext.getMemoryInt(), address >> 2, a, 0, a.length);
+			System.arraycopy(RuntimeContext.getMemoryInt(), address >> 2, a, offset, length4);
 		} else {
 			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
-			for (int i = 0; i < a.length; i++) {
-				a[i] = memoryReader.readNext();
+			for (int i = 0; i < length4; i++) {
+				a[offset + i] = memoryReader.readNext();
 			}
 		}
+    }
+
+    public static int[] readInt32(int address, int length) {
+		int[] a = new int[length >> 2];
+		readInt32(address, length, a, 0);
 
 		return a;
     }

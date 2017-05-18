@@ -41,6 +41,7 @@ import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemorySections;
@@ -293,7 +294,14 @@ public class Compiler implements ICompiler {
     	}
 
     	if (codeBlock.areOpcodesChanged()) {
-			invalidateCodeBlock(codeBlock);
+    		IAction updateOpcodesAction = codeBlock.getUpdateOpcodesAction();
+    		if (updateOpcodesAction != null) {
+    			// Execute the action provided by the code block to update the opcodes
+    			updateOpcodesAction.execute();
+    		} else {
+    			// This is the default action when the opcodes has been updated
+    			invalidateCodeBlock(codeBlock);
+    		}
 		} else {
 			// The opcodes of the code block could get updated by the application "after" calling an icache instruction.
 			// Check if the opcodes have been updated the next time the code block is executed.

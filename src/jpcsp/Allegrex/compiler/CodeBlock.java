@@ -35,6 +35,7 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 import jpcsp.HLE.HLEModuleFunction;
 import jpcsp.HLE.HLEModuleManager;
+import jpcsp.HLE.kernel.types.IAction;
 
 import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassVisitor;
@@ -68,6 +69,7 @@ public class CodeBlock {
 	private MemoryRanges memoryRanges = new MemoryRanges();
 	private int flags;
 	private HLEModuleFunction hleFunction;
+	private IAction updateOpcodesAction;
 
 	public CodeBlock(int startAddress, int instanceCount) {
 		this.startAddress = startAddress;
@@ -659,6 +661,14 @@ public class CodeBlock {
 
 	public boolean isHLEFunction() {
 		return hleFunction != null;
+	}
+
+	public IAction getUpdateOpcodesAction() {
+		return updateOpcodesAction;
+	}
+
+	public void setUpdateOpcodesAction(IAction updateOpcodesAction) {
+		this.updateOpcodesAction = updateOpcodesAction;
 	}
 
 	@Override

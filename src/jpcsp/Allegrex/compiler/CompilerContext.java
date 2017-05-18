@@ -3151,7 +3151,10 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	public void compileNativeCodeSequence(NativeCodeSequence nativeCodeSequence, NativeCodeInstruction nativeCodeInstruction) {
-	    visitNativeCodeSequence(nativeCodeSequence, nativeCodeInstruction.getAddress(), nativeCodeInstruction);
+		// The pc can be used by native code sequences, set it to the start address of the sequence
+		storePc();
+
+		visitNativeCodeSequence(nativeCodeSequence, nativeCodeInstruction.getAddress(), nativeCodeInstruction);
 
 	    if (nativeCodeSequence.isReturning()) {
 	    	loadRegister(_ra);

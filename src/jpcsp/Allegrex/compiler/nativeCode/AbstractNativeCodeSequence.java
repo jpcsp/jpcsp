@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
@@ -55,12 +56,20 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 		return toLowerCase;
 	}
 
+	static protected Processor getProcessor() {
+		return RuntimeContext.processor;
+	}
+
 	static protected CpuState getCpu() {
 		return RuntimeContext.cpu;
 	}
 
 	static protected Memory getMemory() {
 		return RuntimeContext.memory;
+	}
+
+	static protected int getPc() {
+		return getCpu().pc;
 	}
 
 	static protected int getRegisterValue(int register) {

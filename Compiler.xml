@@ -10960,6 +10960,38 @@
 08837E30:[3C04088F]: lui        $a0, 0x088F <=> li $a0, 0x088F0000
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="ULUS10014">
+        <!--
+            The code of this sequence is modified very often by the game
+                Tony Hawk's Underground 2 Remix - ULUS10014
+            Due to these frequent code changes, the compiler is interpreting
+            the code which is leading to poor performance.
+            Interpret this code sequence but cache the decoded instructions
+            to improve the performance.
+        -->
+		<Class>jpcsp.Allegrex.compiler.nativeCode.CachedInterpreter</Class>
+		<Parameters>18,100</Parameters>
+		<CodeInstructions><![CDATA[
+08865600:[6610849A/FFFF00FF]: vhdp.q     S620.s, C100.q, C400.q
+08865604:[6611869B/FFFF00FF]: vhdp.q     S630.s, C120.q, C410.q
+08865608:[6612809C/FFFF00FF]: vhdp.q     S700.s, C000.q, C420.q
+0886560C:[6613829D/FFFF00FF]: vhdp.q     S710.s, C020.q, C430.q
+08865610:[6614829E/FFFF00FF]: vhdp.q     S720.s, C020.q, C500.q
+08865614:[66108CBA/FFFF00FF]: vhdp.q     S621.s, C300.q, C400.q
+08865618:[66118EBB/FFFF00FF]: vhdp.q     S631.s, C320.q, C410.q
+0886561C:[661288BC/FFFF00FF]: vhdp.q     S701.s, C200.q, C420.q
+08865620:[66138ABD/FFFF00FF]: vhdp.q     S711.s, C220.q, C430.q
+08865624:[66148ABE/FFFF00FF]: vhdp.q     S721.s, C220.q, C500.q
+08865628:[661583DA/FFFF00FF]: vhdp.q     S622.s, C030.q, C510.q
+0886562C:[661687DB/FFFF00FF]: vhdp.q     S632.s, C130.q, C520.q
+08865630:[661781DC/FFFF00FF]: vhdp.q     S702.s, C010.q, C530.q
+08865634:[661883DD/FFFF00FF]: vhdp.q     S712.s, C030.q, C600.q
+08865638:[66158BFA/FFFF00FF]: vhdp.q     S623.s, C230.q, C510.q
+0886563C:[66168FFB/FFFF00FF]: vhdp.q     S633.s, C330.q, C520.q
+08865640:[661789FC/FFFF00FF]: vhdp.q     S703.s, C210.q, C530.q
+08865644:[66188BFD/FFFF00FF]: vhdp.q     S713.s, C230.q, C600.q
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
