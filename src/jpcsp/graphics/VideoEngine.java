@@ -261,6 +261,8 @@ public class VideoEngine {
     private static final int maxMultiDrawElements = 1000;
     private int multiTrxkickStart;
     private int multiTrxkickEnd;
+    private boolean multiTrxkickCopyGeToMemoryDone;
+    private boolean multiTrxkickInvalidateGe;
     private static final String name = "VideoEngine";
     private int maxWaitForSyncCount;
     private VertexState v = new VertexState();
@@ -3146,9 +3148,10 @@ public class VideoEngine {
 
         	// These actions are only done once at the start of the TRXKICK sequence:
         	memoryForGEUpdated();
-            re.waitForRenderingCompletion();
-            // Force a copy to the memory
-            display.copyGeToMemory(true, true);
+
+        	// Perform a copy of the GE to memory only when really required
+        	multiTrxkickCopyGeToMemoryDone = false;
+        	multiTrxkickInvalidateGe = false;
         } else if (insideMultiTrxkick) {
         	if (isLogDebugEnabled) {
         		log.debug(String.format("Inside a TRXKICK sequence [0x%08X-0x%08X] at 0x%08X", multiTrxkickStart, multiTrxkickEnd, pc));
@@ -3164,18 +3167,26 @@ public class VideoEngine {
         int bppGe = sceDisplay.getPixelFormatBytes(pixelFormatGe);
 
         boolean transferUsingMemcpy = insideMultiTrxkick;
-        if (!insideMultiTrxkick) {
+        if (insideMultiTrxkick) {
+        	if (display.isGeAddress(context.textureTx_destinationAddress)) {
+        		multiTrxkickInvalidateGe = true;
+        	}
+        } else {
         	memoryForGEUpdated();
 
         	if (!display.isGeAddress(context.textureTx_destinationAddress) || bpp != bppGe || display.isUsingSoftwareRenderer()) {
 	            transferUsingMemcpy = true;
 	        }
+        }
 
-	        if (display.isGeAddress(context.textureTx_sourceAddress)) {
-	            re.waitForRenderingCompletion();
-	            // Force a copy to the memory if performing the transfer using memcpy
-	            display.copyGeToMemory(true, transferUsingMemcpy);
-	        }
+        if (display.isGeAddress(context.textureTx_sourceAddress)) {
+        	if (!insideMultiTrxkick || !multiTrxkickCopyGeToMemoryDone) {
+        		re.waitForRenderingCompletion();
+        		// Force a copy to the memory if performing the transfer using memcpy
+        		display.copyGeToMemory(true, transferUsingMemcpy);
+
+        		multiTrxkickCopyGeToMemoryDone = true;
+        	}
         }
 
         if (transferUsingMemcpy) {
@@ -3336,8 +3347,10 @@ public class VideoEngine {
         	multiTrxkickStart = -1;
         	multiTrxkickEnd = -1;
 
-        	// Force a reload of the GE texture
-        	geBufChanged = true;
+        	if (multiTrxkickInvalidateGe) {
+	        	// Force a reload of the GE texture
+	        	geBufChanged = true;
+        	}
         }
     }
 
