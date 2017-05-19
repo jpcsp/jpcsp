@@ -696,7 +696,7 @@ public class IoFileMgrForUser extends HLEModule {
 
 		defaultTimings.put(IoOperation.open, new IoFileMgrForUser.IoOperationTiming(5));
 		defaultTimings.put(IoOperation.close, new IoFileMgrForUser.IoOperationTiming(1));
-		defaultTimings.put(IoOperation.seek, new IoFileMgrForUser.IoOperationTiming());
+		defaultTimings.put(IoOperation.seek, new IoFileMgrForUser.IoOperationTiming(1));
 		defaultTimings.put(IoOperation.ioctl, new IoFileMgrForUser.IoOperationTiming(20));
 		defaultTimings.put(IoOperation.remove, new IoFileMgrForUser.IoOperationTiming());
 		defaultTimings.put(IoOperation.rename, new IoFileMgrForUser.IoOperationTiming());
