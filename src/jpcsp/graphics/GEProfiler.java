@@ -86,7 +86,7 @@ public class GEProfiler {
     }
 
     public static void exit() {
-        if (!profilerEnabled) {
+        if (!profilerEnabled || geListCount == 0) {
             return;
         }
 
