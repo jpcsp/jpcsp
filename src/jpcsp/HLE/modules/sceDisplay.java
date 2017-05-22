@@ -1280,7 +1280,8 @@ public class sceDisplay extends HLEModule {
     }
 
     public boolean isOnlyGEGraphics() {
-        return onlyGEGraphics;
+    	// "Only GE Graphics" makes only sense when the ExternalGE is not active
+        return onlyGEGraphics && !ExternalGE.isActive();
     }
 
     public void setOnlyGEGraphics(boolean onlyGEGraphics) {
