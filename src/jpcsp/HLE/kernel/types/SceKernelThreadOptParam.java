@@ -33,6 +33,6 @@ public class SceKernelThreadOptParam extends pspAbstractMemoryMappedStructureVar
 
 	@Override
 	public String toString() {
-		return String.format("stackMpid=0x%X", stackMpid);
+		return String.format("sizeof=0x%X, stackMpid=0x%X", sizeof(), stackMpid);
 	}
 }

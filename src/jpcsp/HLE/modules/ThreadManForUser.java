@@ -2237,6 +2237,9 @@ public class ThreadManForUser extends HLEModule {
         	if (sceKernelThreadOptParam.sizeof() >= 8) {
         		mpidStack = sceKernelThreadOptParam.stackMpid;
         	}
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceKernelCreateThread options: %s", sceKernelThreadOptParam));
+        	}
         }
 
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr, mpidStack);
