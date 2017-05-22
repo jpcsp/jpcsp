@@ -49,12 +49,10 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
-import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
-import jpcsp.HLE.kernel.types.SceKernelVplInfo;
 import jpcsp.HLE.kernel.types.SceNetIfHandle;
 import jpcsp.HLE.kernel.types.SceNetIfMessage;
 import jpcsp.HLE.kernel.types.SceNetWlanMessage;
@@ -580,14 +578,7 @@ public class sceWlan extends HLEModule {
 
 	    	SceNetIfMessage message = new SceNetIfMessage();
 	    	final int size = message.sizeof() + dataLength;
-	    	int allocatedAddr;
-	    	SceKernelVplInfo vplInfo = Managers.vpl.getVplInfoByName("SceNet");
-	    	if (vplInfo != null) {
-	    		allocatedAddr = Managers.vpl.tryAllocateVpl(vplInfo, size);
-	    	} else {
-	    		allocatedAddr = Modules.sceNetIfhandleModule.sceNetMallocInternal(size);
-	    	}
-
+	    	int allocatedAddr = Modules.sceNetIfhandleModule.hleNetMallocInternal(size);
 	    	if (allocatedAddr > 0) {
 	    		Memory mem = Memory.getInstance();
 		    	mem.memset(allocatedAddr, (byte) 0, size);
@@ -1049,14 +1040,7 @@ public class sceWlan extends HLEModule {
     	SceNetWlanMessage wlanMessage = new SceNetWlanMessage();
 
     	final int size = message.sizeof() + wlanMessage.sizeof() + SceNetWlanMessage.maxContentLength + 0x12;
-    	int allocatedAddr;
-    	SceKernelVplInfo vplInfo = Managers.vpl.getVplInfoByName("SceNet");
-    	if (vplInfo != null) {
-    		allocatedAddr = Managers.vpl.tryAllocateVpl(vplInfo, size);
-    	} else {
-    		allocatedAddr = Modules.sceNetIfhandleModule.sceNetMallocInternal(size);
-    	}
-
+    	int allocatedAddr = Modules.sceNetIfhandleModule.hleNetMallocInternal(size);
     	if (allocatedAddr <= 0) {
     		return;
     	}
@@ -1282,7 +1266,7 @@ public class sceWlan extends HLEModule {
     }
 
     private void afterNetCreateIfhandleEtherAction(SceKernelThreadInfo thread, TPointer handleAddr) {
-    	int tempMem = sceNetIfhandleModule.sceNetMallocInternal(32);
+    	int tempMem = Modules.sceNetIfhandleModule.hleNetMallocInternal(32);
     	if (tempMem <= 0) {
     		return;
     	}
@@ -1310,10 +1294,7 @@ public class sceWlan extends HLEModule {
 		handle.downCallbackAddr = ThreadManForUser.WLAN_DOWN_CALLBACK_ADDRESS;
 		handle.sendCallbackAddr = ThreadManForUser.WLAN_SEND_CALLBACK_ADDRESS;
 		handle.ioctlCallbackAddr = ThreadManForUser.WLAN_IOCTL_CALLBACK_ADDRESS;
-		int handleMem = sceNetIfhandleModule.sceNetMallocInternal(handle.sizeof());
-		if (handleMem < 0) {
-			return handleMem;
-		}
+		int handleMem = Modules.sceNetIfhandleModule.hleNetMallocInternal(handle.sizeof());
 		TPointer handleAddr = new TPointer(Memory.getInstance(), handleMem);
 		handle.write(handleAddr);
 		RuntimeContext.debugMemory(handleAddr.getAddress(), handle.sizeof());

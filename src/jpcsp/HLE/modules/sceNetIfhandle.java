@@ -34,7 +34,9 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer8;
+import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelVplInfo;
 import jpcsp.HLE.kernel.types.SceNetIfHandle;
 import jpcsp.HLE.kernel.types.SceNetIfHandle.SceNetIfHandleInternal;
 import jpcsp.HLE.kernel.types.SceNetIfMessage;
@@ -105,7 +107,7 @@ public class sceNetIfhandle extends HLEModule {
     	}
 
     	SceNetIfHandleInternal handleInternal = new SceNetIfHandleInternal();
-    	int allocatedMem = sceNetMallocInternal(handleInternal.sizeof());
+    	int allocatedMem = hleNetMallocInternal(handleInternal.sizeof());
     	if (allocatedMem < 0) {
     		return SceKernelErrors.ERROR_OUT_OF_MEMORY;
     	}
@@ -132,6 +134,21 @@ public class sceNetIfhandle extends HLEModule {
     	handle.write(handleAddr);
 
     	return 0;
+    }
+
+    public int hleNetMallocInternal(int size) {
+    	int allocatedAddr;
+    	// When flash0:/kd/ifhandle.prx is in use, allocate the memory through this
+    	// implementation instead of using the HLE implementation.
+    	// ifhandle.prx is creating a VPL name "SceNet" and allocating from it.
+    	SceKernelVplInfo vplInfo = Managers.vpl.getVplInfoByName("SceNet");
+    	if (vplInfo != null) {
+    		allocatedAddr = Managers.vpl.tryAllocateVpl(vplInfo, size);
+    	} else {
+    		allocatedAddr = sceNetMallocInternal(size);
+    	}
+
+    	return allocatedAddr;
     }
 
     @HLEFunction(nid = 0xC80181A2, version = 150, checkInsideInterrupt = true)

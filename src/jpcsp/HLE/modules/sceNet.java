@@ -166,7 +166,7 @@ public class sceNet extends HLEModule {
 
     protected void sendDummyMessage(SceKernelThreadInfo thread) {
     	if (readContextAddr == null) {
-    		int mem = Modules.sceNetIfhandleModule.sceNetMallocInternal(4);
+    		int mem = Modules.sceNetIfhandleModule.hleNetMallocInternal(4);
     		if (mem > 0) {
     			readContextAddr = new TPointer32(Memory.getInstance(), mem);
     		}
@@ -179,7 +179,7 @@ public class sceNet extends HLEModule {
     protected void hleAfterReadContextCallback() {
     	if (readMessage == null) {
     		int size = 256;
-    		int mem = Modules.sceNetIfhandleModule.sceNetMallocInternal(size);
+    		int mem = Modules.sceNetIfhandleModule.hleNetMallocInternal(size);
     		if (mem > 0) {
     			readMessage = new TPointer(Memory.getInstance(), mem);
         		readMessage.clear(size);
@@ -715,7 +715,7 @@ public class sceNet extends HLEModule {
     	int currentThreadId = Modules.ThreadManForUserModule.getCurrentThreadID();
     	if (!allocatedThreadStructures.containsKey(currentThreadId)) {
         	int size = 92;
-        	int allocateMem = Modules.sceNetIfhandleModule.sceNetMallocInternal(size);
+        	int allocateMem = Modules.sceNetIfhandleModule.hleNetMallocInternal(size);
         	if (allocateMem < 0) {
         		errorAddr.setValue(allocateMem);
         		return 0;
