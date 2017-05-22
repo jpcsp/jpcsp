@@ -211,10 +211,17 @@ public class sceAudiocodec extends HLEModule {
 	public int sceAudiocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
 		workArea.setValue32(8, 0); // err field
 
+		AudiocodecInfo info = infos.get(workArea.getAddress());
+		if (info == null) {
+			log.warn(String.format("sceAudiocodecDecode no info available for workArea=%s", workArea));
+			return -1;
+		}
+
 		int inputBuffer = workArea.getValue32(24);
 		int outputBuffer = workArea.getValue32(32);
 		int unknown1 = workArea.getValue32(40);
-		int codingMode = 0; // TODO How to find out the correct value?
+		int codingMode = 0;
+		int channels = info.outputChannels;
 
 		int inputBufferSize;
 		switch (codecType) {
@@ -235,7 +242,17 @@ public class sceAudiocodec extends HLEModule {
 				}
 				break;
 			case PSP_CODEC_AT3:
-				inputBufferSize = workArea.getValue32(40) == 6 ? 0x130 : 0x180;
+				switch (workArea.getValue32(40)) {
+					case 0x4: inputBufferSize = 0x180; break;
+					case 0x6: inputBufferSize = 0x130; break;
+					case 0xB: inputBufferSize =  0xC0; codingMode = 1; break; // JOINT_STEREO
+					case 0xE: inputBufferSize =  0xC0; break;
+					case 0xF: inputBufferSize =  0x98; channels = 1; break; // MONO
+					default:
+						log.warn(String.format("sceAudiocodecDecode Atrac3 unknown value 0x%X at offset 40", workArea.getValue32(40)));
+						inputBufferSize = 0x180;
+						break;
+				}
 				break;
 			case PSP_CODEC_MP3:
 				inputBufferSize = workArea.getValue32(40);
@@ -265,15 +282,9 @@ public class sceAudiocodec extends HLEModule {
 			}
 		}
 
-		AudiocodecInfo info = infos.get(workArea.getAddress());
-		if (info == null) {
-			log.warn(String.format("sceAudiocodecDecode no info available for workArea=%s", workArea));
-			return -1;
-		}
-
 		ICodec codec = info.getCodec();
     	if (!info.isCodecInitialized()) {
-    		codec.init(inputBufferSize, info.outputChannels, info.outputChannels, codingMode);
+    		codec.init(inputBufferSize, channels, info.outputChannels, codingMode);
     		info.setCodecInitialized();
     	}
 
