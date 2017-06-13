@@ -27,6 +27,7 @@ import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
@@ -220,16 +221,25 @@ public class SysclibForKernel extends HLEModule {
 		for (int i = 0; true; i++) {
 			int c = memoryReader.readNext();
 			if (c == 0 || !isNumberValidCharacter(c, base)) {
-				endString.setValue(memoryReader.getCurrentAddress());
+				endString.setValue(string.getAddress() + i);
 				s = s.substring(0, i);
 				break;
 			}
 		}
 
-		int result = Integer.parseInt(s, base);
+		int result;
+		if (s.length() == 0) {
+			result = 0;
+		} else {
+			result = Integer.parseInt(s, base);
+		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("strtol on '%s' returning 0x%X", s, result));
+			if (base == 10) {
+				log.debug(String.format("strtol on '%s' returning %d", s, result));
+			} else {
+				log.debug(String.format("strtol on '%s' returning 0x%X", s, result));
+			}
 		}
 
 		return result;
@@ -262,5 +272,41 @@ public class SysclibForKernel extends HLEModule {
 	@HLEFunction(nid = 0x5E8E5F42, version = 150)
     public long __umoddi3(long a, long b) {
 		return a % b;
+    }
+
+	@HLEFunction(nid = 0xB1DC2AE8, version = 150)
+    public int strchr(PspString string, int c) {
+		int index = string.getString().indexOf(c);
+		if (index < 0) {
+			return 0;
+		}
+
+		return string.getAddress() + index;
+    }
+
+	@HLEFunction(nid = 0x32C767F2, version = 150)
+    public int look_ctype_table(int c) {
+		return Modules.sceNetModule.sceNetLook_ctype_table(c);
+    }
+
+	@HLEFunction(nid = 0x3EC5BBF6, version = 150)
+    public int tolower(int c) {
+		return Modules.sceNetModule.sceNetTolower(c);
+    }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x87C78FB6, version = 150)
+    public int prnt() {
+		return 0;
+    }
+
+	@HLEFunction(nid = 0x4C0E0274, version = 150)
+    public int strrchr(PspString string, int c) {
+		int index = string.getString().lastIndexOf(c);
+		if (index < 0) {
+			return 0;
+		}
+
+		return string.getAddress() + index;
     }
 }
