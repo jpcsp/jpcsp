@@ -16,13 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_MEMORY_SIZE;
+import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
+
 import java.util.HashMap;
 
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.State;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
@@ -34,22 +39,35 @@ import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.MemoryChunk;
 import jpcsp.HLE.kernel.types.MemoryChunkList;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelGameInfo;
+import jpcsp.HLE.kernel.types.SceSysmemUidCB;
+import jpcsp.HLE.kernel.types.pspSysmemPartitionInfo;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Model;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
 public class SysMemForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("SysMemForKernel");
+    public static final int UID_FUNCTION_INITIALIZE = 0xD310D2D9;
+    public static final int UID_FUNCTION_DELETE = 0x87089863;
+    public static final int UID_FUNCTION_ALLOC = 0x0DE3B1BD;
+    public static final int UID_FUNCTION_FREE = 0xA9CE362D;
+    public static final int UID_FUNCTION_TOTAL_FREE_SIZE = 0x01DB36E1;
     protected HashMap<Integer, HeapInformation> heaps;
     private String npEnv;
     private int dnas;
     private SysMemInfo gameInfoMem;
     private SceKernelGameInfo gameInfo;
     private SysMemInfo dummyControlBlock;
+    private int uidHeap;
+    private int uidTypeListRoot;
+    private int uidTypeListCount;
+    private int uidTypeListMetaRoot;
 
     protected static class HeapInformation {
     	private static final String uidPurpose = "SysMemForKernel-Heap";
@@ -125,7 +143,117 @@ public class SysMemForKernel extends HLEModule {
 		gameInfoMem = null;
 		gameInfo = new SceKernelGameInfo();
 
+		uidHeap = sceKernelCreateHeap(SysMemUserForUser.KERNEL_PARTITION_ID, 0x2000, 1, "UID Heap");
+
+		initUidBasic();
+
 		super.start();
+	}
+
+	protected static String getUidFunctionIdName(int id) {
+		switch (id) {
+			case UID_FUNCTION_INITIALIZE: return "initialize";
+			case UID_FUNCTION_DELETE: return "delete";
+			case UID_FUNCTION_ALLOC: return "alloc";
+			case UID_FUNCTION_FREE: return "free";
+			case UID_FUNCTION_TOTAL_FREE_SIZE: return "totalFreeSize";
+		}
+
+		return String.format("0x%08X", id);
+	}
+
+	protected int newUid(int addr) {
+		return (addr << 5) | ((uidTypeListCount++ & 0x3F) << 1) | 1;
+	}
+
+	protected void initUidRoot() {
+		Memory mem = Memory.getInstance();
+
+		SceSysmemUidCB sceSysmemUidCBRoot = new SceSysmemUidCB();
+    	int root = sceKernelAllocHeapMemory(uidHeap, sceSysmemUidCBRoot.sizeof());
+
+    	SceSysmemUidCB sceSysmemUidCBMetaRoot = new SceSysmemUidCB();
+		int metaRoot = sceKernelAllocHeapMemory(uidHeap, sceSysmemUidCBMetaRoot.sizeof());
+
+		uidTypeListCount = 1;
+		uidTypeListRoot = root;
+		sceSysmemUidCBRoot.meta = metaRoot;
+		sceSysmemUidCBRoot.parent0 = root;
+		sceSysmemUidCBRoot.nextChild = root;
+		sceSysmemUidCBRoot.uid = newUid(root);
+		sceSysmemUidCBRoot.childSize = 6;
+		sceSysmemUidCBRoot.allocAndSetName(uidHeap, "Root");
+		sceSysmemUidCBRoot.write(mem, root);
+
+		uidTypeListMetaRoot = metaRoot;
+		sceSysmemUidCBMetaRoot.meta = metaRoot;
+		sceSysmemUidCBMetaRoot.parent0 = metaRoot;
+		sceSysmemUidCBMetaRoot.nextChild = metaRoot;
+		sceSysmemUidCBMetaRoot.uid = newUid(metaRoot);
+		sceSysmemUidCBMetaRoot.childSize = 6;
+		sceSysmemUidCBMetaRoot.allocAndSetName(uidHeap, "MetaRoot");
+		sceSysmemUidCBMetaRoot.write(mem, metaRoot);
+	}
+
+	protected void initUidBasic() {
+		initUidRoot();
+
+		Memory mem = Memory.getInstance();
+
+		SceSysmemUidCB sceSysmemUidCBBasic = new SceSysmemUidCB();
+    	int basic = sceKernelAllocHeapMemory(uidHeap, sceSysmemUidCBBasic.sizeof());
+
+    	SceSysmemUidCB sceSysmemUidCBMetaBasic = new SceSysmemUidCB();
+		int metaBasic = sceKernelAllocHeapMemory(uidHeap, sceSysmemUidCBMetaBasic.sizeof());
+
+    	SceSysmemUidCB sceSysmemUidCBMetaRoot = new SceSysmemUidCB();
+    	sceSysmemUidCBMetaRoot.read(mem, uidTypeListMetaRoot);
+
+    	SceSysmemUidCB sceSysmemUidCBRoot = new SceSysmemUidCB();
+    	sceSysmemUidCBRoot.read(mem, uidTypeListRoot);
+
+    	sceSysmemUidCBBasic.meta = metaBasic;
+		sceSysmemUidCBBasic.parent0 = basic;
+		sceSysmemUidCBBasic.nextChild = basic;
+		sceSysmemUidCBBasic.uid = newUid(basic);
+		sceSysmemUidCBBasic.childSize += (4 + 3) >> 2;
+		sceSysmemUidCBBasic.size = sceSysmemUidCBRoot.childSize;
+		sceSysmemUidCBBasic.allocAndSetName(uidHeap, "Basic");
+		sceSysmemUidCBBasic.next = sceSysmemUidCBRoot.next;
+		sceSysmemUidCBBasic.parent1 = uidTypeListRoot;
+		sceSysmemUidCBBasic.write(mem, basic);
+
+		sceSysmemUidCBRoot.next = basic;
+		sceSysmemUidCBRoot.write(mem, uidTypeListRoot);
+
+    	sceSysmemUidCBMetaRoot.next++;
+		sceSysmemUidCBMetaRoot.write(mem, uidTypeListMetaRoot);
+
+		sceSysmemUidCBMetaBasic.meta = uidTypeListMetaRoot;
+		sceSysmemUidCBMetaBasic.parent0 = metaBasic;
+		sceSysmemUidCBMetaBasic.nextChild = metaBasic;
+		sceSysmemUidCBMetaBasic.uid = newUid(metaBasic);
+		sceSysmemUidCBMetaBasic.childSize = 6;
+		sceSysmemUidCBMetaBasic.allocAndSetName(uidHeap, "MetaRoot");
+		sceSysmemUidCBMetaBasic.parent1 = sceSysmemUidCBRoot.meta;
+		sceSysmemUidCBMetaBasic.write(mem, metaBasic);
+	}
+
+	protected SceSysmemUidCB searchUidTypeByName(String name) {
+		int cur = uidTypeListRoot;
+		SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
+		Memory mem = Memory.getInstance();
+
+		do {
+			sceSysmemUidCB.read(mem, cur);
+			if (name.equals(sceSysmemUidCB.name)) {
+				return sceSysmemUidCB;
+			}
+
+			cur = sceSysmemUidCB.next;
+		} while (cur != uidTypeListRoot);
+
+		return null;
 	}
 
 	@HLEFunction(nid = 0xA089ECA4, version = 150)
@@ -174,6 +302,9 @@ public class SysMemForKernel extends HLEModule {
     	if (info == null) {
     		return 0;
     	}
+
+    	// Always allocate in blocks of 8 bytes
+    	size = Utilities.alignUp(size, 7);
 
     	int addr = info.allocBlock(size);
     	if (log.isDebugEnabled()) {
@@ -360,4 +491,259 @@ public class SysMemForKernel extends HLEModule {
 
 		return 0;
 	}
+
+    @HLEFunction(nid = 0x58148F07, version = 660)
+    public int sceKernelCreateHeap_660(int partitionId, int size, int flags, String name) {
+    	return sceKernelCreateHeap(partitionId, size, flags, name);
+    }
+
+    @HLEFunction(nid = 0xAD09C397, version = 150)
+	public int sceKernelCreateUIDtypeInherit(String parentName, String name, int size, @CanBeNull TPointer32 funcTable, @CanBeNull TPointer32 metaFuncTable, @BufferInfo(usage=Usage.out) TPointer32 uidTypeOut) {
+    	Memory mem = Memory.getInstance();
+
+    	if (funcTable.isNotNull()) {
+    		for (int offset = 0; true; offset += 8) {
+    			int id = funcTable.getValue(offset);
+    			if (id == 0) {
+    				break;
+    			}
+    			int addr = funcTable.getValue(offset + 4);
+
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("sceKernelCreateUIDtypeInherit - funcTable id=%s, addr=0x%08X", getUidFunctionIdName(id), addr));
+    			}
+    		}
+    	}
+
+    	SceSysmemUidCB parentUidType = searchUidTypeByName(parentName);
+    	if (parentUidType == null) {
+    		return SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID_TYPE;
+    	}
+
+    	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
+    	int uidType = sceKernelAllocHeapMemory(uidHeap, sceSysmemUidCB.sizeof());
+
+    	SceSysmemUidCB sceSysmemUidCBMeta = new SceSysmemUidCB();
+    	int metaUidType = sceKernelAllocHeapMemory(uidHeap, sceSysmemUidCBMeta.sizeof());
+
+    	sceSysmemUidCB.allocAndSetName(uidHeap, name);
+    	sceSysmemUidCBMeta.allocAndSetName(uidHeap, "Meta" + name);
+
+    	if (uidType <= 0 || metaUidType <= 0 || sceSysmemUidCB.nameAddr <= 0 || sceSysmemUidCBMeta.nameAddr <= 0) {
+    		if (uidType > 0) {
+    			sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, uidType));
+    		}
+    		if (metaUidType > 0) {
+    			sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, metaUidType));
+    		}
+    		if (sceSysmemUidCB.nameAddr > 0) {
+    			sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, sceSysmemUidCB.nameAddr));
+    		}
+    		if (sceSysmemUidCBMeta.nameAddr > 0) {
+    			sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, sceSysmemUidCBMeta.nameAddr));
+    		}
+
+    		return SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
+    	}
+
+    	SceSysmemUidCB parentMetaUidType = new SceSysmemUidCB();
+    	parentMetaUidType.read(mem, parentUidType.meta);
+    	parentMetaUidType.next++;
+    	parentMetaUidType.write(mem, parentUidType.meta);
+
+    	SceSysmemUidCB rootUidType = new SceSysmemUidCB();
+    	rootUidType.read(mem, uidTypeListRoot);
+
+    	sceSysmemUidCB.parent0 = uidType;
+    	sceSysmemUidCB.uid = newUid(uidType);
+    	sceSysmemUidCB.nextChild = uidType;
+    	sceSysmemUidCB.meta = metaUidType;
+    	sceSysmemUidCB.childSize = parentUidType.childSize + ((size + 3) >> 2);
+    	sceSysmemUidCB.size = parentUidType.childSize;
+    	sceSysmemUidCB.name = name;
+    	sceSysmemUidCB.next = rootUidType.next;
+    	sceSysmemUidCB.parent1 = parentUidType.getBaseAddress();
+    	sceSysmemUidCB.funcTable = funcTable.getAddress();
+    	sceSysmemUidCB.write(mem, uidType);
+
+    	sceSysmemUidCBMeta.nextChild = metaUidType;
+    	sceSysmemUidCBMeta.meta = uidTypeListMetaRoot;
+    	sceSysmemUidCBMeta.childSize = 6;
+    	sceSysmemUidCBMeta.size = 0;
+    	sceSysmemUidCBMeta.name = "Meta" + name;
+    	sceSysmemUidCBMeta.funcTable = metaFuncTable.getAddress();
+    	sceSysmemUidCBMeta.write(mem, metaUidType);
+
+    	uidTypeOut.setValue(uidType);
+
+    	return 0;
+	}
+
+    @HLEFunction(nid = 0xD222DAA7, version = 660)
+	public int sceKernelCreateUIDtypeInherit_660(String parentName, String name, int size, @CanBeNull TPointer32 funcTable, @CanBeNull TPointer32 metaFuncTable, @BufferInfo(usage=Usage.out) TPointer32 uidTypeOut) {
+    	return sceKernelCreateUIDtypeInherit(parentName, name, size, funcTable, metaFuncTable, uidTypeOut);
+	}
+
+	@HLEUnimplemented
+    @HLEFunction(nid = 0xFEFC8666, version = 150)
+    public int sceKernelCreateUIDtype(String name, int size, @CanBeNull TPointer32 funcTable, @CanBeNull TPointer32 metaFuncTable, @BufferInfo(usage=Usage.out) TPointer32 uidTypeOut) {
+    	return sceKernelCreateUIDtypeInherit("Basic", name, size, funcTable, metaFuncTable, uidTypeOut);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x034129FB, version = 660)
+    public int sceKernelCreateUIDtype_660(String name, int size, @CanBeNull TPointer32 funcTable, @CanBeNull TPointer32 metaFuncTable, @BufferInfo(usage=Usage.out) TPointer32 uidTypeOut) {
+    	return sceKernelCreateUIDtype(name, size, funcTable, metaFuncTable, uidTypeOut);
+    }
+
+    @HLEFunction(nid = 0x23D81675, version = 660)
+    public int sceKernelAllocHeapMemory_660(int heapId, int size) {
+    	return sceKernelAllocHeapMemory(heapId, size);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x89A74008, version = 150)
+    public int sceKernelCreateUID(TPointer uidType, String name, int k1, @BufferInfo(usage=Usage.out) TPointer32 outUid) {
+    	Memory mem = uidType.getMemory();
+
+    	SceSysmemUidCB sceSysmemUidCBType = new SceSysmemUidCB();
+    	sceSysmemUidCBType.read(uidType);
+
+    	int uid = sceKernelAllocHeapMemory(uidHeap, sceSysmemUidCBType.childSize << 2);
+    	if (uid <= 0) {
+    		return SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
+    	}
+
+    	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
+    	sceSysmemUidCB.allocAndSetName(uidHeap, name);
+    	if (sceSysmemUidCB.nameAddr == 0) {
+			sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, uid));
+    		return SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
+    	}
+
+    	sceSysmemUidCB.attr = k1;
+    	sceSysmemUidCB.uid = newUid(uid);
+    	sceSysmemUidCB.nextChild = sceSysmemUidCBType.nextChild;
+    	sceSysmemUidCB.parent0 = uidType.getAddress();
+    	sceSysmemUidCB.size = sceSysmemUidCBType.size;
+    	sceSysmemUidCB.childSize = sceSysmemUidCBType.childSize;
+    	sceSysmemUidCB.meta = uidType.getAddress();
+    	sceSysmemUidCB.write(mem, uid);
+
+    	sceSysmemUidCBType.nextChild = uid;
+    	sceSysmemUidCBType.write(uidType);
+
+    	SceSysmemUidCB next = new SceSysmemUidCB();
+    	next.read(mem, sceSysmemUidCB.nextChild);
+    	next.parent0 = uid;
+    	next.write(mem, sceSysmemUidCB.nextChild);
+
+    	outUid.setValue(uid);
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0A34C078, version = 150)
+    public int sceKernelCreateUID_660(TPointer uidType, String name, int k1, @BufferInfo(usage=Usage.out) TPointer32 outUid) {
+    	return sceKernelCreateUID(uidType, name, k1, outUid);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2E3402CC, version = 150)
+    public int sceKernelRenameUID(int id, String name) {
+    	if ((id & 0x80000001) != 1) {
+    		return SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
+    	}
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA7622297, version = 660)
+    public int sceKernelRenameUID_660(int id, String name) {
+    	return sceKernelRenameUID(id, name);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8F20C4C0, version = 150)
+    public int sceKernelDeleteUID(int id) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x361F0F88, version = 660)
+    public int sceKernelDeleteUID_660(int id) {
+    	return sceKernelDeleteUID(id);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x87C2AB85, version = 660)
+    public int sceKernelFreeHeapMemory_660(int heapId, TPointer block) {
+    	return sceKernelFreeHeapMemory(heapId, block);
+    }
+
+    /*
+     * Query the partition information.
+     * 
+     * Parameters:
+     * pid	- The partition id
+     * info	- Pointer to the PspSysmemPartitionInfo structure
+     * 
+     * Returns
+     *     0 on success.
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x55A40B2C, version = 150)
+    public int sceKernelQueryMemoryPartitionInfo(int partitionId, @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.out) TPointer infoPtr) {
+    	pspSysmemPartitionInfo partitionInfo = new pspSysmemPartitionInfo();
+    	partitionInfo.read(infoPtr);
+
+    	switch (partitionId) {
+    		case VSHELL_PARTITION_ID:
+    			partitionInfo.memSize = VSHELL_MEMORY_SIZE;
+    			partitionInfo.startAddr = MemoryMap.END_KERNEL + 1 - VSHELL_MEMORY_SIZE;
+    			partitionInfo.memSize = VSHELL_MEMORY_SIZE;
+    			partitionInfo.attr = 0;
+    			break;
+			default:
+				log.warn(String.format("Unimplemented sceKernelQueryMemoryPartitionInfo partitionId=0x%X", partitionId));
+				return -1;
+    	}
+
+    	partitionInfo.write(infoPtr);
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC4EEAF20, version = 660)
+    public int sceKernelQueryMemoryPartitionInfo_660(int partitionId, @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.out) TPointer infoPtr) {
+    	return sceKernelQueryMemoryPartitionInfo(partitionId, infoPtr);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x41FFC7F9, version = 150)
+    public int sceKernelGetUIDcontrolBlockWithType(int id, TPointer32 uidType, TPointer32 controlBlockAddr) {
+		if (dummyControlBlock == null) {
+			dummyControlBlock = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "DummyControlBlock", SysMemUserForUser.PSP_SMEM_Low, 36, 0);
+			if (dummyControlBlock == null) {
+				return -1;
+			}
+		}
+
+		TPointer dummyControlBlockPtr = new TPointer(Memory.getInstance(), dummyControlBlock.addr);
+		dummyControlBlockPtr.clear(36);
+		dummyControlBlockPtr.setValue32(22, 0xFF); // SceSysmemUidCB.attr
+
+		controlBlockAddr.setValue(dummyControlBlockPtr.getAddress());
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x44BDF332, version = 660)
+    public int sceKernelGetUIDcontrolBlockWithType_660(int id, TPointer32 uidType, TPointer32 controlBlockAddr) {
+    	return sceKernelGetUIDcontrolBlockWithType(id, uidType, controlBlockAddr);
+    }
 }
