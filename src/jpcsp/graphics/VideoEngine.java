@@ -7588,7 +7588,7 @@ public class VideoEngine {
 
         addToVideoTextures(startAddress, endAddress);
 
-        if (display.isFbAddress(startAddress)) {
+        if (display != null && display.isFbAddress(startAddress)) {
         	display.setGeDirty(true);
         }
     }
