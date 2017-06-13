@@ -20,6 +20,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.Allegrex.Common._s1;
+import static jpcsp.HLE.kernel.types.SceUtilitySavedataParam.ERROR_SAVEDATA_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_JPEG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_PNG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_NAMERULE_AUTONUM;
@@ -972,6 +973,7 @@ public class sceUtility extends HLEModule {
 
         protected SceUtilitySavedataParam savedataParams;
         protected volatile String saveListSelection;
+        protected volatile InputStream saveListSelectionIcon0;
         protected boolean saveListEmpty;
 
         public SavedataUtilityDialogState(String name) {
@@ -1105,7 +1107,7 @@ public class sceUtility extends HLEModule {
                             }
 
                             if (isReadyForVisible()) {
-                                GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this);
+                                GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this, saveListSelectionIcon0);
                                 openDialog(gu);
                                 dialogState = DialogState.completed;
                             }
@@ -1153,7 +1155,7 @@ public class sceUtility extends HLEModule {
                                         savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                                     } else {
                                         // Dialog cancelled
-                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
+                                        savedataParams.base.result = ERROR_SAVEDATA_CANCELLED;
                                     }
                                     quitDialog(savedataParams.base.result);
                                 } else if (saveListSelection == null) {
@@ -1192,7 +1194,7 @@ public class sceUtility extends HLEModule {
                             }
 
                             if (isReadyForVisible()) {
-                                GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this);
+                                GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this, saveListSelectionIcon0);
                                 openDialog(gu);
                                 dialogState = DialogState.completed;
                             }
@@ -1278,7 +1280,7 @@ public class sceUtility extends HLEModule {
                             }
 
                             if (isReadyForVisible()) {
-                                GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this);
+                                GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this, saveListSelectionIcon0);
                                 openDialog(gu);
                                 dialogState = DialogState.completed;
                             }
@@ -1315,7 +1317,7 @@ public class sceUtility extends HLEModule {
                                     quitDialog(SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS);
                                 } else if (saveListSelection == null) {
                                     log.warn("Savedata MODE_LISTSAVE no save selected");
-                                    quitDialog(SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS);
+                                    quitDialog(ERROR_SAVEDATA_CANCELLED);
                                 } else {
                                     savedataParams.saveName = saveListSelection;
                                     savedataParams.write(mem);
@@ -1363,7 +1365,7 @@ public class sceUtility extends HLEModule {
                             }
 
                             if (isReadyForVisible()) {
-                                GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this);
+                                GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this, saveListSelectionIcon0);
                                 openDialog(gu);
                                 dialogState = DialogState.completed;
                             }
@@ -3463,13 +3465,18 @@ public class sceUtility extends HLEModule {
 
         protected final SavedataUtilityDialogState savedataDialogState;
         protected final SceUtilitySavedataParam savedataParams;
+        private final InputStream icon0;
         protected boolean isYesSelected;
         private String strCompleted;
 
-        protected GuSavedataDialogCompleted(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState) {
+        protected GuSavedataDialogCompleted(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState, final InputStream icon0) {
             super(savedataParams.base);
             this.savedataDialogState = savedataDialogState;
             this.savedataParams = savedataParams;
+            this.icon0 = icon0;
+            if (icon0 != null) {
+            	icon0.mark(Integer.MAX_VALUE);
+            }
             try {
             	strCompleted = ResourceBundle.getBundle("jpcsp/languages/jpcsp", utilityLocale).getString(String.format("sceUtilitySavedata.%s.strCompleted.text", savedataParams.getModeName()));
             } catch (MissingResourceException e) {
@@ -3485,7 +3492,20 @@ public class sceUtility extends HLEModule {
             String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Save", utilityLocale);
             Calendar savedTime = savedataParams.getSavedTime();
 
-            drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
+            int textureAddr;
+            // Take the icon0 from the selection in case the icon0 is not saved into the savedataParams
+            if (savedataParams.icon0FileData.buf == 0 && icon0 != null) {
+            	try {
+					icon0.reset();
+				} catch (IOException e) {
+					// Ignore exception
+				}
+
+            	textureAddr = readIcon(icon0);
+            } else {
+            	textureAddr = readIcon(savedataParams.icon0FileData.buf);
+            }
+            drawIcon(textureAddr, 26, 96, icon0Width, icon0Height);
 
             gu.sceGuDrawHorizontalLine(201, 464, 114, 0xFF000000 | textColor);
             drawTextWithShadow(270, 131, defaultFontScale, strCompleted);
@@ -3601,12 +3621,12 @@ public class sceUtility extends HLEModule {
             return savedataParams.getTimestamp(savedataParams.gameName, saveName);
         }
 
-        private int getIcon0(int index) {
-            if (index < 0 || index >= saveNames.length) {
-                return 0;
-            }
-
+        private InputStream getIcon0InputStream(int index) {
             InputStream iconStream = null;
+
+            if (index < 0 || index >= saveNames.length) {
+                return iconStream;
+            }
 
             // Get icon0 file
             String iconFileName = savedataParams.getFileName(saveNames[index], SceUtilitySavedataParam.icon0FileName);
@@ -3638,6 +3658,12 @@ public class sceUtility extends HLEModule {
             		iconStream = new ByteArrayInputStream(iconBuffer);
             	}
             }
+
+            return iconStream;
+        }
+
+        private int getIcon0(int index) {
+        	InputStream iconStream = getIcon0InputStream(index);
 
             return readIcon(iconStream);
         }
@@ -3756,8 +3782,10 @@ public class sceUtility extends HLEModule {
 
             if (selectedRow >= 0) {
                 savedataDialogState.saveListSelection = saveNames[selectedRow];
+                savedataDialogState.saveListSelectionIcon0 = getIcon0InputStream(selectedRow);
             } else {
                 savedataDialogState.saveListSelection = null;
+                savedataDialogState.saveListSelectionIcon0 = null;
             }
 
             super.checkController();
