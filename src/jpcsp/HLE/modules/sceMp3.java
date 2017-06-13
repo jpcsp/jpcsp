@@ -36,7 +36,6 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspFileBuffer;
 import jpcsp.HLE.modules.sceAudiocodec.AudiocodecInfo;
-import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.mp3.Mp3Decoder;
 import jpcsp.media.codec.mp3.Mp3Header;
 import jpcsp.util.Utilities;
@@ -185,13 +184,12 @@ public class sceMp3 extends HLEModule {
 
         @Override
 		public void release() {
+        	super.release();
             reserved = false;
         }
 
-        @Override
 		public void initCodec() {
-            codec = CodecFactory.getCodec(PSP_CODEC_MP3);
-            setCodecInitialized(false);
+        	initCodec(PSP_CODEC_MP3);
         }
 
         public int notifyAddStream(int bytesToAdd) {

@@ -52,7 +52,6 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspFileBuffer;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.modules.sceAudiocodec.AudiocodecInfo;
-import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.atrac3.Atrac3Decoder;
 import jpcsp.media.codec.atrac3plus.Atrac3plusDecoder;
@@ -201,6 +200,7 @@ public class sceAtrac3plus extends HLEModule {
 
         @Override
 		public void release() {
+        	super.release();
         	setInUse(false);
         	releaseContext();
         	releaseInternalBuffer();
@@ -765,10 +765,8 @@ public class sceAtrac3plus extends HLEModule {
 			}
 		}
 
-		@Override
 		public void initCodec() {
-			codec = CodecFactory.getCodec(getCodecType());
-			setCodecInitialized(false);
+			initCodec(getCodecType());
 		}
 
         @Override
