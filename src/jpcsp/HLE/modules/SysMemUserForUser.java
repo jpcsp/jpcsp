@@ -73,6 +73,7 @@ public class SysMemUserForUser extends HLEModule {
     protected static MemoryChunkList[] freeMemoryChunks;
     protected int firmwareVersion = 150;
     public static final int defaultSizeAlignment = 256;
+    public static final int VSHELL_MEMORY_SIZE = 0x400000;
 
     // PspSysMemBlockTypes
     public static final int PSP_SMEM_Low = 0;
@@ -150,11 +151,10 @@ public class SysMemUserForUser extends HLEModule {
 		}
 
 		if (!preserveKernelMemory) {
-			int vshellSize = 0x400000;
 	        // free memory chunks for each partition
 	        freeMemoryChunks = new MemoryChunkList[6];
-	        freeMemoryChunks[KERNEL_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_KERNEL, MemoryMap.END_KERNEL - vshellSize);
-	        freeMemoryChunks[VSHELL_PARTITION_ID] = createMemoryChunkList(MemoryMap.END_KERNEL + 1 - vshellSize, MemoryMap.END_KERNEL);
+	        freeMemoryChunks[KERNEL_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_KERNEL, MemoryMap.END_KERNEL - VSHELL_MEMORY_SIZE);
+	        freeMemoryChunks[VSHELL_PARTITION_ID] = createMemoryChunkList(MemoryMap.END_KERNEL + 1 - VSHELL_MEMORY_SIZE, MemoryMap.END_KERNEL);
 		}
         freeMemoryChunks[USER_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_USERSPACE, MemoryMap.END_USERSPACE);
 	}
@@ -497,7 +497,12 @@ public class SysMemUserForUser extends HLEModule {
 				if (parameterFormat.startsWith("%s")) {
 					// Convert an integer address to a String by reading
 					// the String at the given address
-					formatParameters[parameterIndex] = Utilities.readStringZ(((Integer) formatParameters[parameterIndex]).intValue());
+					int address = ((Integer) formatParameters[parameterIndex]).intValue();
+					if (address == 0) {
+						formatParameters[parameterIndex] = "(null)";
+					} else {
+						formatParameters[parameterIndex] = Utilities.readStringZ(address);
+					}
 				}
     		}
 
