@@ -103,10 +103,10 @@ import org.lwjgl.opengl.PixelFormat;
 public class sceDisplay extends HLEModule {
     public static Logger log = Modules.getLogger("sceDisplay");
 
-    @SuppressWarnings("serial")
     class AWTGLCanvas_sceDisplay extends AWTGLCanvas {
+		private static final long serialVersionUID = -3808789665048696700L;
 
-        public AWTGLCanvas_sceDisplay() throws LWJGLException {
+		public AWTGLCanvas_sceDisplay() throws LWJGLException {
             super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(antiAliasSamplesNum), null, new ContextAttribs().withDebug(useDebugGL));
         }
 
