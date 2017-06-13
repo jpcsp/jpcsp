@@ -21,6 +21,7 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.managers.IntrManager;
 
 import org.apache.log4j.Logger;
 
@@ -129,5 +130,10 @@ public class InterruptManager extends HLEModule {
 	@HLEFunction(nid = 0xFFA8B183, version = 150)
 	public int sceKernelRegisterSubIntrHandler() {
 		return 0;
+	}
+
+	@HLEFunction(nid = 0xFE28C6D9, version = 150)
+	public boolean sceKernelIsIntrContext() {
+		return IntrManager.getInstance().isInsideInterrupt();
 	}
 }
