@@ -182,4 +182,10 @@ public class KDebugForKernel extends HLEModule {
 	public int sceKernelIsDevelopmentToolMode() {
 		return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xF339073C, version = 150)
+	public int sceKernelDeci2pReferOperations() {
+		return 0;
+	}
 }
