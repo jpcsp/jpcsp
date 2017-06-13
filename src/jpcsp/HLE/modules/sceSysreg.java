@@ -167,7 +167,7 @@ public class sceSysreg extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x20DF8278, version = 150)
     public int sceSysregMsifGetConnectStatus() {
-    	return 0;
+    	return 1;
     }
 
     @HLEUnimplemented
