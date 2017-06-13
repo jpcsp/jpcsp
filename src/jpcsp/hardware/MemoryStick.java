@@ -19,7 +19,9 @@ package jpcsp.hardware;
 import jpcsp.util.Utilities;
 
 public class MemoryStick {
-    // States for mscmhc0 (used in callbacks).
+	public static int IO_MS_MEMORY_MAPPED_BASE_ADDRESS;
+
+	// States for mscmhc0 (used in callbacks).
     public final static int PSP_MEMORYSTICK_STATE_DRIVER_READY     = 1;
     public final static int PSP_MEMORYSTICK_STATE_DRIVER_BUSY      = 2;
     public final static int PSP_MEMORYSTICK_STATE_DEVICE_INSERTED  = 4;
@@ -31,6 +33,9 @@ public class MemoryStick {
     // MS and FatMS states.
     private static int msState = PSP_MEMORYSTICK_STATE_DRIVER_READY;
     private static int fatMsState = PSP_FAT_MEMORYSTICK_STATE_ASSIGNED;
+
+    // Memory Stick power
+    private static boolean msPower = true;
 
     // available size on memory stick, in bytes.
     private static long freeSize = 1L * 1024 * 1024 * 1024;	// 1GB
@@ -100,5 +105,13 @@ public class MemoryStick {
 
 	public static void setLocked(boolean locked) {
 		MemoryStick.locked = locked;
+	}
+
+	public static boolean hasMsPower() {
+		return msPower;
+	}
+
+	public static void setMsPower(boolean msPower) {
+		MemoryStick.msPower = msPower;
 	}
 }

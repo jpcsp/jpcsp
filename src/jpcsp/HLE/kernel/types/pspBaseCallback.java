@@ -20,6 +20,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
 public class pspBaseCallback {
+	public static final String callbackUidPurpose = "ThreadMan-callback";
 	private final int arguments[];
 	private final int callbackFunction;
 	private final int uid;
@@ -27,7 +28,7 @@ public class pspBaseCallback {
 	public pspBaseCallback(int callbackFunction, int numberArguments) {
 		this.callbackFunction = callbackFunction;
 		arguments = new int[numberArguments];
-        uid = SceUidManager.getNewUid("callback");
+        uid = SceUidManager.getNewUid(callbackUidPurpose);
 	}
 
 	public int getArgument(int n) {

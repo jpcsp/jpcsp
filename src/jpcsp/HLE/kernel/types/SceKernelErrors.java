@@ -149,6 +149,7 @@ public class SceKernelErrors {
     public final static int ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED            = 0x80020066;
     public final static int ERROR_KERNEL_SUBINTR_ALREADY_REGISTERED             = 0x80020067;
     public final static int ERROR_KERNEL_SUBINTR_NOT_REGISTERED                 = 0x80020068;
+    public final static int ERROR_KERNEL_UNKNOWN_UID_TYPE                       = 0x800200c9;
     public final static int ERROR_KERNEL_UNKNOWN_UID                            = 0x800200cb;
     public final static int ERROR_KERNEL_UNMATCH_TYPE_UID                       = 0x800200cc;
     public final static int ERROR_KERNEL_NOT_EXIST_ID                           = 0x800200cd;

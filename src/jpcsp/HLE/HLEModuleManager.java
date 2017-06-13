@@ -70,6 +70,12 @@ public class HLEModuleManager {
      */
 	private static final String[] moduleFileNamesToBeLoaded = {
 			"flash0:/kd/utility.prx"
+//			, "flash0:/kd/iofilemgr.prx"
+//			, "flash0:/kd/codepage.prx"
+//			, "flash0:/kd/msstor.prx"
+//			, "flash0:/kd/fatms.prx"
+//			, "flash0:/kd/isofs.prx"
+//			, "flash0:/kd/np9660.prx"
 	};
 
     /**
@@ -81,7 +87,9 @@ public class HLEModuleManager {
     	SysMemUserForUser(Modules.SysMemUserForUserModule),
         SysMemForKernel(Modules.SysMemForKernelModule),
     	IoFileMgrForUser(Modules.IoFileMgrForUserModule),
+    	IoFileMgrForKernel(Modules.IoFileMgrForKernelModule),
     	ThreadManForUser(Modules.ThreadManForUserModule),
+    	ThreadManForKernel(Modules.ThreadManForKernelModule),
     	InterruptManager(Modules.InterruptManagerModule),
     	LoadExecForUser(Modules.LoadExecForUserModule),
     	LoadExecForKernel(Modules.LoadExecForKernelModule),
@@ -202,7 +210,9 @@ public class HLEModuleManager {
         sceSyscon(Modules.sceSysconModule),
         sceLed(Modules.sceLedModule),
         sceSysreg(Modules.sceSysregModule),
-        scePsheet(Modules.scePsheetModule);
+        scePsheet(Modules.scePsheetModule),
+        sceUmdMan(Modules.sceUmdManModule),
+        sceCodepage(Modules.sceCodepageModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;

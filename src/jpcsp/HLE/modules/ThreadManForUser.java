@@ -128,6 +128,7 @@ import jpcsp.HLE.kernel.types.pspBaseCallback;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo.RegisteredCallbacks;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Interrupts;
+import jpcsp.hardware.MemoryStick;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -640,9 +641,8 @@ public class ThreadManForUser extends HLEModule {
         callbackMap = new HashMap<Integer, pspBaseCallback>();
         callbackManager.Initialize();
 
-        // Reserve the memory used by the internal handlers
-        Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-InternalHandlers", SysMemUserForUser.PSP_SMEM_Addr, INTERNAL_THREAD_ADDRESS_SIZE, INTERNAL_THREAD_ADDRESS_START);
-        installIdleThreads();
+        int rootMem = reserveInternalMemory();
+        installIdleThreads(rootMem);
         installThreadExitHandler();
         installCallbackExitHandler();
         installAsyncLoopHandler();
@@ -844,14 +844,27 @@ public class ThreadManForUser extends HLEModule {
     	return (AllegrexOpcodes.BEQ << 26) | (_zr << 21) | (_zr << 16) | (destination & 0x0000FFFF);
     }
 
+    private int reserveInternalMemory() {
+        // Reserve the memory used by the internal handlers
+        Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-InternalHandlers", SysMemUserForUser.PSP_SMEM_Addr, INTERNAL_THREAD_ADDRESS_SIZE, INTERNAL_THREAD_ADDRESS_START);
+
+        // This memory is always reserved on a real PSP
+        SysMemInfo rootMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
+        int rootMem = rootMemInfo.addr;
+
+        SysMemInfo memoryStickIoInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "MemoryStick-MappedIo", SysMemUserForUser.PSP_SMEM_Low, 0x40, 0);
+        MemoryStick.IO_MS_MEMORY_MAPPED_BASE_ADDRESS = memoryStickIoInfo.addr;
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("Allocated address 0x%08X for the memory stick mapped IO area", memoryStickIoInfo.addr));
+        }
+
+    	return rootMem;
+    }
+
     /**
      * Generate 2 idle threads which can toggle between each other when there are no ready threads
      */
-    private void installIdleThreads() {
-        // This memory is always reserved on a real PSP
-        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
-        int reservedMem = info.addr;
-
+    private void installIdleThreads(int rootMem) {
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(IDLE_THREAD_ADDRESS, 0x20, 4);
         memoryWriter.writeNext(MOVE(_a0, _zr));
         memoryWriter.writeNext(SYSCALL("sceKernelDelayThread"));
@@ -864,14 +877,14 @@ public class ThreadManForUser extends HLEModule {
         // idle thread, using its stack.
         // The stack is allocated into the reservedMem area.
         idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL, KERNEL_PARTITION_ID);
-        idle0.setSystemStack(reservedMem, 0x2000);
+        idle0.setSystemStack(rootMem, 0x2000);
         idle0.reset();
         idle0.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         threadMap.put(idle0.uid, idle0);
         hleChangeThreadState(idle0, PSP_THREAD_READY);
 
         idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL, KERNEL_PARTITION_ID);
-        idle1.setSystemStack(reservedMem + 0x2000, 0x2000);
+        idle1.setSystemStack(rootMem + 0x2000, 0x2000);
         idle1.reset();
         idle1.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         threadMap.put(idle1.uid, idle1);
@@ -4203,55 +4216,55 @@ public class ThreadManForUser extends HLEModule {
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", false)) {
             return SCE_KERNEL_TMID_Thread;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-sema", false)) {
         	return SCE_KERNEL_TMID_Semaphore;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", false)) {
         	return SCE_KERNEL_TMID_EventFlag;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Mbx", false)) {
         	return SCE_KERNEL_TMID_Mbox;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Vpl", false)) {
         	return SCE_KERNEL_TMID_Vpl;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Fpl", false)) {
         	return SCE_KERNEL_TMID_Fpl;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-MsgPipe", false)) {
         	return SCE_KERNEL_TMID_Mpipe;
         }
-        
-        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-callback", false)) {
+
+        if (SceUidManager.checkUidPurpose(uid, pspBaseCallback.callbackUidPurpose, false)) {
         	return SCE_KERNEL_TMID_Callback;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-ThreadEventHandler", false)) {
         	return SCE_KERNEL_TMID_ThreadEventHandler;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Alarm", false)) {
         	return SCE_KERNEL_TMID_Alarm;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-VTimer", false)) {
         	return SCE_KERNEL_TMID_VTimer;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Mutex", false)) {
         	return SCE_KERNEL_TMID_Mutex;
         }
-        
+
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-LwMutex", false)) {
         	return SCE_KERNEL_TMID_LwMutex;
         }
-        
+
         return SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
     }
 

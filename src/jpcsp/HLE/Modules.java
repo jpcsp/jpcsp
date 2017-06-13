@@ -27,7 +27,9 @@ public class Modules {
 	//    <module class name>Module
 	// This is required by the compiler (see CompilerContext.loadModule()).
     public static IoFileMgrForUser IoFileMgrForUserModule = new IoFileMgrForUser();
+    public static IoFileMgrForKernel IoFileMgrForKernelModule = new IoFileMgrForKernel();
     public static ThreadManForUser ThreadManForUserModule = new ThreadManForUser();
+    public static ThreadManForKernel ThreadManForKernelModule = new ThreadManForKernel();
     public static SysMemUserForUser SysMemUserForUserModule = new SysMemUserForUser();
     public static SysMemForKernel SysMemForKernelModule = new SysMemForKernel();
     public static InterruptManager InterruptManagerModule = new InterruptManager();
@@ -151,6 +153,8 @@ public class Modules {
     public static sceLed sceLedModule = new sceLed();
     public static sceSysreg sceSysregModule = new sceSysreg();
     public static scePsheet scePsheetModule = new scePsheet();
+    public static sceUmdMan sceUmdManModule = new sceUmdMan();
+    public static sceCodepage sceCodepageModule = new sceCodepage();
 
     public static Logger log = Logger.getLogger("hle");
 
