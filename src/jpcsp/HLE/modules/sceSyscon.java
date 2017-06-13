@@ -24,6 +24,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.hardware.Battery;
+import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Wlan;
 
 public class sceSyscon extends HLEModule {
@@ -125,5 +126,30 @@ public class sceSyscon extends HLEModule {
 	@HLEFunction(nid = 0x8CBC7987, version = 150)
 	public int sceSysconResetDevice(int reset, int mode) {
     	return 0;
+	}
+
+    /**
+     * Get the Memory Stick power control state.
+     *
+     * @return 1 if powered, 0 otherwise
+     */
+	@HLEFunction(nid = 0x7672103B, version = 150)
+	public boolean sceSysconGetMsPowerCtrl() {
+		return MemoryStick.hasMsPower();
+	}
+
+    /**
+     * Set the memory stick power.
+     *
+     * @param power The new power value.
+     *
+     * @return 0 on success.
+     */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x1088ABA8, version = 150)
+	public int sceSysconCtrlMsPower(boolean power) {
+		MemoryStick.setMsPower(power);
+
+		return 0;
 	}
 }
