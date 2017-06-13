@@ -88,7 +88,6 @@ import jpcsp.HLE.kernel.types.SceKernelMppInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
-import jpcsp.HLE.kernel.types.pspIoDrv;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -4010,7 +4009,7 @@ public class IoFileMgrForUser extends HLEModule {
                 	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(outdata_addr)) {
                     // 0 = Driver busy.
-                    // 1 = Driver ready.
+                    // 4 = Driver ready.
                     mem.write32(outdata_addr, 4);
                     result = 0;
                 } else {
@@ -4476,22 +4475,5 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0x3C54E908, version = 150)
     public int sceIoReopen(PspString filename, int flags, int permissions, int id) {
     	return -1;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0xC7F35804, version = 150)
-    public int sceIoDelDrv(PspString driverName) {
-    	return 0;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x8E982A74, version = 150)
-    public int sceIoAddDrv(TPointer pspIoDrvAddr) {
-    	pspIoDrv pspIoDrv = new pspIoDrv();
-    	pspIoDrv.read(pspIoDrvAddr);
-
-    	log.warn(String.format("sceIoAddDrv pspIoDrv=%s", pspIoDrv));
-
-    	return 0;
     }
 }
