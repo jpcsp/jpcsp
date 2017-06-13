@@ -447,4 +447,16 @@ public class sceUmdUser extends HLEModule {
     public int sceUmdSetSuspendResumeMode(int mode) {
         return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x982272FE, version = 150)
+    public int sceUmdSetDriveStatus(int state) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x6EDF57F1, version = 150)
+    public int sceUmdClearDriveStatus(int state) {
+        return 0;
+    }
 }
