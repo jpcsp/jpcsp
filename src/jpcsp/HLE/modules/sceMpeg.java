@@ -1974,9 +1974,7 @@ public class sceMpeg extends HLEModule {
 			log.debug(String.format("writeImageABGR addr=0x%08X-0x%08X, frameWidth=%d, frameHeight=%d, width=%d, height=%d, pixelMode=%d", addr, addr + frameWidth * frameHeight * bytesPerPixel, frameWidth, frameHeight, imageWidth, imageHeight, pixelMode));
 		}
 
-		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, frameWidth * frameHeight * bytesPerPixel, bytesPerPixel);
 		int lineWidth = Math.min(imageWidth, frameWidth);
-		int lineSkip = frameWidth - lineWidth;
 
 		if (pixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && hasMemoryInt()) {
 			// Optimize the most common case
@@ -1989,6 +1987,8 @@ public class sceMpeg extends HLEModule {
 			}
 		} else {
 			// The general case with color format transformation
+			int lineSkip = frameWidth - lineWidth;
+			IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, frameWidth * frameHeight * bytesPerPixel, bytesPerPixel);
 			for (int y = 0; y < frameHeight; y++) {
 				int offset = y * imageWidth;
 				for (int x = 0; x < lineWidth; x++, offset++) {
@@ -1997,8 +1997,8 @@ public class sceMpeg extends HLEModule {
 				}
 				memoryWriter.skip(lineSkip);
 			}
+			memoryWriter.flush();
 		}
-		memoryWriter.flush();
     }
 
     private void writeImageYCbCr(int addr, int imageWidth, int imageHeight, int[] luma, int[] cb, int[] cr) {
