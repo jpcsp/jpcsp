@@ -575,4 +575,9 @@ public class sceRtc extends HLEModule {
     public int sceRtc_508BA64B(@CanBeNull @BufferInfo(usage=Usage.in) TPointer64 unknown) {
 		return 0;
     }
+
+    @HLEFunction(nid = 0xE7B3ABF4, version = 660)
+    public int sceRtcSetTick_660(TPointer timeAddr, TPointer64 ticksAddr) {
+		return sceRtcSetTick(timeAddr, ticksAddr);
+    }
 }
