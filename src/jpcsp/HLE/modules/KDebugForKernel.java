@@ -188,4 +188,18 @@ public class KDebugForKernel extends HLEModule {
 	public int sceKernelDeci2pReferOperations() {
 		return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x6CB0BDA4, version = 150)
+	public int sceKernelDipswHigh32() {
+    	// Has no parameters
+		return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x43F0F8AB, version = 150)
+	public int sceKernelDipswLow32() {
+    	// Has no parameters
+		return 0;
+	}
 }
