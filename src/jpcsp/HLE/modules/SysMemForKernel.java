@@ -78,7 +78,6 @@ public class SysMemForKernel extends HLEModule {
     	protected final int flags;
     	protected final String name;
     	protected SysMemInfo sysMemInfo;
-    	protected int allocatedSize;
     	protected MemoryChunkList freeMemoryChunks;
 
     	public HeapInformation(int partitionId, int size, int flags, String name) {
@@ -86,8 +85,6 @@ public class SysMemForKernel extends HLEModule {
 			this.size = size;
 			this.flags = flags;
 			this.name = name;
-
-			allocatedSize = 0;
 
 			int type = SysMemUserForUser.PSP_SMEM_Low; // Which memory type to use?
 			sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionId, name, type, size, 0);
@@ -130,9 +127,14 @@ public class SysMemForKernel extends HLEModule {
     		addr -= HEAP_BLOCK_HEADER_SIZE;
     		int blockSize = Memory.getInstance().read32(addr);
 
-    		MemoryChunk memoryChunk = new MemoryChunk(addr, blockSize);
+    		MemoryChunk memoryChunk = new MemoryChunk(addr, blockSize + HEAP_BLOCK_HEADER_SIZE);
     		freeMemoryChunks.add(memoryChunk);
     	}
+
+		@Override
+		public String toString() {
+			return String.format("uid=0x%X, partitionId=0x%X, size=0x%X, flags=0x%X, name='%s', freeMemoryChunks=%s", uid, partitionId, size, flags, name, freeMemoryChunks);
+		}
     }
 
 	@Override
@@ -142,6 +144,10 @@ public class SysMemForKernel extends HLEModule {
 		dnas = 0;
 		gameInfoMem = null;
 		gameInfo = new SceKernelGameInfo();
+
+		// Disable UMD cache
+		gameInfo.flags |= 0x200;
+		gameInfo.umdCacheOn = 0;
 
 		uidHeap = sceKernelCreateHeap(SysMemUserForUser.KERNEL_PARTITION_ID, 0x2000, 1, "UID Heap");
 
@@ -164,6 +170,10 @@ public class SysMemForKernel extends HLEModule {
 
 	protected int newUid(int addr) {
 		return (addr << 5) | ((uidTypeListCount++ & 0x3F) << 1) | 1;
+	}
+
+	protected int getCBFromUid(int uid) {
+		return ((uid & ~0x7F) >> 5) | MemoryMap.START_RAM;
 	}
 
 	protected void initUidRoot() {
@@ -216,7 +226,7 @@ public class SysMemForKernel extends HLEModule {
 		sceSysmemUidCBBasic.parent0 = basic;
 		sceSysmemUidCBBasic.nextChild = basic;
 		sceSysmemUidCBBasic.uid = newUid(basic);
-		sceSysmemUidCBBasic.childSize += (4 + 3) >> 2;
+		sceSysmemUidCBBasic.childSize = sceSysmemUidCBRoot.childSize + ((4 + 3) >> 2);
 		sceSysmemUidCBBasic.size = sceSysmemUidCBRoot.childSize;
 		sceSysmemUidCBBasic.allocAndSetName(uidHeap, "Basic");
 		sceSysmemUidCBBasic.next = sceSysmemUidCBRoot.next;
@@ -308,7 +318,7 @@ public class SysMemForKernel extends HLEModule {
 
     	int addr = info.allocBlock(size);
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceKernelAllocHeapMemory returning 0x%08X", addr));
+    		log.debug(String.format("sceKernelAllocHeapMemory(size=0x%X) returning 0x%08X, %s", size, addr, info));
     	}
 
     	return addr;
@@ -329,6 +339,10 @@ public class SysMemForKernel extends HLEModule {
     	}
 
     	info.freeBlock(block.getAddress());
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceKernelFreeHeapMemory after free: %s", info));
+    	}
 
     	return 0;
     }
@@ -668,6 +682,16 @@ public class SysMemForKernel extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x8F20C4C0, version = 150)
     public int sceKernelDeleteUID(int id) {
+    	Memory mem = Memory.getInstance();
+
+    	int cb = getCBFromUid(id);
+    	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
+    	sceSysmemUidCB.read(mem, cb);
+    	if (sceSysmemUidCB.nameAddr != 0) {
+    		sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, sceSysmemUidCB.nameAddr));
+    	}
+		sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, cb));
+
     	return 0;
     }
 
@@ -724,26 +748,54 @@ public class SysMemForKernel extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x41FFC7F9, version = 150)
-    public int sceKernelGetUIDcontrolBlockWithType(int id, TPointer32 uidType, TPointer32 controlBlockAddr) {
-		if (dummyControlBlock == null) {
-			dummyControlBlock = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "DummyControlBlock", SysMemUserForUser.PSP_SMEM_Low, 36, 0);
-			if (dummyControlBlock == null) {
-				return -1;
-			}
-		}
-
-		TPointer dummyControlBlockPtr = new TPointer(Memory.getInstance(), dummyControlBlock.addr);
-		dummyControlBlockPtr.clear(36);
-		dummyControlBlockPtr.setValue32(22, 0xFF); // SceSysmemUidCB.attr
-
-		controlBlockAddr.setValue(dummyControlBlockPtr.getAddress());
+    public int sceKernelGetUIDcontrolBlockWithType(int id, TPointer32 uidType, @BufferInfo(usage=Usage.out) TPointer32 controlBlockAddr) {
+    	int cb = getCBFromUid(id);
+		controlBlockAddr.setValue(cb);
 
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x44BDF332, version = 660)
-    public int sceKernelGetUIDcontrolBlockWithType_660(int id, TPointer32 uidType, TPointer32 controlBlockAddr) {
+    public int sceKernelGetUIDcontrolBlockWithType_660(int id, TPointer32 uidType, @BufferInfo(usage=Usage.out) TPointer32 controlBlockAddr) {
     	return sceKernelGetUIDcontrolBlockWithType(id, uidType, controlBlockAddr);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7B3E7441, version = 150)
+    public void sceKernelMemoryExtendSize() {
+    	// Has no parameters
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1E6BB8E8, version = 660)
+    public void sceKernelMemoryExtendSize_660() {
+    	// Has no parameters
+    	sceKernelMemoryExtendSize();
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE0058030, version = 150)
+    public void sceKernelMemoryShrinkSize() {
+    	// Has no parameters
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7A7CD7BC, version = 660)
+    public void sceKernelMemoryShrinkSize_660() {
+    	// Has no parameters
+    	sceKernelMemoryShrinkSize();
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xCBB05241, version = 150)
+    public int sceKernelSetAllowReplaceUmd(boolean allow) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF19BA38D, version = 660)
+    public int sceKernelSetAllowReplaceUmd_660(boolean allow) {
+    	return sceKernelSetAllowReplaceUmd(allow);
     }
 }
