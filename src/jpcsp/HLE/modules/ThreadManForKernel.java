@@ -37,4 +37,15 @@ public class ThreadManForKernel extends HLEModule {
     public int sceKernelCheckThreadKernelStack() {
     	return 4096;
     }
+
+    /**
+     * Checks if the current thread is a usermode thread.
+     * 
+     * @return 0 if kernel, 1 if user, < 0 on error
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x85A2A5BF, version = 150)
+    public int sceKernelIsUserModeThread() {
+    	return 1;
+    }
 }
