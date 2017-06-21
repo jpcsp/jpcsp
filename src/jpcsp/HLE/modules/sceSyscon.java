@@ -25,6 +25,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.MemoryStick;
+import jpcsp.hardware.UMDDrive;
 import jpcsp.hardware.Wlan;
 
 public class sceSyscon extends HLEModule {
@@ -149,6 +150,32 @@ public class sceSyscon extends HLEModule {
 	@HLEFunction(nid = 0x1088ABA8, version = 150)
 	public int sceSysconCtrlMsPower(boolean power) {
 		MemoryStick.setMsPower(power);
+
+		return 0;
+	}
+
+    /**
+     * Get the UMD drive power control state.
+     *
+     * @return 1 if powered, 0 otherwise
+     */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x577C5771, version = 660)
+	public boolean sceSysconGetLeptonPowerCtrl() {
+		return UMDDrive.hasUmdPower();
+	}
+
+    /**
+     * Set the lepton power.
+     *
+     * @param power The new power value.
+     *
+     * @return 0 on success.
+     */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8A4519F5, version = 660)
+	public int sceSysconCtrlLeptonPower(boolean power) {
+		UMDDrive.setUmdPower(power);
 
 		return 0;
 	}
