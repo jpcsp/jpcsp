@@ -142,7 +142,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     public Queue<Callback> pendingCallbacks = new LinkedList<Callback>();
     public Queue<IAction> pendingActions = new LinkedList<IAction>();
     // Used by sceKernelExtendThreadStack
-    private SysMemInfo extendedStackSysMemInfo;
+    private List<SysMemInfo> extendedStackSysMemInfos;
     public boolean preserveStack;
 
     public static class RegisteredCallbacks {
@@ -457,21 +457,40 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         freeExtendedStack();
     }
 
+    public void freeExtendedStack(SysMemInfo extendedStackSysMemInfo) {
+    	if (extendedStackSysMemInfos != null) {
+    		if (extendedStackSysMemInfos.remove(extendedStackSysMemInfo)) {
+    			Modules.SysMemUserForUserModule.free(extendedStackSysMemInfo);
+    		}
+
+    		if (extendedStackSysMemInfos.size() == 0) {
+    			extendedStackSysMemInfos = null;
+    		}
+    	}
+    }
+
     public void freeExtendedStack() {
-        if (extendedStackSysMemInfo != null) {
-        	Modules.SysMemUserForUserModule.free(extendedStackSysMemInfo);
-        	extendedStackSysMemInfo = null;
+        if (extendedStackSysMemInfos != null) {
+        	for (SysMemInfo extendedStackSysMemInfo : extendedStackSysMemInfos) {
+            	Modules.SysMemUserForUserModule.free(extendedStackSysMemInfo);
+        	}
+        	extendedStackSysMemInfos = null;
         }
     }
 
-    public int extendStack(int size) {
-    	extendedStackSysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("ThreadMan-ExtendedStack-0x%x-%s", uid, name), SysMemUserForUser.PSP_SMEM_High, size, 0);
+    public SysMemInfo extendStack(int size) {
+    	SysMemInfo extendedStackSysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("ThreadMan-ExtendedStack-0x%x-%s", uid, name), SysMemUserForUser.PSP_SMEM_High, size, 0);
+    	if (extendedStackSysMemInfos == null) {
+    		extendedStackSysMemInfos = new LinkedList<SysMemInfo>();
+    	}
+    	extendedStackSysMemInfos.add(extendedStackSysMemInfo);
 
-    	return extendedStackSysMemInfo.addr;
+    	return extendedStackSysMemInfo;
     }
 
     public int getStackAddr() {
-    	if (extendedStackSysMemInfo != null) {
+    	if (extendedStackSysMemInfos != null) {
+    		SysMemInfo extendedStackSysMemInfo = extendedStackSysMemInfos.get(extendedStackSysMemInfos.size() - 1);
         	return extendedStackSysMemInfo.addr;
     	}
 

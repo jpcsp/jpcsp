@@ -36,6 +36,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_NOT_
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_TERMINATED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_OUT_OF_MEMORY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_CREATE;
 import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT;
@@ -128,7 +129,6 @@ import jpcsp.HLE.kernel.types.pspBaseCallback;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo.RegisteredCallbacks;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Interrupts;
-import jpcsp.hardware.MemoryStick;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -596,17 +596,19 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private static class AfterSceKernelExtendThreadStackAction implements IAction {
-
         private SceKernelThreadInfo thread;
         private int savedPc;
         private int savedSp;
         private int savedRa;
+        private int returnValue;
+        private SysMemInfo extendedStackSysMemInfo;
 
-        public AfterSceKernelExtendThreadStackAction(SceKernelThreadInfo thread, int savedPc, int savedSp, int savedRa) {
+        public AfterSceKernelExtendThreadStackAction(SceKernelThreadInfo thread, int savedPc, int savedSp, int savedRa, SysMemInfo extendedStackSysMemInfo) {
             this.thread = thread;
             this.savedPc = savedPc;
             this.savedSp = savedSp;
             this.savedRa = savedRa;
+            this.extendedStackSysMemInfo = extendedStackSysMemInfo;
         }
 
         @Override
@@ -614,16 +616,21 @@ public class ThreadManForUser extends HLEModule {
             CpuState cpu = Emulator.getProcessor().cpu;
 
             if (log.isDebugEnabled()) {
-                log.debug(String.format("AfterSceKernelExtendThreadStackAction savedSp=0x%08X, savedRa=0x%08X", savedSp, savedRa));
+                log.debug(String.format("AfterSceKernelExtendThreadStackAction savedSp=0x%08X, savedRa=0x%08X, $v0=0x%08X", savedSp, savedRa, cpu._v0));
             }
 
             cpu.pc = savedPc;
             cpu._sp = savedSp;
             cpu._ra = savedRa;
+            returnValue = cpu._v0;
 
             // The return value in $v0 of the entryAdd is passed back as return value
             // of sceKernelExtendThreadStack.
-            thread.freeExtendedStack();
+            thread.freeExtendedStack(extendedStackSysMemInfo);
+        }
+
+        public int getReturnValue() {
+        	return returnValue;
         }
     }
 
@@ -701,7 +708,7 @@ public class ThreadManForUser extends HLEModule {
 
     public SceKernelThreadInfo getRootThread(SceModule module) {
     	for (SceKernelThreadInfo thread : threadMap.values()) {
-    		if (rootThreadName.equals(thread.name) && thread.moduleid == module.modid) {
+    		if (rootThreadName.equals(thread.name) && (module == null || thread.moduleid == module.modid)) {
     			return thread;
     		}
     	}
@@ -829,9 +836,13 @@ public class ThreadManForUser extends HLEModule {
     	return (AllegrexOpcodes.J << 26) | ((address >> 2) & 0x03FFFFFF);
     }
 
-    private int SYSCALL(String functionName) {
+    private static int SYSCALL(HLEModule hleModule, String functionName) {
     	// syscall [functionName]
-    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (getHleFunctionByName(functionName).getSyscallCode() << 6);
+    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (hleModule.getHleFunctionByName(functionName).getSyscallCode() << 6);
+    }
+
+    private int SYSCALL(String functionName) {
+    	return SYSCALL(this, functionName);
     }
 
     public static int JR() {
@@ -851,12 +862,6 @@ public class ThreadManForUser extends HLEModule {
         // This memory is always reserved on a real PSP
         SysMemInfo rootMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
         int rootMem = rootMemInfo.addr;
-
-        SysMemInfo memoryStickIoInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "MemoryStick-MappedIo", SysMemUserForUser.PSP_SMEM_Low, 0x40, 0);
-        MemoryStick.IO_MS_MEMORY_MAPPED_BASE_ADDRESS = memoryStickIoInfo.addr;
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("Allocated address 0x%08X for the memory stick mapped IO area", memoryStickIoInfo.addr));
-        }
 
     	return rootMem;
     }
@@ -900,12 +905,24 @@ public class ThreadManForUser extends HLEModule {
         memoryWriter.flush();
     }
 
-    private void installCallbackExitHandler() {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(CALLBACK_EXIT_HANDLER_ADDRESS, 0x10, 4);
-        memoryWriter.writeNext(SYSCALL("hleKernelExitCallback"));
+    public static void installHLESyscall(int address, HLEModule hleModule, String name) {
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 12, 4);
+        memoryWriter.writeNext(SYSCALL(hleModule, name));
         memoryWriter.writeNext(JR());
         memoryWriter.writeNext(NOP());
         memoryWriter.flush();
+    }
+
+    private void installHLESyscall(int address, String name) {
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 12, 4);
+        memoryWriter.writeNext(SYSCALL(name));
+        memoryWriter.writeNext(JR());
+        memoryWriter.writeNext(NOP());
+        memoryWriter.flush();
+    }
+
+    private void installCallbackExitHandler() {
+    	installHLESyscall(CALLBACK_EXIT_HANDLER_ADDRESS, "hleKernelExitCallback");
     }
 
     private void installLoopHandler(String hleFunctionName, int address) {
@@ -971,11 +988,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void installWlanSendCallback() {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(WLAN_SEND_CALLBACK_ADDRESS, 0x10, 4);
-        memoryWriter.writeNext(SYSCALL("hleWlanSendCallback"));
-        memoryWriter.writeNext(JR());
-        memoryWriter.writeNext(NOP());
-        memoryWriter.flush();
+    	installHLESyscall(WLAN_SEND_CALLBACK_ADDRESS, "hleWlanSendCallback");
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
@@ -984,11 +997,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void installWlanUpCallback() {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(WLAN_UP_CALLBACK_ADDRESS, 0x10, 4);
-        memoryWriter.writeNext(SYSCALL("hleWlanUpCallback"));
-        memoryWriter.writeNext(JR());
-        memoryWriter.writeNext(NOP());
-        memoryWriter.flush();
+    	installHLESyscall(WLAN_UP_CALLBACK_ADDRESS, "hleWlanUpCallback");
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
@@ -997,11 +1006,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void installWlanDownCallback() {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(WLAN_DOWN_CALLBACK_ADDRESS, 0x10, 4);
-        memoryWriter.writeNext(SYSCALL("hleWlanDownCallback"));
-        memoryWriter.writeNext(JR());
-        memoryWriter.writeNext(NOP());
-        memoryWriter.flush();
+    	installHLESyscall(WLAN_DOWN_CALLBACK_ADDRESS, "hleWlanDownCallback");
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
@@ -1010,11 +1015,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void installWlanIoctlCallback() {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(WLAN_IOCTL_CALLBACK_ADDRESS, 0x10, 4);
-        memoryWriter.writeNext(SYSCALL("hleWlanIoctlCallback"));
-        memoryWriter.writeNext(JR());
-        memoryWriter.writeNext(NOP());
-        memoryWriter.flush();
+    	installHLESyscall(WLAN_IOCTL_CALLBACK_ADDRESS, "hleWlanIoctlCallback");
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
@@ -2072,6 +2073,30 @@ public class ThreadManForUser extends HLEModule {
         }
 
         callAddress(thread, address, afterAction, returnVoid, false, new int[]{registerA0, registerA1, registerA2, registerA3, registerT0});
+    }
+
+    /**
+     * Trigger a call to a callback in the context of a thread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param thread      the callback has to be executed by this thread (null means the currentThread)
+     * @param address     address of the callback
+     * @param afterAction action to be executed after the completion of the callback
+     * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
+     * @param registerA0  first parameter of the callback ($a0)
+     * @param registerA1  second parameter of the callback ($a1)
+     * @param registerA2  third parameter of the callback ($a2)
+     * @param registerT0  fifth parameter of the callback ($t0)
+     * @param registerT1  sixth parameter of the callback ($t1)
+     */
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, int registerA0, int registerA1, int registerA2, int registerA3, int registerT0, int registerT1) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X, $a3=0x%08X, $t0=0x%08X, $t1=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, registerA1, registerA2, registerA3, registerT0, registerT1, afterAction, returnVoid));
+        }
+
+        callAddress(thread, address, afterAction, returnVoid, false, new int[]{registerA0, registerA1, registerA2, registerA3, registerT0, registerT1});
     }
 
     /**
@@ -4373,30 +4398,36 @@ public class ThreadManForUser extends HLEModule {
         // When the code at entryAddr returns, sceKernelExtendThreadStack also returns
         // with the return value of entryAddr.
         SceKernelThreadInfo thread = getCurrentThread();
-        int extendedStackAddr = thread.extendStack(size);
-        IAction afterAction = new AfterSceKernelExtendThreadStackAction(thread, cpu.pc, cpu._sp, cpu._ra);
+        SysMemInfo extendedStackSysMemInfo = thread.extendStack(size);
+        if (extendedStackSysMemInfo == null) {
+        	return ERROR_OUT_OF_MEMORY;
+        }
+        AfterSceKernelExtendThreadStackAction afterAction = new AfterSceKernelExtendThreadStackAction(thread, cpu.pc, cpu._sp, cpu._ra, extendedStackSysMemInfo);
         cpu._a0 = entryParameter;
-        cpu._sp = extendedStackAddr + size;
+        cpu._sp = extendedStackSysMemInfo.addr + size;
         callAddress(entryAddr.getAddress(), afterAction, false);
 
-        return 0;
+        return afterAction.getReturnValue();
     }
 
     @HLEFunction(nid = 0xBC31C1B9, version = 150, checkInsideInterrupt = true)
     public int sceKernelExtendKernelStack(CpuState cpu, @CheckArgument("checkStackSize") int size, TPointer entryAddr, int entryParameter) {
         // sceKernelExtendKernelStack executes the code at entryAddr using a larger
-        // stack. The entryParameter is  passed as the only parameter ($a0) to
+        // stack. The entryParameter is passed as the only parameter ($a0) to
         // the code at entryAddr.
         // When the code at entryAddr returns, sceKernelExtendKernelStack also returns
         // with the return value of entryAddr.
         SceKernelThreadInfo thread = getCurrentThread();
-        int extendedStackAddr = thread.extendStack(size);
-        IAction afterAction = new AfterSceKernelExtendThreadStackAction(thread, cpu.pc, cpu._sp, cpu._ra);
+        SysMemInfo extendedStackSysMemInfo = thread.extendStack(size);
+        if (extendedStackSysMemInfo == null) {
+        	return ERROR_OUT_OF_MEMORY;
+        }
+        AfterSceKernelExtendThreadStackAction afterAction = new AfterSceKernelExtendThreadStackAction(thread, cpu.pc, cpu._sp, cpu._ra, extendedStackSysMemInfo);
         cpu._a0 = entryParameter;
-        cpu._sp = extendedStackAddr + size;
+        cpu._sp = extendedStackSysMemInfo.addr + size;
         callAddress(entryAddr.getAddress(), afterAction, false);
 
-        return 0;
+        return afterAction.getReturnValue();
     }
 
     @HLEFunction(nid = 0x8DAFF657, version = 620)
