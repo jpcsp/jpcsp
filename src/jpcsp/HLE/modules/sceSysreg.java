@@ -961,4 +961,17 @@ public class sceSysreg extends HLEModule {
     public int sceSysreg_driver_FF0E07B1() {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x16909002, version = 150)
+    public int sceSysregAtaBusClockEnable() {
+    	// Has no parameters
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE2A5D1EE, version = 150)
+    public int sceSysregGetTachyonVersion() {
+    	return 0;
+    }
 }
