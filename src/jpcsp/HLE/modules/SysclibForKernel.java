@@ -218,6 +218,13 @@ public class SysclibForKernel extends HLEModule {
 
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(string.getAddress(), 1);
 		String s = string.getString();
+
+		// Skip any leading "0x" in case of base 16
+		if (base == 16 && (s.startsWith("0x") || s.startsWith("0X"))) {
+			memoryReader.skip(2);
+			s = s.substring(2);
+		}
+
 		for (int i = 0; true; i++) {
 			int c = memoryReader.readNext();
 			if (c == 0 || !isNumberValidCharacter(c, base)) {
@@ -308,5 +315,10 @@ public class SysclibForKernel extends HLEModule {
 		}
 
 		return string.getAddress() + index;
+    }
+
+	@HLEFunction(nid = 0x86FEFCE9, version = 150)
+    public void bzero(@CanBeNull TPointer destAddr, int size) {
+		memset(destAddr, 0, size);
     }
 }
