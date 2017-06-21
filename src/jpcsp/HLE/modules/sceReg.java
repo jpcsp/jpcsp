@@ -170,6 +170,7 @@ public class sceReg extends HLEModule {
     	fullName = fullName.replace("flash1/registry/system", "");
     	fullName = fullName.replace("flash2/registry/system", "");
 
+    	Settings settings = Settings.getInstance();
     	if ("/system/DATA/FONT".equals(fullName) || "/DATA/FONT".equals(fullName)) {
     		List<sceFont.FontRegistryEntry> fontRegistry = Modules.sceFontModule.getFontRegistry();
     		if ("path_name".equals(name)) {
@@ -298,22 +299,22 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(2);
+    				buf.setValue32(settings.readInt("registry.date_format", 2));
     			}
     		} else if ("time_format".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(settings.readInt("registry.time_format", 0));
     			}
     		} else if ("time_zone_offset".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(settings.readInt("registry.time_zone_offset", 0));
     			}
     		} else if ("time_zone_area".equals(name)) {
-    			String timeZoneArea = "united_kingdom";
+				String timeZoneArea = settings.readString("registry.time_zone_area", "united_kingdom");
     			ptype.setValue(REG_TYPE_STR);
     			psize.setValue(timeZoneArea.length() + 1);
     			if (size > 0) {
@@ -323,7 +324,7 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(0);
+    				buf.setValue32(settings.readInt("registry.summer_time", 0));
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -1696,6 +1697,20 @@ public class sceReg extends HLEModule {
     			if (log.isDebugEnabled()) {
     				log.debug(String.format("sceRegSetKeyValue movieFps=0x%X", movieFps));
     			}
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
+    		}
+    	} else if ("/CONFIG/DATE".equals(fullName)) {
+    		if ("date_format".equals(name)) {
+    			settings.writeInt("registry.date_format", buf.getValue32());
+    		} else if ("time_format".equals(name)) {
+    			settings.writeInt("registry.time_format", buf.getValue32());
+    		} else if ("time_zone_offset".equals(name)) {
+    			settings.writeInt("registry.time_zone_offset", buf.getValue32());
+    		} else if ("time_zone_area".equals(name)) {
+    			settings.writeString("registry.time_zone_offset", buf.getStringZ());
+    		} else if ("summer_time".equals(name)) {
+    			settings.writeInt("registry.summer_time", buf.getValue32());
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
