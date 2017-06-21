@@ -71,11 +71,10 @@ public class HLEModuleManager {
 	private static final String[] moduleFileNamesToBeLoaded = {
 			"flash0:/kd/utility.prx"
 //			, "flash0:/kd/iofilemgr.prx"
-//			, "flash0:/kd/codepage.prx"
-//			, "flash0:/kd/msstor.prx"
-//			, "flash0:/kd/fatms.prx"
 //			, "flash0:/kd/isofs.prx"
-//			, "flash0:/kd/np9660.prx"
+//			, "flash0:/kd/umd9660.prx"
+//			, "flash0:/kd/lfatfs.prx"
+//			, "flash0:/kd/fatms.prx"
 	};
 
     /**
@@ -212,7 +211,11 @@ public class HLEModuleManager {
         sceSysreg(Modules.sceSysregModule),
         scePsheet(Modules.scePsheetModule),
         sceUmdMan(Modules.sceUmdManModule),
-        sceCodepage(Modules.sceCodepageModule);
+        sceCodepage(Modules.sceCodepageModule),
+        sceMSstor(Modules.sceMSstorModule),
+        sceAta(Modules.sceAtaModule),
+        sceGpio(Modules.sceGpioModule),
+        sceNand(Modules.sceNandModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;

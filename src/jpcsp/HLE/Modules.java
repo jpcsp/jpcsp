@@ -155,6 +155,10 @@ public class Modules {
     public static scePsheet scePsheetModule = new scePsheet();
     public static sceUmdMan sceUmdManModule = new sceUmdMan();
     public static sceCodepage sceCodepageModule = new sceCodepage();
+    public static sceMSstor sceMSstorModule = new sceMSstor();
+    public static sceAta sceAtaModule = new sceAta();
+    public static sceGpio sceGpioModule = new sceGpio();
+    public static sceNand sceNandModule = new sceNand();
 
     public static Logger log = Logger.getLogger("hle");
 
