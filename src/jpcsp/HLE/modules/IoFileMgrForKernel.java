@@ -18,36 +18,25 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.HLE.BufferInfo;
-import jpcsp.HLE.BufferInfo.LengthInfo;
-import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
-import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.pspIoDrv;
 
 public class IoFileMgrForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("IoFileMgrForKernel");
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xC7F35804, version = 150)
-    public int sceIoDelDrv(PspString driverName) {
+    @HLEFunction(nid = 0x8E982A74, version = 150)
+    public int sceIoAddDrv(pspIoDrv pspIoDrv) {
     	return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x8E982A74, version = 150)
-    public int sceIoAddDrv(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer pspIoDrvAddr) {
-    	pspIoDrv pspIoDrv = new pspIoDrv();
-    	pspIoDrv.read(pspIoDrvAddr);
-
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceIoAddDrv pspIoDrv=%s", pspIoDrv));
-    	}
-
+    @HLEFunction(nid = 0xC7F35804, version = 150)
+    public int sceIoDelDrv(PspString driverName) {
     	return 0;
     }
 }

@@ -19,8 +19,6 @@ package jpcsp.hardware;
 import jpcsp.util.Utilities;
 
 public class MemoryStick {
-	public static int IO_MS_MEMORY_MAPPED_BASE_ADDRESS;
-
 	// States for mscmhc0 (used in callbacks).
     public final static int PSP_MEMORYSTICK_STATE_DRIVER_READY     = 1;
     public final static int PSP_MEMORYSTICK_STATE_DRIVER_BUSY      = 2;
