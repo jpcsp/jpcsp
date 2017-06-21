@@ -136,4 +136,16 @@ public class LoadExecForKernel extends HLEModule {
 
     	return Modules.LoadExecForUserModule.hleKernelLoadExec(moduleBuffer, argSize, argAddr, null, null);
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x11412288, version = 150)
+    public int sceKernelLoadExec_11412288(TPointer callback) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA5ECA6E3, version = 660)
+    public int sceKernelLoadExec_11412288_660(TPointer callback) {
+    	return sceKernelLoadExec_11412288(callback);
+    }
 }
