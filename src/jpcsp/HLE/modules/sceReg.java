@@ -1708,7 +1708,7 @@ public class sceReg extends HLEModule {
     		} else if ("time_zone_offset".equals(name)) {
     			settings.writeInt("registry.time_zone_offset", buf.getValue32());
     		} else if ("time_zone_area".equals(name)) {
-    			settings.writeString("registry.time_zone_offset", buf.getStringZ());
+    			settings.writeString("registry.time_zone_area", buf.getStringZ());
     		} else if ("summer_time".equals(name)) {
     			settings.writeInt("registry.summer_time", buf.getValue32());
     		} else {
