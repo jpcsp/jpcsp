@@ -51,6 +51,10 @@ public class sceSysEventForKernel extends HLEModule {
     		log.debug(String.format("sceKernelRegisterSysEventHandler handler: %s", sysEventHandler));
     	}
 
+    	if ("SceFatfsSysEvent".equals(sysEventHandler.name)) {
+    		Modules.sceMSstorModule.installDrivers();
+    	}
+
     	return 0;
     }
 
