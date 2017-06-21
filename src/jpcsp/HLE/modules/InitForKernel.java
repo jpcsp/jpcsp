@@ -36,6 +36,88 @@ public class InitForKernel extends HLEModule {
 	public static final int SCE_INIT_BOOT_MS = 0x40;
 	public static final int SCE_INIT_BOOT_EF = 0x50;
 	public static final int SCE_INIT_BOOT_FLASH3 = 0x80;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_UNK0x100       = 0x100;
+    // GAME EBOOT.
+    public static final int SCE_INIT_APITYPE_GAME_EBOOT     = 0x110;
+    // GAME BOOT.
+    public static final int SCE_INIT_APITYPE_GAME_BOOT      = 0x111;
+    // Emulated EBOOT Memory-Stick.
+    public static final int SCE_INIT_APITYPE_EMU_EBOOT_MS   = 0x112;
+    // Emulated BOOT Memory-Stick.
+    public static final int SCE_INIT_APITYPE_EMU_BOOT_MS    = 0x113;
+    // Emulated EBOOT EF.
+    public static final int SCE_INIT_APITYPE_EMU_EBOOT_EF   = 0x114;
+    // Emulated BOOT EF.
+    public static final int SCE_INIT_APITYPE_EMU_BOOT_EF    = 0x115;
+    // NP-DRM Memory-Stick.
+    public static final int SCE_INIT_APITYPE_NPDRM_MS       = 0x116; // Distributed programs and data through the Playstation Store.
+    // NP-DRM EF.
+    public static final int SCE_INIT_APITYPE_NPDRM_EF       = 0x118; // NP-DRM: PlayStation Network Platform Digital Rights Management
+    // Executable on a disc.
+    public static final int SCE_INIT_APITYPE_DISC           = 0x120;
+    // Updater executable on a disc
+    public static final int SCE_INIT_APITYPE_DISC_UPDATER   = 0x121;
+    // Disc debugger.
+    public static final int SCE_INIT_APITYPE_DISC_DEBUG     = 0x122;
+    // NP-9660 game.
+    public static final int SCE_INIT_APITYPE_DISC_EMU_MS1   = 0x123;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_DISC_EMU_MS2   = 0x124;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_DISC_EMU_EF1   = 0x125;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_DISC_EMU_EF2   = 0x126;
+    // Game-sharing executable.
+    public static final int SCE_INIT_APITYPE_USBWLAN        = 0x130;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_USBWLAN_DEBUG  = 0x131;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_UNK            = 0x132;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_UNK_DEBUG      = 0x133;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_MS1            = 0x140;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_MS2            = 0x141;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_MS3            = 0x142;
+    // Applications (i.e. Comic Reader)
+    public static final int SCE_INIT_APITYPE_MS4            = 0x143;
+    // Playstation One executable.
+    public static final int SCE_INIT_APITYPE_MS5            = 0x144;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_MS6            = 0x145;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_EF1            = 0x151;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_EF2            = 0x152;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_EF3            = 0x153;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_EF4            = 0x154;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_EF5            = 0x155;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_EF6            = 0x156;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_UNK_GAME1      = 0x160;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_UNK_GAME2      = 0x161;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_MLNAPP_MS      = 0x170;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_MLNAPP_EF      = 0x171;
+    // Unknown.
+    public static final int SCE_INIT_APITYPE_KERNEL_1       = 0x200;
+    // Exit Game.
+    public static final int SCE_INIT_APITYPE_VSH_1          = 0x210;
+    // Exit VSH.
+    public static final int SCE_INIT_APITYPE_VSH_2          = 0x220;
+    // Kernel reboot.
+    public static final int SCE_INIT_APITYPE_KERNEL_REBOOT  = 0x300;
+    // Debug.
+	public static final int SCE_INIT_APITYPE_DEBUG = 0x420; // doesn't start reboot
 
 	@HLEFunction(nid = 0x7233B5BC, version = 150)
 	public int sceKernelApplicationType() {
@@ -50,6 +132,20 @@ public class InitForKernel extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xA18A4A8B, version = 150)
 	public int sceKernelInitDiscImage() {
+		// Has no parameters
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x7A2333AD, version = 150)
+	public int sceKernelInitApitype() {
+		// Has no parameters
+		return SCE_INIT_APITYPE_GAME_EBOOT;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5238F4CC, version = 150)
+	public int sceKernelInitLptSummary() {
 		// Has no parameters
 		return 0;
 	}
