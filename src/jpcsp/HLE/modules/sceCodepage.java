@@ -18,10 +18,37 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 
 public class sceCodepage extends HLEModule {
     public static Logger log = Modules.getLogger("sceCodepage");
 
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEE932176, version = 150)
+    public int sceCodepage_driver_EE932176() {
+    	// Has no parameters
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1D0DE569, version = 150)
+    public int sceCodepage_driver_1D0DE569(TPointer32 unknown1, TPointer32 unknown2, TPointer32 unknown3, TPointer32 unknown4) {
+    	unknown1.setValue(0);
+    	unknown2.setValue(0);
+    	unknown3.setValue(47880);
+    	unknown4.setValue(128);
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x039BF9E9, version = 150)
+    public int sceCodepage_driver_039BF9E9(TPointer unknown1, int unknown2, TPointer unknown3, int unknown4, TPointer unknown5, int unknown6, TPointer unknown7, int unknown8) {
+    	return 0;
+    }
 }
