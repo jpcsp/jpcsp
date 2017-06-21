@@ -148,6 +148,10 @@ public class UmdIsoReader implements IBrowser {
         return numSectors;
     }
 
+    public ISectorDevice getSectorDevice() {
+    	return sectorDevice;
+    }
+
     /**
      * Read sequential sectors into a byte array
      *
