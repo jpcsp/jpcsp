@@ -41,6 +41,7 @@ import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
 public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 	public static final String PSP_GAME = "PSP/GAME";
 	private static final String EBOOT_PBP = "EBOOT.PBP";
+	private static final String DOCUMENT_DAT = "DOCUMENT.DAT";
 	private static final String ISO_DIR = "ms0/ISO";
 	private IVirtualFileSystem vfs;
 	private File[] umdPaths;
@@ -68,6 +69,10 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 		}
 
 		umdFiles = new LinkedList<XmbVirtualFileSystem.VirtualPBP>();
+	}
+
+	private boolean isVirtualFile(String name) {
+		return EBOOT_PBP.equals(name) || DOCUMENT_DAT.equals(name);
 	}
 
 	private String[] addUmdFileNames(String dirName, File[] files) {
@@ -137,11 +142,20 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 		return null;
 	}
 
-	private int umdIoGetstat(String umdFileName, SceIoStat stat) {
+	private int umdIoGetstat(String umdFileName, String restFileName, SceIoStat stat) {
 		StringBuilder localFileName = new StringBuilder();
 		IVirtualFileSystem vfs = getUmdVfs(umdFileName, localFileName);
 		if (vfs != null) {
-			return vfs.ioGetstat(localFileName.toString(), stat);
+			int result = vfs.ioGetstat(localFileName.toString(), stat);
+			// If the UMD file is actually a directory
+			// (e.g. containing the EBOOT.PBP),
+			// then stat the real file (EBOOT.PBP or DOCUMENT.DAT).
+			if (restFileName != null && restFileName.length() > 0 && result == 0) {
+				if ((stat.attr & 0x10) != 0) {
+					result = vfs.ioGetstat(localFileName.toString() + "/" + restFileName, stat);
+				}
+			}
+			return result;
 		}
 
 		return IO_ERROR;
@@ -177,7 +191,7 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 		StringBuilder restFileName = new StringBuilder();
 		String umdFileName = getUmdFileName(dirName, restFileName);
 		if (umdFileName != null && restFileName.length() == 0 && EBOOT_PBP.equals(dir.filename)) {
-			int result = umdIoGetstat(umdFileName, dir.stat);
+			int result = umdIoGetstat(umdFileName, restFileName.toString(), dir.stat);
 			if (result < 0) {
 				return result;
 			}
@@ -188,7 +202,7 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 		restFileName = new StringBuilder();
 		umdFileName = getUmdFileName(dir.filename, restFileName);
 		if (umdFileName != null && restFileName.length() == 0) {
-			int result = umdIoGetstat(umdFileName, dir.stat);
+			int result = umdIoGetstat(umdFileName, restFileName.toString(), dir.stat);
 			if (result < 0) {
 				return result;
 			}
@@ -207,8 +221,8 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 	public int ioGetstat(String fileName, SceIoStat stat) {
 		StringBuilder restFileName = new StringBuilder();
 		String umdFileName = getUmdFileName(fileName, restFileName);
-		if (umdFileName != null && EBOOT_PBP.equals(restFileName.toString())) {
-			return umdIoGetstat(umdFileName, stat);
+		if (umdFileName != null && isVirtualFile(restFileName.toString())) {
+			return umdIoGetstat(umdFileName, restFileName.toString(), stat);
 		}
 
 		return vfs.ioGetstat(fileName, stat);
@@ -218,7 +232,7 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 	public IVirtualFile ioOpen(String fileName, int flags, int mode) {
 		StringBuilder restFileName = new StringBuilder();
 		VirtualPBP virtualPBP = getVirtualPBP(fileName, restFileName);
-		if (virtualPBP != null && EBOOT_PBP.equals(restFileName.toString())) {
+		if (virtualPBP != null && isVirtualFile(restFileName.toString())) {
 			String umdFileName = virtualPBP.umdFile;
 			File umdFile = new File(umdFileName);
 
