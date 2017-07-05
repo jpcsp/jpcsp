@@ -79,6 +79,18 @@ public class LoadExecForKernel extends HLEModule {
     		}
     	}
 
+    	if (loadExecVSHParam.args > 0 && loadExecVSHParam.argp != 0) {
+    		String arg = Utilities.readStringNZ(loadExecVSHParam.argp, loadExecVSHParam.args);
+    		if (arg.startsWith("disc0:")) {
+    			Modules.IoFileMgrForUserModule.setfilepath("disc0/");
+    		} else if (arg.startsWith("ms0:")) {
+    	    	int dirIndex = arg.lastIndexOf('/');
+    	    	if (dirIndex >= 0) {
+    	    		Modules.IoFileMgrForUserModule.setfilepath(arg.substring(0, dirIndex));
+    	    	}
+    		}
+    	}
+
     	return Modules.LoadExecForUserModule.hleKernelLoadExec(filename, loadExecVSHParam.args, loadExecVSHParam.argp);
     }
 

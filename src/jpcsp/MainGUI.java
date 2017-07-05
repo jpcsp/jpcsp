@@ -2922,6 +2922,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 Modules.sceDisplayModule.setCalledFromCommandLine();
                 HTTPServer.processProxyRequestLocally = true;
                 loadFile(new File("flash0/vsh/module/vshmain.prx"), true);
+                Modules.IoFileMgrForUserModule.setfilepath("ms0/PSP/GAME");
 
             	ModuleMgrForUser moduleMgr = Modules.ModuleMgrForUserModule;
 
