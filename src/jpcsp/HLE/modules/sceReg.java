@@ -61,10 +61,6 @@ public class sceReg extends HLEModule {
     private int oskKeytopIndex;
     private String npEnv;
     private String adhocSsidPrefix;
-    private int themeCustomThemeCode;
-    private int themeColorMode;
-    private int themeWallpaperMode;
-    private int themeSystemColor;
     private int musicVisualizerMode;
     private int musicTrackInfoMode;
     private String lockPassword;
@@ -735,25 +731,25 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(themeWallpaperMode);
+    				buf.setValue32(settings.readInt("registry.theme.wallpaper_mode", 0));
     			}
     		} else if ("custom_theme_mode".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(themeCustomThemeCode);
+    				buf.setValue32(settings.readInt("registry.theme.custom_theme_mode", 0));
     			}
     		} else if ("color_mode".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(themeColorMode);
+    				buf.setValue32(settings.readInt("registry.theme.color_mode", 0));
     			}
     		} else if ("system_color".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(themeSystemColor);
+    				buf.setValue32(settings.readInt("registry.theme.system_color", 0));
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -1331,10 +1327,6 @@ public class sceReg extends HLEModule {
 	    oskKeytopIndex = 0x5;
 	    npEnv = "np"; // Max length 8
 	    adhocSsidPrefix = "PSP"; // Must be of length 3
-	    themeWallpaperMode = 0;
-	    themeColorMode = 0;
-	    themeCustomThemeCode = 0;
-	    themeSystemColor = 0;
 	    musicVisualizerMode = 0;
 	    musicTrackInfoMode = 1;
 	    lockPassword = "0000"; // 4-digit password
@@ -1648,13 +1640,13 @@ public class sceReg extends HLEModule {
     		}
     	} else if ("/CONFIG/SYSTEM/XMB/THEME".equals(fullName)) {
     		if ("custom_theme_mode".equals(name) && size >= 4) {
-    			themeCustomThemeCode = buf.getValue32();
+    			settings.writeInt("registry.theme.custom_theme_mode", buf.getValue32());
     		} else if ("color_mode".equals(name) && size >= 4) {
-    			themeColorMode = buf.getValue32();
+    			settings.writeInt("registry.theme.color_mode", buf.getValue32());
     		} else if ("wallpaper_mode".equals(name) && size >= 4) {
-    			themeWallpaperMode = buf.getValue32();
+    			settings.writeInt("registry.theme.wallpaper_mode", buf.getValue32());
     		} else if ("system_color".equals(name) && size >= 4) {
-    			themeSystemColor = buf.getValue32();
+    			settings.writeInt("registry.theme.system_color", buf.getValue32());
     		} else {
     			log.warn(String.format("Unknown registry entry '%s'", name));
     		}
