@@ -1306,6 +1306,20 @@ public class Utilities {
 		}
     }
 
+    public static void writeInt32(int address, int length, int[] a, int offset) {
+    	final int length4 = length >> 2;
+		// Optimize the most common case
+    	if (RuntimeContext.hasMemoryInt()) {
+    		System.arraycopy(a, offset, RuntimeContext.getMemoryInt(), address >> 2, length4);
+    	} else {
+	    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, length, 4);
+	    	for (int i = 0; i < length4; i++) {
+	    		memoryWriter.writeNext(a[offset + i]);
+	    	}
+	    	memoryWriter.flush();
+    	}
+    }
+
     public static int[] readInt32(int address, int length) {
 		int[] a = new int[length >> 2];
 		readInt32(address, length, a, 0);
