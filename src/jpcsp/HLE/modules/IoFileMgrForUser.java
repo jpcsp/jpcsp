@@ -4205,7 +4205,7 @@ public class IoFileMgrForUser extends HLEModule {
                 log.debug("sceIoDevctl get MS capacity (fatms0)");
                 int sectorSize = 0x200;
                 int sectorCount = MemoryStick.getSectorSize() / sectorSize;
-                int maxClusters = (int) ((MemoryStick.getFreeSize() * 95L / 100) / (sectorSize * sectorCount));
+                int maxClusters = (int) (MemoryStick.getFreeSize() / (sectorSize * sectorCount));
                 int freeClusters = maxClusters;
                 int maxSectors = maxClusters;
                 if (Memory.isAddressGood(indataAddr) && inlen >= 4) {
