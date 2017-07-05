@@ -99,6 +99,9 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 				section.umdFilename = umdFilenames[i];
 				if (vfs.ioGetstat(section.umdFilename, stat) >= 0) {
 					section.size = (int) stat.size;
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("%s: mapping %s at offset 0x%X, size 0x%X", umdFilename, umdFilenames[i], section.offset, section.size));
+					}
 				}
 
 				String cacheFileName = getCacheFileName(section);
@@ -135,7 +138,14 @@ public class XmbIsoVirtualFile extends AbstractVirtualFile {
 			for (int i = 1; i < sections.length; i++) {
 				buffer.putInt(sections[i].offset);
 			}
+			int endSectionOffset = sections[sections.length - 1].offset + sections[sections.length - 1].size;
+			for (int i = sections.length; i <= 8; i++) {
+				buffer.putInt(endSectionOffset);
+			}
 
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("%s: PBP header :%s", umdFilename, Utilities.getMemoryDump(contents, sections[0].offset, sections[0].size)));
+			}
 			vfs.ioExit();
 		} catch (FileNotFoundException e) {
 			log.debug("XmbIsoVirtualFile", e);
