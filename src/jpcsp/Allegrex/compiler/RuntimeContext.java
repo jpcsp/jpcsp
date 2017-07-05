@@ -285,9 +285,9 @@ public class RuntimeContext {
 				int parameterValue = cpu.getRegister(register);
 
 				if (Memory.isAddressGood(parameterValue)) {
-    				s.append(String.format(", %s = 0x%08X", Common.gprNames[register], parameterValue));
+    				s.append(String.format(", %s=0x%08X", Common.gprNames[register], parameterValue));
 				} else {
-    				s.append(String.format(", %s = 0x%X", Common.gprNames[register], parameterValue));
+    				s.append(String.format(", %s=0x%X", Common.gprNames[register], parameterValue));
 				}
 			}
 			parameters = s.toString();
