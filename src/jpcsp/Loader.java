@@ -22,6 +22,7 @@ import static jpcsp.format.Elf32SectionHeader.SHF_EXECUTE;
 import static jpcsp.format.Elf32SectionHeader.SHF_NONE;
 import static jpcsp.format.Elf32SectionHeader.SHF_WRITE;
 import static jpcsp.util.Utilities.readUnaligned32;
+import static jpcsp.util.Utilities.writeInt32;
 import static jpcsp.util.Utilities.writeUnaligned32;
 
 import java.io.File;
@@ -30,6 +31,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -39,6 +42,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Opcodes;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
@@ -541,7 +545,24 @@ public class Loader {
                 		// Clear the memory part not loaded from the file
                 		mem.memset(memOffset + fileLen, (byte) 0, memLen - fileLen);
                 	}
-                	mem.copyToMemory(memOffset, f, fileLen);
+
+                	if (((memOffset | fileLen | f.position()) & 3) == 0) {
+                		ByteOrder order = f.order();
+                		f.order(ByteOrder.LITTLE_ENDIAN);
+                		IntBuffer intBuffer = f.asIntBuffer();
+                		// Optimize the most common case
+                		if (RuntimeContext.hasMemoryInt()) {
+                			intBuffer.get(RuntimeContext.getMemoryInt(), memOffset >> 2, fileLen >> 2);
+                		} else {
+                			int[] buffer = new int[fileLen >> 2];
+                			intBuffer.get(buffer);
+                			writeInt32(memOffset, fileLen, buffer, 0);
+                		}
+                		f.order(order);
+                		f.position(f.position() + fileLen);
+                	} else {
+                		mem.copyToMemory(memOffset, f, fileLen);
+                	}
                 }
 
                 // Update memory area consumed by the module
