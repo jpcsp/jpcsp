@@ -548,7 +548,7 @@ public class sceSasCore extends HLEModule {
         }
 
         checkSasAndVoiceHandlesGood(sasCore, voice);
-        
+
     	voices[voice].setVAG(vagAddr, size);
         voices[voice].setLoopMode(loopmode);
         
