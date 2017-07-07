@@ -25,6 +25,7 @@ import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.DebugMemory;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -100,6 +101,12 @@ public class sceMSstor extends HLEModule {
     		case 0x02025801: // Check the MemoryStick's driver status
     			outdata.setValue32(4);
     			break;
+    		case 0x2015807:
+    			outdata.setValue32(1); // Unknown value: seems to be 0 or 1?
+    			break;
+    		case 0x0202580A:
+    			outdata.clear(outlen);
+    			break;
 			default:
                 log.warn(String.format("hleMSstorIoDevctl 0x%08X unknown command on device '%s'", cmd, devicename));
 				break;
@@ -127,10 +134,17 @@ public class sceMSstor extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hleMSstorPartitionIoIoctl(pspIoDrvFileArg drvFileArg, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer indata, int inlen, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outdata, int outlen) {
+    public int hleMSstorPartitionIoIoctl(pspIoDrvFileArg drvFileArg, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer indata, int inlen, @CanBeNull @DebugMemory @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outdata, int outlen) {
     	switch (cmd) {
     		case 0x02125001: // Mounted?
     			outdata.setValue32(1); // When returning 0, ERROR_ERRNO_DEVICE_NOT_FOUND is raised
+    			break;
+    		case 0x02125803:
+    			outdata.clear(outlen);
+    			outdata.setValue8(0, (byte) 2);
+    			break;
+    		case 0x02125008:
+    			outdata.setValue32(1); // 0 or != 0
     			break;
 			default:
                 log.warn(String.format("hleMSstorPartitionIoIoctl 0x%08X unknown command", cmd));
@@ -155,6 +169,22 @@ public class sceMSstor extends HLEModule {
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleMSstorPartitionIoRead(pspIoDrvFileArg drvFileArg, @BufferInfo(lengthInfo=LengthInfo.returnValue, usage=Usage.out) TPointer data, int len) {
     	data.clear(len);
+
+    	// 512 at offset 11
+    	data.setValue8(11, (byte) 0);
+    	data.setValue8(12, (byte) 2);
+
+    	data.setValue8(13, (byte) 0x20);
+
+    	data.setValue8(14, (byte) 0x20);
+
+    	data.setValue8(16, (byte) 2);
+
+    	data.setValue8(19, (byte) 0xE0);
+    	data.setValue8(20, (byte) 0xBF);
+    	data.setValue8(21, (byte) 0xF8);
+
+    	data.setValue32(32, 4);
 
     	return len;
     }
