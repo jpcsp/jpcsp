@@ -17,10 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.TPointer;
 import jpcsp.util.Utilities;
 
-public class SceSysmemUidCB extends pspAbstractMemoryMappedStructure {
+public class SceSysmemUidCBtype extends pspAbstractMemoryMappedStructure {
 	public int parent0;
 	public int nextChild;
 	public int meta;
@@ -31,6 +30,8 @@ public class SceSysmemUidCB extends pspAbstractMemoryMappedStructure {
 	public int size;
 	public int attr;
 	public int next;
+	public int parent1;
+	public int funcTable;
 
 	@Override
 	protected void read() {
@@ -48,6 +49,8 @@ public class SceSysmemUidCB extends pspAbstractMemoryMappedStructure {
 		size = read8(); // Offset 21
 		attr = read16(); // Offset 22
 		next = read32(); // Offset 24
+		parent1 = read32(); // Offset 28
+		funcTable = read32(); // Offset 32
 	}
 
 	@Override
@@ -61,33 +64,26 @@ public class SceSysmemUidCB extends pspAbstractMemoryMappedStructure {
 		write8((byte) size); // Offset 21
 		write16((short) attr); // Offset 22
 		write32(next); // Offset 24
+		write32(parent1); // Offset 28
+		write32(funcTable); // Offset 32
 	}
 
 	public void allocAndSetName(int uidHeap, String name) {
+		this.name = name;
 		if (name == null) {
 			nameAddr = 0;
 		} else {
 			nameAddr = Modules.SysMemForKernelModule.sceKernelAllocHeapMemory(uidHeap, name.length() + 1);
 			if (nameAddr < 0) {
 				nameAddr = 0;
-				name = null;
 			} else if (nameAddr != 0) {
 				Utilities.writeStringZ(mem, nameAddr, name);
 			}
-		}
-		this.name = name;
-	}
-
-	public void freeName(int uidHeap) {
-		if (nameAddr != 0) {
-			Modules.SysMemForKernelModule.sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, nameAddr));
-			nameAddr = 0;
-			name = null;
 		}
 	}
 
 	@Override
 	public int sizeof() {
-		return 28;
+		return 36;
 	}
 }
