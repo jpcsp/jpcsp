@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -208,7 +211,7 @@ public class UtilsForUser extends HLEModule {
 
     @HLELogging(level="info")
 	@HLEFunction(nid = 0xC8186A58, version = 150)
-	public int sceKernelUtilsMd5Digest(TPointer inAddr, int inSize, TPointer outAddr) {
+	public int sceKernelUtilsMd5Digest(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer inAddr, int inSize, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer outAddr) {
     	int result = SceKernelUtilsMd5Context.digest(inAddr, inSize, outAddr);
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceKernelUtilsMd5Digest input:%s, output:%s", Utilities.getMemoryDump(inAddr.getAddress(), inSize), Utilities.getMemoryDump(outAddr.getAddress(), 16)));
