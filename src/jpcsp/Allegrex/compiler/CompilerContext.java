@@ -206,9 +206,9 @@ public class CompilerContext implements ICompilerContext {
 	        addFastSyscall(0x369ED59D); // sceKernelGetSystemTimeLow
 	        addFastSyscall(0xB5F6DC87); // sceMpegRingbufferAvailableSize
 	        addFastSyscall(0xE0D68148); // sceGeListUpdateStallAddr
-	        addFastSyscall(0x34B9FA9E); // sceKernelDcacheWritebackInvalidateRangeFunction
-	        addFastSyscall(0xE47E40E4); // sceGeEdramGetAddrFunction
-	        addFastSyscall(0x1F6752AD); // sceGeEdramGetSizeFunction
+	        addFastSyscall(0x34B9FA9E); // sceKernelDcacheWritebackInvalidateRange
+	        addFastSyscall(0xE47E40E4); // sceGeEdramGetAddr
+	        addFastSyscall(0x1F6752AD); // sceGeEdramGetSize
 	        addFastSyscall(0x74AE582A); // __sceSasGetEnvelopeHeight
 	        addFastSyscall(0x68A46B95); // __sceSasGetEndFlag
         }
