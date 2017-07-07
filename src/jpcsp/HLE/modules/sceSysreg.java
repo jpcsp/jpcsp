@@ -25,6 +25,14 @@ import jpcsp.HLE.Modules;
 
 public class sceSysreg extends HLEModule {
     public static Logger log = Modules.getLogger("sceSysreg");
+    public long fuseId = 0L;
+
+    public void setFuseId(long fuseId) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("setFuseId 0x%X", fuseId));
+    	}
+    	this.fuseId = fuseId;
+    }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x0143E8A8, version = 150)
@@ -973,5 +981,12 @@ public class sceSysreg extends HLEModule {
     @HLEFunction(nid = 0xE2A5D1EE, version = 150)
     public int sceSysregGetTachyonVersion() {
     	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4F46EEDE, version = 150)
+    public long sceSysregGetFuseId() {
+    	// Has no parameters
+    	return fuseId;
     }
 }
