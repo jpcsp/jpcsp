@@ -17,7 +17,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_SET;
 import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscall;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 
 import org.apache.log4j.Logger;
 
@@ -46,6 +53,9 @@ import jpcsp.util.Utilities;
 
 public class sceMSstor extends HLEModule {
     public static Logger log = Modules.getLogger("sceMSstor");
+    private byte[] dumpBlocks;
+    private byte[] dumpIoIoctl_0x02125803;
+    private long position;
 
     private static class AfterAddDrvController implements IAction {
     	private SceKernelThreadInfo thread;
@@ -95,7 +105,9 @@ public class sceMSstor extends HLEModule {
     	switch (cmd) {
     		case 0x0203D802: // Set EventFlag named SceFatfsDetectMedium
     			int eventFlag = indata.getValue32();
-    			Managers.eventFlags.sceKernelSetEventFlag(eventFlag, 0x3);
+    			// Event 0x1: memory stick inserted?
+    			// Event 0x2: memory stick ejected?
+    			Managers.eventFlags.sceKernelSetEventFlag(eventFlag, 0x1);
     			outdata.setValue32(0);
     			break;
     		case 0x02025801: // Check the MemoryStick's driver status
@@ -107,8 +119,11 @@ public class sceMSstor extends HLEModule {
     		case 0x0202580A:
     			outdata.clear(outlen);
     			break;
+    		case 0x201580B:
+    			// inlen == 20
+    			break;
 			default:
-                log.warn(String.format("hleMSstorIoDevctl 0x%08X unknown command on device '%s'", cmd, devicename));
+                log.warn(String.format("hleMSstorControllerIoDevctl 0x%08X unknown command on device '%s'", cmd, devicename));
 				break;
     	}
     	return 0;
@@ -134,6 +149,20 @@ public class sceMSstor extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleMSstorPartitionIoDevctl(pspIoDrvFileArg drvFileArg, PspString devicename, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer indata, int inlen, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outdata, int outlen) {
+    	switch (cmd) {
+    		case 0x02125802:
+    			outdata.setValue32(0); // ???
+    			break;
+			default:
+                log.warn(String.format("hleMSstorPartitionIoDevctl 0x%08X unknown command on device '%s'", cmd, devicename));
+				break;
+    	}
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleMSstorPartitionIoIoctl(pspIoDrvFileArg drvFileArg, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer indata, int inlen, @CanBeNull @DebugMemory @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outdata, int outlen) {
     	switch (cmd) {
     		case 0x02125001: // Mounted?
@@ -141,10 +170,17 @@ public class sceMSstor extends HLEModule {
     			break;
     		case 0x02125803:
     			outdata.clear(outlen);
-    			outdata.setValue8(0, (byte) 2);
+    			if (dumpIoIoctl_0x02125803 != null) {
+    				Utilities.writeBytes(outdata.getAddress(), outlen, dumpIoIoctl_0x02125803, 0);
+    			} else {
+    				outdata.setValue8(0, (byte) 0x02);
+    			}
     			break;
     		case 0x02125008:
     			outdata.setValue32(1); // 0 or != 0
+    			break;
+    		case 0x02125009:
+    			outdata.setValue32(0); // 0 or != 0
     			break;
 			default:
                 log.warn(String.format("hleMSstorPartitionIoIoctl 0x%08X unknown command", cmd));
@@ -156,13 +192,30 @@ public class sceMSstor extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleMSstorPartitionIoOpen(pspIoDrvFileArg drvFileArg, PspString fileName, int flags, int mode) {
+    	position = 0L;
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleMSstorPartitionIoClose(pspIoDrvFileArg drvFileArg) {
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public long hleMSstorPartitionIoLseek(pspIoDrvFileArg drvFileArg, long offset, int whence) {
-    	return offset;
+        switch (whence) {
+        	case PSP_SEEK_SET:
+            	position = offset;
+            	break;
+        	default:
+        		log.warn(String.format("hleMSstorPartitionIoLseek unimplemented whence=0x%X", whence));
+        		break;
+        }
+
+    	return position;
     }
 
     @HLEUnimplemented
@@ -170,23 +223,26 @@ public class sceMSstor extends HLEModule {
     public int hleMSstorPartitionIoRead(pspIoDrvFileArg drvFileArg, @BufferInfo(lengthInfo=LengthInfo.returnValue, usage=Usage.out) TPointer data, int len) {
     	data.clear(len);
 
-    	// 512 at offset 11
-    	data.setValue8(11, (byte) 0);
-    	data.setValue8(12, (byte) 2);
-
-    	data.setValue8(13, (byte) 0x20);
-
-    	data.setValue8(14, (byte) 0x20);
-
-    	data.setValue8(16, (byte) 2);
-
-    	data.setValue8(19, (byte) 0xE0);
-    	data.setValue8(20, (byte) 0xBF);
-    	data.setValue8(21, (byte) 0xF8);
-
-    	data.setValue32(32, 4);
+    	if (dumpBlocks != null) {
+    		Utilities.writeBytes(data.getAddress(), len, dumpBlocks, (int) position);
+    	}
 
     	return len;
+    }
+
+    private static byte[] readBytes(String fileName) {
+    	byte[] bytes = null;
+    	try {
+    		File file = new File(fileName);
+			InputStream is = new FileInputStream(file);
+			bytes = new byte[(int) file.length()];
+			is.read(bytes);
+			is.close();
+		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
+		}
+
+    	return bytes;
     }
 
     private void installIoFunctions(pspIoDrvFuncs controllerFuncs, pspIoDrvFuncs storageFuncs, pspIoDrvFuncs partitionFuncs) {
@@ -211,7 +267,11 @@ public class sceMSstor extends HLEModule {
 
 		partitionFuncs.ioInit = addr;
 		addr += sizeIoFunctionStub;
+		partitionFuncs.ioDevctl = addr;
+		addr += sizeIoFunctionStub;
 		partitionFuncs.ioOpen = addr;
+		addr += sizeIoFunctionStub;
+		partitionFuncs.ioClose = addr;
 		addr += sizeIoFunctionStub;
 		partitionFuncs.ioIoctl = addr;
 		addr += sizeIoFunctionStub;
@@ -220,7 +280,9 @@ public class sceMSstor extends HLEModule {
 		partitionFuncs.ioRead = addr;
 		addr += sizeIoFunctionStub;
 		installHLESyscall(partitionFuncs.ioInit, this, "hleMSstorPartitionIoInit");
+		installHLESyscall(partitionFuncs.ioDevctl, this, "hleMSstorPartitionIoDevctl");
 		installHLESyscall(partitionFuncs.ioOpen, this, "hleMSstorPartitionIoOpen");
+		installHLESyscall(partitionFuncs.ioClose, this, "hleMSstorPartitionIoClose");
 		installHLESyscall(partitionFuncs.ioIoctl, this, "hleMSstorPartitionIoIoctl");
 		installHLESyscall(partitionFuncs.ioLseek, this, "hleMSstorPartitionIoLseek");
 		installHLESyscall(partitionFuncs.ioRead, this, "hleMSstorPartitionIoRead");
@@ -228,6 +290,9 @@ public class sceMSstor extends HLEModule {
 
     public void installDrivers() {
 		Memory mem = Memory.getInstance();
+
+		dumpBlocks = readBytes("ms.block");
+		dumpIoIoctl_0x02125803 = readBytes("ms.ioctl.0x02125803");
 
 		pspIoDrv controllerDrv = new pspIoDrv();
 		pspIoDrvFuncs controllerFuncs = new pspIoDrvFuncs();
