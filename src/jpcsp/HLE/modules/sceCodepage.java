@@ -16,14 +16,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure.charset16;
+
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer8;
 
 public class sceCodepage extends HLEModule {
     public static Logger log = Modules.getLogger("sceCodepage");
@@ -50,5 +57,62 @@ public class sceCodepage extends HLEModule {
     @HLEFunction(nid = 0x039BF9E9, version = 150)
     public int sceCodepage_driver_039BF9E9(TPointer unknown1, int unknown2, TPointer unknown3, int unknown4, TPointer unknown5, int unknown6, TPointer unknown7, int unknown8) {
     	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB0AE63AA, version = 150)
+    public int sceCodepage_driver_B0AE63AA(int c) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x855C5C2E, version = 150)
+    public int sceCodepage_driver_855C5C2E(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer destAddr, int destLength, String src) {
+    	byte[] destBytes = src.getBytes(charset16);
+    	int length = Math.min(destLength, destBytes.length);
+    	destAddr.setArray(destBytes, length);
+    	// Add trailing "\0\0"
+    	if (length <= destLength - 2) {
+    		destAddr.clear(length, 2);
+    	}
+
+    	return src.length();
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x11123ED1, version = 150)
+    public boolean sceCodepage_driver_11123ED1(int char16) {
+    	if (char16 <= 0 || char16 > 0x7E) {
+    		return true;
+    	}
+    	return false;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x47BDF633, version = 150)
+    public int sceCodepage_driver_47BDF633(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer8 destAddr, int destLength, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32) TPointer16 srcAddr) {
+    	int result = 0;
+		byte[] bytes = new byte[2];
+    	for (int i = 0, j = 0; true; i += 2, j++) {
+    		int char16 = srcAddr.getValue(i);
+    		if (char16 == 0) {
+    			result = j;
+    			break;
+    		}
+
+    		bytes[0] = (byte) char16;
+    		bytes[1] = (byte) (char16 >> 8);
+    		byte char8 = (byte) new String(bytes, charset16).charAt(0);
+
+    		destAddr.setValue(j, char8);
+    	}
+
+    	return result;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x014E0C72, version = 150)
+    public boolean sceCodepage_driver_014E0C72(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=2, usage=Usage.in) TPointer8 srcAddr) {
+    	return false;
     }
 }

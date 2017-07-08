@@ -28,7 +28,7 @@ import jpcsp.util.Utilities;
 
 public abstract class pspAbstractMemoryMappedStructure {
     private final static int unknown = 0x11111111;
-	private final static Charset charset16 = Charset.forName("UTF-16LE");
+	public final static Charset charset16 = Charset.forName("UTF-16LE");
 
     private int baseAddress;
     private int maxSize = Integer.MAX_VALUE;
