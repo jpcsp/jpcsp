@@ -321,4 +321,21 @@ public class SysclibForKernel extends HLEModule {
     public void bzero(@CanBeNull TPointer destAddr, int size) {
 		memset(destAddr, 0, size);
     }
+
+	@HLEFunction(nid = 0x90C5573D, version = 150)
+    public int strnlen(@CanBeNull TPointer srcAddr, int size) {
+		if (srcAddr.isNull() || size == 0) {
+			return 0;
+		}
+
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr.getAddress(), size, 1);
+		for (int i = 0; i < size; i++) {
+			int c = memoryReader.readNext();
+			if (c == 0) {
+				return i;
+			}
+		}
+
+		return size;
+	}
 }
