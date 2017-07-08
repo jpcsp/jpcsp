@@ -286,6 +286,11 @@ public class sceRtc extends HLEModule {
         return 0;
     }
 
+    @HLEFunction(nid = 0x74772CCC, version = 660)
+    public int sceRtcSetDosTime_660(TPointer dateAddr, int time) {
+    	return sceRtcSetDosTime(dateAddr, time);
+    }
+
     @HLEFunction(nid = 0x36075567, version = 150)
     public int sceRtcGetDosTime(ScePspDateTime dateTime, TPointer32 timeAddr) {
         Calendar cal = Calendar.getInstance();
