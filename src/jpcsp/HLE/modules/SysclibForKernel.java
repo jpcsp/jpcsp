@@ -301,6 +301,11 @@ public class SysclibForKernel extends HLEModule {
 		return Modules.sceNetModule.sceNetTolower(c);
     }
 
+	@HLEFunction(nid = 0xCE2F7487, version = 150)
+    public int toupper(int c) {
+		return Modules.sceNetModule.sceNetToupper(c);
+    }
+
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x87C78FB6, version = 150)
     public int prnt() {
