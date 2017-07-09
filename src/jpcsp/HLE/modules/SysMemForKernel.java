@@ -384,6 +384,11 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
+    @HLEFunction(nid = 0xDD6512D0, version = 660)
+    public int sceKernelDeleteHeap_660(int heapId) {
+    	return sceKernelDeleteHeap(heapId);
+    }
+
     @HLEFunction(nid = 0x6373995D, version = 280)
     public int sceKernelGetModel() {
 		int result = Model.getModel(); // <= 0 original, 1 slim
@@ -721,10 +726,36 @@ public class SysMemForKernel extends HLEModule {
     	int cb = getCBFromUid(id);
     	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
     	sceSysmemUidCB.read(mem, cb);
+
+    	SceSysmemUidCBtype sceSysmemUidCBtype = new SceSysmemUidCBtype();
+    	sceSysmemUidCBtype.read(mem, sceSysmemUidCB.meta);
+    	int funcAddr = getUIDFunction(sceSysmemUidCBtype, UID_FUNCTION_DELETE);
+    	if (funcAddr != 0) {
+    		SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+    		Modules.ThreadManForUserModule.executeCallback(thread, funcAddr, null, false, cb, sceSysmemUidCB.meta, UID_FUNCTION_DELETE);
+    	}
+
+    	SceSysmemUidCB parent0 = new SceSysmemUidCB();
+    	parent0.read(mem, sceSysmemUidCB.parent0);
+    	parent0.nextChild = sceSysmemUidCB.nextChild;
+    	parent0.write(mem, sceSysmemUidCB.parent0);
+
+    	SceSysmemUidCB nextChild = new SceSysmemUidCB();
+    	nextChild.read(mem, sceSysmemUidCB.nextChild);
+    	nextChild.parent0 = sceSysmemUidCB.parent0;
+    	nextChild.write(mem, sceSysmemUidCB.nextChild);
+
+    	sceSysmemUidCB.meta = 0;
+    	sceSysmemUidCB.uid = 0;
+    	sceSysmemUidCB.nextChild = cb;
+    	sceSysmemUidCB.parent0 = cb;
+    	sceSysmemUidCB.write(mem, cb);
+
     	if (sceSysmemUidCB.nameAddr != 0) {
     		sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, sceSysmemUidCB.nameAddr));
     	}
-		sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, cb));
+
+    	sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, cb));
 
     	return 0;
     }
@@ -783,8 +814,19 @@ public class SysMemForKernel extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x41FFC7F9, version = 150)
     public int sceKernelGetUIDcontrolBlockWithType(int id, TPointer32 uidType, @BufferInfo(usage=Usage.out) TPointer32 controlBlockAddr) {
+    	Memory mem = Memory.getInstance();
+
+    	if ((id & 0x80000001) != 1) {
+    		return SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
+    	}
     	int cb = getCBFromUid(id);
-		controlBlockAddr.setValue(cb);
+    	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
+    	sceSysmemUidCB.read(mem, cb);
+    	if (sceSysmemUidCB.uid != id) {
+    		return SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
+    	}
+
+    	controlBlockAddr.setValue(cb);
 
     	return 0;
     }
