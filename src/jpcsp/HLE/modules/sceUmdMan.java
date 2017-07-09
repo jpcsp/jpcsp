@@ -104,9 +104,11 @@ public class sceUmdMan extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x3C8C523D, version = 150)
     public int sceUmdMan_3C8C523D(int wantedStatus, TPointer callback, TPointer callbackArg) {
-    	if (wantedStatus == PSP_UMD_READABLE || wantedStatus == PSP_UMD_READY) {
-    		TriggerCallbackAction triggerCallbackAction = new TriggerCallbackAction(wantedStatus, callback.getAddress(), callbackArg.getAddress(), 0);
-    		Emulator.getScheduler().addAction(Scheduler.getNow() + 1000, triggerCallbackAction);
+    	if (getSectorDevice() != null) {
+    		if (wantedStatus == PSP_UMD_READABLE || wantedStatus == PSP_UMD_READY) {
+    			TriggerCallbackAction triggerCallbackAction = new TriggerCallbackAction(wantedStatus, callback.getAddress(), callbackArg.getAddress(), 0);
+    			Emulator.getScheduler().addAction(Scheduler.getNow() + 1000, triggerCallbackAction);
+    		}
     	}
 
     	return 0;
@@ -281,6 +283,12 @@ public class sceUmdMan extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x2CE918B1, version = 150)
     public int sceUmdMan_2CE918B1(TPointer unknown) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA7536109, version = 150)
+    public int sceUmdMan_A7536109(int unknown) {
         return 0;
     }
 }
