@@ -65,6 +65,7 @@ import jpcsp.GUI.UmdBrowser;
 import jpcsp.GUI.UmdVideoPlayer;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.ModuleMgrForUser;
@@ -2756,6 +2757,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         Modules.ThreadManForUserModule.exit();
         Modules.sceDisplayModule.exit();
         Modules.IoFileMgrForUserModule.exit();
+        Modules.sceMSstorModule.exit();
         VideoEngine.exit();
         Screen.exit();
         Emulator.exit();
@@ -2932,6 +2934,16 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/paf.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/common_gui.prx", startPriority++);
             	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/common_util.prx", startPriority++);
+
+            	// Start VSH with the lowest priority so that the initialization of the other
+            	// modules can be completed.
+            	// The VSH root thread is running in KERNEL mode.
+            	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getRootThread(null);
+            	if (rootThread != null) {
+            		rootThread.currentPriority = 0x7E;
+            		rootThread.attr |= SceKernelThreadInfo.PSP_THREAD_ATTR_KERNEL;
+            		rootThread.attr &= ~SceKernelThreadInfo.PSP_THREAD_ATTR_USER;
+            	}
 
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_VAUDIO");
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_ATRAC3PLUS");

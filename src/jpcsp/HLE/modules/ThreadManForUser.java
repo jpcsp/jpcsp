@@ -4003,7 +4003,7 @@ public class ThreadManForUser extends HLEModule {
         }
 
         if (currentThread.isKernelMode()) {
-        	// Value priority range in user mode: [1..126]
+        	// Value priority range in kernel mode: [1..126]
         	if (priority < 1 || priority >= 127) {
         		if (log.isDebugEnabled()) {
         			log.debug(String.format("checkThreadPriority priority:0x%x is outside of valid range in kernel mode", priority));
