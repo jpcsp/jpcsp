@@ -29,8 +29,10 @@ public class ThreadManForKernel extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x04E72261, version = 150)
-    public int sceKernelAllocateKTLS(int id, TPointer callback, int callbackArg) {
-    	return 0;
+    public int sceKernelAllocateKTLS(int size, TPointer callback, int callbackArg) {
+    	int id = Modules.ThreadManForUserModule.sceKernelCreateTlspl("KTLS", SysMemUserForUser.KERNEL_PARTITION_ID, SysMemUserForUser.PSP_SMEM_Low, size, 32, TPointer.NULL);
+
+    	return id;
     }
 
     @HLEFunction(nid = 0x4FE44D5E, version = 150)
@@ -47,5 +49,11 @@ public class ThreadManForKernel extends HLEModule {
     @HLEFunction(nid = 0x85A2A5BF, version = 150)
     public int sceKernelIsUserModeThread() {
     	return 1;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA249EAAE, version = 150)
+    public int sceKernelGetKTLS(int id) {
+    	return Modules.Kernel_LibraryModule.sceKernel_FA835CDE(id);
     }
 }

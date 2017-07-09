@@ -4431,7 +4431,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x8DAFF657, version = 620)
-    public int sceKernelCreateTlspl(PspString name, int partitionId, int attr, int blockSize, int numberBlocks, @CanBeNull TPointer optionsAddr) {
+    public int sceKernelCreateTlspl(String name, int partitionId, int attr, int blockSize, int numberBlocks, @CanBeNull TPointer optionsAddr) {
         int alignment = 0;
         if (optionsAddr.isNotNull()) {
             int length = optionsAddr.getValue32(0);
@@ -4449,7 +4449,7 @@ public class ThreadManForUser extends HLEModule {
             alignedBlockSize = alignUp(alignedBlockSize, alignment - 1);
         }
 
-        SceKernelTls tls = new SceKernelTls(name.getString(), partitionId, attr, blockSize, alignedBlockSize, numberBlocks, alignment);
+        SceKernelTls tls = new SceKernelTls(name, partitionId, attr, blockSize, alignedBlockSize, numberBlocks, alignment);
         if (tls.getBaseAddress() == 0) {
             return SceKernelErrors.ERROR_OUT_OF_MEMORY;
         }
