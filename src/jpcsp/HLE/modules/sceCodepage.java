@@ -90,10 +90,10 @@ public class sceCodepage extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x47BDF633, version = 150)
-    public int sceCodepage_driver_47BDF633(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer8 destAddr, int destLength, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32) TPointer16 srcAddr) {
-    	int result = 0;
+    public int sceCodepage_driver_47BDF633(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer8 destAddr, int destLength, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer16 srcAddr) {
+    	int result = destLength;
 		byte[] bytes = new byte[2];
-    	for (int i = 0, j = 0; true; i += 2, j++) {
+    	for (int i = 0, j = 0; j < destLength; i += 2, j++) {
     		int char16 = srcAddr.getValue(i);
     		if (char16 == 0) {
     			result = j;
@@ -107,6 +107,11 @@ public class sceCodepage extends HLEModule {
     		destAddr.setValue(j, char8);
     	}
 
+    	if (result < destLength) {
+        	// Add trailing '\0'
+    		destAddr.setValue(result, (byte) 0);
+    	}
+
     	return result;
     }
 
@@ -114,5 +119,66 @@ public class sceCodepage extends HLEModule {
     @HLEFunction(nid = 0x014E0C72, version = 150)
     public boolean sceCodepage_driver_014E0C72(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=2, usage=Usage.in) TPointer8 srcAddr) {
     	return false;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC899572E, version = 150)
+    public int sceCodepage_driver_C899572E(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer destAddr, int destLength, String src) {
+    	byte[] destBytes = src.getBytes(charset16);
+    	int length = Math.min(destLength, destBytes.length);
+    	destAddr.setArray(destBytes, length);
+    	// Add trailing "\0\0"
+    	if (length <= destLength - 2) {
+    		destAddr.clear(length, 2);
+    	}
+
+    	return src.length();
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x907CBFD2, version = 150)
+    public int sceCodepage_driver_907CBFD2(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer8 destAddr, int destLength, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer16 srcAddr) {
+    	int result = destLength;
+		byte[] bytes = new byte[2];
+    	for (int i = 0, j = 0; j < destLength; i += 2, j++) {
+    		int char16 = srcAddr.getValue(i);
+    		if (char16 == 0) {
+    			result = j;
+    			break;
+    		}
+
+    		bytes[0] = (byte) char16;
+    		bytes[1] = (byte) (char16 >> 8);
+    		byte char8 = (byte) new String(bytes, charset16).charAt(0);
+
+    		destAddr.setValue(j, char8);
+    	}
+
+    	if (result < destLength) {
+        	// Add trailing '\0'
+    		destAddr.setValue(result, (byte) 0);
+    	}
+
+    	return result;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0AA54D6D, version = 150)
+    public int sceCodepage_driver_0AA54D6D(TPointer32 unknown) {
+    	unknown.setValue(0);
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x266ABDD8, version = 150)
+    public int sceCodepage_driver_266ABDD8() {
+    	// Has no parameters
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xDCD95405, version = 150)
+    public int sceCodepage_driver_DCD95405(int unknown) {
+    	return 0;
     }
 }
