@@ -23,8 +23,11 @@ import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscall;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -49,13 +52,16 @@ import jpcsp.HLE.kernel.types.pspIoDrvArg;
 import jpcsp.HLE.kernel.types.pspIoDrvFileArg;
 import jpcsp.HLE.kernel.types.pspIoDrvFuncs;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
 
 public class sceMSstor extends HLEModule {
     public static Logger log = Modules.getLogger("sceMSstor");
     private byte[] dumpBlocks;
+    private boolean dumpBlocksDirty;
     private byte[] dumpIoIoctl_0x02125803;
     private long position;
+    private final static int sectorSize = 512;
 
     private static class AfterAddDrvController implements IAction {
     	private SceKernelThreadInfo thread;
@@ -93,7 +99,19 @@ public class sceMSstor extends HLEModule {
 		}
     }
 
-    @HLEUnimplemented
+	public void exit() {
+		if (dumpBlocks != null && dumpBlocksDirty) {
+			try {
+				OutputStream os = new FileOutputStream("ms.block");
+				os.write(dumpBlocks);
+				os.close();
+			} catch (FileNotFoundException e) {
+			} catch (IOException e) {
+			}
+		}
+	}
+
+	@HLEUnimplemented
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleMSstorControllerIoInit(pspIoDrvArg drvArg) {
     	return 0;
@@ -120,8 +138,13 @@ public class sceMSstor extends HLEModule {
     			outdata.clear(outlen);
     			break;
     		case 0x201580B:
-    			// inlen == 20
+    			// inlen == 20, outlen == 0
     			break;
+            case 0x02025806: // Check if the device is inserted
+                // 0 = Not inserted.
+                // 1 = Inserted.
+                outdata.setValue32(1);
+            	break;
 			default:
                 log.warn(String.format("hleMSstorControllerIoDevctl 0x%08X unknown command on device '%s'", cmd, devicename));
 				break;
@@ -135,9 +158,302 @@ public class sceMSstor extends HLEModule {
     	return 0;
     }
 
+    private void writeSector(byte[] sector, int offset, int sectorNumber) {
+    	if (dumpBlocks != null) {
+    		System.arraycopy(sector, offset, dumpBlocks, sectorNumber * sectorSize, sectorSize);
+    	}
+    }
+
+    private int getFatSectors(int totalSectors, int sectorsPerCluster) {
+    	int totalClusters = (totalSectors / sectorsPerCluster) + 1;
+    	int fatSectors = (totalClusters / (sectorSize / 4)) + 1;
+
+    	return fatSectors;
+    }
+
+    private void createBootSector(int sectorNumber, int reservedSectors, int totalSectors, int fsInfoSector, int sectorsPerCluster, int numOfFats) {
+    	byte[] sector = new byte[sectorSize];
+
+    	// Jump Code
+    	sector[0] = (byte) 0xEB;
+    	sector[1] = (byte) 0x58;
+    	sector[2] = (byte) 0x90;
+    	// OEM Name
+    	sector[3] = (byte) ' ';
+    	sector[4] = (byte) ' ';
+    	sector[5] = (byte) ' ';
+    	sector[6] = (byte) ' ';
+    	sector[7] = (byte) ' ';
+    	sector[8] = (byte) ' ';
+    	sector[9] = (byte) ' ';
+    	sector[10] = (byte) ' ';
+
+    	// Bytes per sector
+    	sector[11] = (byte) (sectorSize >> 0);
+    	sector[12] = (byte) (sectorSize >> 8);
+
+    	// Sectors per cluster
+    	sector[13] = (byte) sectorsPerCluster;
+
+    	// Reserved sectors
+    	sector[14] = (byte) (reservedSectors >> 0);
+    	sector[15] = (byte) (reservedSectors >> 8);
+
+    	// Number of FATS
+    	sector[16] = (byte) numOfFats;
+
+    	// Max entries in root dir (unused by FAT32)
+    	sector[17] = (byte) 0;
+    	sector[18] = (byte) 0;
+
+    	// Total sectors (use FAT32 count instead)
+    	sector[19] = (byte) 0;
+    	sector[20] = (byte) 0;
+
+    	// Media type
+    	sector[21] = (byte) 0xF8;
+
+    	// Count of sectors used by the FAT table (unused by FAT32)
+    	sector[22] = (byte) 0;
+    	sector[23] = (byte) 0;
+
+    	// Sectors per track (default)
+    	sector[24] = (byte) 0x3F;
+    	sector[25] = (byte) 0;
+
+    	// Heads (default)
+    	sector[26] = (byte) 0xFF;
+    	sector[27] = (byte) 0;
+
+    	// Hidden sectors
+    	sector[28] = (byte) 0;
+    	sector[29] = (byte) 0;
+    	sector[30] = (byte) 0;
+    	sector[31] = (byte) 0;
+
+    	// Total sectors
+    	sector[32] = (byte) (totalSectors >> 0);
+    	sector[33] = (byte) (totalSectors >> 8);
+    	sector[34] = (byte) (totalSectors >> 16);
+    	sector[35] = (byte) (totalSectors >> 24);
+
+    	// BPB_FATz32
+    	final int fatSectors = getFatSectors(totalSectors, sectorsPerCluster);
+    	sector[36] = (byte) (fatSectors >> 0);
+    	sector[37] = (byte) (fatSectors >> 8);
+    	sector[38] = (byte) (fatSectors >> 16);
+    	sector[39] = (byte) (fatSectors >> 24);
+
+    	// BPB_ExtFlags
+    	sector[40] = (byte) 0;
+    	sector[41] = (byte) 0;
+
+    	// BPB_FSVer
+    	sector[42] = (byte) 0;
+    	sector[43] = (byte) 0;
+
+    	// BPB_RootClus
+    	final int rootDirFirstCluster = 2;
+    	sector[44] = (byte) (rootDirFirstCluster >> 0);
+    	sector[45] = (byte) (rootDirFirstCluster >> 8);
+    	sector[46] = (byte) (rootDirFirstCluster >> 16);
+    	sector[47] = (byte) (rootDirFirstCluster >> 24);
+
+    	// BPB_FSInfo
+    	sector[48] = (byte) (fsInfoSector >> 0);
+    	sector[49] = (byte) (fsInfoSector >> 8);
+
+    	// BPB_BkBootSec
+    	sector[50] = (byte) 6;
+    	sector[51] = (byte) 0;
+
+    	// Drive number
+    	sector[64] = (byte) 0;
+
+    	// Boot signature
+    	sector[66] = (byte) 0x29;
+
+    	// Volume ID
+    	sector[67] = (byte) 0x00;
+    	sector[68] = (byte) 0x00;
+    	sector[69] = (byte) 0x00;
+    	sector[70] = (byte) 0x00;
+
+    	// Volume name
+    	sector[71] = (byte) ' ';
+    	sector[72] = (byte) ' ';
+    	sector[73] = (byte) ' ';
+    	sector[74] = (byte) ' ';
+    	sector[75] = (byte) ' ';
+    	sector[76] = (byte) ' ';
+    	sector[77] = (byte) ' ';
+    	sector[78] = (byte) ' ';
+    	sector[79] = (byte) ' ';
+    	sector[80] = (byte) ' ';
+    	sector[81] = (byte) ' ';
+
+    	// File sys type
+    	sector[82] = (byte) 'F';
+    	sector[83] = (byte) 'A';
+    	sector[84] = (byte) 'T';
+    	sector[85] = (byte) '3';
+    	sector[86] = (byte) '2';
+    	sector[87] = (byte) ' ';
+    	sector[88] = (byte) ' ';
+    	sector[89] = (byte) ' ';
+
+    	// Signature
+    	sector[510] = (byte) 0x55;
+    	sector[511] = (byte) 0xAA;
+
+    	writeSector(sector, 0, sectorNumber);
+    }
+
+    private void createFsInfoSector(int sectorNumber) {
+    	byte[] sector = new byte[sectorSize];
+
+    	// FSI_LeadSig
+    	sector[0] = (byte) 0x52;
+    	sector[1] = (byte) 0x52;
+    	sector[2] = (byte) 0x61;
+    	sector[3] = (byte) 0x41;
+
+    	// FSI_StrucSig
+    	sector[484] = (byte) 0x72;
+    	sector[485] = (byte) 0x72;
+    	sector[486] = (byte) 0x41;
+    	sector[487] = (byte) 0x61;
+
+    	// FSI_Free_Count
+    	sector[488] = (byte) 0xFF;
+    	sector[489] = (byte) 0xFF;
+    	sector[490] = (byte) 0xFF;
+    	sector[491] = (byte) 0xFF;
+
+    	// FSI_Nxt_Free
+    	sector[492] = (byte) 0xFF;
+    	sector[493] = (byte) 0xFF;
+    	sector[494] = (byte) 0xFF;
+    	sector[495] = (byte) 0xFF;
+
+    	// Signature
+    	sector[510] = (byte) 0x55;
+    	sector[511] = (byte) 0xAA;
+
+    	writeSector(sector, 0, sectorNumber);
+    }
+
+    private void eraseSectors(int sectorNumber, int count) {
+    	byte[] sector = new byte[sectorSize];
+
+    	for (int i = 0; i < count; i++) {
+    		writeSector(sector, 0, sectorNumber + i);
+    	}
+    }
+
+    private void eraseFat(int sectorNumber, int totalSectors, int sectorsPerCluster, int numOfFats) {
+    	byte[] sector = new byte[sectorSize];
+
+    	// Initialize default allocate / reserved clusters
+    	sector[0] = (byte) 0xF8;
+    	sector[1] = (byte) 0xFF;
+    	sector[2] = (byte) 0xFF;
+    	sector[3] = (byte) 0x0F;
+
+    	sector[4] = (byte) 0xFF;
+    	sector[5] = (byte) 0xFF;
+    	sector[6] = (byte) 0xFF;
+    	sector[7] = (byte) 0xFF;
+
+    	sector[8] = (byte) 0xFF;
+    	sector[9] = (byte) 0xFF;
+    	sector[10] = (byte) 0xFF;
+    	sector[11] = (byte) 0x0F;
+
+    	writeSector(sector, 0, sectorNumber);
+
+    	// Zero remaining FAT sectors
+    	eraseSectors(sectorNumber + 1, getFatSectors(totalSectors, sectorsPerCluster) * numOfFats - 1);
+    }
+
+    private void formatStorage() {
+    	if (dumpBlocks != null) {
+    		Arrays.fill(dumpBlocks, (byte) 0);
+    		dumpBlocksDirty = true;
+    	}
+
+		final int totalSectors = (int) (MemoryStick.getFreeSize() / sectorSize);
+		final int reservedSectors = 32;
+		final int bootSector = 0;
+    	final int fsInfoSector = bootSector + 1;
+    	final int sectorsPerCluster = 64;
+    	final int numOfFats = 2;
+
+    	// Sector 0: Boot sector
+		createBootSector(bootSector, reservedSectors, totalSectors, fsInfoSector, sectorsPerCluster, numOfFats);
+
+		// Initialize FSInfo sector
+		createFsInfoSector(fsInfoSector);
+
+		// Initialize FAT sectors
+		eraseFat(bootSector + reservedSectors, totalSectors, sectorsPerCluster, numOfFats);
+
+		// Erase Root directory
+		eraseSectors(bootSector + reservedSectors + getFatSectors(totalSectors, sectorsPerCluster) * numOfFats, sectorsPerCluster);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleMSstorStorageIoDevctl(pspIoDrvFileArg drvFileArg, PspString devicename, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer indata, int inlen, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outdata, int outlen) {
+    	switch (cmd) {
+    		case 0x02125802:
+    			outdata.setValue32(0); // ???
+    			break;
+    		case 0x0211D814:
+    			// inlen == 4, outlen == 0
+    			break;
+    		case 0x0210D816: // Format Memory Stick
+    			// inlen == 0, outlen == 0
+    			formatStorage();
+    			break;
+            case 0x02025806: // Check if the device is inserted
+                // 0 = Not inserted.
+                // 1 = Inserted.
+                outdata.setValue32(1);
+            	break;
+			default:
+                log.warn(String.format("hleMSstorStorageIoDevctl 0x%08X unknown command on device '%s'", cmd, devicename));
+				break;
+    	}
+    	return 0;
+    }
+
     @HLEUnimplemented
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleMSstorStorageIoOpen(pspIoDrvFileArg drvFileArg, PspString fileName, int flags, int mode) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleMSstorStorageIoIoctl(pspIoDrvFileArg drvFileArg, int cmd, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer indata, int inlen, @CanBeNull @DebugMemory @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outdata, int outlen) {
+    	switch (cmd) {
+			case 0x02125008:
+				outdata.setValue32(1); // 0 or != 0
+				break;
+    		case 0x02125009:
+    			outdata.setValue32(0); // 0 or != 0
+    			break;
+			default:
+                log.warn(String.format("hleMSstorStorageIoIoctl 0x%08X unknown command", cmd));
+				break;
+    	}
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleMSstorStorageIoClose(pspIoDrvFileArg drvFileArg) {
     	return 0;
     }
 
@@ -230,6 +546,17 @@ public class sceMSstor extends HLEModule {
     	return len;
     }
 
+    @HLEUnimplemented
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleMSstorPartitionIoWrite(pspIoDrvFileArg drvFileArg, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer data, int len) {
+    	if (dumpBlocks != null) {
+    		Utilities.readBytes(data.getAddress(), len, dumpBlocks, (int) position);
+    		dumpBlocksDirty = true;
+    	}
+
+    	return len;
+    }
+
     private static byte[] readBytes(String fileName) {
     	byte[] bytes = null;
     	try {
@@ -247,7 +574,7 @@ public class sceMSstor extends HLEModule {
 
     private void installIoFunctions(pspIoDrvFuncs controllerFuncs, pspIoDrvFuncs storageFuncs, pspIoDrvFuncs partitionFuncs) {
     	final int sizeIoFunctionStub = 12;
-    	final int numberIoFunctions = 9;
+    	final int numberIoFunctions = 15;
 		SysMemInfo memInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceMSstor-IoFunctions", SysMemUserForUser.PSP_SMEM_Low, sizeIoFunctionStub * numberIoFunctions, 0);
 		int addr = memInfo.addr;
 
@@ -260,10 +587,19 @@ public class sceMSstor extends HLEModule {
 
 		storageFuncs.ioInit = addr;
 		addr += sizeIoFunctionStub;
+		storageFuncs.ioDevctl = addr;
+		addr += sizeIoFunctionStub;
 		storageFuncs.ioOpen = addr;
 		addr += sizeIoFunctionStub;
+		storageFuncs.ioIoctl = addr;
+		addr += sizeIoFunctionStub;
+		storageFuncs.ioClose = addr;
+		addr += sizeIoFunctionStub;
 		installHLESyscall(storageFuncs.ioInit, this, "hleMSstorStorageIoInit");
+		installHLESyscall(storageFuncs.ioDevctl, this, "hleMSstorStorageIoDevctl");
 		installHLESyscall(storageFuncs.ioOpen, this, "hleMSstorStorageIoOpen");
+		installHLESyscall(storageFuncs.ioIoctl, this, "hleMSstorStorageIoIoctl");
+		installHLESyscall(storageFuncs.ioClose, this, "hleMSstorStorageIoClose");
 
 		partitionFuncs.ioInit = addr;
 		addr += sizeIoFunctionStub;
@@ -279,6 +615,8 @@ public class sceMSstor extends HLEModule {
 		addr += sizeIoFunctionStub;
 		partitionFuncs.ioRead = addr;
 		addr += sizeIoFunctionStub;
+		partitionFuncs.ioWrite = addr;
+		addr += sizeIoFunctionStub;
 		installHLESyscall(partitionFuncs.ioInit, this, "hleMSstorPartitionIoInit");
 		installHLESyscall(partitionFuncs.ioDevctl, this, "hleMSstorPartitionIoDevctl");
 		installHLESyscall(partitionFuncs.ioOpen, this, "hleMSstorPartitionIoOpen");
@@ -286,12 +624,14 @@ public class sceMSstor extends HLEModule {
 		installHLESyscall(partitionFuncs.ioIoctl, this, "hleMSstorPartitionIoIoctl");
 		installHLESyscall(partitionFuncs.ioLseek, this, "hleMSstorPartitionIoLseek");
 		installHLESyscall(partitionFuncs.ioRead, this, "hleMSstorPartitionIoRead");
+		installHLESyscall(partitionFuncs.ioWrite, this, "hleMSstorPartitionIoWrite");
     }
 
     public void installDrivers() {
 		Memory mem = Memory.getInstance();
 
 		dumpBlocks = readBytes("ms.block");
+		dumpBlocksDirty = false;
 		dumpIoIoctl_0x02125803 = readBytes("ms.ioctl.0x02125803");
 
 		pspIoDrv controllerDrv = new pspIoDrv();
