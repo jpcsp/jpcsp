@@ -156,6 +156,11 @@ public class sceRtc extends HLEModule {
         return 0;
     }
 
+    @HLEFunction(nid = 0x9012B140, version = 660)
+    public int sceRtcGetCurrentClockLocalTime_660(TPointer addr) {
+    	return sceRtcGetCurrentClockLocalTime(addr);
+    }
+
     @HLEFunction(nid = 0x34885E0D, version = 150)
     public int sceRtcConvertUtcToLocalTime(TPointer64 utcPtr, TPointer64 localPtr) {
     	// Add the offset of the local time zone to UTC
@@ -304,6 +309,11 @@ public class sceRtc extends HLEModule {
         timeAddr.setValue(dostime);
         
         return 0;
+    }
+
+    @HLEFunction(nid = 0xA4A5BF1B, version = 660)
+    public int sceRtcGetDosTime_660(ScePspDateTime dateTime, TPointer32 timeAddr) {
+    	return sceRtcGetDosTime(dateTime, timeAddr);
     }
 
     @HLEFunction(nid = 0x7ACE4C04, version = 150)
