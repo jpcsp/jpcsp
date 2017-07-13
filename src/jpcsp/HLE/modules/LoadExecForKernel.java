@@ -86,7 +86,7 @@ public class LoadExecForKernel extends HLEModule {
     		} else if (arg.startsWith("ms0:")) {
     	    	int dirIndex = arg.lastIndexOf('/');
     	    	if (dirIndex >= 0) {
-    	    		Modules.IoFileMgrForUserModule.setfilepath(arg.substring(0, dirIndex));
+    	    		Modules.IoFileMgrForUserModule.setfilepath("ms0/" + arg.substring(4, dirIndex));
     	    	}
     		}
     	}
