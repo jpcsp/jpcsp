@@ -654,10 +654,27 @@ public class ModuleMgrForUser extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xF9275D98, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadModuleBufferUsbWlan() {
-        return 0;
+    public int sceKernelLoadModuleBufferUsbWlan(TPointer buffer, int bufSize, int flags, @CanBeNull TPointer optionAddr) {
+        SceKernelLMOption lmOption = null;
+        if (optionAddr.isNotNull()) {
+            lmOption = new SceKernelLMOption();
+            lmOption.read(optionAddr);
+            if (log.isInfoEnabled()) {
+                log.info(String.format("sceKernelLoadModuleBufferUsbWlan options: %s", lmOption));
+            }
+        }
+
+        LoadModuleContext loadModuleContext = new LoadModuleContext();
+        loadModuleContext.fileName = buffer.toString();
+        loadModuleContext.flags = flags;
+        loadModuleContext.buffer = buffer.getAddress();
+        loadModuleContext.bufferSize = bufSize;
+        loadModuleContext.lmOption = lmOption;
+        loadModuleContext.needModuleInfo = true;
+        loadModuleContext.allocMem = true;
+
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }
 
     @HLEFunction(nid = 0x50F0C1EC, version = 150, checkInsideInterrupt = true)
