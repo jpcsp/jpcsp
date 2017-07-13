@@ -23,7 +23,6 @@ import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
-import jpcsp.HLE.DebugMemory;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -3242,7 +3241,7 @@ public class sceNetInet extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xB3888AD4, version = 150)
-	public int sceNetInetGetTcpcbstat(TPointer32 sizeAddr, @DebugMemory @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.out) TPointer buf) {
+	public int sceNetInetGetTcpcbstat(TPointer32 sizeAddr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.out) TPointer buf) {
 		int tcpCount = 0;
     	for (pspInetSocket socket : sockets.values()) {
     		if (socket instanceof pspInetStreamSocket) {

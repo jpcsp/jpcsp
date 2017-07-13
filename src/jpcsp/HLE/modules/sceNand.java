@@ -32,7 +32,6 @@ import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
-import jpcsp.HLE.DebugMemory;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -243,7 +242,7 @@ public class sceNand extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5182C394, version = 150)
-    public int sceNandReadExtraOnly(int ppn, @DebugMemory @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer spare, int len) {
+    public int sceNandReadExtraOnly(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer spare, int len) {
     	if (dumpSpares != null) {
     		Utilities.writeBytes(spare.getAddress(), len * 16, dumpSpares, ppn * 16);
     	} else {
@@ -268,7 +267,7 @@ public class sceNand extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xE05AE88D, version = 150)
-    public int sceNandReadPagesRawExtra(int ppn, @DebugMemory @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len) {
+    public int sceNandReadPagesRawExtra(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len) {
     	return hleNandReadPages(ppn, user, spare, len, true);
     }
 
