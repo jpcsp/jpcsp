@@ -35,9 +35,12 @@ public class MemoryStick {
     // Memory Stick power
     private static boolean msPower = true;
 
-    // available size on memory stick, in bytes.
-    private static long freeSize = 1L * 1024 * 1024 * 1024;	// 1GB
-    private static int sectorSize = 32 * 1024; // 32KB
+    // Total size of the memory stick, in bytes
+//    private final static long totalSize = 64L * 1024 * 1024; // 64MB
+    private final static long totalSize = 16L * 1024 * 1024 * 1024; // 16GB
+    // Free size on memory stick, in bytes
+    private final static long freeSize = 64L * 1024 * 1024;	// 64MB
+    private final static int sectorSize = 32 * 1024; // 32KB
 
     private static boolean locked = false;
 
@@ -67,10 +70,6 @@ public class MemoryStick {
 
 	public static int getFreeSizeKb() {
 		return Utilities.getSizeKb(getFreeSize());
-	}
-
-	public static void setFreeSize(long freeSize) {
-		MemoryStick.freeSize = freeSize;
 	}
 
 	public static int getSectorSize() {
@@ -111,5 +110,9 @@ public class MemoryStick {
 
 	public static void setMsPower(boolean msPower) {
 		MemoryStick.msPower = msPower;
+	}
+
+	public static long getTotalSize() {
+		return totalSize;
 	}
 }

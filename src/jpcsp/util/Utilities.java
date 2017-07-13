@@ -1358,21 +1358,48 @@ public class Utilities {
     }
 
     public static byte[] extendArray(byte[] array, byte[] extend) {
-    	if (extend == null || extend.length == 0) {
+    	if (extend == null) {
+    		return array;
+    	}
+    	return extendArray(array, extend, 0, extend.length);
+    }
+
+    public static byte[] extendArray(byte[] array, byte[] extend, int offset, int length) {
+    	if (length <= 0) {
     		return array;
     	}
 
     	if (array == null) {
-    		array = new byte[extend.length];
-    		System.arraycopy(extend, 0, array, 0, extend.length);
+    		array = new byte[length];
+    		System.arraycopy(extend, offset, array, 0, length);
             return array;
         }
 
-        byte[] newArray = new byte[array.length + extend.length];
+        byte[] newArray = new byte[array.length + length];
         System.arraycopy(array, 0, newArray, 0, array.length);
-        System.arraycopy(extend, 0, newArray, array.length, extend.length);
+        System.arraycopy(extend, offset, newArray, array.length, length);
 
         return newArray;
+    }
+
+    public static byte[] copyToArrayAndExtend(byte[] destination, int destinationOffset, byte[] source, int sourceOffset, int length) {
+    	if (source == null || length <= 0) {
+    		return destination;
+    	}
+
+    	if (destination == null) {
+    		destination = new byte[destinationOffset + length];
+    		System.arraycopy(source, sourceOffset, destination, destinationOffset, length);
+    		return destination;
+    	}
+
+    	if (destinationOffset + length > destination.length) {
+    		destination = extendArray(destination, destinationOffset + length - destination.length);
+    	}
+
+    	System.arraycopy(source, sourceOffset, destination, destinationOffset, length);
+
+    	return destination;
     }
 
     public static String[] add(String[] array, String s) {
@@ -1595,5 +1622,15 @@ public class Utilities {
 		System.arraycopy(a2, 0, a, a1.length, a2.length);
 
 		return a;
+	}
+
+	public static boolean equals(byte[] array1, int offset1, byte[] array2, int offset2, int length) {
+		for (int i = 0; i < length; i++) {
+			if (array1[offset1 + i] != array2[offset2 + i]) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 }

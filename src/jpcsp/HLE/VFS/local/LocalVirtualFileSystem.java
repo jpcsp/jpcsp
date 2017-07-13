@@ -86,7 +86,7 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 	}
 
 	protected File getFile(String fileName) {
-		return new File(localPath + fileName);
+		return new File(fileName == null ? localPath : localPath + fileName);
 	}
 
 	protected static String getMode(int mode) {

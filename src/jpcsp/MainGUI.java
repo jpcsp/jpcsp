@@ -2757,7 +2757,6 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         Modules.ThreadManForUserModule.exit();
         Modules.sceDisplayModule.exit();
         Modules.IoFileMgrForUserModule.exit();
-        Modules.sceMSstorModule.exit();
         VideoEngine.exit();
         Screen.exit();
         Emulator.exit();
