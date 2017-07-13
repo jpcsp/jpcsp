@@ -77,34 +77,15 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
         this.microsecond = microsecond;
     }
 
-    /** @param time MSDOS time, seconds since the epoch/1980. */
-    public static ScePspDateTime fromMSDOSTime(long time) {
-        // Calculate each time parameter.
-        long milliseconds = time / 10000;
-        long days = milliseconds / (24 * 60 * 60 * 1000);
-        milliseconds -= days * (24 * 60 * 60 * 1000);
-        long hours = milliseconds / (60 * 60 * 1000);
-        milliseconds -= hours * (60 * 60 * 1000);
-        long minutes = milliseconds / (60 * 1000);
-        milliseconds -= minutes * (60 * 1000);
-        long seconds = milliseconds / 1000;
-        milliseconds -= seconds * 1000;
-        // Initialize a new calendar and set it for the rigth epoch.
-        Calendar cal = Calendar.getInstance();
-        cal.set(1980, Calendar.JANUARY, 1, 0, 0, 0);
-        cal.add(Calendar.DATE, (int)days);
-        cal.add(Calendar.HOUR_OF_DAY, (int)hours);
-        cal.add(Calendar.MINUTE, (int)minutes);
-        cal.add(Calendar.SECOND, (int)seconds);
-        cal.add(Calendar.MILLISECOND, (int)milliseconds);
-
-        int year = cal.get(Calendar.YEAR);
-        int month = 1 + cal.get(Calendar.MONTH);
-        int day = cal.get(Calendar.DAY_OF_MONTH);
-        int hour = cal.get(Calendar.HOUR_OF_DAY);
-        int minute = cal.get(Calendar.MINUTE);
-        int second = cal.get(Calendar.SECOND);
-        int microsecond = cal.get(Calendar.MILLISECOND) * 1000;
+    /** @param time MSDOS time, as coded in FAT directory entries. */
+    public static ScePspDateTime fromMSDOSTime(int time) {
+        int year = 1980 + ((time >> 25) & 0x7F);
+        int month = (time >> 21) & 0xF;
+        int day = (time >> 16) & 0x1F;
+        int hour = (time >> 11) & 0x1F;
+        int minute = (time >> 5) & 0x3F;
+        int second = ((time >> 0) & 0x1F) << 1; // 2 second resolution
+        int microsecond = 0;
 
         return new ScePspDateTime(year, month, day, hour, minute, second, microsecond);
     }
@@ -121,7 +102,7 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
         milliseconds -= minutes * (60 * 1000);
         long seconds = milliseconds / 1000;
         milliseconds -= seconds * 1000;
-        // Initialize a new calendar and set it for the rigth epoch.
+        // Initialize a new calendar and set it for the right epoch.
         Calendar cal = Calendar.getInstance();
         cal.set(1601, Calendar.JANUARY, 1, 0, 0, 0);
         cal.add(Calendar.DATE, (int)days);
