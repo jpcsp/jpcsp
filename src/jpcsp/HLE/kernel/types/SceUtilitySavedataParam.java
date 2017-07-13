@@ -614,10 +614,6 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         }
     }
 
-    public void save(Memory mem) throws IOException {
-        save(mem, false);
-    }
-
     public void save(Memory mem, boolean secure) throws IOException {
         String path = getBasePath();
 

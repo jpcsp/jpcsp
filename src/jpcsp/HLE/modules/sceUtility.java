@@ -1226,7 +1226,7 @@ public class sceUtility extends HLEModule {
                     }
 
                     try {
-                        savedataParams.save(mem);
+                        savedataParams.save(mem, true);
                         savedataParams.base.result = 0;
                     } catch (IOException e) {
                         savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
@@ -1270,7 +1270,7 @@ public class sceUtility extends HLEModule {
                         }
                         case inProgress: {
                             try {
-                                savedataParams.save(mem);
+                                savedataParams.save(mem, true);
                                 savedataParams.base.result = 0;
                             } catch (IOException e) {
                                 savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
@@ -1355,7 +1355,7 @@ public class sceUtility extends HLEModule {
                                 if (log.isDebugEnabled()) {
                                     log.debug(String.format("Saving savedata %s", savedataParams.saveName));
                                 }
-                                savedataParams.save(mem);
+                                savedataParams.save(mem, true);
                                 savedataParams.base.result = 0;
                             } catch (IOException e) {
                                 savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
