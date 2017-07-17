@@ -2547,6 +2547,20 @@ public class sceDisplay extends HLEModule {
 		return 0;
 	}
 
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9B18DDDD, version = 660)
+	public int sceDisplay_driver_9B18DDDD(int unknown) {
+		// This seems to be related to the registry entry "/CONFIG/DISPLAY/color_space_mode"
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF455917F, version = 660)
+	public int sceDisplay_driver_F455917F(int unknown) {
+		// This seems to be related to the registry entry "/CONFIG/SYSTEM/POWER_SAVING/active_backlight_mode"
+		return 0;
+	}
+
 	public static class BufferInfo {
 
         public int topAddr;
