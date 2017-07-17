@@ -75,6 +75,7 @@ public class HLEModuleManager {
 //			, "flash0:/kd/umd9660.prx"
 //			, "flash0:/kd/lfatfs.prx"
 //			, "flash0:/kd/fatms.prx"
+//			, "flash0:/kd/codepage.prx"
 	};
 
     /**
@@ -84,11 +85,11 @@ public class HLEModuleManager {
      */
     private enum ModuleInfo {
     	SysMemUserForUser(Modules.SysMemUserForUserModule),
-        SysMemForKernel(Modules.SysMemForKernelModule),
     	IoFileMgrForUser(Modules.IoFileMgrForUserModule),
     	IoFileMgrForKernel(Modules.IoFileMgrForKernelModule),
     	ThreadManForUser(Modules.ThreadManForUserModule),
     	ThreadManForKernel(Modules.ThreadManForKernelModule),
+        SysMemForKernel(Modules.SysMemForKernelModule), // To be loaded after ThreadManForUser
     	InterruptManager(Modules.InterruptManagerModule),
     	LoadExecForUser(Modules.LoadExecForUserModule),
     	LoadExecForKernel(Modules.LoadExecForKernelModule),
