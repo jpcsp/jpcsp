@@ -895,4 +895,13 @@ public class SysMemForKernel extends HLEModule {
     public int sceKernelSetAllowReplaceUmd_660(boolean allow) {
     	return sceKernelSetAllowReplaceUmd(allow);
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1404C1AA, version = 660)
+    public int sceKernelSetUmdCacheOn(int umdCacheOn) {
+    	gameInfo.umdCacheOn = umdCacheOn;
+		gameInfo.flags |= 0x200;
+
+    	return 0;
+    }
 }
