@@ -216,7 +216,8 @@ public class HLEModuleManager {
         sceMSstor(Modules.sceMSstorModule),
         sceAta(Modules.sceAtaModule),
         sceGpio(Modules.sceGpioModule),
-        sceNand(Modules.sceNandModule);
+        sceNand(Modules.sceNandModule),
+        sceBSMan(Modules.sceBSManModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
