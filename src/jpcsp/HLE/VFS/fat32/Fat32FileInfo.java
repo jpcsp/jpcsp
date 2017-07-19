@@ -193,11 +193,24 @@ public class Fat32FileInfo {
 		clusters[clusters.length - 1] = cluster;
 	}
 
+	public int getFirstCluster() {
+		if (clusters == null || clusters.length == 0) {
+			return 0;
+		}
+
+		return clusters[0];
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 
-		s.append(getFullFileName());
+		if (getFullFileName() == null) {
+			s.append("[ROOT]");
+		} else {
+			s.append(getFullFileName());
+		}
+
 		if (fileName83 != null) {
 			s.append(String.format("('%s')", fileName83));
 		}

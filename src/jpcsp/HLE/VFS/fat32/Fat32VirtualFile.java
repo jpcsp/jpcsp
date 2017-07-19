@@ -17,10 +17,26 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.VFS.fat32;
 
 import static jpcsp.HLE.VFS.AbstractVirtualFileSystem.IO_ERROR;
+import static jpcsp.HLE.VFS.fat32.Fat32Builder.bootSectorNumber;
+import static jpcsp.HLE.VFS.fat32.Fat32Builder.directoryTableEntrySize;
+import static jpcsp.HLE.VFS.fat32.Fat32Builder.fatSectorNumber;
+import static jpcsp.HLE.VFS.fat32.Fat32Builder.firstClusterNumber;
+import static jpcsp.HLE.VFS.fat32.Fat32Builder.fsInfoSectorNumber;
+import static jpcsp.HLE.VFS.fat32.Fat32Builder.numberOfFats;
+import static jpcsp.HLE.VFS.fat32.Fat32Builder.reservedSectors;
+import static jpcsp.HLE.VFS.fat32.Fat32Builder.sectorsPerCluster;
+import static jpcsp.HLE.VFS.fat32.Fat32Utils.getSectorNumber;
+import static jpcsp.HLE.VFS.fat32.Fat32Utils.getSectorOffset;
+import static jpcsp.HLE.VFS.fat32.Fat32Utils.readSectorInt16;
+import static jpcsp.HLE.VFS.fat32.Fat32Utils.readSectorInt32;
+import static jpcsp.HLE.VFS.fat32.Fat32Utils.readSectorString;
+import static jpcsp.HLE.VFS.fat32.Fat32Utils.storeSectorInt16;
+import static jpcsp.HLE.VFS.fat32.Fat32Utils.storeSectorInt32;
+import static jpcsp.HLE.VFS.fat32.Fat32Utils.storeSectorInt8;
+import static jpcsp.HLE.VFS.fat32.Fat32Utils.storeSectorString;
 import static jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure.charset16;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -28,9 +44,6 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
-import jpcsp.HLE.kernel.types.SceIoDirent;
-import jpcsp.HLE.kernel.types.SceIoStat;
-import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
@@ -41,34 +54,25 @@ import jpcsp.util.Utilities;
 public class Fat32VirtualFile implements IVirtualFile {
 	public static Logger log = Logger.getLogger("fat32");
     public final static int sectorSize = 512;
-    private final static int bootSectorNumber = 0;
-    private final static int fsInfoSectorNumber = bootSectorNumber + 1;
-    private final static int numberOfFats = 2;
-    private final static int reservedSectors = 32;
-	private final static int sectorsPerCluster = 64;
-    private final static int fatSectorNumber = bootSectorNumber + reservedSectors;
-    private final static int directoryTableEntrySize = 32;
-    private final static int firstClusterNumber = 2;
-    private final static int clusterSize = sectorSize * sectorsPerCluster;
+    public final static int CLUSTER_MASK = 0x0FFFFFFF;
     private final byte[] currentSector = new byte[sectorSize];
     private static final byte[] emptySector = new byte[sectorSize];
 	private IVirtualFileSystem vfs;
 	private long position;
     private int totalSectors;
     private int fatSectors;
-    private int firstFreeCluster;
-    private Fat32FileInfo rootDirectory;
     private int[] fatClusterMap;
     private Fat32FileInfo[] fatFileInfoMap;
     private byte[] pendingCreateDirectoryEntryLFN;
     private Map<Integer, byte[]> pendingWriteSectors = new HashMap<Integer, byte[]>();
+    private Map<Integer, Fat32FileInfo> pendingDeleteFiles = new HashMap<Integer, Fat32FileInfo>();
+    private Fat32Builder builder;
 
 	public Fat32VirtualFile(IVirtualFileSystem vfs) {
 		this.vfs = vfs;
 
 		totalSectors = (int) (MemoryStick.getTotalSize() / sectorSize);
 		fatSectors = getFatSectors(totalSectors, sectorsPerCluster);
-		firstFreeCluster = firstClusterNumber;
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("totalSectors=0x%X, fatSectors=0x%X", totalSectors, fatSectors));
@@ -80,15 +84,22 @@ public class Fat32VirtualFile implements IVirtualFile {
 		fatClusterMap[0] = 0x0FFFFFF8; // 0xF8 is matching the boot sector Media type field
 		fatClusterMap[1] = 0x0FFFFFFF;
 
+		// Allocate the FAT file info map
 		fatFileInfoMap = new Fat32FileInfo[fatClusterMap.length];
+
+		builder = new Fat32Builder(this, vfs);
 	}
 
-	private static int getSectorNumber(long position) {
-		return (int) (position / sectorSize);
+	public void scan() {
+		builder.scan();
 	}
 
-	private static int getSectorOffset(long position) {
-		return (int) (position % sectorSize);
+	public void setFatFileInfoMap(int clusterNumber, Fat32FileInfo fileInfo) {
+		fatFileInfoMap[clusterNumber] = fileInfo;
+	}
+
+	public void setFatClusterMap(int clusterNumber, int value) {
+		fatClusterMap[clusterNumber] = value;
 	}
 
 	private int getClusterNumber(int sectorNumber) {
@@ -110,124 +121,19 @@ public class Fat32VirtualFile implements IVirtualFile {
 		return sectorNumber % sectorsPerCluster;
 	}
 
-	public void scan() {
-		// Allocate a whole cluster for the root directory
-		int[] rootDirectoryClusters = allocateClusters(clusterSize);
-		rootDirectory = new Fat32FileInfo(null, null, true, false, null, 0);
-		rootDirectory.setParentDirectory(rootDirectory);
-
-		scan(null, rootDirectory);
-
-		setClusters(rootDirectory, rootDirectoryClusters);
-
-		if (log.isDebugEnabled()) {
-			debugScan(rootDirectory);
-		}
+	private static boolean isFreeClusterNumber(int clusterNumber) {
+		clusterNumber &= CLUSTER_MASK;
+		return clusterNumber == 0;
 	}
 
-	private void debugScan(Fat32FileInfo fileInfo) {
-		log.debug(String.format("scan %s", fileInfo));
-		List<Fat32FileInfo> children = fileInfo.getChildren();
-		if (children != null) {
-			for (Fat32FileInfo child: children) {
-				debugScan(child);
-			}
-		}
+	private static boolean isDataClusterNumber(int clusterNumber) {
+		clusterNumber &= CLUSTER_MASK;
+		return clusterNumber >= 2 && clusterNumber <= 0x0FFFFFEF;
 	}
 
-	private void setClusters(Fat32FileInfo fileInfo, int[] clusters) {
-		if (clusters != null) {
-			for (int i = 0; i < clusters.length; i++) {
-				fatFileInfoMap[clusters[i]] = fileInfo;
-			}
-		}
-		fileInfo.setClusters(clusters);
-	}
-
-	private int allocateCluster() {
-		return firstFreeCluster++;
-	}
-
-	private int[] allocateClusters(long size) {
-		int clusterSize = sectorSize * sectorsPerCluster;
-		int numberClusters = (int) ((size + clusterSize - 1) / clusterSize);
-		if (numberClusters <= 0) {
-			return null;
-		}
-
-		int[] clusters = new int[numberClusters];
-		for (int i = 0; i < numberClusters; i++) {
-			clusters[i] = allocateCluster();
-		}
-
-		// Fill the cluster chain in the cluster map
-		for (int i = 0; i < numberClusters - 1; i++) {
-			// Pointing to the next cluster
-			fatClusterMap[clusters[i]] = clusters[i + 1];
-		}
-		if (numberClusters > 0) {
-			// Last cluster in file (EOC)
-			fatClusterMap[clusters[numberClusters - 1]] = 0x0FFFFFFF;
-		}
-
-		return clusters;
-	}
-
-	private void allocateClusters(Fat32FileInfo fileInfo) {
-		long dataSize = fileInfo.getFileSize();
-		if (fileInfo.isDirectory()) {
-			// Two child entries for "." and ".."
-			int directoryTableEntries = 2;
-
-			List<Fat32FileInfo> children = fileInfo.getChildren();
-			if (children != null) {
-				// TODO: take fake entries into account to support "long filename"
-				directoryTableEntries += children.size();
-			} 
-
-			dataSize = directoryTableEntrySize * directoryTableEntries;
-		}
-
-		int[] clusters = allocateClusters(dataSize);
-		setClusters(fileInfo, clusters);
-	}
-
-	private void scan(String dirName, Fat32FileInfo parent) {
-		String[] names = vfs.ioDopen(dirName);
-		if (names == null || names.length == 0) {
-			return;
-		}
-
-		SceIoStat stat = new SceIoStat();
-		SceIoDirent dir = new SceIoDirent(stat, null);
-		for (int i = 0; i < names.length; i++) {
-			dir.filename = names[i];
-			if (vfs.ioDread(dirName, dir) >= 0) {
-				boolean directory = (dir.stat.attr & 0x10) != 0;
-				boolean readOnly = (dir.stat.mode & 0x2) == 0;
-				Fat32FileInfo fileInfo = new Fat32FileInfo(dirName, dir.filename, directory, readOnly, dir.stat.mtime, dir.stat.size);
-
-				parent.addChild(fileInfo);
-
-				if (directory) {
-					if (dirName == null) {
-						scan(dir.filename, fileInfo);
-					} else {
-						scan(dirName + "/" + dir.filename, fileInfo);
-					}
-				}
-
-				// Allocate the clusters after having scanned the children
-				allocateClusters(fileInfo);
-			}
-		}
-
-		List<Fat32FileInfo> children = parent.getChildren();
-		if (children != null) {
-			for (Fat32FileInfo child: children) {
-				computeFileName83(child, children);
-			}
-		}
+	private static boolean isLastClusterNumber(int clusterNumber) {
+		clusterNumber &= CLUSTER_MASK;
+		return clusterNumber == 0x0FFFFFFF;
 	}
 
 	private int getFatSectors(int totalSectors, int sectorsPerCluster) {
@@ -236,36 +142,6 @@ public class Fat32VirtualFile implements IVirtualFile {
 
     	return fatSectors;
     }
-
-	private static void storeSectorInt32(byte[] sector, int offset, int value) {
-		Utilities.writeUnaligned32(sector, offset, value);
-	}
-
-	private static void storeSectorInt8(byte[] sector, int offset, int value) {
-		sector[offset] = (byte) value;
-	}
-
-	private static void storeSectorInt16(byte[] sector, int offset, int value) {
-		Utilities.writeUnaligned16(sector, offset, value);
-	}
-
-	private static int readSectorInt32(byte[] sector, int offset) {
-		return Utilities.readUnaligned32(sector, offset);
-	}
-
-	private static int readSectorInt16(byte[] sector, int offset) {
-		return Utilities.readUnaligned16(sector, offset);
-	}
-
-	private static void storeSectorString(byte[] sector, int offset, String value, int length) {
-		int stringLength = Math.min(value.length(), length);
-		Utilities.writeStringNZ(sector, offset, stringLength, value);
-
-		// Fill rest with spaces
-		for (int i = stringLength; i < length; i++) {
-			sector[offset + i] = (byte) ' ';
-		}
-	}
 
 	private void readBootSector() {
 		readEmptySector();
@@ -390,320 +266,6 @@ public class Fat32VirtualFile implements IVirtualFile {
 		}
 	}
 
-	private static String convertFileName8_3To83(String fileName8_3) {
-		String name = fileName8_3;
-		String extension = "";
-		int dotIndex = name.indexOf('.');
-		if (dotIndex >= 0) {
-			extension = name.substring(dotIndex + 1);
-			name = name.substring(0, dotIndex);
-		}
-
-		name = (name + "        ").substring(0, 8);
-		extension = (extension + "   ").substring(0, 3);
-
-		return name + extension;
-	}
-
-	private boolean isLongFileName(String fileName8_3, String fileName) {
-		return !fileName8_3.equalsIgnoreCase(fileName);
-	}
-
-	// Convert a "long" file name into a 8.3 file name.
-	public static String convertFileNameTo8_3(String fileName, int collisionIndex) {
-		if (fileName == null) {
-			return null;
-		}
-
-		// Special character '+' is turned into '_'
-		fileName = fileName.replace("+", "_");
-		// File name is upper-cased
-		fileName = fileName.toUpperCase();
-
-		// Split into the name and extension parts
-		int lastDot = fileName.lastIndexOf(".");
-		String name;
-		String ext;
-		if (lastDot < 0) {
-			name = fileName;
-			ext = "";
-		} else {
-			name = fileName.substring(0, lastDot);
-			ext = fileName.substring(lastDot + 1);
-		}
-
-		// All dots in name part are dropped
-		name = name.replace(".", "");
-
-		// The file extension is truncated to 3 characters
-		if (ext.length() > 3) {
-			ext = ext.substring(0, 3);
-		}
-
-		if (collisionIndex >= 1) {
-			if (collisionIndex <= 4) {
-				// The name is truncated to 6 characters, followed by "~N"
-				if (name.length() > 6) {
-					name = name.substring(0, 6);
-				}
-				name += "~" + collisionIndex;
-			} else {
-				// The name is truncated to 2 characters,
-				// followed by 4 hexadecimal digits derived
-				// from an undocumented hash of the filename,
-				// followed by a tilde, followed by a single digit.
-				if (name.length() > 2) {
-					name = name.substring(0, 2);
-				}
-				name += String.format("%04X", collisionIndex) + "~1";
-			}
-		} else if (name.length() > 8) {
-			// The name is truncated to 6 characters (if longer than 8 characters)
-			// followed by "~1"
-			name = name.substring(0, 6) + "~1";
-		}
-
-		if (ext.length() == 0) {
-			return name;
-		}
-		return name + "." + ext;
-	}
-
-	public static String convertFileNameTo8_3(String fileName) {
-		return convertFileNameTo8_3(fileName, 0);
-	}
-
-	public static String convertFileNameTo83(String fileName, int collisionIndex) {
-		String fileName8_3 = convertFileNameTo8_3(fileName, collisionIndex);
-		return convertFileName8_3To83(fileName8_3);
-	}
-
-	private void computeFileName83(Fat32FileInfo fileInfo, List<Fat32FileInfo> siblings) {
-		int collisionIndex = 0;
-		String fileName = fileInfo.getFileName();
-		String fileName83 = convertFileNameTo83(fileName, collisionIndex);
-
-		// Check if the 8.3 file name is not colliding
-		// with other 8.3 file names in the same directory.
-		boolean hasCollision;
-		do {
-			hasCollision = false;
-			for (Fat32FileInfo sibling: siblings) {
-				String siblingFileName83 = sibling.getFileName83();
-				if (siblingFileName83 != null) {
-					if (fileName83.equals(siblingFileName83)) {
-						// 8.3 file name collision
-						collisionIndex++;
-						hasCollision = true;
-						fileName83 = convertFileNameTo83(fileName, collisionIndex);
-						break;
-					}
-				}
-			}
-		} while (hasCollision);
-
-		fileInfo.setFileName83(fileName83);
-	}
-
-	private byte[] addLongFileNameDirectoryEntries(byte[] directoryData, String fileName, int fileNameChecksum) {
-		byte[] fileNameBytes = fileName.getBytes(charset16);
-		int numberEntries = (fileNameBytes.length + 2 + 25) / 26;
-
-		byte[] extend = new byte[numberEntries * 26 - fileNameBytes.length];
-		extend[0] = (byte) 0;
-		extend[1] = (byte) 0;
-		for (int i = 2; i < extend.length; i++) {
-			extend[i] = (byte) 0xFF;
-		}
-		fileNameBytes = Utilities.extendArray(fileNameBytes, extend);
-
-		int offset = directoryData.length;
-		directoryData = Utilities.extendArray(directoryData, directoryTableEntrySize * numberEntries);
-
-		for (int i = numberEntries; i > 0; i--) {
-			int sequenceNumber = i;
-			if (i == numberEntries) {
-				sequenceNumber |= 0x40; // Last LFN entry
-			}
-			storeSectorInt8(directoryData, offset + 0, sequenceNumber);
-
-			// Name characters (five UCS-2 characters)
-			int fileNameBytesOffset = (i - 1) * 26;
-			System.arraycopy(fileNameBytes, fileNameBytesOffset, directoryData, offset + 1, 10);
-			fileNameBytesOffset += 10;
-
-			// Attributes (always 0x0F)
-			storeSectorInt8(directoryData, offset + 11, 0x0F);
-
-			// Type (always 0x00 for VFAT LFN)
-			storeSectorInt8(directoryData, offset + 12, 0x00);
-
-			// Checksum of DOS file name
-			storeSectorInt8(directoryData, offset + 13, fileNameChecksum);
-
-			// Name characters (six UCS-2 characters)
-			System.arraycopy(fileNameBytes, fileNameBytesOffset, directoryData, offset + 14, 12);
-			fileNameBytesOffset += 12;
-
-			// First cluster (always 0)
-			storeSectorInt16(directoryData, offset + 26, 0);
-
-			// Name characters (two UCS-2 characters)
-			System.arraycopy(fileNameBytes, fileNameBytesOffset, directoryData, offset + 28, 4);
-
-			offset += directoryTableEntrySize;
-		}
-
-		return directoryData;
-	}
-
-	private int getFileNameChecksum(String fileName) {
-		int checksum = 0;
-
-		for (int i = 0; i < fileName.length(); i++) {
-			int c = fileName.charAt(i) & 0xFF;
-			checksum = ((checksum & 1) << 7) + (checksum >> 1) + c;
-		}
-
-		return checksum;
-	}
-
-	private byte[] addDirectoryEntry(byte[] directoryData, Fat32FileInfo fileInfo) {
-		String fileName = fileInfo.getFileName();
-		String fileName8_3 = convertFileNameTo8_3(fileName);
-		String fileName83 = convertFileName8_3To83(fileName8_3);
-		if (isLongFileName(fileName8_3, fileName)) {
-			int checksum = getFileNameChecksum(fileName83);
-			directoryData = addLongFileNameDirectoryEntries(directoryData, fileName, checksum);
-		}
-
-		int offset = directoryData.length;
-		directoryData = Utilities.extendArray(directoryData, directoryTableEntrySize);
-
-		storeSectorString(directoryData, offset + 0, fileName83, 8 + 3);
-
-		int fileAttributes = 0x20; // Archive attribute
-		if (fileInfo.isReadOnly()) {
-			fileAttributes |= 0x01; // Read Only attribute
-		}
-		if (fileInfo.isDirectory()) {
-			fileAttributes |= 0x10; // Sub-directory attribute
-		}
-		storeSectorInt8(directoryData, offset + 11, fileAttributes);
-
-		// Has extended attributes?
-		storeSectorInt8(directoryData, offset + 12, 0);
-
-		ScePspDateTime lastModified = fileInfo.getLastModified();
-		storeSectorInt8(directoryData, offset + 13, 0); // Milliseconds always set to 0 by the PSP
-
-		int createTime = lastModified.hour << 11;
-		createTime |= lastModified.minute << 5;
-		createTime |= lastModified.second >> 1;
-		storeSectorInt16(directoryData, offset + 14, createTime);
-
-		int createDate = (lastModified.year - 1980) << 9;
-		createDate |= lastModified.month << 5;
-		createDate |= lastModified.day;
-		storeSectorInt16(directoryData, offset + 16, createDate);
-
-		storeSectorInt16(directoryData, offset + 18, createDate);
-
-		int[] clusters = fileInfo.getClusters();
-		if (clusters != null) {
-			storeSectorInt16(directoryData, offset + 20, clusters[0] >>> 16);
-		} else {
-			storeSectorInt16(directoryData, offset + 20, 0); // Empty file
-		}
-
-		storeSectorInt16(directoryData, offset + 22, createTime);
-		storeSectorInt16(directoryData, offset + 24, createDate);
-
-		if (clusters != null) {
-			storeSectorInt16(directoryData, offset + 26, clusters[0] & 0xFFFF);
-		} else {
-			storeSectorInt16(directoryData, offset + 26, 0); // Empty file
-		}
-
-		storeSectorInt32(directoryData, offset + 28, (int) fileInfo.getFileSize());
-
-		return directoryData;
-	}
-
-	private void buildDotDirectoryEntry(byte[] directoryData, int offset, Fat32FileInfo fileInfo, String dotName, ScePspDateTime alternateLastModified) {
-		storeSectorString(directoryData, offset + 0, dotName, 8 + 3);
-
-		// File attributes: directory
-		storeSectorInt8(directoryData, offset + 11, 0x10);
-
-		// Has extended attributes?
-		storeSectorInt8(directoryData, offset + 12, 0);
-
-		ScePspDateTime lastModified = fileInfo.getLastModified();
-		if (lastModified == null) {
-			// The root directory has no lastModified date/time,
-			// rather use the date/time of the sub-directory.
-			lastModified = alternateLastModified;
-		}
-		storeSectorInt8(directoryData, offset + 13, 0); // Milliseconds, always set to 0 by the PSP
-
-		int createTime = lastModified.hour << 11;
-		createTime |= lastModified.minute << 5;
-		createTime |= lastModified.second >> 1;
-		storeSectorInt16(directoryData, offset + 14, createTime);
-
-		int createDate = (lastModified.year - 1980) << 9;
-		createDate |= lastModified.month << 5;
-		createDate |= lastModified.day;
-		storeSectorInt16(directoryData, offset + 16, createDate);
-
-		storeSectorInt16(directoryData, offset + 18, createDate);
-
-		int[] clusters = fileInfo.getClusters();
-		if (clusters != null) {
-			storeSectorInt16(directoryData, offset + 20, clusters[0] >>> 16);
-		} else {
-			storeSectorInt16(directoryData, offset + 20, 0); // Empty file
-		}
-
-		storeSectorInt16(directoryData, offset + 22, createTime);
-		storeSectorInt16(directoryData, offset + 24, createDate);
-
-		if (clusters != null) {
-			storeSectorInt16(directoryData, offset + 26, clusters[0] & 0xFFFF);
-		} else {
-			storeSectorInt16(directoryData, offset + 26, 0); // Empty file
-		}
-
-		// File size
-		storeSectorInt32(directoryData, offset + 28, 0);
-	}
-
-	private byte[] buildDirectoryData(Fat32FileInfo fileInfo) {
-		byte[] directoryData;
-
-		// Is this the root directory?
-		if (fileInfo.isRootDirectory()) {
-			// The root directory has no "." nor ".." directory entries
-			directoryData = new byte[0];
-		} else {
-			// Non-root directories have "." and ".." directory entries
-			directoryData = new byte[directoryTableEntrySize * 2];
-
-			buildDotDirectoryEntry(directoryData, 0, fileInfo, ".", fileInfo.getLastModified());
-			buildDotDirectoryEntry(directoryData, directoryTableEntrySize, fileInfo.getParentDirectory(), "..", fileInfo.getLastModified());
-		}
-
-		List<Fat32FileInfo> children = fileInfo.getChildren();
-		if (children != null) {
-			for (Fat32FileInfo child : children) {
-				directoryData = addDirectoryEntry(directoryData, child);
-			}
-		}
-
-		return directoryData;
-	}
-
 	private void readDataSector(int sectorNumber) {
 		readEmptySector();
 
@@ -721,7 +283,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 		if (fileInfo.isDirectory()) {
 			byte[] directoryData = fileInfo.getFileData();
 			if (directoryData == null) {
-				directoryData = buildDirectoryData(fileInfo);
+				directoryData = builder.buildDirectoryData(fileInfo);
 				fileInfo.setFileData(directoryData);
 			}
 
@@ -811,15 +373,28 @@ public class Fat32VirtualFile implements IVirtualFile {
 
 		Fat32FileInfo fileInfo = fatFileInfoMap[clusterNumber];
 		if (fileInfo != null) {
-			int newClusterNumber = value & 0x0FFFFFFF;
-			// Setting a new data cluster number?
-			if (newClusterNumber >= 2 && newClusterNumber <= 0x0FFFFFEF) {
-				if (!fileInfo.hasCluster(newClusterNumber)) {
-					fileInfo.addCluster(newClusterNumber);
-					fatFileInfoMap[newClusterNumber] = fileInfo;
+			// Freeing the cluster?
+			if (isFreeClusterNumber(value)) {
+				if (pendingDeleteFiles.containsValue(fileInfo)) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Deleting the file '%s'", fileInfo.getFullFileName()));
+					}
+					int result = vfs.ioRemove(fileInfo.getFullFileName());
+					if (result < 0) {
+						log.warn(String.format("Cannot delete the file '%s'", fileInfo.getFullFileName()));
+					}
 				}
+			} else {
+				// Setting a new data cluster number?
+				if (isDataClusterNumber(value)) {
+					int newClusterNumber = value & CLUSTER_MASK;
+					if (!fileInfo.hasCluster(newClusterNumber)) {
+						fileInfo.addCluster(newClusterNumber);
+						fatFileInfoMap[newClusterNumber] = fileInfo;
+					}
+				}
+				checkPendingWriteSectors(fileInfo);
 			}
-			checkPendingWriteSectors(fileInfo);
 		}
 	}
 
@@ -837,7 +412,15 @@ public class Fat32VirtualFile implements IVirtualFile {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("deleteDirectoryEntry on %s: %s", fileInfo, Utilities.getMemoryDump(directoryData, offset, directoryTableEntrySize)));
 		}
-		// TODO
+
+		String fileName83 = Utilities.readStringNZ(directoryData, offset + 0, 8 + 3);
+
+		Fat32FileInfo childFileInfo = fileInfo.getChildByFileName83(fileName83);
+		if (childFileInfo == null) {
+			log.warn(String.format("deleteDirectoryEntry cannot find child entry '%s' in %s", fileName83, fileInfo));
+		} else {
+			pendingDeleteFiles.put(childFileInfo.getFirstCluster(), childFileInfo);
+		}
 	}
 
 	private void deleteDirectoryEntries(Fat32FileInfo fileInfo, byte[] directoryData, int offset, int length) {
@@ -848,19 +431,6 @@ public class Fat32VirtualFile implements IVirtualFile {
 		for (int i = 0; i < length; i += directoryTableEntrySize) {
 			deleteDirectoryEntry(fileInfo, directoryData, offset + i);
 		}
-	}
-
-	private String extractString(byte[] sector, int offset, int length) {
-		String s = "";
-		// Skip any trailing spaces
-		for (int i = length - 1; i >= 0; i--) {
-			if (sector[offset + i] != (byte) ' ') {
-				s = new String(sector, offset, i + 1);
-				break;
-			}
-		}
-
-		return s;
 	}
 
 	private String getFileNameLFN(byte[] lfn) {
@@ -899,8 +469,8 @@ public class Fat32VirtualFile implements IVirtualFile {
 		if (lfn != null) {
 			fileName = getFileNameLFN(lfn);
 		} else {
-			String name = extractString(sector, offset + 0, 8);
-			String ext = extractString(sector, offset + 8, 3);
+			String name = readSectorString(sector, offset + 0, 8);
+			String ext = readSectorString(sector, offset + 8, 3);
 			if (ext.length() == 0) {
 				fileName = name;
 			} else {
@@ -933,17 +503,42 @@ public class Fat32VirtualFile implements IVirtualFile {
 				log.debug(String.format("createDirectoryEntry fileName='%s', readOnly=%b, directory=%b, clusterNumber=0x%X, fileSize=0x%X", fileName, readOnly, directory, clusterNumber, fileSize));
 			}
 
-			Fat32FileInfo newFileInfo = new Fat32FileInfo(fileInfo.getFullFileName(), fileName, directory, readOnly, null, fileSize);
-			newFileInfo.setFileName83(Utilities.readStringNZ(sector, offset + 0, 8 + 3));
-			if (clusterNumber != 0) {
-				int[] clusters = new int[1];
-				clusters[0] = clusterNumber;
-				newFileInfo.setClusters(clusters);
-				fatFileInfoMap[clusterNumber] = newFileInfo;
-			}
+			Fat32FileInfo pendingDeleteFile = pendingDeleteFiles.remove(clusterNumber);
+			if (pendingDeleteFile != null) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Renaming directory entry %s into '%s'", pendingDeleteFile, fileName));
+				}
+				if (readOnly != pendingDeleteFile.isReadOnly()) {
+					log.warn(String.format("Cannot change read-only attribute of %s", pendingDeleteFile));
+				}
+				if (directory != pendingDeleteFile.isDirectory()) {
+					log.warn(String.format("Cannot change directory attribute of %s", pendingDeleteFile));
+				}
+				if (fileSize != pendingDeleteFile.getFileSize()) {
+					log.warn(String.format("Cannot change file size of %s", pendingDeleteFile));
+				}
+				String oldFullFileName = pendingDeleteFile.getFullFileName();
+				pendingDeleteFile.setFileName(fileName);
+				String newFullFileName = pendingDeleteFile.getFullFileName();
+				int result = vfs.ioRename(oldFullFileName, newFullFileName);
+				if (result < 0) {
+					log.warn(String.format("Cannot rename file '%s' into '%s'", oldFullFileName, newFullFileName));
+				}
+				pendingDeleteFile.setDirectory(directory);
+				pendingDeleteFile.setReadOnly(readOnly);
+				pendingDeleteFile.setFileSize(fileSize);
+			} else {
+				Fat32FileInfo newFileInfo = new Fat32FileInfo(fileInfo.getFullFileName(), fileName, directory, readOnly, null, fileSize);
+				newFileInfo.setFileName83(Utilities.readStringNZ(sector, offset + 0, 8 + 3));
+				if (clusterNumber != 0) {
+					int[] clusters = new int[1];
+					clusters[0] = clusterNumber;
+					newFileInfo.setClusters(clusters);
+					fatFileInfoMap[clusterNumber] = newFileInfo;
+				}
 
-			fileInfo.addChild(newFileInfo);
-			// TODO
+				fileInfo.addChild(newFileInfo);
+			}
 
 			pendingCreateDirectoryEntryLFN = null;
 		}
@@ -973,6 +568,24 @@ public class Fat32VirtualFile implements IVirtualFile {
 				}
 			}
 		}
+	}
+
+	private int[] getClusters(int clusterNumber) {
+		int[] clusters = new int[] { clusterNumber };
+
+		while (true) {
+			int nextCluster = fatClusterMap[clusterNumber];
+			if (isLastClusterNumber(nextCluster)) {
+				break;
+			}
+
+			// Add the nextCluster to the clusters array
+			clusters = Utilities.extendArray(clusters, 1);
+			clusterNumber = nextCluster & CLUSTER_MASK;
+			clusters[clusters.length - 1] = clusterNumber;
+		}
+
+		return clusters;
 	}
 
 	private void updateDirectoryEntry(Fat32FileInfo fileInfo, byte[] directoryData, int directoryDataOffset, byte[] sector, int sectorOffset) {
@@ -1008,10 +621,8 @@ public class Fat32VirtualFile implements IVirtualFile {
 
 			// Update the clusterNumber
 			if (oldClusterNumber != newClusterNumber) {
-				int[] clusters = new int[1];
-				clusters[0] = newClusterNumber;
-				childFileInfo.setClusters(clusters);
-				fatFileInfoMap[newClusterNumber] = childFileInfo;
+				int[] clusters = getClusters(newClusterNumber);
+				builder.setClusters(childFileInfo, clusters);
 
 				// The clusters have been updated for this file,
 				// check if there were pending sector writes in the new
@@ -1021,7 +632,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 		}
 	}
 
-	private boolean isLongFileNameDirectoryEntry(byte[] sector, int offset) {
+	private static boolean isLongFileNameDirectoryEntry(byte[] sector, int offset) {
 		// Attributes (always 0x0F for LFN)
 		return sector[offset + 11] == 0x0F;
 	}
@@ -1067,7 +678,9 @@ public class Fat32VirtualFile implements IVirtualFile {
 		Fat32FileInfo fileInfo = fatFileInfoMap[clusterNumber];
 		if (fileInfo == null) {
 			pendingWriteSectors.put(sectorNumber, currentSector.clone());
-			log.warn(String.format("writeDataSector unknown sectorNumber=0x%X, clusterNumber=0x%X", sectorNumber, clusterNumber));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("writeDataSector pending sectorNumber=0x%X, clusterNumber=0x%X", sectorNumber, clusterNumber));
+			}
 			return;
 		}
 		if (log.isDebugEnabled()) {
@@ -1077,7 +690,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 		if (fileInfo.isDirectory()) {
 			byte[] directoryData = fileInfo.getFileData();
 			if (directoryData == null) {
-				directoryData = buildDirectoryData(fileInfo);
+				directoryData = builder.buildDirectoryData(fileInfo);
 				fileInfo.setFileData(directoryData);
 			}
 
@@ -1092,7 +705,12 @@ public class Fat32VirtualFile implements IVirtualFile {
 					break;
 				}
 
-				if (byteOffset + i >= directoryData.length) {
+				if (currentSector[i + 0] == (byte) 0xE5) {
+					// Deleted file
+					if (byteOffset + i < directoryData.length && directoryData[byteOffset + i + 0] != (byte) 0xE5) {
+						deleteDirectoryEntry(fileInfo, directoryData, byteOffset + i);
+					}
+				} else if (byteOffset + i >= directoryData.length) {
 					createDirectoryEntry(fileInfo, currentSector, i);
 				} else if (!Utilities.equals(directoryData, byteOffset + i, currentSector, i, directoryTableEntrySize)) {
 					updateDirectoryEntry(fileInfo, directoryData, byteOffset + i, currentSector, i);
@@ -1244,6 +862,6 @@ public class Fat32VirtualFile implements IVirtualFile {
 
     @Override
 	public String toString() {
-    	return vfs.toString();
+    	return String.format("%s", vfs);
 	}
 }
