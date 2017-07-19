@@ -29,6 +29,9 @@ import static jpcsp.HLE.modules.ThreadManForUser.LUI;
 import static jpcsp.HLE.modules.ThreadManForUser.LW;
 import static jpcsp.HLE.modules.ThreadManForUser.SW;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -72,6 +75,7 @@ import org.apache.log4j.Logger;
 
 public class ModuleMgrForUser extends HLEModule {
     public static Logger log = Modules.getLogger("ModuleMgrForUser");
+    public static final int SCE_HEADER_LENGTH = 0x40;
 
     public static class LoadModuleContext {
         public String fileName;
@@ -169,39 +173,64 @@ public class ModuleMgrForUser extends HLEModule {
         return -1;
     }
 
+    private byte[] readHeader(LoadModuleContext loadModuleContext) {
+    	byte[] header = new byte[SCE_HEADER_LENGTH + PSP.PSP_HEADER_SIZE];
+
+        if (loadModuleContext.buffer != 0) {
+        	Utilities.readBytes(loadModuleContext.buffer, header.length, header, 0);
+        } else {
+            SeekableDataInput file;
+        	if (loadModuleContext.byUid) {
+        		file = Modules.IoFileMgrForUserModule.getFile(loadModuleContext.uid);
+        	} else {
+        		file = Modules.IoFileMgrForUserModule.getFile(loadModuleContext.fileName, IoFileMgrForUser.PSP_O_RDONLY);
+        	}
+
+        	if (file == null) {
+        		return null;
+        	}
+
+        	try {
+            	long position = file.getFilePointer();
+        		file.readFully(header);
+        		file.seek(position);
+    		} catch (IOException e) {
+    			return null;
+    		} finally {
+    			if (!loadModuleContext.byUid) {
+    	    		try {
+    					file.close();
+    				} catch (IOException e) {
+    					// Ignore exception
+    				}
+    	    	}
+    		}
+        }
+
+        return header;
+    }
+
     private void getModuleNameFromFileContent(LoadModuleContext loadModuleContext) {
     	// Extract the library name from the file itself
         // for files in "~SCE"/"~PSP" format.
-        SeekableDataInput file;
-        if (loadModuleContext.byUid) {
-        	file = Modules.IoFileMgrForUserModule.getFile(loadModuleContext.uid);
-        } else {
-        	file = Modules.IoFileMgrForUserModule.getFile(loadModuleContext.fileName, IoFileMgrForUser.PSP_O_RDONLY);
-        }
-
-    	if (file == null) {
+    	byte[] header = readHeader(loadModuleContext);
+    	if (header == null) {
     		return;
     	}
 
-    	final int sceHeaderLength = 0x40;
-    	byte[] header = new byte[sceHeaderLength + PSP.PSP_HEADER_SIZE];
-    	try {
-        	long position = file.getFilePointer();
-    		file.readFully(header);
-    		file.seek(position);
+		try {
+			ByteBuffer f = ByteBuffer.wrap(header);
 
-    		ByteBuffer f = ByteBuffer.wrap(header);
+			// Skip an optional "~SCE" header
+			int magic = Utilities.readWord(f);
+			if (magic == Loader.SCE_MAGIC) {
+				f.position(SCE_HEADER_LENGTH);
+			} else {
+				f.position(0);
+			}
 
-    		// Skip an optional "~SCE" header
-    		int magic = Utilities.readWord(f);
-    		if (magic == Loader.SCE_MAGIC) {
-    			f.position(sceHeaderLength);
-    		} else {
-    			f.position(0);
-    		}
-
-    		// Retrieve the library name from the "~PSP" header
-    		PSP psp = new PSP(f);
+			// Retrieve the library name from the "~PSP" header
+			PSP psp = new PSP(f);
 			if (psp.isValid()) {
 				String libName = psp.getModname();
 				if (libName != null && libName.length() > 0) {
@@ -215,13 +244,6 @@ public class ModuleMgrForUser extends HLEModule {
 		} catch (IOException e) {
 			// Ignore exception
 		}
-
-    	if (!loadModuleContext.byUid) {
-    		try {
-				file.close();
-			} catch (IOException e) {
-			}
-    	}
     }
 
     public int hleKernelLoadModule(LoadModuleContext loadModuleContext) {
@@ -655,7 +677,7 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xF9275D98, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadModuleBufferUsbWlan(TPointer buffer, int bufSize, int flags, @CanBeNull TPointer optionAddr) {
+    public int sceKernelLoadModuleBufferUsbWlan(int bufSize, @BufferInfo(lengthInfo=LengthInfo.previousParameter, usage=Usage.in) TPointer buffer, int flags, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
