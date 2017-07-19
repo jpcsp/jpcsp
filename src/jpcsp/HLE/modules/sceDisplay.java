@@ -1026,7 +1026,7 @@ public class sceDisplay extends HLEModule {
         frameCount = 0;
         paintFrameCount = 0;
         prevFrameCount = 0;
-        prevFrameCount = 0;
+        prevPaintFrameCount = 0;
         reportCount = 0;
         insideRendering = false;
         framePerSecFactor = 1;
