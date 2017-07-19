@@ -2555,6 +2555,8 @@ public class sceMpeg extends HLEModule {
     }
 
     public int hleMpegAvcDecode(int buffer, int frameWidth, int pixelMode, TPointer32 gotFrameAddr, boolean writeAbgr, TPointer auAddr) {
+    	startVideoDecoderThread();
+
 		int threadUid = Modules.ThreadManForUserModule.getCurrentThreadID();
 		Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_VIDEO_DECODER);
 		videoDecoderThread.trigger(threadUid, buffer, frameWidth, pixelMode, gotFrameAddr, writeAbgr, auAddr, Emulator.getClock().microTime() + avcDecodeDelay);
