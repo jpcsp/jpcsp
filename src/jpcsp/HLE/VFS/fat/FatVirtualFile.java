@@ -14,29 +14,26 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.VFS.fat32;
+package jpcsp.HLE.VFS.fat;
 
 import static jpcsp.HLE.VFS.AbstractVirtualFileSystem.IO_ERROR;
-import static jpcsp.HLE.VFS.fat32.Fat32Builder.bootSectorNumber;
-import static jpcsp.HLE.VFS.fat32.Fat32Builder.directoryTableEntrySize;
-import static jpcsp.HLE.VFS.fat32.Fat32Builder.fatSectorNumber;
-import static jpcsp.HLE.VFS.fat32.Fat32Builder.firstClusterNumber;
-import static jpcsp.HLE.VFS.fat32.Fat32Builder.fsInfoSectorNumber;
-import static jpcsp.HLE.VFS.fat32.Fat32Builder.numberOfFats;
-import static jpcsp.HLE.VFS.fat32.Fat32Builder.reservedSectors;
-import static jpcsp.HLE.VFS.fat32.Fat32Builder.sectorsPerCluster;
-import static jpcsp.HLE.VFS.fat32.Fat32Utils.getSectorNumber;
-import static jpcsp.HLE.VFS.fat32.Fat32Utils.getSectorOffset;
-import static jpcsp.HLE.VFS.fat32.Fat32Utils.readSectorInt16;
-import static jpcsp.HLE.VFS.fat32.Fat32Utils.readSectorInt32;
-import static jpcsp.HLE.VFS.fat32.Fat32Utils.readSectorString;
-import static jpcsp.HLE.VFS.fat32.Fat32Utils.storeSectorInt16;
-import static jpcsp.HLE.VFS.fat32.Fat32Utils.storeSectorInt32;
-import static jpcsp.HLE.VFS.fat32.Fat32Utils.storeSectorInt8;
-import static jpcsp.HLE.VFS.fat32.Fat32Utils.storeSectorString;
+import static jpcsp.HLE.VFS.fat.FatBuilder.bootSectorNumber;
+import static jpcsp.HLE.VFS.fat.FatBuilder.directoryTableEntrySize;
+import static jpcsp.HLE.VFS.fat.FatBuilder.firstClusterNumber;
+import static jpcsp.HLE.VFS.fat.FatBuilder.numberOfFats;
+import static jpcsp.HLE.VFS.fat.FatBuilder.reservedSectors;
+import static jpcsp.HLE.VFS.fat.FatUtils.getSectorNumber;
+import static jpcsp.HLE.VFS.fat.FatUtils.getSectorOffset;
+import static jpcsp.HLE.VFS.fat.FatUtils.readSectorInt16;
+import static jpcsp.HLE.VFS.fat.FatUtils.readSectorInt32;
+import static jpcsp.HLE.VFS.fat.FatUtils.readSectorString;
+import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorInt32;
+import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorInt8;
+import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorString;
 import static jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure.charset16;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -44,35 +41,36 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
-import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
 
-// See format description: https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
-public class Fat32VirtualFile implements IVirtualFile {
-	public static Logger log = Logger.getLogger("fat32");
+//See format description: https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
+public abstract class FatVirtualFile implements IVirtualFile {
+	public static Logger log = Logger.getLogger("fat");
     public final static int sectorSize = 512;
-    public final static int CLUSTER_MASK = 0x0FFFFFFF;
-    private final byte[] currentSector = new byte[sectorSize];
+    protected final byte[] currentSector = new byte[sectorSize];
     private static final byte[] emptySector = new byte[sectorSize];
 	private IVirtualFileSystem vfs;
 	private long position;
-    private int totalSectors;
+	protected int totalSectors;
     private int fatSectors;
-    private int[] fatClusterMap;
-    private Fat32FileInfo[] fatFileInfoMap;
+    protected int[] fatClusterMap;
+    private FatFileInfo[] fatFileInfoMap;
     private byte[] pendingCreateDirectoryEntryLFN;
     private Map<Integer, byte[]> pendingWriteSectors = new HashMap<Integer, byte[]>();
-    private Map<Integer, Fat32FileInfo> pendingDeleteFiles = new HashMap<Integer, Fat32FileInfo>();
-    private Fat32Builder builder;
+    private Map<Integer, FatFileInfo> pendingDeleteFiles = new HashMap<Integer, FatFileInfo>();
+    private FatBuilder builder;
+    private int fatSectorNumber = bootSectorNumber + reservedSectors;
+    private int fsInfoSectorNumber = bootSectorNumber + 1;
 
-	public Fat32VirtualFile(IVirtualFileSystem vfs) {
+	protected FatVirtualFile(IVirtualFileSystem vfs, int totalSectors) {
 		this.vfs = vfs;
 
-		totalSectors = (int) (MemoryStick.getTotalSize() / sectorSize);
-		fatSectors = getFatSectors(totalSectors, sectorsPerCluster);
+		this.totalSectors = totalSectors;
+		fatSectors = getFatSectors(totalSectors, getSectorsPerCluster());
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("totalSectors=0x%X, fatSectors=0x%X", totalSectors, fatSectors));
@@ -81,35 +79,78 @@ public class Fat32VirtualFile implements IVirtualFile {
 		// Allocate the FAT cluster map
 		fatClusterMap = new int[fatSectors * (sectorSize / 4)];
 		// First 2 special entries in the cluster map
-		fatClusterMap[0] = 0x0FFFFFF8; // 0xF8 is matching the boot sector Media type field
-		fatClusterMap[1] = 0x0FFFFFFF;
+		fatClusterMap[0] = 0xFFFFFFF8 & getClusterMask(); // 0xF8 is matching the boot sector Media type field
+		fatClusterMap[1] = 0xFFFFFFFF & getClusterMask();
 
 		// Allocate the FAT file info map
-		fatFileInfoMap = new Fat32FileInfo[fatClusterMap.length];
+		fatFileInfoMap = new FatFileInfo[fatClusterMap.length];
 
-		builder = new Fat32Builder(this, vfs);
+		builder = new FatBuilder(this, vfs);
+	}
+
+	protected abstract int getClusterMask();
+	protected abstract int getSectorsPerCluster();
+	protected abstract int getFatEOC();
+	protected abstract int getFatSectors(int totalSectors, int sectorsPerCluster);
+	protected abstract void readBIOSParameterBlock();
+
+	protected int getClusterSize() {
+		return sectorSize * getSectorsPerCluster();
+	}
+
+	public int getFsInfoSectorNumber() {
+		return fsInfoSectorNumber;
+	}
+
+	public void setFsInfoSectorNumber(int fsInfoSectorNumber) {
+		this.fsInfoSectorNumber = fsInfoSectorNumber;
+	}
+
+	public int getFatSectorNumber() {
+		return fatSectorNumber;
+	}
+
+	public void setFatSectorNumber(int fatSectorNumber) {
+		this.fatSectorNumber = fatSectorNumber;
 	}
 
 	public void scan() {
 		builder.scan();
 	}
 
-	public void setFatFileInfoMap(int clusterNumber, Fat32FileInfo fileInfo) {
+	private void extendClusterMap(int clusterNumber) {
+		int extend = clusterNumber + 1 - fatClusterMap.length;
+		if (extend > 0) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("extendClusterMap clusterNumber=0x%X, extend=0x%X", clusterNumber, extend));
+			}
+			fatClusterMap = Utilities.extendArray(fatClusterMap, extend);
+			fatFileInfoMap = FatUtils.extendArray(fatFileInfoMap, extend);
+		}
+	}
+
+	public void setFatFileInfoMap(int clusterNumber, FatFileInfo fileInfo) {
+		if (clusterNumber >= fatFileInfoMap.length) {
+			extendClusterMap(clusterNumber);
+		}
 		fatFileInfoMap[clusterNumber] = fileInfo;
 	}
 
 	public void setFatClusterMap(int clusterNumber, int value) {
+		if (clusterNumber >= fatClusterMap.length) {
+			extendClusterMap(clusterNumber);
+		}
 		fatClusterMap[clusterNumber] = value;
 	}
 
 	private int getClusterNumber(int sectorNumber) {
 		sectorNumber -= fatSectorNumber;
 		sectorNumber -= numberOfFats * fatSectors;
-		return firstClusterNumber + (sectorNumber / sectorsPerCluster);
+		return firstClusterNumber + (sectorNumber / getSectorsPerCluster());
 	}
 
 	private int getSectorNumberFromCluster(int clusterNumber) {
-		int sectorNumber = (clusterNumber - firstClusterNumber) * sectorsPerCluster;
+		int sectorNumber = (clusterNumber - firstClusterNumber) * getSectorsPerCluster();
 		sectorNumber += fatSectorNumber;
 		sectorNumber += numberOfFats * fatSectors;
 		return sectorNumber;
@@ -118,30 +159,22 @@ public class Fat32VirtualFile implements IVirtualFile {
 	private int getSectorOffsetInCluster(int sectorNumber) {
 		sectorNumber -= fatSectorNumber;
 		sectorNumber -= numberOfFats * fatSectors;
-		return sectorNumber % sectorsPerCluster;
+		return sectorNumber % getSectorsPerCluster();
 	}
 
-	private static boolean isFreeClusterNumber(int clusterNumber) {
-		clusterNumber &= CLUSTER_MASK;
+	private boolean isFreeClusterNumber(int clusterNumber) {
+		clusterNumber &= getClusterMask();
 		return clusterNumber == 0;
 	}
 
-	private static boolean isDataClusterNumber(int clusterNumber) {
-		clusterNumber &= CLUSTER_MASK;
+	private boolean isDataClusterNumber(int clusterNumber) {
+		clusterNumber &= getClusterMask();
 		return clusterNumber >= 2 && clusterNumber <= 0x0FFFFFEF;
 	}
 
-	private static boolean isLastClusterNumber(int clusterNumber) {
-		clusterNumber &= CLUSTER_MASK;
-		return clusterNumber == 0x0FFFFFFF;
+	protected String getOEMName() {
+		return "";
 	}
-
-	private int getFatSectors(int totalSectors, int sectorsPerCluster) {
-    	int totalClusters = (totalSectors / sectorsPerCluster) + 1;
-    	int fatSectors = (totalClusters / (sectorSize / 4)) + 1;
-
-    	return fatSectors;
-    }
 
 	private void readBootSector() {
 		readEmptySector();
@@ -152,78 +185,11 @@ public class Fat32VirtualFile implements IVirtualFile {
     	storeSectorInt8(currentSector, 2, 0x90);
 
     	// OEM Name
-    	storeSectorString(currentSector, 3, "", 8);
+    	storeSectorString(currentSector, 3, getOEMName(), 8);
 
-    	// Bytes per sector
-    	storeSectorInt16(currentSector, 11, sectorSize);
-
-    	// Sectors per cluster
-    	storeSectorInt8(currentSector, 13, sectorsPerCluster);
-
-    	// Reserved sectors
-    	storeSectorInt16(currentSector, 14, reservedSectors);
-
-    	// Number of File Allocation Tables (FATs)
-    	storeSectorInt8(currentSector, 16, numberOfFats);
-
-    	// Max entries in root dir (0 for FAT32)
-    	storeSectorInt16(currentSector, 17, 0);
-
-    	// Total sectors (use FAT32 count instead)
-    	storeSectorInt16(currentSector, 19, 0);
-
-    	// Media type
-    	storeSectorInt8(currentSector, 21, 0xF8); // Fixed disk
-
-    	// Count of sectors used by the FAT table (0 for FAT32)
-    	storeSectorInt16(currentSector, 22, 0);
-
-    	// Sectors per track (default)
-    	storeSectorInt16(currentSector, 24, 0x3F);
-
-    	// Number of heads (default)
-    	storeSectorInt16(currentSector, 26, 0xFF);
-
-    	// Count of hidden sectors
-    	storeSectorInt32(currentSector, 28, 0);
-
-    	// Total sectors
-    	storeSectorInt32(currentSector, 32, totalSectors);
-
-    	// Sectors per FAT
-    	final int fatSectors = getFatSectors(totalSectors, sectorsPerCluster);
-    	storeSectorInt32(currentSector, 36, fatSectors);
-
-    	// Drive description / mirroring flags
-    	storeSectorInt16(currentSector, 40, 0);
-
-    	// Version
-    	storeSectorInt16(currentSector, 42, 0);
-
-    	// Cluster number of root directory start
-    	final int rootDirFirstCluster = 2;
-    	storeSectorInt32(currentSector, 44, rootDirFirstCluster);
-
-    	// Sector number of FS Information Sector
-    	storeSectorInt16(currentSector, 48, fsInfoSectorNumber);
-
-    	// First sector number of a copy of the three FAT32 boot sectors, typically 6.
-    	storeSectorInt16(currentSector, 50, 6);
-
-    	// Drive number
-    	storeSectorInt8(currentSector, 64, 0);
-
-    	// Extended boot signature
-    	storeSectorInt8(currentSector, 66, 0x29);
-
-    	// Volume ID
-    	storeSectorInt32(currentSector, 67, 0x00000000);
-
-    	// Volume label
-    	storeSectorString(currentSector, 71, "", 11);
-
-    	// File system type
-    	storeSectorString(currentSector, 82, "FAT32", 8);
+    	// The format of BIOS Parameter Block is depending on the
+    	// fat format (FAT12, FAT16 or FAT32)
+    	readBIOSParameterBlock();
 
     	// Signature
     	storeSectorInt8(currentSector, 510, 0x55);
@@ -257,21 +223,14 @@ public class Fat32VirtualFile implements IVirtualFile {
     	storeSectorInt8(currentSector, 511, 0xAA);
 	}
 
-	private void readFatSector(int fatIndex) {
-		readEmptySector();
-
-		int offset = (fatIndex * sectorSize) >> 2;
-		for (int i = 0, j = 0; i < sectorSize; i += 4, j++) {
-			storeSectorInt32(currentSector, i, fatClusterMap[offset + j]);
-		}
-	}
+	protected abstract void readFatSector(int fatIndex);
 
 	private void readDataSector(int sectorNumber) {
 		readEmptySector();
 
 		int clusterNumber = getClusterNumber(sectorNumber);
 		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
-		Fat32FileInfo fileInfo = fatFileInfoMap[clusterNumber];
+		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
 		if (fileInfo == null) {
 			log.warn(String.format("readDataSector unknown sectorNumber=0x%X, clusterNumber=0x%X", sectorNumber, clusterNumber));
 			return;
@@ -306,7 +265,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 					if (clusters[i] == clusterNumber) {
 						break;
 					}
-					byteOffset += sectorsPerCluster * sectorSize;
+					byteOffset += getSectorsPerCluster() * sectorSize;
 				}
 			}
 
@@ -329,7 +288,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 		}
 	}
 
-	private void readEmptySector() {
+	protected void readEmptySector() {
 		System.arraycopy(emptySector, 0, currentSector, 0, sectorSize);
 	}
 
@@ -363,7 +322,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 		writeEmptySector();
 	}
 
-	private void writeFatSectorEntry(int clusterNumber, int value) {
+	protected void writeFatSectorEntry(int clusterNumber, int value) {
 		// One entry of the FAT has been updated
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("writeFatSectorEntry[0x%X]=0x%08X", clusterNumber, value));
@@ -371,7 +330,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 
 		fatClusterMap[clusterNumber] = value;
 
-		Fat32FileInfo fileInfo = fatFileInfoMap[clusterNumber];
+		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
 		if (fileInfo != null) {
 			// Freeing the cluster?
 			if (isFreeClusterNumber(value)) {
@@ -379,6 +338,10 @@ public class Fat32VirtualFile implements IVirtualFile {
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("Deleting the file '%s'", fileInfo.getFullFileName()));
 					}
+
+					// Close the file before deleting it
+					closeTree(fileInfo);
+
 					int result = vfs.ioRemove(fileInfo.getFullFileName());
 					if (result < 0) {
 						log.warn(String.format("Cannot delete the file '%s'", fileInfo.getFullFileName()));
@@ -387,7 +350,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 			} else {
 				// Setting a new data cluster number?
 				if (isDataClusterNumber(value)) {
-					int newClusterNumber = value & CLUSTER_MASK;
+					int newClusterNumber = value & getClusterMask();
 					if (!fileInfo.hasCluster(newClusterNumber)) {
 						fileInfo.addCluster(newClusterNumber);
 						fatFileInfoMap[newClusterNumber] = fileInfo;
@@ -398,32 +361,26 @@ public class Fat32VirtualFile implements IVirtualFile {
 		}
 	}
 
-	private void writeFatSector(int fatIndex) {
-		int offset = (fatIndex * sectorSize) >> 2;
-		for (int i = 0, j = 0; i < sectorSize; i += 4, j++) {
-			int fatEntry = readSectorInt32(currentSector, i);
-			if (fatEntry != fatClusterMap[offset + j]) {
-				writeFatSectorEntry(offset + j, fatEntry);
-			}
-		}
-	}
+	protected abstract void writeFatSector(int fatIndex);
 
-	private void deleteDirectoryEntry(Fat32FileInfo fileInfo, byte[] directoryData, int offset) {
+	private void deleteDirectoryEntry(FatFileInfo fileInfo, byte[] directoryData, int offset) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("deleteDirectoryEntry on %s: %s", fileInfo, Utilities.getMemoryDump(directoryData, offset, directoryTableEntrySize)));
 		}
 
-		String fileName83 = Utilities.readStringNZ(directoryData, offset + 0, 8 + 3);
+		if (!isLongFileNameDirectoryEntry(directoryData, offset)) {
+			String fileName83 = Utilities.readStringNZ(directoryData, offset + 0, 8 + 3);
 
-		Fat32FileInfo childFileInfo = fileInfo.getChildByFileName83(fileName83);
-		if (childFileInfo == null) {
-			log.warn(String.format("deleteDirectoryEntry cannot find child entry '%s' in %s", fileName83, fileInfo));
-		} else {
-			pendingDeleteFiles.put(childFileInfo.getFirstCluster(), childFileInfo);
+			FatFileInfo childFileInfo = fileInfo.getChildByFileName83(fileName83);
+			if (childFileInfo == null) {
+				log.warn(String.format("deleteDirectoryEntry cannot find child entry '%s' in %s", fileName83, fileInfo));
+			} else {
+				pendingDeleteFiles.put(childFileInfo.getFirstCluster(), childFileInfo);
+			}
 		}
 	}
 
-	private void deleteDirectoryEntries(Fat32FileInfo fileInfo, byte[] directoryData, int offset, int length) {
+	private void deleteDirectoryEntries(FatFileInfo fileInfo, byte[] directoryData, int offset, int length) {
 		if (directoryData == null || length <= 0 || offset >= directoryData.length) {
 			return;
 		}
@@ -481,7 +438,37 @@ public class Fat32VirtualFile implements IVirtualFile {
 		return fileName;
 	}
 
-	private void createDirectoryEntry(Fat32FileInfo fileInfo, byte[] sector, int offset) {
+	private void closeTree(FatFileInfo fileInfo) {
+		if (fileInfo != null) {
+			fileInfo.closeVirtualFile();
+
+			List<FatFileInfo> children = fileInfo.getChildren();
+			if (children != null) {
+				for (FatFileInfo child: children) {
+					closeTree(child);
+				}
+			}
+		}
+	}
+
+	private int getMode(boolean directory, boolean readOnly) {
+		// Always readable
+		int mode = 0444; // Readable
+
+		// Only directories are executable
+		if (directory) {
+			mode |= 0111; // Executable
+		}
+
+		// Writable when not read-only
+		if (!readOnly) {
+			mode |= 0222; // Writable
+		}
+
+		return mode;
+	}
+
+	private void createDirectoryEntry(FatFileInfo fileInfo, byte[] sector, int offset) {
 		if (offset >= sector.length) {
 			return;
 		}
@@ -499,11 +486,14 @@ public class Fat32VirtualFile implements IVirtualFile {
 			int clusterNumber = readSectorInt16(sector, offset + 20) << 16;
 			clusterNumber |= readSectorInt16(sector, offset + 26);
 			long fileSize = readSectorInt32(sector, offset + 28) & 0xFFFFFFFFL;
+			int time = readSectorInt16(sector, offset + 22);
+			time |= readSectorInt16(sector, offset + 24) << 16;
+			ScePspDateTime lastModified = ScePspDateTime.fromMSDOSTime(time);
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("createDirectoryEntry fileName='%s', readOnly=%b, directory=%b, clusterNumber=0x%X, fileSize=0x%X", fileName, readOnly, directory, clusterNumber, fileSize));
 			}
 
-			Fat32FileInfo pendingDeleteFile = pendingDeleteFiles.remove(clusterNumber);
+			FatFileInfo pendingDeleteFile = pendingDeleteFiles.remove(clusterNumber);
 			if (pendingDeleteFile != null) {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Renaming directory entry %s into '%s'", pendingDeleteFile, fileName));
@@ -520,6 +510,10 @@ public class Fat32VirtualFile implements IVirtualFile {
 				String oldFullFileName = pendingDeleteFile.getFullFileName();
 				pendingDeleteFile.setFileName(fileName);
 				String newFullFileName = pendingDeleteFile.getFullFileName();
+
+				// Close all the files in the directory before renaming it
+				closeTree(pendingDeleteFile);
+
 				int result = vfs.ioRename(oldFullFileName, newFullFileName);
 				if (result < 0) {
 					log.warn(String.format("Cannot rename file '%s' into '%s'", oldFullFileName, newFullFileName));
@@ -527,24 +521,28 @@ public class Fat32VirtualFile implements IVirtualFile {
 				pendingDeleteFile.setDirectory(directory);
 				pendingDeleteFile.setReadOnly(readOnly);
 				pendingDeleteFile.setFileSize(fileSize);
+				pendingDeleteFile.setLastModified(lastModified);
 			} else {
-				Fat32FileInfo newFileInfo = new Fat32FileInfo(fileInfo.getFullFileName(), fileName, directory, readOnly, null, fileSize);
+				FatFileInfo newFileInfo = new FatFileInfo(fileInfo.getFullFileName(), fileName, directory, readOnly, null, fileSize);
+				newFileInfo.setLastModified(lastModified);
 				newFileInfo.setFileName83(Utilities.readStringNZ(sector, offset + 0, 8 + 3));
 				if (clusterNumber != 0) {
-					int[] clusters = new int[1];
-					clusters[0] = clusterNumber;
-					newFileInfo.setClusters(clusters);
-					fatFileInfoMap[clusterNumber] = newFileInfo;
+					int[] clusters = getClusters(clusterNumber);
+					builder.setClusters(newFileInfo, clusters);
 				}
 
 				fileInfo.addChild(newFileInfo);
+
+				if (directory) {
+					vfs.ioMkdir(newFileInfo.getFullFileName(), getMode(directory, readOnly));
+				}
 			}
 
 			pendingCreateDirectoryEntryLFN = null;
 		}
 	}
 
-	private void checkPendingWriteSectors(Fat32FileInfo fileInfo) {
+	private void checkPendingWriteSectors(FatFileInfo fileInfo) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("checkPendingWriteSectors for %s", fileInfo));
 		}
@@ -561,7 +559,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 		for (int i = 0; i < clusters.length; i++) {
 			int clusterNumber = clusters[i];
 			int sectorNumber = getSectorNumberFromCluster(clusterNumber);
-			for (int j = 0; j < sectorsPerCluster; j++, sectorNumber++) {
+			for (int j = 0; j < getSectorsPerCluster(); j++, sectorNumber++) {
 				byte[] pendingWriteSector = pendingWriteSectors.remove(sectorNumber);
 				if (pendingWriteSector != null) {
 					writeFileSector(fileInfo, sectorNumber, pendingWriteSector);
@@ -573,22 +571,22 @@ public class Fat32VirtualFile implements IVirtualFile {
 	private int[] getClusters(int clusterNumber) {
 		int[] clusters = new int[] { clusterNumber };
 
-		while (true) {
+		while (clusterNumber < fatClusterMap.length) {
 			int nextCluster = fatClusterMap[clusterNumber];
-			if (isLastClusterNumber(nextCluster)) {
+			if (!isDataClusterNumber(nextCluster)) {
 				break;
 			}
 
 			// Add the nextCluster to the clusters array
 			clusters = Utilities.extendArray(clusters, 1);
-			clusterNumber = nextCluster & CLUSTER_MASK;
+			clusterNumber = nextCluster & getClusterMask();
 			clusters[clusters.length - 1] = clusterNumber;
 		}
 
 		return clusters;
 	}
 
-	private void updateDirectoryEntry(Fat32FileInfo fileInfo, byte[] directoryData, int directoryDataOffset, byte[] sector, int sectorOffset) {
+	private void updateDirectoryEntry(FatFileInfo fileInfo, byte[] directoryData, int directoryDataOffset, byte[] sector, int sectorOffset) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("updateDirectoryEntry on %s: from %s, to %s", fileInfo, Utilities.getMemoryDump(directoryData, directoryDataOffset, directoryTableEntrySize), Utilities.getMemoryDump(sector, sectorOffset, directoryTableEntrySize)));
 		}
@@ -611,7 +609,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 			log.warn(String.format("updateDirectoryEntry unimplemented change of 8.3. file name: from '%s' to '%s'", oldFileName83, newFileName83));
 		}
 
-		Fat32FileInfo childFileInfo = fileInfo.getChildByFileName83(oldFileName83);
+		FatFileInfo childFileInfo = fileInfo.getChildByFileName83(oldFileName83);
 		if (childFileInfo == null) {
 			log.warn(String.format("updateDirectoryEntry child '%s' not found", oldFileName83));
 		} else {
@@ -632,12 +630,12 @@ public class Fat32VirtualFile implements IVirtualFile {
 		}
 	}
 
-	private static boolean isLongFileNameDirectoryEntry(byte[] sector, int offset) {
+	private static boolean isLongFileNameDirectoryEntry(byte[] directoryData, int offset) {
 		// Attributes (always 0x0F for LFN)
-		return sector[offset + 11] == 0x0F;
+		return directoryData[offset + 11] == 0x0F;
 	}
 
-	private void writeFileSector(Fat32FileInfo fileInfo, int sectorNumber, byte[] sector) {
+	private void writeFileSector(FatFileInfo fileInfo, int sectorNumber, byte[] sector) {
 		int clusterNumber = getClusterNumber(sectorNumber);
 		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
 
@@ -654,7 +652,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 				if (clusters[i] == clusterNumber) {
 					break;
 				}
-				byteOffset += sectorsPerCluster * sectorSize;
+				byteOffset += getClusterSize();
 			}
 		}
 
@@ -675,7 +673,7 @@ public class Fat32VirtualFile implements IVirtualFile {
 	private void writeDataSector(int sectorNumber) {
 		int clusterNumber = getClusterNumber(sectorNumber);
 		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
-		Fat32FileInfo fileInfo = fatFileInfoMap[clusterNumber];
+		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
 		if (fileInfo == null) {
 			pendingWriteSectors.put(sectorNumber, currentSector.clone());
 			if (log.isDebugEnabled()) {
@@ -748,7 +746,8 @@ public class Fat32VirtualFile implements IVirtualFile {
 	public int ioRead(TPointer outputPointer, int outputLength) {
 		int readLength = 0;
 		while (outputLength > 0) {
-			readSector(getSectorNumber(position));
+			int sectorNumber = getSectorNumber(position);
+			readSector(sectorNumber);
 			int sectorOffset = getSectorOffset(position);
 			int sectorLength = sectorSize - sectorOffset;
 			int length = Math.min(sectorLength, outputLength);
@@ -768,7 +767,8 @@ public class Fat32VirtualFile implements IVirtualFile {
 	public int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
 		int readLength = 0;
 		while (outputLength > 0) {
-			readSector(getSectorNumber(position));
+			int sectorNumber = getSectorNumber(position);
+			readSector(sectorNumber);
 			int sectorOffset = getSectorOffset(position);
 			int sectorLength = sectorSize - sectorOffset;
 			int length = Math.min(sectorLength, outputLength);
@@ -794,12 +794,14 @@ public class Fat32VirtualFile implements IVirtualFile {
 
 			if (length != sectorSize) {
 				// Not writing a complete sector, read the current sector
-				readSector(getSectorNumber(position));
+				int sectorNumber = getSectorNumber(position);
+				readSector(sectorNumber);
 			}
 
 			System.arraycopy(inputPointer.getArray8(length), 0, currentSector, sectorOffset, length);
 
-			writeSector(getSectorNumber(position));
+			int sectorNumber = getSectorNumber(position);
+			writeSector(sectorNumber);
 
 			inputLength -= length;
 			inputPointer.add(length);

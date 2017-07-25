@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.HLE.TPointer;
+
 public class SceNandSpare extends pspAbstractMemoryMappedStructure {
 	public int userEcc[] = new int[3];
 	public int reserved1;
@@ -56,6 +58,21 @@ public class SceNandSpare extends pspAbstractMemoryMappedStructure {
 		write8((byte) spareEcc[1]);
 		write8((byte) reserved2[0]);
 		write8((byte) reserved2[1]);
+	}
+
+	public void writeNoUserEcc(TPointer buffer, int offset) {
+		buffer.setValue8(offset + 0, (byte) blockFmt);
+		buffer.setValue8(offset + 1, (byte) blockStat);
+		buffer.setValue16(offset + 2, (short) endianSwap16((short) lbn));
+		buffer.setValue32(offset + 4, id);
+		buffer.setValue8(offset + 8, (byte) spareEcc[0]);
+		buffer.setValue8(offset + 9, (byte) spareEcc[1]);
+		buffer.setValue8(offset + 10, (byte) reserved2[0]);
+		buffer.setValue8(offset + 11, (byte) reserved2[1]);
+	}
+
+	public int sizeofNoEcc() {
+		return 12;
 	}
 
 	@Override

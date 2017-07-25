@@ -14,13 +14,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.VFS.fat32;
+package jpcsp.HLE.VFS.fat;
 
-import static jpcsp.HLE.VFS.fat32.Fat32VirtualFile.sectorSize;
+import static jpcsp.HLE.VFS.fat.Fat32VirtualFile.sectorSize;
 
 import jpcsp.util.Utilities;
 
-public class Fat32Utils {
+public class FatUtils {
 	public static int getSectorNumber(long position) {
 		return (int) (position / sectorSize);
 	}
@@ -49,6 +49,10 @@ public class Fat32Utils {
 		return Utilities.readUnaligned16(sector, offset);
 	}
 
+	public static int readSectorInt8(byte[] sector, int offset) {
+		return Utilities.read8(sector, offset);
+	}
+
 	public static String readSectorString(byte[] sector, int offset, int length) {
 		String s = "";
 		// Skip any trailing spaces
@@ -71,4 +75,15 @@ public class Fat32Utils {
 			sector[offset + i] = (byte) ' ';
 		}
 	}
+
+    public static FatFileInfo[] extendArray(FatFileInfo[] array, int extend) {
+        if (array == null) {
+            return new FatFileInfo[extend];
+        }
+
+        FatFileInfo[] newArray = new FatFileInfo[array.length + extend];
+        System.arraycopy(array, 0, newArray, 0, array.length);
+
+        return newArray;
+    }
 }

@@ -39,7 +39,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
-import jpcsp.HLE.VFS.fat32.Fat32VirtualFile;
+import jpcsp.HLE.VFS.fat.Fat32VirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;

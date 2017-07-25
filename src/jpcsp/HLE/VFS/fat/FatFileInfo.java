@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.VFS.fat32;
+package jpcsp.HLE.VFS.fat;
 
 import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_RDWR;
 
@@ -26,7 +26,7 @@ import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.util.Utilities;
 
-public class Fat32FileInfo {
+public class FatFileInfo {
 	private String dirName;
 	private String fileName;
 	private String fileName83;
@@ -35,13 +35,13 @@ public class Fat32FileInfo {
 	private ScePspDateTime lastModified;
 	private long fileSize;
 	private int[] clusters;
-	private List<Fat32FileInfo> children;
+	private List<FatFileInfo> children;
 	private IVirtualFile vFile;
 	private boolean vFileOpen;
 	private byte[] fileData;
-	private Fat32FileInfo parentDirectory;
+	private FatFileInfo parentDirectory;
 
-	public Fat32FileInfo(String dirName, String fileName, boolean directory, boolean readOnly, ScePspDateTime lastModified, long fileSize) {
+	public FatFileInfo(String dirName, String fileName, boolean directory, boolean readOnly, ScePspDateTime lastModified, long fileSize) {
 		this.dirName = dirName;
 		this.fileName = fileName;
 		this.directory = directory;
@@ -113,16 +113,16 @@ public class Fat32FileInfo {
 		this.clusters = clusters;
 	}
 
-	public void addChild(Fat32FileInfo fileInfo) {
+	public void addChild(FatFileInfo fileInfo) {
 		if (children == null) {
-			children = new LinkedList<Fat32FileInfo>();
+			children = new LinkedList<FatFileInfo>();
 		}
 
 		children.add(fileInfo);
 		fileInfo.setParentDirectory(this);;
 	}
 
-	public List<Fat32FileInfo> getChildren() {
+	public List<FatFileInfo> getChildren() {
 		return children;
 	}
 
@@ -135,6 +135,16 @@ public class Fat32FileInfo {
 		return vFile;
 	}
 
+	public void closeVirtualFile() {
+		if (vFileOpen) {
+			if (vFile != null) {
+				vFile.ioClose();
+				vFile = null;
+			}
+			vFileOpen = false;
+		}
+	}
+
 	public byte[] getFileData() {
 		return fileData;
 	}
@@ -143,11 +153,11 @@ public class Fat32FileInfo {
 		this.fileData = fileData;
 	}
 
-	public Fat32FileInfo getParentDirectory() {
+	public FatFileInfo getParentDirectory() {
 		return parentDirectory;
 	}
 
-	public void setParentDirectory(Fat32FileInfo parentDirectory) {
+	public void setParentDirectory(FatFileInfo parentDirectory) {
 		this.parentDirectory = parentDirectory;
 	}
 
@@ -163,9 +173,9 @@ public class Fat32FileInfo {
 		this.fileName83 = fileName83;
 	}
 
-	public Fat32FileInfo getChildByFileName83(String fileName83) {
+	public FatFileInfo getChildByFileName83(String fileName83) {
 		if (children != null) {
-			for (Fat32FileInfo child : children) {
+			for (FatFileInfo child : children) {
 				String childFileName83 = child.getFileName83();
 				if (childFileName83 != null && fileName83.equals(childFileName83)) {
 					return child;

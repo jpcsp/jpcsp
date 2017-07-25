@@ -37,6 +37,10 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.VFS.fat.Fat12VirtualFile;
+import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceNandSpare;
 import jpcsp.util.Utilities;
 
@@ -50,6 +54,10 @@ public class sceNand extends HLEModule {
     private byte[] dumpBlocks;
     private byte[] dumpSpares;
     private int[] dumpResults;
+    private int[] ppnToLbn = new int[0x10000];
+    private static final boolean emulateNand = true;
+    private Fat12VirtualFile vFile603;
+    private Fat12VirtualFile vFile3;
 
     @Override
 	public void start() {
@@ -59,6 +67,20 @@ public class sceNand extends HLEModule {
 		dumpBlocks = readBytes("nand.block");
 		dumpSpares = readBytes("nand.spare");
 		dumpResults = readInts("nand.result");
+
+		int lbn = 0;
+		for (int ppn = 0; ppn < ppnToLbn.length; ppn++) {
+			if ((ppn % 0x3E00) >= 0x1440 && (ppn % 0x3E00) < 0x1440 + pagesPerBlock * 16) {
+				ppnToLbn[ppn] = 0xFFFF;
+			} else if (ppn >= 0x800) {
+    			ppnToLbn[ppn] = lbn;
+    			if ((ppn % pagesPerBlock) == pagesPerBlock - 1) {
+    				lbn++;
+    			}
+    		} else {
+    			ppnToLbn[ppn] = 0x0000;
+    		}
+		}
 
 		byte[] fuseId = readBytes("nand.fuseid");
 		if (fuseId != null && fuseId.length == 8) {
@@ -135,28 +157,308 @@ public class sceNand extends HLEModule {
     	}
     }
 
-    protected int hleNandReadPages(int ppn, TPointer user, TPointer spare, int len, boolean raw) {
+    private void readMasterBootRecord0(TPointer buffer) {
+    	// First partition entry
+    	int partitionEntry = 446;
+
+    	// Status of physical drive
+    	buffer.setValue8(partitionEntry + 0, (byte) 0x00);
+    	// CHS address of first absolute sector in partition
+    	buffer.setValue8(partitionEntry + 1, (byte) 0x00);
+    	buffer.setValue8(partitionEntry + 2, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 3, (byte) 0x01);
+    	// Partition type
+    	buffer.setValue8(partitionEntry + 4, (byte) 0x05);
+    	// CHS address of last absolute sector in partition
+    	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
+    	buffer.setValue8(partitionEntry + 7, (byte) 0xBE);
+    	// LBA of first absolute sector in the partition
+    	buffer.setUnalignedValue32(partitionEntry + 8, 0x40);
+    	// Number of sectors in partition
+    	buffer.setUnalignedValue32(partitionEntry + 12, 0xEF80);
+
+    	// Boot signature
+    	buffer.setValue8(510, (byte) 0x55);
+    	buffer.setValue8(511, (byte) 0xAA);
+    }
+
+    private void readMasterBootRecord2(TPointer buffer) {
+    	// First partition entry
+    	int partitionEntry = 446;
+
+    	// Status of physical drive
+    	buffer.setValue8(partitionEntry + 0, (byte) 0x00);
+    	// CHS address of first absolute sector in partition
+    	buffer.setValue8(partitionEntry + 1, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 2, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 3, (byte) 0x01);
+    	// Partition type
+    	buffer.setValue8(partitionEntry + 4, (byte) 0x01);
+    	// CHS address of last absolute sector in partition
+    	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
+    	buffer.setValue8(partitionEntry + 7, (byte) 0x00);
+    	// LBA of first absolute sector in the partition
+    	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
+    	// Number of sectors in partition
+    	buffer.setUnalignedValue32(partitionEntry + 12, 0xBFE0);
+
+    	// Second partition entry
+    	partitionEntry += 16;
+
+    	// Status of physical drive
+    	buffer.setValue8(partitionEntry + 0, (byte) 0x00);
+    	// CHS address of first absolute sector in partition
+    	buffer.setValue8(partitionEntry + 1, (byte) 0x00);
+    	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
+    	buffer.setValue8(partitionEntry + 3, (byte) 0x01);
+    	// Partition type
+    	buffer.setValue8(partitionEntry + 4, (byte) 0x05);
+    	// CHS address of last absolute sector in partition
+    	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
+    	buffer.setValue8(partitionEntry + 7, (byte) 0x80);
+    	// LBA of first absolute sector in the partition
+    	buffer.setUnalignedValue32(partitionEntry + 8, 0xC000);
+    	// Number of sectors in partition
+    	buffer.setUnalignedValue32(partitionEntry + 12, 0x2000);
+
+    	// Boot signature
+    	buffer.setValue8(510, (byte) 0x55);
+    	buffer.setValue8(511, (byte) 0xAA);
+    }
+
+    private void readMasterBootRecord602(TPointer buffer) {
+    	// First partition entry
+    	int partitionEntry = 446;
+
+    	// Status of physical drive
+    	buffer.setValue8(partitionEntry + 0, (byte) 0x00);
+    	// CHS address of first absolute sector in partition
+    	buffer.setValue8(partitionEntry + 1, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
+    	buffer.setValue8(partitionEntry + 3, (byte) 0x01);
+    	// Partition type
+    	buffer.setValue8(partitionEntry + 4, (byte) 0x01);
+    	// CHS address of last absolute sector in partition
+    	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
+    	buffer.setValue8(partitionEntry + 7, (byte) 0x80);
+    	// LBA of first absolute sector in the partition
+    	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
+    	// Number of sectors in partition
+    	buffer.setUnalignedValue32(partitionEntry + 12, 0x1FE0);
+
+    	// Second partition entry
+    	partitionEntry += 16;
+
+    	// Status of physical drive
+    	buffer.setValue8(partitionEntry + 0, (byte) 0x00);
+    	// CHS address of first absolute sector in partition
+    	buffer.setValue8(partitionEntry + 1, (byte) 0x00);
+    	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
+    	buffer.setValue8(partitionEntry + 3, (byte) 0x81);
+    	// Partition type
+    	buffer.setValue8(partitionEntry + 4, (byte) 0x05);
+    	// CHS address of last absolute sector in partition
+    	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
+    	buffer.setValue8(partitionEntry + 7, (byte) 0xA0);
+    	// LBA of first absolute sector in the partition
+    	buffer.setUnalignedValue32(partitionEntry + 8, 0xE000);
+    	// Number of sectors in partition
+    	buffer.setUnalignedValue32(partitionEntry + 12, 0x800);
+
+    	// Boot signature
+    	buffer.setValue8(510, (byte) 0x55);
+    	buffer.setValue8(511, (byte) 0xAA);
+    }
+
+    private void readMasterBootRecord702(TPointer buffer) {
+    	// First partition entry
+    	int partitionEntry = 446;
+
+    	// Status of physical drive
+    	buffer.setValue8(partitionEntry + 0, (byte) 0x00);
+    	// CHS address of first absolute sector in partition
+    	buffer.setValue8(partitionEntry + 1, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
+    	buffer.setValue8(partitionEntry + 3, (byte) 0x81);
+    	// Partition type
+    	buffer.setValue8(partitionEntry + 4, (byte) 0x01);
+    	// CHS address of last absolute sector in partition
+    	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
+    	buffer.setValue8(partitionEntry + 7, (byte) 0xA0);
+    	// LBA of first absolute sector in the partition
+    	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
+    	// Number of sectors in partition
+    	buffer.setUnalignedValue32(partitionEntry + 12, 0x7E0);
+
+    	// Second partition entry
+    	partitionEntry += 16;
+
+    	// Status of physical drive
+    	buffer.setValue8(partitionEntry + 0, (byte) 0x00);
+    	// CHS address of first absolute sector in partition
+    	buffer.setValue8(partitionEntry + 1, (byte) 0x00);
+    	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
+    	buffer.setValue8(partitionEntry + 3, (byte) 0xA1);
+    	// Partition type
+    	buffer.setValue8(partitionEntry + 4, (byte) 0x05);
+    	// CHS address of last absolute sector in partition
+    	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
+    	buffer.setValue8(partitionEntry + 7, (byte) 0xBE);
+    	// LBA of first absolute sector in the partition
+    	buffer.setUnalignedValue32(partitionEntry + 8, 0xE800);
+    	// Number of sectors in partition
+    	buffer.setUnalignedValue32(partitionEntry + 12, 0x780);
+
+    	// Boot signature
+    	buffer.setValue8(510, (byte) 0x55);
+    	buffer.setValue8(511, (byte) 0xAA);
+    }
+
+    private void readMasterBootRecord742(TPointer buffer) {
+    	// First partition entry
+    	int partitionEntry = 446;
+
+    	// Status of physical drive
+    	buffer.setValue8(partitionEntry + 0, (byte) 0x00);
+    	// CHS address of first absolute sector in partition
+    	buffer.setValue8(partitionEntry + 1, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
+    	buffer.setValue8(partitionEntry + 3, (byte) 0xA1);
+    	// Partition type
+    	buffer.setValue8(partitionEntry + 4, (byte) 0x01);
+    	// CHS address of last absolute sector in partition
+    	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
+    	buffer.setValue8(partitionEntry + 7, (byte) 0xBE);
+    	// LBA of first absolute sector in the partition
+    	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
+    	// Number of sectors in partition
+    	buffer.setUnalignedValue32(partitionEntry + 12, 0x760);
+
+    	// Boot signature
+    	buffer.setValue8(510, (byte) 0x55);
+    	buffer.setValue8(511, (byte) 0xAA);
+    }
+
+    private void readFile(TPointer buffer, IVirtualFile vFile, int ppn, int lbnStart) {
+    	int lbn = ppnToLbn[ppn];
+    	int sectorNumber = (lbn - lbnStart) * pagesPerBlock + (ppn % pagesPerBlock);
+if (ppn >= 0x1000) {
+	sectorNumber -= pagesPerBlock;
+}
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("readFile ppn=0x%X, lbnStart=0x%X, lbn=0x%X, sectorNumber=0x%X", ppn, lbnStart, lbn, sectorNumber));
+    	}
+    	readFile(buffer, vFile, sectorNumber);
+    }
+
+    private void readFile(TPointer buffer, IVirtualFile vFile, int sectorNumber) {
+    	vFile.ioLseek(sectorNumber * pageSize);
+    	vFile.ioRead(buffer, pageSize);
+    }
+
+    protected int hleNandReadPages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc) {
     	if (user.isNotNull()) {
-	    	if (dumpBlocks != null) {
+	    	if (dumpBlocks != null && !emulateNand) {
 	    		if (scramble != 0) {
 	    			descramble(ppn, user, len, dumpBlocks, ppn * pageSize);
 	    		} else {
 	    			Utilities.writeBytes(user.getAddress(), len * pageSize, dumpBlocks, ppn * pageSize);
 	    		}
 	    	} else {
-	    		user.clear(len * pageSize);
+	    		for (int i = 0; i < len; i++) {
+	    			user.clear(pageSize);
+		    		if ((ppn + i) == 0x80) {
+		    			for (int n = 0; n < 8; n++) {
+		    				user.setValue16(n * 2, (short) (16 + n));
+		    			}
+		    		} else if (ppnToLbn[ppn + i] == 0) {
+		    			// Master Boot Record
+		    			readMasterBootRecord0(user);
+		    		} else if (ppnToLbn[ppn + i] == 2) {
+		    			// Master Boot Record
+		    			readMasterBootRecord2(user);
+		    		} else if (ppnToLbn[ppn + i] >= 0x3 && ppnToLbn[ppn + i] < 0x602) {
+		    			if (vFile3 == null) {
+		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem("flash0/", false);
+		    				vFile3 = new Fat12VirtualFile(vfs);
+		    				vFile3.scan();
+		    			}
+		    			readFile(user, vFile3, ppn + i, 0x3);
+		    		} else if (ppnToLbn[ppn + i] == 0x602) {
+		    			// Master Boot Record
+		    			readMasterBootRecord602(user);
+		    		} else if (ppnToLbn[ppn + i] >= 0x603 && ppnToLbn[ppn + i] < 0x702) {
+		    			if (vFile603 == null) {
+		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem("flash1/", false);
+		    				vFile603 = new Fat12VirtualFile(vfs);
+		    				vFile603.scan();
+		    			}
+		    			readFile(user, vFile603, ppn + i, 0x603);
+		    		} else if (ppnToLbn[ppn + i] == 0x702) {
+		    			// Master Boot Record
+		    			readMasterBootRecord702(user);
+		    		} else if (ppnToLbn[ppn + i] == 0x742) {
+		    			// Master Boot Record
+		    			readMasterBootRecord742(user);
+		    		}
+		    		user.add(pageSize);
+	    		}
 	    	}
     	}
 
     	if (spare.isNotNull()) {
-	    	if (dumpSpares != null) {
-	    		// It doesn't return the userEcc
-	    		for (int i = 0; i < len; i++) {
-	    			Utilities.writeBytes(spare.getAddress() + i * 12, 12, dumpSpares, (ppn + i) * 16);
-	    		}
-	    	} else {
-	    		spare.clear(len * 12);
-	    	}
+        	if (dumpSpares != null && !emulateNand) {
+        		if (spareUserEcc) {
+        			// Write the userEcc
+        			Utilities.writeBytes(spare.getAddress(), len * 16, dumpSpares, ppn * 16);
+        		} else {
+        			// Do not return the userEcc
+    	    		for (int i = 0; i < len; i++) {
+    	    			Utilities.writeBytes(spare.getAddress() + i * 12, 12, dumpSpares, (ppn + i) * 16 + 4);
+    	    		}
+        		}
+        	} else {
+    	    	SceNandSpare sceNandSpare = new SceNandSpare();
+    	    	for (int i = 0; i < len; i++) {
+        			sceNandSpare.blockFmt = (ppn + i) < 0x800 ? 0xFF : 0x00;
+    	    		sceNandSpare.blockStat = 0xFF;
+        			sceNandSpare.lbn = ppnToLbn[ppn + i];
+    	    		if (ppn == 0x80) {
+    	    			sceNandSpare.id = 0x6DC64A38; // For IPL area
+    	    		}
+    	    		sceNandSpare.reserved2[0] = 0xFF;
+    	    		sceNandSpare.reserved2[1] = 0xFF;
+
+    	    		// All values are set to 0xFF when the lbn is 0xFFFF
+    	    		if (sceNandSpare.lbn == 0xFFFF) {
+    	    			sceNandSpare.userEcc[0] = 0xFF;
+    	    			sceNandSpare.userEcc[1] = 0xFF;
+    	    			sceNandSpare.userEcc[2] = 0xFF;
+    	    			sceNandSpare.reserved1 = 0xFF;
+    	    			sceNandSpare.blockFmt = 0xFF;
+    	    			sceNandSpare.blockStat = 0xFF;
+    	    			sceNandSpare.id = 0xFFFFFFFF;
+    	    			sceNandSpare.spareEcc[0] = 0xFF;
+    	    			sceNandSpare.spareEcc[1] = 0xFF;
+    	    			sceNandSpare.reserved2[0] = 0xFF;
+    	    			sceNandSpare.reserved2[1] = 0xFF;
+    	    		}
+
+    	    		if (spareUserEcc) {
+    	    			sceNandSpare.write(spare, i * sceNandSpare.sizeof());
+    	    		} else {
+    	    			sceNandSpare.writeNoUserEcc(spare, i * sceNandSpare.sizeofNoEcc());
+    	    		}
+    	    	}
+        	}
     	}
 
     	int result = 0;
@@ -243,38 +545,26 @@ public class sceNand extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x5182C394, version = 150)
     public int sceNandReadExtraOnly(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer spare, int len) {
-    	if (dumpSpares != null) {
-    		Utilities.writeBytes(spare.getAddress(), len * 16, dumpSpares, ppn * 16);
-    	} else {
-	    	SceNandSpare sceNandSpare = new SceNandSpare();
-	    	for (int i = 0; i < len; i++) {
-	    		sceNandSpare.blockStat = 0xFF;
-	    		sceNandSpare.lbn = 0xFFFF; // Use for bad blocks to point to an alternate block?
-	    		sceNandSpare.id = 0x6DC64A38; // For IPL area
-	    		//sceNandSpare.reserved2[0] = 0x80 | 0x60;
-	    		sceNandSpare.write(spare, i * sceNandSpare.sizeof());
-	    	}
-    	}
-
+    	hleNandReadPages(ppn, TPointer.NULL, spare, len, true, true);
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x89BDCA08, version = 150)
     public int sceNandReadPages(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len) {
-    	return hleNandReadPages(ppn, user, spare, len, false);
+    	return hleNandReadPages(ppn, user, spare, len, false, false);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xE05AE88D, version = 150)
     public int sceNandReadPagesRawExtra(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len) {
-    	return hleNandReadPages(ppn, user, spare, len, true);
+    	return hleNandReadPages(ppn, user, spare, len, true, false);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC32EA051, version = 150)
     public int sceNandReadBlockWithRetry(int ppn, TPointer user, TPointer spare) {
-    	return 0;
+    	return hleNandReadPages(ppn, user, spare, pagesPerBlock, false, false);
     }
 
     @HLEUnimplemented
