@@ -70,6 +70,7 @@ public class HLEModuleManager {
      */
 	private static final String[] moduleFileNamesToBeLoaded = {
 			"flash0:/kd/utility.prx"
+//			, "flash0:/kd/loadexec_01g.prx"
 //			, "flash0:/kd/iofilemgr.prx"
 //			, "flash0:/kd/isofs.prx"
 //			, "flash0:/kd/umd9660.prx"
@@ -109,6 +110,7 @@ public class HLEModuleManager {
         sceAudio(Modules.sceAudioModule),
         sceImpose(Modules.sceImposeModule),
         sceSuspendForUser(Modules.sceSuspendForUserModule),
+        sceSuspendForKernel(Modules.sceSuspendForKernelModule),
         sceDmac(Modules.sceDmacModule),
         sceHprm(Modules.sceHprmModule),		// check if loaded by default
         sceAtrac3plus(Modules.sceAtrac3plusModule, new String[] { "libatrac3plus", "PSP_AV_MODULE_ATRAC3PLUS", "PSP_MODULE_AV_ATRAC3PLUS", "sceATRAC3plus_Library" }, "flash0:/kd/libatrac3plus.prx"),

@@ -54,6 +54,7 @@ public class Modules {
     public static sceAudio sceAudioModule = new sceAudio();
     public static sceImpose sceImposeModule = new sceImpose();
     public static sceSuspendForUser sceSuspendForUserModule = new sceSuspendForUser();
+    public static sceSuspendForKernel sceSuspendForKernelModule = new sceSuspendForKernel();
     public static sceDmac sceDmacModule = new sceDmac();
     public static sceSasCore sceSasCoreModule = new sceSasCore();
     public static sceHprm sceHprmModule = new sceHprm();
