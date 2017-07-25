@@ -82,6 +82,15 @@ public class LocalVirtualFile extends AbstractVirtualFile {
 	        		result = 0;
 	        	}
 				break;
+            // Check if LoadExec is allowed on the device
+            case 0x00208013:
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Checking if LoadExec is allowed on '%s'", this));
+            	}
+            	// Result == 0: LoadExec allowed
+            	// Result != 0: LoadExec prohibited
+            	result = 0;
+            	break;
 			default:
 				result = super.ioIoctl(command, inputPointer, inputLength, outputPointer, outputLength);
 				break;

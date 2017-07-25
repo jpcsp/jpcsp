@@ -2757,7 +2757,16 @@ public class IoFileMgrForUser extends HLEModule {
                     }
                     break;
                 }
-
+                // Check if LoadExec is allowed on the device
+                case 0x00208013: {
+                	if (log.isDebugEnabled()) {
+                		log.debug(String.format("Checking if LoadExec is allowed on '%s'", info));
+                	}
+                	// Result == 0: LoadExec allowed
+                	// Result != 0: LoadExec prohibited
+                	result = 0;
+                	break;
+                }
                 default: {
                 	result = -1;
                     log.warn(String.format("hleIoIoctl 0x%08X unknown command, inlen=%d, outlen=%d", cmd, inlen, outlen));
@@ -4300,6 +4309,16 @@ public class IoFileMgrForUser extends HLEModule {
                     result = 0;
                 }
                 break;
+            }
+            // Check if LoadExec is allowed on the device
+            case 0x00208813: {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Checking if LoadExec is allowed on '%s'", devicename));
+            	}
+            	// Result == 0: LoadExec allowed
+            	// Result != 0: LoadExec prohibited
+            	result = 0;
+            	break;
             }
             default:
                 log.warn(String.format("sceIoDevctl 0x%08X unknown command", cmd));
