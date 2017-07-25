@@ -2830,7 +2830,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 break;
             }
 
-            if (!ignorePSPGame || !umdPath.equals("ms0\\PSP\\GAME")) {
+            if (!ignorePSPGame || !(umdPath.equals("ms0\\PSP\\GAME") || umdPath.equals("ms0/PSP/GAME"))) {
             	umdPaths.add(new File(umdPath + "/"));
             }
         }
