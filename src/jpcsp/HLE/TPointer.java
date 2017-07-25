@@ -72,6 +72,7 @@ final public class TPointer implements ITPointerBase {
 		this.address = address & Memory.addressMask;
 	}
 
+	@Override
 	public Memory getMemory() {
 		return memory;
 	}
@@ -176,6 +177,18 @@ final public class TPointer implements ITPointerBase {
 			memoryWriter.writeNext(bytes[bytesOffset + i] & 0xFF);
 		}
 		memoryWriter.flush();
+	}
+
+	public TPointer getPointer() {
+		return getPointer(0);
+	}
+
+	public TPointer getPointer(int offset) {
+		if (isNull()) {
+			return TPointer.NULL;
+		}
+
+		return new TPointer(getMemory(), getValue32(offset));
 	}
 
 	public void memcpy(int src, int length) {

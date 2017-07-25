@@ -18,7 +18,6 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Memory;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
@@ -108,7 +107,7 @@ public class mp4msv extends HLEModule {
     	if (unknown1.getValue(0) == 0) {
     		return 4;
     	}
-    	TPointer unknown5 = new TPointer(Memory.getInstance(), unknown1.getValue(0));
+    	TPointer unknown5 = unknown1.getPointer(0);
     	if (unknown5.getValue32(184) == 0) {
     		return 0x2003;
     	}

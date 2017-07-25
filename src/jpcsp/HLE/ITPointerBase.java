@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import jpcsp.Memory;
+
 public interface ITPointerBase {
 	/**
 	 * Equivalent to
@@ -59,4 +61,11 @@ public interface ITPointerBase {
 	 *         false if the pointer address is NULL.
 	 */
 	public boolean isNotNull();
+
+	/**
+	 * Returns the Memory instance.
+	 *
+	 * @return the Memory instance
+	 */
+	public Memory getMemory();
 }

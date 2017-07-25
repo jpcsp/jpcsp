@@ -182,7 +182,7 @@ public class sceVideocodec extends HLEModule {
     	int frameBufferWidthCb = frameBufferWidthY / 2;
 
     	Memory mem = buffer.getMemory();
-    	TPointer buffer2 = new TPointer(mem, buffer.getValue32(16));
+    	TPointer buffer2 = buffer.getPointer(16);
     	switch (type) {
     		case 0:
 		    	buffer2.setValue32(8, frameWidth);
@@ -434,7 +434,7 @@ public class sceVideocodec extends HLEModule {
 		            releaseIntBuffer(cb);
 		            releaseIntBuffer(cr);
 
-		        	TPointer mpegAvcYuvStruct = new TPointer(buffer.getMemory(), buffer.getValue32(44));
+		        	TPointer mpegAvcYuvStruct = buffer.getPointer(44);
 		        	for (int i = 0; i < 8; i++) {
 				    	mpegAvcYuvStruct.setValue32(i * 4, buffers[buffersIndex][i]);
 				    	if (log.isTraceEnabled()) {
@@ -458,7 +458,7 @@ public class sceVideocodec extends HLEModule {
 		        	mem.write32(bufferUnknown2 + 24, 0);
 		        	mem.write32(bufferUnknown2 + 28, 0);
 
-		        	TPointer buffer3 = new TPointer(buffer.getMemory(), buffer.getValue32(48));
+		        	TPointer buffer3 = buffer.getPointer(48);
 					buffer3.setValue8(0, (byte) 0x01);
 					buffer3.setValue8(1, (byte) 0xFF);
 		        	buffer3.setValue32(4, 3);
@@ -469,7 +469,7 @@ public class sceVideocodec extends HLEModule {
 		        	buffer3.setValue32(32, 4004); // 4004 or 5005
 		        	buffer3.setValue32(36, 240000);
 
-		        	TPointer decodeSEI = new TPointer(buffer.getMemory(), buffer.getValue32(80));
+		        	TPointer decodeSEI = buffer.getPointer(80);
 		        	decodeSEI.setValue8(0, (byte) 0x02);
 		        	decodeSEI.setValue32(8, sceMpeg.mpegTimestampPerSecond);
 		        	decodeSEI.setValue32(16, sceMpeg.mpegTimestampPerSecond);
@@ -586,7 +586,7 @@ public class sceVideocodec extends HLEModule {
 
     @HLEFunction(nid = 0xC01EC829, version = 150)
     public int sceVideocodecOpen(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
-    	TPointer buffer2 = new TPointer(buffer.getMemory(), buffer.getValue32(16));
+    	TPointer buffer2 = buffer.getPointer(16);
 
     	buffer.setValue32(0, 0x05100601);
 
@@ -725,7 +725,7 @@ public class sceVideocodec extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x627B7D42, version = 150)
     public int sceVideocodecGetSEI(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer, int type) {
-    	TPointer decodeSEI = new TPointer(buffer.getMemory(), buffer.getValue32(80));
+    	TPointer decodeSEI = buffer.getPointer(80);
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceVideocodecGetSEI storing decodeSEI to %s", decodeSEI));
     	}

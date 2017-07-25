@@ -56,4 +56,16 @@ public class TPointer32 extends TPointerBase {
 			pointer.setValue32(offset, value);
 		}
 	}
+
+	public TPointer getPointer() {
+		return getPointer(0);
+	}
+
+	public TPointer getPointer(int offset) {
+		if (isNull()) {
+			return TPointer.NULL;
+		}
+
+		return new TPointer(getMemory(), getValue(offset));
+	}
 }
