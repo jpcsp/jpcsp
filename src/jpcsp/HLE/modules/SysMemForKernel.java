@@ -651,6 +651,7 @@ public class SysMemForKernel extends HLEModule {
     	if (uid <= 0) {
     		return SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
     	}
+    	mem.memset(uid, (byte) 0, sceSysmemUidCBType.childSize << 2);
 
     	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
     	sceSysmemUidCB.allocAndSetName(uidHeap, name);
