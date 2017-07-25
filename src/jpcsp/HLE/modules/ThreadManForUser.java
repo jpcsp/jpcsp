@@ -70,6 +70,9 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SEMA;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_VPL;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
+import static jpcsp.Memory.addressMask;
+import static jpcsp.MemoryMap.END_KERNEL;
+import static jpcsp.MemoryMap.START_KERNEL;
 import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.writeStringZ;
 
@@ -1285,6 +1288,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public boolean isKernelMode() {
+    	// Running code in the kernel memory area?
+    	int pc = RuntimeContext.getPc() & addressMask;
+    	if (pc >= (START_KERNEL & addressMask) && pc <= (END_KERNEL & addressMask)) {
+    		return true;
+    	}
+
     	return currentThread.isKernelMode();
     }
 
@@ -2263,7 +2272,7 @@ public class ThreadManForUser extends HLEModule {
 
     	if (id != SysMemUserForUser.USER_PARTITION_ID && id != SysMemUserForUser.VSHELL_PARTITION_ID) {
     		// Accept KERNEL_PARTITION_ID for threads running in kernel mode.
-    		if (id != SysMemUserForUser.KERNEL_PARTITION_ID || !currentThread.isKernelMode()) {
+    		if (id != SysMemUserForUser.KERNEL_PARTITION_ID || !isKernelMode()) {
     			throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_ILLEGAL_PERMISSION);
     		}
     	}

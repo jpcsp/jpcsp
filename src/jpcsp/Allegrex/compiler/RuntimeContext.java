@@ -1493,4 +1493,8 @@ public class RuntimeContext {
     public static int[] getMemoryInt() {
     	return memoryInt;
     }
+
+    public static int getPc() {
+    	return Emulator.getProcessor().cpu.pc;
+    }
 }

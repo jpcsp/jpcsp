@@ -82,7 +82,6 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.StringInfo;
-import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.TErrorPointer32;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
@@ -1973,14 +1972,14 @@ public class CompilerContext implements ICompilerContext {
     		}
 	        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(syscallAddr, instanceIndex), getStaticExecMethodName(), getStaticExecMethodDesc());
     	} else {
-        	if (code == SyscallHandler.syscallUnmappedImport) {
-        		storePc();
-        	}
-
     		HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
 
     		boolean fastSyscall = isFastSyscall(code);
-        	if (func == null) {
+    		if (!fastSyscall) {
+    			storePc();
+    		}
+
+    		if (func == null) {
     	    	loadImm(code);
     	    	if (fastSyscall) {
     	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)V");

@@ -16,6 +16,8 @@
  */
 package jpcsp;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.getPc;
+
 import java.io.File;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -169,7 +171,7 @@ public abstract class Memory {
     }
 
     public void invalidMemoryAddress(int address, String prefix, int status) {
-        String message = String.format("%s - Invalid memory address: 0x%08X PC=0x%08X", prefix, address, Emulator.getProcessor().cpu.pc);
+        String message = String.format("%s - Invalid memory address: 0x%08X PC=0x%08X", prefix, address, getPc());
 
         if (ignoreInvalidMemoryAccess) {
             log.warn("IGNORED: " + message);
@@ -180,7 +182,7 @@ public abstract class Memory {
     }
 
     public void invalidMemoryAddress(int address, int length, String prefix, int status) {
-        String message = String.format("%s - Invalid memory address: 0x%08X-0x%08X(length=0x%X) PC=0x%08X", prefix, address, address + length, length, Emulator.getProcessor().cpu.pc);
+        String message = String.format("%s - Invalid memory address: 0x%08X-0x%08X(length=0x%X) PC=0x%08X", prefix, address, address + length, length, getPc());
 
         if (ignoreInvalidMemoryAccess) {
             log.warn("IGNORED: " + message);
