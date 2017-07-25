@@ -65,8 +65,20 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 
 public class Utilities {
-
     private static final int[] round4 = {0, 3, 2, 1};
+    private static final String lineSeparator = System.getProperty("line.separator");
+    private static final char[] lineTemplate = (lineSeparator + "0x00000000 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  >................<").toCharArray();
+    private static final char[] hexDigits = "0123456789ABCDEF".toCharArray();
+    private static final char[] ascii = new char[256];
+	static {
+		for (int i = 0; i < ascii.length; i++) {
+			char c = (char) i;
+	        if (c < ' ' || c > '~') {
+	            c = '.';
+	        }
+	        ascii[i] = c;
+		}
+	}
 
     public static String formatString(String type, String oldstring) {
         int counter = 0;
@@ -698,25 +710,19 @@ public class Utilities {
     private static void addAsciiDump(StringBuilder dump, IMemoryReader charReader, int bytesPerLine) {
         dump.append("  >");
         for (int i = 0; i < bytesPerLine; i++) {
-            char c = (char) charReader.readNext();
-            if (c < ' ' || c > '~') {
-                c = '.';
-            }
-            dump.append(c);
+        	dump.append(ascii[charReader.readNext()]);
         }
         dump.append("<");
     }
 
     private static String getMemoryDump(int address, int length, int step, int bytesPerLine, IMemoryReader memoryReader, IMemoryReader charReader) {
         StringBuilder dump = new StringBuilder();
-        String lineSeparator = System.getProperty("line.separator");
 
         if (length < bytesPerLine) {
             bytesPerLine = length;
         }
 
         String format = String.format(" %%0%dX", step * 2);
-        boolean startOfLine = true;
         for (int i = 0; i < length; i += step) {
             if ((i % bytesPerLine) < step) {
                 if (i > 0) {
@@ -724,11 +730,7 @@ public class Utilities {
                     addAsciiDump(dump, charReader, bytesPerLine);
                 }
                 dump.append(lineSeparator);
-                startOfLine = true;
-            }
-            if (startOfLine) {
                 dump.append(String.format("0x%08X", address + i));
-                startOfLine = false;
             }
 
             int value = memoryReader.readNext();
@@ -765,8 +767,133 @@ public class Utilities {
         return dump.toString();
     }
 
+    // Optimize the most common case
+    private static String getMemoryDump(int[] memoryInt, int address, int length) {
+    	final int numberLines = length >> 4;
+    	final char[] chars = new char[numberLines * lineTemplate.length];
+    	final int lineOffset = lineSeparator.length() + 2;
+    	address &= Memory.addressMask;
+
+    	for (int i = 0, j = 0, a = address >> 2; i < numberLines; i++, j += lineTemplate.length, address += 16) {
+    		System.arraycopy(lineTemplate, 0, chars, j, lineTemplate.length);
+
+    		// Address field
+    		int k = j + lineOffset;
+    		chars[k++] = hexDigits[(address >> 28)      ];
+    		chars[k++] = hexDigits[(address >> 24) & 0xF];
+    		chars[k++] = hexDigits[(address >> 20) & 0xF];
+    		chars[k++] = hexDigits[(address >> 16) & 0xF];
+    		chars[k++] = hexDigits[(address >> 12) & 0xF];
+    		chars[k++] = hexDigits[(address >>  8) & 0xF];
+    		chars[k++] = hexDigits[(address >>  4) & 0xF];
+    		chars[k++] = hexDigits[(address      ) & 0xF];
+    		k++;
+
+    		// First 32-bit value
+    		int value = memoryInt[a++];
+    		if (value != 0) {
+	    		chars[k++] = hexDigits[(value >>   4) & 0xF];
+	    		chars[k++] = hexDigits[(value       ) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>  12) & 0xF];
+	    		chars[k++] = hexDigits[(value >>   8) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>  20) & 0xF];
+	    		chars[k++] = hexDigits[(value >>  16) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>> 28)      ];
+	    		chars[k++] = hexDigits[(value >>  24) & 0xF];
+	    		k++;
+
+	    		chars[k + 38] = ascii[(value       ) & 0xFF];
+	    		chars[k + 39] = ascii[(value >>   8) & 0xFF];
+	    		chars[k + 40] = ascii[(value >>  16) & 0xFF];
+	    		chars[k + 41] = ascii[(value >>> 24)       ];
+    		} else {
+    			k += 12;
+    		}
+
+    		// Second 32-bit value
+    		value = memoryInt[a++];
+    		if (value != 0) {
+	    		chars[k++] = hexDigits[(value >>   4) & 0xF];
+	    		chars[k++] = hexDigits[(value       ) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>  12) & 0xF];
+	    		chars[k++] = hexDigits[(value >>   8) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>  20) & 0xF];
+	    		chars[k++] = hexDigits[(value >>  16) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>> 28)      ];
+	    		chars[k++] = hexDigits[(value >>  24) & 0xF];
+	    		k++;
+
+	    		chars[k + 30] = ascii[(value       ) & 0xFF];
+	    		chars[k + 31] = ascii[(value >>   8) & 0xFF];
+	    		chars[k + 32] = ascii[(value >>  16) & 0xFF];
+	    		chars[k + 33] = ascii[(value >>> 24)       ];
+    		} else {
+    			k += 12;
+    		}
+
+    		// Third 32-bit value
+    		value = memoryInt[a++];
+    		if (value != 0) {
+	    		chars[k++] = hexDigits[(value >>   4) & 0xF];
+	    		chars[k++] = hexDigits[(value       ) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>  12) & 0xF];
+	    		chars[k++] = hexDigits[(value >>   8) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>  20) & 0xF];
+	    		chars[k++] = hexDigits[(value >>  16) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>> 28)      ];
+	    		chars[k++] = hexDigits[(value >>  24) & 0xF];
+	    		k++;
+
+	    		chars[k + 22] = ascii[(value       ) & 0xFF];
+	    		chars[k + 23] = ascii[(value >>   8) & 0xFF];
+	    		chars[k + 24] = ascii[(value >>  16) & 0xFF];
+	    		chars[k + 25] = ascii[(value >>> 24)       ];
+    		} else {
+    			k += 12;
+    		}
+
+    		// Fourth 32-bit value
+    		value = memoryInt[a++];
+    		if (value != 0) {
+	    		chars[k++] = hexDigits[(value >>   4) & 0xF];
+	    		chars[k++] = hexDigits[(value       ) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>  12) & 0xF];
+	    		chars[k++] = hexDigits[(value >>   8) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>  20) & 0xF];
+	    		chars[k++] = hexDigits[(value >>  16) & 0xF];
+	    		k++;
+	    		chars[k++] = hexDigits[(value >>> 28)      ];
+	    		chars[k++] = hexDigits[(value >>  24) & 0xF];
+	    		k += 15;
+
+	    		chars[k++] = ascii[(value       ) & 0xFF];
+	    		chars[k++] = ascii[(value >>   8) & 0xFF];
+	    		chars[k++] = ascii[(value >>  16) & 0xFF];
+	    		chars[k  ] = ascii[(value >>> 24)       ];
+    		}
+    	}
+
+    	return new String(chars);
+    }
+
     public static String getMemoryDump(int address, int length) {
-        // Convenience function using default step and bytesPerLine
+    	if (RuntimeContext.hasMemoryInt() && (length & 0xF) == 0 && (address & 0x3) == 0) {
+    	    // The most common case has been optimized
+    		return getMemoryDump(RuntimeContext.getMemoryInt(), address, length);
+    	}
+
+    	// Convenience function using default step and bytesPerLine
         return getMemoryDump(address, length, 1, 16);
     }
 
