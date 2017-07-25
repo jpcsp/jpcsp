@@ -202,4 +202,11 @@ public class KDebugForKernel extends HLEModule {
     	// Has no parameters
 		return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x568DCD25, version = 150)
+	public int sceKernelDipswCpTime() {
+    	// Has no parameters
+		return 0;
+	}
 }

@@ -70,6 +70,7 @@ public class SysMemForKernel extends HLEModule {
     private int uidTypeListRoot;
     private int uidTypeListCount;
     private int uidTypeListMetaRoot;
+    private int systemStatus;
 
     protected static class HeapInformation {
     	private static final String uidPurpose = "SysMemForKernel-Heap";
@@ -903,6 +904,54 @@ public class SysMemForKernel extends HLEModule {
     	gameInfo.umdCacheOn = umdCacheOn;
 		gameInfo.flags |= 0x200;
 
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x96A3CE2C, version = 150)
+    public int sceKernelSetRebootKernel(TPointer rebootKernelFunction) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x36C503A9, version = 150)
+    public int sceKernelGetSystemStatus() {
+    	return systemStatus;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x521AC5A4, version = 150)
+    public int sceKernelSetSystemStatus(int systemStatus) {
+    	int oldSystemStatus = this.systemStatus;
+    	this.systemStatus = systemStatus;
+
+    	return oldSystemStatus;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4A325AA0, version = 150)
+    public int sceKernelGetInitialRandomValue() {
+    	return 0x12345678;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x6D9E2DD6, version = 150)
+    public int sceKernelSysMemRealMemorySize() {
+    	return MemoryMap.SIZE_RAM;
+    }
+
+    @HLEFunction(nid = 0x9BAC123D, version = 150)
+    public int sceKernelMemmove(TPointer destAddr, TPointer srcAddr, int size) {
+    	if (destAddr.getAddress() != srcAddr.getAddress()) {
+    		destAddr.memmove(srcAddr.getAddress(), size);
+    	}
+
+    	return destAddr.getAddress();
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x83B5226D, version = 150)
+    public int sceKernelSetDdrMemoryProtection(TPointer addr, int size, int set) {
     	return 0;
     }
 }

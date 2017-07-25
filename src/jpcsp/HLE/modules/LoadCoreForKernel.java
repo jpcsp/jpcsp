@@ -270,4 +270,10 @@ public class LoadCoreForKernel extends HLEModule {
 	public int sceKernelGetModuleIdListForKernel() {
 		return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xB27CC244, version = 150)
+	public int sceKernelLoadRebootBin(TPointer fileData, int fileSize) {
+		return 0;
+	}
 }

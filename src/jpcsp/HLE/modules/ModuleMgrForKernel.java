@@ -27,6 +27,7 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
@@ -207,5 +208,23 @@ public class ModuleMgrForKernel extends HLEModule {
         loadModuleContext.basePartition = sysMemInfo.partitionid;
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xCC873DFA, version = 150)
+    public int sceKernelRebootBeforeForUser(TPointer param) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9B7102E2, version = 150)
+    public int sceKernelRebootPhaseForKernel(int unknown1, TPointer param, int unknown2, int unknown3) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x5FC3B3DA, version = 150)
+    public int sceKernelRebootBeforeForKernel(TPointer param, int unknown1, int unknown2, int unknown3) {
+    	return 0;
     }
 }

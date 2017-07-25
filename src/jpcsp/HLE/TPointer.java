@@ -201,6 +201,16 @@ final public class TPointer implements ITPointerBase {
 		}
 	}
 
+	public void memmove(int src, int length) {
+		memmove(0, src, length);
+	}
+
+	public void memmove(int offset, int src, int length) {
+		if (isNotNull()) {
+			memory.memmove(getAddress() + offset, src, length);
+		}
+	}
+
 	/**
 	 * Set "length" bytes to the value "data" starting at the pointer address.
 	 * Equivalent to
