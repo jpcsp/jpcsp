@@ -33,7 +33,7 @@ public class DeferredStub {
     public DeferredStub(SceModule sourceModule, String moduleName, int importAddress, int nid) {
     	this.sourceModule = sourceModule;
         this.moduleName = moduleName;
-        this.importAddress = importAddress;
+        this.importAddress = importAddress & Memory.addressMask;
         this.nid = nid;
     }
 

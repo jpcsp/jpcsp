@@ -411,7 +411,7 @@ public class Loader {
 
 	            // The following can only be done after relocation
 	            // Load .rodata.sceModuleInfo
-	            LoadELFModuleInfo(f, module, baseAddress, elf, elfOffset);
+	            LoadELFModuleInfo(f, module, baseAddress, elf, elfOffset, analyzeOnly);
 	            if (allocMem) {
 		            // After LoadELFModuleInfo so the we can name the memory allocation after the module name
 		            LoadELFReserveMemory(module);
@@ -442,6 +442,8 @@ public class Loader {
 
 	            // Flush module struct to psp mem
 	            module.write(Memory.getInstance(), module.address);
+            } else {
+	            LoadELFModuleInfo(f, module, baseAddress, elf, elfOffset, analyzeOnly);
             }
             return true;
         }
@@ -710,7 +712,7 @@ public class Loader {
 
         int partition = module.mpidtext > 0 ? module.mpidtext : SysMemUserForUser.USER_PARTITION_ID;
         SysMemInfo info = Modules.SysMemUserForUserModule.malloc(partition, module.modname, SysMemUserForUser.PSP_SMEM_Addr, size, address);
-        if (info == null || info.addr != address) {
+        if (info == null || info.addr != (address & Memory.addressMask)) {
             log.warn(String.format("Failed to properly reserve memory consumed by module %s at address 0x%08X, size 0x%X: allocated %s", module.modname, address, size, info));
         }
         module.addAllocatedMemory(info);
@@ -718,46 +720,56 @@ public class Loader {
 
     /** Loads from memory */
     private void LoadELFModuleInfo(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset) throws IOException {
+        Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
 
         Elf32ProgramHeader phdr = elf.getProgramHeader(0);
         Elf32SectionHeader shdr = elf.getSectionHeader(".rodata.sceModuleInfo");
 
-        int moduleInfoAddr;
+        int moduleInfoAddr = 0;
+        int moduleInfoFileOffset = -1;
         if (!elf.getHeader().isPRXDetected() && shdr == null) {
-            log.warn("ELF is not PRX, but has no section headers!");
-            moduleInfoAddr = (int)(phdr.getP_vaddr() + (phdr.getP_paddr() & 0x7FFFFFFFL) - phdr.getP_offset());
-            log.warn("Manually locating ModuleInfo at address: 0x" + Integer.toHexString(moduleInfoAddr));
-
-            PSPModuleInfo moduleInfo = new PSPModuleInfo();
-            moduleInfo.read(Memory.getInstance(), moduleInfoAddr);
-            module.copy(moduleInfo);
+        	if (analyzeOnly) {
+        		moduleInfoFileOffset = phdr.getP_paddr() & Memory.addressMask;
+        	} else {
+	            log.warn("ELF is not PRX, but has no section headers!");
+	            moduleInfoAddr = phdr.getP_vaddr() + (phdr.getP_paddr() & Memory.addressMask) - phdr.getP_offset();
+	            log.warn("Manually locating ModuleInfo at address: 0x" + Integer.toHexString(moduleInfoAddr));
+        	}
         } else if (elf.getHeader().isPRXDetected()) {
-            moduleInfoAddr = (int)(baseAddress + (phdr.getP_paddr() & 0x7FFFFFFFL) - phdr.getP_offset());
-
-            PSPModuleInfo moduleInfo = new PSPModuleInfo();
-            moduleInfo.read(Memory.getInstance(), moduleInfoAddr);
-            module.copy(moduleInfo);
+        	if (analyzeOnly) {
+        		moduleInfoFileOffset = phdr.getP_paddr() & Memory.addressMask;
+        	} else {
+        		moduleInfoAddr = baseAddress + (phdr.getP_paddr() & Memory.addressMask) - phdr.getP_offset();
+        	}
         } else if (shdr != null) {
         	moduleInfoAddr = shdr.getSh_addr(baseAddress);;
+        }
 
+        if (moduleInfoAddr != 0) {
             PSPModuleInfo moduleInfo = new PSPModuleInfo();
             moduleInfo.read(Memory.getInstance(), moduleInfoAddr);
+            module.copy(moduleInfo);
+        } else if (moduleInfoFileOffset >= 0) {
+            PSPModuleInfo moduleInfo = new PSPModuleInfo();
+            f.position(moduleInfoFileOffset);
+            moduleInfo.read(f);
             module.copy(moduleInfo);
         } else {
             log.error("ModuleInfo not found!");
             return;
         }
 
-        if (log.isInfoEnabled()) {
-        	log.info(String.format("Found ModuleInfo at 0x%08X, name:'%s', version: %02X%02X, attr: 0x%08X, gp: 0x%08X", moduleInfoAddr, module.modname, module.version[1], module.version[0], module.attribute, module.gp_value));
-        }
+        if (!analyzeOnly) {
+	        if (log.isInfoEnabled()) {
+	        	log.info(String.format("Found ModuleInfo at 0x%08X, name:'%s', version: %02X%02X, attr: 0x%08X, gp: 0x%08X", moduleInfoAddr, module.modname, module.version[1], module.version[0], module.attribute, module.gp_value));
+	        }
 
-        if ((module.attribute & SceModule.PSP_MODULE_KERNEL) != 0) {
-            log.warn("Kernel mode module detected");
-        }
-        if ((module.attribute & SceModule.PSP_MODULE_VSH) != 0) {
-            log.warn("VSH mode module detected");
+	        if ((module.attribute & SceModule.PSP_MODULE_KERNEL) != 0) {
+	            log.warn("Kernel mode module detected");
+	        }
+	        if ((module.attribute & SceModule.PSP_MODULE_VSH) != 0) {
+	            log.warn("VSH mode module detected");
+	        }
         }
     }
 
@@ -880,7 +892,7 @@ public class Loader {
                              result += 0x10000;
                         }
                         data2 &= ~0x0000FFFF;
-                        data2 |= (result >> 16) & 0x0000FFFF; // truncate
+                        data2 |= result >>> 16;
                     	if (log.isTraceEnabled()) {
                     		log.trace(String.format("R_MIPS_HILO16 addr=0x%08X before=0x%08X after=0x%08X", data_addr2, readUnaligned32(mem, data_addr2), data2));
                         }
@@ -925,7 +937,7 @@ public class Loader {
     	return names[R_TYPE];
     }
 
-    private void relocateFromBufferA1(ByteBuffer f, Elf32 elf, int baseAddress, int programHeaderNumber, int size) throws IOException {
+    private void relocateFromBufferA1(ByteBuffer f, SceModule module, Elf32 elf, int baseAddress, int programHeaderNumber, int size) throws IOException {
         Memory mem = Memory.getInstance();
 
         // Relocation variables.
@@ -964,6 +976,9 @@ public class Loader {
         flags[0] = flags.length;
         for (int j = 1; j < flags.length; j++) {
         	flags[j] = f.get() & 0xFF;
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("R_FLAG(%d bits) 0x%X -> 0x%X", fbits, j, flags[j]));
+        	}
         }
 
         // Locate the type table.
@@ -971,6 +986,25 @@ public class Loader {
         types[0] = types.length;
         for (int j = 1; j < types.length; j++) {
         	types[j] = f.get() & 0xFF;
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("R_TYPE(%d bits) 0x%X -> 0x%X", tbits, j, types[j]));
+        	}
+        }
+
+        boolean hasHi16 = false;
+        boolean hasLo16 = false;
+        for (int j = 1; j < types.length; j++) {
+        	if (types[j] == 4) {
+        		hasHi16 = true;
+        	} else if (types[j] == 1 || types[j] == 5) {
+        		hasLo16 = true;
+        	}
+        }
+        if (!hasLo16 || !hasHi16) {
+        	log.warn(String.format("relocateFromBufferA1 missing HI16/LO16 type mapping, something is probably wrong"));
+        	if ("flash0:/kd/loadcore.prx".equals(module.pspfilename)) {
+        		types = new int[] { 6, 4, 5, 7, 6, 2 };
+        	}
         }
 
         // Save the current position.
@@ -1085,20 +1119,20 @@ public class Loader {
                         data += phBaseOffset;
                         break;
                     case 3: // R_MIPS_26
-                        data = (data & 0xFC000000) | (((data & 0x03FFFFFF) + (phBaseOffset >> 2)) & 0x03FFFFFFF);
+                        data = (data & 0xFC000000) | (((data & 0x03FFFFFF) + (phBaseOffset >>> 2)) & 0x03FFFFFF);
                         break;
                     case 6: // R_MIPS_J26
-                        data = (Opcodes.J << 26) | (((data & 0x03FFFFFF) + (phBaseOffset >> 2)) & 0x03FFFFFFF);
+                        data = (Opcodes.J << 26) | (((data & 0x03FFFFFF) + (phBaseOffset >>> 2)) & 0x03FFFFFF);
                         break;
                     case 7: // R_MIPS_JAL26
-                        data = (Opcodes.JAL << 26) | (((data & 0x03FFFFFF) + (phBaseOffset >> 2)) & 0x03FFFFFFF);
+                        data = (Opcodes.JAL << 26) | (((data & 0x03FFFFFF) + (phBaseOffset >>> 2)) & 0x03FFFFFF);
                         break;
                     case 4: // R_MIPS_HI16
                         hi16 = ((data << 16) + lo16) + phBaseOffset;
                         if ((hi16 & 0x8000) == 0x8000) {
                             hi16 += 0x00010000;
                         }
-                        data = (data & 0xffff0000) | (hi16 >> 16);
+                        data = (data & 0xffff0000) | (hi16 >>> 16);
                         break;
                     case 1: // R_MIPS_16
                     case 5: // R_MIPS_LO16
@@ -1116,9 +1150,9 @@ public class Loader {
 	                }
                 }
                 r++;
-            }
 
-            R_TYPE_OLD = R_TYPE;
+                R_TYPE_OLD = R_TYPE;
+            }
         }
     }
 
@@ -1162,7 +1196,7 @@ public class Loader {
                 	log.debug(String.format("Type 0x700000A1 PH#%d: relocating A1 entries, size=0x%X", i, phdr.getP_filesz()));
                 }
                 f.position(elfOffset + phdr.getP_offset());
-                relocateFromBufferA1(f, elf, baseAddress, i, phdr.getP_filesz());
+                relocateFromBufferA1(f, module, elf, baseAddress, i, phdr.getP_filesz());
                 return;
             }
             i++;

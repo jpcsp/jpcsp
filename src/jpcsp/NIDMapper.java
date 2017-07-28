@@ -333,6 +333,8 @@ public class NIDMapper {
      * @param address    the address of the nid
      */
     public void addModuleNid(SceModule module, String moduleName, int nid, int address) {
+    	address &= Memory.addressMask;
+
     	NIDInfo info = getNIDInfoByNid(moduleName, nid);
     	if (info != null) {
     		// Only modules from flash0 are allowed to overwrite NIDs from syscalls
