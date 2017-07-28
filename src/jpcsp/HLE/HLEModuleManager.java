@@ -70,6 +70,7 @@ public class HLEModuleManager {
      */
 	private static final String[] moduleFileNamesToBeLoaded = {
 			"flash0:/kd/utility.prx"
+//			, "flash0:/kd/loadcore.prx"
 //			, "flash0:/kd/loadexec_01g.prx"
 //			, "flash0:/kd/iofilemgr.prx"
 //			, "flash0:/kd/isofs.prx"
@@ -220,7 +221,8 @@ public class HLEModuleManager {
         sceAta(Modules.sceAtaModule),
         sceGpio(Modules.sceGpioModule),
         sceNand(Modules.sceNandModule),
-        sceBSMan(Modules.sceBSManModule);
+        sceBSMan(Modules.sceBSManModule),
+        memlmd(Modules.memlmdModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
@@ -642,7 +644,16 @@ public class HLEModuleManager {
         	if (log.isInfoEnabled()) {
         		log.info(String.format("Loading and starting the module '%s', it will replace the equivalent HLE functions", moduleFileName));
         	}
-    		Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(moduleFileName, startPriority++);
+        	int argSize = 0;
+        	TPointer argp = TPointer.NULL;
+
+        	// loadcore.prx requires start parameters
+        	if ("flash0:/kd/loadcore.prx".equals(moduleFileName)) {
+        		argSize = 8;
+        		argp = Modules.LoadCoreForKernelModule.prepareModuleStart();
+        	}
+
+        	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(moduleFileName, startPriority++, argSize, argp);
     	}
 	}
 }

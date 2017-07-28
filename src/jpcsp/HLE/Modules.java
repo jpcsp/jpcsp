@@ -162,6 +162,7 @@ public class Modules {
     public static sceNand sceNandModule = new sceNand();
     public static sceBSMan sceBSManModule = new sceBSMan();
     public static mp4msv mp4msvModule = new mp4msv();
+    public static memlmd memlmdModule = new memlmd();
 
     public static Logger log = Logger.getLogger("hle");
 
