@@ -321,6 +321,13 @@ public class SceModule {
 
 	@Override
 	public String toString() {
-		return String.format("SceModule '%s'", modname);
+		StringBuilder s = new StringBuilder("SceModule ");
+		if (modname != null) {
+			s.append(String.format("'%s'", modname));
+		} else if (pspfilename != null) {
+			s.append(String.format("'%s'", pspfilename));
+		}
+
+		return s.toString();
 	}
 }

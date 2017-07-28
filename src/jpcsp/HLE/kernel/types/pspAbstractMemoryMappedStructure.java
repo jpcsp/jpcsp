@@ -20,6 +20,7 @@ import java.nio.charset.Charset;
 
 import jpcsp.Memory;
 import jpcsp.HLE.ITPointerBase;
+import jpcsp.HLE.TPointer;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -310,6 +311,21 @@ public abstract class pspAbstractMemoryMappedStructure {
     	return s.toString();
     }
 
+    protected TPointer readPointer() {
+    	int value = read32();
+    	if (value == 0) {
+    		return TPointer.NULL;
+    	}
+
+    	return new TPointer(mem, value);
+    }
+
+    protected void readPointerArray(TPointer[] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		array[i] = readPointer();
+    	}
+    }
+
     /**
      * Write a string in UTF16, including a trailing '\0\0'
      * @param addr address where to write the string
@@ -475,6 +491,20 @@ public abstract class pspAbstractMemoryMappedStructure {
             object.write();
         }
         offset += object.sizeof();
+    }
+
+    protected void writePointer(TPointer pointer) {
+    	if (pointer == null) {
+    		write32(0);
+    	} else {
+    		write32(pointer.getAddress());
+    	}
+    }
+
+    protected void writePointerArray(TPointer[] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		writePointer(array[i]);
+    	}
     }
 
     protected int getOffset() {

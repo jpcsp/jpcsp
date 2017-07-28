@@ -22,6 +22,7 @@ import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNKNOWN_MODULE;
+import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
 import static jpcsp.HLE.modules.ThreadManForUser.J;
 import static jpcsp.HLE.modules.ThreadManForUser.JAL;
@@ -258,6 +259,10 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     public int hleKernelLoadAndStartModule(String name, int startPriority) {
+    	return hleKernelLoadAndStartModule(name, startPriority, 0, TPointer.NULL);
+    }
+
+    public int hleKernelLoadAndStartModule(String name, int startPriority, int argSize, TPointer argp) {
     	LoadModuleContext loadModuleContext = new LoadModuleContext();
     	loadModuleContext.fileName = name;
     	loadModuleContext.allocMem = true;
@@ -280,7 +285,7 @@ public class ModuleMgrForUser extends HLEModule {
 	    	sceKernelSMOption.priority = startPriority;
 	    	sceKernelSMOption.write(startOptions);
 
-	    	hleKernelStartModule(moduleUid, 0, TPointer.NULL, TPointer32.NULL, startOptions, false);
+	    	hleKernelStartModule(moduleUid, argSize, argp, TPointer32.NULL, startOptions, false);
     	}
 
     	return moduleUid;
@@ -373,7 +378,11 @@ public class ModuleMgrForUser extends HLEModule {
 	        } else {
 	        	moduleBase = testBase;
 	        }
-    	} else {
+
+	        if ((testModule.attribute & SceModule.PSP_MODULE_KERNEL) != 0 && testModule.mpidtext == KERNEL_PARTITION_ID) {
+	        	moduleBase |= MemoryMap.START_KERNEL; // Set the address kernel flag 0x80000000
+	        }
+        } else {
     		moduleBase = loadModuleContext.baseAddr;
     		mpidText = loadModuleContext.basePartition;
     		mpidData = loadModuleContext.basePartition;

@@ -715,7 +715,7 @@ public class sceNetAdhocctl extends HLEModule {
      * Register an adhoc event handler
      *
      * @param handler - The event handler.
-     * @param unknown - Pass NULL.
+     * @param unknown60 - Pass NULL.
      *
      * @return Handler id on success, < 0 on error.
      */

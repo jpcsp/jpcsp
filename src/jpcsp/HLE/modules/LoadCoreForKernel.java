@@ -16,21 +16,151 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceLoadCoreBootInfo;
+import jpcsp.HLE.kernel.types.SceLoadCoreBootModuleInfo;
+import jpcsp.HLE.kernel.types.SceLoadCoreExecFileInfo;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.kernel.types.SysMemThreadConfig;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.format.Elf32Header;
+import jpcsp.format.Elf32ProgramHeader;
+import jpcsp.format.PSPModuleInfo;
+
+import static jpcsp.HLE.modules.ModuleMgrForUser.SCE_HEADER_LENGTH;
+import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
+import static jpcsp.Loader.SCE_MAGIC;
+import static jpcsp.format.PSP.PSP_HEADER_SIZE;
+import static jpcsp.format.PSP.PSP_MAGIC;
 
 import org.apache.log4j.Logger;
 
 public class LoadCoreForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("LoadCoreForKernel");
+
+    private TPointer allocMem(int size) {
+		SysMemInfo memInfo = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, "LoadCore-StartModuleParameters", PSP_SMEM_Low, size, 0);
+		if (memInfo == null) {
+			log.error(String.format("Cannot allocate memory for loadcore.prx start parameters"));
+			return TPointer.NULL;
+		}
+
+		TPointer pointer = new TPointer(Memory.getInstance(), memInfo.addr);
+		pointer.clear(size);
+
+		return pointer;
+    }
+
+    public TPointer prepareModuleStart() {
+		SceLoadCoreBootInfo sceLoadCoreBootInfo = new SceLoadCoreBootInfo();
+		SysMemThreadConfig sysMemThreadConfig = new SysMemThreadConfig();
+		SceLoadCoreExecFileInfo loadCoreExecInfo = new SceLoadCoreExecFileInfo();
+		SceLoadCoreExecFileInfo sysMemExecInfo = new SceLoadCoreExecFileInfo();
+		PSPModuleInfo loadCoreModuleInfo = new PSPModuleInfo();
+		PSPModuleInfo sysMemModuleInfo = new PSPModuleInfo();
+    	// TODO
+
+		// Computing a checksum on the first 64 bytes of the first segment
+		int dummySegmentSize = 64;
+		TPointer dummySegmentAddr = allocMem(dummySegmentSize);
+		loadCoreExecInfo.segmentAddr[0] = dummySegmentAddr;
+		loadCoreExecInfo.segmentSize[0] = dummySegmentSize;
+		loadCoreExecInfo.numSegments = 1;
+		sysMemExecInfo.segmentAddr[0] = dummySegmentAddr;
+		sysMemExecInfo.segmentSize[0] = dummySegmentSize;
+		sysMemExecInfo.numSegments = 1;
+
+		// At least 1 module is required
+		sceLoadCoreBootInfo.numModules = 1;
+		SceLoadCoreBootModuleInfo sceLoadCoreBootModuleInfo = new SceLoadCoreBootModuleInfo();
+		sceLoadCoreBootInfo.modules = allocMem(sceLoadCoreBootInfo.numModules * sceLoadCoreBootModuleInfo.sizeof());
+		for (int i = 0; i < sceLoadCoreBootInfo.numModules; i++) {
+			// Dummy module data
+			TPointer modBuf = allocMem(1024);
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Allocated dummy module buffer %s", modBuf));
+			}
+			sceLoadCoreBootModuleInfo.modBuf = modBuf;
+
+			int offset = 0;
+			// SCE header
+			modBuf.setValue32(offset + 0, SCE_MAGIC);
+			modBuf.setValue32(offset + 4, SCE_HEADER_LENGTH); // SceHeader.size
+			offset += SCE_HEADER_LENGTH;
+
+			// PSP header
+			modBuf.setValue32(offset + 0, PSP_MAGIC);
+			modBuf.setValue16(offset + 4, (short) 0x1000); // PspHeader.mod_attr = SCE_MODULE_KERNEL
+			modBuf.setValue32(offset + 52, 0x80000000); // PspHeader.modinfo_offset = IS_KERNEL_ADDR
+			modBuf.setValue8(offset + 124, (byte) 2); // PspHeader.dec_mode = DECRYPT_MODE_KERNEL_MODULE
+			offset += PSP_HEADER_SIZE;
+
+			// ELF header
+			modBuf.setValue32(offset + 0, Elf32Header.ELF_MAGIC);
+			modBuf.setValue8(offset + 4, (byte) 1); // Elf32Header.e_class = ELFCLASS32
+			modBuf.setValue8(offset + 5, (byte) 1); // Elf32Header.e_data = ELFDATA2LSB
+			modBuf.setValue16(offset + 16, (short) 0xFFA0); // Elf32Header.e_type = ET_SCE_PRX
+			modBuf.setValue16(offset + 18, (short) Elf32Header.E_MACHINE_MIPS); // Elf32Header.e_machine = EM_MIPS_ALLEGREX
+			modBuf.setValue32(offset + 28, Elf32Header.sizeof()); // Elf32Header.e_phoff = sizeof(Elf32Header), must be > 0
+			modBuf.setValue16(offset + 44, (short) 1); // Elf32Header.e_phnum, must be > 0
+			offset += Elf32Header.sizeof();
+
+			// ELF Program header
+			modBuf.setValue32(offset + 0, 1); // Elf32ProgramHeader.p_type = PT_LOAD
+			modBuf.setValue32(offset + 8, 0); // Elf32ProgramHeader.p_vaddr = 0
+			modBuf.setValue32(offset + 12, Elf32Header.sizeof() + Elf32ProgramHeader.sizeof()); // Elf32ProgramHeader.p_paddr = sizeof(Efl32Header) + sizeof(Elf32ProgramHeader)
+			offset += Elf32ProgramHeader.sizeof();
+
+			TPointer sceLoadCoreBootModuleInfoAddr = new TPointer(sceLoadCoreBootInfo.modules, i * sceLoadCoreBootModuleInfo.sizeof());
+			sceLoadCoreBootModuleInfo.write(sceLoadCoreBootModuleInfoAddr);
+		}
+
+		TPointer loadCoreModuleInfoAddr = allocMem(loadCoreModuleInfo.sizeof());
+		loadCoreModuleInfo.write(loadCoreModuleInfoAddr);
+		loadCoreExecInfo.moduleInfo = loadCoreModuleInfoAddr;
+
+		TPointer sysMemModuleInfoAddr = allocMem(sysMemModuleInfo.sizeof());
+		sysMemModuleInfo.write(sysMemModuleInfoAddr);
+		sysMemExecInfo.moduleInfo = sysMemModuleInfoAddr;
+
+		TPointer sysMemExecInfoAddr = allocMem(sysMemExecInfo.sizeof());
+		sysMemExecInfo.write(sysMemExecInfoAddr);
+		sysMemThreadConfig.sysMemExecInfo = sysMemExecInfoAddr;
+
+		TPointer loadCoreExecInfoAddr = allocMem(loadCoreExecInfo.sizeof());
+		loadCoreExecInfo.write(loadCoreExecInfoAddr);
+		sysMemThreadConfig.loadCoreExecInfo = loadCoreExecInfoAddr;
+
+		TPointer sceLoadCoreBootInfoAddr = allocMem(sceLoadCoreBootInfo.sizeof());
+		sceLoadCoreBootInfo.write(sceLoadCoreBootInfoAddr);
+
+		TPointer sysMemThreadConfigAddr = allocMem(sysMemThreadConfig.sizeof());
+		sysMemThreadConfig.write(sysMemThreadConfigAddr);
+
+    	TPointer argp = allocMem(8);
+		argp.setPointer(0, sceLoadCoreBootInfoAddr);
+		argp.setPointer(4, sysMemThreadConfigAddr);
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("prepareModuleStart sceLoadCoreBootInfoAddr=%s, sysMemThreadConfigAddr=%s, loadCoreExecInfoAddr=%s, sysMemExecInfoAddr=%s", sceLoadCoreBootInfoAddr, sysMemThreadConfigAddr, loadCoreExecInfoAddr, sysMemExecInfoAddr));
+		}
+
+		return argp;
+    }
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xACE23476, version = 150)
@@ -273,7 +403,31 @@ public class LoadCoreForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xB27CC244, version = 150)
-	public int sceKernelLoadRebootBin(TPointer fileData, int fileSize) {
+	public int sceKernelLoadRebootBin(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer fileData, int fileSize) {
+		return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x493EE781, version = 660)
+	public int sceKernelLoadModuleBootLoadCore(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer bootModInfo, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.out) TPointer execInfo, @BufferInfo(usage=Usage.out) TPointer32 modMemId) {
+		return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xD3353EC4, version = 660)
+	public int sceKernelCheckExecFile(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer buf, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execInfo) {
+		return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x41D10899, version = 660)
+	public int sceKernelProbeExecutableObject(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer buf, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execInfo) {
+		return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x1C394885, version = 660)
+	public int sceKernelLoadExecutableObject(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer buf, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execInfo) {
 		return 0;
 	}
 }

@@ -3931,7 +3931,7 @@ public class sceMpeg extends HLEModule {
      * sceMpegNextAvcRpAu - skip one video frame
      * 
      * @param mpeg
-     * @param unknown
+     * @param unknown60
      * 
      * @return
      */

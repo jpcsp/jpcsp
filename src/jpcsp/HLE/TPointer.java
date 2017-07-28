@@ -191,6 +191,18 @@ final public class TPointer implements ITPointerBase {
 		return new TPointer(getMemory(), getValue32(offset));
 	}
 
+	public void setPointer(TPointer value) {
+		setPointer(0, value);
+	}
+
+	public void setPointer(int offset, TPointer value) {
+		if (value == null) {
+			setValue32(offset, 0);
+		} else {
+			setValue32(offset, value.getAddress());
+		}
+	}
+
 	public void memcpy(int src, int length) {
 		memcpy(0, src, length);
 	}
