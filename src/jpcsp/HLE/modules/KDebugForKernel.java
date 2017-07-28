@@ -103,7 +103,7 @@ public class KDebugForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x24C32559, version = 150)
-	public int sceKernelDipsw() {
+	public int sceKernelDipsw(int unknown) {
 		return 0;
 	}
 
@@ -173,8 +173,8 @@ public class KDebugForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x86010FCB, version = 150)
-	public int sceKernelDipsw_660() {
-		return sceKernelDipsw();
+	public int sceKernelDipsw_660(int unknown) {
+		return sceKernelDipsw(unknown);
 	}
 
     @HLEUnimplemented
