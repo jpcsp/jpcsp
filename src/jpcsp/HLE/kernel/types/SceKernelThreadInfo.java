@@ -327,10 +327,6 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         }
         cpuContext._k0 = 0;
         cpuContext._k1 = 0;
-        if (isUserMode()) {
-        	cpuContext._k1 |= 0x100000;
-        }
-cpuContext._k1 |= 0x100000;
         int intNanValue = 0x7F800001;
         float nanValue = Float.intBitsToFloat(intNanValue);
         for (int i = Common._f31; i >= Common._f0; i--) {
