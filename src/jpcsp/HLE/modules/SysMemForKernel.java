@@ -16,8 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_MEMORY_SIZE;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
+import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_SIZE;
+import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_START;
 
 import java.util.HashMap;
 
@@ -792,9 +793,8 @@ public class SysMemForKernel extends HLEModule {
 
     	switch (partitionId) {
     		case VSHELL_PARTITION_ID:
-    			partitionInfo.memSize = VSHELL_MEMORY_SIZE;
-    			partitionInfo.startAddr = MemoryMap.END_KERNEL + 1 - VSHELL_MEMORY_SIZE;
-    			partitionInfo.memSize = VSHELL_MEMORY_SIZE;
+    			partitionInfo.startAddr = KERNEL_VOLATILE_MEM_START;
+    			partitionInfo.memSize = KERNEL_VOLATILE_MEM_SIZE;
     			partitionInfo.attr = 0;
     			break;
 			default:

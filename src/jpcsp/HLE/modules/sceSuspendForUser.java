@@ -38,6 +38,10 @@ public class sceSuspendForUser extends HLEModule {
     public static final int KERNEL_POWER_TICK_DISPLAY = 6;
     protected SceKernelSemaInfo volatileMemSema;
     protected static final int volatileMemSignal = 1;
+    // Volatile mem is always at 0x08400000
+    public static final int KERNEL_VOLATILE_MEM_START = 0x08400000;
+    // Volatile mem size is 4Megs
+    public static final int KERNEL_VOLATILE_MEM_SIZE = 0x400000;
 
     @Override
     public void start() {
@@ -46,15 +50,7 @@ public class sceSuspendForUser extends HLEModule {
     	volatileMemSema = Managers.semas.hleKernelCreateSema("ScePowerVmem", 0, volatileMemSignal, volatileMemSignal, NULL);
     }
 
-    protected int hleKernelVolatileMemLock(int type, TPointer32 paddr, TPointer32 psize, boolean trylock) {
-        if (type != 0) {
-            log.warn(String.format("hleKernelVolatileMemLock bad param type=%d", type));
-            return ERROR_INVALID_MODE;
-        }
-
-        paddr.setValue(0x08400000); // Volatile mem is always at 0x08400000
-        psize.setValue(0x400000);   // Volatile mem size is 4Megs
-
+    public int hleKernelVolatileMemLock(int type, boolean trylock) {
         if (trylock) {
         	if (Managers.semas.hleKernelPollSema(volatileMemSema, volatileMemSignal) != 0) {
         		// Volatile mem is already locked
@@ -66,6 +62,22 @@ public class sceSuspendForUser extends HLEModule {
         // If the volatile mem is already locked, the current thread has to wait
         // until it is unlocked.
         return Managers.semas.hleKernelWaitSema(volatileMemSema, volatileMemSignal, TPointer32.NULL, false);
+    }
+
+    public int hleKernelVolatileMemUnlock(int type) {
+        return Managers.semas.hleKernelSignalSema(volatileMemSema, volatileMemSignal);
+    }
+
+    protected int hleKernelVolatileMemLock(int type, TPointer32 paddr, TPointer32 psize, boolean trylock) {
+        if (type != 0) {
+            log.warn(String.format("hleKernelVolatileMemLock bad param type=%d", type));
+            return ERROR_INVALID_MODE;
+        }
+
+        paddr.setValue(KERNEL_VOLATILE_MEM_START);
+        psize.setValue(KERNEL_VOLATILE_MEM_SIZE);
+
+        return hleKernelVolatileMemLock(type, trylock);
     }
 
     public int hleKernelPowerTick(int flag) {
@@ -130,6 +142,6 @@ public class sceSuspendForUser extends HLEModule {
             return ERROR_INVALID_MODE;
         }
 
-        return Managers.semas.hleKernelSignalSema(volatileMemSema, volatileMemSignal);
+        return hleKernelVolatileMemUnlock(type);
     }
 }

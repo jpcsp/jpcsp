@@ -14,11 +14,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._t3;
+import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_SIZE;
+import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_START;
+
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
@@ -73,7 +75,6 @@ public class SysMemUserForUser extends HLEModule {
     protected static MemoryChunkList[] freeMemoryChunks;
     protected int firmwareVersion = 150;
     public static final int defaultSizeAlignment = 256;
-    public static final int VSHELL_MEMORY_SIZE = 0x400000;
 
     // PspSysMemBlockTypes
     public static final int PSP_SMEM_Low = 0;
@@ -153,8 +154,8 @@ public class SysMemUserForUser extends HLEModule {
 		if (!preserveKernelMemory) {
 	        // free memory chunks for each partition
 	        freeMemoryChunks = new MemoryChunkList[6];
-	        freeMemoryChunks[KERNEL_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_KERNEL, MemoryMap.END_KERNEL - VSHELL_MEMORY_SIZE);
-	        freeMemoryChunks[VSHELL_PARTITION_ID] = createMemoryChunkList(MemoryMap.END_KERNEL + 1 - VSHELL_MEMORY_SIZE, MemoryMap.END_KERNEL);
+	        freeMemoryChunks[KERNEL_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_KERNEL, KERNEL_VOLATILE_MEM_START - 1);
+	        freeMemoryChunks[VSHELL_PARTITION_ID] = createMemoryChunkList(KERNEL_VOLATILE_MEM_START, KERNEL_VOLATILE_MEM_START + KERNEL_VOLATILE_MEM_SIZE - 1);
 		}
         freeMemoryChunks[USER_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_USERSPACE, MemoryMap.END_USERSPACE);
 	}
@@ -300,7 +301,7 @@ public class SysMemUserForUser extends HLEModule {
 	        		allocatedAddress = freeMemoryChunk.allocHigh(allocatedSize, alignment);
 	        		break;
 	        	case PSP_SMEM_Addr:
-	        		allocatedAddress = freeMemoryChunk.alloc(addr, allocatedSize);
+	        		allocatedAddress = freeMemoryChunk.alloc(addr & Memory.addressMask, allocatedSize);
 	        		break;
 	    		default:
 	    			log.warn(String.format("malloc: unknown type %s", getTypeName(type)));
@@ -619,6 +620,11 @@ public class SysMemUserForUser extends HLEModule {
         }
 
         return info.addr;
+	}
+
+	@HLEFunction(nid = 0xF12A62F7, version = 660)
+	public int sceKernelGetBlockHeadAddr_660(int uid) {
+		return sceKernelGetBlockHeadAddr(uid);
 	}
 
 	@HLEFunction(nid = 0x13A5ABEF, version = 150)
