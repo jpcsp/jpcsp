@@ -25,6 +25,8 @@ import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCRE
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_PNG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_NAMERULE_AUTONUM;
 import static jpcsp.HLE.modules.sceFont.PSP_FONT_PIXELFORMAT_4;
+import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_SIZE;
+import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_START;
 import static jpcsp.graphics.GeCommands.ALPHA_ONE_MINUS_SOURCE_ALPHA;
 import static jpcsp.graphics.GeCommands.ALPHA_SOURCE_ALPHA;
 import static jpcsp.graphics.GeCommands.ALPHA_SOURCE_BLEND_OPERATION_ADD;
@@ -534,7 +536,17 @@ public class sceUtility extends HLEModule {
 
     	switch (action) {
     		case UTILITY_THREAD_ACTION_SHUTDOWN_START:
-    			// Starting the shutdown action.
+    			// Unlock the volatile mem
+                int unlockResult = Modules.sceSuspendForUserModule.hleKernelVolatileMemUnlock(0);
+                if (unlockResult < 0) {
+                	log.error(String.format("hleUtilityThread shutdown thread cannot unlock the volatile mem 0x%08X", unlockResult));
+                } else {
+                	Memory mem = Memory.getInstance();
+                	// The volatile memory is cleared after its use
+                	mem.memset(KERNEL_VOLATILE_MEM_START, (byte) 0, KERNEL_VOLATILE_MEM_SIZE);
+                }
+
+                // Starting the shutdown action.
     			// Wait a short time before completing the shutdown.
     			processor.cpu.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN_COMPLETE);
     			Modules.ThreadManForUserModule.hleKernelDelayThread(delay, false);
@@ -681,6 +693,13 @@ public class sceUtility extends HLEModule {
                 }
                 return SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
             }
+
+            // Lock the volatile mem, it is used until sceUtilityXXXShutdown
+            int lockResult = Modules.sceSuspendForUserModule.hleKernelVolatileMemLock(0, false);
+            if (lockResult < 0) {
+            	return lockResult;
+            }
+
             this.paramsAddr = paramsAddr;
             this.params = createParams();
 
