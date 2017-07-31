@@ -20,6 +20,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 
@@ -116,7 +117,7 @@ public class InterruptManager extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x58DD8978, version = 150)
-	public int sceKernelRegisterIntrHandler() {
+	public int sceKernelRegisterIntrHandler(int intrNumber, int unknown1, TPointer handler, TPointer unknown2, int unknown3) {
 		return 0;
 	}
 
