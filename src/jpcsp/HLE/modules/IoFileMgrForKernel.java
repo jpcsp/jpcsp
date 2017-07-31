@@ -39,4 +39,10 @@ public class IoFileMgrForKernel extends HLEModule {
     public int sceIoDelDrv(PspString driverName) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2B6A9B21, version = 150)
+    public int IoFileMgrForKernel_30E8ABB3() {
+    	return 0;
+    }
 }

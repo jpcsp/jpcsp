@@ -981,4 +981,40 @@ public class SysMemForKernel extends HLEModule {
     public int sceKernelSetDdrMemoryProtection(TPointer addr, int size, int set) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4972F9D1, version = 150)
+    public int sceKernelGetAllowReplaceUmd() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9B20ACEF, version = 150)
+    public int sceKernelMemmoveWithFill() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD0C1460D, version = 150)
+    public int sceKernelGetId() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF7E78B33, version = 150)
+    public int sceKernelSeparateMemoryBlock() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xFAF29F34, version = 150)
+    public int sceKernelQueryMemoryInfo() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xFB5BEB66, version = 150)
+    public int sceKernelResizeMemoryBlock() {
+    	return 0;
+    }
 }

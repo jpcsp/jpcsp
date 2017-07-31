@@ -81,4 +81,10 @@ public class memlmd extends HLEModule {
     	// Has no parameters
 		return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x2AE425D2, version = 660)
+	public boolean memlmd_2F3D7E2D(int subType) {
+		return true;
+	}
 }

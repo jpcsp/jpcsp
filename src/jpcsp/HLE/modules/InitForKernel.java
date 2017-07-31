@@ -149,4 +149,22 @@ public class InitForKernel extends HLEModule {
 		// Has no parameters
 		return 0;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x2C6E9FE9, version = 150)
+	public int sceKernelGetChunk() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x9D33A110, version = 660)
+	public int sceKernelBootFromGo_660() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xD83A9BD7, version = 150)
+	public int sceKernelInitParamSfo() {
+		return 0;
+	}
 }

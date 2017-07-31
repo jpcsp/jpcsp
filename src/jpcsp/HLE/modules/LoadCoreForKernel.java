@@ -458,6 +458,21 @@ public class LoadCoreForKernel extends HLEModule {
 		return 0;
 	}
 
+    /**
+     * Load a module. This function is used to boot modules during the start of Loadcore. In order for 
+     * a module to be loaded, it has to be a kernel module.
+     * 
+     * @param bootModInfo Pointer to module information (including the file content of the module, 
+     *                    its size,...) used to boot the module.
+     * @param execInfo Pointer an allocated execInfo structure used to handle load-checks against the 
+     *                 program module.
+     *                 Furthermore, it collects various information about the module, such as its elfType, 
+     *                 its segments (.text, .data, .bss), the locations of its exported functions.
+     * @param modMemId The memory id of the allocated kernelPRX memory block used for the program module 
+     *                 sections. The memory block specified by the ID holds the .text segment of the module. 
+     * 
+     * @return 0 on success.
+     */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x493EE781, version = 660)
 	public int sceKernelLoadModuleBootLoadCore(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer bootModInfo, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.out) TPointer execInfo, @BufferInfo(usage=Usage.out) TPointer32 modMemId) {
@@ -479,6 +494,347 @@ public class LoadCoreForKernel extends HLEModule {
     @HLEUnimplemented
 	@HLEFunction(nid = 0x1C394885, version = 660)
 	public int sceKernelLoadExecutableObject(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer buf, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execInfo) {
+		return 0;
+	}
+
+    /**
+     * Register a resident library's entry table in the system. A resident module can register any 
+     * number of resident libraries. Note that this function is only meant to register kernel mode 
+     * resident libraries. In order to register user mode libraries, use sceKernelRegisterLibraryForUser().
+     * 
+     * @param libEntryTable Pointer to the resident library's entry table.
+     * 
+     * @return 0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x48AF96A9, version = 660)
+	public int sceKernelRegisterLibrary(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer libEntryTable) {
+		return 0;
+	}
+
+    /**
+     * Check if a resident library can be released. This check returns "true" when all corresponding stub
+     * libraries at the time of the check have one the following status:
+     *      a) unlinked
+     *      b) have the the attribute SCE_LIB_WEAK_IMPORT (they can exist without the resident library 
+     *         being registered).
+     * 
+     * @param libEntryTable Pointer to the resident library's entry table.
+     * 
+     * @return 0 indicates the library can be released.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x538129F8, version = 660)
+	public int sceKernelCanReleaseLibrary(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer libEntryTable) {
+		return 0;
+	}
+
+    /**
+     * Link kernel mode stub libraries with the corresponding registered resident libraries. Note that 
+     * this function assumes that the resident libraries linked with reside in kernel memory. Linking 
+     * with user mode resident libraries will result in failure.
+     * 
+     * @param libStubTable Pointer to a stub library's entry table. If you want to link an array of 
+     *                     entry tables, make libStubTable a pointer to the first element of that array.
+     * @param size         The number of entry tables to link.
+     * 
+     * @return 0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x8EAE9534, version = 660)
+	public int sceKernelLinkLibraryEntries_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable, int size) {
+		return 0;
+	}
+
+    /**
+     * Unlink stub libraries from their corresponding registered resident libraries. 
+     * 
+     * @param libStubTable Pointer to a stub library's entry table. If you want to unlink an array of 
+     *                     entry tables, make libStubTable a pointer to the first element of that array.
+     * @param size The number of entry tables to unlink.
+     * @return 
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x0295CFCE, version = 660)
+	public int sceKernelUnLinkLibraryEntries_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable, int size) {
+		return 0;
+	}
+
+    /**
+     * Save interrupts state and disable all interrupts.
+     * 
+     * @return The current state of the interrupt controller. Use sceKernelLoadCoreUnlock() to return 
+     *         to that state.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x1999032F, version = 660)
+	public int sceKernelLoadCoreLock() {
+    	// Has no parameters
+		return 0;
+	}
+
+    /**
+     * Return interrupt state.
+     * 
+     * @param intrState The state acquired by sceKernelLoadCoreLock().
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xB6C037EA, version = 660)
+	public int sceKernelLoadCoreUnlock(int intrState) {
+		return 0;
+	}
+
+    /**
+     * Register a user mode resident library's entry table in the system. A resident module can register 
+     * any number of resident libraries. In order to register kernel mode libraries, use 
+     * sceKernelRegisterLibrary().
+     * 
+     * Restrictions on user mode resident libraries:
+     *    1) The resident library has to live in user memory.
+     *    2) Functions cannot be exported via the SYSCALL technique.
+     *    3) The resident library cannot be linked with stub libraries living in kernel memory.
+     * 
+     * @param libEntryTable Pointer to the resident library's entry table.
+     * 
+     * @return 0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x2C60CCB8, version = 660)
+	public int sceKernelRegisterLibraryForUser_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable) {
+		return 0;
+	}
+
+    /**
+     * Delete a registered resident library from the system. Deletion cannot be performed if there are 
+     * loaded modules using the resident library. These modules must be deleted first.
+     * 
+     * @param libEntryTable Pointer to the resident library's entry table.
+     * 
+     * @return 0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xCB636A90, version = 660)
+	public int sceKernelReleaseLibrary(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable) {
+		return 0;
+	}
+
+    /**
+     * 
+     * @param libStubTable Pointer to a stub library's entry table. If you want to link an array of entry 
+     *                     tables, make libStubTable a pointer to the first element of that array.
+     * @param size The number of entry tables to link.
+     * 
+     * @return 0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x6ECFFFBA, version = 660)
+	public int sceKernelLinkLibraryEntriesForUser(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libStubTable, int size) {
+		return 0;
+	}
+
+    /**
+     * 
+     * @param libStubTable Pointer to a stub library's entry table. If you want to link an array of entry 
+     *                     tables, make libStubTable a pointer to the first element of that array.
+     * @param size The number of entry tables to link.
+     * 
+     * @return 0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xA481E30E, version = 660)
+	public int sceKernelLinkLibraryEntriesWithModule(TPointer mod, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libStubTable, int size) {
+		return 0;
+	}
+
+    /**
+     * Does nothing but a simple return.
+     * 
+     * @return 0.
+     */
+	@HLEFunction(nid = 0x1915737F, version = 660)
+	public int sceKernelMaskLibraryEntries() {
+    	// Has no parameters
+		return 0;
+	}
+
+	/**
+	 * Delete a module from the system. The module has to be stopped and released before.
+	 * 
+	 * @param mod The module to delete.
+	 * 
+	 * @return 0 on success.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x001B57BB, version = 660)
+	public int sceKernelDeleteModule(TPointer mod) {
+		return 0;
+	}
+
+	/**
+	 * Allocate memory for a new SceModule structure and fill it with default values. This function is 
+	 * called during the loading process of a module.
+	 * 
+	 * @return A pointer to the allocated SceModule structure on success, otherwise NULL.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x2C44F793, version = 660)
+	public int sceKernelCreateModule_660() {
+		// Has no parameters
+		return 0;
+	}
+
+	/**
+	 * Receive a list of UIDs of loaded modules.
+	 * 
+	 * @param modIdList Pointer to a SceUID array which will receive the UIDs of the loaded modules.
+	 * @param size Size of modIdList. Specifies the number of entries that can be stored into modIdList.
+	 * @param modCount A pointer which will receive the total number of loaded modules.
+	 * @param userModsOnly Set to 1 to only receive UIDs from user mode modules. Set to 0 to receive UIDs 
+	 *                     from all loaded modules.
+	 * 
+	 * @return 0 on success.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x37E6F41B, version = 660)
+	public int sceKernelGetModuleIdListForKernel(TPointer32 modIdList, int size, TPointer32 modCount, boolean userModsOnly) {
+		return 0;
+	}
+
+	/**
+	 * Receive a list of UIDs of all loaded modules.
+	 * 
+	 * @param modCount A pointer which will receive the total number of loaded modules.
+	 * 
+	 * @return The UID of the allocated array containing UIDs of the loaded modules on success. It should 
+	 *        be greater than 0.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x3FE631F0, version = 660)
+	public int sceKernelGetModuleListWithAlloc(TPointer32 modCount) {
+		return 0;
+	}
+
+	/**
+	 * Find a loaded module by its UID.
+	 * 
+	 * @param uid The UID of the module to find.
+	 * 
+	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x40972E6E, version = 660)
+	public int sceKernelFindModuleByUID_660(int uid) {
+		return 0;
+	}
+
+	/**
+	 * Get the global pointer value of a module.
+	 * 
+	 * @param addr Memory address belonging to the module, i.e. the address of a function/global variable 
+	 *             within the module.
+	 * 
+	 * @return The global pointer value (greater than 0) of the found module on success.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x410084F9, version = 660)
+	public int sceKernelGetModuleGPByAddressForKernel(int addr) {
+		return 0;
+	}
+
+	/**
+	 * Compute a checksum of every segment of a module.
+	 * 
+	 * @param mod The module to create the checksum for.
+	 * 
+	 * @return The checksum. Shouldn't be 0.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5FDDB07A, version = 660)
+	public int sceKernelSegmentChecksum(TPointer mod) {
+		return 0;
+	}
+
+	/**
+	 * Unlink a module from the internal loaded-modules-linked-list. The module has to be stopped before.
+	 * 
+	 * @param mod The module to release.
+	 * 
+	 * @return 0 on success.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xB17F5075, version = 660)
+	public int sceKernelReleaseModule(TPointer mod) {
+		return 0;
+	}
+
+	/**
+	 * Find a loaded module containing the specified address.
+	 * 
+	 * @param addr Memory address belonging to the module, i.e. the address of a function/global variable 
+	 *             within the module.
+	 * 
+	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xBC99C625, version = 660)
+	public int sceKernelFindModuleByAddress(int addr) {
+		return 0;
+	}
+
+	/**
+	 * Find a loaded module by its name. If more than one module with the same name is loaded, return 
+	 * the module which was loaded last.
+	 * 
+	 * @param name The name of the module to find. 
+	 * 
+	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF6B1BF0F, version = 660)
+	public int sceKernelFindModuleByName(String name) {
+		return 0;
+	}
+
+	/**
+	 * Register a module in the system and link it into the internal loaded-modules-linked-list.
+	 * 
+	 * @param mod The module to register.
+	 * 
+	 * @return 0.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xBF2E388C, version = 660)
+	public int sceKernelRegisterModule(TPointer mod) {
+		return 0;
+	}
+
+	/**
+	 * Get a loaded module from its UID.
+	 * 
+	 * @param uid The UID (of a module) to check for.
+	 * 
+	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xCD26E0CA, version = 660)
+	public int sceKernelGetModuleFromUID(int uid) {
+		return 0;
+	}
+
+	/**
+	 * Assign a module and check if it can be loaded, is a valid module and copy the moduleInfo section 
+	 * of the execution file over to the SceModule structure.
+	 * 
+	 * @param mod The module to receive the moduleInfo section data based on the provided execution file 
+	 *            information.
+	 * @param execFileInfo The execution file information used to copy over the moduleInfo section for 
+	 *        the specified module.
+	 * 
+	 * @return 0 on success.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF3DD4808, version = 660)
+	public int sceKernelAssignModule(TPointer mod, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execFileInfo) {
 		return 0;
 	}
 }

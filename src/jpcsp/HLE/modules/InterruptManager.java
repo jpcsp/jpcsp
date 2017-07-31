@@ -137,4 +137,10 @@ public class InterruptManager extends HLEModule {
 	public boolean sceKernelIsIntrContext() {
 		return IntrManager.getInstance().isInsideInterrupt();
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA0F88036, version = 150)
+	public int sceKernelGetSyscallRA() {
+		return 0;
+	}
 }

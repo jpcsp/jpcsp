@@ -227,4 +227,10 @@ public class ModuleMgrForKernel extends HLEModule {
     public int sceKernelRebootBeforeForKernel(TPointer param, int unknown1, int unknown2, int unknown3) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC3DDABEF, version = 150)
+    public int ModuleMgrForKernel_C3DDABEF() {
+    	return 0;
+    }
 }
