@@ -28,6 +28,7 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.crypto.CryptoEngine;
@@ -204,5 +205,17 @@ public class semaphore extends HLEModule {
     @HLEFunction(nid = 0x77E97079, version = 150)
     public int sceUtilsBufferCopyByPollingWithRange(TPointer outAddr, int outSize, TPointer inAddr, int inSize, int cmd) {
 		return sceUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, cmd);
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x00EEC06A, version = 150)
+	public int sceUtilsBufferCopy(TPointer outAddr, TPointer inAddr, int cmd) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8EEB7BF2, version = 150)
+	public int 	sceUtilsBufferCopyByPolling(TPointer outAddr, TPointer inAddr, int cmd) {
+		return 0;
 	}
 }
