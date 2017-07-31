@@ -778,10 +778,10 @@ public class Loader {
 	        }
 
 	        if ((module.attribute & SceModule.PSP_MODULE_KERNEL) != 0) {
-	            log.warn("Kernel mode module detected");
+	            log.debug("Kernel mode module detected");
 	        }
 	        if ((module.attribute & SceModule.PSP_MODULE_VSH) != 0) {
-	            log.warn("VSH mode module detected");
+	            log.debug("VSH mode module detected");
 	        }
         }
     }

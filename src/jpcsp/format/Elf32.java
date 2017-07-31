@@ -107,7 +107,7 @@ public class Elf32 {
         }
 
         if (shstrtab == null) {
-            Emulator.log.warn(".shstrtab section not found");
+            Emulator.log.debug(".shstrtab section not found");
             return;
         }
 
