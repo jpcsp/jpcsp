@@ -16,9 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
 import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_SIZE;
 import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_START;
+import static jpcsp.Memory.addressMask;
+import static jpcsp.MemoryMap.START_KERNEL;
 
 import java.util.HashMap;
 
@@ -43,6 +46,7 @@ import jpcsp.HLE.kernel.types.MemoryChunkList;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelGameInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.SceSysmemMemoryBlockInfo;
 import jpcsp.HLE.kernel.types.SceSysmemUidCB;
 import jpcsp.HLE.kernel.types.SceSysmemUidCBtype;
 import jpcsp.HLE.kernel.types.pspSysmemPartitionInfo;
@@ -508,7 +512,20 @@ public class SysMemForKernel extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xE860BE8F, version = 150)
 	public int sceKernelQueryMemoryBlockInfo(int id, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=56, usage=Usage.out) TPointer infoPtr) {
-		infoPtr.clear(56);
+		SysMemInfo info = Modules.SysMemUserForUserModule.getSysMemInfo(id);
+		if (info == null) {
+			return -1;
+		}
+
+		SceSysmemMemoryBlockInfo blockInfo = new SceSysmemMemoryBlockInfo();
+		blockInfo.read(infoPtr);
+		blockInfo.name = info.name;
+		blockInfo.attr = 0;
+		blockInfo.addr = info.addr;
+		blockInfo.memSize = info.size;
+		blockInfo.sizeLocked = 0;
+		blockInfo.unused = 0;
+		blockInfo.write(infoPtr);
 
 		return 0;
 	}
@@ -705,6 +722,11 @@ public class SysMemForKernel extends HLEModule {
     	Memory mem = Memory.getInstance();
 
     	int cb = getCBFromUid(id);
+    	if (!Memory.isAddressGood(cb) || cb == MemoryMap.START_RAM) {
+    		log.warn(String.format("sceKernelRenameUID called on id=0x%X, which has not been created by sceKernelCreateUID", id));
+    		return 0;
+    	}
+
     	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
     	sceSysmemUidCB.read(mem, cb);
 
@@ -792,6 +814,11 @@ public class SysMemForKernel extends HLEModule {
     	partitionInfo.read(infoPtr);
 
     	switch (partitionId) {
+    		case KERNEL_PARTITION_ID:
+    			partitionInfo.startAddr = START_KERNEL;
+    			partitionInfo.memSize = KERNEL_VOLATILE_MEM_START - (START_KERNEL & addressMask);
+    			partitionInfo.attr = 0;
+    			break;
     		case VSHELL_PARTITION_ID:
     			partitionInfo.startAddr = KERNEL_VOLATILE_MEM_START;
     			partitionInfo.memSize = KERNEL_VOLATILE_MEM_SIZE;
