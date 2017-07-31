@@ -2757,13 +2757,34 @@ public class IoFileMgrForUser extends HLEModule {
                     }
                     break;
                 }
-                // Check if LoadExec is allowed on the device
+                // Check if LoadExec is allowed on the file
                 case 0x00208013: {
                 	if (log.isDebugEnabled()) {
                 		log.debug(String.format("Checking if LoadExec is allowed on '%s'", info));
                 	}
                 	// Result == 0: LoadExec allowed
                 	// Result != 0: LoadExec prohibited
+                	result = 0;
+                	break;
+                }
+                // Check if LoadModule is allowed on the file
+                case 0x00208003: {
+                	if (log.isDebugEnabled()) {
+                		log.debug(String.format("Checking if LoadModule is allowed on '%s'", info));
+                	}
+                	// Result == 0: LoadModule allowed
+                	// Result != 0: LoadModule prohibited
+                	result = 0;
+                	break;
+                }
+                // Check if PRX type is allowed on the file
+                case 0x00208081:
+                case 0x00208082: {
+                	if (log.isDebugEnabled()) {
+                		log.debug(String.format("Checking if PRX type is allowed on '%s'", info));
+                	}
+                	// Result == 0: PRX type allowed
+                	// Result != 0: PRX type prohibited
                 	result = 0;
                 	break;
                 }
