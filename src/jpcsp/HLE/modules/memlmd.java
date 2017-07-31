@@ -33,7 +33,7 @@ public class memlmd extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x6192F715, version = 660)
-	public int memlmd_6192F715(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buffer, int size) {
+	public int memlmd_6192F715(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int size) {
 		return 0;
 	}
 
@@ -44,8 +44,8 @@ public class memlmd extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x9D36A439, version = 660)
-	public int memlmd_9D36A439(int subType) {
-		return 1;
+	public boolean memlmd_9D36A439(int subType) {
+		return true;
 	}
 
     @HLEUnimplemented
@@ -56,9 +56,29 @@ public class memlmd extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xEF73E85B, version = 660)
-	public int memlmd_EF73E85B(TPointer buffer, int size, TPointer32 resultSize) {
+	public int memlmd_EF73E85B(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int size, @BufferInfo(usage=Usage.out) TPointer32 resultSize) {
     	resultSize.setValue(size);
 
+    	Modules.LoadCoreForKernelModule.decodeDummyModuleData(buffer, size, resultSize);
+
     	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xCF03556B, version = 660)
+	public int memlmd_CF03556B(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int size, @BufferInfo(usage=Usage.out) TPointer32 resultSize) {
+    	// Same as memlmd_EF73E85B?
+    	resultSize.setValue(size);
+
+    	Modules.LoadCoreForKernelModule.decodeDummyModuleData(buffer, size, resultSize);
+
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x2F3D7E2D, version = 660)
+	public int memlmd_2F3D7E2D() {
+    	// Has no parameters
+		return 0;
 	}
 }
