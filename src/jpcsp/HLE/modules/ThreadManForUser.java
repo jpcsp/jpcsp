@@ -819,7 +819,7 @@ public class ThreadManForUser extends HLEModule {
     	return (AllegrexOpcodes.LUI << 26) | (rd << 16) | (imm16 & 0xFFFF);
     }
 
-    public static int ADDIU(int rs, int rt, int imm16) {
+    public static int ADDIU(int rt, int rs, int imm16) {
     	return (AllegrexOpcodes.ADDIU << 26) | (rs << 21) | (rt << 16) | (imm16 & 0xFFFF);
     }
 
