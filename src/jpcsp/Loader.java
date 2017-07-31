@@ -16,6 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import static jpcsp.Allegrex.Common._a2;
+import static jpcsp.Allegrex.Common._v0;
+import static jpcsp.Allegrex.Common._v1;
+import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
+import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
 import static jpcsp.HLE.modules.ThreadManForUser.NOP;
 import static jpcsp.format.Elf32SectionHeader.SHF_ALLOCATE;
 import static jpcsp.format.Elf32SectionHeader.SHF_EXECUTE;
@@ -142,8 +148,9 @@ public class Loader {
                 currentOffset = f.position();
 
                 // probably kxploit stub
-                if (currentOffset == f.limit())
+                if (currentOffset == f.limit()) {
                     break;
+                }
             } else if (!fromSyscall) {
                 loadPSF(module, analyzeOnly, allocMem, fromSyscall);
             }
@@ -163,26 +170,32 @@ public class Loader {
             }
             
             f.position(currentOffset);
-            if (LoadSPRX(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall))
+            if (LoadSPRX(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall)) {
                 break;
+            }
 
             f.position(currentOffset);
-            if (LoadSCE(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall))
+            if (LoadSCE(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall)) {
                 break;
+            }
 
             f.position(currentOffset);
-            if (LoadPSP(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall))
+            if (LoadPSP(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall)) {
                 break;
+            }
 
             f.position(currentOffset);
-            if (LoadELF(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall))
+            if (LoadELF(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall)) {
                 break;
+            }
 
             f.position(currentOffset);
             LoadUNK(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall);
-        } while(false);
+        } while (false);
 
-        patchModule(module);
+        if (!analyzeOnly) {
+        	patchModule(module);
+        }
 
         return module;
     }
@@ -1660,11 +1673,32 @@ public class Loader {
     	if ("sceGameUpdate_Library".equals(module.modname)) {
     		patchRemoveStringChar(mem, module, 0x000030C4, 's'); // replace "https" with "http" in "https://a0.ww.%s.dl.playstation.net/tpl/..."
     	}
+
+    	if ("sceMemlmd".equals(module.modname)) {
+    		patch(mem, module, 0x000017EC, 0x0E000000, MOVE(_v0, _zr), 0xFE000000); // replace "jal sceUtilsBufferCopy(cmd=15)" with "move $v0, $zr"
+    		SysMemInfo dummyArea = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "patch-sceMemlmd", SysMemUserForUser.PSP_SMEM_Low, 256, 0);
+    		patch(mem, module, 0x000024C0, 0xBFC00220, dummyArea.addr); // replace hardware register address with dummy address
+    		patch(mem, module, 0x000024D4, 0xBFC00280, dummyArea.addr); // replace hardware register address with dummy address
+    		patch(mem, module, 0x000024D8, 0xBFC00A00, dummyArea.addr); // replace hardware register address with dummy address
+    		patch(mem, module, 0x000024DC, 0xBFC00340, dummyArea.addr); // replace hardware register address with dummy address
+    		// Replace entry of sceUtilsBufferCopyWithRange with "return 0".
+    		patch(mem, module, 0x00001CFC, 0x27BDFFE0, ThreadManForUser.JR());
+    		patch(mem, module, 0x00001D00, 0x3C020000, MOVE(_v0, _zr), 0xFFFF0000);
+    		// Patch memlmd_9D36A439 with "return 1"
+    		patch(mem, module, 0x00001414, 0x0044102B, ADDIU(_v0, _zr, 1)); // replace "sltu $v0, $v0, $a0" with "li $v0, 1"
+    		// Patch memlmd_F26A33C3
+    		patch(mem, module, 0x000012D8, 0x90430000, ADDIU(_v1, _zr, 1)); // replace "lbu $v1, 0($v0)" with "li $v1, 1"
+    		patch(mem, module, 0x00001324, 0x90460000, ADDIU(_a2, _zr, 0)); // replace "lbu $a2, 0($v0)" with "li $a2, 0"
+    	}
     }
 
     private void patch(Memory mem, SceModule module, int offset, int oldValue, int newValue) {
+    	patch(mem, module, offset, oldValue, newValue, 0xFFFFFFFF);
+    }
+
+    private void patch(Memory mem, SceModule module, int offset, int oldValue, int newValue, int mask) {
     	int checkValue = mem.read32(module.baseAddress + offset);
-    	if (checkValue != oldValue) {
+    	if ((checkValue & mask) != (oldValue & mask)) {
     		log.error(String.format("Patching of module '%s' failed at offset 0x%X, 0x%08X found instead of 0x%08X", module.modname, offset, checkValue, oldValue));
     	} else {
     		mem.write32(module.baseAddress + offset, newValue);
