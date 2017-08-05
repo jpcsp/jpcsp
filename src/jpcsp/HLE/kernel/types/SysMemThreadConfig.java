@@ -57,7 +57,7 @@ public class SysMemThreadConfig extends pspAbstractMemoryMappedStructure {
     public TPointer getLengthFunction;
     // s32 (*PrepareGetLengthFunction)(u8 *buf, u32 size)
     public TPointer prepareGetLengthFunction;
-    public final TPointer userLibs[] = new TPointer[3];
+    public TPointer userLibs[] = new TPointer[3];
 
 	@Override
 	protected void read() {
@@ -111,6 +111,6 @@ public class SysMemThreadConfig extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public int sizeof() {
-		return 124;
+		return 112 + 4 * userLibs.length;
 	}
 }

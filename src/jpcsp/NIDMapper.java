@@ -480,4 +480,28 @@ public class NIDMapper {
         	}
     	}
     }
+
+    public int[] getModuleNids(String moduleName) {
+    	Map<Integer, NIDInfo> moduleMap = moduleNidMap.get(moduleName);
+    	if (moduleMap == null) {
+    		return null;
+    	}
+
+    	Integer[] nids = moduleMap.keySet().toArray(new Integer[moduleMap.size()]);
+    	if (nids == null) {
+    		return null;
+    	}
+
+    	int[] result = new int[nids.length];
+    	for (int i = 0; i < nids.length; i++) {
+    		result[i] = nids[i].intValue();
+    	}
+
+    	return result;
+    }
+
+    public String[] getModuleNames() {
+    	String[] moduleNames = moduleNidMap.keySet().toArray(new String[moduleNidMap.size()]);
+    	return moduleNames;
+    }
 }

@@ -59,7 +59,7 @@ public class memlmd extends HLEModule {
 	public int memlmd_EF73E85B(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int size, @BufferInfo(usage=Usage.out) TPointer32 resultSize) {
     	resultSize.setValue(size);
 
-    	Modules.LoadCoreForKernelModule.decodeDummyModuleData(buffer, size, resultSize);
+    	Modules.LoadCoreForKernelModule.decodeInitModuleData(buffer, size, resultSize);
 
     	return 0;
 	}
@@ -70,7 +70,7 @@ public class memlmd extends HLEModule {
     	// Same as memlmd_EF73E85B?
     	resultSize.setValue(size);
 
-    	Modules.LoadCoreForKernelModule.decodeDummyModuleData(buffer, size, resultSize);
+    	Modules.LoadCoreForKernelModule.decodeInitModuleData(buffer, size, resultSize);
 
     	return 0;
 	}
