@@ -99,4 +99,10 @@ public class RuntimeThread extends Thread {
 	public int getStackSize() {
 		return stackSize;
 	}
+
+	public void onThreadStart() {
+		if (threadInfo != null) {
+			threadInfo.onThreadStart();
+		}
+	}
 }

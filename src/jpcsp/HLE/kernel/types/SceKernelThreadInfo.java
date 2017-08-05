@@ -144,6 +144,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     // Used by sceKernelExtendThreadStack
     private List<SysMemInfo> extendedStackSysMemInfos;
     public boolean preserveStack;
+    private IAction onThreadStartAction;
 
     public static class RegisteredCallbacks {
     	private int type;
@@ -327,6 +328,10 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         }
         cpuContext._k0 = 0;
         cpuContext._k1 = 0;
+        if (isUserMode()) {
+        	cpuContext._k1 |= 0x100000;
+        }
+cpuContext._k1 |= 0x100000;
         int intNanValue = 0x7F800001;
         float nanValue = Float.intBitsToFloat(intNanValue);
         for (int i = Common._f31; i >= Common._f0; i--) {
@@ -716,6 +721,16 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     	}
 
     	return address >= stackAddr && address < (stackAddr + stackSize);
+    }
+
+    public void setOnThreadStartAction(IAction onThreadStartAction) {
+    	this.onThreadStartAction = onThreadStartAction;
+    }
+
+    public void onThreadStart() {
+    	if (onThreadStartAction != null) {
+    		onThreadStartAction.execute();
+    	}
     }
 
     @Override

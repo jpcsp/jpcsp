@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.Memory.addressMask;
 import static jpcsp.util.Utilities.sleep;
 
 import java.util.ArrayList;
@@ -345,8 +346,8 @@ public class RuntimeContext {
 
         sceDisplayModule = Modules.sceDisplayModule;
 
-        fastExecutableLookup = new IExecutable[(MemoryMap.END_USERSPACE - MemoryMap.START_USERSPACE + 1) >> 2];
-        fastCodeBlockLookup = new CodeBlockList[(MemoryMap.END_USERSPACE - MemoryMap.START_USERSPACE + 1) >> fastCodeBlockLookupShift];
+        fastExecutableLookup = new IExecutable[MemoryMap.SIZE_RAM >> 2];
+        fastCodeBlockLookup = new CodeBlockList[MemoryMap.SIZE_RAM >> fastCodeBlockLookupShift];
 
 		return true;
     }
@@ -783,6 +784,8 @@ public class RuntimeContext {
     		return;
     	}
 
+    	thread.onThreadStart();
+
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         IExecutable executable = getExecutable(processor.cpu.pc);
@@ -870,7 +873,7 @@ public class RuntimeContext {
 	    		// One code block has been deleted, recompute the whole code blocks range
 	    		computeCodeBlocksRange();
 
-	    		int fastExecutableLoopukIndex = (address - MemoryMap.START_USERSPACE) >> 2;
+	    		int fastExecutableLoopukIndex = (address - MemoryMap.START_RAM) >> 2;
 	    		if (fastExecutableLoopukIndex >= 0 && fastExecutableLoopukIndex < fastExecutableLookup.length) {
 	    			fastExecutableLookup[fastExecutableLoopukIndex] = null;
 	    		}
@@ -880,8 +883,8 @@ public class RuntimeContext {
 	    		codeBlocksHighestAddress = Math.max(codeBlocksHighestAddress, codeBlock.getHighestAddress());
 	    	}
 
-	    	int startIndex = (codeBlock.getLowestAddress() - MemoryMap.START_USERSPACE) >> fastCodeBlockLookupShift;
-    		int endIndex = (codeBlock.getHighestAddress() - MemoryMap.START_USERSPACE) >> fastCodeBlockLookupShift;
+	    	int startIndex = (codeBlock.getLowestAddress() - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
+    		int endIndex = (codeBlock.getHighestAddress() - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
     		for (int i = startIndex; i <= endIndex; i++) {
     			if (i >= 0 && i < fastCodeBlockLookup.length) {
     				CodeBlockList codeBlockList = fastCodeBlockLookup[i];
@@ -889,7 +892,7 @@ public class RuntimeContext {
     					if (previousCodeBlock != null) {
     						codeBlockList.remove(previousCodeBlock);
     					}
-    					int addr = (i << fastCodeBlockLookupShift) + MemoryMap.START_USERSPACE;
+    					int addr = (i << fastCodeBlockLookupShift) + MemoryMap.START_RAM;
     					int size = 1 << fastCodeBlockLookupShift;
     					if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
     						codeBlockList.add(codeBlock);
@@ -913,8 +916,9 @@ public class RuntimeContext {
     }
 
     public static IExecutable getExecutable(int address) {
+    	address &= addressMask;
     	// Check if we have already the executable in the fastExecutableLookup array
-		int fastExecutableLoopukIndex = (address - MemoryMap.START_USERSPACE) >> 2;
+		int fastExecutableLoopukIndex = (address - MemoryMap.START_RAM) >> 2;
 		IExecutable executable;
 		if (fastExecutableLoopukIndex >= 0 && fastExecutableLoopukIndex < fastExecutableLookup.length) {
 			executable = fastExecutableLookup[fastExecutableLoopukIndex];
@@ -1180,7 +1184,7 @@ public class RuntimeContext {
     }
 
     private static CodeBlockList fillFastCodeBlockList(int index) {
-		int startAddr = (index << fastCodeBlockLookupShift)  + MemoryMap.START_USERSPACE;
+		int startAddr = (index << fastCodeBlockLookupShift)  + MemoryMap.START_RAM;
 		int size = 1 << fastCodeBlockLookupShift;
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Creating new fastCodeBlockList for 0x%08X", startAddr));
@@ -1214,8 +1218,8 @@ public class RuntimeContext {
         	// Check if the code blocks located in the given range have to be invalidated
         	if (size == fastCodeBlockSize) {
         		// This is a fast track to avoid checking all the code blocks
-        		int startIndex = (addr - MemoryMap.START_USERSPACE) >> fastCodeBlockLookupShift;
-				int endIndex = (addr + size - MemoryMap.START_USERSPACE) >> fastCodeBlockLookupShift;
+        		int startIndex = (addr - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
+				int endIndex = (addr + size - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
 				if (startIndex >= 0 && endIndex <= fastCodeBlockLookup.length) {
 					for (int index = startIndex; index <= endIndex; index++) {
 	        			CodeBlockList codeBlockList = fastCodeBlockLookup[index];
