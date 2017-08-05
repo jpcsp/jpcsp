@@ -16,9 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
-import jpcsp.AllegrexOpcodes;
+import static jpcsp.HLE.SyscallHandler.syscallUnmappedImport;
+import static jpcsp.HLE.modules.ThreadManForUser.J;
+import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
+
 import jpcsp.Memory;
-import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.types.SceModule;
 
 public class DeferredStub {
@@ -57,9 +59,7 @@ public class DeferredStub {
     	}
 
 		// j <address>
-    	int instruction = (AllegrexOpcodes.J << 26) | ((address >> 2) & 0x03FFFFFF);
-
-        mem.write32(importAddress, instruction);
+        mem.write32(importAddress, J(address));
         mem.write32(importAddress + 4, 0); // write a nop over our "unmapped import detection special syscall"
     }
 
@@ -69,8 +69,7 @@ public class DeferredStub {
     		mem.write32(importAddress + 4, savedImport2);
     	} else {
         	// syscall <syscallUnmappedImport>
-        	int instruction = (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (SyscallHandler.syscallUnmappedImport << 6);
-            mem.write32(importAddress + 4, instruction);
+            mem.write32(importAddress + 4, SYSCALL(syscallUnmappedImport));
     	}
 
     	if (sourceModule != null) {

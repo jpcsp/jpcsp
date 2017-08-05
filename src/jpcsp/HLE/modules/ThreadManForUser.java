@@ -216,6 +216,8 @@ public class ThreadManForUser extends HLEModule {
     private static final boolean LOG_CONTEXT_SWITCHING = true;
     private static final boolean LOG_INSTRUCTIONS = false;
     public boolean exitCalled = false;
+    private int freeInternalUserMemoryStart;
+    private int freeInternalUserMemoryEnd;
 
     // see sceKernelGetThreadmanIdList
     public final static int SCE_KERNEL_TMID_Thread = 1;
@@ -651,8 +653,8 @@ public class ThreadManForUser extends HLEModule {
         callbackMap = new HashMap<Integer, pspBaseCallback>();
         callbackManager.Initialize();
 
-        int rootMem = reserveInternalMemory();
-        installIdleThreads(rootMem);
+        reserveInternalMemory();
+        installIdleThreads();
         installThreadExitHandler();
         installCallbackExitHandler();
         installAsyncLoopHandler();
@@ -710,10 +712,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public SceKernelThreadInfo getRootThread(SceModule module) {
-    	for (SceKernelThreadInfo thread : threadMap.values()) {
-    		if (rootThreadName.equals(thread.name) && (module == null || thread.moduleid == module.modid)) {
-    			return thread;
-    		}
+    	if (threadMap != null) {
+	    	for (SceKernelThreadInfo thread : threadMap.values()) {
+	    		if (rootThreadName.equals(thread.name) && (module == null || thread.moduleid == module.modid)) {
+	    			return thread;
+	    		}
+	    	}
     	}
 
     	return null;
@@ -839,9 +843,13 @@ public class ThreadManForUser extends HLEModule {
     	return (AllegrexOpcodes.J << 26) | ((address >> 2) & 0x03FFFFFF);
     }
 
+    public static int SYSCALL(int syscallCode) {
+    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (syscallCode << 6);
+    }
+
     private static int SYSCALL(HLEModule hleModule, String functionName) {
     	// syscall [functionName]
-    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (hleModule.getHleFunctionByName(functionName).getSyscallCode() << 6);
+    	return SYSCALL(hleModule.getHleFunctionByName(functionName).getSyscallCode());
     }
 
     private int SYSCALL(String functionName) {
@@ -858,7 +866,7 @@ public class ThreadManForUser extends HLEModule {
     	return (AllegrexOpcodes.BEQ << 26) | (_zr << 21) | (_zr << 16) | (destination & 0x0000FFFF);
     }
 
-    private int reserveInternalMemory() {
+    private void reserveInternalMemory() {
         // Reserve the memory used by the internal handlers
         SysMemInfo internalMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-InternalHandlers", SysMemUserForUser.PSP_SMEM_Addr, INTERNAL_THREAD_ADDRESS_SIZE, INTERNAL_THREAD_ADDRESS_START);
         if (internalMemInfo == null) {
@@ -866,16 +874,31 @@ public class ThreadManForUser extends HLEModule {
         }
 
         // This memory is always reserved on a real PSP
-        SysMemInfo rootMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
-        int rootMem = rootMemInfo.addr;
+        int internalUserMemorySize = 0x4000;
+        SysMemInfo rootMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, internalUserMemorySize, MemoryMap.START_USERSPACE);
+        freeInternalUserMemoryStart = rootMemInfo.addr;
+        freeInternalUserMemoryEnd = freeInternalUserMemoryStart + internalUserMemorySize;
+    }
 
-    	return rootMem;
+    public int allocateInternalUserMemory(int size) {
+    	// Align on a multiple of 4 bytes
+    	size = alignUp(size, 3);
+
+    	if (freeInternalUserMemoryStart + size > freeInternalUserMemoryEnd) {
+    		log.error(String.format("allocateInternalUserMemory not enough free memory available, requested size=0x%X, available size=0x%X", size, freeInternalUserMemoryEnd - freeInternalUserMemoryStart));
+    		return 0;
+    	}
+
+    	int allocatedMem = freeInternalUserMemoryStart;
+    	freeInternalUserMemoryStart += size;
+
+    	return allocatedMem;
     }
 
     /**
      * Generate 2 idle threads which can toggle between each other when there are no ready threads
      */
-    private void installIdleThreads(int rootMem) {
+    private void installIdleThreads() {
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(IDLE_THREAD_ADDRESS, 0x20, 4);
         memoryWriter.writeNext(MOVE(_a0, _zr));
         memoryWriter.writeNext(SYSCALL("sceKernelDelayThread"));
@@ -883,19 +906,20 @@ public class ThreadManForUser extends HLEModule {
         memoryWriter.writeNext(NOP());
         memoryWriter.flush();
 
-        // lowest allowed priority is 0x77, so we are ok at 0x7f
+        int idleThreadStackSize = 0x1000;
+        // Lowest allowed priority is 0x77, so we are fine at 0x7F.
         // Allocate a stack because interrupts can be processed by the
         // idle thread, using its stack.
         // The stack is allocated into the reservedMem area.
-        idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL, KERNEL_PARTITION_ID);
-        idle0.setSystemStack(rootMem, 0x2000);
+        idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7F, 0, PSP_THREAD_ATTR_KERNEL, KERNEL_PARTITION_ID);
+        idle0.setSystemStack(allocateInternalUserMemory(idleThreadStackSize), idleThreadStackSize);
         idle0.reset();
         idle0.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         threadMap.put(idle0.uid, idle0);
         hleChangeThreadState(idle0, PSP_THREAD_READY);
 
-        idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL, KERNEL_PARTITION_ID);
-        idle1.setSystemStack(rootMem + 0x2000, 0x2000);
+        idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7F, 0, PSP_THREAD_ATTR_KERNEL, KERNEL_PARTITION_ID);
+        idle1.setSystemStack(allocateInternalUserMemory(idleThreadStackSize), idleThreadStackSize);
         idle1.reset();
         idle1.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         threadMap.put(idle1.uid, idle1);
