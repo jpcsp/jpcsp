@@ -143,4 +143,10 @@ public class InterruptManager extends HLEModule {
 	public int sceKernelGetSyscallRA() {
 		return 0;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x14D4C61A, version = 660)
+	public int sceKernelRegisterSystemCallTable_660(TPointer syscallTable) {
+		return 0;
+	}
 }
