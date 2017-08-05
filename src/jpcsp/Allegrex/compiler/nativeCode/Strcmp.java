@@ -35,8 +35,8 @@ public class Strcmp extends AbstractNativeCodeSequence {
 			return;
 		}
 
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("strcmp src1=%s, src2=%s", Utilities.getMemoryDump(getGprA0(), getStrlen(getGprA0())), Utilities.getMemoryDump(getGprA1(), getStrlen(getGprA1()))));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("strcmp src1=%s, src2=%s", Utilities.getMemoryDump(getGprA0(), getStrlen(getGprA0())), Utilities.getMemoryDump(getGprA1(), getStrlen(getGprA1()))));
 		}
 
 		setGprV0(strcmp(getGprA0(), getGprA1()));
