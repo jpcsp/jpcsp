@@ -68,7 +68,6 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
-import jpcsp.HLE.modules.ModuleMgrForUser;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.filesystems.SeekableDataInput;
@@ -1475,6 +1474,10 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         // Files relative to ms0 directory
         if (pcfilename.startsWith("ms0")) {
             return "ms0:" + pcfilename.substring(3).replaceAll("\\\\", "/").toUpperCase();
+        }
+        // Files relative to flash0 directory
+        if (pcfilename.startsWith("flash0")) {
+            return "flash0:" + pcfilename.substring(6).replaceAll("\\\\", "/");
         }
 
         // Files with absolute path but also in ms0 directory
@@ -2925,15 +2928,6 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 loadFile(new File("flash0/vsh/module/vshmain.prx"), true);
                 Modules.IoFileMgrForUserModule.setfilepath("ms0/PSP/GAME");
 
-            	ModuleMgrForUser moduleMgr = Modules.ModuleMgrForUserModule;
-
-            	// Use increasing start thread priorities to enforce the start order
-            	int startPriority = 0x11;
-            	moduleMgr.hleKernelLoadAndStartModule("flash0:/kd/vshbridge.prx", startPriority++);
-            	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/paf.prx", startPriority++);
-            	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/common_gui.prx", startPriority++);
-            	moduleMgr.hleKernelLoadAndStartModule("flash0:/vsh/module/common_util.prx", startPriority++);
-
             	// Start VSH with the lowest priority so that the initialization of the other
             	// modules can be completed.
             	// The VSH root thread is running in KERNEL mode.
@@ -3272,5 +3266,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 	@Override
 	public void reset() {
         resetEmu();
+	}
+
+	@Override
+	public boolean isRunningFromVsh() {
+		return runFromVsh;
 	}
 }

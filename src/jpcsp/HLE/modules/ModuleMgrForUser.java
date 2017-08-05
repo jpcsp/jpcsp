@@ -259,10 +259,14 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     public int hleKernelLoadAndStartModule(String name, int startPriority) {
-    	return hleKernelLoadAndStartModule(name, startPriority, 0, TPointer.NULL);
+    	return hleKernelLoadAndStartModule(name, startPriority, null);
     }
 
-    public int hleKernelLoadAndStartModule(String name, int startPriority, int argSize, TPointer argp) {
+    public int hleKernelLoadAndStartModule(String name, int startPriority, IAction onModuleStartAction) {
+    	return hleKernelLoadAndStartModule(name, startPriority, 0, TPointer.NULL, onModuleStartAction);
+    }
+
+    public int hleKernelLoadAndStartModule(String name, int startPriority, int argSize, TPointer argp, IAction onModuleStartAction) {
     	LoadModuleContext loadModuleContext = new LoadModuleContext();
     	loadModuleContext.fileName = name;
     	loadModuleContext.allocMem = true;
@@ -285,7 +289,7 @@ public class ModuleMgrForUser extends HLEModule {
 	    	sceKernelSMOption.priority = startPriority;
 	    	sceKernelSMOption.write(startOptions);
 
-	    	hleKernelStartModule(moduleUid, argSize, argp, TPointer32.NULL, startOptions, false);
+	    	hleKernelStartModule(moduleUid, argSize, argp, TPointer32.NULL, startOptions, false, onModuleStartAction);
     	}
 
     	return moduleUid;
@@ -475,7 +479,7 @@ public class ModuleMgrForUser extends HLEModule {
     	return result;
 	}
 
-    public int hleKernelStartModule(int uid, int argSize, TPointer argp, TPointer32 statusAddr, TPointer optionAddr, boolean waitForThreadEnd) {
+    public int hleKernelStartModule(int uid, int argSize, TPointer argp, TPointer32 statusAddr, TPointer optionAddr, boolean waitForThreadEnd, IAction onModuleStartAction) {
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         SceKernelSMOption smOption = null;
         if (optionAddr.isNotNull()) {
@@ -549,6 +553,12 @@ public class ModuleMgrForUser extends HLEModule {
             thread.moduleid = sceModule.modid;
             // Store the thread exit status into statusAddr when the thread terminates
             thread.exitStatusAddr = statusAddr;
+
+            // Store any action that need to be executed when starting the module
+            if (onModuleStartAction != null) {
+            	thread.setOnThreadStartAction(onModuleStartAction);
+            }
+
             sceModule.start();
 
             if (startModuleHandler != 0) {
@@ -710,7 +720,7 @@ public class ModuleMgrForUser extends HLEModule {
 
     @HLEFunction(nid = 0x50F0C1EC, version = 150, checkInsideInterrupt = true)
     public int sceKernelStartModule(int uid, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
-    	return hleKernelStartModule(uid, argSize, argp, statusAddr, optionAddr, true);
+    	return hleKernelStartModule(uid, argSize, argp, statusAddr, optionAddr, true, null);
     }
 
     @HLELogging(level="info")

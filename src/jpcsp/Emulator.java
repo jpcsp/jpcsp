@@ -33,6 +33,8 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.SysMemUserForUser;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VertexCache;
 import jpcsp.graphics.VideoEngine;
@@ -152,12 +154,25 @@ public class Emulator implements Runnable {
         return load(pspfilename, f, false);
     }
 
+    private int getLoadAddress() {
+        SysMemInfo testInfo = Modules.SysMemUserForUserModule.malloc(USER_PARTITION_ID, "test-LoadAddress", SysMemUserForUser.PSP_SMEM_Low, 0x100, 0);
+        if (testInfo == null) {
+        	return MemoryMap.START_USERSPACE + 0x4000;
+        }
+
+        int lowestAddress = testInfo.addr;
+        Modules.SysMemUserForUserModule.free(testInfo);
+
+        return lowestAddress;
+    }
+
     public SceModule load(String pspfilename, ByteBuffer f, boolean fromSyscall) throws IOException, GeneralJpcspException {
         initNewPsp(fromSyscall);
 
         HLEModuleManager.getInstance().loadAvailableFlash0Modules();
 
-    	module = Loader.getInstance().LoadModule(pspfilename, f, MemoryMap.START_USERSPACE + 0x4000, USER_PARTITION_ID, USER_PARTITION_ID, false, true, fromSyscall);
+        int loadAddress = getLoadAddress();
+    	module = Loader.getInstance().LoadModule(pspfilename, f, loadAddress, USER_PARTITION_ID, USER_PARTITION_ID, false, true, fromSyscall);
 
         if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
             throw new GeneralJpcspException("File format not supported!");

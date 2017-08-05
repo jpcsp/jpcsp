@@ -33,6 +33,7 @@ import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.ThreadManForUser;
@@ -69,9 +70,15 @@ public class HLEModuleManager {
      * They will then replace the HLE equivalent.
      */
 	private static final String[] moduleFileNamesToBeLoaded = {
-			"flash0:/kd/utility.prx"
+			  "flash0:/kd/utility.prx"
+			, "flash0:/kd/vshbridge.prx"
+			, "flash0:/vsh/module/paf.prx"
+			, "flash0:/vsh/module/common_gui.prx"
+			, "flash0:/vsh/module/common_util.prx"
+//			, "flash0:/kd/memlmd_01g.prx"
 //			, "flash0:/kd/loadcore.prx"
 //			, "flash0:/kd/loadexec_01g.prx"
+//			, "flash0:/kd/modulemgr.prx"
 //			, "flash0:/kd/iofilemgr.prx"
 //			, "flash0:/kd/isofs.prx"
 //			, "flash0:/kd/umd9660.prx"
@@ -80,7 +87,14 @@ public class HLEModuleManager {
 //			, "flash0:/kd/codepage.prx"
 	};
 
-    /**
+	private static final String[] moduleFilesNameVshOnly = {
+			"flash0:/kd/vshbridge.prx"
+			, "flash0:/vsh/module/paf.prx"
+			, "flash0:/vsh/module/common_gui.prx"
+			, "flash0:/vsh/module/common_util.prx"
+	};
+
+	/**
      * List of modules that can be loaded
      * - by default in all firmwares (or only from a given FirmwareVersion)
      * - by sceKernelLoadModule/sceUtilityLoadModule from the flash0 or from the UMD (.prx)
@@ -618,14 +632,28 @@ public class HLEModuleManager {
 		hleModule.unload();
 	}
 
+	private boolean isModuleFileNameVshOnly(String moduleFileName) {
+		for (int i = 0; i < moduleFilesNameVshOnly.length; i++) {
+			if (moduleFilesNameVshOnly[i].equalsIgnoreCase(moduleFileName)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public void loadAvailableFlash0Modules() {
+		boolean runningFromVsh = Emulator.getMainGUI().isRunningFromVsh();
+
 		List<String> availableModuleFileNames = new LinkedList<>();
 		for (String moduleFileName : moduleFileNamesToBeLoaded) {
-			StringBuilder localFileName = new StringBuilder();
-			IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(moduleFileName, localFileName);
-			if (vfs != null && vfs.ioGetstat(localFileName.toString(), new SceIoStat()) == 0) {
-				// The module is available, load it
-				availableModuleFileNames.add(moduleFileName);
+			if (runningFromVsh || !isModuleFileNameVshOnly(moduleFileName)) {
+				StringBuilder localFileName = new StringBuilder();
+				IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(moduleFileName, localFileName);
+				if (vfs != null && vfs.ioGetstat(localFileName.toString(), new SceIoStat()) == 0) {
+					// The module is available, load it
+					availableModuleFileNames.add(moduleFileName);
+				}
 			}
 		}
 
@@ -644,16 +672,15 @@ public class HLEModuleManager {
         	if (log.isInfoEnabled()) {
         		log.info(String.format("Loading and starting the module '%s', it will replace the equivalent HLE functions", moduleFileName));
         	}
-        	int argSize = 0;
-        	TPointer argp = TPointer.NULL;
+
+        	IAction onModuleStartAction = null;
 
         	// loadcore.prx requires start parameters
         	if ("flash0:/kd/loadcore.prx".equals(moduleFileName)) {
-        		argSize = 8;
-        		argp = Modules.LoadCoreForKernelModule.prepareModuleStart();
+        		onModuleStartAction = Modules.LoadCoreForKernelModule.getModuleStartAction();
         	}
 
-        	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(moduleFileName, startPriority++, argSize, argp);
+        	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(moduleFileName, startPriority++, onModuleStartAction);
     	}
 	}
 }

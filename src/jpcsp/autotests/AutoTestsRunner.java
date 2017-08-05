@@ -106,6 +106,7 @@ public class AutoTestsRunner {
 		@Override public void run() { }
 		@Override public void pause() { }
 		@Override public void reset() { }
+		@Override public boolean isRunningFromVsh() { return false; }
 	}
 	
 	public AutoTestsRunner() {

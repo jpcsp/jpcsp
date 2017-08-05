@@ -48,4 +48,6 @@ public interface IMainGUI {
 
 	public void setDisplayMinimumSize(int width, int height);
 	public void setDisplaySize(int width, int height);
+
+	public boolean isRunningFromVsh();
 }
