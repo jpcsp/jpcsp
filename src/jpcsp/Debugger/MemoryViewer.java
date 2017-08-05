@@ -17,9 +17,9 @@
 package jpcsp.Debugger;
 
 import java.awt.event.KeyEvent;
-import java.io.BufferedWriter;
+import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 import javax.swing.JOptionPane;
@@ -27,7 +27,10 @@ import javax.swing.SwingUtilities;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.WindowPropSaver;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
 
 /**
@@ -294,15 +297,15 @@ private void btnGoToSPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 
 private void btnDumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDumpRawRamActionPerformed
         File f = new File("ramdump.bin");
-        BufferedWriter out = null;
+        BufferedOutputStream out = null;
         try {
-            out = new BufferedWriter(new FileWriter(f));
-            Memory mem = Memory.getInstance();
-            for (int i = 0x08000000; i <= 0x09ffffff; i++) {
-                out.write(safeRead8(mem, i));
+            out = new BufferedOutputStream(new FileOutputStream(f));
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(MemoryMap.START_RAM, MemoryMap.SIZE_RAM, 1);
+            for (int i = 0; i < MemoryMap.SIZE_RAM; i++) {
+                out.write(memoryReader.readNext());
             }
         } catch (IOException e) {
-            // do nothing
+            // Ignore exception
         } finally {
             Utilities.close(out);
         }
