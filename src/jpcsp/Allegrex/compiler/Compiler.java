@@ -21,6 +21,9 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_BRANCHING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_STARTS_NEW_BLOCK;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_SYSCALL;
+import static jpcsp.HLE.SyscallHandler.syscallLoadCoreUnmappedImport;
+import static jpcsp.HLE.modules.ThreadManForUser.NOP;
+import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
 
 import java.io.File;
 import java.io.IOException;
@@ -151,6 +154,8 @@ public class Compiler implements ICompiler {
     private static final int maxRecompileExecutable = 50;
     private CompilerTypeManager compilerTypeManager;
     private HashSet<Integer> interpretedAddresses = new HashSet<Integer>();
+    private static final int opcodeSyscallLoadCoreUnmappedImport = SYSCALL(syscallLoadCoreUnmappedImport);
+    private static final int opcodeNop = NOP();
 
 	private class IgnoreInvalidMemoryAccessSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -447,6 +452,18 @@ public class Compiler implements ICompiler {
 
                     if (isEndBlockInsn(pc, opcode, insn)) {
                     	endPc = npc;
+                    } else if (opcode == opcodeSyscallLoadCoreUnmappedImport) {
+                    	// loadcore.prx is generating the following sequence for unmapped imports:
+                    	//     syscall 0x00015
+                    	//     nop
+                    	// As there is no instruction marking the end of this block, we
+                    	// need to handle this special case.
+                    	int nextOpcode = memoryReader.readNext();
+                    	if (nextOpcode == opcodeNop) {
+                    		endPc = npc;
+                    	}
+                    	// Undo reading of next instruction
+                		memoryReader.skip(-1);
                     }
 
                     if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {

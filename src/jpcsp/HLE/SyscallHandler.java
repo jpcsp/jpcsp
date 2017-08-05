@@ -37,6 +37,8 @@ public class SyscallHandler {
 	private static Logger log = Modules.log;
     public static boolean ignoreUnmappedImports = false;
     public static final int syscallUnmappedImport = 0xFFFFF;
+    // Syscall number used by loadcore.prx to mark unmapped imports
+    public static final int syscallLoadCoreUnmappedImport = 0x00015;
     private static IgnoreUnmappedImportsSettingsListerner ignoreUnmappedImportsSettingsListerner;
 
 	private static class IgnoreUnmappedImportsSettingsListerner extends AbstractBoolSettingsListener {
@@ -72,6 +74,47 @@ public class SyscallHandler {
     	NIDMapper nidMapper = NIDMapper.getInstance();
 
     	if (code == syscallUnmappedImport) { // special code for unmapped imports
+            CpuState cpu = Emulator.getProcessor().cpu;
+
+            String description = String.format("0x%08X", cpu.pc);
+            // Search for the module & NID to provide a better description
+            for (SceModule module : Managers.modules.values()) {
+            	for (DeferredStub deferredStub : module.unresolvedImports) {
+            		if (deferredStub.getImportAddress() == cpu.pc || deferredStub.getImportAddress() == cpu.pc - 4) {
+            			description = deferredStub.toString();
+            			break;
+            		}
+            	}
+            }
+
+            if (isEnableIgnoreUnmappedImports()) {
+	            log.warn(String.format("IGNORING: Unmapped import at %s - $a0=0x%08X $a1=0x%08X $a2=0x%08X", description, cpu._a0, cpu._a1, cpu._a2));
+	        } else {
+		        log.error(String.format("Unmapped import at %s:", description));
+		        log.error(String.format("Registers: $a0=0x%08X, $a1=0x%08X, $a2=0x%08X, $a3=0x%08X", cpu._a0, cpu._a1, cpu._a2, cpu._a3));
+		        log.error(String.format("           $t0=0x%08X, $t1=0x%08X, $t2=0x%08X, $t3=0x%08X", cpu._t0, cpu._t1, cpu._t2, cpu._t3));
+		        log.error(String.format("           $ra=0x%08X, $sp=0x%08X", cpu._ra, cpu._sp));
+		        Memory mem = Emulator.getMemory();
+		        log.error(String.format("Caller code:"));
+		        for (int i = -96; i <= 40; i += 4) {
+		        	int address = cpu._ra + i;
+		        	int opcode = mem.read32(address);
+		        	Instruction insn = Decoder.instruction(opcode);
+		        	String disasm = insn.disasm(address, opcode);
+		        	log.error(String.format("%c 0x%08X:[%08X]: %s", i == -8 ? '>' : ' ', address, opcode, disasm));
+		        }
+		        logMem(mem, cpu._a0, Common.gprNames[Common._a0]);
+		        logMem(mem, cpu._a1, Common.gprNames[Common._a1]);
+		        logMem(mem, cpu._a2, Common.gprNames[Common._a2]);
+		        logMem(mem, cpu._a3, Common.gprNames[Common._a3]);
+		        logMem(mem, cpu._t0, Common.gprNames[Common._t0]);
+		        logMem(mem, cpu._t1, Common.gprNames[Common._t1]);
+		        logMem(mem, cpu._t2, Common.gprNames[Common._t2]);
+		        logMem(mem, cpu._t3, Common.gprNames[Common._t3]);
+		        Emulator.PauseEmu();
+	        }
+            cpu._v0 = 0;
+    	} else if (code == syscallLoadCoreUnmappedImport) {
             CpuState cpu = Emulator.getProcessor().cpu;
 
             String description = String.format("0x%08X", cpu.pc);

@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import static jpcsp.HLE.SyscallHandler.syscallLoadCoreUnmappedImport;
+import static jpcsp.HLE.SyscallHandler.syscallUnmappedImport;
+
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.ICompilerContext;
@@ -682,7 +685,13 @@ public class Common {
     	}
 
     	if (functionName == null) {
-    		functionName = "unknown";
+    		if (code == syscallUnmappedImport) {
+    			functionName = "Unmapped import";
+    		} else if (code == syscallLoadCoreUnmappedImport) {
+    			functionName = "Unmapped import from loadcore";
+    		} else {
+    			functionName = "unknown";
+    		}
     	}
 
         return String.format("%1$-10s 0x%2$05X [%3$s]", "syscall", code, functionName);

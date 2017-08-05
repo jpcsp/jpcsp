@@ -37,6 +37,7 @@ import static jpcsp.Allegrex.Common._t9;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
 import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.HLE.SyscallHandler.syscallLoadCoreUnmappedImport;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -2009,6 +2010,16 @@ public class CompilerContext implements ICompilerContext {
         	prepareHiloForStore();
         	mv.visitLdcInsn(new Long(0xDEADBEEFDEADBEEFL));
         	storeHilo();
+
+        	// loadcore.prx is generating the following sequence for unmapped imports:
+        	//     syscall 0x00015
+        	//     nop
+        	// As there is no instruction to return to the called, we
+        	// need to handle this special case.
+	    	if (code == syscallLoadCoreUnmappedImport) {
+	    		loadRegister(_ra);
+	    		visitJump();
+	    	}
     	}
     }
 
