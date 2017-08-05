@@ -23,6 +23,7 @@ import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
 import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
 import static jpcsp.HLE.modules.ThreadManForUser.NOP;
+import static jpcsp.Memory.addressMask;
 import static jpcsp.format.Elf32SectionHeader.SHF_ALLOCATE;
 import static jpcsp.format.Elf32SectionHeader.SHF_EXECUTE;
 import static jpcsp.format.Elf32SectionHeader.SHF_NONE;
@@ -567,7 +568,7 @@ public class Loader {
                 		IntBuffer intBuffer = f.asIntBuffer();
                 		// Optimize the most common case
                 		if (RuntimeContext.hasMemoryInt()) {
-                			intBuffer.get(RuntimeContext.getMemoryInt(), memOffset >> 2, fileLen >> 2);
+                			intBuffer.get(RuntimeContext.getMemoryInt(), (memOffset & addressMask) >> 2, fileLen >> 2);
                 		} else {
                 			int[] buffer = new int[fileLen >> 2];
                 			intBuffer.get(buffer);
@@ -1689,6 +1690,17 @@ public class Loader {
     		// Patch memlmd_F26A33C3
     		patch(mem, module, 0x000012D8, 0x90430000, ADDIU(_v1, _zr, 1)); // replace "lbu $v1, 0($v0)" with "li $v1, 1"
     		patch(mem, module, 0x00001324, 0x90460000, ADDIU(_a2, _zr, 0)); // replace "lbu $a2, 0($v0)" with "li $a2, 0"
+    	}
+
+    	if ("sceModuleManager".equals(module.modname)) {
+    		patch(mem, module, 0x000030CC, 0x24030020, 0x24030010); // replace "li $v1, 32" with "li $v1, 16" (this will be stored at SceLoadCoreExecFileInfo.apiType)
+    	}
+
+    	if ("sceLoaderCore".equals(module.modname)) {
+//    		patch(mem, module, 0x0000469C, 0x15C0FFA0, NOP()); // Allow loading of privileged modules being not encrypted
+//    		patch(mem, module, 0x00004548, 0x7C0F6244, NOP()); // Allow loading of privileged modules being not encrypted (take SceLoadCoreExecFileInfo.modInfoAttribute from the ELF module info)
+//    		patch(mem, module, 0x00004550, 0x14E0002C, 0x1000002C); // Allow loading of privileged modules being not encrypted
+    		patch(mem, module, 0x00003D58, 0x10C0FFBE, NOP()); // Allow linking user stub to kernel lib
     	}
     }
 

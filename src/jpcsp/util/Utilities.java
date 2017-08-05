@@ -17,6 +17,7 @@
 package jpcsp.util;
 
 import static java.lang.System.arraycopy;
+import static jpcsp.Memory.addressMask;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -55,6 +56,7 @@ import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
@@ -1424,7 +1426,7 @@ public class Utilities {
     	final int length4 = length >> 2;
 		// Optimize the most common case
 		if (RuntimeContext.hasMemoryInt()) {
-			System.arraycopy(RuntimeContext.getMemoryInt(), address >> 2, a, offset, length4);
+			System.arraycopy(RuntimeContext.getMemoryInt(), (address & addressMask) >> 2, a, offset, length4);
 		} else {
 			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
 			for (int i = 0; i < length4; i++) {
@@ -1437,7 +1439,7 @@ public class Utilities {
     	final int length4 = length >> 2;
 		// Optimize the most common case
     	if (RuntimeContext.hasMemoryInt()) {
-    		System.arraycopy(a, offset, RuntimeContext.getMemoryInt(), address >> 2, length4);
+    		System.arraycopy(a, offset, RuntimeContext.getMemoryInt(), (address & addressMask) >> 2, length4);
     	} else {
 	    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, length, 4);
 	    	for (int i = 0; i < length4; i++) {
@@ -1527,6 +1529,17 @@ public class Utilities {
     	System.arraycopy(source, sourceOffset, destination, destinationOffset, length);
 
     	return destination;
+    }
+
+    public static TPointer[] extendArray(TPointer[] array, int extend) {
+        if (array == null) {
+            return new TPointer[extend];
+        }
+
+        TPointer[] newArray = new TPointer[array.length + extend];
+        System.arraycopy(array, 0, newArray, 0, array.length);
+
+        return newArray;
     }
 
     public static String[] add(String[] array, String s) {
