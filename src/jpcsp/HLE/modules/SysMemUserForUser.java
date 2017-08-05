@@ -204,7 +204,7 @@ public class SysMemUserForUser extends HLEModule {
         public final int type;
         public int size;
         public int allocatedSize;
-        public final int addr;
+        public int addr;
 
         public SysMemInfo(int partitionid, String name, int type, int size, int allocatedSize, int addr) {
             this.partitionid = partitionid;
@@ -352,11 +352,19 @@ public class SysMemUserForUser extends HLEModule {
     	return result.toString();
     }
 
+    private void free(int partitionId, int addr, int size) {
+    	MemoryChunk memoryChunk = new MemoryChunk(addr, size);
+    	freeMemoryChunks[partitionId].add(memoryChunk);
+    }
+
+    private int alloc(int partitionId, int addr, int size) {
+		return freeMemoryChunks[partitionId].alloc(addr, size);
+    }
+
     public void free(SysMemInfo info) {
     	if (info != null) {
     		info.free();
-	    	MemoryChunk memoryChunk = new MemoryChunk(info.addr, info.allocatedSize);
-	    	freeMemoryChunks[info.partitionid].add(memoryChunk);
+    		free(info.partitionid, info.addr, info.allocatedSize);
 
 	    	if (log.isDebugEnabled()) {
 	    		log.debug(String.format("free %s", info.toString()));
@@ -395,6 +403,16 @@ public class SysMemUserForUser extends HLEModule {
     	return blockList.get(uid);
     }
 
+    public SysMemInfo getSysMemInfoByAddress(int address) {
+    	for (SysMemInfo info : blockList.values()) {
+    		if (address >= info.addr && address < info.addr + info.size) {
+    			return info;
+    		}
+    	}
+
+    	return null;
+    }
+
     public SysMemInfo separateMemoryBlock(SysMemInfo info, int size) {
     	int newAddr = info.addr + size;
     	int newSize = info.size - size;
@@ -408,6 +426,42 @@ public class SysMemUserForUser extends HLEModule {
     	info.allocatedSize -= newAllocatedSize;
 
     	return newSysMemInfo;
+    }
+
+    public boolean resizeMemoryBlock(SysMemInfo info, int leftShift, int rightShift) {
+    	if (rightShift < 0) {
+    		int sizeToFree = -rightShift;
+    		free(info.partitionid, info.addr + info.allocatedSize - sizeToFree, sizeToFree);
+    		info.allocatedSize -= sizeToFree;
+    		info.size -= sizeToFree;
+    	} else if (rightShift > 0) {
+    		int sizeToExtend = rightShift;
+    		int extendAddr = alloc(info.partitionid, info.addr + info.allocatedSize, sizeToExtend);
+    		if (extendAddr == 0) {
+    			return false;
+    		}
+    		info.allocatedSize += sizeToExtend;
+    		info.size += sizeToExtend;
+    	}
+
+    	if (leftShift < 0) {
+    		int sizeToFree = -leftShift;
+    		free(info.partitionid, info.addr, sizeToFree);
+    		info.addr += sizeToFree;
+    		info.size -= sizeToFree;
+    		info.allocatedSize -= sizeToFree;
+    	} else if (leftShift > 0) {
+    		int sizeToExtend = leftShift;
+    		int extendAddr = alloc(info.partitionid, info.addr - sizeToExtend, sizeToExtend);
+    		if (extendAddr == 0) {
+    			return false;
+    		}
+    		info.addr -= sizeToExtend;
+    		info.allocatedSize += sizeToExtend;
+    		info.size += sizeToExtend;
+    	}
+
+    	return true;
     }
 
     /** @param firmwareVersion : in this format: ABB, where A = major and B = minor, for example 271 */

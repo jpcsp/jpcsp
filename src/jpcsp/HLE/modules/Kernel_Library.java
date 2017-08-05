@@ -148,6 +148,13 @@ public class Kernel_Library extends HLEModule {
 		return dst.getAddress();
 	}
 
+    @HLEFunction(nid = 0xA089ECA4, version = 150)
+    public int sceKernelMemset(TPointer destAddr, int data, int size) {
+        destAddr.memset((byte) data, size);
+
+        return 0;
+    }
+
     @HLEFunction(nid = 0xFA835CDE, version = 620)
 	public int sceKernel_FA835CDE(int uid) {
 		SceKernelTls tls = Modules.ThreadManForUserModule.getKernelTls(uid);

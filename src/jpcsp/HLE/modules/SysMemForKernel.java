@@ -17,11 +17,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
+import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
+import static jpcsp.HLE.modules.SysMemUserForUser.defaultSizeAlignment;
 import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_SIZE;
 import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_START;
 import static jpcsp.Memory.addressMask;
+import static jpcsp.MemoryMap.END_USERSPACE;
 import static jpcsp.MemoryMap.START_KERNEL;
+import static jpcsp.MemoryMap.START_USERSPACE;
 
 import java.util.HashMap;
 
@@ -291,16 +295,9 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-	@HLEFunction(nid = 0xA089ECA4, version = 150)
-    public int sceKernelMemset(TPointer destAddr, int data, int size) {
-        destAddr.memset((byte) data, size);
-
-        return 0;
-    }
-
 	@HLEFunction(nid = 0x8AE776AF, version = 660)
     public int sceKernelMemset_660(TPointer destAddr, int data, int size) {
-		return sceKernelMemset(destAddr, data, size);
+		return Modules.Kernel_LibraryModule.sceKernelMemset(destAddr, data, size);
     }
 
     /**
@@ -315,6 +312,9 @@ public class SysMemForKernel extends HLEModule {
 	@HLELogging(level = "info")
     @HLEFunction(nid = 0x1C1FBFE7, version = 150)
     public int sceKernelCreateHeap(int partitionId, int size, int flags, String name) {
+		// Hook to force the allocation of a larger heap for the sceLoaderCore module
+		size = Modules.LoadCoreForKernelModule.hleKernelCreateHeapHook(partitionId, size, flags, name);
+
     	HeapInformation info = new HeapInformation(partitionId, size, flags, name);
 
     	if (info.uid >= 0) {
@@ -716,17 +716,17 @@ public class SysMemForKernel extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x2E3402CC, version = 150)
     public int sceKernelRenameUID(int id, String name) {
+    	if (SceUidManager.isValidUid(id)) {
+    		log.warn(String.format("sceKernelRenameUID called on id=0x%X, which has not been created by sceKernelCreateUID", id));
+    		return 0;
+    	}
+
     	if ((id & 0x80000001) != 1) {
     		return SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
     	}
     	Memory mem = Memory.getInstance();
 
     	int cb = getCBFromUid(id);
-    	if (!Memory.isAddressGood(cb) || cb == MemoryMap.START_RAM) {
-    		log.warn(String.format("sceKernelRenameUID called on id=0x%X, which has not been created by sceKernelCreateUID", id));
-    		return 0;
-    	}
-
     	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
     	sceSysmemUidCB.read(mem, cb);
 
@@ -807,7 +807,6 @@ public class SysMemForKernel extends HLEModule {
      * Returns
      *     0 on success.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x55A40B2C, version = 150)
     public int sceKernelQueryMemoryPartitionInfo(int partitionId, @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.out) TPointer infoPtr) {
     	pspSysmemPartitionInfo partitionInfo = new pspSysmemPartitionInfo();
@@ -818,6 +817,11 @@ public class SysMemForKernel extends HLEModule {
     			partitionInfo.startAddr = START_KERNEL;
     			partitionInfo.memSize = KERNEL_VOLATILE_MEM_START - (START_KERNEL & addressMask);
     			partitionInfo.attr = 0;
+    			break;
+    		case USER_PARTITION_ID:
+    			partitionInfo.startAddr = START_USERSPACE;
+    			partitionInfo.memSize = END_USERSPACE - START_USERSPACE + 1;
+    			partitionInfo.attr = 0x3;
     			break;
     		case VSHELL_PARTITION_ID:
     			partitionInfo.startAddr = KERNEL_VOLATILE_MEM_START;
@@ -834,7 +838,6 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xC4EEAF20, version = 660)
     public int sceKernelQueryMemoryPartitionInfo_660(int partitionId, @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.out) TPointer infoPtr) {
     	return sceKernelQueryMemoryPartitionInfo(partitionId, infoPtr);
@@ -990,31 +993,54 @@ public class SysMemForKernel extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x9B20ACEF, version = 150)
-    public int sceKernelMemmoveWithFill() {
-    	return 0;
+    public int sceKernelMemmoveWithFill(TPointer dstAddr, TPointer srcAddr, int size, int fill) {
+    	// Calling memmove
+    	dstAddr.memmove(srcAddr.getAddress(), size);
+    	// TODO: implement the fill parameter
+
+    	return dstAddr.getAddress();
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD0C1460D, version = 150)
     public int sceKernelGetId() {
+    	// Has no parameters
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xF7E78B33, version = 150)
-    public int sceKernelSeparateMemoryBlock() {
+    public int sceKernelSeparateMemoryBlock(int id, boolean cutBefore, int size) {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xFAF29F34, version = 150)
-    public int sceKernelQueryMemoryInfo() {
+    public int sceKernelQueryMemoryInfo(int address, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 partitionIdAddr, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 memoryBlockIdAddr) {
+		SysMemInfo info = Modules.SysMemUserForUserModule.getSysMemInfoByAddress(address);
+		if (info == null) {
+			return -1;
+		}
+
+		partitionIdAddr.setValue(info.partitionid);
+    	memoryBlockIdAddr.setValue(info.uid);
+
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xFB5BEB66, version = 150)
-    public int sceKernelResizeMemoryBlock() {
-    	return 0;
+    public int sceKernelResizeMemoryBlock(int id, int leftShift, int rightShift) {
+		SysMemInfo info = Modules.SysMemUserForUserModule.getSysMemInfo(id);
+		if (info == null) {
+			return -1;
+		}
+
+		leftShift = leftShift / defaultSizeAlignment * defaultSizeAlignment;
+		rightShift = rightShift / defaultSizeAlignment * defaultSizeAlignment;
+
+		if (!Modules.SysMemUserForUserModule.resizeMemoryBlock(info, leftShift, rightShift)) {
+			return SceKernelErrors.ERROR_KERNEL_FAILED_RESIZE_MEMBLOCK;
+		}
+
+		return 0;
     }
 }

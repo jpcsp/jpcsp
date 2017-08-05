@@ -89,6 +89,10 @@ public class SceUidManager {
         return true;
     }
 
+    static public boolean isValidUid(int uid) {
+    	return uidMap.containsKey(uid);
+    }
+
     /**
      * Return a new ID for the given purpose.
      * The ID will be unique for the given purpose but will not be unique
