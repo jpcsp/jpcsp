@@ -181,7 +181,7 @@ public class HLEModuleManager {
         scePauth(Modules.scePauthModule),
         sceSfmt19937(Modules.sceSfmt19937Module),
         sceMd5(Modules.sceMd5Module, new String[] { "libmd5" }),
-        sceParseUri(Modules.sceParseUriModule, new String[] { "libparse_uri", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP", "PSP_MODULE_NET_PARSEURI" }),
+        sceParseUri(Modules.sceParseUriModule, new String[] { "libparse_uri", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP", "PSP_MODULE_NET_PARSEURI" }, "flash0:/kd/libparse_uri.prx"),
         sceUsbAcc(Modules.sceUsbAccModule, new String[] { "PSP_USB_MODULE_ACC", "USBAccBaseDriver" }),
         sceMt19937(Modules.sceMt19937Module, new String[] { "libmt19937" }),
         sceAac(Modules.sceAacModule, new String[] { "libaac", "PSP_AV_MODULE_AAC", "PSP_MODULE_AV_AAC" }),
