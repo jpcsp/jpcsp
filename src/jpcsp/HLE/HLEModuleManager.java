@@ -130,7 +130,8 @@ public class HLEModuleManager {
         sceHprm(Modules.sceHprmModule),		// check if loaded by default
         sceAtrac3plus(Modules.sceAtrac3plusModule, new String[] { "libatrac3plus", "PSP_AV_MODULE_ATRAC3PLUS", "PSP_MODULE_AV_ATRAC3PLUS", "sceATRAC3plus_Library" }, "flash0:/kd/libatrac3plus.prx"),
         sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_AV_MODULE_SASCORE", "PSP_MODULE_AV_SASCORE", "sceSAScore" }, "flash0:/kd/sc_sascore.prx"),
-        sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "mpeg_vsh", "mpeg_vsh370", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE", "sceMpeg_library" }, "flash0:/kd/mpeg.prx"),
+        sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE", "sceMpeg_library" }, "flash0:/kd/mpeg.prx"),
+        sceMpegVsh(Modules.sceMpegModule, new String[] { "mpeg_vsh", "mpeg_vsh370", }, "flash0:/kd/mpeg_vsh.prx"),
         sceMpegbase(Modules.sceMpegbaseModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec", "sceMpegbase_Driver" }, "flash0:/kd/avcodec.prx"),
         sceFont(Modules.sceFontModule, new String[] { "libfont", "sceFont_Library" }),
         scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer", "psmf_jk", "scePsmfP_library" }),
