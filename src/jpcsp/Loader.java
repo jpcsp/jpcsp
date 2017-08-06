@@ -1721,7 +1721,7 @@ public class Loader {
     	int address = module.baseAddress + offset;
     	int checkChar = mem.read8(address);
     	if (checkChar != oldChar) {
-    		log.error(String.format("Patching of module '%s' failed at offset 0x%X, 0x%02X found instead of 0x%02X", module.modname, offset, checkChar, oldChar));
+    		log.error(String.format("Patching of module '%s' failed at offset 0x%X, 0x%02X found instead of 0x%02X: %s", module.modname, offset, checkChar, oldChar, Utilities.getMemoryDump(address - 0x100, 0x200)));
     	} else {
     		String s = Utilities.readStringZ(address);
     		s = s.substring(1);
