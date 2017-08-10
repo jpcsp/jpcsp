@@ -23,6 +23,9 @@ import java.nio.ByteBuffer;
 import jpcsp.util.Utilities;
 
 public class Elf32ProgramHeader {
+	public static final int PF_X = (1 << 0); /* Segment is executable */
+	public static final int PF_W = (1 << 1); /* Segment is writable */
+	public static final int PF_R = (1 << 2); /* Segment is readable */
     private int p_type;
     private int p_offset;
     private int p_vaddr;

@@ -24,6 +24,7 @@ import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
 import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
 import static jpcsp.HLE.modules.ThreadManForUser.NOP;
 import static jpcsp.Memory.addressMask;
+import static jpcsp.format.Elf32ProgramHeader.PF_X;
 import static jpcsp.format.Elf32SectionHeader.SHF_ALLOCATE;
 import static jpcsp.format.Elf32SectionHeader.SHF_EXECUTE;
 import static jpcsp.format.Elf32SectionHeader.SHF_NONE;
@@ -528,6 +529,10 @@ public class Loader {
         List<Elf32ProgramHeader> programHeaderList = elf.getProgramHeaderList();
         Memory mem = Memory.getInstance();
 
+        module.text_size = 0;
+        module.data_size = 0;
+        module.bss_size = 0;
+
         int i = 0;
         for (Elf32ProgramHeader phdr : programHeaderList) {
         	if (log.isTraceEnabled()) {
@@ -598,6 +603,21 @@ public class Loader {
                 module.segmentaddr[module.nsegment] = memOffset;
                 module.segmentsize[module.nsegment] = memLen;
                 module.nsegment++;
+
+                /*
+                 * If the segment is executable, it contains the .text section.
+                 * Otherwise, it contains the .data section.
+                 */
+                if ((phdr.getP_flags() & PF_X) != 0) {
+                	module.text_size += fileLen;
+                } else {
+                	module.data_size += fileLen;
+                }
+
+                /* Add the "extra" segment bytes to the .bss section. */
+                if (fileLen < memLen) {
+                	module.bss_size += memLen - fileLen;
+                }
             }
             i++;
         }
@@ -613,9 +633,6 @@ public class Loader {
         Memory mem = Memory.getInstance();
 
         module.text_addr = baseAddress;
-        module.text_size = 0;
-        module.data_size = 0;
-        module.bss_size = 0;
 
         for (Elf32SectionHeader shdr : sectionHeaderList) {
         	if (log.isTraceEnabled()) {
@@ -657,12 +674,10 @@ public class Loader {
 	                        }
 
 	                        if ((flags & SHF_WRITE) != 0) {
-	                        	module.data_size += len;
 	                        	if (log.isTraceEnabled()) {
 	                        		log.trace(String.format("Section Header as data, len=0x%08X, data_size=0x%08X", len, module.data_size));
 	                        	}
 	                        } else {
-	                        	module.text_size += len;
 	                        	if (log.isTraceEnabled()) {
 	                        		log.trace(String.format("Section Header as text, len=0x%08X, text_size=0x%08X", len, module.text_size));
 	                        	}
@@ -701,8 +716,6 @@ public class Loader {
                                 	log.debug(String.format("%s: new loadAddressHigh %08X (+%08X)", shdr.getSh_namez(), module.loadAddressHigh, len));
                                 }
                             }
-
-                            module.bss_size += len;
                         }
                         break;
                     }
@@ -1475,7 +1488,7 @@ public class Loader {
 	                    // the module is a homebrew (loaded from MemoryStick) or
 	                    // this is the EBOOT module.
                         if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000) || module.pspfilename.startsWith("ms0:") || module.pspfilename.startsWith("disc0:/PSP_GAME/SYSDIR/EBOOT.") || module.pspfilename.startsWith("flash0:")) {
-                            nidMapper.addModuleNid(module, moduleName, nid, exportAddress);
+                            nidMapper.addModuleNid(module, moduleName, nid, exportAddress, false);
                             entCount++;
                             if (log.isDebugEnabled()) {
                                 log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
@@ -1521,7 +1534,7 @@ public class Loader {
 	                        default:
 	                            // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
 	                            if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
-	                                nidMapper.addModuleNid(module, moduleName, nid, exportAddress);
+	                                nidMapper.addModuleNid(module, moduleName, nid, exportAddress, false);
 	                                entCount++;
 	                                if (log.isDebugEnabled()) {
 	                                    log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
@@ -1579,7 +1592,7 @@ public class Loader {
                         default:
                             // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
                             if (Memory.isAddressGood(variableAddr) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
-                                nidMapper.addModuleNid(module, moduleName, nid, variableAddr);
+                                nidMapper.addModuleNid(module, moduleName, nid, variableAddr, true);
                                 entCount++;
                                 if (log.isDebugEnabled()) {
                                     log.debug(String.format("Export found at 0x%08X [0x%08X]", variableAddr, nid));

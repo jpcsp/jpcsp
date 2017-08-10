@@ -847,7 +847,7 @@ public class ThreadManForUser extends HLEModule {
     	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (syscallCode << 6);
     }
 
-    private static int SYSCALL(HLEModule hleModule, String functionName) {
+    public static int SYSCALL(HLEModule hleModule, String functionName) {
     	// syscall [functionName]
     	return SYSCALL(hleModule.getHleFunctionByName(functionName).getSyscallCode());
     }

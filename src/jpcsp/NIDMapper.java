@@ -42,6 +42,7 @@ public class NIDMapper {
     	private int address;
     	private final String name;
     	private final String moduleName;
+    	private final boolean variableExport; // Is coming from a function or variable export?
     	private int firmwareVersion;
     	private boolean overwritten;
     	private boolean loaded;
@@ -54,10 +55,11 @@ public class NIDMapper {
     	 * @param address
     	 * @param moduleName
     	 */
-    	public NIDInfo(int nid, int address, String moduleName) {
+    	public NIDInfo(int nid, int address, String moduleName, boolean variableExport) {
 			this.nid = nid;
 			this.address = address;
 			this.moduleName = moduleName;
+			this.variableExport = variableExport;
 			name = null;
 			syscall = -1;
 			firmwareVersion = 999;
@@ -80,6 +82,7 @@ public class NIDMapper {
     		this.syscall = syscall;
     		this.name = name;
     		this.moduleName = moduleName;
+    		variableExport = false;
     		this.firmwareVersion = firmwareVersion;
     		address = 0;
     		overwritten = false;
@@ -165,6 +168,10 @@ public class NIDMapper {
 			return validModuleName;
 		}
 
+		public boolean isVariableExport() {
+			return variableExport;
+		}
+
 		@Override
 		public String toString() {
 			StringBuilder s = new StringBuilder();
@@ -177,6 +184,9 @@ public class NIDMapper {
 			s.append(String.format(", moduleName='%s'", moduleName));
 			if (!isValidModuleName()) {
 				s.append("(probably invalid)");
+			}
+			if (isVariableExport()) {
+				s.append(", variable export");
 			}
 			s.append(String.format(", firmwareVersion=%d", firmwareVersion));
 			if (isOverwritten()) {
@@ -331,8 +341,9 @@ public class NIDMapper {
      * @param moduleName the module name
      * @param nid        the nid
      * @param address    the address of the nid
+     * @param variableExport coming from a function or variable export
      */
-    public void addModuleNid(SceModule module, String moduleName, int nid, int address) {
+    public void addModuleNid(SceModule module, String moduleName, int nid, int address, boolean variableExport) {
     	address &= Memory.addressMask;
 
     	NIDInfo info = getNIDInfoByNid(moduleName, nid);
@@ -347,7 +358,7 @@ public class NIDMapper {
         	info.overwrite(address);
         	addressMap.put(address, info);
     	} else {
-    		info = new NIDInfo(nid, address, moduleName);
+    		info = new NIDInfo(nid, address, moduleName, variableExport);
 
     		addNIDInfo(info);
     	}
@@ -503,5 +514,14 @@ public class NIDMapper {
     public String[] getModuleNames() {
     	String[] moduleNames = moduleNidMap.keySet().toArray(new String[moduleNidMap.size()]);
     	return moduleNames;
+    }
+
+    public boolean isVariableExportByAddress(int address) {
+    	NIDInfo info = getNIDInfoByAddress(address);
+    	if (info == null) {
+    		return false;
+    	}
+
+    	return info.isVariableExport();
     }
 }
