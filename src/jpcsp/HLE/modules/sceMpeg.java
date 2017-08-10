@@ -2461,6 +2461,7 @@ public class sceMpeg extends HLEModule {
 	        	readNextAudioFrame(audioPesHeader);
 
 	        	if (needUpdateAu) {
+	            	mpegAtracAu.esSize = audioFrameLength == 0 ? 0 : audioFrameLength + 8;
 	    			// Take the PTS from the first PES header and reset it.
 	        		mpegAtracAu.pts = audioPesHeader.getPts();
 	        		audioPesHeader.setDtsPts(UNKNOWN_TIMESTAMP);
