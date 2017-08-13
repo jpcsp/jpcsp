@@ -2112,6 +2112,8 @@ public class sceNetInet extends HLEModule {
 	protected HashMap<Integer, pspInetSocket> sockets;
 	protected static final String idPurpose = "sceNetInet-socket";
 	private InetAddress[] doProxyInetAddresses;
+	private byte[] unknown1 = new byte[4];
+	private byte[] unknown2 = new byte[4];
 
 	@Override
 	public void start() {
@@ -3408,6 +3410,74 @@ public class sceNetInet extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xAEE60F84, version = 150)
 	public int sceNetInet_lib_AEE60F84(@CheckArgument("checkSocket") int socket, int unknown1, int unknown2) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xAAF4895A, version = 150)
+	public int sceNetInet_lib_AAF4895A(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) @CanBeNull TPointer unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) @CanBeNull TPointer unknown2) {
+		if (unknown1.isNotNull()) {
+			this.unknown1 = unknown1.getArray8(4);
+		}
+		if (unknown2.isNotNull()) {
+			this.unknown2 = unknown2.getArray8(4);
+		}
+
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xAC9D90A5, version = 150)
+	public int sceNetInet_lib_AC9D90A5(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.out) @CanBeNull TPointer unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.out) @CanBeNull TPointer unknown2) {
+		unknown1.setArray(this.unknown1, 4);
+		unknown2.setArray(this.unknown2, 4);
+
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xE6F67D14, version = 150)
+	public int sceNetInet_lib_E6F67D14(String interfaceName) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x6A046357, version = 150)
+	public int sceNetInet_lib_6A046357(String interfaceName) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5155EC8A, version = 150)
+	public int sceNetInet_lib_5155EC8A(String interfaceName, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.out) TPointer unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.out) TPointer unknown2, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.out) TPointer unknown3) {
+		unknown1.clear(4);
+		unknown2.clear(4);
+		unknown3.clear(4);
+
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xA94A75E7, version = 150)
+	public int sceNetInet_lib_A94A75E7(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) TPointer unknown) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x7776A492, version = 150)
+	public int sceNetInet_lib_7776A492(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) TPointer unknown) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x4F68DB0E, version = 150)
+	public int sceNetInet_lib_4F68DB0E(String interfaceName, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) @CanBeNull TPointer unknown1, @BufferInfo(usage=Usage.in) @CanBeNull TPointer32 unknown2, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) @CanBeNull TPointer unknown3) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x59561561, version = 150)
+	public int sceNetInet_lib_59561561(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=6, usage=Usage.in) TPointer unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) TPointer unknown2) {
 		return 0;
 	}
 }
