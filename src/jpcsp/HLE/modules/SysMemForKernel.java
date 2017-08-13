@@ -816,7 +816,7 @@ public class SysMemForKernel extends HLEModule {
     		case KERNEL_PARTITION_ID:
     			partitionInfo.startAddr = START_KERNEL;
     			partitionInfo.memSize = KERNEL_VOLATILE_MEM_START - (START_KERNEL & addressMask);
-    			partitionInfo.attr = 0;
+    			partitionInfo.attr = 0xC;
     			break;
     		case USER_PARTITION_ID:
     			partitionInfo.startAddr = START_USERSPACE;
@@ -826,7 +826,7 @@ public class SysMemForKernel extends HLEModule {
     		case VSHELL_PARTITION_ID:
     			partitionInfo.startAddr = KERNEL_VOLATILE_MEM_START;
     			partitionInfo.memSize = KERNEL_VOLATILE_MEM_SIZE;
-    			partitionInfo.attr = 0;
+    			partitionInfo.attr = 0xF;
     			break;
 			default:
 				log.warn(String.format("Unimplemented sceKernelQueryMemoryPartitionInfo partitionId=0x%X", partitionId));
