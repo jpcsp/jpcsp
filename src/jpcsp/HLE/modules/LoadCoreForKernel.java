@@ -319,15 +319,9 @@ public class LoadCoreForKernel extends HLEModule {
     	int functionIndex = 0;
     	int variableIndex = sceResidentLibraryEntryTable.stubCount;
     	for (int i = 0; i < nids.length; i++) {
-    		if (areVariableExports[i]) {
-    			entryTable.setValue32(variableIndex * 4, nids[i]);
-    			entryTable.setValue32((variableIndex + nids.length) * 4, addresses[i]);
-    			variableIndex++;
-    		} else {
-    			entryTable.setValue32(functionIndex * 4, nids[i]);
-    			entryTable.setValue32((functionIndex + nids.length) * 4, addresses[i]);
-    			functionIndex++;
-    		}
+    		int index = areVariableExports[i] ? variableIndex++ : functionIndex++;
+			entryTable.setValue32(index * 4, nids[i]);
+			entryTable.setValue32((index + nids.length) * 4, addresses[i]);
     	}
 
     	int userLibIndex = sysMemThreadConfig.numExportLibs - sysMemThreadConfig.numKernelLibs;
