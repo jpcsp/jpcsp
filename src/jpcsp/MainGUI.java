@@ -2223,11 +2223,41 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         log.info(String.format("%s / %s", bundle.getString("SettingsGUI.title"), bundle.getString(resourceKey)));
     }
 
+    private void logDirectory(File dir, String prefix) {
+    	if (dir == null || !dir.exists()) {
+    		return;
+    	}
+
+    	if (dir.isDirectory()) {
+        	log.info(String.format("%s%s:", prefix, dir.getName()));
+    		File[] files = dir.listFiles();
+    		if (files != null) {
+    			for (File file: files) {
+    				logDirectory(file, prefix + "    ");
+    			}
+    		}
+    	} else {
+        	log.info(String.format("%s%s, size=0x%X", prefix, dir.getName(), dir.length()));
+    	}
+    }
+
+    private void logDirectory(String dirName) {
+    	File dir = new File(dirName);
+    	if (dir.exists()) {
+        	log.info(String.format("Contents of '%s' directory:", dirName));
+        	logDirectory(dir, "  ");
+    	} else {
+    		log.info(String.format("Non existing directory '%s'", dirName));
+    	}
+    }
+
     private void logStart() {
         log.info(String.format("Java version: %s (%s)", System.getProperty("java.version"), System.getProperty("java.runtime.version")));
         log.info(String.format("Java library path: %s", System.getProperty("java.library.path")));
 
         logConfigurationSettings();
+
+        logDirectory("flash0");
     }
 
     private void logStartIso(UmdIsoReader iso) {
