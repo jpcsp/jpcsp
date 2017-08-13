@@ -533,18 +533,36 @@ public class SysMemForKernel extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xC90B0992, version = 150)
 	public int sceKernelGetUIDcontrolBlock(int id, TPointer32 controlBlockAddr) {
-		if (dummyControlBlock == null) {
-			dummyControlBlock = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "DummyControlBlock", SysMemUserForUser.PSP_SMEM_Low, 36, 0);
-			if (dummyControlBlock == null) {
-				return -1;
-			}
-		}
+    	Memory mem = Memory.getInstance();
 
-		TPointer dummyControlBlockPtr = new TPointer(Memory.getInstance(), dummyControlBlock.addr);
-		dummyControlBlockPtr.clear(36);
-		dummyControlBlockPtr.setValue32(22, 0xFF); // SceSysmemUidCB.attr
+    	if (SceUidManager.isValidUid(id)) {
+    		if (dummyControlBlock == null) {
+    			dummyControlBlock = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "DummyControlBlock", SysMemUserForUser.PSP_SMEM_Low, 36, 0);
+    			if (dummyControlBlock == null) {
+    				return -1;
+    			}
+    		}
 
-		controlBlockAddr.setValue(dummyControlBlockPtr.getAddress());
+    		TPointer dummyControlBlockPtr = new TPointer(mem, dummyControlBlock.addr);
+    		dummyControlBlockPtr.clear(36);
+    		dummyControlBlockPtr.setValue16(22, (short) 0x00FF); // SceSysmemUidCB.attr
+
+    		controlBlockAddr.setValue(dummyControlBlockPtr.getAddress());
+
+    		return 0;
+    	}
+
+    	if ((id & 0x80000001) != 1) {
+    		return SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
+    	}
+    	int cb = getCBFromUid(id);
+    	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
+    	sceSysmemUidCB.read(mem, cb);
+    	if (sceSysmemUidCB.uid != id) {
+    		return SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
+    	}
+
+    	controlBlockAddr.setValue(cb);
 
 		return 0;
 	}
