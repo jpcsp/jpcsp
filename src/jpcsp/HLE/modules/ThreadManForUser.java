@@ -103,11 +103,13 @@ import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEModuleFunction;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.StringInfo;
+import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
@@ -739,7 +741,7 @@ public class ThreadManForUser extends HLEModule {
         }
 
         // For a kernel module, the stack is allocated in the kernel partition
-        int rootMpidStack = module.mpiddata > 0 ? module.mpiddata : USER_PARTITION_ID;
+        int rootMpidStack = module != null && module.mpiddata > 0 ? module.mpiddata : USER_PARTITION_ID;
 
         int rootInitPriority = 0x20;
         // Use the module_start_thread_priority when this information was present in the ELF file
@@ -848,8 +850,13 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public static int SYSCALL(HLEModule hleModule, String functionName) {
+    	HLEModuleFunction hleModuleFunction = hleModule.getHleFunctionByName(functionName);
+    	if (hleModuleFunction == null) {
+    		return SYSCALL(SyscallHandler.syscallUnmappedImport);
+    	}
+
     	// syscall [functionName]
-    	return SYSCALL(hleModule.getHleFunctionByName(functionName).getSyscallCode());
+    	return SYSCALL(hleModuleFunction.getSyscallCode());
     }
 
     private int SYSCALL(String functionName) {
