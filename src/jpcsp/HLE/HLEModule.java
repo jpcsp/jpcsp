@@ -50,7 +50,7 @@ abstract public class HLEModule {
 	 */
 	public HLEModuleFunction getHleFunctionByName(String functionName) throws RuntimeException {
 		if (!installedHLEModuleFunctions.containsKey(functionName)) {
-			Modules.log.error(String.format("Can't find hle function '%s' on module '%s'", functionName, getName()));
+			Modules.log.error(String.format("Can't find HLE function '%s' in module '%s'", functionName, this));
 			return null;
 		}
 
@@ -106,5 +106,10 @@ abstract public class HLEModule {
 			Modules.SysMemUserForUserModule.free(memory);
 			memory = null;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return getName();
 	}
 }

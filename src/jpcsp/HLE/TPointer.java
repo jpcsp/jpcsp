@@ -154,13 +154,31 @@ final public class TPointer implements ITPointerBase {
 	}
 
 	public byte[] getArray8(int offset, int n) {
-		byte[] bytes = new byte[n];
-		IMemoryReader memoryReader = MemoryReader.getMemoryReader(getAddress() + offset, n, 1);
-		for (int i = 0; i < n; i++) {
-			bytes[i] = (byte) memoryReader.readNext();
+		return getArray8(offset, new byte[n], 0, n);
+	}
+
+	public byte[] getArray8(byte[] bytes) {
+		if (bytes == null) {
+			return bytes;
+		}
+		return getArray8(0, bytes, 0, bytes.length);
+	}
+
+	public byte[] getArray8(int offset, byte[] bytes, int bytesOffset, int n) {
+		if (isNotNull()) {
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(getAddress() + offset, n, 1);
+			for (int i = 0; i < n; i++) {
+				bytes[bytesOffset + i] = (byte) memoryReader.readNext();
+			}
 		}
 
 		return bytes;
+	}
+
+	public void setArray(byte[] bytes) {
+		if (bytes != null) {
+			setArray(bytes, bytes.length);
+		}
 	}
 
 	public void setArray(byte[] bytes, int n) {
@@ -172,11 +190,13 @@ final public class TPointer implements ITPointerBase {
 	}
 
 	public void setArray(int offset, byte[] bytes, int bytesOffset, int n) {
-		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(getAddress() + offset, n, 1);
-		for (int i = 0; i < n; i++) {
-			memoryWriter.writeNext(bytes[bytesOffset + i] & 0xFF);
+		if (isNotNull()) {
+			IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(getAddress() + offset, n, 1);
+			for (int i = 0; i < n; i++) {
+				memoryWriter.writeNext(bytes[bytesOffset + i] & 0xFF);
+			}
+			memoryWriter.flush();
 		}
-		memoryWriter.flush();
 	}
 
 	public TPointer getPointer() {

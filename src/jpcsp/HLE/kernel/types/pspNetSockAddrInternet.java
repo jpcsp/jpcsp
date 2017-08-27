@@ -78,8 +78,7 @@ public class pspNetSockAddrInternet extends pspAbstractMemoryMappedStructure {
 	}
 
 	public boolean equals(InetAddress inetAddress) {
-		byte[] addrBytes = inetAddress.getAddress();
-		int addr = (addrBytes[0] & 0xFF) | ((addrBytes[1] & 0xFF) << 8) | ((addrBytes[2] & 0xFF) << 16) | ((addrBytes[3] & 0xFF) << 24);
+		int addr = sceNetInet.bytesToInternetAddress(inetAddress.getAddress());
 		return addr == sin_addr;
 	}
 

@@ -298,7 +298,7 @@ public class sceNpService extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x43E635D2, version = 150)
-    public int sceNpService_43E635D2() {
+    public int sceNpService_43E635D2(int unknown1, int unknown2) {
     	return 0;
     }
 
