@@ -445,4 +445,8 @@ public class Emulator implements Runnable {
             setClock(variableSpeedClock);
         }
     }
+
+    public void setModuleLoaded(boolean moduleLoaded) {
+    	this.moduleLoaded = moduleLoaded;
+    }
 }
