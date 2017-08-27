@@ -52,6 +52,7 @@ public class HLEModuleManager {
     private static HLEModuleManager instance;
 
     public static final int HLESyscallNid = -1;
+    public static final int InternalSyscallNid = -1;
 
     private boolean modulesStarted = false;
     private boolean startFromSyscall;
@@ -237,7 +238,8 @@ public class HLEModuleManager {
         sceGpio(Modules.sceGpioModule),
         sceNand(Modules.sceNandModule),
         sceBSMan(Modules.sceBSManModule),
-        memlmd(Modules.memlmdModule);
+        memlmd(Modules.memlmdModule),
+        reboot(Modules.rebootModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
