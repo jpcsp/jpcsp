@@ -58,6 +58,7 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -1764,6 +1765,21 @@ public class Utilities {
 		return a;
 	}
 
+	public static InetAddress[] add(InetAddress[] array, InetAddress inetAddress) {
+    	if (inetAddress == null) {
+    		return array;
+    	}
+    	if (array == null) {
+    		return new InetAddress[] { inetAddress };
+    	}
+
+    	InetAddress[] newArray = new InetAddress[array.length + 1];
+    	System.arraycopy(array, 0, newArray, 0, array.length);
+    	newArray[array.length] = inetAddress;
+
+    	return newArray;
+	}
+
 	public static boolean equals(byte[] array1, int offset1, byte[] array2, int offset2, int length) {
 		for (int i = 0; i < length; i++) {
 			if (array1[offset1 + i] != array2[offset2 + i]) {
@@ -1773,4 +1789,30 @@ public class Utilities {
 
 		return true;
 	}
+
+
+    public static void patch(Memory mem, SceModule module, int offset, int oldValue, int newValue) {
+    	patch(mem, module, offset, oldValue, newValue, 0xFFFFFFFF);
+    }
+
+    public static void patch(Memory mem, SceModule module, int offset, int oldValue, int newValue, int mask) {
+    	int checkValue = mem.read32(module.baseAddress + offset);
+    	if ((checkValue & mask) != (oldValue & mask)) {
+    		Emulator.log.error(String.format("Patching of module '%s' failed at offset 0x%X, 0x%08X found instead of 0x%08X", module.modname, offset, checkValue, oldValue));
+    	} else {
+    		mem.write32(module.baseAddress + offset, newValue);
+    	}
+    }
+
+    public static void patchRemoveStringChar(Memory mem, SceModule module, int offset, int oldChar) {
+    	int address = module.baseAddress + offset;
+    	int checkChar = mem.read8(address);
+    	if (checkChar != oldChar) {
+    		Emulator.log.error(String.format("Patching of module '%s' failed at offset 0x%X, 0x%02X found instead of 0x%02X: %s", module.modname, offset, checkChar, oldChar, Utilities.getMemoryDump(address - 0x100, 0x200)));
+    	} else {
+    		String s = Utilities.readStringZ(address);
+    		s = s.substring(1);
+    		Utilities.writeStringZ(mem, address, s);
+    	}
+    }
 }

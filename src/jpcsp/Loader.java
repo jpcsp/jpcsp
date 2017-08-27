@@ -29,6 +29,8 @@ import static jpcsp.format.Elf32SectionHeader.SHF_ALLOCATE;
 import static jpcsp.format.Elf32SectionHeader.SHF_EXECUTE;
 import static jpcsp.format.Elf32SectionHeader.SHF_NONE;
 import static jpcsp.format.Elf32SectionHeader.SHF_WRITE;
+import static jpcsp.util.Utilities.patch;
+import static jpcsp.util.Utilities.patchRemoveStringChar;
 import static jpcsp.util.Utilities.readUnaligned32;
 import static jpcsp.util.Utilities.writeInt32;
 import static jpcsp.util.Utilities.writeUnaligned32;
@@ -1018,21 +1020,15 @@ public class Loader {
         	}
         }
 
-        boolean hasHi16 = false;
-        boolean hasLo16 = false;
-        for (int j = 1; j < types.length; j++) {
-        	if (types[j] == 4) {
-        		hasHi16 = true;
-        	} else if (types[j] == 1 || types[j] == 5) {
-        		hasLo16 = true;
-        	}
-        }
-        if (!hasLo16 || !hasHi16) {
-        	log.warn(String.format("relocateFromBufferA1 missing HI16/LO16 type mapping, something is probably wrong"));
-        	if ("flash0:/kd/loadcore.prx".equals(module.pspfilename)) {
-        		types = new int[] { 6, 4, 5, 7, 6, 2 };
-        	}
-        }
+        // loadcore.prx and sysmem.prx are being loaded and relocated by
+        // the PSP reboot code. It is using a different type mapping.
+        // See https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L327
+    	if ("flash0:/kd/loadcore.prx".equals(module.pspfilename) || "flash0:/kd/sysmem.prx".equals(module.pspfilename)) {
+    		final int[] rebootTypeRemapping = new int[] { 0, 3, 6, 7, 1, 2, 4, 5 };
+    		for (int i = 1; i < types.length; i++) {
+    			types[i] = rebootTypeRemapping[types[i]];
+    		}
+    	}
 
         // Save the current position.
         pos = f.position();
@@ -1124,13 +1120,6 @@ public class Loader {
                 // Read the data.
                 data_addr = R_BASE + baseAddress + elf.getProgramHeader(OFS_BASE).getP_vaddr();
                 data = readUnaligned32(mem, data_addr);
-
-                if (false) {
-                	// TODO for example sysmem.prx, the R_TYPE need to be modified to really do something meaningful. To be further investigated.
-                	//                      0, 1, 2, 3, 4, 5, 6, 7
-                	int map[] = new int[] { 0, 0, 3, 3, 0, 0, 4, 5 };
-                	R_TYPE = map[R_TYPE];
-                }
 
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("Relocation #%d type=%d, Offset PH#%d, Base Offset PH#%d, Offset 0x%08X",
@@ -1710,35 +1699,10 @@ public class Loader {
     	}
 
     	if ("sceLoaderCore".equals(module.modname)) {
-//    		patch(mem, module, 0x0000469C, 0x15C0FFA0, NOP()); // Allow loading of privileged modules being not encrypted
-//    		patch(mem, module, 0x00004548, 0x7C0F6244, NOP()); // Allow loading of privileged modules being not encrypted (take SceLoadCoreExecFileInfo.modInfoAttribute from the ELF module info)
-//    		patch(mem, module, 0x00004550, 0x14E0002C, 0x1000002C); // Allow loading of privileged modules being not encrypted
+    		patch(mem, module, 0x0000469C, 0x15C0FFA0, NOP()); // Allow loading of privileged modules being not encrypted (https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L339)
+    		patch(mem, module, 0x00004548, 0x7C0F6244, NOP()); // Allow loading of privileged modules being not encrypted (take SceLoadCoreExecFileInfo.modInfoAttribute from the ELF module info, https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L351)
+    		patch(mem, module, 0x00004550, 0x14E0002C, 0x1000002C); // Allow loading of privileged modules being not encrypted (https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L352)
     		patch(mem, module, 0x00003D58, 0x10C0FFBE, NOP()); // Allow linking user stub to kernel lib
-    	}
-    }
-
-    private void patch(Memory mem, SceModule module, int offset, int oldValue, int newValue) {
-    	patch(mem, module, offset, oldValue, newValue, 0xFFFFFFFF);
-    }
-
-    private void patch(Memory mem, SceModule module, int offset, int oldValue, int newValue, int mask) {
-    	int checkValue = mem.read32(module.baseAddress + offset);
-    	if ((checkValue & mask) != (oldValue & mask)) {
-    		log.error(String.format("Patching of module '%s' failed at offset 0x%X, 0x%08X found instead of 0x%08X", module.modname, offset, checkValue, oldValue));
-    	} else {
-    		mem.write32(module.baseAddress + offset, newValue);
-    	}
-    }
-
-    private void patchRemoveStringChar(Memory mem, SceModule module, int offset, int oldChar) {
-    	int address = module.baseAddress + offset;
-    	int checkChar = mem.read8(address);
-    	if (checkChar != oldChar) {
-    		log.error(String.format("Patching of module '%s' failed at offset 0x%X, 0x%02X found instead of 0x%02X: %s", module.modname, offset, checkChar, oldChar, Utilities.getMemoryDump(address - 0x100, 0x200)));
-    	} else {
-    		String s = Utilities.readStringZ(address);
-    		s = s.substring(1);
-    		Utilities.writeStringZ(mem, address, s);
     	}
     }
 }
