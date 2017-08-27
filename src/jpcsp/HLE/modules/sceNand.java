@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static java.lang.Integer.rotateRight;
+import static jpcsp.HLE.HLEModuleManager.InternalSyscallNid;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,6 +38,7 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer8;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.fat.Fat12VirtualFile;
@@ -594,6 +596,98 @@ if (ppn >= 0x1000) {
     @HLEUnimplemented
     @HLEFunction(nid = 0xEB0A0022, version = 150)
     public int sceNandEraseBlock(int ppn) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7AF7B77A, version = 150)
+    public int sceNandReset(@CanBeNull @BufferInfo(usage=Usage.out) TPointer8 statusAddr) {
+    	statusAddr.setValue(0);
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = InternalSyscallNid, version = 150)
+    public boolean sceNandIsReady() {
+    	return true;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = InternalSyscallNid, version = 150)
+    public int sceNandInit2() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = InternalSyscallNid, version = 150)
+    public int sceNandTransferDataToNandBuf() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = InternalSyscallNid, version = 150)
+    public int sceNandIntrHandler() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = InternalSyscallNid, version = 150)
+    public int sceNandTransferDataFromNandBuf() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xFCDF7610, version = 150)
+    public int sceNandReadId(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer8 id, int len) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x766756EF, version = 150)
+    public int sceNandReadAccess(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len, int mode) {
+    	return hleNandReadPages(ppn, user, spare, len, false, false);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0ADC8686, version = 150)
+    public int sceNandWriteAccess(int ppn, TPointer user, TPointer spare, int len, int mode) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8AF0AB9F, version = 150)
+    public int sceNandWritePages(int ppn, TPointer user, TPointer spare, int len) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC478C1DE, version = 150)
+    public int sceNandReadPagesRawAll(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len) {
+    	return hleNandReadPages(ppn, user, spare, len, true, false);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x5AC02755, version = 150)
+    public int sceNandVerifyBlockWithRetry(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8933B2E0, version = 150)
+    public int sceNandEraseBlockWithRetry(int ppn) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC29DA136, version = 150)
+    public int sceNandDoMarkAsBadBlock(int ppn) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2FF6081B, version = 150)
+    public int sceNandDetectChipMakersBBM(int ppn) {
     	return 0;
     }
 }
