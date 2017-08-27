@@ -18,6 +18,7 @@ package jpcsp.Allegrex.compiler.nativeCode;
 
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -28,6 +29,10 @@ public class Strncmp extends AbstractNativeCodeSequence {
 		int src1Addr = getGprA0();
 		int src2Addr = getGprA1();
 		int n = getGprA2();
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("strncmp src1=0x%08X('%s'), src2=0x%08X('%s'), n=0x%X", src1Addr, Utilities.readStringNZ(src1Addr, n), src2Addr, Utilities.readStringNZ(src2Addr, n), n));
+		}
 
 		if (n > 0) {
 			IMemoryReader memoryReader1 = MemoryReader.getMemoryReader(src1Addr, n, 1);

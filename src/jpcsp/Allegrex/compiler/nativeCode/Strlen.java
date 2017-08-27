@@ -20,6 +20,8 @@ import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._a2;
 
+import jpcsp.util.Utilities;
+
 /**
  * @author gid15
  *
@@ -30,6 +32,11 @@ public class Strlen extends AbstractNativeCodeSequence {
         int srcAddr = getGprA0();
 
         int srcLength = getStrlen(srcAddr);
+
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("strlen src=0x%08X('%s') returning 0x%X", srcAddr, Utilities.readStringZ(srcAddr), srcLength));
+        }
+
         setGprV0(srcLength);
         getCpu()._a0 = srcAddr + srcLength;
         getCpu()._a1 = srcAddr;
