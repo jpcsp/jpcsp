@@ -361,7 +361,7 @@ public class FatBuilder {
 
 		for (int i = 0; i < fileName.length(); i++) {
 			int c = fileName.charAt(i) & 0xFF;
-			checksum = ((checksum & 1) << 7) + (checksum >> 1) + c;
+			checksum = (((checksum & 1) << 7) + (checksum >> 1) + c) & 0xFF;
 		}
 
 		return checksum;
