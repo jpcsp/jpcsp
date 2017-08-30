@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import static jpcsp.Allegrex.Common.COP0_STATE_COUNT;
+import static jpcsp.Allegrex.Common.COP0_STATE_CPUID;
+import static jpcsp.Allegrex.Common.COP0_STATE_STATUS;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_LINK_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_CANNOT_BE_SPLIT;
@@ -43,6 +46,8 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.SequenceLWCodeInstruction;
 import jpcsp.Allegrex.compiler.SequenceSWCodeInstruction;
 import jpcsp.HLE.SyscallHandler;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.hardware.Interrupts;
 import jpcsp.util.Utilities;
 
 import org.objectweb.asm.Label;
@@ -5501,11 +5506,28 @@ public final String category() { return "MIPS I"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int c0dr = (insn>>11)&31;
-	//int rt = (insn>>16)&31;
+	int c0dr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-
-            
+	int value = 0;
+	switch (c0dr) {
+		case COP0_STATE_STATUS:
+			value = 0;
+			if (Interrupts.isInterruptsEnabled()) {
+				value |= (1 << 0);
+			}
+			break;
+		case COP0_STATE_CPUID:
+			value = 0; // CPU ID (0=Main, 1=ME)
+			break;
+		case COP0_STATE_COUNT: // System counter
+			value = (int) Emulator.getClock().nanoTime();
+			break;
+		default:
+            processor.cpu.doUNK(String.format("Unsupported mfc0 instruction for c0dr=%d(%s)", c0dr, Common.cop0Names[c0dr]));
+            break;
+	}
+    processor.cpu.setRegister(rt, value);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -5513,10 +5535,10 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	//int c0dr = (insn>>11)&31;
-	//int rt = (insn>>16)&31;
+	int c0dr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-return "Unimplemented MFC0";
+	return Common.disasmRTC0dr("mfc0", rt, c0dr);
 }
 };
 public static final Instruction CFC0 = new Instruction(146) {
@@ -5529,11 +5551,19 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int c0cr = (insn>>11)&31;
-	//int rt = (insn>>16)&31;
+	int c0cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-
-            
+	int value = 0;
+	switch (c0cr) {
+		case 13:
+			value = IntrManager.getInstance().isInsideInterrupt() ? 1 : 0;
+			break;
+		default:
+            processor.cpu.doUNK(String.format("Unsupported cfc0 instruction for c0cr=%d", c0cr));
+            break;
+	}
+	processor.cpu.setRegister(rt, value);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -5541,10 +5571,10 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	//int c0cr = (insn>>11)&31;
-	//int rt = (insn>>16)&31;
+	int c0cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-return "Unimplemented CFC0";
+	return Common.disasmRTC0cr("cfc0", rt, c0cr);
 }
 };
 public static final Instruction MTC0 = new Instruction(147) {
@@ -5557,11 +5587,18 @@ public final String category() { return "MIPS I"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int c0dr = (insn>>11)&31;
-	//int rt = (insn>>16)&31;
+	int c0dr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-
-            
+	int value = processor.cpu.getRegister(rt);
+	switch (c0dr) {
+		case Common.COP0_STATE_STATUS:
+			Interrupts.setInterruptsEnabled((value & (1 << 0)) != 0);
+			break;
+		default:
+	        processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
+	        break;
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -5569,10 +5606,10 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	//int c0dr = (insn>>11)&31;
-	//int rt = (insn>>16)&31;
+	int c0dr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-return "Unimplemented MTC0";
+	return Common.disasmRTC0dr("mtc0", rt, c0dr);
 }
 };
 public static final Instruction CTC0 = new Instruction(148) {
@@ -5585,11 +5622,15 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int c0cr = (insn>>11)&31;
-	//int rt = (insn>>16)&31;
+	int c0cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-
-            
+	int value = processor.cpu.getRegister(rt);
+	switch (c0cr) {
+		default:
+	        processor.cpu.doUNK(String.format("Unsupported ctc0 instruction for c0cr=%d, value=0x%X", c0cr, value));
+	        break;
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -5597,10 +5638,10 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	//int c0cr = (insn>>11)&31;
-	//int rt = (insn>>16)&31;
+	int c0cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-return "Unimplemented CTC0";
+	return Common.disasmRTC0cr("ctc0", rt, c0cr);
 }
 };
 public static final Instruction VADD = new Instruction(149, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {

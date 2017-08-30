@@ -504,9 +504,14 @@ public class Common {
     public static String[] cop0Names = {
         "Index", "Random", "EntryLo0", "EntryLo1", "Context", "PageMask", "Wired", "cop0reg7",
         "BadVaddr", "Count", "EntryHi", "Compare", "Status", "Cause", "EPC", "PrID",
-        "Config", "LLAddr", "WatchLo", "WatchHi", "XContext", "cop0reg21", "cop0reg22", "cop0reg23",
+        "Config", "LLAddr", "WatchLo", "WatchHi", "XContext", "SyscallCode", "CPUId", "cop0reg23",
         "cop0reg24", "EBase", "ECC", "CacheErr", "TagLo", "TagHi", "ErrorPC", "cop0reg31"
     };
+    public static final int COP0_STATE_COUNT = 9;
+    public static final int COP0_STATE_COMPARE = 11;
+    public static final int COP0_STATE_STATUS = 12;
+    public static final int COP0_STATE_SCCODE = 21;
+    public static final int COP0_STATE_CPUID = 22;
     public static String vsuffix[] = {
         ".s",
         ".p",
@@ -760,6 +765,14 @@ public class Common {
 
     public static String disasmRTFC(String opname, int rt, int fc) {
         return String.format("%1$-10s %2$s, %3$s", opname, gprNames[rt], fcrNames[fc]);
+    }
+
+    public static String disasmRTC0dr(String opname, int rt, int c0dr) {
+        return String.format("%1$-10s %2$s, %3$s", opname, gprNames[rt], cop0Names[c0dr]);
+    }
+
+    public static String disasmRTC0cr(String opname, int rt, int c0cr) {
+        return String.format("%1$-10s %2$s, %3$d", opname, gprNames[rt], c0cr);
     }
 
     public static String disasmCcondS(int cconds, int fs, int ft) {
