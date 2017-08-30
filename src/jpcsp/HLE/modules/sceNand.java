@@ -41,8 +41,10 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer8;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.VFS.compress.CompressPrxVirtualFileSystem;
 import jpcsp.HLE.VFS.fat.Fat12VirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
+import jpcsp.HLE.VFS.patch.PatchFileVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceNandSpare;
 import jpcsp.util.Utilities;
 
@@ -390,6 +392,14 @@ if (ppn >= 0x1000) {
 		    		} else if (ppnToLbn[ppn + i] >= 0x3 && ppnToLbn[ppn + i] < 0x602) {
 		    			if (vFile3 == null) {
 		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem("flash0/", false);
+
+		    				// Apply patches for some files as required
+		    				vfs = new PatchFileVirtualFileSystem(vfs);
+
+		    				// All the PRX files need to be compressed so that they can fit
+		    				// into the space available on flash0.
+		    				vfs = new CompressPrxVirtualFileSystem(vfs);
+
 		    				vFile3 = new Fat12VirtualFile(vfs);
 		    				vFile3.scan();
 		    			}

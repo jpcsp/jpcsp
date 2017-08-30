@@ -37,6 +37,14 @@ import jpcsp.settings.Settings;
 public class PSP {
     public static final int PSP_HEADER_SIZE = 336;
     public static final int PSP_MAGIC = 0x5053507E;
+    public static final int SCE_KERNEL_MAX_MODULE_SEGMENT = 4;
+    public static final int AES_KEY_SIZE = 16;
+    public static final int CMAC_KEY_SIZE = 16;
+    public static final int CMAC_HEADER_HASH_SIZE = 16;
+    public static final int CMAC_DATA_HASH_SIZE = 16;
+    public static final int CHECK_SIZE = 88;
+    public static final int SHA1_HASH_SIZE = 20;
+    public static final int KEY_DATA_SIZE = 16;
     private int magic;
     private int mod_attr;
     private int comp_mod_attr;
@@ -50,26 +58,26 @@ public class PSP {
     private int boot_entry;
     private int modinfo_offset;
     private int bss_size;
-    private int[] seg_align = new int[4];
-    private int[] seg_address = new int[4];
-    private int[] seg_size = new int[4];
+    private int[] seg_align = new int[SCE_KERNEL_MAX_MODULE_SEGMENT];
+    private int[] seg_address = new int[SCE_KERNEL_MAX_MODULE_SEGMENT];
+    private int[] seg_size = new int[SCE_KERNEL_MAX_MODULE_SEGMENT];
     private int[] reserved = new int[5];
     private int devkit_version;
     private int dec_mode;
     private int pad;
     private int overlap_size;
-    private int[] aes_key = new int[16];
-    private int[] cmac_key = new int[16];
-    private int[] cmac_header_hash = new int[16];
+    private int[] aes_key = new int[AES_KEY_SIZE];
+    private int[] cmac_key = new int[CMAC_KEY_SIZE];
+    private int[] cmac_header_hash = new int[CMAC_HEADER_HASH_SIZE];
     private int comp_size;
     private int comp_offset;
     private int unk1;
     private int unk2;
-    private int[] cmac_data_hash = new int[16];
+    private int[] cmac_data_hash = new int[CMAC_DATA_HASH_SIZE];
     private int tag;
-    private int[] sig_check = new int[88];
-    private int[] sha1_hash = new int[20];
-    private int[] key_data = new int[16];
+    private int[] sig_check = new int[CHECK_SIZE];
+    private int[] sha1_hash = new int[SHA1_HASH_SIZE];
+    private int[] key_data = new int[KEY_DATA_SIZE];
 
     public PSP(ByteBuffer f) throws IOException {
         read(f);
@@ -114,30 +122,30 @@ public class PSP {
         dec_mode = readUByte(f);
         pad = readUByte(f);
         overlap_size = readUHalf(f);
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < AES_KEY_SIZE; i++) {
             aes_key[i] = readUByte(f);
         }
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < CMAC_KEY_SIZE; i++) {
             cmac_key[i] = readUByte(f);
         }
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < CMAC_HEADER_HASH_SIZE; i++) {
             cmac_header_hash[i] = readUByte(f);
         }
         comp_size = readWord(f);
         comp_offset = readWord(f);
         unk1 = readWord(f);
         unk2 = readWord(f);
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < CMAC_DATA_HASH_SIZE; i++) {
             cmac_data_hash[i] = readUByte(f);
         }
         tag = readWord(f);
-        for (int i = 0; i < 88; i++) {
+        for (int i = 0; i < CHECK_SIZE; i++) {
             sig_check[i] = readUByte(f);
         }
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < SHA1_HASH_SIZE; i++) {
             sha1_hash[i] = readUByte(f);
         }
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < KEY_DATA_SIZE; i++) {
             key_data[i] = readUByte(f);
         }
     }

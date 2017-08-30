@@ -37,6 +37,7 @@ public class Elf32Header {
 	public static final int E_MACHINE_IA_64   = 0x0032;
 	public static final int E_MACHINE_x86_64  = 0x003E;
 	public static final int E_MACHINE_AArch64 = 0x00B7;
+	public static final int ET_SCE_PRX = 0xFFA0;
     private int e_magic;
     private int e_class;
     private int e_data;
@@ -97,7 +98,7 @@ public class Elf32Header {
     }
 
     public boolean isPRXDetected(){
-        return getE_type() == 0xFFA0;
+        return getE_type() == ET_SCE_PRX;
     }
 
     public boolean requiresRelocation(){
