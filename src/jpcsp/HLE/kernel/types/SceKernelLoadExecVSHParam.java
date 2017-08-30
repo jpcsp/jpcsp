@@ -16,42 +16,43 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.HLE.TPointer;
 import jpcsp.util.Utilities;
 
 public class SceKernelLoadExecVSHParam extends pspAbstractMemoryMappedStructureVariableLength {
 	public int args;
 	public int argp;
-	public int keyAddr;
+	public TPointer keyAddr;
 	public String key;
 	public int vshmainArgsSize;
 	public int vshmainArgs;
-	public int configFileAddr;
+	public TPointer configFileAddr;
 	public String configFile;
-	public int unknown1;
-	public int unknown2;
-	public int unknown3;
-	public int unknown4;
-	public int unknown5;
+	public int unknownString;
+	public int flags;
+	public int extArgs;
+	public int extArgp;
+	public int opt11;
 
 	@Override
 	protected void read() {
 		super.read();
 		args = read32();
 		argp = read32();
-		keyAddr = read32();
+		keyAddr = readPointer();
 		vshmainArgsSize = read32();
 		vshmainArgs = read32();
-		configFileAddr = read32();
-		unknown1 = read32();
-		unknown2 = read32();
+		configFileAddr = readPointer();
+		unknownString = read32();
+		flags = read32();
 
 		if (sizeof() >= 48) {
-			unknown3 = read32();
-			unknown4 = read32();
-			unknown5 = read32();
+			extArgs = read32();
+			extArgp = read32();
+			opt11 = read32();
 		}
-		key = readStringZ(keyAddr);
-		configFile = readStringZ(configFileAddr);
+		key = keyAddr.getStringZ();
+		configFile = configFileAddr.getStringZ();
 	}
 
 	@Override
@@ -59,22 +60,22 @@ public class SceKernelLoadExecVSHParam extends pspAbstractMemoryMappedStructureV
 		super.write();
 		write32(args);
 		write32(argp);
-		write32(keyAddr);
+		writePointer(keyAddr);
 		write32(vshmainArgsSize);
 		write32(vshmainArgs);
-		write32(configFileAddr);
-		write32(unknown1);
-		write32(unknown2);
+		writePointer(configFileAddr);
+		write32(unknownString);
+		write32(flags);
 
 		if (sizeof() >= 48) {
-			write32(unknown3);
-			write32(unknown4);
-			write32(unknown5);
+			write32(extArgs);
+			write32(extArgp);
+			write32(opt11);
 		}
 	}
 
 	@Override
 	public String toString() {
-		return String.format("args=0x%X, argp=0x%08X, key=0x%08X('%s'), vshmainArgsSize=0x%X, vshmainArgs=0x%08X, configFile=0x%08X('%s'), unknown1=0x%X, unknown2=0x%X, unknown3=0x%X, unknown4=0x%X, unknown5=0x%X, vshmainArgs: %s", args, argp, keyAddr, key, vshmainArgsSize, vshmainArgs, configFileAddr, configFile, unknown1, unknown2, unknown3, unknown4, unknown5, Utilities.getMemoryDump(vshmainArgs, vshmainArgsSize));
+		return String.format("args=0x%X, argp=0x%08X, key=%s('%s'), vshmainArgsSize=0x%X, vshmainArgs=0x%08X, configFile=%s('%s'), unknownString=0x%08X, flags=0x%X, extArgs=0x%X, extArgp=0x%08X, opt11=0x%X, vshmainArgs: %s", args, argp, keyAddr, key, vshmainArgsSize, vshmainArgs, configFileAddr, configFile, unknownString, flags, extArgs, extArgp, opt11, Utilities.getMemoryDump(vshmainArgs, vshmainArgsSize));
 	}
 }

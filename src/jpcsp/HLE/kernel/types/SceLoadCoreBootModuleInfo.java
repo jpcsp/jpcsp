@@ -30,7 +30,7 @@ public class SceLoadCoreBootModuleInfo extends pspAbstractMemoryMappedStructure 
     /** The size of the module. */
     public int modSize; //8
     /** Unknown. */
-    public int unk12; //12
+    public TPointer unk12; //12
     /** Attributes. */
     public int attr; //16
     /** 
@@ -48,7 +48,7 @@ public class SceLoadCoreBootModuleInfo extends pspAbstractMemoryMappedStructure 
 		modPath = readPointer();
 		modBuf = readPointer();
 		modSize = read32();
-		unk12 = read32();
+		unk12 = readPointer();
 		attr = read32();
 		bootData = read32();
 		argSize = read32();
@@ -60,7 +60,7 @@ public class SceLoadCoreBootModuleInfo extends pspAbstractMemoryMappedStructure 
 		writePointer(modPath);
 		writePointer(modBuf);
 		write32(modSize);
-		write32(unk12);
+		writePointer(unk12);
 		write32(attr);
 		write32(bootData);
 		write32(argSize);

@@ -833,6 +833,10 @@ public class ThreadManForUser extends HLEModule {
     	return (AllegrexOpcodes.SW << 26) | (base << 21) | (rt << 16) | (imm16 & 0xFFFF);
     }
 
+    public static int SB(int rt, int rs, int imm16) {
+    	return (AllegrexOpcodes.SB << 26) | (rs << 21) | (rt << 16) | (imm16 & 0xFFFF);
+    }
+
     public static int LW(int rt, int base, int imm16) {
     	return (AllegrexOpcodes.LW << 26) | (base << 21) | (rt << 16) | (imm16 & 0xFFFF);
     }

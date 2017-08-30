@@ -208,7 +208,7 @@ public class LoadCoreForKernel extends HLEModule {
 		modBuf.setValue32(offset + 0, Elf32Header.ELF_MAGIC);
 		modBuf.setValue8(offset + 4, (byte) 1); // Elf32Header.e_class = ELFCLASS32
 		modBuf.setValue8(offset + 5, (byte) 1); // Elf32Header.e_data = ELFDATA2LSB
-		modBuf.setValue16(offset + 16, (short) 0xFFA0); // Elf32Header.e_type = ET_SCE_PRX
+		modBuf.setValue16(offset + 16, (short) Elf32Header.ET_SCE_PRX); // Elf32Header.e_type = ET_SCE_PRX
 		modBuf.setValue16(offset + 18, (short) Elf32Header.E_MACHINE_MIPS); // Elf32Header.e_machine = EM_MIPS_ALLEGREX
 		modBuf.setValue32(offset + 24, moduleInfoSizeof + initCodeOffset); // Elf32Header.e_entry = dummy entry point, must be != 0
 		modBuf.setValue32(offset + 28, Elf32Header.sizeof()); // Elf32Header.e_phoff = sizeof(Elf32Header)
@@ -372,7 +372,7 @@ public class LoadCoreForKernel extends HLEModule {
     	SceLoadCoreBootModuleInfo sceLoadCoreBootModuleInfo = new SceLoadCoreBootModuleInfo();
     	createDummyModule(sceLoadCoreBootModuleInfo, moduleName, 0);
 
-		TPointer sceLoadCoreBootModuleInfoAddr = new TPointer(sceLoadCoreBootInfo.modules, sceLoadCoreBootInfo.numModules * sceLoadCoreBootModuleInfo.sizeof());
+		TPointer sceLoadCoreBootModuleInfoAddr = new TPointer(sceLoadCoreBootInfo.startAddr, sceLoadCoreBootInfo.numModules * sceLoadCoreBootModuleInfo.sizeof());
 		sceLoadCoreBootModuleInfo.write(sceLoadCoreBootModuleInfoAddr);
 		sceLoadCoreBootInfo.numModules++;
     }
@@ -437,14 +437,14 @@ public class LoadCoreForKernel extends HLEModule {
 
 		final int totalNumberOfModules = 2;
 		SceLoadCoreBootModuleInfo sceLoadCoreBootModuleInfo = new SceLoadCoreBootModuleInfo();
-		sceLoadCoreBootInfo.modules = allocMem(totalNumberOfModules * sceLoadCoreBootModuleInfo.sizeof());
+		sceLoadCoreBootInfo.startAddr = allocMem(totalNumberOfModules * sceLoadCoreBootModuleInfo.sizeof());
 		sceLoadCoreBootInfo.numModules = 0;
 
 		addExistingModule(sceLoadCoreBootInfo, "scePaf_Module");
 
 		// Add the "sceInit" module as the last one
 		createDummyInitModule(sceLoadCoreBootModuleInfo);
-		TPointer sceLoadCoreBootModuleInfoAddr = new TPointer(sceLoadCoreBootInfo.modules, sceLoadCoreBootInfo.numModules * sceLoadCoreBootModuleInfo.sizeof());
+		TPointer sceLoadCoreBootModuleInfoAddr = new TPointer(sceLoadCoreBootInfo.startAddr, sceLoadCoreBootInfo.numModules * sceLoadCoreBootModuleInfo.sizeof());
 		sceLoadCoreBootModuleInfo.write(sceLoadCoreBootModuleInfoAddr);
 		sceLoadCoreBootInfo.numModules++;
 
