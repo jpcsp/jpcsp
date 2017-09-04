@@ -16,9 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import static jpcsp.Allegrex.Common.COP0_STATE_CAUSE;
+import static jpcsp.Allegrex.Common.COP0_STATE_COMPARE;
+import static jpcsp.Allegrex.Common.COP0_STATE_CONFIG;
 import static jpcsp.Allegrex.Common.COP0_STATE_COUNT;
 import static jpcsp.Allegrex.Common.COP0_STATE_CPUID;
+import static jpcsp.Allegrex.Common.COP0_STATE_EBASE;
+import static jpcsp.Allegrex.Common.COP0_STATE_EPC;
+import static jpcsp.Allegrex.Common.COP0_STATE_REG24;
 import static jpcsp.Allegrex.Common.COP0_STATE_STATUS;
+import static jpcsp.Allegrex.Common.COP0_STATE_TAGHI;
+import static jpcsp.Allegrex.Common.COP0_STATE_TAGLO;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_LINK_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_CANNOT_BE_SPLIT;
@@ -223,6 +231,34 @@ public String disasm(int address, int insn) {
 	int rs = (insn>>21)&31;
 
 return Common.disasmCODEIMMRS("cache", 0x0B, (short)imm16, rs);
+}
+};
+public static final Instruction ICACHE = new Instruction(252) {
+
+@Override
+public final String name() { return "ICACHE"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
+@Override
+public void interpret(Processor processor, int insn) {
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
+
+
+}
+@Override
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
+}
+@Override
+public String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+	int function = (insn>>16)&31;
+
+return Common.disasmCODEIMMRS("icache", function, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_INDEX_WRITEBACK_INVALIDATE = new Instruction(6) {
@@ -468,6 +504,34 @@ public String disasm(int address, int insn) {
 return Common.disasmCODEIMMRS("cache", 0x1F, (short)imm16, rs);
 }
 };
+public static final Instruction DCACHE = new Instruction(253) {
+
+@Override
+public final String name() { return "DCACHE"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
+@Override
+public void interpret(Processor processor, int insn) {
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
+
+
+}
+@Override
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
+}
+@Override
+public String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+	int function = (insn>>16)&31;
+
+return Common.disasmCODEIMMRS("dcache", function, (short)imm16, rs);
+}
+};
 public static final Instruction SYSCALL = new Instruction(15, FLAG_SYSCALL) {
 
 @Override
@@ -497,7 +561,7 @@ public String disasm(int address, int insn) {
 return Common.disasmSYSCALL(imm20);
 }
 };
-public static final Instruction ERET = new Instruction(16) {
+public static final Instruction ERET = new Instruction(16, FLAG_CANNOT_BE_SPLIT | FLAG_ENDS_BLOCK) {
 
 @Override
 public final String name() { return "ERET"; }
@@ -507,8 +571,7 @@ public final String category() { return "MIPS III"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-
-
+	processor.cpu.doERET();
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -608,10 +671,9 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int rt = (insn>>21)&31;
+	int rt = (insn>>16)&31;
 
-
-            
+	processor.cpu.setRegister(rt, Interrupts.isInterruptsEnabled() ? 1 : 0);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -619,7 +681,7 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	int rt = (insn>>21)&31;
+	int rt = (insn>>16)&31;
 
 return Common.disasmRT("mfic", rt);
 }
@@ -634,10 +696,10 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int rt = (insn>>21)&31;
+	int rt = (insn>>16)&31;
 
-
-            
+	int value = processor.cpu.getRegister(rt);
+	Interrupts.setInterruptsEnabled(value != 0);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -645,7 +707,7 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	int rt = (insn>>21)&31;
+	int rt = (insn>>16)&31;
 
 return Common.disasmRT("mtic", rt);
 }
@@ -5511,17 +5573,49 @@ public void interpret(Processor processor, int insn) {
 
 	int value = 0;
 	switch (c0dr) {
+		case COP0_STATE_COUNT: // System counter
+			value = (int) Emulator.getClock().nanoTime();
+			break;
 		case COP0_STATE_STATUS:
 			value = 0;
 			if (Interrupts.isInterruptsEnabled()) {
 				value |= (1 << 0);
 			}
 			break;
+		case COP0_STATE_CAUSE:
+			value = 0x200;
+			break;
+		case COP0_STATE_EPC:
+			value = processor.cpu.getEpc();
+			break;
+		case COP0_STATE_CONFIG:
+			final int dataCacheSize = 16 * 1024; // 16KB
+			final int instructionCacheSize = 16 * 1024; // 16KB
+
+			value = 0;
+			// 3 bits to indicate the data cache size
+			value |= Math.min(Integer.numberOfTrailingZeros(dataCacheSize) - 12, 7) << 6;
+			// 3 bits to indicate the instruction cache size
+			value |= Math.min(Integer.numberOfTrailingZeros(instructionCacheSize) - 12, 7) << 9;
+			break;
 		case COP0_STATE_CPUID:
 			value = 0; // CPU ID (0=Main, 1=ME)
 			break;
-		case COP0_STATE_COUNT: // System counter
-			value = (int) Emulator.getClock().nanoTime();
+		case COP0_STATE_REG24:
+			value = 0; 
+
+			// Bit 0 is used, usage unknown
+			boolean unknown = false;
+			value |= unknown ? 1 : 0;
+			break;
+		case COP0_STATE_EBASE:
+			value = processor.cpu.getEbase();
+			break;
+		case COP0_STATE_TAGLO:
+			value = 0;
+			break;
+		case COP0_STATE_TAGHI:
+			value = 0;
 			break;
 		default:
             processor.cpu.doUNK(String.format("Unsupported mfc0 instruction for c0dr=%d(%s)", c0dr, Common.cop0Names[c0dr]));
@@ -5559,6 +5653,9 @@ public void interpret(Processor processor, int insn) {
 		case 13:
 			value = IntrManager.getInstance().isInsideInterrupt() ? 1 : 0;
 			break;
+		case 25:
+			value = 0;
+			break;
 		default:
             processor.cpu.doUNK(String.format("Unsupported cfc0 instruction for c0cr=%d", c0cr));
             break;
@@ -5592,8 +5689,36 @@ public void interpret(Processor processor, int insn) {
 
 	int value = processor.cpu.getRegister(rt);
 	switch (c0dr) {
-		case Common.COP0_STATE_STATUS:
+		case COP0_STATE_COUNT:
+			// Count is set to 0 at boot time
+			if (value != 0) {
+				processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
+			}
+			break;
+		case COP0_STATE_COMPARE:
+			// Compare is set to 0x80000000 at boot time
+			if (value != 0x80000000) {
+				processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
+			}
+			break;
+		case COP0_STATE_CAUSE:
+			// Cause is set to 0x200 at boot time
+			if (value != 0x200) {
+				processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
+			}
+			break;
+		case COP0_STATE_STATUS:
 			Interrupts.setInterruptsEnabled((value & (1 << 0)) != 0);
+			break;
+		case COP0_STATE_EPC:
+			processor.cpu.setEpc(value);
+			break;
+		case COP0_STATE_EBASE:
+			processor.cpu.setEbase(value);
+			break;
+		case COP0_STATE_TAGLO:
+			break;
+		case COP0_STATE_TAGHI:
 			break;
 		default:
 	        processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
@@ -5627,6 +5752,11 @@ public void interpret(Processor processor, int insn) {
 
 	int value = processor.cpu.getRegister(rt);
 	switch (c0cr) {
+		case 25:
+			if (value != 0) {
+		        processor.cpu.doUNK(String.format("Unsupported ctc0 instruction for c0cr=%d, value=0x%X", c0cr, value));
+			}
+			break;
 		default:
 	        processor.cpu.doUNK(String.format("Unsupported ctc0 instruction for c0cr=%d, value=0x%X", c0cr, value));
 	        break;

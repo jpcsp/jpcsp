@@ -185,6 +185,8 @@ public class CodeInstruction {
 	        compileJr(context, mv);
         } else if (insn == Instructions.JALR) {
             compileJalr(context, mv);
+        } else if (insn == Instructions.ERET) {
+        	compileEret(context, mv);
         } else if (interpretAllVfpuInstructions && insn.category().startsWith("VFPU")) {
         	context.visitIntepreterCall(opcode, insn);
 	    } else {
@@ -210,6 +212,11 @@ public class CodeInstruction {
         context.loadRs();       
         compileDelaySlot(context, mv);
         context.visitCall(getAddress() + 8, context.getRdRegisterIndex());
+    }
+
+    private void compileEret(CompilerContext context, MethodVisitor mv) {
+    	context.loadEpc();
+    	context.visitJump();
     }
 
     private void compileBranch(CompilerContext context, MethodVisitor mv) {

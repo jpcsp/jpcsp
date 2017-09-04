@@ -510,8 +510,15 @@ public class Common {
     public static final int COP0_STATE_COUNT = 9;
     public static final int COP0_STATE_COMPARE = 11;
     public static final int COP0_STATE_STATUS = 12;
+    public static final int COP0_STATE_CAUSE = 13;
+    public static final int COP0_STATE_EPC = 14;
+    public static final int COP0_STATE_CONFIG = 16;
     public static final int COP0_STATE_SCCODE = 21;
     public static final int COP0_STATE_CPUID = 22;
+    public static final int COP0_STATE_REG24 = 24;
+    public static final int COP0_STATE_EBASE = 25;
+    public static final int COP0_STATE_TAGLO = 28;
+    public static final int COP0_STATE_TAGHI = 29;
     public static String vsuffix[] = {
         ".s",
         ".p",
@@ -961,7 +968,7 @@ public class Common {
     }
 
 
-    protected static Instruction[] m_instances = new Instruction[252];
+    protected static Instruction[] m_instances = new Instruction[254];
 
     public static final Instruction[] instructions() {
         return m_instances;

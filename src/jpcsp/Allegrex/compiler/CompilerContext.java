@@ -37,6 +37,8 @@ import static jpcsp.Allegrex.Common._t9;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
 import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
+import static jpcsp.HLE.HLEModuleManager.InternalSyscallNid;
 import static jpcsp.HLE.SyscallHandler.syscallLoadCoreUnmappedImport;
 
 import java.lang.annotation.Annotation;
@@ -1670,6 +1672,10 @@ public class CompilerContext implements ICompilerContext {
     	mv.visitLabel(notDebug);
     }
 
+    private boolean isCodeInstructionInKernelMemory() {
+    	return codeInstruction.getAddress() < MemoryMap.START_USERSPACE;
+    }
+
     /**
      * Generate the required Java code to call a syscall function.
      * The code generated must match the Java behavior implemented in
@@ -1740,7 +1746,7 @@ public class CompilerContext implements ICompilerContext {
     	if (func.getFirmwareVersion() >= 999) {
     		// Dummy version number meaning valid for all versions
     		needFirmwareVersionCheck = false;
-    	} else if (codeInstruction.getAddress() < MemoryMap.START_USERSPACE) {
+    	} else if (isCodeInstructionInKernelMemory()) {
     		// When compiling code in the kernel memory space, do not perform any version check.
     		// This is used by overwritten HLE functions.
     		needFirmwareVersionCheck = false;
@@ -1980,6 +1986,12 @@ public class CompilerContext implements ICompilerContext {
     			storePc();
     		}
 
+    		boolean destroyTempRegisters = true;
+    		if (code == syscallLoadCoreUnmappedImport) {
+    			// We do not destroy the temp registers for special syscalls
+    			destroyTempRegisters = false;
+    		}
+
     		if (func == null) {
     	    	loadImm(code);
     	    	if (fastSyscall) {
@@ -1989,32 +2001,39 @@ public class CompilerContext implements ICompilerContext {
     	    	}
         	} else {
         		visitSyscall(func, fastSyscall);
+
+        		if (func.getNid() == HLESyscallNid || func.getNid() == InternalSyscallNid) {
+        			// We do not destroy the temp registers for special syscalls
+        			destroyTempRegisters = false;
+        		}
         	}
 
-        	// The following registers are always set to 0xDEADBEEF after a syscall
-        	int deadbeef = 0xDEADBEEF;
-        	storeRegister(_a0, deadbeef);
-        	storeRegister(_a1, deadbeef);
-        	storeRegister(_a2, deadbeef);
-        	storeRegister(_a3, deadbeef);
-        	storeRegister(_t0, deadbeef);
-        	storeRegister(_t1, deadbeef);
-        	storeRegister(_t2, deadbeef);
-        	storeRegister(_t3, deadbeef);
-        	storeRegister(_t4, deadbeef);
-        	storeRegister(_t5, deadbeef);
-        	storeRegister(_t6, deadbeef);
-        	storeRegister(_t7, deadbeef);
-        	storeRegister(_t8, deadbeef);
-        	storeRegister(_t9, deadbeef);
-        	prepareHiloForStore();
-        	mv.visitLdcInsn(new Long(0xDEADBEEFDEADBEEFL));
-        	storeHilo();
+    		if (destroyTempRegisters) {
+	        	// The following registers are always set to 0xDEADBEEF after a syscall
+	        	int deadbeef = 0xDEADBEEF;
+	        	storeRegister(_a0, deadbeef);
+	        	storeRegister(_a1, deadbeef);
+	        	storeRegister(_a2, deadbeef);
+	        	storeRegister(_a3, deadbeef);
+	        	storeRegister(_t0, deadbeef);
+	        	storeRegister(_t1, deadbeef);
+	        	storeRegister(_t2, deadbeef);
+	        	storeRegister(_t3, deadbeef);
+	        	storeRegister(_t4, deadbeef);
+	        	storeRegister(_t5, deadbeef);
+	        	storeRegister(_t6, deadbeef);
+	        	storeRegister(_t7, deadbeef);
+	        	storeRegister(_t8, deadbeef);
+	        	storeRegister(_t9, deadbeef);
+	        	prepareHiloForStore();
+	        	mv.visitLdcInsn(new Long(0xDEADBEEFDEADBEEFL));
+	        	storeHilo();
+    		}
 
         	// loadcore.prx is generating the following sequence for unmapped imports:
         	//     syscall 0x00015
         	//     nop
-        	// As there is no instruction to return to the called, we
+        	// As there is no instruction to return to the caller, we
         	// need to handle this special case.
 	    	if (code == syscallLoadCoreUnmappedImport) {
 	    		loadRegister(_ra);
@@ -2757,9 +2776,18 @@ public class CompilerContext implements ICompilerContext {
 
 		if (RuntimeContext.hasMemoryInt()) {
 			if (registerIndex == _sp) {
-				// No need to check for a valid memory access when referencing the $sp register
-				loadImm(2);
-    			mv.visitInsn(Opcodes.IUSHR);
+				if (isCodeInstructionInKernelMemory()) {
+					// In kernel memory, the $sp value can have the flag 0x80000000.
+	    			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
+	    			loadImm(2);
+	    			mv.visitInsn(Opcodes.ISHL);
+	    			loadImm(4);
+	    			mv.visitInsn(Opcodes.IUSHR);
+				} else {
+					// No need to check for a valid memory access when referencing the $sp register
+					loadImm(2);
+	    			mv.visitInsn(Opcodes.IUSHR);
+				}
 			} else if (checkMemoryAccess()) {
 	            loadImm(codeInstruction.getAddress());
 	            String checkMethodName = String.format("checkMemory%s%d", isRead ? "Read" : "Write", width);
@@ -4394,5 +4422,10 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public boolean compileLWsequence(int baseRegister, int[] offsets, int[] registers) {
 		return compileSWLWsequence(baseRegister, offsets, registers, true);
+	}
+
+	public void loadEpc() {
+    	loadCpu();
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, "getEpc", "()I");
 	}
 }

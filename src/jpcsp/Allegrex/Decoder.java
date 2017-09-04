@@ -518,8 +518,8 @@ public class Decoder {
         jpcsp.Allegrex.Instructions.VSLT,
     };
     public static final Instruction table_11[] = {
-        jpcsp.Allegrex.Common.UNK,
-        jpcsp.Allegrex.Common.UNK,
+        jpcsp.Allegrex.Instructions.ICACHE,
+        jpcsp.Allegrex.Instructions.ICACHE,
         jpcsp.Allegrex.Instructions.ICACHE_INDEX_INVALIDATE,
         jpcsp.Allegrex.Instructions.ICACHE_INDEX_UNLOCK,
         jpcsp.Allegrex.Instructions.ICACHE_HIT_INVALIDATE,
@@ -533,10 +533,10 @@ public class Decoder {
 				return jpcsp.Allegrex.Instructions.ICACHE_FILL_WITH_LOCK;
             }
         },
-        jpcsp.Allegrex.Common.UNK,
-        jpcsp.Allegrex.Common.UNK,
-        jpcsp.Allegrex.Common.UNK,
-        jpcsp.Allegrex.Common.UNK,
+        jpcsp.Allegrex.Instructions.ICACHE,
+        jpcsp.Allegrex.Instructions.ICACHE,
+        jpcsp.Allegrex.Instructions.DCACHE,
+        jpcsp.Allegrex.Instructions.DCACHE,
         jpcsp.Allegrex.Instructions.DCACHE_INDEX_WRITEBACK_INVALIDATE,
         jpcsp.Allegrex.Instructions.DCACHE_INDEX_UNLOCK,
         new STUB() {
