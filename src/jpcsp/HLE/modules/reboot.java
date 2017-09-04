@@ -162,7 +162,6 @@ public class reboot extends HLEModule {
     	//  sub_11994 -> sceSysregEmcsmIoEnable
 		//	unkVar90A4 -> g_scramble
 
-		patch(mem, rebootModule, 0x00000020, 0x3C1D8880, 0x3C1D0880); // Replace "lui $sp, 0x8880" with "lui $sp, 0x0880"
 		patch(mem, rebootModule, 0x00004AA0, 0x18600007, 0x18600039); // Skip initialization accessing hardware register 0xBC1000nn
 		patch(mem, rebootModule, 0x00012AD4, 0xFFFFFFFF, 0x00100000); // Change initial value of static variable: https://github.com/uofw/uofw/blob/master/src/reboot/unk.c#L563
 		patch(mem, rebootModule, 0x000060A8, 0x11A0001F, NOP()); // Allow non-encrypted sysmem.prx and loadcore.prx: NOP the test at https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L680

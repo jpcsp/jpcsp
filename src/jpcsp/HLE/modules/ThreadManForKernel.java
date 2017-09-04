@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.HLEFunction;
@@ -23,6 +25,7 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.kernel.Managers;
 
 public class ThreadManForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("ThreadManForKernel");
@@ -55,5 +58,16 @@ public class ThreadManForKernel extends HLEModule {
     @HLEFunction(nid = 0xA249EAAE, version = 150)
     public int sceKernelGetKTLS(int id) {
     	return Modules.Kernel_LibraryModule.sceKernel_FA835CDE(id);
+    }
+
+    /**
+     * This HLE syscall is used when reading the hardware register 0xBC600000.
+     * It is equivalent to reading the system time.
+     * 
+     * @return the same value as returned by sceKernelGetSystemTimeLow().
+     */
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleKernelGetSystemTimeLow() {
+    	return Managers.systime.sceKernelGetSystemTimeLow();
     }
 }

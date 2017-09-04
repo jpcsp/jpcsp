@@ -700,4 +700,64 @@ if (ppn >= 0x1000) {
     public int sceNandDetectChipMakersBBM(int ppn) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBADD5D46, version = 150)
+    public int sceNandWritePagesRawAll() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD897C343, version = 150)
+    public int sceNandDetectChip() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3F76BC21, version = 150)
+    public int sceNandDumpWearBBMSize() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEBA0E6C6, version = 150)
+    public int sceNandCountChipMakersBBM() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2674CFFE, version = 150)
+    public int sceNandEraseAllBlock() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9B2AC433, version = 150)
+    public int sceNandTestBlock() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x716CD2B2, version = 150)
+    public int sceNandWriteBlock() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEF55F193, version = 150)
+    public int sceNandCalcEcc() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x18B78661, version = 150)
+    public int sceNandVerifyEcc() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x88CC9F72, version = 150)
+    public int sceNandCorrectEcc() {
+    	return 0;
+    }
 }
