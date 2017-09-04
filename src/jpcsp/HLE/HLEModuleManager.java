@@ -577,7 +577,7 @@ public class HLEModuleManager {
 			functionName = method.getName();
 		}
 
-		HLEModuleFunction hleModuleFunction = new HLEModuleFunction(moduleName, functionName, hleModule, method, hleFunction.checkInsideInterrupt(), hleFunction.checkDispatchThreadEnabled(), hleFunction.stackUsage(), hleFunction.version());
+		HLEModuleFunction hleModuleFunction = new HLEModuleFunction(moduleName, functionName, hleFunction.nid(), hleModule, method, hleFunction.checkInsideInterrupt(), hleFunction.checkDispatchThreadEnabled(), hleFunction.stackUsage(), hleFunction.version());
 
 		if (hleUnimplemented != null) {
 			hleModuleFunction.setUnimplemented(true);
@@ -665,10 +665,9 @@ public class HLEModuleManager {
 			return;
 		}
 
-		// These 2 HLE modules need to be started in order
+		// This HLE module need to be started in order
 		// to be able to load and start the available modules.
 		Modules.ModuleMgrForUserModule.start();
-    	Modules.ThreadManForUserModule.start();
 
     	int startPriority = 0x10;
     	for (String moduleFileName : availableModuleFileNames) {

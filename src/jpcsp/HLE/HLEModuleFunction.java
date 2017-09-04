@@ -37,9 +37,10 @@ public class HLEModuleFunction {
 	private HLEModule hleModule;
 	private int firmwareVersion;
 
-    public HLEModuleFunction(String moduleName, String functionName, HLEModule hleModule, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled, int stackUsage, int firmwareVersion) {
+    public HLEModuleFunction(String moduleName, String functionName, int nid, HLEModule hleModule, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled, int stackUsage, int firmwareVersion) {
         this.moduleName = moduleName;
         this.functionName = functionName;
+        this.nid = nid;
 		this.checkInsideInterrupt = checkInsideInterrupt;
 		this.checkDispatchThreadEnabled = checkDispatchThreadEnabled;
 		this.stackUsage = stackUsage;

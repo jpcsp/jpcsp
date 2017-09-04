@@ -262,6 +262,7 @@ public class Emulator implements Runnable {
         Managers.reset();
         Modules.SysMemUserForUserModule.start();
         Modules.SysMemUserForUserModule.setFirmwareVersion(firmwareVersion);
+    	Modules.ThreadManForUserModule.start();
     }
 
     @Override
