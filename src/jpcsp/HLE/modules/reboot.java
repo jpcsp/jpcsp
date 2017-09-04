@@ -65,7 +65,7 @@ import jpcsp.hardware.Model;
 
 public class reboot extends HLEModule {
     public static Logger log = Modules.getLogger("reboot");
-    private static final boolean enableReboot = true;
+    private static final boolean enableReboot = false;
     private static final String rebootFileName = "flash0:/reboot.bin";
     private static final int rebootBaseAddress = MemoryMap.START_KERNEL + 0x600000;
     private static final int rebootParamAddress = MemoryMap.START_KERNEL + 0x400000;

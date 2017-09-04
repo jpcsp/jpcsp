@@ -2955,7 +2955,11 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 	            Emulator.getInstance().setFirmwareVersion(660);
                 Modules.sceDisplayModule.setCalledFromCommandLine();
                 HTTPServer.processProxyRequestLocally = true;
-                loadFile(new File("flash0/vsh/module/vshmain.prx"), true);
+
+                if (!Modules.rebootModule.loadAndRun()) {
+                    loadFile(new File("flash0/vsh/module/vshmain.prx"), true);
+                }
+
                 Modules.IoFileMgrForUserModule.setfilepath("ms0/PSP/GAME");
 
             	// Start VSH with the lowest priority so that the initialization of the other
