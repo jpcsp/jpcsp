@@ -239,7 +239,8 @@ public class HLEModuleManager {
         sceNand(Modules.sceNandModule),
         sceBSMan(Modules.sceBSManModule),
         memlmd(Modules.memlmdModule),
-        reboot(Modules.rebootModule);
+        reboot(Modules.rebootModule),
+        sceI2c(Modules.sceI2cModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;

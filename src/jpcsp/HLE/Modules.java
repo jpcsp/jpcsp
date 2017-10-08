@@ -164,6 +164,7 @@ public class Modules {
     public static mp4msv mp4msvModule = new mp4msv();
     public static memlmd memlmdModule = new memlmd();
     public static reboot rebootModule = new reboot();
+    public static sceI2c sceI2cModule = new sceI2c();
 
     public static Logger log = Logger.getLogger("hle");
 
