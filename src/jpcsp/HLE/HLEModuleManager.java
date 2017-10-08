@@ -645,8 +645,8 @@ public class HLEModuleManager {
 		return false;
 	}
 
-	public void loadAvailableFlash0Modules() {
-		boolean runningFromVsh = Emulator.getMainGUI().isRunningFromVsh();
+	public void loadAvailableFlash0Modules(boolean fromSyscall) {
+		boolean runningFromVsh = Emulator.getMainGUI().isRunningFromVsh() && !fromSyscall;
 
 		List<String> availableModuleFileNames = new LinkedList<>();
 		for (String moduleFileName : moduleFileNamesToBeLoaded) {

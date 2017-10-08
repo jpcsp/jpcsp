@@ -169,7 +169,7 @@ public class Emulator implements Runnable {
     public SceModule load(String pspfilename, ByteBuffer f, boolean fromSyscall) throws IOException, GeneralJpcspException {
         initNewPsp(fromSyscall);
 
-        HLEModuleManager.getInstance().loadAvailableFlash0Modules();
+        HLEModuleManager.getInstance().loadAvailableFlash0Modules(fromSyscall);
 
         int loadAddress = getLoadAddress();
     	module = Loader.getInstance().LoadModule(pspfilename, f, loadAddress, USER_PARTITION_ID, USER_PARTITION_ID, false, true, fromSyscall);
