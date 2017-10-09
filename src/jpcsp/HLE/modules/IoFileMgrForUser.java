@@ -1273,10 +1273,18 @@ public class IoFileMgrForUser extends HLEModule {
         return iso;
     }
 
-    protected void delayIoOperation(IoOperationTiming ioOperationTiming) {
-        if (!noDelayIoOperation && ioOperationTiming.delayMillis > 0) {
-            Modules.ThreadManForUserModule.hleKernelDelayThread(ioOperationTiming.delayMillis * 1000, false);
+    private void delayIoOpertation(int delayMillis) {
+        if (!noDelayIoOperation && delayMillis > 0) {
+            Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
         }
+    }
+
+    protected void delayIoOperation(IoOperationTiming ioOperationTiming) {
+    	delayIoOpertation(ioOperationTiming.getDelayMillis());
+    }
+
+    protected void delayIoOperation(IoOperationTiming ioOperationTiming, int size) {
+    	delayIoOpertation(ioOperationTiming.getDelayMillis(size));
     }
 
     public void hleSetNoDelayIoOperation(boolean noDelayIoOperation) {
@@ -2068,7 +2076,7 @@ public class IoFileMgrForUser extends HLEModule {
         if (!async) {
             // Do not delay output on stdout/stderr
             if (id != STDOUT_ID && id != STDERR_ID) {
-            	delayIoOperation(timings.get(IoOperation.write));
+            	delayIoOperation(timings.get(IoOperation.write), size);
             }
         }
 
@@ -2203,7 +2211,7 @@ public class IoFileMgrForUser extends HLEModule {
 
         if (!async) {
             if (size > 0x100) {
-            	delayIoOperation(timings.get(IoOperation.read));
+            	delayIoOperation(timings.get(IoOperation.read), size);
             }
         }
 
