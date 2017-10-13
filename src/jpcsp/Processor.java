@@ -21,6 +21,7 @@ import static jpcsp.Allegrex.GprState.NUMBER_REGISTERS;
 import java.nio.ByteBuffer;
 
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.Cp0State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 
@@ -28,6 +29,7 @@ import org.apache.log4j.Logger;
 
 public class Processor {
     public CpuState cpu = new CpuState();
+    public Cp0State cp0 = new Cp0State();
     public static final Memory memory = Memory.getInstance();
     public static Logger log = Logger.getLogger("cpu");
 

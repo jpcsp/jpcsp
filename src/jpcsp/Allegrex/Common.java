@@ -19,6 +19,9 @@ package jpcsp.Allegrex;
 import static jpcsp.HLE.SyscallHandler.syscallLoadCoreUnmappedImport;
 import static jpcsp.HLE.SyscallHandler.syscallUnmappedImport;
 
+import org.apache.log4j.Logger;
+
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.ICompilerContext;
@@ -34,7 +37,7 @@ import jpcsp.util.Utilities;
 public class Common {
 
     public static abstract class Instruction {
-
+    	protected static Logger log = Emulator.log;
         private int m_count = 0;
         private int flags = 0;
         public final static int FLAG_INTERPRETED = (1 << 0);

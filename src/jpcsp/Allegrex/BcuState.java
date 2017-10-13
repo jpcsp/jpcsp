@@ -28,15 +28,11 @@ import jpcsp.Processor;
 public class BcuState extends LsuState {
     public int pc;
     public int npc;
-    private int epc;
-    private int ebase;
 
     @Override
     public void reset() {
         pc = 0;
         npc = 0;
-        epc = 0;
-        ebase = 0;
     }
 
     @Override
@@ -44,31 +40,23 @@ public class BcuState extends LsuState {
         super.resetAll();
         pc = 0;
         npc = 0;
-        epc = 0;
-        ebase = 0;
     }
 
     public BcuState() {
         pc = 0;
         npc = 0;
-        epc = 0;
-        ebase = 0;
     }
 
     public void copy(BcuState that) {
         super.copy(that);
         pc = that.pc;
         npc = that.npc;
-        epc = that.epc;
-        ebase = that.ebase;
     }
 
     public BcuState(BcuState that) {
         super(that);
         pc = that.pc;
         npc = that.npc;
-        epc = that.epc;
-        ebase = that.ebase;
     }
 
     public static int branchTarget(int npc, int simm16) {
@@ -103,22 +91,6 @@ public class BcuState extends LsuState {
         pc = npc;
         npc = pc + 4;
     }
-
-    public void setEpc(int epc) {
-    	this.epc = epc;
-    }
-
-    public int getEpc() {
-    	return epc;
-    }
-
-	public int getEbase() {
-		return ebase;
-	}
-
-	public void setEbase(int ebase) {
-		this.ebase = ebase;
-	}
 
 	public boolean doJR(int rs) {
         npc = getRegister(rs);
@@ -275,6 +247,6 @@ public class BcuState extends LsuState {
     }
 
     public void doERET() {
-    	npc = getEpc();
+    	npc = Emulator.getProcessor().cp0.getEpc();
     }
 }

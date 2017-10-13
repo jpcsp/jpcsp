@@ -63,6 +63,7 @@ import jpcsp.Allegrex.GprState;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.VfpuState;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.Cp0State;
 import jpcsp.Allegrex.FpuState.Fcr31;
 import jpcsp.Allegrex.VfpuState.Vcr;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxDst;
@@ -250,6 +251,11 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
     	}
 	}
+
+    private void loadCp0() {
+    	loadProcessor();
+        mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Processor.class), "cp0", Type.getDescriptor(Cp0State.class));
+    }
 
     private void loadProcessor() {
         mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "processor", processorDescriptor);
@@ -4425,7 +4431,7 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	public void loadEpc() {
-    	loadCpu();
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, "getEpc", "()I");
+    	loadCp0();
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Cp0State.class), "getEpc", "()I");
 	}
 }

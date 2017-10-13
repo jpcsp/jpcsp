@@ -20,13 +20,8 @@ import static jpcsp.Allegrex.Common.COP0_STATE_CAUSE;
 import static jpcsp.Allegrex.Common.COP0_STATE_COMPARE;
 import static jpcsp.Allegrex.Common.COP0_STATE_CONFIG;
 import static jpcsp.Allegrex.Common.COP0_STATE_COUNT;
-import static jpcsp.Allegrex.Common.COP0_STATE_CPUID;
 import static jpcsp.Allegrex.Common.COP0_STATE_EBASE;
-import static jpcsp.Allegrex.Common.COP0_STATE_EPC;
-import static jpcsp.Allegrex.Common.COP0_STATE_REG24;
 import static jpcsp.Allegrex.Common.COP0_STATE_STATUS;
-import static jpcsp.Allegrex.Common.COP0_STATE_TAGHI;
-import static jpcsp.Allegrex.Common.COP0_STATE_TAGLO;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_LINK_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_CANNOT_BE_SPLIT;
@@ -54,7 +49,7 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.SequenceLWCodeInstruction;
 import jpcsp.Allegrex.compiler.SequenceSWCodeInstruction;
 import jpcsp.HLE.SyscallHandler;
-import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.hardware.Interrupts;
 import jpcsp.util.Utilities;
 
@@ -547,7 +542,7 @@ public void interpret(Processor processor, int insn) {
 	try {
 		SyscallHandler.syscall(imm20);
 	} catch (Exception e) {
-		Emulator.log.error("syscall", e);
+		log.error("syscall", e);
 	}
 }
 @Override
@@ -594,7 +589,7 @@ public final String category() { return "MIPS I"; }
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm20 = (insn>>6)&1048575;
-	Emulator.log.error(String.format("0x%08X - Allegrex break 0x%05X", processor.cpu.pc, imm20));
+	log.error(String.format("0x%08X - Allegrex break 0x%05X", processor.cpu.pc, imm20));
 
 	// Pause the emulator only if not ignoring invalid memory accesses
 	// (I'm too lazy to introduce a new configuration flag to ignore "break" instructions).
@@ -648,11 +643,29 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	Emulator.log.error("Allegrex halt");
-	Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
+	log.error("Allegrex halt");
+//	Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
+
+	try {
+		int ebase = processor.cp0.getDataRegister(COP0_STATE_EBASE);
+		// Simulate an interrupt exception
+		int cause = processor.cp0.getDataRegister(COP0_STATE_CAUSE);
+		cause |= ExceptionManager.EXCEP_INT << 2;
+		processor.cp0.setDataRegister(COP0_STATE_CAUSE, cause);
+		int returnAddress = (processor.cpu.pc + 4) | 0x80000000;
+		processor.cp0.setEpc(returnAddress);
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Calling exception handler at 0x%08X", ebase));
+		}
+		RuntimeContext.jump(ebase, returnAddress);
+	} catch (Exception e) {
+		log.error("Error while calling code at EBase", e);
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
+	context.storePc();
 	super.compile(context, insn);
 }
 @Override
@@ -5571,57 +5584,27 @@ public void interpret(Processor processor, int insn) {
 	int c0dr = (insn>>11)&31;
 	int rt = (insn>>16)&31;
 
-	int value = 0;
+	int value = processor.cp0.getDataRegister(c0dr);
+
+	// Manipulate some special values
 	switch (c0dr) {
 		case COP0_STATE_COUNT: // System counter
 			value = (int) Emulator.getClock().nanoTime();
 			break;
 		case COP0_STATE_STATUS:
-			value = 0;
 			if (Interrupts.isInterruptsEnabled()) {
 				value |= (1 << 0);
+			} else {
+				value &= ~(1 << 0);
 			}
 			break;
-		case COP0_STATE_CAUSE:
-			value = 0x200;
-			break;
-		case COP0_STATE_EPC:
-			value = processor.cpu.getEpc();
-			break;
-		case COP0_STATE_CONFIG:
-			final int dataCacheSize = 16 * 1024; // 16KB
-			final int instructionCacheSize = 16 * 1024; // 16KB
-
-			value = 0;
-			// 3 bits to indicate the data cache size
-			value |= Math.min(Integer.numberOfTrailingZeros(dataCacheSize) - 12, 7) << 6;
-			// 3 bits to indicate the instruction cache size
-			value |= Math.min(Integer.numberOfTrailingZeros(instructionCacheSize) - 12, 7) << 9;
-			break;
-		case COP0_STATE_CPUID:
-			value = 0; // CPU ID (0=Main, 1=ME)
-			break;
-		case COP0_STATE_REG24:
-			value = 0; 
-
-			// Bit 0 is used, usage unknown
-			boolean unknown = false;
-			value |= unknown ? 1 : 0;
-			break;
-		case COP0_STATE_EBASE:
-			value = processor.cpu.getEbase();
-			break;
-		case COP0_STATE_TAGLO:
-			value = 0;
-			break;
-		case COP0_STATE_TAGHI:
-			value = 0;
-			break;
-		default:
-            processor.cpu.doUNK(String.format("Unsupported mfc0 instruction for c0dr=%d(%s)", c0dr, Common.cop0Names[c0dr]));
-            break;
 	}
-    processor.cpu.setRegister(rt, value);
+
+	processor.cpu.setRegister(rt, value);
+
+	if (log.isTraceEnabled()) {
+		log.trace(String.format("mfc0 reading data register#%d(%s) having value 0x%08X", c0dr, Common.cop0Names[c0dr], value));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -5648,19 +5631,12 @@ public void interpret(Processor processor, int insn) {
 	int c0cr = (insn>>11)&31;
 	int rt = (insn>>16)&31;
 
-	int value = 0;
-	switch (c0cr) {
-		case 13:
-			value = IntrManager.getInstance().isInsideInterrupt() ? 1 : 0;
-			break;
-		case 25:
-			value = 0;
-			break;
-		default:
-            processor.cpu.doUNK(String.format("Unsupported cfc0 instruction for c0cr=%d", c0cr));
-            break;
-	}
+	int value = processor.cp0.getControlRegister(c0cr);
 	processor.cpu.setRegister(rt, value);
+
+	if (log.isTraceEnabled()) {
+		log.trace(String.format("cfc0 reading control register#%d having value 0x%08X", c0cr, value));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -5701,28 +5677,17 @@ public void interpret(Processor processor, int insn) {
 				processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
 			}
 			break;
-		case COP0_STATE_CAUSE:
-			// Cause is set to 0x200 at boot time
-			if (value != 0x200) {
-				processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
-			}
-			break;
 		case COP0_STATE_STATUS:
 			Interrupts.setInterruptsEnabled((value & (1 << 0)) != 0);
 			break;
-		case COP0_STATE_EPC:
-			processor.cpu.setEpc(value);
+		case COP0_STATE_CONFIG:
+			processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
 			break;
-		case COP0_STATE_EBASE:
-			processor.cpu.setEbase(value);
-			break;
-		case COP0_STATE_TAGLO:
-			break;
-		case COP0_STATE_TAGHI:
-			break;
-		default:
-	        processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
-	        break;
+	}
+	processor.cp0.setDataRegister(c0dr, value);
+
+	if (log.isTraceEnabled()) {
+		log.trace(String.format("mtc0 setting data register#%d(%s) to value 0x%08X", c0dr, Common.cop0Names[c0dr], value));
 	}
 }
 @Override
@@ -5751,15 +5716,10 @@ public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
 	int value = processor.cpu.getRegister(rt);
-	switch (c0cr) {
-		case 25:
-			if (value != 0) {
-		        processor.cpu.doUNK(String.format("Unsupported ctc0 instruction for c0cr=%d, value=0x%X", c0cr, value));
-			}
-			break;
-		default:
-	        processor.cpu.doUNK(String.format("Unsupported ctc0 instruction for c0cr=%d, value=0x%X", c0cr, value));
-	        break;
+	processor.cp0.setControlRegister(c0cr, value);
+
+	if (log.isTraceEnabled()) {
+		log.trace(String.format("ctc0 setting control register#%d to value 0x%08X", c0cr, value));
 	}
 }
 @Override
