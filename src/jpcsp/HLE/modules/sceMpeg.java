@@ -2021,7 +2021,7 @@ public class sceMpeg extends HLEModule {
 			log.debug(String.format("writeImageYCbCr addr=0x%08X-0x%08X, frameWidth=%d, frameHeight=%d", addr, addr + length + length2 + length2, frameWidth, frameHeight));
 		}
 
-		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, length, 1);
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, length + length2 + length2, 1);
 		for (int i = 0; i < length; i++) {
 			memoryWriter.writeNext(luma[i] & 0xFF);
 		}

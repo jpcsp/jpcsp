@@ -736,13 +736,13 @@ public class sceReg extends HLEModule {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-    				buf.setValue32(1);
+    				buf.setValue32(sceUtility.getSystemParamLanguage());
     			}
     		} else if ("button_assign".equals(name)) {
     			ptype.setValue(REG_TYPE_INT);
     			psize.setValue(4);
     			if (size >= 4) {
-        			buf.setValue32(1);
+        			buf.setValue32(sceUtility.getSystemParamButtonPreference());
     			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
@@ -2034,6 +2034,14 @@ public class sceReg extends HLEModule {
     			settings.writeString("registry.time_zone_area", buf.getStringZ());
     		} else if ("summer_time".equals(name)) {
     			settings.writeInt("registry.summer_time", buf.getValue32());
+    		} else {
+    			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
+    		}
+    	} else if ("/CONFIG/SYSTEM/XMB".equals(fullName)) {
+    		if ("language".equals(name)) {
+    			settings.writeInt(sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE, buf.getValue32());
+    		} else if ("button_assign".equals(name)) {
+    			settings.writeInt(sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, buf.getValue32());
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}

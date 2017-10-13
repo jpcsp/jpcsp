@@ -37,4 +37,10 @@ public class sceI2c extends HLEModule {
 
     	return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x8CBD8CCF, version = 150)
+	public int sceI2cMasterTransmit(int transmitI2cAddress, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer transmitBuffer, int transmitBufferSize) {
+    	return 0;
+	}
 }

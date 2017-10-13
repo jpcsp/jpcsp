@@ -270,7 +270,8 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x3F6F2CC7, version = 150)
-    public int sceSysreg_driver_3F6F2CC7() {
+    public int sceSysreg_driver_3F6F2CC7(int cpuFreqNumerator, int cpuFreqDenominator) {
+    	// Sets the CPU Frequency by ratio
     	return 0;
     }
 
