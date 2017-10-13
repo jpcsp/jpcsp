@@ -18,10 +18,17 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 
 public class sceAta extends HLEModule {
     public static Logger log = Modules.getLogger("sceAta");
 
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBE6261DA, version = 150)
+    public int sceAta_driver_BE6261DA(int unknown) {
+    	return 0;
+    }
 }

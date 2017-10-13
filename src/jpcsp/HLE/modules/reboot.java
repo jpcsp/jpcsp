@@ -168,7 +168,7 @@ public class reboot extends HLEModule {
 		patch(mem, rebootModule, 0x00002734, 0x012C182B, ADDIU(_t4, _t4, 1)); // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
 		patch(mem, rebootModule, 0x00002738, 0x1060FFFA, 0x012C182B);         // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
 		patch(mem, rebootModule, 0x0000273C, 0x00000000, 0x1060FFF9);         // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
-		patch(mem, rebootModule, 0x0000274C, 0xA1630000, SB(_v1, _t3, -1)); // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L48
+		patch(mem, rebootModule, 0x0000274C, 0xA1630000, SB(_v1, _t3, -1));   // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L48
 
 		// The function at offset 0x00006130 is decrypting the modules.
 		// See https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L707
