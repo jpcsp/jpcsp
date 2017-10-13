@@ -165,6 +165,9 @@ public class Modules {
     public static memlmd memlmdModule = new memlmd();
     public static reboot rebootModule = new reboot();
     public static sceI2c sceI2cModule = new sceI2c();
+    public static scePwm scePwmModule = new scePwm();
+    public static sceLcdc sceLcdcModule = new sceLcdc();
+    public static sceDmacplus sceDmacplusModule = new sceDmacplus();
 
     public static Logger log = Logger.getLogger("hle");
 

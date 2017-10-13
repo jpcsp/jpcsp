@@ -240,7 +240,10 @@ public class HLEModuleManager {
         sceBSMan(Modules.sceBSManModule),
         memlmd(Modules.memlmdModule),
         reboot(Modules.rebootModule),
-        sceI2c(Modules.sceI2cModule);
+        sceI2c(Modules.sceI2cModule),
+        scePwm(Modules.scePwmModule),
+        sceLcdc(Modules.sceLcdcModule),
+        sceDmacplus(Modules.sceDmacplusModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
