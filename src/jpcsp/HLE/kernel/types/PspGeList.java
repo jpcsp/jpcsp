@@ -420,6 +420,20 @@ public class PspGeList {
 		return false;
 	}
 
+	public int getSyncStatus() {
+		// Return the status PSP_GE_LIST_STALL_REACHED only when the stall address is reached.
+		// I.e. return PSP_GE_LIST_DRAWING when the stall address has been recently updated
+		// but the list processing has not yet been resumed and the status is still left
+		// at the value PSP_GE_LIST_STALL_REACHED.
+		if (status == PSP_GE_LIST_STALL_REACHED) {
+			if (!isStallReached()) {
+				return PSP_GE_LIST_DRAWING;
+			}
+		}
+
+		return status;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("PspGeList[id=0x%X, status=%s, list=0x%08X, pc=0x%08X, stall=0x%08X, cbid=0x%X, ended=%b, finished=%b, paused=%b, restarted=%b, reset=%b]", id, PSP_GE_LIST_STRINGS[status], list_addr, pc, stall_addr, cbid, ended, finished, paused, restarted, reset);

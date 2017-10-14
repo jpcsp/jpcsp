@@ -640,7 +640,7 @@ public class sceGe_user extends HLEModule {
         		result = 0;
         		blockCurrentThread = true;
         	} else {
-        		result = list.status;
+        		result = list.getSyncStatus();
         	}
 		}
 
@@ -687,7 +687,7 @@ public class sceGe_user extends HLEModule {
         		currentList = VideoEngine.getInstance().getFirstDrawList();
         	}
             if (currentList != null) {
-                result = currentList.status;
+                result = currentList.getSyncStatus();
             }
             if (log.isDebugEnabled()) {
             	log.debug(String.format("sceGeDrawSync mode=%d, returning %d", mode, result));
