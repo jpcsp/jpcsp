@@ -168,6 +168,7 @@ public class Modules {
     public static scePwm scePwmModule = new scePwm();
     public static sceLcdc sceLcdcModule = new sceLcdc();
     public static sceDmacplus sceDmacplusModule = new sceDmacplus();
+    public static sceDdr sceDdrModule = new sceDdr();
 
     public static Logger log = Logger.getLogger("hle");
 

@@ -243,7 +243,8 @@ public class HLEModuleManager {
         sceI2c(Modules.sceI2cModule),
         scePwm(Modules.scePwmModule),
         sceLcdc(Modules.sceLcdcModule),
-        sceDmacplus(Modules.sceDmacplusModule);
+        sceDmacplus(Modules.sceDmacplusModule),
+        sceDdr(Modules.sceDdrModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
