@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.StepLogger;
 import jpcsp.GUI.IMainGUI;
@@ -268,6 +269,7 @@ public class Emulator implements Runnable {
     @Override
     public void run() {
         RuntimeContext.start();
+        RuntimeContextLLE.start();
         GEProfiler.initialise();
 
         clock.resume();

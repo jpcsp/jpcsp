@@ -46,6 +46,7 @@ public class CodeInstruction {
 	private boolean isBranching;
 	private Label label;
 	private boolean isDelaySlot;
+	private boolean useMMIO;
 
     protected CodeInstruction() {
     }
@@ -209,7 +210,14 @@ public class CodeInstruction {
     	// Retrieve the call address from the Rs register before executing
     	// the delay slot instruction, as it might theoretically modify the
     	// content of the Rs register.
-        context.loadRs();       
+        context.loadRs();
+
+        // It seems the PSP ignores the lowest 2 bits of the address.
+        // These bits are used and set by interruptman.prx
+        // but never cleared explicitly before executing a jalr instruction.
+        context.loadImm(0xFFFFFFFC);
+        mv.visitInsn(Opcodes.IAND);
+
         compileDelaySlot(context, mv);
         context.visitCall(getAddress() + 8, context.getRdRegisterIndex());
     }
@@ -714,6 +722,14 @@ public class CodeInstruction {
 		}
 
 		return getInsn().disasm(address, opcode);
+	}
+
+	public boolean useMMIO() {
+		return useMMIO;
+	}
+
+	public void setUseMMIO(boolean useMMIO) {
+		this.useMMIO = useMMIO;
 	}
 
 	@Override

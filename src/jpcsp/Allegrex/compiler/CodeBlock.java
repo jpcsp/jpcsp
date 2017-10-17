@@ -78,12 +78,14 @@ public class CodeBlock {
 		highestAddress = startAddress;
 	}
 
-	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo) {
+	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo, boolean useMMIO) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("CodeBlock.addInstruction 0x%X - %s", address, insn.disasm(address, opcode)));
 		}
 
 		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo);
+
+		codeInstruction.setUseMMIO(useMMIO);
 
 		// Insert the codeInstruction in the codeInstructions list
 		// and keep the list sorted by address.

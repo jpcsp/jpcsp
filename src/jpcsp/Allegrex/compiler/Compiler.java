@@ -156,6 +156,7 @@ public class Compiler implements ICompiler {
     private HashSet<Integer> interpretedAddresses = new HashSet<Integer>();
     private static final int opcodeSyscallLoadCoreUnmappedImport = SYSCALL(syscallLoadCoreUnmappedImport);
     private static final int opcodeNop = NOP();
+    private Set<Integer> useMMIOAddresses = new HashSet<Integer>();
 
 	private class IgnoreInvalidMemoryAccessSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -495,7 +496,9 @@ public class Compiler implements ICompiler {
                         }
                     }
 
-                    codeBlock.addInstruction(pc, opcode, insn, isBranchTarget, isBranching, branchingTo);
+                    boolean useMMIO = useMMIOAddresses.contains(pc);
+
+                    codeBlock.addInstruction(pc, opcode, insn, isBranchTarget, isBranching, branchingTo, useMMIO);
                     pc = npc;
 
                     isBranchTarget = false;
@@ -696,5 +699,13 @@ public class Compiler implements ICompiler {
 
 	public CompilerTypeManager getCompilerTypeManager() {
 		return compilerTypeManager;
+	}
+
+	public void addMMIORange(int startAddress, int length) {
+		startAddress &= Memory.addressMask;
+
+		for (int i = 0; i < length; i += 4) {
+			useMMIOAddresses.add(startAddress + i);
+		}
 	}
 }
