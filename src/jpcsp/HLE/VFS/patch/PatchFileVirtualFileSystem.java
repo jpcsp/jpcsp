@@ -16,33 +16,23 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.patch;
 
-import static jpcsp.Allegrex.Common._a0;
-import static jpcsp.Allegrex.Common._a1;
-import static jpcsp.Allegrex.Common._a2;
-import static jpcsp.Allegrex.Common._a3;
-import static jpcsp.Allegrex.Common._at;
-import static jpcsp.Allegrex.Common._s0;
-import static jpcsp.Allegrex.Common._t0;
-import static jpcsp.Allegrex.Common._t1;
-import static jpcsp.Allegrex.Common._t2;
-import static jpcsp.Allegrex.Common._t3;
-import static jpcsp.Allegrex.Common._t4;
-import static jpcsp.Allegrex.Common._t6;
-import static jpcsp.Allegrex.Common._t7;
-import static jpcsp.Allegrex.Common._t8;
-import static jpcsp.Allegrex.Common._t9;
-import static jpcsp.Allegrex.Common._v0;
-import static jpcsp.Allegrex.Common._v1;
-import static jpcsp.Allegrex.Common._zr;
-import static jpcsp.HLE.Modules.ThreadManForKernelModule;
+import static jpcsp.HLE.Modules.sceAtaModule;
+import static jpcsp.HLE.Modules.sceDdrModule;
+import static jpcsp.HLE.Modules.sceDmacplusModule;
+import static jpcsp.HLE.Modules.sceGpioModule;
+import static jpcsp.HLE.Modules.sceI2cModule;
+import static jpcsp.HLE.Modules.sceLcdcModule;
 import static jpcsp.HLE.Modules.sceNandModule;
+import static jpcsp.HLE.Modules.scePwmModule;
+import static jpcsp.HLE.Modules.sceSysconModule;
 import static jpcsp.HLE.Modules.sceSysregModule;
 import static jpcsp.HLE.modules.ThreadManForUser.JR;
-import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
 import static jpcsp.HLE.modules.ThreadManForUser.NOP;
 import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
+import static jpcsp.util.Utilities.read8;
 import static jpcsp.util.Utilities.readUnaligned16;
 import static jpcsp.util.Utilities.readUnaligned32;
+import static jpcsp.util.Utilities.writeUnaligned16;
 import static jpcsp.util.Utilities.writeUnaligned32;
 
 import java.util.LinkedList;
@@ -64,9 +54,6 @@ import jpcsp.util.Utilities;
  */
 public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 	private static final PatchInfo[] allPatches = new PatchInfo[] {
-			// sysmem.prx: disable the function MemoryProtectInit(sub_0000A2C4)
-			new PrxPatchInfo("kd/sysmem.prx", 0x0000A2C4, 0x27BDFFF0, JR()),
-			new PrxPatchInfo("kd/sysmem.prx", 0x0000A2C8, 0xAFB10004, MOVE(_v0, _zr)),
 			// loadcore.prx used by loadCoreInit()
 			new PrxPatchInfo("kd/loadcore.prx", 0x0000469C, 0x15C0FFA0, NOP()),      // Allow loading of privileged modules being not encrypted (https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L339)
 			new PrxPatchInfo("kd/loadcore.prx", 0x00004548, 0x7C0F6244, NOP()),      // Allow loading of privileged modules being not encrypted (take SceLoadCoreExecFileInfo.modInfoAttribute from the ELF module info, https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L351)
@@ -75,111 +62,33 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			new PrxPatchInfo("kd/loadcore.prx", 0x00005D1C, 0x5040FE91, NOP()),      // Allow loading of non-encrypted modules for apiType==80 (Disable test at https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L1059)
 			new PrxPatchInfo("kd/loadcore.prx", 0x00005D20, 0x3C118002, NOP()),      // Allow loading of non-encrypted modules for apiType==80 (Disable test at https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L1059)
 			new PrxPatchInfo("kd/loadcore.prx", 0x00004378, 0x5120FFDB, NOP()),      // Allow loading of kernel modules being not encrypted (set "execInfo->isKernelMod = SCE_TRUE" even when "decryptMode == 0": https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L118)
-			// exceptionman.prx used by ExcepManInit()
-			new PrxPatchInfo("kd/exceptionman.prx", 0x00000568, 0xACAF0000, NOP()), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/exceptionman/exceptions.c#L71)
-			new PrxPatchInfo("kd/exceptionman.prx", 0x0000018C, 0xAC430004, NOP()), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/exceptionman/excep.S#L148)
-			// interruptman.prx used by IntrManInit()
-			new PrxPatchInfo("kd/interruptman.prx", 0x0000103C, 0xAC220008, NOP()), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/interruptman/start.S#L1273)
-			new PrxPatchInfo("kd/interruptman.prx", 0x00001040, 0xAC200018, NOP()), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/interruptman/start.S#L1274)
-			new PrxPatchInfo("kd/interruptman.prx", 0x00001044, 0xAC200028, NOP()), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/interruptman/start.S#L1275)
-			// interruptman.prx used by sceKernelSuspendIntr()/sceKernelResumeIntr()
-			new PrxPatchInfo("kd/interruptman.prx", 0x00001084, 0x8C220008, MOVE(_v0, _zr)), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/interruptman/start.S#L1297)
-			new PrxPatchInfo("kd/interruptman.prx", 0x00001088, 0x8C230018, MOVE(_v1, _zr)), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/interruptman/start.S#L1298)
-			new PrxPatchInfo("kd/interruptman.prx", 0x0000108C, 0x8C210028, MOVE(_at, _zr)), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/interruptman/start.S#L1299)
-			new PrxPatchInfo("kd/interruptman.prx", 0x000010C0, 0xAC220008, NOP()),          // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/interruptman/start.S#L1315)
-			new PrxPatchInfo("kd/interruptman.prx", 0x000010D8, 0xAC230018, NOP()),          // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/interruptman/start.S#L1321)
-			new PrxPatchInfo("kd/interruptman.prx", 0x000010DC, 0xAC220028, NOP()),          // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/interruptman/start.S#L1322)
-			// threadman.prx
-			new PrxPatchInfo("kd/threadman.prx", 0x0000E674, 0xAC33000C, NOP()), // Avoid access to hardware register (*(int*)0xBC60000C = 1)
-			new PrxPatchInfo("kd/threadman.prx", 0x0000E67C, 0xAC320008, NOP()), // Avoid access to hardware register (*(int*)0xBC600008 = 48)
-			new PrxPatchInfo("kd/threadman.prx", 0x0000E684, 0xAC200010, NOP()), // Avoid access to hardware register (*(int*)0xBC600010 = 0)
-			new PrxPatchInfo("kd/threadman.prx", 0x0000E78C, 0xAC280004, NOP()), // Avoid access to hardware register (*(int*)0xBC600004 = 0xF0000000)
-			new PrxPatchInfo("kd/threadman.prx", 0x0000E798, 0xAC200000, NOP()), // Avoid access to hardware register (*(int*)0xBC600000 = 0)
-			// threadman.prx reading from 0xBC600000 is equivalent to a call of sceKernelGetSystemTimeLow()
-			new PrxPatchInfo("kd/threadman.prx", 0x0000ECF0, 0x3C0ABC60, SYSCALL(ThreadManForKernelModule, "hleKernelGetSystemTimeLow")), // Replace reading of hardware register *(int*)0xBC600000 with a call to ThreadManForKernel.hleKernelGetSystemTimeLow()
-			new PrxPatchInfo("kd/threadman.prx", 0x0000ECF4, 0x8D4A0000, MOVE(_t2, _v0)),                                                 // Replace reading of hardware register *(int*)0xBC600000 with a call to ThreadManForKernel.hleKernelGetSystemTimeLow()
-			// threadman.prx replace the implementation sceKernelGetSystemTimeLow() with a call to ThreadManForKernel.hleKernelGetSystemTimeLow()
-			new PrxPatchInfo("kd/threadman.prx", 0x00010D28, 0x3C02BC60, JR()),                                                           // Replace reading of hardware register *(int*)0xBC600000 with a call to ThreadManForKernel.hleKernelGetSystemTimeLow()
-			new PrxPatchInfo("kd/threadman.prx", 0x00010D2C, 0x03E00008, SYSCALL(ThreadManForKernelModule, "hleKernelGetSystemTimeLow")), // Replace reading of hardware register *(int*)0xBC600000 with a call to ThreadManForKernel.hleKernelGetSystemTimeLow()
-			// threadman.prx reading from 0xBC600000 is equivalent to a call of sceKernelGetSystemTimeLow()
-			new PrxPatchInfo("kd/threadman.prx", 0x000112E4, 0x8C420000, SYSCALL(ThreadManForKernelModule, "hleKernelGetSystemTimeLow")), // Replace reading of hardware register *(int*)0xBC600000 with a call to ThreadManForKernel.hleKernelGetSystemTimeLow()
-			// threadman.prx reading from 0xBC600000 is equivalent to a call of sceKernelGetSystemTimeLow()
-			new PrxPatchInfo("kd/threadman.prx", 0x0001131C, 0x8C420000, SYSCALL(ThreadManForKernelModule, "hleKernelGetSystemTimeLow")), // Replace reading of hardware register *(int*)0xBC600000 with a call to ThreadManForKernel.hleKernelGetSystemTimeLow()
-			// systimer.prx used by SysTimerInit
-			new PrxPatchInfo("kd/systimer.prx", 0x00000334, 0xAD330000, NOP()), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/systimer/systimer.c#L203)
-			new PrxPatchInfo("kd/systimer.prx", 0x00000340, 0xAD320008, NOP()), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/systimer/systimer.c#L204)
-			new PrxPatchInfo("kd/systimer.prx", 0x00000348, 0xAD32000C, NOP()), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/systimer/systimer.c#L205)
-			new PrxPatchInfo("kd/systimer.prx", 0x00000350, 0x8D230000, NOP()), // Avoid access to hardware register (https://github.com/uofw/uofw/blob/master/src/systimer/systimer.c#L206)
-			// memlmd_01g.prx used by module_start
-			new PrxPatchInfo("kd/memlmd_01g.prx", 0x00001C44, 0x27BDFFE0, JR()),           // NOP the function sceUtilsBufferCopyByPolling()
-			new PrxPatchInfo("kd/memlmd_01g.prx", 0x00001C48, 0x3C020000, MOVE(_v0, _zr)), // NOP the function sceUtilsBufferCopyByPolling()
-			// lowio.prx used by module_start
-			new PrxPatchInfo("kd/lowio.prx", 0x00001CCC, 0x8C490000, MOVE(_t1, _zr)), // Avoid access to hardware register in sceSysregPllUpdateFrequency()
-			new PrxPatchInfo("kd/lowio.prx", 0x000008A0, 0x8D090058, MOVE(_t1, _zr)), // Avoid access to hardware register in sceSysregGpioClkEnable()
-			new PrxPatchInfo("kd/lowio.prx", 0x000008C4, 0xAD090058, NOP()),          // Avoid access to hardware register in sceSysregGpioClkEnable()
-			new PrxPatchInfo("kd/lowio.prx", 0x00002D48, 0x8D8C0000, MOVE(_t4, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002D50, 0x8F390040, MOVE(_t9, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002D58, 0x8C630010, MOVE(_v1, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002D60, 0x8CE70014, MOVE(_a3, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002D68, 0x8CC60018, MOVE(_a2, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002D70, 0x8D08001C, MOVE(_t0, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002DA0, 0xAC380010, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002DB0, 0xAC2F0014, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002DBC, 0xAC2E0018, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002DC4, 0xAC2D001C, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002DD0, 0xAC200030, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00002DF0, 0xAC200034, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00000CF8, 0x8D090078, MOVE(_t1, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00000D1C, 0xAD090078, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00003898, 0x8CA80004, MOVE(_t0, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x000004D8, 0x8D090050, MOVE(_t1, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x000004FC, 0xAD090050, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x000053E8, 0x8C840110, MOVE(_a0, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00005770, 0x8CA50110, MOVE(_a1, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00005790, 0xAC2A0110, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x0000579C, 0xAC290100, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00005740, 0xAC20010C, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00005748, 0xAC250110, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00005484, 0x8D8C0110, MOVE(_t4, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00005498, 0xAC270110, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00005954, 0xAC220100, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00005960, 0xAC20010C, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x0000591C, 0x8F390110, MOVE(_t9, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00005928, 0xAC270110, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00005FF4, 0x8F0E0000, MOVE(_t6, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x0000600C, 0x8D0B0000, MOVE(_t3, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00006024, 0x8CE60000, MOVE(_a2, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00006038, 0x8D490000, MOVE(_t1, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00006098, 0xAC400000, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x0000199C, 0x8CC60040, MOVE(_a2, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x000079E8, 0x8DA60004, MOVE(_a2, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A5C, 0x8DA60008, MOVE(_a2, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A68, 0x8DB80010, MOVE(_t8, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A6C, 0x8DA20014, MOVE(_v0, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A70, 0x8DA80018, MOVE(_t0, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A74, 0x8DA5001C, MOVE(_a1, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A78, 0x8DA90020, MOVE(_t1, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A7C, 0x8DAA0024, MOVE(_t2, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A80, 0x8DAB0028, MOVE(_t3, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A84, 0x8DA6002C, MOVE(_a2, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A88, 0x8DA70040, MOVE(_a3, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007A94, 0x8DA40044, MOVE(_a0, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007AA0, 0x8DA70048, MOVE(_a3, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007AAC, 0x8DA4004C, MOVE(_a0, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007AEC, 0x8D8C0060, MOVE(_t4, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007678, 0x8E8B0000, MOVE(_t3, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00007688, 0xAE820000, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00008BBC, 0xAC231038, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00008C0C, 0xAC291200, NOP()),          // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x00008C8C, 0x8C631004, MOVE(_v1, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x0000B038, 0x00653023, MOVE(_a2, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x000001D8, 0x8D09004C, MOVE(_t1, _zr)), // Avoid access to hardware register
-			new PrxPatchInfo("kd/lowio.prx", 0x000001FC, 0xAD09004C, NOP()),          // Avoid access to hardware register
-			// lowio.prx used by sceSysregSetMasterPriv()
-			new PrxPatchInfo("kd/lowio.prx", 0x00001AD0, 0x8C420044, MOVE(_v0, _zr)), // Avoid access to hardware register in sceSysregSetMasterPriv()
-			new PrxPatchInfo("kd/lowio.prx", 0x00001AE4, 0xAC220044, NOP()),          // Avoid access to hardware register in sceSysregSetMasterPriv()
 			// lowio.prx: syscalls from sceSysreg module
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregGetFuseId", 0x00001AF4, 0x3C03BC10, 0x3C07BC10),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregGetFuseId"        , 0x00001AF4, 0x3C03BC10, 0x3C07BC10),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregAtaClkSelect"     , 0x00002584, 0x27BDFFF0, 0x3C028000),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregAtaClkEnable"     , 0x00000510, 0x24040001, 0x0800020A),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregAtaClkDisable"    , 0x0000051C, 0x24040001, 0x0800020A),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregAtahddClkEnable"  , 0x00000528, 0x24040002, 0x0800020A),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregAtahddClkDisable" , 0x00000534, 0x24040002, 0x0800020A),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregUsbhostClkEnable" , 0x00000540, 0x3C040001, 0x0800020A),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregUsbhostClkDisable", 0x0000054C, 0x3C040001, 0x0800020A),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysreg_driver_4841B2D2" , 0x00001788, 0x27BDFFF0, 0xAFBF0008),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregApbTimerClkSelect", 0x00001F98, 0x27BDFFF0, 0xAFB10004),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysreg_driver_96D74557" , 0x00002CB0, 0x27BDFFF0, 0xAFBF0000),
+			// lowio.prx: syscalls from sceGpio module
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceGpioModule, "sceGpioSetPortMode", 0x00002E24, 0x27BDFFE0, 0xAFB00000),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceGpioModule, "sceGpioSetIntrMode", 0x00002FD0, 0x27BDFFE0, 0xAFB00000),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceGpioModule, "sceGpioPortRead"   , 0x00003204, 0x3C02BE24, 0x34440004),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceGpioModule, "sceGpioPortSet"    , 0x00003214, 0x3C05BE24, 0x34A30008),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceGpioModule, "sceGpioPortClear"  , 0x0000322C, 0x3C05BE24, 0x34A3000C),
+			// lowio.prx: syscalls from scePwm module
+			new PrxSyscallPatchInfo("kd/lowio.prx", scePwmModule, "scePwm_driver_36F98EBA", 0x00003B48, 0x3C028000, 0x2C880003),
+			new PrxSyscallPatchInfo("kd/lowio.prx", scePwmModule, "scePwm_driver_94552DD4", 0x000039C0, 0x3C028000, 0x2C880003),
+			// lowio.prx: syscalls from sceLcdc module
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceLcdcModule, "sceLcdc_driver_E9DBD35F", 0x00007FD8, 0x27BDFFD0, 0xAFB50014),
+			// lowio.prx: syscalls from sceDmacplus module
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceDmacplusModule, "sceDmacplusLcdcDisable"  , 0x000059DC, 0x27BDFFF0, 0xAFB00000),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceDmacplusModule, "sceDmacplusLcdcEnable"   , 0x0000587C, 0x27BDFFF0, 0xAFB00000),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceDmacplusModule, "sceDmacplusLcdcSetFormat", 0x000057C0, 0x3C028000, 0x30880007),
 			// lowio.prx: syscalls from sceNand module
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandSetWriteProtect"     , 0x00009014, 0x27BDFFF0, 0xAFB10004),
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandLock"                , 0x00009094, 0x27BDFFF0, 0x3C030000),
@@ -217,50 +126,21 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandCalcEcc"             , 0x0000AB0C, 0x27BDFFF0, 0xAFB3000C),
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandVerifyEcc"           , 0x0000AD38, 0x27BDFFF0, 0xAFBF0000),
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandCorrectEcc"          , 0x0000AD54, 0x27BDFFF0, 0xAFBF0000),
-			// ge.prx used by module_start / sceGeInit
-			new PrxPatchInfo("kd/ge.prx", 0x00000284, 0x8F180804, MOVE(_t8, _zr)), // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000028C, 0x8F390810, MOVE(_t9, _zr)), // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000294, 0x8E100814, MOVE(_s0, _zr)), // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000029C, 0x8DCE0818, MOVE(_t6, _zr)), // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000002A8, 0x8D8C08EC, MOVE(_t4, _zr)), // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000002D4, 0xAC200100, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000002E4, 0xAC200108, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000002F4, 0xAC20010C, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000304, 0xAC200110, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000030C, 0xAC200114, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000314, 0xAC200118, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000031C, 0xAC20011C, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000324, 0xAC200120, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000032C, 0xAC200124, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000334, 0xAC200128, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000033C, 0x8C630304, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000344, 0xAC230310, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000350, 0x8C420308, MOVE(_v0, _zr)), // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000358, 0xAC22030C, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000360, 0xAC230308, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000480, 0x8E100308, MOVE(_s0, _zr)), // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000360, 0xAC230308, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000494, 0xAC30030C, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000049C, 0xAC390108, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000004A8, 0xAC20010C, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000004B4, 0xAC270100, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000004BC, 0x8C630100, MOVE(_v1, _zr)), // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000004D8, 0xAC200100, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000004E8, 0xAC200108, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000004F8, 0xAC20010C, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000508, 0x8D8C0304, MOVE(_t4, _zr)), // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000518, 0xAC2C0310, NOP()),          // Avoid access to hardware register in sceGeInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00000524, 0xAC2B0308, NOP()),          // Avoid access to hardware register in sceGeInit()
-			// ge.prx used by module_start / sceGeEdramInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000265C, 0xAC220010, NOP()),          // Avoid access to hardware register in sceGeEdramInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00002664, 0x8CA50010, MOVE(_a1, _zr)), // Avoid access to hardware register in sceGeEdramInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000268C, 0xAC290020, NOP()),          // Avoid access to hardware register in sceGeEdramInit()
-			new PrxPatchInfo("kd/ge.prx", 0x00002694, 0xAC280040, NOP()),          // Avoid access to hardware register in sceGeEdramInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000269C, 0xAC270090, NOP()),          // Avoid access to hardware register in sceGeEdramInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000026A4, 0xAC220400, NOP()),          // Avoid access to hardware register in sceGeEdramInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000026B4, 0x8D6B0070, MOVE(_t3, _zr)), // Avoid access to hardware register in sceGeEdramInit()
-			new PrxPatchInfo("kd/ge.prx", 0x0000275C, 0x8DEF0080, MOVE(_t7, _zr)), // Avoid access to hardware register in sceGeEdramInit()
-			new PrxPatchInfo("kd/ge.prx", 0x000026E8, 0x8CA50008, MOVE(_a1, _zr)), // Avoid access to hardware register in sceGeEdramInit()
+			// lowio.prx: syscalls from sceI2c module
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceI2cModule, "sceI2cMasterTransmitReceive" , 0x000044A8, 0x27BDFFD0, 0xAFB00000),
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceI2cModule, "sceI2cMasterTransmit"        , 0x00003D3C, 0x27BDFFE0, 0xAFB10004),
+			// lowio.prx: syscalls from sceDdr module
+			new PrxSyscallPatchInfo("kd/lowio.prx", sceDdrModule, "sceDdrFlush"                 , 0x000011B4, 0x0000000F, 0x3C02BD00),
+			// syscon.prx: syscalls
+			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconCmdExec"         , 0x0000154C, 0x27BDFFF0, 0xAFB10004),
+			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconCmdExecAsync"    , 0x00001600, 0x27BDFFE0, 0xAFB40010),
+			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetBaryonVersion", 0x00002DB4, 0x27BDFFF0, 0xAFBF0000),
+			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetTimeStamp"    , 0x000025F0, 0x27BDFF90, 0xAFB00060),
+			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetPommelVersion", 0x000033E8, 0x27BDFFF0, 0xAFBF0000),
+			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetPowerStatus"  , 0x000034AC, 0x27BDFFF0, 0xAFBF0000),
+			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconReadScratchPad"  , 0x0000274C, 0x27BDFF90, 0x24C9FFFF),
+			// ata.prx: syscalls
+			new PrxSyscallPatchInfo("kd/ata.prx", sceAtaModule, "sceAta_driver_BE6261DA", 0x00002338, 0x0000000F, 0x00042827),
 			// Last entry is a dummy one
 			new PatchInfo("XXX dummy XXX", 0, 0, 0) // Dummy entry for easier formatting of the above entries
 	};
@@ -300,6 +180,20 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			apply(buffer, offset);
 		}
 
+		protected void patch16(byte[] buffer, int offset, int oldValue, int newValue) {
+			if (offset >= 0 && offset < buffer.length) {
+				int checkValue = readUnaligned16(buffer, offset);
+				if (checkValue != oldValue) {
+		    		log.error(String.format("Patching of file '%s' failed at offset 0x%08X, 0x%04X found instead of 0x%04X", fileName, offset, checkValue, oldValue));
+				} else {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Patching file '%s' at offset 0x%08X: 0x%04X -> 0x%04X", fileName, offset, oldValue, newValue));
+					}
+					writeUnaligned16(buffer, offset, newValue);
+				}
+			}
+		}
+
 		@Override
 		public String toString() {
 			return String.format("Patch '%s' at offset 0x%08X: 0x%08X -> 0x%08X", fileName, offset, oldValue, newValue);
@@ -307,11 +201,18 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 	}
 
 	private static class PrxPatchInfo extends PatchInfo {
+		private int removeLocationOffset = 4;
+
 		public PrxPatchInfo(String fileName, int offset, int oldValue, int newValue) {
 			super(fileName, offset, oldValue, newValue);
 		}
 
-		protected int getFileOffset(byte[] buffer) {
+		public PrxPatchInfo(String fileName, int offset, int oldValue, int newValue, int removeLocationOffset) {
+			super(fileName, offset, oldValue, newValue);
+			this.removeLocationOffset = removeLocationOffset;
+		}
+
+		private int getFileOffset(byte[] buffer) {
 			int elfMagic = readUnaligned32(buffer, 0);
 			if (elfMagic != Elf32Header.ELF_MAGIC) {
 				return offset;
@@ -343,6 +244,165 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			return -1;
 		}
 
+		private int getRelocationSegmentNumber(byte[] buffer) {
+			int phOffset = readUnaligned32(buffer, 28);
+			int phEntSize = readUnaligned16(buffer, 42);
+			int phNum = readUnaligned16(buffer, 44);
+
+			// Scan all the ELF program headers
+			for (int i = 0; i < phNum; i++) {
+				int offset = phOffset + i * phEntSize;
+				int phType = readUnaligned32(buffer, offset + 0);
+				if (phType == 0x700000A1) {
+					return i;
+				}
+			}
+
+			return -1;
+		}
+
+		private void removeRelocation(byte[] buffer) {
+			int relocationSegmentNumber = getRelocationSegmentNumber(buffer);
+			if (relocationSegmentNumber < 0) {
+				return;
+			}
+
+			int phOffset = readUnaligned32(buffer, 28);
+			int phEntSize = readUnaligned16(buffer, 42);
+
+			int o = readUnaligned32(buffer, phOffset + relocationSegmentNumber * phEntSize + 4);
+			o += 2;
+
+			int fbits = read8(buffer, o++);
+			int flagShift = 0;
+			int flagMask = (1 << fbits) - 1;
+
+			int sbits = relocationSegmentNumber < 3 ? 1 : 2;
+	        int segmentShift = fbits;
+	        int segmentMask = (1 << sbits) - 1;
+
+			int tbits = read8(buffer, o++);
+	        int typeShift = fbits + sbits;
+	        int typeMask = (1 << tbits) - 1;
+
+			int nflags = read8(buffer, o++);
+			int flags[] = new int[nflags];
+			flags[0] = nflags;
+			for (int i = 1; i < nflags; i++) {
+				flags[i] = read8(buffer, o++);
+			}
+
+			int ntypes = read8(buffer, o++);
+			int types[] = new int[ntypes];
+			types[0] = ntypes;
+			for (int i = 1; i < ntypes; i++) {
+				types[i] = read8(buffer, o++);
+			}
+
+			int offsetShift = fbits + tbits + sbits;
+			int OFS_BASE = 0;
+			int R_BASE = 0;
+			while (o < buffer.length) {
+				int cmdOffset = o;
+				int R_CMD = readUnaligned16(buffer, o);
+				o += 2;
+
+	            // Process the relocation flag.
+	            int flagIndex = (R_CMD >> flagShift) & flagMask;
+	            int R_FLAG = flags[flagIndex];
+
+	            // Set the segment offset.
+	            int S = (R_CMD >> segmentShift) & segmentMask;
+
+	            // Process the relocation type.
+	            int typeIndex = (R_CMD >> typeShift) & typeMask;
+	            //int R_TYPE = types[typeIndex];
+
+	            if ((R_FLAG & 1) == 0) {
+	            	OFS_BASE = S;
+	            	switch (R_FLAG & 6) {
+		            	case 0:
+		            		R_BASE = R_CMD >> (fbits + sbits);
+		            		break;
+		            	case 4:
+		            		R_BASE = readUnaligned32(buffer, o);
+		            		o += 4;
+		            		break;
+	            		default:
+	            			return;
+	            	}
+	            } else {
+	            	int R_OFFSET;
+	                switch (R_FLAG & 6) {
+		                case 0:
+		                    R_OFFSET = (int) (short) R_CMD; // sign-extend 16 to 32 bits
+		                    R_OFFSET >>= offsetShift;
+		                    R_BASE += R_OFFSET;
+		                    break;
+	                    case 2:
+		                    R_OFFSET = (R_CMD << 16) >> offsetShift;
+		                    R_OFFSET &= 0xFFFF0000;
+		                    R_OFFSET |= read8(buffer, o++);
+		                    R_OFFSET |= read8(buffer, o++) << 8;
+		                    R_BASE += R_OFFSET;
+		                    break;
+	                    case 4:
+		                	R_BASE = readUnaligned32(buffer, o);
+		                	o += 4;
+		                	break;
+	                	default:
+	                		return;
+	                }
+
+	                switch (R_FLAG & 0x38) {
+	                	case 0x0:
+	                	case 0x8:
+	                		break;
+	                	case 0x10:
+	                		o += 2;
+	                		break;
+                		default:
+                			return;
+	                }
+
+	                if (log.isTraceEnabled()) {
+	                	log.trace(String.format("Relocation R_BASE=0x%08X", R_BASE));
+	                }
+
+	                if (R_BASE == offset) {
+	                	int newOffset = ((int) (short) R_CMD) >> offsetShift;
+	                	if ((R_FLAG & 7) == 1) {
+	                		newOffset += removeLocationOffset;
+	                	} else {
+	                		log.error(String.format("Unsupported relocation patch at 0x%08X, R_FLAG=0x%X", R_BASE, R_FLAG));
+	                		return;
+	                	}
+	                	int newCmd = (flagIndex << flagShift) | (OFS_BASE << segmentShift) | (typeIndex << typeShift) | (newOffset << offsetShift);
+	                	newCmd &= 0xFFFF;
+	                	patch16(buffer, cmdOffset, R_CMD, newCmd);
+
+	                	int nextCmd = readUnaligned16(buffer, o);
+	                	int nextFlagIndex = (nextCmd >> flagShift) & flagMask;
+	                	int nextFlag = flags[nextFlagIndex];
+	                	int nextSegment = (nextCmd >> segmentShift) & segmentMask;
+	                	int nextTypeIndex = (nextCmd >> typeShift) & typeMask;
+
+	                	int newNextOffset = ((int) (short) nextCmd) >> offsetShift;
+	                	if ((nextFlag & 7) == 1) {
+	                		newNextOffset -= removeLocationOffset;
+	                	} else {
+	                		log.error(String.format("Unsupported relocation patch at 0x%08X, R_CMD=0x%04X, nextCmd=0x%04X", R_BASE, R_CMD, nextCmd));
+	                		return;
+	                	}
+	                	int newNextCmd = (nextFlagIndex << flagShift) | (nextSegment << segmentShift) | (nextTypeIndex << typeShift) | (newNextOffset << offsetShift);
+	                	patch16(buffer, o, nextCmd, newNextCmd);
+
+	                	return;
+	                }
+	            }
+			}
+		}
+
 		@Override
 		public void apply(byte[] buffer) {
 			int fileOffset = getFileOffset(buffer);
@@ -352,6 +412,8 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 					log.debug(String.format("Patching file '%s' at PRX offset 0x%08X: 0x%08X -> 0x%08X", fileName, offset, oldValue, newValue));
 				}
 				super.apply(buffer, fileOffset);
+
+				removeRelocation(buffer);
 			}
 		}
 	}
@@ -361,7 +423,7 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 		private String functionName;
 
 		public PrxSyscallPatchInfo(String fileName, HLEModule hleModule, String functionName, int offset, int oldValue1, int oldValue2) {
-			super(fileName, offset, oldValue1, JR());
+			super(fileName, offset, oldValue1, JR(), 8);
 			this.functionName = functionName;
 			patchInfo2 = new PrxPatchInfo(fileName, offset + 4, oldValue2, SYSCALL(hleModule, functionName));
 		}
