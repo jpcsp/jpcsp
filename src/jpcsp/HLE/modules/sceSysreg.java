@@ -667,8 +667,8 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x96D74557, version = 150)
-    public int sceSysreg_driver_96D74557() {
-    	return 0;
+    public float sceSysreg_driver_96D74557() {
+    	return 0f;
     }
 
     @HLEUnimplemented
@@ -715,8 +715,8 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA5CC6025, version = 150)
-    public int sceSysregPllGetFrequency() {
-    	return 0;
+    public float sceSysregPllGetFrequency() {
+    	return 0f;
     }
 
     @HLEUnimplemented
