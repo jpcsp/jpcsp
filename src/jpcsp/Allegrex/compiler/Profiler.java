@@ -249,6 +249,9 @@ public class Profiler {
             long count1 = backBranchCounts.get(address1);
             long count2 = backBranchCounts.get(address2);
 
+            if (count1 == count2) {
+            	return 0;
+            }
             return (count2 > count1 ? 1 : -1);
         }
     }
