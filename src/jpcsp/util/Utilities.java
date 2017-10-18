@@ -55,6 +55,8 @@ import jpcsp.MemoryMap;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.HLEModuleFunction;
+import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFile;
@@ -1558,6 +1560,18 @@ public class Utilities {
     	return newArray;
     }
 
+    public static int[] add(int[] array, int n) {
+    	if (array == null) {
+    		return new int[] { n };
+    	}
+
+    	int[] newArray = new int[array.length + 1];
+    	System.arraycopy(array, 0, newArray, 0, array.length);
+    	newArray[array.length] = n;
+
+    	return newArray;
+    }
+
     public static File[] add(File[] array, File f) {
     	if (f == null) {
     		return array;
@@ -1814,5 +1828,29 @@ public class Utilities {
     		s = s.substring(1);
     		Utilities.writeStringZ(mem, address, s);
     	}
+    }
+
+    public static HLEModuleFunction getHLEFunctionByAddress(int address) {
+		HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromAddress(address);
+		if (func == null) {
+			func = Modules.LoadCoreForKernelModule.getHLEFunctionByAddress(address);
+		}
+
+		return func;
+    }
+
+    public static String getFunctionNameByAddress(int address) {
+    	String functionName = null;
+
+		HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromAddress(address);
+		if (func != null) {
+			functionName = func.getFunctionName();
+		}
+
+		if (functionName == null) {
+			functionName = Modules.LoadCoreForKernelModule.getFunctionNameByAddress(address);
+		}
+
+		return functionName;
     }
 }

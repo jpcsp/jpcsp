@@ -34,8 +34,8 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 import jpcsp.HLE.HLEModuleFunction;
-import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassVisitor;
@@ -480,15 +480,10 @@ public class CodeBlock {
 		context.setCodeBlock(this);
 		String className = getInternalClassName();
 		if (log.isDebugEnabled()) {
-			String hleFunctionName = null;
+			String functionName = Utilities.getFunctionNameByAddress(getStartAddress());
 
-			HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromAddress(getStartAddress());
-			if (func != null) {
-				hleFunctionName = func.getFunctionName();
-			}
-
-			if (hleFunctionName != null) {
-				log.debug(String.format("Compiling %s (%s)", className, hleFunctionName));
+			if (functionName != null) {
+				log.debug(String.format("Compiling %s (%s)", className, functionName));
 			} else {
 				log.debug(String.format("Compiling %s", className));
 			}

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.AllegrexOpcodes;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -25,6 +26,8 @@ import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.HLEModuleFunction;
+import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
@@ -482,6 +485,115 @@ public class LoadCoreForKernel extends HLEModule {
     	SceKernelThreadInfo currentThread = Modules.ThreadManForUserModule.getCurrentThread();
     	currentThread.cpuContext._a0 = 8;
     	currentThread.cpuContext._a1 = argp.getAddress();
+    }
+
+    private int getLoadCoreBaseAddress() {
+    	return 0x8802111C;
+    }
+
+    public HLEModuleFunction getHLEFunctionByAddress(int address) {
+    	if (!reboot.enableReboot) {
+    		return null;
+    	}
+    	
+    	address &= Memory.addressMask;
+
+    	Memory mem = Memory.getInstance();
+    	int g_loadCore = getLoadCoreBaseAddress();
+    	int registeredLibs = g_loadCore + 0;
+
+    	int[] nids = getFunctionNIDsByAddress(mem, registeredLibs, address);
+    	if (nids == null) {
+    		// Verify if this not the address of a stub call:
+    		//   J   realAddress
+    		//   NOP
+        	if ((mem.read32(address) >>> 26) == AllegrexOpcodes.J) {
+        		if (mem.read32(address + 4) == ThreadManForUser.NOP()) {
+        			int jumpAddress = (mem.read32(address) & 0x03FFFFFF) << 2;
+
+        			nids = getFunctionNIDsByAddress(mem, registeredLibs, jumpAddress);
+        		}
+        	}
+    	}
+
+    	if (nids != null) {
+    		for (int nid : nids) {
+        		HLEModuleFunction hleFunction = HLEModuleManager.getInstance().getFunctionFromNID(nid);
+        		if (hleFunction != null) {
+        			return hleFunction;
+        		}
+    		}
+    	}
+
+    	return null;
+    }
+
+    public String getFunctionNameByAddress(int address) {
+    	if (!reboot.enableReboot) {
+    		return null;
+    	}
+
+    	address &= Memory.addressMask;
+
+    	HLEModuleFunction hleModuleFunction = getHLEFunctionByAddress(address);
+    	if (hleModuleFunction != null) {
+    		return hleModuleFunction.getFunctionName();
+    	}
+
+    	Memory mem = Memory.getInstance();
+    	int g_loadCore = getLoadCoreBaseAddress();
+    	int registeredMods = mem.read32(g_loadCore + 524);
+    	int module = getModuleByAddress(mem, registeredMods, address);
+    	if (module != 0) {
+    		String moduleName = Utilities.readStringNZ(module + 8, 27);
+    		int textAddr = mem.read32(module + 108) & Memory.addressMask;
+
+    		return String.format("%s.sub_%08X", moduleName, address - textAddr);
+    	}
+
+    	return null;
+    }
+
+    private int[] getFunctionNIDsByAddress(Memory mem, int registeredLibs, int address) {
+    	int[] nids = null;
+
+		for (int i = 0; i < 512; i += 4) {
+			int linkedLibraries = mem.read32(registeredLibs + i);
+	    	while (linkedLibraries != 0) {
+	    		int numExports = mem.read32(linkedLibraries + 16);
+	    		int entryTable = mem.read32(linkedLibraries + 32);
+	
+	    		for (int j = 0; j < numExports; j++) {
+	    			int nid = mem.read32(entryTable + j * 4);
+	    			int entryAddress = mem.read32(entryTable + (j + numExports) * 4) & Memory.addressMask;
+	
+	    			if (address == entryAddress) {
+	    				nids = Utilities.add(nids, nid);
+	    			}
+	    		}
+	
+	    		// Next
+	    		linkedLibraries = mem.read32(linkedLibraries);
+	    	}
+		}
+
+    	return nids;
+    }
+
+    private int getModuleByAddress(Memory mem, int linkedModules, int address) {
+    	while (linkedModules != 0) {
+    		int textAddr = mem.read32(linkedModules + 108) & Memory.addressMask;
+    		int textSize = mem.read32(linkedModules + 112);
+
+    		if (textAddr <= address && address < textAddr + textSize) {
+    			return linkedModules;
+    		}
+
+    		// Next
+    		linkedModules = mem.read32(linkedModules);
+    	}
+
+    	return 0;
     }
 
     @HLEUnimplemented

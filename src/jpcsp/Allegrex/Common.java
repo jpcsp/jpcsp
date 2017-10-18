@@ -723,13 +723,9 @@ public class Common {
         // If we think the target is a stub, try and append the syscall name
         if ((opname.equals("jal") || opname.equals("j")) && jump != 0 &&
                 jumpToSyscall != opcode_address && Memory.isAddressGood(jumpToSyscall)) {
-        	String hleFunctionName = null;
-        	HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromAddress(jump);
-        	if (func != null) {
-        		hleFunctionName = func.getFunctionName();
-        	}
-        	if (hleFunctionName != null) {
-                return String.format("%1$-10s 0x%2$08X [%3$s]", opname, jump, hleFunctionName);
+        	String functionName = Utilities.getFunctionNameByAddress(jump);
+        	if (functionName != null) {
+                return String.format("%1$-10s 0x%2$08X [%3$s]", opname, jump, functionName);
         	}
             int nextOpcode = jpcsp.Memory.getInstance().read32(jumpToSyscall);
             Instruction nextInsn = Decoder.instruction(nextOpcode);

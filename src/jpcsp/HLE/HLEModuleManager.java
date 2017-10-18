@@ -499,6 +499,10 @@ public class HLEModuleManager {
     	return func;
     }
 
+    public HLEModuleFunction getFunctionFromNID(int nid) {
+    	return nidToFunction.get(nid);
+    }
+
     public void removeFunction(HLEModuleFunction func) {
     	nidMapper.unloadNid(func.getNid());
     }

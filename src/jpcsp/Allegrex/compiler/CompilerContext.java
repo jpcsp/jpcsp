@@ -2106,7 +2106,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void startHLEMethod() {
-        HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromAddress(codeBlock.getStartAddress());
+        HLEModuleFunction func = Utilities.getHLEFunctionByAddress(codeBlock.getStartAddress());
         codeBlock.setHLEFunction(func);
 
         if (codeBlock.isHLEFunction()) {
