@@ -26,6 +26,7 @@ import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
@@ -62,6 +63,17 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 
 	static protected CpuState getCpu() {
 		return RuntimeContext.cpu;
+	}
+
+	static protected Memory getMemoryForLLE() {
+		Memory mem;
+		if (RuntimeContextLLE.isLLEActive()) {
+			mem = RuntimeContextLLE.getMMIO();
+		} else {
+			mem = getMemory();
+		}
+
+		return mem;
 	}
 
 	static protected Memory getMemory() {
