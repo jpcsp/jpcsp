@@ -60,8 +60,9 @@ public class sceNand extends HLEModule {
     private int[] dumpResults;
     private int[] ppnToLbn = new int[0x10000];
     private static final boolean emulateNand = true;
-    private Fat12VirtualFile vFile603;
     private Fat12VirtualFile vFile3;
+    private Fat12VirtualFile vFile603;
+    private Fat12VirtualFile vFile703;
 
     @Override
 	public void start() {
@@ -354,7 +355,7 @@ public class sceNand extends HLEModule {
     private void readFile(TPointer buffer, IVirtualFile vFile, int ppn, int lbnStart) {
     	int lbn = ppnToLbn[ppn];
     	int sectorNumber = (lbn - lbnStart) * pagesPerBlock + (ppn % pagesPerBlock);
-if (ppn >= 0x1000) {
+if (ppn >= 0x1000 && ppn < 0xD040) {
 	sectorNumber -= pagesPerBlock;
 }
     	if (log.isDebugEnabled()) {
@@ -410,13 +411,20 @@ if (ppn >= 0x1000) {
 		    		} else if (ppnToLbn[ppn + i] >= 0x603 && ppnToLbn[ppn + i] < 0x702) {
 		    			if (vFile603 == null) {
 		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem("flash1/", false);
-		    				vFile603 = new Fat12VirtualFile(vfs);
+		    				vFile603 = new Fat12VirtualFile(vfs, 0x1FE0);
 		    				vFile603.scan();
 		    			}
 		    			readFile(user, vFile603, ppn + i, 0x603);
 		    		} else if (ppnToLbn[ppn + i] == 0x702) {
 		    			// Master Boot Record
 		    			readMasterBootRecord702(user);
+		    		} else if (ppnToLbn[ppn + i] >= 0x703 && ppnToLbn[ppn + i] < 0x742) {
+		    			if (vFile703 == null) {
+		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem("flash2/", false);
+		    				vFile703 = new Fat12VirtualFile(vfs, 0x7E0);
+		    				vFile703.scan();
+		    			}
+		    			readFile(user, vFile703, ppn + i, 0x703);
 		    		} else if (ppnToLbn[ppn + i] == 0x742) {
 		    			// Master Boot Record
 		    			readMasterBootRecord742(user);
