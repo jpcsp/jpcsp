@@ -63,6 +63,7 @@ import jpcsp.HLE.kernel.types.SceLoadCoreBootInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Model;
+import jpcsp.util.Utilities;
 
 public class reboot extends HLEModule {
     public static Logger log = Modules.getLogger("reboot");
@@ -328,6 +329,53 @@ public class reboot extends HLEModule {
     private static void patchSyscall(int offset, HLEModule hleModule, String functionName, Memory mem, SceModule rebootModule, int oldCode1, int oldCode2) {
 		patch(mem, rebootModule, offset + 0, oldCode1, JR());
 		patch(mem, rebootModule, offset + 4, oldCode2, ThreadManForUser.SYSCALL(hleModule, functionName));
+    }
+
+    public static void dumpAllModulesAndLibraries() {
+    	Memory mem = Memory.getInstance();
+    	int g_loadCore = 0x8802111C;
+    	int registeredMods = mem.read32(g_loadCore + 524);
+    	int registeredLibs = g_loadCore + 0;
+    	dumpAllModules(mem, registeredMods);
+    	for (int i = 0; i < 512; i += 4) {
+    		dumpAllLibraries(mem, mem.read32(registeredLibs + i));
+    	}
+    }
+
+    private static void dumpAllModules(Memory mem, int address) {
+    	while (address != 0) {
+    		String moduleName = Utilities.readStringNZ(address + 8, 27);
+    		int textAddr = mem.read32(address + 108);
+    		int textSize = mem.read32(address + 112);
+
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Module '%s': text 0x%08X-0x%08X", moduleName, textAddr, textAddr + textSize));
+    		}
+    		// Next
+    		address = mem.read32(address);
+    	}
+    }
+
+    private static void dumpAllLibraries(Memory mem, int address) {
+    	while (address != 0) {
+    		String libName = Utilities.readStringZ(mem.read32(address + 68));
+    		int numExports = mem.read32(address + 16);
+    		int entryTable = mem.read32(address + 32);
+
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Library '%s':", libName));
+    		}
+    		for (int i = 0; i < numExports; i++) {
+    			int nid = mem.read32(entryTable + i * 4);
+    			int entryAddress = mem.read32(entryTable + (i + numExports) * 4);
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("   0x%08X: 0x%08X", nid, entryAddress));
+    			}
+    		}
+
+    		// Next
+    		address = mem.read32(address);
+    	}
     }
 
     @HLEUnimplemented
