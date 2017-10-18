@@ -29,8 +29,10 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.WindowPropSaver;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.memory.mmio.MMIO;
 import jpcsp.util.Utilities;
 
 /**
@@ -61,15 +63,29 @@ public class MemoryViewer extends javax.swing.JFrame {
 
     private static byte safeRead8(Memory mem, int address) {
         byte value = 0;
-        if (Memory.isAddressGood(address)) {
+        if (isAddressGood(address)) {
             value = (byte) mem.read8(address);
         }
         return value;
     }
 
+    public static boolean isAddressGood(int address) {
+    	if (RuntimeContextLLE.isLLEActive()) {
+    		return MMIO.isAddressGood(address);
+    	}
+    	return Memory.isAddressGood(address);
+    }
+
+    public static Memory getMemory() {
+    	if (RuntimeContextLLE.isLLEActive()) {
+    		return RuntimeContextLLE.getMMIO();
+    	}
+    	return Memory.getInstance();
+    }
+
     public static String getMemoryView(int addr) {
         byte[] line = new byte[16];
-        Memory mem = Memory.getInstance();
+        Memory mem = getMemory();
 
         for (int i = 0; i < line.length; i++) {
             line[i] = safeRead8(mem, addr + i);

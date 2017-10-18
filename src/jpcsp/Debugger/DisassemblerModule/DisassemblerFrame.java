@@ -58,6 +58,7 @@ import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Debugger.DumpDebugState;
+import jpcsp.Debugger.MemoryViewer;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.Utilities;
 
@@ -307,9 +308,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
             // compute the number of visible rows, based on the widget's size
             int numVisibleRows = disasmList.getHeight() / disasmList.getFixedCellHeight();
+            Memory mem = MemoryViewer.getMemory();
             for (pc = DebuggerPC; pc < (DebuggerPC + numVisibleRows * 0x00000004); pc += 0x00000004) {
-                if (Memory.isAddressGood(pc)) {
-                    int opcode = Memory.getInstance().read32(pc);
+                if (MemoryViewer.isAddressGood(pc)) {
+                    int opcode = mem.read32(pc);
 
                     Instruction insn = Decoder.instruction(opcode);
 
@@ -329,7 +331,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                     }
 
                 } else {
-                    listmodel.addElement(String.format("   %08x: invalid address", pc));
+                    listmodel.addElement(String.format("   0x%08X: invalid address", pc));
                 }
             }
         }

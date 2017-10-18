@@ -65,7 +65,7 @@ public class MMIO extends Memory {
     	addHandlerRW(0xBE500000, 0x3C);
     	addHandlerRW(0xBE580000, 0x28);
     	addHandlerRW(0xBE740000, 0x28);
-    	addHandlerRW(0xBFC00000, 0xE40);
+    	addHandlerRW(0xBFC00000, 0x1000);
     }
 
     private void addHandler(int baseAddress, int length, IMMIOHandler handler) {
@@ -94,6 +94,13 @@ public class MMIO extends Memory {
 
     private IMMIOHandler getHandler(int address) {
     	return handlers.get(address);
+    }
+
+    public static boolean isAddressGood(int address) {
+    	if (Memory.isAddressGood(address)) {
+    		return true;
+    	}
+    	return address >= 0xBC000000 && address < 0xBFC01000;
     }
 
     @Override
@@ -175,10 +182,16 @@ public class MMIO extends Memory {
 
 	@Override
 	protected void memcpy(int destination, int source, int length, boolean checkOverlap) {
-		if (checkOverlap) {
-			mem.memmove(destination, source, length);
+		if (((destination | source | length) & 0x3) == 0 && !checkOverlap) {
+			for (int i = 0; i < length; i += 4) {
+				write32(destination + i, read32(source + i));
+			}
 		} else {
-			mem.memcpy(destination, source, length);
+			if (checkOverlap) {
+				mem.memmove(destination, source, length);
+			} else {
+				mem.memcpy(destination, source, length);
+			}
 		}
 	}
 }
