@@ -87,13 +87,13 @@ public class InterruptManager extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xD774BA45, version = 150)
-	public int sceKernelDisableIntr() {
+	public int sceKernelDisableIntr(int intrNumber) {
 		return 0;
 	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x4D6E7305, version = 150)
-	public int sceKernelEnableIntr() {
+	public int sceKernelEnableIntr(int intrNumber) {
 		return 0;
 	}
 
@@ -128,9 +128,9 @@ public class InterruptManager extends HLEModule {
 	}
 
 	@HLEUnimplemented
-	@HLEFunction(nid = 0xFFA8B183, version = 150)
-	public int sceKernelRegisterSubIntrHandler() {
-		return 0;
+	@HLEFunction(nid = 0xFFA8B183, version = 660)
+	public int sceKernelRegisterSubIntrHandler_660(int intrNumber, int subIntrNumber, int handlerAddress, int handlerArgument) {
+		return sceKernelRegisterSubIntrHandler(intrNumber, subIntrNumber, handlerAddress, handlerArgument);
 	}
 
 	@HLEFunction(nid = 0xFE28C6D9, version = 150)
