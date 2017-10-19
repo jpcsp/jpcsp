@@ -2706,10 +2706,10 @@ public class CompilerContext implements ICompilerContext {
                 loadImm(1);
                 mv.visitInsn(Opcodes.IUSHR);
             } else {
-    			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
-    			loadImm(2);
-    			mv.visitInsn(Opcodes.ISHL);
+    			// memoryInt[(address & 0x1FFFFFFF) / 4] == memoryInt[(address << 3) >>> 5]
     			loadImm(3);
+    			mv.visitInsn(Opcodes.ISHL);
+    			loadImm(4);
     			mv.visitInsn(Opcodes.IUSHR);
             }
 			mv.visitInsn(Opcodes.DUP);
@@ -2760,10 +2760,10 @@ public class CompilerContext implements ICompilerContext {
                 loadImm(codeInstruction.getAddress());
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead8", "(II)I");
             } else {
-    			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
-    			loadImm(2);
+    			// memoryInt[(address & 0x1FFFFFFF) / 4] == memoryInt[(address << 3) >>> 5]
+    			loadImm(3);
     			mv.visitInsn(Opcodes.ISHL);
-    			loadImm(2);
+    			loadImm(3);
     			mv.visitInsn(Opcodes.IUSHR);
             }
 			mv.visitInsn(Opcodes.DUP);
@@ -2804,10 +2804,10 @@ public class CompilerContext implements ICompilerContext {
 			if (registerIndex == _sp) {
 				if (isCodeInstructionInKernelMemory()) {
 					// In kernel memory, the $sp value can have the flag 0x80000000.
-	    			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
-	    			loadImm(2);
+	    			// memoryInt[(address & 0x1FFFFFFF) / 4] == memoryInt[(address << 3) >>> 5]
+	    			loadImm(3);
 	    			mv.visitInsn(Opcodes.ISHL);
-	    			loadImm(4);
+	    			loadImm(5);
 	    			mv.visitInsn(Opcodes.IUSHR);
 				} else {
 					// No need to check for a valid memory access when referencing the $sp register
@@ -2821,10 +2821,10 @@ public class CompilerContext implements ICompilerContext {
                 loadImm(2);
                 mv.visitInsn(Opcodes.IUSHR);
 	        } else {
-    			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
-    			loadImm(2);
+    			// memoryInt[(address & 0x1FFFFFFF) / 4] == memoryInt[(address << 3) >>> 5]
+    			loadImm(3);
     			mv.visitInsn(Opcodes.ISHL);
-    			loadImm(4);
+    			loadImm(5);
     			mv.visitInsn(Opcodes.IUSHR);
 	        }
 		}
@@ -2908,7 +2908,7 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.IADD);
 		}
 
-		if (RuntimeContext.hasMemoryInt()) {
+		if (!useMMIO() && RuntimeContext.hasMemoryInt()) {
 			if (checkMemoryAccess()) {
 				loadImm(codeInstruction.getAddress());
 				mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite16", "(II)I");
@@ -2964,9 +2964,9 @@ public class CompilerContext implements ICompilerContext {
 				loadImm(2);
 				mv.visitInsn(Opcodes.ISHR);
 			} else {
-				loadImm(2);
+				loadImm(3);
 				mv.visitInsn(Opcodes.ISHL);
-				loadImm(4);
+				loadImm(5);
 				mv.visitInsn(Opcodes.IUSHR);
 			}
 			mv.visitInsn(Opcodes.DUP2);
@@ -3003,7 +3003,7 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.IADD);
 		}
 
-		if (RuntimeContext.hasMemoryInt()) {
+		if (!useMMIO() && RuntimeContext.hasMemoryInt()) {
 			if (checkMemoryAccess()) {
 				loadImm(codeInstruction.getAddress());
 				mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite8", "(II)I");
@@ -3059,9 +3059,9 @@ public class CompilerContext implements ICompilerContext {
 				loadImm(2);
 				mv.visitInsn(Opcodes.ISHR);
 			} else {
-				loadImm(2);
+				loadImm(3);
 				mv.visitInsn(Opcodes.ISHL);
-				loadImm(4);
+				loadImm(5);
 				mv.visitInsn(Opcodes.IUSHR);
 			}
 			mv.visitInsn(Opcodes.DUP2);
@@ -3121,9 +3121,9 @@ public class CompilerContext implements ICompilerContext {
 				loadImm(2);
 				mv.visitInsn(Opcodes.ISHR);
 			} else {
-				loadImm(2);
+				loadImm(3);
 				mv.visitInsn(Opcodes.ISHL);
-				loadImm(4);
+				loadImm(5);
 				mv.visitInsn(Opcodes.IUSHR);
 			}
 			mv.visitInsn(Opcodes.DUP2);
@@ -4085,9 +4085,9 @@ public class CompilerContext implements ICompilerContext {
             loadImm(2);
             mv.visitInsn(Opcodes.IUSHR);
     	} else {
-    		loadImm(2);
+    		loadImm(3);
 			mv.visitInsn(Opcodes.ISHL);
-			loadImm(4);
+			loadImm(5);
 			mv.visitInsn(Opcodes.IUSHR);
     	}
 
@@ -4147,9 +4147,9 @@ public class CompilerContext implements ICompilerContext {
             loadImm(2);
             mv.visitInsn(Opcodes.IUSHR);
     	} else {
-    		loadImm(2);
+    		loadImm(3);
 			mv.visitInsn(Opcodes.ISHL);
-			loadImm(4);
+			loadImm(5);
 			mv.visitInsn(Opcodes.IUSHR);
     	}
 
@@ -4405,7 +4405,7 @@ public class CompilerContext implements ICompilerContext {
 
 	private boolean compileSWLWsequence(int baseRegister, int[] offsets, int[] registers, boolean isLW) {
 		// Optimization only possible for memoryInt
-		if (!RuntimeContext.hasMemoryInt()) {
+		if (useMMIO() || !RuntimeContext.hasMemoryInt()) {
 			return false;
 		}
 		// Disable optimizations when the profiler is enabled.

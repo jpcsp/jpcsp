@@ -46,7 +46,7 @@ public abstract class Memory {
     public static boolean useNativeMemory = false;
     public static boolean useDirectBufferMemory = false;
     public static boolean useSafeMemory = true;
-    public static final int addressMask = 0x3FFFFFFF;
+    public static final int addressMask = 0x1FFFFFFF;
     private boolean ignoreInvalidMemoryAccess = false;
     protected static final int MEMORY_PAGE_SHIFT = 12;
     protected static boolean[] validMemoryPage = new boolean[0x00100000];
