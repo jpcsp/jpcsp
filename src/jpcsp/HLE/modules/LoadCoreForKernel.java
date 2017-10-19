@@ -546,8 +546,32 @@ public class LoadCoreForKernel extends HLEModule {
     	int module = getModuleByAddress(mem, registeredMods, address);
     	if (module != 0) {
     		String moduleName = Utilities.readStringNZ(module + 8, 27);
+    		int moduleStart = mem.read32(module + 80) & Memory.addressMask;
+    		int moduleStop = mem.read32(module + 84) & Memory.addressMask;
+    		int moduleBootStart = mem.read32(module + 88) & Memory.addressMask;
+    		int moduleRebootBefore = mem.read32(module + 92) & Memory.addressMask;
+    		int moduleRebootPhase = mem.read32(module + 96) & Memory.addressMask;
+    		int entryAddr = mem.read32(module + 100) & Memory.addressMask;
     		int textAddr = mem.read32(module + 108) & Memory.addressMask;
 
+    		if (address == moduleStart) {
+    			return String.format("%s.module_start", moduleName);
+    		}
+    		if (address == moduleStop) {
+    			return String.format("%s.module_stop", moduleName);
+    		}
+    		if (address == moduleBootStart) {
+    			return String.format("%s.module_bootstart", moduleName);
+    		}
+    		if (address == moduleRebootBefore) {
+    			return String.format("%s.module_reboot_before", moduleName);
+    		}
+    		if (address == moduleRebootPhase) {
+    			return String.format("%s.module_reboot_phase", moduleName);
+    		}
+    		if (address == entryAddr) {
+    			return String.format("%s.module_start", moduleName);
+    		}
     		return String.format("%s.sub_%08X", moduleName, address - textAddr);
     	}
 
@@ -730,7 +754,7 @@ public class LoadCoreForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xAE7C6E76, version = 150)
-	public int sceKernelRegisterModule() {
+	public int sceKernelRegisterModule(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=228, usage=Usage.inout) TPointer module) {
 		return 0;
 	}
 
