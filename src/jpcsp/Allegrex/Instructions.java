@@ -46,13 +46,18 @@ import jpcsp.Allegrex.compiler.CodeInstruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.ICompilerContext;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.Allegrex.compiler.SequenceLWCodeInstruction;
 import jpcsp.Allegrex.compiler.SequenceSWCodeInstruction;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.managers.ExceptionManager;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.modules.reboot;
 import jpcsp.hardware.Interrupts;
 import jpcsp.util.Utilities;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -634,6 +639,7 @@ return "sync";
 }
 };
 public static final Instruction HALT = new Instruction(19) {
+private int step = 0;
 
 @Override
 public final String name() { return "HALT"; }
@@ -644,23 +650,56 @@ public final String category() { return "ALLEGREX"; }
 @Override
 public void interpret(Processor processor, int insn) {
 	log.error("Allegrex halt");
-//	Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
 
-	try {
-		int ebase = processor.cp0.getDataRegister(COP0_STATE_EBASE);
-		// Simulate an interrupt exception
-		int cause = processor.cp0.getDataRegister(COP0_STATE_CAUSE);
-		cause |= ExceptionManager.EXCEP_INT << 2;
-		processor.cp0.setDataRegister(COP0_STATE_CAUSE, cause);
-		int returnAddress = (processor.cpu.pc + 4) | 0x80000000;
-		processor.cp0.setEpc(returnAddress);
+	if (reboot.enableReboot) {
+		// This playground implementation is related to the investigation
+		// for the reboot process (flash0:/reboot.bin).
+		Logger.getRootLogger().setLevel(Level.TRACE);
+		reboot.dumpAllThreads();
+		reboot.dumpAllModulesAndLibraries();
+		try {
+			// Simulate an interrupt exception
+			int cause = processor.cp0.getDataRegister(COP0_STATE_CAUSE);
+			cause = (cause & 0xFFFFFF00) | (ExceptionManager.EXCEP_INT << 2);
+			cause = (cause & 0xFFFF00FF) | (0x08 << 8);
+			processor.cp0.setDataRegister(COP0_STATE_CAUSE, cause);
 
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("Calling exception handler at 0x%08X", ebase));
+			switch (step) {
+				case 0:
+					RuntimeContextLLE.getMMIO().write32(0xBC300000, (1 << IntrManager.PSP_VBLANK_INTR));
+					break;
+				case 1:
+					RuntimeContextLLE.getMMIO().write32(0xBC300000, (1 << IntrManager.PSP_MECODEC_INTR));
+					break;
+				case 2:
+					RuntimeContextLLE.getMMIO().write32(0xBC300000, (1 << IntrManager.PSP_THREAD0_INTR));
+					break;
+				case 3:
+					RuntimeContextLLE.getMMIO().write32(0xBC300000, (1 << IntrManager.PSP_GE_INTR));
+					break;
+				case 4:
+					RuntimeContextLLE.getMMIO().write32(0xBC300000, 0);
+					break;
+				default:
+					RuntimeContextLLE.getMMIO().write32(0xBC300000, 0);
+					Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
+					break;
+			}
+			step++;
+
+			int returnAddress = (processor.cpu.pc + 4) | 0x80000000;
+			processor.cp0.setEpc(returnAddress);
+			int ebase = processor.cp0.getDataRegister(COP0_STATE_EBASE);
+
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Calling exception handler at 0x%08X", ebase));
+			}
+			RuntimeContext.jump(ebase, returnAddress);
+		} catch (Exception e) {
+			log.error("Error while calling code at EBase", e);
 		}
-		RuntimeContext.jump(ebase, returnAddress);
-	} catch (Exception e) {
-		log.error("Error while calling code at EBase", e);
+	} else {
+		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
 	}
 }
 @Override
