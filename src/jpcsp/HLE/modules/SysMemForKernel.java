@@ -184,7 +184,7 @@ public class SysMemForKernel extends HLEModule {
 		return (addr << 5) | ((uidTypeListCount++ & 0x3F) << 1) | 1;
 	}
 
-	protected int getCBFromUid(int uid) {
+	public static int getCBFromUid(int uid) {
 		return ((uid & ~0x7F) >> 5) | MemoryMap.START_RAM;
 	}
 
