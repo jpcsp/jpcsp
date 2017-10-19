@@ -56,6 +56,7 @@ public class sceReg extends HLEModule {
     private int psnAccountCount;
     private int slideCount;
     private int bootCount;
+    private int gameExecCount;
     private int oskVersionId;
     private int oskDispLocale;
     private int oskWritingLocale;
@@ -1136,6 +1137,12 @@ public class sceReg extends HLEModule {
     			if (size >= 4) {
     				buf.setValue32(bootCount);
     			}
+    		} else if (name.equals("game_exec_count")) {
+    			ptype.setValue(REG_TYPE_INT);
+    			psize.setValue(4);
+    			if (size >= 4) {
+    				buf.setValue32(gameExecCount);
+    			}
     		} else {
     			log.warn(String.format("Unknown registry entry '%s/%s'", fullName, name));
     		}
@@ -1470,6 +1477,7 @@ public class sceReg extends HLEModule {
 		networkLatestId = 0;
 		wifiConnectCount = 0;
 		usbConnectCount = 0;
+		gameExecCount = 0;
 	    oskVersionId = 0x226;
 	    oskDispLocale = 0x1;
 	    oskWritingLocale = 0x1;
@@ -1743,6 +1751,8 @@ public class sceReg extends HLEModule {
     			slideCount = buf.getValue32();
     		} else if ("boot_count".equals(name) && size >= 4) {
     			bootCount = buf.getValue32();
+    		} else if ("game_exec_count".equals(name) && size >= 4) {
+    			gameExecCount = buf.getValue32();
     		} else {
     			log.warn(String.format("Unknown registry entry '%s'", name));
     		}
