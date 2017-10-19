@@ -54,7 +54,8 @@ public class MMIO extends Memory {
     	addHandlerRW(0xBD500000, 0x94);
     	addHandlerRO(0xBD500010, 0x4);
     	addHandlerRW(0xBDE00000, 0x3C);
-    	write32(0xBDE0001C, 0x33);
+    	//write32(0xBDE0001C, 0x33);
+    	write32(0xBDE0001C, 0x01);
     	addHandlerRW(0xBDF00000, 0x90);
     	addHandlerRW(0xBE000000, 0x54);
     	write32(0xBE000028, 0x30);
