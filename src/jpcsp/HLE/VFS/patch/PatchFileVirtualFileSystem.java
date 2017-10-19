@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.patch;
 
+import static jpcsp.Allegrex.Common._a1;
+import static jpcsp.Allegrex.Common._v0;
+import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.HLE.Modules.sceAtaModule;
 import static jpcsp.HLE.Modules.sceDdrModule;
 import static jpcsp.HLE.Modules.sceDmacplusModule;
@@ -27,6 +30,7 @@ import static jpcsp.HLE.Modules.scePwmModule;
 import static jpcsp.HLE.Modules.sceSysconModule;
 import static jpcsp.HLE.Modules.sceSysregModule;
 import static jpcsp.HLE.modules.ThreadManForUser.JR;
+import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
 import static jpcsp.HLE.modules.ThreadManForUser.NOP;
 import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
 import static jpcsp.util.Utilities.read8;
@@ -141,6 +145,11 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconReadScratchPad"  , 0x0000274C, 0x27BDFF90, 0x24C9FFFF),
 			// ata.prx: syscalls
 			new PrxSyscallPatchInfo("kd/ata.prx", sceAtaModule, "sceAta_driver_BE6261DA", 0x00002338, 0x0000000F, 0x00042827),
+			// semawm.prx used by sceSemawm.module_start
+			new PrxPatchInfo("kd/semawm.prx", 0x00005620, 0x27BDFFD0, JR()),           // Disable the internal module signature check
+			new PrxPatchInfo("kd/semawm.prx", 0x00005624, 0xAFBF0024, MOVE(_v0, _zr)), // Disable the internal module signature check
+			// me_wrapper.prx used by sceMeCodecWrapper.module_start
+			new PrxPatchInfo("kd/me_wrapper.prx", 0x00001F38, 0x24050001, MOVE(_a1, _zr)), // Disable wait in sub_00001C30() (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1169 changed second argument from 1 to 0)
 			// Last entry is a dummy one
 			new PatchInfo("XXX dummy XXX", 0, 0, 0) // Dummy entry for easier formatting of the above entries
 	};
