@@ -8,9 +8,10 @@ if NOT EXIST "%SystemRoot%\SysWOW64" goto JAVA32
 
 if "%ProgramFiles%" == "%ProgramFiles(x86)%" goto JAVA32SHELL
 
-set JAVA_CMD=%ProgramFiles(x86)%\Java\jre7\bin\java.exe
-if not exist "%JAVA_CMD%" set JAVA_CMD=java.exe
-
+set JAVA_CMD=java.exe
+where /q java.exe
+if ERRORLEVEL 0 goto RUN
+
 rem Checking if the "reg" command is available
 reg /? >NUL 2>NUL
 if ERRORLEVEL 1 goto RUN
@@ -22,7 +23,8 @@ for /f "tokens=3* skip=2" %%a in ('reg query "%key%" /v CurrentVersion') do set 
 for /f "tokens=2* skip=2" %%a in ('reg query "%key%\%JAVA_VERSION%" /v JavaHome') do set JAVA_HOME=%%b
 
 set JAVA_CMD=%JAVA_HOME%\bin\java.exe
-if not exist "%JAVA_CMD%" goto JAVAMISSING
+if not exist "%JAVA_CMD%" set JAVA_CMD=%ProgramFiles(x86)%\Java\jre7\bin\java.exe
+if not exist "%JAVA_CMD%" goto JAVAMISSING
 
 :RUN
 echo Running Jpcsp 64bit...
