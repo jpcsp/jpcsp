@@ -38,7 +38,7 @@ public class MMIO extends Memory {
     	addHandlerRW(0xBC000000, 0x54);
     	addHandlerRW(0xBC100000, 0x84);
     	addHandlerRW(0xBC200000, 0x4);
-    	addHandler(0xBC300000, 0x30, new MMIOHandlerInterruptMan(0xBC300000));
+    	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, new MMIOHandlerInterruptMan(MMIOHandlerInterruptMan.BASE_ADDRESS));
     	addHandler(0xBC500000, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500000));
     	addHandler(0xBC500010, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500010));
     	addHandler(0xBC500020, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500020));
@@ -53,9 +53,7 @@ public class MMIO extends Memory {
     	addHandlerRO(0xBD400100, 0x4);
     	addHandlerRW(0xBD500000, 0x94);
     	addHandlerRO(0xBD500010, 0x4);
-    	addHandlerRW(0xBDE00000, 0x3C);
-    	//write32(0xBDE0001C, 0x33);
-    	write32(0xBDE0001C, 0x01);
+    	addHandler(0xBDE00000, 0x3C, new MMIOHandlerKirk(0xBDE00000));
     	addHandlerRW(0xBDF00000, 0x90);
     	addHandlerRW(0xBE000000, 0x54);
     	write32(0xBE000028, 0x30);
