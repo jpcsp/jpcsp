@@ -401,7 +401,7 @@ if (ppn >= 0x1000 && ppn < 0xD040) {
 		    				// into the space available on flash0.
 		    				vfs = new CompressPrxVirtualFileSystem(vfs);
 
-		    				vFile3 = new Fat12VirtualFile(vfs);
+		    				vFile3 = new Fat12VirtualFile(vfs, 0xBFE0);
 		    				vFile3.scan();
 		    			}
 		    			readFile(user, vFile3, ppn + i, 0x3);

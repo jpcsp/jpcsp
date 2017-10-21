@@ -28,17 +28,8 @@ import static jpcsp.util.Utilities.alignUp;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 
 public class Fat12VirtualFile extends FatVirtualFile {
-	public Fat12VirtualFile(IVirtualFileSystem vfs) {
-		super(vfs, 0xBFE0);
-		initFat12();
-	}
-
 	public Fat12VirtualFile(IVirtualFileSystem vfs, int totalSectors) {
 		super(vfs, totalSectors);
-		initFat12();
-	}
-
-	private void initFat12() {
 		// FAT12 has no FS Info sector
 		setFsInfoSectorNumber(-1);
 
