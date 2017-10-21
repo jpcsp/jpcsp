@@ -16,12 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
-import static jpcsp.Allegrex.Common.COP0_STATE_CAUSE;
 import static jpcsp.Allegrex.Common.COP0_STATE_COMPARE;
 import static jpcsp.Allegrex.Common.COP0_STATE_CONFIG;
 import static jpcsp.Allegrex.Common.COP0_STATE_COUNT;
-import static jpcsp.Allegrex.Common.COP0_STATE_EBASE;
-import static jpcsp.Allegrex.Common.COP0_STATE_STATUS;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_LINK_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_CANNOT_BE_SPLIT;
@@ -37,6 +34,8 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
 import static jpcsp.Allegrex.FpuState.IMPLEMENT_ROUNDING_MODES;
+import static jpcsp.Allegrex.compiler.CompilerContext.runtimeContextInternalName;
+
 import jpcsp.Emulator;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common.Instruction;
@@ -46,18 +45,13 @@ import jpcsp.Allegrex.compiler.CodeInstruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.ICompilerContext;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.Allegrex.compiler.SequenceLWCodeInstruction;
 import jpcsp.Allegrex.compiler.SequenceSWCodeInstruction;
+import jpcsp.Allegrex.compiler.StopThreadException;
 import jpcsp.HLE.SyscallHandler;
-import jpcsp.HLE.kernel.managers.ExceptionManager;
-import jpcsp.HLE.kernel.managers.IntrManager;
-import jpcsp.HLE.modules.reboot;
 import jpcsp.hardware.Interrupts;
 import jpcsp.util.Utilities;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -571,7 +565,7 @@ public final String category() { return "MIPS III"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	processor.cpu.doERET();
+	processor.cpu.npc = processor.cpu.doERET(processor);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -639,7 +633,6 @@ return "sync";
 }
 };
 public static final Instruction HALT = new Instruction(19) {
-private int step = 0;
 
 @Override
 public final String name() { return "HALT"; }
@@ -649,63 +642,16 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	log.error("Allegrex halt");
-
-	if (reboot.enableReboot) {
-		// This playground implementation is related to the investigation
-		// for the reboot process (flash0:/reboot.bin).
-		Logger.getRootLogger().setLevel(Level.TRACE);
-		reboot.dumpAllThreads();
-		reboot.dumpAllModulesAndLibraries();
-		try {
-			// Simulate an interrupt exception
-			int cause = processor.cp0.getDataRegister(COP0_STATE_CAUSE);
-			cause = (cause & 0xFFFFFF00) | (ExceptionManager.EXCEP_INT << 2);
-			cause = (cause & 0xFFFF00FF) | (0x08 << 8);
-			processor.cp0.setDataRegister(COP0_STATE_CAUSE, cause);
-
-			switch (step) {
-				case 0:
-					RuntimeContextLLE.getMMIO().write32(0xBC300000, (1 << IntrManager.PSP_VBLANK_INTR));
-					break;
-				case 1:
-					RuntimeContextLLE.getMMIO().write32(0xBC300000, (1 << IntrManager.PSP_MECODEC_INTR));
-					break;
-				case 2:
-					RuntimeContextLLE.getMMIO().write32(0xBC300000, (1 << IntrManager.PSP_THREAD0_INTR));
-					break;
-				case 3:
-					RuntimeContextLLE.getMMIO().write32(0xBC300000, (1 << IntrManager.PSP_GE_INTR));
-					break;
-				case 4:
-					RuntimeContextLLE.getMMIO().write32(0xBC300000, 0);
-					break;
-				default:
-					RuntimeContextLLE.getMMIO().write32(0xBC300000, 0);
-					Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
-					break;
-			}
-			step++;
-
-			int returnAddress = (processor.cpu.pc + 4) | 0x80000000;
-			processor.cp0.setEpc(returnAddress);
-			int ebase = processor.cp0.getDataRegister(COP0_STATE_EBASE);
-
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("Calling exception handler at 0x%08X", ebase));
-			}
-			RuntimeContext.jump(ebase, returnAddress);
-		} catch (Exception e) {
-			log.error("Error while calling code at EBase", e);
-		}
-	} else {
-		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
+	try {
+		RuntimeContext.executeHalt();
+	} catch (StopThreadException e) {
+		log.error("Exception catched while interpreting the halt instruction");
 	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
 	context.storePc();
-	super.compile(context, insn);
+    context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "executeHalt", "()V");
 }
 @Override
 public String disasm(int address, int insn) {
@@ -725,6 +671,9 @@ public final String category() { return "ALLEGREX"; }
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
+	if (log.isDebugEnabled()) {
+		log.debug(String.format("0x%08X - mfic interruptsEnabled=%b", processor.cpu.pc, Interrupts.isInterruptsEnabled()));
+	}
 	processor.cpu.setRegister(rt, Interrupts.isInterruptsEnabled() ? 1 : 0);
 }
 @Override
@@ -751,7 +700,18 @@ public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
 	int value = processor.cpu.getRegister(rt);
+	if (log.isDebugEnabled()) {
+		log.debug(String.format("0x%08X - mtic interruptEnabled=%b", processor.cpu.pc, value != 0));
+	}
 	Interrupts.setInterruptsEnabled(value != 0);
+
+	if (Interrupts.isInterruptsEnabled()) {
+		try {
+			RuntimeContext.sync();
+		} catch (StopThreadException e) {
+			log.error("Catched exception while executing mtic instruction", e);
+		}
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -5630,19 +5590,19 @@ public void interpret(Processor processor, int insn) {
 		case COP0_STATE_COUNT: // System counter
 			value = (int) Emulator.getClock().nanoTime();
 			break;
-		case COP0_STATE_STATUS:
-			if (Interrupts.isInterruptsEnabled()) {
-				value |= (1 << 0);
-			} else {
-				value &= ~(1 << 0);
-			}
-			break;
+//		case COP0_STATE_STATUS:
+//			if (Interrupts.isInterruptsEnabled()) {
+//				value |= (1 << 0);
+//			} else {
+//				value &= ~(1 << 0);
+//			}
+//			break;
 	}
 
 	processor.cpu.setRegister(rt, value);
 
-	if (log.isTraceEnabled()) {
-		log.trace(String.format("mfc0 reading data register#%d(%s) having value 0x%08X", c0dr, Common.cop0Names[c0dr], value));
+	if (log.isDebugEnabled()) {
+		log.debug(String.format("0x%08X - mfc0 reading data register#%d(%s) having value 0x%08X", processor.cpu.pc, c0dr, Common.cop0Names[c0dr], value));
 	}
 }
 @Override
@@ -5703,6 +5663,11 @@ public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
 	int value = processor.cpu.getRegister(rt);
+
+	if (log.isDebugEnabled()) {
+		log.debug(String.format("0x%08X - mtc0 setting data register#%d(%s) to value 0x%08X", processor.cpu.pc, c0dr, Common.cop0Names[c0dr], value));
+	}
+
 	switch (c0dr) {
 		case COP0_STATE_COUNT:
 			// Count is set to 0 at boot time
@@ -5716,18 +5681,14 @@ public void interpret(Processor processor, int insn) {
 				processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
 			}
 			break;
-		case COP0_STATE_STATUS:
-			Interrupts.setInterruptsEnabled((value & (1 << 0)) != 0);
-			break;
+//		case COP0_STATE_STATUS:
+//			Interrupts.setInterruptsEnabled((value & (1 << 0)) != 0);
+//			break;
 		case COP0_STATE_CONFIG:
 			processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
 			break;
 	}
 	processor.cp0.setDataRegister(c0dr, value);
-
-	if (log.isTraceEnabled()) {
-		log.trace(String.format("mtc0 setting data register#%d(%s) to value 0x%08X", c0dr, Common.cop0Names[c0dr], value));
-	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {

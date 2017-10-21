@@ -30,4 +30,13 @@ public class ExceptionManager {
 	public static final int EXCEP_FPE = 15; // Floating-point exception
 	public static final int EXCEP_WATCH = 23; // Watch (reference to WatchHi/WatchLo)
 	public static final int EXCEP_VCED = 31; // "Virtual Coherency Exception Data" (used for NMI handling apparently)
+
+	public static final int IP0 = (1 << 0);
+	public static final int IP1 = (1 << 1);
+	public static final int IP2 = (1 << 2);
+	public static final int IP3 = (1 << 3);
+	public static final int IP4 = (1 << 4);
+	public static final int IP5 = (1 << 5);
+	public static final int IP6 = (1 << 6);
+	public static final int IP7 = (1 << 7);
 }

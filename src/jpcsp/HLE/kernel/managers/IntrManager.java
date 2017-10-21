@@ -38,7 +38,6 @@ import jpcsp.scheduler.Scheduler;
 import org.apache.log4j.Logger;
 
 public class IntrManager {
-
     protected static Logger log = Modules.getLogger("ThreadManForUser");
 
 	public static final int PSP_GPIO_INTR      =  4;

@@ -20,6 +20,7 @@ import jpcsp.Emulator;
 import jpcsp.HLE.kernel.managers.IntrManager;
 
 public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
+	public static final int BASE_ADDRESS = 0xBC300000;
 	public final boolean interruptTriggered[] = new boolean[64];
 	public final boolean interruptEnabled[] = new boolean[64];
 	public final boolean interruptOccured[] = new boolean[64];
@@ -83,17 +84,17 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 
 		switch (address - baseAddress) {
 			// Interrupt triggered:
-			case 0 : return getBits1(interruptTriggered);
-			case 16: return getBits2(interruptTriggered);
-			case 32: return getBits3(interruptTriggered);
+			case 0x00: return getBits1(interruptTriggered);
+			case 0x10: return getBits2(interruptTriggered);
+			case 0x20: return getBits3(interruptTriggered);
 			// Interrupt occured:
-			case 4 : return getBits1(interruptOccured);
-			case 20: return getBits2(interruptOccured);
-			case 36: return getBits3(interruptOccured);
+			case 0x04: return getBits1(interruptOccured);
+			case 0x14: return getBits2(interruptOccured);
+			case 0x24: return getBits3(interruptOccured);
 			// Interrupt enabled:
-			case 8 : return getBits1(interruptEnabled);
-			case 24: return getBits2(interruptEnabled);
-			case 40: return getBits3(interruptEnabled);
+			case 0x08: return getBits1(interruptEnabled);
+			case 0x18: return getBits2(interruptEnabled);
+			case 0x28: return getBits3(interruptEnabled);
 		}
 		return super.read32(address);
 	}

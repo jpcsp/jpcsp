@@ -44,6 +44,7 @@ import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.HLE.modules.reboot;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.hardware.Interrupts;
 import jpcsp.memory.DebuggerMemory;
@@ -55,6 +56,7 @@ import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
@@ -1500,5 +1502,63 @@ public class RuntimeContext {
 
     public static int getPc() {
     	return Emulator.getProcessor().cpu.pc;
+    }
+
+    public static int executeEret() throws Exception {
+    	int epc = processor.cpu.doERET(processor);
+
+    	// TODO: Optimize to throw a StackPopException only when the stack if growing too large
+    	throw new StackPopException(epc);
+
+//    	return epc;
+    }
+
+    private static int haltCount = 0;
+    public static void executeHalt() throws StopThreadException {
+    	log.error("Allegrex halt");
+
+    	if (reboot.enableReboot) {
+    		// This playground implementation is related to the investigation
+    		// for the reboot process (flash0:/reboot.bin).
+    		Logger.getRootLogger().setLevel(Level.TRACE);
+    		reboot.dumpAllThreads();
+    		reboot.dumpAllModulesAndLibraries();
+
+    		// Simulate an interrupt exception
+    		switch (haltCount) {
+    			case 0:
+    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_VBLANK_INTR);
+    				break;
+    			case 1:
+    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_MECODEC_INTR);
+    				break;
+    			case 2:
+    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_THREAD0_INTR);
+    				break;
+    			case 3:
+    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_GE_INTR);
+    				break;
+    			default:
+    				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
+    				break;
+    		}
+    		haltCount++;
+
+   			idle();
+    	} else {
+    		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
+    	}
+    }
+
+    public static void idle() throws StopThreadException {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("idle wantSync=%b", wantSync));
+    	}
+
+    	if (wantSync) {
+    		sync();
+    	} else {
+    		Utilities.sleep(1);
+    	}
     }
 }

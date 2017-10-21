@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.hardware;
 
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.managers.IntrManager;
 
 public class Interrupts {
@@ -40,6 +41,7 @@ public class Interrupts {
 			if (interruptsEnabled) {
 				// Interrupts have been enabled
 				IntrManager.getInstance().onInterruptsEnabled();
+				RuntimeContextLLE.onInterruptsEnabled();
 			}
 		}
 	}

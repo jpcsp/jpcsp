@@ -63,7 +63,6 @@ import jpcsp.Allegrex.GprState;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.VfpuState;
 import jpcsp.Allegrex.Common.Instruction;
-import jpcsp.Allegrex.Cp0State;
 import jpcsp.Allegrex.FpuState.Fcr31;
 import jpcsp.Allegrex.VfpuState.Vcr;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxDst;
@@ -160,7 +159,7 @@ public class CompilerContext implements ICompilerContext {
     private final VfpuPfxDstState vfpuPfxdState = new VfpuPfxDstState();
     private Label interpretPfxLabel = null;
     private boolean pfxVdOverlap = false;
-    private static final String runtimeContextInternalName = Type.getInternalName(RuntimeContext.class);
+    public static final String runtimeContextInternalName = Type.getInternalName(RuntimeContext.class);
     private static final String processorDescriptor = Type.getDescriptor(Processor.class);
     private static final String cpuDescriptor = Type.getDescriptor(CpuState.class);
     private static final String cpuInternalName = Type.getInternalName(CpuState.class);
@@ -252,11 +251,6 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
     	}
 	}
-
-    private void loadCp0() {
-    	loadProcessor();
-        mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Processor.class), "cp0", Type.getDescriptor(Cp0State.class));
-    }
 
     private void loadProcessor() {
         mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "processor", processorDescriptor);
@@ -2233,8 +2227,8 @@ public class CompilerContext implements ICompilerContext {
     		}
     	}
 
-		// The pc is used by the DebuggerMemory
-    	if (Memory.getInstance() instanceof DebuggerMemory) {
+		// The pc is used by the DebuggerMemory or the LLE/MMIO
+    	if (Memory.getInstance() instanceof DebuggerMemory || RuntimeContextLLE.isLLEActive()) {
     		storePc();
     	}
 
@@ -4464,8 +4458,8 @@ public class CompilerContext implements ICompilerContext {
 		return compileSWLWsequence(baseRegister, offsets, registers, true);
 	}
 
-	public void loadEpc() {
-    	loadCp0();
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Cp0State.class), "getEpc", "()I");
+	public void compileEret() {
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "executeEret", "()I");
+    	visitJump();
 	}
 }
