@@ -105,7 +105,7 @@ public class InterruptManager extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x0C5F7AE3, version = 150)
-	public int sceKernelCallSubIntrHandler() {
+	public int sceKernelCallSubIntrHandler(int intrNum, int subIntrNum, int handlerArg0, int handlerArg2) {
 		return 0;
 	}
 
