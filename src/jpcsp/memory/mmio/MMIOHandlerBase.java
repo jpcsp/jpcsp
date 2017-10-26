@@ -60,4 +60,9 @@ public class MMIOHandlerBase implements IMMIOHandler {
 	public void write32(int address, int value) {
 		log.error(String.format("0x%08X - Unimplemented write32(0x%08X, 0x%08X)", Emulator.getProcessor().cpu.pc, address, value));
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s at 0x%08X", getClass().getName(), baseAddress);
+	}
 }

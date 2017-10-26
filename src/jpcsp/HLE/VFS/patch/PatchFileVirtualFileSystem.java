@@ -21,12 +21,8 @@ import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.HLE.Modules.sceAtaModule;
 import static jpcsp.HLE.Modules.sceDdrModule;
-import static jpcsp.HLE.Modules.sceDmacplusModule;
-import static jpcsp.HLE.Modules.sceGpioModule;
 import static jpcsp.HLE.Modules.sceI2cModule;
-import static jpcsp.HLE.Modules.sceLcdcModule;
 import static jpcsp.HLE.Modules.sceNandModule;
-import static jpcsp.HLE.Modules.scePwmModule;
 import static jpcsp.HLE.Modules.sceSysconModule;
 import static jpcsp.HLE.Modules.sceSysregModule;
 import static jpcsp.HLE.modules.ThreadManForUser.JR;
@@ -78,21 +74,6 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysreg_driver_4841B2D2" , 0x00001788, 0x27BDFFF0, 0xAFBF0008),
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregApbTimerClkSelect", 0x00001F98, 0x27BDFFF0, 0xAFB10004),
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysreg_driver_96D74557" , 0x00002CB0, 0x27BDFFF0, 0xAFBF0000),
-			// lowio.prx: syscalls from sceGpio module
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceGpioModule, "sceGpioSetPortMode", 0x00002E24, 0x27BDFFE0, 0xAFB00000),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceGpioModule, "sceGpioSetIntrMode", 0x00002FD0, 0x27BDFFE0, 0xAFB00000),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceGpioModule, "sceGpioPortRead"   , 0x00003204, 0x3C02BE24, 0x34440004),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceGpioModule, "sceGpioPortSet"    , 0x00003214, 0x3C05BE24, 0x34A30008),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceGpioModule, "sceGpioPortClear"  , 0x0000322C, 0x3C05BE24, 0x34A3000C),
-			// lowio.prx: syscalls from scePwm module
-			new PrxSyscallPatchInfo("kd/lowio.prx", scePwmModule, "scePwm_driver_36F98EBA", 0x00003B48, 0x3C028000, 0x2C880003),
-			new PrxSyscallPatchInfo("kd/lowio.prx", scePwmModule, "scePwm_driver_94552DD4", 0x000039C0, 0x3C028000, 0x2C880003),
-			// lowio.prx: syscalls from sceLcdc module
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceLcdcModule, "sceLcdc_driver_E9DBD35F", 0x00007FD8, 0x27BDFFD0, 0xAFB50014),
-			// lowio.prx: syscalls from sceDmacplus module
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceDmacplusModule, "sceDmacplusLcdcDisable"  , 0x000059DC, 0x27BDFFF0, 0xAFB00000),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceDmacplusModule, "sceDmacplusLcdcEnable"   , 0x0000587C, 0x27BDFFF0, 0xAFB00000),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceDmacplusModule, "sceDmacplusLcdcSetFormat", 0x000057C0, 0x3C028000, 0x30880007),
 			// lowio.prx: syscalls from sceNand module
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandSetWriteProtect"     , 0x00009014, 0x27BDFFF0, 0xAFB10004),
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandLock"                , 0x00009094, 0x27BDFFF0, 0x3C030000),
@@ -136,13 +117,13 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			// lowio.prx: syscalls from sceDdr module
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceDdrModule, "sceDdrFlush"                 , 0x000011B4, 0x0000000F, 0x3C02BD00),
 			// syscon.prx: syscalls
-			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconCmdExec"         , 0x0000154C, 0x27BDFFF0, 0xAFB10004),
-			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconCmdExecAsync"    , 0x00001600, 0x27BDFFE0, 0xAFB40010),
-			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetBaryonVersion", 0x00002DB4, 0x27BDFFF0, 0xAFBF0000),
-			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetTimeStamp"    , 0x000025F0, 0x27BDFF90, 0xAFB00060),
-			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetPommelVersion", 0x000033E8, 0x27BDFFF0, 0xAFBF0000),
-			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetPowerStatus"  , 0x000034AC, 0x27BDFFF0, 0xAFBF0000),
-			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconReadScratchPad"  , 0x0000274C, 0x27BDFF90, 0x24C9FFFF),
+//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconCmdExec"         , 0x0000154C, 0x27BDFFF0, 0xAFB10004),
+//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconCmdExecAsync"    , 0x00001600, 0x27BDFFE0, 0xAFB40010),
+//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetBaryonVersion", 0x00002DB4, 0x27BDFFF0, 0xAFBF0000),
+//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetTimeStamp"    , 0x000025F0, 0x27BDFF90, 0xAFB00060),
+//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetPommelVersion", 0x000033E8, 0x27BDFFF0, 0xAFBF0000),
+//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetPowerStatus"  , 0x000034AC, 0x27BDFFF0, 0xAFBF0000),
+//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconReadScratchPad"  , 0x0000274C, 0x27BDFF90, 0x24C9FFFF),
 			// ata.prx: syscalls
 			new PrxSyscallPatchInfo("kd/ata.prx", sceAtaModule, "sceAta_driver_BE6261DA", 0x00002338, 0x0000000F, 0x00042827),
 			// semawm.prx used by sceSemawm.module_start

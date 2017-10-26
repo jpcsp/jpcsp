@@ -22,10 +22,12 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.hardware.Model;
 
 public class sceSysreg extends HLEModule {
     public static Logger log = Modules.getLogger("sceSysreg");
-    public long fuseId = 0L;
+    private long fuseId = 0L;
+    private int fuseConfig = 0x2400; // Value retrieved from a real PSP
 
     public void setFuseId(long fuseId) {
     	if (log.isDebugEnabled()) {
@@ -428,6 +430,7 @@ public class sceSysreg extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x61FAE917, version = 150)
     public int sceSysregInterruptToOther() {
+    	// Has no parameters
     	return 0;
     }
 
@@ -536,6 +539,7 @@ public class sceSysreg extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x7AA8A8BE, version = 150)
     public int sceSysregIntrEnd() {
+    	// Has no parameters
     	return 0;
     }
 
@@ -981,7 +985,23 @@ public class sceSysreg extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xE2A5D1EE, version = 150)
     public int sceSysregGetTachyonVersion() {
-    	return 0;
+		// Tachyon = 0x00140000, Baryon = 0x00030600 TA-079 v1 1g
+		// Tachyon = 0x00200000, Baryon = 0x00030600 TA-079 v2 1g
+		// Tachyon = 0x00200000, Baryon = 0x00040600 TA-079 v3 1g
+		// Tachyon = 0x00300000, Baryon = 0x00040600 TA-081 1g
+		// Tachyon = 0x00400000, Baryon = 0x00114000 TA-082 1g
+		// Tachyon = 0x00400000, Baryon = 0x00121000 TA-086 1g
+		// Tachyon = 0x00500000, Baryon = 0x0022B200 TA-085 2g
+		// Tachyon = 0x00500000, Baryon = 0x00234000 TA-085 2g
+    	int tachyon = 0;
+    	switch (Model.getModel()) {
+    		case Model.MODEL_PSP_FAT : tachyon = 0x00140000; break;
+    		case Model.MODEL_PSP_SLIM: tachyon = 0x00500000; break;
+    		default:
+    			log.warn(String.format("sceSysregGetTachyonVersion unknown tachyon version for PSP Model %s", Model.getModelName(Model.getModel())));
+    			break;
+    	}
+    	return tachyon;
     }
 
     @HLEUnimplemented
@@ -989,5 +1009,12 @@ public class sceSysreg extends HLEModule {
     public long sceSysregGetFuseId() {
     	// Has no parameters
     	return fuseId;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8F4F4E96, version = 150)
+    public int sceSysregGetFuseConfig() {
+    	// Has no parameters
+    	return fuseConfig;
     }
 }

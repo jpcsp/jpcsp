@@ -49,6 +49,7 @@ import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.hardware.Interrupts;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.FastMemory;
+import jpcsp.memory.mmio.MMIOHandlerDisplayController;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
@@ -1507,6 +1508,8 @@ public class RuntimeContext {
     public static int executeEret() throws Exception {
     	int epc = processor.cpu.doERET(processor);
 
+		reboot.dumpAllThreads();
+
     	// TODO: Optimize to throw a StackPopException only when the stack if growing too large
     	throw new StackPopException(epc);
 
@@ -1527,19 +1530,18 @@ public class RuntimeContext {
     		// Simulate an interrupt exception
     		switch (haltCount) {
     			case 0:
-    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_VBLANK_INTR);
+    				// The module_start of display_01g.prx is requiring at least one VBLANK interrupt
+    				// as it is executing sceDisplayWaitVblankStart().
+    				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
     				break;
     			case 1:
-    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_MECODEC_INTR);
+//    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_MECODEC_INTR);
     				break;
     			case 2:
-    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_THREAD0_INTR);
-    				break;
-    			case 3:
-    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_GE_INTR);
+//    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_GE_INTR);
     				break;
     			default:
-    				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
+//    				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
     				break;
     		}
     		haltCount++;

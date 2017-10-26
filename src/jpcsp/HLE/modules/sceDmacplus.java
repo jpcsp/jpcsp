@@ -43,4 +43,10 @@ public class sceDmacplus extends HLEModule {
 	public int sceDmacplusLcdcSetFormat(int unknown1, int unknown2, int unknown3) {
     	return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xA3AA8D00, version = 150)
+	public int sceDmacplusLcdcSetBaseAddr(int frameBufferAddress) {
+    	return 0;
+	}
 }

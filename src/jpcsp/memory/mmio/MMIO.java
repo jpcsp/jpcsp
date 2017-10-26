@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import jpcsp.Memory;
+import jpcsp.hardware.Screen;
 
 public class MMIO extends Memory {
     private final Memory mem;
@@ -35,35 +36,47 @@ public class MMIO extends Memory {
 	public void Initialise() {
     	handlers.clear();
 
-    	addHandlerRW(0xBC000000, 0x54);
-    	addHandlerRW(0xBC100000, 0x84);
-    	addHandlerRW(0xBC200000, 0x4);
-    	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, new MMIOHandlerInterruptMan(MMIOHandlerInterruptMan.BASE_ADDRESS));
+    	addHandlerRW(0xBC000000, 0x54); // Memory interface
+    	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, MMIOHandlerSystemControl.SIZE_OF, MMIOHandlerSystemControl.getInstance());
+    	addHandlerRW(0xBC200000, 0x4); // sysreg
+    	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, MMIOHandlerInterruptMan.getInstance());
     	addHandler(0xBC500000, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500000));
     	addHandler(0xBC500010, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500010));
     	addHandler(0xBC500020, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500020));
     	addHandler(0xBC500030, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500030));
-    	addHandlerRW(0xBC600000, 0x14);
-    	addHandler(0xBC600000, 1, new MMIOHandlerSystemTime(0xBC600000));
-    	addHandlerRW(0xBC800000, 0x164);
-    	addHandlerRW(0xBD100000, 0x1204);
-    	addHandler(0xBD200000, 0x40, new MMIOHandlerReadWrite16(0xBD200000, 0x40));
-    	addHandlerRW(0xBD300000, 0x40);
-    	addHandlerRW(0xBD400000, 0x8F0);
+    	addHandler(0xBC600000, 0x14, new MMIOHandlerSystemTime(0xBC600000));
+    	addHandlerRW(0xBC800000, 0x164); // DMA control (dmacplus)
+    	addHandlerRW(0xBD100000, 0x1204); // NAND flash
+    	addHandler(0xBD200000, 0x40, new MMIOHandlerReadWrite16(0xBD200000, 0x40)); // Memory stick
+    	addHandlerRW(0xBD300000, 0x44); // Wlan
+    	addHandlerRW(0xBD400000, 0x8F0); // Graphics engine (ge)
     	addHandlerRO(0xBD400100, 0x4);
-    	addHandlerRW(0xBD500000, 0x94);
+    	addHandlerRW(0xBD500000, 0x94); // Graphics engine (ge)
     	addHandlerRO(0xBD500010, 0x4);
-    	addHandler(0xBDE00000, 0x3C, new MMIOHandlerKirk(0xBDE00000));
-    	addHandlerRW(0xBDF00000, 0x90);
-    	addHandlerRW(0xBE000000, 0x54);
+    	addHandlerRW(0xBD600000, 0x50); // Ata
+    	addHandler(0xBD700000, 0xF, new MMIOHandlerReadWrite8(0xBD700000, 0xF)); // Ata
+    	addHandler(0xBDE00000, 0x3C, new MMIOHandlerKirk(0xBDE00000)); // Kirk
+    	addHandlerRW(0xBDF00000, 0x90); // UMD
+    	addHandlerRW(0xBE000000, 0x54); // Audio
     	write32(0xBE000028, 0x30);
-    	addHandlerRW(0xBE140000, 0x50);
-    	addHandlerRW(0xBE240000, 0x44);
-    	addHandlerRW(0xBE300000, 0x48);
-    	addHandlerRW(0xBE4C0000, 0x48);
-    	addHandlerRW(0xBE500000, 0x3C);
-    	addHandlerRW(0xBE580000, 0x28);
-    	addHandlerRW(0xBE740000, 0x28);
+    	addHandlerRW(0xBE140000, 0x204); // LCDC / display
+    	write32(0xBE140010, 0x29);
+    	write32(0xBE140014, 0x02);
+    	write32(0xBE140018, 0x02);
+    	write32(0xBE14001C, Screen.width);
+    	write32(0xBE140020, 0x0A);
+    	write32(0xBE140024, 0x02);
+    	write32(0xBE140028, 0x02);
+    	write32(0xBE14002C, Screen.height);
+    	write32(0xBE140048, Screen.width);
+    	write32(0xBE14004C, Screen.height);
+    	write32(0xBE140050, 0x01);
+    	addHandler(MMIOHandlerGpio.BASE_ADDRESS, 0x4C, MMIOHandlerGpio.getInstance());
+    	addHandlerRW(0xBE300000, 0x48); // Power management
+    	addHandlerRW(0xBE4C0000, 0x48); // UART4 Uart4/kernel debug(?) UART (IPL, uart4, reboot)
+    	addHandlerRW(0xBE500000, 0x3C); // UART3 headphone remote SIO (hpremote)
+    	addHandler(MMIOHandlerSyscon.BASE_ADDRESS, 0x28, MMIOHandlerSyscon.getInstance());
+    	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
     	addHandlerRW(0xBFC00000, 0x1000);
     }
 

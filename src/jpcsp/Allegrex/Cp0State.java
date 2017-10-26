@@ -99,4 +99,8 @@ public class Cp0State {
 	public void setEbase(int ebase) {
 		setDataRegister(COP0_STATE_EBASE, ebase);
 	}
+
+	public void setSyscallCode(int syscallCode) {
+		setDataRegister(Common.COP0_STATE_SCCODE, syscallCode);
+	}
 }

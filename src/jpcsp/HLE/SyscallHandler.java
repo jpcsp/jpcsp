@@ -23,6 +23,7 @@ import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
@@ -178,7 +179,13 @@ public class SyscallHandler {
 	        		log.error(String.format("HLE Function %s not activated by default for Firmware Version %d", name, Emulator.getInstance().getFirmwareVersion()));
         		} else {
 	        		int nid = nidMapper.getNidBySyscall(code);
-	        		log.error(String.format("NID 0x%08X not activated by default for Firmware Version %d", nid, Emulator.getInstance().getFirmwareVersion()));
+	        		if (nid != 0) {
+	        			log.error(String.format("NID 0x%08X not activated by default for Firmware Version %d", nid, Emulator.getInstance().getFirmwareVersion()));
+	        		} else if (RuntimeContextLLE.isLLEActive()) {
+	        			RuntimeContextLLE.triggerSyscallException(Emulator.getProcessor(), code);
+	        		} else {
+	        			log.error(String.format("Unknown syscall 0x%05X", code));
+	        		}
         		}
         	}
         }

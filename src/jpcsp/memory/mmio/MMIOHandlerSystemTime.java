@@ -16,10 +16,28 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterrupt;
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterrupt;
+import static jpcsp.Emulator.getProcessor;
+import static jpcsp.Emulator.getScheduler;
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_THREAD0_INTR;
+
 import jpcsp.Emulator;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
+import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.scheduler.Scheduler;
 
 public class MMIOHandlerSystemTime extends MMIOHandlerBase {
+	private long alarm;
+	private TriggerAlarmInterruptAction triggerAlarmInterruptAction;
+
+	private class TriggerAlarmInterruptAction implements IAction {
+		@Override
+		public void execute() {
+			triggerAlarmInterrupt();
+		}
+	}
+
 	public MMIOHandlerSystemTime(int baseAddress) {
 		super(baseAddress);
 	}
@@ -28,27 +46,76 @@ public class MMIOHandlerSystemTime extends MMIOHandlerBase {
 		return (int) SystemTimeManager.getSystemTime();
 	}
 
-	@Override
-	public int read32(int address) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, this));
+	private void setAlarm(int alarm) {
+		Scheduler scheduler = getScheduler();
+
+		if (triggerAlarmInterruptAction == null) {
+			triggerAlarmInterruptAction = new TriggerAlarmInterruptAction();
+		} else {
+			scheduler.removeAction(this.alarm, triggerAlarmInterruptAction);
+			clearInterrupt(getProcessor(), PSP_THREAD0_INTR);
 		}
 
-		if (address == baseAddress) {
-			return getSystemTime();
+		this.alarm = alarm & 0xFFFFFFFFL;
+
+		scheduler.addAction(this.alarm, triggerAlarmInterruptAction);
+	}
+
+	private void triggerAlarmInterrupt() {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Triggering PSP_THREAD0_INTR interrupt for %s", this));
 		}
-		return super.read32(address);
+		triggerInterrupt(getProcessor(), PSP_THREAD0_INTR);
+	}
+
+	@Override
+	public int read32(int address) {
+		int value;
+		switch (address - baseAddress) {
+			case 0x00: value = getSystemTime(); break;
+			default: value = super.read32(address); break;
+		}
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", Emulator.getProcessor().cpu.pc, address, value));
+		}
+
+		return value;
 	}
 
 	@Override
 	public void write32(int address, int value) {
-		if (address == baseAddress) {
-			// Value is set to 0 at boot time
-			if (value != 0) {
+		switch (address - baseAddress) {
+			case 0x00:
+				// Value is set to 0 at boot time
+				if (value != 0) {
+					super.write32(address, value);
+				}
+				break;
+			case 0x04:
+				setAlarm(value);
+				break;
+			case 0x08:
+				// Value is set to 0x30 at boot time
+				if (value != 0x30) {
+					super.write32(address, value);
+				}
+				break;
+			case 0x0C:
+				// Value is set to 0x1 at boot time
+				if (value != 0x1) {
+					super.write32(address, value);
+				}
+				break;
+			case 0x10:
+				// Value is set to 0 at boot time
+				if (value != 0) {
+					super.write32(address, value);
+				}
+				break;
+			default:
 				super.write32(address, value);
-			}
-		} else {
-			super.write32(address, value);
+				break;
 		}
 
 		if (log.isTraceEnabled()) {
@@ -58,6 +125,6 @@ public class MMIOHandlerSystemTime extends MMIOHandlerBase {
 
 	@Override
 	public String toString() {
-		return String.format("MMIOHandlerSystemTime");
+		return String.format("MMIOHandlerSystemTime systemTime=0x%08X, alarm=0x%08X", getSystemTime(), alarm);
 	}
 }

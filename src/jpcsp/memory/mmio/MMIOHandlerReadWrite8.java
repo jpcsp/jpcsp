@@ -18,30 +18,30 @@ package jpcsp.memory.mmio;
 
 import jpcsp.Emulator;
 
-public class MMIOHandlerReadWrite16 extends MMIOHandlerBase {
+public class MMIOHandlerReadWrite8 extends MMIOHandlerBase {
 	private final int[] memory;
 
-	public MMIOHandlerReadWrite16(int baseAddress, int length) {
+	public MMIOHandlerReadWrite8(int baseAddress, int length) {
 		super(baseAddress);
 
-		memory = new int[length >> 2];
+		memory = new int[length];
 	}
 
 	@Override
-	public int read16(int address) {
+	public int read8(int address) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read16(0x%08X) returning 0x%04X", Emulator.getProcessor().cpu.pc, address, memory[(address - baseAddress) >> 2]));
+			log.trace(String.format("0x%08X - read8(0x%08X) returning 0x%02X", Emulator.getProcessor().cpu.pc, address, memory[address - baseAddress]));
 		}
 
-		return memory[(address - baseAddress) >> 2];
+		return memory[address - baseAddress];
 	}
 
 	@Override
-	public void write16(int address, short value) {
+	public void write8(int address, byte value) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write16(0x%08X, 0x%04X)", Emulator.getProcessor().cpu.pc, address, value & 0xFFFF));
+			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X)", Emulator.getProcessor().cpu.pc, address, value & 0xFF));
 		}
 
-		memory[(address - baseAddress) >> 2] = value & 0xFFFF;
+		memory[address - baseAddress] = value & 0xFF;
 	}
 }

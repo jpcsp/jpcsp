@@ -16,17 +16,61 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterruptException;
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterruptException;
+import static jpcsp.Emulator.getProcessor;
+import static jpcsp.HLE.kernel.managers.ExceptionManager.IP2;
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;
+
 import jpcsp.Emulator;
 import jpcsp.HLE.kernel.managers.IntrManager;
 
 public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
+	private static MMIOHandlerInterruptMan instance;
 	public static final int BASE_ADDRESS = 0xBC300000;
-	public final boolean interruptTriggered[] = new boolean[64];
-	public final boolean interruptEnabled[] = new boolean[64];
-	public final boolean interruptOccured[] = new boolean[64];
+	private static final int NUMBER_INTERRUPTS = 64;
+	public final boolean interruptTriggered[] = new boolean[NUMBER_INTERRUPTS];
+	public final boolean interruptEnabled[] = new boolean[NUMBER_INTERRUPTS];
+	public final boolean interruptOccurred[] = new boolean[NUMBER_INTERRUPTS];
 
-	public MMIOHandlerInterruptMan(int baseAddress) {
+	public static MMIOHandlerInterruptMan getInstance() {
+		if (instance == null) {
+			instance = new MMIOHandlerInterruptMan(BASE_ADDRESS);
+		}
+		return instance;
+	}
+
+	private MMIOHandlerInterruptMan(int baseAddress) {
 		super(baseAddress);
+	}
+
+	public void triggerInterrupt(int interruptNumber) {
+		interruptTriggered[interruptNumber] = true;
+		checkException();
+	}
+
+	public void clearInterrupt(int interruptNumber) {
+		interruptTriggered[interruptNumber] = false;
+		checkException();
+	}
+
+	private void checkException() {
+		if (doTriggerException()) {
+			triggerInterruptException(getProcessor(), IP2);
+		} else {
+			clearInterruptException(getProcessor(), IP2);
+		}
+	}
+
+	private boolean doTriggerException() {
+		for (int i = 0; i < NUMBER_INTERRUPTS; i++) {
+			if (interruptTriggered[i] && interruptEnabled[i]) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private void setBits(boolean values[], int value, int offset, int mask) {
@@ -35,6 +79,7 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 				values[offset + i] = (value & 1) != 0;
 			}
 		}
+		checkException();
 	}
 
 	private void setBits1(boolean values[], int value) {
@@ -87,10 +132,10 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 			case 0x00: return getBits1(interruptTriggered);
 			case 0x10: return getBits2(interruptTriggered);
 			case 0x20: return getBits3(interruptTriggered);
-			// Interrupt occured:
-			case 0x04: return getBits1(interruptOccured);
-			case 0x14: return getBits2(interruptOccured);
-			case 0x24: return getBits3(interruptOccured);
+			// Interrupt occurred (read only inside sceKernelIsInterruptOccurred, never written):
+			case 0x04: return getBits1(interruptOccurred);
+			case 0x14: return getBits2(interruptOccurred);
+			case 0x24: return getBits3(interruptOccurred);
 			// Interrupt enabled:
 			case 0x08: return getBits1(interruptEnabled);
 			case 0x18: return getBits2(interruptEnabled);
@@ -103,13 +148,17 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
 			// Interrupt triggered:
-			case 0 : setBits1(interruptTriggered, value); break;
-			case 16: setBits2(interruptTriggered, value); break;
-			case 32: setBits3(interruptTriggered, value); break;
-			// Interrupt occured:
-			case 4 : setBits1(interruptOccured, value); break;
-			case 20: setBits2(interruptOccured, value); break;
-			case 36: setBits3(interruptOccured, value); break;
+			case 0 :
+				// interruptman.prx is only writing the values 0x80000000 and 0x40000000
+				// which seems to have the effect of clearing the triggers for these interrupts.
+				if (value == (1 << PSP_VBLANK_INTR)) {
+					clearInterrupt(PSP_VBLANK_INTR);
+				} else if (value == (1 << PSP_MECODEC_INTR)) {
+					clearInterrupt(PSP_MECODEC_INTR);
+				} else {
+					super.write32(address, value);
+				}
+				break;
 			// Interrupt enabled:
 			case 8 : setBits1(interruptEnabled, value); break;
 			case 24: setBits2(interruptEnabled, value); break;
@@ -143,11 +192,18 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 		sb.append("]");
 	}
 
+	public String toStringInterruptTriggered() {
+		StringBuilder sb = new StringBuilder();
+		toString(sb, "", interruptTriggered);
+
+		return sb.toString();
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		toString(sb, "interruptTriggered", interruptTriggered);
-		toString(sb, "interruptOccured", interruptOccured);
+		toString(sb, "interruptOccurred", interruptOccurred);
 		toString(sb, "interruptEnabled", interruptEnabled);
 
 		return sb.toString();

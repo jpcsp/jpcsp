@@ -101,6 +101,10 @@ public class sceCtrl extends HLEModule {
         return false;
     }
 
+    public void setSamplingMode(int mode) {
+    	this.mode = mode;
+    }
+
     private static int getTimestamp() {
     	return ((int) SystemTimeManager.getSystemTime()) & 0x7FFFFFFF;
     }
@@ -433,7 +437,7 @@ public class sceCtrl extends HLEModule {
     @HLEFunction(nid = 0x1F4011E6, version = 150, checkInsideInterrupt = true)
     public int sceCtrlSetSamplingMode(@CheckArgument("checkMode") int newMode) {
         int oldMode = mode;
-        this.mode = newMode;
+        setSamplingMode(newMode);
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceCtrlSetSamplingMode mode=%d returning %d", newMode, oldMode));

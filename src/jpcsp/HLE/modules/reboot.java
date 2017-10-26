@@ -62,7 +62,6 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceLoadCoreBootInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.SceSysmemUidCB;
-import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Model;
 import jpcsp.util.Utilities;
@@ -384,13 +383,30 @@ public class reboot extends HLEModule {
     	Memory mem = Memory.getInstance();
     	int threadManInfo = 0x88048740;
 
-    	dumpThread(mem, mem.read32(threadManInfo + 0), "Current thread:");
-    	dumpThreadList(mem, threadManInfo + 1176, "Sleeping threads:");
-    	dumpThreadList(mem, threadManInfo + 1184, "Delayed threads:");
-    	dumpThreadList(mem, threadManInfo + 1192, "Stopped threads:");
-    	dumpThreadList(mem, threadManInfo + 1200, "Suspended threads:");
+    	int currentThread = mem.read32(threadManInfo + 0);
+    	int nextThread = mem.read32(threadManInfo + 4);
+
+    	dumpThreadTypeList(mem, mem.read32(threadManInfo + 1228));
+    	dumpThread(mem, currentThread, "Current thread");
+    	if (nextThread != currentThread) {
+    		dumpThread(mem, nextThread, "Next thread");
+    	}
+    	dumpThreadList(mem, threadManInfo + 1176, "Sleeping thread");
+    	dumpThreadList(mem, threadManInfo + 1184, "Delayed thread");
+    	dumpThreadList(mem, threadManInfo + 1192, "Stopped thread");
+    	dumpThreadList(mem, threadManInfo + 1200, "Suspended thread");
+    	dumpThreadList(mem, threadManInfo + 1208, "Dead thread");
+    	dumpThreadList(mem, threadManInfo + 1216, "??? thread");
     	for (int priority = 0; priority < 128; priority++) {
-    		dumpThreadList(mem, threadManInfo + 152 + priority * 8, String.format("Ready threads[prio=0x%X]:", priority));
+    		dumpThreadList(mem, threadManInfo + 152 + priority * 8, String.format("Ready thread[prio=0x%X]", priority));
+    	}
+    }
+
+    private static void dumpThreadTypeList(Memory mem, int list) {
+    	for (int cb = mem.read32(list); cb != list; cb = mem.read32(cb)) {
+    		SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
+    		sceSysmemUidCB.read(mem, cb);
+    		dumpThread(mem, cb + sceSysmemUidCB.size * 4, "Thread");
     	}
     }
 
@@ -398,25 +414,39 @@ public class reboot extends HLEModule {
 		int uid = mem.read32(address + 8);
 		int status = mem.read32(address + 12);
 		int currentPriority = mem.read32(address + 16);
-		int waitType = mem.read32(address + 88);
-		int waitDelay = mem.read32(address + 96);
+
+		StringBuilder waitInfo = new StringBuilder();
+		if (SceKernelThreadInfo.isWaitingStatus(status)) {
+			int waitType = mem.read32(address + 88);
+			if (waitType != 0) {
+				waitInfo.append(String.format(", waitType=0x%X(%s)", waitType, SceKernelThreadInfo.getWaitName(waitType)));
+			}
+
+			int waitTypeCBaddr = mem.read32(address + 92);
+			if (waitTypeCBaddr != 0) {
+				SceSysmemUidCB waitTypeCB = new SceSysmemUidCB();
+				waitTypeCB.read(mem, waitTypeCBaddr);
+				waitInfo.append(String.format(", waitUid=0x%X(%s)", waitTypeCB.uid, waitTypeCB.name));
+			}
+
+			if (waitType == SceKernelThreadInfo.PSP_WAIT_DELAY) {
+				int waitDelay = mem.read32(address + 96);
+				waitInfo.append(String.format(", waitDelay=0x%X", waitDelay));
+			}
+		}
 
 		int cb = SysMemForKernel.getCBFromUid(uid);
 		SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
 		sceSysmemUidCB.read(mem, cb);
 
 		if (log.isDebugEnabled()) {
-			if (comment != null) {
-				log.debug(comment);
-			}
-			log.debug(String.format("Thread uid=0x%X, name='%s', status=0x%X(%s), currentPriority=0x%X, waitType=0x%X(%s), waitDelay=0x%X: %s", uid, sceSysmemUidCB.name, status, SceKernelThreadInfo.getStatusName(status), currentPriority, waitType, SceKernelThreadInfo.getWaitName(waitType, 0, new ThreadWaitInfo(), status), waitDelay, Utilities.getMemoryDump(address, 0x140)));
+			log.debug(String.format("%s: uid=0x%X, name='%s', status=0x%X(%s), currentPriority=0x%X%s: %s", comment, uid, sceSysmemUidCB.name, status, SceKernelThreadInfo.getStatusName(status), currentPriority, waitInfo, Utilities.getMemoryDump(address, 0x140)));
 		}
     }
 
     private static void dumpThreadList(Memory mem, int list, String comment) {
     	for (int address = mem.read32(list); address != list; address = mem.read32(address)) {
     		dumpThread(mem, address, comment);
-    		comment = null;
     	}
     }
 

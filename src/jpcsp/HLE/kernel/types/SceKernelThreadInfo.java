@@ -544,6 +544,35 @@ cpuContext._k1 |= 0x100000;
         return getStatusName(status);
     }
 
+    public static String getWaitName(int waitType) {
+        switch (waitType) {
+	    	case PSP_WAIT_NONE: return "None";
+	    	case PSP_WAIT_SLEEP: return "Sleep";
+	    	case PSP_WAIT_DELAY: return "Delay";
+	    	case PSP_WAIT_THREAD_END: return "ThreadEnd";
+	    	case PSP_WAIT_EVENTFLAG: return "EventFlag";
+	    	case PSP_WAIT_SEMA: return "Semaphore";
+	    	case PSP_WAIT_MUTEX: return "Mutex";
+	    	case PSP_WAIT_LWMUTEX: return "LwMutex";
+	    	case PSP_WAIT_MBX: return "Mbx";
+	    	case PSP_WAIT_VPL: return "Vpl";
+	    	case PSP_WAIT_FPL: return "Fpl";
+	    	case PSP_WAIT_MSGPIPE: return "MsgPipe";
+	    	case PSP_WAIT_EVENTHANDLER: return "EventHandler";
+	    	case PSP_WAIT_CALLBACK_DELETE: return "CallBackDelete";
+	    	case JPCSP_WAIT_IO: return "Io";
+	    	case JPCSP_WAIT_UMD: return "Umd";
+	    	case JPCSP_WAIT_GE_LIST: return "Ge List";
+	    	case JPCSP_WAIT_NET: return "Network";
+	    	case JPCSP_WAIT_AUDIO: return "Audio";
+	    	case JPCSP_WAIT_DISPLAY_VBLANK: return "Display Vblank";
+	    	case JPCSP_WAIT_CTRL: return "Ctrl";
+	    	case JPCSP_WAIT_USB: return "Usb";
+	    	case JPCSP_WAIT_VIDEO_DECODER: return "VideoDecoder";
+	    }
+        return String.format("Unknown waitType=%d", waitType);
+    }
+
     public static String getWaitName(int waitType, int waitId, ThreadWaitInfo wait, int status) {
         StringBuilder s = new StringBuilder();
 
@@ -646,7 +675,11 @@ cpuContext._k1 |= 0x100000;
     }
 
     public boolean isWaiting() {
-        return (status & PSP_THREAD_WAITING) != 0;
+        return isWaitingStatus(status);
+    }
+
+    public static boolean isWaitingStatus(int status) {
+    	return (status & PSP_THREAD_WAITING) != 0;
     }
 
     public boolean isWaitingForType(int waitType) {

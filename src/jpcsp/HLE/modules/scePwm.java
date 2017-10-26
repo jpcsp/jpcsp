@@ -28,6 +28,9 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 
+/*
+ * scePwm - Power Management
+ */
 public class scePwm extends HLEModule {
     public static Logger log = Modules.getLogger("scePwm");
 

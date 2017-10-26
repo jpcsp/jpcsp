@@ -47,13 +47,11 @@ public class sceGpio extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x103C3EB2, version = 150)
-    public int sceGpioPortClear(int mask) {
-        return 0;
+    public void sceGpioPortClear(int mask) {
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x310F0CCF, version = 150)
-    public int sceGpioPortSet(int mask) {
-        return 0;
+    public void sceGpioPortSet(int mask) {
     }
 }

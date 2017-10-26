@@ -16,11 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 
@@ -117,13 +121,13 @@ public class InterruptManager extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x58DD8978, version = 150)
-	public int sceKernelRegisterIntrHandler(int intrNumber, int unknown1, TPointer handler, TPointer unknown2, int unknown3) {
+	public int sceKernelRegisterIntrHandler(int intrNumber, int unknown1, TPointer func, int funcArg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.in) TPointer32 handler) {
 		return 0;
 	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xF987B1F0, version = 150)
-	public int sceKernelReleaseIntrHandler() {
+	public int sceKernelReleaseIntrHandler(int intrNumber) {
 		return 0;
 	}
 

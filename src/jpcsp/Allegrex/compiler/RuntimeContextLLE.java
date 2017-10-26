@@ -77,12 +77,7 @@ public class RuntimeContextLLE {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("triggerInterrupt 0x%X(%s)", interruptNumber, IntrManager.getInterruptName(interruptNumber)));
 		}
-		int addr = MMIOHandlerInterruptMan.BASE_ADDRESS;
-		int value = mmio.read32(addr);
-		value |= 1 << interruptNumber;
-		mmio.write32(addr, value);
-
-		triggerException(processor, ExceptionManager.IP2);
+		MMIOHandlerInterruptMan.getInstance().triggerInterrupt(interruptNumber);
 	}
 
 	public static void clearInterrupt(Processor processor, int interruptNumber) {
@@ -94,14 +89,29 @@ public class RuntimeContextLLE {
 			log.debug(String.format("clearInterrupt 0x%X(%s)", interruptNumber, IntrManager.getInterruptName(interruptNumber)));
 		}
 
-		int addr = MMIOHandlerInterruptMan.BASE_ADDRESS;
-		int value = mmio.read32(addr);
-		value &= ~(1 << interruptNumber);
-		mmio.write32(addr, value);
+		MMIOHandlerInterruptMan.getInstance().clearInterrupt(interruptNumber);
+	}
 
-		if (value == 0) {
-			clearException(processor, ExceptionManager.IP2);
+	public static void triggerInterruptException(Processor processor, int IPbits) {
+		if (!isLLEActive()) {
+			return;
 		}
+
+		int cause = processor.cp0.getCause();
+		cause |= (IPbits << 8);
+		processor.cp0.setCause(cause);
+
+		triggerException(processor, ExceptionManager.EXCEP_INT);
+	}
+
+	public static void triggerSyscallException(Processor processor, int syscallCode) {
+		processor.cp0.setSyscallCode(syscallCode);
+
+		int cause = processor.cp0.getCause();
+		cause |= 0x80000000; // BD (Branch Delay Slot): set to 1 when the instruction is located in a branch delay slot
+		processor.cp0.setCause(cause);
+
+		triggerException(processor, ExceptionManager.EXCEP_SYS);
 	}
 
 	public static void triggerException(Processor processor, int exceptionNumber) {
@@ -110,8 +120,7 @@ public class RuntimeContextLLE {
 		}
 
 		int cause = processor.cp0.getCause();
-		cause = (cause & 0xFFFFFF00) | (ExceptionManager.EXCEP_INT << 2);
-		cause |= (exceptionNumber << 8);
+		cause = (cause & 0xFFFFFF00) | (exceptionNumber << 2);
 		processor.cp0.setCause(cause);
 
 		if (Interrupts.isInterruptsEnabled()) {
@@ -119,13 +128,13 @@ public class RuntimeContextLLE {
 		}
 	}
 
-	public static void clearException(Processor processor, int exceptionNumber) {
+	public static void clearInterruptException(Processor processor, int IPbits) {
 		if (!isLLEActive()) {
 			return;
 		}
 
 		int cause = processor.cp0.getCause();
-		cause &= ~(exceptionNumber << 8);
+		cause &= ~(IPbits << 8);
 		processor.cp0.setCause(cause);
 	}
 
@@ -185,13 +194,20 @@ public class RuntimeContextLLE {
 		processor.cp0.setStatus(status);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Calling exception handler at 0x%08X from 0x%08X", ebase, returnAddress));
+			log.debug(String.format("Calling exception handler for %s at 0x%08X from 0x%08X", MMIOHandlerInterruptMan.getInstance().toStringInterruptTriggered(), ebase, returnAddress));
 		}
 
-		try {
-			RuntimeContext.jump(ebase, returnAddress);
-		} catch (Exception e) {
-			log.error("Error while calling code at EBase", e);
+		int address = ebase;
+		while (true) {
+			try {
+				RuntimeContext.jump(address, returnAddress);
+				break;
+			} catch (StackPopException e) {
+				address = e.getRa();
+			} catch (Exception e) {
+				log.error("Error while calling code at EBase", e);
+				break;
+			}
 		}
 	}
 }
