@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
@@ -23,6 +25,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer32;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Model;
 
@@ -77,6 +80,8 @@ public class scePower extends HLEModule {
     // or lower than 1/4 of the PLL clock's frequency.
     protected int busClock = 111;
     protected static final int backlightMaximum = 4;
+    protected int tachyonVoltage1;
+    protected int tachyonVoltage2;
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2B51FE2F, version = 150)
@@ -615,5 +620,37 @@ public class scePower extends HLEModule {
     @HLEFunction(nid = 0x766CD857, version = 150)
     public int scePowerRegisterCallback_660(int slot, int uid) {
     	return scePowerRegisterCallback(slot, uid);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x55D2D789, version = 150)
+    public int scePowerGetTachyonVoltage(@BufferInfo(usage=Usage.out) TPointer32 unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
+    	unknown1.setValue(tachyonVoltage1);
+    	unknown2.setValue(tachyonVoltage2);
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBADA8332, version = 660)
+    public int scePowerGetTachyonVoltage_660(@BufferInfo(usage=Usage.out) TPointer32 unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
+    	return scePowerGetTachyonVoltage(unknown1, unknown2);
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xDD27F119, version = 150)
+    public int scePowerSetTachyonVoltage(int unknown1, int unknown2) {
+    	if (unknown1 != -1) {
+    		tachyonVoltage1 = unknown1 & 0xFFFF;
+    	}
+    	if (unknown2 != -1) {
+    		tachyonVoltage2 = unknown2 & 0xFFFF;
+    	}
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x12F8302D, version = 660)
+    public int scePowerSetTachyonVoltage_660(int unknown1, int unknown2) {
+    	return scePowerSetTachyonVoltage(unknown1, unknown2);
     }
 }
