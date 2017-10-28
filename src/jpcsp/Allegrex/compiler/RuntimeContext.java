@@ -1523,7 +1523,9 @@ public class RuntimeContext {
     	if (reboot.enableReboot) {
     		// This playground implementation is related to the investigation
     		// for the reboot process (flash0:/reboot.bin).
-    		Logger.getRootLogger().setLevel(Level.TRACE);
+    		if (false) {
+    			Logger.getRootLogger().setLevel(Level.TRACE);
+    		}
     		reboot.dumpAllThreads();
     		reboot.dumpAllModulesAndLibraries();
 

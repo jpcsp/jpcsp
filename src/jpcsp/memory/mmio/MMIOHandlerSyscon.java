@@ -50,7 +50,6 @@ import jpcsp.Controller;
 import jpcsp.Emulator;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.sceSyscon;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.LED;
 import jpcsp.hardware.Model;

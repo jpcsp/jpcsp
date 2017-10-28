@@ -17,10 +17,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex;
 
 import static jpcsp.Allegrex.Common.COP0_STATE_CAUSE;
+import static jpcsp.Allegrex.Common.COP0_STATE_CONFIG;
 import static jpcsp.Allegrex.Common.COP0_STATE_EBASE;
 import static jpcsp.Allegrex.Common.COP0_STATE_EPC;
 import static jpcsp.Allegrex.Common.COP0_STATE_ERROR_EPC;
+import static jpcsp.Allegrex.Common.COP0_STATE_SCCODE;
 import static jpcsp.Allegrex.Common.COP0_STATE_STATUS;
+
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 
 /**
  * System Control Coprocessor 0
@@ -41,7 +45,7 @@ public class Cp0State {
 		config |= Math.min(Integer.numberOfTrailingZeros(dataCacheSize) - 12, 7) << 6;
 		// 3 bits to indicate the instruction cache size
 		config |= Math.min(Integer.numberOfTrailingZeros(instructionCacheSize) - 12, 7) << 9;
-		setDataRegister(Common.COP0_STATE_CONFIG, config);
+		setConfig(config);
 	}
 
 	public int getDataRegister(int n) {
@@ -50,6 +54,12 @@ public class Cp0State {
 
 	public void setDataRegister(int n, int value) {
 		data[n] = value;
+
+		// If the status register has been changed,
+		// check if a pending interrupt can be triggered now
+		if (n == COP0_STATE_STATUS) {
+			RuntimeContextLLE.checkPendingInterruptException();
+		}
 	}
 
 	public int getControlRegister(int n) {
@@ -101,6 +111,10 @@ public class Cp0State {
 	}
 
 	public void setSyscallCode(int syscallCode) {
-		setDataRegister(Common.COP0_STATE_SCCODE, syscallCode);
+		setDataRegister(COP0_STATE_SCCODE, syscallCode);
+	}
+
+	public void setConfig(int config) {
+		setDataRegister(COP0_STATE_CONFIG, config);
 	}
 }

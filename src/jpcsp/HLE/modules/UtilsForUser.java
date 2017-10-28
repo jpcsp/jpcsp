@@ -240,7 +240,7 @@ public class UtilsForUser extends HLEModule {
 
     @HLELogging(level="info")
 	@HLEFunction(nid = 0x840259F1, version = 150)
-	public int sceKernelUtilsSha1Digest(TPointer inAddr, int inSize, TPointer outAddr) {
+	public int sceKernelUtilsSha1Digest(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer inAddr, int inSize, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.out) TPointer outAddr) {
     	return SceKernelUtilsSha1Context.digest(inAddr, inSize, outAddr);
 	}
 

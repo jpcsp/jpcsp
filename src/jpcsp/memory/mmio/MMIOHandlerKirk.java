@@ -126,7 +126,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		switch (value) {
 			case 1:
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("KIRK endProcessing 2 on %s", this));
+					log.debug(String.format("KIRK endProcessing 1 on %s", this));
 				}
 				RuntimeContextLLE.clearInterrupt(getProcessor(), PSP_MEMLMD_INTR);
 				break;

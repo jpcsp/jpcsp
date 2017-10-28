@@ -115,15 +115,7 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceI2cModule, "sceI2cMasterTransmitReceive" , 0x000044A8, 0x27BDFFD0, 0xAFB00000),
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceI2cModule, "sceI2cMasterTransmit"        , 0x00003D3C, 0x27BDFFE0, 0xAFB10004),
 			// lowio.prx: syscalls from sceDdr module
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceDdrModule, "sceDdrFlush"                 , 0x000011B4, 0x0000000F, 0x3C02BD00),
-			// syscon.prx: syscalls
-//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconCmdExec"         , 0x0000154C, 0x27BDFFF0, 0xAFB10004),
-//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconCmdExecAsync"    , 0x00001600, 0x27BDFFE0, 0xAFB40010),
-//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetBaryonVersion", 0x00002DB4, 0x27BDFFF0, 0xAFBF0000),
-//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetTimeStamp"    , 0x000025F0, 0x27BDFF90, 0xAFB00060),
-//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetPommelVersion", 0x000033E8, 0x27BDFFF0, 0xAFBF0000),
-//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconGetPowerStatus"  , 0x000034AC, 0x27BDFFF0, 0xAFBF0000),
-//			new PrxSyscallPatchInfo("kd/syscon.prx", sceSysconModule, "sceSysconReadScratchPad"  , 0x0000274C, 0x27BDFF90, 0x24C9FFFF),
+//			new PrxSyscallPatchInfo("kd/lowio.prx", sceDdrModule, "sceDdrFlush"                 , 0x000011B4, 0x0000000F, 0x3C02BD00),
 			// ata.prx: syscalls
 			new PrxSyscallPatchInfo("kd/ata.prx", sceAtaModule, "sceAta_driver_BE6261DA", 0x00002338, 0x0000000F, 0x00042827),
 			// semawm.prx used by sceSemawm.module_start

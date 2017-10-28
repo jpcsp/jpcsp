@@ -46,6 +46,7 @@ public class MMIO extends Memory {
     	addHandler(0xBC500030, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500030));
     	addHandler(0xBC600000, 0x14, new MMIOHandlerSystemTime(0xBC600000));
     	addHandlerRW(0xBC800000, 0x164); // DMA control (dmacplus)
+    	addHandler(0xBD000000, 0x48, new MMIOHandlerDdr(0xBD000000));
     	addHandlerRW(0xBD100000, 0x1204); // NAND flash
     	addHandler(0xBD200000, 0x40, new MMIOHandlerReadWrite16(0xBD200000, 0x40)); // Memory stick
     	addHandlerRW(0xBD300000, 0x44); // Wlan
@@ -78,6 +79,7 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerSyscon.BASE_ADDRESS, 0x28, MMIOHandlerSyscon.getInstance());
     	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
     	addHandlerRW(0xBFC00000, 0x1000);
+    	addHandler(MMIOHandlerMeCore.BASE_ADDRESS, 0x2C, MMIOHandlerMeCore.getInstance());
     }
 
     private void addHandler(int baseAddress, int length, IMMIOHandler handler) {

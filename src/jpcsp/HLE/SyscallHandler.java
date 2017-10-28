@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
+import jpcsp.Processor;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
@@ -181,8 +182,6 @@ public class SyscallHandler {
 	        		int nid = nidMapper.getNidBySyscall(code);
 	        		if (nid != 0) {
 	        			log.error(String.format("NID 0x%08X not activated by default for Firmware Version %d", nid, Emulator.getInstance().getFirmwareVersion()));
-	        		} else if (RuntimeContextLLE.isLLEActive()) {
-	        			RuntimeContextLLE.triggerSyscallException(Emulator.getProcessor(), code);
 	        		} else {
 	        			log.error(String.format("Unknown syscall 0x%05X", code));
 	        		}
@@ -192,7 +191,17 @@ public class SyscallHandler {
     }
 
     public static void syscall(int code) throws Exception {
-    	// All syscalls are now implemented natively in the compiler
-    	unsupportedSyscall(code);
+    	if (RuntimeContextLLE.isLLEActive()) {
+    		Processor processor = Emulator.getProcessor();
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("0x%08X - syscall 0x%05X", processor.cpu.pc, code));
+    		}
+
+    		// For LLE syscalls, trigger a syscall exception
+			RuntimeContextLLE.triggerSyscallException(processor, code);
+    	} else {
+    		// All HLE syscalls are now implemented natively in the compiler
+    		unsupportedSyscall(code);
+    	}
     }
 }

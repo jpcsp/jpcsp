@@ -41,7 +41,7 @@ public class Interrupts {
 			if (interruptsEnabled) {
 				// Interrupts have been enabled
 				IntrManager.getInstance().onInterruptsEnabled();
-				RuntimeContextLLE.onInterruptsEnabled();
+				RuntimeContextLLE.checkPendingInterruptException();
 			}
 		}
 	}

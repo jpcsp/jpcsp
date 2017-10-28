@@ -16,8 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.Emulator.getProcessor;
+
 import org.apache.log4j.Logger;
 
+import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -25,10 +28,12 @@ import jpcsp.Processor;
 import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.reboot;
 import jpcsp.hardware.Interrupts;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerInterruptMan;
+import jpcsp.scheduler.Scheduler;
 
 /**
  * @author gid15
@@ -38,6 +43,7 @@ public class RuntimeContextLLE {
 	public static Logger log = RuntimeContext.log;
 	private static final boolean isLLEActive = reboot.enableReboot;
 	private static Memory mmio;
+	private static int pendingInterruptIPbits;
 
 	private static class CallExceptionHandlerAction implements IAction {
 		private Processor processor;
@@ -77,6 +83,7 @@ public class RuntimeContextLLE {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("triggerInterrupt 0x%X(%s)", interruptNumber, IntrManager.getInterruptName(interruptNumber)));
 		}
+
 		MMIOHandlerInterruptMan.getInstance().triggerInterrupt(interruptNumber);
 	}
 
@@ -97,18 +104,22 @@ public class RuntimeContextLLE {
 			return;
 		}
 
-		int cause = processor.cp0.getCause();
-		cause |= (IPbits << 8);
-		processor.cp0.setCause(cause);
+		pendingInterruptIPbits |= IPbits;
 
-		triggerException(processor, ExceptionManager.EXCEP_INT);
+		checkPendingInterruptException();
 	}
 
 	public static void triggerSyscallException(Processor processor, int syscallCode) {
-		processor.cp0.setSyscallCode(syscallCode);
+		processor.cp0.setSyscallCode(syscallCode << 2);
 
+		// Check if the syscall was executed in a delay slot,
+		// i.e. if the previous instruction is "jr $ra".
 		int cause = processor.cp0.getCause();
-		cause |= 0x80000000; // BD (Branch Delay Slot): set to 1 when the instruction is located in a branch delay slot
+		if (isInstructionInDelaySlot(processor.cpu.pc)) {
+			cause |= 0x80000000; // Set BD flag (Branch Delay Slot)
+		} else {
+			cause &= ~0x80000000; // Clear BD flag (Branch Delay Slot)
+		}
 		processor.cp0.setCause(cause);
 
 		triggerException(processor, ExceptionManager.EXCEP_SYS);
@@ -123,9 +134,10 @@ public class RuntimeContextLLE {
 		cause = (cause & 0xFFFFFF00) | (exceptionNumber << 2);
 		processor.cp0.setCause(cause);
 
-		if (Interrupts.isInterruptsEnabled()) {
-			callExceptionHandler(processor);
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Adding action to call the exception handler"));
 		}
+		Emulator.getScheduler().addAction(new CallExceptionHandlerAction(processor));
 	}
 
 	public static void clearInterruptException(Processor processor, int IPbits) {
@@ -133,70 +145,167 @@ public class RuntimeContextLLE {
 			return;
 		}
 
+		pendingInterruptIPbits &= ~IPbits;
+
 		int cause = processor.cp0.getCause();
 		cause &= ~(IPbits << 8);
 		processor.cp0.setCause(cause);
 	}
 
-	public static void onInterruptsEnabled() {
-		if (!isLLEActive()) {
-			return;
+	private static boolean isInterruptExceptionAllowed(int IPbits) {
+		if (IPbits == 0) {
+			return false;
 		}
 
-		Processor processor = Emulator.getProcessor();
+		if (Interrupts.isInterruptsDisabled()) {
+			return false;
+		}
 
-		// Is the processor already in an exception state?
+		Processor processor = getProcessor();
+
 		int status = processor.cp0.getStatus();
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("cp0 Status=0x%X", status));
 		}
-		if ((status & 0x2) == 0) {
-			// Is an exception pending?
-			int cause = processor.cp0.getCause();
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("cp0 Cause=0x%X", cause));
-			}
-			int excCode = cause & 0x000000FF;
-			if (excCode == ExceptionManager.EXCEP_INT) {
-				int ip = cause & 0x0000FF00;
-				// Is a non-masked interrupt pending?
-				if (ip != 0 && (status & 0x1) != 0 && (ip & status) != 0) {
-					callExceptionHandler(processor);
-				}
-			} else {
-				callExceptionHandler(processor);
-			}
+
+		// Is the processor already in an exception state?
+		if ((status & 0x2) != 0) {
+			return false;
 		}
+
+		// Is the interrupt masked?
+		if ((status & 0x1) == 0 || ((IPbits << 8) & status) == 0) {
+			return false;
+		}
+
+		return true;
 	}
 
-	private static void callExceptionHandler(Processor processor) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Adding action to call the exception handler"));
-		}
-		Emulator.getScheduler().addAction(new CallExceptionHandlerAction(processor));
-	}
-
-	private static void callExceptionHandlerNow(Processor processor) {
+	public static void checkPendingInterruptException() {
 		if (!isLLEActive()) {
 			return;
 		}
 
-		int returnAddress = processor.cpu.pc + 4;
-		// Address in kernel space?
-		if (returnAddress < MemoryMap.START_USERSPACE) {
-			returnAddress |= 0x80000000;
+		if (isInterruptExceptionAllowed(pendingInterruptIPbits)) {
+			Processor processor = getProcessor();
+			int cause = processor.cp0.getCause();
+			cause |= (pendingInterruptIPbits << 8);
+			pendingInterruptIPbits = 0;
+			processor.cp0.setCause(cause);
+
+			triggerException(processor, ExceptionManager.EXCEP_INT);
 		}
-		processor.cp0.setEpc(returnAddress);
+	}
+
+	private static boolean isInstructionInDelaySlot(int address) {
+		Memory mem = Memory.getInstance();
+		int previousInstruction = mem.read32(address - 4);
+		switch ((previousInstruction >> 26) & 0x3F) {
+			case AllegrexOpcodes.J:
+			case AllegrexOpcodes.JAL:
+			case AllegrexOpcodes.BEQ:
+			case AllegrexOpcodes.BNE:
+			case AllegrexOpcodes.BLEZ:
+			case AllegrexOpcodes.BGTZ:
+			case AllegrexOpcodes.BEQL:
+			case AllegrexOpcodes.BNEL:
+			case AllegrexOpcodes.BLEZL:
+			case AllegrexOpcodes.BGTZL:
+				return true;
+			case AllegrexOpcodes.REGIMM:
+				switch ((previousInstruction >> 16) & 0x1F) {
+					case AllegrexOpcodes.BLTZ:
+					case AllegrexOpcodes.BGEZ:
+					case AllegrexOpcodes.BLTZL:
+					case AllegrexOpcodes.BGEZL:
+					case AllegrexOpcodes.BLTZAL:
+					case AllegrexOpcodes.BGEZAL:
+					case AllegrexOpcodes.BLTZALL:
+					case AllegrexOpcodes.BGEZALL:
+						return true;
+				}
+				break;
+			case AllegrexOpcodes.COP1:
+				switch ((previousInstruction >> 21) & 0x1F) {
+					case AllegrexOpcodes.COP1BC:
+						switch ((previousInstruction >> 16) & 0x1F) {
+							case AllegrexOpcodes.BC1F:
+							case AllegrexOpcodes.BC1T:
+							case AllegrexOpcodes.BC1FL:
+							case AllegrexOpcodes.BC1TL:
+								return true;
+						}
+						break;
+				}
+				break;
+		}
+
+		return false;
+	}
+
+	private static boolean instructionCanBeRepeated(int address) {
+		Memory mem = Memory.getInstance();
+		int instruction = mem.read32(address);
+		if (instruction == ThreadManForUser.NOP()) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private static void callExceptionHandlerNow(Processor processor) {
+		int epc = processor.cpu.pc;
+
+		int cause = processor.cp0.getCause();
+		if (isInstructionInDelaySlot(epc)) {
+			if (!instructionCanBeRepeated(epc)) {
+				// We have a problem: the execution of this instruction would be repeated
+				// when returning from the exception. This can't be done with this instruction,
+				// so delay the execution of the exception a little bit
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("The delay slot instruction at 0x%08X can't be repeated, delaying the exception", epc));
+				}
+				long now = Scheduler.getNow();
+				Emulator.getScheduler().addAction(now + 10, new CallExceptionHandlerAction(processor));
+				return;
+			}
+
+			cause |= 0x80000000; // Set BD flag (Branch Delay Slot)
+			epc -= 4; // The EPC is set to the instruction having the delay slot
+		} else {
+			cause &= ~0x80000000; // Clear BD flag (Branch Delay Slot)
+
+			// In case of an Interrupt exception, the EPC need to be set
+			// after the current instruction, only when not in a branch delay slot
+			int excCode = (cause & 0x0000007C) >> 2;
+			if (excCode == ExceptionManager.EXCEP_INT) {
+				epc += 4;
+			}
+		}
+		processor.cp0.setCause(cause);
+
+		// Address in kernel space?
+		if (epc < MemoryMap.START_USERSPACE) {
+			epc |= 0x80000000;
+		}
+
+		// Set the EPC
+		processor.cp0.setEpc(epc);
+
 		int ebase = processor.cp0.getEbase();
 
+		// Set the EXL bit
 		int status = processor.cp0.getStatus();
 		status |= 0x2; // Set EXL bit
 		processor.cp0.setStatus(status);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Calling exception handler for %s at 0x%08X from 0x%08X", MMIOHandlerInterruptMan.getInstance().toStringInterruptTriggered(), ebase, returnAddress));
+			log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X", MMIOHandlerInterruptMan.getInstance().toStringInterruptTriggered(), ebase, epc));
 		}
 
+		// The jump return address is always the following instruction
+		int returnAddress = processor.cpu.pc + 4;
+		// Jump to the EBase address
 		int address = ebase;
 		while (true) {
 			try {

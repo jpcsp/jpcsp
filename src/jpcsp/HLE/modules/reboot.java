@@ -167,8 +167,6 @@ public class reboot extends HLEModule {
 
     	markMMIO();
 
-//		patch(mem, rebootModule, 0x00004AA0, 0x18600007, 0x18600039); // Skip initialization accessing hardware register 0xBC1000nn
-//		patch(mem, rebootModule, 0x00012AD4, 0xFFFFFFFF, 0x00100000); // Change initial value of static variable: https://github.com/uofw/uofw/blob/master/src/reboot/unk.c#L563
 		patch(mem, rebootModule, 0x000060A8, 0x11A0001F, NOP()); // Allow non-encrypted sysmem.prx and loadcore.prx: NOP the test at https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L680
 		patch(mem, rebootModule, 0x00002734, 0x012C182B, ADDIU(_t4, _t4, 1)); // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
 		patch(mem, rebootModule, 0x00002738, 0x1060FFFA, 0x012C182B);         // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40

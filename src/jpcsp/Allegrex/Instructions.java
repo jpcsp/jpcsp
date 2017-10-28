@@ -5634,7 +5634,7 @@ public void interpret(Processor processor, int insn) {
 	processor.cpu.setRegister(rt, value);
 
 	if (log.isDebugEnabled()) {
-		log.debug(String.format("cfc0 reading control register#%d having value 0x%08X", c0cr, value));
+		log.debug(String.format("0x%08X - cfc0 reading control register#%d having value 0x%08X", processor.cpu.pc, c0cr, value));
 	}
 }
 @Override
@@ -5719,7 +5719,7 @@ public void interpret(Processor processor, int insn) {
 	processor.cp0.setControlRegister(c0cr, value);
 
 	if (log.isDebugEnabled()) {
-		log.debug(String.format("ctc0 setting control register#%d to value 0x%08X", c0cr, value));
+		log.debug(String.format("0x%08X - ctc0 setting control register#%d to value 0x%08X", processor.cpu.pc, c0cr, value));
 	}
 }
 @Override

@@ -42,7 +42,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 
 	private void sysregInterruptToOther(int value) {
 		if (value != 0) {
-			RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MECODEC_INTR);
+			MMIOHandlerMeCore.getInstance().interrupt();
 		}
 	}
 
