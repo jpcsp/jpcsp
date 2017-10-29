@@ -60,7 +60,7 @@ public class sceRtc extends HLEModule {
     private long rtcMagicOffset = 62135596800000000L;
     protected static SimpleDateFormat rfc3339 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
 
-    protected long hleGetCurrentTick() {
+    public long hleGetCurrentTick() {
     	TimeNanos timeNanos = Emulator.getClock().currentTimeNanos();
     	return (timeNanos.micros + timeNanos.millis * 1000) + timeNanos.seconds * 1000000L + rtcMagicOffset;
     }

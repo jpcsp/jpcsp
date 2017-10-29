@@ -36,6 +36,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POMMEL_VERSION;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POWER_STATUS;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POWER_SUPPLY_STATUS;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_TIMESTAMP;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_READ_ALARM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_READ_CLOCK;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_READ_SCRATCHPAD;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_RECEIVE_SETPARAM;
@@ -249,15 +250,19 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				}
 				break;
 			case PSP_SYSCON_CMD_READ_SCRATCHPAD:
-				int src = data[PSP_SYSCON_TX_DATA] & 0xFC;
+				int src = (data[PSP_SYSCON_TX_DATA] & 0xFC) >> 2;
 				int size = 1 << (data[PSP_SYSCON_TX_DATA] & 0x03);
-				int[] scratchPad = sceSysconModule.readScratchpad(src, size);
-				for (int i = 0; i < scratchPad.length; i++) {
-					responseData = Utilities.add(responseData, scratchPad[i] & 0xFF);
+				int values[] = new int[size];
+				sceSysconModule.readScratchpad(src, values, size);
+				for (int i = 0; i < size; i++) {
+					responseData = Utilities.add(responseData, values[i] & 0xFF);
 				}
 				break;
 			case PSP_SYSCON_CMD_READ_CLOCK:
 				responseData = addResponseData32(responseData, sceSysconModule.readClock());
+				break;
+			case PSP_SYSCON_CMD_READ_ALARM:
+				responseData = addResponseData32(responseData, sceSysconModule.readAlarm());
 				break;
 			default:
 				log.warn(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));

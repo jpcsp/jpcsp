@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import java.util.Arrays;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.BufferInfo;
@@ -111,8 +113,37 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_LED_WLAN  = 1; // W-LAN LED
     public static final int PSP_SYSCON_LED_POWER = 2; // Power LED
     public static final int PSP_SYSCON_LED_BT    = 3; // Bluetooth LED (only PSP GO)
+    private final int scratchPad[] = new int[32];
+    private int alarm;
 
-    public static String getSysconCmdName(int cmd) {
+	@Override
+	public void start() {
+		Arrays.fill(scratchPad, 0);
+
+		// Unknown 4-bytes value at offset 8
+		int scratchPad8 = 0;
+		for (int i = 0; i < 5; i++, scratchPad8 >>= 8) {
+			scratchPad[i + 8] = scratchPad8 & 0xFF;
+		}
+
+		// 5-bytes value at offset 16
+		int scratchPad16 = (int) (Modules.sceRtcModule.hleGetCurrentTick() >> 19);
+		for (int i = 0; i < 5; i++, scratchPad16 >>= 8) {
+			scratchPad[i + 16] = scratchPad16 & 0xFF;
+		}
+
+		// Unknown 5-bytes value at offset 16
+		int scratchPad24 = 0;
+		for (int i = 0; i < 5; i++, scratchPad24 >>= 8) {
+			scratchPad[i + 24] = scratchPad24 & 0xFF;
+		}
+
+		alarm = 0;
+
+		super.start();
+	}
+
+	public static String getSysconCmdName(int cmd) {
     	if (cmdNames == null) {
     		cmdNames = new String[256];
     		cmdNames[PSP_SYSCON_CMD_NOP] = "NOP";
@@ -230,12 +261,23 @@ public class sceSyscon extends HLEModule {
     	return new int[12];
     }
 
-    public int[] readScratchpad(int src, int size) {
-    	return new int[size];
+    public void readScratchpad(int src, int[] values, int size) {
+    	System.arraycopy(scratchPad, src, values, 0, size);
+    }
+
+    public void writeScratchpad(int dst, int[] src, int size) {
     }
 
     public int readClock() {
     	return 0;
+    }
+
+    public int readAlarm() {
+    	return alarm;
+    }
+
+    public void writeAlarm(int alarm) {
+    	this.alarm = alarm;
     }
 
     /**
@@ -512,10 +554,31 @@ public class sceSyscon extends HLEModule {
     @HLEUnimplemented
 	@HLEFunction(nid = 0xEB277C88, version = 150)
 	public int sceSysconReadScratchPad(int src, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer dst, int size) {
-    	int[] scratchPad = readScratchpad(src, size);
+    	int values[] = new int[size];
+    	readScratchpad(src, values, size);
     	for (int i = 0; i < scratchPad.length; i++) {
-    		dst.setValue8(i, (byte) scratchPad[i]);
+    		dst.setValue8(i, (byte) values[i]);
     	}
+
+    	return 0;
+	}
+
+    /**
+     * Write data to the scratchpad.
+     *
+     * @param dst  The scratchpad address to write to.
+     * @param src  A pointer to the data to copy to the scratchpad.
+     * @param size The size of the data to copy.
+     * @return     0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x65EB6096, version = 150)
+	public int sceSysconWriteScratchPad(int dst, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer src, int size) {
+    	int[] values = new int[size];
+    	for (int i = 0; i < size; i++) {
+    		values[i] = src.getValue8(i);
+    	}
+    	writeScratchpad(dst, values, size);
 
     	return 0;
 	}
@@ -805,5 +868,55 @@ public class sceSyscon extends HLEModule {
 	@HLEFunction(nid = 0xF436BB12, version = 150)
 	public int sceSysconReadClock_660(@BufferInfo(usage=Usage.out) TPointer32 clockAddr) {
     	return sceSysconReadClock(clockAddr);
+    }
+
+    /**
+     * Read the PSP alarm.
+     *
+     * @param alarmAddr Pointer to a s32 where the alarm will be stored.
+     * @return          0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x7A805EE4, version = 150)
+	public int sceSysconReadAlarm(@BufferInfo(usage=Usage.out) TPointer32 alarmAddr) {
+    	alarmAddr.setValue(readAlarm());
+    	return 0;
+    }
+
+    /**
+     * Read the PSP alarm.
+     *
+     * @param alarmAddr Pointer to a s32 where the alarm will be stored.
+     * @return          0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xF2AE6D5E, version = 660)
+	public int sceSysconReadAlarm_660(@BufferInfo(usage=Usage.out) TPointer32 alarmAddr) {
+    	return sceSysconReadAlarm(alarmAddr);
+    }
+
+    /**
+     * Set the PSP alarm.
+     *
+     * @param alarm The alarm value to set the PSP alarm to.
+     * @return      0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x6C911742, version = 150)
+	public int sceSysconWriteAlarm(int alarm) {
+    	writeAlarm(alarm);
+    	return 0;
+    }
+
+    /**
+     * Set the PSP alarm.
+     *
+     * @param alarm The alarm value to set the PSP alarm to.
+     * @return      0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x80711575, version = 150)
+	public int sceSysconWriteAlarm_660(int alarm) {
+    	return sceSysconWriteAlarm(alarm);
     }
 }
