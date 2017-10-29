@@ -37,6 +37,7 @@ import static jpcsp.Allegrex.Common._t9;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
 import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_MODIFIES_INTERRUPT_STATE;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.HLEModuleManager.InternalSyscallNid;
 import static jpcsp.HLE.SyscallHandler.syscallLoadCoreUnmappedImport;
@@ -160,6 +161,7 @@ public class CompilerContext implements ICompilerContext {
     private Label interpretPfxLabel = null;
     private boolean pfxVdOverlap = false;
     public static final String runtimeContextInternalName = Type.getInternalName(RuntimeContext.class);
+    public static final String runtimeContextLLEInternalName = Type.getInternalName(RuntimeContextLLE.class);
     private static final String processorDescriptor = Type.getDescriptor(Processor.class);
     private static final String cpuDescriptor = Type.getDescriptor(CpuState.class);
     private static final String cpuInternalName = Type.getInternalName(CpuState.class);
@@ -261,7 +263,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void loadMMIO() {
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(RuntimeContextLLE.class), "getMMIO", "()" + memoryDescriptor);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextLLEInternalName, "getMMIO", "()" + memoryDescriptor);
     }
 
     private void loadModule(String moduleName) {
@@ -2218,6 +2220,38 @@ public class CompilerContext implements ICompilerContext {
         return !codeInstruction.isBranchTarget() && !codeInstruction.isBranching();
     }
 
+    private boolean previousInstructionModifiesInterruptState(CodeInstruction codeInstruction) {
+    	CodeInstruction previousInstruction = getCodeBlock().getCodeInstruction(codeInstruction.getAddress() - 4);
+    	if (previousInstruction == null) {
+    		return false;
+    	}
+
+    	return previousInstruction.hasFlags(FLAG_MODIFIES_INTERRUPT_STATE);
+    }
+
+    private void startInstructionLLE(CodeInstruction codeInstruction) {
+    	// Check for a pending interrupt only for instructions not being in a delay slot
+    	if (codeInstruction.isDelaySlot()) {
+    		return;
+    	}
+
+    	// TO avoid checking too often for a pending interrupt, check
+    	// only for instructions being the target of the branch or for those marked
+    	// as potentially modifying the interrupt state.
+    	if (!codeInstruction.isBranchTarget() && !previousInstructionModifiesInterruptState(codeInstruction)) {
+    		return;
+    	}
+
+    	Label noPendingInterrupt = new Label();
+        mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextLLEInternalName, "pendingInterruptIPbits", "I");
+        mv.visitJumpInsn(Opcodes.IFEQ, noPendingInterrupt);
+        int returnAddress = codeInstruction.getAddress();
+        loadImm(returnAddress);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextLLEInternalName, "checkPendingInterruptException", "(I)I");
+        visitContinueToAddress(returnAddress, false);
+        mv.visitLabel(noPendingInterrupt);
+    }
+
     public void startInstruction(CodeInstruction codeInstruction) {
     	if (RuntimeContext.enableLineNumbers) {
     		int lineNumber = codeInstruction.getAddress() - getCodeBlock().getLowestAddress();
@@ -2230,6 +2264,10 @@ public class CompilerContext implements ICompilerContext {
 		// The pc is used by the DebuggerMemory or the LLE/MMIO
     	if (Memory.getInstance() instanceof DebuggerMemory || RuntimeContextLLE.isLLEActive()) {
     		storePc();
+    	}
+
+    	if (RuntimeContextLLE.isLLEActive()) {
+    		startInstructionLLE(codeInstruction);
     	}
 
     	if (RuntimeContext.debugCodeInstruction) {
@@ -2294,15 +2332,15 @@ public class CompilerContext implements ICompilerContext {
 
     public void endInstruction() {
         if (codeInstruction != null) {
-            if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXS)) {
+            if (codeInstruction.hasFlags(Instruction.FLAG_USES_VFPU_PFXS)) {
                 disablePfxSrc(vfpuPfxsState);
             }
 
-            if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXT)) {
+            if (codeInstruction.hasFlags(Instruction.FLAG_USES_VFPU_PFXT)) {
                 disablePfxSrc(vfpuPfxtState);
             }
 
-            if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXD)) {
+            if (codeInstruction.hasFlags(Instruction.FLAG_USES_VFPU_PFXD)) {
                 disablePfxDst(vfpuPfxdState);
             }
         }
@@ -3765,23 +3803,23 @@ public class CompilerContext implements ICompilerContext {
     public void startPfxCompiled(boolean isFloat) {
         interpretPfxLabel = null;
 
-        if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXS)) {
+        if (codeInstruction.hasFlags(Instruction.FLAG_USES_VFPU_PFXS)) {
             startPfxCompiled(vfpuPfxsState, "pfxs", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class), isFloat);
         }
 
-        if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXT)) {
+        if (codeInstruction.hasFlags(Instruction.FLAG_USES_VFPU_PFXT)) {
             startPfxCompiled(vfpuPfxtState, "pfxt", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class), isFloat);
         }
 
-        if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXD)) {
+        if (codeInstruction.hasFlags(Instruction.FLAG_USES_VFPU_PFXD)) {
             startPfxCompiled(vfpuPfxdState, "pfxd", Type.getDescriptor(PfxDst.class), Type.getInternalName(PfxDst.class), isFloat);
         }
 
         pfxVdOverlap = false;
-		if (getCodeInstruction().hasFlags(Instruction.FLAG_USE_VFPU_PFXS | Instruction.FLAG_USE_VFPU_PFXD)) {
+		if (getCodeInstruction().hasFlags(Instruction.FLAG_USES_VFPU_PFXS | Instruction.FLAG_USES_VFPU_PFXD)) {
 			pfxVdOverlap |= isVsVdOverlap();
 		}
-		if (getCodeInstruction().hasFlags(Instruction.FLAG_USE_VFPU_PFXT | Instruction.FLAG_USE_VFPU_PFXD)) {
+		if (getCodeInstruction().hasFlags(Instruction.FLAG_USES_VFPU_PFXT | Instruction.FLAG_USES_VFPU_PFXD)) {
 			pfxVdOverlap |= isVtVdOverlap();
 		}
     }
@@ -3935,7 +3973,7 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void compileVFPUInstr(Object cstBefore, int opcode, String mathFunction) {
 		int vsize = getVsize();
-		boolean useVt = getCodeInstruction().hasFlags(Instruction.FLAG_USE_VFPU_PFXT);
+		boolean useVt = getCodeInstruction().hasFlags(Instruction.FLAG_USES_VFPU_PFXT);
 
 		if (mathFunction == null &&
 		    opcode == Opcodes.NOP &&

@@ -24,8 +24,6 @@ import static jpcsp.Allegrex.Common.COP0_STATE_ERROR_EPC;
 import static jpcsp.Allegrex.Common.COP0_STATE_SCCODE;
 import static jpcsp.Allegrex.Common.COP0_STATE_STATUS;
 
-import jpcsp.Allegrex.compiler.RuntimeContextLLE;
-
 /**
  * System Control Coprocessor 0
  *
@@ -54,12 +52,6 @@ public class Cp0State {
 
 	public void setDataRegister(int n, int value) {
 		data[n] = value;
-
-		// If the status register has been changed,
-		// check if a pending interrupt can be triggered now
-		if (n == COP0_STATE_STATUS) {
-			RuntimeContextLLE.checkPendingInterruptException();
-		}
 	}
 
 	public int getControlRegister(int n) {

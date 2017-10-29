@@ -196,19 +196,20 @@ public class RuntimeContext {
 	}
 
 	public static void jump(int address, int returnAddress) throws Exception {
+		returnAddress &= Memory.addressMask;
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
 			log.debug(String.format("RuntimeContext.jump starting address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu._sp));
 		}
 
 		int sp = cpu._sp;
-		while (address != returnAddress) {
+		while ((address & Memory.addressMask) != returnAddress) {
 			try {
 				address = jumpCall(address);
 			} catch (StackPopException e) {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("jumpCall catching StackPopException 0x%08X with $sp=0x%08X, start $sp=0x%08X", e.getRa(), cpu._sp, sp));
 				}
-				if (e.getRa() != returnAddress) {
+				if ((e.getRa() & Memory.addressMask) != returnAddress) {
 					throw e;
 				}
 				break;
@@ -1511,9 +1512,9 @@ public class RuntimeContext {
 		reboot.dumpAllThreads();
 
     	// TODO: Optimize to throw a StackPopException only when the stack if growing too large
-    	throw new StackPopException(epc);
+//    	throw new StackPopException(epc);
 
-//    	return epc;
+    	return epc;
     }
 
     private static int haltCount = 0;

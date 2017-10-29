@@ -48,14 +48,15 @@ public class Common {
         public final static int FLAG_IS_CONDITIONAL = (1 << 5);
         public final static int FLAG_STARTS_NEW_BLOCK = (1 << 6);
         public final static int FLAG_ENDS_BLOCK = (1 << 7);
-        public final static int FLAG_USE_VFPU_PFXS = (1 << 8);
-        public final static int FLAG_USE_VFPU_PFXT = (1 << 9);
-        public final static int FLAG_USE_VFPU_PFXD = (1 << 10);
+        public final static int FLAG_USES_VFPU_PFXS = (1 << 8);
+        public final static int FLAG_USES_VFPU_PFXT = (1 << 9);
+        public final static int FLAG_USES_VFPU_PFXD = (1 << 10);
         public final static int FLAG_CONSUMES_VFPU_PFXT = (1 << 11);
         public final static int FLAG_COMPILED_PFX = (1 << 12);
         public final static int FLAG_WRITES_RT = (1 << 13);
         public final static int FLAG_WRITES_RD = (1 << 14);
         public final static int FLAG_SYSCALL = (1 << 15);
+        public final static int FLAG_MODIFIES_INTERRUPT_STATE = (1 << 16);
         public final static int FLAGS_BRANCH_INSTRUCTION = FLAG_CANNOT_BE_SPLIT | FLAG_HAS_DELAY_SLOT | FLAG_IS_BRANCHING | FLAG_IS_CONDITIONAL;
         public final static int FLAGS_LINK_INSTRUCTION = FLAG_HAS_DELAY_SLOT | FLAG_STARTS_NEW_BLOCK;
 
