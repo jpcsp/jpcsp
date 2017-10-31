@@ -23,9 +23,6 @@
 #include <string.h>
 #include <assert.h>
 
-extern int sceNetApctlAddHandler(void *, int);
-extern int sceNetApctlDelHandler(int);
-
 #define printf pspDebugScreenPrintf
 
 PSP_MODULE_INFO("Network Test", 0x1000, 1, 1);
