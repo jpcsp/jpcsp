@@ -38,7 +38,7 @@ public class MMIO extends Memory {
 
     	addHandlerRW(0xBC000000, 0x54); // Memory interface
     	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, MMIOHandlerSystemControl.SIZE_OF, MMIOHandlerSystemControl.getInstance());
-    	addHandlerRW(0xBC200000, 0x4); // sysreg
+    	addHandlerRW(0xBC200000, 0x8); // sceSysreg from lowio.prx
     	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, MMIOHandlerInterruptMan.getInstance());
     	addHandler(0xBC500000, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500000));
     	addHandler(0xBC500010, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500010));
@@ -50,8 +50,7 @@ public class MMIO extends Memory {
     	addHandlerRW(0xBD100000, 0x1204); // NAND flash
     	addHandler(0xBD200000, 0x40, new MMIOHandlerReadWrite16(0xBD200000, 0x40)); // Memory stick
     	addHandlerRW(0xBD300000, 0x44); // Wlan
-    	addHandlerRW(0xBD400000, 0x8F0); // Graphics engine (ge)
-    	addHandlerRO(0xBD400100, 0x4);
+    	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0x8F0, MMIOHandlerGe.getInstance());
     	addHandlerRW(0xBD500000, 0x94); // Graphics engine (ge)
     	addHandlerRO(0xBD500010, 0x4);
     	addHandlerRW(0xBD600000, 0x50); // Ata

@@ -1543,7 +1543,8 @@ public class RuntimeContext {
     				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
     				break;
     			case 2:
-//    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_GE_INTR);
+    				// The thread SCE_VSH_GRAPHICS is calling sceDisplayWaitVblankStart().
+    				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
     				break;
     			default:
 //    				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
