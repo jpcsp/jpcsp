@@ -24,6 +24,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include "systemctrl.h"
 #include "common.h"
+#if DUMP_NAND
+#  include <pspnand_driver.h>
+   int sceNandReadExtraOnly(u32 ppn, void *spare, u32 len);
+#endif
 
 PSP_MODULE_INFO("JpcspTrace", PSP_MODULE_KERNEL, 1, 0);
 
@@ -775,6 +779,131 @@ int loadUserModule(SceSize args, void * argp) {
 	return 0;
 }
 
+#if DUMP_NAND
+void dumpNand() {
+	SceUID fdFuseId = ioOpen("ms0:/nand.fuseid", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fdFuseId < 0) {
+		printLog("dumpNand - Cannot create nand.fuseid file\n");
+		return;
+	}
+
+	// sceSysregGetFuseId
+	u32 fuseId0 = *((u32 *) (0xBC100090));
+	u32 fuseId1 = *((u32 *) (0xBC100094));
+	ioWrite(fdFuseId, &fuseId0, 4);
+	ioWrite(fdFuseId, &fuseId1, 4);
+	ioClose(fdFuseId);
+
+	SceUID fdBlock = ioOpen("ms0:/nand.block", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fdBlock < 0) {
+		printLog("dumpNand - Cannot create nand.block file\n");
+		return;
+	}
+
+	SceUID fdSpare = ioOpen("ms0:/nand.spare", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fdSpare < 0) {
+		printLog("dumpNand - Cannot create nand.spare file\n");
+		return;
+	}
+
+	SceUID fdResult = ioOpen("ms0:/nand.result", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fdResult < 0) {
+		printLog("dumpNand - Cannot create nand.result file\n");
+		return;
+	}
+
+	int pageSize = sceNandGetPageSize();
+	int pagesPerBlock = sceNandGetPagesPerBlock();
+	int totalBlocks = sceNandGetTotalBlocks();
+	printLogH("sceNandGetPageSize ", pageSize, "\n");
+	printLogH("sceNandGetPagesPerBlock ", pagesPerBlock, "\n");
+	printLogH("sceNandGetTotalBlocks ", totalBlocks, "\n");
+
+	int blockBufferSize = pageSize * pagesPerBlock;
+	void *blockBuffer = alloc(blockBufferSize);
+	int spareBufferSize = 16 * pagesPerBlock;
+	void *spareBuffer = alloc(spareBufferSize);
+
+	int block;
+	for (block = 0; block < totalBlocks; block++) {
+		u32 ppn = block * pagesPerBlock;
+
+		memset(blockBuffer, 0, blockBufferSize);
+		memset(spareBuffer, 0, spareBufferSize);
+
+		sceNandLock(0);
+		int result = sceNandReadPages(ppn, blockBuffer, NULL, pagesPerBlock);
+		sceNandReadExtraOnly(ppn, spareBuffer, pagesPerBlock);
+		sceNandUnlock();
+
+		ioWrite(fdBlock, blockBuffer, blockBufferSize);
+		ioWrite(fdSpare, spareBuffer, spareBufferSize);
+		ioWrite(fdResult, &result, 4);
+	}
+
+	ioClose(fdResult);
+	ioClose(fdSpare);
+	ioClose(fdBlock);
+}
+#endif
+
+#if DUMP_MEMORYSTICK
+void dumpMemoryStick() {
+	SceUID fdBlock = ioOpen("ms0:/ms.block", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fdBlock < 0) {
+		printLog("dumpMemoryStick - Cannot create ms.block file\n");
+		return;
+	}
+
+	SceUID ms = ioOpen("msstor0p1:", PSP_O_RDONLY, 0777);
+	if (ms < 0) {
+		printLog("dumpMemoryStick - Cannot open the MemoryStick\n");
+		return;
+	}
+
+	int result = sceIoLseek(ms, 0, 0);
+	if (result < 0) {
+		printLog("dumpMemoryStick - Cannot seek on the MemoryStick\n");
+		return;
+	}
+
+	int bufferSize = 0x10000;
+	void *buffer = alloc(bufferSize);
+
+	result = sceIoIoctl(ms, 0x2125001, NULL, 0, buffer, 4);
+	printLogHH("sceIoIoctl 0x2125001 returned ", result, ", out=", ((u32 *) buffer)[0], "\n");
+
+	result = sceIoIoctl(ms, 0x2125803, NULL, 0, buffer, 0x60);
+	printLogH("sceIoIoctl 0x2125803 returned ", result, "\n");
+	printLogMem("   out=", (int) buffer, 0x60);
+	SceUID fd = ioOpen("ms0:/ms.ioctl.0x02125803", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fd >= 0) {
+		ioWrite(fd, buffer, 0x60);
+		ioClose(fd);
+	}
+
+	result = sceIoIoctl(ms, 0x2125008, NULL, 0, buffer, 4);
+	printLogHH("sceIoIoctl 0x2125008 returned ", result, ", out=", ((u32 *) buffer)[0], "\n");
+
+	result = sceIoIoctl(ms, 0x2125009, NULL, 0, buffer, 4);
+	printLogHH("sceIoIoctl 0x2125009 returned ", result, ", out=", ((u32 *) buffer)[0], "\n");
+
+	int i;
+	for (i = 0; i < 0x1000; i++) {
+		result = sceIoRead(ms, buffer, bufferSize);
+		if (result < 0) {
+			printLog("dumpMemoryStick - Cannot read the MemoryStick\n");
+			return;
+		}
+
+		ioWrite(fdBlock, buffer, bufferSize);
+	}
+
+	ioClose(ms);
+	ioClose(fdBlock);
+}
+#endif
+
 // Module Start
 int module_start(SceSize args, void * argp) {
 	// Find Allocator Functions in Memory
@@ -804,6 +933,13 @@ int module_start(SceSize args, void * argp) {
 	openLogFile();
 
 	printLog("JpcspTrace - module_start\n");
+
+	#if DUMP_NAND
+	dumpNand();
+	#endif
+	#if DUMP_MEMORYSTICK
+	dumpMemoryStick();
+	#endif
 
 	int initKeyConfig = sceKernelInitKeyConfig();
 	if (initKeyConfig == PSP_INIT_KEYCONFIG_VSH) {

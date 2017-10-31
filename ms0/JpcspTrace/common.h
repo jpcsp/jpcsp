@@ -23,6 +23,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define DEFAULT_LOG_BUFFER_SIZE		8*1024
 #define DUMP_VIDEOCODEC_FRAMES	0
 #define DUMP_sceMpegBaseCscAvc_CALLS	0
+#define DUMP_sceMpegBaseYCrCbCopy_CALLS	0
+#define DUMP_NAND			0
+#define DUMP_MEMORYSTICK	0
+#define DUMP_MMIO			0
+
 
 #define ALIGN_UP(n, alignment) (((n) + ((alignment) - 1)) & ~((alignment) - 1))
 
@@ -53,6 +58,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define NID_sceIoClose_stargate	0x747A373E
 #define NID_sceVideocodecDecode 0xDBA273FA
 #define NID_sceMpegBaseCscAvc	0x91929A21
+#define NID_sceMpegBaseYCrCbCopy	0x7AC0321A
 
 #define IS_sceIoOpen_NID(nid) ((nid) == NID_sceIoOpen || (nid) == NID_sceIoOpen_stargate)
 #define IS_sceIoClose_NID(nid) ((nid) == NID_sceIoClose || (nid) == NID_sceIoClose_stargate)

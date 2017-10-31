@@ -4,7 +4,7 @@ OBJS = main.o common.o
 INCDIR = ../../../procfw/include
 LIBDIR = ../../../procfw/libs
 
-LIBS = -lpspsystemctrl_kernel -lpsprtc -lpsputility -lpspuser
+LIBS = -lpspsystemctrl_kernel -lpsprtc -lpsputility -lpspuser -lpspnand_driver
 
 CFLAGS = -Os -G0 -Wall -fno-pic -fno-inline
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti

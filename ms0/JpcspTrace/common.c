@@ -57,6 +57,10 @@ int videocodecFrame = 0;
 int sceMpegBaseCscAvcCall = 0;
 #endif
 
+#if DUMP_sceMpegBaseYCrCbCopy_CALLS
+int sceMpegBaseYCrCbCopyCall = 0;
+#endif
+
 int (* ioOpen)(const char *s, int flags, int permissions) = userIoOpen;
 int (* ioWrite)(SceUID id, const void *data, int size) = userIoWrite;
 int (* ioClose)(SceUID id) = userIoClose;
@@ -614,6 +618,41 @@ void syscallLog(const SyscallInfo *syscallInfo, int inOut, const u32 *parameters
 		return;
 	}
 
+#if DUMP_MMIO
+#	define LW(a) (*((volatile u32*)(a)))
+#	define SW(a, n) (*((volatile u32*)(a))=(n))
+
+	u32 i0 = LW(0xBC300004);
+	SW(0xBC300004, 0xFFFFFFFF);
+	u32 i1 = LW(0xBC300004);
+	SW(0xBC300004, i0);
+	printLogHH("0xBC300004 write32: ", i0, " -> ", i1, "\n");
+
+	u32 i2 = LW(0xBC300008);
+	SW(0xBC300008, 0xFFFFFFFF);
+	u32 i3 = LW(0xBC300008);
+	SW(0xBC300008, i2);
+	printLogHH("0xBC300008 write32: ", i2, " -> ", i3, "\n");
+
+	u32 fuseConfig = LW(0xBC100098);
+	printLogH("fuseConfig: ", fuseConfig, "\n");
+
+	int n = 0;
+	u32 n4 = _lw(0xBE740004);
+	u32 n8 = _lw(0xBE740008);
+	while (n < 20) {
+		u32 i4 = _lw(0xBE740004);
+		u32 i8 = _lw(0xBE740008);
+		if (i4 != n4 || i8 != n8) {
+			printLogHH("0xBE740004: ", i4, " ", i8, "\n");
+			printLogHH("0xBC300000: ", _lw(0xBC300000), " ", _lw(0xBC300010), "\n");
+			n++;
+			n4 = i4;
+			n8 = i8;
+		}
+	}
+#endif
+
 	if (syscallInfo->flags & FLAG_LOG_FREEMEM) {
 		// Allocate the logBuffer first to report a proper free mem size
 		allocLogBuffer();
@@ -794,6 +833,9 @@ if (syscallInfo->nid == 0x410B34AA && _lb(parameter + 2) == 0 && _lb(parameter +
 			int height = _lw(parameters[3] + 0);
 			int size = (bufferWidth * (height << 4)) << 2;
 			int addr = parameters[0] | 0x40000000; // Uncached video memory
+			if ((addr & 0xFFFFF000) == 0x44110000) {
+				addr &= 0xFFFFF000;
+			}
 			while (size > 0) {
 				int length = commonInfo->maxLogBufferLength;
 				if (length > size) {
@@ -811,6 +853,42 @@ if (syscallInfo->nid == 0x410B34AA && _lb(parameter + 2) == 0 && _lb(parameter +
 		}
 		s = flushBuffer(buffer, s);
 		sceMpegBaseCscAvcCall++;
+	}
+#endif
+
+#if DUMP_sceMpegBaseYCrCbCopy_CALLS
+	if (syscallInfo->nid == NID_sceMpegBaseYCrCbCopy) {
+		char *fileName = buffer;
+		s = append(buffer, "ms0:/tmp/sceMpegBaseYCrCbCopy.");
+		s = appendInt(s, sceMpegBaseYCrCbCopyCall, 0);
+		SceUID fd = ioOpen(fileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+		if (fd >= 0) {
+			int flags = parameters[2];
+			int h = _lw(parameters[1] + 0);
+			int w = _lw(parameters[1] + 4);
+			int size1 = ((w + 16) >> 5) * (h >> 1) * 16;
+			int size2 = (w >> 5) * (h >> 1) * 16;
+			ioWrite(fd, &flags, 4);
+			ioWrite(fd, &h, 4);
+			ioWrite(fd, &w, 4);
+			ioWrite(fd, &size1, 4);
+			ioWrite(fd, &size2, 4);
+			if (flags & 1) {
+				ioWrite(fd, (void *) _lw(parameters[0] + 16), size1);
+				ioWrite(fd, (void *) _lw(parameters[0] + 20), size2);
+				ioWrite(fd, (void *) _lw(parameters[0] + 32), size1 >> 1);
+				ioWrite(fd, (void *) _lw(parameters[0] + 36), size2 >> 1);
+			}
+			if (flags & 2) {
+				ioWrite(fd, (void *) _lw(parameters[0] + 24), size1);
+				ioWrite(fd, (void *) _lw(parameters[0] + 28), size2);
+				ioWrite(fd, (void *) _lw(parameters[0] + 40), size1 >> 1);
+				ioWrite(fd, (void *) _lw(parameters[0] + 44), size2 >> 1);
+			}
+			ioClose(fd);
+		}
+		s = flushBuffer(buffer, s);
+		sceMpegBaseYCrCbCopyCall++;
 	}
 #endif
 
