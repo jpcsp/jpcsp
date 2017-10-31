@@ -21,6 +21,8 @@ int done = 0;
 FontLibraryHandle libHandle;
 FontHandle fontHandle;
 int totalAlloc = 0;
+int charCode = 0xFF20;
+int backgroundColor = 1;
 
 
 void *fontAlloc(void *data, u32 size)
@@ -144,7 +146,7 @@ void sceFontGetFontInfoTest()
 void sceFontGetCharInfoTest(int charCode)
 {
 	char charString[20];
-	if (charCode < ' ') {
+	if (charCode < ' ' || charCode > 0x7F) {
 		sprintf(charString, "0x%04X", charCode);
 	} else {
 		sprintf(charString, "'%c'", charCode);
@@ -169,8 +171,12 @@ void printBuffer(u8 *buffer, int bufWidth)
 
 	for (y = 0; y < 20; y++) {
 		for (x = 0, i = 0; x < 20; x++, i++) {
-			int pixelColor = buffer[y * bufWidth + x] >> 4;
-			line[i] = pixels[pixelColor];
+			int pixelColor = buffer[y * bufWidth + x];
+			if (pixelColor == backgroundColor) {
+				line[i] = '-';
+			} else {
+				line[i] = pixels[pixelColor >> 4];
+			}
 		}
 		line[i] = '\0';
 		pspDebugScreenPrintf(">%s<\n", line);
@@ -185,15 +191,15 @@ void sceFontGetCharGlyphImageTest(int charCode)
 	u8 *buffer = malloc(bufWidth * bufHeight);
 
 	glyphImage.pixelFormat = PSP_FONT_PIXELFORMAT_8;
-	glyphImage.xPos64 = 2 << 6;
-	glyphImage.yPos64 = 2 << 6;
+	glyphImage.xPos64 = (2 << 6) + 32;
+	glyphImage.yPos64 = (2 << 6) + 32;
 	glyphImage.bufWidth = bufWidth;
 	glyphImage.bufHeight = bufHeight;
 	glyphImage.bytesPerLine = bufWidth;
 	glyphImage.pad = 0;
 	glyphImage.buffer = buffer;
 
-	memset(buffer, 0, bufWidth * bufHeight);
+	memset(buffer, backgroundColor, bufWidth * bufHeight);
 	int result = sceFontGetCharGlyphImage(fontHandle, charCode, &glyphImage);
 	pspDebugScreenPrintf("sceFontGetCharGlyphImage returns 0x%08X\n", result);
 	printBuffer(buffer, bufWidth);
@@ -217,7 +223,7 @@ void sceFontGetCharGlyphImage_ClipTest(int charCode)
 	glyphImage.pad = 0;
 	glyphImage.buffer = buffer;
 
-	memset(buffer, 0, bufWidth * bufHeight);
+	memset(buffer, backgroundColor, bufWidth * bufHeight);
 	int result = sceFontGetCharGlyphImage_Clip(fontHandle, charCode, &glyphImage, 3, 3, 11, 7);
 	pspDebugScreenPrintf("sceFontGetCharGlyphImage_Clip returns 0x%08X\n", result);
 	printBuffer(buffer, bufWidth);
@@ -317,9 +323,9 @@ void printInstructions()
 	pspDebugScreenPrintf("Press Cross to test sceFontNewLib\n");
 	pspDebugScreenPrintf("Press Square to test sceFontOpen\n");
 	pspDebugScreenPrintf("Press Circle to test sceFontGetFontInfo\n");
-	pspDebugScreenPrintf("Press Left to test sceFontGetCharInfo('R')\n");
-	pspDebugScreenPrintf("Press Right to test sceFontGetCharGlyphImage('R')\n");
-	pspDebugScreenPrintf("Press Down to test sceFontGetCharGlyphImage_Clip('R')\n");
+	pspDebugScreenPrintf("Press Left to test sceFontGetCharInfo('%c')\n", charCode + 1);
+	pspDebugScreenPrintf("Press Right to test sceFontGetCharGlyphImage('%c')\n", charCode);
+	pspDebugScreenPrintf("Press Down to test sceFontGetCharGlyphImage_Clip('%c')\n", charCode);
 	pspDebugScreenPrintf("Press Up to test sceFontFindOptimumFont()\n");
 	pspDebugScreenPrintf("Press RTrigger to test sceFontClose()\n");
 	pspDebugScreenPrintf("Press LTrigger to test sceFontOpenUserFile()\n");
@@ -408,24 +414,25 @@ int main_thread(SceSize _argc, ScePVoid _argp)
 
 		if (buttonDown & PSP_CTRL_LEFT)
 		{
+			charCode++;
+
 			pspDebugScreenClear();
 			printInstructions();
-			sceFontGetCharInfoTest('R');
-			sceFontGetCharInfoTest(0x000D);
+			sceFontGetCharInfoTest(charCode);
 		}
 
 		if (buttonDown & PSP_CTRL_RIGHT)
 		{
 			pspDebugScreenClear();
 			printInstructions();
-			sceFontGetCharGlyphImageTest('R');
+			sceFontGetCharGlyphImageTest(charCode);
 		}
 
 		if (buttonDown & PSP_CTRL_DOWN)
 		{
 			pspDebugScreenClear();
 			printInstructions();
-			sceFontGetCharGlyphImage_ClipTest('R');
+			sceFontGetCharGlyphImage_ClipTest(charCode);
 		}
 
 		if (buttonDown & PSP_CTRL_UP)
