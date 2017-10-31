@@ -381,6 +381,52 @@ void test_general()
     }
 }
 
+int closeFd;
+
+int close_thread(SceSize args, void *argp)
+{
+	int result;
+	int busy;
+	SceInt64 async;
+
+	busy = sceIoPollAsync(closeFd, &async);
+	result = sceIoClose(closeFd);
+	printf("Other thread sceIoPollAsync result=0x%X\n", busy);
+	printf("Other thread sceIoClose result=0x%08X\n", result);
+
+	return 0;
+}
+
+void test_close()
+{
+	int result;
+	SceInt64 async;
+
+	int fd = sceIoOpen("test.txt", PSP_O_RDONLY, 0);
+	if (fd >= 0) {
+		int thid = sceKernelCreateThread("close_thread", close_thread, 0x20, 0x4000, 0, 0);
+
+		result = sceIoReadAsync(fd, g_read_buf, sizeof(g_read_buf));
+		if (thid >= 0) {
+			closeFd = fd;
+			sceKernelStartThread(thid, 0, 0x0);
+		}
+		printf("sceIoReadAsync result=0x%08X\n", result);
+
+		//result = sceIoClose(fd);
+		//printf("sceIoClose result=0x%08X\n", result);
+
+		result = sceIoWaitAsync(fd, &async);
+		printf("sceIoWaitAsync result=0x%08X\n", result);
+
+		result = sceIoClose(fd);
+		printf("sceIoClose result=0x%08X\n", result);
+	} else {
+		printf("sceIoOpen 'test.txt', result=0x%08X\n", fd);
+	}
+}
+
+
 int io_thread(SceSize args, void *argp)
 {
     set_cwd(g_cwd);
@@ -389,11 +435,12 @@ int io_thread(SceSize args, void *argp)
     //test_toe();
     //test_pt2();
     //test_mercury();
-    test_kao();
+    //test_kao();
 
     //test_asyncresult();
     //test_callback();
     //test_general();
+    test_close();
 
     io_done = 1;
     return 0;
