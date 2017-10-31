@@ -28,7 +28,7 @@ void runTest()
 	SceIoDirent dir;
 	u8 buffer[1044];
 	while (1) {
-		memset(&dir, 0, sizeof(dir));
+		memset(&dir, -1, sizeof(dir));
 		memset(buffer, 0, sizeof(buffer));
 		((u32 *) buffer)[0] = sizeof(buffer);
 		dir.d_private = buffer;
@@ -37,6 +37,12 @@ void runTest()
 		if (result <= 0) {
 			break;
 		}
+		if (dir.d_name[0] == '.') {
+			pspDebugScreenPrintf("dir_name = 0x%02X 0x%02X 0x%02X 0x%02X\n", dir.d_name[0], dir.d_name[1], dir.d_name[2], dir.d_name[3]);
+		} else {
+			pspDebugScreenPrintf("d_name = '%s'\n", dir.d_name);
+		}
+		pspDebugScreenPrintf("d_name = '%s'\n", dir.d_name);
 		int i;
 		for (i = 0; i < sizeof(buffer); i++) {
 			if (buffer[i] != 0) {
