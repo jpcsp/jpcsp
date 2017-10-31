@@ -20,10 +20,8 @@ import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.HLE.Modules.sceAtaModule;
-import static jpcsp.HLE.Modules.sceDdrModule;
 import static jpcsp.HLE.Modules.sceI2cModule;
 import static jpcsp.HLE.Modules.sceNandModule;
-import static jpcsp.HLE.Modules.sceSysconModule;
 import static jpcsp.HLE.Modules.sceSysregModule;
 import static jpcsp.HLE.modules.ThreadManForUser.JR;
 import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
@@ -61,6 +59,8 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			new PrxPatchInfo("kd/loadcore.prx", 0x00003D58, 0x10C0FFBE, NOP()),      // Allow linking user stub to kernel lib
 			new PrxPatchInfo("kd/loadcore.prx", 0x00005D1C, 0x5040FE91, NOP()),      // Allow loading of non-encrypted modules for apiType==80 (Disable test at https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L1059)
 			new PrxPatchInfo("kd/loadcore.prx", 0x00005D20, 0x3C118002, NOP()),      // Allow loading of non-encrypted modules for apiType==80 (Disable test at https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L1059)
+			new PrxPatchInfo("kd/loadcore.prx", 0x00005790, 0x5462FFF4, NOP()),      // Allow loading of non-encrypted modules for apiType==0x300 (Disable test at https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L1149)
+			new PrxPatchInfo("kd/loadcore.prx", 0x00005794, 0x3C118002, NOP()),      // Allow loading of non-encrypted modules for apiType==0x300 (Disable test at https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L1149)
 			new PrxPatchInfo("kd/loadcore.prx", 0x00004378, 0x5120FFDB, NOP()),      // Allow loading of kernel modules being not encrypted (set "execInfo->isKernelMod = SCE_TRUE" even when "decryptMode == 0": https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L118)
 			// lowio.prx: syscalls from sceSysreg module
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregGetFuseId"        , 0x00001AF4, 0x3C03BC10, 0x3C07BC10),

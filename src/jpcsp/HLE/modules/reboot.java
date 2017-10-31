@@ -26,6 +26,7 @@ import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
 import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.HLE.HLEModuleManager.InternalSyscallNid;
+import static jpcsp.HLE.Modules.LoadCoreForKernelModule;
 import static jpcsp.HLE.Modules.sceNandModule;
 import static jpcsp.HLE.modules.InitForKernel.SCE_INIT_APITYPE_KERNEL_REBOOT;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Addr;
@@ -37,6 +38,7 @@ import static jpcsp.HLE.modules.ThreadManForUser.LW;
 import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
 import static jpcsp.HLE.modules.ThreadManForUser.NOP;
 import static jpcsp.HLE.modules.ThreadManForUser.SB;
+import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
 import static jpcsp.format.PSP.PSP_HEADER_SIZE;
 import static jpcsp.util.Utilities.patch;
 
@@ -167,6 +169,8 @@ public class reboot extends HLEModule {
 
     	markMMIO();
 
+    	addFunctionNames();
+
 		patch(mem, rebootModule, 0x000060A8, 0x11A0001F, NOP()); // Allow non-encrypted sysmem.prx and loadcore.prx: NOP the test at https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L680
 		patch(mem, rebootModule, 0x00002734, 0x012C182B, ADDIU(_t4, _t4, 1)); // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
 		patch(mem, rebootModule, 0x00002738, 0x1060FFFA, 0x012C182B);         // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
@@ -262,7 +266,7 @@ public class reboot extends HLEModule {
     	return true;
     }
 
-    private static void markMMIO() {
+    private void markMMIO() {
     	int[] addresses = {
     			0x0800A310, 0x0800A33C, 0x0800A3A4, 0x0800A3D8, 0x0800A3E0,
     			0x0800A3E8, 0x0800A3F0, 0x0800A3F8, 0x0800A400, 0x0800A40C,
@@ -327,7 +331,26 @@ public class reboot extends HLEModule {
 
     private static void patchSyscall(int offset, HLEModule hleModule, String functionName, Memory mem, SceModule rebootModule, int oldCode1, int oldCode2) {
 		patch(mem, rebootModule, offset + 0, oldCode1, JR());
-		patch(mem, rebootModule, offset + 4, oldCode2, ThreadManForUser.SYSCALL(hleModule, functionName));
+		patch(mem, rebootModule, offset + 4, oldCode2, SYSCALL(hleModule, functionName));
+    }
+
+    private void addFunctionNames() {
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0080, "sceInit.patchGames");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0218, "sceInit.InitCBInit");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x02E0, "sceInit.ExitInit");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x03F4, "sceInit.ExitCheck");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0438, "sceInit.PowerUnlock");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x048C, "sceInit.invoke_init_callback");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x05F0, "sceInit.sub_05F0");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x06A8, "sceInit.CleanupPhase1");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0790, "sceInit.CleanupPhase2");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x08F8, "sceInit.ProtectHandling");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0CFC, "sceInit.sub_0CFC_IsModuleInUserPartition");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0D4C, "sceInit.ClearFreeBlock");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0DD0, "sceInit.sub_0DD0_IsApplicationTypeGame");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x1038, "sceInit.LoadModuleBufferAnchorInBtcnf");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x1240, "sceInit.InitThreadEntry");
+    	LoadCoreForKernelModule.addFunctionName("sceLoaderCore", 0x56B8, "sceLoaderCore.PspUncompress");
     }
 
     public static void dumpAllModulesAndLibraries() {

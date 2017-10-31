@@ -1538,7 +1538,10 @@ public class RuntimeContext {
     				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
     				break;
     			case 1:
-//    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_MECODEC_INTR);
+    				// The init callback (sub_00000B08 registered by sceKernelSetInitCallback())
+    				// of display_01g.prx is requiring at least one VBLANK interrupt
+    				// as it is executing sceDisplayWaitVblankStart().
+    				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
     				break;
     			case 2:
 //    				RuntimeContextLLE.triggerInterrupt(processor, IntrManager.PSP_GE_INTR);
