@@ -41,6 +41,7 @@ import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
+import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer32;
@@ -1060,5 +1061,23 @@ public class SysMemForKernel extends HLEModule {
 		}
 
 		return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x40B744A4, version = 150)
+    public int SysMemForKernel_40B744A4(int unknown) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBFE08689, version = 150)
+    public int SysMemForKernel_BFE08689(@CanBeNull @StringInfo(maxLength=64) PspString unknown) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEA1CABF1, version = 150)
+    public int sceKernelFillFreeBlock(int mpid, int c) {
+    	return 0;
     }
 }
