@@ -167,4 +167,24 @@ public class InitForKernel extends HLEModule {
 	public int sceKernelInitParamSfo() {
 		return 0;
 	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x040C934B, version = 150)
+	public int sceKernelQueryInitCB() {
+		// Has no parameters
+		return 0;
+	}
+
+	/**
+	 * Register a chunk in the system.
+	 *
+	 * @param chunkId The ID of the chunk to hold the memory block ID. Between 0 - 15.
+	 * @param blockId The memory block ID to register.
+	 * @return        The blockId stored into the chunk on success, otherwise SCE_ERROR_KERNEL_ILLEGAL_CHUNK_ID.
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x1D3256BA, version = 150)
+	public int sceKernelRegisterChunk(int chunkId, int blockId) {
+		return 0;
+	}
 }
