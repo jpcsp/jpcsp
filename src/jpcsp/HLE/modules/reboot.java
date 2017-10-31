@@ -351,6 +351,7 @@ public class reboot extends HLEModule {
     	LoadCoreForKernelModule.addFunctionName("sceInit",       0x1038, "sceInit.LoadModuleBufferAnchorInBtcnf");
     	LoadCoreForKernelModule.addFunctionName("sceInit",       0x1240, "sceInit.InitThreadEntry");
     	LoadCoreForKernelModule.addFunctionName("sceLoaderCore", 0x56B8, "sceLoaderCore.PspUncompress");
+    	LoadCoreForKernelModule.addFunctionName("sceGE_Manager", 0x0258, "sceGE_Manager.sceGeInit");
     }
 
     public static void dumpAllModulesAndLibraries() {
@@ -409,7 +410,7 @@ public class reboot extends HLEModule {
 
     	dumpThreadTypeList(mem, mem.read32(threadManInfo + 1228));
     	dumpThread(mem, currentThread, "Current thread");
-    	if (nextThread != currentThread) {
+    	if (nextThread != 0 && nextThread != currentThread) {
     		dumpThread(mem, nextThread, "Next thread");
     	}
     	dumpThreadList(mem, threadManInfo + 1176, "Sleeping thread");

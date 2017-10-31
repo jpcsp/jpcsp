@@ -16,10 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import static jpcsp.Emulator.getProcessor;
-import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
-
-import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 
 public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {

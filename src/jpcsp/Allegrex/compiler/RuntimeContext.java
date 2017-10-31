@@ -152,7 +152,7 @@ public class RuntimeContext {
         IExecutable executable = getExecutable(address);
         if (executable == null) {
             // TODO Return to interpreter
-            log.error("RuntimeContext.jumpCall - Cannot find executable");
+            log.error("jumpCall - Cannot find executable");
             throw new RuntimeException("Cannot find executable");
         }
 
@@ -189,7 +189,7 @@ public class RuntimeContext {
 		}
 
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-        	log.debug(String.format("RuntimeContext.jumpCall returning 0x%08X", returnValue));
+        	log.debug(String.format("jumpCall returning 0x%08X", returnValue));
         }
 
         return returnValue;
@@ -197,7 +197,7 @@ public class RuntimeContext {
 
 	public static void jump(int address, int returnAddress) throws Exception {
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.jump starting address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu._sp));
+			log.debug(String.format("jump starting address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu._sp));
 		}
 
 		int sp = cpu._sp;
@@ -206,7 +206,7 @@ public class RuntimeContext {
 				address = jumpCall(address);
 			} catch (StackPopException e) {
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("jumpCall catching StackPopException 0x%08X with $sp=0x%08X, start $sp=0x%08X", e.getRa(), cpu._sp, sp));
+					log.debug(String.format("jump catching StackPopException 0x%08X with $sp=0x%08X, start $sp=0x%08X", e.getRa(), cpu._sp, sp));
 				}
 				if ((e.getRa() & addressMask) != (returnAddress & addressMask)) {
 					throw e;
@@ -216,13 +216,13 @@ public class RuntimeContext {
 		}
 
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.jump returning address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu._sp));
+			log.debug(String.format("jump returning address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu._sp));
 		}
 	}
 
     public static int call(int address) throws Exception {
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.call address=0x%08X, $ra=0x%08X", address, cpu._ra));
+			log.debug(String.format("call address=0x%08X, $ra=0x%08X", address, cpu._ra));
 		}
         int returnValue = jumpCall(address);
 
@@ -231,7 +231,7 @@ public class RuntimeContext {
 
 	public static int executeInterpreter(int address) throws Exception {
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.executeInterpreter address=0x%08X", address));
+			log.debug(String.format("executeInterpreter address=0x%08X", address));
 		}
 
 		boolean interpret = true;
