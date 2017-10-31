@@ -196,20 +196,19 @@ public class RuntimeContext {
 	}
 
 	public static void jump(int address, int returnAddress) throws Exception {
-		returnAddress &= Memory.addressMask;
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
 			log.debug(String.format("RuntimeContext.jump starting address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu._sp));
 		}
 
 		int sp = cpu._sp;
-		while ((address & Memory.addressMask) != returnAddress) {
+		while ((address & addressMask) != (returnAddress & addressMask)) {
 			try {
 				address = jumpCall(address);
 			} catch (StackPopException e) {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("jumpCall catching StackPopException 0x%08X with $sp=0x%08X, start $sp=0x%08X", e.getRa(), cpu._sp, sp));
 				}
-				if ((e.getRa() & Memory.addressMask) != returnAddress) {
+				if ((e.getRa() & addressMask) != (returnAddress & addressMask)) {
 					throw e;
 				}
 				break;
@@ -920,9 +919,9 @@ public class RuntimeContext {
     }
 
     public static IExecutable getExecutable(int address) {
-    	address &= addressMask;
+    	int maskedAddress = address & addressMask;
     	// Check if we have already the executable in the fastExecutableLookup array
-		int fastExecutableLoopukIndex = (address - MemoryMap.START_RAM) >> 2;
+		int fastExecutableLoopukIndex = (maskedAddress - MemoryMap.START_RAM) >> 2;
 		IExecutable executable;
 		if (fastExecutableLoopukIndex >= 0 && fastExecutableLoopukIndex < fastExecutableLookup.length) {
 			executable = fastExecutableLookup[fastExecutableLoopukIndex];
@@ -931,7 +930,7 @@ public class RuntimeContext {
 		}
 
 		if (executable == null) {
-	        CodeBlock codeBlock = getCodeBlock(address);
+	        CodeBlock codeBlock = getCodeBlock(maskedAddress);
 	        if (codeBlock == null) {
 	            executable = Compiler.getInstance().compile(address);
 	        } else {

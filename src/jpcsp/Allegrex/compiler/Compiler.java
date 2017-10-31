@@ -358,7 +358,6 @@ public class Compiler implements ICompiler {
         if (log.isDebugEnabled()) {
             log.debug(String.format("Compiler.interpret Block 0x%08X", startAddress));
         }
-        startAddress = startAddress & Memory.addressMask;
         CodeBlock codeBlock = new CodeBlock(startAddress, instanceIndex);
 
         codeBlock.addCodeBlock();
@@ -401,7 +400,6 @@ public class Compiler implements ICompiler {
         }
         int maxBranchInstructions = Integer.MAX_VALUE; // 5 for FRONTIER_1337 homebrew
         MemorySections memorySections = MemorySections.getInstance();
-        startAddress = startAddress & Memory.addressMask;
         CodeBlock codeBlock = new CodeBlock(startAddress, instanceIndex);
         Stack<Integer> pendingBlockAddresses = new Stack<Integer>();
         pendingBlockAddresses.clear();
@@ -496,7 +494,7 @@ public class Compiler implements ICompiler {
                         }
                     }
 
-                    boolean useMMIO = useMMIOAddresses.contains(pc);
+                    boolean useMMIO = useMMIOAddresses.contains(pc & Memory.addressMask);
 
                     codeBlock.addInstruction(pc, opcode, insn, isBranchTarget, isBranching, branchingTo, useMMIO);
                     pc = npc;

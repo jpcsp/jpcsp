@@ -2387,6 +2387,9 @@ public class CompilerContext implements ICompilerContext {
 
     public static int getClassAddress(String name) {
     	String hexAddress = name.substring(name.lastIndexOf("_") + 1);
+    	if (hexAddress.length() == 8) {
+    		return (int) Long.parseLong(hexAddress, 16);
+    	}
 
         return Integer.parseInt(hexAddress, 16);
     }

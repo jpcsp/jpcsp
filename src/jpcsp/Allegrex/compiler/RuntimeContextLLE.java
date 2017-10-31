@@ -23,7 +23,6 @@ import org.apache.log4j.Logger;
 import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -246,11 +245,6 @@ public class RuntimeContextLLE {
 			cause &= ~0x80000000; // Clear BD flag (Branch Delay Slot)
 		}
 		processor.cp0.setCause(cause);
-
-		// Address in kernel space?
-		if (epc < MemoryMap.START_USERSPACE) {
-			epc |= 0x80000000;
-		}
 
 		// Set the EPC
 		processor.cp0.setEpc(epc);
