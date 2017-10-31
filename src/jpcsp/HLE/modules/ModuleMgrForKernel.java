@@ -32,6 +32,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
@@ -231,6 +232,24 @@ public class ModuleMgrForKernel extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xC3DDABEF, version = 150)
     public int ModuleMgrForKernel_C3DDABEF() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1CF0B794, version = 150)
+    public int sceKernelLoadModuleBufferBootInitBtcnf(int modSize, @BufferInfo(lengthInfo=LengthInfo.previousParameter, usage=Usage.in) TPointer modBuf, int flags, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.in) TPointer option, int unknown) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x955D6CB2, version = 150)
+    public int sceKernelLoadModuleBootInitBtcnf(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer modBuf, int flags, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.in) TPointer option) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4E38EA1D, version = 150)
+    public int sceKernelLoadModuleBufferForRebootKernel(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer modBuf, int flags, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.in) TPointer option, int unknown) {
     	return 0;
     }
 }
