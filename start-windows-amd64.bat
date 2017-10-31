@@ -1,3 +1,4 @@
+x
 @echo off
 rem CD to the path of the command line, this is required when running as an administrator
 cd /D "%~dp0"
