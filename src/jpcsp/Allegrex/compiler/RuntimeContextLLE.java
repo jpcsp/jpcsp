@@ -95,15 +95,24 @@ public class RuntimeContextLLE {
 
 		// Check if the syscall was executed in a delay slot,
 		// i.e. if the previous instruction is "jr $ra".
+		int returnAddress;
 		int cause = processor.cp0.getCause();
+
 		if (isInstructionInDelaySlot(processor.cpu.pc)) {
 			cause |= 0x80000000; // Set BD flag (Branch Delay Slot)
+
+			// The syscall will return to the address contained in the $ra register
+			returnAddress = processor.cpu._ra;
 		} else {
 			cause &= ~0x80000000; // Clear BD flag (Branch Delay Slot)
+
+			// The syscall will return to the address following the syscall instruction
+			returnAddress = processor.cpu.pc + 4;
 		}
+
 		processor.cp0.setCause(cause);
 
-		triggerException(processor, ExceptionManager.EXCEP_SYS);
+		triggerException(processor, ExceptionManager.EXCEP_SYS, returnAddress);
 	}
 
 	private static void setExceptionCause(Processor processor, int exceptionNumber) {
@@ -112,7 +121,7 @@ public class RuntimeContextLLE {
 		processor.cp0.setCause(cause);
 	}
 
-	public static void triggerException(Processor processor, int exceptionNumber) {
+	public static void triggerException(Processor processor, int exceptionNumber, int returnAddress) {
 		if (!isLLEActive()) {
 			return;
 		}
@@ -125,8 +134,6 @@ public class RuntimeContextLLE {
 			log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X", MMIOHandlerInterruptMan.getInstance().toStringInterruptTriggered(), ebase, processor.cp0.getEpc()));
 		}
 
-		// The jump return address is always the following instruction
-		int returnAddress = processor.cpu.pc + 4;
 		// Jump to the EBase address
 		int address = ebase;
 		while (true) {
