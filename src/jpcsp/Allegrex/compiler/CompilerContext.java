@@ -2685,6 +2685,9 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	private boolean useMMIO() {
+		if (codeInstruction == null) {
+			return false;
+		}
 		return codeInstruction.useMMIO();
 	}
 
