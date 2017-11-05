@@ -16,7 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.externalge;
 
+import static jpcsp.graphics.RE.externalge.ExternalGE.numberRendererThread;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
+import static jpcsp.graphics.RE.externalge.NativeUtils.coreInterpret;
+import static jpcsp.graphics.RE.externalge.NativeUtils.getCoreIntrStat;
+import static jpcsp.graphics.RE.externalge.NativeUtils.getCoreMadr;
+import static jpcsp.graphics.RE.externalge.NativeUtils.getCoreSadr;
+import static jpcsp.graphics.RE.externalge.NativeUtils.getRendererIndexCount;
+import static jpcsp.graphics.RE.externalge.NativeUtils.isCoreCtrlActive;
+import static jpcsp.graphics.RE.externalge.NativeUtils.updateMemoryUnsafeAddr;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -61,37 +69,37 @@ public class CoreThreadMMIO extends Thread {
 	@Override
 	public void run() {
 		while (!exit) {
-			if (!NativeUtils.isCoreCtrlActive()) {
-				if (!Emulator.pause && log.isDebugEnabled()) {
-					log.debug(String.format("CoreThreadMMIO not active... waiting"));
+			if (!isCoreCtrlActive() || getCoreMadr() == getCoreSadr()) {
+				if (!Emulator.pause && log.isTraceEnabled()) {
+					log.trace(String.format("CoreThreadMMIO not active... waiting"));
 				}
 
-				waitForSync(100);
+				waitForSync(1000);
 			} else {
-				NativeUtils.updateMemoryUnsafeAddr();
+				updateMemoryUnsafeAddr();
 
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("CoreThreadMMIO processing 0x%08X", NativeUtils.getCoreMadr()));
 				}
 
-				while (NativeUtils.coreInterpret()) {
-					NativeUtils.updateMemoryUnsafeAddr();
+				while (coreInterpret()) {
+					updateMemoryUnsafeAddr();
 
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("CoreThreadMMIO looping at 0x%08X", NativeUtils.getCoreMadr()));
 					}
 
-					if (ExternalGE.numberRendererThread > 0 && NativeUtils.getRendererIndexCount() > 0) {
+					if (numberRendererThread > 0 && getRendererIndexCount() > 0) {
 						break;
 					}
 				}
 
-				int intrStat = NativeUtils.getCoreIntrStat();
+				int intrStat = getCoreIntrStat();
 				if ((intrStat & INTR_STAT_END) != 0) {
 					MMIOHandlerGe.getInstance().triggerGeInterrupt();
 				}
 
-				if (ExternalGE.numberRendererThread > 0 && NativeUtils.getRendererIndexCount() > 0) {
+				if (numberRendererThread > 0 && getRendererIndexCount() > 0) {
 					ExternalGE.render();
 				}
 			}

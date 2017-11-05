@@ -74,6 +74,10 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 		return getPreviousVblankSchedule() + displaySyncMicros;
 	}
 
+	public static void setMaxVblankInterrupts(int maxVblankInterrupts) {
+		MMIOHandlerDisplayController.maxVblankInterrupts = maxVblankInterrupts;
+	}
+
 	private void scheduleNextVblankInterrupt() {
 		if (maxVblankInterrupts == 0) {
 			return;

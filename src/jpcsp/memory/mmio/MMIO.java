@@ -16,20 +16,33 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.MemoryMap.START_IO_0;
+
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.hardware.Screen;
 
 public class MMIO extends Memory {
     private final Memory mem;
     private final Map<Integer, IMMIOHandler> handlers = new HashMap<Integer, IMMIOHandler>();
+    protected static final boolean[] validMemoryPage = new boolean[Memory.validMemoryPage.length];
 
     public MMIO(Memory mem) {
     	this.mem = mem;
+    }
+
+    @Override
+    public boolean allocate() {
+    	System.arraycopy(Memory.validMemoryPage, 0, validMemoryPage, 0, validMemoryPage.length);
+    	Arrays.fill(validMemoryPage, START_IO_0 >>> MEMORY_PAGE_SHIFT, (MemoryMap.END_EXCEPTIO_VEC >>> MEMORY_PAGE_SHIFT) + 1, true);
+
+        return true;
     }
 
     @Override
@@ -38,14 +51,16 @@ public class MMIO extends Memory {
 
     	addHandlerRW(0xBC000000, 0x54); // Memory interface
     	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, MMIOHandlerSystemControl.SIZE_OF, MMIOHandlerSystemControl.getInstance());
-    	addHandlerRW(0xBC200000, 0x8); // sceSysreg from lowio.prx
-    	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, MMIOHandlerInterruptMan.getInstance());
+    	addHandler(0xBC200000, 0x8, new MMIOHandlerCpuBusFrequency(0xBC200000));
+    	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, MMIOHandlerInterruptMan.getProxyInstance());
     	addHandler(0xBC500000, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500000));
     	addHandler(0xBC500010, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500010));
     	addHandler(0xBC500020, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500020));
     	addHandler(0xBC500030, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500030));
     	addHandler(0xBC600000, 0x14, new MMIOHandlerSystemTime(0xBC600000));
-    	addHandlerRW(0xBC800000, 0x164); // DMA control (dmacplus)
+    	addHandler(0xBC800000, 0x1D4, new MMIOHandlerDmacplus(0xBC800000));
+    	addHandlerRW(0xBCC00000, 0x74);
+    	addHandlerRO(0xBCC00010, 0x4);
     	addHandler(0xBD000000, 0x48, new MMIOHandlerDdr(0xBD000000));
     	addHandlerRW(0xBD100000, 0x1204); // NAND flash
     	addHandler(0xBD200000, 0x40, new MMIOHandlerReadWrite16(0xBD200000, 0x40)); // Memory stick
@@ -81,7 +96,7 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerMeCore.BASE_ADDRESS, 0x2C, MMIOHandlerMeCore.getInstance());
     }
 
-    private void addHandler(int baseAddress, int length, IMMIOHandler handler) {
+    protected void addHandler(int baseAddress, int length, IMMIOHandler handler) {
     	addHandler(baseAddress, length, null, handler);
     }
 
@@ -97,11 +112,11 @@ public class MMIO extends Memory {
     	}
     }
 
-    private void addHandlerRW(int baseAddress, int length) {
+    protected void addHandlerRW(int baseAddress, int length) {
     	addHandler(baseAddress, length, new MMIOHandlerReadWrite(baseAddress, length));
     }
 
-    private void addHandlerRO(int baseAddress, int length) {
+    protected void addHandlerRO(int baseAddress, int length) {
     	addHandler(baseAddress, length, new MMIOHandlerReadOnly(baseAddress, length));
     }
 
@@ -110,10 +125,7 @@ public class MMIO extends Memory {
     }
 
     public static boolean isAddressGood(int address) {
-    	if (Memory.isAddressGood(address)) {
-    		return true;
-    	}
-    	return address >= 0xBC000000 && address < 0xBFC01000;
+        return validMemoryPage[address >>> MEMORY_PAGE_SHIFT];
     }
 
     @Override

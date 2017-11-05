@@ -16,16 +16,23 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.patch;
 
+import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._a1;
+import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.HLE.Modules.UtilsForKernelModule;
 import static jpcsp.HLE.Modules.sceAtaModule;
 import static jpcsp.HLE.Modules.sceI2cModule;
 import static jpcsp.HLE.Modules.sceNandModule;
 import static jpcsp.HLE.Modules.sceSysregModule;
+import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
 import static jpcsp.HLE.modules.ThreadManForUser.JR;
+import static jpcsp.HLE.modules.ThreadManForUser.LUI;
 import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
 import static jpcsp.HLE.modules.ThreadManForUser.NOP;
+import static jpcsp.HLE.modules.ThreadManForUser.ORI;
+import static jpcsp.HLE.modules.ThreadManForUser.SW;
 import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
 import static jpcsp.util.Utilities.read8;
 import static jpcsp.util.Utilities.readUnaligned16;
@@ -36,11 +43,14 @@ import static jpcsp.util.Utilities.writeUnaligned32;
 import java.util.LinkedList;
 import java.util.List;
 
+import jpcsp.Allegrex.Common;
 import jpcsp.HLE.HLEModule;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.AbstractProxyVirtualFileSystem;
 import jpcsp.HLE.VFS.ByteArrayVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.format.Elf32Header;
 import jpcsp.util.Utilities;
 
@@ -122,7 +132,14 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			new PrxPatchInfo("kd/semawm.prx", 0x00005620, 0x27BDFFD0, JR()),           // Disable the internal module signature check
 			new PrxPatchInfo("kd/semawm.prx", 0x00005624, 0xAFBF0024, MOVE(_v0, _zr)), // Disable the internal module signature check
 			// me_wrapper.prx used by sceMeCodecWrapper.module_start
-			new PrxPatchInfo("kd/me_wrapper.prx", 0x00001F38, 0x24050001, MOVE(_a1, _zr)), // Disable wait in sub_00001C30() (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1169 changed second argument from 1 to 0)
+//			new PrxPatchInfo("kd/me_wrapper.prx", 0x00001F38, 0x24050001, MOVE(_a1, _zr)), // Disable wait in sub_00001C30() (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1169 changed second argument from 1 to 0)
+			new PrxPatchInfo("kd/me_wrapper.prx", 0x00001FEC, 0x14400013, NOP()), // Disable check for "KL4E" in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1064)
+//			new PrxPatchInfo("kd/me_wrapper.prx", 0x00001FFC, 0x3C048830, LUI(_a0, 0x8837)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)
+//			new PrxPatchInfo("kd/me_wrapper.prx", 0x00002000, 0x014B2821, ORI(_a0, _a0, 0xD724)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)
+			new PrxPatchInfo("kd/me_wrapper.prx", 0x00001FFC, 0x3C048830, LUI(_a0, 0x8840)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)
+			new PrxPatchInfo("kd/me_wrapper.prx", 0x00002000, 0x014B2821, ORI(_a0, _a0, 0x0000)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)
+			new PrxPatchInfo("kd/me_wrapper.prx", 0x00002004, 0x25460004, SW(_a0, _sp, 0)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)
+			new PrxPatchInfo("kd/me_wrapper.prx", 0x00002008, 0x0C0008D5, MOVE(_v0, _zr)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)
 			// Last entry is a dummy one
 			new PatchInfo("XXX dummy XXX", 0, 0, 0) // Dummy entry for easier formatting of the above entries
 	};

@@ -21,6 +21,7 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MEMLMD_INTR;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.util.Utilities;
 
 public class MMIOHandlerKirk extends MMIOHandlerBase {
 	public static final int RESULT_SUCCESS = 0;
@@ -105,6 +106,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				setStatus(STATUS_PHASE1_MASK, STATUS_PHASE1_IN_PROGRESS);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("KIRK startProcessing 1 on %s", this));
+					log.debug(String.format("source: %s", Utilities.getMemoryDump(sourceAddr, 0x100)));
 				}
 				result = RESULT_SUCCESS;
 				setStatus(STATUS_PHASE1_MASK, STATUS_PHASE1_COMPLETED);
@@ -114,6 +116,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				setStatus(STATUS_PHASE2_MASK, STATUS_PHASE2_IN_PROGRESS);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("KIRK startProcessing 2 on %s", this));
+					log.debug(String.format("source: %s", Utilities.getMemoryDump(sourceAddr, 0x100)));
 				}
 				break;
 			default:

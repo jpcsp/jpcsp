@@ -22,9 +22,16 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.graphics.GeCommands;
 
 public class sceDmacplus extends HLEModule {
     public static Logger log = Modules.getLogger("sceDmacplus");
+    public static final int pixelFormatFromCode[] = {
+    		GeCommands.PSM_32BIT_ABGR8888,
+    		GeCommands.PSM_16BIT_BGR5650,
+    		GeCommands.PSM_16BIT_ABGR5551,
+    		GeCommands.PSM_16BIT_ABGR4444
+    };
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xE9B746F9, version = 150)
@@ -40,7 +47,11 @@ public class sceDmacplus extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x88ACB6F1, version = 150)
-	public int sceDmacplusLcdcSetFormat(int unknown1, int unknown2, int unknown3) {
+	public int sceDmacplusLcdcSetFormat(int displayWidth, int displayFrameBufferWidth, int displayPixelFormatCoded) {
+    	int pixelFormat = pixelFormatFromCode[displayPixelFormatCoded];
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceDmacplusLcdcSetFormat pixelFormat=%d", pixelFormat));
+    	}
     	return 0;
 	}
 

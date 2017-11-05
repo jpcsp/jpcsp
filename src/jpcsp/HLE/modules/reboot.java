@@ -327,6 +327,8 @@ public class reboot extends HLEModule {
     		compiler.addMMIORange(address, 1);
     	}
     	compiler.addMMIORange(MemoryMap.START_KERNEL, 0x800000);
+
+    	compiler.addMMIORange(0xBFC00C00, 0x240);
     }
 
     private static void patchSyscall(int offset, HLEModule hleModule, String functionName, Memory mem, SceModule rebootModule, int oldCode1, int oldCode2) {
@@ -335,23 +337,24 @@ public class reboot extends HLEModule {
     }
 
     private void addFunctionNames() {
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0080, "sceInit.patchGames");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0218, "sceInit.InitCBInit");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x02E0, "sceInit.ExitInit");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x03F4, "sceInit.ExitCheck");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0438, "sceInit.PowerUnlock");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x048C, "sceInit.invoke_init_callback");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x05F0, "sceInit.sub_05F0");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x06A8, "sceInit.CleanupPhase1");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0790, "sceInit.CleanupPhase2");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x08F8, "sceInit.ProtectHandling");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0CFC, "sceInit.sub_0CFC_IsModuleInUserPartition");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0D4C, "sceInit.ClearFreeBlock");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x0DD0, "sceInit.sub_0DD0_IsApplicationTypeGame");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x1038, "sceInit.LoadModuleBufferAnchorInBtcnf");
-    	LoadCoreForKernelModule.addFunctionName("sceInit",       0x1240, "sceInit.InitThreadEntry");
-    	LoadCoreForKernelModule.addFunctionName("sceLoaderCore", 0x56B8, "sceLoaderCore.PspUncompress");
-    	LoadCoreForKernelModule.addFunctionName("sceGE_Manager", 0x0258, "sceGE_Manager.sceGeInit");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x0080, "sceInit.patchGames");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x0218, "sceInit.InitCBInit");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x02E0, "sceInit.ExitInit");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x03F4, "sceInit.ExitCheck");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x0438, "sceInit.PowerUnlock");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x048C, "sceInit.invoke_init_callback");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x05F0, "sceInit.sub_05F0");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x06A8, "sceInit.CleanupPhase1");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x0790, "sceInit.CleanupPhase2");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x08F8, "sceInit.ProtectHandling");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x0CFC, "sceInit.sub_0CFC_IsModuleInUserPartition");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x0D4C, "sceInit.ClearFreeBlock");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x0DD0, "sceInit.sub_0DD0_IsApplicationTypeGame");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x1038, "sceInit.LoadModuleBufferAnchorInBtcnf");
+    	LoadCoreForKernelModule.addFunctionName("sceInit",           0x1240, "sceInit.InitThreadEntry");
+    	LoadCoreForKernelModule.addFunctionName("sceLoaderCore",     0x56B8, "sceLoaderCore.PspUncompress");
+    	LoadCoreForKernelModule.addFunctionName("sceGE_Manager",     0x0258, "sceGE_Manager.sceGeInit");
+    	LoadCoreForKernelModule.addFunctionName("sceMeCodecWrapper", 0x1C04, "sceMeCodecWrapper.decrypt");
     }
 
     public static void dumpAllModulesAndLibraries() {

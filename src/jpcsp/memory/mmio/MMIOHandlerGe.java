@@ -99,6 +99,7 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.stall = stall;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreSadr(stall);
+			CoreThreadMMIO.getInstance().sync();
 		}
 	}
 

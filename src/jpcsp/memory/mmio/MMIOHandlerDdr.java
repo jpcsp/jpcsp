@@ -19,6 +19,8 @@ package jpcsp.memory.mmio;
 import jpcsp.Emulator;
 
 public class MMIOHandlerDdr extends MMIOHandlerBase {
+	private int unknown40;
+
 	public MMIOHandlerDdr(int baseAddress) {
 		super(baseAddress);
 	}
@@ -34,6 +36,8 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 		int value;
 		switch (address - baseAddress) {
 			case 0x04: value = 0; break;
+			case 0x30: value = 0; break; // Unknown, used during sceDdrChangePllClock()
+			case 0x40: value = unknown40; unknown40 ^= 0x100; break; // Unknown, used during sceDdrChangePllClock()
 			default: value = super.read32(address); break;
 		}
 
@@ -48,6 +52,10 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
 			case 0x04: doFlush(value); break;
+			case 0x30: break; // Unknown, used during sceDdrChangePllClock()
+			case 0x34: break; // Unknown, used during sceDdrChangePllClock()
+			case 0x40: break; // Unknown, used during sceDdrChangePllClock()
+			case 0x44: break; // Unknown, used during sceDdrChangePllClock()
 			default: super.write32(address, value); break;
 		}
 
