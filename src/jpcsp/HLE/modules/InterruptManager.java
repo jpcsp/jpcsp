@@ -40,7 +40,7 @@ public class InterruptManager extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0xCA04A2B9, version = 150)
-	public int sceKernelRegisterSubIntrHandler(int intrNumber, int subIntrNumber, int handlerAddress, int handlerArgument) {
+	public int sceKernelRegisterSubIntrHandler(int intrNumber, int subIntrNumber, TPointer handlerAddress, int handlerArgument) {
 		return Managers.intr.sceKernelRegisterSubIntrHandler(intrNumber, subIntrNumber, handlerAddress, handlerArgument);
 	}
 
@@ -133,7 +133,7 @@ public class InterruptManager extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xFFA8B183, version = 660)
-	public int sceKernelRegisterSubIntrHandler_660(int intrNumber, int subIntrNumber, int handlerAddress, int handlerArgument) {
+	public int sceKernelRegisterSubIntrHandler_660(int intrNumber, int subIntrNumber, TPointer handlerAddress, int handlerArgument) {
 		return sceKernelRegisterSubIntrHandler(intrNumber, subIntrNumber, handlerAddress, handlerArgument);
 	}
 

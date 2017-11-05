@@ -695,7 +695,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x9CD29D6C, version = 150)
-    public int sceSysregSetMasterPriv() {
+    public int sceSysregSetMasterPriv(int privilege, boolean on) {
     	return 0;
     }
 

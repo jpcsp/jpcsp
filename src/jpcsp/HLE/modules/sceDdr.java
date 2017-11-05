@@ -43,4 +43,11 @@ public class sceDdr extends HLEModule {
     public int sceDdrChangePllClock_660(int unknown) {
     	return sceDdrChangePllClock(unknown);
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x95B9A692, version = 150)
+    public int sceDdr_driver_95B9A692() {
+    	// Has no parameters
+    	return 0;
+    }
 }

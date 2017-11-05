@@ -507,16 +507,18 @@ public class LoadCoreForKernel extends HLEModule {
 
     	int[] nids = getFunctionNIDsByAddress(mem, registeredLibs, address);
     	if (nids == null) {
-    		// Verify if this not the address of a stub call:
-    		//   J   realAddress
-    		//   NOP
-        	if ((mem.read32(address) >>> 26) == AllegrexOpcodes.J) {
-        		if (mem.read32(address + 4) == ThreadManForUser.NOP()) {
-        			int jumpAddress = (mem.read32(address) & 0x03FFFFFF) << 2;
+    		if (Memory.isAddressGood(address)) {
+	    		// Verify if this not the address of a stub call:
+	    		//   J   realAddress
+	    		//   NOP
+	        	if ((mem.read32(address) >>> 26) == AllegrexOpcodes.J) {
+	        		if (mem.read32(address + 4) == ThreadManForUser.NOP()) {
+	        			int jumpAddress = (mem.read32(address) & 0x03FFFFFF) << 2;
 
-        			nids = getFunctionNIDsByAddress(mem, registeredLibs, jumpAddress);
-        		}
-        	}
+	        			nids = getFunctionNIDsByAddress(mem, registeredLibs, jumpAddress);
+	        		}
+	        	}
+    		}
     	}
 
     	if (nids != null) {
