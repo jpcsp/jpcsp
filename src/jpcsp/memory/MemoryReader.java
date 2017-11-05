@@ -23,14 +23,17 @@ import java.nio.IntBuffer;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 
 /**
  * @author gid15
  *
  */
 public class MemoryReader {
-	private static int getMaxLength(int address) {
+	private static int getMaxLength(int rawAddress) {
 		int length;
+
+		int address = rawAddress & Memory.addressMask;
 
 		if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {
 			length = MemoryMap.END_RAM - address + 1;
@@ -38,6 +41,8 @@ public class MemoryReader {
 			length = MemoryMap.END_VRAM - address + 1;
 		} else if (address >= MemoryMap.START_SCRATCHPAD && address <= MemoryMap.END_SCRATCHPAD) {
 			length = MemoryMap.END_SCRATCHPAD - address + 1;
+		} else if (rawAddress >= MemoryMap.START_IO_0 && rawAddress <= MemoryMap.END_IO_1) {
+			length = MemoryMap.END_IO_1 - address + 1;
 		} else {
 			length = 0;
 		}
@@ -72,27 +77,29 @@ public class MemoryReader {
 	 * @return        the MemoryReader
 	 */
 	public static IMemoryReader getMemoryReader(int address, int length, int step) {
-		address &= Memory.addressMask;
-		if (RuntimeContext.hasMemoryInt()) {
-			return getFastMemoryReader(address, step);
-		}
+		if (Memory.isAddressGood(address)) {
+			address &= Memory.addressMask;
+			if (RuntimeContext.hasMemoryInt()) {
+				return getFastMemoryReader(address, step);
+			}
 
-		if (!DebuggerMemory.isInstalled()) {
-			Buffer buffer = Memory.getInstance().getBuffer(address, length);
+			if (!DebuggerMemory.isInstalled()) {
+				Buffer buffer = Memory.getInstance().getBuffer(address, length);
 
-			if (buffer instanceof IntBuffer) {
-				IntBuffer intBuffer = (IntBuffer) buffer;
-				switch (step) {
-				case 1: return new MemoryReaderInt8(intBuffer, address);
-				case 2: return new MemoryReaderInt16(intBuffer, address);
-				case 4: return new MemoryReaderInt32(intBuffer, address);
-				}
-			} else if (buffer instanceof ByteBuffer) {
-				ByteBuffer byteBuffer = (ByteBuffer) buffer;
-				switch (step) {
-				case 1: return new MemoryReaderByte8(byteBuffer, address);
-				case 2: return new MemoryReaderByte16(byteBuffer, address);
-				case 4: return new MemoryReaderByte32(byteBuffer, address);
+				if (buffer instanceof IntBuffer) {
+					IntBuffer intBuffer = (IntBuffer) buffer;
+					switch (step) {
+					case 1: return new MemoryReaderInt8(intBuffer, address);
+					case 2: return new MemoryReaderInt16(intBuffer, address);
+					case 4: return new MemoryReaderInt32(intBuffer, address);
+					}
+				} else if (buffer instanceof ByteBuffer) {
+					ByteBuffer byteBuffer = (ByteBuffer) buffer;
+					switch (step) {
+					case 1: return new MemoryReaderByte8(byteBuffer, address);
+					case 2: return new MemoryReaderByte16(byteBuffer, address);
+					case 4: return new MemoryReaderByte32(byteBuffer, address);
+					}
 				}
 			}
 		}
@@ -114,8 +121,8 @@ public class MemoryReader {
 	 * @return        the MemoryReader
 	 */
 	public static IMemoryReader getMemoryReader(int address, int step) {
-		address &= Memory.addressMask;
-		if (RuntimeContext.hasMemoryInt()) {
+		if (RuntimeContext.hasMemoryInt(address)) {
+			address &= Memory.addressMask;
 			return getFastMemoryReader(address, step);
 		}
 		return getMemoryReader(address, getMaxLength(address), step);
@@ -139,16 +146,20 @@ public class MemoryReader {
 	// Added "final" here only for performance reasons. Can be removed if inheritance
 	// of these classes is required.
 	private final static class MemoryReaderGeneric implements IMemoryReader {
-		private Memory mem;
+		private final Memory mem;
 		private int address;
 		private int length;
-		private int step;
+		private final int step;
 
 		public MemoryReaderGeneric(int address, int length, int step) {
 			this.address = address;
 			this.length = length;
 			this.step = step;
-			mem = Memory.getInstance();
+			if (Memory.isAddressGood(address) || RuntimeContextLLE.getMMIO() == null) {
+				mem = Memory.getInstance();
+			} else {
+				mem = RuntimeContextLLE.getMMIO();
+			}
 		}
 
 		@Override

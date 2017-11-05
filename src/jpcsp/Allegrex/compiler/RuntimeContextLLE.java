@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
-import static jpcsp.Emulator.getProcessor;
-
 import org.apache.log4j.Logger;
 
 import jpcsp.AllegrexOpcodes;
@@ -27,7 +25,8 @@ import jpcsp.Processor;
 import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.modules.reboot;
-import jpcsp.hardware.Interrupts;
+import jpcsp.mediaengine.MEProcessor;
+import jpcsp.mediaengine.METhread;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerInterruptMan;
 
@@ -51,7 +50,11 @@ public class RuntimeContextLLE {
 		}
 
 		mmio = new MMIO(Emulator.getMemory());
-		mmio.Initialise();
+		if (mmio.allocate()) {
+			mmio.Initialise();
+		} else {
+			mmio = null;
+		}
 	}
 
 	public static Memory getMMIO() {
@@ -90,7 +93,7 @@ public class RuntimeContextLLE {
 		pendingInterruptIPbits |= IPbits;
 	}
 
-	public static void triggerSyscallException(Processor processor, int syscallCode) {
+	public static int triggerSyscallException(Processor processor, int syscallCode) {
 		processor.cp0.setSyscallCode(syscallCode << 2);
 
 		// Check if the syscall was executed in a delay slot,
@@ -112,7 +115,36 @@ public class RuntimeContextLLE {
 
 		processor.cp0.setCause(cause);
 
-		triggerException(processor, ExceptionManager.EXCEP_SYS, returnAddress);
+		return triggerException(processor, ExceptionManager.EXCEP_SYS, returnAddress);
+	}
+
+	public static boolean isMediaEngineCpu() {
+		if (!isLLEActive()) {
+			return false;
+		}
+		return METhread.isMediaEngine(Thread.currentThread());
+	}
+
+	public static boolean isMainCpu() {
+		if (!isLLEActive()) {
+			return true;
+		}
+		return !isMediaEngineCpu();
+	}
+
+	public static Processor getProcessor() {
+		if (isMediaEngineCpu()) {
+			return MEProcessor.getInstance();
+		}
+		return Emulator.getProcessor();
+	}
+
+	public static void triggerMeException() {
+		METhread meThread = METhread.getInstance();
+		MEProcessor meProcessor = MEProcessor.getInstance();
+		meThread.setProcessor(meProcessor);
+		meProcessor.triggerException(ExceptionManager.IP2);
+		meThread.sync();
 	}
 
 	private static void setExceptionCause(Processor processor, int exceptionNumber) {
@@ -121,11 +153,7 @@ public class RuntimeContextLLE {
 		processor.cp0.setCause(cause);
 	}
 
-	public static void triggerException(Processor processor, int exceptionNumber, int returnAddress) {
-		if (!isLLEActive()) {
-			return;
-		}
-
+	public static int triggerException(Processor processor, int exceptionNumber, int returnAddress) {
 		setExceptionCause(processor, exceptionNumber);
 
 		int ebase = prepareExceptionHandlerCall(processor);
@@ -134,19 +162,23 @@ public class RuntimeContextLLE {
 			log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X", MMIOHandlerInterruptMan.getInstance().toStringInterruptTriggered(), ebase, processor.cp0.getEpc()));
 		}
 
-		// Jump to the EBase address
-		int address = ebase;
-		while (true) {
-			try {
-				RuntimeContext.jump(address, returnAddress);
-				break;
-			} catch (StackPopException e) {
-				address = e.getRa();
-			} catch (Exception e) {
-				log.error("Error while calling code at EBase", e);
-				break;
-			}
-		}
+		return ebase;
+//		// Jump to the EBase address
+//		int address = ebase;
+//		while (true) {
+//			try {
+//				RuntimeContext.jump(address, returnAddress);
+//				break;
+//			} catch (StackPopException e) {
+//				if (log.isDebugEnabled()) {
+//					log.debug("triggerException", e);
+//				}
+//				address = e.getRa();
+//			} catch (Exception e) {
+//				log.error("Error while calling code at EBase", e);
+//				break;
+//			}
+//		}
 	}
 
 	public static void clearInterruptException(Processor processor, int IPbits) {
@@ -166,7 +198,7 @@ public class RuntimeContextLLE {
 			return false;
 		}
 
-		if (Interrupts.isInterruptsDisabled()) {
+		if (processor.isInterruptsDisabled()) {
 			return false;
 		}
 

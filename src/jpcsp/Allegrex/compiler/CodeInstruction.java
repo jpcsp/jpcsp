@@ -20,11 +20,14 @@ import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
+import static jpcsp.HLE.modules.ThreadManForUser.NOP;
+
 import jpcsp.Emulator;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
+import jpcsp.HLE.modules.ThreadManForUser;
 
 import org.apache.log4j.Logger;
 import org.objectweb.asm.Label;
@@ -163,7 +166,7 @@ public class CodeInstruction {
 
     protected void startCompile(CompilerContext context, MethodVisitor mv) {
         if (log.isDebugEnabled()) {
-            log.debug("CodeInstruction.compile " + toString());
+            log.debug(toString());
         }
 
         context.setCodeInstruction(this);
@@ -458,13 +461,13 @@ public class CodeInstruction {
         	//    nop
         	//    jr  $ra
         	//    nop
-		String lineSeparator = System.getProperty("line.separator");
+        	String lineSeparator = System.getProperty("line.separator");
         	log.warn(String.format("Instruction in a delay slot having a delay slot:%s%s%s%s", lineSeparator, this, lineSeparator, delaySlotCodeInstruction));
         } else {
         	compileDelaySlot(context, mv, delaySlotCodeInstruction);
         }
 
-    	if (branchingOpcode == Opcodes.GOTO && getBranchingTo() == getAddress()) {
+    	if (branchingOpcode == Opcodes.GOTO && getBranchingTo() == getAddress() && delaySlotCodeInstruction.getOpcode() == NOP()) {
     		context.visitLogInfo(mv, String.format("Pausing emulator - branch to self (death loop) at 0x%08X", getAddress()));
     		context.visitPauseEmuWithStatus(mv, Emulator.EMU_STATUS_JUMPSELF);
     	}
@@ -729,27 +732,21 @@ public class CodeInstruction {
 
 	@Override
 	public String toString() {
-    	StringBuilder result = new StringBuilder();
-
-    	String branchingFlag;
+    	char branchingFlag;
     	if (isBranching()) {
     		if (hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
-    			branchingFlag = "<"; // branching "out" of current block
+    			branchingFlag = '<'; // branching "out" of the current block
     		} else if (getBranchingTo() <= getAddress()) {
-    			branchingFlag = "^"; // branching "up"
+    			branchingFlag = '^'; // branching "up"
     		} else {
-    			branchingFlag = "v"; // branching "down"
+    			branchingFlag = 'v'; // branching "down"
     		}
     	} else {
-    		branchingFlag = " "; // no branching
+    		branchingFlag = ' '; // no branching
     	}
-    	result.append(branchingFlag);
-    	result.append(isBranchTarget() ? ">" : " ");
-    	result.append(" 0x");
-    	result.append(Integer.toHexString(getAddress()).toUpperCase());
-    	result.append(" - ");
-    	result.append(disasm(getAddress(), getOpcode()));
 
-    	return result.toString();
+    	char branchTargetFlag = isBranchTarget() ? '>' : ' ';
+
+    	return String.format("%c%c 0x%08X: [0x%08X] - %s", branchingFlag, branchTargetFlag, getAddress(), getOpcode(), disasm(getAddress(), getOpcode()));
     }
 }

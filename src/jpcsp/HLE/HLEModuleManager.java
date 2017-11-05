@@ -480,13 +480,15 @@ public class HLEModuleManager {
     		// Verify if this not the address of a stub call:
     		//   J   realAddress
     		//   NOP
-        	Memory mem = Memory.getInstance();
-        	if ((mem.read32(address) >>> 26) == AllegrexOpcodes.J) {
-        		if (mem.read32(address + 4) == ThreadManForUser.NOP()) {
-        			int jumpAddress = (mem.read32(address) & 0x03FFFFFF) << 2;
+        	if (Memory.isAddressGood(address)) {
+            	Memory mem = Memory.getInstance();
+	        	if ((mem.read32(address) >>> 26) == AllegrexOpcodes.J) {
+	        		if (mem.read32(address + 4) == ThreadManForUser.NOP()) {
+	        			int jumpAddress = (mem.read32(address) & 0x03FFFFFF) << 2;
 
-        			nid = nidMapper.getNidByAddress(jumpAddress);
-        		}
+	        			nid = nidMapper.getNidByAddress(jumpAddress);
+	        		}
+	        	}
         	}
     	}
 

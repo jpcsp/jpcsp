@@ -18,6 +18,7 @@ package jpcsp.Allegrex;
 
 import static jpcsp.Allegrex.Common.COP0_STATE_CAUSE;
 import static jpcsp.Allegrex.Common.COP0_STATE_CONFIG;
+import static jpcsp.Allegrex.Common.COP0_STATE_CPUID;
 import static jpcsp.Allegrex.Common.COP0_STATE_EBASE;
 import static jpcsp.Allegrex.Common.COP0_STATE_EPC;
 import static jpcsp.Allegrex.Common.COP0_STATE_ERROR_EPC;
@@ -108,5 +109,13 @@ public class Cp0State {
 
 	public void setConfig(int config) {
 		setDataRegister(COP0_STATE_CONFIG, config);
+	}
+
+	public void setCpuid(int cpuid) {
+		setDataRegister(COP0_STATE_CPUID, cpuid);
+	}
+
+	public int getCpuid() {
+		return getDataRegister(COP0_STATE_CPUID);
 	}
 }

@@ -67,7 +67,7 @@ public class SyscallHandler {
     	}
     }
 
-    private static void unsupportedSyscall(int code) throws Exception {
+    private static int unsupportedSyscall(int code) {
     	if (ignoreUnmappedImportsSettingsListerner == null) {
     		ignoreUnmappedImportsSettingsListerner = new IgnoreUnmappedImportsSettingsListerner();
     		Settings.getInstance().registerSettingsListener("SyscallHandler", "emu.ignoreUnmappedImports", ignoreUnmappedImportsSettingsListerner);
@@ -188,9 +188,11 @@ public class SyscallHandler {
         		}
         	}
         }
+
+    	return 0;
     }
 
-    public static void syscall(int code) throws Exception {
+    public static int syscall(int code) {
     	if (RuntimeContextLLE.isLLEActive()) {
     		Processor processor = Emulator.getProcessor();
     		if (log.isDebugEnabled()) {
@@ -198,10 +200,10 @@ public class SyscallHandler {
     		}
 
     		// For LLE syscalls, trigger a syscall exception
-			RuntimeContextLLE.triggerSyscallException(processor, code);
-    	} else {
-    		// All HLE syscalls are now implemented natively in the compiler
-    		unsupportedSyscall(code);
+			return RuntimeContextLLE.triggerSyscallException(processor, code);
     	}
+
+    	// All HLE syscalls are now implemented natively in the compiler
+		return unsupportedSyscall(code);
     }
 }

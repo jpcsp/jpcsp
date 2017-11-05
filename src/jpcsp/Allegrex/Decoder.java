@@ -102,7 +102,7 @@ public class Decoder {
                 return table_9[(insn >> 23) & 0x00000007].instance(insn);
             }
         },
-        jpcsp.Allegrex.Common.UNK,
+        jpcsp.Allegrex.Instructions.MFVME,
         new STUB() {
 
             @Override
@@ -119,6 +119,9 @@ public class Decoder {
                         return jpcsp.Allegrex.Instructions.HALT;
                     }
 					return jpcsp.Allegrex.Instructions.MFIC;
+                }
+                if ((insn & 0x0000003F) == 0x0000003F) {
+                	return jpcsp.Allegrex.Instructions.DBREAK;
                 }
 				return jpcsp.Allegrex.Instructions.MTIC;
             }
@@ -162,7 +165,7 @@ public class Decoder {
         jpcsp.Allegrex.Instructions.SH,
         jpcsp.Allegrex.Instructions.SWL,
         jpcsp.Allegrex.Instructions.SW,
-        jpcsp.Allegrex.Common.UNK,
+        jpcsp.Allegrex.Instructions.MTVME,
         jpcsp.Allegrex.Common.UNK,
         jpcsp.Allegrex.Instructions.SWR,
         new STUB() {

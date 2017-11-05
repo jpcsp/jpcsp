@@ -40,7 +40,7 @@ public class Opcodes {
 //
 //      *1 = SPECIAL, see SPECIAL list    *2 = REGIMM, see REGIMM list
 //      *3 = COP0                         *4 = COP1
-//      *5 = SPECIAL2 , see SPECIAL2      *6 = SPECAIL3 , see SPECIAL 3
+//      *5 = SPECIAL2 , see SPECIAL2      *6 = SPECIAL3 , see SPECIAL 3
 //      *ULVQ is buggy on PSP1000 PSP
 //      *VFPU0 check VFPU0 table
 //      *VFPU1 check VFPU1 table
@@ -76,7 +76,7 @@ public class Opcodes {
     public static final byte BGTZL = 0x17; // Branch on Greater Than Zero Likely
     public static final byte VFPU0 = 0x18;
     public static final byte VFPU1 = 0x19;
-    /*  0x1a reserved or unsupported */
+    public static final byte ME1 = 0x1A; // Only for the ME
     public static final byte VFPU3 = 0x1b;
     public static final byte SPECIAL2 = 0x1c; // Allegrex table
     /*  0x1d reserved or unsupported */
@@ -94,7 +94,7 @@ public class Opcodes {
     public static final byte SH = 0x29; // Store Halfword
     public static final byte SWL = 0x2A; // Store Word Left
     public static final byte SW = 0x2B; // Store Word
-    /*  0x2c reserved or unsupported */
+    public static final byte ME2 = 0x2C; // Only for the ME
     /*  0x2d reserved or unsupported */
     public static final byte SWR = 0x2E; // Store Word Right
     public static final byte CACHE = 0x2f; // Allegrex Cache Operation
@@ -278,6 +278,7 @@ public class Opcodes {
     public static final byte HALT = 0x0; // halt execution until next interrupt
     public static final byte MFIC = 0x24; // move from IC (Interrupt) register
     public static final byte MTIC = 0x26; // move to IC (Interrupt) register
+    public static final byte DBREAK = 0x3F; // Debugging break, only for the ME
 
 //     SPECIAL3: encoded by function field when opcode field = SPECIAL3
 //     31---------26------------------------------------------5--------0

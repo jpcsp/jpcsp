@@ -55,10 +55,10 @@ public class FastMemory extends Memory {
 	// Array containing only 0, for fast memset(addr, 0, length);
 	public static final int[] zero = new int[32768];
 
-	private static final int[] memory8Shift = { 0, 8, 16, 24 };
-	private static final int[] memory8Mask = { 0xFFFFFF00, 0xFFFF00FF, 0xFF00FFFF, 0x00FFFFFF };
-	private static final int[] memory16Shift = { 0, 0, 16, 16 };
-	private static final int[] memory16Mask = { 0xFFFF0000, 0xFFFF0000, 0x0000FFFF, 0x0000FFFF };
+	public static final int[] memory8Shift = { 0, 8, 16, 24 };
+	public static final int[] memory8Mask = { 0xFFFFFF00, 0xFFFF00FF, 0xFF00FFFF, 0x00FFFFFF };
+	public static final int[] memory16Shift = { 0, 0, 16, 16 };
+	public static final int[] memory16Mask = { 0xFFFF0000, 0xFFFF0000, 0x0000FFFF, 0x0000FFFF };
 	private static final boolean[] isIntAligned = { true, false, false, false };
 
 	@Override

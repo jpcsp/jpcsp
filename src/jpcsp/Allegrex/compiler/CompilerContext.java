@@ -99,7 +99,6 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.ThreadManForUser;
-import jpcsp.hardware.Interrupts;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.FastMemory;
 import jpcsp.memory.SafeFastMemory;
@@ -254,7 +253,8 @@ public class CompilerContext implements ICompilerContext {
     	}
 	}
 
-    private void loadProcessor() {
+    @Override
+    public void loadProcessor() {
         mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "processor", processorDescriptor);
     }
 
@@ -793,6 +793,26 @@ public class CompilerContext implements ICompilerContext {
 	        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "jump", "(II)V");
 	        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
         }
+
+        mv.visitLabel(isReturnAddress);
+        mv.visitInsn(Opcodes.POP);
+        mv.visitLabel(continueLabel);
+    }
+
+    private void visitContinueToAddressInRegister(int reg) {
+        //      if (x != cpu.reg) {
+        //          RuntimeContext.jump(x, cpu.reg);
+        //      }
+        Label continueLabel = new Label();
+        Label isReturnAddress = new Label();
+
+        mv.visitInsn(Opcodes.DUP);
+        loadRegister(reg);
+        visitJump(Opcodes.IF_ICMPEQ, isReturnAddress);
+
+        loadRegister(reg);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "jump", "(II)V");
+        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
 
         mv.visitLabel(isReturnAddress);
         mv.visitInsn(Opcodes.POP);
@@ -1827,7 +1847,8 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(ThreadManForUser.class), "isDispatchThreadEnabled", "()Z");
     		Label returnError = new Label();
     		mv.visitJumpInsn(Opcodes.IFEQ, returnError);
-    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Interrupts.class), "isInterruptsEnabled", "()Z");
+    		loadProcessor();
+    		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Processor.class), "isInterruptsEnabled", "()Z");
     		Label noError = new Label();
     		mv.visitJumpInsn(Opcodes.IFNE, noError);
 
@@ -1989,6 +2010,12 @@ public class CompilerContext implements ICompilerContext {
     		HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
 
     		boolean fastSyscall = isFastSyscall(code);
+
+    		// Under LLE, all syscalls are "fast" syscalls
+    		if (func == null && RuntimeContextLLE.isLLEActive()) {
+    			fastSyscall = true;
+    		}
+
     		if (!fastSyscall) {
     			storePc();
     		}
@@ -2002,9 +2029,24 @@ public class CompilerContext implements ICompilerContext {
     		if (func == null) {
     	    	loadImm(code);
     	    	if (fastSyscall) {
-    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)V");
+    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)I");
     	    	} else {
-    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)V");
+    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)I");
+    	    	}
+
+    	    	if (getCodeInstruction() != null) {
+    	    		if (getCodeInstruction().isDelaySlot()) {
+    	    			visitContinueToAddressInRegister(_ra);
+    	    		} else {
+    	    			visitContinueToAddress(getCodeInstruction().getAddress() + 4, false);
+    	    		}
+    	    	} else {
+    	    		mv.visitInsn(Opcodes.POP);
+    	    	}
+
+    	    	if (RuntimeContextLLE.isLLEActive()) {
+        			// We do not destroy the temp registers for LLE syscalls
+    	    		destroyTempRegisters = false;
     	    	}
         	} else {
         		visitSyscall(func, fastSyscall);
@@ -2036,16 +2078,13 @@ public class CompilerContext implements ICompilerContext {
 	        	mv.visitLdcInsn(new Long(0xDEADBEEFDEADBEEFL));
 	        	storeHilo();
     		}
+    	}
 
-        	// loadcore.prx is generating the following sequence for unmapped imports:
-        	//     syscall 0x00015
-        	//     nop
-        	// As there is no instruction to return to the caller, we
-        	// need to handle this special case.
-	    	if (code == syscallLoadCoreUnmappedImport) {
-	    		loadRegister(_ra);
-	    		visitJump();
-	    	}
+    	// For code blocks consisting of a single syscall instruction,
+    	// generate an end for the code block.
+    	if (getCodeBlock().getLength() == 1) {
+    		loadRegister(_ra);
+    		visitJump();
     	}
     }
 
@@ -2382,11 +2421,11 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public static String getClassName(int address, int instanceIndex) {
-    	return "_S1_" + instanceIndex + "_" + Integer.toHexString(address).toUpperCase();
+    	return String.format("_S1_%d_0x%08X", instanceIndex, address);
     }
 
     public static int getClassAddress(String name) {
-    	String hexAddress = name.substring(name.lastIndexOf("_") + 1);
+    	String hexAddress = name.substring(name.lastIndexOf("0x") + 2);
     	if (hexAddress.length() == 8) {
     		return (int) Long.parseLong(hexAddress, 16);
     	}

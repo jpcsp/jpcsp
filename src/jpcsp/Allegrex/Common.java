@@ -984,6 +984,9 @@ public class Common {
         return String.format("%1$-10s %2$d, 0x%3$08X", opname, vcc, ((int) (short) simm16) * 4 + opcode_address + 4);
     }
 
+    public static String disasmRTVME(String opname, int rt, int vme) {
+        return String.format("%1$-10s %2$s, 0x%3$04X", opname, gprNames[rt], vme);
+    }
 
     protected static Instruction[] m_instances = new Instruction[254];
 

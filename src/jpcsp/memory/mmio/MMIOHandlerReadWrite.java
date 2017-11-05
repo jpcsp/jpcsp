@@ -16,6 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.memory.FastMemory.memory16Mask;
+import static jpcsp.memory.FastMemory.memory16Shift;
+import static jpcsp.memory.FastMemory.memory8Mask;
+import static jpcsp.memory.FastMemory.memory8Shift;
+
 import jpcsp.Emulator;
 
 public class MMIOHandlerReadWrite extends MMIOHandlerBase {
@@ -27,13 +32,43 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 		memory = new int[length >> 2];
 	}
 
+	public MMIOHandlerReadWrite(int baseAddress, int length, int[] memory) {
+		super(baseAddress);
+
+		this.memory = memory;
+	}
+
+	public int[] getInternalMemory() {
+		return memory;
+	}
+
 	@Override
 	public int read32(int address) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", Emulator.getProcessor().cpu.pc, address, memory[(address - baseAddress) >> 2]));
+			log.trace(String.format("0x%08X - read32(0x%08X)=0x%08X", Emulator.getProcessor().cpu.pc, address, memory[(address - baseAddress) >> 2]));
 		}
 
 		return memory[(address - baseAddress) >> 2];
+	}
+
+	@Override
+	public int read16(int address) {
+		int data = (memory[(address - baseAddress) >> 2] >> memory16Shift[address & 0x02]) & 0xFFFF;
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("0x%08X - read16(0x%08X)=0x%04X", Emulator.getProcessor().cpu.pc, address, data));
+		}
+
+		return data;
+	}
+
+	@Override
+	public int read8(int address) {
+		int data = (memory[(address - baseAddress) >> 2] >> memory8Shift[address & 0x03]) & 0xFF;
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("0x%08X - read8(0x%08X)=0x%02X", Emulator.getProcessor().cpu.pc, address, data));
+		}
+	
+		return data;
 	}
 
 	@Override
@@ -43,5 +78,29 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 		}
 
 		memory[(address - baseAddress) >> 2] = value;
+	}
+
+	@Override
+	public void write16(int address, short value) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("0x%08X - write16(0x%08X, 0x%04X)", Emulator.getProcessor().cpu.pc, address, value & 0xFFFF));
+		}
+
+		int index = address & 0x02;
+		int memData = (memory[(address - baseAddress) >> 2] & memory16Mask[index]) | ((value & 0xFFFF) << memory16Shift[index]);
+
+		memory[(address - baseAddress) >> 2] = memData;
+	}
+
+	@Override
+	public void write8(int address, byte value) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X)", Emulator.getProcessor().cpu.pc, address, value & 0xFF));
+		}
+
+		int index = address & 0x03;
+		int memData = (memory[(address - baseAddress) >> 2] & memory8Mask[index]) | ((value & 0xFF) << memory8Shift[index]);
+
+		memory[(address - baseAddress) >> 2] = memData;
 	}
 }

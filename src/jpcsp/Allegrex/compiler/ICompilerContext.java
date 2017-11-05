@@ -175,4 +175,5 @@ public interface ICompilerContext {
     public boolean compileLWsequence(int baseRegister, int[] offsets, int[] registers);
     public void storePc();
     public void loadLocalVar(int localVar);
+    public void loadProcessor();
 }

@@ -18,7 +18,6 @@ package jpcsp.Allegrex;
 
 import jpcsp.Emulator;
 import jpcsp.Processor;
-import jpcsp.hardware.Interrupts;
 
 /**
  * Branch Control Unit, handles branching and jumping operations
@@ -259,7 +258,7 @@ public class BcuState extends LsuState {
     	}
     	processor.cp0.setStatus(status);
 
-    	Interrupts.enableInterrupts();
+    	processor.enableInterrupts();
 
     	if (Emulator.log.isDebugEnabled()) {
     		Emulator.log.debug(String.format("0x%08X - eret with status=0x%X, epc=0x%08X", processor.cpu.pc, status, epc));

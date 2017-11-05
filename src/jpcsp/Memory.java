@@ -49,7 +49,7 @@ public abstract class Memory {
     public static final int addressMask = 0x1FFFFFFF;
     private boolean ignoreInvalidMemoryAccess = false;
     protected static final int MEMORY_PAGE_SHIFT = 12;
-    protected static boolean[] validMemoryPage = new boolean[0x00100000];
+    protected static final boolean[] validMemoryPage = new boolean[1 << (Integer.SIZE - MEMORY_PAGE_SHIFT)];
     // Assume that a video check during a memcpy is only necessary
     // when copying at least one screen row (at 2 bytes per pixel).
     private static final int MINIMUM_LENGTH_FOR_VIDEO_CHECK = Screen.width * 2;

@@ -45,7 +45,6 @@ import jpcsp.graphics.RE.software.BaseRenderer;
 import jpcsp.graphics.RE.software.RendererExecutor;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
-import jpcsp.hardware.Interrupts;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.MemorySections;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
@@ -247,7 +246,6 @@ public class Emulator implements Runnable {
         }
 
         Battery.initialize();
-        Interrupts.initialize();
         Wlan.initialize();
         jpcsp.HLE.kernel.types.SceModule.ResetAllocator();
         SceUidManager.reset();

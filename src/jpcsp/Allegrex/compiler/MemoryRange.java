@@ -26,6 +26,7 @@ import jpcsp.memory.MemoryReader;
  */
 public class MemoryRange {
 	private int address;
+	private int rawAddress;
 	private int length;
 	private int[] values;
 
@@ -40,6 +41,7 @@ public class MemoryRange {
 
 	public void setAddress(int address) {
 		this.address = address & Memory.addressMask;
+		rawAddress = address;
 	}
 
 	public int getLength() {
@@ -53,13 +55,13 @@ public class MemoryRange {
 	public void updateValues() {
 		values = new int[length >> 2];
 
-		if (!RuntimeContext.hasMemoryInt()) {
-			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
+		if (RuntimeContext.hasMemoryInt(address)) {
+			System.arraycopy(RuntimeContext.getMemoryInt(), address >> 2, values, 0, values.length);
+		} else {
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(rawAddress, length, 4);
 			for (int i = 0; i < values.length; i++) {
 				values[i] = memoryReader.readNext();
 			}
-		} else {
-			System.arraycopy(RuntimeContext.getMemoryInt(), address >> 2, values, 0, values.length);
 		}
 	}
 
@@ -77,19 +79,19 @@ public class MemoryRange {
 	}
 
 	public boolean areValuesChanged() {
-		if (!RuntimeContext.hasMemoryInt()) {
-			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
-			for (int i = 0; i < values.length; i++) {
-				if (values[i] != memoryReader.readNext()) {
-					return true;
-				}
-			}
-		} else {
+		if (RuntimeContext.hasMemoryInt(address)) {
 			// Optimized for the most common case (i.e. using memoryInt)
 			int[] memoryInt = RuntimeContext.getMemoryInt();
 			int memoryIndex = address >> 2;
 			for (int i = 0; i < values.length; i++, memoryIndex++) {
 				if (memoryInt[memoryIndex] != values[i]) {
+					return true;
+				}
+			}
+		} else {
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(rawAddress, length, 4);
+			for (int i = 0; i < values.length; i++) {
+				if (values[i] != memoryReader.readNext()) {
 					return true;
 				}
 			}
@@ -129,6 +131,6 @@ public class MemoryRange {
 
 	@Override
 	public String toString() {
-		return String.format("[0x%08X-0x%08X]", address, address + length);
+		return String.format("[0x%08X-0x%08X]", rawAddress, rawAddress + length);
 	}
 }

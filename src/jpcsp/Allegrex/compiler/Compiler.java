@@ -21,9 +21,6 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_BRANCHING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_STARTS_NEW_BLOCK;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_SYSCALL;
-import static jpcsp.HLE.SyscallHandler.syscallLoadCoreUnmappedImport;
-import static jpcsp.HLE.modules.ThreadManForUser.NOP;
-import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +45,7 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemorySections;
+import jpcsp.memory.mmio.MMIO;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.AbstractIntSettingsListener;
 import jpcsp.settings.Settings;
@@ -154,8 +152,6 @@ public class Compiler implements ICompiler {
     private static final int maxRecompileExecutable = 50;
     private CompilerTypeManager compilerTypeManager;
     private HashSet<Integer> interpretedAddresses = new HashSet<Integer>();
-    private static final int opcodeSyscallLoadCoreUnmappedImport = SYSCALL(syscallLoadCoreUnmappedImport);
-    private static final int opcodeNop = NOP();
     private Set<Integer> useMMIOAddresses = new HashSet<Integer>();
 
 	private class IgnoreInvalidMemoryAccessSettingsListerner extends AbstractBoolSettingsListener {
@@ -407,7 +403,7 @@ public class Compiler implements ICompiler {
         Set<Integer> branchingToAddresses = new HashSet<Integer>();
         while (!pendingBlockAddresses.isEmpty()) {
             int pc = pendingBlockAddresses.pop();
-            if (!Memory.isAddressGood(pc)) {
+            if (!isAddressGood(pc)) {
                 if (isIgnoreInvalidMemory()) {
                     log.warn(String.format("IGNORING: Trying to compile an invalid address 0x%08X", pc));
                 } else {
@@ -451,18 +447,8 @@ public class Compiler implements ICompiler {
 
                     if (isEndBlockInsn(pc, opcode, insn)) {
                     	endPc = npc;
-                    } else if (opcode == opcodeSyscallLoadCoreUnmappedImport) {
-                    	// loadcore.prx is generating the following sequence for unmapped imports:
-                    	//     syscall 0x00015
-                    	//     nop
-                    	// As there is no instruction marking the end of this block, we
-                    	// need to handle this special case.
-                    	int nextOpcode = memoryReader.readNext();
-                    	if (nextOpcode == opcodeNop) {
-                    		endPc = npc;
-                    	}
-                    	// Undo reading of next instruction
-                		memoryReader.skip(-1);
+                    } else if (pc < endPc && insn.hasFlags(Instruction.FLAG_SYSCALL)) {
+                    	endPc = pc;
                     }
 
                     if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
@@ -566,11 +552,24 @@ public class Compiler implements ICompiler {
         return context;
     }
 
+    private boolean isAddressGood(int address) {
+    	if (Memory.isAddressGood(address)) {
+    		return true;
+    	}
+    	if (interpretedAddresses.contains(address)) {
+    		return true;
+    	}
+    	if (RuntimeContextLLE.getMMIO() != null) {
+    		return MMIO.isAddressGood(address);
+    	}
+    	return false;
+    }
+
     public IExecutable compile(int address, int instanceIndex) {
-    	if (!Memory.isAddressGood(address)) {
-            if(isIgnoreInvalidMemory())
+    	if (!isAddressGood(address)) {
+            if (isIgnoreInvalidMemory()) {
                 log.warn(String.format("IGNORING: Trying to compile an invalid address 0x%08X", address));
-            else {
+            } else {
                 log.error(String.format("Trying to compile an invalid address 0x%08X", address));
                 Emulator.PauseEmu();
             }

@@ -46,7 +46,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.reboot;
 import jpcsp.HLE.modules.sceDisplay;
-import jpcsp.hardware.Interrupts;
+import jpcsp.mediaengine.MEProcessor;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.FastMemory;
 import jpcsp.memory.mmio.MMIOHandlerDisplayController;
@@ -234,29 +234,36 @@ public class RuntimeContext {
 			log.debug(String.format("executeInterpreter address=0x%08X", address));
 		}
 
+		boolean useMMIO = false;
+		if (!Memory.isAddressGood(address)) {
+			Memory mmio = RuntimeContextLLE.getMMIO();
+			if (mmio != null) {
+				useMMIO = true;
+				cpu.setMemory(mmio);
+			}
+		}
+
 		boolean interpret = true;
 		cpu.pc = address;
 		int returnValue = 0;
 		while (interpret) {
-			int opcode = cpu.fetchOpcode();
-			Instruction insn = Decoder.instruction(opcode);
-
-			if (Compiler.log.isDebugEnabled()) {
-				Compiler.log.debug(String.format("Interpreting 0x%X - %s", cpu.pc - 4, insn.disasm(cpu.pc - 4, opcode)));
-				if (insn.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
-					int opcodeDelaySlot = memory.read32(cpu.pc);
-					Instruction insnDelaySlot = Decoder.instruction(opcodeDelaySlot);
-					Compiler.log.debug(String.format("Interpreting 0x%X - %s", cpu.pc, insnDelaySlot.disasm(cpu.pc, opcodeDelaySlot)));
-				}
-			}
-
-			insn.interpret(processor, opcode);
+			Instruction insn = processor.interpret();
 			if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
+				if (useMMIO) {
+					cpu.setMemory(memory);
+				}
 				cpu.pc = jumpCall(cpu.pc);
+				if (useMMIO) {
+					cpu.setMemory(RuntimeContextLLE.getMMIO());
+				}
 			} else if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK) && !insn.hasFlags(Instruction.FLAG_IS_CONDITIONAL)) {
 				interpret = false;
 				returnValue = cpu.pc;
 			}
+		}
+
+		if (useMMIO) {
+			cpu.setMemory(memory);
 		}
 
 		return returnValue;
@@ -682,7 +689,7 @@ public class RuntimeContext {
 	    	} else {
 		    	syncPause();
 				Emulator.getScheduler().step();
-				if (Interrupts.isInterruptsEnabled()) {
+				if (processor.isInterruptsEnabled()) {
 					Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
 				}
 				syncThread();
@@ -722,16 +729,20 @@ public class RuntimeContext {
     	syncFast();
     }
 
-    public static void syscallFast(int code) throws Exception {
+    public static int syscallFast(int code) throws Exception {
 		// Fast syscall: no context switching
-    	SyscallHandler.syscall(code);
+    	int continueAddress = SyscallHandler.syscall(code);
     	postSyscallFast();
+
+    	return continueAddress;
     }
 
-    public static void syscall(int code) throws Exception {
+    public static int syscall(int code) throws Exception {
     	preSyscall();
-    	SyscallHandler.syscall(code);
+    	int continueAddress = SyscallHandler.syscall(code);
     	postSyscall();
+
+    	return continueAddress;
     }
 
     private static void execWithReturnAddress(IExecutable executable, int returnAddress) throws Exception {
@@ -1497,6 +1508,10 @@ public class RuntimeContext {
     	return memoryInt != null;
     }
 
+    public static boolean hasMemoryInt(int address) {
+    	return hasMemoryInt() && Memory.isAddressGood(address);
+    }
+
     public static int[] getMemoryInt() {
     	return memoryInt;
     }
@@ -1517,43 +1532,54 @@ public class RuntimeContext {
     }
 
     private static int haltCount = 0;
-    public static void executeHalt() throws StopThreadException {
-    	log.error("Allegrex halt");
-
+    public static void executeHalt(Processor processor) throws StopThreadException {
     	if (reboot.enableReboot) {
     		// This playground implementation is related to the investigation
     		// for the reboot process (flash0:/reboot.bin).
-    		if (false) {
-    			Logger.getRootLogger().setLevel(Level.TRACE);
-    		}
-    		reboot.dumpAllThreads();
-    		reboot.dumpAllModulesAndLibraries();
+    		if (processor.cp0.getCpuid() == MEProcessor.CPUID_ME) {
+    			log.error(String.format("0x%08X - halt on ME", processor.cpu.pc));
+    			if (processor instanceof MEProcessor) {
+    				((MEProcessor) processor).halt();
+    			}
+    		} else {
+    	    	log.error("Allegrex halt");
+	    		if (false) {
+	    			Logger.getRootLogger().setLevel(Level.TRACE);
+	    		}
+	    		reboot.dumpAllThreads();
+	    		reboot.dumpAllModulesAndLibraries();
 
-    		// Simulate an interrupt exception
-    		switch (haltCount) {
-    			case 0:
-    				// The module_start of display_01g.prx is requiring at least one VBLANK interrupt
-    				// as it is executing sceDisplayWaitVblankStart().
-    				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
-    				break;
-    			case 1:
-    				// The init callback (sub_00000B08 registered by sceKernelSetInitCallback())
-    				// of display_01g.prx is requiring at least one VBLANK interrupt
-    				// as it is executing sceDisplayWaitVblankStart().
-    				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
-    				break;
-    			case 2:
-    				// The thread SCE_VSH_GRAPHICS is calling sceDisplayWaitVblankStart().
-    				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
-    				break;
-    			default:
-//    				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
-    				break;
-    		}
-    		haltCount++;
+	    		// Simulate an interrupt exception
+	    		switch (haltCount) {
+	    			case 0:
+	    				// The module_start of display_01g.prx is requiring at least one VBLANK interrupt
+	    				// as it is executing sceDisplayWaitVblankStart().
+	    				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
+	    				break;
+	    			case 1:
+	    				// The init callback (sub_00000B08 registered by sceKernelSetInitCallback())
+	    				// of display_01g.prx is requiring at least one VBLANK interrupt
+	    				// as it is executing sceDisplayWaitVblankStart().
+	    				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
+	    				break;
+	    			case 2:
+	    				// The thread SCE_VSH_GRAPHICS is calling sceDisplayWaitVblankStart().
+	    				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
+	    				break;
+	    			case 3:
+	    				// The thread SCE_VSH_GRAPHICS is calling a function from paf.prx waiting for a vblank.
+	    				MMIOHandlerDisplayController.setMaxVblankInterrupts(-1);
+	    				MMIOHandlerDisplayController.getInstance().triggerVblankInterrupt();
+	    				break;
+	    			default:
+	    				break;
+	    		}
+	    		haltCount++;
 
-   			idle();
+	    		idle();
+    		}
     	} else {
+        	log.error("Allegrex halt");
     		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
     	}
     }

@@ -46,11 +46,12 @@ import jpcsp.Allegrex.compiler.CodeInstruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.ICompilerContext;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.Allegrex.compiler.SequenceLWCodeInstruction;
 import jpcsp.Allegrex.compiler.SequenceSWCodeInstruction;
 import jpcsp.Allegrex.compiler.StopThreadException;
 import jpcsp.HLE.SyscallHandler;
-import jpcsp.hardware.Interrupts;
+import jpcsp.mediaengine.MEProcessor;
 import jpcsp.util.Utilities;
 
 import org.objectweb.asm.Label;
@@ -644,7 +645,7 @@ public final String category() { return "ALLEGREX"; }
 @Override
 public void interpret(Processor processor, int insn) {
 	try {
-		RuntimeContext.executeHalt();
+		RuntimeContext.executeHalt(processor);
 	} catch (StopThreadException e) {
 		log.error("Exception catched while interpreting the halt instruction");
 	}
@@ -652,7 +653,8 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	context.storePc();
-    context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "executeHalt", "()V");
+	context.loadProcessor();
+    context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "executeHalt", "(" + Type.getDescriptor(Processor.class) + ")V");
 }
 @Override
 public String disasm(int address, int insn) {
@@ -673,9 +675,9 @@ public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
 	if (log.isDebugEnabled()) {
-		log.debug(String.format("0x%08X - mfic interruptsEnabled=%b", processor.cpu.pc, Interrupts.isInterruptsEnabled()));
+		log.debug(String.format("0x%08X - mfic interruptsEnabled=%b", processor.cpu.pc, processor.isInterruptsEnabled()));
 	}
-	processor.cpu.setRegister(rt, Interrupts.isInterruptsEnabled() ? 1 : 0);
+	processor.cpu.setRegister(rt, processor.isInterruptsEnabled() ? 1 : 0);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -704,9 +706,9 @@ public void interpret(Processor processor, int insn) {
 	if (log.isDebugEnabled()) {
 		log.debug(String.format("0x%08X - mtic interruptEnabled=%b", processor.cpu.pc, value != 0));
 	}
-	Interrupts.setInterruptsEnabled(value != 0);
+	processor.setInterruptsEnabled(value != 0);
 
-	if (Interrupts.isInterruptsEnabled()) {
+	if (processor.isInterruptsEnabled() && RuntimeContextLLE.isMainCpu()) {
 		try {
 			RuntimeContext.sync();
 		} catch (StopThreadException e) {
@@ -4059,7 +4061,7 @@ public void compile(ICompilerContext context, int insn) {
 		    	if (Compiler.log.isDebugEnabled()) {
 		            CodeInstruction sequence = new SequenceLWCodeInstruction(rs, offsets, registers);
 		            sequence.setAddress(context.getCodeInstruction().getAddress());
-		    		Compiler.log.debug(String.format("CodeInstruction.compile %s", sequence));
+		    		Compiler.log.debug(sequence);
 		    	}
 
 		    	// Skip the next lw instructions
@@ -4280,7 +4282,7 @@ public void compile(ICompilerContext context, int insn) {
 	    	if (Compiler.log.isDebugEnabled()) {
 	            CodeInstruction sequence = new SequenceSWCodeInstruction(rs, offsets, registers);
 	            sequence.setAddress(context.getCodeInstruction().getAddress());
-	    		Compiler.log.debug(String.format("CodeInstruction.compile %s", sequence));
+	    		Compiler.log.debug(sequence);
 	    	}
 
 	    	// Skip the next sw instructions
@@ -4856,7 +4858,7 @@ public void compile(ICompilerContext context, int insn) {
 	if (context.compileVFPUStore(context.getRsRegisterIndex(), simm14, vt, countSequence * 4)) {
 		if (countSequence > 1) {
 	    	if (Compiler.log.isDebugEnabled()) {
-	    		Compiler.log.debug(String.format("sv.q sequence 0x%08X-0x%08X", address, address + countSequence * 4 - 4));
+	    		Compiler.log.debug(String.format("   sv.q sequence 0x%08X-0x%08X", address, address + countSequence * 4 - 4));
 	    	}
 
 	    	// Skip the next sv.q instructions
@@ -10302,6 +10304,93 @@ public void compile(ICompilerContext context, int insn) {
 public String disasm(int address, int insn) {
 
 return "vsync";
+}
+};
+public static final Instruction DBREAK = new Instruction(251) {
+
+@Override
+public final String name() { return "DBREAK"; }
+
+@Override
+public final String category() { return "ME"; }
+
+@Override
+public void interpret(Processor processor, int insn) {
+	if (processor.cp0.getCpuid() != MEProcessor.CPUID_ME) {
+		processor.cpu.doUNK(String.format("Unsupported dbreak instruction on the main processor: 0x%08X: [0x%08X]", processor.cpu.pc, insn));
+	} else {
+		processor.cpu.pc = 0xBFC01000;
+	}
+}
+@Override
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
+}
+@Override
+public String disasm(int address, int insn) {
+return "dbreak";
+}
+};
+public static final Instruction MTVME = new Instruction(252) {
+
+@Override
+public final String name() { return "MTVME"; }
+
+@Override
+public final String category() { return "ME"; }
+
+@Override
+public void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	if (processor.cp0.getCpuid() != MEProcessor.CPUID_ME) {
+		processor.cpu.doUNK(String.format("Unsupported mtvme instruction on the main processor: 0x%08X: [0x%08X]", processor.cpu.pc, insn));
+	} else if (processor instanceof MEProcessor) {
+		((MEProcessor) processor).setVmeRegister(imm16, processor.cpu.getRegister(rt));
+	} else {
+		processor.cpu.doUNK(String.format("Unsupported processor for mtvme instruction is not an MEProcessor: 0x%08X: [0x%08X]", processor.cpu.pc, insn));
+	}
+}
+@Override
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
+}
+@Override
+public String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	return Common.disasmRTVME("mtvme", rt, imm16);
+}
+};
+public static final Instruction MFVME = new Instruction(253) {
+
+@Override
+public final String name() { return "MFVME"; }
+
+@Override
+public final String category() { return "ME"; }
+
+@Override
+public void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	if (processor.cp0.getCpuid() != MEProcessor.CPUID_ME) {
+		processor.cpu.doUNK(String.format("Unsupported mfvme instruction on the main processor: 0x%08X: [0x%08X]", processor.cpu.pc, insn));
+	} else if (processor instanceof MEProcessor) {
+		processor.cpu.setRegister(rt, ((MEProcessor) processor).getVmeRegister(imm16));
+	} else {
+		processor.cpu.doUNK(String.format("Unsupported processor for mfvme instruction is not an MEProcessor: 0x%08X: [0x%08X]", processor.cpu.pc, insn));
+	}
+}
+@Override
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
+}
+@Override
+public String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	return Common.disasmRTVME("mfvme", rt, imm16);
 }
 };
 }

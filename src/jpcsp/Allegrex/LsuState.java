@@ -26,7 +26,7 @@ import jpcsp.Memory;
  */
 public class LsuState extends MduState {
 
-    public static final Memory memory = Memory.getInstance();
+    public Memory memory = Memory.getInstance();
     protected static final boolean CHECK_ALIGNMENT = true;
 
     @Override
@@ -47,6 +47,10 @@ public class LsuState extends MduState {
 
     public LsuState(LsuState that) {
         super(that);
+    }
+
+    public void setMemory(Memory memory) {
+    	this.memory = memory;
     }
 
     public void doLB(int rt, int rs, int simm16) {

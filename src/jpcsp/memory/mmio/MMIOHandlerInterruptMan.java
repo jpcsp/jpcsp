@@ -27,7 +27,7 @@ import jpcsp.Emulator;
 import jpcsp.HLE.kernel.managers.IntrManager;
 
 public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
-	private static MMIOHandlerInterruptMan instance;
+	private static MMIOHandlerProxyOnCpu instance;
 	public static final int BASE_ADDRESS = 0xBC300000;
 	private static final int NUMBER_INTERRUPTS = 64;
 	public final boolean interruptTriggered[] = new boolean[NUMBER_INTERRUPTS];
@@ -35,8 +35,12 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	public final boolean interruptOccurred[] = new boolean[NUMBER_INTERRUPTS];
 
 	public static MMIOHandlerInterruptMan getInstance() {
+		return (MMIOHandlerInterruptMan) getProxyInstance().getInstance();
+	}
+
+	public static MMIOHandlerProxyOnCpu getProxyInstance() {
 		if (instance == null) {
-			instance = new MMIOHandlerInterruptMan(BASE_ADDRESS);
+			instance = new MMIOHandlerProxyOnCpu(new MMIOHandlerInterruptMan(BASE_ADDRESS), new MMIOHandlerInterruptMan(BASE_ADDRESS));
 		}
 		return instance;
 	}
