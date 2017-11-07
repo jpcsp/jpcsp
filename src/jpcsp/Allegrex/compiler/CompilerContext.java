@@ -1700,6 +1700,9 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private boolean isCodeInstructionInKernelMemory() {
+    	if (codeInstruction == null) {
+    		return false;
+    	}
     	return codeInstruction.getAddress() < MemoryMap.START_USERSPACE;
     }
 
