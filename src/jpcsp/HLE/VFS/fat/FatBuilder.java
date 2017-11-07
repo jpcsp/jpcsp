@@ -41,11 +41,13 @@ public class FatBuilder {
     public final static int firstClusterNumber = 2;
 	private final FatVirtualFile vFile;
 	private final IVirtualFileSystem vfs;
+	private final int maxNumberClusters;
     private int firstFreeCluster;
 
-	public FatBuilder(FatVirtualFile vFile, IVirtualFileSystem vfs) {
+	public FatBuilder(FatVirtualFile vFile, IVirtualFileSystem vfs, int maxNumberClusters) {
 		this.vFile = vFile;
 		this.vfs = vfs;
+		this.maxNumberClusters = maxNumberClusters;
 
 		firstFreeCluster = firstClusterNumber;
 	}
@@ -61,7 +63,12 @@ public class FatBuilder {
 		setClusters(rootDirectory, rootDirectoryClusters);
 
 		if (log.isDebugEnabled()) {
+			log.debug(String.format("Using 0x%X clusters out of 0x%X", firstFreeCluster, maxNumberClusters));
 			debugScan(rootDirectory);
+		}
+
+		if (firstFreeCluster > maxNumberClusters) {
+			log.error(String.format("Too many files in the Fat partition: required clusters=0x%X, max clusters=0x%X", firstFreeCluster, maxNumberClusters));
 		}
 
 		return rootDirectory;

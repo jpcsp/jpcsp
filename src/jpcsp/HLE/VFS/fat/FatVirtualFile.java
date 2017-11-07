@@ -76,16 +76,19 @@ public abstract class FatVirtualFile implements IVirtualFile {
 			log.debug(String.format("totalSectors=0x%X, fatSectors=0x%X", totalSectors, fatSectors));
 		}
 
+		int usedSectors = reservedSectors + fatSectors * numberOfFats;
+		usedSectors += (0x200 << 5) / sectorSize;
+		int maxNumberClusters = (totalSectors - usedSectors) / getSectorsPerCluster();
 		// Allocate the FAT cluster map
-		fatClusterMap = new int[fatSectors * (sectorSize / 4)];
+		fatClusterMap = new int[maxNumberClusters];
 		// First 2 special entries in the cluster map
 		fatClusterMap[0] = 0xFFFFFFF8 & getClusterMask(); // 0xF8 is matching the boot sector Media type field
 		fatClusterMap[1] = 0xFFFFFFFF & getClusterMask();
 
 		// Allocate the FAT file info map
-		fatFileInfoMap = new FatFileInfo[fatClusterMap.length];
+		fatFileInfoMap = new FatFileInfo[maxNumberClusters];
 
-		builder = new FatBuilder(this, vfs);
+		builder = new FatBuilder(this, vfs, maxNumberClusters);
 	}
 
 	protected abstract int getClusterMask();

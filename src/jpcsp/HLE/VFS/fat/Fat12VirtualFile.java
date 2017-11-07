@@ -133,8 +133,13 @@ public class Fat12VirtualFile extends FatVirtualFile {
 		int offset = (fatIndex * sectorSize) / 3 * 2;
 		int startIndex = (offset / 2 * 3) - (fatIndex * sectorSize);
 		for (int i = startIndex, j = 0; i < sectorSize; j += 2) {
-			int value = fatClusterMap[offset + j];
-			value |= fatClusterMap[offset + j + 1] << 12;
+			int value = 0;
+			if (offset + j < fatClusterMap.length) {
+				value = fatClusterMap[offset + j];
+				if (offset + j + 1 < fatClusterMap.length) {
+					value |= fatClusterMap[offset + j + 1] << 12;
+				}
+			}
 
 			// Store 3 bytes representing two FAT12 entries
 			storeFatByte(i, value);
