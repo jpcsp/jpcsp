@@ -78,6 +78,10 @@ public class MemoryRange {
 		length += size;
 	}
 
+	public int getValue(int address) {
+		return values[(address - this.address) >>> 2];
+	}
+
 	public boolean areValuesChanged() {
 		if (RuntimeContext.hasMemoryInt(address)) {
 			// Optimized for the most common case (i.e. using memoryInt)

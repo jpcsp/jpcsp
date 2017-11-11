@@ -27,7 +27,6 @@ import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
-import jpcsp.HLE.modules.ThreadManForUser;
 
 import org.apache.log4j.Logger;
 import org.objectweb.asm.Label;

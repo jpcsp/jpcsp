@@ -19,6 +19,8 @@ package jpcsp.Allegrex.compiler;
 import java.util.LinkedList;
 import java.util.List;
 
+import jpcsp.Memory;
+
 /**
  * @author gid15
  *
@@ -26,8 +28,9 @@ import java.util.List;
 public class MemoryRanges {
 	private List<MemoryRange> ranges = new LinkedList<MemoryRange>();
 
-	public void addAddress(int address) {
+	public void addAddress(int rawAddress) {
 		final int length = 4;
+		final int address = rawAddress & Memory.addressMask;
 		for (MemoryRange memoryRange : ranges) {
 			// The most common case: the address is extending the top of the range
 			if (address == memoryRange.getAddress() + memoryRange.getLength()) {
@@ -44,7 +47,7 @@ public class MemoryRanges {
 			}
 		}
 
-		MemoryRange memoryRange = new MemoryRange(address, length);
+		MemoryRange memoryRange = new MemoryRange(rawAddress, length);
 		ranges.add(memoryRange);
 	}
 
@@ -72,6 +75,16 @@ public class MemoryRanges {
 		}
 
 		return false;
+	}
+
+	public int getValue(int address) {
+		for (MemoryRange memoryRange : ranges) {
+			if (memoryRange.isOverlappingWithAddress(address)) {
+				return memoryRange.getValue(address);
+			}
+		}
+
+		return 0;
 	}
 
 	@Override

@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
+import jpcsp.Memory;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.nativeCode.HookCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
@@ -154,6 +155,11 @@ public class CodeBlock {
 		}
 
 		return null;
+	}
+
+	public int getCodeInstructionOpcode(int rawAddress) {
+		int address = rawAddress & Memory.addressMask;
+		return memoryRanges.getValue(address);
 	}
 
 	public String getClassName() {

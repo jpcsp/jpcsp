@@ -31,8 +31,6 @@ import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.CodeBlock;
 import jpcsp.Allegrex.compiler.CodeInstruction;
 import jpcsp.Allegrex.compiler.Compiler;
-import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
 
 import org.w3c.dom.Element;
@@ -377,9 +375,8 @@ public class NativeCodeManager {
 			}
 		}
 
-		IMemoryReader codeBlockReader = MemoryReader.getMemoryReader(address, 4);
 		for (int i = 0; i < numOpcodes; i++) {
-			int opcode = codeBlockReader.readNext();
+			int opcode = codeBlock.getCodeInstructionOpcode(address + (i << 2));
 			if (!nativeCodeSequence.isMatching(i, opcode)) {
 				return false;
 			}
