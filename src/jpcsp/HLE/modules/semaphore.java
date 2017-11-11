@@ -152,9 +152,7 @@ public class semaphore extends HLEModule {
 		return false;
 	}
 
-	@HLELogging(level = "info")
-    @HLEFunction(nid = 0x4C537C72, version = 150)
-    public int sceUtilsBufferCopyWithRange(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outAddr, int outSize, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer inAddr, int inSize, int cmd) {
+    public int hleUtilsBufferCopyWithRange(TPointer outAddr, int outSize, TPointer inAddr, int inSize, int cmd) {
 		int originalInSize = inSize;
 
 		// The input size needs for some KIRK commands to be 16-bytes aligned
@@ -199,6 +197,12 @@ public class semaphore extends HLEModule {
     	memoryWriter.flush();
 
     	return 0;
+    }
+
+    @HLELogging(level = "info")
+    @HLEFunction(nid = 0x4C537C72, version = 150)
+    public int sceUtilsBufferCopyWithRange(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outAddr, int outSize, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer inAddr, int inSize, int cmd) {
+    	return hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, cmd);
     }
 
 	@HLELogging(level = "info")

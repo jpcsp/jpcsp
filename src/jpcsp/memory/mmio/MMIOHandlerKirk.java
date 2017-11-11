@@ -17,31 +17,40 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MEMLMD_INTR;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT_FUSE;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_GEN_KEYS;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_MULTIPLY_POINT;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_SIGN;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_VERIFY;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ENCRYPT;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_PRIV_SIG_CHECK;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_PRNG;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_SHA1_HASH;
+import static jpcsp.crypto.KIRK.PSP_KIRK_INVALID_OPERATION;
+
+import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.modules.semaphore;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerKirk extends MMIOHandlerBase {
+	private static Logger log = semaphore.log;
 	public static final int RESULT_SUCCESS = 0;
-	public static final int RESULT_KIRK_NOT_ENABLED = 1;
-	public static final int RESULT_INVALID_MODE = 2;
-	public static final int RESULT_HEADER_CHECK_INVALID = 3;
-	public static final int RESULT_DATA_CHECK_INVALID = 4;
-	public static final int RESULT_SIG_CHECK_INVALID = 5;
-	public static final int RESULT_KIRK_NOT_INITIALIZED = 12;
-	public static final int RESULT_INVALID_OPERATION = 13;
-	public static final int RESULT_INVALID_SEED_CODE = 14;
-	public static final int RESULT_INVALID_SIZE = 15;
-	public static final int RESULT_DATA_SIZE_IS_ZERO = 16;
-	public static final int STATUS_PHASE1_MASK = 0x11;
 	public static final int STATUS_PHASE1_IN_PROGRESS = 0x00;
 	public static final int STATUS_PHASE1_COMPLETED = 0x01;
 	public static final int STATUS_PHASE1_ERROR = 0x10;
-	public static final int STATUS_PHASE2_MASK = 0x22;
+	public static final int STATUS_PHASE1_MASK = STATUS_PHASE1_COMPLETED | STATUS_PHASE1_ERROR;
 	public static final int STATUS_PHASE2_IN_PROGRESS = 0x00;
 	public static final int STATUS_PHASE2_COMPLETED = 0x02;
 	public static final int STATUS_PHASE2_ERROR = 0x20;
+	public static final int STATUS_PHASE2_MASK = STATUS_PHASE2_COMPLETED | STATUS_PHASE2_ERROR;
 	public int signature = 0x4B52494B; // KIRK
 	public int version = 0x30313030; // 0010
 	public int error;
@@ -99,6 +108,66 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		}
 	}
 
+	private int hleUtilsBufferCopyWithRange() {
+		TPointer outAddr = new TPointer(getMemory(), destAddr);
+		TPointer inAddr = new TPointer(getMemory(), sourceAddr);
+
+		int inSize;
+		int outSize;
+		switch (command) {
+			case PSP_KIRK_CMD_ENCRYPT:
+			case PSP_KIRK_CMD_ENCRYPT_FUSE:
+			case PSP_KIRK_CMD_DECRYPT:
+			case PSP_KIRK_CMD_DECRYPT_FUSE:
+				// AES128_CBC_Header
+				inSize = inAddr.getValue32(16) + 20;
+				outSize = inSize;
+				break;
+			case PSP_KIRK_CMD_DECRYPT_PRIVATE:
+			case PSP_KIRK_CMD_PRIV_SIG_CHECK:
+				// AES128_CMAC_Header
+				inSize = inAddr.getValue32(112) + 144;
+				outSize = inSize;
+				break;
+			case PSP_KIRK_CMD_SHA1_HASH:
+				// SHA1_Header
+				inSize = inAddr.getValue32(0) + 4;
+				outSize = inSize;
+				break;
+            case PSP_KIRK_CMD_ECDSA_GEN_KEYS:
+            	inSize = 0;
+				outSize = 0x3C;
+            	break;
+            case PSP_KIRK_CMD_ECDSA_MULTIPLY_POINT:
+            	inSize = 0x3C;
+            	outSize = 0x28;
+            	break;
+            case PSP_KIRK_CMD_PRNG:
+            	inSize = 0;
+            	outSize = 0x10; // TODO Unknown outSize?
+            	break;
+            case PSP_KIRK_CMD_ECDSA_SIGN:
+            	inSize = 0x34;
+            	outSize = 0x28;
+            	break;
+            case PSP_KIRK_CMD_ECDSA_VERIFY:
+            	inSize = 0x64;
+            	outSize = 0;
+            	break;
+            case 0xF:
+            case 0x12:
+				// These are valid KIRK commands, but their behavior is unknown.
+            	// Simulate success
+				log.warn(String.format("MMIOHandlerKirk.hleUtilsBufferCopyWithRange unknown KIRK command 0x%X", command));
+				return RESULT_SUCCESS;
+			default:
+				log.error(String.format("MMIOHandlerKirk.hleUtilsBufferCopyWithRange unimplemented KIRK command 0x%X", command));
+				return PSP_KIRK_INVALID_OPERATION;
+		}
+
+		return Modules.semaphoreModule.hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, command);
+	}
+
 	private void startProcessing(int value) {
 		switch (value) {
 			case 1:
@@ -107,12 +176,14 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 					log.debug(String.format("KIRK startProcessing 1 on %s", this));
 					log.debug(String.format("source: %s", Utilities.getMemoryDump(sourceAddr, 0x100)));
 				}
-				result = RESULT_SUCCESS;
+				result = hleUtilsBufferCopyWithRange();
 				setStatus(STATUS_PHASE1_MASK, STATUS_PHASE1_COMPLETED);
 				RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MEMLMD_INTR);
 				break;
 			case 2:
 				setStatus(STATUS_PHASE2_MASK, STATUS_PHASE2_IN_PROGRESS);
+				log.error(String.format("Unimplemented Phase 2 KIRK command 0x%X on %s", command, this));
+				log.error(String.format("source: %s", Utilities.getMemoryDump(sourceAddr, 0x100)));
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("KIRK startProcessing 2 on %s", this));
 					log.debug(String.format("source: %s", Utilities.getMemoryDump(sourceAddr, 0x100)));
