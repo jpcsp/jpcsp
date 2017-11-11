@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import static jpcsp.Emulator.getProcessor;
 import static jpcsp.Emulator.getScheduler;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;
 import static jpcsp.scheduler.Scheduler.getNow;

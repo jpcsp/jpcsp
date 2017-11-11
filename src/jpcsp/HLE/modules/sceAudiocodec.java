@@ -48,6 +48,10 @@ public class sceAudiocodec extends HLEModule {
 	public static final int PSP_CODEC_MP3     = 0x00001002;
 	public static final int PSP_CODEC_AAC     = 0x00001003;
 
+	public static final int AUDIOCODEC_AT3P_UNKNOWN_52 = 44100;
+	public static final int AUDIOCODEC_AT3P_UNKNOWN_60 = 2;
+	public static final int AUDIOCODEC_AT3P_UNKNOWN_64 = 0x2E8;
+
 	public static class AudiocodecInfo {
 		protected ICodec codec;
 		protected boolean codecInitialized;
@@ -125,7 +129,7 @@ public class sceAudiocodec extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x9D3F790C, version = 150)
-	public int sceAudiocodecCheckNeedMem(TPointer workArea, int codecType) {
+	public int sceAudiocodecCheckNeedMem(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
 		workArea.setValue32(0, 0x05100601);
 
 		switch (codecType) {
@@ -134,9 +138,9 @@ public class sceAudiocodec extends HLEModule {
 				break;
 			case PSP_CODEC_AT3PLUS:
 				workArea.setValue32(16, 0x7BC0);
-				workArea.setValue32(52, 44100);
-				workArea.setValue32(60, 2);
-				workArea.setValue32(64, 0x2E8);
+				workArea.setValue32(52, AUDIOCODEC_AT3P_UNKNOWN_52);
+				workArea.setValue32(60, AUDIOCODEC_AT3P_UNKNOWN_60);
+				workArea.setValue32(64, AUDIOCODEC_AT3P_UNKNOWN_64);
 				break;
 			case PSP_CODEC_MP3:
 				break;
@@ -155,7 +159,7 @@ public class sceAudiocodec extends HLEModule {
 		return hleAudiocodecInit(workArea, codecType, 2);
 	}
 
-	private int getOutputBufferSize(TPointer workArea, int codecType) {
+	public static int getOutputBufferSize(TPointer workArea, int codecType) {
 		int outputBufferSize;
 		switch (codecType) {
 			case PSP_CODEC_AT3PLUS:

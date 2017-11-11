@@ -337,6 +337,7 @@ public class reboot extends HLEModule {
     }
 
     private void addFunctionNames() {
+    	// These function names are taken from uOFW (https://github.com/uofw/uofw)
     	LoadCoreForKernelModule.addFunctionName("sceInit",           0x0080, "sceInit.patchGames");
     	LoadCoreForKernelModule.addFunctionName("sceInit",           0x0218, "sceInit.InitCBInit");
     	LoadCoreForKernelModule.addFunctionName("sceInit",           0x02E0, "sceInit.ExitInit");
@@ -355,6 +356,16 @@ public class reboot extends HLEModule {
     	LoadCoreForKernelModule.addFunctionName("sceLoaderCore",     0x56B8, "sceLoaderCore.PspUncompress");
     	LoadCoreForKernelModule.addFunctionName("sceGE_Manager",     0x0258, "sceGE_Manager.sceGeInit");
     	LoadCoreForKernelModule.addFunctionName("sceMeCodecWrapper", 0x1C04, "sceMeCodecWrapper.decrypt");
+    	LoadCoreForKernelModule.addFunctionName("sceAudio_Driver",   0x0000, "sceAudio_Driver.updateAudioBuf");
+    	LoadCoreForKernelModule.addFunctionName("sceAudio_Driver",   0x137C, "sceAudio_Driver.audioOutput");
+    	LoadCoreForKernelModule.addFunctionName("sceAudio_Driver",   0x0530, "sceAudio_Driver.audioOutputDmaCb");
+    	LoadCoreForKernelModule.addFunctionName("sceAudio_Driver",   0x01EC, "sceAudio_Driver.dmaUpdate");
+    	LoadCoreForKernelModule.addFunctionName("sceAudio_Driver",   0x1970, "sceAudio_Driver.audioIntrHandler");
+    	LoadCoreForKernelModule.addFunctionName("sceAudio_Driver",   0x02B8, "sceAudio_Driver.audioMixerThread");
+    	LoadCoreForKernelModule.addFunctionName("sceSYSCON_Driver",  0x0A10, "sceSYSCON_Driver._sceSysconGpioIntr");
+    	LoadCoreForKernelModule.addFunctionName("sceSYSCON_Driver",  0x2434, "sceSYSCON_Driver._sceSysconPacketEnd");
+    	LoadCoreForKernelModule.addFunctionName("sceDisplay_Service",0x04EC, "sceDisplay_Service.sceDisplayInit");
+    	LoadCoreForKernelModule.addFunctionName("scePower_Service",  0x0000, "scePower_Service.scePowerInit");
     }
 
     public static void dumpAllModulesAndLibraries() {
@@ -465,7 +476,10 @@ public class reboot extends HLEModule {
 		sceSysmemUidCB.read(mem, cb);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("%s: uid=0x%X, name='%s', status=0x%X(%s), currentPriority=0x%X%s: %s", comment, uid, sceSysmemUidCB.name, status, SceKernelThreadInfo.getStatusName(status), currentPriority, waitInfo, Utilities.getMemoryDump(address, 0x140)));
+			log.debug(String.format("%s: uid=0x%X, name='%s', status=0x%X(%s), currentPriority=0x%X%s", comment, uid, sceSysmemUidCB.name, status, SceKernelThreadInfo.getStatusName(status), currentPriority, waitInfo));
+			if (log.isTraceEnabled()) {
+				log.trace(Utilities.getMemoryDump(address, 0x140));
+			}
 		}
     }
 

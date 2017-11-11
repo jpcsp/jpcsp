@@ -55,6 +55,10 @@ public class sceNand extends HLEModule {
     private static final int pageSize = 0x200; // 512B per page
     private static final int pagesPerBlock = 0x20; // 16KB per block
     private static final int totalBlocks = 0x800; // 32MB in total
+    private static final int idStoragePpnStart = 0x600;
+    private static final int idStoragePpnEnd = 0x7FF;
+    private static final int iplId = 0x6DC64A38;
+    private static final int idStorageId = 0xFFFF0101;
     private byte[] dumpBlocks;
     private byte[] dumpSpares;
     private int[] dumpResults;
@@ -371,6 +375,27 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	vFile.ioRead(buffer, pageSize);
     }
 
+    private void readIdStoragePage(TPointer buffer, int page) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("readIdStoragePage page=0x%X", page));
+    	}
+
+    	switch (page) {
+    		case 0:
+    			buffer.memset((byte) 0xFF, pageSize);
+    			buffer.setValue16( 4, (short) 0x0008);
+    			buffer.setValue16( 6, (short) 0x0004);
+    			buffer.setValue16( 8, (short) 0x0006);
+    			buffer.setValue16(10, (short) 0x0045);
+    			buffer.setValue16(12, (short) 0x0100);
+    			buffer.setValue16(14, (short) 0x0120);
+    			break;
+    		case 1:
+    			buffer.memset((byte) 0xFF, pageSize);
+    			break;
+    	}
+    }
+
     protected int hleNandReadPages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc) {
     	if (user.isNotNull()) {
 	    	if (dumpBlocks != null && !emulateNand) {
@@ -386,6 +411,8 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 		    			for (int n = 0; n < 8; n++) {
 		    				user.setValue16(n * 2, (short) (16 + n));
 		    			}
+		    		} else if ((ppn + i) >= idStoragePpnStart && (ppn + i) <= idStoragePpnEnd) {
+		    			readIdStoragePage(user, ppn + i - idStoragePpnStart);
 		    		} else if (ppnToLbn[ppn + i] == 0) {
 		    			// Master Boot Record
 		    			readMasterBootRecord0(user);
@@ -454,7 +481,9 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	    		sceNandSpare.blockStat = 0xFF;
         			sceNandSpare.lbn = ppnToLbn[ppn + i];
     	    		if (ppn == 0x80) {
-    	    			sceNandSpare.id = 0x6DC64A38; // For IPL area
+    	    			sceNandSpare.id = iplId; // For IPL area
+    	    		} else if (ppn >= idStoragePpnStart && ppn <= idStoragePpnEnd) {
+    	    			sceNandSpare.id = idStorageId; // For ID Storage area
     	    		}
     	    		sceNandSpare.reserved2[0] = 0xFF;
     	    		sceNandSpare.reserved2[1] = 0xFF;
@@ -484,7 +513,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	}
 
     	int result = 0;
-    	if (dumpResults != null) {
+    	if (dumpResults != null && !emulateNand) {
     		result = dumpResults[ppn / pagesPerBlock];
     	}
 
@@ -767,7 +796,13 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x88CC9F72, version = 150)
-    public int sceNandCorrectEcc() {
+    public int sceNandCorrectEcc(TPointer buffer, int ecc) {
+    	// Required by sceIdStorageInit() to recognize the ID Storage pages
+    	if (buffer.getValue32(4) == idStorageId) {
+    		buffer.setValue8(2, (byte) 0x73);
+    		buffer.setValue8(3, (byte) 0x01);
+    	}
+
     	return 0;
     }
 }

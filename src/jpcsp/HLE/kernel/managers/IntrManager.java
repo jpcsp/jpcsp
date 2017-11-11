@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Vector;
 
 import jpcsp.Emulator;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.IAction;
@@ -153,6 +154,11 @@ public class IntrManager {
 	}
 
 	private void installDefaultInterrupts() {
+		// No default interrupts when running LLE
+		if (RuntimeContextLLE.isLLEActive()) {
+			return;
+		}
+
 		Scheduler scheduler = Emulator.getScheduler();
 
 		// install VBLANK interrupt every 1/60 second

@@ -33,7 +33,7 @@ public class sceGpio extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xFBC85E74, version = 150)
+    @HLEFunction(nid = 0xFBC85E74, version = 660)
     public int sceGpioSetIntrMode(int interruptNumber, int mode) {
         return 0;
     }
@@ -53,5 +53,11 @@ public class sceGpio extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x310F0CCF, version = 150)
     public void sceGpioPortSet(int mask) {
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1A730F20, version = 660)
+    public int sceGpioAcquireIntr(int interruptNumber) {
+    	return 0;
     }
 }

@@ -995,7 +995,7 @@ public class sceSysreg extends HLEModule {
 		// Tachyon = 0x00500000, Baryon = 0x00234000 TA-085 2g
     	int tachyon = 0;
     	switch (Model.getModel()) {
-    		case Model.MODEL_PSP_FAT : tachyon = 0x00140000; break;
+    		case Model.MODEL_PSP_FAT : tachyon = 0x00300000; break;
     		case Model.MODEL_PSP_SLIM: tachyon = 0x00500000; break;
     		default:
     			log.warn(String.format("sceSysregGetTachyonVersion unknown tachyon version for PSP Model %s", Model.getModelName(Model.getModel())));

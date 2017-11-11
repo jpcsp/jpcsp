@@ -56,6 +56,11 @@ public class sceVideocodec extends HLEModule {
     // Based on JpcspTrace tests, sceVideocodecDelete delays for 40ms
     public static final int videocodecDeleteDelay = 40000;
     public static final int EDRAM_MEMORY_MASK = 0x03FFFFFF;
+    public static final int VIDEOCODEC_OPEN_TYPE0_UNKNOWN24 = 0x3C2C;
+    public static final int VIDEOCODEC_OPEN_TYPE0_UNKNOWN0 = 0x1F6400;
+    public static final int VIDEOCODEC_OPEN_TYPE0_UNKNOWN4 = 0x15C00;
+    public static final int VIDEOCODEC_OPEN_TYPE1_UNKNOWN24 = 0x264C;
+    public static final int VIDEOCODEC_OPEN_TYPE1_UNKNOWN32 = 0xB69E3;
     protected SysMemInfo memoryInfo;
     protected SysMemInfo edramInfo;
     protected int frameCount;
@@ -593,16 +598,16 @@ public class sceVideocodec extends HLEModule {
     	switch (type) {
     		case 0:
 	        	buffer.setValue32(8, 1);
-	        	buffer.setValue32(24, 0x3C2C);
-	        	buffer.setValue32(32, 0x15C00);
+	        	buffer.setValue32(24, VIDEOCODEC_OPEN_TYPE0_UNKNOWN24);
+	        	buffer.setValue32(32, VIDEOCODEC_OPEN_TYPE0_UNKNOWN4);
 
-	        	buffer2.setValue32(0, 0x1F6400);
-	        	buffer2.setValue32(4, 0x15C00);
+	        	buffer2.setValue32(0, VIDEOCODEC_OPEN_TYPE0_UNKNOWN0);
+	        	buffer2.setValue32(4, VIDEOCODEC_OPEN_TYPE0_UNKNOWN4);
 	        	break;
     		case 1:
     			buffer.setValue32(8, 0);
-            	buffer.setValue32(24, 0x264C);
-            	buffer.setValue32(32, 0xB69E3);
+            	buffer.setValue32(24, VIDEOCODEC_OPEN_TYPE1_UNKNOWN24);
+            	buffer.setValue32(32, VIDEOCODEC_OPEN_TYPE1_UNKNOWN32);
     			break;
 			default:
 	    		log.warn(String.format("sceVideocodecOpen unknown type %d", type));

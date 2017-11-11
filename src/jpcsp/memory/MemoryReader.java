@@ -42,7 +42,7 @@ public class MemoryReader {
 		} else if (address >= MemoryMap.START_SCRATCHPAD && address <= MemoryMap.END_SCRATCHPAD) {
 			length = MemoryMap.END_SCRATCHPAD - address + 1;
 		} else if (rawAddress >= MemoryMap.START_IO_0 && rawAddress <= MemoryMap.END_IO_1) {
-			length = MemoryMap.END_IO_1 - address + 1;
+			length = MemoryMap.END_IO_1 - rawAddress + 1;
 		} else {
 			length = 0;
 		}

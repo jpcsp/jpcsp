@@ -87,9 +87,16 @@ public class sceIdStorage extends HLEModule {
 		return 0;
 	}
 
+	/**
+	 * Retrieves the whole 512 byte container for the key.
+	 * 
+	 * @param key    idstorage key
+	 * @param buffer buffer with at last 512 bytes of storage 
+	 * @return       0.
+	 */
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xEB00C509, version = 150)
-	public int sceIdStorageReadLeaf() {
+	public int sceIdStorageReadLeaf(int key, TPointer buffer) {
 		return 0;
 	}
 

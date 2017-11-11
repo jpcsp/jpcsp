@@ -18,10 +18,16 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 
 public class DmacManForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("DmacManForKernel");
@@ -29,6 +35,7 @@ public class DmacManForKernel extends HLEModule {
     @HLEUnimplemented
 	@HLEFunction(nid = 0x59615199, version = 150)
 	public int sceKernelDmaOpAlloc() {
+    	// Has no parameters
     	return 0;
 	}
 
@@ -40,19 +47,19 @@ public class DmacManForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xF64BAB99, version = 150)
-	public int sceKernelDmaOpAssign() {
+	public int sceKernelDmaOpAssign(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr, int unknown1, int unknown2, int unknown3, int unknown4) {
     	return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x3BDEA96C, version = 150)
-	public int sceKernelDmaOpEnQueue() {
+	public int sceKernelDmaOpEnQueue(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr) {
     	return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x5AF32783, version = 150)
-	public int sceKernelDmaOpQuit() {
+	public int sceKernelDmaOpQuit(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.in) TPointer dmaOpAddr) {
     	return 0;
 	}
 
@@ -70,13 +77,19 @@ public class DmacManForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xD0358BE9, version = 150)
-	public int sceKernelDmaOpSetCallback() {
+	public int sceKernelDmaOpSetCallback(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr, TPointer callback, int unknown) {
     	return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xDB286D65, version = 150)
 	public int sceKernelDmaOpSync() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x7D21A2EF, version = 150)
+	public int sceKernelDmaOpSetupLink(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr, int unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 unknown2) {
     	return 0;
 	}
 }

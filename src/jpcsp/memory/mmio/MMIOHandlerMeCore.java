@@ -16,17 +16,31 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import static jpcsp.Emulator.getProcessor;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
+import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
+import static jpcsp.HLE.modules.sceAudiocodec.getOutputBufferSize;
+import static jpcsp.HLE.modules.sceVideocodec.VIDEOCODEC_OPEN_TYPE0_UNKNOWN0;
+import static jpcsp.HLE.modules.sceVideocodec.VIDEOCODEC_OPEN_TYPE0_UNKNOWN24;
+import static jpcsp.HLE.modules.sceVideocodec.VIDEOCODEC_OPEN_TYPE0_UNKNOWN4;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.modules.sceAudiocodec;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 
 public class MMIOHandlerMeCore extends MMIOHandlerBase {
 	public static final int BASE_ADDRESS = 0xBFC00600;
+	public static final int ME_CMD_VIDEOCODEC_OPEN = 0x0;
+	public static final int ME_CMD_AT3P_DECODE = 0x60;
 	public static final int ME_CMD_AT3P_CHECK_NEED_MEM1 = 0x63;
+	public static final int ME_CMD_AT3P_SET_UNK68 = 0x64;
 	public static final int ME_CMD_AT3P_CHECK_NEED_MEM2 = 0x66;
+	public static final int ME_CMD_AT3P_SETUP_CHANNEL = 0x67;
+	public static final int ME_CMD_AT3P_CHECK_UNK20 = 0x68;
+	public static final int ME_CMD_AT3P_SET_UNK44 = 0x69;
 	public static final int ME_CMD_AT3_CHECK_NEED_MEM = 0x72;
 	public static final int ME_CMD_MALLOC = 0x180;
 	public static final int ME_CMD_FREE = 0x181;
@@ -34,6 +48,8 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 	public static final int ME_CMD_AW_EDRAM_BUS_CLOCK_ENABLE = 0x183;
 	public static final int ME_CMD_AW_EDRAM_BUS_CLOCK_DISBABLE = 0x184;
 	public static final int ME_CMD_BOOT = 0x185;
+	public static final int ME_CMD_CPU = 0x186;
+	public static final int ME_CMD_POWER = 0x187;
 	private static MMIOHandlerMeCore instance;
 	private int cmd;
 	private int unknown;
@@ -52,26 +68,88 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 		super(baseAddress);
 	}
 
+	private int decodeDebugIndex = 0;
+	private void meAtrac3plusDecode(TPointer workArea) {
+		workArea.setValue32(8, 0); // error field
+		int outputBufferSize = getOutputBufferSize(workArea, PSP_CODEC_AT3PLUS);
+		workArea.setValue32(36, outputBufferSize);
+
+		int inputBufferSize;
+		if (workArea.getValue32(48) == 0) {
+			inputBufferSize = workArea.getValue32(64) + 2;
+		} else {
+			inputBufferSize = 0x100A;
+		}
+		workArea.setValue32(28, inputBufferSize);
+
+		int outputBuffer = workArea.getValue32(32);
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Generating dummy audio data starting at 0x%04X", decodeDebugIndex));
+			IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(outputBuffer, outputBufferSize, 2);
+			for (int i = 0; i < outputBufferSize; i += 2) {
+				memoryWriter.writeNext(decodeDebugIndex++);
+			}
+		} else {
+			getMemory().memset(outputBuffer, (byte) 0, outputBufferSize);
+		}
+	}
+
 	public void interrupt() {
 		Memory mem = Memory.getInstance();
 		result = 0;
 
 		switch (cmd) {
+			case ME_CMD_VIDEOCODEC_OPEN:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_VIDEOCODEC_OPEN unknownAddr=0x%08X", parameters[0]));
+				}
+				mem.write32(parameters[0] + 0, VIDEOCODEC_OPEN_TYPE0_UNKNOWN0);
+				mem.write32(parameters[0] + 4, VIDEOCODEC_OPEN_TYPE0_UNKNOWN4);
+				result = VIDEOCODEC_OPEN_TYPE0_UNKNOWN24;
+				break;
 			case ME_CMD_AT3P_CHECK_NEED_MEM1:
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("ME_CMD_AT3P_CHECK_NEED_MEM1 unknownAddr1=0x%08X, unknownAddr2=0x%08X, unknownAddr3=0x%08X, unknownAddr4=0x%08X", parameters[0], parameters[1], parameters[2], parameters[3]));
 				}
-				mem.write32(parameters[0], 0); // Unknown value
-				mem.write32(parameters[1], -1); // Unknown value
-				mem.write32(parameters[2], 0); // Unknown value
+				mem.write32(parameters[0], sceAudiocodec.AUDIOCODEC_AT3P_UNKNOWN_52);
+				mem.write32(parameters[1], sceAudiocodec.AUDIOCODEC_AT3P_UNKNOWN_60);
+				mem.write32(parameters[2], sceAudiocodec.AUDIOCODEC_AT3P_UNKNOWN_64);
 				mem.write32(parameters[3], 0); // Unknown value
 				break;
 			case ME_CMD_AT3P_CHECK_NEED_MEM2:
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("ME_CMD_AT3P_CHECK_NEED_MEM2 unknownValue1=0x%X, neededMemAddr=0x%08X, errorAddr=0x%08X", parameters[0], parameters[1], parameters[2], parameters[3]));
+					log.debug(String.format("ME_CMD_AT3P_CHECK_NEED_MEM2 unknownValue1=0x%X, neededMemAddr=0x%08X, errorAddr=0x%08X", parameters[0], parameters[1], parameters[2]));
 				}
 				mem.write32(parameters[1], 0); // Needed mem
 				mem.write32(parameters[2], 0); // Error
+				break;
+			case ME_CMD_AT3P_SETUP_CHANNEL:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_AT3P_SETUP_CHANNEL unknownValue1=0x%X, unknownValue2=0x%X, unknownValue3=0x%X, unknownValue4=0x%X, edramAddr=0x%08X", parameters[0], parameters[1], parameters[2], parameters[3], parameters[4]));
+				}
+				break;
+			case ME_CMD_AT3P_SET_UNK44:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_AT3P_SET_UNK44 unk44Addr=0x%08X, edramAddr=0x%08X", parameters[0], parameters[1]));
+				}
+				mem.write32(parameters[0], 0); // Unknown value
+				break;
+			case ME_CMD_AT3P_SET_UNK68:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_AT3P_SET_UNK68 unk68Addr=0x%08X, edramAddr=0x%08X", parameters[0], parameters[1]));
+				}
+				mem.write32(parameters[0], 0); // Unknown value
+				break;
+			case ME_CMD_AT3P_CHECK_UNK20:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_AT3P_CHECK_UNK20 unk20=0x%X, edramAddr=0x%08X", parameters[0], parameters[1]));
+				}
+				break;
+			case ME_CMD_AT3P_DECODE:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_AT3P_DECODE workArea=0x%08X", parameters[0]));
+				}
+				meAtrac3plusDecode(new TPointer(getMemory(), parameters[0]));
 				break;
 			case ME_CMD_AT3_CHECK_NEED_MEM:
 				if (log.isDebugEnabled()) {
@@ -122,8 +200,18 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 					log.debug(String.format("ME_CMD_BOOT unknown=%b", parameters[0] != 0));
 				}
 				break;
+			case ME_CMD_CPU:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_CPU numerator=%d, denominator=%d", parameters[0], parameters[1]));
+				}
+				break;
+			case ME_CMD_POWER:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_POWER unknown1=0x%X, unknown2=0x%X", parameters[0], parameters[1]));
+				}
+				break;
 			default:
-				log.warn(String.format("MMIOHandlerMeCore unknown cmd=0x%X", cmd));
+				log.error(String.format("MMIOHandlerMeCore unknown cmd=0x%X", cmd));
 				break;
 		}
 		RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MECODEC_INTR);

@@ -38,7 +38,7 @@ public class RuntimeContextLLE {
 	public static Logger log = RuntimeContext.log;
 	private static final boolean isLLEActive = reboot.enableReboot;
 	private static Memory mmio;
-	public static int pendingInterruptIPbits;
+	public volatile static int pendingInterruptIPbits;
 
 	public static boolean isLLEActive() {
 		return isLLEActive;
@@ -91,6 +91,10 @@ public class RuntimeContextLLE {
 		}
 
 		pendingInterruptIPbits |= IPbits;
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("triggerInterruptException IPbits=0x%X, pendingInterruptIPbits=0x%X", IPbits, pendingInterruptIPbits));
+		}
 	}
 
 	public static int triggerSyscallException(Processor processor, int syscallCode) {
@@ -156,29 +160,13 @@ public class RuntimeContextLLE {
 	public static int triggerException(Processor processor, int exceptionNumber, int returnAddress) {
 		setExceptionCause(processor, exceptionNumber);
 
-		int ebase = prepareExceptionHandlerCall(processor);
+		int ebase = prepareExceptionHandlerCall(processor, false);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X", MMIOHandlerInterruptMan.getInstance().toStringInterruptTriggered(), ebase, processor.cp0.getEpc()));
+			log.debug(String.format("Calling exception handler for Syscall at 0x%08X, epc=0x%08X", ebase, processor.cp0.getEpc()));
 		}
 
 		return ebase;
-//		// Jump to the EBase address
-//		int address = ebase;
-//		while (true) {
-//			try {
-//				RuntimeContext.jump(address, returnAddress);
-//				break;
-//			} catch (StackPopException e) {
-//				if (log.isDebugEnabled()) {
-//					log.debug("triggerException", e);
-//				}
-//				address = e.getRa();
-//			} catch (Exception e) {
-//				log.error("Error while calling code at EBase", e);
-//				break;
-//			}
-//		}
 	}
 
 	public static void clearInterruptException(Processor processor, int IPbits) {
@@ -195,10 +183,12 @@ public class RuntimeContextLLE {
 
 	private static boolean isInterruptExceptionAllowed(Processor processor, int IPbits) {
 		if (IPbits == 0) {
+			log.debug("IPbits == 0");
 			return false;
 		}
 
 		if (processor.isInterruptsDisabled()) {
+			log.debug("Interrupts disabled");
 			return false;
 		}
 
@@ -273,11 +263,11 @@ public class RuntimeContextLLE {
 		return false;
 	}
 
-	private static int prepareExceptionHandlerCall(Processor processor) {
+	private static int prepareExceptionHandlerCall(Processor processor, boolean forceNoDelaySlot) {
 		int epc = processor.cpu.pc;
 
 		int cause = processor.cp0.getCause();
-		if (isInstructionInDelaySlot(epc)) {
+		if (!forceNoDelaySlot && isInstructionInDelaySlot(epc)) {
 			cause |= 0x80000000; // Set BD flag (Branch Delay Slot)
 			epc -= 4; // The EPC is set to the instruction having the delay slot
 		} else {
@@ -307,7 +297,9 @@ public class RuntimeContextLLE {
 			processor.cp0.setCause(cause);
 
 			setExceptionCause(processor, ExceptionManager.EXCEP_INT);
-			int ebase = prepareExceptionHandlerCall(processor);
+			// The compiler is only calling this function when
+			// we are not in a delay slot
+			int ebase = prepareExceptionHandlerCall(processor, true);
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X", MMIOHandlerInterruptMan.getInstance().toStringInterruptTriggered(), ebase, processor.cp0.getEpc()));

@@ -18,7 +18,6 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterruptException;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterruptException;
-import static jpcsp.Emulator.getProcessor;
 import static jpcsp.HLE.kernel.managers.ExceptionManager.IP2;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;

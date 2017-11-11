@@ -1547,7 +1547,9 @@ public class RuntimeContext {
 	    			Logger.getRootLogger().setLevel(Level.TRACE);
 	    		}
 	    		reboot.dumpAllThreads();
-	    		reboot.dumpAllModulesAndLibraries();
+	    		if (false) {
+	    			reboot.dumpAllModulesAndLibraries();
+	    		}
 
 	    		// Simulate an interrupt exception
 	    		switch (haltCount) {

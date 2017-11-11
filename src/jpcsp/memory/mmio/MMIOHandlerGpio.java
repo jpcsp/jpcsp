@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterrupt;
-import static jpcsp.Emulator.getProcessor;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_GPIO_INTR;
 
 import jpcsp.Emulator;

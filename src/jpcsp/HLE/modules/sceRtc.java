@@ -58,6 +58,8 @@ public class sceRtc extends HLEModule {
     final static int PSP_TIME_SECONDS_IN_MONTH = 2629743;
     final static int PSP_TIME_SECONDS_IN_YEAR = 31556926;
 
+    // Number of milliseconds between 1900-01-01 (reference date on a PSP)
+    // and 1970-01-01 (reference date on Java)
     private long rtcMagicOffset = 62135596800000000L;
     protected static SimpleDateFormat rfc3339 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
 

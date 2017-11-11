@@ -126,16 +126,20 @@ public class sceSyscon extends HLEModule {
 			scratchPad[i + 8] = scratchPad8 & 0xFF;
 		}
 
-		// 5-bytes value at offset 16
-		int scratchPad16 = (int) (Modules.sceRtcModule.hleGetCurrentTick() >> 19);
+		// 5-bytes value at offset 16, used to initialize the clock.
+		// Set this value to 0 to force the clock initialization at boot time.
+		long scratchPad16 = Modules.sceRtcModule.hleGetCurrentTick() >> 19;
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Initializing scratchPad16=0x%X", scratchPad16));
+		}
 		for (int i = 0; i < 5; i++, scratchPad16 >>= 8) {
-			scratchPad[i + 16] = scratchPad16 & 0xFF;
+			scratchPad[i + 16] = (int) scratchPad16 & 0xFF;
 		}
 
-		// Unknown 5-bytes value at offset 16
-		int scratchPad24 = 0;
+		// Unknown 5-bytes value at offset 24
+		long scratchPad24 = 0L;
 		for (int i = 0; i < 5; i++, scratchPad24 >>= 8) {
-			scratchPad[i + 24] = scratchPad24 & 0xFF;
+			scratchPad[i + 24] = (int) scratchPad24 & 0xFF;
 		}
 
 		alarm = 0;
@@ -226,7 +230,13 @@ public class sceSyscon extends HLEModule {
     }
 
     public int getPowerSupplyStatus() {
-    	return 0xC2;
+    	int powerSupplyStatus = 0xC0; // Unknown value
+
+    	if (Battery.isPresent()) {
+    		powerSupplyStatus |= 0x02; // Flag indicating that there is a battery present
+    	}
+
+    	return powerSupplyStatus;
     }
 
     public int getBatteryStatusCap1() {
@@ -270,6 +280,9 @@ public class sceSyscon extends HLEModule {
 
     public int readClock() {
     	return 0;
+    }
+
+    public void writeClock(int clock) {
     }
 
     public int readAlarm() {
@@ -918,5 +931,75 @@ public class sceSyscon extends HLEModule {
 	@HLEFunction(nid = 0x80711575, version = 150)
 	public int sceSysconWriteAlarm_660(int alarm) {
     	return sceSysconWriteAlarm(alarm);
+    }
+
+    /**
+     * Send a command to the syscon doing nothing.
+     *
+     * @return      0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xE6B74CB9, version = 150)
+	public int sceSysconNop() {
+    	return 0;
+    }
+
+    /**
+     * Set the low battery callback, that will be ran when the battery is low.
+     *
+     * @param callback         The callback function.
+     * @param callbackArgument The second argument that will be passed to the callback.
+     * @return                 0.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xAD555CE5, version = 150)
+	public int sceSysconSetLowBatteryCallback(TPointer callback, int callbackArgument) {
+    	return 0;
+    }
+
+    /**
+     * Set the low battery callback, that will be ran when the battery is low.
+     *
+     * @param callback         The callback function.
+     * @param callbackArgument The second argument that will be passed to the callback.
+     * @return                 0.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x599EB8A0, version = 660)
+	public int sceSysconSetLowBatteryCallback_660(TPointer callback, int callbackArgument) {
+    	return sceSysconSetLowBatteryCallback(callback, callbackArgument);
+    }
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xA3406117, version = 150)
+	public boolean sceSysconIsAcSupplied() {
+    	// Has no parameters
+    	return true;
+    }
+
+    /**
+     * Set the Ac supply callback, that will be ran when the PSP Ac power is (dis)connected (probably).
+     *
+     * @param callback         The callback function.
+     * @param callbackArgument The second argument that will be passed to the callback.
+     * @return                 0.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xE540E532, version = 150)
+	public int sceSysconSetAcSupplyCallback(TPointer callback, int callbackArgument) {
+    	return 0;
+    }
+
+    /**
+     * Set the Ac supply callback, that will be ran when the PSP Ac power is (dis)connected (probably).
+     *
+     * @param callback         The callback function.
+     * @param callbackArgument The second argument that will be passed to the callback.
+     * @return                 0.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x657DCEF7, version = 660)
+	public int sceSysconSetAcSupplyCallback_660(TPointer callback, int callbackArgument) {
+    	return sceSysconSetAcSupplyCallback(callback, callbackArgument);
     }
 }

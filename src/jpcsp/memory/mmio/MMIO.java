@@ -59,6 +59,7 @@ public class MMIO extends Memory {
     	addHandler(0xBC500030, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500030));
     	addHandler(0xBC600000, 0x14, new MMIOHandlerSystemTime(0xBC600000));
     	addHandler(0xBC800000, 0x1D4, new MMIOHandlerDmacplus(0xBC800000));
+    	addHandler(0xBC900000, 0x1F4, new MMIOHandlerDmac(0xBC900000));
     	addHandlerRW(0xBCC00000, 0x74);
     	addHandlerRO(0xBCC00010, 0x4);
     	addHandler(0xBD000000, 0x48, new MMIOHandlerDdr(0xBD000000));
@@ -72,8 +73,7 @@ public class MMIO extends Memory {
     	addHandler(0xBD700000, 0xF, new MMIOHandlerReadWrite8(0xBD700000, 0xF)); // Ata
     	addHandler(0xBDE00000, 0x3C, new MMIOHandlerKirk(0xBDE00000)); // Kirk
     	addHandlerRW(0xBDF00000, 0x90); // UMD
-    	addHandlerRW(0xBE000000, 0x54); // Audio
-    	write32(0xBE000028, 0x30);
+    	addHandler(0xBE000000, 0x80, new MMIOHandlerAudio(0xBE000000));
     	addHandlerRW(0xBE140000, 0x204); // LCDC / display
     	write32(0xBE140010, 0x29);
     	write32(0xBE140014, 0x02);
