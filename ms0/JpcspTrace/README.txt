@@ -54,6 +54,11 @@ The format of the file JpcspTrace.config is the following:
   In this case, the log buffer is written to the log.txt file only when
   the buffer is full. This method has a better performance but some log data
   could be lost in case JpcspTrace is crashing.
+- a memory range can be dumped to a file using the following command:
+    DumpMemory 0xNNNNNNNN 0xNNN ms0:/filename
+  where the first parameter is the address start, the second parameter
+  is the length in bytes to be dumped and the third parameter is
+  the file name where the memory will be dumped.
 - one syscall to be traced is described in a single line:
 	<syscall-name> <nid> <number-of-parameters> <parameter-types>
 

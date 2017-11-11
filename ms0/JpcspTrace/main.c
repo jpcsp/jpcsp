@@ -415,6 +415,35 @@ void patchSyscall(char *module, char *library, const char *name, u32 nid, int nu
 	#endif
 }
 
+void dumpMemory(u32 startAddress, u32 length, const char *fileName) {
+	SceUID fd = ioOpen(fileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fd < 0) {
+		printLog("dumpMemory - Cannot create file\n");
+		return;
+	}
+
+	u32 buffer[256];
+	u32 address = startAddress & 0xFFFFFFFC;
+	while (length > 0) {
+		u32 n = length;
+		if (n > sizeof(buffer)) {
+			n = sizeof(buffer);
+		}
+
+		u32 i;
+		u32 n4 = n >> 2;
+		for (i = 0; i < n4; i++, address += 4) {
+			buffer[i] = _lw(address);
+		}
+
+		ioWrite(fd, buffer, n);
+
+		length -= n;
+	}
+
+	ioClose(fd);
+}
+
 int readChar(SceUID fd) {
 	char c;
 	int length = sceIoRead(fd, &c, 1);
@@ -500,16 +529,22 @@ void patchSyscalls(char *filePath) {
 		char *hexNumParams = nextWord(&line);
 		char *strParamTypes = nextWord(&line);
 
-		u32 nid = parseHex(hexNid);
-		u32 numParams = parseHex(hexNumParams);
-		u32 flags = 0;
-		u32 paramTypes = parseParamTypes(strParamTypes, &flags);
-
-		if (strcmp(name, "LogBufferLength") == 0) {
-			commonInfo->maxLogBufferLength = nid;
-		} else if (strcmp(name, "BufferLogWrites") == 0) {
+		if (strcmp(name, "BufferLogWrites") == 0) {
 			commonInfo->bufferLogWrites = 1;
+		} else if (strcmp(name, "LogBufferLength") == 0) {
+			commonInfo->maxLogBufferLength = parseHex(hexNid);
+		} else if (strcmp(name, "DumpMemory") == 0) {
+			u32 startAddress = parseHex(hexNid);
+			u32 length = parseHex(hexNumParams);
+			char *fileName = strParamTypes;
+
+			dumpMemory(startAddress, length, fileName);
 		} else {
+			u32 nid = parseHex(hexNid);
+			u32 numParams = parseHex(hexNumParams);
+			u32 flags = 0;
+			u32 paramTypes = parseParamTypes(strParamTypes, &flags);
+
 			// If no numParams specified, take maximum number of params
 			if (strlen(hexNumParams) == 0) {
 				numParams = 8;
