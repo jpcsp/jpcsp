@@ -253,6 +253,8 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 			case 0x50: value = busClockDevices; break;
 			case 0x54: value = clock1Devices; break;
 			case 0x78: value = ioDevices; break;
+			case 0x90: value = (int) Modules.sceSysregModule.sceSysregGetFuseId(); break;
+			case 0x94: value = (int) (Modules.sceSysregModule.sceSysregGetFuseId() >> 32); break;
 			case 0x98: value = Modules.sceSysregModule.sceSysregGetFuseConfig(); break;
 			default: value = super.read32(address); break;
 		}

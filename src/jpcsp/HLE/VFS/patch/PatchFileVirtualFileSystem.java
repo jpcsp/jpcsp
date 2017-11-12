@@ -17,16 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.VFS.patch;
 
 import static jpcsp.Allegrex.Common._a0;
-import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
-import static jpcsp.HLE.Modules.UtilsForKernelModule;
-import static jpcsp.HLE.Modules.sceAtaModule;
-import static jpcsp.HLE.Modules.sceI2cModule;
 import static jpcsp.HLE.Modules.sceNandModule;
-import static jpcsp.HLE.Modules.sceSysregModule;
-import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
 import static jpcsp.HLE.modules.ThreadManForUser.JR;
 import static jpcsp.HLE.modules.ThreadManForUser.LUI;
 import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
@@ -43,14 +37,11 @@ import static jpcsp.util.Utilities.writeUnaligned32;
 import java.util.LinkedList;
 import java.util.List;
 
-import jpcsp.Allegrex.Common;
 import jpcsp.HLE.HLEModule;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.AbstractProxyVirtualFileSystem;
 import jpcsp.HLE.VFS.ByteArrayVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
-import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.format.Elf32Header;
 import jpcsp.util.Utilities;
 
@@ -72,18 +63,6 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			new PrxPatchInfo("kd/loadcore.prx", 0x00005790, 0x5462FFF4, NOP()),      // Allow loading of non-encrypted modules for apiType==0x300 (Disable test at https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L1149)
 			new PrxPatchInfo("kd/loadcore.prx", 0x00005794, 0x3C118002, NOP()),      // Allow loading of non-encrypted modules for apiType==0x300 (Disable test at https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L1149)
 			new PrxPatchInfo("kd/loadcore.prx", 0x00004378, 0x5120FFDB, NOP()),      // Allow loading of kernel modules being not encrypted (set "execInfo->isKernelMod = SCE_TRUE" even when "decryptMode == 0": https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L118)
-			// lowio.prx: syscalls from sceSysreg module
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregGetFuseId"        , 0x00001AF4, 0x3C03BC10, 0x3C07BC10),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregAtaClkSelect"     , 0x00002584, 0x27BDFFF0, 0x3C028000),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregAtaClkEnable"     , 0x00000510, 0x24040001, 0x0800020A),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregAtaClkDisable"    , 0x0000051C, 0x24040001, 0x0800020A),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregAtahddClkEnable"  , 0x00000528, 0x24040002, 0x0800020A),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregAtahddClkDisable" , 0x00000534, 0x24040002, 0x0800020A),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregUsbhostClkEnable" , 0x00000540, 0x3C040001, 0x0800020A),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregUsbhostClkDisable", 0x0000054C, 0x3C040001, 0x0800020A),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysreg_driver_4841B2D2" , 0x00001788, 0x27BDFFF0, 0xAFBF0008),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysregApbTimerClkSelect", 0x00001F98, 0x27BDFFF0, 0xAFB10004),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceSysregModule, "sceSysreg_driver_96D74557" , 0x00002CB0, 0x27BDFFF0, 0xAFBF0000),
 			// lowio.prx: syscalls from sceNand module
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandSetWriteProtect"     , 0x00009014, 0x27BDFFF0, 0xAFB10004),
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandLock"                , 0x00009094, 0x27BDFFF0, 0x3C030000),
@@ -121,21 +100,11 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandCalcEcc"             , 0x0000AB0C, 0x27BDFFF0, 0xAFB3000C),
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandVerifyEcc"           , 0x0000AD38, 0x27BDFFF0, 0xAFBF0000),
 			new PrxSyscallPatchInfo("kd/lowio.prx", sceNandModule, "sceNandCorrectEcc"          , 0x0000AD54, 0x27BDFFF0, 0xAFBF0000),
-			// lowio.prx: syscalls from sceI2c module
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceI2cModule, "sceI2cMasterTransmitReceive" , 0x000044A8, 0x27BDFFD0, 0xAFB00000),
-			new PrxSyscallPatchInfo("kd/lowio.prx", sceI2cModule, "sceI2cMasterTransmit"        , 0x00003D3C, 0x27BDFFE0, 0xAFB10004),
-			// lowio.prx: syscalls from sceDdr module
-//			new PrxSyscallPatchInfo("kd/lowio.prx", sceDdrModule, "sceDdrFlush"                 , 0x000011B4, 0x0000000F, 0x3C02BD00),
-			// ata.prx: syscalls
-			new PrxSyscallPatchInfo("kd/ata.prx", sceAtaModule, "sceAta_driver_BE6261DA", 0x00002338, 0x0000000F, 0x00042827),
 			// semawm.prx used by sceSemawm.module_start
 			new PrxPatchInfo("kd/semawm.prx", 0x00005620, 0x27BDFFD0, JR()),           // Disable the internal module signature check
 			new PrxPatchInfo("kd/semawm.prx", 0x00005624, 0xAFBF0024, MOVE(_v0, _zr)), // Disable the internal module signature check
 			// me_wrapper.prx used by sceMeCodecWrapper.module_start
-//			new PrxPatchInfo("kd/me_wrapper.prx", 0x00001F38, 0x24050001, MOVE(_a1, _zr)), // Disable wait in sub_00001C30() (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1169 changed second argument from 1 to 0)
 			new PrxPatchInfo("kd/me_wrapper.prx", 0x00001FEC, 0x14400013, NOP()), // Disable check for "KL4E" in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1064)
-//			new PrxPatchInfo("kd/me_wrapper.prx", 0x00001FFC, 0x3C048830, LUI(_a0, 0x8837)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)
-//			new PrxPatchInfo("kd/me_wrapper.prx", 0x00002000, 0x014B2821, ORI(_a0, _a0, 0xD724)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)
 			new PrxPatchInfo("kd/me_wrapper.prx", 0x00001FFC, 0x3C048830, LUI(_a0, 0x8840)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)
 			new PrxPatchInfo("kd/me_wrapper.prx", 0x00002000, 0x014B2821, ORI(_a0, _a0, 0x0000)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)
 			new PrxPatchInfo("kd/me_wrapper.prx", 0x00002004, 0x25460004, SW(_a0, _sp, 0)), // Disable KL4E decompression in decompressAndRunMeImage (https://github.com/uofw/uofw/blob/master/src/me_wrapper/me_wrapper.c#L1065)

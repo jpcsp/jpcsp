@@ -86,6 +86,7 @@ public class MMIO extends Memory {
     	write32(0xBE140048, Screen.width);
     	write32(0xBE14004C, Screen.height);
     	write32(0xBE140050, 0x01);
+    	addHandler(0xBE200000, 0x30, new MMIOHandlerI2c(0xBE200000));
     	addHandler(MMIOHandlerGpio.BASE_ADDRESS, 0x4C, MMIOHandlerGpio.getInstance());
     	addHandlerRW(0xBE300000, 0x48); // Power management
     	addHandlerRW(0xBE4C0000, 0x48); // UART4 Uart4/kernel debug(?) UART (IPL, uart4, reboot)
