@@ -30,6 +30,8 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_HR_POWER;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_LED;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_LEPTON_POWER;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_MS_POWER;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_POWER;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_VOLTAGE;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_WLAN_POWER;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_ANALOG;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_BARYON;
@@ -142,6 +144,14 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		return value;
 	}
 
+	private int getData24(int[] responseData, int offset) {
+		int value = responseData[offset] & 0xFF;
+		value |= (responseData[offset + 1] & 0xFF) << 8;
+		value |= (responseData[offset + 2] & 0xFF) << 16;
+
+		return value;
+	}
+
 	private int getBaryonStatus() {
 		int baryonStatus = 0;
 
@@ -197,6 +207,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		// The default response
 		int[] responseData = new int[] { 0x82 };
 
+		int unknown;
 		switch (cmd) {
 			case PSP_SYSCON_CMD_NOP:
 				// Doing nothing
@@ -385,6 +396,14 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 			case PSP_SYSCON_CMD_CTRL_MS_POWER:
 				boolean power = getData32(data, PSP_SYSCON_TX_DATA) != 0;
 				MemoryStick.setMsPower(power);
+				break;
+			case PSP_SYSCON_CMD_CTRL_POWER:
+				unknown = getData24(data, PSP_SYSCON_TX_DATA);
+				sceSysconModule.sceSysconCtrlPower(unknown & 0x3FFFFF, (unknown >> 23) & 0x1);
+				break;
+			case PSP_SYSCON_CMD_CTRL_VOLTAGE:
+				unknown = getData24(data, PSP_SYSCON_TX_DATA);
+				sceSysconModule.sceSysconCtrlVoltage(unknown & 0xFF, (unknown >> 8) & 0xFFFF);
 				break;
 			default:
 				log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));

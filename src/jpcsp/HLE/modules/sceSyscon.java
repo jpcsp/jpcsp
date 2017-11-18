@@ -1002,4 +1002,56 @@ public class sceSyscon extends HLEModule {
 	public int sceSysconSetAcSupplyCallback_660(TPointer callback, int callbackArgument) {
     	return sceSysconSetAcSupplyCallback(callback, callbackArgument);
     }
+
+    /**
+     * Set the power control
+     *
+     * @param unknown1 Unknown.
+     * @param unknown2 Unknown.
+     * @return         0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xBE27FE66, version = 150)
+	public int sceSysconCtrlPower(int unknown1, int unknown2) {
+    	return 0;
+    }
+
+    /**
+     * Set the power control
+     *
+     * @param unknown1 Unknown.
+     * @param unknown2 Unknown.
+     * @return         0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xEDD3AB8B, version = 660)
+	public int sceSysconCtrlPower_660(int unknown1, int unknown2) {
+    	return sceSysconCtrlPower(unknown1, unknown2);
+    }
+
+    /**
+     * Set the voltage.
+     *
+     * @param unknown1 Unknown.
+     * @param unknown2 Unknown.
+     * @return         0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x01677F91, version = 150)
+	public int sceSysconCtrlVoltage(int unknown1, int unknown2) {
+    	return 0;
+    }
+
+    /**
+     * Set the voltage.
+     *
+     * @param unknown1 Unknown.
+     * @param unknown2 Unknown.
+     * @return         0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xF7BCD2A6, version = 660)
+	public int sceSysconCtrlVoltage_660(int unknown1, int unknown2) {
+    	return sceSysconCtrlVoltage(unknown1, unknown2);
+    }
 }
