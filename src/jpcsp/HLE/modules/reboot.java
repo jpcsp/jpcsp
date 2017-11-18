@@ -27,7 +27,6 @@ import static jpcsp.Allegrex.Common._v1;
 import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.HLE.HLEModuleManager.InternalSyscallNid;
 import static jpcsp.HLE.Modules.LoadCoreForKernelModule;
-import static jpcsp.HLE.Modules.sceNandModule;
 import static jpcsp.HLE.modules.InitForKernel.SCE_INIT_APITYPE_KERNEL_REBOOT;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Addr;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
@@ -43,6 +42,7 @@ import static jpcsp.format.PSP.PSP_HEADER_SIZE;
 import static jpcsp.util.Utilities.patch;
 
 import org.apache.log4j.Logger;
+import org.apache.log4j.MDC;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -54,11 +54,11 @@ import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEModuleManager;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelLoadExecVSHParam;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceLoadCoreBootInfo;
@@ -74,6 +74,13 @@ public class reboot extends HLEModule {
     private static final String rebootFileName = "flash0:/reboot.bin";
     private static final int rebootBaseAddress = MemoryMap.START_KERNEL + 0x600000;
     private static final int rebootParamAddress = MemoryMap.START_KERNEL + 0x400000;
+
+    private static class SetLog4jMDC implements IAction {
+		@Override
+		public void execute() {
+			setLog4jMDC();
+		}
+    }
 
     public boolean loadAndRun() {
     	if (!enableReboot) {
@@ -169,7 +176,7 @@ public class reboot extends HLEModule {
 
     	markMMIO();
 
-    	addFunctionNames();
+    	addFunctionNames(rebootModule);
 
 		patch(mem, rebootModule, 0x000060A8, 0x11A0001F, NOP()); // Allow non-encrypted sysmem.prx and loadcore.prx: NOP the test at https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L680
 		patch(mem, rebootModule, 0x00002734, 0x012C182B, ADDIU(_t4, _t4, 1)); // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
@@ -190,37 +197,6 @@ public class reboot extends HLEModule {
 		patch(mem, rebootModule, 0x000052F4, 0x27BDFE50, JR());
 		patch(mem, rebootModule, 0x000052F8, 0xAFB101A4, MOVE(_v0, _zr));
 
-		patchSyscall(0x0000EFCC, sceNandModule  , "sceNandInit2"                  , mem, rebootModule, 0x27BDFFF0, 0xAFB10004);
-		patchSyscall(0x0000F0C4, sceNandModule  , "sceNandIsReady"                , mem, rebootModule, 0x3C03BD10, 0x8C631004);
-		patchSyscall(0x0000F0D4, sceNandModule  , "sceNandSetWriteProtect"        , mem, rebootModule, 0x3C03BD10, 0x8C631004);
-		patchSyscall(0x0000F144, sceNandModule  , "sceNandLock"                   , mem, rebootModule, 0x3C058864, 0x8CA6909C);
-		patchSyscall(0x0000F198, sceNandModule  , "sceNandReset"                  , mem, rebootModule, 0x27BDFFF0, 0xAFB00000);
-		patchSyscall(0x0000F234, sceNandModule  , "sceNandReadId"                 , mem, rebootModule, 0x24030090, 0x3C01BD10);
-		patchSyscall(0x0000F28C, sceNandModule  , "sceNandReadAccess"             , mem, rebootModule, 0x27BDFFF0, 0x3C028000);
-		patchSyscall(0x0000F458, sceNandModule  , "sceNandWriteAccess"            , mem, rebootModule, 0x27BDFFE0, 0x3C028000);
-		patchSyscall(0x0000F640, sceNandModule  , "sceNandEraseBlock"             , mem, rebootModule, 0x27BDFFF0, 0xAFB00000);
-		patchSyscall(0x0000F72C, sceNandModule  , "sceNandReadExtraOnly"          , mem, rebootModule, 0x27BDFFE0, 0xAFB20008);
-		patchSyscall(0x0000F8A8, sceNandModule  , "sceNandReadStatus"             , mem, rebootModule, 0x3C09BD10, 0x35231008);
-		patchSyscall(0x0000F8DC, sceNandModule  , "sceNandSetScramble"            , mem, rebootModule, 0x3C038864, 0x00001021);
-		patchSyscall(0x0000F8EC, sceNandModule  , "sceNandReadPages"              , mem, rebootModule, 0x27BDFFF0, 0x00004021);
-		patchSyscall(0x0000F930, sceNandModule  , "sceNandWritePages"             , mem, rebootModule, 0x24080010, 0x0005400B);
-		patchSyscall(0x0000F958, sceNandModule  , "sceNandReadPagesRawExtra"      , mem, rebootModule, 0x27BDFFF0, 0xAFBF0000);
-		patchSyscall(0x0000F974, sceNandModule  , "sceNandWritePagesRawExtra"     , mem, rebootModule, 0x24090030, 0x24080020);
-		patchSyscall(0x0000F998, sceNandModule  , "sceNandReadPagesRawAll"        , mem, rebootModule, 0x27BDFFF0, 0xAFBF0000);
-		patchSyscall(0x0000F9D0, sceNandModule  , "sceNandTransferDataToNandBuf"  , mem, rebootModule, 0x27BDFFE0, 0xAFB00010);
-		patchSyscall(0x0000FC40, sceNandModule  , "sceNandIntrHandler"            , mem, rebootModule, 0x27BDFFF0, 0xAFBF0008);
-		patchSyscall(0x0000FF60, sceNandModule  , "sceNandTransferDataFromNandBuf", mem, rebootModule, 0x27BDFFE0, 0xAFB20018);
-		patchSyscall(0x000103C8, sceNandModule  , "sceNandWriteBlockWithVerify"   , mem, rebootModule, 0x27BDFFE0, 0xAFBF0014);
-		patchSyscall(0x0001047C, sceNandModule  , "sceNandReadBlockWithRetry"     , mem, rebootModule, 0x27BDFFE0, 0xAFBF0014);
-		patchSyscall(0x00010500, sceNandModule  , "sceNandVerifyBlockWithRetry"   , mem, rebootModule, 0x27BDFFC0, 0xAFB50024);
-		patchSyscall(0x00010650, sceNandModule  , "sceNandEraseBlockWithRetry"    , mem, rebootModule, 0x3C038864, 0x8C6696D4);
-		patchSyscall(0x000106C4, sceNandModule  , "sceNandIsBadBlock"             , mem, rebootModule, 0x3C038864, 0x8C6696D4);
-		patchSyscall(0x00010750, sceNandModule  , "sceNandDoMarkAsBadBlock"       , mem, rebootModule, 0x27BDFFE0, 0xAFB50014);
-		patchSyscall(0x000109DC, sceNandModule  , "sceNandDetectChipMakersBBM"    , mem, rebootModule, 0x27BDFFD0, 0xAFB60018);
-		patchSyscall(0x00010D1C, sceNandModule  , "sceNandGetPageSize"            , mem, rebootModule, 0x3C048864, 0x03E00008);
-		patchSyscall(0x00010D28, sceNandModule  , "sceNandGetPagesPerBlock"       , mem, rebootModule, 0x3C048864, 0x03E00008);
-		patchSyscall(0x00010D34, sceNandModule  , "sceNandGetTotalBlocks"         , mem, rebootModule, 0x3C048864, 0x03E00008);
-		patchSyscall(0x00011548, this           , "hleGetUniqueId"                , mem, rebootModule, 0x3C03BC10, 0x3C07BC10);
 		patchSyscall(0x0000574C, this           , "hleDecryptBtcnf"               , mem, rebootModule, 0x27BDFFE0, 0xAFB20018);
 
 		SysMemInfo rebootParamInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot-parameters", PSP_SMEM_Addr, 0x10000, rebootParamAddress);
@@ -258,6 +234,9 @@ public class reboot extends HLEModule {
 			rootThread.cpuContext._a2 = SCE_INIT_APITYPE_KERNEL_REBOOT;
 			rootThread.cpuContext._a3 = Modules.SysMemForKernelModule.sceKernelGetInitialRandomValue();
     	}
+
+    	// This will set the Log4j MDC values for the root thread
+    	Emulator.getScheduler().addAction(new SetLog4jMDC());
 
     	if (log.isDebugEnabled()) {
 			log.debug(String.format("sceReboot arg0=%s, arg1=%s", sceLoadCoreBootInfoAddr, sceKernelLoadExecVSHParamAddr));
@@ -336,7 +315,15 @@ public class reboot extends HLEModule {
 		patch(mem, rebootModule, offset + 4, oldCode2, SYSCALL(hleModule, functionName));
     }
 
-    private void addFunctionNames() {
+    private void addFunctionNid(int moduleAddress, SceModule module, String name) {
+    	int nid = HLEModuleManager.getInstance().getNIDFromFunctionName(name);
+    	if (nid != 0) {
+    		int address = module.text_addr + moduleAddress;
+    		LoadCoreForKernelModule.addFunctionNid(address, nid);
+    	}
+    }
+
+    private void addFunctionNames(SceModule rebootModule) {
     	// These function names are taken from uOFW (https://github.com/uofw/uofw)
     	LoadCoreForKernelModule.addFunctionName("sceInit",             0x0080, "sceInit.patchGames");
     	LoadCoreForKernelModule.addFunctionName("sceInit",             0x0218, "sceInit.InitCBInit");
@@ -367,6 +354,37 @@ public class reboot extends HLEModule {
     	LoadCoreForKernelModule.addFunctionName("sceDisplay_Service",  0x04EC, "sceDisplay_Service.sceDisplayInit");
     	LoadCoreForKernelModule.addFunctionName("scePower_Service",    0x0000, "scePower_Service.scePowerInit");
     	LoadCoreForKernelModule.addFunctionName("sceHP_Remote_Driver", 0x0704, "sceHP_Remote_Driver.sceHpRemoteThreadEntry");
+
+    	addFunctionNid(0x0000EFCC, rebootModule, "sceNandInit2");
+    	addFunctionNid(0x0000F0C4, rebootModule, "sceNandIsReady");
+    	addFunctionNid(0x0000F0D4, rebootModule, "sceNandSetWriteProtect");
+    	addFunctionNid(0x0000F144, rebootModule, "sceNandLock");
+    	addFunctionNid(0x0000F198, rebootModule, "sceNandReset");
+    	addFunctionNid(0x0000F234, rebootModule, "sceNandReadId");
+    	addFunctionNid(0x0000F28C, rebootModule, "sceNandReadAccess");
+    	addFunctionNid(0x0000F458, rebootModule, "sceNandWriteAccess");
+    	addFunctionNid(0x0000F640, rebootModule, "sceNandEraseBlock");
+    	addFunctionNid(0x0000F72C, rebootModule, "sceNandReadExtraOnly");
+    	addFunctionNid(0x0000F8A8, rebootModule, "sceNandReadStatus");
+    	addFunctionNid(0x0000F8DC, rebootModule, "sceNandSetScramble");
+    	addFunctionNid(0x0000F8EC, rebootModule, "sceNandReadPages");
+    	addFunctionNid(0x0000F930, rebootModule, "sceNandWritePages");
+    	addFunctionNid(0x0000F958, rebootModule, "sceNandReadPagesRawExtra");
+    	addFunctionNid(0x0000F974, rebootModule, "sceNandWritePagesRawExtra");
+    	addFunctionNid(0x0000F998, rebootModule, "sceNandReadPagesRawAll");
+    	addFunctionNid(0x0000F9D0, rebootModule, "sceNandTransferDataToNandBuf");
+    	addFunctionNid(0x0000FC40, rebootModule, "sceNandIntrHandler");
+    	addFunctionNid(0x0000FF60, rebootModule, "sceNandTransferDataFromNandBuf");
+    	addFunctionNid(0x000103C8, rebootModule, "sceNandWriteBlockWithVerify");
+    	addFunctionNid(0x0001047C, rebootModule, "sceNandReadBlockWithRetry");
+    	addFunctionNid(0x00010500, rebootModule, "sceNandVerifyBlockWithRetry");
+    	addFunctionNid(0x00010650, rebootModule, "sceNandEraseBlockWithRetry");
+    	addFunctionNid(0x000106C4, rebootModule, "sceNandIsBadBlock");
+    	addFunctionNid(0x00010750, rebootModule, "sceNandDoMarkAsBadBlock");
+    	addFunctionNid(0x000109DC, rebootModule, "sceNandDetectChipMakersBBM");
+    	addFunctionNid(0x00010D1C, rebootModule, "sceNandGetPageSize");
+    	addFunctionNid(0x00010D28, rebootModule, "sceNandGetPagesPerBlock");
+    	addFunctionNid(0x00010D34, rebootModule, "sceNandGetTotalBlocks");
     }
 
     public static void dumpAllModulesAndLibraries() {
@@ -413,6 +431,38 @@ public class reboot extends HLEModule {
 
     		// Next
     		address = mem.read32(address);
+    	}
+    }
+
+    /**
+     * Set information about the current thread that can be used for logging in log4j:
+     * - LLE-thread-name: the current thread name
+     * - LLE-thread-uid: the current thread UID in the format 0x%X
+     * - LLE-thread: the current thread name and uid
+     *
+     * These values can be used in LogSettings.xml inside a PatternLayout:
+     *   <layout class="org.apache.log4j.PatternLayout">
+     *     <param name="ConversionPattern" value="%d{HH:mm:ss,SSS} %5p %8c - %X{LLE-thread} - %m%n" />
+     *   </layout>
+     */
+    public static void setLog4jMDC() {
+    	Memory mem = Memory.getInstance();
+    	int threadManInfo = 0x88048740;
+
+    	int currentThread = mem.read32(threadManInfo + 0);
+    	if (Memory.isAddressGood(currentThread)) {
+			int uid = mem.read32(currentThread + 8);
+			int cb = SysMemForKernel.getCBFromUid(uid);
+			int nameAddr = mem.read32(cb + 16);
+			String name = Utilities.readStringZ(nameAddr);
+
+			MDC.put("LLE-thread-name", name);
+			MDC.put("LLE-thread-uid", String.format("0x%X", uid));
+			MDC.put("LLE-thread", String.format("%s_0x%X", name, uid));
+    	} else {
+    		MDC.put("LLE-thread-name", "root");
+    		MDC.put("LLE-thread-uid", "");
+    		MDC.put("LLE-thread", "root");
     	}
     }
 
@@ -488,12 +538,6 @@ public class reboot extends HLEModule {
     	for (int address = mem.read32(list); address != list; address = mem.read32(address)) {
     		dumpThread(mem, address, comment);
     	}
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = InternalSyscallNid, version = 150)
-    public long hleGetUniqueId() {
-    	return 0L;
     }
 
     @HLEFunction(nid = InternalSyscallNid, version = 150)

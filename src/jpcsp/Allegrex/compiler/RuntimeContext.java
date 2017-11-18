@@ -57,7 +57,6 @@ import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
@@ -1523,10 +1522,8 @@ public class RuntimeContext {
     public static int executeEret() throws Exception {
     	int epc = processor.cpu.doERET(processor);
 
+    	reboot.setLog4jMDC();
 		reboot.dumpAllThreads();
-
-    	// TODO: Optimize to throw a StackPopException only when the stack if growing too large
-//    	throw new StackPopException(epc);
 
     	return epc;
     }
@@ -1542,10 +1539,9 @@ public class RuntimeContext {
     				((MEProcessor) processor).halt();
     			}
     		} else {
-    	    	log.error("Allegrex halt");
-	    		if (false) {
-	    			Logger.getRootLogger().setLevel(Level.TRACE);
-	    		}
+    			if (log.isDebugEnabled()) {
+    				log.debug("Allegrex halt");
+    			}
 	    		reboot.dumpAllThreads();
 	    		if (false) {
 	    			reboot.dumpAllModulesAndLibraries();

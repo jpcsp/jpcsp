@@ -493,4 +493,24 @@ public class sceMSstor extends HLEModule {
 			Modules.ThreadManForUserModule.executeCallback(thread, sceIoAddDrv, new AfterAddDrvController(thread, sceIoAddDrv, storageDrvAddr, partitionDrvAddr), false, controllerDrvAddr);
 		}
 	}
+
+    /**
+     * This is the function executed at module start (alias to "module_start")
+     *
+     * @param unknown1
+     * @param unknown2
+     * @param unknown3
+     * @return
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x6FC1E8AE, version = 150)
+    public int sceMSstorEntry(int unknown1, int unknown2, int unknown3) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x714782D6, version = 150)
+    public int sceMSstorRegisterCLDMSelf(int unknown) {
+    	return 0;
+    }
 }

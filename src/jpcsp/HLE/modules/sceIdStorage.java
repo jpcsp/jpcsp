@@ -18,6 +18,9 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -96,7 +99,7 @@ public class sceIdStorage extends HLEModule {
 	 */
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xEB00C509, version = 150)
-	public int sceIdStorageReadLeaf(int key, TPointer buffer) {
+	public int sceIdStorageReadLeaf(int key, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=512, usage=Usage.out) TPointer buffer) {
 		return 0;
 	}
 
@@ -147,7 +150,7 @@ public class sceIdStorage extends HLEModule {
 	 */
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x6FE062D1, version = 150)
-	public int sceIdStorageLookup(int key, int offset, TPointer buffer, int length) {
+	public int sceIdStorageLookup(int key, int offset, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buffer, int length) {
 		buffer.clear(length);
 		return 0;
 	}
@@ -163,5 +166,4 @@ public class sceIdStorage extends HLEModule {
 	public int sceIdStorageFlush() {
 		return 0;
 	}
-
 }

@@ -25,7 +25,7 @@ public class SceNandSpare extends pspAbstractMemoryMappedStructure {
 	public int blockStat;
 	public int lbn;
 	public int id;
-	public int spareEcc[] = new int[2];
+	public int spareEcc;
 	public int reserved2[] = new int[2];
 
 	@Override
@@ -38,8 +38,7 @@ public class SceNandSpare extends pspAbstractMemoryMappedStructure {
 		blockStat = read8(); // Offset 5
 		lbn = endianSwap16((short) read16()); // Offset 6
 		id = read32(); // Offset 8
-		spareEcc[0] = read8(); // Offset 12
-		spareEcc[1] = read8(); // Offset 13
+		spareEcc = read16(); // Offset 12
 		reserved2[0] = read8(); // Offset 14
 		reserved2[1] = read8(); // Offset 15
 	}
@@ -54,8 +53,7 @@ public class SceNandSpare extends pspAbstractMemoryMappedStructure {
 		write8((byte) blockStat);
 		write16((short) endianSwap16((short) lbn));
 		write32(id);
-		write8((byte) spareEcc[0]);
-		write8((byte) spareEcc[1]);
+		write16((short) spareEcc);
 		write8((byte) reserved2[0]);
 		write8((byte) reserved2[1]);
 	}
@@ -65,8 +63,7 @@ public class SceNandSpare extends pspAbstractMemoryMappedStructure {
 		buffer.setValue8(offset + 1, (byte) blockStat);
 		buffer.setValue16(offset + 2, (short) endianSwap16((short) lbn));
 		buffer.setValue32(offset + 4, id);
-		buffer.setValue8(offset + 8, (byte) spareEcc[0]);
-		buffer.setValue8(offset + 9, (byte) spareEcc[1]);
+		buffer.setValue16(offset + 8, (short) spareEcc);
 		buffer.setValue8(offset + 10, (byte) reserved2[0]);
 		buffer.setValue8(offset + 11, (byte) reserved2[1]);
 	}

@@ -63,8 +63,8 @@ public class MMIO extends Memory {
     	addHandlerRW(0xBCC00000, 0x74);
     	addHandlerRO(0xBCC00010, 0x4);
     	addHandler(0xBD000000, 0x48, new MMIOHandlerDdr(0xBD000000));
-    	addHandlerRW(0xBD100000, 0x1204); // NAND flash
-    	addHandler(0xBD200000, 0x40, new MMIOHandlerReadWrite16(0xBD200000, 0x40)); // Memory stick
+    	addHandler(MMIOHandlerNand.BASE_ADDRESS, 0x304, MMIOHandlerNand.getInstance());
+    	addHandler(0xBD200000, 0x44, new MMIOHandlerMemoryStick(0xBD200000));
     	addHandlerRW(0xBD300000, 0x44); // Wlan
     	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0x8F0, MMIOHandlerGe.getInstance());
     	addHandlerRW(0xBD500000, 0x94); // Graphics engine (ge)
@@ -95,6 +95,8 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
     	addHandlerRW(0xBFC00000, 0x1000);
     	addHandler(MMIOHandlerMeCore.BASE_ADDRESS, 0x2C, MMIOHandlerMeCore.getInstance());
+    	addHandler(MMIOHandlerNandPage.BASE_ADDRESS1, 0x90C, MMIOHandlerNandPage.getInstance());
+    	addHandler(MMIOHandlerNandPage.BASE_ADDRESS2, 0x90C, MMIOHandlerNandPage.getInstance());
     }
 
     protected void addHandler(int baseAddress, int length, IMMIOHandler handler) {

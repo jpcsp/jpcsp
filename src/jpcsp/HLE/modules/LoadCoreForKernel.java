@@ -79,6 +79,7 @@ public class LoadCoreForKernel extends HLEModule {
     private TPointer syscallStubAddr;
     private int availableSyscallStubs;
     private final Map<String, String> functionNames = new HashMap<String, String>();
+    private final Map<Integer, Integer> functionNids = new HashMap<Integer, Integer>();
 
 	private class OnModuleStartAction implements IAction {
 		@Override
@@ -498,7 +499,7 @@ public class LoadCoreForKernel extends HLEModule {
     	if (!reboot.enableReboot) {
     		return null;
     	}
-    	
+
     	address &= Memory.addressMask;
 
     	Memory mem = Memory.getInstance();
@@ -588,6 +589,12 @@ public class LoadCoreForKernel extends HLEModule {
     	functionNames.put(String.format("%s.sub_%08X", moduleName, address), functionName);
     }
 
+    public void addFunctionNid(int address, int nid) {
+    	address &= Memory.addressMask;
+
+    	functionNids.put(address, nid);
+    }
+
     private int[] getFunctionNIDsByAddress(Memory mem, int registeredLibs, int address) {
     	int[] nids = null;
 
@@ -611,7 +618,11 @@ public class LoadCoreForKernel extends HLEModule {
 	    	}
 		}
 
-    	return nids;
+		if (nids == null && functionNids.containsKey(address)) {
+			nids = new int[] { functionNids.get(address).intValue() };
+		}
+
+		return nids;
     }
 
     private int getModuleByAddress(Memory mem, int linkedModules, int address) {

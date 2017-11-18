@@ -233,6 +233,10 @@ public abstract class FatVirtualFile implements IVirtualFile {
 
 		int clusterNumber = getClusterNumber(sectorNumber);
 		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
+		if (clusterNumber >= fatFileInfoMap.length) {
+			// Reading out of the allocated fat files
+			return;
+		}
 		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
 		if (fileInfo == null) {
 			log.warn(String.format("readDataSector unknown sectorNumber=0x%X, clusterNumber=0x%X", sectorNumber, clusterNumber));
@@ -748,6 +752,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 	@Override
 	public int ioRead(TPointer outputPointer, int outputLength) {
 		int readLength = 0;
+		int outputOffset = 0;
 		while (outputLength > 0) {
 			int sectorNumber = getSectorNumber(position);
 			readSector(sectorNumber);
@@ -755,10 +760,10 @@ public abstract class FatVirtualFile implements IVirtualFile {
 			int sectorLength = sectorSize - sectorOffset;
 			int length = Math.min(sectorLength, outputLength);
 
-			outputPointer.setArray(0, currentSector, sectorOffset, length);
+			outputPointer.setArray(outputOffset, currentSector, sectorOffset, length);
 
 			outputLength -= length;
-			outputPointer.add(length);
+			outputOffset += length;
 			position += length;
 			readLength += length;
 		}

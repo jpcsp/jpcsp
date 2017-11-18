@@ -52,7 +52,7 @@ public class sceNand extends HLEModule {
     public static Logger log = Modules.getLogger("sceNand");
     protected boolean writeProtected;
     protected int scramble;
-    private static final int pageSize = 0x200; // 512B per page
+    public static final int pageSize = 0x200; // 512B per page
     private static final int pagesPerBlock = 0x20; // 16KB per block
     private static final int totalBlocks = 0x800; // 32MB in total
     private static final int idStoragePpnStart = 0x600;
@@ -91,9 +91,11 @@ public class sceNand extends HLEModule {
     		}
 		}
 
-		byte[] fuseId = readBytes("nand.fuseid");
-		if (fuseId != null && fuseId.length == 8) {
-			Modules.sceSysregModule.setFuseId(Utilities.readUnaligned64(fuseId, 0));
+		if (!emulateNand) {
+			byte[] fuseId = readBytes("nand.fuseid");
+			if (fuseId != null && fuseId.length == 8) {
+				Modules.sceSysregModule.setFuseId(Utilities.readUnaligned64(fuseId, 0));
+			}
 		}
 
 		super.start();
@@ -124,6 +126,33 @@ public class sceNand extends HLEModule {
     	ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().get(ints);
 
     	return ints;
+    }
+
+    public static void scramblePage(int scramble, int ppn, int[] source, int[] destination) {
+    	int scrmb = rotateRight(scramble, 21);
+    	int key = rotateRight(ppn, 17) ^ (scrmb * 7);
+    	int scrambleOffset = (((ppn ^ scrmb) & 0x1F) << 4) >> 2;
+
+    	final int pageSize4 = pageSize >> 2;
+    	for (int i = 0; i < pageSize4; ) {
+    		int value0 = source[i++];
+    		int value1 = source[i++];
+    		int value2 = source[i++];
+    		int value3 = source[i++];
+    		if (scrambleOffset >= pageSize4) {
+    			scrambleOffset -= pageSize4;
+    		}
+    		destination[scrambleOffset++] = value0 + key;
+    		key += value0;
+    		destination[scrambleOffset++] = value1 + key;
+    		key ^= value1;
+    		destination[scrambleOffset++] = value2 + key;
+    		key -= value2;
+    		destination[scrambleOffset++] = value3 + key;
+    		key += value3;
+    		key += scrmb;
+    		key = Integer.reverse(key);
+    	}
     }
 
     protected void descramblePage(int ppn, TPointer user, byte[] blocks, int offset) {
@@ -396,7 +425,145 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	}
     }
 
-    protected int hleNandReadPages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc) {
+    private int computeEcc(SceNandSpare spare) {
+    	int t0, t1, t2, t3, t4, t5, t6, t7, t9;
+    	int s0, s1, s2, s3, s4, s5;
+    	int a0, a3;
+    	int v0, v1;
+
+    	s3 = spare.blockFmt;
+    	v0 = spare.blockStat;
+    	t4 = spare.lbn >> 8;
+    	t2 = spare.lbn & 0xFF;
+    	s0 = spare.id & 0xFF;
+    	t7 = s3 ^ v0;
+    	s1 = (spare.id >> 8) & 0xFF;
+    	t9 = t4 ^ t7;
+    	s5 = (spare.id >> 16) & 0xFF;
+    	t6 = t2 ^ t9;
+    	v1 = s0 ^ t6;
+    	t9 = (spare.id >> 24) & 0xFF;
+    	a3 = s0 ^ s1;
+    	t5 = s1 ^ v1;
+    	s2 = t4 ^ t2;
+    	t0 = s5 ^ t5;
+    	t3 = s5 ^ a3;
+    	t5 = s5 ^ s2;
+    	s4 = t9 ^ t0;
+    	a3 = t9 ^ t3;
+    	a0 = s4 & 0xFF;
+    	s2 = v0 ^ t2;
+    	s4 = t6 & 0xFF;
+    	t3 = s0 ^ t7;
+    	t6 = a3 & 0xFF;
+    	t7 = t9 ^ t5;
+    	v0 = 0x6996;
+    	t0 = t7 & 0xFF;
+    	a3 = s4 >> 4;
+    	t7 = s3 ^ t4;
+    	t5 = s4 & 0x0F;
+    	s3 = s1 ^ s2;
+    	s4 = t6 & 0x0F;
+    	s2 = s1 ^ t3;
+    	t4 = t6 >> 4;
+    	s1 = a0 & 0xCC;
+    	t6 = v0 >> t4;
+    	v1 = v0 >> s4;
+    	t3 = s2 & 0xFF;
+    	t4 = a0 >> 4;
+    	t1 = v0 >> t5;
+    	s2 = s1 >> 4;
+    	t5 = v0 >> a3;
+    	s1 = s0 ^ t7;
+    	a3 = a0 & 0x0F;
+    	s0 = t9 ^ s3;
+    	t7 = a0 & 0x0C;
+    	s3 = t0 >> 4;
+    	s4 = t0 & 0x0F;
+    	t2 = s0 & 0xFF;
+    	s2 = v0 >> s2;
+    	s0 = v0 >> t7;
+    	t0 = v0 >> s4;
+    	t7 = v0 >> a3;
+    	s4 = v0 >> s3;
+    	a3 = v0 >> t4;
+    	t1 = t1 ^ t5;
+    	t4 = s5 ^ s1;
+    	t5 = v1 ^ t6;
+    	s5 = t3 >> 4;
+    	s3 = a0 & 0xAA;
+    	t6 = a0 & 0x03;
+    	s1 = (a0 >> 4) & 0x03;
+    	t3 = t3 & 0x0F;
+    	s1 = v0 >> s1;
+    	s5 = v0 >> s5;
+    	s0 = s0 ^ s2;
+    	t0 = t0 ^ s4;
+    	t4 = t4 & 0xFF;
+    	t6 = v0 >> t6;
+    	s2 = t7 & 0x01;
+    	s4 = t2 >> 4;
+    	t3 = v0 >> t3;
+    	v1 = t5 & 0x01;
+    	s3 = s3 >> 4;
+    	t5 = a0 & 0x0A;
+    	a3 = a3 & 0x01;
+    	t1 = t1 & 0x01;
+    	t2 = t2 & 0x0F;
+    	t6 = t6 ^ s1;
+    	t3 = t3 ^ s5;
+    	s3 = v0 >> s3;
+    	s5 = v0 >> t5;
+    	t7 = s2 << 2;
+    	s4 = v0 >> s4;
+    	a3 = a3 << 8;
+    	s2 = t4 >> 4;
+    	t2 = v0 >> t2;
+    	t1 = t1 << 5;
+    	s1 = a0 & 0x55;
+    	s0 = s0 & 0x01;
+    	t0 = t0 & 0x01;
+    	v1 = v1 << 11;
+    	t4 = t4 & 0x0F;
+    	t5 = s5 ^ s3;
+    	t2 = t2 ^ s4;
+    	s5 = a3 | t7;
+    	s4 = t6 & 0x01;
+    	s2 = v0 >> s2;
+    	t7 = t3 & 0x01;
+    	v1 = v1 | t1;
+    	s1 = s1 >> 4;
+    	t1 = v0 >> t4;
+    	s0 = s0 << 7;
+    	t0 = t0 << 10;
+    	a0 = a0 & 0x05;
+    	s3 = s5 | s0;
+    	s5 = t1 ^ s2;
+    	s0 = s4 << 1;
+    	s2 = v0 >> a0;
+    	t1 = v1 | t0;
+    	v0 = v0 >> s1;
+    	t0 = t5 & 0x01;
+    	s1 = t7 << 4;
+    	s4 = t2 & 0x01;
+    	t7 = s2 ^ v0;
+    	t6 = s5 & 0x01;
+    	s2 = s3 | s0;
+    	s0 = t1 | s1;
+    	s3 = t0 << 6;
+    	s1 = s4 << 9;
+    	v0 = s0 | s1;
+    	t3 = s2 | s3;
+    	t2 = t7 & 0x01;
+    	t1 = t6 << 3;
+    	a0 = v0 | t1;
+    	t0 = t3 | t2;
+    	v0 = t0 | a0;
+
+    	return v0;
+    }
+
+    public int hleNandReadPages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc) {
     	if (user.isNotNull()) {
 	    	if (dumpBlocks != null && !emulateNand) {
 	    		if (scramble != 0) {
@@ -484,11 +651,14 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	    			sceNandSpare.id = iplId; // For IPL area
     	    		} else if (ppn >= idStoragePpnStart && ppn <= idStoragePpnEnd) {
     	    			sceNandSpare.id = idStorageId; // For ID Storage area
+    	    			sceNandSpare.lbn = 0x7301;
     	    		}
     	    		sceNandSpare.reserved2[0] = 0xFF;
     	    		sceNandSpare.reserved2[1] = 0xFF;
 
-    	    		// All values are set to 0xFF when the lbn is 0xFFFF
+	    			sceNandSpare.spareEcc = computeEcc(sceNandSpare);
+
+	    			// All values are set to 0xFF when the lbn is 0xFFFF
     	    		if (sceNandSpare.lbn == 0xFFFF) {
     	    			sceNandSpare.userEcc[0] = 0xFF;
     	    			sceNandSpare.userEcc[1] = 0xFF;
@@ -497,8 +667,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	    			sceNandSpare.blockFmt = 0xFF;
     	    			sceNandSpare.blockStat = 0xFF;
     	    			sceNandSpare.id = 0xFFFFFFFF;
-    	    			sceNandSpare.spareEcc[0] = 0xFF;
-    	    			sceNandSpare.spareEcc[1] = 0xFF;
+    	    			sceNandSpare.spareEcc = 0xFFFF;
     	    			sceNandSpare.reserved2[0] = 0xFF;
     	    			sceNandSpare.reserved2[1] = 0xFF;
     	    		}
@@ -796,13 +965,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x88CC9F72, version = 150)
-    public int sceNandCorrectEcc(TPointer buffer, int ecc) {
-    	// Required by sceIdStorageInit() to recognize the ID Storage pages
-    	if (buffer.getValue32(4) == idStorageId) {
-    		buffer.setValue8(2, (byte) 0x73);
-    		buffer.setValue8(3, (byte) 0x01);
-    	}
-
+    public int sceNandCorrectEcc(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.inout) TPointer buffer, int ecc) {
     	return 0;
     }
 }
