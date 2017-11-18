@@ -26,7 +26,7 @@ import jpcsp.hardware.Model;
 
 public class sceSysreg extends HLEModule {
     public static Logger log = Modules.getLogger("sceSysreg");
-    private long fuseId = 0L;
+    private long fuseId = 0x12345678ABCDEFL; // Dummy Fuse ID
     private int fuseConfig = 0x2400; // Value retrieved from a real PSP
 
     public void setFuseId(long fuseId) {
@@ -176,7 +176,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x20DF8278, version = 150)
-    public int sceSysregMsifGetConnectStatus() {
+    public int sceSysregMsifGetConnectStatus(int memoryStickNumber) {
     	return 1;
     }
 
@@ -411,7 +411,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x56E95BB6, version = 150)
-    public int sceSysregMsifAcquireConnectIntr() {
+    public int sceSysregMsifAcquireConnectIntr(int memoryStickNumber, int mask) {
     	return 0;
     }
 
