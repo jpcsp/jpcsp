@@ -30,6 +30,7 @@ import jpcsp.memory.mmio.MMIOHandlerDmac;
 
 public class DmacThread extends Thread {
 	private static Logger log = MMIOHandlerDmac.log;
+	private static final int DMAC_MEMCPY_STEP2 = 0;
 	private static final int DMAC_MEMCPY_STEP16 = 1;
 	private static final int DMAC_MEMCPY_STEP8 = 2;
 	private static final int DMAC_MEMCPY_STEP4 = 3;
@@ -44,6 +45,7 @@ public class DmacThread extends Thread {
 	private volatile boolean exit;
 
 	public DmacThread() {
+		dmacMemcpyStepLength[DMAC_MEMCPY_STEP2] = 2;
 		dmacMemcpyStepLength[DMAC_MEMCPY_STEP4] = 4;
 		dmacMemcpyStepLength[DMAC_MEMCPY_STEP8] = 8;
 		dmacMemcpyStepLength[DMAC_MEMCPY_STEP16] = 16;
@@ -115,6 +117,18 @@ public class DmacThread extends Thread {
 
 		while (dstLength > 0 && srcLength > 0) {
 			switch (srcStepLength) {
+				case 1:
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("memcpy dst=0x%08X, src=0x%08X, length=0x%X", dst, src, 1));
+					}
+					mem.write8(dst, (byte) mem.read8(src));
+					break;
+				case 2:
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("memcpy dst=0x%08X, src=0x%08X, length=0x%X", dst, src, 2));
+					}
+					mem.write16(dst, (short) mem.read16(src));
+					break;
 				case 4:
 					if (log.isTraceEnabled()) {
 						log.trace(String.format("memcpy dst=0x%08X, src=0x%08X, length=0x%X", dst, src, 4));
