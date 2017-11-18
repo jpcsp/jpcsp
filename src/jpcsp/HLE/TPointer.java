@@ -191,7 +191,7 @@ final public class TPointer implements ITPointerBase {
 
 	public void setArray(int offset, byte[] bytes, int bytesOffset, int n) {
 		if (isNotNull()) {
-			IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(getAddress() + offset, n, 1);
+			IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(getMemory(), getAddress() + offset, n, 1);
 			for (int i = 0; i < n; i++) {
 				memoryWriter.writeNext(bytes[bytesOffset + i] & 0xFF);
 			}

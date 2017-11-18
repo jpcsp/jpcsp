@@ -121,11 +121,41 @@ public class MemoryWriter {
 		return getMemoryWriter(address, getMaxLength(address), step);
 	}
 
+	/**
+	 * Creates a MemoryWriter to write values from memory.
+	 *
+	 * @param mem     the memory to be used.
+	 * @param address the address where to start writing.
+	 *                When step == 2, the address has to be 16-bit aligned ((address & 1) == 0).
+	 *                When step == 4, the address has to be 32-bit aligned ((address & 3) == 0).
+	 * @param step    when step == 1, write 8-bit values
+	 *                when step == 2, write 16-bit values
+	 *                when step == 4, write 32-bit values
+	 *                other value for step are not allowed.
+	 * @return        the MemoryWriter
+	 */
+	public static IMemoryWriter getMemoryWriter(Memory mem, int address, int length, int step) {
+		// Use the optimized version if we are just using the standard memory
+		if (mem == RuntimeContext.memory) {
+			return getMemoryWriter(address, length, step);
+		}
+
+		// Default (generic) MemoryWriter
+		return new MemoryWriterGeneric(mem, address, length, step);
+	}
+
 	private static class MemoryWriterGeneric implements IMemoryWriter {
 		private Memory mem;
 		private int address;
 		private int length;
 		private int step;
+
+		public MemoryWriterGeneric(Memory mem, int address, int length, int step) {
+			this.mem = mem;
+			this.address = address;
+			this.length = length;
+			this.step = step;
+		}
 
 		public MemoryWriterGeneric(int address, int length, int step) {
 			this.address = address;
