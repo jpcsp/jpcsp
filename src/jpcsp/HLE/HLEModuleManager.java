@@ -244,7 +244,8 @@ public class HLEModuleManager {
         scePwm(Modules.scePwmModule),
         sceLcdc(Modules.sceLcdcModule),
         sceDmacplus(Modules.sceDmacplusModule),
-        sceDdr(Modules.sceDdrModule);
+        sceDdr(Modules.sceDdrModule),
+        sceMScm(Modules.sceMScmModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
@@ -503,6 +504,16 @@ public class HLEModuleManager {
 
     public HLEModuleFunction getFunctionFromNID(int nid) {
     	return nidToFunction.get(nid);
+    }
+
+    public int getNIDFromFunctionName(String functionName) {
+    	for (HLEModuleFunction function : nidToFunction.values()) {
+    		if (functionName.equals(function.getFunctionName())) {
+    			return function.getNid();
+    		}
+    	}
+
+    	return 0;
     }
 
     public void removeFunction(HLEModuleFunction func) {
