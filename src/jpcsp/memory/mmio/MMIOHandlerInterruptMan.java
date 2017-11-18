@@ -49,13 +49,21 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	}
 
 	public void triggerInterrupt(int interruptNumber) {
-		interruptTriggered[interruptNumber] = true;
-		checkException();
+		if (!hasInterruptTriggered(interruptNumber)) {
+			interruptTriggered[interruptNumber] = true;
+			checkException();
+		}
 	}
 
 	public void clearInterrupt(int interruptNumber) {
-		interruptTriggered[interruptNumber] = false;
-		checkException();
+		if (hasInterruptTriggered(interruptNumber)) {
+			interruptTriggered[interruptNumber] = false;
+			checkException();
+		}
+	}
+
+	public boolean hasInterruptTriggered(int interruptNumber) {
+		return interruptTriggered[interruptNumber];
 	}
 
 	private void checkException() {

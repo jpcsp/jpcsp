@@ -66,11 +66,13 @@ public class RuntimeContextLLE {
 			return;
 		}
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("triggerInterrupt 0x%X(%s)", interruptNumber, IntrManager.getInterruptName(interruptNumber)));
-		}
+		if (!MMIOHandlerInterruptMan.getInstance().hasInterruptTriggered(interruptNumber)) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("triggerInterrupt 0x%X(%s)", interruptNumber, IntrManager.getInterruptName(interruptNumber)));
+			}
 
-		MMIOHandlerInterruptMan.getInstance().triggerInterrupt(interruptNumber);
+			MMIOHandlerInterruptMan.getInstance().triggerInterrupt(interruptNumber);
+		}
 	}
 
 	public static void clearInterrupt(Processor processor, int interruptNumber) {
@@ -78,11 +80,13 @@ public class RuntimeContextLLE {
 			return;
 		}
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("clearInterrupt 0x%X(%s)", interruptNumber, IntrManager.getInterruptName(interruptNumber)));
-		}
+		if (MMIOHandlerInterruptMan.getInstance().hasInterruptTriggered(interruptNumber)) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("clearInterrupt 0x%X(%s)", interruptNumber, IntrManager.getInterruptName(interruptNumber)));
+			}
 
-		MMIOHandlerInterruptMan.getInstance().clearInterrupt(interruptNumber);
+			MMIOHandlerInterruptMan.getInstance().clearInterrupt(interruptNumber);
+		}
 	}
 
 	public static void triggerInterruptException(Processor processor, int IPbits) {
