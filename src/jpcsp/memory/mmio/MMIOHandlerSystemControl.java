@@ -27,6 +27,7 @@ import jpcsp.Memory;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
+import jpcsp.hardware.MemoryStick;
 
 public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 	public static final int BASE_ADDRESS = 0xBC100000;
@@ -92,6 +93,12 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 	public static final int SYSREG_IO_SPI3         = 27;
 	public static final int SYSREG_IO_SPI4         = 28;
 	public static final int SYSREG_IO_SPI5         = 29;
+	public static final int SYSREG_USBMS_USB_CONNECTED      = 0x000001;
+	public static final int SYSREG_USBMS_USB_INTERRUPT_MASK = 0x00001E;
+	public static final int SYSREG_USBMS_MS0_CONNECTED      = 0x000100;
+	public static final int SYSREG_USBMS_MS0_INTERRUPT_MASK = 0x001E00;
+	public static final int SYSREG_USBMS_MS1_CONNECTED      = 0x010000;
+	public static final int SYSREG_USBMS_MS1_INTERRUPT_MASK = 0x1E0000;
 	public static final int RAM_SIZE_16MB = 0;
 	public static final int RAM_SIZE_32MB = 1;
 	public static final int RAM_SIZE_64MB = 2;
@@ -103,6 +110,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 	private int ioDevices;
 	private int ramSize;
 	private int tachyonVersion;
+	private int usbAndMemoryStick;
 
 	public static MMIOHandlerSystemControl getInstance() {
 		if (instance == null) {
@@ -116,6 +124,10 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 
 		ramSize = RAM_SIZE_16MB;
 		tachyonVersion = Modules.sceSysregModule.sceSysregGetTachyonVersion();
+
+		if (MemoryStick.isInserted()) {
+			usbAndMemoryStick |= SYSREG_USBMS_MS0_CONNECTED;
+		}
 	}
 
 	private static String getResetDeviceName(int bit) {
@@ -244,6 +256,11 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 		ramSize = value & 0x3;
 	}
 
+	private void clearUsbMemoryStick(int usbMemoryStick) {
+		usbMemoryStick &= SYSREG_USBMS_USB_INTERRUPT_MASK | SYSREG_USBMS_MS0_INTERRUPT_MASK | SYSREG_USBMS_MS1_INTERRUPT_MASK;
+		this.usbAndMemoryStick &= ~usbMemoryStick;
+	}
+
 	@Override
 	public int read32(int address) {
 		int value;
@@ -253,6 +270,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 			case 0x50: value = busClockDevices; break;
 			case 0x54: value = clock1Devices; break;
 			case 0x78: value = ioDevices; break;
+			case 0x80: value = usbAndMemoryStick; break;
 			case 0x90: value = (int) Modules.sceSysregModule.sceSysregGetFuseId(); break;
 			case 0x94: value = (int) (Modules.sceSysregModule.sceSysregGetFuseId() >> 32); break;
 			case 0x98: value = Modules.sceSysregModule.sceSysregGetFuseConfig(); break;
@@ -275,6 +293,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 			case 0x50: setBusClockDevices(value); break;
 			case 0x54: setClock1Devices(value); break;
 			case 0x78: setIoDevices(value); break;
+			case 0x80: clearUsbMemoryStick(value); break;
 			default: super.write32(address, value); break;
 		}
 
@@ -343,6 +362,10 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 		toString(sb, busClockDevices, 1, "busClockDevices");
 		toString(sb, clock1Devices, 2, "clock1Devices");
 		toString(sb, ioDevices, 3, "ioDevices");
+
+		sb.append(String.format(", USB[connected=%b, interrupt=0x%01X]", (usbAndMemoryStick & SYSREG_USBMS_USB_CONNECTED) != 0, (usbAndMemoryStick & SYSREG_USBMS_USB_INTERRUPT_MASK) >> 1));
+		sb.append(String.format(", MemoryStick0[connected=%b, interrupt=0x%01X]", (usbAndMemoryStick & SYSREG_USBMS_MS0_CONNECTED) != 0, (usbAndMemoryStick & SYSREG_USBMS_USB_INTERRUPT_MASK) >> 9));
+		sb.append(String.format(", MemoryStick1[connected=%b, interrupt=0x%01X]", (usbAndMemoryStick & SYSREG_USBMS_MS1_CONNECTED) != 0, (usbAndMemoryStick & SYSREG_USBMS_USB_INTERRUPT_MASK) >> 17));
 
 		return sb.toString();
 	}
