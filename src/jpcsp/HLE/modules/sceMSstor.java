@@ -399,13 +399,9 @@ public class sceMSstor extends HLEModule {
 		installHLESyscall(partitionFuncs.ioWrite, this, "hleMSstorPartitionIoWrite");
     }
 
-    public void installDrivers() {
-		Memory mem = Memory.getInstance();
-
-		dumpIoIoctl_0x02125803 = readBytes("ms.ioctl.0x02125803");
-
+    public void hleInit() {
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem("ms0/", true);
-		vFile = new Fat32VirtualFile(vfs);
+		vFile = new Fat32VirtualFile("ms0:", vfs);
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("installDrivers vFile=%s", vFile));
 		}
@@ -414,6 +410,14 @@ public class sceMSstor extends HLEModule {
 		scanThread.setName("Fat32VirtualFile Scan Thread");
 		scanThread.setDaemon(true);
 		scanThread.start();
+    }
+
+    public void installDrivers() {
+		Memory mem = Memory.getInstance();
+
+		dumpIoIoctl_0x02125803 = readBytes("ms.ioctl.0x02125803");
+
+		hleInit();
 
 		pspIoDrv controllerDrv = new pspIoDrv();
 		pspIoDrvFuncs controllerFuncs = new pspIoDrvFuncs();

@@ -597,7 +597,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 		    				// into the space available on flash0.
 		    				vfs = new CompressPrxVirtualFileSystem(vfs);
 
-		    				vFile3 = new Fat12VirtualFile(vfs, 0xBFE0);
+		    				vFile3 = new Fat12VirtualFile("flash0:", vfs, 0xBFE0);
 		    				vFile3.scan();
 		    			}
 		    			readFile(user, vFile3, ppn + i, 0x3);
@@ -607,7 +607,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 		    		} else if (ppnToLbn[ppn + i] >= 0x603 && ppnToLbn[ppn + i] < 0x702) {
 		    			if (vFile603 == null) {
 		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem("flash1/", false);
-		    				vFile603 = new Fat12VirtualFile(vfs, 0x1FE0);
+		    				vFile603 = new Fat12VirtualFile("flash1:", vfs, 0x1FE0);
 		    				vFile603.scan();
 		    			}
 		    			readFile(user, vFile603, ppn + i, 0x603);
@@ -617,7 +617,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 		    		} else if (ppnToLbn[ppn + i] >= 0x703 && ppnToLbn[ppn + i] < 0x742) {
 		    			if (vFile703 == null) {
 		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem("flash2/", false);
-		    				vFile703 = new Fat12VirtualFile(vfs, 0x7E0);
+		    				vFile703 = new Fat12VirtualFile("flash2:", vfs, 0x7E0);
 		    				vFile703.scan();
 		    			}
 		    			readFile(user, vFile703, ppn + i, 0x703);

@@ -16,16 +16,75 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.HLE.Modules.sceMSstorModule;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MSCM0_INTR;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_SET;
+import static jpcsp.memory.mmio.memorystick.MemoryStickBootAttributesInfo.MS_SYSINF_CARDTYPE_RDWR;
+import static jpcsp.memory.mmio.memorystick.MemoryStickBootAttributesInfo.MS_SYSINF_FORMAT_FAT;
+import static jpcsp.memory.mmio.memorystick.MemoryStickBootAttributesInfo.MS_SYSINF_MSCLASS_TYPE_1;
+import static jpcsp.memory.mmio.memorystick.MemoryStickBootAttributesInfo.MS_SYSINF_USAGE_GENERAL;
+import static jpcsp.memory.mmio.memorystick.MemoryStickBootHeader.MS_BOOT_BLOCK_DATA_ENTRIES;
+import static jpcsp.memory.mmio.memorystick.MemoryStickBootHeader.MS_BOOT_BLOCK_FORMAT_VERSION;
+import static jpcsp.memory.mmio.memorystick.MemoryStickBootHeader.MS_BOOT_BLOCK_ID;
+import static jpcsp.memory.mmio.memorystick.MemoryStickSystemItem.MS_SYSENT_TYPE_CIS_IDI;
+import static jpcsp.memory.mmio.memorystick.MemoryStickSystemItem.MS_SYSENT_TYPE_INVALID_BLOCK;
+import static jpcsp.util.Utilities.endianSwap16;
 
 import java.util.Arrays;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.modules.sceMScm;
 import jpcsp.hardware.MemoryStick;
+import jpcsp.memory.IntArrayMemory;
+import jpcsp.memory.mmio.memorystick.MemoryStickBootPage;
+import jpcsp.util.Utilities;
 
+/**
+ * MMIO for Memory Stick.
+ * Based on information from
+ *     https://github.com/torvalds/linux/tree/master/drivers/memstick/core
+ * and https://github.com/torvalds/linux/blob/master/drivers/usb/storage/ene_ub6250.c
+ *
+ * @author gid15
+ *
+ */
 public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
+	public static Logger log = sceMScm.log;
 	private static final boolean simulateMemoryStickPro = false;
+	// Overwrite area
+	public static final int MS_REG_OVR_BKST = 0x80; // Block status
+	public static final int MS_REG_OVR_BKST_OK = MS_REG_OVR_BKST; // Block status OK
+	public static final int MS_REG_OVR_BKST_NG = 0; // Block status NG
+	public static final int MS_REG_OVR_PGST0 = 0x40; // Page status, bit 0
+	public static final int MS_REG_OVR_PGST1 = 0x20; // Page status, bit 1
+	public static final int MS_REG_OVR_PGST_MASK = MS_REG_OVR_PGST0 | MS_REG_OVR_PGST1;
+	public static final int MS_REG_OVR_PGST_OK = MS_REG_OVR_PGST0 | MS_REG_OVR_PGST1; // Page status OK
+	public static final int MS_REG_OVR_PGST_NG = MS_REG_OVR_PGST1; // Page status NG
+	public static final int MS_REG_OVR_PGST_DATA_ERROR = 0; // Page status data error
+	public static final int MS_REG_OVR_UDST = 0x10; // Update status
+	public static final int MS_REG_OVR_UDST_UPDATING = 0; // Update status updating
+	public static final int MS_REG_OVR_UDST_NO_UPDATE = MS_REG_OVR_UDST; // Update status no update
+	public static final int MS_REG_OVR_RESERVED = 0x08;
+	public static final int MS_REG_OVR_DEFAULT = MS_REG_OVR_BKST_OK | MS_REG_OVR_PGST_OK | MS_REG_OVR_UDST_NO_UPDATE | MS_REG_OVR_RESERVED;
+	// Management flag
+	public static final int MS_REG_MNG_SCMS0 = 0x20; // Serial copy management system, bit 0
+	public static final int MS_REG_MNG_SCMS1 = 0x10; // Serial copy management system, bit 1
+	public static final int MS_REG_MNG_SCMS_MASK = MS_REG_MNG_SCMS0 | MS_REG_MNG_SCMS1;
+	public static final int MS_REG_MNG_SCMS_COPY_OK = MS_REG_MNG_SCMS0 | MS_REG_MNG_SCMS1;
+	public static final int MS_REG_MNG_SCMS_ONE_COPY = MS_REG_MNG_SCMS1;
+	public static final int MS_REG_MNG_SCMS_NO_COPY = 0;
+	public static final int MS_REG_MNG_ATFLG = 0x08; // Address transfer table flag
+	public static final int MS_REG_MNG_ATFLG_OTHER = MS_REG_MNG_ATFLG; // Address transfer other
+	public static final int MS_REG_MNG_ATFLG_ATTBL = 0; // Address transfer table
+	public static final int MS_REG_MNG_SYSFLG = 0x04; // System flag
+	public static final int MS_REG_MNG_SYSFLG_USER = MS_REG_MNG_SYSFLG; // User block
+	public static final int MS_REG_MNG_SYSFLG_BOOT = 0; // System block
+	public static final int MS_REG_MNG_RESERVED = 0xC3;
+	public static final int MS_REG_MNG_DEFAULT = MS_REG_MNG_SCMS_COPY_OK | MS_REG_MNG_ATFLG_OTHER | MS_REG_MNG_SYSFLG_USER | MS_REG_MNG_RESERVED;
 	// commandState bit
 	public static final int MS_COMMANDSTATE_BUSY   = 0x0001;
 	// SYS bit
@@ -61,22 +120,36 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	public static final int MS_SYSTEM_ADDRESS        = 0x10;
 	public static final int MS_SYSTEM_SERIAL_MODE    = 0x80;
 	// MS commands
-	public static final int MS_CMD_BLOCK_READ  = 0xAA;
-	public static final int MS_CMD_BLOCK_WRITE = 0x55;
-	public static final int MS_CMD_BLOCK_END   = 0x33;
-	public static final int MS_CMD_BLOCK_ERASE = 0x99;
-	public static final int MS_CMD_FLASH_STOP  = 0xCC;
-	public static final int MS_CMD_CLEAR_BUF   = 0xC3;
-	public static final int MS_CMD_RESET       = 0x3C;
+	public static final int MS_CMD_BLOCK_END       = 0x33;
+	public static final int MS_CMD_RESET           = 0x3C;
+	public static final int MS_CMD_BLOCK_WRITE     = 0x55;
+	public static final int MS_CMD_SLEEP           = 0x5A;
+	public static final int MS_CMD_LOAD_ID         = 0x60;
+	public static final int MS_CMD_CMP_ICV         = 0x7F;
+	public static final int MS_CMD_BLOCK_ERASE     = 0x99;
+	public static final int MS_CMD_BLOCK_READ      = 0xAA;
+	public static final int MS_CMD_CLEAR_BUF       = 0xC3;
+	public static final int MS_CMD_FLASH_STOP      = 0xCC;
 	// MS Pro commands
-	public static final int MS_CMD_READ_DATA   = 0x20;
-	public static final int MS_CMD_WRITE_DATA  = 0x21;
-	public static final int MS_CMD_READ_ATRB   = 0x24;
-	public static final int MS_CMD_STOP        = 0x25;
-	public static final int MS_CMD_ERASE       = 0x26;
-	public static final int MS_CMD_SET_IBD     = 0x46;
-	public static final int MS_CMD_GET_IBD     = 0x47;
-	public static final int MS_CMD_SLEEP       = 0x11;
+	public static final int MSPRO_CMD_FORMAT       = 0x10;
+	public static final int MSPRO_CMD_SLEEP        = 0x11;
+	public static final int MSPRO_CMD_WAKEUP       = 0x12;
+	public static final int MSPRO_CMD_READ_DATA    = 0x20;
+	public static final int MSPRO_CMD_WRITE_DATA   = 0x21;
+	public static final int MSPRO_CMD_READ_ATRB    = 0x24;
+	public static final int MSPRO_CMD_STOP         = 0x25;
+	public static final int MSPRO_CMD_ERASE        = 0x26;
+	public static final int MSPRO_CMD_READ_QUAD    = 0x27;
+	public static final int MSPRO_CMD_WRITE_QUAD   = 0x28;
+	public static final int MSPRO_CMD_SET_IBD      = 0x46;
+	public static final int MSPRO_CMD_GET_IBD      = 0x47;
+	public static final int MSPRO_CMD_IN_IO_DATA   = 0xB0;
+	public static final int MSPRO_CMD_OUT_IO_DATA  = 0xB1;
+	public static final int MSPRO_CMD_READ_IO_ATRB = 0xB2;
+	public static final int MSPRO_CMD_IN_IO_FIFO   = 0xB3;
+	public static final int MSPRO_CMD_OUT_IO_FIFO  = 0xB4;
+	public static final int MSPRO_CMD_IN_IOM       = 0xB5;
+	public static final int MSPRO_CMD_OUT_IOM      = 0xB6;
 	private int interrupt; // Possible bits: 0x000D
 	private int commandState;
 	private int unk08; // Possible bits: 0x03F0
@@ -89,11 +162,52 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	private int writeAddress;
 	private int writeSize;
 	private int cmd;
+	private int oobLength;
+	private int startBlock;
+	private int oobIndex;
+	private final int[] pageBuffer = new int[(PAGE_SIZE + PAGE_BUFFER_MEMORY_OFFSET) >> 2];
+	private final IntArrayMemory pageBufferMemory = new IntArrayMemory(pageBuffer);
+	private final TPointer pageBufferPointer = new TPointer(pageBufferMemory, PAGE_BUFFER_MEMORY_OFFSET);
+	private int pageStartLba;
+	private int numberOfPages;
+	private int pageDataIndex;
+	private int pageIndex;
+	private final MemoryStickBootPage bootPage = new MemoryStickBootPage();
+	private final IntArrayMemory bootPageMemory = new IntArrayMemory(new int[bootPage.sizeof() >> 2]);
+	private final MemoryStickBootPage bootPageBackup = new MemoryStickBootPage();
+	private final IntArrayMemory bootPageBackupMemory = new IntArrayMemory(new int[bootPageBackup.sizeof() >> 2]);
+	private final IntArrayMemory disabledBlocksPageMemory = new IntArrayMemory(new int[PAGE_SIZE >> 2]);
+	private final static int PAGE_SIZE = 0x200;
+	private final static int PAGES_PER_BLOCK = 32;
+	private final static int BLOCK_SIZE = PAGES_PER_BLOCK * PAGE_SIZE / 1024; // Number of KB per block
+	private final static int DISABLED_BLOCKS_PAGE = 1;
+	private final static int CIS_IDI_PAGE = 2;
+	private final static int NUMBER_OF_PHYSICAL_BLOCKS = 0x2000 - 0x1020;
+	private final static int NUMBER_OF_LOGICAL_BLOCKS = NUMBER_OF_PHYSICAL_BLOCKS - (NUMBER_OF_PHYSICAL_BLOCKS / 512 * 16);
+	private final static int FIRST_PAGE_LBA = 2 * PAGES_PER_BLOCK;
+	private final static int NUMBER_OF_PAGES = (NUMBER_OF_PHYSICAL_BLOCKS / 512 * 496 - 2) * BLOCK_SIZE * 2 - FIRST_PAGE_LBA;
+	private final static int PAGE_BUFFER_MEMORY_OFFSET = 4; // To avoid interpreting the address 0 as a NULL pointer
 
 	public MMIOHandlerMemoryStick(int baseAddress) {
 		super(baseAddress);
 
+		sceMSstorModule.hleInit();
 		reset();
+	}
+
+	private static String getTPCName(int tpc) {
+		switch (tpc) {
+			case MS_TPC_READ_PAGE_DATA: return "READ_PAGE_DATA";
+			case MS_TPC_READ_REG: return "READ_REG";
+			case MS_TPC_GET_INT: return "GET_INT";
+			case MS_TPC_SET_RW_REG_ADDRESS: return "SET_RW_REG_ADDRESS";
+			case MS_TPC_EX_SET_CMD: return "EX_SET_CMD";
+			case MS_TPC_WRITE_REG: return "WRITE_REG";
+			case MS_TPC_WRITE_PAGE_DATA: return "WRITE_PAGE_DATA";
+			case MS_TPC_SET_CMD: return "SET_CMD";
+		}
+
+		return String.format("UNKNOWN_TPC_%X", tpc);
 	}
 
 	private void reset() {
@@ -109,6 +223,13 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		writeAddress = 0;
 		writeSize = 0;
 		cmd = 0;
+		numberOfPages = 0;
+		pageStartLba = 0;
+		pageIndex = 0;
+		pageDataIndex = 0;
+		startBlock = 0;
+		oobLength = 0;
+		oobIndex = 0;
 
 		registers[MS_INT_REG_ADDRESS] = MS_INT_REG_CED;
 		if (MemoryStick.isInserted()) {
@@ -122,6 +243,38 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 			registers[MS_TYPE_ADDRESS] = MS_TYPE_MEMORY_STICK_PRO;
 			registers[MS_SYSTEM_ADDRESS] = MS_SYSTEM_SERIAL_MODE;
 		}
+
+		bootPage.header.blockId = MS_BOOT_BLOCK_ID;
+		bootPage.header.formatVersion = MS_BOOT_BLOCK_FORMAT_VERSION;
+		bootPage.header.numberOfDataEntry = MS_BOOT_BLOCK_DATA_ENTRIES;
+		bootPage.entry.disabledBlock.startAddr = DISABLED_BLOCKS_PAGE * PAGE_SIZE - bootPage.sizeof();
+		bootPage.entry.disabledBlock.dataSize = 4;
+		bootPage.entry.disabledBlock.dataTypeId = MS_SYSENT_TYPE_INVALID_BLOCK;
+		bootPage.entry.cisIdi.startAddr = CIS_IDI_PAGE * PAGE_SIZE - bootPage.sizeof();
+		bootPage.entry.cisIdi.dataSize = PAGE_SIZE;
+		bootPage.entry.cisIdi.dataTypeId = MS_SYSENT_TYPE_CIS_IDI;
+		bootPage.attr.memorystickClass = MS_SYSINF_MSCLASS_TYPE_1; // must be 1
+		bootPage.attr.cardType = MS_SYSINF_CARDTYPE_RDWR;
+		bootPage.attr.blockSize = BLOCK_SIZE; // Number of KB per block
+		bootPage.attr.numberOfBlocks = NUMBER_OF_PHYSICAL_BLOCKS; // Number of physical blocks
+		bootPage.attr.numberOfEffectiveBlocks = NUMBER_OF_LOGICAL_BLOCKS; // Number of logical blocks
+		bootPage.attr.pageSize = PAGE_SIZE; // Must be 0x200
+		bootPage.attr.extraDataSize = 0x10;
+		bootPage.attr.securitySupport = 0x01; // 1 means no security support
+		bootPage.attr.formatUniqueValue4[0] = 1;
+		bootPage.attr.formatUniqueValue4[1] = 1;
+		bootPage.attr.transferSupporting = 0;
+		bootPage.attr.formatType = MS_SYSINF_FORMAT_FAT;
+		bootPage.attr.memorystickApplication = MS_SYSINF_USAGE_GENERAL;
+		bootPage.attr.deviceType = 0;
+		bootPage.write(bootPageMemory);
+
+		bootPageBackup.header.blockId = MS_BOOT_BLOCK_ID;
+		bootPageBackup.write(bootPageBackupMemory);
+
+		disabledBlocksPageMemory.write16(0, (short) endianSwap16(0x0000));
+		disabledBlocksPageMemory.write16(2, (short) endianSwap16(0x0001));
+		disabledBlocksPageMemory.write16(4, (short) endianSwap16(NUMBER_OF_PHYSICAL_BLOCKS - 1));
 	}
 
 	private void writeSys(int sys) {
@@ -197,12 +350,15 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		int unknown = tpc & 0x3FF;
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("startTPC tpcCode=0x%01X, unknown=0x%03X", tpcCode, unknown));
+			log.debug(String.format("startTPC tpcCode=0x%01X(%s), unknown=0x%03X", tpcCode, getTPCName(tpcCode), unknown));
 		}
 
 		switch (tpcCode) {
 			case MS_TPC_SET_RW_REG_ADDRESS:
 				// Data will be set at next writeData()
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_SET_RW_REG_ADDRESS"));
+				}
 				break;
 			case MS_TPC_READ_REG:
 				// Data will be retrieve at next readData()
@@ -225,7 +381,16 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				}
 				break;
 			case MS_TPC_GET_INT:
-				// Data will be retrieve at next readData()
+				// Data will be retrieved at next readData()
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_GET_INT"));
+				}
+				break;
+			case MS_TPC_READ_PAGE_DATA:
+				// Data will be retrieved through readData16()
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_READ_PAGE_DATA"));
+				}
 				break;
 			default:
 				log.error(String.format("MMIOHandlerMemoryStick.startTPC unknown TPC 0x%01X", tpcCode));
@@ -237,8 +402,8 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 
 	private int getRegisterValue(int reg, int length) {
 		int value = 0;
-		for (int i = 0, shift = 0; i < length; i++, shift += 8) {
-			value |= (registers[reg + i] & 0xFF) << shift;
+		for (int i = 0; i < length; i++) {
+			value = (value << 8) | (registers[reg + i] & 0xFF);
 		}
 
 		return value;
@@ -248,33 +413,56 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		if (isMemoryStickPro()) {
 			return getRegisterValue(0x11, 2);
 		}
-		return getRegisterValue(0x14, 1) << 4;
+		return PAGE_SIZE;
 	}
 
 	private int getDataAddress() {
 		if (isMemoryStickPro()) {
 			return getRegisterValue(0x13, 4);
 		}
-		return getRegisterValue(0x11, 3);
+
+		int blockAddress = getRegisterValue(0x11, 3);
+		int pageAddress = getRegisterValue(0x15, 1);
+		return blockAddress * PAGES_PER_BLOCK + pageAddress;
 	}
 
 	private void startCmd(int cmd) {
 		this.cmd = cmd;
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerMemoryStick.startCmd cmd=0x%02X", cmd));
+			log.debug(String.format("MMIOHandlerMemoryStick.startCmd cmd=0x%02X", this.cmd));
 		}
 
 		switch (cmd) {
 			case MS_CMD_BLOCK_READ:
-				// TODO Unknown command
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startCmd MS_CMD_BLOCK_READ dataCount=0x%04X, dataAddress=0x%08X", getDataCount(), getDataAddress()));
+					log.debug(String.format("MMIOHandlerMemoryStick.startCmd MS_CMD_BLOCK_READ dataCount=0x%04X, dataAddress=0x%08X, cp=0x%02X", getDataCount(), getDataAddress(), getRegisterValue(0x14, 1)));
 				}
+				setBusy();
 				if (!isMemoryStickPro()) {
 					registers[0x16] = 0x80;
 					registers[0x17] = 0x00;
 				}
+				break;
+			case MS_CMD_BLOCK_ERASE:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerMemoryStick.startCmd MS_CMD_BLOCK_ERASE dataCount=0x%04X, dataAddress=0x%08X, cp=0x%02X", getDataCount(), getDataAddress(), getRegisterValue(0x14, 1)));
+				}
+				clearBusy();
+				break;
+			case MS_CMD_BLOCK_WRITE:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerMemoryStick.startCmd MS_CMD_BLOCK_WRITE dataCount=0x%04X, dataAddress=0x%08X, cp=0x%02X", getDataCount(), getDataAddress(), getRegisterValue(0x14, 1)));
+				}
+				break;
+			case MS_CMD_SLEEP:
+				// Simply ignore this command
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerMemoryStick.startCmd MS_CMD_SLEEP"));
+				}
+				break;
+			default:
+				log.error(String.format("MMIOHandlerMemoryStick.startCmd unknown cmd=0x%02X", cmd));
 				break;
 		}
 
@@ -282,6 +470,8 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		// indicating a successful completion
 		registers[MS_INT_REG_ADDRESS] = MS_INT_REG_CED;
 
+		pageIndex = 0;
+		pageDataIndex = 0;
 		status |= 0x2000;
 		sys |= 0x4000;
 		setInterrupt(0x4);
@@ -293,8 +483,156 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 			return 0;
 		}
 
-		// TODO
-		return 0;
+		int value = 0;
+		int dataAddress = getDataAddress();
+		if (dataAddress == 0) {
+			value = bootPageMemory.read16(pageDataIndex);
+		} else if (dataAddress == PAGES_PER_BLOCK) {
+			value = bootPageBackupMemory.read16(pageDataIndex);
+		} else if (dataAddress == DISABLED_BLOCKS_PAGE) {
+			value = disabledBlocksPageMemory.read16(pageDataIndex);
+		} else if (dataAddress == CIS_IDI_PAGE) {
+			log.error(String.format("MMIOHandlerMemoryStick.readData16 unimplemented reading from CIS_IDI_PAGE"));
+		}
+
+		pageDataIndex += 2;
+		if (pageDataIndex >= PAGE_SIZE) {
+			clearBusy();
+			status |= 0x2000;
+			sys |= 0x4000;
+			setInterrupt(0x0004);
+		}
+
+		return value;
+	}
+
+	private int readDataOOB16() {
+		int value;
+		if ((oobIndex & 3) == 0) {
+			// Overwrite area and management flag
+			value = (MS_REG_MNG_DEFAULT << 8) | MS_REG_OVR_DEFAULT;
+		} else {
+			// Logical address
+			value = endianSwap16(startBlock + (oobIndex >> 2));
+		}
+
+		oobIndex += 2;
+		if (oobIndex >= (oobLength << 2)) {
+			oobIndex = 0;
+			clearBusy();
+			status |= 0x2000;
+			sys |= 0x4000;
+			unk08 |= 0x0040;
+			unk08 &= ~0x000F; // Clear error code
+			setInterrupt(0x0004);
+		}
+
+		return value;
+	}
+
+	private int readPageData16() {
+		int value = 0;
+
+		value = pageBufferMemory.read16(pageDataIndex + PAGE_BUFFER_MEMORY_OFFSET);
+
+		pageDataIndex += 2;
+		if (pageDataIndex >= PAGE_SIZE) {
+			pageDataIndex = 0;
+			pageIndex++;
+			if (pageIndex >= numberOfPages) {
+				pageIndex = 0;
+				clearBusy();
+				status |= 0x2000;
+				sys |= 0x4000;
+				unk08 |= 0x0040;
+				unk08 &= ~0x000F; // Clear error code
+				setInterrupt(0x0004);
+			} else {
+				readPageBuffer();
+			}
+		}
+
+		return value;
+	}
+
+	private void setNumberOfPages(int numberOfPages) {
+		this.numberOfPages = numberOfPages;
+		pageIndex = 0;
+		pageDataIndex = 0;
+	}
+
+	private void setPageStartLba(int pageStartLba) {
+		this.pageStartLba = pageStartLba;
+		pageIndex = 0;
+		pageDataIndex = 0;
+
+		readPageBuffer();
+	}
+
+	private void setStartBlock(int startBlock) {
+		this.startBlock = startBlock;
+		pageIndex = 0;
+		pageDataIndex = 0;
+		oobIndex = 0;
+	}
+
+	private void readMasterBootRecord() {
+		// See description of MBR at
+		// https://en.wikipedia.org/wiki/Master_boot_record
+		pageBufferPointer.clear(PAGE_SIZE);
+
+		// First partition entry
+		TPointer partitionPointer = new TPointer(pageBufferPointer, 446);
+		// Active partition
+		partitionPointer.setValue8(0, (byte) 0x80);
+    	// CHS address of first absolute sector in partition (not used by the PSP)
+		partitionPointer.setValue8(1, (byte) 0x00);
+		partitionPointer.setValue8(2, (byte) 0x00);
+		partitionPointer.setValue8(3, (byte) 0x00);
+		// Partition type: FAT32 with LBA
+		partitionPointer.setValue8(4, (byte) 0x0C);
+    	// CHS address of last absolute sector in partition (not used by the PSP)
+		partitionPointer.setValue8(5, (byte) 0x00);
+		partitionPointer.setValue8(6, (byte) 0x00);
+		partitionPointer.setValue8(7, (byte) 0x00);
+		// LBA of first absolute sector in the partition
+		partitionPointer.setUnalignedValue32(8, FIRST_PAGE_LBA);
+		// Number of sectors in partition
+		partitionPointer.setUnalignedValue32(12, NUMBER_OF_PAGES);
+
+		// Signature
+		pageBufferPointer.setValue8(510, (byte) 0x55);
+		pageBufferPointer.setValue8(511, (byte) 0xAA);
+	}
+
+	private void readPageBuffer() {
+		long offset = 0L;
+		int pageLba = pageStartLba + pageIndex;
+		if (startBlock != 0xFFFF) {
+			pageLba += startBlock * PAGES_PER_BLOCK;
+		}
+
+		// Invalid page number set during boot sequence
+		if (pageStartLba == 0x4000) {
+			pageBufferPointer.clear(PAGE_SIZE);
+		} else if (pageLba == 0) {
+			readMasterBootRecord();
+		} else if (pageLba >= FIRST_PAGE_LBA) {
+			offset = (pageLba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
+
+			sceMSstorModule.hleMSstorPartitionIoLseek(null, offset, PSP_SEEK_SET);
+			sceMSstorModule.hleMSstorPartitionIoRead(null, pageBufferPointer, PAGE_SIZE);
+		} else {
+			pageBufferPointer.clear(PAGE_SIZE);
+		}
+
+		if (log.isDebugEnabled()) {
+			byte[] buffer = new byte[PAGE_SIZE];
+			for (int i = 0; i < buffer.length; i++) {
+				buffer[i] = pageBufferPointer.getValue8(i);
+			}
+			log.debug(String.format("MMIOHandlerMemoryStick.readPageBuffer startBlock=0x%X, pageLba=0x%X, offset=0x%X: %s", startBlock, pageLba, offset, Utilities.getMemoryDump(buffer)));
+		}
 	}
 
 	private int readData32() {
@@ -331,10 +669,10 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		return data;
 	}
 
-	int count = 0;
+	int count32 = 0;
 	private int readData32Parallel() {
-		count++;
-		if (count == 128) {
+		count32++;
+		if (count32 == 128) {
 			clearBusy();
 			status |= 0x2000;
 			sys |= 0x4000;
@@ -397,6 +735,8 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 			case 0x00: value = interrupt; break;
 			case 0x04: value = commandState; break;
 			case 0x08: value = unk08; break;
+			case 0x24: value = readDataOOB16(); break;
+			case 0x28: value = readPageData16(); break;
 			case 0x30: value = tpc; break;
 			case 0x34: value = readData16(); break;
 			case 0x38: value = status; break;
@@ -433,10 +773,13 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	public void write16(int address, short value) {
 		switch (address - baseAddress) {
 			case 0x00: clearInterrupt(value & 0xFFFF); break;
-			case 0x02: break; // TODO Unknown, used in parallel mode
+			case 0x02: break; // TODO Unknown
 			case 0x04: writeCommandState(value & 0xFFFF); break;
-			case 0x10: break; // TODO Unknown, used in parallel mode
-			case 0x20: break; // TODO Unknown, used in parallel mode
+			case 0x10: setNumberOfPages(value); break;
+			case 0x12: oobLength = value; break;
+			case 0x14: setStartBlock(value); break;
+			case 0x16: setPageStartLba(value); break;
+			case 0x20: break; // TODO Unknown
 			case 0x30: startTPC(value & 0xFFFF); break;
 			case 0x38: status = value & 0xFFFF; break;
 			case 0x3C: writeSys(value & 0xFFFF); break;

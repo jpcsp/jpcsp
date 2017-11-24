@@ -53,6 +53,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
     public final static int sectorSize = 512;
     protected final byte[] currentSector = new byte[sectorSize];
     private static final byte[] emptySector = new byte[sectorSize];
+    private String deviceName;
 	private IVirtualFileSystem vfs;
 	private long position;
 	protected int totalSectors;
@@ -66,7 +67,8 @@ public abstract class FatVirtualFile implements IVirtualFile {
     private int fatSectorNumber = bootSectorNumber + reservedSectors;
     private int fsInfoSectorNumber = bootSectorNumber + 1;
 
-	protected FatVirtualFile(IVirtualFileSystem vfs, int totalSectors) {
+	protected FatVirtualFile(String deviceName, IVirtualFileSystem vfs, int totalSectors) {
+		this.deviceName = deviceName;
 		this.vfs = vfs;
 
 		this.totalSectors = totalSectors;
@@ -530,7 +532,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 				pendingDeleteFile.setFileSize(fileSize);
 				pendingDeleteFile.setLastModified(lastModified);
 			} else {
-				FatFileInfo newFileInfo = new FatFileInfo(fileInfo.getFullFileName(), fileName, directory, readOnly, null, fileSize);
+				FatFileInfo newFileInfo = new FatFileInfo(deviceName, fileInfo.getFullFileName(), fileName, directory, readOnly, null, fileSize);
 				newFileInfo.setLastModified(lastModified);
 				newFileInfo.setFileName83(Utilities.readStringNZ(sector, offset + 0, 8 + 3));
 				if (clusterNumber != 0) {
@@ -732,6 +734,10 @@ public abstract class FatVirtualFile implements IVirtualFile {
 	private void writeEmptySector() {
 	}
 
+	public String getDeviceName() {
+		return deviceName;
+	}
+
 	private void writeSector(int sectorNumber) {
 		if (sectorNumber == bootSectorNumber) {
 			writeBootSector();
@@ -872,6 +878,6 @@ public abstract class FatVirtualFile implements IVirtualFile {
 
     @Override
 	public String toString() {
-    	return String.format("%s", vfs);
+    	return String.format("%s%s", deviceName == null ? "" : deviceName, vfs);
 	}
 }

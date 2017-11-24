@@ -27,6 +27,7 @@ import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.util.Utilities;
 
 public class FatFileInfo {
+	private String deviceName;
 	private String dirName;
 	private String fileName;
 	private String fileName83;
@@ -41,7 +42,8 @@ public class FatFileInfo {
 	private byte[] fileData;
 	private FatFileInfo parentDirectory;
 
-	public FatFileInfo(String dirName, String fileName, boolean directory, boolean readOnly, ScePspDateTime lastModified, long fileSize) {
+	public FatFileInfo(String deviceName, String dirName, String fileName, boolean directory, boolean readOnly, ScePspDateTime lastModified, long fileSize) {
+		this.deviceName = deviceName;
 		this.dirName = dirName;
 		this.fileName = fileName;
 		this.directory = directory;
@@ -215,9 +217,14 @@ public class FatFileInfo {
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 
+		if (deviceName != null) {
+			s.append(deviceName);
+		}
+
 		if (getFullFileName() == null) {
 			s.append("[ROOT]");
 		} else {
+			s.append("/");
 			s.append(getFullFileName());
 		}
 

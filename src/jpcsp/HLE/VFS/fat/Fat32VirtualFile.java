@@ -28,8 +28,8 @@ import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.hardware.MemoryStick;
 
 public class Fat32VirtualFile extends FatVirtualFile {
-	public Fat32VirtualFile(IVirtualFileSystem vfs) {
-		super(vfs, (int) (MemoryStick.getTotalSize() / sectorSize));
+	public Fat32VirtualFile(String deviceName, IVirtualFileSystem vfs) {
+		super(deviceName, vfs, (int) (MemoryStick.getTotalSize() / sectorSize));
 	}
 
 	@Override
@@ -134,7 +134,8 @@ public class Fat32VirtualFile extends FatVirtualFile {
 		readEmptySector();
 
 		int offset = (fatIndex * sectorSize) >> 2;
-		for (int i = 0, j = 0; i < sectorSize; i += 4, j++) {
+		int maxSize = Math.min(sectorSize, (fatClusterMap.length - offset) << 2);
+		for (int i = 0, j = 0; i < maxSize; i += 4, j++) {
 			storeSectorInt32(currentSector, i, fatClusterMap[offset + j]);
 		}
 	}

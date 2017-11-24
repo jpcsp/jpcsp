@@ -55,7 +55,7 @@ public class FatBuilder {
 	public FatFileInfo scan() {
 		// Allocate a whole cluster for the root directory
 		int[] rootDirectoryClusters = allocateClusters(vFile.getClusterSize());
-		FatFileInfo rootDirectory = new FatFileInfo(null, null, true, false, null, 0);
+		FatFileInfo rootDirectory = new FatFileInfo(vFile.getDeviceName(), null, null, true, false, null, 0);
 		rootDirectory.setParentDirectory(rootDirectory);
 
 		scan(null, rootDirectory);
@@ -154,7 +154,7 @@ public class FatBuilder {
 			if (vfs.ioDread(dirName, dir) >= 0) {
 				boolean directory = (dir.stat.attr & 0x10) != 0;
 				boolean readOnly = (dir.stat.mode & 0x2) == 0;
-				FatFileInfo fileInfo = new FatFileInfo(dirName, dir.filename, directory, readOnly, dir.stat.mtime, dir.stat.size);
+				FatFileInfo fileInfo = new FatFileInfo(vFile.getDeviceName(), dirName, dir.filename, directory, readOnly, dir.stat.mtime, dir.stat.size);
 
 				parent.addChild(fileInfo);
 
@@ -435,7 +435,11 @@ public class FatBuilder {
 			storeSectorInt16(directoryData, offset + 26, 0); // Empty file
 		}
 
-		storeSectorInt32(directoryData, offset + 28, (int) fileInfo.getFileSize());
+		int fileSize = (int) fileInfo.getFileSize();
+		if (fileInfo.isDirectory()) {
+			fileSize = 0;
+		}
+		storeSectorInt32(directoryData, offset + 28, fileSize);
 
 		return directoryData;
 	}
