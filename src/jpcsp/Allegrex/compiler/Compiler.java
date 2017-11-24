@@ -405,9 +405,9 @@ public class Compiler implements ICompiler {
             int pc = pendingBlockAddresses.pop();
             if (!isAddressGood(pc)) {
                 if (isIgnoreInvalidMemory()) {
-                    log.warn(String.format("IGNORING: Trying to compile an invalid address 0x%08X", pc));
+                    log.warn(String.format("IGNORING: Trying to compile an invalid address 0x%08X while compiling from 0x%08X", pc, startAddress));
                 } else {
-                    log.error(String.format("Trying to compile an invalid address 0x%08X", pc));
+                    log.error(String.format("Trying to compile an invalid address 0x%08X while compiling from 0x%08X", pc, startAddress));
                 }
             	return null;
             }

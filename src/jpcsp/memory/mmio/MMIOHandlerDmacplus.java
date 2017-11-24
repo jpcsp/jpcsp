@@ -19,6 +19,8 @@ package jpcsp.memory.mmio;
 import static jpcsp.HLE.Modules.sceDisplayModule;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_DMACPLUS_INTR;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.types.IAction;
@@ -26,6 +28,7 @@ import jpcsp.HLE.modules.sceDmacplus;
 import jpcsp.memory.mmio.dmac.DmacProcessor;
 
 public class MMIOHandlerDmacplus extends MMIOHandlerBase {
+	public static Logger log = sceDmacplus.log;
 	public static final int COMPLETED_FLAG_UNKNOWN      = 0x01;
 	public static final int COMPLETED_FLAG_AVC          = 0x02;
 	public static final int COMPLETED_FLAG_SC2ME        = 0x04;

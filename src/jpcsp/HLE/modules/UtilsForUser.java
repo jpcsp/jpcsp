@@ -197,7 +197,6 @@ public class UtilsForUser extends HLEModule {
         return 0;
 	}
 
-    @HLELogging(level="info")
 	@HLEFunction(nid = 0xC2DF770E, version = 150)
 	public int sceKernelIcacheInvalidateRange(TPointer addr, int size) {
 		if (log.isInfoEnabled()) {
@@ -209,7 +208,6 @@ public class UtilsForUser extends HLEModule {
         return 0;
 	}
 
-    @HLELogging(level="info")
 	@HLEFunction(nid = 0xC8186A58, version = 150)
 	public int sceKernelUtilsMd5Digest(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer inAddr, int inSize, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer outAddr) {
     	int result = SceKernelUtilsMd5Context.digest(inAddr, inSize, outAddr);
@@ -219,20 +217,17 @@ public class UtilsForUser extends HLEModule {
     	return result;
 	}
 
-    @HLELogging(level="info")
 	@HLEFunction(nid = 0x9E5C5086, version = 150)
 	public int sceKernelUtilsMd5BlockInit(TPointer md5CtxAddr) {
         md5Ctx = new SceKernelUtilsMd5Context();
         return md5Ctx.init(md5CtxAddr);
 	}
 
-    @HLELogging(level="info")
 	@HLEFunction(nid = 0x61E1E525, version = 150)
 	public int sceKernelUtilsMd5BlockUpdate(TPointer md5CtxAddr, TPointer inAddr, int inSize) {
         return md5Ctx.update(md5CtxAddr, inAddr, inSize);
 	}
 
-    @HLELogging(level="info")
 	@HLEFunction(nid = 0xB8D24E78, version = 150)
 	public int sceKernelUtilsMd5BlockResult(TPointer md5CtxAddr, TPointer outAddr) {
         return md5Ctx.result(md5CtxAddr, outAddr);
@@ -243,20 +238,17 @@ public class UtilsForUser extends HLEModule {
     	return SceKernelUtilsSha1Context.digest(inAddr, inSize, outAddr);
 	}
 
-    @HLELogging(level="info")
 	@HLEFunction(nid = 0xF8FCD5BA, version = 150)
 	public int sceKernelUtilsSha1BlockInit(TPointer sha1CtxAddr) {
         sha1Ctx = new SceKernelUtilsSha1Context();
         return sha1Ctx.init(sha1CtxAddr);
 	}
 
-    @HLELogging(level="info")
 	@HLEFunction(nid = 0x346F6DA8, version = 150)
 	public int sceKernelUtilsSha1BlockUpdate(TPointer sha1CtxAddr, TPointer inAddr, int inSize) {
         return sha1Ctx.update(sha1CtxAddr, inAddr, inSize);
 	}
 
-    @HLELogging(level="info")
 	@HLEFunction(nid = 0x585F1C09, version = 150)
 	public int sceKernelUtilsSha1BlockResult(TPointer sha1CtxAddr, TPointer outAddr) {
         return sha1Ctx.result(sha1CtxAddr, outAddr);
@@ -377,7 +369,6 @@ public class UtilsForUser extends HLEModule {
 		return 0;
 	}
 
-	@HLELogging(level="info")
 	@HLEFunction(nid = 0x920F104A, version = 150)
 	public void sceKernelIcacheInvalidateAll() {
 		// Some games attempt to change compiled code at runtime

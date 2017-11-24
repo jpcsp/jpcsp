@@ -19,6 +19,8 @@ package jpcsp.memory.mmio;
 import static jpcsp.HLE.Modules.sceSysregModule;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_NAND_INTR;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
@@ -35,6 +37,7 @@ import jpcsp.util.Utilities;
  *
  */
 public class MMIOHandlerNand extends MMIOHandlerBase {
+	public static Logger log = sceNand.log;
 	public static final int BASE_ADDRESS = 0xBD101000;
 	public static final int PSP_NAND_CONTROL_AUTO_USER_ECC = 0x10000;
 	public static final int PSP_NAND_STATUS_READY = 0x01;

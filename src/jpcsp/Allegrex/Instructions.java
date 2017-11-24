@@ -674,8 +674,8 @@ public final String category() { return "ALLEGREX"; }
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
-	if (log.isDebugEnabled()) {
-		log.debug(String.format("0x%08X - mfic interruptsEnabled=%b", processor.cpu.pc, processor.isInterruptsEnabled()));
+	if (log.isTraceEnabled()) {
+		log.trace(String.format("0x%08X - mfic interruptsEnabled=%b", processor.cpu.pc, processor.isInterruptsEnabled()));
 	}
 	processor.cpu.setRegister(rt, processor.isInterruptsEnabled() ? 1 : 0);
 }
@@ -703,8 +703,8 @@ public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
 	int value = processor.cpu.getRegister(rt);
-	if (log.isDebugEnabled()) {
-		log.debug(String.format("0x%08X - mtic interruptEnabled=%b", processor.cpu.pc, value != 0));
+	if (log.isTraceEnabled()) {
+		log.trace(String.format("0x%08X - mtic interruptEnabled=%b", processor.cpu.pc, value != 0));
 	}
 	processor.setInterruptsEnabled(value != 0);
 
@@ -5593,19 +5593,12 @@ public void interpret(Processor processor, int insn) {
 		case COP0_STATE_COUNT: // System counter
 			value = (int) Emulator.getClock().nanoTime();
 			break;
-//		case COP0_STATE_STATUS:
-//			if (Interrupts.isInterruptsEnabled()) {
-//				value |= (1 << 0);
-//			} else {
-//				value &= ~(1 << 0);
-//			}
-//			break;
 	}
 
 	processor.cpu.setRegister(rt, value);
 
-	if (log.isDebugEnabled()) {
-		log.debug(String.format("0x%08X - mfc0 reading data register#%d(%s) having value 0x%08X", processor.cpu.pc, c0dr, Common.cop0Names[c0dr], value));
+	if (log.isTraceEnabled()) {
+		log.trace(String.format("0x%08X - mfc0 reading data register#%d(%s) having value 0x%08X", processor.cpu.pc, c0dr, Common.cop0Names[c0dr], value));
 	}
 }
 @Override
@@ -5636,8 +5629,8 @@ public void interpret(Processor processor, int insn) {
 	int value = processor.cp0.getControlRegister(c0cr);
 	processor.cpu.setRegister(rt, value);
 
-	if (log.isDebugEnabled()) {
-		log.debug(String.format("0x%08X - cfc0 reading control register#%d having value 0x%08X", processor.cpu.pc, c0cr, value));
+	if (log.isTraceEnabled()) {
+		log.trace(String.format("0x%08X - cfc0 reading control register#%d having value 0x%08X", processor.cpu.pc, c0cr, value));
 	}
 }
 @Override
@@ -5667,8 +5660,8 @@ public void interpret(Processor processor, int insn) {
 
 	int value = processor.cpu.getRegister(rt);
 
-	if (log.isDebugEnabled()) {
-		log.debug(String.format("0x%08X - mtc0 setting data register#%d(%s) to value 0x%08X", processor.cpu.pc, c0dr, Common.cop0Names[c0dr], value));
+	if (log.isTraceEnabled()) {
+		log.trace(String.format("0x%08X - mtc0 setting data register#%d(%s) to value 0x%08X", processor.cpu.pc, c0dr, Common.cop0Names[c0dr], value));
 	}
 
 	switch (c0dr) {
@@ -5684,9 +5677,6 @@ public void interpret(Processor processor, int insn) {
 				processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
 			}
 			break;
-//		case COP0_STATE_STATUS:
-//			Interrupts.setInterruptsEnabled((value & (1 << 0)) != 0);
-//			break;
 		case COP0_STATE_CONFIG:
 			processor.cpu.doUNK(String.format("Unsupported mtc0 instruction for c0dr=%d(%s), value=0x%X", c0dr, Common.cop0Names[c0dr], value));
 			break;
@@ -5721,8 +5711,8 @@ public void interpret(Processor processor, int insn) {
 	int value = processor.cpu.getRegister(rt);
 	processor.cp0.setControlRegister(c0cr, value);
 
-	if (log.isDebugEnabled()) {
-		log.debug(String.format("0x%08X - ctc0 setting control register#%d to value 0x%08X", processor.cpu.pc, c0cr, value));
+	if (log.isTraceEnabled()) {
+		log.trace(String.format("0x%08X - ctc0 setting control register#%d to value 0x%08X", processor.cpu.pc, c0cr, value));
 	}
 }
 @Override

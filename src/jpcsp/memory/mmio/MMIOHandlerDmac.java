@@ -18,12 +18,16 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_DMA0_INTR;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.modules.sceDmac;
 import jpcsp.memory.mmio.dmac.DmacProcessor;
 
 public class MMIOHandlerDmac extends MMIOHandlerBase {
+	public static Logger log = sceDmac.log;
 	private final DmacProcessor dmacProcessors[] = new DmacProcessor[8];
 	private int flagsCompleted;
 	private int flagsError;

@@ -83,7 +83,7 @@ public class DmacManForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xDB286D65, version = 150)
-	public int sceKernelDmaOpSync() {
+	public int sceKernelDmaOpSync(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr, int unknown1, int unknown2) {
     	return 0;
 	}
 
