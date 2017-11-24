@@ -78,6 +78,7 @@ public class RuntimeContext {
 	public  static final boolean debugCodeBlockCalls = false;
 	public  static final String debugCodeBlockStart = "debugCodeBlockStart";
 	public  static final String debugCodeBlockEnd = "debugCodeBlockEnd";
+	private static final int debugCodeBlockNumberOfParameters = 0;
 	private static final Map<Integer, Integer> debugCodeBlocks = new HashMap<Integer, Integer>();
 	public  static final boolean debugCodeInstruction = false;
 	public  static final String debugCodeInstructionName = "debugCodeInstruction";
@@ -274,36 +275,50 @@ public class RuntimeContext {
 	}
 
 	private static String getDebugCodeBlockStart(int address) {
-		String comment = "";
+		StringBuilder s = new StringBuilder("Starting CodeBlock 0x");
+		Utilities.addAddressHex(s, address);
+
 		int syscallAddress = address + 4;
 		if (Memory.isAddressGood(syscallAddress)) {
     		int syscallOpcode = memory.read32(syscallAddress);
     		Instruction syscallInstruction = Decoder.instruction(syscallOpcode);
     		if (syscallInstruction == Instructions.SYSCALL) {
         		String syscallDisasm = syscallInstruction.disasm(syscallAddress, syscallOpcode);
-    			comment = syscallDisasm.substring(19);
+    			s.append(syscallDisasm.substring(19));
     		}
 		}
 
-		String parameters = "";
-		Integer numberOfParameters = debugCodeBlocks.get(address);
-		if (numberOfParameters != null) {
-			StringBuilder s = new StringBuilder();
-			int maxRegisterParameters = Math.min(numberOfParameters.intValue(), 8);
+		int numberOfParameters = debugCodeBlockNumberOfParameters;
+		if (!debugCodeBlocks.isEmpty()) {
+			Integer numberOfParametersValue = debugCodeBlocks.get(address);
+			if (numberOfParametersValue != null) {
+				numberOfParameters = numberOfParametersValue.intValue();
+			}
+		}
+
+		if (numberOfParameters > 0) {
+			int maxRegisterParameters = Math.min(numberOfParameters, 8);
 			for (int i = 0; i < maxRegisterParameters; i++) {
 				int register = Common._a0 + i;
 				int parameterValue = cpu.getRegister(register);
 
+				s.append(", ");
+				s.append(Common.gprNames[register]);
+				s.append("=0x");
 				if (Memory.isAddressGood(parameterValue)) {
-    				s.append(String.format(", %s=0x%08X", Common.gprNames[register], parameterValue));
+					Utilities.addAddressHex(s, parameterValue);
 				} else {
-    				s.append(String.format(", %s=0x%X", Common.gprNames[register], parameterValue));
+					Utilities.addHex(s, parameterValue);
 				}
 			}
-			parameters = s.toString();
 		}
 
-		return String.format("Starting CodeBlock 0x%08X%s%s, $ra=0x%08X, $sp=0x%08X", address, comment, parameters, cpu._ra, cpu._sp);
+		s.append(", $ra=0x");
+		Utilities.addAddressHex(s, cpu._ra);
+		s.append(", $sp=0x");
+		Utilities.addAddressHex(s, cpu._sp);
+
+		return s.toString();
 	}
 
 	public static void debugCodeBlockStart(int address) {
@@ -318,7 +333,15 @@ public class RuntimeContext {
 
     public static void debugCodeBlockEnd(int address, int returnAddress) {
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("Returning from CodeBlock 0x%08X to 0x%08X, $sp=0x%08X, $v0=0x%08X", address, returnAddress, cpu._sp, cpu._v0));
+    		StringBuilder s = new StringBuilder("Returning from CodeBlock 0x");
+    		Utilities.addAddressHex(s, address);
+    		s.append(" to 0x");
+    		Utilities.addAddressHex(s, returnAddress);
+    		s.append(", $sp=0x");
+    		Utilities.addAddressHex(s, cpu._sp);
+    		s.append(", $v0=0x");
+    		Utilities.addAddressHex(s, cpu._v0);
+    		log.debug(s.toString());
     	}
     }
 

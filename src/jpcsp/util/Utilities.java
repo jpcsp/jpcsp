@@ -777,21 +777,20 @@ public class Utilities {
     	final int numberLines = length >> 4;
     	final char[] chars = new char[numberLines * lineTemplate.length];
     	final int lineOffset = lineSeparator.length() + 2;
-    	address &= Memory.addressMask;
 
-    	for (int i = 0, j = 0, a = address >> 2; i < numberLines; i++, j += lineTemplate.length, address += 16) {
+    	for (int i = 0, j = 0, a = (address & Memory.addressMask) >> 2; i < numberLines; i++, j += lineTemplate.length, address += 16) {
     		System.arraycopy(lineTemplate, 0, chars, j, lineTemplate.length);
 
     		// Address field
     		int k = j + lineOffset;
-    		chars[k++] = hexDigits[(address >> 28)      ];
-    		chars[k++] = hexDigits[(address >> 24) & 0xF];
-    		chars[k++] = hexDigits[(address >> 20) & 0xF];
-    		chars[k++] = hexDigits[(address >> 16) & 0xF];
-    		chars[k++] = hexDigits[(address >> 12) & 0xF];
-    		chars[k++] = hexDigits[(address >>  8) & 0xF];
-    		chars[k++] = hexDigits[(address >>  4) & 0xF];
-    		chars[k++] = hexDigits[(address      ) & 0xF];
+    		chars[k++] = hexDigits[(address >>> 28)      ];
+    		chars[k++] = hexDigits[(address >>  24) & 0xF];
+    		chars[k++] = hexDigits[(address >>  20) & 0xF];
+    		chars[k++] = hexDigits[(address >>  16) & 0xF];
+    		chars[k++] = hexDigits[(address >>  12) & 0xF];
+    		chars[k++] = hexDigits[(address >>   8) & 0xF];
+    		chars[k++] = hexDigits[(address >>   4) & 0xF];
+    		chars[k++] = hexDigits[(address       ) & 0xF];
     		k++;
 
     		// First 32-bit value
@@ -1852,5 +1851,29 @@ public class Utilities {
 		}
 
 		return functionName;
+    }
+
+    public static void addHex(StringBuilder s, int value) {
+    	if (value == 0) {
+    		s.append('0');
+    		return;
+    	}
+
+    	int shift = 28 - (Integer.numberOfLeadingZeros(value) & 0x3C);
+    	for (; shift >= 0; shift -= 4) {
+    		int digit = (value >> shift) & 0xF;
+    		s.append(hexDigits[digit]);
+    	}
+    }
+
+    public static void addAddressHex(StringBuilder s, int address) {
+		s.append(hexDigits[(address >>> 28)      ]);
+		s.append(hexDigits[(address >>  24) & 0xF]);
+		s.append(hexDigits[(address >>  20) & 0xF]);
+		s.append(hexDigits[(address >>  16) & 0xF]);
+		s.append(hexDigits[(address >>  12) & 0xF]);
+		s.append(hexDigits[(address >>   8) & 0xF]);
+		s.append(hexDigits[(address >>   4) & 0xF]);
+		s.append(hexDigits[(address       ) & 0xF]);
     }
 }
