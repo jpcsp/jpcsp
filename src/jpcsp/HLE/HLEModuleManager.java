@@ -245,7 +245,8 @@ public class HLEModuleManager {
         sceLcdc(Modules.sceLcdcModule),
         sceDmacplus(Modules.sceDmacplusModule),
         sceDdr(Modules.sceDdrModule),
-        sceMScm(Modules.sceMScmModule);
+        sceMScm(Modules.sceMScmModule),
+        sceG729(Modules.sceG729Module, new String[] { "PSP_MODULE_AV_G729", "g729" }, "flash0:/kd/g729.prx");
 
     	private HLEModule module;
     	private boolean loadedByDefault;
