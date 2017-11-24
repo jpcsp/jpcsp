@@ -20,6 +20,7 @@ import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.IAction;
 
 public class DmacProcessor {
+	private static final int STATUS_IN_PROGRESS = 0x1;
 	private Memory mem;
 	private IAction completedAction;
 	private DmacThread dmacThread;
@@ -29,9 +30,27 @@ public class DmacProcessor {
 	private int attributes;
 	private int status;
 
+	private class CompletedAction implements IAction {
+		private IAction completedAction;
+
+		public CompletedAction(IAction completedAction) {
+			this.completedAction = completedAction;
+		}
+
+		@Override
+		public void execute() {
+			// Clear the flag STATUS_IN_PROGRESS
+			status &= ~STATUS_IN_PROGRESS;
+
+			if (completedAction != null) {
+				completedAction.execute();
+			}
+		}
+	}
+
 	public DmacProcessor(Memory mem, int baseAddress, IAction completedAction) {
 		this.mem = mem;
-		this.completedAction = completedAction;
+		this.completedAction = new CompletedAction(completedAction);
 
 		dmacThread = new DmacThread();
 		dmacThread.setName(String.format("Dmac Thread for 0x%08X", baseAddress));
@@ -78,7 +97,7 @@ public class DmacProcessor {
 	public void setStatus(int status) {
 		this.status = status;
 
-		if ((status & 1) != 0) {
+		if ((status & STATUS_IN_PROGRESS) != 0) {
 			dmacThread.execute(mem, dst, src, next, attributes, completedAction);
 		}
 	}
