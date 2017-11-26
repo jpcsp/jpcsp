@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex.compiler;
 
 import static jpcsp.Memory.addressMask;
+import static jpcsp.util.Utilities.addAddressHex;
+import static jpcsp.util.Utilities.addHex;
 import static jpcsp.util.Utilities.sleep;
 
 import java.util.ArrayList;
@@ -275,8 +277,9 @@ public class RuntimeContext {
 	}
 
 	private static String getDebugCodeBlockStart(int address) {
+		// Do not build the string using "String.format()" for improved performance of this time-critical function
 		StringBuilder s = new StringBuilder("Starting CodeBlock 0x");
-		Utilities.addAddressHex(s, address);
+		addAddressHex(s, address);
 
 		int syscallAddress = address + 4;
 		if (Memory.isAddressGood(syscallAddress)) {
@@ -306,17 +309,17 @@ public class RuntimeContext {
 				s.append(Common.gprNames[register]);
 				s.append("=0x");
 				if (Memory.isAddressGood(parameterValue)) {
-					Utilities.addAddressHex(s, parameterValue);
+					addAddressHex(s, parameterValue);
 				} else {
-					Utilities.addHex(s, parameterValue);
+					addHex(s, parameterValue);
 				}
 			}
 		}
 
 		s.append(", $ra=0x");
-		Utilities.addAddressHex(s, cpu._ra);
+		addAddressHex(s, cpu._ra);
 		s.append(", $sp=0x");
-		Utilities.addAddressHex(s, cpu._sp);
+		addAddressHex(s, cpu._sp);
 
 		return s.toString();
 	}
@@ -333,14 +336,15 @@ public class RuntimeContext {
 
     public static void debugCodeBlockEnd(int address, int returnAddress) {
     	if (log.isDebugEnabled()) {
+    		// Do not build the string using "String.format()" for improved performance of this time-critical function
     		StringBuilder s = new StringBuilder("Returning from CodeBlock 0x");
-    		Utilities.addAddressHex(s, address);
+    		addAddressHex(s, address);
     		s.append(" to 0x");
-    		Utilities.addAddressHex(s, returnAddress);
+    		addAddressHex(s, returnAddress);
     		s.append(", $sp=0x");
-    		Utilities.addAddressHex(s, cpu._sp);
+    		addAddressHex(s, cpu._sp);
     		s.append(", $v0=0x");
-    		Utilities.addAddressHex(s, cpu._v0);
+    		addAddressHex(s, cpu._v0);
     		log.debug(s.toString());
     	}
     }
