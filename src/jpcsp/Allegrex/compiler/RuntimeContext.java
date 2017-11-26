@@ -78,7 +78,7 @@ public class RuntimeContext {
 	public  static final boolean debugCodeBlockCalls = false;
 	public  static final String debugCodeBlockStart = "debugCodeBlockStart";
 	public  static final String debugCodeBlockEnd = "debugCodeBlockEnd";
-	private static final int debugCodeBlockNumberOfParameters = 0;
+	private static final int debugCodeBlockNumberOfParameters = 6;
 	private static final Map<Integer, Integer> debugCodeBlocks = new HashMap<Integer, Integer>();
 	public  static final boolean debugCodeInstruction = false;
 	public  static final String debugCodeInstructionName = "debugCodeInstruction";
@@ -706,7 +706,7 @@ public class RuntimeContext {
     	do {
     		wantSync = false;
 
-	    	if (!IntrManager.getInstance().canExecuteInterruptNow()) {
+	    	if (!IntrManager.getInstance().canExecuteInterruptNow() && !RuntimeContextLLE.isLLEActive()) {
 	    		syncFast();
 	    	} else {
 		    	syncPause();
@@ -1563,7 +1563,7 @@ public class RuntimeContext {
     			}
     		} else {
     			if (log.isDebugEnabled()) {
-    				log.debug("Allegrex halt");
+    				log.debug(String.format("Allegrex halt pendingInterruptIPbits=0x%X", RuntimeContextLLE.pendingInterruptIPbits));
     			}
 	    		reboot.dumpAllThreads();
 	    		if (false) {
@@ -1610,7 +1610,14 @@ public class RuntimeContext {
     		log.debug(String.format("idle wantSync=%b", wantSync));
     	}
 
-    	if (wantSync) {
+		if (RuntimeContextLLE.isLLEActive()) {
+			if (!toBeStoppedThreads.isEmpty()) {
+				wantSync = true;
+			}
+			Emulator.getScheduler().step();
+		}
+
+		if (wantSync) {
     		sync();
     	} else {
     		Utilities.sleep(1);
