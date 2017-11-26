@@ -1403,6 +1403,7 @@ public class VfpuState extends FpuState {
 
         setRegister(rt, getVprInt(m, c, r));
     }
+
     // VFPU2:MFVC
     public void doMFVC(int rt, int imm7) {
     	if (rt != 0) {
@@ -1481,11 +1482,12 @@ public class VfpuState extends FpuState {
                     break;
                 default:
                     // These values are not supported in Jpcsp
-                    doUNK("Unimplemented MFVC (rt=" + rt + ", imm7=" + imm7 + ")");
+                    doUNK(String.format("Unimplemented mfvc (rt=%s, imm7=%d)", Common.gprNames[rt], imm7));
                     break;
             }
     	}
     }
+
     // VFPU2:MTV
     public void doMTV(int rt, int imm7) {
         int r = (imm7 >> 5) & 3;
@@ -1555,6 +1557,12 @@ public class VfpuState extends FpuState {
                     value >>>= 1;
                 }
                 break;
+            case 4:
+            	// The value 0 is used by the PSP reboot code, other values are unknown
+            	if (value != 0) {
+                    doUNK(String.format("Unimplemented mtvc (rt=%s, imm7=%d, value=0x%X)", Common.gprNames[rt], imm7, value));
+            	}
+            	break;
             case 8: /* 136 - RCX0 */
                 rnd.setSeed(value);
                 break;
@@ -1569,7 +1577,7 @@ public class VfpuState extends FpuState {
                 break;
             default:
                 // These values are not supported in Jpcsp
-                doUNK("Unimplemented MTVC (rt=" + rt + ", imm7=" + imm7 + ", value=0x" + Integer.toHexString(value) + ")");
+                doUNK(String.format("Unimplemented mtvc (rt=%s, imm7=%d, value=0x%X)", Common.gprNames[rt], imm7, value));
                 break;
         }
     }

@@ -6224,7 +6224,7 @@ public String disasm(int address, int insn) {
 	int imm7 = (insn>>0)&127;
 	int rt = (insn>>16)&31;
 
-	return Common.disasmRTIMM7("MFVC", rt, imm7);
+	return Common.disasmRTIMM7("mfvc", rt, imm7);
 }
 };
 public static final Instruction MTV = new Instruction(161) {
@@ -6284,7 +6284,7 @@ public String disasm(int address, int insn) {
 	int imm7 = (insn>>0)&127;
 	int rt = (insn>>16)&31;
 
-	return Common.disasmRTIMM7("MTVC", rt, imm7);
+	return Common.disasmRTIMM7("mtvc", rt, imm7);
 }
 };
 public static final Instruction VCMP = new Instruction(163, FLAG_USES_VFPU_PFXS | FLAG_USES_VFPU_PFXT | FLAG_COMPILED_PFX) {
