@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio.dmac;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.MemoryMap.END_IO_1;
 import static jpcsp.MemoryMap.START_IO_0;
 
@@ -53,6 +54,8 @@ public class DmacThread extends Thread {
 
 	@Override
 	public void run() {
+		setLog4jMDC();
+
 		while (!exit) {
 			try {
 				job.acquire();

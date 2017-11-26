@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_SET;
 import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscall;
@@ -107,6 +108,7 @@ public class sceMSstor extends HLEModule {
 
 		@Override
 		public void run() {
+			setLog4jMDC();
 			vFile.scan();
 			completed = true;
 		}

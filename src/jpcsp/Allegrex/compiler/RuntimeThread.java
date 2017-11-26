@@ -38,7 +38,7 @@ public class RuntimeThread extends Thread {
 		threadInfo.javaThreadId = getId();
 		isInSyscall = false;
 		if (RuntimeContext.log.isDebugEnabled()) {
-			setName(threadInfo.name + "_" + Integer.toHexString(threadInfo.uid));
+			setName(String.format("%s_0x%X", threadInfo.name, threadInfo.uid));
 		} else {
 			setName(threadInfo.name);
 		}

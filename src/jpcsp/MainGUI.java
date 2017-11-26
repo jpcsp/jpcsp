@@ -16,6 +16,8 @@
  */
 package jpcsp;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -2987,6 +2989,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
      */
     public static void main(String args[]) {
         DOMConfigurator.configure("LogSettings.xml");
+        setLog4jMDC();
 
 		// Re-enable all disabled algorithms as the PSP is allowing them
 		Security.setProperty("jdk.certpath.disabledAlgorithms", "");

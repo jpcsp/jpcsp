@@ -60,6 +60,7 @@ import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
+import org.apache.log4j.MDC;
 
 /**
  * @author gid15
@@ -810,6 +811,8 @@ public class RuntimeContext {
     }
 
     public static void runThread(RuntimeThread thread) {
+    	setLog4jMDC();
+
     	thread.setInSyscall(true);
 
     	if (isStoppedThread()) {
@@ -1626,5 +1629,25 @@ public class RuntimeContext {
     	} else {
     		Utilities.sleep(1);
     	}
+    }
+
+    public static void setLog4jMDC() {
+    	setLog4jMDC(Thread.currentThread().getName());
+    }
+
+    public static void setLog4jMDC(String threadName) {
+    	setLog4jMDC(threadName, 0);
+    }
+
+    public static void setLog4jMDC(String threadName, int threadUid) {
+		MDC.put("LLE-thread-name", threadName);
+
+		if (threadUid != 0) {
+			MDC.put("LLE-thread-uid", String.format("0x%X", threadUid));
+			MDC.put("LLE-thread", String.format("%s_0x%X", threadName, threadUid));
+		} else {
+			MDC.put("LLE-thread-uid", "");
+			MDC.put("LLE-thread", threadName);
+		}
     }
 }

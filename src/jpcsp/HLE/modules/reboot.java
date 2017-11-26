@@ -42,12 +42,12 @@ import static jpcsp.format.PSP.PSP_HEADER_SIZE;
 import static jpcsp.util.Utilities.patch;
 
 import org.apache.log4j.Logger;
-import org.apache.log4j.MDC;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.Compiler;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -456,13 +456,9 @@ public class reboot extends HLEModule {
 			int nameAddr = mem.read32(cb + 16);
 			String name = Utilities.readStringZ(nameAddr);
 
-			MDC.put("LLE-thread-name", name);
-			MDC.put("LLE-thread-uid", String.format("0x%X", uid));
-			MDC.put("LLE-thread", String.format("%s_0x%X", name, uid));
+			RuntimeContext.setLog4jMDC(name, uid);
     	} else {
-    		MDC.put("LLE-thread-name", "root");
-    		MDC.put("LLE-thread-uid", "");
-    		MDC.put("LLE-thread", "root");
+			RuntimeContext.setLog4jMDC("root");
     	}
     }
 

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.remote;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.HLE.modules.sceNpAuth.STATUS_ACCOUNT_PARENTAL_CONTROL_ENABLED;
 import static jpcsp.HLE.modules.sceNpAuth.addTicketDateParam;
 import static jpcsp.HLE.modules.sceNpAuth.addTicketLongParam;
@@ -174,6 +175,7 @@ public class HTTPServer {
 
 		@Override
 		public void run() {
+			setLog4jMDC();
 			try {
 				if (descriptor.isSsl()) {
 					SSLServerSocketFactory factory = getSSLServerSocketFactory();
@@ -273,6 +275,7 @@ public class HTTPServer {
 
 		@Override
 		public void run() {
+			setLog4jMDC();
 			process(descriptor, socket);
 		}
 	}
