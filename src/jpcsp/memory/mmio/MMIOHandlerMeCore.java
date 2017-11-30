@@ -23,15 +23,19 @@ import static jpcsp.HLE.modules.sceVideocodec.VIDEOCODEC_OPEN_TYPE0_UNKNOWN0;
 import static jpcsp.HLE.modules.sceVideocodec.VIDEOCODEC_OPEN_TYPE0_UNKNOWN24;
 import static jpcsp.HLE.modules.sceVideocodec.VIDEOCODEC_OPEN_TYPE0_UNKNOWN4;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.sceAudiocodec;
+import jpcsp.HLE.modules.sceMeCore;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 
 public class MMIOHandlerMeCore extends MMIOHandlerBase {
+	public Logger log = sceMeCore.log;
 	public static final int BASE_ADDRESS = 0xBFC00600;
 	public static final int ME_CMD_VIDEOCODEC_OPEN = 0x0;
 	public static final int ME_CMD_AT3P_DECODE = 0x60;

@@ -22,10 +22,14 @@ import static jpcsp.HLE.kernel.managers.ExceptionManager.IP2;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.modules.InterruptManager;
 
 public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
+	public static Logger log = InterruptManager.log;
 	private static MMIOHandlerProxyOnCpu instance;
 	public static final int BASE_ADDRESS = 0xBC300000;
 	private static final int NUMBER_INTERRUPTS = 64;

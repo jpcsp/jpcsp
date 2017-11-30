@@ -1662,7 +1662,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x17768E14, version = 150)
-    public int sceRegSetKeyValue(int hd, String name, TPointer buf, int size) {
+    public int sceRegSetKeyValue(int hd, String name, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buf, int size) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
     		return -1;
@@ -2182,7 +2182,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x49C70163, version = 150)
-    public int sceRegSetKeyValue_660(int hd, String name, TPointer buf, int size) {
+    public int sceRegSetKeyValue_660(int hd, String name, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buf, int size) {
     	return sceRegSetKeyValue(hd, name, buf, size);
     }
 

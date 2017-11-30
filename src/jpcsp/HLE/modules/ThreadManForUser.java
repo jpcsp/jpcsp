@@ -3370,17 +3370,17 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xBED27435, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelAllocateVpl(@CheckArgument("checkVplID") int uid, int size, TPointer32 dataAddr, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelAllocateVpl(@CheckArgument("checkVplID") int uid, int size, @BufferInfo(usage=Usage.out) TPointer32 dataAddr, @CanBeNull TPointer32 timeoutAddr) {
         return Managers.vpl.sceKernelAllocateVpl(uid, size, dataAddr, timeoutAddr);
     }
 
     @HLEFunction(nid = 0xEC0A693F, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelAllocateVplCB(@CheckArgument("checkVplID") int uid, int size, TPointer32 dataAddr, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelAllocateVplCB(@CheckArgument("checkVplID") int uid, int size, @BufferInfo(usage=Usage.out) TPointer32 dataAddr, @CanBeNull TPointer32 timeoutAddr) {
         return Managers.vpl.sceKernelAllocateVplCB(uid, size, dataAddr, timeoutAddr);
     }
 
     @HLEFunction(nid = 0xAF36D708, version = 150)
-    public int sceKernelTryAllocateVpl(@CheckArgument("checkVplID") int uid, int size, TPointer32 dataAddr) {
+    public int sceKernelTryAllocateVpl(@CheckArgument("checkVplID") int uid, int size, @BufferInfo(usage=Usage.out) TPointer32 dataAddr) {
         return Managers.vpl.sceKernelTryAllocateVpl(uid, size, dataAddr);
     }
 
@@ -3410,17 +3410,17 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xD979E9BF, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelAllocateFpl(@CheckArgument("checkFplID") int uid, TPointer32 dataAddr, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelAllocateFpl(@CheckArgument("checkFplID") int uid, @BufferInfo(usage=Usage.out) TPointer32 dataAddr, @CanBeNull TPointer32 timeoutAddr) {
         return Managers.fpl.sceKernelAllocateFpl(uid, dataAddr, timeoutAddr);
     }
 
     @HLEFunction(nid = 0xE7282CB6, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelAllocateFplCB(@CheckArgument("checkFplID") int uid, TPointer32 dataAddr, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelAllocateFplCB(@CheckArgument("checkFplID") int uid, @BufferInfo(usage=Usage.out) TPointer32 dataAddr, @CanBeNull TPointer32 timeoutAddr) {
         return Managers.fpl.sceKernelAllocateFplCB(uid, dataAddr, timeoutAddr);
     }
 
     @HLEFunction(nid = 0x623AE665, version = 150)
-    public int sceKernelTryAllocateFpl(@CheckArgument("checkFplID") int uid, TPointer32 dataAddr) {
+    public int sceKernelTryAllocateFpl(@CheckArgument("checkFplID") int uid, @BufferInfo(usage=Usage.out) TPointer32 dataAddr) {
         return Managers.fpl.sceKernelTryAllocateFpl(uid, dataAddr);
     }
 

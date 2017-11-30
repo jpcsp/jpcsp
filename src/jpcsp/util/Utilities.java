@@ -71,7 +71,7 @@ import jpcsp.memory.MemoryWriter;
 
 public class Utilities {
     private static final int[] round4 = {0, 3, 2, 1};
-    private static final String lineSeparator = System.getProperty("line.separator");
+    public  static final String lineSeparator = System.getProperty("line.separator");
     private static final char[] lineTemplate = (lineSeparator + "0x00000000 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  >................<").toCharArray();
     private static final char[] hexDigits = "0123456789ABCDEF".toCharArray();
     private static final char[] ascii = new char[256];

@@ -16,9 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
+import jpcsp.HLE.modules.sceDdr;
 
 public class MMIOHandlerDdr extends MMIOHandlerBase {
+	public static Logger log = sceDdr.log;
 	private int unknown40;
 
 	public MMIOHandlerDdr(int baseAddress) {

@@ -354,6 +354,7 @@ public class reboot extends HLEModule {
     	LoadCoreForKernelModule.addFunctionName("sceDisplay_Service",  0x04EC, "sceDisplay_Service.sceDisplayInit");
     	LoadCoreForKernelModule.addFunctionName("scePower_Service",    0x0000, "scePower_Service.scePowerInit");
     	LoadCoreForKernelModule.addFunctionName("sceHP_Remote_Driver", 0x0704, "sceHP_Remote_Driver.sceHpRemoteThreadEntry");
+    	LoadCoreForKernelModule.addFunctionName("sceLowIO_Driver",     0x9C7C, "sceNandTransferDataToNandBuf");
 
     	addFunctionNid(0x0000EFCC, rebootModule, "sceNandInit2");
     	addFunctionNid(0x0000F0C4, rebootModule, "sceNandIsReady");

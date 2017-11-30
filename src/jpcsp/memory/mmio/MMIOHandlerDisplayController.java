@@ -20,11 +20,15 @@ import static jpcsp.Emulator.getScheduler;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;
 import static jpcsp.scheduler.Scheduler.getNow;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.modules.sceDisplay;
 
 public class MMIOHandlerDisplayController extends MMIOHandlerBase {
+	public static Logger log = sceDisplay.log;
 	public static final int BASE_ADDRESS = 0xBE740000;
 	private static MMIOHandlerDisplayController instance;
 	private long baseTimeMicros;

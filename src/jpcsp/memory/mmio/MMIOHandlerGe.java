@@ -20,14 +20,18 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_GE_INTR;
 import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_ACTIVE;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.RE.externalge.CoreThreadMMIO;
 import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.graphics.RE.externalge.NativeUtils;
 
 public class MMIOHandlerGe extends MMIOHandlerBase {
+	public static Logger log = sceGe_user.log;
 	public static final int BASE_ADDRESS = 0xBD400000;
 	private static MMIOHandlerGe instance;
 	private int ctrl;

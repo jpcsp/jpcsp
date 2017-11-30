@@ -58,10 +58,13 @@ import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_BIT_SYSCON_END_CMD;
 
 import java.util.Arrays;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Controller;
 import jpcsp.Emulator;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.sceSyscon;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.LED;
 import jpcsp.hardware.MemoryStick;
@@ -70,6 +73,7 @@ import jpcsp.hardware.UMDDrive;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerSyscon extends MMIOHandlerBase {
+	public static Logger log = sceSyscon.log;
 	private static MMIOHandlerSyscon instance;
 	public static final int BASE_ADDRESS = 0xBE580000;
 	public static final int PSP_SYSCON_RX_STATUS = 0;

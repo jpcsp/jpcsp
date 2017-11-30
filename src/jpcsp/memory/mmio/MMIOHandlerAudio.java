@@ -18,10 +18,14 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_AUDIO_INTR;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.modules.sceAudio;
 
 public class MMIOHandlerAudio extends MMIOHandlerBase {
+	public static Logger log = sceAudio.log;
 	public static final int AUDIO_HW_FREQUENCY_8000 = 0x01;
 	public static final int AUDIO_HW_FREQUENCY_11025 = 0x02;
 	public static final int AUDIO_HW_FREQUENCY_12000 = 0x04;

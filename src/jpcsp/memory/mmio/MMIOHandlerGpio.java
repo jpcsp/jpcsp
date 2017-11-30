@@ -19,10 +19,14 @@ package jpcsp.memory.mmio;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterrupt;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_GPIO_INTR;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.modules.sceGpio;
 
 public class MMIOHandlerGpio extends MMIOHandlerBase {
+	public static Logger log = sceGpio.log;
 	public static final int BASE_ADDRESS = 0xBE240000;
 	private static MMIOHandlerGpio instance;
 	public static final int GPIO_BIT_SYSCON_START_CMD = 3;

@@ -18,12 +18,16 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_I2C_INTR;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.modules.sceI2c;
 import jpcsp.memory.mmio.cy27040.CY27040;
 import jpcsp.memory.mmio.wm8750.WM8750;
 
 public class MMIOHandlerI2c extends MMIOHandlerBase {
+	public static Logger log = sceI2c.log;
 	public static final int PSP_CY27040_I2C_ADDR = 0xD2;
 	public static final int PSP_WM8750_I2C_ADDR = 0x34;
 	private int i2cAddress;
