@@ -16,14 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.HLE.Modules.sceNandModule;
 import static jpcsp.HLE.Modules.sceSysregModule;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_NAND_INTR;
+import static jpcsp.util.Utilities.lineSeparator;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.sceNand;
 import jpcsp.memory.IntArrayMemory;
@@ -139,7 +140,7 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 				break;
 			case PSP_NAND_COMMAND_READ_EXTRA:
 				TPointer spare = dataMemory.getPointer();
-				Modules.sceNandModule.hleNandReadPages(pageAddress >> 10, TPointer.NULL, spare, 1, true, true);
+				sceNandModule.hleNandReadPages(pageAddress >> 10, TPointer.NULL, spare, 1, true, true, true);
 				break;
 		}
 	}
@@ -213,24 +214,48 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 			int ppn = dmaAddress >> 10;
 			int scramble = getScramble(ppn);
 
-			TPointer user = scramble != 0 ? scrambleBufferMemory.getPointer() : pageDataMemory.getPointer();
-			TPointer spare = pageEccMemory.getPointer();
-			Modules.sceNandModule.hleNandReadPages(ppn, user, spare, 1, true, true);
+			if ((dmaControl & 0x002) != 0) {
+				log.error(String.format("MMIOHandlerNand.startDma writing to the NAND is unimplemented ppn=0x%X", ppn));
 
-			if (log.isDebugEnabled()) {
-				byte[] bytes = new byte[sceNand.pageSize];
-				user.add(-sceNand.pageSize);
-				for (int i = 0; i < bytes.length; i++) {
-					bytes[i] = user.getValue8(i);
+				TPointer user = pageDataMemory.getPointer();
+				TPointer spare = pageEccMemory.getPointer();
+				sceNandModule.hleNandWritePages(ppn, user, spare, 1, true, true, true);
+
+				if (log.isDebugEnabled()) {
+					byte[] userBytes = new byte[sceNand.pageSize];
+					user = pageDataMemory.getPointer();
+					for (int i = 0; i < userBytes.length; i++) {
+						userBytes[i] = user.getValue8(i);
+					}
+					byte[] spareBytes = new byte[16];
+					spare = pageEccMemory.getPointer();
+					for (int i = 0; i < spareBytes.length; i++) {
+						spareBytes[i] = spare.getValue8(i);
+					}
+					log.debug(String.format("hleNandWritePages ppn=0x%X, scramble=0x%X: %s%sSpare: %s", ppn, scramble, Utilities.getMemoryDump(userBytes), lineSeparator, Utilities.getMemoryDump(spareBytes)));
 				}
-				log.debug(String.format("hleNandReadPages ppn=0x%X, scramble=0x%X: %s", ppn, scramble, Utilities.getMemoryDump(bytes)));
-			}
 
-			if (scramble != 0) {
-				sceNand.scramblePage(scramble, ppn, scrambleBuffer, MMIOHandlerNandPage.getInstance().getData());
-			}
+				triggerInterrupt(PSP_NAND_INTR_WRITE_COMPLETED);
+			} else {
+				TPointer user = scramble != 0 ? scrambleBufferMemory.getPointer() : pageDataMemory.getPointer();
+				TPointer spare = pageEccMemory.getPointer();
+				sceNandModule.hleNandReadPages(ppn, user, spare, 1, true, true, true);
 
-			triggerInterrupt(PSP_NAND_INTR_READ_COMPLETED);
+				if (log.isDebugEnabled()) {
+					byte[] bytes = new byte[sceNand.pageSize];
+					user = scramble != 0 ? scrambleBufferMemory.getPointer() : pageDataMemory.getPointer();
+					for (int i = 0; i < bytes.length; i++) {
+						bytes[i] = user.getValue8(i);
+					}
+					log.debug(String.format("hleNandReadPages ppn=0x%X, scramble=0x%X: %s", ppn, scramble, Utilities.getMemoryDump(bytes)));
+				}
+
+				if (scramble != 0) {
+					sceNand.scramblePage(scramble, ppn, scrambleBuffer, MMIOHandlerNandPage.getInstance().getData());
+				}
+
+				triggerInterrupt(PSP_NAND_INTR_READ_COMPLETED);
+			}
 		}
 	}
 

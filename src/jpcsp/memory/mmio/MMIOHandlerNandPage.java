@@ -16,10 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.HLE.modules.sceNand;
 
 public class MMIOHandlerNandPage extends MMIOHandlerBase {
+	public static Logger log = MMIOHandlerNand.log;
 	public static final int BASE_ADDRESS1 = 0xBFF00000;
 	public static final int BASE_ADDRESS2 = 0x9FF00000;
 	private static MMIOHandlerNandPage instance;
@@ -72,7 +75,7 @@ public class MMIOHandlerNandPage extends MMIOHandlerBase {
 
 	@Override
 	public void write32(int address, int value) {
-		int localAddress = address - baseAddress;
+		int localAddress = (address - baseAddress) & 0xFFFFF;
 		switch (localAddress) {
 			case 0x800: ecc[0] = value; break;
 			case 0x900: ecc[1] = value; break;

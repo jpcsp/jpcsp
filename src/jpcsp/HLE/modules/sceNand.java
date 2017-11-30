@@ -67,6 +67,30 @@ public class sceNand extends HLEModule {
     private Fat12VirtualFile vFile3;
     private Fat12VirtualFile vFile603;
     private Fat12VirtualFile vFile703;
+    private static final int idStorageKeys[] = {
+    		// The first 2 entries have to be 0xFFFF
+    		0xFFFF,
+    		0xFFFF,
+    		// The following entries are the keys used when calling sceIdStorageLookup()
+    		0x0004,
+    		0x0008,
+    		0x0006,
+    		0x0010,
+    		0x0011,
+    		0x0045,
+    		0x0100,
+    		0x0102,
+    		0x0103,
+    		0x0104,
+    		0x0105,
+    		0x0106,
+    		0x0120,
+    		0x0122,
+    		0x0123,
+    		0x0124,
+    		0x0125,
+    		0x0126
+    };
 
     @Override
 	public void start() {
@@ -404,6 +428,13 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	vFile.ioRead(buffer, pageSize);
     }
 
+    private boolean isIdStoragePageForKey(int page, int key) {
+    	if (page < 0 || page >= idStorageKeys.length) {
+    		return false;
+    	}
+    	return idStorageKeys[page] == key;
+    }
+
     private void readIdStoragePage(TPointer buffer, int page) {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("readIdStoragePage page=0x%X", page));
@@ -412,16 +443,22 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	switch (page) {
     		case 0:
     			buffer.memset((byte) 0xFF, pageSize);
-    			buffer.setValue16( 4, (short) 0x0008);
-    			buffer.setValue16( 6, (short) 0x0004);
-    			buffer.setValue16( 8, (short) 0x0006);
-    			buffer.setValue16(10, (short) 0x0045);
-    			buffer.setValue16(12, (short) 0x0100);
-    			buffer.setValue16(14, (short) 0x0120);
+    			for (int i = 0; i < idStorageKeys.length; i++) {
+    				buffer.setValue16(i << 1, (short) idStorageKeys[i]);
+    			}
     			break;
     		case 1:
     			buffer.memset((byte) 0xFF, pageSize);
     			break;
+			default:
+				// Used by sceChkregCheckRegion()
+				if (isIdStoragePageForKey(page, 0x0102)) {
+					buffer.setValue32(0x0B0, 15); // Region code allowed for the PSP
+					buffer.setValue32(0x0B4, 0x80000000);
+					buffer.setValue32(0x0B8, 1);
+					buffer.setValue32(0x0BC, 0);
+				}
+				break;
     	}
     }
 
@@ -563,7 +600,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	return v0;
     }
 
-    public int hleNandReadPages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc) {
+    public int hleNandReadPages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc, boolean isLLE) {
     	if (user.isNotNull()) {
 	    	if (dumpBlocks != null && !emulateNand) {
 	    		if (scramble != 0) {
@@ -658,19 +695,21 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 
 	    			sceNandSpare.spareEcc = computeEcc(sceNandSpare);
 
-	    			// All values are set to 0xFF when the lbn is 0xFFFF
-    	    		if (sceNandSpare.lbn == 0xFFFF) {
-    	    			sceNandSpare.userEcc[0] = 0xFF;
-    	    			sceNandSpare.userEcc[1] = 0xFF;
-    	    			sceNandSpare.userEcc[2] = 0xFF;
-    	    			sceNandSpare.reserved1 = 0xFF;
-    	    			sceNandSpare.blockFmt = 0xFF;
-    	    			sceNandSpare.blockStat = 0xFF;
-    	    			sceNandSpare.id = 0xFFFFFFFF;
-    	    			sceNandSpare.spareEcc = 0xFFFF;
-    	    			sceNandSpare.reserved2[0] = 0xFF;
-    	    			sceNandSpare.reserved2[1] = 0xFF;
-    	    		}
+	    			if (!isLLE) {
+		    			// All values are set to 0xFF when the lbn is 0xFFFF
+	    	    		if (sceNandSpare.lbn == 0xFFFF) {
+	    	    			sceNandSpare.userEcc[0] = 0xFF;
+	    	    			sceNandSpare.userEcc[1] = 0xFF;
+	    	    			sceNandSpare.userEcc[2] = 0xFF;
+	    	    			sceNandSpare.reserved1 = 0xFF;
+	    	    			sceNandSpare.blockFmt = 0xFF;
+	    	    			sceNandSpare.blockStat = 0xFF;
+	    	    			sceNandSpare.id = 0xFFFFFFFF;
+	    	    			sceNandSpare.spareEcc = 0xFFFF;
+	    	    			sceNandSpare.reserved2[0] = 0xFF;
+	    	    			sceNandSpare.reserved2[1] = 0xFF;
+	    	    		}
+	    			}
 
     	    		if (spareUserEcc) {
     	    			sceNandSpare.write(spare, i * sceNandSpare.sizeof());
@@ -684,6 +723,45 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	int result = 0;
     	if (dumpResults != null && !emulateNand) {
     		result = dumpResults[ppn / pagesPerBlock];
+    	}
+
+    	return result;
+    }
+
+    private void writeFile(TPointer buffer, IVirtualFile vFile, int ppn, int lbnStart) {
+    	int lbn = ppnToLbn[ppn];
+    	int sectorNumber = (lbn - lbnStart) * pagesPerBlock + (ppn % pagesPerBlock);
+if (ppn >= 0x900 && ppn < 0xD040) {
+	sectorNumber -= pagesPerBlock;
+} else if (ppn > 0xD0C0 && ppn < 0xF060) {
+	sectorNumber -= pagesPerBlock;
+}
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("writeFile ppn=0x%X, lbnStart=0x%X, lbn=0x%X, sectorNumber=0x%X", ppn, lbnStart, lbn, sectorNumber));
+    	}
+    	writeFile(buffer, vFile, sectorNumber);
+    }
+
+    private void writeFile(TPointer buffer, IVirtualFile vFile, int sectorNumber) {
+    	vFile.ioLseek(sectorNumber * pageSize);
+    	vFile.ioWrite(buffer, pageSize);
+    }
+
+    public int hleNandWritePages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc, boolean isLLE) {
+    	int result = 0;
+
+    	if (user.isNotNull()) {
+    		for (int i = 0; i < len; i++) {
+    			if (ppnToLbn[ppn + i] >= 0x3 && ppnToLbn[ppn + i] < 0x602) {
+	    			writeFile(user, vFile3, ppn + i, 0x3);
+	    		} else if (ppnToLbn[ppn + i] >= 0x603 && ppnToLbn[ppn + i] < 0x702) {
+	    			writeFile(user, vFile603, ppn + i, 0x603);
+	    		} else if (ppnToLbn[ppn + i] >= 0x703 && ppnToLbn[ppn + i] < 0x742) {
+	    			writeFile(user, vFile703, ppn + i, 0x703);
+    			} else {
+    				log.error(String.format("hleNandWritePages unimplemented write on ppn=0x%X, lbn=0x%X", ppn + i, ppnToLbn[ppn + i]));
+    			}
+    		}
     	}
 
     	return result;
@@ -758,39 +836,39 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x8932166A, version = 150)
-    public int sceNandWritePagesRawExtra(int ppn, TPointer user, TPointer spare, int len) {
-        return 0;
+    public int sceNandWritePagesRawExtra(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.in) TPointer user, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer spare, int len) {
+    	return hleNandWritePages(ppn, user, spare, len, true, false, false);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5182C394, version = 150)
     public int sceNandReadExtraOnly(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer spare, int len) {
-    	hleNandReadPages(ppn, TPointer.NULL, spare, len, true, true);
+    	hleNandReadPages(ppn, TPointer.NULL, spare, len, true, true, false);
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x89BDCA08, version = 150)
     public int sceNandReadPages(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len) {
-    	return hleNandReadPages(ppn, user, spare, len, false, false);
+    	return hleNandReadPages(ppn, user, spare, len, false, false, false);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xE05AE88D, version = 150)
     public int sceNandReadPagesRawExtra(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len) {
-    	return hleNandReadPages(ppn, user, spare, len, true, false);
+    	return hleNandReadPages(ppn, user, spare, len, true, false, false);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC32EA051, version = 150)
     public int sceNandReadBlockWithRetry(int ppn, TPointer user, TPointer spare) {
-    	return hleNandReadPages(ppn, user, spare, pagesPerBlock, false, false);
+    	return hleNandReadPages(ppn, user, spare, pagesPerBlock, false, false, false);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xB2B021E5, version = 150)
     public int sceNandWriteBlockWithVerify(int ppn, TPointer user, TPointer spare) {
-    	return 0;
+    	return hleNandWritePages(ppn, user, spare, pagesPerBlock, false, false, false);
     }
 
     @HLEFunction(nid = 0xC1376222, version = 150)
@@ -864,25 +942,25 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     @HLEUnimplemented
     @HLEFunction(nid = 0x766756EF, version = 150)
     public int sceNandReadAccess(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len, int mode) {
-    	return hleNandReadPages(ppn, user, spare, len, false, false);
+    	return hleNandReadPages(ppn, user, spare, len, false, false, false);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x0ADC8686, version = 150)
-    public int sceNandWriteAccess(int ppn, TPointer user, TPointer spare, int len, int mode) {
+    public int sceNandWriteAccess(int ppn, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.in) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.in) TPointer spare, int len, int mode) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x8AF0AB9F, version = 150)
-    public int sceNandWritePages(int ppn, TPointer user, TPointer spare, int len) {
-        return 0;
+    public int sceNandWritePages(int ppn, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.in) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.in) TPointer spare, int len) {
+    	return hleNandWritePages(ppn, user, spare, len, false, false, false);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC478C1DE, version = 150)
     public int sceNandReadPagesRawAll(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len) {
-    	return hleNandReadPages(ppn, user, spare, len, true, false);
+    	return hleNandReadPages(ppn, user, spare, len, true, false, false);
     }
 
     @HLEUnimplemented
@@ -911,8 +989,8 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xBADD5D46, version = 150)
-    public int sceNandWritePagesRawAll() {
-    	return 0;
+    public int sceNandWritePagesRawAll(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.in) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.in) TPointer spare, int len) {
+    	return hleNandWritePages(ppn, user, spare, len, true, false, false);
     }
 
     @HLEUnimplemented
@@ -953,7 +1031,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xEF55F193, version = 150)
-    public int sceNandCalcEcc() {
+    public int sceNandCalcEcc(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.in) TPointer buffer) {
     	return 0;
     }
 
