@@ -26,16 +26,19 @@ import jpcsp.util.Utilities;
 final public class TPointer implements ITPointerBase {
 	private Memory memory;
 	private int address;
+	private boolean isNull;
 	public static final TPointer NULL = new TPointer((Memory) null, 0);
 
 	public TPointer(Memory memory, int address) {
 		this.memory = memory;
 		this.address = address & Memory.addressMask;
+		isNull = (address == 0);
 	}
 
 	public TPointer(TPointer base) {
 		memory = base.getMemory();
 		address = base.getAddress();
+		isNull = base.isNull();
 	}
 
 	public TPointer(TPointer base, int addressOffset) {
@@ -45,6 +48,7 @@ final public class TPointer implements ITPointerBase {
 		} else {
 			address = base.getAddress() + addressOffset;
 		}
+		isNull = base.isNull();
 	}
 
 	public void add(int addressOffset) {
@@ -70,6 +74,7 @@ final public class TPointer implements ITPointerBase {
 
 	public void setAddress(int address) {
 		this.address = address & Memory.addressMask;
+		isNull = (address == 0);
 	}
 
 	@Override
@@ -79,12 +84,18 @@ final public class TPointer implements ITPointerBase {
 
 	@Override
 	public boolean isNull() {
-		return address == 0;
+		return isNull;
 	}
 
 	@Override
 	public boolean isNotNull() {
-		return address != 0;
+		return !isNull;
+	}
+
+	public TPointer forceNonNull() {
+		isNull = false;
+
+		return this;
 	}
 
 	public byte  getValue8() { return getValue8(0); }
@@ -166,7 +177,7 @@ final public class TPointer implements ITPointerBase {
 
 	public byte[] getArray8(int offset, byte[] bytes, int bytesOffset, int n) {
 		if (isNotNull()) {
-			IMemoryReader memoryReader = MemoryReader.getMemoryReader(getAddress() + offset, n, 1);
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(getMemory(), getAddress() + offset, n, 1);
 			for (int i = 0; i < n; i++) {
 				bytes[bytesOffset + i] = (byte) memoryReader.readNext();
 			}

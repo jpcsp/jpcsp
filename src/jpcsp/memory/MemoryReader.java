@@ -111,6 +111,30 @@ public class MemoryReader {
 	/**
 	 * Creates a MemoryReader to read values from memory.
 	 *
+	 * @param mem     the memory to be used.
+	 * @param address the address where to start reading.
+	 *                When step == 2, the address has to be 16-bit aligned ((address & 1) == 0).
+	 *                When step == 4, the address has to be 32-bit aligned ((address & 3) == 0).
+	 * @param length  the maximum number of bytes that can be read.
+	 * @param step    when step == 1, read 8-bit values
+	 *                when step == 2, read 16-bit values
+	 *                when step == 4, read 32-bit values
+	 *                other value for step are not allowed.
+	 * @return        the MemoryReader
+	 */
+	public static IMemoryReader getMemoryReader(Memory mem, int address, int length, int step) {
+		// Use the optimized version if we are just using the standard memory
+		if (mem == RuntimeContext.memory) {
+			return getMemoryReader(address, length, step);
+		}
+
+		// Default (generic) MemoryReader
+		return new MemoryReaderGeneric(mem, address, length, step);
+	}
+
+	/**
+	 * Creates a MemoryReader to read values from memory.
+	 *
 	 * @param address the address where to start reading.
 	 *                When step == 2, the address has to be 16-bit aligned ((address & 1) == 0).
 	 *                When step == 4, the address has to be 32-bit aligned ((address & 3) == 0).
@@ -150,6 +174,13 @@ public class MemoryReader {
 		private int address;
 		private int length;
 		private final int step;
+
+		public MemoryReaderGeneric(Memory mem, int address, int length, int step) {
+			this.mem = mem;
+			this.address = address;
+			this.length = length;
+			this.step = step;
+		}
 
 		public MemoryReaderGeneric(int address, int length, int step) {
 			this.address = address;

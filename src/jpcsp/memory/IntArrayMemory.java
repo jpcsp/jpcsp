@@ -30,8 +30,6 @@ import jpcsp.HLE.TPointer;
 public class IntArrayMemory extends Memory {
 	private int[] memory;
 	private int offset;
-	private int baseAddress;
-	private static final int BASE_ADDRESS_NOT_NULL = 4;
 
 	public IntArrayMemory(int[] memory) {
 		this.memory = memory;
@@ -44,19 +42,11 @@ public class IntArrayMemory extends Memory {
 	}
 
 	public TPointer getPointer(int address) {
-		if (address == 0) {
-			setBaseAddress(BASE_ADDRESS_NOT_NULL);
-		}
-
-		return new TPointer(this, baseAddress + address);
+		return new TPointer(this, address).forceNonNull();
 	}
 
 	public TPointer getPointer() {
 		return getPointer(0);
-	}
-
-	private void setBaseAddress(int baseAddress) {
-		this.baseAddress = baseAddress;
 	}
 
 	@Override
@@ -64,7 +54,7 @@ public class IntArrayMemory extends Memory {
 	}
 
 	private int getOffset(int address) {
-		return ((address - baseAddress) >> 2) + offset;
+		return (address >> 2) + offset;
 	}
 
 	@Override
