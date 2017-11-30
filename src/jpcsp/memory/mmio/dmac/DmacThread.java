@@ -118,6 +118,13 @@ public class DmacThread extends Thread {
 			log.debug(String.format("dmacMemcpy dst=0x%08X, src=0x%08X, dstLength=0x%X, srcLength=0x%X, dstStepLength=%d, srcStepLength=%d, dstIncrement=%b, srcIncrement=%b", dst, src, dstLength, srcLength, dstStepLength, srcStepLength, dstIncrement, srcIncrement));
 		}
 
+		final int srcStep4  = srcIncrement ?  4 : 0;
+		final int srcStep8  = srcIncrement ?  8 : 0;
+		final int srcStep12 = srcIncrement ? 12 : 0;
+		final int dstStep4  = dstIncrement ?  4 : 0;
+		final int dstStep8  = dstIncrement ?  8 : 0;
+		final int dstStep12 = dstIncrement ? 12 : 0;
+
 		while (dstLength > 0 && srcLength > 0) {
 			switch (srcStepLength) {
 				case 1:
@@ -143,16 +150,16 @@ public class DmacThread extends Thread {
 						log.trace(String.format("memcpy dst=0x%08X, src=0x%08X, length=0x%X", dst, src, 8));
 					}
 					mem.write32(dst, mem.read32(src));
-					mem.write32(dst + 4, mem.read32(src + 4));
+					mem.write32(dst + dstStep4, mem.read32(src + srcStep4));
 					break;
 				case 16:
 					if (log.isTraceEnabled()) {
 						log.trace(String.format("memcpy dst=0x%08X, src=0x%08X, length=0x%X", dst, src, 16));
 					}
 					mem.write32(dst, mem.read32(src));
-					mem.write32(dst + 4, mem.read32(src + 4));
-					mem.write32(dst + 8, mem.read32(src + 8));
-					mem.write32(dst + 12, mem.read32(src + 12));
+					mem.write32(dst + dstStep4, mem.read32(src + srcStep4));
+					mem.write32(dst + dstStep8, mem.read32(src + srcStep8));
+					mem.write32(dst + dstStep12, mem.read32(src + srcStep12));
 					break;
 			}
 			dstLength -= dstStepLength;
@@ -177,6 +184,10 @@ public class DmacThread extends Thread {
 			int dstLength = (attr & 0xFFF) << dstLengthShift;
 			boolean srcIncrement = (attr & 0x04000000) != 0;
 			boolean dstIncrement = (attr & 0x08000000) != 0;
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("dmacMemcpy dst=0x%08X, src=0x%08X, dstLength=0x%X, srcLength=0x%X, dstStep=%d, srcStep=%d, dstIncrement=%b, srcIncrement=%b", dst, src, dstLength, srcLength, dstStep, srcStep, dstIncrement, srcIncrement));
+			}
 
 			src = normalizeAddress(src);
 			dst = normalizeAddress(dst);
