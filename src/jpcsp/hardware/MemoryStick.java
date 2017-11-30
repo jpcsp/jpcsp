@@ -36,10 +36,10 @@ public class MemoryStick {
     private static boolean msPower = true;
 
     // Total size of the memory stick, in bytes
-//    private final static long totalSize = 64L * 1024 * 1024; // 64MB
-    private final static long totalSize = 16L * 1024 * 1024 * 1024; // 16GB
+//    private static long totalSize = 64L * 1024 * 1024; // 64MB
+    private static long totalSize = 16L * 1024 * 1024 * 1024; // 16GB
     // Free size on memory stick, in bytes
-    private final static long freeSize = 1L * 1024 * 1024 * 1024;	// 1GB
+    private static long freeSize = 1L * 1024 * 1024 * 1024;	// 1GB
     private final static int sectorSize = 32 * 1024; // 32KB
 
     private static boolean locked = false;
@@ -114,5 +114,12 @@ public class MemoryStick {
 
 	public static long getTotalSize() {
 		return totalSize;
+	}
+
+	public static void setTotalSize(long totalSize) {
+		MemoryStick.totalSize = totalSize;
+		if (freeSize > totalSize) {
+			freeSize = totalSize;
+		}
 	}
 }

@@ -320,6 +320,15 @@ public class sceMSstor extends HLEModule {
     	return len;
     }
 
+    public int hleMSstorPartitionIoRead(byte[] buffer, int bufferOffset, int len) {
+    	if (vFile != null) {
+    		scanThread.waitForCompletion();
+    		len = vFile.ioRead(buffer, bufferOffset, len);
+    	}
+
+    	return len;
+    }
+
     @HLEUnimplemented
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleMSstorPartitionIoWrite(pspIoDrvFileArg drvFileArg, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer data, int len) {
