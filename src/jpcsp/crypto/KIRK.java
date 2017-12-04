@@ -905,6 +905,10 @@ public class KIRK {
                 return executeKIRKCmd16(out, outsize, in, insize);
             case PSP_KIRK_CMD_ECDSA_VERIFY:
                 return executeKIRKCmd17(in, insize);
+            case PSP_KIRK_CMD_INIT:
+            	return 0;
+            case PSP_KIRK_CMD_CERT_VERIFY:
+            	return 0;
             default:
                 return PSP_KIRK_INVALID_OPERATION; // Dummy.
         }

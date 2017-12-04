@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MEMLMD_INTR;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_CERT_VERIFY;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT_FUSE;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE;
@@ -26,6 +27,7 @@ import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_SIGN;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_VERIFY;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ENCRYPT;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_INIT;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_PRIV_SIG_CHECK;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_PRNG;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_SHA1_HASH;
@@ -154,12 +156,14 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
             	inSize = 0x64;
             	outSize = 0;
             	break;
-            case 0xF:
-            case 0x12:
-				// These are valid KIRK commands, but their behavior is unknown.
-            	// Simulate success
-				log.warn(String.format("MMIOHandlerKirk.hleUtilsBufferCopyWithRange unknown KIRK command 0x%X", command));
-				return RESULT_SUCCESS;
+            case PSP_KIRK_CMD_INIT:
+            	inSize = 0;
+            	outSize = 0;
+            	break;
+            case PSP_KIRK_CMD_CERT_VERIFY:
+            	inSize = 0xB8;
+            	outSize = 0;
+            	break;
 			default:
 				log.error(String.format("MMIOHandlerKirk.hleUtilsBufferCopyWithRange unimplemented KIRK command 0x%X", command));
 				return PSP_KIRK_INVALID_OPERATION;
