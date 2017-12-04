@@ -18,6 +18,7 @@ package jpcsp.HLE.modules;
 
 import static java.lang.Integer.rotateRight;
 import static jpcsp.HLE.HLEModuleManager.InternalSyscallNid;
+import static jpcsp.HLE.Modules.sceChkregModule;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -103,15 +104,23 @@ public class sceNand extends HLEModule {
 
 		int lbn = 0;
 		for (int ppn = 0; ppn < ppnToLbn.length; ppn++) {
-			if ((ppn % 0x3E00) >= 0x1440 && (ppn % 0x3E00) < 0x1440 + pagesPerBlock * 16) {
-				ppnToLbn[ppn] = 0xFFFF;
-			} else if (ppn >= 0x800) {
-    			ppnToLbn[ppn] = lbn;
-    			if ((ppn % pagesPerBlock) == pagesPerBlock - 1) {
-    				lbn++;
-    			}
-    		} else {
+			if (ppn < 0x800) {
     			ppnToLbn[ppn] = 0x0000;
+			} else {
+				// The PSP code requires that we leave 16 blocks free every 0x1F0 blocks.
+				// These are maybe used for bad blocks
+				int freeBlockNumber = ((ppn - 0x800) / pagesPerBlock) % 0x1F0;
+				final int freeBlockAreaStart = 0x7; // Trial and error show that valid values are from 0x7 to 0x62 (why???)
+				final int freeBlockAreaEnd = freeBlockAreaStart + 16;
+
+				if (freeBlockNumber >= freeBlockAreaStart && freeBlockNumber < freeBlockAreaEnd) {
+					ppnToLbn[ppn] = 0xFFFF;
+				} else {
+					ppnToLbn[ppn] = lbn;
+	    			if ((ppn % pagesPerBlock) == pagesPerBlock - 1) {
+	    				lbn++;
+	    			}
+				}
     		}
 		}
 
@@ -457,6 +466,15 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 					buffer.setValue32(0x0B4, 0x80000000);
 					buffer.setValue32(0x0B8, 1);
 					buffer.setValue32(0x0BC, 0);
+				// Used by sceChkreg_driver_6894A027()
+				} else if (isIdStoragePageForKey(page, 0x100)) {
+					// A certificate is stored at offset 0x38
+					int certificateOffset = 0x38;
+					int certificateLength = 0xB8;
+					buffer.clear(certificateOffset, certificateLength);
+					int unknownValue = sceChkregModule.getValueReturnedBy6894A027();
+					buffer.setValue8(certificateOffset + 8, (byte) ((0x23 << 2) | ((unknownValue >> 6) & 0x03)));
+					buffer.setValue8(certificateOffset + 9, (byte) ((unknownValue << 2) & 0xFC));
 				}
 				break;
     	}

@@ -39,6 +39,10 @@ public class sceChkreg extends HLEModule {
     public static final int PS_CODE_RUSSIA = 12;
     public static final int PS_CODE_CHINA = 13;
 
+    public int getValueReturnedBy6894A027() {
+    	return 1; // Fake value
+    }
+
     @HLEFunction(nid = 0x54495B19, version = 150)
     public int sceChkregCheckRegion(int unknown1, int unknown2) {
     	// 0: region is not correct
@@ -62,8 +66,8 @@ public class sceChkreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x6894A027, version = 150)
-    public int sceChkreg_driver_6894A027(TPointer8 unknown1, int unknown2) {
-    	unknown1.setValue(1); // Fake value
+    public int sceChkreg_driver_6894A027(@BufferInfo(usage=Usage.out) TPointer8 unknown1, int unknown2) {
+    	unknown1.setValue(getValueReturnedBy6894A027());
 
     	return 0;
     }
