@@ -175,7 +175,7 @@ public class CompilerContext implements ICompilerContext {
     private static final String profilerInternalName = Type.getInternalName(Profiler.class);
 	public  static final String executableDescriptor = Type.getDescriptor(IExecutable.class);
 	public  static final String executableInternalName = Type.getInternalName(IExecutable.class);
-	private static final String arraycopyDescriptor = "(" + Type.getDescriptor(Object.class) + "I" + Type.getDescriptor(Object.class) + "II)V";
+	public  static final String arraycopyDescriptor = "(" + Type.getDescriptor(Object.class) + "I" + Type.getDescriptor(Object.class) + "II)V";
 	private static Set<Integer> fastSyscalls;
 	private int instanceIndex;
 	private NativeCodeSequence preparedCallNativeCodeBlock = null;
@@ -274,11 +274,13 @@ public class CompilerContext implements ICompilerContext {
 		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "fpr", "[F");
     }
 
-    private void loadVprFloat() {
+    @Override
+    public void loadVprFloat() {
 		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "vprFloat", "[F");
     }
 
-    private void loadVprInt() {
+    @Override
+    public void loadVprInt() {
 		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "vprInt", "[I");
     }
 
@@ -533,6 +535,21 @@ public class CompilerContext implements ICompilerContext {
 	        mv.visitInsn(Opcodes.SWAP);
 	        mv.visitInsn(Opcodes.FASTORE);
     	}
+    }
+
+    @Override
+    public boolean hasNoPfx() {
+    	if (vfpuPfxdState != null && vfpuPfxdState.isKnown() && vfpuPfxdState.pfxDst.enabled) {
+    		return false;
+    	}
+    	if (vfpuPfxsState != null && vfpuPfxsState.isKnown() && vfpuPfxsState.pfxSrc.enabled) {
+    		return false;
+    	}
+    	if (vfpuPfxtState != null && vfpuPfxtState.isKnown() && vfpuPfxtState.pfxSrc.enabled) {
+    		return false;
+    	}
+
+    	return true;
     }
 
     private boolean isPfxDstMasked(VfpuPfxDstState pfxDstState, int n) {
@@ -3578,7 +3595,7 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void prepareVdForStoreInt(int vsize, int vd, int n) {
 		if (pfxVdOverlap && n < vsize - 1) {
-			// Do nothing, value will be store in tmp local variable
+			// Do nothing, value will be stored in tmp local variable
 		} else {
 			prepareVRegisterForStore(vsize, vd, n, vfpuPfxdState, false);
 		}

@@ -35,6 +35,7 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_USES_VFPU_PFXT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
 import static jpcsp.Allegrex.FpuState.IMPLEMENT_ROUNDING_MODES;
+import static jpcsp.Allegrex.compiler.CompilerContext.arraycopyDescriptor;
 import static jpcsp.Allegrex.compiler.CompilerContext.runtimeContextInternalName;
 
 import jpcsp.Emulator;
@@ -9933,16 +9934,36 @@ public void compile(ICompilerContext context, int insn) {
 	final int vsize = context.getVsize();
 	final int vd = context.getVdRegisterIndex();
 	final int vs = context.getVsRegisterIndex();
-	context.startPfxCompiled(false);
-	for (int i = 0; i < vsize; i++) {
-		for (int n = 0; n < vsize; n++) {
-			context.prepareVdForStoreInt(vsize, vd + i, n);
-			context.loadVsInt(vsize, vs + i, n);
-			context.storeVdInt(vsize, vd + i, n);
+	if (vsize == 4 && ((vd | vs) & (32 | 64)) == 0 && context.hasNoPfx()) {
+		// Simple case which can be implemented using an array copy.
+		int vsVprIndex = VfpuState.getVprIndex((vs >> 2) & 7, vs & 3, 0);
+		int vdVprIndex = VfpuState.getVprIndex((vd >> 2) & 7, vd & 3, 0);
+
+		context.loadVprInt();
+		context.loadImm(vsVprIndex);
+		context.loadVprInt();
+		context.loadImm(vdVprIndex);
+		context.loadImm(16);
+    	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
+
+    	context.loadVprFloat();
+		context.loadImm(vsVprIndex);
+		context.loadVprFloat();
+		context.loadImm(vdVprIndex);
+		context.loadImm(16);
+    	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
+	} else {
+		context.startPfxCompiled(false);
+		for (int i = 0; i < vsize; i++) {
+			for (int n = 0; n < vsize; n++) {
+				context.prepareVdForStoreInt(vsize, vd + i, n);
+				context.loadVsInt(vsize, vs + i, n);
+				context.storeVdInt(vsize, vd + i, n);
+			}
+			context.flushPfxCompiled(vsize, vd + i, false);
 		}
-		context.flushPfxCompiled(vsize, vd + i, false);
+		context.endPfxCompiled(vsize, false, false);
 	}
-	context.endPfxCompiled(vsize, false, false);
 }
 @Override
 public String disasm(int address, int insn) {
