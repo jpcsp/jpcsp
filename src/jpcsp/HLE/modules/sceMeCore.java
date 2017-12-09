@@ -45,7 +45,7 @@ public class sceMeCore extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x635397BB, version = 150)
-	public int sceMeCore_driver_635397BB() {
+	public int sceMeCore_driver_635397BB(CpuState cpu, int cmd) {
 		return 0;
 	}
 

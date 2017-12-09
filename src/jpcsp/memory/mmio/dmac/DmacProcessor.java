@@ -21,7 +21,8 @@ import jpcsp.HLE.kernel.types.IAction;
 
 public class DmacProcessor {
 	private static final int STATUS_IN_PROGRESS = 0x1;
-	private Memory mem;
+	private Memory memSrc;
+	private Memory memDst;
 	private IAction completedAction;
 	private DmacThread dmacThread;
 	private int dst;
@@ -48,8 +49,9 @@ public class DmacProcessor {
 		}
 	}
 
-	public DmacProcessor(Memory mem, int baseAddress, IAction completedAction) {
-		this.mem = mem;
+	public DmacProcessor(Memory memSrc, Memory memDst, int baseAddress, IAction completedAction) {
+		this.memSrc = memSrc;
+		this.memDst = memDst;
 		this.completedAction = new CompletedAction(completedAction);
 
 		dmacThread = new DmacThread();
@@ -98,7 +100,7 @@ public class DmacProcessor {
 		this.status = status;
 
 		if ((status & STATUS_IN_PROGRESS) != 0) {
-			dmacThread.execute(mem, dst, src, next, attributes, completedAction);
+			dmacThread.execute(memDst, memSrc, dst, src, next, attributes, completedAction);
 		}
 	}
 

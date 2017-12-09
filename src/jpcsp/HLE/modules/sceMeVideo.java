@@ -18,11 +18,14 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 
 public class sceMeVideo extends HLEModule {
     public static Logger log = Modules.getLogger("sceMeVideo");
@@ -63,13 +66,14 @@ public class sceMeVideo extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x8768915D, version = 150)
-	public int sceMeVideo_driver_8768915D() {
+	public int sceMeVideo_driver_8768915D(int type, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer) {
 		return 0;
 	}
 
+	// Called by sceVideocodecDelete()
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x8DD56014, version = 150)
-	public int sceMeVideo_driver_8DD56014() {
+	public int sceMeVideo_driver_8DD56014(int type, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=96, usage=Usage.inout) TPointer buffer) {
 		return 0;
 	}
 }

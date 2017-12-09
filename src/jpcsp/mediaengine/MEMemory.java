@@ -42,6 +42,8 @@ public class MEMemory extends MMIO {
 
 		MMIOHandlerReadWrite handler = new MMIOHandlerReadWrite(START_ME_RAM, SIZE_ME_RAM);
 		addHandler(START_ME_RAM, SIZE_ME_RAM, handler);
+		// The same memory is also visible at address range 0x40000000-0x401FFFFF
+		addHandler(START_ME_RAM | 0x40000000, SIZE_ME_RAM, new MMIOHandlerReadWrite(START_ME_RAM | 0x40000000, SIZE_ME_RAM, handler.getInternalMemory()));
 		// The same memory is also visible at address range 0x80000000-0x801FFFFF
 		addHandler(START_ME_RAM | 0x80000000, SIZE_ME_RAM, new MMIOHandlerReadWrite(START_ME_RAM | 0x80000000, SIZE_ME_RAM, handler.getInternalMemory()));
 

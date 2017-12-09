@@ -49,7 +49,7 @@ public class MMIOHandlerDmac extends MMIOHandlerBase {
 		super(baseAddress);
 
 		for (int i = 0; i < dmacProcessors.length; i++) {
-			dmacProcessors[i] = new DmacProcessor(getMemory(), baseAddress + 0x100 + i * 0x20, new DmacCompletedAction(1 << i));
+			dmacProcessors[i] = new DmacProcessor(getMemory(), getMemory(), baseAddress + 0x100 + i * 0x20, new DmacCompletedAction(1 << i));
 		}
 	}
 

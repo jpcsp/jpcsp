@@ -22,9 +22,11 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_DMACPLUS_INTR;
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceDmacplus;
+import jpcsp.mediaengine.MEProcessor;
 import jpcsp.memory.mmio.dmac.DmacProcessor;
 
 public class MMIOHandlerDmacplus extends MMIOHandlerBase {
@@ -34,7 +36,7 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 	public static final int COMPLETED_FLAG_SC2ME        = 0x04;
 	public static final int COMPLETED_FLAG_ME2SC        = 0x08;
 	public static final int COMPLETED_FLAG_SC128_MEMCPY = 0x10;
-	private DmacProcessor dmacProcessor;
+	private final DmacProcessor dmacProcessors[] = new DmacProcessor[3];
 	// flagsCompleted:
 	// - 0x01: not used
 	// - 0x02: triggers call to sceLowIO_Driver.sub_000063DC (sceKernelSetEventFlag name=SceDmacplusAvc, bits=1)
@@ -73,7 +75,11 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 	public MMIOHandlerDmacplus(int baseAddress) {
 		super(baseAddress);
 
-		dmacProcessor = new DmacProcessor(getMemory(), baseAddress + 0x1C0, new DmacCompletedAction(COMPLETED_FLAG_SC128_MEMCPY));
+		Memory meMemory = MEProcessor.getInstance().getMEMemory();
+		Memory scMemory = getMemory();
+		dmacProcessors[0] = new DmacProcessor(scMemory, meMemory, baseAddress + 0x180, new DmacCompletedAction(COMPLETED_FLAG_SC2ME));
+		dmacProcessors[1] = new DmacProcessor(meMemory, scMemory, baseAddress + 0x1A0, new DmacCompletedAction(COMPLETED_FLAG_ME2SC));
+		dmacProcessors[2] = new DmacProcessor(scMemory, scMemory, baseAddress + 0x1C0, new DmacCompletedAction(COMPLETED_FLAG_SC128_MEMCPY));
 	}
 
 	private void memcpyCompleted(int flagCompleted) {
@@ -144,11 +150,21 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 			case 0x154: value = 0; break; // TODO Unknown
 			case 0x158: value = 0; break; // TODO Unknown
 			case 0x15C: value = 0; break; // TODO Unknown
+			case 0x180:
+			case 0x184:
+			case 0x188:
+			case 0x18C:
+			case 0x190: value = dmacProcessors[0].read32(address - baseAddress - 0x180); break;
+			case 0x1A0:
+			case 0x1A4:
+			case 0x1A8:
+			case 0x1AC:
+			case 0x1B0: value = dmacProcessors[1].read32(address - baseAddress - 0x1A0); break;
 			case 0x1C0:
 			case 0x1C4:
 			case 0x1C8:
 			case 0x1CC:
-			case 0x1D0: value = dmacProcessor.read32(address - baseAddress - 0x1C0); break;
+			case 0x1D0: value = dmacProcessors[2].read32(address - baseAddress - 0x1C0); break;
 			default: value = super.read32(address); break;
 		}
 
@@ -170,11 +186,21 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 			case 0x110: setDisplayFlags(value); break;
 			case 0x10C: setDisplayFrameBufferWidth(value); break;
 			case 0x160: break; // TODO reset?
+			case 0x180:
+			case 0x184:
+			case 0x188:
+			case 0x18C:
+			case 0x190: dmacProcessors[0].write32(address - baseAddress - 0x180, value); break;
+			case 0x1A0:
+			case 0x1A4:
+			case 0x1A8:
+			case 0x1AC:
+			case 0x1B0: dmacProcessors[1].write32(address - baseAddress - 0x1A0, value); break;
 			case 0x1C0:
 			case 0x1C4:
 			case 0x1C8:
 			case 0x1CC:
-			case 0x1D0: dmacProcessor.write32(address - baseAddress - 0x1C0, value); break;
+			case 0x1D0: dmacProcessors[2].write32(address - baseAddress - 0x1C0, value); break;
 			default: super.write32(address, value); break;
 		}
 

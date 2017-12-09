@@ -68,6 +68,10 @@ public class MEProcessor extends Processor {
 		halt();
 	}
 
+	public MEMemory getMEMemory() {
+		return meMemory;
+	}
+
 	public int getVmeRegister(int reg) {
 		return vmeRegisters[reg];
 	}

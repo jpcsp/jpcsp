@@ -18,10 +18,14 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer32;
 import jpcsp.graphics.GeCommands;
 
 public class sceDmacplus extends HLEModule {
@@ -59,5 +63,26 @@ public class sceDmacplus extends HLEModule {
 	@HLEFunction(nid = 0xA3AA8D00, version = 150)
 	public int sceDmacplusLcdcSetBaseAddr(int frameBufferAddress) {
     	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x3438DA0B, version = 150)
+	public int sceDmacplusSc2MeLLI(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 dmacParameters) {
+    	int src = dmacParameters.getValue(0);
+    	int dst = dmacParameters.getValue(4);
+    	int next = dmacParameters.getValue(8);
+    	int attributes = dmacParameters.getValue(12);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceDmacplusSc2MeLLI src=0x%08X, dst=0x%08X, next=0x%08X, attributes=0x%X", src, dst, next, attributes));
+    	}
+
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x282CA0D7, version = 660)
+	public int sceDmacplusSc2MeLLI_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 dmacParameters) {
+    	return sceDmacplusSc2MeLLI(dmacParameters);
 	}
 }
