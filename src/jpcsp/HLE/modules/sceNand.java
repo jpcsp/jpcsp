@@ -54,7 +54,7 @@ public class sceNand extends HLEModule {
     protected boolean writeProtected;
     protected int scramble;
     public static final int pageSize = 0x200; // 512B per page
-    private static final int pagesPerBlock = 0x20; // 16KB per block
+    public static final int pagesPerBlock = 0x20; // 16KB per block
     private static final int totalBlocks = 0x800; // 32MB in total
     private static final int idStoragePpnStart = 0x600;
     private static final int idStoragePpnEnd = 0x7FF;
@@ -122,6 +122,30 @@ public class sceNand extends HLEModule {
 	    			}
 				}
     		}
+		}
+
+		if (log.isDebugEnabled()) {
+			for (int ppn = 0; ppn < ppnToLbn.length; ppn++) {
+				if (ppnToLbn[ppn] == 0xFFFF) {
+					int startFreePpn = ppn;
+					int endFreePpn = ppn;
+					for (; ppn < ppnToLbn.length; ppn++) {
+						if (ppnToLbn[ppn] != 0xFFFF) {
+							ppn--;
+							endFreePpn = ppn;
+							break;
+						}
+					}
+
+					log.debug(String.format("Free blocks ppn=0x%X-0x%X", startFreePpn, endFreePpn));
+				}
+			}
+		}
+
+		if (log.isTraceEnabled()) {
+			for (int ppn = 0; ppn < ppnToLbn.length; ppn++) {
+				log.trace(String.format("ppn=0x%04X -> lbn=0x%04X", ppn, ppnToLbn[ppn]));
+			}
 		}
 
 		if (!emulateNand) {
@@ -768,6 +792,36 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     public int hleNandWritePages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc, boolean isLLE) {
     	int result = 0;
 
+    	if (spare.isNotNull()) {
+    		SceNandSpare sceNandSpare = new SceNandSpare();
+    		for (int i = 0; i < len; i++) {
+	    		if (spareUserEcc) {
+		    		sceNandSpare.read(spare, i * sceNandSpare.sizeof());
+	    		} else {
+		    		sceNandSpare.readNoUserEcc(spare, i * sceNandSpare.sizeofNoEcc());
+	    		}
+
+	    		if (sceNandSpare.lbn != 0xFFFF && ppnToLbn[ppn + i] != sceNandSpare.lbn) {
+	    			int offset = (ppn + i) % pagesPerBlock;
+	    			for (int j = offset; j < ppnToLbn.length; j += pagesPerBlock) {
+	    				if (ppnToLbn[j] == sceNandSpare.lbn) {
+	    					if (log.isDebugEnabled()) {
+	    						log.debug(String.format("hleNandWritePages moving lbn=0x%04X from ppn=0x%X to ppn=0x%X", sceNandSpare.lbn, j, ppn + i));
+	    					}
+	    					ppnToLbn[j] = 0xFFFF;
+	    					break;
+	    				}
+	    			}
+
+	    			if (ppnToLbn[ppn + i] == 0xFFFF) {
+	    				ppnToLbn[ppn + i] = sceNandSpare.lbn;
+	    			} else {
+	    				log.error(String.format("hleNandWritePages moving lbn=0x%04X to ppn=0x%X not being free", sceNandSpare.lbn, ppn + i));
+	    			}
+	    		}
+    		}
+    	}
+
     	if (user.isNotNull()) {
     		for (int i = 0; i < len; i++) {
     			if (ppnToLbn[ppn + i] >= 0x3 && ppnToLbn[ppn + i] < 0x602) {
@@ -779,10 +833,15 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     			} else {
     				log.error(String.format("hleNandWritePages unimplemented write on ppn=0x%X, lbn=0x%X", ppn + i, ppnToLbn[ppn + i]));
     			}
+    			user.add(pageSize);
     		}
     	}
 
     	return result;
+    }
+
+    public int getLbnFromPpn(int ppn) {
+    	return ppnToLbn[ppn];
     }
 
     @HLEFunction(nid = 0xB07C41D4, version = 150)

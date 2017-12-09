@@ -58,6 +58,16 @@ public class SceNandSpare extends pspAbstractMemoryMappedStructure {
 		write8((byte) reserved2[1]);
 	}
 
+	public void readNoUserEcc(TPointer buffer, int offset) {
+		blockFmt = buffer.getValue8(offset + 0) & 0xFF;
+		blockStat = buffer.getValue8(offset + 1) & 0xFF;
+		lbn = endianSwap16(buffer.getValue16(offset + 2));
+		id = buffer.getValue32(offset + 4);
+		spareEcc = buffer.getValue16(offset + 8) & 0xFFFF;
+		reserved2[0] = buffer.getValue8(offset + 10) & 0xFF;
+		reserved2[1] = buffer.getValue8(offset + 11) & 0xFF;
+	}
+
 	public void writeNoUserEcc(TPointer buffer, int offset) {
 		buffer.setValue8(offset + 0, (byte) blockFmt);
 		buffer.setValue8(offset + 1, (byte) blockStat);

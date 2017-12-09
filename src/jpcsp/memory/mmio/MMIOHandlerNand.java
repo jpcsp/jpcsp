@@ -19,6 +19,8 @@ package jpcsp.memory.mmio;
 import static jpcsp.HLE.Modules.sceNandModule;
 import static jpcsp.HLE.Modules.sceSysregModule;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_NAND_INTR;
+import static jpcsp.HLE.modules.sceNand.pagesPerBlock;
+import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.lineSeparator;
 
 import org.apache.log4j.Logger;
@@ -51,6 +53,8 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 	public static final int PSP_NAND_COMMAND_READ_ID = 0x90;
 	public static final int PSP_NAND_COMMAND_ERASE_BLOCK_CONFIRM = 0xD0;
 	public static final int PSP_NAND_COMMAND_RESET = 0xFF;
+	private static final int DMA_CONTROL_START = 0x0001;
+	private static final int DMA_CONTROL_WRITE = 0x0002;
 	private static MMIOHandlerNand instance;
 	private final IntArrayMemory pageDataMemory;
 	private final IntArrayMemory pageEccMemory;
@@ -116,7 +120,7 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("PSP_NAND_COMMAND_ERASE_BLOCK ppn=0x%X", pageAddress >> 10));
 				}
-				triggerInterrupt(PSP_NAND_INTR_WRITE_COMPLETED); // TODO Unknown value
+//				triggerInterrupt(PSP_NAND_INTR_WRITE_COMPLETED); // TODO Unknown value
 				break;
 			default:
 				log.error(String.format("MMIOHandlerNand.startCommand unknown command 0x%X", command));
@@ -188,19 +192,22 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 
 	private int getScramble(int ppn) {
 		long fuseId = sceSysregModule.sceSysregGetFuseId();
-		if (ppn == 0x860) {
+		int lbn = sceNandModule.getLbnFromPpn(ppn);
+		int sector = ppn % pagesPerBlock;
+
+		if (lbn == 0x003 && sector == 0) {
 			return getScrambleBootSector(fuseId, 0); // flash0 boot sector
-		} else if (ppn >= 0x880 && ppn < 0xD040) {
+		} else if (lbn >= 0x004 && lbn < 0x601) {
 			return getScrambleDataSector(fuseId, 0); // flash0
-		} else if (ppn >= 0xD040 && ppn < 0xF040) {
+		} else if (lbn >= 0x602 && lbn < 0x702) {
 			return 0; // flash1 is not scrambled
-		} else if (ppn == 0xF060) {
+		} else if (lbn == 0x703 && sector == 0) {
 			return getScrambleBootSector(fuseId, 2); // flash2 boot sector
-		} else if (ppn >= 0xF080 && ppn < 0xF840) {
+		} else if (lbn >= 0x704 && lbn < 0x742) {
 			return getScrambleDataSector(fuseId, 2); // flash2
-		} else if (ppn == 0xF840) {
+		} else if (lbn == 0x742 && sector == 0) {
 			return getScrambleBootSector(fuseId, 3); // flash3 boot sector
-		} else if (ppn >= 0xF860) {
+		} else if (lbn >= 0x743) {
 			return getScrambleDataSector(fuseId, 3); // flash3
 		}
 
@@ -210,29 +217,33 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 	private void startDma(int dmaControl) {
 		this.dmaControl = dmaControl;
 
-		if ((dmaControl & 0x001) != 0) {
+		if ((dmaControl & DMA_CONTROL_START) != 0) {
 			int ppn = dmaAddress >> 10;
 			int scramble = getScramble(ppn);
 
-			if ((dmaControl & 0x002) != 0) {
-				log.error(String.format("MMIOHandlerNand.startDma writing to the NAND is unimplemented ppn=0x%X", ppn));
-
-				TPointer user = pageDataMemory.getPointer();
-				TPointer spare = pageEccMemory.getPointer();
-				sceNandModule.hleNandWritePages(ppn, user, spare, 1, true, true, true);
+			// Read or write operation?
+			if ((dmaControl & DMA_CONTROL_WRITE) != 0) {
+				int lbn = endianSwap16(pageEccMemory.read16(6) & 0xFFFF);
+				if (lbn == 0xFFFF) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("writing to ppn=0x%X with lbn=0x%X ignored", ppn, lbn));
+					}
+				} else {
+					TPointer user = pageDataMemory.getPointer();
+					TPointer spare = pageEccMemory.getPointer();
+					sceNandModule.hleNandWritePages(ppn, user, spare, 1, true, true, true);
+				}
 
 				if (log.isDebugEnabled()) {
 					byte[] userBytes = new byte[sceNand.pageSize];
-					user = pageDataMemory.getPointer();
 					for (int i = 0; i < userBytes.length; i++) {
-						userBytes[i] = user.getValue8(i);
+						userBytes[i] = (byte) pageDataMemory.read8(i);
 					}
 					byte[] spareBytes = new byte[16];
-					spare = pageEccMemory.getPointer();
 					for (int i = 0; i < spareBytes.length; i++) {
-						spareBytes[i] = spare.getValue8(i);
+						spareBytes[i] = (byte) pageEccMemory.read8(i);
 					}
-					log.debug(String.format("hleNandWritePages ppn=0x%X, scramble=0x%X: %s%sSpare: %s", ppn, scramble, Utilities.getMemoryDump(userBytes), lineSeparator, Utilities.getMemoryDump(spareBytes)));
+					log.debug(String.format("hleNandWritePages ppn=0x%X, lbn=0x%X, scramble=0x%X: %s%sSpare: %s", ppn, lbn, scramble, Utilities.getMemoryDump(userBytes), lineSeparator, Utilities.getMemoryDump(spareBytes)));
 				}
 
 				triggerInterrupt(PSP_NAND_INTR_WRITE_COMPLETED);

@@ -75,7 +75,10 @@ public abstract class pspAbstractMemoryMappedStructure {
     }
 
     public void read(ITPointerBase pointer, int offset) {
-    	read(pointer.getMemory(), pointer.getAddress() + offset);
+    	start(pointer.getMemory(), pointer.getAddress() + offset);
+    	if (pointer.isNotNull()) {
+    		read();
+    	}
     }
 
     public void write(Memory mem, int address) {
