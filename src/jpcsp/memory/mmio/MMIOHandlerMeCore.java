@@ -38,6 +38,16 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 	public Logger log = sceMeCore.log;
 	public static final int BASE_ADDRESS = 0xBFC00600;
 	public static final int ME_CMD_VIDEOCODEC_OPEN = 0x0;
+	public static final int ME_CMD_VIDEOCODEC_INIT_TYPE0 = 0x1;
+	public static final int ME_CMD_VIDEOCODEC_DECODE_TYPE0 = 0x2;
+	public static final int ME_CMD_VIDEOCODEC_DELETE_TYPE0 = 0x4;
+	public static final int ME_CMD_VIDEOCODEC_SET_MEMORY_TYPE0 = 0x5;
+	public static final int ME_CMD_VIDEOCODEC_GET_VERSION_TYPE0 = 0x6;
+	public static final int ME_CMD_AVC_POWER_ENABLE = 0x8;
+	public static final int ME_CMD_VIDEOCODEC_DECODE_TYPE1 = 0x20;
+	public static final int ME_CMD_VIDEOCODEC_DELETE_TYPE1 = 0x22;
+	public static final int ME_CMD_VIDEOCODEC_INIT_TYPE1 = 0x25;
+	public static final int ME_CMD_VIDEOCODEC_GET_VERSION_TYPE1 = 0x27;
 	public static final int ME_CMD_AT3P_DECODE = 0x60;
 	public static final int ME_CMD_AT3P_CHECK_NEED_MEM1 = 0x63;
 	public static final int ME_CMD_AT3P_SET_UNK68 = 0x64;
@@ -110,6 +120,46 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 				mem.write32(parameters[0] + 0, VIDEOCODEC_OPEN_TYPE0_UNKNOWN0);
 				mem.write32(parameters[0] + 4, VIDEOCODEC_OPEN_TYPE0_UNKNOWN4);
 				result = VIDEOCODEC_OPEN_TYPE0_UNKNOWN24;
+				break;
+			case ME_CMD_VIDEOCODEC_INIT_TYPE0:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_VIDEOCODEC_INIT_TYPE0 unknownAddr=0x%08X, unknownValue1=0x%X, unknownValue2=0x%X", parameters[0], parameters[1], parameters[2]));
+				}
+				mem.write32(parameters[0], parameters[1] + 8);
+				break;
+			case ME_CMD_VIDEOCODEC_DECODE_TYPE0:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_VIDEOCODEC_DECODE_TYPE0 unknownValue1=0x%X, mp4Data=0x%08X, mp4Size=0x%08X, buffer2=0x%08X, mpegAvcYuvStruct=0x%08X, buffer3=0x%08X, unknownValue2=0x%X, mpegAvcYuvStructAddr=0x%08X", parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7]));
+				}
+				break;
+			case ME_CMD_VIDEOCODEC_DELETE_TYPE0:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_VIDEOCODEC_DELETE_TYPE0 unknownValue1=0x%X", parameters[0]));
+				}
+				break;
+			case ME_CMD_VIDEOCODEC_SET_MEMORY_TYPE0:
+				// Called during sceVideocodecSetMemory()
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_VIDEOCODEC_SET_MEMORY_TYPE0 unknownValue1=0x%X, unknownValue2=0x%X, unknownValue3=0x%X, unknownValue4=0x%X, unknownValue5=0x%X, unknownValue6=0x%X", parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5]));
+				}
+				break;
+			case ME_CMD_VIDEOCODEC_GET_VERSION_TYPE0:
+				// Called during sceVideocodecGetVersion()
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_VIDEOCODEC_GET_VERSION_TYPE0 versionAddr=0x%08X", parameters[0]));
+				}
+				mem.write32(parameters[0], 0); // Unknown version value
+				break;
+			case ME_CMD_AVC_POWER_ENABLE:
+				// Called during sceMePowerControlAvcPower() when enabling the Avc power
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_AVC_POWER_ENABLE"));
+				}
+				break;
+			case ME_CMD_VIDEOCODEC_DELETE_TYPE1:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ME_CMD_VIDEOCODEC_DELETE_TYPE1 unknownValue1=0x%X", parameters[0]));
+				}
 				break;
 			case ME_CMD_AT3P_CHECK_NEED_MEM1:
 				if (log.isDebugEnabled()) {

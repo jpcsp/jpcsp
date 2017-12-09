@@ -93,6 +93,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 	public static final int SYSREG_IO_SPI3         = 27;
 	public static final int SYSREG_IO_SPI4         = 28;
 	public static final int SYSREG_IO_SPI5         = 29;
+	public static final int SYSREG_AVC_POWER       = 2;
 	public static final int SYSREG_USBMS_USB_CONNECTED      = 0x000001;
 	public static final int SYSREG_USBMS_USB_INTERRUPT_MASK = 0x00001E;
 	public static final int SYSREG_USBMS_MS0_CONNECTED      = 0x000100;
@@ -111,6 +112,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 	private int ramSize;
 	private int tachyonVersion;
 	private int usbAndMemoryStick;
+	private int avcPower;
 
 	public static MMIOHandlerSystemControl getInstance() {
 		if (instance == null) {
@@ -261,6 +263,25 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 		this.usbAndMemoryStick &= ~usbMemoryStick;
 	}
 
+	private void setAvcPower(int value) {
+		avcPower = value;
+
+		if (hasBit(avcPower, SYSREG_AVC_POWER)) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("MMIOHandlerSystemControl.setAvcPower enabling Avc power"));
+			}
+		} else {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("MMIOHandlerSystemControl.setAvcPower disabling Avc power"));
+			}
+		}
+
+		// Only bit SYSREG_AVC_POWER is known
+		if ((value & ~(1 << SYSREG_AVC_POWER)) != 0) {
+			log.error(String.format("MMIOHandlerSystemControl.setAvcPower unknown value 0x%X", value));
+		}
+	}
+
 	@Override
 	public int read32(int address) {
 		int value;
@@ -269,6 +290,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 			case 0x4C: value = resetDevices; break;
 			case 0x50: value = busClockDevices; break;
 			case 0x54: value = clock1Devices; break;
+			case 0x70: value = avcPower; break;
 			case 0x78: value = ioDevices; break;
 			case 0x80: value = usbAndMemoryStick; break;
 			case 0x90: value = (int) Modules.sceSysregModule.sceSysregGetFuseId(); break;
@@ -292,6 +314,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 			case 0x4C: setResetDevices(value); break;
 			case 0x50: setBusClockDevices(value); break;
 			case 0x54: setClock1Devices(value); break;
+			case 0x70: setAvcPower(value); break;
 			case 0x78: setIoDevices(value); break;
 			case 0x80: clearUsbMemoryStick(value); break;
 			default: super.write32(address, value); break;
