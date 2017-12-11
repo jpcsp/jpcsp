@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 
 /**
@@ -24,6 +26,7 @@ import jpcsp.Emulator;
  * @author hli
  */
 public class GprState {
+	protected Logger log;
 	public static final int NUMBER_REGISTERS = 32;
 	// Use fields to store the 32 registers, and not an array like
 	//    int[] gpr = new int[32]
@@ -60,6 +63,10 @@ public class GprState {
     public int _sp;
     public int _fp;
     public int _ra;
+
+    public void setLogger(Logger log) {
+    	this.log = log;
+    }
 
     public void reset() {
     	_at = 0;

@@ -1,10 +1,3 @@
-package jpcsp.mediaengine;
-
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.log4j.Logger;
-
 /*
 This file is part of jpcsp.
 
@@ -21,6 +14,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
+package jpcsp.mediaengine;
+
+import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
+
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Thread running the Media Engine processor.
@@ -29,7 +28,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 public class METhread extends Thread {
-	public static Logger log = MEProcessor.log;
 	private static METhread instance;
 	private volatile boolean exit;
 	private MEProcessor processor;
@@ -66,6 +64,7 @@ public class METhread extends Thread {
 
 	@Override
 	public void run() {
+		setLog4jMDC();
 		while (!exit) {
 			if (waitForSync(100)) {
 				processor.run();
@@ -87,7 +86,7 @@ public class METhread extends Thread {
 				return false;
 			} catch (InterruptedException e) {
 				// Ignore exception and retry again
-				log.debug(String.format("METhread.waitForSync %s", e));
+				processor.getLogger().debug(String.format("METhread.waitForSync %s", e));
 			}
     	}
 

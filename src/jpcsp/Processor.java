@@ -32,11 +32,21 @@ public class Processor {
     public CpuState cpu = new CpuState();
     public Cp0State cp0 = new Cp0State();
     public static final Memory memory = Memory.getInstance();
-    public static Logger log = Logger.getLogger("cpu");
+    protected Logger log = Logger.getLogger("cpu");
     private boolean interruptsEnabled;
 
     public Processor() {
+    	setLogger(log);
         reset();
+    }
+
+    protected void setLogger(Logger log) {
+    	this.log = log;
+    	cpu.setLogger(log);
+    }
+
+    public Logger getLogger() {
+    	return log;
     }
 
     public void setCpu(CpuState cpu) {
@@ -69,8 +79,8 @@ public class Processor {
     public Instruction interpret() {
         int opcode = cpu.fetchOpcode();
         Instruction insn = Decoder.instruction(opcode);
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("Interpreting 0x%08X: [0x%08X] - %s", cpu.pc - 4, opcode, insn.disasm(cpu.pc - 4, opcode)));
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("Interpreting 0x%08X: [0x%08X] - %s", cpu.pc - 4, opcode, insn.disasm(cpu.pc - 4, opcode)));
         }
         insn.interpret(this, opcode);
 
@@ -80,8 +90,8 @@ public class Processor {
     public void interpretDelayslot() {
         int opcode = cpu.nextOpcode();
         Instruction insn = Decoder.instruction(opcode);
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("Interpreting 0x%08X: [0x%08X] - %s", cpu.pc - 4, opcode, insn.disasm(cpu.pc - 4, opcode)));
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("Interpreting 0x%08X: [0x%08X] - %s", cpu.pc - 4, opcode, insn.disasm(cpu.pc - 4, opcode)));
         }
         insn.interpret(this, opcode);
         cpu.nextPc();

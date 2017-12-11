@@ -24,7 +24,7 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 
 public class MMIOHandlerBase implements IMMIOHandler {
-	public static Logger log = Logger.getLogger("mmio");
+	protected Logger log = Logger.getLogger("mmio");
 	protected final int baseAddress;
 
 	public MMIOHandlerBase(int baseAddress) {
@@ -35,41 +35,45 @@ public class MMIOHandlerBase implements IMMIOHandler {
 		return RuntimeContextLLE.getMMIO();
 	}
 
-	protected static Processor getProcessor() {
+	protected Processor getProcessor() {
 		return Emulator.getProcessor();
 	}
 
 	@Override
 	public int read8(int address) {
-		log.error(String.format("0x%08X - Unimplemented read8(0x%08X)", Emulator.getProcessor().cpu.pc, address));
+		log.error(String.format("0x%08X - Unimplemented read8(0x%08X)", getProcessor().cpu.pc, address));
 		return 0;
 	}
 
 	@Override
 	public int read16(int address) {
-		log.error(String.format("0x%08X - Unimplemented read16(0x%08X)", Emulator.getProcessor().cpu.pc, address));
+		log.error(String.format("0x%08X - Unimplemented read16(0x%08X)", getProcessor().cpu.pc, address));
 		return 0;
 	}
 
 	@Override
 	public int read32(int address) {
-		log.error(String.format("0x%08X - Unimplemented read32(0x%08X)", Emulator.getProcessor().cpu.pc, address));
+		log.error(String.format("0x%08X - Unimplemented read32(0x%08X)", getProcessor().cpu.pc, address));
 		return 0;
 	}
 
 	@Override
 	public void write8(int address, byte value) {
-		log.error(String.format("0x%08X - Unimplemented write8(0x%08X, 0x%02X)", Emulator.getProcessor().cpu.pc, address, value));
+		log.error(String.format("0x%08X - Unimplemented write8(0x%08X, 0x%02X)", getProcessor().cpu.pc, address, value));
 	}
 
 	@Override
 	public void write16(int address, short value) {
-		log.error(String.format("0x%08X - Unimplemented write16(0x%08X, 0x%04X)", Emulator.getProcessor().cpu.pc, address, value));
+		log.error(String.format("0x%08X - Unimplemented write16(0x%08X, 0x%04X)", getProcessor().cpu.pc, address, value));
 	}
 
 	@Override
 	public void write32(int address, int value) {
-		log.error(String.format("0x%08X - Unimplemented write32(0x%08X, 0x%08X)", Emulator.getProcessor().cpu.pc, address, value));
+		log.error(String.format("0x%08X - Unimplemented write32(0x%08X, 0x%08X)", getProcessor().cpu.pc, address, value));
+	}
+
+	public void setLogger(Logger log) {
+		this.log = log;
 	}
 
 	@Override
