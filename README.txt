@@ -244,7 +244,7 @@ JPCSP v0.5 (March 09, 2010):
 
 1. Getting started:
 
-Be sure to have JRE (Java Runtime Environment) installed in your computer
+Be sure to have JRE 8 (Java Runtime Environment) installed in your computer
 before attempting to run JPCSP.
 
 NOTE: It is strongly advised that even on a 64-bit OS, you should install the
