@@ -568,7 +568,7 @@ public final String category() { return "MIPS III"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	processor.cpu.npc = processor.cpu.doERET(processor);
+	processor.cpu.pc = processor.cpu.doERET(processor);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
