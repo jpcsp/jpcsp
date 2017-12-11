@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.mediaengine;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Memory;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerReadWrite;
@@ -32,7 +30,6 @@ import jpcsp.memory.mmio.MMIOHandlerReadWrite;
  *
  */
 public class MEMemory extends MMIO {
-	public static Logger log = MEProcessor.log;
 	public static final int START_ME_RAM = 0x00000000;
 	public static final int END_ME_RAM = 0x001FFFFF;
 	public static final int SIZE_ME_RAM = END_ME_RAM - START_ME_RAM + 1;
@@ -41,13 +38,25 @@ public class MEMemory extends MMIO {
 		super(mem);
 
 		MMIOHandlerReadWrite handler = new MMIOHandlerReadWrite(START_ME_RAM, SIZE_ME_RAM);
+		handler.setLogger(log);
 		addHandler(START_ME_RAM, SIZE_ME_RAM, handler);
+
 		// The same memory is also visible at address range 0x40000000-0x401FFFFF
-		addHandler(START_ME_RAM | 0x40000000, SIZE_ME_RAM, new MMIOHandlerReadWrite(START_ME_RAM | 0x40000000, SIZE_ME_RAM, handler.getInternalMemory()));
+		addHandler(handler, 0x40000000);
+
 		// The same memory is also visible at address range 0x80000000-0x801FFFFF
-		addHandler(START_ME_RAM | 0x80000000, SIZE_ME_RAM, new MMIOHandlerReadWrite(START_ME_RAM | 0x80000000, SIZE_ME_RAM, handler.getInternalMemory()));
+		addHandler(handler, 0x80000000);
+
+		// The same memory is also visible at address range 0xA0000000-0xA01FFFFF
+		addHandler(handler, 0xA0000000);
 
 		// This address range is not the VRAM, but probably some unknown MMIO
-		addHandlerRW(0x44000000, 0x100000);
+		addHandler(0x44000000, 0x100000, new MMIOHandlerMe(0x44000000));
+	}
+
+	private void addHandler(MMIOHandlerReadWrite handler, int address) {
+		MMIOHandlerReadWrite handler2 = new MMIOHandlerReadWrite(START_ME_RAM | address, SIZE_ME_RAM, handler.getInternalMemory());
+		handler2.setLogger(log);
+		addHandler(START_ME_RAM | address, SIZE_ME_RAM, handler2);
 	}
 }

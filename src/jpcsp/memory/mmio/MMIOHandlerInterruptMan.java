@@ -25,6 +25,7 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
+import jpcsp.Processor;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.modules.InterruptManager;
 
@@ -37,8 +38,8 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	public final boolean interruptEnabled[] = new boolean[NUMBER_INTERRUPTS];
 	public final boolean interruptOccurred[] = new boolean[NUMBER_INTERRUPTS];
 
-	public static MMIOHandlerInterruptMan getInstance() {
-		return (MMIOHandlerInterruptMan) getProxyInstance().getInstance();
+	public static MMIOHandlerInterruptMan getInstance(Processor processor) {
+		return (MMIOHandlerInterruptMan) getProxyInstance().getInstance(processor);
 	}
 
 	public static MMIOHandlerProxyOnCpu getProxyInstance() {

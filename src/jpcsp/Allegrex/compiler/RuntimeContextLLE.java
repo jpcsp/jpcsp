@@ -66,12 +66,13 @@ public class RuntimeContextLLE {
 			return;
 		}
 
-		if (!MMIOHandlerInterruptMan.getInstance().hasInterruptTriggered(interruptNumber)) {
+		MMIOHandlerInterruptMan interruptMan = MMIOHandlerInterruptMan.getInstance(processor);
+		if (!interruptMan.hasInterruptTriggered(interruptNumber)) {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("triggerInterrupt 0x%X(%s)", interruptNumber, IntrManager.getInterruptName(interruptNumber)));
 			}
 
-			MMIOHandlerInterruptMan.getInstance().triggerInterrupt(interruptNumber);
+			interruptMan.triggerInterrupt(interruptNumber);
 		}
 	}
 
@@ -80,12 +81,13 @@ public class RuntimeContextLLE {
 			return;
 		}
 
-		if (MMIOHandlerInterruptMan.getInstance().hasInterruptTriggered(interruptNumber)) {
+		MMIOHandlerInterruptMan interruptMan = MMIOHandlerInterruptMan.getInstance(processor);
+		if (interruptMan.hasInterruptTriggered(interruptNumber)) {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("clearInterrupt 0x%X(%s)", interruptNumber, IntrManager.getInterruptName(interruptNumber)));
 			}
 
-			MMIOHandlerInterruptMan.getInstance().clearInterrupt(interruptNumber);
+			interruptMan.clearInterrupt(interruptNumber);
 		}
 	}
 
@@ -145,14 +147,6 @@ public class RuntimeContextLLE {
 			return MEProcessor.getInstance();
 		}
 		return Emulator.getProcessor();
-	}
-
-	public static void triggerMeException() {
-		METhread meThread = METhread.getInstance();
-		MEProcessor meProcessor = MEProcessor.getInstance();
-		meThread.setProcessor(meProcessor);
-		meProcessor.triggerException(ExceptionManager.IP2);
-		meThread.sync();
 	}
 
 	private static void setExceptionCause(Processor processor, int exceptionNumber) {
@@ -306,7 +300,7 @@ public class RuntimeContextLLE {
 			int ebase = prepareExceptionHandlerCall(processor, true);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X", MMIOHandlerInterruptMan.getInstance().toStringInterruptTriggered(), ebase, processor.cp0.getEpc()));
+				log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X", MMIOHandlerInterruptMan.getInstance(processor).toStringInterruptTriggered(), ebase, processor.cp0.getEpc()));
 			}
 
 			return ebase;

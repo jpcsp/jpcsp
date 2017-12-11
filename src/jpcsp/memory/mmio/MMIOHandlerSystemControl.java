@@ -16,18 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
 
 import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.hardware.MemoryStick;
+import jpcsp.mediaengine.MEProcessor;
 
 public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 	public static final int BASE_ADDRESS = 0xBC100000;
@@ -219,7 +215,20 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 
 	private void sysregInterruptToOther(int value) {
 		if (value != 0) {
-			MMIOHandlerMeCore.getInstance().interrupt();
+			if (RuntimeContextLLE.isMainCpu()) {
+				// Interrupt from the main cpu to the Media Engine cpu
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sysregInterruptToOther to ME on %s", MMIOHandlerMeCore.getInstance().toString()));
+				}
+				RuntimeContextLLE.triggerInterrupt(MEProcessor.getInstance(), PSP_MECODEC_INTR);
+				MEProcessor.getInstance().triggerException(ExceptionManager.IP2);
+			} else {
+				// Interrupt from the Media Engine cpu to the main cpu
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sysregInterruptToOther from ME on %s", MMIOHandlerMeCore.getInstance().toString()));
+				}
+				RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MECODEC_INTR);
+			}
 		}
 	}
 
@@ -237,8 +246,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 		resetDevices = value;
 
 		if (isFalling(oldResetDevices, resetDevices, SYSREG_RESET_ME)) {
-			loadMeimg();
-			RuntimeContextLLE.triggerMeException();
+			MEProcessor.getInstance().triggerReset();
 		}
 	}
 
@@ -322,34 +330,6 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, value, this));
-		}
-	}
-
-	private void loadMeimg() {
-		try {
-			BufferedReader in = new BufferedReader(new FileReader("meimg.txt"));
-			BufferedWriter out = new BufferedWriter(new FileWriter("meimg.disasm.txt"));
-			Memory mem = RuntimeContextLLE.getMMIO();
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Loading meimg.txt..."));
-			}
-			for (int address = 0x88300000; address < 0x88400000; address += 4) {
-				String line = in.readLine();
-				if (line == null) {
-					break;
-				}
-				if (line.startsWith("0x")) {
-					line = line.substring(2);
-				}
-				int value = (int) Long.parseLong(line, 16);
-				mem.write32(address, value);
-
-				out.write(String.format("0x%08X: 0x%08X - %s%s", address, value, Decoder.instruction(value).disasm(address, value), System.lineSeparator()));
-			}
-			out.close();
-			in.close();
-		} catch (IOException e) {
-			log.error("loadMeimg", e);
 		}
 	}
 

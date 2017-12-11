@@ -16,7 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.mediaengine.MEProcessor;
 
 public class MMIOHandlerProxyOnCpu implements IMMIOHandler {
 	private IMMIOHandler proxyOnMain;
@@ -33,6 +35,17 @@ public class MMIOHandlerProxyOnCpu implements IMMIOHandler {
 
 	public IMMIOHandler getInstance() {
 		if (isOnMe()) {
+			return proxyOnMe;
+		}
+		return proxyOnMain;
+	}
+
+	private boolean isOnMe(Processor processor) {
+		return processor.cp0.getCpuid() == MEProcessor.CPUID_ME;
+	}
+
+	public IMMIOHandler getInstance(Processor processor) {
+		if (isOnMe(processor)) {
 			return proxyOnMe;
 		}
 		return proxyOnMain;

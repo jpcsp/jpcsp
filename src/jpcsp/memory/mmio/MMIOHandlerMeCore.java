@@ -35,7 +35,7 @@ import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 
 public class MMIOHandlerMeCore extends MMIOHandlerBase {
-	public Logger log = sceMeCore.log;
+	public static Logger log = sceMeCore.log;
 	public static final int BASE_ADDRESS = 0xBFC00600;
 	public static final int ME_CMD_VIDEOCODEC_OPEN = 0x0;
 	public static final int ME_CMD_VIDEOCODEC_INIT_TYPE0 = 0x1;
@@ -80,6 +80,40 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 
 	private MMIOHandlerMeCore(int baseAddress) {
 		super(baseAddress);
+	}
+
+	private static String getCmdName(int cmd) {
+		switch (cmd) {
+			case ME_CMD_VIDEOCODEC_OPEN             : return "ME_CMD_VIDEOCODEC_OPEN";
+			case ME_CMD_VIDEOCODEC_INIT_TYPE0       : return "ME_CMD_VIDEOCODEC_INIT_TYPE0";
+			case ME_CMD_VIDEOCODEC_DECODE_TYPE0     : return "ME_CMD_VIDEOCODEC_DECODE_TYPE0";
+			case ME_CMD_VIDEOCODEC_DELETE_TYPE0     : return "ME_CMD_VIDEOCODEC_DELETE_TYPE0";
+			case ME_CMD_VIDEOCODEC_SET_MEMORY_TYPE0 : return "ME_CMD_VIDEOCODEC_SET_MEMORY_TYPE0";
+			case ME_CMD_VIDEOCODEC_GET_VERSION_TYPE0: return "ME_CMD_VIDEOCODEC_GET_VERSION_TYPE0";
+			case ME_CMD_AVC_POWER_ENABLE            : return "ME_CMD_AVC_POWER_ENABLE";
+			case ME_CMD_VIDEOCODEC_DECODE_TYPE1     : return "ME_CMD_VIDEOCODEC_DECODE_TYPE1";
+			case ME_CMD_VIDEOCODEC_DELETE_TYPE1     : return "ME_CMD_VIDEOCODEC_DELETE_TYPE1";
+			case ME_CMD_VIDEOCODEC_INIT_TYPE1       : return "ME_CMD_VIDEOCODEC_INIT_TYPE1";
+			case ME_CMD_VIDEOCODEC_GET_VERSION_TYPE1: return "ME_CMD_VIDEOCODEC_GET_VERSION_TYPE1";
+			case ME_CMD_AT3P_DECODE                 : return "ME_CMD_AT3P_DECODE";
+			case ME_CMD_AT3P_CHECK_NEED_MEM1        : return "ME_CMD_AT3P_CHECK_NEED_MEM1";
+			case ME_CMD_AT3P_SET_UNK68              : return "ME_CMD_AT3P_SET_UNK68";
+			case ME_CMD_AT3P_CHECK_NEED_MEM2        : return "ME_CMD_AT3P_CHECK_NEED_MEM2";
+			case ME_CMD_AT3P_SETUP_CHANNEL          : return "ME_CMD_AT3P_SETUP_CHANNEL";
+			case ME_CMD_AT3P_CHECK_UNK20            : return "ME_CMD_AT3P_CHECK_UNK20";
+			case ME_CMD_AT3P_SET_UNK44              : return "ME_CMD_AT3P_SET_UNK44";
+			case ME_CMD_AT3_CHECK_NEED_MEM          : return "ME_CMD_AT3_CHECK_NEED_MEM";
+			case ME_CMD_MALLOC                      : return "ME_CMD_MALLOC";
+			case ME_CMD_FREE                        : return "ME_CMD_FREE";
+			case ME_CMD_CALLOC                      : return "ME_CMD_CALLOC";
+			case ME_CMD_AW_EDRAM_BUS_CLOCK_ENABLE   : return "ME_CMD_AW_EDRAM_BUS_CLOCK_ENABLE";
+			case ME_CMD_AW_EDRAM_BUS_CLOCK_DISBABLE : return "ME_CMD_AW_EDRAM_BUS_CLOCK_DISBABLE";
+			case ME_CMD_BOOT                        : return "ME_CMD_BOOT";
+			case ME_CMD_CPU                         : return "ME_CMD_CPU";
+			case ME_CMD_POWER                       : return "ME_CMD_POWER";
+		}
+
+		return String.format("ME_CMD_UNKNOWN_%X", cmd);
 	}
 
 	private int decodeDebugIndex = 0;
@@ -316,5 +350,10 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, value, this));
 		}
+	}
+
+	@Override
+	public String toString() {
+		return String.format("cmd=0x%X(%s), result=0x%08X, parameters[0]=0x%08X, parameters[1]=0x%08X, parameters[2]=0x%08X, parameters[3]=0x%08X, parameters[4]=0x%08X, parameters[5]=0x%08X, parameters[6]=0x%08X, parameters[7]=0x%08X", cmd, getCmdName(cmd), result, parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7]);
 	}
 }
