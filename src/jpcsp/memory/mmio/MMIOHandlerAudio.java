@@ -20,7 +20,6 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_AUDIO_INTR;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.modules.sceAudio;
 
@@ -116,7 +115,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", Emulator.getProcessor().cpu.pc, address, value));
+			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", getPc(), address, value));
 		}
 
 		return value;
@@ -151,7 +150,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, value, this));
+			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
 		}
 	}
 

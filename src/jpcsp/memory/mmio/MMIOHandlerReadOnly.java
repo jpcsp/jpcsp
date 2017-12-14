@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import jpcsp.Emulator;
-
 public class MMIOHandlerReadOnly extends MMIOHandlerReadWrite {
 	public MMIOHandlerReadOnly(int baseAddress, int length) {
 		super(baseAddress, length);
@@ -27,7 +25,7 @@ public class MMIOHandlerReadOnly extends MMIOHandlerReadWrite {
 	public void write32(int address, int value) {
 		// Ignore write
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) ignored", Emulator.getProcessor().cpu.pc, address, value));
+			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) ignored", getPc(), address, value));
 		}
 	}
 }

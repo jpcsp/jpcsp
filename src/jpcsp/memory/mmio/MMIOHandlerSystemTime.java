@@ -21,7 +21,6 @@ import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterrupt;
 import static jpcsp.Emulator.getScheduler;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_THREAD0_INTR;
 
-import jpcsp.Emulator;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.scheduler.Scheduler;
@@ -76,7 +75,7 @@ public class MMIOHandlerSystemTime extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", Emulator.getProcessor().cpu.pc, address, value));
+			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", getPc(), address, value));
 		}
 
 		return value;
@@ -118,7 +117,7 @@ public class MMIOHandlerSystemTime extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, value, this));
+			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
 		}
 	}
 

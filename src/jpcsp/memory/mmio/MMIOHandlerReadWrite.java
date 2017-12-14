@@ -21,8 +21,6 @@ import static jpcsp.memory.FastMemory.memory16Shift;
 import static jpcsp.memory.FastMemory.memory8Mask;
 import static jpcsp.memory.FastMemory.memory8Shift;
 
-import jpcsp.Emulator;
-
 public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	private final int[] memory;
 
@@ -45,7 +43,7 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	@Override
 	public int read32(int address) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X)=0x%08X", Emulator.getProcessor().cpu.pc, address, memory[(address - baseAddress) >> 2]));
+			log.trace(String.format("0x%08X - read32(0x%08X)=0x%08X", getPc(), address, memory[(address - baseAddress) >> 2]));
 		}
 
 		return memory[(address - baseAddress) >> 2];
@@ -55,7 +53,7 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	public int read16(int address) {
 		int data = (memory[(address - baseAddress) >> 2] >> memory16Shift[address & 0x02]) & 0xFFFF;
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read16(0x%08X)=0x%04X", Emulator.getProcessor().cpu.pc, address, data));
+			log.trace(String.format("0x%08X - read16(0x%08X)=0x%04X", getPc(), address, data));
 		}
 
 		return data;
@@ -65,7 +63,7 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	public int read8(int address) {
 		int data = (memory[(address - baseAddress) >> 2] >> memory8Shift[address & 0x03]) & 0xFF;
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read8(0x%08X)=0x%02X", Emulator.getProcessor().cpu.pc, address, data));
+			log.trace(String.format("0x%08X - read8(0x%08X)=0x%02X", getPc(), address, data));
 		}
 	
 		return data;
@@ -74,7 +72,7 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	@Override
 	public void write32(int address, int value) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X)", Emulator.getProcessor().cpu.pc, address, value));
+			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X)", getPc(), address, value));
 		}
 
 		memory[(address - baseAddress) >> 2] = value;
@@ -83,7 +81,7 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	@Override
 	public void write16(int address, short value) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write16(0x%08X, 0x%04X)", Emulator.getProcessor().cpu.pc, address, value & 0xFFFF));
+			log.trace(String.format("0x%08X - write16(0x%08X, 0x%04X)", getPc(), address, value & 0xFFFF));
 		}
 
 		int index = address & 0x02;
@@ -95,7 +93,7 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	@Override
 	public void write8(int address, byte value) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X)", Emulator.getProcessor().cpu.pc, address, value & 0xFF));
+			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X)", getPc(), address, value & 0xFF));
 		}
 
 		int index = address & 0x03;

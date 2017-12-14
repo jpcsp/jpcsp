@@ -35,7 +35,6 @@ import static jpcsp.crypto.KIRK.PSP_KIRK_INVALID_OPERATION;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
@@ -71,7 +70,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	@Override
 	public int read32(int address) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, this));
+			log.trace(String.format("0x%08X - read32(0x%08X) on %s", getPc(), address, this));
 		}
 
 		switch (address - baseAddress) {
@@ -106,7 +105,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, value, this));
+			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
 		}
 	}
 
@@ -194,7 +193,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				}
 				break;
 			default:
-				log.warn(String.format("0x%08X - KIRK unknown startProcessing value 0x%X on %s", Emulator.getProcessor().cpu.pc, value, this));
+				log.warn(String.format("0x%08X - KIRK unknown startProcessing value 0x%X on %s", getPc(), value, this));
 				break;
 		}
 	}
@@ -213,7 +212,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				}
 				break;
 			default:
-				log.warn(String.format("0x%08X - KIRK unknown endProcessing value 0x%X on %s", Emulator.getProcessor().cpu.pc, value, this));
+				log.warn(String.format("0x%08X - KIRK unknown endProcessing value 0x%X on %s", getPc(), value, this));
 				break;
 		}
 	}

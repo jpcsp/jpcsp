@@ -18,7 +18,6 @@ package jpcsp.memory.mmio;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
-import jpcsp.mediaengine.MEProcessor;
 
 public class MMIOHandlerProxyOnCpu implements IMMIOHandler {
 	private IMMIOHandler proxyOnMain;
@@ -29,23 +28,15 @@ public class MMIOHandlerProxyOnCpu implements IMMIOHandler {
 		this.proxyOnMe = proxyOnMe;
 	}
 
-	private boolean isOnMe() {
-		return RuntimeContextLLE.isMediaEngineCpu();
-	}
-
 	public IMMIOHandler getInstance() {
-		if (isOnMe()) {
+		if (RuntimeContextLLE.isMediaEngineCpu()) {
 			return proxyOnMe;
 		}
 		return proxyOnMain;
 	}
 
-	private boolean isOnMe(Processor processor) {
-		return processor.cp0.getCpuid() == MEProcessor.CPUID_ME;
-	}
-
 	public IMMIOHandler getInstance(Processor processor) {
-		if (isOnMe(processor)) {
+		if (processor.cp0.isMediaEngineCpu()) {
 			return proxyOnMe;
 		}
 		return proxyOnMain;

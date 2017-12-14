@@ -19,12 +19,14 @@ package jpcsp.memory.mmio;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterruptException;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterruptException;
 import static jpcsp.HLE.kernel.managers.ExceptionManager.IP2;
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_ATA_INTR;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;
+import static jpcsp.util.Utilities.clearBit;
+import static jpcsp.util.Utilities.hasBit;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Emulator;
 import jpcsp.Processor;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.modules.InterruptManager;
@@ -79,7 +81,7 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 		}
 	}
 
-	private boolean doTriggerException() {
+	public boolean doTriggerException() {
 		for (int i = 0; i < NUMBER_INTERRUPTS; i++) {
 			if (interruptTriggered[i] && interruptEnabled[i]) {
 				return true;
@@ -140,7 +142,7 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	@Override
 	public int read32(int address) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, this));
+			log.trace(String.format("0x%08X - read32(0x%08X) on %s", getPc(), address, this));
 		}
 
 		switch (address - baseAddress) {
@@ -167,11 +169,20 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 			case 0 :
 				// interruptman.prx is only writing the values 0x80000000 and 0x40000000
 				// which seems to have the effect of clearing the triggers for these interrupts.
-				if (value == (1 << PSP_VBLANK_INTR)) {
+				// The Media Engine is also writing the value 0x00000020.
+				if (hasBit(value, PSP_VBLANK_INTR)) {
 					clearInterrupt(PSP_VBLANK_INTR);
-				} else if (value == (1 << PSP_MECODEC_INTR)) {
+					value = clearBit(value, PSP_VBLANK_INTR);
+				}
+				if (hasBit(value, PSP_MECODEC_INTR)) {
 					clearInterrupt(PSP_MECODEC_INTR);
-				} else {
+					value = clearBit(value, PSP_MECODEC_INTR);
+				}
+				if (hasBit(value, PSP_ATA_INTR)) {
+					clearInterrupt(PSP_ATA_INTR);
+					value = clearBit(value, PSP_ATA_INTR);
+				}
+				if (value != 0) {
 					super.write32(address, value);
 				}
 				break;
@@ -184,7 +195,7 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, value, this));
+			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
 		}
 	}
 

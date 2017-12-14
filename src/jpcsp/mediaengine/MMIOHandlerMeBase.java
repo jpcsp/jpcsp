@@ -16,33 +16,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.mediaengine;
 
-public class MMIOHandlerMe extends MMIOHandlerMeBase {
-	public MMIOHandlerMe(int baseAddress) {
+import jpcsp.Processor;
+import jpcsp.HLE.modules.sceMeCore;
+import jpcsp.memory.mmio.MMIOHandlerBase;
+
+public class MMIOHandlerMeBase extends MMIOHandlerBase {
+	public MMIOHandlerMeBase(int baseAddress) {
 		super(baseAddress);
+
+		log = sceMeCore.log;
 	}
 
 	@Override
-	public int read32(int address) {
-		int value;
-		switch (address - baseAddress) {
-			default: value = super.read32(address); break;
-		}
-
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", getPc() - 4, address, value));
-		}
-
-		return value;
-	}
-
-	@Override
-	public void write32(int address, int value) {
-		switch (address - baseAddress) {
-			default: super.write32(address, value); break;
-		}
-
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc() - 4, address, value, this));
-		}
+	protected Processor getProcessor() {
+		return MEProcessor.getInstance();
 	}
 }

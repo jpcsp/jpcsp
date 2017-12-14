@@ -1876,4 +1876,16 @@ public class Utilities {
 		s.append(hexDigits[(address >>   4) & 0xF]);
 		s.append(hexDigits[(address       ) & 0xF]);
     }
+
+    public static boolean hasBit(int value, int bit) {
+    	return (value & (1 << bit)) != 0;
+    }
+
+    public static int setBit(int value, int bit) {
+    	return value | (1 << bit);
+    }
+
+    public static int clearBit(int value, int bit) {
+    	return value & ~(1 << bit);
+    }
 }

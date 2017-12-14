@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import jpcsp.Emulator;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 
 public class MMIOHandlerTimer extends MMIOHandlerBase {
@@ -55,7 +54,7 @@ public class MMIOHandlerTimer extends MMIOHandlerBase {
 	@Override
 	public int read32(int address) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, this));
+			log.trace(String.format("0x%08X - read32(0x%08X) on %s", getPc(), address, this));
 		}
 
 		switch (address - baseAddress) {
@@ -80,7 +79,7 @@ public class MMIOHandlerTimer extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, value, this));
+			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
 		}
 	}
 

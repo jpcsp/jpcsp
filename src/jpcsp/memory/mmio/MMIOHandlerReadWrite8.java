@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import jpcsp.Emulator;
-
 public class MMIOHandlerReadWrite8 extends MMIOHandlerBase {
 	private final int[] memory;
 
@@ -30,7 +28,7 @@ public class MMIOHandlerReadWrite8 extends MMIOHandlerBase {
 	@Override
 	public int read8(int address) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read8(0x%08X) returning 0x%02X", Emulator.getProcessor().cpu.pc, address, memory[address - baseAddress]));
+			log.trace(String.format("0x%08X - read8(0x%08X) returning 0x%02X", getPc(), address, memory[address - baseAddress]));
 		}
 
 		return memory[address - baseAddress];
@@ -39,7 +37,7 @@ public class MMIOHandlerReadWrite8 extends MMIOHandlerBase {
 	@Override
 	public void write8(int address, byte value) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X)", Emulator.getProcessor().cpu.pc, address, value & 0xFF));
+			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X)", getPc(), address, value & 0xFF));
 		}
 
 		memory[address - baseAddress] = value & 0xFF;

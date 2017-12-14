@@ -39,7 +39,6 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
@@ -987,7 +986,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read16(0x%08X) returning 0x%04X", Emulator.getProcessor().cpu.pc, address, value));
+			log.trace(String.format("0x%08X - read16(0x%08X) returning 0x%04X", getPc(), address, value));
 		}
 
 		return value;
@@ -1003,7 +1002,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", Emulator.getProcessor().cpu.pc, address, value));
+			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", getPc(), address, value));
 		}
 
 		return value;
@@ -1027,7 +1026,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write16(0x%08X, 0x%04X) on %s", Emulator.getProcessor().cpu.pc, address, value & 0xFFFF, this));
+			log.trace(String.format("0x%08X - write16(0x%08X, 0x%04X) on %s", getPc(), address, value & 0xFFFF, this));
 		}
 	}
 
@@ -1040,7 +1039,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, value, this));
+			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
 		}
 	}
 
@@ -1052,7 +1051,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X) on %s", Emulator.getProcessor().cpu.pc, address, value & 0xFF, this));
+			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X) on %s", getPc(), address, value & 0xFF, this));
 		}
 	}
 }
