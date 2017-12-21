@@ -25,6 +25,8 @@ import static jpcsp.Allegrex.Common.COP0_STATE_ERROR_EPC;
 import static jpcsp.Allegrex.Common.COP0_STATE_SCCODE;
 import static jpcsp.Allegrex.Common.COP0_STATE_STATUS;
 
+import jpcsp.mediaengine.MEProcessor;
+
 /**
  * System Control Coprocessor 0
  *
@@ -117,5 +119,13 @@ public class Cp0State {
 
 	public int getCpuid() {
 		return getDataRegister(COP0_STATE_CPUID);
+	}
+
+	public boolean isMediaEngineCpu() {
+		return getCpuid() == MEProcessor.CPUID_ME;
+	}
+
+	public boolean isMainCpu() {
+		return !isMediaEngineCpu();
 	}
 }
