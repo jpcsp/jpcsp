@@ -11204,35 +11204,6 @@
 08865644:[66188BFD/FFFF00FF]: vhdp.q     S713.s, C230.q, C600.q
 ]]></CodeInstructions>
 	</NativeCodeSequence>
-	<NativeCodeSequence name="NPJH00126">
-		<Class>jpcsp.Allegrex.compiler.nativeCode.NPJH00126</Class>
-		<CodeInstructions><![CDATA[
-088D92C4:[F181A400]: VHTFM4.q   C000.q, E100.q, C010.q
-088D92C8:[64008381]: vmul.q     C010.q, C030.q, C000.q
-088D92CC:[DD0000FF]: VPFXT      [w, w, w, w]
-088D92D0:[6F00808C]: vsge.q     C300.q, C000.q, C000.q
-088D92D4:[DD0F00FF]: VPFXT      [-w, -w, -w, -w]
-088D92D8:[6F80808D]: vslt.q     C310.q, C000.q, C000.q
-088D92DC:[DD0000FF]: VPFXT      [w, w, w, w]
-088D92E0:[6F01818E]: vsge.q     C320.q, C010.q, C010.q
-088D92E4:[DD0F00FF]: VPFXT      [-w, -w, -w, -w]
-088D92E8:[6F81818F]: vslt.q     C330.q, C010.q, C010.q
-088D92EC:[6D108C08]: vmin.t     C200.t, C300.t, C400.t
-088D92F0:[6D118D09]: vmin.t     C210.t, C310.t, C410.t
-088D92F4:[6D928E0A]: vmax.t     C220.t, C320.t, C420.t
-088D92F8:[6D938F0B]: vmax.t     C230.t, C330.t, C430.t
-088D92FC:[6D148808]: vmin.t     C200.t, C200.t, C500.t
-088D9300:[6D158909]: vmin.t     C210.t, C210.t, C510.t
-088D9304:[6D968A0A]: vmax.t     C220.t, C220.t, C520.t
-088D9308:[6D978B0B]: vmax.t     C230.t, C230.t, C530.t
-088D930C:[6DA9A8A8]: vmax.q     R200.q, R200.q, R201.q
-088D9310:[6DAAA8A8]: vmax.q     R200.q, R200.q, R202.q
-088D9314:[F3809094]: VMMOV.q    M500.q, M400.q
-088D9318:[F3808C90]: VMMOV.q    M400.q, M300.q
-088D931C:[D03CA888]: vi2uc.q    S200.s, R200.q
-088D9320:[48680008]: mfv.s      $t0, S200.s
-]]></CodeInstructions>
-	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
