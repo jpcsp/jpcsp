@@ -212,7 +212,10 @@ public class PBP {
         dir.mkdir();
 
         for (int index = 0; index < TOTAL_FILES; index++) {
-            FileUtil.writeBytes(new File(PBP_UNPACK_PATH_PREFIX + pbp.getName(index)), pbp.getBytes(f, index));
+        	byte[] bytes = pbp.getBytes(f, index);
+        	if (bytes != null && bytes.length > 0) {
+        		FileUtil.writeBytes(new File(PBP_UNPACK_PATH_PREFIX + pbp.getName(index)), bytes);
+        	}
         }
     }
 }

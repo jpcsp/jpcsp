@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import jpcsp.Emulator;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660Directory;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660File;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660Handler;
+import jpcsp.format.PBP;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
@@ -72,6 +74,12 @@ public class UmdIsoReader implements IBrowser {
 	        if (header[0] == 'C' && header[1] == 'I' && header[2] == 'S' && header[3] == 'O') {
 	            sectorDevice = new CSOFileSectorDevice(fileReader, header);
 	        } else if (header[0] == 0 && header[1] == 'P' && header[2] == 'B' && header[3] == 'P') {
+	            // Dump unpacked PBP
+	            if (Settings.getInstance().readBool("emu.pbpunpack")) {
+	            	ByteBuffer f = Utilities.readAsByteBuffer(fileReader);
+	            	fileReader.seek(0);
+	                PBP.unpackPBP(f);
+	            }
 	        	sectorDevice = new PBPFileSectorDevice(fileReader);
 	        } else {
 	            sectorDevice = new ISOFileSectorDevice(fileReader);
