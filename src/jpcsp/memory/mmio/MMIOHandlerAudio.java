@@ -38,6 +38,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	private int interrupt;
 	private int flags04;
 	private int flags08;
+	private int inProgress;
 	private int flags10;
 	private int flags20;
 	private int flags24;
@@ -47,8 +48,8 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	private int frequency1;
 	private int frequencyFlags;
 	private int hardwareFrequency;
-	private final int audioData0[] = new int[16*4];
-	private final int audioData1[] = new int[16*4];
+	private final int audioData0[] = new int[24 + (256/4)];
+	private final int audioData1[] = new int[24 + (256/4)];
 	private int audioDataIndex0;
 	private int audioDataIndex1;
 
@@ -71,8 +72,8 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		}
 	}
 
-	private int sendAudioData(int index, int[] data, int interrupt) {
-		index += 4;
+	private int sendAudioData(int value, int index, int[] data, int interrupt) {
+		data[index++] = value;
 
 		if (index >= data.length) {
 			if (log.isDebugEnabled()) {
@@ -95,6 +96,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			}
 			index = 0;
 
+			inProgress &= ~interrupt;
 			this.interrupt |= interrupt;
 			checkInterrupt();
 		}
@@ -102,12 +104,25 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		return index;
 	}
 
+	private void setFlags08(int flags08) {
+		this.flags08 = flags08;
+
+		if ((flags08 & 0x1) == 0) {
+			audioDataIndex0 = 0;
+			inProgress |= 1;
+		}
+		if ((flags08 & 0x2) == 0) {
+			audioDataIndex1 = 0;
+			inProgress |= 2;
+		}
+	}
+
 	@Override
 	public int read32(int address) {
 		int value;
 		switch (address - baseAddress) {
 			case 0x00: value = busy; break;
-			case 0x0C: value = 0; break; // flags when some actions are in progress?
+			case 0x0C: value = inProgress; break;
 			case 0x1C: value = interrupt; break;
 			case 0x28: value = 0x37; break; // flags when some actions are completed?
 			case 0x50: value = 0; break; // This doesn't seem to return the volume value
@@ -126,7 +141,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		switch (address - baseAddress) {
 			case 0x00: busy = value; break;
 			case 0x04: flags04 = value; break;
-			case 0x08: flags08 = value; break;
+			case 0x08: setFlags08(value); break;
 			case 0x10: flags10 = value; break;
 			case 0x14: if (value != 0x1208) { super.write32(address, value); } break;
 			case 0x18: if (value != 0x0) { super.write32(address, value); } break;
@@ -138,14 +153,8 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			case 0x40: frequencyFlags = value; break;
 			case 0x44: hardwareFrequency = value; break;
 			case 0x50: volume = value; break;
-			case 0x60: audioData0[audioDataIndex0 + 0] = value; break;
-			case 0x64: audioData0[audioDataIndex0 + 1] = value; break;
-			case 0x68: audioData0[audioDataIndex0 + 2] = value; break;
-			case 0x6C: audioData0[audioDataIndex0 + 3] = value; audioDataIndex0 = sendAudioData(audioDataIndex0, audioData0, 1); break;
-			case 0x70: audioData1[audioDataIndex1 + 0] = value; break;
-			case 0x74: audioData1[audioDataIndex1 + 1] = value; break;
-			case 0x78: audioData1[audioDataIndex1 + 2] = value; break;
-			case 0x7C: audioData1[audioDataIndex1 + 3] = value; audioDataIndex1 = sendAudioData(audioDataIndex1, audioData1, 2); break;
+			case 0x60: audioDataIndex0 = sendAudioData(value, audioDataIndex0, audioData0, 1); break;
+			case 0x70: audioDataIndex1 = sendAudioData(value, audioDataIndex1, audioData1, 2); break;
 			default: super.write32(address, value); break;
 		}
 
@@ -156,6 +165,6 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 
 	@Override
 	public String toString() {
-		return String.format("busy=0x%X, flags04=0x%X, flags08=0x%X, flags10=0x%X, flags20=0x%X, flags24=0x%X, flags2C=0x%X, volume=0x%X, frequency0=0x%X, frequency1=0x%X, frequencyFlags=0x%X, hardwareFrequency=0x%X", busy, flags04, flags08, flags10, flags20, flags24, flags2C, volume, frequency0, frequency1, frequencyFlags, hardwareFrequency);
+		return String.format("busy=0x%X, interrupt=0x%X, flags04=0x%X, flags08=0x%X, inProgress=0x%X, flags10=0x%X, flags20=0x%X, flags24=0x%X, flags2C=0x%X, volume=0x%X, frequency0=0x%X, frequency1=0x%X, frequencyFlags=0x%X, hardwareFrequency=0x%X", busy, interrupt, flags04, flags08, inProgress, flags10, flags20, flags24, flags2C, volume, frequency0, frequency1, frequencyFlags, hardwareFrequency);
 	}
 }

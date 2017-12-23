@@ -16,10 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import jpcsp.Emulator;
 import jpcsp.HLE.modules.sceMeCore;
+import jpcsp.mediaengine.MEProcessor;
 
 public class MMIOHandlerMeCore extends MMIOHandlerBase {
 	public static Logger log = sceMeCore.log;
@@ -48,6 +49,7 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 		ME_CMD_AT3P_SETUP_CHANNEL(0x67, 5),
 		ME_CMD_AT3P_CHECK_UNK20(0x68, 2),
 		ME_CMD_AT3P_SET_UNK44(0x69, 2),
+		ME_CMD_AT3P_GET_INTERNAL_ERROR(0x6A, 2),
 		ME_CMD_AT3_CHECK_NEED_MEM(0x72, 3),
 		ME_CMD_MALLOC(0x180, 1),
 		ME_CMD_FREE(0x181, 1),
@@ -295,6 +297,18 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 //		RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MECODEC_INTR);
 //	}
 
+	private void writeCmd(int cmd) {
+		this.cmd = cmd;
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Starting cmd=0x%X(%s)", cmd, MECommand.getCommandName(cmd)));
+		}
+
+		if (cmd == MECommand.ME_CMD_AT3P_CHECK_NEED_MEM1.getCmd() && MEProcessor.log.isDebugEnabled()) {
+			MEProcessor.log.setLevel(Level.TRACE);
+		}
+	}
+
 	@Override
 	public int read32(int address) {
 		int value;
@@ -314,7 +328,7 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", Emulator.getProcessor().cpu.pc, address, value));
+			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", getPc(), address, value));
 		}
 
 		return value;
@@ -323,7 +337,7 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 	@Override
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
-			case 0x00: cmd = value; break;
+			case 0x00: writeCmd(value); break;
 			case 0x04: unknown = value; break;
 			case 0x08: parameters[0] = value; break;
 			case 0x0C: parameters[1] = value; break;
@@ -338,7 +352,7 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", Emulator.getProcessor().cpu.pc, address, value, this));
+			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
 		}
 	}
 

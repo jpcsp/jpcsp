@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.mediaengine;
 
+import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.HLE.modules.sceMeCore;
 import jpcsp.memory.mmio.MMIOHandlerBase;
@@ -30,5 +31,10 @@ public class MMIOHandlerMeBase extends MMIOHandlerBase {
 	@Override
 	protected Processor getProcessor() {
 		return MEProcessor.getInstance();
+	}
+
+	@Override
+	protected Memory getMemory() {
+		return MEProcessor.getInstance().getMEMemory();
 	}
 }

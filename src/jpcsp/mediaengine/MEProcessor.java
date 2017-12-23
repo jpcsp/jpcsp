@@ -30,6 +30,8 @@ import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.memory.mmio.MMIOHandlerInterruptMan;
+import jpcsp.util.Utilities;
 
 /**
  * The PSP Media Engine is very close to the PSP main CPU. It has the same instructions
@@ -50,6 +52,7 @@ import jpcsp.Allegrex.compiler.RuntimeContextLLE;
  *
  */
 public class MEProcessor extends Processor {
+	public static Logger log = Logger.getLogger("me");
 	public static final int CPUID_ME = 1;
 	private static MEProcessor instance;
 	private MEMemory meMemory;
@@ -68,8 +71,8 @@ public class MEProcessor extends Processor {
 	}
 
 	private MEProcessor() {
-		setLogger(Logger.getLogger("me"));
-		meMemory = new MEMemory(RuntimeContextLLE.getMMIO());
+		setLogger(log);
+		meMemory = new MEMemory(RuntimeContextLLE.getMMIO(), log);
 		cpu.setMemory(meMemory);
 
 		// CPUID is 1 for the ME
@@ -123,7 +126,7 @@ public class MEProcessor extends Processor {
 			log.debug(String.format("MEProcessor.halt: pendingInterruptIPbits=0x%X, isInterruptExecutionAllowed=%b, status=0x%X, pc=0x%08X", pendingInterruptIPbits, isInterruptExecutionAllowed(), cp0.getStatus(), cpu.pc));
 		}
 
-		if (pendingInterruptIPbits == 0) {
+		if (pendingInterruptIPbits == 0 && !MMIOHandlerInterruptMan.getInstance(this).doTriggerException()) {
 			halt = true;
 		}
 	}
@@ -312,6 +315,7 @@ public class MEProcessor extends Processor {
 	private void normalRun() {
 		int count = 0;
 		long start = Emulator.getClock().currentTimeMillis();
+		final boolean hasMemoryInt = RuntimeContext.hasMemoryInt();
 
 		while (!halt && !Emulator.pause) {
 			if (pendingInterruptIPbits != 0) {
@@ -322,8 +326,14 @@ public class MEProcessor extends Processor {
 			count++;
 
 			int pc = cpu.pc & Memory.addressMask;
-			if (pc >= optimizedRunStart && pc < optimizedRunEnd) {
+			if (hasMemoryInt && pc >= optimizedRunStart && pc < optimizedRunEnd) {
 				break;
+			}
+
+			if (cpu.pc == 0x883000E0 && log.isDebugEnabled()) {
+				log.debug(String.format("Initial ME memory content from meimg.img:"));
+				log.debug(Utilities.getMemoryDump(meMemory, 0x00101000, cpu._v0));
+				log.setLevel(Level.TRACE);
 			}
 		}
 
@@ -343,9 +353,11 @@ public class MEProcessor extends Processor {
 			log.debug(String.format("MEProcessor starting run: halt=%b, pendingInterruptIPbits=0x%X, pc=0x%08X", halt, pendingInterruptIPbits, cpu.pc));
 		}
 
+		final boolean hasMemoryInt = RuntimeContext.hasMemoryInt();
+
 		while (!halt && !Emulator.pause) {
 			int pc = cpu.pc & Memory.addressMask;
-			if (pc >= optimizedRunStart && pc < optimizedRunEnd) {
+			if (hasMemoryInt && pc >= optimizedRunStart && pc < optimizedRunEnd) {
 				optimizedRun();
 			} else {
 				normalRun();

@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.mediaengine;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Memory;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerReadWrite;
@@ -34,7 +36,7 @@ public class MEMemory extends MMIO {
 	public static final int END_ME_RAM = 0x001FFFFF;
 	public static final int SIZE_ME_RAM = END_ME_RAM - START_ME_RAM + 1;
 
-	public MEMemory(Memory mem) {
+	public MEMemory(Memory mem, Logger log) {
 		super(mem);
 
 		MMIOHandlerReadWrite handler = new MMIOHandlerReadWrite(START_ME_RAM, SIZE_ME_RAM);
@@ -42,19 +44,22 @@ public class MEMemory extends MMIO {
 		addHandler(START_ME_RAM, SIZE_ME_RAM, handler);
 
 		// The same memory is also visible at address range 0x40000000-0x401FFFFF
-		addHandler(handler, 0x40000000);
+		addHandler(handler, 0x40000000, log);
 
 		// The same memory is also visible at address range 0x80000000-0x801FFFFF
-		addHandler(handler, 0x80000000);
+		addHandler(handler, 0x80000000, log);
 
 		// The same memory is also visible at address range 0xA0000000-0xA01FFFFF
-		addHandler(handler, 0xA0000000);
+		addHandler(handler, 0xA0000000, log);
 
 		// This address range is not the VRAM, but probably some unknown MMIO
-		addHandler(0x44000000, 0x100000, new MMIOHandlerMe(0x44000000));
+		addHandler(0x44000000, 0x200000, new MMIOHandlerMeBase(0x44000000));
+//		addHandler(0x44000000, 0x100000, new MMIOHandlerMe(0x44000000));
+		addHandler(0x440FF000, 0x2C, new MMIOHandlerMe0FF000(0x440FF000));
+		addHandler(0x44100000, 0x40, new MMIOHandlerMeDecoderQuSpectra(0x44100000));
 	}
 
-	private void addHandler(MMIOHandlerReadWrite handler, int address) {
+	private void addHandler(MMIOHandlerReadWrite handler, int address, Logger log) {
 		MMIOHandlerReadWrite handler2 = new MMIOHandlerReadWrite(START_ME_RAM | address, SIZE_ME_RAM, handler.getInternalMemory());
 		handler2.setLogger(log);
 		addHandler(START_ME_RAM | address, SIZE_ME_RAM, handler2);

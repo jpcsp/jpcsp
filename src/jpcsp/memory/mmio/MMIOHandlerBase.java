@@ -31,7 +31,7 @@ public class MMIOHandlerBase implements IMMIOHandler {
 		this.baseAddress = baseAddress;
 	}
 
-	protected static Memory getMemory() {
+	protected Memory getMemory() {
 		return RuntimeContextLLE.getMMIO();
 	}
 
