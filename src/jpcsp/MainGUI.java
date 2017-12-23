@@ -70,6 +70,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.HLE.modules.reboot;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.filesystems.SeekableDataInput;
@@ -1524,19 +1525,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             long size = raf.length();
             // Do not try to map very large files, this would raise on OutOfMemory exception.
             if (size > 1 * 1024 * 1024) {
-                byte[] bytes = new byte[(int) size];
-                int offset = 0;
-                // Read large files by chunks.
-                while (offset < bytes.length) {
-                    int len = raf.read(bytes, offset, Math.min(10 * 1024, bytes.length - offset));
-                    if (len < 0) {
-                        break;
-                    }
-                    if (len > 0) {
-                        offset += len;
-                    }
-                }
-                readbuffer = ByteBuffer.wrap(bytes, 0, offset);
+            	readbuffer = Utilities.readAsByteBuffer(raf);
             } else {
                 roChannel = raf.getChannel();
                 readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int) roChannel.size());
@@ -2259,7 +2248,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
         logConfigurationSettings();
 
-        logDirectory("flash0");
+        logDirectory(Settings.getInstance().getDirectoryMapping("flash0"));
     }
 
     private void logStartIso(UmdIsoReader iso) {
@@ -2865,7 +2854,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 break;
             }
 
-            if (!ignorePSPGame || !(umdPath.equals("ms0\\PSP\\GAME") || umdPath.equals("ms0/PSP/GAME"))) {
+            if (!ignorePSPGame || !(umdPath.equals("ms0\\PSP\\GAME") || umdPath.equals(Settings.getInstance().getDirectoryMapping("ms0") + "PSP/GAME"))) {
             	umdPaths.add(new File(umdPath + "/"));
             }
         }
@@ -2959,10 +2948,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 HTTPServer.processProxyRequestLocally = true;
 
                 if (!Modules.rebootModule.loadAndRun()) {
-                    loadFile(new File("flash0/vsh/module/vshmain.prx"), true);
+                    loadFile(new File(Settings.getInstance().getDirectoryMapping("flash0") + "vsh/module/vshmain.prx"), true);
                 }
 
-                Modules.IoFileMgrForUserModule.setfilepath("ms0/PSP/GAME");
+                Modules.IoFileMgrForUserModule.setfilepath(Settings.getInstance().getDirectoryMapping("ms0") + "PSP/GAME");
 
             	// Start VSH with the lowest priority so that the initialization of the other
             	// modules can be completed.
@@ -2977,6 +2966,31 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_VAUDIO");
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_ATRAC3PLUS");
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_AVCODEC");
+            } else if (args[i].equals("--reboot")) {
+            	reboot.enableReboot = true;
+            	logStart();
+	            setTitle(MetaInformation.FULL_NAME + " - reboot");
+                Modules.sceDisplayModule.setCalledFromCommandLine();
+                HTTPServer.processProxyRequestLocally = true;
+
+                if (!Modules.rebootModule.loadAndRun()) {
+                	log.error(String.format("Cannot reboot - missing files"));
+                }
+            } else if (args[i].matches("--flash[0-2]") || args[i].matches("--ms[0]") || args[i].matches("--exdata[0]")) {
+            	String directoryName = args[i].substring(2);
+            	i++;
+            	if (i < args.length) {
+            		String mappedDirectoryName = args[i];
+            		// The mapped directory name must end with "/"
+            		if (!mappedDirectoryName.endsWith("/")) {
+            			mappedDirectoryName += "/";
+            		}
+            		Settings.getInstance().setDirectoryMapping(directoryName, mappedDirectoryName);
+            		log.info(String.format("Mapping '%s' to directory '%s'", directoryName, mappedDirectoryName));
+            	} else {
+            		printUsage();
+            		break;
+            	}
             } else {
                 printUsage();
                 break;

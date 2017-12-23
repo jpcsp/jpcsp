@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.net.InetAddress;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -899,6 +900,13 @@ public class Utilities {
 
     	// Convenience function using default step and bytesPerLine
         return getMemoryDump(address, length, 1, 16);
+    }
+
+    public static String getMemoryDump(Memory mem, int address, int length) {
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, address, length, 1);
+    	IMemoryReader charReader = MemoryReader.getMemoryReader(mem, address, length, 1);
+
+    	return getMemoryDump(address, length, 1, 16, memoryReader, charReader);
     }
 
     public static String getMemoryDump(int address, int length, int step, int bytesPerLine) {
@@ -1887,5 +1895,22 @@ public class Utilities {
 
     public static int clearBit(int value, int bit) {
     	return value & ~(1 << bit);
+    }
+
+    public static ByteBuffer readAsByteBuffer(RandomAccessFile raf) throws IOException {
+        byte[] bytes = new byte[(int) raf.length()];
+        int offset = 0;
+        // Read large files by chunks.
+        while (offset < bytes.length) {
+            int len = raf.read(bytes, offset, Math.min(10 * 1024, bytes.length - offset));
+            if (len < 0) {
+                break;
+            }
+            if (len > 0) {
+                offset += len;
+            }
+        }
+
+        return ByteBuffer.wrap(bytes, 0, offset);
     }
 }

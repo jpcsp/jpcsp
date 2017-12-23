@@ -37,12 +37,13 @@ import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
+import jpcsp.settings.Settings;
 
 public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 	public static final String PSP_GAME = "PSP/GAME";
 	private static final String EBOOT_PBP = "EBOOT.PBP";
 	private static final String DOCUMENT_DAT = "DOCUMENT.DAT";
-	private static final String ISO_DIR = "ms0/ISO";
+	private static final String ISO_DIR = Settings.getInstance().getDirectoryMapping("ms0") + "ISO";
 	private IVirtualFileSystem vfs;
 	private File[] umdPaths;
 	private Map<String, IVirtualFileSystem> umdVfs;

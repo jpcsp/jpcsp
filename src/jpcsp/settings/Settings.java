@@ -60,6 +60,7 @@ public class Settings {
     private HashMap<String, List<ISettingsListener>> listenersByKey;
     private List<SettingsListenerInfo> allListeners;
     private boolean useUmdIdForDiscDirectory;
+    private Map<String, String> directoryMapping;
 
     public static Settings getInstance() {
         if (instance == null) {
@@ -73,6 +74,7 @@ public class Settings {
         allListeners = new LinkedList<SettingsListenerInfo>();
         defaultSettings = new Properties();
         patchSettings = new Properties();
+        directoryMapping = new HashMap<String, String>();
         InputStream defaultSettingsStream = null;
         InputStream loadedSettingsStream = null;
         try {
@@ -93,6 +95,11 @@ public class Settings {
             Emulator.log.error("Could not initialize properly Jpcsp, try to install jpcsp directly under C:\\jpcsp", e);
         } finally {
             Utilities.close(defaultSettingsStream, loadedSettingsStream);
+        }
+
+        // Set default directory mappings
+        for (String directoryName : new String[] { "flash0", "flash1", "flash2", "ms0", "exdata0" }) {
+        	setDirectoryMapping(directoryName, readString(directoryName, directoryName + "/"));
         }
     }
 
@@ -828,5 +835,13 @@ public class Settings {
                 listener.settingsValueChanged(key, value);
             }
         }
+    }
+
+    public void setDirectoryMapping(String directoryName, String mappedDirectoryName) {
+    	directoryMapping.put(directoryName, mappedDirectoryName);
+    }
+
+    public String getDirectoryMapping(String directoryName) {
+    	return directoryMapping.get(directoryName);
     }
 }

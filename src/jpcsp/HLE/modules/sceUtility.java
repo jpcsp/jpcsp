@@ -2148,7 +2148,7 @@ public class sceUtility extends HLEModule {
 
             if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && !screenshotParams.isContModeAuto() && !screenshotParams.isContModeFinish() && Memory.isAddressGood(screenshotParams.imgFrameBufAddr)) {
             	Buffer buffer = Memory.getInstance().getBuffer(screenshotParams.imgFrameBufAddr, screenshotParams.imgFrameBufWidth * screenshotParams.displayHeigth * IRenderingEngine.sizeOfTextureType[screenshotParams.imgPixelFormat]);
-            	String directoyName = String.format("ms0/PSP/SCREENSHOT/%s/", screenshotParams.screenshotID);
+            	String directoyName = String.format(Settings.getInstance().getDirectoryMapping("ms0") + "PSP/SCREENSHOT/%s/", screenshotParams.screenshotID);
             	new File(directoyName).mkdirs();
             	String fileName = null;
             	String fileSuffix = screenshotParams.imgFormat == PSP_UTILITY_SCREENSHOT_FORMAT_JPEG ? "jpeg" : "png";

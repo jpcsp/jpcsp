@@ -32,6 +32,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceKernelLoadExecVSHParam;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -94,7 +95,7 @@ public class LoadExecForKernel extends HLEModule {
     		} else if (arg.startsWith("ms0:")) {
     	    	int dirIndex = arg.lastIndexOf('/');
     	    	if (dirIndex >= 0) {
-    	    		Modules.IoFileMgrForUserModule.setfilepath("ms0/" + arg.substring(4, dirIndex));
+    	    		Modules.IoFileMgrForUserModule.setfilepath(Settings.getInstance().getDirectoryMapping("ms0") + arg.substring(4, dirIndex));
     	    	}
     		}
     	}

@@ -100,6 +100,7 @@ import jpcsp.hardware.MemoryStick;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -648,11 +649,11 @@ public class IoFileMgrForUser extends HLEModule {
     	if (vfsManager == null) {
             vfsManager = new VirtualFileSystemManager();
     	}
-        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/", true));
-        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/", true));
-        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/", false));
-        vfsManager.register("flash1", new LocalVirtualFileSystem("flash1/", false));
-        vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/", false));
+        vfsManager.register("ms0", new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("ms0"), true));
+        vfsManager.register("fatms0", new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("ms0"), true));
+        vfsManager.register("flash0", new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false));
+        vfsManager.register("flash1", new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false));
+        vfsManager.register("exdata0", new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("exdata0"), false));
         vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
         vfsManager.register("msstor0p1", new MemoryStickStorageVirtualFileSystem());
         vfsManager.register("msstor0", new MemoryStickStorageVirtualFileSystem());
@@ -795,7 +796,7 @@ public class IoFileMgrForUser extends HLEModule {
     	}
     	absoluteFileName += fileName;
     	absoluteFileName = absoluteFileName.replaceFirst("^disc0/", "disc0:");
-    	absoluteFileName = absoluteFileName.replaceFirst("^ms0/", "ms0:");
+    	absoluteFileName = absoluteFileName.replaceFirst("^" + Settings.getInstance().getDirectoryMapping("ms0"), "ms0:");
 
     	return absoluteFileName;
     }
@@ -811,16 +812,16 @@ public class IoFileMgrForUser extends HLEModule {
 
         if (pspfilename.startsWith("flash0:")) {
         	if (pspfilename.startsWith("flash0:/")) {
-        		return pspfilename.replace("flash0:", "flash0");
+        		return pspfilename.replace("flash0:/", Settings.getInstance().getDirectoryMapping("flash0"));
         	}
-        	return pspfilename.replace("flash0:", "flash0/");
+        	return pspfilename.replace("flash0:", Settings.getInstance().getDirectoryMapping("flash0"));
         }
 
         if (pspfilename.startsWith("exdata0:")) {
         	if (pspfilename.startsWith("exdata0:/")) {
-        		return pspfilename.replace("exdata0:", "exdata0");
+        		return pspfilename.replace("exdata0:/", Settings.getInstance().getDirectoryMapping("exdata0"));
         	}
-        	return pspfilename.replace("exdata0:", "exdata0/");
+        	return pspfilename.replace("exdata0:", Settings.getInstance().getDirectoryMapping("exdata0"));
         }
 
         if (host0Path != null && pspfilename.startsWith("host0:") && !pspfilename.startsWith("host0:/")) {
@@ -896,7 +897,10 @@ public class IoFileMgrForUser extends HLEModule {
         // convert device to lower case here for case sensitive file systems (linux) and also for isUmdPath and trimUmdPrefix regex
         // - GTA: LCS uses upper case device DISC0
         // - The Fast and the Furious uses upper case device DISC0
-        filename = device.toLowerCase();
+        filename = Settings.getInstance().getDirectoryMapping(device.toLowerCase());
+        if (filename == null) {
+        	filename = device.toLowerCase();
+        }
         if (cwd.length() > 0) {
             filename += "/" + cwd;
         }

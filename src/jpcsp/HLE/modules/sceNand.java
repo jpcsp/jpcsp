@@ -47,6 +47,7 @@ import jpcsp.HLE.VFS.fat.Fat12VirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.patch.PatchFileVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceNandSpare;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 public class sceNand extends HLEModule {
@@ -667,7 +668,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 		    			readMasterBootRecord2(user);
 		    		} else if (ppnToLbn[ppn + i] >= 0x3 && ppnToLbn[ppn + i] < 0x602) {
 		    			if (vFile3 == null) {
-		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem("flash0/", false);
+		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
 
 		    				// Apply patches for some files as required
 		    				vfs = new PatchFileVirtualFileSystem(vfs);
@@ -685,7 +686,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 		    			readMasterBootRecord602(user);
 		    		} else if (ppnToLbn[ppn + i] >= 0x603 && ppnToLbn[ppn + i] < 0x702) {
 		    			if (vFile603 == null) {
-		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem("flash1/", false);
+		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
 		    				vFile603 = new Fat12VirtualFile("flash1:", vfs, 0x1FE0);
 		    				vFile603.scan();
 		    			}
@@ -695,7 +696,7 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 		    			readMasterBootRecord702(user);
 		    		} else if (ppnToLbn[ppn + i] >= 0x703 && ppnToLbn[ppn + i] < 0x742) {
 		    			if (vFile703 == null) {
-		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem("flash2/", false);
+		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
 		    				vFile703 = new Fat12VirtualFile("flash2:", vfs, 0x7E0);
 		    				vFile703.scan();
 		    			}

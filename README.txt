@@ -318,8 +318,40 @@ Available <OPTIONS>:
                              Only required when running 2 Jpcsp instances on the same computer.
   --netServerPortShift N     Increase Network server ports by N (e.g. N = 100).
                              Only required when running 2 Jpcsp instances on the same computer.
-
-
+  --flash0 DIRECTORY         Use the given directory name for the PSP flash0:  device, instead of "flash0/"  by default.
+  --flash1 DIRECTORY         Use the given directory name for the PSP flash1:  device, instead of "flash1/"  by default.
+  --flash2 DIRECTORY         Use the given directory name for the PSP flash2:  device, instead of "flash2/"  by default.
+  --ms0 DIRECTORY            Use the given directory name for the PSP ms0:     device, instead of "ms0/"     by default.
+  --exdata0 DIRECTORY        Use the given directory name for the PSP exdata0: device, instead of "exdata0/" by default.
+  --vsh                      Run the PSP VSH. The following files need to be decrypted on a real PSP using PSARDUMP.
+                             Do not copy other files, they are not yet supported, only those listed here:
+                               flash0/kd/mgr.prx
+                               flash0/kd/mgvideo.prx
+                               flash0/kd/mlnbridge.prx
+                               flash0/kd/mlnbridge_msapp.prx
+                               flash0/kd/mp4msv.prx
+                               flash0/kd/np.prx
+                               flash0/kd/np_auth.prx
+                               flash0/kd/np_campaign.prx
+                               flash0/kd/np_commerce2.prx
+                               flash0/kd/np_commerce2_regcam.prx
+                               flash0/kd/np_commerce2_store.prx
+                               flash0/kd/np_core.prx
+                               flash0/kd/np_inst.prx
+                               flash0/kd/np_matching2.prx
+                               flash0/kd/np_service.prx
+                               flash0/kd/vshbridge.prx
+                               flash0/codepage/cptbl.dat
+                               flash0/vsh/etc/*
+                               flash0/vsh/module/*
+                               flash0/vsh/resource/* 
+  --reboot                   Run a low-level emulation of the complete PSP reboot process. Still experimental.
+                             The following files need to be decrypted on a real PSP using PSARDUMP:
+                               flash0/*
+                               flash1/*
+                               flash2/*
+                             The following file need to be decrypted on a real PSP using JpcspTrace:
+                               flash0/kd/resource/meimg.img
 
 
 5. Requirements:

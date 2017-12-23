@@ -22,6 +22,7 @@ import java.util.HashMap;
 
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.xmb.XmbVirtualFileSystem;
+import jpcsp.settings.Settings;
 
 public class VirtualFileSystemManager {
 	protected HashMap<String, IVirtualFileSystem> virtualFileSystems = new HashMap<String, IVirtualFileSystem>();
@@ -54,7 +55,7 @@ public class VirtualFileSystemManager {
 
 			if ("ms0".equals(name) && localFileName.toString().startsWith(PSP_GAME)) {
 				if (xmbVfs == null) {
-					xmbVfs = new XmbVirtualFileSystem(new LocalVirtualFileSystem("ms0/", true));
+					xmbVfs = new XmbVirtualFileSystem(new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("ms0"), true));
 				}
 				return xmbVfs;
 			}

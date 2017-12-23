@@ -48,7 +48,7 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
 	public final static int ERROR_SAVEDATA_CANCELLED = 1;
 
 	public final static String savedataPath = "ms0:/PSP/SAVEDATA/";
-    public final static String savedataFilePath = "ms0/PSP/SAVEDATA/";
+    public final static String savedataFilePath = Settings.getInstance().getDirectoryMapping("ms0") + "PSP/SAVEDATA/";
     public final static String icon0FileName = "ICON0.PNG";
     public final static String icon1PNGFileName = "ICON1.PNG";
     public final static String icon1PMFFileName = "ICON1.PMF";

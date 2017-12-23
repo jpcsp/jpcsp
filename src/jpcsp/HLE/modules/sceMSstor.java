@@ -52,6 +52,7 @@ import jpcsp.HLE.kernel.types.pspIoDrvArg;
 import jpcsp.HLE.kernel.types.pspIoDrvFileArg;
 import jpcsp.HLE.kernel.types.pspIoDrvFuncs;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 public class sceMSstor extends HLEModule {
@@ -411,7 +412,7 @@ public class sceMSstor extends HLEModule {
     }
 
     public void hleInit() {
-		IVirtualFileSystem vfs = new LocalVirtualFileSystem("ms0/", true);
+		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("ms0"), true);
 		vFile = new Fat32VirtualFile("ms0:", vfs);
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("installDrivers vFile=%s", vFile));
