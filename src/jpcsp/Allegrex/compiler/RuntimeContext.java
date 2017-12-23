@@ -1563,11 +1563,8 @@ public class RuntimeContext {
     	if (reboot.enableReboot) {
     		// This playground implementation is related to the investigation
     		// for the reboot process (flash0:/reboot.bin).
-    		if (processor.cp0.getCpuid() == MEProcessor.CPUID_ME) {
-    			log.error(String.format("0x%08X - halt on ME", processor.cpu.pc));
-    			if (processor instanceof MEProcessor) {
-    				((MEProcessor) processor).halt();
-    			}
+    		if (processor.cp0.isMediaEngineCpu()) {
+				((MEProcessor) processor).halt();
     		} else {
     			if (log.isDebugEnabled()) {
     				log.debug(String.format("Allegrex halt pendingInterruptIPbits=0x%X", RuntimeContextLLE.pendingInterruptIPbits));

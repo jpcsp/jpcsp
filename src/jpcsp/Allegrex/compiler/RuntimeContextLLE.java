@@ -96,10 +96,12 @@ public class RuntimeContextLLE {
 			return;
 		}
 
-		pendingInterruptIPbits |= IPbits;
+		if (processor.cp0.isMainCpu()) {
+			pendingInterruptIPbits |= IPbits;
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("triggerInterruptException IPbits=0x%X, pendingInterruptIPbits=0x%X", IPbits, pendingInterruptIPbits));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("triggerInterruptException IPbits=0x%X, pendingInterruptIPbits=0x%X", IPbits, pendingInterruptIPbits));
+			}
 		}
 	}
 

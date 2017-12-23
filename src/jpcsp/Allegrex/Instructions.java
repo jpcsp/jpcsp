@@ -10327,7 +10327,7 @@ public final String category() { return "ME"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	if (processor.cp0.getCpuid() != MEProcessor.CPUID_ME) {
+	if (processor.cp0.isMainCpu()) {
 		processor.cpu.doUNK(String.format("Unsupported dbreak instruction on the main processor: 0x%08X: [0x%08X]", processor.cpu.pc, insn));
 	} else {
 		processor.cpu.pc = 0xBFC01000;
@@ -10354,7 +10354,7 @@ public final String category() { return "ME"; }
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rt = (insn>>16)&31;
-	if (processor.cp0.getCpuid() != MEProcessor.CPUID_ME) {
+	if (processor.cp0.isMainCpu()) {
 		processor.cpu.doUNK(String.format("Unsupported mtvme instruction on the main processor: 0x%08X: [0x%08X]", processor.cpu.pc, insn));
 	} else if (processor instanceof MEProcessor) {
 		((MEProcessor) processor).setVmeRegister(imm16, processor.cpu.getRegister(rt));
@@ -10385,7 +10385,7 @@ public final String category() { return "ME"; }
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rt = (insn>>16)&31;
-	if (processor.cp0.getCpuid() != MEProcessor.CPUID_ME) {
+	if (processor.cp0.isMainCpu()) {
 		processor.cpu.doUNK(String.format("Unsupported mfvme instruction on the main processor: 0x%08X: [0x%08X]", processor.cpu.pc, insn));
 	} else if (processor instanceof MEProcessor) {
 		processor.cpu.setRegister(rt, ((MEProcessor) processor).getVmeRegister(imm16));

@@ -43,6 +43,7 @@ import jpcsp.HLE.modules.sceAudiocodec;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
+import jpcsp.util.LWJGLFixer;
 import jpcsp.util.Utilities;
 
 import com.twilight.h264.decoder.AVFrame;
@@ -71,6 +72,7 @@ public class PSMFPlayer implements Runnable {
 	private int totalNumberOfFrames;
 
 	public static void main(String[] args) {
+        LWJGLFixer.fixOnce();
 		new PSMFPlayer(args);
 	}
 

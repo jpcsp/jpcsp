@@ -19,9 +19,11 @@ package jpcsp.test;
 import org.apache.log4j.xml.DOMConfigurator;
 
 import jpcsp.graphics.RE.externalge.NativeUtils;
+import jpcsp.util.LWJGLFixer;
 
 public class ExternalGETests {
 	public static void main(String[] args) {
+        LWJGLFixer.fixOnce();
         DOMConfigurator.configure("LogSettings.xml");
 		NativeUtils.init();
 		NativeUtils.setLogLevel();
