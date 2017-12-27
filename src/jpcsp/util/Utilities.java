@@ -315,6 +315,20 @@ public class Utilities {
         return getUnsignedByte(buf) | (getUnsignedByte(buf) << 8) | (getUnsignedByte(buf) << 16) | (getUnsignedByte(buf) << 24);
     }
 
+    public static int read8(IVirtualFile vFile) throws IOException {
+    	byte[] buffer = new byte[1];
+    	int result = vFile.ioRead(buffer, 0, buffer.length);
+    	if (result < buffer.length) {
+    		return 0;
+    	}
+
+    	return buffer[0] & 0xFF;
+    }
+
+    public static int read32(IVirtualFile vFile) throws IOException {
+    	return read8(vFile) | (read8(vFile) << 8) | (read8(vFile) << 16) | (read8(vFile) << 24);
+    }
+
     public static void writeWord(ByteBuffer buf, int value) {
         putUnsignedByte(buf, value >> 0);
         putUnsignedByte(buf, value >> 8);

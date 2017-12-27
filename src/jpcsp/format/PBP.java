@@ -16,14 +16,18 @@
  */
 package jpcsp.format;
 
+import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.util.ByteUtil;
 import jpcsp.util.FileUtil;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import static jpcsp.util.Utilities.formatString;
+import static jpcsp.util.Utilities.read32;
 import static jpcsp.util.Utilities.readUWord;
 
 public class PBP {
@@ -98,6 +102,9 @@ public class PBP {
 
             info = toString();
         }
+    }
+
+    private PBP() {
     }
 
     public PSF readPSF(ByteBuffer f) throws IOException {
@@ -215,6 +222,52 @@ public class PBP {
         	byte[] bytes = pbp.getBytes(f, index);
         	if (bytes != null && bytes.length > 0) {
         		FileUtil.writeBytes(new File(PBP_UNPACK_PATH_PREFIX + pbp.getName(index)), bytes);
+        	}
+        }
+    }
+
+    /**
+     * Unpack a PBP file, avoiding to consume too much memory
+     * (i.e. not reading each section completely in memory).
+     * 
+     * @param vFile        the PBP file
+     * @throws IOException
+     */
+    public static void unpackPBP(IVirtualFile vFile) throws IOException {
+    	vFile.ioLseek(0L);
+    	PBP pbp = new PBP();
+    	pbp.size_pbp = (int) vFile.length();
+    	pbp.p_magic = read32(vFile);
+    	if (!pbp.isValid()) {
+    		return;
+    	}
+    	pbp.p_version = read32(vFile);
+        pbp.p_offsets = new int[] { read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), read32(vFile), pbp.size_pbp };
+
+        File dir = new File(PBP_UNPACK_PATH_PREFIX);
+        deleteDir(dir); //delete all files and directory
+        dir.mkdir();
+
+        final byte[] buffer = new byte[10 * 1024];
+        for (int index = 0; index < TOTAL_FILES; index++) {
+        	int size = pbp.getSize(index);
+        	if (size > 0) {
+        		long offset = pbp.getOffset(index) & 0xFFFFFFFFL;
+        		if (vFile.ioLseek(offset) == offset) {
+            		OutputStream os = new FileOutputStream(new File(PBP_UNPACK_PATH_PREFIX + pbp.getName(index)));
+	        		while (size > 0) {
+	        			int length = Math.min(size, buffer.length);
+	        			int readLength = vFile.ioRead(buffer, 0, length);
+	        			if (readLength > 0) {
+	        				os.write(buffer, 0, readLength);
+	        				size -= readLength;
+	        			}
+	        			if (readLength != length) {
+	        				break;
+	        			}
+	        		}
+	        		os.close();
+        		}
         	}
         }
     }
