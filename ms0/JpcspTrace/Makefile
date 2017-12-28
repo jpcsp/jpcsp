@@ -1,5 +1,5 @@
 TARGET = JpcspTrace
-OBJS = main.o common.o
+OBJS = main.o common.o sceWmd.o
 
 INCDIR = ../../../procfw/include
 LIBDIR = ../../../procfw/libs

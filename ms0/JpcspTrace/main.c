@@ -36,6 +36,9 @@ PSP_MODULE_INFO("JpcspTrace", PSP_MODULE_KERNEL, 1, 0);
 #define MAKE_SYSCALL(n) ((((n) & 0xFFFFF) << 6) | 0x0C)
 #define NOP 0
 
+#define LW(addr) (*((volatile u32*) (addr)))
+#define SW(value, addr) (*((volatile u32*) (addr)) = (value))
+
 #define SYSCALL_PLUGIN_NID	0xADB83469
 
 // ASM Redirect Patch
@@ -54,6 +57,7 @@ int callSyscallPluginOffset;
 int (* originalIoOpen)(const char *s, int flags, int permissions);
 int (* originalIoWrite)(SceUID id, const void *data, int size);
 int (* originalIoClose)(SceUID id);
+int sceWmd_driver_7A0E484C(void *, u32, u32 *);
 
 
 SyscallInfo *moduleSyscalls = NULL;
@@ -444,6 +448,48 @@ void dumpMemory(u32 startAddress, u32 length, const char *fileName) {
 	ioClose(fd);
 }
 
+void decryptMeimg(char *fromFileName, char *toFileName) {
+	SceUID me = ioOpen(fromFileName, PSP_O_RDONLY, 0777);
+	if (me < 0) {
+		printLog("Cannot open meimg.img file\n");
+		return;
+	}
+
+	u32 bufferSize = 349200;
+	u32 allocSize = bufferSize + 0x40;
+	void *allocBuffer = alloc(allocSize);
+	void *buffer = (void *) ((((u32) allocBuffer) + 0x3F) & ~0x3F);
+
+	int result = sceIoRead(me, buffer, bufferSize);
+	if (result < 0) {
+		printLog("Error reading meimg.img file\n");
+		freeAlloc(allocBuffer, allocSize);
+		return;
+	}
+
+	ioClose(me);
+
+	u32 newSize = 0;
+	result = sceWmd_driver_7A0E484C(buffer, bufferSize, &newSize);
+	if (result < 0) {
+		printLogH("Error ", result, " decrypting meimg.img\n");
+		freeAlloc(allocBuffer, allocSize);
+		return;
+	}
+
+	me = ioOpen(toFileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (me < 0) {
+		printLog("Cannot create decrypted meimg.img file\n");
+		freeAlloc(allocBuffer, allocSize);
+		return;
+	}
+	printLogH("meimg.img decrypted newSize=", newSize, "\n");
+	ioWrite(me, buffer, newSize);
+	ioClose(me);
+
+	freeAlloc(allocBuffer, allocSize);
+}
+
 int readChar(SceUID fd) {
 	char c;
 	int length = sceIoRead(fd, &c, 1);
@@ -539,6 +585,11 @@ void patchSyscalls(char *filePath) {
 			char *fileName = strParamTypes;
 
 			dumpMemory(startAddress, length, fileName);
+		} else if (strcmp(name, "DecryptMeimg") == 0) {
+			char *fromFileName = hexNid;
+			char *toFileName = hexNumParams;
+
+			decryptMeimg(fromFileName, toFileName);
 		} else {
 			u32 nid = parseHex(hexNid);
 			u32 numParams = parseHex(hexNumParams);
@@ -939,6 +990,15 @@ void dumpMemoryStick() {
 }
 #endif
 
+u32 nandDmaIntrOld = -1;
+void checkNandDma() {
+	u32 nandDmaIntr = LW(0xBD101038);
+	if (nandDmaIntr != nandDmaIntrOld) {
+		printLogH("nandDmaIntr=", nandDmaIntr, "\n");
+	}
+	nandDmaIntrOld = nandDmaIntr;
+}
+
 // Module Start
 int module_start(SceSize args, void * argp) {
 	// Find Allocator Functions in Memory
@@ -968,6 +1028,28 @@ int module_start(SceSize args, void * argp) {
 	openLogFile();
 
 	printLog("JpcspTrace - module_start\n");
+
+#if 0
+int intr = sceKernelCpuSuspendIntr();
+	checkNandDma();
+	SW(0x000, 0xBD101038);
+	checkNandDma();
+	SW(0x303, 0xBD101038);
+	checkNandDma();
+	SW(0x800 << 10, 0xBD101020);
+	SW(LW(0xBD101038) & 0xFEFC, 0xBD101038);
+	checkNandDma();
+	SW(0x301, 0xBD101024);
+	checkNandDma();
+	while (1) {
+		checkNandDma();
+		if ((((nandDmaIntrOld >> 8) & nandDmaIntrOld) & 0x3) != 0) {
+			printLog("Nand Dma completed\n");
+			break;
+		}
+	}
+sceKernelCpuResumeIntr(intr);
+#endif
 
 	#if DUMP_NAND
 	dumpNand();

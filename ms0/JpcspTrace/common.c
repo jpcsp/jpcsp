@@ -115,6 +115,12 @@ void *alloc(int size) {
 	return allocAddr;
 }
 
+void freeAlloc(void *buffer, int size) {
+	if (freeAddr + freeSize == buffer) {
+		freeSize += size;
+	}
+}
+
 char *append(char *dst, const char *src) {
 	while ((*dst = *src) != '\0') {
 		src++;

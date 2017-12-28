@@ -94,6 +94,7 @@ extern int (* ioWrite)(SceUID id, const void *data, int size);
 extern int (* ioClose)(SceUID id);
 
 void *alloc(int size);
+void freeAlloc(void *buffer, int size);
 char *append(char *dst, const char *src);
 char *appendHex(char *dst, u32 hex, int numDigits);
 char *appendInt(char *dst, s32 n, int numDigits);
