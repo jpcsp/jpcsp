@@ -774,7 +774,7 @@ public class NullRenderingEngine implements IRenderingEngine {
 	}
 
 	@Override
-	public boolean canNativeClut(int textureAddress, boolean textureSwizzle) {
+	public boolean canNativeClut(int textureAddress, int pixelFormat, boolean textureSwizzle) {
 		return false;
 	}
 

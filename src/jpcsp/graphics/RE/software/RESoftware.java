@@ -468,7 +468,7 @@ public class RESoftware extends NullRenderingEngine {
 	}
 
 	@Override
-	public boolean canNativeClut(int textureAddress, boolean textureSwizzle) {
+	public boolean canNativeClut(int textureAddress, int pixelFormat, boolean textureSwizzle) {
 		if (Memory.isVRAM(textureAddress) && !textureSwizzle) {
 			return true;
 		}

@@ -44,7 +44,8 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void exit() {
 		super.exit();
-		re.checkAndLogErrors("exit");
+		// Do not check the errors on exit as we don't have a valid OpenGL context in the current thread.
+		//re.checkAndLogErrors("exit");
 	}
 
 	@Override
@@ -1117,8 +1118,8 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public boolean canNativeClut(int textureAddress, boolean textureSwizzle) {
-		boolean value = super.canNativeClut(textureAddress, textureSwizzle);
+	public boolean canNativeClut(int textureAddress, int pixelFormat, boolean textureSwizzle) {
+		boolean value = super.canNativeClut(textureAddress, pixelFormat, textureSwizzle);
 		re.checkAndLogErrors("canNativeClut");
 		return value;
 	}

@@ -15,6 +15,8 @@
  */
 package jpcsp.graphics.RE;
 
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED;
 import static jpcsp.graphics.RE.DirectBufferUtilities.allocateDirectBuffer;
 import static jpcsp.graphics.RE.DirectBufferUtilities.copyBuffer;
 import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectBuffer;
@@ -22,6 +24,7 @@ import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectByteBuffer;
 import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectFloatBuffer;
 import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectIntBuffer;
 import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectShortBuffer;
+
 import jpcsp.graphics.VideoEngine;
 import jpcsp.plugins.XBRZNativeFilter;
 
@@ -426,6 +429,8 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
         GL11.GL_DEPTH_BUFFER_BIT, // RE_DEPTH_BUFFER_BIT
         GL11.GL_STENCIL_BUFFER_BIT // RE_STENCIL_BUFFER_BIT
     };
+    protected boolean vendorIntel;
+    protected boolean hasOpenGL30;
 
     public static String getVersion() {
         return GL11.glGetString(GL11.GL_VERSION);
@@ -453,7 +458,12 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     protected void init() {
         String openGLVersion = GL11.glGetString(GL11.GL_VERSION);
-        log.info("OpenGL version: " + openGLVersion);
+        String openGLVendor = GL11.glGetString(GL11.GL_VENDOR);
+        String openGLRenderer = GL11.glGetString(GL11.GL_RENDERER);
+        log.info(String.format("OpenGL version: %s, vender: %s, renderer: %s", openGLVersion, openGLVendor, openGLRenderer));
+
+        vendorIntel = "Intel".equalsIgnoreCase(openGLVendor);
+        hasOpenGL30 = GLContext.getCapabilities().OpenGL30;
 
         if (GLContext.getCapabilities().OpenGL20) {
             String shadingLanguageVersion = GL11.glGetString(GL20.GL_SHADING_LANGUAGE_VERSION);
@@ -1494,9 +1504,17 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     }
 
     @Override
-    public boolean canNativeClut(int textureAddress, boolean textureSwizzle) {
-        // Requires at least OpenGL 3.0
-        return GLContext.getCapabilities().OpenGL30;
+    public boolean canNativeClut(int textureAddress, int pixelFormat, boolean textureSwizzle) {
+    	if (vendorIntel) {
+    		// Intel driver: OpenGL texImage2D with GL_R8UI doesn't work. See the bug report:
+    		// https://software.intel.com/en-us/forums/graphics-driver-bug-reporting/topic/748843
+    		if (pixelFormat == TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED || pixelFormat == TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED) {
+    			return false;
+    		}
+    	}
+
+    	// Requires at least OpenGL 3.0
+    	return hasOpenGL30;
     }
 
     @Override

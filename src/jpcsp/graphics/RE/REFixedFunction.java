@@ -190,7 +190,7 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public boolean canNativeClut(int textureAddress, boolean textureSwizzle) {
+	public boolean canNativeClut(int textureAddress, int pixelFormat, boolean textureSwizzle) {
 		// Shaders are required for native clut
 		return false;
 	}
