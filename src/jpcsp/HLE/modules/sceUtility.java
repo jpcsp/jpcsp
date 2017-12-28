@@ -20,6 +20,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.Allegrex.Common._s1;
+import static jpcsp.HLE.VFS.local.LocalVirtualFileSystem.getMsFileName;
 import static jpcsp.HLE.kernel.types.SceUtilitySavedataParam.ERROR_SAVEDATA_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_JPEG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_PNG;
@@ -1624,8 +1625,8 @@ public class sceUtility extends HLEModule {
                                 stat.mtime.write(mem, entryAddr + 36);
                             }
                             String entryName = entries[i].substring(savedataParams.gameName.length());
-                            // File names are always returned in upper case
-                            entryName = entryName.toUpperCase();
+                            // File names are upper cased in some conditions
+                            entryName = getMsFileName(entryName);
                             Utilities.writeStringNZ(mem, entryAddr + 52, 20, entryName);
 
                             if (log.isDebugEnabled()) {
@@ -1667,8 +1668,8 @@ public class sceUtility extends HLEModule {
 
                         // List all files in the savedata (normal and/or encrypted).
                         for (int i = 0; i < maxNumEntries; i++) {
-                            // File names are always returned in upper case
-                            String entry = entries[i].toUpperCase();
+                            // File names are upper cased in some conditions
+                            String entry = getMsFileName(entries[i]);
                             String filePath = path + "/" + entry;
                             SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
 
