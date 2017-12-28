@@ -24,11 +24,11 @@ for /f "tokens=2* skip=2" %%a in ('reg query "%key%\%JAVA_VERSION%" /v JavaHome'
 
 set JAVA_CMD=%JAVA_HOME%\bin\java.exe
 if not exist "%JAVA_CMD%" set JAVA_CMD=%ProgramFiles(x86)%\Java\jre7\bin\java.exe
-if not exist "%JAVA_CMD%" goto JAVAMISSING
+if not exist "%JAVA_CMD%" goto JAVAMISSING
 
 :RUN
 echo Running Jpcsp 64bit...
-"%JAVA_CMD%" -Xmx1024m -Xss2m -XX:MaxPermSize=128m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-amd64 -jar bin/jpcsp.jar %*
+"%JAVA_CMD%" -Xmx1024m -Xss2m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-amd64 -jar bin/jpcsp.jar %*
 if ERRORLEVEL 1 goto PAUSE
 goto END
 

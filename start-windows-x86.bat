@@ -35,7 +35,7 @@ ver | findstr "5\.1\." > nul
 if %ERRORLEVEL% EQU 0 set MAX_MEM_SIZE=768m
 
 echo Running Jpcsp 32bit...
-"%JAVA_CMD%" -Xmx%MAX_MEM_SIZE% -Xss2m -XX:MaxPermSize=128m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-x86 -jar bin/jpcsp.jar %*
+"%JAVA_CMD%" -Xmx%MAX_MEM_SIZE% -Xss2m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-x86 -jar bin/jpcsp.jar %*
 if ERRORLEVEL 1 goto PAUSE
 goto END
 

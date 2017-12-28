@@ -33,7 +33,7 @@
 		<key>MainClass</key>
 		<string>jpcsp.MainGUI</string>
 		<key>JVMVersion</key>
-		<string>1.6+</string>
+		<string>1.8+</string>
 		<key>Arguments</key>
 		<string></string>
 		<key>ClassPath</key>
@@ -51,7 +51,6 @@
 		<array>
 			<string>-Xmx1024m</string>
 			<string>-Xss2m</string>
-			<string>-XX:MaxPermSize=128m</string>
 			<string>-XX:ReservedCodeCacheSize=64m</string>
 		</array>
 	</dict>
