@@ -323,6 +323,7 @@ Available <OPTIONS>:
   --flash2 DIRECTORY         Use the given directory name for the PSP flash2:  device, instead of "flash2/"  by default.
   --ms0 DIRECTORY            Use the given directory name for the PSP ms0:     device, instead of "ms0/"     by default.
   --exdata0 DIRECTORY        Use the given directory name for the PSP exdata0: device, instead of "exdata0/" by default.
+  --logsettings FILE         Use the given file for the log4j configuration, instead of "LogSettings.xml" by default.
   --vsh                      Run the PSP VSH. The following files need to be decrypted on a real PSP using PSARDUMP.
                              Do not copy other files, they are not yet supported, only those listed here:
                                flash0/kd/mgr.prx
