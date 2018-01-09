@@ -52,6 +52,7 @@ public class UmdIsoReader implements IBrowser {
     private int numSectors;
     private static boolean doIsoBuffering = false;
     private boolean hasJolietExtension;
+    private boolean isPBP;
 
     public UmdIsoReader(String umdFilename) throws IOException, FileNotFoundException {
     	init(umdFilename, doIsoBuffering);
@@ -62,6 +63,7 @@ public class UmdIsoReader implements IBrowser {
     }
 
     private void init(String umdFilename, boolean doIsoBuffering) throws IOException, FileNotFoundException {
+    	isPBP = false;
     	if (umdFilename == null && doIsoBuffering) {
     		sectorDevice = null;
     	} else {
@@ -75,11 +77,8 @@ public class UmdIsoReader implements IBrowser {
 	        if (header[0] == 'C' && header[1] == 'I' && header[2] == 'S' && header[3] == 'O') {
 	            sectorDevice = new CSOFileSectorDevice(fileReader, header);
 	        } else if (header[0] == 0 && header[1] == 'P' && header[2] == 'B' && header[3] == 'P') {
-	            // Dump unpacked PBP
-	            if (Settings.getInstance().readBool("emu.pbpunpack")) {
-	            	PBP.unpackPBP(new LocalVirtualFile(new SeekableRandomFile(umdFilename, "r")));
-	            }
 	        	sectorDevice = new PBPFileSectorDevice(fileReader);
+	        	isPBP = true;
 	        } else {
 	            sectorDevice = new ISOFileSectorDevice(fileReader);
 	        }
@@ -610,5 +609,9 @@ public class UmdIsoReader implements IBrowser {
 			return browser.readPsarData();
 		}
 		return null;
+	}
+
+	public boolean isPBP() {
+		return isPBP;
 	}
 }

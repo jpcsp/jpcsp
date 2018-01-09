@@ -67,6 +67,7 @@ import jpcsp.GUI.UmdBrowser;
 import jpcsp.GUI.UmdVideoPlayer;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
@@ -74,8 +75,10 @@ import jpcsp.HLE.modules.reboot;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
+import jpcsp.format.PBP;
 import jpcsp.format.PSF;
 import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VideoEngine;
@@ -1947,6 +1950,11 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             loadedFile = file;
 
             UmdIsoReader iso = new UmdIsoReader(filePath);
+
+            // Dump unpacked PBP
+            if (iso.isPBP() && Settings.getInstance().readBool("emu.pbpunpack")) {
+            	PBP.unpackPBP(new LocalVirtualFile(new SeekableRandomFile(filePath, "r")));
+            }
 
             UmdIsoFile psfFile = iso.getFile("PSP_GAME/param.sfo");
 
