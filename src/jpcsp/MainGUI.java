@@ -2992,6 +2992,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 if (!Modules.rebootModule.loadAndRun()) {
                 	log.error(String.format("Cannot reboot - missing files"));
                 }
+            } else if (args[i].equals("--debugCodeBlockCalls")) {
+            	RuntimeContext.debugCodeBlockCalls = true;
             } else if (args[i].matches("--flash[0-2]") || args[i].matches("--ms[0]") || args[i].matches("--exdata[0]")) {
             	String directoryName = args[i].substring(2);
             	i++;

@@ -78,7 +78,7 @@ public class RuntimeContext {
 	public  static Memory memory;
 	public  static       boolean enableDebugger = true;
 	public  static final String debuggerName = "syncDebugger";
-	public  static final boolean debugCodeBlockCalls = false;
+	public  static       boolean debugCodeBlockCalls = false;
 	public  static final String debugCodeBlockStart = "debugCodeBlockStart";
 	public  static final String debugCodeBlockEnd = "debugCodeBlockEnd";
 	private static final int debugCodeBlockNumberOfParameters = 6;
