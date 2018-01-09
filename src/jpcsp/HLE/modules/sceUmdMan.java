@@ -282,7 +282,8 @@ public class sceUmdMan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2CE918B1, version = 150)
-    public int sceUmdMan_2CE918B1(TPointer unknown) {
+    public int sceUmdMan_2CE918B1() {
+    	// Has no parameters
         return 0;
     }
 

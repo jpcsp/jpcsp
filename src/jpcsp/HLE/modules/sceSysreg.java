@@ -104,7 +104,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x15DC34BC, version = 150)
-    public int sceSysregGpioIoDisable() {
+    public int sceSysregGpioIoDisable(int port) {
     	return 0;
     }
 
@@ -242,7 +242,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x37FBACA5, version = 150)
-    public int sceSysregGpioIoEnable() {
+    public int sceSysregGpioIoEnable(int port) {
     	return 0;
     }
 
