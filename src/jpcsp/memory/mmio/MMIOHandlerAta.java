@@ -16,30 +16,43 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-public class MMIOHandlerReadWrite8 extends MMIOHandlerBase {
-	private final int[] memory;
+import org.apache.log4j.Logger;
 
-	public MMIOHandlerReadWrite8(int baseAddress, int length) {
+import jpcsp.HLE.modules.sceAta;
+
+public class MMIOHandlerAta extends MMIOHandlerBase {
+	public static Logger log = sceAta.log;
+	private int error;
+	private int control;
+
+	public MMIOHandlerAta(int baseAddress) {
 		super(baseAddress);
-
-		memory = new int[length];
 	}
 
 	@Override
 	public int read8(int address) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read8(0x%08X) returning 0x%02X", getPc(), address, memory[address - baseAddress]));
+		int value;
+		switch (address - baseAddress) {
+			case 0x1: value = error; break;
+			case 0xE: value = control; break;
+			default: value = super.read8(address); break;
 		}
 
-		return memory[address - baseAddress];
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("0x%08X - read8(0x%08X) returning 0x%02X", getPc(), address, value));
+		}
+
+		return value;
 	}
 
 	@Override
 	public void write8(int address, byte value) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X)", getPc(), address, value & 0xFF));
+		switch (address - baseAddress) {
+			default: super.write8(address, value); break;
 		}
 
-		memory[address - baseAddress] = value & 0xFF;
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X) on %s", getPc(), address, value & 0xFF, this));
+		}
 	}
 }

@@ -18,6 +18,9 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterrupt;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_GPIO_INTR;
+import static jpcsp.util.Utilities.clearBit;
+import static jpcsp.util.Utilities.hasBit;
+import static jpcsp.util.Utilities.setBit;
 
 import org.apache.log4j.Logger;
 
@@ -28,13 +31,17 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 	public static Logger log = sceGpio.log;
 	public static final int BASE_ADDRESS = 0xBE240000;
 	private static MMIOHandlerGpio instance;
-	public static final int GPIO_BIT_SYSCON_START_CMD = 3;
-	public static final int GPIO_BIT_SYSCON_END_CMD = 4;
-	public static final int GPIO_BIT_LED_MS = 6;
-	public static final int GPIO_BIT_LED_WLAN = 7;
-	public static final int GPIO_BIT_BLUETOOTH = 24;
-	public static final int GPIO_BIT_UMD = 26;
-	private int bits;
+	public static final int GPIO_PORT_DISPLAY          = 0x00;
+	public static final int GPIO_PORT_WM8750_Port1     = 0x01;
+	public static final int GPIO_PORT_SYSCON_START_CMD = 0x03;
+	public static final int GPIO_PORT_SYSCON_END_CMD   = 0x04;
+	public static final int GPIO_PORT_WM8750_Port5     = 0x05;
+	public static final int GPIO_PORT_LED_MS           = 0x06;
+	public static final int GPIO_PORT_LED_WLAN         = 0x07;
+	public static final int GPIO_PORT_USB              = 0x17;
+	public static final int GPIO_PORT_BLUETOOTH        = 0x18;
+	public static final int GPIO_PORT_UMD              = 0x1A;
+	private int ports;
 	private int isOutput;
 	private int isInputOn;
 	private int isInterruptEnabled;
@@ -56,41 +63,46 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 		super(baseAddress);
 	}
 
-	private boolean hasBit(int value, int bit) {
-		return (value & (1 << bit)) != 0;
+	private static String getPortName(int port) {
+		switch (port) {
+			case GPIO_PORT_DISPLAY: return "DISPLAY";
+			case GPIO_PORT_WM8750_Port1: return "WM8750_Port1";
+			case GPIO_PORT_SYSCON_START_CMD: return "SYSCON_START_CMD";
+			case GPIO_PORT_SYSCON_END_CMD: return "SYSCON_END_CMD";
+			case GPIO_PORT_WM8750_Port5: return "WM8750_Port5";
+			case GPIO_PORT_LED_MS: return "LED_MS";
+			case GPIO_PORT_LED_WLAN: return "LED_WLAN";
+			case GPIO_PORT_USB: return "USB";
+			case GPIO_PORT_BLUETOOTH: return "BLUETOOTH";
+			case GPIO_PORT_UMD: return "UMD";
+		}
+
+		return String.format("GPIO_UNKNOWN_PORT_0x%X", port);
 	}
 
-	private int setBit(int value, int bit) {
-		return value | (1 << bit);
-	}
-
-	private int clearBit(int value, int bit) {
-		return value & ~(1 << bit);
-	}
-
-	public void setPortBit(int bit) {
+	public void setPort(int port) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerGpio.setPortBit 0x%X on %s", bit, this));
+			log.debug(String.format("MMIOHandlerGpio.setPort 0x%X(%s) on %s", port, getPortName(port), this));
 		}
 
-		if (!hasBit(bits, bit)) {
-			if (hasBit(isRisingEdge, bit)) {
-				triggerInterrupt(bit);
+		if (!hasBit(ports, port)) {
+			if (hasBit(isRisingEdge, port)) {
+				triggerInterrupt(port);
 			}
-			bits = setBit(bits, bit);
+			ports = setBit(ports, port);
 		}
 	}
 
-	public void clearPortBit(int bit) {
+	public void clearPort(int port) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerGpio.clearPortBit 0x%X on %s", bit, this));
+			log.debug(String.format("MMIOHandlerGpio.clearPort 0x%X(%s) on %s", port, getPortName(port), this));
 		}
 
-		if (hasBit(bits, bit)) {
-			if (hasBit(isFallingEdge, bit)) {
-				triggerInterrupt(bit);
+		if (hasBit(ports, port)) {
+			if (hasBit(isFallingEdge, port)) {
+				triggerInterrupt(port);
 			}
-			bits = clearBit(bits, bit);
+			ports = clearBit(ports, port);
 		}
 	}
 
@@ -105,7 +117,7 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 		if (value != 0) {
 			for (int i = 0; i < 32; i++) {
 				if (hasBit(value, i)) {
-					setPortBit(i);
+					setPort(i);
 				}
 			}
 		}
@@ -115,7 +127,7 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 		if (value != 0) {
 			for (int i = 0; i < 32; i++) {
 				if (hasBit(value, i)) {
-					clearPortBit(i);
+					clearPort(i);
 				}
 			}
 		}
@@ -135,7 +147,7 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 		int value;
 		switch (address - baseAddress) {
 			case 0x00: value = isOutput; break;
-			case 0x04: value = bits; break;
+			case 0x04: value = ports; break;
 			case 0x10: value = isEdgeDetection; break;
 			case 0x14: value = isFallingEdge; break;
 			case 0x18: value = isRisingEdge; break;
@@ -179,6 +191,6 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 
 	@Override
 	public String toString() {
-		return String.format("MMIOHandlerGpio bits=0x%08X", bits);
+		return String.format("MMIOHandlerGpio ports=0x%08X", ports);
 	}
 }

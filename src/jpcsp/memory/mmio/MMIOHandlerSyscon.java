@@ -54,7 +54,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_ALARM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_CLOCK;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_SCRATCHPAD;
 import static jpcsp.HLE.modules.sceSyscon.getSysconCmdName;
-import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_BIT_SYSCON_END_CMD;
+import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_SYSCON_END_CMD;
 
 import java.util.Arrays;
 
@@ -422,7 +422,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("endSysconCmd %s", this));
 		}
-		MMIOHandlerGpio.getInstance().setPortBit(GPIO_BIT_SYSCON_END_CMD);
+		MMIOHandlerGpio.getInstance().setPort(GPIO_PORT_SYSCON_END_CMD);
 	}
 
 	public void setResponseData(int status, int[] responseData, int offset, int length) {
@@ -479,7 +479,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		if ((flags & 2) != 0) {
 			startSysconCmd();
 		} else {
-			MMIOHandlerGpio.getInstance().clearPortBit(GPIO_BIT_SYSCON_END_CMD);
+			MMIOHandlerGpio.getInstance().clearPort(GPIO_PORT_SYSCON_END_CMD);
 		}
 	}
 
