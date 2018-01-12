@@ -292,4 +292,12 @@ public class sceUmdMan extends HLEModule {
     public int sceUmdMan_A7536109(int unknown) {
         return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE779ECEF, version = 150)
+    public int sceUmdManGetInquiry(int unknown, int outputBufferLength, @BufferInfo(lengthInfo=LengthInfo.previousParameter, usage=Usage.out) TPointer outputBuffer) {
+    	outputBuffer.clear(outputBufferLength);
+
+    	return 0;
+    }
 }

@@ -69,7 +69,7 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0x8F0, MMIOHandlerGe.getInstance());
     	addHandlerRW(0xBD500000, 0x94); // Graphics engine (ge)
     	addHandlerRO(0xBD500010, 0x4);
-    	addHandlerRW(0xBD600000, 0x50); // Ata
+    	addHandler(0xBD600000, 0x50, new MMIOHandlerAta2(0xBD600000));
     	addHandler(0xBD700000, 0xF, new MMIOHandlerAta(0xBD700000));
     	addHandler(0xBDE00000, 0x3C, new MMIOHandlerKirk(0xBDE00000));
     	addHandler(0xBDF00000, 0x90, new MMIOHandlerUmd(0xBDF00000));
