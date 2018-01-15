@@ -18,10 +18,15 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer8;
 
 public class sceAta extends HLEModule {
     public static Logger log = Modules.getLogger("sceAta");
@@ -89,7 +94,7 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC74F04B7, version = 150)
-    public int sceAtaExecPacketCmd() {
+    public int sceAtaExecPacketCmd(TPointer unknown1, int unknown2, int unknown3, int unknown4, int unknown5, int operationCode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=3, usage=Usage.in) TPointer8 unknown6) {
     	return 0;
     }
 
@@ -379,5 +384,12 @@ public class sceAta extends HLEModule {
     		return 0;
     	}
     	return 0; // Return the address of a 8-bytes long structure
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8B32C14C, version = 660)
+    public int sceAta_driver_8B32C14C() {
+    	// Has no parameters
+    	return 0;
     }
 }

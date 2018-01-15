@@ -579,4 +579,16 @@ public class sceUmdUser extends HLEModule {
     public int sceUmd_76D356F9(TPointer callback) {
         return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEB56097E, version = 150)
+    public int sceUmdGetDetectUMDCallBackId() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA55109DD, version = 660)
+    public int sceUmdGetDetectUMDCallBackId_660() {
+        return 0;
+    }
 }

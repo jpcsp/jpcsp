@@ -178,7 +178,7 @@ public class reboot extends HLEModule {
 
     	addFunctionNames(rebootModule);
 
-		patch(mem, rebootModule, 0x000060A8, 0x11A0001F, NOP()); // Allow non-encrypted sysmem.prx and loadcore.prx: NOP the test at https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L680
+		patch(mem, rebootModule, 0x000060A8, 0x11A0001F, NOP());              // Allow non-encrypted sysmem.prx and loadcore.prx: NOP the test at https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L680
 		patch(mem, rebootModule, 0x00002734, 0x012C182B, ADDIU(_t4, _t4, 1)); // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
 		patch(mem, rebootModule, 0x00002738, 0x1060FFFA, 0x012C182B);         // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
 		patch(mem, rebootModule, 0x0000273C, 0x00000000, 0x1060FFF9);         // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
@@ -197,7 +197,7 @@ public class reboot extends HLEModule {
 		patch(mem, rebootModule, 0x000052F4, 0x27BDFE50, JR());
 		patch(mem, rebootModule, 0x000052F8, 0xAFB101A4, MOVE(_v0, _zr));
 
-		patchSyscall(0x0000574C, this           , "hleDecryptBtcnf"               , mem, rebootModule, 0x27BDFFE0, 0xAFB20018);
+		patchSyscall(0x0000574C, this, "hleDecryptBtcnf", mem, rebootModule, 0x27BDFFE0, 0xAFB20018);
 
 		SysMemInfo rebootParamInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot-parameters", PSP_SMEM_Addr, 0x10000, rebootParamAddress);
 		TPointer sceLoadCoreBootInfoAddr = new TPointer(mem, rebootParamInfo.addr);
@@ -223,6 +223,8 @@ public class reboot extends HLEModule {
 		sceLoadCoreBootInfo.modProtId = -1;
 		sceLoadCoreBootInfo.modArgProtId = -1;
 		sceLoadCoreBootInfo.model = Model.getModel();
+		sceLoadCoreBootInfo.dipswLo = Modules.KDebugForKernelModule.sceKernelDipswLow32();
+		sceLoadCoreBootInfo.dipswHi = Modules.KDebugForKernelModule.sceKernelDipswHigh32();
 		sceLoadCoreBootInfo.unknown72 = MemoryMap.END_USERSPACE | 0x80000000; // Must be larger than 0x89000000 + size of pspbtcnf.bin file
 		sceLoadCoreBootInfo.cpTime = Modules.KDebugForKernelModule.sceKernelDipswCpTime();
 		sceLoadCoreBootInfo.write(sceLoadCoreBootInfoAddr);

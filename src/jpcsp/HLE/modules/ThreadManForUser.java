@@ -2940,8 +2940,8 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xE81CAF8F, version = 150, checkInsideInterrupt = true)
-    public int sceKernelCreateCallback(@StringInfo(maxLength = 32) String name, int func_addr, int user_arg_addr) {
-    	SceKernelCallbackInfo callback = hleKernelCreateCallback(name, func_addr, user_arg_addr);
+    public int sceKernelCreateCallback(@StringInfo(maxLength = 32) String name, TPointer func_addr, int user_arg_addr) {
+    	SceKernelCallbackInfo callback = hleKernelCreateCallback(name, func_addr.getAddress(), user_arg_addr);
         return callback.getUid();
     }
 

@@ -151,7 +151,7 @@ public class sceUmdMan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x6519F8D1, version = 150)
-    public int sceUmdMan_6519F8D1(int unknown) {
+    public int sceUmdMan_6519F8D1(int timeout) {
         return 0;
     }
 
@@ -299,5 +299,12 @@ public class sceUmdMan extends HLEModule {
     	outputBuffer.clear(outputBufferLength);
 
     	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x921E7B7D, version = 150)
+    public int sceUmdMan_driver_921E7B7D() {
+    	// Has no parameters
+        return 0;
     }
 }
