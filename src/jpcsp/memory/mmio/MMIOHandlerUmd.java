@@ -40,9 +40,9 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 	// Possible interrupt flags: 0x1, 0x2, 0x10, 0x20, 0x40, 0x80, 0x10000, 0x20000, 0x40000, 0x80000
 	private int interrupt;
 	private int interruptEnabled;
-	private int transferLength;
-	protected final int unknownAddresses[] = new int[10];
-	protected final int unknownValues[] = new int[10];
+	private int totalTransferLength;
+	protected final int transferAddresses[] = new int[10];
+	protected final int transferSizes[] = new int[10];
 	private static final int QTGP2[] = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
 	private static final int QTGP3[] = { 0x0F, 0xED, 0xCB, 0xA9, 0x87, 0x65, 0x43, 0x21, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
 	IVirtualFile vFile;
@@ -51,7 +51,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 		super(baseAddress);
 
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem("umdimages/", false);
-		vFile = vfs.ioOpen("cube.iso", IoFileMgrForUser.PSP_O_RDONLY, 0);
+		vFile = vfs.ioOpen("test.iso", IoFileMgrForUser.PSP_O_RDONLY, 0);
 	}
 
 	private void setReset(int reset) {
@@ -81,22 +81,22 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 				interrupt |= 0x1;
 				break;
 			case 0x04:
-				for (int i = 0; i < QTGP2.length && i < unknownValues[0]; i++) {
-					getMemory().write8(unknownAddresses[0] + i, (byte) QTGP2[i]);
+				for (int i = 0; i < QTGP2.length && i < transferSizes[0]; i++) {
+					getMemory().write8(transferAddresses[0] + i, (byte) QTGP2[i]);
 				}
 				interrupt |= 0x1;
 				break;
 			case 0x05:
-				for (int i = 0; i < QTGP3.length && i < unknownValues[0]; i++) {
-					getMemory().write8(unknownAddresses[0] + i, (byte) QTGP3[i]);
+				for (int i = 0; i < QTGP3.length && i < transferSizes[0]; i++) {
+					getMemory().write8(transferAddresses[0] + i, (byte) QTGP3[i]);
 				}
 				interrupt |= 0x1;
 				break;
 			case 0x08:
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X", command, transferLength));
+					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X", command, totalTransferLength));
 				}
-				TPointer result = new TPointer(getMemory(), unknownAddresses[0]);
+				TPointer result = new TPointer(getMemory(), transferAddresses[0]);
 				result.setValue32(0, 0x12345678);
 				result.setValue32(0, 0x00000000);
 				// Number of region entries
@@ -124,37 +124,37 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 				break;
 			case 0x0A: // Called after ATA_CMD_OP_READ_BIG to read the data
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X", command, transferLength));
+					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X", command, totalTransferLength));
 				}
 
-				int fileLength = transferLength / (sectorLength + 0x10) * sectorLength;
-				TPointer addr = new TPointer(getMemory(), unknownAddresses[0]);
-				int readResult;
-				if (vFile != null) {
-					long offset = (MMIOHandlerAta.getInstance().getLogicalBlockAddress() & 0xFFFFFFFFL) * sectorLength;
-					long seekResult = vFile.ioLseek(offset);
-					if (seekResult < 0) {
-						readResult = (int) seekResult;
-					} else {
-						if (seekResult != offset) {
-							log.error(String.format("MMIOHandlerUmd.setCommand incorrect seek: offset=0x%X, seekResult=0x%X", offset, seekResult));
+				int fileLength = totalTransferLength / (sectorLength + 0x10) * sectorLength;
+				long offset = (MMIOHandlerAta.getInstance().getLogicalBlockAddress() & 0xFFFFFFFFL) * sectorLength;
+				long seekResult = vFile.ioLseek(offset);
+				if (seekResult < 0) {
+					log.error(String.format("MMIOHandlerUmd.setCommand seek error 0x%08X", seekResult));
+				} else if (seekResult != offset) {
+					log.error(String.format("MMIOHandlerUmd.setCommand incorrect seek: offset=0x%X, seekResult=0x%X", offset, seekResult));
+				} else {
+					for (int i = 0; fileLength > 0 && i < transferAddresses.length; i++) {
+						int transferLength = transferSizes[i];
+						if (transferLength > 0) {
+							TPointer addr = new TPointer(getMemory(), transferAddresses[i]);
+							int readResult = vFile.ioRead(addr, transferLength);
+							if (readResult < 0) {
+								log.error(String.format("MMIOHandlerUmd.setCommand read error 0x%08X", readResult));
+								break;
+							} else {
+								if (readResult != transferLength) {
+									log.error(String.format("MMIOHandlerUmd.setCommand uncomplete read: transferLength=0x%X, readLength=0x%X", transferLength, readResult));
+									break;
+								}
+		
+								if (log.isTraceEnabled()) {
+									log.trace(String.format("MMIOHandlerUmd.setCommand read 0x%X bytes: %s", readResult, Utilities.getMemoryDump(addr.getAddress(), readResult)));
+								}
+							}
+							fileLength -= transferLength;
 						}
-						readResult = vFile.ioRead(addr, fileLength);
-					}
-				} else {
-					addr.clear(fileLength);
-					readResult = fileLength;
-				}
-
-				if (readResult < 0) {
-					log.error(String.format("MMIOHandlerUmd.setCommand read error 0x%08X", readResult));
-				} else {
-					if (readResult != fileLength) {
-						log.error(String.format("MMIOHandlerUmd.setCommand uncomplete read: fileLength=0x%X, readLength=0x%X", fileLength, readResult));
-					}
-
-					if (log.isTraceEnabled()) {
-						log.trace(String.format("MMIOHandlerUmd.setCommand read 0x%X bytes: %s", readResult, Utilities.getMemoryDump(addr.getAddress(), readResult)));
 					}
 				}
 
@@ -212,7 +212,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 			case 0x2C: value = 0; break; // Unknown value
 			case 0x30: value = 0; break; // Unknown value, error code?
 			case 0x38: value = 0; break; // Unknown value
-			case 0x90: value = transferLength; break;
+			case 0x90: value = totalTransferLength; break;
 			default: value = super.read32(address); break;
 		}
 
@@ -233,27 +233,27 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 			case 0x2C: disableInterrupt(value); break; // Not sure about the meaning
 			case 0x30: if (value != 0x4) { super.write32(address, value); } break; // Unknown value
 			case 0x38: if (value != 0x4) { super.write32(address, value); } break; // Unknown value
-			case 0x40: unknownAddresses[0] = value; break;
-			case 0x44: unknownValues[0] = value; break;
-			case 0x48: unknownAddresses[1] = value; break;
-			case 0x4C: unknownValues[1] = value; break;
-			case 0x50: unknownAddresses[2] = value; break;
-			case 0x54: unknownValues[2] = value; break;
-			case 0x58: unknownAddresses[3] = value; break;
-			case 0x5C: unknownValues[3] = value; break;
-			case 0x60: unknownAddresses[4] = value; break;
-			case 0x64: unknownValues[4] = value; break;
-			case 0x68: unknownAddresses[5] = value; break;
-			case 0x6C: unknownValues[5] = value; break;
-			case 0x70: unknownAddresses[6] = value; break;
-			case 0x74: unknownValues[6] = value; break;
-			case 0x78: unknownAddresses[7] = value; break;
-			case 0x7C: unknownValues[7] = value; break;
-			case 0x80: unknownAddresses[8] = value; break;
-			case 0x84: unknownValues[8] = value; break;
-			case 0x88: unknownAddresses[9] = value; break;
-			case 0x8C: unknownValues[9] = value; break;
-			case 0x90: transferLength = value; break;
+			case 0x40: transferAddresses[0] = value; break;
+			case 0x44: transferSizes[0] = value; break;
+			case 0x48: transferAddresses[1] = value; break;
+			case 0x4C: transferSizes[1] = value; break;
+			case 0x50: transferAddresses[2] = value; break;
+			case 0x54: transferSizes[2] = value; break;
+			case 0x58: transferAddresses[3] = value; break;
+			case 0x5C: transferSizes[3] = value; break;
+			case 0x60: transferAddresses[4] = value; break;
+			case 0x64: transferSizes[4] = value; break;
+			case 0x68: transferAddresses[5] = value; break;
+			case 0x6C: transferSizes[5] = value; break;
+			case 0x70: transferAddresses[6] = value; break;
+			case 0x74: transferSizes[6] = value; break;
+			case 0x78: transferAddresses[7] = value; break;
+			case 0x7C: transferSizes[7] = value; break;
+			case 0x80: transferAddresses[8] = value; break;
+			case 0x84: transferSizes[8] = value; break;
+			case 0x88: transferAddresses[9] = value; break;
+			case 0x8C: transferSizes[9] = value; break;
+			case 0x90: totalTransferLength = value; break;
 			case 0x94: if (value != 1) { super.write32(address, value); } break; // Unknown value, possible values: 0, 1
 			default: super.write32(address, value); break;
 		}
