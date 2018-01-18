@@ -33,8 +33,7 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xBE6261DA, version = 150)
-    public int sceAta_driver_BE6261DA(int unknown) {
-    	return 0;
+    public void sceAta_driver_BE6261DA(int unknown) {
     }
 
     @HLEUnimplemented
@@ -186,14 +185,14 @@ public class sceAta extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x2F7BE141, version = 150)
+    @HLEFunction(nid = 0xA77C230B, version = 150)
     public int sceAtaWaitBusBusyIE() {
     	// Has no parameters
     	return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x8DE58134, version = 660)
+    @HLEFunction(nid = 0x2F7BE141, version = 660)
     public int sceAtaWaitBusBusyIE_660() {
     	// Has no parameters
     	return sceAtaWaitBusBusyIE();
@@ -390,6 +389,18 @@ public class sceAta extends HLEModule {
     @HLEFunction(nid = 0x8B32C14C, version = 660)
     public int sceAta_driver_8B32C14C() {
     	// Has no parameters
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC344D497, version = 660)
+    public int sceAta_driver_C344D497(int unknown1, int unknown2, int unknown3, int unknown4) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3265D064, version = 660)
+    public int sceAta_driver_3265D064(int unknown1, int unknown2) {
     	return 0;
     }
 }

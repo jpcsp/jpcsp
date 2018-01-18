@@ -93,6 +93,26 @@ public class sceNand extends HLEModule {
     		0x0125,
     		0x0126
     };
+    public static final int regionCodes[] = {
+    		0xFFFFFFFF, 0x80000001,
+    		0x00000002, 0x80000000,
+    		0x0000000F, 0x80000000,
+    		0x00000012, 0x80000000,
+    		0x0000001F, 0x80000000,
+    		0x00000022, 0x80000000,
+    		0x0000002F, 0x80000000,
+    		0x00000032, 0x80000000,
+    		0x0000003F, 0x80000000,
+    		0x00000042, 0x80000000,
+    		0x0000004F, 0x80000000,
+    		0x1000000F, 0x80000000,
+    		0x1000001F, 0x80000000,
+    		0x1000002F, 0x80000000,
+    		0x1000003F, 0x80000000,
+    		0x1000004F, 0x80000000,
+    		0x2000000F, 0x80000000,
+    		0x00000001, 0x00000000 // Last entry must be 1, 0
+    };
 
     @Override
 	public void start() {
@@ -487,10 +507,10 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 			default:
 				// Used by sceChkregCheckRegion()
 				if (isIdStoragePageForKey(page, 0x0102)) {
-					buffer.setValue32(0x0B0, 15); // Region code allowed for the PSP
-					buffer.setValue32(0x0B4, 0x80000000);
-					buffer.setValue32(0x0B8, 1);
-					buffer.setValue32(0x0BC, 0);
+					buffer.setValue32(0x08C, 0x60); // Number of region code entries?
+					for (int i = 0; i < regionCodes.length; i++) {
+						buffer.setValue32(0x0B0 + i * 4, regionCodes[i]);
+					}
 				// Used by sceChkreg_driver_6894A027()
 				} else if (isIdStoragePageForKey(page, 0x100)) {
 					// A certificate is stored at offset 0x38

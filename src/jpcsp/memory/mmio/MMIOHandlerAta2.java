@@ -33,6 +33,7 @@ public class MMIOHandlerAta2 extends MMIOHandlerBase {
 		switch (address - baseAddress) {
 			case 0x00: value = 0x00010033; break; // Unknown value
 			case 0x34: value = 0; break; // Unknown value
+			case 0x40: value = 0; break; // Unknown value, flag 0x2 is being tested
 			default: value = super.read32(address); break;
 		}
 
@@ -59,6 +60,8 @@ public class MMIOHandlerAta2 extends MMIOHandlerBase {
 			case 0x1C: if (value != 0x00020A0C) { super.write32(address, value); } break; // Unknown value
 			case 0x14: break; // Unknown value
 			case 0x34: if (value != 0) { super.write32(address, value); } break; // Unknown value
+			case 0x38: if (value != 0x00010100) { super.write32(address, value); } break; // Unknown value
+			case 0x40: if (value != 1) { super.write32(address, value); } break; // Unknown value
 			case 0x44: writeUnknown44(value); break;
 			default: super.write32(address, value); break;
 		}

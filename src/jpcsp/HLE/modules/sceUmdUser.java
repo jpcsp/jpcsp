@@ -473,7 +473,13 @@ public class sceUmdUser extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x816E656B, version = 660)
-    public int sceUmdSetSuspendResumeMode(int mode) {
+    public void sceUmdSetSuspendResumeMode(int mode) {
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x899B5C41, version = 660)
+    public int sceUmdGetSuspendResumeMode() {
+    	// Has no parameters
         return 0;
     }
 

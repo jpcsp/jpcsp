@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterrupt;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_GPIO_INTR;
 import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.hasBit;
@@ -41,6 +40,7 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 	public static final int GPIO_PORT_USB              = 0x17;
 	public static final int GPIO_PORT_BLUETOOTH        = 0x18;
 	public static final int GPIO_PORT_UMD              = 0x1A;
+	private static final int NUMBER_PORTS = 32;
 	private int ports;
 	private int isOutput;
 	private int isInputOn;
@@ -107,15 +107,23 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 	}
 
 	private void triggerInterrupt(int bit) {
-		if (hasBit(isInterruptEnabled, bit)) {
+		if (!hasBit(isInterruptTriggered, bit)) {
 			isInterruptTriggered = setBit(isInterruptTriggered, bit);
+			checkInterrupt();
+		}
+	}
+
+	private void checkInterrupt() {
+		if ((isInterruptTriggered & isInterruptEnabled) != 0) {
 			RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_GPIO_INTR);
+		} else {
+			RuntimeContextLLE.clearInterrupt(getProcessor(), PSP_GPIO_INTR);
 		}
 	}
 
 	private void setPorts(int value) {
 		if (value != 0) {
-			for (int i = 0; i < 32; i++) {
+			for (int i = 0; i < NUMBER_PORTS; i++) {
 				if (hasBit(value, i)) {
 					setPort(i);
 				}
@@ -125,7 +133,7 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 
 	private void clearPorts(int value) {
 		if (value != 0) {
-			for (int i = 0; i < 32; i++) {
+			for (int i = 0; i < NUMBER_PORTS; i++) {
 				if (hasBit(value, i)) {
 					clearPort(i);
 				}
@@ -136,9 +144,14 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 	private void acknowledgeInterrupt(int value) {
 		if (value != 0 && isInterruptTriggered != 0) {
 			isInterruptTriggered &= ~value;
-			if (isInterruptTriggered == 0) {
-				clearInterrupt(getProcessor(), PSP_GPIO_INTR);
-			}
+			checkInterrupt();
+		}
+	}
+
+	private void setInterruptEnabled(int isInterruptEnabled) {
+		if (this.isInterruptEnabled != isInterruptEnabled) {
+			this.isInterruptEnabled = isInterruptEnabled;
+			checkInterrupt();
 		}
 	}
 
@@ -176,7 +189,7 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 			case 0x10: isEdgeDetection = value; break;
 			case 0x14: isFallingEdge = value; break;
 			case 0x18: isRisingEdge = value; break;
-			case 0x1C: isInterruptEnabled = value; break;
+			case 0x1C: setInterruptEnabled(value); break;
 			case 0x24: acknowledgeInterrupt(value); break;
 			case 0x30: isCapturePort = value; break;
 			case 0x34: isTimerCaptureEnabled = value; break;
@@ -189,8 +202,22 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 		}
 	}
 
+	private static String getPortNames(int bits) {
+		StringBuilder s = new StringBuilder();
+		for (int i = 0; i < NUMBER_PORTS; i++) {
+			if (hasBit(bits, i)) {
+				if (s.length() > 0) {
+					s.append("|");
+				}
+				s.append(getPortName(i));
+			}
+		}
+
+		return s.toString();
+	}
+
 	@Override
 	public String toString() {
-		return String.format("MMIOHandlerGpio ports=0x%08X", ports);
+		return String.format("MMIOHandlerGpio ports=0x%08X(%s), isInterruptEnabled=0x%08X(%s), isInterruptTriggered=0x%08X(%s), isOutput=0x%08X(%s), isEdgeDetection=0x%08X, isFallingEdge=0x%08X, isRisingEdge=0x%08X, isInputOn=0x%08X", ports, getPortNames(ports), isInterruptEnabled, getPortNames(isInterruptEnabled), isInterruptTriggered, getPortNames(isInterruptTriggered), isOutput, getPortNames(isOutput), isEdgeDetection, isFallingEdge, isRisingEdge, isInputOn);
 	}
 }

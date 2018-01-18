@@ -307,4 +307,22 @@ public class sceUmdMan extends HLEModule {
     	// Has no parameters
         return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8CFED611, version = 150)
+    public int sceUmdManStart(int unknown) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1F9AFFF4, version = 150)
+    public int sceUmdManMediaPresent(int unknown) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD372D6F3, version = 150)
+    public int sceUmdMan_driver_D372D6F3(TPointer driveInformationAddress) {
+        return 0;
+    }
 }

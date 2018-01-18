@@ -17,12 +17,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_UMD_INTR;
+import static jpcsp.filesystems.umdiso.ISectorDevice.sectorLength;
 import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_BLUETOOTH;
+import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_UMD;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
+import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.HLE.modules.sceNand;
 import jpcsp.HLE.modules.sceUmdMan;
+import jpcsp.util.Utilities;
 
 public class MMIOHandlerUmd extends MMIOHandlerBase {
 	public static Logger log = sceUmdMan.log;
@@ -31,11 +40,18 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 	// Possible interrupt flags: 0x1, 0x2, 0x10, 0x20, 0x40, 0x80, 0x10000, 0x20000, 0x40000, 0x80000
 	private int interrupt;
 	private int interruptEnabled;
+	private int transferLength;
 	protected final int unknownAddresses[] = new int[10];
 	protected final int unknownValues[] = new int[10];
+	private static final int QTGP2[] = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
+	private static final int QTGP3[] = { 0x0F, 0xED, 0xCB, 0xA9, 0x87, 0x65, 0x43, 0x21, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
+	IVirtualFile vFile;
 
 	public MMIOHandlerUmd(int baseAddress) {
 		super(baseAddress);
+
+		IVirtualFileSystem vfs = new LocalVirtualFileSystem("umdimages/", false);
+		vFile = vfs.ioOpen("cube.iso", IoFileMgrForUser.PSP_O_RDONLY, 0);
 	}
 
 	private void setReset(int reset) {
@@ -43,19 +59,107 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 
 		if ((reset & 0x1) != 0) {
 			MMIOHandlerGpio.getInstance().setPort(GPIO_PORT_BLUETOOTH);
+			MMIOHandlerGpio.getInstance().setPort(GPIO_PORT_UMD);
 		}
 	}
 
 	private void setCommand(int command) {
 		this.command = command;
 
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("MMIOHandlerUmd.setCommand command 0x%X", command));
+		}
+
 		switch (command & 0xFF)  {
 			case 0x01:
-				//interrupt |= 0x1 | 0x2 | 0x10 | 0x20 | 0x40 | 0x80 | 0x10000 | 0x20000 | 0x40000 | 0x80000;
-				interrupt |= 0x1 | 0x2 | 0x10 | 0x20 | 0x40 | 0x80;
+				interrupt |= 0x1;
 				break;
 			case 0x02:
-				interrupt |= 0x1 | 0x2;
+				interrupt |= 0x1;
+				break;
+			case 0x03:
+				interrupt |= 0x1;
+				break;
+			case 0x04:
+				for (int i = 0; i < QTGP2.length && i < unknownValues[0]; i++) {
+					getMemory().write8(unknownAddresses[0] + i, (byte) QTGP2[i]);
+				}
+				interrupt |= 0x1;
+				break;
+			case 0x05:
+				for (int i = 0; i < QTGP3.length && i < unknownValues[0]; i++) {
+					getMemory().write8(unknownAddresses[0] + i, (byte) QTGP3[i]);
+				}
+				interrupt |= 0x1;
+				break;
+			case 0x08:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X", command, transferLength));
+				}
+				TPointer result = new TPointer(getMemory(), unknownAddresses[0]);
+				result.setValue32(0, 0x12345678);
+				result.setValue32(0, 0x00000000);
+				// Number of region entries
+				result.setValue32(12, 2);
+				// Each region entry has 24 bytes
+				final int regionSize = 24;
+				TPointer region = new TPointer(result, 40);
+
+				region.clear(regionSize);
+				// Take any region code found in the IdStorage page 0x102
+				region.setValue32(0, sceNand.regionCodes[2]); // Region code
+				region.setValue32(4, sceNand.regionCodes[3]);
+				region.add(regionSize);
+
+				region.clear(regionSize);
+				// Last region entry must be 1, 0
+				region.setValue32(0, 1);
+				region.setValue32(4, 0);
+
+				interrupt |= 0x1;
+				MMIOHandlerAta.getInstance().packetCommandCompleted();
+				break;
+			case 0x09:
+				interrupt |= 0x1;
+				break;
+			case 0x0A: // Called after ATA_CMD_OP_READ_BIG to read the data
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X", command, transferLength));
+				}
+
+				int fileLength = transferLength / (sectorLength + 0x10) * sectorLength;
+				TPointer addr = new TPointer(getMemory(), unknownAddresses[0]);
+				int readResult;
+				if (vFile != null) {
+					long offset = (MMIOHandlerAta.getInstance().getLogicalBlockAddress() & 0xFFFFFFFFL) * sectorLength;
+					long seekResult = vFile.ioLseek(offset);
+					if (seekResult < 0) {
+						readResult = (int) seekResult;
+					} else {
+						if (seekResult != offset) {
+							log.error(String.format("MMIOHandlerUmd.setCommand incorrect seek: offset=0x%X, seekResult=0x%X", offset, seekResult));
+						}
+						readResult = vFile.ioRead(addr, fileLength);
+					}
+				} else {
+					addr.clear(fileLength);
+					readResult = fileLength;
+				}
+
+				if (readResult < 0) {
+					log.error(String.format("MMIOHandlerUmd.setCommand read error 0x%08X", readResult));
+				} else {
+					if (readResult != fileLength) {
+						log.error(String.format("MMIOHandlerUmd.setCommand uncomplete read: fileLength=0x%X, readLength=0x%X", fileLength, readResult));
+					}
+
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("MMIOHandlerUmd.setCommand read 0x%X bytes: %s", readResult, Utilities.getMemoryDump(addr.getAddress(), readResult)));
+					}
+				}
+
+				interrupt |= 0x1;
+				MMIOHandlerAta.getInstance().packetCommandCompleted();
 				break;
 			case 0x0B:
 				break;
@@ -98,14 +202,17 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 		int value;
 		switch (address - baseAddress) {
 			case 0x08: value = reset; break;
+			case 0x10: value = 0; break; // Unknown value
+			case 0x14: value = 0; break; // Unknown value
 			case 0x18: value = 0; break; // flags 0x10 and 0x100 are being tested
-			case 0x1C: value = 0x20; value = 0x00; break; // Tests: (value & 0x1) != 0 (meaning timeout occured?), value < 0x11 
+			case 0x1C: value = 0; break; // Tests: (value & 0x1) != 0 (meaning timeout occured?), value < 0x11
 			case 0x20: value = interrupt; break;
 			case 0x24: value = 0; break; // Unknown value
 			case 0x28: value = interruptEnabled; break; // Unknown value
 			case 0x2C: value = 0; break; // Unknown value
 			case 0x30: value = 0; break; // Unknown value, error code?
 			case 0x38: value = 0; break; // Unknown value
+			case 0x90: value = transferLength; break;
 			default: value = super.read32(address); break;
 		}
 
@@ -146,6 +253,8 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 			case 0x84: unknownValues[8] = value; break;
 			case 0x88: unknownAddresses[9] = value; break;
 			case 0x8C: unknownValues[9] = value; break;
+			case 0x90: transferLength = value; break;
+			case 0x94: if (value != 1) { super.write32(address, value); } break; // Unknown value, possible values: 0, 1
 			default: super.write32(address, value); break;
 		}
 
