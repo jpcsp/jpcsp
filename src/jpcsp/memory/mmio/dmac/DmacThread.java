@@ -17,8 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio.dmac;
 
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
-import static jpcsp.MemoryMap.END_IO_1;
-import static jpcsp.MemoryMap.START_IO_0;
+import static jpcsp.memory.mmio.MMIO.normalizeAddress;
 
 import java.util.concurrent.Semaphore;
 
@@ -82,15 +81,6 @@ public class DmacThread extends Thread {
 		this.completedAction = completedAction;
 
 		job.release();
-	}
-
-	private static int normalizeAddress(int addr) {
-		// Transform address 0x1nnnnnnn into 0xBnnnnnnn
-		if (addr >= (START_IO_0 & Memory.addressMask) && addr <= (END_IO_1 & Memory.addressMask)) {
-			addr |= (START_IO_0 & ~Memory.addressMask);
-		}
-
-		return addr;
 	}
 
 	private void dmacMemcpy(int dst, int src, int dstLength, int srcLength, int dstStepLength, int srcStepLength, boolean dstIncrement, boolean srcIncrement) {

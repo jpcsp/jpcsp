@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.MemoryMap.END_IO_1;
 import static jpcsp.MemoryMap.START_IO_0;
 
 import java.nio.Buffer;
@@ -60,6 +61,7 @@ public class MMIO extends Memory {
     	addHandler(0xBC600000, 0x14, new MMIOHandlerSystemTime(0xBC600000));
     	addHandler(0xBC800000, 0x1D4, new MMIOHandlerDmacplus(0xBC800000));
     	addHandler(0xBC900000, 0x1F4, new MMIOHandlerDmac(0xBC900000));
+    	addHandler(0xBCA00000, 0x1F4, new MMIOHandlerDmac(0xBCA00000));
     	addHandlerRW(0xBCC00000, 0x74);
     	addHandlerRO(0xBCC00010, 0x4);
     	addHandler(0xBD000000, 0x48, new MMIOHandlerDdr(0xBD000000));
@@ -94,6 +96,10 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerSyscon.BASE_ADDRESS, 0x28, MMIOHandlerSyscon.getInstance());
     	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
     	addHandlerRW(0xBFC00000, 0x1000);
+    	write32(0xBFC00200, 0x24388370);
+    	write32(0xBFC00204, 0xB565FA41);
+    	write32(0xBFC00208, 0x48ADBAA4);
+    	write32(0xBFC0020C, 0x53DFF0BB);
     	addHandler(MMIOHandlerMeCore.BASE_ADDRESS, 0x2C, MMIOHandlerMeCore.getInstance());
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS1, 0x90C, MMIOHandlerNandPage.getInstance());
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS2, 0x90C, MMIOHandlerNandPage.getInstance());
@@ -127,9 +133,30 @@ public class MMIO extends Memory {
     	return handlers.get(address);
     }
 
+    private boolean hasHandler(int address) {
+    	return handlers.containsKey(address);
+    }
+
     public static boolean isAddressGood(int address) {
         return validMemoryPage[address >>> MEMORY_PAGE_SHIFT];
     }
+
+    @Override
+    public int normalize(int address) {
+    	if (hasHandler(address)) {
+    		return address;
+    	}
+    	return mem.normalize(address);
+    }
+
+    public static int normalizeAddress(int addr) {
+		// Transform address 0x1nnnnnnn into 0xBnnnnnnn
+		if (addr >= (START_IO_0 & Memory.addressMask) && addr <= (END_IO_1 & Memory.addressMask)) {
+			addr |= (START_IO_0 & ~Memory.addressMask);
+		}
+
+		return addr;
+	}
 
     @Override
 	public int read8(int address) {

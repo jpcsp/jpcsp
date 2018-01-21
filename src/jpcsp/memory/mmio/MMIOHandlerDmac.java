@@ -128,7 +128,7 @@ public class MMIOHandlerDmac extends MMIOHandlerBase {
 		switch (address - baseAddress) {
 			case 0x008: flagsCompleted &= ~value; checkInterrupt(); break;
 			case 0x010: flagsError &= ~value; break;
-			case 0x030: if (value != 1) { super.write32(address, value); } break; // Unknown
+			case 0x030: if (value != 0 && value != 1) { super.write32(address, value); } break; // Unknown
 			case 0x034: if (value != 0) { super.write32(address, value); } break; // Unknown
 			case 0x100:
 			case 0x104:
