@@ -27,6 +27,7 @@ import jpcsp.memory.mmio.MMIOHandlerReadWrite;
  * - 0x00000000 - 0x001FFFFF (2MB): ME internal RAM
  * - access to the main memory
  * - access to the MMIO
+ * - access to the Media Engine DSP processor
  *
  * @author gid15
  *
@@ -54,7 +55,8 @@ public class MEMemory extends MMIO {
 
 		// This address range is not the VRAM, but probably some unknown MMIO
 		addHandler(0x44000000, 0x200000, new MMIOHandlerMeBase(0x44000000));
-//		addHandler(0x44000000, 0x100000, new MMIOHandlerMe(0x44000000));
+
+		addHandler(0x440F8000, 0x194, new MMIOHandlerMe0F8000(0x440F8000));
 		addHandler(0x440FF000, 0x2C, new MMIOHandlerMe0FF000(0x440FF000));
 		addHandler(0x44100000, 0x40, new MMIOHandlerMeDecoderQuSpectra(0x44100000));
 	}

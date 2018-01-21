@@ -198,6 +198,6 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 
 	@Override
 	public String toString() {
-		return String.format("unknown00=0x%X, power=0x%X, control=0x%X, unknown10=0x%X, unknown14=0x%X, unknown18=0x%X, unknown1C=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", status, power, command, unknown10, unknown14, unknown18, unknown1C, unknown20, unknown24, unknown28);
+		return String.format("MMIOHandlerMe0FF000 unknown00=0x%X, power=0x%X, control=0x%X, unknown10=0x%X, unknown14=0x%X, unknown18=0x%X, unknown1C=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", status, power, command, unknown10, unknown14, unknown18, unknown1C, unknown20, unknown24, unknown28);
 	}
 }
