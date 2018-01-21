@@ -921,7 +921,7 @@ public class Loader {
                              result += 0x10000;
                         }
                         data2 &= ~0x0000FFFF;
-                        data2 |= result >>> 16;
+                        data2 |= (int) ((result >> 16) & 0x0000FFFF);
                     	if (log.isTraceEnabled()) {
                     		log.trace(String.format("R_MIPS_HILO16 addr=0x%08X before=0x%08X after=0x%08X", data_addr2, readUnaligned32(mem, data_addr2), data2));
                         }
