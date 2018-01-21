@@ -32,6 +32,7 @@ import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_PRIV_SIG_CHECK;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_PRNG;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_SHA1_HASH;
 import static jpcsp.crypto.KIRK.PSP_KIRK_INVALID_OPERATION;
+import static jpcsp.memory.mmio.MMIO.normalizeAddress;
 
 import org.apache.log4j.Logger;
 
@@ -110,8 +111,8 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	}
 
 	private int hleUtilsBufferCopyWithRange() {
-		TPointer outAddr = new TPointer(getMemory(), destAddr);
-		TPointer inAddr = new TPointer(getMemory(), sourceAddr);
+		TPointer outAddr = new TPointer(getMemory(), normalizeAddress(destAddr));
+		TPointer inAddr = new TPointer(getMemory(), normalizeAddress(sourceAddr));
 
 		int inSize;
 		int outSize;
@@ -177,7 +178,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				setStatus(STATUS_PHASE1_MASK, STATUS_PHASE1_IN_PROGRESS);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("KIRK startProcessing 1 on %s", this));
-					log.debug(String.format("source: %s", Utilities.getMemoryDump(sourceAddr, 0x100)));
+					log.debug(String.format("source: %s", Utilities.getMemoryDump(getMemory(), normalizeAddress(sourceAddr), 0x100)));
 				}
 				result = hleUtilsBufferCopyWithRange();
 				setStatus(STATUS_PHASE1_MASK, STATUS_PHASE1_COMPLETED);
@@ -186,11 +187,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			case 2:
 				setStatus(STATUS_PHASE2_MASK, STATUS_PHASE2_IN_PROGRESS);
 				log.error(String.format("Unimplemented Phase 2 KIRK command 0x%X on %s", command, this));
-				log.error(String.format("source: %s", Utilities.getMemoryDump(sourceAddr, 0x100)));
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("KIRK startProcessing 2 on %s", this));
-					log.debug(String.format("source: %s", Utilities.getMemoryDump(sourceAddr, 0x100)));
-				}
+				log.error(String.format("source: %s", Utilities.getMemoryDump(getMemory(), normalizeAddress(sourceAddr), 0x100)));
 				break;
 			default:
 				log.warn(String.format("0x%08X - KIRK unknown startProcessing value 0x%X on %s", getPc(), value, this));

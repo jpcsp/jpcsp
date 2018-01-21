@@ -24,6 +24,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.TPointer;
 
 /**
  * @author gid15
@@ -130,6 +131,21 @@ public class MemoryReader {
 
 		// Default (generic) MemoryReader
 		return new MemoryReaderGeneric(mem, address, length, step);
+	}
+
+	/**
+	 * Creates a MemoryReader to read values from memory.
+	 *
+	 * @param address the address where to start reading.
+	 * @param length  the maximum number of bytes that can be read.
+	 * @param step    when step == 1, read 8-bit values
+	 *                when step == 2, read 16-bit values
+	 *                when step == 4, read 32-bit values
+	 *                other value for step are not allowed.
+	 * @return        the MemoryReader
+	 */
+	public static IMemoryReader getMemoryReader(TPointer address, int length, int step) {
+		return getMemoryReader(address.getMemory(), address.getAddress(), length, step);
 	}
 
 	/**

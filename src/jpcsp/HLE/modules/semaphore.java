@@ -162,7 +162,7 @@ public class semaphore extends HLEModule {
     	// (up to 144 bytes, depending on the KIRK command)
     	byte[] inBytes = new byte[inSize + 144]; // Up to 144 bytes header
     	ByteBuffer inBuffer = ByteBuffer.wrap(inBytes).order(ByteOrder.LITTLE_ENDIAN);
-    	IMemoryReader memoryReaderIn = MemoryReader.getMemoryReader(inAddr.getAddress(), inSize, 1);
+    	IMemoryReader memoryReaderIn = MemoryReader.getMemoryReader(inAddr, inSize, 1);
     	for (int i = 0; i < inSize; i++) {
     		inBytes[i] = (byte) memoryReaderIn.readNext();
     	}
@@ -171,7 +171,7 @@ public class semaphore extends HLEModule {
     	// Read the whole output buffer so that it can be updated completely after the KIRK call.
     	byte[] outBytes = new byte[Utilities.alignUp(outSize, 15)];
     	ByteBuffer outBuffer = ByteBuffer.wrap(outBytes).order(ByteOrder.LITTLE_ENDIAN);
-    	IMemoryReader memoryReaderOut = MemoryReader.getMemoryReader(outAddr.getAddress(), outBytes.length, 1);
+    	IMemoryReader memoryReaderOut = MemoryReader.getMemoryReader(outAddr, outBytes.length, 1);
     	for (int i = 0; i < outBytes.length; i++) {
     		outBytes[i] = (byte) memoryReaderOut.readNext();
     	}
@@ -190,7 +190,7 @@ public class semaphore extends HLEModule {
     	}
 
     	// Write back the whole output buffer to the memory.
-    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(outAddr.getAddress(), outSize, 1);
+    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(outAddr, outSize, 1);
     	for (int i = 0; i < outSize; i++) {
     		memoryWriter.writeNext(outBytes[i] & 0xFF);
     	}

@@ -23,6 +23,7 @@ import java.nio.IntBuffer;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.TPointer;
 
 /**
  * @author gid15
@@ -142,6 +143,20 @@ public class MemoryWriter {
 
 		// Default (generic) MemoryWriter
 		return new MemoryWriterGeneric(mem, address, length, step);
+	}
+
+	/**
+	 * Creates a MemoryWriter to write values from memory.
+	 *
+	 * @param address the address where to start writing.
+	 * @param step    when step == 1, write 8-bit values
+	 *                when step == 2, write 16-bit values
+	 *                when step == 4, write 32-bit values
+	 *                other value for step are not allowed.
+	 * @return        the MemoryWriter
+	 */
+	public static IMemoryWriter getMemoryWriter(TPointer address, int length, int step) {
+		return getMemoryWriter(address.getMemory(), address.getAddress(), length, step);
 	}
 
 	private static class MemoryWriterGeneric implements IMemoryWriter {
