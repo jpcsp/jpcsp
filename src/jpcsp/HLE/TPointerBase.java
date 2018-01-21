@@ -22,6 +22,11 @@ abstract public class TPointerBase implements ITPointerBase {
 	protected TPointer pointer;
 	private boolean canBeNull;
 
+	protected TPointerBase() {
+		pointer = TPointer.NULL;
+		canBeNull = true;
+	}
+
 	protected TPointerBase(Memory memory, int address, boolean canBeNull) {
 		pointer = new TPointer(memory, address);
 		this.canBeNull = canBeNull;

@@ -27,11 +27,17 @@ final public class TPointer implements ITPointerBase {
 	private Memory memory;
 	private int address;
 	private boolean isNull;
-	public static final TPointer NULL = new TPointer((Memory) null, 0);
+	public static final TPointer NULL = new TPointer();
+
+	protected TPointer() {
+		memory = null;
+		address = 0;
+		isNull = true;
+	}
 
 	public TPointer(Memory memory, int address) {
 		this.memory = memory;
-		this.address = address & Memory.addressMask;
+		this.address = memory.normalize(address);
 		isNull = (address == 0);
 	}
 
@@ -73,7 +79,7 @@ final public class TPointer implements ITPointerBase {
 	}
 
 	public void setAddress(int address) {
-		this.address = address & Memory.addressMask;
+		this.address = memory.normalize(address);
 		isNull = (address == 0);
 	}
 

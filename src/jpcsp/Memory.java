@@ -389,6 +389,10 @@ public abstract class Memory {
         memcpy(destination, source, length, true);
     }
 
+    public int normalize(int address) {
+    	return address & addressMask;
+    }
+
     public static int normalizeAddress(int address) {
         address &= addressMask;
 
