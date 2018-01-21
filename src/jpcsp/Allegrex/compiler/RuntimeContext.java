@@ -277,14 +277,14 @@ public class RuntimeContext {
 		execute(insn, opcode);
 	}
 
-	private static String getDebugCodeBlockStart(int address) {
+	private static String getDebugCodeBlockStart(CpuState cpu, int address) {
 		// Do not build the string using "String.format()" for improved performance of this time-critical function
 		StringBuilder s = new StringBuilder("Starting CodeBlock 0x");
 		addAddressHex(s, address);
 
 		int syscallAddress = address + 4;
 		if (Memory.isAddressGood(syscallAddress)) {
-    		int syscallOpcode = memory.read32(syscallAddress);
+    		int syscallOpcode = cpu.memory.read32(syscallAddress);
     		Instruction syscallInstruction = Decoder.instruction(syscallOpcode);
     		if (syscallInstruction == Instructions.SYSCALL) {
         		String syscallDisasm = syscallInstruction.disasm(syscallAddress, syscallOpcode);
@@ -328,14 +328,30 @@ public class RuntimeContext {
 	public static void debugCodeBlockStart(int address) {
 		if (!debugCodeBlocks.isEmpty() && debugCodeBlocks.containsKey(address)) {
 			if (log.isInfoEnabled()) {
-				log.info(getDebugCodeBlockStart(address));
+				log.info(getDebugCodeBlockStart(cpu, address));
 			}
 		} else if (log.isDebugEnabled()) {
-    		log.debug(getDebugCodeBlockStart(address));
+    		log.debug(getDebugCodeBlockStart(cpu, address));
+    	}
+    }
+
+	public static void debugCodeBlockStart(CpuState cpu, int address) {
+		if (!debugCodeBlocks.isEmpty() && debugCodeBlocks.containsKey(address)) {
+			if (log.isInfoEnabled()) {
+				log.info(getDebugCodeBlockStart(cpu, address));
+			}
+		} else if (log.isDebugEnabled()) {
+    		log.debug(getDebugCodeBlockStart(cpu, address));
     	}
     }
 
     public static void debugCodeBlockEnd(int address, int returnAddress) {
+    	if (log.isDebugEnabled()) {
+    		debugCodeBlockEnd(cpu, address, returnAddress);
+    	}
+    }
+
+    public static void debugCodeBlockEnd(CpuState cpu, int address, int returnAddress) {
     	if (log.isDebugEnabled()) {
     		// Do not build the string using "String.format()" for improved performance of this time-critical function
     		StringBuilder s = new StringBuilder("Returning from CodeBlock 0x");

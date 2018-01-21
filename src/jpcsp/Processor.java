@@ -16,15 +16,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import static jpcsp.Allegrex.BcuState.jumpTarget;
 import static jpcsp.Allegrex.GprState.NUMBER_REGISTERS;
 
 import java.nio.ByteBuffer;
 
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Cp0State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.Instructions;
 
 import org.apache.log4j.Logger;
 
@@ -84,7 +88,21 @@ public class Processor {
         }
         insn.interpret(this, opcode);
 
-        return insn;
+    	if (RuntimeContext.debugCodeBlockCalls) {
+    		if (insn == Instructions.JAL) {
+    			RuntimeContext.debugCodeBlockStart(cpu, cpu.pc);
+    		} else if (insn == Instructions.JR && ((opcode >> 21) & 31) == Common._ra) {
+    			int opcodeCaller = cpu.memory.read32(cpu._ra - 8);
+    			Instruction insnCaller = Decoder.instruction(opcodeCaller);
+    			int codeBlockStart = cpu.pc;
+    			if (insnCaller == Instructions.JAL) {
+    				codeBlockStart = jumpTarget(cpu.pc, (opcodeCaller) & 0x3FFFFFF);
+    			}
+				RuntimeContext.debugCodeBlockEnd(cpu, codeBlockStart, cpu._ra);
+    		}
+    	}
+
+    	return insn;
     }
 
     public void interpretDelayslot() {
