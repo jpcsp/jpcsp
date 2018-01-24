@@ -31,18 +31,29 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 	private final int[] parameters = new int[8];
 	private int result;
 	private enum MECommand {
-		ME_CMD_VIDEOCODEC_OPEN(0x0, 1),
+		ME_CMD_VIDEOCODEC_OPEN_TYPE0(0x0, 1),
 		ME_CMD_VIDEOCODEC_INIT_TYPE0(0x1, 3),
 		ME_CMD_VIDEOCODEC_DECODE_TYPE0(0x2, 8),
+		ME_CMD_VIDEOCODEC_STOP_TYPE0(0x3, 3),
 		ME_CMD_VIDEOCODEC_DELETE_TYPE0(0x4, 1),
 		ME_CMD_VIDEOCODEC_SET_MEMORY_TYPE0(0x5, 6),
 		ME_CMD_VIDEOCODEC_GET_VERSION_TYPE0(0x6, 1),
+		ME_CMD_AVC_SELECT_CLOCK(0x7, 1),
 		ME_CMD_AVC_POWER_ENABLE(0x8, 0),
-		ME_CMD_VIDEOCODEC_DECODE_TYPE1(0x20, 8),
+		ME_CMD_VIDEOCODEC_GET_SEI_TYPE0(0x9, 2),
+		ME_CMD_VIDEOCODEC_GET_FRAME_CROP_TYPE0(0xA, 2),
+		ME_CMD_VIDEOCODEC_GET_UNKNOWN_TYPE0(0xB, 2),
+		ME_CMD_VIDEOCODEC_UNKNOWN_CMD_0x10(0x10, 1),
+		ME_CMD_VIDEOCODEC_DECODE_TYPE1(0x20, 4),
+		ME_CMD_VIDEOCODEC_STOP_TYPE1(0x21, 1),
 		ME_CMD_VIDEOCODEC_DELETE_TYPE1(0x22, 1),
+		ME_CMD_VIDEOCODEC_OPEN_TYPE1_STEP2(0x23, 3),
+		ME_CMD_VIDEOCODEC_OPEN_TYPE1(0x24, 0),
 		ME_CMD_VIDEOCODEC_INIT_TYPE1(0x25, 8),
+		ME_CMD_VIDEOCODEC_SCAN_HEADER_TYPE1(0x26, 2),
 		ME_CMD_VIDEOCODEC_GET_VERSION_TYPE1(0x27, 8),
 		ME_CMD_AT3P_DECODE(0x60, 1),
+		ME_CMD_AT3P_GET_INFO3(0x61, 0),
 		ME_CMD_AT3P_CHECK_NEED_MEM1(0x63, 4),
 		ME_CMD_AT3P_SET_UNK68(0x64, 2),
 		ME_CMD_AT3P_CHECK_NEED_MEM2(0x66, 3),
@@ -50,7 +61,29 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 		ME_CMD_AT3P_CHECK_UNK20(0x68, 2),
 		ME_CMD_AT3P_SET_UNK44(0x69, 2),
 		ME_CMD_AT3P_GET_INTERNAL_ERROR(0x6A, 2),
+		ME_CMD_AT3_DECODE(0x70, 1),
+		ME_CMD_AT3_GET_INTERNAL_ERROR(0x71, 2),
 		ME_CMD_AT3_CHECK_NEED_MEM(0x72, 3),
+		ME_CMD_AT3_INIT(0x73, 4),
+		ME_CMD_AT3_GET_INFO3(0x74, 0),
+		ME_CMD_MP3_GET_INFO3(0x81, 0),
+		ME_CMD_MP3_GET_INFO2(0x82, 2),
+		ME_CMD_MP3_SET_VALUE_FOR_INFO2(0x89, 2),
+		ME_CMD_MP3_CHECK_NEED_MEM(0x8A, 3),
+		ME_CMD_MP3_INIT(0x8B, 1),
+		ME_CMD_MP3_DECODE(0x8C, 1),
+		ME_CMD_AAC_DECODE(0x90, 5),
+		ME_CMD_AAC_GET_INTERNAL_ERROR(0x91, 2),
+		ME_CMD_AAC_CHECK_NEED_MEM(0x92, 0),
+		ME_CMD_AAC_INIT(0x93, 2),
+		ME_CMD_AAC_GET_INFO3(0x94, 0),
+		ME_CMD_AAC_INIT_UNK44(0x95, 2),
+		ME_CMD_AAC_INIT_UNK44_STEP2(0x97, 4),
+		ME_CMD_WMA_GET_INFO3(0xE1, 0),
+		ME_CMD_WMA_CHECK_NEED_MEM(0xE2, 0),
+		ME_CMD_WMA_INIT(0xE3, 2),
+		ME_CMD_WMA_DECODE(0xE5, 7),
+		ME_CMD_WMA_GET_INTERNAL_ERROR(0xE6, 2),
 		ME_CMD_MALLOC(0x180, 1),
 		ME_CMD_FREE(0x181, 1),
 		ME_CMD_CALLOC(0x182, 2),
@@ -58,7 +91,8 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 		ME_CMD_AW_EDRAM_BUS_CLOCK_DISABLE(0x184, 0),
 		ME_CMD_BOOT(0x185, 1),
 		ME_CMD_CPU(0x186, 2),
-		ME_CMD_POWER(0x187, 2);
+		ME_CMD_POWER(0x187, 2),
+		ME_CMD_STANDBY(0x18F, 2);
 
 		private int cmd;
 		private int numberOfParameters;
@@ -107,195 +141,6 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 	private MMIOHandlerMeCore(int baseAddress) {
 		super(baseAddress);
 	}
-
-//	private int decodeDebugIndex = 0;
-//	private void meAtrac3plusDecode(TPointer workArea) {
-//		workArea.setValue32(8, 0); // error field
-//		int outputBufferSize = getOutputBufferSize(workArea, PSP_CODEC_AT3PLUS);
-//		workArea.setValue32(36, outputBufferSize);
-//
-//		int inputBufferSize;
-//		if (workArea.getValue32(48) == 0) {
-//			inputBufferSize = workArea.getValue32(64) + 2;
-//		} else {
-//			inputBufferSize = 0x100A;
-//		}
-//		workArea.setValue32(28, inputBufferSize);
-//
-//		int outputBuffer = workArea.getValue32(32);
-//		if (log.isDebugEnabled()) {
-//			log.debug(String.format("Generating dummy audio data starting at 0x%04X", decodeDebugIndex));
-//			IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(outputBuffer, outputBufferSize, 2);
-//			for (int i = 0; i < outputBufferSize; i += 2) {
-//				memoryWriter.writeNext(decodeDebugIndex++);
-//			}
-//		} else {
-//			getMemory().memset(outputBuffer, (byte) 0, outputBufferSize);
-//		}
-//	}
-
-//	public void interrupt() {
-//		Memory mem = Memory.getInstance();
-//		result = 0;
-//
-//		switch (cmd) {
-//			case ME_CMD_VIDEOCODEC_OPEN:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_VIDEOCODEC_OPEN unknownAddr=0x%08X", parameters[0]));
-//				}
-//				mem.write32(parameters[0] + 0, VIDEOCODEC_OPEN_TYPE0_UNKNOWN0);
-//				mem.write32(parameters[0] + 4, VIDEOCODEC_OPEN_TYPE0_UNKNOWN4);
-//				result = VIDEOCODEC_OPEN_TYPE0_UNKNOWN24;
-//				break;
-//			case ME_CMD_VIDEOCODEC_INIT_TYPE0:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_VIDEOCODEC_INIT_TYPE0 unknownAddr=0x%08X, unknownValue1=0x%X, unknownValue2=0x%X", parameters[0], parameters[1], parameters[2]));
-//				}
-//				mem.write32(parameters[0], parameters[1] + 8);
-//				break;
-//			case ME_CMD_VIDEOCODEC_DECODE_TYPE0:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_VIDEOCODEC_DECODE_TYPE0 unknownValue1=0x%X, mp4Data=0x%08X, mp4Size=0x%08X, buffer2=0x%08X, mpegAvcYuvStruct=0x%08X, buffer3=0x%08X, unknownValue2=0x%X, mpegAvcYuvStructAddr=0x%08X", parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5], parameters[6], parameters[7]));
-//				}
-//				break;
-//			case ME_CMD_VIDEOCODEC_DELETE_TYPE0:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_VIDEOCODEC_DELETE_TYPE0 unknownValue1=0x%X", parameters[0]));
-//				}
-//				break;
-//			case ME_CMD_VIDEOCODEC_SET_MEMORY_TYPE0:
-//				// Called during sceVideocodecSetMemory()
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_VIDEOCODEC_SET_MEMORY_TYPE0 unknownValue1=0x%X, unknownValue2=0x%X, unknownValue3=0x%X, unknownValue4=0x%X, unknownValue5=0x%X, unknownValue6=0x%X", parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5]));
-//				}
-//				break;
-//			case ME_CMD_VIDEOCODEC_GET_VERSION_TYPE0:
-//				// Called during sceVideocodecGetVersion()
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_VIDEOCODEC_GET_VERSION_TYPE0 versionAddr=0x%08X", parameters[0]));
-//				}
-//				mem.write32(parameters[0], 0); // Unknown version value
-//				break;
-//			case ME_CMD_AVC_POWER_ENABLE:
-//				// Called during sceMePowerControlAvcPower() when enabling the Avc power
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AVC_POWER_ENABLE"));
-//				}
-//				break;
-//			case ME_CMD_VIDEOCODEC_DELETE_TYPE1:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_VIDEOCODEC_DELETE_TYPE1 unknownValue1=0x%X", parameters[0]));
-//				}
-//				break;
-//			case ME_CMD_AT3P_CHECK_NEED_MEM1:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AT3P_CHECK_NEED_MEM1 unknownAddr1=0x%08X, unknownAddr2=0x%08X, unknownAddr3=0x%08X, unknownAddr4=0x%08X", parameters[0], parameters[1], parameters[2], parameters[3]));
-//				}
-//				mem.write32(parameters[0], sceAudiocodec.AUDIOCODEC_AT3P_UNKNOWN_52);
-//				mem.write32(parameters[1], sceAudiocodec.AUDIOCODEC_AT3P_UNKNOWN_60);
-//				mem.write32(parameters[2], sceAudiocodec.AUDIOCODEC_AT3P_UNKNOWN_64);
-//				mem.write32(parameters[3], 0); // Unknown value
-//				break;
-//			case ME_CMD_AT3P_CHECK_NEED_MEM2:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AT3P_CHECK_NEED_MEM2 unknownValue1=0x%X, neededMemAddr=0x%08X, errorAddr=0x%08X", parameters[0], parameters[1], parameters[2]));
-//				}
-//				mem.write32(parameters[1], 0); // Needed mem
-//				mem.write32(parameters[2], 0); // Error
-//				break;
-//			case ME_CMD_AT3P_SETUP_CHANNEL:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AT3P_SETUP_CHANNEL unknownValue1=0x%X, unknownValue2=0x%X, unknownValue3=0x%X, unknownValue4=0x%X, edramAddr=0x%08X", parameters[0], parameters[1], parameters[2], parameters[3], parameters[4]));
-//				}
-//				break;
-//			case ME_CMD_AT3P_SET_UNK44:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AT3P_SET_UNK44 unk44Addr=0x%08X, edramAddr=0x%08X", parameters[0], parameters[1]));
-//				}
-//				mem.write32(parameters[0], 0); // Unknown value
-//				break;
-//			case ME_CMD_AT3P_SET_UNK68:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AT3P_SET_UNK68 unk68Addr=0x%08X, edramAddr=0x%08X", parameters[0], parameters[1]));
-//				}
-//				mem.write32(parameters[0], 0); // Unknown value
-//				break;
-//			case ME_CMD_AT3P_CHECK_UNK20:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AT3P_CHECK_UNK20 unk20=0x%X, edramAddr=0x%08X", parameters[0], parameters[1]));
-//				}
-//				break;
-//			case ME_CMD_AT3P_DECODE:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AT3P_DECODE workArea=0x%08X", parameters[0]));
-//				}
-//				meAtrac3plusDecode(new TPointer(getMemory(), parameters[0]));
-//				break;
-//			case ME_CMD_AT3_CHECK_NEED_MEM:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AT3_CHECK_NEED_MEM unknown=0x%X, neededMemAddr=0x%08X, errorAddr=0x%08X", parameters[0], parameters[1], parameters[2]));
-//				}
-//				mem.write32(parameters[1], 0); // Needed mem
-//				mem.write32(parameters[2], 0); // Error
-//				break;
-//			case ME_CMD_MALLOC: {
-//				int size = parameters[0];
-//				result = freeMeMemory;
-//				freeMeMemory += size;
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_MALLOC size=0x%X returning 0x%06X", size, result));
-//				}
-//				break;
-//			}
-//			case ME_CMD_FREE: {
-//				int addr = parameters[0];
-//				freeMeMemory = addr;
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_FREE addr=0x%06X", addr));
-//				}
-//				break;
-//			}
-//			case ME_CMD_CALLOC: {
-//				int num = parameters[0];
-//				int size = parameters[1];
-//				result = freeMeMemory;
-//				freeMeMemory += num * size;
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_CALLOC num=0x%X, size=0x%X returning 0x%06X", num, size, result));
-//				}
-//				break;
-//			}
-//			case ME_CMD_AW_EDRAM_BUS_CLOCK_ENABLE:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AW_EDRAM_BUS_CLOCK_ENABLE"));
-//				}
-//				break;
-//			case ME_CMD_AW_EDRAM_BUS_CLOCK_DISBABLE:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_AW_EDRAM_BUS_CLOCK_DISBABLE"));
-//				}
-//				break;
-//			case ME_CMD_BOOT:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_BOOT unknown=%b", parameters[0] != 0));
-//				}
-//				break;
-//			case ME_CMD_CPU:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_CPU numerator=%d, denominator=%d", parameters[0], parameters[1]));
-//				}
-//				break;
-//			case ME_CMD_POWER:
-//				if (log.isDebugEnabled()) {
-//					log.debug(String.format("ME_CMD_POWER unknown1=0x%X, unknown2=0x%X", parameters[0], parameters[1]));
-//				}
-//				break;
-//			default:
-//				log.error(String.format("MMIOHandlerMeCore unknown cmd=0x%X", cmd));
-//				break;
-//		}
-//		RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MECODEC_INTR);
-//	}
 
 	private void writeCmd(int cmd) {
 		this.cmd = cmd;

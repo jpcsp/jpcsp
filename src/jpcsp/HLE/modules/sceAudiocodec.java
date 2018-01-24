@@ -47,6 +47,7 @@ public class sceAudiocodec extends HLEModule {
 	public static final int PSP_CODEC_AT3     = 0x00001001;
 	public static final int PSP_CODEC_MP3     = 0x00001002;
 	public static final int PSP_CODEC_AAC     = 0x00001003;
+	public static final int PSP_CODEC_WMA     = 0x00001005;
 
 	public static final int AUDIOCODEC_AT3P_UNKNOWN_52 = 44100;
 	public static final int AUDIOCODEC_AT3P_UNKNOWN_60 = 2;
