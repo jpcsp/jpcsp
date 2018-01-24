@@ -110,7 +110,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		}
 	}
 
-	private int hleUtilsBufferCopyWithRange() {
+	private void hleUtilsBufferCopyWithRange() {
 		TPointer outAddr = new TPointer(getMemory(), normalizeAddress(destAddr));
 		TPointer inAddr = new TPointer(getMemory(), normalizeAddress(sourceAddr));
 
@@ -126,15 +126,19 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				outSize = inSize;
 				break;
 			case PSP_KIRK_CMD_DECRYPT_PRIVATE:
-			case PSP_KIRK_CMD_PRIV_SIG_CHECK:
 				// AES128_CMAC_Header
 				inSize = inAddr.getValue32(112) + 144;
 				outSize = inSize;
 				break;
+			case PSP_KIRK_CMD_PRIV_SIG_CHECK:
+				// AES128_CMAC_Header
+				inSize = inAddr.getValue32(112) + 144;
+				outSize = 0;
+				break;
 			case PSP_KIRK_CMD_SHA1_HASH:
 				// SHA1_Header
 				inSize = inAddr.getValue32(0) + 4;
-				outSize = inSize;
+				outSize = 20;
 				break;
             case PSP_KIRK_CMD_ECDSA_GEN_KEYS:
             	inSize = 0;
@@ -166,10 +170,19 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
             	break;
 			default:
 				log.error(String.format("MMIOHandlerKirk.hleUtilsBufferCopyWithRange unimplemented KIRK command 0x%X", command));
-				return PSP_KIRK_INVALID_OPERATION;
+				result = PSP_KIRK_INVALID_OPERATION;
+				return;
 		}
 
-		return Modules.semaphoreModule.hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, command);
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("hleUtilsBufferCopyWithRange input: %s", Utilities.getMemoryDump(inAddr, inSize)));
+		}
+
+		result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, command);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("hleUtilsBufferCopyWithRange result=0x%X, output: %s", result, Utilities.getMemoryDump(outAddr, outSize)));
+		}
 	}
 
 	private void startProcessing(int value) {
@@ -178,9 +191,8 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				setStatus(STATUS_PHASE1_MASK, STATUS_PHASE1_IN_PROGRESS);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("KIRK startProcessing 1 on %s", this));
-					log.debug(String.format("source: %s", Utilities.getMemoryDump(getMemory(), normalizeAddress(sourceAddr), 0x100)));
 				}
-				result = hleUtilsBufferCopyWithRange();
+				hleUtilsBufferCopyWithRange();
 				setStatus(STATUS_PHASE1_MASK, STATUS_PHASE1_COMPLETED);
 				RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MEMLMD_INTR);
 				break;

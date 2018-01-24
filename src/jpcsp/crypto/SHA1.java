@@ -24,12 +24,11 @@ public class SHA1 {
     public SHA1() {
     }
 
-    public byte[] doSHA1(byte[] bytes, int lenght) {
+    public byte[] doSHA1(byte[] bytes, int length) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
-            byte[] sha1Hash = new byte[40];
-            md.update(bytes, 0, lenght);
-            sha1Hash = md.digest();
+            md.update(bytes, 0, length);
+            byte[] sha1Hash = md.digest();
             return sha1Hash;
         } catch (Exception e) {
             e.printStackTrace();

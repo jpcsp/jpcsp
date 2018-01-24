@@ -18,6 +18,7 @@ package jpcsp.mediaengine;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.util.Utilities;
 
 public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 	private int status;
@@ -74,6 +75,7 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 				// Used at startup
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Unknown command 0x%X, status=0x%X, power=0x%X, unknown10=0x%08X", command, status, power, unknown10));
+					log.debug(String.format("unknown10: %s", Utilities.getMemoryDump(getMemory(), unknown10, 0x2000)));
 				}
 				break;
 			case 0x20:

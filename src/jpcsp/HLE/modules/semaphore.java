@@ -176,6 +176,7 @@ public class semaphore extends HLEModule {
     		outBytes[i] = (byte) memoryReaderOut.readNext();
     	}
 
+    	int result = 0;
     	if (preDecrypt(outBytes, outSize, inBytes, originalInSize, cmd)) {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("sceUtilsBufferCopyWithRange using pre-decrypted data"));
@@ -183,7 +184,7 @@ public class semaphore extends HLEModule {
     	} else {
 	    	// Call the KIRK engine to perform the given command
 	    	CryptoEngine crypto = new CryptoEngine();
-	    	int result = crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, outSize, inBuffer, inSize, originalInSize, cmd);
+	    	result = crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, outSize, inBuffer, inSize, originalInSize, cmd);
 	    	if (result != 0) {
 	    		log.warn(String.format("hleUtilsBufferCopyWithRange cmd=0x%X returned 0x%X", cmd, result));
 	    	}
@@ -196,13 +197,15 @@ public class semaphore extends HLEModule {
     	}
     	memoryWriter.flush();
 
-    	return 0;
+    	return result;
     }
 
     @HLELogging(level = "info")
     @HLEFunction(nid = 0x4C537C72, version = 150)
     public int sceUtilsBufferCopyWithRange(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outAddr, int outSize, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer inAddr, int inSize, int cmd) {
-    	return hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, cmd);
+    	hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, cmd);
+    	// Fake a successful operation
+    	return 0;
     }
 
 	@HLELogging(level = "info")

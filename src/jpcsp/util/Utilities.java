@@ -736,7 +736,11 @@ public class Utilities {
     }
 
     private static String getMemoryDump(int address, int length, int step, int bytesPerLine, IMemoryReader memoryReader, IMemoryReader charReader) {
-        StringBuilder dump = new StringBuilder();
+        if (length <= 0 || bytesPerLine <= 0 || step <= 0) {
+            return "";
+        }
+
+    	StringBuilder dump = new StringBuilder();
 
         if (length < bytesPerLine) {
             bytesPerLine = length;
@@ -789,7 +793,11 @@ public class Utilities {
 
     // Optimize the most common case
     private static String getMemoryDump(int[] memoryInt, int address, int length) {
-    	final int numberLines = length >> 4;
+        if (length <= 0) {
+            return "";
+        }
+
+        final int numberLines = length >> 4;
     	final char[] chars = new char[numberLines * lineTemplate.length];
     	final int lineOffset = lineSeparator.length() + 2;
 
@@ -923,13 +931,14 @@ public class Utilities {
     	return getMemoryDump(address, length, 1, 16, memoryReader, charReader);
     }
 
+    public static String getMemoryDump(TPointer address, int length) {
+    	return getMemoryDump(address.getMemory(), address.getAddress(), length);
+    }
+
     public static String getMemoryDump(int address, int length, int step, int bytesPerLine) {
     	if (!Memory.isAddressGood(address)) {
     		return String.format("Invalid memory address 0x%08X", address);
     	}
-        if (length <= 0 || bytesPerLine <= 0 || step <= 0) {
-            return "";
-        }
 
         IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, step);
         IMemoryReader charReader = MemoryReader.getMemoryReader(address, length, 1);
