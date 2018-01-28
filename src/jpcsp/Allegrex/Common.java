@@ -38,6 +38,7 @@ public class Common {
 
     public static abstract class Instruction {
     	protected static Logger log = Emulator.log;
+    	protected static Logger logCop0 = Logger.getLogger("cop0");
         private int m_count = 0;
         private int flags = 0;
         public final static int FLAG_INTERPRETED = (1 << 0);

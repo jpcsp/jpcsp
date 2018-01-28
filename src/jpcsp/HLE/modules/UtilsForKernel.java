@@ -42,7 +42,6 @@ public class UtilsForKernel extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x39FFB756, version = 150)
     public int UtilsForKernel_39FFB756(int unknown) {
-    	// Has no parameters
     	return 0;
     }
 

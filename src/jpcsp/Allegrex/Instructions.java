@@ -240,14 +240,32 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+	int function = (insn>>16)&31;
 
-
+	if (processor.cp0.isMainCpu()) {
+		// The instructions icache 0x01 and icache 0x03 are used to implement sceKernelIcacheInvalidateAll().
+		// They do clear all the cache lines (16KB cache size):
+		//    icache 0x01, addr=0x0000
+		//    icache 0x03, addr=0x0000
+		//    icache 0x01, addr=0x0040
+		//    icache 0x03, addr=0x0040
+		//    icache 0x01, addr=0x0080
+		//    icache 0x03, addr=0x0080
+		//    ...
+		//    icache 0x01, addr=0x3FC0
+		//    icache 0x03, addr=0x3FC0
+		// We only react on clearing the cache line at addr=0x0000.
+		int addr = processor.cpu.getRegister(rs) + (short) imm16;
+		if (function == 0x01 && addr == 0x0000) {
+			RuntimeContext.invalidateAll();
+		}
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5598,8 +5616,8 @@ public void interpret(Processor processor, int insn) {
 
 	processor.cpu.setRegister(rt, value);
 
-	if (log.isTraceEnabled()) {
-		log.trace(String.format("0x%08X - mfc0 reading data register#%d(%s) having value 0x%08X", processor.cpu.pc, c0dr, Common.cop0Names[c0dr], value));
+	if (logCop0.isTraceEnabled()) {
+		logCop0.trace(String.format("0x%08X - mfc0 reading data register#%d(%s) having value 0x%08X", processor.cpu.pc, c0dr, Common.cop0Names[c0dr], value));
 	}
 }
 @Override
@@ -5630,8 +5648,8 @@ public void interpret(Processor processor, int insn) {
 	int value = processor.cp0.getControlRegister(c0cr);
 	processor.cpu.setRegister(rt, value);
 
-	if (log.isTraceEnabled()) {
-		log.trace(String.format("0x%08X - cfc0 reading control register#%d having value 0x%08X", processor.cpu.pc, c0cr, value));
+	if (logCop0.isTraceEnabled()) {
+		logCop0.trace(String.format("0x%08X - cfc0 reading control register#%d having value 0x%08X", processor.cpu.pc, c0cr, value));
 	}
 }
 @Override
@@ -5661,8 +5679,8 @@ public void interpret(Processor processor, int insn) {
 
 	int value = processor.cpu.getRegister(rt);
 
-	if (log.isTraceEnabled()) {
-		log.trace(String.format("0x%08X - mtc0 setting data register#%d(%s) to value 0x%08X", processor.cpu.pc, c0dr, Common.cop0Names[c0dr], value));
+	if (logCop0.isTraceEnabled()) {
+		logCop0.trace(String.format("0x%08X - mtc0 setting data register#%d(%s) to value 0x%08X", processor.cpu.pc, c0dr, Common.cop0Names[c0dr], value));
 	}
 
 	switch (c0dr) {
@@ -5712,8 +5730,8 @@ public void interpret(Processor processor, int insn) {
 	int value = processor.cpu.getRegister(rt);
 	processor.cp0.setControlRegister(c0cr, value);
 
-	if (log.isTraceEnabled()) {
-		log.trace(String.format("0x%08X - ctc0 setting control register#%d to value 0x%08X", processor.cpu.pc, c0cr, value));
+	if (logCop0.isTraceEnabled()) {
+		logCop0.trace(String.format("0x%08X - ctc0 setting control register#%d to value 0x%08X", processor.cpu.pc, c0cr, value));
 	}
 }
 @Override
