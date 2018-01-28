@@ -84,7 +84,7 @@ public class memlmd extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x2AE425D2, version = 660)
-	public boolean memlmd_2F3D7E2D(int subType) {
+	public boolean memlmd_2AE425D2(int subType) {
 		return true;
 	}
 }

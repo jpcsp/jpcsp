@@ -50,6 +50,7 @@ import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.autotests.AutoTestsRunner;
 import jpcsp.crypto.AES128;
+import jpcsp.crypto.PreDecrypt;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.ImageViewer;
 import jpcsp.Debugger.InstructionCounter;
@@ -3044,6 +3045,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 		Security.setProperty("jdk.certpath.disabledAlgorithms", "");
 		Security.setProperty("jdk.tls.disabledAlgorithms", "");
 
+    	PreDecrypt.init();
         AES128.init();
 
         HTTPServer.getInstance();

@@ -1602,6 +1602,18 @@ public class Utilities {
     	return newArray;
     }
 
+    public static byte[] add(byte[] array, byte n) {
+    	if (array == null) {
+    		return new byte[] { n };
+    	}
+
+    	byte[] newArray = new byte[array.length + 1];
+    	System.arraycopy(array, 0, newArray, 0, array.length);
+    	newArray[array.length] = n;
+
+    	return newArray;
+    }
+
     public static File[] add(File[] array, File f) {
     	if (f == null) {
     		return array;

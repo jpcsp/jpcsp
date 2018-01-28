@@ -34,6 +34,10 @@ import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_SHA1_HASH;
 import static jpcsp.crypto.KIRK.PSP_KIRK_INVALID_OPERATION;
 import static jpcsp.memory.mmio.MMIO.normalizeAddress;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
@@ -53,6 +57,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	public static final int STATUS_PHASE2_COMPLETED = 0x02;
 	public static final int STATUS_PHASE2_ERROR = 0x20;
 	public static final int STATUS_PHASE2_MASK = STATUS_PHASE2_COMPLETED | STATUS_PHASE2_ERROR;
+	private static int dumpIndex = 0;
 	public int signature = 0x4B52494B; // KIRK
 	public int version = 0x30313030; // 0010
 	public int error;
@@ -63,6 +68,10 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	public int statusAsyncEnd;
 	public int sourceAddr;
 	public int destAddr;
+	private static final int commandsToBeDumped[] = {
+//		PSP_KIRK_CMD_SHA1_HASH,
+//		PSP_KIRK_CMD_DECRYPT_PRIVATE,
+	};
 
 	public MMIOHandlerKirk(int baseAddress) {
 		super(baseAddress);
@@ -116,6 +125,8 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 
 		int inSize;
 		int outSize;
+		int dataSize;
+		int dataOffset;
 		switch (command) {
 			case PSP_KIRK_CMD_ENCRYPT:
 			case PSP_KIRK_CMD_ENCRYPT_FUSE:
@@ -127,12 +138,16 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				break;
 			case PSP_KIRK_CMD_DECRYPT_PRIVATE:
 				// AES128_CMAC_Header
-				inSize = inAddr.getValue32(112) + 144;
-				outSize = inSize;
+				dataSize = inAddr.getValue32(112);
+				dataOffset = inAddr.getValue32(116);
+				inSize = 144 + Utilities.alignUp(dataSize, 15) + dataOffset;
+				outSize = Utilities.alignUp(dataSize, 15);
 				break;
 			case PSP_KIRK_CMD_PRIV_SIG_CHECK:
 				// AES128_CMAC_Header
-				inSize = inAddr.getValue32(112) + 144;
+				dataSize = inAddr.getValue32(112);
+				dataOffset = inAddr.getValue32(116);
+				inSize = 144 + Utilities.alignUp(dataSize, 15) + dataOffset;
 				outSize = 0;
 				break;
 			case PSP_KIRK_CMD_SHA1_HASH:
@@ -178,10 +193,42 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			log.debug(String.format("hleUtilsBufferCopyWithRange input: %s", Utilities.getMemoryDump(inAddr, inSize)));
 		}
 
+		for (int commandToBeDumped : commandsToBeDumped) {
+			if (command == commandToBeDumped) {
+				String dumpFileName = String.format("dump.hleUtilsBufferCopyWithRange.%d", dumpIndex++);
+				log.warn(String.format("MMIOHandlerKirk: hleUtilsBufferCopyWithRange dumping command=0x%X, outputSize=0x%X, inputSize=0x%X, input dumped into file '%s'", command, outSize, inSize, dumpFileName));
+				try {
+					OutputStream dump = new FileOutputStream(dumpFileName);
+					byte[] inputBuffer = new byte[inSize];
+					for (int i = 0; i < inSize; i++) {
+						inputBuffer[i] = inAddr.getValue8(i);
+					}
+					dump.write(inputBuffer);
+					dump.close();
+				} catch (IOException e) {
+				}
+			}
+		}
+
 		result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, command);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("hleUtilsBufferCopyWithRange result=0x%X, output: %s", result, Utilities.getMemoryDump(outAddr, outSize)));
+		}
+
+		if (result != 0) {
+			String dumpFileName = String.format("dump.hleUtilsBufferCopyWithRange.%d", dumpIndex++);
+			log.warn(String.format("MMIOHandlerKirk: hleUtilsBufferCopyWithRange returned error result=0x%X for command=0x%X, outputSize=0x%X, inputSize=0x%X, input dumped into file '%s'", result, command, outSize, inSize, dumpFileName));
+			try {
+				OutputStream dump = new FileOutputStream(dumpFileName);
+				byte[] inputBuffer = new byte[inSize];
+				for (int i = 0; i < inSize; i++) {
+					inputBuffer[i] = inAddr.getValue8(i);
+				}
+				dump.write(inputBuffer);
+				dump.close();
+			} catch (IOException e) {
+			}
 		}
 	}
 

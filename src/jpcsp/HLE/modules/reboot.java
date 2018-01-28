@@ -486,7 +486,7 @@ public class reboot extends HLEModule {
     	if (signature == 0x0F803001) {
         	// The file flash0:/kd/pspbtcnf.bin is already decrypted
     	} else {
-    		log.error(String.format("hleDecryptBtcnf the file flash0:/kd/pspbtcnf.bin is not decrypted. It need to be decrypted on your PSP"));
+    		log.error(String.format("hleDecryptBtcnf the file flash0:/kd/pspbtcnf.bin is not decrypted. It needs to be decrypted on your PSP"));
     	}
 
     	return size;

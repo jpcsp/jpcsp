@@ -96,10 +96,10 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerSyscon.BASE_ADDRESS, 0x28, MMIOHandlerSyscon.getInstance());
     	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
     	addHandlerRW(0xBFC00000, 0x1000);
-    	write32(0xBFC00200, 0x24388370);
-    	write32(0xBFC00204, 0xB565FA41);
-    	write32(0xBFC00208, 0x48ADBAA4);
-    	write32(0xBFC0020C, 0x53DFF0BB);
+    	write32(0xBFC00200, 0x2E547106);
+    	write32(0xBFC00204, 0xFBDFC08B);
+    	write32(0xBFC00208, 0x087FCC08);
+    	write32(0xBFC0020C, 0xAA60334E);
     	addHandler(MMIOHandlerMeCore.BASE_ADDRESS, 0x2C, MMIOHandlerMeCore.getInstance());
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS1, 0x90C, MMIOHandlerNandPage.getInstance());
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS2, 0x90C, MMIOHandlerNandPage.getInstance());
