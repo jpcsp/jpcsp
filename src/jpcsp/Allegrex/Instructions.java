@@ -103,21 +103,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x04, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x04, (short)imm16, rs);
 }
 };
 public static final Instruction ICACHE_INDEX_UNLOCK = new Instruction(2) {
@@ -130,21 +132,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x06, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x06, (short)imm16, rs);
 }
 };
 public static final Instruction ICACHE_HIT_INVALIDATE = new Instruction(3) {
@@ -160,9 +164,15 @@ public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-	int addr = processor.cpu.getRegister(rs) + (short) imm16;
-	int size = 64;
-	RuntimeContext.invalidateRange(addr, size);
+	if (processor.cp0.isMainCpu()) {
+		int addr = processor.cpu.getRegister(rs) + (short) imm16;
+		int size = 64;
+		RuntimeContext.invalidateRange(addr, size);
+	}
+
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -173,7 +183,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x08, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x08, (short)imm16, rs);
 }
 };
 public static final Instruction ICACHE_FILL = new Instruction(4) {
@@ -186,21 +196,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x0A, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x0A, (short)imm16, rs);
 }
 };
 public static final Instruction ICACHE_FILL_WITH_LOCK = new Instruction(5) {
@@ -213,21 +225,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x0B, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x0B, (short)imm16, rs);
 }
 };
 public static final Instruction ICACHE = new Instruction(252) {
@@ -262,6 +276,10 @@ public void interpret(Processor processor, int insn) {
 			RuntimeContext.invalidateAll();
 		}
 	}
+
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -273,7 +291,7 @@ public String disasm(int address, int insn) {
 	int rs = (insn>>21)&31;
 	int function = (insn>>16)&31;
 
-return Common.disasmCODEIMMRS("icache", function, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("icache", function, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_INDEX_WRITEBACK_INVALIDATE = new Instruction(6) {
@@ -286,21 +304,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x14, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x14, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_INDEX_UNLOCK = new Instruction(7) {
@@ -313,21 +333,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x16, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x16, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_CREATE_DIRTY_EXCLUSIVE = new Instruction(8) {
@@ -340,21 +362,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x18, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x18, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_HIT_INVALIDATE = new Instruction(9) {
@@ -367,21 +391,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x19, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x19, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_HIT_WRITEBACK = new Instruction(10) {
@@ -394,21 +420,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x1A, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x1A, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_HIT_WRITEBACK_INVALIDATE = new Instruction(11) {
@@ -421,21 +449,30 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
+	if (processor.cp0.isMainCpu()) {
+		// This instruction is used by loadcore.prx to invalidate the cache after updating stubs for linking.
+		int addr = processor.cpu.getRegister(rs) + (short) imm16;
+		int size = 64;
+		RuntimeContext.invalidateRange(addr, size);
+	}
 
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x1B, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x1B, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_CREATE_DIRTY_EXCLUSIVE_WITH_LOCK = new Instruction(12) {
@@ -448,21 +485,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x1C, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x1C, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_FILL = new Instruction(13) {
@@ -475,21 +514,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x1E, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x1E, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_FILL_WITH_LOCK = new Instruction(14) {
@@ -502,21 +543,23 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x1F, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("cache", 0x1F, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE = new Instruction(253) {
@@ -529,14 +572,16 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-
+	if (logCache.isTraceEnabled()) {
+		logCache.trace(String.format("%s 0x%08X", name(), processor.cpu.getRegister(rs) + (short)imm16));
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -544,7 +589,7 @@ public String disasm(int address, int insn) {
 	int rs = (insn>>21)&31;
 	int function = (insn>>16)&31;
 
-return Common.disasmCODEIMMRS("dcache", function, (short)imm16, rs);
+	return Common.disasmCODEIMMRS("dcache", function, (short)imm16, rs);
 }
 };
 public static final Instruction SYSCALL = new Instruction(15, FLAG_SYSCALL) {
