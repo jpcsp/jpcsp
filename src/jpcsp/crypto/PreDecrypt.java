@@ -40,33 +40,90 @@ public class PreDecrypt {
 	private static PreDecryptInfo preDecrypts[];
 
 	private static class PreDecryptInfo {
-		private byte[] preIn;
-		private byte[] preOut;
-		private int preCmd;
+		private byte[] input;
+		private byte[] output;
+		private int cmd;
 
-		public PreDecryptInfo(byte[] preIn, byte[] preOut, int preCmd) {
-			this.preIn = preIn;
-			this.preOut = preOut;
-			this.preCmd = preCmd;
+		public PreDecryptInfo(byte[] input, byte[] output, int cmd) {
+			this.input = input;
+			this.output = output;
+			this.cmd = cmd;
 		}
 
 		public boolean decrypt(byte[] out, int outSize, byte[] in, int inSize, int cmd) {
-			if (preCmd != cmd) {
+			if (this.cmd != cmd) {
 				return false;
 			}
-			if (preIn.length != inSize || preOut.length != outSize) {
+			if (input.length != inSize || output.length != outSize) {
 				return false;
 			}
 
 			for (int i = 0; i < inSize; i++) {
-				if (preIn[i] != in[i]) {
+				if (input[i] != in[i]) {
 					return false;
 				}
 			}
 
-			System.arraycopy(preOut, 0, out, 0, outSize);
+			System.arraycopy(output, 0, out, 0, outSize);
 
 			return true;
+		}
+
+		private static boolean equals(byte[] a, byte[] b) {
+			if (a == null) {
+				return b == null;
+			}
+			if (b == null) {
+				return false;
+			}
+			if (a.length != b.length) {
+				return false;
+			}
+
+			for (int i = 0; i < a.length; i++) {
+				if (a[i] != b[i]) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		public boolean equals(PreDecryptInfo info) {
+			if (cmd != info.cmd) {
+				return false;
+			}
+			if (!equals(input, info.input)) {
+				return false;
+			}
+			if (!equals(output, info.output)) {
+				return false;
+			}
+
+			return true;
+		}
+
+		private static void toString(StringBuilder s, byte[] bytes, String name) {
+			s.append(String.format(", %s=[", name));
+			if (bytes != null) {
+				for (int i = 0; i < bytes.length; i++) {
+					if (i > 0) {
+						s.append(", ");
+					}
+					s.append(String.format("0x%02X", bytes[i]));
+				}
+			}
+			s.append("]");
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder s = new StringBuilder();
+			s.append(String.format("cmd=0x%X", cmd));
+			toString(s, input, "Input");
+			toString(s, output, "Output");
+
+			return s.toString();
 		}
 	}
 
@@ -159,6 +216,13 @@ public class PreDecrypt {
 
 	private static void addInfo(byte[] input, byte[] output, int cmd) {
 		PreDecryptInfo info = new PreDecryptInfo(input, output, cmd);
+		for (int i = 0; i < preDecrypts.length; i++) {
+			if (info.equals(preDecrypts[i])) {
+				log.warn(String.format("PreDecrypt.xml: duplicate entry %s", info));
+				return;
+			}
+		}
+
 		PreDecryptInfo[] newPreDecrypts = new PreDecryptInfo[preDecrypts.length + 1];
 		System.arraycopy(preDecrypts, 0, newPreDecrypts, 0, preDecrypts.length);
 		newPreDecrypts[preDecrypts.length] = info;
