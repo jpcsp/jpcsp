@@ -499,6 +499,12 @@ public class CompressPrxVirtualFileSystem extends AbstractProxyVirtualFileSystem
 		if (bufferUncompressed == null) {
 			return null;
 		}
+
+		int headerMagic = Utilities.readUnaligned32(bufferUncompressed, 0);
+		if (headerMagic != Elf32Header.ELF_MAGIC) {
+			return bufferUncompressed;
+		}
+
 		int lengthUncompressed = bufferUncompressed.length;
 
 		ByteArrayOutputStream osCompressed = new ByteArrayOutputStream(PSP_HEADER_SIZE + 9 + lengthUncompressed);

@@ -324,6 +324,12 @@ public class PatchFileVirtualFileSystem extends AbstractProxyVirtualFileSystem {
 
 		@Override
 		public void apply(byte[] buffer) {
+			// Can only patch PRX in ELF format
+			int headerMagic = Utilities.readUnaligned32(buffer, 0);
+			if (headerMagic != Elf32Header.ELF_MAGIC) {
+				return;
+			}
+
 			int fileOffset = getFileOffset(buffer);
 
 			if (fileOffset >= 0) {

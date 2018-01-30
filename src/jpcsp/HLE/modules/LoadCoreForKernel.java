@@ -626,7 +626,7 @@ public class LoadCoreForKernel extends HLEModule {
     }
 
     private int getModuleByAddress(Memory mem, int linkedModules, int address) {
-    	while (linkedModules != 0) {
+    	while (linkedModules != 0 && Memory.isAddressGood(linkedModules)) {
     		int textAddr = mem.read32(linkedModules + 108) & Memory.addressMask;
     		int textSize = mem.read32(linkedModules + 112);
 
