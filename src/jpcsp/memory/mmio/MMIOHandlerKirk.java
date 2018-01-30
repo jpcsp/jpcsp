@@ -71,6 +71,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	private static final int commandsToBeDumped[] = {
 //		PSP_KIRK_CMD_SHA1_HASH,
 //		PSP_KIRK_CMD_DECRYPT_PRIVATE,
+//		PSP_KIRK_CMD_DECRYPT_FUSE,
 	};
 
 	public MMIOHandlerKirk(int baseAddress) {
@@ -133,8 +134,9 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			case PSP_KIRK_CMD_DECRYPT:
 			case PSP_KIRK_CMD_DECRYPT_FUSE:
 				// AES128_CBC_Header
-				inSize = inAddr.getValue32(16) + 20;
-				outSize = inSize;
+				dataSize = inAddr.getValue32(16);
+				inSize = dataSize + 20;
+				outSize = dataSize;
 				break;
 			case PSP_KIRK_CMD_DECRYPT_PRIVATE:
 				// AES128_CMAC_Header

@@ -606,8 +606,8 @@ public class KIRK {
 
         AES128 aes = new AES128("AES/CBC/NoPadding");
 
-        byte[] inBuf = new byte[size];
-        in.get(inBuf, 0, size);
+        byte[] inBuf = new byte[header.dataSize];
+        in.get(inBuf, 0, inBuf.length);
         byte[] outBuf = aes.decrypt(inBuf, decKey, priv_iv);
 
         out.clear();

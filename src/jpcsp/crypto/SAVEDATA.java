@@ -164,8 +164,9 @@ public class SAVEDATA {
         buf[19] = (byte) (size & 0xFF);
         
         // Ignore PSP_KIRK_CMD_ENCRYPT_FUSE and PSP_KIRK_CMD_DECRYPT_FUSE. 
-        if((kirk_code == 0x5) || (kirk_code == 8))
+        if (kirk_code == KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE || kirk_code == KIRK.PSP_KIRK_CMD_DECRYPT_FUSE) {
             return; 
+        }
 
         ByteBuffer bBuf = ByteBuffer.wrap(buf);
         kirk.hleUtilsBufferCopyWithRange(bBuf, size, bBuf, size, kirk_code);
