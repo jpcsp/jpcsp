@@ -915,7 +915,7 @@ public class Utilities {
     }
 
     public static String getMemoryDump(int address, int length) {
-    	if (RuntimeContext.hasMemoryInt() && (length & 0xF) == 0 && (address & 0x3) == 0) {
+    	if (RuntimeContext.hasMemoryInt() && (length & 0xF) == 0 && (address & 0x3) == 0 && Memory.isAddressGood(address)) {
     	    // The most common case has been optimized
     		return getMemoryDump(RuntimeContext.getMemoryInt(), address, length);
     	}

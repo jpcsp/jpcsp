@@ -93,7 +93,7 @@ public class semaphore extends HLEModule {
 
     @HLELogging(level = "info")
     @HLEFunction(nid = 0x4C537C72, version = 150)
-    public int sceUtilsBufferCopyWithRange(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer outAddr, int outSize, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer inAddr, int inSize, int cmd) {
+    public int sceUtilsBufferCopyWithRange(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out, maxDumpLength=256) TPointer outAddr, int outSize, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in, maxDumpLength=256) TPointer inAddr, int inSize, int cmd) {
     	hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, cmd);
     	// Fake a successful operation
     	return 0;

@@ -32,6 +32,7 @@ public @interface BufferInfo {
 	public static final Usage defaultUsage = Usage.unknown;
 	public static final LengthInfo defaultLengthInfo = LengthInfo.unknown;
 	public static final int defaultLength = -1;
+	public static final int defaultMaxDumpLength = -1;
 
 	public static enum LengthInfo {
 		unknown,
@@ -54,4 +55,6 @@ public @interface BufferInfo {
 	public int length() default defaultLength;
 
 	public Usage usage() default Usage.unknown;
+
+	public int maxDumpLength() default defaultMaxDumpLength;
 }

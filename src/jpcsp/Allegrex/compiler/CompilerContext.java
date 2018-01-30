@@ -1352,12 +1352,14 @@ public class CompilerContext implements ICompilerContext {
         		LengthInfo lengthInfo = BufferInfo.defaultLengthInfo;
         		int length = BufferInfo.defaultLength;
         		Usage usage = BufferInfo.defaultUsage;
+            	int maxDumpLength = BufferInfo.defaultMaxDumpLength;
         		for (Annotation parameterAnnotation : paramsAnotations[paramIndex]) {
         			if (parameterAnnotation instanceof BufferInfo) {
         				BufferInfo bufferInfo = (BufferInfo) parameterAnnotation;
         				lengthInfo = bufferInfo.lengthInfo();
         				length = bufferInfo.length();
         				usage = bufferInfo.usage();
+        				maxDumpLength = bufferInfo.maxDumpLength();
         			}
         		}
 
@@ -1442,6 +1444,10 @@ public class CompilerContext implements ICompilerContext {
 	        		}
 
                 	if (useMemoryDump) {
+                		if (maxDumpLength >= 0) {
+                			loadImm(maxDumpLength);
+                    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "min", "(II)I");
+                		}
                 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Utilities.class), "getMemoryDump", "(II)" + Type.getDescriptor(String.class));
                 	}
             		mv.visitInsn(Opcodes.AASTORE);
@@ -1568,6 +1574,7 @@ public class CompilerContext implements ICompilerContext {
 	        		LengthInfo lengthInfo = BufferInfo.defaultLengthInfo;
 	        		int length = BufferInfo.defaultLength;
 	        		Usage usage = BufferInfo.defaultUsage;
+	        		int maxDumpLength = BufferInfo.defaultMaxDumpLength;
 	        		boolean debugMemory = false;
 	        		for (Annotation parameterAnnotation : paramsAnotations[paramIndex]) {
 	        			if (parameterAnnotation instanceof BufferInfo) {
@@ -1575,6 +1582,7 @@ public class CompilerContext implements ICompilerContext {
 	        				lengthInfo = bufferInfo.lengthInfo();
 	        				length = bufferInfo.length();
 	        				usage = bufferInfo.usage();
+	        				maxDumpLength = bufferInfo.maxDumpLength();
 	        			} else if (parameterAnnotation instanceof DebugMemory) {
 	        				debugMemory = true;
 	        			}
@@ -1682,6 +1690,10 @@ public class CompilerContext implements ICompilerContext {
 	                		if (debugMemory) {
 	                    		mv.visitInsn(Opcodes.DUP2);
 		                		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemory", "(II)V");
+	                		}
+	                		if (maxDumpLength >= 0) {
+	                			loadImm(maxDumpLength);
+		                		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "min", "(II)I");
 	                		}
 	                		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Utilities.class), "getMemoryDump", "(II)" + Type.getDescriptor(String.class));
 	                	}
