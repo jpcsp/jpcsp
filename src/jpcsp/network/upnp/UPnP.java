@@ -374,6 +374,9 @@ public class UPnP {
 
 	public String getExternalIPAddress(String controlUrl, String serviceType) {
 		HashMap<String, String> result = executeSimpleUPnPcommand(controlUrl, serviceType, "GetExternalIPAddress", null);
+		if (result == null) {
+			return null;
+		}
 
 		return result.get("NewExternalIPAddress");
 	}
