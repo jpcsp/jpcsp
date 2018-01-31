@@ -3482,7 +3482,8 @@ public class VideoEngine {
         nopCount++;
     	// Some application do have more than 5000 NOP instructions inside the first 2 lists
     	// (i.e. at application initialization), so exclude these lists.
-        if (listCount > 2 && nopCount > 5000) {
+        // The check on the nopCount is currently disabled as it is causing issues in "Dissidia 012: Duodecim Final Fantasy".
+        if (listCount > 2 && nopCount > Integer.MAX_VALUE) {
         	// More than 5000 NOP instructions executed during this list,
             // something must be wrong...
             error(String.format("Too many NOP instructions executed (%d) at 0x%08X, list %s", nopCount, currentList.getPc(), currentList));
