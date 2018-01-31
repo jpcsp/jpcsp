@@ -70,7 +70,7 @@ public class MemoryRange {
 	}
 
 	public void extendBottom(int size) {
-		address -= size;
+		setAddress(address - size);
 		length += size;
 	}
 
