@@ -34,4 +34,20 @@ public class Memcpy extends AbstractNativeCodeSequence {
 
 		setGprV0(dstAddr);
 	}
+
+	static public void callWithInvalidateCache() {
+		int dstAddr = getGprA0();
+		int srcAddr = getGprA1();
+		int n = getGprA2();
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("memcpy with invalidate cache dst=0x%08X, src=0x%08X, length=0x%X", dstAddr, srcAddr, n));
+		}
+
+		getMemoryForLLE().memcpyWithVideoCheck(dstAddr, srcAddr, n);
+
+		invalidateCache(dstAddr, n);
+
+		setGprV0(dstAddr);
+	}
 }

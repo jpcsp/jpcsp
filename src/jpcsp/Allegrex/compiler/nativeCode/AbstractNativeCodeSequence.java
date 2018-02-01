@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode;
 
+import static jpcsp.util.Utilities.alignDown;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
@@ -29,6 +31,7 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -349,5 +352,17 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	static protected void interpret(int opcode) {
 		Instruction insn = Decoder.instruction(opcode);
 		insn.interpret(RuntimeContext.processor, opcode);
+	}
+
+	static protected void invalidateCache(int address, int length) {
+		address = getMemory().normalize(address);
+		int endAddress = address + length;
+		final int invalidateSize = 64;
+		address = alignDown(address, invalidateSize - 1);
+
+		while (address < endAddress) {
+			RuntimeContext.invalidateRange(address, invalidateSize);
+			address += invalidateSize;
+		}
 	}
 }

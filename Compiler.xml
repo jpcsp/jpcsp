@@ -3805,6 +3805,7 @@
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memcpy">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcpy</Class>
+		<Method>callWithInvalidateCache</Method>
 		<IsReturning>true</IsReturning>
 		<CodeInstructions><![CDATA[
 0800D714:[00A05021]: addu       $t2, $a1, $zr <=> move $t2, $a1
