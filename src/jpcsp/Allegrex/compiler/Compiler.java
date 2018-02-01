@@ -290,6 +290,10 @@ public class Compiler implements ICompiler {
     }
 
     public void checkCodeBlockValidity(CodeBlock codeBlock) {
+    	if (codeBlock.getExecutable() == null) {
+    		// This code block is interpreted, no need to check
+    		return;
+    	}
     	if (codeBlock.getExecutable().getExecutable() instanceof InvalidatedExecutable) {
     		// This code block has already been invalidated (will be checked for changes or recompiled)
     		return;
