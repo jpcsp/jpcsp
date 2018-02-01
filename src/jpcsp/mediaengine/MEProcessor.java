@@ -21,7 +21,6 @@ import static jpcsp.HLE.kernel.managers.ExceptionManager.EXCEP_INT;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -118,6 +117,11 @@ public class MEProcessor extends Processor {
 
 		halt = false;
 
+		if (log.isTraceEnabled()) {
+			// The TRACE level is generating too much output during the initial reset (or after a sceKernelLoadExec())
+			log.setLevel(Level.DEBUG);
+		}
+
 		meThread.sync();
 	}
 
@@ -152,7 +156,6 @@ public class MEProcessor extends Processor {
 		}
 
 		// Is the interrupt masked?
-//		if ((status & 0x1) == 0 || ((pendingInterruptIPbits << 8) & status) == 0) {
 		if (((pendingInterruptIPbits << 8) & status) == 0) {
 			return false;
 		}
@@ -170,7 +173,7 @@ public class MEProcessor extends Processor {
 		int epc = cpu.pc;
 
 		int cause = cp0.getCause();
-		if (!forceNoDelaySlot && epc != 0 && isInstructionInDelaySlot(epc)) {
+		if (!forceNoDelaySlot && epc != 0 && isInstructionInDelaySlot(cpu.memory, epc)) {
 			cause |= 0x80000000; // Set BD flag (Branch Delay Slot)
 			epc -= 4; // The EPC is set to the instruction having the delay slot
 		} else {
@@ -197,58 +200,6 @@ public class MEProcessor extends Processor {
 		halt = false;
 
 		return ebase;
-	}
-
-	private boolean isInstructionInDelaySlot(int address) {
-		int previousInstruction = cpu.memory.read32(address - 4);
-		switch ((previousInstruction >> 26) & 0x3F) {
-			case AllegrexOpcodes.J:
-			case AllegrexOpcodes.JAL:
-			case AllegrexOpcodes.BEQ:
-			case AllegrexOpcodes.BNE:
-			case AllegrexOpcodes.BLEZ:
-			case AllegrexOpcodes.BGTZ:
-			case AllegrexOpcodes.BEQL:
-			case AllegrexOpcodes.BNEL:
-			case AllegrexOpcodes.BLEZL:
-			case AllegrexOpcodes.BGTZL:
-				return true;
-			case AllegrexOpcodes.SPECIAL:
-				switch (previousInstruction & 0x3F) {
-					case AllegrexOpcodes.JR:
-					case AllegrexOpcodes.JALR:
-						return true;
-				}
-				break;
-			case AllegrexOpcodes.REGIMM:
-				switch ((previousInstruction >> 16) & 0x1F) {
-					case AllegrexOpcodes.BLTZ:
-					case AllegrexOpcodes.BGEZ:
-					case AllegrexOpcodes.BLTZL:
-					case AllegrexOpcodes.BGEZL:
-					case AllegrexOpcodes.BLTZAL:
-					case AllegrexOpcodes.BGEZAL:
-					case AllegrexOpcodes.BLTZALL:
-					case AllegrexOpcodes.BGEZALL:
-						return true;
-				}
-				break;
-			case AllegrexOpcodes.COP1:
-				switch ((previousInstruction >> 21) & 0x1F) {
-					case AllegrexOpcodes.COP1BC:
-						switch ((previousInstruction >> 16) & 0x1F) {
-							case AllegrexOpcodes.BC1F:
-							case AllegrexOpcodes.BC1T:
-							case AllegrexOpcodes.BC1FL:
-							case AllegrexOpcodes.BC1TL:
-								return true;
-						}
-						break;
-				}
-				break;
-		}
-
-		return false;
 	}
 
 	private void checkPendingInterruptException() {

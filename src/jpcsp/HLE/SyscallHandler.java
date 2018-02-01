@@ -192,7 +192,7 @@ public class SyscallHandler {
     	return 0;
     }
 
-    public static int syscall(int code) {
+    public static int syscall(int code, boolean inDelaySlot) {
     	if (RuntimeContextLLE.isLLEActive()) {
     		Processor processor = Emulator.getProcessor();
     		if (log.isDebugEnabled()) {
@@ -200,7 +200,7 @@ public class SyscallHandler {
     		}
 
     		// For LLE syscalls, trigger a syscall exception
-			return RuntimeContextLLE.triggerSyscallException(processor, code);
+			return RuntimeContextLLE.triggerSyscallException(processor, code, inDelaySlot);
     	}
 
     	// All HLE syscalls are now implemented natively in the compiler

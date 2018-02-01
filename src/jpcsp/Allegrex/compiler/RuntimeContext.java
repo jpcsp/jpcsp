@@ -772,17 +772,17 @@ public class RuntimeContext {
     	syncFast();
     }
 
-    public static int syscallFast(int code) throws Exception {
+    public static int syscallFast(int code, boolean inDelaySlot) throws Exception {
 		// Fast syscall: no context switching
-    	int continueAddress = SyscallHandler.syscall(code);
+    	int continueAddress = SyscallHandler.syscall(code, inDelaySlot);
     	postSyscallFast();
 
     	return continueAddress;
     }
 
-    public static int syscall(int code) throws Exception {
+    public static int syscall(int code, boolean inDelaySlot) throws Exception {
     	preSyscall();
-    	int continueAddress = SyscallHandler.syscall(code);
+    	int continueAddress = SyscallHandler.syscall(code, inDelaySlot);
     	postSyscall();
 
     	return continueAddress;

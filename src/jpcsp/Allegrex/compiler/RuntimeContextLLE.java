@@ -18,7 +18,6 @@ package jpcsp.Allegrex.compiler;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -105,29 +104,19 @@ public class RuntimeContextLLE {
 		}
 	}
 
-	public static int triggerSyscallException(Processor processor, int syscallCode) {
+	public static int triggerSyscallException(Processor processor, int syscallCode, boolean inDelaySlot) {
 		processor.cp0.setSyscallCode(syscallCode << 2);
 
-		// Check if the syscall was executed in a delay slot,
-		// i.e. if the previous instruction is "jr $ra".
-		int returnAddress;
+		// Set the BD (Branch Delay Slot) flag if the syscall was called inside a delay slot.
 		int cause = processor.cp0.getCause();
-
-		if (isInstructionInDelaySlot(processor.cpu.pc)) {
+		if (inDelaySlot) {
 			cause |= 0x80000000; // Set BD flag (Branch Delay Slot)
-
-			// The syscall will return to the address contained in the $ra register
-			returnAddress = processor.cpu._ra;
 		} else {
 			cause &= ~0x80000000; // Clear BD flag (Branch Delay Slot)
-
-			// The syscall will return to the address following the syscall instruction
-			returnAddress = processor.cpu.pc + 4;
 		}
-
 		processor.cp0.setCause(cause);
 
-		return triggerException(processor, ExceptionManager.EXCEP_SYS, returnAddress);
+		return triggerException(processor, ExceptionManager.EXCEP_SYS);
 	}
 
 	public static boolean isMediaEngineCpu() {
@@ -157,10 +146,10 @@ public class RuntimeContextLLE {
 		processor.cp0.setCause(cause);
 	}
 
-	public static int triggerException(Processor processor, int exceptionNumber, int returnAddress) {
+	public static int triggerException(Processor processor, int exceptionNumber) {
 		setExceptionCause(processor, exceptionNumber);
 
-		int ebase = prepareExceptionHandlerCall(processor, false);
+		int ebase = prepareExceptionHandlerCall(processor);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Calling exception handler for Syscall at 0x%08X, epc=0x%08X", ebase, processor.cp0.getEpc()));
@@ -210,70 +199,13 @@ public class RuntimeContextLLE {
 		return true;
 	}
 
-	private static boolean isInstructionInDelaySlot(int address) {
-		Memory mem = Memory.getInstance();
-		int previousInstruction = mem.read32(address - 4);
-		switch ((previousInstruction >> 26) & 0x3F) {
-			case AllegrexOpcodes.J:
-			case AllegrexOpcodes.JAL:
-			case AllegrexOpcodes.BEQ:
-			case AllegrexOpcodes.BNE:
-			case AllegrexOpcodes.BLEZ:
-			case AllegrexOpcodes.BGTZ:
-			case AllegrexOpcodes.BEQL:
-			case AllegrexOpcodes.BNEL:
-			case AllegrexOpcodes.BLEZL:
-			case AllegrexOpcodes.BGTZL:
-				return true;
-			case AllegrexOpcodes.SPECIAL:
-				switch (previousInstruction & 0x3F) {
-					case AllegrexOpcodes.JR:
-					case AllegrexOpcodes.JALR:
-						return true;
-				}
-				break;
-			case AllegrexOpcodes.REGIMM:
-				switch ((previousInstruction >> 16) & 0x1F) {
-					case AllegrexOpcodes.BLTZ:
-					case AllegrexOpcodes.BGEZ:
-					case AllegrexOpcodes.BLTZL:
-					case AllegrexOpcodes.BGEZL:
-					case AllegrexOpcodes.BLTZAL:
-					case AllegrexOpcodes.BGEZAL:
-					case AllegrexOpcodes.BLTZALL:
-					case AllegrexOpcodes.BGEZALL:
-						return true;
-				}
-				break;
-			case AllegrexOpcodes.COP1:
-				switch ((previousInstruction >> 21) & 0x1F) {
-					case AllegrexOpcodes.COP1BC:
-						switch ((previousInstruction >> 16) & 0x1F) {
-							case AllegrexOpcodes.BC1F:
-							case AllegrexOpcodes.BC1T:
-							case AllegrexOpcodes.BC1FL:
-							case AllegrexOpcodes.BC1TL:
-								return true;
-						}
-						break;
-				}
-				break;
-		}
-
-		return false;
-	}
-
-	private static int prepareExceptionHandlerCall(Processor processor, boolean forceNoDelaySlot) {
+	private static int prepareExceptionHandlerCall(Processor processor) {
 		int epc = processor.cpu.pc;
 
-		int cause = processor.cp0.getCause();
-		if (!forceNoDelaySlot && isInstructionInDelaySlot(epc)) {
-			cause |= 0x80000000; // Set BD flag (Branch Delay Slot)
+		// BD (Branch Delay Slot) flag set?
+		if ((processor.cp0.getCause() & 0x80000000) != 0) {
 			epc -= 4; // The EPC is set to the instruction having the delay slot
-		} else {
-			cause &= ~0x80000000; // Clear BD flag (Branch Delay Slot)
 		}
-		processor.cp0.setCause(cause);
 
 		// Set the EPC
 		processor.cp0.setEpc(epc);
@@ -294,12 +226,13 @@ public class RuntimeContextLLE {
 			int cause = processor.cp0.getCause();
 			cause |= (pendingInterruptIPbits << 8);
 			pendingInterruptIPbits = 0;
+			// The compiler is only calling this function when
+			// we are not in a delay slot
+			cause &= ~0x80000000; // Clear the BD (Branch Delay Slot) flag
 			processor.cp0.setCause(cause);
 
 			setExceptionCause(processor, ExceptionManager.EXCEP_INT);
-			// The compiler is only calling this function when
-			// we are not in a delay slot
-			int ebase = prepareExceptionHandlerCall(processor, true);
+			int ebase = prepareExceptionHandlerCall(processor);
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X", MMIOHandlerInterruptMan.getInstance(processor).toStringInterruptTriggered(), ebase, processor.cp0.getEpc()));

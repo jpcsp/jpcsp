@@ -2059,15 +2059,23 @@ public class CompilerContext implements ICompilerContext {
     		}
 
     		if (func == null) {
-    	    	loadImm(code);
+    			boolean inDelaySlot;
+    			if (getCodeInstruction() != null) {
+    				inDelaySlot = getCodeInstruction().isDelaySlot();
+    			} else {
+    				inDelaySlot = false;
+    			}
+
+    			loadImm(code);
+    			loadImm(inDelaySlot);
     	    	if (fastSyscall) {
-    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)I");
+    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(IZ)I");
     	    	} else {
-    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)I");
+    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(IZ)I");
     	    	}
 
     	    	if (getCodeInstruction() != null) {
-    	    		if (getCodeInstruction().isDelaySlot()) {
+    	    		if (inDelaySlot) {
     	    			visitContinueToAddressInRegister(_ra);
     	    		} else {
     	    			visitContinueToAddress(getCodeInstruction().getAddress() + 4, false);
