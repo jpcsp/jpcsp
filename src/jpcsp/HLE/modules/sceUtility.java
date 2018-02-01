@@ -527,7 +527,18 @@ public class sceUtility extends HLEModule {
     }
 
     private static String formatDateTime(Calendar dateTime) {
-    	return String.format(getDateTimeFormatString(), dateTime);
+    	String formattedDateTime = String.format(getDateTimeFormatString(), dateTime);
+
+    	// Java doesn't have a format for the month as single digit :-(
+    	// E.g. February is always formatted as "02".
+    	// The PSP is however displaying the month as a single digit,
+    	// so we manually remove any leading 0 for the month.
+    	if (formattedDateTime.startsWith("0")) {
+    		formattedDateTime = formattedDateTime.substring(1);
+    	}
+    	formattedDateTime = formattedDateTime.replace("/0", "/");
+
+    	return formattedDateTime;
     }
 
     public void hleUtilityThread(Processor processor) {
