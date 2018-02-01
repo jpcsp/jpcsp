@@ -38,14 +38,16 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x4222D6F3, version = 150)
-    public int sceAta_driver_4222D6F3() {
-    	return 0;
+    public void sceAta_driver_4222D6F3() {
+    	// Has no parameters
+    	// Stores 0 at hardware address 0xBD600010
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x4D225674, version = 150)
-    public int sceAta_driver_4D225674() {
-    	return 0;
+    public void sceAta_driver_4D225674() {
+    	// Has no parameters
+    	// Stores 1 at hardware address 0xBD600010
     }
 
     @HLEUnimplemented

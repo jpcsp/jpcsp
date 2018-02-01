@@ -27,6 +27,12 @@ public class MMIOHandlerAta2 extends MMIOHandlerBase {
 		super(baseAddress);
 	}
 
+	private void writeReset(int value) {
+		if (value != 0) {
+			MMIOHandlerAta.getInstance().reset();
+		}
+	}
+
 	@Override
 	public int read32(int address) {
 		int value;
@@ -56,7 +62,7 @@ public class MMIOHandlerAta2 extends MMIOHandlerBase {
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
 			case 0x04: if (value != 0x04028002) { super.write32(address, value); } break; // Unknown value
-			case 0x10: if (value != 1) { super.write32(address, value); } break; // Unknown value
+			case 0x10: writeReset(value); break;
 			case 0x1C: if (value != 0x00020A0C) { super.write32(address, value); } break; // Unknown value
 			case 0x14: break; // Unknown value
 			case 0x34: if (value != 0) { super.write32(address, value); } break; // Unknown value

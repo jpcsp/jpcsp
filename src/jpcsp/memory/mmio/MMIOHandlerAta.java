@@ -131,6 +131,10 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 		drive = 0x00;
 	}
 
+	public void reset() {
+		setSignature();
+	}
+
 	private void setByteCount(int byteCount) {
 		cylinderLow = byteCount & 0xFF;
 		cylinderHigh = (byteCount >> 8) & 0xFF;
@@ -496,14 +500,14 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 				break;
 			case ATA_CMD_OP_READ_BIG:
 				logicalBlockAddress = data[5] | (data[4] << 8) | (data[3] << 16) | (data[2] << 24);
-				int transferLength = data[8] | (data[7] << 8);
+				int numberOfSectorsToTransfer = data[8] | (data[7] << 8);
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("ATA_CMD_OP_READ_BIG logicalBlockAddress=0x%X, transferLength=0x%X", logicalBlockAddress, transferLength));
+					log.debug(String.format("ATA_CMD_OP_READ_BIG logicalBlockAddress=0x%X, numberOfSectorsToTransfer=0x%X", logicalBlockAddress, numberOfSectorsToTransfer));
 				}
 
-				prepareDataInit(transferLength);
-				prepareDataEnd(transferLength);
+				prepareDataInit(0);
+				prepareDataEnd(0);
 				break;
 			default:
 				log.error(String.format("MMIOHandlerAta.executePacketCommand unknown operation code 0x%02X(%s)", operationCode, getOperationCodeName(operationCode)));
