@@ -365,9 +365,9 @@ public class SettingsGUI extends javax.swing.JFrame {
 
     public static String[] getSysparamDateFormats() {
         return new String[]{
-            "YYYY-MM-DD",
-            "MM-DD-YYYY",
-            "DD-MM-YYYY"
+            "YYYY/M/D",
+            "M/D/YYYY",
+            "D/M/YYYY"
         };
     }
 
