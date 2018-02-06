@@ -18,19 +18,49 @@ package jpcsp.memory.mmio;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceDdr;
 
 public class MMIOHandlerDdr extends MMIOHandlerBase {
 	public static Logger log = sceDdr.log;
+	public static final int BASE_ADDRESS = 0xBD000000;
+	public static final int DDR_FLUSH_DMAC = 4;
+	private static MMIOHandlerDdr instance;
 	private int unknown40;
+	private final IAction flushActions[] = new IAction[16];
+	private final boolean flushDone[] = new boolean[16];
 
-	public MMIOHandlerDdr(int baseAddress) {
+	public static MMIOHandlerDdr getInstance() {
+		if (instance == null) {
+			instance = new MMIOHandlerDdr(BASE_ADDRESS);
+		}
+		return instance;
+	}
+
+	private MMIOHandlerDdr(int baseAddress) {
 		super(baseAddress);
 	}
 
+	public boolean checkAndClearFlushDone(int value) {
+		boolean check = flushDone[value];
+		flushDone[value] = false;
+
+		return check;
+	}
+
+	public void setFlushAction(int value, IAction action) {
+		flushActions[value] = action;
+	}
+
 	private void doFlush(int value) {
+		flushDone[value] = true;
+
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("MMIOHandlerDdr.doFlush 0x%01X", value));
+		}
+
+		if (flushActions[value] != null) {
+			flushActions[value].execute();
 		}
 	}
 

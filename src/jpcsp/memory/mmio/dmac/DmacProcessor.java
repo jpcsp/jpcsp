@@ -23,6 +23,7 @@ public class DmacProcessor {
 	private static final int STATUS_IN_PROGRESS = 0x1;
 	private Memory memSrc;
 	private Memory memDst;
+	private IAction interruptAction;
 	private IAction completedAction;
 	private DmacThread dmacThread;
 	private int dst;
@@ -32,29 +33,23 @@ public class DmacProcessor {
 	private int status;
 
 	private class CompletedAction implements IAction {
-		private IAction completedAction;
-
-		public CompletedAction(IAction completedAction) {
-			this.completedAction = completedAction;
+		public CompletedAction() {
 		}
 
 		@Override
 		public void execute() {
 			// Clear the flag STATUS_IN_PROGRESS
 			status &= ~STATUS_IN_PROGRESS;
-
-			if (completedAction != null) {
-				completedAction.execute();
-			}
 		}
 	}
 
-	public DmacProcessor(Memory memSrc, Memory memDst, int baseAddress, IAction completedAction) {
+	public DmacProcessor(Memory memSrc, Memory memDst, int baseAddress, IAction interruptAction) {
 		this.memSrc = memSrc;
 		this.memDst = memDst;
-		this.completedAction = new CompletedAction(completedAction);
+		this.interruptAction = interruptAction;
+		this.completedAction = new CompletedAction();
 
-		dmacThread = new DmacThread();
+		dmacThread = new DmacThread(this);
 		dmacThread.setName(String.format("Dmac Thread for 0x%08X", baseAddress));
 		dmacThread.setDaemon(true);
 		dmacThread.start();
@@ -97,10 +92,18 @@ public class DmacProcessor {
 	}
 
 	public void setStatus(int status) {
+		int previousStatus = this.status;
 		this.status = status;
 
-		if ((status & STATUS_IN_PROGRESS) != 0) {
-			dmacThread.execute(memDst, memSrc, dst, src, next, attributes, completedAction);
+		// Status "in progress" changed?
+		if ((previousStatus & STATUS_IN_PROGRESS) != (status & STATUS_IN_PROGRESS)) {
+			if ((status & STATUS_IN_PROGRESS) != 0) {
+				// Starting...
+				dmacThread.execute(memDst, memSrc, dst, src, next, attributes, status, interruptAction, completedAction);
+			} else {
+				// Stopping...
+				dmacThread.abortJob();
+			}
 		}
 	}
 
