@@ -36,8 +36,6 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	public static final int AUDIO_HW_FREQUENCY_48000 = 0x100;
 	private int busy;
 	private int interrupt;
-	private int flags04;
-	private int flags08;
 	private int inProgress;
 	private int flags10;
 	private int flags20;
@@ -73,6 +71,9 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	}
 
 	private int sendAudioData(int value, int index, int[] data, int interrupt) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sendAudioData value=0x%08X, index=0x%X, interrupt=%d", value, index, interrupt));
+		}
 		data[index++] = value;
 
 		if (index >= data.length) {
@@ -96,24 +97,34 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			}
 			index = 0;
 
-			inProgress &= ~interrupt;
-			this.interrupt |= interrupt;
-			checkInterrupt();
+//			inProgress &= ~interrupt;
+//			this.interrupt |= interrupt;
+//			checkInterrupt();
 		}
 
 		return index;
 	}
 
-	private void setFlags08(int flags08) {
-		this.flags08 = flags08;
-
-		if ((flags08 & 0x1) == 0) {
+	private void startAudio(int flags) {
+		if ((flags & 0x1) == 0) {
 			audioDataIndex0 = 0;
 			inProgress |= 1;
 		}
-		if ((flags08 & 0x2) == 0) {
+		if ((flags & 0x2) == 0) {
 			audioDataIndex1 = 0;
 			inProgress |= 2;
+		}
+	}
+
+	private void stopAudio(int flags) {
+		if ((inProgress & 0x1) != 0 && (flags & 0x1) == 0) {
+			inProgress &= ~0x1;
+		}
+		if ((inProgress & 0x2) != 0 && (flags & 0x2) == 0) {
+			inProgress &= ~0x2;
+		}
+		if ((inProgress & 0x4) != 0 && (flags & 0x4) == 0) {
+			inProgress &= ~0x4;
 		}
 	}
 
@@ -140,8 +151,8 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
 			case 0x00: busy = value; break;
-			case 0x04: flags04 = value; break;
-			case 0x08: setFlags08(value); break;
+			case 0x04: stopAudio(value); break;
+			case 0x08: startAudio(value); break;
 			case 0x10: flags10 = value; break;
 			case 0x14: if (value != 0x1208) { super.write32(address, value); } break;
 			case 0x18: if (value != 0x0) { super.write32(address, value); } break;
@@ -165,6 +176,6 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 
 	@Override
 	public String toString() {
-		return String.format("busy=0x%X, interrupt=0x%X, flags04=0x%X, flags08=0x%X, inProgress=0x%X, flags10=0x%X, flags20=0x%X, flags24=0x%X, flags2C=0x%X, volume=0x%X, frequency0=0x%X, frequency1=0x%X, frequencyFlags=0x%X, hardwareFrequency=0x%X", busy, interrupt, flags04, flags08, inProgress, flags10, flags20, flags24, flags2C, volume, frequency0, frequency1, frequencyFlags, hardwareFrequency);
+		return String.format("busy=0x%X, interrupt=0x%X, inProgress=0x%X, flags10=0x%X, flags20=0x%X, flags24=0x%X, flags2C=0x%X, volume=0x%X, frequency0=0x%X, frequency1=0x%X, frequencyFlags=0x%X, hardwareFrequency=0x%X", busy, interrupt, inProgress, flags10, flags20, flags24, flags2C, volume, frequency0, frequency1, frequencyFlags, hardwareFrequency);
 	}
 }
