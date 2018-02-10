@@ -318,7 +318,9 @@ public class UPnP {
 		} catch (MalformedURLException e) {
 			log.error("executeUPnPcommand", e);
 		} catch (IOException e) {
-			log.error("executeUPnPcommand", e);
+			if (log.isDebugEnabled()) {
+				log.debug("executeUPnPcommand", e);
+			}
 		}
 
 		return result;
