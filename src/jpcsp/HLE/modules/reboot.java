@@ -16,30 +16,10 @@
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.Allegrex.Common._a0;
-import static jpcsp.Allegrex.Common._a1;
-import static jpcsp.Allegrex.Common._a2;
-import static jpcsp.Allegrex.Common._s1;
-import static jpcsp.Allegrex.Common._t3;
-import static jpcsp.Allegrex.Common._t4;
-import static jpcsp.Allegrex.Common._v0;
-import static jpcsp.Allegrex.Common._v1;
-import static jpcsp.Allegrex.Common._zr;
-import static jpcsp.HLE.HLEModuleManager.InternalSyscallNid;
 import static jpcsp.HLE.Modules.LoadCoreForKernelModule;
 import static jpcsp.HLE.modules.InitForKernel.SCE_INIT_APITYPE_KERNEL_REBOOT;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Addr;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
-import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
-import static jpcsp.HLE.modules.ThreadManForUser.JAL;
-import static jpcsp.HLE.modules.ThreadManForUser.JR;
-import static jpcsp.HLE.modules.ThreadManForUser.LW;
-import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
-import static jpcsp.HLE.modules.ThreadManForUser.NOP;
-import static jpcsp.HLE.modules.ThreadManForUser.SB;
-import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
-import static jpcsp.format.PSP.PSP_HEADER_SIZE;
-import static jpcsp.util.Utilities.patch;
 
 import org.apache.log4j.Logger;
 
@@ -48,10 +28,6 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.HLE.BufferInfo;
-import jpcsp.HLE.BufferInfo.LengthInfo;
-import jpcsp.HLE.BufferInfo.Usage;
-import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
@@ -133,71 +109,9 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-		// Mapping of subroutines defined in
-		//     https://github.com/uofw/uofw/blob/master/src/reboot/unk.c
-		// and https://github.com/uofw/uofw/blob/master/src/reboot/nand.c
-		//
-		//	sub_EFCC -> sceNandInit2
-		//	sub_F0C4 -> sceNandIsReady
-		//	sub_F0D4 -> sceNandSetWriteProtect
-		//	sub_F144 -> sceNandLock
-		//	sub_F198 -> sceNandReset
-		//	sub_F234 -> sceNandReadId
-		//	sub_F28C -> sceNandReadAccess
-		//	sub_F458 -> sceNandWriteAccess
-		//	sub_F640 -> sceNandEraseBlock
-		//	sub_F72C -> sceNandReadExtraOnly
-		//	sub_F8A8 -> sceNandReadStatus
-		//	sub_F8DC -> sceNandSetScramble
-		//	sub_F8EC -> sceNandReadPages
-		//	sub_F930 -> sceNandWritePages
-		//	sub_F958 -> sceNandReadPagesRawExtra
-		//	sub_F974 -> sceNandWritePagesRawExtra
-		//	sub_F998 -> sceNandReadPagesRawAll
-		//	sub_F9D0 -> sceNandTransferDataToNandBuf
-		//	sub_FC40 -> sceNandIntrHandler
-		//	sub_FF60 -> sceNandTransferDataFromNandBuf
-		//	sub_103C8 -> sceNandWriteBlockWithVerify
-		//	sub_1047C -> sceNandReadBlockWithRetry
-		//	sub_10500 -> sceNandVerifyBlockWithRetry
-		//	sub_10650 -> sceNandEraseBlockWithRetry
-		//	sub_106C4 -> sceNandIsBadBlock
-		//	sub_10750 -> sceNandDoMarkAsBadBlock
-		//	sub_109DC -> sceNandDetectChipMakersBBM
-		//	sub_10D1C -> sceNandGetPageSize
-		//	sub_10D28 -> sceNandGetPagesPerBlock
-		//	sub_10D34 -> sceNandGetTotalBlocks
-		//	sub_10DA0 -> sceNandCalcEcc
-		//	sub_88610FE8 -> sceNandCorrectEcc
-		//	sub_11004 -> sceNandCorrectEcc2
-    	//  sub_11860 -> sceSysregEmcsmBusClockEnable
-    	//  sub_11994 -> sceSysregEmcsmIoEnable
-		//	unkVar90A4 -> g_scramble
-
     	markMMIO();
 
     	addFunctionNames(rebootModule);
-
-		patch(mem, rebootModule, 0x000060A8, 0x11A0001F, NOP());              // Allow non-encrypted sysmem.prx and loadcore.prx: NOP the test at https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L680
-		patch(mem, rebootModule, 0x00002734, 0x012C182B, ADDIU(_t4, _t4, 1)); // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
-		patch(mem, rebootModule, 0x00002738, 0x1060FFFA, 0x012C182B);         // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
-		patch(mem, rebootModule, 0x0000273C, 0x00000000, 0x1060FFF9);         // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L40
-		patch(mem, rebootModule, 0x0000274C, 0xA1630000, SB(_v1, _t3, -1));   // Fix KL4E decompression of uncompressed data: https://github.com/uofw/uofw/blob/master/src/reboot/main.c#L48
-
-		// The function at offset 0x00006130 is decrypting the modules.
-		// See https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L707
-		patch(mem, rebootModule, 0x00006174, 0x9223007C, MOVE(_a0, _s1));
-		patch(mem, rebootModule, 0x00006178, 0x1060000D, ADDIU(_a1, _a0, PSP_HEADER_SIZE));
-		patch(mem, rebootModule, 0x0000617C, 0x3C078002, LW(_a2, _a0, 44));
-		patch(mem, rebootModule, 0x00006180, 0x24050002, JAL(rebootModule.baseAddress + 0x00003C4C)); // jal memcpy
-		patch(mem, rebootModule, 0x00006184, 0x1065000A, ADDIU(_a2, _a2, -PSP_HEADER_SIZE));
-		patch(mem, rebootModule, 0x00006188, 0x34E40148, MOVE(_a0, _zr));
-
-		// The function at offset 0x000052F4 is checking the validity of the module hash from pspbtcnf.bin.
-		patch(mem, rebootModule, 0x000052F4, 0x27BDFE50, JR());
-		patch(mem, rebootModule, 0x000052F8, 0xAFB101A4, MOVE(_v0, _zr));
-
-		patchSyscall(0x0000574C, this, "hleDecryptBtcnf", mem, rebootModule, 0x27BDFFE0, 0xAFB20018);
 
 		SysMemInfo rebootParamInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot-parameters", PSP_SMEM_Addr, 0x10000, rebootParamAddress);
 		TPointer sceLoadCoreBootInfoAddr = new TPointer(mem, rebootParamInfo.addr);
@@ -253,11 +167,6 @@ public class reboot extends HLEModule {
     	compiler.addMMIORange(0xBFC00C00, 0x240);
     }
 
-    private static void patchSyscall(int offset, HLEModule hleModule, String functionName, Memory mem, SceModule rebootModule, int oldCode1, int oldCode2) {
-		patch(mem, rebootModule, offset + 0, oldCode1, JR());
-		patch(mem, rebootModule, offset + 4, oldCode2, SYSCALL(hleModule, functionName));
-    }
-
     private void addFunctionNid(int moduleAddress, SceModule module, String name) {
     	int nid = HLEModuleManager.getInstance().getNIDFromFunctionName(name);
     	if (nid != 0) {
@@ -299,6 +208,9 @@ public class reboot extends HLEModule {
     	LoadCoreForKernelModule.addFunctionName("sceHP_Remote_Driver", 0x0704, "sceHP_Remote_Driver.sceHpRemoteThreadEntry");
     	LoadCoreForKernelModule.addFunctionName("sceLowIO_Driver",     0x9C7C, "sceNandTransferDataToNandBuf");
 
+		// Mapping of subroutines defined in
+		//     https://github.com/uofw/uofw/blob/master/src/reboot/unk.c
+		// and https://github.com/uofw/uofw/blob/master/src/reboot/nand.c
     	addFunctionNid(0x0000EFCC, rebootModule, "sceNandInit2");
     	addFunctionNid(0x0000F0C4, rebootModule, "sceNandIsReady");
     	addFunctionNid(0x0000F0D4, rebootModule, "sceNandSetWriteProtect");
@@ -459,6 +371,9 @@ public class reboot extends HLEModule {
 			if (waitType == SceKernelThreadInfo.PSP_WAIT_DELAY) {
 				int waitDelay = mem.read32(address + 96);
 				waitInfo.append(String.format(", waitDelay=0x%X", waitDelay));
+			} else if (waitType == SceKernelThreadInfo.PSP_WAIT_EVENTFLAG) {
+				int bits = mem.read32(address + 96);
+				waitInfo.append(String.format(", waitEventFlagBits=0x%X", bits));
 			}
 		}
 
@@ -478,17 +393,5 @@ public class reboot extends HLEModule {
     	for (int address = mem.read32(list); address != list; address = mem.read32(address)) {
     		dumpThread(mem, address, comment);
     	}
-    }
-
-    @HLEFunction(nid = InternalSyscallNid, version = 150)
-    public long hleDecryptBtcnf(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buffer, int size, int unknown) {
-    	int signature = buffer.getValue32();
-    	if (signature == 0x0F803001) {
-        	// The file flash0:/kd/pspbtcnf.bin is already decrypted
-    	} else {
-    		log.error(String.format("hleDecryptBtcnf the file flash0:/kd/pspbtcnf.bin is not decrypted. It needs to be decrypted on your PSP"));
-    	}
-
-    	return size;
     }
 }
