@@ -77,7 +77,7 @@ public class MEProcessor extends Processor {
 		// CPUID is 1 for the ME
 		cp0.setCpuid(CPUID_ME);
 
-		halt();
+		halt = true;
 	}
 
 	public MEMemory getMEMemory() {
@@ -127,7 +127,7 @@ public class MEProcessor extends Processor {
 
 	public void halt() {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MEProcessor.halt: pendingInterruptIPbits=0x%X, isInterruptExecutionAllowed=%b, status=0x%X, pc=0x%08X", pendingInterruptIPbits, isInterruptExecutionAllowed(), cp0.getStatus(), cpu.pc));
+			log.debug(String.format("MEProcessor.halt: pendingInterruptIPbits=0x%X, isInterruptExecutionAllowed=%b, doTriggerException=%b, status=0x%X, pc=0x%08X", pendingInterruptIPbits, isInterruptExecutionAllowed(), MMIOHandlerInterruptMan.getInstance(this).doTriggerException(), cp0.getStatus(), cpu.pc));
 		}
 
 		if (pendingInterruptIPbits == 0 && !MMIOHandlerInterruptMan.getInstance(this).doTriggerException()) {
@@ -214,9 +214,6 @@ public class MEProcessor extends Processor {
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("MEProcessor calling exception handler at 0x%08X, IP bits=0x%02X", cpu.pc, (cause >> 8) & 0xFF));
-				if (cp0.getEpc() != 0) {
-					log.setLevel(Level.TRACE);
-				}
 			}
 		}
 	}
@@ -284,7 +281,7 @@ public class MEProcessor extends Processor {
 			if (cpu.pc == 0x883000E0 && log.isDebugEnabled()) {
 				log.debug(String.format("Initial ME memory content from meimg.img:"));
 				log.debug(Utilities.getMemoryDump(meMemory, 0x00101000, cpu._v0));
-				log.setLevel(Level.TRACE);
+//				log.setLevel(Level.TRACE);
 			}
 		}
 

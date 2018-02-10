@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.hardware.Screen;
@@ -68,7 +70,7 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerNand.BASE_ADDRESS, 0x304, MMIOHandlerNand.getInstance());
     	addHandler(0xBD200000, 0x44, new MMIOHandlerMemoryStick(0xBD200000));
     	addHandlerRW(0xBD300000, 0x44); // Wlan
-    	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0x8F0, MMIOHandlerGe.getInstance());
+    	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0xE50, MMIOHandlerGe.getInstance());
     	addHandlerRW(0xBD500000, 0x94); // Graphics engine (ge)
     	addHandlerRO(0xBD500010, 0x4);
     	addHandler(0xBD600000, 0x50, new MMIOHandlerAta2(0xBD600000));
@@ -122,7 +124,15 @@ public class MMIO extends Memory {
     }
 
     protected void addHandlerRW(int baseAddress, int length) {
-    	addHandler(baseAddress, length, new MMIOHandlerReadWrite(baseAddress, length));
+    	addHandlerRW(baseAddress, length, null);
+    }
+
+    protected void addHandlerRW(int baseAddress, int length, Logger log) {
+    	MMIOHandlerReadWrite handler = new MMIOHandlerReadWrite(baseAddress, length);
+    	if (log != null) {
+    		handler.setLogger(log);
+    	}
+    	addHandler(baseAddress, length, handler);
     }
 
     protected void addHandlerRO(int baseAddress, int length) {

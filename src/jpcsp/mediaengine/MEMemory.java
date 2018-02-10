@@ -53,11 +53,16 @@ public class MEMemory extends MMIO {
 		// The same memory is also visible at address range 0xA0000000-0xA01FFFFF
 		addHandler(handler, 0xA0000000, log);
 
-		// This address range is not the VRAM, but probably some unknown MMIO
-		addHandler(0x44000000, 0x200000, new MMIOHandlerMeBase(0x44000000));
+		addHandlerRW(0x44000000, 0x7070, log);
+		addHandlerRW(0x44020000, 0x70, log);
+		// This address range is maybe some unknown MMIO
+		addHandlerRW(0x44020FF0, 0x4, log);
+		addHandlerRW(0x44022FF0, 0x4, log);
+		addHandlerRW(0x44024000, 0x8, log);
+		addHandlerRW(0x44026000, 0x8, log);
 
 		addHandler(0x440F8000, 0x194, new MMIOHandlerMe0F8000(0x440F8000));
-		addHandler(0x440FF000, 0x2C, new MMIOHandlerMe0FF000(0x440FF000));
+		addHandler(0x440FF000, 0x30, new MMIOHandlerMe0FF000(0x440FF000));
 		addHandler(0x44100000, 0x40, new MMIOHandlerMeDecoderQuSpectra(0x44100000));
 	}
 
