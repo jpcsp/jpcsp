@@ -16,11 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.sceMeCore;
-import jpcsp.mediaengine.MEProcessor;
 
 public class MMIOHandlerMeCore extends MMIOHandlerBase {
 	public static Logger log = sceMeCore.log;
@@ -84,6 +82,7 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 		ME_CMD_WMA_INIT(0xE3, 2),
 		ME_CMD_WMA_DECODE(0xE5, 7),
 		ME_CMD_WMA_GET_INTERNAL_ERROR(0xE6, 2),
+		ME_CMD_SASCORE_WITH_MIX(0x101, 6),
 		ME_CMD_MALLOC(0x180, 1),
 		ME_CMD_FREE(0x181, 1),
 		ME_CMD_CALLOC(0x182, 2),
@@ -147,10 +146,6 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Starting cmd=0x%X(%s)", cmd, MECommand.getCommandName(cmd)));
-		}
-
-		if (cmd == MECommand.ME_CMD_AT3P_CHECK_NEED_MEM1.getCmd() && MEProcessor.log.isDebugEnabled()) {
-			MEProcessor.log.setLevel(Level.TRACE);
 		}
 	}
 
