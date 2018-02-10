@@ -321,4 +321,18 @@ public class NativeUtils {
     public static native void setMaxTextureSizeLog2(int maxTextureSizeLog2);
     public static native void setDoubleTexture2DCoords(boolean doubleTexture2DCoords);
     public static native void doTests();
+    public static native int getCoreOadr();
+    public static native void setCoreOadr(int oadr);
+    public static native int getCoreOadr1();
+    public static native void setCoreOadr1(int oadr1);
+    public static native int getCoreOadr2();
+    public static native void setCoreOadr2(int oadr2);
+    public static native int getCoreRadr1();
+    public static native void setCoreRadr1(int radr1);
+    public static native int getCoreRadr2();
+    public static native void setCoreRadr2(int radr2);
+    public static native int getCoreVadr();
+    public static native void setCoreVadr(int vadr);
+    public static native int getCoreIadr();
+    public static native void setCoreIadr(int iadr);
 }
