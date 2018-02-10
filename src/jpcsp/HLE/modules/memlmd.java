@@ -33,7 +33,7 @@ public class memlmd extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x6192F715, version = 660)
-	public int memlmd_6192F715(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int size) {
+	public int memlmd_6192F715(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout, maxDumpLength=512) TPointer buffer, int size) {
 		return 0;
 	}
 
