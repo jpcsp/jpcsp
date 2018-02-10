@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.modules.sceGe_user;
+import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.RE.externalge.CoreThreadMMIO;
 import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.graphics.RE.externalge.NativeUtils;
@@ -106,59 +107,101 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	}
 
 	private int getRaddr1() {
+		if (ExternalGE.isActive()) {
+			raddr1 = NativeUtils.getCoreRadr1();
+		}
 		return raddr1;
 	}
 
 	private void setRaddr1(int raddr1) {
 		this.raddr1 = raddr1;
+		if (ExternalGE.isActive()) {
+			NativeUtils.setCoreRadr1(raddr1);
+		}
 	}
 
 	private int getRaddr2() {
+		if (ExternalGE.isActive()) {
+			raddr2 = NativeUtils.getCoreRadr2();
+		}
 		return raddr2;
 	}
 
 	private void setRaddr2(int raddr2) {
 		this.raddr2 = raddr2;
+		if (ExternalGE.isActive()) {
+			NativeUtils.setCoreRadr2(raddr2);
+		}
 	}
 
 	private int getVaddr() {
+		if (ExternalGE.isActive()) {
+			vaddr = NativeUtils.getCoreVadr();
+		}
 		return vaddr;
 	}
 
 	private void setVaddr(int vaddr) {
 		this.vaddr = vaddr;
+		if (ExternalGE.isActive()) {
+			NativeUtils.setCoreVadr(vaddr);
+		}
 	}
 
 	private int getIaddr() {
+		if (ExternalGE.isActive()) {
+			iaddr = NativeUtils.getCoreIadr();
+		}
 		return iaddr;
 	}
 
 	private void setIaddr(int iaddr) {
 		this.iaddr = iaddr;
+		if (ExternalGE.isActive()) {
+			NativeUtils.setCoreIadr(iaddr);
+		}
 	}
 
 	private int getOaddr() {
+		if (ExternalGE.isActive()) {
+			oaddr = NativeUtils.getCoreOadr();
+		}
 		return oaddr;
 	}
 
 	private void setOaddr(int oaddr) {
 		this.oaddr = oaddr;
+		if (ExternalGE.isActive()) {
+			NativeUtils.setCoreOadr(oaddr);
+		}
 	}
 
 	private int getOaddr1() {
+		if (ExternalGE.isActive()) {
+			oaddr1 = NativeUtils.getCoreOadr1();
+		}
 		return oaddr1;
 	}
 
 	private void setOaddr1(int oaddr1) {
 		this.oaddr1 = oaddr1;
+		if (ExternalGE.isActive()) {
+			NativeUtils.setCoreOadr1(oaddr1);
+		}
 	}
 
 	private int getOaddr2() {
+		if (ExternalGE.isActive()) {
+			oaddr2 = NativeUtils.getCoreOadr2();
+		}
 		return oaddr2;
 	}
 
 	private void setOaddr2(int oaddr2) {
 		this.oaddr2 = oaddr2;
+		if (ExternalGE.isActive()) {
+			NativeUtils.setCoreOadr2(oaddr2);
+		}
 	}
 
 	private int getCmdStatus() {
@@ -173,6 +216,9 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreIntrStat(cmdStatus);
 		}
+
+		// Clearing some flags from cmdStatus is also clearing the related interrupt flags
+		setInterrupt(getInterrupt() & cmdStatus);
 	}
 
 	private void changeCmdStatus(int mask) {
@@ -239,27 +285,55 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	}
 
 	private int readGeCmd(int cmd) {
-		return 0;
+		int value = 0;
+		if (ExternalGE.isActive()) {
+			value = ExternalGE.getCmd(cmd);
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("readGeCmd(%s)=0x%08X", GeCommands.getInstance().getCommandString(cmd), value));
+		}
+
+		return value;
+	}
+
+	private int readMatrix(int matrixType, int matrixIndex) {
+		float[] matrix = null;
+		if (ExternalGE.isActive()) {
+			 matrix = ExternalGE.getMatrix(matrixType);
+		}
+
+		if (matrix == null || matrixIndex < 0 || matrixIndex >= matrix.length) {
+			return 0;
+		}
+
+		int value = Float.floatToRawIntBits(matrix[matrixIndex]) >>> 8;
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("readMatrix(matrixType=%d, matrixIndex=%d)=0x%X(%f)", matrixType, matrixIndex, value, matrix[matrixIndex]));
+		}
+
+		return value;
 	}
 
 	private int readGeBone(int bone) {
-		return 0;
+		return readMatrix(sceGe_user.PSP_GE_MATRIX_BONE0 + (bone / 12), bone % 12);
 	}
 
 	private int readGeWorld(int world) {
-		return 0;
+		return readMatrix(sceGe_user.PSP_GE_MATRIX_WORLD, world);
 	}
 
 	private int readGeView(int view) {
-		return 0;
+		return readMatrix(sceGe_user.PSP_GE_MATRIX_VIEW, view);
 	}
 
 	private int readGeProjection(int projection) {
-		return 0;
+		return readMatrix(sceGe_user.PSP_GE_MATRIX_PROJECTION, projection);
 	}
 
 	private int readGeTexture(int texture) {
-		return 0;
+		return readMatrix(sceGe_user.PSP_GE_MATRIX_TEXGEN, texture);
 	}
 
 	@Override
@@ -334,5 +408,10 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
 		}
+	}
+
+	@Override
+	public String toString() {
+		return String.format("MMIOHandlerGe ctrl=0x%X, status=0x%X, list=0x%08X, interrupt=0x%X, cmdStatus=0x%X", ctrl, status, list, interrupt, cmdStatus);
 	}
 }
