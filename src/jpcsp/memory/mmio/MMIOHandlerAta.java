@@ -19,6 +19,7 @@ package jpcsp.memory.mmio;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterrupt;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterrupt;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_ATA_INTR;
+import static jpcsp.filesystems.umdiso.ISectorDevice.sectorLength;
 
 import java.util.Arrays;
 
@@ -398,6 +399,9 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 				prepareDataInit(allocationLength);
 				switch (formatCode) {
 					case 0x00:
+						final int numberOfSectors = 1800 * (1024 * 1024 / sectorLength); // 1.8GB
+						final int startingSectorNumber = 0x030000;
+						final int endSectorNumber = startingSectorNumber + numberOfSectors - 1;
 						prepareData16(20); // DVD Structure Data Length
 						prepareData8(0); // Reserved
 						prepareData8(0); // Reserved
@@ -406,9 +410,9 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 						prepareData8(0); // Number of Layers / Track Path / Layer Type
 						prepareData8(0); // Linear Density / Track Density
 						prepareData8(0); // Reserved
-						prepareData24(0x030000); // Starting Sector Number of Main Data (0x030000 is the only valid value)
+						prepareData24(startingSectorNumber); // Starting Sector Number of Main Data (0x030000 is the only valid value)
 						prepareData8(0); // Reserved
-						prepareData24(0x040000); // End Sector of Main Data
+						prepareData24(endSectorNumber); // End Sector of Main Data
 						prepareData8(0); // Reserved
 						prepareData24(0x000000); // End Sector Number in Layer 0
 						prepareData8(0); // BCA (Burst Cutting Area) Flag
