@@ -219,14 +219,14 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sysregInterruptToOther to ME on %s", MMIOHandlerMeCore.getInstance().toString()));
 				}
-				RuntimeContextLLE.triggerInterrupt(MEProcessor.getInstance(), PSP_MECODEC_INTR);
-				MEProcessor.getInstance().triggerException(ExceptionManager.IP2);
+				RuntimeContextLLE.triggerInterrupt(RuntimeContextLLE.getMediaEngineProcessor(), PSP_MECODEC_INTR);
+				RuntimeContextLLE.getMediaEngineProcessor().triggerException(ExceptionManager.IP2);
 			} else {
 				// Interrupt from the Media Engine cpu to the main cpu
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sysregInterruptToOther from ME on %s", MMIOHandlerMeCore.getInstance().toString()));
 				}
-				RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MECODEC_INTR);
+				RuntimeContextLLE.triggerInterrupt(RuntimeContextLLE.getMainProcessor(), PSP_MECODEC_INTR);
 			}
 		}
 	}

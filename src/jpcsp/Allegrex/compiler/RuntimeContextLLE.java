@@ -90,7 +90,10 @@ public class RuntimeContextLLE {
 		}
 	}
 
-	public static void triggerInterruptException(Processor processor, int IPbits) {
+	/*
+	 * synchronized method as it can be called from different threads (e.g. CoreThreadMMIO)
+	 */
+	public static synchronized void triggerInterruptException(Processor processor, int IPbits) {
 		if (!isLLEActive()) {
 			return;
 		}
@@ -133,11 +136,19 @@ public class RuntimeContextLLE {
 		return !isMediaEngineCpu();
 	}
 
+	public static Processor getMainProcessor() {
+		return Emulator.getProcessor();
+	}
+
+	public static MEProcessor getMediaEngineProcessor() {
+		return MEProcessor.getInstance();
+	}
+
 	public static Processor getProcessor() {
 		if (isMediaEngineCpu()) {
-			return MEProcessor.getInstance();
+			return getMediaEngineProcessor();
 		}
-		return Emulator.getProcessor();
+		return getMainProcessor();
 	}
 
 	private static void setExceptionCause(Processor processor, int exceptionNumber) {
@@ -158,16 +169,15 @@ public class RuntimeContextLLE {
 		return ebase;
 	}
 
-	public static void clearInterruptException(Processor processor, int IPbits) {
+	/*
+	 * synchronized method as it can be called from different threads (e.g. CoreThreadMMIO)
+	 */
+	public static synchronized void clearInterruptException(Processor processor, int IPbits) {
 		if (!isLLEActive()) {
 			return;
 		}
 
 		pendingInterruptIPbits &= ~IPbits;
-
-		int cause = processor.cp0.getCause();
-		cause &= ~(IPbits << 8);
-		processor.cp0.setCause(cause);
 	}
 
 	private static boolean isInterruptExceptionAllowed(Processor processor, int IPbits) {
@@ -220,7 +230,10 @@ public class RuntimeContextLLE {
 		return ebase;
 	}
 
-	public static int checkPendingInterruptException(int returnAddress) {
+	/*
+	 * synchronized method as it is modifying pendingInterruptIPbits which can be updated from different threads
+	 */
+	public static synchronized int checkPendingInterruptException(int returnAddress) {
 		Processor processor = getProcessor();
 		if (isInterruptExceptionAllowed(processor, pendingInterruptIPbits)) {
 			int cause = processor.cp0.getCause();
@@ -235,7 +248,7 @@ public class RuntimeContextLLE {
 			int ebase = prepareExceptionHandlerCall(processor);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X", MMIOHandlerInterruptMan.getInstance(processor).toStringInterruptTriggered(), ebase, processor.cp0.getEpc()));
+				log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X, cause=0x%X", MMIOHandlerInterruptMan.getInstance(processor).toStringInterruptTriggered(), ebase, processor.cp0.getEpc(), processor.cp0.getCause()));
 			}
 
 			return ebase;

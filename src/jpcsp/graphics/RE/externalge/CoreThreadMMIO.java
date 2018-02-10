@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.externalge;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.graphics.RE.externalge.ExternalGE.numberRendererThread;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
 import static jpcsp.graphics.RE.externalge.NativeUtils.coreInterpret;
@@ -68,6 +69,7 @@ public class CoreThreadMMIO extends Thread {
 
 	@Override
 	public void run() {
+		setLog4jMDC();
 		while (!exit) {
 			if (!isCoreCtrlActive() || getCoreMadr() == getCoreSadr()) {
 				if (!Emulator.pause && log.isTraceEnabled()) {

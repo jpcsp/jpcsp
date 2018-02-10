@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.externalge;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.graphics.GeCommands.END;
 import static jpcsp.graphics.GeCommands.FINISH;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
@@ -68,6 +69,7 @@ public class CoreThread extends Thread {
 
 	@Override
 	public void run() {
+		setLog4jMDC();
 		boolean doCoreInterpret = false;
 
 		while (!exit) {

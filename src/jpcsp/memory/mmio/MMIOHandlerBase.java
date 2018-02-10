@@ -18,7 +18,6 @@ package jpcsp.memory.mmio;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
@@ -36,7 +35,7 @@ public class MMIOHandlerBase implements IMMIOHandler {
 	}
 
 	protected Processor getProcessor() {
-		return Emulator.getProcessor();
+		return RuntimeContextLLE.getProcessor();
 	}
 
 	protected int getPc() {

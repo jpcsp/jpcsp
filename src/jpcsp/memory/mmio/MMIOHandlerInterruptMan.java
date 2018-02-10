@@ -28,6 +28,7 @@ import static jpcsp.util.Utilities.hasBit;
 import org.apache.log4j.Logger;
 
 import jpcsp.Processor;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.modules.InterruptManager;
 
@@ -36,9 +37,10 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	private static MMIOHandlerProxyOnCpu instance;
 	public static final int BASE_ADDRESS = 0xBC300000;
 	private static final int NUMBER_INTERRUPTS = 64;
-	public final boolean interruptTriggered[] = new boolean[NUMBER_INTERRUPTS];
-	public final boolean interruptEnabled[] = new boolean[NUMBER_INTERRUPTS];
-	public final boolean interruptOccurred[] = new boolean[NUMBER_INTERRUPTS];
+	private final boolean interruptTriggered[] = new boolean[NUMBER_INTERRUPTS];
+	private final boolean interruptEnabled[] = new boolean[NUMBER_INTERRUPTS];
+	private final boolean interruptOccurred[] = new boolean[NUMBER_INTERRUPTS];
+	private final Processor processor;
 
 	public static MMIOHandlerInterruptMan getInstance(Processor processor) {
 		return (MMIOHandlerInterruptMan) getProxyInstance().getInstance(processor);
@@ -46,13 +48,21 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 
 	public static MMIOHandlerProxyOnCpu getProxyInstance() {
 		if (instance == null) {
-			instance = new MMIOHandlerProxyOnCpu(new MMIOHandlerInterruptMan(BASE_ADDRESS), new MMIOHandlerInterruptMan(BASE_ADDRESS));
+			MMIOHandlerInterruptMan mainInstance = new MMIOHandlerInterruptMan(BASE_ADDRESS, RuntimeContextLLE.getMainProcessor());
+			MMIOHandlerInterruptMan meInstance = new MMIOHandlerInterruptMan(BASE_ADDRESS, RuntimeContextLLE.getMediaEngineProcessor());
+			instance = new MMIOHandlerProxyOnCpu(mainInstance, meInstance);
 		}
 		return instance;
 	}
 
-	private MMIOHandlerInterruptMan(int baseAddress) {
+	private MMIOHandlerInterruptMan(int baseAddress, Processor processor) {
 		super(baseAddress);
+		this.processor = processor;
+	}
+
+	@Override
+	protected Processor getProcessor() {
+		return processor;
 	}
 
 	public void triggerInterrupt(int interruptNumber) {
@@ -84,6 +94,9 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	public boolean doTriggerException() {
 		for (int i = 0; i < NUMBER_INTERRUPTS; i++) {
 			if (interruptTriggered[i] && interruptEnabled[i]) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("doTriggerException on %s", this));
+				}
 				return true;
 			}
 		}
