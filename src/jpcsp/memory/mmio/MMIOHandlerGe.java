@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.HLE.Modules.sceDisplayModule;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_GE_INTR;
 import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_ACTIVE;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
@@ -61,6 +62,7 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 
 	public void triggerGeInterrupt() {
 		setInterrupt(getInterrupt() | INTR_STAT_END);
+		sceDisplayModule.setGeDirty(true);
 	}
 
 	private int getStatus() {
