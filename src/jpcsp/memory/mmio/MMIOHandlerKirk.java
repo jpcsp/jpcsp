@@ -131,6 +131,11 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		switch (command) {
 			case PSP_KIRK_CMD_ENCRYPT:
 			case PSP_KIRK_CMD_ENCRYPT_FUSE:
+				// AES128_CBC_Header
+				dataSize = inAddr.getValue32(16);
+				inSize = dataSize + 20;
+				outSize = dataSize + 20;
+				break;
 			case PSP_KIRK_CMD_DECRYPT:
 			case PSP_KIRK_CMD_DECRYPT_FUSE:
 				// AES128_CBC_Header

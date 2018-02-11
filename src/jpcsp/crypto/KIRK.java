@@ -484,6 +484,13 @@ public class KIRK {
         byte[] outBuf = aes.encrypt(inBuf, encKey, priv_iv);
 
         out.clear();
+        // The header is kept in the output and the header.mode is even updated from
+        // PSP_KIRK_CMD_MODE_ENCRYPT_CBC to PSP_KIRK_CMD_MODE_DECRYPT_CBC.
+        out.putInt(PSP_KIRK_CMD_MODE_DECRYPT_CBC);
+        out.putInt(header.unk1);
+        out.putInt(header.unk2);
+        out.putInt(header.keySeed);
+        out.putInt(header.dataSize);
         out.put(outBuf);
         in.clear();
 
@@ -527,6 +534,13 @@ public class KIRK {
         byte[] outBuf = aes.encrypt(inBuf, encKey, priv_iv);
 
         out.clear();
+        // The header is kept in the output and the header.mode is even updated from
+        // PSP_KIRK_CMD_MODE_ENCRYPT_CBC to PSP_KIRK_CMD_MODE_DECRYPT_CBC.
+        out.putInt(PSP_KIRK_CMD_MODE_DECRYPT_CBC);
+        out.putInt(header.unk1);
+        out.putInt(header.unk2);
+        out.putInt(header.keySeed);
+        out.putInt(header.dataSize);
         out.put(outBuf);
         in.clear();
 
