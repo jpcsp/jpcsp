@@ -18,6 +18,12 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_AUDIO_INTR;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.SourceDataLine;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
@@ -50,9 +56,24 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	private final int audioData1[] = new int[24 + (256/4)];
 	private int audioDataIndex0;
 	private int audioDataIndex1;
+	private final SourceDataLine audioLines[] = new SourceDataLine[2];
+	private final byte audioBytes[] = new byte[audioData0.length * 4];
 
 	public MMIOHandlerAudio(int baseAddress) {
 		super(baseAddress);
+
+		int audioChannels = 2;
+        AudioFormat audioFormat = new AudioFormat(44100, 16, audioChannels, true, false);
+        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+        try {
+        	for (int i = 0; i < audioLines.length; i++) {
+        		audioLines[i] = (SourceDataLine) AudioSystem.getLine(info);
+        		audioLines[i].open(audioFormat);
+        		audioLines[i].start();
+        	}
+		} catch (LineUnavailableException e) {
+			log.error("Cannot create audio line", e);
+		}
 	}
 
 	private void setFlags24(int flags24) {
@@ -70,15 +91,24 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		}
 	}
 
-	private int sendAudioData(int value, int index, int[] data, int interrupt) {
+	private int sendAudioData(int value, int line, int index, int[] data, int interrupt) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sendAudioData value=0x%08X, index=0x%X, interrupt=%d", value, index, interrupt));
+			log.debug(String.format("sendAudioData value=0x%08X, line=%d, index=0x%X, interrupt=%d", value, line, index, interrupt));
 		}
 		data[index++] = value;
 
 		if (index >= data.length) {
+			for (int i = 0, n = 0; i < data.length; i++) {
+				int data32 = data[i];
+				audioBytes[n++] = (byte) (data32      );
+				audioBytes[n++] = (byte) (data32 >>  8);
+				audioBytes[n++] = (byte) (data32 >> 16);
+				audioBytes[n++] = (byte) (data32 >> 24);
+			}
+			audioLines[line].write(audioBytes, 0, audioBytes.length);
+
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("sendAudioData:"));
+				log.debug(String.format("sendAudioData line#%d:", line));
 				StringBuilder sb = new StringBuilder();
 				for (int i = 0; i < data.length; i++) {
 					if (sb.length() > 0) {
@@ -96,10 +126,6 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 				}
 			}
 			index = 0;
-
-//			inProgress &= ~interrupt;
-//			this.interrupt |= interrupt;
-//			checkInterrupt();
 		}
 
 		return index;
@@ -164,8 +190,8 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			case 0x40: frequencyFlags = value; break;
 			case 0x44: hardwareFrequency = value; break;
 			case 0x50: volume = value; break;
-			case 0x60: audioDataIndex0 = sendAudioData(value, audioDataIndex0, audioData0, 1); break;
-			case 0x70: audioDataIndex1 = sendAudioData(value, audioDataIndex1, audioData1, 2); break;
+			case 0x60: audioDataIndex0 = sendAudioData(value, 0, audioDataIndex0, audioData0, 1); break;
+			case 0x70: audioDataIndex1 = sendAudioData(value, 1, audioDataIndex1, audioData1, 2); break;
 			default: super.write32(address, value); break;
 		}
 
