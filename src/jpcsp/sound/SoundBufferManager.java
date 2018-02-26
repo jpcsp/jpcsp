@@ -82,6 +82,10 @@ public class SoundBufferManager {
 	}
 
 	public void releaseDirectBuffer(ByteBuffer directBuffer) {
-		freeDirectBuffers.add(0, directBuffer);
+		if (freeDirectBuffers.isEmpty()) {
+			freeDirectBuffers.add(directBuffer);
+		} else {
+			freeDirectBuffers.add(0, directBuffer);
+		}
 	}
 }

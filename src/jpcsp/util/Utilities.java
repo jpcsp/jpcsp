@@ -56,6 +56,7 @@ import jpcsp.MemoryMap;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.HLEModuleFunction;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
@@ -69,6 +70,7 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.memory.mmio.MMIO;
 
 public class Utilities {
     private static final int[] round4 = {0, 3, 2, 1};
@@ -936,12 +938,16 @@ public class Utilities {
     }
 
     public static String getMemoryDump(int address, int length, int step, int bytesPerLine) {
+    	Memory mem = Memory.getInstance();
     	if (!Memory.isAddressGood(address)) {
-    		return String.format("Invalid memory address 0x%08X", address);
+    		if (!RuntimeContextLLE.isLLEActive() || !MMIO.isAddressGood(address)) {
+        		return String.format("Invalid memory address 0x%08X", address);
+    		}
+			mem = RuntimeContextLLE.getMMIO();
     	}
 
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, step);
-        IMemoryReader charReader = MemoryReader.getMemoryReader(address, length, 1);
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, address, length, step);
+        IMemoryReader charReader = MemoryReader.getMemoryReader(mem, address, length, 1);
 
         return getMemoryDump(address, length, step, bytesPerLine, memoryReader, charReader);
     }

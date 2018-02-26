@@ -16,6 +16,8 @@
  */
 package jpcsp.memory;
 
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getProcessor;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -332,7 +334,7 @@ public class DebuggerMemory extends Memory {
     protected String getMemoryReadMessage(int address, int width) {
         StringBuilder message = new StringBuilder();
 
-        Processor processor = Emulator.getProcessor();
+        Processor processor = getProcessor();
         if (processor != null) {
         	message.append(String.format("0x%08X - ", processor.cpu.pc));
         }
@@ -373,7 +375,7 @@ public class DebuggerMemory extends Memory {
     protected String getMemoryWriteMessage(int address, int value, int width) {
         StringBuilder message = new StringBuilder();
 
-        Processor processor = Emulator.getProcessor();
+        Processor processor = getProcessor();
         if (processor != null) {
         	message.append(String.format("0x%08X - ", processor.cpu.pc));
         }

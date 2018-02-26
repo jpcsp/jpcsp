@@ -18,16 +18,11 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_AUDIO_INTR;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
-
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.modules.sceAudio;
+import jpcsp.memory.mmio.audio.AudioLine;
 
 public class MMIOHandlerAudio extends MMIOHandlerBase {
 	public static Logger log = sceAudio.log;
@@ -56,23 +51,13 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	private final int audioData1[] = new int[24 + (256/4)];
 	private int audioDataIndex0;
 	private int audioDataIndex1;
-	private final SourceDataLine audioLines[] = new SourceDataLine[2];
-	private final byte audioBytes[] = new byte[audioData0.length * 4];
+	private final AudioLine audioLines[] = new AudioLine[2];
 
 	public MMIOHandlerAudio(int baseAddress) {
 		super(baseAddress);
 
-		int audioChannels = 2;
-        AudioFormat audioFormat = new AudioFormat(44100, 16, audioChannels, true, false);
-        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-        try {
-        	for (int i = 0; i < audioLines.length; i++) {
-        		audioLines[i] = (SourceDataLine) AudioSystem.getLine(info);
-        		audioLines[i].open(audioFormat);
-        		audioLines[i].start();
-        	}
-		} catch (LineUnavailableException e) {
-			log.error("Cannot create audio line", e);
+    	for (int i = 0; i < audioLines.length; i++) {
+    		audioLines[i] = new AudioLine();
 		}
 	}
 
@@ -98,14 +83,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		data[index++] = value;
 
 		if (index >= data.length) {
-			for (int i = 0, n = 0; i < data.length; i++) {
-				int data32 = data[i];
-				audioBytes[n++] = (byte) (data32      );
-				audioBytes[n++] = (byte) (data32 >>  8);
-				audioBytes[n++] = (byte) (data32 >> 16);
-				audioBytes[n++] = (byte) (data32 >> 24);
-			}
-			audioLines[line].write(audioBytes, 0, audioBytes.length);
+			audioLines[line].writeAudioData(data, 0, index);
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("sendAudioData line#%d:", line));
@@ -154,6 +132,55 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		}
 	}
 
+	private static int getFrequencyValue(int hwFrequency) {
+		switch (hwFrequency) {
+			case AUDIO_HW_FREQUENCY_8000 : return  8000;
+			case AUDIO_HW_FREQUENCY_11025: return 11025;
+			case AUDIO_HW_FREQUENCY_12000: return 12000;
+			case AUDIO_HW_FREQUENCY_16000: return 16000;
+			case AUDIO_HW_FREQUENCY_22050: return 22050;
+			case AUDIO_HW_FREQUENCY_24000: return 24000;
+			case AUDIO_HW_FREQUENCY_32000: return 32000;
+			case AUDIO_HW_FREQUENCY_44100: return 44100;
+			case AUDIO_HW_FREQUENCY_48000: return 48000;
+		}
+		return hwFrequency;
+	}
+
+	private void setFrequency0(int frequency0) {
+		this.frequency0 = frequency0;
+		updateAudioLineFrequency();
+	}
+
+	private void setFrequency1(int frequency1) {
+		this.frequency1 = frequency1;
+		updateAudioLineFrequency();
+	}
+
+	private void setHardwareFrequency(int hardwareFrequency) {
+		this.hardwareFrequency = hardwareFrequency;
+		updateAudioLineFrequency();
+	}
+
+	private void updateAudioLineFrequency() {
+		// TODO In the VSH, only frequency0 is being set. When to use frequency1 and hardwareFrequency?
+		int frequency = getFrequencyValue(frequency0);
+		for (int i = 0; i < audioLines.length; i++) {
+			audioLines[i].setFrequency(frequency);
+		}
+	}
+
+	private void setVolume(int volume) {
+		this.volume = volume;
+		updateAudioLineVolume();
+	}
+
+	private void updateAudioLineVolume() {
+		for (int i = 0; i < audioLines.length; i++) {
+			audioLines[i].setVolume(volume);
+		}
+	}
+
 	@Override
 	public int read32(int address) {
 		int value;
@@ -185,11 +212,11 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			case 0x20: flags20 = value; break;
 			case 0x24: setFlags24(value); break;
 			case 0x2C: flags2C = value; break;
-			case 0x38: frequency0 = value; break;
-			case 0x3C: frequency1 = value; break;
+			case 0x38: setFrequency0(value); break;
+			case 0x3C: setFrequency1(value); break;
 			case 0x40: frequencyFlags = value; break;
-			case 0x44: hardwareFrequency = value; break;
-			case 0x50: volume = value; break;
+			case 0x44: setHardwareFrequency(value); break;
+			case 0x50: setVolume(value); break;
 			case 0x60: audioDataIndex0 = sendAudioData(value, 0, audioDataIndex0, audioData0, 1); break;
 			case 0x70: audioDataIndex1 = sendAudioData(value, 1, audioDataIndex1, audioData1, 2); break;
 			default: super.write32(address, value); break;
@@ -202,6 +229,6 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 
 	@Override
 	public String toString() {
-		return String.format("busy=0x%X, interrupt=0x%X, inProgress=0x%X, flags10=0x%X, flags20=0x%X, flags24=0x%X, flags2C=0x%X, volume=0x%X, frequency0=0x%X, frequency1=0x%X, frequencyFlags=0x%X, hardwareFrequency=0x%X", busy, interrupt, inProgress, flags10, flags20, flags24, flags2C, volume, frequency0, frequency1, frequencyFlags, hardwareFrequency);
+		return String.format("busy=0x%X, interrupt=0x%X, inProgress=0x%X, flags10=0x%X, flags20=0x%X, flags24=0x%X, flags2C=0x%X, volume=0x%X, frequency0=0x%X(%d), frequency1=0x%X(%d), frequencyFlags=0x%X, hardwareFrequency=0x%X(%d)", busy, interrupt, inProgress, flags10, flags20, flags24, flags2C, volume, frequency0, getFrequencyValue(frequency0), frequency1, getFrequencyValue(frequency1), frequencyFlags, hardwareFrequency, getFrequencyValue(hardwareFrequency));
 	}
 }

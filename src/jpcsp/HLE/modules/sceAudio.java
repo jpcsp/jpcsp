@@ -21,6 +21,9 @@ import static java.lang.Math.min;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -85,7 +88,7 @@ public class sceAudio extends HLEModule {
 		super.stop();
 	}
 
-	protected static final int PSP_AUDIO_VOLUME_MAX = 0x8000;
+	public    static final int PSP_AUDIO_VOLUME_MAX = 0x8000;
     protected static final int PSP_AUDIO_CHANNEL_MAX = 8;
     protected static final int PSP_AUDIO_SAMPLE_MIN = 64;
     protected static final int PSP_AUDIO_SAMPLE_MAX = 65472;
@@ -558,7 +561,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x136CAF51, version = 150, checkInsideInterrupt = true)
-    public int sceAudioOutputBlocking(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkVolume") int vol, @CanBeNull TPointer pvoid_buf) {
+    public int sceAudioOutputBlocking(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkVolume") int vol, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=0x700, usage=Usage.in) TPointer pvoid_buf) {
     	int result = 0;
         if (pvoid_buf.isNull()) {
             if (!pspPCMChannels[channel].isDrained()) {
