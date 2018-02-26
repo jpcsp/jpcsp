@@ -42,4 +42,9 @@ public class SchedulerAction {
 	public void setAction(IAction action) {
 		this.action = action;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("schedule=0x%X, action=%s", schedule, action);
+	}
 }

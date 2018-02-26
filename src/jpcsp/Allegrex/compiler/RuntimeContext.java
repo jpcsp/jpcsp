@@ -118,7 +118,7 @@ public class RuntimeContext {
 	private static volatile boolean reset = false;
 	public  static CpuDurationStatistics idleDuration = new CpuDurationStatistics("Idle Time");
 	private static Map<Instruction, Integer> instructionTypeCounts = Collections.synchronizedMap(new HashMap<Instruction, Integer>());
-	public  static boolean enableDaemonThreadSync = true;
+	public  static final boolean enableDaemonThreadSync = true;
 	public  static final String syncName = "sync";
 	public  static volatile boolean wantSync = false;
 	private static RuntimeSyncThread runtimeSyncThread = null;
@@ -772,6 +772,11 @@ public class RuntimeContext {
     	syncFast();
     }
 
+    public static void postSyscallLLE() {
+        Modules.sceDisplayModule.step();
+    	checkSync();
+    }
+
     public static int syscallFast(int code, boolean inDelaySlot) throws Exception {
 		// Fast syscall: no context switching
     	int continueAddress = SyscallHandler.syscall(code, inDelaySlot);
@@ -784,6 +789,13 @@ public class RuntimeContext {
     	preSyscall();
     	int continueAddress = SyscallHandler.syscall(code, inDelaySlot);
     	postSyscall();
+
+    	return continueAddress;
+    }
+
+    public static int syscallLLE(int code, boolean inDelaySlot) throws Exception {
+    	int continueAddress = SyscallHandler.syscall(code, inDelaySlot);
+    	postSyscallLLE();
 
     	return continueAddress;
     }
@@ -1483,33 +1495,56 @@ public class RuntimeContext {
     }
 
     public static void onNextScheduleModified() {
-    	checkSync(false);
+		checkSync();
 
-    	// Notify the thread waiting on the idleSyncObject that
-    	// the scheduler has now received a new schedule.
-    	synchronized (idleSyncObject) {
-        	idleSyncObject.notifyAll();
-		}
+		if (!RuntimeContextLLE.isLLEActive()) {
+	    	// Notify the thread waiting on the idleSyncObject that
+	    	// the scheduler has now received a new schedule.
+	    	synchronized (idleSyncObject) {
+	        	idleSyncObject.notifyAll();
+			}
+    	}
     }
 
-    private static void checkSync(boolean sleep) {
+    public static void checkSync() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("checkSync wantSync=%b, now=0x%X", wantSync, Scheduler.getNow()));
+    	}
+
+    	if (!wantSync) {
+    		long delay = Emulator.getScheduler().getNextActionDelay(idleSleepMicros);
+    		if (delay <= 0) {
+    			wantSync = true;
+
+    			if (log.isDebugEnabled()) {
+    	    		log.debug(String.format("checkSync wantSync=%b, now=0x%X", wantSync, Scheduler.getNow()));
+    	    	}
+    		}
+    	}
+    }
+
+    public static void checkSyncWithSleep() {
     	long delay = Emulator.getScheduler().getNextActionDelay(idleSleepMicros);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("checkSyncWithSleep delay=0x%X, now=0x%X", delay, Scheduler.getNow()));
+    	}
+
     	if (delay > 0) {
-    		if (sleep) {
-	    		int intDelay = (int) delay;
-	    		sleep(intDelay / 1000, intDelay % 1000);
+    		int intDelay = (int) delay;
+    		if (intDelay < 0) {
+    			intDelay = idleSleepMicros;
     		}
+    		sleep(intDelay / 1000, intDelay % 1000);
     	} else if (wantSync) {
-    		if (sleep) {
-    			sleep(idleSleepMicros);
-    		}
+			sleep(idleSleepMicros);
     	} else {
     		wantSync = true;
     	}
     }
 
     public static boolean syncDaemonStep() {
-    	checkSync(true);
+    	checkSyncWithSleep();
 
     	return enableDaemonThreadSync;
     }

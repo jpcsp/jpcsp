@@ -82,6 +82,9 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 
 	private void scheduleNextVblankInterrupt() {
 		if (maxVblankInterrupts == 0) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Skipping Vblank interrupt %s", this));
+			}
 			return;
 		}
 		if (maxVblankInterrupts > 0) {

@@ -772,7 +772,9 @@ public void interpret(Processor processor, int insn) {
 	}
 	processor.setInterruptsEnabled(value != 0);
 
-	if (processor.isInterruptsEnabled() && !RuntimeContextLLE.isLLEActive()) {
+	if (RuntimeContextLLE.isLLEActive()) {
+		RuntimeContext.checkSync();
+	} else if (processor.isInterruptsEnabled()) {
 		try {
 			RuntimeContext.sync();
 		} catch (StopThreadException e) {

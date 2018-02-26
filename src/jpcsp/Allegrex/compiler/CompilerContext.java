@@ -2042,13 +2042,9 @@ public class CompilerContext implements ICompilerContext {
     		HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
 
     		boolean fastSyscall = isFastSyscall(code);
+    		boolean lleSyscall = func == null && RuntimeContextLLE.isLLEActive();
 
-    		// Under LLE, all syscalls are "fast" syscalls
-    		if (func == null && RuntimeContextLLE.isLLEActive()) {
-    			fastSyscall = true;
-    		}
-
-    		if (!fastSyscall) {
+    		if (!fastSyscall && !lleSyscall) {
     			storePc();
     		}
 
@@ -2068,7 +2064,9 @@ public class CompilerContext implements ICompilerContext {
 
     			loadImm(code);
     			loadImm(inDelaySlot);
-    	    	if (fastSyscall) {
+    			if (lleSyscall) {
+    	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallLLE", "(IZ)I");
+    			} else if (fastSyscall) {
     	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(IZ)I");
     	    	} else {
     	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(IZ)I");
@@ -2083,11 +2081,6 @@ public class CompilerContext implements ICompilerContext {
     	    	} else {
     	    		mv.visitInsn(Opcodes.POP);
     	    	}
-
-    	    	if (RuntimeContextLLE.isLLEActive()) {
-        			// We do not destroy the temp registers for LLE syscalls
-    	    		destroyTempRegisters = false;
-    	    	}
         	} else {
         		visitSyscall(func, fastSyscall);
 
@@ -2097,7 +2090,7 @@ public class CompilerContext implements ICompilerContext {
         		}
         	}
 
-    		if (destroyTempRegisters) {
+    		if (destroyTempRegisters && !lleSyscall) {
 	        	// The following registers are always set to 0xDEADBEEF after a syscall
 	        	int deadbeef = 0xDEADBEEF;
 	        	storeRegister(_a0, deadbeef);
