@@ -251,6 +251,7 @@ public class ExternalGE {
 					NativeUtils.setScreenScale(getScreenScale());
 				}
 				currentList = list;
+				currentList.sync();
 				CoreThread.getInstance().sync();
 			} else {
 				drawListQueue.add(list);
