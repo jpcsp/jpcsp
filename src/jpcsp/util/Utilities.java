@@ -927,10 +927,15 @@ public class Utilities {
     }
 
     public static String getMemoryDump(Memory mem, int address, int length) {
-    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, address, length, 1);
+    	// Convenience function using default step and bytesPerLine
+    	return getMemoryDump(mem, address, length, 1, 16);
+    }
+
+    public static String getMemoryDump(Memory mem, int address, int length, int step, int bytesPerLine) {
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, address, length, step);
     	IMemoryReader charReader = MemoryReader.getMemoryReader(mem, address, length, 1);
 
-    	return getMemoryDump(address, length, 1, 16, memoryReader, charReader);
+    	return getMemoryDump(address, length, step, bytesPerLine, memoryReader, charReader);
     }
 
     public static String getMemoryDump(TPointer address, int length) {

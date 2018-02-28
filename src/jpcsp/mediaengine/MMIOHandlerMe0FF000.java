@@ -16,8 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.mediaengine;
 
+import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
@@ -59,6 +62,7 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 			case 0x05:
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X", command, status, unknown10));
+					log.debug(Utilities.getMemoryDump(getMemory(), unknown10, 0x1A4, 4, 16));
 				}
 				break;
 			case 0x08:
@@ -134,11 +138,41 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 				}
 				break;
 			case 0x58:
+				if ((unknown14 & 0xFFFF0000) != 0) {
+					log.error(String.format("Unknown length 0x%X in command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", unknown14, command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
+				} else if (unknown18 != 0x9C00 || unknown20 != 0 || unknown24 != 0xFFFE || unknown28 != 0) {
+					log.error(String.format("Unknown parameters in command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
+				} else {
+					IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(getMemory(), unknown10, (unknown14 + 1) << 2, 4);
+					for (int i = 0; i <= unknown14; i++) {
+						memoryWriter.writeNext(0);
+					}
+					memoryWriter.flush();
+				}
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
 				}
 				break;
 			case 0x5A:
+				if (unknown18 != 0x548 || unknown20 != 4 || unknown24 != 3 || unknown28 != 0x10800) {
+					log.error(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
+				} else if (unknown14 == 0x07FF0000) {
+					// Interlaced left and right samples
+					int numberOfSamples = unknown28 & 0xFFFF;
+					Memory mem = getMemory();
+					for (int i = 0; i < numberOfSamples; i++) {
+						mem.write16(unknown10 + i * 4, (short) 0x1234);
+					}
+				} else if (unknown14 == 0x000103FF) {
+					// Non-interlaced left and right samples
+					int numberOfSamples = unknown28 & 0xFFFF;
+					Memory mem = getMemory();
+					for (int i = 0; i < numberOfSamples; i++) {
+						mem.write16(unknown10 + i * 2, (short) 0x1234);
+					}
+				} else {
+					log.error(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
+				}
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
 				}

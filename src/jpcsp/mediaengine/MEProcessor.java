@@ -281,7 +281,7 @@ public class MEProcessor extends Processor {
 			if (cpu.pc == 0x883000E0 && log.isDebugEnabled()) {
 				log.debug(String.format("Initial ME memory content from meimg.img:"));
 				log.debug(Utilities.getMemoryDump(meMemory, 0x00101000, cpu._v0));
-//				log.setLevel(Level.TRACE);
+				log.setLevel(Level.TRACE);
 			}
 		}
 
