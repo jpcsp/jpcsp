@@ -252,7 +252,7 @@ public class NIDMapper {
     	if (moduleMap != null) {
     		moduleMap.remove(info.getNid());
     		if (moduleMap.isEmpty()) {
-    			moduleMap.remove(info.getModuleName());
+    			moduleNidMap.remove(info.getModuleName());
     		}
     	}
 
@@ -270,7 +270,7 @@ public class NIDMapper {
     	}
 
     	if (info.hasName()) {
-    		syscallMap.remove(info.getName());
+    		nameMap.remove(info.getName());
     	}
     }
 

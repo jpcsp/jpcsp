@@ -142,7 +142,7 @@ import jpcsp.util.DurationStatistics;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.HLE.CheckArgument;;
+import jpcsp.HLE.CheckArgument;
 
 /*
  * Thread scheduling on PSP:

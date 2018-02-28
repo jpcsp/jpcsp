@@ -7,18 +7,13 @@ import java.awt.event.WindowEvent;
 import java.awt.image.MemoryImageSource;
 import java.io.File;
 import java.io.FileInputStream;
-import java.nio.IntBuffer;
 import java.util.Arrays;
 
 import javax.swing.JFrame;
 
 import com.twilight.h264.decoder.AVFrame;
 import com.twilight.h264.decoder.AVPacket;
-import com.twilight.h264.decoder.DebugTool;
-import com.twilight.h264.decoder.H264Context;
-import com.twilight.h264.decoder.H264Data;
 import com.twilight.h264.decoder.H264Decoder;
-import com.twilight.h264.decoder.H264PredictionContext;
 import com.twilight.h264.decoder.MpegEncContext;
 
 public class H264Player implements Runnable {
@@ -32,9 +27,9 @@ public class H264Player implements Runnable {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 		new H264Player(args);
 	}
+
 	public H264Player(String[] args) {
 		if(args.length<1) {
 			System.out.println("Usage: java com.twilight.h264.decoder.H264Player <.h264 raw file>\n");
@@ -80,8 +75,6 @@ public class H264Player implements Runnable {
 	    //uint8_t inbuf[INBUF_SIZE + H264Context.FF_INPUT_BUFFER_PADDING_SIZE];
 	    byte[] inbuf = new byte[INBUF_SIZE + MpegEncContext.FF_INPUT_BUFFER_PADDING_SIZE];
 	    int[] inbuf_int = new int[INBUF_SIZE + MpegEncContext.FF_INPUT_BUFFER_PADDING_SIZE];
-	    //char buf[1024];
-	    byte[] buf = new byte[1024];
 	    AVPacket avpkt = new AVPacket();
 
 	    avpkt.av_init_packet();

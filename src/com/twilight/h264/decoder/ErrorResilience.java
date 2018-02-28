@@ -41,8 +41,8 @@ public class ErrorResilience {
 	        if(ref >= h.ref_count[0]) //FIXME it is posible albeit uncommon that slice references differ between slices, we take the easy approuch and ignore it for now. If this turns out to have any relevance in practice then correct remapping should be added
 	            ref=0;
 	        Rectangle.fill_rectangle_sign(s.current_picture.ref_index[0], 4*h.mb_xy, 2, 2, 2, ref, 1);
-	        Rectangle.fill_rectangle_sign(h.ref_cache[0], h.scan8[0], 4, 4, 8, ref, 1);
-	        Rectangle.fill_rectangle_mv_cache(h.mv_cache[0],  h.scan8[0] , 4, 4, 8, h.pack16to32(mv[0][0][0],mv[0][0][1]), 4);
+	        Rectangle.fill_rectangle_sign(h.ref_cache[0], H264Context.scan8[0], 4, 4, 8, ref, 1);
+	        Rectangle.fill_rectangle_mv_cache(h.mv_cache[0], H264Context.scan8[0] , 4, 4, 8, H264Context.pack16to32(mv[0][0][0],mv[0][0][1]), 4);
 	        ////assert(!FRAME_MBAFF);
 	        h.ff_h264_hl_decode_mb();
 	    }else{
@@ -386,7 +386,7 @@ public class ErrorResilience {
 	    int mb_stride = s.mb_stride;
 	    int mb_width = s.mb_width;
 	    int mb_height= s.mb_height;
-	    int i, depth, num_avail;
+	    int i, num_avail;
 	    int mb_x, mb_y, mot_step, mot_stride;
 
 	    int[] param = new int[2];
@@ -434,14 +434,13 @@ public class ErrorResilience {
 	        return;
 	    }
 
-	    for(depth=0;; depth++){
+	    while(true){
 	        int changed, pass, none_left;
 
 	        none_left=1;
 	        changed=1;
 	        for(pass=0; (changed!=0 || pass<2) && pass<10; pass++){
 	            //int mb_x, mb_y;
-	            int score_sum=0;
 
 	            changed=0;
 	            for(mb_y=0; mb_y<s.mb_height; mb_y++){
@@ -617,7 +616,6 @@ public class ErrorResilience {
 	                            best_pred= j;
 	                        }
 	                    }
-	                    score_sum+= best_score;
 	                    mv[0][0][0]= mv_predictor[best_pred][0];
 	                    mv[0][0][1]= mv_predictor[best_pred][1];
 
@@ -831,7 +829,7 @@ public class ErrorResilience {
 	}
 	
 	public static void ff_er_frame_end(MpegEncContext s){
-	    int i, mb_x, mb_y, error, error_type, dc_error, mv_error, ac_error;
+	    int i, mb_x, mb_y, error, error_type;
 	    int distance;
 	    int[] threshold_part = {100,100,100};
 	    int threshold= 50;
@@ -1004,13 +1002,9 @@ public class ErrorResilience {
 
 	    // DebugTool.printDebugString("....F1.7....\n");
 
-	    dc_error= ac_error= mv_error=0;
 	    for(i=0; i<s.mb_num; i++){
 	        int mb_xy= s.mb_index2xy[i];
 	        error= s.error_status_table[mb_xy];
-	        if(0!=(error&MpegEncContext.DC_ERROR)) dc_error ++;
-	        if(0!=(error&MpegEncContext.AC_ERROR)) ac_error ++;
-	        if(0!=(error&MpegEncContext.MV_ERROR)) mv_error ++;
 	    }
 	    //av_log(s.avctx, AV_LOG_INFO, "concealing %d DC, %d AC, %d MV errors\n", dc_error, ac_error, mv_error);
 

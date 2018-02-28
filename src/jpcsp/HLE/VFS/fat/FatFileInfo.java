@@ -121,7 +121,7 @@ public class FatFileInfo {
 		}
 
 		children.add(fileInfo);
-		fileInfo.setParentDirectory(this);;
+		fileInfo.setParentDirectory(this);
 	}
 
 	public List<FatFileInfo> getChildren() {

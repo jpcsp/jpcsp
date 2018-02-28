@@ -136,7 +136,7 @@ public class MemoryReader {
 	/**
 	 * Creates a MemoryReader to read values from memory.
 	 *
-	 * @param address the address where to start reading.
+	 * @param address the address and memory where to start reading.
 	 * @param length  the maximum number of bytes that can be read.
 	 * @param step    when step == 1, read 8-bit values
 	 *                when step == 2, read 16-bit values

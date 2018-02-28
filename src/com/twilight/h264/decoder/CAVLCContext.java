@@ -1,6 +1,6 @@
 package com.twilight.h264.decoder;
 
-import com.twilight.h264.util.*;;
+import com.twilight.h264.util.*;
 
 public class CAVLCContext {
 
@@ -315,7 +315,6 @@ public class CAVLCContext {
 
 	    if (0==calvc_inited) {
 	        int i;
-	        int offset;
 	        calvc_inited = 1;
 
 	        //chroma_dc_coeff_token_vlc.table_base = chroma_dc_coeff_token_vlc_table;
@@ -329,7 +328,6 @@ public class CAVLCContext {
 	                 GetBitContext.INIT_VLC_USE_NEW_STATIC);
 			*/
 	        
-	        offset = 0;
 	        for(i=0; i<4; i++){
 	        	coeff_token_vlc[i] = new VLC();
 //	            coeff_token_vlc[i].table_base = coeff_token_vlc_tables;
@@ -343,7 +341,6 @@ public class CAVLCContext {
 	                     coeff_token_bits[i],0, 1, 1,
 	                     GetBitContext.INIT_VLC_USE_NEW_STATIC);
 	            */
-	            offset += coeff_token_vlc_tables_size[i];
 	        }
 	        /*
 	         * This is a one time safety check to make sure that
@@ -869,9 +866,9 @@ public class CAVLCContext {
 	                }
 
 	                if(di==4)
-	                    Rectangle.fill_rectangle_sign( h.intra4x4_pred_mode_cache, h.scan8[i] , 2, 2, 8, mode, 1 );
+	                    Rectangle.fill_rectangle_sign( h.intra4x4_pred_mode_cache, H264Context.scan8[i] , 2, 2, 8, mode, 1 );
 	                else
-	                    h.intra4x4_pred_mode_cache[ h.scan8[i] ] = mode;
+	                    h.intra4x4_pred_mode_cache[ H264Context.scan8[i] ] = mode;
 	            }
 	            h.ff_h264_write_back_intra_pred_mode();
 	            if( h.ff_h264_check_intra4x4_pred_mode() < 0)
@@ -905,10 +902,10 @@ public class CAVLCContext {
 	            }
 	            if( 0!=((h.sub_mb_type[0]|h.sub_mb_type[1]|h.sub_mb_type[2]|h.sub_mb_type[3])&H264Context.MB_TYPE_DIRECT2)) {
 	            	mb_type = h.ff_h264_pred_direct_motion(mb_type);
-	                h.ref_cache[0][h.scan8[4]] =
-	                h.ref_cache[1][h.scan8[4]] =
-	                h.ref_cache[0][h.scan8[12]] =
-	                h.ref_cache[1][h.scan8[12]] = H264Context.PART_NOT_AVAILABLE;
+	                h.ref_cache[0][H264Context.scan8[4]] =
+	                h.ref_cache[1][H264Context.scan8[4]] =
+	                h.ref_cache[0][H264Context.scan8[12]] =
+	                h.ref_cache[1][H264Context.scan8[12]] = H264Context.PART_NOT_AVAILABLE;
 	            }
 	        }else{
 	            //assert(h.slice_type_nos == H264Context.FF_P_TYPE); //FIXME SP correct ?
@@ -954,11 +951,11 @@ public class CAVLCContext {
 	        for(list=0; list<h.list_count; list++){
 	            for(i=0; i<4; i++){
 	                if(0!=(h.sub_mb_type[i] & H264Context.MB_TYPE_DIRECT2)) {
-	                    h.ref_cache[list][ h.scan8[4*i] ] = h.ref_cache[list][ h.scan8[4*i]+1 ];
+	                    h.ref_cache[list][ H264Context.scan8[4*i] ] = h.ref_cache[list][ H264Context.scan8[4*i]+1 ];
 	                    continue;
 	                }
-	                h.ref_cache[list][ h.scan8[4*i]   ]=h.ref_cache[list][ h.scan8[4*i]+1 ]=
-	                h.ref_cache[list][ h.scan8[4*i]+8 ]=h.ref_cache[list][ h.scan8[4*i]+9 ]= ref[list][i];
+	                h.ref_cache[list][ H264Context.scan8[4*i]   ]=h.ref_cache[list][ H264Context.scan8[4*i]+1 ]=
+	                h.ref_cache[list][ H264Context.scan8[4*i]+8 ]=h.ref_cache[list][ H264Context.scan8[4*i]+9 ]= ref[list][i];
 
 	                if(((h.sub_mb_type[i]) & (H264Context.MB_TYPE_P0L0<<((0)+2*(list)))) != 0 ) {//IS_DIR(h.sub_mb_type[i], 0, list)){
 	                    int sub_mb_type= h.sub_mb_type[i];
@@ -968,9 +965,9 @@ public class CAVLCContext {
 	                        int index= 4*i + block_width*j;
 	                        //int16_t (* mv_cache)[2]= &h.mv_cache[list][ h.scan8[index] ];
 	                        int[][] mv_cache_base = h.mv_cache[list];
-	                        int my_cache_offset = h.scan8[index];
+	                        int my_cache_offset = H264Context.scan8[index];
 	                        int[] mxmy = new int[2];
-	                        h.pred_motion(index, block_width, list, h.ref_cache[list][ h.scan8[index] ], mxmy);
+	                        h.pred_motion(index, block_width, list, h.ref_cache[list][ H264Context.scan8[index] ], mxmy);
 	                        mx = mxmy[0];
 	                        my = mxmy[1];
 	                        mx += s.gb.get_se_golomb("mx?");
@@ -998,14 +995,14 @@ public class CAVLCContext {
 	                    p[0] = p[1]=
 	                    p[8] = p[9]= 0;
 	                    */
-	                	h.mv_cache[list][h.scan8[4*i] + 0][0] = (short)0;
-	                	h.mv_cache[list][h.scan8[4*i] + 1][0] = (short)0;
-	                	h.mv_cache[list][h.scan8[4*i] + 8][0] = (short)0;
-	                	h.mv_cache[list][h.scan8[4*i] + 9][0] = (short)0;
-	                	h.mv_cache[list][h.scan8[4*i] + 0][1] = (short)0;
-	                	h.mv_cache[list][h.scan8[4*i] + 1][1] = (short)0;
-	                	h.mv_cache[list][h.scan8[4*i] + 8][1] = (short)0;
-	                	h.mv_cache[list][h.scan8[4*i] + 9][1] = (short)0;
+	                	h.mv_cache[list][H264Context.scan8[4*i] + 0][0] = (short)0;
+	                	h.mv_cache[list][H264Context.scan8[4*i] + 1][0] = (short)0;
+	                	h.mv_cache[list][H264Context.scan8[4*i] + 8][0] = (short)0;
+	                	h.mv_cache[list][H264Context.scan8[4*i] + 9][0] = (short)0;
+	                	h.mv_cache[list][H264Context.scan8[4*i] + 0][1] = (short)0;
+	                	h.mv_cache[list][H264Context.scan8[4*i] + 1][1] = (short)0;
+	                	h.mv_cache[list][H264Context.scan8[4*i] + 8][1] = (short)0;
+	                	h.mv_cache[list][H264Context.scan8[4*i] + 9][1] = (short)0;
 	                }
 	            }
 	        }
@@ -1030,13 +1027,13 @@ public class CAVLCContext {
 	                                return -1;
 	                            }
 	                        }
-	                    Rectangle.fill_rectangle_sign(h.ref_cache[list], h.scan8[0], 4, 4, 8, val, 1);
+	                    Rectangle.fill_rectangle_sign(h.ref_cache[list], H264Context.scan8[0], 4, 4, 8, val, 1);
 	                    }
 	            }
 	            for(list=0; list<h.list_count; list++){
 	                if(((mb_type) & (H264Context.MB_TYPE_P0L0<<((0)+2*(list)))) != 0 ){
                     	int[] mxmy = new int[] { mx, my };
-	                    h.pred_motion(0, 4, list, h.ref_cache[list][ h.scan8[0] ], mxmy);
+	                    h.pred_motion(0, 4, list, h.ref_cache[list][ H264Context.scan8[0] ], mxmy);
                         mx = mxmy[0];
                         my = mxmy[1];
 	                    mx += s.gb.get_se_golomb("mx?");
@@ -1046,7 +1043,7 @@ public class CAVLCContext {
 	                    // DebugTool.printDebugString("    ****(1) mx="+mx+", my="+my+", val="+val+"\n");
 	                    //tprintf(s.avctx, "final mv:%d %d\n", mx, my);
 
-	                    Rectangle.fill_rectangle_mv_cache(h.mv_cache[list], h.scan8[0] , 4, 4, 8, h.pack16to32(mx,my), 4);
+	                    Rectangle.fill_rectangle_mv_cache(h.mv_cache[list], H264Context.scan8[0] , 4, 4, 8, H264Context.pack16to32(mx,my), 4);
 	                }
 	            }
 	        }
@@ -1070,7 +1067,7 @@ public class CAVLCContext {
 	                        	//!!?????????????????????? Need unsigneded??
 	                            val= H264Context.LIST_NOT_USED;
 	                        } // if
-	                        Rectangle.fill_rectangle_sign(h.ref_cache[list], h.scan8[0] + 16*i , 4, 2, 8, val, 1);
+	                        Rectangle.fill_rectangle_sign(h.ref_cache[list], H264Context.scan8[0] + 16*i , 4, 2, 8, val, 1);
 	                    }
 	            }
 	            for(list=0; list<h.list_count; list++){
@@ -1078,20 +1075,20 @@ public class CAVLCContext {
 	                    int val;
 	                    if(((mb_type) & (H264Context.MB_TYPE_P0L0<<((i)+2*(list)))) != 0 ){
 	                    	int[] mxmy = new int[] { mx, my };
-	                        h.pred_16x8_motion(8*i, list, h.ref_cache[list][h.scan8[0] + 16*i], mxmy);
+	                        h.pred_16x8_motion(8*i, list, h.ref_cache[list][H264Context.scan8[0] + 16*i], mxmy);
 	                        mx = mxmy[0];
 	                        my = mxmy[1];
 	                        mx += s.gb.get_se_golomb("mx?");
 	                        my += s.gb.get_se_golomb("my?");
 	                        //tprintf(s.avctx, "final mv:%d %d\n", mx, my);
 
-	                        val= h.pack16to32(mx,my);
+	                        val= H264Context.pack16to32(mx,my);
 
 		                    // DebugTool.printDebugString("    ****(2) mx="+mx+", my="+my+", val="+val+"\n");
 
 	                    }else
 	                        val=0;
-	                    Rectangle.fill_rectangle_mv_cache(h.mv_cache[list], h.scan8[0] + 16*i, 4, 2, 8, val, 4);
+	                    Rectangle.fill_rectangle_mv_cache(h.mv_cache[list], H264Context.scan8[0] + 16*i, 4, 2, 8, val, 4);
 	                }
 	            }
 	        }else{
@@ -1113,10 +1110,10 @@ public class CAVLCContext {
 	                            }
 	                        }else {
 	                        	// !!?????????? Need Unsigned
-	                        	val= h.LIST_NOT_USED;	
+	                        	val= H264Context.LIST_NOT_USED;	
 	                        } // if
 	                            
-	                        Rectangle.fill_rectangle_sign(h.ref_cache[list], h.scan8[0] + 2*i , 2, 4, 8, val, 1);
+	                        Rectangle.fill_rectangle_sign(h.ref_cache[list], H264Context.scan8[0] + 2*i , 2, 4, 8, val, 1);
 	                    }
 	            }
 	            for(list=0; list<h.list_count; list++){
@@ -1124,20 +1121,20 @@ public class CAVLCContext {
 	                    int val;
 	                    if(((mb_type) & (H264Context.MB_TYPE_P0L0<<((i)+2*(list)))) != 0 ){
 	                    	int[] mxmy = new int[] { mx, my };
-	                    	h.pred_8x16_motion(i*4, list, h.ref_cache[list][ h.scan8[0] + 2*i ], mxmy);
+	                    	h.pred_8x16_motion(i*4, list, h.ref_cache[list][ H264Context.scan8[0] + 2*i ], mxmy);
 	                    	mx = mxmy[0];
 	                    	my = mxmy[1];
 	                        mx += s.gb.get_se_golomb("mx?");
 	                        my += s.gb.get_se_golomb("my?");
 	                        //tprintf(s.avctx, "final mv:%d %d\n", mx, my);
 
-	                        val= h.pack16to32(mx,my);
+	                        val= H264Context.pack16to32(mx,my);
 	                        
 		                    // DebugTool.printDebugString("    ****(3) mx="+mx+", my="+my+", val="+val+"\n");
 
 	                    }else
 	                        val=0;
-	                    Rectangle.fill_rectangle_mv_cache(h.mv_cache[list], h.scan8[0] + 2*i , 2, 4, 8, val, 4);
+	                    Rectangle.fill_rectangle_mv_cache(h.mv_cache[list], H264Context.scan8[0] + 2*i , 2, 4, 8, val, 4);
 	                }
 	            }
 	        }
@@ -1225,7 +1222,7 @@ public class CAVLCContext {
 	                }
 	                	
 	            }else{
-	                Rectangle.fill_rectangle_unsign(h.non_zero_count_cache, h.scan8[0], 4, 4, 8, 0, 1);
+	                Rectangle.fill_rectangle_unsign(h.non_zero_count_cache, H264Context.scan8[0], 4, 4, 8, 0, 1);
 	            }
 	        }else{
 	            for(i8x8=0; i8x8<4; i8x8++){
@@ -1239,7 +1236,7 @@ public class CAVLCContext {
 	                                return -1;
 	                        }
 	                        int[] nnz_base = h.non_zero_count_cache;
-	                        int nnz_offset = h.scan8[4*i8x8];
+	                        int nnz_offset = H264Context.scan8[4*i8x8];
 	                        nnz_base[nnz_offset + 0] += nnz_base[nnz_offset + 1] + nnz_base[nnz_offset + 8] + nnz_base[nnz_offset + 9];
 	                    }else{
 	                        for(i4x4=0; i4x4<4; i4x4++){
@@ -1252,7 +1249,7 @@ public class CAVLCContext {
 	                    }
 	                }else{
                         int[] nnz_base = h.non_zero_count_cache;
-                        int nnz_offset = h.scan8[4*i8x8];
+                        int nnz_offset = H264Context.scan8[4*i8x8];
                         nnz_base[nnz_offset + 0] = nnz_base[nnz_offset + 1] = nnz_base[nnz_offset + 8] = nnz_base[nnz_offset + 9] = 0;
 	                }
 	            }
@@ -1285,14 +1282,14 @@ public class CAVLCContext {
 	            }
 	        }else{
 		        int[] nnz= h.non_zero_count_cache;
-		        nnz[ h.scan8[16]+0 ] = nnz[ h.scan8[16]+1 ] =nnz[ h.scan8[16]+8 ] =nnz[ h.scan8[16]+9 ] =
-		        nnz[ h.scan8[20]+0 ] = nnz[ h.scan8[20]+1 ] =nnz[ h.scan8[20]+8 ] =nnz[ h.scan8[20]+9 ] = 0;
+		        nnz[ H264Context.scan8[16]+0 ] = nnz[ H264Context.scan8[16]+1 ] =nnz[ H264Context.scan8[16]+8 ] =nnz[ H264Context.scan8[16]+9 ] =
+		        nnz[ H264Context.scan8[20]+0 ] = nnz[ H264Context.scan8[20]+1 ] =nnz[ H264Context.scan8[20]+8 ] =nnz[ H264Context.scan8[20]+9 ] = 0;
 	        }
 	    }else{
 	        int[] nnz= h.non_zero_count_cache;
-	        Rectangle.fill_rectangle_unsign(nnz, h.scan8[0], 4, 4, 8, 0, 1);
-	        nnz[ h.scan8[16]+0 ] = nnz[ h.scan8[16]+1 ] =nnz[ h.scan8[16]+8 ] =nnz[ h.scan8[16]+9 ] =
-	        nnz[ h.scan8[20]+0 ] = nnz[ h.scan8[20]+1 ] =nnz[ h.scan8[20]+8 ] =nnz[ h.scan8[20]+9 ] = 0;
+	        Rectangle.fill_rectangle_unsign(nnz, H264Context.scan8[0], 4, 4, 8, 0, 1);
+	        nnz[ H264Context.scan8[16]+0 ] = nnz[ H264Context.scan8[16]+1 ] =nnz[ H264Context.scan8[16]+8 ] =nnz[ H264Context.scan8[16]+9 ] =
+	        nnz[ H264Context.scan8[20]+0 ] = nnz[ H264Context.scan8[20]+1 ] =nnz[ H264Context.scan8[20]+8 ] =nnz[ H264Context.scan8[20]+9 ] = 0;
 	    }
 	    s.current_picture.qscale_table[mb_xy]= s.qscale;
 	    h.write_back_non_zero_count();

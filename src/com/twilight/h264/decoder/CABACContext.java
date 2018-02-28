@@ -1110,15 +1110,15 @@ public class CABACContext {
 	}
 
 	public int decode_cabac_mb_ref( H264Context h, int list, int n ) {
-	    int refa = h.ref_cache[list][h.scan8[n] - 1];
-	    int refb = h.ref_cache[list][h.scan8[n] - 8];
+	    int refa = h.ref_cache[list][H264Context.scan8[n] - 1];
+	    int refb = h.ref_cache[list][H264Context.scan8[n] - 8];
 	    int ref  = 0;
 	    int ctx  = 0;
 
 	    if( h.slice_type_nos == H264Context.FF_B_TYPE) {
-	        if( refa > 0 && 0 == (h.direct_cache[h.scan8[n] - 1]&(H264Context.MB_TYPE_DIRECT2>>1)) )
+	        if( refa > 0 && 0 == (h.direct_cache[H264Context.scan8[n] - 1]&(H264Context.MB_TYPE_DIRECT2>>1)) )
 	            ctx++;
-	        if( refb > 0 && 0 == (h.direct_cache[h.scan8[n] - 8]&(H264Context.MB_TYPE_DIRECT2>>1)) )
+	        if( refb > 0 && 0 == (h.direct_cache[H264Context.scan8[n] - 8]&(H264Context.MB_TYPE_DIRECT2>>1)) )
 	            ctx += 2;
 	    } else {
 	        if( refa > 0 )

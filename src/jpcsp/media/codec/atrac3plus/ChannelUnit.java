@@ -1044,7 +1044,7 @@ public class ChannelUnit {
 					}
 				} else { // VLC modulo delta to lev_codes of previous subband
 					if (chan.gainData[0].numPoints > 0) {
-						gaincLevelMode1m(chan.gainData[0]);;
+						gaincLevelMode1m(chan.gainData[0]);
 					}
 
 					for (int sb = 1; sb < codedSubbands; sb++) {
@@ -1588,7 +1588,7 @@ public class ChannelUnit {
 	private int decodeTonesInfo() {
 		for (int chNum = 0; chNum < numChannels; chNum++) {
 			for (int i = 0; i < ATRAC3P_SUBBANDS; i++) {
-				ctx.channels[chNum].tonesInfo[i].clear();;
+				ctx.channels[chNum].tonesInfo[i].clear();
 			}
 		}
 
@@ -1598,7 +1598,7 @@ public class ChannelUnit {
 		}
 
 		for (int i = 0; i < ctx.wavesInfo.waves.length; i++) {
-			ctx.wavesInfo.waves[i].clear();;
+			ctx.wavesInfo.waves[i].clear();
 		}
 
 		ctx.wavesInfo.amplitudeMode = br.read1();

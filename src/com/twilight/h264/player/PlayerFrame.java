@@ -6,6 +6,7 @@ import java.awt.Image;
 import javax.swing.JPanel;
 
 public class PlayerFrame extends JPanel {
+	private static final long serialVersionUID = 3976202609366729753L;
 	public Image lastFrame;
 	
 	public void paint(Graphics g) {

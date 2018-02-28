@@ -166,7 +166,7 @@ public class Controller extends BaseNativeObject {
 		}
 
 		if (focus != null) {
-			focus.onLeft();;
+			focus.onLeft();
 		}
 	}
 

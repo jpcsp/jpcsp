@@ -60,7 +60,7 @@ public class MemoryWriter {
 	}
 
 	/**
-	 * Creates a MemoryWriter to write values from memory.
+	 * Creates a MemoryWriter to write values to memory.
 	 *
 	 * @param address the address where to start writing.
 	 *                When step == 2, the address has to be 16-bit aligned ((address & 1) == 0).
@@ -103,7 +103,7 @@ public class MemoryWriter {
 	}
 
 	/**
-	 * Creates a MemoryWriter to write values from memory.
+	 * Creates a MemoryWriter to write values to memory.
 	 *
 	 * @param address the address where to start writing.
 	 *                When step == 2, the address has to be 16-bit aligned ((address & 1) == 0).
@@ -123,12 +123,13 @@ public class MemoryWriter {
 	}
 
 	/**
-	 * Creates a MemoryWriter to write values from memory.
+	 * Creates a MemoryWriter to write values to memory.
 	 *
 	 * @param mem     the memory to be used.
 	 * @param address the address where to start writing.
 	 *                When step == 2, the address has to be 16-bit aligned ((address & 1) == 0).
 	 *                When step == 4, the address has to be 32-bit aligned ((address & 3) == 0).
+	 * @param length  the maximum number of bytes that can be written.
 	 * @param step    when step == 1, write 8-bit values
 	 *                when step == 2, write 16-bit values
 	 *                when step == 4, write 32-bit values
@@ -146,9 +147,10 @@ public class MemoryWriter {
 	}
 
 	/**
-	 * Creates a MemoryWriter to write values from memory.
+	 * Creates a MemoryWriter to write values to memory.
 	 *
-	 * @param address the address where to start writing.
+	 * @param address the address and memory where to start writing.
+	 * @param length  the maximum number of bytes that can be written.
 	 * @param step    when step == 1, write 8-bit values
 	 *                when step == 2, write 16-bit values
 	 *                when step == 4, write 32-bit values

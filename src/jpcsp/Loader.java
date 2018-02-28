@@ -771,7 +771,7 @@ public class Loader {
         		moduleInfoAddr = baseAddress + (phdr.getP_paddr() & Memory.addressMask) - phdr.getP_offset();
         	}
         } else if (shdr != null) {
-        	moduleInfoAddr = shdr.getSh_addr(baseAddress);;
+        	moduleInfoAddr = shdr.getSh_addr(baseAddress);
         }
 
         if (moduleInfoAddr != 0) {

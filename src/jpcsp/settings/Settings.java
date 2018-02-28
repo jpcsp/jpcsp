@@ -667,7 +667,7 @@ public class Settings {
     }
 
     public void readRecent(String cat, List<RecentElement> recent) {
-        for (int i = 0;; ++i) {
+        for (int i = 0; true; ++i) {
             String r = getProperty("gui.recent." + cat + "." + i);
             if (r == null) {
                 break;

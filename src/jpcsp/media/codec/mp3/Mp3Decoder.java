@@ -508,7 +508,7 @@ public class Mp3Decoder implements ICodec {
                     	g.sbHybrid[sIndex] = v;
                     }
                     if (y < 15) {
-                    	float v = expval_table[exponent][y];;
+                    	float v = expval_table[exponent][y];
                     	if (bb.readBool()) {
                     		v = -v;
                     	}
@@ -526,7 +526,7 @@ public class Mp3Decoder implements ICodec {
                     y = y & 0x0F;
                     x += y;
                     if (x < 15) {
-                    	float v = expval_table[exponent][x];;
+                    	float v = expval_table[exponent][x];
                     	if (bb.readBool()) {
                     		v = -v;
                     	}

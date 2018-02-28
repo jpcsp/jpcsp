@@ -31,7 +31,6 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
-import jpcsp.util.Utilities;
 
 /**
  * @author gid15

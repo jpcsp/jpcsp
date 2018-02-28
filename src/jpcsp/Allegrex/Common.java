@@ -890,7 +890,7 @@ public class Common {
         StringBuilder rot = new StringBuilder("[");
 
         i = 0;
-        for (;;) {
+        while (true) {
             rot.append(codes[i++]);
             if (i >= vsize) {
                 break;
