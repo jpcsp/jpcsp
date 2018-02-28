@@ -133,7 +133,7 @@ public class sceUsb extends HLEModule {
 	public int sceUsbStop(PspString driverName, int size, @CanBeNull TPointer args) {
 		usbStarted = false;
 
-		SceModule module = loadedModules.remove(driverName);
+		SceModule module = loadedModules.remove(driverName.getString());
 		if (module != null) {
 			HLEModuleManager moduleManager = HLEModuleManager.getInstance();
 			moduleManager.UnloadFlash0Module(module);

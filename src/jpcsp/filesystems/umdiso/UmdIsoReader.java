@@ -28,12 +28,9 @@ import java.util.Date;
 import java.util.HashMap;
 
 import jpcsp.Emulator;
-import jpcsp.HLE.VFS.local.LocalVirtualFile;
-import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660Directory;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660File;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660Handler;
-import jpcsp.format.PBP;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 

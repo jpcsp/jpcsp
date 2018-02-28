@@ -3017,9 +3017,9 @@ public class H264Context {
 	        // FIXME The two following lines get the bitstream position in the cabac
 	        // decode, I think it should be done by a function in cabac.h (or cabac.c).
 	        if((cabac.low&0x01) != 0) ptr_offset--;
-	        if(CABACContext.CABAC_BITS==16){
+	        //if(CABACContext.CABAC_BITS==16){
 	            if((cabac.low&0x01FF) != 0) ptr_offset--;
-	        }
+	        //}
 
 	        // The pixels are stored in the same order as levels in h->mb array.
 	        for(int i=0;i<128;i++) {
@@ -4956,14 +4956,10 @@ public class H264Context {
 	        }
 
 	    } else {
-	    	int mbCount = 0;
 	        for(;;){
 	            int ret = cavlc.ff_h264_decode_mb_cavlc(this);
 	            
 	            // DebugTool.printDebugString(" ---- ff_h264_decode_mb_cavlc return "+ret+"\n");
-
-	            mbCount++;
-	            //System.out.println("Reading Macro-Block ("+ mbCount +" )");
 
 	            if(ret>=0) ff_h264_hl_decode_mb();
 	            
@@ -7012,8 +7008,8 @@ public class H264Context {
 	        }
 
 	        for(q=0; q<52; q++){
-	            int shift = this.div6[q];
-	            int idx = this.rem6[q];
+	            int shift = div6[q];
+	            int idx = rem6[q];
 	            for(x=0; x<64; x++)
 	                this.dequant8_coeff[i][q][(x>>3)|((x&7)<<3)] =
 	                    ((/*uint32_t*/int)H264Data.dequant8_coeff_init[idx][ H264Data.dequant8_coeff_init_scan[((x>>1)&12) | (x&3)] ] *
@@ -7910,8 +7906,8 @@ public class H264Context {
 
 	    s.dropable= (h.nal_ref_idc == 0)?1:0;
 
-        s.me.qpel_put= s.dsp.put_h264_qpel_pixels_tab;
-        s.me.qpel_avg= s.dsp.avg_h264_qpel_pixels_tab;
+        s.me.qpel_put= DSPContext.put_h264_qpel_pixels_tab;
+        s.me.qpel_avg= DSPContext.avg_h264_qpel_pixels_tab;
 
 	    first_mb_in_slice= s.gb.get_ue_golomb("first_mb_in_slice");
 

@@ -7,7 +7,6 @@ import java.net.URL;
 // https://github.com/libgdx/libgdx/blob/master/gdx/src/com/badlogic/gdx/utils/SharedLibraryLoader.java
 // https://github.com/LWJGL/lwjgl3/blob/master/modules/core/src/main/java/org/lwjgl/system/SharedLibraryLoader.java
 // This is not required on lwjgl3 since SharedLibraryLoader takes care of it and allows fatjars and launch4j executables
-@SuppressWarnings("ResultOfMethodCallIgnored")
 public class LWJGLFixer {
     static private boolean fixed = false;
 
