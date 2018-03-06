@@ -20,7 +20,7 @@ import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.graphics.RE.externalge.ExternalGE.numberRendererThread;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
 import static jpcsp.graphics.RE.externalge.NativeUtils.coreInterpret;
-import static jpcsp.graphics.RE.externalge.NativeUtils.getCoreIntrStat;
+import static jpcsp.graphics.RE.externalge.NativeUtils.getCoreInterrupt;
 import static jpcsp.graphics.RE.externalge.NativeUtils.getCoreMadr;
 import static jpcsp.graphics.RE.externalge.NativeUtils.getCoreSadr;
 import static jpcsp.graphics.RE.externalge.NativeUtils.getRendererIndexCount;
@@ -96,9 +96,9 @@ public class CoreThreadMMIO extends Thread {
 					}
 				}
 
-				int intrStat = getCoreIntrStat();
-				if ((intrStat & INTR_STAT_END) != 0) {
-					MMIOHandlerGe.getInstance().triggerGeInterrupt();
+				int interrupt = getCoreInterrupt();
+				if ((interrupt & INTR_STAT_END) != 0) {
+					MMIOHandlerGe.getInstance().onGeInterrupt();
 				}
 
 				if (numberRendererThread > 0 && getRendererIndexCount() > 0) {

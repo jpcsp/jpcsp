@@ -60,8 +60,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		super(baseAddress);
 	}
 
-	public void triggerGeInterrupt() {
-		setInterrupt(getInterrupt() | INTR_STAT_END);
+	public void onGeInterrupt() {
+		checkInterrupt();
 		sceDisplayModule.setGeDirty(true);
 	}
 
@@ -228,25 +228,35 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	}
 
 	private int getInterrupt() {
+		if (ExternalGE.isActive()) {
+			interrupt = NativeUtils.getCoreInterrupt();
+		}
 		return interrupt;
 	}
 
-	private void setInterrupt(int interrupt) {
-		this.interrupt = interrupt;
-
-		if ((interrupt & INTR_STAT_END) == 0) {
+	private void checkInterrupt() {
+		if ((getInterrupt() & INTR_STAT_END) == 0) {
 			RuntimeContextLLE.clearInterrupt(getProcessor(), PSP_GE_INTR);
 		} else {
 			RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_GE_INTR);
 		}
 	}
 
+	private void setInterrupt(int interrupt) {
+		this.interrupt = interrupt;
+		if (ExternalGE.isActive()) {
+			NativeUtils.setCoreInterrupt(interrupt);
+		}
+
+		checkInterrupt();
+	}
+
 	private void changeInterrupt(int mask) {
-		setInterrupt(interrupt ^ mask);
+		setInterrupt(getInterrupt() ^ mask);
 	}
 
 	private void clearInterrupt(int mask) {
-		setInterrupt(interrupt & ~mask);
+		setInterrupt(getInterrupt() & ~mask);
 	}
 
 	private void startGeList() {

@@ -298,6 +298,8 @@ public class NativeUtils {
     public static native void setCoreSadr(int sadr);
     public static native int getCoreIntrStat();
     public static native void setCoreIntrStat(int intrStat);
+    public static native int getCoreInterrupt();
+    public static native void setCoreInterrupt(int interrupt);
     public static native int getCoreCmdArray(int cmd);
     public static native void setCoreCmdArray(int cmd, int value);
     public static native float getCoreMtxArray(int mtx);
