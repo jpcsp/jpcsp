@@ -59,6 +59,7 @@ public class Common {
         public final static int FLAG_WRITES_RD = (1 << 14);
         public final static int FLAG_SYSCALL = (1 << 15);
         public final static int FLAG_MODIFIES_INTERRUPT_STATE = (1 << 16);
+        public final static int FLAG_TRIGGERS_EXCEPTION = (1 << 17);
         public final static int FLAGS_BRANCH_INSTRUCTION = FLAG_CANNOT_BE_SPLIT | FLAG_HAS_DELAY_SLOT | FLAG_IS_BRANCHING | FLAG_IS_CONDITIONAL;
         public final static int FLAGS_LINK_INSTRUCTION = FLAG_HAS_DELAY_SLOT | FLAG_STARTS_NEW_BLOCK;
 
@@ -117,6 +118,10 @@ public class Common {
 
         public boolean hasFlags(int testFlags) {
             return (flags & testFlags) == testFlags;
+        }
+
+        public boolean hasOneFlag(int testFlags) {
+            return (flags & testFlags) != 0;
         }
 
         private void appendFlagString(StringBuilder result, String flagString) {

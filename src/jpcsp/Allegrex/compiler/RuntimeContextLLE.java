@@ -109,17 +109,23 @@ public class RuntimeContextLLE {
 
 	public static int triggerSyscallException(Processor processor, int syscallCode, boolean inDelaySlot) {
 		processor.cp0.setSyscallCode(syscallCode << 2);
+		int ebase = triggerException(processor, ExceptionManager.EXCEP_SYS, inDelaySlot);
 
-		// Set the BD (Branch Delay Slot) flag if the syscall was called inside a delay slot.
-		int cause = processor.cp0.getCause();
-		if (inDelaySlot) {
-			cause |= 0x80000000; // Set BD flag (Branch Delay Slot)
-		} else {
-			cause &= ~0x80000000; // Clear BD flag (Branch Delay Slot)
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Calling exception handler for Syscall at 0x%08X, epc=0x%08X", ebase, processor.cp0.getEpc()));
 		}
-		processor.cp0.setCause(cause);
 
-		return triggerException(processor, ExceptionManager.EXCEP_SYS);
+		return ebase;
+	}
+
+	public static int triggerBreakException(Processor processor, boolean inDelaySlot) {
+		int ebase = triggerException(processor, ExceptionManager.EXCEP_BP, inDelaySlot);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Calling exception handler for Break at 0x%08X, epc=0x%08X", ebase, processor.cp0.getEpc()));
+		}
+
+		return ebase;
 	}
 
 	public static boolean isMediaEngineCpu() {
@@ -151,22 +157,8 @@ public class RuntimeContextLLE {
 		return getMainProcessor();
 	}
 
-	private static void setExceptionCause(Processor processor, int exceptionNumber) {
-		int cause = processor.cp0.getCause();
-		cause = (cause & 0xFFFFFF00) | (exceptionNumber << 2);
-		processor.cp0.setCause(cause);
-	}
-
-	public static int triggerException(Processor processor, int exceptionNumber) {
-		setExceptionCause(processor, exceptionNumber);
-
-		int ebase = prepareExceptionHandlerCall(processor);
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Calling exception handler for Syscall at 0x%08X, epc=0x%08X", ebase, processor.cp0.getEpc()));
-		}
-
-		return ebase;
+	public static int triggerException(Processor processor, int exceptionNumber, boolean inDelaySlot) {
+		return prepareExceptionHandlerCall(processor, exceptionNumber, inDelaySlot);
 	}
 
 	/*
@@ -209,11 +201,20 @@ public class RuntimeContextLLE {
 		return true;
 	}
 
-	private static int prepareExceptionHandlerCall(Processor processor) {
+	private static int prepareExceptionHandlerCall(Processor processor, int exceptionNumber, boolean inDelaySlot) {
+		// Set the exception number and BD flag
+		int cause = processor.cp0.getCause();
+		cause = (cause & 0xFFFFFF00) | (exceptionNumber << 2);
+		if (inDelaySlot) {
+			cause |= 0x80000000; // Set BD flag (Branch Delay Slot)
+		} else {
+			cause &= ~0x80000000; // Clear BD flag (Branch Delay Slot)
+		}
+		processor.cp0.setCause(cause);
+
 		int epc = processor.cpu.pc;
 
-		// BD (Branch Delay Slot) flag set?
-		if ((processor.cp0.getCause() & 0x80000000) != 0) {
+		if (inDelaySlot) {
 			epc -= 4; // The EPC is set to the instruction having the delay slot
 		}
 
@@ -239,13 +240,11 @@ public class RuntimeContextLLE {
 			int cause = processor.cp0.getCause();
 			cause |= (pendingInterruptIPbits << 8);
 			pendingInterruptIPbits = 0;
-			// The compiler is only calling this function when
-			// we are not in a delay slot
-			cause &= ~0x80000000; // Clear the BD (Branch Delay Slot) flag
 			processor.cp0.setCause(cause);
 
-			setExceptionCause(processor, ExceptionManager.EXCEP_INT);
-			int ebase = prepareExceptionHandlerCall(processor);
+			// The compiler is only calling this function when
+			// we are not in a delay slot
+			int ebase = prepareExceptionHandlerCall(processor, ExceptionManager.EXCEP_INT, false);
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X, cause=0x%X", MMIOHandlerInterruptMan.getInstance(processor).toStringInterruptTriggered(), ebase, processor.cp0.getEpc(), processor.cp0.getCause()));

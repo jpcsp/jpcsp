@@ -259,7 +259,7 @@ public class RuntimeContext {
 				if (useMMIO) {
 					cpu.setMemory(RuntimeContextLLE.getMMIO());
 				}
-			} else if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK) && !insn.hasFlags(Instruction.FLAG_IS_CONDITIONAL)) {
+			} else if (insn.hasOneFlag(Instruction.FLAG_ENDS_BLOCK | Instruction.FLAG_TRIGGERS_EXCEPTION) && !insn.hasFlags(Instruction.FLAG_IS_CONDITIONAL)) {
 				interpret = false;
 				returnValue = cpu.pc;
 			}
@@ -1525,10 +1525,6 @@ public class RuntimeContext {
 
     public static void checkSyncWithSleep() {
     	long delay = Emulator.getScheduler().getNextActionDelay(idleSleepMicros);
-
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("checkSyncWithSleep delay=0x%X, now=0x%X", delay, Scheduler.getNow()));
-    	}
 
     	if (delay > 0) {
     		int intDelay = (int) delay;

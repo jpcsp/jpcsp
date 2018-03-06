@@ -21,6 +21,7 @@ import static jpcsp.Allegrex.Common.COP0_STATE_CONFIG;
 import static jpcsp.Allegrex.Common.COP0_STATE_COUNT;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_LINK_INSTRUCTION;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_TRIGGERS_EXCEPTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_CANNOT_BE_SPLIT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_COMPILED_PFX;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_CONSUMES_VFPU_PFXT;
@@ -592,7 +593,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmCODEIMMRS("dcache", function, (short)imm16, rs);
 }
 };
-public static final Instruction SYSCALL = new Instruction(15, FLAG_SYSCALL) {
+public static final Instruction SYSCALL = new Instruction(15, FLAG_SYSCALL | FLAG_TRIGGERS_EXCEPTION) {
 
 @Override
 public final String name() { return "SYSCALL"; }
@@ -643,7 +644,7 @@ public String disasm(int address, int insn) {
 return "eret";
 }
 };
-public static final Instruction BREAK = new Instruction(17) {
+public static final Instruction BREAK = new Instruction(17, FLAG_TRIGGERS_EXCEPTION) {
 
 @Override
 public final String name() { return "BREAK"; }
@@ -654,12 +655,16 @@ public final String category() { return "MIPS I"; }
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm20 = (insn>>6)&1048575;
-	log.error(String.format("0x%08X - Allegrex break 0x%05X", processor.cpu.pc, imm20));
+	if (RuntimeContextLLE.isLLEActive()) {
+		processor.cpu.pc = RuntimeContextLLE.triggerBreakException(processor, Processor.isInstructionInDelaySlot(processor.cpu.memory, processor.cpu.pc));
+	} else {
+		log.error(String.format("0x%08X - Allegrex break 0x%05X", processor.cpu.pc, imm20));
 
-	// Pause the emulator only if not ignoring invalid memory accesses
-	// (I'm too lazy to introduce a new configuration flag to ignore "break" instructions).
-	if (!Processor.memory.isIgnoreInvalidMemoryAccess()) {
-		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAK);
+		// Pause the emulator only if not ignoring invalid memory accesses
+		// (I'm too lazy to introduce a new configuration flag to ignore "break" instructions).
+		if (!Processor.memory.isIgnoreInvalidMemoryAccess()) {
+			Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAK);
+		}
 	}
 }
 @Override
