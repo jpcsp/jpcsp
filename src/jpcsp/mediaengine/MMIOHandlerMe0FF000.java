@@ -79,17 +79,18 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 				// Used at startup
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Unknown command 0x%X, status=0x%X, power=0x%X, unknown10=0x%08X", command, status, power, unknown10));
-					log.debug(String.format("unknown10: %s", Utilities.getMemoryDump(getMemory(), unknown10, 0x2000)));
+					log.debug(String.format("unknown10: %s", Utilities.getMemoryDump(getMemory(), unknown10, 0x2000, 4, 16)));
 				}
 				break;
 			case 0x20:
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown14=0x%X, unknown18=0x%X, unknown2C", command, status, unknown14, unknown18, unknown2C));
+					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown14=0x%X, unknown18=0x%X, unknown1C=0x%X, unknown2C=0x%X", command, status, unknown14, unknown18, unknown1C, unknown2C));
 				}
 				break;
 			case 0x21:
+				// Used during decodeSpectrum
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown14=0x%X, unknown18=0x%X", command, status, unknown14, unknown18));
+					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown14=0x%X, unknown18=0x%X, unknown1C=0x%X", command, status, unknown14, unknown18, unknown1C));
 				}
 				break;
 			case 0x28:
@@ -100,11 +101,12 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 			case 0x40:
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X", command, status, unknown10, unknown14, unknown18));
+					log.debug(String.format("unknown10: %s", Utilities.getMemoryDump(getMemory(), unknown10, (unknown14 + 1) << 2), 4, 16));
 				}
 				break;
 			case 0x42:
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X", command, status, unknown10, unknown14, unknown18));
+					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown1C=0x%X", command, status, unknown10, unknown14, unknown18, unknown1C));
 				}
 				break;
 			case 0x45:

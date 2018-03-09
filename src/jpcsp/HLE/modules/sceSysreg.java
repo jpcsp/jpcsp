@@ -929,7 +929,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xEC03F6E2, version = 150)
-    public int sceSysregUsbAcquireIntr() {
+    public int sceSysregUsbAcquireIntr(int mask) {
     	return 0;
     }
 

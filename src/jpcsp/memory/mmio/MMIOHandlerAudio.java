@@ -77,16 +77,16 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	}
 
 	private int sendAudioData(int value, int line, int index, int[] data, int interrupt) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sendAudioData value=0x%08X, line=%d, index=0x%X, interrupt=%d", value, line, index, interrupt));
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("sendAudioData value=0x%08X, line=%d, index=0x%X, interrupt=%d", value, line, index, interrupt));
 		}
 		data[index++] = value;
 
 		if (index >= data.length) {
 			audioLines[line].writeAudioData(data, 0, index);
 
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("sendAudioData line#%d:", line));
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("sendAudioData line#%d:", line));
 				StringBuilder sb = new StringBuilder();
 				for (int i = 0; i < data.length; i++) {
 					if (sb.length() > 0) {
@@ -98,7 +98,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 					sb.append(String.format("0x%04X 0x%04X", data[i] & 0xFFFF, data[i] >>> 16));
 
 					if (((i + 1) % 4) == 0) {
-						log.debug(sb.toString());
+						log.trace(sb.toString());
 						sb.setLength(0);
 					}
 				}

@@ -63,6 +63,10 @@ public class IntrManager {
 	public static final int PSP_VBLANK_INTR    = 30;
 	public static final int PSP_MECODEC_INTR   = 31;
 	public static final int PSP_HPREMOTE_INTR  = 36;
+	public static final int PSP_USB_56         = 56;
+	public static final int PSP_USB_57         = 57;
+	public static final int PSP_USB_58         = 58;
+	public static final int PSP_USB_59         = 59;
 	public static final int PSP_MSCM1_INTR     = 60;
 	public static final int PSP_MSCM2_INTR     = 61;
 	public static final int PSP_THREAD1_INTR   = 65;

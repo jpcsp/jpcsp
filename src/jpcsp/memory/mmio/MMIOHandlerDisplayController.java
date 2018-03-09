@@ -33,7 +33,7 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 	private long baseTimeMicros;
 	private static final int displaySyncMicros = (1000000 + 30) / 60;
 	private static final int numberDisplayRows = 286;
-	private static final int rowSyncNanos = (displaySyncMicros + 143) / numberDisplayRows;
+	private static final int rowSyncMicros = (displaySyncMicros + (numberDisplayRows / 2)) / numberDisplayRows;
 	private TriggerVblankInterruptAction triggerVblankInterruptAction;
 	// Used for debugging: limit the number of VBLANK interrupts being triggered
 	private static int maxVblankInterrupts = 0;
@@ -60,12 +60,12 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 		return getNow() - baseTimeMicros;
 	}
 
-	private int getDisplayRowSync() {
-		return (int) (getTimeMicros() / rowSyncNanos) + 1;
+	private int getDisplayRowSync(long time) {
+		return getDisplaySync(time) + (((int) (time / rowSyncMicros) + 1) % numberDisplayRows);
 	}
 
-	private int getDisplaySync() {
-		return (int) (getTimeMicros() / displaySyncMicros) * numberDisplayRows;
+	private int getDisplaySync(long time) {
+		return (int) (time / displaySyncMicros) * numberDisplayRows;
 	}
 
 	private long getPreviousVblankSchedule() {
@@ -114,8 +114,8 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 	public int read32(int address) {
 		int value;
 		switch (address - baseAddress) {
-			case 0x04: value = getDisplayRowSync(); break;
-			case 0x08: value = getDisplaySync(); break;
+			case 0x04: value = getDisplayRowSync(getTimeMicros()); break;
+			case 0x08: value = getDisplaySync(getTimeMicros()); break;
 			case 0x20: value = 0; break;
 			default: value = super.read32(address); break;
 		}
@@ -145,6 +145,6 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 
 	@Override
 	public String toString() {
-		return String.format("MMIOHandlerDisplayController rowSync=0x%X, displaySync=0x%X, baseTime=0x%X, now=0x%X", getDisplayRowSync(), getDisplaySync(), baseTimeMicros, getNow());
+		return String.format("MMIOHandlerDisplayController rowSync=0x%X, displaySync=0x%X, baseTime=0x%X, now=0x%X", getDisplayRowSync(getTimeMicros()), getDisplaySync(getTimeMicros()), baseTimeMicros, getNow());
 	}
 }

@@ -227,14 +227,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		setCmdStatus(cmdStatus ^ mask);
 	}
 
-	private int getInterrupt() {
+	// All methods reading/writing the interrupt field are synchronized as they can be called from multiple threads
+	private synchronized int getInterrupt() {
 		if (ExternalGE.isActive()) {
 			interrupt = NativeUtils.getCoreInterrupt();
 		}
 		return interrupt;
 	}
 
-	private void checkInterrupt() {
+	// All methods reading/writing the interrupt field are synchronized as they can be called from multiple threads
+	private synchronized void checkInterrupt() {
 		if ((getInterrupt() & INTR_STAT_END) == 0) {
 			RuntimeContextLLE.clearInterrupt(getProcessor(), PSP_GE_INTR);
 		} else {
@@ -242,7 +244,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		}
 	}
 
-	private void setInterrupt(int interrupt) {
+	// All methods reading/writing the interrupt field are synchronized as they can be called from multiple threads
+	private synchronized void setInterrupt(int interrupt) {
 		this.interrupt = interrupt;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreInterrupt(interrupt);
@@ -251,11 +254,13 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		checkInterrupt();
 	}
 
-	private void changeInterrupt(int mask) {
+	// All methods reading/writing the interrupt field are synchronized as they can be called from multiple threads
+	private synchronized void changeInterrupt(int mask) {
 		setInterrupt(getInterrupt() ^ mask);
 	}
 
-	private void clearInterrupt(int mask) {
+	// All methods reading/writing the interrupt field are synchronized as they can be called from multiple threads
+	private synchronized void clearInterrupt(int mask) {
 		setInterrupt(getInterrupt() & ~mask);
 	}
 

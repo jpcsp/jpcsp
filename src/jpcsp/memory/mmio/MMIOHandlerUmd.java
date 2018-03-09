@@ -21,20 +21,22 @@ import static jpcsp.filesystems.umdiso.ISectorDevice.sectorLength;
 import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_BLUETOOTH;
 import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_UMD;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFile;
-import jpcsp.HLE.VFS.IVirtualFileSystem;
-import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
-import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.HLE.VFS.iso.UmdIsoReaderVirtualFile;
 import jpcsp.HLE.modules.sceNand;
 import jpcsp.HLE.modules.sceUmdMan;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerUmd extends MMIOHandlerBase {
 	public static Logger log = sceUmdMan.log;
+	public static final int BASE_ADDRESS = 0xBDF00000;
+	private static MMIOHandlerUmd instance;
 	protected int command;
 	private int reset;
 	// Possible interrupt flags: 0x1, 0x2, 0x10, 0x20, 0x40, 0x80, 0x10000, 0x20000, 0x40000, 0x80000
@@ -45,13 +47,32 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 	protected final int transferSizes[] = new int[10];
 	private static final int QTGP2[] = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
 	private static final int QTGP3[] = { 0x0F, 0xED, 0xCB, 0xA9, 0x87, 0x65, 0x43, 0x21, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
-	IVirtualFile vFile;
+	private IVirtualFile vFile;
 
-	public MMIOHandlerUmd(int baseAddress) {
+	public static MMIOHandlerUmd getInstance() {
+		if (instance == null) {
+			instance = new MMIOHandlerUmd(BASE_ADDRESS);
+		}
+		return instance;
+	}
+
+	private MMIOHandlerUmd(int baseAddress) {
 		super(baseAddress);
+	}
 
-		IVirtualFileSystem vfs = new LocalVirtualFileSystem("umdimages/", false);
-		vFile = vfs.ioOpen("test.iso", IoFileMgrForUser.PSP_O_RDONLY, 0);
+	private void closeFile() {
+		if (vFile != null) {
+			vFile.ioClose();
+			vFile = null;
+		}
+	}
+
+	public void switchUmd(String fileName) throws IOException {
+		closeFile();
+
+		log.info(String.format("Using UMD '%s'", fileName));
+
+		vFile = new UmdIsoReaderVirtualFile(fileName);
 	}
 
 	private void setReset(int reset) {
@@ -123,37 +144,42 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 				interrupt |= 0x1;
 				break;
 			case 0x0A: // Called after ATA_CMD_OP_READ_BIG to read the data
+				int lba = MMIOHandlerAta.getInstance().getLogicalBlockAddress();
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X", command, totalTransferLength));
+					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X, lba=0x%X", command, totalTransferLength, lba));
 				}
 
-				int fileLength = totalTransferLength / (sectorLength + 0x10) * sectorLength;
-				long offset = (MMIOHandlerAta.getInstance().getLogicalBlockAddress() & 0xFFFFFFFFL) * sectorLength;
-				long seekResult = vFile.ioLseek(offset);
-				if (seekResult < 0) {
-					log.error(String.format("MMIOHandlerUmd.setCommand seek error 0x%08X", seekResult));
-				} else if (seekResult != offset) {
-					log.error(String.format("MMIOHandlerUmd.setCommand incorrect seek: offset=0x%X, seekResult=0x%X", offset, seekResult));
+				if (vFile == null) {
+					log.error(String.format("MMIOHandlerUmd no UMD loaded"));
 				} else {
-					for (int i = 0; fileLength > 0 && i < transferAddresses.length; i++) {
-						int transferLength = transferSizes[i];
-						if (transferLength > 0) {
-							TPointer addr = new TPointer(getMemory(), transferAddresses[i]);
-							int readResult = vFile.ioRead(addr, transferLength);
-							if (readResult < 0) {
-								log.error(String.format("MMIOHandlerUmd.setCommand read error 0x%08X", readResult));
-								break;
-							} else {
-								if (readResult != transferLength) {
-									log.error(String.format("MMIOHandlerUmd.setCommand uncomplete read: transferLength=0x%X, readLength=0x%X", transferLength, readResult));
+					int fileLength = totalTransferLength / (sectorLength + 0x10) * sectorLength;
+					long offset = (lba & 0xFFFFFFFFL) * sectorLength;
+					long seekResult = vFile.ioLseek(offset);
+					if (seekResult < 0) {
+						log.error(String.format("MMIOHandlerUmd.setCommand seek error 0x%08X", seekResult));
+					} else if (seekResult != offset) {
+						log.error(String.format("MMIOHandlerUmd.setCommand incorrect seek: offset=0x%X, seekResult=0x%X", offset, seekResult));
+					} else {
+						for (int i = 0; fileLength > 0 && i < transferAddresses.length; i++) {
+							int transferLength = transferSizes[i];
+							if (transferLength > 0) {
+								TPointer addr = new TPointer(getMemory(), transferAddresses[i]);
+								int readResult = vFile.ioRead(addr, transferLength);
+								if (readResult < 0) {
+									log.error(String.format("MMIOHandlerUmd.setCommand read error 0x%08X", readResult));
 									break;
-								}
+								} else {
+									if (readResult != transferLength) {
+										log.error(String.format("MMIOHandlerUmd.setCommand uncomplete read: transferLength=0x%X, readLength=0x%X", transferLength, readResult));
+										break;
+									}
 		
-								if (log.isTraceEnabled()) {
-									log.trace(String.format("MMIOHandlerUmd.setCommand read 0x%X bytes: %s", readResult, Utilities.getMemoryDump(addr.getAddress(), readResult)));
+									if (log.isTraceEnabled()) {
+										log.trace(String.format("MMIOHandlerUmd.setCommand read 0x%X bytes: %s", readResult, Utilities.getMemoryDump(addr.getAddress(), readResult)));
+									}
 								}
+								fileLength -= transferLength;
 							}
-							fileLength -= transferLength;
 						}
 					}
 				}

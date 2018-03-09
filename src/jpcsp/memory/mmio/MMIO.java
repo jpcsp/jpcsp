@@ -29,7 +29,9 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.hardware.Screen;
+import jpcsp.memory.mmio.uart.MMIOHandlerUart3;
+import jpcsp.memory.mmio.uart.MMIOHandlerUart4;
+import jpcsp.memory.mmio.uart.MMIOHandlerUartBase;
 
 public class MMIO extends Memory {
     private final Memory mem;
@@ -52,7 +54,7 @@ public class MMIO extends Memory {
 	public void Initialise() {
     	handlers.clear();
 
-    	addHandlerRW(0xBC000000, 0x54); // Memory interface
+    	addHandler(0xBC000000, 0x54, new MMIOHandlerMemoryAccessControl(0xBC000000));
     	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, MMIOHandlerSystemControl.SIZE_OF, MMIOHandlerSystemControl.getInstance());
     	addHandler(0xBC200000, 0x8, new MMIOHandlerCpuBusFrequency(0xBC200000));
     	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, MMIOHandlerInterruptMan.getProxyInstance());
@@ -64,37 +66,25 @@ public class MMIO extends Memory {
     	addHandler(0xBC800000, 0x1D4, new MMIOHandlerDmacplus(0xBC800000));
     	addHandler(0xBC900000, 0x1F4, new MMIOHandlerDmac(0xBC900000));
     	addHandler(0xBCA00000, 0x1F4, new MMIOHandlerDmac(0xBCA00000));
-    	addHandlerRW(0xBCC00000, 0x74);
-    	addHandlerRO(0xBCC00010, 0x4);
+    	addHandler(0xBCC00000, 0x74, new MMIOHandlerMeController(0xBCC00000));
     	addHandler(MMIOHandlerDdr.BASE_ADDRESS, 0x48, MMIOHandlerDdr.getInstance());
     	addHandler(MMIOHandlerNand.BASE_ADDRESS, 0x304, MMIOHandlerNand.getInstance());
     	addHandler(0xBD200000, 0x44, new MMIOHandlerMemoryStick(0xBD200000));
     	addHandlerRW(0xBD300000, 0x44); // Wlan
     	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0xE50, MMIOHandlerGe.getInstance());
-    	addHandlerRW(0xBD500000, 0x94); // Graphics engine (ge)
-    	addHandlerRO(0xBD500010, 0x4);
+    	addHandler(0xBD500000, 0x94, new MMIOHandlerGeEdram(0xBD500000));
     	addHandler(0xBD600000, 0x50, new MMIOHandlerAta2(0xBD600000));
     	addHandler(MMIOHandlerAta.BASE_ADDRESS, 0xF, MMIOHandlerAta.getInstance());
+    	addHandler(0xBD800000, 0x420, new MMIOHandlerUsb(0xBD800400));
     	addHandler(0xBDE00000, 0x3C, new MMIOHandlerKirk(0xBDE00000));
-    	addHandler(0xBDF00000, 0x98, new MMIOHandlerUmd(0xBDF00000));
+    	addHandler(MMIOHandlerUmd.BASE_ADDRESS, 0x98, MMIOHandlerUmd.getInstance());
     	addHandler(0xBE000000, 0x80, new MMIOHandlerAudio(0xBE000000));
-    	addHandlerRW(0xBE140000, 0x204); // LCDC / display
-    	write32(0xBE140010, 0x29);
-    	write32(0xBE140014, 0x02);
-    	write32(0xBE140018, 0x02);
-    	write32(0xBE14001C, Screen.width);
-    	write32(0xBE140020, 0x0A);
-    	write32(0xBE140024, 0x02);
-    	write32(0xBE140028, 0x02);
-    	write32(0xBE14002C, Screen.height);
-    	write32(0xBE140048, Screen.width);
-    	write32(0xBE14004C, Screen.height);
-    	write32(0xBE140050, 0x01);
+    	addHandler(0xBE140000, 0x204, new MMIOHandlerLcdc(0xBE140000));
     	addHandler(0xBE200000, 0x30, new MMIOHandlerI2c(0xBE200000));
     	addHandler(MMIOHandlerGpio.BASE_ADDRESS, 0x4C, MMIOHandlerGpio.getInstance());
-    	addHandlerRW(0xBE300000, 0x48); // Power management
-    	addHandlerRW(0xBE4C0000, 0x48); // UART4 Uart4/kernel debug(?) UART (IPL, uart4, reboot)
-    	addHandlerRW(0xBE500000, 0x3C); // UART3 headphone remote SIO (hpremote)
+    	addHandler(0xBE300000, 0x60, new MMIOHandlerPower(0xBE300000));
+    	addHandler(0xBE4C0000, MMIOHandlerUartBase.SIZE_OF, new MMIOHandlerUart4(0xBE4C0000));
+    	addHandler(0xBE500000, MMIOHandlerUartBase.SIZE_OF, new MMIOHandlerUart3(0xBE500000));
     	addHandler(MMIOHandlerSyscon.BASE_ADDRESS, 0x28, MMIOHandlerSyscon.getInstance());
     	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
     	addHandlerRW(0xBFC00000, 0x1000);
@@ -133,10 +123,6 @@ public class MMIO extends Memory {
     		handler.setLogger(log);
     	}
     	addHandler(baseAddress, length, handler);
-    }
-
-    protected void addHandlerRO(int baseAddress, int length) {
-    	addHandler(baseAddress, length, new MMIOHandlerReadOnly(baseAddress, length));
     }
 
     private IMMIOHandler getHandler(int address) {

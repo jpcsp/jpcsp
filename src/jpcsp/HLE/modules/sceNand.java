@@ -79,14 +79,19 @@ public class sceNand extends HLEModule {
     		0x0006,
     		0x0010,
     		0x0011,
+    		0x0041,
+    		0x0043,
     		0x0045,
+    		0x0054,
     		0x0100,
+    		0x0101,
     		0x0102,
     		0x0103,
     		0x0104,
     		0x0105,
     		0x0106,
     		0x0120,
+    		0x0121,
     		0x0122,
     		0x0123,
     		0x0124,
@@ -489,6 +494,18 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	return idStorageKeys[page] == key;
     }
 
+    private void writeStringType(TPointer buffer, int offset, String s) {
+    	buffer.setValue8(offset++, (byte) ((s.length() + 1) * 2)); // number of bytes including terminating 0.
+    	buffer.setValue8(offset++, (byte) 3); // Showing a string type?
+    	for (int i = 0; i < s.length(); i++) {
+    		buffer.setValue8(offset++, (byte) s.charAt(i));
+    		buffer.setValue8(offset++, (byte) 0);
+    	}
+    	// Terminating 0
+    	buffer.setValue8(offset++, (byte) 0);
+    	buffer.setValue8(offset++, (byte) 0);
+    }
+
     private void readIdStoragePage(TPointer buffer, int page) {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("readIdStoragePage page=0x%X", page));
@@ -520,6 +537,26 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 					int unknownValue = sceChkregModule.getValueReturnedBy6894A027();
 					buffer.setValue8(certificateOffset + 8, (byte) ((0x23 << 2) | ((unknownValue >> 6) & 0x03)));
 					buffer.setValue8(certificateOffset + 9, (byte) ((unknownValue << 2) & 0xFC));
+				// Used by usb.prx
+				} else if (isIdStoragePageForKey(page, 0x41)) {
+					int offset = 0;
+					buffer.setValue32(offset, 0x54C);
+					offset += 4;
+					writeStringType(buffer, 4, "Sony");
+					offset += 64;
+
+					final int[] types = { 0x1C8, 0x1C9, 0x1CA, 0x1CB, 0x1CC };
+					final String[] typeNames = { "PSP Type A", "PSP Type B", "PSP Type C", "PSP Type D", "PSP Type E" };
+
+					buffer.setValue32(offset, types.length);
+					offset += 4;
+
+					for (int i = 0; i < types.length; i++) {
+						buffer.setValue32(offset, types[i]);
+						offset += 4;
+						writeStringType(buffer, offset, typeNames[i]);
+						offset += 64;
+					}
 				}
 				break;
     	}

@@ -14,18 +14,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio;
+package jpcsp.memory.mmio.uart;
 
-public class MMIOHandlerReadOnly extends MMIOHandlerReadWrite {
-	public MMIOHandlerReadOnly(int baseAddress, int length) {
-		super(baseAddress, length);
-	}
-
-	@Override
-	public void write32(int address, int value) {
-		// Ignore write
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) ignored", getPc(), address, value));
-		}
+public class MMIOHandlerUart4 extends MMIOHandlerUartBase {
+	public MMIOHandlerUart4(int baseAddress) {
+		super(baseAddress);
 	}
 }

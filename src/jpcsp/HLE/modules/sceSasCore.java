@@ -18,6 +18,10 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAS_INVALID_ADDRESS;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAS_INVALID_ADSR_CURVE_MODE;
+
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -985,7 +989,7 @@ public class sceSasCore extends HLEModule {
      *                    ERROR_SAS_NOT_INIT if an invalid sasCore handle is provided
      */
     @HLEFunction(nid = 0x07F58C24, version = 150, checkInsideInterrupt = true)
-    public int __sceSasGetAllEnvelopeHeights(int sasCore, TPointer32 heightsAddr) {
+    public int __sceSasGetAllEnvelopeHeights(int sasCore, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=PSP_SAS_VOICES_MAX*4, usage=Usage.out) TPointer32 heightsAddr) {
         checkSasHandleGood(sasCore);
 
 		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(heightsAddr.getAddress(), voices.length * 4, 4);
