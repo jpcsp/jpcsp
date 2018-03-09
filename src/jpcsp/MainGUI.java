@@ -88,6 +88,7 @@ import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
+import jpcsp.memory.mmio.MMIOHandlerUmd;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.remote.HTTPServer;
 import jpcsp.settings.Settings;
@@ -1580,7 +1581,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             if (!isHomebrew && !isInternal) {
                 Settings.getInstance().loadPatchSettings();
             }
-            if (!runFromVsh) {
+            if (!isRunningFromVsh() && !isRunningReboot()) {
             	logStart();
             }
 
@@ -1756,7 +1757,7 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 }//GEN-LAST:event_formWindowClosing
 
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
-		if (!runFromVsh) {
+		if (!isRunningFromVsh()) {
 			PauseEmu();
 		}
 
@@ -1872,7 +1873,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     public void loadAndRunUMD(File file) {
 		loadUMD(file);
 
-		if (!runFromVsh) {
+		if (!isRunningFromVsh() && !isRunningReboot()) {
     		loadAndRun();
     	}
     }
@@ -1887,7 +1888,9 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 		try {
 			iso = new UmdIsoReader(filePath);
 			logStartIso(iso);
-			if (runFromVsh) {
+			if (isRunningReboot()) {
+				MMIOHandlerUmd.getInstance().switchUmd(filePath);
+			} else if (isRunningFromVsh()) {
 	            Modules.sceUmdUserModule.hleUmdSwitch(iso);
 			} else {
 				closeIso = true;
@@ -1898,7 +1901,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 		        } else if (iso.hasFile("UMD_AUDIO/param.sfo")) {
 		        	loadUMDAudio(file);
 		        } else {
-		        	// EBOOT.PBP contains an ELF file?
+		        	// Does the EBOOT.PBP contain an ELF file?
 		        	byte[] pspData = iso.readPspData();
 		        	if (pspData != null) {
 		        		loadFile(file);
@@ -1906,13 +1909,16 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 		        }
 			}
 		} catch (IOException e) {
-			// Ignore exception
+			log.error("loadUMD", e);
+			closeIso = true;
 		} finally {
 			if (closeIso) {
 				try {
-					iso.close();
+					if (iso != null) {
+						iso.close();
+					}
 				} catch (IOException e) {
-					// Ignore exception
+					log.error("loadUMD", e);
 				}
 			}
 		}
@@ -1921,17 +1927,17 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
     public void switchUMD(File file) {
         try {
-            // Raising an exception here means the ISO/CSO is not a PSP_GAME.
             UmdIsoReader iso = new UmdIsoReader(file.getPath());
-            iso.getFile("PSP_GAME/param.sfo");
+            if (!iso.hasFile("PSP_GAME/param.sfo")) {
+            	log.error(String.format("The UMD '%s' is not a PSP_GAME UMD", file));
+            	return;
+            }
 
             log.info(String.format("Switching to the UMD %s", file));
 
             Modules.sceUmdUserModule.hleUmdSwitch(iso);
-        } catch (FileNotFoundException e) {
-            // Ignore.
-        } catch (IOException ioe) {
-            // Ignore.
+        } catch (IOException e) {
+        	log.error("switchUMD", e);
         }
     }
 
@@ -2992,6 +2998,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 
                 if (!Modules.rebootModule.loadAndRun()) {
                 	log.error(String.format("Cannot reboot - missing files"));
+                	reboot.enableReboot = false;
                 }
             } else if (args[i].equals("--debugCodeBlockCalls")) {
             	RuntimeContext.debugCodeBlockCalls = true;
@@ -3359,5 +3366,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 	@Override
 	public boolean isRunningFromVsh() {
 		return runFromVsh;
+	}
+
+	@Override
+	public boolean isRunningReboot() {
+		return reboot.enableReboot;
 	}
 }

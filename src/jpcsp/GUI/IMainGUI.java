@@ -50,4 +50,5 @@ public interface IMainGUI {
 	public void setDisplaySize(int width, int height);
 
 	public boolean isRunningFromVsh();
+	public boolean isRunningReboot();
 }
