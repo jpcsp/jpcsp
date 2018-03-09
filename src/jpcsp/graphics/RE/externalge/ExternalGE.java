@@ -259,6 +259,35 @@ public class ExternalGE {
 		}
 	}
 
+	private static void addListToHead(PspGeList list) {
+		synchronized (drawListQueue) {
+	        // The ConcurrentLinkedQueue type doesn't allow adding
+	        // objects directly at the head of the queue.
+
+	        // This function creates a new array using the given list as it's head
+	        // and constructs a new ConcurrentLinkedQueue based on it.
+	        // The actual drawListQueue is then replaced by this new one.
+	        int arraySize = drawListQueue.size();
+
+	        if (arraySize > 0) {
+	            PspGeList[] array = drawListQueue.toArray(new PspGeList[arraySize]);
+
+	            ConcurrentLinkedQueue<PspGeList> newQueue = new ConcurrentLinkedQueue<PspGeList>();
+	            PspGeList[] newArray = new PspGeList[arraySize + 1];
+
+	            newArray[0] = list;
+	            for (int i = 0; i < arraySize; i++) {
+	                newArray[i + 1] = array[i];
+	                newQueue.add(newArray[i]);
+	            }
+
+	            drawListQueue = newQueue;
+	        } else {    // If the queue is empty.
+	            drawListQueue.add(list);
+	        }
+		}
+	}
+
 	public static void startListHead(PspGeList list) {
 		if (list == null) {
 			return;
@@ -266,31 +295,14 @@ public class ExternalGE {
 
 		if (currentList == null) {
 			startList(list);
+//		} else if (!currentList.isDrawing()) {
+//			if (!drawListQueue.contains(currentList)) {
+//				addListToHead(currentList);
+//			}
+//			currentList = null;
+//			startList(list);
 		} else {
-	        // The ConcurrentLinkedQueue type doesn't allow adding
-	        // objects directly at the head of the queue.
-
-	        // This function creates a new array using the given list as it's head
-	        // and constructs a new ConcurrentLinkedQueue based on it.
-	        // The actual drawListQueue is then replaced by this new one.
-            int arraySize = drawListQueue.size();
-
-            if (arraySize > 0) {
-                PspGeList[] array = drawListQueue.toArray(new PspGeList[arraySize]);
-
-                ConcurrentLinkedQueue<PspGeList> newQueue = new ConcurrentLinkedQueue<PspGeList>();
-                PspGeList[] newArray = new PspGeList[arraySize + 1];
-
-                newArray[0] = list;
-                for (int i = 0; i < arraySize; i++) {
-                    newArray[i + 1] = array[i];
-                    newQueue.add(newArray[i]);
-                }
-
-                drawListQueue = newQueue;
-            } else {    // If the queue is empty.
-                drawListQueue.add(list);
-            }
+			addListToHead(list);
 		}
 	}
 
