@@ -113,9 +113,9 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 		}
 	}
 
-	public void setDisplayPixelFormat(int displayPixelFormat) {
-		if (this.displayPixelFormatCoded != displayPixelFormat) {
-			this.displayPixelFormatCoded = displayPixelFormat;
+	public void setDisplayPixelFormat(int displayPixelFormatCoded) {
+		if (this.displayPixelFormatCoded != displayPixelFormatCoded) {
+			this.displayPixelFormatCoded = displayPixelFormatCoded;
 			updateDisplay();
 		}
 	}
@@ -130,6 +130,11 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 		if ((displayFlags & DISPLAY_FLAG_ENABLED) == 0) {
 			frameBufferAddr = 0;
 		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("updateDisplay.hleDisplaySetFrameBuf 0x%08X, 0x%X, 0x%X", frameBufferAddr, displayFrameBufferWidth, displayPixelFormat));
+		}
+
 		sceDisplayModule.hleDisplaySetFrameBuf(frameBufferAddr, displayFrameBufferWidth, displayPixelFormat, 0);
 		sceDisplayModule.step();
 	}
@@ -182,8 +187,8 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 			case 0x100: setDisplayFrameBufferAddr(value); break;
 			case 0x104: setDisplayPixelFormat(value); break;
 			case 0x108: setDisplayWidth(value); break;
-			case 0x110: setDisplayFlags(value); break;
 			case 0x10C: setDisplayFrameBufferWidth(value); break;
+			case 0x110: setDisplayFlags(value); break;
 			case 0x160: break; // TODO reset?
 			case 0x180:
 			case 0x184:
