@@ -55,7 +55,7 @@ public class MMIO extends Memory {
     	handlers.clear();
 
     	addHandler(0xBC000000, 0x54, new MMIOHandlerMemoryAccessControl(0xBC000000));
-    	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, MMIOHandlerSystemControl.SIZE_OF, MMIOHandlerSystemControl.getInstance());
+    	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, 0x9C, MMIOHandlerSystemControl.getInstance());
     	addHandler(0xBC200000, 0x8, new MMIOHandlerCpuBusFrequency(0xBC200000));
     	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, MMIOHandlerInterruptMan.getProxyInstance());
     	addHandler(0xBC500000, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500000));
@@ -75,7 +75,7 @@ public class MMIO extends Memory {
     	addHandler(0xBD500000, 0x94, new MMIOHandlerGeEdram(0xBD500000));
     	addHandler(0xBD600000, 0x50, new MMIOHandlerAta2(0xBD600000));
     	addHandler(MMIOHandlerAta.BASE_ADDRESS, 0xF, MMIOHandlerAta.getInstance());
-    	addHandler(0xBD800000, 0x420, new MMIOHandlerUsb(0xBD800400));
+    	addHandler(MMIOHandlerUsb.BASE_ADDRESS, 0x420, MMIOHandlerUsb.getInstance());
     	addHandler(0xBDE00000, 0x3C, new MMIOHandlerKirk(0xBDE00000));
     	addHandler(MMIOHandlerUmd.BASE_ADDRESS, 0x98, MMIOHandlerUmd.getInstance());
     	addHandler(0xBE000000, 0x80, new MMIOHandlerAudio(0xBE000000));

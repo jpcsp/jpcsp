@@ -28,10 +28,9 @@ import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Usb;
 import jpcsp.mediaengine.MEProcessor;
 
-public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
+public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	public static Logger log = Logger.getLogger("systemcontrol");
 	public static final int BASE_ADDRESS = 0xBC100000;
-	public static final int SIZE_OF = 0x9C;
 	public static final int SYSREG_RESET_TOP       = 0;
 	public static final int SYSREG_RESET_SC        = 1;
 	public static final int SYSREG_RESET_ME        = 2;
@@ -68,6 +67,32 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 	public static final int SYSREG_CLK1_USB        = 4;
 	public static final int SYSREG_CLK1_MSIF0      = 8;
 	public static final int SYSREG_CLK1_MSIF1      = 9;
+	public static final int SYSREG_CLK_SPI0        = 0;
+	public static final int SYSREG_CLK_SPI1        = 1;
+	public static final int SYSREG_CLK_SPI2        = 2;
+	public static final int SYSREG_CLK_SPI3        = 3;
+	public static final int SYSREG_CLK_SPI4        = 4;
+	public static final int SYSREG_CLK_SPI5        = 5;
+	public static final int SYSREG_CLK_UART0       = 6;
+	public static final int SYSREG_CLK_UART1       = 7;
+	public static final int SYSREG_CLK_UART2       = 8;
+	public static final int SYSREG_CLK_UART3       = 9;
+	public static final int SYSREG_CLK_UART4       = 10;
+	public static final int SYSREG_CLK_UART5       = 11;
+	public static final int SYSREG_CLK_APB_TIMER0  = 12;
+	public static final int SYSREG_CLK_APB_TIMER1  = 13;
+	public static final int SYSREG_CLK_APB_TIMER2  = 14;
+	public static final int SYSREG_CLK_APB_TIMER3  = 15;
+	public static final int SYSREG_CLK_AUDIO0      = 16;
+	public static final int SYSREG_CLK_AUDIO1      = 17;
+	public static final int SYSREG_CLK_UNKNOWN0    = 18;
+	public static final int SYSREG_CLK_UNKNOWN1    = 19;
+	public static final int SYSREG_CLK_UNKNOWN2    = 20;
+	public static final int SYSREG_CLK_UNKNOWN3    = 21;
+	public static final int SYSREG_CLK_SIRCS       = 22;
+	public static final int SYSREG_CLK_GPIO        = 23;
+	public static final int SYSREG_CLK_AUDIO_CLKOUT= 24;
+	public static final int SYSREG_CLK_UNKNOWN4    = 25;
 	public static final int SYSREG_IO_EMCSM        = 1;
 	public static final int SYSREG_IO_USB          = 2;
 	public static final int SYSREG_IO_ATA          = 3;
@@ -112,21 +137,31 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 	private int resetDevices;
 	private int busClockDevices;
 	private int clock1Devices;
+	private int clockDevices;
 	private int ioDevices;
 	private int ramSize;
 	private int tachyonVersion;
 	private int usbAndMemoryStick;
 	private int avcPower;
+	private int interrupts;
+	private int pllFrequency;
+	private int spiClkSelect;
+	private int gpioEnable;
+	private int ataClkSelect;
+	private int unknown00;
+	private int unknown3C;
+	private int unknown60;
+	private int unknown74;
 
 	public static MMIOHandlerSystemControl getInstance() {
 		if (instance == null) {
-			instance = new MMIOHandlerSystemControl(BASE_ADDRESS, SIZE_OF);
+			instance = new MMIOHandlerSystemControl(BASE_ADDRESS);
 		}
 		return instance;
 	}
 
-	private MMIOHandlerSystemControl(int baseAddress, int length) {
-		super(baseAddress, length);
+	private MMIOHandlerSystemControl(int baseAddress) {
+		super(baseAddress);
 
 		ramSize = RAM_SIZE_16MB;
 		tachyonVersion = Modules.sceSysregModule.sceSysregGetTachyonVersion();
@@ -193,6 +228,38 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 			case SYSREG_CLK1_MSIF1: return "MSIF1";
 		}
 		return String.format("SYSREG_CLK1_%02X", bit);
+	}
+
+	private static String getClockDeviceName(int bit) {
+		switch (bit) {
+			case SYSREG_CLK_SPI0        : return "SPI0";
+			case SYSREG_CLK_SPI1        : return "SPI1";
+			case SYSREG_CLK_SPI2        : return "SPI2";
+			case SYSREG_CLK_SPI3        : return "SPI3";
+			case SYSREG_CLK_SPI4        : return "SPI4";
+			case SYSREG_CLK_SPI5        : return "SPI5";
+			case SYSREG_CLK_UART0       : return "UART0";
+			case SYSREG_CLK_UART1       : return "UART1";
+			case SYSREG_CLK_UART2       : return "UART2";
+			case SYSREG_CLK_UART3       : return "UART3";
+			case SYSREG_CLK_UART4       : return "UART4";
+			case SYSREG_CLK_UART5       : return "UART5";
+			case SYSREG_CLK_APB_TIMER0  : return "APB_TIMIER0";
+			case SYSREG_CLK_APB_TIMER1  : return "APB_TIMIER1";
+			case SYSREG_CLK_APB_TIMER2  : return "APB_TIMIER2";
+			case SYSREG_CLK_APB_TIMER3  : return "APB_TIMIER2";
+			case SYSREG_CLK_AUDIO0      : return "AUDIO0";
+			case SYSREG_CLK_AUDIO1      : return "AUDIO1";
+			case SYSREG_CLK_UNKNOWN0    : return "UNKNOWN0";
+			case SYSREG_CLK_UNKNOWN1    : return "UNKNOWN1";
+			case SYSREG_CLK_UNKNOWN2    : return "UNKNOWN2";
+			case SYSREG_CLK_UNKNOWN3    : return "UNKNOWN3";
+			case SYSREG_CLK_SIRCS       : return "SIRCS";
+			case SYSREG_CLK_GPIO        : return "GPIO";
+			case SYSREG_CLK_AUDIO_CLKOUT: return "AUDIO_CLKOUT";
+			case SYSREG_CLK_UNKNOWN4    : return "UNKNOWN4";
+		}
+		return String.format("SYSREG_CLK_%02X", bit);
 	}
 
 	private static String getIoDeviceName(int bit) {
@@ -262,8 +329,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 			MEProcessor.getInstance().triggerReset();
 		}
 		if (isFalling(oldResetDevices, resetDevices, SYSREG_RESET_USB)) {
-			usbAndMemoryStick |= 1 << SYSREG_USBMS_USB_INTERRUPT3;
-			RuntimeContextLLE.triggerInterrupt(getProcessor(), IntrManager.PSP_USB_57);
+			MMIOHandlerUsb.getInstance().triggerReset();
 		}
 	}
 
@@ -275,12 +341,20 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 		clock1Devices = value;
 	}
 
+	private void setClockDevices(int value) {
+		clockDevices = value;
+	}
+
 	private void setIoDevices(int value) {
 		ioDevices = value;
 	}
 
 	private void setRamSize(int value) {
 		ramSize = value & 0x3;
+	}
+
+	public void triggerUsbMemoryStickInterrupt(int bit) {
+		usbAndMemoryStick |= 1 << bit;
 	}
 
 	private void clearUsbMemoryStick(int mask) {
@@ -321,16 +395,35 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 		}
 	}
 
+	private void clearInterrupts(int mask) {
+		interrupts &= ~mask;
+	}
+
+	private void setPllFrequency(int value) {
+		if ((value & 0x80) != 0) {
+			pllFrequency = value & 0xF;
+		}
+	}
+
 	@Override
 	public int read32(int address) {
 		int value;
 		switch (address - baseAddress) {
+			case 0x00: value = unknown00; break;
+			case 0x3C: value = unknown3C; break;
 			case 0x40: value = (tachyonVersion << 8) | ramSize; break;
 			case 0x4C: value = resetDevices; break;
 			case 0x50: value = busClockDevices; break;
 			case 0x54: value = clock1Devices; break;
+			case 0x58: value = clockDevices; break;
+			case 0x5C: value = ataClkSelect; break;
+			case 0x60: value = unknown60; break;
+			case 0x64: value = spiClkSelect; break;
+			case 0x68: value = pllFrequency; break;
 			case 0x70: value = avcPower; break;
+			case 0x74: value = unknown74; break;
 			case 0x78: value = ioDevices; break;
+			case 0x7C: value = gpioEnable; break;
 			case 0x80: value = usbAndMemoryStick; break;
 			case 0x90: value = (int) Modules.sceSysregModule.sceSysregGetFuseId(); break;
 			case 0x94: value = (int) (Modules.sceSysregModule.sceSysregGetFuseId() >> 32); break;
@@ -348,13 +441,23 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 	@Override
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
+			case 0x00: unknown00 = value; break;
+			case 0x04: clearInterrupts(value); break;
+			case 0x3C: unknown3C = value; break;
 			case 0x40: setRamSize(value); break;
 			case 0x44: sysregInterruptToOther(value); break;
 			case 0x4C: setResetDevices(value); break;
 			case 0x50: setBusClockDevices(value); break;
+			case 0x5C: ataClkSelect = value; break;
 			case 0x54: setClock1Devices(value); break;
+			case 0x58: setClockDevices(value); break;
+			case 0x60: unknown60 = value; break;
+			case 0x64: spiClkSelect = value; break;
+			case 0x68: setPllFrequency(value); break;
 			case 0x70: setAvcPower(value); break;
+			case 0x74: unknown74 = value; break;
 			case 0x78: setIoDevices(value); break;
+			case 0x7C: gpioEnable = value; break;
 			case 0x80: clearUsbMemoryStick(value); break;
 			default: super.write32(address, value); break;
 		}
@@ -382,7 +485,8 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 					case 0: sb.append(getResetDeviceName(bit)); break;
 					case 1: sb.append(getBusClockDeviceName(bit)); break;
 					case 2: sb.append(getClock1DeviceName(bit)); break;
-					case 3: sb.append(getIoDeviceName(bit)); break;
+					case 3: sb.append(getClockDeviceName(bit)); break;
+					case 4: sb.append(getIoDeviceName(bit)); break;
 				}
 			}
 		}
@@ -395,11 +499,14 @@ public class MMIOHandlerSystemControl extends MMIOHandlerReadWrite {
 		toString(sb, resetDevices, 0, "resetDevices");
 		toString(sb, busClockDevices, 1, "busClockDevices");
 		toString(sb, clock1Devices, 2, "clock1Devices");
-		toString(sb, ioDevices, 3, "ioDevices");
+		toString(sb, clockDevices, 3, "clockDevices");
+		toString(sb, ioDevices, 4, "ioDevices");
 
 		sb.append(String.format(", USB[connected=%b, interrupt=0x%01X]", (usbAndMemoryStick & SYSREG_USBMS_USB_CONNECTED) != 0, (usbAndMemoryStick & SYSREG_USBMS_USB_INTERRUPT_MASK) >> 1));
 		sb.append(String.format(", MemoryStick0[connected=%b, interrupt=0x%01X]", (usbAndMemoryStick & SYSREG_USBMS_MS0_CONNECTED) != 0, (usbAndMemoryStick & SYSREG_USBMS_USB_INTERRUPT_MASK) >> 9));
 		sb.append(String.format(", MemoryStick1[connected=%b, interrupt=0x%01X]", (usbAndMemoryStick & SYSREG_USBMS_MS1_CONNECTED) != 0, (usbAndMemoryStick & SYSREG_USBMS_USB_INTERRUPT_MASK) >> 17));
+		sb.append(String.format(", interrupts=0x%X", interrupts));
+		sb.append(String.format(", pllFrequency=0x%X", pllFrequency));
 
 		return sb.toString();
 	}

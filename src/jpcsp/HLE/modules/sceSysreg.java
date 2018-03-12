@@ -1017,4 +1017,22 @@ public class sceSysreg extends HLEModule {
     	// Has no parameters
     	return fuseConfig;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8835D1E1, version = 150)
+    public int sceSysregSpiClkEnable(int spiId) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8B90B8B5, version = 150)
+    public int sceSysregSpiClkDisable(int spiId) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD6628A48, version = 150)
+    public int sceSysregSpiClkSelect(int unknown1, int unknown2) {
+    	return 0;
+    }
 }
