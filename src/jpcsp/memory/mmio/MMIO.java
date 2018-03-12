@@ -70,7 +70,7 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerDdr.BASE_ADDRESS, 0x48, MMIOHandlerDdr.getInstance());
     	addHandler(MMIOHandlerNand.BASE_ADDRESS, 0x304, MMIOHandlerNand.getInstance());
     	addHandler(0xBD200000, 0x44, new MMIOHandlerMemoryStick(0xBD200000));
-    	addHandlerRW(0xBD300000, 0x44); // Wlan
+    	addHandler(0xBD300000, 0x44, new MMIOHandlerWlan(0xBD300000));
     	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0xE50, MMIOHandlerGe.getInstance());
     	addHandler(0xBD500000, 0x94, new MMIOHandlerGeEdram(0xBD500000));
     	addHandler(0xBD600000, 0x50, new MMIOHandlerAta2(0xBD600000));

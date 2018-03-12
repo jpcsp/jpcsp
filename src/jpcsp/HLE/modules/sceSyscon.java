@@ -323,11 +323,18 @@ public class sceSyscon extends HLEModule {
      *
      * @return 1 if wlan is activated, 0 otherwise.
      */
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x2D510164, version = 150)
 	public int sceSysconGetWlanSwitch() {
     	return Wlan.getSwitchState();
 	}
+
+	@HLEFunction(nid = 0x0B51E34D, version = 150)
+	public int sceSysconSetWlanSwitch(int switchState) {
+    	int oldSwitchState = Wlan.getSwitchState();
+    	Wlan.setSwitchState(switchState);
+
+    	return oldSwitchState;
+    }
 
     /**
      * Set the wlan power.
