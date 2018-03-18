@@ -66,6 +66,60 @@ public class UmdBrowser extends javax.swing.JDialog {
     private static final long serialVersionUID = 7788144302296106541L;
     private static Logger log = Emulator.log;
 
+    private static class EbootFileFilter implements FileFilter {
+        @Override
+        public boolean accept(File file) {
+            return file.getName().equalsIgnoreCase("eboot.pbp");
+        }
+    }
+
+    private static boolean isEbootFile(File file) {
+    	if (!file.isFile()) {
+    		return false;
+    	}
+
+    	// Basic sanity checks on EBOOT.PBP
+        DataInputStream is = null;
+        try {
+			is = new DataInputStream(new FileInputStream(file));
+			byte[] header = new byte[0x24];
+			int length = is.read(header);
+			if (length != header.length) {
+				return false;
+			}
+			// PBP header?
+			if (header[0] != 0 || header[1] != 'P' || header[2] != 'B' || header[3] != 'P') {
+				return false;
+			}
+		} catch (IOException e) {
+			return false;
+		} finally {
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {
+					// Ignore exception
+				}
+			}
+		}
+
+        // Valid EBOOT.PBP
+        return true;
+    }
+
+    private static boolean isEbootDirectory(File directory) {
+    	if (!directory.isDirectory()) {
+    		return false;
+    	}
+
+    	File eboot[] = directory.listFiles(new EbootFileFilter());
+        if (eboot.length != 1) {
+        	return false;
+        }
+
+        return isEbootFile(eboot[0]);
+    }
+
     public static class UmdFileFilter implements FileFilter {
         @Override
         public boolean accept(File file) {
@@ -73,44 +127,8 @@ public class UmdBrowser extends javax.swing.JDialog {
             if (lower.endsWith(".cso") || lower.endsWith(".iso")) {
                 return true;
             }
-            if (file.isDirectory()) {
-                File eboot[] = file.listFiles(new FileFilter() {
-                    @Override
-                    public boolean accept(File file) {
-                        return file.getName().equalsIgnoreCase("eboot.pbp");
-                    }
-                });
-                if (eboot.length != 1) {
-                	return false;
-                }
-
-                // Basic sanity checks on EBOOT.PBP
-                DataInputStream is = null;
-                try {
-					is = new DataInputStream(new FileInputStream(eboot[0]));
-					byte[] header = new byte[0x24];
-					int length = is.read(header);
-					if (length != header.length) {
-						return false;
-					}
-					// PBP header?
-					if (header[0] != 0 || header[1] != 'P' || header[2] != 'B' || header[3] != 'P') {
-						return false;
-					}
-				} catch (IOException e) {
-					return false;
-				} finally {
-					if (is != null) {
-						try {
-							is.close();
-						} catch (IOException e) {
-							// Ignore exception
-						}
-					}
-				}
-
-                // Valid EBOOT.PBP
-                return true;
+            if (isEbootDirectory(file)) {
+            	return true;
             }
             return false;
         }
