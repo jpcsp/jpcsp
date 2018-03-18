@@ -135,7 +135,6 @@ public class UmdBrowser extends javax.swing.JDialog {
     }
 
     private final class MemStickTableModel extends AbstractTableModel {
-
         private static final long serialVersionUID = -1675488447176776560L;
         private UmdInfoLoader umdInfoLoader;
 
@@ -429,13 +428,7 @@ public class UmdBrowser extends javax.swing.JDialog {
         	boolean cacheEntry = true;
         	String entryName = programs[rowIndex].getName();
             if (programs[rowIndex].isDirectory()) {
-                File eboot[] = programs[rowIndex].listFiles(new FileFilter() {
-                    @Override
-                    public boolean accept(File file) {
-                        return file.getName().equalsIgnoreCase("eboot.pbp");
-                    }
-                });
-
+                File eboot[] = programs[rowIndex].listFiles(new EbootFileFilter());
                 if (eboot.length > 0) {
                 	programs[rowIndex] = eboot[0];
                 } else {
