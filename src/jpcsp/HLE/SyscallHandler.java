@@ -74,10 +74,10 @@ public class SyscallHandler {
     	}
 
     	NIDMapper nidMapper = NIDMapper.getInstance();
+        CpuState cpu = Emulator.getProcessor().cpu;
+    	int result = cpu._ra;
 
     	if (code == syscallUnmappedImport) { // special code for unmapped imports
-            CpuState cpu = Emulator.getProcessor().cpu;
-
             String description = String.format("0x%08X", cpu.pc);
             // Search for the module & NID to provide a better description
             for (SceModule module : Managers.modules.values()) {
@@ -117,8 +117,6 @@ public class SyscallHandler {
 	        }
             cpu._v0 = 0;
     	} else if (code == syscallLoadCoreUnmappedImport) {
-            CpuState cpu = Emulator.getProcessor().cpu;
-
             String description = String.format("0x%08X", cpu.pc);
             // Search for the module & NID to provide a better description
             for (SceModule module : Managers.modules.values()) {
@@ -189,7 +187,7 @@ public class SyscallHandler {
         	}
         }
 
-    	return 0;
+    	return result;
     }
 
     public static int syscall(int code, boolean inDelaySlot) {
