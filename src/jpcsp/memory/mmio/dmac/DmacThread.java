@@ -113,8 +113,10 @@ public class DmacThread extends Thread {
 		final int dstStep8  = dstIncrement ?  8 : 0;
 		final int dstStep12 = dstIncrement ? 12 : 0;
 
+		final int stepLength = Math.min(srcStepLength, dstStepLength);
+
 		while (dstLength > 0 && srcLength > 0) {
-			switch (srcStepLength) {
+			switch (stepLength) {
 				case 1:
 					if (log.isTraceEnabled()) {
 						log.trace(String.format("memcpy dst=0x%08X, src=0x%08X, length=0x%X", dst, src, 1));
@@ -150,14 +152,14 @@ public class DmacThread extends Thread {
 					memDst.write32(dst + dstStep12, memSrc.read32(src + srcStep12));
 					break;
 			}
-			dstLength -= dstStepLength;
-			srcLength -= srcStepLength;
+			dstLength -= stepLength;
+			srcLength -= stepLength;
 
 			if (dstIncrement) {
-				dst += dstStepLength;
+				dst += stepLength;
 			}
 			if (srcIncrement) {
-				src += srcStepLength;
+				src += stepLength;
 			}
 		}
 	}
@@ -187,10 +189,10 @@ public class DmacThread extends Thread {
 			return false;
 		}
 
-		if (srcStepLength != dstStepLength) {
-			log.error(String.format("dmacMemcpy with different steps: srcStepLength=%d, dstSteplength=%d", srcStepLength, dstStepLength));
-			return false;
-		}
+//		if (srcStepLength != dstStepLength) {
+//			log.error(String.format("dmacMemcpy with different steps: srcStepLength=%d, dstSteplength=%d, dst=0x%08X, src=0x%08X, attr=0x%X, dstLength=0x%X(shift=%d), srcLength=0x%X(shift=%d)", srcStepLength, dstStepLength, dst, src, attributes, length << dstLengthShift, dstLengthShift, length << srcLengthShift, srcLengthShift));
+//			return false;
+//		}
 
 		// TODO Not sure about the real meaning of this attribute flag...
 		if ((attributes & 0x02000000) != 0) {
@@ -311,7 +313,7 @@ public class DmacThread extends Thread {
 		}
 
 		if (dmacMemcpyStep()) {
-			while (next != 0) {
+			while (next != 0 && !abortJob) {
 				src = memSrc.read32(next + 0);
 				dst = memSrc.read32(next + 4);
 				attributes = memSrc.read32(next + 12);
@@ -326,10 +328,6 @@ public class DmacThread extends Thread {
 							break;
 						}
 					}
-				}
-
-				if (abortJob) {
-					break;
 				}
 
 				next = memSrc.read32(next + 8);

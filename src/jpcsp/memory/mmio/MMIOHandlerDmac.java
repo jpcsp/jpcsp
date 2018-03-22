@@ -53,6 +53,9 @@ public class MMIOHandlerDmac extends MMIOHandlerBase {
 	}
 
 	private void memcpyCompleted(int flagCompleted) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("memcpyCompleted 0x%X", flagCompleted));
+		}
 		flagsCompleted |= flagCompleted;
 
 		checkInterrupt();
