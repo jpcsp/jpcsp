@@ -2116,7 +2116,7 @@ public class CompilerContext implements ICompilerContext {
     	// For code blocks consisting of a single syscall instruction,
     	// generate an end for the code block.
     	if (getCodeBlock().getLength() == 1) {
-    		loadRegister(_ra);
+        	loadImm(codeInstruction.getAddress() + 4); // Returning to the instruction following the syscall
     		visitJump();
     	}
     }
