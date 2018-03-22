@@ -354,6 +354,10 @@ public class Loader {
     	ByteBuffer decryptedPrx = psp.decrypt(f);
     	long end = System.currentTimeMillis();
 
+    	if (decryptedPrx == null) {
+    		return false;
+    	}
+
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("Called crypto engine for PRX (duration=%d ms)", end - start));
     	}

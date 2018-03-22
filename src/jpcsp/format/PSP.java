@@ -169,6 +169,10 @@ public class PSP {
         int inSize = inBuf.length;
         int retsize = crypto.getPRXEngine().DecryptPRX(inBuf, inSize, null, 0, 2, null, null);
 
+        if (retsize < 0) {
+        	return null;
+        }
+
         if (CryptoEngine.getExtractEbootStatus()) {
             try {
                 String ebootPath = Settings.getInstance().getDiscTmpDirectory();
