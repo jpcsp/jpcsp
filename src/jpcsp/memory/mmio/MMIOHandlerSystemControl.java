@@ -151,6 +151,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	private int unknown00;
 	private int unknown3C;
 	private int unknown60;
+	private int unknown6C;
 	private int unknown74;
 
 	public static MMIOHandlerSystemControl getInstance() {
@@ -420,6 +421,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 			case 0x60: value = unknown60; break;
 			case 0x64: value = spiClkSelect; break;
 			case 0x68: value = pllFrequency; break;
+			case 0x6C: value = unknown6C; break;
 			case 0x70: value = avcPower; break;
 			case 0x74: value = unknown74; break;
 			case 0x78: value = ioDevices; break;
@@ -454,6 +456,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 			case 0x60: unknown60 = value; break;
 			case 0x64: spiClkSelect = value; break;
 			case 0x68: setPllFrequency(value); break;
+			case 0x6C: unknown6C = value; break;
 			case 0x70: setAvcPower(value); break;
 			case 0x74: unknown74 = value; break;
 			case 0x78: setIoDevices(value); break;
