@@ -47,6 +47,7 @@ import jpcsp.HLE.VFS.fat.Fat12VirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.patch.PatchFileVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceNandSpare;
+import jpcsp.hardware.Wlan;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
@@ -81,6 +82,7 @@ public class sceNand extends HLEModule {
     		0x0011,
     		0x0041,
     		0x0043,
+    		0x0044,
     		0x0045,
     		0x0054,
     		0x0100,
@@ -475,6 +477,8 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 	sectorNumber -= pagesPerBlock;
 } else if (ppn > 0xD0C0 && ppn < 0xF060) {
 	sectorNumber -= pagesPerBlock;
+} else if (ppn > 0xF0C0) {
+	sectorNumber -= pagesPerBlock;
 }
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("readFile ppn=0x%X, lbnStart=0x%X, lbn=0x%X, sectorNumber=0x%X", ppn, lbnStart, lbn, sectorNumber));
@@ -557,6 +561,9 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 						writeStringType(buffer, offset, typeNames[i]);
 						offset += 64;
 					}
+				// Used to display the MAC address in the VSH
+				} else if (isIdStoragePageForKey(page, 0x44)) {
+					buffer.setArray(0, Wlan.getMacAddress(), Wlan.MAC_ADDRESS_LENGTH);
 				}
 				break;
     	}
