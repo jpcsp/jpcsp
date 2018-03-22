@@ -937,14 +937,15 @@ public class RuntimeContext {
     }
 
     public static void addCodeBlock(int address, CodeBlock codeBlock) {
-    	CodeBlock previousCodeBlock = codeBlocks.put(address, codeBlock);
+    	int maskedAddress = address & addressMask;
+    	CodeBlock previousCodeBlock = codeBlocks.put(maskedAddress, codeBlock);
 
     	if (!codeBlock.isInternal()) {
 	    	if (previousCodeBlock != null) {
 	    		// One code block has been deleted, recompute the whole code blocks range
 	    		computeCodeBlocksRange();
 
-	    		int fastExecutableLoopukIndex = (address - MemoryMap.START_RAM) >> 2;
+	    		int fastExecutableLoopukIndex = (maskedAddress - MemoryMap.START_RAM) >> 2;
 	    		if (fastExecutableLoopukIndex >= 0 && fastExecutableLoopukIndex < fastExecutableLookup.length) {
 	    			fastExecutableLookup[fastExecutableLoopukIndex] = null;
 	    		}
@@ -954,8 +955,8 @@ public class RuntimeContext {
 	    		codeBlocksHighestAddress = Math.max(codeBlocksHighestAddress, codeBlock.getHighestAddress());
 	    	}
 
-	    	int startIndex = (codeBlock.getLowestAddress() - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
-    		int endIndex = (codeBlock.getHighestAddress() - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
+	    	int startIndex = ((codeBlock.getLowestAddress() & addressMask) - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
+    		int endIndex = ((codeBlock.getHighestAddress() & addressMask) - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
     		for (int i = startIndex; i <= endIndex; i++) {
     			if (i >= 0 && i < fastCodeBlockLookup.length) {
     				CodeBlockList codeBlockList = fastCodeBlockLookup[i];
@@ -975,11 +976,11 @@ public class RuntimeContext {
     }
 
     public static CodeBlock getCodeBlock(int address) {
-	    return codeBlocks.get(address);
+	    return codeBlocks.get(address & addressMask);
 	}
 
     public static boolean hasCodeBlock(int address) {
-        return codeBlocks.containsKey(address);
+        return codeBlocks.containsKey(address & addressMask);
     }
 
     public static Map<Integer, CodeBlock> getCodeBlocks() {
@@ -998,7 +999,7 @@ public class RuntimeContext {
 		}
 
 		if (executable == null) {
-	        CodeBlock codeBlock = getCodeBlock(maskedAddress);
+	        CodeBlock codeBlock = getCodeBlock(address);
 	        if (codeBlock == null) {
 	            executable = Compiler.getInstance().compile(address);
 	        } else {
@@ -1507,8 +1508,8 @@ public class RuntimeContext {
     }
 
     public static void checkSync() {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("checkSync wantSync=%b, now=0x%X", wantSync, Scheduler.getNow()));
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("checkSync wantSync=%b, now=0x%X", wantSync, Scheduler.getNow()));
     	}
 
     	if (!wantSync) {
@@ -1516,8 +1517,8 @@ public class RuntimeContext {
     		if (delay <= 0) {
     			wantSync = true;
 
-    			if (log.isDebugEnabled()) {
-    	    		log.debug(String.format("checkSync wantSync=%b, now=0x%X", wantSync, Scheduler.getNow()));
+    			if (log.isTraceEnabled()) {
+    	    		log.trace(String.format("checkSync wantSync=%b, now=0x%X", wantSync, Scheduler.getNow()));
     	    	}
     		}
     	}
