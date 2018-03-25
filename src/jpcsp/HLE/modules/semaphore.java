@@ -28,7 +28,6 @@ import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
@@ -91,7 +90,6 @@ public class semaphore extends HLEModule {
     	return result;
     }
 
-    @HLELogging(level = "info")
     @HLEFunction(nid = 0x4C537C72, version = 150)
     public int sceUtilsBufferCopyWithRange(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out, maxDumpLength=256) TPointer outAddr, int outSize, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in, maxDumpLength=256) TPointer inAddr, int inSize, int cmd) {
     	hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, cmd);
@@ -99,7 +97,6 @@ public class semaphore extends HLEModule {
     	return 0;
     }
 
-	@HLELogging(level = "info")
     @HLEFunction(nid = 0x77E97079, version = 150)
     public int sceUtilsBufferCopyByPollingWithRange(TPointer outAddr, int outSize, TPointer inAddr, int inSize, int cmd) {
 		return sceUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, cmd);
