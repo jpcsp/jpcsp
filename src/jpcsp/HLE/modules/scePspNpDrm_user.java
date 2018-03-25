@@ -328,7 +328,13 @@ public class scePspNpDrm_user extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x17E3F4BB, version = 150)
-    public int sceNpDrmVerifyAct(TPointer unknown) {
+    public int sceNpDrmVerifyAct(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4152, usage=Usage.in) TPointer actDatAddr) {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x37B9B10D, version = 150)
+    public int sceNpDrmVerifyRif(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=152, usage=Usage.in) TPointer rifAddr) {
         return 0;
     }
 
@@ -340,8 +346,14 @@ public class scePspNpDrm_user extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x0F9547E6, version = 150)
-    public int sceNpDrmGetVersionKey(TPointer unknown1, @CanBeNull TPointer unknown2, TPointer unknown3, int unknown4) {
+    public int sceNpDrmGetVersionKey(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.out) TPointer keyAddr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4152, usage=Usage.in) TPointer actDatAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=152, usage=Usage.in) TPointer rifAddr, int type) {
         return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x5667B7B9, version = 150)
+    public int sceNpDrmGetContentKey(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.out) TPointer keyAddr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4152, usage=Usage.in) TPointer actDatAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=152, usage=Usage.in) TPointer rifAddr) {
+        return sceNpDrmGetVersionKey(keyAddr, actDatAddr, rifAddr, 0);
     }
 
     @HLEUnimplemented
