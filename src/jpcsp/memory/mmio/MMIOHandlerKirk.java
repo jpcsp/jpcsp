@@ -43,7 +43,9 @@ import org.apache.log4j.Logger;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.semaphore;
+import jpcsp.scheduler.Scheduler;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerKirk extends MMIOHandlerBase {
@@ -58,21 +60,30 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	public static final int STATUS_PHASE2_ERROR = 0x20;
 	public static final int STATUS_PHASE2_MASK = STATUS_PHASE2_COMPLETED | STATUS_PHASE2_ERROR;
 	private static int dumpIndex = 0;
-	public int signature = 0x4B52494B; // KIRK
-	public int version = 0x30313030; // 0010
-	public int error;
-	public int command;
-	public int result = RESULT_SUCCESS;
-	public int status = STATUS_PHASE1_IN_PROGRESS | STATUS_PHASE2_IN_PROGRESS;
-	public int statusAsync;
-	public int statusAsyncEnd;
-	public int sourceAddr;
-	public int destAddr;
+	private final int signature = 0x4B52494B; // "KIRK"
+	private final int version = 0x30313030; // "0010"
+	private int error;
+	private int command;
+	private int result = RESULT_SUCCESS;
+	private int status = STATUS_PHASE1_IN_PROGRESS | STATUS_PHASE2_IN_PROGRESS;
+	private int statusAsync;
+	private int statusAsyncEnd;
+	private int sourceAddr;
+	private int destAddr;
+	private final CompletePhase1Action completePhase1Action = new CompletePhase1Action();
+	private long completePhase1Schedule = 0L;
 	private static final int commandsToBeDumped[] = {
 //		PSP_KIRK_CMD_SHA1_HASH,
 //		PSP_KIRK_CMD_DECRYPT_PRIVATE,
 //		PSP_KIRK_CMD_DECRYPT_FUSE,
 	};
+
+	private class CompletePhase1Action implements IAction {
+		@Override
+		public void execute() {
+			completePhase1();
+		}
+	}
 
 	public MMIOHandlerKirk(int baseAddress) {
 		super(baseAddress);
@@ -90,7 +101,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			case 0x08: return error;
 			case 0x10: return command;
 			case 0x14: return result;
-			case 0x1C: return status;
+			case 0x1C: return getStatus();
 			case 0x20: return statusAsync;
 			case 0x24: return statusAsyncEnd;
 			case 0x2C: return sourceAddr;
@@ -120,7 +131,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		}
 	}
 
-	private void hleUtilsBufferCopyWithRange() {
+	private int hleUtilsBufferCopyWithRange() {
 		TPointer outAddr = new TPointer(getMemory(), normalizeAddress(destAddr));
 		TPointer inAddr = new TPointer(getMemory(), normalizeAddress(sourceAddr));
 
@@ -193,7 +204,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			default:
 				log.error(String.format("MMIOHandlerKirk.hleUtilsBufferCopyWithRange unimplemented KIRK command 0x%X", command));
 				result = PSP_KIRK_INVALID_OPERATION;
-				return;
+				return 0;
 		}
 
 		if (log.isDebugEnabled()) {
@@ -237,6 +248,18 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			} catch (IOException e) {
 			}
 		}
+
+		return Math.max(inSize, outSize);
+	}
+
+	private void completePhase1() {
+		if (completePhase1Schedule != 0L) {
+			Scheduler.getInstance().removeAction(completePhase1Schedule, completePhase1Action);
+			completePhase1Schedule = 0L;
+		}
+
+		setStatus(STATUS_PHASE1_MASK, STATUS_PHASE1_COMPLETED);
+		RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MEMLMD_INTR);
 	}
 
 	private void startProcessing(int value) {
@@ -246,9 +269,20 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("KIRK startProcessing 1 on %s", this));
 				}
-				hleUtilsBufferCopyWithRange();
-				setStatus(STATUS_PHASE1_MASK, STATUS_PHASE1_COMPLETED);
-				RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MEMLMD_INTR);
+
+				int size = hleUtilsBufferCopyWithRange();
+
+				if (result == 0) {
+					// Duration: 360 us per 0x1000 bytes data
+					int delayUs = Math.max(0, size * 360 / 0x1000);
+					completePhase1Schedule = Scheduler.getNow() + delayUs;
+					Scheduler.getInstance().addAction(completePhase1Schedule, completePhase1Action);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("KIRK delaying completion of phase 1 by %d us", delayUs));
+					}
+				} else {
+					completePhase1();
+				}
 				break;
 			case 2:
 				setStatus(STATUS_PHASE2_MASK, STATUS_PHASE2_IN_PROGRESS);
@@ -282,6 +316,20 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 
 	private void setStatus(int mask, int value) {
 		status = (status & ~mask) | value;
+	}
+
+	private void updateStatus() {
+		if (completePhase1Schedule != 0L) {
+			if (completePhase1Schedule <= Scheduler.getNow()) {
+				completePhase1();
+			}
+		}
+	}
+
+	private int getStatus() {
+		updateStatus();
+
+		return status;
 	}
 
 	@Override
