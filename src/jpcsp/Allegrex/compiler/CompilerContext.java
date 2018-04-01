@@ -99,6 +99,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.HLE.modules.reboot;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.FastMemory;
 import jpcsp.memory.SafeFastMemory;
@@ -1732,6 +1733,9 @@ public class CompilerContext implements ICompilerContext {
     	if (codeInstruction == null) {
     		return false;
     	}
+    	if (reboot.enableReboot) {
+    		return true;
+    	}
     	return codeInstruction.getAddress() < MemoryMap.START_USERSPACE;
     }
 
@@ -2113,9 +2117,10 @@ public class CompilerContext implements ICompilerContext {
     		}
     	}
 
-    	// For code blocks consisting of a single syscall instruction,
+    	// For code blocks consisting of a single syscall instruction
+    	// or a syscall without any preceding instruction,
     	// generate an end for the code block.
-    	if (getCodeBlock().getLength() == 1) {
+    	if (getCodeBlock().getLength() == 1 || getCodeBlock().getCodeInstruction(codeInstruction.getAddress() - 4) == null) {
         	loadImm(codeInstruction.getAddress() + 4); // Returning to the instruction following the syscall
     		visitJump();
     	}

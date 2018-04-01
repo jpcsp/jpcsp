@@ -53,6 +53,7 @@ import jpcsp.Allegrex.compiler.SequenceLWCodeInstruction;
 import jpcsp.Allegrex.compiler.SequenceSWCodeInstruction;
 import jpcsp.Allegrex.compiler.StopThreadException;
 import jpcsp.HLE.SyscallHandler;
+import jpcsp.HLE.modules.reboot;
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.util.Utilities;
 
@@ -5781,6 +5782,10 @@ public void interpret(Processor processor, int insn) {
 
 	int value = processor.cpu.getRegister(rt);
 	processor.cp0.setControlRegister(c0cr, value);
+
+	if (c0cr == 13) {
+		reboot.setLog4jMDC();
+	}
 
 	if (logCop0.isTraceEnabled()) {
 		logCop0.trace(String.format("0x%08X - ctc0 setting control register#%d to value 0x%08X", processor.cpu.pc, c0cr, value));

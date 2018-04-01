@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.HLEModule;
@@ -302,19 +303,25 @@ public class reboot extends HLEModule {
      *   </layout>
      */
     public static void setLog4jMDC() {
-    	Memory mem = Memory.getInstance();
-    	int threadManInfo = 0x88048740;
-
-    	int currentThread = mem.read32(threadManInfo + 0);
-    	if (Memory.isAddressGood(currentThread)) {
-			int uid = mem.read32(currentThread + 8);
-			int cb = SysMemForKernel.getCBFromUid(uid);
-			int nameAddr = mem.read32(cb + 16);
-			String name = Utilities.readStringZ(nameAddr);
-
-			RuntimeContext.setLog4jMDC(name, uid);
+    	Processor processor = Emulator.getProcessor();
+    	boolean isInterruptContext = processor.cp0.getControlRegister(13) != 0;
+    	if (isInterruptContext) {
+    		RuntimeContext.setLog4jMDC("Interrupt");
     	} else {
-			RuntimeContext.setLog4jMDC("root");
+        	Memory mem = Memory.getInstance();
+        	int threadManInfo = 0x88048740;
+
+	    	int currentThread = mem.read32(threadManInfo + 0);
+	    	if (Memory.isAddressGood(currentThread)) {
+				int uid = mem.read32(currentThread + 8);
+				int cb = SysMemForKernel.getCBFromUid(uid);
+				int nameAddr = mem.read32(cb + 16);
+				String name = Utilities.readStringZ(nameAddr);
+
+				RuntimeContext.setLog4jMDC(name, uid);
+	    	} else {
+				RuntimeContext.setLog4jMDC("root");
+	    	}
     	}
     }
 
