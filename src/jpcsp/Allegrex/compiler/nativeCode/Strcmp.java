@@ -55,22 +55,38 @@ public class Strcmp extends AbstractNativeCodeSequence {
 	}
 
 	static public void call(int valueEqual, int valueLower, int valueHigher) {
-		if (!Memory.isAddressGood(getGprA0())) {
-			getMemory().invalidMemoryAddress(getGprA0(), "strcmp", Emulator.EMU_STATUS_MEM_READ);
-			return;
-		}
-		if (!Memory.isAddressGood(getGprA1())) {
-			getMemory().invalidMemoryAddress(getGprA1(), "strcmp", Emulator.EMU_STATUS_MEM_READ);
-			return;
-		}
-
-		int cmp = strcmp(getGprA0(), getGprA1());
-		if (cmp < 0) {
-			setGprV0(valueLower);
-		} else if (cmp > 0) {
-			setGprV0(valueHigher);
+		int str1 = getGprA0();
+		int str2 = getGprA1();
+		if (str1 == 0 || str2 == 0) {
+			if (str1 == str2) {
+				setGprV0(valueEqual);
+			} if (str1 != 0) {
+				setGprV0(valueHigher);
+			} else {
+				setGprV0(valueLower);
+			}
 		} else {
-			setGprV0(valueEqual);
+			if (!Memory.isAddressGood(str1)) {
+				getMemory().invalidMemoryAddress(str1, "strcmp", Emulator.EMU_STATUS_MEM_READ);
+				return;
+			}
+			if (!Memory.isAddressGood(str2)) {
+				getMemory().invalidMemoryAddress(str2, "strcmp", Emulator.EMU_STATUS_MEM_READ);
+				return;
+			}
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("strcmp src1=%s, src2=%s", Utilities.getMemoryDump(str1, getStrlen(str1)), Utilities.getMemoryDump(str2, getStrlen(str2))));
+			}
+
+			int cmp = strcmp(str1, str2);
+			if (cmp < 0) {
+				setGprV0(valueLower);
+			} else if (cmp > 0) {
+				setGprV0(valueHigher);
+			} else {
+				setGprV0(valueEqual);
+			}
 		}
 	}
 }
