@@ -95,7 +95,7 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC74F04B7, version = 150)
-    public int sceAtaExecPacketCmd(TPointer unknown1, int unknown2, int unknown3, int unknown4, int unknown5, int operationCode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=3, usage=Usage.in) TPointer8 unknown6) {
+    public int sceAtaExecPacketCmd(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=36, usage=Usage.in) TPointer driveStructure, int unknown1, int unknown2, int unknown3, int unknown4, int operationCode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=64, usage=Usage.inout) TPointer8 unknown5) {
     	return 0;
     }
 
@@ -131,7 +131,7 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD1E6E175, version = 150)
-    public int sceAtaEnableClkIo() {
+    public int sceAtaEnableClkIo(int unknown) {
     	return 0;
     }
 
@@ -202,7 +202,7 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x3AA3FA39, version = 150)
-    public int sceAtaSelectDevice() {
+    public int sceAtaSelectDevice(int unknown) {
     	return 0;
     }
 
@@ -214,7 +214,7 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x6E639701, version = 150)
-    public int sceAtaScanDevice() {
+    public int sceAtaScanDevice(TPointer driveStructure) {
     	return 0;
     }
 
@@ -286,7 +286,7 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC144826E, version = 150)
-    public int sceAta_driver_C144826E() {
+    public int sceAta_driver_C144826E(int unknown) {
     	return 0;
     }
 
@@ -403,6 +403,280 @@ public class sceAta extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x3265D064, version = 660)
     public int sceAta_driver_3265D064(int unknown1, int unknown2) {
+    	return 0;
+    }
+
+    /*
+     * Performs an ATA soft reset
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEE230A74, version = 660)
+    public int sceAta_driver_EE230A74() {
+    	// Has no parameters
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0092958D, version = 150)
+    public int sceAta_driver_0092958D() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0AC8F250, version = 150)
+    public int sceAta_driver_0AC8F250() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1829BF5D, version = 150)
+    public int sceAta_driver_1829BF5D() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2065EC41, version = 150)
+    public int sceAta_driver_2065EC41() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2248D797, version = 150)
+    public int sceAta_driver_2248D797() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2F403F95, version = 150)
+    public int sceAta_driver_2F403F95() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x33ADDDB5, version = 150)
+    public int sceAta_driver_33ADDDB5() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x372F6826, version = 150)
+    public int sceAta_driver_372F6826() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3AE54125, version = 150)
+    public int sceAta_driver_3AE54125() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x40EB3E33, version = 150)
+    public int sceAta_driver_40EB3E33() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x55268789, version = 150)
+    public int sceAta_driver_55268789() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x56EFF1AD, version = 150)
+    public int sceAta_driver_56EFF1AD() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x585E69C2, version = 150)
+    public int sceAta_driver_585E69C2() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x64DA79ED, version = 150)
+    public int sceAta_driver_64DA79ED() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x6BC8735F, version = 150)
+    public int sceAta_driver_6BC8735F() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x703189EB, version = 150)
+    public int sceAta_driver_703189EB() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x749BF82F, version = 150)
+    public int sceAta_driver_749BF82F() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x78A45AD9, version = 150)
+    public int sceAta_driver_78A45AD9() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x790CA1AA, version = 150)
+    public int sceAta_driver_790CA1AA() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7A307EE2, version = 150)
+    public int sceAta_driver_7A307EE2() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7B9FECFA, version = 150)
+    public int sceAta_driver_7B9FECFA() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7EAAF3DE, version = 150)
+    public int sceAta_driver_7EAAF3DE() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x807240E3, version = 150)
+    public int sceAta_driver_807240E3() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8611DD55, version = 150)
+    public int sceAta_driver_8611DD55() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8862E565, version = 150)
+    public int sceAta_driver_8862E565() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8C975118, version = 150)
+    public int sceAta_driver_8C975118() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9C57F0F4, version = 150)
+    public int sceAta_driver_9C57F0F4() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA8704EAE, version = 150)
+    public int sceAta_driver_A8704EAE() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xAA2E6A18, version = 150)
+    public int sceAta_driver_AA2E6A18() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xAD4EE538, version = 150)
+    public int sceAta_driver_AD4EE538() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB750550D, version = 150)
+    public int sceAta_driver_B750550D() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBB8C811E, version = 150)
+    public int sceAta_driver_BB8C811E() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xBC04ADE2, version = 150)
+    public int sceAta_driver_BC04ADE2() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC200327E, version = 150)
+    public int sceAta_driver_C200327E() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC68EDAA4, version = 150)
+    public int sceAta_driver_C68EDAA4() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xC8B7A389, version = 150)
+    public int sceAta_driver_C8B7A389() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xCB7D083B, version = 150)
+    public int sceAta_driver_CB7D083B() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD1F7BE40, version = 150)
+    public int sceAta_driver_D1F7BE40() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD3AB80C2, version = 150)
+    public int sceAta_driver_D3AB80C2() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD9CB3246, version = 150)
+    public int sceAta_driver_D9CB3246() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xDE774356, version = 150)
+    public int sceAta_driver_DE774356() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xE568A604, version = 150)
+    public int sceAta_driver_E568A604() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEBAEAAE8, version = 150)
+    public int sceAta_driver_EBAEAAE8() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xFB9EA525, version = 150)
+    public int sceAta_driver_FB9EA525() {
     	return 0;
     }
 }
