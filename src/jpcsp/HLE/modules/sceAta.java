@@ -396,7 +396,10 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC344D497, version = 660)
-    public int sceAta_driver_C344D497(int unknown1, int unknown2, int unknown3, int unknown4) {
+    public int sceAta_driver_C344D497(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=36, usage=Usage.in) TPointer driveStructure, int unknown, int mode, int length) {
+    	// unknown: possible values: 0x2, 0x4, 0x80
+    	// mode=1: write bytes to Ata drive
+    	// mode=2: read bytes from Ata drive
     	return 0;
     }
 

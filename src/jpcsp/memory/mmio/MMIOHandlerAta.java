@@ -25,7 +25,9 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceAta;
+import jpcsp.scheduler.Scheduler;
 
 /**
  * See "ATA Packet Interface for CD-ROMs SFF-8020i" and ATAPI-4 specification
@@ -44,6 +46,7 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 	public static final int ATA_STATUS_BUSY  = 0x80;
 	public static final int ATA_INTERRUPT_REASON_CoD = 0x01;
 	public static final int ATA_INTERRUPT_REASON_IO = 0x02;
+	public static final int ATA_CONTROL_SOFT_RESET = 0x04;
 	public static final int ATA_CMD_PACKET = 0xA0;
 	public static final int ATA_CMD_OP_TEST_UNIT_READY = 0x00;
 	public static final int ATA_CMD_OP_REQUEST_SENSE = 0x03;
@@ -81,6 +84,29 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 	private int control;
 	private int pendingOperationCodeParameters;
 	private int logicalBlockAddress;
+
+	private class PrepareDataEndAction implements IAction {
+		private int allocationLength;
+
+		public PrepareDataEndAction(int allocationLength) {
+			this.allocationLength = allocationLength;
+		}
+
+		@Override
+		public void execute() {
+			prepareDataEnd(allocationLength);
+		}
+	}
+
+	private class PacketCommandCompletedAction implements IAction {
+		public PacketCommandCompletedAction() {
+		}
+
+		@Override
+		public void execute() {
+			packetCommandCompleted();
+		}
+	}
 
 	public static MMIOHandlerAta getInstance() {
 		if (instance == null) {
@@ -184,6 +210,10 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("MMIOHandlerAta.setControl control 0x%02X", this.control));
 		}
+
+		if ((control & ATA_CONTROL_SOFT_RESET) != 0) {
+			reset();
+		}
 	}
 
 	private void setFeatures(int features) {
@@ -239,13 +269,21 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 	}
 
 	private void prepareDataEnd(int allocationLength) {
-		dataLength = dataIndex;
+		dataLength = Math.min(allocationLength, dataIndex);
 		dataIndex = 0;
-		setByteCount(Math.min(allocationLength, dataLength));
+		setByteCount(dataLength);
 		setInterruptReason(false, true);
 		status |= ATA_STATUS_DATA_REQUEST;
 		status &= ~ATA_STATUS_BUSY;
 		triggerInterrupt(getProcessor(), PSP_ATA_INTR);
+	}
+
+	private void prepareDataEndWithDelay(int allocationLength, int delayUs) {
+		if (delayUs <= 0) {
+			prepareDataEnd(allocationLength);
+		} else {
+			Scheduler.getInstance().addAction(Scheduler.getNow() + delayUs, new PrepareDataEndAction(allocationLength));
+		}
 	}
 
 	private void prepareData8(int data8) {
@@ -288,6 +326,14 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 		triggerInterrupt(getProcessor(), PSP_ATA_INTR);
 	}
 
+	public void packetCommandCompletedWithDelay(int delayUs) {
+		if (delayUs <= 0) {
+			packetCommandCompleted();
+		} else {
+			Scheduler.getInstance().addAction(Scheduler.getNow() + delayUs, new PacketCommandCompletedAction());
+		}
+	}
+
 	public int getLogicalBlockAddress() {
 		return logicalBlockAddress;
 	}
@@ -326,6 +372,7 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 		int operationCode = data[0];
 		int allocationLength;
 		int unknown;
+		int delayUs;
 
 		switch (operationCode) {
 			case ATA_CMD_OP_INQUIRY:
@@ -339,23 +386,25 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 				prepareData8(ATA_INQUIRY_PERIPHERAL_DEVICE_TYPE_CDROM);
 				prepareData8(0x80); // Medium is removable
 				prepareData8(0x00); // ISO Version, ACMA Version, ANSI Version
-				prepareData8(0x21); // ATAPI Version, Response Data Format
-				prepareData8(51); // Additional Length (number of bytes following this one)
+				prepareData8(0x32); // ATAPI Version, Response Data Format
+				prepareData8(0x5C); // Additional Length (number of bytes following this one)
 				prepareData8(0x00); // Reserved
 				prepareData8(0x00); // Reserved
 				prepareData8(0x00); // Reserved
-				prepareData("        "); // Vendor Identification
-				prepareData("                "); // Product Identification
+				prepareData("SCEI    "); // Vendor Identification
+				prepareData("UMD ROM DRIVE   "); // Product Identification
 				prepareData("    "); // Product Revision Level
-				prepareData("1.090               "); // Vendor-specific
-				prepareDataEnd(allocationLength);
+				prepareData("1.090 Oct18 ,2004   "); // Vendor-specific
+				// Duration 2ms
+				prepareDataEndWithDelay(allocationLength, 2000);
 				break;
 			case ATA_CMD_OP_TEST_UNIT_READY:
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("ATA_CMD_OP_TEST_UNIT_READY"));
 				}
 
-				packetCommandCompleted();
+				// Duration 1ms
+				packetCommandCompletedWithDelay(1000);
 				break;
 			case ATA_CMD_OP_REQUEST_SENSE:
 				allocationLength = data[4];
@@ -386,7 +435,8 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 				prepareData8(0); // SKSV / Sense Key Specific
 				prepareData8(0); // Sense Key Specific
 				prepareData8(0); // Sense Key Specific
-				prepareDataEnd(allocationLength);
+				// Duration 2ms
+				prepareDataEndWithDelay(allocationLength, 2000);
 				break;
 			case ATA_CMD_OP_READ_STRUCTURE:
 				allocationLength = data[9] | (data[8] << 8);
@@ -397,18 +447,19 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 				}
 
 				prepareDataInit(allocationLength);
+				delayUs = 0;
 				switch (formatCode) {
 					case 0x00:
 						final int numberOfSectors = 1800 * (1024 * 1024 / sectorLength); // 1.8GB
 						final int startingSectorNumber = 0x030000;
 						final int endSectorNumber = startingSectorNumber + numberOfSectors - 1;
-						prepareData16(20); // DVD Structure Data Length
+						prepareData16(allocationLength + 4); // DVD Structure Data Length
 						prepareData8(0); // Reserved
 						prepareData8(0); // Reserved
-						prepareData8(0xA0); // Book Type (0xA => DVD+R) / Book Version
-						prepareData8(0x10); // Disc Size (1 => 80mm) / Minimum Rate (0 => 2.52 Mbps)
-						prepareData8(0); // Number of Layers / Track Path / Layer Type
-						prepareData8(0); // Linear Density / Track Density
+						prepareData8(0x80); // Book Type / Part Version
+						prepareData8(0x00); // Disc Size (1 => 120mm) / Minimum Rate (0 => 2.52 Mbps)
+						prepareData8(0x01); // Number of Layers / Track Path / Layer Type (1 => the Layer contains embossed user data area)
+						prepareData8(0xE0); // Linear Density / Track Density
 						prepareData8(0); // Reserved
 						prepareData24(startingSectorNumber); // Starting Sector Number of Main Data (0x030000 is the only valid value)
 						prepareData8(0); // Reserved
@@ -416,22 +467,25 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 						prepareData8(0); // Reserved
 						prepareData24(0x000000); // End Sector Number in Layer 0
 						prepareData8(0); // BCA (Burst Cutting Area) Flag
-						prepareData8(0); // Reserved
+						prepareData8(0x07); // Reserved
+						// Duration 6ms
+						delayUs = 6000;
 						break;
 					default:
 						log.error(String.format("ATA_CMD_OP_READ_STRUCTURE unknown formatCode=0x%X", formatCode));
 						break;
 				}
-				prepareDataEnd(allocationLength);
+				prepareDataEndWithDelay(allocationLength, delayUs);
 				break;
 			case ATA_CMD_OP_UNKNOWN_F0:
-				allocationLength = data[1];
+				unknown = data[1];
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("ATA_CMD_OP_UNKNOWN_F0 allocationLength=0x%X", allocationLength));
+					log.debug(String.format("ATA_CMD_OP_UNKNOWN_F0 unknown=0x%X", unknown));
 				}
 
 				// Unknown 1 byte is being returned
+				allocationLength = 1;
 				prepareDataInit(allocationLength);
 				prepareData8(0x08); // Unknown value. The following values are accepted: 0x08, 0x47, 0x48, 0x50
 				prepareDataEnd(allocationLength);
@@ -445,27 +499,52 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 				}
 
 				prepareDataInit(allocationLength);
+				delayUs = 0;
 				switch (pageCode) {
 					case ATA_PAGE_CODE_POWER_CONDITION:
-						prepareData16(8);
+						prepareData16(26); // Length of following data
 						prepareData8(0);
 						prepareData8(0);
 						prepareData8(0);
 						prepareData8(0);
 						prepareData8(0);
 						prepareData8(0);
+						// The following values are unknown, they are returned by a real PSP
+						prepareData8(0x9A);
+						prepareData8(0x12);
+						prepareData8(0);
+						prepareData8(0x02);
+						prepareData8(0);
+						prepareData8(0);
+						prepareData8(0);
+						prepareData8(0x06);
+						prepareData8(0);
+						prepareData8(0);
+						prepareData8(0);
+						prepareData8(0);
+						prepareData8(0);
+						prepareData8(0);
+						prepareData8(0);
+						prepareData8(0x04);
+						prepareData8(0);
+						prepareData8(0);
+						prepareData8(0);
+						prepareData8(0x04);
+						// Duration 2ms
+						delayUs = 2000;
 						break;
 					default:
 						log.error(String.format("ATA_CMD_OP_MODE_SENSE_BIG unknown pageCode=0x%X", pageCode));
 						break;
 				}
-				prepareDataEnd(allocationLength);
+				prepareDataEndWithDelay(allocationLength, delayUs);
 				break;
 			case ATA_CMD_OP_MODE_SELECT_BIG:
 				int parameterListLength = data[8] | (data[7] << 8);
+				unknown = data[1];
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("ATA_CMD_OP_MODE_SELECT_BIG parameterListLength=0x%X", parameterListLength));
+					log.debug(String.format("ATA_CMD_OP_MODE_SELECT_BIG parameterListLength=0x%X, unknown=0x%X", parameterListLength, unknown));
 				}
 
 				preparePacketCommandParameterList(parameterListLength, operationCode);
@@ -511,7 +590,8 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 				}
 
 				prepareDataInit(0);
-				prepareDataEnd(0);
+				// Duration 1ms (TODO duration not verified on a real PSP)
+				prepareDataEndWithDelay(0, 1000);
 				break;
 			default:
 				log.error(String.format("MMIOHandlerAta.executePacketCommand unknown operation code 0x%02X(%s)", operationCode, getOperationCodeName(operationCode)));
@@ -528,7 +608,7 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 				if (pageCode != 0) {
 					log.error(String.format("ATA_CMD_OP_MODE_SELECT_BIG parameter unknown pageCode=0x%X", pageCode));
 				}
-				if (pageLength != 8) {
+				if (pageLength != 0x1A) {
 					log.error(String.format("ATA_CMD_OP_MODE_SELECT_BIG parameter unknown pageLength=0x%X", pageLength));
 				}
 
