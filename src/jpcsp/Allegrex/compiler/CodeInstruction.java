@@ -225,7 +225,12 @@ public class CodeInstruction {
     }
 
     private void compileBranch(CompilerContext context, MethodVisitor mv) {
-        int branchingOpcode = getBranchingOpcode(context, mv);
+    	// Perform any required checkSync() before executing the delay slot instruction,
+    	// so that the emulation can be paused in a consistent state
+    	// before the branch and its delay slot.
+    	context.startJump(getBranchingTo());
+
+    	int branchingOpcode = getBranchingOpcode(context, mv);
 
         if (branchingOpcode != Opcodes.NOP) {
             CodeInstruction branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo());

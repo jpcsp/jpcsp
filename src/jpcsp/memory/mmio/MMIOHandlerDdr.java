@@ -16,13 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceDdr;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerDdr extends MMIOHandlerBase {
 	public static Logger log = sceDdr.log;
+	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBD000000;
 	public static final int DDR_FLUSH_DMAC = 4;
 	private static MMIOHandlerDdr instance;
@@ -39,6 +44,22 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 
 	private MMIOHandlerDdr(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		unknown40 = stream.readInt();
+		stream.readBooleans(flushDone);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(unknown40);
+		stream.writeBooleans(flushDone);
+		super.write(stream);
 	}
 
 	public boolean checkAndClearFlushDone(int value) {

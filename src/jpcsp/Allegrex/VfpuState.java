@@ -22,10 +22,13 @@ import static java.lang.Math.abs;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 
 import jpcsp.Memory;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * Vectorial Floating Point Unit, handles scalar, vector and matrix operations.
@@ -33,6 +36,7 @@ import jpcsp.Memory;
  * @author hli, gid15
  */
 public class VfpuState extends FpuState {
+	private static final int STATE_VERSION = 0;
     // We have a problem using Float.intBitsToFloat():
     // extract from the JDK 1.6 documentation:
     //    "...Consequently, for some int values,
@@ -99,6 +103,7 @@ public class VfpuState extends FpuState {
     public static final float PI_2 = (float) (Math.PI * 0.5);
 
     private static class Random {
+    	private static final int STATE_VERSION = 0;
         private long seed;
 
         private final static long multiplier = 0x5DEECE66DL;
@@ -109,6 +114,16 @@ public class VfpuState extends FpuState {
         
         public Random(int seed) {
             setSeed(seed);
+        }
+
+        public void read(StateInputStream stream) throws IOException {
+        	stream.readVersion(STATE_VERSION);
+        	seed = stream.readLong();
+        }
+
+        public void write(StateOutputStream stream) throws IOException {
+        	stream.writeVersion(STATE_VERSION);
+        	stream.writeLong(seed);
         }
 
         public void setSeed(int seed) {
@@ -152,8 +167,10 @@ public class VfpuState extends FpuState {
     private static Random rnd;
     
     public static class Vcr {
+    	private static final int STATE_VERSION = 0;
 
         public static class PfxSrc /* $128, $129 */ {
+        	private static final int STATE_VERSION = 0;
 
             public int[] swz;
             public boolean[] abs;
@@ -190,11 +207,30 @@ public class VfpuState extends FpuState {
             public PfxSrc(PfxSrc that) {
                 copy(that);
             }
+
+            public void read(StateInputStream stream) throws IOException {
+            	stream.readVersion(STATE_VERSION);
+            	stream.readInts(swz);
+            	stream.readBooleans(abs);
+            	stream.readBooleans(cst);
+            	stream.readBooleans(neg);
+            	enabled = stream.readBoolean();
+            }
+
+            public void write(StateOutputStream stream) throws IOException {
+            	stream.writeVersion(STATE_VERSION);
+            	stream.writeInts(swz);
+            	stream.writeBooleans(abs);
+            	stream.writeBooleans(cst);
+            	stream.writeBooleans(neg);
+            	stream.writeBoolean(enabled);
+            }
         }
         public PfxSrc pfxs;
         public PfxSrc pfxt;
 
         public static class PfxDst /* 130 */ {
+        	private static final int STATE_VERSION = 0;
 
             public int[] sat;
             public boolean[] msk;
@@ -220,6 +256,20 @@ public class VfpuState extends FpuState {
 
             public PfxDst(PfxDst that) {
                 copy(that);
+            }
+
+            public void read(StateInputStream stream) throws IOException {
+            	stream.readVersion(STATE_VERSION);
+            	stream.readInts(sat);
+            	stream.readBooleans(msk);
+            	enabled = stream.readBoolean();
+            }
+
+            public void write(StateOutputStream stream) throws IOException {
+            	stream.writeVersion(STATE_VERSION);
+            	stream.writeInts(sat);
+            	stream.writeBooleans(msk);
+            	stream.writeBoolean(enabled);
             }
         }
         public PfxDst pfxd;
@@ -251,6 +301,22 @@ public class VfpuState extends FpuState {
             pfxt = new PfxSrc(that.pfxt);
             pfxd = new PfxDst(that.pfxd);
             cc = that.cc.clone();
+        }
+
+        public void read(StateInputStream stream) throws IOException {
+        	stream.readVersion(STATE_VERSION);
+        	pfxs.read(stream);
+        	pfxt.read(stream);
+        	pfxd.read(stream);
+        	stream.readBooleans(cc);
+        }
+
+        public void write(StateOutputStream stream) throws IOException {
+        	stream.writeVersion(STATE_VERSION);
+        	pfxs.write(stream);
+        	pfxt.write(stream);
+        	pfxd.write(stream);
+        	stream.writeBooleans(cc);
         }
     }
     public Vcr vcr;
@@ -292,6 +358,26 @@ public class VfpuState extends FpuState {
         System.arraycopy(that.vprFloat, 0, vprFloat, 0, vprFloat.length);
         System.arraycopy(that.vprInt, 0, vprInt, 0, vprInt.length);
         vcr = new Vcr(that.vcr);
+    }
+
+    @Override
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	stream.readFloats(vprFloat);
+    	stream.readInts(vprInt);
+    	rnd.read(stream);
+    	vcr.read(stream);
+    	super.read(stream);
+    }
+
+    @Override
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	stream.writeFloats(vprFloat);
+    	stream.writeInts(vprInt);
+    	rnd.write(stream);
+    	vcr.write(stream);
+    	super.write(stream);
     }
 
     /**

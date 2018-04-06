@@ -514,17 +514,29 @@ public class ExternalGE {
 		return NativeUtils.getCoreCmdArray(cmd);
 	}
 
-	public static float[] getMatrix(int mtxType) {
-		int size = 12;
-		int offset = mtxType * size;
+	public static void setCmd(int cmd, int value) {
+		NativeUtils.setCoreCmdArray(cmd, value);
+	}
 
-		if (mtxType == PSP_GE_MATRIX_PROJECTION) {
-			// Projection matrix has 16 elements
-			size = 16;
-		} else if (mtxType > PSP_GE_MATRIX_PROJECTION) {
+	private static int getMatrixOffset(int mtxType) {
+		int offset = mtxType * 12;
+
+		if (mtxType > PSP_GE_MATRIX_PROJECTION) {
 			// Projection matrix has 4 elements more
 			offset += 4;
 		}
+
+		return offset;
+	}
+
+	private static int getMatrixSize(int mtxType) {
+		// Only the projection matrix has 16 elements
+		return mtxType == PSP_GE_MATRIX_PROJECTION ? 16 : 12;
+	}
+
+	public static float[] getMatrix(int mtxType) {
+		int size = getMatrixSize(mtxType);
+		int offset = getMatrixOffset(mtxType);
 
 		float mtx[] = new float[size];
 		for (int i = 0; i < size; i++) {
@@ -532,6 +544,10 @@ public class ExternalGE {
 		}
 
 		return mtx;
+	}
+
+	public static void setMatrix(int mtxType, int offset, float value) {
+		NativeUtils.setCoreMtxArray(getMatrixOffset(mtxType) + offset, value);
 	}
 
 	public static int getScreenScale() {

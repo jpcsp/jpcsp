@@ -16,7 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
 public class MMIOHandlerCpuBusFrequency extends MMIOHandlerBase {
+	private static final int STATE_VERSION = 0;
 	private int cpuFrequencyNumerator;
 	private int cpuFrequencyDenominator;
 	private int busFrequencyNumerator;
@@ -24,6 +30,26 @@ public class MMIOHandlerCpuBusFrequency extends MMIOHandlerBase {
 
 	public MMIOHandlerCpuBusFrequency(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		cpuFrequencyNumerator = stream.readInt();
+		cpuFrequencyDenominator = stream.readInt();
+		busFrequencyNumerator = stream.readInt();
+		busFrequencyDenominator = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(cpuFrequencyNumerator);
+		stream.writeInt(cpuFrequencyDenominator);
+		stream.writeInt(busFrequencyNumerator);
+		stream.writeInt(busFrequencyDenominator);
+		super.write(stream);
 	}
 
 	private int getFrequency(int numerator, int denominator) {

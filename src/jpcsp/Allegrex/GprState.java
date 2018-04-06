@@ -16,16 +16,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * General Purpose Registers, handles integer operations like ALU, shifter, etc.
  *
  * @author hli
  */
-public class GprState {
+public class GprState implements IState {
+	private static final int STATE_VERSION = 0;
 	protected Logger log;
 	public static final int NUMBER_REGISTERS = 32;
 	// Use fields to store the 32 registers, and not an array like
@@ -284,6 +290,24 @@ public class GprState {
     	}
 
     	Emulator.log.error(String.format("Unknown register %d, value=0x%08X", reg, value));
+    }
+
+    @Override
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	// Skip register $zr
+    	for (int i = 1; i < NUMBER_REGISTERS; i++) {
+    		setRegister(i, stream.readInt());
+    	}
+    }
+
+    @Override
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	// Skip register $zr
+    	for (int i = 1; i < NUMBER_REGISTERS; i++) {
+    		stream.writeInt(getRegister(i));
+    	}
     }
 
     public void doUNK(String reason) {

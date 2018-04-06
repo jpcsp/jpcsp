@@ -18,6 +18,8 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
@@ -27,9 +29,12 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Usb;
 import jpcsp.mediaengine.MEProcessor;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	public static Logger log = Logger.getLogger("systemcontrol");
+	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBC100000;
 	public static final int SYSREG_RESET_TOP       = 0;
 	public static final int SYSREG_RESET_SC        = 1;
@@ -175,6 +180,56 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 			usbAndMemoryStick |= SYSREG_USBMS_USB_CONNECTED;
 			resetDevices |= 1 << SYSREG_RESET_USB;
 		}
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		resetDevices = stream.readInt();
+		busClockDevices = stream.readInt();
+		clock1Devices = stream.readInt();
+		clockDevices = stream.readInt();
+		ioDevices = stream.readInt();
+		ramSize = stream.readInt();
+		tachyonVersion = stream.readInt();
+		usbAndMemoryStick = stream.readInt();
+		avcPower = stream.readInt();
+		interrupts = stream.readInt();
+		pllFrequency = stream.readInt();
+		spiClkSelect = stream.readInt();
+		gpioEnable = stream.readInt();
+		ataClkSelect = stream.readInt();
+		unknown00 = stream.readInt();
+		unknown3C = stream.readInt();
+		unknown60 = stream.readInt();
+		unknown6C = stream.readInt();
+		unknown74 = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(resetDevices);
+		stream.writeInt(busClockDevices);
+		stream.writeInt(clock1Devices);
+		stream.writeInt(clockDevices);
+		stream.writeInt(ioDevices);
+		stream.writeInt(ramSize);
+		stream.writeInt(tachyonVersion);
+		stream.writeInt(usbAndMemoryStick);
+		stream.writeInt(avcPower);
+		stream.writeInt(interrupts);
+		stream.writeInt(pllFrequency);
+		stream.writeInt(spiClkSelect);
+		stream.writeInt(gpioEnable);
+		stream.writeInt(ataClkSelect);
+		stream.writeInt(unknown00);
+		stream.writeInt(unknown3C);
+		stream.writeInt(unknown60);
+		stream.writeInt(unknown6C);
+		stream.writeInt(unknown74);
+		super.write(stream);
 	}
 
 	private static String getResetDeviceName(int bit) {

@@ -21,7 +21,13 @@ import static jpcsp.memory.FastMemory.memory16Shift;
 import static jpcsp.memory.FastMemory.memory8Mask;
 import static jpcsp.memory.FastMemory.memory8Shift;
 
+import java.io.IOException;
+
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
 public class MMIOHandlerReadWrite extends MMIOHandlerBase {
+	private static final int STATE_VERSION = 0;
 	private final int[] memory;
 
 	public MMIOHandlerReadWrite(int baseAddress, int length) {
@@ -34,6 +40,20 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 		super(baseAddress);
 
 		this.memory = memory;
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		stream.readInts(memory);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInts(memory);
+		super.write(stream);
 	}
 
 	public int[] getInternalMemory() {

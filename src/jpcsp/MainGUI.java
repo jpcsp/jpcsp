@@ -27,10 +27,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -48,6 +45,7 @@ import javax.swing.*;
 
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.autotests.AutoTestsRunner;
 import jpcsp.crypto.AES128;
 import jpcsp.crypto.PreDecrypt;
@@ -2531,57 +2529,27 @@ private void ExportAllElementsActionPerformed(java.awt.event.ActionEvent evt) {/
         State.exportGeOnlyVisibleElements = false;
 }//GEN-LAST:event_ExportAllElementsActionPerformed
 
-    private byte safeRead8(int address) {
-        byte value = 0;
-        if (Memory.isAddressGood(address)) {
-            value = (byte) Memory.getInstance().read8(address);
-        }
-        return value;
+    private String getStateFileName() {
+    	if (RuntimeContextLLE.isLLEActive()) {
+    		return String.format("State.bin");
+    	}
+    	return String.format("State_%s.bin", State.discId);
     }
 
-    private void safeWrite8(byte value, int address) {
-        if (Memory.isAddressGood(address)) {
-            Memory.getInstance().write8(address, value);
-        }
-    }
 private void SaveSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveSnapActionPerformed
-        File f = new File("Snap_" + State.discId + ".bin");
-        BufferedOutputStream bOut = null;
-        ByteBuffer cpuBuf = ByteBuffer.allocate(1024);
-
-        Emulator.getProcessor().save(cpuBuf);
-
-        try {
-            bOut = new BufferedOutputStream(new FileOutputStream(f));
-            for (int i = 0x08000000; i <= 0x09ffffff; i++) {
-                bOut.write(safeRead8(i));
-            }
-
-            bOut.write(cpuBuf.array());
-        } catch (IOException e) {
-        } finally {
-            Utilities.close(bOut);
-        }
+	try {
+		new jpcsp.state.State().write(getStateFileName());
+	} catch (IOException e) {
+		e.printStackTrace();
+	}
 }//GEN-LAST:event_SaveSnapActionPerformed
 
 private void LoadSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LoadSnapActionPerformed
-        File f = new File("Snap_" + State.discId + ".bin");
-        BufferedInputStream bIn = null;
-        ByteBuffer cpuBuf = ByteBuffer.allocate(1024);
-
-        try {
-            bIn = new BufferedInputStream(new FileInputStream(f));
-            for (int i = 0x08000000; i <= 0x09ffffff; i++) {
-                safeWrite8((byte) bIn.read(), i);
-            }
-
-            bIn.read(cpuBuf.array());
-        } catch (IOException e) {
-        } finally {
-            Utilities.close(bIn);
-        }
-
-        Emulator.getProcessor().load(cpuBuf);
+	try {
+		new jpcsp.state.State().read(getStateFileName());
+	} catch (IOException e) {
+		e.printStackTrace();
+	}
 }//GEN-LAST:event_LoadSnapActionPerformed
 
 private void EnglishUSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnglishUSActionPerformed

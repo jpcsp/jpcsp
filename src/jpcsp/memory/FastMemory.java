@@ -18,6 +18,7 @@ package jpcsp.memory;
 
 import static jpcsp.util.Utilities.round4;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
@@ -26,6 +27,8 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.Modules;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class FastMemory extends Memory {
 	//
@@ -387,5 +390,15 @@ public class FastMemory extends Memory {
 				}
 			}
 		}
+	}
+
+	@Override
+	protected void read(StateInputStream stream, int address, int length) throws IOException {
+		stream.readInts(all, address >> 2, length >> 2);
+	}
+
+	@Override
+	protected void write(StateOutputStream stream, int address, int length) throws IOException {
+		stream.writeInts(all, address >> 2, length >> 2);
 	}
 }

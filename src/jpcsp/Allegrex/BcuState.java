@@ -16,8 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import java.io.IOException;
+
 import jpcsp.Emulator;
 import jpcsp.Processor;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * Branch Control Unit, handles branching and jumping operations
@@ -26,6 +30,7 @@ import jpcsp.Processor;
  *
  */
 public class BcuState extends LsuState {
+	private static final int STATE_VERSION = 0;
     public int pc;
     public int npc;
 
@@ -57,6 +62,22 @@ public class BcuState extends LsuState {
         super(that);
         pc = that.pc;
         npc = that.npc;
+    }
+
+    @Override
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	pc = stream.readInt();
+    	npc = stream.readInt();
+    	super.read(stream);
+    }
+
+    @Override
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	stream.writeInt(pc);
+    	stream.writeInt(npc);
+    	super.write(stream);
     }
 
     public static int branchTarget(int npc, int simm16) {

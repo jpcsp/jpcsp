@@ -239,8 +239,8 @@ public class CoreThread extends Thread {
                                (addr & 0x00FFFFFF);
                 int tbwValue = (behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL + GeCommands.TBW0) << 24 |
                                ((addr >> 8) & 0x00FF0000) | (width & 0xFFFF);
-                NativeUtils.setCoreCmdArray(command(tbpValue),	tbpValue);
-                NativeUtils.setCoreCmdArray(command(tbwValue),	tbwValue);
+                NativeUtils.interpretCoreCmd(command(tbpValue),	tbpValue, NativeUtils.getCoreMadr());
+                NativeUtils.interpretCoreCmd(command(tbwValue),	tbwValue, NativeUtils.getCoreMadr());
                 break;
             }
             case sceGe_user.PSP_GE_SIGNAL_TBP0_REL_OFFSET:
@@ -262,8 +262,8 @@ public class CoreThread extends Thread {
                                (addr & 0x00FFFFFF);
                 int tbwValue = (behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL + GeCommands.TBW0) << 24 |
                                ((addr >> 8) & 0x00FF0000) | (width & 0xFFFF);
-                NativeUtils.setCoreCmdArray(command(tbpValue),	tbpValue);
-                NativeUtils.setCoreCmdArray(command(tbwValue),	tbwValue);
+                NativeUtils.interpretCoreCmd(command(tbpValue),	tbpValue, NativeUtils.getCoreMadr());
+                NativeUtils.interpretCoreCmd(command(tbwValue),	tbwValue, NativeUtils.getCoreMadr());
                 break;
             }
             case sceGe_user.PSP_GE_SIGNAL_HANDLER_SUSPEND:

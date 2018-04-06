@@ -16,7 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio.wm8750;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
+
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * The  WM8750L  is  a  low  power,  high  quality  stereo  CODEC
@@ -25,8 +31,9 @@ import org.apache.log4j.Logger;
  * See documentation at
  *    http://hitmen.c02.at/files/docs/psp/WM8750.pdf
  */
-public class WM8750 {
+public class WM8750 implements IState {
 	public static Logger log = Logger.getLogger("WM8750");
+	private static final int STATE_VERSION = 0;
 	private static WM8750 instance;
 	private static final int NUMBER_REGISTERS = 43;
 	private final int registers[] = new int[NUMBER_REGISTERS];
@@ -46,6 +53,18 @@ public class WM8750 {
 
 	private WM8750() {
 		resetToDefaultValues();
+	}
+
+    @Override
+	public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	stream.readInts(registers);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInts(registers);
 	}
 
 	private void resetToDefaultValues() {

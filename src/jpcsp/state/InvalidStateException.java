@@ -14,15 +14,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio;
+package jpcsp.state;
 
-import jpcsp.state.IState;
+import java.io.IOException;
 
-public interface IMMIOHandler extends IState {
-	public int read8(int address);
-	public int read16(int address);
-	public int read32(int address);
-	public void write8(int address, byte value);
-	public void write16(int address, short value);
-	public void write32(int address, int value);
+public class InvalidStateException extends IOException {
+	private static final long serialVersionUID = 2063627324189082439L;
+
+	public InvalidStateException(String message) {
+		super(message);
+	}
 }

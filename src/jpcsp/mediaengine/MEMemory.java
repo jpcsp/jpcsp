@@ -16,11 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.mediaengine;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
+import jpcsp.memory.mmio.IMMIOHandler;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerReadWrite;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * The PSP Media Engine memory:
@@ -33,29 +38,34 @@ import jpcsp.memory.mmio.MMIOHandlerReadWrite;
  *
  */
 public class MEMemory extends MMIO {
+	private static final int STATE_VERSION = 0;
 	public static final int START_ME_RAM = 0x00000000;
 	public static final int END_ME_RAM = 0x001FFFFF;
 	public static final int SIZE_ME_RAM = END_ME_RAM - START_ME_RAM + 1;
+	private final IMMIOHandler meRamHandlers[] = new IMMIOHandler[8];
 
 	public MEMemory(Memory mem, Logger log) {
 		super(mem);
 
-		MMIOHandlerReadWrite handler = new MMIOHandlerReadWrite(START_ME_RAM, SIZE_ME_RAM);
-		handler.setLogger(log);
-		addHandler(START_ME_RAM, SIZE_ME_RAM, handler);
+		// This array will store the contents of the ME RAM and
+		// will be shared between several handlers at different addresses.
+		final int meRam[] = new int[SIZE_ME_RAM >> 2];
+
+		// The ME RAM  is visible at address range 0x00000000-0x001FFFFF
+		addMeRamHandler(0x00000000, meRam, log);
 
 		// The same memory is also visible at address range 0x40000000-0x401FFFFF
-		addHandler(handler, 0x40000000, log);
+		addMeRamHandler(0x40000000, meRam, log);
 
 		// The same memory is also visible at address range 0x80000000-0x801FFFFF
-		addHandler(handler, 0x80000000, log);
+		addMeRamHandler(0x80000000, meRam, log);
 
 		// The same memory is also visible at address range 0xA0000000-0xA01FFFFF
-		addHandler(handler, 0xA0000000, log);
+		addMeRamHandler(0xA0000000, meRam, log);
 
 		addHandlerRW(0x44000000, 0x7070, log);
 		addHandlerRW(0x44020000, 0x70, log);
-		// This address range is maybe some unknown MMIO
+		// TODO This address range is maybe some unknown MMIO?
 		addHandlerRW(0x44020FF0, 0x4, log);
 		addHandlerRW(0x44022FF0, 0x4, log);
 		addHandlerRW(0x44024000, 0x8, log);
@@ -66,9 +76,34 @@ public class MEMemory extends MMIO {
 		addHandler(0x44100000, 0x40, new MMIOHandlerMeDecoderQuSpectra(0x44100000));
 	}
 
-	private void addHandler(MMIOHandlerReadWrite handler, int address, Logger log) {
-		MMIOHandlerReadWrite handler2 = new MMIOHandlerReadWrite(START_ME_RAM | address, SIZE_ME_RAM, handler.getInternalMemory());
-		handler2.setLogger(log);
-		addHandler(START_ME_RAM | address, SIZE_ME_RAM, handler2);
+	private void addMeRamHandler(int address, int[] meRam, Logger log) {
+		MMIOHandlerReadWrite handler = new MMIOHandlerReadWrite(START_ME_RAM | address, SIZE_ME_RAM, meRam);
+		handler.setLogger(log);
+		meRamHandlers[address >>> 29] = handler;
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		// The ME RAM need to be read only once
+		meRamHandlers[0].read(stream);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		// The ME RAM need to be written only once
+		meRamHandlers[0].write(stream);
+		super.write(stream);
+	}
+
+	@Override
+	protected IMMIOHandler getHandler(int address) {
+		// Fast retrieval for the ME RAM
+		if ((address & Memory.addressMask) <= END_ME_RAM) {
+			return meRamHandlers[address >>> 29];
+		}
+		return super.getHandler(address);
 	}
 }

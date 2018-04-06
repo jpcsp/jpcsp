@@ -18,15 +18,20 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_I2C_INTR;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.modules.sceI2c;
 import jpcsp.memory.mmio.cy27040.CY27040;
 import jpcsp.memory.mmio.wm8750.WM8750;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerI2c extends MMIOHandlerBase {
 	public static Logger log = sceI2c.log;
+	private static final int STATE_VERSION = 0;
 	public static final int PSP_CY27040_I2C_ADDR = 0xD2;
 	public static final int PSP_WM8750_I2C_ADDR = 0x34;
 	private int i2cAddress;
@@ -37,6 +42,28 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 
 	public MMIOHandlerI2c(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		i2cAddress = stream.readInt();
+		dataLength = stream.readInt();
+		dataIndex = stream.readInt();
+		stream.readInts(transmitData);
+		stream.readInts(receiveData);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(i2cAddress);
+		stream.writeInt(dataLength);
+		stream.writeInt(dataIndex);
+		stream.writeInts(transmitData);
+		stream.writeInts(receiveData);
+		super.write(stream);
 	}
 
 	private void writeData(int value) {

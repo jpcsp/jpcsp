@@ -16,13 +16,31 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
+
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerMeController extends MMIOHandlerBase {
 	public static Logger log = MMIOHandlerMeCore.log;
+	private static final int STATE_VERSION = 0;
 
 	public MMIOHandlerMeController(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		super.write(stream);
 	}
 
 	@Override

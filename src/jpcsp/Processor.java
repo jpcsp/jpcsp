@@ -17,13 +17,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import static jpcsp.Allegrex.BcuState.jumpTarget;
-import static jpcsp.Allegrex.GprState.NUMBER_REGISTERS;
 
-import java.nio.ByteBuffer;
+import java.io.IOException;
 
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Cp0State;
 import jpcsp.Allegrex.CpuState;
@@ -32,7 +34,8 @@ import jpcsp.Allegrex.Instructions;
 
 import org.apache.log4j.Logger;
 
-public class Processor {
+public class Processor implements IState {
+	private static final int STATE_VERSION = 0;
     public CpuState cpu = new CpuState();
     public Cp0State cp0 = new Cp0State();
     public static final Memory memory = Memory.getInstance();
@@ -62,22 +65,20 @@ public class Processor {
         cpu.reset();
     }
 
-    public void load(ByteBuffer buffer) {
-        cpu.pc = buffer.getInt();
-        cpu.npc = buffer.getInt();
-
-        for (int i = 0; i < NUMBER_REGISTERS; i++) {
-            cpu.setRegister(i, buffer.getInt());
-        }
+    @Override
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+		cpu.read(stream);
+		cp0.read(stream);
+		interruptsEnabled = stream.readBoolean();
     }
 
-    public void save(ByteBuffer buffer) {
-        buffer.putInt(cpu.pc);
-        buffer.putInt(cpu.npc);
-
-        for (int i = 0; i < NUMBER_REGISTERS; i++) {
-            buffer.putInt(cpu.getRegister(i));
-        }
+    @Override
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	cpu.write(stream);
+    	cp0.write(stream);
+    	stream.writeBoolean(interruptsEnabled);
     }
 
     public Instruction interpret() {

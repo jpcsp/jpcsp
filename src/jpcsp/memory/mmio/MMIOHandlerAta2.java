@@ -16,15 +16,32 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.sceAta;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerAta2 extends MMIOHandlerBase {
 	public static Logger log = sceAta.log;
+	private static final int STATE_VERSION = 0;
 
 	public MMIOHandlerAta2(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		super.write(stream);
 	}
 
 	private void writeReset(int value) {

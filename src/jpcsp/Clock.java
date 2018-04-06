@@ -16,7 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-public class Clock {
+import java.io.IOException;
+
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
+public class Clock implements IState {
+	private static final int STATE_VERSION = 0;
 	private long baseNanos;
 	private long pauseNanos;
 	private long baseTimeMillis;
@@ -112,5 +119,22 @@ public class Clock {
 		public int millis;
 		public int micros;
 		public int nanos;
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		long systemNanoTimeAtWrite = stream.readLong();
+
+		// Do not take into account the elapsed time between write() & read()
+		long delta = getSystemNanoTime() - systemNanoTimeAtWrite;
+		baseNanos += delta;
+		pauseNanos += delta;
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeLong(getSystemNanoTime());
 	}
 }

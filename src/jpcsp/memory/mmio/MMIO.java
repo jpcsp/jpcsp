@@ -19,24 +19,32 @@ package jpcsp.memory.mmio;
 import static jpcsp.MemoryMap.END_IO_1;
 import static jpcsp.MemoryMap.START_IO_0;
 
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.memory.mmio.cy27040.CY27040;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart3;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart4;
 import jpcsp.memory.mmio.uart.MMIOHandlerUartBase;
+import jpcsp.memory.mmio.wm8750.WM8750;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIO extends Memory {
+	private static final int STATE_VERSION = 0;
     private final Memory mem;
-    private final Map<Integer, IMMIOHandler> handlers = new HashMap<Integer, IMMIOHandler>();
+    private final Map<Integer, IMMIOHandler> handlers = new HashMap<Integer, IMMIOHandler>(40000);
     protected static final boolean[] validMemoryPage = new boolean[Memory.validMemoryPage.length];
+    private final Map<Integer, IMMIOHandler> sortedHandlers = new TreeMap<Integer, IMMIOHandler>();
 
     public MMIO(Memory mem) {
     	this.mem = mem;
@@ -50,7 +58,7 @@ public class MMIO extends Memory {
         return true;
     }
 
-    @Override
+	@Override
 	public void Initialise() {
     	handlers.clear();
 
@@ -70,7 +78,8 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerDdr.BASE_ADDRESS, 0x48, MMIOHandlerDdr.getInstance());
     	addHandler(MMIOHandlerNand.BASE_ADDRESS, 0x304, MMIOHandlerNand.getInstance());
     	addHandler(0xBD200000, 0x44, new MMIOHandlerMemoryStick(0xBD200000));
-    	addHandler(0xBD300000, 0x44, new MMIOHandlerWlan(0xBD300000));
+//    	addHandler(0xBD300000, 0x44, new MMIOHandlerWlan(0xBD300000));
+    	addHandlerRW(0xBD300000, 0x44);
     	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0xE50, MMIOHandlerGe.getInstance());
     	addHandler(0xBD500000, 0x94, new MMIOHandlerGeEdram(0xBD500000));
     	addHandler(0xBD600000, 0x50, new MMIOHandlerAta2(0xBD600000));
@@ -102,6 +111,9 @@ public class MMIO extends Memory {
     }
 
     private void addHandler(int baseAddress, int length, int[] additionalOffsets, IMMIOHandler handler) {
+    	// The handlers will be kept sorted based on their baseAddress
+    	sortedHandlers.put(baseAddress, handler);
+
     	for (int i = 0; i < length; i++) {
     		handlers.put(baseAddress + i, handler);
     	}
@@ -125,7 +137,7 @@ public class MMIO extends Memory {
     	addHandler(baseAddress, length, handler);
     }
 
-    private IMMIOHandler getHandler(int address) {
+    protected IMMIOHandler getHandler(int address) {
     	return handlers.get(address);
     }
 
@@ -244,5 +256,35 @@ public class MMIO extends Memory {
 				mem.memcpy(destination, source, length);
 			}
 		}
+	}
+
+    @Override
+	public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	// The handlers are kept sorted based on their base address
+    	for (Integer baseAddress : sortedHandlers.keySet()) {
+    		IMMIOHandler handler = sortedHandlers.get(baseAddress);
+    		handler.read(stream);
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Read State for %s at 0x%08X", handler, baseAddress));
+    		}
+    	}
+    	CY27040.getInstance().read(stream);
+    	WM8750.getInstance().read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+    	// The handlers are kept sorted based on their base address
+    	for (Integer baseAddress : sortedHandlers.keySet()) {
+    		IMMIOHandler handler = sortedHandlers.get(baseAddress);
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Writing State for %s at 0x%08X", handler, baseAddress));
+    		}
+    		handler.write(stream);
+    	}
+    	CY27040.getInstance().write(stream);
+    	WM8750.getInstance().write(stream);
 	}
 }

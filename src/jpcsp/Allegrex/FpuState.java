@@ -16,9 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import jpcsp.Emulator;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * Floating Point Unit, handles floating point operations, including BCU and LSU
@@ -26,6 +29,7 @@ import jpcsp.Emulator;
  * @author hli, gid15
  */
 public class FpuState extends BcuState {
+	private static final int STATE_VERSION = 0;
 	public static final boolean IMPLEMENT_ROUNDING_MODES = true;
 	private static final String roundingModeNames[] = {
 		"Round to neareast number",
@@ -39,15 +43,12 @@ public class FpuState extends BcuState {
 	public static final int ROUNDING_MODE_TOWARD_NEGATIVE_INF = 3;
 
     public static final class Fcr0 {
-
         public static final int imp = 0; /* FPU design number */
-
         public static final int rev = 0; /* FPU revision bumber */
-
     }
 
     public class Fcr31 {
-
+    	private static final int STATE_VERSION = 0;
         public int rm;
         public boolean c;
         public boolean fs;
@@ -73,9 +74,24 @@ public class FpuState extends BcuState {
         	c = that.c;
         	fs = that.fs;
         }
+
+        public void read(StateInputStream stream) throws IOException {
+        	stream.readVersion(STATE_VERSION);
+        	rm = stream.readInt();
+        	c = stream.readBoolean();
+        	fs = stream.readBoolean();
+        }
+
+        public void write(StateOutputStream stream) throws IOException {
+        	stream.writeVersion(STATE_VERSION);
+        	stream.writeInt(rm);
+        	stream.writeBoolean(c);
+        	stream.writeBoolean(fs);
+        }
     }
-    public float[] fpr;
-    public Fcr31 fcr31;
+
+    public final float[] fpr = new float[32];
+    public final Fcr31 fcr31 = new Fcr31();
 
     @Override
     public void reset() {
@@ -91,8 +107,6 @@ public class FpuState extends BcuState {
     }
 
     public FpuState() {
-        fpr = new float[32];
-        fcr31 = new Fcr31();
     }
 
     public void copy(FpuState that) {
@@ -103,8 +117,24 @@ public class FpuState extends BcuState {
 
     public FpuState(FpuState that) {
         super(that);
-        fpr = that.fpr.clone();
-        fcr31 = new Fcr31(that.fcr31);
+        System.arraycopy(that.fpr, 0, fpr, 0, fpr.length);
+        fcr31.copy(that.fcr31);
+    }
+
+    @Override
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	stream.readFloats(fpr);
+    	fcr31.read(stream);
+    	super.read(stream);
+    }
+
+    @Override
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	stream.writeFloats(fpr);
+    	fcr31.write(stream);
+    	super.write(stream);
     }
 
     public float round(double d) {

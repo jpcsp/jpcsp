@@ -25,15 +25,20 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;
 import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.hasBit;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.modules.InterruptManager;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	public static Logger log = InterruptManager.log;
+	private static final int STATE_VERSION = 0;
 	private static MMIOHandlerProxyOnCpu instance;
 	public static final int BASE_ADDRESS = 0xBC300000;
 	private static final int NUMBER_INTERRUPTS = 64;
@@ -63,6 +68,24 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	@Override
 	protected Processor getProcessor() {
 		return processor;
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		stream.readBooleans(interruptTriggered);
+		stream.readBooleans(interruptEnabled);
+		stream.readBooleans(interruptOccurred);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeBooleans(interruptTriggered);
+		stream.writeBooleans(interruptEnabled);
+		stream.writeBooleans(interruptOccurred);
+		super.write(stream);
 	}
 
 	public void triggerInterrupt(int interruptNumber) {

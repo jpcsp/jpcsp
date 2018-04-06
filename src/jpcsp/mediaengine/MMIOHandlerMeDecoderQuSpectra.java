@@ -18,26 +18,76 @@ package jpcsp.mediaengine;
 
 import static jpcsp.util.Utilities.signExtend;
 
+import java.io.IOException;
+
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
 public class MMIOHandlerMeDecoderQuSpectra extends MMIOHandlerMeBase {
-	protected int control;
-	protected int numSpecs;
-	protected int groupSize;
-	protected int numCoeffs;
-	protected int tabBits;
-	protected int vlcBits;
-	protected int unknown18;
-	protected int inputBuffer;
-	protected int bitIndex;
-	protected int vlcTableCode;
-	protected int vlsTableN;
-	protected int unknown2C;
-	protected int outputBuffer;
-	protected int outputBufferSize; // ???, always 0x2000
+	private static final int STATE_VERSION = 0;
+	private int control;
+	private int numSpecs;
+	private int groupSize;
+	private int numCoeffs;
+	private int tabBits;
+	private int vlcBits;
+	private int unknown18;
+	private int inputBuffer;
+	private int bitIndex;
+	private int vlcTableCode;
+	private int vlsTableN;
+	private int unknown2C;
+	private int outputBuffer;
+	private int outputBufferSize; // ???, always 0x2000
 	private int cacheAddress;
 	private int cacheValue8;
 
 	public MMIOHandlerMeDecoderQuSpectra(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		control = stream.readInt();
+		numSpecs = stream.readInt();
+		groupSize = stream.readInt();
+		numCoeffs = stream.readInt();
+		tabBits = stream.readInt();
+		vlcBits = stream.readInt();
+		unknown18 = stream.readInt();
+		inputBuffer = stream.readInt();
+		bitIndex = stream.readInt();
+		vlcTableCode = stream.readInt();
+		vlsTableN = stream.readInt();
+		unknown2C = stream.readInt();
+		outputBuffer = stream.readInt();
+		outputBufferSize = stream.readInt();
+		cacheAddress = stream.readInt();
+		cacheValue8 = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(control);
+		stream.writeInt(numSpecs);
+		stream.writeInt(groupSize);
+		stream.writeInt(numCoeffs);
+		stream.writeInt(tabBits);
+		stream.writeInt(vlcBits);
+		stream.writeInt(unknown18);
+		stream.writeInt(inputBuffer);
+		stream.writeInt(bitIndex);
+		stream.writeInt(vlcTableCode);
+		stream.writeInt(vlsTableN);
+		stream.writeInt(unknown2C);
+		stream.writeInt(outputBuffer);
+		stream.writeInt(outputBufferSize);
+		stream.writeInt(cacheAddress);
+		stream.writeInt(cacheValue8);
+		super.write(stream);
 	}
 
 	private void setControl(int control) {

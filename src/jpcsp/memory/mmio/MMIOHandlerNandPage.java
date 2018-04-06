@@ -16,12 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.sceNand;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerNandPage extends MMIOHandlerBase {
 	public static Logger log = MMIOHandlerNand.log;
+	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS1 = 0xBFF00000;
 	public static final int BASE_ADDRESS2 = 0x9FF00000;
 	private static MMIOHandlerNandPage instance;
@@ -37,6 +42,22 @@ public class MMIOHandlerNandPage extends MMIOHandlerBase {
 
 	private MMIOHandlerNandPage(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		stream.readInts(data);
+		stream.readInts(ecc);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInts(data);
+		stream.writeInts(ecc);
+		super.write(stream);
 	}
 
 	public int[] getData() {

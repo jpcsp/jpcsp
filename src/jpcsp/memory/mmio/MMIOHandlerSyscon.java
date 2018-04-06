@@ -56,6 +56,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_SCRATCHPAD;
 import static jpcsp.HLE.modules.sceSyscon.getSysconCmdName;
 import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_SYSCON_END_CMD;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.log4j.Logger;
@@ -69,10 +70,13 @@ import jpcsp.hardware.LED;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Model;
 import jpcsp.hardware.UMDDrive;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	public static Logger log = sceSyscon.log;
+	private static final int STATE_VERSION = 0;
 	private static MMIOHandlerSyscon instance;
 	public static final int BASE_ADDRESS = 0xBE580000;
 	public static final int PSP_SYSCON_RX_STATUS = 0;
@@ -103,6 +107,26 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 
 	private MMIOHandlerSyscon(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		stream.readInts(data);
+		dataIndex = stream.readInt();
+		endDataIndex = stream.readBoolean();
+		error = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInts(data);
+		stream.writeInt(dataIndex);
+		stream.writeBoolean(endDataIndex);
+		stream.writeInt(error);
+		super.write(stream);
 	}
 
 	private void clearData() {

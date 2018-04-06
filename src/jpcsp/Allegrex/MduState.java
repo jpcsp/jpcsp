@@ -16,13 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import java.io.IOException;
+
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
 /**
  * Multiply Divide Unit, handles accumulators.
  *
  * @author hli
  */
 public class MduState extends GprState {
-
+	private static final int STATE_VERSION = 0;
     public long hilo;
 
     public void setHi(int value) {
@@ -64,6 +69,20 @@ public class MduState extends GprState {
     public MduState(MduState that) {
         super(that);
         hilo = that.hilo;
+    }
+
+    @Override
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	hilo = stream.readLong();
+    	super.read(stream);
+    }
+
+    @Override
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	stream.writeLong(hilo);
+    	super.write(stream);
     }
 
     public static final long signedDivMod(int x, int y) {

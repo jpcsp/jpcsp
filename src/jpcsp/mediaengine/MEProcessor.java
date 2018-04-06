@@ -18,6 +18,8 @@ package jpcsp.mediaengine;
 
 import static jpcsp.HLE.kernel.managers.ExceptionManager.EXCEP_INT;
 
+import java.io.IOException;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -30,6 +32,8 @@ import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.memory.mmio.MMIOHandlerInterruptMan;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 /**
@@ -52,6 +56,7 @@ import jpcsp.util.Utilities;
  */
 public class MEProcessor extends Processor {
 	public static Logger log = Logger.getLogger("me");
+	private static final int STATE_VERSION = 0;
 	public static final int CPUID_ME = 1;
 	private static MEProcessor instance;
 	private MEMemory meMemory;
@@ -67,6 +72,27 @@ public class MEProcessor extends Processor {
 			instance = new MEProcessor();
 		}
 		return instance;
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		stream.readInts(vmeRegisters);
+		halt = stream.readBoolean();
+		pendingInterruptIPbits = stream.readInt();
+		super.read(stream);
+
+		instructions = null;
+		sync();
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInts(vmeRegisters);
+		stream.writeBoolean(halt);
+		stream.writeInt(pendingInterruptIPbits);
+		super.write(stream);
 	}
 
 	private MEProcessor() {
@@ -101,10 +127,13 @@ public class MEProcessor extends Processor {
 		}
 	}
 
-	public void triggerReset() {
+	private void sync() {
 		METhread meThread = METhread.getInstance();
 		meThread.setProcessor(this);
+		meThread.sync();
+	}
 
+	public void triggerReset() {
 		int status = 0;
 		// BEV = 1 during bootstrapping
 		status |= 0x00400000;
@@ -122,7 +151,7 @@ public class MEProcessor extends Processor {
 			log.setLevel(Level.DEBUG);
 		}
 
-		meThread.sync();
+		sync();
 	}
 
 	public void halt() {
@@ -281,7 +310,7 @@ public class MEProcessor extends Processor {
 			if (cpu.pc == 0x883000E0 && log.isDebugEnabled()) {
 				log.debug(String.format("Initial ME memory content from meimg.img:"));
 				log.debug(Utilities.getMemoryDump(meMemory, 0x00101000, cpu._v0));
-				log.setLevel(Level.TRACE);
+//				log.setLevel(Level.TRACE);
 			}
 		}
 

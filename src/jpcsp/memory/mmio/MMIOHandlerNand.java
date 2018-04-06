@@ -23,12 +23,16 @@ import static jpcsp.HLE.modules.sceNand.pagesPerBlock;
 import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.lineSeparator;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.sceNand;
 import jpcsp.memory.IntArrayMemory;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 /**
@@ -40,6 +44,7 @@ import jpcsp.util.Utilities;
  */
 public class MMIOHandlerNand extends MMIOHandlerBase {
 	public static Logger log = sceNand.log;
+	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBD101000;
 	public static final int PSP_NAND_CONTROL_AUTO_USER_ECC = 0x10000;
 	public static final int PSP_NAND_STATUS_READY = 0x01;
@@ -89,6 +94,42 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 		scrambleBufferMemory = new IntArrayMemory(scrambleBuffer);
 
 		status = PSP_NAND_STATUS_READY;
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		control = stream.readInt();
+		status = stream.readInt();
+		command = stream.readInt();
+		pageAddress = stream.readInt();
+		stream.readInts(data);
+		dataIndex = stream.readInt();
+		dmaAddress = stream.readInt();
+		dmaControl = stream.readInt();
+		dmaStatus = stream.readInt();
+		dmaInterrupt = stream.readInt();
+		unknown200 = stream.readInt();
+		needPageAddress = stream.readBoolean();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(control);
+		stream.writeInt(status);
+		stream.writeInt(command);
+		stream.writeInt(pageAddress);
+		stream.writeInts(data);
+		stream.writeInt(dataIndex);
+		stream.writeInt(dmaAddress);
+		stream.writeInt(dmaControl);
+		stream.writeInt(dmaStatus);
+		stream.writeInt(dmaInterrupt);
+		stream.writeInt(unknown200);
+		stream.writeBoolean(needPageAddress);
+		super.write(stream);
 	}
 
 	private void startCommand(int command) {

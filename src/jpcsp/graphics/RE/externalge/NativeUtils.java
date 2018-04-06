@@ -302,6 +302,7 @@ public class NativeUtils {
     public static native void setCoreInterrupt(int interrupt);
     public static native int getCoreCmdArray(int cmd);
     public static native void setCoreCmdArray(int cmd, int value);
+    public static native void interpretCoreCmd(int cmd, int value, int madr);
     public static native float getCoreMtxArray(int mtx);
     public static native void setCoreMtxArray(int mtx, float value);
     public static native void setLogLevel(int level);

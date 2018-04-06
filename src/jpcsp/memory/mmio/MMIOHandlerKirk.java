@@ -46,10 +46,13 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.semaphore;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerKirk extends MMIOHandlerBase {
 	private static Logger log = semaphore.log;
+	private static final int STATE_VERSION = 0;
 	public static final int RESULT_SUCCESS = 0;
 	public static final int STATUS_PHASE1_IN_PROGRESS = 0x00;
 	public static final int STATUS_PHASE1_COMPLETED = 0x01;
@@ -87,6 +90,36 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 
 	public MMIOHandlerKirk(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		error = stream.readInt();
+		command = stream.readInt();
+		result = stream.readInt();
+		status = stream.readInt();
+		statusAsync = stream.readInt();
+		statusAsyncEnd = stream.readInt();
+		sourceAddr = stream.readInt();
+		destAddr = stream.readInt();
+		super.read(stream);
+
+		completePhase1Schedule = 0L;
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(error);
+		stream.writeInt(command);
+		stream.writeInt(result);
+		stream.writeInt(status);
+		stream.writeInt(statusAsync);
+		stream.writeInt(statusAsyncEnd);
+		stream.writeInt(sourceAddr);
+		stream.writeInt(destAddr);
+		super.write(stream);
 	}
 
 	@Override

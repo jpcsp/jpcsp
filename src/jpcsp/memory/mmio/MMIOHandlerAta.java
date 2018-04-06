@@ -21,6 +21,7 @@ import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterrupt;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_ATA_INTR;
 import static jpcsp.filesystems.umdiso.ISectorDevice.sectorLength;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.log4j.Logger;
@@ -28,6 +29,8 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceAta;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * See "ATA Packet Interface for CD-ROMs SFF-8020i" and ATAPI-4 specification
@@ -38,6 +41,7 @@ import jpcsp.scheduler.Scheduler;
  */
 public class MMIOHandlerAta extends MMIOHandlerBase {
 	public static Logger log = sceAta.log;
+	private static final int STATE_VERSION = 0;
 	private static MMIOHandlerAta instance;
 	public static final int BASE_ADDRESS = 0xBD700000;
 	public static final int ATA_STATUS_ERROR = 0x01;
@@ -119,6 +123,48 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 		super(baseAddress);
 
 		setSignature();
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		stream.readInts(data);
+		dataIndex = stream.readInt();
+		dataLength = stream.readInt();
+		error = stream.readInt();
+		features = stream.readInt();
+		sectorCount = stream.readInt();
+		sectorNumber = stream.readInt();
+		cylinderLow = stream.readInt();
+		cylinderHigh = stream.readInt();
+		drive = stream.readInt();
+		status = stream.readInt();
+		command = stream.readInt();
+		control = stream.readInt();
+		pendingOperationCodeParameters = stream.readInt();
+		logicalBlockAddress = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInts(data);
+		stream.writeInt(dataIndex);
+		stream.writeInt(dataLength);
+		stream.writeInt(error);
+		stream.writeInt(features);
+		stream.writeInt(sectorCount);
+		stream.writeInt(sectorNumber);
+		stream.writeInt(cylinderLow);
+		stream.writeInt(cylinderHigh);
+		stream.writeInt(drive);
+		stream.writeInt(status);
+		stream.writeInt(command);
+		stream.writeInt(control);
+		stream.writeInt(pendingOperationCodeParameters);
+		stream.writeInt(logicalBlockAddress);
+		super.write(stream);
 	}
 
 	private static String getCommandName(int command) {

@@ -16,17 +16,23 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.scePower;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerPower extends MMIOHandlerBase {
 	public static Logger log = scePower.log;
+	private static final int STATE_VERSION = 0;
 	private final PowerObject unknown1 = new PowerObject();
 	private final PowerObject unknown2 = new PowerObject();
 	private final PowerObject unknown3 = new PowerObject();
 
 	private static class PowerObject {
+		private static final int STATE_VERSION = 0;
 		public int unknown00;
 		public int unknown04;
 		public int unknown08;
@@ -64,10 +70,52 @@ public class MMIOHandlerPower extends MMIOHandlerBase {
 				case 0x1C: unknown1C = value; break;
 			}
 		}
+
+		public void read(StateInputStream stream) throws IOException {
+			stream.readVersion(STATE_VERSION);
+			unknown00 = stream.readInt();
+			unknown04 = stream.readInt();
+			unknown08 = stream.readInt();
+			unknown0C = stream.readInt();
+			unknown10 = stream.readInt();
+			unknown14 = stream.readInt();
+			unknown18 = stream.readInt();
+			unknown1C = stream.readInt();
+		}
+
+		public void write(StateOutputStream stream) throws IOException {
+			stream.writeVersion(STATE_VERSION);
+			stream.writeInt(unknown00);
+			stream.writeInt(unknown04);
+			stream.writeInt(unknown08);
+			stream.writeInt(unknown0C);
+			stream.writeInt(unknown10);
+			stream.writeInt(unknown14);
+			stream.writeInt(unknown18);
+			stream.writeInt(unknown1C);
+		}
 	}
 
 	public MMIOHandlerPower(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		unknown1.read(stream);
+		unknown2.read(stream);
+		unknown3.read(stream);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		unknown1.write(stream);
+		unknown2.write(stream);
+		unknown3.write(stream);
+		super.write(stream);
 	}
 
 	@Override

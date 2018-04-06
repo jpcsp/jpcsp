@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
@@ -28,6 +30,8 @@ import jpcsp.mediaengine.MEProcessor;
 import jpcsp.mediaengine.METhread;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerInterruptMan;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * @author gid15
@@ -35,6 +39,7 @@ import jpcsp.memory.mmio.MMIOHandlerInterruptMan;
  */
 public class RuntimeContextLLE {
 	public static Logger log = RuntimeContext.log;
+	private static final int STATE_VERSION = 0;
 	private static final boolean isLLEActive = reboot.enableReboot;
 	private static Memory mmio;
 	public volatile static int pendingInterruptIPbits;
@@ -48,11 +53,21 @@ public class RuntimeContextLLE {
 			return;
 		}
 
-		mmio = new MMIO(Emulator.getMemory());
-		if (mmio.allocate()) {
-			mmio.Initialise();
-		} else {
-			mmio = null;
+		createMMIO();
+	}
+
+	public static void createMMIO() {
+		if (!isLLEActive()) {
+			return;
+		}
+
+		if (mmio == null) {
+			mmio = new MMIO(Emulator.getMemory());
+			if (mmio.allocate()) {
+				mmio.Initialise();
+			} else {
+				mmio = null;
+			}
 		}
 	}
 
@@ -254,5 +269,21 @@ public class RuntimeContextLLE {
 		}
 
 		return returnAddress;
+	}
+
+	/*
+	 * synchronized method as it is modifying pendingInterruptIPbits which can be updated from different threads
+	 */
+	public static synchronized void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		pendingInterruptIPbits = stream.readInt();
+	}
+
+	/*
+	 * synchronized method as it is reading pendingInterruptIPbits which can be updated from different threads
+	 */
+	public static synchronized void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(pendingInterruptIPbits);
 	}
 }

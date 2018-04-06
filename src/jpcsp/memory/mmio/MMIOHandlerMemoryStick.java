@@ -35,6 +35,7 @@ import static jpcsp.memory.mmio.memorystick.MemoryStickSystemItem.MS_SYSENT_TYPE
 import static jpcsp.memory.mmio.memorystick.MemoryStickSystemItem.MS_SYSENT_TYPE_INVALID_BLOCK;
 import static jpcsp.util.Utilities.endianSwap16;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.log4j.Logger;
@@ -51,6 +52,8 @@ import jpcsp.memory.mmio.memorystick.MemoryStickMbr;
 import jpcsp.memory.mmio.memorystick.MemoryStickPbr32;
 import jpcsp.memory.mmio.memorystick.MemoryStickProAttribute;
 import jpcsp.memory.mmio.memorystick.MemoryStickSysInfo;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 /**
@@ -64,6 +67,7 @@ import jpcsp.util.Utilities;
  */
 public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	public static Logger log = sceMScm.log;
+	private static final int STATE_VERSION = 0;
 	private static final boolean simulateMemoryStickPro = true;
 	// Overwrite area
 	public static final int MS_REG_OVR_BKST = 0x80; // Block status
@@ -206,6 +210,60 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 
 		sceMSstorModule.hleInit();
 		reset();
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		interrupt = stream.readInt();
+		commandState = stream.readInt();
+		unk08 = stream.readInt();
+		tpc = stream.readInt();
+		status = stream.readInt();
+		sys = stream.readInt();
+		stream.readInts(registers);
+		readAddress = stream.readInt();
+		readSize = stream.readInt();
+		writeAddress = stream.readInt();
+		writeSize = stream.readInt();
+		cmd = stream.readInt();
+		oobLength = stream.readInt();
+		startBlock = stream.readInt();
+		oobIndex = stream.readInt();
+		stream.readInts(pageBuffer);
+		pageStartLba = stream.readInt();
+		numberOfPages = stream.readInt();
+		pageDataIndex = stream.readInt();
+		pageIndex = stream.readInt();
+		commandDataIndex = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(interrupt);
+		stream.writeInt(commandState);
+		stream.writeInt(unk08);
+		stream.writeInt(tpc);
+		stream.writeInt(status);
+		stream.writeInt(sys);
+		stream.writeInts(registers);
+		stream.writeInt(readAddress);
+		stream.writeInt(readSize);
+		stream.writeInt(writeAddress);
+		stream.writeInt(writeSize);
+		stream.writeInt(cmd);
+		stream.writeInt(oobLength);
+		stream.writeInt(startBlock);
+		stream.writeInt(oobIndex);
+		stream.writeInts(pageBuffer);
+		stream.writeInt(pageStartLba);
+		stream.writeInt(numberOfPages);
+		stream.writeInt(pageDataIndex);
+		stream.writeInt(pageIndex);
+		stream.writeInt(commandDataIndex);
+		super.write(stream);
 	}
 
 	private static String getTPCName(int tpc) {

@@ -18,14 +18,19 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_AUDIO_INTR;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.modules.sceAudio;
 import jpcsp.memory.mmio.audio.AudioLine;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerAudio extends MMIOHandlerBase {
 	public static Logger log = sceAudio.log;
+	private static final int STATE_VERSION = 0;
 	public static final int AUDIO_HW_FREQUENCY_8000 = 0x01;
 	public static final int AUDIO_HW_FREQUENCY_11025 = 0x02;
 	public static final int AUDIO_HW_FREQUENCY_12000 = 0x04;
@@ -59,6 +64,56 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
     	for (int i = 0; i < audioLines.length; i++) {
     		audioLines[i] = new AudioLine();
 		}
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		busy = stream.readInt();
+		interrupt = stream.readInt();
+		inProgress = stream.readInt();
+		flags10 = stream.readInt();
+		flags20 = stream.readInt();
+		flags24 = stream.readInt();
+		flags2C = stream.readInt();
+		volume = stream.readInt();
+		frequency0 = stream.readInt();
+		frequency1 = stream.readInt();
+		frequencyFlags = stream.readInt();
+		hardwareFrequency = stream.readInt();
+		stream.readInts(audioData0);
+		stream.readInts(audioData1);
+		audioDataIndex0 = stream.readInt();
+		audioDataIndex1 = stream.readInt();
+		for (int i = 0; i < audioLines.length; i++) {
+			audioLines[i].read(stream);
+		}
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(busy);
+		stream.writeInt(interrupt);
+		stream.writeInt(inProgress);
+		stream.writeInt(flags10);
+		stream.writeInt(flags20);
+		stream.writeInt(flags24);
+		stream.writeInt(flags2C);
+		stream.writeInt(volume);
+		stream.writeInt(frequency0);
+		stream.writeInt(frequency1);
+		stream.writeInt(frequencyFlags);
+		stream.writeInt(hardwareFrequency);
+		stream.writeInts(audioData0);
+		stream.writeInts(audioData1);
+		stream.writeInt(audioDataIndex0);
+		stream.writeInt(audioDataIndex1);
+		for (int i = 0; i < audioLines.length; i++) {
+			audioLines[i].write(stream);
+		}
+		super.write(stream);
 	}
 
 	private void setFlags24(int flags24) {

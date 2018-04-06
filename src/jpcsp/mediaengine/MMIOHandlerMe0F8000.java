@@ -16,7 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.mediaengine;
 
+import java.io.IOException;
+
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
 public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
+	private static final int STATE_VERSION = 0;
 	private int unknown000;
 	private int unknown004;
 	private int unknown008;
@@ -50,6 +56,78 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 
 	public MMIOHandlerMe0F8000(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		unknown000 = stream.readInt();
+		unknown004 = stream.readInt();
+		unknown008 = stream.readInt();
+		unknown00C = stream.readInt();
+		unknown074 = stream.readInt();
+		unknown088 = stream.readInt();
+		unknown08C = stream.readInt();
+		unknown094 = stream.readInt();
+		unknown09C = stream.readInt();
+		unknown0A0 = stream.readInt();
+		unknown0A4 = stream.readInt();
+		unknown0AC = stream.readInt();
+		unknown0B4 = stream.readInt();
+		unknown0B8 = stream.readInt();
+		unknown0BC = stream.readInt();
+		unknown0C4 = stream.readInt();
+		unknown0E4 = stream.readInt();
+		unknown0E8 = stream.readInt();
+		unknown0F4 = stream.readInt();
+		unknown0FC = stream.readInt();
+		unknown100 = stream.readInt();
+		unknown118 = stream.readInt();
+		unknown12C = stream.readInt();
+		unknown130 = stream.readInt();
+		unknown144 = stream.readInt();
+		unknown148 = stream.readInt();
+		unknown174 = stream.readInt();
+		unknown178 = stream.readInt();
+		unknown18C = stream.readInt();
+		unknown190 = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(unknown000);
+		stream.writeInt(unknown004);
+		stream.writeInt(unknown008);
+		stream.writeInt(unknown00C);
+		stream.writeInt(unknown074);
+		stream.writeInt(unknown088);
+		stream.writeInt(unknown08C);
+		stream.writeInt(unknown094);
+		stream.writeInt(unknown09C);
+		stream.writeInt(unknown0A0);
+		stream.writeInt(unknown0A4);
+		stream.writeInt(unknown0AC);
+		stream.writeInt(unknown0B4);
+		stream.writeInt(unknown0B8);
+		stream.writeInt(unknown0BC);
+		stream.writeInt(unknown0C4);
+		stream.writeInt(unknown0E4);
+		stream.writeInt(unknown0E8);
+		stream.writeInt(unknown0F4);
+		stream.writeInt(unknown0FC);
+		stream.writeInt(unknown100);
+		stream.writeInt(unknown118);
+		stream.writeInt(unknown12C);
+		stream.writeInt(unknown130);
+		stream.writeInt(unknown144);
+		stream.writeInt(unknown148);
+		stream.writeInt(unknown174);
+		stream.writeInt(unknown178);
+		stream.writeInt(unknown18C);
+		stream.writeInt(unknown190);
+		super.write(stream);
 	}
 
 	@Override

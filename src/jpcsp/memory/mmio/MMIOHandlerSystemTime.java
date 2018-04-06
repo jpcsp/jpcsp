@@ -21,11 +21,16 @@ import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterrupt;
 import static jpcsp.Emulator.getScheduler;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_THREAD0_INTR;
 
+import java.io.IOException;
+
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerSystemTime extends MMIOHandlerBase {
+	private static final int STATE_VERSION = 0;
 	private long alarm;
 	private TriggerAlarmInterruptAction triggerAlarmInterruptAction;
 
@@ -38,6 +43,20 @@ public class MMIOHandlerSystemTime extends MMIOHandlerBase {
 
 	public MMIOHandlerSystemTime(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		setAlarm((int) (stream.readLong() + getSystemTime()));
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeLong(alarm - getSystemTime());
+		super.write(stream);
 	}
 
 	private int getSystemTime() {

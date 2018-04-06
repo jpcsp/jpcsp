@@ -16,14 +16,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.mediaengine;
 
+import java.io.IOException;
+
 import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
+	private static final int STATE_VERSION = 0;
 	private int status;
 	private int power;
 	private int command;
@@ -38,6 +43,40 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 
 	public MMIOHandlerMe0FF000(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		status = stream.readInt();
+		power = stream.readInt();
+		command = stream.readInt();
+		unknown10 = stream.readInt();
+		unknown14 = stream.readInt();
+		unknown18 = stream.readInt();
+		unknown1C = stream.readInt();
+		unknown20 = stream.readInt();
+		unknown24 = stream.readInt();
+		unknown28 = stream.readInt();
+		unknown2C = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(status);
+		stream.writeInt(power);
+		stream.writeInt(command);
+		stream.writeInt(unknown10);
+		stream.writeInt(unknown14);
+		stream.writeInt(unknown18);
+		stream.writeInt(unknown1C);
+		stream.writeInt(unknown20);
+		stream.writeInt(unknown24);
+		stream.writeInt(unknown28);
+		stream.writeInt(unknown2C);
+		super.write(stream);
 	}
 
 	private void setCommand(int command) {

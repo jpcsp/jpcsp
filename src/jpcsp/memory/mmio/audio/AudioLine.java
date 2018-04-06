@@ -18,6 +18,7 @@ package jpcsp.memory.mmio.audio;
 
 import static jpcsp.HLE.modules.sceAudio.PSP_AUDIO_VOLUME_MAX;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -26,9 +27,13 @@ import org.lwjgl.openal.AL10;
 
 import jpcsp.memory.mmio.MMIOHandlerAudio;
 import jpcsp.sound.SoundBufferManager;
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
-public class AudioLine {
+public class AudioLine implements IState {
 	public static Logger log = MMIOHandlerAudio.log;
+	private static final int STATE_VERSION = 0;
 	private SoundBufferManager soundBufferManager;
 	private int alSource;
 	private int frequency = 44100;
@@ -81,5 +86,17 @@ public class AudioLine {
 
 		alSourcePlay();
 		checkFreeBuffers();
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		frequency = stream.readInt();
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(frequency);
 	}
 }

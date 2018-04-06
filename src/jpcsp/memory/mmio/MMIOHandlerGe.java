@@ -21,6 +21,8 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_GE_INTR;
 import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_ACTIVE;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.MemoryMap;
@@ -30,9 +32,12 @@ import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.RE.externalge.CoreThreadMMIO;
 import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.graphics.RE.externalge.NativeUtils;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerGe extends MMIOHandlerBase {
 	public static Logger log = sceGe_user.log;
+	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBD400000;
 	private static MMIOHandlerGe instance;
 	private int ctrl;
@@ -58,6 +63,83 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 
 	private MMIOHandlerGe(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		setStatus(stream.readInt());
+		setList(stream.readInt());
+		setStall(stream.readInt());
+		setRaddr1(stream.readInt());
+		setRaddr2(stream.readInt());
+		setVaddr(stream.readInt());
+		setIaddr(stream.readInt());
+		setOaddr(stream.readInt());
+		setOaddr1(stream.readInt());
+		setOaddr2(stream.readInt());
+		setCmdStatus(stream.readInt());
+		setInterrupt(stream.readInt());
+		for (int cmd = 0x00; cmd <= 0xFF; cmd++) {
+			writeGeCmd(cmd, stream.readInt());
+		}
+		for (int i = 0; i < 8 * 12; i++) {
+			writeGeBone(i, stream.readInt());
+		}
+		for (int i = 0; i < 12; i++) {
+			writeGeWorld(i, stream.readInt());
+		}
+		for (int i = 0; i < 12; i++) {
+			writeGeView(i, stream.readInt());
+		}
+		for (int i = 0; i < 16; i++) {
+			writeGeProjection(i, stream.readInt());
+		}
+		for (int i = 0; i < 12; i++) {
+			writeGeTexture(i, stream.readInt());
+		}
+		// Setting the ctrl must be the last action as it might trigger a GE list execution
+		setCtrl(stream.readInt());
+		super.read(stream);
+
+		sceDisplayModule.setGeDirty(true);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(getStatus());
+		stream.writeInt(getList());
+		stream.writeInt(getStall());
+		stream.writeInt(getRaddr1());
+		stream.writeInt(getRaddr2());
+		stream.writeInt(getVaddr());
+		stream.writeInt(getIaddr());
+		stream.writeInt(getOaddr());
+		stream.writeInt(getOaddr1());
+		stream.writeInt(getOaddr2());
+		stream.writeInt(getCmdStatus());
+		stream.writeInt(getInterrupt());
+		for (int cmd = 0x00; cmd <= 0xFF; cmd++) {
+			stream.writeInt(readGeCmd(cmd));
+		}
+		for (int i = 0; i < 8 * 12; i++) {
+			stream.writeInt(readGeBone(i));
+		}
+		for (int i = 0; i < 12; i++) {
+			stream.writeInt(readGeWorld(i));
+		}
+		for (int i = 0; i < 12; i++) {
+			stream.writeInt(readGeView(i));
+		}
+		for (int i = 0; i < 16; i++) {
+			stream.writeInt(readGeProjection(i));
+		}
+		for (int i = 0; i < 12; i++) {
+			stream.writeInt(readGeTexture(i));
+		}
+		stream.writeInt(getCtrl());
+		super.write(stream);
 	}
 
 	public void onGeInterrupt() {
@@ -314,6 +396,12 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		return value;
 	}
 
+	private void writeGeCmd(int cmd, int value) {
+		if (ExternalGE.isActive()) {
+			ExternalGE.setCmd(cmd, value);
+		}
+	}
+
 	private int readMatrix(int matrixType, int matrixIndex) {
 		float[] matrix = null;
 		if (ExternalGE.isActive()) {
@@ -337,20 +425,50 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		return readMatrix(sceGe_user.PSP_GE_MATRIX_BONE0 + (bone / 12), bone % 12);
 	}
 
+	private void writeGeBone(int bone, int value) {
+		if (ExternalGE.isActive()) {
+			ExternalGE.setMatrix(sceGe_user.PSP_GE_MATRIX_BONE0 + (bone / 12), bone %12, Float.intBitsToFloat(value << 8));
+		}
+	}
+
 	private int readGeWorld(int world) {
 		return readMatrix(sceGe_user.PSP_GE_MATRIX_WORLD, world);
+	}
+
+	private void writeGeWorld(int world, int value) {
+		if (ExternalGE.isActive()) {
+			ExternalGE.setMatrix(sceGe_user.PSP_GE_MATRIX_WORLD, world, Float.intBitsToFloat(value << 8));
+		}
 	}
 
 	private int readGeView(int view) {
 		return readMatrix(sceGe_user.PSP_GE_MATRIX_VIEW, view);
 	}
 
+	private void writeGeView(int view, int value) {
+		if (ExternalGE.isActive()) {
+			ExternalGE.setMatrix(sceGe_user.PSP_GE_MATRIX_VIEW, view, Float.intBitsToFloat(value << 8));
+		}
+	}
+
 	private int readGeProjection(int projection) {
 		return readMatrix(sceGe_user.PSP_GE_MATRIX_PROJECTION, projection);
 	}
 
+	private void writeGeProjection(int projection, int value) {
+		if (ExternalGE.isActive()) {
+			ExternalGE.setMatrix(sceGe_user.PSP_GE_MATRIX_PROJECTION, projection, Float.intBitsToFloat(value << 8));
+		}
+	}
+
 	private int readGeTexture(int texture) {
 		return readMatrix(sceGe_user.PSP_GE_MATRIX_TEXGEN, texture);
+	}
+
+	private void writeGeTexture(int texture, int value) {
+		if (ExternalGE.isActive()) {
+			ExternalGE.setMatrix(sceGe_user.PSP_GE_MATRIX_TEXGEN, texture, Float.intBitsToFloat(value << 8));
+		}
 	}
 
 	@Override

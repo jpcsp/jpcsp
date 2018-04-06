@@ -16,7 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
 public class MMIOHandlerMemoryAccessControl extends MMIOHandlerBase {
+	private static final int STATE_VERSION = 0;
 	private final int memoryProtection[] = new int[4];
 	private int unknown10;
 	private int unknown14;
@@ -37,6 +43,52 @@ public class MMIOHandlerMemoryAccessControl extends MMIOHandlerBase {
 
 	public MMIOHandlerMemoryAccessControl(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		stream.readInts(memoryProtection);
+		unknown10 = stream.readInt();
+		unknown14 = stream.readInt();
+		unknown18 = stream.readInt();
+		unknown1C = stream.readInt();
+		unknown20 = stream.readInt();
+		unknown24 = stream.readInt();
+		unknown28 = stream.readInt();
+		unknown2C = stream.readInt();
+		unknown30 = stream.readInt();
+		unknown34 = stream.readInt();
+		unknown38 = stream.readInt();
+		unknown3C = stream.readInt();
+		unknown40 = stream.readInt();
+		unknown44 = stream.readInt();
+		unknown48 = stream.readInt();
+		unknown50 = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInts(memoryProtection);
+		stream.writeInt(unknown10);
+		stream.writeInt(unknown14);
+		stream.writeInt(unknown18);
+		stream.writeInt(unknown1C);
+		stream.writeInt(unknown20);
+		stream.writeInt(unknown24);
+		stream.writeInt(unknown28);
+		stream.writeInt(unknown2C);
+		stream.writeInt(unknown30);
+		stream.writeInt(unknown34);
+		stream.writeInt(unknown38);
+		stream.writeInt(unknown3C);
+		stream.writeInt(unknown40);
+		stream.writeInt(unknown44);
+		stream.writeInt(unknown48);
+		stream.writeInt(unknown50);
+		super.write(stream);
 	}
 
 	@Override

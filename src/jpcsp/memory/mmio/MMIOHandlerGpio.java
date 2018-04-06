@@ -21,13 +21,18 @@ import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.setBit;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.modules.sceGpio;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerGpio extends MMIOHandlerBase {
 	public static Logger log = sceGpio.log;
+	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBE240000;
 	private static MMIOHandlerGpio instance;
 	public static final int GPIO_PORT_DISPLAY          = 0x00;
@@ -61,6 +66,38 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 
 	private MMIOHandlerGpio(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		ports = stream.readInt();
+		isOutput = stream.readInt();
+		isInputOn = stream.readInt();
+		isInterruptEnabled = stream.readInt();
+		isInterruptTriggered = stream.readInt();
+		isEdgeDetection = stream.readInt();
+		isRisingEdge = stream.readInt();
+		isFallingEdge = stream.readInt();
+		isCapturePort = stream.readInt();
+		isTimerCaptureEnabled = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(ports);
+		stream.writeInt(isOutput);
+		stream.writeInt(isInputOn);
+		stream.writeInt(isInterruptEnabled);
+		stream.writeInt(isInterruptTriggered);
+		stream.writeInt(isEdgeDetection);
+		stream.writeInt(isRisingEdge);
+		stream.writeInt(isFallingEdge);
+		stream.writeInt(isCapturePort);
+		stream.writeInt(isTimerCaptureEnabled);
+		super.write(stream);
 	}
 
 	private static String getPortName(int port) {

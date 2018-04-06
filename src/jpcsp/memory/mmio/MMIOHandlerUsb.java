@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
@@ -24,9 +26,12 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceUsb;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerUsb extends MMIOHandlerBase {
 	public static Logger log = sceUsb.log;
+	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBD800000;
 	private static MMIOHandlerUsb instance;
 	private int unknown400;
@@ -54,6 +59,32 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 
 	private MMIOHandlerUsb(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		unknown400 = stream.readInt();
+		unknown404 = stream.readInt();
+		unknown40C = stream.readInt();
+		unknown410 = stream.readInt();
+		unknown414 = stream.readInt();
+		unknown418 = stream.readInt();
+		unknown41C = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(unknown400);
+		stream.writeInt(unknown404);
+		stream.writeInt(unknown40C);
+		stream.writeInt(unknown410);
+		stream.writeInt(unknown414);
+		stream.writeInt(unknown418);
+		stream.writeInt(unknown41C);
+		super.write(stream);
 	}
 
 	public void triggerReset() {

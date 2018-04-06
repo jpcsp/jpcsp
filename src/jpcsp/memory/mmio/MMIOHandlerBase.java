@@ -16,14 +16,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerBase implements IMMIOHandler {
 	protected Logger log = Logger.getLogger("mmio");
+	private static final int STATE_VERSION = 0;
 	protected final int baseAddress;
 
 	public MMIOHandlerBase(int baseAddress) {
@@ -77,6 +82,16 @@ public class MMIOHandlerBase implements IMMIOHandler {
 
 	public void setLogger(Logger log) {
 		this.log = log;
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
 	}
 
 	@Override

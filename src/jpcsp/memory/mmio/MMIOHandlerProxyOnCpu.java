@@ -16,8 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerProxyOnCpu implements IMMIOHandler {
 	private IMMIOHandler proxyOnMain;
@@ -70,5 +74,17 @@ public class MMIOHandlerProxyOnCpu implements IMMIOHandler {
 	@Override
 	public void write32(int address, int value) {
 		getInstance().write32(address, value);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		proxyOnMain.read(stream);
+		proxyOnMe.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		proxyOnMain.write(stream);
+		proxyOnMe.write(stream);
 	}
 }

@@ -16,10 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.sceLcdc;
 import jpcsp.hardware.Screen;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * LCD Sharp LQ043
@@ -29,10 +33,12 @@ import jpcsp.hardware.Screen;
  */
 public class MMIOHandlerLcdc extends MMIOHandlerBase {
 	public static Logger log = sceLcdc.log;
+	private static final int STATE_VERSION = 0;
 	private final LcdcController controller1 = new LcdcController();
 	private final LcdcController controller2 = new LcdcController();
 
 	private static class LcdcController {
+		private static final int STATE_VERSION = 0;
 		// The register names are based on https://github.com/uofw/upspd/wiki/Hardware-registers
 		public int enable;
 		public int synchronizationDifference;
@@ -134,12 +140,66 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 				case 0x04C: scaledYResolution = value; break;
 			}
 		}
+
+		public void read(StateInputStream stream) throws IOException {
+			stream.readVersion(STATE_VERSION);
+			enable = stream.readInt();
+			synchronizationDifference = stream.readInt();
+			unknown008 = stream.readInt();
+			xPulseWidth = stream.readInt();
+			xBackPorch = stream.readInt();
+			xFrontPorch = stream.readInt();
+			xResolution = stream.readInt();
+			yBackPorch = stream.readInt();
+			yFrontPorch = stream.readInt();
+			yPulseWidth = stream.readInt();
+			yResolution = stream.readInt();
+			yShift = stream.readInt();
+			xShift = stream.readInt();
+			scaledXResolution = stream.readInt();
+			scaledYResolution = stream.readInt();
+		}
+
+		public void write(StateOutputStream stream) throws IOException {
+			stream.writeVersion(STATE_VERSION);
+			stream.writeInt(enable);
+			stream.writeInt(synchronizationDifference);
+			stream.writeInt(unknown008);
+			stream.writeInt(xPulseWidth);
+			stream.writeInt(xBackPorch);
+			stream.writeInt(xFrontPorch);
+			stream.writeInt(xResolution);
+			stream.writeInt(yBackPorch);
+			stream.writeInt(yFrontPorch);
+			stream.writeInt(yPulseWidth);
+			stream.writeInt(yResolution);
+			stream.writeInt(yShift);
+			stream.writeInt(xShift);
+			stream.writeInt(scaledXResolution);
+			stream.writeInt(scaledYResolution);
+		}
 	}
 
 	public MMIOHandlerLcdc(int baseAddress) {
 		super(baseAddress);
 
 		reset();
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		controller1.read(stream);
+		controller2.read(stream);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		controller1.write(stream);
+		controller2.write(stream);
+		super.write(stream);
 	}
 
 	private void reset() {

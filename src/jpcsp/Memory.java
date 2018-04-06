@@ -19,6 +19,7 @@ package jpcsp;
 import static jpcsp.Allegrex.compiler.RuntimeContext.getPc;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
@@ -28,6 +29,10 @@ import jpcsp.hardware.Screen;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.DirectBufferMemory;
 import jpcsp.memory.FastMemory;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.memory.NativeMemory;
 import jpcsp.memory.SafeDirectBufferMemory;
 import jpcsp.memory.SafeFastMemory;
@@ -37,10 +42,13 @@ import jpcsp.memory.SparseNativeMemory;
 import jpcsp.memory.StandardMemory;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 import org.apache.log4j.Logger;
 
-public abstract class Memory {
+public abstract class Memory implements IState {
     public static Logger log = Logger.getLogger("memory");
     private static Memory instance = null;
     public static boolean useNativeMemory = false;
@@ -53,8 +61,9 @@ public abstract class Memory {
     // Assume that a video check during a memcpy is only necessary
     // when copying at least one screen row (at 2 bytes per pixel).
     private static final int MINIMUM_LENGTH_FOR_VIDEO_CHECK = Screen.width * 2;
+	private static final int STATE_VERSION = 0;
 
-    public static Memory getInstance() {
+	public static Memory getInstance() {
         if (instance == null) {
             //
             // The following memory implementations are available:
@@ -418,7 +427,6 @@ public abstract class Memory {
 
     public void setIgnoreInvalidMemoryAccess(boolean ignoreInvalidMemoryAccess) {
         this.ignoreInvalidMemoryAccess = ignoreInvalidMemoryAccess;
-        log.info(String.format("Ignore invalid memory access: %b", ignoreInvalidMemoryAccess));
     }
 
     public static boolean isRAM(int address) {
@@ -431,4 +439,35 @@ public abstract class Memory {
         // Test first against END_VRAM as it is most likely to fail first (because RAM is above VRAM)
         return address <= MemoryMap.END_VRAM && address >= MemoryMap.START_VRAM;
     }
+
+    protected void read(StateInputStream stream, int address, int length) throws IOException {
+    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(this, address, length, 4);
+    	for (int i = 0; i < length; i += 4) {
+    		memoryWriter.writeNext(stream.readInt());
+    	}
+    	memoryWriter.flush();
+    }
+
+    protected void write(StateOutputStream stream, int address, int length) throws IOException {
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(this, address, length, 4);
+    	for (int i = 0; i < length; i += 4) {
+    		stream.writeInt(memoryReader.readNext());
+    	}
+    }
+
+    @Override
+	public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	read(stream, MemoryMap.START_SCRATCHPAD, MemoryMap.SIZE_SCRATCHPAD);
+    	read(stream, MemoryMap.START_VRAM, MemoryMap.SIZE_VRAM);
+    	read(stream, MemoryMap.START_RAM, MemoryMap.SIZE_RAM);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+    	write(stream, MemoryMap.START_SCRATCHPAD, MemoryMap.SIZE_SCRATCHPAD);
+    	write(stream, MemoryMap.START_VRAM, MemoryMap.SIZE_VRAM);
+    	write(stream, MemoryMap.START_RAM, MemoryMap.SIZE_RAM);
+	}
 }

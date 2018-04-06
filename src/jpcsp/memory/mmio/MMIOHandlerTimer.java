@@ -16,9 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerTimer extends MMIOHandlerBase {
+	private static final int STATE_VERSION = 0;
 	private static final int TIMER_COUNTER_MASK = 0x003FFFFF;
 	private static final int TIMER_MODE_SHIFT = 22;
 	// Indicates that a time-up handler is set for the specific timer
@@ -35,6 +40,28 @@ public class MMIOHandlerTimer extends MMIOHandlerBase {
 
 	public MMIOHandlerTimer(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		timerMode = stream.readInt();
+		timerCounter = stream.readInt();
+		baseTime = stream.readInt();
+		prsclNumerator = stream.readInt();
+		prsclDenominator = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(timerMode);
+		stream.writeInt(timerCounter);
+		stream.writeInt(baseTime);
+		stream.writeInt(prsclNumerator);
+		stream.writeInt(prsclDenominator);
+		super.write(stream);
 	}
 
 	private int getTimerData() {

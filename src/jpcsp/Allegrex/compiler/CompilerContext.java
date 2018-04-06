@@ -2162,6 +2162,7 @@ public class CompilerContext implements ICompilerContext {
     		Label doNotWantSync = new Label();
             mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "wantSync", "Z");
             mv.visitJumpInsn(Opcodes.IFEQ, doNotWantSync);
+            storePc();
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.syncName, "()V");
             mv.visitLabel(doNotWantSync);
     	}
@@ -2423,9 +2424,9 @@ public class CompilerContext implements ICompilerContext {
         }
     }
 
-    public void visitJump(int opcode, CodeInstruction target) {
+    public void startJump(int targetAddress) {
     	// Back branch? i.e probably a loop
-        if (target.getAddress() <= getCodeInstruction().getAddress()) {
+        if (targetAddress <= getCodeInstruction().getAddress()) {
         	checkSync();
 
         	if (Profiler.isProfilerEnabled()) {
@@ -2433,6 +2434,9 @@ public class CompilerContext implements ICompilerContext {
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addBackBranch", "(I)V");
         	}
         }
+    }
+
+    public void visitJump(int opcode, CodeInstruction target) {
         visitJump(opcode, target.getLabel());
     }
 
@@ -3334,7 +3338,8 @@ public class CompilerContext implements ICompilerContext {
 	    mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(nativeCodeSequence.getNativeCodeSequenceClass()), nativeCodeSequence.getMethodName(), methodSignature.toString());
 
 	    if (nativeCodeInstruction != null && nativeCodeInstruction.isBranching()) {
-    		CodeInstruction targetInstruction = getCodeBlock().getCodeInstruction(nativeCodeInstruction.getBranchingTo());
+			startJump(nativeCodeInstruction.getBranchingTo());
+			CodeInstruction targetInstruction = getCodeBlock().getCodeInstruction(nativeCodeInstruction.getBranchingTo());
     		if (targetInstruction != null) {
     			visitJump(Opcodes.GOTO, targetInstruction);
     		} else {

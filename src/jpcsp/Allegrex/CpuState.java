@@ -16,15 +16,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import java.io.IOException;
+
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
 /**
  * Central Point Unit, handles all operations
  *
  * @author hli
  */
 
-public class CpuState extends VfpuState {
+public class CpuState extends VfpuState implements IState {
+	private static final int STATE_VERSION = 0;
 
-    @Override
+	@Override
     public void reset() {
         resetAll();
     }
@@ -36,7 +43,19 @@ public class CpuState extends VfpuState {
         super.copy(that);
     }
 
-    public CpuState(CpuState that) {
+	public CpuState(CpuState that) {
         copy(that);
     }
+
+    @Override
+	public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		super.write(stream);
+	}
 }

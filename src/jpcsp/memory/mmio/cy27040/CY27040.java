@@ -16,10 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio.cy27040;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
-public class CY27040 {
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
+public class CY27040 implements IState {
 	public static Logger log = Logger.getLogger("CY27040");
+	private static final int STATE_VERSION = 0;
 	private static CY27040 instance;
 	// In clock register, used to manage the audio frequency
 	public static final int PSP_CLOCK_AUDIO_FREQ = 0x01;
@@ -41,6 +48,22 @@ public class CY27040 {
 
 	private CY27040() {
 		revision = 0x03;
+	}
+
+    @Override
+	public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	revision = stream.readInt();
+    	clock = stream.readInt();
+    	spreadSpectrum = stream.readInt();
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(revision);
+		stream.writeInt(clock);
+		stream.writeInt(spreadSpectrum);
 	}
 
 	public void executeTransmitReceiveCommand(int[] transmitData, int[] receiveData) {

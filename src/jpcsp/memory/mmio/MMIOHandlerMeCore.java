@@ -16,12 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.sceMeCore;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerMeCore extends MMIOHandlerBase {
 	public static Logger log = sceMeCore.log;
+	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBFC00600;
 	private static MMIOHandlerMeCore instance;
 	private int cmd;
@@ -140,6 +145,26 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 
 	private MMIOHandlerMeCore(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		cmd = stream.readInt();
+		unknown = stream.readInt();
+		stream.readInts(parameters);
+		result = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(cmd);
+		stream.writeInt(unknown);
+		stream.writeInts(parameters);
+		stream.writeInt(result);
+		super.write(stream);
 	}
 
 	private void writeCmd(int cmd) {

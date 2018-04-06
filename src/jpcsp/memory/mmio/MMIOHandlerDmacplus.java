@@ -19,6 +19,8 @@ package jpcsp.memory.mmio;
 import static jpcsp.HLE.Modules.sceDisplayModule;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_DMACPLUS_INTR;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
@@ -27,9 +29,12 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceDmacplus;
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.memory.mmio.dmac.DmacProcessor;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 	public static Logger log = sceDmacplus.log;
+	private static final int STATE_VERSION = 0;
 	public static final int COMPLETED_FLAG_UNKNOWN      = 0x01;
 	public static final int COMPLETED_FLAG_AVC          = 0x02;
 	public static final int COMPLETED_FLAG_SC2ME        = 0x04;
@@ -79,6 +84,40 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 		dmacProcessors[0] = new DmacProcessor(scMemory, meMemory, baseAddress + 0x180, new DmacCompletedAction(COMPLETED_FLAG_SC2ME));
 		dmacProcessors[1] = new DmacProcessor(meMemory, scMemory, baseAddress + 0x1A0, new DmacCompletedAction(COMPLETED_FLAG_ME2SC));
 		dmacProcessors[2] = new DmacProcessor(scMemory, scMemory, baseAddress + 0x1C0, new DmacCompletedAction(COMPLETED_FLAG_SC128_MEMCPY));
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		flagsCompleted = stream.readInt();
+		flagsError = stream.readInt();
+		for (int i = 0; i < dmacProcessors.length; i++) {
+			dmacProcessors[i].read(stream);
+		}
+		displayFrameBufferAddr = stream.readInt();
+		displayWidth = stream.readInt();
+		displayFrameBufferWidth = stream.readInt();
+		displayPixelFormatCoded = stream.readInt();
+		displayFlags = stream.readInt();
+		super.read(stream);
+
+		updateDisplay();
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(flagsCompleted);
+		stream.writeInt(flagsError);
+		for (int i = 0; i < dmacProcessors.length; i++) {
+			dmacProcessors[i].write(stream);
+		}
+		stream.writeInt(displayFrameBufferAddr);
+		stream.writeInt(displayWidth);
+		stream.writeInt(displayFrameBufferWidth);
+		stream.writeInt(displayPixelFormatCoded);
+		stream.writeInt(displayFlags);
+		super.write(stream);
 	}
 
 	private void memcpyCompleted(int flagCompleted) {

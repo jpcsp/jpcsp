@@ -31,13 +31,16 @@ import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.iso.UmdIsoReaderVirtualFile;
 import jpcsp.HLE.modules.sceNand;
 import jpcsp.HLE.modules.sceUmdMan;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerUmd extends MMIOHandlerBase {
 	public static Logger log = sceUmdMan.log;
+	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBDF00000;
 	private static MMIOHandlerUmd instance;
-	protected int command;
+	private int command;
 	private int reset;
 	// Possible interrupt flags: 0x1, 0x2, 0x10, 0x20, 0x40, 0x80, 0x10000, 0x20000, 0x40000, 0x80000
 	private int interrupt;
@@ -58,6 +61,32 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 
 	private MMIOHandlerUmd(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		command = stream.readInt();
+		reset = stream.readInt();
+		interrupt = stream.readInt();
+		interruptEnabled = stream.readInt();
+		totalTransferLength = stream.readInt();
+		stream.readInts(transferAddresses);
+		stream.readInts(transferSizes);
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(command);
+		stream.writeInt(reset);
+		stream.writeInt(interrupt);
+		stream.writeInt(interruptEnabled);
+		stream.writeInt(totalTransferLength);
+		stream.writeInts(transferAddresses);
+		stream.writeInts(transferSizes);
+		super.write(stream);
 	}
 
 	private void closeFile() {

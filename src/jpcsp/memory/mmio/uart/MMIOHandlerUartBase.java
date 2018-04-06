@@ -16,12 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio.uart;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.memory.mmio.MMIOHandlerBase;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerUartBase extends MMIOHandlerBase {
 	public static Logger log = Logger.getLogger("uart");
+	private static final int STATE_VERSION = 0;
 	public static final int SIZE_OF = 0x48;
 	public static final int UART_STATUS_RXEMPTY = 0x10;
 	public static final int UART_STATUS_TXFULL = 0x20;
@@ -39,6 +44,36 @@ public class MMIOHandlerUartBase extends MMIOHandlerBase {
 		super(baseAddress);
 
 		status = UART_STATUS_RXEMPTY;
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		data = stream.readInt();
+		status = stream.readInt();
+		baudrateDivisor = stream.readLong();
+		control = stream.readInt();
+		unknown04 = stream.readInt();
+		unknown30 = stream.readInt();
+		unknown34 = stream.readInt();
+		unknown34 = stream.readInt();
+		interrupt = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(data);
+		stream.writeInt(status);
+		stream.writeLong(baudrateDivisor);
+		stream.writeInt(control);
+		stream.writeInt(unknown04);
+		stream.writeInt(unknown30);
+		stream.writeInt(unknown34);
+		stream.writeInt(unknown38);
+		stream.writeInt(interrupt);
+		super.write(stream);
 	}
 
 	private void clearInterrupt(int mask) {

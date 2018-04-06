@@ -25,7 +25,12 @@ import static jpcsp.Allegrex.Common.COP0_STATE_ERROR_EPC;
 import static jpcsp.Allegrex.Common.COP0_STATE_SCCODE;
 import static jpcsp.Allegrex.Common.COP0_STATE_STATUS;
 
+import java.io.IOException;
+
 import jpcsp.mediaengine.MEProcessor;
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * System Control Coprocessor 0
@@ -33,7 +38,8 @@ import jpcsp.mediaengine.MEProcessor;
  * @author gid15
  *
  */
-public class Cp0State {
+public class Cp0State implements IState {
+	private static final int STATE_VERSION = 0;
 	private final int[] data = new int[32];
 	private final int[] control = new int[32];
 
@@ -49,7 +55,21 @@ public class Cp0State {
 		setConfig(config);
 	}
 
-	public int getDataRegister(int n) {
+	@Override
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	stream.readInts(data);
+    	stream.readInts(control);
+    }
+
+	@Override
+    public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+    	stream.writeInts(data);
+    	stream.writeInts(control);
+    }
+
+    public int getDataRegister(int n) {
 		return data[n];
 	}
 

@@ -16,10 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio.dmac;
 
+import java.io.IOException;
+
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
-public class DmacProcessor {
+public class DmacProcessor implements IState {
+	private static final int STATE_VERSION = 0;
 	private static final int STATUS_IN_PROGRESS = 0x1;
 	private Memory memSrc;
 	private Memory memDst;
@@ -53,6 +59,26 @@ public class DmacProcessor {
 		dmacThread.setName(String.format("Dmac Thread for 0x%08X", baseAddress));
 		dmacThread.setDaemon(true);
 		dmacThread.start();
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		dst = stream.readInt();
+		src = stream.readInt();
+		next = stream.readInt();
+		attributes = stream.readInt();
+		status = stream.readInt();
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(dst);
+		stream.writeInt(src);
+		stream.writeInt(next);
+		stream.writeInt(attributes);
+		stream.writeInt(status);
 	}
 
 	public int getDst() {

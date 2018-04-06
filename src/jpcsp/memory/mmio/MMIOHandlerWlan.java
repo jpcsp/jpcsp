@@ -18,15 +18,19 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.util.Utilities.endianSwap16;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.sceWlan;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerWlan extends MMIOHandlerBase {
 	public static Logger log = sceWlan.log;
+	private static final int STATE_VERSION = 0;
 	private int command;
 	private Object dmaLock = new Object();
 	private final int data[] = new int[4096];
@@ -41,6 +45,34 @@ public class MMIOHandlerWlan extends MMIOHandlerBase {
 		super(baseAddress);
 
 		unknown38 = 0x4000 | 0x2000 | 0x1000 | 0x0002;
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		command = stream.readInt();
+		stream.readInts(data);
+		unknown38 = stream.readInt();
+		unknown3C = stream.readInt();
+		unknown40 = stream.readInt();
+		index = stream.readInt();
+		totalLength = stream.readInt();
+		currentLength = stream.readInt();
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(command);
+		stream.writeInts(data);
+		stream.writeInt(unknown38);
+		stream.writeInt(unknown3C);
+		stream.writeInt(unknown40);
+		stream.writeInt(index);
+		stream.writeInt(totalLength);
+		stream.writeInt(currentLength);
+		super.write(stream);
 	}
 
 	private void setUnknown3C(int value) {

@@ -20,14 +20,19 @@ import static jpcsp.Emulator.getScheduler;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;
 import static jpcsp.scheduler.Scheduler.getNow;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 	public static Logger log = sceDisplay.log;
+	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBE740000;
 	private static MMIOHandlerDisplayController instance;
 	private long baseTimeMicros;
@@ -54,6 +59,24 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 
 	private MMIOHandlerDisplayController(int baseAddress) {
 		super(baseAddress);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		maxVblankInterrupts = stream.readInt();
+		baseTimeMicros = getNow() - stream.readLong();
+		super.read(stream);
+
+		startVblankInterrupts();
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(maxVblankInterrupts);
+		stream.writeLong(getTimeMicros());
+		super.write(stream);
 	}
 
 	private long getTimeMicros() {
