@@ -21,6 +21,8 @@ import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.log4j.Logger;
 
@@ -35,7 +37,10 @@ public class State implements IState {
 	}
 
 	public void read(String fileName) throws IOException {
-		StateInputStream stream = new StateInputStream(new BufferedInputStream(new FileInputStream(fileName)));
+		FileInputStream fileInputStream = new FileInputStream(fileName);
+		GZIPInputStream gzipInputStream = new GZIPInputStream(fileInputStream);
+		BufferedInputStream bufferedInputStream = new BufferedInputStream(gzipInputStream);
+		StateInputStream stream = new StateInputStream(bufferedInputStream);
 
 		if (log.isInfoEnabled()) {
 			log.info(String.format("Reading state from file '%s'", fileName));
@@ -56,7 +61,10 @@ public class State implements IState {
 	}
 
 	public void write(String fileName) throws IOException {
-		StateOutputStream stream = new StateOutputStream(new BufferedOutputStream(new FileOutputStream(fileName)));
+		FileOutputStream fileOutputStream = new FileOutputStream(fileName);
+		GZIPOutputStream gzipOutputStream = new GZIPOutputStream(fileOutputStream);
+		BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(gzipOutputStream);
+		StateOutputStream stream = new StateOutputStream(bufferedOutputStream);
 
 		if (log.isInfoEnabled()) {
 			log.info(String.format("Writing state to file '%s'", fileName));
