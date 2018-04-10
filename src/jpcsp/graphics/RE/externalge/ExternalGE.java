@@ -518,6 +518,10 @@ public class ExternalGE {
 		NativeUtils.setCoreCmdArray(cmd, value);
 	}
 
+	public static void interpretCmd(int cmd, int value) {
+		NativeUtils.interpretCoreCmd(cmd, value, NativeUtils.getCoreMadr());
+	}
+
 	private static int getMatrixOffset(int mtxType) {
 		int offset = mtxType * 12;
 

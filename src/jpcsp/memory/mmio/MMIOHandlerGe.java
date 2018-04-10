@@ -81,7 +81,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		setCmdStatus(stream.readInt());
 		setInterrupt(stream.readInt());
 		for (int cmd = 0x00; cmd <= 0xFF; cmd++) {
-			writeGeCmd(cmd, stream.readInt());
+			int value = stream.readInt();
+			writeGeCmd(cmd, value);
 		}
 		for (int i = 0; i < 8 * 12; i++) {
 			writeGeBone(i, stream.readInt());
@@ -399,6 +400,9 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	private void writeGeCmd(int cmd, int value) {
 		if (ExternalGE.isActive()) {
 			ExternalGE.setCmd(cmd, value);
+			if (GeCommands.pureStateCommands[cmd]) {
+				ExternalGE.interpretCmd(cmd, value);
+			}
 		}
 	}
 

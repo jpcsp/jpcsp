@@ -322,6 +322,10 @@ public class MEProcessor extends Processor {
 	}
 
 	public void run() {
+		if (!Emulator.run) {
+			return;
+		}
+
 		if (instructions == null) {
 			initRun();
 		}
