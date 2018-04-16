@@ -43,4 +43,34 @@ public class sceI2c extends HLEModule {
 	public int sceI2cMasterTransmit(int transmitI2cAddress, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer transmitBuffer, int transmitBufferSize) {
     	return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x4020DC7E, version = 150)
+	public int sceI2cSetPollingMode() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x49B159DE, version = 150)
+	public int sceI2cMasterReceive() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x62C7E1E4, version = 150)
+	public int sceI2cSetClock(int unknown1, int unknown2) {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xD35FC17D, version = 150)
+	public int sceI2cReset() {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xDBE12CED, version = 150)
+	public int sceI2cSetDebugHandlers() {
+    	return 0;
+	}
 }
