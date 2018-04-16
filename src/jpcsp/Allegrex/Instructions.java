@@ -779,6 +779,9 @@ public void interpret(Processor processor, int insn) {
 	processor.setInterruptsEnabled(value != 0);
 
 	if (RuntimeContextLLE.isLLEActive()) {
+		if (processor.isInterruptsEnabled()) {
+			reboot.setLog4jMDC();
+		}
 		RuntimeContext.checkSync();
 	} else if (processor.isInterruptsEnabled()) {
 		try {
