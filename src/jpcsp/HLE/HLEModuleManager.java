@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,6 +38,8 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * Manager for the HLE modules.
@@ -50,6 +53,7 @@ import jpcsp.HLE.modules.ThreadManForUser;
 public class HLEModuleManager {
 	private static Logger log = Modules.log;
     private static HLEModuleManager instance;
+	private static final int STATE_VERSION = 0;
 
     public static final int HLESyscallNid = -1;
     public static final int InternalSyscallNid = -1;
@@ -710,4 +714,20 @@ public class HLEModuleManager {
         	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(moduleFileName, startPriority++, onModuleStartAction);
     	}
 	}
+
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	for (ModuleInfo moduleInfo : ModuleInfo.values()) {
+        	HLEModule hleModule = moduleInfo.getModule();
+        	hleModule.read(stream);
+        }
+    }
+
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	for (ModuleInfo moduleInfo : ModuleInfo.values()) {
+        	HLEModule hleModule = moduleInfo.getModule();
+        	hleModule.write(stream);
+        }
+    }
 }

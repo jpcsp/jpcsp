@@ -28,6 +28,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.HLEModuleManager;
 
 public class State implements IState {
 	public static Logger log = Logger.getLogger("state");
@@ -87,6 +88,7 @@ public class State implements IState {
 		Emulator.getClock().read(stream);
 		Emulator.getProcessor().read(stream);
 		Emulator.getMemory().read(stream);
+		HLEModuleManager.getInstance().read(stream);
 		if (RuntimeContextLLE.isLLEActive()) {
 			RuntimeContextLLE.read(stream);
 			RuntimeContextLLE.createMMIO();
@@ -102,6 +104,7 @@ public class State implements IState {
 		Emulator.getClock().write(stream);
 		Emulator.getProcessor().write(stream);
 		Emulator.getMemory().write(stream);
+		HLEModuleManager.getInstance().write(stream);
 		if (RuntimeContextLLE.isLLEActive()) {
 			RuntimeContextLLE.write(stream);
 			RuntimeContextLLE.createMMIO();

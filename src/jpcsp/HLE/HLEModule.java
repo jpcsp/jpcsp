@@ -16,18 +16,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.io.IOException;
 import java.util.HashMap;
 
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.settings.ISettingsListener;
 import jpcsp.settings.Settings;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  *
  * @author fiveofhearts
  */
 abstract public class HLEModule {
+	private static final int STATE_VERSION = 0;
 	private SysMemInfo memory;
 	private String name;
 	private boolean started = false;
@@ -108,7 +112,19 @@ abstract public class HLEModule {
 		}
 	}
 
-	@Override
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	name = stream.readString();
+    	started = stream.readBoolean();
+    }
+
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	stream.writeString(name);
+    	stream.writeBoolean(started);
+    }
+
+    @Override
 	public String toString() {
 		return getName();
 	}

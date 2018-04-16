@@ -16,9 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.state;
 
+import static jpcsp.state.StateOutputStream.NULL_ARRAY_LENGTH;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+
+import jpcsp.Emulator;
 
 public class StateInputStream extends ObjectInputStream {
 	public StateInputStream(InputStream in) throws IOException {
@@ -38,6 +42,17 @@ public class StateInputStream extends ObjectInputStream {
 		readInts(a, 0, a.length);
 	}
 
+	public int[] readIntsWithLength() throws IOException {
+		int length = readInt();
+		if (length == NULL_ARRAY_LENGTH) {
+			return null;
+		}
+		int a[] = new int[length];
+		readInts(a);
+
+		return a;
+	}
+
 	public void readInts(int[] a, int offset, int length) throws IOException {
 		for (int i = 0; i < length; i++) {
 			a[i + offset] = readInt();
@@ -53,6 +68,40 @@ public class StateInputStream extends ObjectInputStream {
 	public void readBooleans(boolean[] a) throws IOException {
 		for (int i = 0; i < a.length; i++) {
 			a[i] = readBoolean();
+		}
+	}
+
+	public void readBytes(byte[] a) throws IOException {
+		readBytes(a, 0, a.length);
+	}
+
+	public void readBytes(byte[] a, int offset, int length) throws IOException {
+		for (int i = 0; i < length; i++) {
+			a[i + offset] = readByte();
+		}
+	}
+
+	public byte[] readBytesWithLength() throws IOException {
+		int length = readInt();
+		if (length == NULL_ARRAY_LENGTH) {
+			return null;
+		}
+		byte a[] = new byte[length];
+		readBytes(a);
+
+		return a;
+	}
+
+	public String readString() throws IOException {
+		try {
+			Object a = readObject();
+			if (a == null) {
+				return null;
+			}
+			return a.toString();
+		} catch (ClassNotFoundException e) {
+			Emulator.log.error("readString", e);
+			return null;
 		}
 	}
 }

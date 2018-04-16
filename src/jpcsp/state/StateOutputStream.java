@@ -21,6 +21,8 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 public class StateOutputStream extends ObjectOutputStream {
+	public static final int NULL_ARRAY_LENGTH = -1;
+
 	public StateOutputStream(OutputStream out) throws IOException {
 		super(out);
 	}
@@ -31,6 +33,15 @@ public class StateOutputStream extends ObjectOutputStream {
 
 	public void writeInts(int[] a) throws IOException {
 		writeInts(a, 0, a.length);
+	}
+
+	public void writeIntsWithLength(int[] a) throws IOException {
+		if (a == null) {
+			writeInt(NULL_ARRAY_LENGTH);
+		} else {
+			writeInt(a.length);
+			writeInts(a, 0, a.length);
+		}
 	}
 
 	public void writeInts(int[] a, int offset, int length) throws IOException {
@@ -49,5 +60,28 @@ public class StateOutputStream extends ObjectOutputStream {
 		for (int i = 0; i < a.length; i++) {
 			writeBoolean(a[i]);
 		}
+	}
+
+	public void writeBytes(byte[] a) throws IOException {
+		writeBytes(a, 0, a.length);
+	}
+
+	public void writeBytesWithLength(byte[] a) throws IOException {
+		if (a == null) {
+			writeInt(NULL_ARRAY_LENGTH);
+		} else {
+			writeInt(a.length);
+			writeBytes(a);
+		}
+	}
+
+	public void writeBytes(byte[] a, int offset, int length) throws IOException {
+		for (int i = 0; i < length; i++) {
+			writeByte(a[i + offset]);
+		}
+	}
+
+	public void writeString(String s) throws IOException {
+		writeObject(s);
 	}
 }
