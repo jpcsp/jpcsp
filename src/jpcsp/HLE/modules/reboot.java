@@ -245,6 +245,10 @@ public class reboot extends HLEModule {
     }
 
     public static void dumpAllModulesAndLibraries() {
+    	if (!enableReboot) {
+    		return;
+    	}
+
     	Memory mem = Memory.getInstance();
     	int g_loadCore = 0x8802111C;
     	int registeredMods = mem.read32(g_loadCore + 524);
@@ -303,6 +307,10 @@ public class reboot extends HLEModule {
      *   </layout>
      */
     public static void setLog4jMDC() {
+    	if (!enableReboot) {
+    		return;
+    	}
+
     	Processor processor = Emulator.getProcessor();
     	boolean isInterruptContext = processor.cp0.getControlRegister(13) != 0;
     	if (isInterruptContext) {
@@ -326,6 +334,10 @@ public class reboot extends HLEModule {
     }
 
     public static void dumpAllThreads() {
+    	if (!enableReboot) {
+    		return;
+    	}
+
     	Memory mem = Memory.getInstance();
     	int threadManInfo = 0x88048740;
 
