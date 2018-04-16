@@ -32,6 +32,7 @@ import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorInt8;
 import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorString;
 import static jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure.charset16;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,11 +46,14 @@ import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
-//See format description: https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
+// See format description: https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
 public abstract class FatVirtualFile implements IVirtualFile {
 	public static Logger log = Logger.getLogger("fat");
+	private static final int STATE_VERSION = 0;
     public final static int sectorSize = 512;
     protected final byte[] currentSector = new byte[sectorSize];
     private static final byte[] emptySector = new byte[sectorSize];
@@ -61,8 +65,8 @@ public abstract class FatVirtualFile implements IVirtualFile {
     protected int[] fatClusterMap;
     private FatFileInfo[] fatFileInfoMap;
     private byte[] pendingCreateDirectoryEntryLFN;
-    private Map<Integer, byte[]> pendingWriteSectors = new HashMap<Integer, byte[]>();
-    private Map<Integer, FatFileInfo> pendingDeleteFiles = new HashMap<Integer, FatFileInfo>();
+    private final Map<Integer, byte[]> pendingWriteSectors = new HashMap<Integer, byte[]>();
+    private final Map<Integer, FatFileInfo> pendingDeleteFiles = new HashMap<Integer, FatFileInfo>();
     private FatBuilder builder;
     private int fatSectorNumber = bootSectorNumber + reservedSectors;
     private int fsInfoSectorNumber = bootSectorNumber + 1;
@@ -532,8 +536,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 				pendingDeleteFile.setFileSize(fileSize);
 				pendingDeleteFile.setLastModified(lastModified);
 			} else {
-				FatFileInfo newFileInfo = new FatFileInfo(deviceName, fileInfo.getFullFileName(), fileName, directory, readOnly, null, fileSize);
-				newFileInfo.setLastModified(lastModified);
+				FatFileInfo newFileInfo = new FatFileInfo(deviceName, fileInfo.getFullFileName(), fileName, directory, readOnly, lastModified, fileSize);
 				newFileInfo.setFileName83(Utilities.readStringNZ(sector, offset + 0, 8 + 3));
 				if (clusterNumber != 0) {
 					int[] clusters = getClusters(clusterNumber);
@@ -875,6 +878,130 @@ public abstract class FatVirtualFile implements IVirtualFile {
 
 		return 0;
 	}
+
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	deviceName = stream.readString();
+    	position = stream.readLong();
+    	totalSectors = stream.readInt();
+    	fatSectors = stream.readInt();
+
+    	fatClusterMap = stream.readIntsWithLength();
+
+    	// Read the fatFileInfoMap in the format: index, object, index, object..., -1
+    	fatFileInfoMap = new FatFileInfo[fatClusterMap.length];
+    	while (true) {
+    		int i = stream.readInt();
+    		if (i < 0) {
+    			// End of the fatFileInfoMap
+    			break;
+    		}
+			fatFileInfoMap[i] = new FatFileInfo();
+			fatFileInfoMap[i].read(stream);
+    	}
+
+    	// Read the parent-children relations
+    	for (int i = 0; i < fatFileInfoMap.length; i++) {
+    		if (fatFileInfoMap[i] != null) {
+    			fatFileInfoMap[i].read(stream, this);
+    		}
+    	}
+
+    	// Read the pendingWriteSectors
+    	pendingWriteSectors.clear();
+    	while (true) {
+    		int sectorNumber = stream.readInt();
+    		if (sectorNumber < 0) {
+    			// End of the pendingWriteSectors
+    			break;
+    		}
+    		byte[] bytes = stream.readBytesWithLength();
+    		pendingWriteSectors.put(sectorNumber, bytes);
+    	}
+
+    	// Read the pendingDeleteFiles
+    	pendingDeleteFiles.clear();
+    	while (true) {
+    		int clusterNumber = stream.readInt();
+    		if (clusterNumber < 0) {
+    			// End of the pendingDeleteFiles
+    			break;
+    		}
+
+    		FatFileInfo info = readFatFileInfo(stream);
+			pendingDeleteFiles.put(clusterNumber, info);
+    	}
+    }
+
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	stream.writeString(deviceName);
+    	stream.writeLong(position);
+    	stream.writeInt(totalSectors);
+    	stream.writeInt(fatSectors);
+
+    	stream.writeIntsWithLength(fatClusterMap);
+
+    	// Write the fatFileInfoMap in the format: index, object, index, object..., -1
+    	for (int i = 0; i < fatFileInfoMap.length; i++) {
+    		if (fatFileInfoMap[i] != null) {
+    			stream.writeInt(i);
+    			fatFileInfoMap[i].write(stream);
+    		}
+    	}
+    	// End of the fatFileInfoMap
+    	stream.writeInt(-1);
+
+    	// Write the parent-children relations
+    	for (int i = 0; i < fatFileInfoMap.length; i++) {
+    		if (fatFileInfoMap[i] != null) {
+    			fatFileInfoMap[i].write(stream, this);
+    		}
+    	}
+
+    	// Write the pendingWriteSectors, followed by -1 to mark the end
+    	for (int sectorNumber : pendingWriteSectors.keySet()) {
+    		stream.writeInt(sectorNumber);
+    		stream.writeBytesWithLength(pendingWriteSectors.get(sectorNumber));
+    	}
+    	stream.writeInt(-1);
+
+    	// Write the pendingDeleteFiles, followed by -1 to mark the end
+    	for (int clusterNumber : pendingDeleteFiles.keySet()) {
+    		stream.writeInt(clusterNumber);
+    		writeFatFileInfo(stream, pendingDeleteFiles.get(clusterNumber));
+    	}
+    	stream.writeInt(-1);
+    }
+
+    private int getFatFileInfoMapIndex(FatFileInfo info) {
+		if (info != null) {
+			for (int i = 0; i < fatFileInfoMap.length; i++) {
+				if (info == fatFileInfoMap[i]) {
+					return i;
+				}
+			}
+		}
+
+		return -1;
+	}
+
+	private FatFileInfo getFatFileInfoFromMapIndex(int index) {
+		if (index < 0 || index >= fatFileInfoMap.length) {
+			return null;
+		}
+		return fatFileInfoMap[index];
+	}
+
+    public FatFileInfo readFatFileInfo(StateInputStream stream) throws IOException {
+    	int mapIndex = stream.readInt();
+    	return getFatFileInfoFromMapIndex(mapIndex);
+    }
+
+    public void writeFatFileInfo(StateOutputStream stream, FatFileInfo info) throws IOException {
+    	int mapIndex = getFatFileInfoMapIndex(info);
+    	stream.writeInt(mapIndex);
+    }
 
     @Override
 	public String toString() {

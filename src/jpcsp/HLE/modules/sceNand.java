@@ -49,10 +49,13 @@ import jpcsp.HLE.VFS.patch.PatchFileVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceNandSpare;
 import jpcsp.hardware.Wlan;
 import jpcsp.settings.Settings;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 public class sceNand extends HLEModule {
     public static Logger log = Modules.getLogger("sceNand");
+	private static final int STATE_VERSION = 0;
     protected boolean writeProtected;
     protected int scramble;
     public static final int pageSize = 0x200; // 512B per page
@@ -185,6 +188,69 @@ public class sceNand extends HLEModule {
 
 		super.start();
 	}
+
+    @Override
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	writeProtected = stream.readBoolean();
+    	scramble = stream.readInt();
+    	for (int i = 0; i < ppnToLbn.length; i++) {
+    		ppnToLbn[i] = stream.readUnsignedShort();
+    	}
+
+    	boolean vFile3present = stream.readBoolean();
+    	if (vFile3present) {
+	    	openFile3();
+	    	vFile3.read(stream);
+    	}
+
+    	boolean vFile603present = stream.readBoolean();
+    	if (vFile603present) {
+    		openFile603();
+    		vFile603.read(stream);
+    	}
+
+    	boolean vFile703present = stream.readBoolean();
+    	if (vFile703present) {
+    		openFile703();
+    		vFile703.read(stream);
+    	}
+
+    	super.read(stream);
+    }
+
+    @Override
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	stream.writeBoolean(writeProtected);
+    	stream.writeInt(scramble);
+    	for (int i = 0; i < ppnToLbn.length; i++) {
+    		stream.writeShort(ppnToLbn[i]);
+    	}
+
+    	if (vFile3 != null) {
+    		stream.writeBoolean(true);
+    		vFile3.write(stream);
+    	} else {
+    		stream.writeBoolean(false);
+    	}
+
+    	if (vFile603 != null) {
+    		stream.writeBoolean(true);
+    		vFile603.write(stream);
+    	} else {
+    		stream.writeBoolean(false);
+    	}
+
+    	if (vFile703 != null) {
+    		stream.writeBoolean(true);
+        	vFile703.write(stream);
+    	} else {
+    		stream.writeBoolean(false);
+    	}
+
+    	super.write(stream);
+    }
 
     private static byte[] readBytes(String fileName) {
     	byte[] bytes = null;
@@ -707,6 +773,44 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	return v0;
     }
 
+    private void openFile3() {
+		if (vFile3 != null) {
+			return;
+		}
+
+		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
+
+		// Apply patches for some files as required
+		vfs = new PatchFileVirtualFileSystem(vfs);
+
+		// All the PRX files need to be compressed so that they can fit
+		// into the space available on flash0.
+		vfs = new CompressPrxVirtualFileSystem(vfs);
+
+		vFile3 = new Fat12VirtualFile("flash0:", vfs, 0xBFE0);
+		vFile3.scan();
+    }
+
+    private void openFile603() {
+		if (vFile603 != null) {
+			return;
+		}
+
+		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
+		vFile603 = new Fat12VirtualFile("flash1:", vfs, 0x1FE0);
+		vFile603.scan();
+    }
+
+    private void openFile703() {
+		if (vFile703 != null) {
+			return;
+		}
+
+		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
+		vFile703 = new Fat12VirtualFile("flash2:", vfs, 0x7E0);
+		vFile703.scan();
+    }
+
     public int hleNandReadPages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc, boolean isLLE) {
     	if (user.isNotNull()) {
 	    	if (dumpBlocks != null && !emulateNand) {
@@ -731,39 +835,19 @@ if (ppn >= 0x900 && ppn < 0xD040) {
 		    			// Master Boot Record
 		    			readMasterBootRecord2(user);
 		    		} else if (ppnToLbn[ppn + i] >= 0x3 && ppnToLbn[ppn + i] < 0x602) {
-		    			if (vFile3 == null) {
-		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
-
-		    				// Apply patches for some files as required
-		    				vfs = new PatchFileVirtualFileSystem(vfs);
-
-		    				// All the PRX files need to be compressed so that they can fit
-		    				// into the space available on flash0.
-		    				vfs = new CompressPrxVirtualFileSystem(vfs);
-
-		    				vFile3 = new Fat12VirtualFile("flash0:", vfs, 0xBFE0);
-		    				vFile3.scan();
-		    			}
+		    			openFile3();
 		    			readFile(user, vFile3, ppn + i, 0x3);
 		    		} else if (ppnToLbn[ppn + i] == 0x602) {
 		    			// Master Boot Record
 		    			readMasterBootRecord602(user);
 		    		} else if (ppnToLbn[ppn + i] >= 0x603 && ppnToLbn[ppn + i] < 0x702) {
-		    			if (vFile603 == null) {
-		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
-		    				vFile603 = new Fat12VirtualFile("flash1:", vfs, 0x1FE0);
-		    				vFile603.scan();
-		    			}
+		    			openFile603();
 		    			readFile(user, vFile603, ppn + i, 0x603);
 		    		} else if (ppnToLbn[ppn + i] == 0x702) {
 		    			// Master Boot Record
 		    			readMasterBootRecord702(user);
 		    		} else if (ppnToLbn[ppn + i] >= 0x703 && ppnToLbn[ppn + i] < 0x742) {
-		    			if (vFile703 == null) {
-		    				IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
-		    				vFile703 = new Fat12VirtualFile("flash2:", vfs, 0x7E0);
-		    				vFile703.scan();
-		    			}
+		    			openFile703();
 		    			readFile(user, vFile703, ppn + i, 0x703);
 		    		} else if (ppnToLbn[ppn + i] == 0x742) {
 		    			// Master Boot Record
@@ -890,10 +974,13 @@ if (ppn >= 0x900 && ppn < 0xD040) {
     	if (user.isNotNull()) {
     		for (int i = 0; i < len; i++) {
     			if (ppnToLbn[ppn + i] >= 0x3 && ppnToLbn[ppn + i] < 0x602) {
+    				openFile3();
 	    			writeFile(user, vFile3, ppn + i, 0x3);
 	    		} else if (ppnToLbn[ppn + i] >= 0x603 && ppnToLbn[ppn + i] < 0x702) {
+	    			openFile603();
 	    			writeFile(user, vFile603, ppn + i, 0x603);
 	    		} else if (ppnToLbn[ppn + i] >= 0x703 && ppnToLbn[ppn + i] < 0x742) {
+	    			openFile703();
 	    			writeFile(user, vFile703, ppn + i, 0x703);
     			} else {
     				log.error(String.format("hleNandWritePages unimplemented write on ppn=0x%X, lbn=0x%X", ppn + i, ppnToLbn[ppn + i]));

@@ -66,8 +66,7 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
         microsecond = cal.get(Calendar.MILLISECOND) * 1000;
     }
 
-    public ScePspDateTime(int year, int month, int day,
-            int hour, int minute, int second, int microsecond) {
+    public ScePspDateTime(int year, int month, int day, int hour, int minute, int second, int microsecond) {
         this.year = year;
         this.month = month;
         this.day = day;
@@ -84,10 +83,22 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
         int day = (time >> 16) & 0x1F;
         int hour = (time >> 11) & 0x1F;
         int minute = (time >> 5) & 0x3F;
-        int second = ((time >> 0) & 0x1F) << 1; // 2 second resolution
+        int second = ((time >> 0) & 0x1F) << 1; // 2 seconds resolution
         int microsecond = 0;
 
         return new ScePspDateTime(year, month, day, hour, minute, second, microsecond);
+    }
+
+    public int toMSDOSTime() {
+    	int time = 0;
+    	time |= ((year - 1980) & 0x7F) << 25;
+    	time |= (month & 0xF) << 21;
+    	time |= (day & 0x1F) << 16;
+    	time |= (hour & 0x1F) << 11;
+    	time |= (minute & 0x3F) << 5;
+    	time |= ((second >> 1) & 0x1F) << 0; // 2 seconds resolution
+
+    	return time;
     }
 
     /** @param time FILETIME time, 100 nanoseconds since the epoch/1601. */
@@ -155,7 +166,6 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
 
         return new ScePspDateTime(year, month, day, hour, minute, second, microsecond);
     }
-
 
 	@Override
 	protected void read() {
