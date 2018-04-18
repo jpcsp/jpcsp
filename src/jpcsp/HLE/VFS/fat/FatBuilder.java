@@ -38,7 +38,6 @@ public class FatBuilder {
     public final static int numberOfFats = 2;
     public final static int reservedSectors = 32;
     public final static int directoryTableEntrySize = 32;
-    public final static int firstClusterNumber = 2;
 	private final FatVirtualFile vFile;
 	private final IVirtualFileSystem vfs;
 	private final int maxNumberClusters;
@@ -48,19 +47,17 @@ public class FatBuilder {
 		this.vFile = vFile;
 		this.vfs = vfs;
 		this.maxNumberClusters = maxNumberClusters;
-
-		firstFreeCluster = firstClusterNumber;
 	}
 
 	public FatFileInfo scan() {
-		// Allocate a whole cluster for the root directory
-		int[] rootDirectoryClusters = allocateClusters(vFile.getClusterSize());
+		firstFreeCluster = vFile.getFirstFreeCluster();
+
 		FatFileInfo rootDirectory = new FatFileInfo(vFile.getDeviceName(), null, null, true, false, null, 0);
 		rootDirectory.setParentDirectory(rootDirectory);
 
 		scan(null, rootDirectory);
 
-		setClusters(rootDirectory, rootDirectoryClusters);
+		vFile.setRootDirectory(rootDirectory);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Using 0x%X clusters out of 0x%X", firstFreeCluster, maxNumberClusters));

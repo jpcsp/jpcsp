@@ -539,13 +539,6 @@ public class sceNand extends HLEModule {
     private void readFile(TPointer buffer, IVirtualFile vFile, int ppn, int lbnStart) {
     	int lbn = ppnToLbn[ppn];
     	int sectorNumber = (lbn - lbnStart) * pagesPerBlock + (ppn % pagesPerBlock);
-if (ppn >= 0x900 && ppn < 0xD040) {
-	sectorNumber -= pagesPerBlock;
-} else if (ppn > 0xD0C0 && ppn < 0xF060) {
-	sectorNumber -= pagesPerBlock;
-} else if (ppn > 0xF0C0) {
-	sectorNumber -= pagesPerBlock;
-}
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("readFile ppn=0x%X, lbnStart=0x%X, lbn=0x%X, sectorNumber=0x%X", ppn, lbnStart, lbn, sectorNumber));
     	}

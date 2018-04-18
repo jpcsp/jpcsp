@@ -28,6 +28,8 @@ import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.hardware.MemoryStick;
 
 public class Fat32VirtualFile extends FatVirtualFile {
+	private final int[] rootDirectoryClusters = new int[1];
+
 	public Fat32VirtualFile(String deviceName, IVirtualFileSystem vfs) {
 		super(deviceName, vfs, (int) (MemoryStick.getTotalSize() / sectorSize));
 	}
@@ -149,5 +151,30 @@ public class Fat32VirtualFile extends FatVirtualFile {
 				writeFatSectorEntry(offset + j, fatEntry);
 			}
 		}
+	}
+
+	@Override
+	protected int getFirstDataClusterOffset() {
+		// The first data cluster is starting at the root directory
+		return 0;
+	}
+
+	@Override
+	protected int getFirstFreeCluster() {
+		// Allocate the first cluster(s) for the root directory
+		int clusterNumber = super.getFirstFreeCluster();
+		for (int i = 0; i < rootDirectoryClusters.length; i++) {
+			rootDirectoryClusters[i] = clusterNumber++;
+		}
+
+		return clusterNumber;
+	}
+
+	@Override
+	protected void setRootDirectory(FatFileInfo rootDirectory) {
+		for (int i = 0; i < rootDirectoryClusters.length; i++) {
+			setFatFileInfoMap(rootDirectoryClusters[i], rootDirectory);
+		}
+		rootDirectory.setClusters(rootDirectoryClusters);
 	}
 }

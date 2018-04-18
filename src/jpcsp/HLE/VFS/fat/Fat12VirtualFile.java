@@ -28,6 +28,8 @@ import static jpcsp.util.Utilities.alignUp;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 
 public class Fat12VirtualFile extends FatVirtualFile {
+	private static final int numberOfRootDirectoryEntries = 0x200;
+
 	public Fat12VirtualFile(String deviceName, IVirtualFileSystem vfs, int totalSectors) {
 		super(deviceName, vfs, totalSectors);
 		// FAT12 has no FS Info sector
@@ -77,7 +79,7 @@ public class Fat12VirtualFile extends FatVirtualFile {
     	storeSectorInt8(currentSector, 16, numberOfFats);
 
     	// Max entries in root dir
-    	storeSectorInt16(currentSector, 17, 0x200);
+    	storeSectorInt16(currentSector, 17, numberOfRootDirectoryEntries);
 
     	// Total sectors
     	storeSectorInt16(currentSector, 19, totalSectors);
@@ -171,5 +173,18 @@ public class Fat12VirtualFile extends FatVirtualFile {
 				writeFatSectorEntry(offset + j + 1, fatEntry2);
 			}
 		}
+	}
+
+	@Override
+	protected int getFirstDataClusterOffset() {
+		// The first data cluster is starting after the root directory
+		return (numberOfRootDirectoryEntries << 5) / sectorSize;
+	}
+
+	@Override
+	protected void setRootDirectory(FatFileInfo rootDirectory) {
+		rootDirectoryStartSectorNumber = getFatSectorNumber() + numberOfFats * fatSectors;
+		rootDirectoryEndSectorNumber = rootDirectoryStartSectorNumber + getFirstDataClusterOffset() - 1;
+		this.rootDirectory = rootDirectory;
 	}
 }

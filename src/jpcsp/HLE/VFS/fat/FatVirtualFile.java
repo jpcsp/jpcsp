@@ -19,7 +19,6 @@ package jpcsp.HLE.VFS.fat;
 import static jpcsp.HLE.VFS.AbstractVirtualFileSystem.IO_ERROR;
 import static jpcsp.HLE.VFS.fat.FatBuilder.bootSectorNumber;
 import static jpcsp.HLE.VFS.fat.FatBuilder.directoryTableEntrySize;
-import static jpcsp.HLE.VFS.fat.FatBuilder.firstClusterNumber;
 import static jpcsp.HLE.VFS.fat.FatBuilder.numberOfFats;
 import static jpcsp.HLE.VFS.fat.FatBuilder.reservedSectors;
 import static jpcsp.HLE.VFS.fat.FatUtils.getSectorNumber;
@@ -55,13 +54,14 @@ public abstract class FatVirtualFile implements IVirtualFile {
 	public static Logger log = Logger.getLogger("fat");
 	private static final int STATE_VERSION = 0;
     public final static int sectorSize = 512;
+    protected final static int firstClusterNumber = 2;
     protected final byte[] currentSector = new byte[sectorSize];
     private static final byte[] emptySector = new byte[sectorSize];
     private String deviceName;
 	private IVirtualFileSystem vfs;
 	private long position;
 	protected int totalSectors;
-    private int fatSectors;
+    protected int fatSectors;
     protected int[] fatClusterMap;
     private FatFileInfo[] fatFileInfoMap;
     private byte[] pendingCreateDirectoryEntryLFN;
@@ -70,6 +70,9 @@ public abstract class FatVirtualFile implements IVirtualFile {
     private FatBuilder builder;
     private int fatSectorNumber = bootSectorNumber + reservedSectors;
     private int fsInfoSectorNumber = bootSectorNumber + 1;
+    protected FatFileInfo rootDirectory;
+    protected int rootDirectoryStartSectorNumber = -1;
+    protected int rootDirectoryEndSectorNumber = -1;
 
 	protected FatVirtualFile(String deviceName, IVirtualFileSystem vfs, int totalSectors) {
 		this.deviceName = deviceName;
@@ -83,7 +86,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		}
 
 		int usedSectors = reservedSectors + fatSectors * numberOfFats;
-		usedSectors += (0x200 << 5) / sectorSize;
+		usedSectors += getFirstDataClusterOffset();
 		int maxNumberClusters = (totalSectors - usedSectors) / getSectorsPerCluster();
 		// Allocate the FAT cluster map
 		fatClusterMap = new int[maxNumberClusters];
@@ -102,6 +105,12 @@ public abstract class FatVirtualFile implements IVirtualFile {
 	protected abstract int getFatEOC();
 	protected abstract int getFatSectors(int totalSectors, int sectorsPerCluster);
 	protected abstract void readBIOSParameterBlock();
+	protected abstract int getFirstDataClusterOffset();
+	protected abstract void setRootDirectory(FatFileInfo rootDirectory);
+
+	protected int getFirstFreeCluster() {
+		return firstClusterNumber + getFirstDataClusterOffset() / getSectorsPerCluster();
+	}
 
 	protected int getClusterSize() {
 		return sectorSize * getSectorsPerCluster();
@@ -155,6 +164,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 	private int getClusterNumber(int sectorNumber) {
 		sectorNumber -= fatSectorNumber;
 		sectorNumber -= numberOfFats * fatSectors;
+		sectorNumber -= getFirstDataClusterOffset();
 		return firstClusterNumber + (sectorNumber / getSectorsPerCluster());
 	}
 
@@ -162,12 +172,14 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		int sectorNumber = (clusterNumber - firstClusterNumber) * getSectorsPerCluster();
 		sectorNumber += fatSectorNumber;
 		sectorNumber += numberOfFats * fatSectors;
+		sectorNumber += getFirstDataClusterOffset();
 		return sectorNumber;
 	}
 
 	private int getSectorOffsetInCluster(int sectorNumber) {
 		sectorNumber -= fatSectorNumber;
 		sectorNumber -= numberOfFats * fatSectors;
+		sectorNumber -= getFirstDataClusterOffset();
 		return sectorNumber % getSectorsPerCluster();
 	}
 
@@ -234,16 +246,9 @@ public abstract class FatVirtualFile implements IVirtualFile {
 
 	protected abstract void readFatSector(int fatIndex);
 
-	private void readDataSector(int sectorNumber) {
+	private void readDataSector(int sectorNumber, int clusterNumber, int sectorOffsetInCluster, FatFileInfo fileInfo) {
 		readEmptySector();
 
-		int clusterNumber = getClusterNumber(sectorNumber);
-		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
-		if (clusterNumber >= fatFileInfoMap.length) {
-			// Reading out of the allocated fat files
-			return;
-		}
-		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
 		if (fileInfo == null) {
 			log.warn(String.format("readDataSector unknown sectorNumber=0x%X, clusterNumber=0x%X", sectorNumber, clusterNumber));
 			return;
@@ -301,6 +306,24 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		}
 	}
 
+	private void readRootDirectory(int sectorNumber) {
+		readDataSector(rootDirectoryStartSectorNumber, 0, sectorNumber, rootDirectory);
+	}
+
+	private void readDataSector(int sectorNumber) {
+		readEmptySector();
+
+		int clusterNumber = getClusterNumber(sectorNumber);
+		if (clusterNumber >= fatFileInfoMap.length) {
+			// Reading out of the allocated fat files
+			return;
+		}
+		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
+		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
+
+		readDataSector(sectorNumber, clusterNumber, sectorOffsetInCluster, fileInfo);
+	}
+
 	protected void readEmptySector() {
 		System.arraycopy(emptySector, 0, currentSector, 0, sectorSize);
 	}
@@ -320,6 +343,11 @@ public abstract class FatVirtualFile implements IVirtualFile {
 			readEmptySector();
 		} else if (sectorNumber >= fatSectorNumber && sectorNumber < fatSectorNumber + fatSectors) {
 			readFatSector(sectorNumber - fatSectorNumber);
+		} else if (sectorNumber >= fatSectorNumber + fatSectors && sectorNumber < fatSectorNumber + numberOfFats * fatSectors) {
+			// Reading from the second FAT table
+			readFatSector(sectorNumber - fatSectorNumber - fatSectors);
+		} else if (sectorNumber >= rootDirectoryStartSectorNumber && sectorNumber <= rootDirectoryEndSectorNumber) {
+			readRootDirectory(sectorNumber - rootDirectoryStartSectorNumber);
 		} else {
 			readDataSector(sectorNumber);
 		}
