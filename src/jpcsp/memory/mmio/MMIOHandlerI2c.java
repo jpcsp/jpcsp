@@ -23,9 +23,11 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceI2c;
 import jpcsp.memory.mmio.cy27040.CY27040;
 import jpcsp.memory.mmio.wm8750.WM8750;
+import jpcsp.scheduler.Scheduler;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -39,6 +41,14 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 	private int transmitData[] = new int[16];
 	private int receiveData[] = new int[16];
 	private int dataIndex = -1;
+	private final IAction completeCommandAction = new CompleteCommandAction();
+
+	private class CompleteCommandAction implements IAction {
+		@Override
+		public void execute() {
+			completeCommand();
+		}
+	}
 
 	public MMIOHandlerI2c(int baseAddress) {
 		super(baseAddress);
@@ -87,7 +97,13 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 		dataIndex = -1;
 	}
 
+	private void completeCommand() {
+		RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_I2C_INTR);
+	}
+
 	private void startCommand(int command) {
+		int delayCompleteCommand = 0;
+
 		// 0x85 is used by sceI2cMasterTransmitReceive after writing the transmit data (prefixed by the transmit address)
 		// 0x8A is used by sceI2cMasterTransmitReceive after writing the receive address
 		// 0x87 is used by sceI2cMasterTransmit after writing the transmit data (prefixed by the transmit address)
@@ -101,6 +117,7 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 				switch (i2cAddress ^ 0x01) {
 					case PSP_CY27040_I2C_ADDR:
 						CY27040.getInstance().executeTransmitReceiveCommand(transmitData, receiveData);
+						delayCompleteCommand = 10000;
 						break;
 					case PSP_WM8750_I2C_ADDR:
 						WM8750.getInstance().executeTransmitReceiveCommand(transmitData, receiveData);
@@ -129,7 +146,11 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 				return;
 		}
 
-		RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_I2C_INTR);
+		if (delayCompleteCommand > 0) {
+			Scheduler.getInstance().addAction(Scheduler.getNow() + delayCompleteCommand, completeCommandAction);
+		} else {
+			completeCommand();
+		}
 	}
 
 	private void acknowledgeInterrupt(int value) {
