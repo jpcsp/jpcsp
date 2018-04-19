@@ -87,6 +87,8 @@ public class sceNand extends HLEModule {
     		0x0043,
     		0x0044,
     		0x0045,
+    		0x0046,
+    		0x0047,
     		0x0054,
     		0x0100,
     		0x0101,
@@ -915,11 +917,6 @@ public class sceNand extends HLEModule {
     private void writeFile(TPointer buffer, IVirtualFile vFile, int ppn, int lbnStart) {
     	int lbn = ppnToLbn[ppn];
     	int sectorNumber = (lbn - lbnStart) * pagesPerBlock + (ppn % pagesPerBlock);
-if (ppn >= 0x900 && ppn < 0xD040) {
-	sectorNumber -= pagesPerBlock;
-} else if (ppn > 0xD0C0 && ppn < 0xF060) {
-	sectorNumber -= pagesPerBlock;
-}
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("writeFile ppn=0x%X, lbnStart=0x%X, lbn=0x%X, sectorNumber=0x%X", ppn, lbnStart, lbn, sectorNumber));
     	}

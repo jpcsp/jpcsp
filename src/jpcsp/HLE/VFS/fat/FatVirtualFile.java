@@ -73,6 +73,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
     protected FatFileInfo rootDirectory;
     protected int rootDirectoryStartSectorNumber = -1;
     protected int rootDirectoryEndSectorNumber = -1;
+    private final byte[] secondFat;
 
 	protected FatVirtualFile(String deviceName, IVirtualFileSystem vfs, int totalSectors) {
 		this.deviceName = deviceName;
@@ -96,6 +97,8 @@ public abstract class FatVirtualFile implements IVirtualFile {
 
 		// Allocate the FAT file info map
 		fatFileInfoMap = new FatFileInfo[maxNumberClusters];
+
+		secondFat = new byte[fatSectors * sectorSize];
 
 		builder = new FatBuilder(this, vfs, maxNumberClusters);
 	}
@@ -324,6 +327,10 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		readDataSector(sectorNumber, clusterNumber, sectorOffsetInCluster, fileInfo);
 	}
 
+	private void readSecondFatSector(int fatIndex) {
+		System.arraycopy(secondFat, fatIndex * sectorSize, currentSector, 0, sectorSize);
+	}
+
 	protected void readEmptySector() {
 		System.arraycopy(emptySector, 0, currentSector, 0, sectorSize);
 	}
@@ -345,7 +352,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 			readFatSector(sectorNumber - fatSectorNumber);
 		} else if (sectorNumber >= fatSectorNumber + fatSectors && sectorNumber < fatSectorNumber + numberOfFats * fatSectors) {
 			// Reading from the second FAT table
-			readFatSector(sectorNumber - fatSectorNumber - fatSectors);
+			readSecondFatSector(sectorNumber - fatSectorNumber - fatSectors);
 		} else if (sectorNumber >= rootDirectoryStartSectorNumber && sectorNumber <= rootDirectoryEndSectorNumber) {
 			readRootDirectory(sectorNumber - rootDirectoryStartSectorNumber);
 		} else {
@@ -710,17 +717,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		}
 	}
 
-	private void writeDataSector(int sectorNumber) {
-		int clusterNumber = getClusterNumber(sectorNumber);
-		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
-		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
-		if (fileInfo == null) {
-			pendingWriteSectors.put(sectorNumber, currentSector.clone());
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("writeDataSector pending sectorNumber=0x%X, clusterNumber=0x%X", sectorNumber, clusterNumber));
-			}
-			return;
-		}
+	private void writeDataSector(int sectorNumber, int clusterNumber, int sectorOffsetInCluster, FatFileInfo fileInfo) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("writeDataSector clusterNumber=0x%X(sector=0x%X), fileInfo=%s", clusterNumber, sectorOffsetInCluster, fileInfo));
 		}
@@ -762,6 +759,29 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		}
 	}
 
+	private void writeRootDirectory(int sectorNumber) {
+		writeDataSector(rootDirectoryStartSectorNumber, 0, sectorNumber, rootDirectory);
+	}
+
+	private void writeDataSector(int sectorNumber) {
+		int clusterNumber = getClusterNumber(sectorNumber);
+		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
+		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
+		if (fileInfo == null) {
+			pendingWriteSectors.put(sectorNumber, currentSector.clone());
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("writeDataSector pending sectorNumber=0x%X, clusterNumber=0x%X", sectorNumber, clusterNumber));
+			}
+			return;
+		}
+
+		writeDataSector(sectorNumber, clusterNumber, sectorOffsetInCluster, fileInfo);
+	}
+
+	private void writeSecondFatSector(int fatIndex) {
+		System.arraycopy(currentSector, 0, secondFat, fatIndex * sectorSize, sectorSize);
+	}
+
 	private void writeEmptySector() {
 	}
 
@@ -770,6 +790,10 @@ public abstract class FatVirtualFile implements IVirtualFile {
 	}
 
 	private void writeSector(int sectorNumber) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("writeSector 0x%X", sectorNumber));
+		}
+
 		if (sectorNumber == bootSectorNumber) {
 			writeBootSector();
 		} else if (sectorNumber == fsInfoSectorNumber) {
@@ -779,8 +803,10 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		} else if (sectorNumber >= fatSectorNumber && sectorNumber < fatSectorNumber + fatSectors) {
 			writeFatSector(sectorNumber - fatSectorNumber);
 		} else if (sectorNumber >= fatSectorNumber + fatSectors && sectorNumber < fatSectorNumber + numberOfFats * fatSectors) {
-			// Writing to the second FAT table, ignore it
-			writeEmptySector();
+			// Writing to the second FAT table
+			writeSecondFatSector(sectorNumber - fatSectorNumber - fatSectors);
+		} else if (sectorNumber >= rootDirectoryStartSectorNumber && sectorNumber <= rootDirectoryEndSectorNumber) {
+			writeRootDirectory(sectorNumber - rootDirectoryStartSectorNumber);
 		} else {
 			writeDataSector(sectorNumber);
 		} 

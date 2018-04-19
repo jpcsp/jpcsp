@@ -145,6 +145,11 @@ public class Fat32VirtualFile extends FatVirtualFile {
 	@Override
 	protected void writeFatSector(int fatIndex) {
 		int offset = (fatIndex * sectorSize) >> 2;
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Fat32VirtualFile.writeFatSector fatIndex=0x%X, offset=0x%X", fatIndex, offset));
+		}
+
 		for (int i = 0, j = 0; i < sectorSize; i += 4, j++) {
 			int fatEntry = readSectorInt32(currentSector, i);
 			if (fatEntry != fatClusterMap[offset + j]) {

@@ -23,7 +23,7 @@ import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorInt16;
 import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorInt32;
 import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorInt8;
 import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorString;
-import static jpcsp.util.Utilities.alignUp;
+import static jpcsp.util.Utilities.alignDown;
 
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 
@@ -153,25 +153,42 @@ public class Fat12VirtualFile extends FatVirtualFile {
 		}
 	}
 
+	private int readFatEntry0(int offset) {
+		return readSectorInt8(currentSector, offset) | ((readSectorInt8(currentSector, offset + 1) & 0x0F) << 8);
+	}
+
+	private int readFatEntry1(int offset) {
+		return (readSectorInt8(currentSector, offset + 1) >> 4) | (readSectorInt8(currentSector, offset + 2) << 4);
+	}
+
 	@Override
 	protected void writeFatSector(int fatIndex) {
 		// TODO Implement the change of the FAT cluster number overlapping 2 sectors
-		int offset = alignUp((fatIndex * sectorSize * 2) / 3, 1);
-		int startIndex = (offset / 2 * 3) - (fatIndex * sectorSize);
-		for (int i = startIndex, j = 0; i < sectorSize - 2; j += 2, i += 3) {
-			int value = readSectorInt8(currentSector, i);
-			value |= readSectorInt8(currentSector, i + 1) << 8;
-			value |= readSectorInt8(currentSector, i + 2) << 16;
+		int index = alignDown(fatIndex * sectorSize * 2 / 3, 1);
+		int offset = (index / 2 * 3) - (fatIndex * sectorSize);
 
-			int fatEntry1 = value & 0xFFF;
-			if (fatEntry1 != fatClusterMap[offset + j]) {
-				writeFatSectorEntry(offset + j, fatEntry1);
-			}
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Fat12VirtualFile.writeFatSector fatIndex=0x%X, index=0x%X, offset=0x%X", fatIndex, index, offset));
+		}
 
-			int fatEntry2 = value >> 12;
-			if (fatEntry2 != fatClusterMap[offset + j + 1]) {
-				writeFatSectorEntry(offset + j + 1, fatEntry2);
+		while (offset < sectorSize && index < fatClusterMap.length) {
+			if (offset >= 0 && offset + 1 < sectorSize && index < fatClusterMap.length) {
+				int fatEntry = readFatEntry0(offset);
+				if (fatEntry != fatClusterMap[index]) {
+					writeFatSectorEntry(index, fatEntry);
+				}
 			}
+			index++;
+
+			if (offset >= -1 && offset + 2 < sectorSize && index < fatClusterMap.length) {
+				int fatEntry = readFatEntry1(offset);
+				if (fatEntry != fatClusterMap[index]) {
+					writeFatSectorEntry(index, fatEntry);
+				}
+			}
+			index++;
+
+			offset += 3;
 		}
 	}
 
