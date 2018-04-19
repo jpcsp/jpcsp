@@ -56,8 +56,7 @@ import jpcsp.util.Utilities;
 public class sceNand extends HLEModule {
     public static Logger log = Modules.getLogger("sceNand");
 	private static final int STATE_VERSION = 0;
-    protected boolean writeProtected;
-    protected int scramble;
+    private static final boolean emulateNand = true;
     public static final int pageSize = 0x200; // 512B per page
     public static final int pagesPerBlock = 0x20; // 16KB per block
     private static final int totalBlocks = 0x800; // 32MB in total
@@ -69,7 +68,8 @@ public class sceNand extends HLEModule {
     private byte[] dumpSpares;
     private int[] dumpResults;
     private int[] ppnToLbn = new int[0x10000];
-    private static final boolean emulateNand = true;
+    private boolean writeProtected;
+    private int scramble;
     private Fat12VirtualFile vFile3;
     private Fat12VirtualFile vFile603;
     private Fat12VirtualFile vFile703;
