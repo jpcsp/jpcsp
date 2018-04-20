@@ -595,6 +595,9 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		}
 
 		if (pendingWriteSectors.isEmpty()) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("checkPendingWriteSectors - no pending sectors"));
+			}
 			return;
 		}
 
@@ -603,12 +606,24 @@ public abstract class FatVirtualFile implements IVirtualFile {
 			return;
 		}
 
+		if (log.isDebugEnabled()) {
+			for (int sectorNumber : pendingWriteSectors.keySet()) {
+				log.debug(String.format("checkPendingWriteSectors pending sectorNumber=0x%X", sectorNumber));
+			}
+		}
+
 		for (int i = 0; i < clusters.length; i++) {
 			int clusterNumber = clusters[i];
 			int sectorNumber = getSectorNumberFromCluster(clusterNumber);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("checkPendingWriteSectors checking for clusterNumber=0x%X, sectorNumber=0x%X-0x%X", clusterNumber, sectorNumber, sectorNumber + getSectorsPerCluster() - 1));
+			}
 			for (int j = 0; j < getSectorsPerCluster(); j++, sectorNumber++) {
 				byte[] pendingWriteSector = pendingWriteSectors.remove(sectorNumber);
 				if (pendingWriteSector != null) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("checkPendingWriteSectors writing pending sectorNumber=0x%X for %s", sectorNumber, fileInfo));
+					}
 					writeFileSector(fileInfo, sectorNumber, pendingWriteSector);
 				}
 			}
@@ -858,6 +873,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 	@Override
 	public int ioWrite(TPointer inputPointer, int inputLength) {
 		int writeLength = 0;
+		int inputOffset = 0;
 		while (inputLength > 0) {
 			int sectorOffset = getSectorOffset(position);
 			int sectorLength = sectorSize - sectorOffset;
@@ -869,13 +885,13 @@ public abstract class FatVirtualFile implements IVirtualFile {
 				readSector(sectorNumber);
 			}
 
-			System.arraycopy(inputPointer.getArray8(length), 0, currentSector, sectorOffset, length);
+			System.arraycopy(inputPointer.getArray8(inputOffset, length), 0, currentSector, sectorOffset, length);
 
 			int sectorNumber = getSectorNumber(position);
 			writeSector(sectorNumber);
 
 			inputLength -= length;
-			inputPointer.add(length);
+			inputOffset += length;
 			position += length;
 			writeLength += length;
 		}

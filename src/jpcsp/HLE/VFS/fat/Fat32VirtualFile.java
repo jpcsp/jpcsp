@@ -179,6 +179,8 @@ public class Fat32VirtualFile extends FatVirtualFile {
 	protected void setRootDirectory(FatFileInfo rootDirectory) {
 		for (int i = 0; i < rootDirectoryClusters.length; i++) {
 			setFatFileInfoMap(rootDirectoryClusters[i], rootDirectory);
+			int nextCluster = i < rootDirectoryClusters.length - 1 ? rootDirectoryClusters[i + 1] : getFatEOC();
+			setFatClusterMap(rootDirectoryClusters[i], nextCluster);
 		}
 		rootDirectory.setClusters(rootDirectoryClusters);
 	}
