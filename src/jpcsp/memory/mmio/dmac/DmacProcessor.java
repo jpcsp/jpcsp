@@ -26,7 +26,23 @@ import jpcsp.state.StateOutputStream;
 
 public class DmacProcessor implements IState {
 	private static final int STATE_VERSION = 0;
-	private static final int STATUS_IN_PROGRESS = 0x1;
+	// Dmac STATUS flags:
+	public static final int DMAC_STATUS_IN_PROGRESS                = 0x00000001;
+	public static final int DMAC_STATUS_REQUIRES_DDR               = 0x00000100;
+	// Dmac ATTRIBUTES flags:
+	public static final int DMAC_ATTRIBUTES_LENGTH                 = 0x00000FFF;
+	//                                                               0x00007000
+	public static final int DMAC_ATTRIBUTES_SRC_STEP_SHIFT         = 12;
+	//                                                               0x00038000
+	public static final int DMAC_ATTRIBUTES_DST_STEP_SHIFT         = 15;
+	//                                                               0x001C0000
+	public static final int DMAC_ATTRIBUTES_SRC_LENGTH_SHIFT_SHIFT = 18;
+	//                                                               0x00E00000
+	public static final int DMAC_ATTRIBUTES_DST_LENGTH_SHIFT_SHIFT = 21;
+	public static final int DMAC_ATTRIBUTES_UNKNOWN                = 0x02000000;
+	public static final int DMAC_ATTRIBUTES_SRC_INCREMENT          = 0x04000000;
+	public static final int DMAC_ATTRIBUTES_DST_INCREMENT          = 0x08000000;
+	public static final int DMAC_ATTRIBUTES_TRIGGER_INTERRUPT      = 0x80000000;
 	private Memory memSrc;
 	private Memory memDst;
 	private IAction interruptAction;
@@ -44,8 +60,8 @@ public class DmacProcessor implements IState {
 
 		@Override
 		public void execute() {
-			// Clear the flag STATUS_IN_PROGRESS
-			status &= ~STATUS_IN_PROGRESS;
+			// Clear the status "in progress"
+			status &= ~DMAC_STATUS_IN_PROGRESS;
 		}
 	}
 
@@ -122,8 +138,8 @@ public class DmacProcessor implements IState {
 		this.status = status;
 
 		// Status "in progress" changed?
-		if ((previousStatus & STATUS_IN_PROGRESS) != (status & STATUS_IN_PROGRESS)) {
-			if ((status & STATUS_IN_PROGRESS) != 0) {
+		if ((previousStatus & DMAC_STATUS_IN_PROGRESS) != (status & DMAC_STATUS_IN_PROGRESS)) {
+			if ((status & DMAC_STATUS_IN_PROGRESS) != 0) {
 				// Starting...
 				dmacThread.execute(memDst, memSrc, dst, src, next, attributes, status, interruptAction, completedAction);
 			} else {

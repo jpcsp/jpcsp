@@ -19,6 +19,16 @@ package jpcsp.memory.mmio.dmac;
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.memory.mmio.MMIO.normalizeAddress;
 import static jpcsp.memory.mmio.MMIOHandlerDdr.DDR_FLUSH_DMAC;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_DST_INCREMENT;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_DST_LENGTH_SHIFT_SHIFT;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_DST_STEP_SHIFT;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_LENGTH;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_SRC_INCREMENT;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_SRC_LENGTH_SHIFT_SHIFT;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_SRC_STEP_SHIFT;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_TRIGGER_INTERRUPT;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_UNKNOWN;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_REQUIRES_DDR;
 
 import java.util.concurrent.Semaphore;
 
@@ -169,13 +179,13 @@ public class DmacThread extends Thread {
 			return false;
 		}
 
-		int srcStep = (attributes >> 12) & 0x7;
-		int dstStep = (attributes >> 15) & 0x7;
-		int srcLengthShift = (attributes >> 18) & 0x7;
-		int dstLengthShift = (attributes >> 21) & 0x7;
-		boolean srcIncrement = (attributes & 0x04000000) != 0;
-		boolean dstIncrement = (attributes & 0x08000000) != 0;
-		int length = attributes & 0xFFF;
+		int srcStep = (attributes >> DMAC_ATTRIBUTES_SRC_STEP_SHIFT) & 0x7;
+		int dstStep = (attributes >> DMAC_ATTRIBUTES_DST_STEP_SHIFT) & 0x7;
+		int srcLengthShift = (attributes >> DMAC_ATTRIBUTES_SRC_LENGTH_SHIFT_SHIFT) & 0x7;
+		int dstLengthShift = (attributes >> DMAC_ATTRIBUTES_DST_LENGTH_SHIFT_SHIFT) & 0x7;
+		boolean srcIncrement = (attributes & DMAC_ATTRIBUTES_SRC_INCREMENT) != 0;
+		boolean dstIncrement = (attributes & DMAC_ATTRIBUTES_DST_INCREMENT) != 0;
+		int length = attributes & DMAC_ATTRIBUTES_LENGTH;
 
 		int srcStepLength = dmacMemcpyStepLength[srcStep];
 		if (srcStepLength == 0) {
@@ -195,7 +205,7 @@ public class DmacThread extends Thread {
 //		}
 
 		// TODO Not sure about the real meaning of this attribute flag...
-		if ((attributes & 0x02000000) != 0) {
+		if ((attributes & DMAC_ATTRIBUTES_UNKNOWN) != 0) {
 			// It seems to completely ignore the other attribute values
 			srcIncrement = true;
 			dstIncrement = true;
@@ -250,7 +260,7 @@ public class DmacThread extends Thread {
 		}
 
 		// Trigger an interrupt if requested in the attributes
-		if ((attributes & 0x80000000) != 0) {
+		if ((attributes & DMAC_ATTRIBUTES_TRIGGER_INTERRUPT) != 0) {
 			if (interruptAction != null) {
 				interruptAction.execute();
 			}
@@ -298,9 +308,9 @@ public class DmacThread extends Thread {
 	private void dmacMemcpy() {
 		boolean waitForTrigger = false;
 
-		if ((status & 0x00000800) != 0) {
+		if ((status & DMAC_STATUS_REQUIRES_DDR) != 0) {
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("dmacMemcpy requiring a call to sceDdrFlush(0x%X)", DDR_FLUSH_DMAC));
+				log.debug(String.format("dmacMemcpy requiring a call to sceDdrFlush(0x%X), dst=0x%08X, src=0x%08X, attr=0x%08X, next=0x%08X, status=0x%X", DDR_FLUSH_DMAC, dst, src, attributes, next, status));
 			}
 			trigger.drainPermits();
 			waitForTrigger = true;
