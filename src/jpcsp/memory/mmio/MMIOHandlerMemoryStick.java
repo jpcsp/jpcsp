@@ -175,6 +175,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	private int readSize;
 	private int writeAddress;
 	private int writeSize;
+	private int tpcExSetCmdIndex;
 	private int cmd;
 	private int oobLength;
 	private int startBlock;
@@ -497,6 +498,11 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		}
 	}
 
+	private int getStatus() {
+		// Lowest 4 bits of the status are identical to bits 4..7 from MS_INT_REG_ADDRESS register
+		return (status & ~0xF) | ((registers[MS_INT_REG_ADDRESS] >> 4) & 0xF);
+	}
+
 	private void setBusy() {
 		commandState |= MS_COMMANDSTATE_BUSY;
 	}
@@ -593,6 +599,15 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_SET_CMD"));
 				}
 				break;
+			case MS_TPC_EX_SET_CMD:
+				// Clear the CED (Command EnD) bit in the INT register
+				registers[MS_INT_REG_ADDRESS] &= ~MS_INT_REG_CED;
+				// Parameters will be written during writeTPCData()
+				tpcExSetCmdIndex = 0;
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_EX_SET_CMD"));
+				}
+				break;
 			case MS_TPC_GET_INT:
 				// Data will be retrieved at next readData()
 				if (log.isDebugEnabled()) {
@@ -671,6 +686,14 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 			case MS_CMD_SLEEP:
 			case MSPRO_CMD_SLEEP:
 				// Simply ignore these commands
+				break;
+			case MSPRO_CMD_WRITE_DATA:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerMemoryStick.startCmd MSPRO_CMD_WRITE_DATA dataCount=0x%04X, dataAddress=0x%08X", getDataCount(), getDataAddress()));
+				}
+				setNumberOfPages(getDataCount());
+				setStartBlock(0);
+				setPageStartLba(getDataAddress());
 				break;
 			default:
 				log.error(String.format("MMIOHandlerMemoryStick.startCmd unknown cmd=0x%02X", cmd));
@@ -973,6 +996,26 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				// Ignore further data
 				tpc = -1;
 				break;
+			case MS_TPC_EX_SET_CMD:
+				switch (tpcExSetCmdIndex) {
+					case 0:
+						setCmd(value & 0xFF);
+						registers[0x11] = (value >>  8) & 0xFF;
+						registers[0x12] = (value >> 16) & 0xFF;
+						registers[0x13] = (value >> 24) & 0xFF;
+						break;
+					case 1:
+						registers[0x14] = (value >>  0) & 0xFF;
+						registers[0x15] = (value >>  8) & 0xFF;
+						registers[0x16] = (value >> 16) & 0xFF;
+						startCmd(cmd);
+						break;
+					default:
+						log.error(String.format("Too many parameters to MS_TPC_EX_SET_CMD: 0x%X", value));
+						break;
+				}
+				tpcExSetCmdIndex++;
+				break;
 		}
 	}
 
@@ -1074,6 +1117,9 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		pageDataIndex += 4;
 		if (pageDataIndex >= PAGE_SIZE) {
 			pageDataIndex = 0;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("MMIOHandlerMemoryStick.writePageData32 writing page 0x%X/0x%X", pageIndex, numberOfPages));
+			}
 			writePageBuffer();
 			pageIndex++;
 			if (pageIndex >= numberOfPages) {
@@ -1100,7 +1146,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 			case 0x28: value = readPageData16(); break;
 			case 0x30: value = tpc; break;
 			case 0x34: value = readData16(); break;
-			case 0x38: value = status; break;
+			case 0x38: value = getStatus(); break;
 			case 0x3C: value = sys; break;
 			default: value = super.read16(address); break;
 		}
