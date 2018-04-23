@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.VFS.compress;
 
 import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_RDONLY;
+import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_O_RDWR;
 import static jpcsp.format.PSP.AES_KEY_SIZE;
 import static jpcsp.format.PSP.CHECK_SIZE;
 import static jpcsp.format.PSP.CMAC_DATA_HASH_SIZE;
@@ -552,7 +553,7 @@ public class CompressPrxVirtualFileSystem extends AbstractProxyVirtualFileSystem
 
 	@Override
 	public IVirtualFile ioOpen(String fileName, int flags, int mode) {
-		if (isPrx(fileName)) {
+		if (isPrx(fileName) && (flags & PSP_O_RDWR) == PSP_O_RDONLY) {
 			return new ByteArrayVirtualFile(getCompressedPrxFile(null, fileName));
 		}
 

@@ -308,6 +308,37 @@ public class sceNand extends HLEModule {
     	}
     }
 
+    public static void descramblePage(int scramble, int ppn, int[] source, int[] destination) {
+    	int scrmb = rotateRight(scramble, 21);
+    	int key = rotateRight(ppn, 17) ^ (scrmb * 7);
+    	int scrambleOffset = (((ppn ^ scrmb) & 0x1F) << 4) >> 2;
+
+    	final int pageSize4 = pageSize >> 2;
+    	for (int i = 0; i < pageSize4; ) {
+    		int value0 = source[scrambleOffset++];
+    		int value1 = source[scrambleOffset++];
+    		int value2 = source[scrambleOffset++];
+    		int value3 = source[scrambleOffset++];
+    		if (scrambleOffset >= pageSize4) {
+    			scrambleOffset -= pageSize4;
+    		}
+    		value0 -= key;
+    		key += value0;
+    		destination[i++] = value0;
+    		value1 -= key;
+    		key ^= value1;
+    		destination[i++] = value1;
+    		value2 -= key;
+    		key -= value2;
+    		destination[i++] = value2;
+    		value3 -= key;
+    		key += value3;
+    		destination[i++] = value3;
+    		key += scrmb;
+    		key = Integer.reverse(key);
+    	}
+    }
+
     protected void descramblePage(int ppn, TPointer user, byte[] blocks, int offset) {
     	int scrmb = rotateRight(scramble, 21);
     	int key = rotateRight(ppn, 17) ^ (scrmb * 7);
@@ -928,7 +959,7 @@ public class sceNand extends HLEModule {
     	vFile.ioWrite(buffer, pageSize);
     }
 
-    public int hleNandWritePages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc, boolean isLLE) {
+    public int hleNandWriteSparePages(int ppn, TPointer spare, int len, boolean raw, boolean spareUserEcc, boolean isLLE) {
     	int result = 0;
 
     	if (spare.isNotNull()) {
@@ -945,7 +976,7 @@ public class sceNand extends HLEModule {
 	    			for (int j = offset; j < ppnToLbn.length; j += pagesPerBlock) {
 	    				if (ppnToLbn[j] == sceNandSpare.lbn) {
 	    					if (log.isDebugEnabled()) {
-	    						log.debug(String.format("hleNandWritePages moving lbn=0x%04X from ppn=0x%X to ppn=0x%X", sceNandSpare.lbn, j, ppn + i));
+	    						log.debug(String.format("hleNandWriteSparePages moving lbn=0x%04X from ppn=0x%X to ppn=0x%X", sceNandSpare.lbn, j, ppn + i));
 	    					}
 	    					ppnToLbn[j] = 0xFFFF;
 	    					break;
@@ -955,11 +986,17 @@ public class sceNand extends HLEModule {
 	    			if (ppnToLbn[ppn + i] == 0xFFFF) {
 	    				ppnToLbn[ppn + i] = sceNandSpare.lbn;
 	    			} else {
-	    				log.error(String.format("hleNandWritePages moving lbn=0x%04X to ppn=0x%X not being free", sceNandSpare.lbn, ppn + i));
+	    				log.error(String.format("hleNandWriteSparePages moving lbn=0x%04X to ppn=0x%X not being free", sceNandSpare.lbn, ppn + i));
 	    			}
 	    		}
     		}
     	}
+
+    	return result;
+    }
+
+    public int hleNandWriteUserPages(int ppn, TPointer user, int len, boolean raw, boolean isLLE) {
+    	int result = 0;
 
     	if (user.isNotNull()) {
     		for (int i = 0; i < len; i++) {
@@ -973,13 +1010,22 @@ public class sceNand extends HLEModule {
 	    			openFile703();
 	    			writeFile(user, vFile703, ppn + i, 0x703);
     			} else {
-    				log.error(String.format("hleNandWritePages unimplemented write on ppn=0x%X, lbn=0x%X", ppn + i, ppnToLbn[ppn + i]));
+    				log.error(String.format("hleNandWriteUserPages unimplemented write on ppn=0x%X, lbn=0x%X", ppn + i, ppnToLbn[ppn + i]));
     			}
     			user.add(pageSize);
     		}
     	}
 
     	return result;
+    }
+
+    public int hleNandWritePages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc, boolean isLLE) {
+    	int result = hleNandWriteSparePages(ppn, spare, len, raw, spareUserEcc, isLLE);
+    	if (result != 0) {
+    		return result;
+    	}
+
+    	return hleNandWriteUserPages(ppn, user, len, raw, isLLE);
     }
 
     public int getLbnFromPpn(int ppn) {

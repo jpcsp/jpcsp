@@ -382,7 +382,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		if (fileInfo != null) {
 			// Freeing the cluster?
 			if (isFreeClusterNumber(value)) {
-				if (pendingDeleteFiles.containsValue(fileInfo)) {
+				if (pendingDeleteFiles.get(clusterNumber) == fileInfo) {
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("Deleting the file '%s'", fileInfo.getFullFileName()));
 					}
@@ -394,6 +394,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 					if (result < 0) {
 						log.warn(String.format("Cannot delete the file '%s'", fileInfo.getFullFileName()));
 					}
+					pendingDeleteFiles.remove(clusterNumber);
 				}
 			} else {
 				// Setting a new data cluster number?
@@ -653,41 +654,49 @@ public abstract class FatVirtualFile implements IVirtualFile {
 			log.debug(String.format("updateDirectoryEntry on %s: from %s, to %s", fileInfo, Utilities.getMemoryDump(directoryData, directoryDataOffset, directoryTableEntrySize), Utilities.getMemoryDump(sector, sectorOffset, directoryTableEntrySize)));
 		}
 
-		int oldClusterNumber = readSectorInt16(directoryData, directoryDataOffset + 20) << 16;
-		oldClusterNumber |= readSectorInt16(directoryData, directoryDataOffset + 26);
-
-		int newClusterNumber = readSectorInt16(sector, sectorOffset + 20) << 16;
-		newClusterNumber |= readSectorInt16(sector, sectorOffset + 26);
-		long newFileSize = readSectorInt32(sector, sectorOffset + 28) & 0xFFFFFFFFL;
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("updateDirectoryEntry oldClusterNumber=0x%X, newClusterNumber=0x%X, newFileSize=0x%X", oldClusterNumber, newClusterNumber, newFileSize));
-		}
-
-		String oldFileName83 = Utilities.readStringNZ(directoryData, directoryDataOffset + 0, 8 + 3);
-		String newFileName83 = Utilities.readStringNZ(sector, sectorOffset + 0, 8 + 3);
-
-		if (!oldFileName83.equals(newFileName83)) {
-			// TODO
-			log.warn(String.format("updateDirectoryEntry unimplemented change of 8.3. file name: from '%s' to '%s'", oldFileName83, newFileName83));
-		}
-
-		FatFileInfo childFileInfo = fileInfo.getChildByFileName83(oldFileName83);
-		if (childFileInfo == null) {
-			log.warn(String.format("updateDirectoryEntry child '%s' not found", oldFileName83));
+		boolean oldLFN = isLongFileNameDirectoryEntry(directoryData, directoryDataOffset);
+		boolean newLFN = isLongFileNameDirectoryEntry(sector, sectorOffset);
+		if (oldLFN != newLFN) {
+			log.error(String.format("updateDirectoryEntry changing LongFileName entries not implemented: %s from %s, to %s", fileInfo, Utilities.getMemoryDump(directoryData, directoryDataOffset, directoryTableEntrySize), Utilities.getMemoryDump(sector, sectorOffset, directoryTableEntrySize)));
+		} else if (newLFN) {
+			log.error(String.format("updateDirectoryEntry updating LongFileName entries not implemented: %s from %s, to %s", fileInfo, Utilities.getMemoryDump(directoryData, directoryDataOffset, directoryTableEntrySize), Utilities.getMemoryDump(sector, sectorOffset, directoryTableEntrySize)));
 		} else {
-			// Update the file size.
-			// Rem.: this must be done before calling checkPendingWriteSectors
-			childFileInfo.setFileSize(newFileSize);
+			int oldClusterNumber = readSectorInt16(directoryData, directoryDataOffset + 20) << 16;
+			oldClusterNumber |= readSectorInt16(directoryData, directoryDataOffset + 26);
 
-			// Update the clusterNumber
-			if (oldClusterNumber != newClusterNumber) {
-				int[] clusters = getClusters(newClusterNumber);
-				builder.setClusters(childFileInfo, clusters);
+			int newClusterNumber = readSectorInt16(sector, sectorOffset + 20) << 16;
+			newClusterNumber |= readSectorInt16(sector, sectorOffset + 26);
+			long newFileSize = readSectorInt32(sector, sectorOffset + 28) & 0xFFFFFFFFL;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("updateDirectoryEntry oldClusterNumber=0x%X, newClusterNumber=0x%X, newFileSize=0x%X", oldClusterNumber, newClusterNumber, newFileSize));
+			}
 
-				// The clusters have been updated for this file,
-				// check if there were pending sector writes in the new
-				// clusters
-				checkPendingWriteSectors(childFileInfo);
+			String oldFileName83 = Utilities.readStringNZ(directoryData, directoryDataOffset + 0, 8 + 3);
+			String newFileName83 = Utilities.readStringNZ(sector, sectorOffset + 0, 8 + 3);
+
+			if (!oldFileName83.equals(newFileName83)) {
+				// TODO
+				log.warn(String.format("updateDirectoryEntry unimplemented change of 8.3. file name: from '%s' to '%s'", oldFileName83, newFileName83));
+			}
+
+			FatFileInfo childFileInfo = fileInfo.getChildByFileName83(oldFileName83);
+			if (childFileInfo == null) {
+				log.warn(String.format("updateDirectoryEntry child '%s' not found", oldFileName83));
+			} else {
+				// Update the file size.
+				// Rem.: this must be done before calling checkPendingWriteSectors
+				childFileInfo.setFileSize(newFileSize);
+
+				// Update the clusterNumber
+				if (oldClusterNumber != newClusterNumber) {
+					int[] clusters = getClusters(newClusterNumber);
+					builder.setClusters(childFileInfo, clusters);
+
+					// The clusters have been updated for this file,
+					// check if there were pending sector writes in the new
+					// clusters
+					checkPendingWriteSectors(childFileInfo);
+				}
 			}
 		}
 	}
