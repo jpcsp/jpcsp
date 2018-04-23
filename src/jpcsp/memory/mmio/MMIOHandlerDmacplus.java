@@ -160,7 +160,10 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 	}
 
 	public void setDisplayFlags(int displayFlags) {
-		this.displayFlags = displayFlags;
+		if (this.displayFlags != displayFlags) {
+			this.displayFlags = displayFlags;
+			updateDisplay();
+		}
 	}
 
 	private void updateDisplay() {
@@ -171,7 +174,7 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("updateDisplay.hleDisplaySetFrameBuf 0x%08X, 0x%X, 0x%X", frameBufferAddr, displayFrameBufferWidth, displayPixelFormat));
+			log.debug(String.format("updateDisplay.hleDisplaySetFrameBuf frameBufferAddr=0x%08X, displayFrameBufferWidth=0x%X, displayPixelFormat=0x%X, displayFlags=0x%X", frameBufferAddr, displayFrameBufferWidth, displayPixelFormat, displayFlags));
 		}
 
 		sceDisplayModule.hleDisplaySetFrameBuf(frameBufferAddr, displayFrameBufferWidth, displayPixelFormat, 0);
