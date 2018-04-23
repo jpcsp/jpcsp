@@ -183,7 +183,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	private final int[] pageBuffer = new int[(PAGE_SIZE) >> 2];
 	private final IntArrayMemory pageBufferMemory = new IntArrayMemory(pageBuffer);
 	private final TPointer pageBufferPointer = pageBufferMemory.getPointer();
-	private int pageStartLba;
+	private int pageLba;
 	private int numberOfPages;
 	private int pageDataIndex;
 	private int pageIndex;
@@ -232,7 +232,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		startBlock = stream.readInt();
 		oobIndex = stream.readInt();
 		stream.readInts(pageBuffer);
-		pageStartLba = stream.readInt();
+		pageLba = stream.readInt();
 		numberOfPages = stream.readInt();
 		pageDataIndex = stream.readInt();
 		pageIndex = stream.readInt();
@@ -259,7 +259,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		stream.writeInt(startBlock);
 		stream.writeInt(oobIndex);
 		stream.writeInts(pageBuffer);
-		stream.writeInt(pageStartLba);
+		stream.writeInt(pageLba);
 		stream.writeInt(numberOfPages);
 		stream.writeInt(pageDataIndex);
 		stream.writeInt(pageIndex);
@@ -380,7 +380,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		writeSize = 0;
 		cmd = 0;
 		numberOfPages = 0;
-		pageStartLba = 0;
+		pageLba = 0;
 		pageIndex = 0;
 		pageDataIndex = 0;
 		startBlock = 0;
@@ -693,7 +693,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				}
 				setNumberOfPages(getDataCount());
 				setStartBlock(0);
-				setPageStartLba(getDataAddress());
+				setPageLba(getDataAddress());
 				break;
 			default:
 				log.error(String.format("MMIOHandlerMemoryStick.startCmd unknown cmd=0x%02X", cmd));
@@ -774,6 +774,9 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 
 		switch (cmd) {
 			case MS_CMD_BLOCK_READ:
+				if (pageDataIndex == 0) {
+					readPageBuffer();
+				}
 				value = pageBufferMemory.read16(pageDataIndex);
 				break;
 			default:
@@ -794,8 +797,6 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				unk08 |= 0x0040;
 				unk08 &= ~0x000F; // Clear error code
 				setInterrupt(0x0004);
-			} else {
-				readPageBuffer();
 			}
 		}
 
@@ -808,12 +809,10 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		pageDataIndex = 0;
 	}
 
-	private void setPageStartLba(int pageStartLba) {
-		this.pageStartLba = pageStartLba;
+	private void setPageLba(int pageLba) {
+		this.pageLba = pageLba;
 		pageIndex = 0;
 		pageDataIndex = 0;
-
-		readPageBuffer();
 	}
 
 	private void setStartBlock(int startBlock) {
@@ -859,18 +858,18 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	private void readPageBuffer() {
 		if (cmd == MS_CMD_BLOCK_READ || cmd == MSPRO_CMD_READ_DATA) {
 			long offset = 0L;
-			int pageLba = pageStartLba + pageIndex;
+			int lba = pageLba;
 			if (startBlock != 0xFFFF) {
 				pageLba += startBlock * PAGES_PER_BLOCK;
 			}
 
 			// Invalid page number set during boot sequence
-			if (pageStartLba == 0x4000) {
+			if (pageLba == 0x4000) {
 				pageBufferPointer.clear(PAGE_SIZE);
-			} else if (pageLba == 0) {
+			} else if (lba == 0) {
 				readMasterBootRecord();
-			} else if (pageLba >= FIRST_PAGE_LBA) {
-				offset = (pageLba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
+			} else if (lba >= FIRST_PAGE_LBA) {
+				offset = (lba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
 
 				sceMSstorModule.hleMSstorPartitionIoLseek(null, offset, PSP_SEEK_SET);
 				sceMSstorModule.hleMSstorPartitionIoRead(null, pageBufferPointer, PAGE_SIZE);
@@ -883,8 +882,10 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				for (int i = 0; i < buffer.length; i++) {
 					buffer[i] = pageBufferPointer.getValue8(i);
 				}
-				log.debug(String.format("MMIOHandlerMemoryStick.readPageBuffer startBlock=0x%X, pageLba=0x%X, offset=0x%X: %s", startBlock, pageLba, offset, Utilities.getMemoryDump(buffer)));
+				log.debug(String.format("MMIOHandlerMemoryStick.readPageBuffer startBlock=0x%X, lba=0x%X, offset=0x%X: %s", startBlock, lba, offset, Utilities.getMemoryDump(buffer)));
 			}
+
+			pageLba++;
 		}
 	}
 
@@ -925,9 +926,12 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 
 		switch (cmd) {
 			case MSPRO_CMD_READ_ATRB:
-				value = msproAttributeMemory.read32(((pageStartLba + pageIndex) * PAGE_SIZE) + pageDataIndex);
+				value = msproAttributeMemory.read32((pageLba * PAGE_SIZE) + pageDataIndex);
 				break;
 			case MSPRO_CMD_READ_DATA:
+				if (pageDataIndex == 0) {
+					readPageBuffer();
+				}
 				value = pageBufferMemory.read32(pageDataIndex);
 				break;
 			default:
@@ -949,8 +953,6 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				unk08 |= 0x0040;
 				unk08 &= ~0x000F; // Clear error code
 				setInterrupt(0x0004);
-			} else {
-				readPageBuffer();
 			}
 		}
 
@@ -1050,19 +1052,19 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				}
 				break;
 			case 3:
-				pageStartLba = (pageStartLba & 0x00FFFFFF) | (value << 24);
+				pageLba = (pageLba & 0x00FFFFFF) | (value << 24);
 				break;
 			case 4:
-				pageStartLba = (pageStartLba & 0xFF00FFFF) | (value << 16);
+				pageLba = (pageLba & 0xFF00FFFF) | (value << 16);
 				break;
 			case 5:
-				pageStartLba = (pageStartLba & 0xFFFF00FF) | (value << 8);
+				pageLba = (pageLba & 0xFFFF00FF) | (value << 8);
 				break;
 			case 6:
 				setStartBlock(0);
-				setPageStartLba((pageStartLba & 0xFFFFFF00) | value);
+				setPageLba((pageLba & 0xFFFFFF00) | value);
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("pageStartLba=0x%X", pageStartLba));
+					log.debug(String.format("pageLba=0x%X", pageLba));
 				}
 				break;
 			default:
@@ -1075,9 +1077,9 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	private void writePageBuffer() {
 		if (cmd == MSPRO_CMD_WRITE_DATA) {
 			long offset = 0L;
-			int pageLba = pageStartLba + pageIndex;
+			int lba = pageLba;
 			if (startBlock != 0xFFFF) {
-				pageLba += startBlock * PAGES_PER_BLOCK;
+				lba += startBlock * PAGES_PER_BLOCK;
 			}
 
 			if (log.isDebugEnabled()) {
@@ -1085,17 +1087,19 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				for (int i = 0; i < buffer.length; i++) {
 					buffer[i] = pageBufferPointer.getValue8(i);
 				}
-				log.debug(String.format("MMIOHandlerMemoryStick.writePageBuffer startBlock=0x%X, pageLba=0x%X, offset=0x%X: %s", startBlock, pageLba, offset, Utilities.getMemoryDump(buffer)));
+				log.debug(String.format("MMIOHandlerMemoryStick.writePageBuffer startBlock=0x%X, lba=0x%X, offset=0x%X: %s", startBlock, lba, offset, Utilities.getMemoryDump(buffer)));
 			}
 
-			if (pageLba >= FIRST_PAGE_LBA) {
-				offset = (pageLba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
+			if (lba >= FIRST_PAGE_LBA) {
+				offset = (lba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
 
 				sceMSstorModule.hleMSstorPartitionIoLseek(null, offset, PSP_SEEK_SET);
 				sceMSstorModule.hleMSstorPartitionIoWrite(null, pageBufferPointer, PAGE_SIZE);
 			} else {
-				log.error(String.format("MMIOHandlerMemoryStick.writePageBuffer invalid pageLba=0x%X", pageLba));
+				log.error(String.format("MMIOHandlerMemoryStick.writePageBuffer invalid lba=0x%X", lba));
 			}
+
+			pageLba++;
 		}
 	}
 
@@ -1183,7 +1187,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 			case 0x10: setNumberOfPages(value); break;
 			case 0x12: oobLength = value; break;
 			case 0x14: setStartBlock(value); break;
-			case 0x16: setCmd(MS_CMD_BLOCK_READ); setPageStartLba(value); break;
+			case 0x16: setCmd(MS_CMD_BLOCK_READ); setPageLba(value); break;
 			case 0x20: break; // TODO Unknown
 			case 0x30: startTPC(value & 0xFFFF); break;
 			case 0x38: status = value & 0xFFFF; break;
