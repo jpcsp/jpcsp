@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
@@ -25,12 +26,14 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 
 import java.util.LinkedList;
@@ -166,9 +169,16 @@ public class sceUmdUser extends HLEModule {
         return stat;
     }
 
+    public int checkWantedStat(int wantedStat) {
+    	if ((wantedStat & (PSP_UMD_READY | PSP_UMD_READABLE | PSP_UMD_NOT_READY | PSP_UMD_PRESENT | PSP_UMD_NOT_PRESENT)) == 0) {
+    		throw new SceKernelErrorException(ERROR_ERRNO_INVALID_ARGUMENT);
+    	}
+    	return wantedStat;
+    }
+
     protected boolean checkDriveStat(int wantedStat) {
         int currentStat = getUmdStat();
-        return ((currentStat & wantedStat) != 0);
+        return (currentStat & wantedStat) != 0;
     }
 
     protected void removeWaitingThread(SceKernelThreadInfo thread) {
@@ -358,17 +368,17 @@ public class sceUmdUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x8EF08FCE, version = 150, checkInsideInterrupt = true)
-    public int sceUmdWaitDriveStat(int wantedStat) {
+    public int sceUmdWaitDriveStat(@CheckArgument("checkWantedStat") int wantedStat) {
         return hleUmdWaitDriveStat(wantedStat, false, false, 0);
     }
 
     @HLEFunction(nid = 0x56202973, version = 150, checkInsideInterrupt = true)
-    public int sceUmdWaitDriveStatWithTimer(int wantedStat, int timeout) {
+    public int sceUmdWaitDriveStatWithTimer(@CheckArgument("checkWantedStat") int wantedStat, int timeout) {
         return hleUmdWaitDriveStat(wantedStat, false, true, timeout);
     }
 
     @HLEFunction(nid = 0x4A9E5E29, version = 150, checkInsideInterrupt = true)
-    public int sceUmdWaitDriveStatCB(int wantedStat, int timeout) {
+    public int sceUmdWaitDriveStatCB(@CheckArgument("checkWantedStat") int wantedStat, int timeout) {
         return hleUmdWaitDriveStat(wantedStat, true, true, timeout);
     }
 
