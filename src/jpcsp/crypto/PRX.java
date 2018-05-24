@@ -400,8 +400,18 @@ public class PRX {
 
             System.arraycopy(oldbuf1, 0x40, oldbuf, 0x40, 0x40);
 
+            // Convert the u32 pti.key to u8
+            byte[] keyBytes = new byte[pti.key.length << 2];
+            for (int i = 0, j = 0; i < pti.key.length; i++) {
+            	int u32 = pti.key[i];
+            	keyBytes[j++] = (byte) (u32 >>  0);
+            	keyBytes[j++] = (byte) (u32 >>  8);
+            	keyBytes[j++] = (byte) (u32 >> 16);
+            	keyBytes[j++] = (byte) (u32 >> 24);
+            }
+
             for (int iXOR = 0; iXOR < 0x70; iXOR++) {
-                oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x40 + iXOR] ^ (byte) pti.key[0x14 + iXOR]);
+                oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x40 + iXOR] ^ keyBytes[0x14 + iXOR]);
             }
 
             // Scramble the data by calling CMD7.
@@ -412,7 +422,7 @@ public class PRX {
             System.arraycopy(bScrambleOut.array(), 0, oldbuf, 0x2C, 0x70);
 
             for (int iXOR = 0x6F; iXOR >= 0; iXOR--) {
-                oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x2C + iXOR] ^ (byte) pti.key[0x20 + iXOR]);
+                oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x2C + iXOR] ^ keyBytes[0x20 + iXOR]);
             }
 
             for (int k = 0; k < 0x30; k++) {
