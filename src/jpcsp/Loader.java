@@ -190,6 +190,9 @@ public class Loader {
 
             f.position(currentOffset);
             if (LoadELF(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall)) {
+            	if (!fromSyscall) {
+            		Emulator.getInstance().setFirmwareVersion(FIRMWAREVERSION_HOMEBREW);
+            	}
                 break;
             }
 
