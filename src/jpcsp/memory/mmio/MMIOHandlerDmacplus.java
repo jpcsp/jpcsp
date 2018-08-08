@@ -18,6 +18,7 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.Modules.sceDisplayModule;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_DMACPLUS_INTR;
+import static jpcsp.HLE.modules.sceDisplay.PSP_DISPLAY_SETBUF_IMMEDIATE;
 
 import java.io.IOException;
 
@@ -177,7 +178,7 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 			log.debug(String.format("updateDisplay.hleDisplaySetFrameBuf frameBufferAddr=0x%08X, displayFrameBufferWidth=0x%X, displayPixelFormat=0x%X, displayFlags=0x%X", frameBufferAddr, displayFrameBufferWidth, displayPixelFormat, displayFlags));
 		}
 
-		sceDisplayModule.hleDisplaySetFrameBuf(frameBufferAddr, displayFrameBufferWidth, displayPixelFormat, 0);
+		sceDisplayModule.hleDisplaySetFrameBuf(frameBufferAddr, displayFrameBufferWidth, displayPixelFormat, PSP_DISPLAY_SETBUF_IMMEDIATE);
 		sceDisplayModule.step();
 	}
 
