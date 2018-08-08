@@ -35,6 +35,7 @@ import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelSemaInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
@@ -289,6 +290,9 @@ public class SemaManager {
     }
 
     public int sceKernelCreateSema(String name, int attr, int initVal, int maxVal, TPointer option) {
+    	if (name == null) {
+    		return SceKernelErrors.ERROR_KERNEL_ERROR;
+    	}
         SceKernelSemaInfo sema = hleKernelCreateSema(name, attr, initVal, maxVal, option);
 
         if (log.isDebugEnabled()) {

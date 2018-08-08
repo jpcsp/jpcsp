@@ -1353,6 +1353,9 @@ public class RuntimeContext {
     }
 
     public static String readStringNZ(int address, int maxLength) {
+    	if (address == 0) {
+    		return null;
+    	}
     	return Utilities.readStringNZ(address, maxLength);
     }
 
