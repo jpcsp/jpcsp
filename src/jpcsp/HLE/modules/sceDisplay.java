@@ -1006,9 +1006,14 @@ public class sceDisplay extends HLEModule {
         // E.g. sceKernelLoadExec() is not clearing/resetting the display.
         if (!HLEModuleManager.getInstance().isStartFromSyscall()) {
             mode = 0;
-            fb = new FrameBufferSettings(START_VRAM, 512, Screen.width, Screen.height, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
+            final int bufferWidth = 512;
+            fb = new FrameBufferSettings(START_VRAM, bufferWidth, Screen.width, Screen.height, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
             ge = new FrameBufferSettings(fb);
             sync = PSP_DISPLAY_SETBUF_IMMEDIATE;
+
+            texS = (float) fb.getWidth() / (float) bufferWidth;
+            texT = (float) fb.getHeight() / (float) makePow2(fb.getHeight());
+            displayScreen.update();
 
             createTex = true;
         }
