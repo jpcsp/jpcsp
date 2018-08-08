@@ -53,10 +53,13 @@ import jpcsp.HLE.kernel.types.pspIoDrvFileArg;
 import jpcsp.HLE.kernel.types.pspIoDrvFuncs;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.settings.Settings;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 public class sceMSstor extends HLEModule {
     public static Logger log = Modules.getLogger("sceMSstor");
+	private static final int STATE_VERSION = 0;
     private byte[] dumpIoIoctl_0x02125803;
     private long position;
     private Fat32VirtualFile vFile;
@@ -125,7 +128,37 @@ public class sceMSstor extends HLEModule {
 		}
     }
 
-	@HLEUnimplemented
+    @Override
+    public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+    	dumpIoIoctl_0x02125803 = stream.readBytesWithLength();
+    	position = stream.readLong();
+    	boolean vFilePresent = stream.readBoolean();
+    	if (vFilePresent) {
+    		openFile();
+    		vFile.read(stream);
+    	}
+
+    	super.read(stream);
+    }
+
+    @Override
+    public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	stream.writeBytesWithLength(dumpIoIoctl_0x02125803);
+    	stream.writeLong(position);
+
+    	if (vFile != null) {
+    		stream.writeBoolean(true);
+    		vFile.write(stream);
+    	} else {
+    		stream.writeBoolean(false);
+    	}
+
+    	super.write(stream);
+    }
+
+    @HLEUnimplemented
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleMSstorControllerIoInit(pspIoDrvArg drvArg) {
     	return 0;
@@ -411,12 +444,16 @@ public class sceMSstor extends HLEModule {
 		installHLESyscall(partitionFuncs.ioWrite, this, "hleMSstorPartitionIoWrite");
     }
 
-    public void hleInit() {
+    private void openFile() {
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("ms0"), true);
 		vFile = new Fat32VirtualFile("ms0:", vfs);
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("installDrivers vFile=%s", vFile));
+			log.debug(String.format("openFile vFile=%s", vFile));
 		}
+    }
+
+    public void hleInit() {
+    	openFile();
 
 		scanThread = new Fat32ScanThread(vFile);
 		scanThread.setName("Fat32VirtualFile Scan Thread");

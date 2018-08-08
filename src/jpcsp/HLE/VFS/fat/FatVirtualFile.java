@@ -33,6 +33,7 @@ import static jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure.charset16;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -967,23 +968,30 @@ public abstract class FatVirtualFile implements IVirtualFile {
 
     	fatClusterMap = stream.readIntsWithLength();
 
-    	// Read the fatFileInfoMap in the format: index, object, index, object..., -1
+    	// Read the fatFileInfoMap in the format: index, alreadyReadIndex, [object,] index, alreadyReadIndex, [object]..., -1
     	fatFileInfoMap = new FatFileInfo[fatClusterMap.length];
+    	List<FatFileInfo> fatFileInfoList = new LinkedList<FatFileInfo>();
     	while (true) {
     		int i = stream.readInt();
     		if (i < 0) {
     			// End of the fatFileInfoMap
     			break;
     		}
-			fatFileInfoMap[i] = new FatFileInfo();
-			fatFileInfoMap[i].read(stream);
+
+    		int alreadyReadIndex = stream.readInt();
+    		if (alreadyReadIndex < 0) {
+    			FatFileInfo fatFileInfo = new FatFileInfo();
+				fatFileInfoMap[i] = fatFileInfo;
+				fatFileInfo.read(stream);
+				fatFileInfoList.add(fatFileInfo);
+    		} else {
+    			fatFileInfoMap[i] = fatFileInfoMap[alreadyReadIndex];
+    		}
     	}
 
     	// Read the parent-children relations
-    	for (int i = 0; i < fatFileInfoMap.length; i++) {
-    		if (fatFileInfoMap[i] != null) {
-    			fatFileInfoMap[i].read(stream, this);
-    		}
+    	for (FatFileInfo fatFileInfo : fatFileInfoList) {
+			fatFileInfo.read(stream, this);
     	}
 
     	// Read the pendingWriteSectors
@@ -1021,21 +1029,30 @@ public abstract class FatVirtualFile implements IVirtualFile {
 
     	stream.writeIntsWithLength(fatClusterMap);
 
-    	// Write the fatFileInfoMap in the format: index, object, index, object..., -1
+    	// Write the fatFileInfoMap in the format: index, alreadyWrittenIndex, [object,] index, alreadyWrittenIndex, [object]..., -1
+    	HashMap<FatFileInfo, Integer> alreadyWritten = new HashMap<FatFileInfo, Integer>();
+    	List<FatFileInfo> fatFileInfoList = new LinkedList<FatFileInfo>();
     	for (int i = 0; i < fatFileInfoMap.length; i++) {
-    		if (fatFileInfoMap[i] != null) {
+    		FatFileInfo fatFileInfo = fatFileInfoMap[i];
+    		if (fatFileInfo != null) {
     			stream.writeInt(i);
-    			fatFileInfoMap[i].write(stream);
+    			Integer alreadyWrittenIndex = alreadyWritten.get(fatFileInfo);
+    			if (alreadyWrittenIndex != null) {
+    				stream.writeInt(alreadyWrittenIndex.intValue());
+    			} else {
+    				stream.writeInt(-1);
+    				fatFileInfo.write(stream);
+        			alreadyWritten.put(fatFileInfo, i);
+        			fatFileInfoList.add(fatFileInfo);
+    			}
     		}
     	}
     	// End of the fatFileInfoMap
     	stream.writeInt(-1);
 
     	// Write the parent-children relations
-    	for (int i = 0; i < fatFileInfoMap.length; i++) {
-    		if (fatFileInfoMap[i] != null) {
-    			fatFileInfoMap[i].write(stream, this);
-    		}
+    	for (FatFileInfo fatFileInfo : fatFileInfoList) {
+			fatFileInfo.write(stream, this);
     	}
 
     	// Write the pendingWriteSectors, followed by -1 to mark the end
