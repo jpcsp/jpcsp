@@ -39,6 +39,7 @@ import static jpcsp.graphics.GeCommands.*;
 import static jpcsp.util.Utilities.matrixMult;
 import static jpcsp.util.Utilities.round4;
 import static jpcsp.util.Utilities.vectorMult;
+import static jpcsp.util.Utilities.vectorMult44;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
@@ -2209,6 +2210,36 @@ public class VideoEngine {
         return new VertexIndexInfo(minIndex, maxIndex, sequence);
     }
 
+    private boolean isVertexDiscarded(float[] mvpMatrix, float[] p) {
+        // Apply the MVP transformation to position coordinates
+        float[] mvpPosition = new float[4];
+        float[] vertexPosition = new float[4];
+        vertexPosition[0] = p[0];
+        vertexPosition[1] = p[1];
+        vertexPosition[2] = p[2];
+        vertexPosition[3] = 1f;
+        vectorMult44(mvpPosition, mvpMatrix, vertexPosition);
+        float invertedW = 1f / mvpPosition[3];
+        float xs = mvpPosition[0] * invertedW * context.viewport_width  + context.viewport_cx;
+        float ys = mvpPosition[1] * invertedW * context.viewport_height + context.viewport_cy;
+        float zs = mvpPosition[2] * invertedW * context.zscale          + context.zpos;
+
+        boolean discarded = false;
+        if (xs < 0f || xs >= 4096f || ys < 0f || ys >= 4096f) {
+        	discarded = true;
+        } else if (!context.clipPlanesFlag.isEnabled()) {
+        	if (zs < 0f || zs >= 65536f) {
+        		discarded = true;
+        	}
+        }
+
+        if (isLogDebugEnabled) {
+        	log.debug(String.format("isVertexDiscarded (%.0f,%.0f,%.0f) %s=%b returning %b", xs, ys, zs, context.clipPlanesFlag.toString(), context.clipPlanesFlag.isEnabled(), discarded));
+        }
+
+        return discarded;
+    }
+
     private void executeCommandPRIM() {
         int numberOfVertex = normalArgument & 0xFFFF;
         int type = (normalArgument >> 16) & 0x7;
@@ -2652,6 +2683,16 @@ public class VideoEngine {
                     readTexture = true;
                 }
 
+                final boolean needToDiscardVertices = !context.vinfo.transform2D && !re.canDiscardVertices();
+                // Pre-compute the MVP (Model-View-Projection) matrix.
+                // It is used in case we need to discard vertices or with 3D sprites for the texture flip.
+                float[] mvpMatrix = null;
+                if (cachedVertexInfo == null && (needToDiscardVertices || (!context.vinfo.transform2D && type == PRIM_SPRITES))) {
+                    mvpMatrix = new float[4 * 4];
+                    matrixMult(mvpMatrix, context.model_uploaded_matrix, context.view_uploaded_matrix);
+                    matrixMult(mvpMatrix, mvpMatrix, context.proj_uploaded_matrix);
+                }
+
                 switch (type) {
                     case PRIM_POINT:
                     case PRIM_LINE:
@@ -2674,6 +2715,15 @@ public class VideoEngine {
                                     doSkinning(context.bone_uploaded_matrix, context.vinfo, v);
                                 }
 
+                                if (needToDiscardVertices) {
+	                                // TODO Check if the vertex needs to be discarded. The effect of discarding one vertex depends on the prim type.
+	                                //boolean discard = isVertexDiscarded(mvpMatrix, v.p);
+	                                //if (isLogDebugEnabled) {
+	                                //	log(String.format("Vertex#%d discard=%b", i, discard));
+	                                //}
+                                }
+
+                                // Texture
                                 if (useTextureFromNormal) {
                                     floatBufferArray[ii++] = v.n[0];
                                     floatBufferArray[ii++] = v.n[1];
@@ -2691,22 +2741,26 @@ public class VideoEngine {
                                     floatBufferArray[ii++] = v.t[0];
                                     floatBufferArray[ii++] = v.t[1];
                                 }
+                                // Color
                                 if (context.useVertexColor) {
                                     floatBufferArray[ii++] = v.c[0];
                                     floatBufferArray[ii++] = v.c[1];
                                     floatBufferArray[ii++] = v.c[2];
                                     floatBufferArray[ii++] = v.c[3];
                                 }
+                                // Normal
                                 if (context.vinfo.normal != 0) {
                                     floatBufferArray[ii++] = v.n[0];
                                     floatBufferArray[ii++] = v.n[1];
                                     floatBufferArray[ii++] = v.n[2];
                                 }
+                                // Position
                                 if (context.vinfo.position != 0) {
                                     floatBufferArray[ii++] = v.p[0];
                                     floatBufferArray[ii++] = v.p[1];
                                     floatBufferArray[ii++] = v.p[2];
                                 }
+                                // Weights
                                 if (numberOfWeightsForBuffer > 0) {
                                     for (int j = 0; j < numberOfWeightsForBuffer; j++) {
                                         floatBufferArray[ii++] = v.boneWeights[j];
@@ -2754,14 +2808,6 @@ public class VideoEngine {
                             re.disableFlag(IRenderingEngine.GU_CULL_FACE);
                         }
 
-                        float[] mvpMatrix = null;
-                        if (!context.vinfo.transform2D) {
-                            mvpMatrix = new float[4 * 4];
-                            // pre-Compute the MVP (Model-View-Projection) matrix
-                            matrixMult(mvpMatrix, context.model_uploaded_matrix, context.view_uploaded_matrix);
-                            matrixMult(mvpMatrix, mvpMatrix, getProjectionMatrix());
-                        }
-
                         if (cachedVertexInfo == null) {
                             vertexReadingStatistics.start();
                             int ii = 0;
@@ -2772,6 +2818,20 @@ public class VideoEngine {
                                 context.vinfo.readVertex(mem, addr2, v2, readTexture, isDoubleTexture2DCoords());
 
                                 v1.p[2] = v2.p[2];
+
+                                // In 3D, check if one of the vertex is discarded
+                                if (needToDiscardVertices) {
+                                	boolean discarded1 = isVertexDiscarded(mvpMatrix, v1.p);
+                                	boolean discarded2 = isVertexDiscarded(mvpMatrix, v2.p);
+
+	                                // Discard the sprite if one of its vertex is discarded
+	                                if (discarded1 || discarded2) {
+	                                    if (isLogDebugEnabled) {
+	                                    	log(String.format("sprite discarded %b, %b", discarded1, discarded2));
+	                                    }
+	                                    continue;
+	                                }
+                                }
 
                                 if (v2.p[1] > maxSpriteHeight) {
                                     maxSpriteHeight = (int) v2.p[1];
@@ -6560,6 +6620,8 @@ public class VideoEngine {
          */
         boolean loadOrtho2D = false;
         if (viewportChanged) {
+        	re.setViewportPos(context.viewport_cx, context.viewport_cy, context.zpos);
+        	re.setViewportScale(context.viewport_width, context.viewport_height, context.zscale);
             if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
                 re.setViewport(0, 0, Screen.width, Screen.height);
                 // Load the ortho for 2D after the depth settings

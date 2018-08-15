@@ -92,7 +92,10 @@ public enum Uniforms {
 	fogEnable("fogEnable"),
 	fogColor("fogColor"),
 	fogEnd("fogEnd"),
-	fogScale("fogScale");
+	fogScale("fogScale"),
+	clipPlaneEnable("clipPlaneEnable"),
+	viewportPos("viewportPos"),
+	viewportScale("viewportScale");
 
 	String uniformString;
 	int[] uniformId = new int[StateProxy.maxProgramId];

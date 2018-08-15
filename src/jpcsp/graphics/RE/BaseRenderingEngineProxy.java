@@ -1031,4 +1031,19 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public boolean isTextureBarrierAvailable() {
 		return proxy.isTextureBarrierAvailable();
 	}
+
+	@Override
+	public boolean canDiscardVertices() {
+		return proxy.canDiscardVertices();
+	}
+
+	@Override
+	public void setViewportPos(float x, float y, float z) {
+		proxy.setViewportPos(x, y, z);
+	}
+
+	@Override
+	public void setViewportScale(float sx, float sy, float sz) {
+		proxy.setViewportScale(sx, sy, sz);
+	}
 }

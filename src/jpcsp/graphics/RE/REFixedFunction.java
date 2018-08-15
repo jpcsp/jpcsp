@@ -264,4 +264,10 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
             super.setFogDist(glStart, glEnd);
         }
 	}
+
+	@Override
+	public boolean canDiscardVertices() {
+		// OpenGL fixed-function pipeline cannot discard vertices
+		return false;
+	}
 }

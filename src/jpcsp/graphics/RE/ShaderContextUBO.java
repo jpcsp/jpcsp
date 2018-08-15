@@ -93,6 +93,9 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo fogColor;
 	private ShaderUniformInfo fogEnd;
 	private ShaderUniformInfo fogScale;
+	private ShaderUniformInfo clipPlaneEnable;
+	private ShaderUniformInfo viewportPos;
+	private ShaderUniformInfo viewportScale;
 	private ShaderUniformInfo numberBones;
 	private ShaderUniformInfo boneMatrix;
 	private ShaderUniformInfo endOfUBO;
@@ -243,6 +246,9 @@ public class ShaderContextUBO extends ShaderContext {
 		fogColor = addShaderUniform(Uniforms.fogColor, "vec3");
 		fogEnd = addShaderUniform(Uniforms.fogEnd, "float");
 		fogScale = addShaderUniform(Uniforms.fogScale, "float");
+		clipPlaneEnable = addShaderUniform(Uniforms.clipPlaneEnable, "bool");
+		viewportPos = addShaderUniform(Uniforms.viewportPos, "vec3");
+		viewportScale = addShaderUniform(Uniforms.viewportScale, "vec3");
 		numberBones = addShaderUniform(Uniforms.numberBones, "int");
 		boneMatrix = addShaderUniform(Uniforms.boneMatrix, "mat4", 8);
 		// The following entry has always to be the last one
@@ -961,6 +967,32 @@ public class ShaderContextUBO extends ShaderContext {
 		if (fogScale != getFogScale()) {
 			copy(fogScale, this.fogScale);
 			super.setFogScale(fogScale);
+		}
+	}
+
+	@Override
+	public void setClipPlaneEnable(int clipPlaneEnable) {
+		if (clipPlaneEnable != getClipPlaneEnable()) {
+			copy(clipPlaneEnable, this.clipPlaneEnable);
+			super.setClipPlaneEnable(clipPlaneEnable);
+		}
+	}
+
+	@Override
+	public void setViewportPos(float x, float y, float z) {
+		float[] currentViewportPos = getViewportPos();
+		if (x != currentViewportPos[0] || y != currentViewportPos[1] || z != currentViewportPos[2]) {
+			copy(new float[] { x, y, z }, this.viewportPos, 0, 3);
+			super.setViewportPos(x, y, z);
+		}
+	}
+
+	@Override
+	public void setViewportScale(float sx, float sy, float sz) {
+		float[] currentViewportScale = getViewportScale();
+		if (sx != currentViewportScale[0] || sy != currentViewportScale[1] || sz != currentViewportScale[2]) {
+			copy(new float[] { sx, sy, sz }, this.viewportScale, 0, 3);
+			super.setViewportScale(sx, sy, sz);
 		}
 	}
 }

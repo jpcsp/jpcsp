@@ -508,4 +508,7 @@ public interface IRenderingEngine {
 	public boolean setCopyRedToAlpha(boolean copyRedToAlpha);
 	public boolean isTextureBarrierAvailable();
 	public void textureBarrier();
+	public boolean canDiscardVertices();
+	public void setViewportPos(float x, float y, float z);
+	public void setViewportScale(float sx, float sy, float sz);
 }

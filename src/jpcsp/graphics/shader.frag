@@ -71,6 +71,7 @@
 #endif
 uniform sampler2D tex;   // The active texture
 uniform sampler2D fbTex; // The texture containing the current screen (FrameBuffer)
+noperspective in float discarded;
 
 #if USE_NATIVE_CLUT
     uniform usampler2D utex;
@@ -885,6 +886,8 @@ void ApplyFog(inout vec4 Cf)
 
 void main()
 {
+	if (discarded > 0.0) discard;
+
     vec4 Cf = getFragColor();
     #if !USE_DYNAMIC_DEFINES || BLEND_TEST_ENABLE
         vec4 Csrc = Cf;

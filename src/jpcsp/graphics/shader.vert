@@ -27,6 +27,7 @@ ATTRIBUTE vec3 pspNormal;
 ATTRIBUTE vec4 pspPosition;
 ATTRIBUTE vec4 pspWeights1;
 ATTRIBUTE vec4 pspWeights2;
+noperspective out float discarded;
 
 #if USE_UBO
 	UBO_STRUCTURE
@@ -53,6 +54,9 @@ ATTRIBUTE vec4 pspWeights2;
     uniform float textureScale;
     uniform float weightScale;
     uniform vec4  vertexColor;
+    uniform bool  clipPlaneEnable;
+    uniform vec3  viewportPos;
+    uniform vec3  viewportScale;
 #endif
 
 
@@ -486,6 +490,38 @@ void DecodeColor(inout vec4 C)
 }
 #endif
 
+float getDiscarded(inout vec4 pos)
+{
+	float discarded = 0.0;
+
+	if (!vinfoTransform2D)
+	{
+		vec3 screenPos = pos.xyz / pos.w * viewportScale + viewportPos;
+
+		// If x,y are out of [0..4096], discard the triangle(s) using this vertex.
+		if (screenPos.x < 0.0 || screenPos.x >= 4096.0 || screenPos.y < 0.0 || screenPos.y >= 4096.0)
+		{
+			// As a vertex shader cannot discard a vertex, the discarding is done
+			// by the fragment shader for each pixel of the rendered triangle.
+			// This is achieved by setting the vertex shader output variable "discarded"
+			// to a high value. The value stays at 0.0 for non-discarded vertices.
+			// This value is then interpolated by OpenGL between the 3 vertices of a triangle
+			// when passed to the fragment shader. The fragment shader just needs to check
+			// if the value is > 0.0, meaning that at least one vertex is discarded.
+			discarded = 100000.0;
+		}
+		else if (!clipPlaneEnable)
+		{
+			if (screenPos.z < 0.0 || screenPos.z >= 65536.0)
+			{
+				discarded = 100000.0;
+			}
+		}
+	}
+
+	return discarded;
+}
+
 ///////////////////////////////////////////////////////////////
 // Main program
 ///////////////////////////////////////////////////////////////
@@ -582,4 +618,5 @@ void main()
     gl_TexCoord[0]         = T;
     gl_FrontColor          = Cp;
     gl_FrontSecondaryColor = Cs;
+    discarded              = getDiscarded(gl_Position);
 }

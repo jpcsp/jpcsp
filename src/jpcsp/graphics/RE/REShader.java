@@ -604,6 +604,10 @@ public class REShader extends BaseRenderingEngineFunction {
 				shaderContext.setFogEnable(value);
 				setFlag = false;
 				break;
+			case IRenderingEngine.GU_CLIP_PLANES:
+				shaderContext.setClipPlaneEnable(value);
+				setFlag = false;
+				break;
 		}
 
 		return setFlag;
@@ -757,6 +761,9 @@ public class REShader extends BaseRenderingEngineFunction {
 		super.disableClientState(IRenderingEngine.RE_COLOR);
 		super.disableClientState(IRenderingEngine.RE_NORMAL);
 		super.disableClientState(IRenderingEngine.RE_VERTEX);
+
+		// The value of the flags are lost when starting a new display
+		setShaderFlag(IRenderingEngine.GU_CLIP_PLANES, 1);
 	}
 
 	@Override
@@ -1449,5 +1456,23 @@ public class REShader extends BaseRenderingEngineFunction {
 		shaderContext.setFogEnd(end);
 		shaderContext.setFogScale(scale);
 		super.setFogDist(end, scale);
+	}
+
+	@Override
+	public boolean canDiscardVertices() {
+		// Functionality to discard vertices has been implemented in the shaders
+		return true;
+	}
+
+	@Override
+	public void setViewportPos(float x, float y, float z) {
+		shaderContext.setViewportPos(x, y, z);
+		super.setViewportPos(x, y, z);
+	}
+
+	@Override
+	public void setViewportScale(float sx, float sy, float sz) {
+		shaderContext.setViewportScale(sx, sy, sz);
+		super.setViewportScale(sx, sy, sz);
 	}
 }

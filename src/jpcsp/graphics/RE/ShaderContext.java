@@ -100,6 +100,9 @@ public class ShaderContext {
 	private float[] fogColor = new float[3];
 	private float fogEnd;
 	private float fogScale;
+	private int clipPlaneEnable;
+	private float[] viewportPos = new float[3];
+	private float[] viewportScale = new float[3];
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
@@ -167,6 +170,9 @@ public class ShaderContext {
 		re.setUniform3(Uniforms.fogColor.getId(shaderProgram), fogColor);
 		re.setUniform(Uniforms.fogEnd.getId(shaderProgram), fogEnd);
 		re.setUniform(Uniforms.fogScale.getId(shaderProgram), fogScale);
+		re.setUniform(Uniforms.clipPlaneEnable.getId(shaderProgram), clipPlaneEnable);
+		re.setUniform3(Uniforms.viewportPos.getId(shaderProgram), viewportPos);
+		re.setUniform3(Uniforms.viewportScale.getId(shaderProgram), viewportScale);
 
 		setUniformsSamplers(re, shaderProgram);
 	}
@@ -761,5 +767,33 @@ public class ShaderContext {
 
 	public void setFogScale(float fogScale) {
 		this.fogScale = fogScale;
+	}
+
+	public int getClipPlaneEnable() {
+		return clipPlaneEnable;
+	}
+
+	public void setClipPlaneEnable(int clipPlaneEnable) {
+		this.clipPlaneEnable = clipPlaneEnable;
+	}
+
+	public float[] getViewportPos() {
+		return viewportPos;
+	}
+
+	public void setViewportPos(float x, float y, float z) {
+		this.viewportPos[0] = x;
+		this.viewportPos[1] = y;
+		this.viewportPos[2] = z;
+	}
+
+	public float[] getViewportScale() {
+		return viewportScale;
+	}
+
+	public void setViewportScale(float sx, float sy, float sz) {
+		this.viewportScale[0] = sx;
+		this.viewportScale[1] = sy;
+		this.viewportScale[2] = sz;
 	}
 }

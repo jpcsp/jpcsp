@@ -848,4 +848,17 @@ public class NullRenderingEngine implements IRenderingEngine {
 	public boolean isTextureBarrierAvailable() {
 		return false;
 	}
+
+	@Override
+	public boolean canDiscardVertices() {
+		return false;
+	}
+
+	@Override
+	public void setViewportPos(float x, float y, float z) {
+	}
+
+	@Override
+	public void setViewportScale(float sx, float sy, float sz) {
+	}
 }
