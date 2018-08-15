@@ -361,6 +361,9 @@ public abstract class Memory implements IState {
 	        if (isVRAM(source) && Modules.sceDisplayModule.getSaveGEToTexture()) {
 	        	VideoEngine.getInstance().addVideoTexture(source, source + length);
 	        }
+	        if (isVRAM(source)) {
+	        	Modules.sceDisplayModule.waitForRenderingCompletion(source);
+	        }
     	} else if (isVRAM(destination)) {
     		Modules.sceDisplayModule.waitForRenderingCompletion(destination);
     	}
