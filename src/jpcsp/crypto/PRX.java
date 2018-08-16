@@ -62,6 +62,7 @@ public class PRX {
     }
     
     private TAG_INFO g_tagInfo[] = {
+    	// 16-bytes keys
         new TAG_INFO(0x4C949CF0, KeyVault.keys210_vita_k0, 0x43),
         new TAG_INFO(0x4C9494F0, KeyVault.keys660_k1, 0x43),
         new TAG_INFO(0x4C9495F0, KeyVault.keys660_k2, 0x43),
@@ -196,27 +197,28 @@ public class PRX {
         new TAG_INFO(0x407810F0, KeyVault.key_407810F0, 0x6A),
         new TAG_INFO(0xE92410F0, KeyVault.drmkeys_6XX_1, 0x40),
         new TAG_INFO(0x692810F0, KeyVault.drmkeys_6XX_2, 0x40),
-        new TAG_INFO(0x00000000, KeyVault.g_key00, 0x42),
-        new TAG_INFO(0x02000000, KeyVault.g_key02, 0x45),
-        new TAG_INFO(0x03000000, KeyVault.g_key03, 0x46),
-        new TAG_INFO(0x03000000, KeyVault.g_key04, 0x47),
-        new TAG_INFO(0x03000000, KeyVault.g_key05, 0x48),
-        new TAG_INFO(0x03000000, KeyVault.g_key06, 0x49),
-        new TAG_INFO(0x03000000, KeyVault.g_key0A, 0x4D),
-        new TAG_INFO(0x03000000, KeyVault.g_key0D, 0x50),
-        new TAG_INFO(0x03000000, KeyVault.g_key0E, 0x51),
+    	// 144-bytes keys
+        new TAG_INFO(0x00000000, KeyVault.g_key00, 0x42, 0x00),
+        new TAG_INFO(0x02000000, KeyVault.g_key02, 0x45, 0x00),
+        new TAG_INFO(0x03000000, KeyVault.g_key03, 0x46, 0x00),
+        new TAG_INFO(0x03000000, KeyVault.g_key04, 0x47, 0x00),
+        new TAG_INFO(0x03000000, KeyVault.g_key05, 0x48, 0x00),
+        new TAG_INFO(0x03000000, KeyVault.g_key06, 0x49, 0x00),
+        new TAG_INFO(0x03000000, KeyVault.g_key0A, 0x4D, 0x00),
+        new TAG_INFO(0x03000000, KeyVault.g_key0D, 0x50, 0x00),
+        new TAG_INFO(0x03000000, KeyVault.g_key0E, 0x51, 0x00),
         new TAG_INFO(0x4467415d, KeyVault.g_key44, 0x59, 0x59),
         new TAG_INFO(0x207bbf2f, KeyVault.g_key20, 0x5A, 0x5A),
         new TAG_INFO(0x3ace4dce, KeyVault.g_key3A, 0x5B, 0x5B),
-        new TAG_INFO(0x07000000, KeyVault.g_key_INDEXDAT1xx, 0x4A),
-        new TAG_INFO(0x08000000, KeyVault.g_keyEBOOT1xx, 0x4B),
+        new TAG_INFO(0x07000000, KeyVault.g_key_INDEXDAT1xx, 0x4A, 0x00),
+        new TAG_INFO(0x08000000, KeyVault.g_keyEBOOT1xx, 0x4B, 0x00),
         new TAG_INFO(0xC0CB167C, KeyVault.g_keyEBOOT2xx, 0x5D, 0x5D),
-        new TAG_INFO(0x0B000000, KeyVault.g_keyUPDATER, 0x4E),
-        new TAG_INFO(0x0C000000, KeyVault.g_keyDEMOS27X, 0x4F),
-        new TAG_INFO(0x0F000000, KeyVault.g_keyMEIMG250, 0x52),
+        new TAG_INFO(0x0B000000, KeyVault.g_keyUPDATER, 0x4E, 0x00),
+        new TAG_INFO(0x0C000000, KeyVault.g_keyDEMOS27X, 0x4F, 0x00),
+        new TAG_INFO(0x0F000000, KeyVault.g_keyMEIMG250, 0x52, 0x00),
         new TAG_INFO(0x862648D1, KeyVault.g_keyMEIMG260, 0x52, 0x52),
         new TAG_INFO(0x207BBF2F, KeyVault.g_keyUNK1, 0x5A, 0x5A),
-        new TAG_INFO(0x09000000, KeyVault.g_key_GAMESHARE1xx, 0x4C),
+        new TAG_INFO(0x09000000, KeyVault.g_key_GAMESHARE1xx, 0x4C, 0x00),
         new TAG_INFO(0xBB67C59F, KeyVault.g_keyB8, 0x5C, 0x5C),
         new TAG_INFO(0xBB67C59F, KeyVault.g_key_GAMESHARE2xx, 0x5E, 0x5E),
         new TAG_INFO(0xBB67C59F, KeyVault.g_key4C, 0x5F, 0x5F),
@@ -400,18 +402,8 @@ public class PRX {
 
             System.arraycopy(oldbuf1, 0x40, oldbuf, 0x40, 0x40);
 
-            // Convert the u32 pti.key to u8
-            byte[] keyBytes = new byte[pti.key.length << 2];
-            for (int i = 0, j = 0; i < pti.key.length; i++) {
-            	int u32 = pti.key[i];
-            	keyBytes[j++] = (byte) (u32 >>  0);
-            	keyBytes[j++] = (byte) (u32 >>  8);
-            	keyBytes[j++] = (byte) (u32 >> 16);
-            	keyBytes[j++] = (byte) (u32 >> 24);
-            }
-
             for (int iXOR = 0; iXOR < 0x70; iXOR++) {
-                oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x40 + iXOR] ^ keyBytes[0x14 + iXOR]);
+                oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x40 + iXOR] ^ pti.key[0x14 + iXOR]);
             }
 
             // Scramble the data by calling CMD7.
@@ -422,7 +414,7 @@ public class PRX {
             System.arraycopy(bScrambleOut.array(), 0, oldbuf, 0x2C, 0x70);
 
             for (int iXOR = 0x6F; iXOR >= 0; iXOR--) {
-                oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x2C + iXOR] ^ keyBytes[0x20 + iXOR]);
+                oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x2C + iXOR] ^ pti.key[0x20 + iXOR]);
             }
 
             for (int k = 0; k < 0x30; k++) {
