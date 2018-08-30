@@ -163,6 +163,15 @@ public class ModuleMgrForUser extends HLEModule {
         	}
         }
 
+        if (loadModuleContext.fileName != null && loadModuleContext.fileName.startsWith("flash0:")) {
+        	StringBuilder localFileName = new StringBuilder();
+        	IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(loadModuleContext.fileName, localFileName);
+        	if (vfs.ioGetstat(localFileName.toString(), new SceIoStat()) == 0) {
+        		// The flash0 file is available, load it
+        		return -1;
+        	}
+        }
+
         // Check if the PRX name matches an HLE module
         if (moduleManager.hasFlash0Module(loadModuleContext.moduleName)) {
         	if (log.isInfoEnabled()) {
@@ -396,10 +405,15 @@ public class ModuleMgrForUser extends HLEModule {
     	SceModule module = Loader.getInstance().LoadModule(loadModuleContext.fileName, loadModuleContext.moduleBuffer, moduleBase, mpidText, mpidData, false, loadModuleContext.allocMem, true);
         module.load();
 
-        if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
-                (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
+    	if ((module.fileFormat & Loader.FORMAT_ELF) != 0) {
+			module.addAllocatedMemory(moduleInfo);
+	        result = module.modid;
+	    	if (log.isDebugEnabled()) {
+	    		log.debug(String.format("hleKernelLoadModule returning uid=0x%X", result));
+	    	}
+    	} else if ((module.fileFormat & (Loader.FORMAT_SCE | Loader.FORMAT_PSP)) != 0) {
             // Simulate a successful loading
-            log.info("hleKernelLoadModule(path='" + loadModuleContext.fileName + "') encrypted module not loaded");
+            log.info(String.format("hleKernelLoadModule(path='%s') encrypted module not loaded", loadModuleContext.fileName));
             SceModule fakeModule = new SceModule(true);
             fakeModule.modname = loadModuleContext.moduleName.toString();
         	fakeModule.addAllocatedMemory(moduleInfo);
@@ -408,12 +422,6 @@ public class ModuleMgrForUser extends HLEModule {
             }
             Managers.modules.addModule(fakeModule);
             result = fakeModule.modid;
-        } else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
-    		module.addAllocatedMemory(moduleInfo);
-            result = module.modid;
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("hleKernelLoadModule returning uid=0x%X", result));
-        	}
         } else {
             // The Loader class now manages the module's memory footprint, it won't allocate if it failed to load
             result = -1;
