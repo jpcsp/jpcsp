@@ -16,20 +16,48 @@
  */
 package jpcsp.crypto;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import static jpcsp.HLE.Modules.memlmdModule;
+import static jpcsp.HLE.Modules.semaphoreModule;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_MODE_CMD1;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_MODE_DECRYPT_CBC;
+import static jpcsp.util.Utilities.read8;
+import static jpcsp.util.Utilities.readUnaligned16;
+import static jpcsp.util.Utilities.readUnaligned32;
+import static jpcsp.util.Utilities.writeUnaligned32;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.zip.GZIPInputStream;
+
+import org.apache.log4j.Logger;
+
+import jpcsp.util.Utilities;
 
 public class PRX {
-    
-    private static KIRK kirk;
-    
+    public static Logger log = CryptoEngine.log;
+    // enum SceExecFileAttr
+    public static final int SCE_EXEC_FILE_COMPRESSED      = 0x001;
+    public static final int SCE_EXEC_FILE_ELF             = 0x002;
+    public static final int SCE_EXEC_FILE_GZIP_OVERLAP    = 0x008;
+    public static final int SCE_EXEC_FILE_KL4E_COMPRESSED = 0x200;
+    // enum SceExecFileDecryptMode
+    public static final int DECRYPT_MODE_NO_EXEC           =  0;
+    public static final int DECRYPT_MODE_BOGUS_MODULE      =  1;
+    public static final int DECRYPT_MODE_KERNEL_MODULE     =  2;
+    public static final int DECRYPT_MODE_VSH_MODULE        =  3;
+    public static final int DECRYPT_MODE_USER_MODULE       =  4;
+    public static final int DECRYPT_MODE_UMD_GAME_EXEC     =  9;
+    public static final int DECRYPT_MODE_GAMESHARING_EXEC  = 10;
+    public static final int DECRYPT_MODE_MS_UPDATER        = 12;
+    public static final int DECRYPT_MODE_DEMO_EXEC         = 13;
+    public static final int DECRYPT_MODE_APP_MODULE        = 14;
+    public static final int DECRYPT_MODE_POPS_EXEC         = 20;
+
     public PRX() {
-        kirk = new KIRK();
     }
-    
+
     // PRXDecrypter TAG struct.
     private class TAG_INFO {
-
         int tag; // 4 byte value at offset 0xD0 in the PRX file
         int[] key; // 144 bytes keys
         int code; // code for scramble
@@ -235,38 +263,26 @@ public class PRX {
         return null;
     }
 
-    private void ScramblePRX(byte[] buf, int size, byte code) {
+    private int ScramblePRX(byte[] buf, int offset, int size, int code) {
         // Set CBC mode.
-        buf[0] = 0;
-        buf[1] = 0;
-        buf[2] = 0;
-        buf[3] = 5;
+    	writeUnaligned32(buf, offset + 0, PSP_KIRK_CMD_MODE_DECRYPT_CBC);
 
-        // Set unkown parameters to 0.
-        buf[4] = 0;
-        buf[5] = 0;
-        buf[6] = 0;
-        buf[7] = 0;
-
-        buf[8] = 0;
-        buf[9] = 0;
-        buf[10] = 0;
-        buf[11] = 0;
+        // Set unknown parameters to 0.
+    	writeUnaligned32(buf, offset + 4, 0);
+    	writeUnaligned32(buf, offset + 8, 0);
 
         // Set the the key seed to code.
-        buf[12] = 0;
-        buf[13] = 0;
-        buf[14] = 0;
-        buf[15] = code;
+    	writeUnaligned32(buf, offset + 12, code & 0xFF);
 
         // Set the the data size to size.
-        buf[16] = (byte) ((size >> 24) & 0xFF);
-        buf[17] = (byte) ((size >> 16) & 0xFF);
-        buf[18] = (byte) ((size >> 8) & 0xFF);
-        buf[19] = (byte) (size & 0xFF);
+    	writeUnaligned32(buf, offset + 16, size);
 
-        ByteBuffer bBuf = ByteBuffer.wrap(buf);
-        kirk.hleUtilsBufferCopyWithRange(bBuf, size, bBuf, size, KIRK.PSP_KIRK_CMD_DECRYPT);
+        int result = semaphoreModule.hleUtilsBufferCopyWithRange(buf, offset, size, buf, offset, size + 0x14, KIRK.PSP_KIRK_CMD_DECRYPT);
+        if (result != 0) {
+        	log.error(String.format("ScramblePRX returning 0x%X", result));
+        }
+
+        return result;
     }
   
     private static boolean isNullKey(byte[] key) {
@@ -278,21 +294,6 @@ public class PRX {
             }
         }
         return true;
-    }
-
-    private boolean TestBlacklist(byte[] inbuf, byte[] blacklist, int blacklistsize) {
-        if (blacklistsize / 16 != 0) {
-            for (int i = 0; i < blacklistsize / 16; i++) {
-                for (int j = 0; j < 0x10; j++) {
-                    byte b = blacklist[(i * 16) + j];
-                    byte bb = inbuf[0x140 + j];
-                    if (b != bb) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     private void MixXOR(byte[] outbuf, int size, byte[] inbuf, byte[] xor) {
@@ -312,51 +313,113 @@ public class PRX {
             }
         }
     }
-    
-    public int DecryptPRX(byte[] buf, int size, byte[] blacklist, int blacklistsize, int type, byte[] xor1, byte[] xor2) {
-        // Setup temporary buffers.
-        byte[] buf1 = new byte[0x150];
-        byte[] buf2 = new byte[0x150];
-        byte[] buf3 = new byte[0x90];
-        byte[] buf4 = new byte[0xB4];
-        byte[] buf5 = new byte[0x20];
-        byte[] buf6 = new byte[0x28];
-        byte[] sigbuf = new byte[0x28];
-        byte[] sha1buf = new byte[0x14];
-        int unk_0xD4 = 0;
 
-        // Copy the first header to buf1.
-        System.arraycopy(buf, 0, buf1, 0, 0x150);
+    public byte[] DecryptAndUncompressPRX(byte[] buf, int size) {
+        int compAttribute = readUnaligned16(buf, 0x6);
+    	int pspSize = readUnaligned32(buf, 0x2C);
+    	int elfSize = readUnaligned32(buf, 0x28);
+        int decryptMode = read8(buf, 0x7C);
+
+    	byte[] resultBuffer = new byte[size];
+    	System.arraycopy(buf, 0, resultBuffer, 0, size);
+
+    	int type;
+        switch (decryptMode) {
+        	case DECRYPT_MODE_VSH_MODULE:
+        	case DECRYPT_MODE_USER_MODULE:
+            	int result = memlmdModule.hleMemlmd_6192F715(resultBuffer, size);
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("DecryptPRX: memlmd_6192F715 returning 0x%X: %s", result, Utilities.getMemoryDump(resultBuffer, 0, 0x80 + 0xD0)));
+            	}
+        		type = 9;
+        		break;
+        	case DECRYPT_MODE_UMD_GAME_EXEC:
+        		type = 9;
+        		break;
+        	case DECRYPT_MODE_GAMESHARING_EXEC:
+        		type = 2;
+        		break;
+        	case DECRYPT_MODE_MS_UPDATER:
+        		type = 8;
+        		break;
+        	case DECRYPT_MODE_DEMO_EXEC:
+        	case DECRYPT_MODE_APP_MODULE:
+        		type = 4;
+        		break;
+        	case DECRYPT_MODE_POPS_EXEC:
+        		type = 5;
+        		break;
+    		default:
+    			log.error(String.format("DecryptAndUncompressPRX unknown decryptMode=%d", decryptMode));
+    			type = 2;
+    			break;
+        }
+
+        int resultSize = DecryptPRX(resultBuffer, size, type, null, null);
+        if (resultSize < 0) {
+        	return null;
+        }
+
+        if ((compAttribute & SCE_EXEC_FILE_COMPRESSED) != 0) {
+        	if ((compAttribute & 0xF00) == 0) {
+	        	// GZIP compressed
+	        	try {
+					GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(resultBuffer, 0, pspSize));
+					byte[] elfBuffer = new byte[elfSize];
+					int elfOffset = 0;
+					while (elfOffset < elfSize) {
+						int length = in.read(elfBuffer, elfOffset, elfSize - elfOffset);
+						if (length <= 0) {
+							break;
+						}
+						elfOffset += length;
+					}
+					in.close();
+	
+					// Return the uncompressed ELF file
+					resultSize = elfOffset;
+					resultBuffer = elfBuffer;
+				} catch (IOException e) {
+					log.error(e);
+				}
+        	} else {
+        		log.error(String.format("KL4E decompression unimplemented, compAttribute=0x%X", compAttribute));
+        	}
+        }
+
+        // Truncate the resultBuffer if too long
+        if (resultBuffer.length > resultSize) {
+        	byte[] newBuffer = new byte[resultSize];
+        	System.arraycopy(resultBuffer, 0, newBuffer, 0, resultSize);
+        	resultBuffer = newBuffer;
+        }
+
+        return resultBuffer;
+    }
+
+    public int DecryptPRX(byte[] buf, int size, int type, byte[] xor1, byte[] xor2) {
+    	int result = 0;
 
         // Fetch the PRX tag.
-        int tag = ((buf[0xD0] & 0xFF) << 24) | ((buf[0xD1] & 0xFF) << 16)
-                | ((buf[0xD2] & 0xFF) << 8) | (buf[0xD3] & 0xFF);
+        int tag = readUnaligned32(buf, 0xD0);
 
         // Get the tag info.
-        TAG_INFO pti = GetTagInfo(Integer.reverseBytes(tag));
+        TAG_INFO pti = GetTagInfo(tag);
         if (pti == null) {
             return -1;
         }
 
-        // Check for blacklisted tags.
-        if ((blacklist != null) && (blacklistsize != 0)) {
-            if (TestBlacklist(buf1, blacklist, blacklistsize)) {
-                return -1;
-            }
-        }
-
         // Fetch the final ELF size.
-        int retsize = ((buf[0xB3] & 0xFF) << 24) | ((buf[0xB2] & 0xFF) << 16)
-                | ((buf[0xB1] & 0xFF) << 8) | ((buf[0xB0] & 0xFF));
+        int retsize = readUnaligned32(buf, 0xB0);
 
         // Old encryption method (144 bytes key).
         if (pti.key.length > 0x10) {
             // Setup the buffers.
             byte[] oldbuf = new byte[size];
             byte[] oldbuf1 = new byte[0x150];
-            
+
             System.arraycopy(buf, 0, oldbuf, 0, size);
-            
+
             for (int i = 0; i < 0x150; i++) {
                 oldbuf[i] = 0;
             }
@@ -364,30 +427,11 @@ public class PRX {
                 oldbuf[i] = 0x55;
             }
 
-            oldbuf[0x2C + 0] = 0;
-            oldbuf[0x2C + 1] = 0;
-            oldbuf[0x2C + 2] = 0;
-            oldbuf[0x2C + 3] = 5;
-
-            oldbuf[0x2C + 4] = 0;
-            oldbuf[0x2C + 5] = 0;
-            oldbuf[0x2C + 6] = 0;
-            oldbuf[0x2C + 7] = 0;
-
-            oldbuf[0x2C + 8] = 0;
-            oldbuf[0x2C + 9] = 0;
-            oldbuf[0x2C + 10] = 0;
-            oldbuf[0x2C + 11] = 0;
-
-            oldbuf[0x2C + 12] = 0;
-            oldbuf[0x2C + 13] = 0;
-            oldbuf[0x2C + 14] = 0;
-            oldbuf[0x2C + 15] = (byte) pti.code;
-
-            oldbuf[0x2C + 16] = 0;
-            oldbuf[0x2C + 17] = 0;
-            oldbuf[0x2C + 18] = 0;
-            oldbuf[0x2C + 19] = (byte) 0x70;
+            writeUnaligned32(oldbuf, 0x2C + 0, PSP_KIRK_CMD_MODE_DECRYPT_CBC);
+            writeUnaligned32(oldbuf, 0x2C + 4, 0);
+            writeUnaligned32(oldbuf, 0x2C + 8, 0);
+            writeUnaligned32(oldbuf, 0x2C + 12, pti.code);
+            writeUnaligned32(oldbuf, 0x2C + 16, 0x70);
 
             System.arraycopy(buf, 0xD0, oldbuf1, 0, 0x80);
             System.arraycopy(buf, 0x80, oldbuf1, 0x80, 0x50);
@@ -396,7 +440,7 @@ public class PRX {
             if (pti.codeExtra != 0) {
                 byte[] tmp = new byte[0x14 + 0xA0];
                 System.arraycopy(oldbuf1, 0x10, tmp, 0x14, 0xA0);
-                ScramblePRX(tmp, 0xA0, (byte) pti.codeExtra);
+                ScramblePRX(tmp, 0, 0xA0, pti.codeExtra);
                 System.arraycopy(tmp, 0, oldbuf1, 0x10, 0xA0);
             }
 
@@ -407,11 +451,10 @@ public class PRX {
             }
 
             // Scramble the data by calling CMD7.
-            ByteBuffer bScrambleOut = ByteBuffer.allocate(oldbuf.length);
-            ByteBuffer bScrambleIn = ByteBuffer.wrap(oldbuf);
-            bScrambleIn.position(0x2C);
-            kirk.hleUtilsBufferCopyWithRange(bScrambleOut, 0x70, bScrambleIn, 0x70, KIRK.PSP_KIRK_CMD_DECRYPT);
-            System.arraycopy(bScrambleOut.array(), 0, oldbuf, 0x2C, 0x70);
+            result = semaphoreModule.hleUtilsBufferCopyWithRange(oldbuf, 0x2C, 0x70, oldbuf, 0x2C, 0x70, KIRK.PSP_KIRK_CMD_DECRYPT);
+            if (result != 0) {
+            	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_DECRYPT returned error %d", result));
+            }
 
             for (int iXOR = 0x6F; iXOR >= 0; iXOR--) {
                 oldbuf[0x40 + iXOR] = (byte) (oldbuf[0x2C + iXOR] ^ pti.key[0x20 + iXOR]);
@@ -426,21 +469,32 @@ public class PRX {
             oldbuf[0xA1] = 0x0;
             oldbuf[0xA2] = 0x0;
             oldbuf[0xA3] = 0x1;
-            
+
             System.arraycopy(buf, 0xB0, oldbuf, 0xB0, 0x20);
             System.arraycopy(buf, 0, oldbuf, 0xD0, 0x80);
 
             // Call KIRK CMD1 for final decryption.
-            ByteBuffer bDataOut = ByteBuffer.wrap(oldbuf);
-            ByteBuffer bHeaderIn = bDataOut.duplicate().order(ByteOrder.LITTLE_ENDIAN);
-            bHeaderIn.position(0x40);
-            kirk.hleUtilsBufferCopyWithRange(bDataOut, size, bHeaderIn, size, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
-            
-            // Copy back the decrypted file.
-            System.arraycopy(oldbuf, 0, buf, 0, size);
+            result = semaphoreModule.hleUtilsBufferCopyWithRange(buf, 0, size, oldbuf, 0x40, size - 0x40, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
+            if (result != 0) {
+            	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_DECRYPT_PRIVATE returned error %d", result));
+            }
         } else { // New encryption method (16 bytes key).
+            // Setup temporary buffers.
+            byte[] buf1 = new byte[0x150];
+            byte[] buf2 = new byte[0x150];
+            byte[] buf3 = new byte[0x90];
+            byte[] buf4 = new byte[0xB4];
+            byte[] buf5 = new byte[0x20];
+            byte[] buf6 = new byte[0x28];
+            byte[] sigbuf = new byte[0x28];
+            byte[] sha1buf = new byte[0x14];
+            int unk_0xD4 = 0;
+
+            // Copy the first header to buf1.
+            System.arraycopy(buf, 0, buf1, 0, 0x150);
+
             // Read in the user key and apply scramble.
-            if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
+            if ((type >= 2 && type <= 7) || type == 9 || type == 10) {
                 for (int i = 0; i < 9; i++) {
                     for (int j = 0; j < 0x10; j++) {
                         buf2[0x14 + ((i << 4) + j)] = (byte) pti.key[j];
@@ -453,10 +507,10 @@ public class PRX {
                 }
             }
 
-            ScramblePRX(buf2, 0x90, (byte) (pti.code & 0xFF));
+            ScramblePRX(buf2, 0, 0x90, pti.code);
 
             // Round XOR key for PRX type 3,5,7 and 10.
-            if ((type == 3) || (type == 5) || (type == 7) || (type == 10)) {
+            if (type == 3 || type == 5 || type == 7 || type == 10) {
                 if (!isNullKey(xor2)) {
                     RoundXOR(buf2, 0x90, xor2, null);
                 }
@@ -465,7 +519,7 @@ public class PRX {
             System.arraycopy(buf2, 0, buf3, 0, 0x90);
 
             // Type 9 and 10 specific step.
-            if ((type == 9) || (type == 10)) {
+            if (type == 9 || type == 10) {
                 System.arraycopy(buf, 0x104, buf6, 0, buf6.length);
 
                 for (int i = 0; i < buf6.length; i++) {
@@ -474,32 +528,35 @@ public class PRX {
 
                 System.arraycopy(buf6, 0, sigbuf, 0, sigbuf.length);
 
-                buf[0] = (byte) (((size - 4) & 0xFF) << 24);
-                buf[1] = (byte) (((size - 4) & 0xFF) << 16);
-                buf[2] = (byte) (((size - 4) & 0xFF) << 8);
-                buf[3] = (byte) (((size - 4) & 0xFF));
+                writeUnaligned32(buf, 0, size - 4);
 
                 // Generate SHA1 hash.
-                ByteBuffer bSHA1 = ByteBuffer.wrap(buf);
-                kirk.hleUtilsBufferCopyWithRange(bSHA1, size, bSHA1, size, KIRK.PSP_KIRK_CMD_SHA1_HASH);
+                result = semaphoreModule.hleUtilsBufferCopyWithRange(buf, 0, size, buf, 0, size, KIRK.PSP_KIRK_CMD_SHA1_HASH);
+                if (result != 0) {
+                	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_SHA1_HASH returned error %d", result));
+                }
 
                 System.arraycopy(buf, 0, sha1buf, 0, sha1buf.length);
-                System.arraycopy(buf, 0, buf1, 0, 0x20);
+                System.arraycopy(buf1, 0, buf, 0, 0x20);
 
-                if ((((tag << 16) & 0xFF) & 0x16) == 0x16) {
-                    System.arraycopy(KeyVault.g_pubkey_28752, 0, buf4, 0, KeyVault.g_pubkey_28752.length);
-                } else if ((((tag << 16) & 0xFF) & 0x5E) == 0x5E) {
-                    System.arraycopy(KeyVault.g_pubkey_28712, 0, buf4, 0, KeyVault.g_pubkey_28712.length);
-                } else {
-                    System.arraycopy(KeyVault.g_pubkey_28672, 0, buf4, 0, KeyVault.g_pubkey_28672.length);
+                int[] pubKey;
+                switch ((tag >> 16) & 0xFF) {
+                	case 0x16: pubKey = KeyVault.g_pubkey_28752; break;
+                	case 0x5E: pubKey = KeyVault.g_pubkey_28712; break;
+                	default:   pubKey = KeyVault.g_pubkey_28672; break;
+                }
+                for (int i = 0; i < pubKey.length; i++) {
+                	buf4[i] = (byte) pubKey[i];
                 }
 
                 System.arraycopy(sha1buf, 0, buf4, 0x28, sha1buf.length);
                 System.arraycopy(sigbuf, 0, buf4, 0x28 + sha1buf.length, sigbuf.length);
 
                 // Verify ECDSA signature.
-                ByteBuffer bECDSA = ByteBuffer.wrap(buf4);
-                kirk.hleUtilsBufferCopyWithRange(null, 0, bECDSA, 100, KIRK.PSP_KIRK_CMD_ECDSA_VERIFY);
+                result = semaphoreModule.hleUtilsBufferCopyWithRange(null, 0, 0, buf4, 0, 100, KIRK.PSP_KIRK_CMD_ECDSA_VERIFY);
+                if (result != 0) {
+                	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_ECDSA_VERIFY returned error %d", result));
+                }
             }
 
             if (type == 3) {
@@ -526,9 +583,10 @@ public class PRX {
                 System.arraycopy(tmp, 0, buf2, 0x90, 0x50);
 
                 // Decrypt signature (type 3).
-                ByteBuffer bSIGin = ByteBuffer.wrap(buf2);
-                ByteBuffer bSIGout = ByteBuffer.wrap(buf4);
-                kirk.hleUtilsBufferCopyWithRange(bSIGout, 0xB4, bSIGin, 0x150, KIRK.PSP_KIRK_CMD_DECRYPT_SIGN);
+                result = semaphoreModule.hleUtilsBufferCopyWithRange(buf4, 0, 0xB4, buf2, 0, 0x150, KIRK.PSP_KIRK_CMD_DECRYPT_SIGN);
+                if (result != 0) {
+                	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_DECRYPT_SIGN returned error %d", result));
+                }
 
                 // Regenerate signature.
                 System.arraycopy(buf1, 0xD0, buf2, 0, 0x4);
@@ -542,7 +600,7 @@ public class PRX {
                 System.arraycopy(buf4, 0x30, buf2, 0xB0, 0x10);
                 System.arraycopy(buf1, 0xB0, buf2, 0xC0, 0x10);
                 System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
-            } else if ((type == 5) || (type == 7) || (type == 10)) {
+            } else if (type == 5 || type == 7 || type == 10) {
                 System.arraycopy(buf1, 0x80, buf2, 0x14, 0x30);
                 System.arraycopy(buf1, 0xC0, buf2, 0x44, 0x10);
                 System.arraycopy(buf1, 0x12C, buf2, 0x54, 0x10);
@@ -558,7 +616,7 @@ public class PRX {
                 System.arraycopy(tmp, 0, buf2, 0x14, 0x50);
 
                 // Apply scramble.
-                ScramblePRX(buf2, 0x50, (byte) (pti.code & 0xFF));
+                ScramblePRX(buf2, 0, 0x50, pti.code);
 
                 // Copy to buf4.
                 System.arraycopy(buf2, 0, buf4, 0, 0x50);
@@ -575,7 +633,7 @@ public class PRX {
                 System.arraycopy(buf4, 0x30, buf2, 0xB0, 0x10);
                 System.arraycopy(buf1, 0xB0, buf2, 0xC0, 0x10);
                 System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
-            } else if ((type == 2) || (type == 4) || (type == 6) || (type == 9)) {
+            } else if (type == 2 || type == 4 || type == 6 || type == 9) {
                 // Regenerate sig check.
                 System.arraycopy(buf1, 0xD0, buf2, 0, 0x5C);
                 System.arraycopy(buf1, 0x140, buf2, 0x5C, 0x10);
@@ -584,6 +642,11 @@ public class PRX {
                 System.arraycopy(buf1, 0xC0, buf2, 0xB0, 0x10);
                 System.arraycopy(buf1, 0xB0, buf2, 0xC0, 0x10);
                 System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
+                if (type == 9) {
+                	for (int i = 0; i < 0x28; i++) {
+                		buf2[0x34 + i] = (byte) 0;
+                	}
+                }
             } else {
                 // Regenerate sig check.
                 System.arraycopy(buf1, 0xD0, buf2, 0, 0x80);
@@ -593,12 +656,12 @@ public class PRX {
 
             if (type == 1) {
                 System.arraycopy(buf2, 0x10, buf4, 0x14, 0xA0);
-                ScramblePRX(buf4, 0xA0, (byte) (pti.code & 0xFF));
+                ScramblePRX(buf4, 0, 0xA0, pti.code);
                 System.arraycopy(buf4, 0, buf2, 0x10, 0xA0);
-            } else if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
+            } else if ((type >= 2 && type <= 7) || type == 9 || type == 10) {
                 System.arraycopy(buf2, 0x5C, buf4, 0x14, 0x60);
 
-                if ((type == 3) || (type == 5) || (type == 7) || (type == 10)) {
+                if (type == 3 || type == 5 || type == 7 || type == 10) {
                     byte[] tmp = new byte[0x60];
                     for (int i = 0; i < tmp.length; i++) {
                         tmp[i] = buf4[0x14 + i];
@@ -606,11 +669,11 @@ public class PRX {
                     RoundXOR(tmp, 0x60, xor1, null);
                     System.arraycopy(tmp, 0, buf4, 0x14, 0x60);
                 }
-                ScramblePRX(buf4, 0x60, (byte) (pti.code & 0xFF));
+                ScramblePRX(buf4, 0, 0x60, pti.code);
                 System.arraycopy(buf4, 0, buf2, 0x5C, 0x60);
             }
 
-            if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
+            if ((type >= 2 && type <= 7) || type == 9 || type == 10) {
                 System.arraycopy(buf2, 0x6C, buf4, 0, 0x14);
 
                 if (type == 4) {
@@ -621,7 +684,7 @@ public class PRX {
                 } else {
                     System.arraycopy(buf2, 0x5C, buf2, 0x70, 0x10);
 
-                    if ((type == 6) || (type == 7)) {
+                    if (type == 6 || type == 7) {
                         System.arraycopy(buf2, 0x3C, buf5, 0, 0x20);
                         System.arraycopy(buf5, 0, buf2, 0x50, 0x20);
                         for (int i = 0; i < 0x38; i++) {
@@ -640,26 +703,22 @@ public class PRX {
 
                 // Set the SHA1 block size to digest.
                 System.arraycopy(buf2, 0, buf2, 0x4, 4);
-                buf2[0] = 0x00;
-                buf2[1] = 0x00;
-                buf2[2] = 0x01;
-                buf2[3] = 0x4C;
+                writeUnaligned32(buf2, 0, 0x14C);
                 System.arraycopy(buf3, 0, buf2, 0x8, 0x10);
             } else {
                 // Set the SHA1 block size to digest.
                 System.arraycopy(buf2, 0x4, buf4, 0, 0x14);
-                buf2[0] = 0x00;
-                buf2[1] = 0x00;
-                buf2[2] = 0x01;
-                buf2[3] = 0x4C;
+                writeUnaligned32(buf2, 0, 0x14C);
                 System.arraycopy(buf3, 0, buf2, 0x4, 0x14);
             }
 
             // Generate SHA1 hash.
-            ByteBuffer bSHA1Out = ByteBuffer.wrap(buf2);
-            kirk.hleUtilsBufferCopyWithRange(bSHA1Out, 0x150, bSHA1Out, 0x150, KIRK.PSP_KIRK_CMD_SHA1_HASH);
+            result = semaphoreModule.hleUtilsBufferCopyWithRange(buf2, 0, 0x150, buf2, 0, 0x150, KIRK.PSP_KIRK_CMD_SHA1_HASH);
+            if (result != 0) {
+            	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_SHA1_HASH returned error %d", result));
+            }
 
-            if ((type >= 2) && (type <= 7) || (type == 9) || (type == 10)) {
+            if ((type >= 2 && type <= 7) || type == 9 || type == 10) {
                 byte[] tmp1 = new byte[0x40];
                 byte[] tmp2 = new byte[0x40];
                 byte[] tmp3 = new byte[0x40 + 0x14];
@@ -674,7 +733,7 @@ public class PRX {
 
                 MixXOR(tmp1, 0x40, tmp1, tmp2);
                 System.arraycopy(tmp1, 0, tmp3, 0x14, 0x40);
-                ScramblePRX(tmp3, 0x40, (byte) (pti.code & 0xFF));
+                ScramblePRX(tmp3, 0, 0x40, pti.code);
                 System.arraycopy(tmp3, 0, buf2, 0x80, 0x40);
 
                 for (int i = 0; i < 0x40; i++) {
@@ -686,7 +745,7 @@ public class PRX {
                 MixXOR(tmp4, 0x40, tmp5, tmp6);
                 System.arraycopy(tmp4, 0, buf, 0x40, 0x40);
 
-                if ((type == 6) || (type == 7)) {
+                if (type == 6 || type == 7) {
                     System.arraycopy(buf5, 0, buf, 0x80, 0x20);
                     for (int i = 0; i < 0x10; i++) {
                         buf[0xA0 + i] = 0;
@@ -695,18 +754,12 @@ public class PRX {
                     buf[0xA5] = 0x0;
                     buf[0xA6] = 0x0;
                     buf[0xA7] = 0x1;
-                    buf[0xA0] = 0x0;
-                    buf[0xA1] = 0x0;
-                    buf[0xA2] = 0x0;
-                    buf[0xA3] = 0x1;
+                    writeUnaligned32(buf, 0xA0, PSP_KIRK_CMD_MODE_CMD1);
                 } else {
                     for (int i = 0; i < 0x30; i++) {
                         buf[0x80 + i] = 0;
                     }
-                    buf[0xA0] = 0x0;
-                    buf[0xA1] = 0x0;
-                    buf[0xA2] = 0x0;
-                    buf[0xA3] = 0x1;
+                    writeUnaligned32(buf, 0xA0, PSP_KIRK_CMD_MODE_CMD1);
                 }
 
                 System.arraycopy(buf2, 0xC0, buf, 0xB0, 0x10);
@@ -728,7 +781,7 @@ public class PRX {
 
                 MixXOR(tmp7, 0x70, tmp7, tmp8);
                 System.arraycopy(tmp7, 0, tmp9, 0x14, 0x70);
-                ScramblePRX(tmp9, 0x70, (byte) (pti.code & 0xFF));
+                ScramblePRX(tmp9, 0, 0x70, pti.code);
                 System.arraycopy(tmp9, 0, buf2, 0x40, 0x40);
 
                 for (int i = 0; i < 0x70; i++) {
@@ -756,10 +809,10 @@ public class PRX {
             }
 
             // Call KIRK CMD1 for final decryption.
-            ByteBuffer bDataOut = ByteBuffer.wrap(buf);
-            ByteBuffer bHeaderIn = bDataOut.duplicate().order(ByteOrder.LITTLE_ENDIAN);
-            bHeaderIn.position(0x40);
-            kirk.hleUtilsBufferCopyWithRange(bDataOut, size, bHeaderIn, size, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
+            result = semaphoreModule.hleUtilsBufferCopyWithRange(buf, 0, size, buf, 0x40, size, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
+            if (result != 0) {
+            	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_DECRYPT_PRIVATE returned error %d", result));
+            }
 
             if (retsize < 0x150) {
                 for (int i = 0; i < (0x150 - retsize); i++) {

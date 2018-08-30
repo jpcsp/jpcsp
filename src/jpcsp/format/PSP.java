@@ -166,10 +166,11 @@ public class PSP {
         	f.get(inBuf);
         	f.position(currentPosition);
         }
-        int inSize = inBuf.length;
-        int retsize = crypto.getPRXEngine().DecryptPRX(inBuf, inSize, null, 0, 2, null, null);
 
-        if (retsize < 0) {
+        int inSize = inBuf.length;
+        byte[] elfBuffer = crypto.getPRXEngine().DecryptAndUncompressPRX(inBuf, inSize);
+
+        if (elfBuffer == null) {
         	return null;
         }
 
@@ -178,14 +179,14 @@ public class PSP {
                 String ebootPath = Settings.getInstance().getDiscTmpDirectory();
                 new File(ebootPath).mkdirs();
                 RandomAccessFile raf = new RandomAccessFile(ebootPath + "EBOOT.BIN", "rw");
-                raf.write(inBuf, 0, retsize);
+                raf.write(elfBuffer);
                 raf.close();
-            } catch (Exception e) {
+            } catch (IOException e) {
                 // Ignore.
             }
         }
 
-        return ByteBuffer.wrap(inBuf, 0, retsize);
+        return ByteBuffer.wrap(elfBuffer);
     }
 
     public boolean isValid() {

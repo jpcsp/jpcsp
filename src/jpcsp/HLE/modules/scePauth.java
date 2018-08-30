@@ -92,7 +92,7 @@ public class scePauth extends HLEModule {
                 pauthKey.close();
                 
                 // Decryption is not working properly due to a missing KIRK key.
-                int reslength = crypto.getPRXEngine().DecryptPRX(in, inputLength, null, 0, 5, key, xor);
+                int reslength = crypto.getPRXEngine().DecryptPRX(in, inputLength, 5, key, xor);
                 
                 // Fake the result.
                 inputAddr.clear(reslength);
@@ -160,7 +160,7 @@ public class scePauth extends HLEModule {
                 pauthKey.close();
                 
                 // Decryption is not working properly due to a missing KIRK key.
-                int reslength = crypto.getPRXEngine().DecryptPRX(in, inputLength, null, 0, 5, key, xor);
+                int reslength = crypto.getPRXEngine().DecryptPRX(in, inputLength, 5, key, xor);
                 
                 // Fake the result.
                 inputAddr.clear(reslength);
