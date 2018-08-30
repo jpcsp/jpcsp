@@ -369,6 +369,7 @@ public class KIRK {
 
         // Set the final PRNG number.
         System.arraycopy(key, 0, temp, 0x1C, 0x10);
+        bPRNG.clear();
         executeKIRKCmd11(bPRNG, bTemp, 0x104);
 
         fuseID0 = fuseid0;
@@ -384,6 +385,8 @@ public class KIRK {
         if (!CryptoEngine.getCryptoEngineStatus()) {
             return PSP_KIRK_NOT_INIT;
         }
+
+        int outPosition = out.position();
 
         // Copy the input for sig check.
         ByteBuffer sigIn = in.duplicate();
@@ -441,7 +444,7 @@ public class KIRK {
         System.arraycopy(in.array(), elfDataOffset + headerOffset + headerSize, inBuf, 0, paddedElfDataSize);
         byte[] outBuf = aes.decrypt(inBuf, aesBuf, priv_iv);
 
-        out.clear();
+        out.position(outPosition);
         out.put(outBuf);
         out.limit(elfDataSize);
         in.clear();
@@ -455,6 +458,8 @@ public class KIRK {
         if (!CryptoEngine.getCryptoEngineStatus()) {
             return PSP_KIRK_NOT_INIT;
         }
+
+        int outPosition = out.position();
 
         // Read in the CMD4 format header.
         AES128_CBC_Header header = new AES128_CBC_Header(in);
@@ -483,7 +488,7 @@ public class KIRK {
         in.get(inBuf, 0, header.dataSize);
         byte[] outBuf = aes.encrypt(inBuf, encKey, priv_iv);
 
-        out.clear();
+        out.position(outPosition);
         // The header is kept in the output and the header.mode is even updated from
         // PSP_KIRK_CMD_MODE_ENCRYPT_CBC to PSP_KIRK_CMD_MODE_DECRYPT_CBC.
         out.putInt(PSP_KIRK_CMD_MODE_DECRYPT_CBC);
@@ -504,6 +509,8 @@ public class KIRK {
             return PSP_KIRK_NOT_INIT;
         }
 
+        int outPosition = out.position();
+
         // Read in the CMD4 format header.
         AES128_CBC_Header header = new AES128_CBC_Header(in);
 
@@ -533,7 +540,7 @@ public class KIRK {
         in.get(inBuf, 0, header.dataSize);
         byte[] outBuf = aes.encrypt(inBuf, encKey, priv_iv);
 
-        out.clear();
+        out.position(outPosition);
         // The header is kept in the output and the header.mode is even updated from
         // PSP_KIRK_CMD_MODE_ENCRYPT_CBC to PSP_KIRK_CMD_MODE_DECRYPT_CBC.
         out.putInt(PSP_KIRK_CMD_MODE_DECRYPT_CBC);
@@ -553,6 +560,8 @@ public class KIRK {
         if (!CryptoEngine.getCryptoEngineStatus()) {
             return PSP_KIRK_NOT_INIT;
         }
+
+        int outPosition = out.position();
 
         // Read in the CMD7 format header.
         AES128_CBC_Header header = new AES128_CBC_Header(in);
@@ -581,7 +590,7 @@ public class KIRK {
         in.get(inBuf, 0, header.dataSize);
         byte[] outBuf = aes.decrypt(inBuf, decKey, priv_iv);
 
-        out.clear();
+        out.position(outPosition);
         out.put(outBuf);
         in.clear();
 
@@ -594,6 +603,8 @@ public class KIRK {
         if (!CryptoEngine.getCryptoEngineStatus()) {
             return PSP_KIRK_NOT_INIT;
         }
+
+        int outPosition = out.position();
 
         // Read in the CMD7 format header.
         AES128_CBC_Header header = new AES128_CBC_Header(in);
@@ -624,7 +635,7 @@ public class KIRK {
         in.get(inBuf, 0, header.dataSize);
         byte[] outBuf = aes.decrypt(inBuf, decKey, priv_iv);
 
-        out.clear();
+        out.position(outPosition);
         out.put(outBuf);
         in.clear();
 
@@ -713,13 +724,15 @@ public class KIRK {
             return PSP_KIRK_NOT_INIT;
         }
 
+        int outPosition = out.position();
+
         SHA1_Header header = new SHA1_Header(in);
         SHA1 sha1 = new SHA1();
 
         size = (size < header.dataSize) ? size : header.dataSize;
         header.readData(in, size);
 
-        out.clear();
+        out.position(outPosition);
         out.put(sha1.doSHA1(header.data, size));
         in.clear();
 
