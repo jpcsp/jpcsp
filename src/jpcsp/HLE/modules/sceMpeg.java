@@ -2408,6 +2408,13 @@ public class sceMpeg extends HLEModule {
         	if (decodedImageInfo.frameEnd < 0) {
         		// Return an error only past the last video timestamp
         		if (psmfHeader == null || currentVideoTimestamp > psmfHeader.mpegLastTimestamp || !isRegisteredAudioChannel()) {
+        			if (log.isDebugEnabled()) {
+        				if (psmfHeader == null) {
+        					log.debug(String.format("hleMpegGetAvcAu with psmfHeader==null, returning ERROR_MPEG_NO_DATA"));
+        				} else {
+        					log.debug(String.format("hleMpegGetAvcAu with currentVideoTimestamp=%d and psmfHeader.mpegLastTimestamp=%d, returning ERROR_MPEG_NO_DATA", currentVideoTimestamp, psmfHeader.mpegLastTimestamp));
+        				}
+        			}
 	    			result = SceKernelErrors.ERROR_MPEG_NO_DATA;
         		}
         	}
