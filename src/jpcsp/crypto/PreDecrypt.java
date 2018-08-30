@@ -50,7 +50,7 @@ public class PreDecrypt {
 			this.cmd = cmd;
 		}
 
-		public boolean decrypt(byte[] out, int outSize, byte[] in, int inSize, int cmd) {
+		public boolean decrypt(byte[] out, int outOffset, int outSize, byte[] in, int inOffset, int inSize, int cmd) {
 			if (this.cmd != cmd) {
 				return false;
 			}
@@ -59,12 +59,14 @@ public class PreDecrypt {
 			}
 
 			for (int i = 0; i < inSize; i++) {
-				if (input[i] != in[i]) {
+				if (input[i] != in[inOffset + i]) {
 					return false;
 				}
 			}
 
-			System.arraycopy(output, 0, out, 0, outSize);
+			if (out != null && outSize > 0) {
+				System.arraycopy(output, 0, out, outOffset, outSize);
+			}
 
 			return true;
 		}
@@ -127,9 +129,9 @@ public class PreDecrypt {
 		}
 	}
 
-	public static boolean preDecrypt(byte[] out, int outSize, byte[] in, int inSize, int cmd) {
+	public static boolean preDecrypt(byte[] out, int outOffset, int outSize, byte[] in, int inOffset, int inSize, int cmd) {
 		for (PreDecryptInfo preDecrypt : preDecrypts) {
-			if (preDecrypt.decrypt(out, outSize, in, inSize, cmd)) {
+			if (preDecrypt.decrypt(out, outOffset, outSize, in, inOffset, inSize, cmd)) {
 				return true;
 			}
 		}
