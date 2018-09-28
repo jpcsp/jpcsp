@@ -87,6 +87,15 @@ public class sceMpegbase extends HLEModule {
 		copy(mem, dst, src, blocks << 4);
 	}
 
+    public int hleMpegBaseCscAvc(TPointer bufferRGB, int unknown, int bufferWidth, SceMp4AvcCscStruct mp4AvcCscStruct) {
+    	int rangeX = 0;
+        int rangeY = 0;
+        int rangeWidth = mp4AvcCscStruct.width << 4;
+        int rangeHeight = mp4AvcCscStruct.height << 4;
+
+    	return hleMpegBaseCscAvcRange(bufferRGB, unknown, bufferWidth, mp4AvcCscStruct, rangeX, rangeY, rangeWidth, rangeHeight);
+    }
+
     private int hleMpegBaseCscAvcRange(TPointer bufferRGB, int unknown, int bufferWidth, SceMp4AvcCscStruct mp4AvcCscStruct, int rangeX, int rangeY, int rangeWidth, int rangeHeight) {
     	int width = mp4AvcCscStruct.width << 4;
     	int height = mp4AvcCscStruct.height << 4;
@@ -95,6 +104,10 @@ public class sceMpegbase extends HLEModule {
     	int videoPixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 		int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         int destAddr = bufferRGB.getAddress();
+
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("hleMpegBaseCscAvcRange width=%d, height=%d, pixelMode=%d, destAddr=%s", width, height, videoPixelMode, bufferRGB));
+        }
 
         int width2 = width >> 1;
     	int height2 = height >> 1;
@@ -223,23 +236,22 @@ public class sceMpegbase extends HLEModule {
     }
 
     @HLEFunction(nid = 0xBEA18F91, version = 150)
-    public int sceMpegBasePESpacketCopy(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 packetInfo) {
-    	Memory mem = Memory.getInstance();
-    	int infoAddr = packetInfo.getAddress();
-    	while (infoAddr != 0) {
-    		int bufferAddr = mem.read32(infoAddr + 0);
-    		int destinationAddr = mem.read32(infoAddr + 4) | MemoryMap.START_RAM;
-    		int nextInfoAddr = mem.read32(infoAddr + 8);
-    		int bufferLength = mem.read32(infoAddr + 12) & 0x00000FFF;
+    public int sceMpegBasePESpacketCopy(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer packetInfo) {
+    	Memory mem = packetInfo.getMemory();
+    	while (packetInfo.isNotNull()) {
+    		int bufferAddr = packetInfo.getValue32(0);
+    		int destinationAddr = packetInfo.getValue32(4) | MemoryMap.START_RAM;
+    		TPointer nextPacketInfo = packetInfo.getPointer(8);
+    		int bufferLength = packetInfo.getValue32(12) & 0x00000FFF;
 
     		if (log.isDebugEnabled()) {
-    			log.debug(String.format("sceMpegBasePESpacketCopy packet at 0x%08X: bufferAddr=0x%08X, destinationAddr=0x%08X, nextInfoAddr=0x%08X, bufferLength=0x%X: %s", infoAddr, bufferAddr, destinationAddr, nextInfoAddr, bufferLength, Utilities.getMemoryDump(bufferAddr, bufferLength)));
+    			log.debug(String.format("sceMpegBasePESpacketCopy packet at %s: bufferAddr=0x%08X, destinationAddr=0x%08X, nextInfoAddr=%s, bufferLength=0x%X: %s", packetInfo, bufferAddr, destinationAddr, nextPacketInfo, bufferLength, Utilities.getMemoryDump(bufferAddr, bufferLength)));
     		}
     		if (bufferLength == 0) {
     			return SceKernelErrors.ERROR_INVALID_SIZE;
     		}
     		mem.memcpy(destinationAddr, bufferAddr, bufferLength);
-        	infoAddr = nextInfoAddr;
+    		packetInfo = nextPacketInfo;
     	}
 
     	Modules.sceMpegModule.hleMpegNotifyRingbufferRead();
@@ -381,7 +393,7 @@ public class sceMpegbase extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x492B5E4B, version = 150)
-    public int sceMpegBaseCscInit(int unknown) {
+    public int sceMpegBaseCscInit(int frameWidth) {
     	// sceMpegBaseCscAvc is decoding with no alpha
     	H264Utils.setAlpha(0x00);
 
@@ -393,16 +405,11 @@ public class sceMpegbase extends HLEModule {
         SceMp4AvcCscStruct mp4AvcCscStruct = new SceMp4AvcCscStruct();
     	mp4AvcCscStruct.read(mp4AvcCscStructAddr);
 
-    	int rangeX = 0;
-        int rangeY = 0;
-        int rangeWidth = mp4AvcCscStruct.width << 4;
-        int rangeHeight = mp4AvcCscStruct.height << 4;
-
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceMpegBaseCscAvc %s", mp4AvcCscStruct));
     	}
 
-    	return hleMpegBaseCscAvcRange(bufferRGB, unknown, bufferWidth, mp4AvcCscStruct, rangeX, rangeY, rangeWidth, rangeHeight);
+    	return hleMpegBaseCscAvc(bufferRGB, unknown, bufferWidth, mp4AvcCscStruct);
     }
 
     @HLEFunction(nid = 0x304882E1, version = 150)
