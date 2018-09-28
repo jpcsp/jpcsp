@@ -584,7 +584,7 @@ public class sceNetAdhocctl extends HLEModule {
         doDisconnect = false;
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         adhocctlThread = threadMan.hleKernelCreateThread("SceNetAdhocctl", ThreadManForUser.NET_ADHOC_CTL_LOOP_ADDRESS, priority, stackSize, 0, 0, SysMemUserForUser.USER_PARTITION_ID);
-        threadMan.hleKernelStartThread(adhocctlThread, 0, 0, adhocctlThread.gpReg_addr);
+        threadMan.hleKernelStartThread(adhocctlThread, 0, TPointer.NULL, adhocctlThread.gpReg_addr);
 
         networkAdapter.sceNetAdhocctlInit();
 

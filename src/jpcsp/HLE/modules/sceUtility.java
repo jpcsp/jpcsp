@@ -760,7 +760,7 @@ public class sceUtility extends HLEModule {
 
                 // Execute the init thread, it will update the status
                 SceKernelThreadInfo initThread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceUtilityInit", ThreadManForUser.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0, SysMemUserForUser.USER_PARTITION_ID);
-                Modules.ThreadManForUserModule.hleKernelStartThread(initThread, 0, 0, initThread.gpReg_addr);
+                Modules.ThreadManForUserModule.hleKernelStartThread(initThread, 0, TPointer.NULL, initThread.gpReg_addr);
                 initThread.cpuContext.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_INIT_START);
                 initThread.cpuContext.setRegister(utilityThreadDelayRegister, getInitDelay());
             }
@@ -828,7 +828,7 @@ public class sceUtility extends HLEModule {
 
             // Execute the shutdown thread, it will set the status to 0.
             SceKernelThreadInfo shutdownThread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceUtilityShutdown", ThreadManForUser.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0, SysMemUserForUser.USER_PARTITION_ID);
-            Modules.ThreadManForUserModule.hleKernelStartThread(shutdownThread, 0, 0, shutdownThread.gpReg_addr);
+            Modules.ThreadManForUserModule.hleKernelStartThread(shutdownThread, 0, TPointer.NULL, shutdownThread.gpReg_addr);
             shutdownThread.cpuContext.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN_START);
             shutdownThread.cpuContext.setRegister(utilityThreadDelayRegister, getShutdownDelay());
 

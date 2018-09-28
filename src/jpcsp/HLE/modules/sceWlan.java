@@ -816,7 +816,7 @@ public class sceWlan extends HLEModule {
     	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceWlanHal", ThreadManForUser.WLAN_LOOP_ADDRESS, 39, 2048, 0, 0, KERNEL_PARTITION_ID);
     	if (thread != null) {
     		wlanThreadUid = thread.uid;
-    		Modules.ThreadManForUserModule.hleKernelStartThread(thread, 0, 0, 0);
+    		Modules.ThreadManForUserModule.hleKernelStartThread(thread, 0, TPointer.NULL, 0);
     	}
 
     	Modules.ThreadManForUserModule.sceKernelSignalSema(handle.handleInternal.ioctlSemaId, 1);

@@ -786,10 +786,11 @@ public class ThreadManForUser extends HLEModule {
     	memoryWriter.flush();
     }
 
-    public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, int argumentAddr, int argumentSize) {
-    	int address = prepareThreadArguments(thread, argumentAddr == 0 ? -1 : argumentSize);
-    	if (argumentAddr != 0) {
-    		Memory.getInstance().memcpy(address, argumentAddr, argumentSize);
+    public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, TPointer argumentAddr, int argumentSize) {
+    	int address = prepareThreadArguments(thread, argumentAddr.isNull() ? -1 : argumentSize);
+    	if (argumentAddr.isNotNull()) {
+    		TPointer destinationAddr = new TPointer(getMemory(), address);
+    		destinationAddr.memcpy(argumentAddr, argumentSize);
     	}
     }
 
@@ -948,14 +949,14 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public static void installHLESyscall(int address, HLEModule hleModule, String name) {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 12, 4);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 8, 4);
         memoryWriter.writeNext(JR());
         memoryWriter.writeNext(SYSCALL(hleModule, name));
         memoryWriter.flush();
     }
 
     private void installHLESyscall(int address, String name) {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 12, 4);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 8, 4);
         memoryWriter.writeNext(JR());
         memoryWriter.writeNext(SYSCALL(name));
         memoryWriter.flush();
@@ -966,9 +967,16 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void installLoopHandler(String hleFunctionName, int address) {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 0x20, 4);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 8, 4);
         memoryWriter.writeNext(B(-1));
         memoryWriter.writeNext(SYSCALL(hleFunctionName));
+        memoryWriter.flush();
+    }
+
+    public static void installHLEThread(int address, HLEModule hleModule, String hleFunctionName) {
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 8, 4);
+        memoryWriter.writeNext(B(-1));
+        memoryWriter.writeNext(SYSCALL(hleModule, hleFunctionName));
         memoryWriter.flush();
     }
 
@@ -2340,9 +2348,9 @@ public class ThreadManForUser extends HLEModule {
         return thread;
     }
 
-    public void hleKernelStartThread(SceKernelThreadInfo thread, int userDataLength, int userDataAddr, int gp) {
+    public void hleKernelStartThread(SceKernelThreadInfo thread, int userDataLength, @CanBeNull TPointer userDataAddr, int gp) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("hleKernelStartThread SceUID=0x%X, name='%s', dataLen=0x%X, data=0x%08X, gp=0x%08X", thread.uid, thread.name, userDataLength, userDataAddr, gp));
+            log.debug(String.format("hleKernelStartThread SceUID=0x%X, name='%s', dataLen=0x%X, data=%s, gp=0x%08X", thread.uid, thread.name, userDataLength, userDataAddr, gp));
         }
         // Reset all thread parameters: a thread can be restarted when it has exited.
         thread.reset();
@@ -3840,7 +3848,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xF475845D, version = 150, checkInsideInterrupt = true)
-    public int sceKernelStartThread(@CheckArgument("checkThreadID") int uid, int len, int data_addr) {
+    public int sceKernelStartThread(@CheckArgument("checkThreadID") int uid, int len, @BufferInfo(lengthInfo=LengthInfo.previousParameter, usage=Usage.in) @CanBeNull TPointer data_addr) {
         SceKernelThreadInfo thread = threadMap.get(uid);
 
         if (!thread.isStopped()) {

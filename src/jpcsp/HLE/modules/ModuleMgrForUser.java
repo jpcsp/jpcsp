@@ -250,6 +250,12 @@ public class ModuleMgrForUser extends HLEModule {
 						log.debug(String.format("getModuleNameFromFileContent %s", loadModuleContext));
 					}
 				}
+			} else {
+				// Try to load the module info if this is a file in ELF format...
+				SceModule moduleInfo = getModuleInfo(loadModuleContext);
+				if (moduleInfo != null) {
+					loadModuleContext.moduleName = moduleInfo.modname;
+				}
 			}
 		} catch (IOException e) {
 			// Ignore exception
@@ -314,6 +320,32 @@ public class ModuleMgrForUser extends HLEModule {
     	return result;
     }
 
+    private ByteBuffer getModuleByteBuffer(LoadModuleContext loadModuleContext) {
+    	if (loadModuleContext.moduleBuffer != null) {
+    		return loadModuleContext.moduleBuffer;
+    	}
+
+    	if (loadModuleContext.buffer != 0) {
+    		byte[] bytes = new byte[loadModuleContext.bufferSize];
+    		Utilities.readBytes(loadModuleContext.buffer, loadModuleContext.bufferSize, bytes, 0);
+    		return ByteBuffer.wrap(bytes);
+    	}
+
+    	SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(loadModuleContext.fileName, loadModuleContext.flags);
+    	if (moduleInput != null) {
+			try {
+				byte[] moduleBytes = new byte[(int) moduleInput.length()];
+	            moduleInput.readFully(moduleBytes);
+	            moduleInput.close();
+	            return ByteBuffer.wrap(moduleBytes);
+			} catch (IOException e) {
+				// Ignore exception
+			}
+        }
+
+        return null;
+    }
+
     public SceModule getModuleInfo(String name, ByteBuffer moduleBuffer, int mpidText, int mpidData) {
         SceModule module = null;
 		try {
@@ -324,6 +356,15 @@ public class ModuleMgrForUser extends HLEModule {
 		}
 
         return module;
+    }
+
+    private SceModule getModuleInfo(LoadModuleContext loadModuleContext) {
+        int mpidText = loadModuleContext.lmOption != null && loadModuleContext.lmOption.mpidText != 0 ? loadModuleContext.lmOption.mpidText : SysMemUserForUser.USER_PARTITION_ID;
+        int mpidData = loadModuleContext.lmOption != null && loadModuleContext.lmOption.mpidData != 0 ? loadModuleContext.lmOption.mpidData : SysMemUserForUser.USER_PARTITION_ID;
+
+    	ByteBuffer moduleBuffer = getModuleByteBuffer(loadModuleContext);
+
+    	return getModuleInfo(loadModuleContext.fileName, moduleBuffer, mpidText, mpidData);
     }
 
     public int getModuleRequiredMemorySize(SceModule module) {
@@ -604,7 +645,7 @@ public class ModuleMgrForUser extends HLEModule {
             }
 
             // Start the module start thread
-            threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
+            threadMan.hleKernelStartThread(thread, argSize, argp, sceModule.gp_value);
 
             if (waitForThreadEnd) {
 	            // Wait for the end of the module start thread.
@@ -802,7 +843,7 @@ public class ModuleMgrForUser extends HLEModule {
             sceModule.stop();
 
             // Start the "stop" thread...
-            threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
+            threadMan.hleKernelStartThread(thread, argSize, argp, sceModule.gp_value);
 
             // ...and wait for its end.
             threadMan.hleKernelWaitThreadEnd(currentThread, thread.uid, TPointer32.NULL, false, false);
@@ -847,7 +888,7 @@ public class ModuleMgrForUser extends HLEModule {
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
-        	threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
+        	threadMan.hleKernelStartThread(thread, argSize, argp, sceModule.gp_value);
         }
 
         return 0;
@@ -885,7 +926,7 @@ public class ModuleMgrForUser extends HLEModule {
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
-        	threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
+        	threadMan.hleKernelStartThread(thread, argSize, argp, sceModule.gp_value);
         }
 
         return 0;
@@ -920,7 +961,7 @@ public class ModuleMgrForUser extends HLEModule {
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
-        	threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
+        	threadMan.hleKernelStartThread(thread, argSize, argp, sceModule.gp_value);
         }
 
         return 0;

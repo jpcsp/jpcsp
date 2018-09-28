@@ -1397,7 +1397,7 @@ public class IoFileMgrForUser extends HLEModule {
                 }
 	            // This must be the last action of the hleIoXXX call because it can context-switch
 	            // Inherit $gp from this process ($gp can be used by interrupts)
-	            threadMan.hleKernelStartThread(info.asyncThread, 0, 0, info.asyncThread.gpReg_addr);
+	            threadMan.hleKernelStartThread(info.asyncThread, 0, TPointer.NULL, info.asyncThread.gpReg_addr);
 
 	            // Copy uid to Async Thread argument register after starting the thread
 	            // (all registers are reset when starting the thread).
