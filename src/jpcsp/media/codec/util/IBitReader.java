@@ -22,4 +22,5 @@ public interface IBitReader {
 	public int read(int n);
 	public int peek(int n);
 	public void skip(int n);
+	public int getReadAddr();
 }

@@ -54,16 +54,8 @@ public class BitBuffer implements IBitReader {
 		return readCount;
 	}
 
-	public int getBytesRead() {
-		return getBitsRead() >>> 3;
-	}
-
 	public int getBitsWritten() {
 		return writeCount;
-	}
-
-	public int getBytesWritten() {
-		return getBitsWritten() >>> 3;
 	}
 
 	@Override
@@ -103,6 +95,11 @@ public class BitBuffer implements IBitReader {
 		int read = read(n);
 		skip(-n);
 		return read;
+	}
+
+	@Override
+	public int getReadAddr() {
+		return getBitsRead() >>> 3;
 	}
 
 	@Override

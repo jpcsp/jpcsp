@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.util.Utilities;
 
@@ -44,6 +45,11 @@ public class PspString {
 		this.canBeNull = canBeNull;
 	}
 
+	public PspString(String string) {
+		this.address = MemoryMap.START_USERSPACE; // Dummy address
+		this.string = string;
+	}
+
 	public String getString() {
 		if (string == null) {
 			if (canBeNull && isNull()) {
@@ -57,6 +63,10 @@ public class PspString {
 
 	public int getAddress() {
 		return address;
+	}
+
+	public TPointer getPointer() {
+		return new TPointer(Memory.getInstance(), address);
 	}
 
 	public boolean isNull() {

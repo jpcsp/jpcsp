@@ -61,6 +61,7 @@ import jpcsp.HLE.HLEModuleFunction;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.filesystems.SeekableDataInput;
@@ -68,6 +69,7 @@ import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.IntArrayMemory;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.memory.mmio.MMIO;
@@ -193,7 +195,7 @@ public class Utilities {
         byte[] bytes = new byte[Math.min(n, 10000)];
 
         int length = 0;
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, n, 1);
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, address, n, 1);
         for (; n > 0; n--) {
             int b = memoryReader.readNext();
             if (b == 0) {
@@ -254,7 +256,7 @@ public class Utilities {
 
     public static void writeStringNZ(Memory mem, int address, int n, String s) {
         int offset = 0;
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, n, 1);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(mem, address, n, 1);
         if (s != null) {
             byte[] bytes = s.getBytes(Constants.charset);
             while (offset < bytes.length && offset < n) {
@@ -1958,5 +1960,17 @@ public class Utilities {
         }
 
         return ByteBuffer.wrap(bytes, 0, offset);
+    }
+
+    public static TPointer allocatePointer(int memorySize) {
+    	int[] intArray = new int[alignUp(memorySize, 3) >> 2];
+    	IntArrayMemory mem = new IntArrayMemory(intArray);
+    	return mem.getPointer();
+    }
+
+    public static TPointer32 allocatePointer32(int memorySize) {
+    	int[] intArray = new int[alignUp(memorySize, 3) >> 2];
+    	IntArrayMemory mem = new IntArrayMemory(intArray);
+    	return mem.getPointer32();
     }
 }

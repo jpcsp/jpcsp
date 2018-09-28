@@ -68,4 +68,6 @@ public interface ITPointerBase {
 	 * @return the Memory instance
 	 */
 	public Memory getMemory();
+
+	public Memory getNewPointerMemory();
 }

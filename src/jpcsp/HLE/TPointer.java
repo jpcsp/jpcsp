@@ -23,7 +23,7 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
-final public class TPointer implements ITPointerBase {
+public class TPointer implements ITPointerBase {
 	private Memory memory;
 	private int address;
 	private boolean isNull;
@@ -63,6 +63,12 @@ final public class TPointer implements ITPointerBase {
 		}
 	}
 
+	public void alignUp(int alignment) {
+		if (isNotNull()) {
+			address = Utilities.alignUp(address, alignment);
+		}
+	}
+
 	@Override
 	public boolean isAddressGood() {
 		return Memory.isAddressGood(address);
@@ -89,6 +95,11 @@ final public class TPointer implements ITPointerBase {
 	}
 
 	@Override
+	public Memory getNewPointerMemory() {
+		return memory;
+	}
+
+	@Override
 	public boolean isNull() {
 		return isNull;
 	}
@@ -108,6 +119,8 @@ final public class TPointer implements ITPointerBase {
 	public short getValue16() { return getValue16(0); }
 	public int   getValue32() { return getValue32(0); }
 	public long  getValue64() { return getValue64(0); }
+	public short getUnalignedValue16() { return getUnalignedValue16(0); }
+	public int   getUnalignedValue32() { return getUnalignedValue32(0); }
 
 	public void setValue8(byte value) { setValue8(0, value); }
 	public void setValue16(short value) { setValue16(0, value); }
@@ -119,6 +132,8 @@ final public class TPointer implements ITPointerBase {
 	public short getValue16(int offset) { return (short) memory.read16(address + offset); }
 	public int   getValue32(int offset) { return memory.read32(address + offset); }
 	public long  getValue64(int offset) { return memory.read64(address + offset); }
+	public short getUnalignedValue16(int offset) { return (short) Utilities.readUnaligned16(memory, address + offset); }
+	public int   getUnalignedValue32(int offset) { return Utilities.readUnaligned32(memory, address + offset); }
 
 	public void setValue8(int offset, byte value) { if (isNotNull()) memory.write8(address + offset, value); }
 	public void setValue16(int offset, short value) { if (isNotNull()) memory.write16(address + offset, value); }
@@ -225,7 +240,7 @@ final public class TPointer implements ITPointerBase {
 			return TPointer.NULL;
 		}
 
-		return new TPointer(getMemory(), getValue32(offset));
+		return new TPointer(getNewPointerMemory(), getValue32(offset));
 	}
 
 	public void setPointer(TPointer value) {
@@ -240,6 +255,18 @@ final public class TPointer implements ITPointerBase {
 		}
 	}
 
+	public void setPointer(TPointer32 value) {
+		setPointer(0, value);
+	}
+
+	public void setPointer(int offset, TPointer32 value) {
+		if (value == null) {
+			setValue32(offset, 0);
+		} else {
+			setValue32(offset, value.getAddress());
+		}
+	}
+
 	public void memcpy(int src, int length) {
 		memcpy(0, src, length);
 	}
@@ -247,6 +274,22 @@ final public class TPointer implements ITPointerBase {
 	public void memcpy(int offset, int src, int length) {
 		if (isNotNull()) {
 			memory.memcpy(getAddress() + offset, src, length);
+		}
+	}
+
+	public void memcpy(TPointer src, int length) {
+		memcpy(0, src, length);
+	}
+
+	public void memcpy(int offset, TPointer src, int length) {
+		if (isNotNull()) {
+			if (memory == src.getMemory()) {
+				memory.memcpy(getAddress() + offset, src.getAddress(), length);
+			} else {
+				for (int i = 0; i < length; i++) {
+					setValue8(offset + i, src.getValue8(i));
+				}
+			}
 		}
 	}
 

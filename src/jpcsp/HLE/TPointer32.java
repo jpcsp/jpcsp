@@ -33,6 +33,19 @@ public class TPointer32 extends TPointerBase {
 		super(memory, address, canBeNull);
 	}
 
+	public TPointer32(TPointer pointer) {
+		super(pointer.getMemory(), pointer.getAddress(), false);
+	}
+
+	public TPointer32(TPointer pointer, int offset) {
+		super(pointer.getMemory(), pointer.getAddress() + offset, false);
+	}
+
+	public TPointer32 forceNonNull() {
+		pointer.forceNonNull();
+		return this;
+	}
+
 	public int getValue() {
 		return getValue(0);
 	}
@@ -70,6 +83,14 @@ public class TPointer32 extends TPointerBase {
 			return TPointer.NULL;
 		}
 
-		return new TPointer(getMemory(), getValue(offset));
+		return new TPointer(getNewPointerMemory(), getValue(offset));
+	}
+
+	public void setPointer(TPointer pointer) {
+		setValue(pointer.getAddress());
+	}
+
+	public void setPointer(int offset, TPointer pointer) {
+		setValue(offset, pointer.getAddress());
 	}
 }

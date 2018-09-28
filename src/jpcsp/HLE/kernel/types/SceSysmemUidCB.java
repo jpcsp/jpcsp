@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.util.Utilities;
@@ -63,7 +64,7 @@ public class SceSysmemUidCB extends pspAbstractMemoryMappedStructure {
 		write32(next); // Offset 24
 	}
 
-	public void allocAndSetName(int uidHeap, String name) {
+	public void allocAndSetName(Memory mem, int uidHeap, String name) {
 		if (name == null) {
 			nameAddr = 0;
 		} else {

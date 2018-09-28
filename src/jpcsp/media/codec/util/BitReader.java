@@ -43,12 +43,21 @@ public class BitReader implements IBitReader {
 		return read1() != 0;
 	}
 
+	protected int nextAddr() {
+		size--;
+		return addr + direction;
+	}
+
+	protected int previousAddr() {
+		size++;
+		return addr - direction;
+	}
+
 	@Override
 	public int read1() {
 		if (bits <= 0) {
 			value = mem.read8(addr);
-			addr += direction;
-			size--;
+			addr = nextAddr();
 			bits = 8;
 		}
 		int bit = value >> 7;
@@ -84,8 +93,7 @@ public class BitReader implements IBitReader {
 			skip(bits);
 		}
 		int read = mem.read8(addr);
-		addr += direction;
-		size--;
+		addr = nextAddr();
 
 		return read;
 	}
@@ -119,14 +127,12 @@ public class BitReader implements IBitReader {
 		bits -= n;
 		if (n >= 0) {
 			while (bits < 0) {
-				addr += direction;
-				size--;
+				addr = nextAddr();
 				bits += 8;
 			}
 		} else {
 			while (bits > 8) {
-				addr -= direction;
-				size++;
+				addr = previousAddr();
 				bits -= 8;
 			}
 		}
@@ -152,6 +158,14 @@ public class BitReader implements IBitReader {
 		if (bits > 0 && bits < 8) {
 			skip(bits);
 		}
+	}
+
+	@Override
+	public int getReadAddr() {
+		if (bits == 8) {
+			return addr - direction;
+		}
+		return addr;
 	}
 
 	@Override

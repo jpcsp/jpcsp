@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import jpcsp.Memory;
 import jpcsp.HLE.ITPointerBase;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -341,6 +342,15 @@ public abstract class pspAbstractMemoryMappedStructure {
     	return new TPointer(mem, value);
     }
 
+    protected TPointer32 readPointer32() {
+    	int value = read32();
+    	if (value == 0) {
+    		return TPointer32.NULL;
+    	}
+
+    	return new TPointer32(mem, value);
+    }
+
     protected void readPointerArray(TPointer[] array) {
     	for (int i = 0; array != null && i < array.length; i++) {
     		array[i] = readPointer();
@@ -544,6 +554,14 @@ public abstract class pspAbstractMemoryMappedStructure {
     	}
     }
 
+    protected void writePointer32(TPointer32 pointer) {
+    	if (pointer == null) {
+    		write32(0);
+    	} else {
+    		write32(pointer.getAddress());
+    	}
+    }
+
     protected void writePointerArray(TPointer[] array) {
     	for (int i = 0; array != null && i < array.length; i++) {
     		writePointer(array[i]);
@@ -576,6 +594,10 @@ public abstract class pspAbstractMemoryMappedStructure {
 
     protected long endianSwap64(long data) {
     	return Long.reverseBytes(data);
+    }
+
+    protected long longSwap64(long data) {
+    	return (data >>> 32) | (data << 32);
     }
 
     protected boolean isBigEndian() {

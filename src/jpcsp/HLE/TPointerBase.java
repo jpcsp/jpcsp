@@ -62,6 +62,11 @@ abstract public class TPointerBase implements ITPointerBase {
 		return pointer.getMemory();
 	}
 
+	@Override
+	public Memory getNewPointerMemory() {
+		return getMemory();
+	}
+
 	/**
 	 * Tests if the value can be set.
 	 * A value can be set if the pointer cannot be NULL or is not NULL.

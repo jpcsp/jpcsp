@@ -19,6 +19,9 @@ package jpcsp.HLE;
 import java.io.IOException;
 import java.util.HashMap;
 
+import jpcsp.Emulator;
+import jpcsp.Memory;
+import jpcsp.Processor;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.settings.ISettingsListener;
@@ -112,7 +115,23 @@ abstract public class HLEModule {
 		}
 	}
 
-    public void read(StateInputStream stream) throws IOException {
+	protected int getModuleMemory() {
+		if (memory == null) {
+			return 0;
+		}
+
+		return memory.addr;
+	}
+
+	protected Memory getMemory() {
+		return Memory.getInstance();
+	}
+
+	protected Processor getProcessor() {
+		return Emulator.getProcessor();
+	}
+
+	public void read(StateInputStream stream) throws IOException {
     	stream.readVersion(STATE_VERSION);
     	name = stream.readString();
     	started = stream.readBoolean();

@@ -26,10 +26,33 @@ import java.nio.ByteBuffer;
 
 import jpcsp.Memory;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 
 public class IntArrayMemory extends Memory {
 	private int[] memory;
 	private int offset;
+
+	private static class IntArrayTPointer32 extends TPointer32 {
+		public IntArrayTPointer32(Memory memory, int address) {
+			super(memory, address);
+		}
+
+		@Override
+		public Memory getNewPointerMemory() {
+			return Memory.getInstance();
+		}
+	}
+
+	private static class IntArrayTPointer extends TPointer {
+		public IntArrayTPointer(Memory memory, int address) {
+			super(memory, address);
+		}
+
+		@Override
+		public Memory getNewPointerMemory() {
+			return Memory.getInstance();
+		}
+	}
 
 	public IntArrayMemory(int[] memory) {
 		this.memory = memory;
@@ -42,11 +65,19 @@ public class IntArrayMemory extends Memory {
 	}
 
 	public TPointer getPointer(int address) {
-		return new TPointer(this, address).forceNonNull();
+		return new IntArrayTPointer(this, address).forceNonNull();
 	}
 
 	public TPointer getPointer() {
 		return getPointer(0);
+	}
+
+	public TPointer32 getPointer32(int address) {
+		return new IntArrayTPointer32(this, address).forceNonNull();
+	}
+
+	public TPointer32 getPointer32() {
+		return getPointer32(0);
 	}
 
 	@Override

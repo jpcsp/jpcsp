@@ -205,7 +205,7 @@ public class SysMemForKernel extends HLEModule {
 		sceSysmemUidCBRoot.nextChild = root;
 		sceSysmemUidCBRoot.uid = newUid(root);
 		sceSysmemUidCBRoot.childSize = 6;
-		sceSysmemUidCBRoot.allocAndSetName(uidHeap, "Root");
+		sceSysmemUidCBRoot.allocAndSetName(mem, uidHeap, "Root");
 		sceSysmemUidCBRoot.write(mem, root);
 
 		uidTypeListMetaRoot = metaRoot;
@@ -214,7 +214,7 @@ public class SysMemForKernel extends HLEModule {
 		sceSysmemUidCBMetaRoot.nextChild = metaRoot;
 		sceSysmemUidCBMetaRoot.uid = newUid(metaRoot);
 		sceSysmemUidCBMetaRoot.childSize = 6;
-		sceSysmemUidCBMetaRoot.allocAndSetName(uidHeap, "MetaRoot");
+		sceSysmemUidCBMetaRoot.allocAndSetName(mem, uidHeap, "MetaRoot");
 		sceSysmemUidCBMetaRoot.write(mem, metaRoot);
 	}
 
@@ -241,7 +241,7 @@ public class SysMemForKernel extends HLEModule {
 		sceSysmemUidCBBasic.uid = newUid(basic);
 		sceSysmemUidCBBasic.childSize = sceSysmemUidCBRoot.childSize + ((4 + 3) >> 2);
 		sceSysmemUidCBBasic.size = sceSysmemUidCBRoot.childSize;
-		sceSysmemUidCBBasic.allocAndSetName(uidHeap, "Basic");
+		sceSysmemUidCBBasic.allocAndSetName(mem, uidHeap, "Basic");
 		sceSysmemUidCBBasic.next = sceSysmemUidCBRoot.next;
 		sceSysmemUidCBBasic.parent1 = uidTypeListRoot;
 		sceSysmemUidCBBasic.write(mem, basic);
@@ -257,7 +257,7 @@ public class SysMemForKernel extends HLEModule {
 		sceSysmemUidCBMetaBasic.nextChild = metaBasic;
 		sceSysmemUidCBMetaBasic.uid = newUid(metaBasic);
 		sceSysmemUidCBMetaBasic.childSize = 6;
-		sceSysmemUidCBMetaBasic.allocAndSetName(uidHeap, "MetaRoot");
+		sceSysmemUidCBMetaBasic.allocAndSetName(mem, uidHeap, "MetaRoot");
 		sceSysmemUidCBMetaBasic.parent1 = sceSysmemUidCBRoot.meta;
 		sceSysmemUidCBMetaBasic.write(mem, metaBasic);
 	}
@@ -602,8 +602,8 @@ public class SysMemForKernel extends HLEModule {
     	SceSysmemUidCBtype sceSysmemUidCBMeta = new SceSysmemUidCBtype();
     	int metaUidType = sceKernelAllocHeapMemory(uidHeap, sceSysmemUidCBMeta.sizeof());
 
-    	sceSysmemUidCB.allocAndSetName(uidHeap, name);
-    	sceSysmemUidCBMeta.allocAndSetName(uidHeap, "Meta" + name);
+    	sceSysmemUidCB.allocAndSetName(mem, uidHeap, name);
+    	sceSysmemUidCBMeta.allocAndSetName(mem, uidHeap, "Meta" + name);
 
     	if (uidType <= 0 || metaUidType <= 0 || sceSysmemUidCB.nameAddr <= 0 || sceSysmemUidCBMeta.nameAddr <= 0) {
     		if (uidType > 0) {
@@ -692,7 +692,7 @@ public class SysMemForKernel extends HLEModule {
     	mem.memset(uid, (byte) 0, sceSysmemUidCBType.childSize << 2);
 
     	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
-    	sceSysmemUidCB.allocAndSetName(uidHeap, name);
+    	sceSysmemUidCB.allocAndSetName(mem, uidHeap, name);
     	if (sceSysmemUidCB.nameAddr == 0) {
 			sceKernelFreeHeapMemory(uidHeap, new TPointer(mem, uid));
     		return SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
@@ -750,7 +750,7 @@ public class SysMemForKernel extends HLEModule {
     	sceSysmemUidCB.read(mem, cb);
 
     	sceSysmemUidCB.freeName(uidHeap);
-    	sceSysmemUidCB.allocAndSetName(uidHeap, name);
+    	sceSysmemUidCB.allocAndSetName(mem, uidHeap, name);
     	sceSysmemUidCB.write(mem, cb);
 
     	return 0;
