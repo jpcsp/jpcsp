@@ -336,9 +336,9 @@ public class Loader {
     private boolean LoadSCE(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
         int magic = Utilities.readWord(f);
         if (magic == SCE_MAGIC) {
-            module.fileFormat |= FORMAT_SCE;
-            log.warn("Encrypted file not supported! (~SCE)");
-            return true;
+        	int size = Utilities.readWord(f);
+        	f.position(f.position() + size - 8);
+        	return LoadPSP(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall);
         }
         // Not a valid PSP
         return false;
