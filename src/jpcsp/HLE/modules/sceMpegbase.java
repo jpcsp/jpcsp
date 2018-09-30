@@ -18,6 +18,9 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.modules.sceMpeg.getIntBuffer;
 import static jpcsp.HLE.modules.sceMpeg.releaseIntBuffer;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 
 import org.apache.log4j.Logger;
@@ -49,6 +52,7 @@ import jpcsp.util.Utilities;
 
 public class sceMpegbase extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMpegbase");
+	private int pixelMode;
 
 	private static void read(int addr, int length, int[] buffer, int offset) {
 		addr |= MemoryMap.START_RAM;
@@ -100,8 +104,7 @@ public class sceMpegbase extends HLEModule {
     	int width = mp4AvcCscStruct.width << 4;
     	int height = mp4AvcCscStruct.height << 4;
 
-    	// It seems that the pixel output format is always ABGR8888.
-    	int videoPixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+    	int videoPixelMode = pixelMode;
 		int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         int destAddr = bufferRGB.getAddress();
 
@@ -429,10 +432,17 @@ public class sceMpegbase extends HLEModule {
         return hleMpegBaseCscAvcRange(bufferRGB, unknown, bufferWidth, mp4AvcCscStruct, rangeX, rangeY, rangeWidth, rangeHeight);
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x0530BE4E, version = 150)
-    public int sceMpegbase_0530BE4E(int unknown) {
-        return 0;
+    public int sceMpegbase_0530BE4E(int internalPixelMode) {
+    	switch (internalPixelMode) {
+    		case 0: pixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888; break;
+    		case 1: pixelMode = TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;  break;
+    		case 2: pixelMode = TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551; break;
+    		case 3: pixelMode = TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444; break;
+    		default: return -1;
+    	}
+
+    	return 0;
     }
 
     @HLEUnimplemented
