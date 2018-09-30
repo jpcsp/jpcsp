@@ -773,6 +773,30 @@ public class RuntimeContext {
     	}
     }
 
+    /**
+     * When calling an HLE module function from another HLE module, the call
+     * has to be encapsulated into this hleSyscall() so that a thread switching
+     * can occur if required.
+     * E.g.:
+     *   int result = hleSyscall(Modules.IoFileMgrForUserModule.sceIoRead(id, buffer, size));
+     *
+     * @param result the result value received from the HLE syscall function.
+     *
+     * @return the result value received, after having performed a thread switch if required.
+     */
+    public static int hleSyscall(int result) {
+    	if (result >= 0) {
+    		try {
+				postSyscall();
+			} catch (StopThreadException e) {
+				log.error(String.format("RuntimeContext.hleSyscall StopThreadException received: %s", e));
+				result = -1;
+			}
+    	}
+
+    	return result;
+    }
+
     public static void postSyscallFast() {
     	syncFast();
     }
