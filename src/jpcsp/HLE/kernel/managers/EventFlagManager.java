@@ -51,13 +51,13 @@ public class EventFlagManager {
     private static HashMap<Integer, SceKernelEventFlagInfo> eventMap;
     private EventFlagWaitStateChecker eventFlagWaitStateChecker;
 
-    protected final static int PSP_EVENT_WAITSINGLE = 0;
-    protected final static int PSP_EVENT_WAITMULTIPLE = 0x200;
-    protected final static int PSP_EVENT_WAITANDOR_MASK = 0x01;
-    protected final static int PSP_EVENT_WAITAND = 0x00;
-    protected final static int PSP_EVENT_WAITOR = 0x01;
-    protected final static int PSP_EVENT_WAITCLEARALL = 0x10;
-    protected final static int PSP_EVENT_WAITCLEAR = 0x20;
+    public final static int PSP_EVENT_WAITSINGLE = 0;
+    public final static int PSP_EVENT_WAITMULTIPLE = 0x200;
+    public final static int PSP_EVENT_WAITANDOR_MASK = 0x01;
+    public final static int PSP_EVENT_WAITAND = 0x00;
+    public final static int PSP_EVENT_WAITOR = 0x01;
+    public final static int PSP_EVENT_WAITCLEARALL = 0x10;
+    public final static int PSP_EVENT_WAITCLEAR = 0x20;
 
     public void reset() {
         eventMap = new HashMap<Integer, SceKernelEventFlagInfo>();

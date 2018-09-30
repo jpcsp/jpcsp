@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 public class SceMp4AvcCscStruct extends pspAbstractMemoryMappedStructure {
+	public static final int SIZE_OF = 48;
 	public int height;
 	public int width;
 	public int mode0;
@@ -64,7 +65,7 @@ public class SceMp4AvcCscStruct extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public int sizeof() {
-		return 48;
+		return SIZE_OF;
 	}
 
 	@Override
