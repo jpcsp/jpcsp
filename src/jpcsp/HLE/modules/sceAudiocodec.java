@@ -42,6 +42,7 @@ import jpcsp.util.Utilities;
 
 public class sceAudiocodec extends HLEModule {
 	public static Logger log = Modules.getLogger("sceAudiocodec");
+    public static final int audiocodecBufferSize = 108;
 
 	public static final int PSP_CODEC_AT3PLUS = 0x00001000;
 	public static final int PSP_CODEC_AT3     = 0x00001001;
@@ -130,7 +131,7 @@ public class sceAudiocodec extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x9D3F790C, version = 150)
-	public int sceAudiocodecCheckNeedMem(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
+	public int sceAudiocodecCheckNeedMem(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
 		workArea.setValue32(0, 0x05100601);
 
 		switch (codecType) {
@@ -155,7 +156,7 @@ public class sceAudiocodec extends HLEModule {
 
 	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x5B37EB1D, version = 150)
-	public int sceAudiocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
+	public int sceAudiocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
 		// Same as sceAudiocodec_3DD7EE1A, but for stereo audio
 		return hleAudiocodecInit(workArea, codecType, 2);
 	}
@@ -198,7 +199,7 @@ public class sceAudiocodec extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x70A703F8, version = 150)
-	public int sceAudiocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
+	public int sceAudiocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
 		workArea.setValue32(8, 0); // err field
 
 		AudiocodecInfo info = infos.get(workArea.getAddress());
@@ -324,13 +325,13 @@ public class sceAudiocodec extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x8ACA11D5, version = 150)
-	public int sceAudiocodecGetInfo(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
+	public int sceAudiocodecGetInfo(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
 		return 0;
 	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x59176A0F, version = 150)
-	public int sceAudiocodecAlcExtendParameter(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType, @BufferInfo(usage=Usage.out) TPointer32 sizeAddr) {
+	public int sceAudiocodecAlcExtendParameter(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType, @BufferInfo(usage=Usage.out) TPointer32 sizeAddr) {
 		int outputBufferSize = getOutputBufferSize(workArea, codecType);
 
 		sizeAddr.setValue(outputBufferSize);
@@ -378,7 +379,7 @@ public class sceAudiocodec extends HLEModule {
 
 	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x3DD7EE1A, version = 150)
-	public int sceAudiocodec_3DD7EE1A(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=108, usage=Usage.inout) TPointer workArea, int codecType) {
+	public int sceAudiocodec_3DD7EE1A(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
 		// Same as sceAudiocodecInit, but for mono audio
 		return hleAudiocodecInit(workArea, codecType, 1);
 	}
