@@ -54,6 +54,13 @@ public class sceMpegbase extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMpegbase");
 	private int pixelMode;
 
+	@Override
+	public void start() {
+		pixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+
+		super.start();
+	}
+
 	private static void read(int addr, int length, int[] buffer, int offset) {
 		addr |= MemoryMap.START_RAM;
 		if (log.isTraceEnabled()) {
