@@ -783,14 +783,15 @@ public class RuntimeContext {
      * @param result the result value received from the HLE syscall function.
      *
      * @return the result value received, after having performed a thread switch if required.
+     * @throws StopThreadRuntimeException 
      */
-    public static int hleSyscall(int result) {
+    public static int hleSyscall(int result) throws StopThreadRuntimeException {
     	if (result >= 0) {
-    		try {
+			try {
 				postSyscall();
 			} catch (StopThreadException e) {
-				log.error(String.format("RuntimeContext.hleSyscall StopThreadException received: %s", e));
-				result = -1;
+				// For convenience, throw an exception not requiring a "throws"
+				throw new StopThreadRuntimeException(e.getMessage());
 			}
     	}
 
@@ -857,6 +858,8 @@ public class RuntimeContext {
 			newPc = returnAddress;
 		} catch (StopThreadException e) {
 			// Ignore exception
+		} catch (StopThreadRuntimeException e) {
+			// Ignore exception
 		} catch (Exception e) {
 			log.error("Catched Throwable in executeCallback:", e);
 			exception = true;
@@ -903,6 +906,8 @@ public class RuntimeContext {
     		threadMan.hleKernelExitThread(processor.cpu._v0);
     	} catch (StopThreadException e) {
     		// Ignore Exception
+    	} catch (StopThreadRuntimeException e) {
+    		// Ignore Exception
     	} catch (Throwable e) {
     		// Do not spam exceptions when exiting...
         	if (!Modules.ThreadManForUserModule.exitCalled) {
@@ -939,6 +944,9 @@ public class RuntimeContext {
 	    		syncIdle();
 	    		syncThreadImmediately();
 			} catch (StopThreadException e) {
+	    		// Ignore Exception
+	    	} catch (StopThreadRuntimeException e) {
+	    		// Ignore Exception
 			}
 		}
 
@@ -1071,6 +1079,9 @@ public class RuntimeContext {
         	try {
 				syncIdle();
 			} catch (StopThreadException e) {
+				// Thread is stopped, return immediately
+				return;
+	    	} catch (StopThreadRuntimeException e) {
 				// Thread is stopped, return immediately
 				return;
 			}
