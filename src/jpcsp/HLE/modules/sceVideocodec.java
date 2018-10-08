@@ -168,7 +168,10 @@ public class sceVideocodec extends HLEModule {
     		videoCodec.init(null);
     	}
 
-    	int[] mp4Buffer = getIntBuffer(mp4Size);
+    	// The H264 video decoder can read up to 2 bytes past the end
+    	// of the video data for the read-ahead buffer used for CABAC.
+    	// Provide 2 dummy bytes after the video data.
+    	int[] mp4Buffer = getIntBuffer(mp4Size + 2);
     	IMemoryReader memoryReader = MemoryReader.getMemoryReader(mp4Data, mp4Size, 1);
     	for (int i = 0; i < mp4Size; i++) {
     		mp4Buffer[i] = memoryReader.readNext();
@@ -362,9 +365,9 @@ public class sceVideocodec extends HLEModule {
 		        		int width2 = width / 2;
 		        		int height2 = height / 2;
 		        		int sizeY1 = ((width + 16) >> 5) * (height >> 1) * 16;
-		        		int sizeY2 = (width >> 5) * (height >> 1) * 16;
-		        		int sizeCrCb1 = sizeY1 >> 1;
-		        		int sizeCrCb2 = sizeY1 >> 1;
+		        		int sizeY2 = ((width +  0) >> 5) * (height >> 1) * 16;
+		        		int sizeCrCb1 = ((width + 16) >> 5) * ((height + 2) >> 2) * 16;
+		        		int sizeCrCb2 = ((width +  0) >> 5) * ((height + 0) >> 2) * 16;
 
 		        		int[] bufferY1 = getIntBuffer(sizeY1);
 		        		for (int x = 0, j = 0; x < width; x += 32) {
