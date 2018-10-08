@@ -33,6 +33,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
     private int dataUpperBound;
     private int semaID; // unused?
     private int mpeg; // pointer to mpeg struct, fixed up in sceMpegCreate
+    private int gp;
     // Internal info
     private pspFileBuffer videoBuffer;
     private pspFileBuffer audioBuffer;
@@ -109,6 +110,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
         dataUpperBound      = read32();
         semaID              = read32();
         mpeg                = read32();
+        gp                  = read32();
 	}
 
 	@Override
@@ -124,6 +126,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
         write32(dataUpperBound);
         write32(semaID);
         write32(mpeg);
+        write32(gp);
 	}
 
 	public int getFreePackets() {
@@ -279,7 +282,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public int sizeof() {
-		return 44;
+		return 48;
 	}
 
 	@Override
