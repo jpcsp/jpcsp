@@ -53,10 +53,12 @@ import jpcsp.util.Utilities;
 public class sceMpegbase extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMpegbase");
 	private int pixelMode;
+	private int defaultBufferWidth;
 
 	@Override
 	public void start() {
 		pixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+		defaultBufferWidth = 0;
 
 		super.start();
 	}
@@ -108,6 +110,10 @@ public class sceMpegbase extends HLEModule {
     }
 
     private int hleMpegBaseCscAvcRange(TPointer bufferRGB, int unknown, int bufferWidth, SceMp4AvcCscStruct mp4AvcCscStruct, int rangeX, int rangeY, int rangeWidth, int rangeHeight) {
+    	if (bufferWidth == 0) {
+    		bufferWidth = defaultBufferWidth;
+    	}
+
     	int width = mp4AvcCscStruct.width << 4;
     	int height = mp4AvcCscStruct.height << 4;
 
@@ -401,13 +407,20 @@ public class sceMpegbase extends HLEModule {
 		return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x492B5E4B, version = 150)
-    public int sceMpegBaseCscInit(int frameWidth) {
+    public int sceMpegBaseCscInit(int bufferWidth) {
     	// sceMpegBaseCscAvc is decoding with no alpha
     	H264Utils.setAlpha(0x00);
 
-    	return 0;
+    	TPointer unknown = Utilities.allocatePointer(22);
+    	unknown.setValue32(0, 0x00000095);
+    	unknown.setValue32(4, 0x009500CC);
+    	unknown.setValue32(8, 0x039803CE);
+    	unknown.setValue32(12, 0x01020095);
+    	unknown.setValue32(16, 0x00100000);
+    	unknown.setValue16(20, (short) 0x0001);
+
+    	return sceMpegbase_AC9E717E(bufferWidth, unknown);
     }
 
     @HLEFunction(nid = 0x91929A21, version = 150)
@@ -454,7 +467,9 @@ public class sceMpegbase extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xAC9E717E, version = 150)
-    public int sceMpegbase_AC9E717E(int unknown1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=22, usage=Usage.in) TPointer unknown2) {
-        return 0;
+    public int sceMpegbase_AC9E717E(int defaultBufferWidth, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=22, usage=Usage.in) TPointer unknown) {
+    	this.defaultBufferWidth = defaultBufferWidth;
+
+    	return 0;
     }
 }
