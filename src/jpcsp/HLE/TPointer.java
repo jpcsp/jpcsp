@@ -57,10 +57,20 @@ public class TPointer implements ITPointerBase {
 		isNull = base.isNull();
 	}
 
-	public void add(int addressOffset) {
+	public TPointer add(int addressOffset) {
 		if (isNotNull()) {
 			address += addressOffset;
 		}
+
+		return this;
+	}
+
+	public TPointer sub(int addressOffset) {
+		if (isNotNull()) {
+			address -= addressOffset;
+		}
+
+		return this;
 	}
 
 	public void alignUp(int alignment) {
@@ -121,25 +131,33 @@ public class TPointer implements ITPointerBase {
 	public long  getValue64() { return getValue64(0); }
 	public short getUnalignedValue16() { return getUnalignedValue16(0); }
 	public int   getUnalignedValue32() { return getUnalignedValue32(0); }
+	public int   getUnsignedValue8() { return getUnsignedValue8(0); }
+	public int   getUnsignedValue16() { return getUnsignedValue16(0); }
 
 	public void setValue8(byte value) { setValue8(0, value); }
 	public void setValue16(short value) { setValue16(0, value); }
 	public void setValue32(int value) { setValue32(0, value); }
 	public void setValue32(boolean value) { setValue32(0, value); }
 	public void setValue64(long value) { setValue64(0, value); }
+	public void setUnsignedValue8(int value) { setUnsignedValue8(0, value); }
+	public void setUnsignedValue16(int value) { setUnsignedValue16(0, value); }
 
-	public byte  getValue8(int offset) { return (byte) memory.read8(address + offset); }
-	public short getValue16(int offset) { return (short) memory.read16(address + offset); }
+	public byte  getValue8(int offset) { return (byte) getUnsignedValue8(offset); }
+	public short getValue16(int offset) { return (short) getUnsignedValue16(offset); }
 	public int   getValue32(int offset) { return memory.read32(address + offset); }
 	public long  getValue64(int offset) { return memory.read64(address + offset); }
 	public short getUnalignedValue16(int offset) { return (short) Utilities.readUnaligned16(memory, address + offset); }
 	public int   getUnalignedValue32(int offset) { return Utilities.readUnaligned32(memory, address + offset); }
+	public int   getUnsignedValue8(int offset) { return memory.read8(address + offset); }
+	public int   getUnsignedValue16(int offset) { return memory.read16(address + offset); }
 
 	public void setValue8(int offset, byte value) { if (isNotNull()) memory.write8(address + offset, value); }
 	public void setValue16(int offset, short value) { if (isNotNull()) memory.write16(address + offset, value); }
 	public void setValue32(int offset, int value) { if (isNotNull()) memory.write32(address + offset, value); }
 	public void setValue32(int offset, boolean value) { if (isNotNull()) memory.write32(address + offset, value ? 1 : 0); }
 	public void setValue64(int offset, long value) { if (isNotNull()) memory.write64(address + offset, value); }
+	public void setUnsignedValue8(int offset, int value) { if (isNotNull()) memory.write8(address + offset, (byte) value); }
+	public void setUnsignedValue16(int offset, int value) { if (isNotNull()) memory.write16(address + offset, (short) value); }
 
 	public float getFloat() {
 		return getFloat(0);
@@ -359,6 +377,10 @@ public class TPointer implements ITPointerBase {
 		if (isNotNull()) {
 			Utilities.writeUnaligned32(getMemory(), getAddress() + offset, value);
 		}
+	}
+
+	public boolean equals(TPointer ptr) {
+		return getAddress() == ptr.getAddress() && getMemory() == ptr.getMemory();
 	}
 
 	@Override

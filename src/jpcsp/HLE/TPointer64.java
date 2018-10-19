@@ -46,4 +46,9 @@ final public class TPointer64 extends TPointerBase {
 			pointer.setValue64(offset, value);
 		}
 	}
+
+	public TPointer64 forceNonNull() {
+		pointer.forceNonNull();
+		return this;
+	}
 }

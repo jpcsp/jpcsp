@@ -27,6 +27,14 @@ public class TPointer16 extends TPointerBase {
 		super(memory, address, canBeNull);
 	}
 
+	public TPointer16(TPointer pointer) {
+		super(pointer.getMemory(), pointer.getAddress(), false);
+	}
+
+	public TPointer16(TPointer pointer, int offset) {
+		super(pointer.getMemory(), pointer.getAddress() + offset, false);
+	}
+
 	public int getValue() {
 		return pointer.getValue16();
 	}

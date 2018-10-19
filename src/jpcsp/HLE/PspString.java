@@ -50,6 +50,18 @@ public class PspString {
 		this.string = string;
 	}
 
+	public PspString(TPointer pointer) {
+		this.string = null;
+		this.address = pointer.getAddress();
+		this.maxLength = MemoryMap.SIZE_RAM; // Never will be greater than the whole PSP memory :P
+	}
+
+	public PspString(TPointer pointer, int offset) {
+		this.string = null;
+		this.address = pointer.getAddress() + offset;
+		this.maxLength = MemoryMap.SIZE_RAM; // Never will be greater than the whole PSP memory :P
+	}
+
 	public String getString() {
 		if (string == null) {
 			if (canBeNull && isNull()) {

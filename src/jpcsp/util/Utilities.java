@@ -62,6 +62,7 @@ import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.filesystems.SeekableDataInput;
@@ -1972,5 +1973,11 @@ public class Utilities {
     	int[] intArray = new int[alignUp(memorySize, 3) >> 2];
     	IntArrayMemory mem = new IntArrayMemory(intArray);
     	return mem.getPointer32();
+    }
+
+    public static TPointer64 allocatePointer64(int memorySize) {
+    	int[] intArray = new int[alignUp(memorySize, 3) >> 2];
+    	IntArrayMemory mem = new IntArrayMemory(intArray);
+    	return mem.getPointer64();
     }
 }

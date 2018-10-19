@@ -60,7 +60,7 @@ public class FplManager {
     public final static int PSP_FPL_ATTR_FIFO = 0;
     public final static int PSP_FPL_ATTR_PRIORITY = 0x100;
     private final static int PSP_FPL_ATTR_MASK = 0x41FF;            // Anything outside this mask is an illegal attr.
-    private final static int PSP_FPL_ATTR_ADDR_HIGH = 0x4000;       // Create the fpl in high memory.
+    public final static int PSP_FPL_ATTR_ADDR_HIGH = 0x4000;       // Create the fpl in high memory.
 
     public void reset() {
         fplMap = new HashMap<Integer, SceKernelFplInfo>();

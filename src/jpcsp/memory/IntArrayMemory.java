@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import jpcsp.Memory;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer64;
 
 public class IntArrayMemory extends Memory {
 	private int[] memory;
@@ -78,6 +79,14 @@ public class IntArrayMemory extends Memory {
 
 	public TPointer32 getPointer32() {
 		return getPointer32(0);
+	}
+
+	public TPointer64 getPointer64(int address) {
+		return new TPointer64(this, address).forceNonNull();
+	}
+
+	public TPointer64 getPointer64() {
+		return getPointer64(0);
 	}
 
 	@Override
