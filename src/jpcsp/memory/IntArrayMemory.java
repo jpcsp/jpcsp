@@ -26,8 +26,10 @@ import java.nio.ByteBuffer;
 
 import jpcsp.Memory;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
+import jpcsp.HLE.TPointer8;
 
 public class IntArrayMemory extends Memory {
 	private int[] memory;
@@ -71,6 +73,22 @@ public class IntArrayMemory extends Memory {
 
 	public TPointer getPointer() {
 		return getPointer(0);
+	}
+
+	public TPointer8 getPointer8(int address) {
+		return new TPointer8(this, address).forceNonNull();
+	}
+
+	public TPointer8 getPointer8() {
+		return getPointer8(0);
+	}
+
+	public TPointer16 getPointer16(int address) {
+		return new TPointer16(this, address).forceNonNull();
+	}
+
+	public TPointer16 getPointer16() {
+		return getPointer16(0);
 	}
 
 	public TPointer32 getPointer32(int address) {

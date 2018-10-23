@@ -86,11 +86,39 @@ public class TPointer32 extends TPointerBase {
 		return new TPointer(getNewPointerMemory(), getValue(offset));
 	}
 
+	public TPointer32 getPointer32() {
+		return getPointer32(0);
+	}
+
+	public TPointer32 getPointer32(int offset) {
+		if (isNull()) {
+			return TPointer32.NULL;
+		}
+
+		return new TPointer32(getNewPointerMemory(), getValue(offset));
+	}
+
 	public void setPointer(TPointer pointer) {
 		setValue(pointer.getAddress());
 	}
 
 	public void setPointer(int offset, TPointer pointer) {
 		setValue(offset, pointer.getAddress());
+	}
+
+	public TPointer32 add(int addressOffset) {
+		if (isNotNull()) {
+			pointer.add(addressOffset);
+		}
+
+		return this;
+	}
+
+	public TPointer32 sub(int addressOffset) {
+		if (isNotNull()) {
+			pointer.sub(addressOffset);
+		}
+
+		return this;
 	}
 }

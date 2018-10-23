@@ -31,6 +31,10 @@ public class TPointer8 extends TPointerBase {
 		return pointer.getValue8();
 	}
 
+	public int getUnsignedValue() {
+		return pointer.getUnsignedValue8();
+	}
+
 	public void setValue(int value) {
 		if (canSetValue()) {
 			pointer.setValue8((byte) value);
@@ -41,9 +45,34 @@ public class TPointer8 extends TPointerBase {
 		return pointer.getValue8(offset);
 	}
 
+	public int getUnsignedValue(int offset) {
+		return pointer.getUnsignedValue8(offset);
+	}
+
 	public void setValue(int offset, int value) {
 		if (canSetValue()) {
 			pointer.setValue8(offset, (byte) value);
 		}
+	}
+
+	public TPointer8 forceNonNull() {
+		pointer.forceNonNull();
+		return this;
+	}
+
+	public TPointer8 add(int addressOffset) {
+		if (isNotNull()) {
+			pointer.add(addressOffset);
+		}
+
+		return this;
+	}
+
+	public TPointer8 sub(int addressOffset) {
+		if (isNotNull()) {
+			pointer.sub(addressOffset);
+		}
+
+		return this;
 	}
 }

@@ -61,8 +61,10 @@ import jpcsp.HLE.HLEModuleFunction;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
+import jpcsp.HLE.TPointer8;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.filesystems.SeekableDataInput;
@@ -1963,21 +1965,28 @@ public class Utilities {
         return ByteBuffer.wrap(bytes, 0, offset);
     }
 
-    public static TPointer allocatePointer(int memorySize) {
+    private static IntArrayMemory allocateIntArrayMemory(int memorySize) {
     	int[] intArray = new int[alignUp(memorySize, 3) >> 2];
-    	IntArrayMemory mem = new IntArrayMemory(intArray);
-    	return mem.getPointer();
+    	return new IntArrayMemory(intArray);
+    }
+
+    public static TPointer allocatePointer(int memorySize) {
+    	return allocateIntArrayMemory(memorySize).getPointer();
+    }
+
+    public static TPointer8 allocatePointer8(int memorySize) {
+    	return allocateIntArrayMemory(memorySize).getPointer8();
+    }
+
+    public static TPointer16 allocatePointer16(int memorySize) {
+    	return allocateIntArrayMemory(memorySize).getPointer16();
     }
 
     public static TPointer32 allocatePointer32(int memorySize) {
-    	int[] intArray = new int[alignUp(memorySize, 3) >> 2];
-    	IntArrayMemory mem = new IntArrayMemory(intArray);
-    	return mem.getPointer32();
+    	return allocateIntArrayMemory(memorySize).getPointer32();
     }
 
     public static TPointer64 allocatePointer64(int memorySize) {
-    	int[] intArray = new int[alignUp(memorySize, 3) >> 2];
-    	IntArrayMemory mem = new IntArrayMemory(intArray);
-    	return mem.getPointer64();
+    	return allocateIntArrayMemory(memorySize).getPointer64();
     }
 }

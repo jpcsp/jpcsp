@@ -39,6 +39,10 @@ public class TPointer16 extends TPointerBase {
 		return pointer.getValue16();
 	}
 
+	public int getUnsignedValue() {
+		return pointer.getUnsignedValue16();
+	}
+
 	public void setValue(int value) {
 		if (canSetValue()) {
 			pointer.setValue16((short) value);
@@ -49,9 +53,34 @@ public class TPointer16 extends TPointerBase {
 		return pointer.getValue16(offset);
 	}
 
+	public int getUnsignedValue(int offset) {
+		return pointer.getUnsignedValue16(offset);
+	}
+
 	public void setValue(int offset, int value) {
 		if (canSetValue()) {
 			pointer.setValue16(offset, (short) value);
 		}
+	}
+
+	public TPointer16 forceNonNull() {
+		pointer.forceNonNull();
+		return this;
+	}
+
+	public TPointer16 add(int addressOffset) {
+		if (isNotNull()) {
+			pointer.add(addressOffset);
+		}
+
+		return this;
+	}
+
+	public TPointer16 sub(int addressOffset) {
+		if (isNotNull()) {
+			pointer.sub(addressOffset);
+		}
+
+		return this;
 	}
 }
