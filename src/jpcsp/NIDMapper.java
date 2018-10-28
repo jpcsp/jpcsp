@@ -471,6 +471,15 @@ public class NIDMapper {
     	return info.getNid();
     }
 
+    public String getModuleNameByAddress(int address) {
+    	NIDInfo info = getNIDInfoByAddress(address);
+    	if (info == null) {
+    		return null;
+    	}
+
+    	return info.getModuleName();
+    }
+
     public void unloadNid(int nid) {
     	// Search for the NID in all the modules
     	for (String moduleName : moduleNidMap.keySet()) {

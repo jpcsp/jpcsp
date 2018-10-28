@@ -53,8 +53,12 @@ import javax.net.ssl.X509TrustManager;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.NIDMapper;
 import jpcsp.Allegrex.Common;
+import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.HLEModuleFunction;
@@ -66,6 +70,7 @@ import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.TPointer8;
 import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
@@ -1898,6 +1903,10 @@ public class Utilities {
     }
 
     public static String getFunctionNameByAddress(int address) {
+    	if (address == 0) {
+    		return null;
+    	}
+
     	String functionName = null;
 
 		HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromAddress(address);
@@ -1907,6 +1916,55 @@ public class Utilities {
 
 		if (functionName == null) {
 			functionName = Modules.LoadCoreForKernelModule.getFunctionNameByAddress(address);
+		}
+
+		if (functionName == null) {
+			NIDMapper nidMapper = NIDMapper.getInstance();
+			int nid = nidMapper.getNidByAddress(address);
+			if (nid != 0) {
+				int syscall = nidMapper.getSyscallByNid(nid);
+				if (syscall >= 0) {
+					functionName = nidMapper.getNameBySyscall(syscall);
+				}
+
+				if (functionName == null) {
+					String moduleName = nidMapper.getModuleNameByAddress(address);
+					if (moduleName != null && moduleName.length() > 0) {
+						functionName = String.format("%s_%08X", moduleName, nid);
+					}
+				}
+			}
+		}
+
+		int nextOpcode = Memory.getInstance().read32(address + 4);
+		Instruction nextInsn = Decoder.instruction(nextOpcode);
+		if (nextInsn == Instructions.SYSCALL) {
+			int syscallCode = (nextOpcode >> 6) & 0xFFFFF;
+			func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(syscallCode);
+			if (func != null) {
+				functionName = func.getFunctionName();
+			}
+		}
+
+		if (functionName == null) {
+			SceModule module = Managers.modules.getModuleByAddress(address);
+			if (module != null && module.modname != null && module.modname.length() > 0) {
+	    		if (address == module.module_start_func) {
+	    			functionName = String.format("%s.module_start", module.modname);
+	    		} else if (address == module.module_stop_func) {
+	    			functionName = String.format("%s.module_stop", module.modname);
+	    		} else if (address == module.module_bootstart_func) {
+	    			functionName = String.format("%s.module_bootstart", module.modname);
+	    		} else if (address == module.module_reboot_before_func) {
+	    			functionName = String.format("%s.module_reboot_before", module.modname);
+	    		} else if (address == module.module_reboot_phase_func) {
+	    			functionName = String.format("%s.module_reboot_phase", module.modname);
+	    		} else if (address == module.module_start_func) {
+	    			functionName = String.format("%s.module_start", module.modname);
+	    		} else {
+	    			functionName = String.format("%s.sub_%08X", module.modname, address - module.text_addr);
+	    		}
+			}
 		}
 
 		return functionName;

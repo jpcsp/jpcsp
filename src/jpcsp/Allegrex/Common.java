@@ -22,7 +22,6 @@ import static jpcsp.HLE.SyscallHandler.syscallUnmappedImport;
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
-import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.ICompilerContext;
 import jpcsp.HLE.HLEModuleFunction;
@@ -743,23 +742,16 @@ public class Common {
 
     public static String disasmJUMP(String opname, int uimm26, int opcode_address) {
         int jump = (opcode_address & 0xf0000000) | ((uimm26 & 0x3ffffff) << 2);
-        int jumpToSyscall = jump + 4;
 
-        // If we think the target is a stub, try and append the syscall name
-        if ((opname.equals("jal") || opname.equals("j")) && jump != 0 &&
-                jumpToSyscall != opcode_address && Memory.isAddressGood(jumpToSyscall)) {
+        String disasm = String.format("%1$-10s 0x%2$08X", opname, jump);
+        // Try to find a human-readable name for the address
+        if (opname.equals("jal") || opname.equals("j")) {
         	String functionName = Utilities.getFunctionNameByAddress(jump);
         	if (functionName != null) {
-                return String.format("%1$-10s 0x%2$08X [%3$s]", opname, jump, functionName);
+        		disasm += String.format(" [%s]", functionName);
         	}
-            int nextOpcode = jpcsp.Memory.getInstance().read32(jumpToSyscall);
-            Instruction nextInsn = Decoder.instruction(nextOpcode);
-            String secondTarget = nextInsn.disasm(jumpToSyscall, nextOpcode);
-            if (secondTarget.startsWith("syscall") && !secondTarget.contains("[unknown]")) {
-                return String.format("%1$-10s 0x%2$08X %3$s", opname, jump, secondTarget.substring(19));
-            }
         }
-        return String.format("%1$-10s 0x%2$08X", opname, jump);
+        return disasm;
     }
 
     public static String disasmRTIMM(String opname, int rt, int imm) {
