@@ -19,6 +19,12 @@ package jpcsp.HLE;
 import jpcsp.Memory;
 
 final public class TPointer64 extends TPointerBase {
+	public static final TPointer64 NULL = new TPointer64();
+
+	private TPointer64() {
+		super();
+	}
+
 	public TPointer64(Memory memory, int address) {
 		super(memory, address, false);
 	}

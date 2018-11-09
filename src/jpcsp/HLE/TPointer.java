@@ -73,10 +73,12 @@ public class TPointer implements ITPointerBase {
 		return this;
 	}
 
-	public void alignUp(int alignment) {
+	public TPointer alignUp(int alignment) {
 		if (isNotNull()) {
 			address = Utilities.alignUp(address, alignment);
 		}
+
+		return this;
 	}
 
 	@Override
