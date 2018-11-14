@@ -2,7 +2,7 @@ group 'com.jpcsp'
 version '0.7'
 
 buildscript {
-    ext.launch4j_version = '1.6.2'
+    ext.launch4j_version = '2.4.4'
 
     repositories {
         maven { url "https://plugins.gradle.org/m2/" }
@@ -82,7 +82,7 @@ jar {
 }
 
 launch4j {
-    opt = "-Xmx768m"
+    jvmOptions = ['-Xmx768m']
     print "version: $version"
     outfile = "../../build/libs/jpcsp-${project.version}.exe"
     icon = "../../resources/jpcsp/icon.ico"
