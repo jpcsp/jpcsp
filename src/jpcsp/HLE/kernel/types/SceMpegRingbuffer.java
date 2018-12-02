@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 
@@ -33,7 +34,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
     private int dataUpperBound;
     private int semaID; // unused?
     private int mpeg; // pointer to mpeg struct, fixed up in sceMpegCreate
-    private int gp;
+    private int gp; // "gp" register for the ringbuffer callbacks, only after PSP v2.60
     // Internal info
     private pspFileBuffer videoBuffer;
     private pspFileBuffer audioBuffer;
@@ -97,7 +98,11 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 		userDataBuffer.reset(0, 0);
     }
 
-	@Override
+    private static boolean isMpeg260() {
+    	return Emulator.getInstance().getFirmwareVersion() <= 260;
+    }
+
+    @Override
 	protected void read() {
         packets             = read32();
         packetsRead         = read32();
@@ -110,7 +115,9 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
         dataUpperBound      = read32();
         semaID              = read32();
         mpeg                = read32();
-        gp                  = read32();
+        if (!isMpeg260()) {
+        	gp              = read32();
+        }
 	}
 
 	@Override
@@ -126,7 +133,9 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
         write32(dataUpperBound);
         write32(semaID);
         write32(mpeg);
-        write32(gp);
+        if (!isMpeg260()) {
+        	write32(gp);
+        }
 	}
 
 	public int getFreePackets() {
