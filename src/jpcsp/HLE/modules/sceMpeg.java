@@ -21,6 +21,7 @@ import static jpcsp.Allegrex.compiler.RuntimeContext.hasMemoryInt;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_High;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
+import static jpcsp.Memory.normalizeAddress;
 import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PACK_START_CODE;
 import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PADDING_STREAM;
 import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PRIVATE_STREAM_1;
@@ -1978,7 +1979,7 @@ public class sceMpeg extends HLEModule {
 		if (pixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && hasMemoryInt()) {
 			// Optimize the most common case
 			int offset = 0;
-			int memoryIntOffset = addr >> 2;
+			int memoryIntOffset = normalizeAddress(addr) >> 2;
 			for (int y = 0; y < frameHeight; y++) {
 				System.arraycopy(abgr, offset, getMemoryInt(), memoryIntOffset, lineWidth);
 				memoryIntOffset += frameWidth;
