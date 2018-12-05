@@ -135,6 +135,7 @@ public class TPointer implements ITPointerBase {
 	public int   getUnalignedValue32() { return getUnalignedValue32(0); }
 	public int   getUnsignedValue8() { return getUnsignedValue8(0); }
 	public int   getUnsignedValue16() { return getUnsignedValue16(0); }
+	public float getFloat() { return getFloat(0); }
 
 	public void setValue8(byte value) { setValue8(0, value); }
 	public void setValue16(short value) { setValue16(0, value); }
@@ -143,6 +144,7 @@ public class TPointer implements ITPointerBase {
 	public void setValue64(long value) { setValue64(0, value); }
 	public void setUnsignedValue8(int value) { setUnsignedValue8(0, value); }
 	public void setUnsignedValue16(int value) { setUnsignedValue16(0, value); }
+	public void setFloat(float value) { setFloat(0, value); }
 
 	public byte  getValue8(int offset) { return (byte) getUnsignedValue8(offset); }
 	public short getValue16(int offset) { return (short) getUnsignedValue16(offset); }
@@ -152,6 +154,7 @@ public class TPointer implements ITPointerBase {
 	public int   getUnalignedValue32(int offset) { return Utilities.readUnaligned32(memory, address + offset); }
 	public int   getUnsignedValue8(int offset) { return memory.read8(address + offset); }
 	public int   getUnsignedValue16(int offset) { return memory.read16(address + offset); }
+	public float getFloat(int offset) { return Float.intBitsToFloat(getValue32(offset)); }
 
 	public void setValue8(int offset, byte value) { if (isNotNull()) memory.write8(address + offset, value); }
 	public void setValue16(int offset, short value) { if (isNotNull()) memory.write16(address + offset, value); }
@@ -160,22 +163,25 @@ public class TPointer implements ITPointerBase {
 	public void setValue64(int offset, long value) { if (isNotNull()) memory.write64(address + offset, value); }
 	public void setUnsignedValue8(int offset, int value) { if (isNotNull()) memory.write8(address + offset, (byte) value); }
 	public void setUnsignedValue16(int offset, int value) { if (isNotNull()) memory.write16(address + offset, (short) value); }
+	public void setFloat(int offset, float value) { setValue32(offset, Float.floatToRawIntBits(value)); }
 
-	public float getFloat() {
-		return getFloat(0);
-	}
+	public void incrValue8(int value) { incrValue8(0, value); }
+	public void incrValue16(int value) { incrValue16(0, value); }
+	public void incrValue32(int value) { incrValue32(0, value); }
+	public void incrValue64(long value) { incrValue64(0, value); }
+	public void incrValue8(int offset, int value) { if (isNotNull()) memory.write8(address + offset, (byte) (memory.read8(address + offset) + value)); }
+	public void incrValue16(int offset, int value) { if (isNotNull()) memory.write16(address + offset, (short) (memory.read16(address + offset) + value)); }
+	public void incrValue32(int offset, int value) { if (isNotNull()) memory.write32(address + offset, memory.read32(address + offset) + value); }
+	public void incrValue64(int offset, long value) { if (isNotNull()) memory.write64(address + offset, memory.read64(address + offset) + value); }
 
-	public float getFloat(int offset) {
-		return Float.intBitsToFloat(getValue32(offset));
-	}
-
-	public void setFloat(float value) {
-		setFloat(0, value);
-	}
-
-	public void setFloat(int offset, float value) {
-		setValue32(offset, Float.floatToRawIntBits(value));
-	}
+	public void decrValue8(int value) { decrValue8(0, value); }
+	public void decrValue16(int value) { decrValue16(0, value); }
+	public void decrValue32(int value) { decrValue32(0, value); }
+	public void decrValue64(long value) { decrValue64(0, value); }
+	public void decrValue8(int offset, int value) { incrValue8(offset, -value); }
+	public void decrValue16(int offset, int value) { incrValue16(offset, -value); }
+	public void decrValue32(int offset, int value) { incrValue32(offset, -value); }
+	public void decrValue64(int offset, long value) { incrValue64(offset, -value); }
 
 	public String getStringZ() {
 		return Utilities.readStringZ(memory, address);

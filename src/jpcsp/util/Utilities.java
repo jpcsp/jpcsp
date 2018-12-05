@@ -2047,4 +2047,8 @@ public class Utilities {
     public static TPointer64 allocatePointer64(int memorySize) {
     	return allocateIntArrayMemory(memorySize).getPointer64();
     }
+
+    public static int compareUnsigned32(int a, int b) {
+    	return Integer.compareUnsigned(a, b);
+    }
 }

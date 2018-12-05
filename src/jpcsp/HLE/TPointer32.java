@@ -121,4 +121,22 @@ public class TPointer32 extends TPointerBase {
 
 		return this;
 	}
+
+	public void incrValue(int value) {
+		incrValue(0, value);
+	}
+
+	public void incrValue(int offset, int value) {
+		if (canSetValue()) {
+			pointer.setValue32(offset, pointer.getValue32(offset) + value);
+		}
+	}
+
+	public void decrValue(int value) {
+		decrValue(0, value);
+	}
+
+	public void decrValue(int offset, int value) {
+		incrValue(offset, -value);
+	}
 }

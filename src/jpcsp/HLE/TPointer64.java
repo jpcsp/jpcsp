@@ -33,6 +33,14 @@ final public class TPointer64 extends TPointerBase {
 		super(memory, address, canBeNull);
 	}
 
+	public TPointer64(TPointer pointer) {
+		super(pointer.getMemory(), pointer.getAddress(), false);
+	}
+
+	public TPointer64(TPointer pointer, int offset) {
+		super(pointer.getMemory(), pointer.getAddress() + offset, false);
+	}
+
 	public long getValue() {
 		return pointer.getValue64();
 	}
@@ -56,5 +64,23 @@ final public class TPointer64 extends TPointerBase {
 	public TPointer64 forceNonNull() {
 		pointer.forceNonNull();
 		return this;
+	}
+
+	public void incrValue(long value) {
+		incrValue(0, value);
+	}
+
+	public void incrValue(int offset, long value) {
+		if (canSetValue()) {
+			pointer.setValue64(offset, pointer.getValue64(offset) + value);
+		}
+	}
+
+	public void decrValue(long value) {
+		decrValue(0, value);
+	}
+
+	public void decrValue(int offset, long value) {
+		incrValue(offset, -value);
 	}
 }
