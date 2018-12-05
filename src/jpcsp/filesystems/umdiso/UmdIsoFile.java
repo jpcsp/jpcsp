@@ -239,8 +239,8 @@ public class UmdIsoFile extends SeekableInputStream {
     }
 
     public String getName() {
-        if (this.name == null) {
-          this.name = internalReader.getFileName(startSectorNumber);
+        if (name == null) {
+        	name = internalReader.getFileName(startSectorNumber);
         }
     	return name;
     }

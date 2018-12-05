@@ -370,17 +370,6 @@ public class UmdIsoReader implements IBrowser {
     	return false;
     }
 
-    public String resolveSectorPath(int start, long length) {
-        String fileName = null;
-        // Scroll back through the sectors until the file's start sector is reached
-        // and it's name can be obtained.
-        while ((fileName == null) || (start <= startSector)) {
-            fileName = getFileName(start);
-            start--;
-        }
-        return fileName;
-    }
-
     public String[] listDirectory(String filePath) throws IOException, FileNotFoundException {
         Iso9660Directory dir = null;
 
@@ -432,7 +421,7 @@ public class UmdIsoReader implements IBrowser {
                 info = getFileEntry(filePath);
                 if (info != null) {
                     if (info.getLBA() == fileStartSector) {
-                        return info.getFileName();
+                        return filePath;
                     }
                 }
             }
