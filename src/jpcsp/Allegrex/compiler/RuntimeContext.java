@@ -850,7 +850,11 @@ public class RuntimeContext {
 
     public static boolean executeFunction(int address) {
 		IExecutable executable = getExecutable(address);
-        int newPc = 0;
+		if (executable == null) {
+			return false;
+		}
+
+		int newPc = 0;
         int returnAddress = cpu._ra;
         boolean exception = false;
 		try {
