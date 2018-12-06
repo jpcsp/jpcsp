@@ -120,10 +120,12 @@ public class AutoDetectJpcsp {
 	}
 
 	public void startDaemon() {
-		listenerThread = new ListenerThread();
-		listenerThread.setName("AutoDetectJpcsp - ListenerThread");
-		listenerThread.setDaemon(true);
-		listenerThread.start();
+		if (listenerThread == null) {
+			listenerThread = new ListenerThread();
+			listenerThread.setName("AutoDetectJpcsp - ListenerThread");
+			listenerThread.setDaemon(true);
+			listenerThread.start();
+		}
 	}
 
 	public static void exit() {

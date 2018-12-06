@@ -150,6 +150,13 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		upnp.discoverInBackground();
 	}
 
+	@Override
+	public void stop() {
+		upnp.stop();
+
+		super.stop();
+	}
+
 	protected void sendToMetaServer(SceNetAdhocctlPacketBaseC2S packet) throws IOException {
 		if (metaSocket != null) {
 			metaSocket.getOutputStream().write(packet.getBytes());

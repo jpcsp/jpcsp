@@ -56,6 +56,7 @@ import org.xml.sax.SAXException;
 public class UPnP {
 	public static Logger log = Logger.getLogger("upnp");
 	protected IGD igd;
+	private volatile boolean end;
 	public  static final int discoveryTimeoutMillis = 2000;
 	public  static final int discoveryPort = 1900;
 	public  static final int discoverySearchPort = 1901;
@@ -81,11 +82,16 @@ public class UPnP {
 		discoverThread.start();
 	}
 
+	public void stop() {
+		end = true;
+	}
+
 	private static class ListenerThread extends Thread {
 		private UPnP upnp;
     	private IGD igd;
     	private boolean done;
     	private volatile boolean ready;
+    	private volatile boolean end;
 
 		public ListenerThread(UPnP upnp, IGD igd) {
 			this.upnp = upnp;
@@ -175,6 +181,7 @@ public class UPnP {
 	    		sockets[i].close();
 	    	}
 	    	ready = true;
+	    	end = true;
 		}
 
 		public boolean isDone() {
@@ -188,6 +195,10 @@ public class UPnP {
 
 		public boolean isReady() {
 			return ready;
+		}
+
+		public boolean isEnded() {
+			return end;
 		}
 	}
 
@@ -224,17 +235,16 @@ public class UPnP {
 			}
 
 			for (int i = 0; i < discoveryTimeoutMillis / 10; i++) {
-				if (listener.isDone()) {
+				if (end || listener.isDone()) {
 					break;
 				}
 				Utilities.sleep(10, 0);
 			}
 
 			listener.setDone(true);
-			while (!listener.isReady()) {
+			while (!listener.isReady() && !listener.isEnded()) {
 				Utilities.sleep(100);
 			}
-
 		} catch (IOException e) {
 			log.error("discover", e);
 		}
