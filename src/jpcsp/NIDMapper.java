@@ -35,8 +35,9 @@ public class NIDMapper {
     private final Map<Integer, NIDInfo> addressMap;
     private final Map<String, NIDInfo> nameMap;
     private int freeSyscallNumber;
+    private boolean hideAllSyscalls;
 
-    protected static class NIDInfo {
+	protected static class NIDInfo {
     	private final int nid;
 		private final int syscall;
     	private int address;
@@ -428,6 +429,10 @@ public class NIDMapper {
     }
 
     public int getSyscallByNid(int nid, String moduleName) {
+    	if (isHideAllSyscalls()) {
+    		return -1;
+    	}
+
     	NIDInfo info = getNIDInfoByNid(moduleName, nid);
     	if (info == null || !info.hasSyscall()) {
     		return -1;
@@ -533,4 +538,12 @@ public class NIDMapper {
 
     	return info.isVariableExport();
     }
+
+    public boolean isHideAllSyscalls() {
+		return hideAllSyscalls;
+	}
+
+	public void setHideAllSyscalls(boolean hideAllSyscalls) {
+		this.hideAllSyscalls = hideAllSyscalls;
+	}
 }

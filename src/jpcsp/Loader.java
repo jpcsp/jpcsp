@@ -1304,7 +1304,7 @@ public class Loader {
                             log.debug(String.format("Mapped import at 0x%08X to syscall 0x%05X [0x%08X] (attempt %d)",
                                 importAddress, code, nid, module.importFixupAttempts));
                         }
-                    } else {
+                    } else if (!nidMapper.isHideAllSyscalls()) {
                         log.warn(String.format("Failed to map import at 0x%08X [0x%08X] Module '%s'(attempt %d)",
                             importAddress, nid, moduleName, module.importFixupAttempts));
                         numberoffailedNIDS++;

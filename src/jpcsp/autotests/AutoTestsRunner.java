@@ -86,7 +86,7 @@ public class AutoTestsRunner {
 		System.err.println(str);
 	}
 
-	class DummyGUI implements IMainGUI {
+	public static class DummyGUI implements IMainGUI {
 		@Override public void setMainTitle(String title) { }
 		@Override public void RefreshButtons() { }
 		@Override public void setLocation() { }
