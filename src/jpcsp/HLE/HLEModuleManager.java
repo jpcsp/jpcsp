@@ -252,7 +252,8 @@ public class HLEModuleManager {
         sceMScm(Modules.sceMScmModule),
         sceG729(Modules.sceG729Module, new String[] { "PSP_MODULE_AV_G729", "g729" }, "flash0:/kd/g729.prx"),
         scePopsMan(Modules.scePopsManModule),
-        scePaf(Modules.scePafModule);
+        scePaf(Modules.scePafModule),
+        sceClockgen(Modules.sceClockgenModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
