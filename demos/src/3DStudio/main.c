@@ -492,10 +492,10 @@ char *blendFuncNames[] = { "GU_SRC_COLOR", "GU_ONE_MINUS_SRC_COLOR", "GU_SRC_ALP
 struct Color blendSFix;
 struct Color blendDFix;
 
-int textureType1 = 0;
-int textureType2 = 0;
+int textureType1 = 1;
+int textureType2 = 1;
 int mipmapLevel1Type = 1;
-char *textureTypeNames[] = { "Checkboard 1x1", "Checkboard 3x3", "Unicolor", "Vertical", "Horizontal", "Center" };
+char *textureTypeNames[] = { "NULL", "Checkboard 1x1", "Checkboard 3x3", "Unicolor", "Vertical", "Horizontal", "Center" };
 
 struct Color backgroundColor;
 int clearMode = 0;
@@ -862,12 +862,13 @@ unsigned int getTextureColor(struct Color *pcolor, int textureType, int x, int y
 
 	switch (textureType)
 	{
-		case 0: color = (((x + y / 1 * 1) / 1) & 1) == 0 ? color1 : color2; break;	/* Checkboard 1x1 */
-		case 1: color = (((x + y / 3 * 3) / 3) & 1) == 0 ? color1 : color2; break;	/* Checkboard 3x3 */
-		case 2: color = color1; break;									/* Unicolor */
-		case 3: factor = x * 256 / TEXTURE_WIDTH; break;				/* Vertical */
-		case 4: factor = y * 256 / TEXTURE_HEIGHT; break;				/* Horizontal */
-		case 5: a = x - (TEXTURE_WIDTH  / 2);
+		case 0: color = 0; break; /* NULL */
+		case 1: color = (((x + y / 1 * 1) / 1) & 1) == 0 ? color1 : color2; break;	/* Checkboard 1x1 */
+		case 2: color = (((x + y / 3 * 3) / 3) & 1) == 0 ? color1 : color2; break;	/* Checkboard 3x3 */
+		case 3: color = color1; break;									/* Unicolor */
+		case 4: factor = x * 256 / TEXTURE_WIDTH; break;				/* Vertical */
+		case 5: factor = y * 256 / TEXTURE_HEIGHT; break;				/* Horizontal */
+		case 6: a = x - (TEXTURE_WIDTH  / 2);
 			b = y - (TEXTURE_HEIGHT / 2);
 			int a2 = TEXTURE_WIDTH * TEXTURE_WIDTH / 2;
 			factor = (256 * (a2 - ((a * a) + (b * b)))) / a2; break;	/* Center */
@@ -1331,7 +1332,7 @@ void drawRectangles()
 	sceGuTexSlope(texSlope1);
 	for (level = 0, width = TEXTURE_WIDTH, height = TEXTURE_HEIGHT, bufferWidth = textureBufferWidth1; level <= numberMipmaps; level++, width /= 2, height /= 2, bufferWidth /= 2)
 	{
-		sceGuTexImage(level, width, height, bufferWidth, texture1[level]); 
+		sceGuTexImage(level, width, height, bufferWidth, textureType1 == 0 ? NULL : texture1[level]); 
 	}
 	if (texFuncDouble1)
 	{
@@ -1493,7 +1494,7 @@ void drawRectangles()
 	sceGuTexSlope(texSlope2);
 	for (level = 0, width = TEXTURE_WIDTH, height = TEXTURE_HEIGHT, bufferWidth = textureBufferWidth2; level <= numberMipmaps; level++, width /= 2, height /= 2, bufferWidth /= 2)
 	{
-		sceGuTexImage(level, width, height, bufferWidth, texture2[level]); 
+		sceGuTexImage(level, width, height, bufferWidth, textureType2 == 0 ? NULL : texture2[level]); 
 	}
 	if (texFuncDouble2)
 	{
