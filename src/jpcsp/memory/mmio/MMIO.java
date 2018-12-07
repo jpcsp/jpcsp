@@ -62,7 +62,7 @@ public class MMIO extends Memory {
 	public void Initialise() {
     	handlers.clear();
 
-    	addHandler(0xBC000000, 0x54, new MMIOHandlerMemoryAccessControl(0xBC000000));
+    	addHandler(0xBC000000, 0x80, new MMIOHandlerMemoryAccessControl(0xBC000000));
     	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, 0x9C, MMIOHandlerSystemControl.getInstance());
     	addHandler(0xBC200000, 0x8, new MMIOHandlerCpuBusFrequency(0xBC200000));
     	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, MMIOHandlerInterruptMan.getProxyInstance());

@@ -36,10 +36,7 @@ public class MMIOHandlerMemoryAccessControl extends MMIOHandlerBase {
 	private int unknown34;
 	private int unknown38;
 	private int unknown3C;
-	private int unknown40;
-	private int unknown44;
-	private int unknown48;
-	private int unknown50;
+	private final int[] unknown40_to_7C = new int[0x10];
 
 	public MMIOHandlerMemoryAccessControl(int baseAddress) {
 		super(baseAddress);
@@ -61,10 +58,7 @@ public class MMIOHandlerMemoryAccessControl extends MMIOHandlerBase {
 		unknown34 = stream.readInt();
 		unknown38 = stream.readInt();
 		unknown3C = stream.readInt();
-		unknown40 = stream.readInt();
-		unknown44 = stream.readInt();
-		unknown48 = stream.readInt();
-		unknown50 = stream.readInt();
+		stream.readInts(unknown40_to_7C);
 		super.read(stream);
 	}
 
@@ -84,10 +78,7 @@ public class MMIOHandlerMemoryAccessControl extends MMIOHandlerBase {
 		stream.writeInt(unknown34);
 		stream.writeInt(unknown38);
 		stream.writeInt(unknown3C);
-		stream.writeInt(unknown40);
-		stream.writeInt(unknown44);
-		stream.writeInt(unknown48);
-		stream.writeInt(unknown50);
+		stream.writeInts(unknown40_to_7C);
 		super.write(stream);
 	}
 
@@ -111,10 +102,22 @@ public class MMIOHandlerMemoryAccessControl extends MMIOHandlerBase {
 			case 0x34: value = unknown34; break;
 			case 0x38: value = unknown38; break;
 			case 0x3C: value = unknown3C; break;
-			case 0x40: value = unknown40; break;
-			case 0x44: value = unknown44; break;
-			case 0x48: value = unknown48; break;
-			case 0x50: value = unknown50; break;
+			case 0x40: value = unknown40_to_7C[ 0]; break;
+			case 0x44: value = unknown40_to_7C[ 1]; break;
+			case 0x48: value = unknown40_to_7C[ 2]; break;
+			case 0x4C: value = unknown40_to_7C[ 3]; break;
+			case 0x50: value = unknown40_to_7C[ 4]; break;
+			case 0x54: value = unknown40_to_7C[ 5]; break;
+			case 0x58: value = unknown40_to_7C[ 6]; break;
+			case 0x5C: value = unknown40_to_7C[ 7]; break;
+			case 0x60: value = unknown40_to_7C[ 8]; break;
+			case 0x64: value = unknown40_to_7C[ 9]; break;
+			case 0x68: value = unknown40_to_7C[10]; break;
+			case 0x6C: value = unknown40_to_7C[11]; break;
+			case 0x70: value = unknown40_to_7C[12]; break;
+			case 0x74: value = unknown40_to_7C[13]; break;
+			case 0x78: value = unknown40_to_7C[14]; break;
+			case 0x7C: value = unknown40_to_7C[15]; break;
 			default: value = super.read32(address); break;
 		}
 
@@ -144,10 +147,22 @@ public class MMIOHandlerMemoryAccessControl extends MMIOHandlerBase {
 			case 0x34: unknown34 = value; break;
 			case 0x38: unknown38 = value; break;
 			case 0x3C: unknown3C = value; break;
-			case 0x40: unknown40 = value; break;
-			case 0x44: unknown44 = value; break;
-			case 0x48: unknown48 = value; break;
-			case 0x50: unknown50 = value; break;
+			case 0x40: unknown40_to_7C[ 0] = value; break;
+			case 0x44: unknown40_to_7C[ 1] = value; break;
+			case 0x48: unknown40_to_7C[ 2] = value; break;
+			case 0x4C: unknown40_to_7C[ 3] = value; break;
+			case 0x50: unknown40_to_7C[ 4] = value; break;
+			case 0x54: unknown40_to_7C[ 5] = value; break;
+			case 0x58: unknown40_to_7C[ 6] = value; break;
+			case 0x5C: unknown40_to_7C[ 7] = value; break;
+			case 0x60: unknown40_to_7C[ 8] = value; break;
+			case 0x64: unknown40_to_7C[ 9] = value; break;
+			case 0x68: unknown40_to_7C[10] = value; break;
+			case 0x6C: unknown40_to_7C[11] = value; break;
+			case 0x70: unknown40_to_7C[12] = value; break;
+			case 0x74: unknown40_to_7C[13] = value; break;
+			case 0x78: unknown40_to_7C[14] = value; break;
+			case 0x7C: unknown40_to_7C[15] = value; break;
 			default: super.write32(address, value); break;
 		}
 
