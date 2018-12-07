@@ -89,10 +89,19 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
+	private void updateUmd() {
+		if (vFile != null) {
+			MMIOHandlerGpio.getInstance().setPort(GPIO_PORT_UMD);
+		} else {
+			MMIOHandlerGpio.getInstance().clearPort(GPIO_PORT_UMD);
+		}
+	}
+
 	private void closeFile() {
 		if (vFile != null) {
 			vFile.ioClose();
 			vFile = null;
+			updateUmd();
 		}
 	}
 
@@ -102,6 +111,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 		log.info(String.format("Using UMD '%s'", fileName));
 
 		vFile = new UmdIsoReaderVirtualFile(fileName);
+		updateUmd();
 	}
 
 	private void setReset(int reset) {
@@ -109,7 +119,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 
 		if ((reset & 0x1) != 0) {
 			MMIOHandlerGpio.getInstance().setPort(GPIO_PORT_BLUETOOTH);
-			MMIOHandlerGpio.getInstance().setPort(GPIO_PORT_UMD);
+			updateUmd();
 		}
 	}
 
