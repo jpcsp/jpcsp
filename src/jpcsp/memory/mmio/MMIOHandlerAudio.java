@@ -24,6 +24,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.modules.sceAudio;
+import jpcsp.hardware.Audio;
 import jpcsp.memory.mmio.audio.AudioLine;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -135,6 +136,11 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("sendAudioData value=0x%08X, line=%d, index=0x%X, interrupt=%d", value, line, index, interrupt));
 		}
+
+		if (Audio.isMuted()) {
+			value = 0;
+		}
+
 		data[index++] = value;
 
 		if (index >= data.length) {

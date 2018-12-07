@@ -23,6 +23,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.apache.log4j.Logger;
+import org.lwjgl.LWJGLException;
+import org.lwjgl.openal.AL;
 import org.lwjgl.openal.AL10;
 
 import jpcsp.memory.mmio.MMIOHandlerAudio;
@@ -39,9 +41,22 @@ public class AudioLine implements IState {
 	private int frequency = 44100;
 
 	public AudioLine() {
+		initOpenAL();
+
 		soundBufferManager = SoundBufferManager.getInstance();
 		alSource = AL10.alGenSources();
 		AL10.alSourcei(alSource, AL10.AL_LOOPING, AL10.AL_FALSE);
+	}
+
+	private static void initOpenAL() {
+		// Initialize OpenAL
+		if (!AL.isCreated()) {
+			try {
+				AL.create();
+			} catch (LWJGLException e) {
+				log.error(e);
+			}
+		}
 	}
 
 	private void alSourcePlay() {
