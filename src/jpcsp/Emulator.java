@@ -388,6 +388,17 @@ public class Emulator implements Runnable {
         return Memory.getInstance();
     }
 
+	public static Memory getMemory(int address) {
+		if (!Memory.isAddressGood(address)) {
+			Memory mmio = RuntimeContextLLE.getMMIO();
+			if (mmio != null) {
+				return mmio;
+			}
+		}
+
+		return getMemory();
+	}
+
     public static Clock getClock() {
         return clock;
     }

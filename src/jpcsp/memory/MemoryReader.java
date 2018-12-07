@@ -20,10 +20,10 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
 
 /**
@@ -78,29 +78,26 @@ public class MemoryReader {
 	 * @return        the MemoryReader
 	 */
 	public static IMemoryReader getMemoryReader(int address, int length, int step) {
-		if (Memory.isAddressGood(address)) {
-			address &= Memory.addressMask;
-			if (RuntimeContext.hasMemoryInt()) {
-				return getFastMemoryReader(address, step);
-			}
+		if (RuntimeContext.hasMemoryInt(address)) {
+			return getFastMemoryReader(address, step);
+		}
 
-			if (!DebuggerMemory.isInstalled()) {
-				Buffer buffer = Memory.getInstance().getBuffer(address, length);
+		if (!DebuggerMemory.isInstalled()) {
+			Buffer buffer = Emulator.getMemory(address).getBuffer(address, length);
 
-				if (buffer instanceof IntBuffer) {
-					IntBuffer intBuffer = (IntBuffer) buffer;
-					switch (step) {
-					case 1: return new MemoryReaderInt8(intBuffer, address);
-					case 2: return new MemoryReaderInt16(intBuffer, address);
-					case 4: return new MemoryReaderInt32(intBuffer, address);
-					}
-				} else if (buffer instanceof ByteBuffer) {
-					ByteBuffer byteBuffer = (ByteBuffer) buffer;
-					switch (step) {
-					case 1: return new MemoryReaderByte8(byteBuffer, address);
-					case 2: return new MemoryReaderByte16(byteBuffer, address);
-					case 4: return new MemoryReaderByte32(byteBuffer, address);
-					}
+			if (buffer instanceof IntBuffer) {
+				IntBuffer intBuffer = (IntBuffer) buffer;
+				switch (step) {
+				case 1: return new MemoryReaderInt8(intBuffer, address);
+				case 2: return new MemoryReaderInt16(intBuffer, address);
+				case 4: return new MemoryReaderInt32(intBuffer, address);
+				}
+			} else if (buffer instanceof ByteBuffer) {
+				ByteBuffer byteBuffer = (ByteBuffer) buffer;
+				switch (step) {
+				case 1: return new MemoryReaderByte8(byteBuffer, address);
+				case 2: return new MemoryReaderByte16(byteBuffer, address);
+				case 4: return new MemoryReaderByte32(byteBuffer, address);
 				}
 			}
 		}
@@ -162,7 +159,6 @@ public class MemoryReader {
 	 */
 	public static IMemoryReader getMemoryReader(int address, int step) {
 		if (RuntimeContext.hasMemoryInt(address)) {
-			address &= Memory.addressMask;
 			return getFastMemoryReader(address, step);
 		}
 		return getMemoryReader(address, getMaxLength(address), step);
@@ -202,11 +198,7 @@ public class MemoryReader {
 			this.address = address;
 			this.length = length;
 			this.step = step;
-			if (Memory.isAddressGood(address) || RuntimeContextLLE.getMMIO() == null) {
-				mem = Memory.getInstance();
-			} else {
-				mem = RuntimeContextLLE.getMMIO();
-			}
+			mem = Emulator.getMemory(address);
 		}
 
 		@Override
@@ -250,7 +242,7 @@ public class MemoryReader {
 
 		public MemoryReaderIntArray8(int[] buffer, int addr) {
 			this.buffer = buffer;
-			offset = addr / 4;
+			offset = (addr & Memory.addressMask) >> 2;
 			index = addr & 3;
 			value = buffer[offset] >> (index << 3);
 		}
@@ -295,7 +287,7 @@ public class MemoryReader {
 
 		public MemoryReaderIntArray16(int[] buffer, int addr) {
 			this.buffer = buffer;
-			offset = addr >> 2;
+			offset = (addr & Memory.addressMask) >> 2;
 			index = (addr >> 1) & 1;
 			if (index != 0) {
 				value = buffer[offset];
@@ -342,7 +334,7 @@ public class MemoryReader {
 		private int[] buffer;
 
 		public MemoryReaderIntArray32(int[] buffer, int addr) {
-			offset = addr / 4;
+			offset = (addr & Memory.addressMask) >> 2;
 			this.buffer = buffer;
 		}
 

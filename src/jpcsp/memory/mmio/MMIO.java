@@ -235,6 +235,10 @@ public class MMIO extends Memory {
 
 	@Override
 	public Buffer getBuffer(int address, int length) {
+		IMMIOHandler handler = getHandler(address);
+		if (handler != null) {
+			return null;
+		}
 		return mem.getBuffer(address, length);
 	}
 

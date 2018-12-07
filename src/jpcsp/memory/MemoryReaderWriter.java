@@ -37,8 +37,7 @@ public class MemoryReaderWriter {
 	}
 
 	public static IMemoryReaderWriter getMemoryReaderWriter(int address, int length, int step) {
-		address &= Memory.addressMask;
-		if (RuntimeContext.hasMemoryInt()) {
+		if (RuntimeContext.hasMemoryInt(address)) {
 			return getFastMemoryReaderWriter(address, step);
 		}
 
@@ -47,8 +46,7 @@ public class MemoryReaderWriter {
 	}
 
 	public static IMemoryReaderWriter getMemoryReaderWriter(int address, int step) {
-		address &= Memory.addressMask;
-		if (RuntimeContext.hasMemoryInt()) {
+		if (RuntimeContext.hasMemoryInt(address)) {
 			return getFastMemoryReaderWriter(address, step);
 		}
 
@@ -109,7 +107,7 @@ public class MemoryReaderWriter {
 		private final int[] buffer;
 
 		public MemoryReaderWriterIntArray32(int[] buffer, int addr) {
-			offset = addr >> 2;
+			offset = (addr & Memory.addressMask) >> 2;
 			this.buffer = buffer;
 		}
 
@@ -146,7 +144,7 @@ public class MemoryReaderWriter {
 
 		public MemoryReaderWriterIntArray16(int[] buffer, int addr) {
 			this.buffer = buffer;
-			offset = addr >> 2;
+			offset = (addr & Memory.addressMask) >> 2;
 			index = (addr >> 1) & 1;
 			if (index != 0) {
 				value = buffer[offset] & 0x0000FFFF;

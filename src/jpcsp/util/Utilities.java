@@ -1936,7 +1936,7 @@ public class Utilities {
 			}
 		}
 
-		int nextOpcode = Memory.getInstance().read32(address + 4);
+		int nextOpcode = Emulator.getMemory(address).read32(address + 4);
 		Instruction nextInsn = Decoder.instruction(nextOpcode);
 		if (nextInsn == Instructions.SYSCALL) {
 			int syscallCode = (nextOpcode >> 6) & 0xFFFFF;

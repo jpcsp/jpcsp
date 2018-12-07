@@ -20,6 +20,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -73,13 +74,12 @@ public class MemoryWriter {
 	 * @return        the MemoryWriter
 	 */
 	public static IMemoryWriter getMemoryWriter(int address, int length, int step) {
-		address &= Memory.addressMask;
-		if (RuntimeContext.hasMemoryInt()) {
+		if (RuntimeContext.hasMemoryInt(address)) {
 			return getFastMemoryWriter(address, step);
 		}
 
 		if (!DebuggerMemory.isInstalled()) {
-			Buffer buffer = Memory.getInstance().getBuffer(address, length);
+			Buffer buffer = Emulator.getMemory(address).getBuffer(address, length);
 
 			if (buffer instanceof IntBuffer) {
 				IntBuffer intBuffer = (IntBuffer) buffer;
@@ -115,8 +115,7 @@ public class MemoryWriter {
 	 * @return        the MemoryWriter
 	 */
 	public static IMemoryWriter getMemoryWriter(int address, int step) {
-		address &= Memory.addressMask;
-		if (RuntimeContext.hasMemoryInt()) {
+		if (RuntimeContext.hasMemoryInt(address)) {
 			return getFastMemoryWriter(address, step);
 		}
 		return getMemoryWriter(address, getMaxLength(address), step);
@@ -222,7 +221,7 @@ public class MemoryWriter {
 
 		public MemoryWriterIntArray8(int[] buffer, int addr) {
 			this.buffer = buffer;
-			offset = addr >> 2;
+			offset = (addr & Memory.addressMask) >> 2;
 			index = addr & 3;
 			value = buffer[offset] & mask[index];
 		}
@@ -272,7 +271,7 @@ public class MemoryWriter {
 
 		public MemoryWriterIntArray16(int[] buffer, int addr) {
 			this.buffer = buffer;
-			offset = addr >> 2;
+			offset = (addr & Memory.addressMask) >> 2;
 			index = (addr >> 1) & 1;
 			if (index != 0) {
 				value = buffer[offset] & 0x0000FFFF;
@@ -321,7 +320,7 @@ public class MemoryWriter {
 		private int[] buffer;
 
 		public MemoryWriterIntArray32(int[] buffer, int addr) {
-			offset = addr >> 2;
+			offset = (addr & Memory.addressMask) >> 2;
 			this.buffer = buffer;
 		}
 
