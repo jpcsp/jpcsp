@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -40,12 +41,16 @@ import jpcsp.state.StateOutputStream;
 public class RuntimeContextLLE {
 	public static Logger log = RuntimeContext.log;
 	private static final int STATE_VERSION = 0;
-	private static final boolean isLLEActive = reboot.enableReboot;
+	private static boolean isLLEActive = reboot.enableReboot;
 	private static Memory mmio;
 	public volatile static int pendingInterruptIPbits;
 
 	public static boolean isLLEActive() {
 		return isLLEActive;
+	}
+
+	public static void enableLLE() {
+		isLLEActive = true;
 	}
 
 	public static void start() {
@@ -68,8 +73,15 @@ public class RuntimeContextLLE {
 			} else {
 				mmio = null;
 			}
+			markMMIO();
 		}
 	}
+
+    private static void markMMIO() {
+    	Compiler compiler = Compiler.getInstance();
+    	compiler.addMMIORange(MemoryMap.START_KERNEL, 0x800000);
+    	compiler.addMMIORange(0xBFC00C00, 0x240);
+    }
 
 	public static Memory getMMIO() {
 		return mmio;

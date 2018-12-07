@@ -32,6 +32,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
@@ -92,11 +93,19 @@ public class HLEModuleManager {
 //			, "flash0:/kd/codepage.prx"
 	};
 
-	private static final String[] moduleFilesNameVshOnly = {
-			"flash0:/kd/vshbridge.prx"
+	private static final String[] moduleFileNamesVshOnly = {
+			  "flash0:/kd/vshbridge.prx"
 			, "flash0:/vsh/module/paf.prx"
 			, "flash0:/vsh/module/common_gui.prx"
 			, "flash0:/vsh/module/common_util.prx"
+	};
+
+	/**
+	 * List of PSP modules that do require LLE emulation when loaded.
+	 */
+	private static final String[] moduleFileNamesLLE = {
+			  "flash0:/kd/lowio.prx"
+			, "flash0:/kd/audio.prx"
 	};
 
 	/**
@@ -253,7 +262,8 @@ public class HLEModuleManager {
         sceG729(Modules.sceG729Module, new String[] { "PSP_MODULE_AV_G729", "g729" }, "flash0:/kd/g729.prx"),
         scePopsMan(Modules.scePopsManModule),
         scePaf(Modules.scePafModule),
-        sceClockgen(Modules.sceClockgenModule);
+        sceClockgen(Modules.sceClockgenModule),
+        sceCodec(Modules.sceCodecModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
@@ -666,8 +676,8 @@ public class HLEModuleManager {
 	}
 
 	private boolean isModuleFileNameVshOnly(String moduleFileName) {
-		for (int i = 0; i < moduleFilesNameVshOnly.length; i++) {
-			if (moduleFilesNameVshOnly[i].equalsIgnoreCase(moduleFileName)) {
+		for (int i = 0; i < moduleFileNamesVshOnly.length; i++) {
+			if (moduleFileNamesVshOnly[i].equalsIgnoreCase(moduleFileName)) {
 				return true;
 			}
 		}
@@ -703,6 +713,17 @@ public class HLEModuleManager {
     	for (String moduleFileName : availableModuleFileNames) {
         	if (log.isInfoEnabled()) {
         		log.info(String.format("Loading and starting the module '%s', it will replace the equivalent HLE functions", moduleFileName));
+        	}
+
+        	// Is the module requiring LLE?
+        	for (String moduleFileNameLLE : moduleFileNamesLLE) {
+        		if (moduleFileName.equals(moduleFileNameLLE)) {
+        			// Enable the LLE if not yet done
+        			if (!RuntimeContextLLE.isLLEActive()) {
+        				RuntimeContextLLE.enableLLE();
+        				RuntimeContextLLE.start();
+        			}
+        		}
         	}
 
         	IAction onModuleStartAction = null;

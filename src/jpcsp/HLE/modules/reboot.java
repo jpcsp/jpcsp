@@ -27,7 +27,6 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
-import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEModuleManager;
@@ -110,8 +109,6 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-    	markMMIO();
-
     	addFunctionNames(rebootModule);
 
 		SysMemInfo rebootParamInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot-parameters", PSP_SMEM_Addr, 0x10000, rebootParamAddress);
@@ -160,12 +157,6 @@ public class reboot extends HLEModule {
 		}
 
     	return true;
-    }
-
-    private void markMMIO() {
-    	Compiler compiler = Compiler.getInstance();
-    	compiler.addMMIORange(MemoryMap.START_KERNEL, 0x800000);
-    	compiler.addMMIORange(0xBFC00C00, 0x240);
     }
 
     private void addFunctionNid(int moduleAddress, SceModule module, String name) {
