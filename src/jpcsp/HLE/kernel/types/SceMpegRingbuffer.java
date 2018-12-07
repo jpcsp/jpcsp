@@ -16,93 +16,27 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Emulator;
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.TPointer;
+import static jpcsp.HLE.modules.sceMpeg.isMpeg260;
+
+import jpcsp.HLE.TPointer32;
 
 public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 	public static final int ringbufferPacketSize = 2048;
     // PSP info
-    private int packets;
-    private int packetsRead;
-    private int packetsWritten;
-    private int packetsInRingbuffer;
-    private int packetSize; // 2048
-    private int data; // address, ring buffer
-    private int callbackAddr; // see sceMpegRingbufferPut
-    private int callbackArgs;
-    private int dataUpperBound;
-    private int semaID; // unused?
-    private int mpeg; // pointer to mpeg struct, fixed up in sceMpegCreate
-    private int gp; // "gp" register for the ringbuffer callbacks, only after PSP v2.60
-    // Internal info
-    private pspFileBuffer videoBuffer;
-    private pspFileBuffer audioBuffer;
-    private pspFileBuffer userDataBuffer;
-    private boolean hasAudio = false;
-    private boolean hasVideo = true;
-    private boolean hasUserData = false;
-    private int writePacketOffset;
-    private int internalPacketsInRingbuffer;
+    public int packets;
+    public int packetsRead;
+    public int packetsWritten;
+    public int packetsInRingbuffer;
+    public int packetSize; // 2048
+    public int data; // address, ring buffer
+    public int callbackAddr; // see sceMpegRingbufferPut
+    public int callbackArgs;
+    public int dataUpperBound;
+    public int semaID; // unused?
+    public TPointer32 mpeg; // pointer to mpeg struct, set in sceMpegCreate
+    public int gp; // "gp" register for the callback, only after PSP v2.60
 
-    public SceMpegRingbuffer(int packets, int data, int size, int callbackAddr, int callbackArgs) {
-        this.packets = packets;
-        packetSize = ringbufferPacketSize;
-        this.data = data;
-        this.callbackAddr = callbackAddr;
-        this.callbackArgs = callbackArgs;
-        dataUpperBound = data + packets * ringbufferPacketSize;
-        semaID = -1;
-        mpeg = 0;
-        initBuffer();
-
-        if (dataUpperBound > data + size) {
-            dataUpperBound = data + size;
-            Modules.log.warn("SceMpegRingbuffer clamping dataUpperBound to " + dataUpperBound);
-        }
-
-        reset();
-    }
-
-    private SceMpegRingbuffer() {
-    }
-
-    private void initBuffer() {
-        videoBuffer = new pspFileBuffer(data, dataUpperBound - data);
-        audioBuffer = new pspFileBuffer(data, dataUpperBound - data);
-        userDataBuffer = new pspFileBuffer(data, dataUpperBound - data);
-        // No check on file size for MPEG.
-        videoBuffer.setFileMaxSize(Integer.MAX_VALUE);
-        audioBuffer.setFileMaxSize(Integer.MAX_VALUE);
-        userDataBuffer.setFileMaxSize(Integer.MAX_VALUE);
-
-        writePacketOffset = 0;
-    }
-
-    public static SceMpegRingbuffer fromMem(TPointer address) {
-        SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer();
-        ringbuffer.read(address);
-        ringbuffer.initBuffer();
-
-        return ringbuffer;
-    }
-
-    public void reset() {
-    	packetsRead = 0;
-    	packetsWritten = 0;
-    	packetsInRingbuffer = 0;
-    	internalPacketsInRingbuffer = 0;
-    	writePacketOffset = 0;
-		videoBuffer.reset(0, 0);
-		audioBuffer.reset(0, 0);
-		userDataBuffer.reset(0, 0);
-    }
-
-    private static boolean isMpeg260() {
-    	return Emulator.getInstance().getFirmwareVersion() <= 260;
-    }
-
-    @Override
+	@Override
 	protected void read() {
         packets             = read32();
         packetsRead         = read32();
@@ -114,7 +48,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
         callbackArgs        = read32();
         dataUpperBound      = read32();
         semaID              = read32();
-        mpeg                = read32();
+        mpeg                = readPointer32();
         if (!isMpeg260()) {
         	gp              = read32();
         }
@@ -132,170 +66,18 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
         write32(callbackArgs);
         write32(dataUpperBound);
         write32(semaID);
-        write32(mpeg);
+        writePointer32(mpeg);
         if (!isMpeg260()) {
         	write32(gp);
         }
 	}
 
-	public int getFreePackets() {
-		return packets - getPacketsInRingbuffer();
-	}
-
-	public void addPackets(int packetsAdded) {
-		videoBuffer.notifyWrite(packetsAdded * packetSize);
-		audioBuffer.notifyWrite(packetsAdded * packetSize);
-		userDataBuffer.notifyWrite(packetsAdded * packetSize);
-		packetsRead += packetsAdded;
-		packetsWritten += packetsAdded;
-		packetsInRingbuffer += packetsAdded;
-		internalPacketsInRingbuffer += packetsAdded;
-
-		writePacketOffset += packetsAdded;
-		if (writePacketOffset >= packets) {
-			// Wrap around
-			writePacketOffset -= packets;
-		}
-	}
-
-	public void consumeAllPackets() {
-		videoBuffer.notifyReadAll();
-		audioBuffer.notifyReadAll();
-		userDataBuffer.notifyReadAll();
-		packetsInRingbuffer = 0;
-		internalPacketsInRingbuffer = 0;
-	}
-
-	public int getPacketsInRingbuffer() {
-		return packetsInRingbuffer;
-	}
-
-    public boolean isEmpty() {
-    	return getPacketsInRingbuffer() == 0;
-    }
-
-	public int getReadPackets() {
-		return packetsRead;
-	}
-
-	public boolean hasReadPackets() {
-		return packetsRead != 0;
-	}
-
-	public void setReadPackets(int packetsRead) {
-		this.packetsRead = packetsRead;
-	}
-
-	public int getTotalPackets() {
-		return packets;
-	}
-
-	public int getPacketSize() {
-		return packetSize;
-	}
-
-	public int getPutDataAddr() {
-		return data + writePacketOffset * packetSize;
-	}
-
-	public int getPutSequentialPackets() {
-		return Math.min(getFreePackets(), packets - writePacketOffset);
-	}
-
-	public int getTmpAddress(int length) {
-		return dataUpperBound - length;
-	}
-
-	public void setMpeg(int mpeg) {
-		this.mpeg = mpeg;
-	}
-
-	public int getUpperDataAddr() {
-		return dataUpperBound;
-	}
-
-	public int getCallbackAddr() {
-		return callbackAddr;
-	}
-
-	public int getCallbackArgs() {
-		return callbackArgs;
-	}
-
-	public pspFileBuffer getAudioBuffer() {
-		return audioBuffer;
-	}
-
-	public pspFileBuffer getVideoBuffer() {
-		return videoBuffer;
-	}
-
-	public pspFileBuffer getUserDataBuffer() {
-		return userDataBuffer;
-	}
-
-	public void notifyRead(int pendingImages) {
-		if (packetSize == 0) {
-			return;
-		}
-
-		int remainingLength = 0;
-		if (hasAudio()) {
-			remainingLength = Math.max(remainingLength, audioBuffer.getCurrentSize());
-		}
-		if (hasVideo()) {
-			int videoBufferLength = videoBuffer.getCurrentSize();
-			// Do not empty completely the ringbuffer when we still have pending images
-			if (pendingImages > 1) {
-				videoBufferLength = Math.max(videoBufferLength, 1);
-			}
-			remainingLength = Math.max(remainingLength, videoBufferLength);
-		}
-		if (hasUserData()) {
-			remainingLength = Math.max(remainingLength, userDataBuffer.getCurrentSize());
-		}
-		int remainingPackets = (remainingLength + packetSize - 1) / packetSize;
-
-		if (internalPacketsInRingbuffer > remainingPackets) {
-			internalPacketsInRingbuffer = remainingPackets;
-		}
-	}
-
-	public void notifyConsumed() {
-		packetsInRingbuffer = internalPacketsInRingbuffer;
-	}
-
-	public boolean hasAudio() {
-		return hasAudio;
-	}
-
-	public void setHasAudio(boolean hasAudio) {
-		this.hasAudio = hasAudio;
-	}
-
-	public boolean hasVideo() {
-		return hasVideo;
-	}
-
-	public void setHasVideo(boolean hasVideo) {
-		this.hasVideo = hasVideo;
-	}
-
-	public boolean hasUserData() {
-		return hasUserData;
-	}
-
-	public void setHasUserData(boolean hasUserData) {
-		this.hasUserData = hasUserData;
-	}
-
 	@Override
 	public int sizeof() {
+		if (isMpeg260()) {
+			// No "gp" field up to PSP v2.60
+			return 44;
+		}
 		return 48;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("SceMpegRingbuffer(packets=0x%X, packetsRead=0x%X, packetsWritten=0x%X, packetsFree=0x%X, packetSize=0x%X, hasVideo=%b, videoBuffer=%s, hasAudio=%b, audioBuffer=%s)", packets, packetsRead, packetsWritten, getFreePackets(), packetSize, hasVideo, videoBuffer, hasAudio, audioBuffer);
 	}
 }

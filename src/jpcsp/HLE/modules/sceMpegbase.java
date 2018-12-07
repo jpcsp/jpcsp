@@ -16,12 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.HLE.modules.sceMpeg.getIntBuffer;
-import static jpcsp.HLE.modules.sceMpeg.releaseIntBuffer;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -54,16 +55,62 @@ public class sceMpegbase extends HLEModule {
 	public static Logger log = Modules.getLogger("sceMpegbase");
 	private int pixelMode;
 	private int defaultBufferWidth;
+	private static Set<int[]> intBuffers;
+	private static final int MAX_INT_BUFFERS_SIZE = 12;
 
 	@Override
 	public void start() {
 		pixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 		defaultBufferWidth = 0;
+		intBuffers = new HashSet<int[]>();
 
 		super.start();
 	}
 
-	private static void read(int addr, int length, int[] buffer, int offset) {
+	@Override
+	public void stop() {
+		// Free the temporary arrays
+    	intBuffers.clear();
+
+    	super.stop();
+	}
+
+	public static int[] getIntBuffer(int length) {
+    	synchronized (intBuffers) {
+        	for (int[] intBuffer : intBuffers) {
+        		if (intBuffer.length >= length) {
+        			intBuffers.remove(intBuffer);
+        			return intBuffer;
+        		}
+        	}
+		}
+
+    	return new int[length];
+    }
+
+    public static void releaseIntBuffer(int[] intBuffer) {
+    	if (intBuffer == null) {
+    		return;
+    	}
+
+    	synchronized (intBuffers) {
+        	intBuffers.add(intBuffer);
+
+	    	if (intBuffers.size() > MAX_INT_BUFFERS_SIZE) {
+	    		// Remove the smallest int buffer
+	    		int[] smallestIntBuffer = null;
+	    		for (int[] buffer : intBuffers) {
+	    			if (smallestIntBuffer == null || buffer.length < smallestIntBuffer.length) {
+	    				smallestIntBuffer = buffer;
+	    			}
+	    		}
+	
+	    		intBuffers.remove(smallestIntBuffer);
+	    	}
+    	}
+    }
+
+    private static void read(int addr, int length, int[] buffer, int offset) {
 		addr |= MemoryMap.START_RAM;
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("read addr=0x%08X, length=0x%X", addr, length));
@@ -122,7 +169,7 @@ public class sceMpegbase extends HLEModule {
         int destAddr = bufferRGB.getAddress();
 
         if (log.isTraceEnabled()) {
-        	log.trace(String.format("hleMpegBaseCscAvcRange width=%d, height=%d, pixelMode=%d, destAddr=%s", width, height, videoPixelMode, bufferRGB));
+        	log.trace(String.format("hleMpegBaseCscAvcRange bufferWidth=%d, width=%d, height=%d, pixelMode=%d, destAddr=%s", bufferWidth, width, height, videoPixelMode, bufferRGB));
         }
 
         int width2 = width >> 1;
@@ -269,9 +316,6 @@ public class sceMpegbase extends HLEModule {
     		mem.memcpy(destinationAddr, bufferAddr, bufferLength);
     		packetInfo = nextPacketInfo;
     	}
-
-    	Modules.sceMpegModule.hleMpegNotifyRingbufferRead();
-    	Modules.sceMpegModule.hleMpegNotifyVideoDecoderThread();
 
     	return 0;
     }

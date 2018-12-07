@@ -28,9 +28,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 
+import jpcsp.Memory;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -50,6 +52,7 @@ import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.Settings;
+import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
 public class sceJpeg extends HLEModule {
@@ -190,8 +193,39 @@ public class sceJpeg extends HLEModule {
         VideoEngine.getInstance().addVideoTexture(imageBuffer.getAddress(), imageBuffer.getAddress() + bufferWidth * height * sceDisplay.getPixelFormatBytes(pixelFormat));
     }
 
+    private static void generateFakeImage(int dest_addr, int frameWidth, int imageWidth, int imageHeight, int pixelMode) {
+        Memory mem = Memory.getInstance();
+
+        Random random = new Random();
+        final int pixelSize = 3;
+        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelMode);
+        for (int y = 0; y < imageHeight - pixelSize + 1; y += pixelSize) {
+            int address = dest_addr + y * frameWidth * bytesPerPixel;
+            final int width = Math.min(imageWidth, frameWidth);
+            for (int x = 0; x < width; x += pixelSize) {
+                int n = random.nextInt(256);
+                int color = 0xFF000000 | (n << 16) | (n << 8) | n;
+                int pixelColor = Debug.getPixelColor(color, pixelMode);
+                if (bytesPerPixel == 4) {
+                    for (int i = 0; i < pixelSize; i++) {
+                        for (int j = 0; j < pixelSize; j++) {
+                            mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
+                        }
+                    }
+                } else if (bytesPerPixel == 2) {
+                    for (int i = 0; i < pixelSize; i++) {
+                        for (int j = 0; j < pixelSize; j++) {
+                            mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
+                        }
+                    }
+                }
+                address += pixelSize * bytesPerPixel;
+            }
+        }
+    }
+
     protected void generateFakeImage(TPointer imageBuffer, int width, int height, int bufferWidth, int pixelFormat) {
-        sceMpeg.generateFakeImage(imageBuffer.getAddress(), bufferWidth, width, height, pixelFormat);
+        generateFakeImage(imageBuffer.getAddress(), bufferWidth, width, height, pixelFormat);
         VideoEngine.getInstance().addVideoTexture(imageBuffer.getAddress(), imageBuffer.getAddress() + bufferWidth * height * sceDisplay.getPixelFormatBytes(pixelFormat));
     }
 

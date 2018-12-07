@@ -5,6 +5,7 @@
 package jpcsp.GUI;
 
 import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
+import static jpcsp.HLE.modules.scePsmf.MPEG_HEADER_BUFFER_MINIMUM_SIZE;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -51,7 +52,7 @@ import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFile;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceAtrac3plus.AtracFileInfo;
-import jpcsp.HLE.modules.sceMpeg.PSMFHeader;
+import jpcsp.HLE.modules.scePsmf.PSMFHeader;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -577,7 +578,7 @@ public class UmdBrowser extends javax.swing.JDialog {
                 	umdBrowserSound = new UmdBrowserSound(Memory.getInstance(), iso.readSnd0());
                 } else {
                 	IVirtualFile pmf = new UmdIsoVirtualFile(iso.getFile("PSP_GAME/ICON1.PMF"));
-                	byte mpegHeader[] = new byte[sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE];
+                	byte mpegHeader[] = new byte[MPEG_HEADER_BUFFER_MINIMUM_SIZE];
                 	if (pmf.ioRead(mpegHeader, 0, mpegHeader.length) == mpegHeader.length) {
 	                	PSMFHeader psmfHeader = new PSMFHeader(0, mpegHeader);
 	                	if (psmfHeader.getSpecificStreamNum(sceMpeg.PSMF_ATRAC_STREAM) > 0) {

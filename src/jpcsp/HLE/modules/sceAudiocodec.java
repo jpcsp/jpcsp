@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.modules.sceAtrac3plus.atracDecodeDelay;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -318,7 +320,7 @@ public class sceAudiocodec extends HLEModule {
 
 		workArea.setValue32(28, bytesConsumed > 0 ? bytesConsumed : inputBufferSize);
 
-		Modules.ThreadManForUserModule.hleKernelDelayThread(sceMpeg.atracDecodeDelay, false);
+		Modules.ThreadManForUserModule.hleKernelDelayThread(atracDecodeDelay, false);
 
 		return 0;
 	}

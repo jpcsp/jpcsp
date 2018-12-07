@@ -18,8 +18,8 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_AVC_INVALID_VALUE;
-import static jpcsp.HLE.modules.sceMpeg.getIntBuffer;
-import static jpcsp.HLE.modules.sceMpeg.releaseIntBuffer;
+import static jpcsp.HLE.modules.sceMpegbase.getIntBuffer;
+import static jpcsp.HLE.modules.sceMpegbase.releaseIntBuffer;
 import static jpcsp.util.Utilities.alignUp;
 
 import java.util.concurrent.Semaphore;
@@ -78,8 +78,16 @@ public class sceVideocodec extends HLEModule {
     protected int bufferUnknown2;
     protected IVideoCodec videoCodec;
     private VideocodecDecoderThread videocodecDecoderThread;
+    private int[] videocodecExtraData;
 
-    private class VideocodecDecoderThread extends Thread {
+	@Override
+	public void start() {
+    	videocodecExtraData = null;
+
+		super.start();
+	}
+
+	private class VideocodecDecoderThread extends Thread {
     	private volatile boolean exit = false;
     	private volatile boolean done = false;
     	private Semaphore sema = new Semaphore(1);
@@ -151,6 +159,18 @@ public class sceVideocodec extends HLEModule {
     	}
     }
 
+    public int[] getVideocodecExtraData() {
+		return videocodecExtraData;
+	}
+
+	public void setVideocodecExtraData(int[] videocodecExtraData) {
+		this.videocodecExtraData = videocodecExtraData;
+	}
+
+	public void clearVideocodecExtraData() {
+		videocodecExtraData = null;
+	}
+
     private void videocodecDecoderStep(TPointer buffer, int type, IAction afterDecodeAction, int threadUid, long threadWakeupMicroTime) {
     	if (buffer == null) {
     		return;
@@ -165,7 +185,8 @@ public class sceVideocodec extends HLEModule {
 
     	if (videoCodec == null) {
     		videoCodec = CodecFactory.getVideoCodec();
-    		videoCodec.init(null);
+    		videoCodec.init(getVideocodecExtraData());
+    		clearVideocodecExtraData();
     	}
 
     	// The H264 video decoder can read up to 2 bytes past the end

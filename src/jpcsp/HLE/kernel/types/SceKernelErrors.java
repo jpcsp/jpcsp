@@ -534,17 +534,35 @@ public class SceKernelErrors {
     public final static int ERROR_PSMF_INVALID_PSMF                             = 0x80615501;
 
     public final static int ERROR_PSMFPLAYER_NOT_INITIALIZED                    = 0x80616001;
+    public final static int ERROR_PSMFPLAYER_NOT_SUPPORTED                      = 0x80616003;
+    public final static int ERROR_PSMFPLAYER_NO_MEMORY                          = 0x80616005;
     public final static int ERROR_PSMFPLAYER_INVALID_CONFIG_MODE                = 0x80616006;
     public final static int ERROR_PSMFPLAYER_INVALID_CONFIG_VALUE               = 0x80616008;
-    public final static int ERROR_PSMFPLAYER_AUDIO_VIDEO_OUT_OF_SYNC            = 0x8061600c;
+    public final static int ERROR_PSMFPLAYER_TOO_BIG_OFFSET                     = 0x80616009;
+    public final static int ERROR_PSMFPLAYER_FAILED_READ_HEADER                 = 0x8061600A;
+    public final static int ERROR_PSMFPLAYER_FATAL                              = 0x8061600B;
+    public final static int ERROR_PSMFPLAYER_NO_DATA                            = 0x8061600C;
+    public final static int ERROR_PSMFPLAYER_INVALID_PSMF                       = 0x8061600D;
 
+    public final static int ERROR_MP4_NOT_INIT                                  = 0x80617001;
+    public final static int ERROR_MP4_ALREADY_INIT                              = 0x80617002;
     public final static int ERROR_MP4_INVALID_VALUE                             = 0x80617003;
+    public final static int ERROR_MP4_INVALID_VALUE3                            = 0x80617004;
+    public final static int ERROR_MP4_INVALID_VALUE2                            = 0x80617005;
     public final static int ERROR_MP4_INVALID_SAMPLE_NUMBER                     = 0x80617006;
+    public final static int ERROR_MP4_INVALID_SAMPLE_NUMBER2                    = 0x80617007;
+    public final static int ERROR_MP4_NO_MEMORY                                 = 0x80617008;
     public final static int ERROR_MP4_NO_AVAILABLE_SIZE                         = 0x80617009;
-    public final static int ERROR_MP4_NO_MORE_DATA                              = 0x8061700a;
+    public final static int ERROR_MP4_NO_MORE_DATA                              = 0x8061700A;
+    public final static int ERROR_MP4_AAC_DECODE_INIT_ERROR                     = 0x80617121;
     public final static int ERROR_MP4_AAC_DECODE_ERROR                          = 0x80617141;
+    public final static int ERROR_MP4_AAC_DECODE_NO_MEMORY                      = 0x80617151;
+    public final static int ERROR_MP4_AAC_DECODE_ALREADY_INIT                   = 0x80617154;
 
     public final static int ERROR_MPEG_NO_DATA                                  = 0x80618001;
+    public final static int ERROR_MPEG_NO_NEXT_DATA                             = 0x80618004;
+    public final static int ERROR_MPEG_ALREADY_USED                             = 0x80618005;
+    public final static int ERROR_MPEG_ILLEGAL_STREAM                           = 0x80618007;
     public final static int ERROR_MPEG_UNKNOWN_STREAM_ID                        = 0x80618009;
 
     public final static int ERROR_AVC_INVALID_VALUE                             = 0x806201FE;
@@ -594,8 +612,9 @@ public class SceKernelErrors {
     public final static int ERROR_AAC_NOT_ENOUGH_MEMORY                         = 0x80691501;
     public final static int ERROR_AAC_RESOURCE_NOT_INITIALIZED                  = 0x80691503;
 
-    public final static int ERROR_CODEC_AUDIO_EDRAM_NOT_ALLOCATED               = 0x807f0004;
-    public final static int ERROR_CODEC_AUDIO_FATAL                             = 0x807f00fc;
+    public final static int ERROR_CODEC_AUDIO_EDRAM_NOT_ALLOCATED               = 0x807F0004;
+    public final static int ERROR_CODEC_AUDIO_FATAL                             = 0x807F00FC;
+    public final static int ERROR_CODEC_AUDIO_UNKNOWN_ERROR                     = 0x807F00FF;
 
     public final static int FATAL_UMD_UNKNOWN_MEDIUM                            = 0xC0210004;
     public final static int FATAL_UMD_HARDWARE_FAILURE                          = 0xC0210005;

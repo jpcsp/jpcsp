@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.test;
 
+import static jpcsp.HLE.modules.scePsmfPlayer.videoTimestampStep;
+
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.WindowAdapter;
@@ -274,7 +276,7 @@ public class PSMFPlayer implements Runnable {
 		skip(is, sceMpeg.PSMF_FIRST_TIMESTAMP_OFFSET - 12);
 		long firstTimestamp = readTimestamp(is);
 		long lastTimestamp = readTimestamp(is);
-		totalNumberOfFrames = (int) ((lastTimestamp - firstTimestamp) / sceMpeg.videoTimestampStep);
+		totalNumberOfFrames = (int) ((lastTimestamp - firstTimestamp) / videoTimestampStep);
 		skip(is, mpegOffset - (sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET + 6));
 	}
 

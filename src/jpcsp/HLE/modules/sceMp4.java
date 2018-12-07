@@ -95,7 +95,6 @@ public class sceMp4 extends HLEModule {
 	protected int currentAtomOffset;
 	protected int trackTimeScale;
 	protected int trackDuration;
-	protected int[] videoCodecExtraData;
 	protected SceMp4TrackSampleBuf currentTrack;
 	protected TPointer currentTracAddr;
 	protected boolean bufferPutInProgress;
@@ -263,16 +262,15 @@ public class sceMp4 extends HLEModule {
 								if (log.isDebugEnabled()) {
 									log.debug(String.format("Video frame size %dx%d", videoFrameWidth, videoFrameHeight));
 								}
-
-								Modules.sceMpegModule.setVideoFrameHeight(videoFrameHeight);
 							}
+
 							if (size >= 102) {
 								int atomAvcC = read32(content, 98);
 								int atomAvcCsize = read32(content, 94);
 								if (atomAvcC == ATOM_AVCC && atomAvcCsize <= size - 94) {
-									videoCodecExtraData = new int[atomAvcCsize - 8];
+									int[] videoCodecExtraData = new int[atomAvcCsize - 8];
 									System.arraycopy(content, 102, videoCodecExtraData, 0, videoCodecExtraData.length);
-									Modules.sceMpegModule.setVideoCodecExtraData(videoCodecExtraData);
+									Modules.sceVideocodecModule.setVideocodecExtraData(videoCodecExtraData);
 								}
 							}
 							break;
@@ -613,8 +611,6 @@ public class sceMp4 extends HLEModule {
 			}
 			currentTrack = null;
 			currentTracAddr = null;
-
-			Modules.sceMpegModule.setVideoFrameSizes(videoSamplesSize);
 		}
 	}
 
@@ -772,10 +768,6 @@ public class sceMp4 extends HLEModule {
 		}
 
 		currentTrack.addBytesToTrack(addr, length);
-
-		if (currentTrack.isOfType(TRACK_TYPE_VIDEO)) {
-			Modules.sceMpegModule.addToVideoBuffer(mem, addr, length);
-		}
 	}
 
 	private void bufferPut() {
@@ -859,8 +851,6 @@ public class sceMp4 extends HLEModule {
 				log.trace(String.format("bufferPut returning 0x%X for thread %s", bufferPutSamplesPut, bufferPutThread));
 			}
 			bufferPutThread.cpuContext._v0 = bufferPutSamplesPut;
-
-			Modules.sceMpegModule.hleMpegNotifyVideoDecoderThread();
 
 			bufferPutInProgress = false;
 
@@ -1051,8 +1041,6 @@ public class sceMp4 extends HLEModule {
     public int sceMp4Create(int mp4, TPointer32 callbacks, TPointer readBufferAddr, int readBufferSize) {
     	this.readBufferAddr = readBufferAddr.getAddress();
     	this.readBufferSize = readBufferSize;
-
-    	Modules.sceMpegModule.hleCreateRingbuffer();
 
     	readCallbacks(callbacks);
 
@@ -1277,10 +1265,6 @@ public class sceMp4 extends HLEModule {
 
     	track.write(trackAddr);
 
-		if (track.isOfType(TRACK_TYPE_VIDEO)) {
-			Modules.sceMpegModule.flushVideoFrameData();
-		}
-
 		return 0;
     }
 
@@ -1399,10 +1383,6 @@ public class sceMp4 extends HLEModule {
 
     	track.currentSample = sample;
     	track.write(trackAddr);
-
-		if (track.isOfType(TRACK_TYPE_VIDEO)) {
-			Modules.sceMpegModule.setVideoFrame(sample);
-		}
 
 		return 0;
     }
@@ -1594,7 +1574,6 @@ public class sceMp4 extends HLEModule {
 
     	SceMpegAu au = new SceMpegAu();
     	au.read(auAddr);
-    	Modules.sceMpegModule.setMpegAvcAu(au);
 
     	int sample = track.currentSample - track.bufSamples.sizeAvailableForRead;
     	int sampleSize = getSampleSize(track.trackType, sample);
@@ -1605,8 +1584,8 @@ public class sceMp4 extends HLEModule {
 
     	// Consume one frame
     	track.bufSamples.notifyRead(1);
-    	track.bufBytes.notifyRead(sampleSize);
-
+    	track.readBytes(au.esBuffer, sampleSize);
+    	au.esSize = sampleSize;
     	au.dts = videoCurrentTimestamp;
     	videoCurrentTimestamp += frameDuration;
     	au.pts = au.dts + framePresentationOffset;

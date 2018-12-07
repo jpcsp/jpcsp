@@ -28,6 +28,7 @@ import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_TRIANGLE;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_UP;
 import static jpcsp.HLE.modules.sceMpeg.UNKNOWN_TIMESTAMP;
 import static jpcsp.HLE.modules.sceMpeg.mpegTimestampPerSecond;
+import static jpcsp.HLE.modules.scePsmfPlayer.videoTimestampStep;
 import static jpcsp.HLE.modules.sceUtility.PSP_SYSTEMPARAM_BUTTON_CROSS;
 import static jpcsp.HLE.modules.sceUtility.getSystemParamButtonPreference;
 import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PACK_START_CODE;
@@ -88,7 +89,6 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceUtility;
 
 import com.twilight.h264.decoder.GetBitContext;
@@ -1199,7 +1199,7 @@ public class UmdVideoPlayer implements KeyListener {
 	    boolean skipFrame = false;
 		if ((frame % fastForwardSpeeds[fastForwardSpeed]) != 0) {
 			skipFrame = true;
-			startTime -= sceMpeg.videoTimestampStep;
+			startTime -= videoTimestampStep;
 		}
 
 	    if (videoCodec.hasImage() && !skipFrame) {
@@ -1242,7 +1242,7 @@ public class UmdVideoPlayer implements KeyListener {
 
 	    		long now = System.currentTimeMillis();
 			    long currentDuration = now - startTime;
-			    long videoDuration = frame * 100000L / sceMpeg.videoTimestampStep;
+			    long videoDuration = frame * 100000L / videoTimestampStep;
 			    if (currentDuration < videoDuration) {
 			    	Utilities.sleep((int) (videoDuration - currentDuration), 0);
 			    }
@@ -1253,7 +1253,7 @@ public class UmdVideoPlayer implements KeyListener {
 	    	if (pesHeaderVideo.getPts() != UNKNOWN_TIMESTAMP) {
 	    		currentVideoTimestamp = pesHeaderVideo.getPts();
 	    	} else {
-	    		currentVideoTimestamp += sceMpeg.videoTimestampStep;
+	    		currentVideoTimestamp += videoTimestampStep;
 	    	}
 	    	if (log.isTraceEnabled()) {
 	    		MpsStreamInfo streamInfo = mpsStreams.get(currentStreamIndex);
