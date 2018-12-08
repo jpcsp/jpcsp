@@ -54,7 +54,7 @@ public class reboot extends HLEModule {
     private static class SetLog4jMDC implements IAction {
 		@Override
 		public void execute() {
-			setLog4jMDC();
+			setLog4jMDC(Emulator.getProcessor());
 		}
     }
 
@@ -297,12 +297,16 @@ public class reboot extends HLEModule {
      *     <param name="ConversionPattern" value="%d{HH:mm:ss,SSS} %5p %8c - %X{LLE-thread} - %m%n" />
      *   </layout>
      */
-    public static void setLog4jMDC() {
+    public static void setLog4jMDC(Processor processor) {
     	if (!enableReboot) {
     		return;
     	}
 
-    	Processor processor = Emulator.getProcessor();
+    	// Do not change the name of the Media Engine Thread
+    	if (processor.cp0.isMediaEngineCpu()) {
+    		return;
+    	}
+
     	boolean isInterruptContext = processor.cp0.getControlRegister(13) != 0;
     	if (isInterruptContext) {
     		RuntimeContext.setLog4jMDC("Interrupt");

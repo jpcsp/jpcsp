@@ -1647,7 +1647,7 @@ public class RuntimeContext {
     public static int executeEret() throws Exception {
     	int epc = processor.cpu.doERET(processor);
 
-    	reboot.setLog4jMDC();
+    	reboot.setLog4jMDC(processor);
 		reboot.dumpAllThreads();
 
     	return epc;

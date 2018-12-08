@@ -780,7 +780,7 @@ public void interpret(Processor processor, int insn) {
 
 	if (RuntimeContextLLE.isLLEActive()) {
 		if (processor.isInterruptsEnabled()) {
-			reboot.setLog4jMDC();
+			reboot.setLog4jMDC(processor);
 		}
 		RuntimeContext.checkSync();
 	} else if (processor.isInterruptsEnabled()) {
@@ -5787,7 +5787,7 @@ public void interpret(Processor processor, int insn) {
 	processor.cp0.setControlRegister(c0cr, value);
 
 	if (c0cr == 13) {
-		reboot.setLog4jMDC();
+		reboot.setLog4jMDC(processor);
 	}
 
 	if (logCop0.isTraceEnabled()) {
