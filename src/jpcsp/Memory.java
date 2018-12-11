@@ -292,6 +292,18 @@ public abstract class Memory implements IState {
 
     protected abstract void memcpy(int destination, int source, int length, boolean checkOverlap);
 
+    public boolean hasMemoryInt(int address) {
+    	return false;
+    }
+
+    public int[] getMemoryInt(int address) {
+    	return null;
+    }
+
+    public int getMemoryIntOffset(int address) {
+    	return (address & addressMask) >> 2;
+    }
+
     public static boolean isAddressGood(int address) {
         return validMemoryPage[address >>> MEMORY_PAGE_SHIFT];
     }

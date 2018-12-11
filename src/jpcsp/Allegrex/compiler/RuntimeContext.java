@@ -43,6 +43,7 @@ import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SyscallHandler;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
@@ -50,7 +51,6 @@ import jpcsp.HLE.modules.reboot;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.memory.DebuggerMemory;
-import jpcsp.memory.FastMemory;
 import jpcsp.memory.mmio.MMIOHandlerDisplayController;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.AbstractBoolSettingsListener;
@@ -486,11 +486,7 @@ public class RuntimeContext {
 
     public static void updateMemory() {
         memory = Emulator.getMemory();
-		if (memory instanceof FastMemory) {
-			memoryInt = ((FastMemory) memory).getAll();
-		} else {
-		    memoryInt = null;
-		}
+        memoryInt = memory.getMemoryInt(0);
     }
 
     public static void update() {
@@ -1634,6 +1630,10 @@ public class RuntimeContext {
 
     public static boolean hasMemoryInt(int address) {
     	return hasMemoryInt() && Memory.isAddressGood(address);
+    }
+
+    public static boolean hasMemoryInt(TPointer address) {
+    	return hasMemoryInt() && address.getMemory() == memory;
     }
 
     public static int[] getMemoryInt() {

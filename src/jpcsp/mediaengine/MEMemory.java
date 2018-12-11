@@ -43,13 +43,14 @@ public class MEMemory extends MMIO {
 	public static final int END_ME_RAM = 0x001FFFFF;
 	public static final int SIZE_ME_RAM = END_ME_RAM - START_ME_RAM + 1;
 	private final IMMIOHandler meRamHandlers[] = new IMMIOHandler[8];
+	private final int[] meRam;
 
 	public MEMemory(Memory mem, Logger log) {
 		super(mem);
 
 		// This array will store the contents of the ME RAM and
 		// will be shared between several handlers at different addresses.
-		final int meRam[] = new int[SIZE_ME_RAM >> 2];
+		meRam = new int[SIZE_ME_RAM >> 2];
 
 		// The ME RAM  is visible at address range 0x00000000-0x001FFFFF
 		addMeRamHandler(0x00000000, meRam, log);
@@ -105,5 +106,21 @@ public class MEMemory extends MMIO {
 			return meRamHandlers[address >>> 29];
 		}
 		return super.getHandler(address);
+	}
+
+	@Override
+	public boolean hasMemoryInt(int address) {
+		if ((address & Memory.addressMask) <= END_ME_RAM) {
+			return true;
+		}
+		return super.hasMemoryInt(address);
+	}
+
+	@Override
+	public int[] getMemoryInt(int address) {
+		if ((address & Memory.addressMask) <= END_ME_RAM) {
+			return meRam;
+		}
+		return super.getMemoryInt(address);
 	}
 }

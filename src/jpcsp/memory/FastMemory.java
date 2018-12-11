@@ -299,10 +299,6 @@ public class FastMemory extends Memory {
 		}
 	}
 
-	public int[] getAll() {
-	    return all;
-	}
-
 	// Source, destination and length are "int"-aligned
 	private void memcpyAligned4(int destination, int source, int length, boolean checkOverlap) {
 		if (checkOverlap || !areOverlapping(destination, source, length)) {
@@ -401,4 +397,14 @@ public class FastMemory extends Memory {
 	protected void write(StateOutputStream stream, int address, int length) throws IOException {
 		stream.writeInts(all, address >> 2, length >> 2);
 	}
+
+	@Override
+    public boolean hasMemoryInt(int address) {
+    	return true;
+    }
+
+	@Override
+    public int[] getMemoryInt(int address) {
+    	return all;
+    }
 }
