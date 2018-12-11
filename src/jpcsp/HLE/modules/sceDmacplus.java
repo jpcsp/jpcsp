@@ -25,6 +25,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.graphics.GeCommands;
 
@@ -84,5 +85,17 @@ public class sceDmacplus extends HLEModule {
 	@HLEFunction(nid = 0x282CA0D7, version = 660)
 	public int sceDmacplusSc2MeLLI_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 dmacParameters) {
     	return sceDmacplusSc2MeLLI(dmacParameters);
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xB269EAC9, version = 660)
+	public int sceDmacplus_driver_B269EAC9(int unknown1, int unknown2, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=22, usage=Usage.in) TPointer unknown3) {
+    	return 0;
+	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xD126494B, version = 660)
+	public int sceDmacplus_driver_D126494B(TPointer unknown1, TPointer unknown2, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=48, usage=Usage.in) TPointer32 unknown3) {
+    	return 0;
 	}
 }
