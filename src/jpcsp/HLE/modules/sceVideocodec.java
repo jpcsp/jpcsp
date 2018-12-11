@@ -30,7 +30,6 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -73,9 +72,9 @@ public class sceVideocodec extends HLEModule {
     protected int bufferCr2;
     protected int bufferCb1;
     protected int bufferCb2;
-    protected final int buffers[][] = new int[4][8];
-    protected int bufferUnknown1;
-    protected int bufferUnknown2;
+    protected final TPointer buffers[][] = new TPointer[4][8];
+    protected TPointer bufferUnknown1;
+    protected TPointer bufferUnknown2;
     protected IVideoCodec videoCodec;
     private VideocodecDecoderThread videocodecDecoderThread;
     private int[] videocodecExtraData;
@@ -171,16 +170,38 @@ public class sceVideocodec extends HLEModule {
 		videocodecExtraData = null;
 	}
 
-    private void videocodecDecoderStep(TPointer buffer, int type, IAction afterDecodeAction, int threadUid, long threadWakeupMicroTime) {
-    	if (buffer == null) {
-    		return;
+	public void videocodecDelete() {
+    	if (videocodecDecoderThread != null) {
+    		videocodecDecoderThread.exit();
+    		videocodecDecoderThread = null;
     	}
 
-    	int mp4Data = buffer.getValue32(36) | MemoryMap.START_RAM;
-    	int mp4Size = buffer.getValue32(40);
+		clearVideocodecExtraData();
 
+		if (videoCodec != null) {
+    		videoCodec = null;
+    	}
+
+    	if (memoryInfo != null) {
+    		Modules.SysMemUserForUserModule.free(memoryInfo);
+    		memoryInfo = null;
+    	}
+
+    	for (int i = 0; i < buffers.length; i++) {
+    		for (int j = 0; j < buffers[i].length; j++) {
+    			buffers[i][j] = null;
+    		}
+    	}
+
+    	if (edramInfo != null) {
+    		Modules.SysMemUserForUserModule.free(edramInfo);
+    		edramInfo = null;
+    	}
+	}
+
+	private int videocodecDecode(Memory mp4Memory, int mp4Data, int mp4Size) {
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceVideocodecDecode mp4Data:%s", Utilities.getMemoryDump(mp4Data, mp4Size)));
+    		log.trace(String.format("sceVideocodecDecode mp4Data:%s", Utilities.getMemoryDump(mp4Memory, mp4Data, mp4Size)));
     	}
 
     	if (videoCodec == null) {
@@ -193,7 +214,7 @@ public class sceVideocodec extends HLEModule {
     	// of the video data for the read-ahead buffer used for CABAC.
     	// Provide 2 dummy bytes after the video data.
     	int[] mp4Buffer = getIntBuffer(mp4Size + 2);
-    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(mp4Data, mp4Size, 1);
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(mp4Memory, mp4Data, mp4Size, 1);
     	for (int i = 0; i < mp4Size; i++) {
     		mp4Buffer[i] = memoryReader.readNext();
     	}
@@ -205,7 +226,320 @@ public class sceVideocodec extends HLEModule {
 
     	releaseIntBuffer(mp4Buffer);
 
-    	buffer.setValue32(8, 0);
+    	return result;
+	}
+
+	public int videocodecDecodeType0(Memory mp4Memory, int mp4Data, int mp4Size, TPointer buffer2, TPointer mpegAvcYuvStruct, TPointer buffer3, TPointer decodeSEI) {
+		int result = videocodecDecode(mp4Memory, mp4Data, mp4Size);
+
+    	int frameWidth = videoCodec.getImageWidth();
+    	int frameHeight = videoCodec.getImageHeight();
+
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("sceVideocodecDecode codec image size %dx%d, frame size %dx%d", videoCodec.getImageWidth(), videoCodec.getImageHeight(), frameWidth, frameHeight));
+    	}
+
+    	buffer2.setValue32(8, frameWidth);
+    	buffer2.setValue32(12, frameHeight);
+    	buffer2.setValue32(28, 1);
+    	buffer2.setValue32(32, videoCodec.hasImage()); // Number of decoded images
+    	buffer2.setValue32(36, !videoCodec.hasImage());
+
+    	if (videoCodec.hasImage()) {
+    		if (buffers[0][0] == null) {
+    			int sizeY1 = alignUp(((frameWidth + 16) >> 5) * (frameHeight >> 1) * 16, 0x1FF);
+    			int sizeY2 = alignUp((frameWidth >> 5) * (frameHeight >> 1) * 16, 0x1FF);
+        		int sizeCr1 = alignUp(((frameWidth + 16) >> 5) * (frameHeight >> 1) * 8, 0x1FF);
+        		int sizeCr2 = alignUp((frameWidth >> 5) * (frameHeight >> 1) * 8, 0x1FF);
+        		int size = 256 + (sizeY1 + sizeY2 + sizeCr1 + sizeCr2) * 2 * buffers.length;
+
+        		TPointer base;
+        		if (mp4Memory == Memory.getInstance()) {
+        			memoryInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecDecode", SysMemUserForUser.PSP_SMEM_Low, size, 0);
+        			base = new TPointer(mp4Memory, memoryInfo.addr);
+        		} else {
+        			base = new TPointer(mp4Memory, 0x00000000).forceNonNull();
+        		}
+
+        		bufferUnknown1 = new TPointer(base);
+        		bufferUnknown1.clear(36);
+
+        		bufferUnknown2 = new TPointer(base, 36);
+        		bufferUnknown1.clear(32);
+
+        		TPointer yuvBuffersBase = new TPointer(base, 256); // Add 256 to keep aligned
+        		TPointer base1 = new TPointer(yuvBuffersBase);
+        		TPointer base2 = new TPointer(base1, (sizeY1 + sizeY2) * buffers.length);
+        		int step = (sizeY1 + sizeY2 + sizeCr1 + sizeCr2) * buffers.length;
+        		for (int i = 0; i < buffers.length; i++) {
+        			buffers[i][0] = new TPointer(base1);
+        			buffers[i][1] = new TPointer(buffers[i][0], step);
+        			buffers[i][2] = new TPointer(base1, sizeY1);
+        			buffers[i][3] = new TPointer(buffers[i][2], step);
+        			buffers[i][4] = new TPointer(base2);
+        			buffers[i][5] = new TPointer(buffers[i][4], step);
+        			buffers[i][6] = new TPointer(base2, sizeCr1);
+        			buffers[i][7] = new TPointer(buffers[i][6], step);
+
+        			base1.add(sizeY1 + sizeY2);
+        			base2.add(sizeCr1 + sizeCr2);
+        		}
+        	}
+
+        	int buffersIndex = frameCount % 3;
+    		int width = videoCodec.getImageWidth();
+    		int height = videoCodec.getImageHeight();
+
+    		int[] luma = getIntBuffer(width * height);
+            int[] cb = getIntBuffer((width * height) >> 2);
+            int[] cr = getIntBuffer((width * height) >> 2);
+        	if (videoCodec.getImage(luma, cb, cr) == 0) {
+        		// The PSP is storing the YCbCr information in a non-linear format.
+        		// By analyzing the output of sceMpegBaseYCrCbCopy on a real PSP,
+        		// the following format for the YCbCr was found:
+        		// the image is divided vertically into bands of 32 pixels.
+        		// Each band is stored vertically into different buffers.
+        		// The Y information is stored as 1 byte per pixel.
+        		// The Cb information is stored as 1 byte for a square of four pixels (2x2).
+        		// The Cr information is stored as 1 byte for a square of four pixels (2x2).
+        		// For a square of four pixels, the one Cb byte is stored first,
+        		// followed by the one Cr byte.
+        		//
+        		// - buffer0:
+        		//     storing the Y information of the first block
+        		//     of 16 pixels of a 32 pixels wide vertical band.
+        		//     Starting at the image pixel (x=0,y=0),
+        		//     16 horizontal pixels are stored sequentially in the buffer,
+        		//     followed by 16 pixels of the next next image row (i.e. every 2nd row).
+        		//     The rows are stored from the image top to the image bottom.
+        		//     [x=0-15,y=0], [x=0-15,y=2], [x=0-15,y=4]...
+        		//     [x=32-47,y=0], [x=32-47,y=2], [x=32-47,y=4]...
+        		//     [x=64-79,y=0], [x=64-79,y=2], [x=64-79,y=4]...
+        		// - buffer1:
+        		//     storing the Y information of the second block
+        		//     of 16 pixels of a 32 pixels wide vertical band.
+        		//     Starting at the image pixel (x=16,y=0),
+        		//     16 horizontal pixels are stored sequentially in the buffer,
+        		//     followed by 16 pixels of the next next image row (i.e. every 2nd row).
+        		//     The rows are stored from the image top to the image bottom.
+        		//     [x=16-31,y=0], [x=16-31,y=2], [x=16-31,y=4]...
+        		//     [x=48-63,y=0], [x=48-63,y=2], [x=48-63,y=4]...
+        		//     [x=80-95,y=0], [x=80-95,y=2], [x=80-95,y=4]...
+        		// - buffer2:
+        		//     storing the Y information of the first block of 16 pixels
+        		//     of a 32 pixels wide vertical band.
+        		//     Starting at the image pixel (x=0,y=1),
+        		//     16 horizontal pixels are stored sequentially in the buffer,
+        		//     followed by 16 pixels of the next next image row (i.e. every 2nd row).
+        		//     The rows are stored from the image top to the image bottom.
+        		//     [x=0-15,y=1], [x=0-15,y=3], [x=0-15,y=5]...
+        		//     [x=32-47,y=1], [x=32-47,y=3], [x=32-47,y=5]...
+        		//     [x=64-79,y=1], [x=64-79,y=3], [x=64-79,y=5]...
+        		// - buffer3:
+        		//     storing the Y information of the second block of 16 pixels
+        		//     of a 32 pixels wide vertical band.
+        		//     Starting at the image pixel (x=16,y=1),
+        		//     16 horizontal pixels are stored sequentially in the buffer,
+        		//     followed by 16 pixels of the next next image row (i.e. every 2nd row).
+        		//     The rows are stored from the image top to the image bottom.
+        		//     [x=16-31,y=1], [x=16-31,y=3], [x=16-31,y=5]...
+        		//     [x=48-63,y=1], [x=48-63,y=3], [x=48-63,y=5]...
+        		//     [x=80-95,y=1], [x=80-95,y=3], [x=80-95,y=5]...
+        		// - buffer4:
+        		//     storing the Cb and Cr information of the first block
+        		//     of 16 pixels of a 32 pixels wide vertical band.
+        		//     Starting at the image pixel (x=0,y=0),
+        		//     8 byte pairs of (Cb,Cr) are stored sequentially in the buffer
+        		//     (representing 16 horizontal pixels),
+        		//     then the next 3 rows are being skipped,
+        		//     and then followed by 8 byte pairs of the next image row (i.e. every 4th row).
+        		//     The rows are stored from the image top to the image bottom.
+        		//     CbCr[x=0,y=0], CbCr[x=2,y=0], CbCr[x=4,y=0], CbCr[x=6,y=0], CbCr[x=8,y=0], CbCr[x=10,y=0], CbCr[x=12,y=0], CbCr[x=14,y=0]
+        		//     CbCr[x=32,y=0], CbCr[x=34,y=0], CbCr[x=36,y=0], CbCr[x=38,y=0], CbCr[x=40,y=0], CbCr[x=42,y=0], CbCr[x=44,y=0], CbCr[x=46,y=0]
+        		//     ...
+        		//     CbCr[x=0,y=4], CbCr[x=2,y=4], CbCr[x=4,y=4], CbCr[x=6,y=4], CbCr[x=8,y=4], CbCr[x=10,y=4], CbCr[x=12,y=4], CbCr[x=14,y=4]
+        		//     CbCr[x=32,y=4], CbCr[x=34,y=4], CbCr[x=36,y=4], CbCr[x=38,y=4], CbCr[x=40,y=4], CbCr[x=42,y=4], CbCr[x=44,y=4], CbCr[x=46,y=4]
+        		//     ...
+        		// - buffer5:
+        		//     storing the Cb and Cr information of the first block
+        		//     of 16 pixels of a 32 pixels wide vertical band.
+        		//     Starting at the image pixel (x=0,y=2),
+        		//     8 byte pairs of (Cb,Cr) are stored sequentially in the buffer
+        		//     (representing 16 horizontal pixels),
+        		//     then the next 3 rows are being skipped,
+        		//     and then followed by 8 byte pairs of the next image row (i.e. every 4th row).
+        		//     The rows are stored from the image top to the image bottom.
+        		//     CbCr[x=0,y=2], CbCr[x=2,y=2], CbCr[x=4,y=2], CbCr[x=6,y=2], CbCr[x=8,y=2], CbCr[x=10,y=2], CbCr[x=12,y=2], CbCr[x=14,y=2]
+        		//     CbCr[x=32,y=2], CbCr[x=34,y=2], CbCr[x=36,y=2], CbCr[x=38,y=2], CbCr[x=40,y=2], CbCr[x=42,y=2], CbCr[x=44,y=2], CbCr[x=46,y=2]
+        		//     ...
+        		//     CbCr[x=0,y=6], CbCr[x=2,y=6], CbCr[x=4,y=6], CbCr[x=6,y=6], CbCr[x=8,y=6], CbCr[x=10,y=6], CbCr[x=12,y=6], CbCr[x=14,y=6]
+        		//     CbCr[x=32,y=6], CbCr[x=34,y=6], CbCr[x=36,y=6], CbCr[x=38,y=6], CbCr[x=40,y=6], CbCr[x=42,y=6], CbCr[x=44,y=6], CbCr[x=46,y=6]
+        		//     ...
+        		// - buffer6:
+        		//     storing the Cb and Cr information of the second block
+        		//     of 16 pixels of a 32 pixels wide vertical band.
+        		//     Starting at the image pixel (x=16,y=0),
+        		//     8 byte pairs of (Cb,Cr) are stored sequentially in the buffer
+        		//     (representing 16 horizontal pixels),
+        		//     then the next 3 rows are being skipped,
+        		//     and then followed by 8 byte pairs of the next image row (i.e. every 4th row).
+        		//     The rows are stored from the image top to the image bottom.
+        		//     CbCr[x=16,y=0], CbCr[x=18,y=0], CbCr[x=20,y=0], CbCr[x=22,y=0], CbCr[x=24,y=0], CbCr[x=26,y=0], CbCr[x=28,y=0], CbCr[x=30,y=0]
+        		//     CbCr[x=48,y=0], CbCr[x=50,y=0], CbCr[x=52,y=0], CbCr[x=54,y=0], CbCr[x=56,y=0], CbCr[x=58,y=0], CbCr[x=60,y=0], CbCr[x=62,y=0]
+        		//     ...
+        		//     CbCr[x=16,y=4], CbCr[x=18,y=4], CbCr[x=20,y=4], CbCr[x=22,y=4], CbCr[x=24,y=4], CbCr[x=26,y=4], CbCr[x=28,y=4], CbCr[x=30,y=4]
+        		//     CbCr[x=48,y=4], CbCr[x=50,y=4], CbCr[x=52,y=4], CbCr[x=54,y=4], CbCr[x=56,y=4], CbCr[x=58,y=4], CbCr[x=60,y=4], CbCr[x=62,y=4]
+        		//     ...
+        		// - buffer7:
+        		//     storing the Cb and Cr information of the second block
+        		//     of 16 pixels of a 32 pixels wide vertical band.
+        		//     Starting at the image pixel (x=16,y=2),
+        		//     8 byte pairs of (Cb,Cr) are stored sequentially in the buffer
+        		//     (representing 16 horizontal pixels),
+        		//     then the next 3 rows are being skipped,
+        		//     and then followed by 8 byte pairs of the next image row (i.e. every 4th row).
+        		//     The rows are stored from the image top to the image bottom.
+        		//     CbCr[x=16,y=2], CbCr[x=18,y=2], CbCr[x=20,y=2], CbCr[x=22,y=2], CbCr[x=24,y=2], CbCr[x=26,y=2], CbCr[x=28,y=2], CbCr[x=30,y=2]
+        		//     CbCr[x=48,y=2], CbCr[x=50,y=2], CbCr[x=52,y=2], CbCr[x=54,y=2], CbCr[x=56,y=2], CbCr[x=58,y=2], CbCr[x=60,y=2], CbCr[x=62,y=2]
+        		//     ...
+        		//     CbCr[x=16,y=6], CbCr[x=18,y=6], CbCr[x=20,y=6], CbCr[x=22,y=6], CbCr[x=24,y=6], CbCr[x=26,y=6], CbCr[x=28,y=6], CbCr[x=30,y=6]
+        		//     CbCr[x=48,y=6], CbCr[x=50,y=6], CbCr[x=52,y=6], CbCr[x=54,y=6], CbCr[x=56,y=6], CbCr[x=58,y=6], CbCr[x=60,y=6], CbCr[x=62,y=6]
+        		//     ...
+        		int width2 = width / 2;
+        		int height2 = height / 2;
+        		// Reserve a buffer large enough for all sections
+        		int[] buffer = getIntBuffer(((width + 31) >> 5) * ((height + 1) >> 1) * 16);
+        		int n = 0;
+        		for (int x = 0; x < width; x += 32) {
+        			for (int y = 0, i = x; y < height; y += 2, n += 16, i += 2 * width) {
+        				System.arraycopy(luma, i, buffer, n, 16);
+        			}
+        		}
+        		write(buffers[buffersIndex][0], n, buffer, 0);
+
+        		n = 0;
+        		for (int x = 16; x < width; x += 32) {
+        			for (int y = 0, i = x; y < height; y += 2, n += 16, i += 2 * width) {
+        				System.arraycopy(luma, i, buffer, n, 16);
+        			}
+        		}
+        		write(buffers[buffersIndex][1], n, buffer, 0);
+
+        		n = 0;
+        		for (int x = 0; x < width2; x += 16) {
+    				for (int y = 0; y < height2; y += 2) {
+    					for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
+    						buffer[n++] = cb[i];
+    						buffer[n++] = cr[i];
+    					}
+        			}
+        		}
+        		write(buffers[buffersIndex][4], n, buffer, 0);
+
+        		n = 0;
+        		for (int x = 0; x < width2; x += 16) {
+    				for (int y = 1; y < height2; y += 2) {
+    					for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
+    						buffer[n++] = cb[i];
+    						buffer[n++] = cr[i];
+    					}
+        			}
+        		}
+        		write(buffers[buffersIndex][5], n, buffer, 0);
+
+        		n = 0;
+        		for (int x = 0; x < width; x += 32) {
+        			for (int y = 1, i = x + width; y < height; y += 2, n += 16, i += 2 * width) {
+        				System.arraycopy(luma, i, buffer, n, 16);
+        			}
+        		}
+        		write(buffers[buffersIndex][2], n, buffer, 0);
+
+        		n = 0;
+        		for (int x = 16; x < width; x += 32) {
+        			for (int y = 1, i = x + width; y < height; y += 2, n += 16, i += 2 * width) {
+        				System.arraycopy(luma, i, buffer, n, 16);
+        			}
+        		}
+        		write(buffers[buffersIndex][3], n, buffer, 0);
+
+        		n = 0;
+        		for (int x = 8; x < width2; x += 16) {
+    				for (int y = 0; y < height2; y += 2) {
+    					for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
+    						buffer[n++] = cb[i];
+    						buffer[n++] = cr[i];
+    					}
+        			}
+        		}
+        		write(buffers[buffersIndex][6], n, buffer, 0);
+
+        		n = 0;
+        		for (int x = 8; x < width2; x += 16) {
+    				for (int y = 1; y < height2; y += 2) {
+    					for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
+    						buffer[n++] = cb[i];
+    						buffer[n++] = cr[i];
+    					}
+        			}
+        		}
+        		write(buffers[buffersIndex][7], n, buffer, 0);
+
+        		releaseIntBuffer(buffer);
+        	}
+            releaseIntBuffer(luma);
+            releaseIntBuffer(cb);
+            releaseIntBuffer(cr);
+
+        	for (int i = 0; i < 8; i++) {
+		    	mpegAvcYuvStruct.setValue32(i * 4, buffers[buffersIndex][i].getAddress() & EDRAM_MEMORY_MASK);
+		    	if (log.isTraceEnabled()) {
+		    		log.trace(String.format("sceVideocodecDecode YUV buffer[%d]=%s", i, buffers[buffersIndex][i]));
+		    	}
+        	}
+
+        	mpegAvcYuvStruct.setValue32(32, videoCodec.hasImage()); // 0 or 1
+
+        	mpegAvcYuvStruct.setPointer(36, bufferUnknown1);
+        	bufferUnknown1.setUnsignedValue8(0, 0x02); // 0x00 or 0x04
+        	bufferUnknown1.setValue32(8, sceMpeg.mpegTimestampPerSecond);
+        	bufferUnknown1.setValue32(16, sceMpeg.mpegTimestampPerSecond);
+        	bufferUnknown1.setValue32(24, frameCount * 2);
+        	bufferUnknown1.setValue32(28, 2);
+        	bufferUnknown1.setUnsignedValue8(32, 0x00); // 0x00 or 0x01 or 0x02
+        	bufferUnknown1.setUnsignedValue8(33, 0x01);
+
+        	mpegAvcYuvStruct.setPointer(40, bufferUnknown2);
+        	bufferUnknown2.setUnsignedValue8(0, 0x00); // 0x00 or 0x04
+        	bufferUnknown2.setValue32(24, 0);
+        	bufferUnknown2.setValue32(28, 0);
+
+			buffer3.setValue8(0, (byte) 0x01);
+			buffer3.setValue8(1, (byte) 0xFF);
+        	buffer3.setValue32(4, 3);
+        	buffer3.setValue32(8, 4);
+        	buffer3.setValue32(12, 1);
+        	buffer3.setValue8(16, (byte) 0);
+        	buffer3.setValue32(20, 0x10000);
+        	buffer3.setValue32(32, 4004); // 4004 or 5005
+        	buffer3.setValue32(36, 240000);
+
+        	decodeSEI.setValue8(0, (byte) 0x02);
+        	decodeSEI.setValue32(8, sceMpeg.mpegTimestampPerSecond);
+        	decodeSEI.setValue32(16, sceMpeg.mpegTimestampPerSecond);
+        	decodeSEI.setValue32(24, frameCount * 2);
+        	decodeSEI.setValue32(28, 2);
+        	decodeSEI.setValue8(32, (byte) 0x00);
+        	decodeSEI.setValue8(33, (byte) 0x01);
+
+        	frameCount++;
+    	}
+
+    	return result;
+	}
+
+	public int videocodecDecodeType1(Memory mp4Memory, int mp4Data, int mp4Size, TPointer buffer2, int value) {
+		int result = videocodecDecode(mp4Memory, mp4Data, mp4Size);
 
     	int frameWidth = videoCodec.getImageWidth();
     	int frameHeight = videoCodec.getImageHeight();
@@ -217,361 +551,86 @@ public class sceVideocodec extends HLEModule {
     	int frameBufferWidthCr = frameBufferWidthY / 2;
     	int frameBufferWidthCb = frameBufferWidthY / 2;
 
-    	Memory mem = buffer.getMemory();
+		if (videoCodec.hasImage()) {
+        	if (memoryInfo == null) {
+        		int sizeY = frameBufferWidthY * frameHeight;
+        		int sizeCr = frameBufferWidthCr * (frameHeight / 2);
+        		int sizeCb = frameBufferWidthCr * (frameHeight / 2);
+        		int size = (sizeY + sizeCr + sizeCb) * 2;
+
+        		memoryInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecDecode", SysMemUserForUser.PSP_SMEM_Low, size, 0);
+
+        		bufferY1 = memoryInfo.addr & EDRAM_MEMORY_MASK;
+        		bufferY2 = bufferY1 + sizeY;
+        		bufferCr1 = bufferY1 + sizeY;
+        		bufferCb1 = bufferCr1 + sizeCr;
+        		bufferCr2 = bufferY2 + sizeY;
+        		bufferCb2 = bufferCr2 + sizeCr;
+        	}
+		}
+
+    	boolean buffer1 = (frameCount & 1) == 0;
+    	int bufferY = buffer1 ? bufferY1 : bufferY2;
+    	int bufferCr = buffer1 ? bufferCr1 : bufferCr2;
+    	int bufferCb = buffer1 ? bufferCb1 : bufferCb2;
+
+    	if (videoCodec.hasImage()) {
+    		Memory mem = Memory.getInstance();
+        	mem.memset(bufferY | MemoryMap.START_RAM, (byte) 0x80, frameBufferWidthY * frameHeight);
+        	mem.memset(bufferCr | MemoryMap.START_RAM, (byte) (buffer1 ? 0x50 : 0x80), frameBufferWidthCr * (frameHeight / 2));
+        	mem.memset(bufferCb | MemoryMap.START_RAM, (byte) 0x80, frameBufferWidthCb * (frameHeight / 2));
+
+        	frameCount++;
+    	}
+
+    	buffer2.setValue32(0, mp4Data);
+    	buffer2.setValue32(4, mp4Size);
+    	buffer2.setValue32(8, value);
+    	buffer2.setValue32(12, 0x40);
+    	buffer2.setValue32(16, 0);
+    	buffer2.setValue32(44, mp4Size);
+    	buffer2.setValue32(48, frameWidth);
+    	buffer2.setValue32(52, frameHeight);
+    	buffer2.setValue32(60, videoCodec.hasImage() ? 2 : 1);
+    	buffer2.setValue32(64, 1);
+    	buffer2.setValue32(72, -1);
+    	buffer2.setValue32(76, frameCount * 0x64);
+    	buffer2.setValue32(80, 2997);
+    	buffer2.setValue32(84, bufferY);
+    	buffer2.setValue32(88, bufferCr);
+    	buffer2.setValue32(92, bufferCb);
+    	buffer2.setValue32(96, frameBufferWidthY);
+    	buffer2.setValue32(100, frameBufferWidthCr);
+    	buffer2.setValue32(104, frameBufferWidthCb);
+
+    	return result;
+	}
+
+	private void videocodecDecoderStep(TPointer buffer, int type, IAction afterDecodeAction, int threadUid, long threadWakeupMicroTime) {
+    	if (buffer == null) {
+    		return;
+    	}
+
+    	Memory mp4Memory = buffer.getMemory();
+    	int mp4Data = buffer.getValue32(36) | MemoryMap.START_RAM;
+    	int mp4Size = buffer.getValue32(40);
+
+    	buffer.setValue32(8, 0);
+
     	TPointer buffer2 = buffer.getPointer(16);
     	switch (type) {
     		case 0:
-		    	buffer2.setValue32(8, frameWidth);
-		    	buffer2.setValue32(12, frameHeight);
-		    	buffer2.setValue32(28, 1);
-		    	buffer2.setValue32(32, videoCodec.hasImage()); // Number of decoded images
-		    	buffer2.setValue32(36, !videoCodec.hasImage());
-
-		    	if (videoCodec.hasImage()) {
-		    		if (memoryInfo == null) {
-		    			int sizeY1 = alignUp(((frameWidth + 16) >> 5) * (frameHeight >> 1) * 16, 0x1FF);
-		    			int sizeY2 = alignUp((frameWidth >> 5) * (frameHeight >> 1) * 16, 0x1FF);
-		        		int sizeCr1 = alignUp(((frameWidth + 16) >> 5) * (frameHeight >> 1) * 8, 0x1FF);
-		        		int sizeCr2 = alignUp((frameWidth >> 5) * (frameHeight >> 1) * 8, 0x1FF);
-		        		int size = 256 + (sizeY1 + sizeY2 + sizeCr1 + sizeCr2) * 2 * buffers.length;
-
-		        		memoryInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecDecode", SysMemUserForUser.PSP_SMEM_Low, size, 0);
-
-		        		int base = memoryInfo.addr;
-
-		        		bufferUnknown1 = base;
-		        		mem.memset(bufferUnknown1, (byte) 0, 36);
-
-		        		bufferUnknown2 = base + 36;
-		        		mem.memset(bufferUnknown2, (byte) 0, 32);
-
-		        		int yuvBuffersBase = base + 256; // Add 256 to keep aligned
-		        		int base1 = yuvBuffersBase & EDRAM_MEMORY_MASK;
-		        		int base2 = base1 + (sizeY1 + sizeY2) * buffers.length;
-		        		int step = (sizeY1 + sizeY2 + sizeCr1 + sizeCr2) * buffers.length;
-		        		for (int i = 0; i < buffers.length; i++) {
-		        			buffers[i][0] = base1;
-		        			buffers[i][1] = buffers[i][0] + step;
-		        			buffers[i][2] = base1 + sizeY1;
-		        			buffers[i][3] = buffers[i][2] + step;
-		        			buffers[i][4] = base2;
-		        			buffers[i][5] = buffers[i][4] + step;
-		        			buffers[i][6] = base2 + sizeCr1;
-		        			buffers[i][7] = buffers[i][6] + step;
-
-		        			base1 += sizeY1 + sizeY2;
-		        			base2 += sizeCr1 + sizeCr2;
-		        		}
-		        	}
-
-		        	int buffersIndex = frameCount % 3;
-	        		int width = videoCodec.getImageWidth();
-	        		int height = videoCodec.getImageHeight();
-
-	        		int[] luma = getIntBuffer(width * height);
-		            int[] cb = getIntBuffer(width * height / 4);
-		            int[] cr = getIntBuffer(width * height / 4);
-		        	if (videoCodec.getImage(luma, cb, cr) == 0) {
-		        		// The PSP is storing the YCbCr information in a non-linear format.
-		        		// By analyzing the output of sceMpegBaseYCrCbCopy on a real PSP,
-		        		// the following format for the YCbCr was found:
-		        		// the image is divided vertically into bands of 32 pixels.
-		        		// Each band is stored vertically into different buffers.
-		        		// The Y information is stored as 1 byte per pixel.
-		        		// The Cb information is stored as 1 byte for a square of four pixels (2x2).
-		        		// The Cr information is stored as 1 byte for a square of four pixels (2x2).
-		        		// For a square of four pixels, the one Cb byte is stored first,
-		        		// followed by the one Cr byte.
-		        		//
-		        		// - buffer0:
-		        		//     storing the Y information of the first block
-		        		//     of 16 pixels of a 32 pixels wide vertical band.
-		        		//     Starting at the image pixel (x=0,y=0),
-		        		//     16 horizontal pixels are stored sequentially in the buffer,
-		        		//     followed by 16 pixels of the next next image row (i.e. every 2nd row).
-		        		//     The rows are stored from the image top to the image bottom.
-		        		//     [x=0-15,y=0], [x=0-15,y=2], [x=0-15,y=4]...
-		        		//     [x=32-47,y=0], [x=32-47,y=2], [x=32-47,y=4]...
-		        		//     [x=64-79,y=0], [x=64-79,y=2], [x=64-79,y=4]...
-		        		// - buffer1:
-		        		//     storing the Y information of the second block
-		        		//     of 16 pixels of a 32 pixels wide vertical band.
-		        		//     Starting at the image pixel (x=16,y=0),
-		        		//     16 horizontal pixels are stored sequentially in the buffer,
-		        		//     followed by 16 pixels of the next next image row (i.e. every 2nd row).
-		        		//     The rows are stored from the image top to the image bottom.
-		        		//     [x=16-31,y=0], [x=16-31,y=2], [x=16-31,y=4]...
-		        		//     [x=48-63,y=0], [x=48-63,y=2], [x=48-63,y=4]...
-		        		//     [x=80-95,y=0], [x=80-95,y=2], [x=80-95,y=4]...
-		        		// - buffer2:
-		        		//     storing the Y information of the first block of 16 pixels
-		        		//     of a 32 pixels wide vertical band.
-		        		//     Starting at the image pixel (x=0,y=1),
-		        		//     16 horizontal pixels are stored sequentially in the buffer,
-		        		//     followed by 16 pixels of the next next image row (i.e. every 2nd row).
-		        		//     The rows are stored from the image top to the image bottom.
-		        		//     [x=0-15,y=1], [x=0-15,y=3], [x=0-15,y=5]...
-		        		//     [x=32-47,y=1], [x=32-47,y=3], [x=32-47,y=5]...
-		        		//     [x=64-79,y=1], [x=64-79,y=3], [x=64-79,y=5]...
-		        		// - buffer3:
-		        		//     storing the Y information of the second block of 16 pixels
-		        		//     of a 32 pixels wide vertical band.
-		        		//     Starting at the image pixel (x=16,y=1),
-		        		//     16 horizontal pixels are stored sequentially in the buffer,
-		        		//     followed by 16 pixels of the next next image row (i.e. every 2nd row).
-		        		//     The rows are stored from the image top to the image bottom.
-		        		//     [x=16-31,y=1], [x=16-31,y=3], [x=16-31,y=5]...
-		        		//     [x=48-63,y=1], [x=48-63,y=3], [x=48-63,y=5]...
-		        		//     [x=80-95,y=1], [x=80-95,y=3], [x=80-95,y=5]...
-		        		// - buffer4:
-		        		//     storing the Cb and Cr information of the first block
-		        		//     of 16 pixels of a 32 pixels wide vertical band.
-		        		//     Starting at the image pixel (x=0,y=0),
-		        		//     8 byte pairs of (Cb,Cr) are stored sequentially in the buffer
-		        		//     (representing 16 horizontal pixels),
-		        		//     then the next 3 rows are being skipped,
-		        		//     and then followed by 8 byte pairs of the next image row (i.e. every 4th row).
-		        		//     The rows are stored from the image top to the image bottom.
-		        		//     CbCr[x=0,y=0], CbCr[x=2,y=0], CbCr[x=4,y=0], CbCr[x=6,y=0], CbCr[x=8,y=0], CbCr[x=10,y=0], CbCr[x=12,y=0], CbCr[x=14,y=0]
-		        		//     CbCr[x=32,y=0], CbCr[x=34,y=0], CbCr[x=36,y=0], CbCr[x=38,y=0], CbCr[x=40,y=0], CbCr[x=42,y=0], CbCr[x=44,y=0], CbCr[x=46,y=0]
-		        		//     ...
-		        		//     CbCr[x=0,y=4], CbCr[x=2,y=4], CbCr[x=4,y=4], CbCr[x=6,y=4], CbCr[x=8,y=4], CbCr[x=10,y=4], CbCr[x=12,y=4], CbCr[x=14,y=4]
-		        		//     CbCr[x=32,y=4], CbCr[x=34,y=4], CbCr[x=36,y=4], CbCr[x=38,y=4], CbCr[x=40,y=4], CbCr[x=42,y=4], CbCr[x=44,y=4], CbCr[x=46,y=4]
-		        		//     ...
-		        		// - buffer5:
-		        		//     storing the Cb and Cr information of the first block
-		        		//     of 16 pixels of a 32 pixels wide vertical band.
-		        		//     Starting at the image pixel (x=0,y=2),
-		        		//     8 byte pairs of (Cb,Cr) are stored sequentially in the buffer
-		        		//     (representing 16 horizontal pixels),
-		        		//     then the next 3 rows are being skipped,
-		        		//     and then followed by 8 byte pairs of the next image row (i.e. every 4th row).
-		        		//     The rows are stored from the image top to the image bottom.
-		        		//     CbCr[x=0,y=2], CbCr[x=2,y=2], CbCr[x=4,y=2], CbCr[x=6,y=2], CbCr[x=8,y=2], CbCr[x=10,y=2], CbCr[x=12,y=2], CbCr[x=14,y=2]
-		        		//     CbCr[x=32,y=2], CbCr[x=34,y=2], CbCr[x=36,y=2], CbCr[x=38,y=2], CbCr[x=40,y=2], CbCr[x=42,y=2], CbCr[x=44,y=2], CbCr[x=46,y=2]
-		        		//     ...
-		        		//     CbCr[x=0,y=6], CbCr[x=2,y=6], CbCr[x=4,y=6], CbCr[x=6,y=6], CbCr[x=8,y=6], CbCr[x=10,y=6], CbCr[x=12,y=6], CbCr[x=14,y=6]
-		        		//     CbCr[x=32,y=6], CbCr[x=34,y=6], CbCr[x=36,y=6], CbCr[x=38,y=6], CbCr[x=40,y=6], CbCr[x=42,y=6], CbCr[x=44,y=6], CbCr[x=46,y=6]
-		        		//     ...
-		        		// - buffer6:
-		        		//     storing the Cb and Cr information of the second block
-		        		//     of 16 pixels of a 32 pixels wide vertical band.
-		        		//     Starting at the image pixel (x=16,y=0),
-		        		//     8 byte pairs of (Cb,Cr) are stored sequentially in the buffer
-		        		//     (representing 16 horizontal pixels),
-		        		//     then the next 3 rows are being skipped,
-		        		//     and then followed by 8 byte pairs of the next image row (i.e. every 4th row).
-		        		//     The rows are stored from the image top to the image bottom.
-		        		//     CbCr[x=16,y=0], CbCr[x=18,y=0], CbCr[x=20,y=0], CbCr[x=22,y=0], CbCr[x=24,y=0], CbCr[x=26,y=0], CbCr[x=28,y=0], CbCr[x=30,y=0]
-		        		//     CbCr[x=48,y=0], CbCr[x=50,y=0], CbCr[x=52,y=0], CbCr[x=54,y=0], CbCr[x=56,y=0], CbCr[x=58,y=0], CbCr[x=60,y=0], CbCr[x=62,y=0]
-		        		//     ...
-		        		//     CbCr[x=16,y=4], CbCr[x=18,y=4], CbCr[x=20,y=4], CbCr[x=22,y=4], CbCr[x=24,y=4], CbCr[x=26,y=4], CbCr[x=28,y=4], CbCr[x=30,y=4]
-		        		//     CbCr[x=48,y=4], CbCr[x=50,y=4], CbCr[x=52,y=4], CbCr[x=54,y=4], CbCr[x=56,y=4], CbCr[x=58,y=4], CbCr[x=60,y=4], CbCr[x=62,y=4]
-		        		//     ...
-		        		// - buffer7:
-		        		//     storing the Cb and Cr information of the second block
-		        		//     of 16 pixels of a 32 pixels wide vertical band.
-		        		//     Starting at the image pixel (x=16,y=2),
-		        		//     8 byte pairs of (Cb,Cr) are stored sequentially in the buffer
-		        		//     (representing 16 horizontal pixels),
-		        		//     then the next 3 rows are being skipped,
-		        		//     and then followed by 8 byte pairs of the next image row (i.e. every 4th row).
-		        		//     The rows are stored from the image top to the image bottom.
-		        		//     CbCr[x=16,y=2], CbCr[x=18,y=2], CbCr[x=20,y=2], CbCr[x=22,y=2], CbCr[x=24,y=2], CbCr[x=26,y=2], CbCr[x=28,y=2], CbCr[x=30,y=2]
-		        		//     CbCr[x=48,y=2], CbCr[x=50,y=2], CbCr[x=52,y=2], CbCr[x=54,y=2], CbCr[x=56,y=2], CbCr[x=58,y=2], CbCr[x=60,y=2], CbCr[x=62,y=2]
-		        		//     ...
-		        		//     CbCr[x=16,y=6], CbCr[x=18,y=6], CbCr[x=20,y=6], CbCr[x=22,y=6], CbCr[x=24,y=6], CbCr[x=26,y=6], CbCr[x=28,y=6], CbCr[x=30,y=6]
-		        		//     CbCr[x=48,y=6], CbCr[x=50,y=6], CbCr[x=52,y=6], CbCr[x=54,y=6], CbCr[x=56,y=6], CbCr[x=58,y=6], CbCr[x=60,y=6], CbCr[x=62,y=6]
-		        		//     ...
-		        		int width2 = width / 2;
-		        		int height2 = height / 2;
-		        		int sizeY1 = ((width + 16) >> 5) * (height >> 1) * 16;
-		        		int sizeY2 = ((width +  0) >> 5) * (height >> 1) * 16;
-		        		int sizeCrCb1 = ((width + 16) >> 5) * ((height + 2) >> 2) * 16;
-		        		int sizeCrCb2 = ((width +  0) >> 5) * ((height + 0) >> 2) * 16;
-
-		        		int[] bufferY1 = getIntBuffer(sizeY1);
-		        		for (int x = 0, j = 0; x < width; x += 32) {
-		        			for (int y = 0, i = x; y < height; y += 2, j += 16, i += 2 * width) {
-		        				System.arraycopy(luma, i, bufferY1, j, 16);
-		        			}
-		        		}
-		        		write(buffers[buffersIndex][0] | MemoryMap.START_RAM, sizeY1, bufferY1, 0);
-
-		        		int[] bufferY2 = getIntBuffer(sizeY2);
-		        		for (int x = 16, j = 0; x < width; x += 32) {
-		        			for (int y = 0, i = x; y < height; y += 2, j += 16, i += 2 * width) {
-		        				System.arraycopy(luma, i, bufferY2, j, 16);
-		        			}
-		        		}
-		        		write(buffers[buffersIndex][1] | MemoryMap.START_RAM, sizeY2, bufferY2, 0);
-
-		        		int[] bufferCrCb1 = getIntBuffer(sizeCrCb1);
-		        		for (int x = 0, j = 0; x < width2; x += 16) {
-	        				for (int y = 0; y < height2; y += 2) {
-	        					for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
-	        						bufferCrCb1[j++] = cb[i];
-	        						bufferCrCb1[j++] = cr[i];
-	        					}
-		        			}
-		        		}
-		        		write(buffers[buffersIndex][4] | MemoryMap.START_RAM, sizeCrCb1, bufferCrCb1, 0);
-
-		        		int[] bufferCrCb2 = getIntBuffer(sizeCrCb2);
-		        		for (int x = 0, j = 0; x < width2; x += 16) {
-	        				for (int y = 1; y < height2; y += 2) {
-	        					for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
-	        						bufferCrCb2[j++] = cb[i];
-	        						bufferCrCb2[j++] = cr[i];
-	        					}
-		        			}
-		        		}
-		        		write(buffers[buffersIndex][5] | MemoryMap.START_RAM, sizeCrCb2, bufferCrCb2, 0);
-
-		        		for (int x = 0, j = 0; x < width; x += 32) {
-		        			for (int y = 1, i = x + width; y < height; y += 2, j += 16, i += 2 * width) {
-		        				System.arraycopy(luma, i, bufferY1, j, 16);
-		        			}
-		        		}
-		        		write(buffers[buffersIndex][2] | MemoryMap.START_RAM, sizeY1, bufferY1, 0);
-		        		releaseIntBuffer(bufferY1);
-
-		        		for (int x = 16, j = 0; x < width; x += 32) {
-		        			for (int y = 1, i = x + width; y < height; y += 2, j += 16, i += 2 * width) {
-		        				System.arraycopy(luma, i, bufferY2, j, 16);
-		        			}
-		        		}
-		        		write(buffers[buffersIndex][3] | MemoryMap.START_RAM, sizeY2, bufferY2, 0);
-		        		releaseIntBuffer(bufferY2);
-
-		        		for (int x = 8, j = 0; x < width2; x += 16) {
-	        				for (int y = 0; y < height2; y += 2) {
-	        					for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
-	        						bufferCrCb1[j++] = cb[i];
-	        						bufferCrCb1[j++] = cr[i];
-	        					}
-		        			}
-		        		}
-		        		write(buffers[buffersIndex][6] | MemoryMap.START_RAM, sizeCrCb1, bufferCrCb1, 0);
-		        		releaseIntBuffer(bufferCrCb1);
-
-		        		for (int x = 8, j = 0; x < width2; x += 16) {
-	        				for (int y = 1; y < height2; y += 2) {
-	        					for (int xx = 0, i = y * width2 + x; xx < 8; xx++, i++) {
-	        						bufferCrCb2[j++] = cb[i];
-	        						bufferCrCb2[j++] = cr[i];
-	        					}
-		        			}
-		        		}
-		        		write(buffers[buffersIndex][7] | MemoryMap.START_RAM, sizeCrCb2, bufferCrCb2, 0);
-		        		releaseIntBuffer(bufferCrCb2);
-		        	}
-		            releaseIntBuffer(luma);
-		            releaseIntBuffer(cb);
-		            releaseIntBuffer(cr);
-
-		        	TPointer mpegAvcYuvStruct = buffer.getPointer(44);
-		        	for (int i = 0; i < 8; i++) {
-				    	mpegAvcYuvStruct.setValue32(i * 4, buffers[buffersIndex][i]);
-				    	if (log.isTraceEnabled()) {
-				    		log.trace(String.format("sceVideocodecDecode YUV buffer[%d]=0x%08X", i, buffers[buffersIndex][i]));
-				    	}
-		        	}
-
-		        	mpegAvcYuvStruct.setValue32(32, videoCodec.hasImage()); // 0 or 1
-
-		        	mpegAvcYuvStruct.setValue32(36, bufferUnknown1);
-		        	mem.write8(bufferUnknown1 + 0, (byte) 0x02); // 0x00 or 0x04
-		        	mem.write32(bufferUnknown1 + 8, sceMpeg.mpegTimestampPerSecond);
-		        	mem.write32(bufferUnknown1 + 16, sceMpeg.mpegTimestampPerSecond);
-		        	mem.write32(bufferUnknown1 + 24, frameCount * 2);
-		        	mem.write32(bufferUnknown1 + 28, 2);
-		        	mem.write8(bufferUnknown1 + 32, (byte) 0x00); // 0x00 or 0x01 or 0x02
-		        	mem.write8(bufferUnknown1 + 33, (byte) 0x01);
-
-		        	mpegAvcYuvStruct.setValue32(40, bufferUnknown2);
-		        	mem.write8(bufferUnknown2 + 0, (byte) 0x00); // 0x00 or 0x04
-		        	mem.write32(bufferUnknown2 + 24, 0);
-		        	mem.write32(bufferUnknown2 + 28, 0);
-
-		        	TPointer buffer3 = buffer.getPointer(48);
-					buffer3.setValue8(0, (byte) 0x01);
-					buffer3.setValue8(1, (byte) 0xFF);
-		        	buffer3.setValue32(4, 3);
-		        	buffer3.setValue32(8, 4);
-		        	buffer3.setValue32(12, 1);
-		        	buffer3.setValue8(16, (byte) 0);
-		        	buffer3.setValue32(20, 0x10000);
-		        	buffer3.setValue32(32, 4004); // 4004 or 5005
-		        	buffer3.setValue32(36, 240000);
-
-		        	TPointer decodeSEI = buffer.getPointer(80);
-		        	decodeSEI.setValue8(0, (byte) 0x02);
-		        	decodeSEI.setValue32(8, sceMpeg.mpegTimestampPerSecond);
-		        	decodeSEI.setValue32(16, sceMpeg.mpegTimestampPerSecond);
-		        	decodeSEI.setValue32(24, frameCount * 2);
-		        	decodeSEI.setValue32(28, 2);
-		        	decodeSEI.setValue8(32, (byte) 0x00);
-		        	decodeSEI.setValue8(33, (byte) 0x01);
-		    	}
+            	TPointer mpegAvcYuvStruct = buffer.getPointer(44);
+            	TPointer buffer3 = buffer.getPointer(48);
+            	TPointer decodeSEI = buffer.getPointer(80);
+    			videocodecDecodeType0(mp4Memory, mp4Data, mp4Size, buffer2, mpegAvcYuvStruct, buffer3, decodeSEI);
 		    	break;
     		case 1:
-    			if (videoCodec.hasImage()) {
-		        	if (memoryInfo == null) {
-		        		int sizeY = frameBufferWidthY * frameHeight;
-		        		int sizeCr = frameBufferWidthCr * (frameHeight / 2);
-		        		int sizeCb = frameBufferWidthCr * (frameHeight / 2);
-		        		int size = (sizeY + sizeCr + sizeCb) * 2;
-
-		        		memoryInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceVideocodecDecode", SysMemUserForUser.PSP_SMEM_Low, size, 0);
-
-		        		bufferY1 = memoryInfo.addr & EDRAM_MEMORY_MASK;
-		        		bufferY2 = bufferY1 + sizeY;
-		        		bufferCr1 = bufferY1 + sizeY;
-		        		bufferCb1 = bufferCr1 + sizeCr;
-		        		bufferCr2 = bufferY2 + sizeY;
-		        		bufferCb2 = bufferCr2 + sizeCr;
-		        	}
-    			}
-
-	        	boolean buffer1 = (frameCount & 1) == 0;
-	        	int bufferY = buffer1 ? bufferY1 : bufferY2;
-	        	int bufferCr = buffer1 ? bufferCr1 : bufferCr2;
-	        	int bufferCb = buffer1 ? bufferCb1 : bufferCb2;
-
-	        	if (videoCodec.hasImage()) {
-		        	mem.memset(bufferY | MemoryMap.START_RAM, (byte) 0x80, frameBufferWidthY * frameHeight);
-		        	mem.memset(bufferCr | MemoryMap.START_RAM, (byte) (buffer1 ? 0x50 : 0x80), frameBufferWidthCr * (frameHeight / 2));
-		        	mem.memset(bufferCb | MemoryMap.START_RAM, (byte) 0x80, frameBufferWidthCb * (frameHeight / 2));
-	        	}
-
-	        	buffer2.setValue32(0, mp4Data);
-		    	buffer2.setValue32(4, mp4Size);
-		    	buffer2.setValue32(8, buffer.getValue32(56));
-		    	buffer2.setValue32(12, 0x40);
-		    	buffer2.setValue32(16, 0);
-		    	buffer2.setValue32(44, mp4Size);
-		    	buffer2.setValue32(48, frameWidth);
-		    	buffer2.setValue32(52, frameHeight);
-		    	buffer2.setValue32(60, videoCodec.hasImage() ? 2 : 1);
-		    	buffer2.setValue32(64, 1);
-		    	buffer2.setValue32(72, -1);
-		    	buffer2.setValue32(76, frameCount * 0x64);
-		    	buffer2.setValue32(80, 2997);
-		    	buffer2.setValue32(84, bufferY);
-		    	buffer2.setValue32(88, bufferCr);
-		    	buffer2.setValue32(92, bufferCb);
-		    	buffer2.setValue32(96, frameBufferWidthY);
-		    	buffer2.setValue32(100, frameBufferWidthCr);
-		    	buffer2.setValue32(104, frameBufferWidthCb);
+    			videocodecDecodeType1(mp4Memory, mp4Data, mp4Size, buffer2, buffer.getValue32(56));
 		    	break;
 	    	default:
 	    		log.warn(String.format("sceVideocodecDecode unknown type=0x%X", type));
 	    		break;
-    	}
-
-    	if (videoCodec.hasImage()) {
-    		frameCount++;
     	}
 
     	if (afterDecodeAction != null) {
@@ -597,17 +656,19 @@ public class sceVideocodec extends HLEModule {
 		Emulator.getScheduler().addAction(action);
     }
 
-    public static void write(int addr, int length, int[] buffer, int offset) {
+    public static void write(TPointer addr, int length, int[] buffer, int offset) {
     	length = Math.min(length, buffer.length - offset);
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("write addr=0x%08X, length=0x%X", addr, length));
+    		log.trace(String.format("write addr=%s, length=0x%X", addr, length));
     	}
 
     	// Optimize the most common case
-        if (RuntimeContext.hasMemoryInt()) {
+    	Memory mem = addr.getMemory();
+    	int address = addr.getAddress();
+        if (mem.hasMemoryInt(address)) {
         	int length4 = length >> 2;
-        	int addrOffset = addr >> 2;
-    		int[] memoryInt = RuntimeContext.getMemoryInt();
+        	int addrOffset = mem.getMemoryIntOffset(address);
+    		int[] memoryInt = mem.getMemoryInt(address);
 	        for (int i = 0, j = offset; i < length4; i++) {
 	        	int value = buffer[j++] & 0xFF;
 	        	value += (buffer[j++] & 0xFF) << 8;
@@ -746,24 +807,7 @@ public class sceVideocodec extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x307E6E1C, version = 150)
     public int sceVideocodecDelete(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=videocodecBufferSize, usage=Usage.inout) TPointer buffer, int type) {
-    	if (videocodecDecoderThread != null) {
-    		videocodecDecoderThread.exit();
-    		videocodecDecoderThread = null;
-    	}
-
-    	if (videoCodec != null) {
-    		videoCodec = null;
-    	}
-
-    	if (memoryInfo != null) {
-    		Modules.SysMemUserForUserModule.free(memoryInfo);
-    		memoryInfo = null;
-    	}
-
-    	if (edramInfo != null) {
-    		Modules.SysMemUserForUserModule.free(edramInfo);
-    		edramInfo = null;
-    	}
+    	videocodecDelete();
 
     	Modules.ThreadManForUserModule.hleKernelDelayThread(videocodecDeleteDelay, false);
 
