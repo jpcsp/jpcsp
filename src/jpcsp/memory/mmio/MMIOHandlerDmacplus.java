@@ -24,10 +24,15 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceMp4AvcCscStruct;
 import jpcsp.HLE.modules.sceDmacplus;
+import jpcsp.HLE.modules.sceMpegbase;
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.memory.mmio.dmac.DmacProcessor;
 import jpcsp.state.StateInputStream;
@@ -63,6 +68,17 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 	public static final int DISPLAY_FLAG_ENABLED = 0x1;
 	public static final int DISPLAY_FLAG_UNKNOWN = 0x2;
 	private int displayFlags;
+	private final int[] mpegAvcYuvBuffers = new int[8];
+	private int mpegAvcWidth;
+	private int mpegAvcHeight;
+	private int mpegAvcMode0;
+	private int mpegAvcMode1;
+	private int mpegAvcBufferWidth;
+	private int mpegAvcInternalPixelMode;
+	private int mpegAvcBufferUnknownPresent;
+	private int mpegAvcBufferRGB;
+	private int mpegAvcBufferUnknown;
+	private final int[] mpegAvcCodes = new int[4];
 
 	private class DmacCompletedAction implements IAction {
 		private int flagCompleted;
@@ -73,7 +89,7 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 
 		@Override
 		public void execute() {
-			memcpyCompleted(flagCompleted);
+			setCompleted(flagCompleted);
 		}
 	}
 
@@ -121,7 +137,7 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
-	private void memcpyCompleted(int flagCompleted) {
+	private void setCompleted(int flagCompleted) {
 		flagsCompleted |= flagCompleted;
 
 		checkInterrupt();
@@ -193,10 +209,10 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 			case 0x108: value = displayWidth; break;
 			case 0x10C: value = displayFrameBufferWidth; break;
 			case 0x110: value = displayFlags; break;
-			case 0x150: value = 0; break; // TODO Unknown
-			case 0x154: value = 0; break; // TODO Unknown
-			case 0x158: value = 0; break; // TODO Unknown
-			case 0x15C: value = 0; break; // TODO Unknown
+			case 0x150: value = mpegAvcCodes[0]; break;
+			case 0x154: value = mpegAvcCodes[1]; break;
+			case 0x158: value = mpegAvcCodes[2]; break;
+			case 0x15C: value = mpegAvcCodes[3]; break;
 			case 0x180:
 			case 0x184:
 			case 0x188:
@@ -222,6 +238,60 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 		return value;
 	}
 
+	private void setMpegAvc140(int value) {
+		mpegAvcHeight = (value >> 16) & 0x3F;
+		mpegAvcWidth = (value >> 8) & 0x3F;
+		mpegAvcMode0 = (value >> 2) & 0x1;
+		mpegAvcMode1 = (value >> 1) & 0x1;
+	}
+
+	private void setMpegAvc14C(int value) {
+		mpegAvcBufferWidth = value >>> 8;
+		mpegAvcInternalPixelMode = (value >> 1) & 0x3;
+		mpegAvcBufferUnknownPresent = (value >> 0) & 0x1;
+	}
+
+	private void setMpegAvcCmd(int cmd) {
+		switch (cmd) {
+			case 0x0:
+				break;
+			case 0xD:
+				// Start sceMpegBaseCscAvc
+				if (mpegAvcCodes[0] != 0x0CC00095 || mpegAvcCodes[1] != 0x398F3895 || mpegAvcCodes[2] != 0x00040895 || mpegAvcCodes[3] != 0x00000110) {
+					log.error(String.format("setMpegAvcCmd sceMpegBaseCscAvc unknown mpegAvcCodes 0x%08X, 0x%08X, 0x%08X, 0x%08X", mpegAvcCodes[0], mpegAvcCodes[1], mpegAvcCodes[2], mpegAvcCodes[3]));
+				}
+
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("setMpegAvcCmd sceMpegBaseCscAvc bufferRGB=0x%08X, bufferUnknown=0x%08X, width=0x%X, height=0x%X, bufferWidth=0x%X, mode0=0x%X, mode1=0x%X, internalPixelMode=0x%X, bufferUnknownPresent=0x%X", mpegAvcBufferRGB, mpegAvcBufferUnknown, mpegAvcWidth, mpegAvcHeight, mpegAvcBufferWidth, mpegAvcMode0, mpegAvcMode1, mpegAvcInternalPixelMode, mpegAvcBufferUnknownPresent));
+				}
+
+				int pixelMode = sceMpegbase.getPixelMode(mpegAvcInternalPixelMode);
+				TPointer bufferRGB = new TPointer(Emulator.getMemory(mpegAvcBufferRGB), mpegAvcBufferRGB);
+				TPointer bufferUnknown = mpegAvcBufferUnknownPresent != 0 ? new TPointer(Emulator.getMemory(mpegAvcBufferUnknown), mpegAvcBufferUnknown) : TPointer.NULL;
+				SceMp4AvcCscStruct mp4AvcCscStruct = new SceMp4AvcCscStruct();
+				mp4AvcCscStruct.height = mpegAvcHeight;
+				mp4AvcCscStruct.width = mpegAvcWidth;
+				mp4AvcCscStruct.mode0 = mpegAvcMode0;
+				mp4AvcCscStruct.mode1 = mpegAvcMode1;
+				mp4AvcCscStruct.buffer0 = mpegAvcYuvBuffers[0];
+				mp4AvcCscStruct.buffer1 = mpegAvcYuvBuffers[1];
+				mp4AvcCscStruct.buffer2 = mpegAvcYuvBuffers[2];
+				mp4AvcCscStruct.buffer3 = mpegAvcYuvBuffers[3];
+				mp4AvcCscStruct.buffer4 = mpegAvcYuvBuffers[4];
+				mp4AvcCscStruct.buffer5 = mpegAvcYuvBuffers[5];
+				mp4AvcCscStruct.buffer6 = mpegAvcYuvBuffers[6];
+				mp4AvcCscStruct.buffer7 = mpegAvcYuvBuffers[7];
+				mp4AvcCscStruct.bufferMemory = MEProcessor.getInstance().getMEMemory();
+				Modules.sceMpegbaseModule.hleMpegBaseCscAvc(bufferRGB, bufferUnknown, mpegAvcBufferWidth, pixelMode, mp4AvcCscStruct);
+
+				setCompleted(COMPLETED_FLAG_AVC);
+				break;
+			default:
+				log.error(String.format("setMpegAvcCmd unknown cmd=0x%X", cmd));
+				break;
+		}
+	}
+
 	@Override
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
@@ -232,7 +302,23 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 			case 0x108: setDisplayWidth(value); break;
 			case 0x10C: setDisplayFrameBufferWidth(value); break;
 			case 0x110: setDisplayFlags(value); break;
-			case 0x160: break; // TODO reset?
+			case 0x120: mpegAvcYuvBuffers[0] = value; break;
+			case 0x124: mpegAvcYuvBuffers[1] = value; break;
+			case 0x128: mpegAvcYuvBuffers[2] = value; break;
+			case 0x12C: mpegAvcYuvBuffers[3] = value; break;
+			case 0x130: mpegAvcYuvBuffers[4] = value; break;
+			case 0x134: mpegAvcYuvBuffers[5] = value; break;
+			case 0x138: mpegAvcYuvBuffers[6] = value; break;
+			case 0x13C: mpegAvcYuvBuffers[7] = value; break;
+			case 0x140: setMpegAvc140(value); break;
+			case 0x144: mpegAvcBufferRGB = value; break;
+			case 0x148: mpegAvcBufferUnknown = value; break;
+			case 0x14C: setMpegAvc14C(value); break;
+			case 0x150: mpegAvcCodes[0] = value; break;
+			case 0x154: mpegAvcCodes[1] = value; break;
+			case 0x158: mpegAvcCodes[2] = value; break;
+			case 0x15C: mpegAvcCodes[3] = value; break;
+			case 0x160: setMpegAvcCmd(value); break;
 			case 0x180:
 			case 0x184:
 			case 0x188:

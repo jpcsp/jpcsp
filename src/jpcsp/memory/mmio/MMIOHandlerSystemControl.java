@@ -363,6 +363,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sysregInterruptToOther from ME on %s", MMIOHandlerMeCore.getInstance().toString()));
 				}
+				MMIOHandlerMeCore.getInstance().hleCompleteMeCommand();
 				RuntimeContextLLE.triggerInterrupt(RuntimeContextLLE.getMainProcessor(), PSP_MECODEC_INTR);
 			}
 		}

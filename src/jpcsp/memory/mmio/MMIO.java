@@ -225,7 +225,14 @@ public class MMIO extends Memory {
 
 	@Override
 	public void memset(int address, byte data, int length) {
-		mem.memset(address, data, length);
+    	IMMIOHandler handler = getHandler(address);
+    	if (handler != null) {
+    		for (int i = 0; i < length; i++) {
+    			handler.write8(address + i, data);
+    		}
+    	} else {
+    		mem.memset(address, data, length);
+    	}
 	}
 
 	@Override

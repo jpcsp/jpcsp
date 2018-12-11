@@ -16,11 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
+
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Memory;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.sceMeCore;
+import jpcsp.media.codec.ICodec;
+import jpcsp.mediaengine.MEProcessor;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -172,6 +179,37 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Starting cmd=0x%X(%s)", cmd, MECommand.getCommandName(cmd)));
+		}
+	}
+
+	public void hleCompleteMeCommand() {
+    	Memory meMemory = MEProcessor.getInstance().getMEMemory();
+    	Memory mem = Memory.getInstance();
+
+    	switch (cmd) {
+			case 0x2: // ME_CMD_VIDEOCODEC_DECODE_TYPE0
+		    	int mp4Data = parameters[1];
+		    	int mp4Size = parameters[2];
+		    	TPointer buffer2 = new TPointer(mem, parameters[3]);
+            	TPointer mpegAvcYuvStruct = new TPointer(mem, parameters[4]);
+            	TPointer buffer3 = new TPointer(mem, parameters[5]);
+            	TPointer decodeSEI = new TPointer(mem, parameters[6]);
+				result = Modules.sceVideocodecModule.videocodecDecodeType0(meMemory, mp4Data, mp4Size, buffer2, mpegAvcYuvStruct, buffer3, decodeSEI);
+				break;
+			case 0x4: // ME_CMD_VIDEOCODEC_DELETE_TYPE0
+				Modules.sceVideocodecModule.videocodecDelete();
+				break;
+			case 0x60: // ME_CMD_AT3P_DECODE
+				TPointer workArea = new TPointer(mem, parameters[0]);
+				int inputBufferSize;
+				if (workArea.getValue32(48) == 0) {
+					inputBufferSize = workArea.getValue32(64) + 2;
+				} else {
+					inputBufferSize = 0x100A;
+				}
+				ICodec audioCodec = Modules.sceAudiocodecModule.getCodec(workArea.getAddress(), PSP_CODEC_AT3PLUS, inputBufferSize, 2, 2, 0);
+				result = audioCodec.decode(meMemory, workArea.getValue32(24), inputBufferSize, meMemory, workArea.getValue32(32));
+				break;
 		}
 	}
 

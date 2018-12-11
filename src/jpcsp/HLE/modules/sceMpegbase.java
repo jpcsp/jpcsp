@@ -26,12 +26,14 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
@@ -75,6 +77,23 @@ public class sceMpegbase extends HLEModule {
     	super.stop();
 	}
 
+	public static int getPixelMode(int internalPixelMode) {
+    	switch (internalPixelMode) {
+			case 0: return TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+			case 1: return TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
+			case 2: return TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
+			case 3: return TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
+    	}
+
+    	log.error(String.format("getPixelMode unknown internalPixelMode=0x%X", internalPixelMode));
+
+    	return -1;
+	}
+
+	public int getPixelMode() {
+		return pixelMode;
+	}
+
 	public static int[] getIntBuffer(int length) {
     	synchronized (intBuffers) {
         	for (int[] intBuffer : intBuffers) {
@@ -110,17 +129,20 @@ public class sceMpegbase extends HLEModule {
     	}
     }
 
-    private static void read(int addr, int length, int[] buffer, int offset) {
-		addr |= MemoryMap.START_RAM;
-		if (log.isTraceEnabled()) {
+    private static void read(Memory mem, int addr, int length, int[] buffer, int offset) {
+    	if (mem == Emulator.getMemory()) {
+    		addr |= MemoryMap.START_RAM;
+    	}
+
+    	if (log.isTraceEnabled()) {
 			log.trace(String.format("read addr=0x%08X, length=0x%X", addr, length));
 		}
 
     	// Optimize the most common case
-        if (RuntimeContext.hasMemoryInt()) {
+        if (mem.hasMemoryInt(addr)) {
         	int length4 = length >> 2;
-        	int addrOffset = addr >> 2;
-        	int[] memoryInt = RuntimeContext.getMemoryInt();
+        	int addrOffset = mem.getMemoryIntOffset(addr);
+        	int[] memoryInt = mem.getMemoryInt(addr);
 	        for (int i = 0, j = offset; i < length4; i++) {
 	        	int value = memoryInt[addrOffset++];
 	        	buffer[j++] = (value      ) & 0xFF;
@@ -129,7 +151,7 @@ public class sceMpegbase extends HLEModule {
 	        	buffer[j++] = (value >> 24) & 0xFF;
 	        }
         } else {
-	        IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, length, 1);
+	        IMemoryReader memoryReader = MemoryReader.getMemoryReader(mem, addr, length, 1);
 	        for (int i = 0, j = offset; i < length; i++) {
 	        	buffer[j++] = memoryReader.readNext();
 	        }
@@ -147,16 +169,16 @@ public class sceMpegbase extends HLEModule {
 		copy(mem, dst, src, blocks << 4);
 	}
 
-    public int hleMpegBaseCscAvc(TPointer bufferRGB, int unknown, int bufferWidth, SceMp4AvcCscStruct mp4AvcCscStruct) {
+    public int hleMpegBaseCscAvc(TPointer bufferRGB, TPointer unknown, int bufferWidth, int videoPixelMode, SceMp4AvcCscStruct mp4AvcCscStruct) {
     	int rangeX = 0;
         int rangeY = 0;
         int rangeWidth = mp4AvcCscStruct.width << 4;
         int rangeHeight = mp4AvcCscStruct.height << 4;
 
-    	return hleMpegBaseCscAvcRange(bufferRGB, unknown, bufferWidth, mp4AvcCscStruct, rangeX, rangeY, rangeWidth, rangeHeight);
+    	return hleMpegBaseCscAvcRange(bufferRGB, unknown, bufferWidth, videoPixelMode, mp4AvcCscStruct, rangeX, rangeY, rangeWidth, rangeHeight);
     }
 
-    private int hleMpegBaseCscAvcRange(TPointer bufferRGB, int unknown, int bufferWidth, SceMp4AvcCscStruct mp4AvcCscStruct, int rangeX, int rangeY, int rangeWidth, int rangeHeight) {
+    private int hleMpegBaseCscAvcRange(TPointer bufferRGB, TPointer unknown, int bufferWidth, int videoPixelMode, SceMp4AvcCscStruct mp4AvcCscStruct, int rangeX, int rangeY, int rangeWidth, int rangeHeight) {
     	if (bufferWidth == 0) {
     		bufferWidth = defaultBufferWidth;
     	}
@@ -164,7 +186,6 @@ public class sceMpegbase extends HLEModule {
     	int width = mp4AvcCscStruct.width << 4;
     	int height = mp4AvcCscStruct.height << 4;
 
-    	int videoPixelMode = pixelMode;
 		int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         int destAddr = bufferRGB.getAddress();
 
@@ -191,10 +212,10 @@ public class sceMpegbase extends HLEModule {
 		int[] bufferCrCb1 = getIntBuffer(sizeCrCb1);
 		int[] bufferCrCb2 = getIntBuffer(sizeCrCb2);
 
-		read(mp4AvcCscStruct.buffer0, sizeY1, bufferY1, 0);
-		read(mp4AvcCscStruct.buffer1, sizeY2, bufferY2, 0);
-		read(mp4AvcCscStruct.buffer4, sizeCrCb1, bufferCrCb1, 0);
-		read(mp4AvcCscStruct.buffer5, sizeCrCb2, bufferCrCb2, 0);
+		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer0, sizeY1, bufferY1, 0);
+		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer1, sizeY2, bufferY2, 0);
+		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer4, sizeCrCb1, bufferCrCb1, 0);
+		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer5, sizeCrCb2, bufferCrCb2, 0);
 		for (int x = 0, j = 0; x < width; x += 32) {
 			for (int y = 0, i = x; y < height; y += 2, i += 2 * width, j += 16) {
 				System.arraycopy(bufferY1, j, luma, i, 16);
@@ -222,10 +243,10 @@ public class sceMpegbase extends HLEModule {
 			}
 		}
 
-		read(mp4AvcCscStruct.buffer2, sizeY1, bufferY1, 0);
-		read(mp4AvcCscStruct.buffer3, sizeY2, bufferY2, 0);
-		read(mp4AvcCscStruct.buffer6, sizeCrCb1, bufferCrCb1, 0);
-		read(mp4AvcCscStruct.buffer7, sizeCrCb2, bufferCrCb2, 0);
+		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer2, sizeY1, bufferY1, 0);
+		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer3, sizeY2, bufferY2, 0);
+		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer6, sizeCrCb1, bufferCrCb1, 0);
+		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer7, sizeCrCb2, bufferCrCb2, 0);
 		for (int x = 0, j = 0; x < width; x += 32) {
 			for (int y = 1, i = x + width; y < height; y += 2, i += 2 * width, j += 16) {
 				System.arraycopy(bufferY1, j, luma, i, 16);
@@ -408,9 +429,9 @@ public class sceMpegbase extends HLEModule {
         int[] luma = getIntBuffer(length);
         int[] cb = getIntBuffer(length2);
         int[] cr = getIntBuffer(length2);
-        read(sceMpegYCrCbBuffer.bufferY, length, luma, 0);
-        read(sceMpegYCrCbBuffer.bufferCb, length2, cb, 0);
-        read(sceMpegYCrCbBuffer.bufferCr, length2, cr, 0);
+        read(sceMpegYCrCbBuffer.bufferMemory, sceMpegYCrCbBuffer.bufferY, length, luma, 0);
+        read(sceMpegYCrCbBuffer.bufferMemory, sceMpegYCrCbBuffer.bufferCb, length2, cb, 0);
+        read(sceMpegYCrCbBuffer.bufferMemory, sceMpegYCrCbBuffer.bufferCr, length2, cr, 0);
 
         // Convert YCbCr to ABGR
         int[] abgr = getIntBuffer(length);
@@ -468,7 +489,7 @@ public class sceMpegbase extends HLEModule {
     }
 
     @HLEFunction(nid = 0x91929A21, version = 150)
-    public int sceMpegBaseCscAvc(TPointer bufferRGB, int unknown, int bufferWidth, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=48, usage=Usage.in) TPointer mp4AvcCscStructAddr) {
+    public int sceMpegBaseCscAvc(TPointer bufferRGB, @CanBeNull TPointer unknown, int bufferWidth, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=48, usage=Usage.in) TPointer mp4AvcCscStructAddr) {
         SceMp4AvcCscStruct mp4AvcCscStruct = new SceMp4AvcCscStruct();
     	mp4AvcCscStruct.read(mp4AvcCscStructAddr);
 
@@ -476,11 +497,11 @@ public class sceMpegbase extends HLEModule {
     		log.debug(String.format("sceMpegBaseCscAvc %s", mp4AvcCscStruct));
     	}
 
-    	return hleMpegBaseCscAvc(bufferRGB, unknown, bufferWidth, mp4AvcCscStruct);
+    	return hleMpegBaseCscAvc(bufferRGB, unknown, bufferWidth, pixelMode, mp4AvcCscStruct);
     }
 
     @HLEFunction(nid = 0x304882E1, version = 150)
-    public int sceMpegBaseCscAvcRange(TPointer bufferRGB, int unknown, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 rangeAddr, int bufferWidth, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=48, usage=Usage.in) TPointer mp4AvcCscStructAddr) {
+    public int sceMpegBaseCscAvcRange(TPointer bufferRGB, @CanBeNull TPointer unknown, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 rangeAddr, int bufferWidth, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=48, usage=Usage.in) TPointer mp4AvcCscStructAddr) {
         SceMp4AvcCscStruct mp4AvcCscStruct = new SceMp4AvcCscStruct();
     	mp4AvcCscStruct.read(mp4AvcCscStructAddr);
 
@@ -493,18 +514,17 @@ public class sceMpegbase extends HLEModule {
             log.debug(String.format("sceMpegBaseCscAvcRange range x=%d, y=%d, width=%d, height=%d, %s", rangeX, rangeY, rangeWidth, rangeHeight, mp4AvcCscStruct));
         }
 
-        return hleMpegBaseCscAvcRange(bufferRGB, unknown, bufferWidth, mp4AvcCscStruct, rangeX, rangeY, rangeWidth, rangeHeight);
+        return hleMpegBaseCscAvcRange(bufferRGB, unknown, bufferWidth, pixelMode, mp4AvcCscStruct, rangeX, rangeY, rangeWidth, rangeHeight);
     }
 
     @HLEFunction(nid = 0x0530BE4E, version = 150)
     public int sceMpegbase_0530BE4E(int internalPixelMode) {
-    	switch (internalPixelMode) {
-    		case 0: pixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888; break;
-    		case 1: pixelMode = TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;  break;
-    		case 2: pixelMode = TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551; break;
-    		case 3: pixelMode = TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444; break;
-    		default: return -1;
+    	int pixelMode = getPixelMode(internalPixelMode);
+    	if (pixelMode < 0) {
+    		return -1;
     	}
+
+    	this.pixelMode = pixelMode;
 
     	return 0;
     }
