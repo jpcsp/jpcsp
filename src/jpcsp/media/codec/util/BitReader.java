@@ -19,7 +19,7 @@ package jpcsp.media.codec.util;
 import jpcsp.Memory;
 
 public class BitReader implements IBitReader {
-	private Memory mem;
+	private final Memory mem;
 	private int addr;
 	private int initialAddr;
 	private int initialSize;
@@ -28,12 +28,12 @@ public class BitReader implements IBitReader {
 	private int value;
 	private int direction;
 
-	public BitReader(int addr, int size) {
+	public BitReader(Memory mem, int addr, int size) {
+		this.mem = mem;
 		this.addr = addr;
 		this.size = size;
 		initialAddr = addr;
 		initialSize = size;
-		mem = Memory.getInstance();
 		bits = 0;
 		direction = 1;
 	}

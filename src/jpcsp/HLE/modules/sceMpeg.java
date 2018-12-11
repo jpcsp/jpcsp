@@ -338,8 +338,8 @@ public class sceMpeg extends HLEModule {
     	private final int addrMax;
     	private final int addrMin;
 
-		public RingbufferBitReader(int addr, int addrMin, int addrMax, int size) {
-			super(addr, size);
+		public RingbufferBitReader(Memory mem, int addr, int addrMin, int addrMax, int size) {
+			super(mem, addr, size);
 
 			this.addrMin = addrMin;
 			this.addrMax = addrMax;
@@ -626,7 +626,7 @@ public class sceMpeg extends HLEModule {
         		log.debug(String.format("hleMpegRingbufferPostPut returning processedPackets=0x%X", processedPackets));
         	}
 
-        	int result = scanStreamPackets(sceMpegRingbuffer, processedPackets);
+        	int result = scanStreamPackets(ringbufferAddr.getMemory(), sceMpegRingbuffer, processedPackets);
         	if (result < 0) {
         		afterRingbufferPutCallback.setReturnValue(result);
         	}
@@ -642,11 +642,11 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    private int scanStreamPackets(SceMpegRingbuffer sceMpegRingbuffer, int numberOfPackets) {
+    private int scanStreamPackets(Memory mem, SceMpegRingbuffer sceMpegRingbuffer, int numberOfPackets) {
     	TPointer data = sceMpegRingbuffer.mpeg.getPointer();
 
     	int readAddr = sceMpegRingbuffer.data + sceMpegRingbuffer.packetsRead * sceMpegRingbuffer.packetSize;
-    	RingbufferBitReader reader = new RingbufferBitReader(readAddr, sceMpegRingbuffer.data, sceMpegRingbuffer.dataUpperBound, numberOfPackets * sceMpegRingbuffer.packetSize);
+    	RingbufferBitReader reader = new RingbufferBitReader(mem, readAddr, sceMpegRingbuffer.data, sceMpegRingbuffer.dataUpperBound, numberOfPackets * sceMpegRingbuffer.packetSize);
 
     	if (log.isTraceEnabled()) {
     		log.trace(String.format("scanStreamPackets packets %d to %d", sceMpegRingbuffer.packetsRead, (sceMpegRingbuffer.packetsRead + numberOfPackets) % sceMpegRingbuffer.packets));
@@ -913,8 +913,9 @@ public class sceMpeg extends HLEModule {
 	    		mp4AvcCscStruct.buffer5 = mpegAvcYuvStruct.getValue32(20);
 	    		mp4AvcCscStruct.buffer6 = mpegAvcYuvStruct.getValue32(24);
 	    		mp4AvcCscStruct.buffer7 = mpegAvcYuvStruct.getValue32(28);
+	    		mp4AvcCscStruct.bufferMemory = data.getMemory();
 	    		TPointer buffer = bufferAddr.getPointer(i * 4);
-	    		result = Modules.sceMpegbaseModule.hleMpegBaseCscAvc(buffer, 0, frameWidth, mp4AvcCscStruct);
+	    		result = Modules.sceMpegbaseModule.hleMpegBaseCscAvc(buffer, TPointer.NULL, frameWidth, Modules.sceMpegbaseModule.getPixelMode(), mp4AvcCscStruct);
 	        	if (result != 0) {
 	        		break;
 	        	}
@@ -2423,7 +2424,7 @@ public class sceMpeg extends HLEModule {
 	    		if (buffer.isNull()) {
 	    			return ERROR_MPEG_INVALID_VALUE;
 	    		}
-	    		result = Modules.sceMpegbaseModule.hleMpegBaseCscAvc(buffer, 0, frameWidth, mp4AvcCscStruct);
+	    		result = Modules.sceMpegbaseModule.hleMpegBaseCscAvc(buffer, TPointer.NULL, frameWidth, Modules.sceMpegbaseModule.getPixelMode(), mp4AvcCscStruct);
 	        	if (result != 0) {
 	        		break;
 	        	}
@@ -2664,7 +2665,7 @@ public class sceMpeg extends HLEModule {
     	sceMpegBaseCscAvcRangeAddr.setValue(8, rangeWidth >>> 4);
     	sceMpegBaseCscAvcRangeAddr.setValue(12, rangeHeight >>> 4);
 
-    	return Modules.sceMpegbaseModule.sceMpegBaseCscAvcRange(destAddr, 0, sceMpegBaseCscAvcRangeAddr, frameWidth, sceMpegAvcCscBuffer1);
+    	return Modules.sceMpegbaseModule.sceMpegBaseCscAvcRange(destAddr, TPointer.NULL, sceMpegBaseCscAvcRangeAddr, frameWidth, sceMpegAvcCscBuffer1);
     }
 
     /**

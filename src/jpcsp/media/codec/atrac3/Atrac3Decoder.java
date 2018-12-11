@@ -35,6 +35,7 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Memory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.atrac3plus.Atrac;
 import jpcsp.media.codec.util.BitReader;
@@ -636,8 +637,8 @@ public class Atrac3Decoder implements ICodec {
 	}
 
 	@Override
-	public int decode(int inputAddr, int inputLength, int outputAddr) {
-		br = new BitReader(inputAddr, inputLength);
+	public int decode(Memory inputMemory, int inputAddr, int inputLength, Memory outputMemory, int outputAddr) {
+		br = new BitReader(inputMemory, inputAddr, inputLength);
 		ctx.br = br;
 
 		int ret = decodeFrame();
@@ -645,7 +646,7 @@ public class Atrac3Decoder implements ICodec {
 			return ret;
 		}
 
-		writeOutput(ctx.samples, outputAddr, SAMPLES_PER_FRAME, ctx.channels, ctx.outputChannels);
+		writeOutput(ctx.samples, outputMemory, outputAddr, SAMPLES_PER_FRAME, ctx.channels, ctx.outputChannels);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Bytes read 0x%X", ctx.br.getBytesRead()));

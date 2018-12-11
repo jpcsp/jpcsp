@@ -199,7 +199,7 @@ public class UmdBrowserSound {
 			inputPosition = inputOffset;
 		}
 
-		int result = codec.decode(inputAddr + inputPosition, inputBytesPerFrame, samplesAddr);
+		int result = codec.decode(mem, inputAddr + inputPosition, inputBytesPerFrame, mem, samplesAddr);
 		if (result < 0) {
 			return false;
 		}

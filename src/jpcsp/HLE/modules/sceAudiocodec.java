@@ -131,6 +131,24 @@ public class sceAudiocodec extends HLEModule {
 		return 0;
 	}
 
+	public ICodec getCodec(int workArea, int codecType, int inputBufferSize, int channels, int outputChannels, int codingMode) {
+		AudiocodecInfo info = infos.get(workArea);
+		if (info == null) {
+			info = new AudiocodecInfo(workArea);
+			info.outputChannels = outputChannels;
+			info.initCodec(codecType);
+			infos.put(workArea, info);
+		}
+
+		ICodec codec = info.getCodec();
+    	if (!info.isCodecInitialized()) {
+    		codec.init(inputBufferSize, channels, info.outputChannels, codingMode);
+    		info.setCodecInitialized();
+    	}
+
+    	return codec;
+	}
+
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x9D3F790C, version = 150)
 	public int sceAudiocodecCheckNeedMem(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
@@ -286,7 +304,8 @@ public class sceAudiocodec extends HLEModule {
 			return -1;
 		}
 
-		int bytesConsumed = codec.decode(inputBuffer, inputBufferSize, outputBuffer);
+		Memory mem = workArea.getMemory();
+		int bytesConsumed = codec.decode(mem, inputBuffer, inputBufferSize, mem, outputBuffer);
 		if (log.isDebugEnabled()) {
 			if (bytesConsumed < 0) {
 				log.debug(String.format("codec.decode returned error 0x%08X, data: %s", bytesConsumed, Utilities.getMemoryDump(inputBuffer, inputBufferSize)));

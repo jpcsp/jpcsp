@@ -231,6 +231,7 @@ public class sceAtrac3plus extends HLEModule {
 
         public int decodeData(int samplesAddr, TPointer32 outEndAddr) {
         	skippedEndSamples = 0;
+        	Memory mem = Memory.getInstance();
 
         	if (currentReadPosition + info.atracBytesPerFrame > info.inputFileSize || getAtracCurrentSample() - info.atracSampleOffset > info.atracEndSample) {
         		if (log.isDebugEnabled()) {
@@ -279,7 +280,6 @@ public class sceAtrac3plus extends HLEModule {
             		temporaryDecodeArea = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, "Temporary-sceAtrac3plus-DecodeData", PSP_SMEM_Low, info.atracBytesPerFrame, 0);
         		}
         		if (temporaryDecodeArea != null) {
-        			Memory mem = Memory.getInstance();
         			readAddr = temporaryDecodeArea.addr;
         			int wrapLength = inputBuffer.getReadSize();
         			mem.memcpy(readAddr, inputBuffer.getReadAddr(), wrapLength);
@@ -305,7 +305,7 @@ public class sceAtrac3plus extends HLEModule {
         		log.debug(String.format("decodeData from 0x%08X(0x%X) to 0x%08X(0x%X), skippedSamples=0x%X, currentSample=0x%X, outputChannels=%d", readAddr, info.atracBytesPerFrame, decodedSamplesAddr, maxSamples, skippedSamples, currentSample, outputChannels));
         	}
 
-        	int result = codec.decode(readAddr, info.atracBytesPerFrame, decodedSamplesAddr);
+        	int result = codec.decode(mem, readAddr, info.atracBytesPerFrame, mem, decodedSamplesAddr);
         	if (result < 0) {
         		if (log.isDebugEnabled()) {
         			log.debug(String.format("decodeData received codec decode error 0x%08X", result));
@@ -331,7 +331,6 @@ public class sceAtrac3plus extends HLEModule {
         	setAtracCurrentSample(nextCurrentSample);
 
         	if (skippedSamples > 0) {
-        		Memory mem = Memory.getInstance();
         		int returnedSamples = getNumberOfSamples();
         		// Move the sample buffer to skip the needed samples
         		mem.memmove(samplesAddr, decodedSamplesAddr + skippedSamples * bytesPerSample, returnedSamples * bytesPerSample);
@@ -1607,7 +1606,7 @@ public class sceAtrac3plus extends HLEModule {
 
         int sourceBytesConsumed = 0;
     	int bytesPerSample = id.getOutputChannels() << 1;
-    	int result = codec.decode(sourceAddr.getAddress(), id.getSourceBufferLength(), samplesAddr.getAddress());
+    	int result = codec.decode(sourceAddr.getMemory(), sourceAddr.getAddress(), id.getSourceBufferLength(), samplesAddr.getMemory(), samplesAddr.getAddress());
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceAtracLowLevelDecode codec returned 0x%08X", result));
     	}

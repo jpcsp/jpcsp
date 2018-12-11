@@ -39,6 +39,7 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Memory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.mp3.Mp3Data.HuffTable;
 import jpcsp.media.codec.util.BitBuffer;
@@ -1181,8 +1182,8 @@ public class Mp3Decoder implements ICodec {
 	}
 
 	@Override
-	public int decode(int inputAddr, int inputLength, int outputAddr) {
-		br = new BitReader(inputAddr, inputLength);
+	public int decode(Memory inputMemory, int inputAddr, int inputLength, Memory outputMemory, int outputAddr) {
+		br = new BitReader(inputMemory, inputAddr, inputLength);
 		ctx.br = br;
 
 		int skippedBytes = 0;
@@ -1213,7 +1214,7 @@ public class Mp3Decoder implements ICodec {
 			return ret;
 		}
 
-		CodecUtils.writeOutput(ctx.samples, outputAddr, ctx.header.maxSamples, ctx.header.nbChannels, ctx.outputChannels);
+		CodecUtils.writeOutput(ctx.samples, outputMemory, outputAddr, ctx.header.maxSamples, ctx.header.nbChannels, ctx.outputChannels);
 
 		return ctx.header.frameSize + skippedBytes;
 	}

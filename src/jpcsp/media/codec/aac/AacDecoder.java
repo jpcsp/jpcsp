@@ -58,6 +58,7 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Memory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.util.BitReader;
 import jpcsp.media.codec.util.CodecUtils;
@@ -2691,8 +2692,8 @@ public class AacDecoder implements ICodec {
 	}
 
 	@Override
-	public int decode(int inputAddr, int inputLength, int outputAddr) {
-		br = new BitReader(inputAddr, inputLength);
+	public int decode(Memory inputMemory, int inputAddr, int inputLength, Memory outputMemory, int outputAddr) {
+		br = new BitReader(inputMemory, inputAddr, inputLength);
 		ac.br = br;
 
 		ac.dmonoMode = 0;
@@ -2714,7 +2715,7 @@ public class AacDecoder implements ICodec {
 			return err;
 		}
 
-		CodecUtils.writeOutput(ac.samples, outputAddr, ac.nbSamples, ac.channels, ac.outputChannels);
+		CodecUtils.writeOutput(ac.samples, outputMemory, outputAddr, ac.nbSamples, ac.channels, ac.outputChannels);
 
 		return br.getBytesRead();
 	}

@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.media.codec.atrac3plus;
 
 import static jpcsp.media.codec.util.CodecUtils.writeOutput;
+
+import jpcsp.Memory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.media.codec.util.BitReader;
 import jpcsp.media.codec.util.FFT;
@@ -69,7 +71,7 @@ public class Atrac3plusDecoder implements ICodec {
 	}
 
 	@Override
-	public int decode(int inputAddr, int inputLength, int outputAddr) {
+	public int decode(Memory inputMemory, int inputAddr, int inputLength, Memory outputMemory, int outputAddr) {
 		int ret;
 
 		if (ctx == null) {
@@ -83,7 +85,7 @@ public class Atrac3plusDecoder implements ICodec {
 			return 0;
 		}
 
-		ctx.br = new BitReader(inputAddr, inputLength);
+		ctx.br = new BitReader(inputMemory, inputAddr, inputLength);
 		if (ctx.br.readBool()) {
 			log.error(String.format("Invalid start bit"));
 			return AT3P_ERROR;
@@ -120,7 +122,7 @@ public class Atrac3plusDecoder implements ICodec {
 			ctx.channelUnits[chBlock].decodeResidualSpectrum(ctx.samples);
 			ctx.channelUnits[chBlock].reconstructFrame(ctx);
 
-			writeOutput(ctx.outpBuf, outputAddr, ATRAC3P_FRAME_SAMPLES, channelsToProcess, ctx.outputChannels);
+			writeOutput(ctx.outpBuf, outputMemory, outputAddr, ATRAC3P_FRAME_SAMPLES, channelsToProcess, ctx.outputChannels);
 
 			chBlock++;
 		}

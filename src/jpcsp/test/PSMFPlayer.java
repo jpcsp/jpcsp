@@ -515,7 +515,7 @@ public class PSMFPlayer implements Runnable {
 		        		for (int i = 0; i < audioFrameLength; i++) {
 		        			mem.write8(audioInputAddr + i, (byte) audioData[i]);
 		        		}
-		        		int result = audioCodec.decode(audioInputAddr, audioFrameLength, audioOutputAddr);
+		        		int result = audioCodec.decode(mem, audioInputAddr, audioFrameLength, mem, audioOutputAddr);
 		        		if (result < 0) {
 		        			log.error(String.format("Audio decode error 0x%08X", result));
 		        			break;

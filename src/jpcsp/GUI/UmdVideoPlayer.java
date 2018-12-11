@@ -69,6 +69,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
+import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.State;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -172,6 +173,7 @@ public class UmdVideoPlayer implements KeyListener {
     // Internal data
     private MpsDisplayThread displayThread;
     private SourceDataLine mLine;
+    private Memory mem;
 
     // RCO MoviePlayer
     private MoviePlayer moviePlayer;
@@ -385,6 +387,7 @@ public class UmdVideoPlayer implements KeyListener {
     private void init() {
     	Emulator.getScheduler().reset();
     	Emulator.getClock().resume();
+    	mem = Emulator.getMemory();
 
     	displayControllerThread = new DisplayControllerThread();
     	displayControllerThread.setName("Display Controller Thread");
@@ -1296,7 +1299,7 @@ public class UmdVideoPlayer implements KeyListener {
 		    		memoryWriter.writeNext(audioData[i]);
 		    	}
 		    	memoryWriter.flush();
-		    	result = audioCodec.decode(audioBufferAddr, audioFrameLength, samplesAddr);
+		    	result = audioCodec.decode(mem, audioBufferAddr, audioFrameLength, mem, samplesAddr);
 	    	}
     		consumeAudioData(audioFrameLength);
 

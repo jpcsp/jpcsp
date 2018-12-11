@@ -183,7 +183,7 @@ public class CodecTest {
 			}
 
 			for (int frameNbr = 0; true; frameNbr++) {
-				int result = codec.decode(inputAddr, length, samplesAddr);
+				int result = codec.decode(mem, inputAddr, length, mem, samplesAddr);
 				if (result < 0) {
 					log.error(String.format("Frame #%d, result 0x%08X", frameNbr, result));
 					break;

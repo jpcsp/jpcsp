@@ -164,7 +164,7 @@ public class sceAac extends HLEModule {
 	            	log.debug(String.format("Decoding from 0x%08X, length=0x%X to 0x%08X", decodeInputAddr, decodeInputLength, decodeOutputAddr));
 	            }
 
-	        	result = codec.decode(decodeInputAddr, decodeInputLength, decodeOutputAddr);
+	        	result = codec.decode(outputBufferAddress.getMemory(), decodeInputAddr, decodeInputLength, outputBufferAddress.getMemory(), decodeOutputAddr);
 
 	            if (result < 0) {
 	            	result = ERROR_AAC_DECODING_ERROR;

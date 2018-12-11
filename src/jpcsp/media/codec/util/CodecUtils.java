@@ -18,6 +18,8 @@ package jpcsp.media.codec.util;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+
+import jpcsp.Memory;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 
@@ -43,8 +45,8 @@ public class CodecUtils {
 		return min(max((int) (sample * 32768f + 0.5f), -32768), 32767) & 0xFFFF;
 	}
 
-	public static void writeOutput(float[][] samples, int outputAddr, int numberOfSamples, int decodedChannels, int outputChannels) {
-		IMemoryWriter writer = MemoryWriter.getMemoryWriter(outputAddr, numberOfSamples * 2 * outputChannels, 2);
+	public static void writeOutput(float[][] samples, Memory outputMemory, int outputAddr, int numberOfSamples, int decodedChannels, int outputChannels) {
+		IMemoryWriter writer = MemoryWriter.getMemoryWriter(outputMemory, outputAddr, numberOfSamples * 2 * outputChannels, 2);
 		switch (outputChannels) {
 			case 1:
 				for (int i = 0; i < numberOfSamples; i++) {

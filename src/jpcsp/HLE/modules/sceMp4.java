@@ -1530,7 +1530,7 @@ public class sceMp4 extends HLEModule {
     		log.trace(String.format("sceMp4AacDecode au=%s, esBuffer:%s", au, Utilities.getMemoryDump(au.esBuffer, au.esSize)));
     	}
 
-    	int result = audioCodec.decode(au.esBuffer, au.esSize, bufferAddr.getAddress());
+    	int result = audioCodec.decode(auAddr.getMemory(), au.esBuffer, au.esSize, bufferAddr.getMemory(), bufferAddr.getAddress());
 
     	if (result < 0) {
 			log.error(String.format("sceMp4AacDecode audio codec returned 0x%08X", result));

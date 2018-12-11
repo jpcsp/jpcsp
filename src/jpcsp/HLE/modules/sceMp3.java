@@ -251,7 +251,7 @@ public class sceMp3 extends HLEModule {
 	            	log.debug(String.format("Decoding from 0x%08X, length=0x%X to 0x%08X, inputBuffer %s", decodeInputAddr, decodeInputLength, decodeOutputAddr, inputBuffer));
 	            }
 
-	        	result = codec.decode(decodeInputAddr, decodeInputLength, decodeOutputAddr);
+	        	result = codec.decode(outputBufferAddress.getMemory(), decodeInputAddr, decodeInputLength, outputBufferAddress.getMemory(), decodeOutputAddr);
 
 	            if (result < 0) {
 	            	result = ERROR_MP3_DECODING_ERROR;
@@ -642,7 +642,7 @@ public class sceMp3 extends HLEModule {
 	@HLEFunction(nid = 0xE3EE2C81, version = 620)
     public int sceMp3LowLevelDecode(@CheckArgument("checkInitId") int id, TPointer sourceAddr, TPointer32 sourceBytesConsumedAddr, TPointer samplesAddr, TPointer32 sampleBytesAddr) {
     	Mp3Info mp3Info = getMp3Info(id);
-		int result = mp3Info.getCodec().decode(sourceAddr.getAddress(), 10000, samplesAddr.getAddress());
+		int result = mp3Info.getCodec().decode(sourceAddr.getMemory(), sourceAddr.getAddress(), 10000, samplesAddr.getMemory(), samplesAddr.getAddress());
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceMp3LowLevelDecode result=0x%08X, samples=0x%X", result, mp3Info.getCodec().getNumberOfSamples()));
 		}
