@@ -2623,6 +2623,7 @@ public class sceMpeg extends HLEModule {
     	TPointer data = mpeg.getPointer();
 
     	SceMp4AvcCscStruct sceMp4AvcCscStruct = new SceMp4AvcCscStruct();
+    	sceMp4AvcCscStruct.bufferMemory = sceMpegAvcCscBuffer1.getMemory();
     	sceMp4AvcCscStruct.height = sourceAddr.getValue32(0);
     	sceMp4AvcCscStruct.width = sourceAddr.getValue32(4);
     	sceMp4AvcCscStruct.mode0 = sourceAddr.getValue32(8);

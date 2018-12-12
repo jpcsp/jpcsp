@@ -46,6 +46,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_PSMFPLAYER_NO_DATA;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -3590,6 +3591,29 @@ public class scePsmfPlayer extends HLEModule {
     	psmfInfoAddr.setValue(8, psmfControlAddr.getValue32(16)); // numberOfAtracStreams
     	psmfInfoAddr.setValue(12, psmfControlAddr.getValue32(20)); // numberOfPcmStreams
     	psmfInfoAddr.setValue(16, getPlayerVersion(playerStatusAddr)); // version
+
+    	// The game "LocoRoco 2" is using a special version of scePsmfPlayerGetPsmfInfo()
+    	// which is having 4 parameters instead of 2.
+    	// This special version is detected using the module version stored into the libpsmfplayer.prx
+    	// file itself.
+    	if (getModuleVersion() == 0x03090510) {
+        	TPointer psmf = new TPointer(psmfControlAddr, 24);
+        	TPointer32 psmf32 = new TPointer32(psmf);
+        	TPointer32 videoInfoBuffer = Utilities.allocatePointer32(8);
+        	int result = Modules.scePsmfModule.scePsmfGetVideoInfo(psmf32, videoInfoBuffer);
+        	if (result != 0) {
+        		return result;
+        	}
+
+        	int videoWidthAddr = Emulator.getProcessor().cpu._a2;
+        	int videoHeightAddr = Emulator.getProcessor().cpu._a3;
+        	if (videoWidthAddr != 0) {
+        		getMemory().write32(videoWidthAddr, videoInfoBuffer.getValue(0));
+        	}
+        	if (videoHeightAddr != 0) {
+        		getMemory().write32(videoHeightAddr, videoInfoBuffer.getValue(4));
+        	}
+    	}
 
     	return 0;
     }
