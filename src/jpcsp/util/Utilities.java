@@ -2049,6 +2049,8 @@ public class Utilities {
     }
 
     public static int compareUnsigned32(int a, int b) {
-    	return Integer.compareUnsigned(a, b);
+    	// Equivalent to Integer.compareUnsigned(a, b) from JDK 1.8.
+    	// Using Integer.compare() here for compatibility with JDK 1.7.
+    	return Integer.compare(a + Integer.MIN_VALUE, b + Integer.MIN_VALUE);
     }
 }
