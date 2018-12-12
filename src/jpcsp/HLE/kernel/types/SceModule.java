@@ -89,6 +89,7 @@ public class SceModule {
     public int fileFormat; // See Loader class for valid formats
     public String pspfilename; // boot path, for thread argument
     public PSF psf; // for xmb title, etc
+    public int moduleVersion;
 
     // The space consumed by the program image
     public int loadAddressLow, loadAddressHigh;

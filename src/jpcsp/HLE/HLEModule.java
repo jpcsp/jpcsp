@@ -38,6 +38,7 @@ abstract public class HLEModule {
 	private SysMemInfo memory;
 	private String name;
 	private boolean started = false;
+	private int moduleVersion;
 
 	public HashMap<String, HLEModuleFunction> installedHLEModuleFunctions = new HashMap<String, HLEModuleFunction>();
 
@@ -135,13 +136,23 @@ abstract public class HLEModule {
     	stream.readVersion(STATE_VERSION);
     	name = stream.readString();
     	started = stream.readBoolean();
+    	moduleVersion = stream.readInt();
     }
 
     public void write(StateOutputStream stream) throws IOException {
     	stream.writeVersion(STATE_VERSION);
     	stream.writeString(name);
     	stream.writeBoolean(started);
+    	stream.writeInt(moduleVersion);
     }
+
+    public int getModuleVersion() {
+		return moduleVersion;
+	}
+
+	public void setModuleVersion(int moduleVersion) {
+		this.moduleVersion = moduleVersion;
+	}
 
     @Override
 	public String toString() {

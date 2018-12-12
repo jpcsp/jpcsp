@@ -423,20 +423,26 @@ public class HLEModuleManager {
     	return null;
     }
 
+    public int LoadFlash0Module(String name) {
+    	return LoadFlash0Module(name, 0);
+    }
+
     /** @return the UID assigned to the module or negative on error
      * TODO need to figure out how the uids work when 1 prx contains several modules. */
-    public int LoadFlash0Module(String name) {
+    public int LoadFlash0Module(String name, int moduleVersion) {
     	if (name != null) {
 	        List<HLEModule> modules = flash0prxMap.get(name.toLowerCase());
 	        if (modules != null) {
 	            for (HLEModule module : modules) {
 	            	installModuleWithAnnotations(module);
+	            	module.setModuleVersion(moduleVersion);
 	            }
 	        }
     	}
 
         SceModule fakeModule = new SceModule(true);
         fakeModule.modname = name;
+        fakeModule.moduleVersion = moduleVersion;
         fakeModule.write(Memory.getInstance(), fakeModule.address);
         Managers.modules.addModule(fakeModule);
 

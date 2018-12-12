@@ -93,6 +93,7 @@ public class ModuleMgrForUser extends HLEModule {
         public int basePartition;
         public SceKernelThreadInfo thread;
         public ByteBuffer moduleBuffer;
+        public int moduleVersion;
 
         public LoadModuleContext() {
         	basePartition = SysMemUserForUser.USER_PARTITION_ID;
@@ -131,7 +132,7 @@ public class ModuleMgrForUser extends HLEModule {
 		}
 	}
 
-    private int hleKernelLoadHLEModule(LoadModuleContext loadModuleContext) {
+	private int hleKernelLoadHLEModule(LoadModuleContext loadModuleContext) {
     	String fileName = loadModuleContext.fileName;
         HLEModuleManager moduleManager = HLEModuleManager.getInstance();
 
@@ -144,11 +145,8 @@ public class ModuleMgrForUser extends HLEModule {
         	loadModuleContext.moduleName = fileName;
         }
 
-        if (!moduleManager.hasFlash0Module(loadModuleContext.moduleName)) {
-        	// Retrieve the module name from the file content
-        	// if it could not be guessed from the file name.
-        	getModuleNameFromFileContent(loadModuleContext);
-        }
+    	// Retrieve the module name and devkitVersion from the file content
+    	getModuleInfoFromFileContent(loadModuleContext);
 
         // Check if the module is not overwritten
         // by a file located under flash0 (decrypted from a real PSP).
@@ -177,7 +175,7 @@ public class ModuleMgrForUser extends HLEModule {
         	if (log.isInfoEnabled()) {
         		log.info(String.format("hleKernelLoadModule(path='%s') HLE module %s loaded", loadModuleContext.fileName, loadModuleContext.moduleName));
         	}
-            return moduleManager.LoadFlash0Module(loadModuleContext.moduleName);
+            return moduleManager.LoadFlash0Module(loadModuleContext.moduleName, loadModuleContext.moduleVersion);
         }
 
         return -1;
@@ -220,7 +218,7 @@ public class ModuleMgrForUser extends HLEModule {
         return header;
     }
 
-    private void getModuleNameFromFileContent(LoadModuleContext loadModuleContext) {
+    private void getModuleInfoFromFileContent(LoadModuleContext loadModuleContext) {
     	// Extract the library name from the file itself
         // for files in "~SCE"/"~PSP" format.
     	byte[] header = readHeader(loadModuleContext);
@@ -250,11 +248,13 @@ public class ModuleMgrForUser extends HLEModule {
 						log.debug(String.format("getModuleNameFromFileContent %s", loadModuleContext));
 					}
 				}
+				loadModuleContext.moduleVersion = psp.getDevkitVersion();
 			} else {
 				// Try to load the module info if this is a file in ELF format...
 				SceModule moduleInfo = getModuleInfo(loadModuleContext);
 				if (moduleInfo != null) {
 					loadModuleContext.moduleName = moduleInfo.modname;
+					loadModuleContext.moduleVersion = moduleInfo.moduleVersion;
 				}
 			}
 		} catch (IOException e) {

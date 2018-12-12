@@ -31,6 +31,7 @@ import static jpcsp.format.Elf32SectionHeader.SHF_NONE;
 import static jpcsp.format.Elf32SectionHeader.SHF_WRITE;
 import static jpcsp.util.Utilities.patch;
 import static jpcsp.util.Utilities.patchRemoveStringChar;
+import static jpcsp.util.Utilities.readUWord;
 import static jpcsp.util.Utilities.readUnaligned32;
 import static jpcsp.util.Utilities.writeInt32;
 import static jpcsp.util.Utilities.writeUnaligned32;
@@ -468,6 +469,7 @@ public class Loader {
 	            module.write(Memory.getInstance(), module.address);
             } else {
 	            LoadELFModuleInfo(f, module, baseAddress, elf, elfOffset, analyzeOnly);
+	            LoadSDKVersion(f, module, elf, elfOffset);
             }
             return true;
         }
@@ -1423,6 +1425,55 @@ public class Loader {
         }
     }
 
+    private void LoadSDKVersion(ByteBuffer f, SceModule module, Elf32 elf, int elfOffset) throws IOException {
+    	int entHeadersOffset = elfOffset + elf.getProgramHeader(0).getP_offset();
+    	int tableOffset = elfOffset + elf.getProgramHeader(1).getP_offset();
+        int entHeadersAddress = module.ent_top;
+        int entHeadersEndAddress = module.ent_top + module.ent_size;
+        while (entHeadersAddress < entHeadersEndAddress) {
+            f.position(entHeadersOffset + entHeadersAddress);
+        	Elf32EntHeader entHeader = new Elf32EntHeader(f);
+
+        	if (entHeader.getSize() <= 0) {
+                entHeadersAddress += Elf32EntHeader.sizeof() / 2;
+        	} else if (entHeader.getSize() > 4) {
+                entHeadersAddress += entHeader.getSize() * 4;
+            } else {
+                entHeadersAddress += Elf32EntHeader.sizeof();
+            }
+
+            int functionCount = entHeader.getFunctionCount();
+            int variableCount = entHeader.getVariableCount();
+            int nidAddr = (int) entHeader.getOffsetResident();
+            int exportAddr = nidAddr + (functionCount + variableCount) * 4;
+            int variableTableAddr = exportAddr + functionCount * 4;
+
+            int[] variableNids = new int[variableCount];
+            f.position(entHeadersOffset + nidAddr + functionCount * 4);
+            for (int j = 0; j < variableCount; j++) {
+            	variableNids[j] = readUWord(f);
+            }
+
+            int[] variableTable = new int[variableCount];
+            f.position(entHeadersOffset + variableTableAddr);
+            for (int j = 0; j < variableCount; j++) {
+            	variableTable[j] = readUWord(f);
+            }
+
+            for (int j = 0; j < variableCount; j++) {
+            	switch (variableNids[j]) {
+            		case 0x11B97506: // module_sdk_version
+            			f.position(tableOffset + variableTable[j]);
+            			module.moduleVersion = readUWord(f);
+            			if (log.isDebugEnabled()) {
+            				log.debug(String.format("Found sdkVersion=0x%08X", module.moduleVersion));
+            			}
+            			break;
+            	}
+            }
+        }
+    }
+
     /* Loads from memory */
     private void LoadELFExports(SceModule module) throws IOException {
         NIDMapper nidMapper = NIDMapper.getInstance();
@@ -1579,10 +1630,9 @@ public class Loader {
                             }
                             break;
                         case 0x11B97506: // module_sdk_version
-                            // Currently ignored
-                            int sdk_version = mem.read32(variableAddr);
+                            module.moduleVersion = mem.read32(variableAddr);
                             if (log.isDebugEnabled()) {
-                                log.warn(String.format("module_sdk_version found: nid=0x%08X, sdk_version=0x%08X", nid, sdk_version));
+                                log.debug(String.format("module_sdk_version found: nid=0x%08X, sdkVersion=0x%08X", nid, module.moduleVersion));
                             }
                             break;
                         default:

@@ -196,4 +196,8 @@ public class PSP {
     public String getModname() {
     	return modname;
     }
+
+    public int getDevkitVersion() {
+    	return devkit_version;
+    }
 }
