@@ -184,6 +184,10 @@ public class TPointer implements ITPointerBase {
 	public void decrValue64(int offset, long value) { incrValue64(offset, -value); }
 
 	public String getStringZ() {
+		if (isNull()) {
+			return null;
+		}
+
 		return Utilities.readStringZ(memory, address);
 	}
 
@@ -192,6 +196,10 @@ public class TPointer implements ITPointerBase {
 	}
 
 	public String getStringNZ(int offset, int n) {
+		if (isNull()) {
+			return null;
+		}
+
 		return Utilities.readStringNZ(memory, address + offset, n);
 	}
 
@@ -200,11 +208,15 @@ public class TPointer implements ITPointerBase {
 	}
 
 	public void setStringNZ(int offset, int n, String s) {
-		Utilities.writeStringNZ(memory, address + offset, n, s);
+		if (isNotNull()) {
+			Utilities.writeStringNZ(memory, address + offset, n, s);
+		}
 	}
 
 	public void setStringZ(String s) {
-		Utilities.writeStringZ(memory, address, s);
+		if (isNotNull()) {
+			Utilities.writeStringZ(memory, address, s);
+		}
 	}
 
 	public byte[] getArray8(int n) {
