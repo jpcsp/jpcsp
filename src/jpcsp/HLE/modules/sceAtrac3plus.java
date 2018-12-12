@@ -209,7 +209,9 @@ public class sceAtrac3plus extends HLEModule {
         public int setHalfwayBuffer(int addr, int readSize, int bufferSize, boolean isMonoOutput, AtracFileInfo info) {
         	this.info = info;
         	channels = info.atracChannels;
-    		inputBuffer = new pspFileBuffer(addr, bufferSize, readSize, readSize);
+        	int maxSizeBeforeFirstWrap = bufferSize - ((bufferSize - info.inputFileDataOffset) % info.atracBytesPerFrame);
+        	int maxSizeAfterFirstWrap = bufferSize - (bufferSize % info.atracBytesPerFrame);
+    		inputBuffer = new pspFileBuffer(addr, maxSizeBeforeFirstWrap, maxSizeAfterFirstWrap, readSize, readSize);
         	inputBuffer.notifyRead(info.inputFileDataOffset);
     		inputBuffer.setFileMaxSize(info.inputFileSize);
         	currentReadPosition = info.inputFileDataOffset;
@@ -282,6 +284,9 @@ public class sceAtrac3plus extends HLEModule {
         		if (temporaryDecodeArea != null) {
         			readAddr = temporaryDecodeArea.addr;
         			int wrapLength = inputBuffer.getReadSize();
+        			if (log.isDebugEnabled()) {
+        				log.debug(String.format("decodeData from temporary buffer: 0x%08X/0x%X (from 0x%08X), 0x%08X/0x%X (from 0x%08X)", readAddr, wrapLength, inputBuffer.getReadAddr(), readAddr + wrapLength, info.atracBytesPerFrame - wrapLength, inputBuffer.getAddr()));
+        			}
         			mem.memcpy(readAddr, inputBuffer.getReadAddr(), wrapLength);
         			mem.memcpy(readAddr + wrapLength, inputBuffer.getAddr(), info.atracBytesPerFrame - wrapLength);
         		}

@@ -34,24 +34,20 @@ public class pspFileBuffer {
 	private int writePosition;
 	private int filePosition;
 	private int fileMaxSize;
-
-	public pspFileBuffer() {
-	}
-
-	public pspFileBuffer(int addr, int maxSize) {
-		this.addr = addr;
-		this.maxSize = maxSize;
-	}
-
-	public pspFileBuffer(int addr, int maxSize, int readSize) {
-		this.addr = addr;
-		this.maxSize = maxSize;
-		notifyWrite(readSize);
-	}
+	private int maxSizeAfterFirstWrap;
 
 	public pspFileBuffer(int addr, int maxSize, int readSize, int filePosition) {
 		this.addr = addr;
 		this.maxSize = maxSize;
+		this.maxSizeAfterFirstWrap = maxSize;
+		notifyWrite(readSize);
+		this.filePosition = filePosition;
+	}
+
+	public pspFileBuffer(int addr, int maxSizeBeforeFirstWrap, int maxSize, int readSize, int filePosition) {
+		this.addr = addr;
+		this.maxSize = maxSizeBeforeFirstWrap;
+		this.maxSizeAfterFirstWrap = maxSize;
 		notifyWrite(readSize);
 		this.filePosition = filePosition;
 	}
@@ -111,7 +107,11 @@ public class pspFileBuffer {
 	public synchronized void notifyRead(int size) {
 		if (size > 0) {
 			size = min(size, currentSize);
+			int previousReadPosition = readPosition;
 			readPosition = incrementPosition(readPosition, size);
+			if (readPosition < previousReadPosition) {
+				maxSize = maxSizeAfterFirstWrap;
+			}
 			currentSize -= size;
 		}
 	}
