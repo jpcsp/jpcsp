@@ -31,6 +31,8 @@ import static jpcsp.format.Elf32SectionHeader.SHF_NONE;
 import static jpcsp.format.Elf32SectionHeader.SHF_WRITE;
 import static jpcsp.util.Utilities.patch;
 import static jpcsp.util.Utilities.patchRemoveStringChar;
+import static jpcsp.util.Utilities.readUByte;
+import static jpcsp.util.Utilities.readUHalf;
 import static jpcsp.util.Utilities.readUWord;
 import static jpcsp.util.Utilities.readUnaligned32;
 import static jpcsp.util.Utilities.writeInt32;
@@ -991,13 +993,14 @@ public class Loader {
         int phBaseOffset;
         int r = 0;
 
-        // Buffer position variable.
-        int pos = f.position();
-        int end = pos + size;
+        int end = f.position() + size;
+
+        // Skip 2 unused bytes
+        readUByte(f);
+        readUByte(f);
 
         // Locate and read the flag, type and segment bits.
-        f.position(pos + 2);
-        int fbits = f.get();
+        int fbits = readUByte(f);
         int flagShift = 0;
         int flagMask = (1 << fbits) - 1;
 
@@ -1005,25 +1008,25 @@ public class Loader {
         int segmentShift = fbits;
         int segmentMask = (1 << sbits) - 1;
 
-        int tbits = f.get();
+        int tbits = readUByte(f);
         int typeShift = fbits + sbits;
         int typeMask = (1 << tbits) - 1;
 
         // Locate the flag table.
-        int flags[] = new int[f.get() & 0xFF];
+        int flags[] = new int[readUByte(f)];
         flags[0] = flags.length;
         for (int j = 1; j < flags.length; j++) {
-        	flags[j] = f.get() & 0xFF;
+        	flags[j] = readUByte(f);
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("R_FLAG(%d bits) 0x%X -> 0x%X", fbits, j, flags[j]));
         	}
         }
 
         // Locate the type table.
-        int types[] = new int[f.get() & 0xFF];
+        int types[] = new int[readUByte(f)];
         types[0] = types.length;
         for (int j = 1; j < types.length; j++) {
-        	types[j] = f.get() & 0xFF;
+        	types[j] = readUByte(f);
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("R_TYPE(%d bits) 0x%X -> 0x%X", tbits, j, types[j]));
         	}
@@ -1039,14 +1042,11 @@ public class Loader {
     		}
     	}
 
-        // Save the current position.
-        pos = f.position();
-
+        int pos = f.position();
         int R_TYPE_OLD = types.length;
-
         while (pos < end) {
             // Read the CMD byte.
-            int R_CMD = (f.get() & 0xFF) | ((f.get() & 0xFF) << 8);
+            int R_CMD = readUHalf(f);
             pos += 2;
 
             // Process the relocation flag.
@@ -1070,10 +1070,7 @@ public class Loader {
                 if ((R_FLAG & 0x06) == 0) {
                     R_BASE = (R_CMD >> (fbits + sbits));
                 } else if ((R_FLAG & 0x06) == 4) {
-                    R_BASE = (f.get() & 0xFF);
-                    R_BASE |= ((f.get() & 0xFF) << 8);
-                    R_BASE |= ((f.get() & 0xFF) << 16);
-                    R_BASE |= ((f.get() & 0xFF) << 24);
+                    R_BASE = readUWord(f);
                     pos += 4;
                 } else {
                     log.warn("PH Relocation type 0x700000A1: Invalid size flag!");
@@ -1094,15 +1091,11 @@ public class Loader {
                 } else if ((R_FLAG & 0x06) == 0x02) {
                     R_OFFSET = (R_CMD << 16) >> (fbits + tbits + sbits);
                     R_OFFSET &= 0xFFFF0000;
-                    R_OFFSET |= (f.get() & 0xFF);
-                    R_OFFSET |= ((f.get() & 0xFF) << 8);
+                    R_OFFSET |= readUHalf(f);
                     pos += 2;
                     R_BASE += R_OFFSET;
                 } else if ((R_FLAG & 0x06) == 0x04) {
-                    R_BASE = (f.get() & 0xFF);
-                    R_BASE |= ((f.get() & 0xFF) << 8);
-                    R_BASE |= ((f.get() & 0xFF) << 16);
-                    R_BASE |= ((f.get() & 0xFF) << 24);
+                    R_BASE = readUWord(f);
                     pos += 4;
                 } else {
                     log.warn("PH Relocation type 0x700000A1: Invalid relocation size flag!");
@@ -1116,8 +1109,7 @@ public class Loader {
                         lo16 = 0;
                     }
                 } else if ((R_FLAG & 0x38) == 0x10) {
-                    lo16 = (f.get() & 0xFF);
-                    lo16 |= ((f.get() & 0xFF) << 8);
+                    lo16 = readUHalf(f);
                     lo16 = (int) (short) lo16; // sign-extend 16 to 32 bits
                     pos += 2;
                 } else if ((R_FLAG & 0x38) == 0x18) {
@@ -1207,7 +1199,7 @@ public class Loader {
         // Relocate from program headers
         int i = 0;
         for (Elf32ProgramHeader phdr : elf.getProgramHeaderList()) {
-            if (phdr.getP_type() == 0x700000A0L) {
+            if (phdr.getP_type() == 0x700000A0) {
                 int RelCount = phdr.getP_filesz() / Elf32Relocate.sizeof();
                 if (log.isDebugEnabled()) {
                 	log.debug(String.format("PH#%d: relocating %d entries", i, RelCount));
@@ -1216,7 +1208,7 @@ public class Loader {
                 f.position(elfOffset + phdr.getP_offset());
                 relocateFromBuffer(f, module, baseAddress, elf, RelCount, true);
                 return;
-            } else if (phdr.getP_type() == 0x700000A1L) {
+            } else if (phdr.getP_type() == 0x700000A1) {
                 if (log.isDebugEnabled()) {
                 	log.debug(String.format("Type 0x700000A1 PH#%d: relocating A1 entries, size=0x%X", i, phdr.getP_filesz()));
                 }
@@ -1425,9 +1417,166 @@ public class Loader {
         }
     }
 
+    private int getOffsetFromRelocation(ByteBuffer f, Elf32 elf, int elfOffset, int relocationOffset, int relocationSize, int position) throws IOException {
+    	int relocationCount = relocationSize / Elf32Relocate.sizeof();
+    	f.position(elfOffset + relocationOffset);
+    	Elf32Relocate rel = new Elf32Relocate();
+        for (int i = 0; i < relocationCount; i++) {
+        	rel.read(f);
+            int R_TYPE = rel.getR_info() & 0xFF;
+            if (R_TYPE == 2) { //R_MIPS_32
+	            int OFS_BASE  = (rel.getR_info() >>  8) & 0xFF;
+	            int ADDR_BASE = (rel.getR_info() >> 16) & 0xFF;
+	        	int relocationPosition = rel.getR_offset() + elf.getProgramHeader(OFS_BASE).getP_vaddr();
+	        	if (relocationPosition == position) {
+	        		return elf.getProgramHeader(ADDR_BASE).getP_offset();
+	        	}
+            }
+        }
+
+        return -1;
+    }
+
+    private int getOffsetFromRelocationA1(ByteBuffer f, SceModule module, Elf32 elf, int elfOffset, int programHeaderNumber, int relocationOffset, int relocationSize, int position) throws IOException {
+        // Relocation variables.
+        int R_OFFSET = 0;
+        int R_BASE = 0;
+
+        // Buffer position variable.
+        int pos = elfOffset + relocationOffset;
+        int end = pos + relocationSize;
+
+        // Locate and read the flag, type and segment bits.
+        f.position(pos + 2);
+        int fbits = readUByte(f);
+        int flagShift = 0;
+        int flagMask = (1 << fbits) - 1;
+
+        int sbits = programHeaderNumber < 3 ? 1 : 2;
+        int segmentShift = fbits;
+        int segmentMask = (1 << sbits) - 1;
+
+        int tbits = readUByte(f);
+        int typeShift = fbits + sbits;
+        int typeMask = (1 << tbits) - 1;
+
+        // Locate the flag table.
+        int flags[] = new int[readUByte(f)];
+        flags[0] = flags.length;
+        for (int j = 1; j < flags.length; j++) {
+        	flags[j] = readUByte(f);
+        }
+
+        // Locate the type table.
+        int types[] = new int[readUByte(f)];
+        types[0] = types.length;
+        for (int j = 1; j < types.length; j++) {
+        	types[j] = readUByte(f);
+        }
+
+        // loadcore.prx and sysmem.prx are being loaded and relocated by
+        // the PSP reboot code. It is using a different type mapping.
+        // See https://github.com/uofw/uofw/blob/master/src/reboot/elf.c#L327
+    	if ("flash0:/kd/loadcore.prx".equals(module.pspfilename) || "flash0:/kd/sysmem.prx".equals(module.pspfilename)) {
+    		final int[] rebootTypeRemapping = new int[] { 0, 3, 6, 7, 1, 2, 4, 5 };
+    		for (int i = 1; i < types.length; i++) {
+    			types[i] = rebootTypeRemapping[types[i]];
+    		}
+    	}
+
+        // Save the current position.
+        pos = f.position();
+
+        while (pos < end) {
+            // Read the CMD byte.
+            int R_CMD = readUHalf(f);
+            pos += 2;
+
+            // Process the relocation flag.
+            int flagIndex = (R_CMD >> flagShift) & flagMask;
+            int R_FLAG = flags[flagIndex];
+
+            // Set the segment offset.
+            int S = (R_CMD >> segmentShift) & segmentMask;
+
+            // Process the relocation type.
+            int typeIndex = (R_CMD >> typeShift) & typeMask;
+            int R_TYPE = types[typeIndex];
+
+            if ((R_FLAG & 0x01) == 0) {
+                if ((R_FLAG & 0x06) == 0) {
+                    R_BASE = (R_CMD >> (fbits + sbits));
+                } else if ((R_FLAG & 0x06) == 4) {
+                    R_BASE = readUWord(f);
+                    pos += 4;
+                } else {
+                    R_BASE = 0;
+                }
+            } else {
+                int ADDR_BASE = S;
+
+                if ((R_FLAG & 0x06) == 0x00) {
+                    R_OFFSET = (int) (short) R_CMD; // sign-extend 16 to 32 bits
+                    R_OFFSET >>= (fbits + tbits + sbits);
+                    R_BASE += R_OFFSET;
+                } else if ((R_FLAG & 0x06) == 0x02) {
+                    R_OFFSET = (R_CMD << 16) >> (fbits + tbits + sbits);
+                    R_OFFSET &= 0xFFFF0000;
+                    R_OFFSET |= readUHalf(f);
+                    pos += 2;
+                    R_BASE += R_OFFSET;
+                } else if ((R_FLAG & 0x06) == 0x04) {
+                    R_BASE = readUWord(f);
+                    pos += 4;
+                }
+
+                if ((R_FLAG & 0x38) == 0x10) {
+                	readUHalf(f);
+                    pos += 2;
+                }
+
+                if (R_TYPE == 2) { // R_MIPS_32
+                	if (R_BASE == position) {
+                		return elf.getProgramHeader(ADDR_BASE).getP_offset();
+                	}
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    private int getOffsetFromRelocation(ByteBuffer f, SceModule module, Elf32 elf, int elfOffset, int position) throws IOException {
+    	int i = 0;
+        for (Elf32ProgramHeader phdr : elf.getProgramHeaderList()) {
+            if (phdr.getP_type() == 0x700000A0) {
+                int offset = getOffsetFromRelocation(f, elf, elfOffset, phdr.getP_offset(), phdr.getP_filesz(), position);
+                if (offset >= 0) {
+                	return offset;
+                }
+            } else if (phdr.getP_type() == 0x700000A1) {
+                int offset = getOffsetFromRelocationA1(f, module, elf, elfOffset, i, phdr.getP_offset(), phdr.getP_filesz(), position);
+                if (offset >= 0) {
+                	return offset;
+                }
+            }
+            i++;
+        }
+
+        for (Elf32SectionHeader shdr : elf.getSectionHeaderList()) {
+        	if (shdr.getSh_type() == Elf32SectionHeader.SHT_PRXREL) {
+                int offset = getOffsetFromRelocation(f, elf, elfOffset, shdr.getSh_offset(), shdr.getSh_size(), position);
+                if (offset >= 0) {
+                	return offset;
+                }
+        	}
+        }
+
+        return 0;
+    }
+
     private void LoadSDKVersion(ByteBuffer f, SceModule module, Elf32 elf, int elfOffset) throws IOException {
-    	int entHeadersOffset = elfOffset + elf.getProgramHeader(0).getP_offset();
-    	int tableOffset = elfOffset + elf.getProgramHeader(1).getP_offset();
+        int entHeadersOffset = elfOffset + elf.getProgramHeader(0).getP_offset();
         int entHeadersAddress = module.ent_top;
         int entHeadersEndAddress = module.ent_top + module.ent_size;
         while (entHeadersAddress < entHeadersEndAddress) {
@@ -1455,15 +1604,17 @@ public class Loader {
             }
 
             int[] variableTable = new int[variableCount];
-            f.position(entHeadersOffset + variableTableAddr);
             for (int j = 0; j < variableCount; j++) {
-            	variableTable[j] = readUWord(f);
+            	int pos = variableTableAddr + j * 4;
+            	int offset = getOffsetFromRelocation(f, module, elf, elfOffset, pos);
+            	f.position(entHeadersOffset + pos);
+            	variableTable[j] = readUWord(f) + offset;
             }
 
             for (int j = 0; j < variableCount; j++) {
             	switch (variableNids[j]) {
             		case 0x11B97506: // module_sdk_version
-            			f.position(tableOffset + variableTable[j]);
+            			f.position(elfOffset + variableTable[j]);
             			module.moduleVersion = readUWord(f);
             			if (log.isDebugEnabled()) {
             				log.debug(String.format("Found sdkVersion=0x%08X", module.moduleVersion));
