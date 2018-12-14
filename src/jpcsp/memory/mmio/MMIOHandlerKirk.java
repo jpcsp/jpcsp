@@ -34,9 +34,7 @@ import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_SHA1_HASH;
 import static jpcsp.crypto.KIRK.PSP_KIRK_INVALID_OPERATION;
 import static jpcsp.memory.mmio.MMIO.normalizeAddress;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 
 import org.apache.log4j.Logger;
 
@@ -62,7 +60,6 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	public static final int STATUS_PHASE2_COMPLETED = 0x02;
 	public static final int STATUS_PHASE2_ERROR = 0x20;
 	public static final int STATUS_PHASE2_MASK = STATUS_PHASE2_COMPLETED | STATUS_PHASE2_ERROR;
-	private static int dumpIndex = 0;
 	private final int signature = 0x4B52494B; // "KIRK"
 	private final int version = 0x30313030; // "0010"
 	private int error;
@@ -75,11 +72,6 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	private int destAddr;
 	private final CompletePhase1Action completePhase1Action = new CompletePhase1Action();
 	private long completePhase1Schedule = 0L;
-	private static final int commandsToBeDumped[] = {
-//		PSP_KIRK_CMD_SHA1_HASH,
-//		PSP_KIRK_CMD_DECRYPT_PRIVATE,
-//		PSP_KIRK_CMD_DECRYPT_FUSE,
-	};
 
 	private class CompletePhase1Action implements IAction {
 		@Override
@@ -244,42 +236,10 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			log.debug(String.format("hleUtilsBufferCopyWithRange input: %s", Utilities.getMemoryDump(inAddr, inSize)));
 		}
 
-		for (int commandToBeDumped : commandsToBeDumped) {
-			if (command == commandToBeDumped) {
-				String dumpFileName = String.format("dump.hleUtilsBufferCopyWithRange.%d", dumpIndex++);
-				log.warn(String.format("MMIOHandlerKirk: hleUtilsBufferCopyWithRange dumping command=0x%X, outputSize=0x%X, inputSize=0x%X, input dumped into file '%s'", command, outSize, inSize, dumpFileName));
-				try {
-					OutputStream dump = new FileOutputStream(dumpFileName);
-					byte[] inputBuffer = new byte[inSize];
-					for (int i = 0; i < inSize; i++) {
-						inputBuffer[i] = inAddr.getValue8(i);
-					}
-					dump.write(inputBuffer);
-					dump.close();
-				} catch (IOException e) {
-				}
-			}
-		}
-
 		result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(outAddr, outSize, inAddr, inSize, command);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("hleUtilsBufferCopyWithRange result=0x%X, output: %s", result, Utilities.getMemoryDump(outAddr, outSize)));
-		}
-
-		if (result != 0) {
-			String dumpFileName = String.format("dump.hleUtilsBufferCopyWithRange.%d", dumpIndex++);
-			log.warn(String.format("MMIOHandlerKirk: hleUtilsBufferCopyWithRange returned error result=0x%X for command=0x%X, outputSize=0x%X, inputSize=0x%X, input dumped into file '%s'", result, command, outSize, inSize, dumpFileName));
-			try {
-				OutputStream dump = new FileOutputStream(dumpFileName);
-				byte[] inputBuffer = new byte[inSize];
-				for (int i = 0; i < inSize; i++) {
-					inputBuffer[i] = inAddr.getValue8(i);
-				}
-				dump.write(inputBuffer);
-				dump.close();
-			} catch (IOException e) {
-			}
 		}
 
 		return Math.max(inSize, outSize);

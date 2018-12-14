@@ -18,6 +18,9 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.crypto.PreDecrypt.preDecrypt;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -41,6 +44,7 @@ import jpcsp.util.Utilities;
 
 public class semaphore extends HLEModule {
 	public static Logger log = Modules.getLogger("semaphore");
+	private static int dumpIndex = 0;
 
     public int hleUtilsBufferCopyWithRange(byte[] out, int outOffset, int outSize, byte[] in, int inOffset, int inSize, int cmd) {
     	int result = 0;
@@ -66,7 +70,14 @@ public class semaphore extends HLEModule {
 	    	CryptoEngine crypto = new CryptoEngine();
 	    	result = crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, outSize, inBuffer, inSizeAligned, inSize, cmd);
 	    	if (result != 0) {
-	    		log.warn(String.format("hleUtilsBufferCopyWithRange cmd=0x%X returned 0x%X", cmd, result));
+				String dumpFileName = String.format("dump.hleUtilsBufferCopyWithRange.%d", dumpIndex++);
+				log.warn(String.format("hleUtilsBufferCopyWithRange returned error result=0x%X for command=0x%X, outputSize=0x%X, inputSize=0x%X, input dumped into file '%s'", result, cmd, outSize, inSize, dumpFileName));
+				try {
+					OutputStream dump = new FileOutputStream(dumpFileName);
+					dump.write(in, inOffset, inSize);
+					dump.close();
+				} catch (IOException e) {
+				}
 	    	}
     	}
 
