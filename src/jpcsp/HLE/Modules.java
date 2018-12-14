@@ -175,6 +175,7 @@ public class Modules {
     public static scePaf scePafModule = new scePaf();
     public static sceClockgen sceClockgenModule = new sceClockgen();
     public static sceCodec sceCodecModule = new sceCodec();
+    public static sceMesgd sceMesgdModule = new sceMesgd();
 
     public static Logger log = Logger.getLogger("hle");
 
