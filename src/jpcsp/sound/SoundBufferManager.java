@@ -46,12 +46,14 @@ public class SoundBufferManager {
 	}
 
 	public int getBuffer() {
-		if (freeBuffers.isEmpty()) {
-			int alBuffer = AL10.alGenBuffers();
-			freeBuffers.push(alBuffer);
-		}
+		synchronized (freeBuffers) {
+			if (freeBuffers.isEmpty()) {
+				int alBuffer = AL10.alGenBuffers();
+				freeBuffers.push(alBuffer);
+			}
 
-		return freeBuffers.pop();
+			return freeBuffers.pop();
+		}
 	}
 
 	public void checkFreeBuffers(int alSource) {
@@ -64,16 +66,21 @@ public class SoundBufferManager {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("free buffer %d", alBuffer));
     		}
-    		freeBuffers.push(alBuffer);
+
+    		synchronized (freeBuffers) {
+        		freeBuffers.push(alBuffer);
+			}
         }
 	}
 
 	public ByteBuffer getDirectBuffer(int size) {
-		for (int i = 0; i < freeDirectBuffers.size(); i++) {
-			ByteBuffer directBuffer = freeDirectBuffers.get(i);
-			if (directBuffer.capacity() >= size) {
-				freeDirectBuffers.remove(i);
-				return directBuffer;
+		synchronized (freeDirectBuffers) {
+			for (int i = 0; i < freeDirectBuffers.size(); i++) {
+				ByteBuffer directBuffer = freeDirectBuffers.get(i);
+				if (directBuffer.capacity() >= size) {
+					freeDirectBuffers.remove(i);
+					return directBuffer;
+				}
 			}
 		}
 
@@ -82,10 +89,12 @@ public class SoundBufferManager {
 	}
 
 	public void releaseDirectBuffer(ByteBuffer directBuffer) {
-		if (freeDirectBuffers.isEmpty()) {
-			freeDirectBuffers.add(directBuffer);
-		} else {
-			freeDirectBuffers.add(0, directBuffer);
+		synchronized (freeDirectBuffers) {
+			if (freeDirectBuffers.isEmpty()) {
+				freeDirectBuffers.add(directBuffer);
+			} else {
+				freeDirectBuffers.add(0, directBuffer);
+			}
 		}
 	}
 }

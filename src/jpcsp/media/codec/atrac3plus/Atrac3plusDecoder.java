@@ -103,7 +103,7 @@ public class Atrac3plusDecoder implements ICodec {
 				return AT3P_ERROR;
 			}
 
-			if (chBlock >= ctx.channelUnits.length) {
+			if (chBlock >= ctx.channelUnits.length || ctx.channelUnits[chBlock] == null) {
 				log.error(String.format("Too many channel blocks"));
 				return AT3P_ERROR;
 			}

@@ -35,6 +35,10 @@ public class SceMpegYCrCbBuffer extends pspAbstractMemoryMappedStructure {
 	public int unknown3[] = new int[11];
 	public Memory bufferMemory;
 
+	public SceMpegYCrCbBuffer() {
+		bufferMemory = Memory.getInstance();
+	}
+
 	@Override
 	protected void read() {
 		frameBufferHeight16 = read32();

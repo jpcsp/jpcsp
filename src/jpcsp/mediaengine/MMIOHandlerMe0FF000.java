@@ -182,7 +182,9 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 				if ((unknown14 & 0xFFFF0000) != 0) {
 					log.error(String.format("Unknown length 0x%X in command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", unknown14, command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
 				} else if (unknown18 != 0x9C00 || unknown20 != 0 || unknown24 != 0xFFFE || unknown28 != 0) {
-					log.error(String.format("Unknown parameters in command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Unknown parameters in command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
+					}
 				} else {
 					IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(getMemory(), unknown10, (unknown14 + 1) << 2, 4);
 					for (int i = 0; i <= unknown14; i++) {

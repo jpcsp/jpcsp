@@ -22,12 +22,14 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.modules.sceAudio;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.mmio.audio.AudioLine;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
+import jpcsp.util.Utilities;
 
 public class MMIOHandlerAudio extends MMIOHandlerBase {
 	public static Logger log = sceAudio.log;
@@ -59,12 +61,37 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	private int audioDataIndex1;
 	private final AudioLine audioLines[] = new AudioLine[2];
 
+	private class PollAudioLinesThread extends Thread {
+		@Override
+		public void run() {
+			RuntimeContext.setLog4jMDC();
+
+			boolean exit = false;
+			while (!exit) {
+				try {
+			    	for (int i = 0; i < audioLines.length; i++) {
+			    		audioLines[i].poll();
+					}
+
+			    	Utilities.sleep(10, 0);
+				} catch (UnsatisfiedLinkError e) {
+					exit = true;
+				}
+			}
+		}
+	}
+
 	public MMIOHandlerAudio(int baseAddress) {
 		super(baseAddress);
 
     	for (int i = 0; i < audioLines.length; i++) {
     		audioLines[i] = new AudioLine();
 		}
+
+    	PollAudioLinesThread thread = new PollAudioLinesThread();
+    	thread.setDaemon(true);
+    	thread.setName("Poll Audio Lines Thread");
+    	thread.start();
 	}
 
 	@Override
@@ -147,7 +174,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			audioLines[line].writeAudioData(data, 0, index);
 
 			if (log.isTraceEnabled()) {
-				log.trace(String.format("sendAudioData line#%d:", line));
+				log.trace(String.format("sendAudioData line#%d (%d waiting buffers):", line, audioLines[line].getWaitingBuffers()));
 				StringBuilder sb = new StringBuilder();
 				for (int i = 0; i < data.length; i++) {
 					if (sb.length() > 0) {

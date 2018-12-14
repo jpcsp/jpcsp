@@ -819,6 +819,7 @@ public class sceMpeg extends HLEModule {
 	    		mp4AvcCscStruct.buffer5 = mpegAvcYuvStruct.getValue32(20) + sceMpegAvcCscOffsets[3];
 	    		mp4AvcCscStruct.buffer6 = mpegAvcYuvStruct.getValue32(24) + sceMpegAvcCscOffsets[2];
 	    		mp4AvcCscStruct.buffer7 = mpegAvcYuvStruct.getValue32(28) + sceMpegAvcCscOffsets[3];
+	    		mp4AvcCscStruct.bufferMemory = sceMpegAvcDecodeYCbCrBuffer1.getMemory();
 	    		mp4AvcCscStruct.write(sceMpegAvcDecodeYCbCrBuffer1);
 
 	    		result = Modules.sceMpegbaseModule.sceMpegBaseYCrCbCopy(destinationAddr, sceMpegAvcDecodeYCbCrBuffer1, 0x3);
@@ -2420,6 +2421,7 @@ public class sceMpeg extends HLEModule {
 	    		mp4AvcCscStruct.buffer5 = mpegAvcYuvStruct.getValue32(20);
 	    		mp4AvcCscStruct.buffer6 = mpegAvcYuvStruct.getValue32(24);
 	    		mp4AvcCscStruct.buffer7 = mpegAvcYuvStruct.getValue32(28);
+	    		mp4AvcCscStruct.bufferMemory = data.getMemory();
 	    		TPointer buffer = bufferAddr.getPointer(i * 4);
 	    		if (buffer.isNull()) {
 	    			return ERROR_MPEG_INVALID_VALUE;

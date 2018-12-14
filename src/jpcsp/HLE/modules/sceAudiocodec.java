@@ -131,22 +131,29 @@ public class sceAudiocodec extends HLEModule {
 		return 0;
 	}
 
-	public ICodec getCodec(int workArea, int codecType, int inputBufferSize, int channels, int outputChannels, int codingMode) {
-		AudiocodecInfo info = infos.get(workArea);
-		if (info == null) {
-			info = new AudiocodecInfo(workArea);
-			info.outputChannels = outputChannels;
-			info.initCodec(codecType);
-			infos.put(workArea, info);
+	public void initCodec(int id, int codecType, int inputBufferSize, int channels, int outputChannels, int codingMode) {
+		AudiocodecInfo info = infos.remove(id);
+		if (info != null) {
+			info.release();
 		}
 
-		ICodec codec = info.getCodec();
-    	if (!info.isCodecInitialized()) {
-    		codec.init(inputBufferSize, channels, info.outputChannels, codingMode);
-    		info.setCodecInitialized();
-    	}
+		info = new AudiocodecInfo(id);
+		info.outputChannels = outputChannels;
+		info.initCodec(codecType);
+		infos.put(id, info);
 
-    	return codec;
+		ICodec codec = info.getCodec();
+		codec.init(inputBufferSize, channels, info.outputChannels, codingMode);
+		info.setCodecInitialized();
+	}
+
+	public ICodec getCodec(int id) {
+		AudiocodecInfo info = infos.get(id);
+		if (info == null) {
+			return null;
+		}
+
+		return info.getCodec();
 	}
 
 	@HLEUnimplemented

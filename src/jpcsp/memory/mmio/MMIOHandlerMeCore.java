@@ -30,6 +30,7 @@ import jpcsp.media.codec.ICodec;
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
+import jpcsp.util.Utilities;
 
 public class MMIOHandlerMeCore extends MMIOHandlerBase {
 	public static Logger log = sceMeCore.log;
@@ -199,16 +200,40 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 			case 0x4: // ME_CMD_VIDEOCODEC_DELETE_TYPE0
 				Modules.sceVideocodecModule.videocodecDelete();
 				break;
+			case 0x67: // ME_CMD_AT3P_SETUP_CHANNEL
+				Modules.sceAudiocodecModule.initCodec(parameters[4], PSP_CODEC_AT3PLUS, parameters[2] + 2, parameters[1], parameters[3], 0);
+				break;
 			case 0x60: // ME_CMD_AT3P_DECODE
 				TPointer workArea = new TPointer(mem, parameters[0]);
-				int inputBufferSize;
+				int edram = workArea.getValue32(12);
+		    	int inputBufferSize;
 				if (workArea.getValue32(48) == 0) {
 					inputBufferSize = workArea.getValue32(64) + 2;
 				} else {
 					inputBufferSize = 0x100A;
 				}
-				ICodec audioCodec = Modules.sceAudiocodecModule.getCodec(workArea.getAddress(), PSP_CODEC_AT3PLUS, inputBufferSize, 2, 2, 0);
-				result = audioCodec.decode(meMemory, workArea.getValue32(24), inputBufferSize, meMemory, workArea.getValue32(32));
+				ICodec audioCodec = Modules.sceAudiocodecModule.getCodec(edram);
+				int inputBuffer = workArea.getValue32(24);
+
+				// Skip any audio frame header (found in PSMF files)
+				if (mem.read8(inputBuffer) == 0x0F && mem.read8(inputBuffer + 1) == 0xD0) {
+					int frameHeader23 = (mem.read8(inputBuffer + 2) << 8) | mem.read8(inputBuffer + 3);
+					int audioFrameLength = (frameHeader23 & 0x3FF) << 3;
+					inputBufferSize = audioFrameLength;
+					inputBuffer += 8;
+				}
+
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("ME_CMD_AT3P_DECODE inputBuffer: %s", Utilities.getMemoryDump(inputBuffer, inputBufferSize)));
+				}
+				result = audioCodec.decode(meMemory, inputBuffer, inputBufferSize, meMemory, workArea.getValue32(32));
+				if (log.isDebugEnabled()) {
+					if (result < 0) {
+						log.debug(String.format("ME_CMD_AT3P_DECODE audiocodec.decode returned error 0x%08X, data: %s", result, Utilities.getMemoryDump(inputBuffer, inputBufferSize)));
+					} else {
+						log.debug(String.format("ME_CMD_AT3P_DECODE audiocodec.decode bytesConsumed=0x%X", result));
+					}
+				}
 				break;
 		}
 	}

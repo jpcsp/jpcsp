@@ -36,8 +36,8 @@ import jpcsp.state.StateOutputStream;
 public class AudioLine implements IState {
 	public static Logger log = MMIOHandlerAudio.log;
 	private static final int STATE_VERSION = 0;
-	private SoundBufferManager soundBufferManager;
-	private int alSource;
+	private final SoundBufferManager soundBufferManager;
+	private final int alSource;
 	private int frequency = 44100;
 
 	public AudioLine() {
@@ -100,7 +100,17 @@ public class AudioLine implements IState {
 		soundBufferManager.releaseDirectBuffer(directBuffer);
 
 		alSourcePlay();
+		poll();
+	}
+
+	public void poll() {
 		checkFreeBuffers();
+	}
+
+	public int getWaitingBuffers() {
+		checkFreeBuffers();
+
+		return AL10.alGetSourcei(alSource, AL10.AL_BUFFERS_QUEUED) - AL10.alGetSourcei(alSource, AL10.AL_BUFFERS_PROCESSED);
 	}
 
 	@Override

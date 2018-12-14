@@ -34,6 +34,10 @@ public class SceMp4AvcCscStruct extends pspAbstractMemoryMappedStructure {
 	public int buffer7;
 	public Memory bufferMemory;
 
+	public SceMp4AvcCscStruct() {
+		bufferMemory = Memory.getInstance();
+	}
+
 	@Override
 	protected void read() {
 		height = read32();
