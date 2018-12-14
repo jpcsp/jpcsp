@@ -63,9 +63,12 @@ public class MEProcessor extends Processor {
 	private final int[] vmeRegisters = new int[0x590]; // Highest VME register number seen is 0x058F
 	private boolean halt;
 	private int pendingInterruptIPbits;
-	private Instruction instructions[];
-	private static final int optimizedRunStart = MemoryMap.START_RAM;
-	private static final int optimizedRunEnd = MemoryMap.START_RAM + 0x3000;
+	private Instruction optimizedInstructions1[];
+	private Instruction optimizedInstructions2[];
+	private static final int optimizedRunStart1 = MemoryMap.START_RAM + 0x300000;
+	private static final int optimizedRunEnd1   = MemoryMap.START_RAM + 0x37D720;
+	private static final int optimizedRunStart2 = MemoryMap.START_RAM;
+	private static final int optimizedRunEnd2   = MemoryMap.START_RAM + 0x3000;
 
 	public static MEProcessor getInstance() {
 		if (instance == null) {
@@ -82,7 +85,8 @@ public class MEProcessor extends Processor {
 		pendingInterruptIPbits = stream.readInt();
 		super.read(stream);
 
-		instructions = null;
+		optimizedInstructions1 = null;
+		optimizedInstructions2 = null;
 		sync();
 	}
 
@@ -247,17 +251,30 @@ public class MEProcessor extends Processor {
 		}
 	}
 
-	private void initRun() {
-		instructions = new Instruction[(optimizedRunEnd - optimizedRunStart) >> 2];
-		for (int pc = optimizedRunStart; pc < optimizedRunEnd; pc += 4) {
+	private void initOptimizedRun1() {
+		optimizedInstructions1 = new Instruction[(optimizedRunEnd1 - optimizedRunStart1) >> 2];
+		for (int pc = optimizedRunStart1; pc < optimizedRunEnd1; pc += 4) {
 			int opcode = memory.read32(pc);
-			instructions[(pc - optimizedRunStart) >> 2] = Decoder.instruction(opcode);
+			optimizedInstructions1[(pc - optimizedRunStart1) >> 2] = Decoder.instruction(opcode);
 		}
 	}
 
-	private void optimizedRun() {
+	private void initOptimizedRun2() {
+		optimizedInstructions2 = new Instruction[(optimizedRunEnd2 - optimizedRunStart2) >> 2];
+		for (int pc = optimizedRunStart2; pc < optimizedRunEnd2; pc += 4) {
+			int opcode = memory.read32(pc);
+			optimizedInstructions2[(pc - optimizedRunStart2) >> 2] = Decoder.instruction(opcode);
+		}
+	}
+
+	private void optimizedRun1() {
 		int[] memoryInt = RuntimeContext.getMemoryInt();
-		
+
+		if (optimizedInstructions1 == null) {
+			initOptimizedRun1();
+		}
+
+		final boolean isTraceEnabled = log.isTraceEnabled();
 		int count = 0;
 		long start = Emulator.getClock().currentTimeMillis();
 
@@ -267,15 +284,15 @@ public class MEProcessor extends Processor {
 			}
 
 			int pc = cpu.pc & Memory.addressMask;
-			if (pc >= optimizedRunEnd) {
+			if (pc >= optimizedRunEnd1) {
 				break;
 			}
-			int insnIndex = (pc - optimizedRunStart) >> 2;
+			int insnIndex = (pc - optimizedRunStart1) >> 2;
 			int opcode = memoryInt[pc >> 2];
 			cpu.pc += 4;
 
-			Instruction insn = instructions[insnIndex];
-	        if (log.isTraceEnabled()) {
+			Instruction insn = optimizedInstructions1[insnIndex];
+	        if (isTraceEnabled) {
 	        	log.trace(String.format("Interpreting 0x%08X: [0x%08X] - %s", cpu.pc - 4, opcode, insn.disasm(cpu.pc - 4, opcode)));
 	        }
 			insn.interpret(this, opcode);
@@ -285,7 +302,46 @@ public class MEProcessor extends Processor {
 		long end = Emulator.getClock().currentTimeMillis();
 		if (count > 0 && log.isInfoEnabled()) {
 			int duration = Math.max((int) (end - start), 1);
-			log.info(String.format("MEProcessor %d instructions executed in %d ms: %d instructions per ms", count, duration, (count + duration / 2) / duration));
+			log.info(String.format("MEProcessor.optimizedRun1 %d instructions executed in %d ms: %d instructions per ms", count, duration, (count + duration / 2) / duration));
+		}
+	}
+
+	private void optimizedRun2() {
+		int[] memoryInt = RuntimeContext.getMemoryInt();
+
+		if (optimizedInstructions2 == null) {
+			initOptimizedRun2();
+		}
+
+		final boolean isTraceEnabled = log.isTraceEnabled();
+		int count = 0;
+		long start = Emulator.getClock().currentTimeMillis();
+
+		while (!halt && !Emulator.pause) {
+			if (pendingInterruptIPbits != 0) {
+				checkPendingInterruptException();
+			}
+
+			int pc = cpu.pc & Memory.addressMask;
+			if (pc >= optimizedRunEnd2) {
+				break;
+			}
+			int insnIndex = (pc - optimizedRunStart2) >> 2;
+			int opcode = memoryInt[pc >> 2];
+			cpu.pc += 4;
+
+			Instruction insn = optimizedInstructions2[insnIndex];
+	        if (isTraceEnabled) {
+	        	log.trace(String.format("Interpreting 0x%08X: [0x%08X] - %s", cpu.pc - 4, opcode, insn.disasm(cpu.pc - 4, opcode)));
+	        }
+			insn.interpret(this, opcode);
+			count++;
+		}
+
+		long end = Emulator.getClock().currentTimeMillis();
+		if (count > 0 && log.isInfoEnabled()) {
+			int duration = Math.max((int) (end - start), 1);
+			log.info(String.format("MEProcessor.optimizedRun2 %d instructions executed in %d ms: %d instructions per ms", count, duration, (count + duration / 2) / duration));
 		}
 	}
 
@@ -303,8 +359,13 @@ public class MEProcessor extends Processor {
 			count++;
 
 			int pc = cpu.pc & Memory.addressMask;
-			if (hasMemoryInt && pc >= optimizedRunStart && pc < optimizedRunEnd) {
-				break;
+			if (hasMemoryInt) {
+				if (pc >= optimizedRunStart1 && pc < optimizedRunEnd1) {
+					break;
+				}
+				if (pc >= optimizedRunStart2 && pc < optimizedRunEnd2) {
+					break;
+				}
 			}
 
 			if (cpu.pc == 0x883000E0 && log.isDebugEnabled()) {
@@ -317,17 +378,13 @@ public class MEProcessor extends Processor {
 		long end = Emulator.getClock().currentTimeMillis();
 		if (count > 0 && log.isInfoEnabled()) {
 			int duration = Math.max((int) (end - start), 1);
-			log.info(String.format("MEProcessor %d instructions executed in %d ms: %d instructions per ms", count, duration, (count + duration / 2) / duration));
+			log.info(String.format("MEProcessor.normalRun %d instructions executed in %d ms: %d instructions per ms", count, duration, (count + duration / 2) / duration));
 		}
 	}
 
 	public void run() {
 		if (!Emulator.run) {
 			return;
-		}
-
-		if (instructions == null) {
-			initRun();
 		}
 
 		if (log.isDebugEnabled()) {
@@ -338,8 +395,10 @@ public class MEProcessor extends Processor {
 
 		while (!halt && !Emulator.pause) {
 			int pc = cpu.pc & Memory.addressMask;
-			if (hasMemoryInt && pc >= optimizedRunStart && pc < optimizedRunEnd) {
-				optimizedRun();
+			if (hasMemoryInt && pc >= optimizedRunStart1 && pc < optimizedRunEnd1) {
+				optimizedRun1();
+			} else if (hasMemoryInt && pc >= optimizedRunStart2 && pc < optimizedRunEnd2) {
+				optimizedRun2();
 			} else {
 				normalRun();
 			}
