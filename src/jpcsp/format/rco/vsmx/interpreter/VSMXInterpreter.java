@@ -526,11 +526,18 @@ public class VSMXInterpreter {
 				o = r.getValue();
 				if (o instanceof VSMXArray) {
 					if (code.value == 0) {
+						// No arguments: create an empty array
 						stack.push(new VSMXArray(this));
 					} else if (code.value == 1) {
+						// One argument: create an array of the given size
 						stack.push(new VSMXArray(this, arguments[0].getIntValue()));
 					} else {
-						log.warn(String.format("Line#%d wrong number of arguments for new Array %s", pc - 1, code));
+						// More than 1 arguments: create an array containing the given values
+						VSMXArray array = new VSMXArray(this, code.value);
+						for (int j = 0; j < code.value; j++) {
+							array.setPropertyValue(j, arguments[j]);
+						}
+						stack.push(array);
 					}
 				} else if (o instanceof VSMXFunction) {
 					VSMXFunction function = (VSMXFunction) o;
