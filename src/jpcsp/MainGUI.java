@@ -1655,8 +1655,46 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             Settings.getInstance().writeRecent("umd", recentUMD);
             populateRecentMenu();
         } catch (IOException e) {
-            e.printStackTrace();
+        	log.error("addRecentUMD", e);
         }
+    }
+
+    private void moveUpRecentUMD(File file) {
+    	String title = null;
+		try {
+			String path = file.getCanonicalPath();
+	    	for (RecentElement re : recentUMD) {
+	    		if (re.path.equals(path)) {
+	    			title = re.title;
+	    			break;
+	    		}
+	    	}
+		} catch (IOException e) {
+        	log.error("moveUpRecentUMD", e);
+		}
+
+    	if (title != null) {
+    		addRecentUMD(file, title);
+    	}
+    }
+
+    private void moveUpRecentFile(File file) {
+    	String title = null;
+		try {
+			String path = file.getCanonicalPath();
+	    	for (RecentElement re : recentFile) {
+	    		if (re.path.equals(path)) {
+	    			title = re.title;
+	    			break;
+	    		}
+	    	}
+		} catch (IOException e) {
+        	log.error("moveUpRecentFile", e);
+		}
+
+    	if (title != null) {
+    		addRecentFile(file, title);
+    	}
     }
 
     private void removeRecentUMD(String file) {
@@ -3265,8 +3303,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             File file = new File(path);
             if (file.exists()) {
                 if (type == TYPE_UMD) {
+                	moveUpRecentUMD(file);
                     loadUMD(file);
                 } else {
+                	moveUpRecentFile(file);
                     loadFile(file);
                 }
                 loadAndRun();
