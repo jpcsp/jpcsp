@@ -206,6 +206,9 @@ public class sceVideocodec extends HLEModule {
 
     	if (videoCodec == null) {
     		videoCodec = CodecFactory.getVideoCodec();
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("videocodecDecode init Codec with extraData=%s", getVideocodecExtraData()));
+    		}
     		videoCodec.init(getVideocodecExtraData());
     		clearVideocodecExtraData();
     	}

@@ -208,7 +208,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
             	break;
             case PSP_KIRK_CMD_PRNG:
             	inSize = 0;
-            	outSize = 0x10; // TODO Unknown outSize?
+            	outSize = 0x14;
             	break;
             case PSP_KIRK_CMD_ECDSA_SIGN:
             	inSize = 0x34;

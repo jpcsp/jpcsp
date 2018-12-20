@@ -28,6 +28,7 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 	private int unknown008;
 	private int unknown00C;
 	private int unknown074;
+	private int unknown084;
 	private int unknown088;
 	private int unknown08C;
 	private int unknown094;
@@ -39,6 +40,7 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 	private int unknown0B8;
 	private int unknown0BC;
 	private int unknown0C4;
+	private int unknown0CC;
 	private int unknown0E4;
 	private int unknown0E8;
 	private int unknown0F4;
@@ -66,6 +68,7 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 		unknown008 = stream.readInt();
 		unknown00C = stream.readInt();
 		unknown074 = stream.readInt();
+		unknown084 = stream.readInt();
 		unknown088 = stream.readInt();
 		unknown08C = stream.readInt();
 		unknown094 = stream.readInt();
@@ -77,6 +80,7 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 		unknown0B8 = stream.readInt();
 		unknown0BC = stream.readInt();
 		unknown0C4 = stream.readInt();
+		unknown0CC = stream.readInt();
 		unknown0E4 = stream.readInt();
 		unknown0E8 = stream.readInt();
 		unknown0F4 = stream.readInt();
@@ -102,6 +106,7 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 		stream.writeInt(unknown008);
 		stream.writeInt(unknown00C);
 		stream.writeInt(unknown074);
+		stream.writeInt(unknown084);
 		stream.writeInt(unknown088);
 		stream.writeInt(unknown08C);
 		stream.writeInt(unknown094);
@@ -113,6 +118,7 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 		stream.writeInt(unknown0B8);
 		stream.writeInt(unknown0BC);
 		stream.writeInt(unknown0C4);
+		stream.writeInt(unknown0CC);
 		stream.writeInt(unknown0E4);
 		stream.writeInt(unknown0E8);
 		stream.writeInt(unknown0F4);
@@ -138,6 +144,7 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 			case 0x008: unknown008 = value; break;
 			case 0x00C: unknown00C = value; break;
 			case 0x074: unknown074 = value; break;
+			case 0x084: unknown084 = value; break;
 			case 0x088: unknown088 = value; break;
 			case 0x08C: unknown08C = value; break;
 			case 0x094: unknown094 = value; break;
@@ -149,6 +156,7 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 			case 0x0B8: unknown0B8 = value; break;
 			case 0x0BC: unknown0BC = value; break;
 			case 0x0C4: unknown0C4 = value; break;
+			case 0x0CC: unknown0CC = value; break;
 			case 0x0E4: unknown0E4 = value; break;
 			case 0x0E8: unknown0E8 = value; break;
 			case 0x0F4: unknown0F4 = value; break;
@@ -180,6 +188,7 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 		s.append(String.format(", unknown008=0x%X", unknown008));
 		s.append(String.format(", unknown00C=0x%X", unknown00C));
 		s.append(String.format(", unknown074=0x%X", unknown074));
+		s.append(String.format(", unknown084=0x%X", unknown084));
 		s.append(String.format(", unknown088=0x%X", unknown088));
 		s.append(String.format(", unknown08C=0x%X", unknown08C));
 		s.append(String.format(", unknown094=0x%X", unknown094));
@@ -191,6 +200,7 @@ public class MMIOHandlerMe0F8000 extends MMIOHandlerMeBase {
 		s.append(String.format(", unknown0B8=0x%X", unknown0B8));
 		s.append(String.format(", unknown0BC=0x%X", unknown0BC));
 		s.append(String.format(", unknown0C4=0x%X", unknown0C4));
+		s.append(String.format(", unknown0CC=0x%X", unknown0CC));
 		s.append(String.format(", unknown0E4=0x%X", unknown0E4));
 		s.append(String.format(", unknown0E8=0x%X", unknown0E8));
 		s.append(String.format(", unknown0F4=0x%X", unknown0F4));

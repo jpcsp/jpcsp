@@ -197,7 +197,14 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 				}
 				break;
 			case 0x5A:
-				if (unknown18 != 0x548 || unknown20 != 4 || unknown24 != 3 || unknown28 != 0x10800) {
+				if (unknown14 == 0x03FF0000 && unknown18 == 0 && unknown20 == 2 && unknown24 == 3 && unknown28 == 0x10800) {
+					// Used by sceSasCore
+					int numberOfSamples = unknown28 & 0xFFFF;
+					Memory mem = getMemory();
+					for (int i = 0; i < numberOfSamples; i++) {
+						mem.write16(unknown10 + i * 2, (short) 0x1234);
+					}
+				} else if (unknown18 != 0x548 || unknown20 != 4 || unknown24 != 3 || unknown28 != 0x10800) {
 					log.error(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
 				} else if (unknown14 == 0x07FF0000) {
 					// Interlaced left and right samples
