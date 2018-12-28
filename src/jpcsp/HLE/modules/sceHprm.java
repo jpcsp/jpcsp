@@ -143,4 +143,16 @@ public class sceHprm extends HLEModule {
     public int sceHprmGetModel_660(@CanBeNull @BufferInfo(usage=Usage.out) TPointer32 unknown1, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 unknown2, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 unknown3, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 unknown4) {
         return sceHprmGetModel(unknown1, unknown2, unknown3, unknown4);
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8EC787E0, version = 150)
+    public int sceHprmUpdateCableType() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA0B1A19B, version = 660)
+    public int sceHprmUpdateCableType_660() {
+        return sceHprmUpdateCableType();
+    }
 }

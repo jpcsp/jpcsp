@@ -4416,7 +4416,7 @@ public class IoFileMgrForUser extends HLEModule {
      * 
      * @return
      */
-    @HLELogging(level="warn")
+    @HLELogging(level="info")
     @HLEFunction(nid = 0xB2A628C1, version = 150, checkInsideInterrupt = true)
     public int sceIoAssign(PspString alias, PspString physicalDev, PspString filesystemDev, int mode, int arg_addr, int argSize) {
         int result = 0;
@@ -4442,7 +4442,7 @@ public class IoFileMgrForUser extends HLEModule {
      * 
      * @return
      */
-    @HLELogging(level="warn")
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x6D08A871, version = 150, checkInsideInterrupt = true)
     public int sceIoUnassign(PspString alias) {
     	assignedDevices.remove(alias.getString().replace(":", ""));

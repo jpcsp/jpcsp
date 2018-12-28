@@ -663,6 +663,18 @@ public class sceSyscon extends HLEModule {
     }
 
     /**
+     * Control the remote control power.
+     *
+     * @param power  1 is on, 0 is off
+     * @return       < 0 on error 
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xBB7260C8, version = 660)
+	public int sceSysconCtrlHRPower_660(boolean power) {
+    	return sceSysconCtrlHRPower(power);
+    }
+
+    /**
      * Get the power supply status.
      *
      * @param statusAddr Pointer to a s32 where the power supply status will be stored.
@@ -1060,5 +1072,29 @@ public class sceSyscon extends HLEModule {
 	@HLEFunction(nid = 0xF7BCD2A6, version = 660)
 	public int sceSysconCtrlVoltage_660(int unknown1, int unknown2) {
     	return sceSysconCtrlVoltage(unknown1, unknown2);
+    }
+
+    /**
+     * Get the headphone connection.
+     * 
+     * @return 1 if the headphone is connected, 0 otherwise.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xE0DDFE18, version = 150)
+	public int sceSysconGetHPConnect() {
+    	// Has no parameters
+    	return 0;
+    }
+
+    /**
+     * Get the headphone connection.
+     * 
+     * @return 1 if the headphone is connected, 0 otherwise.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x2D6F2728, version = 660)
+	public int sceSysconGetHPConnect_660() {
+    	// Has no parameters
+    	return sceSysconGetHPConnect();
     }
 }

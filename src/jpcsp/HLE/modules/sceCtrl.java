@@ -86,8 +86,10 @@ public class sceCtrl extends HLEModule {
     public final static int PSP_CTRL_MS       = 0x2000000;
 
     // PspCtrlMode
-    public final static int PSP_CTRL_MODE_DIGITAL = 0;
-    public final static int PSP_CTRL_MODE_ANALOG = 1;
+    public final static int PSP_CTRL_MODE_DIGITAL = 0x0;
+    public final static int PSP_CTRL_MODE_ANALOG = 0x1;
+    public final static int PSP_CTRL_MODE_ANALOG_DIGITAL = 0x1;
+    public final static int PSP_CTRL_MODE_CABLE_TYPE_REQUEST = 0x2;
     protected IAction sampleAction = null;
     protected Sample samples[];
     protected int currentSamplingIndex;
@@ -98,10 +100,7 @@ public class sceCtrl extends HLEModule {
     protected List<ThreadWaitingForSampling> threadsWaitingForSampling;
 
     public boolean isModeDigital() {
-        if (mode == PSP_CTRL_MODE_DIGITAL) {
-            return true;
-        }
-        return false;
+    	return (mode & PSP_CTRL_MODE_ANALOG_DIGITAL) == PSP_CTRL_MODE_DIGITAL;
     }
 
     public void setSamplingMode(int mode) {
@@ -593,4 +592,11 @@ public class sceCtrl extends HLEModule {
     public int sceCtrlGetSamplingMode_660(TPointer32 modeAddr) {
     	return sceCtrlGetSamplingMode(modeAddr);
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x365BE224, version = 660)
+	public int sceCtrlUpdateCableTypeReq() {
+    	// Has no parameters
+    	return 0;
+	}
 }

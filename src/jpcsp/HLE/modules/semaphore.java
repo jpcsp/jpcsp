@@ -47,6 +47,10 @@ public class semaphore extends HLEModule {
 	private static int dumpIndex = 0;
 
     public int hleUtilsBufferCopyWithRange(byte[] out, int outOffset, int outSize, byte[] in, int inOffset, int inSize, int cmd) {
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("hleUtilsBufferCopyWithRange cmd=0x%X, input(size=0x%X): %s", cmd, inSize, Utilities.getMemoryDump(in, inOffset, inSize)));
+    	}
+
     	int result = 0;
     	if (preDecrypt(out, outOffset, outSize, in, inOffset, inSize, cmd)) {
     		if (log.isDebugEnabled()) {
@@ -79,6 +83,10 @@ public class semaphore extends HLEModule {
 				} catch (IOException e) {
 				}
 	    	}
+    	}
+
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("hleUtilsBufferCopyWithRange result=0x%X, output(size=0x%X): %s", result, outSize, Utilities.getMemoryDump(out, outOffset, outSize)));
     	}
 
     	return result;

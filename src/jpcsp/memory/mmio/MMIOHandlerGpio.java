@@ -255,6 +255,6 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 
 	@Override
 	public String toString() {
-		return String.format("MMIOHandlerGpio ports=0x%08X(%s), isInterruptEnabled=0x%08X(%s), isInterruptTriggered=0x%08X(%s), isOutput=0x%08X(%s), isEdgeDetection=0x%08X, isFallingEdge=0x%08X, isRisingEdge=0x%08X, isInputOn=0x%08X", ports, getPortNames(ports), isInterruptEnabled, getPortNames(isInterruptEnabled), isInterruptTriggered, getPortNames(isInterruptTriggered), isOutput, getPortNames(isOutput), isEdgeDetection, isFallingEdge, isRisingEdge, isInputOn);
+		return String.format("MMIOHandlerGpio ports=0x%08X(%s), isInterruptEnabled=0x%08X(%s), isInterruptTriggered=0x%08X(%s), isOutput=0x%08X(%s), isEdgeDetection=0x%08X, isFallingEdge=0x%08X, isRisingEdge=0x%08X, isInputOn=0x%08X(%s)", ports, getPortNames(ports), isInterruptEnabled, getPortNames(isInterruptEnabled), isInterruptTriggered, getPortNames(isInterruptTriggered), isOutput, getPortNames(isOutput), isEdgeDetection, isFallingEdge, isRisingEdge, isInputOn, getPortNames(isInputOn));
 	}
 }
