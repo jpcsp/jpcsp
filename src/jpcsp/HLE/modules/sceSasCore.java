@@ -1040,6 +1040,7 @@ public class sceSasCore extends HLEModule {
         return 0;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x7497EA85, version = 600, checkInsideInterrupt = true)
     public int __sceSasConcatenateATRAC3(int sasCore, int voice, @CanBeNull TPointer atrac3DataAddr, int atrac3DataLength) {
         checkSasAndVoiceHandlesGood(sasCore, voice);
