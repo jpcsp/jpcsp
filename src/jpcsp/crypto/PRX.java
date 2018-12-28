@@ -225,6 +225,7 @@ public class PRX {
         new TAG_INFO(0x407810F0, KeyVault.key_407810F0, 0x6A),
         new TAG_INFO(0xE92410F0, KeyVault.drmkeys_6XX_1, 0x40),
         new TAG_INFO(0x692810F0, KeyVault.drmkeys_6XX_2, 0x40),
+        new TAG_INFO(0x63BAB403, KeyVault.key_102DC8AF_1, 0x51),
     	// 144-bytes keys
         new TAG_INFO(0x00000000, KeyVault.g_key00, 0x42, 0x00),
         new TAG_INFO(0x02000000, KeyVault.g_key02, 0x45, 0x00),
@@ -251,7 +252,8 @@ public class PRX {
         new TAG_INFO(0xBB67C59F, KeyVault.g_key_GAMESHARE2xx, 0x5E, 0x5E),
         new TAG_INFO(0xBB67C59F, KeyVault.g_key4C, 0x5F, 0x5F),
         new TAG_INFO(0xBB67C59F, KeyVault.g_key7F, 0x60, 0x60),
-        new TAG_INFO(0xBB67C59F, KeyVault.g_key1B, 0x61, 0x61)};
+        new TAG_INFO(0xBB67C59F, KeyVault.g_key1B, 0x61, 0x61),
+    	new TAG_INFO(0x0E000000, KeyVault.key_102DC8AF_2, 0x51, 0x00)};
     
     private TAG_INFO GetTagInfo(int tag) {
         int iTag;
@@ -296,10 +298,14 @@ public class PRX {
         return true;
     }
 
-    private void MixXOR(byte[] outbuf, int size, byte[] inbuf, byte[] xor) {
+    private void MixXOR(byte[] outbuf, int outOffset, int size, byte[] inbuf, int inOffset, byte[] xor, int xorOffset) {
         for (int i = 0; i < size; i++) {
-            outbuf[i] = (byte) ((inbuf[i] & 0xFF) ^ (xor[i] & 0xFF));
+            outbuf[outOffset + i] = (byte) ((inbuf[inOffset + i] & 0xFF) ^ (xor[xorOffset + i] & 0xFF));
         }
+    }
+
+    private void MixXOR(byte[] outbuf, int size, byte[] inbuf, byte[] xor) {
+    	MixXOR(outbuf, 0, size, inbuf, 0, xor, 0);
     }
 
     private void RoundXOR(byte[] buf, int size, byte[] xor1, byte[] xor2) {
@@ -413,7 +419,7 @@ public class PRX {
         int retsize = readUnaligned32(buf, 0xB0);
 
         // Old encryption method (144 bytes key).
-        if (pti.key.length > 0x10) {
+        if (((type >= 2 && type <= 7) || type == 9 || type == 10) && pti.key.length > 0x10) {
             // Setup the buffers.
             byte[] oldbuf = new byte[size];
             byte[] oldbuf1 = new byte[0x150];
@@ -492,6 +498,10 @@ public class PRX {
 
             // Copy the first header to buf1.
             System.arraycopy(buf, 0, buf1, 0, 0x150);
+
+            if (size - 0x150 < retsize) {
+            	return -206;
+            }
 
             // Read in the user key and apply scramble.
             if ((type >= 2 && type <= 7) || type == 9 || type == 10) {
@@ -768,48 +778,27 @@ public class PRX {
                 }
                 System.arraycopy(buf2, 0xD0, buf, 0xD0, 0x80);
             } else {
-                byte[] tmp7 = new byte[0x70];
-                byte[] tmp8 = new byte[0x70];
-                byte[] tmp9 = new byte[0x70 + 0x14];
-                byte[] tmp10 = new byte[0x70];
-                byte[] tmp11 = new byte[0x70];
-                byte[] tmp12 = new byte[0x70];
-                for (int i = 0; i < 0x70; i++) {
-                    tmp7[i] = buf2[0x40 + i];
-                    tmp8[i] = buf3[0x14 + i];
-                }
-
-                MixXOR(tmp7, 0x70, tmp7, tmp8);
-                System.arraycopy(tmp7, 0, tmp9, 0x14, 0x70);
-                ScramblePRX(tmp9, 0, 0x70, pti.code);
-                System.arraycopy(tmp9, 0, buf2, 0x40, 0x40);
-
-                for (int i = 0; i < 0x70; i++) {
-                    tmp10[i] = buf[0x40 + i];
-                    tmp11[i] = buf2[0x40 + i];
-                    tmp12[i] = buf3[0x20 + i];
-                }
-
-                MixXOR(tmp10, 0x70, tmp11, tmp12);
-                System.arraycopy(tmp10, 0, buf, 0x40, 0x70);
+                MixXOR(buf2, 0x40, 0x70, buf2, 0x40, buf3, 0x14);
+                ScramblePRX(buf2, 0x2C, 0x70, pti.code);
+                MixXOR(buf, 0x40, 0x70, buf2, 0x2C, buf3, 0x20);
                 System.arraycopy(buf2, 0xB0, buf, 0xB0, 0xA0);
             }
 
             if (type == 8) {
-                if ((buf[0xA4] & 0x1) != 0x1) {
-                    return -1;
+                if (buf[0xA4] != 0x01) {
+                    return -303;
                 }
             }
 
             if (unk_0xD4 == 0x80) {
-                if ((buf[0x590] & 0x1) == 0x1) {
-                    return -1;
+                if (buf[0x590] != 0x00) {
+                    return -302;
                 }
                 buf[0x590] |= 0x80;
             }
 
             // Call KIRK CMD1 for final decryption.
-            result = semaphoreModule.hleUtilsBufferCopyWithRange(buf, 0, size, buf, 0x40, size, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
+            result = semaphoreModule.hleUtilsBufferCopyWithRange(buf, 0, size, buf, 0x40, size - 0x40, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
             if (result != 0) {
             	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_DECRYPT_PRIVATE returned error %d", result));
             }

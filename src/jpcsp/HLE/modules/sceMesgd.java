@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.util.Utilities.readUnaligned32;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.BufferInfo;
@@ -27,16 +29,49 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.crypto.CryptoEngine;
+import jpcsp.crypto.PRX;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.util.Utilities;
 
 public class sceMesgd extends HLEModule {
     public static Logger log = Modules.getLogger("sceMesgd");
+    private PRX prxEngine = new CryptoEngine().getPRXEngine();
 
     public int sceMesgd_driver_102DC8AF(byte[] buffer, int bufferOffset, int bufferSize, TPointer32 resultSizeAddr) {
-    	return 0;
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("sceMesgd_driver_102DC8AF input(size=0x%X): %s", bufferSize, Utilities.getMemoryDump(buffer, bufferOffset, bufferSize)));
+    	}
+
+        int tag = readUnaligned32(buffer, bufferOffset + 0xD0);
+        int type;
+        switch (tag) {
+        	case 0x0E000000:
+        		type = 0;
+        		break;
+        	case 0x63BAB403:
+        		type = 2;
+        		break;
+    		default:
+    			return -301;
+        }
+    	int result = prxEngine.DecryptPRX(buffer, bufferSize, type, null, null);
+
+    	int resultSize = 0;
+    	if (result > 0) {
+    		resultSize = result;
+    		result = 0;
+    	}
+    	resultSizeAddr.setValue(resultSize);
+
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("sceMesgd_driver_102DC8AF result=0x%X, output(size=0x%X): %s", result, resultSize, Utilities.getMemoryDump(buffer, bufferOffset, resultSize)));
+    	}
+
+    	return result;
     }
 
     @HLEUnimplemented
