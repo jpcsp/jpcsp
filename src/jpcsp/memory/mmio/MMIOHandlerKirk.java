@@ -21,6 +21,7 @@ import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_CERT_VERIFY;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT_FUSE;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE;
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT_SIGN;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_GEN_KEYS;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_MULTIPLY_POINT;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_ECDSA_SIGN;
@@ -43,6 +44,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.semaphore;
+import jpcsp.crypto.KIRK;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -225,6 +227,10 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
             case PSP_KIRK_CMD_CERT_VERIFY:
             	inSize = 0xB8;
             	outSize = 0;
+            	break;
+            case PSP_KIRK_CMD_DECRYPT_SIGN:
+            	inSize = 0x200;
+            	outSize = 0x200;
             	break;
 			default:
 				log.error(String.format("MMIOHandlerKirk.hleUtilsBufferCopyWithRange unimplemented KIRK command 0x%X", command));
