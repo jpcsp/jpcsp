@@ -16,7 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_DECRYPT;
 import static jpcsp.crypto.PreDecrypt.preDecrypt;
+import static jpcsp.util.Utilities.readUnaligned32;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -51,8 +53,14 @@ public class semaphore extends HLEModule {
     		log.trace(String.format("hleUtilsBufferCopyWithRange cmd=0x%X, input(size=0x%X): %s", cmd, inSize, Utilities.getMemoryDump(in, inOffset, inSize)));
     	}
 
+    	int correctOutSize = outSize;
+    	if (cmd == PSP_KIRK_CMD_DECRYPT) {
+    		// For cmd==7(PSP_KIRK_CMD_DECRYPT), the outSize is provided in the input data.
+    		correctOutSize = readUnaligned32(in, inOffset + 16);
+    	}
+
     	int result = 0;
-    	if (preDecrypt(out, outOffset, outSize, in, inOffset, inSize, cmd)) {
+    	if (preDecrypt(out, outOffset, correctOutSize, in, inOffset, inSize, cmd)) {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("hleUtilsBufferCopyWithRange using pre-decrypted data"));
     		}
@@ -75,7 +83,7 @@ public class semaphore extends HLEModule {
 	    	result = crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, outSize, inBuffer, inSizeAligned, inSize, cmd);
 	    	if (result != 0) {
 				String dumpFileName = String.format("dump.hleUtilsBufferCopyWithRange.%d", dumpIndex++);
-				log.warn(String.format("hleUtilsBufferCopyWithRange returned error result=0x%X for command=0x%X, outputSize=0x%X, inputSize=0x%X, input dumped into file '%s'", result, cmd, outSize, inSize, dumpFileName));
+				log.error(String.format("hleUtilsBufferCopyWithRange returned error result=0x%X for command=0x%X, outputSize=0x%X, inputSize=0x%X, input dumped into file '%s'", result, cmd, correctOutSize, inSize, dumpFileName));
 				try {
 					OutputStream dump = new FileOutputStream(dumpFileName);
 					dump.write(in, inOffset, inSize);
@@ -109,19 +117,23 @@ public class semaphore extends HLEModule {
     	// Some KIRK commands (e.g. PSP_KIRK_CMD_SHA1_HASH) only update a part of the output buffer.
     	// Read the whole output buffer so that it can be updated completely after the KIRK call.
     	byte[] outBytes = new byte[Utilities.alignUp(outSize, 15)];
-    	IMemoryReader memoryReaderOut = MemoryReader.getMemoryReader(outAddr, outBytes.length, 1);
-    	for (int i = 0; i < outBytes.length; i++) {
-    		outBytes[i] = (byte) memoryReaderOut.readNext();
+    	if (outBytes.length > 0) {
+	    	IMemoryReader memoryReaderOut = MemoryReader.getMemoryReader(outAddr, outBytes.length, 1);
+	    	for (int i = 0; i < outBytes.length; i++) {
+	    		outBytes[i] = (byte) memoryReaderOut.readNext();
+	    	}
     	}
 
     	int result = hleUtilsBufferCopyWithRange(outBytes, 0, outSize, inBytes, 0, originalInSize, cmd);
 
     	// Write back the whole output buffer to the memory.
-    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(outAddr, outSize, 1);
-    	for (int i = 0; i < outSize; i++) {
-    		memoryWriter.writeNext(outBytes[i] & 0xFF);
+    	if (outSize > 0) {
+	    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(outAddr, outSize, 1);
+	    	for (int i = 0; i < outSize; i++) {
+	    		memoryWriter.writeNext(outBytes[i] & 0xFF);
+	    	}
+	    	memoryWriter.flush();
     	}
-    	memoryWriter.flush();
 
     	return result;
     }
