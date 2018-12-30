@@ -355,6 +355,9 @@ public class PRX {
         	case DECRYPT_MODE_POPS_EXEC:
         		type = 5;
         		break;
+        	case DECRYPT_MODE_KERNEL_MODULE:
+        		type = 2;
+        		break;
     		default:
     			log.error(String.format("DecryptAndUncompressPRX unknown decryptMode=%d", decryptMode));
     			type = 2;
