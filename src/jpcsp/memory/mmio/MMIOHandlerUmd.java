@@ -29,7 +29,6 @@ import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.iso.UmdIsoReaderVirtualFile;
-import jpcsp.HLE.modules.sceNand;
 import jpcsp.HLE.modules.sceUmdMan;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -51,6 +50,26 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 	private static final int QTGP2[] = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
 	private static final int QTGP3[] = { 0x0F, 0xED, 0xCB, 0xA9, 0x87, 0x65, 0x43, 0x21, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
 	private IVirtualFile vFile;
+    public static final int regionCodes[] = {
+    		0xFFFFFFFF, 0x80000001,
+    		0x00000002, 0x80000000,
+    		0x0000000F, 0x80000000,
+    		0x00000012, 0x80000000,
+    		0x0000001F, 0x80000000,
+    		0x00000022, 0x80000000,
+    		0x0000002F, 0x80000000,
+    		0x00000032, 0x80000000,
+    		0x0000003F, 0x80000000,
+    		0x00000042, 0x80000000,
+    		0x0000004F, 0x80000000,
+    		0x1000000F, 0x80000000,
+    		0x1000001F, 0x80000000,
+    		0x1000002F, 0x80000000,
+    		0x1000003F, 0x80000000,
+    		0x1000004F, 0x80000000,
+    		0x2000000F, 0x80000000,
+    		0x00000001, 0x00000000 // Last entry must be 1, 0
+    };
 
 	public static MMIOHandlerUmd getInstance() {
 		if (instance == null) {
@@ -167,8 +186,8 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 
 				region.clear(regionSize);
 				// Take any region code found in the IdStorage page 0x102
-				region.setValue32(0, sceNand.regionCodes[2]); // Region code
-				region.setValue32(4, sceNand.regionCodes[3]);
+				region.setValue32(0, regionCodes[2]); // Region code
+				region.setValue32(4, regionCodes[3]);
 				region.add(regionSize);
 
 				region.clear(regionSize);

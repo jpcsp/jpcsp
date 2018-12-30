@@ -18,7 +18,6 @@ package jpcsp.HLE.modules;
 
 import static java.lang.Integer.rotateRight;
 import static jpcsp.HLE.HLEModuleManager.InternalSyscallNid;
-import static jpcsp.HLE.Modules.sceChkregModule;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,7 +46,6 @@ import jpcsp.HLE.VFS.fat.Fat12VirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.patch.PatchFileVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceNandSpare;
-import jpcsp.hardware.Wlan;
 import jpcsp.settings.Settings;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -103,27 +101,8 @@ public class sceNand extends HLEModule {
     		0x0123,
     		0x0124,
     		0x0125,
-    		0x0126
-    };
-    public static final int regionCodes[] = {
-    		0xFFFFFFFF, 0x80000001,
-    		0x00000002, 0x80000000,
-    		0x0000000F, 0x80000000,
-    		0x00000012, 0x80000000,
-    		0x0000001F, 0x80000000,
-    		0x00000022, 0x80000000,
-    		0x0000002F, 0x80000000,
-    		0x00000032, 0x80000000,
-    		0x0000003F, 0x80000000,
-    		0x00000042, 0x80000000,
-    		0x0000004F, 0x80000000,
-    		0x1000000F, 0x80000000,
-    		0x1000001F, 0x80000000,
-    		0x1000002F, 0x80000000,
-    		0x1000003F, 0x80000000,
-    		0x1000004F, 0x80000000,
-    		0x2000000F, 0x80000000,
-    		0x00000001, 0x00000000 // Last entry must be 1, 0
+    		0x0126,
+    		0x0141
     };
 
     @Override
@@ -583,23 +562,12 @@ public class sceNand extends HLEModule {
     	vFile.ioRead(buffer, pageSize);
     }
 
-    private boolean isIdStoragePageForKey(int page, int key) {
+    private int getIdStorageKey(int page) {
     	if (page < 0 || page >= idStorageKeys.length) {
-    		return false;
+    		return -1;
     	}
-    	return idStorageKeys[page] == key;
-    }
 
-    private void writeStringType(TPointer buffer, int offset, String s) {
-    	buffer.setValue8(offset++, (byte) ((s.length() + 1) * 2)); // number of bytes including terminating 0.
-    	buffer.setValue8(offset++, (byte) 3); // Showing a string type?
-    	for (int i = 0; i < s.length(); i++) {
-    		buffer.setValue8(offset++, (byte) s.charAt(i));
-    		buffer.setValue8(offset++, (byte) 0);
-    	}
-    	// Terminating 0
-    	buffer.setValue8(offset++, (byte) 0);
-    	buffer.setValue8(offset++, (byte) 0);
+    	return idStorageKeys[page];
     }
 
     private void readIdStoragePage(TPointer buffer, int page) {
@@ -618,44 +586,9 @@ public class sceNand extends HLEModule {
     			buffer.memset((byte) 0xFF, pageSize);
     			break;
 			default:
-				// Used by sceChkregCheckRegion()
-				if (isIdStoragePageForKey(page, 0x0102)) {
-					buffer.setValue32(0x08C, 0x60); // Number of region code entries?
-					for (int i = 0; i < regionCodes.length; i++) {
-						buffer.setValue32(0x0B0 + i * 4, regionCodes[i]);
-					}
-				// Used by sceChkreg_driver_6894A027()
-				} else if (isIdStoragePageForKey(page, 0x100)) {
-					// A certificate is stored at offset 0x38
-					int certificateOffset = 0x38;
-					int certificateLength = 0xB8;
-					buffer.clear(certificateOffset, certificateLength);
-					int unknownValue = sceChkregModule.getValueReturnedBy6894A027();
-					buffer.setValue8(certificateOffset + 8, (byte) ((0x23 << 2) | ((unknownValue >> 6) & 0x03)));
-					buffer.setValue8(certificateOffset + 9, (byte) ((unknownValue << 2) & 0xFC));
-				// Used by usb.prx
-				} else if (isIdStoragePageForKey(page, 0x41)) {
-					int offset = 0;
-					buffer.setValue32(offset, 0x54C);
-					offset += 4;
-					writeStringType(buffer, 4, "Sony");
-					offset += 64;
-
-					final int[] types = { 0x1C8, 0x1C9, 0x1CA, 0x1CB, 0x1CC };
-					final String[] typeNames = { "PSP Type A", "PSP Type B", "PSP Type C", "PSP Type D", "PSP Type E" };
-
-					buffer.setValue32(offset, types.length);
-					offset += 4;
-
-					for (int i = 0; i < types.length; i++) {
-						buffer.setValue32(offset, types[i]);
-						offset += 4;
-						writeStringType(buffer, offset, typeNames[i]);
-						offset += 64;
-					}
-				// Used to display the MAC address in the VSH
-				} else if (isIdStoragePageForKey(page, 0x44)) {
-					buffer.setArray(0, Wlan.getMacAddress(), Wlan.MAC_ADDRESS_LENGTH);
+				int key = getIdStorageKey(page);
+				if (key >= 0) {
+					Modules.sceIdStorageModule.hleIdStorageReadLeaf(key, buffer);
 				}
 				break;
     	}
