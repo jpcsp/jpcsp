@@ -170,27 +170,29 @@ public class SysMemUserForUser extends HLEModule {
 
     public void setMemorySize(int memorySize) {
     	if (MemoryMap.SIZE_RAM != memorySize) {
+    		int kernelSize = MemoryMap.END_KERNEL - MemoryMap.START_KERNEL + 1;
+    		int kernelSize32 = kernelSize >> 2;
+    		int[] savedKernelMemory = new int[kernelSize32];
+    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(MemoryMap.START_KERNEL, kernelSize, 4);
+    		for (int i = 0; i < kernelSize32; i++) {
+    			savedKernelMemory[i] = memoryReader.readNext();
+    		}
+
     		int previousMemorySize = MemoryMap.SIZE_RAM;
     		MemoryMap.END_RAM = MemoryMap.START_RAM + memorySize - 1;
     		MemoryMap.END_USERSPACE = MemoryMap.END_RAM;
     		MemoryMap.SIZE_RAM = MemoryMap.END_RAM - MemoryMap.START_RAM + 1;
-
-    		int kernelSize32 = (MemoryMap.END_KERNEL - MemoryMap.START_KERNEL + 1) >> 2;
-    		int[] savedKernelMemory = new int[kernelSize32];
-    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(MemoryMap.START_KERNEL, 4);
-    		for (int i = 0; i < kernelSize32; i++) {
-    			savedKernelMemory[i] = memoryReader.readNext();
-    		}
 
     		if (!Memory.getInstance().allocate()) {
 				log.error(String.format("Failed to resize the PSP memory from 0x%X to 0x%X", previousMemorySize, memorySize));
 				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_ANY);
 			}
 
-    		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(MemoryMap.START_KERNEL, 4);
+    		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(MemoryMap.START_KERNEL, kernelSize, 4);
     		for (int i = 0; i < kernelSize32; i++) {
     			memoryWriter.writeNext(savedKernelMemory[i]);
     		}
+    		memoryWriter.flush();
 
     		reset(true);
     	}
