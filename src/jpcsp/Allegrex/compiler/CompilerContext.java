@@ -2340,7 +2340,7 @@ public class CompilerContext implements ICompilerContext {
     	}
 
 		// The pc is used by the DebuggerMemory or the LLE/MMIO
-    	if (Memory.getInstance() instanceof DebuggerMemory || RuntimeContextLLE.isLLEActive()) {
+    	if (Memory.getInstance() instanceof DebuggerMemory || RuntimeContextLLE.isLLEActive() || RuntimeContextLLE.hasMMIO()) {
     		storePc();
     	}
 

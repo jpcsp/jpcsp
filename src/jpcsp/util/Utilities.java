@@ -955,7 +955,7 @@ public class Utilities {
     public static String getMemoryDump(int address, int length, int step, int bytesPerLine) {
     	Memory mem = Memory.getInstance();
     	if (!Memory.isAddressGood(address)) {
-    		if (!RuntimeContextLLE.isLLEActive() || !MMIO.isAddressGood(address)) {
+    		if (!RuntimeContextLLE.hasMMIO() || !MMIO.isAddressGood(address)) {
         		return String.format("Invalid memory address 0x%08X", address);
     		}
 			mem = RuntimeContextLLE.getMMIO();

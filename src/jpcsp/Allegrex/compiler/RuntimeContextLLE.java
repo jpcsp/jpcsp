@@ -62,10 +62,6 @@ public class RuntimeContextLLE {
 	}
 
 	public static void createMMIO() {
-		if (!isLLEActive()) {
-			return;
-		}
-
 		if (mmio == null) {
 			mmio = new MMIO(Emulator.getMemory());
 			if (mmio.allocate()) {
@@ -82,6 +78,10 @@ public class RuntimeContextLLE {
     	compiler.addMMIORange(MemoryMap.START_KERNEL, 0x800000);
     	compiler.addMMIORange(0xBFC00C00, 0x240);
     }
+
+	public static boolean hasMMIO() {
+		return mmio != null;
+	}
 
 	public static Memory getMMIO() {
 		return mmio;

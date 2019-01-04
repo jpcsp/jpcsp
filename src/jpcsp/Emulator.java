@@ -198,6 +198,11 @@ public class Emulator implements Runnable {
     }
 
     private void initCpu(boolean fromSyscall) {
+    	String discId = module.psf != null ? module.psf.getString("DISC_ID") : State.discId;
+        if ("MSTKUPDATE".equals(discId)) {
+        	RuntimeContextLLE.createMMIO();
+        }
+
         RuntimeContext.update();
 
         int entryAddr = module.entry_addr;

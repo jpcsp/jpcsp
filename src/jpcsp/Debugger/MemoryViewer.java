@@ -70,14 +70,14 @@ public class MemoryViewer extends javax.swing.JFrame {
     }
 
     public static boolean isAddressGood(int address) {
-    	if (RuntimeContextLLE.isLLEActive()) {
+    	if (RuntimeContextLLE.hasMMIO()) {
     		return MMIO.isAddressGood(address);
     	}
     	return Memory.isAddressGood(address);
     }
 
     public static Memory getMemory() {
-    	if (RuntimeContextLLE.isLLEActive()) {
+    	if (RuntimeContextLLE.hasMMIO()) {
     		return RuntimeContextLLE.getMMIO();
     	}
     	return Memory.getInstance();

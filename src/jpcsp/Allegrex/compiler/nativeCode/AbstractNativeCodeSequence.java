@@ -68,14 +68,11 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	}
 
 	static protected Memory getMemoryForLLE() {
-		Memory mem;
-		if (RuntimeContextLLE.isLLEActive()) {
-			mem = RuntimeContextLLE.getMMIO();
-		} else {
-			mem = getMemory();
+		if (RuntimeContextLLE.hasMMIO()) {
+			return RuntimeContextLLE.getMMIO();
 		}
 
-		return mem;
+		return getMemory();
 	}
 
 	static protected Memory getMemory() {
