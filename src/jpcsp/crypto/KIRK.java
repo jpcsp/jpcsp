@@ -276,49 +276,51 @@ public class KIRK {
     // Helper functions.
     private static int[] getAESKeyFromSeed(int seed) {
         switch (seed) {
-            case (0x02):
+            case 0x02:
                 return KeyVault.kirkAESKey20;
-            case (0x03):
+            case 0x03:
                 return KeyVault.kirkAESKey1;
-            case (0x04):
+            case 0x04:
                 return KeyVault.kirkAESKey2;
-            case (0x05):
+            case 0x05:
                 return KeyVault.kirkAESKey3;
-            case (0x07):
+            case 0x07:
                 return KeyVault.kirkAESKey21;
-            case (0x0C):
+            case 0x0A:
+            	return new int[] { 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A };
+            case 0x0C:
                 return KeyVault.kirkAESKey4;
-            case (0x0D):
+            case 0x0D:
                 return KeyVault.kirkAESKey5;
-            case (0x0E):
+            case 0x0E:
                 return KeyVault.kirkAESKey6;
-            case (0x0F):
+            case 0x0F:
                 return KeyVault.kirkAESKey7;
-            case (0x10):
+            case 0x10:
                 return KeyVault.kirkAESKey8;
-            case (0x11):
+            case 0x11:
                 return KeyVault.kirkAESKey9;
-            case (0x12):
+            case 0x12:
                 return KeyVault.kirkAESKey10;
-            case (0x38):
+            case 0x38:
                 return KeyVault.kirkAESKey11;
-            case (0x39):
+            case 0x39:
                 return KeyVault.kirkAESKey12;
-            case (0x3A):
+            case 0x3A:
                 return KeyVault.kirkAESKey13;
-            case (0x44):
+            case 0x44:
                 return KeyVault.kirkAESKey22;
-            case (0x4B):
+            case 0x4B:
                 return KeyVault.kirkAESKey14;
-            case (0x53):
+            case 0x53:
                 return KeyVault.kirkAESKey15;
-            case (0x57):
+            case 0x57:
                 return KeyVault.kirkAESKey16;
-            case (0x5D):
+            case 0x5D:
                 return KeyVault.kirkAESKey17;
-            case (0x63):
+            case 0x63:
                 return KeyVault.kirkAESKey18;
-            case (0x64):
+            case 0x64:
                 return KeyVault.kirkAESKey19;
             default:
                 return null;
