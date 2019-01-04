@@ -233,18 +233,22 @@ public class sceSyscon extends HLEModule {
     	int powerSupplyStatus = 0xC0; // Unknown value
 
     	if (Battery.isPresent()) {
-    		powerSupplyStatus |= 0x02; // Flag indicating that there is a battery present
+    		powerSupplyStatus |= 0x02; // Flag indicating that a battery is present
     	}
 
     	return powerSupplyStatus;
     }
 
+    private int getBatteryStatusCap() {
+    	return (Battery.getCurrentPowerPercent() + 1) * 0x10000 / 16 + 0x800;
+    }
+
     public int getBatteryStatusCap1() {
-    	return 0;
+    	return getBatteryStatusCap() & 0xFFFF;
     }
 
     public int getBatteryStatusCap2() {
-    	return 0;
+    	return (getBatteryStatusCap() >> 16) & 0xFFFF;
     }
 
     public int getBatteryCycle() {
