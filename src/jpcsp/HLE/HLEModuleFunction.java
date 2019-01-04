@@ -36,8 +36,9 @@ public class HLEModuleFunction {
 	private int stackUsage;
 	private HLEModule hleModule;
 	private int firmwareVersion;
+	private final boolean jumpCall;
 
-    public HLEModuleFunction(String moduleName, String functionName, int nid, HLEModule hleModule, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled, int stackUsage, int firmwareVersion) {
+    public HLEModuleFunction(String moduleName, String functionName, int nid, HLEModule hleModule, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled, int stackUsage, int firmwareVersion, boolean jumpCall) {
         this.moduleName = moduleName;
         this.functionName = functionName;
         this.nid = nid;
@@ -47,6 +48,7 @@ public class HLEModuleFunction {
 		this.hleModuleMethod = hleModuleMethod; 
 		this.hleModule = hleModule;
 		this.firmwareVersion = firmwareVersion;
+		this.jumpCall = jumpCall;
     }
 
     public final void setSyscallCode(int syscallCode) {
@@ -115,6 +117,10 @@ public class HLEModuleFunction {
 
 	public int getFirmwareVersion() {
 		return firmwareVersion;
+	}
+
+	public boolean requiresJumpCall() {
+		return jumpCall;
 	}
 
 	@Override

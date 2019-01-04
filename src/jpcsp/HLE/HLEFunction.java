@@ -64,4 +64,10 @@ public @interface HLEFunction {
 	 * Size of the stack used by the function.
 	 */
 	public int stackUsage() default 0;
+
+	/**
+	 * Specifies that this function has to be reached
+	 * through a jump instruction instead of a syscall.
+	 */
+	public boolean jumpCall() default false;
 }

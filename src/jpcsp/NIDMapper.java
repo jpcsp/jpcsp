@@ -365,6 +365,18 @@ public class NIDMapper {
     	}
     }
 
+    public void setNidAddress(String moduleName, int nid, int address) {
+    	address &= Memory.addressMask;
+
+    	NIDInfo info = getNIDInfoByNid(moduleName, nid);
+    	if (info == null) {
+    		log.error(String.format("NID 0x%08X from module '%s' not found", nid, moduleName));
+    		return;
+    	}
+
+    	info.address = address;
+    }
+
     /**
      * Remove all the NIDs that have been loaded from a module.
      *

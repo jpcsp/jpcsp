@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
+
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -31,6 +34,7 @@ import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
+import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
@@ -38,6 +42,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -494,6 +499,23 @@ public class HLEModuleManager {
     	if (syscallCode >= 0) {
     		func.setSyscallCode(syscallCode);
     		syscallToFunction.put(syscallCode, func);
+
+    		if (func.requiresJumpCall()) {
+    			SysMemInfo sysMemInfo = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, String.format("JumpCall-%s", func.getFunctionName()), PSP_SMEM_Low, 8, 0);
+    			int jumpCallAddress = sysMemInfo.addr;
+            	int returnInstruction = // jr $ra
+                	    (AllegrexOpcodes.SPECIAL << 26)
+                	    | AllegrexOpcodes.JR
+                	    | ((Common._ra) << 21);
+                int syscallInstruction = // syscall <code>
+                    (AllegrexOpcodes.SPECIAL << 26)
+                    | AllegrexOpcodes.SYSCALL
+                    | ((syscallCode & 0x000fffff) << 6);
+                Memory mem = Emulator.getMemory(jumpCallAddress);
+                mem.write32(jumpCallAddress + 0, returnInstruction);
+                mem.write32(jumpCallAddress + 4, syscallInstruction);
+    			nidMapper.setNidAddress(func.getModuleName(), nid, jumpCallAddress);
+    		}
     	}
     }
 
@@ -625,7 +647,7 @@ public class HLEModuleManager {
 			functionName = method.getName();
 		}
 
-		HLEModuleFunction hleModuleFunction = new HLEModuleFunction(moduleName, functionName, hleFunction.nid(), hleModule, method, hleFunction.checkInsideInterrupt(), hleFunction.checkDispatchThreadEnabled(), hleFunction.stackUsage(), hleFunction.version());
+		HLEModuleFunction hleModuleFunction = new HLEModuleFunction(moduleName, functionName, hleFunction.nid(), hleModule, method, hleFunction.checkInsideInterrupt(), hleFunction.checkDispatchThreadEnabled(), hleFunction.stackUsage(), hleFunction.version(), hleFunction.jumpCall());
 
 		if (hleUnimplemented != null) {
 			hleModuleFunction.setUnimplemented(true);
@@ -724,14 +746,18 @@ public class HLEModuleManager {
         	}
 
         	// Is the module requiring LLE?
+        	boolean requiresLLE = false;
         	for (String moduleFileNameLLE : moduleFileNamesLLE) {
         		if (moduleFileName.equals(moduleFileNameLLE)) {
-        			// Enable the LLE if not yet done
-        			if (!RuntimeContextLLE.isLLEActive()) {
-        				RuntimeContextLLE.enableLLE();
-        				RuntimeContextLLE.start();
-        			}
+        			requiresLLE = true;
+        			break;
         		}
+        	}
+
+			// Enable the LLE if not yet done
+        	if (requiresLLE && !RuntimeContextLLE.isLLEActive()) {
+				RuntimeContextLLE.enableLLE();
+				RuntimeContextLLE.start();
         	}
 
         	IAction onModuleStartAction = null;
