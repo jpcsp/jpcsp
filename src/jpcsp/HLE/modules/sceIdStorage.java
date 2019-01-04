@@ -19,6 +19,8 @@ package jpcsp.HLE.modules;
 import static jpcsp.HLE.Modules.sceChkregModule;
 import static jpcsp.HLE.modules.sceNand.pageSize;
 import static jpcsp.memory.mmio.MMIOHandlerUmd.regionCodes;
+import static jpcsp.util.Utilities.endianSwap16;
+import static jpcsp.util.Utilities.endianSwap32;
 
 import org.apache.log4j.Logger;
 
@@ -33,9 +35,44 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 public class sceIdStorage extends HLEModule {
 	public static Logger log = Modules.getLogger("sceIdStorage");
+    public static final int idStorageKeys[] = {
+    		// The first 2 entries have to be 0xFFFF
+    		0xFFFF,
+    		0xFFFF,
+    		// The following entries are the keys used when calling sceIdStorageLookup()
+    		0x0004,
+    		0x0005,
+    		0x0006,
+    		0x0008,
+    		0x0010,
+    		0x0011,
+    		0x0041,
+    		0x0043,
+    		0x0044,
+    		0x0045,
+    		0x0046,
+    		0x0047,
+    		0x0054,
+    		0x0100,
+    		0x0101,
+    		0x0102,
+    		0x0103,
+    		0x0104,
+    		0x0105,
+    		0x0106,
+    		0x0120,
+    		0x0121,
+    		0x0122,
+    		0x0123,
+    		0x0124,
+    		0x0125,
+    		0x0126,
+    		0x0141
+    };
 
     private static void writeStringType(TPointer buffer, int offset, String s) {
     	buffer.setValue8(offset++, (byte) ((s.length() + 1) * 2)); // number of bytes including terminating 0.
@@ -53,22 +90,14 @@ public class sceIdStorage extends HLEModule {
 		buffer.clear(pageSize);
 
 		switch (key) {
-			case 0x0102:
-				// Used by sceChkregCheckRegion()
-				buffer.setValue32(0x08C, 0x60); // Number of region code entries?
-				for (int i = 0; i < regionCodes.length; i++) {
-					buffer.setValue32(0x0B0 + i * 4, regionCodes[i]);
-				}
+			case 0x0004:
+				buffer.setValue32(0, 0x4272796E); // Fixed value "nyrB"
 				break;
-			case 0x0100:
-				// Used by sceChkreg_driver_6894A027()
-				// A certificate is stored at offset 0x38
-				int certificateOffset = 0x38;
-				int certificateLength = 0xB8;
-				buffer.clear(certificateOffset, certificateLength);
-				int unknownValue = sceChkregModule.getValueReturnedBy6894A027();
-				buffer.setValue8(certificateOffset + 8, (byte) ((0x23 << 2) | ((unknownValue >> 6) & 0x03)));
-				buffer.setValue8(certificateOffset + 9, (byte) ((unknownValue << 2) & 0xFC));
+			case 0x0005:
+				buffer.setValue32(0, 0x436C6B67); // Fixed value "gklC"
+				break;
+			case 0x0006:
+				buffer.setValue32(0, 0x4D446472); // Fixed value "rdDM"
 				break;
 			case 0x0041:
 				// Used by usb.prx
@@ -95,12 +124,29 @@ public class sceIdStorage extends HLEModule {
 				// Used to display the MAC address in the VSH
 				buffer.setArray(0, Wlan.getMacAddress(), Wlan.MAC_ADDRESS_LENGTH);
 				break;
-			case 0x0141:
-				// Used by sceChkuppkg from PSP 6.61 EBOOT.PBP
-				for (int i = 0; i < 0xA0; i++) {
-					buffer.setUnsignedValue8(i, i);
+			case 0x0100:
+				// Used by sceChkreg_driver_6894A027()
+				// A certificate is stored at offset 0x38
+				int certificateOffset = 0x38;
+				int certificateLength = 0xB8;
+				buffer.clear(certificateOffset, certificateLength);
+				int unknownValue = sceChkregModule.getValueReturnedBy6894A027();
+				buffer.setValue32(certificateOffset + 0, endianSwap32(1));
+				buffer.setUnsignedValue16(certificateOffset + 4, endianSwap16(5));
+				buffer.setUnsignedValue16(certificateOffset + 6, endianSwap16(1));
+				buffer.setUnsignedValue8(certificateOffset + 8, (0x23 << 2) | ((unknownValue >> 6) & 0x03));
+				buffer.setUnsignedValue8(certificateOffset + 9, (unknownValue << 2) & 0xFC);
+				break;
+			case 0x0102:
+				// Used by sceChkregCheckRegion()
+				buffer.setValue32(0x08C, 0x60); // Number of region code entries?
+				for (int i = 0; i < regionCodes.length; i++) {
+					buffer.setValue32(0x0B0 + i * 4, regionCodes[i]);
 				}
 				break;
+			case 0x0141:
+				// Used by sceChkuppkg from PSP 6.61 EBOOT.PBP
+				return SceKernelErrors.ERROR_NOT_FOUND;
 		}
 
 		return 0;
