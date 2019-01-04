@@ -1162,16 +1162,17 @@ public class IoFileMgrForUser extends HLEModule {
             } else {
                 // First check if the file already exists
                 File file = new File(pcfilename);
-                if (file.exists() &&
-                        (flags & PSP_O_CREAT) == PSP_O_CREAT &&
-                        (flags & PSP_O_EXCL) == PSP_O_EXCL) {
+                if (file.exists() && (flags & (PSP_O_CREAT | PSP_O_EXCL | PSP_O_TRUNC)) == (PSP_O_CREAT | PSP_O_EXCL)) {
                     if (log.isDebugEnabled()) {
                         log.debug("getFile - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
                     }
                 } else {
-                    if (file.exists() &&
-                            (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
-                        log.warn("getFile - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
+                    if (file.exists() && (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+                    	if ((flags & (PSP_O_CREAT | PSP_O_EXCL | PSP_O_TRUNC)) == (PSP_O_CREAT | PSP_O_EXCL | PSP_O_TRUNC)) {
+                    		file.delete();
+                    	} else {
+                    		log.warn("getFile - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
+                    	}
                     }
                     String mode = getMode(flags);
 
@@ -1826,8 +1827,7 @@ public class IoFileMgrForUser extends HLEModule {
                 } else {
                     // First check if the file already exists
                     File file = new File(pcfilename);
-                    if (file.exists() && (flags & PSP_O_CREAT) == PSP_O_CREAT &&
-                            (flags & PSP_O_EXCL) == PSP_O_EXCL) {
+                    if (file.exists() && (flags & (PSP_O_CREAT | PSP_O_EXCL | PSP_O_TRUNC)) == (PSP_O_CREAT | PSP_O_EXCL)) {
                         if (log.isDebugEnabled()) {
                             log.debug("hleIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
                         }
@@ -3717,36 +3717,36 @@ public class IoFileMgrForUser extends HLEModule {
                 int mode = stat.mode;
                 boolean successful = true;
 
-                if ((bits & 0x0001) != 0) {	// Others execute permission
+                if ((bits & 0101) == 0101) {	// Others execute permission
                     if (!file.setExecutable((mode & 0x0001) != 0)) {
                     	// This always fails under Windows
                         // successful = false;
                     }
                 }
-                if ((bits & 0x0002) != 0) {	// Others write permission
+                if ((bits & 0202) == 0202) {	// Others write permission
                     if (!file.setWritable((mode & 0x0002) != 0)) {
                         successful = false;
                     }
                 }
-                if ((bits & 0x0004) != 0) {	// Others read permission
+                if ((bits & 0404) == 0404) {	// Others read permission
                     if (!file.setReadable((mode & 0x0004) != 0)) {
                     	// This always fails under Windows
                         // successful = false;
                     }
                 }
 
-                if ((bits & 0x0040) != 0) {	// User execute permission
+                if ((bits & 0100) != 0) {	// User execute permission
                     if (!file.setExecutable((mode & 0x0040) != 0, true)) {
                     	// This always fails under Windows
                         // successful = false;
                     }
                 }
-                if ((bits & 0x0080) != 0) {	// User write permission
+                if ((bits & 0200) != 0) {	// User write permission
                     if (!file.setWritable((mode & 0x0080) != 0, true)) {
                         successful = false;
                     }
                 }
-                if ((bits & 0x0100) != 0) {	// User read permission
+                if ((bits & 0400) != 0) {	// User read permission
                     if (!file.setReadable((mode & 0x0100) != 0, true)) {
                     	// This always fails under Windows
                         // successful = false;
