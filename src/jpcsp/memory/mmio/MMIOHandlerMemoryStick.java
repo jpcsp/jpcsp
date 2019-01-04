@@ -195,6 +195,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	private final IntArrayMemory disabledBlocksPageMemory = new IntArrayMemory(new int[PAGE_SIZE >> 2]);
 	private final MemoryStickProAttribute msproAttribute = new MemoryStickProAttribute();
 	private final IntArrayMemory msproAttributeMemory = new IntArrayMemory(new int[(2 * PAGE_SIZE) >> 2]);
+	private boolean msproAttributeMemoryInitialized = false;
 	private final static int PAGE_SIZE = 0x200;
 	private final static int DISABLED_BLOCKS_PAGE = 1;
 	private final static int CIS_IDI_PAGE = 2;
@@ -432,8 +433,10 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		disabledBlocksPageMemory.write16(0, (short) endianSwap16(0x0000));
 		disabledBlocksPageMemory.write16(2, (short) endianSwap16(0x0001));
 		disabledBlocksPageMemory.write16(4, (short) endianSwap16(NUMBER_OF_PHYSICAL_BLOCKS - 1));
+	}
 
-		if (simulateMemoryStickPro) {
+	private void initMsproAttributeMemory() {
+		if (simulateMemoryStickPro && !msproAttributeMemoryInitialized) {
 			msproAttribute.signature = 0xA5C3;
 			msproAttribute.count = 0;
 			int entryAddress = 0x1A0; // Only accepting attribute entries starting at that address
@@ -461,6 +464,8 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 			entryAddress = addMsproAttributeEntry(entryAddress, MSPRO_BLOCK_ID_PBR32, memoryStickPbr32);
 
 			msproAttribute.write(msproAttributeMemory);
+
+			msproAttributeMemoryInitialized = true;
 		}
 	}
 
@@ -926,6 +931,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 
 		switch (cmd) {
 			case MSPRO_CMD_READ_ATRB:
+				initMsproAttributeMemory();
 				value = msproAttributeMemory.read32((pageLba * PAGE_SIZE) + pageDataIndex);
 				break;
 			case MSPRO_CMD_READ_DATA:
