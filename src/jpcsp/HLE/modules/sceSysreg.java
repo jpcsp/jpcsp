@@ -1035,4 +1035,28 @@ public class sceSysreg extends HLEModule {
     public int sceSysregSpiClkSelect(int unknown1, int unknown2) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF97D9D73, version = 150)
+    public int sceSysregEmcsmBusClockEnable() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2D0F7755, version = 150)
+    public int sceSysregEmcsmBusClockDisable() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9DD1F821, version = 150)
+    public int sceSysregEmcsmIoEnable() {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1C4C4C7A, version = 150)
+    public int sceSysregEmcsmIoDisable() {
+    	return 0;
+    }
 }

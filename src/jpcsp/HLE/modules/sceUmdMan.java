@@ -325,4 +325,34 @@ public class sceUmdMan extends HLEModule {
     public int sceUmdMan_driver_D372D6F3(TPointer driveInformationAddress) {
         return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x14D3381C, version = 150)
+    public int sceUmdExecTestCmd() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x1B19A313, version = 150)
+    public int sceUmdExecInquiryCmd() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0D3EA203, version = 150)
+    public int sceUmdManTerm() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xCAD31025, version = 150)
+    public int sceUmdManStop() {
+        return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x736AE133, version = 150)
+    public int  sceUmdManLPNNegateWakeup() {
+        return 0;
+    }
 }

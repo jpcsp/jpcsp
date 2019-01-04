@@ -60,4 +60,10 @@ public class sceGpio extends HLEModule {
     public int sceGpioAcquireIntr(int interruptNumber) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x95D7F3B8, version = 660)
+    public int sceGpioDisableIntr() {
+    	return 0;
+    }
 }

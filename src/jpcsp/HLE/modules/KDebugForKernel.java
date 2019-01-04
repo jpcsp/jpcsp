@@ -139,7 +139,7 @@ public class KDebugForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xE892D9A1, version = 150)
-	public int KDebugForKernel_E892D9A1() {
+	public int sceKernelSm1ReferOperations() {
 		return 0;
 	}
 
