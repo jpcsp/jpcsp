@@ -355,6 +355,7 @@ public class PRX {
         	case DECRYPT_MODE_POPS_EXEC:
         		type = 5;
         		break;
+        	case DECRYPT_MODE_BOGUS_MODULE:
         	case DECRYPT_MODE_KERNEL_MODULE:
         		type = 2;
         		break;
