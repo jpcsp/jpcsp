@@ -18,6 +18,7 @@ package jpcsp.HLE.modules;
 
 import static java.lang.Integer.rotateRight;
 import static jpcsp.HLE.HLEModuleManager.InternalSyscallNid;
+import static jpcsp.HLE.modules.sceIdStorage.idStorageKeys;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -71,39 +72,6 @@ public class sceNand extends HLEModule {
     private Fat12VirtualFile vFile3;
     private Fat12VirtualFile vFile603;
     private Fat12VirtualFile vFile703;
-    private static final int idStorageKeys[] = {
-    		// The first 2 entries have to be 0xFFFF
-    		0xFFFF,
-    		0xFFFF,
-    		// The following entries are the keys used when calling sceIdStorageLookup()
-    		0x0004,
-    		0x0008,
-    		0x0006,
-    		0x0010,
-    		0x0011,
-    		0x0041,
-    		0x0043,
-    		0x0044,
-    		0x0045,
-    		0x0046,
-    		0x0047,
-    		0x0054,
-    		0x0100,
-    		0x0101,
-    		0x0102,
-    		0x0103,
-    		0x0104,
-    		0x0105,
-    		0x0106,
-    		0x0120,
-    		0x0121,
-    		0x0122,
-    		0x0123,
-    		0x0124,
-    		0x0125,
-    		0x0126,
-    		0x0141
-    };
 
     @Override
 	public void start() {
@@ -965,7 +933,7 @@ public class sceNand extends HLEModule {
     	return ppnToLbn[ppn];
     }
 
-    @HLEFunction(nid = 0xB07C41D4, version = 150)
+    @HLEFunction(nid = 0xB07C41D4, version = 150, jumpCall = true)
     public int sceNandGetPagesPerBlock() {
     	// Has no parameters
         return pagesPerBlock;
@@ -978,7 +946,7 @@ public class sceNand extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xAE4438C7, version = 150)
+    @HLEFunction(nid = 0xAE4438C7, version = 150, jumpCall = true)
     public int sceNandLock(int mode) {
     	sceNandSetWriteProtect(mode == 0);
 
@@ -986,7 +954,7 @@ public class sceNand extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x41FFA822, version = 150)
+    @HLEFunction(nid = 0x41FFA822, version = 150, jumpCall = true)
     public int sceNandUnlock() {
     	// Has no parameters
     	sceNandSetWriteProtect(true);
@@ -995,7 +963,7 @@ public class sceNand extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x01F09203, version = 150)
+    @HLEFunction(nid = 0x01F09203, version = 150, jumpCall = true)
     public int sceNandIsBadBlock(int ppn) {
     	if ((ppn % pagesPerBlock) != 0) {
     		return -1;
@@ -1023,7 +991,7 @@ public class sceNand extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x84EE5D76, version = 150)
+    @HLEFunction(nid = 0x84EE5D76, version = 150, jumpCall = true)
     public boolean sceNandSetWriteProtect(boolean protect) {
     	boolean result = writeProtected;
 
@@ -1033,50 +1001,50 @@ public class sceNand extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x8932166A, version = 150)
+    @HLEFunction(nid = 0x8932166A, version = 150, jumpCall = true)
     public int sceNandWritePagesRawExtra(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.in) TPointer user, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer spare, int len) {
     	return hleNandWritePages(ppn, user, spare, len, true, false, false);
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x5182C394, version = 150)
+    @HLEFunction(nid = 0x5182C394, version = 150, jumpCall = true)
     public int sceNandReadExtraOnly(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer spare, int len) {
     	hleNandReadPages(ppn, TPointer.NULL, spare, len, true, true, false);
     	return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x89BDCA08, version = 150)
+    @HLEFunction(nid = 0x89BDCA08, version = 150, jumpCall = true)
     public int sceNandReadPages(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len) {
     	return hleNandReadPages(ppn, user, spare, len, false, false, false);
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xE05AE88D, version = 150)
+    @HLEFunction(nid = 0xE05AE88D, version = 150, jumpCall = true)
     public int sceNandReadPagesRawExtra(int ppn, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.out) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer spare, int len) {
     	return hleNandReadPages(ppn, user, spare, len, true, false, false);
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xC32EA051, version = 150)
+    @HLEFunction(nid = 0xC32EA051, version = 150, jumpCall = true)
     public int sceNandReadBlockWithRetry(int ppn, TPointer user, TPointer spare) {
     	return hleNandReadPages(ppn, user, spare, pagesPerBlock, false, false, false);
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xB2B021E5, version = 150)
+    @HLEFunction(nid = 0xB2B021E5, version = 150, jumpCall = true)
     public int sceNandWriteBlockWithVerify(int ppn, TPointer user, TPointer spare) {
     	return hleNandWritePages(ppn, user, spare, pagesPerBlock, false, false, false);
     }
 
-    @HLEFunction(nid = 0xC1376222, version = 150)
+    @HLEFunction(nid = 0xC1376222, version = 150, jumpCall = true)
     public int sceNandGetTotalBlocks() {
     	// Has no parameters
     	return totalBlocks;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xE41A11DE, version = 150)
+    @HLEFunction(nid = 0xE41A11DE, version = 150, jumpCall = true)
     public int sceNandReadStatus() {
     	// Has no parameters
     	int result = 0;
@@ -1088,7 +1056,7 @@ public class sceNand extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xEB0A0022, version = 150)
+    @HLEFunction(nid = 0xEB0A0022, version = 150, jumpCall = true)
     public int sceNandEraseBlock(int ppn) {
     	return 0;
     }
@@ -1150,7 +1118,7 @@ public class sceNand extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x8AF0AB9F, version = 150)
+    @HLEFunction(nid = 0x8AF0AB9F, version = 150, jumpCall = true)
     public int sceNandWritePages(int ppn, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=pageSize, usage=Usage.in) TPointer user, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.in) TPointer spare, int len) {
     	return hleNandWritePages(ppn, user, spare, len, false, false, false);
     }
@@ -1174,7 +1142,7 @@ public class sceNand extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xC29DA136, version = 150)
+    @HLEFunction(nid = 0xC29DA136, version = 150, jumpCall = true)
     public int sceNandDoMarkAsBadBlock(int ppn) {
     	return 0;
     }
@@ -1216,7 +1184,7 @@ public class sceNand extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x9B2AC433, version = 150)
+    @HLEFunction(nid = 0x9B2AC433, version = 150, jumpCall = true)
     public int sceNandTestBlock() {
     	return 0;
     }
@@ -1243,5 +1211,11 @@ public class sceNand extends HLEModule {
     @HLEFunction(nid = 0x88CC9F72, version = 150)
     public int sceNandCorrectEcc(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.inout) TPointer buffer, int ecc) {
     	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB795D2ED, version = 150, jumpCall = true)
+    public int sceNandCollectEcc(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.inout) TPointer buffer, int ecc) {
+    	return sceNandCorrectEcc(buffer, ecc);
     }
 }
