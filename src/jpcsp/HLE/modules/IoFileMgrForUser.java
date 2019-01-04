@@ -3145,7 +3145,7 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x6A638D83, version = 150, checkInsideInterrupt = true)
-    public int sceIoRead(int id, TPointer data_addr, int size) {
+    public int sceIoRead(int id, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer data_addr, int size) {
         return hleIoRead(id, data_addr.getAddress(), size, false);
     }
 
@@ -4421,10 +4421,17 @@ public class IoFileMgrForUser extends HLEModule {
     public int sceIoAssign(PspString alias, PspString physicalDev, PspString filesystemDev, int mode, int arg_addr, int argSize) {
         int result = 0;
 
-        // Do not assign "disc0:".
-        // Example from "Ridge Racer UCES00002":
-        //   sceIoAssign alias=0x0899F1E0('disc0:'), physicalDev=0x0899F1D0('umd0:'), filesystemDev=0x0899F1D8('isofs0:'), mode=0x1, arg_addr=0x0, argSize=0x0
-        if (!alias.getString().equals("disc0:")) {
+        // Do not really assign "standard" assignments
+        if ("flash0:".equals(alias.getString()) && "lflash0:0,0".equals(physicalDev.getString()) && "flashfat0:".equals(filesystemDev.getString())) {
+        	assignedDevices.remove("flash0");
+        } else if ("flash1:".equals(alias.getString()) && "lflash0:0,1".equals(physicalDev.getString()) && "flashfat1:".equals(filesystemDev.getString())) {
+        	assignedDevices.remove("flash1");
+        } else if ("flash2:".equals(alias.getString()) && "lflash0:0,2".equals(physicalDev.getString()) && "flashfat2:".equals(filesystemDev.getString())) {
+        	assignedDevices.remove("flash2");
+        } else if (!alias.getString().equals("disc0:")) {
+            // Do not assign "disc0:".
+            // Example from "Ridge Racer UCES00002":
+            //   sceIoAssign alias=0x0899F1E0('disc0:'), physicalDev=0x0899F1D0('umd0:'), filesystemDev=0x0899F1D8('isofs0:'), mode=0x1, arg_addr=0x0, argSize=0x0
         	assignedDevices.put(alias.getString().replace(":", ""), filesystemDev.getString().replace(":", ""));
         }
 
