@@ -41,9 +41,9 @@ public class sceMesgd extends HLEModule {
     public static Logger log = Modules.getLogger("sceMesgd");
     private PRX prxEngine = new CryptoEngine().getPRXEngine();
 
-    public int sceMesgd_driver_102DC8AF(byte[] buffer, int bufferOffset, int bufferSize, TPointer32 resultSizeAddr) {
+    public int hleMesgd_driver_102DC8AF(byte[] buffer, int bufferOffset, int bufferSize, TPointer32 resultSizeAddr) {
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceMesgd_driver_102DC8AF input(size=0x%X): %s", bufferSize, Utilities.getMemoryDump(buffer, bufferOffset, bufferSize)));
+    		log.trace(String.format("hleMesgd_driver_102DC8AF input(size=0x%X): %s", bufferSize, Utilities.getMemoryDump(buffer, bufferOffset, bufferSize)));
     	}
 
         int tag = readUnaligned32(buffer, bufferOffset + 0xD0);
@@ -68,7 +68,7 @@ public class sceMesgd extends HLEModule {
     	resultSizeAddr.setValue(resultSize);
 
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceMesgd_driver_102DC8AF result=0x%X, output(size=0x%X): %s", result, resultSize, Utilities.getMemoryDump(buffer, bufferOffset, resultSize)));
+    		log.trace(String.format("hleMesgd_driver_102DC8AF result=0x%X, output(size=0x%X): %s", result, resultSize, Utilities.getMemoryDump(buffer, bufferOffset, resultSize)));
     	}
 
     	return result;
@@ -83,7 +83,7 @@ public class sceMesgd extends HLEModule {
     		bytes[i] = (byte) memoryReader.readNext();
     	}
 
-    	int result = sceMesgd_driver_102DC8AF(bytes, 0, bufferSize, resultSizeAddr);
+    	int result = hleMesgd_driver_102DC8AF(bytes, 0, bufferSize, resultSizeAddr);
     	if (result != 0) {
     		return result;
     	}
