@@ -146,6 +146,7 @@ public class GprState implements IState {
     }
 
     public void copy(GprState that) {
+    	log = that.log;
         _at = that._at;
         _v0 = that._v0;
         _v1 = that._v1;
@@ -180,6 +181,7 @@ public class GprState implements IState {
     }
 
     public GprState(GprState that) {
+    	log = that.log;
         _at = that._at;
         _v0 = that._v0;
         _v1 = that._v1;
