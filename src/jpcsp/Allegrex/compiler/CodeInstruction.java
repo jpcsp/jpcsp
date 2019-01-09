@@ -21,6 +21,7 @@ import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
 import static jpcsp.HLE.modules.ThreadManForUser.NOP;
+import static jpcsp.HLE.modules.ThreadManForUser.SYNC;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.Instructions;
@@ -471,7 +472,7 @@ public class CodeInstruction {
         	compileDelaySlot(context, mv, delaySlotCodeInstruction);
         }
 
-    	if (branchingOpcode == Opcodes.GOTO && getBranchingTo() == getAddress() && delaySlotCodeInstruction.getOpcode() == NOP()) {
+    	if (branchingOpcode == Opcodes.GOTO && getBranchingTo() == getAddress() && (delaySlotCodeInstruction.getOpcode() == NOP() || delaySlotCodeInstruction.getOpcode() == SYNC())) {
     		context.visitLogInfo(mv, String.format("Pausing emulator - branch to self (death loop) at 0x%08X", getAddress()));
     		context.visitPauseEmuWithStatus(mv, Emulator.EMU_STATUS_JUMPSELF);
     	}

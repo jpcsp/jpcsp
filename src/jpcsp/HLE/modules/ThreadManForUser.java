@@ -816,6 +816,10 @@ public class ThreadManForUser extends HLEModule {
     	return (AllegrexOpcodes.SLL << 26) | (_zr << 16) | (_zr << 11) | (0 << 6);
     }
 
+    public static int SYNC() {
+    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYNC;
+    }
+
     public static int MOVE(int rd, int rs) {
     	// addu rd, rs, $zr <=> move rd, rs
     	return AllegrexOpcodes.ADDU | (rd << 11) | (_zr << 16) | (rs << 21);
