@@ -653,4 +653,10 @@ public class scePower extends HLEModule {
     public int scePowerSetTachyonVoltage_660(int unknown1, int unknown2) {
     	return scePowerSetTachyonVoltage(unknown1, unknown2);
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x0442D852, version = 150)
+    public int scePowerRequestColdReset(int unknown) {
+    	return 0;
+    }
 }
