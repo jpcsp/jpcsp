@@ -25,11 +25,13 @@ import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.interrupts.AbstractAllegrexInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.AbstractInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.AfterSubIntrAction;
+import jpcsp.HLE.kernel.types.interrupts.InterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.InterruptState;
 import jpcsp.HLE.kernel.types.interrupts.IntrHandler;
 import jpcsp.HLE.kernel.types.interrupts.SubIntrHandler;
@@ -300,6 +302,10 @@ public class IntrManager {
 		}
 	}
 
+	public void triggerInterrupt(int interruptNumber) {
+		triggerInterrupt(interruptNumber, null, null);
+	}
+
 	public void triggerInterrupt(int interruptNumber, IAction afterInterruptAction, IAction afterHandlerAction) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Triggering Interrupt %s(0x%X)", getInterruptName(interruptNumber), interruptNumber));
@@ -411,5 +417,16 @@ public class IntrManager {
 
 	public int sceKernelDisableSubIntr(int intrNumber, int subIntrNumber) {
 		return hleKernelEnableDisableSubIntr(intrNumber, subIntrNumber, false);
+	}
+
+	public int sceKernelRegisterIntrHandler(int intrNumber, int unknown, TPointer func, int funcArg, TPointer32 handler) {
+		if (intrNumber < 0 || intrNumber >= IntrManager.PSP_NUMBER_INTERRUPTS) {
+			return -1;
+		}
+
+		AbstractInterruptHandler interruptHandler = new InterruptHandler(func, funcArg);
+		addInterruptHandler(intrNumber, interruptHandler);
+
+		return 0;
 	}
 }
