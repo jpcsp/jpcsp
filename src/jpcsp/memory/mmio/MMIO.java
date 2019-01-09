@@ -53,7 +53,7 @@ public class MMIO extends Memory {
     @Override
     public boolean allocate() {
     	System.arraycopy(Memory.validMemoryPage, 0, validMemoryPage, 0, validMemoryPage.length);
-    	Arrays.fill(validMemoryPage, START_IO_0 >>> MEMORY_PAGE_SHIFT, (MemoryMap.END_EXCEPTIO_VEC >>> MEMORY_PAGE_SHIFT) + 1, true);
+    	Arrays.fill(validMemoryPage, START_IO_0 >>> MEMORY_PAGE_SHIFT, (MemoryMap.END_IO_1 >>> MEMORY_PAGE_SHIFT) + 1, true);
 
         return true;
     }
@@ -96,11 +96,13 @@ public class MMIO extends Memory {
     	addHandler(0xBE500000, MMIOHandlerUartBase.SIZE_OF, new MMIOHandlerUart3(0xBE500000));
     	addHandler(MMIOHandlerSyscon.BASE_ADDRESS, 0x28, MMIOHandlerSyscon.getInstance());
     	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
-    	addHandlerRW(0xBFC00000, 0x1000);
+    	addHandlerRW(0xBFC00000, 0x1000); // 4K embedded RAM
     	write32(0xBFC00200, 0x2E547106);
     	write32(0xBFC00204, 0xFBDFC08B);
     	write32(0xBFC00208, 0x087FCC08);
     	write32(0xBFC0020C, 0xAA60334E);
+//    	write32(0xBFC00FFC, 0xFFFFFFFF);
+    	addHandlerRW(0xBFD00000, 0x1000); // 4K embedded RAM
     	addHandler(MMIOHandlerMeCore.BASE_ADDRESS, 0x2C, MMIOHandlerMeCore.getInstance());
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS1, 0x90C, MMIOHandlerNandPage.getInstance());
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS2, 0x90C, MMIOHandlerNandPage.getInstance());
