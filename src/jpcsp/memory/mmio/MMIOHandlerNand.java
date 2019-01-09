@@ -269,38 +269,32 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 			// Read or write operation?
 			if ((dmaControl & DMA_CONTROL_WRITE) != 0) {
 				int lbn = endianSwap16(pageEccMemory.read16(6) & 0xFFFF);
-				if (lbn == 0xFFFF) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("writing to ppn=0x%X with lbn=0x%X ignored", ppn, lbn));
+				TPointer spare = pageEccMemory.getPointer();
+				sceNandModule.hleNandWriteSparePages(ppn, spare, 1, true, true, true);
+
+				TPointer user = pageDataMemory.getPointer();
+
+				// Updating the scramble as the LBN corresponding to the PPN might have been moved
+				scramble = getScramble(ppn);
+				if (scramble != 0) {
+					sceNand.descramblePage(scramble, ppn, MMIOHandlerNandPage.getInstance().getData(), scrambleBuffer);
+					user = scrambleBufferMemory.getPointer();
+				}
+
+				sceNandModule.hleNandWriteUserPages(ppn, user, 1, true, true);
+
+				if (log.isDebugEnabled()) {
+					byte[] userBytes = new byte[sceNand.pageSize];
+					user = scramble != 0 ? scrambleBufferMemory.getPointer() : pageDataMemory.getPointer();
+					for (int i = 0; i < userBytes.length; i++) {
+						userBytes[i] = user.getValue8(i);
 					}
-				} else {
-					TPointer spare = pageEccMemory.getPointer();
-					sceNandModule.hleNandWriteSparePages(ppn, spare, 1, true, true, true);
-
-					TPointer user = pageDataMemory.getPointer();
-
-					// Updating the scramble as the LBN corresponding to the PPN might have been moved
-					scramble = getScramble(ppn);
-					if (scramble != 0) {
-						sceNand.descramblePage(scramble, ppn, MMIOHandlerNandPage.getInstance().getData(), scrambleBuffer);
-						user = scrambleBufferMemory.getPointer();
+					byte[] spareBytes = new byte[16];
+					spare = pageEccMemory.getPointer();
+					for (int i = 0; i < spareBytes.length; i++) {
+						spareBytes[i] = spare.getValue8(i);
 					}
-
-					sceNandModule.hleNandWriteUserPages(ppn, user, 1, true, true);
-
-					if (log.isDebugEnabled()) {
-						byte[] userBytes = new byte[sceNand.pageSize];
-						user = scramble != 0 ? scrambleBufferMemory.getPointer() : pageDataMemory.getPointer();
-						for (int i = 0; i < userBytes.length; i++) {
-							userBytes[i] = user.getValue8(i);
-						}
-						byte[] spareBytes = new byte[16];
-						spare = pageEccMemory.getPointer();
-						for (int i = 0; i < spareBytes.length; i++) {
-							spareBytes[i] = spare.getValue8(i);
-						}
-						log.debug(String.format("hleNandWritePages ppn=0x%X, lbn=0x%X, scramble=0x%X: %s%sSpare: %s", ppn, lbn, scramble, Utilities.getMemoryDump(userBytes), lineSeparator, Utilities.getMemoryDump(spareBytes)));
-					}
+					log.debug(String.format("hleNandWritePages ppn=0x%X, lbn=0x%X, scramble=0x%X: %s%sSpare: %s", ppn, lbn, scramble, Utilities.getMemoryDump(userBytes), lineSeparator, Utilities.getMemoryDump(spareBytes)));
 				}
 
 				triggerInterrupt(PSP_NAND_INTR_WRITE_COMPLETED);

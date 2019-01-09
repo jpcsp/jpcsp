@@ -170,7 +170,9 @@ public class IntArrayMemory extends Memory {
 
 	@Override
 	public void copyToMemory(int address, ByteBuffer source, int length) {
-		log.error(String.format("Unimplemented copyToMemory address=0x%08X, source=%s, length=0x%X", address, source, length));
+		for (int i = 0; i < length; i++) {
+			write8(address + i, source.get(i));
+		}
 	}
 
 	@Override
