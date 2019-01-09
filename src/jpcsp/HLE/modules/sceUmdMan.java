@@ -19,6 +19,8 @@ package jpcsp.HLE.modules;
 import static jpcsp.HLE.modules.sceUmdUser.PSP_UMD_READABLE;
 import static jpcsp.HLE.modules.sceUmdUser.PSP_UMD_READY;
 import static jpcsp.filesystems.umdiso.ISectorDevice.sectorLength;
+import static jpcsp.memory.mmio.MMIOHandlerAta.ATA_SENSE_KEY_NO_SENSE;
+import static jpcsp.memory.mmio.MMIOHandlerAta.ATA_SENSE_KEY_UNKNOWN9;
 
 import java.io.IOException;
 
@@ -270,8 +272,37 @@ public class sceUmdMan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2CBE959B, version = 150)
-    public int sceUmdExecReqSenseCmd(TPointer unknown1, TPointer unknown2, int cmd) {
-        return 0;
+    public int sceUmdExecReqSenseCmd(TPointer unknown, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer resultAddr, int resultSize) {
+    	boolean mediaPresent = false;
+
+    	if (resultSize < 18) {
+    		return -1;
+    	}
+
+    	// Result of ATA_CMD_OP_REQUEST_SENSE command
+    	resultAddr.clear(resultSize);
+    	resultAddr.setUnsignedValue8(0, 0x80); // Valid bit, no Error Code
+    	resultAddr.setUnsignedValue8(1, 0x00); // Reserved
+		if (mediaPresent) {
+			resultAddr.setUnsignedValue8(2, ATA_SENSE_KEY_NO_SENSE); // Successful command
+		} else {
+			resultAddr.setUnsignedValue8(2, ATA_SENSE_KEY_UNKNOWN9); // Successful command
+		}
+		resultAddr.setUnalignedValue32(3, 0); // Information
+		resultAddr.setUnsignedValue8(7, 10); // Additional Sense Length
+		resultAddr.setUnalignedValue32(8, 0); // Command Specific Information
+		if (mediaPresent) {
+			resultAddr.setUnsignedValue8(12, 0); // Additional Sense Code
+		} else {
+			resultAddr.setUnsignedValue8(12, 2); // Additional Sense Code: media not present
+		}
+		resultAddr.setUnsignedValue8(13, 0); // Additional Sense Code Qualifier
+		resultAddr.setUnsignedValue8(14, 0); // Field Replaceable Unit Code
+		resultAddr.setUnsignedValue8(15, 0); // SKSV / Sense Key Specific
+		resultAddr.setUnsignedValue8(16, 0); // Sense Key Specific
+		resultAddr.setUnsignedValue8(17, 0); // Sense Key Specific
+
+		return 0;
     }
 
     @HLEUnimplemented
