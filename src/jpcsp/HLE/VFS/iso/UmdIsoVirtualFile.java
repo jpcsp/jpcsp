@@ -187,7 +187,7 @@ public class UmdIsoVirtualFile extends AbstractVirtualFile {
 	            	if (length > 0) {
 	            		if (outputPointer.isAddressGood() && outputLength >= length) {
 	            			try {
-								Utilities.readFully(file, outputPointer.getAddress(), length);
+								Utilities.readFully(file, outputPointer, length);
 								setPosition(getPosition() + length);
 	                            result = length;
 	    					} catch (IOException e) {
@@ -213,7 +213,7 @@ public class UmdIsoVirtualFile extends AbstractVirtualFile {
 	            		if (outputPointer.isAddressGood() && outputLength >= numberOfSectors) {
 	            			try {
 	                        	int length = numberOfSectors * UmdIsoFile.sectorLength;
-								Utilities.readFully(file, outputPointer.getAddress(), length);
+								Utilities.readFully(file, outputPointer, length);
 								setPosition(getPosition() + length);
 	                            result = length / UmdIsoFile.sectorLength;
 	    					} catch (IOException e) {

@@ -573,8 +573,9 @@ public class IoFileMgrForUser extends HLEModule {
             long position = info.position;
             int result = 0;
 
+            TPointer ptr = new TPointer(Memory.getInstance(), address);
             if (info.vFile != null) {
-            	result = info.vFile.ioRead(new TPointer(Memory.getInstance(), address), size);
+            	result = info.vFile.ioRead(ptr, size);
             	if (result >= 0) {
             		info.position += result;
             		size = result;
@@ -586,7 +587,7 @@ public class IoFileMgrForUser extends HLEModule {
             	}
             } else {
 	            try {
-	            	Utilities.readFully(info.readOnlyFile, address, size);
+	            	Utilities.readFully(info.readOnlyFile, ptr, size);
 	            	info.position += size;
 	            	result = size;
 	            	if (info.sectorBlockMode) {
@@ -2064,7 +2065,7 @@ public class IoFileMgrForUser extends HLEModule {
 
                     info.position += size;
 
-                    Utilities.write(info.msFile, dataAddr.getAddress(), size);
+                    Utilities.write(info.msFile, dataAddr, size);
                     result = size;
                 }
             } catch (IOException e) {
@@ -2181,7 +2182,7 @@ public class IoFileMgrForUser extends HLEModule {
                     } else {
                     	position = info.position;
                     	dataInput = info.readOnlyFile;
-                    	Utilities.readFully(info.readOnlyFile, data_addr, size);
+                    	Utilities.readFully(info.readOnlyFile, new TPointer(getMemory(), data_addr), size);
                     	info.position += size;
                     	result = size;
 
@@ -2631,7 +2632,7 @@ public class IoFileMgrForUser extends HLEModule {
                     	if (length > 0) {
                     		if (Memory.isAddressGood(outdata_addr) && outlen >= length) {
                                 try {
-									Utilities.readFully(info.readOnlyFile, outdata_addr, length);
+									Utilities.readFully(info.readOnlyFile, new TPointer(getMemory(), outdata_addr), length);
 	                                info.position += length;
 	                                result = length;
 								} catch (IOException e) {
@@ -2660,7 +2661,7 @@ public class IoFileMgrForUser extends HLEModule {
                     		if (Memory.isAddressGood(outdata_addr) && outlen >= numberOfSectors) {
                                 try {
                                 	int length = numberOfSectors * UmdIsoFile.sectorLength;
-									Utilities.readFully(info.readOnlyFile, outdata_addr, length);
+									Utilities.readFully(info.readOnlyFile, new TPointer(getMemory(), outdata_addr), length);
 	                                info.position += length;
 	                                result = length / UmdIsoFile.sectorLength;
 								} catch (IOException e) {

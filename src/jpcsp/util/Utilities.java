@@ -558,23 +558,24 @@ public class Utilities {
     	return (n & (n - 1)) == 0;
     }
 
-    public static void readFully(SeekableDataInput input, int address, int length) throws IOException {
+    public static void readFully(SeekableDataInput input, TPointer address, int length) throws IOException {
         final int blockSize = 16 * UmdIsoFile.sectorLength;  // 32Kb
         byte[] buffer = null;
+        int offset = 0;
         while (length > 0) {
             int size = Math.min(length, blockSize);
             if (buffer == null || size != buffer.length) {
                 buffer = new byte[size];
             }
             input.readFully(buffer);
-            Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(buffer), size);
-            address += size;
+            address.getMemory().copyToMemory(address.getAddress() + offset, ByteBuffer.wrap(buffer), size);
+            offset += size;
             length -= size;
         }
     }
 
-    public static void write(SeekableRandomFile output, int address, int length) throws IOException {
-        Buffer buffer = Memory.getInstance().getBuffer(address, length);
+    public static void write(SeekableRandomFile output, TPointer address, int length) throws IOException {
+        Buffer buffer = address.getMemory().getBuffer(address.getAddress(), length);
         if (buffer instanceof ByteBuffer) {
             output.getChannel().write((ByteBuffer) buffer);
         } else if (length > 0) {

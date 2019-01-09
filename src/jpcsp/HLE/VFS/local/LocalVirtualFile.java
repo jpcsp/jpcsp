@@ -41,7 +41,7 @@ public class LocalVirtualFile extends AbstractVirtualFile {
 	@Override
 	public int ioWrite(TPointer inputPointer, int inputLength) {
 		try {
-			Utilities.write(file, inputPointer.getAddress(), inputLength);
+			Utilities.write(file, inputPointer, inputLength);
 		} catch (IOException e) {
 			log.error("ioWrite", e);
 			return IO_ERROR;

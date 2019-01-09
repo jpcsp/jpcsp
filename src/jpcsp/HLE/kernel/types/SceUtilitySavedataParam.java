@@ -32,6 +32,7 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
@@ -681,7 +682,7 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
 	        	fileSize = 0;
 	        }
 
-	        Utilities.readFully(fileInput, address, fileSize);
+	        Utilities.readFully(fileInput, new TPointer(mem, address), fileSize);
         } finally {
         	if (fileInput != null) {
         		fileInput.close();
@@ -766,7 +767,7 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         	fileOutput = getDataOutput(path, name);
 	        if (fileOutput != null) {
 	        	fileOutput.getChannel().truncate(length);  // Avoid writing leftover bytes from previous encryption.
-	        	Utilities.write(fileOutput, address, length);
+	        	Utilities.write(fileOutput, new TPointer(mem, address), length);
 	        }
         } finally {
         	if (fileOutput != null) {
