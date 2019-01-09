@@ -238,7 +238,7 @@ public class RuntimeContext {
 		}
 
 		boolean useMMIO = false;
-		if (!Memory.isAddressGood(address)) {
+		if (!Memory.isAddressGood(address) || Compiler.getInstance().isUsingMMIO(address)) {
 			Memory mmio = RuntimeContextLLE.getMMIO();
 			if (mmio != null) {
 				useMMIO = true;

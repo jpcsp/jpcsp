@@ -484,7 +484,7 @@ public class Compiler implements ICompiler {
                         }
                     }
 
-                    boolean useMMIO = useMMIOAddresses.contains(pc & Memory.addressMask);
+                    boolean useMMIO = isUsingMMIO(pc);
 
                     codeBlock.addInstruction(pc, opcode, insn, isBranchTarget, isBranching, branchingTo, useMMIO);
                     pc = npc;
@@ -708,5 +708,9 @@ public class Compiler implements ICompiler {
 		for (int i = 0; i < length; i += 4) {
 			useMMIOAddresses.add(startAddress + i);
 		}
+	}
+
+	public boolean isUsingMMIO(int address) {
+		return useMMIOAddresses.contains(address & Memory.addressMask);
 	}
 }
