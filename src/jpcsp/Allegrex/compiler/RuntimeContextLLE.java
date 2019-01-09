@@ -24,6 +24,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.modules.reboot;
@@ -89,6 +90,7 @@ public class RuntimeContextLLE {
 
 	public static void triggerInterrupt(Processor processor, int interruptNumber) {
 		if (!isLLEActive()) {
+			Managers.intr.triggerInterrupt(interruptNumber);
 			return;
 		}
 
