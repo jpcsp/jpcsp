@@ -339,6 +339,9 @@ public abstract class FatVirtualFile implements IVirtualFile {
 	private void readSector(int sectorNumber) {
 		byte[] pendingWriteSector = pendingWriteSectors.get(sectorNumber);
 		if (pendingWriteSector != null) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("readSector sectorNumber=0x%X reading from pending write sector", sectorNumber));
+			}
 			System.arraycopy(pendingWriteSector, 0, currentSector, 0, sectorSize);
 			return;
 		}
@@ -626,7 +629,10 @@ public abstract class FatVirtualFile implements IVirtualFile {
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("checkPendingWriteSectors writing pending sectorNumber=0x%X for %s", sectorNumber, fileInfo));
 					}
-					writeFileSector(fileInfo, sectorNumber, pendingWriteSector);
+
+					if (!writeFileSector(fileInfo, getByteOffset(fileInfo, sectorNumber), pendingWriteSector)) {
+						pendingWriteSectors.put(sectorNumber, pendingWriteSector);
+					}
 				}
 			}
 		}
@@ -707,15 +713,9 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		return directoryData[offset + 11] == 0x0F;
 	}
 
-	private void writeFileSector(FatFileInfo fileInfo, int sectorNumber, byte[] sector) {
+	private long getByteOffset(FatFileInfo fileInfo, int sectorNumber) {
 		int clusterNumber = getClusterNumber(sectorNumber);
 		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
-
-		IVirtualFile vFile = fileInfo.getVirtualFile(vfs);
-		if (vFile == null) {
-			log.warn(String.format("writeFileSector cannot write file '%s'", fileInfo));
-			return;
-		}
 
 		long byteOffset = sectorOffsetInCluster * (long) sectorSize;
 		int[] clusters = fileInfo.getClusters();
@@ -728,17 +728,66 @@ public abstract class FatVirtualFile implements IVirtualFile {
 			}
 		}
 
-		if (byteOffset < fileInfo.getFileSize()) {
-			if (vFile.ioLseek(byteOffset) != byteOffset) {
-				log.warn(String.format("writeFileSector cannot seek file '%s' to 0x%X", fileInfo, byteOffset));
-				return;
-			}
+		return byteOffset;
+	}
 
-			int length = (int) Math.min(fileInfo.getFileSize() - byteOffset, (long) sectorSize);
-			int writeLength = vFile.ioWrite(sector, 0, length);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("writeFileSector writeLength=0x%X", writeLength));
+	private static boolean isEmpty(byte[] sector, int offset) {
+		for (int i = offset; i < sectorSize; i++) {
+			if (sector[i] != (byte) 0) {
+				return false;
 			}
+		}
+
+		return true;
+	}
+
+	private boolean writeFileSector(FatFileInfo fileInfo, long byteOffset, byte[] sector) {
+		IVirtualFile vFile = fileInfo.getVirtualFile(vfs);
+		if (vFile == null) {
+			log.warn(String.format("writeFileSector cannot write file '%s'", fileInfo));
+			return false;
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("writeFileSector byteOffset=0x%X for %s", byteOffset, fileInfo));
+		}
+
+		int length = (int) Math.min(fileInfo.getFileSize() - byteOffset, (long) sectorSize);
+		if (length < 0 || !isEmpty(sector, length)) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("writeFileSector writing past end of file '%s'", fileInfo));
+			}
+			return false;
+		}
+
+		if (vFile.ioLseek(byteOffset) != byteOffset) {
+			log.warn(String.format("writeFileSector cannot seek file '%s' to 0x%X", fileInfo, byteOffset));
+			return false;
+		}
+
+		int writeLength = vFile.ioWrite(sector, 0, length);
+		if (writeLength != length) {
+			log.warn(String.format("writeFileSector cannot write file 0x%X bytes to file '%s': result 0x%X", length, fileInfo, writeLength));
+			return false;
+		}
+
+		return true;
+	}
+
+	private boolean isCurrentSectorEmpty() {
+		for (int i = 0; i < sectorSize; i++) {
+			if (currentSector[i] != (byte) 0xFF) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private void addPendingWriteSectors(int sectorNumber) {
+		pendingWriteSectors.put(sectorNumber, currentSector.clone());
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("addPendingWriteSectors sectorNumber=0x%X", sectorNumber));
 		}
 	}
 
@@ -748,6 +797,11 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		}
 
 		if (fileInfo.isDirectory()) {
+			if (isCurrentSectorEmpty()) {
+				addPendingWriteSectors(sectorNumber);
+				return;
+			}
+
 			byte[] directoryData = fileInfo.getFileData();
 			if (directoryData == null) {
 				directoryData = builder.buildDirectoryData(fileInfo);
@@ -780,7 +834,9 @@ public abstract class FatVirtualFile implements IVirtualFile {
 			directoryData = Utilities.copyToArrayAndExtend(directoryData, byteOffset, currentSector, 0, sectorLength);
 			fileInfo.setFileData(directoryData);
 		} else {
-			writeFileSector(fileInfo, sectorNumber, currentSector);
+			if (!writeFileSector(fileInfo, getByteOffset(fileInfo, sectorNumber), currentSector)) {
+				addPendingWriteSectors(sectorNumber);
+			}
 		}
 	}
 
@@ -793,10 +849,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		int sectorOffsetInCluster = getSectorOffsetInCluster(sectorNumber);
 		FatFileInfo fileInfo = fatFileInfoMap[clusterNumber];
 		if (fileInfo == null) {
-			pendingWriteSectors.put(sectorNumber, currentSector.clone());
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("writeDataSector pending sectorNumber=0x%X, clusterNumber=0x%X", sectorNumber, clusterNumber));
-			}
+			addPendingWriteSectors(sectorNumber);
 			return;
 		}
 
@@ -819,6 +872,9 @@ public abstract class FatVirtualFile implements IVirtualFile {
 			log.debug(String.format("writeSector 0x%X", sectorNumber));
 		}
 
+		// Forget any previous pending write on that sector
+		pendingWriteSectors.remove(sectorNumber);
+
 		if (sectorNumber == bootSectorNumber) {
 			writeBootSector();
 		} else if (sectorNumber == fsInfoSectorNumber) {
@@ -826,12 +882,24 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		} else if (sectorNumber < fatSectorNumber) {
 			writeEmptySector();
 		} else if (sectorNumber >= fatSectorNumber && sectorNumber < fatSectorNumber + fatSectors) {
-			writeFatSector(sectorNumber - fatSectorNumber);
+			if (isCurrentSectorEmpty()) {
+				addPendingWriteSectors(sectorNumber);
+			} else {
+				writeFatSector(sectorNumber - fatSectorNumber);
+			}
 		} else if (sectorNumber >= fatSectorNumber + fatSectors && sectorNumber < fatSectorNumber + numberOfFats * fatSectors) {
-			// Writing to the second FAT table
-			writeSecondFatSector(sectorNumber - fatSectorNumber - fatSectors);
+			if (isCurrentSectorEmpty()) {
+				addPendingWriteSectors(sectorNumber);
+			} else {
+				// Writing to the second FAT table
+				writeSecondFatSector(sectorNumber - fatSectorNumber - fatSectors);
+			}
 		} else if (sectorNumber >= rootDirectoryStartSectorNumber && sectorNumber <= rootDirectoryEndSectorNumber) {
-			writeRootDirectory(sectorNumber - rootDirectoryStartSectorNumber);
+			if (isCurrentSectorEmpty()) {
+				addPendingWriteSectors(sectorNumber);
+			} else {
+				writeRootDirectory(sectorNumber - rootDirectoryStartSectorNumber);
+			}
 		} else {
 			writeDataSector(sectorNumber);
 		} 

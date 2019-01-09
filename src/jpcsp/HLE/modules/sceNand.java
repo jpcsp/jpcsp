@@ -44,9 +44,13 @@ import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.compress.CompressPrxVirtualFileSystem;
 import jpcsp.HLE.VFS.fat.Fat12VirtualFile;
+import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.patch.PatchFileVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceNandSpare;
+import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.settings.Settings;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -59,6 +63,10 @@ public class sceNand extends HLEModule {
     public static final int pageSize = 0x200; // 512B per page
     public static final int pagesPerBlock = 0x20; // 16KB per block
     private static final int totalBlocks = 0x800; // 32MB in total
+    private static final int iplTablePpnStart = 0x80;
+    private static final int iplTablePpnEnd = 0x17F;
+    private static final int iplPpnStart = 0x200;
+    private static final int iplPpnEnd = 0x2FF;
     private static final int idStoragePpnStart = 0x600;
     private static final int idStoragePpnEnd = 0x7FF;
     private static final int iplId = 0x6DC64A38;
@@ -72,6 +80,7 @@ public class sceNand extends HLEModule {
     private Fat12VirtualFile vFile3;
     private Fat12VirtualFile vFile603;
     private Fat12VirtualFile vFile703;
+    private IVirtualFile vFileIpl;
 
     @Override
 	public void start() {
@@ -651,16 +660,16 @@ public class sceNand extends HLEModule {
     	t3 = t3 ^ s5;
     	s3 = v0 >> s3;
     	s5 = v0 >> t5;
-    	t7 = s2 << 2;
+    	t7 = s2 << 2;	// bit 0x0004
     	s4 = v0 >> s4;
-    	a3 = a3 << 8;
+    	a3 = a3 << 8;	// bit 0x0100
     	s2 = t4 >> 4;
     	t2 = v0 >> t2;
-    	t1 = t1 << 5;
+    	t1 = t1 << 5;	// bit 0x0020
     	s1 = a0 & 0x55;
     	s0 = s0 & 0x01;
     	t0 = t0 & 0x01;
-    	v1 = v1 << 11;
+    	v1 = v1 << 11;	// bit 0x0800
     	t4 = t4 & 0x0F;
     	t5 = s5 ^ s3;
     	t2 = t2 ^ s4;
@@ -671,33 +680,45 @@ public class sceNand extends HLEModule {
     	v1 = v1 | t1;
     	s1 = s1 >> 4;
     	t1 = v0 >> t4;
-    	s0 = s0 << 7;
-    	t0 = t0 << 10;
+    	s0 = s0 << 7;	// bit 0x0080
+    	t0 = t0 << 10;	// bit 0x0400
     	a0 = a0 & 0x05;
     	s3 = s5 | s0;
     	s5 = t1 ^ s2;
-    	s0 = s4 << 1;
+    	s0 = s4 << 1;	// bit 0x0002
     	s2 = v0 >> a0;
     	t1 = v1 | t0;
     	v0 = v0 >> s1;
     	t0 = t5 & 0x01;
-    	s1 = t7 << 4;
+    	s1 = t7 << 4;	// bit 0x0010
     	s4 = t2 & 0x01;
     	t7 = s2 ^ v0;
     	t6 = s5 & 0x01;
     	s2 = s3 | s0;
     	s0 = t1 | s1;
-    	s3 = t0 << 6;
-    	s1 = s4 << 9;
+    	s3 = t0 << 6;	// bit 0x0040
+    	s1 = s4 << 9;	// bit 0x0200
     	v0 = s0 | s1;
     	t3 = s2 | s3;
-    	t2 = t7 & 0x01;
-    	t1 = t6 << 3;
+    	t2 = t7 & 0x01;	// bit 0x0001
+    	t1 = t6 << 3;	// bit 0x0008
     	a0 = v0 | t1;
     	t0 = t3 | t2;
     	v0 = t0 | a0;
 
     	return v0;
+    }
+
+    private void openFileIpl() {
+    	if (vFileIpl != null) {
+    		return;
+    	}
+
+    	try {
+			vFileIpl = new LocalVirtualFile(new SeekableRandomFile("nand.ipl.bin", "rw"));
+		} catch (FileNotFoundException e) {
+			log.error("openFileIpl", e);
+		}
     }
 
     private void openFile3() {
@@ -738,7 +759,21 @@ public class sceNand extends HLEModule {
 		vFile703.scan();
     }
 
+    private boolean isEmptyPage(TPointer user) {
+    	IMemoryReader pageReader = MemoryReader.getMemoryReader(user, pageSize, 4);
+    	for (int i = 0; i < pageSize; i += 4) {
+    		int value = pageReader.readNext();
+    		if (value != 0xFFFFFFFF) {
+    			return false;
+    		}
+    	}
+
+    	return true;
+    }
+
     public int hleNandReadPages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc, boolean isLLE) {
+    	boolean emptyPages[] = new boolean[len];
+
     	if (user.isNotNull()) {
 	    	if (dumpBlocks != null && !emulateNand) {
 	    		if (scramble != 0) {
@@ -749,34 +784,44 @@ public class sceNand extends HLEModule {
 	    	} else {
 	    		for (int i = 0; i < len; i++) {
 	    			user.clear(pageSize);
-		    		if ((ppn + i) == 0x80) {
-		    			for (int n = 0; n < 8; n++) {
-		    				user.setValue16(n * 2, (short) (16 + n));
-		    			}
-		    		} else if ((ppn + i) >= idStoragePpnStart && (ppn + i) <= idStoragePpnEnd) {
+	    			int n = ppn + i;
+	    			if (n >= iplTablePpnStart && n <= iplTablePpnEnd) {
+	    				if (((n - iplPpnStart) % 0x20) == 0) {
+			    			for (int iplPpn = iplPpnStart, offset = 0; iplPpn < iplPpnEnd; iplPpn += pagesPerBlock, offset += 2) {
+			    				user.setUnsignedValue16(offset, iplPpn / pagesPerBlock);
+			    			}
+	    				} else {
+			    			// Empty pages
+			    			emptyPages[i] = true;
+	    				}
+		    		} else if (n >= idStoragePpnStart && n <= idStoragePpnEnd) {
 		    			readIdStoragePage(user, ppn + i - idStoragePpnStart);
-		    		} else if (ppnToLbn[ppn + i] == 0) {
+		    		} else if (n >= iplPpnStart && n <= iplPpnEnd) {
+		    			openFileIpl();
+		    			readFile(user, vFileIpl, ppn + i - iplPpnStart);
+		    			emptyPages[i] = isEmptyPage(user);
+		    		} else if (ppnToLbn[n] == 0) {
 		    			// Master Boot Record
 		    			readMasterBootRecord0(user);
-		    		} else if (ppnToLbn[ppn + i] == 2) {
+		    		} else if (ppnToLbn[n] == 2) {
 		    			// Master Boot Record
 		    			readMasterBootRecord2(user);
-		    		} else if (ppnToLbn[ppn + i] >= 0x3 && ppnToLbn[ppn + i] < 0x602) {
+		    		} else if (ppnToLbn[n] >= 0x3 && ppnToLbn[n] < 0x602) {
 		    			openFile3();
-		    			readFile(user, vFile3, ppn + i, 0x3);
-		    		} else if (ppnToLbn[ppn + i] == 0x602) {
+		    			readFile(user, vFile3, n, 0x3);
+		    		} else if (ppnToLbn[n] == 0x602) {
 		    			// Master Boot Record
 		    			readMasterBootRecord602(user);
-		    		} else if (ppnToLbn[ppn + i] >= 0x603 && ppnToLbn[ppn + i] < 0x702) {
+		    		} else if (ppnToLbn[n] >= 0x603 && ppnToLbn[n] < 0x702) {
 		    			openFile603();
-		    			readFile(user, vFile603, ppn + i, 0x603);
-		    		} else if (ppnToLbn[ppn + i] == 0x702) {
+		    			readFile(user, vFile603, n, 0x603);
+		    		} else if (ppnToLbn[n] == 0x702) {
 		    			// Master Boot Record
 		    			readMasterBootRecord702(user);
-		    		} else if (ppnToLbn[ppn + i] >= 0x703 && ppnToLbn[ppn + i] < 0x742) {
+		    		} else if (ppnToLbn[n] >= 0x703 && ppnToLbn[n] < 0x742) {
 		    			openFile703();
-		    			readFile(user, vFile703, ppn + i, 0x703);
-		    		} else if (ppnToLbn[ppn + i] == 0x742) {
+		    			readFile(user, vFile703, n, 0x703);
+		    		} else if (ppnToLbn[n] == 0x742) {
 		    			// Master Boot Record
 		    			readMasterBootRecord742(user);
 		    		}
@@ -799,19 +844,28 @@ public class sceNand extends HLEModule {
         	} else {
     	    	SceNandSpare sceNandSpare = new SceNandSpare();
     	    	for (int i = 0; i < len; i++) {
-        			sceNandSpare.blockFmt = (ppn + i) < 0x800 ? 0xFF : 0x00;
+    	    		int n = ppn + i;
+        			sceNandSpare.blockFmt = n < 0x800 ? 0xFF : 0x00;
     	    		sceNandSpare.blockStat = 0xFF;
-        			sceNandSpare.lbn = ppnToLbn[ppn + i];
-    	    		if (ppn == 0x80) {
-    	    			sceNandSpare.id = iplId; // For IPL area
-    	    		} else if (ppn >= idStoragePpnStart && ppn <= idStoragePpnEnd) {
+        			sceNandSpare.lbn = ppnToLbn[n];
+    	    		if ((n >= iplTablePpnStart && n <= iplTablePpnEnd) || (n >= iplPpnStart && n <= iplPpnEnd)) {
+    	    			if (emptyPages[i]) {
+    	    				sceNandSpare.id = 0xFFFFFFFF;
+    	    				sceNandSpare.lbn = 0xFFFF;
+    	    			} else {
+    	    				sceNandSpare.id = iplId; // For IPL area
+    	    			}
+    	    		} else if (n >= idStoragePpnStart && n <= idStoragePpnEnd) {
     	    			sceNandSpare.id = idStorageId; // For ID Storage area
     	    			sceNandSpare.lbn = 0x7301;
+    	    		} else if (n > 0x80 && n <= 0x9F) {
+	    				sceNandSpare.id = 0xFFFFFFFF;
+	    				sceNandSpare.lbn = 0xFFFF;
     	    		}
     	    		sceNandSpare.reserved2[0] = 0xFF;
     	    		sceNandSpare.reserved2[1] = 0xFF;
 
-	    			sceNandSpare.spareEcc = computeEcc(sceNandSpare);
+	    			sceNandSpare.spareEcc = computeEcc(sceNandSpare) | 0xF000;
 
 	    			if (!isLLE) {
 		    			// All values are set to 0xFF when the lbn is 0xFFFF
@@ -872,8 +926,9 @@ public class sceNand extends HLEModule {
 		    		sceNandSpare.readNoUserEcc(spare, i * sceNandSpare.sizeofNoEcc());
 	    		}
 
-	    		if (sceNandSpare.lbn != 0xFFFF && ppnToLbn[ppn + i] != sceNandSpare.lbn) {
-	    			int offset = (ppn + i) % pagesPerBlock;
+    			int n = ppn + i;
+	    		if (sceNandSpare.lbn != 0xFFFF && ppnToLbn[n] != sceNandSpare.lbn) {
+	    			int offset = n % pagesPerBlock;
 	    			for (int j = offset; j < ppnToLbn.length; j += pagesPerBlock) {
 	    				if (ppnToLbn[j] == sceNandSpare.lbn) {
 	    					if (log.isDebugEnabled()) {
@@ -884,10 +939,10 @@ public class sceNand extends HLEModule {
 	    				}
 	    			}
 
-	    			if (ppnToLbn[ppn + i] == 0xFFFF) {
-	    				ppnToLbn[ppn + i] = sceNandSpare.lbn;
+	    			if (ppnToLbn[n] == 0xFFFF) {
+	    				ppnToLbn[n] = sceNandSpare.lbn;
 	    			} else {
-	    				log.error(String.format("hleNandWriteSparePages moving lbn=0x%04X to ppn=0x%X not being free", sceNandSpare.lbn, ppn + i));
+	    				log.error(String.format("hleNandWriteSparePages moving lbn=0x%04X to ppn=0x%X not being free (currently used for lbn=0x%04X)", sceNandSpare.lbn, n, ppnToLbn[n]));
 	    			}
 	    		}
     		}
@@ -901,17 +956,23 @@ public class sceNand extends HLEModule {
 
     	if (user.isNotNull()) {
     		for (int i = 0; i < len; i++) {
-    			if (ppnToLbn[ppn + i] >= 0x3 && ppnToLbn[ppn + i] < 0x602) {
+    			int n = ppn + i;
+    			if (n >= iplTablePpnStart && n <= iplTablePpnEnd) {
+    				// Ignore
+    			} else if (n >= iplPpnStart && n <= iplPpnEnd) {
+    				openFileIpl();
+    				writeFile(user, vFileIpl, n - iplPpnStart);
+    			} else if (ppnToLbn[n] >= 0x3 && ppnToLbn[n] < 0x602) {
     				openFile3();
-	    			writeFile(user, vFile3, ppn + i, 0x3);
-	    		} else if (ppnToLbn[ppn + i] >= 0x603 && ppnToLbn[ppn + i] < 0x702) {
+	    			writeFile(user, vFile3, n, 0x3);
+	    		} else if (ppnToLbn[n] >= 0x603 && ppnToLbn[n] < 0x702) {
 	    			openFile603();
-	    			writeFile(user, vFile603, ppn + i, 0x603);
-	    		} else if (ppnToLbn[ppn + i] >= 0x703 && ppnToLbn[ppn + i] < 0x742) {
+	    			writeFile(user, vFile603, n, 0x603);
+	    		} else if (ppnToLbn[n] >= 0x703 && ppnToLbn[n] < 0x742) {
 	    			openFile703();
-	    			writeFile(user, vFile703, ppn + i, 0x703);
+	    			writeFile(user, vFile703, n, 0x703);
     			} else {
-    				log.error(String.format("hleNandWriteUserPages unimplemented write on ppn=0x%X, lbn=0x%X", ppn + i, ppnToLbn[ppn + i]));
+    				log.error(String.format("hleNandWriteUserPages unimplemented write on ppn=0x%X, lbn=0x%X", n, ppnToLbn[n]));
     			}
     			user.add(pageSize);
     		}
