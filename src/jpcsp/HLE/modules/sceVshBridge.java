@@ -64,6 +64,7 @@ public class sceVshBridge extends HLEModule {
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;
         loadModuleContext.allocMem = true;
+        loadModuleContext.isSignChecked = false;
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }

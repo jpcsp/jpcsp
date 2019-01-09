@@ -77,7 +77,7 @@ public class LoadExecForUser extends HLEModule {
 
         try {
             if (moduleBuffer != null) {
-                SceModule module = Emulator.getInstance().load(moduleFileName, moduleBuffer, true);
+                SceModule module = Emulator.getInstance().load(moduleFileName, moduleBuffer, true, Modules.ModuleMgrForUserModule.isSignChecked(moduleFileName));
                 Emulator.getClock().resume();
 
                 // After a sceKernelLoadExec, host0: is relative to the directory where

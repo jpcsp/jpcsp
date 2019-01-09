@@ -94,6 +94,7 @@ public class ModuleMgrForUser extends HLEModule {
         public SceKernelThreadInfo thread;
         public ByteBuffer moduleBuffer;
         public int moduleVersion;
+        public boolean isSignChecked;
 
         public LoadModuleContext() {
         	basePartition = SysMemUserForUser.USER_PARTITION_ID;
@@ -286,6 +287,7 @@ public class ModuleMgrForUser extends HLEModule {
     	loadModuleContext.fileName = name;
     	loadModuleContext.allocMem = true;
     	loadModuleContext.thread = Modules.ThreadManForUserModule.getCurrentThread();
+    	loadModuleContext.isSignChecked = isSignChecked(name);
 
     	int moduleUid = hleKernelLoadModuleNow(loadModuleContext);
 
@@ -346,10 +348,10 @@ public class ModuleMgrForUser extends HLEModule {
         return null;
     }
 
-    public SceModule getModuleInfo(String name, ByteBuffer moduleBuffer, int mpidText, int mpidData) {
+    public SceModule getModuleInfo(String name, ByteBuffer moduleBuffer, int mpidText, int mpidData, boolean isSignChecked) {
         SceModule module = null;
 		try {
-			module = Loader.getInstance().LoadModule(name, moduleBuffer, MemoryMap.START_USERSPACE, mpidText, mpidData, true, false, true);
+			module = Loader.getInstance().LoadModule(name, moduleBuffer, MemoryMap.START_USERSPACE, mpidText, mpidData, true, false, true, isSignChecked);
 	        moduleBuffer.rewind();
 		} catch (IOException e) {
 			log.error("getModuleRequiredMemorySize", e);
@@ -364,7 +366,7 @@ public class ModuleMgrForUser extends HLEModule {
 
     	ByteBuffer moduleBuffer = getModuleByteBuffer(loadModuleContext);
 
-    	return getModuleInfo(loadModuleContext.fileName, moduleBuffer, mpidText, mpidData);
+    	return getModuleInfo(loadModuleContext.fileName, moduleBuffer, mpidText, mpidData, loadModuleContext.isSignChecked);
     }
 
     public int getModuleRequiredMemorySize(SceModule module) {
@@ -390,7 +392,7 @@ public class ModuleMgrForUser extends HLEModule {
 	        final int moduleHeaderSize = 256;
 
 	        // Load the module in analyze mode to find out its required memory size
-	        SceModule testModule = getModuleInfo(loadModuleContext.fileName, loadModuleContext.moduleBuffer, mpidText, mpidData);
+	        SceModule testModule = getModuleInfo(loadModuleContext.fileName, loadModuleContext.moduleBuffer, mpidText, mpidData, loadModuleContext.isSignChecked);
 	        int totalAllocSize = moduleHeaderSize + getModuleRequiredMemorySize(testModule);
 	        if (log.isDebugEnabled()) {
 	        	log.debug(String.format("Module '%s' requires %d bytes memory", loadModuleContext.fileName, totalAllocSize));
@@ -443,7 +445,7 @@ public class ModuleMgrForUser extends HLEModule {
     	}
 
         // Load the module
-    	SceModule module = Loader.getInstance().LoadModule(loadModuleContext.fileName, loadModuleContext.moduleBuffer, moduleBase, mpidText, mpidData, false, loadModuleContext.allocMem, true);
+    	SceModule module = Loader.getInstance().LoadModule(loadModuleContext.fileName, loadModuleContext.moduleBuffer, moduleBase, mpidText, mpidData, false, loadModuleContext.allocMem, true, loadModuleContext.isSignChecked);
         module.load();
 
     	if ((module.fileFormat & Loader.FORMAT_ELF) != 0) {
@@ -689,6 +691,10 @@ public class ModuleMgrForUser extends HLEModule {
         return sceModule.modid;
     }
 
+    public boolean isSignChecked(String path) {
+    	return path != null && path.startsWith("flash0:");
+    }
+
     @HLEFunction(nid = 0xB7F46618, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModuleByID(int uid, @CanBeNull TPointer optionAddr) {
         String name = Modules.IoFileMgrForUserModule.getFileFilename(uid);
@@ -713,6 +719,7 @@ public class ModuleMgrForUser extends HLEModule {
         loadModuleContext.byUid = true;
         loadModuleContext.needModuleInfo = true;
         loadModuleContext.allocMem = true;
+        loadModuleContext.isSignChecked = isSignChecked(name);
 
         return hleKernelLoadModule(loadModuleContext);
     }
@@ -734,6 +741,7 @@ public class ModuleMgrForUser extends HLEModule {
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;
         loadModuleContext.allocMem = true;
+        loadModuleContext.isSignChecked = isSignChecked(path.getString());
 
         return hleKernelLoadModule(loadModuleContext);
     }
@@ -763,6 +771,7 @@ public class ModuleMgrForUser extends HLEModule {
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;
         loadModuleContext.allocMem = true;
+        loadModuleContext.isSignChecked = false;
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }

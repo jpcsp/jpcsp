@@ -51,6 +51,7 @@ public class KUBridge extends HLEModule {
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;
         loadModuleContext.allocMem = true;
+        loadModuleContext.isSignChecked = Modules.ModuleMgrForUserModule.isSignChecked(path.getString());
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }

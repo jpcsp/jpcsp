@@ -373,7 +373,7 @@ public class sceUtility extends HLEModule {
 
 	    			// TODO How is this module being loaded?
 	                // Does it unload the current module? i.e. re-init the PSP
-	                SceModule module = Emulator.getInstance().load(name, moduleBuffer, true);
+	                SceModule module = Emulator.getInstance().load(name, moduleBuffer, true, false);
 	                Emulator.getClock().resume();
 
 	                if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
@@ -5122,6 +5122,7 @@ public class sceUtility extends HLEModule {
         loadModuleContext.fileName = path;
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.allocMem = true;
+        loadModuleContext.isSignChecked = Modules.ModuleMgrForUserModule.isSignChecked(path);
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
 	}

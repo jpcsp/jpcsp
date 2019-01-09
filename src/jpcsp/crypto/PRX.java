@@ -226,9 +226,10 @@ public class PRX {
         new TAG_INFO(0xE92410F0, KeyVault.drmkeys_6XX_1, 0x40),
         new TAG_INFO(0x692810F0, KeyVault.drmkeys_6XX_2, 0x40),
         new TAG_INFO(0x63BAB403, KeyVault.key_102DC8AF_1, 0x51),
+        new TAG_INFO(0x0B2B90F0, KeyVault.key_9DC14891, 0x5C),
     	// 144-bytes keys
         new TAG_INFO(0x00000000, KeyVault.g_key00, 0x42, 0x00),
-        new TAG_INFO(0x02000000, KeyVault.g_key02, 0x45, 0x00),
+        new TAG_INFO(0x02000000, KeyVault.key_5C3A61FE, 0x45, 0x00),
         new TAG_INFO(0x03000000, KeyVault.g_key03, 0x46, 0x00),
         new TAG_INFO(0x03000000, KeyVault.g_key04, 0x47, 0x00),
         new TAG_INFO(0x03000000, KeyVault.g_key05, 0x48, 0x00),
@@ -320,7 +321,7 @@ public class PRX {
         }
     }
 
-    public byte[] DecryptAndUncompressPRX(byte[] buf, int size) {
+    public byte[] DecryptAndUncompressPRX(byte[] buf, int size, boolean isSignChecked) {
         int compAttribute = readUnaligned16(buf, 0x6);
     	int pspSize = readUnaligned32(buf, 0x2C);
     	int elfSize = readUnaligned32(buf, 0x28);
@@ -329,15 +330,50 @@ public class PRX {
     	byte[] resultBuffer = new byte[size];
     	System.arraycopy(buf, 0, resultBuffer, 0, size);
 
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("DecryptAndUncompressPRX size=0x%X, compAttribute=0x%X, pspSize=0x%X, elfSize=0x%X, decryptMode=0x%X", size, compAttribute, pspSize, elfSize, decryptMode));
+    	}
+
     	int type;
+    	int tag;
         switch (decryptMode) {
         	case DECRYPT_MODE_VSH_MODULE:
+        		if (isSignChecked) {
+	            	int result = memlmdModule.hleMemlmd_6192F715(resultBuffer, size);
+	            	if (log.isDebugEnabled()) {
+	            		log.debug(String.format("DecryptPRX: memlmd_6192F715 returning 0x%X: %s", result, Utilities.getMemoryDump(resultBuffer, 0, 0x80 + 0xD0)));
+	            	}
+        		}
+
+        		tag = readUnaligned32(buf, 0xD0);
+                if (tag == 0x02000000) {
+                	type = 8;
+                } else {
+                	type = 9;
+                }
+        		break;
         	case DECRYPT_MODE_USER_MODULE:
-            	int result = memlmdModule.hleMemlmd_6192F715(resultBuffer, size);
-            	if (log.isDebugEnabled()) {
-            		log.debug(String.format("DecryptPRX: memlmd_6192F715 returning 0x%X: %s", result, Utilities.getMemoryDump(resultBuffer, 0, 0x80 + 0xD0)));
-            	}
-        		type = 9;
+        		if (isSignChecked) {
+	            	int result = memlmdModule.hleMemlmd_6192F715(resultBuffer, size);
+	            	if (log.isDebugEnabled()) {
+	            		log.debug(String.format("DecryptPRX: memlmd_6192F715 returning 0x%X: %s", result, Utilities.getMemoryDump(resultBuffer, 0, 0x80 + 0xD0)));
+	            	}
+        		}
+
+        		tag = readUnaligned32(buf, 0xD0);
+        		if (tag == 0x457B90F0) {
+        			type = 9;
+        		} else if (tag == 0x457B8AF0 || tag == 0x457B80F0) {
+        			type = 6;
+        		} else if (tag == 0x457B0CF0 || tag == 0x457B0BF0 || tag == 0x457B0AF0 || tag == 0x457B08F0 || tag == 0x457B08F0 || tag == 0x457B05F0 || tag == 0x76202403) {
+        			type = 2;
+        		} else if (tag == 0x3ACE4DCE) {
+        			type = 1;
+        		} else if (tag == 0x03000000) {
+        			type = 0;
+        		} else {
+        			type = 9;
+        		}
         		break;
         	case DECRYPT_MODE_UMD_GAME_EXEC:
         		type = 9;

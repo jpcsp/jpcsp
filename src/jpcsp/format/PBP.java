@@ -194,6 +194,10 @@ public class PBP {
         return getSize(ICON0_PNG);
     }
 
+    public int getSizePsarData() {
+    	return getSize(PSAR_DATA);
+    }
+
     public static boolean deleteDir(File dir) {
         if (dir.isDirectory()) {
             String[] children = dir.list();

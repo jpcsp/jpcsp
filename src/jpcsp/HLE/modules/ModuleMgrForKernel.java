@@ -81,6 +81,7 @@ public class ModuleMgrForKernel extends HLEModule {
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;
         loadModuleContext.allocMem = true;
+        loadModuleContext.isSignChecked = false;
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }
@@ -111,6 +112,7 @@ public class ModuleMgrForKernel extends HLEModule {
         loadModuleContext.lmOption = lmOption;
         loadModuleContext.needModuleInfo = true;
         loadModuleContext.allocMem = true;
+        loadModuleContext.isSignChecked = Modules.ModuleMgrForUserModule.isSignChecked(path.getString());
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
 	}
@@ -179,7 +181,7 @@ public class ModuleMgrForKernel extends HLEModule {
 	        	int length = vFile.ioRead(bytes, 0, bytes.length);
 	        	ByteBuffer moduleBuffer = ByteBuffer.wrap(bytes, 0, length);
 
-	        	SceModule module = Modules.ModuleMgrForUserModule.getModuleInfo(path.getString(), moduleBuffer, sysMemInfo.partitionid, sysMemInfo.partitionid);
+	        	SceModule module = Modules.ModuleMgrForUserModule.getModuleInfo(path.getString(), moduleBuffer, sysMemInfo.partitionid, sysMemInfo.partitionid, Modules.ModuleMgrForUserModule.isSignChecked(path.getString()));
 	        	if (module != null) {
 	        		int size = Modules.ModuleMgrForUserModule.getModuleRequiredMemorySize(module);
 
@@ -207,6 +209,7 @@ public class ModuleMgrForKernel extends HLEModule {
         loadModuleContext.allocMem = false;
         loadModuleContext.baseAddr = sysMemInfo.addr;
         loadModuleContext.basePartition = sysMemInfo.partitionid;
+        loadModuleContext.isSignChecked = Modules.ModuleMgrForUserModule.isSignChecked(path.getString());
 
         return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
     }

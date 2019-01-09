@@ -150,7 +150,7 @@ public class PSP {
         }
     }
 
-    public ByteBuffer decrypt(ByteBuffer f) {
+    public ByteBuffer decrypt(ByteBuffer f, boolean isSignChecked) {
         if (f.capacity() == 0) {
             return null;
         }
@@ -168,7 +168,7 @@ public class PSP {
         }
 
         int inSize = inBuf.length;
-        byte[] elfBuffer = crypto.getPRXEngine().DecryptAndUncompressPRX(inBuf, inSize);
+        byte[] elfBuffer = crypto.getPRXEngine().DecryptAndUncompressPRX(inBuf, inSize, isSignChecked);
 
         if (elfBuffer == null) {
         	return null;

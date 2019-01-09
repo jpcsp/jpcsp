@@ -297,7 +297,7 @@ public class scePspNpDrm_user extends HLEModule {
                 moduleInput.close();
                 ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
-                SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true);
+                SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true, Modules.ModuleMgrForUserModule.isSignChecked(fileName.getString()));
                 Emulator.getClock().resume();
 
                 if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {

@@ -126,7 +126,7 @@ public class Loader {
      *                      fileFormat member against the FORMAT_* bits.
      *                      Example: (fileFormat & FORMAT_ELF) == FORMAT_ELF
      **/
-    public SceModule LoadModule(String pspfilename, ByteBuffer f, int baseAddress, int mpidText, int mpidData, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
+    public SceModule LoadModule(String pspfilename, ByteBuffer f, int baseAddress, int mpidText, int mpidData, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
         SceModule module = new SceModule(false);
 
         int currentOffset = f.position();
@@ -177,17 +177,17 @@ public class Loader {
             }
             
             f.position(currentOffset);
-            if (LoadSPRX(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall)) {
+            if (LoadSPRX(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall, isSignChecked)) {
                 break;
             }
 
             f.position(currentOffset);
-            if (LoadSCE(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall)) {
+            if (LoadSCE(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall, isSignChecked)) {
                 break;
             }
 
             f.position(currentOffset);
-            if (LoadPSP(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall)) {
+            if (LoadPSP(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall, isSignChecked)) {
                 break;
             }
 
@@ -321,14 +321,14 @@ public class Loader {
     }
     
     /** @return true on success */
-    private boolean LoadSPRX(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
+    private boolean LoadSPRX(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
         int magicPSP = Utilities.readWord(f);
         int magicEDAT = Utilities.readWord(f);
         if ((magicPSP == PSP_MAGIC) && (magicEDAT == EDAT_MAGIC)) {
             log.warn("Encrypted file detected! (.PSPEDAT)");
             // Skip the EDAT header and load as a regular ~PSP prx.
             f.position(0x90);
-            LoadPSP(f.slice(), module, baseAddress, analyzeOnly, allocMem, fromSyscall);
+            LoadPSP(f.slice(), module, baseAddress, analyzeOnly, allocMem, fromSyscall, isSignChecked);
             return true;
         }
         // Not a valid SPRX
@@ -336,19 +336,19 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadSCE(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
+    private boolean LoadSCE(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
         int magic = Utilities.readWord(f);
         if (magic == SCE_MAGIC) {
         	int size = Utilities.readWord(f);
         	f.position(f.position() + size - 8);
-        	return LoadPSP(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall);
+        	return LoadPSP(f, module, baseAddress, analyzeOnly, allocMem, fromSyscall, isSignChecked);
         }
         // Not a valid PSP
         return false;
     }
 
     /** @return true on success */
-    private boolean LoadPSP(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
+    private boolean LoadPSP(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
         PSP psp = new PSP(f);
         if (!psp.isValid()) {
             // Not a valid PSP
@@ -357,7 +357,7 @@ public class Loader {
         module.fileFormat |= FORMAT_PSP;
 
         long start = System.currentTimeMillis();
-    	ByteBuffer decryptedPrx = psp.decrypt(f);
+    	ByteBuffer decryptedPrx = psp.decrypt(f, isSignChecked);
     	long end = System.currentTimeMillis();
 
     	if (decryptedPrx == null) {
