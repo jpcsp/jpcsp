@@ -164,6 +164,23 @@ public class MemoryReader {
 		return getMemoryReader(address, getMaxLength(address), step);
 	}
 
+	/**
+	 * Creates a MemoryReader to read values from memory.
+	 *
+	 * @param mem     the memory to be used.
+	 * @param address the address where to start reading.
+	 *                When step == 2, the address has to be 16-bit aligned ((address & 1) == 0).
+	 *                When step == 4, the address has to be 32-bit aligned ((address & 3) == 0).
+	 * @param step    when step == 1, read 8-bit values
+	 *                when step == 2, read 16-bit values
+	 *                when step == 4, read 32-bit values
+	 *                other value for step are not allowed.
+	 * @return        the MemoryReader
+	 */
+	public static IMemoryReader getMemoryReader(Memory mem, int address, int step) {
+		return getMemoryReader(mem, address, getMaxLength(address), step);
+	}
+
 	public static IMemoryReader getMemoryReader(int address, byte[] bytes, int offset, int length, int step) {
 		switch (step) {
 		case 1: return new MemoryReaderBytes8(address, bytes, offset, length);

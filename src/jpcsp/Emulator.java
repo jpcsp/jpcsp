@@ -31,6 +31,7 @@ import jpcsp.GUI.IMainGUI;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.HLEUidObjectMapping;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -154,16 +155,17 @@ public class Emulator implements Runnable {
         return load(pspfilename, f, false, false);
     }
 
-    private int getLoadAddress() {
+    private TPointer getLoadAddress() {
+    	Memory mem = Emulator.getMemory();
         SysMemInfo testInfo = Modules.SysMemUserForUserModule.malloc(USER_PARTITION_ID, "test-LoadAddress", SysMemUserForUser.PSP_SMEM_Low, 0x100, 0);
         if (testInfo == null) {
-        	return MemoryMap.START_USERSPACE + 0x4000;
+        	return new TPointer(mem, MemoryMap.START_USERSPACE + 0x4000);
         }
 
         int lowestAddress = testInfo.addr;
         Modules.SysMemUserForUserModule.free(testInfo);
 
-        return lowestAddress;
+        return new TPointer(mem, lowestAddress);
     }
 
     public SceModule load(String pspfilename, ByteBuffer f, boolean fromSyscall, boolean isSignChecked) throws IOException, GeneralJpcspException {
@@ -171,7 +173,7 @@ public class Emulator implements Runnable {
 
         HLEModuleManager.getInstance().loadAvailableFlash0Modules(fromSyscall);
 
-        int loadAddress = getLoadAddress();
+        TPointer loadAddress = getLoadAddress();
     	module = Loader.getInstance().LoadModule(pspfilename, f, loadAddress, USER_PARTITION_ID, USER_PARTITION_ID, false, true, fromSyscall, isSignChecked);
 
         if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
@@ -387,6 +389,13 @@ public class Emulator implements Runnable {
 
     public static Processor getProcessor() {
         return processor;
+    }
+
+    public static Processor setProcessor(Processor processor) {
+    	Processor previousProcessor = Emulator.processor;
+    	Emulator.processor = processor;
+
+    	return previousProcessor;
     }
 
     public static Memory getMemory() {

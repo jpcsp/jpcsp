@@ -70,8 +70,10 @@ import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.TPointer8;
 import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -1490,11 +1492,11 @@ public class Utilities {
 		}
     }
 
-    public static void writeInt32(int address, int length, int[] a, int offset) {
+    public static void writeInt32(TPointer address, int length, int[] a, int offset) {
     	final int length4 = length >> 2;
 		// Optimize the most common case
-    	if (RuntimeContext.hasMemoryInt()) {
-    		System.arraycopy(a, offset, RuntimeContext.getMemoryInt(), (address & addressMask) >> 2, length4);
+    	if (RuntimeContext.hasMemoryInt(address)) {
+    		System.arraycopy(a, offset, RuntimeContext.getMemoryInt(), (address.getAddress() & addressMask) >> 2, length4);
     	} else {
 	    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, length, 4);
 	    	for (int i = 0; i < length4; i++) {
@@ -1686,6 +1688,34 @@ public class Utilities {
         }
 
         return buffer;
+    }
+
+    public static byte[] readCompleteFile(String fileName) {
+    	StringBuilder localFileName = new StringBuilder();
+    	IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(fileName, localFileName);
+    	if (vfs == null) {
+    		return null;
+    	}
+
+    	IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), IoFileMgrForUser.PSP_O_RDONLY, 0);
+    	if (vFile == null) {
+    		return null;
+    	}
+
+    	int length = (int) vFile.length();
+    	if (length <= 0) {
+    		return null;
+    	}
+
+    	// Read the complete file
+    	byte[] buffer = new byte[length];
+    	int readLength = vFile.ioRead(buffer, 0, length);
+    	vFile.ioClose();
+    	if (readLength != length) {
+    		return null;
+    	}
+
+    	return buffer;
     }
 
     public static boolean isSystemLibraryExisting(String libraryName) {
@@ -1985,14 +2015,16 @@ public class Utilities {
     }
 
     public static void addAddressHex(StringBuilder s, int address) {
-		s.append(hexDigits[(address >>> 28)      ]);
-		s.append(hexDigits[(address >>  24) & 0xF]);
-		s.append(hexDigits[(address >>  20) & 0xF]);
-		s.append(hexDigits[(address >>  16) & 0xF]);
-		s.append(hexDigits[(address >>  12) & 0xF]);
-		s.append(hexDigits[(address >>   8) & 0xF]);
-		s.append(hexDigits[(address >>   4) & 0xF]);
-		s.append(hexDigits[(address       ) & 0xF]);
+		s.append(new char[] {
+			hexDigits[(address >>> 28)      ],
+			hexDigits[(address >>  24) & 0xF],
+			hexDigits[(address >>  20) & 0xF],
+			hexDigits[(address >>  16) & 0xF],
+			hexDigits[(address >>  12) & 0xF],
+			hexDigits[(address >>   8) & 0xF],
+			hexDigits[(address >>   4) & 0xF],
+			hexDigits[(address       ) & 0xF]
+			});
     }
 
     public static boolean hasBit(int value, int bit) {

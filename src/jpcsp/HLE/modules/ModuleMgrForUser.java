@@ -95,8 +95,10 @@ public class ModuleMgrForUser extends HLEModule {
         public ByteBuffer moduleBuffer;
         public int moduleVersion;
         public boolean isSignChecked;
+        public Memory mem;
 
         public LoadModuleContext() {
+        	mem = Emulator.getMemory();
         	basePartition = SysMemUserForUser.USER_PARTITION_ID;
         }
 
@@ -351,7 +353,7 @@ public class ModuleMgrForUser extends HLEModule {
     public SceModule getModuleInfo(String name, ByteBuffer moduleBuffer, int mpidText, int mpidData, boolean isSignChecked) {
         SceModule module = null;
 		try {
-			module = Loader.getInstance().LoadModule(name, moduleBuffer, MemoryMap.START_USERSPACE, mpidText, mpidData, true, false, true, isSignChecked);
+			module = Loader.getInstance().LoadModule(name, moduleBuffer, new TPointer(getMemory(), MemoryMap.START_USERSPACE), mpidText, mpidData, true, false, true, isSignChecked);
 	        moduleBuffer.rewind();
 		} catch (IOException e) {
 			log.error("getModuleRequiredMemorySize", e);
@@ -445,7 +447,7 @@ public class ModuleMgrForUser extends HLEModule {
     	}
 
         // Load the module
-    	SceModule module = Loader.getInstance().LoadModule(loadModuleContext.fileName, loadModuleContext.moduleBuffer, moduleBase, mpidText, mpidData, false, loadModuleContext.allocMem, true, loadModuleContext.isSignChecked);
+    	SceModule module = Loader.getInstance().LoadModule(loadModuleContext.fileName, loadModuleContext.moduleBuffer, new TPointer(loadModuleContext.mem, moduleBase), mpidText, mpidData, false, loadModuleContext.allocMem, true, loadModuleContext.isSignChecked);
         module.load();
 
     	if ((module.fileFormat & Loader.FORMAT_ELF) != 0) {

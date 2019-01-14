@@ -58,6 +58,7 @@ import jpcsp.Allegrex.Opcodes;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
@@ -126,7 +127,7 @@ public class Loader {
      *                      fileFormat member against the FORMAT_* bits.
      *                      Example: (fileFormat & FORMAT_ELF) == FORMAT_ELF
      **/
-    public SceModule LoadModule(String pspfilename, ByteBuffer f, int baseAddress, int mpidText, int mpidData, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
+    public SceModule LoadModule(String pspfilename, ByteBuffer f, TPointer baseAddress, int mpidText, int mpidData, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
         SceModule module = new SceModule(false);
 
         int currentOffset = f.position();
@@ -294,7 +295,7 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadPBP(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
+    private boolean LoadPBP(ByteBuffer f, SceModule module, TPointer baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
         PBP pbp = new PBP(f);
         if (pbp.isValid()) {
             module.fileFormat |= FORMAT_PBP;
@@ -321,7 +322,7 @@ public class Loader {
     }
     
     /** @return true on success */
-    private boolean LoadSPRX(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
+    private boolean LoadSPRX(ByteBuffer f, SceModule module, TPointer baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
         int magicPSP = Utilities.readWord(f);
         int magicEDAT = Utilities.readWord(f);
         if ((magicPSP == PSP_MAGIC) && (magicEDAT == EDAT_MAGIC)) {
@@ -336,7 +337,7 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadSCE(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
+    private boolean LoadSCE(ByteBuffer f, SceModule module, TPointer baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
         int magic = Utilities.readWord(f);
         if (magic == SCE_MAGIC) {
         	int size = Utilities.readWord(f);
@@ -348,7 +349,7 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadPSP(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
+    private boolean LoadPSP(ByteBuffer f, SceModule module, TPointer baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall, boolean isSignChecked) throws IOException {
         PSP psp = new PSP(f);
         if (!psp.isValid()) {
             // Not a valid PSP
@@ -372,7 +373,7 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadELF(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
+    private boolean LoadELF(ByteBuffer f, SceModule module, TPointer baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
         int elfOffset = f.position();
         Elf32 elf = new Elf32(f);
         if (elf.getHeader().isValid()) {
@@ -386,8 +387,8 @@ public class Loader {
             if (elf.isKernelMode()) {
                 module.mpidtext = SysMemUserForUser.KERNEL_PARTITION_ID;
                 module.mpiddata = SysMemUserForUser.KERNEL_PARTITION_ID;
-                if (!analyzeOnly && baseAddress == MemoryMap.START_USERSPACE + 0x4000) {
-                	baseAddress = MemoryMap.START_RAM + Utilities.alignUp(ThreadManForUser.INTERNAL_THREAD_ADDRESS_SIZE, SysMemUserForUser.defaultSizeAlignment - 1);
+                if (!analyzeOnly && baseAddress.getAddress() == MemoryMap.START_USERSPACE + 0x4000) {
+                	baseAddress.setAddress(MemoryMap.START_RAM + Utilities.alignUp(ThreadManForUser.INTERNAL_THREAD_ADDRESS_SIZE, SysMemUserForUser.defaultSizeAlignment - 1));
                 }
             }
 
@@ -401,25 +402,25 @@ public class Loader {
                 // After the user chooses a game to run and we load it, then
                 // we can't load another PBP at the same time. We can only load
                 // relocatable modules (PRX's) after the user loaded app.
-                if (baseAddress > 0x08900000) {
+                if (baseAddress.getAddress() > 0x08900000) {
                     log.warn("Loader: Probably trying to load PBP ELF while another PBP ELF is already loaded");
                 }
 
-                baseAddress = 0;
+                baseAddress.setAddress(0);
             }
 
-            module.baseAddress = baseAddress;
+            module.baseAddress = baseAddress.getAddress();
             if (elf.getHeader().getE_entry() == -1) {
                 module.entry_addr = -1;
             } else {
-                module.entry_addr = baseAddress + elf.getHeader().getE_entry();
+                module.entry_addr = baseAddress.getAddress() + elf.getHeader().getE_entry();
             }
 
             // Note: baseAddress is 0 unless we are loading a PRX
             // Set loadAddressLow to the highest possible address, it will be updated
             // by LoadELFProgram().
-            module.loadAddressLow = (baseAddress != 0) ? baseAddress : MemoryMap.END_USERSPACE;
-            module.loadAddressHigh = baseAddress;
+            module.loadAddressLow = baseAddress.isNotNull() ? baseAddress.getAddress() : MemoryMap.END_USERSPACE;
+            module.loadAddressHigh = baseAddress.getAddress();
 
             // Load into mem
             LoadELFProgram(f, module, baseAddress, elf, elfOffset, analyzeOnly);
@@ -444,12 +445,12 @@ public class Loader {
 		            LoadELFReserveMemory(module);
 	            }
 	            // Save imports
-	            LoadELFImports(module);
+	            LoadELFImports(module, baseAddress);
 	            // Save exports
-	            LoadELFExports(module);
+	            LoadELFExports(module, baseAddress);
 	            // Try to fixup imports for ALL modules
 	            Managers.modules.addModule(module);
-	            ProcessUnresolvedImports(module, fromSyscall);
+	            ProcessUnresolvedImports(module, baseAddress, fromSyscall);
 
 	            // Debug
 	            LoadELFDebuggerInfo(f, module, baseAddress, elf, elfOffset, fromSyscall);
@@ -468,7 +469,9 @@ public class Loader {
 	            }
 
 	            // Flush module struct to psp mem
-	            module.write(Memory.getInstance(), module.address);
+	            if (baseAddress.getMemory() == Emulator.getMemory()) {
+	            	module.write(baseAddress.getMemory(), module.address);
+	            }
             } else {
 	            LoadELFModuleInfo(f, module, baseAddress, elf, elfOffset, analyzeOnly);
 	            LoadSDKVersion(f, module, elf, elfOffset);
@@ -482,7 +485,7 @@ public class Loader {
 
     /** Dummy loader for unrecognized file formats, put at the end of a loader chain.
      * @return true on success */
-    private boolean LoadUNK(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
+    private boolean LoadUNK(ByteBuffer f, SceModule module, TPointer baseAddress, boolean analyzeOnly, boolean allocMem, boolean fromSyscall) throws IOException {
 
         byte m0 = f.get();
         byte m1 = f.get();
@@ -536,11 +539,10 @@ public class Loader {
     // ELF Loader
 
     /** Load some programs into memory */
-    private void LoadELFProgram(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
+    private void LoadELFProgram(ByteBuffer f, SceModule module, TPointer baseAddress, Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
 
         List<Elf32ProgramHeader> programHeaderList = elf.getProgramHeaderList();
-        Memory mem = Memory.getInstance();
+        Memory mem = baseAddress.getMemory();
 
         module.text_size = 0;
         module.data_size = 0;
@@ -553,7 +555,7 @@ public class Loader {
         	}
             if (phdr.getP_type() == 0x00000001L) {
                 int fileOffset = (int)phdr.getP_offset();
-                int memOffset = baseAddress + (int)phdr.getP_vaddr();
+                int memOffset = baseAddress.getAddress() + (int)phdr.getP_vaddr();
                 if (!Memory.isAddressGood(memOffset)) {
                     memOffset = (int)phdr.getP_vaddr();
                     if (!Memory.isAddressGood(memOffset)) {
@@ -584,13 +586,14 @@ public class Loader {
                 		ByteOrder order = f.order();
                 		f.order(ByteOrder.LITTLE_ENDIAN);
                 		IntBuffer intBuffer = f.asIntBuffer();
+                		TPointer destAddr = new TPointer(baseAddress.getMemory(), memOffset);
                 		// Optimize the most common case
-                		if (RuntimeContext.hasMemoryInt()) {
+                		if (RuntimeContext.hasMemoryInt(destAddr)) {
                 			intBuffer.get(RuntimeContext.getMemoryInt(), (memOffset & addressMask) >> 2, fileLen >> 2);
                 		} else {
                 			int[] buffer = new int[fileLen >> 2];
                 			intBuffer.get(buffer);
-                			writeInt32(memOffset, fileLen, buffer, 0);
+                			writeInt32(destAddr, fileLen, buffer, 0);
                 		}
                 		f.order(order);
                 		f.position(f.position() + fileLen);
@@ -641,11 +644,11 @@ public class Loader {
     }
 
     /** Load some sections into memory */
-    private void LoadELFSections(ByteBuffer f, SceModule module, int baseAddress, Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
+    private void LoadELFSections(ByteBuffer f, SceModule module, TPointer baseAddress, Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
         List<Elf32SectionHeader> sectionHeaderList = elf.getSectionHeaderList();
-        Memory mem = Memory.getInstance();
+        Memory mem = baseAddress.getMemory();
 
-        module.text_addr = baseAddress;
+        module.text_addr = baseAddress.getAddress();
 
         for (Elf32SectionHeader shdr : sectionHeaderList) {
         	if (log.isTraceEnabled()) {
@@ -759,8 +762,7 @@ public class Loader {
     }
 
     /** Loads from memory */
-    private void LoadELFModuleInfo(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
+    private void LoadELFModuleInfo(ByteBuffer f, SceModule module, TPointer baseAddress, Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
 
         Elf32ProgramHeader phdr = elf.getProgramHeader(0);
         Elf32SectionHeader shdr = elf.getSectionHeader(".rodata.sceModuleInfo");
@@ -779,7 +781,7 @@ public class Loader {
         	if (analyzeOnly) {
         		moduleInfoFileOffset = phdr.getP_paddr() & Memory.addressMask;
         	} else {
-        		moduleInfoAddr = baseAddress + (phdr.getP_paddr() & Memory.addressMask) - phdr.getP_offset();
+        		moduleInfoAddr = baseAddress.getAddress() + (phdr.getP_paddr() & Memory.addressMask) - phdr.getP_offset();
         	}
         } else if (shdr != null) {
         	moduleInfoAddr = shdr.getSh_addr(baseAddress);
@@ -787,7 +789,7 @@ public class Loader {
 
         if (moduleInfoAddr != 0) {
             PSPModuleInfo moduleInfo = new PSPModuleInfo();
-            moduleInfo.read(Memory.getInstance(), moduleInfoAddr);
+            moduleInfo.read(baseAddress.getMemory(), moduleInfoAddr);
             module.copy(moduleInfo);
         } else if (moduleInfoFileOffset >= 0) {
             PSPModuleInfo moduleInfo = new PSPModuleInfo();
@@ -820,13 +822,13 @@ public class Loader {
      * @param pspRelocationFormat true if the relocation are in the PSP specific format,
      *                            false if the relocation is in standard ELF format.
      */
-    private void relocateFromBuffer(ByteBuffer f, SceModule module, int baseAddress, Elf32 elf, int RelCount, boolean pspRelocationFormat) throws IOException {
+    private void relocateFromBuffer(ByteBuffer f, SceModule module, TPointer baseAddress, Elf32 elf, int RelCount, boolean pspRelocationFormat) throws IOException {
 
     	Elf32Relocate rel = new Elf32Relocate();
         int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
         List<Integer> deferredHi16 = new LinkedList<Integer>(); // We'll use this to relocate R_MIPS_HI16 when we get a R_MIPS_LO16
 
-        Memory mem = Memory.getInstance();
+        Memory mem = baseAddress.getMemory();
         for (int i = 0; i < RelCount; i++) {
             rel.read(f);
 
@@ -853,7 +855,7 @@ public class Loader {
             }
 
             // Address of data to relocate
-            int data_addr = baseAddress + R_OFFSET + phOffset;
+            int data_addr = baseAddress.getAddress() + R_OFFSET + phOffset;
             // Value of data to relocate
             int data = readUnaligned32(mem, data_addr);
             long result = 0; // Used to hold the result of relocation, OR this back into data
@@ -864,7 +866,7 @@ public class Loader {
             int lo16 = data & 0x0000FFFF;
 
             int A = 0; // addend
-            int S = baseAddress + phBaseOffset;
+            int S = baseAddress.getAddress() + phBaseOffset;
 
             switch (R_TYPE) {
                 case 0: //R_MIPS_NONE
@@ -977,8 +979,8 @@ public class Loader {
     	return names[R_TYPE];
     }
 
-    private void relocateFromBufferA1(ByteBuffer f, SceModule module, Elf32 elf, int baseAddress, int programHeaderNumber, int size) throws IOException {
-        Memory mem = Memory.getInstance();
+    private void relocateFromBufferA1(ByteBuffer f, SceModule module, Elf32 elf, TPointer baseAddress, int programHeaderNumber, int size) throws IOException {
+        Memory mem = baseAddress.getMemory();
 
         // Relocation variables.
         int R_OFFSET = 0;
@@ -1082,7 +1084,7 @@ public class Loader {
                 }
 
                 int ADDR_BASE = S;
-                phBaseOffset = baseAddress + elf.getProgramHeader(ADDR_BASE).getP_vaddr();
+                phBaseOffset = baseAddress.getAddress() + elf.getProgramHeader(ADDR_BASE).getP_vaddr();
 
                 if ((R_FLAG & 0x06) == 0x00) {
                     R_OFFSET = (int) (short) R_CMD; // sign-extend 16 to 32 bits
@@ -1119,7 +1121,7 @@ public class Loader {
                 }
 
                 // Read the data.
-                data_addr = R_BASE + baseAddress + elf.getProgramHeader(OFS_BASE).getP_vaddr();
+                data_addr = R_BASE + baseAddress.getAddress() + elf.getProgramHeader(OFS_BASE).getP_vaddr();
                 data = readUnaligned32(mem, data_addr);
 
                 if (log.isDebugEnabled()) {
@@ -1193,8 +1195,7 @@ public class Loader {
 
     /** Uses info from the elf program headers and elf section headers to
      * relocate a PRX. */
-    private void relocateFromHeaders(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset) throws IOException {
+    private void relocateFromHeaders(ByteBuffer f, SceModule module, TPointer baseAddress, Elf32 elf, int elfOffset) throws IOException {
 
         // Relocate from program headers
         int i = 0;
@@ -1233,8 +1234,8 @@ public class Loader {
         }
     }
 
-    private void ProcessUnresolvedImports(SceModule sourceModule, boolean fromSyscall) {
-        Memory mem = Memory.getInstance();
+    private void ProcessUnresolvedImports(SceModule sourceModule, TPointer baseAddress, boolean fromSyscall) {
+        Memory mem = baseAddress.getMemory();
         NIDMapper nidMapper = NIDMapper.getInstance();
         int numberoffailedNIDS = 0;
         int numberofmappedNIDS = 0;
@@ -1314,8 +1315,8 @@ public class Loader {
     }
 
     /* Loads from memory */
-    private void LoadELFImports(SceModule module) throws IOException {
-        Memory mem = Memory.getInstance();
+    private void LoadELFImports(SceModule module, TPointer baseAddress) throws IOException {
+        Memory mem = baseAddress.getMemory();
         int stubHeadersAddress = module.stub_top;
         int stubHeadersEndAddress = module.stub_top + module.stub_size;
 
@@ -1351,12 +1352,12 @@ public class Loader {
                 		if (log.isDebugEnabled()) {
                 			log.debug(String.format("VStub has size %d: %s", vStubSize, Utilities.getMemoryDump(vStub, vStubSize * 8, 4, 16)));
                 		}
-                		IMemoryReader vstubReader = MemoryReader.getMemoryReader(vStub, vStubSize * 8, 4);
+                		IMemoryReader vstubReader = MemoryReader.getMemoryReader(mem, vStub, vStubSize * 8, 4);
                     	for (int j = 0; j < vStubSize; j++) {
                     		int relocAddr = vstubReader.readNext();
 	                    	int nid = vstubReader.readNext();
 	                    	// relocAddr points to a list of relocation terminated by a 0
-	                    	IMemoryReader relocReader = MemoryReader.getMemoryReader(relocAddr, 4);
+	                    	IMemoryReader relocReader = MemoryReader.getMemoryReader(mem, relocAddr, 4);
 	                    	while (true) {
 	                    		int reloc = relocReader.readNext();
 	                    		if (reloc == 0) {
@@ -1397,7 +1398,7 @@ public class Loader {
                 	log.warn(String.format("Incorrect s_nid or s_text address in StubHeader #%d: %s", i, stubHeader.toString()));
                 } else {
 	                // n stubs per module to import
-	                IMemoryReader nidReader = MemoryReader.getMemoryReader((int) stubHeader.getOffsetNid(), stubHeader.getImports() * 4, 4);
+	                IMemoryReader nidReader = MemoryReader.getMemoryReader(mem, (int) stubHeader.getOffsetNid(), stubHeader.getImports() * 4, 4);
 	                for (int j = 0; j < stubHeader.getImports(); j++) {
 	                	int nid = nidReader.readNext();
 	                	int importAddress = (int) (stubHeader.getOffsetText() + j * 8);
@@ -1626,9 +1627,9 @@ public class Loader {
     }
 
     /* Loads from memory */
-    private void LoadELFExports(SceModule module) throws IOException {
+    private void LoadELFExports(SceModule module, TPointer baseAddress) throws IOException {
         NIDMapper nidMapper = NIDMapper.getInstance();
-        Memory mem = Memory.getInstance();
+        Memory mem = baseAddress.getMemory();
         int entHeadersAddress = module.ent_top;
         int entHeadersEndAddress = module.ent_top + module.ent_size;
         int entCount = 0;
@@ -1674,9 +1675,9 @@ public class Loader {
                 int functionCount = entHeader.getFunctionCount();
                 int variableCount = entHeader.getVariableCount();
                 int nidAddr = (int) entHeader.getOffsetResident();
-                IMemoryReader nidReader = MemoryReader.getMemoryReader(nidAddr, 4);
+                IMemoryReader nidReader = MemoryReader.getMemoryReader(mem, nidAddr, (functionCount + variableCount) * 4, 4);
                 int exportAddr = nidAddr + (functionCount + variableCount) * 4;
-                IMemoryReader exportReader = MemoryReader.getMemoryReader(exportAddr, 4);
+                IMemoryReader exportReader = MemoryReader.getMemoryReader(mem, exportAddr, functionCount * 4, 4);
                 if ((entHeader.getAttr() & 0x8000) == 0) {
 	                for (int j = 0; j < functionCount; j++) {
 	                    int nid = nidReader.readNext();
@@ -1744,7 +1745,7 @@ public class Loader {
                 }
 
                 int variableTableAddr = exportAddr + functionCount * 4;
-                IMemoryReader variableReader = MemoryReader.getMemoryReader(variableTableAddr, 4);
+                IMemoryReader variableReader = MemoryReader.getMemoryReader(mem, variableTableAddr, variableCount * 4, 4);
                 for (int j = 0; j < variableCount; j++) {
                     int nid = nidReader.readNext();
                     int variableAddr = variableReader.readNext();
@@ -1810,8 +1811,7 @@ public class Loader {
         }
     }
 
-    private void LoadELFDebuggerInfo(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset, boolean fromSyscall) throws IOException {
+    private void LoadELFDebuggerInfo(ByteBuffer f, SceModule module, TPointer baseAddress, Elf32 elf, int elfOffset, boolean fromSyscall) throws IOException {
         // Save executable section address/size for the debugger/instruction counter
         Elf32SectionHeader shdr;
 

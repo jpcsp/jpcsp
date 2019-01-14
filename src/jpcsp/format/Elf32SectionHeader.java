@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import jpcsp.Memory;
+import jpcsp.HLE.TPointer;
 
 public class Elf32SectionHeader {
     // Flags
@@ -131,6 +132,10 @@ public class Elf32SectionHeader {
 
     public int getSh_addr() {
         return sh_addr;
+    }
+
+    public int getSh_addr(TPointer baseAddress) {
+    	return getSh_addr(baseAddress.getAddress());
     }
 
     public int getSh_addr(int baseAddress) {
