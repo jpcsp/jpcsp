@@ -103,4 +103,13 @@ public class sceMesgd extends HLEModule {
     public int sceMesgd_driver_ADD0CB66() {
     	return 0;
     }
+
+    /**
+     * Used to decrypt meimg.img
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7A0E484C, version = 150)
+    public int sceWmd_driver_7A0E484C(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultSizeAddr) {
+    	return 0;
+    }
 }
