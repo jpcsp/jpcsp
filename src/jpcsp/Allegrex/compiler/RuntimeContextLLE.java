@@ -42,7 +42,7 @@ import jpcsp.state.StateOutputStream;
 public class RuntimeContextLLE {
 	public static Logger log = RuntimeContext.log;
 	private static final int STATE_VERSION = 0;
-	private static boolean isLLEActive = reboot.enableReboot;
+	private static boolean isLLEActive;
 	private static Memory mmio;
 	public volatile static int pendingInterruptIPbits;
 
@@ -55,6 +55,8 @@ public class RuntimeContextLLE {
 	}
 
 	public static void start() {
+		isLLEActive = reboot.enableReboot;
+
 		if (!isLLEActive()) {
 			return;
 		}

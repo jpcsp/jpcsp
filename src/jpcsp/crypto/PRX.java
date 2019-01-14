@@ -31,6 +31,9 @@ import java.util.zip.GZIPInputStream;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Processor;
+import jpcsp.Allegrex.Interpreter;
+import jpcsp.HLE.TPointer;
 import jpcsp.util.Utilities;
 
 public class PRX {
@@ -246,7 +249,7 @@ public class PRX {
         new TAG_INFO(0x0B000000, KeyVault.g_keyUPDATER, 0x4E, 0x00),
         new TAG_INFO(0x0C000000, KeyVault.g_keyDEMOS27X, 0x4F, 0x00),
         new TAG_INFO(0x0F000000, KeyVault.g_keyMEIMG250, 0x52, 0x00),
-        new TAG_INFO(0x862648D1, KeyVault.g_keyMEIMG260, 0x52, 0x52),
+        new TAG_INFO(0x862648D1, KeyVault.key_7A0E484C, 0x52, 0x00),
         new TAG_INFO(0x207BBF2F, KeyVault.g_keyUNK1, 0x5A, 0x5A),
         new TAG_INFO(0x09000000, KeyVault.g_key_GAMESHARE1xx, 0x4C, 0x00),
         new TAG_INFO(0xBB67C59F, KeyVault.g_keyB8, 0x5C, 0x5C),
@@ -322,6 +325,10 @@ public class PRX {
     }
 
     public byte[] DecryptAndUncompressPRX(byte[] buf, int size, boolean isSignChecked) {
+    	return DecryptAndUncompressPRX(buf, size, isSignChecked, null, null, 0);
+    }
+
+    public byte[] DecryptAndUncompressPRX(byte[] buf, int size, boolean isSignChecked, TPointer kl4eDecompress, TPointer tempBuffer, int tempBufferSize) {
         int compAttribute = readUnaligned16(buf, 0x6);
     	int pspSize = readUnaligned32(buf, 0x2C);
     	int elfSize = readUnaligned32(buf, 0x28);
@@ -393,6 +400,13 @@ public class PRX {
         		break;
         	case DECRYPT_MODE_BOGUS_MODULE:
         	case DECRYPT_MODE_KERNEL_MODULE:
+        		if (isSignChecked) {
+	            	int result = memlmdModule.hleMemlmd_6192F715(resultBuffer, size);
+	            	if (log.isDebugEnabled()) {
+	            		log.debug(String.format("DecryptPRX: memlmd_6192F715 returning 0x%X: %s", result, Utilities.getMemoryDump(resultBuffer, 0, 0x80 + 0xD0)));
+	            	}
+        		}
+
         		type = 2;
         		break;
     		default:
@@ -428,8 +442,53 @@ public class PRX {
 				} catch (IOException e) {
 					log.error(e);
 				}
+        	} else if (kl4eDecompress != null && kl4eDecompress.isNotNull()) {
+        		try {
+        			int offset = 0;
+        			tempBuffer.alignUp(15);
+        			TPointer inputBufferAddr = new TPointer(tempBuffer, offset);
+        			offset += Utilities.alignUp(resultSize, 15); // Stack must be 16-bytes aligned
+        			int stackSize = Utilities.alignUp(3000, 15);
+        			TPointer stackBufferAddr = new TPointer(tempBuffer, offset);
+        			offset += stackSize;
+        			offset = Utilities.alignUp(offset, 63);
+        			TPointer outputBufferAddr = new TPointer(tempBuffer, offset);
+
+        			inputBufferAddr.setArray(0, resultBuffer, 4, resultSize - 4);
+
+        			if (log.isDebugEnabled()) {
+        				log.debug(String.format("Calling KL4E decompress at %s: input %s(size=0x%X), output %s(size=0x%X)", kl4eDecompress, inputBufferAddr, resultSize, outputBufferAddr, elfSize));
+        			}
+
+        			Processor processor = new Processor();
+        			processor.cpu.setMemory(kl4eDecompress.getMemory());
+        			processor.cpu._a0 = outputBufferAddr.getAddress();
+        			processor.cpu._a1 = elfSize;
+        			processor.cpu._a2 = inputBufferAddr.getAddress();
+        			processor.cpu._a3 = 0;
+        			processor.cpu._sp = (stackBufferAddr.getAddress() + stackSize) | 0x80000000;
+        			Interpreter interpreter = new Interpreter(processor);
+        			interpreter.run(kl4eDecompress.getAddress());
+
+        			int result = processor.cpu._v0;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("KL4E decompress returned 0x%08X", result));
+					}
+        			if (result < 0) {
+        				return null;
+        			}
+
+        			resultSize = result;
+					resultBuffer = outputBufferAddr.getArray8(0, resultSize);
+        		} catch (Exception e) {
+					log.error("KL4E decompress", e);
+					return null;
+				}
         	} else {
         		log.error(String.format("KL4E decompression unimplemented, compAttribute=0x%X", compAttribute));
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("DecryptAndUncompressPRX KL4E: %s", Utilities.getMemoryDump(resultBuffer, 0, resultSize)));
+        		}
         	}
         }
 
@@ -444,6 +503,10 @@ public class PRX {
     }
 
     public int DecryptPRX(byte[] buf, int size, int type, byte[] xor1, byte[] xor2) {
+    	return DecryptPRX(buf, size, type, xor1, xor2, false);
+    }
+
+    public int DecryptPRX(byte[] buf, int size, int type, byte[] xor1, byte[] xor2, boolean forceNewMethod) {
     	int result = 0;
 
         // Fetch the PRX tag.
@@ -452,6 +515,7 @@ public class PRX {
         // Get the tag info.
         TAG_INFO pti = GetTagInfo(tag);
         if (pti == null) {
+        	log.error(String.format("DecryptPRX unknown tag 0x%08X", tag));
             return -1;
         }
 
@@ -459,7 +523,7 @@ public class PRX {
         int retsize = readUnaligned32(buf, 0xB0);
 
         // Old encryption method (144 bytes key).
-        if (((type >= 2 && type <= 7) || type == 9 || type == 10) && pti.key.length > 0x10) {
+        if (((type >= 2 && type <= 7) || type == 9 || type == 10) && pti.key.length > 0x10 && !forceNewMethod) {
             // Setup the buffers.
             byte[] oldbuf = new byte[size];
             byte[] oldbuf1 = new byte[0x150];

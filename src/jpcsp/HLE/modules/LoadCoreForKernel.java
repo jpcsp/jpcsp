@@ -535,7 +535,7 @@ public class LoadCoreForKernel extends HLEModule {
     }
 
     public String getFunctionNameByAddress(int address) {
-    	if (!reboot.enableReboot) {
+    	if (!reboot.loadCoreInitialized) {
     		return null;
     	}
 

@@ -32,8 +32,9 @@ import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.TPointer8;
 
 public class IntArrayMemory extends Memory {
-	private int[] memory;
-	private int offset;
+	private final int[] memory;
+	private final int offset;
+	private final int baseAddress;
 
 	private static class IntArrayTPointer32 extends TPointer32 {
 		public IntArrayTPointer32(Memory memory, int address) {
@@ -60,11 +61,19 @@ public class IntArrayMemory extends Memory {
 	public IntArrayMemory(int[] memory) {
 		this.memory = memory;
 		offset = 0;
+		baseAddress = 0;
 	}
 
 	public IntArrayMemory(int[] memory, int offset) {
 		this.memory = memory;
 		this.offset = offset;
+		baseAddress = 0;
+	}
+
+	public IntArrayMemory(int[] memory, int offset, int baseAddress) {
+		this.memory = memory;
+		this.offset = offset;
+		this.baseAddress = baseAddress & addressMask;
 	}
 
 	public TPointer getPointer(int address) {
@@ -72,7 +81,7 @@ public class IntArrayMemory extends Memory {
 	}
 
 	public TPointer getPointer() {
-		return getPointer(0);
+		return getPointer(baseAddress);
 	}
 
 	public TPointer8 getPointer8(int address) {
@@ -80,7 +89,7 @@ public class IntArrayMemory extends Memory {
 	}
 
 	public TPointer8 getPointer8() {
-		return getPointer8(0);
+		return getPointer8(baseAddress);
 	}
 
 	public TPointer16 getPointer16(int address) {
@@ -88,7 +97,7 @@ public class IntArrayMemory extends Memory {
 	}
 
 	public TPointer16 getPointer16() {
-		return getPointer16(0);
+		return getPointer16(baseAddress);
 	}
 
 	public TPointer32 getPointer32(int address) {
@@ -96,7 +105,7 @@ public class IntArrayMemory extends Memory {
 	}
 
 	public TPointer32 getPointer32() {
-		return getPointer32(0);
+		return getPointer32(baseAddress);
 	}
 
 	public TPointer64 getPointer64(int address) {
@@ -104,7 +113,7 @@ public class IntArrayMemory extends Memory {
 	}
 
 	public TPointer64 getPointer64() {
-		return getPointer64(0);
+		return getPointer64(baseAddress);
 	}
 
 	@Override
@@ -112,7 +121,7 @@ public class IntArrayMemory extends Memory {
 	}
 
 	private int getOffset(int address) {
-		return (address >> 2) + offset;
+		return (((address & addressMask) - baseAddress) >> 2) + offset;
 	}
 
 	@Override
