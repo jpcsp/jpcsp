@@ -138,15 +138,7 @@ public class MEProcessor extends Processor {
 	}
 
 	public void triggerReset() {
-		int status = 0;
-		// BEV = 1 during bootstrapping
-		status |= 0x00400000;
-		// Set the initial status
-		cp0.setStatus(status);
-		// All interrupts disabled
-		disableInterrupts();
-
-		cpu.pc = 0xBFC00000;
+		super.triggerReset();
 
 		halt = false;
 

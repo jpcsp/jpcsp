@@ -41,8 +41,12 @@ public class Processor implements IState {
     public static final Memory memory = Memory.getInstance();
     protected Logger log = Logger.getLogger("cpu");
     private boolean interruptsEnabled;
+    private int opcode;
+    private Instruction instruction;
+    private int delaySlotOpcode;
+    private Instruction delaySlotInstruction;
 
-    public Processor() {
+	public Processor() {
     	setLogger(log);
         reset();
     }
@@ -81,18 +85,18 @@ public class Processor implements IState {
     	stream.writeBoolean(interruptsEnabled);
     }
 
-    public Instruction interpret() {
-        int opcode = cpu.fetchOpcode();
-        Instruction insn = Decoder.instruction(opcode);
+    public void interpret() {
+        opcode = cpu.fetchOpcode();
+        instruction = Decoder.instruction(opcode);
         if (log.isTraceEnabled()) {
-        	log.trace(String.format("Interpreting 0x%08X: [0x%08X] - %s", cpu.pc - 4, opcode, insn.disasm(cpu.pc - 4, opcode)));
+        	log.trace(String.format("Interpreting 0x%08X: [0x%08X] - %s", cpu.pc - 4, opcode, instruction.disasm(cpu.pc - 4, opcode)));
         }
-        insn.interpret(this, opcode);
+        instruction.interpret(this, opcode);
 
     	if (RuntimeContext.debugCodeBlockCalls) {
-    		if (insn == Instructions.JAL) {
+    		if (instruction == Instructions.JAL) {
     			RuntimeContext.debugCodeBlockStart(cpu, cpu.pc);
-    		} else if (insn == Instructions.JR && ((opcode >> 21) & 31) == Common._ra) {
+    		} else if (instruction == Instructions.JR && ((opcode >> 21) & 31) == Common._ra && Memory.isAddressGood(cpu._ra)) {
     			int opcodeCaller = cpu.memory.read32(cpu._ra - 8);
     			Instruction insnCaller = Decoder.instruction(opcodeCaller);
     			int codeBlockStart = cpu.pc;
@@ -102,17 +106,15 @@ public class Processor implements IState {
 				RuntimeContext.debugCodeBlockEnd(cpu, codeBlockStart, cpu._ra);
     		}
     	}
-
-    	return insn;
     }
 
     public void interpretDelayslot() {
-        int opcode = cpu.nextOpcode();
-        Instruction insn = Decoder.instruction(opcode);
+        delaySlotOpcode = cpu.nextOpcode();
+        delaySlotInstruction = Decoder.instruction(delaySlotOpcode);
         if (log.isTraceEnabled()) {
-        	log.trace(String.format("Interpreting 0x%08X: [0x%08X] - %s", cpu.pc - 4, opcode, insn.disasm(cpu.pc - 4, opcode)));
+        	log.trace(String.format("Interpreting 0x%08X: [0x%08X] - %s", cpu.pc - 4, delaySlotOpcode, delaySlotInstruction.disasm(cpu.pc - 4, delaySlotOpcode)));
         }
-        insn.interpret(this, opcode);
+        delaySlotInstruction.interpret(this, delaySlotOpcode);
         cpu.nextPc();
     }
 
@@ -146,6 +148,22 @@ public class Processor implements IState {
 	public void step() {
         interpret();
     }
+
+	public int getOpcode() {
+		return opcode;
+	}
+
+    public Instruction getInstruction() {
+		return instruction;
+	}
+
+	public int getDelaySlotOpcode() {
+		return delaySlotOpcode;
+	}
+
+	public Instruction getDelaySlotInstruction() {
+		return delaySlotInstruction;
+	}
 
 	public static boolean isInstructionInDelaySlot(Memory memory, int address) {
 		int previousInstruction = memory.read32(address - 4);
@@ -197,5 +215,17 @@ public class Processor implements IState {
 		}
 
 		return false;
+	}
+
+	public void triggerReset() {
+		int status = 0;
+		// BEV = 1 during bootstrapping
+		status |= 0x00400000;
+		// Set the initial status
+		cp0.setStatus(status);
+		// All interrupts disabled
+		disableInterrupts();
+
+		cpu.pc = 0xBFC00000;
 	}
 }

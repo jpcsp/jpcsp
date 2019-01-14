@@ -2540,9 +2540,9 @@ public class CompilerContext implements ICompilerContext {
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.pauseEmuWithStatus, "(I)V");
     }
 
-    public void visitLogInfo(MethodVisitor mv, String message) {
+    public void visitLogError(MethodVisitor mv, String message) {
     	mv.visitLdcInsn(message);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.logInfo, "(" + stringDescriptor + ")V");
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.logError, "(" + stringDescriptor + ")V");
     }
 
 	@Override

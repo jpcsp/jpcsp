@@ -90,7 +90,7 @@ public class RuntimeContext {
 	public  static final boolean debugMemoryReadWriteNoSP = true;
 	public  static final boolean enableInstructionTypeCounting = false;
 	public  static final String instructionTypeCount = "instructionTypeCount";
-	public  static final String logInfo = "logInfo";
+	public  static final String logError = "logError";
 	public  static final String pauseEmuWithStatus = "pauseEmuWithStatus";
 	public  static final boolean enableLineNumbers = true;
 	public  static final boolean checkCodeModification = false;
@@ -250,7 +250,9 @@ public class RuntimeContext {
 		cpu.pc = address;
 		int returnValue = 0;
 		while (interpret) {
-			Instruction insn = processor.interpret();
+			processor.interpret();
+
+			Instruction insn = processor.getInstruction();
 			if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
 				if (useMMIO) {
 					cpu.setMemory(memory);
@@ -380,7 +382,7 @@ public class RuntimeContext {
     	}
     }
 
-    private static boolean initialise() {
+    public static boolean initialise() {
         if (!compilerEnabled) {
             return false;
         }
@@ -836,7 +838,17 @@ public class RuntimeContext {
     			break;
 			} catch (StackPopException e) {
 				log.info("Stack exceeded maximum size, shrinking to top level");
+
 				executable = getExecutable(e.getRa());
+				if (executable == null) {
+					throw e;
+				}
+			} catch (ResetException e) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Processor has to been reset to pc=0x%08X", e.getPc()));
+				}
+
+				executable = getExecutable(e.getPc());
 				if (executable == null) {
 					throw e;
 				}
@@ -1373,8 +1385,8 @@ public class RuntimeContext {
     	syncPause();
     }
 
-    public static void logInfo(String message) {
-    	log.info(message);
+    public static void logError(String message) {
+    	log.error(message);
     }
 
     public static boolean checkMemoryPointer(int address) {

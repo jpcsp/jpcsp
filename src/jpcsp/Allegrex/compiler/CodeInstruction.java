@@ -328,7 +328,7 @@ public class CodeInstruction {
         compileDelaySlot(context, mv);
 
         if (getBranchingTo() == getAddress()) {
-    		context.visitLogInfo(mv, String.format("Pausing emulator - jump to self (death loop) at 0x%08X", getAddress()));
+    		context.visitLogError(mv, String.format("Pausing emulator - jump to self (death loop) at 0x%08X", getAddress()));
     		context.visitPauseEmuWithStatus(mv, Emulator.EMU_STATUS_JUMPSELF);
     	}
 
@@ -473,7 +473,7 @@ public class CodeInstruction {
         }
 
     	if (branchingOpcode == Opcodes.GOTO && getBranchingTo() == getAddress() && (delaySlotCodeInstruction.getOpcode() == NOP() || delaySlotCodeInstruction.getOpcode() == SYNC())) {
-    		context.visitLogInfo(mv, String.format("Pausing emulator - branch to self (death loop) at 0x%08X", getAddress()));
+    		context.visitLogError(mv, String.format("Pausing emulator - branch to self (death loop) at 0x%08X", getAddress()));
     		context.visitPauseEmuWithStatus(mv, Emulator.EMU_STATUS_JUMPSELF);
     	}
 
