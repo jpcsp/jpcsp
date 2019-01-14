@@ -22,6 +22,8 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
+import jpcsp.Allegrex.compiler.ResetException;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.ExceptionManager;
@@ -356,6 +358,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sysregInterruptToOther to ME on %s", MMIOHandlerMeCore.getInstance().toString()));
 				}
+				MMIOHandlerMeCore.getInstance().hleStartMeCommand();
 				RuntimeContextLLE.triggerInterrupt(RuntimeContextLLE.getMediaEngineProcessor(), PSP_MECODEC_INTR);
 				RuntimeContextLLE.getMediaEngineProcessor().triggerException(ExceptionManager.IP2);
 			} else {
@@ -374,6 +377,11 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		return (oldFlag & mask) > (newFlag & mask);
 	}
 
+	private boolean isRaising(int oldFlag, int newFlag, int bit) {
+		int mask = 1 << bit;
+		return (oldFlag & mask) < (newFlag & mask);
+	}
+
 	private boolean hasBit(int value, int bit) {
 		return (value & (1 << bit)) != 0;
 	}
@@ -382,6 +390,12 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		int oldResetDevices = resetDevices;
 		resetDevices = value;
 
+		if (isRaising(oldResetDevices, resetDevices, SYSREG_RESET_SC)) {
+			MMIO mmio = (MMIO) RuntimeContextLLE.getMMIO();
+			mmio.remapMemoryAtProcessorReset();
+			Emulator.getProcessor().triggerReset();
+			throw new ResetException();
+		}
 		if (isFalling(oldResetDevices, resetDevices, SYSREG_RESET_ME)) {
 			MEProcessor.getInstance().triggerReset();
 		}

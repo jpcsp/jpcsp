@@ -18,29 +18,21 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
 
-import java.io.IOException;
-
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.sceMeCore;
 import jpcsp.media.codec.ICodec;
 import jpcsp.mediaengine.MEProcessor;
-import jpcsp.state.StateInputStream;
-import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
-public class MMIOHandlerMeCore extends MMIOHandlerBase {
+public class MMIOHandlerMeCore {
 	public static Logger log = sceMeCore.log;
-	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBFC00600;
 	private static MMIOHandlerMeCore instance;
-	private int cmd;
-	private int unknown;
-	private final int[] parameters = new int[8];
-	private int result;
 	private enum MECommand {
 		ME_CMD_VIDEOCODEC_OPEN_TYPE0(0x0, 1),
 		ME_CMD_VIDEOCODEC_INIT_TYPE0(0x1, 3),
@@ -146,40 +138,17 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 
 	public static MMIOHandlerMeCore getInstance() {
 		if (instance == null) {
-			instance = new MMIOHandlerMeCore(BASE_ADDRESS);
+			instance = new MMIOHandlerMeCore();
 		}
 		return instance;
 	}
 
-	private MMIOHandlerMeCore(int baseAddress) {
-		super(baseAddress);
+	private MMIOHandlerMeCore() {
 	}
 
-	@Override
-	public void read(StateInputStream stream) throws IOException {
-		stream.readVersion(STATE_VERSION);
-		cmd = stream.readInt();
-		unknown = stream.readInt();
-		stream.readInts(parameters);
-		result = stream.readInt();
-		super.read(stream);
-	}
-
-	@Override
-	public void write(StateOutputStream stream) throws IOException {
-		stream.writeVersion(STATE_VERSION);
-		stream.writeInt(cmd);
-		stream.writeInt(unknown);
-		stream.writeInts(parameters);
-		stream.writeInt(result);
-		super.write(stream);
-	}
-
-	private void writeCmd(int cmd) {
-		this.cmd = cmd;
-
+	public void hleStartMeCommand() {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Starting cmd=0x%X(%s)", cmd, MECommand.getCommandName(cmd)));
+			log.debug(String.format("Starting %s", this));
 		}
 	}
 
@@ -187,24 +156,26 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
     	Memory meMemory = MEProcessor.getInstance().getMEMemory();
     	Memory mem = Memory.getInstance();
 
-    	switch (cmd) {
+    	int result;
+    	switch (getCmd()) {
 			case 0x2: // ME_CMD_VIDEOCODEC_DECODE_TYPE0
-		    	int mp4Data = parameters[1];
-		    	int mp4Size = parameters[2];
-		    	TPointer buffer2 = new TPointer(mem, parameters[3]);
-            	TPointer mpegAvcYuvStruct = new TPointer(mem, parameters[4]);
-            	TPointer buffer3 = new TPointer(mem, parameters[5]);
-            	TPointer decodeSEI = new TPointer(mem, parameters[6]);
+		    	int mp4Data = getParameter(1);
+		    	int mp4Size = getParameter(2);
+		    	TPointer buffer2 = getParameterPointer(3);
+            	TPointer mpegAvcYuvStruct = getParameterPointer(4);
+            	TPointer buffer3 = getParameterPointer(5);
+            	TPointer decodeSEI = getParameterPointer(6);
 				result = Modules.sceVideocodecModule.videocodecDecodeType0(meMemory, mp4Data, mp4Size, buffer2, mpegAvcYuvStruct, buffer3, decodeSEI);
+				setResult(result);
 				break;
 			case 0x4: // ME_CMD_VIDEOCODEC_DELETE_TYPE0
 				Modules.sceVideocodecModule.videocodecDelete();
 				break;
 			case 0x67: // ME_CMD_AT3P_SETUP_CHANNEL
-				Modules.sceAudiocodecModule.initCodec(parameters[4], PSP_CODEC_AT3PLUS, parameters[2] + 2, parameters[1], parameters[3], 0);
+				Modules.sceAudiocodecModule.initCodec(getParameter(4), PSP_CODEC_AT3PLUS, getParameter(2) + 2, getParameter(1), getParameter(3), 0);
 				break;
 			case 0x60: // ME_CMD_AT3P_DECODE
-				TPointer workArea = new TPointer(mem, parameters[0]);
+				TPointer workArea = getParameterPointer(0);
 				int edram = workArea.getValue32(12);
 		    	int inputBufferSize;
 				if (workArea.getValue32(48) == 0) {
@@ -227,6 +198,7 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 					log.trace(String.format("ME_CMD_AT3P_DECODE inputBuffer: %s", Utilities.getMemoryDump(inputBuffer, inputBufferSize)));
 				}
 				result = audioCodec.decode(meMemory, inputBuffer, inputBufferSize, meMemory, workArea.getValue32(32));
+				setResult(result);
 				if (log.isDebugEnabled()) {
 					if (result < 0) {
 						log.debug(String.format("ME_CMD_AT3P_DECODE audiocodec.decode returned error 0x%08X, data: %s", result, Utilities.getMemoryDump(inputBuffer, inputBufferSize)));
@@ -238,59 +210,45 @@ public class MMIOHandlerMeCore extends MMIOHandlerBase {
 		}
 	}
 
-	@Override
-	public int read32(int address) {
-		int value;
-		switch (address - baseAddress) {
-			case 0x00: value = cmd; break;
-			case 0x04: value = unknown; break;
-			case 0x08: value = parameters[0]; break;
-			case 0x0C: value = parameters[1]; break;
-			case 0x10: value = parameters[2]; break;
-			case 0x14: value = parameters[3]; break;
-			case 0x18: value = parameters[4]; break;
-			case 0x1C: value = parameters[5]; break;
-			case 0x20: value = parameters[6]; break;
-			case 0x24: value = parameters[7]; break;
-			case 0x28: value = result; break;
-			default: value = super.read32(address); break;
-		}
-
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", getPc(), address, value));
-		}
-
-		return value;
+	private int read32(int offset) {
+		return RuntimeContextLLE.getMMIO().read32(BASE_ADDRESS + offset);
 	}
 
-	@Override
-	public void write32(int address, int value) {
-		switch (address - baseAddress) {
-			case 0x00: writeCmd(value); break;
-			case 0x04: unknown = value; break;
-			case 0x08: parameters[0] = value; break;
-			case 0x0C: parameters[1] = value; break;
-			case 0x10: parameters[2] = value; break;
-			case 0x14: parameters[3] = value; break;
-			case 0x18: parameters[4] = value; break;
-			case 0x1C: parameters[5] = value; break;
-			case 0x20: parameters[6] = value; break;
-			case 0x24: parameters[7] = value; break;
-			case 0x28: result = value; break;
-			default: super.write32(address, value); break;
-		}
+	private void write32(int offset, int value) {
+		RuntimeContextLLE.getMMIO().write32(BASE_ADDRESS + offset, value);
+	}
 
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
-		}
+	public int getCmd() {
+		return read32(0x00);
+	}
+
+	public int getUnknown() {
+		return read32(0x04);
+	}
+
+	public int getParameter(int index) {
+		return read32(0x08 + (index << 2));
+	}
+
+	public TPointer getParameterPointer(int index) {
+		return new TPointer(Memory.getInstance(), getParameter(index));
+	}
+
+	public int getResult() {
+		return read32(0x28);
+	}
+
+	public void setResult(int result) {
+		write32(0x28, result);
 	}
 
 	@Override
 	public String toString() {
-		StringBuilder s = new StringBuilder(String.format("cmd=0x%X(%s), result=0x%08X", cmd, MECommand.getCommandName(cmd), result));
+		int cmd = getCmd();
+		StringBuilder s = new StringBuilder(String.format("cmd=0x%X(%s), result=0x%08X", cmd, MECommand.getCommandName(cmd), getResult()));
 		int numberOfParameters = MECommand.getNumberOfParameters(cmd);
 		for (int i = 0; i < numberOfParameters; i++) {
-			s.append(String.format(", parameters[%d]=0x%08X", i, parameters[i]));
+			s.append(String.format(", parameters[%d]=0x%08X", i, getParameter(i)));
 		}
 		return s.toString();
 	}

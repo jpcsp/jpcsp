@@ -97,13 +97,12 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerSyscon.BASE_ADDRESS, 0x28, MMIOHandlerSyscon.getInstance());
     	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
     	addHandlerRW(0xBFC00000, 0x1000); // 4K embedded RAM
-    	write32(0xBFC00200, 0x2E547106);
-    	write32(0xBFC00204, 0xFBDFC08B);
-    	write32(0xBFC00208, 0x087FCC08);
-    	write32(0xBFC0020C, 0xAA60334E);
 //    	write32(0xBFC00FFC, 0xFFFFFFFF);
     	addHandlerRW(0xBFD00000, 0x1000); // 4K embedded RAM
-    	addHandler(MMIOHandlerMeCore.BASE_ADDRESS, 0x2C, MMIOHandlerMeCore.getInstance());
+    	write32(0xBFD00200, 0x2E547106);
+    	write32(0xBFD00204, 0xFBDFC08B);
+    	write32(0xBFD00208, 0x087FCC08);
+    	write32(0xBFD0020C, 0xAA60334E);
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS1, 0x90C, MMIOHandlerNandPage.getInstance());
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS2, 0x90C, MMIOHandlerNandPage.getInstance());
     }
@@ -137,6 +136,20 @@ public class MMIO extends Memory {
     		handler.setLogger(log);
     	}
     	addHandler(baseAddress, length, handler);
+    }
+
+    private void removeHandler(int baseAddress, int length) {
+    	for (int i = 0; i < length; i++) {
+    		handlers.remove(baseAddress + i);
+    	}
+    }
+
+    public void remapMemoryAtProcessorReset() {
+		// When resetting the main processor, the memory content that was accessible
+		// at address 0xBFD00000 is now made available at address 0xBFC00000 and
+		// the address 0xBFD00000 becomes invalid.
+		memcpy(0xBFC00000, 0xBFD00000, 0x1000);
+		removeHandler(0xBFD00000, 0x1000);
     }
 
     protected IMMIOHandler getHandler(int address) {
