@@ -68,6 +68,7 @@ public class sceDmacplus extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x3438DA0B, version = 150)
+	@HLEFunction(nid = 0x282CA0D7, version = 660)
 	public int sceDmacplusSc2MeLLI(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 dmacParameters) {
     	int src = dmacParameters.getValue(0);
     	int dst = dmacParameters.getValue(4);
@@ -79,12 +80,6 @@ public class sceDmacplus extends HLEModule {
     	}
 
     	return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x282CA0D7, version = 660)
-	public int sceDmacplusSc2MeLLI_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 dmacParameters) {
-    	return sceDmacplusSc2MeLLI(dmacParameters);
 	}
 
     @HLEUnimplemented

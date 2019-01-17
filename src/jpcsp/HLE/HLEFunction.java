@@ -20,12 +20,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 
 /**
  * This annotation marks a function as a kernel function from a module.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
+@Repeatable(HLEFunctions.class)
 public @interface HLEFunction {
 	/**
 	 * Unique 32-bit identifier of the function for that module.

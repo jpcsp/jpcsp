@@ -674,8 +674,8 @@ public class HLEModuleManager {
 
 		try {
 			for (Method method : hleModule.getClass().getMethods()) {
-				HLEFunction hleFunction = method.getAnnotation(HLEFunction.class);
-				if (hleFunction != null) {
+				HLEFunction[] hleFunctions = method.getAnnotationsByType(HLEFunction.class);
+				for (HLEFunction hleFunction : hleFunctions) {
 					installFunctionWithAnnotations(hleFunction, method, hleModule);
 				}
 			}

@@ -158,7 +158,7 @@ public class InitForKernel extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x9D33A110, version = 660)
-	public int sceKernelBootFromGo_660() {
+	public int sceKernelBootFromGo() {
 		return 0;
 	}
 

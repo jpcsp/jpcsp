@@ -34,7 +34,7 @@ public class scePaf extends HLEModule {
     private HashMap<Integer, SysMemInfo> allocated = new HashMap<Integer, SysMemInfo>();
 
     @HLEFunction(nid = 0xA138A376, version = 660)
-    public int scePaf_sprintf_660(CpuState cpu, TPointer buffer, String format) {
+    public int scePaf_sprintf(CpuState cpu, TPointer buffer, String format) {
     	return Modules.SysclibForKernelModule.sprintf(cpu, buffer, format);
     }
 

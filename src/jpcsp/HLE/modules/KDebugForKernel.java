@@ -103,6 +103,7 @@ public class KDebugForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x24C32559, version = 150)
+	@HLEFunction(nid = 0x86010FCB, version = 660)
 	public int sceKernelDipsw(int unknown) {
 		return 0;
 	}
@@ -169,12 +170,6 @@ public class KDebugForKernel extends HLEModule {
 	@HLEFunction(nid = 0xB41E2430, version = 150)
 	public boolean sceKernelIsDVDMode() {
 		return false;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x86010FCB, version = 150)
-	public int sceKernelDipsw_660(int unknown) {
-		return sceKernelDipsw(unknown);
 	}
 
     @HLEUnimplemented

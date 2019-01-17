@@ -495,38 +495,23 @@ public class sceUmdUser extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD45D1FE6, version = 150)
+    @HLEFunction(nid = 0xB7BF4C31, version = 660)
     public int sceUmdGetDriveStatus() {
         return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xB7BF4C31, version = 660)
-    public int sceUmdGetDriveStatus_660() {
-        return sceUmdGetDriveStatus();
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x230666E3, version = 150)
+    @HLEFunction(nid = 0x982272FE, version = 660)
     public int sceUmdSetDriveStatus(int state) {
         return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x982272FE, version = 660)
-    public int sceUmdSetDriveStatus_660(int state) {
-        return sceUmdSetDriveStatus(state);
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0xAE53DC2D, version = 150)
+    @HLEFunction(nid = 0x6EDF57F1, version = 660)
     public int sceUmdClearDriveStatus(int state) {
         return 0;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x6EDF57F1, version = 660)
-    public int sceUmdClearDriveStatus_660(int state) {
-        return sceUmdClearDriveStatus(state);
     }
 
     @HLEUnimplemented
@@ -538,14 +523,9 @@ public class sceUmdUser extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7850F057, version = 150)
+    @HLEFunction(nid = 0x48EF868C, version = 660)
     public int sceUmdRegisterGetUMDInfoCallBack(TPointer callback, @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.out) TPointer discInfoAddr) {
     	return 0;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x48EF868C, version = 660)
-    public int sceUmdRegisterGetUMDInfoCallBack_660(TPointer callback, @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.out) TPointer discInfoAddr) {
-    	return sceUmdRegisterGetUMDInfoCallBack(callback, discInfoAddr);
     }
 
     @HLEUnimplemented
@@ -556,38 +536,23 @@ public class sceUmdUser extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x086DDC0D, version = 150)
+    @HLEFunction(nid = 0x9B0F59CE, version = 660)
     public int sceUmdRegisterActivateCallBack(TPointer callback, int callbackArg) {
         return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x9B0F59CE, version = 660)
-    public int sceUmdRegisterActivateCallBack_660(TPointer callback, int callbackArg) {
-        return sceUmdRegisterActivateCallBack(callback, callbackArg);
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x2D81508D, version = 150)
+    @HLEFunction(nid = 0xD1C80E51, version = 660)
     public int sceUmdRegisterDeactivateCallBack(TPointer callback, int callbackArg) {
         return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xD1C80E51, version = 660)
-    public int sceUmdRegisterDeactivateCallBack_660(TPointer callback, int callbackArg) {
-        return sceUmdRegisterDeactivateCallBack(callback, callbackArg);
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x4832ABF3, version = 150)
+    @HLEFunction(nid = 0x3748C4DB, version = 660)
     public int sceUmdRegisterReplaceCallBack(TPointer callback) {
         return 0;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x3748C4DB, version = 660)
-    public int sceUmdRegisterReplaceCallBack_660(TPointer callback) {
-        return sceUmdRegisterReplaceCallBack(callback);
     }
 
     @HLEUnimplemented
@@ -598,13 +563,8 @@ public class sceUmdUser extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xEB56097E, version = 150)
-    public int sceUmdGetDetectUMDCallBackId() {
-        return 0;
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0xA55109DD, version = 660)
-    public int sceUmdGetDetectUMDCallBackId_660() {
+    public int sceUmdGetDetectUMDCallBackId() {
         return 0;
     }
 }

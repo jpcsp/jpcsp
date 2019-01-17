@@ -296,11 +296,6 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-	@HLEFunction(nid = 0x8AE776AF, version = 660)
-    public int sceKernelMemset_660(TPointer destAddr, int data, int size) {
-		return Modules.Kernel_LibraryModule.sceKernelMemset(destAddr, data, size);
-    }
-
     /**
      * Create a heap.
      * 
@@ -312,6 +307,7 @@ public class SysMemForKernel extends HLEModule {
      */
 	@HLELogging(level = "info")
     @HLEFunction(nid = 0x1C1FBFE7, version = 150)
+    @HLEFunction(nid = 0x58148F07, version = 660)
     public int sceKernelCreateHeap(int partitionId, int size, int flags, String name) {
 		// Hook to force the allocation of a larger heap for the sceLoaderCore module
 		size = Modules.LoadCoreForKernelModule.hleKernelCreateHeapHook(partitionId, size, flags, name);
@@ -333,6 +329,7 @@ public class SysMemForKernel extends HLEModule {
      * @return       The address of the allocated memory block, or NULL on error.
      */
     @HLEFunction(nid = 0x636C953B, version = 150)
+    @HLEFunction(nid = 0x23D81675, version = 660)
     public int sceKernelAllocHeapMemory(int heapId, int size) {
     	HeapInformation info = heaps.get(heapId);
     	if (info == null) {
@@ -358,6 +355,7 @@ public class SysMemForKernel extends HLEModule {
      * @return       0 on success, < 0 on error. 
      */
     @HLEFunction(nid = 0x7B749390, version = 150)
+    @HLEFunction(nid = 0x87C2AB85, version = 660)
     public int sceKernelFreeHeapMemory(int heapId, TPointer block) {
     	HeapInformation info = heaps.get(heapId);
     	if (info == null) {
@@ -380,6 +378,7 @@ public class SysMemForKernel extends HLEModule {
      * @return       0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xC9805775, version = 150)
+    @HLEFunction(nid = 0xDD6512D0, version = 660)
     public int sceKernelDeleteHeap(int heapId) {
     	HeapInformation info = heaps.remove(heapId);
     	if (info == null) {
@@ -391,28 +390,13 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-    @HLEFunction(nid = 0xDD6512D0, version = 660)
-    public int sceKernelDeleteHeap_660(int heapId) {
-    	return sceKernelDeleteHeap(heapId);
-    }
-
     @HLEFunction(nid = 0x6373995D, version = 280)
+    @HLEFunction(nid = 0x07C586A1, version = 660)
     public int sceKernelGetModel() {
 		int result = Model.getModel(); // <= 0 original, 1 slim
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceKernelGetModel returning %d(%s)", result, Model.getModelName(result)));
-		}
-
-		return result;
-	}
-
-    @HLEFunction(nid = 0x07C586A1, version = 150)
-    public int sceKernelGetModel_660() {
-		int result = Model.getModel(); // <= 0 original, 1 slim
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceKernelGetModel_660 returning %d(%s)", result, Model.getModelName(result)));
 		}
 
 		return result;
@@ -477,21 +461,6 @@ public class SysMemForKernel extends HLEModule {
 
     	return gameInfoMem.addr;
     }
-
-    @HLEFunction(nid = 0xB4F00CB5, version = 150)
-    public int sceKernelGetCompiledSdkVersion_660() {
-    	return Modules.SysMemUserForUserModule.sceKernelGetCompiledSdkVersion();
-    }
-
-	@HLEFunction(nid = 0x7158CE7E, version = 150)
-	public int sceKernelAllocPartitionMemory_660(int partitionid, String name, int type, int size, int addr) {
-		return Modules.SysMemUserForUserModule.sceKernelAllocPartitionMemory(partitionid, name, type, size, addr);
-	}
-
-	@HLEFunction(nid = 0xC1A26C6F, version = 150)
-	public int sceKernelFreePartitionMemory_660(int uid) {
-		return Modules.SysMemUserForUserModule.sceKernelFreePartitionMemory(uid);
-	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x1AB50974, version = 150)
@@ -568,12 +537,8 @@ public class SysMemForKernel extends HLEModule {
 		return 0;
 	}
 
-    @HLEFunction(nid = 0x58148F07, version = 660)
-    public int sceKernelCreateHeap_660(int partitionId, int size, int flags, String name) {
-    	return sceKernelCreateHeap(partitionId, size, flags, name);
-    }
-
     @HLEFunction(nid = 0xAD09C397, version = 150)
+    @HLEFunction(nid = 0xD222DAA7, version = 660)
 	public int sceKernelCreateUIDtypeInherit(String parentName, String name, int size, @CanBeNull TPointer32 funcTable, @CanBeNull TPointer32 metaFuncTable, @BufferInfo(usage=Usage.out) TPointer32 uidTypeOut) {
     	Memory mem = Memory.getInstance();
 
@@ -655,30 +620,16 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
 	}
 
-    @HLEFunction(nid = 0xD222DAA7, version = 660)
-	public int sceKernelCreateUIDtypeInherit_660(String parentName, String name, int size, @CanBeNull TPointer32 funcTable, @CanBeNull TPointer32 metaFuncTable, @BufferInfo(usage=Usage.out) TPointer32 uidTypeOut) {
-    	return sceKernelCreateUIDtypeInherit(parentName, name, size, funcTable, metaFuncTable, uidTypeOut);
-	}
-
 	@HLEUnimplemented
     @HLEFunction(nid = 0xFEFC8666, version = 150)
+    @HLEFunction(nid = 0x034129FB, version = 660)
     public int sceKernelCreateUIDtype(String name, int size, @CanBeNull TPointer32 funcTable, @CanBeNull TPointer32 metaFuncTable, @BufferInfo(usage=Usage.out) TPointer32 uidTypeOut) {
     	return sceKernelCreateUIDtypeInherit("Basic", name, size, funcTable, metaFuncTable, uidTypeOut);
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x034129FB, version = 660)
-    public int sceKernelCreateUIDtype_660(String name, int size, @CanBeNull TPointer32 funcTable, @CanBeNull TPointer32 metaFuncTable, @BufferInfo(usage=Usage.out) TPointer32 uidTypeOut) {
-    	return sceKernelCreateUIDtype(name, size, funcTable, metaFuncTable, uidTypeOut);
-    }
-
-    @HLEFunction(nid = 0x23D81675, version = 660)
-    public int sceKernelAllocHeapMemory_660(int heapId, int size) {
-    	return sceKernelAllocHeapMemory(heapId, size);
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x89A74008, version = 150)
+    @HLEFunction(nid = 0x0A34C078, version = 660)
     public int sceKernelCreateUID(TPointer uidType, String name, int k1, @BufferInfo(usage=Usage.out) TPointer32 outUid) {
     	Memory mem = uidType.getMemory();
 
@@ -727,13 +678,8 @@ public class SysMemForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x0A34C078, version = 150)
-    public int sceKernelCreateUID_660(TPointer uidType, String name, int k1, @BufferInfo(usage=Usage.out) TPointer32 outUid) {
-    	return sceKernelCreateUID(uidType, name, k1, outUid);
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x2E3402CC, version = 150)
+    @HLEFunction(nid = 0xA7622297, version = 660)
     public int sceKernelRenameUID(int id, String name) {
     	if (SceUidManager.isValidUid(id)) {
     		log.warn(String.format("sceKernelRenameUID called on id=0x%X, which has not been created by sceKernelCreateUID", id));
@@ -757,13 +703,8 @@ public class SysMemForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xA7622297, version = 660)
-    public int sceKernelRenameUID_660(int id, String name) {
-    	return sceKernelRenameUID(id, name);
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x8F20C4C0, version = 150)
+    @HLEFunction(nid = 0x361F0F88, version = 660)
     public int sceKernelDeleteUID(int id) {
     	Memory mem = Memory.getInstance();
 
@@ -804,18 +745,6 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x361F0F88, version = 660)
-    public int sceKernelDeleteUID_660(int id) {
-    	return sceKernelDeleteUID(id);
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x87C2AB85, version = 660)
-    public int sceKernelFreeHeapMemory_660(int heapId, TPointer block) {
-    	return sceKernelFreeHeapMemory(heapId, block);
-    }
-
     /*
      * Query the partition information.
      * 
@@ -827,6 +756,7 @@ public class SysMemForKernel extends HLEModule {
      *     0 on success.
      */
     @HLEFunction(nid = 0x55A40B2C, version = 150)
+    @HLEFunction(nid = 0xC4EEAF20, version = 660)
     public int sceKernelQueryMemoryPartitionInfo(int partitionId, @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.out) TPointer infoPtr) {
     	pspSysmemPartitionInfo partitionInfo = new pspSysmemPartitionInfo();
     	partitionInfo.read(infoPtr);
@@ -857,13 +787,9 @@ public class SysMemForKernel extends HLEModule {
     	return 0;
     }
 
-    @HLEFunction(nid = 0xC4EEAF20, version = 660)
-    public int sceKernelQueryMemoryPartitionInfo_660(int partitionId, @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.out) TPointer infoPtr) {
-    	return sceKernelQueryMemoryPartitionInfo(partitionId, infoPtr);
-    }
-
     @HLEUnimplemented
     @HLEFunction(nid = 0x41FFC7F9, version = 150)
+    @HLEFunction(nid = 0x44BDF332, version = 660)
     public int sceKernelGetUIDcontrolBlockWithType(int id, TPointer32 uidType, @BufferInfo(usage=Usage.out) TPointer32 controlBlockAddr) {
     	Memory mem = Memory.getInstance();
 
@@ -883,14 +809,8 @@ public class SysMemForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x44BDF332, version = 660)
-    public int sceKernelGetUIDcontrolBlockWithType_660(int id, TPointer32 uidType, @BufferInfo(usage=Usage.out) TPointer32 controlBlockAddr) {
-    	return sceKernelGetUIDcontrolBlockWithType(id, uidType, controlBlockAddr);
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x235C2646, version = 660)
-    public int sceKernelCallUIDObjCommonFunction_660(TPointer32 uid, TPointer32 uidWithFunc, int funcId) {
+    public int sceKernelCallUIDObjCommonFunction(TPointer32 uid, TPointer32 uidWithFunc, int funcId) {
     	SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
     	sceSysmemUidCB.read(uid);
 
@@ -911,40 +831,23 @@ public class SysMemForKernel extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7B3E7441, version = 150)
+    @HLEFunction(nid = 0x1E6BB8E8, version = 660)
     public void sceKernelMemoryExtendSize() {
     	// Has no parameters
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x1E6BB8E8, version = 660)
-    public void sceKernelMemoryExtendSize_660() {
-    	// Has no parameters
-    	sceKernelMemoryExtendSize();
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0xE0058030, version = 150)
+    @HLEFunction(nid = 0x7A7CD7BC, version = 660)
     public void sceKernelMemoryShrinkSize() {
     	// Has no parameters
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x7A7CD7BC, version = 660)
-    public void sceKernelMemoryShrinkSize_660() {
-    	// Has no parameters
-    	sceKernelMemoryShrinkSize();
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0xCBB05241, version = 150)
+    @HLEFunction(nid = 0xF19BA38D, version = 660)
     public int sceKernelSetAllowReplaceUmd(boolean allow) {
     	return 0;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0xF19BA38D, version = 660)
-    public int sceKernelSetAllowReplaceUmd_660(boolean allow) {
-    	return sceKernelSetAllowReplaceUmd(allow);
     }
 
     @HLEUnimplemented

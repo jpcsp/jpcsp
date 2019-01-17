@@ -662,20 +662,9 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x44439604, version = 150)
+	@HLEFunction(nid = 0xBB7260C8, version = 660)
 	public int sceSysconCtrlHRPower(boolean power) {
     	return 0;
-    }
-
-    /**
-     * Control the remote control power.
-     *
-     * @param power  1 is on, 0 is off
-     * @return       < 0 on error 
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xBB7260C8, version = 660)
-	public int sceSysconCtrlHRPower_660(boolean power) {
-    	return sceSysconCtrlHRPower(power);
     }
 
     /**
@@ -686,21 +675,10 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0xFC32141A, version = 150)
+	@HLEFunction(nid = 0x22240B41, version = 660)
 	public int sceSysconGetPowerSupplyStatus(@BufferInfo(usage=Usage.out) TPointer32 statusAddr) {
     	statusAddr.setValue(getPowerSupplyStatus());
     	return 0;
-    }
-
-    /**
-     * Get the power supply status.
-     *
-     * @param statusAddr Pointer to a s32 where the power supply status will be stored.
-     * @return           0 on success. 
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x22240B41, version = 660)
-	public int sceSysconGetPowerSupplyStatus_660(@BufferInfo(usage=Usage.out) TPointer32 statusAddr) {
-    	return sceSysconGetPowerSupplyStatus(statusAddr);
     }
 
     /**
@@ -712,23 +690,11 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x6A53F3F8, version = 150)
+	@HLEFunction(nid = 0x85F5F601, version = 660)
 	public int sceSysconBatteryGetStatusCap(@BufferInfo(usage=Usage.out) TPointer32 unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
     	unknown1.setValue(getBatteryStatusCap1());
     	unknown2.setValue(getBatteryStatusCap2());
     	return 0;
-    }
-
-    /**
-     * Get the battery status cap.
-     *
-     * @param unknown1 Pointer to an unknown s32 where a value will be stored. 
-     * @param unknown2 Pointer to an unknown s32 where a value will be stored. 
-     * @return         0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x85F5F601, version = 660)
-	public int sceSysconBatteryGetStatusCap_660(@BufferInfo(usage=Usage.out) TPointer32 unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
-    	return sceSysconBatteryGetStatusCap(unknown1, unknown2);
     }
 
     /**
@@ -739,21 +705,10 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x71135D7D, version = 150)
+	@HLEFunction(nid = 0x4C871BEA, version = 660)
 	public int sceSysconBatteryGetFullCap(@BufferInfo(usage=Usage.out) TPointer32 capAddr) {
     	capAddr.setValue(Battery.getFullCapacity());
     	return 0;
-    }
-
-    /**
-     * Get the battery full capacity.
-     *
-     * @param capAddr Pointer to a s32 where the capacity will be stored.
-     * @return        0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x4C871BEA, version = 660)
-	public int sceSysconBatteryGetFullCap_660(@BufferInfo(usage=Usage.out) TPointer32 capAddr) {
-    	return sceSysconBatteryGetFullCap(capAddr);
     }
 
     /**
@@ -764,21 +719,10 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0xB5105D51, version = 150)
+	@HLEFunction(nid = 0x68AF19F1, version = 660)
 	public int sceSysconBatteryGetCycle(@BufferInfo(usage=Usage.out) TPointer32 cycleAddr) {
     	cycleAddr.setValue(getBatteryCycle());
     	return 0;
-    }
-
-    /**
-     * Get the battery cycle.
-     *
-     * @param cycleAddr Pointer to a s32 where the cycle will be stored.
-     * @return          0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x68AF19F1, version = 660)
-	public int sceSysconBatteryGetCycle_660(@BufferInfo(usage=Usage.out) TPointer32 cycleAddr) {
-    	return sceSysconBatteryGetCycle(cycleAddr);
     }
 
     /**
@@ -789,21 +733,10 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x284FE366, version = 150)
+	@HLEFunction(nid = 0x4D5A19BB, version = 660)
 	public int sceSysconBatteryGetLimitTime(@BufferInfo(usage=Usage.out) TPointer32 timeAddr) {
     	timeAddr.setValue(getBatteryLimitTime());
     	return 0;
-    }
-
-    /**
-     * Get the battery limit time.
-     *
-     * @param timeAddr Pointer to a s32 where the limit time will be stored.
-     * @return         0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x4D5A19BB, version = 660)
-	public int sceSysconBatteryGetLimitTime_660(@BufferInfo(usage=Usage.out) TPointer32 timeAddr) {
-    	return sceSysconBatteryGetLimitTime(timeAddr);
     }
 
     /**
@@ -814,21 +747,10 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x70C10E61, version = 150)
+	@HLEFunction(nid = 0xCE8B6633, version = 660)
 	public int sceSysconBatteryGetTemp(@BufferInfo(usage=Usage.out) TPointer32 tempAddr) {
     	tempAddr.setValue(Battery.getTemperature());
     	return 0;
-    }
-
-    /**
-     * Get the battery temperature.
-     *
-     * @param tempAddr Pointer to a s32 where the temperature will be stored.
-     * @return         0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xCE8B6633, version = 150)
-	public int sceSysconBatteryGetTemp_660(@BufferInfo(usage=Usage.out) TPointer32 tempAddr) {
-    	return sceSysconBatteryGetTemp(tempAddr);
     }
 
     /**
@@ -839,21 +761,10 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x373EC933, version = 150)
+	@HLEFunction(nid = 0x483088B0, version = 660)
 	public int sceSysconBatteryGetElec(@BufferInfo(usage=Usage.out) TPointer32 elecAddr) {
     	elecAddr.setValue(getBatteryElec());
     	return 0;
-    }
-
-    /**
-     * Get the battery electric charge.
-     *
-     * @param elecAddr Pointer to a s32 where the charge will be stored.
-     * @return         0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x483088B0, version = 660)
-	public int sceSysconBatteryGetElec_660(@BufferInfo(usage=Usage.out) TPointer32 elecAddr) {
-    	return sceSysconBatteryGetElec(elecAddr);
     }
 
     /**
@@ -864,21 +775,10 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x8BDEBB1E, version = 150)
+	@HLEFunction(nid = 0xA7DB34BB, version = 660)
 	public int sceSysconBatteryGetVolt(@BufferInfo(usage=Usage.out) TPointer32 voltAddr) {
     	voltAddr.setValue(Battery.getVoltage());
     	return 0;
-    }
-
-    /**
-     * Get the battery voltage.
-     *
-     * @param voltAddr Pointer to a s32 where the voltage will be stored.
-     * @return         0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xA7DB34BB, version = 660)
-	public int sceSysconBatteryGetVolt_660(@BufferInfo(usage=Usage.out) TPointer32 voltAddr) {
-    	return sceSysconBatteryGetVolt(voltAddr);
     }
 
     /**
@@ -889,21 +789,10 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0xC4D66C1D, version = 150)
+	@HLEFunction(nid = 0xF436BB12, version = 660)
 	public int sceSysconReadClock(@BufferInfo(usage=Usage.out) TPointer32 clockAddr) {
     	clockAddr.setValue(readClock());
     	return 0;
-    }
-
-    /**
-     * Read the PSP clock.
-     *
-     * @param clockAddr Pointer to a s32 where the clock will be stored.
-     * @return          0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xF436BB12, version = 150)
-	public int sceSysconReadClock_660(@BufferInfo(usage=Usage.out) TPointer32 clockAddr) {
-    	return sceSysconReadClock(clockAddr);
     }
 
     /**
@@ -914,21 +803,10 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x7A805EE4, version = 150)
+	@HLEFunction(nid = 0xF2AE6D5E, version = 660)
 	public int sceSysconReadAlarm(@BufferInfo(usage=Usage.out) TPointer32 alarmAddr) {
     	alarmAddr.setValue(readAlarm());
     	return 0;
-    }
-
-    /**
-     * Read the PSP alarm.
-     *
-     * @param alarmAddr Pointer to a s32 where the alarm will be stored.
-     * @return          0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xF2AE6D5E, version = 660)
-	public int sceSysconReadAlarm_660(@BufferInfo(usage=Usage.out) TPointer32 alarmAddr) {
-    	return sceSysconReadAlarm(alarmAddr);
     }
 
     /**
@@ -939,21 +817,10 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x6C911742, version = 150)
+	@HLEFunction(nid = 0x80711575, version = 660)
 	public int sceSysconWriteAlarm(int alarm) {
     	writeAlarm(alarm);
     	return 0;
-    }
-
-    /**
-     * Set the PSP alarm.
-     *
-     * @param alarm The alarm value to set the PSP alarm to.
-     * @return      0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x80711575, version = 150)
-	public int sceSysconWriteAlarm_660(int alarm) {
-    	return sceSysconWriteAlarm(alarm);
     }
 
     /**
@@ -976,21 +843,9 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0xAD555CE5, version = 150)
+	@HLEFunction(nid = 0x599EB8A0, version = 660)
 	public int sceSysconSetLowBatteryCallback(TPointer callback, int callbackArgument) {
     	return 0;
-    }
-
-    /**
-     * Set the low battery callback, that will be ran when the battery is low.
-     *
-     * @param callback         The callback function.
-     * @param callbackArgument The second argument that will be passed to the callback.
-     * @return                 0.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x599EB8A0, version = 660)
-	public int sceSysconSetLowBatteryCallback_660(TPointer callback, int callbackArgument) {
-    	return sceSysconSetLowBatteryCallback(callback, callbackArgument);
     }
 
     @HLEUnimplemented
@@ -1009,21 +864,9 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0xE540E532, version = 150)
+	@HLEFunction(nid = 0x657DCEF7, version = 660)
 	public int sceSysconSetAcSupplyCallback(TPointer callback, int callbackArgument) {
     	return 0;
-    }
-
-    /**
-     * Set the Ac supply callback, that will be ran when the PSP Ac power is (dis)connected (probably).
-     *
-     * @param callback         The callback function.
-     * @param callbackArgument The second argument that will be passed to the callback.
-     * @return                 0.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x657DCEF7, version = 660)
-	public int sceSysconSetAcSupplyCallback_660(TPointer callback, int callbackArgument) {
-    	return sceSysconSetAcSupplyCallback(callback, callbackArgument);
     }
 
     /**
@@ -1035,21 +878,9 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0xBE27FE66, version = 150)
+	@HLEFunction(nid = 0xEDD3AB8B, version = 660)
 	public int sceSysconCtrlPower(int unknown1, int unknown2) {
     	return 0;
-    }
-
-    /**
-     * Set the power control
-     *
-     * @param unknown1 Unknown.
-     * @param unknown2 Unknown.
-     * @return         0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xEDD3AB8B, version = 660)
-	public int sceSysconCtrlPower_660(int unknown1, int unknown2) {
-    	return sceSysconCtrlPower(unknown1, unknown2);
     }
 
     /**
@@ -1061,21 +892,9 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x01677F91, version = 150)
+	@HLEFunction(nid = 0xF7BCD2A6, version = 660)
 	public int sceSysconCtrlVoltage(int unknown1, int unknown2) {
     	return 0;
-    }
-
-    /**
-     * Set the voltage.
-     *
-     * @param unknown1 Unknown.
-     * @param unknown2 Unknown.
-     * @return         0 on success.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xF7BCD2A6, version = 660)
-	public int sceSysconCtrlVoltage_660(int unknown1, int unknown2) {
-    	return sceSysconCtrlVoltage(unknown1, unknown2);
     }
 
     /**
@@ -1085,20 +904,9 @@ public class sceSyscon extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0xE0DDFE18, version = 150)
+	@HLEFunction(nid = 0x2D6F2728, version = 660)
 	public int sceSysconGetHPConnect() {
     	// Has no parameters
     	return 0;
-    }
-
-    /**
-     * Get the headphone connection.
-     * 
-     * @return 1 if the headphone is connected, 0 otherwise.
-     */
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x2D6F2728, version = 660)
-	public int sceSysconGetHPConnect_660() {
-    	// Has no parameters
-    	return sceSysconGetHPConnect();
     }
 }

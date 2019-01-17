@@ -374,6 +374,7 @@ public class scePower extends HLEModule {
 
     @HLELogging(level="info")
     @HLEFunction(nid = 0x04B7766E, version = 150)
+    @HLEFunction(nid = 0x766CD857, version = 660)
     public int scePowerRegisterCallback(int slot, int uid) {
         boolean notifyCallback = false;
         int result;
@@ -416,6 +417,7 @@ public class scePower extends HLEModule {
 
     @HLELogging(level="info")
     @HLEFunction(nid = 0xDFA8BAF8, version = 150)
+    @HLEFunction(nid = 0x315B8CB6, version = 660)
     public int scePowerUnregisterCallback(int slot) {
     	if (slot < 0 || slot >= powerCBSlots.length) {
     		return -1;
@@ -611,19 +613,8 @@ public class scePower extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x315B8CB6, version = 150)
-    public int scePowerUnregisterCallback_660() {
-    	return 0;
-    }
-
-    @HLELogging(level="info")
-    @HLEFunction(nid = 0x766CD857, version = 150)
-    public int scePowerRegisterCallback_660(int slot, int uid) {
-    	return scePowerRegisterCallback(slot, uid);
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x55D2D789, version = 150)
+    @HLEFunction(nid = 0xBADA8332, version = 660)
     public int scePowerGetTachyonVoltage(@BufferInfo(usage=Usage.out) TPointer32 unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
     	unknown1.setValue(tachyonVoltage1);
     	unknown2.setValue(tachyonVoltage2);
@@ -631,13 +622,8 @@ public class scePower extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xBADA8332, version = 660)
-    public int scePowerGetTachyonVoltage_660(@BufferInfo(usage=Usage.out) TPointer32 unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
-    	return scePowerGetTachyonVoltage(unknown1, unknown2);
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0xDD27F119, version = 150)
+    @HLEFunction(nid = 0x12F8302D, version = 660)
     public int scePowerSetTachyonVoltage(int unknown1, int unknown2) {
     	if (unknown1 != -1) {
     		tachyonVoltage1 = unknown1 & 0xFFFF;
@@ -646,12 +632,6 @@ public class scePower extends HLEModule {
     		tachyonVoltage2 = unknown2 & 0xFFFF;
     	}
     	return 0;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x12F8302D, version = 660)
-    public int scePowerSetTachyonVoltage_660(int unknown1, int unknown2) {
-    	return scePowerSetTachyonVoltage(unknown1, unknown2);
     }
 
     @HLEUnimplemented

@@ -127,26 +127,6 @@ public class ModuleMgrForKernel extends HLEModule {
 		return module.modid;
 	}
 
-    @HLEFunction(nid = 0x939E4270, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadModule_660(PspString path, int flags, @CanBeNull TPointer optionAddr) {
-    	return Modules.ModuleMgrForUserModule.sceKernelLoadModule(path, flags, optionAddr);
-    }
-
-    @HLEFunction(nid = 0x387E3CA9, version = 150, checkInsideInterrupt = true)
-    public int sceKernelUnloadModule_660(int uid) {
-    	return Modules.ModuleMgrForUserModule.sceKernelUnloadModule(uid);
-    }
-
-    @HLEFunction(nid = 0x3FF74DF1, version = 150, checkInsideInterrupt = true)
-    public int sceKernelStartModule_660(int uid, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
-    	return Modules.ModuleMgrForUserModule.sceKernelStartModule(uid, argSize, argp, statusAddr, optionAddr);
-    }
-
-    @HLEFunction(nid = 0xE5D6087B, version = 150, checkInsideInterrupt = true)
-    public int sceKernelStopModule_660(int uid, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
-    	return Modules.ModuleMgrForUserModule.sceKernelStopModule(uid, argSize, argp, statusAddr, optionAddr);
-    }
-
     @HLEFunction(nid = 0xD4EE2D26, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModuleToBlock(PspString path, int blockId, @BufferInfo(usage=Usage.out) TPointer32 separatedBlockId, int unknown2, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;

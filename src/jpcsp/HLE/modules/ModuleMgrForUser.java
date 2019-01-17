@@ -727,6 +727,7 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x977DE386, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x939E4270, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModule(PspString path, int flags, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
@@ -779,12 +780,14 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x50F0C1EC, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x3FF74DF1, version = 150, checkInsideInterrupt = true)
     public int sceKernelStartModule(int uid, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
     	return hleKernelStartModule(uid, argSize, argp, statusAddr, optionAddr, true, null);
     }
 
     @HLELogging(level="info")
     @HLEFunction(nid = 0xD1FF982A, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xE5D6087B, version = 150, checkInsideInterrupt = true)
     public int sceKernelStopModule(int uid, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         SceKernelSMOption smOption = null;
@@ -874,6 +877,7 @@ public class ModuleMgrForUser extends HLEModule {
 
     @HLELogging(level="info")
     @HLEFunction(nid = 0x2E0911AA, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x387E3CA9, version = 150, checkInsideInterrupt = true)
     public int sceKernelUnloadModule(int uid) {
     	return hleKernelUnloadModule(uid);
     }
@@ -1004,6 +1008,7 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x748CBED9, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x22BDBEFF, version = 150, checkInsideInterrupt = true)
     public int sceKernelQueryModuleInfo(int uid, TPointer infoAddr) {
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         if (sceModule == null) {
@@ -1196,10 +1201,5 @@ public class ModuleMgrForUser extends HLEModule {
         gpAddr.setValue(module.gp_value);
 
         return 0;
-    }
-
-    @HLEFunction(nid = 0x22BDBEFF, version = 150, checkInsideInterrupt = true)
-    public int sceKernelQueryModuleInfo_660(int uid, TPointer infoAddr) {
-    	return sceKernelQueryModuleInfo(uid, infoAddr);
     }
 }

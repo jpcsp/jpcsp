@@ -2241,13 +2241,8 @@ public class sceDisplay extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7ED59BC4, version = 150, checkInsideInterrupt = true)
-    public int sceDisplaySetHoldMode(int holdMode) {
-        return 0;
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x3552AB11, version = 660, checkInsideInterrupt = true)
-    public int sceDisplaySetHoldMode_660(int holdMode) {
+    public int sceDisplaySetHoldMode(int holdMode) {
         return 0;
     }
 

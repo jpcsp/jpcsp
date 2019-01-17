@@ -70,25 +70,15 @@ public class sceCodec extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x6D945509, version = 150)
+    @HLEFunction(nid = 0x49C13ACF, version = 660)
     public int sceCodecSetHeadphoneVolume() {
     	return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x49C13ACF, version = 660)
-    public int sceCodecSetHeadphoneVolume_660() {
-    	return 0;
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0x40D5C897, version = 150)
-    public int sceCodecSetSpeakerVolume() {
-    	return 0;
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0xEACF7284, version = 660)
-    public int sceCodecSetSpeakerVolume_660() {
+    public int sceCodecSetSpeakerVolume() {
     	return 0;
     }
 
@@ -112,13 +102,8 @@ public class sceCodec extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xEEB91526, version = 150)
-    public int sceCodecSetVolumeOffset() {
-    	return 0;
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0xD27707A8, version = 660)
-    public int sceCodecSetVolumeOffset_660() {
+    public int sceCodecSetVolumeOffset() {
     	return 0;
     }
 
@@ -130,13 +115,8 @@ public class sceCodec extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x20C61103, version = 150)
-    public int sceCodecSelectVolumeTable() {
-    	return 0;
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0xE4456BC3, version = 660)
-    public int sceCodecSelectVolumeTable_660() {
+    public int sceCodecSelectVolumeTable() {
     	return 0;
     }
 

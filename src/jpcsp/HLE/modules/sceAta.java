@@ -174,30 +174,18 @@ public class sceAta extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC21318E6, version = 150)
+    @HLEFunction(nid = 0x8DE58134, version = 660)
     public int sceAtaWaitBusBusy2() {
     	// Has no parameters
     	return 0;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x8DE58134, version = 660)
-    public int sceAtaWaitBusBusy2_660() {
-    	// Has no parameters
-    	return sceAtaWaitBusBusy2();
-    }
-
-    @HLEUnimplemented
     @HLEFunction(nid = 0xA77C230B, version = 150)
+    @HLEFunction(nid = 0x2F7BE141, version = 660)
     public int sceAtaWaitBusBusyIE() {
     	// Has no parameters
     	return 0;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x2F7BE141, version = 660)
-    public int sceAtaWaitBusBusyIE_660() {
-    	// Has no parameters
-    	return sceAtaWaitBusBusyIE();
     }
 
     @HLEUnimplemented

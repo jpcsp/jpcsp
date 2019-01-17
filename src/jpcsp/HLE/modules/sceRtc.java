@@ -152,16 +152,12 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0xE7C27D1B, version = 150)
+    @HLEFunction(nid = 0x9012B140, version = 660)
     public int sceRtcGetCurrentClockLocalTime(TPointer addr) {
         ScePspDateTime pspTime = new ScePspDateTime();
         pspTime.write(addr);
 
         return 0;
-    }
-
-    @HLEFunction(nid = 0x9012B140, version = 660)
-    public int sceRtcGetCurrentClockLocalTime_660(TPointer addr) {
-    	return sceRtcGetCurrentClockLocalTime(addr);
     }
 
     @HLEFunction(nid = 0x34885E0D, version = 150)
@@ -287,6 +283,7 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0xF006F264, version = 150)
+    @HLEFunction(nid = 0x74772CCC, version = 660)
     public int sceRtcSetDosTime(TPointer dateAddr, int time) {
         ScePspDateTime dateTime = ScePspDateTime.fromMSDOSTime(time);
         dateTime.write(dateAddr);
@@ -294,12 +291,8 @@ public class sceRtc extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x74772CCC, version = 660)
-    public int sceRtcSetDosTime_660(TPointer dateAddr, int time) {
-    	return sceRtcSetDosTime(dateAddr, time);
-    }
-
     @HLEFunction(nid = 0x36075567, version = 150)
+    @HLEFunction(nid = 0xA4A5BF1B, version = 660)
     public int sceRtcGetDosTime(ScePspDateTime dateTime, TPointer32 timeAddr) {
         Calendar cal = Calendar.getInstance();
         cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
@@ -312,11 +305,6 @@ public class sceRtc extends HLEModule {
         timeAddr.setValue(dostime);
         
         return 0;
-    }
-
-    @HLEFunction(nid = 0xA4A5BF1B, version = 660)
-    public int sceRtcGetDosTime_660(ScePspDateTime dateTime, TPointer32 timeAddr) {
-    	return sceRtcGetDosTime(dateTime, timeAddr);
     }
 
     @HLEFunction(nid = 0x7ACE4C04, version = 150)
@@ -344,6 +332,7 @@ public class sceRtc extends HLEModule {
 
     /** Set a pspTime struct based on ticks. */
     @HLEFunction(nid = 0x7ED29E40, version = 150)
+    @HLEFunction(nid = 0xE7B3ABF4, version = 660)
     public int sceRtcSetTick(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer timeAddr, @BufferInfo(usage=Usage.in) TPointer64 ticksAddr) {
         long ticks = ticksAddr.getValue() - rtcMagicOffset;
         ScePspDateTime time = ScePspDateTime.fromMicros(ticks);
@@ -483,6 +472,7 @@ public class sceRtc extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7D1FBED3, version = 150)
+    @HLEFunction(nid = 0xE09880CF, version = 660)
     public int sceRtcSetAlarmTick(@CanBeNull TPointer64 srcPtr) {
     	if (log.isDebugEnabled() && srcPtr.isNotNull()) {
     		log.debug(String.format("sceRtcSetAlarmTick src=0x%X", srcPtr.getValue()));
@@ -565,12 +555,6 @@ public class sceRtc extends HLEModule {
 	}
 
 	@HLEUnimplemented
-    @HLEFunction(nid = 0xE09880CF, version = 660)
-    public int sceRtcSetAlarmTick_660(@CanBeNull TPointer64 srcPtr) {
-		return sceRtcSetAlarmTick(srcPtr);
-    }
-
-	@HLEUnimplemented
     @HLEFunction(nid = 0xCEEF238F, version = 150)
     public int sceRtcGetCurrentSecureTick(TPointer64 currentTick) {
 		return sceRtcGetCurrentTick(currentTick);
@@ -578,24 +562,14 @@ public class sceRtc extends HLEModule {
 
 	@HLEUnimplemented
     @HLEFunction(nid = 0x759937C5, version = 150)
+    @HLEFunction(nid = 0xDFF30673, version = 660)
     public int sceRtcSetConf(int unknown1, int unknown2, int unknown3, int unknown4) {
 		return 0;
-    }
-
-	@HLEUnimplemented
-    @HLEFunction(nid = 0xDFF30673, version = 660)
-    public int sceRtcSetConf_660(int unknown1, int unknown2, int unknown3, int unknown4) {
-		return sceRtcSetConf(unknown1, unknown2, unknown3, unknown4);
     }
 
 	@HLEUnimplemented
     @HLEFunction(nid = 0x508BA64B, version = 150)
     public int sceRtc_508BA64B(@CanBeNull @BufferInfo(usage=Usage.in) TPointer64 unknown) {
 		return 0;
-    }
-
-    @HLEFunction(nid = 0xE7B3ABF4, version = 660)
-    public int sceRtcSetTick_660(TPointer timeAddr, TPointer64 ticksAddr) {
-		return sceRtcSetTick(timeAddr, ticksAddr);
     }
 }

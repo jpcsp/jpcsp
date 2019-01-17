@@ -635,6 +635,7 @@ public class SysMemUserForUser extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x237DBD4F, version = 150)
+	@HLEFunction(nid = 0x7158CE7E, version = 660)
 	public int sceKernelAllocPartitionMemory(int partitionid, String name, int type, int size, int addr) {
         addr &= Memory.addressMask;
 
@@ -651,6 +652,7 @@ public class SysMemUserForUser extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0xB6D61D02, version = 150)
+	@HLEFunction(nid = 0xC1A26C6F, version = 660)
 	public int sceKernelFreePartitionMemory(int uid) {
 		SceUidManager.checkUidPurpose(uid, "SysMem", true);
 
@@ -666,6 +668,7 @@ public class SysMemUserForUser extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x9D9A5BA1, version = 150)
+	@HLEFunction(nid = 0xF12A62F7, version = 660)
 	public int sceKernelGetBlockHeadAddr(int uid) {
 		SceUidManager.checkUidPurpose(uid, "SysMem", true);
 
@@ -678,17 +681,13 @@ public class SysMemUserForUser extends HLEModule {
         return info.addr;
 	}
 
-	@HLEFunction(nid = 0xF12A62F7, version = 660)
-	public int sceKernelGetBlockHeadAddr_660(int uid) {
-		return sceKernelGetBlockHeadAddr(uid);
-	}
-
 	@HLEFunction(nid = 0x13A5ABEF, version = 150)
 	public int sceKernelPrintf(CpuState cpu, PspString formatString) {
 		return hleKernelPrintf(cpu, formatString, stdout);
 	}
 
 	@HLEFunction(nid = 0x3FC9AE6A, version = 150)
+	@HLEFunction(nid = 0xC886B169, version = 660)
 	public int sceKernelDevkitVersion() {
 		int major = firmwareVersion / 100;
         int minor = (firmwareVersion / 10) % 10;
@@ -708,6 +707,7 @@ public class SysMemUserForUser extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0xFC114573, version = 200)
+    @HLEFunction(nid = 0xB4F00CB5, version = 660)
 	public int sceKernelGetCompiledSdkVersion() {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceKernelGetCompiledSdkVersion returning 0x%08X", compiledSdkVersion));
@@ -716,6 +716,14 @@ public class SysMemUserForUser extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x7591C7DB, version = 200)
+	@HLEFunction(nid = 0x342061E5, version = 370)
+	@HLEFunction(nid = 0x315AD3A0, version = 380)
+	@HLEFunction(nid = 0xEBD5C3E6, version = 395)
+	@HLEFunction(nid = 0x91DE343C, version = 500)
+	@HLEFunction(nid = 0x7893F79A, version = 507)
+	@HLEFunction(nid = 0x35669D4C, version = 600)
+	@HLEFunction(nid = 0x1B4217BC, version = 603)
+	@HLEFunction(nid = 0x358CA1BB, version = 606)
 	public int sceKernelSetCompiledSdkVersion(int sdkVersion) {
         hleSetCompiledSdkVersion(sdkVersion);
 
@@ -818,66 +826,5 @@ public class SysMemUserForUser extends HLEModule {
         }
 
         return info.uid;
-	}
-
-	@HLEFunction(nid = 0x342061E5, version = 370)
-	public int sceKernelSetCompiledSdkVersion370(int sdkVersion) {
-        hleSetCompiledSdkVersion(sdkVersion);
-
-        return 0;
-	}
-
-	@HLEFunction(nid = 0x315AD3A0, version = 380)
-	public int sceKernelSetCompiledSdkVersion380_390(int sdkVersion) {
-        hleSetCompiledSdkVersion(sdkVersion);
-
-        return 0;
-	}
-
-	@HLEFunction(nid = 0xEBD5C3E6, version = 395)
-	public int sceKernelSetCompiledSdkVersion395(int sdkVersion) {
-        hleSetCompiledSdkVersion(sdkVersion);
-
-        return 0;
-	}
-
-	@HLEFunction(nid = 0x91DE343C, version = 500)
-	public int sceKernelSetCompiledSdkVersion500_505(int sdkVersion) {
-        hleSetCompiledSdkVersion(sdkVersion);
-
-        return 0;
-	}
-
-	@HLEFunction(nid = 0x7893F79A, version = 507)
-	public int sceKernelSetCompiledSdkVersion507(int sdkVersion) {
-        hleSetCompiledSdkVersion(sdkVersion);
-
-        return 0;
-	}
-
-	@HLEFunction(nid = 0x35669D4C, version = 600)
-	public int sceKernelSetCompiledSdkVersion600_602(int sdkVersion) {
-        hleSetCompiledSdkVersion(sdkVersion);
-
-        return 0;
-	}
-
-	@HLEFunction(nid = 0x1B4217BC, version = 603)
-	public int sceKernelSetCompiledSdkVersion603_605(int sdkVersion) {
-        hleSetCompiledSdkVersion(sdkVersion);
-
-        return 0;
-	}
-
-	@HLEFunction(nid = 0x358CA1BB, version = 606)
-	public int sceKernelSetCompiledSdkVersion606(int sdkVersion) {
-        hleSetCompiledSdkVersion(sdkVersion);
-
-        return 0;
-	}
-
-	@HLEFunction(nid = 0xC886B169, version = 150)
-	public int sceKernelDevkitVersion_660() {
-		return sceKernelDevkitVersion();
 	}
 }

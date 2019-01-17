@@ -129,12 +129,8 @@ public class Kernel_Library extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0xDC692EE3, version = 380, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x37431849, version = 600, checkInsideInterrupt = true)
 	public int sceKernelTryLockLwMutex(TPointer workAreaAddr, int count) {
-		return Managers.lwmutex.sceKernelTryLockLwMutex(workAreaAddr, count);
-	}
-
-    @HLEFunction(nid = 0x37431849, version = 380, checkInsideInterrupt = true)
-    public int sceKernelTryLockLwMutex_600(TPointer workAreaAddr, int count) {
 		return Managers.lwmutex.sceKernelTryLockLwMutex(workAreaAddr, count);
 	}
 
@@ -149,6 +145,7 @@ public class Kernel_Library extends HLEModule {
 	}
 
     @HLEFunction(nid = 0xA089ECA4, version = 150)
+	@HLEFunction(nid = 0x8AE776AF, version = 660)
     public int sceKernelMemset(TPointer destAddr, int data, int size) {
         destAddr.memset((byte) data, size);
 

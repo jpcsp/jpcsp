@@ -184,6 +184,7 @@ public class sceImpose extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x531C9778, version = 352)
+	@HLEFunction(nid = 0xDC3BECFF, version = 660)
 	public int sceImposeGetParam(int param) {
 		int value = 0;
 
@@ -243,6 +244,7 @@ public class sceImpose extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x810FB7FB, version = 352)
+	@HLEFunction(nid = 0x3C318569, version = 660)
 	public int sceImposeSetParam(int param, int value) {
 		switch (param) {
 			case PSP_IMPOSE_MAIN_VOLUME:
@@ -326,17 +328,8 @@ public class sceImpose extends HLEModule {
 		return 0;
 	}
 
-	@HLEFunction(nid = 0xDC3BECFF, version = 660)
-	public int sceImposeGetParam_660(int param) {
-		return sceImposeGetParam(param);
-	}
-
-	@HLEFunction(nid = 0x3C318569, version = 660)
-	public int sceImposeSetParam_660(int param, int value) {
-		return sceImposeSetParam(param, value);
-	}
-
 	@HLEFunction(nid = 0xB415FC59, version = 150)
+	@HLEFunction(nid = 0x0F067E16, version = 660)
 	public int sceImposeChanges() {
 		// Has no parameters
 		int result = imposeChanges;
@@ -349,12 +342,6 @@ public class sceImpose extends HLEModule {
 		return result;
 	}
 
-	@HLEFunction(nid = 0x0F067E16, version = 660)
-	public int sceImposeChanges_660() {
-		// Has no parameters
-		return sceImposeChanges();
-	}
-
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x9BA61B49, version = 150)
 	public int sceImpose_9BA61B49() {
@@ -363,15 +350,10 @@ public class sceImpose extends HLEModule {
 	}
 
 	@HLEUnimplemented
+	@HLEFunction(nid = 0xBCF1D254, version = 660)
 	@HLEFunction(nid = 0x9DBCE0C4, version = 150)
 	public int sceImpose_9DBCE0C4(int unknown) {
 		return 0;
-	}
-
-	@HLEUnimplemented
-	@HLEFunction(nid = 0xBCF1D254, version = 660)
-	public int sceImpose_BCF1D254_660(int unknown) {
-		return sceImpose_9DBCE0C4(unknown);
 	}
 
 	@HLEUnimplemented

@@ -41,18 +41,24 @@ public class LoadExecForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("LoadExecForKernel");
 
     @HLEFunction(nid = 0xA3D5E142, version = 150)
+    @HLEFunction(nid = 0x08F7166C, version = 660, checkInsideInterrupt = true)
     public int sceKernelExitVSHVSH(@CanBeNull TPointer param) {
 		// when called in game mode it will have the same effect that sceKernelExitGame 
-		if (param.isNotNull()) {
-			log.info(String.format("sceKernelExitVSHVSH param=%s", Utilities.getMemoryDump(param.getAddress(), 36)));
+    	SceKernelLoadExecVSHParam loadExecVSHParam = new SceKernelLoadExecVSHParam();
+    	loadExecVSHParam.read(param);
+
+    	if (param.isNotNull()) {
+			log.info(String.format("sceKernelExitVSHVSH param=%s", loadExecVSHParam));
 		}
-		Emulator.PauseEmu();
+
+    	Emulator.PauseEmu();
 		RuntimeContext.reset();
 		Modules.ThreadManForUserModule.stop();
 		return 0;
 	}
 
     @HLEFunction(nid = 0x6D302D3D, version = 150)
+    @HLEFunction(nid = 0xC3474C2A, version = 660)
     public int sceKernelExitVSHKernel(@BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.in) @CanBeNull TPointer param) {
     	SceKernelLoadExecVSHParam loadExecVSHParam = new SceKernelLoadExecVSHParam();
     	loadExecVSHParam.read(param);
@@ -67,13 +73,9 @@ public class LoadExecForKernel extends HLEModule {
 		return 0;
 	}
 
-    @HLEFunction(nid = 0xC3474C2A, version = 660)
-    public int sceKernelExitVSHKernel_660(@BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.in) @CanBeNull TPointer param) {
-    	return sceKernelExitVSHKernel(param);
-    }
-
     @HLELogging(level="info")
     @HLEFunction(nid = 0x28D0D249, version = 150)
+    @HLEFunction(nid = 0xD940C83C, version = 660)
     public int sceKernelLoadExecVSHMs2(PspString filename, TPointer param) {
     	SceKernelLoadExecVSHParam loadExecVSHParam = new SceKernelLoadExecVSHParam();
     	loadExecVSHParam.read(param);
@@ -103,25 +105,6 @@ public class LoadExecForKernel extends HLEModule {
     	return Modules.LoadExecForUserModule.hleKernelLoadExec(filename, loadExecVSHParam.args, loadExecVSHParam.argp);
     }
 
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x08F7166C, version = 660, checkInsideInterrupt = true)
-    public int sceKernelExitVSHVSH_660(TPointer param) {
-    	SceKernelLoadExecVSHParam loadExecVSHParam = new SceKernelLoadExecVSHParam();
-    	loadExecVSHParam.read(param);
-
-    	if (param.isNotNull()) {
-			log.info(String.format("sceKernelExitVSHVSH_660 param=%s", loadExecVSHParam));
-		}
-
-    	return 0;
-    }
-
-    @HLELogging(level="info")
-    @HLEFunction(nid = 0xD940C83C, version = 660)
-    public int sceKernelLoadExecVSHMs2_660(PspString filename, TPointer param) {
-    	return sceKernelLoadExecVSHMs2(filename, param);
-    }
-
     @HLELogging(level="info")
     @HLEFunction(nid = 0xF9CFCF2F, version = 660)
     public int sceKernelLoadExec_F9CFCF2F(PspString filename, TPointer param) {
@@ -130,7 +113,7 @@ public class LoadExecForKernel extends HLEModule {
 
     @HLELogging(level="info")
     @HLEFunction(nid = 0xD8320A28, version = 660)
-    public int sceKernelLoadExecVSHDisc_660(PspString filename, TPointer param) {
+    public int sceKernelLoadExecVSHDisc(PspString filename, TPointer param) {
     	return sceKernelLoadExecVSHMs2(filename, param);
     }
 
@@ -160,13 +143,8 @@ public class LoadExecForKernel extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x11412288, version = 150)
+    @HLEFunction(nid = 0xA5ECA6E3, version = 660)
     public int sceKernelLoadExec_11412288(TPointer callback) {
     	return 0;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0xA5ECA6E3, version = 660)
-    public int sceKernelLoadExec_11412288_660(TPointer callback) {
-    	return sceKernelLoadExec_11412288(callback);
     }
 }

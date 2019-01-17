@@ -108,7 +108,7 @@ public class LoadCoreForKernel extends HLEModule {
     }
 
 	/**
-	 * Hook to force the creation of a larger heap used by sceKernelRegisterLibrary_660().
+	 * Hook to force the creation of a larger heap used by sceKernelRegisterLibrary().
 	 * 
 	 * @param partitionId the partitionId of the heap
 	 * @param size        the size of the heap
@@ -389,7 +389,7 @@ public class LoadCoreForKernel extends HLEModule {
     	SceLoadCoreBootInfo sceLoadCoreBootInfo = new SceLoadCoreBootInfo();
     	sceLoadCoreBootInfo.read(sceLoadCoreBootInfoAddr);
 
-    	int sceKernelFindModuleByName = NIDMapper.getInstance().getAddressByName("sceKernelFindModuleByName_660");
+    	int sceKernelFindModuleByName = NIDMapper.getInstance().getAddressByName("sceKernelFindModuleByName");
     	if (sceKernelFindModuleByName != 0) {
 			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
 
@@ -648,24 +648,6 @@ public class LoadCoreForKernel extends HLEModule {
 	}
 
     @HLEUnimplemented
-	@HLEFunction(nid = 0x7BE1421C, version = 150)
-	public int sceKernelCheckExecFile() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xBF983EF2, version = 150)
-	public int sceKernelProbeExecutableObject() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x7068E6BA, version = 150)
-	public int sceKernelLoadExecutableObject() {
-		return 0;
-	}
-
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xB4D6FECC, version = 150)
 	public int sceKernelApplyElfRelSection() {
 		return 0;
@@ -690,48 +672,6 @@ public class LoadCoreForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
-	@HLEFunction(nid = 0x99A695F0, version = 150)
-	public int sceKernelRegisterLibrary() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x5873A31F, version = 150)
-	public int sceKernelRegisterLibraryForUser() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x0B464512, version = 150)
-	public int sceKernelReleaseLibrary() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x9BAF90F6, version = 150)
-	public int sceKernelCanReleaseLibrary() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x0E760DBA, version = 150)
-	public int sceKernelLinkLibraryEntries() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x0DE1F600, version = 150)
-	public int sceKernelLinkLibraryEntriesForUser() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xDA1B09AA, version = 150)
-	public int sceKernelUnLinkLibraryEntries() {
-		return 0;
-	}
-
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xC99DD47A, version = 150)
 	public int sceKernelQueryLoadCoreCB() {
 		return 0;
@@ -744,48 +684,35 @@ public class LoadCoreForKernel extends HLEModule {
 	}
 
     @HLEUnimplemented
-	@HLEFunction(nid = 0x52A86C21, version = 150)
-	public int sceKernelGetModuleFromUID() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0xCD0F3BAC, version = 150)
-	public int sceKernelCreateModule() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x6B2371C2, version = 150)
-	public int sceKernelDeleteModule() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x8D8A8ACE, version = 150)
-	public int sceKernelAssignModule() {
-		return 0;
-	}
-
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xAFF947D4, version = 150)
 	public int sceKernelCreateAssignModule() {
 		return 0;
 	}
 
+	/**
+	 * Register a module in the system and link it into the internal loaded-modules-linked-list.
+	 * 
+	 * @param module The module to register.
+	 * 
+	 * @return 0.
+	 */
     @HLEUnimplemented
 	@HLEFunction(nid = 0xAE7C6E76, version = 150)
+	@HLEFunction(nid = 0xBF2E388C, version = 660)
 	public int sceKernelRegisterModule(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=228, usage=Usage.inout) TPointer module) {
 		return 0;
 	}
 
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x74CF001A, version = 150)
-	public int sceKernelReleaseModule() {
-		return 0;
-	}
-
+	/**
+	 * Find a loaded module by its name. If more than one module with the same name is loaded, return 
+	 * the module which was loaded last.
+	 * 
+	 * @param name The name of the module to find. 
+	 * 
+	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
+	 */
     @HLEFunction(nid = 0xCF8A41B1, version = 150)
+	@HLEFunction(nid = 0xF6B1BF0F, version = 660)
     public int sceKernelFindModuleByName(PspString moduleName) {
         SceModule module = Managers.modules.getModuleByName(moduleName.getString());
         if (module == null) {
@@ -804,7 +731,16 @@ public class LoadCoreForKernel extends HLEModule {
         return module.address;
     }
 
+	/**
+	 * Find a loaded module containing the specified address.
+	 * 
+	 * @param addr Memory address belonging to the module, i.e. the address of a function/global variable 
+	 *             within the module.
+	 * 
+	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
+	 */
     @HLEFunction(nid = 0xFB8AE27D, version = 150)
+	@HLEFunction(nid = 0xBC99C625, version = 660)
     public int sceKernelFindModuleByAddress(TPointer address) {
         SceModule module = Managers.modules.getModuleByAddress(address.getAddress());
         if (module == null) {
@@ -823,7 +759,15 @@ public class LoadCoreForKernel extends HLEModule {
         return module.address;
 	}
 
+	/**
+	 * Find a loaded module by its UID.
+	 * 
+	 * @param uid The UID of the module to find.
+	 * 
+	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
+	 */
     @HLEFunction(nid = 0xCCE4A157, version = 150)
+	@HLEFunction(nid = 0x40972E6E, version = 660)
     public int sceKernelFindModuleByUID(int uid) {
         SceModule module = Managers.modules.getModuleByUID(uid);
         if (module == null) {
@@ -869,18 +813,6 @@ public class LoadCoreForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
-	@HLEFunction(nid = 0x929B5C69, version = 150)
-	public int sceKernelGetModuleListWithAlloc() {
-		return 0;
-	}
-
-    @HLEUnimplemented
-	@HLEFunction(nid = 0x05D915DB, version = 150)
-	public int sceKernelGetModuleIdListForKernel() {
-		return 0;
-	}
-
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xB27CC244, version = 150)
 	public int sceKernelLoadRebootBin(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer fileData, int fileSize) {
 		return 0;
@@ -903,25 +835,28 @@ public class LoadCoreForKernel extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x493EE781, version = 660)
-	public int sceKernelLoadModuleBootLoadCore_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer bootModInfo, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.out) TPointer execInfo, @BufferInfo(usage=Usage.out) TPointer32 modMemId) {
+	public int sceKernelLoadModuleBootLoadCore(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer bootModInfo, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.out) TPointer execInfo, @BufferInfo(usage=Usage.out) TPointer32 modMemId) {
 		return 0;
 	}
 
     @HLEUnimplemented
+	@HLEFunction(nid = 0x7BE1421C, version = 150)
 	@HLEFunction(nid = 0xD3353EC4, version = 660)
-	public int sceKernelCheckExecFile_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer buf, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execInfo) {
+	public int sceKernelCheckExecFile(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer buf, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execInfo) {
 		return 0;
 	}
 
     @HLEUnimplemented
+	@HLEFunction(nid = 0xBF983EF2, version = 150)
 	@HLEFunction(nid = 0x41D10899, version = 660)
-	public int sceKernelProbeExecutableObject_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer buf, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execInfo) {
+	public int sceKernelProbeExecutableObject(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer buf, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execInfo) {
 		return 0;
 	}
 
     @HLEUnimplemented
+	@HLEFunction(nid = 0x7068E6BA, version = 150)
 	@HLEFunction(nid = 0x1C394885, version = 660)
-	public int sceKernelLoadExecutableObject_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer buf, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execInfo) {
+	public int sceKernelLoadExecutableObject(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer buf, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execInfo) {
 		return 0;
 	}
 
@@ -935,8 +870,9 @@ public class LoadCoreForKernel extends HLEModule {
      * @return 0 on success.
      */
     @HLEUnimplemented
+	@HLEFunction(nid = 0x99A695F0, version = 150)
 	@HLEFunction(nid = 0x48AF96A9, version = 660)
-	public int sceKernelRegisterLibrary_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer libEntryTable) {
+	public int sceKernelRegisterLibrary(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer libEntryTable) {
 		return 0;
 	}
 
@@ -952,8 +888,9 @@ public class LoadCoreForKernel extends HLEModule {
      * @return 0 indicates the library can be released.
      */
     @HLEUnimplemented
+	@HLEFunction(nid = 0x9BAF90F6, version = 150)
 	@HLEFunction(nid = 0x538129F8, version = 660)
-	public int sceKernelCanReleaseLibrary_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer libEntryTable) {
+	public int sceKernelCanReleaseLibrary(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=20, usage=Usage.in) TPointer libEntryTable) {
 		return 0;
 	}
 
@@ -969,8 +906,9 @@ public class LoadCoreForKernel extends HLEModule {
      * @return 0 on success.
      */
     @HLEUnimplemented
+	@HLEFunction(nid = 0x0E760DBA, version = 150)
 	@HLEFunction(nid = 0x8EAE9534, version = 660)
-	public int sceKernelLinkLibraryEntries_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable, int size) {
+	public int sceKernelLinkLibraryEntries(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable, int size) {
 		return 0;
 	}
 
@@ -983,8 +921,9 @@ public class LoadCoreForKernel extends HLEModule {
      * @return 
      */
     @HLEUnimplemented
+	@HLEFunction(nid = 0xDA1B09AA, version = 150)
 	@HLEFunction(nid = 0x0295CFCE, version = 660)
-	public int sceKernelUnLinkLibraryEntries_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable, int size) {
+	public int sceKernelUnLinkLibraryEntries(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable, int size) {
 		return 0;
 	}
 
@@ -996,7 +935,7 @@ public class LoadCoreForKernel extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x1999032F, version = 660)
-	public int sceKernelLoadCoreLock_660() {
+	public int sceKernelLoadCoreLock() {
     	// Has no parameters
 		return 0;
 	}
@@ -1008,7 +947,7 @@ public class LoadCoreForKernel extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0xB6C037EA, version = 660)
-	public int sceKernelLoadCoreUnlock_660(int intrState) {
+	public int sceKernelLoadCoreUnlock(int intrState) {
 		return 0;
 	}
 
@@ -1027,8 +966,9 @@ public class LoadCoreForKernel extends HLEModule {
      * @return 0 on success.
      */
     @HLEUnimplemented
+	@HLEFunction(nid = 0x5873A31F, version = 150)
 	@HLEFunction(nid = 0x2C60CCB8, version = 660)
-	public int sceKernelRegisterLibraryForUser_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable) {
+	public int sceKernelRegisterLibraryForUser(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable) {
 		return 0;
 	}
 
@@ -1041,8 +981,9 @@ public class LoadCoreForKernel extends HLEModule {
      * @return 0 on success.
      */
     @HLEUnimplemented
+	@HLEFunction(nid = 0x0B464512, version = 150)
 	@HLEFunction(nid = 0xCB636A90, version = 660)
-	public int sceKernelReleaseLibrary_660(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable) {
+	public int sceKernelReleaseLibrary(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=26, usage=Usage.in) TPointer libEntryTable) {
 		return 0;
 	}
 
@@ -1055,8 +996,9 @@ public class LoadCoreForKernel extends HLEModule {
      * @return 0 on success.
      */
     @HLEUnimplemented
+	@HLEFunction(nid = 0x0DE1F600, version = 150)
 	@HLEFunction(nid = 0x6ECFFFBA, version = 660)
-	public int sceKernelLinkLibraryEntriesForUser_660(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer libStubTable, int size) {
+	public int sceKernelLinkLibraryEntriesForUser(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer libStubTable, int size) {
 		return 0;
 	}
 
@@ -1070,7 +1012,7 @@ public class LoadCoreForKernel extends HLEModule {
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0xA481E30E, version = 660)
-	public int sceKernelLinkLibraryEntriesWithModule_660(TPointer mod, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer libStubTable, int size) {
+	public int sceKernelLinkLibraryEntriesWithModule(TPointer mod, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer libStubTable, int size) {
 		return 0;
 	}
 
@@ -1080,7 +1022,7 @@ public class LoadCoreForKernel extends HLEModule {
      * @return 0.
      */
 	@HLEFunction(nid = 0x1915737F, version = 660)
-	public int sceKernelMaskLibraryEntries_660() {
+	public int sceKernelMaskLibraryEntries() {
     	// Has no parameters
 		return 0;
 	}
@@ -1093,8 +1035,9 @@ public class LoadCoreForKernel extends HLEModule {
 	 * @return 0 on success.
 	 */
 	@HLEUnimplemented
+	@HLEFunction(nid = 0x6B2371C2, version = 150)
 	@HLEFunction(nid = 0x001B57BB, version = 660)
-	public int sceKernelDeleteModule_660(TPointer mod) {
+	public int sceKernelDeleteModule(TPointer mod) {
 		return 0;
 	}
 
@@ -1105,8 +1048,9 @@ public class LoadCoreForKernel extends HLEModule {
 	 * @return A pointer to the allocated SceModule structure on success, otherwise NULL.
 	 */
 	@HLEUnimplemented
+	@HLEFunction(nid = 0xCD0F3BAC, version = 150)
 	@HLEFunction(nid = 0x2C44F793, version = 660)
-	public int sceKernelCreateModule_660() {
+	public int sceKernelCreateModule() {
 		// Has no parameters
 		return 0;
 	}
@@ -1123,8 +1067,9 @@ public class LoadCoreForKernel extends HLEModule {
 	 * @return 0 on success.
 	 */
 	@HLEUnimplemented
+	@HLEFunction(nid = 0x05D915DB, version = 150)
 	@HLEFunction(nid = 0x37E6F41B, version = 660)
-	public int sceKernelGetModuleIdListForKernel_660(TPointer32 modIdList, int size, TPointer32 modCount, boolean userModsOnly) {
+	public int sceKernelGetModuleIdListForKernel(TPointer32 modIdList, int size, TPointer32 modCount, boolean userModsOnly) {
 		return 0;
 	}
 
@@ -1137,21 +1082,9 @@ public class LoadCoreForKernel extends HLEModule {
 	 *        be greater than 0.
 	 */
 	@HLEUnimplemented
+	@HLEFunction(nid = 0x929B5C69, version = 150)
 	@HLEFunction(nid = 0x3FE631F0, version = 660)
-	public int sceKernelGetModuleListWithAlloc_660(TPointer32 modCount) {
-		return 0;
-	}
-
-	/**
-	 * Find a loaded module by its UID.
-	 * 
-	 * @param uid The UID of the module to find.
-	 * 
-	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
-	 */
-	@HLEUnimplemented
-	@HLEFunction(nid = 0x40972E6E, version = 660)
-	public int sceKernelFindModuleByUID_660(int uid) {
+	public int sceKernelGetModuleListWithAlloc(TPointer32 modCount) {
 		return 0;
 	}
 
@@ -1165,7 +1098,7 @@ public class LoadCoreForKernel extends HLEModule {
 	 */
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x410084F9, version = 660)
-	public int sceKernelGetModuleGPByAddressForKernel_660(int addr) {
+	public int sceKernelGetModuleGPByAddressForKernel(int addr) {
 		return 0;
 	}
 
@@ -1178,7 +1111,7 @@ public class LoadCoreForKernel extends HLEModule {
 	 */
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x5FDDB07A, version = 660)
-	public int sceKernelSegmentChecksum_660(TPointer mod) {
+	public int sceKernelSegmentChecksum(TPointer mod) {
 		return 0;
 	}
 
@@ -1190,49 +1123,9 @@ public class LoadCoreForKernel extends HLEModule {
 	 * @return 0 on success.
 	 */
 	@HLEUnimplemented
+	@HLEFunction(nid = 0x74CF001A, version = 150)
 	@HLEFunction(nid = 0xB17F5075, version = 660)
-	public int sceKernelReleaseModule_660(TPointer mod) {
-		return 0;
-	}
-
-	/**
-	 * Find a loaded module containing the specified address.
-	 * 
-	 * @param addr Memory address belonging to the module, i.e. the address of a function/global variable 
-	 *             within the module.
-	 * 
-	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
-	 */
-	@HLEUnimplemented
-	@HLEFunction(nid = 0xBC99C625, version = 660)
-	public int sceKernelFindModuleByAddress_660(int addr) {
-		return 0;
-	}
-
-	/**
-	 * Find a loaded module by its name. If more than one module with the same name is loaded, return 
-	 * the module which was loaded last.
-	 * 
-	 * @param name The name of the module to find. 
-	 * 
-	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
-	 */
-	@HLEUnimplemented
-	@HLEFunction(nid = 0xF6B1BF0F, version = 660)
-	public int sceKernelFindModuleByName_660(String name) {
-		return 0;
-	}
-
-	/**
-	 * Register a module in the system and link it into the internal loaded-modules-linked-list.
-	 * 
-	 * @param mod The module to register.
-	 * 
-	 * @return 0.
-	 */
-	@HLEUnimplemented
-	@HLEFunction(nid = 0xBF2E388C, version = 660)
-	public int sceKernelRegisterModule_660(TPointer mod) {
+	public int sceKernelReleaseModule(TPointer mod) {
 		return 0;
 	}
 
@@ -1244,8 +1137,9 @@ public class LoadCoreForKernel extends HLEModule {
 	 * @return Pointer to the found SceModule structure on success, otherwise NULL.
 	 */
 	@HLEUnimplemented
+	@HLEFunction(nid = 0x52A86C21, version = 150)
 	@HLEFunction(nid = 0xCD26E0CA, version = 660)
-	public int sceKernelGetModuleFromUID_660(int uid) {
+	public int sceKernelGetModuleFromUID(int uid) {
 		return 0;
 	}
 
@@ -1261,8 +1155,9 @@ public class LoadCoreForKernel extends HLEModule {
 	 * @return 0 on success.
 	 */
 	@HLEUnimplemented
+	@HLEFunction(nid = 0x8D8A8ACE, version = 150)
 	@HLEFunction(nid = 0xF3DD4808, version = 660)
-	public int sceKernelAssignModule_660(TPointer mod, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execFileInfo) {
+	public int sceKernelAssignModule(TPointer mod, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.inout) TPointer execFileInfo) {
 		return 0;
 	}
 }

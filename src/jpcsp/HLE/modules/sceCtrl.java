@@ -437,6 +437,7 @@ public class sceCtrl extends HLEModule {
     }
 
     @HLEFunction(nid = 0x1F4011E6, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xF6E94EA3, version = 150, checkInsideInterrupt = true)
     public int sceCtrlSetSamplingMode(@CheckArgument("checkMode") int newMode) {
         int oldMode = mode;
         setSamplingMode(newMode);
@@ -449,6 +450,7 @@ public class sceCtrl extends HLEModule {
     }
 
     @HLEFunction(nid = 0xDA6B76A1, version = 150)
+    @HLEFunction(nid = 0xF8EC18BD, version = 150)
     public int sceCtrlGetSamplingMode(TPointer32 modeAddr) {
     	modeAddr.setValue(mode);
 
@@ -456,6 +458,8 @@ public class sceCtrl extends HLEModule {
     }
 
     @HLEFunction(nid = 0x3A622550, version = 150)
+    @HLEFunction(nid = 0xC4AAD55F, version = 371)
+    @HLEFunction(nid = 0x2BA616AF, version = 660)
     public int sceCtrlPeekBufferPositive(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer dataAddr, int numBuf) {
         return hleCtrlReadBufferImmediately(dataAddr.getAddress(), numBuf, true, true);
     }
@@ -466,6 +470,10 @@ public class sceCtrl extends HLEModule {
     }
 
     @HLEFunction(nid = 0x1F803938, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x454455AC, version = 371)
+    @HLEFunction(nid = 0xD073ECA4, version = 620)
+    @HLEFunction(nid = 0x9F3038AC, version = 639)
+    @HLEFunction(nid = 0xBE30CED0, version = 660)
     public int sceCtrlReadBufferPositive(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer dataAddr, int numBuf) {
         return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
     }
@@ -547,51 +555,11 @@ public class sceCtrl extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xC4AAD55F, version = 371)
-	public int sceCtrlPeekBufferPositive371(TPointer dataAddr, int numBuf) {
-    	return hleCtrlReadBufferImmediately(dataAddr.getAddress(), numBuf, true, true);
-	}
-
-    @HLEFunction(nid = 0x454455AC, version = 371)
-	public int sceCtrlReadBufferPositive371(TPointer dataAddr, int numBuf) {
-    	return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
-	}
-
-    @HLEFunction(nid = 0xD073ECA4, version = 620)
-	public int sceCtrlReadBufferPositive_620(TPointer dataAddr, int numBuf) {
-    	return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
-	}
-
-    @HLEFunction(nid = 0x9F3038AC, version = 639)
-	public int sceCtrlReadBufferPositive_639(TPointer dataAddr, int numBuf) {
-    	return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
-	}
-
-    @HLEFunction(nid = 0xBE30CED0, version = 660)
-	public int sceCtrlReadBufferPositive_660(TPointer dataAddr, int numBuf) {
-    	return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
-	}
-
-    @HLEFunction(nid = 0xF6E94EA3, version = 150, checkInsideInterrupt = true)
-    public int sceCtrlSetSamplingMode_660(@CheckArgument("checkMode") int newMode) {
-    	return sceCtrlSetSamplingMode(newMode);
-    }
-
     @HLEUnimplemented
     @HLEFunction(nid = 0x6C86AF22, version = 660)
 	public int sceCtrl_driver_6C86AF22(int unknown) {
     	return 0;
 	}
-
-    @HLEFunction(nid = 0x2BA616AF, version = 150)
-	public int sceCtrlPeekBufferPositive_660(TPointer dataAddr, int numBuf) {
-    	return sceCtrlPeekBufferPositive371(dataAddr, numBuf);
-	}
-
-    @HLEFunction(nid = 0xF8EC18BD, version = 150)
-    public int sceCtrlGetSamplingMode_660(TPointer32 modeAddr) {
-    	return sceCtrlGetSamplingMode(modeAddr);
-    }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x365BE224, version = 660)

@@ -41,6 +41,7 @@ public class InterruptManager extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0xCA04A2B9, version = 150)
+	@HLEFunction(nid = 0xFFA8B183, version = 660)
 	public int sceKernelRegisterSubIntrHandler(int intrNumber, int subIntrNumber, TPointer handlerAddress, int handlerArgument) {
 		return Managers.intr.sceKernelRegisterSubIntrHandler(intrNumber, subIntrNumber, handlerAddress, handlerArgument);
 	}
@@ -132,12 +133,6 @@ public class InterruptManager extends HLEModule {
 		return 0;
 	}
 
-	@HLEUnimplemented
-	@HLEFunction(nid = 0xFFA8B183, version = 660)
-	public int sceKernelRegisterSubIntrHandler_660(int intrNumber, int subIntrNumber, TPointer handlerAddress, int handlerArgument) {
-		return sceKernelRegisterSubIntrHandler(intrNumber, subIntrNumber, handlerAddress, handlerArgument);
-	}
-
 	@HLEFunction(nid = 0xFE28C6D9, version = 150)
 	public boolean sceKernelIsIntrContext() {
 		return IntrManager.getInstance().isInsideInterrupt();
@@ -151,7 +146,7 @@ public class InterruptManager extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x14D4C61A, version = 660)
-	public int sceKernelRegisterSystemCallTable_660(TPointer syscallTable) {
+	public int sceKernelRegisterSystemCallTable(TPointer syscallTable) {
 		return 0;
 	}
 }
