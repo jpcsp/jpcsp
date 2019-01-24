@@ -16,7 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.crypto;
 
+import static java.lang.Character.isJavaIdentifierPart;
+import static java.lang.Character.isJavaIdentifierStart;
+import static java.lang.Character.isWhitespace;
+import static jpcsp.util.Constants.charset;
+
 import java.io.IOException;
+import java.lang.reflect.Field;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -29,6 +35,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import jpcsp.HLE.Modules;
 import jpcsp.util.Utilities;
 
 /**
@@ -191,18 +198,94 @@ public class PreDecrypt {
 		}
 	}
 
+	private static int skipWhitespaces(String s, int i) {
+		while (i < s.length() && isWhitespace(s.charAt(i))) {
+			i++;
+		}
+
+		return i;
+	}
+
 	private static byte[] parseBytes(String s) {
 		byte[] bytes = null;
 
 		for (int i = 0; i < s.length(); ) {
-			i = s.indexOf("0x", i);
-			if (i < 0) {
+			i = skipWhitespaces(s, i);
+
+			// The value can be
+			// - 0xNN: representing one byte in hexadecimal notation
+			// - Java name: name of a Java static field, whose value will be converted to a byte array.
+			if (s.startsWith("0x", i)) {
+				i += 2;
+
+				int value = Integer.parseInt(s.substring(i, i + 2), 16);
+				i += 2;
+
+				bytes = Utilities.add(bytes, (byte) value);
+			} else if (isJavaIdentifierStart(s.charAt(i))) {
+				int startJavaName = i;
+				i++;
+				while (i < s.length()) {
+					char c = s.charAt(i);
+					if (isJavaIdentifierPart(c)) {
+						i++;
+					} else if (c == '.') {
+						i++;
+						if (i < s.length()) {
+							c = s.charAt(i);
+							if (isJavaIdentifierStart(c)) {
+								i++;
+							} else {
+								break;
+							}
+						}
+					} else {
+						break;
+					}
+				}
+				int endJavaName = i;
+				String javaName = s.substring(startJavaName, endJavaName);
+
+				int fieldNameIndex = javaName.lastIndexOf('.');
+				if (fieldNameIndex > 0) {
+					String className = javaName.substring(0, fieldNameIndex);
+					String fieldName = javaName.substring(fieldNameIndex + 1);
+
+					try {
+						Class<?> classObject = Modules.class.getClassLoader().loadClass(className);
+						Field fieldObject = classObject.getField(fieldName);
+						// Retrieve the value of the static field
+						Object fieldValue = fieldObject.get(null);
+						// Convert the field value to a byte array
+						byte[] fieldValueBytes;
+						if (fieldValue instanceof byte[]) {
+							fieldValueBytes = (byte[]) fieldValue;
+						} else {
+							fieldValueBytes = fieldValue.toString().getBytes(charset);
+						}
+
+						bytes = Utilities.add(bytes, fieldValueBytes);
+					} catch (ClassNotFoundException e) {
+						log.error(e);
+					} catch (NoSuchFieldException e) {
+						log.error(e);
+					} catch (SecurityException e) {
+						log.error(e);
+					} catch (IllegalArgumentException e) {
+						log.error(e);
+					} catch (IllegalAccessException e) {
+						log.error(e);
+					}
+				}
+			} else {
 				break;
 			}
-			i += 2;
 
-			int value = Integer.parseInt(s.substring(i, i + 2), 16);
-			bytes = Utilities.add(bytes, (byte) value);
+			i = skipWhitespaces(s, i);
+
+			if (i < s.length() && s.charAt(i) == ',') {
+				i++;
+			}
 		}
 
 		return bytes;

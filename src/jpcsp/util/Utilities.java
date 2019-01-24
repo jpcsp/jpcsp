@@ -1074,6 +1074,10 @@ public class Utilities {
         }
     }
 
+    public static void write8(byte[] buffer, int offset, int data) {
+    	buffer[offset] = (byte) data;
+    }
+
     public static void writeUnaligned32(byte[] buffer, int offset, int data) {
     	buffer[offset + 0] = (byte) data;
     	buffer[offset + 1] = (byte) (data >> 8);
@@ -1638,6 +1642,22 @@ public class Utilities {
     	return newArray;
     }
 
+    public static byte[] add(byte[] array, byte[] bytes) {
+    	if (bytes == null) {
+    		return array;
+    	}
+
+    	if (array == null) {
+    		return bytes.clone();
+    	}
+
+    	byte[] newArray = new byte[array.length + bytes.length];
+    	System.arraycopy(array, 0, newArray, 0, array.length);
+    	System.arraycopy(bytes, 0, newArray, array.length, bytes.length);
+
+    	return newArray;
+    }
+
     public static File[] add(File[] array, File f) {
     	if (f == null) {
     		return array;
@@ -1716,6 +1736,45 @@ public class Utilities {
     	}
 
     	return buffer;
+    }
+
+    public static boolean writeCompleteFile(String fileName, byte[] buffer, boolean createDirectories) {
+    	StringBuilder localFileName = new StringBuilder();
+    	IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(fileName, localFileName);
+    	if (vfs == null) {
+    		return false;
+    	}
+
+    	if (createDirectories) {
+    		int index = fileName.indexOf(":/");
+    		if (index >= 0) {
+    			index += 2;
+    			int startDirName = index;
+    			while (true) {
+    				int dirIndex = fileName.indexOf('/', index);
+    				if (dirIndex < 0) {
+    					break;
+    				}
+    				String dirName = fileName.substring(startDirName, dirIndex);
+    				vfs.ioMkdir(dirName, 0777);
+    				index = dirIndex + 1;
+    			}
+    		}
+    	}
+
+    	IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), IoFileMgrForUser.PSP_O_WRONLY, 0777);
+    	if (vFile == null) {
+    		return false;
+    	}
+
+    	// Write the complete file
+    	int writeLength = vFile.ioWrite(buffer, 0, buffer.length);
+    	vFile.ioClose();
+    	if (writeLength != buffer.length) {
+    		return false;
+    	}
+
+    	return true;
     }
 
     public static boolean isSystemLibraryExisting(String libraryName) {

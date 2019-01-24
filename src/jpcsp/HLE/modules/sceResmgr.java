@@ -16,6 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.util.Utilities.readCompleteFile;
+import static jpcsp.util.Utilities.write8;
+import static jpcsp.util.Utilities.writeCompleteFile;
+import static jpcsp.util.Utilities.writeStringNZ;
+import static jpcsp.util.Utilities.writeUnaligned32;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.BufferInfo;
@@ -26,13 +32,18 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
-import jpcsp.HLE.VFS.IVirtualFile;
-import jpcsp.HLE.VFS.IVirtualFileSystem;
-import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.crypto.CryptoEngine;
+import jpcsp.crypto.PRX;
 
 public class sceResmgr extends HLEModule {
     public static Logger log = Modules.getLogger("sceResmgr");
+	private static final String indexDatFileName = "flash0:/vsh/etc/index_01g.dat";
+	// Fake a version 6.59 so that the PSP Update 6.60 can be executed
+	public static final String dummyIndexDatContent = "release:6.59:\n" +
+			"build:5454,0,3,1,0:builder@vsh-build6\n" +
+			"system:57716@release_660,0x06060010:\n" +
+			"vsh:p6616@release_660,v58533@release_660,20110727:\n" +
+			"target:1:WorldWide\n";
 
     @Override
 	public void start() {
@@ -42,40 +53,29 @@ public class sceResmgr extends HLEModule {
 	}
 
     private static void createDummyIndexDat() {
-    	String fileName = "flash0:/vsh/etc/index_01g.dat";
-    	StringBuilder localFileName = new StringBuilder();
-    	IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(fileName, localFileName);
-    	if (vfs == null) {
-    		return;
-    	}
-
-    	SceIoStat stat = new SceIoStat();
-    	int result = vfs.ioGetstat(localFileName.toString(), stat);
-    	if (result == 0 && stat.size > 0L) {
+    	byte[] content = readCompleteFile(indexDatFileName);
+    	if (content != null && content.length > 0) {
     		// File already exists
     		return;
     	}
 
-    	vfs.ioMkdir("vsh", 0777);
-    	vfs.ioMkdir("vsh/etc", 0777);
-    	IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), IoFileMgrForUser.PSP_O_WRONLY, 0777);
+    	// A few entries in PreDecrypt.xml will allow the decryption of this dummy file
+    	byte[] buffer = new byte[0x1F0];
+    	write8(buffer, 0x7C, PRX.DECRYPT_MODE_NO_EXEC); // decryptMode
+    	writeUnaligned32(buffer, 0xB0, 0x9F); // dataSize
+    	writeUnaligned32(buffer, 0xB4, 0x80); // dataOffset
+    	writeUnaligned32(buffer, 0xD0, 0x0B2B90F0); // tag
 
-    	String dummyContent = "release:6.60:\n";
-    	dummyContent += "build:5455,0,3,1,0:builder@vsh-build6\n";
-    	dummyContent += "system:57716@release_660,0x06060010:\n";
-    	dummyContent += "vsh:p6616@release_660,v58533@release_660,20110727:\n";
-    	dummyContent += "target:1:WorldWide\n";
+    	writeStringNZ(buffer, 0x150, buffer.length - 0x150, dummyIndexDatContent);
 
-    	byte[] bytes = dummyContent.getBytes();
-    	vFile.ioWrite(bytes, 0, bytes.length);
-    	vFile.ioClose();
+    	writeCompleteFile(indexDatFileName, buffer, true);
     }
 
 	@HLEFunction(nid = 0x9DC14891, version = 150)
     public int sceResmgr_9DC14891(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultLengthAddr) {
     	int resultLength;
 
-    	// Nothing to do ff the buffer is already decrypted
+    	// Nothing to do if the buffer is already decrypted
     	if ("release:".equals(buffer.getStringNZ(0, 8))) {
     		resultLength = bufferSize;
     	} else {

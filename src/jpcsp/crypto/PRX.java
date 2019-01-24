@@ -20,6 +20,7 @@ import static jpcsp.HLE.Modules.memlmdModule;
 import static jpcsp.HLE.Modules.semaphoreModule;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_MODE_CMD1;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_MODE_DECRYPT_CBC;
+import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.read8;
 import static jpcsp.util.Utilities.readUnaligned16;
 import static jpcsp.util.Utilities.readUnaligned32;
@@ -258,7 +259,7 @@ public class PRX {
         new TAG_INFO(0xBB67C59F, KeyVault.g_key7F, 0x60, 0x60),
         new TAG_INFO(0xBB67C59F, KeyVault.g_key1B, 0x61, 0x61),
     	new TAG_INFO(0x0E000000, KeyVault.key_102DC8AF_2, 0x51, 0x00)};
-    
+
     private TAG_INFO GetTagInfo(int tag) {
         int iTag;
         for (iTag = 0; iTag < g_tagInfo.length; iTag++) {
@@ -521,6 +522,7 @@ public class PRX {
 
         // Fetch the final ELF size.
         int retsize = readUnaligned32(buf, 0xB0);
+        int dataOffset = readUnaligned16(buf, 0xB4);
 
         // Old encryption method (144 bytes key).
         if (((type >= 2 && type <= 7) || type == 9 || type == 10) && pti.key.length > 0x10 && !forceNewMethod) {
@@ -902,7 +904,9 @@ public class PRX {
             }
 
             // Call KIRK CMD1 for final decryption.
-            result = semaphoreModule.hleUtilsBufferCopyWithRange(buf, 0, size, buf, 0x40, size - 0x40, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
+            int inSize = 0x90 + alignUp(retsize, 15) + dataOffset;
+            int outSize = alignUp(retsize, 15);
+            result = semaphoreModule.hleUtilsBufferCopyWithRange(buf, 0, outSize, buf, 0x40, inSize, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
             if (result != 0) {
             	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_DECRYPT_PRIVATE returned error %d", result));
             }
