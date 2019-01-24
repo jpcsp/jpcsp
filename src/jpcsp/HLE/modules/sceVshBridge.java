@@ -21,14 +21,14 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
-import jpcsp.HLE.kernel.types.SceKernelLMOption;
-import jpcsp.HLE.modules.ModuleMgrForUser.LoadModuleContext;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+import jpcsp.util.Utilities;
 
 public class sceVshBridge extends HLEModule {
     public static Logger log = Modules.getLogger("sceVshBridge");
@@ -47,26 +47,7 @@ public class sceVshBridge extends HLEModule {
 
     @HLEFunction(nid = 0xC9626587, version = 150)
     public int vshKernelLoadModuleBufferVSH(int bufferSize, @BufferInfo(lengthInfo=LengthInfo.previousParameter, usage=Usage.in) TPointer buffer, int flags, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.in) TPointer optionAddr) {
-        SceKernelLMOption lmOption = null;
-        if (optionAddr.isNotNull()) {
-            lmOption = new SceKernelLMOption();
-            lmOption.read(optionAddr);
-            if (log.isInfoEnabled()) {
-                log.info(String.format("vshKernelLoadModuleBufferVSH options: %s", lmOption));
-            }
-        }
-
-        LoadModuleContext loadModuleContext = new LoadModuleContext();
-        loadModuleContext.fileName = buffer.toString();
-        loadModuleContext.flags = flags;
-        loadModuleContext.buffer = buffer.getAddress();
-        loadModuleContext.bufferSize = bufferSize;
-        loadModuleContext.lmOption = lmOption;
-        loadModuleContext.needModuleInfo = true;
-        loadModuleContext.allocMem = true;
-        loadModuleContext.isSignChecked = false;
-
-        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
+    	return Modules.ModuleMgrForKernelModule.sceKernelLoadModuleBufferVSH(bufferSize, buffer, flags, optionAddr);
     }
 
     @HLEUnimplemented
@@ -454,7 +435,13 @@ public class sceVshBridge extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x74DA9D25, version = 150)
-    public int vshLflashFatfmtStartFatfmt() {
+    public int vshLflashFatfmtStartFatfmt(int numberParameters, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.in) TPointer32 parameters) {
+    	if (log.isDebugEnabled()) {
+    		for (int i = 0; i < numberParameters; i++) {
+    			log.debug(String.format("vshLflashFatfmtStartFatfmt parameter#%d=%s: '%s'", i, parameters.getPointer(i * 4), Utilities.readStringZ(parameters.getValue(i * 4))));
+    		}
+    	}
+
     	return 0;
     }
 }

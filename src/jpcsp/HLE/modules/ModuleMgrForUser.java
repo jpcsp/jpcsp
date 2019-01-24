@@ -460,7 +460,7 @@ public class ModuleMgrForUser extends HLEModule {
             // Simulate a successful loading
             log.info(String.format("hleKernelLoadModule(path='%s') encrypted module not loaded", loadModuleContext.fileName));
             SceModule fakeModule = new SceModule(true);
-            fakeModule.modname = loadModuleContext.moduleName.toString();
+            fakeModule.modname = loadModuleContext.moduleName;
         	fakeModule.addAllocatedMemory(moduleInfo);
             if (moduleInfo != null) {
                 fakeModule.write(Memory.getInstance(), moduleInfo.addr);

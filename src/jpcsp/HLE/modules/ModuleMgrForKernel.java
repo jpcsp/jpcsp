@@ -235,4 +235,28 @@ public class ModuleMgrForKernel extends HLEModule {
     public int sceKernelLoadModuleBufferForRebootKernel(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=256, usage=Usage.in) TPointer modBuf, int flags, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.in) TPointer option, int unknown) {
     	return 0;
     }
+
+	@HLEFunction(nid = 0xC6DE0B9C, version = 660)
+	public int sceKernelLoadModuleBufferVSH(int bufferSize, @BufferInfo(lengthInfo=LengthInfo.previousParameter, usage=Usage.in) TPointer buffer, int flags, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.in) TPointer optionAddr) {
+        SceKernelLMOption lmOption = null;
+        if (optionAddr.isNotNull()) {
+            lmOption = new SceKernelLMOption();
+            lmOption.read(optionAddr);
+            if (log.isInfoEnabled()) {
+                log.info(String.format("sceKernelLoadModuleBufferVSH options: %s", lmOption));
+            }
+        }
+
+        LoadModuleContext loadModuleContext = new LoadModuleContext();
+        loadModuleContext.fileName = buffer.toString();
+        loadModuleContext.flags = flags;
+        loadModuleContext.buffer = buffer.getAddress();
+        loadModuleContext.bufferSize = bufferSize;
+        loadModuleContext.lmOption = lmOption;
+        loadModuleContext.needModuleInfo = true;
+        loadModuleContext.allocMem = true;
+        loadModuleContext.isSignChecked = false;
+
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(loadModuleContext);
+	}
 }
