@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.Emulator;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
@@ -634,9 +635,13 @@ public class scePower extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x0442D852, version = 150)
     public int scePowerRequestColdReset(int unknown) {
+    	// Display a black screen while rebooting
+        Modules.sceDisplayModule.clear();
+
+        Emulator.getMainGUI().doReboot();
+
     	return 0;
     }
 }

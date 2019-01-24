@@ -2996,16 +2996,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_ATRAC3PLUS");
             	HLEModuleManager.getInstance().LoadFlash0Module("PSP_MODULE_AV_AVCODEC");
             } else if (args[i].equals("--reboot")) {
-            	reboot.enableReboot = true;
-            	logStart();
-	            setTitle(MetaInformation.FULL_NAME + " - reboot");
-                Modules.sceDisplayModule.setCalledFromCommandLine();
-                HTTPServer.processProxyRequestLocally = true;
-
-                if (!Modules.rebootModule.loadAndRun()) {
-                	log.error(String.format("Cannot reboot - missing files"));
-                	reboot.enableReboot = false;
-                }
+            	doReboot();
             } else if (args[i].equals("--debugCodeBlockCalls")) {
             	RuntimeContext.debugCodeBlockCalls = true;
             } else if (args[i].matches("--flash[0-2]") || args[i].matches("--ms[0]") || args[i].matches("--exdata[0]")) {
@@ -3379,5 +3370,19 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 	@Override
 	public boolean isRunningReboot() {
 		return reboot.enableReboot;
+	}
+
+	@Override
+	public void doReboot() {
+    	reboot.enableReboot = true;
+    	logStart();
+        setTitle(MetaInformation.FULL_NAME + " - reboot");
+        Modules.sceDisplayModule.setCalledFromCommandLine();
+        HTTPServer.processProxyRequestLocally = true;
+
+        if (!Modules.rebootModule.loadAndRun()) {
+        	log.error(String.format("Cannot reboot - missing files"));
+        	reboot.enableReboot = false;
+        }
 	}
 }

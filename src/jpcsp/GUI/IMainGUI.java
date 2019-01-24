@@ -51,4 +51,5 @@ public interface IMainGUI {
 
 	public boolean isRunningFromVsh();
 	public boolean isRunningReboot();
+	public void doReboot();
 }

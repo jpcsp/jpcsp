@@ -108,6 +108,7 @@ public class AutoTestsRunner {
 		@Override public void reset() { }
 		@Override public boolean isRunningFromVsh() { return false; }
 		@Override public boolean isRunningReboot() { return false; }
+		@Override public void doReboot() { }
 	}
 	
 	public AutoTestsRunner() {

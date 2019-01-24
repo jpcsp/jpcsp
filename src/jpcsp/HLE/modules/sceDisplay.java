@@ -1122,6 +1122,13 @@ public class sceDisplay extends HLEModule {
         step(false);
     }
 
+    public void clear() {
+    	// Clear the whole VRAM
+    	getMemory().memset(MemoryMap.START_VRAM, (byte) 0, MemoryMap.SIZE_VRAM);
+        setGeDirty(true);
+        step(true);
+    }
+
     public final void write8(int rawAddress) {
         if (fb.isRawAddressInside(rawAddress)) {
             displayDirty = true;
