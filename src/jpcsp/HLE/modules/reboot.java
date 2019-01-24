@@ -688,7 +688,7 @@ public class reboot extends HLEModule {
     }
 
     public static void dumpAllModulesAndLibraries() {
-    	if (!enableReboot) {
+    	if (!enableReboot || !log.isTraceEnabled()) {
     		return;
     	}
 
@@ -708,10 +708,9 @@ public class reboot extends HLEModule {
     		int textAddr = mem.read32(address + 108);
     		int textSize = mem.read32(address + 112);
 
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Module '%s': text 0x%08X-0x%08X", moduleName, textAddr, textAddr + textSize));
-    		}
-    		// Next
+			log.trace(String.format("Module '%s': text 0x%08X-0x%08X", moduleName, textAddr, textAddr + textSize));
+
+			// Next
     		address = mem.read32(address);
     	}
     }
@@ -722,15 +721,13 @@ public class reboot extends HLEModule {
     		int numExports = mem.read32(address + 16);
     		int entryTable = mem.read32(address + 32);
 
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Library '%s':", libName));
-    		}
-    		for (int i = 0; i < numExports; i++) {
+			log.trace(String.format("Library '%s':", libName));
+
+			for (int i = 0; i < numExports; i++) {
     			int nid = mem.read32(entryTable + i * 4);
     			int entryAddress = mem.read32(entryTable + (i + numExports) * 4);
-    			if (log.isDebugEnabled()) {
-    				log.debug(String.format("   0x%08X: 0x%08X", nid, entryAddress));
-    			}
+
+				log.trace(String.format("   0x%08X: 0x%08X", nid, entryAddress));
     		}
 
     		// Next
@@ -771,7 +768,7 @@ public class reboot extends HLEModule {
 				int uid = mem.read32(currentThread + 8);
 				int cb = SysMemForKernel.getCBFromUid(uid);
 				int nameAddr = mem.read32(cb + 16);
-				String name = Utilities.readStringZ(nameAddr);
+				String name = Utilities.readStringZ(mem, nameAddr);
 
 				RuntimeContext.setLog4jMDC(name, uid);
 	    	} else {
@@ -781,7 +778,7 @@ public class reboot extends HLEModule {
     }
 
     public static void dumpAllThreads() {
-    	if (!enableReboot) {
+    	if (!enableReboot || !log.isTraceEnabled()) {
     		return;
     	}
 
@@ -847,12 +844,7 @@ public class reboot extends HLEModule {
 		SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
 		sceSysmemUidCB.read(mem, cb);
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("%s: uid=0x%X, name='%s', status=0x%X(%s), currentPriority=0x%X%s", comment, uid, sceSysmemUidCB.name, status, SceKernelThreadInfo.getStatusName(status), currentPriority, waitInfo));
-			if (log.isTraceEnabled()) {
-				log.trace(Utilities.getMemoryDump(address, 0x140));
-			}
-		}
+		log.trace(String.format("%s: uid=0x%X, name='%s', status=0x%X(%s), currentPriority=0x%X%s", comment, uid, sceSysmemUidCB.name, status, SceKernelThreadInfo.getStatusName(status), currentPriority, waitInfo));
     }
 
     private static void dumpThreadList(Memory mem, int list, String comment) {

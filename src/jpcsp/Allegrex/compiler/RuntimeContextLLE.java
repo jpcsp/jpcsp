@@ -210,7 +210,6 @@ public class RuntimeContextLLE {
 		}
 
 		if (processor.isInterruptsDisabled()) {
-			log.debug("Interrupts disabled");
 			return false;
 		}
 

@@ -1262,6 +1262,7 @@ public class RuntimeContext {
     		synchronized (waitForEnd) {
 				waitForEnd.notify();
 			}
+    		haltCount = 0;
     	}
     }
 
@@ -1668,8 +1669,6 @@ public class RuntimeContext {
     private static int haltCount = 0;
     public static void executeHalt(Processor processor) throws StopThreadException {
     	if (reboot.enableReboot) {
-    		// This playground implementation is related to the investigation
-    		// for the reboot process (flash0:/reboot.bin).
     		if (processor.cp0.isMediaEngineCpu()) {
 				((MEProcessor) processor).halt();
     		} else {

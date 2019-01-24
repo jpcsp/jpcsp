@@ -63,8 +63,8 @@ public class SoundBufferManager {
         		break;
         	}
     		int alBuffer = AL10.alSourceUnqueueBuffers(alSource);
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("free buffer %d", alBuffer));
+    		if (log.isTraceEnabled()) {
+    			log.trace(String.format("free buffer %d", alBuffer));
     		}
 
     		synchronized (freeBuffers) {
