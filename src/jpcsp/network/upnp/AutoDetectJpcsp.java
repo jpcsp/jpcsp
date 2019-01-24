@@ -42,6 +42,7 @@ public class AutoDetectJpcsp {
 	private static AutoDetectJpcsp instance = null;
 	private ListenerThread listenerThread;
 	private static final String deviceName = "Jpcsp";
+	private DiscoverThread discoverThread;
 
 	private class DiscoverThread extends Thread {
 		@Override
@@ -61,10 +62,12 @@ public class AutoDetectJpcsp {
 	}
 
 	public void discoverOtherJpcspInBackground() {
-		DiscoverThread discoverThread = new DiscoverThread();
-		discoverThread.setName("Auto Detect Jpcsp Discover Thread");
-		discoverThread.setDaemon(true);
-		discoverThread.start();
+		if (discoverThread == null) {
+			discoverThread = new DiscoverThread();
+			discoverThread.setName("Auto Detect Jpcsp Discover Thread");
+			discoverThread.setDaemon(true);
+			discoverThread.start();
+		}
 	}
 
 	private void discover() {

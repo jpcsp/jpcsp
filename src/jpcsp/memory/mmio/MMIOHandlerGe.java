@@ -64,6 +64,7 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	private MMIOHandlerGe(int baseAddress) {
 		super(baseAddress);
 
+		ExternalGE.init();
 		if (!ExternalGE.isActive()) {
 			log.error(String.format("MMIOHandlerGe is only working with the External Software Renderer"));
 		}

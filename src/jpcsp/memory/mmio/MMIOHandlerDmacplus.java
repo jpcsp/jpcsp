@@ -190,6 +190,11 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 			frameBufferAddr = 0;
 		}
 
+		// hleDisplaySetFrameBuf is returning an error when bufferWidth == 0 and frameBufferAddr != 0
+		if (displayFrameBufferWidth == 0) {
+			frameBufferAddr = 0;
+		}
+
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("updateDisplay.hleDisplaySetFrameBuf frameBufferAddr=0x%08X, displayFrameBufferWidth=0x%X, displayPixelFormat=0x%X, displayFlags=0x%X", frameBufferAddr, displayFrameBufferWidth, displayPixelFormat, displayFlags));
 		}
