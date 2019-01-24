@@ -16,6 +16,23 @@
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+import static jpcsp.util.Constants.charset;
+import static jpcsp.util.Utilities.alignUp;
+import static jpcsp.util.Utilities.read8;
+import static jpcsp.util.Utilities.readCompleteFile;
+import static jpcsp.util.Utilities.readStringNZ;
+import static jpcsp.util.Utilities.readUnaligned16;
+import static jpcsp.util.Utilities.readUnaligned32;
+import static jpcsp.util.Utilities.write8;
+import static jpcsp.util.Utilities.writeCompleteFile;
+import static jpcsp.util.Utilities.writeStringNZ;
+import static jpcsp.util.Utilities.writeUnaligned16;
+import static jpcsp.util.Utilities.writeUnaligned32;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +56,9 @@ import jpcsp.util.Utilities;
 
 public class sceReg extends HLEModule {
     public static Logger log = Modules.getLogger("sceReg");
+    private static final String iregFileName = "flash1:/registry/system.ireg";
+    private static final String dregFileName = "flash1:/registry/system.dreg";
+    protected static final int DATA_BLOCK_SIZE = 512;
     protected static final int REG_TYPE_DIR = 1;
     protected static final int REG_TYPE_INT = 2;
     protected static final int REG_TYPE_STR = 3;
@@ -73,6 +93,593 @@ public class sceReg extends HLEModule {
     private String npPassword;
     private int npAutoSignInEnable;
     private String ownerName;
+    private Registry registry;
+    private static MessageDigest sha1;
+
+    protected static class Registry {
+    	private byte[] ireg;
+    	private byte[] dreg;
+    	private RegistryHeader header;
+    	private RegistryDirectoryHeader entries[];
+    	private int nextFreeDataBlock;
+
+    	public Registry(int numberDirectoryEntries, int numberDataBlocks) {
+    		header = new RegistryHeader(numberDirectoryEntries);
+    		ireg = new byte[numberDirectoryEntries * RegistryDirectoryHeader.SIZE_OF + RegistryHeader.SIZE_OF];
+    		dreg = new byte[numberDataBlocks * DATA_BLOCK_SIZE];
+    		entries = new RegistryDirectoryHeader[numberDirectoryEntries];
+    	}
+
+    	public Registry(byte[] ireg, byte[] dreg) {
+    		this.ireg = ireg;
+    		this.dreg = dreg;
+
+    		read();
+    	}
+
+    	private void read() {
+    		header = new RegistryHeader(ireg);
+
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("RegistryHeader: %s, valid %b", header, header.isValid(ireg)));
+    		}
+
+    		if (header.isValid(ireg) ) {
+    			entries = new RegistryDirectoryHeader[(ireg.length - RegistryHeader.SIZE_OF) / RegistryDirectoryHeader.SIZE_OF];
+    			int offset = RegistryHeader.SIZE_OF;
+    			for (int i = 0; i < entries.length; i++, offset += RegistryDirectoryHeader.SIZE_OF) {
+    				RegistryDirectoryHeader entry = new RegistryDirectoryHeader(ireg, offset);
+    				if (entry.numberBlocks != 0) {
+    					entries[i] = entry;
+
+    					if (log.isDebugEnabled()) {
+    						log.debug(String.format("RegistryDirectoryHeader#%d: %s, valid checksum %b", i, entry, entry.isValidChecksum(dreg)));
+    					}
+    				}
+    			}
+    		}
+    	}
+
+    	public void save(String iregFileName, String dregFileName) {
+			int offset = RegistryHeader.SIZE_OF;
+    		for (int i = 0; i < entries.length; i++, offset += RegistryDirectoryHeader.SIZE_OF) {
+    			if (entries[i] != null) {
+    				entries[i].write(ireg, offset, dreg);
+    			}
+    		}
+
+    		header.write(ireg);
+
+    		writeCompleteFile(iregFileName, ireg, true);
+    		writeCompleteFile(dregFileName, dreg, true);
+    	}
+
+    	public void dump() {
+    		for (int i = 0; i < entries.length; i++) {
+    			if (entries[i] != null && !entries[i].hasParent()) {
+    				dumpChildren(i, 0);
+    			}
+    		}
+    	}
+
+    	private void dumpEntry(int n, int level) {
+    		if (log.isDebugEnabled()) {
+    			StringBuilder prefix = new StringBuilder();
+    			for (int i = 0; i < level; i++) {
+    				prefix.append("  ");
+    			}
+    			log.debug(String.format("%s%s: %s", prefix, getFullName(n), entries[n]));
+    			byte[] dataBlocks = entries[n].getDataBlocks(dreg);
+    			RegistryHeaderKeyEntry registryHeaderKeyEntry = new RegistryHeaderKeyEntry(dataBlocks);
+    			int numberKeyEntries = Math.max(entries[n].numberChildren, registryHeaderKeyEntry.numberKeyEntries - 1);
+    			for (int i = 0, offset = RegistryKeyEntry.SIZE_OF; i < numberKeyEntries; i++, offset += RegistryKeyEntry.SIZE_OF) {
+    				RegistryKeyEntry keyEntry = new RegistryKeyEntry(dataBlocks, offset);
+
+    				log.debug(String.format("%s  %s", prefix, keyEntry));
+    			}
+    		}
+    	}
+
+    	private void dumpChildren(int parent, int level) {
+			dumpEntry(parent, level);
+			for (int i = 0; i < entries.length; i++) {
+				if (entries[i] != null && entries[i].parent == parent) {
+					dumpChildren(i, level + 1);
+				}
+			}
+    	}
+
+    	private int getFreeDataBlock() {
+    		return nextFreeDataBlock++;
+    	}
+
+    	private int hashName(String name) {
+    		byte[] bytes = name.getBytes(charset);
+    		int hash = 0;
+    		if (bytes != null && bytes.length > 0) {
+    			bytes = Utilities.add(bytes, (byte) 0);
+    			int start = ((int) bytes[0]) * 100;
+    			for (int i = 1; i < bytes.length; i += 2) {
+    				int b = (int) bytes[i];
+    				int n = hash + start + b;
+    				hash = n - (((n + ((int) ((n * 0xFFFFFFFFD260BD6DL) >>> 32))) >> 14) + (n < 0 ? 1 : 0)) * 19937;
+    			}
+    		}
+
+    		if (hash >= 0) {
+    			hash %= header.numberDirectoryEntries;
+    		} else {
+    			hash = (int) ((hash & 0xFFFFFFFFL) % header.numberDirectoryEntries);
+    		}
+
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("hashName '%s' = 0x%X", name, hash));
+    		}
+
+    		return hash;
+    	}
+
+    	private String getFullName(int index) {
+    		if (index == RegistryDirectoryHeader.NO_PARENT || entries[index] == null) {
+    			return "";
+    		}
+
+    		return getFullName(entries[index].parent) + "/" + entries[index].name;
+    	}
+
+    	private String getFullName(int parent, String name) {
+    		StringBuilder s = new StringBuilder();
+
+    		if (parent != RegistryDirectoryHeader.NO_PARENT) {
+    			s.append(getFullName(parent));
+    		}
+			s.append("/");
+    		s.append(name);
+
+    		return s.toString();
+    	}
+
+    	public int addDirectory(int parent, String name, int numberChildren, int numberBlocks) {
+    		String fullName = getFullName(parent, name);
+    		int nameHash = hashName(fullName);
+
+    		// Find the next free entry if there is a collision
+    		int index = nameHash;
+    		while (entries[index] != null) {
+    			index = (index + 1) % header.numberDirectoryEntries;
+    		}
+
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Storing entry '%s' at index 0x%X", fullName, index));
+    		}
+
+    		RegistryDirectoryHeader registryDirectoryHeader = new RegistryDirectoryHeader(numberChildren, numberBlocks);
+    		registryDirectoryHeader.parent = parent;
+    		registryDirectoryHeader.name = name;
+    		registryDirectoryHeader.numberBlocks = numberBlocks;
+    		registryDirectoryHeader.nameHash = nameHash;
+    		for (int i = 0; i < numberBlocks; i++) {
+    			registryDirectoryHeader.blocks[i] = getFreeDataBlock();
+    		}
+
+    		entries[index] = registryDirectoryHeader;
+
+    		return index;
+    	}
+
+    	private void addKey(int index, RegistryKeyEntry keyEntry, int valueSize) {
+    		RegistryDirectoryHeader entry = entries[index];
+
+    		int child = entry.getNextFreeChild();
+    		int nextFreeValue = entry.getNextFreeValue(valueSize);
+
+    		byte[] dataBlocks = entry.getDataBlocks(dreg);
+    		keyEntry.write(dataBlocks, child, nextFreeValue);
+    		entry.updateDataBlocks(dreg, dataBlocks);
+    	}
+
+    	public void addKey(int index, String name, int value) {
+    		addKey(index, new RegistryKeyEntry(name, value), 0);
+    	}
+
+    	public void addKey(int index, String name, byte[] binValue) {
+    		addKey(index, new RegistryKeyEntry(name, binValue), binValue.length);
+    	}
+
+    	public void addKey(int index, String name, byte[] binValue, int binValueLength) {
+    		while (binValue.length < binValueLength) {
+    			binValue = Utilities.add(binValue, (byte) 0);
+    		}
+    		addKey(index, name, binValue);
+    	}
+
+    	public void addKey(int index, String name, String stringValue, int maxSize) {
+    		addKey(index, name, stringValue, stringValue.getBytes(charset).length + 1, maxSize);
+    	}
+
+    	public void addKey(int index, String name, String stringValue, int size, int maxSize) {
+    		addKey(index, new RegistryKeyEntry(name, stringValue, size, maxSize), maxSize);
+    	}
+
+    	public void addKey(int index, String name) {
+    		addKey(index, new RegistryKeyEntry(name), 0);
+    	}
+    }
+
+    protected static class RegistryHeader {
+    	public static final int SIZE_OF = 92;
+    	public static final int MAGIC_IRF = 0x46524900; // ".IRF"
+    	public int magic;
+    	public int version;
+    	public final byte checksum[] = new byte[20];
+    	public int unknown28;
+    	public int unknown32;
+    	public int numberDirectoryEntries;
+    	public int unknown40;
+    	public int unknown44;
+    	public int unknown48;
+    	public int sizeDirectoryEntries;
+    	public int headerSize;
+    	public final byte unknown60[] = new byte[32];
+
+    	public RegistryHeader(int numberDirectoryEntries) {
+    		magic = MAGIC_IRF;
+    		version = 0x10003;
+    		this.numberDirectoryEntries = numberDirectoryEntries;
+    		sizeDirectoryEntries = RegistryDirectoryHeader.SIZE_OF * numberDirectoryEntries;
+    		headerSize = SIZE_OF;
+    	}
+
+    	public RegistryHeader(byte[] ireg) {
+    		magic = readUnaligned32(ireg, 0);
+    		version = readUnaligned32(ireg, 4);
+    		System.arraycopy(ireg, 8, checksum, 0, checksum.length);
+    		unknown28 = readUnaligned32(ireg, 28);
+    		unknown32 = readUnaligned32(ireg, 32);
+    		numberDirectoryEntries = readUnaligned32(ireg, 36);
+    		unknown40 = readUnaligned32(ireg, 40);
+    		unknown44 = readUnaligned32(ireg, 44);
+    		unknown48 = readUnaligned32(ireg, 48);
+    		sizeDirectoryEntries = readUnaligned32(ireg, 52);
+    		headerSize = readUnaligned32(ireg, 56);
+    		System.arraycopy(ireg, 60, unknown60, 0, unknown60.length);
+    	}
+
+    	public boolean isValid(byte[] ireg) {
+    		return magic == MAGIC_IRF && isValidChecksum(ireg);
+    	}
+
+    	private byte[] computeChecksum(byte[] ireg) {
+    		// Clear the checksum before computing the SHA-1 digest on the whole ireg
+    		Arrays.fill(ireg, 8, 8 + checksum.length, (byte) 0);
+    		return sha1(ireg);
+    	}
+
+    	public boolean isValidChecksum(byte[] ireg) {
+    		return Arrays.equals(checksum, computeChecksum(ireg));
+    	}
+
+    	public void write(byte[] ireg) {
+    		writeUnaligned32(ireg, 0, magic);
+    		writeUnaligned32(ireg, 4, version);
+    		writeUnaligned32(ireg, 28, unknown28);
+    		writeUnaligned32(ireg, 32, unknown32);
+    		writeUnaligned32(ireg, 36, numberDirectoryEntries);
+    		writeUnaligned32(ireg, 40, unknown40);
+    		writeUnaligned32(ireg, 44, unknown44);
+    		writeUnaligned32(ireg, 48, unknown48);
+    		writeUnaligned32(ireg, 52, sizeDirectoryEntries);
+    		writeUnaligned32(ireg, 56, headerSize);
+    		System.arraycopy(unknown60, 0, ireg, 60, unknown60.length);
+
+    		// Compute the checksum after updating all fields
+    		System.arraycopy(computeChecksum(ireg), 0, ireg, 8, checksum.length);
+    	}
+
+    	@Override
+		public String toString() {
+			return String.format("magic=0x%08X, version=0x%X, unknown28=0x%X, unknown32=0x%X, numberDirectoryEntries=0x%X, unknown40=0x%X, unknown44=0x%X, unknown48=0x%X, sizeDirectoryEntries=0x%X, headerSize=0x%X", magic, version, unknown28, unknown32, numberDirectoryEntries, unknown40, unknown44, unknown48, sizeDirectoryEntries, headerSize);
+		}
+    }
+
+    protected static class RegistryDirectoryHeader {
+    	public static final int SIZE_OF = 58;
+    	public static final int NO_PARENT = 0xFFFF;
+    	public int unknown0;
+    	public int unknown1;
+    	public int parent;
+    	public int nameHash;
+    	public int unknown3;
+    	public int numberChildren;
+    	public int numberBlocks;
+    	public String name;
+    	public int unknown4;
+    	public final int blocks[] = new int[5];
+    	public int unknown5;
+    	private int nextFreeChild;
+    	private RegistryHeaderKeyEntry registryHeaderKeyEntry;
+
+    	public RegistryDirectoryHeader(int numberChildren, int numberBlocks) {
+    		this.numberChildren = numberChildren;
+
+    		registryHeaderKeyEntry = new RegistryHeaderKeyEntry(numberBlocks);
+    		registryHeaderKeyEntry.numberKeyEntries = numberChildren + 1;
+
+    		for (int i = 0; i < blocks.length; i++) {
+    			blocks[i] = 0xFFFF;
+    		}
+
+    		nextFreeChild = 1;
+    	}
+
+    	public RegistryDirectoryHeader(byte[] ireg, int offset) {
+    		unknown0 = readUnaligned16(ireg, offset + 0);
+    		unknown1 = readUnaligned16(ireg, offset + 2);
+    		parent = readUnaligned16(ireg, offset + 4);
+    		nameHash = readUnaligned16(ireg, offset + 6);
+    		unknown3 = readUnaligned16(ireg, offset + 8);
+    		numberChildren = readUnaligned16(ireg, offset + 10);
+    		numberBlocks = readUnaligned16(ireg, offset + 12);
+    		name = readStringNZ(ireg, offset + 14, 28);
+    		unknown4 = readUnaligned16(ireg, offset + 42);
+    		for (int i = 0; i < blocks.length; i++) {
+    			blocks[i] = readUnaligned16(ireg, offset + 44 + i * 2);
+    		}
+    		unknown5 = readUnaligned32(ireg, offset + 54);
+
+    		registryHeaderKeyEntry = new RegistryHeaderKeyEntry(numberBlocks);
+    		registryHeaderKeyEntry.numberKeyEntries = numberChildren + 1;
+    		nextFreeChild = numberChildren + 1;
+    	}
+
+		public void write(byte[] ireg, int offset, byte[] dreg) {
+			writeUnaligned16(ireg, offset + 0, unknown0);
+			writeUnaligned16(ireg, offset + 2, unknown1);
+			writeUnaligned16(ireg, offset + 4, parent);
+			writeUnaligned16(ireg, offset + 6, nameHash);
+			writeUnaligned16(ireg, offset + 8, unknown3);
+			writeUnaligned16(ireg, offset + 10, numberChildren);
+			writeUnaligned16(ireg, offset + 12, numberBlocks);
+			writeStringNZ(ireg, offset + 14, 28, name);
+			writeUnaligned16(ireg, offset + 42, unknown4);
+			for (int i = 0; i < blocks.length; i++) {
+				writeUnaligned16(ireg, offset + 44 + i * 2, blocks[i]);
+			}
+			writeUnaligned32(ireg, offset + 54, unknown5);
+
+			byte[] dataBlocks = getDataBlocks(dreg);
+			registryHeaderKeyEntry.write(dataBlocks);
+
+			updateDataBlocks(dreg, dataBlocks);
+		}
+
+		public boolean isValidChecksum(byte[] dreg) {
+			byte[] dataBlocks = getDataBlocks(dreg);
+
+			return registryHeaderKeyEntry.isValidChecksum(dataBlocks);
+		}
+
+		public byte[] getDataBlocks(byte[] dreg) {
+			byte[] dataBlocks = new byte[numberBlocks * DATA_BLOCK_SIZE];
+			for (int i = 0; i < numberBlocks; i++) {
+				System.arraycopy(dreg, blocks[i] * DATA_BLOCK_SIZE, dataBlocks, i * DATA_BLOCK_SIZE, DATA_BLOCK_SIZE);
+			}
+
+			return dataBlocks;
+		}
+
+		public void updateDataBlocks(byte[] dreg, byte[] dataBlocks) {
+			for (int i = 0; i < numberBlocks; i++) {
+				System.arraycopy(dataBlocks, i * DATA_BLOCK_SIZE, dreg, blocks[i] * DATA_BLOCK_SIZE, DATA_BLOCK_SIZE);
+			}
+		}
+
+		public boolean hasParent() {
+			return parent != NO_PARENT;
+		}
+
+		public int getNextFreeChild() {
+			return nextFreeChild++;
+		}
+
+		public int getNextFreeValue(int length) {
+			int index = -1;
+
+			while (length > 0) {
+				index = registryHeaderKeyEntry.getNextFreeDataKeyEntry();
+				length -= RegistryKeyEntry.SIZE_OF;
+			}
+
+			return index;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder s = new StringBuilder();
+			s.append(String.format("nameHash=0x%X, parent=0x%X, numberChildren=0x%X, numberBlocks=0x%X, name='%s'", nameHash, parent, numberChildren, numberBlocks, name));
+			for (int i = 0; i < numberBlocks; i++) {
+				s.append(String.format(", block[%d]=0x%X", i, blocks[i]));
+			}
+			return s.toString();
+		}
+    }
+
+    protected static class RegistryHeaderKeyEntry {
+    	public int numberKeyEntries;
+    	public int firstFreeDataKey;
+    	public int checksum;
+
+    	public RegistryHeaderKeyEntry(int numberBlocks) {
+    		firstFreeDataKey = numberBlocks * DATA_BLOCK_SIZE / RegistryKeyEntry.SIZE_OF - 1;
+    	}
+
+    	public RegistryHeaderKeyEntry(byte[] dataBlocks) {
+    		numberKeyEntries = readUnaligned16(dataBlocks, 8);
+    		firstFreeDataKey = readUnaligned16(dataBlocks, 10);
+    		checksum = readUnaligned32(dataBlocks, 14);
+    	}
+
+		private static int computeChecksum(byte[] dataBlocks) {
+			// Clear the checksum field before computing the SHA-1 digest
+			writeUnaligned32(dataBlocks, 14, 0);
+
+			byte[] digestBytes = sha1(dataBlocks);
+
+			// Reduce the 20 bytes digest into one 32-bit value
+			int checksum = 0;
+			for (int i = 0, n = 0; i < 32; i += 8) {
+				for (int j = 0; j < 5; j++, n++) {
+					checksum ^= (digestBytes[n] & 0xFF) << i;
+				}
+			}
+
+			return checksum;
+		}
+
+		public boolean isValidChecksum(byte[] dataBlocks) {
+            return checksum == computeChecksum(dataBlocks);
+		}
+
+		public int getNextFreeDataKeyEntry() {
+			return firstFreeDataKey--;
+		}
+
+		public void write(byte[] dataBlocks) {
+    		writeUnaligned16(dataBlocks, 8, numberKeyEntries);
+    		writeUnaligned16(dataBlocks, 10, firstFreeDataKey);
+
+    		checksum = computeChecksum(dataBlocks);
+    		writeUnaligned32(dataBlocks, 14, checksum);
+    	}
+    }
+
+    protected static class RegistryKeyEntry {
+    	public static final int SIZE_OF = 32;
+    	public int type;
+    	public String name;
+    	public int intValue;
+    	public int size;
+    	public int maxKeyBlocks;
+    	public String stringValue;
+    	public byte[] binValue;
+
+    	public RegistryKeyEntry(String name, int intValue) {
+    		this.type = REG_TYPE_INT;
+    		this.name = name;
+    		this.intValue = intValue;
+    	}
+
+    	public RegistryKeyEntry(String name, String stringValue, int maxSize) {
+    		this.type = REG_TYPE_STR;
+    		this.name = name;
+    		this.stringValue = stringValue;
+    		maxKeyBlocks = maxSize / SIZE_OF;
+			binValue = stringValue.getBytes(charset);
+    		size = binValue.length + 1;
+    	}
+
+    	public RegistryKeyEntry(String name, String stringValue, int size, int maxSize) {
+    		this.type = REG_TYPE_STR;
+    		this.name = name;
+    		this.stringValue = stringValue;
+    		this.size = size;
+    		maxKeyBlocks = maxSize / SIZE_OF;
+			binValue = stringValue.getBytes(charset);
+    	}
+
+    	public RegistryKeyEntry(String name, byte[] binValue) {
+    		this.type = REG_TYPE_BIN;
+    		this.name = name;
+    		this.binValue = binValue;
+    		maxKeyBlocks = alignUp(binValue.length, SIZE_OF - 1) / SIZE_OF; 
+    		size = binValue.length;
+    	}
+
+    	public RegistryKeyEntry(String name) {
+    		this.type = REG_TYPE_DIR;
+    		this.name = name;
+    	}
+
+    	public RegistryKeyEntry(byte[] dataBlocks, int offset) {
+    		type = read8(dataBlocks, offset + 0);
+    		name = readStringNZ(dataBlocks, offset + 1, 27);
+
+    		int valueOffset;
+    		switch (type) {
+    			case REG_TYPE_INT:
+    	    		intValue = readUnaligned32(dataBlocks, offset + 28);
+    	    		break;
+    			case REG_TYPE_BIN:
+        			size = readUnaligned16(dataBlocks, offset + 28);
+        			maxKeyBlocks = read8(dataBlocks, offset + 30);
+        			binValue = new byte[size];
+        			valueOffset = read8(dataBlocks, offset + 31) * SIZE_OF;
+        			System.arraycopy(dataBlocks, valueOffset, binValue, 0, size);
+    				break;
+    			case REG_TYPE_STR:
+        			size = readUnaligned16(dataBlocks, offset + 28);
+        			maxKeyBlocks = read8(dataBlocks, offset + 30);
+        			valueOffset = read8(dataBlocks, offset + 31) * SIZE_OF;
+        			stringValue = readStringNZ(dataBlocks, valueOffset, size);
+        			binValue = stringValue.getBytes(charset);
+    				break;
+    		}
+    	}
+
+    	public void write(byte[] dataBlocks, int child, int valueData) {
+    		int offset = child * SIZE_OF;
+    		int valueOffset = valueData * SIZE_OF;
+
+    		write8(dataBlocks, offset + 0, type);
+    		writeStringNZ(dataBlocks, offset + 1, 27, name);
+
+    		switch (type) {
+    			case REG_TYPE_INT:
+    				writeUnaligned32(dataBlocks, offset + 28, intValue);
+    				break;
+    			case REG_TYPE_BIN:
+    				writeUnaligned16(dataBlocks, offset + 28, size);
+    				write8(dataBlocks, offset + 30, maxKeyBlocks);
+    				write8(dataBlocks, offset + 31, valueData);
+    				System.arraycopy(binValue, 0, dataBlocks, valueOffset, size);
+    				break;
+    			case REG_TYPE_STR:
+    				writeUnaligned16(dataBlocks, offset + 28, size);
+    				write8(dataBlocks, offset + 30, maxKeyBlocks);
+    				write8(dataBlocks, offset + 31, valueData);
+    				System.arraycopy(binValue, 0, dataBlocks, valueOffset, binValue.length);
+    				Arrays.fill(dataBlocks, valueOffset + binValue.length, valueOffset + size, (byte) 0);
+    				break;
+    		}
+    	}
+
+    	@Override
+		public String toString() {
+			StringBuilder s = new StringBuilder(String.format("name='%s'", name));
+			switch (type) {
+				case REG_TYPE_INT:
+					s.append(String.format(", value=0x%08X", intValue));
+					break;
+				case REG_TYPE_STR:
+					s.append(String.format(", value='%s'", stringValue));
+					if (size != binValue.length + 1) {
+						s.append(String.format("(size=0x%X)", size));
+					}
+					s.append(String.format(", maxKeyBlocks=0x%X", maxKeyBlocks));
+					break;
+				case REG_TYPE_BIN:
+					s.append(String.format(", value=%s", Utilities.getMemoryDump(binValue)));
+					break;
+				case REG_TYPE_DIR:
+					s.append(String.format(", directory"));
+					break;
+				default:
+					s.append(String.format(", type=0x%02X", type));
+					break;
+			}
+			return s.toString();
+		}
+    }
 
     protected static class RegistryHandle {
     	private static final String registryHandlePurpose = "sceReg.RegistryHandle";
@@ -131,7 +738,19 @@ public class sceReg extends HLEModule {
     	}
     }
 
-	public String getAuthName() {
+    private static byte[] sha1(byte[] input) {
+    	return sha1(input, 0, input.length);
+    }
+
+    private static byte[] sha1(byte[] input, int offset, int length) {
+    	sha1.reset();
+    	sha1.update(input, offset, length);
+		byte[] digestBytes = sha1.digest();
+
+		return digestBytes;
+    }
+
+    public String getAuthName() {
 		return authName;
 	}
 
@@ -1464,8 +2083,411 @@ public class sceReg extends HLEModule {
     	return 0;
     }
 
-    @Override
+	private void createEmptyRegistry() {
+    	Settings settings = Settings.getInstance();
+		Registry registry = new Registry(256, 256);
+		int index;
+		int parent;
+
+		index = registry.addDirectory(RegistryDirectoryHeader.NO_PARENT, "REGISTRY", 1, 1);
+		registry.addKey(index, "category_version", 102);
+
+		index = registry.addDirectory(RegistryDirectoryHeader.NO_PARENT, "CONFIG", 20, 2);
+		registry.addKey(index, "VIDEO");
+		registry.addKey(index, "PHOTO");
+		registry.addKey(index, "MUSIC");
+		registry.addKey(index, "BROWSER");
+		registry.addKey(index, "LFTV");
+		registry.addKey(index, "RSS");
+		registry.addKey(index, "ALARM");
+		registry.addKey(index, "PREMO");
+		registry.addKey(index, "CAMERA");
+		registry.addKey(index, "DISPLAY");
+		registry.addKey(index, "NP");
+		registry.addKey(index, "ONESEG");
+		registry.addKey(index, "SYSTEM");
+		registry.addKey(index, "DATE");
+		registry.addKey(index, "NETWORK");
+		registry.addKey(index, "BROWSER2");
+		registry.addKey(index, "OSK");
+		registry.addKey(index, "INFOBOARD");
+		registry.addKey(index, "BT");
+		registry.addKey(index, "GAME");
+
+		parent = index;
+		index = registry.addDirectory(parent, "BROWSER2", 4, 1);
+		registry.addKey(index, "tm_service", 0);
+		registry.addKey(index, "tm_ec_ttl", 0);
+		registry.addKey(index, "tm_ec_ttl_update_time", new byte[8]);
+		registry.addKey(index, "tm_service_sub_status", 0);
+
+		index = registry.addDirectory(parent, "VIDEO", 9, 1);
+		registry.addKey(index, "menu_language", "en".getBytes(charset));
+		registry.addKey(index, "sound_language", "00".getBytes(charset));
+		registry.addKey(index, "subtitle_language", "en".getBytes(charset));
+		registry.addKey(index, "appended_volume", 0);
+		registry.addKey(index, "lr_button_enable", 1);
+		registry.addKey(index, "list_play_mode", 1);
+		registry.addKey(index, "title_display_mode", 0);
+		registry.addKey(index, "output_ext_menu", 0);
+		registry.addKey(index, "output_ext_func", 0);
+
+		index = registry.addDirectory(parent, "NP", 15, 2);
+		registry.addKey(index, "env", npEnv, 0x20);
+		registry.addKey(index, "account_id", npAccountId.getBytes(charset), 16);
+		registry.addKey(index, "login_id", npLoginId, 0x60);
+		registry.addKey(index, "password", npPassword, 0x20);
+		registry.addKey(index, "auto_sign_in_enable", npAutoSignInEnable);
+		registry.addKey(index, "nav_only", 0);
+		registry.addKey(index, "np_ad_clock_diff", 0);
+		registry.addKey(index, "view_mode", 0);
+		registry.addKey(index, "np_geo_filtering", 0);
+		registry.addKey(index, "guest_country", "", 0x20);
+		registry.addKey(index, "guest_lang", "", 0x20);
+		registry.addKey(index, "guest_yob", 0);
+		registry.addKey(index, "guest_mob", 0);
+		registry.addKey(index, "guest_dob", 0);
+		registry.addKey(index, "check_drm", 0);
+
+		index = registry.addDirectory(parent, "PHOTO", 1, 1);
+		registry.addKey(index, "slideshow_speed", 1);
+
+		index = registry.addDirectory(parent, "BT", 9, 1);
+		registry.addKey(index, "connect_mode", 0);
+		for (int i = 0; i < 8; i++) {
+			registry.addKey(index, String.format("DEVICE%d", i));
+		}
+		for (int i = 0; i < 8; i++) {
+			int deviceIndex = registry.addDirectory(index, String.format("DEVICE%d", i), 3, 1);
+			registry.addKey(deviceIndex, "audio_type", 1);
+			registry.addKey(deviceIndex, "device_type", 0);
+			registry.addKey(deviceIndex, "device_name", new byte[64]);
+		}
+
+		index = registry.addDirectory(parent, "MUSIC", 3, 1);
+		registry.addKey(index, "wma_play", 1);
+		registry.addKey(index, "visualizer_mode", musicVisualizerMode);
+		registry.addKey(index, "track_info_mode", musicTrackInfoMode);
+
+		index = registry.addDirectory(parent, "ALARM", 20, 2);
+		for (int i = 0; i < 10; i++) {
+			registry.addKey(index, String.format("alarm_%d_time", i), -1);
+		}
+		for (int i = 0; i < 10; i++) {
+			registry.addKey(index, String.format("alarm_%d_property", i), 0);
+		}
+
+		index = registry.addDirectory(parent, "PREMO", 16, 2);
+		registry.addKey(index, "guide_page", 1);
+		registry.addKey(index, "response", 0);
+		registry.addKey(index, "ps3_name", "", 0x80);
+		registry.addKey(index, "ps3_mac", new byte[MAC_ADDRESS_LENGTH]);
+		registry.addKey(index, "ps3_keytype", 1);
+		registry.addKey(index, "ps3_key", new byte[16]);
+		registry.addKey(index, "custom_video_bitrate1", 1);
+		registry.addKey(index, "custom_video_bitrate2", 1);
+		registry.addKey(index, "custom_video_buffer1", 1);
+		registry.addKey(index, "custom_video_buffer2", 1);
+		registry.addKey(index, "setting_internet", 1);
+		registry.addKey(index, "button_assign", 1);
+		registry.addKey(index, "flags", 1);
+		registry.addKey(index, "account_id", new byte[16]);
+		registry.addKey(index, "login_id", "", 0x60);
+		registry.addKey(index, "password", "", 0x20);
+
+		index = registry.addDirectory(parent, "CAMERA", 15, 2);
+		registry.addKey(index, "still_size", 1);
+		registry.addKey(index, "movie_size", 1);
+		registry.addKey(index, "still_quality", 0);
+		registry.addKey(index, "movie_quality", 0);
+		registry.addKey(index, "movie_fps", 1);
+		registry.addKey(index, "white_balance", 0);
+		registry.addKey(index, "exposure_bias", 0);
+		registry.addKey(index, "shutter_sound_mode", 0);
+		registry.addKey(index, "file_folder", 101);
+		registry.addKey(index, "file_number", 1);
+		registry.addKey(index, "msid", new byte[16]);
+		registry.addKey(index, "still_effect", 0);
+		registry.addKey(index, "medium_type", 0);
+		registry.addKey(index, "file_number_eflash", 1);
+		registry.addKey(index, "folder_number_eflash", 101);
+
+		index = registry.addDirectory(parent, "ONESEG", 1, 1);
+		registry.addKey(index, "schedule_data_key", new byte[16]);
+
+		index = registry.addDirectory(parent, "RSS", 1, 1);
+		registry.addKey(index, "download_items", 5);
+
+		index = registry.addDirectory(parent, "OSK", 5, 1);
+		registry.addKey(index, "version_id", oskVersionId);
+		registry.addKey(index, "disp_locale", oskDispLocale);
+		registry.addKey(index, "writing_locale", oskWritingLocale);
+		registry.addKey(index, "input_char_mask", oskInputCharMask);
+		registry.addKey(index, "keytop_index", oskKeytopIndex);
+
+		index = registry.addDirectory(parent, "SYSTEM", 17, 2);
+		registry.addKey(index, "owner_name", ownerName, 0x80);
+		registry.addKey(index, "backlight_brightness", 3);
+		registry.addKey(index, "umd_autoboot", 0);
+		registry.addKey(index, "usb_charge", 1);
+		registry.addKey(index, "umd_cache", 1);
+		registry.addKey(index, "usb_auto_connect", 1);
+		registry.addKey(index, "XMB");
+		registry.addKey(index, "SOUND");
+		registry.addKey(index, "POWER_SAVING");
+		registry.addKey(index, "LOCK");
+		registry.addKey(index, "CHARACTER_SET");
+		registry.addKey(index, "slide_action", 0);
+		registry.addKey(index, "first_boot_tick", new byte[64]);
+		registry.addKey(index, "owner_mob", 0);
+		registry.addKey(index, "owner_dob", 0);
+		registry.addKey(index, "slide_welcome", 0);
+		registry.addKey(index, "exh_mode", 0);
+
+		int parentSystem = index;
+		index = registry.addDirectory(parentSystem, "XMB", 4, 1);
+		registry.addKey(index, "theme_type", 0);
+		registry.addKey(index, "language", 1);
+		registry.addKey(index, "button_assign", 1);
+		registry.addKey(index, "THEME");
+
+		int parentXmb = index;
+		index = registry.addDirectory(parentXmb, "THEME", 4, 1);
+		registry.addKey(index, "color_mode", settings.readInt("registry.theme.color_mode", 0));
+		registry.addKey(index, "wallpaper_mode", settings.readInt("registry.theme.wallpaper_mode", 0));
+		registry.addKey(index, "system_color", settings.readInt("registry.theme.system_color", 0));
+		registry.addKey(index, "custom_theme_mode", settings.readInt("registry.theme.custom_theme_mode", 0));
+
+		index = registry.addDirectory(parentSystem, "POWER_SAVING", 4, 1);
+		registry.addKey(index, "suspend_interval", 600);
+		registry.addKey(index, "backlight_off_interval", 300);
+		registry.addKey(index, "wlan_mode", 0);
+		registry.addKey(index, "active_backlight_mode", 0);
+
+		index = registry.addDirectory(parentSystem, "LOCK", 3, 1);
+		registry.addKey(index, "password", lockPassword.getBytes(charset));
+		registry.addKey(index, "parental_level", 0);
+		registry.addKey(index, "browser_start", 0);
+
+		index = registry.addDirectory(parentSystem, "CHARACTER_SET", 2, 1);
+		registry.addKey(index, "oem", 5);
+		registry.addKey(index, "ansi", 19);
+
+		index = registry.addDirectory(parentSystem, "SOUND", 6, 1);
+		registry.addKey(index, "main_volume", 22);
+		registry.addKey(index, "mute", 0);
+		registry.addKey(index, "avls", 0);
+		registry.addKey(index, "equalizer_mode", 0);
+		registry.addKey(index, "operation_sound_mode", 1);
+		registry.addKey(index, "dynamic_normalizer", 0);
+
+		index = registry.addDirectory(parent, "INFOBOARD", 2, 1);
+		registry.addKey(index, "locale_lang", "en/en/rss.xml", 0x10);
+		registry.addKey(index, "qa_server", 0);
+
+		index = registry.addDirectory(parent, "DATE", 5, 1);
+		registry.addKey(index, "time_format", settings.readInt("registry.time_format", 0));
+		registry.addKey(index, "date_format", settings.readInt("registry.date_format", 2));
+		registry.addKey(index, "summer_time", settings.readInt("registry.summer_time", 0));
+		registry.addKey(index, "time_zone_offset", settings.readInt("registry.time_zone_offset", 0));
+		registry.addKey(index, "time_zone_area", settings.readString("registry.time_zone_area", "united_kingdom"), 0x40);
+
+		index = registry.addDirectory(parent, "GAME", 3, 1);
+		registry.addKey(index, "hibernation_ow_guide", 1);
+		registry.addKey(index, "hibernation_op_guide", 1);
+		registry.addKey(index, "subs_expiration_guide", 1);
+
+		index = registry.addDirectory(parent, "DISPLAY", 5, 1);
+		registry.addKey(index, "aspect_ratio", 0);
+		registry.addKey(index, "scan_mode", 0);
+		registry.addKey(index, "screensaver_start_time", 600);
+		registry.addKey(index, "color_space_mode", 0);
+		registry.addKey(index, "pi_blending_mode", 1);
+
+		index = registry.addDirectory(parent, "LFTV", 32, 4);
+		registry.addKey(index, "easy_reg_done", 0);
+		registry.addKey(index, "netav_domain_name", "", 0x100);
+		registry.addKey(index, "netav_ip_address", "", 0x20);
+		registry.addKey(index, "netav_port_no_home", 5021);
+		registry.addKey(index, "netav_port_no_away", 5021);
+		registry.addKey(index, "netav_nonce", "", 0x40);
+		registry.addKey(index, "base_station_version", "0.000", 0x20);
+		registry.addKey(index, "base_station_region", 0);
+		registry.addKey(index, "tuner_type", 0);
+		registry.addKey(index, "input_line", 0);
+		registry.addKey(index, "tv_channel", 0);
+		registry.addKey(index, "bitrate_home", 0);
+		registry.addKey(index, "bitrate_away", 0);
+		registry.addKey(index, "channel_setting_jp", new byte[24]);
+		registry.addKey(index, "channel_setting_us", new byte[68]);
+		registry.addKey(index, "channel_setting_us_catv", new byte[125]);
+		registry.addKey(index, "overwrite_netav_setting", 1);
+		registry.addKey(index, "screen_mode", 0);
+		registry.addKey(index, "remocon_setting_region", 0);
+		registry.addKey(index, "remocon_setting", new byte[96]);
+		registry.addKey(index, "remocon_setting_revision", "0000.00", 0x20);
+		registry.addKey(index, "external_tuner_channel", 0);
+		registry.addKey(index, "ssid", "", 0x40);
+		registry.addKey(index, "audio_gain", 0);
+		registry.addKey(index, "broadcast_standard_video1", 0);
+		registry.addKey(index, "broadcast_standard_video2", 0);
+		registry.addKey(index, "version", 0);
+		registry.addKey(index, "tv_channel_range", 0);
+		registry.addKey(index, "tuner_type_no", 0);
+		registry.addKey(index, "input_line_no", 0);
+		registry.addKey(index, "audio_channel", 0);
+		registry.addKey(index, "shared_remocon_setting", new byte[96]);
+
+		index = registry.addDirectory(parent, "BROWSER", 19, 4);
+		registry.addKey(index, "home_uri", browserHomeUri, 0x200, 0x400);
+		registry.addKey(index, "cookie_mode", 1);
+		registry.addKey(index, "proxy_mode", 2);
+		registry.addKey(index, "proxy_address", "", 0x80, 0x80);
+		registry.addKey(index, "proxy_port", 0);
+		registry.addKey(index, "picture", 1);
+		registry.addKey(index, "animation", 0);
+		registry.addKey(index, "javascript", 1);
+		registry.addKey(index, "cache_size", 0x200);
+		registry.addKey(index, "char_size", 1);
+		registry.addKey(index, "disp_mode", 0);
+		registry.addKey(index, "connect_mode", 0);
+		registry.addKey(index, "flash_activated", 1);
+		registry.addKey(index, "flash_play", 1);
+		registry.addKey(index, "proxy_protect", 0);
+		registry.addKey(index, "proxy_autoauth", 0);
+		registry.addKey(index, "proxy_user", "", 0x80, 0x80);
+		registry.addKey(index, "proxy_password", "", 0x80, 0x80);
+		registry.addKey(index, "webpage_quality", 1);
+
+		index = registry.addDirectory(parent, "NETWORK", 3, 1);
+		registry.addKey(index, "ADHOC");
+		registry.addKey(index, "INFRASTRUCTURE");
+		registry.addKey(index, "GO_MESSENGER");
+
+		int parentNetwork = index;
+		index = registry.addDirectory(parentNetwork, "INFRASTRUCTURE", 6, 1);
+		registry.addKey(index, "latest_id", networkLatestId);
+		registry.addKey(index, "eap_md5", 0);
+		registry.addKey(index, "auto_setting", 2);
+		registry.addKey(index, "wifisvc_setting", 0);
+		registry.addKey(index, "btdun_warnings_check", 0);
+		registry.addKey(index, "0");
+
+		int parentInfrastructure = index;
+		index = registry.addDirectory(parentInfrastructure, "0", 26, 4);
+		registry.addKey(index, "SUB1");
+		registry.addKey(index, "version", 5);
+		registry.addKey(index, "device", 1);
+		registry.addKey(index, "cnf_name", "", 0x40);
+		registry.addKey(index, "ssid", "", 0x40);
+		registry.addKey(index, "auth_proto", 0);
+		registry.addKey(index, "wep_key", new byte[5]);
+		registry.addKey(index, "how_to_set_ip", 0);
+		registry.addKey(index, "ip_address", "", 0x20);
+		registry.addKey(index, "netmask", "", 0x20);
+		registry.addKey(index, "default_route", "", 0x20);
+		registry.addKey(index, "dns_flag", 0);
+		registry.addKey(index, "primary_dns", "", 0x20);
+		registry.addKey(index, "secondary_dns", "", 0x20);
+		registry.addKey(index, "auth_name", authName, 0x80);
+		registry.addKey(index, "auth_key", authKey, 0x80);
+		registry.addKey(index, "http_proxy_flag", 0);
+		registry.addKey(index, "http_proxy_server", "", 0x80);
+		registry.addKey(index, "http_proxy_port", 8080);
+		registry.addKey(index, "auth_8021x_type", 0);
+		registry.addKey(index, "auth_8021x_auth_name", authName, 0x80);
+		registry.addKey(index, "auth_8021x_auth_key", authKey, 0x80);
+		registry.addKey(index, "wpa_key_type", 0);
+		registry.addKey(index, "wpa_key", new byte[64]);
+		registry.addKey(index, "browser_flag", 0);
+		registry.addKey(index, "wifisvc_config", 0);
+
+		int parent0 = index;
+		index = registry.addDirectory(parent0, "SUB1", 7, 2);
+		registry.addKey(index, "wifisvc_auth_name", authName, 0x80);
+		registry.addKey(index, "wifisvc_auth_key", authKey, 0x80);
+		registry.addKey(index, "wifisvc_option", 0);
+		registry.addKey(index, "last_leased_dhcp_addr", "", 0x20);
+		registry.addKey(index, "bt_id", 0);
+		registry.addKey(index, "at_command", "", 0x60);
+		registry.addKey(index, "phone_number", "", 0x40);
+
+		index = registry.addDirectory(parentNetwork, "GO_MESSENGER", 2, 1);
+		registry.addKey(index, "auth_name", authName, 0x40, 0x40);
+		registry.addKey(index, "auth_key", authKey, 0x40, 0x40);
+
+		index = registry.addDirectory(parentNetwork, "ADHOC", 2, 1);
+		registry.addKey(index, "channel", 0);
+		registry.addKey(index, "ssid_prefix", adhocSsidPrefix, 0x20);
+
+		index = registry.addDirectory(RegistryDirectoryHeader.NO_PARENT, "DATA", 2, 1);
+		registry.addKey(index, "FONT");
+		registry.addKey(index, "COUNT");
+
+		List<FontRegistryEntry> fontRegistry = Modules.sceFontModule.getFontRegistry();
+		parent = index;
+		index = registry.addDirectory(parent, "FONT", 3, 1);
+		registry.addKey(index, "path_name", Modules.sceFontModule.getFontDirPath(), 0x40);
+		registry.addKey(index, "num_fonts", fontRegistry.size());
+		registry.addKey(index, "PROPERTY");
+
+		int parentFont = index;
+		index = registry.addDirectory(parentFont, "PROPERTY", fontRegistry.size(), 2);
+		for (int i = 0; i < fontRegistry.size(); i++) {
+			registry.addKey(index, String.format("INFO%d", i));
+		}
+
+		int parentProperty = index;
+		for (int i = 0; i < fontRegistry.size(); i++) {
+			FontRegistryEntry fontRegistryEntry = fontRegistry.get(i);
+
+			index = registry.addDirectory(parentProperty, String.format("INFO%d", i), 16, 2);
+			registry.addKey(index, "h_size", fontRegistryEntry.h_size);
+			registry.addKey(index, "v_size", fontRegistryEntry.v_size);
+			registry.addKey(index, "h_resolution", fontRegistryEntry.h_resolution);
+			registry.addKey(index, "v_resolution", fontRegistryEntry.v_resolution);
+			registry.addKey(index, "extra_attributes", fontRegistryEntry.extra_attributes);
+			registry.addKey(index, "weight", fontRegistryEntry.weight);
+			registry.addKey(index, "family_code", fontRegistryEntry.family_code);
+			registry.addKey(index, "style", fontRegistryEntry.style);
+			registry.addKey(index, "sub_style", fontRegistryEntry.sub_style);
+			registry.addKey(index, "language_code", fontRegistryEntry.language_code);
+			registry.addKey(index, "region_code", fontRegistryEntry.region_code);
+			registry.addKey(index, "country_code", fontRegistryEntry.country_code);
+			registry.addKey(index, "font_name", fontRegistryEntry.font_name, 0x40);
+			registry.addKey(index, "file_name", fontRegistryEntry.file_name, 0x40);
+			registry.addKey(index, "expire_date", fontRegistryEntry.expire_date);
+			registry.addKey(index, "shadow_option", fontRegistryEntry.shadow_option);
+		}
+
+		index = registry.addDirectory(parent, "COUNT", 6, 1);
+		registry.addKey(index, "boot_count", 0);
+		registry.addKey(index, "game_exec_count", gameExecCount);
+		registry.addKey(index, "slide_count", 0);
+		registry.addKey(index, "usb_connect_count", usbConnectCount);
+		registry.addKey(index, "wifi_connect_count", wifiConnectCount);
+		registry.addKey(index, "psn_access_count", 0);
+
+		index = registry.addDirectory(RegistryDirectoryHeader.NO_PARENT, "SYSPROFILE", 2, 1);
+		registry.addKey(index, "sound_reduction", 0);
+		registry.addKey(index, "RESOLUTION");
+
+		parent = index;
+		index = registry.addDirectory(parent, "RESOLUTION", 2, 1);
+		registry.addKey(index, "horizontal", 8210);
+		registry.addKey(index, "vertical", 8210);
+
+		registry.save(iregFileName, dregFileName);
+	}
+
+	@Override
 	public void start() {
+		try {
+			sha1 = MessageDigest.getInstance("SHA-1");
+		} catch (NoSuchAlgorithmException e) {
+			log.error(e);
+		}
+
 		registryHandles = new HashMap<Integer, sceReg.RegistryHandle>();
 		categoryHandles = new HashMap<Integer, sceReg.CategoryHandle>();
 		keyHandles = new HashMap<Integer, sceReg.KeyHandle>();
@@ -1495,10 +2517,20 @@ public class sceReg extends HLEModule {
 	    npAutoSignInEnable = settings.readInt("registry.npAutoSignInEnable");
 		ownerName = sceUtility.getSystemParamNickname();
 
+		byte[] ireg = readCompleteFile(iregFileName);
+		byte[] dreg = readCompleteFile(dregFileName);
+		if (ireg != null && dreg != null) {
+			registry = new Registry(ireg, dreg);
+			registry.dump();
+		} else {
+			createEmptyRegistry();
+		}
+
 		super.start();
 	}
 
     @HLEFunction(nid = 0x92E41280, version = 150)
+    @HLEFunction(nid = 0xDBA46704, version = 660)
     public int sceRegOpenRegistry(TPointer reg, int mode, @BufferInfo(usage=Usage.out) TPointer32 h) {
     	int regType = reg.getValue32(0);
     	int nameLen = reg.getValue32(260);
@@ -1518,6 +2550,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0xFA8A5739, version = 150)
+    @HLEFunction(nid = 0x49D77D65, version = 660)
     public int sceRegCloseRegistry(int h) {
     	RegistryHandle registryHandle = registryHandles.get(h);
     	if (registryHandle == null) {
@@ -1537,6 +2570,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x1D8A762E, version = 150)
+    @HLEFunction(nid = 0x4F471457, version = 660)
     public int sceRegOpenCategory(int h, String name, int mode, @BufferInfo(usage=Usage.out) TPointer32 hd) {
     	RegistryHandle registryHandle = registryHandles.get(h);
     	if (registryHandle == null) {
@@ -1571,6 +2605,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x0CAE832B, version = 150)
+    @HLEFunction(nid = 0xFC742751, version = 660)
     public int sceRegCloseCategory(int hd) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
@@ -1584,6 +2619,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x39461B4D, version = 150)
+    @HLEFunction(nid = 0x5FD4764A, version = 660)
     public int sceRegFlushRegistry(int h) {
     	RegistryHandle registryHandle = registryHandles.get(h);
     	if (registryHandle == null) {
@@ -1594,6 +2630,7 @@ public class sceReg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x0D69BF40, version = 150)
+    @HLEFunction(nid = 0xD743A608, version = 660)
     public int sceRegFlushCategory(int hd) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
@@ -1603,6 +2640,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x57641A81, version = 150)
+    @HLEFunction(nid = 0x3B6CA1E6, version = 660)
     public int sceRegCreateKey(int hd, String name, int type, int size) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
@@ -1662,6 +2700,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x17768E14, version = 150)
+    @HLEFunction(nid = 0x49C70163, version = 660)
     public int sceRegSetKeyValue(int hd, String name, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buf, int size) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
@@ -2063,6 +3102,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0xD4475AA8, version = 150)
+    @HLEFunction(nid = 0x9980519F, version = 150)
     public int sceRegGetKeyInfo(int hd, String name, TPointer32 hk, @BufferInfo(usage=Usage.out) TPointer32 ptype, @BufferInfo(usage=Usage.out) TPointer32 psize) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
@@ -2078,6 +3118,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x28A8E98A, version = 150)
+    @HLEFunction(nid = 0xF4A3E396, version = 660)
     public int sceRegGetKeyValue(int hd, int hk, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buf, int size) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
@@ -2114,11 +3155,13 @@ public class sceReg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x4CA16893, version = 150)
+    @HLEFunction(nid = 0x61DB9D06, version = 660)
     public int sceRegRemoveCategory(int h, String name) {
     	return 0;
     }
 
     @HLEFunction(nid = 0xC5768D02, version = 150)
+    @HLEFunction(nid = 0xF2619407, version = 660)
     public int sceRegGetKeyInfoByName(int hd, String name, @BufferInfo(usage=Usage.out) TPointer32 ptype, @BufferInfo(usage=Usage.out) TPointer32 psize) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
@@ -2133,6 +3176,7 @@ public class sceReg extends HLEModule {
     }
 
     @HLEFunction(nid = 0x30BE0259, version = 150)
+    @HLEFunction(nid = 0x38415B9F, version = 660)
     public int sceRegGetKeyValueByName(int hd, String name, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buf, int size) {
     	CategoryHandle categoryHandle = categoryHandles.get(hd);
     	if (categoryHandle == null) {
@@ -2144,72 +3188,5 @@ public class sceReg extends HLEModule {
     	}
 
     	return getKey(categoryHandle, name, TPointer32.NULL, TPointer32.NULL, buf, size);
-    }
-
-    @HLEFunction(nid = 0xDBA46704, version = 150)
-    public int sceRegOpenRegistry_660(TPointer reg, int mode, @BufferInfo(usage=Usage.out) TPointer32 h) {
-    	return sceRegOpenRegistry(reg, mode, h);
-    }
-
-    @HLEFunction(nid = 0x4F471457, version = 150)
-    public int sceRegOpenCategory_660(int h, String name, int mode, @BufferInfo(usage=Usage.out) TPointer32 hd) {
-    	return sceRegOpenCategory(h, name, mode, hd);
-    }
-
-    @HLEFunction(nid = 0x9980519F, version = 150)
-    public int sceRegGetKeyInfo_660(int hd, String name, TPointer32 hk, @BufferInfo(usage=Usage.out) TPointer32 ptype, @BufferInfo(usage=Usage.out) TPointer32 psize) {
-    	return sceRegGetKeyInfo(hd, name, hk, ptype, psize);
-    }
-
-    @HLEFunction(nid = 0xF2619407, version = 150)
-    public int sceRegGetKeyInfoByName_660(int hd, String name, @BufferInfo(usage=Usage.out) TPointer32 ptype, @BufferInfo(usage=Usage.out) TPointer32 psize) {
-    	return sceRegGetKeyInfoByName(hd, name, ptype, psize);
-    }
-
-    @HLEFunction(nid = 0xF4A3E396, version = 150)
-    public int sceRegGetKeyValue_660(int hd, int hk, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buf, int size) {
-    	return sceRegGetKeyValue(hd, hk, buf, size);
-    }
-
-    @HLEFunction(nid = 0x38415B9F, version = 150)
-    public int sceRegGetKeyValueByName_660(int hd, String name, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buf, int size) {
-    	return sceRegGetKeyValueByName(hd, name, buf, size);
-    }
-
-    @HLEFunction(nid = 0x3B6CA1E6, version = 150)
-    public int sceRegCreateKey_660(int hd, String name, int type, int size) {
-    	return sceRegCreateKey(hd, name, type, size);
-    }
-
-    @HLEFunction(nid = 0x49C70163, version = 150)
-    public int sceRegSetKeyValue_660(int hd, String name, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buf, int size) {
-    	return sceRegSetKeyValue(hd, name, buf, size);
-    }
-
-    @HLEFunction(nid = 0x5FD4764A, version = 150)
-    public int sceRegFlushRegistry_660(int h) {
-    	return sceRegFlushRegistry(h);
-    }
-
-    @HLEFunction(nid = 0xFC742751, version = 150)
-    public int sceRegCloseCategory_660(int hd) {
-    	return sceRegCloseCategory(hd);
-    }
-
-    @HLEFunction(nid = 0x49D77D65, version = 150)
-    public int sceRegCloseRegistry_660(int h) {
-    	return sceRegCloseRegistry(h);
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x61DB9D06, version = 150)
-    public int sceRegRemoveCategory_660(int h, String name) {
-    	return sceRegRemoveCategory(h, name);
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0xD743A608, version = 150)
-    public int sceRegFlushCategory_660(int hd) {
-    	return sceRegFlushCategory(hd);
     }
 }
