@@ -34,7 +34,10 @@ import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_TRIANGLE;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_UP;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_VOLDOWN;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_VOLUP;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_WLAN_UP;
+
 import jpcsp.hardware.Audio;
+import jpcsp.hardware.Wlan;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.HLE.Modules;
@@ -586,6 +589,12 @@ public class Controller {
                 Modules.LoadExecForUserModule.triggerExitCallback();
             }
         }
+
+    	if (Wlan.getSwitchState() == Wlan.PSP_WLAN_SWITCH_ON) {
+    		Buttons |= PSP_CTRL_WLAN_UP;
+    	} else {
+    		Buttons &= ~PSP_CTRL_WLAN_UP;
+    	}
     }
 
     // Check if a certain special key is pressed.
