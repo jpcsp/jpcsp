@@ -27,7 +27,6 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
-import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.iso.UmdIsoReaderVirtualFile;
 import jpcsp.HLE.modules.sceUmdMan;
 import jpcsp.state.StateInputStream;
@@ -49,7 +48,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 	protected final int transferSizes[] = new int[10];
 	private static final int QTGP2[] = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
 	private static final int QTGP3[] = { 0x0F, 0xED, 0xCB, 0xA9, 0x87, 0x65, 0x43, 0x21, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
-	private IVirtualFile vFile;
+	private UmdIsoReaderVirtualFile vFile;
     public static final int regionCodes[] = {
     		0xFFFFFFFF, 0x80000001,
     		0x00000002, 0x80000000,
@@ -142,6 +141,26 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 		}
 	}
 
+	private boolean isUmdFilePresent(String fileName) {
+		if (vFile == null) {
+			return false;
+		}
+
+		return vFile.hasFile(fileName);
+	}
+
+	private boolean isGameUmd() {
+		return isUmdFilePresent("PSP_GAME/param.sfo");
+	}
+
+	private boolean isVideoUmd() {
+		return isUmdFilePresent("UMD_VIDEO/param.sfo");
+	}
+
+	private boolean isAudioUmd() {
+		return isUmdFilePresent("UMD_AUDIO/param.sfo");
+	}
+
 	private void setCommand(int command) {
 		this.command = command;
 
@@ -172,8 +191,17 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 				interrupt |= 0x1;
 				break;
 			case 0x08:
+				int regionCodeType = 0;
+				if (isGameUmd()) {
+					regionCodeType = 0x00;
+				} else if (isVideoUmd()) {
+					regionCodeType = 0x20;
+				} else if (isAudioUmd()) {
+					regionCodeType = 0x40;
+				}
+
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X", command, totalTransferLength));
+					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X, umdType=0x%X", command, totalTransferLength, regionCodeType));
 				}
 				TPointer result = new TPointer(getMemory(), transferAddresses[0]);
 				result.setValue32(0, 0x12345678);
@@ -185,9 +213,14 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 				TPointer region = new TPointer(result, 40);
 
 				region.clear(regionSize);
-				// Take any region code found in the IdStorage page 0x102
-				region.setValue32(0, regionCodes[2]); // Region code
-				region.setValue32(4, regionCodes[3]);
+				// Take the first region code found in the IdStorage page 0x102 which is matching the UMD type
+				for (int i = 0; i < regionCodes.length; i += 2) {
+					if ((regionCodes[i] & 0xF0) == regionCodeType) {
+						region.setValue32(0, regionCodes[i]); // Region code
+						region.setValue32(4, regionCodes[i + 1]);
+						break;
+					}
+				}
 				region.add(regionSize);
 
 				region.clear(regionSize);

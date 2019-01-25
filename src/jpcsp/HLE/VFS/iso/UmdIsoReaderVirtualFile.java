@@ -136,6 +136,10 @@ public class UmdIsoReaderVirtualFile extends AbstractVirtualFile {
 		return iso.getNumSectors() * (long) sectorLength;
 	}
 
+	public boolean hasFile(String fileName) {
+		return iso.hasFile(fileName);
+	}
+
 	@Override
 	public String toString() {
 		return String.format("%s, position=0x%X", iso, position);
