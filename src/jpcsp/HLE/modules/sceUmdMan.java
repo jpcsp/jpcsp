@@ -154,7 +154,9 @@ public class sceUmdMan extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x6519F8D1, version = 150)
     public int sceUmdMan_6519F8D1(int timeout) {
-        return 0;
+    	// Calling sceKernelSetAlarm(timeout)
+    	int alarmUid = 0;
+        return alarmUid;
     }
 
     @HLEUnimplemented
@@ -215,7 +217,8 @@ public class sceUmdMan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x709E7035, version = 150)
-    public int sceUmdMan_709E7035(int unknown) {
+    public int sceUmdMan_709E7035(int alarmUid) {
+    	// Calling sceKernelCancelAlarm(alarmUid)
         return 0;
     }
 

@@ -142,6 +142,10 @@ public class MEProcessor extends Processor {
 
 		halt = false;
 
+		// Force a re-read of all the instructions as another me*img.img file could have been loaded
+		optimizedInstructions1 = null;
+		optimizedInstructions2 = null;
+
 		if (log.isTraceEnabled()) {
 			// The TRACE level is generating too much output during the initial reset (or after a sceKernelLoadExec())
 			log.setLevel(Level.DEBUG);
@@ -269,6 +273,7 @@ public class MEProcessor extends Processor {
 		final boolean isTraceEnabled = log.isTraceEnabled();
 		int count = 0;
 		long start = Emulator.getClock().currentTimeMillis();
+		int startPc = cpu.pc;
 
 		while (!halt && !Emulator.pause) {
 			if (pendingInterruptIPbits != 0) {
@@ -292,9 +297,9 @@ public class MEProcessor extends Processor {
 		}
 
 		long end = Emulator.getClock().currentTimeMillis();
-		if (count > 0 && log.isInfoEnabled()) {
+		if (count > 0 && log.isDebugEnabled()) {
 			int duration = Math.max((int) (end - start), 1);
-			log.info(String.format("MEProcessor.optimizedRun1 %d instructions executed in %d ms: %d instructions per ms", count, duration, (count + duration / 2) / duration));
+			log.debug(String.format("MEProcessor.optimizedRun1 %d instructions executed from 0x%08X in %d ms: %d instructions per ms", count, startPc, duration, (count + duration / 2) / duration));
 		}
 	}
 
@@ -308,6 +313,7 @@ public class MEProcessor extends Processor {
 		final boolean isTraceEnabled = log.isTraceEnabled();
 		int count = 0;
 		long start = Emulator.getClock().currentTimeMillis();
+		int startPc = cpu.pc;
 
 		while (!halt && !Emulator.pause) {
 			if (pendingInterruptIPbits != 0) {
@@ -331,9 +337,9 @@ public class MEProcessor extends Processor {
 		}
 
 		long end = Emulator.getClock().currentTimeMillis();
-		if (count > 0 && log.isInfoEnabled()) {
+		if (count > 0 && log.isDebugEnabled()) {
 			int duration = Math.max((int) (end - start), 1);
-			log.info(String.format("MEProcessor.optimizedRun2 %d instructions executed in %d ms: %d instructions per ms", count, duration, (count + duration / 2) / duration));
+			log.debug(String.format("MEProcessor.optimizedRun2 %d instructions executed from 0x%08X in %d ms: %d instructions per ms", count, startPc, duration, (count + duration / 2) / duration));
 		}
 	}
 
@@ -341,6 +347,7 @@ public class MEProcessor extends Processor {
 		int count = 0;
 		long start = Emulator.getClock().currentTimeMillis();
 		final boolean hasMemoryInt = RuntimeContext.hasMemoryInt();
+		int startPc = cpu.pc;
 
 		while (!halt && !Emulator.pause) {
 			if (pendingInterruptIPbits != 0) {
@@ -368,9 +375,9 @@ public class MEProcessor extends Processor {
 		}
 
 		long end = Emulator.getClock().currentTimeMillis();
-		if (count > 0 && log.isInfoEnabled()) {
+		if (count > 0 && log.isDebugEnabled()) {
 			int duration = Math.max((int) (end - start), 1);
-			log.info(String.format("MEProcessor.normalRun %d instructions executed in %d ms: %d instructions per ms", count, duration, (count + duration / 2) / duration));
+			log.debug(String.format("MEProcessor.normalRun %d instructions executed from 0x%08X in %d ms: %d instructions per ms", count, startPc, duration, (count + duration / 2) / duration));
 		}
 	}
 

@@ -19,7 +19,9 @@ package jpcsp.crypto;
 import static java.lang.Character.isJavaIdentifierPart;
 import static java.lang.Character.isJavaIdentifierStart;
 import static java.lang.Character.isWhitespace;
+import static java.lang.Integer.parseInt;
 import static jpcsp.util.Constants.charset;
+import static jpcsp.util.Utilities.add;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -36,7 +38,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import jpcsp.HLE.Modules;
-import jpcsp.util.Utilities;
 
 /**
  * List of values that can't be decrypted on Jpcsp due to missing keys.
@@ -209,7 +210,8 @@ public class PreDecrypt {
 	private static byte[] parseBytes(String s) {
 		byte[] bytes = null;
 
-		for (int i = 0; i < s.length(); ) {
+		int length = s.length();
+		for (int i = 0; i < length; ) {
 			i = skipWhitespaces(s, i);
 
 			// The value can be
@@ -218,20 +220,20 @@ public class PreDecrypt {
 			if (s.startsWith("0x", i)) {
 				i += 2;
 
-				int value = Integer.parseInt(s.substring(i, i + 2), 16);
+				int value = parseInt(s.substring(i, i + 2), 16);
 				i += 2;
 
-				bytes = Utilities.add(bytes, (byte) value);
-			} else if (isJavaIdentifierStart(s.charAt(i))) {
+				bytes = add(bytes, (byte) value);
+			} else if (i < length && isJavaIdentifierStart(s.charAt(i))) {
 				int startJavaName = i;
 				i++;
-				while (i < s.length()) {
+				while (i < length) {
 					char c = s.charAt(i);
 					if (isJavaIdentifierPart(c)) {
 						i++;
 					} else if (c == '.') {
 						i++;
-						if (i < s.length()) {
+						if (i < length) {
 							c = s.charAt(i);
 							if (isJavaIdentifierStart(c)) {
 								i++;
@@ -264,7 +266,7 @@ public class PreDecrypt {
 							fieldValueBytes = fieldValue.toString().getBytes(charset);
 						}
 
-						bytes = Utilities.add(bytes, fieldValueBytes);
+						bytes = add(bytes, fieldValueBytes);
 					} catch (ClassNotFoundException e) {
 						log.error(e);
 					} catch (NoSuchFieldException e) {
@@ -283,7 +285,7 @@ public class PreDecrypt {
 
 			i = skipWhitespaces(s, i);
 
-			if (i < s.length() && s.charAt(i) == ',') {
+			if (i < length && s.charAt(i) == ',') {
 				i++;
 			}
 		}

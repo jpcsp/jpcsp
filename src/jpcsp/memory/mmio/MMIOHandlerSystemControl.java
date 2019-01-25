@@ -391,15 +391,24 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		resetDevices = value;
 
 		if (isRaising(oldResetDevices, resetDevices, SYSREG_RESET_SC)) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Reset main processor (SYSREG_RESET_SC)"));
+			}
 			MMIO mmio = (MMIO) RuntimeContextLLE.getMMIO();
 			mmio.remapMemoryAtProcessorReset();
 			Emulator.getProcessor().triggerReset();
 			throw new ResetException();
 		}
 		if (isFalling(oldResetDevices, resetDevices, SYSREG_RESET_ME)) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Reset ME processor (SYSREG_RESET_ME)"));
+			}
 			MEProcessor.getInstance().triggerReset();
 		}
 		if (isFalling(oldResetDevices, resetDevices, SYSREG_RESET_USB)) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Reset USB (SYSREG_RESET_USB)"));
+			}
 			MMIOHandlerUsb.getInstance().triggerReset();
 		}
 	}
