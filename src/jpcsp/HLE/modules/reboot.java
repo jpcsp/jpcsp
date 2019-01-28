@@ -305,8 +305,6 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-    	log.info(String.format("File: %s", Utilities.getMemoryDump(loadexecBuffer)));
-
     	// Search for the reboot.prx inside the loadexec.prx.
     	// The reboot.prx starts with "~PSP".
     	int rebootOffset = -1;
