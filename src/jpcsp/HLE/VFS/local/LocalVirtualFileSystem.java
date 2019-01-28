@@ -44,6 +44,7 @@ import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.hardware.MemoryStick;
+import jpcsp.util.Utilities;
 
 public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 	protected final String localPath;
@@ -78,6 +79,22 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
     		return fileName.toUpperCase();
     	}
     	return fileName;
+    }
+
+    public static String[] fixMsDirectoryFiles(String[] files, String dirName) {
+    	if (files == null) {
+    		return files;
+    	}
+
+    	if (dirName != null && dirName.length() > 0) {
+			files = Utilities.add(new String[] { "..", "." }, files);
+    	}
+
+    	for (int i = 0; i < files.length; i++) {
+    		files[i] = getMsFileName(files[i]);
+    	}
+
+    	return files;
     }
 
 	public LocalVirtualFileSystem(String localPath, boolean useDirExtendedInfo) {
@@ -186,14 +203,7 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 			return null;
 		}
 
-    	String files[] = file.list();
-    	if (files != null) {
-        	for (int i = 0; i < files.length; i++) {
-        		files[i] = getMsFileName(files[i]);
-        	}
-    	}
-
-    	return files;
+    	return fixMsDirectoryFiles(file.list(), dirName);
 	}
 
 	@Override

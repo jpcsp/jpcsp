@@ -521,12 +521,14 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
             String[] fileNames = vfs.ioDopen(localFileName.toString());
             if (fileNames != null) {
                 for (int i = 0; i < fileNames.length; i++) {
-                    SceIoStat stat = new SceIoStat();
-                    SceIoDirent dirent = new SceIoDirent(stat, fileNames[i]);
-                    int result = vfs.ioDread(localFileName.toString(), dirent);
-                    if (result > 0) {
-                        sizeKb += Utilities.getSizeKb((int) stat.size);
-                    }
+                	if (!".".equals(fileNames[i]) && !"..".equals(fileNames[i]) ) {
+	                    SceIoStat stat = new SceIoStat();
+	                    SceIoDirent dirent = new SceIoDirent(stat, fileNames[i]);
+	                    int result = vfs.ioDread(localFileName.toString(), dirent);
+	                    if (result > 0) {
+	                        sizeKb += Utilities.getSizeKb((int) stat.size);
+	                    }
+                	}
                 }
                 vfs.ioDclose(localFileName.toString());
             }

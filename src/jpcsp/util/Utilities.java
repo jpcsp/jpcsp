@@ -1618,6 +1618,21 @@ public class Utilities {
     	return newArray;
     }
 
+    public static String[] add(String[] array, String[] strings) {
+    	if (strings == null) {
+    		return array;
+    	}
+    	if (array == null) {
+    		return strings.clone();
+    	}
+
+    	String[] newArray = new String[array.length + strings.length];
+    	System.arraycopy(array, 0, newArray, 0, array.length);
+    	System.arraycopy(strings, 0, newArray, array.length, strings.length);
+
+    	return newArray;
+    }
+
     public static int[] add(int[] array, int n) {
     	if (array == null) {
     		return new int[] { n };
