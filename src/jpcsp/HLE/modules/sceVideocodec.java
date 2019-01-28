@@ -73,8 +73,8 @@ public class sceVideocodec extends HLEModule {
     protected int bufferCb1;
     protected int bufferCb2;
     protected final TPointer buffers[][] = new TPointer[4][8];
-    protected TPointer bufferUnknown1;
-    protected TPointer bufferUnknown2;
+    protected TPointer defaultBufferUnknown1;
+    protected TPointer defaultBufferUnknown2;
     protected IVideoCodec videoCodec;
     private VideocodecDecoderThread videocodecDecoderThread;
     private int[] videocodecExtraData;
@@ -264,11 +264,11 @@ public class sceVideocodec extends HLEModule {
         			base = new TPointer(mp4Memory, 0x00000000).forceNonNull();
         		}
 
-        		bufferUnknown1 = new TPointer(base);
-        		bufferUnknown1.clear(36);
+        		defaultBufferUnknown1 = new TPointer(base);
+        		defaultBufferUnknown1.clear(36);
 
-        		bufferUnknown2 = new TPointer(base, 36);
-        		bufferUnknown1.clear(32);
+        		defaultBufferUnknown2 = new TPointer(base, 36);
+        		defaultBufferUnknown2.clear(32);
 
         		TPointer yuvBuffersBase = new TPointer(base, 256); // Add 256 to keep aligned
         		TPointer base1 = new TPointer(yuvBuffersBase);
@@ -503,7 +503,11 @@ public class sceVideocodec extends HLEModule {
 
         	mpegAvcYuvStruct.setValue32(32, videoCodec.hasImage()); // 0 or 1
 
-        	mpegAvcYuvStruct.setPointer(36, bufferUnknown1);
+        	TPointer bufferUnknown1 = mpegAvcYuvStruct.getPointer(36);
+        	if (bufferUnknown1.isNull()) {
+        		bufferUnknown1 = defaultBufferUnknown1;
+        		mpegAvcYuvStruct.setPointer(36, bufferUnknown1);
+        	}
         	bufferUnknown1.setUnsignedValue8(0, 0x02); // 0x00 or 0x04
         	bufferUnknown1.setValue32(8, sceMpeg.mpegTimestampPerSecond);
         	bufferUnknown1.setValue32(16, sceMpeg.mpegTimestampPerSecond);
@@ -512,7 +516,11 @@ public class sceVideocodec extends HLEModule {
         	bufferUnknown1.setUnsignedValue8(32, 0x00); // 0x00 or 0x01 or 0x02
         	bufferUnknown1.setUnsignedValue8(33, 0x01);
 
-        	mpegAvcYuvStruct.setPointer(40, bufferUnknown2);
+        	TPointer bufferUnknown2 = mpegAvcYuvStruct.getPointer(40);
+        	if (bufferUnknown2.isNull()) {
+        		bufferUnknown2 = defaultBufferUnknown2;
+        		mpegAvcYuvStruct.setPointer(40, bufferUnknown2);
+        	}
         	bufferUnknown2.setUnsignedValue8(0, 0x00); // 0x00 or 0x04
         	bufferUnknown2.setValue32(24, 0);
         	bufferUnknown2.setValue32(28, 0);
