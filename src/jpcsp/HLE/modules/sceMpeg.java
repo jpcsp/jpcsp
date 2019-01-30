@@ -20,6 +20,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_ALREADY_USED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_ILLEGAL_STREAM;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_NO_DATA;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_NO_NEXT_DATA;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_UNKNOWN_STREAM_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
@@ -1274,6 +1275,31 @@ public class sceMpeg extends HLEModule {
     	return addr1 < addr2 ? 3 : 1;
     }
 
+    private int getDecodeDetail(TPointer data, int imageIndex, TPointer detailPointer) {
+    	TPointer videocodecBuffer = data.getPointer(1728);
+    	detailPointer.setValue32(0, videocodecBuffer.getValue32(8)); // decode result
+    	TPointer videocodecBuffer2 = videocodecBuffer.getPointer(16);
+    	int numberOfDecodedImages = videocodecBuffer2.getValue32(32);
+    	if (numberOfDecodedImages > 0 && numberOfDecodedImages > imageIndex) {
+        	TPointer mpegAvcYuvStruct = videocodecBuffer.getPointer(44);
+        	mpegAvcYuvStruct.add(imageIndex * 44);
+    		detailPointer.setValue32(4, mpegAvcYuvStruct.getValue32(32));
+    		detailPointer.setValue32(8, videocodecBuffer2.getValue32(8)); // frameWidth
+    		detailPointer.setValue32(12, videocodecBuffer2.getValue32(12)); // frameHeight
+    		detailPointer.setValue32(16, videocodecBuffer2.getValue32(16)); // Frame crop rect (left)
+    		detailPointer.setValue32(20, videocodecBuffer2.getValue32(20)); // Frame crop rect (right)
+    		detailPointer.setValue32(24, videocodecBuffer2.getValue32(24)); // Frame crop rect (top)
+    		detailPointer.setValue32(28, videocodecBuffer2.getValue32(28)); // Frame crop rect (bottom)
+    		detailPointer.setValue32(32, numberOfDecodedImages); 
+    		detailPointer.setValue32(36, videocodecBuffer2.getValue32(36));
+    		detailPointer.setValue32(40, videocodecBuffer.getValue32(48));
+    		detailPointer.setValue32(44, mpegAvcYuvStruct.getValue32(36));
+    		detailPointer.setValue32(48, mpegAvcYuvStruct.getValue32(40));
+    	}
+    	
+    	return 0;
+    }
+
     /**
      * sceMpegInit
      * 
@@ -1323,7 +1349,7 @@ public class sceMpeg extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x21FF80E4, version = 150, checkInsideInterrupt = true, stackUsage = 0x18)
-    public int sceMpegQueryStreamOffset(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.in) TPointer bufferAddr, @BufferInfo(usage=Usage.out) TPointer32 offsetAddr) {
+    public int sceMpegQueryStreamOffset(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer bufferAddr, @BufferInfo(usage=Usage.out) TPointer32 offsetAddr) {
 		TPointer data = mpeg.getPointer();
 
         // Check magic
@@ -1360,7 +1386,7 @@ public class sceMpeg extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x611E9E11, version = 150, checkInsideInterrupt = true, stackUsage = 0x8)
-    public int sceMpegQueryStreamSize(TPointer bufferAddr, @BufferInfo(usage=Usage.out) TPointer32 sizeAddr) {
+    public int sceMpegQueryStreamSize(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer bufferAddr, @BufferInfo(usage=Usage.out) TPointer32 sizeAddr) {
         int streamSize = endianSwap32(bufferAddr.getUnalignedValue32(PSMF_STREAM_SIZE_OFFSET));
         sizeAddr.setValue(streamSize);
         if ((streamSize & 0x7FF) != 0) {
@@ -1507,6 +1533,28 @@ public class sceMpeg extends HLEModule {
     	videocodecBuffer.setPointer(48, videocodecBuffer3);
 
     	videocodecBuffer.setValue32(60, 4); // Unknown value
+
+    	if (mode >= 3 && mode <= 6) {
+    		TPointer unknown1744 = new TPointer(videocodecBuffer3, 0x80);
+    		dataAligned.setPointer(1744, unknown1744);
+
+    		TPointer decodeSEI = new TPointer(unknown1744, 0x540);
+    		dataAligned.setPointer(1776, decodeSEI);
+
+    		TPointer unknown1780 = new TPointer(decodeSEI, 0xC0);
+    		dataAligned.setPointer(1780, unknown1780);
+
+    		TPointer unknown1748 = new TPointer(unknown1780, 0x40);
+    		dataAligned.setPointer(1748, unknown1748);
+    		TPointer unknown = new TPointer(unknown1748, 0x14);
+    		unknown.setValue32(0, 5);
+    		unknown.setValue32(4, 0);
+    		unknown.setValue32(8, 0);
+    		unknown.setValue32(12, 0);
+    		unknown.setValue32(16, 0);
+    		unknown.setPointer(16, new TPointer(unknown1748, 0x2BC));
+    		unknown.setValue32(20, 0x90);
+    	}
 
     	int result = Modules.sceVideocodecModule.sceVideocodecOpen(videocodecBuffer, 0);
     	if (result != 0) {
@@ -2318,29 +2366,7 @@ public class sceMpeg extends HLEModule {
     public int sceMpegAvcDecodeDetail(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=52, usage=Usage.out) TPointer detailPointer) {
     	TPointer data = mpeg.getPointer();
 
-    	final int imageIndex = 0;
-    	TPointer videocodecBuffer = data.getPointer(1728);
-    	detailPointer.setValue32(0, videocodecBuffer.getValue32(8)); // decode result
-    	TPointer videocodecBuffer2 = videocodecBuffer.getPointer(16);
-    	int numberOfDecodedImages = videocodecBuffer2.getValue32(32);
-    	if (numberOfDecodedImages > 0 && numberOfDecodedImages > imageIndex) {
-        	TPointer mpegAvcYuvStruct = videocodecBuffer.getPointer(44);
-        	mpegAvcYuvStruct.add(imageIndex * 44);
-    		detailPointer.setValue32(4, mpegAvcYuvStruct.getValue32(32));
-    		detailPointer.setValue32(8, videocodecBuffer2.getValue32(8)); // frameWidth
-    		detailPointer.setValue32(12, videocodecBuffer2.getValue32(12)); // frameHeight
-    		detailPointer.setValue32(16, videocodecBuffer2.getValue32(16)); // Frame crop rect (left)
-    		detailPointer.setValue32(20, videocodecBuffer2.getValue32(20)); // Frame crop rect (right)
-    		detailPointer.setValue32(24, videocodecBuffer2.getValue32(24)); // Frame crop rect (top)
-    		detailPointer.setValue32(28, videocodecBuffer2.getValue32(28)); // Frame crop rect (bottom)
-    		detailPointer.setValue32(32, numberOfDecodedImages); 
-    		detailPointer.setValue32(36, videocodecBuffer2.getValue32(36));
-    		detailPointer.setValue32(40, videocodecBuffer.getValue32(48));
-    		detailPointer.setValue32(44, mpegAvcYuvStruct.getValue32(36));
-    		detailPointer.setValue32(48, mpegAvcYuvStruct.getValue32(40));
-    	}
-    	
-    	return 0;
+    	return getDecodeDetail(data, 0, detailPointer);
     }
 
     /**
@@ -3098,23 +3124,38 @@ public class sceMpeg extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x6F314410, version = 150)
     public int sceMpegAvcDecodeGetDecodeSEI(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(usage=Usage.out) TPointer32 decodeSEIAddr) {
-    	decodeSEIAddr.setValue(0);
-        return 0;
+    	TPointer data = mpeg.getPointer();
+
+    	TPointer decodeSEI = data.getPointer(1776);
+    	decodeSEIAddr.setPointer(decodeSEI);
+    	TPointer videocodecBuffer = data.getPointer(1728);
+    	videocodecBuffer.setPointer(80, decodeSEI);
+
+    	return Modules.sceVideocodecModule.sceVideocodecGetSEI(videocodecBuffer, 0);
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xAB0E9556, version = 150)
-    public int sceMpegAvcDecodeDetailIndex(@CheckArgument("checkMpeg") TPointer32 mpeg, int index, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=52, usage=Usage.out) TPointer32 detail) {
-        return 0;
+    public int sceMpegAvcDecodeDetailIndex(@CheckArgument("checkMpeg") TPointer32 mpeg, int imageIndex, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=52, usage=Usage.out) TPointer detailPointer) {
+    	TPointer data = mpeg.getPointer();
+
+    	return getDecodeDetail(data, imageIndex, detailPointer);
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xCF3547A2, version = 150)
-    public int sceMpegAvcDecodeDetail2(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(usage=Usage.out) TPointer32 detail) {
-        return 0;
+    public int sceMpegAvcDecodeDetail2(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(usage=Usage.out) TPointer32 detailAddr) {
+    	TPointer data = mpeg.getPointer();
+
+    	int mode = data.getValue32(1708);
+    	if (mode >= 4 && mode <= 6) {
+    		detailAddr.setPointer(new TPointer(data.getPointer(1748), 0x2C));
+    	} else {
+        	TPointer videocodecBuffer = data.getPointer(1728);
+        	detailAddr.setPointer(videocodecBuffer);
+    	}
+
+    	return 0;
     }
 
     @HLEFunction(nid = 0xF5E7EA31, version = 150)
@@ -3147,16 +3188,55 @@ public class sceMpeg extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x11CAB459, version = 150)
-    public int sceMpeg_11CAB459() {
-        return 0;
+    public int sceMpeg_11CAB459(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(usage=Usage.out) TPointer32 unknown1, @BufferInfo(usage=Usage.out) TPointer32 unknown2) {
+    	unknown1.setValue(0x19100);
+    	unknown2.setValue(0x2A300);
+
+    	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xB27711A8, version = 150)
-    public int sceMpeg_B27711A8() {
-        return 0;
+    public int sceMpeg_B27711A8(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.in) TPointer streamAddr, int packetIndex, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8 + MPEG_AVC_ES_SIZE, usage=Usage.out) TPointer resultBuffer) {
+    	TPointer data = mpeg.getPointer();
+    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
+    	if (dataStreamAddr == null) {
+    		return ERROR_MPEG_INVALID_VALUE;
+    	}
+
+    	if (streamAddr.getValue32(8) == -1) {
+    		return ERROR_MPEG_INVALID_VALUE;
+    	}
+
+    	if (packetIndex == 0 && streamAddr.getValue32(16) != 0x7FFF) {
+    		resultBuffer.setValue32(0, streamAddr.getValue32(16));
+    		resultBuffer.setValue32(4, streamAddr.getValue32(44));
+			TPointer dataAddr = streamAddr.getPointer(12);
+    		resultBuffer.memcpy(8, dataAddr, MPEG_AVC_ES_SIZE);
+    	} else {
+        	SceMpegStreamPacketInfo packetInfo = new SceMpegStreamPacketInfo();
+    		int result = getStreamPacket(dataStreamAddr, packetIndex, packetInfo);
+    		if (result != 0) {
+    			return ERROR_MPEG_NO_NEXT_DATA;
+    		}
+
+    		if (packetInfo.packetDataLength > MPEG_AVC_ES_SIZE) {
+    			return ERROR_MPEG_ILLEGAL_STREAM;
+    		}
+
+    		resultBuffer.setValue32(0, 0);
+    		resultBuffer.setValue32(4, 0);
+    		resultBuffer.memcpy(8, packetInfo.packetDataAddr, packetInfo.packetDataLength);
+    	}
+
+		if (data.getValue32(12) == 0) { // 0 => PSMF Version 0012
+			TPointer dataAddr = new TPointer(resultBuffer, 8);
+
+			TPointer ptr = new TPointer(dataAddr, 15 + dataAddr.getUnsignedValue8(14 + 3) * 4);
+			ptr.setUnsignedValue8(ptr.getUnsignedValue8() & 0x7F);
+		}
+
+		return 0;
     }
 
     @HLEUnimplemented
@@ -3250,5 +3330,53 @@ public class sceMpeg extends HLEModule {
     	globalFlags |= 0x4;
 
     	return 0;
+    }
+
+    @HLEFunction(nid = 0xC2F02CDD, version = 150)
+    public int sceMpeg_C2F02CDD(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) TPointer videoStreamAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) TPointer audioStreamAddr, @BufferInfo(usage=Usage.out) TPointer32 videoAudioDiffAddr) {
+    	TPointer data = mpeg.getPointer();
+
+    	TPointer videoDataStreamAddr = getDataStreamAddress(data, videoStreamAddr);
+    	if (videoDataStreamAddr == null) {
+    		return ERROR_MPEG_INVALID_VALUE;
+    	}
+
+    	TPointer audioDataStreamAddr = getDataStreamAddress(data, audioStreamAddr);
+    	if (audioDataStreamAddr == null) {
+    		return ERROR_MPEG_INVALID_VALUE;
+    	}
+
+    	if (videoDataStreamAddr.getValue32(4) == -1 || audioDataStreamAddr.getValue32(4) == -1) {
+    		return ERROR_MPEG_NO_DATA;
+    	}
+
+		SceMpegRingbuffer sceMpegRingbuffer = new SceMpegRingbuffer();
+		sceMpegRingbuffer.read(data.getPointer(16));
+
+		int videoSize = videoDataStreamAddr.getPointer(4).getValue32(36) - sceMpegRingbuffer.data;
+		int videoPacketIndex = videoSize / sceMpegRingbuffer.packetSize;
+		int audioSize = audioDataStreamAddr.getPointer(4).getValue32(36) - sceMpegRingbuffer.data;
+		int audioPacketIndex = audioSize / sceMpegRingbuffer.packetSize;
+
+		int videoAudioDiff;
+		if (videoPacketIndex == audioPacketIndex) {
+			videoAudioDiff = 0;
+		} else if (sceMpegRingbuffer.packetsWritten < sceMpegRingbuffer.packetsRead) {
+			videoAudioDiff = videoPacketIndex - audioPacketIndex;
+		} else if (videoPacketIndex < sceMpegRingbuffer.packetsRead && audioPacketIndex < sceMpegRingbuffer.packetsRead) {
+			videoAudioDiff = videoPacketIndex - audioPacketIndex;
+		} else if (videoPacketIndex < sceMpegRingbuffer.packetsWritten || audioPacketIndex < sceMpegRingbuffer.packetsWritten) {
+			if (videoPacketIndex < audioPacketIndex) {
+				videoAudioDiff = sceMpegRingbuffer.packets - (audioPacketIndex - videoPacketIndex);
+			} else {
+				videoAudioDiff = videoPacketIndex - audioPacketIndex - sceMpegRingbuffer.packets;
+			}
+		} else {
+			videoAudioDiff = videoPacketIndex - audioPacketIndex;
+		}
+
+		videoAudioDiffAddr.setValue(videoAudioDiff);
+
+		return 0;
     }
 }
