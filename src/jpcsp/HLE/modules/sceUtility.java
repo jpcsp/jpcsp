@@ -2264,7 +2264,7 @@ public class sceUtility extends HLEModule {
                         for (int i = 0; i < fileNames.length; i++) {
                             String fileName = fileNames[i];
                             // Skip iso special files
-                            if (!fileName.equals(".") && !fileName.equals("\01")) {
+                            if (!fileName.equals(".") && !fileName.equals("\01") && !fileName.equals("..")) {
                                 String sourceFileName = String.format("%s/%s", sourceLocalFileName.toString(), fileName);
                                 IVirtualFile ivf = ivfs.ioOpen(sourceFileName, IoFileMgrForUser.PSP_O_RDONLY, 0);
                                 if (ivf != null) {

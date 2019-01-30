@@ -147,24 +147,26 @@ public class FatBuilder {
 		SceIoStat stat = new SceIoStat();
 		SceIoDirent dir = new SceIoDirent(stat, null);
 		for (int i = 0; i < names.length; i++) {
-			dir.filename = names[i];
-			if (vfs.ioDread(dirName, dir) >= 0) {
-				boolean directory = (dir.stat.attr & 0x10) != 0;
-				boolean readOnly = (dir.stat.mode & 0x2) == 0;
-				FatFileInfo fileInfo = new FatFileInfo(vFile.getDeviceName(), dirName, dir.filename, directory, readOnly, dir.stat.mtime, dir.stat.size);
+			if (!".".equals(names[i]) && !"..".equals(names[i])) {
+				dir.filename = names[i];
+				if (vfs.ioDread(dirName, dir) >= 0) {
+					boolean directory = (dir.stat.attr & 0x10) != 0;
+					boolean readOnly = (dir.stat.mode & 0x2) == 0;
+					FatFileInfo fileInfo = new FatFileInfo(vFile.getDeviceName(), dirName, dir.filename, directory, readOnly, dir.stat.mtime, dir.stat.size);
 
-				parent.addChild(fileInfo);
+					parent.addChild(fileInfo);
 
-				if (directory) {
-					if (dirName == null) {
-						scan(dir.filename, fileInfo);
-					} else {
-						scan(dirName + "/" + dir.filename, fileInfo);
+					if (directory) {
+						if (dirName == null) {
+							scan(dir.filename, fileInfo);
+						} else {
+							scan(dirName + "/" + dir.filename, fileInfo);
+						}
 					}
-				}
 
-				// Allocate the clusters after having scanned the children
-				allocateClusters(fileInfo);
+					// Allocate the clusters after having scanned the children
+					allocateClusters(fileInfo);
+				}
 			}
 		}
 

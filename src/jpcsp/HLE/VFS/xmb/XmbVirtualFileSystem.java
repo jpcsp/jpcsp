@@ -18,7 +18,6 @@ package jpcsp.HLE.VFS.xmb;
 
 import static jpcsp.MainGUI.getUmdPaths;
 import static jpcsp.util.Utilities.add;
-import static jpcsp.util.Utilities.merge;
 
 import java.io.File;
 import java.util.HashMap;
@@ -169,17 +168,17 @@ public class XmbVirtualFileSystem extends AbstractVirtualFileSystem {
 		StringBuilder restFileName = new StringBuilder();
 		String umdFileName = getUmdFileName(dirName, restFileName);
 		if (umdFileName != null && restFileName.length() == 0) {
-			entries = new String[] { EBOOT_PBP };
+			entries = new String[] { "..", ".", EBOOT_PBP };
 		} else if (PSP_GAME.equals(dirName)) {
 			for (int i = 0; i < umdPaths.length; i++) {
 				File umdPath = umdPaths[i];
 				if (umdPath.isDirectory()) {
 					File[] umdFiles = umdPath.listFiles(new UmdBrowser.UmdFileFilter());
-					entries = merge(entries, addUmdFileNames(dirName, umdFiles));
+					entries = add(entries, addUmdFileNames(dirName, umdFiles));
 				}
 			}
 
-			entries = merge(entries, vfs.ioDopen(dirName));
+			entries = add(vfs.ioDopen(dirName), entries);
 		} else {
 			entries = vfs.ioDopen(dirName);
 		}
