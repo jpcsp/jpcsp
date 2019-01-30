@@ -2211,7 +2211,7 @@ public class sceDisplay extends HLEModule {
     }
 
     @HLEFunction(nid = 0xDEA197D4, version = 150)
-    public int sceDisplayGetMode(TPointer32 modeAddr, TPointer32 widthAddr, TPointer32 heightAddr) {
+    public int sceDisplayGetMode(@CanBeNull TPointer32 modeAddr, @CanBeNull TPointer32 widthAddr, @CanBeNull TPointer32 heightAddr) {
         modeAddr.setValue(mode);
         widthAddr.setValue(fb.getWidth());
         heightAddr.setValue(fb.getHeight());
