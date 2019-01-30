@@ -97,6 +97,41 @@
 08AE079C:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memmove">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memmove</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+8800D998:[00803821]: addu       $a3, $a0, $zr <=> move $a3, $a0
+8800D99C:[00A01821]: addu       $v1, $a1, $zr <=> move $v1, $a1
+8800D9A0:[1080000E]: beq        $a0, $zr, 0x8800D9DC
+8800D9A4:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+8800D9A8:[0085402B]: sltu       $t0, $a0, $a1
+8800D9AC:[1500000D]: bne        $t0, $zr, 0x8800D9E4
+8800D9B0:[00000000]: nop
+8800D9B4:[24C6FFFF]: addiu      $a2, $a2, -1
+8800D9B8:[04C00008]: bltz       $a2, 0x8800D9DC
+8800D9BC:[00E01021]: addu       $v0, $a3, $zr <=> move $v0, $a3
+8800D9C0:[00A62021]: addu       $a0, $a1, $a2
+8800D9C4:[90830000]: lbu        $v1, 0($a0)
+8800D9C8:[00E61021]: addu       $v0, $a3, $a2
+8800D9CC:[24C6FFFF]: addiu      $a2, $a2, -1
+8800D9D0:[04C1FFFB]: bgez       $a2, 0x8800D9C0
+8800D9D4:[A0430000]: sb         $v1, 0($v0)
+8800D9D8:[00E01021]: addu       $v0, $a3, $zr <=> move $v0, $a3
+8800D9DC:[03E00008]: jr         $ra
+8800D9E0:[00000000]: nop
+8800D9E4:[18C0FFFD]: blez       $a2, 0x8800D9DC
+8800D9E8:[00E01021]: addu       $v0, $a3, $zr <=> move $v0, $a3
+8800D9EC:[90650000]: lbu        $a1, 0($v1)
+8800D9F0:[24C6FFFF]: addiu      $a2, $a2, -1
+8800D9F4:[24630001]: addiu      $v1, $v1, 1
+8800D9F8:[A0850000]: sb         $a1, 0($a0)
+8800D9FC:[1CC0FFFB]: bgtz       $a2, 0x8800D9EC
+8800DA00:[24840001]: addiu      $a0, $a0, 1
+8800DA04:[03E00008]: jr         $ra
+8800DA08:[00E01021]: addu       $v0, $a3, $zr <=> move $v0, $a3
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="alignMemory">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memmove</Class>
 		<IsReturning>true</IsReturning>
