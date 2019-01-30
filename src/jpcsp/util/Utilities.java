@@ -1917,21 +1917,6 @@ public class Utilities {
 		return -1;
 	}
 
-	public static String[] merge(String[] a1, String[] a2) {
-		if (a1 == null) {
-			return a2;
-		}
-		if (a2 == null) {
-			return a1;
-		}
-
-		String[] a = new String[a1.length + a2.length];
-		System.arraycopy(a1, 0, a, 0, a1.length);
-		System.arraycopy(a2, 0, a, a1.length, a2.length);
-
-		return a;
-	}
-
 	public static InetAddress[] merge(InetAddress[] a1, InetAddress[] a2) {
 		if (a1 == null) {
 			return a2;
@@ -2012,6 +1997,7 @@ public class Utilities {
     		return null;
     	}
 
+		Memory mem = Emulator.getMemory(address);
     	String functionName = null;
 
 		HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromAddress(address);
@@ -2020,7 +2006,16 @@ public class Utilities {
 		}
 
 		if (functionName == null) {
-			functionName = Modules.LoadCoreForKernelModule.getFunctionNameByAddress(address);
+			functionName = Modules.LoadCoreForKernelModule.getFunctionNameByAddress(mem, address);
+		}
+
+		if (functionName == null) {
+			int nextOpcode = mem.read32(address + 4);
+			Instruction nextInsn = Decoder.instruction(nextOpcode);
+			if (nextInsn == Instructions.SYSCALL) {
+				int syscallCode = (nextOpcode >> 6) & 0xFFFFF;
+				functionName = getFunctionNameBySyscall(mem, syscallCode);
+			}
 		}
 
 		if (functionName == null) {
@@ -2038,16 +2033,6 @@ public class Utilities {
 						functionName = String.format("%s_%08X", moduleName, nid);
 					}
 				}
-			}
-		}
-
-		int nextOpcode = Emulator.getMemory(address).read32(address + 4);
-		Instruction nextInsn = Decoder.instruction(nextOpcode);
-		if (nextInsn == Instructions.SYSCALL) {
-			int syscallCode = (nextOpcode >> 6) & 0xFFFFF;
-			func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(syscallCode);
-			if (func != null) {
-				functionName = func.getFunctionName();
 			}
 		}
 
@@ -2073,6 +2058,15 @@ public class Utilities {
 		}
 
 		return functionName;
+    }
+
+    public static String getFunctionNameBySyscall(Memory mem, int syscallCode) {
+    	HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(syscallCode);
+    	if (func != null) {
+    		return func.getFunctionName();
+    	}
+
+    	return Modules.LoadCoreForKernelModule.getFunctionNameBySyscall(mem, syscallCode);
     }
 
     public static void addHex(StringBuilder s, int value) {

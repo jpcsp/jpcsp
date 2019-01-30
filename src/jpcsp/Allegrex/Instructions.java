@@ -620,7 +620,7 @@ public void compile(ICompilerContext context, int insn) {
 public String disasm(int address, int insn) {
 	int imm20 = (insn>>6)&1048575;
 
-return Common.disasmSYSCALL(imm20);
+return Common.disasmSYSCALL(Emulator.getMemory(address), imm20);
 }
 };
 public static final Instruction ERET = new Instruction(16, FLAG_CANNOT_BE_SPLIT | FLAG_ENDS_BLOCK | FLAG_MODIFIES_INTERRUPT_STATE) {

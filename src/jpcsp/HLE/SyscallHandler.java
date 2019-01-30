@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import static jpcsp.Allegrex.Common.disasmSYSCALL;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
@@ -194,7 +196,7 @@ public class SyscallHandler {
     	if (RuntimeContextLLE.isLLEActive()) {
     		Processor processor = Emulator.getProcessor();
     		if (log.isDebugEnabled()) {
-    			log.debug(String.format("0x%08X - syscall 0x%05X", processor.cpu.pc, code));
+    			log.debug(String.format("0x%08X - %s", processor.cpu.pc, disasmSYSCALL(processor.cpu.memory, code)));
     		}
 
     		// For LLE syscalls, trigger a syscall exception

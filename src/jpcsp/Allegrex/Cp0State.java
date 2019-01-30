@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import static jpcsp.Allegrex.Common.COP0_CONTROL_SYSCALL_TABLE;
 import static jpcsp.Allegrex.Common.COP0_STATE_CAUSE;
 import static jpcsp.Allegrex.Common.COP0_STATE_CONFIG;
 import static jpcsp.Allegrex.Common.COP0_STATE_CPUID;
@@ -139,6 +140,10 @@ public class Cp0State implements IState {
 
 	public int getCpuid() {
 		return getDataRegister(COP0_STATE_CPUID);
+	}
+
+	public int getSyscallTable() {
+		return getControlRegister(COP0_CONTROL_SYSCALL_TABLE);
 	}
 
 	public boolean isMediaEngineCpu() {

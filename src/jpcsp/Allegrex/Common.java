@@ -22,10 +22,9 @@ import static jpcsp.HLE.SyscallHandler.syscallUnmappedImport;
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.ICompilerContext;
-import jpcsp.HLE.HLEModuleFunction;
-import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.util.Utilities;
 
@@ -533,6 +532,7 @@ public class Common {
         "Config", "LLAddr", "WatchLo", "WatchHi", "XContext", "SyscallCode", "CPUId", "cop0reg23",
         "cop0reg24", "EBase", "ECC", "CacheErr", "TagLo", "TagHi", "ErrorPC", "cop0reg31"
     };
+    public static final int COP0_CONTROL_SYSCALL_TABLE = 12;
     public static final int COP0_STATE_COUNT = 9;
     public static final int COP0_STATE_COMPARE = 11;
     public static final int COP0_STATE_STATUS = 12;
@@ -716,12 +716,8 @@ public class Common {
         return s;
     }
 
-    public static String disasmSYSCALL(int code) {
-    	String functionName = null;
-    	HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
-    	if (func != null) {
-    		functionName = func.getFunctionName();
-    	}
+    public static String disasmSYSCALL(Memory mem, int code) {
+    	String functionName = Utilities.getFunctionNameBySyscall(mem, code);
 
     	if (functionName == null) {
     		if (code == syscallUnmappedImport) {

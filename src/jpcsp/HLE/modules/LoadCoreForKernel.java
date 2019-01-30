@@ -17,8 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import jpcsp.AllegrexOpcodes;
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
+import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.Instructions;
+import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -495,6 +499,10 @@ public class LoadCoreForKernel extends HLEModule {
     	return 0x8802111C;
     }
 
+    private int getSyscallBaseAddress() {
+    	return 0xA8026410;
+    }
+
     public HLEModuleFunction getHLEFunctionByAddress(int address) {
     	if (!reboot.enableReboot) {
     		return null;
@@ -534,23 +542,57 @@ public class LoadCoreForKernel extends HLEModule {
     	return null;
     }
 
-    public String getFunctionNameByAddress(int address) {
+    public String getFunctionNameBySyscall(Memory mem, int syscallCode) {
     	if (!reboot.loadCoreInitialized) {
     		return null;
     	}
 
-    	address &= Memory.addressMask;
+		int address = 0;
+		int syscallIndex = syscallCode << 2;
+		if (syscallIndex < 256) {
+			address = mem.read32(getSyscallBaseAddress() + syscallIndex);
+		} else {
+			int syscallTable = Emulator.getProcessor().cp0.getSyscallTable();
+			while (syscallTable != 0) {
+				int baseSyscallIndex = mem.read32(syscallTable + 4);
+				int tableSize = mem.read32(syscallTable + 8);
+				if (syscallIndex >= baseSyscallIndex && syscallIndex < baseSyscallIndex + tableSize) {
+					address = mem.read32(syscallTable + 16 + syscallIndex - baseSyscallIndex);
+					break;
+				}
+				syscallTable = mem.read32(syscallTable + 0);
+			}
+		}
+
+		return getFunctionNameByAddress(mem, address);
+    }
+
+    public String getFunctionNameByAddress(Memory mem, int address) {
+    	if (!reboot.loadCoreInitialized || address == 0) {
+    		return null;
+    	}
+
+    	String functionName = null;
+
+		int nextOpcode = Emulator.getMemory(address).read32(address + 4);
+		Instruction nextInsn = Decoder.instruction(nextOpcode);
+		if (nextInsn == Instructions.SYSCALL) {
+			int syscallCode = (nextOpcode >> 6) & 0xFFFFF;
+			functionName = getFunctionNameBySyscall(mem, syscallCode);
+			if (functionName != null) {
+				return functionName;
+			}
+		}
 
     	HLEModuleFunction hleModuleFunction = getHLEFunctionByAddress(address);
     	if (hleModuleFunction != null) {
     		return hleModuleFunction.getFunctionName();
     	}
 
-    	Memory mem = Memory.getInstance();
+    	address &= Memory.addressMask;
     	int g_loadCore = getLoadCoreBaseAddress();
     	int registeredMods = mem.read32(g_loadCore + 524);
     	int module = getModuleByAddress(mem, registeredMods, address);
-    	String functionName = null;
     	if (module != 0) {
     		String moduleName = Utilities.readStringNZ(module + 8, 27);
     		int moduleStart = mem.read32(module + 80) & Memory.addressMask;
