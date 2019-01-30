@@ -252,9 +252,14 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 						log.error(String.format("MMIOHandlerUmd.setCommand incorrect seek: offset=0x%X, seekResult=0x%X", offset, seekResult));
 					} else {
 						for (int i = 0; fileLength > 0 && i < transferAddresses.length; i++) {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("MMIOHandlerUmd.setCommand reading 0x%X bytes at 0x%08X", transferSizes[i], transferAddresses[i]));
+							}
 							int transferLength = transferSizes[i];
 							if (transferLength > 0) {
-								TPointer addr = new TPointer(getMemory(), transferAddresses[i]);
+								// The PSP hardware is always rounding the address down to a 32-bit boundary
+								TPointer addr = new TPointer(getMemory(), transferAddresses[i] & ~0x3);
+
 								int readResult = vFile.ioRead(addr, transferLength);
 								if (readResult < 0) {
 									log.error(String.format("MMIOHandlerUmd.setCommand read error 0x%08X", readResult));
@@ -266,7 +271,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 									}
 		
 									if (log.isTraceEnabled()) {
-										log.trace(String.format("MMIOHandlerUmd.setCommand read 0x%X bytes: %s", readResult, Utilities.getMemoryDump(addr.getAddress(), readResult)));
+										log.trace(String.format("MMIOHandlerUmd.setCommand read 0x%X bytes: %s", readResult, Utilities.getMemoryDump(addr, readResult)));
 									}
 								}
 								fileLength -= transferLength;
