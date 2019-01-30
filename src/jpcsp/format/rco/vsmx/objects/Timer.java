@@ -72,6 +72,9 @@ public class Timer extends BaseNativeObject {
 	private void onTimer(int id, VSMXBaseObject object, VSMXBaseObject function, VSMXBaseObject[] parameters) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Timer.onTimer id=%d, object=%s, function=%s, parameters=%s", id, object, function, parameters));
+			for (int i = 0; i < parameters.length; i++) {
+				log.debug(String.format("Timer.onTimer param%d=%s", i, parameters[i]));
+			}
 		}
 
 		if (function instanceof VSMXFunction) {

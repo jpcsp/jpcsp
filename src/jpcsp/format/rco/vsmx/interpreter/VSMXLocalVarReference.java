@@ -27,7 +27,7 @@ public class VSMXLocalVarReference extends VSMXReference {
 	}
 
 	@Override
-	protected VSMXBaseObject getRef() {
+	protected VSMXBaseObject getRef(int numberOfArguments) {
 		return callState.getLocalVar(index);
 	}
 
