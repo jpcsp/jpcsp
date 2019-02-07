@@ -155,6 +155,8 @@ public class sceGu extends AbstractNativeCodeSequence {
 			listCurrent += (n << 2);
 		}
 
+		listWriter.flush();
+
 		mem.write32(context + listCurrentOffset, listCurrent);
 
 		if (updateStall != 0) {

@@ -73,6 +73,7 @@ public class sceSha256 extends HLEModule {
         for (int i = 0; i < 0x20; i++) {
             memoryWriter.writeNext((byte) d[i]);
         }
+        memoryWriter.flush();
 
         return 0;
     }

@@ -65,14 +65,14 @@ public class sceSha1 extends HLEModule {
     public int sceSha1Digest(TPointer data, int length, TPointer digest) {
         if (log.isTraceEnabled()) {
             log.trace(String.format("sceSha1Digest data:%s", Utilities.getMemoryDump(data.getAddress(), length)));
-	}
+        }
 
         // Read in the source data.
-	byte[] b = new byte[length];
-	IMemoryReader memoryReader = MemoryReader.getMemoryReader(data.getAddress(), length, 1);
-	for (int i = 0; i < length; i++) {
-            b[i] = (byte) memoryReader.readNext();
-	}
+		byte[] b = new byte[length];
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(data.getAddress(), length, 1);
+		for (int i = 0; i < length; i++) {
+	            b[i] = (byte) memoryReader.readNext();
+		}
 
         // Calculate SHA-1.
         SHA1 sha1 = new SHA1();
@@ -80,10 +80,11 @@ public class sceSha1 extends HLEModule {
         
         // Write back the resulting digest.
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(digest.getAddress(), 0x14, 1);
-	for (int i = 0; i < 0x14; i++) {
-            memoryWriter.writeNext((byte) d[i]);
-	}
+		for (int i = 0; i < 0x14; i++) {
+	            memoryWriter.writeNext((byte) d[i]);
+		}
+		memoryWriter.flush();
 
-	return 0;
+		return 0;
     }
 }

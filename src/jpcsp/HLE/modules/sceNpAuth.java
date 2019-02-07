@@ -321,6 +321,7 @@ public class sceNpAuth extends HLEModule {
     		for (int i = 0; i < result; i++) {
     			memoryWriter.writeNext(ticketBytes[i] & 0xFF);
     		}
+    		memoryWriter.flush();
 
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("sceNpAuthGetTicket returning real ticket: %s", Utilities.getMemoryDump(buffer.getAddress(), result)));

@@ -437,6 +437,7 @@ public class sceAudio extends HLEModule {
 				short sample = captureBuffer.getShort();
 				memoryWriter.writeNext(sample & 0xFFFF);
 			}
+			memoryWriter.flush();
 
 			if (log.isTraceEnabled()) {
 				log.trace(String.format("hleAudioBlockingInput returning %d samples: %s", samples, Utilities.getMemoryDump(addr, bufferBytes, 2, 16)));
