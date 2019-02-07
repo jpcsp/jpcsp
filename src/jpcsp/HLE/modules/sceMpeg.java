@@ -2207,7 +2207,7 @@ public class sceMpeg extends HLEModule {
 						length = streamAddr.getValue32(56);
 						destinationAddr.memcpy(packetInfo.packetDataAddr + sourceOffset, length);
 						if (log.isTraceEnabled()) {
-							log.trace(String.format("sceMpegGetAtracAu memcpy(%s, 0x%08X, 0x%X)", destinationAddr, packetInfo.packetDataAddr, length));
+							log.trace(String.format("sceMpegGetAtracAu memcpy(%s, 0x%08X, 0x%X)", destinationAddr, packetInfo.packetDataAddr + sourceOffset, length));
 						}
 						streamAddr.setValue32(56, 0);
 						int audioFrameLength = ((endianSwap16(streamAddr.getUnalignedValue16(60 + 2)) & 0x3FF) << 3) + 8;
@@ -2216,7 +2216,7 @@ public class sceMpeg extends HLEModule {
 					}
 					destinationAddr.memcpy(packetInfo.packetDataAddr + sourceOffset, length);
 					if (log.isTraceEnabled()) {
-						log.trace(String.format("sceMpegGetAtracAu memcpy(%s, 0x%08X, 0x%X)", destinationAddr, packetInfo.packetDataAddr, length));
+						log.trace(String.format("sceMpegGetAtracAu memcpy(%s, 0x%08X, 0x%X)", destinationAddr, packetInfo.packetDataAddr + sourceOffset, length));
 					}
 					destinationAddr.add(length);
 					streamAddr.setValue32(56, streamAddr.getValue32(56) - length);
@@ -3239,16 +3239,160 @@ public class sceMpeg extends HLEModule {
 		return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xD4DD6E75, version = 150)
-    public int sceMpeg_D4DD6E75() {
-        return 0;
+    public int sceMpeg_D4DD6E75(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.inout) TPointer streamAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.out) TPointer auAddr, @BufferInfo(usage=Usage.out) @CanBeNull TPointer32 unknownAddr) {
+		TPointer data = mpeg.getPointer();
+    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
+    	if (dataStreamAddr == null) {
+    		return ERROR_MPEG_INVALID_VALUE;
+    	}
+
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("sceMpeg_D4DD6E75 dataStreamAddr=%s", dataStreamAddr));
+    	}
+
+    	SceMpegStreamPacketInfo packetInfo = new SceMpegStreamPacketInfo();
+
+		SceMpegAu au = new SceMpegAu();
+		au.read(auAddr);
+
+		int result;
+    	while (true) {
+    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+    		if (log.isTraceEnabled()) {
+    			log.trace(String.format("sceMpeg_D4DD6E75 stream packet 0x%X: %s", result, packetInfo));
+    		}
+
+    		if (result < 0) {
+    			result = ERROR_MPEG_NO_DATA;
+    			break;
+    		}
+
+			if (streamAddr.getValue32(56) != 0 || streamAddr.getValue32(44) == 0) {
+				if (streamAddr.getValue32(44) == 0) {
+					au.esSize = 0;
+					while (true) {
+			    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+			    		if (result < 0) {
+			    			au.write(auAddr);
+			    			return ERROR_MPEG_NO_DATA;
+			    		}
+
+			    		if (packetInfo.dts != UNKNOWN_TIMESTAMP || packetInfo.pts != UNKNOWN_TIMESTAMP) {
+			    			break;
+			    		}
+	
+						dequeueStreamPackets(dataStreamAddr, 1);
+					}
+					au.write(auAddr);
+				}
+
+				result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+	    		if (result < 0) {
+	    			return ERROR_MPEG_NO_DATA;
+	    		}
+
+	    		if ((streamAddr.getValue32(24) & 0x1) != 0) {
+					au.pts = packetInfo.pts;
+					au.dts = packetInfo.dts;
+					au.write(auAddr);
+					streamAddr.setValue32(24, 0);
+					streamAddr.setValue16(28, (short) 0);
+	    		}
+
+				if (streamAddr.getValue32(56) == 0) {
+					streamAddr.setValue32(56, 4);
+				}
+
+				int sourceOffset = streamAddr.getValue16(28) + 2;
+				int length = packetInfo.packetDataLength - sourceOffset;
+				TPointer destinationAddr = new TPointer(streamAddr, 60 + (4 - streamAddr.getValue32(56)));
+				for (int packetIndex = 1; true; packetIndex++) {
+					if (length >= streamAddr.getValue32(56)) {
+						length = streamAddr.getValue32(56);
+						destinationAddr.memcpy(packetInfo.packetDataAddr + sourceOffset, length);
+						if (log.isTraceEnabled()) {
+							log.trace(String.format("sceMpeg_D4DD6E75 memcpy(%s, 0x%08X, 0x%X)", destinationAddr, packetInfo.packetDataAddr + sourceOffset, length));
+						}
+						streamAddr.setValue32(56, 0);
+						int frameLength = endianSwap32(streamAddr.getUnalignedValue32(60));
+						streamAddr.setValue32(36, frameLength - streamAddr.getValue32(44) + 4);
+						break;
+					}
+
+					destinationAddr.memcpy(packetInfo.packetDataAddr + sourceOffset, length);
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("sceMpeg_D4DD6E75 memcpy(%s, 0x%08X, 0x%X)", destinationAddr, packetInfo.packetDataAddr + sourceOffset, length));
+					}
+					destinationAddr.add(length);
+					streamAddr.decrValue32(56, length);
+
+					result = getStreamPacket(dataStreamAddr, packetIndex, packetInfo);
+					if (result < 0) {
+						streamAddr.setValue32(36, 4);
+						streamAddr.setValue32(52, 1);
+						break;
+					}
+					sourceOffset = 2;
+					length = packetInfo.packetDataLength - 2;
+				}
+			}
+
+			result = copyStreamData(data, streamAddr, auAddr, 5);
+
+			if (result == 0 && unknownAddr.isNotNull()) {
+				unknownAddr.setValue(sceMpeg_C345DED2(new TPointer(auAddr.getMemory(), au.esBuffer), 4));
+			}
+
+			if (result != 0 || (streamAddr.getValue32(48) & 0x4) == 0) {
+				break;
+			}
+			streamAddr.setValue32(48, streamAddr.getValue32(48) & ~0x4);
+    	}
+
+		return result;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xC345DED2, version = 150)
-    public int sceMpeg_C345DED2() {
-        return 0;
+    public int sceMpeg_C345DED2(TPointer esBuffer, int mode) {
+    	int value = 0;
+
+    	switch (mode) {
+    		case 1:
+    			value = esBuffer.getAddress() + 14;
+    			break;
+    		case 2:
+	    		if ((esBuffer.getUnsignedValue8(13) & 0x02) != 0) {
+	    			value = esBuffer.getAddress() + 18;
+	    		}
+	    		break;
+    		case 3:
+	    		if ((esBuffer.getUnsignedValue8(13) & 0x01) != 0) {
+	    			value = sceMpeg_C345DED2(esBuffer, 8000);
+	    		}
+	    		break;
+    		case 4:
+    			value = sceMpeg_C345DED2(esBuffer, 8000);
+    			if ((esBuffer.getUnsignedValue8(13) & 0x01) != 0) {
+    				value += 64;
+    			}
+    			break;
+    		case 5:
+	    		if ((esBuffer.getUnsignedValue8(13) & 0x02) != 0) {
+	    			TPointer ptr = new TPointer(esBuffer.getMemory(), sceMpeg_C345DED2(esBuffer, 8000));
+	    			value = esBuffer.getAddress() - endianSwap16(ptr.getUnalignedValue16(-2) & 0xFFFF);
+	    		}
+	    		break;
+    		case 8000:
+    			value = sceMpeg_C345DED2(esBuffer, 2);
+    			if (value == 0) {
+    				value = sceMpeg_C345DED2(esBuffer, 1);
+    			}
+				value += 6;
+				break;
+    	}
+
+    	return value;
     }
 
     @HLEUnimplemented
