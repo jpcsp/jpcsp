@@ -289,6 +289,11 @@ public class sceMpegbase extends HLEModule {
 
 		// Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
         VideoEngine.getInstance().addVideoTexture(destAddr, destAddr + (rangeY + rangeHeight) * bufferWidth * bytesPerPixel);
+        // The PSP video player is shifting the destAddr by a few pixels to decode vertical bands
+        int shiftedDestAddr = destAddr & ~0x7FF;
+		if (destAddr != shiftedDestAddr) {
+			VideoEngine.getInstance().addVideoTexture(shiftedDestAddr, shiftedDestAddr + (rangeY + rangeHeight) * bufferWidth * bytesPerPixel);
+		}
 
         // Write the ABGR image
 		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && RuntimeContext.hasMemoryInt()) {
