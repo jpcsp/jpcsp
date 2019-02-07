@@ -372,10 +372,10 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				responseData = addResponseData32(responseData, Battery.getVoltage());
 				break;
 			case PSP_SYSCON_CMD_GET_BARYON:
-				responseData = addResponseData32(responseData, sceSysconModule._sceSysconGetBaryonVersion());
+				responseData = addResponseData32(responseData, Model.getBaryonVersion());
 				break;
 			case PSP_SYSCON_CMD_GET_POMMEL_VERSION:
-				responseData = addResponseData32(responseData, sceSysconModule.getPommelVersion());
+				responseData = addResponseData32(responseData, Model.getPommelVersion());
 				break;
 			case PSP_SYSCON_CMD_GET_POWER_STATUS:
 				responseData = addResponseData32(responseData, sceSysconModule.getPowerStatus());

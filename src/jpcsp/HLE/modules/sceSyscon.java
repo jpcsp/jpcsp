@@ -263,10 +263,6 @@ public class sceSyscon extends HLEModule {
     	return 0;
     }
 
-    public int getPommelVersion() {
-    	return 0;
-    }
-
     public int getPowerStatus() {
     	return 0;
     }
@@ -382,26 +378,9 @@ public class sceSyscon extends HLEModule {
      *
      * @return The baryon version.
      */
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xFD5C58CB, version = 150)
 	public int _sceSysconGetBaryonVersion() {
-		// Tachyon = 0x00140000, Baryon = 0x00030600 TA-079 v1 1g
-		// Tachyon = 0x00200000, Baryon = 0x00030600 TA-079 v2 1g
-		// Tachyon = 0x00200000, Baryon = 0x00040600 TA-079 v3 1g
-		// Tachyon = 0x00300000, Baryon = 0x00040600 TA-081 1g
-		// Tachyon = 0x00400000, Baryon = 0x00114000 TA-082 1g
-		// Tachyon = 0x00400000, Baryon = 0x00121000 TA-086 1g
-		// Tachyon = 0x00500000, Baryon = 0x0022B200 TA-085 2g
-		// Tachyon = 0x00500000, Baryon = 0x00234000 TA-085 2g
-    	int baryon = 0;
-    	switch (Model.getModel()) {
-    		case Model.MODEL_PSP_FAT : baryon = 0x00030600; break;
-    		case Model.MODEL_PSP_SLIM: baryon = 0x0022B200; break;
-    		default:
-    			log.warn(String.format("_sceSysconGetBaryonVersion unknown baryon version for PSP Model %s", Model.getModelName(Model.getModel())));
-    			break;
-    	}
-    	return baryon;
+    	return Model.getBaryonVersion();
 	}
 
     /**
@@ -410,11 +389,9 @@ public class sceSyscon extends HLEModule {
      * @param  baryonVersionAddr Pointer to a s32 where the baryon version will be stored.
      * @return 0 on success.
      */
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x7EC5A957, version = 150)
 	public int sceSysconGetBaryonVersion(@BufferInfo(usage=Usage.out) TPointer32 baryonVersionAddr) {
-    	int baryon = _sceSysconGetBaryonVersion();
-    	baryonVersionAddr.setValue(baryon);
+    	baryonVersionAddr.setValue(Model.getBaryonVersion());
 
     	return 0;
 	}
@@ -545,10 +522,9 @@ public class sceSyscon extends HLEModule {
      * @param  pommelAddr Pointer to a s32 where the pommel version will be stored.
      * @return 0 on success.
      */
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xE7E87741, version = 150)
 	public int sceSysconGetPommelVersion(@BufferInfo(usage=Usage.out) TPointer32 pommelAddr) {
-    	pommelAddr.setValue(getPommelVersion());
+    	pommelAddr.setValue(Model.getPommelVersion());
 
     	return 0;
 	}

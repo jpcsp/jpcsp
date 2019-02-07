@@ -982,26 +982,9 @@ public class sceSysreg extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xE2A5D1EE, version = 150)
     public int sceSysregGetTachyonVersion() {
-		// Tachyon = 0x00140000, Baryon = 0x00030600 TA-079 v1 1g
-		// Tachyon = 0x00200000, Baryon = 0x00030600 TA-079 v2 1g
-		// Tachyon = 0x00200000, Baryon = 0x00040600 TA-079 v3 1g
-		// Tachyon = 0x00300000, Baryon = 0x00040600 TA-081 1g
-		// Tachyon = 0x00400000, Baryon = 0x00114000 TA-082 1g
-		// Tachyon = 0x00400000, Baryon = 0x00121000 TA-086 1g
-		// Tachyon = 0x00500000, Baryon = 0x0022B200 TA-085 2g
-		// Tachyon = 0x00500000, Baryon = 0x00234000 TA-085 2g
-    	int tachyon = 0;
-    	switch (Model.getModel()) {
-    		case Model.MODEL_PSP_FAT : tachyon = 0x00300000; break;
-    		case Model.MODEL_PSP_SLIM: tachyon = 0x00500000; break;
-    		default:
-    			log.warn(String.format("sceSysregGetTachyonVersion unknown tachyon version for PSP Model %s", Model.getModelName(Model.getModel())));
-    			break;
-    	}
-    	return tachyon;
+    	return Model.getTachyonVersion();
     }
 
     @HLEUnimplemented
