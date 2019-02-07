@@ -49,7 +49,7 @@ public class FatBuilder {
 		this.maxNumberClusters = maxNumberClusters;
 	}
 
-	public FatFileInfo scan() {
+	public FatFileInfo scan(String deviceName) {
 		firstFreeCluster = vFile.getFirstFreeCluster();
 
 		FatFileInfo rootDirectory = new FatFileInfo(vFile.getDeviceName(), null, null, true, false, null, 0);
@@ -65,7 +65,7 @@ public class FatBuilder {
 		}
 
 		if (firstFreeCluster > maxNumberClusters) {
-			log.error(String.format("Too many files in the Fat partition: required clusters=0x%X, max clusters=0x%X", firstFreeCluster, maxNumberClusters));
+			log.error(String.format("Too many files in the Fat partition '%s': required clusters=0x%X, max clusters=0x%X", deviceName, firstFreeCluster, maxNumberClusters));
 		}
 
 		return rootDirectory;

@@ -137,7 +137,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 	}
 
 	public void scan() {
-		builder.scan();
+		builder.scan(deviceName);
 	}
 
 	private void extendClusterMap(int clusterNumber) {
