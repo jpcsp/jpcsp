@@ -157,6 +157,7 @@ public class MMIOHandlerMeCore {
     	Memory mem = Memory.getInstance();
 
     	int result;
+    	TPointer decodeSEI;
     	switch (getCmd()) {
 			case 0x2: // ME_CMD_VIDEOCODEC_DECODE_TYPE0
 		    	int mp4Data = getParameter(1);
@@ -164,12 +165,16 @@ public class MMIOHandlerMeCore {
 		    	TPointer buffer2 = getParameterPointer(3);
             	TPointer mpegAvcYuvStruct = getParameterPointer(4);
             	TPointer buffer3 = getParameterPointer(5);
-            	TPointer decodeSEI = getParameterPointer(6);
+            	decodeSEI = getParameterPointer(6);
 				result = Modules.sceVideocodecModule.videocodecDecodeType0(meMemory, mp4Data, mp4Size, buffer2, mpegAvcYuvStruct, buffer3, decodeSEI);
 				setResult(result);
 				break;
 			case 0x4: // ME_CMD_VIDEOCODEC_DELETE_TYPE0
 				Modules.sceVideocodecModule.videocodecDelete();
+				break;
+			case 0x9: // ME_CMD_VIDEOCODEC_GET_SEI_TYPE0
+				decodeSEI = getParameterPointer(1);
+				Modules.sceVideocodecModule.videocodecGetSEIType0(decodeSEI);
 				break;
 			case 0x67: // ME_CMD_AT3P_SETUP_CHANNEL
 				Modules.sceAudiocodecModule.initCodec(getParameter(4), PSP_CODEC_AT3PLUS, getParameter(2) + 2, getParameter(1), getParameter(3), 0);

@@ -535,18 +535,24 @@ public class sceVideocodec extends HLEModule {
         	buffer3.setValue32(32, 4004); // 4004 or 5005
         	buffer3.setValue32(36, 240000);
 
-        	decodeSEI.setValue8(0, (byte) 0x02);
-        	decodeSEI.setValue32(8, sceMpeg.mpegTimestampPerSecond);
-        	decodeSEI.setValue32(16, sceMpeg.mpegTimestampPerSecond);
-        	decodeSEI.setValue32(24, frameCount * 2);
-        	decodeSEI.setValue32(28, 2);
-        	decodeSEI.setValue8(32, (byte) 0x00);
-        	decodeSEI.setValue8(33, (byte) 0x01);
-
         	frameCount++;
+
+        	videocodecGetSEIType0(decodeSEI);
     	}
 
     	return result;
+	}
+
+    public void videocodecGetSEIType0(TPointer decodeSEI) {
+    	if (decodeSEI.isNotNull()) {
+	    	decodeSEI.setValue8(0, (byte) 0x02);
+	    	decodeSEI.setValue32(8, sceMpeg.mpegTimestampPerSecond);
+	    	decodeSEI.setValue32(16, sceMpeg.mpegTimestampPerSecond);
+	    	decodeSEI.setValue32(24, (frameCount - 1) * 2);
+	    	decodeSEI.setValue32(28, 2);
+	    	decodeSEI.setValue8(32, (byte) 0x00);
+	    	decodeSEI.setValue8(33, (byte) 0x01);
+    	}
 	}
 
 	public int videocodecDecodeType1(Memory mp4Memory, int mp4Data, int mp4Size, TPointer buffer2, int value) {
