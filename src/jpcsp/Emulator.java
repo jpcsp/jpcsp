@@ -46,10 +46,12 @@ import jpcsp.graphics.RE.software.BaseRenderer;
 import jpcsp.graphics.RE.software.RendererExecutor;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
+import jpcsp.hardware.Model;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.MemorySections;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.settings.Settings;
 import jpcsp.sound.SoundChannel;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.JpcspDialogManager;
@@ -226,6 +228,7 @@ public class Emulator implements Runnable {
     public void initNewPsp(boolean fromSyscall) {
         moduleLoaded = false;
 
+        Model.setModel(Settings.getInstance().readInt("emu.model"));
         HLEModuleManager.getInstance().stopModules();
         NIDMapper.getInstance().unloadAll();
         RuntimeContext.reset();

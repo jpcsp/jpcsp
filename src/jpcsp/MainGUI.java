@@ -99,7 +99,6 @@ import org.apache.log4j.xml.DOMConfigurator;
 import com.jidesoft.plaf.LookAndFeelFactory;
 
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
-import jpcsp.hardware.Model;
 
 /**
  *
@@ -1509,7 +1508,6 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 
     public void loadFile(File file, boolean isInternal) {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
-        Model.setModel(Settings.getInstance().readInt("emu.model"));
 
         //This is where a real application would open the file.
         try {
@@ -1917,7 +1915,6 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     public void loadUMD(File file) {
     	String filePath = file == null ? null : file.getPath();
         UmdIsoReader.setDoIsoBuffering(doUmdBuffering);
-        Model.setModel(Settings.getInstance().readInt("emu.model"));
 
         UmdIsoReader iso = null;
         boolean closeIso = false;
