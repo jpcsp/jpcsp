@@ -62,8 +62,16 @@ public class PreDecrypt {
 			if (this.cmd != cmd) {
 				return false;
 			}
-			if (input.length != inSize || output.length != outSize) {
+			if (input == null && inSize != 0) {
 				return false;
+			}
+			if (output == null && outSize != 0) {
+				return false;
+			}
+			if (input != null && output != null) {
+				if (input.length != inSize || output.length != outSize) {
+					return false;
+				}
 			}
 
 			for (int i = 0; i < inSize; i++) {

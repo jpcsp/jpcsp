@@ -34,10 +34,10 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.crypto.PRX;
+import jpcsp.hardware.Model;
 
 public class sceResmgr extends HLEModule {
     public static Logger log = Modules.getLogger("sceResmgr");
-	private static final String indexDatFileName = "flash0:/vsh/etc/index_01g.dat";
 	// Fake a version 6.59 so that the PSP Update 6.60 can be executed
 	public static final String dummyIndexDatContent = "release:6.59:\n" +
 			"build:5454,0,3,1,0:builder@vsh-build6\n" +
@@ -53,6 +53,7 @@ public class sceResmgr extends HLEModule {
 	}
 
     private static void createDummyIndexDat() {
+    	String indexDatFileName = String.format("flash0:/vsh/etc/index_%02dg.dat", Model.getGeneration());
     	byte[] content = readCompleteFile(indexDatFileName);
     	if (content != null && content.length > 0) {
     		// File already exists
@@ -64,7 +65,13 @@ public class sceResmgr extends HLEModule {
     	write8(buffer, 0x7C, PRX.DECRYPT_MODE_NO_EXEC); // decryptMode
     	writeUnaligned32(buffer, 0xB0, 0x9F); // dataSize
     	writeUnaligned32(buffer, 0xB4, 0x80); // dataOffset
-    	writeUnaligned32(buffer, 0xD0, 0x0B2B90F0); // tag
+    	int tag;
+    	switch (Model.getGeneration()) {
+    		case 1:  tag = 0x0B2B90F0; break;
+    		case 2:  tag = 0x0B2B91F0; break;
+    		default: tag = 0x0B2B92F0; break;
+    	}
+    	writeUnaligned32(buffer, 0xD0, tag); // tag
 
     	writeStringNZ(buffer, 0x150, buffer.length - 0x150, dummyIndexDatContent);
 

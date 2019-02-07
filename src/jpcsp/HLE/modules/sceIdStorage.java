@@ -47,6 +47,7 @@ public class sceIdStorage extends HLEModule {
     		0x0004,
     		0x0005,
     		0x0006,
+    		0x0007,
     		0x0008,
     		0x0010,
     		0x0011,
@@ -98,6 +99,12 @@ public class sceIdStorage extends HLEModule {
 				break;
 			case 0x0006:
 				buffer.setValue32(0, 0x4D446472); // Fixed value "rdDM"
+				break;
+			case 0x0007:
+				buffer.setValue32(0, 0x41506144); // Fixed value "DaPA"
+				break;
+			case 0x0008:
+				buffer.setValue32(0, 0x4C434470); // Fixed value "pDCL"
 				break;
 			case 0x0041:
 				// Used by usb.prx

@@ -199,7 +199,7 @@ public class reboot extends HLEModule {
      * @return               the address where the MIPS code has been loaded
      */
     private TPointer getKl3eDecompress(TPointer baseAddress, TPointer kl4eDecompress, TPointer tempBuffer, int tempBufferSize) {
-    	String fileName = "flash0:/kd/loadexec_01g.prx";
+    	String fileName = String.format("flash0:/kd/loadexec_%02dg.prx", Model.getGeneration());
 
     	byte[] buffer = readCompleteFile(fileName);
     	if (buffer == null) {
@@ -262,7 +262,7 @@ public class reboot extends HLEModule {
      * @return true if can be booted
      */
     private boolean bootLoadexecPrx() {
-    	String loadexecFileName = "flash0:/kd/loadexec_01g.prx";
+    	String loadexecFileName = String.format("flash0:/kd/loadexec_%02dg.prx", Model.getGeneration());
 
     	byte[] loadexecBuffer = readCompleteFile(loadexecFileName);
     	if (loadexecBuffer == null) {

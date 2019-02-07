@@ -53,6 +53,8 @@ public class sceMesgd extends HLEModule {
         		type = 0;
         		break;
         	case 0x63BAB403:
+        	case 0xD8231EF0:
+        	case 0xD82310F0:
         		type = 2;
         		break;
     		default:
@@ -74,7 +76,6 @@ public class sceMesgd extends HLEModule {
     	return result;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x102DC8AF, version = 150)
     public int sceMesgd_driver_102DC8AF(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultSizeAddr) {
     	byte[] bytes = new byte[bufferSize];

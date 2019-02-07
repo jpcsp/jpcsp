@@ -230,7 +230,9 @@ public class PRX {
         new TAG_INFO(0xE92410F0, KeyVault.drmkeys_6XX_1, 0x40),
         new TAG_INFO(0x692810F0, KeyVault.drmkeys_6XX_2, 0x40),
         new TAG_INFO(0x63BAB403, KeyVault.key_102DC8AF_1, 0x51),
-        new TAG_INFO(0x0B2B90F0, KeyVault.key_9DC14891, 0x5C),
+        new TAG_INFO(0x0B2B90F0, KeyVault.key_9DC14891_1, 0x5C),
+        new TAG_INFO(0x0B2B91F0, KeyVault.key_9DC14891_2, 0x5C),
+        new TAG_INFO(0x0B2B92F0, KeyVault.key_9DC14891_3, 0x5C),
     	// 144-bytes keys
         new TAG_INFO(0x00000000, KeyVault.g_key00, 0x42, 0x00),
         new TAG_INFO(0x02000000, KeyVault.key_5C3A61FE, 0x45, 0x00),
