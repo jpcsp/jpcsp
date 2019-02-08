@@ -538,6 +538,70 @@ void utilityMsgLog(char *buffer, const SyscallInfo *syscallInfo, u32 param) {
 }
 #endif
 
+#if DUMP_PSAR
+int countKirkCmd = 0;
+int firstKirkCmdIndex = 0;
+int dataSize = 0;
+
+char *dumpKirkCmd(char *buffer, char *s, int addr, int length) {
+	int i;
+
+	for (i = 0; i < length; i++) {
+		if ((i % 16) == 0) {
+			s = flushBuffer(buffer, s);
+			s = append(s, "\t\t\t");
+		} else {
+			*s++ = ' ';
+		}
+		s = appendHex(s, _lb(addr + i), 2);
+		*s++ = ',';
+	}
+	s--;
+
+	return s;
+}
+
+void dumpKirkCmdInput(char *buffer, int cmd, int addr, int length) {
+	char *s;
+
+	if (addr == 0) {
+		return;
+	}
+
+	countKirkCmd++;
+	if (countKirkCmd <= firstKirkCmdIndex) {
+		return;
+	}
+
+	s = buffer;
+	s = append(s, "\t<PreDecryptInfo cmd=\"");
+	s = appendInt(s, cmd, 0);
+	s = append(s, "\">\n\t\t<Input>");
+	s = dumpKirkCmd(buffer, s, addr, length);
+	s = append(s, "\n\t\t</Input>");
+	flushBuffer(buffer, s);
+}
+
+void dumpKirkCmdOutput(char *buffer, int cmd, int addr, int length) {
+	char *s;
+
+	if (addr == 0) {
+		return;
+	}
+
+	countKirkCmd++;
+	if (countKirkCmd <= firstKirkCmdIndex) {
+		return;
+	}
+
+	s = buffer;
+	s = append(s, "\t\t<Output>");
+	s = dumpKirkCmd(buffer, s, addr, length);
+	s = append(s, "\n\t\t</Output>\n\t</PreDecryptInfo>");
+	flushBuffer(buffer, s);
+}
+#endif
+
 char *syscallLogMem(char *buffer, char *s, int addr, int length) {
 	int i, j;
 	int lineStart;
@@ -623,6 +687,21 @@ void syscallLog(const SyscallInfo *syscallInfo, int inOut, const u32 *parameters
 	if (IS_sceIoOpen_NID(syscallInfo->nid) && strcmp((const char *) parameters[0], logFilename) == 0) {
 		return;
 	}
+
+#if DUMP_PSAR
+	if (syscallInfo->nid == NID_sceUtilsBufferCopyWithRange || syscallInfo->nid == NID_sceUtilsBufferCopyByPollingWithRange) {
+		int cmd = parameters[4];
+		if (cmd == 7) {
+			if (inOut < 0) {
+				dataSize = _lw(parameters[2] + 16);
+				dumpKirkCmdInput(buffer, cmd, parameters[2], dataSize + 20);
+			} else if (inOut > 0) {
+				dumpKirkCmdOutput(buffer, cmd, parameters[0], dataSize);
+			}
+		}
+		return;
+	}
+#endif
 
 #if DUMP_MMIO
 #	define LW(a) (*((volatile u32*)(a)))

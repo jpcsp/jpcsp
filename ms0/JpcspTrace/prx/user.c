@@ -64,6 +64,10 @@ if (syscallInfo->nid == 0x8EEFD953 && a3 == 443) {
                 }
 
 		syscallLog(syscallInfo, -inOut, parameters, 0, ra, sp, gp);
+
+		if (syscallInfo->flags & FLAG_LOG_FLUSH_AFTER_CALL) {
+			flushLogBuffer();
+		}
 	}
 
 	if (syscallInfo->flags & FLAG_LOG_STACK_USAGE) {
@@ -79,6 +83,10 @@ if (syscallInfo->nid == 0x8EEFD953 && a3 == 443) {
 
 	if (syscallInfo->flags & FLAG_LOG_AFTER_CALL) {
 		syscallLog(syscallInfo, inOut, parameters, result, ra, sp, gp);
+	}
+
+	if (syscallInfo->flags & FLAG_LOG_FLUSH_AFTER_CALL) {
+		flushLogBuffer();
 	}
 
 	return result;

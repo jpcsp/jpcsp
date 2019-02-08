@@ -21,12 +21,23 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #include <psputilsforkernel.h>
 #include <pspsysmem_kernel.h>
 #include <psprtc.h>
+#include <pspidstorage.h>
 #include <string.h>
 #include "systemctrl.h"
 #include "common.h"
-#if DUMP_NAND
-#  include <pspnand_driver.h>
-   int sceNandReadExtraOnly(u32 ppn, void *spare, u32 len);
+#include <pspnand_driver.h>
+int sceNandReadExtraOnly(u32 ppn, void *spare, u32 len);
+#if TEST_ATA
+   void *sceAta_driver_D225B43E(int driveNumber);
+   int sceAtaExecPacketCmd(void *driveStructure, int unknown1, int unknown2, int unknown3, int unknown4, int operationCode, void *unknown5);
+   int sceAta_driver_C344D497(void *driveStructure, int unknown1, int unknown2, int length);
+   int sceAtaSelectDevice(int unknown);
+   int sceAtaScanDevice(void *driveStructure);
+   int sceAtaAhbSetupBus();
+   int sceAtaEnableClkIo(int unknown);
+   int sceAtaWaitBusBusy1();
+   void sceAta_driver_BE6261DA(int unknown);
+   int sceAta_driver_4D225674();
 #endif
 
 PSP_MODULE_INFO("JpcspTrace", PSP_MODULE_KERNEL, 1, 0);
@@ -36,8 +47,15 @@ PSP_MODULE_INFO("JpcspTrace", PSP_MODULE_KERNEL, 1, 0);
 #define MAKE_SYSCALL(n) ((((n) & 0xFFFFF) << 6) | 0x0C)
 #define NOP 0
 
-#define LW(addr) (*((volatile u32*) (addr)))
-#define SW(value, addr) (*((volatile u32*) (addr)) = (value))
+#define LW(addr)   (*((volatile u32*) (addr)))
+#define LW8(addr)  (*((volatile u8 *) (addr)))
+#define LW16(addr) (*((volatile u16*) (addr)))
+#define SW(value, addr)   (*((volatile u32*) (addr)) = (u32) (value))
+#define SW8(value, addr)  (*((volatile u8 *) (addr)) = (u8 ) (value))
+#define SW16(value, addr) (*((volatile u16*) (addr)) = (u16) (value))
+
+#define DISABLE_INTR(intr)	asm("mfic %0, $0\n" : "=r"(intr)); asm("mtic $0, $0\n");
+#define ENABLE_INTR(intr)	asm("mtic %0, $0\n" : : "r"(intr));
 
 #define SYSCALL_PLUGIN_NID	0xADB83469
 
@@ -58,7 +76,11 @@ int (* originalIoOpen)(const char *s, int flags, int permissions);
 int (* originalIoWrite)(SceUID id, const void *data, int size);
 int (* originalIoClose)(SceUID id);
 int sceWmd_driver_7A0E484C(void *, u32, u32 *);
-
+int sceUtilsBufferCopyWithRange(void* outbuff, int outsize, void* inbuff, int insize, int cmd);
+#if DUMP_PSAR
+int sceUtilsBufferCopyByPollingWithRangeAddr = 0;
+int sceUtilsBufferCopyWithRangeAddr = 0;
+#endif
 
 SyscallInfo *moduleSyscalls = NULL;
 
@@ -166,6 +188,8 @@ u32 parseParamTypes(const char *s, u32 *pflags) {
 			*pflags |= FLAG_LOG_FREEMEM;
 		} else if (c == '>') {
 			*pflags |= FLAG_LOG_STACK_USAGE;
+		} else if (c == '%') {
+			*pflags |= FLAG_LOG_FLUSH_AFTER_CALL;
 		} else {
 			paramType = TYPE_HEX32;
 			switch (c) {
@@ -289,6 +313,10 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 		syscallLog(syscallInfo, -inOut, parameters, 0, realRa, sp, gp);
 		pspSdkSetK1(k1);
 		commonInfo->inWriteLog--;
+
+		if (syscallInfo->flags & FLAG_LOG_FLUSH_AFTER_CALL) {
+			flushLogBuffer();
+		}
 	}
 
 	// Remark: the stackUsage doesn't make sense here for syscalls, only for user libraries
@@ -300,13 +328,17 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 		pspSdkSetK1(k1);
 	}
 
-	ioOpen = userIoOpen;
-	ioWrite = userIoWrite;
-	ioClose = userIoClose;
-
 	if (IS_sceIoOpen_NID(syscallInfo->nid)) {
 		commonInfo->inWriteLog--;
 	}
+
+	if (syscallInfo->flags & FLAG_LOG_FLUSH_AFTER_CALL) {
+		flushLogBuffer();
+	}
+
+	ioOpen = userIoOpen;
+	ioWrite = userIoWrite;
+	ioClose = userIoClose;
 
 	return result;
 }
@@ -411,6 +443,21 @@ void patchSyscall(char *module, char *library, const char *name, u32 nid, int nu
 		moduleSyscalls = syscallInfo;
 	}
 
+#if DUMP_PSAR
+	if (nid == NID_sceUtilsBufferCopyByPollingWithRange && sceUtilsBufferCopyByPollingWithRangeAddr != 0) {
+		printLogH("Patching 0x77E97079 before: ", LW(sceUtilsBufferCopyByPollingWithRangeAddr), "\n");
+		SW(0x08000000 | ((((u32) asmblock) >> 2) & 0x03FFFFFF), sceUtilsBufferCopyByPollingWithRangeAddr);
+		printLogH("Patching 0x77E97079 after: ", LW(sceUtilsBufferCopyByPollingWithRangeAddr), "\n");
+		printLogH("Patching 0x77E97079 asmblock: ", (u32) asmblock, "\n");
+	}
+	if (nid == NID_sceUtilsBufferCopyWithRange && sceUtilsBufferCopyWithRangeAddr != 0) {
+		printLogH("Patching 0x4C537C72 before: ", LW(sceUtilsBufferCopyWithRangeAddr), "\n");
+		SW(0x08000000 | ((((u32) asmblock) >> 2) & 0x03FFFFFF), sceUtilsBufferCopyWithRangeAddr);
+		printLogH("Patching 0x4C537C72 after: ", LW(sceUtilsBufferCopyWithRangeAddr), "\n");
+		printLogH("Patching 0x4C537C72 asmblock: ", (u32) asmblock, "\n");
+	}
+#endif
+
 	sceKernelDcacheWritebackAll();
 	sceKernelIcacheClearAll();
 
@@ -461,13 +508,12 @@ void decryptMeimg(char *fromFileName, char *toFileName) {
 	void *buffer = (void *) ((((u32) allocBuffer) + 0x3F) & ~0x3F);
 
 	int result = sceIoRead(me, buffer, bufferSize);
+	ioClose(me);
 	if (result < 0) {
 		printLog("Error reading meimg.img file\n");
 		freeAlloc(allocBuffer, allocSize);
 		return;
 	}
-
-	ioClose(me);
 
 	u32 newSize = 0;
 	result = sceWmd_driver_7A0E484C(buffer, bufferSize, &newSize);
@@ -477,6 +523,7 @@ void decryptMeimg(char *fromFileName, char *toFileName) {
 		return;
 	}
 
+	sceIoRemove(toFileName);
 	me = ioOpen(toFileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
 	if (me < 0) {
 		printLog("Cannot create decrypted meimg.img file\n");
@@ -489,6 +536,364 @@ void decryptMeimg(char *fromFileName, char *toFileName) {
 
 	freeAlloc(allocBuffer, allocSize);
 }
+
+void executeKirkCommand(int cmd, char *outputFileName, int outputSize, char *inputFileName, int inputSize) {
+	SceUID in = ioOpen(inputFileName, PSP_O_RDONLY, 0777);
+	if (in < 0) {
+		printLog("Cannot open input file\n");
+		return;
+	}
+
+	u32 allocInputSize = inputSize + 0x40;
+	void *allocInputBuffer = alloc(allocInputSize);
+	memset(allocInputBuffer, 0, allocInputSize);
+	void *inputBuffer = (void *) ((((u32) allocInputBuffer) + 0x3F) & ~0x3F);
+
+	int result = sceIoRead(in, inputBuffer, inputSize);
+	ioClose(in);
+	if (result < 0) {
+		printLog("Error reading input file\n");
+		freeAlloc(allocInputBuffer, allocInputSize);
+		return;
+	}
+
+	u32 allocOutputSize = outputSize + 0x40;
+	void *allocOutputBuffer = alloc(allocOutputSize);
+	memset(allocOutputBuffer, 0, allocOutputSize);
+	void *outputBuffer = (void *) ((((u32) allocOutputBuffer) + 0x3F) & ~0x3F);
+
+	u32 start = LW(0xBC600000);
+	int kirkResult = sceUtilsBufferCopyWithRange(outputBuffer, outputSize, inputBuffer, inputSize, cmd);
+	u32 end = LW(0xBC600000);
+	if (kirkResult != 0) {
+		printLogH("Error ", kirkResult, " received while executing kirk command\n");
+		freeAlloc(allocOutputBuffer, allocOutputSize);
+		freeAlloc(allocInputBuffer, allocInputSize);
+		return;
+	}
+	printLogH("Kirk command executed in ", end - start, " us\n");
+
+	sceIoRemove(outputFileName);
+	SceUID out = ioOpen(outputFileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (out < 0) {
+		ioClose(in);
+		printLog("Cannot open output file\n");
+		return;
+	}
+	ioWrite(out, outputBuffer, outputSize);
+	ioClose(out);
+
+	freeAlloc(allocOutputBuffer, allocOutputSize);
+	freeAlloc(allocInputBuffer, allocInputSize);
+}
+
+void executeIdStorageRead(int key, char *outputFileName) {
+	char buffer[0x200];
+
+	int result = sceIdStorageReadLeaf(key, buffer);
+	if (result < 0) {
+		printLogH("sceIdStorageReadLeaf returned ", result, "\n");
+		return;
+	}
+
+	sceIoRemove(outputFileName);
+	SceUID out = ioOpen(outputFileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (out < 0) {
+		printLog("Cannot open output file\n");
+		return;
+	}
+	ioWrite(out, buffer, sizeof(buffer));
+	ioClose(out);
+}
+
+void dumpNand() {
+	SceUID fdFuseId = ioOpen("ms0:/nand.fuseid", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fdFuseId < 0) {
+		printLog("dumpNand - Cannot create nand.fuseid file\n");
+		return;
+	}
+
+	// sceSysregGetFuseId
+	u32 fuseId0 = *((u32 *) (0xBC100090));
+	u32 fuseId1 = *((u32 *) (0xBC100094));
+	ioWrite(fdFuseId, &fuseId0, 4);
+	ioWrite(fdFuseId, &fuseId1, 4);
+	ioClose(fdFuseId);
+
+	SceUID fdBlock = ioOpen("ms0:/nand.block", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fdBlock < 0) {
+		printLog("dumpNand - Cannot create nand.block file\n");
+		return;
+	}
+
+	SceUID fdSpare = ioOpen("ms0:/nand.spare", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fdSpare < 0) {
+		printLog("dumpNand - Cannot create nand.spare file\n");
+		return;
+	}
+
+	SceUID fdResult = ioOpen("ms0:/nand.result", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	if (fdResult < 0) {
+		printLog("dumpNand - Cannot create nand.result file\n");
+		return;
+	}
+
+	int pageSize = sceNandGetPageSize();
+	int pagesPerBlock = sceNandGetPagesPerBlock();
+	int totalBlocks = sceNandGetTotalBlocks();
+	printLogH("sceNandGetPageSize ", pageSize, "\n");
+	printLogH("sceNandGetPagesPerBlock ", pagesPerBlock, "\n");
+	printLogH("sceNandGetTotalBlocks ", totalBlocks, "\n");
+
+	int blockBufferSize = pageSize * pagesPerBlock;
+	void *blockBuffer = alloc(blockBufferSize);
+	int spareBufferSize = 16 * pagesPerBlock;
+	void *spareBuffer = alloc(spareBufferSize);
+
+	int block;
+	for (block = 0; block < totalBlocks; block++) {
+		u32 ppn = block * pagesPerBlock;
+
+		memset(blockBuffer, 0, blockBufferSize);
+		memset(spareBuffer, 0, spareBufferSize);
+
+		sceNandLock(0);
+		int result = sceNandReadPages(ppn, blockBuffer, NULL, pagesPerBlock);
+		sceNandReadExtraOnly(ppn, spareBuffer, pagesPerBlock);
+		sceNandUnlock();
+
+		ioWrite(fdBlock, blockBuffer, blockBufferSize);
+		ioWrite(fdSpare, spareBuffer, spareBufferSize);
+		ioWrite(fdResult, &result, 4);
+	}
+
+	ioClose(fdResult);
+	ioClose(fdSpare);
+	ioClose(fdBlock);
+}
+
+#if TEST_ATA
+int ataWaitBusy(int addr) {
+	u8 status;
+	u32 start = LW(0xBC600000);
+	do {
+		status = LW8(addr);
+		if ((status & 0x81) == 0x01) {
+			return 0;
+		}
+
+		// Timeout after 0.1 second
+		u32 now = LW(0xBC600000);
+		if (now - start > 100000) {
+			return 0;
+		}
+	} while (status & 0x80);
+
+	return status & 0x01 ? 0 : 1;
+}
+
+int ataWaitBusy1() {
+	return ataWaitBusy(0xBD70000E);
+}
+
+int ataWaitBusy2() {
+	return ataWaitBusy(0xBD700007);
+}
+
+void wait(int us) {
+	u32 start = LW(0xBC600000);
+	while (us > 0) {
+		u32 now = LW(0xBC600000);
+		if (now - start > us) {
+			break;
+		}
+	}
+}
+
+int ataWaitForCondition(int statusMask, int statusValue, int interruptReasonMask, int interruptReasonValue) {
+	u32 start = LW(0xBC600000);
+	while (1) {
+		u8 status = LW8(0xBD70000E);
+		u8 interruptReason = LW8(0xBD700002);
+		if ((status & statusMask) == statusValue && (interruptReason & interruptReasonMask) == interruptReasonValue) {
+			break;
+		}
+
+		// Timeout after 0.1 second
+		u32 now = LW(0xBC600000);
+		if (now - start > 100000) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+void testAtaReadCmd(int operationCode, int length, int lengthOffset, int data1, int dataOffset1, int data2, int dataOffset2) {
+	int i;
+
+	u16 bufferPacketCmd16[6];
+	memset(bufferPacketCmd16, 0, sizeof(bufferPacketCmd16));
+	u8 *bufferPacketCmd8 = (u8 *) bufferPacketCmd16;
+	bufferPacketCmd8[0] = operationCode;
+	if (lengthOffset > 0) {
+		bufferPacketCmd8[lengthOffset] = length;
+		if (length >= 0x100) {
+			bufferPacketCmd8[lengthOffset - 1] = length >> 8;
+		}
+	}
+	if (dataOffset1 > 0) {
+		bufferPacketCmd8[dataOffset1] = data1;
+		if (data1 >= 0x100) {
+			bufferPacketCmd8[dataOffset1 - 1] = data1 >> 8;
+		}
+	}
+	if (dataOffset2 > 0) {
+		bufferPacketCmd8[dataOffset2] = data2;
+		if (data2 >= 0x100) {
+			bufferPacketCmd8[dataOffset2 - 1] = data2 >> 8;
+		}
+	}
+	printLogMem("bufferPacketCmd ", (u32) bufferPacketCmd16, sizeof(bufferPacketCmd16));
+
+	u16 bufferResult[128];
+	memset(bufferResult, 0, sizeof(bufferResult));
+	int resultLength = 0;
+
+	printLogHH("Start: ", LW8(0xBD70000E), ", ", LW8(0xBD700002), "\n");
+
+	u32 startResponse = 0;
+	u32 endResponse = 0;
+	u32 start = LW(0xBC600000);
+
+	if (ataWaitBusy1() || (LW8(0xBD70000E) & 0x80) == 0x00) {
+		// Wait for BSY=0, DRQ=0
+		if (ataWaitForCondition(0x88, 0x00, 0, 0)) {
+			SW8(0x0A, 0xBD70000E);
+			SW8(0x00, 0xBD700001);
+			SW8(0x00, 0xBD700002);
+			SW8(0x00, 0xBD700003);
+			SW8(0x00, 0xBD700004);
+			SW8(0x40, 0xBD700005);
+			SW8(0x00, 0xBD700006);
+			SW8(0xA0, 0xBD700007);
+			LW8(0xBD70000E);
+			// Wait for CoD=1, IO=0 and BSY=0, DRQ=1
+			if (ataWaitForCondition(0x88, 0x08, 0x03, 0x01)) {
+				for (i = 0; i < 6; i++) {
+					SW16(bufferPacketCmd16[i], 0xBD700000);
+				}
+				SW8(0x00, 0xBD700008);
+				startResponse = LW(0xBC600000);
+				endResponse = startResponse;
+				ataWaitBusy1();
+				if ((LW8(0xBD70000E) & 0x01) == 0x00) {
+					if (LW8(0xBD70000E) & 0x08) {
+						resultLength = LW8(0xBD700004) | (LW8(0xBD700005) << 8);
+						int resultLength2 = (resultLength + 1) >> 1;
+						for (i = 0; i < resultLength2; i++) {
+							bufferResult[i] = LW16(0xBD700000);
+						}
+					} else {
+						printLogHH("No result ", LW8(0xBD70000E), ", ", LW8(0xBD700002), "\n");
+					}
+					// Wait for BSY=0, DRQ=0
+					if (ataWaitForCondition(0x88, 0x00, 0, 0)) {
+						// Wait for CoD=1, IO=1 and DRDY=1, BSY=0, DRQ=0
+						if (ataWaitForCondition(0xC8, 0x40, 0x03, 0x03)) {
+							// OK
+							endResponse = LW(0xBC600000);
+						} else {
+							printLogHH("Timeout on condition CoD=1, IO=1 and DRDY=1, BSY=0, DRQ=0: ", LW8(0xBD70000E), ", ", LW8(0xBD700002), "\n");
+						}
+					} else {
+						printLogHH("Timeout on condition BSY=0, DRQ=0: ", LW8(0xBD70000E), ", ", LW8(0xBD700002), "\n");
+					}
+				} else {
+					printLogHH("Error before reading result ", LW8(0xBD70000E), ", ", LW8(0xBD700002), "\n");
+				}
+			} else {
+				printLogHH("Timeout on condition CoD=1, IO=0 and BSY=0, DRQ=1: ", LW8(0xBD70000E), ", ", LW8(0xBD700002), "\n");
+			}
+		} else {
+			printLogHH("Timeout on condition BSY=0, DRQ=0: ", LW8(0xBD70000E), ", ", LW8(0xBD700002), "\n");
+		}
+	}
+
+	u32 end = LW(0xBC600000);
+
+	printLogHH("testAtaReadCmd end status ", LW8(0xBD70000E), " in ", end - start, " us\n");
+	if (LW8(0xBD70000E) & 0x01) {
+		printLogH("Error ", LW8(0xBD700001), "\n");
+	}
+	if (resultLength > 0) {
+		printLogHH("Result length ", resultLength, " in ", endResponse - startResponse, "\n");
+		printLogMem("bufferResult ", (u32) bufferResult, resultLength);
+	}
+}
+
+void testAta() {
+	sceKernelDelayThread(100000);
+
+	sceAtaEnableClkIo(0x80);
+	SW(0xFECC0000, 0xBD600044);
+	sceAtaAhbSetupBus();
+	ataWaitBusy1();
+	sceAtaEnableClkIo(0x80);
+	sceAtaAhbSetupBus();
+
+	int intr;
+	DISABLE_INTR(intr);
+
+	// Perform soft reset
+	SW8(0x04, 0xBD70000E);
+	wait(100);
+	SW8(0x00, 0xBD70000E);
+	wait(10000);
+	ataWaitBusy1();
+	wait(100000);
+
+	printLogHH("Start 1,2: ", LW8(0xBD700001), ", ", LW8(0xBD700002), "\n");
+	printLogHH("Start 3,4: ", LW8(0xBD700003), ", ", LW8(0xBD700004), "\n");
+	printLogHH("Start 5,6: ", LW8(0xBD700005), ", ", LW8(0xBD700006), "\n");
+	printLogHH("Start 7,E: ", LW8(0xBD700007), ", ", LW8(0xBD70000E), "\n");
+
+	printLog("Testing ATA_CMD_OP_TEST_UNIT_READY:\n");
+	testAtaReadCmd(0x0, 0, -1, 0, -1, 0, -1);
+
+	printLog("Testing ATA_CMD_OP_INQUIRY:\n");
+	testAtaReadCmd(0x12, 0x60, 4, 0, -1, 0, -1);
+
+	printLog("Testing ATA_CMD_OP_READ_STRUCTURE:\n");
+	testAtaReadCmd(0xAD, 0x24, 9, 0, -1, 0, -1);
+
+	printLog("Testing ATA_CMD_OP_REQUEST_SENSE:\n");
+	testAtaReadCmd(0x3, 0x12, 4, 0, -1, 0, -1);
+
+	printLog("Testing ATA_CMD_OP_MODE_SENSE_BIG:\n");
+	testAtaReadCmd(0x5A, 0x8, 8, 0x81A, 2, 0, -1);
+
+	printLog("Testing ATA_CMD_OP_MODE_SENSE_BIG:\n");
+	testAtaReadCmd(0x5A, 0x1C, 8, 0x81A, 2, 0, -1);
+
+	printLog("Testing ATA_CMD_OP_READ_BIG:\n");
+	testAtaReadCmd(0x28, 0x10, 5, 0x1, 8, 0xE0, 9);
+
+	printLog("Testing ATA_CMD_OP_UNKNOWN_F0:\n");
+	testAtaReadCmd(0xF0, 0x1, 1, 0, -1, 0, -1);
+
+	printLog("Testing ATA_CMD_OP_UNKNOWN_F1:\n");
+	testAtaReadCmd(0xF1, 0x8, 7, 0x10, 2, 0, -1);
+
+	printLog("Testing ATA_CMD_OP_UNKNOWN_F7:\n");
+	testAtaReadCmd(0xF7, 0x40, 2, 0, -1, 0, -1);
+
+	printLog("Testing ATA_CMD_OP_UNKNOWN_FC:\n");
+	testAtaReadCmd(0xFC, 0x100, 8, 0, -1, 0, -1);
+
+	ENABLE_INTR(intr);
+}
+#endif
 
 int readChar(SceUID fd) {
 	char c;
@@ -571,33 +976,57 @@ void patchSyscalls(char *filePath) {
 		}
 
 		char *name = nextWord(&line);
-		char *hexNid = nextWord(&line);
-		char *hexNumParams = nextWord(&line);
-		char *strParamTypes = nextWord(&line);
+		char *param1 = nextWord(&line);
+		char *param2 = nextWord(&line);
+		char *param3 = nextWord(&line);
 
 		if (strcmp(name, "BufferLogWrites") == 0) {
 			commonInfo->bufferLogWrites = 1;
 		} else if (strcmp(name, "LogBufferLength") == 0) {
-			commonInfo->maxLogBufferLength = parseHex(hexNid);
+			commonInfo->maxLogBufferLength = parseHex(param1);
+		} else if (strcmp(name, "FlushLogBuffer") == 0) {
+			flushLogBuffer();
 		} else if (strcmp(name, "DumpMemory") == 0) {
-			u32 startAddress = parseHex(hexNid);
-			u32 length = parseHex(hexNumParams);
-			char *fileName = strParamTypes;
+			u32 startAddress = parseHex(param1);
+			u32 length = parseHex(param2);
+			char *fileName = param3;
 
 			dumpMemory(startAddress, length, fileName);
 		} else if (strcmp(name, "DecryptMeimg") == 0) {
-			char *fromFileName = hexNid;
-			char *toFileName = hexNumParams;
+			char *fromFileName = param1;
+			char *toFileName = param2;
 
 			decryptMeimg(fromFileName, toFileName);
+		} else if (strcmp(name, "ExecuteKirkCommand") == 0) {
+			char *param4 = nextWord(&line);
+			char *param5 = nextWord(&line);
+
+			int cmd = parseHex(param1);
+			char *outputFileName = param2;
+			int outputSize = parseHex(param3);
+			char *inputFileName = param4;
+			int inputSize = parseHex(param5);
+
+			executeKirkCommand(cmd, outputFileName, outputSize, inputFileName, inputSize);
+		} else if (strcmp(name, "IdStorageRead") == 0) {
+			int key = parseHex(param1);
+			char *outputFileName = param2;
+
+			executeIdStorageRead(key, outputFileName);
+		} else if (strcmp(name, "DumpNand") == 0) {
+			dumpNand();
+#if TEST_ATA
+		} else if (strcmp(name, "TestAta") == 0) {
+			testAta();
+#endif
 		} else {
-			u32 nid = parseHex(hexNid);
-			u32 numParams = parseHex(hexNumParams);
+			u32 nid = parseHex(param1);
+			u32 numParams = parseHex(param2);
 			u32 flags = 0;
-			u32 paramTypes = parseParamTypes(strParamTypes, &flags);
+			u32 paramTypes = parseParamTypes(param3, &flags);
 
 			// If no numParams specified, take maximum number of params
-			if (strlen(hexNumParams) == 0) {
+			if (strlen(param2) == 0) {
 				numParams = 8;
 			}
 
@@ -797,6 +1226,38 @@ void printAllModules() {
 }
 #endif
 
+#if DUMP_PSAR
+void findPatches() {
+	int n, i, j;
+	int id[100];
+	int idcount = 0;
+	struct SceLibraryEntryTable *entry;
+
+	int result = sceKernelGetModuleIdList(id, sizeof(id), &idcount);
+	if (result != 0) {
+		return;
+	}
+
+	for (n = 0; n < idcount; n++) {
+		SceModule *module = sceKernelFindModuleByUID(id[n]);
+		for (i = 0; i < module->ent_size; i += entry->len * 4) {
+			entry = (struct SceLibraryEntryTable *) (module->ent_top + i);
+			if (entry->libname != NULL) {
+				int numEntries = entry->stubcount + entry->vstubcount;
+				u32 *entries = (u32 *) entry->entrytable;
+				for (j = 0; j < entry->stubcount; j++) {
+					if (entries[j] == 0x102DC8AF) {
+						sceUtilsBufferCopyByPollingWithRangeAddr = entries[numEntries + j] + 0x6BFC - 0x4A0C;
+						sceUtilsBufferCopyWithRangeAddr = entries[numEntries + j] + 0x6BF4 - 0x4A0C;
+					}
+				}
+			}
+		}
+	}
+}
+#endif
+
+
 int loadUserModule(SceSize args, void * argp) {
 	int userModuleId = -1;
 
@@ -843,7 +1304,8 @@ int loadUserModule(SceSize args, void * argp) {
 	int i;
 	int j;
 
-	for (i = 0; i < module->ent_size; i += entry->len * 4) {
+	int ent_size = module == NULL ? 0 : module->ent_size;
+	for (i = 0; i < ent_size; i += entry->len * 4) {
 		entry = (struct SceLibraryEntryTable *) (module->ent_top + i);
 		int numEntries = entry->stubcount + entry->vstubcount;
 		u32 *entries = (u32 *) entry->entrytable;
@@ -864,74 +1326,6 @@ int loadUserModule(SceSize args, void * argp) {
 
 	return 0;
 }
-
-#if DUMP_NAND
-void dumpNand() {
-	SceUID fdFuseId = ioOpen("ms0:/nand.fuseid", PSP_O_WRONLY | PSP_O_CREAT, 0777);
-	if (fdFuseId < 0) {
-		printLog("dumpNand - Cannot create nand.fuseid file\n");
-		return;
-	}
-
-	// sceSysregGetFuseId
-	u32 fuseId0 = *((u32 *) (0xBC100090));
-	u32 fuseId1 = *((u32 *) (0xBC100094));
-	ioWrite(fdFuseId, &fuseId0, 4);
-	ioWrite(fdFuseId, &fuseId1, 4);
-	ioClose(fdFuseId);
-
-	SceUID fdBlock = ioOpen("ms0:/nand.block", PSP_O_WRONLY | PSP_O_CREAT, 0777);
-	if (fdBlock < 0) {
-		printLog("dumpNand - Cannot create nand.block file\n");
-		return;
-	}
-
-	SceUID fdSpare = ioOpen("ms0:/nand.spare", PSP_O_WRONLY | PSP_O_CREAT, 0777);
-	if (fdSpare < 0) {
-		printLog("dumpNand - Cannot create nand.spare file\n");
-		return;
-	}
-
-	SceUID fdResult = ioOpen("ms0:/nand.result", PSP_O_WRONLY | PSP_O_CREAT, 0777);
-	if (fdResult < 0) {
-		printLog("dumpNand - Cannot create nand.result file\n");
-		return;
-	}
-
-	int pageSize = sceNandGetPageSize();
-	int pagesPerBlock = sceNandGetPagesPerBlock();
-	int totalBlocks = sceNandGetTotalBlocks();
-	printLogH("sceNandGetPageSize ", pageSize, "\n");
-	printLogH("sceNandGetPagesPerBlock ", pagesPerBlock, "\n");
-	printLogH("sceNandGetTotalBlocks ", totalBlocks, "\n");
-
-	int blockBufferSize = pageSize * pagesPerBlock;
-	void *blockBuffer = alloc(blockBufferSize);
-	int spareBufferSize = 16 * pagesPerBlock;
-	void *spareBuffer = alloc(spareBufferSize);
-
-	int block;
-	for (block = 0; block < totalBlocks; block++) {
-		u32 ppn = block * pagesPerBlock;
-
-		memset(blockBuffer, 0, blockBufferSize);
-		memset(spareBuffer, 0, spareBufferSize);
-
-		sceNandLock(0);
-		int result = sceNandReadPages(ppn, blockBuffer, NULL, pagesPerBlock);
-		sceNandReadExtraOnly(ppn, spareBuffer, pagesPerBlock);
-		sceNandUnlock();
-
-		ioWrite(fdBlock, blockBuffer, blockBufferSize);
-		ioWrite(fdSpare, spareBuffer, spareBufferSize);
-		ioWrite(fdResult, &result, 4);
-	}
-
-	ioClose(fdResult);
-	ioClose(fdSpare);
-	ioClose(fdBlock);
-}
-#endif
 
 #if DUMP_MEMORYSTICK
 void dumpMemoryStick() {
@@ -1029,31 +1423,40 @@ int module_start(SceSize args, void * argp) {
 
 	printLog("JpcspTrace - module_start\n");
 
-#if 0
-int intr = sceKernelCpuSuspendIntr();
-	checkNandDma();
-	SW(0x000, 0xBD101038);
-	checkNandDma();
-	SW(0x303, 0xBD101038);
-	checkNandDma();
-	SW(0x800 << 10, 0xBD101020);
-	SW(LW(0xBD101038) & 0xFEFC, 0xBD101038);
-	checkNandDma();
-	SW(0x301, 0xBD101024);
-	checkNandDma();
-	while (1) {
-		checkNandDma();
-		if ((((nandDmaIntrOld >> 8) & nandDmaIntrOld) & 0x3) != 0) {
-			printLog("Nand Dma completed\n");
-			break;
+	#if 0
+	int n = 0;
+	int i;
+	int count = 100000;
+	int memSize = count * 4;
+	u32 *timings = alloc(memSize);
+	SW(0x00000007, 0xBE000008);
+	SW(0x00000001, 0xBE000004);
+	SW(0x00000001, 0xBE000010);
+	SW(0x00000001, 0xBE000024);
+	for (i = 0; i < count; i++) {
+		u32 start = LW(0xBC600000);
+		SW((n << 16) | n, 0xBE000060);
+		u32 end = LW(0xBC600000);
+
+		u32 interrupt = LW(0xBE00001C);
+		u32 inProgress = LW(0xBE00000C);
+		u32 completed = LW(0xBE000028);
+		timings[i] = end - start;
+		timings[i] |= (interrupt & 0xFF) << 24;
+		timings[i] |= (inProgress & 0xFF) << 16;
+		timings[i] |= (completed & 0xFF) << 8;
+
+		n += 0x0010;
+		if (n > 0xFFFF) {
+			n = 0;
 		}
 	}
-sceKernelCpuResumeIntr(intr);
-#endif
-
-	#if DUMP_NAND
-	dumpNand();
+	SceUID fd = ioOpen("ms0:/audioTimings.dump", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	ioWrite(fd, timings, memSize);
+	ioClose(fd);
+	freeAlloc(timings, memSize);
 	#endif
+
 	#if DUMP_MEMORYSTICK
 	dumpMemoryStick();
 	#endif
@@ -1071,6 +1474,9 @@ sceKernelCpuResumeIntr(intr);
 	printAllSyscalls();
 	#endif
 
+#if DUMP_PSAR
+	findPatches();
+#endif
 	patchSyscalls("ms0:/seplugins/JpcspTrace.config");
 
 	// Load only JpcspTraceUser.prx if it is required

@@ -24,9 +24,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define DUMP_VIDEOCODEC_FRAMES	0
 #define DUMP_sceMpegBaseCscAvc_CALLS	0
 #define DUMP_sceMpegBaseYCrCbCopy_CALLS	0
-#define DUMP_NAND			0
 #define DUMP_MEMORYSTICK	0
 #define DUMP_MMIO			0
+#define TEST_ATA			0
+#define DUMP_PSAR			0
 
 
 #define ALIGN_UP(n, alignment) (((n) + ((alignment) - 1)) & ~((alignment) - 1))
@@ -50,6 +51,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define FLAG_LOG_AFTER_CALL	(1 << 1)
 #define FLAG_LOG_FREEMEM	(1 << 2)
 #define FLAG_LOG_STACK_USAGE	(1 << 3)
+#define FLAG_LOG_FLUSH_AFTER_CALL (1 << 4)
 
 #define NID_sceIoWrite	0x42EC03AC
 #define NID_sceIoOpen	0x109F50BC
@@ -59,6 +61,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define NID_sceVideocodecDecode 0xDBA273FA
 #define NID_sceMpegBaseCscAvc	0x91929A21
 #define NID_sceMpegBaseYCrCbCopy	0x7AC0321A
+#define NID_sceUtilsBufferCopyByPollingWithRange 0x77E97079
+#define NID_sceUtilsBufferCopyWithRange 0x4C537C72
 
 #define IS_sceIoOpen_NID(nid) ((nid) == NID_sceIoOpen || (nid) == NID_sceIoOpen_stargate)
 #define IS_sceIoClose_NID(nid) ((nid) == NID_sceIoClose || (nid) == NID_sceIoClose_stargate)

@@ -54,11 +54,30 @@ The format of the file JpcspTrace.config is the following:
   In this case, the log buffer is written to the log.txt file only when
   the buffer is full. This method has a better performance but some log data
   could be lost in case JpcspTrace is crashing.
+- the log buffer can be forced to be written to the log.txt through the command:
+    FlushLogBuffer
 - a memory range can be dumped to a file using the following command:
     DumpMemory 0xNNNNNNNN 0xNNN ms0:/filename
   where the first parameter is the address start, the second parameter
   is the length in bytes to be dumped and the third parameter is
   the file name where the memory will be dumped.
+- the complete NAND (flash0, flash1, flash2) can be dumped using the following command:
+    DumpNand
+  The following files will then be created:
+  - ms0:/nand.fuseid: will contain the 8-bytes fuseId of the PSP
+  - ms0:/nand.block: will contain the 32MB user data of the whole NAND
+  - ms0:/nand.spare: will contain the 1MB raw spare data of the whole NAND
+  - ms0:/nand.result: will contain the 2K 4-bytes result of each sceNandReadPages() call
+- a KIRK command can be execute and its output saved to a file by using the command:
+    ExecuteKirkCommand 0xN ms0:/output 0xNN ms0:/input 0xNN
+  where the first parameter is the command code, the second parameter is the file name
+  where the output will be written to, the third parameter is the size in bytes of the
+  output, the fourth parameter is the file name for reading the input and the
+  fifth parameter is the size in bytes of the input.
+- a page of the ID Storage can be read by using the command:
+    IdStorageRead 0xNNN ms0:/output
+  where the first parameter is the key number and the second parameter is the file
+  name where the output will be written to.
 - the file flash0:/kd/resource/meimg.img need to be decrypted on a real PSP
   before it can be used in Jpcsp for the "--reboot" function.
   The following command is decrypting this file:
@@ -110,6 +129,7 @@ The format of the file JpcspTrace.config is the following:
        the '!' flag, the free memory before and after the syscall can be logged.
   - >: this flag is not a parameter type but indicates that the stack usage
        of the function has to logged.
+  - %: flush the log file after executing the syscall
   All the parameter types are concatenated into one string, starting with
   the type of the first parameter ($a0). Unspecified parameter types default to "x".
 
