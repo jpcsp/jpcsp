@@ -63,12 +63,12 @@ public class sceNand extends HLEModule {
     public static final int pageSize = 0x200; // 512B per page
     public static final int pagesPerBlock = 0x20; // 16KB per block
     private static final int totalBlocks = 0x800; // 32MB in total
-    private static final int iplTablePpnStart = 0x80;
-    private static final int iplTablePpnEnd = 0x17F;
-    private static final int iplPpnStart = 0x200;
-    private static final int iplPpnEnd = 0x2FF;
-    private static final int idStoragePpnStart = 0x600;
-    private static final int idStoragePpnEnd = 0x7FF;
+    public static final int iplTablePpnStart = 0x80;
+    public static final int iplTablePpnEnd = 0x17F;
+    public static final int iplPpnStart = 0x200;
+    public static final int iplPpnEnd = 0x2FF;
+    public static final int idStoragePpnStart = 0x600;
+    public static final int idStoragePpnEnd = 0x7FF;
     private static final int iplId = 0x6DC64A38;
     private static final int idStorageId = 0xFFFF0101;
     private byte[] dumpBlocks;
@@ -77,9 +77,14 @@ public class sceNand extends HLEModule {
     private int[] ppnToLbn = new int[0x10000];
     private boolean writeProtected;
     private int scramble;
-    private Fat12VirtualFile vFile3;
-    private Fat12VirtualFile vFile603;
-    private Fat12VirtualFile vFile703;
+    private Fat12VirtualFile vFileFlash0;
+    private Fat12VirtualFile vFileFlash1;
+    private Fat12VirtualFile vFileFlash2;
+    public static final int flash0LbnStart = 0x2;
+    public static final int flash1LbnStart = 0x602;
+    public static final int flash2LbnStart = 0x702;
+    public static final int flash3LbnStart = 0x742;
+    public static final int flash4LbnStart = 0x77E;
     private IVirtualFile vFileIpl;
 
     @Override
@@ -156,22 +161,22 @@ public class sceNand extends HLEModule {
     		ppnToLbn[i] = stream.readUnsignedShort();
     	}
 
-    	boolean vFile3present = stream.readBoolean();
-    	if (vFile3present) {
-	    	openFile3();
-	    	vFile3.read(stream);
+    	boolean vFileFlash0Present = stream.readBoolean();
+    	if (vFileFlash0Present) {
+	    	openFileFlash0();
+	    	vFileFlash0.read(stream);
     	}
 
-    	boolean vFile603present = stream.readBoolean();
-    	if (vFile603present) {
-    		openFile603();
-    		vFile603.read(stream);
+    	boolean vFileFlash1Present = stream.readBoolean();
+    	if (vFileFlash1Present) {
+    		openFileFlash1();
+    		vFileFlash1.read(stream);
     	}
 
-    	boolean vFile703present = stream.readBoolean();
-    	if (vFile703present) {
-    		openFile703();
-    		vFile703.read(stream);
+    	boolean vFileFlash2Present = stream.readBoolean();
+    	if (vFileFlash2Present) {
+    		openFileFlash2();
+    		vFileFlash2.read(stream);
     	}
 
     	super.read(stream);
@@ -186,23 +191,23 @@ public class sceNand extends HLEModule {
     		stream.writeShort(ppnToLbn[i]);
     	}
 
-    	if (vFile3 != null) {
+    	if (vFileFlash0 != null) {
     		stream.writeBoolean(true);
-    		vFile3.write(stream);
+    		vFileFlash0.write(stream);
     	} else {
     		stream.writeBoolean(false);
     	}
 
-    	if (vFile603 != null) {
+    	if (vFileFlash1 != null) {
     		stream.writeBoolean(true);
-    		vFile603.write(stream);
+    		vFileFlash1.write(stream);
     	} else {
     		stream.writeBoolean(false);
     	}
 
-    	if (vFile703 != null) {
+    	if (vFileFlash2 != null) {
     		stream.writeBoolean(true);
-        	vFile703.write(stream);
+        	vFileFlash2.write(stream);
     	} else {
     		stream.writeBoolean(false);
     	}
@@ -361,7 +366,7 @@ public class sceNand extends HLEModule {
     	buffer.setValue8(511, (byte) 0xAA);
     }
 
-    private void readMasterBootRecord2(TPointer buffer) {
+    private void readMasterBootRecordFlash0(TPointer buffer) {
     	// First partition entry
     	int partitionEntry = 446;
 
@@ -380,7 +385,7 @@ public class sceNand extends HLEModule {
     	// LBA of first absolute sector in the partition
     	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, 0xBFE0);
+    	buffer.setUnalignedValue32(partitionEntry + 12, (flash1LbnStart - flash0LbnStart - 1) * 0x20);
 
     	// Second partition entry
     	partitionEntry += 16;
@@ -398,7 +403,7 @@ public class sceNand extends HLEModule {
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
     	buffer.setValue8(partitionEntry + 7, (byte) 0x80);
     	// LBA of first absolute sector in the partition
-    	buffer.setUnalignedValue32(partitionEntry + 8, 0xC000);
+    	buffer.setUnalignedValue32(partitionEntry + 8, (flash1LbnStart - flash0LbnStart) * 0x20);
     	// Number of sectors in partition
     	buffer.setUnalignedValue32(partitionEntry + 12, 0x2000);
 
@@ -407,7 +412,7 @@ public class sceNand extends HLEModule {
     	buffer.setValue8(511, (byte) 0xAA);
     }
 
-    private void readMasterBootRecord602(TPointer buffer) {
+    private void readMasterBootRecordFlash1(TPointer buffer) {
     	// First partition entry
     	int partitionEntry = 446;
 
@@ -426,7 +431,7 @@ public class sceNand extends HLEModule {
     	// LBA of first absolute sector in the partition
     	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, 0x1FE0);
+    	buffer.setUnalignedValue32(partitionEntry + 12, (flash2LbnStart - flash1LbnStart - 1) * 0x20);
 
     	// Second partition entry
     	partitionEntry += 16;
@@ -444,7 +449,7 @@ public class sceNand extends HLEModule {
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
     	buffer.setValue8(partitionEntry + 7, (byte) 0xA0);
     	// LBA of first absolute sector in the partition
-    	buffer.setUnalignedValue32(partitionEntry + 8, 0xE000);
+    	buffer.setUnalignedValue32(partitionEntry + 8, (flash2LbnStart - flash0LbnStart) * 0x20);
     	// Number of sectors in partition
     	buffer.setUnalignedValue32(partitionEntry + 12, 0x800);
 
@@ -453,7 +458,7 @@ public class sceNand extends HLEModule {
     	buffer.setValue8(511, (byte) 0xAA);
     }
 
-    private void readMasterBootRecord702(TPointer buffer) {
+    private void readMasterBootRecordFlash2(TPointer buffer) {
     	// First partition entry
     	int partitionEntry = 446;
 
@@ -472,7 +477,7 @@ public class sceNand extends HLEModule {
     	// LBA of first absolute sector in the partition
     	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, 0x7E0);
+    	buffer.setUnalignedValue32(partitionEntry + 12, (flash3LbnStart - flash2LbnStart - 1) * 0x20);
 
     	// Second partition entry
     	partitionEntry += 16;
@@ -490,7 +495,7 @@ public class sceNand extends HLEModule {
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
     	buffer.setValue8(partitionEntry + 7, (byte) 0xBE);
     	// LBA of first absolute sector in the partition
-    	buffer.setUnalignedValue32(partitionEntry + 8, 0xE800);
+    	buffer.setUnalignedValue32(partitionEntry + 8, (flash3LbnStart - flash0LbnStart) * 0x20);
     	// Number of sectors in partition
     	buffer.setUnalignedValue32(partitionEntry + 12, 0x780);
 
@@ -499,7 +504,7 @@ public class sceNand extends HLEModule {
     	buffer.setValue8(511, (byte) 0xAA);
     }
 
-    private void readMasterBootRecord742(TPointer buffer) {
+    private void readMasterBootRecordFlash3(TPointer buffer) {
     	// First partition entry
     	int partitionEntry = 446;
 
@@ -518,7 +523,7 @@ public class sceNand extends HLEModule {
     	// LBA of first absolute sector in the partition
     	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, 0x760);
+    	buffer.setUnalignedValue32(partitionEntry + 12, (flash4LbnStart - flash3LbnStart - 1) * 0x20);
 
     	// Boot signature
     	buffer.setValue8(510, (byte) 0x55);
@@ -721,8 +726,8 @@ public class sceNand extends HLEModule {
 		}
     }
 
-    private void openFile3() {
-		if (vFile3 != null) {
+    private void openFileFlash0() {
+		if (vFileFlash0 != null) {
 			return;
 		}
 
@@ -735,28 +740,28 @@ public class sceNand extends HLEModule {
 		// into the space available on flash0.
 		vfs = new CompressPrxVirtualFileSystem(vfs);
 
-		vFile3 = new Fat12VirtualFile("flash0:", vfs, 0xBFE0);
-		vFile3.scan();
+		vFileFlash0 = new Fat12VirtualFile("flash0:", vfs, 0xBFE0);
+		vFileFlash0.scan();
     }
 
-    private void openFile603() {
-		if (vFile603 != null) {
+    private void openFileFlash1() {
+		if (vFileFlash1 != null) {
 			return;
 		}
 
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
-		vFile603 = new Fat12VirtualFile("flash1:", vfs, 0x1FE0);
-		vFile603.scan();
+		vFileFlash1 = new Fat12VirtualFile("flash1:", vfs, 0x1FE0);
+		vFileFlash1.scan();
     }
 
-    private void openFile703() {
-		if (vFile703 != null) {
+    private void openFileFlash2() {
+		if (vFileFlash2 != null) {
 			return;
 		}
 
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
-		vFile703 = new Fat12VirtualFile("flash2:", vfs, 0x7E0);
-		vFile703.scan();
+		vFileFlash2 = new Fat12VirtualFile("flash2:", vfs, 0x7E0);
+		vFileFlash2.scan();
     }
 
     private boolean isEmptyPage(TPointer user) {
@@ -803,27 +808,27 @@ public class sceNand extends HLEModule {
 		    		} else if (ppnToLbn[n] == 0) {
 		    			// Master Boot Record
 		    			readMasterBootRecord0(user);
-		    		} else if (ppnToLbn[n] == 2) {
+		    		} else if (ppnToLbn[n] == flash0LbnStart) {
 		    			// Master Boot Record
-		    			readMasterBootRecord2(user);
-		    		} else if (ppnToLbn[n] >= 0x3 && ppnToLbn[n] < 0x602) {
-		    			openFile3();
-		    			readFile(user, vFile3, n, 0x3);
-		    		} else if (ppnToLbn[n] == 0x602) {
+		    			readMasterBootRecordFlash0(user);
+		    		} else if (ppnToLbn[n] > flash0LbnStart && ppnToLbn[n] < flash1LbnStart) {
+		    			openFileFlash0();
+		    			readFile(user, vFileFlash0, n, flash0LbnStart + 1);
+		    		} else if (ppnToLbn[n] == flash1LbnStart) {
 		    			// Master Boot Record
-		    			readMasterBootRecord602(user);
-		    		} else if (ppnToLbn[n] >= 0x603 && ppnToLbn[n] < 0x702) {
-		    			openFile603();
-		    			readFile(user, vFile603, n, 0x603);
-		    		} else if (ppnToLbn[n] == 0x702) {
+		    			readMasterBootRecordFlash1(user);
+		    		} else if (ppnToLbn[n] > flash1LbnStart && ppnToLbn[n] < flash2LbnStart) {
+		    			openFileFlash1();
+		    			readFile(user, vFileFlash1, n, flash1LbnStart + 1);
+		    		} else if (ppnToLbn[n] == flash2LbnStart) {
 		    			// Master Boot Record
-		    			readMasterBootRecord702(user);
-		    		} else if (ppnToLbn[n] >= 0x703 && ppnToLbn[n] < 0x742) {
-		    			openFile703();
-		    			readFile(user, vFile703, n, 0x703);
-		    		} else if (ppnToLbn[n] == 0x742) {
+		    			readMasterBootRecordFlash2(user);
+		    		} else if (ppnToLbn[n] > flash2LbnStart && ppnToLbn[n] < flash3LbnStart) {
+		    			openFileFlash2();
+		    			readFile(user, vFileFlash2, n, flash2LbnStart + 1);
+		    		} else if (ppnToLbn[n] == flash3LbnStart) {
 		    			// Master Boot Record
-		    			readMasterBootRecord742(user);
+		    			readMasterBootRecordFlash3(user);
 		    		}
 		    		user.add(pageSize);
 	    		}
@@ -927,7 +932,15 @@ public class sceNand extends HLEModule {
 	    		}
 
     			int n = ppn + i;
-	    		if (sceNandSpare.lbn != 0xFFFF && ppnToLbn[n] != sceNandSpare.lbn) {
+    			if (n >= iplTablePpnStart && n <= iplTablePpnEnd) {
+    				if (sceNandSpare.lbn != 0xFFFF) {
+    					ppnToLbn[n] = sceNandSpare.lbn;
+    				}
+    			} else if (n >= iplPpnStart && n <= iplPpnEnd) {
+    				if (sceNandSpare.lbn != 0xFFFF) {
+    					ppnToLbn[n] = sceNandSpare.lbn;
+    				}
+    			} else if (sceNandSpare.lbn != 0xFFFF && ppnToLbn[n] != sceNandSpare.lbn) {
 	    			int offset = n % pagesPerBlock;
 	    			for (int j = offset; j < ppnToLbn.length; j += pagesPerBlock) {
 	    				if (ppnToLbn[j] == sceNandSpare.lbn) {
@@ -962,15 +975,15 @@ public class sceNand extends HLEModule {
     			} else if (n >= iplPpnStart && n <= iplPpnEnd) {
     				openFileIpl();
     				writeFile(user, vFileIpl, n - iplPpnStart);
-    			} else if (ppnToLbn[n] >= 0x3 && ppnToLbn[n] < 0x602) {
-    				openFile3();
-	    			writeFile(user, vFile3, n, 0x3);
-	    		} else if (ppnToLbn[n] >= 0x603 && ppnToLbn[n] < 0x702) {
-	    			openFile603();
-	    			writeFile(user, vFile603, n, 0x603);
-	    		} else if (ppnToLbn[n] >= 0x703 && ppnToLbn[n] < 0x742) {
-	    			openFile703();
-	    			writeFile(user, vFile703, n, 0x703);
+    			} else if (ppnToLbn[n] > flash0LbnStart && ppnToLbn[n] < flash1LbnStart) {
+    				openFileFlash0();
+	    			writeFile(user, vFileFlash0, n, flash0LbnStart + 1);
+	    		} else if (ppnToLbn[n] > flash1LbnStart && ppnToLbn[n] < flash2LbnStart) {
+	    			openFileFlash1();
+	    			writeFile(user, vFileFlash1, n, flash1LbnStart + 1);
+	    		} else if (ppnToLbn[n] > flash2LbnStart && ppnToLbn[n] < flash3LbnStart) {
+	    			openFileFlash2();
+	    			writeFile(user, vFileFlash2, n, flash2LbnStart + 1);
     			} else {
     				log.error(String.format("hleNandWriteUserPages unimplemented write on ppn=0x%X, lbn=0x%X", n, ppnToLbn[n]));
     			}

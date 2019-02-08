@@ -19,6 +19,12 @@ package jpcsp.memory.mmio;
 import static jpcsp.HLE.Modules.sceNandModule;
 import static jpcsp.HLE.Modules.sceSysregModule;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_NAND_INTR;
+import static jpcsp.HLE.modules.sceNand.idStoragePpnEnd;
+import static jpcsp.HLE.modules.sceNand.idStoragePpnStart;
+import static jpcsp.HLE.modules.sceNand.iplPpnEnd;
+import static jpcsp.HLE.modules.sceNand.iplPpnStart;
+import static jpcsp.HLE.modules.sceNand.iplTablePpnEnd;
+import static jpcsp.HLE.modules.sceNand.iplTablePpnStart;
 import static jpcsp.HLE.modules.sceNand.pagesPerBlock;
 import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.lineSeparator;
@@ -236,7 +242,13 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 		int sector = ppn % pagesPerBlock;
 
 		int scramble = 0;
-		if (lbn == 0x003 && sector == 0) {
+		if (ppn >= iplTablePpnStart && ppn <= iplTablePpnEnd) {
+			scramble = 0; // IPL Table is not scrambled
+		} else if (ppn >= iplPpnStart && ppn <= iplPpnEnd) {
+			scramble = 0; // IPL is not scrambled
+		} else if (ppn >= idStoragePpnStart && ppn <= idStoragePpnEnd) {
+			scramble = 0; // ID Storage is not scrambled
+		} else if (lbn == 0x003 && sector == 0) {
 			scramble = getScrambleBootSector(fuseId, 0); // flash0 boot sector
 		} else if (lbn >= 0x004 && lbn < 0x601) {
 			scramble = getScrambleDataSector(fuseId, 0); // flash0
