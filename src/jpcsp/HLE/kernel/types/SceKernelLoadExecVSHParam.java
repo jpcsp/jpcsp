@@ -76,6 +76,6 @@ public class SceKernelLoadExecVSHParam extends pspAbstractMemoryMappedStructureV
 
 	@Override
 	public String toString() {
-		return String.format("args=0x%X, argp=0x%08X, key=%s('%s'), vshmainArgsSize=0x%X, vshmainArgs=0x%08X, configFile=%s('%s'), unknownString=0x%08X, flags=0x%X, extArgs=0x%X, extArgp=0x%08X, opt11=0x%X, vshmainArgs: %s", args, argp, keyAddr, key, vshmainArgsSize, vshmainArgs, configFileAddr, configFile, unknownString, flags, extArgs, extArgp, opt11, Utilities.getMemoryDump(vshmainArgs, vshmainArgsSize));
+		return String.format("args=0x%X, argp=0x%08X, key=%s('%s'), vshmainArgsSize=0x%X, vshmainArgs=0x%08X, configFile=%s('%s'), unknownString=0x%08X, flags=0x%X, extArgs=0x%X, extArgp=0x%08X, opt11=0x%X, vshmainArgs: %s", args, argp, keyAddr, key, vshmainArgsSize, vshmainArgs, configFileAddr, configFile, unknownString, flags, extArgs, extArgp, opt11, vshmainArgs == 0 ? "" : Utilities.getMemoryDump(vshmainArgs, vshmainArgsSize));
 	}
 }

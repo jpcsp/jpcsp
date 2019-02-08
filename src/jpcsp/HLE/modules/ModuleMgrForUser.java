@@ -697,6 +697,14 @@ public class ModuleMgrForUser extends HLEModule {
     	return path != null && path.startsWith("flash0:");
     }
 
+	public int getStartModuleHandler() {
+		return startModuleHandler;
+	}
+
+	public void setStartModuleHandler(int startModuleHandler) {
+		this.startModuleHandler = startModuleHandler;
+	}
+
     @HLEFunction(nid = 0xB7F46618, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModuleByID(int uid, @CanBeNull TPointer optionAddr) {
         String name = Modules.IoFileMgrForUserModule.getFileFilename(uid);
@@ -1067,68 +1075,6 @@ public class ModuleMgrForUser extends HLEModule {
         loadModuleContext.allocMem = true;
 
         return hleKernelLoadModule(loadModuleContext);
-    }
-
-    /**
-     * Sets a function to be called just before module_start of a module is gonna be called (useful for patching purposes)
-     *
-     * @param startModuleHandler - The function, that will receive the module structure before the module is started.
-     *
-     * @returns - The previous set function (NULL if none);
-     * @Note: because only one handler function is handled by HEN, you should
-     *        call the previous function in your code.
-     *
-     * @Example: 
-     *
-     * STMOD_HANDLER previous = NULL;
-     *
-     * int OnModuleStart(SceModule2 *mod);
-     *
-     * void somepointofmycode()
-     * {
-     *     previous = sctrlHENSetStartModuleHandler(OnModuleStart);
-     * }
-     *
-     * int OnModuleStart(SceModule2 *mod)
-     * {
-     *     if (strcmp(mod->modname, "vsh_module") == 0)
-     *     {
-     *         // Do something with vsh module here
-     *     }
-     *
-     *     if (!previous)
-     *         return 0;
-     *
-     *     // Call previous handler
-     *
-     *     return previous(mod);
-     * }
-     *
-     * @Note2: The above example should be compiled with the flag -fno-pic
-     *         in order to avoid problems with gp register that may lead to a crash.
-     *
-     */
-    @HLEFunction(nid = 0x1C90BECB, version = 150)
-    public int sctrlHENSetStartModuleHandler(TPointer startModuleHandler) {
-    	int previousStartModuleHandler = this.startModuleHandler;
-
-    	this.startModuleHandler = startModuleHandler.getAddress();
-
-    	return previousStartModuleHandler;
-    }
-
-    /** 
-     * Finds a driver 
-     * 
-     * @param drvname - The name of the driver (without ":" or numbers) 
-     * 
-     * @returns the driver if found, NULL otherwise 
-     * 
-     */ 
-    @HLEUnimplemented
-    @HLEFunction(nid = 0x78E46415, version = 150)
-    public int sctrlHENFindDriver(String drvname) {
-    	return 0;
     }
 
     @HLEUnimplemented

@@ -270,7 +270,8 @@ public class HLEModuleManager {
         sceClockgen(Modules.sceClockgenModule),
         sceCodec(Modules.sceCodecModule),
         sceMesgd(Modules.sceMesgdModule),
-        sceVshBridge(Modules.sceVshBridgeModule);
+        sceVshBridge(Modules.sceVshBridgeModule),
+        SystemCtrlForKernel(Modules.SystemCtrlForKernelModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
