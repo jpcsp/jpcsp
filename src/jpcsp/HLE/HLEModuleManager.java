@@ -188,7 +188,7 @@ public class HLEModuleManager {
         mp4msv(Modules.mp4msvModule, new String[] { "mp4msv" }, "flash0:/kd/mp4msv.prx"),
         sceHttp(Modules.sceHttpModule, new String[] { "libhttp", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }, "flash0:/kd/libhttp.prx"),
         sceHttps(Modules.sceHttpsModule, new String[] { "libhttp", "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }, "flash0:/kd/libhttp.prx"),
-        sceHttpStorage(Modules.sceHttpStorageModule, new String[] { "http_storage" }, "flash0:/kd/http_storage.prx"),
+        sceHttpStorage(Modules.sceHttpStorageModule, new String[] { "http_storage", "PSP_MODULE_NET_HTTPSTORAGE" }, "flash0:/kd/http_storage.prx"),
         sceSsl(Modules.sceSslModule, new String[] { "libssl", "PSP_NET_MODULE_SSL", "PSP_MODULE_NET_SSL" }, "flash0:/kd/libssl.prx"),
         sceP3da(Modules.sceP3daModule),
         sceGameUpdate(Modules.sceGameUpdateModule, new String[] { "libgameupdate" }),

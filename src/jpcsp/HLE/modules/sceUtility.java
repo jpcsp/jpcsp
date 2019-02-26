@@ -4983,13 +4983,11 @@ public class sceUtility extends HLEModule {
 
     @HLEFunction(nid = 0xE49BFE92, version = 303, checkInsideInterrupt = true)
     public int sceUtilityUnloadModule(int module) {
-        String[] moduleNames = getModuleNames(module);
-        int result = 0;
-        for (String moduleName : moduleNames) {
-        	log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
-        	int unloadResult = hleUtilityUnloadModule(module);
-        	if (unloadResult < 0) {
-        		result = unloadResult;
+        int result = hleUtilityUnloadModule(module);
+        if (log.isDebugEnabled()) {
+            String[] moduleNames = getModuleNames(module);
+        	for (String moduleName : moduleNames) {
+        		log.debug(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
         	}
         }
 
