@@ -131,6 +131,11 @@ public class sceIdStorage extends HLEModule {
 				// Used to display the MAC address in the VSH
 				buffer.setArray(0, Wlan.getMacAddress(), Wlan.MAC_ADDRESS_LENGTH);
 				break;
+			case 0x0045:
+				// Used by thread SceWlanChipInit
+				buffer.setUnsignedValue16(0, 0x0002);
+				buffer.setUnsignedValue8(2, 0x01);
+				break;
 			case 0x0100:
 				// Used by sceChkreg_driver_6894A027()
 				// A certificate is stored at offset 0x38
