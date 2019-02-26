@@ -536,6 +536,10 @@ public class HTTPServer {
 				additionalData = additionalData.replaceAll("\\&consoleid=[0-9a-fA-F]*", "");
 			}
 
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("doProxy additional data: '%s'", additionalData));
+			}
+
 			connection.setDoOutput(true);
 			OutputStream dataStream = connection.getOutputStream();
 			dataStream.write(additionalData.getBytes());

@@ -3139,12 +3139,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x278C0DF5, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, @CanBeNull @BufferInfo(usage=Usage.in) TPointer32 timeoutAddr) {
         return hleKernelWaitThreadEnd(currentThread, uid, timeoutAddr, false, true);
     }
 
     @HLEFunction(nid = 0x840E8133, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelWaitThreadEndCB(@CheckArgument("checkThreadID") int uid, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelWaitThreadEndCB(@CheckArgument("checkThreadID") int uid, @CanBeNull @BufferInfo(usage=Usage.in) TPointer32 timeoutAddr) {
         int result = hleKernelWaitThreadEnd(currentThread, uid, timeoutAddr, true, true);
         checkCallbacks();
 
@@ -3212,12 +3212,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x4E3A1105, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelWaitSema(@CheckArgument("checkSemaID") int semaid, int signal, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelWaitSema(@CheckArgument("checkSemaID") int semaid, int signal, @CanBeNull @BufferInfo(usage=Usage.in) TPointer32 timeoutAddr) {
         return Managers.semas.sceKernelWaitSema(semaid, signal, timeoutAddr);
     }
 
     @HLEFunction(nid = 0x6D212BAC, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelWaitSemaCB(@CheckArgument("checkSemaID") int semaid, int signal, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelWaitSemaCB(@CheckArgument("checkSemaID") int semaid, int signal, @CanBeNull @BufferInfo(usage=Usage.in) TPointer32 timeoutAddr) {
         return Managers.semas.sceKernelWaitSemaCB(semaid, signal, timeoutAddr);
     }
 
@@ -3257,12 +3257,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x402FCF22, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelWaitEventFlag(@CheckArgument("checkEventFlagID") int uid, int bits, int wait, @CanBeNull TPointer32 outBitsAddr, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelWaitEventFlag(@CheckArgument("checkEventFlagID") int uid, int bits, int wait, @CanBeNull TPointer32 outBitsAddr, @CanBeNull @BufferInfo(usage=Usage.in) TPointer32 timeoutAddr) {
         return Managers.eventFlags.sceKernelWaitEventFlag(uid, bits, wait, outBitsAddr, timeoutAddr);
     }
 
     @HLEFunction(nid = 0x328C546A, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelWaitEventFlagCB(@CheckArgument("checkEventFlagID") int uid, int bits, int wait, @CanBeNull TPointer32 outBitsAddr, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelWaitEventFlagCB(@CheckArgument("checkEventFlagID") int uid, int bits, int wait, @CanBeNull TPointer32 outBitsAddr, @CanBeNull @BufferInfo(usage=Usage.in) TPointer32 timeoutAddr) {
         return Managers.eventFlags.sceKernelWaitEventFlagCB(uid, bits, wait, outBitsAddr, timeoutAddr);
     }
 
