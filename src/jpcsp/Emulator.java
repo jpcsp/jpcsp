@@ -47,6 +47,7 @@ import jpcsp.graphics.RE.software.RendererExecutor;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Model;
+import jpcsp.hardware.Nand;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.MemorySections;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
@@ -229,6 +230,7 @@ public class Emulator implements Runnable {
         moduleLoaded = false;
 
         Model.setModel(Settings.getInstance().readInt("emu.model"));
+        Nand.init();
         HLEModuleManager.getInstance().stopModules();
         NIDMapper.getInstance().unloadAll();
         RuntimeContext.reset();

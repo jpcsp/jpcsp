@@ -19,6 +19,9 @@ package jpcsp.HLE.modules;
 import static java.lang.Integer.rotateRight;
 import static jpcsp.HLE.HLEModuleManager.InternalSyscallNid;
 import static jpcsp.HLE.modules.sceIdStorage.idStorageKeys;
+import static jpcsp.hardware.Nand.getTotalPages;
+import static jpcsp.hardware.Nand.pageSize;
+import static jpcsp.hardware.Nand.pagesPerBlock;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -49,8 +52,10 @@ import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.patch.PatchFileVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceNandSpare;
 import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.hardware.Nand;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.memory.mmio.MMIOHandlerNand;
 import jpcsp.settings.Settings;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -60,9 +65,6 @@ public class sceNand extends HLEModule {
     public static Logger log = Modules.getLogger("sceNand");
 	private static final int STATE_VERSION = 0;
     private static final boolean emulateNand = true;
-    public static final int pageSize = 0x200; // 512B per page
-    public static final int pagesPerBlock = 0x20; // 16KB per block
-    private static final int totalBlocks = 0x800; // 32MB in total
     public static final int iplTablePpnStart = 0x80;
     public static final int iplTablePpnEnd = 0x17F;
     public static final int iplPpnStart = 0x200;
@@ -74,23 +76,29 @@ public class sceNand extends HLEModule {
     private byte[] dumpBlocks;
     private byte[] dumpSpares;
     private int[] dumpResults;
-    private int[] ppnToLbn = new int[0x10000];
+    private int[] ppnToLbn;
     private boolean writeProtected;
     private int scramble;
     private Fat12VirtualFile vFileFlash0;
     private Fat12VirtualFile vFileFlash1;
     private Fat12VirtualFile vFileFlash2;
     public static final int flash0LbnStart = 0x2;
-    public static final int flash1LbnStart = 0x602;
-    public static final int flash2LbnStart = 0x702;
-    public static final int flash3LbnStart = 0x742;
-    public static final int flash4LbnStart = 0x77E;
+    public static int flash1LbnStart;
+    public static int flash2LbnStart;
+    public static int flash3LbnStart;
+    public static int flash4LbnStart;
     private IVirtualFile vFileIpl;
 
     @Override
 	public void start() {
 		writeProtected = true;
 		scramble = 0;
+
+		ppnToLbn = new int[getTotalPages()];
+		flash1LbnStart = flash0LbnStart + (getTotalSectorsFlash0() / pagesPerBlock) + 1; // 0x602 on PSP-1000, 0xA42 on PSP-2000
+		flash2LbnStart = flash1LbnStart + (getTotalSectorsFlash1() / pagesPerBlock) + 1; // 0x702 on PSP-1000, 0xB82 on PSP-2000
+		flash3LbnStart = flash2LbnStart + (getTotalSectorsFlash2() / pagesPerBlock) + 1; // 0x742 on PSP-1000, 0xDCA on PSP-2000
+		flash4LbnStart = flash3LbnStart + (getTotalSectorsFlash3() / pagesPerBlock) + 1; // 0x77E on PSP-1000, 0xE06 on PSP-2000
 
 		dumpBlocks = readBytes("nand.block");
 		dumpSpares = readBytes("nand.spare");
@@ -149,6 +157,40 @@ public class sceNand extends HLEModule {
 			}
 		}
 
+		if (!emulateNand && log.isTraceEnabled()) {
+			// Brute force search for boot sectors
+			long fuseId = Modules.sceSysregModule.sceSysregGetFuseId();
+			// All possible scramble values
+			final int scrambles[] = new int[7];
+			int n = 0;
+			scrambles[n++] = MMIOHandlerNand.getScrambleBootSector(fuseId, 0);
+			scrambles[n++] = MMIOHandlerNand.getScrambleDataSector(fuseId, 0);
+			scrambles[n++] = 0;
+			scrambles[n++] = MMIOHandlerNand.getScrambleBootSector(fuseId, 2);
+			scrambles[n++] = MMIOHandlerNand.getScrambleDataSector(fuseId, 2);
+			scrambles[n++] = MMIOHandlerNand.getScrambleBootSector(fuseId, 3);
+			scrambles[n++] = MMIOHandlerNand.getScrambleDataSector(fuseId, 3);
+
+			TPointer user = Utilities.allocatePointer(pageSize);
+			int maxPpn = dumpBlocks.length / pageSize;
+			for (int ppn = 0; ppn < maxPpn; ppn++) {
+				for (int i = 0; i < scrambles.length; i++) {
+					int scramble = scrambles[i];
+					if (scramble != 0) {
+						sceNandSetScramble(scramble);
+						descramblePage(ppn, user, dumpBlocks, ppn * pageSize);
+					} else {
+						Utilities.writeBytes(user, pageSize, dumpBlocks, ppn * pageSize);
+					}
+
+					// Boot sector found?
+					if (user.getUnsignedValue16(0) == 0x00EB && user.getUnsignedValue8(2) == 0x90 && user.getUnsignedValue16(510) == 0xAA55) {
+						log.trace(String.format("Boot sector ppn=0x%X: %s", ppn, Utilities.getMemoryDump(user, pageSize)));
+					}
+				}
+			}
+		}
+
 		super.start();
 	}
 
@@ -157,8 +199,18 @@ public class sceNand extends HLEModule {
     	stream.readVersion(STATE_VERSION);
     	writeProtected = stream.readBoolean();
     	scramble = stream.readInt();
-    	for (int i = 0; i < ppnToLbn.length; i++) {
+
+    	int stateNumberPages = stream.readInt();
+    	int numberPages = Math.min(stateNumberPages, ppnToLbn.length);
+    	for (int i = 0; i < numberPages; i++) {
     		ppnToLbn[i] = stream.readUnsignedShort();
+    	}
+    	if (stateNumberPages > numberPages) {
+    		stream.skipBytes(2 * (stateNumberPages - numberPages));
+    	} else {
+			for (int i = numberPages; i < ppnToLbn.length; i++) {
+				ppnToLbn[i] = 0;
+			}
     	}
 
     	boolean vFileFlash0Present = stream.readBoolean();
@@ -187,6 +239,8 @@ public class sceNand extends HLEModule {
     	stream.writeVersion(STATE_VERSION);
     	stream.writeBoolean(writeProtected);
     	stream.writeInt(scramble);
+
+    	stream.writeInt(ppnToLbn.length);
     	for (int i = 0; i < ppnToLbn.length; i++) {
     		stream.writeShort(ppnToLbn[i]);
     	}
@@ -726,6 +780,22 @@ public class sceNand extends HLEModule {
 		}
     }
 
+    private static int getTotalSectorsFlash0() {
+		return Nand.getTotalSizeMb() <= 32 ? 0xBFE0 : 0x147E0;
+    }
+
+    private static int getTotalSectorsFlash1() {
+		return Nand.getTotalSizeMb() <= 32 ? 0x1FE0 : 0x27E0;
+    }
+
+    private static int getTotalSectorsFlash2() {
+		return Nand.getTotalSizeMb() <= 32 ? 0x7E0 : 0x48E0;
+    }
+
+    private static int getTotalSectorsFlash3() {
+		return 0x760;
+    }
+
     private void openFileFlash0() {
 		if (vFileFlash0 != null) {
 			return;
@@ -740,7 +810,7 @@ public class sceNand extends HLEModule {
 		// into the space available on flash0.
 		vfs = new CompressPrxVirtualFileSystem(vfs);
 
-		vFileFlash0 = new Fat12VirtualFile("flash0:", vfs, 0xBFE0);
+		vFileFlash0 = new Fat12VirtualFile("flash0:", vfs, getTotalSectorsFlash0());
 		vFileFlash0.scan();
     }
 
@@ -750,7 +820,7 @@ public class sceNand extends HLEModule {
 		}
 
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
-		vFileFlash1 = new Fat12VirtualFile("flash1:", vfs, 0x1FE0);
+		vFileFlash1 = new Fat12VirtualFile("flash1:", vfs, getTotalSectorsFlash1());
 		vFileFlash1.scan();
     }
 
@@ -760,7 +830,7 @@ public class sceNand extends HLEModule {
 		}
 
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
-		vFileFlash2 = new Fat12VirtualFile("flash2:", vfs, 0x7E0);
+		vFileFlash2 = new Fat12VirtualFile("flash2:", vfs, getTotalSectorsFlash2());
 		vFileFlash2.scan();
     }
 
@@ -784,7 +854,7 @@ public class sceNand extends HLEModule {
 	    		if (scramble != 0) {
 	    			descramble(ppn, user, len, dumpBlocks, ppn * pageSize);
 	    		} else {
-	    			Utilities.writeBytes(user.getAddress(), len * pageSize, dumpBlocks, ppn * pageSize);
+	    			Utilities.writeBytes(user, len * pageSize, dumpBlocks, ppn * pageSize);
 	    		}
 	    	} else {
 	    		for (int i = 0; i < len; i++) {
@@ -839,11 +909,11 @@ public class sceNand extends HLEModule {
         	if (dumpSpares != null && !emulateNand) {
         		if (spareUserEcc) {
         			// Write the userEcc
-        			Utilities.writeBytes(spare.getAddress(), len * 16, dumpSpares, ppn * 16);
+        			Utilities.writeBytes(spare, len * 16, dumpSpares, ppn * 16);
         		} else {
         			// Do not return the userEcc
     	    		for (int i = 0; i < len; i++) {
-    	    			Utilities.writeBytes(spare.getAddress() + i * 12, 12, dumpSpares, (ppn + i) * 16 + 4);
+    	    			Utilities.writeBytes(new TPointer(spare, i * 12), 12, dumpSpares, (ppn + i) * 16 + 4);
     	    		}
         		}
         	} else {
@@ -1114,7 +1184,7 @@ public class sceNand extends HLEModule {
     @HLEFunction(nid = 0xC1376222, version = 150, jumpCall = true)
     public int sceNandGetTotalBlocks() {
     	// Has no parameters
-    	return totalBlocks;
+    	return Nand.getTotalBlocks();
     }
 
     @HLEUnimplemented

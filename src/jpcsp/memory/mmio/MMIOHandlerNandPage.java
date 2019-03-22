@@ -16,11 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.hardware.Nand.pageSize;
+
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.HLE.modules.sceNand;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -30,7 +31,7 @@ public class MMIOHandlerNandPage extends MMIOHandlerBase {
 	public static final int BASE_ADDRESS1 = 0xBFF00000;
 	public static final int BASE_ADDRESS2 = 0x9FF00000;
 	private static MMIOHandlerNandPage instance;
-	private final int[] data = new int[sceNand.pageSize >> 2];
+	private final int[] data = new int[pageSize >> 2];
 	private final int[] ecc = new int[4];
 
 	public static MMIOHandlerNandPage getInstance() {

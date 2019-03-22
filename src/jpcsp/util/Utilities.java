@@ -1483,6 +1483,14 @@ public class Utilities {
         memoryWriter.flush();
     }
 
+    public static void writeBytes(TPointer address, int length, byte[] bytes, int offset) {
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, length, 1);
+        for (int i = 0; i < length; i++) {
+            memoryWriter.writeNext(bytes[i + offset] & 0xFF);
+        }
+        memoryWriter.flush();
+    }
+
     public static void readInt32(int address, int length, int[] a, int offset) {
     	final int length4 = length >> 2;
 		// Optimize the most common case

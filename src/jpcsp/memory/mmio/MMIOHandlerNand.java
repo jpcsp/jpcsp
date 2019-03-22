@@ -25,7 +25,8 @@ import static jpcsp.HLE.modules.sceNand.iplPpnEnd;
 import static jpcsp.HLE.modules.sceNand.iplPpnStart;
 import static jpcsp.HLE.modules.sceNand.iplTablePpnEnd;
 import static jpcsp.HLE.modules.sceNand.iplTablePpnStart;
-import static jpcsp.HLE.modules.sceNand.pagesPerBlock;
+import static jpcsp.hardware.Nand.pageSize;
+import static jpcsp.hardware.Nand.pagesPerBlock;
 import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.lineSeparator;
 
@@ -82,7 +83,7 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 	private int dmaInterrupt;
 	private int unknown200;
 	private boolean needPageAddress;
-	private final int[] scrambleBuffer = new int[sceNand.pageSize >> 2];
+	private final int[] scrambleBuffer = new int[pageSize >> 2];
 
 	public static MMIOHandlerNand getInstance() {
 		if (instance == null) {
@@ -213,7 +214,7 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 		return data[dataIndex++];
 	}
 
-	private int getScrambleBootSector(long fuseId, int partitionNumber) {
+	public static int getScrambleBootSector(long fuseId, int partitionNumber) {
 		int scramble = ((int) fuseId) ^ Integer.rotateLeft((int) (fuseId >> 32), partitionNumber * 2);
 		if (scramble == 0) {
 			scramble = Integer.rotateLeft(0xC4536DE6, partitionNumber);
@@ -222,7 +223,7 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 		return scramble;
 	}
 
-	private int getScrambleDataSector(long fuseId, int partitionNumber) {
+	public static int getScrambleDataSector(long fuseId, int partitionNumber) {
 		if (partitionNumber == 3) {
 			return 0x3C22812A;
 		}
@@ -296,7 +297,7 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 				sceNandModule.hleNandWriteUserPages(ppn, user, 1, true, true);
 
 				if (log.isDebugEnabled()) {
-					byte[] userBytes = new byte[sceNand.pageSize];
+					byte[] userBytes = new byte[pageSize];
 					user = scramble != 0 ? scrambleBufferMemory.getPointer() : pageDataMemory.getPointer();
 					for (int i = 0; i < userBytes.length; i++) {
 						userBytes[i] = user.getValue8(i);
@@ -313,10 +314,11 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 			} else {
 				TPointer user = scramble != 0 ? scrambleBufferMemory.getPointer() : pageDataMemory.getPointer();
 				TPointer spare = pageEccMemory.getPointer();
+				sceNandModule.sceNandSetScramble(scramble);
 				sceNandModule.hleNandReadPages(ppn, user, spare, 1, true, true, true);
 
 				if (log.isDebugEnabled()) {
-					byte[] bytes = new byte[sceNand.pageSize];
+					byte[] bytes = new byte[pageSize];
 					user = scramble != 0 ? scrambleBufferMemory.getPointer() : pageDataMemory.getPointer();
 					for (int i = 0; i < bytes.length; i++) {
 						bytes[i] = user.getValue8(i);

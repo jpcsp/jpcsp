@@ -82,7 +82,12 @@ public class Fat12VirtualFile extends FatVirtualFile {
     	storeSectorInt16(currentSector, 17, numberOfRootDirectoryEntries);
 
     	// Total sectors
-    	storeSectorInt16(currentSector, 19, totalSectors);
+    	if (totalSectors < 0x10000) {
+    		storeSectorInt16(currentSector, 19, totalSectors);
+    	} else {
+    		// If 0, use value at offset 32
+    		storeSectorInt16(currentSector, 19, 0);
+    	}
 
     	// Media type
     	storeSectorInt8(currentSector, 21, 0xF8); // Fixed disk
@@ -101,7 +106,11 @@ public class Fat12VirtualFile extends FatVirtualFile {
     	storeSectorInt32(currentSector, 28, 0);
 
     	// Total sectors
-    	storeSectorInt32(currentSector, 32, 4);
+    	if (totalSectors < 0x10000) {
+    		storeSectorInt32(currentSector, 32, 4);
+    	} else {
+    		storeSectorInt32(currentSector, 32, totalSectors);
+    	}
 
     	// Physical driver number (0x80 for first fixed disk)
     	storeSectorInt8(currentSector, 36, 0x80);
