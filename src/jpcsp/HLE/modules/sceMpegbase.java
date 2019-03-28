@@ -296,17 +296,19 @@ public class sceMpegbase extends HLEModule {
 		}
 
         // Write the ABGR image
-		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && RuntimeContext.hasMemoryInt()) {
+		if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && RuntimeContext.hasMemoryInt(bufferRGB)) {
 			// Optimize the most common case
 			int pixelIndex = rangeY * width + rangeX;
-        	int addr = destAddr;
+        	Memory mem = bufferRGB.getMemory();
+        	int[] memoryInt = mem.getMemoryInt(destAddr);
+        	int addrOffset = mem.getMemoryIntOffset(destAddr);
 	        for (int i = 0; i < rangeHeight; i++) {
-	        	System.arraycopy(abgr, pixelIndex, RuntimeContext.getMemoryInt(), addr >> 2, rangeWidth);
+	        	System.arraycopy(abgr, pixelIndex, memoryInt, addrOffset, rangeWidth);
 	        	pixelIndex += width;
-	        	addr += bufferWidth * bytesPerPixel;
+	        	addrOffset += bufferWidth;
 	        }
 		} else {
-        	int addr = destAddr;
+        	TPointer addr = new TPointer(bufferRGB);
 	        for (int i = 0; i < rangeHeight; i++) {
 	        	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, rangeWidth * bytesPerPixel, bytesPerPixel);
 	        	int pixelIndex = (i + rangeY) * width + rangeX;
@@ -316,7 +318,7 @@ public class sceMpegbase extends HLEModule {
 	        		memoryWriter.writeNext(pixelColor);
 	        	}
 	        	memoryWriter.flush();
-	        	addr += bufferWidth * bytesPerPixel;
+	        	addr.add(bufferWidth * bytesPerPixel);
 	        }
 		}
 		releaseIntBuffer(abgr);

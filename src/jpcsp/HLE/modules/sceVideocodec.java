@@ -276,16 +276,30 @@ public class sceVideocodec extends HLEModule {
         		int step = (sizeY1 + sizeY2 + sizeCr1 + sizeCr2) * buffers.length;
         		for (int i = 0; i < buffers.length; i++) {
         			buffers[i][0] = new TPointer(base1);
+        			buffers[i][0].memset((byte) 0x00, sizeY1);
         			buffers[i][1] = new TPointer(buffers[i][0], step);
+        			buffers[i][1].memset((byte) 0x00, sizeY1);
         			buffers[i][2] = new TPointer(base1, sizeY1);
+        			buffers[i][2].memset((byte) 0x00, sizeY2);
         			buffers[i][3] = new TPointer(buffers[i][2], step);
+        			buffers[i][3].memset((byte) 0x00, sizeY2);
         			buffers[i][4] = new TPointer(base2);
+        			buffers[i][4].memset((byte) 0x80, sizeCr1);
         			buffers[i][5] = new TPointer(buffers[i][4], step);
+        			buffers[i][5].memset((byte) 0x80, sizeCr1);
         			buffers[i][6] = new TPointer(base2, sizeCr1);
+        			buffers[i][6].memset((byte) 0x80, sizeCr2);
         			buffers[i][7] = new TPointer(buffers[i][6], step);
+        			buffers[i][7].memset((byte) 0x80, sizeCr2);
 
         			base1.add(sizeY1 + sizeY2);
         			base2.add(sizeCr1 + sizeCr2);
+
+        			if (log.isDebugEnabled()) {
+        				for (int j = 0; j < buffers[i].length; j++) {
+        					log.debug(String.format("sceVideocodecDecode allocated buffers[%d][%d]=%s", i, j, buffers[i][j]));
+        				}
+        			}
         		}
         	}
 
