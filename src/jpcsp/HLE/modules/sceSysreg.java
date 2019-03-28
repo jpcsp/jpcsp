@@ -987,14 +987,12 @@ public class sceSysreg extends HLEModule {
     	return Model.getTachyonVersion();
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x4F46EEDE, version = 150)
     public long sceSysregGetFuseId() {
     	// Has no parameters
     	return fuseId;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x8F4F4E96, version = 150)
     public int sceSysregGetFuseConfig() {
     	// Has no parameters
