@@ -47,6 +47,8 @@ import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.compress.CompressPrxVirtualFileSystem;
 import jpcsp.HLE.VFS.fat.Fat12VirtualFile;
+import jpcsp.HLE.VFS.fat.Fat16VirtualFile;
+import jpcsp.HLE.VFS.fat.FatVirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.patch.PatchFileVirtualFileSystem;
@@ -79,9 +81,9 @@ public class sceNand extends HLEModule {
     private int[] ppnToLbn;
     private boolean writeProtected;
     private int scramble;
-    private Fat12VirtualFile vFileFlash0;
-    private Fat12VirtualFile vFileFlash1;
-    private Fat12VirtualFile vFileFlash2;
+    private FatVirtualFile vFileFlash0;
+    private FatVirtualFile vFileFlash1;
+    private FatVirtualFile vFileFlash2;
     public static final int flash0LbnStart = 0x2;
     public static int flash1LbnStart;
     public static int flash2LbnStart;
@@ -98,20 +100,21 @@ public class sceNand extends HLEModule {
 		flash1LbnStart = flash0LbnStart + (getTotalSectorsFlash0() / pagesPerBlock) + 1; // 0x602 on PSP-1000, 0xA42 on PSP-2000
 		flash2LbnStart = flash1LbnStart + (getTotalSectorsFlash1() / pagesPerBlock) + 1; // 0x702 on PSP-1000, 0xB82 on PSP-2000
 		flash3LbnStart = flash2LbnStart + (getTotalSectorsFlash2() / pagesPerBlock) + 1; // 0x742 on PSP-1000, 0xDCA on PSP-2000
-		flash4LbnStart = flash3LbnStart + (getTotalSectorsFlash3() / pagesPerBlock) + 1; // 0x77E on PSP-1000, 0xE06 on PSP-2000
+		flash4LbnStart = flash3LbnStart + (getTotalSectorsFlash3() / pagesPerBlock) + 1; // 0x77E on PSP-1000, 0xDFE on PSP-2000
 
 		dumpBlocks = readBytes("nand.block");
 		dumpSpares = readBytes("nand.spare");
 		dumpResults = readInts("nand.result");
 
 		int lbn = 0;
+		final int startPpnToLbn = idStoragePpnEnd + 1;
 		for (int ppn = 0; ppn < ppnToLbn.length; ppn++) {
-			if (ppn < 0x800) {
+			if (ppn < startPpnToLbn) {
     			ppnToLbn[ppn] = 0x0000;
 			} else {
 				// The PSP code requires that we leave 16 blocks free every 0x1F0 blocks.
 				// These are maybe used for bad blocks
-				int freeBlockNumber = ((ppn - 0x800) / pagesPerBlock) % 0x1F0;
+				int freeBlockNumber = ((ppn - startPpnToLbn) / pagesPerBlock) % 0x1F0;
 				final int freeBlockAreaStart = 0x7; // Trial and error show that valid values are from 0x7 to 0x62 (why???)
 				final int freeBlockAreaEnd = freeBlockAreaStart + 16;
 
@@ -184,7 +187,7 @@ public class sceNand extends HLEModule {
 					}
 
 					// Boot sector found?
-					if (user.getUnsignedValue16(0) == 0x00EB && user.getUnsignedValue8(2) == 0x90 && user.getUnsignedValue16(510) == 0xAA55) {
+					if (user.getUnsignedValue16(510) == 0xAA55) {
 						log.trace(String.format("Boot sector ppn=0x%X: %s", ppn, Utilities.getMemoryDump(user, pageSize)));
 					}
 				}
@@ -405,15 +408,15 @@ public class sceNand extends HLEModule {
     	buffer.setValue8(partitionEntry + 2, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 3, (byte) 0x01);
     	// Partition type
-    	buffer.setValue8(partitionEntry + 4, (byte) 0x05);
+    	buffer.setValue8(partitionEntry + 4, (byte) (isSmallNand() ? 0x05 : 0x0F));
     	// CHS address of last absolute sector in partition
     	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
-    	buffer.setValue8(partitionEntry + 7, (byte) 0xBE);
+    	buffer.setValue8(partitionEntry + 7, (byte) (isSmallNand() ? 0xBE : 0xFF));
     	// LBA of first absolute sector in the partition
     	buffer.setUnalignedValue32(partitionEntry + 8, 0x40);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, 0xEF80);
+    	buffer.setUnalignedValue32(partitionEntry + 12, isSmallNand() ? 0xEF80 : 0x1DF80);
 
     	// Boot signature
     	buffer.setValue8(510, (byte) 0x55);
@@ -431,15 +434,15 @@ public class sceNand extends HLEModule {
     	buffer.setValue8(partitionEntry + 2, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 3, (byte) 0x01);
     	// Partition type
-    	buffer.setValue8(partitionEntry + 4, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 4, (byte) (isSmallNand() ? 0x01 : 0x0E)); // FAT12 or FAT16B
     	// CHS address of last absolute sector in partition
     	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
-    	buffer.setValue8(partitionEntry + 7, (byte) 0x00);
+    	buffer.setValue8(partitionEntry + 7, (byte) (isSmallNand() ? 0x00 : 0xFF));
     	// LBA of first absolute sector in the partition
     	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, (flash1LbnStart - flash0LbnStart - 1) * 0x20);
+    	buffer.setUnalignedValue32(partitionEntry + 12, (flash1LbnStart - flash0LbnStart - 1) * pagesPerBlock);
 
     	// Second partition entry
     	partitionEntry += 16;
@@ -449,17 +452,17 @@ public class sceNand extends HLEModule {
     	// CHS address of first absolute sector in partition
     	buffer.setValue8(partitionEntry + 1, (byte) 0x00);
     	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
-    	buffer.setValue8(partitionEntry + 3, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 3, (byte) (isSmallNand() ? 0x01 : 0xFF));
     	// Partition type
-    	buffer.setValue8(partitionEntry + 4, (byte) 0x05);
+    	buffer.setValue8(partitionEntry + 4, (byte) (isSmallNand() ? 0x05 : 0x0F));
     	// CHS address of last absolute sector in partition
     	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
-    	buffer.setValue8(partitionEntry + 7, (byte) 0x80);
+    	buffer.setValue8(partitionEntry + 7, (byte) (isSmallNand() ? 0x80 : 0xFF));
     	// LBA of first absolute sector in the partition
-    	buffer.setUnalignedValue32(partitionEntry + 8, (flash1LbnStart - flash0LbnStart) * 0x20);
+    	buffer.setUnalignedValue32(partitionEntry + 8, (flash1LbnStart - flash0LbnStart) * pagesPerBlock);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, 0x2000);
+    	buffer.setUnalignedValue32(partitionEntry + 12, (flash2LbnStart - flash1LbnStart) * pagesPerBlock);
 
     	// Boot signature
     	buffer.setValue8(510, (byte) 0x55);
@@ -475,17 +478,17 @@ public class sceNand extends HLEModule {
     	// CHS address of first absolute sector in partition
     	buffer.setValue8(partitionEntry + 1, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
-    	buffer.setValue8(partitionEntry + 3, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 3, (byte) (isSmallNand() ? 0x01 : 0xFF));
     	// Partition type
-    	buffer.setValue8(partitionEntry + 4, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 4, (byte) (isSmallNand() ? 0x01 : 0x0E)); // FAT12 or FAT16B
     	// CHS address of last absolute sector in partition
     	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
-    	buffer.setValue8(partitionEntry + 7, (byte) 0x80);
+    	buffer.setValue8(partitionEntry + 7, (byte) (isSmallNand() ? 0x80 : 0xFF));
     	// LBA of first absolute sector in the partition
     	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, (flash2LbnStart - flash1LbnStart - 1) * 0x20);
+    	buffer.setUnalignedValue32(partitionEntry + 12, (flash2LbnStart - flash1LbnStart - 1) * pagesPerBlock);
 
     	// Second partition entry
     	partitionEntry += 16;
@@ -495,17 +498,17 @@ public class sceNand extends HLEModule {
     	// CHS address of first absolute sector in partition
     	buffer.setValue8(partitionEntry + 1, (byte) 0x00);
     	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
-    	buffer.setValue8(partitionEntry + 3, (byte) 0x81);
+    	buffer.setValue8(partitionEntry + 3, (byte) (isSmallNand() ? 0x81 : 0xFF));
     	// Partition type
-    	buffer.setValue8(partitionEntry + 4, (byte) 0x05);
+    	buffer.setValue8(partitionEntry + 4, (byte) (isSmallNand() ? 0x05 : 0x0F));
     	// CHS address of last absolute sector in partition
     	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
-    	buffer.setValue8(partitionEntry + 7, (byte) 0xA0);
+    	buffer.setValue8(partitionEntry + 7, (byte) (isSmallNand() ? 0xA0 : 0xFF));
     	// LBA of first absolute sector in the partition
-    	buffer.setUnalignedValue32(partitionEntry + 8, (flash2LbnStart - flash0LbnStart) * 0x20);
+    	buffer.setUnalignedValue32(partitionEntry + 8, (flash2LbnStart - flash0LbnStart) * pagesPerBlock);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, 0x800);
+    	buffer.setUnalignedValue32(partitionEntry + 12, isSmallNand() ? 0x800 : 0x2000);
 
     	// Boot signature
     	buffer.setValue8(510, (byte) 0x55);
@@ -521,17 +524,17 @@ public class sceNand extends HLEModule {
     	// CHS address of first absolute sector in partition
     	buffer.setValue8(partitionEntry + 1, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
-    	buffer.setValue8(partitionEntry + 3, (byte) 0x81);
+    	buffer.setValue8(partitionEntry + 3, (byte) (isSmallNand() ? 0x81 : 0xFF));
     	// Partition type
-    	buffer.setValue8(partitionEntry + 4, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 4, (byte) (isSmallNand() ? 0x01 : 0x0E)); // FAT12 or FAT16B
     	// CHS address of last absolute sector in partition
     	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
-    	buffer.setValue8(partitionEntry + 7, (byte) 0xA0);
+    	buffer.setValue8(partitionEntry + 7, (byte) (isSmallNand() ? 0xA0 : 0xFF));
     	// LBA of first absolute sector in the partition
     	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, (flash3LbnStart - flash2LbnStart - 1) * 0x20);
+    	buffer.setUnalignedValue32(partitionEntry + 12, (flash3LbnStart - flash2LbnStart - 1) * pagesPerBlock);
 
     	// Second partition entry
     	partitionEntry += 16;
@@ -541,17 +544,17 @@ public class sceNand extends HLEModule {
     	// CHS address of first absolute sector in partition
     	buffer.setValue8(partitionEntry + 1, (byte) 0x00);
     	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
-    	buffer.setValue8(partitionEntry + 3, (byte) 0xA1);
+    	buffer.setValue8(partitionEntry + 3, (byte) (isSmallNand() ? 0xA1 : 0xFF));
     	// Partition type
-    	buffer.setValue8(partitionEntry + 4, (byte) 0x05);
+    	buffer.setValue8(partitionEntry + 4, (byte) (isSmallNand() ? 0x05 : 0x0F));
     	// CHS address of last absolute sector in partition
     	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
-    	buffer.setValue8(partitionEntry + 7, (byte) 0xBE);
+    	buffer.setValue8(partitionEntry + 7, (byte) (isSmallNand() ? 0xBE : 0xFF));
     	// LBA of first absolute sector in the partition
-    	buffer.setUnalignedValue32(partitionEntry + 8, (flash3LbnStart - flash0LbnStart) * 0x20);
+    	buffer.setUnalignedValue32(partitionEntry + 8, (flash3LbnStart - flash0LbnStart) * pagesPerBlock);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, 0x780);
+    	buffer.setUnalignedValue32(partitionEntry + 12, isSmallNand() ? 0x780 : 0x4900);
 
     	// Boot signature
     	buffer.setValue8(510, (byte) 0x55);
@@ -567,17 +570,17 @@ public class sceNand extends HLEModule {
     	// CHS address of first absolute sector in partition
     	buffer.setValue8(partitionEntry + 1, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 2, (byte) 0xC1);
-    	buffer.setValue8(partitionEntry + 3, (byte) 0xA1);
+    	buffer.setValue8(partitionEntry + 3, (byte) (isSmallNand() ? 0xA1 : 0xFF));
     	// Partition type
-    	buffer.setValue8(partitionEntry + 4, (byte) 0x01);
+    	buffer.setValue8(partitionEntry + 4, (byte) (isSmallNand() ? 0x01 : 0x0E)); // FAT12 or FAT16B
     	// CHS address of last absolute sector in partition
     	buffer.setValue8(partitionEntry + 5, (byte) 0x01);
     	buffer.setValue8(partitionEntry + 6, (byte) 0xE0);
-    	buffer.setValue8(partitionEntry + 7, (byte) 0xBE);
+    	buffer.setValue8(partitionEntry + 7, (byte) (isSmallNand() ? 0xBE : 0xFF));
     	// LBA of first absolute sector in the partition
     	buffer.setUnalignedValue32(partitionEntry + 8, 0x20);
     	// Number of sectors in partition
-    	buffer.setUnalignedValue32(partitionEntry + 12, (flash4LbnStart - flash3LbnStart - 1) * 0x20);
+    	buffer.setUnalignedValue32(partitionEntry + 12, (flash4LbnStart - flash3LbnStart - 1) * pagesPerBlock);
 
     	// Boot signature
     	buffer.setValue8(510, (byte) 0x55);
@@ -780,20 +783,24 @@ public class sceNand extends HLEModule {
 		}
     }
 
+    private static boolean isSmallNand() {
+    	return Nand.getTotalSizeMb() <= 32;
+    }
+
     private static int getTotalSectorsFlash0() {
-		return Nand.getTotalSizeMb() <= 32 ? 0xBFE0 : 0x147E0;
+		return isSmallNand() ? 0xBFE0 : 0x147E0;
     }
 
     private static int getTotalSectorsFlash1() {
-		return Nand.getTotalSizeMb() <= 32 ? 0x1FE0 : 0x27E0;
+		return isSmallNand() ? 0x1FE0 : 0x27E0;
     }
 
     private static int getTotalSectorsFlash2() {
-		return Nand.getTotalSizeMb() <= 32 ? 0x7E0 : 0x48E0;
+		return isSmallNand() ? 0x7E0 : 0x48E0;
     }
 
     private static int getTotalSectorsFlash3() {
-		return 0x760;
+		return isSmallNand() ? 0x760 : 0x660;
     }
 
     private void openFileFlash0() {
@@ -810,7 +817,11 @@ public class sceNand extends HLEModule {
 		// into the space available on flash0.
 		vfs = new CompressPrxVirtualFileSystem(vfs);
 
-		vFileFlash0 = new Fat12VirtualFile("flash0:", vfs, getTotalSectorsFlash0());
+		if (isSmallNand()) {
+			vFileFlash0 = new Fat12VirtualFile("flash0:", vfs, getTotalSectorsFlash0());
+		} else {
+			vFileFlash0 = new Fat16VirtualFile("flash0:", vfs, getTotalSectorsFlash0());
+		}
 		vFileFlash0.scan();
     }
 
@@ -820,7 +831,11 @@ public class sceNand extends HLEModule {
 		}
 
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
-		vFileFlash1 = new Fat12VirtualFile("flash1:", vfs, getTotalSectorsFlash1());
+		if (isSmallNand()) {
+			vFileFlash1 = new Fat12VirtualFile("flash1:", vfs, getTotalSectorsFlash1());
+		} else {
+			vFileFlash1 = new Fat16VirtualFile("flash1:", vfs, getTotalSectorsFlash1());
+		}
 		vFileFlash1.scan();
     }
 
@@ -830,7 +845,11 @@ public class sceNand extends HLEModule {
 		}
 
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
-		vFileFlash2 = new Fat12VirtualFile("flash2:", vfs, getTotalSectorsFlash2());
+		if (isSmallNand()) {
+			vFileFlash2 = new Fat12VirtualFile("flash2:", vfs, getTotalSectorsFlash2());
+		} else {
+			vFileFlash2 = new Fat16VirtualFile("flash2:", vfs, getTotalSectorsFlash2());
+		}
 		vFileFlash2.scan();
     }
 
@@ -1022,11 +1041,10 @@ public class sceNand extends HLEModule {
 	    				}
 	    			}
 
-	    			if (ppnToLbn[n] == 0xFFFF) {
-	    				ppnToLbn[n] = sceNandSpare.lbn;
-	    			} else {
+	    			if (ppnToLbn[n] != 0xFFFF) {
 	    				log.error(String.format("hleNandWriteSparePages moving lbn=0x%04X to ppn=0x%X not being free (currently used for lbn=0x%04X)", sceNandSpare.lbn, n, ppnToLbn[n]));
 	    			}
+    				ppnToLbn[n] = sceNandSpare.lbn;
 	    		}
     		}
     	}
