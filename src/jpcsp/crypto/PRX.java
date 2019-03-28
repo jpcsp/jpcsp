@@ -81,7 +81,7 @@ public class PRX {
             this.codeExtra = 0;
         }
 
-        private int[] intArrayToTagArray(int[] array) {
+		private int[] intArrayToTagArray(int[] array) {
             int[] tagArray = new int[144];
             for (int i = 0; i < array.length; i++) {
                 tagArray[i * 4 + 3] = ((array[i] >> 24) & 0xFF);
@@ -91,6 +91,15 @@ public class PRX {
             }
             return tagArray;
         }
+
+        @Override
+		public String toString() {
+        	byte[] bytes = new byte[key.length];
+        	for (int i = 0; i < key.length; i++) {
+        		bytes[i] = (byte) key[i];
+        	}
+        	return String.format("tag=0x%08X, key=%s, code=0x%02X, codeExtra=0x%02X", tag, Utilities.getMemoryDump(bytes), code, codeExtra);
+		}
     }
     
     private TAG_INFO g_tagInfo[] = {
