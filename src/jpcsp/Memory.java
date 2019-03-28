@@ -346,6 +346,10 @@ public abstract class Memory implements IState {
         write32(address + 4, (int) (data >> 32));
     }
 
+    public void writeUnsigned16(int address, int data) {
+    	write16(address, (short) data);
+    }
+
     // memcpy does not check overlapping source and destination areas
     public void memcpy(int destination, int source, int length) {
         memcpy(destination, source, length, false);
@@ -453,6 +457,9 @@ public abstract class Memory implements IState {
         address &= addressMask;
         // Test first against END_VRAM as it is most likely to fail first (because RAM is above VRAM)
         return address <= MemoryMap.END_VRAM && address >= MemoryMap.START_VRAM;
+    }
+
+    public void remapMemoryAtProcessorReset() {
     }
 
     protected void read(StateInputStream stream, int address, int length) throws IOException {

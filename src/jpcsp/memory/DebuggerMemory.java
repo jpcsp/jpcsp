@@ -331,7 +331,7 @@ public class DebuggerMemory extends Memory {
         }
     }
 
-    protected String getMemoryReadMessage(int address, int width) {
+    protected String getMemoryReadMessage(int address, int value, int width) {
         StringBuilder message = new StringBuilder();
 
         Processor processor = getProcessor();
@@ -342,11 +342,10 @@ public class DebuggerMemory extends Memory {
         if (width == 8 || width == 16 || width == 32) {
             message.append(String.format("read%d(0x%08X)=0x", width, address));
             if (width == 8) {
-                message.append(String.format("%02X", mem.read8(address)));
+                message.append(String.format("%02X", value));
             } else if (width == 16) {
-                message.append(String.format("%04X", mem.read16(address)));
+                message.append(String.format("%04X", value));
             } else if (width == 32) {
-                int value = mem.read32(address);
                 //message.append(String.format("%08X (%f)", value, Float.intBitsToFloat(value)));
                 message.append(String.format("%08X", value));
             }
@@ -358,14 +357,13 @@ public class DebuggerMemory extends Memory {
         return message.toString();
     }
 
-    protected void memoryRead(int address, int width, boolean trace) {
-        address &= Memory.addressMask;
+    protected void memoryRead(int address, int value, int width, boolean trace) {
         if ((traceMemoryRead || trace) && log.isTraceEnabled()) {
-            log.trace(getMemoryReadMessage(address, width));
+            log.trace(getMemoryReadMessage(address, value, width));
         }
 
-        if ((pauseEmulatorOnMemoryBreakpoint || log.isInfoEnabled()) && memoryReadBreakpoint.contains(address)) {
-            log.info(getMemoryReadMessage(address, width));
+        if ((pauseEmulatorOnMemoryBreakpoint || log.isInfoEnabled()) && memoryReadBreakpoint.contains(address & Memory.addressMask)) {
+            log.info(getMemoryReadMessage(address, value, width));
             if (pauseEmulatorOnMemoryBreakpoint) {
                 Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
             }
@@ -395,12 +393,11 @@ public class DebuggerMemory extends Memory {
     }
 
     protected void memoryWrite(int address, int value, int width, boolean trace) {
-        address &= Memory.addressMask;
         if ((traceMemoryWrite || trace) && log.isTraceEnabled()) {
             log.trace(getMemoryWriteMessage(address, value, width));
         }
 
-        if ((pauseEmulatorOnMemoryBreakpoint || log.isInfoEnabled()) && memoryWriteBreakpoint.contains(address)) {
+        if ((pauseEmulatorOnMemoryBreakpoint || log.isInfoEnabled()) && memoryWriteBreakpoint.contains(address & Memory.addressMask)) {
             log.info(getMemoryWriteMessage(address, value, width));
             if (pauseEmulatorOnMemoryBreakpoint) {
                 Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
@@ -429,7 +426,7 @@ public class DebuggerMemory extends Memory {
 
     @Override
     public Buffer getBuffer(int address, int length) {
-        memoryRead(address, length * 8, false);
+        memoryRead(address, 0, length * 8, false);
         return mem.getBuffer(address, length);
     }
 
@@ -440,8 +437,8 @@ public class DebuggerMemory extends Memory {
 
     @Override
     protected void memcpy(int destination, int source, int length, boolean checkOverlap) {
-    	destination = normalizeAddress(destination);
-		source = normalizeAddress(source);
+    	destination = normalize(destination);
+		source = normalize(source);
 
 		// Overlapping address ranges must be correctly handled:
 		//   If source >= destination:
@@ -476,20 +473,23 @@ public class DebuggerMemory extends Memory {
 
     @Override
     public int read8(int address) {
-        memoryRead(address, 8, traceMemoryRead8);
-        return mem.read8(address);
+    	int value = mem.read8(address);
+        memoryRead(address, value, 8, traceMemoryRead8);
+        return value;
     }
 
     @Override
     public int read16(int address) {
-        memoryRead(address, 16, traceMemoryRead16);
-        return mem.read16(address);
+    	int value = mem.read16(address);
+        memoryRead(address, value, 16, traceMemoryRead16);
+        return value;
     }
 
     @Override
     public int read32(int address) {
-        memoryRead(address, 32, traceMemoryRead32);
-        return mem.read32(address);
+    	int value = mem.read32(address);
+        memoryRead(address, value, 32, traceMemoryRead32);
+        return value;
     }
 
     @Override
@@ -516,5 +516,34 @@ public class DebuggerMemory extends Memory {
 		if (mem != null) {
 			mem.setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
 		}
+	}
+
+	@Override
+	public void remapMemoryAtProcessorReset() {
+		mem.remapMemoryAtProcessorReset();
+	}
+
+	@Override
+	public boolean hasMemoryInt(int address) {
+		return mem.hasMemoryInt(address);
+	}
+
+	@Override
+	public int[] getMemoryInt(int address) {
+		return mem.getMemoryInt(address);
+	}
+
+	@Override
+	public int getMemoryIntOffset(int address) {
+		return mem.getMemoryIntOffset(address);
+	}
+
+	@Override
+	public int normalize(int address) {
+		return mem.normalize(address);
+	}
+
+	public Memory getDebuggedMemory() {
+		return mem;
 	}
 }

@@ -369,9 +369,8 @@ public class reboot extends HLEModule {
 		}
 
     	RuntimeContextLLE.start();
-    	MMIO mmio = (MMIO) RuntimeContextLLE.getMMIO();
     	// The memory remap has already been done by the IPL code at this point
-    	mmio.remapMemoryAtProcessorReset();
+    	RuntimeContextLLE.getMMIO().remapMemoryAtProcessorReset();
 
     	int rebootMemSize = rebootModule.text_size + rebootModule.data_size + rebootModule.bss_size;
     	SysMemInfo rebootMemInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot", PSP_SMEM_Addr, rebootMemSize, rebootModule.text_addr);
@@ -653,36 +652,43 @@ public class reboot extends HLEModule {
 		// Mapping of subroutines defined in
 		//     https://github.com/uofw/uofw/blob/master/src/reboot/unk.c
 		// and https://github.com/uofw/uofw/blob/master/src/reboot/nand.c
-    	addFunctionNid(0x0000EFCC, rebootModule, "sceNandInit2");
-    	addFunctionNid(0x0000F0C4, rebootModule, "sceNandIsReady");
-    	addFunctionNid(0x0000F0D4, rebootModule, "sceNandSetWriteProtect");
-    	addFunctionNid(0x0000F144, rebootModule, "sceNandLock");
-    	addFunctionNid(0x0000F198, rebootModule, "sceNandReset");
-    	addFunctionNid(0x0000F234, rebootModule, "sceNandReadId");
-    	addFunctionNid(0x0000F28C, rebootModule, "sceNandReadAccess");
-    	addFunctionNid(0x0000F458, rebootModule, "sceNandWriteAccess");
-    	addFunctionNid(0x0000F640, rebootModule, "sceNandEraseBlock");
-    	addFunctionNid(0x0000F72C, rebootModule, "sceNandReadExtraOnly");
-    	addFunctionNid(0x0000F8A8, rebootModule, "sceNandReadStatus");
-    	addFunctionNid(0x0000F8DC, rebootModule, "sceNandSetScramble");
-    	addFunctionNid(0x0000F8EC, rebootModule, "sceNandReadPages");
-    	addFunctionNid(0x0000F930, rebootModule, "sceNandWritePages");
-    	addFunctionNid(0x0000F958, rebootModule, "sceNandReadPagesRawExtra");
-    	addFunctionNid(0x0000F974, rebootModule, "sceNandWritePagesRawExtra");
-    	addFunctionNid(0x0000F998, rebootModule, "sceNandReadPagesRawAll");
-    	addFunctionNid(0x0000F9D0, rebootModule, "sceNandTransferDataToNandBuf");
-    	addFunctionNid(0x0000FC40, rebootModule, "sceNandIntrHandler");
-    	addFunctionNid(0x0000FF60, rebootModule, "sceNandTransferDataFromNandBuf");
-    	addFunctionNid(0x000103C8, rebootModule, "sceNandWriteBlockWithVerify");
-    	addFunctionNid(0x0001047C, rebootModule, "sceNandReadBlockWithRetry");
-    	addFunctionNid(0x00010500, rebootModule, "sceNandVerifyBlockWithRetry");
-    	addFunctionNid(0x00010650, rebootModule, "sceNandEraseBlockWithRetry");
-    	addFunctionNid(0x000106C4, rebootModule, "sceNandIsBadBlock");
-    	addFunctionNid(0x00010750, rebootModule, "sceNandDoMarkAsBadBlock");
-    	addFunctionNid(0x000109DC, rebootModule, "sceNandDetectChipMakersBBM");
-    	addFunctionNid(0x00010D1C, rebootModule, "sceNandGetPageSize");
-    	addFunctionNid(0x00010D28, rebootModule, "sceNandGetPagesPerBlock");
-    	addFunctionNid(0x00010D34, rebootModule, "sceNandGetTotalBlocks");
+    	int offset = -1;
+    	switch (Model.getGeneration()) {
+    		case 1: offset = 0x0;   break;
+    		case 2: offset = 0x348; break; // Functions are shifted in reboot_02g.bin
+    	}
+    	if (offset != -1) {
+	    	addFunctionNid(offset + 0x0000EFCC, rebootModule, "sceNandInit2");
+	    	addFunctionNid(offset + 0x0000F0C4, rebootModule, "sceNandIsReady");
+	    	addFunctionNid(offset + 0x0000F0D4, rebootModule, "sceNandSetWriteProtect");
+	    	addFunctionNid(offset + 0x0000F144, rebootModule, "sceNandLock");
+	    	addFunctionNid(offset + 0x0000F198, rebootModule, "sceNandReset");
+	    	addFunctionNid(offset + 0x0000F234, rebootModule, "sceNandReadId");
+	    	addFunctionNid(offset + 0x0000F28C, rebootModule, "sceNandReadAccess");
+	    	addFunctionNid(offset + 0x0000F458, rebootModule, "sceNandWriteAccess");
+	    	addFunctionNid(offset + 0x0000F640, rebootModule, "sceNandEraseBlock");
+	    	addFunctionNid(offset + 0x0000F72C, rebootModule, "sceNandReadExtraOnly");
+	    	addFunctionNid(offset + 0x0000F8A8, rebootModule, "sceNandReadStatus");
+	    	addFunctionNid(offset + 0x0000F8DC, rebootModule, "sceNandSetScramble");
+	    	addFunctionNid(offset + 0x0000F8EC, rebootModule, "sceNandReadPages");
+	    	addFunctionNid(offset + 0x0000F930, rebootModule, "sceNandWritePages");
+	    	addFunctionNid(offset + 0x0000F958, rebootModule, "sceNandReadPagesRawExtra");
+	    	addFunctionNid(offset + 0x0000F974, rebootModule, "sceNandWritePagesRawExtra");
+	    	addFunctionNid(offset + 0x0000F998, rebootModule, "sceNandReadPagesRawAll");
+	    	addFunctionNid(offset + 0x0000F9D0, rebootModule, "sceNandTransferDataToNandBuf");
+	    	addFunctionNid(offset + 0x0000FC40, rebootModule, "sceNandIntrHandler");
+	    	addFunctionNid(offset + 0x0000FF60, rebootModule, "sceNandTransferDataFromNandBuf");
+	    	addFunctionNid(offset + 0x000103C8, rebootModule, "sceNandWriteBlockWithVerify");
+	    	addFunctionNid(offset + 0x0001047C, rebootModule, "sceNandReadBlockWithRetry");
+	    	addFunctionNid(offset + 0x00010500, rebootModule, "sceNandVerifyBlockWithRetry");
+	    	addFunctionNid(offset + 0x00010650, rebootModule, "sceNandEraseBlockWithRetry");
+	    	addFunctionNid(offset + 0x000106C4, rebootModule, "sceNandIsBadBlock");
+	    	addFunctionNid(offset + 0x00010750, rebootModule, "sceNandDoMarkAsBadBlock");
+	    	addFunctionNid(offset + 0x000109DC, rebootModule, "sceNandDetectChipMakersBBM");
+	    	addFunctionNid(offset + 0x00010D1C, rebootModule, "sceNandGetPageSize");
+	    	addFunctionNid(offset + 0x00010D28, rebootModule, "sceNandGetPagesPerBlock");
+	    	addFunctionNid(offset + 0x00010D34, rebootModule, "sceNandGetTotalBlocks");
+    	}
     }
 
     public static void dumpAllModulesAndLibraries() {

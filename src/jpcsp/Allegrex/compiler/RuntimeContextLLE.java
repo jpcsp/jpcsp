@@ -30,6 +30,7 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.modules.reboot;
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.mediaengine.METhread;
+import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerInterruptMan;
 import jpcsp.state.StateInputStream;
@@ -66,7 +67,14 @@ public class RuntimeContextLLE {
 
 	public static void createMMIO() {
 		if (mmio == null) {
-			mmio = new MMIO(Emulator.getMemory());
+			Memory mem = Emulator.getMemory();
+
+			if (mem instanceof DebuggerMemory) {
+				mmio = new DebuggerMemory(new MMIO(((DebuggerMemory) mem).getDebuggedMemory()));
+			} else {
+				mmio = new MMIO(mem);
+			}
+
 			if (mmio.allocate()) {
 				mmio.Initialise();
 			} else {
