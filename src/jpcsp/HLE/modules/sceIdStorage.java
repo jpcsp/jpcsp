@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.Modules.sceChkregModule;
-import static jpcsp.HLE.modules.sceNand.pageSize;
+import static jpcsp.hardware.Nand.pageSize;
 import static jpcsp.memory.mmio.MMIOHandlerUmd.regionCodes;
 import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.endianSwap32;
@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.hardware.Model;
 import jpcsp.hardware.Wlan;
 import jpcsp.util.Utilities;
 import jpcsp.HLE.HLEFunction;
@@ -133,8 +134,14 @@ public class sceIdStorage extends HLEModule {
 				break;
 			case 0x0045:
 				// Used by thread SceWlanChipInit
-				buffer.setUnsignedValue16(0, 0x0002);
+				int wlanFirmwareVersion = 1;
+				if (Model.getGeneration() > 1) {
+					wlanFirmwareVersion = 1;
+				}
+				buffer.setUnsignedValue16(0, 0x0002 | (wlanFirmwareVersion << 12));
 				buffer.setUnsignedValue8(2, 0x01);
+				buffer.setUnsignedValue8(3, 0x00);
+				buffer.setUnsignedValue8(4, 0x00);
 				break;
 			case 0x0100:
 				// Used by sceChkreg_driver_6894A027()

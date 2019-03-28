@@ -16,48 +16,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import static jpcsp.HLE.Modules.sceMSstorModule;
-import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MSCM0_INTR;
-import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_SET;
-import static jpcsp.memory.mmio.memorystick.MemoryStickBootAttributesInfo.MS_SYSINF_CARDTYPE_RDWR;
-import static jpcsp.memory.mmio.memorystick.MemoryStickBootAttributesInfo.MS_SYSINF_FORMAT_FAT;
-import static jpcsp.memory.mmio.memorystick.MemoryStickBootAttributesInfo.MS_SYSINF_MSCLASS_TYPE_1;
-import static jpcsp.memory.mmio.memorystick.MemoryStickBootAttributesInfo.MS_SYSINF_USAGE_GENERAL;
-import static jpcsp.memory.mmio.memorystick.MemoryStickBootHeader.MS_BOOT_BLOCK_DATA_ENTRIES;
-import static jpcsp.memory.mmio.memorystick.MemoryStickBootHeader.MS_BOOT_BLOCK_FORMAT_VERSION;
-import static jpcsp.memory.mmio.memorystick.MemoryStickBootHeader.MS_BOOT_BLOCK_ID;
-import static jpcsp.memory.mmio.memorystick.MemoryStickProAttributeEntry.MSPRO_BLOCK_ID_DEVINFO;
-import static jpcsp.memory.mmio.memorystick.MemoryStickProAttributeEntry.MSPRO_BLOCK_ID_MBR;
-import static jpcsp.memory.mmio.memorystick.MemoryStickProAttributeEntry.MSPRO_BLOCK_ID_PBR32;
-import static jpcsp.memory.mmio.memorystick.MemoryStickProAttributeEntry.MSPRO_BLOCK_ID_SYSINFO;
-import static jpcsp.memory.mmio.memorystick.MemoryStickSysInfo.MEMORY_STICK_CLASS_PRO;
-import static jpcsp.memory.mmio.memorystick.MemoryStickSystemItem.MS_SYSENT_TYPE_CIS_IDI;
-import static jpcsp.memory.mmio.memorystick.MemoryStickSystemItem.MS_SYSENT_TYPE_INVALID_BLOCK;
 import static jpcsp.util.Utilities.endianSwap16;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
-import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
-import jpcsp.HLE.modules.sceMScm;
-import jpcsp.hardware.MemoryStick;
 import jpcsp.memory.IntArrayMemory;
-import jpcsp.memory.mmio.memorystick.MemoryStickBootPage;
-import jpcsp.memory.mmio.memorystick.MemoryStickDeviceInfo;
-import jpcsp.memory.mmio.memorystick.MemoryStickMbr;
-import jpcsp.memory.mmio.memorystick.MemoryStickPbr32;
-import jpcsp.memory.mmio.memorystick.MemoryStickProAttribute;
-import jpcsp.memory.mmio.memorystick.MemoryStickSysInfo;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 /**
- * MMIO for Memory Stick.
+ * Base MMIO implementation for the Memory Stick and the Wlan interfaces.
+ * 
  * Based on information from
  *     https://github.com/torvalds/linux/tree/master/drivers/memstick/core
  * and https://github.com/torvalds/linux/blob/master/drivers/usb/storage/ene_ub6250.c
@@ -65,10 +38,8 @@ import jpcsp.util.Utilities;
  * @author gid15
  *
  */
-public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
-	public static Logger log = sceMScm.log;
+public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 	private static final int STATE_VERSION = 0;
-	private static final boolean simulateMemoryStickPro = true;
 	// Overwrite area
 	public static final int MS_REG_OVR_BKST = 0x80; // Block status
 	public static final int MS_REG_OVR_BKST_OK = MS_REG_OVR_BKST; // Block status OK
@@ -102,6 +73,8 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	// commandState bit
 	public static final int MS_COMMANDSTATE_BUSY   = 0x0001;
 	// SYS bit
+	public static final int MS_SYS_COMMAND         = 0x0200;
+	public static final int MS_SYS_INTERRUPT       = 0x0800;
 	public static final int MS_SYS_RESET           = 0x8000;
 	// STATUS bit
 	public static final int MS_STATUS_TIMEOUT      = 0x0100;
@@ -110,18 +83,23 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	public static final int MS_STATUS_UNKNOWN      = 0x2000;
 	public static final int MS_STATUS_FIFO_RW      = 0x4000;
 	// MS TPC code
+	public static final int MS_TPC_READ_MG_STATUS     = 0x1;
 	public static final int MS_TPC_READ_PAGE_DATA     = 0x2;
+	public static final int MS_TPC_READ_SHORT_DATA    = 0x3;
 	public static final int MS_TPC_READ_REG           = 0x4;
+	public static final int MS_TPC_READ_IO_DATA       = 0x5;
 	public static final int MS_TPC_GET_INT            = 0x7;
 	public static final int MS_TPC_SET_RW_REG_ADDRESS = 0x8;
 	public static final int MS_TPC_EX_SET_CMD         = 0x9;
+	public static final int MS_TPC_WRITE_IO_DATA      = 0xA;
 	public static final int MS_TPC_WRITE_REG          = 0xB;
+	public static final int MS_TPC_WRITE_SHORT_DATA   = 0xC;
 	public static final int MS_TPC_WRITE_PAGE_DATA    = 0xD;
 	public static final int MS_TPC_SET_CMD            = 0xE;
 	// MS INT (register #1)
 	public static final int MS_INT_REG_ADDRESS     = 0x01;
 	public static final int MS_INT_REG_CMDNK       = 0x10;
-	public static final int MS_INT_REG_BREAK       = 0x20;
+	public static final int MS_INT_REG_BREQ        = 0x20;
 	public static final int MS_INT_REG_ERR         = 0x40;
 	public static final int MS_INT_REG_CED         = 0x80;
 	// MS Status (register #2)
@@ -164,54 +142,38 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	public static final int MSPRO_CMD_OUT_IO_FIFO  = 0xB4;
 	public static final int MSPRO_CMD_IN_IOM       = 0xB5;
 	public static final int MSPRO_CMD_OUT_IOM      = 0xB6;
-	private int interrupt; // Possible bits: 0x000D
-	private int commandState;
-	private int unk08; // Possible bits: 0x03F0
-	private int tpc;
-	private int status;
-	private int sys;
-	private final int[] registers = new int[256];
-	private int readAddress;
-	private int readSize;
-	private int writeAddress;
-	private int writeSize;
-	private int tpcExSetCmdIndex;
-	private int cmd;
-	private int oobLength;
-	private int startBlock;
-	private int oobIndex;
-	private final int[] pageBuffer = new int[(PAGE_SIZE) >> 2];
-	private final IntArrayMemory pageBufferMemory = new IntArrayMemory(pageBuffer);
-	private final TPointer pageBufferPointer = pageBufferMemory.getPointer();
-	private int pageLba;
-	private int numberOfPages;
-	private int pageDataIndex;
-	private int pageIndex;
-	private int commandDataIndex;
-	private final MemoryStickBootPage bootPage = new MemoryStickBootPage();
-	private final IntArrayMemory bootPageMemory = new IntArrayMemory(new int[bootPage.sizeof() >> 2]);
-	private final MemoryStickBootPage bootPageBackup = new MemoryStickBootPage();
-	private final IntArrayMemory bootPageBackupMemory = new IntArrayMemory(new int[bootPageBackup.sizeof() >> 2]);
-	private final IntArrayMemory disabledBlocksPageMemory = new IntArrayMemory(new int[PAGE_SIZE >> 2]);
-	private final MemoryStickProAttribute msproAttribute = new MemoryStickProAttribute();
-	private final IntArrayMemory msproAttributeMemory = new IntArrayMemory(new int[(2 * PAGE_SIZE) >> 2]);
-	private boolean msproAttributeMemoryInitialized = false;
-	private final static int PAGE_SIZE = 0x200;
-	private final static int DISABLED_BLOCKS_PAGE = 1;
-	private final static int CIS_IDI_PAGE = 2;
-	private final static long MAX_MEMORY_STICK_SIZE = 128L * 1024 * 1024; // The maximum size of a Memory Stick (i.e. non-PRO) is 128MB
-	private int PAGES_PER_BLOCK;
-	private int BLOCK_SIZE;
-	private int NUMBER_OF_PHYSICAL_BLOCKS;
-	private int NUMBER_OF_LOGICAL_BLOCKS;
-	private int FIRST_PAGE_LBA;
-	private int NUMBER_OF_PAGES;
+	protected int interrupt; // Possible bits: 0x000D
+	protected int commandState;
+	protected int unk08; // Possible bits: 0x03F0
+	protected int tpc;
+	protected int status;
+	protected int sys;
+	protected int unk40;
+	protected final int[] registers = new int[256];
+	protected int readAddress;
+	protected int readSize;
+	protected int writeAddress;
+	protected int writeSize;
+	protected int tpcExSetCmdIndex;
+	protected int cmd;
+	protected int oobLength;
+	protected int startBlock;
+	protected int oobIndex;
+	protected final int[] pageBuffer = new int[(PAGE_SIZE) >> 2];
+	protected final IntArrayMemory pageBufferMemory = new IntArrayMemory(pageBuffer);
+	protected final TPointer pageBufferPointer = pageBufferMemory.getPointer();
+	protected final IntArrayMemory msproAttributeMemory = new IntArrayMemory(new int[(2 * PAGE_SIZE) >> 2]);
+	protected int pageLba;
+	protected int numberOfPages;
+	protected int pageDataIndex;
+	protected int pageIndex;
+	protected int commandDataIndex;
+	protected final static int PAGE_SIZE = 0x200;
+	protected int PAGES_PER_BLOCK = 16;
+	private final Object dmaLock = new Object();
 
-	public MMIOHandlerMemoryStick(int baseAddress) {
+	public MMIOHandlerBaseMemoryStick(int baseAddress) {
 		super(baseAddress);
-
-		sceMSstorModule.hleInit();
-		reset();
 	}
 
 	@Override
@@ -223,6 +185,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		tpc = stream.readInt();
 		status = stream.readInt();
 		sys = stream.readInt();
+		unk40 = stream.readInt();
 		stream.readInts(registers);
 		readAddress = stream.readInt();
 		readSize = stream.readInt();
@@ -250,6 +213,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		stream.writeInt(tpc);
 		stream.writeInt(status);
 		stream.writeInt(sys);
+		stream.writeInt(unk40);
 		stream.writeInts(registers);
 		stream.writeInt(readAddress);
 		stream.writeInt(readSize);
@@ -270,20 +234,25 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 
 	private static String getTPCName(int tpc) {
 		switch (tpc) {
-			case MS_TPC_READ_PAGE_DATA    : return "READ_PAGE_DATA";
-			case MS_TPC_READ_REG          : return "READ_REG";
-			case MS_TPC_GET_INT           : return "GET_INT";
-			case MS_TPC_SET_RW_REG_ADDRESS: return "SET_RW_REG_ADDRESS";
-			case MS_TPC_EX_SET_CMD        : return "EX_SET_CMD";
-			case MS_TPC_WRITE_REG         : return "WRITE_REG";
-			case MS_TPC_WRITE_PAGE_DATA   : return "WRITE_PAGE_DATA";
-			case MS_TPC_SET_CMD           : return "SET_CMD";
+			case MS_TPC_READ_MG_STATUS    : return "MS_TPC_READ_MG_STATUS";
+			case MS_TPC_READ_PAGE_DATA    : return "MS_TPC_READ_PAGE_DATA";
+			case MS_TPC_READ_SHORT_DATA   : return "MS_TPC_READ_SHORT_DATA";
+			case MS_TPC_READ_REG          : return "MS_TPC_READ_REG";
+			case MS_TPC_READ_IO_DATA      : return "MS_TPC_READ_IO_DATA";
+			case MS_TPC_GET_INT           : return "MS_TPC_GET_INT";
+			case MS_TPC_SET_RW_REG_ADDRESS: return "MS_TPC_SET_RW_REG_ADDRESS";
+			case MS_TPC_EX_SET_CMD        : return "MS_TPC_EX_SET_CMD";
+			case MS_TPC_WRITE_IO_DATA     : return "MS_TPC_WRITE_IO_DATA";
+			case MS_TPC_WRITE_REG         : return "MS_TPC_WRITE_REG";
+			case MS_TPC_WRITE_SHORT_DATA  : return "MS_TPC_WRITE_SHORT_DATA";
+			case MS_TPC_WRITE_PAGE_DATA   : return "MS_TPC_WRITE_PAGE_DATA";
+			case MS_TPC_SET_CMD           : return "MS_TPC_SET_CMD";
 		}
 
 		return String.format("UNKNOWN_TPC_%X", tpc);
 	}
 
-	private static String getCommandName(int cmd) {
+	public static String getCommandName(int cmd) {
 		switch (cmd) {
 			case MS_CMD_BLOCK_END      : return "BLOCK_END";
 			case MS_CMD_RESET          : return "RESET";
@@ -319,61 +288,13 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		return String.format("UNKNOWN_CMD_%X", cmd);
 	}
 
-	private void reset() {
-		long totalSize = MemoryStick.getTotalSize();
-
-		if (!simulateMemoryStickPro) {
-			if (totalSize > MAX_MEMORY_STICK_SIZE) {
-				totalSize = MAX_MEMORY_STICK_SIZE;
-				MemoryStick.setTotalSize(MAX_MEMORY_STICK_SIZE);
-
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Limiting the size of the Memory Stick (i.e. non-PRO) to %s", MemoryStick.getSizeKbString((int) (totalSize / 1024))));
-				}
-			}
-		}
-
-		long totalNumberOfPages = totalSize / PAGE_SIZE;
-		// 16 pages per block is only valid up to 4MB Memory Stick
-		if (!simulateMemoryStickPro && totalNumberOfPages <= 8192L) {
-			PAGES_PER_BLOCK = 16;
-			NUMBER_OF_PHYSICAL_BLOCKS = (int) (totalNumberOfPages / PAGES_PER_BLOCK);
-		} else {
-			for (PAGES_PER_BLOCK = 32; PAGES_PER_BLOCK < 0x8000; PAGES_PER_BLOCK <<= 1) {
-				NUMBER_OF_PHYSICAL_BLOCKS = (int) (totalNumberOfPages / PAGES_PER_BLOCK);
-				if (NUMBER_OF_PHYSICAL_BLOCKS < 0x10000) {
-					break;
-				}
-			}
-		}
-		BLOCK_SIZE = PAGES_PER_BLOCK * PAGE_SIZE / 1024; // Number of KB per block
-		NUMBER_OF_LOGICAL_BLOCKS = NUMBER_OF_PHYSICAL_BLOCKS - (NUMBER_OF_PHYSICAL_BLOCKS / 512 * 16);
-		FIRST_PAGE_LBA = 2 * PAGES_PER_BLOCK;
-		NUMBER_OF_PAGES = (NUMBER_OF_PHYSICAL_BLOCKS / 512 * 496 - 2) * BLOCK_SIZE * 2;
-		if (!simulateMemoryStickPro) {
-			if (NUMBER_OF_PAGES > 0x3DF00) {
-				NUMBER_OF_PAGES = 0x3DF00; // For 128MB Memory Stick
-			} else if (NUMBER_OF_PAGES > 0x1EF80) {
-				NUMBER_OF_PAGES = 0x1EF80; // For 64MB Memory Stick
-			}
-		}
-		NUMBER_OF_PAGES -= FIRST_PAGE_LBA;
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerMemoryStick.reset totalSize=0x%X(%s), pagesPerBlock=0x%X, numberOfPhysicalBlocks=0x%X", totalSize, MemoryStick.getSizeKbString((int) (totalSize / 1024)), PAGES_PER_BLOCK, NUMBER_OF_PHYSICAL_BLOCKS));
-		}
-
-		if (!simulateMemoryStickPro) {
-			if (BLOCK_SIZE != 8 && BLOCK_SIZE != 16) {
-				log.error(String.format("The size of a Memory Stick (i.e. non-PRO) is limited to 512MB, the current size of %s cannot be supported", MemoryStick.getSizeKbString((int) (totalSize / 1024))));
-			}
-		}
-
+	protected void reset() {
 		Arrays.fill(registers, 0);
 		interrupt = 0;
 		commandState = 0;
 		unk08 = 0;
 		tpc = 0;
-		status = 0;
+		status = MS_STATUS_READY;
 		sys = 0;
 		readAddress = 0;
 		readSize = 0;
@@ -389,107 +310,18 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		oobIndex = 0;
 		commandDataIndex = 0;
 
-		registers[MS_INT_REG_ADDRESS] = MS_INT_REG_CED;
-		if (MemoryStick.isInserted()) {
-			status |= MS_STATUS_READY | 0x0020;
-		}
-		if (MemoryStick.isLocked()) {
-			registers[MS_STATUS_REG_ADDRESS] |= MS_STATUS_REG_READONLY;
-		}
-
-		if (simulateMemoryStickPro) {
-			registers[MS_TYPE_ADDRESS] = MS_TYPE_MEMORY_STICK_PRO;
-			registers[MS_SYSTEM_ADDRESS] = MS_SYSTEM_SERIAL_MODE;
-		}
-
-		bootPage.header.blockId = MS_BOOT_BLOCK_ID;
-		bootPage.header.formatVersion = MS_BOOT_BLOCK_FORMAT_VERSION;
-		bootPage.header.numberOfDataEntry = MS_BOOT_BLOCK_DATA_ENTRIES;
-		bootPage.entry.disabledBlock.startAddr = DISABLED_BLOCKS_PAGE * PAGE_SIZE - bootPage.sizeof();
-		bootPage.entry.disabledBlock.dataSize = 4;
-		bootPage.entry.disabledBlock.dataTypeId = MS_SYSENT_TYPE_INVALID_BLOCK;
-		bootPage.entry.cisIdi.startAddr = CIS_IDI_PAGE * PAGE_SIZE - bootPage.sizeof();
-		bootPage.entry.cisIdi.dataSize = PAGE_SIZE;
-		bootPage.entry.cisIdi.dataTypeId = MS_SYSENT_TYPE_CIS_IDI;
-		bootPage.attr.memorystickClass = MS_SYSINF_MSCLASS_TYPE_1; // must be 1
-		bootPage.attr.cardType = MS_SYSINF_CARDTYPE_RDWR;
-		bootPage.attr.blockSize = BLOCK_SIZE; // Number of KB per block
-		bootPage.attr.numberOfBlocks = NUMBER_OF_PHYSICAL_BLOCKS; // Number of physical blocks
-		bootPage.attr.numberOfEffectiveBlocks = NUMBER_OF_LOGICAL_BLOCKS; // Number of logical blocks
-		bootPage.attr.pageSize = PAGE_SIZE; // Must be 0x200
-		bootPage.attr.extraDataSize = 0x10;
-		bootPage.attr.securitySupport = 0x01; // 1 means no security support
-		bootPage.attr.formatUniqueValue4[0] = 1;
-		bootPage.attr.formatUniqueValue4[1] = 1;
-		bootPage.attr.transferSupporting = 0;
-		bootPage.attr.formatType = MS_SYSINF_FORMAT_FAT;
-		bootPage.attr.memorystickApplication = MS_SYSINF_USAGE_GENERAL;
-		bootPage.attr.deviceType = 0;
-		bootPage.write(bootPageMemory);
-
-		bootPageBackup.header.blockId = MS_BOOT_BLOCK_ID;
-		bootPageBackup.write(bootPageBackupMemory);
-
-		disabledBlocksPageMemory.write16(0, (short) endianSwap16(0x0000));
-		disabledBlocksPageMemory.write16(2, (short) endianSwap16(0x0001));
-		disabledBlocksPageMemory.write16(4, (short) endianSwap16(NUMBER_OF_PHYSICAL_BLOCKS - 1));
-	}
-
-	private void initMsproAttributeMemory() {
-		if (simulateMemoryStickPro && !msproAttributeMemoryInitialized) {
-			msproAttribute.signature = 0xA5C3;
-			msproAttribute.count = 0;
-			int entryAddress = 0x1A0; // Only accepting attribute entries starting at that address
-
-			MemoryStickSysInfo memoryStickSysInfo = new MemoryStickSysInfo();
-			memoryStickSysInfo.memoryStickClass = MEMORY_STICK_CLASS_PRO;
-			memoryStickSysInfo.blockSize = PAGES_PER_BLOCK;
-			memoryStickSysInfo.blockCount = NUMBER_OF_PHYSICAL_BLOCKS;
-			memoryStickSysInfo.userBlockCount = NUMBER_OF_LOGICAL_BLOCKS;
-			memoryStickSysInfo.unitSize = PAGE_SIZE;
-			memoryStickSysInfo.deviceType = 0;
-			memoryStickSysInfo.interfaceType = 1;
-			memoryStickSysInfo.memoryStickSubClass = 0;
-			entryAddress = addMsproAttributeEntry(entryAddress, MSPRO_BLOCK_ID_SYSINFO, memoryStickSysInfo);
-
-			MemoryStickDeviceInfo memoryStickDeviceInfo = new MemoryStickDeviceInfo();
-			entryAddress = addMsproAttributeEntry(entryAddress, MSPRO_BLOCK_ID_DEVINFO, memoryStickDeviceInfo);
-
-			MemoryStickMbr memoryStickMbr = new MemoryStickMbr();
-			entryAddress = addMsproAttributeEntry(entryAddress, MSPRO_BLOCK_ID_MBR, memoryStickMbr);
-
-			MemoryStickPbr32 memoryStickPbr32 = new MemoryStickPbr32();
-			sceMSstorModule.hleMSstorPartitionIoLseek(null, 0L, PSP_SEEK_SET);
-			sceMSstorModule.hleMSstorPartitionIoRead(memoryStickPbr32.bootSector, 0, memoryStickPbr32.bootSector.length);
-			entryAddress = addMsproAttributeEntry(entryAddress, MSPRO_BLOCK_ID_PBR32, memoryStickPbr32);
-
-			msproAttribute.write(msproAttributeMemory);
-
-			msproAttributeMemoryInitialized = true;
-		}
-	}
-
-	private int addMsproAttributeEntry(int address, int id, pspAbstractMemoryMappedStructure attributeInfo) {
-		int size = attributeInfo.sizeof();
-
-		msproAttribute.entries[msproAttribute.count].address = address;
-		msproAttribute.entries[msproAttribute.count].size = size;
-		msproAttribute.entries[msproAttribute.count].id = id;
-
-		attributeInfo.write(msproAttributeMemory, address);
-
-		msproAttribute.count++;
-
-		return address + size;
+		setRegisterValue(MS_INT_REG_ADDRESS, MS_INT_REG_CED);
 	}
 
 	private void writeSys(int sys) {
+		sys &= ~(MS_SYS_COMMAND | MS_SYS_INTERRUPT);
+
 		this.sys = sys;
 
 		if ((sys & MS_SYS_RESET) != 0) {
 			// Reset
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("MMIOHandlerMemoryStick.writeSys reset triggered"));
+				log.debug(String.format("MMIOHandlerBaseMemoryStick.writeSys reset triggered"));
 			}
 			reset();
 		}
@@ -525,6 +357,10 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		checkInterrupt();
 	}
 
+	private void setInterrupt() {
+		setInterrupt(getInterruptBit());
+	}
+
 	private void clearInterrupt(int interrupt) {
 		// TODO Not sure if this is the correct behavior. (gid15)
 		//
@@ -543,19 +379,22 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		checkInterrupt();
 	}
 
+	protected abstract int getInterruptNumber();
+	protected abstract int getInterruptBit();
+
 	private void checkInterrupt() {
 		if (interrupt != 0) {
-			RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_MSCM0_INTR);
+			RuntimeContextLLE.triggerInterrupt(getProcessor(), getInterruptNumber());
 		} else {
-			RuntimeContextLLE.clearInterrupt(getProcessor(), PSP_MSCM0_INTR);
+			RuntimeContextLLE.clearInterrupt(getProcessor(), getInterruptNumber());
 		}
 	}
 
-	private boolean isMemoryStickPro() {
+	protected boolean isMemoryStickPro() {
 		return (registers[MS_TYPE_ADDRESS] & MS_TYPE_MEMORY_STICK_PRO) != 0;
 	}
 
-	private boolean isSerialMode() {
+	protected boolean isSerialMode() {
 		if (!isMemoryStickPro()) {
 			// A non-PRO memory stick is always in serial mode
 			return true;
@@ -568,72 +407,80 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	}
 
 	private void startTPC(int tpc) {
-		this.tpc = tpc;
+		synchronized (dmaLock) {
+			this.tpc = tpc;
 
-		int tpcCode = getTPCCode();
-		int unknown = tpc & 0x3FF;
+			int tpcCode = getTPCCode();
+			readSize = tpc & 0x3FF;
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("startTPC tpcCode=0x%01X(%s), unknown=0x%03X", tpcCode, getTPCName(tpcCode), unknown));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("startTPC tpcCode=0x%01X(%s), unknown=0x%03X", tpcCode, getTPCName(tpcCode), readSize));
+			}
+
+			switch (tpcCode) {
+				case MS_TPC_SET_RW_REG_ADDRESS:
+					// Data will be set at next writeData()
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.startTPC MS_TPC_SET_RW_REG_ADDRESS"));
+					}
+					break;
+				case MS_TPC_READ_REG:
+					// Data will be retrieve at next readData()
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.startTPC MS_TPC_READ_REG readAddress=0x%02X, readSize=0x%X", readAddress, readSize));
+					}
+					break;
+				case MS_TPC_WRITE_REG:
+					// Register will be written during writeData()
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.startTPC MS_TPC_WRITE_REG writeAddress=0x%02X, writeSize=0x%X", writeAddress, writeSize));
+					}
+					break;
+				case MS_TPC_SET_CMD:
+					// Clear the CED (Command EnD) bit in the INT register
+					setRegisterValue(MS_INT_REG_ADDRESS, registers[MS_INT_REG_ADDRESS] & ~MS_INT_REG_CED);
+					// Register will be written during writeData()
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.startTPC MS_TPC_SET_CMD"));
+					}
+					break;
+				case MS_TPC_EX_SET_CMD:
+					// Clear the CED (Command EnD) bit in the INT register
+					setRegisterValue(MS_INT_REG_ADDRESS, registers[MS_INT_REG_ADDRESS] & ~MS_INT_REG_CED);
+					// Parameters will be written during writeTPCData()
+					tpcExSetCmdIndex = 0;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.startTPC MS_TPC_EX_SET_CMD"));
+					}
+					break;
+				case MS_TPC_GET_INT:
+					// Data will be retrieved at next readData()
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.startTPC MS_TPC_GET_INT"));
+					}
+					break;
+				case MS_TPC_READ_PAGE_DATA:
+					// Data will be retrieved through readData16()
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.startTPC MS_TPC_READ_PAGE_DATA"));
+					}
+					break;
+				case MS_TPC_READ_IO_DATA:
+					// Data will be retrieved through readData16()
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.startTPC MS_TPC_READ_IO_DATA readSize=0x%X", readSize));
+					}
+					break;
+				default:
+					log.error(String.format("MMIOHandlerBaseMemoryStick.startTPC unknown TPC 0x%01X", tpcCode));
+					break;
+			}
+
+			status |= MS_STATUS_FIFO_RW;
 		}
-
-		switch (tpcCode) {
-			case MS_TPC_SET_RW_REG_ADDRESS:
-				// Data will be set at next writeData()
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_SET_RW_REG_ADDRESS"));
-				}
-				break;
-			case MS_TPC_READ_REG:
-				// Data will be retrieve at next readData()
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_READ_REG readAddress=0x%02X, readSize=0x%X", readAddress, readSize));
-				}
-				break;
-			case MS_TPC_WRITE_REG:
-				// Register will be written during writeData()
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_WRITE_REG writeAddress=0x%02X, writeSize=0x%X", writeAddress, writeSize));
-				}
-				break;
-			case MS_TPC_SET_CMD:
-				// Clear the CED (Command EnD) bit in the INT register
-				registers[MS_INT_REG_ADDRESS] &= ~MS_INT_REG_CED;
-				// Register will be written during writeData()
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_SET_CMD"));
-				}
-				break;
-			case MS_TPC_EX_SET_CMD:
-				// Clear the CED (Command EnD) bit in the INT register
-				registers[MS_INT_REG_ADDRESS] &= ~MS_INT_REG_CED;
-				// Parameters will be written during writeTPCData()
-				tpcExSetCmdIndex = 0;
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_EX_SET_CMD"));
-				}
-				break;
-			case MS_TPC_GET_INT:
-				// Data will be retrieved at next readData()
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_GET_INT"));
-				}
-				break;
-			case MS_TPC_READ_PAGE_DATA:
-				// Data will be retrieved through readData16()
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startTPC MS_TPC_READ_PAGE_DATA"));
-				}
-				break;
-			default:
-				log.error(String.format("MMIOHandlerMemoryStick.startTPC unknown TPC 0x%01X", tpcCode));
-				break;
-		}
-
-		status |= MS_STATUS_FIFO_RW;
 	}
 
-	private int getRegisterValue(int reg, int length) {
+	protected int getRegisterValue(int reg, int length) {
 		int value = 0;
 		for (int i = 0; i < length; i++) {
 			value = (value << 8) | (registers[reg + i] & 0xFF);
@@ -663,29 +510,30 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		setCmd(cmd);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerMemoryStick.startCmd cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
+			log.debug(String.format("MMIOHandlerBaseMemoryStick.startCmd cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
 		}
 
+		boolean commandCompleted = true;
 		switch (cmd) {
 			case MS_CMD_BLOCK_READ:
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startCmd MS_CMD_BLOCK_READ dataCount=0x%04X, dataAddress=0x%08X, cp=0x%02X", getDataCount(), getDataAddress(), getRegisterValue(0x14, 1)));
+					log.debug(String.format("MMIOHandlerBaseMemoryStick.startCmd MS_CMD_BLOCK_READ dataCount=0x%04X, dataAddress=0x%08X, cp=0x%02X", getDataCount(), getDataAddress(), getRegisterValue(0x14, 1)));
 				}
 				setBusy();
 				if (!isMemoryStickPro()) {
-					registers[0x16] = 0x80;
-					registers[0x17] = 0x00;
+					setRegisterValue(0x16, 0x80);
+					setRegisterValue(0x17, 0x00);
 				}
 				break;
 			case MS_CMD_BLOCK_ERASE:
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startCmd MS_CMD_BLOCK_ERASE dataCount=0x%04X, dataAddress=0x%08X, cp=0x%02X", getDataCount(), getDataAddress(), getRegisterValue(0x14, 1)));
+					log.debug(String.format("MMIOHandlerBaseMemoryStick.startCmd MS_CMD_BLOCK_ERASE dataCount=0x%04X, dataAddress=0x%08X, cp=0x%02X", getDataCount(), getDataAddress(), getRegisterValue(0x14, 1)));
 				}
 				clearBusy();
 				break;
 			case MS_CMD_BLOCK_WRITE:
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startCmd MS_CMD_BLOCK_WRITE dataCount=0x%04X, dataAddress=0x%08X, cp=0x%02X", getDataCount(), getDataAddress(), getRegisterValue(0x14, 1)));
+					log.debug(String.format("MMIOHandlerBaseMemoryStick.startCmd MS_CMD_BLOCK_WRITE dataCount=0x%04X, dataAddress=0x%08X, cp=0x%02X", getDataCount(), getDataAddress(), getRegisterValue(0x14, 1)));
 				}
 				break;
 			case MS_CMD_SLEEP:
@@ -694,52 +542,69 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				break;
 			case MSPRO_CMD_WRITE_DATA:
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.startCmd MSPRO_CMD_WRITE_DATA dataCount=0x%04X, dataAddress=0x%08X", getDataCount(), getDataAddress()));
+					log.debug(String.format("MMIOHandlerBaseMemoryStick.startCmd MSPRO_CMD_WRITE_DATA dataCount=0x%04X, dataAddress=0x%08X", getDataCount(), getDataAddress()));
 				}
 				setNumberOfPages(getDataCount());
 				setStartBlock(0);
 				setPageLba(getDataAddress());
 				break;
+			case MSPRO_CMD_READ_IO_ATRB:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerBaseMemoryStick.startCmd MSPRO_CMD_READ_IO_ATRB dataCount=0x%04X, dataAddress=0x%08X", getDataCount(), getDataAddress()));
+				}
+				commandCompleted = false;
+				break;
 			default:
-				log.error(String.format("MMIOHandlerMemoryStick.startCmd unknown cmd=0x%02X", cmd));
+				log.error(String.format("MMIOHandlerBaseMemoryStick.startCmd unknown cmd=0x%02X", cmd));
 				break;
 		}
 
-		// Set only the CED (Command EnD) bit in the INT register,
-		// indicating a successful completion
-		registers[MS_INT_REG_ADDRESS] = MS_INT_REG_CED;
-
 		pageIndex = 0;
 		pageDataIndex = 0;
-		status |= 0x2000;
-		sys |= 0x4000;
-		setInterrupt(0x4);
+		status |= MS_STATUS_UNKNOWN;
+
+		if (commandCompleted) {
+			// Set only the CED (Command EnD) bit in the INT register,
+			// indicating a successful completion
+			setRegisterValue(MS_INT_REG_ADDRESS, MS_INT_REG_CED);
+
+			sys |= 0x4000;
+			setInterrupt();
+		} else {
+			// Set only the BREQ (Buffer REQuest) bit in the INT register
+			setRegisterValue(MS_INT_REG_ADDRESS, MS_INT_REG_BREQ);
+		}
 	}
 
+	protected abstract int readData16(int dataAddress, int pageDataIndex);
+
 	private int readData16() {
-		if (!isSerialMode()) {
-			log.error(String.format("MMIOHandlerMemoryStick.readData16 not supported for parallel mode"));
-			return 0;
+		while (true) {
+			synchronized (dmaLock) {
+				int tpcCode = getTPCCode();
+				if (tpcCode == MS_TPC_READ_IO_DATA || tpcCode == MS_TPC_READ_REG || tpcCode == MS_TPC_GET_INT) {
+					break;
+				}
+			}
+
+			Utilities.sleep(10);
 		}
 
-		int value = 0;
 		int dataAddress = getDataAddress();
-		if (dataAddress == 0) {
-			value = bootPageMemory.read16(pageDataIndex);
-		} else if (dataAddress == PAGES_PER_BLOCK) {
-			value = bootPageBackupMemory.read16(pageDataIndex);
-		} else if (dataAddress == DISABLED_BLOCKS_PAGE) {
-			value = disabledBlocksPageMemory.read16(pageDataIndex);
-		} else if (dataAddress == CIS_IDI_PAGE) {
-			log.error(String.format("MMIOHandlerMemoryStick.readData16 unimplemented reading from CIS_IDI_PAGE"));
-		}
+		int value;
+		synchronized (dmaLock) {
+			value = readData16(dataAddress, pageDataIndex);
 
-		pageDataIndex += 2;
-		if (pageDataIndex >= PAGE_SIZE) {
-			clearBusy();
-			status |= 0x2000;
-			sys |= 0x4000;
-			setInterrupt(0x0004);
+			pageDataIndex += 2;
+			if (pageDataIndex >= readSize) {
+				// Set only the CED (Command EnD) bit in the INT register,
+				// indicating a successful completion
+				setRegisterValue(MS_INT_REG_ADDRESS, MS_INT_REG_CED);
+				clearBusy();
+				status |= MS_STATUS_UNKNOWN;
+				sys |= 0x4000;
+				setInterrupt();
+			}
 		}
 
 		return value;
@@ -759,22 +624,17 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		if (oobIndex >= (oobLength << 2)) {
 			oobIndex = 0;
 			clearBusy();
-			status |= 0x2000;
+			status |= MS_STATUS_UNKNOWN;
 			sys |= 0x4000;
 			unk08 |= 0x0040;
 			unk08 &= ~0x000F; // Clear error code
-			setInterrupt(0x0004);
+			setInterrupt();
 		}
 
 		return value;
 	}
 
 	private int readPageData16() {
-		if (!isSerialMode()) {
-			log.error(String.format("MMIOHandlerMemoryStick.readPageData16 not supported for parallel mode"));
-			return 0;
-		}
-
 		int value;
 
 		switch (cmd) {
@@ -785,7 +645,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				value = pageBufferMemory.read16(pageDataIndex);
 				break;
 			default:
-				log.error(String.format("MMIOHandlerMemoryStick.readPageData16 unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
+				log.error(String.format("MMIOHandlerBaseMemoryStick.readPageData16 unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
 				value = 0;
 				break;
 		}
@@ -797,11 +657,11 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 			if (pageIndex >= numberOfPages) {
 				pageIndex = 0;
 				clearBusy();
-				status |= 0x2000;
+				status |= MS_STATUS_UNKNOWN;
 				sys |= 0x4000;
 				unk08 |= 0x0040;
 				unk08 &= ~0x000F; // Clear error code
-				setInterrupt(0x0004);
+				setInterrupt();
 			}
 		}
 
@@ -827,72 +687,11 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		oobIndex = 0;
 	}
 
-	private void readMasterBootRecord() {
-		// See description of MBR at
-		// https://en.wikipedia.org/wiki/Master_boot_record
-		pageBufferPointer.clear(PAGE_SIZE);
-
-		// First partition entry
-		TPointer partitionPointer = new TPointer(pageBufferPointer, 446);
-		// Active partition
-		partitionPointer.setValue8(0, (byte) 0x80);
-    	// CHS address of first absolute sector in partition (not used by the PSP)
-		partitionPointer.setValue8(1, (byte) 0x00);
-		partitionPointer.setValue8(2, (byte) 0x00);
-		partitionPointer.setValue8(3, (byte) 0x00);
-		// Partition type: FAT32 with LBA
-		partitionPointer.setValue8(4, (byte) 0x0C);
-    	// CHS address of last absolute sector in partition (not used by the PSP)
-		partitionPointer.setValue8(5, (byte) 0x00);
-		partitionPointer.setValue8(6, (byte) 0x00);
-		partitionPointer.setValue8(7, (byte) 0x00);
-		// LBA of first absolute sector in the partition
-		partitionPointer.setUnalignedValue32(8, FIRST_PAGE_LBA);
-		// Number of sectors in partition
-		partitionPointer.setUnalignedValue32(12, NUMBER_OF_PAGES);
-
-		// Signature
-		pageBufferPointer.setValue8(510, (byte) 0x55);
-		pageBufferPointer.setValue8(511, (byte) 0xAA);
-	}
-
 	private void setCmd(int cmd) {
 		this.cmd = cmd;
 	}
 
-	private void readPageBuffer() {
-		if (cmd == MS_CMD_BLOCK_READ || cmd == MSPRO_CMD_READ_DATA) {
-			long offset = 0L;
-			int lba = pageLba;
-			if (startBlock != 0xFFFF) {
-				pageLba += startBlock * PAGES_PER_BLOCK;
-			}
-
-			// Invalid page number set during boot sequence
-			if (pageLba == 0x4000) {
-				pageBufferPointer.clear(PAGE_SIZE);
-			} else if (lba == 0) {
-				readMasterBootRecord();
-			} else if (lba >= FIRST_PAGE_LBA) {
-				offset = (lba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
-
-				sceMSstorModule.hleMSstorPartitionIoLseek(null, offset, PSP_SEEK_SET);
-				sceMSstorModule.hleMSstorPartitionIoRead(null, pageBufferPointer, PAGE_SIZE);
-			} else {
-				pageBufferPointer.clear(PAGE_SIZE);
-			}
-
-			if (log.isDebugEnabled()) {
-				byte[] buffer = new byte[PAGE_SIZE];
-				for (int i = 0; i < buffer.length; i++) {
-					buffer[i] = pageBufferPointer.getValue8(i);
-				}
-				log.debug(String.format("MMIOHandlerMemoryStick.readPageBuffer startBlock=0x%X, lba=0x%X, offset=0x%X: %s", startBlock, lba, offset, Utilities.getMemoryDump(buffer)));
-			}
-
-			pageLba++;
-		}
-	}
+	protected abstract void readPageBuffer();
 
 	private int readTPCData32() {
 		int data = 0;
@@ -900,7 +699,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 			case MS_TPC_GET_INT:
 				data = registers[MS_INT_REG_ADDRESS] & 0xFF;
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.readTPCData32 MS_TPC_GET_INT registers[0x%02X]=0x%02X", MS_INT_REG_ADDRESS, data));
+					log.debug(String.format("MMIOHandlerBaseMemoryStick.readTPCData32 MS_TPC_GET_INT registers[0x%02X]=0x%02X", MS_INT_REG_ADDRESS, data));
 				}
 				break;
 			case MS_TPC_READ_REG:
@@ -910,7 +709,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 					}
 					data |= (registers[readAddress] & 0xFF) << i;
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("MMIOHandlerMemoryStick.readTPCData32 MS_TPC_READ_REG registers[0x%02X]=0x%02X", readAddress, registers[readAddress]));
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.readTPCData32 MS_TPC_READ_REG registers[0x%02X]=0x%02X", readAddress, registers[readAddress]));
 					}
 					readSize--;
 					readAddress++;
@@ -921,12 +720,9 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		return data;
 	}
 
-	private int readPageData32() {
-		if (isSerialMode()) {
-			log.error(String.format("MMIOHandlerMemoryStick.readPageData32 not supported for serial mode"));
-			return 0;
-		}
+	protected abstract void initMsproAttributeMemory();
 
+	private int readPageData32() {
 		int value;
 
 		switch (cmd) {
@@ -941,7 +737,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				value = pageBufferMemory.read32(pageDataIndex);
 				break;
 			default:
-				log.error(String.format("MMIOHandlerMemoryStick.readPageData32 unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
+				log.error(String.format("MMIOHandlerBaseMemoryStick.readPageData32 unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
 				value = 0;
 				break;
 		}
@@ -954,15 +750,19 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				pageIndex = 0;
 				commandDataIndex = 0;
 				clearBusy();
-				status |= 0x2000;
+				status |= MS_STATUS_UNKNOWN;
 				sys |= 0x4000;
 				unk08 |= 0x0040;
 				unk08 &= ~0x000F; // Clear error code
-				setInterrupt(0x0004);
+				setInterrupt();
 			}
 		}
 
 		return value;
+	}
+
+	protected void setRegisterValue(int register, int value) {
+		registers[register] = value;
 	}
 
 	private void writeTPCData(int value) {
@@ -980,7 +780,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				writeAddress = (value >> 16) & 0xFF;
 				writeSize = (value >> 24) & 0xFF;
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.writeTPCData MS_TPC_SET_RW_REG_ADDRESS readAddress=0x%02X, readSize=0x%X, writeAddress=0x%02X, writeSize=0x%X", readAddress, readSize, writeAddress, writeSize));
+					log.debug(String.format("MMIOHandlerBaseMemoryStick.writeTPCData MS_TPC_SET_RW_REG_ADDRESS readAddress=0x%02X, readSize=0x%X, writeAddress=0x%02X, writeSize=0x%X", readAddress, readSize, writeAddress, writeSize));
 				}
 				// Ignore further data
 				tpc = -1;
@@ -990,9 +790,9 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 					if (writeSize <= 0 || writeAddress >= registers.length) {
 						break;
 					}
-					registers[writeAddress] = value & 0xFF;
+					setRegisterValue(writeAddress, value & 0xFF);
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("MMIOHandlerMemoryStick.writeTPCData MS_TPC_WRITE_REG registers[0x%02X]=0x%02X", writeAddress, registers[writeAddress]));
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.writeTPCData MS_TPC_WRITE_REG registers[0x%02X]=0x%02X", writeAddress, registers[writeAddress]));
 					}
 					writeAddress++;
 					writeSize--;
@@ -1008,14 +808,14 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				switch (tpcExSetCmdIndex) {
 					case 0:
 						setCmd(value & 0xFF);
-						registers[0x11] = (value >>  8) & 0xFF;
-						registers[0x12] = (value >> 16) & 0xFF;
-						registers[0x13] = (value >> 24) & 0xFF;
+						setRegisterValue(0x11, (value >>  8) & 0xFF);
+						setRegisterValue(0x12, (value >> 16) & 0xFF);
+						setRegisterValue(0x13, (value >> 24) & 0xFF);
 						break;
 					case 1:
-						registers[0x14] = (value >>  0) & 0xFF;
-						registers[0x15] = (value >>  8) & 0xFF;
-						registers[0x16] = (value >> 16) & 0xFF;
+						setRegisterValue(0x14, (value >>  0) & 0xFF);
+						setRegisterValue(0x15, (value >>  8) & 0xFF);
+						setRegisterValue(0x16, (value >> 16) & 0xFF);
 						startCmd(cmd);
 						break;
 					default:
@@ -1033,7 +833,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				setCmd(value);
 				tpc = MS_TPC_SET_CMD;
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("MMIOHandlerMemoryStick.writeCommandData8 cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
+					log.debug(String.format("MMIOHandlerBaseMemoryStick.writeCommandData8 cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
 				}
 
 				switch (cmd) {
@@ -1044,7 +844,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 					case MSPRO_CMD_WRITE_DATA:
 						break;
 					default:
-						log.error(String.format("MMIOHandlerMemoryStick.writeCommandData8 unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
+						log.error(String.format("MMIOHandlerBaseMemoryStick.writeCommandData8 unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
 						break;
 				}
 				break;
@@ -1074,53 +874,21 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				}
 				break;
 			default:
-				log.error(String.format("MMIOHandlerMemoryStick.writeCommandData8 unknown data 0x%02X written at index 0x%X", value, commandDataIndex));
+				log.error(String.format("MMIOHandlerBaseMemoryStick.writeCommandData8 unknown data 0x%02X written at index 0x%X", value, commandDataIndex));
 				break;
 		}
 		commandDataIndex++;
 	}
 
-	private void writePageBuffer() {
-		if (cmd == MSPRO_CMD_WRITE_DATA) {
-			long offset = 0L;
-			int lba = pageLba;
-			if (startBlock != 0xFFFF) {
-				lba += startBlock * PAGES_PER_BLOCK;
-			}
-
-			if (log.isDebugEnabled()) {
-				byte[] buffer = new byte[PAGE_SIZE];
-				for (int i = 0; i < buffer.length; i++) {
-					buffer[i] = pageBufferPointer.getValue8(i);
-				}
-				log.debug(String.format("MMIOHandlerMemoryStick.writePageBuffer startBlock=0x%X, lba=0x%X, offset=0x%X: %s", startBlock, lba, offset, Utilities.getMemoryDump(buffer)));
-			}
-
-			if (lba >= FIRST_PAGE_LBA) {
-				offset = (lba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
-
-				sceMSstorModule.hleMSstorPartitionIoLseek(null, offset, PSP_SEEK_SET);
-				sceMSstorModule.hleMSstorPartitionIoWrite(null, pageBufferPointer, PAGE_SIZE);
-			} else {
-				log.error(String.format("MMIOHandlerMemoryStick.writePageBuffer invalid lba=0x%X", lba));
-			}
-
-			pageLba++;
-		}
-	}
+	protected abstract void writePageBuffer();
 
 	private void writePageData32(int value) {
-		if (isSerialMode()) {
-			log.error(String.format("MMIOHandlerMemoryStick.writePageData32 not supported for serial mode"));
-			return;
-		}
-
 		switch (cmd) {
 			case MSPRO_CMD_WRITE_DATA:
 				pageBufferMemory.write32(pageDataIndex, value);
 				break;
 			default:
-				log.error(String.format("MMIOHandlerMemoryStick.writePageData32 unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
+				log.error(String.format("MMIOHandlerBaseMemoryStick.writePageData32 unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
 				break;
 		}
 
@@ -1128,7 +896,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		if (pageDataIndex >= PAGE_SIZE) {
 			pageDataIndex = 0;
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("MMIOHandlerMemoryStick.writePageData32 writing page 0x%X/0x%X", pageIndex, numberOfPages));
+				log.debug(String.format("MMIOHandlerBaseMemoryStick.writePageData32 writing page 0x%X/0x%X", pageIndex, numberOfPages));
 			}
 			writePageBuffer();
 			pageIndex++;
@@ -1136,11 +904,11 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 				pageIndex = 0;
 				commandDataIndex = 0;
 				clearBusy();
-				status |= 0x2000;
+				status |= MS_STATUS_UNKNOWN;
 				sys |= 0x4000;
 				unk08 |= 0x0040;
 				unk08 &= ~0x000F; // Clear error code
-				setInterrupt(0x0004);
+				setInterrupt();
 			}
 		}
 	}
@@ -1173,7 +941,11 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 		int value;
 		switch (address - baseAddress) {
 			case 0x28: value = readPageData32(); break;
+			case 0x30: value = tpc; break;
 			case 0x34: value = readTPCData32(); break;
+			case 0x38: value = getStatus(); break;
+			case 0x3C: value = sys; break;
+			case 0x40: value = unk40; break;
 			default: value = super.read32(address); break;
 		}
 
@@ -1210,8 +982,10 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBase {
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
 			case 0x28: writePageData32(value); break;
+			case 0x30: startTPC(value); break;
 			case 0x34: writeTPCData(value); break;
-			case 0x40: break; // TODO Unknown
+			case 0x3C: writeSys(value); break;
+			case 0x40: unk40 = value; break;
 			default: super.write32(address, value); break;
 		}
 

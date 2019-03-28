@@ -16,338 +16,145 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
-import static jpcsp.util.Utilities.endianSwap16;
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_WLAN_INTR;
 
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.apache.log4j.Logger;
-
+import jpcsp.Memory;
 import jpcsp.HLE.modules.sceWlan;
-import jpcsp.state.StateInputStream;
-import jpcsp.state.StateOutputStream;
-import jpcsp.util.Utilities;
+import jpcsp.memory.IntArrayMemory;
 
-public class MMIOHandlerWlan extends MMIOHandlerBase {
-	public static Logger log = sceWlan.log;
-	private static final int STATE_VERSION = 0;
-	private int command;
-	private Object dmaLock = new Object();
-	private final int data[] = new int[4096];
-	private int unknown38;
-	private int unknown3C;
-	private int unknown40;
-	private int index;
-	private int totalLength;
-	private int currentLength;
+/**
+ * MMIO for Wlan.
+ * 
+ * The Wlan interface is very similar to the MemoryStick Pro interface.
+ * 
+ * @author gid15
+ *
+ */
+public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick {
+	private final IntArrayMemory attributesMemory = new IntArrayMemory(new int[0x40 / 4]);
+	private static final int DUMMY_ATTRIBUTE_ENTRY = 0x1234;
+	private static final int WLAN_RESULT_REG_ADDRESS = 0x54;
 
 	public MMIOHandlerWlan(int baseAddress) {
 		super(baseAddress);
 
-		unknown38 = 0x4000 | 0x2000 | 0x1000 | 0x0002;
+		log = sceWlan.log;
+
+		reset();
 	}
 
 	@Override
-	public void read(StateInputStream stream) throws IOException {
-		stream.readVersion(STATE_VERSION);
-		command = stream.readInt();
-		stream.readInts(data);
-		unknown38 = stream.readInt();
-		unknown3C = stream.readInt();
-		unknown40 = stream.readInt();
-		index = stream.readInt();
-		totalLength = stream.readInt();
-		currentLength = stream.readInt();
-		super.read(stream);
-	}
+	protected void reset() {
+		super.reset();
 
-	@Override
-	public void write(StateOutputStream stream) throws IOException {
-		stream.writeVersion(STATE_VERSION);
-		stream.writeInt(command);
-		stream.writeInts(data);
-		stream.writeInt(unknown38);
-		stream.writeInt(unknown3C);
-		stream.writeInt(unknown40);
-		stream.writeInt(index);
-		stream.writeInt(totalLength);
-		stream.writeInt(currentLength);
-		super.write(stream);
-	}
+		// Possible values:
+		// 0x0011 0x0001 0x0001
+		// 0x0011 0x0001 0x1B18
+		// 0x0011 0x0002 0x1B11
+		// 0x0011 0x0002 0x0B11
+		attributesMemory.writeUnsigned16(0, 0x0011);
+		attributesMemory.writeUnsigned16(2, 0x0001);
+		attributesMemory.writeUnsigned16(4, 0x1B18);
 
-	private void setUnknown3C(int value) {
-		unknown3C = value & ~0x200;
-	}
-
-	private int getCommandCode() {
-		return command >>> 12;
-	}
-
-	private int getCommandLength() {
-		return command & 0xFFF;
-	}
-
-	private void setCommand(int value) {
-		synchronized(dmaLock) {
-			command = value;
-			index = 0;
-			unknown38 &= 0xFFFFFFF0;
-
-			switch (command) {
-				case 0x7001:
-					setData8(0, 0x80);
-					totalLength = getCommandLength();
-					currentLength = 0;
-					break;
-				case 0x4001:
-				case 0x4002:
-				case 0x4004:
-					totalLength = getCommandLength();
-					currentLength = 0;
-					break;
-				case 0x5040:
-					clearData(getCommandLength());
-					// Possible values:
-					// 0x0011 0x0001 0x0001
-					// 0x0011 0x0001 0x1B18
-					// 0x0011 0x0002 0x1B11
-					// 0x0011 0x0002 0x0B11
-					setData32(0, swap32(0x00010011));
-					setData32(4, swap32(0x00001B18));
-
-					setData32(8 , swap32(0x12340001));
-					setData32(12, swap32(0x00000040));
-					break;
-				case 0x5200:
-					clearData(getCommandLength());
-					break;
-				case 0x8004:
-					break;
-				case 0x9007:
-					break;
-				case 0xB001:
-					break;
-				default:
-					log.error(String.format("setCommand unknown command=0x%X", command));
-					Arrays.fill(data, 0);
-					break;
-			}
+		for (int i = 1; i < 8; i++) {
+			int offset = i * 8;
+			attributesMemory.writeUnsigned16(offset + 0, i); // Has to be a value in range [1..8]
+			attributesMemory.writeUnsigned16(offset + 2, DUMMY_ATTRIBUTE_ENTRY); // Unknown address used for MSPRO_CMD_READ_IO_ATRB
+			attributesMemory.writeUnsigned16(offset + 4, 0x0040); // Unknown size
 		}
-	}
+		swapData32(attributesMemory, 0, 0x40);
 
-	private int readData8() {
-		while (true) {
-			synchronized (dmaLock) {
-				int commandCode = getCommandCode();
-				if (commandCode == 0x5 || commandCode == 0x7 || commandCode == 0x4) {
-					if ((unknown38 & 0x3) != 0x2) {
-						break;
-					}
-				}
-			}
-			Utilities.sleep(100);
-		}
+		// Behaves like a Memory Stick Pro.
+		registers[MS_TYPE_ADDRESS] = MS_TYPE_MEMORY_STICK_PRO;
+		// For now in serial mode, it will be set later by the PSP to parallel mode.
+		registers[MS_SYSTEM_ADDRESS] = MS_SYSTEM_SERIAL_MODE;
 
-		int value;
-		synchronized (dmaLock) {
-			value = data[index++] & 0xFF;
-
-			if (index == getCommandLength()) {
-				currentLength += index;
-
-				unknown38 |= 0x0002;
-				if (currentLength >= totalLength) {
-					unknown38 |= 0x0001;
-				}
-			}
-		}
-
-		return value;
-	}
-
-	private int readData16() {
-		return readData8() | (readData8() << 8);
-	}
-
-	private int readData32() {
-		return readData8() | (readData8() << 8) | (readData8() << 16) | (readData8() << 24);
-	}
-
-	private int getData16(int offset) {
-		return data[offset] | (data[offset + 1] << 8);
-	}
-
-	private int getData32(int offset) {
-		return data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24);
+		// Unknown register value
+		setRegisterValue(0x22, 0x24);
 	}
 
 	static private int swap32(int value) {
 		return (value >>> 16) | (value << 16);
 	}
 
-	private void setData8(int offset, int value) {
-		data[offset] = value & 0xFF;
-	}
-
-	private void setData16(int offset, int value) {
-		setData8(offset++, value);
-		setData8(offset, value >> 8);
-	}
-
-	private void setData32(int offset, int value) {
-		setData8(offset++, value);
-		setData8(offset++, value >> 8);
-		setData8(offset++, value >> 16);
-		setData8(offset, value >> 24);
-	}
-
-	private void clearData(int offset, int length) {
-		for (int i = 0; i < length; i++) {
-			setData8(offset++, 0);
+	static private void swapData32(Memory mem, int address, int length) {
+		for (int i = 0; i < length; i += 4) {
+			mem.write32(address + i, swap32(mem.read32(address + i)));
 		}
 	}
 
-	private void clearData(int length) {
-		clearData(0, length);
+	@Override
+	protected void initMsproAttributeMemory() {
+		log.error(String.format("MMIOHandlerWlan.initMsproAttributeMemory not supported"));
 	}
 
-	private void writeData8(int value) {
-		data[index++] = value & 0xFF;
+	@Override
+	protected int getInterruptNumber() {
+		return PSP_WLAN_INTR;
 	}
 
-	private void writeData32(int value) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("writeData32 command=0x%X, data=0x%08X, index=0x%X", command, value, index));
+	@Override
+	protected int getInterruptBit() {
+		return 0x0000;
+	}
+
+	private void addResultFlag(int flag) {
+		registers[WLAN_RESULT_REG_ADDRESS] |= flag;
+	}
+
+	@Override
+	protected void setRegisterValue(int register, int value) {
+		switch (register) {
+			case WLAN_RESULT_REG_ADDRESS:
+				// Writing to this register seems to only have the effect to clear bits of its value
+				value = registers[register] & value;
+				break;
 		}
-		writeData8(value);
-		writeData8(value >> 8);
-		writeData8(value >> 16);
-		writeData8(value >>> 24);
 
-		switch (command) {
-			case 0x8004:
-				if (index >= 8) {
-					switch (getData32(0)) {
-						case 0x122:
-						case 0x123:
-						case 0x124:
-						case 0x127:
-							clearData(8);
-							setData8(0, 0x00); // Returning 1 unknown byte
-							break;
-						case 0x125:
-							clearData(8);
-							setData8(0, 0x01); // Returning 1 unknown byte
-							break;
-						case 0x154:
-							clearData(8);
-							setData8(0, 0xFF); // Returning 1 unknown byte
-							break;
-						case 0x24A:
-							clearData(8);
-							setData16(0, endianSwap16(0xC00)); // Returning unknown 16 bit value (it is a size for next request, must be between 4 and 0xC00)
-							break;
-						case 0x44E:
-							clearData(8);
-							setData32(0, 0x100F0000); // Returning unknown 32 bit value
-							// Possible values are 0xNNNNxxxx, with NNNN being one of the following:
-							// 0x1002
-							// 0x1008
-							// 0x100D
-							// 0x100E
-							// 0x100F
-							// 0x1020
-							// 0x1040
-							// 0x1080
-							// 0x10A0
-							// 0x10C0
-							break;
-						case 0x1100000:
-						case 0x1250000:
-						case 0x1260000:
-						case 0x1540000:
-						case 0x15A0000:
-						case 0x15C0000:
-						case 0x15E0000:
-							clearData(8);
-							break;
-						default:
-							log.error(String.format("writeData32 unknown command=0x%X, data[0]=0x%08X, data[1]=0x%08X", command, getData32(0), getData32(4)));
-							Arrays.fill(data, 0);
-							break;
-					}
-				}
+		super.setRegisterValue(register, value);
+
+		switch (register) {
+			case 0x56:
+				// Writing to this register seems to also have the effect of updating the result register
+				addResultFlag(0x04);
 				break;
-			case 0x9007:
-				if (index >= 8) {
-					totalLength = endianSwap16(getData16(1));
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("writeData32 command=0x%X, totalLength=0x%X", command, totalLength));
-					}
-					currentLength = 0;
-					unknown38 |= 0x0002;
-					index = 0;
-				}
-				break;
-			case 0xB001:
-				if (index >= 8) {
-					switch (getData32(0)) {
-						default:
-							log.error(String.format("writeData32 unknown command=0x%X, data[0]=0x%08X, data[1]=0x%08X", command, getData32(0), getData32(4)));
-							Arrays.fill(data, 0);
-							break;
-					}
-				}
+			case 0x5E:
+				// Writing to this register seems to also have the effect of updating the result register
+				addResultFlag(0x80);
 				break;
 		}
 	}
 
 	@Override
-	public int read16(int address) {
-		int value;
-		switch (address - baseAddress) {
-			case 0x34: value = readData16(); break;
-			default: value = super.read16(address); break;
-		}
+	protected int readData16(int dataAddress, int pageDataIndex) {
+		int value = 0;
 
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read16(0x%08X) returning 0x%04X", getPc(), address, value));
+		switch (cmd) {
+			case MSPRO_CMD_READ_IO_ATRB:
+				if (dataAddress == 0 && pageDataIndex < attributesMemory.getSize()) {
+					value = attributesMemory.read16(pageDataIndex);
+				} else if (dataAddress == DUMMY_ATTRIBUTE_ENTRY) {
+					// Dummy entry
+					value = 0;
+				} else {
+					log.error(String.format("MMIOHandlerWlan.readData16 unimplemented cmd=0x%X(%s), dataAddress=0x%X, pageDataIndex=0x%X", cmd, getCommandName(cmd), dataAddress, pageDataIndex));
+				}
+				break;
+			default:
+				log.error(String.format("MMIOHandlerWlan.readData16 unimplemented cmd=0x%X(%s), dataAddress=0x%X, pageDataIndex=0x%X", cmd, getCommandName(cmd), dataAddress, pageDataIndex));
+				break;
 		}
 
 		return value;
 	}
 
 	@Override
-	public int read32(int address) {
-		int value;
-		switch (address - baseAddress) {
-			case 0x30: value = command; break;
-			case 0x34: value = readData32(); break;
-			case 0x38: value = unknown38; break;
-			case 0x3C: value = unknown3C; break;
-			case 0x40: value = unknown40; break;
-			default: value = super.read32(address); break;
-		}
-
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", getPc(), address, value));
-		}
-
-		return value;
+	protected void readPageBuffer() {
+		log.error(String.format("MMIOHandlerWlan.readPageBuffer unimplemented"));
 	}
 
 	@Override
-	public void write32(int address, int value) {
-		switch (address - baseAddress) {
-			case 0x30: setCommand(value); break;
-			case 0x34: writeData32(value); break;
-			case 0x3C: setUnknown3C(value); break;
-			case 0x40: unknown40 = value; break;
-			default: super.write32(address, value); break;
-		}
-
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
-		}
+	protected void writePageBuffer() {
+		log.error(String.format("MMIOHandlerWlan.writePageBuffer unimplemented"));
 	}
 }

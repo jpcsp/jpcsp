@@ -1522,4 +1522,9 @@ public class sceWlan extends HLEModule {
 
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x90E5530F, version = 150)
+    public void sceWlanDrv_driver_90E5530F(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer wlanDriver1, int wlanDriver1Size, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer wlanDriver2, int wlanDriver2Size) {
+    }
 }

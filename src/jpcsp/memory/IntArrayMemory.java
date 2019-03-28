@@ -188,4 +188,8 @@ public class IntArrayMemory extends Memory {
 	protected void memcpy(int destination, int source, int length, boolean checkOverlap) {
 		log.error(String.format("Unimplemented memcpy destination=0x%08X, source=0x%08X, length=0x%X, checkOverlap=%b", destination, source, length, checkOverlap));
 	}
+
+	public int getSize() {
+		return (memory.length - offset) << 2;
+	}
 }
