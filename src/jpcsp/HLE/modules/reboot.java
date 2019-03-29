@@ -654,10 +654,11 @@ public class reboot extends HLEModule {
 		// and https://github.com/uofw/uofw/blob/master/src/reboot/nand.c
     	int offset = -1;
     	switch (Model.getGeneration()) {
-    		case 1: offset = 0x0;   break;
-    		case 2: offset = 0x348; break; // Functions are shifted in reboot_02g.bin
+    		case 1: offset = 0x288; break; // Functions are shifted in reboot.bin 6.61
+    		case 2: offset = 0x348; break; // Functions are shifted in reboot_02g.bin 6.61
     	}
     	if (offset != -1) {
+    		// The below offsets are for reboot.bin 6.60
 	    	addFunctionNid(offset + 0x0000EFCC, rebootModule, "sceNandInit2");
 	    	addFunctionNid(offset + 0x0000F0C4, rebootModule, "sceNandIsReady");
 	    	addFunctionNid(offset + 0x0000F0D4, rebootModule, "sceNandSetWriteProtect");

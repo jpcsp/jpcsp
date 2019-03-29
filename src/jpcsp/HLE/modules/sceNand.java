@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -106,27 +107,21 @@ public class sceNand extends HLEModule {
 		dumpSpares = readBytes("nand.spare");
 		dumpResults = readInts("nand.result");
 
-		int lbn = 0;
 		final int startPpnToLbn = idStoragePpnEnd + 1;
-		for (int ppn = 0; ppn < ppnToLbn.length; ppn++) {
-			if (ppn < startPpnToLbn) {
-    			ppnToLbn[ppn] = 0x0000;
-			} else {
-				// The PSP code requires that we leave 16 blocks free every 0x1F0 blocks.
-				// These are maybe used for bad blocks
-				int freeBlockNumber = ((ppn - startPpnToLbn) / pagesPerBlock) % 0x1F0;
-				final int freeBlockAreaStart = 0x7; // Trial and error show that valid values are from 0x7 to 0x62 (why???)
-				final int freeBlockAreaEnd = freeBlockAreaStart + 16;
+		final int numberUsedBlocks = 0x1E0;
+		final int numberBlocks = isSmallNand() ? 0x1F0 : 0x1F8;
+		final int numberFreePages = (numberBlocks - numberUsedBlocks) * pagesPerBlock;
+		Arrays.fill(ppnToLbn, 0, startPpnToLbn, 0x0000);
+		for (int ppn = startPpnToLbn, lbn = 0; ppn < ppnToLbn.length; ) {
+			Arrays.fill(ppnToLbn, ppn, ppn + pagesPerBlock, lbn);
+			ppn += pagesPerBlock;
+			lbn++;
 
-				if (freeBlockNumber >= freeBlockAreaStart && freeBlockNumber < freeBlockAreaEnd) {
-					ppnToLbn[ppn] = 0xFFFF;
-				} else {
-					ppnToLbn[ppn] = lbn;
-	    			if ((ppn % pagesPerBlock) == pagesPerBlock - 1) {
-	    				lbn++;
-	    			}
-				}
-    		}
+			// The blocks from 0x1E0 to 0x1F0/0x1F8 have to be free
+			if ((lbn % numberUsedBlocks) == 0) {
+				Arrays.fill(ppnToLbn, ppn, ppn + numberFreePages, 0xFFFF);
+				ppn += numberFreePages;
+			}
 		}
 
 		if (log.isDebugEnabled()) {
