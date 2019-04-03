@@ -98,7 +98,7 @@ public class Settings {
         }
 
         // Set default directory mappings
-        for (String directoryName : new String[] { "flash0", "flash1", "flash2", "ms0", "exdata0" }) {
+        for (String directoryName : new String[] { "flash0", "flash1", "flash2", "flash3", "ms0", "exdata0" }) {
         	setDirectoryMapping(directoryName, readString(directoryName, directoryName + "/"));
         }
     }

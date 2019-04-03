@@ -19,6 +19,11 @@ package jpcsp.memory.mmio;
 import static jpcsp.HLE.Modules.sceNandModule;
 import static jpcsp.HLE.Modules.sceSysregModule;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_NAND_INTR;
+import static jpcsp.HLE.modules.sceNand.flash0LbnStart;
+import static jpcsp.HLE.modules.sceNand.flash1LbnStart;
+import static jpcsp.HLE.modules.sceNand.flash2LbnStart;
+import static jpcsp.HLE.modules.sceNand.flash3LbnStart;
+import static jpcsp.HLE.modules.sceNand.flash4LbnStart;
 import static jpcsp.HLE.modules.sceNand.idStoragePpnEnd;
 import static jpcsp.HLE.modules.sceNand.idStoragePpnStart;
 import static jpcsp.HLE.modules.sceNand.iplPpnEnd;
@@ -29,14 +34,19 @@ import static jpcsp.hardware.Nand.pageSize;
 import static jpcsp.hardware.Nand.pagesPerBlock;
 import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.lineSeparator;
+import static jpcsp.util.Utilities.readUnaligned32;
+import static jpcsp.util.Utilities.writeUnaligned32;
+import static jpcsp.util.Utilities.writeUnaligned64;
 
 import java.io.IOException;
+import java.security.MessageDigest;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.sceNand;
+import jpcsp.hardware.Model;
 import jpcsp.memory.IntArrayMemory;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -248,21 +258,43 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 		} else if (ppn >= iplPpnStart && ppn <= iplPpnEnd) {
 			scramble = 0; // IPL is not scrambled
 		} else if (ppn >= idStoragePpnStart && ppn <= idStoragePpnEnd) {
-			scramble = 0; // ID Storage is not scrambled
-		} else if (lbn == 0x003 && sector == 0) {
+			if (Model.getTachyonVersion() < 0x00500000) {
+				scramble = 0; // ID Storage is not scrambled in PSP Fat
+			} else {
+				// Starting in PSP Slim, ID Storage is scrambled
+				byte bytes[] = new byte[16];
+				writeUnaligned64(bytes, 0, fuseId);
+				writeUnaligned32(bytes, 8, ((int) fuseId) << 1);
+				writeUnaligned32(bytes, 12, 0xD41D8CD9);
+	            try {
+	                MessageDigest md = MessageDigest.getInstance("SHA-1");
+	                byte hash[] = md.digest(bytes);
+	                scramble = (readUnaligned32(hash, 0) ^ readUnaligned32(hash, 12)) + readUnaligned32(hash, 8);
+	            } catch (Exception e) {
+	            	log.error("getScramble", e);
+	            }
+			}
+		} else if (lbn == flash0LbnStart + 1 && sector == 0) {
 			scramble = getScrambleBootSector(fuseId, 0); // flash0 boot sector
-		} else if (lbn >= 0x004 && lbn < 0x601) {
+		} else if (lbn >= flash0LbnStart + 2 && lbn < flash1LbnStart - 1) {
 			scramble = getScrambleDataSector(fuseId, 0); // flash0
-		} else if (lbn >= 0x602 && lbn < 0x702) {
+		} else if (lbn >= flash1LbnStart && lbn < flash2LbnStart - 1) {
 			scramble = 0; // flash1 is not scrambled
-		} else if (lbn == 0x703 && sector == 0) {
+		} else if (lbn == flash2LbnStart + 1 && sector == 0) {
 			scramble = getScrambleBootSector(fuseId, 2); // flash2 boot sector
-		} else if (lbn >= 0x704 && lbn < 0x742) {
+		} else if (lbn >= flash2LbnStart + 2 && lbn < flash3LbnStart) {
 			scramble = getScrambleDataSector(fuseId, 2); // flash2
-		} else if (lbn == 0x742 && sector == 0) {
-			scramble = getScrambleBootSector(fuseId, 3); // flash3 boot sector
-		} else if (lbn >= 0x743) {
+		} else if (lbn == flash3LbnStart && sector == 0) {
+			// flash3 boot sector
+			if (Model.getTachyonVersion() < 0x00500000) {
+				scramble = getScrambleBootSector(fuseId, 3); // Scrambled in PSP Fat
+			} else {
+				scramble = 0; // Not scrambled in PSP Slim
+			}
+		} else if (lbn >= flash3LbnStart + 1) {
 			scramble = getScrambleDataSector(fuseId, 3); // flash3
+		} else if (lbn == flash4LbnStart && sector == 0) {
+			scramble = 0; // flash4 boot sector
 		}
 
 		if (log.isDebugEnabled()) {
