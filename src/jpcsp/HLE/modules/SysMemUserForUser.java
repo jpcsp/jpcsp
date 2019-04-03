@@ -162,7 +162,7 @@ public class SysMemUserForUser extends HLEModule {
 
     public void setMemory64MB(boolean isMemory64MB) {
     	if (isMemory64MB) {
-    		setMemorySize(MemoryMap.END_RAM_64MB - MemoryMap.START_RAM + 1); // 60 MB
+    		setMemorySize(MemoryMap.END_RAM_64MB - MemoryMap.START_RAM + 1); // 64 MB
     	} else {
     		setMemorySize(MemoryMap.END_RAM_32MB - MemoryMap.START_RAM + 1); // 32 MB
     	}

@@ -61,6 +61,7 @@ import jpcsp.format.PSP;
 import jpcsp.hardware.Model;
 import jpcsp.memory.IntArrayMemory;
 import jpcsp.memory.mmio.MMIO;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 public class reboot extends HLEModule {
@@ -87,8 +88,13 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-		final boolean fromSyscall = false;
+        Model.setModel(Settings.getInstance().readInt("emu.model"));
+    	Modules.SysMemUserForUserModule.setMemory64MB(Model.getGeneration() > 1);
+        RuntimeContext.updateMemory();
+
+    	final boolean fromSyscall = false;
     	Emulator.getInstance().initNewPsp(fromSyscall);
+    	Emulator.getProcessor().triggerReset();
     	Emulator.getInstance().setModuleLoaded(true);
     	HLEModuleManager.getInstance().startModules(fromSyscall);
 
