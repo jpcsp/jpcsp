@@ -40,6 +40,10 @@ public class Fat16VirtualFile extends Fat12VirtualFile {
 	protected void readFatSector(int fatIndex) {
 		readEmptySector();
 
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Fat16VirtualFile.readFatSector fatIndex=0x%X", fatIndex));
+		}
+
 		int offset = (fatIndex * sectorSize) >> 1;
 		int maxSize = Math.min(sectorSize, (fatClusterMap.length - offset) << 1);
 		for (int i = 0, j = 0; i < maxSize; i += 2, j++) {

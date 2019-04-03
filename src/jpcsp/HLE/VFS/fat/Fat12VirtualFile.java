@@ -141,6 +141,10 @@ public class Fat12VirtualFile extends FatVirtualFile {
 	protected void readFatSector(int fatIndex) {
 		readEmptySector();
 
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Fat12VirtualFile.readFatSector fatIndex=0x%X", fatIndex));
+		}
+
 		int offset = (fatIndex * sectorSize) / 3 * 2;
 		int startIndex = (offset / 2 * 3) - (fatIndex * sectorSize);
 		for (int i = startIndex, j = 0; i < sectorSize; j += 2) {

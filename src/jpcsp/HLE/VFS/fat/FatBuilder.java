@@ -60,7 +60,7 @@ public class FatBuilder {
 		vFile.setRootDirectory(rootDirectory);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Using 0x%X clusters out of 0x%X", firstFreeCluster, maxNumberClusters));
+			log.debug(String.format("%s: Using 0x%X clusters out of 0x%X", deviceName, firstFreeCluster, maxNumberClusters));
 			debugScan(rootDirectory);
 		}
 

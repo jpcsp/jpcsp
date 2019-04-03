@@ -439,4 +439,9 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 	public Map<IoOperation, IoOperationTiming> getTimings() {
 		return IoFileMgrForUser.noDelayTimings;
 	}
+
+    @Override
+	public String toString() {
+		return String.format("LocalVirtualFileSystem localPath='%s', useDirExtendedInfo=%b", localPath, useDirExtendedInfo);
+	}
 }
