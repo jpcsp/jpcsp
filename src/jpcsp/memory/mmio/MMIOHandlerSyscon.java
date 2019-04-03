@@ -42,6 +42,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY_
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POMMEL_VERSION;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POWER_STATUS;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POWER_SUPPLY_STATUS;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_STATUS2;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_TIMESTAMP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_NOP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_READ_ALARM;
@@ -431,6 +432,8 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 			case PSP_SYSCON_CMD_CTRL_VOLTAGE:
 				unknown = getData24(data, PSP_SYSCON_TX_DATA);
 				sceSysconModule.sceSysconCtrlVoltage(unknown & 0xFF, (unknown >> 8) & 0xFFFF);
+				break;
+			case PSP_SYSCON_CMD_GET_STATUS2:
 				break;
 			default:
 				log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));

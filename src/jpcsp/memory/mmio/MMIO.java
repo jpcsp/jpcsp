@@ -98,7 +98,9 @@ public class MMIO extends Memory {
     	addHandler(0xBE4C0000, MMIOHandlerUartBase.SIZE_OF, new MMIOHandlerUart4(0xBE4C0000));
     	addHandler(0xBE500000, MMIOHandlerUartBase.SIZE_OF, new MMIOHandlerUart3(0xBE500000));
     	addHandler(MMIOHandlerSyscon.BASE_ADDRESS, 0x28, MMIOHandlerSyscon.getInstance());
+    	addHandler(0xBE5C0000, 0x28, new MMIOHandlerLdcControllerSlim(0xBE5C0000), 2);
     	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
+    	addHandler(0xBE780000, 0x20, new MMIOHandlerDisplayControllerSlim(0xBE780000), 2);
 
     	// The memory at 0xBFC00000 is only visible during the IPL execution
     	addHandlerRW(0xBFC00000, 0x1000); // 4K embedded RAM
@@ -112,11 +114,15 @@ public class MMIO extends Memory {
     	initMMIO();
 	}
 
+	private void xorKey(int keyAddr, int[] key, int[] xorInts) {
+		byte[] xorBytes = memlmd.getKey(xorInts);
+		for (int i = 0; i < xorBytes.length; i++) {
+			write8(keyAddr + i, (byte) (key[i] ^ xorBytes[i]));
+		}
+	}
+
 	private void initMMIO() {
 		// Initialization of key values used to decrypt pspbtcnf.bin
-		int[] xorInts = null;
-    	int[] key = null;
-    	int keyAddr = 0;
     	switch (Model.getGeneration()) {
     		case 1:
     			// The 4 values stored at 0xBFD00200 will be xor-ed
@@ -130,14 +136,13 @@ public class MMIO extends Memory {
     			//   0x4EBA3ACA
     			//   0x40D276AC
     			//   0xF9BFC3F5
-    			// which will be used to decrypt flash0:/kd/pspbtcnf.bin
-    			keyAddr = 0xBFD00200;
-    			xorInts = new int[] { 0x24388370, 0xB565FA41, 0x48ADBAA4, 0x53DFF0BB };
-    			key = KeyVault.keys660_k1;
+    			// which will be used to decrypt flash0:/kd/pspbtcnf.bin and PRXes
+    			xorKey(0xBFD00200, KeyVault.keys660_k1, new int[] { 0x24388370, 0xB565FA41, 0x48ADBAA4, 0x53DFF0BB });
     	    	break;
     		case 2:
-    			// At least one of the 16 bytes at 0xBFD00200 needs to be non-zero
-    			write8(0xBFD00200, (byte) 0x01);
+    			// Same key as used for generation 1, but different XOR.
+    			// Will be used to decrypt (01g) PRXes.
+    			xorKey(0xBFD00200, KeyVault.keys660_k1, new int[] { 0x896161FF, 0xBCB845BB, 0x6DD47B69, 0x43C76AF0 });
 
     			// The 4 values stored at 0xBFD00210 will be xor-ed
     			// with the following 4 values which are hardcoded in reboot_02g.bin:
@@ -150,15 +155,14 @@ public class MMIO extends Memory {
     			//   0x4FFC6AB9
     			//   0xB3DFE33E
     			//   0x822AE86C
-    			// which will be used to decrypt flash0:/kd/pspbtcnf_02g.bin
-    			keyAddr = 0xBFD00210;
-    			xorInts = new int[] { 0x539CBC37, 0x7CC9CD1C, 0x66128056, 0x531C4971 };
-    			key = KeyVault.keys660_k2;
+    			// which will be used to decrypt flash0:/kd/pspbtcnf_02g.bin and _02g PRXes
+    			xorKey(0xBFD00210, KeyVault.keys660_k2, new int[] { 0x539CBC37, 0x7CC9CD1C, 0x66128056, 0x531C4971 });
     	    	break;
     		case 3:
     		case 9:
-    			// At least one of the 16 bytes at 0xBFD00200 needs to be non-zero
-    			write8(0xBFD00200, (byte) 0x01);
+    			// Same key as used for generation 1, but different XOR.
+    			// Will be used to decrypt (01g) PRXes.
+    			xorKey(0xBFD00200, KeyVault.keys660_k1, new int[] { 0xA8F5FC35, 0x7F8D6DB9, 0x1B4E5413, 0x150FBA9C });
 
     			// The 4 values stored at 0xBFD00210 will be xor-ed
     			// with the following 4 values which are hardcoded in reboot_03g.bin and reboot_09g.bin:
@@ -167,26 +171,24 @@ public class MMIO extends Memory {
     			//   0xDC328074
     			//   0x575ABEE7
     			// The result of the xor has to match KeyVault.keys660_k7
-    			// which will be used to decrypt flash0:/kd/pspbtcnf_03g.bin and pspbtcnf_09g.bin
-    			keyAddr = 0xBFD00210;
-    			xorInts = new int[] { 0xDA87A21B, 0x982BFA1D, 0xDC328074, 0x575ABEE7 };
-    			key = KeyVault.keys660_k7;
+    			// which will be used to decrypt flash0:/kd/pspbtcnf_03g.bin or pspbtcnf_09g.bin
+    			// and _03g/_09g PRXes
+    			xorKey(0xBFD00210, KeyVault.keys660_k7, new int[] { 0xDA87A21B, 0x982BFA1D, 0xDC328074, 0x575ABEE7 });
     	    	break;
 	    	default:
 	    		log.error(String.format("Unimplemented MMIO initialization for PSP Model %s", Model.getModelName()));
 	    		break;
     	}
-
-    	if (keyAddr != 0) {
-    		byte[] xorBytes = memlmd.getKey(xorInts);
-    		for (int i = 0; i < xorBytes.length; i++) {
-    			write8(keyAddr + i, (byte) (key[i] ^ xorBytes[i]));
-    		}
-    	}
 	}
 
 	protected void addHandler(int baseAddress, int length, IMMIOHandler handler) {
     	addHandler(baseAddress, length, null, handler);
+    }
+
+	protected void addHandler(int baseAddress, int length, IMMIOHandler handler, int minimumGeneration) {
+		if (Model.getGeneration() >= minimumGeneration) {
+			addHandler(baseAddress, length, null, handler);
+		}
     }
 
     private void addHandler(int baseAddress, int length, int[] additionalOffsets, IMMIOHandler handler) {

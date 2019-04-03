@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.hardware.Model;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -35,12 +36,14 @@ public class WM8750 implements IState {
 	public static Logger log = Logger.getLogger("WM8750");
 	private static final int STATE_VERSION = 0;
 	private static WM8750 instance;
-	private static final int NUMBER_REGISTERS = 43;
-	private final int registers[] = new int[NUMBER_REGISTERS];
+	private final int NUMBER_REGISTERS;
+	private final int registers[];
 	private static final int defaultRegisterValues[] = new int[] {
 		0x097, 0x097, 0x079, 0x079, 0x000, 0x008, 0x000, 0x00A, 0x000, 0x000, 0x0FF, 0x0FF, 0x00F, 0x00F, 0x000, 0x000,
 		0x000, 0x07B, 0x000, 0x032, 0x000, 0x0C3, 0x0C3, 0x0C0, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000,
-		0x000, 0x000, 0x050, 0x050, 0x050, 0x050, 0x050, 0x050, 0x079, 0x079, 0x079
+		0x000, 0x000, 0x050, 0x050, 0x050, 0x050, 0x050, 0x050, 0x079, 0x079, 0x079,
+		// Additional unknown registers in PSP Slim
+		0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000
 	};
 	public final static int REGISTER_RESET = 15;
 
@@ -52,6 +55,9 @@ public class WM8750 implements IState {
 	}
 
 	private WM8750() {
+		NUMBER_REGISTERS = Model.getGeneration() == 1 ? 43 : 50;
+		registers = new int[NUMBER_REGISTERS];
+
 		resetToDefaultValues();
 	}
 
@@ -83,7 +89,7 @@ public class WM8750 implements IState {
 		if (register >= 0 && register < NUMBER_REGISTERS) {
 			setRegisterValue(register, value);
 		} else {
-			log.error(String.format("executeTransmitCommand unknown register %d", register));
+			log.error(String.format("executeTransmitCommand unknown register number: register=%d, value=0x%03X on %s", register, value, this));
 		}
 
 		if (log.isDebugEnabled()) {

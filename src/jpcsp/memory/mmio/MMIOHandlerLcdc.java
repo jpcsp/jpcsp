@@ -74,6 +74,7 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 		public int xShift;
 		public int scaledXResolution;
 		public int scaledYResolution;
+		public int resume;
 
 		public void reset() {
 			enable = 0;
@@ -94,6 +95,8 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 			xShift = 0x00;
 			scaledXResolution = Screen.width;
 			scaledYResolution = Screen.height;
+
+			resume = 0;
 		}
 
 		public int read32(int offset) {
@@ -138,6 +141,7 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 				case 0x044: xShift = value; break;
 				case 0x048: scaledXResolution = value; break;
 				case 0x04C: scaledYResolution = value; break;
+				case 0x070: resume = value; break;
 			}
 		}
 
@@ -158,6 +162,7 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 			xShift = stream.readInt();
 			scaledXResolution = stream.readInt();
 			scaledYResolution = stream.readInt();
+			resume = stream.readInt();
 		}
 
 		public void write(StateOutputStream stream) throws IOException {
@@ -177,6 +182,7 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 			stream.writeInt(xShift);
 			stream.writeInt(scaledXResolution);
 			stream.writeInt(scaledYResolution);
+			stream.writeInt(resume);
 		}
 	}
 
@@ -270,7 +276,8 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 			case 0x040:
 			case 0x044:
 			case 0x048:
-			case 0x04C: controller1.write32(address - baseAddress, value); break;
+			case 0x04C:
+			case 0x070: controller1.write32(address - baseAddress, value); break;
 			case 0x100:
 			case 0x104:
 			case 0x108:
@@ -285,7 +292,8 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 			case 0x140:
 			case 0x144:
 			case 0x148:
-			case 0x14C: controller2.write32(address - baseAddress - 0x100, value); break;
+			case 0x14C:
+			case 0x170: controller2.write32(address - baseAddress - 0x100, value); break;
 			default: super.write32(address, value); break;
 		}
 
