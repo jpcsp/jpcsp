@@ -148,23 +148,23 @@ public class RuntimeContextLLE {
 
 	public static int triggerSyscallException(Processor processor, int syscallCode, boolean inDelaySlot) {
 		processor.cp0.setSyscallCode(syscallCode << 2);
-		int ebase = triggerException(processor, ExceptionManager.EXCEP_SYS, inDelaySlot);
+		int pc = triggerException(processor, ExceptionManager.EXCEP_SYS, inDelaySlot);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Calling exception handler for Syscall at 0x%08X, epc=0x%08X", ebase, processor.cp0.getEpc()));
+			log.debug(String.format("Calling exception handler for Syscall at 0x%08X, epc=0x%08X", pc, processor.cp0.getEpc()));
 		}
 
-		return ebase;
+		return pc;
 	}
 
 	public static int triggerBreakException(Processor processor, boolean inDelaySlot) {
-		int ebase = triggerException(processor, ExceptionManager.EXCEP_BP, inDelaySlot);
+		int pc = triggerException(processor, ExceptionManager.EXCEP_BP, inDelaySlot);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Calling exception handler for Break at 0x%08X, epc=0x%08X", ebase, processor.cp0.getEpc()));
+			log.debug(String.format("Calling exception handler for Break at 0x%08X, epc=0x%08X", pc, processor.cp0.getEpc()));
 		}
 
-		return ebase;
+		return pc;
 	}
 
 	public static boolean isMediaEngineCpu() {
@@ -259,14 +259,20 @@ public class RuntimeContextLLE {
 		// Set the EPC
 		processor.cp0.setEpc(epc);
 
-		int ebase = processor.cp0.getEbase();
+		int pc;
+		// BEV flag set?
+		if ((processor.cp0.getStatus() & 0x00400000) != 0) {
+			pc = 0xBFC00200;
+		} else {
+			pc = processor.cp0.getEbase();
+		}
 
 		// Set the EXL bit
 		int status = processor.cp0.getStatus();
 		status |= 0x2; // Set EXL bit
 		processor.cp0.setStatus(status);
 
-		return ebase;
+		return pc;
 	}
 
 	/*
@@ -282,13 +288,13 @@ public class RuntimeContextLLE {
 
 			// The compiler is only calling this function when
 			// we are not in a delay slot
-			int ebase = prepareExceptionHandlerCall(processor, ExceptionManager.EXCEP_INT, false);
+			int pc = prepareExceptionHandlerCall(processor, ExceptionManager.EXCEP_INT, false);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X, cause=0x%X", MMIOHandlerInterruptMan.getInstance(processor).toStringInterruptTriggered(), ebase, processor.cp0.getEpc(), processor.cp0.getCause()));
+				log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X, cause=0x%X", MMIOHandlerInterruptMan.getInstance(processor).toStringInterruptTriggered(), pc, processor.cp0.getEpc(), processor.cp0.getCause()));
 			}
 
-			return ebase;
+			return pc;
 		}
 
 		return returnAddress;

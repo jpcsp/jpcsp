@@ -221,8 +221,12 @@ public class Processor implements IState {
 		int status = 0;
 		// BEV = 1 during bootstrapping
 		status |= 0x00400000;
+		// ERL = 1 after reset
+		status |= 0x00000004;
 		// Set the initial status
 		cp0.setStatus(status);
+		// Set Ebase = 0
+		cp0.setEbase(0);
 		// All interrupts disabled
 		disableInterrupts();
 
