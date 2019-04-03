@@ -271,7 +271,8 @@ public class HLEModuleManager {
         sceCodec(Modules.sceCodecModule),
         sceMesgd(Modules.sceMesgdModule),
         sceVshBridge(Modules.sceVshBridgeModule),
-        SystemCtrlForKernel(Modules.SystemCtrlForKernelModule);
+        SystemCtrlForKernel(Modules.SystemCtrlForKernelModule),
+        sceHibari(Modules.sceHibariModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
