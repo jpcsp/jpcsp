@@ -1040,4 +1040,16 @@ public class sceSysreg extends HLEModule {
     public int sceSysregEmcsmIoDisable() {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x8C5C53DE, version = 150)
+    public int sceSysregSpiIoEnable(int spiId) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA16E55F4, version = 150)
+    public int sceSysregSpiIoDisable(int spiId) {
+    	return 0;
+    }
 }
