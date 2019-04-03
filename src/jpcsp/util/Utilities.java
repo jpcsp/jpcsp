@@ -22,9 +22,11 @@ import static jpcsp.Memory.addressMask;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
 import java.nio.Buffer;
@@ -2161,5 +2163,17 @@ public class Utilities {
     	// Equivalent to Integer.compareUnsigned(a, b) from JDK 1.8.
     	// Using Integer.compare() here for compatibility with JDK 1.7.
     	return Integer.compare(a + Integer.MIN_VALUE, b + Integer.MIN_VALUE);
+    }
+
+    public static void dumpToFile(String fileName, TPointer address, int length) {
+		byte[] bytes = new byte[length];
+		address.getArray8(bytes);
+		try {
+			OutputStream os = new FileOutputStream(fileName);
+			os.write(bytes);
+			os.close();
+		} catch (IOException e) {
+			Emulator.log.error(e);
+		}
     }
 }

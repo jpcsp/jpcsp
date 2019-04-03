@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.mediaengine;
 
 import static jpcsp.HLE.kernel.managers.ExceptionManager.EXCEP_INT;
+import static jpcsp.mediaengine.MEMemory.SIZE_ME_RAM;
+import static jpcsp.util.Utilities.dumpToFile;
 
 import java.io.IOException;
 
@@ -31,10 +33,10 @@ import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.TPointer;
 import jpcsp.memory.mmio.MMIOHandlerInterruptMan;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
-import jpcsp.util.Utilities;
 
 /**
  * The PSP Media Engine is very close to the PSP main CPU. It has the same instructions
@@ -56,6 +58,7 @@ import jpcsp.util.Utilities;
  */
 public class MEProcessor extends Processor {
 	public static Logger log = Logger.getLogger("me");
+	private static final boolean DUMP = false;
 	private static final int STATE_VERSION = 0;
 	public static final int CPUID_ME = 1;
 	private static MEProcessor instance;
@@ -66,9 +69,9 @@ public class MEProcessor extends Processor {
 	private Instruction optimizedInstructions1[];
 	private Instruction optimizedInstructions2[];
 	private static final int optimizedRunStart1 = MemoryMap.START_RAM + 0x300000;
-	private static final int optimizedRunEnd1   = MemoryMap.START_RAM + 0x37D720;
+	private static final int optimizedRunEnd1   = optimizedRunStart1 + 0x8E194;
 	private static final int optimizedRunStart2 = MemoryMap.START_RAM;
-	private static final int optimizedRunEnd2   = MemoryMap.START_RAM + 0x3000;
+	private static final int optimizedRunEnd2   = optimizedRunStart2 + 0x3000;
 
 	public static MEProcessor getInstance() {
 		if (instance == null) {
@@ -357,20 +360,21 @@ public class MEProcessor extends Processor {
 			step();
 			count++;
 
-			int pc = cpu.pc & Memory.addressMask;
-			if (hasMemoryInt) {
-				if (pc >= optimizedRunStart1 && pc < optimizedRunEnd1) {
-					break;
+			if (DUMP) {
+				if (cpu.pc == 0x883000E0) {
+					dumpToFile("MEMemory.dump", new TPointer(meMemory, 0).forceNonNull(), SIZE_ME_RAM);
+					dumpToFile("meimg.img", new TPointer(meMemory, optimizedRunStart1), optimizedRunEnd1 - optimizedRunStart1);
 				}
-				if (pc >= optimizedRunStart2 && pc < optimizedRunEnd2) {
-					break;
+			} else {
+				if (hasMemoryInt) {
+					int pc = cpu.pc & Memory.addressMask;
+					if (pc >= optimizedRunStart1 && pc < optimizedRunEnd1) {
+						break;
+					}
+					if (pc >= optimizedRunStart2 && pc < optimizedRunEnd2) {
+						break;
+					}
 				}
-			}
-
-			if (cpu.pc == 0x883000E0 && log.isDebugEnabled()) {
-				log.debug(String.format("Initial ME memory content from meimg.img:"));
-				log.debug(Utilities.getMemoryDump(meMemory, 0x00101000, cpu._v0));
-//				log.setLevel(Level.TRACE);
 			}
 		}
 
