@@ -793,6 +793,11 @@ public class CompilerContext implements ICompilerContext {
         mv.visitFieldInsn(Opcodes.PUTFIELD, cpuInternalName, "pc", "I");
     }
 
+    public void loadPc() {
+    	loadCpu();
+    	mv.visitFieldInsn(Opcodes.GETFIELD, cpuInternalName, "pc", "I");
+    }
+
     private void visitContinueToAddress(int returnAddress, boolean returnOnUnknownAddress) {
         //      if (x != returnAddress) {
         //          RuntimeContext.jump(x, returnAddress);
@@ -4587,5 +4592,26 @@ public class CompilerContext implements ICompilerContext {
 	public void compileEret() {
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "executeEret", "()I");
     	visitJump();
+	}
+
+	@Override
+	public void compileBreak() {
+		storePc();
+		compileInterpreterInstruction();
+
+		boolean isEndingCodeBlock = false;
+		if (getCodeBlock().getHighestAddress() == codeInstruction.getAddress()) {
+			isEndingCodeBlock = true;
+		} else if (getCodeBlock().getHighestAddress() == codeInstruction.getAddress() + 4) {
+			if (getCodeInstruction(codeInstruction.getAddress() + 4).getInsn() == Instructions.NOP) {
+				isEndingCodeBlock = true;
+			}
+		}
+
+		// For code blocks ending with a break instruction, generate an end for the code block.
+    	if (isEndingCodeBlock) {
+    		loadPc(); // Return to the updated pc
+    		visitJump();
+    	}
 	}
 }

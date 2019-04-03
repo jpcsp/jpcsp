@@ -40,6 +40,7 @@ import static jpcsp.Allegrex.compiler.CompilerContext.arraycopyDescriptor;
 import static jpcsp.Allegrex.compiler.CompilerContext.runtimeContextInternalName;
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxDst;
@@ -645,7 +646,7 @@ public String disasm(int address, int insn) {
 return "eret";
 }
 };
-public static final Instruction BREAK = new Instruction(17, FLAG_TRIGGERS_EXCEPTION) {
+public static final Instruction BREAK = new Instruction(17, FLAG_TRIGGERS_EXCEPTION | FLAG_ENDS_BLOCK) {
 
 @Override
 public final String name() { return "BREAK"; }
@@ -657,7 +658,11 @@ public final String category() { return "MIPS I"; }
 public void interpret(Processor processor, int insn) {
 	int imm20 = (insn>>6)&1048575;
 	if (RuntimeContextLLE.isLLEActive()) {
-		processor.cpu.pc = RuntimeContextLLE.triggerBreakException(processor, Processor.isInstructionInDelaySlot(processor.cpu.memory, processor.cpu.pc));
+		Memory mem = processor.cpu.memory;
+		if (processor.cp0.isMainCpu()) {
+			mem = RuntimeContextLLE.getMMIO();
+		}
+		processor.cpu.pc = RuntimeContextLLE.triggerBreakException(processor, Processor.isInstructionInDelaySlot(mem, processor.cpu.pc));
 	} else {
 		log.error(String.format("0x%08X - Allegrex break 0x%05X", processor.cpu.pc, imm20));
 
@@ -670,8 +675,7 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	context.storePc();
-	super.compile(context, insn);
+	context.compileBreak();
 }
 @Override
 public String disasm(int address, int insn) {

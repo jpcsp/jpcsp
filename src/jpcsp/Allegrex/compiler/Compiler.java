@@ -386,6 +386,11 @@ public class Compiler implements ICompiler {
         		} else {
         			log.error(String.format("Unknown conditional instruction ending a block: %s", insn.disasm(pc, opcode)));
         		}
+        	} else if (insn == Instructions.BREAK) {
+        		// Consider a BREAK instruction as an end of block only if it is followed by a NOP instruction
+        		if (Emulator.getMemory(pc + 4).read32(pc + 4) == 0) {
+        			return true;
+        		}
         	} else {
         		return true;
         	}

@@ -28,6 +28,7 @@ public interface ICompilerContext {
 	public void compileRDRT(String method);
 	public void compileFDFSFT(String method);
 	public void compileSyscall();
+	public void compileBreak();
     public void loadRs();
     public void loadRt();
     public void loadRd();
