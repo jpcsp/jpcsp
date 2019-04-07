@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
+import jpcsp.memory.IntArrayMemory;
+
 public class StateOutputStream extends ObjectOutputStream {
 	public static final int NULL_ARRAY_LENGTH = -1;
 
@@ -83,5 +85,12 @@ public class StateOutputStream extends ObjectOutputStream {
 
 	public void writeString(String s) throws IOException {
 		writeObject(s);
+	}
+
+	public void writeIntArrayMemory(IntArrayMemory mem) throws IOException {
+		int size = mem.getSize();
+		for (int i = 0; i < size; i++) {
+			writeByte(mem.read8(i));
+		}
 	}
 }

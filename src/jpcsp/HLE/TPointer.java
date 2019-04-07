@@ -399,6 +399,12 @@ public class TPointer implements ITPointerBase {
 		}
 	}
 
+	public void setUnalignedValue16(int offset, int value) {
+		if (isNotNull()) {
+			Utilities.writeUnaligned16(getMemory(), getAddress() + offset, value);
+		}
+	}
+
 	public boolean equals(TPointer ptr) {
 		return getAddress() == ptr.getAddress() && getMemory() == ptr.getMemory();
 	}

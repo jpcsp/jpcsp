@@ -21,6 +21,8 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MSCM0_INTR;
 import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_SET;
 import static jpcsp.util.Utilities.endianSwap16;
 
+import java.io.IOException;
+
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.sceMScm;
@@ -43,6 +45,8 @@ import static jpcsp.memory.mmio.memorystick.MemoryStickSystemItem.MS_SYSENT_TYPE
 
 import jpcsp.memory.IntArrayMemory;
 import jpcsp.memory.mmio.MMIOHandlerBaseMemoryStick;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 /**
@@ -55,6 +59,7 @@ import jpcsp.util.Utilities;
  *
  */
 public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
+	private static final int STATE_VERSION = 0;
 	private static final boolean simulateMemoryStickPro = true;
 	private final MemoryStickBootPage bootPage = new MemoryStickBootPage();
 	private final IntArrayMemory bootPageMemory = new IntArrayMemory(new int[bootPage.sizeof() >> 2]);
@@ -80,6 +85,29 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 		sceMSstorModule.hleInit();
 
 		reset();
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		BLOCK_SIZE = stream.readInt();
+		NUMBER_OF_PHYSICAL_BLOCKS = stream.readInt();
+		NUMBER_OF_LOGICAL_BLOCKS = stream.readInt();
+		FIRST_PAGE_LBA = stream.readInt();
+		NUMBER_OF_PAGES = stream.readInt();
+		msproAttributeMemoryInitialized = false;
+		super.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(BLOCK_SIZE);
+		stream.writeInt(NUMBER_OF_PHYSICAL_BLOCKS);
+		stream.writeInt(NUMBER_OF_LOGICAL_BLOCKS);
+		stream.writeInt(FIRST_PAGE_LBA);
+		stream.writeInt(NUMBER_OF_PAGES);
+		super.write(stream);
 	}
 
 	@Override
@@ -239,15 +267,15 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 	}
 
 	@Override
-	protected int readData16(int dataAddress, int pageDataIndex) {
+	protected int readData16(int dataAddress, int dataIndex, boolean endOfCommand) {
 		int value = 0;
 
 		if (dataAddress == 0) {
-			value = bootPageMemory.read16(pageDataIndex);
+			value = bootPageMemory.read16(dataIndex);
 		} else if (dataAddress == PAGES_PER_BLOCK) {
-			value = bootPageBackupMemory.read16(pageDataIndex);
+			value = bootPageBackupMemory.read16(dataIndex);
 		} else if (dataAddress == DISABLED_BLOCKS_PAGE) {
-			value = disabledBlocksPageMemory.read16(pageDataIndex);
+			value = disabledBlocksPageMemory.read16(dataIndex);
 		} else if (dataAddress == CIS_IDI_PAGE) {
 			log.error(String.format("MMIOHandlerBaseMemoryStick.readData16 unimplemented reading from CIS_IDI_PAGE"));
 		}
@@ -347,5 +375,10 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 
 			pageLba++;
 		}
+	}
+
+	@Override
+	protected void writeData32(int dataAddress, int dataIndex, int value) {
+		log.error(String.format("MMIOHandlerMemoryStick.writeData32 unimplemented dataAddress=0x%X, dataIndex=0x%X, value=0x%08X", dataAddress, dataIndex, value));
 	}
 }
