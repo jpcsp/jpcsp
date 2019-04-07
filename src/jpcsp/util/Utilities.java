@@ -1008,7 +1008,13 @@ public class Utilities {
         return Integer.reverseBytes(x);
     }
 
-    public static int endianSwap16(int x) {
+	public static void endianSwap32(Memory mem, int address, int length) {
+		for (int i = 0; i < length; i += 4) {
+			mem.write32(address + i, endianSwap32(mem.read32(address + i)));
+		}
+	}
+
+	public static int endianSwap16(int x) {
         return ((x >> 8) & 0x00FF) | ((x << 8) & 0xFF00);
     }
 
@@ -1074,6 +1080,15 @@ public class Utilities {
                 mem.write8(address + 2, (byte) (data >> 16));
                 mem.write8(address + 3, (byte) (data >> 24));
         }
+    }
+
+    public static void writeUnaligned16(Memory mem, int address, int data) {
+    	if ((address & 1) == 0) {
+            mem.write16(address, (short) data);
+    	} else {
+    		mem.write8(address, (byte) data);
+            mem.write8(address + 1, (byte) (data >> 8));
+    	}
     }
 
     public static void write8(byte[] buffer, int offset, int data) {
@@ -2020,7 +2035,7 @@ public class Utilities {
 		}
 
 		if (functionName == null) {
-			int nextOpcode = mem.read32(address + 4);
+			int nextOpcode = mem.internalRead32(address + 4);
 			Instruction nextInsn = Decoder.instruction(nextOpcode);
 			if (nextInsn == Instructions.SYSCALL) {
 				int syscallCode = (nextOpcode >> 6) & 0xFFFFF;

@@ -520,9 +520,9 @@ public class LoadCoreForKernel extends HLEModule {
 	    		// Verify if this not the address of a stub call:
 	    		//   J   realAddress
 	    		//   NOP
-	        	if ((mem.read32(address) >>> 26) == AllegrexOpcodes.J) {
-	        		if (mem.read32(address + 4) == ThreadManForUser.NOP()) {
-	        			int jumpAddress = (mem.read32(address) & 0x03FFFFFF) << 2;
+	        	if ((mem.internalRead32(address) >>> 26) == AllegrexOpcodes.J) {
+	        		if (mem.internalRead32(address + 4) == ThreadManForUser.NOP()) {
+	        			int jumpAddress = (mem.internalRead32(address) & 0x03FFFFFF) << 2;
 
 	        			nids = getFunctionNIDsByAddress(mem, registeredLibs, jumpAddress);
 	        		}
@@ -574,7 +574,7 @@ public class LoadCoreForKernel extends HLEModule {
 
     	String functionName = null;
 
-		int nextOpcode = Emulator.getMemory(address).read32(address + 4);
+		int nextOpcode = Emulator.getMemory(address).internalRead32(address + 4);
 		Instruction nextInsn = Decoder.instruction(nextOpcode);
 		if (nextInsn == Instructions.SYSCALL) {
 			int syscallCode = (nextOpcode >> 6) & 0xFFFFF;
@@ -591,17 +591,17 @@ public class LoadCoreForKernel extends HLEModule {
 
     	address &= Memory.addressMask;
     	int g_loadCore = getLoadCoreBaseAddress();
-    	int registeredMods = mem.read32(g_loadCore + 524);
+    	int registeredMods = mem.internalRead32(g_loadCore + 524);
     	int module = getModuleByAddress(mem, registeredMods, address);
     	if (module != 0) {
     		String moduleName = Utilities.readStringNZ(module + 8, 27);
-    		int moduleStart = mem.read32(module + 80) & Memory.addressMask;
-    		int moduleStop = mem.read32(module + 84) & Memory.addressMask;
-    		int moduleBootStart = mem.read32(module + 88) & Memory.addressMask;
-    		int moduleRebootBefore = mem.read32(module + 92) & Memory.addressMask;
-    		int moduleRebootPhase = mem.read32(module + 96) & Memory.addressMask;
-    		int entryAddr = mem.read32(module + 100) & Memory.addressMask;
-    		int textAddr = mem.read32(module + 108) & Memory.addressMask;
+    		int moduleStart = mem.internalRead32(module + 80) & Memory.addressMask;
+    		int moduleStop = mem.internalRead32(module + 84) & Memory.addressMask;
+    		int moduleBootStart = mem.internalRead32(module + 88) & Memory.addressMask;
+    		int moduleRebootBefore = mem.internalRead32(module + 92) & Memory.addressMask;
+    		int moduleRebootPhase = mem.internalRead32(module + 96) & Memory.addressMask;
+    		int entryAddr = mem.internalRead32(module + 100) & Memory.addressMask;
+    		int textAddr = mem.internalRead32(module + 108) & Memory.addressMask;
 
     		if (address == moduleStart) {
     			functionName = String.format("%s.module_start", moduleName);
@@ -641,14 +641,14 @@ public class LoadCoreForKernel extends HLEModule {
     	int[] nids = null;
 
 		for (int i = 0; i < 512; i += 4) {
-			int linkedLibraries = mem.read32(registeredLibs + i);
+			int linkedLibraries = mem.internalRead32(registeredLibs + i);
 	    	while (linkedLibraries != 0) {
-	    		int numExports = mem.read32(linkedLibraries + 16);
-	    		int entryTable = mem.read32(linkedLibraries + 32);
+	    		int numExports = mem.internalRead32(linkedLibraries + 16);
+	    		int entryTable = mem.internalRead32(linkedLibraries + 32);
 	
 	    		for (int j = 0; j < numExports; j++) {
 	    			int nid = mem.read32(entryTable + j * 4);
-	    			int entryAddress = mem.read32(entryTable + (j + numExports) * 4) & Memory.addressMask;
+	    			int entryAddress = mem.internalRead32(entryTable + (j + numExports) * 4) & Memory.addressMask;
 	
 	    			if (address == entryAddress) {
 	    				nids = Utilities.add(nids, nid);
@@ -656,7 +656,7 @@ public class LoadCoreForKernel extends HLEModule {
 	    		}
 	
 	    		// Next
-	    		linkedLibraries = mem.read32(linkedLibraries);
+	    		linkedLibraries = mem.internalRead32(linkedLibraries);
 	    	}
 		}
 
@@ -669,15 +669,15 @@ public class LoadCoreForKernel extends HLEModule {
 
     private int getModuleByAddress(Memory mem, int linkedModules, int address) {
     	while (linkedModules != 0 && Memory.isAddressGood(linkedModules)) {
-    		int textAddr = mem.read32(linkedModules + 108) & Memory.addressMask;
-    		int textSize = mem.read32(linkedModules + 112);
+    		int textAddr = mem.internalRead32(linkedModules + 108) & Memory.addressMask;
+    		int textSize = mem.internalRead32(linkedModules + 112);
 
     		if (textAddr <= address && address < textAddr + textSize) {
     			return linkedModules;
     		}
 
     		// Next
-    		linkedModules = mem.read32(linkedModules);
+    		linkedModules = mem.internalRead32(linkedModules);
     	}
 
     	return 0;

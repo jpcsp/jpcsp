@@ -335,6 +335,10 @@ public abstract class Memory implements IState {
         return true;
     }
 
+    public int internalRead32(int address) {
+    	return read32(address);
+    }
+
     public long read64(int address) {
         long low = read32(address);
         long high = read32(address + 4);

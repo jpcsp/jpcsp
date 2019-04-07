@@ -533,9 +533,9 @@ public class HLEModuleManager {
     		//   NOP
         	if (Memory.isAddressGood(address)) {
             	Memory mem = Memory.getInstance();
-	        	if ((mem.read32(address) >>> 26) == AllegrexOpcodes.J) {
-	        		if (mem.read32(address + 4) == ThreadManForUser.NOP()) {
-	        			int jumpAddress = (mem.read32(address) & 0x03FFFFFF) << 2;
+	        	if ((mem.internalRead32(address) >>> 26) == AllegrexOpcodes.J) {
+	        		if (mem.internalRead32(address + 4) == ThreadManForUser.NOP()) {
+	        			int jumpAddress = (mem.internalRead32(address) & 0x03FFFFFF) << 2;
 
 	        			nid = nidMapper.getNidByAddress(jumpAddress);
 	        		}
