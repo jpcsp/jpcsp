@@ -33,6 +33,8 @@ import java.util.List;
 
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpoint;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -69,7 +71,7 @@ public class DebuggerMemory extends Memory {
         }
     }
 
-    public List<MemoryBreakpoint> getMemoryBreakpoints() {
+	public List<MemoryBreakpoint> getMemoryBreakpoints() {
         return memoryBreakpoints;
     }
 
@@ -531,26 +533,21 @@ public class DebuggerMemory extends Memory {
 	}
 
 	@Override
-	public boolean hasMemoryInt(int address) {
-		return mem.hasMemoryInt(address);
-	}
-
-	@Override
-	public int[] getMemoryInt(int address) {
-		return mem.getMemoryInt(address);
-	}
-
-	@Override
-	public int getMemoryIntOffset(int address) {
-		return mem.getMemoryIntOffset(address);
-	}
-
-	@Override
 	public int normalize(int address) {
 		return mem.normalize(address);
 	}
 
 	public Memory getDebuggedMemory() {
 		return mem;
+	}
+
+    @Override
+	public void read(StateInputStream stream) throws IOException {
+		mem.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		mem.write(stream);
 	}
 }

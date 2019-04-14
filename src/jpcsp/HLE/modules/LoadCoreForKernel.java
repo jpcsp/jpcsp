@@ -647,7 +647,7 @@ public class LoadCoreForKernel extends HLEModule {
 	    		int entryTable = mem.internalRead32(linkedLibraries + 32);
 	
 	    		for (int j = 0; j < numExports; j++) {
-	    			int nid = mem.read32(entryTable + j * 4);
+	    			int nid = mem.internalRead32(entryTable + j * 4);
 	    			int entryAddress = mem.internalRead32(entryTable + (j + numExports) * 4) & Memory.addressMask;
 	
 	    			if (address == entryAddress) {
