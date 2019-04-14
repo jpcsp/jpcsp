@@ -16,10 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 
 import org.apache.log4j.Logger;
 
@@ -46,7 +52,7 @@ public class sceNetAdhocDownload extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x22C2BCC6, version = 150)
-    public int sceNetAdhocDownloadGetServerList() {
+    public int sceNetAdhocDownloadGetServerList(@BufferInfo(usage=Usage.inout) TPointer32 sizeAddr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=160, usage=Usage.out) TPointer buf) {
     	return 0;
     }
 
