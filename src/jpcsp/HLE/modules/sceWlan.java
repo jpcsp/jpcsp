@@ -282,7 +282,7 @@ public class sceWlan extends HLEModule {
 						scanInfo.channel = channel;
 						scanInfo.ssid = ssid;
 						scanInfo.mode = channelModes[channel];
-						scanInfo.unknown44 = 1000; // Unknown value, need to be != 0
+						scanInfo.beaconInterval = 1000; // Need to be != 0
 						scanInfo.write(addr.getMemory(), addr.getAddress() + 4);
 
 	    				addr.setValue32(0, addr.getAddress() + 4 + scanInfo.sizeof()); // Link to next SSID
@@ -919,7 +919,7 @@ public class sceWlan extends HLEModule {
 					scanInfo.channel = channel;
 					scanInfo.ssid = channelSSIDs[channel];
 					scanInfo.mode = channelModes[channel];
-					scanInfo.unknown44 = 1000; // Unknown value, need to be != 0
+					scanInfo.beaconInterval = 1000; // Need to be != 0
 					scanInfo.write(handleAddr.getMemory(), outputAddr + 4);
 
 	    			mem.write32(outputAddr, 0); // Link to next SSID
@@ -956,7 +956,7 @@ public class sceWlan extends HLEModule {
     			Emulator.getScheduler().addAction(Scheduler.getNow() + wlanCreateActionDelayUs, new WlanCreateAction(handleAddr));
     			break;
     		case IOCTL_CMD_CONNECT: // Called by sceNetAdhocctlConnect() and sceNetAdhocctlJoin()
-    			// Receiving as input the SSID structure returned by cmd=0x34
+    			// Receiving as input the SSID structure returned by cmd=IOCTL_CMD_START_SCANNING
     			SceNetWlanScanInfo scanInfo = new SceNetWlanScanInfo();
     			scanInfo.read(mem, inputAddr);
     			if (log.isDebugEnabled()) {
