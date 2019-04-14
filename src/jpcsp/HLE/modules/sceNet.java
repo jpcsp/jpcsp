@@ -195,8 +195,8 @@ public class sceNet extends HLEModule {
     		TPointer content = new TPointer(data.getMemory(), data.getAddress() + 60);
     		final int contentLength = 8;
     		// Header information:
-    		header.setArray(0, Wlan.getMacAddress(), 6); // destination MAC address
-    		header.setArray(6, new byte[] { 0x11,  0x22, 0x33, 0x44, 0x55, 0x66 }, 6); // source MAC address
+    		header.setArray(0, Wlan.getMacAddress()); // destination MAC address
+    		header.setArray(6, new byte[] { 0x11,  0x22, 0x33, 0x44, 0x55, 0x66 }); // source MAC address
     		header.setValue8(48, (byte) 1); // 1 or 2
     		header.setValue8(49, (byte) 0);
     		header.setValue16(50, (short) endianSwap16(12 + contentLength)); // value must be >= 12

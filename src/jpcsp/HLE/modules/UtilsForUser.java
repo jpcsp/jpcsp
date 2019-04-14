@@ -78,7 +78,7 @@ public class UtilsForUser extends HLEModule {
         private short tmpBytesRemaining;
         private short tmpBytesCalculated;
         private long fullDataSize;
-        private byte[] buf;
+        private final byte[] buf;
 
         // Internal vars.
         private byte[] input;
@@ -106,7 +106,7 @@ public class UtilsForUser extends HLEModule {
             ctxAddr.setValue16(20, tmpBytesRemaining);
             ctxAddr.setValue16(22, tmpBytesCalculated);
             ctxAddr.setValue64(24, fullDataSize);
-            ctxAddr.setArray(32, buf, 64);
+            ctxAddr.setArray(32, buf);
 
             return 0;
         }
