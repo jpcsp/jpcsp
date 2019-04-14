@@ -130,11 +130,11 @@ public class sceIdStorage extends HLEModule {
 				break;
 			case 0x0044:
 				// Used to display the MAC address in the VSH
-				buffer.setArray(0, Wlan.getMacAddress(), Wlan.MAC_ADDRESS_LENGTH);
+				buffer.setArray(0, Wlan.getMacAddress());
 				break;
 			case 0x0045:
 				// Used by thread SceWlanChipInit
-				int wlanFirmwareVersion = 1;
+				int wlanFirmwareVersion = 0;
 				if (Model.getGeneration() > 1) {
 					wlanFirmwareVersion = 1;
 				}
