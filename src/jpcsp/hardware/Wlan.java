@@ -18,6 +18,8 @@ package jpcsp.hardware;
 
 import static jpcsp.HLE.modules.sceNet.convertStringToMacAddress;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
@@ -25,8 +27,11 @@ import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class Wlan {
+	private static final int STATE_VERSION = 0;
 	private static Logger log = Emulator.log;
     public static int PSP_WLAN_SWITCH_OFF = 0;
     public static int PSP_WLAN_SWITCH_ON = 1;
@@ -98,4 +103,16 @@ public class Wlan {
     public static int getSignalStrenth() {
     	return signalStrength;
     }
+
+	public static void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		byte[] stateMacAddress = new byte[MAC_ADDRESS_LENGTH];
+		stream.read(stateMacAddress);
+		setMacAddress(stateMacAddress);
+	}
+
+	public static void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.write(getMacAddress());
+	}
 }

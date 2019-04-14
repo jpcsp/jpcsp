@@ -29,6 +29,7 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.HLEModuleManager;
+import jpcsp.hardware.Wlan;
 
 public class State implements IState {
 	public static Logger log = Logger.getLogger("state");
@@ -86,6 +87,7 @@ public class State implements IState {
 	public void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
 		Emulator.getClock().read(stream);
+		Wlan.read(stream);
 		Emulator.getProcessor().read(stream);
 		Emulator.getMemory().read(stream);
 		HLEModuleManager.getInstance().read(stream);
@@ -102,6 +104,7 @@ public class State implements IState {
 	public void write(StateOutputStream stream) throws IOException {
 		stream.writeVersion(STATE_VERSION);
 		Emulator.getClock().write(stream);
+		Wlan.write(stream);
 		Emulator.getProcessor().write(stream);
 		Emulator.getMemory().write(stream);
 		HLEModuleManager.getInstance().write(stream);
