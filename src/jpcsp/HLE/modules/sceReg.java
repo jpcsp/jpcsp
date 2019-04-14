@@ -155,10 +155,12 @@ public class sceReg extends HLEModule {
     	}
 
     	public void dump() {
-    		for (int i = 0; i < entries.length; i++) {
-    			if (entries[i] != null && !entries[i].hasParent()) {
-    				dumpChildren(i, 0);
-    			}
+    		if (entries != null) {
+	    		for (int i = 0; i < entries.length; i++) {
+	    			if (entries[i] != null && !entries[i].hasParent()) {
+	    				dumpChildren(i, 0);
+	    			}
+	    		}
     		}
     	}
 
