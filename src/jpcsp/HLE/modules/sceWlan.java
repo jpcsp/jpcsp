@@ -61,12 +61,14 @@ import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
 import jpcsp.hardware.Wlan;
 import jpcsp.network.accesspoint.AccessPoint;
+import jpcsp.network.accesspoint.IAccessPointCallback;
+import jpcsp.network.protocols.EtherFrame;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class sceWlan extends HLEModule {
+public class sceWlan extends HLEModule implements IAccessPointCallback {
     public static Logger log = Modules.getLogger("sceWlan");
     public static final int IOCTL_CMD_UNKNOWN_0x2 = 0x2;
     public static final int IOCTL_CMD_START_SCANNING = 0x34;
@@ -107,6 +109,7 @@ public class sceWlan extends HLEModule {
     private int[] channelModes;
     private int wlanDropRate;
     private int wlanDropDuration;
+    private AccessPoint accessPoint;
 
     private static class GameModeState {
     	public long timeStamp;
@@ -374,9 +377,30 @@ public class sceWlan extends HLEModule {
     	return wlanSocketPort;
     }
 
-    private int getBroadcastPort(int channel) {
+	@Override
+	public void sendPacketFromAccessPoint(byte[] buffer, int bufferLength, EtherFrame etherFrame) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sendAccessPointPacket %s", Utilities.getMemoryDump(buffer, 0, bufferLength)));
+    	}
+
+    	try {
+			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(getSocketPort());
+			if (broadcastAddress != null) {
+				for (int i = 0; i < broadcastAddress.length; i++) {
+					DatagramPacket packet = new DatagramPacket(buffer, bufferLength, broadcastAddress[i]);
+					wlanSocket.send(packet);
+				}
+			}
+		} catch (UnknownHostException e) {
+			log.error("sendAccessPointPacket", e);
+		} catch (IOException e) {
+			log.error("sendAccessPointPacket", e);
+		}
+	}
+
+	private int getBroadcastPort(int channel) {
     	if (channel >= 0 && channelModes[channel] == WLAN_MODE_INFRASTRUCTURE) {
-    		return AccessPoint.getInstance().getPort();
+    		return accessPoint.getPort();
     	}
 
     	return wlanSocketPort ^ 1;
@@ -1315,6 +1339,8 @@ public class sceWlan extends HLEModule {
 			Modules.ThreadManForUserModule.executeCallback(thread, sceNetCreateIfhandleEther, new AfterNetCreateIfhandleEtherAction(thread, handleAddr), false, handleAddr.getAddress());
 		}
 
+		accessPoint = new AccessPoint(this);
+
 		return 0;
 	}
 
@@ -1374,6 +1400,11 @@ public class sceWlan extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xC9A8CAB7, version = 150)
     public int sceWlanDevDetach() {
+    	if (accessPoint != null) {
+    		accessPoint.exit();
+    		accessPoint = null;
+    	}
+
     	// Has no parameters
         return 0;
     }

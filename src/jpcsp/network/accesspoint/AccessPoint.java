@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.accesspoint;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.HLE.modules.sceNetAdhoc.ANY_MAC_ADDRESS;
 import static jpcsp.HLE.modules.sceWlan.WLAN_CMD_DATA;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
@@ -54,8 +55,6 @@ import java.util.Random;
 
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetApctl;
-import jpcsp.HLE.modules.sceNetInet;
-import jpcsp.HLE.modules.sceWlan;
 import jpcsp.network.protocols.ARP;
 import jpcsp.network.protocols.DHCP;
 import jpcsp.network.protocols.DNS;
@@ -76,7 +75,7 @@ public class AccessPoint {
     public static final int HARDWARE_TYPE_ETHERNET = 0x0001;
     public static final int IP_ADDRESS_LENGTH = 4;
     private static final int BUFFER_SIZE = 2000;
-    private static AccessPoint instance;
+    private IAccessPointCallback callback;
     private int apSocketPort = 30020;
     private pspNetMacAddress apMacAddress;
     private byte[] apIpAddress;
@@ -165,6 +164,8 @@ public class AccessPoint {
 
 		@Override
 		public void run() {
+			setLog4jMDC();
+
 			while (!exit) {
 				if (!receiveAccessPointMessage()) {
 					if (!exit && !receiveTcpMessages()) {
@@ -179,15 +180,9 @@ public class AccessPoint {
 		}
 	}
 
-	public static AccessPoint getInstance() {
-		if (instance == null) {
-			instance = new AccessPoint();
-		}
+	public AccessPoint(IAccessPointCallback callback) {
+		this.callback = callback;
 
-		return instance;
-	}
-
-	private AccessPoint() {
 		// Generate a random MAC address for the Address Point
 		apMacAddress = new pspNetMacAddress(pspNetMacAddress.getRandomMacAddress());
 
@@ -208,12 +203,10 @@ public class AccessPoint {
 		}
 	}
 
-	public static void exit() {
-		if (instance != null) {
-			if (instance.apThread != null) {
-				instance.apThread.exit();
-				instance.apThread = null;
-			}
+	public void exit() {
+		if (apThread != null) {
+			apThread.exit();
+			apThread = null;
 		}
 	}
 
@@ -313,31 +306,7 @@ public class AccessPoint {
 		return packetReceived;
 	}
 
-    private int getBroadcastPort() {
-    	return sceWlan.getSocketPort();
-    }
-
-    private void sendPacket(byte[] buffer, int bufferLength) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sendPacket %s", Utilities.getMemoryDump(buffer, 0, bufferLength)));
-    	}
-
-    	try {
-			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(getBroadcastPort());
-			if (broadcastAddress != null) {
-				for (int i = 0; i < broadcastAddress.length; i++) {
-					DatagramPacket packet = new DatagramPacket(buffer, bufferLength, broadcastAddress[i]);
-					apSocket.send(packet);
-				}
-			}
-		} catch (UnknownHostException e) {
-			log.error("sendPacket", e);
-		} catch (IOException e) {
-			log.error("sendPacket", e);
-		}
-	}
-
-    private void sendPacket(NetPacket packet) {
+    private void sendPacket(NetPacket packet, EtherFrame etherFrame) {
     	int packetLength = packet.getOffset();
 
     	byte[] buffer = new byte[33 + packetLength];
@@ -351,7 +320,7 @@ public class AccessPoint {
     	System.arraycopy(packet.getBuffer(), 0, buffer, offset, packetLength);
     	offset += packetLength;
 
-    	sendPacket(buffer, offset);
+    	callback.sendPacketFromAccessPoint(buffer, offset, etherFrame);
     }
 
     private void processMessage(NetPacket packet) throws EOFException {
@@ -457,7 +426,7 @@ public class AccessPoint {
 		frame.write(packet);
 		arp.write(packet);
 
-		sendPacket(packet);
+		sendPacket(packet, frame);
 	}
 
 	private void processMessageDatagram(NetPacket packet, EtherFrame frame) throws EOFException {
@@ -565,7 +534,7 @@ public class AccessPoint {
 			answerUdp.write(answerPacket);
 			answerDns.write(answerPacket);
 
-			sendPacket(answerPacket);
+			sendPacket(answerPacket, answerFrame);
 		}
 	}
 
@@ -619,7 +588,7 @@ public class AccessPoint {
 			answerIPv4.write(answerPacket);
 			answerIcmp.write(answerPacket);
 
-			sendPacket(answerPacket);
+			sendPacket(answerPacket, answerFrame);
 		}
 	}
 
@@ -743,7 +712,7 @@ public class AccessPoint {
 			log.debug(String.format("sendAcknowledgeTCP TCP=%s", answerTcp));
 		}
 
-		sendPacket(answerPacket);
+		sendPacket(answerPacket, answerFrame);
 	}
 
 	private void sendTcpData(TcpConnectionState tcpConnectionState, byte[] data) throws EOFException {
@@ -784,7 +753,7 @@ public class AccessPoint {
 			log.debug(String.format("sendTcpData TCP=%s", answerTcp));
 		}
 
-		sendPacket(answerPacket);
+		sendPacket(answerPacket, answerFrame);
 	}
 
 	private boolean receiveTcpMessages() {
@@ -901,7 +870,7 @@ public class AccessPoint {
 			log.debug(String.format("sendDHCPReply messageType=%d, DHCP=%s", messageType, answerDhcp));
 		}
 
-		sendPacket(answerPacket);
+		sendPacket(answerPacket, answerFrame);
 	}
 
 	private void processMessageDHCP(NetPacket packet, EtherFrame frame, IPv4 ipv4, UDP udp) throws EOFException {
