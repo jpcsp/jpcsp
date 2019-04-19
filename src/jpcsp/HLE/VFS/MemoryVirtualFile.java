@@ -20,76 +20,86 @@ import static jpcsp.HLE.VFS.AbstractVirtualFileSystem.IO_ERROR;
 
 import java.util.Map;
 
+import jpcsp.Memory;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
-import jpcsp.util.Utilities;
 
 /**
- * Provide a IVirtualFile interface by reading from memory.
- * Write access is allowed.
+ * Provide a IVirtualFile interface by reading and writing from memory.
  * 
  * @author gid15
  *
  */
 public class MemoryVirtualFile implements IVirtualFile {
-	private final int startAddress;
-	private int address;
+	private final TPointer startPtr;
+	private final TPointer ptr;
 	private final int length;
 
 	public MemoryVirtualFile(int address, int length) {
-		this.startAddress = address;
-		this.address = address;
+		Memory mem = Memory.getInstance();
+		this.startPtr = new TPointer(mem, address);
+		this.ptr = new TPointer(mem, address);
+		this.length = length;
+	}
+
+	public MemoryVirtualFile(TPointer ptr, int length) {
+		this.startPtr = new TPointer(ptr);
+		this.ptr = new TPointer(ptr);
 		this.length = length;
 	}
 
 	@Override
 	public int ioClose() {
-		address = 0;
+		ptr.setAddress(0);
 
 		return 0;
 	}
 
+	private int remainingLength() {
+		return length - (ptr.getAddress() - startPtr.getAddress());
+	}
+
 	@Override
 	public int ioRead(TPointer outputPointer, int outputLength) {
-		outputLength = Math.min(outputLength, length - (address - startAddress));
-		outputPointer.getMemory().memcpy(outputPointer.getAddress(), address, outputLength);
-		address += outputLength;
+		outputLength = Math.min(outputLength, remainingLength());
+		outputPointer.memcpy(ptr, outputLength);
+		ptr.add(outputLength);
 
 		return outputLength;
 	}
 
 	@Override
 	public int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
-		outputLength = Math.min(outputLength, length - (address - startAddress));
-		Utilities.readBytes(address, outputLength, outputBuffer, outputOffset);
-		address += outputLength;
+		outputLength = Math.min(outputLength, remainingLength());
+		ptr.getArray8(0, outputBuffer, outputOffset, outputLength);
+		ptr.add(outputLength);
 
 		return outputLength;
 	}
 
 	@Override
 	public int ioWrite(TPointer inputPointer, int inputLength) {
-		inputLength = Math.min(inputLength, length - (address - startAddress));
-		inputPointer.getMemory().memcpy(address, inputPointer.getAddress(), inputLength);
-		address += inputLength;
+		inputLength = Math.min(inputLength, remainingLength());
+		inputPointer.memcpy(ptr, inputLength);
+		ptr.add(inputLength);
 
 		return inputLength;
 	}
 
 	@Override
 	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
-		inputLength = Math.min(inputLength, length - (address - startAddress));
-		Utilities.writeBytes(address, inputLength, inputBuffer, inputOffset);
-		address += inputLength;
+		inputLength = Math.min(inputLength, remainingLength());
+		ptr.setArray(0, inputBuffer, inputOffset, inputLength);
+		ptr.add(inputLength);
 
 		return inputLength;
 	}
 
 	@Override
 	public long ioLseek(long offset) {
-		address = startAddress + (int) offset;
+		ptr.setAddress(startPtr.getAddress() + (int) offset);
 
 		return offset;
 	}
@@ -111,12 +121,12 @@ public class MemoryVirtualFile implements IVirtualFile {
 
 	@Override
 	public long getPosition() {
-		return address - startAddress;
+		return ptr.getAddress() - startPtr.getAddress();
 	}
 
 	@Override
 	public IVirtualFile duplicate() {
-		MemoryVirtualFile vFile = new MemoryVirtualFile(startAddress, length);
+		MemoryVirtualFile vFile = new MemoryVirtualFile(startPtr, length);
 		vFile.ioLseek(getPosition());
 
 		return vFile;
@@ -129,6 +139,6 @@ public class MemoryVirtualFile implements IVirtualFile {
 
 	@Override
 	public String toString() {
-		return String.format("MemoryVirtualFile 0x%08X-0x%08X (length=0x%X)", startAddress, startAddress + length, length);
+		return String.format("MemoryVirtualFile %s-%s (length=0x%X)", startPtr, new TPointer(startPtr, length), length);
 	}
 }
