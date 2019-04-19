@@ -144,6 +144,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private HashMap<KeyStroke, ActionListener[]> actionListenerMap;
     private boolean doUmdBuffering = false;
     private boolean runFromVsh = false;
+    private String stateFileName = null;
 
     @Override
     public DisplayMode getDisplayMode() {
@@ -2565,6 +2566,10 @@ private void ExportAllElementsActionPerformed(java.awt.event.ActionEvent evt) {/
 }//GEN-LAST:event_ExportAllElementsActionPerformed
 
     private String getStateFileName() {
+    	if (stateFileName != null) {
+    		return stateFileName;
+    	}
+
     	if (RuntimeContextLLE.isLLEActive()) {
     		return String.format("State.bin");
     	}
@@ -2903,6 +2908,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 		out.println("  --ms0 DIRECTORY            Use the given directory name for the PSP ms0:     device, instead of \"ms0/\"     by default.");
 		out.println("  --exdata0 DIRECTORY        Use the given directory name for the PSP exdata0: device, instead of \"exdata0/\" by default.");
 		out.println("  --logsettings FILE         Use the given file for the log4j configuration, instead of \"LogSettings.xml\" by default.");
+		out.println("  --stateFileName FILE       Use the given file when saving/loading the snapshot.");
 		out.println("  --vsh                      Run the PSP VSH.");
 		out.println("  --reboot                   Run a low-level emulation of the complete PSP reboot process. Still experimental.");
     }
@@ -3014,6 +3020,13 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             } else if (args[i].equals("--logsettings")) {
             	// This argument has already been processed in initLog()
             	i++;
+            } else if (args[i].equals("--stateFileName")) {
+            	i++;
+            	if (i < args.length) {
+            		stateFileName = args[i];
+            	} else {
+            		printUsage();
+            	}
             } else {
                 printUsage();
                 break;
