@@ -2414,6 +2414,47 @@ public class sceReg extends HLEModule {
 		registry.addKey(index, "at_command", "", 0x60);
 		registry.addKey(index, "phone_number", "", 0x40);
 
+		// Create 2 dummy infrastructure entries
+		for (int i = 1; i <= 2; i++) {
+			index = registry.addDirectory(parentInfrastructure, Integer.toString(i), 26, 4);
+			registry.addKey(index, "SUB1");
+			registry.addKey(index, "version", 5);
+			registry.addKey(index, "device", 1);
+			registry.addKey(index, "cnf_name", String.format("Jpcsp %d", i), 0x40);
+			registry.addKey(index, "ssid", String.format("Jpcsp SSID %d", i), 0x40);
+			registry.addKey(index, "auth_proto", 0);
+			registry.addKey(index, "wep_key", new byte[5]);
+			registry.addKey(index, "how_to_set_ip", 0);
+			registry.addKey(index, "ip_address", "", 0x20);
+			registry.addKey(index, "netmask", "", 0x20);
+			registry.addKey(index, "default_route", "", 0x20);
+			registry.addKey(index, "dns_flag", 0);
+			registry.addKey(index, "primary_dns", "", 0x20);
+			registry.addKey(index, "secondary_dns", "", 0x20);
+			registry.addKey(index, "auth_name", authName, 0x80);
+			registry.addKey(index, "auth_key", authKey, 0x80);
+			registry.addKey(index, "http_proxy_flag", 0);
+			registry.addKey(index, "http_proxy_server", "", 0x80);
+			registry.addKey(index, "http_proxy_port", 8080);
+			registry.addKey(index, "auth_8021x_type", 0);
+			registry.addKey(index, "auth_8021x_auth_name", authName, 0x80);
+			registry.addKey(index, "auth_8021x_auth_key", authKey, 0x80);
+			registry.addKey(index, "wpa_key_type", 0);
+			registry.addKey(index, "wpa_key", new byte[64]);
+			registry.addKey(index, "browser_flag", 0);
+			registry.addKey(index, "wifisvc_config", 0);
+
+			int parentN = index;
+			index = registry.addDirectory(parentN, "SUB1", 7, 2);
+			registry.addKey(index, "wifisvc_auth_name", authName, 0x80);
+			registry.addKey(index, "wifisvc_auth_key", authKey, 0x80);
+			registry.addKey(index, "wifisvc_option", 0);
+			registry.addKey(index, "last_leased_dhcp_addr", "", 0x20);
+			registry.addKey(index, "bt_id", 0);
+			registry.addKey(index, "at_command", "", 0x60);
+			registry.addKey(index, "phone_number", "", 0x40);
+		}
+
 		index = registry.addDirectory(parentNetwork, "GO_MESSENGER", 2, 1);
 		registry.addKey(index, "auth_name", authName, 0x40, 0x40);
 		registry.addKey(index, "auth_key", authKey, 0x40, 0x40);
