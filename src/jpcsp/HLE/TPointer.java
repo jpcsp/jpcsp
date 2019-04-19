@@ -133,6 +133,7 @@ public class TPointer implements ITPointerBase {
 	public long  getValue64() { return getValue64(0); }
 	public short getUnalignedValue16() { return getUnalignedValue16(0); }
 	public int   getUnalignedValue32() { return getUnalignedValue32(0); }
+	public long  getUnalignedValue64() { return getUnalignedValue64(0); }
 	public int   getUnsignedValue8() { return getUnsignedValue8(0); }
 	public int   getUnsignedValue16() { return getUnsignedValue16(0); }
 	public float getFloat() { return getFloat(0); }
@@ -152,6 +153,7 @@ public class TPointer implements ITPointerBase {
 	public long  getValue64(int offset) { return memory.read64(address + offset); }
 	public short getUnalignedValue16(int offset) { return (short) Utilities.readUnaligned16(memory, address + offset); }
 	public int   getUnalignedValue32(int offset) { return Utilities.readUnaligned32(memory, address + offset); }
+	public long  getUnalignedValue64(int offset) { return Utilities.readUnaligned64(memory, address + offset); }
 	public int   getUnsignedValue8(int offset) { return memory.read8(address + offset); }
 	public int   getUnsignedValue16(int offset) { return memory.read16(address + offset); }
 	public float getFloat(int offset) { return Float.intBitsToFloat(getValue32(offset)); }
@@ -253,6 +255,12 @@ public class TPointer implements ITPointerBase {
 
 	public void setArray(byte[] bytes, int n) {
 		setArray(0, bytes, n);
+	}
+
+	public void setArray(int offset, byte[] bytes) {
+		if (bytes != null) {
+			setArray(offset, bytes, bytes.length);
+		}
 	}
 
 	public void setArray(int offset, byte[] bytes, int n) {
@@ -402,6 +410,12 @@ public class TPointer implements ITPointerBase {
 	public void setUnalignedValue16(int offset, int value) {
 		if (isNotNull()) {
 			Utilities.writeUnaligned16(getMemory(), getAddress() + offset, value);
+		}
+	}
+
+	public void setUnalignedValue64(int offset, long value) {
+		if (isNotNull()) {
+			Utilities.writeUnaligned64(getMemory(), getAddress() + offset, value);
 		}
 	}
 
