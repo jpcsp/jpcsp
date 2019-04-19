@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.protocols;
 
+import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
+import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.network.accesspoint.AccessPoint.IP_ADDRESS_LENGTH;
 import static jpcsp.network.protocols.NetPacket.getIpAddressString;
 import static jpcsp.network.protocols.UDP.UDP_PORT_DHCP_CLIENT;
@@ -194,7 +196,13 @@ public class DHCP {
 				return getTagName();
 			}
 
-			return String.format("%s, length=0x%X, data=%s", getTagName(), length, Utilities.getMemoryDump(data, 0, length));
+			String dataString;
+			if (length == 1 || length == 2 || length == 4) {
+				dataString = String.format("0x%X", getDataAsInt());
+			} else {
+				dataString = Utilities.getMemoryDump(data, 0, length);
+			}
+			return String.format("%s(length=0x%X, data=%s)", getTagName(), length, dataString);
 		}
 	}
 
@@ -374,8 +382,16 @@ public class DHCP {
 		return s.toString();
 	}
 
+	private String clientHardwareAddressToString() {
+		if (hardwareAddressLength == MAC_ADDRESS_LENGTH) {
+			return convertMacAddressToString(clientHardwareAddress);
+		}
+
+		return Utilities.getMemoryDump(clientHardwareAddress, 0, hardwareAddressLength);
+	}
+
 	@Override
 	public String toString() {
-		return String.format("opcode=0x%X, hardwareAddressType=0x%X, hardwareAddressLength=0x%X, hops=0x%X, transactionID=0x%08X, seconds=0x%X, flagBroadcast=%b, flags=0x%04X, clientIPAddress=%s, yourIPAddress=%s, nextServerIPAddress=%s, relayAgentIPAddress=%s, clientHardwareAddress=%s, serverHostName='%s', bootFileName='%s', options=%s", opcode, hardwareAddressType, hardwareAddressLength, hops, transactionID, seconds, flagBroadcast, flagsZero, getIpAddressString(clientIPAddress), getIpAddressString(yourIPAddress), getIpAddressString(nextServerIPAddress), getIpAddressString(relayAgentIPAddress), Utilities.getMemoryDump(clientHardwareAddress, 0, hardwareAddressLength), serverHostName, bootFileName, optionsToString());
+		return String.format("opcode=0x%X, hardwareAddressType=0x%X, hardwareAddressLength=0x%X, hops=0x%X, transactionID=0x%08X, seconds=0x%X, flagBroadcast=%b, flags=0x%04X, clientIPAddress=%s, yourIPAddress=%s, nextServerIPAddress=%s, relayAgentIPAddress=%s, clientHardwareAddress=%s, serverHostName='%s', bootFileName='%s', options=%s", opcode, hardwareAddressType, hardwareAddressLength, hops, transactionID, seconds, flagBroadcast, flagsZero, getIpAddressString(clientIPAddress), getIpAddressString(yourIPAddress), getIpAddressString(nextServerIPAddress), getIpAddressString(relayAgentIPAddress), clientHardwareAddressToString(), serverHostName, bootFileName, optionsToString());
 	}
 }
