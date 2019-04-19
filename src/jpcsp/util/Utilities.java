@@ -1014,6 +1014,12 @@ public class Utilities {
 		}
 	}
 
+	public static void endianSwap32(byte[] buffer, int offset, int length) {
+		for (int i = 0; i < length; i += 4) {
+			writeUnaligned32(buffer, offset + i, endianSwap32(readUnaligned32(buffer, offset + i)));
+		}
+	}
+
 	public static int endianSwap16(int x) {
         return ((x >> 8) & 0x00FF) | ((x << 8) & 0xFF00);
     }
@@ -1037,6 +1043,14 @@ public class Utilities {
     		return mem.read16(address);
     	}
     	return (mem.read8(address + 1) << 8) | mem.read8(address);
+    }
+
+    public static long readUnaligned64(Memory mem, int address) {
+        if ((address & 3) == 0) {
+    		return mem.read64(address);
+        }
+
+        return (readUnaligned32(mem, address) & 0xFFFFFFFFL) | (((long) readUnaligned32(mem, address + 4)) << 32);
     }
 
     public static int read8(byte[] buffer, int offset) {
@@ -1088,6 +1102,15 @@ public class Utilities {
     	} else {
     		mem.write8(address, (byte) data);
             mem.write8(address + 1, (byte) (data >> 8));
+    	}
+    }
+
+    public static void writeUnaligned64(Memory mem, int address, long data) {
+    	if ((address & 3) == 0) {
+    		mem.write64(address, data);
+    	} else {
+    		writeUnaligned32(mem, address, (int) data);
+    		writeUnaligned32(mem, address + 4, (int) (data >> 32));
     	}
     }
 
