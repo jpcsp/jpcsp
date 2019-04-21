@@ -85,6 +85,26 @@ public class NetPacket extends BytesPacket {
 		return name.toString();
 	}
 
+	public String readLine() throws EOFException {
+		StringBuilder line = new StringBuilder();
+
+		while (true) {
+			char c = readAsciiChar();
+			if (c == '\r') {
+				char c2 = readAsciiChar();
+				if (c2 == '\n') {
+					break;
+				}
+				line.append(c);
+				line.append(c2);
+			} else {
+				line.append(c);
+			}
+		}
+
+		return line.toString();
+	}
+
 	public void writeDnsNameNotation(String name) throws EOFException {
 		if (name != null && name.length() > 0) {
 			String[] parts = name.split("\\.");

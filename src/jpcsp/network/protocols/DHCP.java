@@ -57,7 +57,10 @@ public class DHCP {
 	public static final int DHCP_OPTION_MESSAGE_TYPE_DHCPDISCOVER = 1;
 	public static final int DHCP_OPTION_MESSAGE_TYPE_DHCPOFFER = 2;
 	public static final int DHCP_OPTION_MESSAGE_TYPE_DHCPREQUEST = 3;
+	public static final int DHCP_OPTION_MESSAGE_TYPE_DHCPDECLINE = 4;
 	public static final int DHCP_OPTION_MESSAGE_TYPE_DHCPACK = 5;
+	public static final int DHCP_OPTION_MESSAGE_TYPE_DHCPNAK = 6;
+	public static final int DHCP_OPTION_MESSAGE_TYPE_DHCPRELEASE = 7;
 	public int opcode;
 	public int hardwareAddressType;
 	public int hardwareAddressLength;

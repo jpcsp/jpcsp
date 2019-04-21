@@ -2580,6 +2580,10 @@ public class sceNetInet extends HLEModule {
 		return String.format("%d.%d.%d.%d", n1, n2, n3, n4);
 	}
 
+	public static String internetAddressToString(byte[] bytes) {
+		return internetAddressToString(bytesToInternetAddress(bytes));
+	}
+
 	public static int bytesToInternetAddress(byte[] bytes) {
 		if (bytes == null) {
 			return 0;

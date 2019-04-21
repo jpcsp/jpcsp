@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.upnp;
 
+import static jpcsp.network.protocols.UDP.UDP_PORT_SSDP;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,7 +60,7 @@ public class UPnP {
 	protected IGD igd;
 	private volatile boolean end;
 	public  static final int discoveryTimeoutMillis = 2000;
-	public  static final int discoveryPort = 1900;
+	public  static final int discoveryPort = UDP_PORT_SSDP;
 	public  static final int discoverySearchPort = 1901;
 	public  static final String multicastIp = "239.255.255.250";
 	private static final String[] deviceList = new String[] {

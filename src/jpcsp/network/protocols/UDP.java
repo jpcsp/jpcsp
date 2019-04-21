@@ -23,6 +23,7 @@ public class UDP {
     public static final int UDP_PORT_DNS = 53;
     public static final int UDP_PORT_DHCP_SERVER = 67;
     public static final int UDP_PORT_DHCP_CLIENT = 68;
+    public static final int UDP_PORT_SSDP = 1900;
 	public int sourcePort;
 	public int destinationPort;
 	public int length;

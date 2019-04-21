@@ -67,6 +67,10 @@ public class BytesPacket {
 		return length;
 	}
 
+	public boolean isEmpty() {
+		return length <= 0 && bit <= 0;
+	}
+
 	public byte readByte() throws EOFException {
 		if (length <= 0) {
 			throw new EOFException();
@@ -270,6 +274,15 @@ public class BytesPacket {
 		if (newOffset < offset) {
 			length += offset - newOffset;
 			offset = newOffset;
+		}
+	}
+
+	public void writeString(String s) throws EOFException {
+		if (s != null) {
+			int length = s.length();
+			for (int i = 0; i < length; i++) {
+				writeAsciiChar(s.charAt(i));
+			}
 		}
 	}
 
