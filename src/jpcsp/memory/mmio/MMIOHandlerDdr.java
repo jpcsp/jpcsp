@@ -73,7 +73,11 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 		flushActions[value] = action;
 	}
 
-	private void doFlush(int value) {
+	public void clearFlushDone(int value) {
+		flushDone[value] = false;
+	}
+
+	public void doFlush(int value) {
 		flushDone[value] = true;
 
 		if (log.isDebugEnabled()) {

@@ -378,7 +378,12 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 	}
 
 	@Override
-	protected void writeData32(int dataAddress, int dataIndex, int value) {
+	protected void writeData16(int dataAddress, int dataIndex, int value, boolean endOfCommand) {
+		log.error(String.format("MMIOHandlerMemoryStick.writeData16 unimplemented dataAddress=0x%X, dataIndex=0x%X, value=0x%08X", dataAddress, dataIndex, value));
+	}
+
+	@Override
+	protected void writeData32(int dataAddress, int dataIndex, int value, boolean endOfCommand) {
 		log.error(String.format("MMIOHandlerMemoryStick.writeData32 unimplemented dataAddress=0x%X, dataIndex=0x%X, value=0x%08X", dataAddress, dataIndex, value));
 	}
 }
