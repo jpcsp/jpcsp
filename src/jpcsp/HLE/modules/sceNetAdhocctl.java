@@ -177,7 +177,7 @@ public class sceNetAdhocctl extends HLEModule {
 		}
     }
 
-    protected static class AdhocctlNetwork {
+    public static class AdhocctlNetwork {
     	/** Channel number */
     	public int channel;
     	/** Name of the connection (alphanumeric characters only) */
@@ -220,6 +220,10 @@ public class sceNetAdhocctl extends HLEModule {
 		if (!isInitialized) {
 			throw new SceKernelErrorException(SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED);
 		}
+	}
+
+	public List<sceNetAdhocctl.AdhocctlNetwork> getNetworks() {
+		return networks;
 	}
 
 	public void hleNetAdhocctlAddGameModeMac(byte[] macAddr) {
@@ -353,7 +357,7 @@ public class sceNetAdhocctl extends HLEModule {
     	adhocctlCurrentState = state;
     }
 
-    protected void setGroupName(String groupName, int mode) {
+    public void setGroupName(String groupName, int mode) {
     	adhocctlCurrentGroup = groupName;
     	adhocctlCurrentMode = mode;
     	gameModeJoinComplete = false;
@@ -399,6 +403,11 @@ public class sceNetAdhocctl extends HLEModule {
             handler.setError(error);
             handler.triggerAdhocctlHandler();
         }
+    }
+
+    public void hleNetAdhocctlInit(int type, String adhocId) {
+    	adhocctlCurrentType = type;
+    	adhocctlCurrentAdhocID = adhocId;
     }
 
     public String hleNetAdhocctlGetAdhocID() {
@@ -565,16 +574,17 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0xE26F226E, version = 150, checkInsideInterrupt = true)
-    public int sceNetAdhocctlInit(int stackSize, int priority, @CanBeNull TPointer product) {
+    public int sceNetAdhocctlInit(int stackSize, int priority, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=13, usage=Usage.in) @CanBeNull TPointer product) {
     	if (isInitialized) {
     		return SceKernelErrors.ERROR_NET_ADHOCCTL_ALREADY_INITIALIZED;
     	}
 
     	if (product.isNotNull()) {
-            adhocctlCurrentType = product.getValue32(0); // 0 - Commercial type / 1 - Debug type.
-            adhocctlCurrentAdhocID = product.getStringNZ(4, ADHOC_ID_LENGTH);
+            int type = product.getValue32(0); // 0 - Commercial type / 1 - Debug type.
+            String adhocId = product.getStringNZ(4, ADHOC_ID_LENGTH);
+            hleNetAdhocctlInit(type, adhocId);
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("Found product data: type=%d, AdhocID='%s'", adhocctlCurrentType, adhocctlCurrentAdhocID));
+            	log.debug(String.format("Found product data: type=%d, AdhocID='%s'", type, adhocId));
             }
         }
 
@@ -780,7 +790,7 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x362CBE8F, version = 150)
-    public int sceNetAdhocctlGetAdhocId(TPointer addr) {
+    public int sceNetAdhocctlGetAdhocId(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=13, usage=Usage.out) TPointer addr) {
     	checkInitialized();
 
     	if (log.isDebugEnabled()) {

@@ -319,7 +319,7 @@ public class UPnP {
 				log.debug(String.format("UPnP command serviceType %s, action %s, result: %s", serviceType, action, content.toString()));
 			}
 
-			result = parseSimpleCommandResponse(content.toString());
+			result = parseSimpleUPnPCommand(content.toString());
 
 			if (log.isDebugEnabled()) {
 				String errorCode = result.get("errorCode");
@@ -338,7 +338,7 @@ public class UPnP {
 		return result;
 	}
 
-	protected HashMap<String, String> parseSimpleCommandResponse(String content) {
+	public HashMap<String, String> parseSimpleUPnPCommand(String content) {
 		HashMap<String, String> result = null;
 
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -352,13 +352,13 @@ public class UPnP {
 			result = new HashMap<String, String>();
 			parseElement(response.getDocumentElement(), result, null);
 		} catch (ParserConfigurationException e) {
-			log.error("Discovery", e);
+			log.error("parseSimpleUPnPCommand", e);
 		} catch (SAXException e) {
-			log.error("Discovery", e);
+			log.error("parseSimpleUPnPCommand", e);
 		} catch (MalformedURLException e) {
-			log.error("Discovery", e);
+			log.error("parseSimpleUPnPCommand", e);
 		} catch (IOException e) {
-			log.error("Discovery", e);
+			log.error("parseSimpleUPnPCommand", e);
 		}
 
 		return result;

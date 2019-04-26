@@ -49,6 +49,7 @@ public class DHCP {
 	public static final int DHCP_OPTION_MESSAGE_TYPE = 53;
 	public static final int DHCP_OPTION_SERVER_IDENTIFIER = 54;
 	public static final int DHCP_OPTION_PARAMETER_REQUEST = 55;
+	public static final int DHCP_OPTION_MESSAGE = 56;
 	public static final int DHCP_OPTION_MAXIMUM_DHCP_MESSAGE = 57;
 	public static final int DHCP_OPTION_CLIENT_IDENTIFIER = 61;
 	public static final int DHCP_OPTION_END = 255;
@@ -90,6 +91,7 @@ public class DHCP {
 		DHCP_OPTION_NAMES[DHCP_OPTION_MESSAGE_TYPE] = "MESSAGE_TYPE";
 		DHCP_OPTION_NAMES[DHCP_OPTION_SERVER_IDENTIFIER] = "SERVER_IDENTIFIER";
 		DHCP_OPTION_NAMES[DHCP_OPTION_PARAMETER_REQUEST] = "PARAMETER_REQUEST";
+		DHCP_OPTION_NAMES[DHCP_OPTION_MESSAGE] = "MESSAGE";
 		DHCP_OPTION_NAMES[DHCP_OPTION_MAXIMUM_DHCP_MESSAGE] = "MAXIMUM_DHCP_MESSAGE";
 		DHCP_OPTION_NAMES[DHCP_OPTION_CLIENT_IDENTIFIER] = "CLIENT_IDENTIFIER";
 		DHCP_OPTION_NAMES[DHCP_OPTION_END] = "END";
@@ -348,6 +350,20 @@ public class DHCP {
 			return false;
 		}
 		if (!Arrays.equals(requestedIpAddress, requestedIpAddressOption.data)) {
+			return false;
+		}
+
+		return true;
+	}
+
+	public boolean isRelease(UDP udp, IPv4 ipv4, byte[] releasedIpAddress) {
+		if (!isMessageOfType(udp, ipv4, DHCP_OPTION_MESSAGE_TYPE_DHCPRELEASE)) {
+			return false;
+		}
+
+		// Verify that the released IP address is matching
+		// the one specified in the options.
+		if (!Arrays.equals(releasedIpAddress, ipv4.sourceIPAddress)) {
 			return false;
 		}
 

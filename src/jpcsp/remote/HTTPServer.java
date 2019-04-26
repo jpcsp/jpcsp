@@ -97,13 +97,13 @@ public class HTTPServer {
 		new HTTPServerDescriptor(1, 443, true)
 	};
 	public static boolean processProxyRequestLocally = false;
-	private static final String method = "method";
-	private static final String path = "path";
-	private static final String host = "host";
-	private static final String parameters = "parameters";
-	private static final String version = "version";
-	private static final String data = "data";
-	private static final String contentLength = "content-length";
+	public static final String method = "method";
+	public static final String path = "path";
+	public static final String host = "host";
+	public static final String parameters = "parameters";
+	public static final String version = "version";
+	public static final String data = "data";
+	public static final String contentLength = "content-length";
 	private static final String eol = "\r\n";
 	private static final String boundary = "--boundarybetweensingleimages";
 	private static final String isoDirectory = "/iso/";
@@ -131,6 +131,7 @@ public class HTTPServer {
 	private int proxyPort;
 	private int proxyAddress;
 	private SceNpTicket ticket;
+	private Map<String, IProcessHTTPRequest> processors;
 
 	public static HTTPServer getInstance() {
 		if (instance == null) {
@@ -290,6 +291,7 @@ public class HTTPServer {
 
 	private HTTPServer() {
 		keyMapping = new HashMap<Integer, keyCode>();
+		processors = new HashMap<String, IProcessHTTPRequest>();
 
 		serverThreads = new HTTPServerThread[serverDescriptors.length];
 		for (HTTPServerDescriptor descriptor : serverDescriptors) {
@@ -349,6 +351,10 @@ public class HTTPServer {
 		} catch (AWTException e) {
 			log.error("Create captureRobot", e);
 		}
+	}
+
+	public void register(String path, IProcessHTTPRequest processor) {
+		processors.put(path, processor);
 	}
 
 	private static String decodePath(String path) {
@@ -435,6 +441,10 @@ public class HTTPServer {
 		String[] lines = request.split(eol, -1); // Do not loose trailing empty strings
 		boolean header = true;
 
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("parseRequest '%s'", request));
+		}
+
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
 			if (i == 0) {
@@ -467,10 +477,10 @@ public class HTTPServer {
 						headers.put(words[0].toLowerCase(), words[1]);
 					}
 				}
-			} else if (line.length() > 0) {
+			} else {
 				String previousData = headers.get(data);
 				if (previousData != null) {
-					headers.put(data, previousData + "\n" + line);
+					headers.put(data, previousData + eol + line);
 				} else {
 					headers.put(data, line);
 				}
@@ -486,6 +496,9 @@ public class HTTPServer {
 			if (headerContentLength > 0) {
 				String additionalData = headers.get(data);
 				if (additionalData == null || additionalData.length() < headerContentLength) {
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("parseRequest content-length=%d, data length=%d", headerContentLength, additionalData.length()));
+					}
 					return null;
 				}
 			}
@@ -681,6 +694,19 @@ public class HTTPServer {
 		return null;
 	}
 
+	private boolean process(OutputStream os, String path, HashMap<String, String> request) throws IOException {
+		for (String key : processors.keySet()) {
+			if (path.startsWith(key)) {
+				IProcessHTTPRequest processor = processors.get(key);
+				if (processor.processRequest(this, os, path, request)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
 	private boolean process(HTTPServerDescriptor descriptor, HashMap<String, String> request, OutputStream os) throws IOException {
 		boolean keepAlive = false;
 		try {
@@ -689,6 +715,7 @@ public class HTTPServer {
 			if (pathValue.startsWith(baseUrl)) {
 				pathValue = pathValue.substring(baseUrl.length() - 1);
 			}
+			String methodValue = request.get(method);
 
 			HttpServerConfiguration httpServerConfiguration = getHttpServerConfiguration(request.get(host), pathValue);
 
@@ -704,8 +731,10 @@ public class HTTPServer {
 				sendKdpM(request.get(data), os);
 			} else if ("video.dl.playstation.net".equals(request.get(host)) && pathValue.matches("/cdn/video/[A-Z][A-Z]/g")) {
 				sendVideoStore(os);
-			} else if ("GET".equals(request.get(method))) {
-				if ("/".equals(pathValue)) {
+			} else if ("GET".equals(methodValue)) {
+				if (process(os, pathValue, request)) {
+					// Already processed
+				} else if ("/".equals(pathValue)) {
 					sendResponseFile(os, rootDirectory + "/" + indexFile);
 				} else if ("/screen.png".equals(pathValue)) {
 					sendScreenImage(os, "png");
@@ -742,14 +771,20 @@ public class HTTPServer {
 				} else {
 					sendErrorNotFound(os);
 				}
-			} else if ("HEAD".equals(request.get(method))) {
+			} else if ("HEAD".equals(methodValue)) {
 				if (pathValue.startsWith(isoDirectory)) {
 					sendIso(request, os, pathValue, false);
 				} else {
 					sendErrorNotFound(os);
 				}
+			} else if ("POST".equals(methodValue)) {
+				if (process(os, pathValue, request)) {
+					// Already processed
+				} else {
+					sendErrorMethodNotAllowed(os);
+				}
 			} else {
-				sendError(os, 405);
+				sendErrorMethodNotAllowed(os);
 			}
 		} catch (SocketException e) {
 			// Ignore exception (e.g. Connection reset by peer)
@@ -791,6 +826,26 @@ public class HTTPServer {
 		sendResponseFile(os, getClass().getResourceAsStream(fileName), guessMimeType(fileName));
 	}
 
+	public void sendResponse(OutputStream os, String response) throws IOException {
+		byte[] buffer = response.getBytes();
+		sendResponse(os, buffer, buffer.length, null);
+	}
+
+	private void sendResponse(OutputStream os, byte[] buffer, int bufferLength, String contentType) throws IOException {
+		sendOK(os);
+		if (contentType != null) {
+			sendResponseHeader(os, "Content-Type", contentType);
+		}
+		if (bufferLength > 0) {
+			sendResponseHeader(os, "Content-Length", bufferLength);
+		}
+		sendEndOfHeaders(os);
+
+		if (bufferLength > 0) {
+			os.write(buffer, 0, bufferLength);
+		}
+	}
+
 	private void sendResponseFile(OutputStream os, InputStream is, String contentType) throws IOException {
 		byte[] buffer = new byte[1000];
 		int contentLength = 0;
@@ -808,18 +863,7 @@ public class HTTPServer {
 			is.close();
 		}
 
-		sendOK(os);
-		if (contentType != null) {
-			sendResponseHeader(os, "Content-Type", contentType);
-		}
-		if (contentLength > 0) {
-			sendResponseHeader(os, "Content-Length", contentLength);
-		}
-		sendEndOfHeaders(os);
-
-		if (contentLength > 0) {
-			os.write(buffer, 0, contentLength);
-		}
+		sendResponse(os, buffer, contentLength, contentType);
 	}
 
 	private void sendResponseLine(OutputStream os, String line) throws IOException {
@@ -882,6 +926,10 @@ public class HTTPServer {
 
 	private void sendErrorNotFound(OutputStream os) throws IOException {
 		sendError(os, 404);
+	}
+
+	private void sendErrorMethodNotAllowed(OutputStream os) throws IOException {
+		sendError(os, 405);
 	}
 
 	private void sendScreenImage(OutputStream os, String fileFormat) throws IOException {

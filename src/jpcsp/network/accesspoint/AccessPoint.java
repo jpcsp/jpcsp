@@ -18,6 +18,8 @@ package jpcsp.network.accesspoint;
 
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.HLE.modules.sceNetAdhoc.ANY_MAC_ADDRESS;
+import static jpcsp.HLE.modules.sceNetInet.internetAddressToBytes;
+import static jpcsp.HLE.modules.sceNetInet.internetAddressToString;
 import static jpcsp.HLE.modules.sceWlan.WLAN_CMD_DATA;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.network.protocols.ARP.ARP_OPERATION_REPLY;
@@ -37,6 +39,7 @@ import static jpcsp.util.Utilities.writeStringNZ;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.BindException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -59,7 +62,6 @@ import java.util.Random;
 import jpcsp.Emulator;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetApctl;
-import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.network.protocols.ARP;
 import jpcsp.network.protocols.DHCP;
 import jpcsp.network.protocols.DNS;
@@ -71,12 +73,15 @@ import jpcsp.network.protocols.NetPacket;
 import jpcsp.network.protocols.SSDP;
 import jpcsp.network.protocols.TCP;
 import jpcsp.network.protocols.UDP;
+import jpcsp.network.upnp.UPnP;
+import jpcsp.remote.HTTPServer;
+import jpcsp.remote.IProcessHTTPRequest;
 import jpcsp.network.protocols.DNS.DNSRecord;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class AccessPoint {
+public class AccessPoint implements IProcessHTTPRequest {
     public static Logger log = Logger.getLogger("accesspoint");
     public static final int HARDWARE_TYPE_ETHERNET = 0x0001;
     public static final int IP_ADDRESS_LENGTH = 4;
@@ -92,6 +97,8 @@ public class AccessPoint {
 	private List<TcpConnection> tcpConnections;
 	private List<UdpConnection> udpConnections;
 	private Random random;
+	private String baseUri;
+	private UPnP upnp;
 
 	private static class TcpConnection {
 		public pspNetMacAddress sourceMacAddress;
@@ -100,11 +107,27 @@ public class AccessPoint {
 		public int sourceSequenceNumber;
 		public pspNetMacAddress destinationMacAddress;
 		public byte[] destinationIPAddress;
+		public byte[] proxyDestinationIPAddress;
 		public int destinationPort;
+		public int proxyDestinationPort;
 		public int destinationSequenceNumber;
 		public SocketChannel socketChannel;
 		public byte[] pendingWriteData;
 		public boolean pendingConnection;
+
+		public TcpConnection(EtherFrame frame, IPv4 ipv4, TCP tcp, Random random) {
+			sourceMacAddress = frame.srcMac;
+			destinationMacAddress = frame.dstMac;
+			sourceIPAddress = ipv4.sourceIPAddress;
+			destinationIPAddress = ipv4.destinationIPAddress;
+			proxyDestinationIPAddress = ipv4.destinationIPAddress;
+			sourcePort = tcp.sourcePort;
+			destinationPort = tcp.destinationPort;
+			proxyDestinationPort = tcp.destinationPort;
+			sourceSequenceNumber = tcp.sequenceNumber + tcp.data.length;
+			destinationSequenceNumber = random.nextInt();
+			pendingConnection = true;
+		}
 
 		private void openChannel() throws IOException {
 			if (socketChannel == null) {
@@ -119,7 +142,7 @@ public class AccessPoint {
 		public void connect() throws IOException {
 			openChannel();
 			if (!socketChannel.isConnected() && !socketChannel.isConnectionPending()) {
-				SocketAddress socketAddress = new InetSocketAddress(InetAddress.getByAddress(destinationIPAddress), destinationPort);
+				SocketAddress socketAddress = new InetSocketAddress(InetAddress.getByAddress(proxyDestinationIPAddress), proxyDestinationPort);
 				socketChannel.connect(socketAddress);
 			}
 		}
@@ -138,7 +161,14 @@ public class AccessPoint {
 		}
 
 		public void write(byte[] buffer, int offset, int length) throws IOException {
-			socketChannel.write(ByteBuffer.wrap(buffer, 0, length));
+			if (socketChannel != null) {
+				int n = socketChannel.write(ByteBuffer.wrap(buffer, 0, length));
+				if (n != length) {
+					log.error(String.format("TcpConnection.write could not write 0x%X bytes, only 0x%X bytes written", length, n));
+				}
+			} else {
+				log.error(String.format("TcpConnection.write socketChannel not created"));
+			}
 		}
 
 		public byte[] read() throws IOException {
@@ -166,7 +196,7 @@ public class AccessPoint {
 
 		@Override
 		public String toString() {
-			return String.format("source=%s/%s:%d(sequenceNumber=0x%X), destination=%s/%s:%d(sequenceNumber=0x%X)", sourceMacAddress, getIpAddressString(sourceIPAddress), sourcePort, sourceSequenceNumber, destinationMacAddress, getIpAddressString(destinationIPAddress), destinationPort, destinationSequenceNumber);
+			return String.format("source=%s/%s:%d(sequenceNumber=0x%X), destination=%s/%s:%d(sequenceNumber=0x%X), proxyDestination=%s:%d", sourceMacAddress, getIpAddressString(sourceIPAddress), sourcePort, sourceSequenceNumber, destinationMacAddress, getIpAddressString(destinationIPAddress), destinationPort, destinationSequenceNumber, getIpAddressString(proxyDestinationIPAddress), proxyDestinationPort);
 		}
 	}
 
@@ -244,6 +274,10 @@ public class AccessPoint {
 		}
 
 		public byte[] read() throws IOException {
+			if (datagramChannel == null) {
+				return null;
+			}
+
 			byte[] buffer = new byte[BUFFER_SIZE];
 			int length = datagramChannel.read(ByteBuffer.wrap(buffer));
 			if (length <= 0) {
@@ -306,10 +340,20 @@ public class AccessPoint {
 
 		random = new Random();
 
+		if (!createAccessPointSocket()) {
+			log.error(String.format("Cannot create access point socket"));
+		}
+
+		baseUri = String.format("/AccessPoint/%d/", getPort());
+		HTTPServer.getInstance().register(baseUri, this);
+
 		apThread = new AccessPointThread();
 		apThread.setDaemon(true);
 		apThread.setName("Access Point Thread");
 		apThread.start();
+
+		upnp = new UPnP();
+		upnp.discoverInBackground();
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("AccessPoint using MAC=%s, IP=%s", apMacAddress, getIpAddressString(apIpAddress)));
@@ -320,6 +364,11 @@ public class AccessPoint {
 		if (apThread != null) {
 			apThread.exit();
 			apThread = null;
+		}
+
+		if (upnp != null) {
+			upnp.stop();
+			upnp = null;
 		}
 	}
 
@@ -616,7 +665,6 @@ public class AccessPoint {
 				packet.readBytes(data);
 
 				udpConnection.addPendingWriteData(data);
-				log.error(String.format("processMessageUDP unknown destination port 0x%X", udp.destinationPort));
 				break;
 		}
 	}
@@ -769,53 +817,6 @@ public class AccessPoint {
 		return null;
 	}
 
-	private void processInternalMessageTCP(NetPacket packet, EtherFrame frame, IPv4 ipv4, TCP tcp, TcpConnection tcpConnection) throws EOFException {
-		if (tcp.destinationPort != apSocketPort) {
-			log.error(String.format("processInternalMessageTCP unknown port=%d", tcp.destinationPort));
-			return;
-		}
-
-		if (tcpConnection == null) {
-			tcpConnection = new TcpConnection();
-			tcpConnection.sourceMacAddress = frame.srcMac;
-			tcpConnection.destinationMacAddress = frame.dstMac;
-			tcpConnection.sourceIPAddress = ipv4.sourceIPAddress;
-			tcpConnection.destinationIPAddress = ipv4.destinationIPAddress;
-			tcpConnection.sourcePort = tcp.sourcePort;
-			tcpConnection.destinationPort = tcp.destinationPort;
-			tcpConnection.sourceSequenceNumber = tcp.sequenceNumber + tcp.data.length;
-			tcpConnection.destinationSequenceNumber = random.nextInt();
-			tcpConnection.pendingConnection = true;
-			tcpConnections.add(tcpConnection);
-		}
-
-		if (tcp.flagSYN) {
-			tcpConnection.sourceSequenceNumber++;
-			// Send SYN-ACK acknowledge
-			sendAcknowledgeTCP(tcpConnection, true);
-			tcpConnection.destinationSequenceNumber++;
-			tcpConnection.pendingConnection = false;
-		} else if (tcp.flagACK) {
-			try {
-				if (tcp.flagFIN) {
-					tcpConnection.sourceSequenceNumber += tcp.data.length;
-					tcpConnection.sourceSequenceNumber++;
-					sendAcknowledgeTCP(tcpConnection, false);
-				} else if (tcp.flagPSH) {
-					// Acknowledge the reception of the data
-					tcpConnection.sourceSequenceNumber += tcp.data.length;
-					sendAcknowledgeTCP(tcpConnection, false);
-
-					// Queue the received data for the destination
-					tcpConnection.addPendingWriteData(tcp.data);
-					log.error(String.format("processInternalMessageTCP data=%s", Utilities.getMemoryDump(tcp.data)));
-				}
-			} catch (IOException e) {
-				log.error("processInternalMessageTCP", e);
-			}
-		}
-	}
-
 	private void processMessageTCP(NetPacket packet, EtherFrame frame, IPv4 ipv4) throws EOFException {
 		TCP tcp = new TCP();
 		tcp.read(packet);
@@ -825,9 +826,10 @@ public class AccessPoint {
 		}
 
 		TcpConnection tcpConnection = getTcpConnection(ipv4, tcp);
-		if (isMyIpAddress(ipv4.destinationIPAddress)) {
-			processInternalMessageTCP(packet, frame, ipv4, tcp, tcpConnection);
-		} else if (tcp.flagSYN) {
+
+		boolean isInternalMessage = isMyIpAddress(ipv4.destinationIPAddress) && tcp.destinationPort == apSocketPort;
+
+		if (tcp.flagSYN) {
 			if (tcpConnection != null) {
 				if (!tcpConnection.pendingConnection) {
 					log.error(String.format("processMessageTCP SYN received but connection already exists: %s", tcpConnection));
@@ -848,16 +850,11 @@ public class AccessPoint {
 				tcpConnections.remove(tcpConnection);
 			}
 
-			tcpConnection = new TcpConnection();
-			tcpConnection.sourceMacAddress = frame.srcMac;
-			tcpConnection.destinationMacAddress = frame.dstMac;
-			tcpConnection.sourceIPAddress = ipv4.sourceIPAddress;
-			tcpConnection.destinationIPAddress = ipv4.destinationIPAddress;
-			tcpConnection.sourcePort = tcp.sourcePort;
-			tcpConnection.destinationPort = tcp.destinationPort;
-			tcpConnection.sourceSequenceNumber = tcp.sequenceNumber + tcp.data.length;
-			tcpConnection.destinationSequenceNumber = random.nextInt();
-			tcpConnection.pendingConnection = true;
+			tcpConnection = new TcpConnection(frame, ipv4, tcp, random);
+			if (isInternalMessage) {
+				tcpConnection.proxyDestinationIPAddress = internetAddressToBytes(HTTPServer.getInstance().getProxyAddress());
+				tcpConnection.proxyDestinationPort = HTTPServer.getInstance().getProxyPort();
+			}
 			tcpConnections.add(tcpConnection);
 		} else if (tcp.flagACK) {
 			if (tcpConnection == null) {
@@ -873,10 +870,14 @@ public class AccessPoint {
 					tcpConnection.sourceSequenceNumber += tcp.data.length;
 					tcpConnection.sourceSequenceNumber++;
 					sendAcknowledgeTCP(tcpConnection, false);
-				} else if (tcp.flagPSH) {
+				} else if (tcp.flagPSH || tcp.data.length > 0) {
 					// Acknowledge the reception of the data
 					tcpConnection.sourceSequenceNumber += tcp.data.length;
 					sendAcknowledgeTCP(tcpConnection, false);
+
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("processMessageTCP sending data %s: %s", tcpConnection, Utilities.getMemoryDump(tcp.data)));
+					}
 
 					// Queue the received data for the destination
 					tcpConnection.addPendingWriteData(tcp.data);
@@ -972,10 +973,6 @@ public class AccessPoint {
 		List<TcpConnection> tcpConnectionsToBeDeleted = new LinkedList<TcpConnection>();
 
 		for (TcpConnection tcpConnection : tcpConnections) {
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("receiveTcpMessages polling %s", tcpConnection));
-			}
-
 			if (tcpConnection.pendingConnection) {
 				try {
 					tcpConnection.connect();
@@ -1196,6 +1193,8 @@ public class AccessPoint {
 		} else if (dhcp.isRequest(udp, ipv4, getLocalIpAddress())) {
 			// Send back a DHCP acknowledgment message
 			sendDHCPReply(frame, ipv4, udp, dhcp, DHCP.DHCP_OPTION_MESSAGE_TYPE_DHCPACK);
+		} else if (dhcp.isRelease(udp, ipv4, getLocalIpAddress())) {
+			// No message is sent back
 		} else {
 			log.error(String.format("Unknown DHCP request %s", dhcp));
 		}
@@ -1253,12 +1252,132 @@ public class AccessPoint {
 		}
 
 		String device = ssdp.getHeaderValue("ST");
-		String location = String.format("http://%s:%d/%s", sceNetInet.internetAddressToString(getIpAddress()), apSocketPort, device);
+		String location = String.format("http://%s:%d%sUPnP/%s", internetAddressToString(getIpAddress()), getPort(), baseUri, device);
 
 		Map<String, String> replyHeaders = new HashMap<String, String>();
 		replyHeaders.put("ST", device);
 		replyHeaders.put("Location", location);
 
 		sendSSDPReply(frame, ipv4, udp, replyHeaders);
+	}
+
+	private boolean processRequestUPnP(HTTPServer server, OutputStream os, String path, HashMap<String, String> request) throws IOException {
+		if ("urn:schemas-upnp-org:device:InternetGatewayDevice:1".equals(path)) {
+			StringBuilder s = new StringBuilder();
+			s.append("<root>");
+			s.append("  <URLBase>");
+			s.append(     String.format("http://%s:%d/%s", internetAddressToString(getIpAddress()), getPort(), baseUri));
+			s.append("  </URLBase>");
+			s.append("  <device>");
+			s.append("    <deviceList>");
+			s.append("      <device>");
+			s.append("        <deviceList>");
+			s.append("          <device>");
+			s.append("            <serviceList>");
+			s.append("              <service>");
+			s.append("                <serviceType>urn:schemas-upnp-org:service:WANPPPConnection:1</serviceType>");
+			s.append("                <controlURL>" + baseUri + "UPnP/urn:schemas-upnp-org:service:WANPPPConnection:1</controlURL>");
+			s.append("              </service>");
+			s.append("            </serviceList>");
+			s.append("          </device>");
+			s.append("        </deviceList>");
+			s.append("      </device>");
+			s.append("    </deviceList>");
+			s.append("  </device>");
+			s.append("</root>");
+
+			server.sendResponse(os, s.toString());
+		} else if ("urn:schemas-upnp-org:service:WANPPPConnection:1".equals(path)) {
+			String soapAction = request.get("soapaction");
+			if (soapAction.startsWith("\"")) {
+				soapAction = soapAction.substring(1, soapAction.length() - 1);
+			}
+			String action = soapAction.substring(soapAction.indexOf('#') + 1);
+			if ("GetExternalIPAddress".equals(action)) {
+				String newExternalIPAddress = upnp.getIGD().getExternalIPAddress(upnp);
+				if (newExternalIPAddress == null) {
+					newExternalIPAddress = "";
+				}
+
+				StringBuilder s = new StringBuilder();
+				s.append("<s:Envelope>");
+				s.append("  <s:Body>");
+				s.append("    <m:GetExternalIPAddressResponse>");
+				s.append("      <NewExternalIPAddress>" + newExternalIPAddress + "</NewExternalIPAddress>");
+				s.append("    </m:GetExternalIPAddressResponse>");
+				s.append("  </s:Body>");
+				s.append("</s:Envelope>");
+
+				server.sendResponse(os, s.toString());
+			} else if ("AddPortMapping".equals(action)) {
+				HashMap<String, String> upnpRequest = upnp.parseSimpleUPnPCommand(request.get(HTTPServer.data));
+
+				String newRemoteHost = upnpRequest.get("NewRemoteHost");
+				int newExternalPort = Integer.parseInt(upnpRequest.get("NewExternalPort"));
+				String newProtocol = upnpRequest.get("NewProtocol");
+				int newInternalPort = Integer.parseInt(upnpRequest.get("NewInternalPort"));
+				String newInternalClient = upnpRequest.get("NewInternalClient");
+				int newEnabled = Integer.parseInt(upnpRequest.get("NewEnabled"));
+				String newPortMappingDescription = upnpRequest.get("NewPortMappingDescription");
+				int newLeaseDuration = Integer.parseInt(upnpRequest.get("NewLeaseDuration"));
+
+				if (newEnabled == 1) {
+					upnp.getIGD().addPortMapping(upnp, newRemoteHost, newExternalPort, newProtocol, newInternalPort, newInternalClient, newPortMappingDescription, newLeaseDuration);
+				}
+
+				// Return success
+				StringBuilder s = new StringBuilder();
+				s.append("<s:Envelope>");
+				s.append("  <s:Body>");
+				s.append("    <m:AddPortMappingResponse>");
+				s.append("    </m:AddPortMappingResponse>");
+				s.append("  </s:Body>");
+				s.append("</s:Envelope>");
+
+				server.sendResponse(os, s.toString());
+			} else if ("DeletePortMapping".equals(action)) {
+				HashMap<String, String> upnpRequest = upnp.parseSimpleUPnPCommand(request.get(HTTPServer.data));
+
+				String newRemoteHost = upnpRequest.get("NewRemoteHost");
+				int newExternalPort = Integer.parseInt(upnpRequest.get("NewExternalPort"));
+				String newProtocol = upnpRequest.get("NewProtocol");
+
+				upnp.getIGD().deletePortMapping(upnp, newRemoteHost, newExternalPort, newProtocol);
+
+				// Return success
+				StringBuilder s = new StringBuilder();
+				s.append("<s:Envelope>");
+				s.append("  <s:Body>");
+				s.append("    <m:DeletePortMappingResponse>");
+				s.append("    </m:DeletePortMappingResponse>");
+				s.append("  </s:Body>");
+				s.append("</s:Envelope>");
+
+				server.sendResponse(os, s.toString());
+			} else {
+				log.error(String.format("processRequest unimplemented SOAP action '%s' on %s", action, path));
+			}
+		} else {
+			log.error(String.format("processRequest unimplemented %s", path));
+			return false;
+		}
+
+		return true;
+	}
+
+	@Override
+	public boolean processRequest(HTTPServer server, OutputStream os, String path, HashMap<String, String> request) throws IOException {
+		if (!path.startsWith(baseUri)) {
+			log.error(String.format("processRequest unimplemented %s", baseUri));
+			return false;
+		}
+
+		String relativePath = path.substring(baseUri.length());
+		if (relativePath.startsWith("UPnP/")) {
+			return processRequestUPnP(server, os, relativePath.substring(5), request);
+		}
+
+		log.error(String.format("processRequest unimplemented %s", relativePath));
+		return false;
 	}
 }

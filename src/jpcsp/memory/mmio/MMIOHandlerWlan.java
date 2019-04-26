@@ -34,14 +34,20 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jpcsp.Memory;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
+import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.HLE.modules.sceWlan;
-import jpcsp.hardware.Wlan;
 import jpcsp.memory.IntArrayMemory;
+import jpcsp.network.INetworkAdapter;
+import jpcsp.network.NetworkAdapterFactory;
 import jpcsp.network.accesspoint.AccessPoint;
 import jpcsp.network.accesspoint.IAccessPointCallback;
 import jpcsp.network.protocols.EtherFrame;
@@ -152,8 +158,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	private final IntArrayMemory attributesMemory = new IntArrayMemory(new int[0x40 / 4]);
 	private final IntArrayMemory commandPacket = new IntArrayMemory(new int[0xC00 / 4]);
 	private final TPointer commandPacketPtr = commandPacket.getPointer();
-	private final IntArrayMemory dataPacket = new IntArrayMemory(new int[0xC00 / 4]);
-	private final TPointer dataPacketPtr = dataPacket.getPointer();
+	private final IntArrayMemory sendDataPacket = new IntArrayMemory(new int[0xC00 / 4]);
+	private final TPointer sendDataPacketPtr = sendDataPacket.getPointer();
+	private final IntArrayMemory receiveDataPacket = new IntArrayMemory(new int[0xC00 / 4]);
+	private final TPointer receiveDataPacketPtr = receiveDataPacket.getPointer();
 	private static final int DUMMY_ATTRIBUTE_ENTRY = 0x1234;
 	private static final int WLAN_REG_RECEIVED_PACKET_LENGTH = 0x40;
 	private static final int WLAN_REG_OUTPUT_PACKET_SIZE = 0x44;
@@ -176,6 +184,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	private DatagramSocket dataSocket;
     private int dataSocketPort;
     private AccessPoint accessPoint;
+    private INetworkAdapter networkAdapter;
 
 	public MMIOHandlerWlan(int baseAddress) {
 		super(baseAddress);
@@ -196,7 +205,8 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		adhocSsid = stream.readString();
 		stream.readIntArrayMemory(attributesMemory);
 		stream.readIntArrayMemory(commandPacket);
-		stream.readIntArrayMemory(dataPacket);
+		stream.readIntArrayMemory(sendDataPacket);
+		stream.readIntArrayMemory(receiveDataPacket);
 		super.read(stream);
 	}
 
@@ -211,7 +221,8 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		stream.writeString(adhocSsid);
 		stream.writeIntArrayMemory(attributesMemory);
 		stream.writeIntArrayMemory(commandPacket);
-		stream.writeIntArrayMemory(dataPacket);
+		stream.writeIntArrayMemory(sendDataPacket);
+		stream.writeIntArrayMemory(receiveDataPacket);
 		super.write(stream);
 	}
 
@@ -246,7 +257,8 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 		// Clear packet buffers
 		commandPacketPtr.clear(commandPacket.getSize());
-		dataPacketPtr.clear(dataPacket.getSize());
+		sendDataPacketPtr.clear(sendDataPacket.getSize());
+		receiveDataPacketPtr.clear(receiveDataPacket.getSize());
 
 		chipCodeIndex = -1;
 		booting = true;
@@ -255,6 +267,31 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	private void createAccessPoint() {
 		if (accessPoint == null) {
 			accessPoint = new AccessPoint(this);
+		}
+	}
+
+	private void createNetworkAdapter() {
+		if (networkAdapter == null) {
+			networkAdapter = NetworkAdapterFactory.createNetworkAdapter();
+			networkAdapter.start();
+		}
+	}
+
+	private void setSsid(String ssid) {
+		this.adhocSsid = ssid;
+
+		Pattern p = Pattern.compile("PSP_S(.........)_L_(.*)");
+		Matcher m = p.matcher(ssid);
+		if (m.matches()) {
+			String productId = m.group(1);
+			String groupName = m.group(2);
+			Modules.sceNetAdhocctlModule.hleNetAdhocctlInit(2, productId);
+			networkAdapter.sceNetAdhocctlInit();
+			Modules.sceNetAdhocctlModule.setGroupName(groupName, sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL);
+		} else {
+			Modules.sceNetAdhocctlModule.hleNetAdhocctlInit(2, "000000001");
+			networkAdapter.sceNetAdhocctlInit();
+			Modules.sceNetAdhocctlModule.setGroupName(ssid, sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL);
 		}
 	}
 
@@ -388,7 +425,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				}
 				break;
 			case MSPRO_CMD_IN_IO_FIFO:
-				value = getPacket(dataAddress).read16(dataIndex);
+				value = getReceivePacket(dataAddress).read16(dataIndex);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("MMIOHandlerWlan.readData16 MSPRO_CMD_IN_IO_FIFO, dataAddress=0x%X, dataIndex=0x%X, endOfCommand=%b, value=0x%04X", dataAddress, dataIndex, endOfCommand, value));
 				}
@@ -407,7 +444,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 						case DATA_ADDRESS_PACKET:
 							if (log.isTraceEnabled()) {
 								int bufferLength = dataIndex + 2;
-								byte[] buffer = dataPacketPtr.getArray8(bufferLength);
+								byte[] buffer = receiveDataPacketPtr.getArray8(bufferLength);
 								endianSwap32(buffer, 0, bufferLength);
 								log.trace(String.format("MMIOHandlerWlan.readData16 finished reading data packet: %s", Utilities.getMemoryDump(buffer, 0, bufferLength)));
 							}
@@ -466,26 +503,26 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 			}
 
 			final int rxPacketLocation = 24; // Needs to be 24 and not 20 (which would be sufficient to be past the header)
-			dataPacket.writeUnsigned16(0, 0); // rxStatus
-			dataPacket.write8(2, (byte) 0); // SNR
-			dataPacket.write8(3, (byte) 0); // rxControl
-			dataPacket.writeUnsigned16(4, length); // rxPacketLength
-			dataPacket.write8(6, (byte) 0); // NF
-			dataPacket.write8(7, (byte) 0); // rxRate
-			dataPacket.write32(8, rxPacketLocation); // rxPacketLocation
-			dataPacket.write32(12, 0); // reserved
-			dataPacket.write8(16, (byte) 0); // priority
-			dataPacket.write8(17, (byte) 0); // reserved
-			dataPacket.writeUnsigned16(18, 0); // reserved
-			dataPacketPtr.clear(20, rxPacketLocation - 20);
-			dataPacketPtr.setArray(rxPacketLocation, buffer, offset, length);
+			receiveDataPacket.writeUnsigned16(0, 0); // rxStatus
+			receiveDataPacket.write8(2, (byte) 0); // SNR
+			receiveDataPacket.write8(3, (byte) 0); // rxControl
+			receiveDataPacket.writeUnsigned16(4, length); // rxPacketLength
+			receiveDataPacket.write8(6, (byte) 0); // NF
+			receiveDataPacket.write8(7, (byte) 0); // rxRate
+			receiveDataPacket.write32(8, rxPacketLocation); // rxPacketLocation
+			receiveDataPacket.write32(12, 0); // reserved
+			receiveDataPacket.write8(16, (byte) 0); // priority
+			receiveDataPacket.write8(17, (byte) 0); // reserved
+			receiveDataPacket.writeUnsigned16(18, 0); // reserved
+			receiveDataPacketPtr.clear(20, rxPacketLocation - 20);
+			receiveDataPacketPtr.setArray(rxPacketLocation, buffer, offset, length);
 
 			// The PSP is moving 12 bytes from the offset 16 to the offset 24:
 			//     memmove(addr + 24, addr + 16, 12)
 			// This doesn't really make sense as it overwrites the source and destination
 			// MAC addresses of the EtherFrame. Maybe due to a bug in the Wlan card firmware?
 			// Anyway, we have to mimic this behavior.
-			dataPacketPtr.setArray(16, buffer, offset, 12);
+			receiveDataPacketPtr.setArray(16, buffer, offset, 12);
 
 			processReceiveDataPacket(rxPacketLocation + length);
 		} catch (SocketTimeoutException e) {
@@ -563,20 +600,20 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	}
 
 	private void processTransmitDataPacket(int size) {
-		int txStatus = dataPacket.read32(0);
-		int txControl = dataPacket.read32(4);
-		int txPacketLocation = dataPacket.read32(8);
-		int txPacketLength = dataPacket.read16(12);
+		int txStatus = sendDataPacket.read32(0);
+		int txControl = sendDataPacket.read32(4);
+		int txPacketLocation = sendDataPacket.read32(8);
+		int txPacketLength = sendDataPacket.read16(12);
 		pspNetMacAddress txDestAddr = new pspNetMacAddress();
-		txDestAddr.read(dataPacket, 14);
-		int priority = dataPacket.read8(20);
-		int flags = dataPacket.read8(21);
-		int reserved = dataPacket.read16(22);
+		txDestAddr.read(sendDataPacket, 14);
+		int priority = sendDataPacket.read8(20);
+		int flags = sendDataPacket.read8(21);
+		int reserved = sendDataPacket.read16(22);
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("processTransmitDataPacket size=0x%X, txStatus=0x%X, txControl=0x%X, txPacketLocation=0x%X, txPacketLength=0x%X, txDestAddr=%s, priority=0x%X, flags=0x%X, reserved=0x%X, data:%s", size, txStatus, txControl, txPacketLocation, txPacketLength, txDestAddr, priority, flags, reserved, Utilities.getMemoryDump(dataPacket, txPacketLocation, txPacketLength)));
+			log.trace(String.format("processTransmitDataPacket size=0x%X, txStatus=0x%X, txControl=0x%X, txPacketLocation=0x%X, txPacketLength=0x%X, txDestAddr=%s, priority=0x%X, flags=0x%X, reserved=0x%X, data:%s", size, txStatus, txControl, txPacketLocation, txPacketLength, txDestAddr, priority, flags, reserved, Utilities.getMemoryDump(sendDataPacket, txPacketLocation, txPacketLength)));
 		}
 
-		byte[] txPacket = dataPacketPtr.getArray8(txPacketLocation, txPacketLength);
+		byte[] txPacket = sendDataPacketPtr.getArray8(txPacketLocation, txPacketLength);
 		if (adhocJoined) {
 			broadcastAdhocDataPacket(txPacket, txPacketLength);
 		} else {
@@ -585,24 +622,24 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	}
 
 	private void processReceiveDataPacket(int size) {
-		int rxStatus = dataPacket.read16(0);
-		int signalToNoiseRatio = dataPacket.read8(2); // SNR
-		int rxControl = dataPacket.read8(3);
-		int rxPacketLength = dataPacket.read16(4);
-		int noiseFloor = dataPacket.read8(6); // NF
-		int rxRate = dataPacket.read8(7);
-		int rxPacketLocation = dataPacket.read32(8);
-		int reserved1 = dataPacket.read32(12);
-		int priority = dataPacket.read8(16);
-		int reserved2 = dataPacket.read8(17);
-		int reserved3 = dataPacket.read16(18);
+		int rxStatus = receiveDataPacket.read16(0);
+		int signalToNoiseRatio = receiveDataPacket.read8(2); // SNR
+		int rxControl = receiveDataPacket.read8(3);
+		int rxPacketLength = receiveDataPacket.read16(4);
+		int noiseFloor = receiveDataPacket.read8(6); // NF
+		int rxRate = receiveDataPacket.read8(7);
+		int rxPacketLocation = receiveDataPacket.read32(8);
+		int reserved1 = receiveDataPacket.read32(12);
+		int priority = receiveDataPacket.read8(16);
+		int reserved2 = receiveDataPacket.read8(17);
+		int reserved3 = receiveDataPacket.read16(18);
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("processReceiveDataPacket size=0x%X, rxStatus=0x%X, SNR=0x%X, rxControl=0x%X, rxPacketLength=0x%X, NF=0x%X, rxRate=0x%X, rxPacketLocation=0x%X, reserved1=0x%X, priority=0x%X, reserved2=0x%X, reserved3=0x%X, data:%s", size, rxStatus, signalToNoiseRatio, rxControl, rxPacketLength, noiseFloor, rxRate, rxPacketLocation, reserved1, priority, reserved2, reserved3, Utilities.getMemoryDump(dataPacket, rxPacketLocation, rxPacketLength)));
+			log.trace(String.format("processReceiveDataPacket size=0x%X, rxStatus=0x%X, SNR=0x%X, rxControl=0x%X, rxPacketLength=0x%X, NF=0x%X, rxRate=0x%X, rxPacketLocation=0x%X, reserved1=0x%X, priority=0x%X, reserved2=0x%X, reserved3=0x%X, data:%s", size, rxStatus, signalToNoiseRatio, rxControl, rxPacketLength, noiseFloor, rxRate, rxPacketLocation, reserved1, priority, reserved2, reserved3, Utilities.getMemoryDump(receiveDataPacket, rxPacketLocation, rxPacketLength)));
 		}
 
 		setRegisterValue(WLAN_REG_RECEIVED_PACKET_LENGTH, 2, alignUp(size, 7));
 
-		endianSwap32(dataPacket, 0, size);
+		endianSwap32(receiveDataPacket, 0, size);
 
 		addResultFlag(WLAN_RESULT_DATA_PACKET_RECEIVED);
 	}
@@ -753,33 +790,51 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 				commandPacketPtr.clear(11, 21); // Clear the request MAC address and SSID
 
-				int count = 2;
+				int count = 0;
+				List<sceNetAdhocctl.AdhocctlNetwork> networks = null;
+				switch (bssType) {
+					case BSS_TYPE_INFRASTRUCTURE:
+						count = 2;
+						break;
+					case BSS_TYPE_ADHOC:
+						createNetworkAdapter();
+						networkAdapter.sceNetAdhocctlScan();
+
+						if (!adhocStarted && !adhocJoined) {
+							count = 0;
+						} else {
+							networks = Modules.sceNetAdhocctlModule.getNetworks();
+							count = networks.size();
+						}
+						break;
+				}
+
 				commandPacketPtr.setUnsignedValue8(32, count); // Number of APs in the buffer
 				int offset = 33;
 
-				if (bssType == BSS_TYPE_ADHOC && !adhocStarted && !adhocJoined) {
-					count = 0;
-				}
-
+				final int rssi = 40; // RSSI - Received Signal Strength Indication, value range [0..40] for 1% to 100%
+				bssid = null;
 				for (int n = 0; n < count; n++) {
-					int rssi = 40; // RSSI - Received Signal Strength Indication, value range [0..40] for 1% to 100%
 					commandPacketPtr.setValue8(14 + n, (byte) rssi);
 
-					bssid = new byte[] { 'J', 'p', 'c', 's', 'p', (byte) ('0' + n) };
+					int capabilities = 0x0000; // Flags
+					switch (bssType) {
+						case BSS_TYPE_INFRASTRUCTURE:
+							capabilities |= 0x0001; // WLAN_CAPABILITY_BSS
+							bssid = new byte[] { 'J', 'p', 'c', 's', 'p', (byte) ('0' + n) };
+							ssid = String.format("Jpcsp SSID %d", n + 1);
+							break;
+						case BSS_TYPE_ADHOC:
+							capabilities |= 0x0002; // WLAN_CAPABILITY_IBSS
+							bssid = networks.get(n).bssid.getBytes();
+							break;
+					}
+
 					commandPacketPtr.setArray(offset + 2, bssid);
 					long packetTimestamp = 0x0L;
 					commandPacketPtr.setUnalignedValue64(offset + 8, packetTimestamp);
 					int beaconInterval = 1000; // Need to be != 0
 					commandPacketPtr.setUnalignedValue16(offset + 16, beaconInterval);
-					int capabilities = 0x0000; // Flags
-					switch (bssType) {
-						case BSS_TYPE_INFRASTRUCTURE:
-							capabilities |= 0x0001; // WLAN_CAPABILITY_BSS
-							break;
-						case BSS_TYPE_ADHOC:
-							capabilities |= 0x0002; // WLAN_CAPABILITY_IBSS
-							break;
-					}
 					commandPacketPtr.setUnalignedValue16(offset + 18, capabilities);
 					int params = offset + 20;
 
@@ -796,9 +851,6 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					commandPacketPtr.setUnsignedValue8(params + 2, 1); // Channel number
 					params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
 
-					if (bssType != BSS_TYPE_ADHOC) {
-						ssid = String.format("Jpcsp SSID %d", n + 1);
-					}
 					int ssidLength = ssid.length();
 					commandPacketPtr.setUnsignedValue8(params + 0, 0); // WLAN_EID_SSID
 					commandPacketPtr.setUnsignedValue8(params + 1, ssidLength); // length
@@ -932,7 +984,8 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("processCommandPacket CMD_802_11_AD_HOC_START bodySize=0x%X, ssid='%s', bssType=0x%X, beaconPeriod=0x%X, ATIM Window=0x%X", bodySize, ssid, bssType, beaconPeriod, atimWindow));
 				}
-				adhocSsid = ssid;
+
+				setSsid(ssid);
 				adhocStarted = true;
 				break;
 			case CMD_802_11_AD_HOC_STOP:
@@ -967,7 +1020,9 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					}
 					log.debug(String.format("processCommandPacket CMD_802_11_AD_HOC_JOIN bodySize=0x%X, bssid=%s, ssid='%s', bssType=0x%X, beaconPeriod=0x%X, dtimPeriod=0x%X, timestamp=0x%X, startTimestamp=0x%X, capabilities=0x%X, failTimeout=0x%X, probeDelay=0x%X, dataRates=%s", bodySize, convertMacAddressToString(bssid), ssid, bssType, beaconPeriod, dtimPeriod, timestamp, startTimestamp, capabilities, failTimeout, probeDelay, dataRatesString));
 				}
-				adhocSsid = ssid;
+
+				setSsid(ssid);
+				networkAdapter.sceNetAdhocctlConnect();
 				adhocJoined = true;
 addResultFlag(WLAN_RESULT_READY_TO_SEND);
 				break;
@@ -998,7 +1053,7 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND);
 					log.debug(String.format("processCommandPacket CMD_802_11_RSSI bodySize=0x%X, N=0x%X", bodySize, N));
 				}
 				if (N == 0) {
-					commandPacket.writeUnsigned16(8, 0); // SNR
+					commandPacket.writeUnsigned16(8, 40); // SNR (a value of 40 means 100% Signal Strength)
 					commandPacket.writeUnsigned16(10, 0); // Noise Floor
 					commandPacket.writeUnsigned16(12, 0); // Average SNR
 					commandPacket.writeUnsigned16(14, 0); // Average Noise Floor
@@ -1057,21 +1112,34 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND);
 		}
 	}
 
-	private IntArrayMemory getPacket(int dataAddress) {
+	private IntArrayMemory getSendPacket(int dataAddress) {
 		switch (dataAddress) {
 			case DATA_ADDRESS_CMD:
 				return commandPacket;
 			case DATA_ADDRESS_PACKET:
-				return dataPacket;
+				return sendDataPacket;
 			default:
-				log.error(String.format("getPacket unimplemented dataAddress=0x%X", dataAddress));
+				log.error(String.format("getSendPacket unimplemented dataAddress=0x%X", dataAddress));
+		}
+
+		return commandPacket;
+	}
+
+	private IntArrayMemory getReceivePacket(int dataAddress) {
+		switch (dataAddress) {
+			case DATA_ADDRESS_CMD:
+				return commandPacket;
+			case DATA_ADDRESS_PACKET:
+				return receiveDataPacket;
+			default:
+				log.error(String.format("getReceivePacket unimplemented dataAddress=0x%X", dataAddress));
 		}
 
 		return commandPacket;
 	}
 
 	private void writeDataEndOfCommand(int dataAddress, int size) {
-		endianSwap32(getPacket(dataAddress), 0, size);
+		endianSwap32(getSendPacket(dataAddress), 0, size);
 		switch (dataAddress) {
 			case DATA_ADDRESS_CMD:
 				processCommandPacket(size);
@@ -1094,7 +1162,7 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND);
 		if (booting) {
 			log.error(String.format("MMIOHandlerWlan.writeData16 unimplemented while booting"));
 		} else {
-			getPacket(dataAddress).write16(dataIndex, (short) value);
+			getSendPacket(dataAddress).write16(dataIndex, (short) value);
 			if (endOfCommand) {
 				writeDataEndOfCommand(dataAddress, dataIndex + 2);
 			}
@@ -1116,7 +1184,7 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND);
 				chipCodeIndex += 4;
 			}
 		} else {
-			getPacket(dataAddress).write32(dataIndex, value);
+			getSendPacket(dataAddress).write32(dataIndex, value);
 			if (endOfCommand) {
 				writeDataEndOfCommand(dataAddress, dataIndex + 4);
 			}
