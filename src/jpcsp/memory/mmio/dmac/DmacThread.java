@@ -307,15 +307,16 @@ public class DmacThread extends Thread {
 
 	private void dmacMemcpy() {
 		boolean waitForTrigger = false;
+		IAction dmacDdrFlushAction = null;
 
 		if ((status & DMAC_STATUS_REQUIRES_DDR) != 0) {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("dmacMemcpy requiring a call to sceDdrFlush(0x%X), dst=0x%08X, src=0x%08X, attr=0x%08X, next=0x%08X, status=0x%X", DDR_FLUSH_DMAC, dst, src, attributes, next, status));
 			}
-			trigger.drainPermits();
 			waitForTrigger = true;
+			dmacDdrFlushAction = new DmacDdrFlushAction(this);
+			MMIOHandlerDdr.getInstance().setFlushAction(DDR_FLUSH_DMAC, dmacDdrFlushAction);
 			checkTrigger();
-			MMIOHandlerDdr.getInstance().setFlushAction(DDR_FLUSH_DMAC, new DmacDdrFlushAction(this));
 
 			if (!waitForTrigger()) {
 				return;
@@ -343,6 +344,11 @@ public class DmacThread extends Thread {
 				next = memSrc.read32(next + 8);
 				dmacProcessor.setNext(next);
 			}
+		}
+
+		if (dmacDdrFlushAction != null) {
+			MMIOHandlerDdr.getInstance().clearFlushAction(DDR_FLUSH_DMAC, dmacDdrFlushAction);
+			trigger.drainPermits();
 		}
 
 		if (completedAction != null) {

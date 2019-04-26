@@ -62,22 +62,29 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
-	public boolean checkAndClearFlushDone(int value) {
+	public synchronized boolean checkAndClearFlushDone(int value) {
 		boolean check = flushDone[value];
 		flushDone[value] = false;
 
 		return check;
 	}
 
-	public void setFlushAction(int value, IAction action) {
+	public synchronized void setFlushAction(int value, IAction action) {
 		flushActions[value] = action;
 	}
 
-	public void clearFlushDone(int value) {
+	public synchronized void clearFlushAction(int value, IAction action) {
+		if (flushActions[value] != action) {
+			log.error(String.format("clearFlushAction action mismatch between %s and %s", flushActions[value], action));
+		}
+		flushActions[value] = null;
+	}
+
+	public synchronized void clearFlushDone(int value) {
 		flushDone[value] = false;
 	}
 
-	public void doFlush(int value) {
+	public synchronized void doFlush(int value) {
 		flushDone[value] = true;
 
 		if (log.isDebugEnabled()) {

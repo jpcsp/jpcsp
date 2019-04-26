@@ -29,4 +29,9 @@ public class DmacDdrFlushAction implements IAction {
 	public void execute() {
 		dmacThread.ddrFlushDone();
 	}
+
+	@Override
+	public String toString() {
+		return String.format("DmacDdrFlushAction dmacThread=%s", dmacThread);
+	}
 }
