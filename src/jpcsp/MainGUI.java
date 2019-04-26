@@ -2909,6 +2909,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 		out.println("  --exdata0 DIRECTORY        Use the given directory name for the PSP exdata0: device, instead of \"exdata0/\" by default.");
 		out.println("  --logsettings FILE         Use the given file for the log4j configuration, instead of \"LogSettings.xml\" by default.");
 		out.println("  --stateFileName FILE       Use the given file when saving/loading the snapshot.");
+		out.println("  --settingsFileName FILE    Use the given file when saving/loading the settings (Settings.properties by default).");
 		out.println("  --vsh                      Run the PSP VSH.");
 		out.println("  --reboot                   Run a low-level emulation of the complete PSP reboot process. Still experimental.");
     }
@@ -3027,6 +3028,9 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             	} else {
             		printUsage();
             	}
+            } else if (args[i].equals("--settingsFileName")) {
+            	// This argument has already been processed in initSettings()
+            	i++;
             } else {
                 printUsage();
                 break;
@@ -3049,11 +3053,22 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         setLog4jMDC();
     }
 
+    private static void initSettings(String args[]) {
+    	// Verify if settings file name has been provided on the command line
+    	for (int i = 0; i < args.length; i++) {
+    		if (args[i].equals("--settingsFileName")) {
+    			i++;
+    			Settings.SETTINGS_FILE_NAME = args[i];
+    		}
+    	}
+    }
+
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
     	initLog(args);
+    	initSettings(args);
 
 		// Re-enable all disabled algorithms as the PSP is allowing them
 		Security.setProperty("jdk.certpath.disabledAlgorithms", "");
