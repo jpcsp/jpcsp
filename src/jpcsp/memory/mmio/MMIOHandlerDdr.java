@@ -29,7 +29,6 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 	public static Logger log = sceDdr.log;
 	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBD000000;
-	public static final int DDR_FLUSH_DMAC = 4;
 	private static MMIOHandlerDdr instance;
 	private int unknown40;
 	private final IAction flushActions[] = new IAction[16];

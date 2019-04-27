@@ -18,7 +18,6 @@ package jpcsp.memory.mmio.dmac;
 
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.memory.mmio.MMIO.normalizeAddress;
-import static jpcsp.memory.mmio.MMIOHandlerDdr.DDR_FLUSH_DMAC;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_DST_INCREMENT;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_DST_LENGTH_SHIFT_SHIFT;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_DST_STEP_SHIFT;
@@ -28,6 +27,7 @@ import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_SRC_LENGTH_SH
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_SRC_STEP_SHIFT;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_TRIGGER_INTERRUPT;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_UNKNOWN;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_DDR_VALUE;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_REQUIRES_DDR;
 
 import java.util.concurrent.Semaphore;
@@ -269,8 +269,8 @@ public class DmacThread extends Thread {
 		return true;
 	}
 
-	private void checkTrigger() {
-		if (MMIOHandlerDdr.getInstance().checkAndClearFlushDone(DDR_FLUSH_DMAC)) {
+	private void checkTrigger(int ddrValue) {
+		if (MMIOHandlerDdr.getInstance().checkAndClearFlushDone(ddrValue)) {
 			trigger.release();
 		}
 	}
@@ -308,15 +308,17 @@ public class DmacThread extends Thread {
 	private void dmacMemcpy() {
 		boolean waitForTrigger = false;
 		IAction dmacDdrFlushAction = null;
+		int ddrValue = -1;
 
 		if ((status & DMAC_STATUS_REQUIRES_DDR) != 0) {
+			ddrValue = (status & DMAC_STATUS_DDR_VALUE) >> 4;
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("dmacMemcpy requiring a call to sceDdrFlush(0x%X), dst=0x%08X, src=0x%08X, attr=0x%08X, next=0x%08X, status=0x%X", DDR_FLUSH_DMAC, dst, src, attributes, next, status));
+				log.debug(String.format("dmacMemcpy requiring a call to sceDdrFlush(0x%X), dst=0x%08X, src=0x%08X, attr=0x%08X, next=0x%08X, status=0x%X", ddrValue, dst, src, attributes, next, status));
 			}
 			waitForTrigger = true;
-			dmacDdrFlushAction = new DmacDdrFlushAction(this);
-			MMIOHandlerDdr.getInstance().setFlushAction(DDR_FLUSH_DMAC, dmacDdrFlushAction);
-			checkTrigger();
+			dmacDdrFlushAction = new DmacDdrFlushAction(this, ddrValue);
+			MMIOHandlerDdr.getInstance().setFlushAction(ddrValue, dmacDdrFlushAction);
+			checkTrigger(ddrValue);
 
 			if (!waitForTrigger()) {
 				return;
@@ -347,7 +349,7 @@ public class DmacThread extends Thread {
 		}
 
 		if (dmacDdrFlushAction != null) {
-			MMIOHandlerDdr.getInstance().clearFlushAction(DDR_FLUSH_DMAC, dmacDdrFlushAction);
+			MMIOHandlerDdr.getInstance().clearFlushAction(ddrValue, dmacDdrFlushAction);
 			trigger.drainPermits();
 		}
 
@@ -356,11 +358,11 @@ public class DmacThread extends Thread {
 		}
 	}
 
-	public void ddrFlushDone() {
+	public void ddrFlushDone(int ddrValue) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("dmacMemcpy sceDdrFlush(0x%X) called", DDR_FLUSH_DMAC));
+			log.debug(String.format("dmacMemcpy sceDdrFlush(0x%X) called", ddrValue));
 		}
 
-		checkTrigger();
+		checkTrigger(ddrValue);
 	}
 }

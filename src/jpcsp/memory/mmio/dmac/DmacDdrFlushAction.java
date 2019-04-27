@@ -20,18 +20,20 @@ import jpcsp.HLE.kernel.types.IAction;
 
 public class DmacDdrFlushAction implements IAction {
 	private DmacThread dmacThread;
+	private int ddrValue;
 
-	public DmacDdrFlushAction(DmacThread dmacThread) {
+	public DmacDdrFlushAction(DmacThread dmacThread, int ddrValue) {
 		this.dmacThread = dmacThread;
+		this.ddrValue = ddrValue;
 	}
 
 	@Override
 	public void execute() {
-		dmacThread.ddrFlushDone();
+		dmacThread.ddrFlushDone(ddrValue);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("DmacDdrFlushAction dmacThread=%s", dmacThread);
+		return String.format("DmacDdrFlushAction dmacThread=%s, ddrValue=0x%X", dmacThread, ddrValue);
 	}
 }

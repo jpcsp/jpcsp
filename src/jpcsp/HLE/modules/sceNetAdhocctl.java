@@ -148,7 +148,7 @@ public class sceNetAdhocctl extends HLEModule {
 		}
     }
 
-    protected static class AdhocctlPeer {
+    public static class AdhocctlPeer {
     	public String nickName;
     	public byte[] macAddress;
     	public long timestamp;
@@ -224,6 +224,10 @@ public class sceNetAdhocctl extends HLEModule {
 
 	public List<sceNetAdhocctl.AdhocctlNetwork> getNetworks() {
 		return networks;
+	}
+
+	public List<sceNetAdhocctl.AdhocctlPeer> getPeers() {
+		return peers;
 	}
 
 	public void hleNetAdhocctlAddGameModeMac(byte[] macAddr) {

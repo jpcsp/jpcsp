@@ -21,7 +21,6 @@ import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
 import static jpcsp.HLE.modules.sceWlan.WLAN_CMD_DATA;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.hardware.Wlan.getMacAddress;
-import static jpcsp.memory.mmio.MMIOHandlerDdr.DDR_FLUSH_DMAC;
 import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.writeUnaligned32;
@@ -155,6 +154,8 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	public static final int DATA_ADDRESS_CMD = 0x100;
 	public static final int DATA_ADDRESS_PACKET = 0x102;
 	//
+	public static final int WLAN_DDR_FLUSH = 0;
+	//
 	private final IntArrayMemory attributesMemory = new IntArrayMemory(new int[0x40 / 4]);
 	private final IntArrayMemory commandPacket = new IntArrayMemory(new int[0xC00 / 4]);
 	private final TPointer commandPacketPtr = commandPacket.getPointer();
@@ -185,6 +186,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
     private int dataSocketPort;
     private AccessPoint accessPoint;
     private INetworkAdapter networkAdapter;
+    private boolean networkAdapterInited;
 
 	public MMIOHandlerWlan(int baseAddress) {
 		super(baseAddress);
@@ -274,25 +276,33 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		if (networkAdapter == null) {
 			networkAdapter = NetworkAdapterFactory.createNetworkAdapter();
 			networkAdapter.start();
+			networkAdapterInited = false;
 		}
 	}
 
 	private void setSsid(String ssid) {
 		this.adhocSsid = ssid;
 
+		String productId;
+		int productType = 2;
+		String groupName;
+
 		Pattern p = Pattern.compile("PSP_S(.........)_L_(.*)");
 		Matcher m = p.matcher(ssid);
 		if (m.matches()) {
-			String productId = m.group(1);
-			String groupName = m.group(2);
-			Modules.sceNetAdhocctlModule.hleNetAdhocctlInit(2, productId);
-			networkAdapter.sceNetAdhocctlInit();
-			Modules.sceNetAdhocctlModule.setGroupName(groupName, sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL);
+			productId = m.group(1);
+			groupName = m.group(2);
 		} else {
-			Modules.sceNetAdhocctlModule.hleNetAdhocctlInit(2, "000000001");
-			networkAdapter.sceNetAdhocctlInit();
-			Modules.sceNetAdhocctlModule.setGroupName(ssid, sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL);
+			productId = "000000001";
+			groupName = ssid;
 		}
+
+		if (!networkAdapterInited) {
+			Modules.sceNetAdhocctlModule.hleNetAdhocctlInit(productType, productId);
+			networkAdapter.sceNetAdhocctlInit();
+			networkAdapterInited = true;
+		}
+		Modules.sceNetAdhocctlModule.setGroupName(groupName, sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL);
 	}
 
 	private boolean createDataSocket() {
@@ -792,19 +802,21 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 				int count = 0;
 				List<sceNetAdhocctl.AdhocctlNetwork> networks = null;
+				List<sceNetAdhocctl.AdhocctlPeer> peers = null;
 				switch (bssType) {
 					case BSS_TYPE_INFRASTRUCTURE:
 						count = 2;
 						break;
 					case BSS_TYPE_ADHOC:
 						createNetworkAdapter();
-						networkAdapter.sceNetAdhocctlScan();
 
 						if (!adhocStarted && !adhocJoined) {
-							count = 0;
-						} else {
+							networkAdapter.sceNetAdhocctlScan();
 							networks = Modules.sceNetAdhocctlModule.getNetworks();
 							count = networks.size();
+						} else {
+							peers = Modules.sceNetAdhocctlModule.getPeers();
+							count = peers.size();
 						}
 						break;
 				}
@@ -826,7 +838,11 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 							break;
 						case BSS_TYPE_ADHOC:
 							capabilities |= 0x0002; // WLAN_CAPABILITY_IBSS
-							bssid = networks.get(n).bssid.getBytes();
+							if (networks != null) {
+								bssid = networks.get(n).bssid.getBytes();
+							} else {
+								bssid = peers.get(n).macAddress;
+							}
 							break;
 					}
 
@@ -986,6 +1002,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				}
 
 				setSsid(ssid);
+				networkAdapter.sceNetAdhocctlConnect();
 				adhocStarted = true;
 				break;
 			case CMD_802_11_AD_HOC_STOP:
@@ -1197,13 +1214,13 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND);
 
 		switch (getTPCCode()) {
 			case MS_TPC_WRITE_IO_DATA:
-				// Dmac is waiting for a call to sceDdrFlush(DDR_FLUSH_DMAC)
-				MMIOHandlerDdr.getInstance().doFlush(DDR_FLUSH_DMAC);
+				// Dmac is waiting for a call to sceDdrFlush(WLAN_DDR_FLUSH)
+				MMIOHandlerDdr.getInstance().doFlush(WLAN_DDR_FLUSH);
 				break;
 			case MS_TPC_SET_CMD:
 			case MS_TPC_EX_SET_CMD:
-				// Clear any previous call to sceDdrFlush(DDR_FLUSH_DMAC) when starting a new command
-				MMIOHandlerDdr.getInstance().clearFlushDone(DDR_FLUSH_DMAC);
+				// Clear any previous call to sceDdrFlush(WLAN_DDR_FLUSH) when starting a new command
+				MMIOHandlerDdr.getInstance().clearFlushDone(WLAN_DDR_FLUSH);
 				break;
 		}
 	}
