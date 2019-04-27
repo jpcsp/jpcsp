@@ -129,7 +129,9 @@ public class ProOnlineServer {
 					log.debug("Accept server socket", e);
 				}
 
-				for (User user : users) {
+				// Copy the list of users to avoid ConcurrentModificationException
+				List<User> copyUsers = new LinkedList<User>(users);
+				for (User user : copyUsers) {
 					int length = 0;
 					try {
 						InputStream is = user.socket.getInputStream();
