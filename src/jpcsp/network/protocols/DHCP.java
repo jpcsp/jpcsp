@@ -309,19 +309,23 @@ public class DHCP {
 		return 548;
 	}
 
-	public boolean isMessageOfType(UDP udp, IPv4 ipv4, int messageType) {
+	public boolean isMessageOfType(UDP udp, IPv4 ipv4, int messageType, boolean checkIp) {
 		if (opcode != DHCP_BOOT_REQUEST) {
 			return false;
 		}
 		if (udp.sourcePort != UDP_PORT_DHCP_CLIENT || udp.destinationPort != UDP_PORT_DHCP_SERVER) {
 			return false;
 		}
-		if (!Arrays.equals(ipv4.sourceIPAddress, nullIPAddress)) {
-			return false;
+
+		if (checkIp) {
+			if (!Arrays.equals(ipv4.sourceIPAddress, nullIPAddress)) {
+				return false;
+			}
+			if (!Arrays.equals(ipv4.destinationIPAddress, broadcastIPAddress)) {
+				return false;
+			}
 		}
-		if (!Arrays.equals(ipv4.destinationIPAddress, broadcastIPAddress)) {
-			return false;
-		}
+
 		DHCPOption option = getOptionByTag(DHCP_OPTION_MESSAGE_TYPE);
 		if (option == null || option.length != 1) {
 			return false;
@@ -335,11 +339,11 @@ public class DHCP {
 	}
 
 	public boolean isDiscovery(UDP udp, IPv4 ipv4) {
-		return isMessageOfType(udp, ipv4, DHCP_OPTION_MESSAGE_TYPE_DHCPDISCOVER);
+		return isMessageOfType(udp, ipv4, DHCP_OPTION_MESSAGE_TYPE_DHCPDISCOVER, true);
 	}
 
 	public boolean isRequest(UDP udp, IPv4 ipv4, byte[] requestedIpAddress) {
-		if (!isMessageOfType(udp, ipv4, DHCP_OPTION_MESSAGE_TYPE_DHCPREQUEST)) {
+		if (!isMessageOfType(udp, ipv4, DHCP_OPTION_MESSAGE_TYPE_DHCPREQUEST, true)) {
 			return false;
 		}
 
@@ -357,7 +361,7 @@ public class DHCP {
 	}
 
 	public boolean isRelease(UDP udp, IPv4 ipv4, byte[] releasedIpAddress) {
-		if (!isMessageOfType(udp, ipv4, DHCP_OPTION_MESSAGE_TYPE_DHCPRELEASE)) {
+		if (!isMessageOfType(udp, ipv4, DHCP_OPTION_MESSAGE_TYPE_DHCPRELEASE, false)) {
 			return false;
 		}
 
