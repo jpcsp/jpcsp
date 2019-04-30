@@ -41,6 +41,7 @@ import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
+import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.HLE.modules.sceWlan;
@@ -284,15 +285,30 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		this.adhocSsid = ssid;
 
 		String productId;
-		int productType = 2;
+		int productType;
 		String groupName;
 
-		Pattern p = Pattern.compile("PSP_S(.........)_L_(.*)");
+		Pattern p = Pattern.compile("PSP_([AXS])(.........)_([LG])_(.*)");
 		Matcher m = p.matcher(ssid);
 		if (m.matches()) {
-			productId = m.group(1);
-			groupName = m.group(2);
+			switch (m.group(1)) {
+				case "A":
+					productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_COMMERCIAL;
+					break;
+				case "X":
+					productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_DEBUG;
+					break;
+				case "S":
+					productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_SYSTEM;
+					break;
+				default:
+					log.error(String.format("Unknown product type '%s' in SSID='%s'", m.group(1), ssid));
+					return;
+			}
+			productId = m.group(2);
+			groupName = m.group(4);
 		} else {
+			productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_SYSTEM;
 			productId = "000000001";
 			groupName = ssid;
 		}
@@ -624,7 +640,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		}
 
 		byte[] txPacket = sendDataPacketPtr.getArray8(txPacketLocation, txPacketLength);
-		if (adhocJoined) {
+		if (adhocStarted || adhocJoined) {
 			broadcastAdhocDataPacket(txPacket, txPacketLength);
 		} else {
 			sendDataPacketToAccessPoint(txPacket, txPacketLength);
@@ -816,7 +832,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 							count = networks.size();
 						} else {
 							peers = Modules.sceNetAdhocctlModule.getPeers();
-							count = peers.size();
+							count = peers.size() + 1; // Add 1 to include myself
 						}
 						break;
 				}
@@ -839,9 +855,23 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 						case BSS_TYPE_ADHOC:
 							capabilities |= 0x0002; // WLAN_CAPABILITY_IBSS
 							if (networks != null) {
+								if (log.isDebugEnabled()) {
+									log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning network#%d: %s", n, networks.get(n)));
+								}
 								bssid = networks.get(n).bssid.getBytes();
 							} else {
-								bssid = peers.get(n).macAddress;
+								if (n >= peers.size()) {
+									// Return myself
+									bssid = getMacAddress();
+									if (log.isDebugEnabled()) {
+										log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning myself: %s", sceNet.convertMacAddressToString(bssid)));
+									}
+								} else {
+									if (log.isDebugEnabled()) {
+										log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning peer#%d: %s", n, peers.get(n)));
+									}
+									bssid = peers.get(n).macAddress;
+								}
 							}
 							break;
 					}
@@ -1001,6 +1031,8 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					log.debug(String.format("processCommandPacket CMD_802_11_AD_HOC_START bodySize=0x%X, ssid='%s', bssType=0x%X, beaconPeriod=0x%X, ATIM Window=0x%X", bodySize, ssid, bssType, beaconPeriod, atimWindow));
 				}
 
+				commandPacketPtr.setArray(8, getMacAddress());
+
 				setSsid(ssid);
 				networkAdapter.sceNetAdhocctlConnect();
 				adhocStarted = true;
@@ -1058,6 +1090,7 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("processCommandPacket CMD_UNKNOWN_0012 bodySize=0x%X, peerMacAddress=%s, unknown %s", bodySize, peerMacAddress, Utilities.getMemoryDump(commandPacket, 14, bodySize - 14)));
 				}
+				commandPacket.writeUnsigned16(10, 0); // Unknown value
 				break;
 			case CMD_UNKNOWN_007D:
 				if (log.isDebugEnabled()) {
