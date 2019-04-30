@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.Common._s0;
+import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.sceNetAdhocctl.fillNextPointersInLinkedList;
 import static jpcsp.util.Utilities.writeBytes;
 
@@ -251,7 +252,31 @@ public class sceNetAdhocMatching extends HLEModule {
 			log.trace(String.format("Matching opt data: %s", Utilities.getMemoryDump(optData.getAddress(), optLen)));
 		}
 
-        return matchingObjects.get(matchingId).start(evthPri, evthStack, inthPri, inthStack, optLen, optData.getAddress());
+        return matchingObjects.get(matchingId).start(evthPri, USER_PARTITION_ID, evthStack, inthPri, USER_PARTITION_ID, inthStack, optLen, optData.getAddress());
+    }
+
+    /**
+     * Start a matching object
+     *
+     * @param matchingid - The ID returned from ::sceNetAdhocMatchingCreate
+     * @param evthpri - Priority of the event handler thread. Lumines uses 0x10
+     * @param evthPartitionId - Partition ID for the event handler stack
+     * @param evthstack - Stack size of the event handler thread. Lumines uses 0x2000
+     * @param inthpri - Priority of the input handler thread. Lumines uses 0x10
+     * @param inthPartitionId - Partition ID for the input handler stack
+     * @param inthstack - Stack size of the input handler thread. Lumines uses 0x2000
+     * @param optlen - Size of hellodata
+     * @param optdata - Pointer to block of data passed to callback
+     *
+     * @return 0 on success, < 0 on error
+     */
+    @HLEFunction(nid = 0xE8454C65, version = 150)
+    public int sceNetAdhocMatchingStart2(@CheckArgument("checkMatchingId") int matchingId, int evthPri, int evthPartitionId, int evthStack, int inthPri, int inthPartitionId, int inthStack, int optLen, @CanBeNull TPointer optData) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Matching opt data: %s", Utilities.getMemoryDump(optData.getAddress(), optLen)));
+		}
+
+        return matchingObjects.get(matchingId).start(evthPri, evthPartitionId, evthStack, inthPri, inthPartitionId, inthStack, optLen, optData.getAddress());
     }
 
     /**

@@ -176,7 +176,7 @@ public abstract class MatchingObject extends AdhocObject {
 	public void create() {
 	}
 
-	public int start(int evthPri, int evthStack, int inthPri, int inthStack, int optLen, int optData) {
+	public int start(int evthPri, int evthPartitionId, int evthStack, int inthPri, int inthPartitionId, int inthStack, int optLen, int optData) {
 		try {
 			setHelloOpt(optLen, optData);
 			openSocket();

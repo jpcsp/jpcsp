@@ -69,6 +69,10 @@ public class sceNetAdhocctl extends HLEModule {
     public static final int PSP_ADHOCCTL_MODE_GAMEMODE = 1;
     public static final int PSP_ADHOCCTL_MODE_NONE = -1;
 
+    public static final int PSP_ADHOCCTL_TYPE_COMMERCIAL = 0;
+    public static final int PSP_ADHOCCTL_TYPE_DEBUG = 1;
+    public static final int PSP_ADHOCCTL_TYPE_SYSTEM = 2;
+
     public static final int NICK_NAME_LENGTH = 128;
     public static final int GROUP_NAME_LENGTH = 8;
     public static final int IBSS_NAME_LENGTH = 6;
@@ -584,7 +588,7 @@ public class sceNetAdhocctl extends HLEModule {
     	}
 
     	if (product.isNotNull()) {
-            int type = product.getValue32(0); // 0 - Commercial type / 1 - Debug type.
+            int type = product.getValue32(0); // 0 - Commercial type / 1 - Debug type / 2 - System
             String adhocId = product.getStringNZ(4, ADHOC_ID_LENGTH);
             hleNetAdhocctlInit(type, adhocId);
             if (log.isDebugEnabled()) {

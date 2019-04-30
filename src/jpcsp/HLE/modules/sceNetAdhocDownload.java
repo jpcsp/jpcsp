@@ -94,7 +94,7 @@ public class sceNetAdhocDownload extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x57A51DD0, version = 150)
-    public int sceNetAdhocDownloadCreateClient() {
+    public int sceNetAdhocDownloadCreateClient(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.inout) TPointer unknown1, int unknown2) {
     	return 0;
     }
 
@@ -166,7 +166,8 @@ public class sceNetAdhocDownload extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x24FD9B7A, version = 150)
-    public int sceNetAdhocDownload_24FD9B7A() {
+    public int sceNetAdhocDownload_24FD9B7A(int evthPri, int evthPartitionId, int evthStack, int inthPri, int inthPartitionId, int inthStack) {
+    	// Calls sceNetAdhocMatchingStart2 with the received parameters
     	return 0;
     }
 
