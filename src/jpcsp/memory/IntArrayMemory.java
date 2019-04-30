@@ -21,6 +21,7 @@ import static jpcsp.memory.FastMemory.memory16Shift;
 import static jpcsp.memory.FastMemory.memory8Mask;
 import static jpcsp.memory.FastMemory.memory8Shift;
 
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
@@ -30,6 +31,8 @@ import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.TPointer8;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 public class IntArrayMemory extends Memory {
 	private final int[] memory;
@@ -191,5 +194,22 @@ public class IntArrayMemory extends Memory {
 
 	public int getSize() {
 		return (memory.length - offset) << 2;
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		int size4 = stream.readInt();
+		int length4 = Math.min(size4, memory.length - offset);
+		stream.readInts(memory, offset, length4);
+		if (length4 < size4) {
+			stream.skipBytes((size4 - length4) << 2);
+		}
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		int size4 = memory.length - offset;
+		stream.writeInt(size4);
+		stream.writeInts(memory, offset, size4);
 	}
 }
