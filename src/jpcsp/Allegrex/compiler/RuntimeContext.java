@@ -499,7 +499,7 @@ public class RuntimeContext {
         updateStaticVariables();
 
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        if (IntrManager.getInstance().canExecuteInterruptNow()) {
+        if (currentThread == null || IntrManager.getInstance().canExecuteInterruptNow()) {
             SceKernelThreadInfo newThread = threadMan.getCurrentThread();
             if (newThread != null && newThread != currentThread) {
                 switchThread(newThread);

@@ -1178,7 +1178,7 @@ public class ThreadManForUser extends HLEModule {
             return false;
         }
 
-        if (Emulator.getProcessor().isInterruptsDisabled()) {
+        if (currentThread != null && Emulator.getProcessor().isInterruptsDisabled()) {
             // No context switching when interrupts are disabled
             if (log.isDebugEnabled()) {
                 log.debug("Interrupts are disabled, not context switching to " + newThread);

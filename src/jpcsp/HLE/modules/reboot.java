@@ -284,11 +284,7 @@ public class reboot extends HLEModule {
     	rebootModule.data_size = 0;
     	rebootModule.bss_size = 0x26B80;
 
-    	final boolean fromSyscall = false;
-    	Emulator.getInstance().initNewPsp(fromSyscall);
-    	Emulator.getInstance().setModuleLoaded(true);
-    	HLEModuleManager.getInstance().startModules(fromSyscall);
-    	Modules.ThreadManForUserModule.Initialise(rebootModule, rebootModule.baseAddress, 0, rebootModule.pspfilename, -1, 0, fromSyscall);
+    	Modules.ThreadManForUserModule.Initialise(rebootModule, rebootModule.baseAddress, 0, rebootModule.pspfilename, -1, 0, false);
 
     	Memory mem = Memory.getInstance();
 
@@ -469,11 +465,7 @@ public class reboot extends HLEModule {
     	rebootModule.data_size = 0;
     	rebootModule.bss_size = 0x26B80;
 
-    	final boolean fromSyscall = false;
-    	Emulator.getInstance().initNewPsp(fromSyscall);
-    	Emulator.getInstance().setModuleLoaded(true);
-    	HLEModuleManager.getInstance().startModules(fromSyscall);
-    	Modules.ThreadManForUserModule.Initialise(rebootModule, rebootModule.baseAddress, 0, rebootModule.pspfilename, -1, 0, fromSyscall);
+    	Modules.ThreadManForUserModule.Initialise(rebootModule, rebootModule.baseAddress, 0, rebootModule.pspfilename, -1, 0, false);
 
     	RuntimeContextLLE.start();
     	MMIO mmio = (MMIO) RuntimeContextLLE.getMMIO();
