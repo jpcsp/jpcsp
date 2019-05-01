@@ -51,31 +51,6 @@ public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 	}
 
 	@Override
-	public int ioRead(IVirtualFile file, TPointer outputPointer, int outputLength) {
-		return file.ioRead(outputPointer, outputLength);
-	}
-
-	@Override
-	public int ioWrite(IVirtualFile file, TPointer inputPointer, int inputLength) {
-		return file.ioWrite(inputPointer, inputLength);
-	}
-
-	@Override
-	public long ioLseek(IVirtualFile file, long offset) {
-		return file.ioLseek(offset);
-	}
-
-	@Override
-	public int ioIoctl(IVirtualFile file, int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength) {
-		return file.ioIoctl(command, inputPointer, inputLength, outputPointer, outputLength);
-	}
-
-	@Override
-	public int ioClose(IVirtualFile file) {
-		return file.ioClose();
-	}
-
-	@Override
 	public int ioRemove(String name) {
 		return IO_ERROR;
 	}

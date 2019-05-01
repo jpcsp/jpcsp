@@ -63,31 +63,6 @@ public class AbstractProxyVirtualFileSystem implements IVirtualFileSystem {
 	}
 
 	@Override
-	public int ioClose(IVirtualFile file) {
-		return vfs.ioClose(file);
-	}
-
-	@Override
-	public int ioRead(IVirtualFile file, TPointer outputPointer, int outputLength) {
-		return vfs.ioRead(file, outputPointer, outputLength);
-	}
-
-	@Override
-	public int ioWrite(IVirtualFile file, TPointer inputPointer, int inputLength) {
-		return vfs.ioWrite(file, inputPointer, inputLength);
-	}
-
-	@Override
-	public long ioLseek(IVirtualFile file, long offset) {
-		return vfs.ioLseek(file, offset);
-	}
-
-	@Override
-	public int ioIoctl(IVirtualFile file, int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength) {
-		return vfs.ioIoctl(file, command, inputPointer, inputLength, outputPointer, outputLength);
-	}
-
-	@Override
 	public int ioRemove(String name) {
 		return vfs.ioRemove(name);
 	}

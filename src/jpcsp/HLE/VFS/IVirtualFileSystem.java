@@ -27,11 +27,6 @@ public interface IVirtualFileSystem {
 	public void ioInit();
 	public void ioExit(); 
 	public IVirtualFile ioOpen(String fileName, int flags, int mode);
-	public int ioClose(IVirtualFile file);
-	public int ioRead(IVirtualFile file, TPointer outputPointer, int outputLength);
-	public int ioWrite(IVirtualFile file, TPointer inputPointer, int inputLength);
-	public long ioLseek(IVirtualFile file, long offset);
-	public int ioIoctl(IVirtualFile file, int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength);
 	public int ioRemove(String name);
 	public int ioMkdir(String name, int mode);
 	public int ioRmdir(String name);
