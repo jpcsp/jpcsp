@@ -443,7 +443,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		}
 	}
 
-	private String getFileNameLFN(byte[] lfn) {
+	private static String getFileNameLFN(byte[] lfn) {
 		boolean last = false;
 		byte[] fileNameBytes = null;
 		for (int sequenceNumber = 1; !last; sequenceNumber++) {
@@ -473,7 +473,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		return new String(fileNameBytes, charset16);
 	}
 
-	private String getFileName(byte[] sector, int offset, byte[] lfn) {
+	public static String getFileName(byte[] sector, int offset, byte[] lfn) {
 		String fileName;
 
 		if (lfn != null) {
@@ -708,7 +708,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
 		}
 	}
 
-	private static boolean isLongFileNameDirectoryEntry(byte[] directoryData, int offset) {
+	public static boolean isLongFileNameDirectoryEntry(byte[] directoryData, int offset) {
 		// Attributes (always 0x0F for LFN)
 		return directoryData[offset + 11] == 0x0F;
 	}

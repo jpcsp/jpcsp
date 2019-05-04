@@ -34,6 +34,9 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
+import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -49,8 +52,10 @@ import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.compress.CompressPrxVirtualFileSystem;
 import jpcsp.HLE.VFS.fat.Fat12VirtualFile;
 import jpcsp.HLE.VFS.fat.FatVirtualFile;
+import jpcsp.HLE.VFS.fat.FatVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
+import jpcsp.HLE.VFS.nand.NandVirtualFile;
 import jpcsp.HLE.VFS.patch.PatchFileVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceNandSpare;
 import jpcsp.filesystems.SeekableRandomFile;
@@ -62,13 +67,14 @@ import jpcsp.memory.mmio.MMIOHandlerNand;
 import jpcsp.settings.Settings;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
+import jpcsp.util.SynchronizeVirtualFileSystems;
 import jpcsp.util.Utilities;
 
 public class sceNand extends HLEModule {
     public static Logger log = Modules.getLogger("sceNand");
 	private static final int STATE_VERSION = 0;
     private static final boolean emulateNand = true;
-    private static final boolean storeNandInMemory = false;
+    private static final boolean storeNandInMemory = true;
     public static final int iplTablePpnStart = 0x80;
     public static final int iplTablePpnEnd = 0x17F;
     public static final int iplPpnStart = 0x200;
@@ -99,6 +105,41 @@ public class sceNand extends HLEModule {
     private IntArrayMemory nandSpareMemory;
     private TPointer nandSpareMemoryPointer;
     private boolean initNandInProgress;
+    private static final int deltaSyncDelayMillis = 1000;
+    private static final int deltaSyncIntervalMillis = 100;
+    private SynchronizeThread synchronizeThread;
+    private FatVirtualFileSystem inputFlash0;
+    private IVirtualFileSystem outputFlash0;
+    private SynchronizeVirtualFileSystems syncFlash0;
+    private long lastWriteFlash0;
+    private long lastSyncFlash0;
+    private FatVirtualFileSystem inputFlash1;
+    private IVirtualFileSystem outputFlash1;
+    private SynchronizeVirtualFileSystems syncFlash1;
+    private long lastSyncFlash1;
+    private long lastWriteFlash1;
+    private FatVirtualFileSystem inputFlash2;
+    private IVirtualFileSystem outputFlash2;
+    private SynchronizeVirtualFileSystems syncFlash2;
+    private long lastWriteFlash2;
+    private long lastSyncFlash2;
+    private FatVirtualFileSystem inputFlash3;
+    private IVirtualFileSystem outputFlash3;
+    private SynchronizeVirtualFileSystems syncFlash3;
+    private long lastWriteFlash3;
+    private long lastSyncFlash3;
+
+    private class SynchronizeThread extends Thread {
+		@Override
+		public void run() {
+			RuntimeContext.setLog4jMDC();
+
+			while (true) {
+				checkDeltaSync();
+				Utilities.sleep(deltaSyncIntervalMillis, 0);
+			}
+		}
+    }
 
     @Override
 	public void start() {
@@ -212,7 +253,7 @@ public class sceNand extends HLEModule {
 		IntArrayMemory nandSpareMemory = new IntArrayMemory(new int[Nand.getTotalPages() << 2]);
 
 		for (int ppn = 0; ppn < ppnToLbn.length; ppn += pagesPerBlock) {
-			hleNandReadPages(ppn, new TPointer(nandMemory, ppn * pageSize), new TPointer(nandSpareMemory, ppn * 16), pagesPerBlock, true, true, true);
+			hleNandReadPages(ppn, nandMemory.getPointer(ppn * pageSize), nandSpareMemory.getPointer(ppn * 16), pagesPerBlock, true, true, true);
 		}
 
 		if (vFileFlash0 != null) {
@@ -236,6 +277,29 @@ public class sceNand extends HLEModule {
 		nandMemoryPointer = nandMemory.getPointer();
 		this.nandSpareMemory = nandSpareMemory;
 		nandSpareMemoryPointer = nandSpareMemory.getPointer();
+
+		inputFlash0 = new FatVirtualFileSystem("flash0", new NandVirtualFile(flash0LbnStart + 1, flash1LbnStart));
+		outputFlash0 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
+		syncFlash0 = new SynchronizeVirtualFileSystems(inputFlash0, outputFlash0);
+
+		inputFlash1 = new FatVirtualFileSystem("flash1", new NandVirtualFile(flash1LbnStart + 1, flash2LbnStart));
+		outputFlash1 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
+		syncFlash1 = new SynchronizeVirtualFileSystems(inputFlash1, outputFlash1);
+
+		inputFlash2 = new FatVirtualFileSystem("flash2", new NandVirtualFile(flash2LbnStart + 1, flash3LbnStart));
+		outputFlash2 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
+		syncFlash2 = new SynchronizeVirtualFileSystems(inputFlash2, outputFlash2);
+
+		if (!isSmallNand()) {
+			inputFlash3 = new FatVirtualFileSystem("flash3", new NandVirtualFile(flash3LbnStart + 1, flash4LbnStart));
+			outputFlash3 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash3"), false);
+			syncFlash3 = new SynchronizeVirtualFileSystems(inputFlash3, outputFlash3);
+		}
+
+		synchronizeThread = new SynchronizeThread();
+		synchronizeThread.setName("sceNand Synchronize Thread");
+		synchronizeThread.setDaemon(true);
+		synchronizeThread.start();
 
 		initNandInProgress = false;
     }
@@ -965,12 +1029,14 @@ public class sceNand extends HLEModule {
 
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
 
-		// Apply patches for some files as required
-		vfs = new PatchFileVirtualFileSystem(vfs);
+		if (!RuntimeContextLLE.isLLEActive()) {
+			// Apply patches for some files as required
+			vfs = new PatchFileVirtualFileSystem(vfs);
 
-		// All the PRX files need to be compressed so that they can fit
-		// into the space available on flash0.
-		vfs = new CompressPrxVirtualFileSystem(vfs);
+			// All the PRX files need to be compressed so that they can fit
+			// into the space available on flash0.
+			vfs = new CompressPrxVirtualFileSystem(vfs);
+		}
 
 		vFileFlash0 = new Fat12VirtualFile("flash0:", vfs, getTotalSectorsFlash0());
 		vFileFlash0.scan();
@@ -1031,7 +1097,7 @@ public class sceNand extends HLEModule {
 	    			Utilities.writeBytes(user, len * pageSize, dumpBlocks, ppn * pageSize);
 	    		}
 	    	} else if (nandMemory != null) {
-	    		user.memcpy(new TPointer(nandMemory, ppn * pageSize), len * pageSize);
+	    		user.memcpy(nandMemory.getPointer(ppn * pageSize), len * pageSize);
 	    	} else {
 	    		for (int i = 0; i < len; i++) {
 	    			user.clear(pageSize);
@@ -1099,7 +1165,7 @@ public class sceNand extends HLEModule {
     	    		}
         		}
         	} else if (nandSpareMemory != null) {
-	    		spare.memcpy(new TPointer(nandSpareMemory, ppn << 4), len << 4);
+	    		spare.memcpy(nandSpareMemory.getPointer(ppn << 4), len << 4);
         	} else {
     	    	SceNandSpare sceNandSpare = new SceNandSpare();
     	    	for (int i = 0; i < len; i++) {
@@ -1181,6 +1247,21 @@ public class sceNand extends HLEModule {
 		if (spare.isNotNull()) {
     		if (nandSpareMemory != null) {
     			nandSpareMemoryPointer.memcpy(ppn << 4, spare, len << 4);
+
+    			SceNandSpare sceNandSpare = new SceNandSpare();
+	    		for (int i = 0; i < len; i++) {
+		    		if (spareUserEcc) {
+			    		sceNandSpare.read(spare, i * sceNandSpare.sizeof());
+		    		} else {
+			    		sceNandSpare.readNoUserEcc(spare, i * sceNandSpare.sizeofNoEcc());
+		    		}
+
+	    			int n = ppn + i;
+	    			if (log.isDebugEnabled()) {
+	    				log.debug(String.format("hleNandWriteSparePages ppn=0x%X: changed lbn=0x%X to lbn=0x%X", n, ppnToLbn[n], sceNandSpare.lbn));
+	    			}
+					ppnToLbn[n] = sceNandSpare.lbn;
+	    		}
     		} else {
 	    		SceNandSpare sceNandSpare = new SceNandSpare();
 	    		for (int i = 0; i < len; i++) {
@@ -1223,6 +1304,48 @@ public class sceNand extends HLEModule {
     	return result;
     }
 
+    private long now() {
+    	return Emulator.getClock().currentTimeMillis();
+    }
+
+    private void notifyWrite(int ppn, int len) {
+    	long now = now();
+
+		for (int i = 0; i < len; i++) {
+			int n = ppn + i;
+			if (ppnToLbn[n] > flash0LbnStart && ppnToLbn[n] < flash1LbnStart) {
+				lastWriteFlash0 = now;
+    		} else if (ppnToLbn[n] > flash1LbnStart && ppnToLbn[n] < flash2LbnStart) {
+				lastWriteFlash1 = now;
+    		} else if (ppnToLbn[n] > flash2LbnStart && ppnToLbn[n] < flash3LbnStart) {
+				lastWriteFlash2 = now;
+    		} else if (ppnToLbn[n] > flash3LbnStart && ppnToLbn[n] < flash4LbnStart) {
+				lastWriteFlash3 = now;
+			}
+		}
+    }
+
+    private long checkDeltaSync(SynchronizeVirtualFileSystems sync, FatVirtualFileSystem input, long lastWrite, long lastSync) {
+    	if (sync != null) {
+	    	long now = now();
+	    	long millisSinceLastWrite = now - lastWrite;
+	    	if (lastSync < lastWrite && millisSinceLastWrite > deltaSyncDelayMillis) {
+	    		input.invalidateCache();
+	    		sync.deltaSynchronize();
+	    		lastSync = now;
+	    	}
+    	}
+
+    	return lastSync;
+    }
+
+    private void checkDeltaSync() {
+    	lastSyncFlash0 = checkDeltaSync(syncFlash0, inputFlash0, lastWriteFlash0, lastSyncFlash0);
+    	lastSyncFlash1 = checkDeltaSync(syncFlash1, inputFlash1, lastWriteFlash1, lastSyncFlash1);
+    	lastSyncFlash2 = checkDeltaSync(syncFlash2, inputFlash2, lastWriteFlash2, lastSyncFlash2);
+    	lastSyncFlash3 = checkDeltaSync(syncFlash3, inputFlash3, lastWriteFlash3, lastSyncFlash3);
+    }
+
     public int hleNandWriteUserPages(int ppn, TPointer user, int len, boolean raw, boolean isLLE) {
     	int result = 0;
 
@@ -1231,6 +1354,7 @@ public class sceNand extends HLEModule {
 		if (user.isNotNull()) {
     		if (nandMemory != null) {
     			nandMemoryPointer.memcpy(ppn * pageSize, user, len * pageSize);
+    			notifyWrite(ppn, len);
     		} else {
 	    		for (int i = 0; i < len; i++) {
 	    			int n = ppn + i;
@@ -1271,8 +1395,33 @@ public class sceNand extends HLEModule {
     	return hleNandWriteUserPages(ppn, user, len, raw, isLLE);
     }
 
+    public int hleNandEraseBlock(int ppn, boolean isLLE) {
+    	if (storeNandInMemory && isLLE) {
+	    	int lbn = 0xFFFF;
+			for (int i = 0; i < pagesPerBlock; i++) {
+				int n = ppn + i;
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("hleNandEraseBlock ppn=0x%X: changed lbn=0x%X to lbn=0x%X", n, ppnToLbn[n], lbn));
+				}
+				ppnToLbn[n] = lbn;
+			}
+    	}
+
+		return 0;
+    }
+
     public int getLbnFromPpn(int ppn) {
     	return ppnToLbn[ppn];
+    }
+
+    public int getPpnFromLbn(int lbn) {
+    	for (int ppn = 0; ppn < ppnToLbn.length; ppn++) {
+    		if (ppnToLbn[ppn] == lbn) {
+    			return ppn;
+    		}
+    	}
+
+    	return -1;
     }
 
     @HLEFunction(nid = 0xB07C41D4, version = 150, jumpCall = true)

@@ -155,10 +155,14 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
         	return SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
         }
 
+        long size = file.length();
+
         // Set attr (dir/file) and copy into mode
         int attr = 0;
         if (file.isDirectory()) {
             attr |= 0x10;
+            // Directories have size 0
+            size = 0L;
         }
         if (file.isFile()) {
             attr |= 0x20;
@@ -174,7 +178,7 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
         ScePspDateTime atime = ScePspDateTime.fromUnixTime(0);
         ScePspDateTime mtime = ScePspDateTime.fromUnixTime(file.lastModified());
 
-        stat.init(mode, attr, file.length(), ctime, atime, mtime);
+        stat.init(mode, attr, size, ctime, atime, mtime);
 
         return 0;
 	}

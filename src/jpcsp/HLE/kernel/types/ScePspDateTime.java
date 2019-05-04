@@ -189,6 +189,106 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
 		write32(microsecond);
 	}
 
+	public boolean after(ScePspDateTime that) {
+		if (year > that.year) {
+			return true;
+		}
+		if (year < that.year) {
+			return false;
+		}
+
+		if (month > that.month) {
+			return true;
+		}
+		if (month < that.month) {
+			return false;
+		}
+
+		if (day > that.day) {
+			return true;
+		}
+		if (day < that.day) {
+			return false;
+		}
+
+		if (hour > that.hour) {
+			return true;
+		}
+		if (hour < that.hour) {
+			return false;
+		}
+
+		if (minute > that.minute) {
+			return true;
+		}
+		if (minute < that.minute) {
+			return false;
+		}
+
+		if (second > that.second) {
+			return true;
+		}
+		if (second < that.second) {
+			return false;
+		}
+
+		if (microsecond > that.microsecond) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean before(ScePspDateTime that) {
+		if (year < that.year) {
+			return true;
+		}
+		if (year > that.year) {
+			return false;
+		}
+
+		if (month < that.month) {
+			return true;
+		}
+		if (month > that.month) {
+			return false;
+		}
+
+		if (day < that.day) {
+			return true;
+		}
+		if (day > that.day) {
+			return false;
+		}
+
+		if (hour < that.hour) {
+			return true;
+		}
+		if (hour > that.hour) {
+			return false;
+		}
+
+		if (minute < that.minute) {
+			return true;
+		}
+		if (minute > that.minute) {
+			return false;
+		}
+
+		if (second < that.second) {
+			return true;
+		}
+		if (second > that.second) {
+			return false;
+		}
+
+		if (microsecond < that.microsecond) {
+			return true;
+		}
+
+		return false;
+	}
+
 	@Override
 	public int sizeof() {
 		return SIZEOF;

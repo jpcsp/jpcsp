@@ -173,7 +173,6 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 				needPageAddress = true;
 				break;
 			case PSP_NAND_COMMAND_ERASE_BLOCK_CONFIRM:
-				// We don't need to erase blocks...
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("PSP_NAND_COMMAND_ERASE_BLOCK ppn=0x%X", pageAddress >> 10));
 				}
@@ -202,6 +201,9 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 			case PSP_NAND_COMMAND_READ_EXTRA:
 				TPointer spare = dataMemory.getPointer();
 				sceNandModule.hleNandReadPages(pageAddress >> 10, TPointer.NULL, spare, 1, true, true, true);
+				break;
+			case PSP_NAND_COMMAND_ERASE_BLOCK:
+				sceNandModule.hleNandEraseBlock(pageAddress >> 10, true);
 				break;
 		}
 	}

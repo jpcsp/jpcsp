@@ -73,7 +73,9 @@ import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.TPointer8;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.VFS.fat.FatFileInfo;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.filesystems.SeekableDataInput;
@@ -2214,4 +2216,34 @@ public class Utilities {
 			Emulator.log.error(e);
 		}
     }
+
+	public static FatFileInfo[] add(FatFileInfo[] array, FatFileInfo value) {
+    	if (value == null) {
+    		return array;
+    	}
+    	if (array == null) {
+    		return new FatFileInfo[] { value };
+    	}
+
+    	FatFileInfo[] newArray = new FatFileInfo[array.length + 1];
+    	System.arraycopy(array, 0, newArray, 0, array.length);
+    	newArray[array.length] = value;
+
+    	return newArray;
+	}
+
+	public static SceIoDirent[] add(SceIoDirent[] array, SceIoDirent value) {
+    	if (value == null) {
+    		return array;
+    	}
+    	if (array == null) {
+    		return new SceIoDirent[] { value };
+    	}
+
+    	SceIoDirent[] newArray = new SceIoDirent[array.length + 1];
+    	System.arraycopy(array, 0, newArray, 0, array.length);
+    	newArray[array.length] = value;
+
+    	return newArray;
+	}
 }
