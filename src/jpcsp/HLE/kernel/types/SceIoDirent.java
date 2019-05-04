@@ -126,4 +126,9 @@ public class SceIoDirent extends pspAbstractMemoryMappedStructure {
 	public int sizeof() {
 		return SceIoStat.SIZEOF + 256 + 8;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("fileName='%s', stat=%s", filename, stat);
+	}
 }

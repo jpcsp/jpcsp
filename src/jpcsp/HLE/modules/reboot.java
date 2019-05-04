@@ -90,6 +90,7 @@ public class reboot extends HLEModule {
 
         Model.setModel(Settings.getInstance().readInt("emu.model"));
     	Modules.SysMemUserForUserModule.setMemory64MB(Model.getGeneration() > 1);
+        RuntimeContextLLE.start();
         RuntimeContext.updateMemory();
 
     	final boolean fromSyscall = false;
@@ -370,7 +371,6 @@ public class reboot extends HLEModule {
 			log.error("KL3E decompress", e);
 		}
 
-    	RuntimeContextLLE.start();
     	// The memory remap has already been done by the IPL code at this point
     	RuntimeContextLLE.getMMIO().remapMemoryAtProcessorReset();
 
@@ -467,7 +467,6 @@ public class reboot extends HLEModule {
 
     	Modules.ThreadManForUserModule.Initialise(rebootModule, rebootModule.baseAddress, 0, rebootModule.pspfilename, -1, 0, false);
 
-    	RuntimeContextLLE.start();
     	MMIO mmio = (MMIO) RuntimeContextLLE.getMMIO();
     	// The memory remap has already been done by the IPL code at this point
     	mmio.remapMemoryAtProcessorReset();
