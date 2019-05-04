@@ -360,6 +360,56 @@ public class sceNand extends HLEModule {
     			nandSpareMemoryPointer = nandSpareMemory.getPointer();
     		}
     		nandSpareMemory.read(stream);
+
+    		if (syncFlash0 == null) {
+	    		inputFlash0 = new FatVirtualFileSystem("flash0", new NandVirtualFile(flash0LbnStart + 1, flash1LbnStart));
+	    		outputFlash0 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
+	    		syncFlash0 = new SynchronizeVirtualFileSystems(inputFlash0, outputFlash0);
+    		}
+    		lastWriteFlash0 = stream.readLong();
+    		lastSyncFlash0 = stream.readLong();
+    		syncFlash0.read(stream);
+    		inputFlash0.invalidateCache();
+
+    		if (syncFlash1 == null) {
+	    		inputFlash1 = new FatVirtualFileSystem("flash1", new NandVirtualFile(flash1LbnStart + 1, flash2LbnStart));
+	    		outputFlash1 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
+	    		syncFlash1 = new SynchronizeVirtualFileSystems(inputFlash1, outputFlash1);
+    		}
+    		lastWriteFlash1 = stream.readLong();
+    		lastSyncFlash1 = stream.readLong();
+    		syncFlash1.read(stream);
+    		inputFlash1.invalidateCache();
+
+    		if (syncFlash2 == null) {
+	    		inputFlash2 = new FatVirtualFileSystem("flash2", new NandVirtualFile(flash2LbnStart + 1, flash3LbnStart));
+	    		outputFlash2 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
+	    		syncFlash2 = new SynchronizeVirtualFileSystems(inputFlash2, outputFlash2);
+    		}
+    		lastWriteFlash2 = stream.readLong();
+    		lastSyncFlash2 = stream.readLong();
+    		syncFlash2.read(stream);
+    		inputFlash2.invalidateCache();
+
+    		boolean flash3Present = stream.readBoolean();
+    		if (flash3Present) {
+        		if (syncFlash3 == null) {
+    	    		inputFlash3 = new FatVirtualFileSystem("flash3", new NandVirtualFile(flash3LbnStart + 1, flash4LbnStart));
+    	    		outputFlash3 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash3"), false);
+    	    		syncFlash3 = new SynchronizeVirtualFileSystems(inputFlash3, outputFlash3);
+        		}
+	    		lastWriteFlash3 = stream.readLong();
+	    		lastSyncFlash3 = stream.readLong();
+	    		syncFlash3.read(stream);
+	    		inputFlash3.invalidateCache();
+    		}
+
+    		if (synchronizeThread == null) {
+	    		synchronizeThread = new SynchronizeThread();
+	    		synchronizeThread.setName("sceNand Synchronize Thread");
+	    		synchronizeThread.setDaemon(true);
+	    		synchronizeThread.start();
+    		}
     	}
 
     	super.read(stream);
@@ -408,6 +458,27 @@ public class sceNand extends HLEModule {
     		stream.writeBoolean(true);
     		nandMemory.write(stream);
     		nandSpareMemory.write(stream);
+
+    		stream.writeLong(lastWriteFlash0);
+    		stream.writeLong(lastSyncFlash0);
+    		syncFlash0.write(stream);
+
+    		stream.writeLong(lastWriteFlash1);
+    		stream.writeLong(lastSyncFlash1);
+    		syncFlash1.write(stream);
+
+    		stream.writeLong(lastWriteFlash2);
+    		stream.writeLong(lastSyncFlash2);
+    		syncFlash2.write(stream);
+
+    		if (syncFlash3 != null) {
+    			stream.writeBoolean(true);
+	    		stream.writeLong(lastWriteFlash3);
+	    		stream.writeLong(lastSyncFlash3);
+	    		syncFlash3.write(stream);
+    		} else {
+    			stream.writeBoolean(false);
+    		}
     	} else {
     		stream.writeBoolean(false);
     	}

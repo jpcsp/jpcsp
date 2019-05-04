@@ -19,6 +19,7 @@ package jpcsp.util;
 import static jpcsp.HLE.VFS.AbstractVirtualFileSystem.IO_ERROR;
 import static jpcsp.HLE.modules.sceRtc.hleGetCurrentMicros;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,9 +31,13 @@ import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
-public class SynchronizeVirtualFileSystems {
+public class SynchronizeVirtualFileSystems implements IState {
 	public static Logger log = Logger.getLogger("synchronize");
+	private static final int STATE_VERSION = 0;
 	private IVirtualFileSystem input;
 	private IVirtualFileSystem output;
 	private ScePspDateTime lastSync;
@@ -42,6 +47,18 @@ public class SynchronizeVirtualFileSystems {
 		this.output = output;
 
 		lastSync = now();
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+		lastSync.read(stream);
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+    	lastSync.write(stream);
 	}
 
 	public int deltaSynchronize() {

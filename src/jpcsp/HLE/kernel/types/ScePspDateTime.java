@@ -16,11 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
-public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
+public class ScePspDateTime extends pspAbstractMemoryMappedStructure implements IState {
+	private static final int STATE_VERSION = 0;
 	public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 	public static final int SIZEOF = 16;
     public int year;
@@ -187,6 +193,30 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
 		write16((short) minute);
 		write16((short) second);
 		write32(microsecond);
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+    	stream.readVersion(STATE_VERSION);
+		year = stream.readUnsignedShort();
+		month = stream.readUnsignedShort();
+		day = stream.readUnsignedShort();
+		hour = stream.readUnsignedShort();
+		minute = stream.readUnsignedShort();
+		second = stream.readUnsignedShort();
+		microsecond = stream.readInt();
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+    	stream.writeVersion(STATE_VERSION);
+		stream.writeShort(year);
+		stream.writeShort(month);
+		stream.writeShort(day);
+		stream.writeShort(hour);
+		stream.writeShort(minute);
+		stream.writeShort(second);
+		stream.writeInt(microsecond);
 	}
 
 	public boolean after(ScePspDateTime that) {
