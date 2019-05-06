@@ -74,7 +74,7 @@ public class NandVirtualFile implements IVirtualFile {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("writePage ppn=0x%X: %s", ppn, Utilities.getMemoryDump(currentPage)));
 		}
-		sceNandModule.hleNandWritePages(ppn, currentPageMemory.getPointer(), TPointer.NULL, 1, false, false, false);
+		sceNandModule.hleNandWriteUserPages(ppn, currentPageMemory.getPointer(), 1, false, false);
 	}
 
 	@Override

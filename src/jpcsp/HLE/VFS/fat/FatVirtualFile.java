@@ -1021,6 +1021,11 @@ public abstract class FatVirtualFile implements IVirtualFile {
 
 	@Override
 	public int ioClose() {
+		for (FatFileInfo fatFileInfo : fatFileInfoMap) {
+			if (fatFileInfo != null) {
+				fatFileInfo.closeVirtualFile();
+			}
+		}
 		vfs.ioExit();
 		vfs = null;
 

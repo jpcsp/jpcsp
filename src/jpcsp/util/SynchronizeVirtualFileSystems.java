@@ -25,8 +25,11 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.VFS.fat.FatVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
@@ -38,30 +41,84 @@ import jpcsp.state.StateOutputStream;
 public class SynchronizeVirtualFileSystems implements IState {
 	public static Logger log = Logger.getLogger("synchronize");
 	private static final int STATE_VERSION = 0;
+    private static final int deltaSyncDelayMillis = 1000;
+    private static final int deltaSyncIntervalMillis = 100;
 	private IVirtualFileSystem input;
 	private IVirtualFileSystem output;
-	private ScePspDateTime lastSync;
+	private ScePspDateTime lastSyncDate;
+	private long lastWrite;
+	private long lastSync;
+    private SynchronizeThread synchronizeThread;
+    private final Object lock;
 
-	public SynchronizeVirtualFileSystems(IVirtualFileSystem input, IVirtualFileSystem output) {
+    private class SynchronizeThread extends Thread {
+		@Override
+		public void run() {
+			RuntimeContext.setLog4jMDC();
+
+			while (true) {
+				checkDeltaSynchronize();;
+				Utilities.sleep(deltaSyncIntervalMillis, 0);
+			}
+		}
+    }
+
+	public SynchronizeVirtualFileSystems(IVirtualFileSystem input, IVirtualFileSystem output, Object lock) {
 		this.input = input;
 		this.output = output;
+		this.lock = lock;
 
-		lastSync = now();
+		lastSyncDate = now();
+
+		synchronizeThread = new SynchronizeThread();
+		synchronizeThread.setName(String.format("Synchronize Thread - %s", input));
+		synchronizeThread.setDaemon(true);
+		synchronizeThread.start();
 	}
 
 	@Override
 	public void read(StateInputStream stream) throws IOException {
     	stream.readVersion(STATE_VERSION);
-		lastSync.read(stream);
+		lastSyncDate.read(stream);
+    	lastWrite = stream.readLong();
+    	lastSync = stream.readLong();
+		invalidateCache();
 	}
 
 	@Override
 	public void write(StateOutputStream stream) throws IOException {
     	stream.writeVersion(STATE_VERSION);
-    	lastSync.write(stream);
+    	lastSyncDate.write(stream);
+    	stream.writeLong(lastWrite);
+    	stream.writeLong(lastSync);
 	}
 
-	public int deltaSynchronize() {
+	private void invalidateCache() {
+		if (input instanceof FatVirtualFileSystem) {
+			((FatVirtualFileSystem) input).invalidateCache();
+		}
+	}
+
+	private void checkDeltaSynchronize() {
+		synchronized (lock) {
+	    	long now = Emulator.getClock().currentTimeMillis();
+	    	long millisSinceLastWrite = now - lastWrite;
+	    	if (lastSync < lastWrite && millisSinceLastWrite > deltaSyncDelayMillis) {
+	    		invalidateCache();
+	    		deltaSynchronize();
+	    		lastSync = now;
+	    	}
+		}
+	}
+
+	public void notifyWrite() {
+    	long now = Emulator.getClock().currentTimeMillis();
+		synchronized (lock) {
+			lastWrite = now;
+		}
+	}
+
+	private int deltaSynchronize() {
 		ScePspDateTime newLastSync = now();
 
 		if (log.isTraceEnabled()) {
@@ -76,7 +133,7 @@ public class SynchronizeVirtualFileSystems implements IState {
 
 		// The new lastSync is the time when this sync has been started
 		// (and not when it finished).
-		lastSync = newLastSync;
+		lastSyncDate = newLastSync;
 
 		return result;
 	}
@@ -86,7 +143,7 @@ public class SynchronizeVirtualFileSystems implements IState {
 	}
 
 	private boolean isModifiedSinceLastSync(SceIoDirent dirent) {
-		return dirent.stat.mtime.after(lastSync);
+		return dirent.stat.mtime.after(lastSyncDate);
 	}
 
 	private boolean isDirectory(SceIoDirent entry) {
@@ -283,6 +340,10 @@ public class SynchronizeVirtualFileSystems implements IState {
 			}
 
 			result = output.ioMkdir(fileName, 0777);
+
+			if (result != 0) {
+				log.error(String.format("createEntry could not create directory '%s'", fileName));
+			}
 		} else {
 			// Creating a file is the same as updating it
 			result = updateEntry(dirName, entry);
@@ -304,6 +365,10 @@ public class SynchronizeVirtualFileSystems implements IState {
 			result = output.ioRmdir(fileName);
 		} else {
 			result = output.ioRemove(fileName);
+		}
+
+		if (result != 0) {
+			log.error(String.format("deleteEntry could not delete '%s'", fileName));
 		}
 
 		return result;

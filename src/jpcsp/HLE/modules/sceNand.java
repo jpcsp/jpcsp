@@ -34,8 +34,6 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Emulator;
-import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -105,41 +103,11 @@ public class sceNand extends HLEModule {
     private IntArrayMemory nandSpareMemory;
     private TPointer nandSpareMemoryPointer;
     private boolean initNandInProgress;
-    private static final int deltaSyncDelayMillis = 1000;
-    private static final int deltaSyncIntervalMillis = 100;
-    private SynchronizeThread synchronizeThread;
-    private FatVirtualFileSystem inputFlash0;
-    private IVirtualFileSystem outputFlash0;
+    private final Object writeLock = new Object();
     private SynchronizeVirtualFileSystems syncFlash0;
-    private long lastWriteFlash0;
-    private long lastSyncFlash0;
-    private FatVirtualFileSystem inputFlash1;
-    private IVirtualFileSystem outputFlash1;
     private SynchronizeVirtualFileSystems syncFlash1;
-    private long lastSyncFlash1;
-    private long lastWriteFlash1;
-    private FatVirtualFileSystem inputFlash2;
-    private IVirtualFileSystem outputFlash2;
     private SynchronizeVirtualFileSystems syncFlash2;
-    private long lastWriteFlash2;
-    private long lastSyncFlash2;
-    private FatVirtualFileSystem inputFlash3;
-    private IVirtualFileSystem outputFlash3;
     private SynchronizeVirtualFileSystems syncFlash3;
-    private long lastWriteFlash3;
-    private long lastSyncFlash3;
-
-    private class SynchronizeThread extends Thread {
-		@Override
-		public void run() {
-			RuntimeContext.setLog4jMDC();
-
-			while (true) {
-				checkDeltaSync();
-				Utilities.sleep(deltaSyncIntervalMillis, 0);
-			}
-		}
-    }
 
     @Override
 	public void start() {
@@ -278,28 +246,23 @@ public class sceNand extends HLEModule {
 		this.nandSpareMemory = nandSpareMemory;
 		nandSpareMemoryPointer = nandSpareMemory.getPointer();
 
-		inputFlash0 = new FatVirtualFileSystem("flash0", new NandVirtualFile(flash0LbnStart + 1, flash1LbnStart));
-		outputFlash0 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
-		syncFlash0 = new SynchronizeVirtualFileSystems(inputFlash0, outputFlash0);
+		IVirtualFileSystem inputFlash0 = new FatVirtualFileSystem("flash0", new NandVirtualFile(flash0LbnStart + 1, flash1LbnStart));
+		IVirtualFileSystem outputFlash0 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
+		syncFlash0 = new SynchronizeVirtualFileSystems(inputFlash0, outputFlash0, writeLock);
 
-		inputFlash1 = new FatVirtualFileSystem("flash1", new NandVirtualFile(flash1LbnStart + 1, flash2LbnStart));
-		outputFlash1 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
-		syncFlash1 = new SynchronizeVirtualFileSystems(inputFlash1, outputFlash1);
+		IVirtualFileSystem inputFlash1 = new FatVirtualFileSystem("flash1", new NandVirtualFile(flash1LbnStart + 1, flash2LbnStart));
+		IVirtualFileSystem outputFlash1 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
+		syncFlash1 = new SynchronizeVirtualFileSystems(inputFlash1, outputFlash1, writeLock);
 
-		inputFlash2 = new FatVirtualFileSystem("flash2", new NandVirtualFile(flash2LbnStart + 1, flash3LbnStart));
-		outputFlash2 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
-		syncFlash2 = new SynchronizeVirtualFileSystems(inputFlash2, outputFlash2);
+		IVirtualFileSystem inputFlash2 = new FatVirtualFileSystem("flash2", new NandVirtualFile(flash2LbnStart + 1, flash3LbnStart));
+		IVirtualFileSystem outputFlash2 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
+		syncFlash2 = new SynchronizeVirtualFileSystems(inputFlash2, outputFlash2, writeLock);
 
 		if (!isSmallNand()) {
-			inputFlash3 = new FatVirtualFileSystem("flash3", new NandVirtualFile(flash3LbnStart + 1, flash4LbnStart));
-			outputFlash3 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash3"), false);
-			syncFlash3 = new SynchronizeVirtualFileSystems(inputFlash3, outputFlash3);
+			IVirtualFileSystem inputFlash3 = new FatVirtualFileSystem("flash3", new NandVirtualFile(flash3LbnStart + 1, flash4LbnStart));
+			IVirtualFileSystem outputFlash3 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash3"), false);
+			syncFlash3 = new SynchronizeVirtualFileSystems(inputFlash3, outputFlash3, writeLock);
 		}
-
-		synchronizeThread = new SynchronizeThread();
-		synchronizeThread.setName("sceNand Synchronize Thread");
-		synchronizeThread.setDaemon(true);
-		synchronizeThread.start();
 
 		initNandInProgress = false;
     }
@@ -362,53 +325,34 @@ public class sceNand extends HLEModule {
     		nandSpareMemory.read(stream);
 
     		if (syncFlash0 == null) {
-	    		inputFlash0 = new FatVirtualFileSystem("flash0", new NandVirtualFile(flash0LbnStart + 1, flash1LbnStart));
-	    		outputFlash0 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
-	    		syncFlash0 = new SynchronizeVirtualFileSystems(inputFlash0, outputFlash0);
+    			IVirtualFileSystem inputFlash0 = new FatVirtualFileSystem("flash0", new NandVirtualFile(flash0LbnStart + 1, flash1LbnStart));
+    			IVirtualFileSystem outputFlash0 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
+	    		syncFlash0 = new SynchronizeVirtualFileSystems(inputFlash0, outputFlash0, writeLock);
     		}
-    		lastWriteFlash0 = stream.readLong();
-    		lastSyncFlash0 = stream.readLong();
     		syncFlash0.read(stream);
-    		inputFlash0.invalidateCache();
 
     		if (syncFlash1 == null) {
-	    		inputFlash1 = new FatVirtualFileSystem("flash1", new NandVirtualFile(flash1LbnStart + 1, flash2LbnStart));
-	    		outputFlash1 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
-	    		syncFlash1 = new SynchronizeVirtualFileSystems(inputFlash1, outputFlash1);
+    			IVirtualFileSystem inputFlash1 = new FatVirtualFileSystem("flash1", new NandVirtualFile(flash1LbnStart + 1, flash2LbnStart));
+    			IVirtualFileSystem outputFlash1 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
+	    		syncFlash1 = new SynchronizeVirtualFileSystems(inputFlash1, outputFlash1, writeLock);
     		}
-    		lastWriteFlash1 = stream.readLong();
-    		lastSyncFlash1 = stream.readLong();
     		syncFlash1.read(stream);
-    		inputFlash1.invalidateCache();
 
     		if (syncFlash2 == null) {
-	    		inputFlash2 = new FatVirtualFileSystem("flash2", new NandVirtualFile(flash2LbnStart + 1, flash3LbnStart));
-	    		outputFlash2 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
-	    		syncFlash2 = new SynchronizeVirtualFileSystems(inputFlash2, outputFlash2);
+    			IVirtualFileSystem inputFlash2 = new FatVirtualFileSystem("flash2", new NandVirtualFile(flash2LbnStart + 1, flash3LbnStart));
+    			IVirtualFileSystem outputFlash2 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
+	    		syncFlash2 = new SynchronizeVirtualFileSystems(inputFlash2, outputFlash2, writeLock);
     		}
-    		lastWriteFlash2 = stream.readLong();
-    		lastSyncFlash2 = stream.readLong();
     		syncFlash2.read(stream);
-    		inputFlash2.invalidateCache();
 
     		boolean flash3Present = stream.readBoolean();
     		if (flash3Present) {
         		if (syncFlash3 == null) {
-    	    		inputFlash3 = new FatVirtualFileSystem("flash3", new NandVirtualFile(flash3LbnStart + 1, flash4LbnStart));
-    	    		outputFlash3 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash3"), false);
-    	    		syncFlash3 = new SynchronizeVirtualFileSystems(inputFlash3, outputFlash3);
+        			IVirtualFileSystem inputFlash3 = new FatVirtualFileSystem("flash3", new NandVirtualFile(flash3LbnStart + 1, flash4LbnStart));
+        			IVirtualFileSystem outputFlash3 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash3"), false);
+    	    		syncFlash3 = new SynchronizeVirtualFileSystems(inputFlash3, outputFlash3, writeLock);
         		}
-	    		lastWriteFlash3 = stream.readLong();
-	    		lastSyncFlash3 = stream.readLong();
 	    		syncFlash3.read(stream);
-	    		inputFlash3.invalidateCache();
-    		}
-
-    		if (synchronizeThread == null) {
-	    		synchronizeThread = new SynchronizeThread();
-	    		synchronizeThread.setName("sceNand Synchronize Thread");
-	    		synchronizeThread.setDaemon(true);
-	    		synchronizeThread.start();
     		}
     	}
 
@@ -459,22 +403,11 @@ public class sceNand extends HLEModule {
     		nandMemory.write(stream);
     		nandSpareMemory.write(stream);
 
-    		stream.writeLong(lastWriteFlash0);
-    		stream.writeLong(lastSyncFlash0);
     		syncFlash0.write(stream);
-
-    		stream.writeLong(lastWriteFlash1);
-    		stream.writeLong(lastSyncFlash1);
     		syncFlash1.write(stream);
-
-    		stream.writeLong(lastWriteFlash2);
-    		stream.writeLong(lastSyncFlash2);
     		syncFlash2.write(stream);
-
     		if (syncFlash3 != null) {
     			stream.writeBoolean(true);
-	    		stream.writeLong(lastWriteFlash3);
-	    		stream.writeLong(lastSyncFlash3);
 	    		syncFlash3.write(stream);
     		} else {
     			stream.writeBoolean(false);
@@ -1375,107 +1308,88 @@ public class sceNand extends HLEModule {
     	return result;
     }
 
-    private long now() {
-    	return Emulator.getClock().currentTimeMillis();
-    }
-
     private void notifyWrite(int ppn, int len) {
-    	long now = now();
-
 		for (int i = 0; i < len; i++) {
 			int n = ppn + i;
 			if (ppnToLbn[n] > flash0LbnStart && ppnToLbn[n] < flash1LbnStart) {
-				lastWriteFlash0 = now;
+				syncFlash0.notifyWrite();
     		} else if (ppnToLbn[n] > flash1LbnStart && ppnToLbn[n] < flash2LbnStart) {
-				lastWriteFlash1 = now;
+				syncFlash1.notifyWrite();
     		} else if (ppnToLbn[n] > flash2LbnStart && ppnToLbn[n] < flash3LbnStart) {
-				lastWriteFlash2 = now;
+				syncFlash2.notifyWrite();
     		} else if (ppnToLbn[n] > flash3LbnStart && ppnToLbn[n] < flash4LbnStart) {
-				lastWriteFlash3 = now;
+    			if (syncFlash3 != null) {
+    				syncFlash3.notifyWrite();
+    			}
 			}
 		}
-    }
-
-    private long checkDeltaSync(SynchronizeVirtualFileSystems sync, FatVirtualFileSystem input, long lastWrite, long lastSync) {
-    	if (sync != null) {
-	    	long now = now();
-	    	long millisSinceLastWrite = now - lastWrite;
-	    	if (lastSync < lastWrite && millisSinceLastWrite > deltaSyncDelayMillis) {
-	    		input.invalidateCache();
-	    		sync.deltaSynchronize();
-	    		lastSync = now;
-	    	}
-    	}
-
-    	return lastSync;
-    }
-
-    private void checkDeltaSync() {
-    	lastSyncFlash0 = checkDeltaSync(syncFlash0, inputFlash0, lastWriteFlash0, lastSyncFlash0);
-    	lastSyncFlash1 = checkDeltaSync(syncFlash1, inputFlash1, lastWriteFlash1, lastSyncFlash1);
-    	lastSyncFlash2 = checkDeltaSync(syncFlash2, inputFlash2, lastWriteFlash2, lastSyncFlash2);
-    	lastSyncFlash3 = checkDeltaSync(syncFlash3, inputFlash3, lastWriteFlash3, lastSyncFlash3);
     }
 
     public int hleNandWriteUserPages(int ppn, TPointer user, int len, boolean raw, boolean isLLE) {
     	int result = 0;
 
-		initNandInMemory();
+    	synchronized(writeLock) {
+    		initNandInMemory();
 
-		if (user.isNotNull()) {
-    		if (nandMemory != null) {
-    			nandMemoryPointer.memcpy(ppn * pageSize, user, len * pageSize);
-    			notifyWrite(ppn, len);
-    		} else {
-	    		for (int i = 0; i < len; i++) {
-	    			int n = ppn + i;
-	    			if (n >= iplTablePpnStart && n <= iplTablePpnEnd) {
-	    				// Ignore
-	    			} else if (n >= iplPpnStart && n <= iplPpnEnd) {
-	    				openFileIpl();
-	    				writeFile(user, vFileIpl, n - iplPpnStart);
-	    			} else if (ppnToLbn[n] > flash0LbnStart && ppnToLbn[n] < flash1LbnStart) {
-	    				openFileFlash0();
-		    			writeFile(user, vFileFlash0, n, flash0LbnStart + 1);
-		    		} else if (ppnToLbn[n] > flash1LbnStart && ppnToLbn[n] < flash2LbnStart) {
-		    			openFileFlash1();
-		    			writeFile(user, vFileFlash1, n, flash1LbnStart + 1);
-		    		} else if (ppnToLbn[n] > flash2LbnStart && ppnToLbn[n] < flash3LbnStart) {
-		    			openFileFlash2();
-		    			writeFile(user, vFileFlash2, n, flash2LbnStart + 1);
-		    		} else if (!isSmallNand() && ppnToLbn[n] > flash3LbnStart && ppnToLbn[n] < flash4LbnStart) {
-		    			openFileFlash3();
-		    			writeFile(user, vFileFlash3, n, flash3LbnStart + 1);
-	    			} else {
-	    				log.error(String.format("hleNandWriteUserPages unimplemented write on ppn=0x%X, lbn=0x%X", n, ppnToLbn[n]));
-	    			}
-	    			user.add(pageSize);
+			if (user.isNotNull()) {
+	    		if (nandMemory != null) {
+	    			nandMemoryPointer.memcpy(ppn * pageSize, user, len * pageSize);
+	    			notifyWrite(ppn, len);
+	    		} else {
+		    		for (int i = 0; i < len; i++) {
+		    			int n = ppn + i;
+		    			if (n >= iplTablePpnStart && n <= iplTablePpnEnd) {
+		    				// Ignore
+		    			} else if (n >= iplPpnStart && n <= iplPpnEnd) {
+		    				openFileIpl();
+		    				writeFile(user, vFileIpl, n - iplPpnStart);
+		    			} else if (ppnToLbn[n] > flash0LbnStart && ppnToLbn[n] < flash1LbnStart) {
+		    				openFileFlash0();
+			    			writeFile(user, vFileFlash0, n, flash0LbnStart + 1);
+			    		} else if (ppnToLbn[n] > flash1LbnStart && ppnToLbn[n] < flash2LbnStart) {
+			    			openFileFlash1();
+			    			writeFile(user, vFileFlash1, n, flash1LbnStart + 1);
+			    		} else if (ppnToLbn[n] > flash2LbnStart && ppnToLbn[n] < flash3LbnStart) {
+			    			openFileFlash2();
+			    			writeFile(user, vFileFlash2, n, flash2LbnStart + 1);
+			    		} else if (!isSmallNand() && ppnToLbn[n] > flash3LbnStart && ppnToLbn[n] < flash4LbnStart) {
+			    			openFileFlash3();
+			    			writeFile(user, vFileFlash3, n, flash3LbnStart + 1);
+		    			} else {
+		    				log.error(String.format("hleNandWriteUserPages unimplemented write on ppn=0x%X, lbn=0x%X", n, ppnToLbn[n]));
+		    			}
+		    			user.add(pageSize);
+		    		}
 	    		}
-    		}
+			}
     	}
 
     	return result;
     }
 
-    public int hleNandWritePages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc, boolean isLLE) {
-    	int result = hleNandWriteSparePages(ppn, spare, len, raw, spareUserEcc, isLLE);
-    	if (result != 0) {
-    		return result;
-    	}
+    private int hleNandWritePages(int ppn, TPointer user, TPointer spare, int len, boolean raw, boolean spareUserEcc, boolean isLLE) {
+    	synchronized(writeLock) {
+	    	int result = hleNandWriteSparePages(ppn, spare, len, raw, spareUserEcc, isLLE);
+	    	if (result != 0) {
+	    		return result;
+	    	}
 
-    	return hleNandWriteUserPages(ppn, user, len, raw, isLLE);
+	    	return hleNandWriteUserPages(ppn, user, len, raw, isLLE);
+    	}
     }
 
     public int hleNandEraseBlock(int ppn, boolean isLLE) {
-    	if (storeNandInMemory && isLLE) {
-	    	int lbn = 0xFFFF;
-			for (int i = 0; i < pagesPerBlock; i++) {
-				int n = ppn + i;
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("hleNandEraseBlock ppn=0x%X: changed lbn=0x%X to lbn=0x%X", n, ppnToLbn[n], lbn));
+    	synchronized(writeLock) {
+	    	if (storeNandInMemory && isLLE) {
+		    	int lbn = 0xFFFF;
+				for (int i = 0; i < pagesPerBlock; i++) {
+					int n = ppn + i;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("hleNandEraseBlock ppn=0x%X: changed lbn=0x%X to lbn=0x%X", n, ppnToLbn[n], lbn));
+					}
+					ppnToLbn[n] = lbn;
 				}
-				ppnToLbn[n] = lbn;
-			}
+	    	}
     	}
 
 		return 0;

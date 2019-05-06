@@ -120,4 +120,9 @@ public abstract class AbstractProxyVirtualFile implements IVirtualFile {
 	public Map<IoOperation, IoOperationTiming> getTimings() {
 		return vFile.getTimings();
 	}
+
+	@Override
+	public String toString() {
+		return String.format("ProxyVirtualFile %s", vFile);
+	}
 }
