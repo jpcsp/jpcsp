@@ -75,7 +75,7 @@ Please keep in mind that JPCSP does not support or endorse piracy.
 ...............................................................................
 ...............................................................................
 
-JPCSP v0.8 (???):
+JPCSP v1.0 (???):
 
 -> Added support for an external software rendering engine;
 
@@ -97,6 +97,15 @@ JPCSP v0.8 (???):
 -> Added an experimental xBRZ plugin for improved 2D texture scaling
 
 -> Added support of kernel module so that many chinese patched game are worked
+
+-> Complete rewrite of the video modules (sceMpeg, scePsmfPlayer) for
+   improved compatibility
+
+-> Added support to run the PSP original VSH interface
+
+-> Experimental support to run the original PSP complete boot process
+   using Low Level Emulation (LLE). This method is able to run the official
+   PSP 6.61 EBOOT.PBP and from there, the CFW PROC-C for 6.61.
 
 
 
