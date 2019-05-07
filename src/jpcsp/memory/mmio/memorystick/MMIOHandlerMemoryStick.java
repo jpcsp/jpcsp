@@ -25,7 +25,7 @@ import java.io.IOException;
 
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
-import jpcsp.HLE.modules.sceMScm;
+import jpcsp.HLE.modules.sceMSstor;
 import jpcsp.hardware.MemoryStick;
 
 import static jpcsp.memory.mmio.memorystick.MemoryStickBootAttributesInfo.MS_SYSINF_CARDTYPE_RDWR;
@@ -80,7 +80,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 	public MMIOHandlerMemoryStick(int baseAddress) {
 		super(baseAddress);
 
-		log = sceMScm.log;
+		log = sceMSstor.log;
 
 		sceMSstorModule.hleInit();
 

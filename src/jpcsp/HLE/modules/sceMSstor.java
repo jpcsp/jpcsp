@@ -39,8 +39,11 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.VFS.WriteCacheVirtualFile;
 import jpcsp.HLE.VFS.fat.Fat32VirtualFile;
+import jpcsp.HLE.VFS.fat.FatVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -53,8 +56,10 @@ import jpcsp.HLE.kernel.types.pspIoDrvFileArg;
 import jpcsp.HLE.kernel.types.pspIoDrvFuncs;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.settings.Settings;
+import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
+import jpcsp.util.SynchronizeVirtualFileSystems;
 import jpcsp.util.Utilities;
 
 public class sceMSstor extends HLEModule {
@@ -62,8 +67,10 @@ public class sceMSstor extends HLEModule {
 	private static final int STATE_VERSION = 0;
     private byte[] dumpIoIoctl_0x02125803;
     private long position;
-    private Fat32VirtualFile vFile;
+    private IVirtualFile vFile;
     private Fat32ScanThread scanThread;
+    private final Object writeLock = new Object();
+    private SynchronizeVirtualFileSystems sync;
 
     private static class AfterAddDrvController implements IAction {
     	private SceKernelThreadInfo thread;
@@ -136,7 +143,8 @@ public class sceMSstor extends HLEModule {
     	boolean vFilePresent = stream.readBoolean();
     	if (vFilePresent) {
     		openFile();
-    		vFile.read(stream);
+    		((IState) vFile).read(stream);
+    		sync.read(stream);
     	}
 
     	super.read(stream);
@@ -150,7 +158,8 @@ public class sceMSstor extends HLEModule {
 
     	if (vFile != null) {
     		stream.writeBoolean(true);
-    		vFile.write(stream);
+    		((IState) vFile).write(stream);
+    		sync.write(stream);
     	} else {
     		stream.writeBoolean(false);
     	}
@@ -368,7 +377,10 @@ public class sceMSstor extends HLEModule {
     public int hleMSstorPartitionIoWrite(pspIoDrvFileArg drvFileArg, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer data, int len) {
     	if (vFile != null) {
     		scanThread.waitForCompletion();
-    		len = vFile.ioWrite(data, len);
+    		synchronized (writeLock) {
+        		len = vFile.ioWrite(data, len);
+    			sync.notifyWrite();
+			}
     	}
 
     	return len;
@@ -444,18 +456,23 @@ public class sceMSstor extends HLEModule {
 		installHLESyscall(partitionFuncs.ioWrite, this, "hleMSstorPartitionIoWrite");
     }
 
-    private void openFile() {
+    private Fat32VirtualFile openFile() {
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("ms0"), true);
-		vFile = new Fat32VirtualFile("ms0:", vfs);
+		Fat32VirtualFile fat32VirtualFile = new Fat32VirtualFile("ms0:", vfs);
+		vFile = new WriteCacheVirtualFile(fat32VirtualFile);
+		IVirtualFileSystem input = new FatVirtualFileSystem("ms0", vFile);
+		sync = new SynchronizeVirtualFileSystems("ms0", input, vfs, writeLock);
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("openFile vFile=%s", vFile));
 		}
+
+		return fat32VirtualFile;
     }
 
     public void hleInit() {
-    	openFile();
+    	Fat32VirtualFile fat32VirtualFile = openFile();
 
-		scanThread = new Fat32ScanThread(vFile);
+		scanThread = new Fat32ScanThread(fat32VirtualFile);
 		scanThread.setName("Fat32VirtualFile Scan Thread");
 		scanThread.setDaemon(true);
 		scanThread.start();

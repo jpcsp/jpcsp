@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -25,6 +26,9 @@ import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * Proxy all the IVirtualFileSystem interface calls to another virtual file system.
@@ -32,7 +36,7 @@ import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
  * @author gid15
  *
  */
-public class AbstractProxyVirtualFileSystem implements IVirtualFileSystem {
+public class AbstractProxyVirtualFileSystem implements IVirtualFileSystem, IState {
 	protected static Logger log = AbstractVirtualFileSystem.log;
 	protected IVirtualFileSystem vfs;
 
@@ -130,5 +134,19 @@ public class AbstractProxyVirtualFileSystem implements IVirtualFileSystem {
 	@Override
 	public Map<IoOperation, IoOperationTiming> getTimings() {
 		return vfs.getTimings();
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		if (vfs instanceof IState) {
+			((IState) vfs).read(stream);
+		}
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		if (vfs instanceof IState) {
+			((IState) vfs).write(stream);
+		}
 	}
 }

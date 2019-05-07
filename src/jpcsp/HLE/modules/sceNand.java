@@ -248,20 +248,20 @@ public class sceNand extends HLEModule {
 
 		IVirtualFileSystem inputFlash0 = new FatVirtualFileSystem("flash0", new NandVirtualFile(flash0LbnStart + 1, flash1LbnStart));
 		IVirtualFileSystem outputFlash0 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
-		syncFlash0 = new SynchronizeVirtualFileSystems(inputFlash0, outputFlash0, writeLock);
+		syncFlash0 = new SynchronizeVirtualFileSystems("flash0", inputFlash0, outputFlash0, writeLock);
 
 		IVirtualFileSystem inputFlash1 = new FatVirtualFileSystem("flash1", new NandVirtualFile(flash1LbnStart + 1, flash2LbnStart));
 		IVirtualFileSystem outputFlash1 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
-		syncFlash1 = new SynchronizeVirtualFileSystems(inputFlash1, outputFlash1, writeLock);
+		syncFlash1 = new SynchronizeVirtualFileSystems("flash1", inputFlash1, outputFlash1, writeLock);
 
 		IVirtualFileSystem inputFlash2 = new FatVirtualFileSystem("flash2", new NandVirtualFile(flash2LbnStart + 1, flash3LbnStart));
 		IVirtualFileSystem outputFlash2 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
-		syncFlash2 = new SynchronizeVirtualFileSystems(inputFlash2, outputFlash2, writeLock);
+		syncFlash2 = new SynchronizeVirtualFileSystems("flash2", inputFlash2, outputFlash2, writeLock);
 
 		if (!isSmallNand()) {
 			IVirtualFileSystem inputFlash3 = new FatVirtualFileSystem("flash3", new NandVirtualFile(flash3LbnStart + 1, flash4LbnStart));
 			IVirtualFileSystem outputFlash3 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash3"), false);
-			syncFlash3 = new SynchronizeVirtualFileSystems(inputFlash3, outputFlash3, writeLock);
+			syncFlash3 = new SynchronizeVirtualFileSystems("flash3", inputFlash3, outputFlash3, writeLock);
 		}
 
 		initNandInProgress = false;
@@ -327,21 +327,21 @@ public class sceNand extends HLEModule {
     		if (syncFlash0 == null) {
     			IVirtualFileSystem inputFlash0 = new FatVirtualFileSystem("flash0", new NandVirtualFile(flash0LbnStart + 1, flash1LbnStart));
     			IVirtualFileSystem outputFlash0 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash0"), false);
-	    		syncFlash0 = new SynchronizeVirtualFileSystems(inputFlash0, outputFlash0, writeLock);
+	    		syncFlash0 = new SynchronizeVirtualFileSystems("flash0", inputFlash0, outputFlash0, writeLock);
     		}
     		syncFlash0.read(stream);
 
     		if (syncFlash1 == null) {
     			IVirtualFileSystem inputFlash1 = new FatVirtualFileSystem("flash1", new NandVirtualFile(flash1LbnStart + 1, flash2LbnStart));
     			IVirtualFileSystem outputFlash1 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash1"), false);
-	    		syncFlash1 = new SynchronizeVirtualFileSystems(inputFlash1, outputFlash1, writeLock);
+	    		syncFlash1 = new SynchronizeVirtualFileSystems("flash1", inputFlash1, outputFlash1, writeLock);
     		}
     		syncFlash1.read(stream);
 
     		if (syncFlash2 == null) {
     			IVirtualFileSystem inputFlash2 = new FatVirtualFileSystem("flash2", new NandVirtualFile(flash2LbnStart + 1, flash3LbnStart));
     			IVirtualFileSystem outputFlash2 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash2"), false);
-	    		syncFlash2 = new SynchronizeVirtualFileSystems(inputFlash2, outputFlash2, writeLock);
+	    		syncFlash2 = new SynchronizeVirtualFileSystems("flash2", inputFlash2, outputFlash2, writeLock);
     		}
     		syncFlash2.read(stream);
 
@@ -350,7 +350,7 @@ public class sceNand extends HLEModule {
         		if (syncFlash3 == null) {
         			IVirtualFileSystem inputFlash3 = new FatVirtualFileSystem("flash3", new NandVirtualFile(flash3LbnStart + 1, flash4LbnStart));
         			IVirtualFileSystem outputFlash3 = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("flash3"), false);
-    	    		syncFlash3 = new SynchronizeVirtualFileSystems(inputFlash3, outputFlash3, writeLock);
+    	    		syncFlash3 = new SynchronizeVirtualFileSystems("flash3", inputFlash3, outputFlash3, writeLock);
         		}
 	    		syncFlash3.read(stream);
     		}

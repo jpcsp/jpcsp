@@ -33,6 +33,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
+import jpcsp.HLE.VFS.IVirtualCache;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
@@ -43,7 +44,7 @@ import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
 import jpcsp.util.Utilities;
 
 // See format description: https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
-public class FatVirtualFileSystem extends AbstractVirtualFileSystem {
+public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements IVirtualCache {
 	private static Logger log = FatVirtualFile.log;
 	private final String deviceName;
 	private final IVirtualFile vFile;
@@ -263,15 +264,12 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem {
 
 		int rootDirectorySectorNumber = fatSectorNumber + numberOfFats * fatSectors;
 		firstDataClusterSectorNumber = rootDirectorySectorNumber + firstDataClusterOffset;
-		rootDirectoryClusterNumber = 1;
-	}
-
-	public void invalidateCache() {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("invalidateCache for %s", this));
+		if (isFat32) {
+	    	// Cluster number of root directory start
+			rootDirectoryClusterNumber = readSectorInt32(currentSector, 44);
+		} else {
+			rootDirectoryClusterNumber = 1;
 		}
-
-		init();
 	}
 
 	private boolean isEndOfClusterChain(int clusterNumber) {
@@ -533,6 +531,26 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem {
 	public int ioGetstat(String fileName, SceIoStat stat) {
 		log.error(String.format("FatVirtualFileSystem.ioGetstat unimplemented fileName='%s'", fileName));
 		return IO_ERROR;
+	}
+
+	@Override
+	public void invalidateCachedData() {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("invalidateCachedData for %s", this));
+		}
+
+		init();
+
+		if (vFile instanceof IVirtualCache) {
+			((IVirtualCache) vFile).invalidateCachedData();
+		}
+	}
+
+	@Override
+	public void closeCachedFiles() {
+		if (vFile instanceof IVirtualCache) {
+			((IVirtualCache) vFile).closeCachedFiles();
+		}
 	}
 
     @Override

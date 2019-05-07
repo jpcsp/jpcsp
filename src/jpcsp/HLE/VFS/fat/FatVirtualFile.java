@@ -40,22 +40,24 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.VFS.IVirtualCache;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
+import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 // See format description: https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
-public abstract class FatVirtualFile implements IVirtualFile {
+public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, IState {
 	public static Logger log = Logger.getLogger("fat");
 	private static final int STATE_VERSION = 0;
     public final static int sectorSize = 512;
-    protected final static int firstClusterNumber = 2;
+	protected final static int firstClusterNumber = 2;
     protected final byte[] currentSector = new byte[sectorSize];
     private static final byte[] emptySector = new byte[sectorSize];
     private String deviceName;
@@ -1021,17 +1023,14 @@ public abstract class FatVirtualFile implements IVirtualFile {
 
 	@Override
 	public int ioClose() {
-		for (FatFileInfo fatFileInfo : fatFileInfoMap) {
-			if (fatFileInfo != null) {
-				fatFileInfo.closeVirtualFile();
-			}
-		}
+		closeCachedFiles();
 		vfs.ioExit();
 		vfs = null;
 
 		return 0;
 	}
 
+	@Override
     public void read(StateInputStream stream) throws IOException {
     	stream.readVersion(STATE_VERSION);
     	deviceName = stream.readString();
@@ -1093,6 +1092,7 @@ public abstract class FatVirtualFile implements IVirtualFile {
     	}
     }
 
+	@Override
     public void write(StateOutputStream stream) throws IOException {
     	stream.writeVersion(STATE_VERSION);
     	stream.writeString(deviceName);
@@ -1171,6 +1171,20 @@ public abstract class FatVirtualFile implements IVirtualFile {
     	int mapIndex = getFatFileInfoMapIndex(info);
     	stream.writeInt(mapIndex);
     }
+
+    @Override
+	public void invalidateCachedData() {
+    	// Nothing to do
+	}
+
+	@Override
+	public void closeCachedFiles() {
+		for (FatFileInfo fatFileInfo : fatFileInfoMap) {
+			if (fatFileInfo != null) {
+				fatFileInfo.closeVirtualFile();
+			}
+		}
+	}
 
     @Override
 	public String toString() {

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -23,7 +24,9 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperation;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoOperationTiming;
-import jpcsp.util.Utilities;
+import jpcsp.state.IState;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
 
 /**
  * Proxy all the IVirtualFile interface calls to another virtual file.
@@ -31,7 +34,7 @@ import jpcsp.util.Utilities;
  * @author gid15
  *
  */
-public abstract class AbstractProxyVirtualFile implements IVirtualFile {
+public abstract class AbstractProxyVirtualFile implements IVirtualFile, IVirtualCache, IState {
 	protected static Logger log = AbstractVirtualFileSystem.log;
 	protected IVirtualFile vFile;
 
@@ -66,7 +69,9 @@ public abstract class AbstractProxyVirtualFile implements IVirtualFile {
 
 		byte[] outputBuffer = new byte[outputLength];
 		int readLength = ioRead(outputBuffer, 0, outputLength);
-		Utilities.writeBytes(outputPointer.getAddress(), readLength, outputBuffer, 0);
+		if (readLength > 0) {
+			outputPointer.setArray(outputBuffer, readLength);
+		}
 
 		return readLength;
 	}
@@ -119,6 +124,34 @@ public abstract class AbstractProxyVirtualFile implements IVirtualFile {
 	@Override
 	public Map<IoOperation, IoOperationTiming> getTimings() {
 		return vFile.getTimings();
+	}
+
+	@Override
+	public void invalidateCachedData() {
+		if (vFile instanceof IVirtualCache) {
+			((IVirtualCache) vFile).invalidateCachedData();
+		}
+	}
+
+	@Override
+	public void closeCachedFiles() {
+		if (vFile instanceof IVirtualCache) {
+			((IVirtualCache) vFile).closeCachedFiles();
+		}
+	}
+
+	@Override
+	public void read(StateInputStream stream) throws IOException {
+		if (vFile instanceof IState) {
+			((IState) vFile).read(stream);
+		}
+	}
+
+	@Override
+	public void write(StateOutputStream stream) throws IOException {
+		if (vFile instanceof IState) {
+			((IState) vFile).write(stream);
+		}
 	}
 
 	@Override

@@ -27,9 +27,9 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.VFS.IVirtualCache;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
-import jpcsp.HLE.VFS.fat.FatVirtualFileSystem;
 import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
@@ -43,6 +43,7 @@ public class SynchronizeVirtualFileSystems implements IState {
 	private static final int STATE_VERSION = 0;
     private static final int deltaSyncDelayMillis = 1000;
     private static final int deltaSyncIntervalMillis = 100;
+    private String name;
 	private IVirtualFileSystem input;
 	private IVirtualFileSystem output;
 	private ScePspDateTime lastSyncDate;
@@ -63,7 +64,8 @@ public class SynchronizeVirtualFileSystems implements IState {
 		}
     }
 
-	public SynchronizeVirtualFileSystems(IVirtualFileSystem input, IVirtualFileSystem output, Object lock) {
+	public SynchronizeVirtualFileSystems(String name, IVirtualFileSystem input, IVirtualFileSystem output, Object lock) {
+		this.name = name;
 		this.input = input;
 		this.output = output;
 		this.lock = lock;
@@ -71,7 +73,7 @@ public class SynchronizeVirtualFileSystems implements IState {
 		lastSyncDate = now();
 
 		synchronizeThread = new SynchronizeThread();
-		synchronizeThread.setName(String.format("Synchronize Thread - %s", input));
+		synchronizeThread.setName(String.format("Synchronize Thread - %s", name));
 		synchronizeThread.setDaemon(true);
 		synchronizeThread.start();
 	}
@@ -82,7 +84,7 @@ public class SynchronizeVirtualFileSystems implements IState {
 		lastSyncDate.read(stream);
     	lastWrite = stream.readLong();
     	lastSync = stream.readLong();
-		invalidateCache();
+		invalidateCachedData();
 	}
 
 	@Override
@@ -93,9 +95,21 @@ public class SynchronizeVirtualFileSystems implements IState {
     	stream.writeLong(lastSync);
 	}
 
-	private void invalidateCache() {
-		if (input instanceof FatVirtualFileSystem) {
-			((FatVirtualFileSystem) input).invalidateCache();
+	private void invalidateCachedData() {
+		if (input instanceof IVirtualCache) {
+			((IVirtualCache) input).invalidateCachedData();
+		}
+		if (output instanceof IVirtualCache) {
+			((IVirtualCache) output).invalidateCachedData();
+		}
+	}
+
+	private void closeCachedFiles() {
+		if (input instanceof IVirtualCache) {
+			((IVirtualCache) input).closeCachedFiles();
+		}
+		if (output instanceof IVirtualCache) {
+			((IVirtualCache) output).closeCachedFiles();
 		}
 	}
 
@@ -104,7 +118,6 @@ public class SynchronizeVirtualFileSystems implements IState {
 	    	long now = Emulator.getClock().currentTimeMillis();
 	    	long millisSinceLastWrite = now - lastWrite;
 	    	if (lastSync < lastWrite && millisSinceLastWrite > deltaSyncDelayMillis) {
-	    		invalidateCache();
 	    		deltaSynchronize();
 	    		lastSync = now;
 	    	}
@@ -119,16 +132,19 @@ public class SynchronizeVirtualFileSystems implements IState {
 	}
 
 	private int deltaSynchronize() {
+		invalidateCachedData();
+		closeCachedFiles();
+
 		ScePspDateTime newLastSync = now();
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("deltaSynchronize %s start", input));
+			log.trace(String.format("deltaSynchronize %s start", name));
 		}
 
 		int result = deltaSynchronize("");
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("deltaSynchronize %s end", input));
+			log.trace(String.format("deltaSynchronize %s end", name));
 		}
 
 		// The new lastSync is the time when this sync has been started
@@ -222,7 +238,7 @@ public class SynchronizeVirtualFileSystems implements IState {
 			boolean found = false;
 			for (int j = 0; j < outputEntries.length; j++) {
 				if (sameEntryNameAndAttributes(inputEntry, outputEntries[j])) {
-					if (isModifiedSinceLastSync(inputEntry)) {
+					if (!isDirectory(inputEntry) && isModifiedSinceLastSync(inputEntry)) {
 						toBeUpdated.add(inputEntry);
 					}
 					outputEntries[j] = null;
@@ -362,13 +378,53 @@ public class SynchronizeVirtualFileSystems implements IState {
 
 		// Directory entry?
 		if (isDirectory(entry)) {
-			result = output.ioRmdir(fileName);
+			result = deleteDirectoryEntryRecursive(fileName);
 		} else {
 			result = output.ioRemove(fileName);
+
+			if (result != 0) {
+				log.error(String.format("deleteEntry could not delete '%s'", fileName));
+			}
 		}
 
+		return result;
+	}
+
+	private int deleteDirectoryEntryRecursive(String dirName) {
+		SceIoDirent [] entries = getDirectoryEntries(output, dirName);
+		if (entries == null) {
+			log.error(String.format("deleteDirectoryEntryRecursive could not delete '%s'", dirName));
+			return IO_ERROR;
+		}
+
+		int result = 0;
+		for (SceIoDirent entry : entries) {
+			String fileName = getFileName(dirName, entry);
+			if (isDirectory(entry)) {
+				result = deleteDirectoryEntryRecursive(fileName);
+			} else {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("deleteDirectoryEntryRecursive: delete file %s", fileName));
+				}
+				result = output.ioRemove(fileName);
+
+				if (result != 0) {
+					log.error(String.format("deleteDirectoryEntryRecursive could not delete '%s'", dirName));
+				}
+			}
+
+			if (result != 0) {
+				return result;
+			}
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("deleteDirectoryEntryRecursive: delete directory %s", dirName));
+		}
+		result = output.ioRmdir(dirName);
+
 		if (result != 0) {
-			log.error(String.format("deleteEntry could not delete '%s'", fileName));
+			log.error(String.format("deleteDirectoryEntryRecursive could not delete '%s'", dirName));
 		}
 
 		return result;
