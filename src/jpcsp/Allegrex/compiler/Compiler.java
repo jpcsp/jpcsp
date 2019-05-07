@@ -456,7 +456,10 @@ public class Compiler implements ICompiler {
 
                     if (isEndBlockInsn(pc, opcode, insn)) {
                     	endPc = npc;
-                    } else if (pc < endPc && insn.hasFlags(Instruction.FLAG_SYSCALL)) {
+                    } else if (pc == startAddress && insn.hasFlags(Instruction.FLAG_SYSCALL)) {
+                    	// For a block starting with a syscall instruction,
+                    	// it is not expected that the sycall will return.
+                    	// E.g. used for calling _sceKernelExitThread
                     	endPc = pc;
                     }
 
