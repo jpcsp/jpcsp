@@ -2145,17 +2145,57 @@ public class Utilities {
 			});
     }
 
+    public static boolean hasFlag(int value, int flag) {
+    	return (value & flag) != 0;
+    }
+
+    public static boolean notHasFlag(int value, int flag) {
+    	return !hasFlag(value, flag);
+    }
+
+    public static int setFlag(int value, int flag) {
+    	return value | flag;
+    }
+
+    public static int clearFlag(int value, int flag) {
+    	return value & ~flag;
+    }
+
+    public static boolean isFallingFlag(int oldValue, int newValue, int flag) {
+		return (oldValue & flag) > (newValue & flag);
+    }
+
+    public static boolean isRaisingFlag(int oldValue, int newValue, int flag) {
+		return (oldValue & flag) < (newValue & flag);
+    }
+
+    public static int getFlagFromBit(int bit) {
+    	return 1 << bit;
+    }
+
     public static boolean hasBit(int value, int bit) {
-    	return (value & (1 << bit)) != 0;
+    	return hasFlag(value, getFlagFromBit(bit));
+    }
+
+    public static boolean notHasBit(int value, int bit) {
+    	return !hasBit(value, bit);
     }
 
     public static int setBit(int value, int bit) {
-    	return value | (1 << bit);
+    	return setFlag(value, getFlagFromBit(bit));
     }
 
     public static int clearBit(int value, int bit) {
-    	return value & ~(1 << bit);
+    	return clearFlag(value, getFlagFromBit(bit));
     }
+
+    public static boolean isFallingBit(int oldValue, int newValue, int bit) {
+    	return isFallingFlag(oldValue, newValue, getFlagFromBit(bit));
+	}
+
+    public static boolean isRaisingBit(int oldValue, int newValue, int bit) {
+    	return isRaisingFlag(oldValue, newValue, getFlagFromBit(bit));
+	}
 
     public static ByteBuffer readAsByteBuffer(RandomAccessFile raf) throws IOException {
         byte[] bytes = new byte[(int) raf.length()];

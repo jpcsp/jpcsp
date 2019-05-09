@@ -31,6 +31,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.modules.memlmd;
 import jpcsp.crypto.KeyVault;
 import jpcsp.hardware.Model;
@@ -70,10 +71,10 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, 0x9C, MMIOHandlerSystemControl.getInstance());
     	addHandler(0xBC200000, 0x8, new MMIOHandlerCpuBusFrequency(0xBC200000));
     	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, MMIOHandlerInterruptMan.getProxyInstance());
-    	addHandler(0xBC500000, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500000));
-    	addHandler(0xBC500010, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500010));
-    	addHandler(0xBC500020, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500020));
-    	addHandler(0xBC500030, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500030));
+    	addHandler(0xBC500000, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500000, IntrManager.PSP_SYSTIMER0_INTR));
+    	addHandler(0xBC500010, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500010, IntrManager.PSP_SYSTIMER1_INTR));
+    	addHandler(0xBC500020, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500020, IntrManager.PSP_SYSTIMER2_INTR));
+    	addHandler(0xBC500030, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500030, IntrManager.PSP_SYSTIMER3_INTR));
     	addHandler(0xBC600000, 0x14, new MMIOHandlerSystemTime(0xBC600000));
     	addHandler(0xBC800000, 0x1D4, new MMIOHandlerDmacplus(0xBC800000));
     	addHandler(0xBC900000, 0x1F4, new MMIOHandlerDmac(0xBC900000));
@@ -82,7 +83,7 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerDdr.BASE_ADDRESS, 0x48, MMIOHandlerDdr.getInstance());
     	addHandler(MMIOHandlerNand.BASE_ADDRESS, 0x304, MMIOHandlerNand.getInstance());
     	addHandler(0xBD200000, 0x44, new MMIOHandlerMemoryStick(0xBD200000));
-    	addHandler(0xBD300000, 0x44, new MMIOHandlerWlan(0xBD300000));
+    	addHandler(MMIOHandlerWlan.BASE_ADDRESS, 0x44, MMIOHandlerWlan.getInstance());
     	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0xE50, MMIOHandlerGe.getInstance());
     	addHandler(0xBD500000, 0x94, new MMIOHandlerGeEdram(0xBD500000));
     	addHandler(0xBD600000, 0x50, new MMIOHandlerAta2(0xBD600000));
@@ -106,6 +107,7 @@ public class MMIO extends Memory {
     	addHandlerRW(0xBFC00000, 0x1000); // 4K embedded RAM
     	// The memory at 0xBFD00000 will be remapped to 0xBFC00000 after IPL execution
     	// making the original memory at 0xBFC00000 no longer accessible.
+    	// See remapMemoryAtProcessorReset().
     	addHandlerRW(0xBFD00000, 0x1000); // 4K embedded RAM
 
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS1, 0x90C, MMIOHandlerNandPage.getInstance());
