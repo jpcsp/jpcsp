@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
+import static jpcsp.util.Utilities.hasBit;
+import static jpcsp.util.Utilities.isFallingBit;
+import static jpcsp.util.Utilities.isRaisingBit;
 
 import java.io.IOException;
 
@@ -372,25 +375,11 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		}
 	}
 
-	private boolean isFalling(int oldFlag, int newFlag, int bit) {
-		int mask = 1 << bit;
-		return (oldFlag & mask) > (newFlag & mask);
-	}
-
-	private boolean isRaising(int oldFlag, int newFlag, int bit) {
-		int mask = 1 << bit;
-		return (oldFlag & mask) < (newFlag & mask);
-	}
-
-	private boolean hasBit(int value, int bit) {
-		return (value & (1 << bit)) != 0;
-	}
-
 	private void setResetDevices(int value) {
 		int oldResetDevices = resetDevices;
 		resetDevices = value;
 
-		if (isRaising(oldResetDevices, resetDevices, SYSREG_RESET_SC)) {
+		if (isRaisingBit(oldResetDevices, resetDevices, SYSREG_RESET_SC)) {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Reset main processor (SYSREG_RESET_SC)"));
 			}
@@ -398,13 +387,13 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 			Emulator.getProcessor().triggerReset();
 			throw new ResetException();
 		}
-		if (isFalling(oldResetDevices, resetDevices, SYSREG_RESET_ME)) {
+		if (isFallingBit(oldResetDevices, resetDevices, SYSREG_RESET_ME)) {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Reset ME processor (SYSREG_RESET_ME)"));
 			}
 			MEProcessor.getInstance().triggerReset();
 		}
-		if (isFalling(oldResetDevices, resetDevices, SYSREG_RESET_USB)) {
+		if (isFallingBit(oldResetDevices, resetDevices, SYSREG_RESET_USB)) {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Reset USB (SYSREG_RESET_USB)"));
 			}
@@ -441,16 +430,16 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		mask &= SYSREG_USBMS_USB_INTERRUPT_MASK | SYSREG_USBMS_MS0_INTERRUPT_MASK | SYSREG_USBMS_MS1_INTERRUPT_MASK;
 		usbAndMemoryStick &= ~mask;
 
-		if (isFalling(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT1)) {
+		if (isFallingBit(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT1)) {
 			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_58);
 		}
-		if (isFalling(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT2)) {
+		if (isFallingBit(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT2)) {
 			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_59);
 		}
-		if (isFalling(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT3)) {
+		if (isFallingBit(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT3)) {
 			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_57);
 		}
-		if (isFalling(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT4)) {
+		if (isFallingBit(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT4)) {
 			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_56);
 		}
 	}

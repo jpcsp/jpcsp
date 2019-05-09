@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 
 import jpcsp.Emulator;
-import jpcsp.memory.IntArrayMemory;
 
 public class StateInputStream extends ObjectInputStream {
 	public StateInputStream(InputStream in) throws IOException {
@@ -103,14 +102,6 @@ public class StateInputStream extends ObjectInputStream {
 		} catch (ClassNotFoundException e) {
 			Emulator.log.error("readString", e);
 			return null;
-		}
-	}
-
-	public void readIntArrayMemory(IntArrayMemory mem) throws IOException {
-		int size = mem.getSize();
-		for (int i = 0; i < size; i++) {
-			byte b = readByte();
-			mem.write8(i, b);
 		}
 	}
 }

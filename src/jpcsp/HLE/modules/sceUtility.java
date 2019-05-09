@@ -2385,7 +2385,7 @@ public class sceUtility extends HLEModule {
             		if (log.isDebugEnabled()) {
             			log.debug(String.format("sceNp_02CA8CAA Address 0x%08X", address));
             		}
-            		mem.write64(address, Modules.sceRtcModule.hleGetCurrentTick());
+            		mem.write64(address, sceRtc.hleGetCurrentTick());
             	}
             }
 

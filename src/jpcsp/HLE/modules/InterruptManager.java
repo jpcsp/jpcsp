@@ -57,6 +57,7 @@ public class InterruptManager extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x8A389411, version = 150)
+	@HLEFunction(nid = 0x4023E1A7, version = 660)
 	public int sceKernelDisableSubIntr(int intrNumber, int subIntrNumber) {
 		return Managers.intr.sceKernelDisableSubIntr(intrNumber, subIntrNumber);
 	}
@@ -112,12 +113,6 @@ public class InterruptManager extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x0C5F7AE3, version = 150)
 	public int sceKernelCallSubIntrHandler(int intrNum, int subIntrNum, int handlerArg0, int handlerArg2) {
-		return 0;
-	}
-
-	@HLEUnimplemented
-	@HLEFunction(nid = 0x4023E1A7, version = 150)
-	public int sceKernelDisableSubIntr() {
 		return 0;
 	}
 

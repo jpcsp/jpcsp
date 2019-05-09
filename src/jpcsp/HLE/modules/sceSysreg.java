@@ -110,7 +110,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x176E590A, version = 150)
-    public int sceSysregMsifIoDisable() {
+    public int sceSysregMsifIoDisable(int memoryStickInterfaceNumber) {
     	return 0;
     }
 
@@ -152,7 +152,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x1E111B75, version = 150)
-    public int sceSysregMsifClkDisable() {
+    public int sceSysregMsifClkDisable(int memoryStickInterfaceNumber) {
     	return 0;
     }
 
@@ -236,7 +236,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x370419AD, version = 150)
-    public int sceSysregMsifResetEnable() {
+    public int sceSysregMsifResetEnable(int memoryStickInterfaceNumber) {
     	return 0;
     }
 
@@ -321,7 +321,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x48124AFE, version = 150)
-    public int sceSysregMsifClkSelect() {
+    public int sceSysregMsifClkSelect(int memoryStickInterfaceNumber, int unknown) {
     	return 0;
     }
 
@@ -363,7 +363,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x4DB0C55D, version = 150)
-    public int sceSysregMsifClkEnable() {
+    public int sceSysregMsifClkEnable(int memoryStickInterfaceNumber) {
     	return 0;
     }
 
@@ -381,7 +381,9 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x518E3F29, version = 150)
-    public int sceSysregMsifIoEnable() {
+    public int sceSysregMsifIoEnable(int memoryStickInterfaceNumber) {
+    	// memoryStickInterfaceNumber == 0: MemoryStick
+    	// memoryStickInterfaceNumber == 1: WLAN
     	return 0;
     }
 
@@ -551,7 +553,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7DD0CBEE, version = 150)
-    public int sceSysregMsifResetDisable() {
+    public int sceSysregMsifResetDisable(int memoryStickInterfaceNumber) {
     	return 0;
     }
 
@@ -653,7 +655,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x93F96D8F, version = 150)
-    public int sceSysregMsifBusClockEnable() {
+    public int sceSysregMsifBusClockEnable(int memoryStickInterfaceNumber) {
     	return 0;
     }
 
@@ -875,7 +877,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD3E8F2AF, version = 150)
-    public int sceSysregMsifDelaySelect() {
+    public int sceSysregMsifDelaySelect(int memoryStickInterfaceNumber, int unkown) {
     	return 0;
     }
 
@@ -941,7 +943,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xF288E58E, version = 150)
-    public int sceSysregMsifBusClockDisable() {
+    public int sceSysregMsifBusClockDisable(int memoryStickInterfaceNumber) {
     	return 0;
     }
 
