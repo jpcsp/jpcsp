@@ -193,17 +193,20 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 		readSize = stream.readInt();
 		writeAddress = stream.readInt();
 		writeSize = stream.readInt();
+		tpcExSetCmdIndex = stream.readInt();
 		cmd = stream.readInt();
 		oobLength = stream.readInt();
 		startBlock = stream.readInt();
 		oobIndex = stream.readInt();
-		stream.readInts(pageBuffer);
+		pageBufferMemory.read(stream);
+		msproAttributeMemory.read(stream);
 		pageLba = stream.readInt();
 		numberOfPages = stream.readInt();
 		pageDataIndex = stream.readInt();
 		pageIndex = stream.readInt();
 		dataIndex = stream.readInt();
 		commandDataIndex = stream.readInt();
+		PAGES_PER_BLOCK = stream.readInt();
 		dmaTpcCode = stream.readInt();
 		super.read(stream);
 	}
@@ -223,17 +226,20 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 		stream.writeInt(readSize);
 		stream.writeInt(writeAddress);
 		stream.writeInt(writeSize);
+		stream.writeInt(tpcExSetCmdIndex);
 		stream.writeInt(cmd);
 		stream.writeInt(oobLength);
 		stream.writeInt(startBlock);
 		stream.writeInt(oobIndex);
-		stream.writeInts(pageBuffer);
+		pageBufferMemory.write(stream);
+		msproAttributeMemory.write(stream);
 		stream.writeInt(pageLba);
 		stream.writeInt(numberOfPages);
 		stream.writeInt(pageDataIndex);
 		stream.writeInt(pageIndex);
 		stream.writeInt(dataIndex);
 		stream.writeInt(commandDataIndex);
+		stream.writeInt(PAGES_PER_BLOCK);
 		stream.writeInt(dmaTpcCode);
 		super.write(stream);
 	}
