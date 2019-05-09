@@ -113,6 +113,8 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_LED_WLAN  = 1; // W-LAN LED
     public static final int PSP_SYSCON_LED_POWER = 2; // Power LED
     public static final int PSP_SYSCON_LED_BT    = 3; // Bluetooth LED (only PSP GO)
+    public static final int PSP_SYSCON_DEVICE_UMD = 2;
+    public static final int PSP_SYSCON_DEVICE_WLAN = 4;
     private final int scratchPad[] = new int[32];
     private int alarm;
 
@@ -128,7 +130,7 @@ public class sceSyscon extends HLEModule {
 
 		// 5-bytes value at offset 16, used to initialize the clock.
 		// Set this value to 0 to force the clock initialization at boot time.
-		long scratchPad16 = Modules.sceRtcModule.hleGetCurrentTick() >> 19;
+		long scratchPad16 = sceRtc.hleGetCurrentTick() >> 19;
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Initializing scratchPad16=0x%X", scratchPad16));
 		}
@@ -399,14 +401,14 @@ public class sceSyscon extends HLEModule {
     /**
      * Reset the device.
      *
-     * @param reset The reset value, passed to the syscon.
-     * @param mode The resetting mode (?).
+     * @param device The device identifier, passed to the syscon.
+     * @param reset The resetting mode ([0..1]).
      * 
      * @return 0 on success.
      */
     @HLEUnimplemented
 	@HLEFunction(nid = 0x8CBC7987, version = 150)
-	public int sceSysconResetDevice(int reset, int mode) {
+	public int sceSysconResetDevice(int device, int reset) {
     	return 0;
 	}
 

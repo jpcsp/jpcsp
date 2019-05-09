@@ -157,6 +157,8 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	//
 	public static final int WLAN_DDR_FLUSH = 0;
 	//
+	private static MMIOHandlerWlan instance;
+	public static final int BASE_ADDRESS = 0xBD300000;
 	private final IntArrayMemory attributesMemory = new IntArrayMemory(new int[0x40 / 4]);
 	private final IntArrayMemory commandPacket = new IntArrayMemory(new int[0xC00 / 4]);
 	private final TPointer commandPacketPtr = commandPacket.getPointer();
@@ -189,7 +191,15 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
     private INetworkAdapter networkAdapter;
     private boolean networkAdapterInited;
 
-	public MMIOHandlerWlan(int baseAddress) {
+    public static MMIOHandlerWlan getInstance() {
+    	if (instance == null) {
+    		instance = new MMIOHandlerWlan(BASE_ADDRESS);
+    	}
+
+    	return instance;
+    }
+
+    private MMIOHandlerWlan(int baseAddress) {
 		super(baseAddress);
 
 		log = sceWlan.log;
@@ -206,10 +216,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		adhocStarted = stream.readBoolean();
 		adhocJoined = stream.readBoolean();
 		adhocSsid = stream.readString();
-		stream.readIntArrayMemory(attributesMemory);
-		stream.readIntArrayMemory(commandPacket);
-		stream.readIntArrayMemory(sendDataPacket);
-		stream.readIntArrayMemory(receiveDataPacket);
+		attributesMemory.read(stream);
+		commandPacket.read(stream);
+		sendDataPacket.read(stream);
+		receiveDataPacket.read(stream);
 		super.read(stream);
 	}
 
@@ -222,15 +232,15 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		stream.writeBoolean(adhocStarted);
 		stream.writeBoolean(adhocJoined);
 		stream.writeString(adhocSsid);
-		stream.writeIntArrayMemory(attributesMemory);
-		stream.writeIntArrayMemory(commandPacket);
-		stream.writeIntArrayMemory(sendDataPacket);
-		stream.writeIntArrayMemory(receiveDataPacket);
+		attributesMemory.write(stream);
+		commandPacket.write(stream);
+		sendDataPacket.write(stream);
+		receiveDataPacket.write(stream);
 		super.write(stream);
 	}
 
 	@Override
-	protected void reset() {
+	public void reset() {
 		super.reset();
 
 		// Possible values:

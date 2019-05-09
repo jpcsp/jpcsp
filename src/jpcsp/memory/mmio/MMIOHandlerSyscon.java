@@ -54,6 +54,8 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_SEND_SETPARAM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_ALARM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_CLOCK;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_SCRATCHPAD;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_DEVICE_UMD;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_DEVICE_WLAN;
 import static jpcsp.HLE.modules.sceSyscon.getSysconCmdName;
 import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_SYSCON_END_CMD;
 
@@ -246,14 +248,24 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 			case PSP_SYSCON_CMD_RESET_DEVICE:
 				int device = data[PSP_SYSCON_TX_DATA] & 0x7F;
 				boolean reset = (data[PSP_SYSCON_TX_DATA] & 0x80) != 0;
-				if (log.isDebugEnabled()) {
-					String deviceName = "Unknown";
-					if (device == 2) {
-						deviceName = "UMD Drive";
-					} else if (device == 4) {
-						deviceName = "WLAN";
-					}
-					log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(%s), reset=%b", device, deviceName, reset));
+				switch (device) {
+					case PSP_SYSCON_DEVICE_UMD:
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(UMD Drive), reset=%b", device, reset));
+						}
+						break;
+					case PSP_SYSCON_DEVICE_WLAN:
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(WLAN), reset=%b", device, reset));
+						}
+
+						if (reset) {
+							MMIOHandlerWlan.getInstance().reset();
+						}
+						break;
+					default:
+						log.error(String.format("PSP_SYSCON_CMD_RESET_DEVICE unimplemented device=0x%X, reset=%b", device, reset));
+						break;
 				}
 				break;
 			case PSP_SYSCON_CMD_GET_DIGITAL_KEY:
