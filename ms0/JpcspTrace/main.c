@@ -992,6 +992,14 @@ void patchSyscalls(char *filePath) {
 			char *fileName = param3;
 
 			dumpMemory(startAddress, length, fileName);
+		} else if (strcmp(name, "write32") == 0) {
+			u32 address = parseHex(param1);
+			u32 value = parseHex(param2);
+			SW(value, address);
+		} else if (strcmp(name, "read32") == 0) {
+			u32 address = parseHex(param1);
+			u32 value = LW(address);
+			printLogHH("read32(", address, ")=", value, "\n");
 		} else if (strcmp(name, "DecryptMeimg") == 0) {
 			char *fromFileName = param1;
 			char *toFileName = param2;

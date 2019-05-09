@@ -84,6 +84,12 @@ The format of the file JpcspTrace.config is the following:
     DecryptMeimg flash0:/kd/resource/meimg.img ms0:/meimg.img
   The result file ms0:/meimg.img need then to be copied to Jpcsp
   flash0/kd/resource/meimg.img
+- a 32-bit value can be read/written to memory using the commands
+    write32 0xNNNNNNNN 0xNNN
+    read32 0xNNNNNNNN
+  where the first parameter is the address and the second parameter
+  for write32 is the value to be written.
+  This can for example be used to test simple MMIO cases.
 - one syscall to be traced is described in a single line:
 	<syscall-name> <nid> <number-of-parameters> <parameter-types>
 
