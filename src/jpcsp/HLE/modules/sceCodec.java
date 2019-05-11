@@ -134,7 +134,7 @@ public class sceCodec extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x376399B6, version = 660)
-    public int sceCodec_driver_376399B6() {
+    public int sceCodec_driver_376399B6(boolean audioBusy) {
     	return 0;
     }
 
