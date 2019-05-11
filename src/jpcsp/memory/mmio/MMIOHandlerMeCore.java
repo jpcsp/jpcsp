@@ -202,7 +202,11 @@ public class MMIOHandlerMeCore {
 				if (log.isTraceEnabled()) {
 					log.trace(String.format("ME_CMD_AT3P_DECODE inputBuffer: %s", Utilities.getMemoryDump(inputBuffer, inputBufferSize)));
 				}
-				result = audioCodec.decode(meMemory, inputBuffer, inputBufferSize, meMemory, workArea.getValue32(32));
+				if (audioCodec != null) {
+					result = audioCodec.decode(meMemory, inputBuffer, inputBufferSize, meMemory, workArea.getValue32(32));
+				} else {
+					result = inputBufferSize;
+				}
 				setResult(result);
 				if (log.isDebugEnabled()) {
 					if (result < 0) {
