@@ -582,7 +582,7 @@ public class Controller {
             Audio.setVolumeDown();
         } else if (isSpecialKeyPressed(keyCode.VOLPLUS)) {
             Audio.setVolumeUp();
-        } else if (isSpecialKeyPressed(keyCode.HOME)) {
+        } else if (isSpecialKeyPressed(keyCode.HOME) && !Emulator.getMainGUI().isRunningReboot()) {
             Buttons &= ~PSP_CTRL_HOME;    // Release the HOME button to avoid dialog spamming.
             int opt = JOptionPane.showOptionDialog(null, "Exit the current application?", "HOME", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
             if (opt == JOptionPane.YES_OPTION) {
