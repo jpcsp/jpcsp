@@ -123,6 +123,10 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 		}
 	}
 
+	public boolean hasUmdInserted() {
+		return vFile != null;
+	}
+
 	public void switchUmd(String fileName) throws IOException {
 		closeFile();
 

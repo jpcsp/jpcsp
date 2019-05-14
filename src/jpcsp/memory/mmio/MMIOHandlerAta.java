@@ -71,7 +71,8 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 	public static final int ATA_CMD_OP_UNKNOWN_FC = 0xFC;
 	public static final int ATA_INQUIRY_PERIPHERAL_DEVICE_TYPE_CDROM = 0x05;
 	public static final int ATA_SENSE_KEY_NO_SENSE = 0x0;
-	public static final int ATA_SENSE_KEY_UNKNOWN9 = 0x9;
+	public static final int ATA_SENSE_KEY_NOT_READY = 0x2;
+	public static final int ATA_SENSE_ASC_MEDIUM_NOT_PRESENT = 0x3A;
 	public static final int ATA_PAGE_CODE_POWER_CONDITION = 0x1A;
 	private final int[] data = new int[256];
 	private int dataIndex;
@@ -460,23 +461,24 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 				}
 
 				prepareDataInit(allocationLength);
-				boolean mediaPresent = true;
+				boolean mediumPresent = MMIOHandlerUmd.getInstance().hasUmdInserted();
 				prepareData8(0x80); // Valid bit, no Error Code
 				prepareData8(0x00); // Reserved
-				if (mediaPresent) {
+				if (mediumPresent) {
 					prepareData8(ATA_SENSE_KEY_NO_SENSE); // Successful command
 				} else {
-					prepareData8(ATA_SENSE_KEY_UNKNOWN9); // Media not present
+					prepareData8(ATA_SENSE_KEY_NOT_READY); // Medium not present
 				}
 				prepareData32(0); // Information
 				prepareData8(10); // Additional Sense Length
 				prepareData32(0); // Command Specific Information
-				if (mediaPresent) {
+				if (mediumPresent) {
 					prepareData8(0); // Additional Sense Code
+					prepareData8(0); // Additional Sense Code Qualifier
 				} else {
-					prepareData8(5); // Additional Sense Code: media not present
+					prepareData8(ATA_SENSE_ASC_MEDIUM_NOT_PRESENT); // Additional Sense Code: medium not present
+					prepareData8(0x02); // Additional Sense Code Qualifier
 				}
-				prepareData8(0); // Additional Sense Code Qualifier
 				prepareData8(0); // Field Replaceable Unit Code
 				prepareData8(0); // SKSV / Sense Key Specific
 				prepareData8(0); // Sense Key Specific
