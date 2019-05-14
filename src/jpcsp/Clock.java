@@ -68,6 +68,10 @@ public class Clock implements IState {
 		isPaused = true;
 	}
 
+	public boolean isPaused() {
+		return isPaused;
+	}
+
 	public long nanoTime() {
 		long now;
 

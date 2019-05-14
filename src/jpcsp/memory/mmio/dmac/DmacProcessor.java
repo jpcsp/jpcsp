@@ -29,7 +29,9 @@ public class DmacProcessor implements IState {
 	// Dmac STATUS flags:
 	public static final int DMAC_STATUS_IN_PROGRESS                = 0x00000001;
 	public static final int DMAC_STATUS_DDR_VALUE                  = 0x000000F0;
+	public static final int DMAC_STATUS_DDR_VALUE_SHIFT            = 4;
 	public static final int DMAC_STATUS_REQUIRES_DDR               = 0x00000100;
+	public static final int DMAC_STATUS_UNKNOWN                    = 0xFFFFFE0E;
 	// Dmac ATTRIBUTES flags:
 	public static final int DMAC_ATTRIBUTES_LENGTH                 = 0x00000FFF;
 	//                                                               0x00007000

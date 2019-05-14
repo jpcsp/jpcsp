@@ -28,14 +28,19 @@ import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_SRC_STEP_SHIF
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_TRIGGER_INTERRUPT;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_UNKNOWN;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_DDR_VALUE;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_DDR_VALUE_SHIFT;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_REQUIRES_DDR;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_UNKNOWN;
 
 import java.util.concurrent.Semaphore;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Clock;
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.memory.mmio.MMIOHandlerAudio;
 import jpcsp.memory.mmio.MMIOHandlerDdr;
 import jpcsp.memory.mmio.MMIOHandlerDmac;
 
@@ -174,6 +179,50 @@ public class DmacThread extends Thread {
 		}
 	}
 
+	private void dmacMemcpyAudio(int dst, int src, int dstLength, int srcLength, int dstStepLength, int srcStepLength, boolean dstIncrement, boolean srcIncrement) {
+		if (dstLength != srcLength || dstIncrement || !srcIncrement || srcStepLength != 16) {
+			log.error(String.format("dmacMemcpyAudio unimplemented dst=0x%08X, src=0x%08X, dstLength=0x%X, srcLength=0x%X, dstStepLength=%d, srcStepLength=%d, dstIncrement=%b, srcIncrement=%b", dst, src, dstLength, srcLength, dstStepLength, srcStepLength, dstIncrement, srcIncrement));
+			return;
+		}
+
+		final MMIOHandlerAudio mmioHandlerAudio = MMIOHandlerAudio.getInstance();
+		mmioHandlerAudio.onStartDmacMemcpy(dst);
+
+		// The frequency is giving the number of audio samples that can
+		// be written per second.
+		final int frequency = mmioHandlerAudio.getDmacFrequency();
+		int length = srcLength;
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("dmacMemcpyAudio dst=0x%08X, src=0x%08X, length=0x%X, frequency=%d", dst, src, length, frequency));
+		}
+
+		final Clock clock = Emulator.getClock();
+		// Use nano seconds because micro seconds would not have enough accuracy
+		final long durationStep = 1000000000L / frequency;
+		long frequencyTime = clock.nanoTime();
+		long now;
+
+		while (length > 0) {
+			memDst.write32(dst, memSrc.read32(src));
+			src += 4;
+			length -= 4;
+			frequencyTime += durationStep;
+
+			if (length > 0) {
+				// Active waiting because using Thread.sleep would be too inaccurate
+				do {
+					now = clock.nanoTime();
+
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("dmacMemcpyAudio frequencyTime=0x%X, now=0x%X, Clock paused=%b", frequencyTime, now, clock.isPaused()));
+					}
+				} while (now < frequencyTime && !clock.isPaused());
+			}
+		}
+
+		mmioHandlerAudio.onFinishDmacMemcpy(dst);
+	}
+
 	private boolean dmacMemcpyStep() {
 		if (abortJob) {
 			return false;
@@ -198,11 +247,6 @@ public class DmacThread extends Thread {
 			log.error(String.format("dmacMemcpy with unknown dstStep=%d", dstStep));
 			return false;
 		}
-
-//		if (srcStepLength != dstStepLength) {
-//			log.error(String.format("dmacMemcpy with different steps: srcStepLength=%d, dstSteplength=%d, dst=0x%08X, src=0x%08X, attr=0x%X, dstLength=0x%X(shift=%d), srcLength=0x%X(shift=%d)", srcStepLength, dstStepLength, dst, src, attributes, length << dstLengthShift, dstLengthShift, length << srcLengthShift, srcLengthShift));
-//			return false;
-//		}
 
 		// TODO Not sure about the real meaning of this attribute flag...
 		if ((attributes & DMAC_ATTRIBUTES_UNKNOWN) != 0) {
@@ -241,6 +285,11 @@ public class DmacThread extends Thread {
 			}
 
 			memSrc.memcpy(normalizedDst, normalizedSrc, srcLength);
+		} else if ((status & (DMAC_STATUS_UNKNOWN | DMAC_STATUS_REQUIRES_DDR | DMAC_STATUS_DDR_VALUE)) == (0x0100C800 | DMAC_STATUS_REQUIRES_DDR | (4 << DMAC_STATUS_DDR_VALUE_SHIFT))) {
+			// Not sure about the exact meaning of these unknown status flags,
+			// but this combination is only used for the audio output and
+			// requires an exact timing.
+			dmacMemcpyAudio(normalizedDst, normalizedSrc, dstLength, srcLength, dstStepLength, srcStepLength, dstIncrement, srcIncrement);
 		} else {
 			dmacMemcpy(normalizedDst, normalizedSrc, dstLength, srcLength, dstStepLength, srcStepLength, dstIncrement, srcIncrement);
 		}
@@ -311,7 +360,7 @@ public class DmacThread extends Thread {
 		int ddrValue = -1;
 
 		if ((status & DMAC_STATUS_REQUIRES_DDR) != 0) {
-			ddrValue = (status & DMAC_STATUS_DDR_VALUE) >> 4;
+			ddrValue = (status & DMAC_STATUS_DDR_VALUE) >> DMAC_STATUS_DDR_VALUE_SHIFT;
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("dmacMemcpy requiring a call to sceDdrFlush(0x%X), dst=0x%08X, src=0x%08X, attr=0x%08X, next=0x%08X, status=0x%X", ddrValue, dst, src, attributes, next, status));
 			}

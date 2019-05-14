@@ -17,16 +17,23 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_AUDIO_INTR;
+import static jpcsp.util.Utilities.clearBit;
+import static jpcsp.util.Utilities.hasBit;
+import static jpcsp.util.Utilities.isFallingBit;
+import static jpcsp.util.Utilities.notHasBit;
+import static jpcsp.util.Utilities.setBit;
 
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.modules.sceAudio;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.mmio.audio.AudioLine;
+import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
@@ -34,6 +41,7 @@ import jpcsp.util.Utilities;
 public class MMIOHandlerAudio extends MMIOHandlerBase {
 	public static Logger log = sceAudio.log;
 	private static final int STATE_VERSION = 0;
+	public static final int BASE_ADDRESS = 0xBE000000;
 	public static final int AUDIO_HW_FREQUENCY_8000 = 0x01;
 	public static final int AUDIO_HW_FREQUENCY_11025 = 0x02;
 	public static final int AUDIO_HW_FREQUENCY_12000 = 0x04;
@@ -43,23 +51,144 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	public static final int AUDIO_HW_FREQUENCY_32000 = 0x40;
 	public static final int AUDIO_HW_FREQUENCY_44100 = 0x80;
 	public static final int AUDIO_HW_FREQUENCY_48000 = 0x100;
+	// Based on tests performed on a real PSP,
+	// an audio interrupt is triggered as soon as no audio
+	// data is written during approximately 560 milliseconds
+	private final static int INTERRUPT_DELAY_SINCE_LAST_WRITE = 560;
+	// Based on tests performed on a real PSP,
+	// the Dmac can write approximately 179000 audio samples per second
+	private final static int DMAC_SAMPLES_FREQUENCY = 179000;
+	private static MMIOHandlerAudio instance;
 	private int busy;
 	private int interrupt;
 	private int inProgress;
 	private int flags10;
 	private int flags20;
-	private int flags24;
+	private int interruptEnabled;
 	private int flags2C;
 	private int volume;
 	private int frequency0;
 	private int frequency1;
 	private int frequencyFlags;
 	private int hardwareFrequency;
-	private final int audioData0[] = new int[24 + (256/4)];
-	private final int audioData1[] = new int[24 + (256/4)];
-	private int audioDataIndex0;
-	private int audioDataIndex1;
-	private final AudioLine audioLines[] = new AudioLine[2];
+	private final AudioLineState audioLineStates[] = new AudioLineState[2];
+
+	private class AudioLineState implements IState {
+		private static final int STATE_VERSION = 0;
+		private final int lineNumber;
+		private AudioLine audioLine = new AudioLine();
+		private final int data[] = new int[24 + (256/4)];
+		private int dataIndex;
+		private long lastWrite;
+		private boolean dmacMemcpyInProgress;
+
+		public AudioLineState(int lineNumber) {
+			this.lineNumber = lineNumber;
+			lastWrite = now();
+		}
+
+		@Override
+		public synchronized void read(StateInputStream stream) throws IOException {
+			stream.readVersion(STATE_VERSION);
+			audioLine.read(stream);
+			stream.readInts(data);
+			dataIndex = stream.readInt();
+			lastWrite = stream.readLong();
+		}
+
+		@Override
+		public synchronized void write(StateOutputStream stream) throws IOException {
+			stream.writeVersion(STATE_VERSION);
+			audioLine.write(stream);
+			stream.writeInts(data);
+			stream.writeInt(dataIndex);
+			stream.writeLong(lastWrite);
+		}
+
+		public synchronized void poll() {
+			audioLine.poll();
+		}
+
+		public synchronized void checkAudioInterrupt(long now) {
+			if (!dmacMemcpyInProgress && hasBit(interruptEnabled, lineNumber)) {
+				if (now - lastWrite > INTERRUPT_DELAY_SINCE_LAST_WRITE) {
+					setInterruptBit(lineNumber);
+				}
+			}
+		}
+
+		private synchronized void sendAudioData(int value) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("sendAudioData value=0x%08X, %s", value, toString()));
+			}
+
+			if (Audio.isMuted()) {
+				value = 0;
+			}
+
+			data[dataIndex++] = value;
+
+			if (dataIndex >= data.length) {
+				audioLine.writeAudioData(data, 0, dataIndex);
+
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("sendAudioData line#%d (%d waiting buffers):", lineNumber, audioLine.getWaitingBuffers()));
+					StringBuilder sb = new StringBuilder();
+					for (int i = 0; i < data.length; i++) {
+						if (sb.length() > 0) {
+							sb.append(" ");
+						} else {
+							sb.append("    ");
+						}
+
+						sb.append(String.format("0x%04X 0x%04X", data[i] & 0xFFFF, data[i] >>> 16));
+
+						if (((i + 1) % 4) == 0) {
+							log.trace(sb.toString());
+							sb.setLength(0);
+						}
+					}
+				}
+				dataIndex = 0;
+			}
+
+			// This must be done as the last step to not include the time consumed in this method itself
+			lastWrite = now();
+		}
+
+		public synchronized void startAudio() {
+			dataIndex = 0;
+		}
+
+		public synchronized void setFrequency(int frequency) {
+			audioLine.setFrequency(frequency);
+		}
+
+		public synchronized void setVolume(int volume) {
+			audioLine.setVolume(volume);
+		}
+
+		public synchronized void onStartDmacMemcpy() {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("onStartDmacMemcpy %s", toString()));
+			}
+			dmacMemcpyInProgress = true;
+		}
+
+		public synchronized void onFinishDmacMemcpy() {
+			lastWrite = now();
+			dmacMemcpyInProgress = false;
+
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("onFinishDmacMemcpy %s", toString()));
+			}
+		}
+
+		@Override
+		public String toString() {
+			return String.format("line#%d, dataIndex=0x%X, lastWrite since %d milliseconds, dmacMemcpyInProgress=%b", lineNumber, dataIndex, now() - lastWrite, dmacMemcpyInProgress);
+		}
+	}
 
 	private class PollAudioLinesThread extends Thread {
 		@Override
@@ -69,8 +198,8 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			boolean exit = false;
 			while (!exit) {
 				try {
-			    	for (int i = 0; i < audioLines.length; i++) {
-			    		audioLines[i].poll();
+			    	for (int i = 0; i < audioLineStates.length; i++) {
+			    		audioLineStates[i].poll();
 					}
 
 			    	Utilities.sleep(10, 0);
@@ -81,17 +210,42 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		}
 	}
 
-	public MMIOHandlerAudio(int baseAddress) {
-		super(baseAddress);
+	private class CheckAudioInterruptThread extends Thread {
+		@Override
+		public void run() {
+			RuntimeContext.setLog4jMDC();
 
-    	for (int i = 0; i < audioLines.length; i++) {
-    		audioLines[i] = new AudioLine();
+			while (true) {
+				checkAudioInterrupt();
+				Utilities.sleep(INTERRUPT_DELAY_SINCE_LAST_WRITE);
+			}
+		}
+	}
+
+	public static MMIOHandlerAudio getInstance() {
+		if (instance == null) {
+			instance = new MMIOHandlerAudio(BASE_ADDRESS);
 		}
 
-    	PollAudioLinesThread thread = new PollAudioLinesThread();
-    	thread.setDaemon(true);
-    	thread.setName("Poll Audio Lines Thread");
-    	thread.start();
+		return instance;
+	}
+
+	private MMIOHandlerAudio(int baseAddress) {
+		super(baseAddress);
+
+    	for (int i = 0; i < audioLineStates.length; i++) {
+    		audioLineStates[i] = new AudioLineState(i);
+		}
+
+    	PollAudioLinesThread pollAudioLinesThread = new PollAudioLinesThread();
+    	pollAudioLinesThread.setDaemon(true);
+    	pollAudioLinesThread.setName("Poll Audio Lines Thread");
+    	pollAudioLinesThread.start();
+
+    	CheckAudioInterruptThread checkAudioInterruptThread = new CheckAudioInterruptThread();
+    	checkAudioInterruptThread.setDaemon(true);
+    	checkAudioInterruptThread.setName("Check Audio Interrupt Thread");
+    	checkAudioInterruptThread.start();
 	}
 
 	@Override
@@ -102,19 +256,15 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		inProgress = stream.readInt();
 		flags10 = stream.readInt();
 		flags20 = stream.readInt();
-		flags24 = stream.readInt();
+		interruptEnabled = stream.readInt();
 		flags2C = stream.readInt();
 		volume = stream.readInt();
 		frequency0 = stream.readInt();
 		frequency1 = stream.readInt();
 		frequencyFlags = stream.readInt();
 		hardwareFrequency = stream.readInt();
-		stream.readInts(audioData0);
-		stream.readInts(audioData1);
-		audioDataIndex0 = stream.readInt();
-		audioDataIndex1 = stream.readInt();
-		for (int i = 0; i < audioLines.length; i++) {
-			audioLines[i].read(stream);
+		for (int i = 0; i < audioLineStates.length; i++) {
+			audioLineStates[i].read(stream);
 		}
 		super.read(stream);
 	}
@@ -127,96 +277,93 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		stream.writeInt(inProgress);
 		stream.writeInt(flags10);
 		stream.writeInt(flags20);
-		stream.writeInt(flags24);
+		stream.writeInt(interruptEnabled);
 		stream.writeInt(flags2C);
 		stream.writeInt(volume);
 		stream.writeInt(frequency0);
 		stream.writeInt(frequency1);
 		stream.writeInt(frequencyFlags);
 		stream.writeInt(hardwareFrequency);
-		stream.writeInts(audioData0);
-		stream.writeInts(audioData1);
-		stream.writeInt(audioDataIndex0);
-		stream.writeInt(audioDataIndex1);
-		for (int i = 0; i < audioLines.length; i++) {
-			audioLines[i].write(stream);
+		for (int i = 0; i < audioLineStates.length; i++) {
+			audioLineStates[i].write(stream);
 		}
 		super.write(stream);
 	}
 
-	private void setFlags24(int flags24) {
-		this.flags24 = flags24;
-		interrupt &= flags24;
+	public int getDmacFrequency() {
+		return DMAC_SAMPLES_FREQUENCY;
+	}
+
+	public void onStartDmacMemcpy(int address) {
+		switch (address - baseAddress) {
+			case 0x60: audioLineStates[0].onStartDmacMemcpy(); break;
+			case 0x70: audioLineStates[1].onStartDmacMemcpy(); break;
+			default:
+				log.error(String.format("onStartDmacMemcpy unimplemented address=0x%08X", address));
+				break;
+		}
+	}
+
+	public void onFinishDmacMemcpy(int address) {
+		switch (address - baseAddress) {
+			case 0x60: audioLineStates[0].onFinishDmacMemcpy(); break;
+			case 0x70: audioLineStates[1].onFinishDmacMemcpy(); break;
+			default:
+				log.error(String.format("onFinishDmacMemcpy unimplemented address=0x%08X", address));
+				break;
+		}
+	}
+
+	private static long now() {
+		return Emulator.getClock().microTime();
+	}
+
+	private void setInterruptBit(int bit) {
+		interrupt = setBit(interrupt, bit);
+
+		checkInterrupt();
+	}
+
+	private void setInterruptEnabled(int interruptEnabled) {
+		this.interruptEnabled = interruptEnabled;
+		interrupt &= interruptEnabled;
 
 		checkInterrupt();
 	}
 
 	private void checkInterrupt() {
 		if (interrupt != 0) {
+			if (log.isDebugEnabled()) {
+				log.debug("Triggering interrupt PSP_AUDIO_INTR");
+			}
+
 			RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_AUDIO_INTR);
 		} else {
 			RuntimeContextLLE.clearInterrupt(getProcessor(), PSP_AUDIO_INTR);
 		}
 	}
 
-	private int sendAudioData(int value, int line, int index, int[] data, int interrupt) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("sendAudioData value=0x%08X, line=%d, index=0x%X, interrupt=%d", value, line, index, interrupt));
+	private void checkAudioInterrupt() {
+		long now = now();
+		for (int i = 0; i < audioLineStates.length; i++) {
+			audioLineStates[i].checkAudioInterrupt(now);
 		}
-
-		if (Audio.isMuted()) {
-			value = 0;
-		}
-
-		data[index++] = value;
-
-		if (index >= data.length) {
-			audioLines[line].writeAudioData(data, 0, index);
-
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("sendAudioData line#%d (%d waiting buffers):", line, audioLines[line].getWaitingBuffers()));
-				StringBuilder sb = new StringBuilder();
-				for (int i = 0; i < data.length; i++) {
-					if (sb.length() > 0) {
-						sb.append(" ");
-					} else {
-						sb.append("    ");
-					}
-
-					sb.append(String.format("0x%04X 0x%04X", data[i] & 0xFFFF, data[i] >>> 16));
-
-					if (((i + 1) % 4) == 0) {
-						log.trace(sb.toString());
-						sb.setLength(0);
-					}
-				}
-			}
-			index = 0;
-		}
-
-		return index;
 	}
 
 	private void startAudio(int flags) {
-		if ((flags & 0x1) == 0) {
-			audioDataIndex0 = 0;
-			inProgress |= 1;
-		}
-		if ((flags & 0x2) == 0) {
-			audioDataIndex1 = 0;
-			inProgress |= 2;
+		for (int i = 0; i < audioLineStates.length; i++) {
+			if (notHasBit(flags, i)) {
+				audioLineStates[i].startAudio();
+				inProgress = setBit(inProgress, i);
+			}
 		}
 	}
 
 	private void stopAudio(int flags) {
-		if ((inProgress & 0x1) != 0 && (flags & 0x1) == 0) {
-			inProgress &= ~0x1;
-		}
-		if ((inProgress & 0x2) != 0 && (flags & 0x2) == 0) {
-			inProgress &= ~0x2;
-		}
-		if ((inProgress & 0x4) != 0 && (flags & 0x4) == 0) {
-			inProgress &= ~0x4;
+		for (int i = 0; i < 3; i++) {
+			if (isFallingBit(inProgress, flags, i)) {
+				inProgress = clearBit(inProgress, i);
+			}
 		}
 	}
 
@@ -253,8 +400,8 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	private void updateAudioLineFrequency() {
 		// TODO In the VSH, only frequency0 is being set. When to use frequency1 and hardwareFrequency?
 		int frequency = getFrequencyValue(frequency0);
-		for (int i = 0; i < audioLines.length; i++) {
-			audioLines[i].setFrequency(frequency);
+		for (int i = 0; i < audioLineStates.length; i++) {
+			audioLineStates[i].setFrequency(frequency);
 		}
 	}
 
@@ -264,8 +411,8 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	}
 
 	private void updateAudioLineVolume() {
-		for (int i = 0; i < audioLines.length; i++) {
-			audioLines[i].setVolume(volume);
+		for (int i = 0; i < audioLineStates.length; i++) {
+			audioLineStates[i].setVolume(volume);
 		}
 	}
 
@@ -298,15 +445,15 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			case 0x14: if (value != 0x1208) { super.write32(address, value); } break;
 			case 0x18: if (value != 0x0) { super.write32(address, value); } break;
 			case 0x20: flags20 = value; break;
-			case 0x24: setFlags24(value); break;
+			case 0x24: setInterruptEnabled(value); break;
 			case 0x2C: flags2C = value; break;
 			case 0x38: setFrequency0(value); break;
 			case 0x3C: setFrequency1(value); break;
 			case 0x40: frequencyFlags = value; break;
 			case 0x44: setHardwareFrequency(value); break;
 			case 0x50: setVolume(value); break;
-			case 0x60: audioDataIndex0 = sendAudioData(value, 0, audioDataIndex0, audioData0, 1); break;
-			case 0x70: audioDataIndex1 = sendAudioData(value, 1, audioDataIndex1, audioData1, 2); break;
+			case 0x60: audioLineStates[0].sendAudioData(value); break;
+			case 0x70: audioLineStates[1].sendAudioData(value); break;
 			default: super.write32(address, value); break;
 		}
 
@@ -317,6 +464,6 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 
 	@Override
 	public String toString() {
-		return String.format("busy=0x%X, interrupt=0x%X, inProgress=0x%X, flags10=0x%X, flags20=0x%X, flags24=0x%X, flags2C=0x%X, volume=0x%X, frequency0=0x%X(%d), frequency1=0x%X(%d), frequencyFlags=0x%X, hardwareFrequency=0x%X(%d)", busy, interrupt, inProgress, flags10, flags20, flags24, flags2C, volume, frequency0, getFrequencyValue(frequency0), frequency1, getFrequencyValue(frequency1), frequencyFlags, hardwareFrequency, getFrequencyValue(hardwareFrequency));
+		return String.format("busy=0x%X, interrupt=0x%X, inProgress=0x%X, flags10=0x%X, flags20=0x%X, interruptEnabled=0x%X, flags2C=0x%X, volume=0x%X, frequency0=0x%X(%d), frequency1=0x%X(%d), frequencyFlags=0x%X, hardwareFrequency=0x%X(%d)", busy, interrupt, inProgress, flags10, flags20, interruptEnabled, flags2C, volume, frequency0, getFrequencyValue(frequency0), frequency1, getFrequencyValue(frequency1), frequencyFlags, hardwareFrequency, getFrequencyValue(hardwareFrequency));
 	}
 }
