@@ -568,7 +568,7 @@ public class LoadCoreForKernel extends HLEModule {
     }
 
     public String getFunctionNameByAddress(Memory mem, int address) {
-    	if (!reboot.loadCoreInitialized || address == 0) {
+    	if (!reboot.loadCoreInitialized || (address & Memory.addressMask) == 0) {
     		return null;
     	}
 
