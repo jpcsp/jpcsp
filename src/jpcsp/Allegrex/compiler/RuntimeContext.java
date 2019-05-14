@@ -227,6 +227,12 @@ public class RuntimeContext {
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
 			log.debug(String.format("call address=0x%08X, $ra=0x%08X", address, cpu._ra));
 		}
+
+		// We are rebooting in LLE, make sure that the thread name is reset to "root"
+		if (address == 0x88600000 || address == 0x88FC0000) {
+			reboot.resetThreadManInfo(processor);
+		}
+
         int returnValue = jumpCall(address);
 
         return returnValue;

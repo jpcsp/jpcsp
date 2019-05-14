@@ -75,6 +75,7 @@ public class reboot extends HLEModule {
     private static final int BOOT_LOADEXEC_PRX = 1;
     private static final int BOOT_REBOOT_BIN   = 2;
     private static final int bootMethod = BOOT_LOADEXEC_PRX;
+    private static final int threadManInfo = 0x88048740;
 
     private static class SetLog4jMDC implements IAction {
 		@Override
@@ -763,8 +764,6 @@ public class reboot extends HLEModule {
     		RuntimeContext.setLog4jMDC("Interrupt");
     	} else {
         	Memory mem = Memory.getInstance();
-        	int threadManInfo = 0x88048740;
-
 	    	int currentThread = mem.read32(threadManInfo + 0);
 	    	if (Memory.isAddressGood(currentThread)) {
 				int uid = mem.read32(currentThread + 8);
@@ -779,14 +778,27 @@ public class reboot extends HLEModule {
     	}
     }
 
+    public static void resetThreadManInfo(Processor processor) {
+    	if (!enableReboot) {
+    		return;
+    	}
+
+    	if (processor.cp0.isMediaEngineCpu()) {
+    		return;
+    	}
+
+    	Memory mem = Memory.getInstance();
+    	mem.write32(threadManInfo + 0, 0);
+
+    	setLog4jMDC(processor);
+    }
+
     public static void dumpAllThreads() {
     	if (!enableReboot || !log.isTraceEnabled()) {
     		return;
     	}
 
     	Memory mem = Memory.getInstance();
-    	int threadManInfo = 0x88048740;
-
     	int currentThread = mem.read32(threadManInfo + 0);
     	int nextThread = mem.read32(threadManInfo + 4);
 
