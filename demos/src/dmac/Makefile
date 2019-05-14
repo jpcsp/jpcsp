@@ -1,5 +1,5 @@
 TARGET = dmac
-OBJS = main.o DmacManForKernel.o sceDdr.o
+OBJS = main.o DmacManForKernel.o sceDdr.o sceCodec.o
 
 INCDIR =
 CFLAGS = -O2 -G0 -Wall

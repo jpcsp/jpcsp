@@ -4,6 +4,7 @@
 #include <pspdisplay.h>
 #include <pspgu.h>
 #include <pspgum.h>
+#include <pspsdk.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -18,14 +19,21 @@ PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU);
 #define KUNCACHED(ptr) (void *)(K1_BASE | ((u32)(void *)(ptr) & 0x1FFFFFFF)) /* K1 - uncached */
 
 #define LW(addr) (*((u32 *)(addr)))
+#define SW(value, addr)   (*((volatile u32*) (addr)) = (u32) (value))
 
 volatile int done = 0;
 volatile int callbackCalled = 0;
 volatile int callbackArg0;
 volatile int callbackArg1;
 volatile int callbackDisplayDmacRegisters = 0;
-u8 __attribute__((aligned(64))) srcBuffer[1024];
-u8 __attribute__((aligned(64))) dstBuffer[1024];
+volatile u32 systemTimeStart;
+volatile u32 systemTimeEnd;
+u8 __attribute__((aligned(64))) srcBuffer[32768];
+u8 __attribute__((aligned(64))) dstBuffer[32768];
+int sceCodec_driver_376399B6(int busy);
+
+#define SYSTEM_TIME LW(0xBC600000)
+#define AUDIO_SET_BUSY(busy) SW(busy, 0xBE000000)
 
 /* Exit callback */
 int exit_callback(int arg1, int arg2, void *common) {
@@ -81,7 +89,7 @@ void init() {
 
 	u8 *ptr = KUNCACHED(srcBuffer);
 	memset(ptr, 0, sizeof(srcBuffer));
-	for (i = 0; i < 255; i++) {
+	for (i = 0; i < sizeof(srcBuffer); i++) {
 		ptr[i] = (u8) (i + 1);
 	}
 
@@ -104,6 +112,10 @@ void printBuffersWithOffset(int offset, int length) {
 		}
 	}
 
+	if (i == length) {
+		pspDebugScreenPrintf("Successfully copied 0x%X bytes\n", i);
+	}
+
 	for (; i < length; i++) {
 		if (ptr[offset + i] != 0) {
 			pspDebugScreenPrintf("dstBuffer[0x%03X]=0x%02X\n", offset + i, ptr[offset + i]);
@@ -122,6 +134,7 @@ void printBuffers() {
 }
 
 int dmaCallback(int unknown1, int error) {
+	systemTimeEnd = SYSTEM_TIME;
 	callbackArg0 = unknown1;
 	callbackArg1 = error;
 	callbackCalled = 1;
@@ -424,9 +437,17 @@ void runTest6() {
 	setAttribute(&dmaOperationLink4, 16, 7, 7, 2, 2, 1, 1, 1);
 	sceKernelDcacheWritebackRange(&dmaOperationLink4, sizeof(dmaOperationLink4));
 
+	AUDIO_SET_BUSY(1);
+	sceCodec_driver_376399B6(1);
+	SW(0x0, 0xBE000004);
+	SW(0x6, 0xBE000008);
+	SW(0x1, 0xBE00002C);
+	SW(0x1, 0xBE000020);
+
 	DmaOperation *dmaOp = sceKernelDmaOpAlloc();
 
-	result = sceKernelDmaOpAssign(dmaOp, -1, -1, 0x100C941);
+	int flags = 0x100C941;
+	result = sceKernelDmaOpAssign(dmaOp, -1, -1, flags);
 	if (result != 0) {
 		pspDebugScreenPrintf("sceKernelDmaOpAssign = 0x%08X\n", result);
 	}
@@ -436,7 +457,7 @@ void runTest6() {
 		pspDebugScreenPrintf("sceKernelDmaOpSetCallback = 0x%08X\n", result);
 	}
 
-	result = sceKernelDmaOpSetupLink(dmaOp, 0x0100C941, &dmaOperationLink1);
+	result = sceKernelDmaOpSetupLink(dmaOp, flags, &dmaOperationLink1);
 	if (result != 0) {
 		pspDebugScreenPrintf("sceKernelDmaOpSetupLink = 0x%08X\n", result);
 	}
@@ -446,6 +467,11 @@ void runTest6() {
 		pspDebugScreenPrintf("sceKernelDmaOpEnQueue = 0x%08X\n", result);
 	}
 
+	SW(0x7, 0xBE000008);
+	SW(0x1, 0xBE000004);
+	SW(0x1, 0xBE000010);
+	SW(0x1, 0xBE000024);
+
 	sceKernelDelayThread(1000);
 
 	pspDebugScreenPrintf("Before sceDdrFlush(4): ");
@@ -454,10 +480,13 @@ void runTest6() {
 
 	dmaOperationLink2.next = DMACPTR(&dmaOperationLink3);
 	sceKernelDcacheWritebackRange(&dmaOperationLink2, sizeof(dmaOperationLink2));
+	systemTimeStart = SYSTEM_TIME;
+	systemTimeEnd = SYSTEM_TIME;
 	sceDdrFlush(4);
 
 	sceKernelDelayThread(1000);
 
+	pspDebugScreenPrintf("Duration=%d microseconds\n", systemTimeEnd - systemTimeStart);
 	pspDebugScreenPrintf("After sceDdrFlush(4): ");
 	printBuffersWithOffset(0, 32);
 	printBuffersWithOffset(32, 32);
@@ -485,6 +514,105 @@ void runTest6() {
 	if (result != 0) {
 		pspDebugScreenPrintf("sceKernelDmaOpFree = 0x%08X\n", result);
 	}
+
+	AUDIO_SET_BUSY(0);
+	sceCodec_driver_376399B6(0);
+}
+
+void runTest7() {
+	int result;
+	DmaOperationLink dmaOperationLink;
+	int length = 0x1F00;
+
+	init();
+	dmaOperationLink.src = DMACPTR(srcBuffer);
+	dmaOperationLink.dst = DMACPTR(0xBE000060);
+	dmaOperationLink.next = NULL;
+	setAttribute(&dmaOperationLink, length, 3, 3, 2, 2, 1, 0, 1);
+	sceKernelDcacheWritebackRange(&dmaOperationLink, sizeof(dmaOperationLink));
+
+	AUDIO_SET_BUSY(1);
+	sceCodec_driver_376399B6(1);
+	SW(0x0, 0xBE000004);
+	SW(0x6, 0xBE000008);
+	SW(0x1, 0xBE00002C);
+	SW(0x1, 0xBE000020);
+
+	DmaOperation *dmaOp = sceKernelDmaOpAlloc();
+
+	int flags = 0x100C941;
+	result = sceKernelDmaOpAssign(dmaOp, -1, -1, flags);
+	if (result != 0) {
+		pspDebugScreenPrintf("sceKernelDmaOpAssign = 0x%08X\n", result);
+	}
+
+	result = sceKernelDmaOpSetCallback(dmaOp, dmaCallback, 0);
+	if (result != 0) {
+		pspDebugScreenPrintf("sceKernelDmaOpSetCallback = 0x%08X\n", result);
+	}
+
+	result = sceKernelDmaOpSetupLink(dmaOp, flags, &dmaOperationLink);
+	if (result != 0) {
+		pspDebugScreenPrintf("sceKernelDmaOpSetupLink = 0x%08X\n", result);
+	}
+
+	result = sceKernelDmaOpEnQueue(dmaOp);
+	if (result != 0) {
+		pspDebugScreenPrintf("sceKernelDmaOpEnQueue = 0x%08X\n", result);
+	}
+
+	systemTimeStart = SYSTEM_TIME;
+	systemTimeEnd = systemTimeStart;
+
+	SW(0x7, 0xBE000008);
+	SW(0x1, 0xBE000004);
+	SW(0x1, 0xBE000010);
+	SW(0x1, 0xBE000024);
+
+	sceKernelDelayThread(100000);
+
+	if (callbackCalled) {
+		pspDebugScreenPrintf("Duration=%d microseconds for %d audio samples\n", systemTimeEnd - systemTimeStart, length >> 2);
+		// Results:
+		//      11 microseconds for    8 audio samples
+		//      11 microseconds for   16 audio samples
+		//      35 microseconds for   32 audio samples
+		//     206 microseconds for   64 audio samples
+		//     571 microseconds for  128 audio samples
+		//    1297 microseconds for  256 audio samples
+		//    2748 microseconds for  512 audio samples
+		//    5650 microseconds for 1024 audio samples
+		//   11091 microseconds for 1984 audio samples
+		// ==> approx. 179000 audio samples per second
+		// The rate does not depend on the frequency values set at 0xBE000038, 0xBE00003C and 0xBE000044.
+	} else {
+		pspDebugScreenPrintf("Callback not called!\n");
+	}
+
+	result = sceKernelDmaOpSync(dmaOp, 0, 0);
+	if (result != 0) {
+		pspDebugScreenPrintf("sceKernelDmaOpSync = 0x%08X\n", result);
+	}
+
+	if (result < 0) {
+		result = sceKernelDmaOpQuit(dmaOp);
+		if (result != 0) {
+			pspDebugScreenPrintf("sceKernelDmaOpQuit = 0x%08X\n", result);
+		}
+
+		result = sceKernelDmaOpDeQueue(dmaOp);
+		if (result != 0) {
+			pspDebugScreenPrintf("sceKernelDmaOpDeQueue = 0x%08X\n", result);
+		}
+	}
+
+	result = sceKernelDmaOpFree(dmaOp);
+	if (result != 0) {
+		pspDebugScreenPrintf("sceKernelDmaOpFree = 0x%08X\n", result);
+	}
+
+	AUDIO_SET_BUSY(0);
+	sceCodec_driver_376399B6(0);
 }
 
 void runTest() {
@@ -494,6 +622,7 @@ void runTest() {
 	runTest4();
 	runTest5();
 	runTest6();
+	runTest7();
 }
 
 int main(int argc, char *argv[]) {
@@ -564,8 +693,8 @@ int main(int argc, char *argv[]) {
 
 	sceGuTerm();
 
-	pspDebugScreenPrintf("Exiting game...\n");
+	pspSdkSetK1(0x100000);
 	sceKernelExitGame();
-	sceKernelExitDeleteThread(0);
+
 	return 0;
 }
