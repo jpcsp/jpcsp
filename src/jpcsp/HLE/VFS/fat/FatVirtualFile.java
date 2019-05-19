@@ -256,7 +256,9 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 		readEmptySector();
 
 		if (fileInfo == null) {
-			log.warn(String.format("readDataSector unknown sectorNumber=0x%X, clusterNumber=0x%X", sectorNumber, clusterNumber));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("readDataSector unknown sectorNumber=0x%X, clusterNumber=0x%X", sectorNumber, clusterNumber));
+			}
 			return;
 		}
 		if (log.isDebugEnabled()) {

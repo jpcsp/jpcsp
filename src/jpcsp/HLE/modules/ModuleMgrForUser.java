@@ -35,7 +35,6 @@ import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.HLEUnimplemented;
@@ -793,7 +792,6 @@ public class ModuleMgrForUser extends HLEModule {
     	return hleKernelStartModule(uid, argSize, argp, statusAddr, optionAddr, true, null);
     }
 
-    @HLELogging(level="info")
     @HLEFunction(nid = 0xD1FF982A, version = 150, checkInsideInterrupt = true)
     @HLEFunction(nid = 0xE5D6087B, version = 150, checkInsideInterrupt = true)
     public int sceKernelStopModule(int uid, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
@@ -883,7 +881,6 @@ public class ModuleMgrForUser extends HLEModule {
         return 0;
     }
 
-    @HLELogging(level="info")
     @HLEFunction(nid = 0x2E0911AA, version = 150, checkInsideInterrupt = true)
     @HLEFunction(nid = 0x387E3CA9, version = 150, checkInsideInterrupt = true)
     public int sceKernelUnloadModule(int uid) {

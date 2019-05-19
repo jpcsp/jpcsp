@@ -28,7 +28,6 @@ import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
@@ -181,7 +180,6 @@ public class sceAudiocodec extends HLEModule {
 		return 0;
 	}
 
-	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x5B37EB1D, version = 150)
 	public int sceAudiocodecInit(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
 		// Same as sceAudiocodec_3DD7EE1A, but for stereo audio
@@ -405,7 +403,6 @@ public class sceAudiocodec extends HLEModule {
 		return 0;
 	}
 
-	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x3DD7EE1A, version = 150)
 	public int sceAudiocodec_3DD7EE1A(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
 		// Same as sceAudiocodecInit, but for mono audio

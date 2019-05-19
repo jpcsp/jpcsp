@@ -31,7 +31,6 @@ import jpcsp.hardware.Model;
 import jpcsp.hardware.Wlan;
 import jpcsp.util.Utilities;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
@@ -238,7 +237,6 @@ public class sceIdStorage extends HLEModule {
 	 * @param buffer buffer with at last 512 bytes of storage 
 	 * @return       0.
 	 */
-	@HLELogging(level = "info")
 	@HLEFunction(nid = 0xEB00C509, version = 150)
 	public int sceIdStorageReadLeaf(int key, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=512, usage=Usage.out) TPointer buffer) {
 		return hleIdStorageReadLeaf(key, buffer);
@@ -289,7 +287,6 @@ public class sceIdStorage extends HLEModule {
 	 * @param length    amount of data to retrieve (offset + length must be <= 512 bytes)
 	 * @return
 	 */
-	@HLELogging(level = "info")
 	@HLEFunction(nid = 0x6FE062D1, version = 150)
 	public int sceIdStorageLookup(int key, int offset, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buffer, int length) {
 		TPointer leafBuffer = Utilities.allocatePointer(pageSize);

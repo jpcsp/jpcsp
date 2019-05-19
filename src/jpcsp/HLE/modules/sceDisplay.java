@@ -1237,8 +1237,8 @@ public class sceDisplay extends HLEModule {
         if (gotBadGeBufParams) {
             // print when we get good params after bad params
             gotBadGeBufParams = false;
-            if (log.isInfoEnabled()) {
-                log.info(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d OK", topaddr, bufferwidth, pixelformat));
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d OK", topaddr, bufferwidth, pixelformat));
             }
         }
 
@@ -2300,7 +2300,9 @@ public class sceDisplay extends HLEModule {
         if (topaddr == 0) {
             // If topaddr is NULL, the PSP's screen will be displayed as fully black
             // as the output is blocked. Under these circumstances, bufferwidth can be 0.
-            log.info(String.format("sceDisplaySetFrameBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d (blocking display output)", topaddr, bufferwidth, pixelformat, syncType));
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceDisplaySetFrameBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d (blocking display output)", topaddr, bufferwidth, pixelformat, syncType));
+        	}
             isFbShowing = false;
             gotBadFbBufParams = true;
             return 0;
@@ -2308,7 +2310,9 @@ public class sceDisplay extends HLEModule {
 
         if (gotBadFbBufParams) {
             gotBadFbBufParams = false;
-            log.info(String.format("sceDisplaySetFrameBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d ok", topaddr, bufferwidth, pixelformat, syncType));
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("sceDisplaySetFrameBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d ok", topaddr, bufferwidth, pixelformat, syncType));
+            }
         }
 
         if (topaddr == fb.getTopAddr() && bufferwidth == fb.getBufferWidth() && pixelformat == fb.getPixelFormat() && syncType == sync) {

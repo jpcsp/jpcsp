@@ -47,19 +47,19 @@ public class DmacManForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xF64BAB99, version = 150)
-	public int sceKernelDmaOpAssign(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr, int unknown1, int unknown2, int unknown3) {
+	public int sceKernelDmaOpAssign(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=54, usage=Usage.inout) TPointer dmaOpAddr, int unknown1, int unknown2, int unknown3) {
     	return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x3BDEA96C, version = 150)
-	public int sceKernelDmaOpEnQueue(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr) {
+	public int sceKernelDmaOpEnQueue(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=54, usage=Usage.inout) TPointer dmaOpAddr) {
     	return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x5AF32783, version = 150)
-	public int sceKernelDmaOpQuit(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.in) TPointer dmaOpAddr) {
+	public int sceKernelDmaOpQuit(@CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=54, usage=Usage.inout) TPointer dmaOpAddr) {
     	return 0;
 	}
 
@@ -71,19 +71,19 @@ public class DmacManForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xCE467D9B, version = 150)
-	public int sceKernelDmaOpSetupNormal(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr, int status, TPointer dstAddress, TPointer srcAddress, int attributes) {
+	public int sceKernelDmaOpSetupNormal(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=54, usage=Usage.inout) TPointer dmaOpAddr, int status, TPointer dstAddress, TPointer srcAddress, int attributes) {
     	return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xD0358BE9, version = 150)
-	public int sceKernelDmaOpSetCallback(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr, TPointer callback, int unknown) {
+	public int sceKernelDmaOpSetCallback(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=54, usage=Usage.inout) TPointer dmaOpAddr, TPointer callback, int unknown) {
     	return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xDB286D65, version = 150)
-	public int sceKernelDmaOpSync(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr, int waitType, int timeout) {
+	public int sceKernelDmaOpSync(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=54, usage=Usage.inout) TPointer dmaOpAddr, int waitType, int timeout) {
     	// waitType = 0: do not wait for completion of DMA Operation, return error when still running
     	// waitType = 1: wait indefinitely for completion of the DMA Operation
     	// waitType = 2: wait for given timeout for completion of the DMA Operation
@@ -92,13 +92,13 @@ public class DmacManForKernel extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x7D21A2EF, version = 150)
-	public int sceKernelDmaOpSetupLink(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr, int status, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer32 linkStructure) {
+	public int sceKernelDmaOpSetupLink(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=54, usage=Usage.inout) TPointer dmaOpAddr, int status, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer32 linkStructure) {
     	return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x3FAD5844, version = 150)
-	public int sceKernelDmaOpSetupMemcpy(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=30, usage=Usage.inout) TPointer dmaOpAddr, TPointer dstAddress, TPointer srcAddress, int length) {
+	public int sceKernelDmaOpSetupMemcpy(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=54, usage=Usage.inout) TPointer dmaOpAddr, TPointer dstAddress, TPointer srcAddress, int length) {
     	return 0;
 	}
 

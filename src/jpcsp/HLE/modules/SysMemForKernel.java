@@ -37,7 +37,6 @@ import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
@@ -305,7 +304,6 @@ public class SysMemForKernel extends HLEModule {
      * @param name        Name assigned to the new heap.
      * @return            The UID of the new heap, or if less than 0 an error. 
      */
-	@HLELogging(level = "info")
     @HLEFunction(nid = 0x1C1FBFE7, version = 150)
     @HLEFunction(nid = 0x58148F07, version = 660)
     public int sceKernelCreateHeap(int partitionId, int size, int flags, String name) {

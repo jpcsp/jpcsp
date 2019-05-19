@@ -843,7 +843,7 @@ public class RuntimeContext {
     			}
     			break;
 			} catch (StackPopException e) {
-				log.info("Stack exceeded maximum size, shrinking to top level");
+				log.debug("Stack exceeded maximum size, shrinking to top level");
 
 				executable = getExecutable(e.getRa());
 				if (executable == null) {
