@@ -21,6 +21,8 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ERROR;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.Modules;
@@ -29,6 +31,7 @@ import jpcsp.Allegrex.CpuState;
 public class KDebugForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("KDebugForKernel");
     protected static Logger kprintf = Logger.getLogger("kprintf");
+    private long dispsw = 0L;
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xE7A3874D, version = 150)
@@ -101,11 +104,14 @@ public class KDebugForKernel extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x24C32559, version = 150)
 	@HLEFunction(nid = 0x86010FCB, version = 660)
-	public int sceKernelDipsw(int unknown) {
-		return 0;
+	public int sceKernelDipsw(int bit) {
+		if (bit < 0 || bit >= 64) {
+			return ERROR_KERNEL_ERROR;
+		}
+
+		return ((int) (dispsw >> bit)) & 0x1;
 	}
 
     @HLEUnimplemented
@@ -184,18 +190,14 @@ public class KDebugForKernel extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x6CB0BDA4, version = 150)
 	public int sceKernelDipswHigh32() {
-    	// Has no parameters
-		return 0;
+		return (int) (dispsw >>> 32);
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x43F0F8AB, version = 150)
 	public int sceKernelDipswLow32() {
-    	// Has no parameters
-		return 0;
+		return (int) dispsw;
 	}
 
     @HLEUnimplemented
