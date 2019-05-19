@@ -1736,8 +1736,26 @@ public class RuntimeContext {
 		if (wantSync) {
     		sync();
     	} else {
-    		Utilities.sleep(1);
+    		int intDelay = 1000;
+			try {
+				// Wait for intDelay milliseconds.
+				// The wait state will be terminated whenever an interrupt
+				// has been triggered (see onLLEInterrupt()).
+				synchronized (idleSyncObject) {
+					idleSyncObject.wait(intDelay / 1000, intDelay % 1000);
+				}
+			} catch (InterruptedException e) {
+				// Ignore exception
+			}
     	}
+    }
+
+    public static void onLLEInterrupt() {
+    	// Notify the thread waiting on the idleSyncObject that
+    	// the idle should be ended.
+    	synchronized (idleSyncObject) {
+        	idleSyncObject.notifyAll();
+		}
     }
 
     public static void setLog4jMDC() {

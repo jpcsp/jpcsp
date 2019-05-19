@@ -140,6 +140,8 @@ public class RuntimeContextLLE {
 		if (processor.cp0.isMainCpu()) {
 			pendingInterruptIPbits |= IPbits;
 
+			RuntimeContext.onLLEInterrupt();
+
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("triggerInterruptException IPbits=0x%X, pendingInterruptIPbits=0x%X", IPbits, pendingInterruptIPbits));
 			}
