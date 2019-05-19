@@ -21,6 +21,7 @@ import static jpcsp.HLE.modules.InitForKernel.SCE_INIT_APITYPE_KERNEL_REBOOT;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Addr;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
+import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.readCompleteFile;
 import static jpcsp.util.Utilities.readUnaligned32;
 
@@ -70,7 +71,6 @@ public class reboot extends HLEModule {
     public static boolean loadCoreInitialized = false;
     private static final String rebootFileName = "flash0:/reboot.bin";
     private static final int rebootBaseAddress = MemoryMap.START_KERNEL + 0x600000;
-    private static final int rebootParamAddress = MemoryMap.START_KERNEL + 0x400000;
     private static final int BOOT_IPL          = 0;
     private static final int BOOT_LOADEXEC_PRX = 1;
     private static final int BOOT_REBOOT_BIN   = 2;
@@ -264,6 +264,75 @@ public class reboot extends HLEModule {
     	return entryAddress;
     }
 
+    private void initRebootParameters(Memory mem, SceModule rebootModule) {
+    	addFunctionNames(rebootModule);
+
+    	int rebootParamAddressOffset = Model.getModel() == Model.MODEL_PSP_FAT ? 0x400000 : 0x3800000;
+    	int rebootParamAddress = MemoryMap.START_KERNEL + rebootParamAddressOffset + 0x40;
+
+		SysMemInfo rebootParamInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot-parameters", PSP_SMEM_Addr, 0x10000, rebootParamAddress);
+		TPointer sceLoadCoreBootInfoAddr = new TPointer(mem, rebootParamInfo.addr);
+		SceLoadCoreBootInfo sceLoadCoreBootInfo = new SceLoadCoreBootInfo();
+
+		sceLoadCoreBootInfoAddr.clear(0x1000 + 0x1C000 + 0x380);
+
+		TPointer startAddr = new TPointer(sceLoadCoreBootInfoAddr, 0x1000);
+
+		TPointer sceKernelLoadExecVSHParamAddr = new TPointer(startAddr, 0x1C000);
+		TPointer loadModeStringAddr = new TPointer(sceKernelLoadExecVSHParamAddr, 48);
+		loadModeStringAddr.setStringZ("vsh");
+		SceKernelLoadExecVSHParam sceKernelLoadExecVSHParam = new SceKernelLoadExecVSHParam();
+		sceKernelLoadExecVSHParamAddr.setValue32(48);
+		sceKernelLoadExecVSHParam.flags = 0x10000;
+		sceKernelLoadExecVSHParam.keyAddr = loadModeStringAddr;
+		sceKernelLoadExecVSHParam.write(sceKernelLoadExecVSHParamAddr);
+
+		sceLoadCoreBootInfo.memBase = MemoryMap.START_KERNEL;
+		sceLoadCoreBootInfo.memSize = MemoryMap.SIZE_RAM;
+		sceLoadCoreBootInfo.startAddr = startAddr;
+		sceLoadCoreBootInfo.endAddr = new TPointer(sceKernelLoadExecVSHParamAddr, 0x380);
+		sceLoadCoreBootInfo.modProtId = -1;
+		sceLoadCoreBootInfo.modArgProtId = -1;
+		sceLoadCoreBootInfo.model = Model.getModel();
+		sceLoadCoreBootInfo.dipswLo = Modules.KDebugForKernelModule.sceKernelDipswLow32();
+		sceLoadCoreBootInfo.dipswHi = Modules.KDebugForKernelModule.sceKernelDipswHigh32();
+		if (Modules.KDebugForKernelModule.sceKernelDipsw(30) != 0x1) {
+			sceLoadCoreBootInfo.dipswHi = clearBit(sceLoadCoreBootInfo.dipswHi, 24);
+			sceLoadCoreBootInfo.dipswHi = clearBit(sceLoadCoreBootInfo.dipswHi, 26);
+		}
+		sceLoadCoreBootInfo.unknown72 = ((MemoryMap.END_USERSPACE | 0x80000000) & ~0xFF) - 0x400; // Must be larger than 0x89000000 + size of pspbtcnf.bin file
+		sceLoadCoreBootInfo.unknown76 = sceLoadCoreBootInfo.unknown72;
+		sceLoadCoreBootInfo.cpTime = Modules.KDebugForKernelModule.sceKernelDipswCpTime();
+		sceLoadCoreBootInfo.write(sceLoadCoreBootInfoAddr);
+
+    	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getRootThread(null);
+    	if (rootThread != null) {
+			rootThread.cpuContext._a0 = sceLoadCoreBootInfoAddr.getAddress() | MemoryMap.START_KERNEL;
+			rootThread.cpuContext._a1 = sceKernelLoadExecVSHParamAddr.getAddress() | MemoryMap.START_KERNEL;
+			rootThread.cpuContext._a2 = SCE_INIT_APITYPE_KERNEL_REBOOT;
+			rootThread.cpuContext._a3 = Modules.SysMemForKernelModule.sceKernelGetInitialRandomValue();
+    	}
+
+    	if (log.isDebugEnabled()) {
+			log.debug(String.format("sceReboot arg0=%s, arg1=%s", sceLoadCoreBootInfoAddr, sceKernelLoadExecVSHParamAddr));
+		}
+    }
+
+	private SceModule createRebootModule(String fileName) {
+    	SceModule rebootModule = new SceModule(true);
+    	rebootModule.modname = getName();
+    	rebootModule.pspfilename = fileName;
+    	rebootModule.baseAddress = rebootBaseAddress;
+    	rebootModule.text_addr = rebootBaseAddress;
+    	rebootModule.text_size = 0;
+    	rebootModule.data_size = 0;
+    	rebootModule.bss_size = 0x26B80;
+
+    	Modules.ThreadManForUserModule.Initialise(rebootModule, rebootModule.baseAddress, 0, rebootModule.pspfilename, -1, 0, false);
+
+    	return rebootModule;
+    }
+
     /**
      * Boot using the reboot.prx code found in flash0:/kd/loadexec_01g.prx.
      * 
@@ -277,18 +346,7 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-    	SceModule rebootModule = new SceModule(true);
-    	rebootModule.modname = getName();
-    	rebootModule.pspfilename = loadexecFileName;
-    	rebootModule.baseAddress = rebootBaseAddress;
-    	rebootModule.text_addr = rebootBaseAddress;
-    	rebootModule.text_size = 0;
-    	rebootModule.data_size = 0;
-    	rebootModule.bss_size = 0x26B80;
-
-    	Modules.ThreadManForUserModule.Initialise(rebootModule, rebootModule.baseAddress, 0, rebootModule.pspfilename, -1, 0, false);
-
-    	Memory mem = Memory.getInstance();
+    	SceModule rebootModule = createRebootModule(loadexecFileName);
 
     	IntArrayMemory intArrayMemory = new IntArrayMemory(new int[0x40000 >> 2], 0, MemoryMap.START_RAM);
     	TPointer tempMemory = intArrayMemory.getPointer();
@@ -381,53 +439,12 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
+    	Memory mem = Memory.getInstance();
     	TPointer rebootBinAddr = new TPointer(mem, rebootBaseAddress);
     	rebootBinAddr.setArray(rebootBuffer);
     	rebootModule.text_size = rebootBuffer.length;
 
-    	addFunctionNames(rebootModule);
-
-		SysMemInfo rebootParamInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot-parameters", PSP_SMEM_Addr, 0x10000, rebootParamAddress);
-		TPointer sceLoadCoreBootInfoAddr = new TPointer(mem, rebootParamInfo.addr);
-		SceLoadCoreBootInfo sceLoadCoreBootInfo = new SceLoadCoreBootInfo();
-
-		sceLoadCoreBootInfoAddr.clear(0x1000 + 0x1C000 + 0x380);
-
-		TPointer startAddr = new TPointer(sceLoadCoreBootInfoAddr, 0x1000);
-
-		TPointer sceKernelLoadExecVSHParamAddr = new TPointer(startAddr, 0x1C000);
-		TPointer loadModeStringAddr = new TPointer(sceKernelLoadExecVSHParamAddr, 48);
-		loadModeStringAddr.setStringZ("vsh");
-		SceKernelLoadExecVSHParam sceKernelLoadExecVSHParam = new SceKernelLoadExecVSHParam();
-		sceKernelLoadExecVSHParamAddr.setValue32(48);
-		sceKernelLoadExecVSHParam.flags = 0x10000;
-		sceKernelLoadExecVSHParam.keyAddr = loadModeStringAddr;
-		sceKernelLoadExecVSHParam.write(sceKernelLoadExecVSHParamAddr);
-
-		sceLoadCoreBootInfo.memBase = MemoryMap.START_KERNEL;
-		sceLoadCoreBootInfo.memSize = MemoryMap.SIZE_RAM;
-		sceLoadCoreBootInfo.startAddr = startAddr;
-		sceLoadCoreBootInfo.endAddr = new TPointer(sceKernelLoadExecVSHParamAddr, 0x380);
-		sceLoadCoreBootInfo.modProtId = -1;
-		sceLoadCoreBootInfo.modArgProtId = -1;
-		sceLoadCoreBootInfo.model = Model.getModel();
-		sceLoadCoreBootInfo.dipswLo = Modules.KDebugForKernelModule.sceKernelDipswLow32();
-		sceLoadCoreBootInfo.dipswHi = Modules.KDebugForKernelModule.sceKernelDipswHigh32();
-		sceLoadCoreBootInfo.unknown72 = MemoryMap.END_USERSPACE | 0x80000000; // Must be larger than 0x89000000 + size of pspbtcnf.bin file
-		sceLoadCoreBootInfo.cpTime = Modules.KDebugForKernelModule.sceKernelDipswCpTime();
-		sceLoadCoreBootInfo.write(sceLoadCoreBootInfoAddr);
-
-    	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getRootThread(null);
-    	if (rootThread != null) {
-			rootThread.cpuContext._a0 = sceLoadCoreBootInfoAddr.getAddress();
-			rootThread.cpuContext._a1 = sceKernelLoadExecVSHParamAddr.getAddress();
-			rootThread.cpuContext._a2 = SCE_INIT_APITYPE_KERNEL_REBOOT;
-			rootThread.cpuContext._a3 = Modules.SysMemForKernelModule.sceKernelGetInitialRandomValue();
-    	}
-
-    	if (log.isDebugEnabled()) {
-			log.debug(String.format("sceReboot arg0=%s, arg1=%s", sceLoadCoreBootInfoAddr, sceKernelLoadExecVSHParamAddr));
-		}
+    	initRebootParameters(mem, rebootModule);
 
     	return true;
     }
@@ -455,18 +472,8 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-    	Memory mem = Memory.getInstance();
-
-    	SceModule rebootModule = new SceModule(true);
-    	rebootModule.modname = getName();
-    	rebootModule.pspfilename = rebootFileName;
-    	rebootModule.baseAddress = rebootBaseAddress;
-    	rebootModule.text_addr = rebootBaseAddress;
+    	SceModule rebootModule = createRebootModule(rebootFileName);
     	rebootModule.text_size = rebootFileLength;
-    	rebootModule.data_size = 0;
-    	rebootModule.bss_size = 0x26B80;
-
-    	Modules.ThreadManForUserModule.Initialise(rebootModule, rebootModule.baseAddress, 0, rebootModule.pspfilename, -1, 0, false);
 
     	MMIO mmio = (MMIO) RuntimeContextLLE.getMMIO();
     	// The memory remap has already been done by the IPL code at this point
@@ -478,6 +485,7 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
+    	Memory mem = Memory.getInstance();
     	TPointer rebootBinAddr = new TPointer(mem, rebootBaseAddress);
     	int readLength = vFile.ioRead(rebootBinAddr, rebootFileLength);
     	vFile.ioClose();
@@ -485,49 +493,7 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-    	addFunctionNames(rebootModule);
-
-		SysMemInfo rebootParamInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot-parameters", PSP_SMEM_Addr, 0x10000, rebootParamAddress);
-		TPointer sceLoadCoreBootInfoAddr = new TPointer(mem, rebootParamInfo.addr);
-		SceLoadCoreBootInfo sceLoadCoreBootInfo = new SceLoadCoreBootInfo();
-
-		sceLoadCoreBootInfoAddr.clear(0x1000 + 0x1C000 + 0x380);
-
-		TPointer startAddr = new TPointer(sceLoadCoreBootInfoAddr, 0x1000);
-
-		TPointer sceKernelLoadExecVSHParamAddr = new TPointer(startAddr, 0x1C000);
-		TPointer loadModeStringAddr = new TPointer(sceKernelLoadExecVSHParamAddr, 48);
-		loadModeStringAddr.setStringZ("vsh");
-		SceKernelLoadExecVSHParam sceKernelLoadExecVSHParam = new SceKernelLoadExecVSHParam();
-		sceKernelLoadExecVSHParamAddr.setValue32(48);
-		sceKernelLoadExecVSHParam.flags = 0x10000;
-		sceKernelLoadExecVSHParam.keyAddr = loadModeStringAddr;
-		sceKernelLoadExecVSHParam.write(sceKernelLoadExecVSHParamAddr);
-
-		sceLoadCoreBootInfo.memBase = MemoryMap.START_KERNEL;
-		sceLoadCoreBootInfo.memSize = MemoryMap.SIZE_RAM;
-		sceLoadCoreBootInfo.startAddr = startAddr;
-		sceLoadCoreBootInfo.endAddr = new TPointer(sceKernelLoadExecVSHParamAddr, 0x380);
-		sceLoadCoreBootInfo.modProtId = -1;
-		sceLoadCoreBootInfo.modArgProtId = -1;
-		sceLoadCoreBootInfo.model = Model.getModel();
-		sceLoadCoreBootInfo.dipswLo = Modules.KDebugForKernelModule.sceKernelDipswLow32();
-		sceLoadCoreBootInfo.dipswHi = Modules.KDebugForKernelModule.sceKernelDipswHigh32();
-		sceLoadCoreBootInfo.unknown72 = MemoryMap.END_USERSPACE | 0x80000000; // Must be larger than 0x89000000 + size of pspbtcnf.bin file
-		sceLoadCoreBootInfo.cpTime = Modules.KDebugForKernelModule.sceKernelDipswCpTime();
-		sceLoadCoreBootInfo.write(sceLoadCoreBootInfoAddr);
-
-    	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getRootThread(null);
-    	if (rootThread != null) {
-			rootThread.cpuContext._a0 = sceLoadCoreBootInfoAddr.getAddress();
-			rootThread.cpuContext._a1 = sceKernelLoadExecVSHParamAddr.getAddress();
-			rootThread.cpuContext._a2 = SCE_INIT_APITYPE_KERNEL_REBOOT;
-			rootThread.cpuContext._a3 = Modules.SysMemForKernelModule.sceKernelGetInitialRandomValue();
-    	}
-
-    	if (log.isDebugEnabled()) {
-			log.debug(String.format("sceReboot arg0=%s, arg1=%s", sceLoadCoreBootInfoAddr, sceKernelLoadExecVSHParamAddr));
-		}
+    	initRebootParameters(mem, rebootModule);
 
     	return true;
     }
