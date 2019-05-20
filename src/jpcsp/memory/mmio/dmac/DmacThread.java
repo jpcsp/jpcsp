@@ -36,13 +36,12 @@ import java.util.concurrent.Semaphore;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Clock;
-import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.memory.mmio.MMIOHandlerAudio;
 import jpcsp.memory.mmio.MMIOHandlerDdr;
 import jpcsp.memory.mmio.MMIOHandlerDmac;
+import jpcsp.util.Utilities;
 
 public class DmacThread extends Thread {
 	private static Logger log = MMIOHandlerDmac.log;
@@ -185,42 +184,20 @@ public class DmacThread extends Thread {
 			return;
 		}
 
-		final MMIOHandlerAudio mmioHandlerAudio = MMIOHandlerAudio.getInstance();
-		mmioHandlerAudio.onStartDmacMemcpy(dst);
-
-		// The frequency is giving the number of audio samples that can
-		// be written per second.
-		final int frequency = mmioHandlerAudio.getDmacFrequency();
 		int length = srcLength;
+		for (int i = 0; i < length; i += 4) {
+			memDst.write32(dst, memSrc.read32(src + i));
+		}
+
+		final MMIOHandlerAudio mmioHandlerAudio = MMIOHandlerAudio.getInstance();
+		int syncDelay = mmioHandlerAudio.getDmacSyncDelay(dst, length);
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("dmacMemcpyAudio dst=0x%08X, src=0x%08X, length=0x%X, frequency=%d", dst, src, length, frequency));
+			log.debug(String.format("dmacMemcpyAudio dst=0x%08X, src=0x%08X, length=0x%X, syncDelay=0x%X milliseconds", dst, src, length, syncDelay));
 		}
 
-		final Clock clock = Emulator.getClock();
-		// Use nano seconds because micro seconds would not have enough accuracy
-		final long durationStep = 1000000000L / frequency;
-		long frequencyTime = clock.nanoTime();
-		long now;
-
-		while (length > 0) {
-			memDst.write32(dst, memSrc.read32(src));
-			src += 4;
-			length -= 4;
-			frequencyTime += durationStep;
-
-			if (length > 0) {
-				// Active waiting because using Thread.sleep would be too inaccurate
-				do {
-					now = clock.nanoTime();
-
-					if (log.isTraceEnabled()) {
-						log.trace(String.format("dmacMemcpyAudio frequencyTime=0x%X, now=0x%X, Clock paused=%b", frequencyTime, now, clock.isPaused()));
-					}
-				} while (now < frequencyTime && !clock.isPaused());
-			}
+		if (syncDelay > 0) {
+			Utilities.sleep(syncDelay);
 		}
-
-		mmioHandlerAudio.onFinishDmacMemcpy(dst);
 	}
 
 	private boolean dmacMemcpyStep() {

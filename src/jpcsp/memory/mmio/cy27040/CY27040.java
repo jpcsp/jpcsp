@@ -117,7 +117,7 @@ public class CY27040 implements IState {
 		}
 	}
 
-	private int getAudioFreq() {
+	public int getAudioFreq() {
 		return (clock & PSP_CLOCK_AUDIO_FREQ) == 0 ? 44100 : 48000;
 	}
 

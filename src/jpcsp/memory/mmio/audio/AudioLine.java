@@ -70,6 +70,10 @@ public class AudioLine implements IState {
     	soundBufferManager.checkFreeBuffers(alSource);
     }
 
+	public int getFrequency() {
+		return frequency;
+	}
+
 	public void setFrequency(int frequency) {
 		this.frequency = frequency;
 		if (log.isDebugEnabled()) {
