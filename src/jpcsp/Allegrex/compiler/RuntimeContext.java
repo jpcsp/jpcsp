@@ -580,40 +580,55 @@ public class RuntimeContext {
 				}
 
 				if (isIdle) {
-					// While being idle, try to reduce the load on the host CPU
-					// by sleeping as much as possible.
-					// We can now sleep until the next scheduler action need to be executed.
-					//
-					// If the scheduler is receiving from another thread, a new action
-					// to be executed earlier, the wait state of this thread
-					// will be interrupted (see onNextScheduleModified()).
-					// This is for example the case when a GE list is ending (FINISH/SIGNAL + END)
-					// and a GE callback has to be executed immediately.
-					long delay = scheduler.getNextActionDelay(idleSleepMicros);
-					if (delay > 0) {
-						int intDelay;
-						if (delay >= idleSleepMicros) {
-							intDelay = idleSleepMicros;
-						} else {
-							intDelay = (int) delay;
-						}
-
-						try {
-							// Wait for intDelay milliseconds.
-							// The wait state will be terminated whenever the scheduler
-							// is receiving a new scheduler action (see onNextScheduleModified()).
-							synchronized (idleSyncObject) {
-								idleSyncObject.wait(intDelay / 1000, intDelay % 1000);
-							}
-						} catch (InterruptedException e) {
-							// Ignore exception
-						}
-					}
+					idleSleepInterruptable();
 				}
 			}
             idleDuration.end();
             log.debug("Ending Idle State");
         }
+    }
+
+    /*
+     * While being idle, try to reduce the load on the host CPU
+     * by sleeping as much as possible.
+     * We can now sleep until the next scheduler action needs to be executed.
+     *
+     * If the scheduler is receiving, from another thread, a new action
+     * to be executed earlier, the wait state of this thread
+     * will be interrupted (see onNextScheduleModified()).
+     * This is for example the case when a GE list is ending (FINISH/SIGNAL + END)
+     * and a GE callback has to be executed immediately.
+     *
+     * When LLE is enabled, the wait state can also be interrupted
+     * when a different thread is triggering an exception
+     * (see onLLEInterrupt()).
+     * This is for example the case when a Dmac thread is finishing its
+     * action and triggering a PSP_DMA0_INTR interrupt.
+     */
+    private static void idleSleepInterruptable() {
+        Scheduler scheduler = Emulator.getScheduler();
+
+        long delay = scheduler.getNextActionDelay(idleSleepMicros);
+		if (delay > 0) {
+			int intDelay;
+			if (delay >= idleSleepMicros) {
+				intDelay = idleSleepMicros;
+			} else {
+				intDelay = (int) delay;
+			}
+
+			try {
+				// Wait for intDelay milliseconds.
+				// The wait state will be terminated whenever the scheduler
+				// is receiving a new scheduler action (see onNextScheduleModified()),
+				// or whenever an interrupt has been triggered ().
+				synchronized (idleSyncObject) {
+					idleSyncObject.wait(intDelay / 1000, intDelay % 1000);
+				}
+			} catch (InterruptedException e) {
+				// Ignore exception
+			}
+		}
     }
 
     private static void syncThreadImmediately() throws StopThreadException {
@@ -1557,16 +1572,21 @@ public class RuntimeContext {
     	}
     }
 
+    /*
+     * Notify the thread waiting on the idleSyncObject that
+     * the idle should be ended.
+     */
+    private static void interruptIdleSleep() {
+    	synchronized (idleSyncObject) {
+        	// Interrupt the thread waiting on the idleSyncObject
+        	idleSyncObject.notifyAll();
+		}
+    }
+
     public static void onNextScheduleModified() {
 		checkSync();
 
-		if (!RuntimeContextLLE.isLLEActive()) {
-	    	// Notify the thread waiting on the idleSyncObject that
-	    	// the scheduler has now received a new schedule.
-	    	synchronized (idleSyncObject) {
-	        	idleSyncObject.notifyAll();
-			}
-    	}
+		interruptIdleSleep();
     }
 
     public static void checkSync() {
@@ -1736,26 +1756,12 @@ public class RuntimeContext {
 		if (wantSync) {
     		sync();
     	} else {
-    		int intDelay = 1000;
-			try {
-				// Wait for intDelay milliseconds.
-				// The wait state will be terminated whenever an interrupt
-				// has been triggered (see onLLEInterrupt()).
-				synchronized (idleSyncObject) {
-					idleSyncObject.wait(intDelay / 1000, intDelay % 1000);
-				}
-			} catch (InterruptedException e) {
-				// Ignore exception
-			}
+    		idleSleepInterruptable();
     	}
     }
 
     public static void onLLEInterrupt() {
-    	// Notify the thread waiting on the idleSyncObject that
-    	// the idle should be ended.
-    	synchronized (idleSyncObject) {
-        	idleSyncObject.notifyAll();
-		}
+    	interruptIdleSleep();
     }
 
     public static void setLog4jMDC() {
