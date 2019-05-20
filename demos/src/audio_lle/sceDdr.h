@@ -1,0 +1,1 @@
+int sceDdrFlush(int);
