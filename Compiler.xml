@@ -11830,6 +11830,40 @@
 08002580:[34420104]: ori        $v0, $v0, 260
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="sceKernelUtilsSha1Digest">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.sceKernelUtilsSha1Digest</Class>
+		<Method>call</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0800F510:[00854021]: addu       $t0, $a0, $a1
+0800F514:[01044825]: or         $t1, $t0, $a0
+0800F518:[001B52C0]: sll        $t2, $k1, 0x000B
+0800F51C:[01255825]: or         $t3, $t1, $a1
+0800F520:[27BDFFF0]: addiu      $sp, $sp, -16
+0800F524:[3C038002]: lui        $v1, 0x8002 <=> li $v1, 0x80020000
+0800F528:[014B4824]: and        $t1, $t2, $t3
+0800F52C:[AFB00000]: sw         $s0, 0($sp)
+0800F530:[346800D3]: ori        $t0, $v1, 211
+0800F534:[03608021]: addu       $s0, $k1, $zr <=> move $s0, $k1
+0800F538:[AFBF0004]: sw         $ra, 4($sp)
+0800F53C:[01461824]: and        $v1, $t2, $a2
+0800F540:[05200003]: bltz       $t1, 0x0800F550
+0800F544:[0140D821]: addu       $k1, $t2, $zr <=> move $k1, $t2
+0800F548:[04610007]: bgez       $v1, 0x0800F568
+0800F54C:[00000000]: nop
+0800F550:[0200D821]: addu       $k1, $s0, $zr <=> move $k1, $s0
+0800F554:[8FBF0004]: lw         $ra, 4($sp)
+0800F558:[8FB00000]: lw         $s0, 0($sp)
+0800F55C:[01001021]: addu       $v0, $t0, $zr <=> move $v0, $t0
+0800F560:[03E00008]: jr         $ra
+0800F564:[27BD0010]: addiu      $sp, $sp, 16
+0800F568:[0E000690/FC000000]: jal        0x08001A40
+0800F56C:[00000000]: nop
+0800F570:[0200D821]: addu       $k1, $s0, $zr <=> move $k1, $s0
+0800F574:[0A003D55/FC000000]: j          0x0800F554
+0800F578:[00004021]: addu       $t0, $zr, $zr <=> li $t0, 0
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
