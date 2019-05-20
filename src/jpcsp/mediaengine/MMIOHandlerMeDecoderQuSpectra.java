@@ -213,6 +213,7 @@ public class MMIOHandlerMeDecoderQuSpectra extends MMIOHandlerMeBase {
 		switch (address - baseAddress) {
 			case 0x00: value = control; break;
 			case 0x20: value = bitIndex; break;
+			case 0x30: value = outputBuffer; break;
 			default: value = super.read32(address); break;
 		}
 
