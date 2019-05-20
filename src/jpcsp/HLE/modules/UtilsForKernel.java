@@ -19,6 +19,10 @@ package jpcsp.HLE.modules;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
+import jpcsp.util.MemoryInputStream;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -26,6 +30,10 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+
+import java.io.IOException;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 import org.apache.log4j.Logger;
 
@@ -58,5 +66,41 @@ public class UtilsForKernel extends HLEModule {
     @HLEFunction(nid = 0x6C6887EE, version = 150)
     public int UtilsForKernel_6C6887EE(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer dest, int destSize, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=0x100, usage=Usage.in) TPointer src, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 endOfDecompressedDestAddr) {
     	return 0;
+    }
+
+    @HLEFunction(nid = 0xE8DB3CE6, version = 150)
+    public int sceKernelDeflateDecompress(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer dest, int destSize, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=0x100, usage=Usage.in) TPointer src, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 endOfDecompressedDestAddr) {
+		int decompressedLength = 0;
+		byte[] buffer = new byte[destSize];
+    	try {
+    		Inflater inflater = new Inflater(true); // ZLIB header and checksum fields are ignored
+			InflaterInputStream is = new InflaterInputStream(new MemoryInputStream(src), inflater);
+			IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dest, destSize, 1);
+			while (decompressedLength < destSize) {
+				int length = is.read(buffer);
+				if (length < 0) {
+					// End of stream
+					break;
+				}
+				if (decompressedLength + length > destSize) {
+					log.warn(String.format("sceKernelDeflateDecompress : decompress buffer too small inBuffer=%s, outLength=%d", src, destSize));
+					is.close();
+					return SceKernelErrors.ERROR_INVALID_SIZE;
+				}
+
+				for (int i = 0; i < length; i++) {
+					memoryWriter.writeNext(buffer[i] & 0xFF);
+				}
+				decompressedLength += length;
+			}
+			is.close();
+			memoryWriter.flush();
+			endOfDecompressedDestAddr.setValue(src.getAddress() + (int) inflater.getBytesRead());
+		} catch (IOException e) {
+			log.error("sceKernelDeflateDecompress", e);
+			return SceKernelErrors.ERROR_INVALID_FORMAT;
+		}
+
+    	return decompressedLength;
     }
 }

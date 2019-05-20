@@ -19,6 +19,7 @@ package jpcsp.util;
 import java.io.IOException;
 import java.io.InputStream;
 
+import jpcsp.HLE.TPointer;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
@@ -31,6 +32,10 @@ public class MemoryInputStream extends InputStream {
 
 	public MemoryInputStream(int address) {
 		memoryReader = MemoryReader.getMemoryReader(address, 1);
+	}
+
+	public MemoryInputStream(TPointer address) {
+		memoryReader = MemoryReader.getMemoryReader(address.getMemory(), address.getAddress(), 1);
 	}
 
 	@Override
