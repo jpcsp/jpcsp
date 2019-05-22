@@ -200,6 +200,14 @@ public class DmacThread extends Thread {
 		}
 	}
 
+	private boolean isAudio(int ddrValue) {
+		return (status & (DMAC_STATUS_UNKNOWN | DMAC_STATUS_REQUIRES_DDR | DMAC_STATUS_DDR_VALUE)) == (0x0100C800 | DMAC_STATUS_REQUIRES_DDR | (ddrValue << DMAC_STATUS_DDR_VALUE_SHIFT));
+	}
+
+	private boolean isAudio() {
+		return isAudio(4) || isAudio(8);
+	}
+
 	private boolean dmacMemcpyStep() {
 		if (abortJob) {
 			return false;
@@ -262,7 +270,7 @@ public class DmacThread extends Thread {
 			}
 
 			memSrc.memcpy(normalizedDst, normalizedSrc, srcLength);
-		} else if ((status & (DMAC_STATUS_UNKNOWN | DMAC_STATUS_REQUIRES_DDR | DMAC_STATUS_DDR_VALUE)) == (0x0100C800 | DMAC_STATUS_REQUIRES_DDR | (4 << DMAC_STATUS_DDR_VALUE_SHIFT))) {
+		} else if (isAudio()) {
 			// Not sure about the exact meaning of these unknown status flags,
 			// but this combination is only used for the audio output and
 			// requires an exact timing.
@@ -338,6 +346,12 @@ public class DmacThread extends Thread {
 
 		if ((status & DMAC_STATUS_REQUIRES_DDR) != 0) {
 			ddrValue = (status & DMAC_STATUS_DDR_VALUE) >> DMAC_STATUS_DDR_VALUE_SHIFT;
+
+			// For the audio, sceDdrFlush(4) is always used, even when 8 is specified in the Dmac status
+			if (isAudio(8)) {
+				ddrValue = 4;
+			}
+
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("dmacMemcpy requiring a call to sceDdrFlush(0x%X), dst=0x%08X, src=0x%08X, attr=0x%08X, next=0x%08X, status=0x%X", ddrValue, dst, src, attributes, next, status));
 			}

@@ -16,13 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.modules.sceAudiocodec.audiocodecBufferSize;
+
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 
 public class sceMeAudio extends HLEModule {
     public static Logger log = Modules.getLogger("sceMeAudio");
@@ -40,9 +45,10 @@ public class sceMeAudio extends HLEModule {
 		return 0;
 	}
 
+	// Called by sceAudiocodecDecode
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x9A9E21EE, version = 150)
-	public int sceMeAudio_driver_9A9E21EE() {
+	public int sceMeAudio_driver_9A9E21EE(int codecType, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea) {
 		return 0;
 	}
 
