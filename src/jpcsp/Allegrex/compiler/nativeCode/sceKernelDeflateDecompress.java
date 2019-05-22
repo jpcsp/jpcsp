@@ -32,13 +32,16 @@ public class sceKernelDeflateDecompress extends AbstractNativeCodeSequence {
 		Memory mem = getMemory();
 		TPointer dest = new TPointer(mem, getGprA0());
 		int destSize = getGprA1();
-		TPointer src = new TPointer(mem, getGprA2());
+		int srcAddr = getGprA2();
+		TPointer src = new TPointer(mem, srcAddr);
 		TPointer32 endOfDecompressedDestAddr = new TPointer32(mem, getGprA3());
 
 		int result = Modules.UtilsForKernelModule.sceKernelDeflateDecompress(dest, destSize, src, endOfDecompressedDestAddr);
 
 		// Preserve the higher bits of the src address
-		endOfDecompressedDestAddr.setValue(endOfDecompressedDestAddr.getValue() | (getGprA2() & ~Memory.addressMask));
+		if (endOfDecompressedDestAddr.isNotNull()) {
+			endOfDecompressedDestAddr.setValue(endOfDecompressedDestAddr.getValue() | (srcAddr & ~Memory.addressMask));
+		}
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceKernelDeflateDecompress returning 0x%X", result));
