@@ -526,7 +526,10 @@ public class CodeBlock {
 
         // Jump to the block start if other instructions have been inserted in front
         if (!codeInstructions.isEmpty() && codeInstructions.getFirst().getAddress() != getStartAddress()) {
-            mv.visitJumpInsn(Opcodes.GOTO, getCodeInstruction(getStartAddress()).getLabel());
+        	CodeInstruction startCodeInstruction = getCodeInstruction(getStartAddress());
+        	if (startCodeInstruction != null) {
+        		mv.visitJumpInsn(Opcodes.GOTO, startCodeInstruction.getLabel());
+        	}
         }
 
         compile(context, mv, codeInstructions);
