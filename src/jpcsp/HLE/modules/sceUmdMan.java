@@ -20,6 +20,7 @@ import static jpcsp.HLE.modules.sceUmdUser.PSP_UMD_READABLE;
 import static jpcsp.HLE.modules.sceUmdUser.PSP_UMD_READY;
 import static jpcsp.filesystems.umdiso.ISectorDevice.sectorLength;
 import static jpcsp.memory.mmio.MMIOHandlerAta.ATA_SENSE_ASC_MEDIUM_NOT_PRESENT;
+import static jpcsp.memory.mmio.MMIOHandlerAta.ATA_SENSE_KEY_NOT_READY;
 import static jpcsp.memory.mmio.MMIOHandlerAta.ATA_SENSE_KEY_NO_SENSE;
 
 import java.io.IOException;
@@ -28,6 +29,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.State;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -289,7 +291,7 @@ public class sceUmdMan extends HLEModule {
 		if (mediumPresent) {
 			resultAddr.setUnsignedValue8(2, ATA_SENSE_KEY_NO_SENSE); // Successful command
 		} else {
-			resultAddr.setUnsignedValue8(2, ATA_SENSE_ASC_MEDIUM_NOT_PRESENT); // Medium not present
+			resultAddr.setUnsignedValue8(2, ATA_SENSE_KEY_NOT_READY); // Medium not present
 		}
 		resultAddr.setUnalignedValue32(3, 0); // Information
 		resultAddr.setUnsignedValue8(7, 10); // Additional Sense Length
@@ -305,6 +307,15 @@ public class sceUmdMan extends HLEModule {
 		resultAddr.setUnsignedValue8(15, 0); // SKSV / Sense Key Specific
 		resultAddr.setUnsignedValue8(16, 0); // Sense Key Specific
 		resultAddr.setUnsignedValue8(17, 0); // Sense Key Specific
+
+    	// The official PSP Update EBOOT only accepts the following values
+		// otherwise it displays an error "LPTFFFFFFF7".
+		// Not sure of the meaning of those values.
+		if (!mediumPresent && "MSTKUPDATE".equals(State.discId)) {
+			resultAddr.setUnsignedValue8(2, 9);
+			resultAddr.setUnsignedValue8(12, 2);
+			resultAddr.setUnsignedValue8(13, 0);
+		}
 
 		return 0;
     }
