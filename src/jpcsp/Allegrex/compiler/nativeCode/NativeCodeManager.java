@@ -140,10 +140,10 @@ public class NativeCodeManager {
 			return;
 		}
 
-		Pattern codeInstructionPattern = Pattern.compile("\\s*((\\w+)\\s*:?\\s*)?\\[(\\p{XDigit}+)(/(\\p{XDigit}+))?\\].*");
+		Pattern codeInstructionPattern = Pattern.compile("\\s*((\\w+)\\s*:?\\s*)?\\[(0x)?(\\p{XDigit}+)(/(0x)?(\\p{XDigit}+))?\\].*");
 		final int labelGroup = 2;
-		final int opcodeGroup = 3;
-		final int opcodeMaskGroup = 5;
+		final int opcodeGroup = 4;
+		final int opcodeMaskGroup = 7;
 
 		try {
 			while (true) {

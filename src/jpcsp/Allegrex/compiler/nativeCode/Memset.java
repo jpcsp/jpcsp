@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode;
 
-import jpcsp.Memory;
-import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 
@@ -54,69 +52,27 @@ public class Memset extends AbstractNativeCodeSequence {
 		setRegisterValue(nReg, endValue);
 	}
 
-	/**
-	 * Set memory range to a fixed value
-	 * @param dstAddrReg	register number containing the start address
-	 * @param cReg			register number containing the value
-	 * @param nStartReg		register number giving the start value of the counter
-	 * @param nEndReg		register number giving the end value of the counter
-	 * @param cLength		2: take only the lower 16bit of the value
-	 *                      4: take the 32bit of the value
-	 */
-	static public void call(int dstAddrReg, int cReg, int nStartReg, int cLength, int nEndReg) {
-		int dstAddr = getRegisterValue(dstAddrReg);
-		int c = getRegisterValue(cReg);
-		int nStart = getRegisterValue(nStartReg);
-		int nEnd = getRegisterValue(nEndReg);
-		int n = nEnd - nStart;
+	// Memset32 CodeBlock
+	static public void callMemset32() {
+		int dstAddr = getGprA0();
+		int c = getGprA1();
+		int n = getGprA2();
 
-		if (n == 0) {
-			return;
-		}
-
-		if (cLength == 2) {
-			// Both bytes identical?
-			if ((c & 0xFF) == ((c >> 8) & 0xFF)) {
-				// This is equivalent to a normal memset
-				getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n * 2);
-			} else {
-				// We have currently no built-in memset for 16bit values
-				// do it manually...
-				Memory mem = getMemory();
-				int value32 = (c & 0xFFFF) | (c << 16);
-				short value16 = (short) (c & 0xFFFF);
-				if (n > 0 && (dstAddr & 3) != 0) {
-					mem.write16(dstAddr, value16);
-					dstAddr += 2;
-					n--;
-				}
-				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dstAddr, n * 2, 4);
-				for (int i = 0; i < n; i += 2, dstAddr += 4) {
-					memoryWriter.writeNext(value32);
-				}
-				memoryWriter.flush();
-				if ((n & 1) != 0) {
-					mem.write16(dstAddr, value16);
-				}
-			}
-		} else if (cLength == 4) {
+		if (n > 0) {
 			// All bytes identical?
 			if ((c & 0xFF) == ((c >> 8) & 0xFF) && (c & 0xFFFF) == ((c >> 16) & 0xFFFF)) {
 				// This is equivalent to a normal memset
-				getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n * 4);
+				getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n);
 			} else {
-				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dstAddr, n * 4, 4);
-				for (int i = 0; i < n; i++) {
+				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dstAddr, n, 4);
+				for (int i = 0; i < n; i += 4) {
 					memoryWriter.writeNext(c);
 				}
 				memoryWriter.flush();
 			}
-		} else {
-			Compiler.log.error("Memset.call: unsupported cLength=0x" + Integer.toHexString(cLength));
 		}
 
-		setRegisterValue(dstAddrReg, getRegisterValue(dstAddrReg) + n * cLength);
-		setRegisterValue(nStartReg, nEnd);
+		setGprV0(dstAddr + n);
 	}
 
 	// Memset CodeSequence

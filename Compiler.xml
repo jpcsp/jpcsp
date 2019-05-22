@@ -7393,6 +7393,38 @@
 08885F2C:[24840010]: addiu      $a0, $a0, 16
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memset32">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<Method>callMemset32</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0x88008EE0: [0x00861021] - addu       $v0, $a0, $a2
+0x88008EE4: [0x10820015] - beq        $a0, $v0, 0x88008F3C
+0x88008EE8: [0x00000000] - nop
+0x88008EEC: [0xBC980000] - cache      0x18, 0($a0)
+0x88008EF0: [0xAC850000] - sw         $a1, 0($a0)
+0x88008EF4: [0xAC850004] - sw         $a1, 4($a0)
+0x88008EF8: [0xAC850008] - sw         $a1, 8($a0)
+0x88008EFC: [0xAC85000C] - sw         $a1, 12($a0)
+0x88008F00: [0xAC850010] - sw         $a1, 16($a0)
+0x88008F04: [0xAC850014] - sw         $a1, 20($a0)
+0x88008F08: [0xAC850018] - sw         $a1, 24($a0)
+0x88008F0C: [0xAC85001C] - sw         $a1, 28($a0)
+0x88008F10: [0xAC850020] - sw         $a1, 32($a0)
+0x88008F14: [0xAC850024] - sw         $a1, 36($a0)
+0x88008F18: [0xAC850028] - sw         $a1, 40($a0)
+0x88008F1C: [0xAC85002C] - sw         $a1, 44($a0)
+0x88008F20: [0xAC850030] - sw         $a1, 48($a0)
+0x88008F24: [0xAC850034] - sw         $a1, 52($a0)
+0x88008F28: [0xAC850038] - sw         $a1, 56($a0)
+0x88008F2C: [0xAC85003C] - sw         $a1, 60($a0)
+0x88008F30: [0x24840040] - addiu      $a0, $a0, 64
+0x88008F34: [0x1482FFED] - bne        $a0, $v0, 0x88008EEC
+0x88008F38: [0x00000000] - nop
+0x88008F3C: [0x03E00008] - jr         $ra
+0x88008F40: [0x00000000] - nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="memcmpSequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcmp</Class>
 		<IsReturning>true</IsReturning>
