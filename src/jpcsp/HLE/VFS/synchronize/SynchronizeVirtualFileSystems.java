@@ -14,19 +14,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.util;
+package jpcsp.HLE.VFS.synchronize;
 
 import static jpcsp.HLE.VFS.AbstractVirtualFileSystem.IO_ERROR;
-import static jpcsp.HLE.modules.sceRtc.hleGetCurrentMicros;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
-
-import jpcsp.Emulator;
-import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.VFS.IVirtualCache;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
@@ -34,68 +29,40 @@ import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.modules.IoFileMgrForUser;
-import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
+import jpcsp.util.Utilities;
 
-public class SynchronizeVirtualFileSystems implements IState {
-	public static Logger log = Logger.getLogger("synchronize");
+public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 	private static final int STATE_VERSION = 0;
-    private static final int deltaSyncDelayMillis = 1000;
-    private static final int deltaSyncIntervalMillis = 100;
-    private String name;
 	private IVirtualFileSystem input;
 	private IVirtualFileSystem output;
 	private ScePspDateTime lastSyncDate;
-	private long lastWrite;
-	private long lastSync;
-    private SynchronizeThread synchronizeThread;
-    private final Object lock;
-
-    private class SynchronizeThread extends Thread {
-		@Override
-		public void run() {
-			RuntimeContext.setLog4jMDC();
-
-			while (true) {
-				checkDeltaSynchronize();;
-				Utilities.sleep(deltaSyncIntervalMillis, 0);
-			}
-		}
-    }
 
 	public SynchronizeVirtualFileSystems(String name, IVirtualFileSystem input, IVirtualFileSystem output, Object lock) {
-		this.name = name;
+		super(name, lock);
 		this.input = input;
 		this.output = output;
-		this.lock = lock;
 
 		lastSyncDate = now();
-
-		synchronizeThread = new SynchronizeThread();
-		synchronizeThread.setName(String.format("Synchronize Thread - %s", name));
-		synchronizeThread.setDaemon(true);
-		synchronizeThread.start();
 	}
 
 	@Override
 	public void read(StateInputStream stream) throws IOException {
     	stream.readVersion(STATE_VERSION);
 		lastSyncDate.read(stream);
-    	lastWrite = stream.readLong();
-    	lastSync = stream.readLong();
-		invalidateCachedData();
+    	super.read(stream);
 	}
 
 	@Override
 	public void write(StateOutputStream stream) throws IOException {
     	stream.writeVersion(STATE_VERSION);
     	lastSyncDate.write(stream);
-    	stream.writeLong(lastWrite);
-    	stream.writeLong(lastSync);
+    	super.write(stream);
 	}
 
-	private void invalidateCachedData() {
+	@Override
+	protected void invalidateCachedData() {
 		if (input instanceof IVirtualCache) {
 			((IVirtualCache) input).invalidateCachedData();
 		}
@@ -113,25 +80,8 @@ public class SynchronizeVirtualFileSystems implements IState {
 		}
 	}
 
-	private void checkDeltaSynchronize() {
-		synchronized (lock) {
-	    	long now = Emulator.getClock().currentTimeMillis();
-	    	long millisSinceLastWrite = now - lastWrite;
-	    	if (lastSync < lastWrite && millisSinceLastWrite > deltaSyncDelayMillis) {
-	    		deltaSynchronize();
-	    		lastSync = now;
-	    	}
-		}
-	}
-
-	public void notifyWrite() {
-    	long now = Emulator.getClock().currentTimeMillis();
-		synchronized (lock) {
-			lastWrite = now;
-		}
-	}
-
-	private int deltaSynchronize() {
+	@Override
+	protected int deltaSynchronize() {
 		invalidateCachedData();
 		closeCachedFiles();
 
@@ -152,10 +102,6 @@ public class SynchronizeVirtualFileSystems implements IState {
 		lastSyncDate = newLastSync;
 
 		return result;
-	}
-
-	private ScePspDateTime now() {
-		return ScePspDateTime.fromMicros(hleGetCurrentMicros());
 	}
 
 	private boolean isModifiedSinceLastSync(SceIoDirent dirent) {

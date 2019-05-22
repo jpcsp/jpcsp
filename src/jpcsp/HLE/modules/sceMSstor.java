@@ -45,6 +45,7 @@ import jpcsp.HLE.VFS.WriteCacheVirtualFile;
 import jpcsp.HLE.VFS.fat.Fat32VirtualFile;
 import jpcsp.HLE.VFS.fat.FatVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
+import jpcsp.HLE.VFS.synchronize.SynchronizeVirtualFileSystems;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.kernel.Managers;
@@ -59,7 +60,6 @@ import jpcsp.settings.Settings;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
-import jpcsp.util.SynchronizeVirtualFileSystems;
 import jpcsp.util.Utilities;
 
 public class sceMSstor extends HLEModule {

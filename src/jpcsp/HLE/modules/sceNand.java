@@ -55,6 +55,9 @@ import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.nand.NandVirtualFile;
 import jpcsp.HLE.VFS.patch.PatchFileVirtualFileSystem;
+import jpcsp.HLE.VFS.synchronize.ISynchronize;
+import jpcsp.HLE.VFS.synchronize.SynchronizeMemoryToVirtualFile;
+import jpcsp.HLE.VFS.synchronize.SynchronizeVirtualFileSystems;
 import jpcsp.HLE.kernel.types.SceNandSpare;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.hardware.Nand;
@@ -65,7 +68,6 @@ import jpcsp.memory.mmio.MMIOHandlerNand;
 import jpcsp.settings.Settings;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
-import jpcsp.util.SynchronizeVirtualFileSystems;
 import jpcsp.util.Utilities;
 
 public class sceNand extends HLEModule {
@@ -76,7 +78,7 @@ public class sceNand extends HLEModule {
     public static final int iplTablePpnStart = 0x80;
     public static final int iplTablePpnEnd = 0x17F;
     public static final int iplPpnStart = 0x200;
-    public static final int iplPpnEnd = 0x2FF;
+    public static final int iplPpnEnd = 0x31F;
     public static final int idStoragePpnStart = 0x600;
     public static final int idStoragePpnEnd = 0x7FF;
     private static final int iplId = 0x6DC64A38;
@@ -104,10 +106,11 @@ public class sceNand extends HLEModule {
     private TPointer nandSpareMemoryPointer;
     private boolean initNandInProgress;
     private final Object writeLock = new Object();
-    private SynchronizeVirtualFileSystems syncFlash0;
-    private SynchronizeVirtualFileSystems syncFlash1;
-    private SynchronizeVirtualFileSystems syncFlash2;
-    private SynchronizeVirtualFileSystems syncFlash3;
+    private ISynchronize syncFlash0;
+    private ISynchronize syncFlash1;
+    private ISynchronize syncFlash2;
+    private ISynchronize syncFlash3;
+    private ISynchronize syncIpl;
 
     @Override
 	public void start() {
@@ -264,7 +267,16 @@ public class sceNand extends HLEModule {
 			syncFlash3 = new SynchronizeVirtualFileSystems("flash3", inputFlash3, outputFlash3, writeLock);
 		}
 
-		initNandInProgress = false;
+    	try {
+    		TPointer inputIpl = nandMemory.getPointer(iplTablePpnStart * pageSize);
+    		int inputIplSize = (iplPpnEnd - iplTablePpnStart + 1) * pageSize;
+    		IVirtualFile outputIpl = new LocalVirtualFile(new SeekableRandomFile("nand.ipl.bin", "rw"));
+    		syncIpl = new SynchronizeMemoryToVirtualFile("ipl", inputIpl, inputIplSize, outputIpl, writeLock);
+		} catch (FileNotFoundException e) {
+			log.error("initNandInMemory", e);
+		}
+
+    	initNandInProgress = false;
     }
 
     @Override
@@ -354,6 +366,18 @@ public class sceNand extends HLEModule {
         		}
 	    		syncFlash3.read(stream);
     		}
+
+    		if (syncIpl == null) {
+    	    	try {
+    	    		TPointer inputIpl = nandMemory.getPointer(iplTablePpnStart * pageSize);
+    	    		int inputIplSize = (iplPpnEnd - iplTablePpnStart + 1) * pageSize;
+    	    		IVirtualFile outputIpl = new LocalVirtualFile(new SeekableRandomFile("nand.ipl.bin", "rw"));
+    	    		syncIpl = new SynchronizeMemoryToVirtualFile("ipl", inputIpl, inputIplSize, outputIpl, writeLock);
+    			} catch (FileNotFoundException e) {
+    				log.error("initNandInMemory", e);
+    			}
+    		}
+    		syncIpl.read(stream);
     	}
 
     	super.read(stream);
@@ -399,6 +423,8 @@ public class sceNand extends HLEModule {
     	}
 
     	if (nandMemory != null) {
+    		synchronizeAll();
+
     		stream.writeBoolean(true);
     		nandMemory.write(stream);
     		nandSpareMemory.write(stream);
@@ -412,11 +438,22 @@ public class sceNand extends HLEModule {
     		} else {
     			stream.writeBoolean(false);
     		}
+    		syncIpl.write(stream);
     	} else {
     		stream.writeBoolean(false);
     	}
 
     	super.write(stream);
+    }
+
+    private void synchronizeAll() {
+		syncFlash0.synchronize();
+		syncFlash1.synchronize();
+		syncFlash2.synchronize();
+		if (syncFlash3 != null) {
+			syncFlash3.synchronize();
+		}
+		syncIpl.synchronize();
     }
 
     private static byte[] readBytes(String fileName) {
@@ -997,6 +1034,19 @@ public class sceNand extends HLEModule {
 
     	try {
 			vFileIpl = new LocalVirtualFile(new SeekableRandomFile("nand.ipl.bin", "rw"));
+
+			if (vFileIpl.length() == 0L) {
+				byte[] buffer = new byte[pageSize * pagesPerBlock];
+    			for (int iplPpn = iplPpnStart, offset = 0; iplPpn < iplPpnEnd; iplPpn += pagesPerBlock, offset += 2) {
+    				Utilities.writeUnaligned16(buffer, offset, iplPpn / pagesPerBlock);
+    			}
+
+    			vFileIpl.ioLseek(0L);
+				for (int n = iplTablePpnStart; n <= iplTablePpnEnd; n += pagesPerBlock) {
+	    			vFileIpl.ioWrite(buffer, 0, buffer.length);
+				}
+				vFileIpl.ioLseek(0L);
+			}
 		} catch (FileNotFoundException e) {
 			log.error("openFileIpl", e);
 		}
@@ -1106,21 +1156,12 @@ public class sceNand extends HLEModule {
 	    		for (int i = 0; i < len; i++) {
 	    			user.clear(pageSize);
 	    			int n = ppn + i;
-	    			if (n >= iplTablePpnStart && n <= iplTablePpnEnd) {
-	    				if (((n - iplPpnStart) % 0x20) == 0) {
-			    			for (int iplPpn = iplPpnStart, offset = 0; iplPpn < iplPpnEnd; iplPpn += pagesPerBlock, offset += 2) {
-			    				user.setUnsignedValue16(offset, iplPpn / pagesPerBlock);
-			    			}
-	    				} else {
-			    			// Empty pages
-			    			emptyPages[i] = true;
-	    				}
+	    			if (n >= iplTablePpnStart && n <= iplPpnEnd) {
+		    			openFileIpl();
+		    			readFile(user, vFileIpl, ppn + i - iplTablePpnStart);
+		    			emptyPages[i] = isEmptyPage(user);
 		    		} else if (n >= idStoragePpnStart && n <= idStoragePpnEnd) {
 		    			readIdStoragePage(user, ppn + i - idStoragePpnStart);
-		    		} else if (n >= iplPpnStart && n <= iplPpnEnd) {
-		    			openFileIpl();
-		    			readFile(user, vFileIpl, ppn + i - iplPpnStart);
-		    			emptyPages[i] = isEmptyPage(user);
 		    		} else if (ppnToLbn[n] == 0) {
 		    			// Master Boot Record
 		    			readMasterBootRecord0(user);
@@ -1311,7 +1352,9 @@ public class sceNand extends HLEModule {
     private void notifyWrite(int ppn, int len) {
 		for (int i = 0; i < len; i++) {
 			int n = ppn + i;
-			if (ppnToLbn[n] > flash0LbnStart && ppnToLbn[n] < flash1LbnStart) {
+			if (n >= iplTablePpnStart && n <= iplPpnEnd) {
+				syncIpl.notifyWrite();
+			} else if (ppnToLbn[n] > flash0LbnStart && ppnToLbn[n] < flash1LbnStart) {
 				syncFlash0.notifyWrite();
     		} else if (ppnToLbn[n] > flash1LbnStart && ppnToLbn[n] < flash2LbnStart) {
 				syncFlash1.notifyWrite();
