@@ -204,6 +204,7 @@ public class Emulator implements Runnable {
 
     private void initCpu(boolean fromSyscall) {
     	String discId = module.psf != null ? module.psf.getString("DISC_ID") : State.discId;
+    	// The official PSP Update EBOOT requires MMIO to access the Nand
         if ("MSTKUPDATE".equals(discId)) {
         	RuntimeContextLLE.createMMIO();
         }
