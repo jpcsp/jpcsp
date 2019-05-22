@@ -1680,7 +1680,7 @@ public class RuntimeContext {
     }
 
     public static int getPc() {
-    	return Emulator.getProcessor().cpu.pc;
+    	return RuntimeContextLLE.getProcessor().cpu.pc;
     }
 
     public static int executeEret() throws Exception {
