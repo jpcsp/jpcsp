@@ -69,13 +69,8 @@ public class MEMemory extends MMIO {
 		// The same memory is also visible at address range 0xA0000000-0xA01FFFFF
 		addMeRamHandler(0xA0000000, meRam, log);
 
-		addHandlerRW(0x44000000, 0x7070, log);
-		addHandlerRW(0x44020000, 0x70, log);
-		// TODO This address range is maybe some unknown MMIO?
-		addHandlerRW(0x44020FF0, 0x4, log);
-		addHandlerRW(0x44022FF0, 0x4, log);
-		addHandlerRW(0x44024000, 0x8, log);
-		addHandlerRW(0x44026000, 0x8, log);
+		addHandlerRW(0x44000000, 0x8000, log);
+		addHandlerRW(0x44020000, 0x8000, log);
 
 		addHandler(0x440F8000, 0x194, new MMIOHandlerMe0F8000(0x440F8000));
 		addHandler(0x440FF000, 0x30, new MMIOHandlerMe0FF000(0x440FF000));

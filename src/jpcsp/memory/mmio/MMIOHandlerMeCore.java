@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
+import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_MP3;
 
 import org.apache.log4j.Logger;
 
@@ -70,7 +71,7 @@ public class MMIOHandlerMeCore {
 		ME_CMD_AT3_INIT(0x73, 4),
 		ME_CMD_AT3_GET_INFO3(0x74, 0),
 		ME_CMD_MP3_GET_INFO3(0x81, 0),
-		ME_CMD_MP3_GET_INFO2(0x82, 2),
+		ME_CMD_MP3_GET_INFO2(0x82, 4),
 		ME_CMD_MP3_SET_VALUE_FOR_INFO2(0x89, 2),
 		ME_CMD_MP3_CHECK_NEED_MEM(0x8A, 3),
 		ME_CMD_MP3_INIT(0x8B, 1),
@@ -158,6 +159,12 @@ public class MMIOHandlerMeCore {
 
     	int result;
     	TPointer decodeSEI;
+    	TPointer workArea;
+    	int edram;
+    	int inputBufferSize;
+    	ICodec audioCodec;
+    	int inputBuffer;
+    	int outputBuffer;
     	switch (getCmd()) {
 			case 0x2: // ME_CMD_VIDEOCODEC_DECODE_TYPE0
 		    	int mp4Data = getParameter(1);
@@ -177,19 +184,20 @@ public class MMIOHandlerMeCore {
 				Modules.sceVideocodecModule.videocodecGetSEIType0(decodeSEI);
 				break;
 			case 0x67: // ME_CMD_AT3P_SETUP_CHANNEL
-				Modules.sceAudiocodecModule.initCodec(getParameter(4), PSP_CODEC_AT3PLUS, getParameter(2) + 2, getParameter(1), getParameter(3), 0);
+				edram = getParameter(4);
+				Modules.sceAudiocodecModule.initCodec(edram, PSP_CODEC_AT3PLUS, getParameter(2) + 2, getParameter(1), getParameter(3), 0);
 				break;
 			case 0x60: // ME_CMD_AT3P_DECODE
-				TPointer workArea = getParameterPointer(0);
-				int edram = workArea.getValue32(12);
-		    	int inputBufferSize;
+				workArea = getParameterPointer(0);
+				edram = workArea.getValue32(12);
 				if (workArea.getValue32(48) == 0) {
 					inputBufferSize = workArea.getValue32(64) + 2;
 				} else {
 					inputBufferSize = 0x100A;
 				}
-				ICodec audioCodec = Modules.sceAudiocodecModule.getCodec(edram);
-				int inputBuffer = workArea.getValue32(24);
+				audioCodec = Modules.sceAudiocodecModule.getCodec(edram);
+				inputBuffer = workArea.getValue32(24);
+				outputBuffer = workArea.getValue32(32);
 
 				// Skip any audio frame header (found in PSMF files)
 				if (mem.read8(inputBuffer) == 0x0F && mem.read8(inputBuffer + 1) == 0xD0) {
@@ -203,7 +211,7 @@ public class MMIOHandlerMeCore {
 					log.trace(String.format("ME_CMD_AT3P_DECODE inputBuffer: %s", Utilities.getMemoryDump(inputBuffer, inputBufferSize)));
 				}
 				if (audioCodec != null) {
-					result = audioCodec.decode(meMemory, inputBuffer, inputBufferSize, meMemory, workArea.getValue32(32));
+					result = audioCodec.decode(meMemory, inputBuffer, inputBufferSize, meMemory, outputBuffer);
 				} else {
 					result = inputBufferSize;
 				}
@@ -213,6 +221,35 @@ public class MMIOHandlerMeCore {
 						log.debug(String.format("ME_CMD_AT3P_DECODE audiocodec.decode returned error 0x%08X, data: %s", result, Utilities.getMemoryDump(inputBuffer, inputBufferSize)));
 					} else {
 						log.debug(String.format("ME_CMD_AT3P_DECODE audiocodec.decode bytesConsumed=0x%X", result));
+					}
+				}
+				break;
+			case 0x8B: // ME_CMD_MP3_INIT
+				edram = getParameter(0);
+				Modules.sceAudiocodecModule.initCodec(edram, PSP_CODEC_MP3, 0, 2, 2, 0);
+				break;
+			case 0x8C: // ME_CMD_MP3_DECODE
+				workArea = getParameterPointer(0);
+				edram = workArea.getValue32(12);
+				inputBufferSize = workArea.getValue32(40);
+				audioCodec = Modules.sceAudiocodecModule.getCodec(edram);
+				inputBuffer = workArea.getValue32(24);
+				outputBuffer = workArea.getValue32(32);
+
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("ME_CMD_MP3_DECODE inputBuffer: %s", Utilities.getMemoryDump(inputBuffer, inputBufferSize)));
+				}
+				if (audioCodec != null) {
+					result = audioCodec.decode(mem, inputBuffer, inputBufferSize, mem, outputBuffer);
+				} else {
+					result = inputBufferSize;
+				}
+				setResult(result);
+				if (log.isDebugEnabled()) {
+					if (result < 0) {
+						log.debug(String.format("ME_CMD_MP3_DECODE audiocodec.decode returned error 0x%08X, data: %s", result, Utilities.getMemoryDump(inputBuffer, inputBufferSize)));
+					} else {
+						log.debug(String.format("ME_CMD_MP3_DECODE audiocodec.decode bytesConsumed=0x%X", result));
 					}
 				}
 				break;

@@ -18,8 +18,8 @@ package jpcsp.mediaengine;
 
 import java.io.IOException;
 
-import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
@@ -197,34 +197,42 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 				}
 				break;
 			case 0x5A:
+				TPointer outputAddr = new TPointer(getMemory(), unknown10);
+				int unknownParameter1 = unknown18;
+				int unknownParameter2 = (unknown14 & 0xFFFF) + 1;
+				int unknownParameter3 = (unknown14 >>> 16) + 1;
+				int unknownParameter4 = unknown20 >> 1;
+				int numberOfSamples = unknown28 & 0xFFFF;
+				int unknownParameter6 = unknown28 >>> 16;
+				int unknownParameter7 = unknown24 + 1;
 				if (unknown14 == 0x03FF0000 && unknown18 == 0 && unknown20 == 2 && unknown24 == 3 && unknown28 == 0x10800) {
 					// Used by sceSasCore
-					int numberOfSamples = unknown28 & 0xFFFF;
-					Memory mem = getMemory();
 					for (int i = 0; i < numberOfSamples; i++) {
-						mem.write16(unknown10 + i * 2, (short) 0x1234);
+						outputAddr.setUnalignedValue16(i * 2, 0x1234);
+					}
+				} else if (unknown14 == 0x23F0000 && unknown18 == 0x200 && unknown20 == 4 && unknown24 == 3 && unknown28 == 0x10800) {
+					// Used by MP3 decode
+					numberOfSamples = 576; // TODO The number of samples is depending on the layer value from the MP3 header
+					for (int i = 0; i < numberOfSamples; i++) {
+						outputAddr.setUnalignedValue16(i * 4, 0x1234);
 					}
 				} else if (unknown18 != 0x548 || unknown20 != 4 || unknown24 != 3 || unknown28 != 0x10800) {
-					log.error(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
+					log.error(String.format("Unknown command 0x%X, status=0x%X, outputAddr=%s, unknownParameter1=0x%X, unknownParameter2=0x%X, unknownParameter3=0x%X, unknownParameter4=0x%X, numberOfSamples=0x%X, unknownParameter6=0x%X, unknownParameter7=0x%X", command, status, outputAddr, unknownParameter1, unknownParameter2, unknownParameter3, unknownParameter4, numberOfSamples, unknownParameter6, unknownParameter7));
 				} else if (unknown14 == 0x07FF0000) {
 					// Interlaced left and right samples
-					int numberOfSamples = unknown28 & 0xFFFF;
-					Memory mem = getMemory();
 					for (int i = 0; i < numberOfSamples; i++) {
-						mem.write16(unknown10 + i * 4, (short) 0x1234);
+						outputAddr.setUnalignedValue16(i * 4, 0x1234);
 					}
 				} else if (unknown14 == 0x000103FF) {
 					// Non-interlaced left and right samples
-					int numberOfSamples = unknown28 & 0xFFFF;
-					Memory mem = getMemory();
 					for (int i = 0; i < numberOfSamples; i++) {
-						mem.write16(unknown10 + i * 2, (short) 0x1234);
+						outputAddr.setUnalignedValue16(i * 2, 0x1234);
 					}
 				} else {
-					log.error(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
+					log.error(String.format("Unknown command 0x%X, status=0x%X, outputAddr=%s, unknownParameter1=0x%X, unknownParameter2=0x%X, unknownParameter3=0x%X, unknownParameter4=0x%X, numberOfSamples=0x%X, unknownParameter6=0x%X, unknownParameter7=0x%X", command, status, outputAddr, unknownParameter1, unknownParameter2, unknownParameter3, unknownParameter4, numberOfSamples, unknownParameter6, unknownParameter7));
 				}
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", command, status, unknown10, unknown14, unknown18, unknown20, unknown24, unknown28));
+					log.debug(String.format("Unknown command 0x%X, status=0x%X, outputAddr=%s, unknownParameter1=0x%X, unknownParameter2=0x%X, unknownParameter3=0x%X, unknownParameter4=0x%X, numberOfSamples=0x%X, unknownParameter6=0x%X, unknownParameter7=0x%X", command, status, outputAddr, unknownParameter1, unknownParameter2, unknownParameter3, unknownParameter4, numberOfSamples, unknownParameter6, unknownParameter7));
 				}
 				break;
 			case 0x5B:
