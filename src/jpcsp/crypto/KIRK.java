@@ -447,7 +447,7 @@ public class KIRK {
         byte[] outBuf = aes.decrypt(inBuf, aesBuf, priv_iv);
 
         out.position(outPosition);
-        out.put(outBuf);
+        out.put(outBuf, 0, elfDataSize);
         out.limit(elfDataSize);
         in.clear();
 
