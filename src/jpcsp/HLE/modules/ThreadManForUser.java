@@ -876,8 +876,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public static int JR() {
-    	// jr $ra
-    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.JR | (_ra << 21);
+    	return JR(_ra);
+    }
+
+    public static int JR(int reg) {
+    	// jr $reg
+    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.JR | (reg << 21);
     }
 
     public static int B(int destination) {
@@ -953,9 +957,22 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public static void installHLESyscall(int address, HLEModule hleModule, String name) {
+    	installHLESyscall(new TPointer(Memory.getInstance(), address), hleModule, name);
+    }
+
+    public static void installHLESyscall(TPointer address, HLEModule hleModule, String name) {
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 8, 4);
         memoryWriter.writeNext(JR());
         memoryWriter.writeNext(SYSCALL(hleModule, name));
+        memoryWriter.flush();
+    }
+
+    public static void installHLESyscallWithJump(TPointer address, HLEModule hleModule, String name) {
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 16, 4);
+        memoryWriter.writeNext(NOP());
+        memoryWriter.writeNext(SYSCALL(hleModule, name));
+        memoryWriter.writeNext(JR(_v0));
+        memoryWriter.writeNext(NOP());
         memoryWriter.flush();
     }
 

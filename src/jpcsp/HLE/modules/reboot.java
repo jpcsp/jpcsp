@@ -16,18 +16,25 @@
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.Common._t9;
+import static jpcsp.Allegrex.Common._v0;
+import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.Modules.LoadCoreForKernelModule;
 import static jpcsp.HLE.modules.InitForKernel.SCE_INIT_APITYPE_KERNEL_REBOOT;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Addr;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
+import static jpcsp.HLE.modules.ThreadManForUser.LUI;
+import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
+import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscall;
+import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscallWithJump;
+import static jpcsp.MemoryMap.START_SCRATCHPAD;
 import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.readCompleteFile;
 import static jpcsp.util.Utilities.readUnaligned32;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import org.apache.log4j.Logger;
@@ -42,6 +49,7 @@ import jpcsp.Allegrex.Interpreter;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
@@ -60,6 +68,7 @@ import jpcsp.crypto.KIRK;
 import jpcsp.crypto.PRX;
 import jpcsp.format.PSP;
 import jpcsp.hardware.Model;
+import jpcsp.hardware.Nand;
 import jpcsp.memory.IntArrayMemory;
 import jpcsp.memory.mmio.MMIO;
 import jpcsp.settings.Settings;
@@ -76,6 +85,11 @@ public class reboot extends HLEModule {
     private static final int BOOT_REBOOT_BIN   = 2;
     private static final int bootMethod = BOOT_LOADEXEC_PRX;
     private static final int threadManInfo = 0x88048740;
+	// The Pre-IPL code is copying itself to 0x80010000
+	private final TPointer preIplCode = new TPointer(Memory.getInstance(), START_SCRATCHPAD | 0x80000000);
+	private int iplEntry;
+	private int iplBase;
+	private int iplSize;
 
     private static class SetLog4jMDC implements IAction {
 		@Override
@@ -506,49 +520,14 @@ public class reboot extends HLEModule {
      * @return true if can be booted
      */
     private boolean bootIpl() {
-		byte[] buffer = new byte[0x20000];
-    	try {
-			InputStream is = new FileInputStream("nand.ipl.bin");
-			is.read(buffer);
-			is.close();
-    	} catch (IOException e) {
-			return false;
-		}
+    	if (!loadIpl()) {
+    		return false;
+    	}
 
-    	Memory mem = Memory.getInstance();
-
-    	byte[] page = new byte[0x1000];
-		int nextAddr = 0;
-		int iplBase = 0;
-		int iplEntry = 0;
-		for (int i = 0; i < buffer.length && iplEntry == 0; i += 0x1000) {
-			System.arraycopy(buffer, i, page, 0, 0x1000);
-			int result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(page, 0, 0x1000, page, 0, 0x500, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
-			if (result != 0) {
-				log.error(String.format("hleUtilsBufferCopyWithRange returned 0x%08X", result));
-			}
-
-			int addr = readUnaligned32(page, 0);
-			int length = readUnaligned32(page, 4);
-			iplEntry = readUnaligned32(page, 8);
-			int checksum = readUnaligned32(page, 12);
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("IPL block 0x%X: addr=0x%08X, length=0x%X, entry=0x%08X, checkSum=0x%08X", i, addr, length, iplEntry, checksum));
-			}
-
-			if (iplBase == 0) {
-				iplBase = addr;
-			} else if (addr != nextAddr) {
-				log.error(String.format("Error at IPL offset 0x%X: 0x%08X != 0x%08X", i, addr, nextAddr));
-			}
-			mem.copyToMemory(addr, ByteBuffer.wrap(page, 0x10, length), length);
-			nextAddr = addr + length;
-		}
-		int iplSize = nextAddr - iplBase;
-
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("IPL size=0x%X: %s", iplSize, Utilities.getMemoryDump(mem, iplBase, iplSize)));
-		}
+    	installHLESyscallWithJump(new TPointer(preIplCode, 0x000), this, "hlePreIplStart");
+    	installHLESyscall(new TPointer(preIplCode, 0x2A0), this, "hlePreIplIcacheInvalidateAll");
+    	installHLESyscall(new TPointer(preIplCode, 0x2D8), this, "hlePreIplDcacheWritebackInvalidateAll");
+    	installHLESyscall(new TPointer(preIplCode, 0x334), this, "hlePreIplNandReadPage");
 
 		SceModule iplModule = new SceModule(true);
 		iplModule.modname = getName();
@@ -560,9 +539,6 @@ public class reboot extends HLEModule {
 		iplModule.bss_size = 0;
 
     	Modules.ThreadManForUserModule.Initialise(iplModule, iplEntry, 0, iplModule.pspfilename, -1, 0, false);
-
-    	Compiler compiler = Compiler.getInstance();
-    	compiler.addMMIORange(iplBase, iplSize);
 
 		SceModule rebootModule = new SceModule(true);
     	rebootModule.baseAddress = rebootBaseAddress;
@@ -831,5 +807,129 @@ public class reboot extends HLEModule {
     	for (int address = mem.read32(list); address != list; address = mem.read32(address)) {
     		dumpThread(mem, address, comment);
     	}
+    }
+
+    private boolean loadIpl() {
+    	int result;
+    	Memory mem = RuntimeContextLLE.getMMIO();
+
+    	final TPointer nandSpareBuffer = new TPointer(preIplCode, 0x810);
+    	final TPointer iplFatSectorBuffer = new TPointer(preIplCode, 0x81C);
+
+    	for (int iplFatPpn = sceNand.iplTablePpnStart; true; iplFatPpn += Nand.pagesPerBlock) {
+    		// Pre-IPL patched?
+        	if (preIplCode.getValue32(0x154) == MOVE(_v0, _zr)) { 
+        		result = 0;
+        	} else {
+        		result = Modules.sceNandModule.hleNandReadPages(iplFatPpn, iplFatSectorBuffer, nandSpareBuffer, 1, true, false, true);
+        	}
+
+    		if (result != 0) {
+    			return false;
+    		}
+    		if (nandSpareBuffer.getValue32(4) == sceNand.iplId) {
+    			break;
+    		}
+    	}
+
+    	final TPointer decryptBuffer = new TPointer(mem, 0xBFD00000);
+    	final int decryptBufferPages = 8;
+    	final int decryptBufferSize = decryptBufferPages * Nand.pageSize;
+		int nextAddr = 0;
+		iplBase = 0;
+		iplEntry = 0;
+		for (int i = 0; i < Nand.pageSize && iplEntry == 0; i += 2) {
+			int ppn = iplFatSectorBuffer.getUnsignedValue16(i) * Nand.pagesPerBlock;
+			if (ppn == 0) {
+				break;
+			}
+
+			for (int j = 0; j < Nand.pagesPerBlock && iplEntry == 0; j += decryptBufferPages) {
+				for (int page = 0; page < decryptBufferPages; page++) {
+					result = Modules.sceNandModule.hleNandReadPages(ppn + j + page, new TPointer(decryptBuffer, page * Nand.pageSize), nandSpareBuffer, 1, true, false, true);
+					if (result != 0) {
+						return false;
+					}
+					if (nandSpareBuffer.getValue32(4) != sceNand.iplId) {
+						return false;
+					}
+				}
+
+				result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(decryptBuffer, decryptBufferSize, decryptBuffer, decryptBufferSize, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
+				if (result != 0) {
+					log.error(String.format("hleUtilsBufferCopyWithRange returned 0x%08X", result));
+				}
+
+				int addr = decryptBuffer.getValue32(0);
+				int length = decryptBuffer.getValue32(4);
+				iplEntry = decryptBuffer.getValue32(8);
+				int checksum = decryptBuffer.getValue32(12);
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("IPL block 0x%X: addr=0x%08X, length=0x%X, entry=0x%08X, checkSum=0x%08X", i, addr, length, iplEntry, checksum));
+				}
+
+				if (iplBase == 0) {
+					iplBase = addr;
+				} else if (addr != nextAddr) {
+					log.error(String.format("Error at IPL offset 0x%X: 0x%08X != 0x%08X", i, addr, nextAddr));
+				}
+				if (length > 0) {
+					mem.memcpy(addr, decryptBuffer.getAddress() + 0x10, length);
+				}
+				nextAddr = addr + length;
+			}
+		}
+		iplSize = nextAddr - iplBase;
+
+		if (iplBase == 0) {
+			iplBase = decryptBuffer.getAddress();
+			iplSize = decryptBufferSize;
+		}
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("IPL size=0x%X: %s", iplSize, Utilities.getMemoryDump(mem, iplBase, iplSize)));
+		}
+
+    	Compiler compiler = Compiler.getInstance();
+    	compiler.addMMIORange(iplBase, iplSize);
+
+		return true;
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hlePreIplStart() {
+    	loadIpl();
+
+    	int continueAddress = iplEntry;
+
+		// Pre-IPL patched?
+    	int opcode = preIplCode.getValue32(0xFC);
+    	if ((opcode & 0xFFFF0000) == LUI(_t9, 0)) {
+    		continueAddress = opcode << 16;
+
+    		Compiler compiler = Compiler.getInstance();
+        	compiler.addMMIORange(continueAddress, 0x3000);
+    	}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hlePreIplStart continueAddress=0x%08X", continueAddress));
+    	}
+
+    	return continueAddress;
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hlePreIplNandReadPage(int ppn, TPointer user, TPointer spare) {
+    	return Modules.sceNandModule.hleNandReadPages(ppn, user, spare, 1, true, false, true);
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public void hlePreIplIcacheInvalidateAll() {
+    	// Nothing to do
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public void hlePreIplDcacheWritebackInvalidateAll() {
+    	// Nothing to do
     }
 }

@@ -81,7 +81,7 @@ public class sceNand extends HLEModule {
     public static final int iplPpnEnd = 0x31F;
     public static final int idStoragePpnStart = 0x600;
     public static final int idStoragePpnEnd = 0x7FF;
-    private static final int iplId = 0x6DC64A38;
+    public static final int iplId = 0x6DC64A38;
     private static final int idStorageId = 0xFFFF0101;
     private byte[] dumpBlocks;
     private byte[] dumpSpares;
@@ -1210,7 +1210,15 @@ public class sceNand extends HLEModule {
     	    		}
         		}
         	} else if (nandSpareMemory != null) {
-	    		spare.memcpy(nandSpareMemory.getPointer(ppn << 4), len << 4);
+        		if (spareUserEcc) {
+        			// Write the userEcc
+        			spare.memcpy(nandSpareMemory.getPointer(ppn << 4), len << 4);
+        		} else {
+        			// Do not return the userEcc
+    	    		for (int i = 0; i < len; i++) {
+    	    			spare.memcpy(i * 12, nandSpareMemory.getPointer(((ppn + i) << 4) + 4), 12);
+    	    		}
+        		}
         	} else {
     	    	SceNandSpare sceNandSpare = new SceNandSpare();
     	    	for (int i = 0; i < len; i++) {
