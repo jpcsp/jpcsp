@@ -31,6 +31,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.modules.memlmd;
 import jpcsp.crypto.KeyVault;
@@ -233,6 +234,8 @@ public class MMIO extends Memory {
 		// the address 0xBFD00000 becomes invalid.
 		memcpy(0xBFC00000, 0xBFD00000, 0x1000);
 		removeHandler(0xBFD00000, 0x1000);
+
+		RuntimeContext.removeCodeBlocks(0xBFD00000, 0x1000);
     }
 
     protected IMMIOHandler getHandler(int address) {

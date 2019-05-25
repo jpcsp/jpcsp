@@ -1060,6 +1060,25 @@ public class RuntimeContext {
     	return codeBlocks;
     }
 
+    public static void removeCodeBlocks(int address, int size) {
+    	int[] addressesToBeRemoved = null;
+
+		for (CodeBlock codeBlock : codeBlocks.values()) {
+			if (codeBlock.isOverlappingWithAddressRange(address, size)) {
+				addressesToBeRemoved = Utilities.add(addressesToBeRemoved, codeBlock.getStartAddress());
+			}
+    	}
+
+		if (addressesToBeRemoved != null) {
+			for (int addressToBeRemoved : addressesToBeRemoved) {
+				CodeBlock codeBlock = codeBlocks.remove(addressToBeRemoved & addressMask);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("removeCodeBlocks address=0x%08X, size=0x%X, removing %s", address, size, codeBlock));
+				}
+			}
+		}
+    }
+
     public static IExecutable getExecutable(int address) {
     	int maskedAddress = address & addressMask;
     	// Check if we have already the executable in the fastExecutableLookup array

@@ -637,6 +637,8 @@ public class CodeBlock {
 	}
 
 	public boolean isOverlappingWithAddressRange(int address, int size) {
+		address &= Memory.addressMask;
+
 		// Fast check against the lowest & highest addresses
 		if (address > (highestAddress & Memory.addressMask)) {
 			return false;
