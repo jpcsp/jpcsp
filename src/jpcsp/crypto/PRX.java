@@ -346,8 +346,8 @@ public class PRX {
     	int elfSize = readUnaligned32(buf, 0x28);
         int decryptMode = read8(buf, 0x7C);
 
-    	byte[] resultBuffer = new byte[size];
-    	System.arraycopy(buf, 0, resultBuffer, 0, size);
+    	byte[] resultBuffer = new byte[Math.max(elfSize, pspSize)];
+    	System.arraycopy(buf, 0, resultBuffer, 0, Math.min(size, resultBuffer.length));
 
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("DecryptAndUncompressPRX size=0x%X, compAttribute=0x%X, pspSize=0x%X, elfSize=0x%X, decryptMode=0x%X", size, compAttribute, pspSize, elfSize, decryptMode));

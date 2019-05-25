@@ -162,7 +162,8 @@ public class PSP {
         } else {
         	int currentPosition = f.position();
         	f.position(currentPosition - PSP_HEADER_SIZE);
-        	inBuf = new byte[f.remaining()];
+        	int size = Math.min(Math.max(psp_size, elf_size), f.remaining());
+        	inBuf = new byte[size];
         	f.get(inBuf);
         	f.position(currentPosition);
         }
