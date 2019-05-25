@@ -11,7 +11,7 @@ if "%ProgramFiles%" == "%ProgramFiles(x86)%" goto JAVA32SHELL
 set JAVA_CMD=java.exe
 where /q java.exe
 if ERRORLEVEL 0 goto RUN
-
+
 rem Checking if the "reg" command is available
 reg /? >NUL 2>NUL
 if ERRORLEVEL 1 goto RUN
@@ -28,7 +28,7 @@ if not exist "%JAVA_CMD%" goto JAVAMISSING
 
 :RUN
 echo Running Jpcsp 64bit...
-"%JAVA_CMD%" -Xmx1024m -Xss2m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-amd64 -jar bin/jpcsp.jar %*
+"%JAVA_CMD%" -Xmx2048m -Xss2m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-amd64 -jar bin/jpcsp.jar %*
 if ERRORLEVEL 1 goto PAUSE
 goto END
 
