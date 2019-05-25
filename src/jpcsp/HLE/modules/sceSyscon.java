@@ -70,6 +70,7 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_CMD_RESET_DEVICE                  = 0x32;
     public static final int PSP_SYSCON_CMD_CTRL_ANALOG_XY_POLLING        = 0x33;
     public static final int PSP_SYSCON_CMD_CTRL_HR_POWER                 = 0x34;
+    public static final int PSP_SYSCON_CMD_UNKNOWN_35                    = 0x35;
     public static final int PSP_SYSCON_CMD_GET_BATT_VOLT_AD              = 0x37;
     public static final int PSP_SYSCON_CMD_GET_POMMEL_VERSION            = 0x40;
     public static final int PSP_SYSCON_CMD_GET_POLESTAR_VERSION          = 0x41;

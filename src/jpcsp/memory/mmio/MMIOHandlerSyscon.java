@@ -447,6 +447,8 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				break;
 			case PSP_SYSCON_CMD_GET_STATUS2:
 				break;
+			case sceSyscon.PSP_SYSCON_CMD_UNKNOWN_35:
+				break;
 			default:
 				log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
 				break;
@@ -473,12 +475,15 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				setDataValue(PSP_SYSCON_RX_RESPONSE + i, responseData[offset + i]);
 			}
 			addHashValue();
+
+			endDataIndex = false;
 		}
 	}
 
 	private int readData16() {
 		int value = ((data[dataIndex++] & 0xFF) << 8) | (data[dataIndex++] & 0xFF);
 		if (dataIndex >= data[PSP_SYSCON_RX_LEN]) {
+			dataIndex = 0;
 			endDataIndex = true;
 		}
 		return value;
@@ -488,6 +493,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		data[dataIndex++] = (value >> 8) & 0xFF;
 		data[dataIndex++] = value & 0xFF;
 		if (dataIndex >= MAX_DATA_LENGTH) {
+			dataIndex = 0;
 			endDataIndex = true;
 		}
 	}
@@ -495,10 +501,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	private int getFlags0C() {
 		int flags = 0;
 
-		if (endDataIndex) {
-			dataIndex = 0;
-			endDataIndex = false;
-		} else {
+		if (!endDataIndex) {
 			flags |= 4;
 		}
 
@@ -512,7 +515,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	private void setFlags04(int flags) {
 		if ((flags & 4) != 0) {
 			dataIndex = 0;
-			endDataIndex = false;
+			endDataIndex = true;
 		}
 
 		if ((flags & 2) != 0) {
