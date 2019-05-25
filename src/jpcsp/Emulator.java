@@ -36,6 +36,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
+import jpcsp.HLE.modules.reboot;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VertexCache;
@@ -480,5 +481,14 @@ public class Emulator implements Runnable {
 
     public void setModuleLoaded(boolean moduleLoaded) {
     	this.moduleLoaded = moduleLoaded;
+    }
+
+    public void onReboot() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("Emulator onReboot"));
+    	}
+    	module = null;
+		RuntimeContext.onReboot();
+		reboot.resetThreadManInfo(processor);
     }
 }

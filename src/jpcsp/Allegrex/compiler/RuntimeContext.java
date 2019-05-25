@@ -230,7 +230,10 @@ public class RuntimeContext {
 
 		// We are rebooting in LLE, make sure that the thread name is reset to "root"
 		if (address == 0x88600000 || address == 0x88FC0000) {
-			reboot.resetThreadManInfo(processor);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Rebooting at address 0x%08X", address));
+			}
+			Emulator.getInstance().onReboot();
 		}
 
         int returnValue = jumpCall(address);
@@ -1268,14 +1271,7 @@ public class RuntimeContext {
     public static void reset() {
     	if (compilerEnabled) {
     		log.debug("RuntimeContext.reset");
-    		Compiler.getInstance().reset();
-    		codeBlocks.clear();
-    		if (fastExecutableLookup != null) {
-    			Arrays.fill(fastExecutableLookup, null);
-    		}
-    		if (fastCodeBlockLookup != null) {
-    			Arrays.fill(fastCodeBlockLookup, null);
-    		}
+    		onReboot();
     		currentThread = null;
     		currentRuntimeThread = null;
     		reset = true;
@@ -1283,8 +1279,26 @@ public class RuntimeContext {
     		synchronized (waitForEnd) {
 				waitForEnd.notify();
 			}
-    		haltCount = 0;
     	}
+    }
+
+    public static void onReboot() {
+    	invalidateAllCodeBlocks();
+		haltCount = 0;
+    }
+
+    private static void invalidateAllCodeBlocks() {
+		for (CodeBlock codeBlock : codeBlocks.values()) {
+			codeBlock.free();
+		}
+        codeBlocks.clear();
+		if (fastExecutableLookup != null) {
+			Arrays.fill(fastExecutableLookup, null);
+		}
+		if (fastCodeBlockLookup != null) {
+			Arrays.fill(fastCodeBlockLookup, null);
+		}
+        Compiler.getInstance().reset();
     }
 
     public static void invalidateAll() {
@@ -1293,10 +1307,7 @@ public class RuntimeContext {
     			// Simple method: invalidate all the code blocks,
     			// independently if their were modified or not.
         		log.debug("RuntimeContext.invalidateAll simple");
-                codeBlocks.clear();
-        		Arrays.fill(fastExecutableLookup, null);
-    			Arrays.fill(fastCodeBlockLookup, null);
-                Compiler.getInstance().invalidateAll();
+        		invalidateAllCodeBlocks();
     		} else {
     			// Advanced method: check all the code blocks for a modification
     			// of their opcodes and invalidate only those code blocks that

@@ -133,6 +133,10 @@ public class MemoryRange {
 		return false;
 	}
 
+	public void free() {
+		values = null;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("[0x%08X-0x%08X]", rawAddress, rawAddress + length);

@@ -201,13 +201,8 @@ public class Compiler implements ICompiler {
 		classLoader = new CompilerClassLoader(this);
 		compileDuration.reset();
 		nativeCodeManager.reset();
+        interpretedAddresses.clear();
 	}
-
-    public void invalidateAll() {
-        // Simply generate a new class loader.
-    	log.info("Compiler: invalidating all compiled classes");
-        classLoader = new CompilerClassLoader(this);
-    }
 
     public boolean checkSimpleInterpretedCodeBlock(CodeBlock codeBlock) {
     	boolean isSimple = true;

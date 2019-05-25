@@ -87,6 +87,13 @@ public class MemoryRanges {
 		return 0;
 	}
 
+	public void clear() {
+		for (MemoryRange memoryRange : ranges) {
+			memoryRange.free();
+		}
+		ranges.clear();
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();

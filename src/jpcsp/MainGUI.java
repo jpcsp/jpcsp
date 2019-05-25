@@ -3401,6 +3401,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 	public void doReboot() {
     	reboot.enableReboot = true;
     	logStart();
+    	Emulator.getInstance().onReboot();
         setTitle(MetaInformation.FULL_NAME + " - reboot");
         Modules.sceDisplayModule.setCalledFromCommandLine();
         HTTPServer.processProxyRequestLocally = true;

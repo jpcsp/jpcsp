@@ -686,6 +686,32 @@ public class CodeBlock {
 		this.updateOpcodesAction = updateOpcodesAction;
 	}
 
+	public void free() {
+		startAddress = 0;
+		lowestAddress = 0;
+		highestAddress = 0;
+		if (codeInstructions != null) {
+			codeInstructions.clear();
+			codeInstructions = null;
+		}
+		if (sequenceCodeInstructions != null) {
+			sequenceCodeInstructions.clear();
+			sequenceCodeInstructions = null;
+		}
+		currentSequence = null;
+		executable = null;
+		instanceIndex = 0;
+		interpretedInstructions = null;
+		interpretedOpcodes = null;
+		if (memoryRanges != null) {
+			memoryRanges.clear();
+			memoryRanges = null;
+		}
+		flags = 0;
+		hleFunction = null;
+		updateOpcodesAction = null;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("CodeBlock 0x%08X[0x%08X-0x%08X]", getStartAddress(), getLowestAddress(), getHighestAddress());
