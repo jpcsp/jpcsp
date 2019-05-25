@@ -99,7 +99,9 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 	public int read32(int address) {
 		int value;
 		switch (address - baseAddress) {
+			case 0x00: value = 0; break;
 			case 0x04: value = 0; break;
+			case 0x20: value = 0; break;
 			case 0x30: value = 0; break; // Unknown, used during sceDdrChangePllClock()
 			case 0x40: value = unknown40; unknown40 ^= 0x100; break; // Unknown, used during sceDdrChangePllClock()
 			default: value = super.read32(address); break;
@@ -116,6 +118,8 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
 			case 0x04: doFlush(value); break;
+			case 0x20: break;
+			case 0x24: break;
 			case 0x30: break; // Unknown, used during sceDdrChangePllClock()
 			case 0x34: break; // Unknown, used during sceDdrChangePllClock()
 			case 0x40: break; // Unknown, used during sceDdrChangePllClock()
