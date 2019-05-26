@@ -177,7 +177,9 @@ public class sceNand extends HLEModule {
 		}
 
 		if (!emulateNand && log.isTraceEnabled()) {
+			//
 			// Brute force search for boot sectors
+			//
 			long fuseId = Modules.sceSysregModule.sceSysregGetFuseId();
 			// All possible scramble values
 			final int scrambles[] = new int[7];
@@ -206,6 +208,54 @@ public class sceNand extends HLEModule {
 					if (user.getUnsignedValue16(510) == 0xAA55) {
 						log.trace(String.format("Boot sector ppn=0x%X: %s", ppn, Utilities.getMemoryDump(user, pageSize)));
 					}
+				}
+			}
+		}
+
+		if (!emulateNand && log.isTraceEnabled()) {
+			//
+			// Dump all ID storage pages
+			//
+			TPointer user = Utilities.allocatePointer(pageSize);
+			int idStorageKeys[] = new int[0x10000];
+			Arrays.fill(idStorageKeys, -1);
+			int idStoragePage = 0;
+			for (int ppn = idStoragePpnStart; ppn <= idStoragePpnEnd; ppn++) {
+				int id = Utilities.readUnaligned32(dumpSpares, (ppn << 4) + 8);
+				if (id == idStorageId) {
+					int scramble = MMIOHandlerNand.getInstance().getScramble(ppn);
+
+					if (scramble != 0) {
+						sceNandSetScramble(scramble);
+						descramblePage(ppn, user, dumpBlocks, ppn * pageSize);
+					} else {
+						Utilities.writeBytes(user, pageSize, dumpBlocks, ppn * pageSize);
+					}
+
+					for (int i = 0; i < pageSize; i += 2) {
+						int n = user.getUnsignedValue16(i);
+						if (n != 0xFFFF) {
+							idStorageKeys[n] = (idStoragePage * pageSize + i) >> 1;
+						}
+					}
+					idStoragePage++;
+				}
+			}
+
+			for (int key = 0; key < idStorageKeys.length; key++) {
+				if (idStorageKeys[key] >= 0) {
+					int ppn = idStoragePpnStart + idStorageKeys[key];
+
+					int scramble = MMIOHandlerNand.getInstance().getScramble(ppn);
+
+					if (scramble != 0) {
+						sceNandSetScramble(scramble);
+						descramblePage(ppn, user, dumpBlocks, ppn * pageSize);
+					} else {
+						Utilities.writeBytes(user, pageSize, dumpBlocks, ppn * pageSize);
+					}
+
+					log.trace(String.format("ID Storage key=0x%X, ppn=0x%X: %s", key, ppn, isEmptyPage(user, 0) ? "all 0's" : Utilities.getMemoryDump(user, pageSize)));
 				}
 			}
 		}
@@ -1126,11 +1176,11 @@ public class sceNand extends HLEModule {
 		vFileFlash3.scan();
     }
 
-    private boolean isEmptyPage(TPointer user) {
+    private boolean isEmptyPage(TPointer user, int emptyValue) {
     	IMemoryReader pageReader = MemoryReader.getMemoryReader(user, pageSize, 4);
     	for (int i = 0; i < pageSize; i += 4) {
     		int value = pageReader.readNext();
-    		if (value != 0xFFFFFFFF) {
+    		if (value != emptyValue) {
     			return false;
     		}
     	}
@@ -1159,7 +1209,7 @@ public class sceNand extends HLEModule {
 	    			if (n >= iplTablePpnStart && n <= iplPpnEnd) {
 		    			openFileIpl();
 		    			readFile(user, vFileIpl, ppn + i - iplTablePpnStart);
-		    			emptyPages[i] = isEmptyPage(user);
+		    			emptyPages[i] = isEmptyPage(user, 0xFFFFFFFF);
 		    		} else if (n >= idStoragePpnStart && n <= idStoragePpnEnd) {
 		    			readIdStoragePage(user, ppn + i - idStoragePpnStart);
 		    		} else if (ppnToLbn[n] == 0) {
