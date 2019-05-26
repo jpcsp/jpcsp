@@ -3882,9 +3882,10 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x532A522E, version = 150)
-    public int _sceKernelExitThread(int exitStatus) {
-        // _sceKernelExitThread is equivalent to sceKernelExitThread
-        return sceKernelExitThread(exitStatus);
+    public int _sceKernelExitThread(Processor processor) {
+        // _sceKernelExitThread is used when the thread simply returns from its entry point.
+    	// The exit statis is the return value of the entry point method.
+        return sceKernelExitThread(processor.cpu._v0);
     }
 
     /** exit the current thread */
