@@ -16,6 +16,7 @@
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._t9;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
@@ -24,7 +25,9 @@ import static jpcsp.HLE.Modules.LoadCoreForKernelModule;
 import static jpcsp.HLE.modules.InitForKernel.SCE_INIT_APITYPE_KERNEL_REBOOT;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Addr;
+import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
+import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
 import static jpcsp.HLE.modules.ThreadManForUser.LUI;
 import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
 import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscall;
@@ -34,7 +37,10 @@ import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.readCompleteFile;
 import static jpcsp.util.Utilities.readUnaligned32;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import org.apache.log4j.Logger;
@@ -49,11 +55,13 @@ import jpcsp.Allegrex.Interpreter;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.types.IAction;
@@ -281,10 +289,18 @@ public class reboot extends HLEModule {
     private void initRebootParameters(Memory mem, SceModule rebootModule) {
     	addFunctionNames(rebootModule);
 
-    	int rebootParamAddressOffset = Model.getModel() == Model.MODEL_PSP_FAT ? 0x400000 : 0x3800000;
+    	int rebootParamAddressOffset;
+    	int rebootParamPartitionId;
+    	if (Model.getModel() == Model.MODEL_PSP_FAT) {
+        	rebootParamAddressOffset = 0x400000;
+        	rebootParamPartitionId = VSHELL_PARTITION_ID;
+    	} else {
+        	rebootParamAddressOffset = 0x3800000;
+        	rebootParamPartitionId = USER_PARTITION_ID;
+    	}
     	int rebootParamAddress = MemoryMap.START_KERNEL + rebootParamAddressOffset + 0x40;
 
-		SysMemInfo rebootParamInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot-parameters", PSP_SMEM_Addr, 0x10000, rebootParamAddress);
+		SysMemInfo rebootParamInfo = Modules.SysMemUserForUserModule.malloc(rebootParamPartitionId, "reboot-parameters", PSP_SMEM_Addr, 0x10000, rebootParamAddress);
 		TPointer sceLoadCoreBootInfoAddr = new TPointer(mem, rebootParamInfo.addr);
 		SceLoadCoreBootInfo sceLoadCoreBootInfo = new SceLoadCoreBootInfo();
 
@@ -524,6 +540,7 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
+    	addMMIORange(preIplCode, 0x1000);
     	installHLESyscallWithJump(new TPointer(preIplCode, 0x000), this, "hlePreIplStart");
     	installHLESyscall(new TPointer(preIplCode, 0x2A0), this, "hlePreIplIcacheInvalidateAll");
     	installHLESyscall(new TPointer(preIplCode, 0x2D8), this, "hlePreIplDcacheWritebackInvalidateAll");
@@ -809,6 +826,14 @@ public class reboot extends HLEModule {
     	}
     }
 
+    private void addMMIORange(int startAddress, int length) {
+    	Compiler.getInstance().addMMIORange(startAddress, length);
+    }
+
+    private void addMMIORange(TPointer startAddress, int length) {
+    	addMMIORange(startAddress.getAddress(), length);
+    }
+
     private boolean loadIpl() {
     	int result;
     	Memory mem = RuntimeContextLLE.getMMIO();
@@ -890,10 +915,18 @@ public class reboot extends HLEModule {
 			log.trace(String.format("IPL size=0x%X: %s", iplSize, Utilities.getMemoryDump(mem, iplBase, iplSize)));
 		}
 
-    	Compiler compiler = Compiler.getInstance();
-    	compiler.addMMIORange(iplBase, iplSize);
+		patchIpl(mem);
+
+    	addMMIORange(iplBase, iplSize);
 
 		return true;
+    }
+
+    private void patchIpl(Memory mem) {
+    	int sceGzipDecompressAddr = iplBase + 0x910;
+    	if (mem.read32(sceGzipDecompressAddr) == ADDIU(_sp, _sp, -64)) {
+        	installHLESyscall(new TPointer(mem, sceGzipDecompressAddr), this, "hleIplGzipDecompress");
+    	}
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
@@ -907,8 +940,7 @@ public class reboot extends HLEModule {
     	if ((opcode & 0xFFFF0000) == LUI(_t9, 0)) {
     		continueAddress = opcode << 16;
 
-    		Compiler compiler = Compiler.getInstance();
-        	compiler.addMMIORange(continueAddress, 0x3000);
+        	addMMIORange(continueAddress, 0x3000);
     	}
 
     	if (log.isDebugEnabled()) {
@@ -931,5 +963,50 @@ public class reboot extends HLEModule {
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hlePreIplDcacheWritebackInvalidateAll() {
     	// Nothing to do
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleIplGzipDecompress(TPointer outBufferAddr, int outBufferLength, TPointer inBufferAddr, @CanBeNull TPointer32 crc32Addr) {
+    	if (Modules.sceDefltModule.sceGzipIsValid(inBufferAddr)) {
+    		return Modules.sceDefltModule.sceGzipDecompress(outBufferAddr, outBufferLength, inBufferAddr, crc32Addr);
+    	}
+
+    	File mainBin = new File("main.bin");
+    	if (mainBin.canRead()) {
+    		byte[] buffer = new byte[outBufferLength];
+			try {
+				InputStream is = new FileInputStream(mainBin);
+				int readLength = is.read(buffer);
+				is.close();
+
+				outBufferAddr.setArray(buffer, readLength);
+
+		    	addMMIORange(outBufferAddr.getAddress(), readLength);
+
+		    	// Patching main.bin
+		    	outBufferAddr.setValue32(0x90, MOVE(_v0, _zr)); // disable decryption of key at 0xBFD00200
+			} catch (IOException e) {
+				log.error("hleIplGzipDecompress", e);
+			}
+    	} else {
+    		installHLESyscallWithJump(outBufferAddr, this, "hleIplStart");
+    	}
+
+    	return 0;
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleIplStart() {
+    	int continueAddress = 0;
+
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("hleIplStart is there anything patched in this area: %s", Utilities.getMemoryDump(0x04000000, 0x10000)));
+    	}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleIplStart continueAddress=0x%08X", continueAddress));
+    	}
+
+    	return continueAddress;
     }
 }
