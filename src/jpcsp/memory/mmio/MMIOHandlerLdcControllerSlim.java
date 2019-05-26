@@ -62,10 +62,16 @@ public class MMIOHandlerLdcControllerSlim extends MMIOHandlerBase {
 		switch (value) {
 			case 0x1E00:
 			case 0xC100:
+			case 0xC120:
 			case 0xC122:
 			case 0xC123:
 			case 0xC124:
+			case 0xC140:
+			case 0xC167:
+			case 0xC168:
+			case 0xC16B:
 			case 0xC1CC:
+			case 0xC1D0:
 			case 0xCF01:
 			case 0x30F0:
 			case 0x3100:
