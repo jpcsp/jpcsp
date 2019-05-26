@@ -59,11 +59,27 @@ public class MMIOHandlerLdcControllerSlim extends MMIOHandlerBase {
 	private void setUnknown08(int value) {
 		unknown08 = value;
 
-		if (value == 0x1E00 || value == 0x3E00) {
-			unknown0C |= 0x4;
-		}
-		if (value == 0x3E00) {
-			unknown08 |= 0x00A0;
+		switch (value) {
+			case 0x1E00:
+			case 0xC100:
+			case 0xC122:
+			case 0xC123:
+			case 0xC124:
+			case 0xC1CC:
+			case 0xCF01:
+			case 0x30F0:
+			case 0x3100:
+			case 0xEF00:
+				unknown0C |= 0x4;
+				break;
+			case 0x3E00:
+				unknown0C |= 0x4;
+				unknown08 |= 0x00A0;
+				break;
+			case 0xC200:
+				unknown0C |= 0x4;
+				unknown08 |= 0x00D7;
+				break;
 		}
 	}
 
