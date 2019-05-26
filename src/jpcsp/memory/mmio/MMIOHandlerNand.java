@@ -249,7 +249,7 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 		return scramble;
 	}
 
-	private int getScramble(int ppn) {
+	public int getScramble(int ppn) {
 		long fuseId = sceSysregModule.sceSysregGetFuseId();
 		int lbn = sceNandModule.getLbnFromPpn(ppn);
 		int sector = ppn % pagesPerBlock;
