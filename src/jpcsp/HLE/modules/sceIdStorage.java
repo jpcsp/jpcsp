@@ -105,6 +105,14 @@ public class sceIdStorage extends HLEModule {
 				break;
 			case 0x0008:
 				buffer.setValue32(0, 0x4C434470); // Fixed value "pDCL"
+				// Used by display_02g.prx (and later models)
+				buffer.setUnalignedValue16(16, 0x000A);
+				buffer.setUnalignedValue16(18, 0x0019);
+				buffer.setUnalignedValue16(20, 0x0010);
+				buffer.setUnalignedValue16(22, 0x000E);
+				buffer.setUnalignedValue16(24, 0x000B);
+				buffer.setUnalignedValue16(26, 0x0008);
+				buffer.setUnalignedValue16(28, 0x0072);
 				break;
 			case 0x0041:
 				// Used by usb.prx

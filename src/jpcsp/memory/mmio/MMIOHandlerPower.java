@@ -42,13 +42,18 @@ public class MMIOHandlerPower extends MMIOHandlerBase {
 		public int unknown18;
 		public int unknown1C;
 
+		private int getUnknown0C() {
+			unknown0C = unknown04;
+			return unknown0C;
+		}
+
 		public int read32(int offset) {
 			int value = 0;
 			switch (offset) {
 				case 0x00: value = unknown00; break;
 				case 0x04: value = unknown04; break;
 				case 0x08: value = unknown08; break;
-				case 0x0C: value = unknown0C; break;
+				case 0x0C: value = getUnknown0C(); break;
 				case 0x10: value = unknown10; break;
 				case 0x14: value = unknown14; break;
 				case 0x18: value = unknown18; break;

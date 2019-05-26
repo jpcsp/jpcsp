@@ -49,4 +49,10 @@ public class scePwm extends HLEModule {
 	public int scePwm_driver_94552DD4(int unknown1, int unknown2, int unknown3, int unknown4) {
     	return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xB99A9B50, version = 150)
+	public int scePwm_driver_B99A9B50(int unknown1) {
+    	return 0;
+	}
 }
