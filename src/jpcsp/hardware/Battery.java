@@ -16,7 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.hardware;
 
+import java.io.IOException;
+import java.util.Random;
+
+import jpcsp.settings.Settings;
+import jpcsp.state.StateInputStream;
+import jpcsp.state.StateOutputStream;
+
 public class Battery {
+	private static final int STATE_VERSION = 0;
+    private static final String settingsBatterySerialNumber = "batterySerialNumber";
+    public static final int BATTERY_SERIAL_NUMBER_SERVICE = 0xFFFFFFFF;
+    public static final int BATTERY_SERIAL_NUMBER_AUTOBOOT = 0x00000000;
     //battery life time in minutes
     private static int lifeTime = (5 * 60);        // 5 hours
     //some standard battery temperature 28 deg C
@@ -34,12 +45,31 @@ public class Battery {
     // battery capacity in mAh when it is full
     private static final int fullCapacity = 1800;
     private static boolean charging = false;
+    public static final int EEPROM_SIZE = 256;
+    private static final byte[] eeprom = new byte[EEPROM_SIZE];
 
     public static void initialize() {
-        BatteryUpdateThread.initialize();
+    	// Generate a random but valid battery serial number
+    	int randomBatterySerialNumber;
+    	Random random = new Random();
+    	do {
+    		randomBatterySerialNumber = random.nextInt(); 
+    	} while (randomBatterySerialNumber == BATTERY_SERIAL_NUMBER_SERVICE || randomBatterySerialNumber == BATTERY_SERIAL_NUMBER_AUTOBOOT);
+
+    	// Take the battery serial number from the settings if one is specified,
+    	// otherwise, use the random one.
+    	int batterySerialNumber = Settings.getInstance().readInt(settingsBatterySerialNumber, randomBatterySerialNumber);
+
+    	// Store the serial number into the EEPROM
+    	writeEeprom(15, batterySerialNumber >> 24);
+    	writeEeprom(14, batterySerialNumber >> 16);
+    	writeEeprom(19, batterySerialNumber >> 8);
+    	writeEeprom(18, batterySerialNumber);
+
+    	BatteryUpdateThread.initialize();
     }
 
-    public static int getLifeTime() {
+	public static int getLifeTime() {
         return lifeTime;
     }
 
@@ -106,4 +136,36 @@ public class Battery {
     public static int getFullCapacity() {
         return fullCapacity;
     }
+
+    public static int readEeprom(int address) {
+    	return eeprom[address] & 0xFF;
+    }
+
+    public static void writeEeprom(int address, int value) {
+    	eeprom[address] = (byte) (value & 0xFF);
+    }
+
+	public static void read(StateInputStream stream) throws IOException {
+		stream.readVersion(STATE_VERSION);
+		lifeTime = stream.readInt();
+		temperature = stream.readInt();
+		voltage = stream.readInt();
+		pluggedIn = stream.readBoolean();
+		present = stream.readBoolean();
+		currentPowerPercent = stream.readInt();
+		charging = stream.readBoolean();
+		stream.read(eeprom);
+	}
+
+	public static void write(StateOutputStream stream) throws IOException {
+		stream.writeVersion(STATE_VERSION);
+		stream.writeInt(lifeTime);
+		stream.writeInt(temperature);
+		stream.writeInt(voltage);
+		stream.writeBoolean(pluggedIn);
+		stream.writeBoolean(present);
+		stream.writeInt(currentPowerPercent);
+		stream.writeBoolean(charging);
+		stream.write(eeprom);
+	}
 }

@@ -25,6 +25,8 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_LIMIT_TIME;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_STATUS_CAP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_TEMP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_GET_VOLT;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_READ_EEPROM;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_BATTERY_WRITE_EEPROM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_ANALOG_XY_POLLING;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_HR_POWER;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_LED;
@@ -51,6 +53,8 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_READ_SCRATCHPAD;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_RECEIVE_SETPARAM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_RESET_DEVICE;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_SEND_SETPARAM;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_UNKNOWN_30;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_UNKNOWN_35;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_ALARM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_CLOCK;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_SCRATCHPAD;
@@ -58,6 +62,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_DEVICE_UMD;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_DEVICE_WLAN;
 import static jpcsp.HLE.modules.sceSyscon.getSysconCmdName;
 import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_SYSCON_END_CMD;
+import static jpcsp.util.Utilities.hasFlag;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -100,6 +105,8 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	private int dataIndex;
 	private boolean endDataIndex;
 	private int error;
+	private static final int NUMBER_INTERNAL_REGISTERS = 8;
+	private final byte[][] internalRegisters = new byte[8][8];
 
 	public static MMIOHandlerSyscon getInstance() {
 		if (instance == null) {
@@ -238,6 +245,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		int[] responseData = new int[] { 0x82 };
 
 		int unknown;
+		int address;
 		switch (cmd) {
 			case PSP_SYSCON_CMD_NOP:
 				// Doing nothing
@@ -447,7 +455,41 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				break;
 			case PSP_SYSCON_CMD_GET_STATUS2:
 				break;
-			case sceSyscon.PSP_SYSCON_CMD_UNKNOWN_35:
+			case PSP_SYSCON_CMD_UNKNOWN_35:
+				break;
+			case PSP_SYSCON_CMD_UNKNOWN_30:
+				int length = data[PSP_SYSCON_TX_LEN] - 3;
+				int registerAndFlag = data[PSP_SYSCON_TX_DATA];
+				int register = registerAndFlag & 0x7F;
+				if (register > NUMBER_INTERNAL_REGISTERS) {
+					log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
+				} else if (hasFlag(registerAndFlag, 0x80)) {
+					// Writing to internal registers
+					if (length <= internalRegisters[register].length) {
+						for (int i = 0; i < length; i++) {
+							internalRegisters[register][i] = (byte) data[PSP_SYSCON_TX_DATA + 1 + i];
+						}
+					} else {
+						log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
+					}
+				} else {
+					// Reading from internal registers
+					responseData = Utilities.add(responseData, 0); // Response code
+					for (int i = 0; i < internalRegisters[register].length; i++) {
+						responseData = Utilities.add(responseData, internalRegisters[register][i] & 0xFF);
+					}
+				}
+				break;
+			case PSP_SYSCON_CMD_BATTERY_WRITE_EEPROM:
+				address = data[PSP_SYSCON_TX_DATA] << 1;
+				Battery.writeEeprom(address + 0, data[PSP_SYSCON_TX_DATA + 1]);
+				Battery.writeEeprom(address + 1, data[PSP_SYSCON_TX_DATA + 2]);
+				break;
+			case PSP_SYSCON_CMD_BATTERY_READ_EEPROM:
+				address = data[PSP_SYSCON_TX_DATA] << 1;
+				responseData = Utilities.add(responseData, 0); // Response code
+				responseData = Utilities.add(responseData, Battery.readEeprom(address + 0));
+				responseData = Utilities.add(responseData, Battery.readEeprom(address + 1));
 				break;
 			default:
 				log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
@@ -482,7 +524,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 
 	private int readData16() {
 		int value = ((data[dataIndex++] & 0xFF) << 8) | (data[dataIndex++] & 0xFF);
-		if (dataIndex >= data[PSP_SYSCON_RX_LEN]) {
+		if (dataIndex > data[PSP_SYSCON_RX_LEN]) {
 			dataIndex = 0;
 			endDataIndex = true;
 		}

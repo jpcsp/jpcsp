@@ -66,6 +66,7 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_CMD_RECEIVE_SETPARAM              = 0x26;
     public static final int PSP_SYSCON_CMD_CTRL_BT_POWER_UNK1            = 0x29;
     public static final int PSP_SYSCON_CMD_CTRL_BT_POWER_UNK2            = 0x2A;
+    public static final int PSP_SYSCON_CMD_UNKNOWN_30                    = 0x30;
     public static final int PSP_SYSCON_CMD_CTRL_TACHYON_WDT              = 0x31;
     public static final int PSP_SYSCON_CMD_RESET_DEVICE                  = 0x32;
     public static final int PSP_SYSCON_CMD_CTRL_ANALOG_XY_POLLING        = 0x33;
@@ -109,6 +110,8 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_CMD_BATTERY_GET_ELEC_AD           = 0x70;
     public static final int PSP_SYSCON_CMD_BATTERY_GET_TOTAL_ELEC        = 0x71;
     public static final int PSP_SYSCON_CMD_BATTERY_GET_CHARGE_TIME       = 0x72;
+    public static final int PSP_SYSCON_CMD_BATTERY_WRITE_EEPROM          = 0x73;
+    public static final int PSP_SYSCON_CMD_BATTERY_READ_EEPROM           = 0x74;
     private static String cmdNames[];
     public static final int PSP_SYSCON_LED_MS    = 0; // Memory-Stick LED
     public static final int PSP_SYSCON_LED_WLAN  = 1; // W-LAN LED
@@ -125,7 +128,7 @@ public class sceSyscon extends HLEModule {
 
 		// Unknown 4-bytes value at offset 8
 		int scratchPad8 = 0;
-		for (int i = 0; i < 5; i++, scratchPad8 >>= 8) {
+		for (int i = 0; i < 4; i++, scratchPad8 >>= 8) {
 			scratchPad[i + 8] = scratchPad8 & 0xFF;
 		}
 

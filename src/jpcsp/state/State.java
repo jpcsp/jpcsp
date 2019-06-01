@@ -29,6 +29,7 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.HLEModuleManager;
+import jpcsp.hardware.Battery;
 import jpcsp.hardware.Wlan;
 
 public class State implements IState {
@@ -88,6 +89,7 @@ public class State implements IState {
 		stream.readVersion(STATE_VERSION);
 		Emulator.getClock().read(stream);
 		Wlan.read(stream);
+		Battery.read(stream);
 		Emulator.getProcessor().read(stream);
 		Emulator.getMemory().read(stream);
 		HLEModuleManager.getInstance().read(stream);
@@ -105,6 +107,7 @@ public class State implements IState {
 		stream.writeVersion(STATE_VERSION);
 		Emulator.getClock().write(stream);
 		Wlan.write(stream);
+		Battery.write(stream);
 		Emulator.getProcessor().write(stream);
 		Emulator.getMemory().write(stream);
 		HLEModuleManager.getInstance().write(stream);
