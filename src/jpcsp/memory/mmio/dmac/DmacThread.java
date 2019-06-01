@@ -31,6 +31,7 @@ import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_DDR_VALUE;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_DDR_VALUE_SHIFT;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_REQUIRES_DDR;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_UNKNOWN;
+import static jpcsp.util.Utilities.hasFlag;
 
 import java.util.concurrent.Semaphore;
 
@@ -129,7 +130,7 @@ public class DmacThread extends Thread {
 
 		final int stepLength = Math.min(srcStepLength, dstStepLength);
 
-		while (dstLength > 0 && srcLength > 0) {
+		while (dstLength > 0 && srcLength > 0 && !abortJob) {
 			switch (stepLength) {
 				case 1:
 					if (log.isTraceEnabled()) {
@@ -185,18 +186,24 @@ public class DmacThread extends Thread {
 		}
 
 		int length = srcLength;
-		for (int i = 0; i < length; i += 4) {
+		for (int i = 0; i < length && !abortJob; i += 4) {
 			memDst.write32(dst, memSrc.read32(src + i));
 		}
 
 		final MMIOHandlerAudio mmioHandlerAudio = MMIOHandlerAudio.getInstance();
-		int syncDelay = mmioHandlerAudio.getDmacSyncDelay(dst, length);
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("dmacMemcpyAudio dst=0x%08X, src=0x%08X, length=0x%X, syncDelay=0x%X milliseconds", dst, src, length, syncDelay));
+		if (hasFlag(attributes, DMAC_ATTRIBUTES_TRIGGER_INTERRUPT)) {
+			mmioHandlerAudio.dmacFlush(dst);
 		}
 
-		if (syncDelay > 0) {
-			Utilities.sleep(syncDelay);
+		if (!abortJob) {
+			int syncDelay = mmioHandlerAudio.getDmacSyncDelay(dst, length);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("dmacMemcpyAudio dst=0x%08X, src=0x%08X, length=0x%X, syncDelay=0x%X milliseconds", dst, src, length, syncDelay));
+			}
+
+			if (syncDelay > 0) {
+				Utilities.sleep(syncDelay);
+			}
 		}
 	}
 
@@ -217,8 +224,8 @@ public class DmacThread extends Thread {
 		int dstStep = (attributes >> DMAC_ATTRIBUTES_DST_STEP_SHIFT) & 0x7;
 		int srcLengthShift = (attributes >> DMAC_ATTRIBUTES_SRC_LENGTH_SHIFT_SHIFT) & 0x7;
 		int dstLengthShift = (attributes >> DMAC_ATTRIBUTES_DST_LENGTH_SHIFT_SHIFT) & 0x7;
-		boolean srcIncrement = (attributes & DMAC_ATTRIBUTES_SRC_INCREMENT) != 0;
-		boolean dstIncrement = (attributes & DMAC_ATTRIBUTES_DST_INCREMENT) != 0;
+		boolean srcIncrement = hasFlag(attributes, DMAC_ATTRIBUTES_SRC_INCREMENT);
+		boolean dstIncrement = hasFlag(attributes, DMAC_ATTRIBUTES_DST_INCREMENT);
 		int length = attributes & DMAC_ATTRIBUTES_LENGTH;
 
 		int srcStepLength = dmacMemcpyStepLength[srcStep];
@@ -234,7 +241,7 @@ public class DmacThread extends Thread {
 		}
 
 		// TODO Not sure about the real meaning of this attribute flag...
-		if ((attributes & DMAC_ATTRIBUTES_UNKNOWN) != 0) {
+		if (hasFlag(attributes, DMAC_ATTRIBUTES_UNKNOWN)) {
 			// It seems to completely ignore the other attribute values
 			srcIncrement = true;
 			dstIncrement = true;
@@ -294,7 +301,7 @@ public class DmacThread extends Thread {
 		}
 
 		// Trigger an interrupt if requested in the attributes
-		if ((attributes & DMAC_ATTRIBUTES_TRIGGER_INTERRUPT) != 0) {
+		if (hasFlag(attributes, DMAC_ATTRIBUTES_TRIGGER_INTERRUPT)) {
 			if (interruptAction != null) {
 				interruptAction.execute();
 			}
@@ -344,7 +351,7 @@ public class DmacThread extends Thread {
 		IAction dmacDdrFlushAction = null;
 		int ddrValue = -1;
 
-		if ((status & DMAC_STATUS_REQUIRES_DDR) != 0) {
+		if (hasFlag(status, DMAC_STATUS_REQUIRES_DDR)) {
 			ddrValue = (status & DMAC_STATUS_DDR_VALUE) >> DMAC_STATUS_DDR_VALUE_SHIFT;
 
 			// For the audio, sceDdrFlush(4) is always used, even when 8 is specified in the Dmac status
@@ -386,6 +393,11 @@ public class DmacThread extends Thread {
 				next = memSrc.read32(next + 8);
 				dmacProcessor.setNext(next);
 			}
+		}
+
+		// Make sure the Audio Dmac is properly flushed, even when the Dmac job has been aborted
+		if (isAudio()) {
+			MMIOHandlerAudio.getInstance().dmacFlush(normalizeAddress(dst));
 		}
 
 		if (dmacDdrFlushAction != null) {

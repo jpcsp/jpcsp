@@ -91,8 +91,12 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			audioLine.read(stream);
 			stream.readInts(data);
 			dataIndex = stream.readInt();
+			stalled = stream.readBoolean();
 
 			updateNumberBlockingBuffers();
+
+			// The audio is actually stalled when reloading a state
+			setStalled();
 		}
 
 		@Override
@@ -101,6 +105,12 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			audioLine.write(stream);
 			stream.writeInts(data);
 			stream.writeInt(dataIndex);
+			stream.writeBoolean(stalled);
+		}
+
+		private void setStalled() {
+			dataIndex = 0;
+			stalled = true;
 		}
 
 		public synchronized void poll() {
@@ -112,10 +122,37 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 
 				if (waitingBuffers <= 0 && dataIndex == 0) {
 					setInterruptBit(lineNumber);
-					dataIndex = 0;
-					stalled = true;
+					setStalled();
 				}
 			}
+		}
+
+		private synchronized void flushAudioData() {
+			if (dataIndex <= 0) {
+				return;
+			}
+
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("sendAudioData line#%d:", lineNumber));
+				StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < data.length; i++) {
+					if (sb.length() > 0) {
+						sb.append(" ");
+					} else {
+						sb.append("    ");
+					}
+
+					sb.append(String.format("0x%04X 0x%04X", data[i] & 0xFFFF, data[i] >>> 16));
+
+					if (((i + 1) % 4) == 0) {
+						log.trace(sb.toString());
+						sb.setLength(0);
+					}
+				}
+			}
+
+			audioLine.writeAudioData(data, 0, dataIndex);
+			dataIndex = 0;
 		}
 
 		private synchronized void sendAudioData(int value) {
@@ -144,27 +181,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			}
 
 			if (dataIndex >= data.length) {
-				if (log.isTraceEnabled()) {
-					log.trace(String.format("sendAudioData line#%d:", lineNumber));
-					StringBuilder sb = new StringBuilder();
-					for (int i = 0; i < data.length; i++) {
-						if (sb.length() > 0) {
-							sb.append(" ");
-						} else {
-							sb.append("    ");
-						}
-
-						sb.append(String.format("0x%04X 0x%04X", data[i] & 0xFFFF, data[i] >>> 16));
-
-						if (((i + 1) % 4) == 0) {
-							log.trace(sb.toString());
-							sb.setLength(0);
-						}
-					}
-				}
-
-				audioLine.writeAudioData(data, 0, dataIndex);
-				dataIndex = 0;
+				flushAudioData();
 			}
 		}
 
@@ -205,6 +222,10 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			}
 
 			return syncDelay;
+		}
+
+		public synchronized void dmacFlush() {
+			flushAudioData();
 		}
 
 		@Override
@@ -309,6 +330,16 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		}
 
 		return syncDelay;
+	}
+
+	public void dmacFlush(int address) {
+		switch (address - baseAddress) {
+			case 0x60: audioLineStates[0].dmacFlush(); break;
+			case 0x70: audioLineStates[1].dmacFlush(); break;
+		default:
+			log.error(String.format("dmacFlush unimplemented address=0x%08X", address));
+			break;
+		}
 	}
 
 	private void setInterruptBit(int bit) {

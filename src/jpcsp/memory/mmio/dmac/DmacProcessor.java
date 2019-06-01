@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio.dmac;
 
+import static jpcsp.util.Utilities.clearFlag;
+import static jpcsp.util.Utilities.isFallingFlag;
+import static jpcsp.util.Utilities.isRaisingFlag;
+
 import java.io.IOException;
 
 import jpcsp.Memory;
@@ -64,7 +68,7 @@ public class DmacProcessor implements IState {
 		@Override
 		public void execute() {
 			// Clear the status "in progress"
-			status &= ~DMAC_STATUS_IN_PROGRESS;
+			status = clearFlag(status, DMAC_STATUS_IN_PROGRESS);
 		}
 	}
 
@@ -141,14 +145,12 @@ public class DmacProcessor implements IState {
 		this.status = status;
 
 		// Status "in progress" changed?
-		if ((previousStatus & DMAC_STATUS_IN_PROGRESS) != (status & DMAC_STATUS_IN_PROGRESS)) {
-			if ((status & DMAC_STATUS_IN_PROGRESS) != 0) {
-				// Starting...
-				dmacThread.execute(memDst, memSrc, dst, src, next, attributes, status, interruptAction, completedAction);
-			} else {
-				// Stopping...
-				dmacThread.abortJob();
-			}
+		if (isFallingFlag(previousStatus, status, DMAC_STATUS_IN_PROGRESS)) {
+			// Stopping...
+			dmacThread.abortJob();
+		} else if (isRaisingFlag(previousStatus, status, DMAC_STATUS_IN_PROGRESS)) {
+			// Starting...
+			dmacThread.execute(memDst, memSrc, dst, src, next, attributes, status, interruptAction, completedAction);
 		}
 	}
 
