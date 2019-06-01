@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -57,7 +60,7 @@ public class sceDeflt extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x6DBCF897, version = 150)
-	public int sceGzipDecompress(TPointer outBufferAddr, int outBufferLength, TPointer inBufferAddr, @CanBeNull TPointer32 crc32Addr) {
+	public int sceGzipDecompress(@BufferInfo(lengthInfo=LengthInfo.returnValue, usage=Usage.out) TPointer outBufferAddr, int outBufferLength, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer inBufferAddr, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 crc32Addr) {
     	if (log.isTraceEnabled()) {
     		log.trace(String.format("sceGzipDecompress: %s", Utilities.getMemoryDump(inBufferAddr.getAddress(), 16)));
     	}
@@ -127,17 +130,14 @@ public class sceDeflt extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x1B5B82BC, version = 150)
-	public boolean sceGzipIsValid(TPointer gzipData) {
-    	int magic = gzipData.getValue16() & 0xFFFF;
-    	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceGzipIsValid gzipData:%s", Utilities.getMemoryDump(gzipData.getAddress(), 16)));
-    	}
+	public boolean sceGzipIsValid(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer gzipData) {
+    	int magic = gzipData.getUnsignedValue16();
 
     	return magic == GZIP_MAGIC;
 	}
 
 	@HLEFunction(nid = 0xA9E4FB28, version = 150)
-	public int sceZlibDecompress(TPointer outBufferAddr, int outBufferLength, TPointer inBufferAddr, @CanBeNull TPointer32 crc32Addr) {
+	public int sceZlibDecompress(@BufferInfo(lengthInfo=LengthInfo.returnValue, usage=Usage.out) TPointer outBufferAddr, int outBufferLength, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer inBufferAddr, @CanBeNull @BufferInfo(usage=Usage.out) TPointer32 crc32Addr) {
 		byte inBuffer[] = new byte[4096];
 		byte outBuffer[] = new byte[4096];
 		int inBufferPtr = 0;
