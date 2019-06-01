@@ -83,7 +83,7 @@ public class MMIO extends Memory {
     	addHandler(0xBCC00000, 0x74, new MMIOHandlerMeController(0xBCC00000));
     	addHandler(MMIOHandlerDdr.BASE_ADDRESS, 0x48, MMIOHandlerDdr.getInstance());
     	addHandler(MMIOHandlerNand.BASE_ADDRESS, 0x304, MMIOHandlerNand.getInstance());
-    	addHandler(0xBD200000, 0x44, new MMIOHandlerMemoryStick(0xBD200000));
+    	addHandler(MMIOHandlerMemoryStick.BASE_ADDRESS, 0x44, MMIOHandlerMemoryStick.getInstance());
     	addHandler(MMIOHandlerWlan.BASE_ADDRESS, 0x44, MMIOHandlerWlan.getInstance());
     	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0xE50, MMIOHandlerGe.getInstance());
     	addHandler(0xBD500000, 0x94, new MMIOHandlerGeEdram(0xBD500000));
@@ -352,7 +352,14 @@ public class MMIO extends Memory {
 
 	@Override
 	public void copyToMemory(int address, ByteBuffer source, int length) {
-		mem.copyToMemory(address, source, length);
+    	IMMIOHandler handler = getHandler(address);
+    	if (handler != null) {
+    		for (int i = 0; i < length; i++) {
+    			handler.write8(address + i, source.get());
+    		}
+    	} else {
+    		mem.copyToMemory(address, source, length);
+    	}
 	}
 
 	@Override

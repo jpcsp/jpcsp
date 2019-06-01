@@ -169,7 +169,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 	protected int pageIndex;
 	protected int dataIndex;
 	protected int commandDataIndex;
-	protected final static int PAGE_SIZE = 0x200;
+	public final static int PAGE_SIZE = 0x200;
 	protected int PAGES_PER_BLOCK = 16;
 	private final Object dmaLock = new Object();
 	private int dmaTpcCode;
