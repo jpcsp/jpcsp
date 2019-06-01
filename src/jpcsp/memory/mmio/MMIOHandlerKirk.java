@@ -125,6 +125,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			case 0x00: return signature;
 			case 0x04: return version;
 			case 0x08: return error;
+			case 0x0C: return 0; // Unknown
 			case 0x10: return command;
 			case 0x14: return result;
 			case 0x1C: return getStatus();
