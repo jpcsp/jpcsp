@@ -40,7 +40,7 @@ public class CompilerParameterReader extends ParameterReader {
 	}
 
 	private void loadParameterIntFromMemory(int index) {
-		compilerContext.memRead32(_sp, (index - maxParameterInGprRegisters) << 2);
+		compilerContext.memRead32(_sp, (index - maxParameterInGprRegisters) << 2, false);
 	}
 
 	protected void loadParameterIntFromRegister(int index) {

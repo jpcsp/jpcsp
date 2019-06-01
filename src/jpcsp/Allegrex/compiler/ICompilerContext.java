@@ -127,13 +127,13 @@ public interface ICompilerContext {
     public void loadImm(int imm);
     public void loadImm16(boolean signedImm);
     public MethodVisitor getMethodVisitor();
-    public void memRead32(int registerIndex, int offset);
+    public void memRead32(int registerIndex, int offset, boolean align32);
     public void memRead16(int registerIndex, int offset);
     public void memRead8(int registerIndex, int offset);
-    public void memWrite32(int registerIndex, int offset);
+    public void memWrite32(int registerIndex, int offset, boolean align32);
     public void memWrite16(int registerIndex, int offset);
     public void memWrite8(int registerIndex, int offset);
-    public void prepareMemWrite32(int registerIndex, int offset);
+    public void prepareMemWrite32(int registerIndex, int offset, boolean align32);
     public void prepareMemWrite16(int registerIndex, int offset);
     public void prepareMemWrite8(int registerIndex, int offset);
     public void memWriteZero8(int registerIndex, int offset);

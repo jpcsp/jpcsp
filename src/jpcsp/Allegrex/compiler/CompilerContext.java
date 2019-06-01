@@ -2778,7 +2778,7 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
-	public void memRead32(int registerIndex, int offset) {
+	public void memRead32(int registerIndex, int offset, boolean align32) {
 		if (useMMIO()) {
 			loadMMIO();
 		} else if (!RuntimeContext.hasMemoryInt()) {
@@ -2787,7 +2787,7 @@ public class CompilerContext implements ICompilerContext {
 			loadMemoryInt();
 		}
 
-		prepareMemIndex(registerIndex, offset, true, 32);
+		prepareMemIndex(registerIndex, offset, true, 32, align32);
 
 		if (useMMIO() || !RuntimeContext.hasMemoryInt()) {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
@@ -2906,7 +2906,7 @@ public class CompilerContext implements ICompilerContext {
 		}
 	}
 
-	private void prepareMemIndex(int registerIndex, int offset, boolean isRead, int width) {
+	private void prepareMemIndex(int registerIndex, int offset, boolean isRead, int width, boolean align32) {
 		loadRegister(registerIndex);
 		if (offset != 0) {
 			loadImm(offset);
@@ -2951,11 +2951,14 @@ public class CompilerContext implements ICompilerContext {
     			loadImm(5);
     			mv.visitInsn(Opcodes.IUSHR);
 	        }
+		} else if (align32) {
+			loadImm(~0x3);
+			mv.visitInsn(Opcodes.IAND);
 		}
 	}
 
 	@Override
-	public void prepareMemWrite32(int registerIndex, int offset) {
+	public void prepareMemWrite32(int registerIndex, int offset, boolean align32) {
 		if (useMMIO()) {
 			loadMMIO();
 		} else if (!RuntimeContext.hasMemoryInt()) {
@@ -2964,13 +2967,13 @@ public class CompilerContext implements ICompilerContext {
 			loadMemoryInt();
 		}
 
-		prepareMemIndex(registerIndex, offset, false, 32);
+		prepareMemIndex(registerIndex, offset, false, 32, align32);
 
 		memWritePrepared = true;
 	}
 
 	@Override
-	public void memWrite32(int registerIndex, int offset) {
+	public void memWrite32(int registerIndex, int offset, boolean align32) {
 		if (!memWritePrepared) {
 			if (useMMIO()) {
 				loadMMIO();
@@ -2985,6 +2988,10 @@ public class CompilerContext implements ICompilerContext {
 			if (offset != 0) {
 				loadImm(offset);
 				mv.visitInsn(Opcodes.IADD);
+			}
+			if (align32) {
+				loadImm(~0x3);
+				mv.visitInsn(Opcodes.IAND);
 			}
             if (checkMemoryAccess()) {
                 loadImm(codeInstruction.getAddress());
@@ -4517,7 +4524,7 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(FastMemory.class), "zero", "[I");
 	    	loadImm(0);
 	    	loadMemoryInt();
-	    	prepareMemIndex(baseRegister, offset, false, 32);
+	    	prepareMemIndex(baseRegister, offset, false, 32, false);
 	    	loadImm(copyLength);
 	    	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
 
@@ -4549,7 +4556,7 @@ public class CompilerContext implements ICompilerContext {
 		}
 
 		int offset = offsets[0];
-		prepareMemIndex(baseRegister, offset, isLW, 32);
+		prepareMemIndex(baseRegister, offset, isLW, 32, false);
     	storeTmp1();
 
     	for (int i = 0; i < offsets.length; i++) {

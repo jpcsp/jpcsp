@@ -4148,7 +4148,7 @@ public void compile(ICompilerContext context, int insn) {
 			}
 		} else {
 			context.prepareRtForStore();
-			context.memRead32(rs, simm16);
+			context.memRead32(rs, simm16, false);
 			context.storeRt();
 		}
 	}
@@ -4186,7 +4186,7 @@ public void compile(ICompilerContext context, int insn) {
 		MethodVisitor mv = context.getMethodVisitor();
 		int simm16 = context.getImm16(true);
 		context.prepareRtForStore();
-		context.memRead32(context.getRsRegisterIndex(), simm16);
+		context.memRead32(context.getRsRegisterIndex(), simm16, true);
 		context.loadRs();
 		if (simm16 != 0) {
 			context.loadImm16(true);
@@ -4243,7 +4243,7 @@ public void compile(ICompilerContext context, int insn) {
 		MethodVisitor mv = context.getMethodVisitor();
 		int simm16 = context.getImm16(true);
 		context.prepareRtForStore();
-		context.memRead32(context.getRsRegisterIndex(), simm16);
+		context.memRead32(context.getRsRegisterIndex(), simm16, true);
 		context.loadRs();
 		if (simm16 != 0) {
 			context.loadImm16(true);
@@ -4420,9 +4420,9 @@ public void compile(ICompilerContext context, int insn) {
 	    	context.skipInstructions(countSequence - 1, false);
 		}
 	} else {
-		context.prepareMemWrite32(rs, simm16);
+		context.prepareMemWrite32(rs, simm16, false);
 		context.loadRt();
-		context.memWrite32(rs, simm16);
+		context.memWrite32(rs, simm16, false);
 	}
 }
 @Override
@@ -4457,7 +4457,7 @@ public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
 		MethodVisitor mv = context.getMethodVisitor();
 		int simm16 = context.getImm16(true);
-		context.prepareMemWrite32(context.getRsRegisterIndex(), simm16);
+		context.prepareMemWrite32(context.getRsRegisterIndex(), simm16, true);
 		context.loadRt();
 		context.loadRs();
 		if (simm16 != 0) {
@@ -4476,10 +4476,10 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadImm(0xFFFFFF00);
 		mv.visitInsn(Opcodes.SWAP);
 		mv.visitInsn(Opcodes.ISHL);
-		context.memRead32(context.getRsRegisterIndex(), simm16);
+		context.memRead32(context.getRsRegisterIndex(), simm16, true);
 		mv.visitInsn(Opcodes.IAND);
 		mv.visitInsn(Opcodes.IOR);
-		context.memWrite32(context.getRsRegisterIndex(), simm16);
+		context.memWrite32(context.getRsRegisterIndex(), simm16, true);
 	}
 }
 @Override
@@ -4514,7 +4514,7 @@ public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
 		MethodVisitor mv = context.getMethodVisitor();
 		int simm16 = context.getImm16(true);
-		context.prepareMemWrite32(context.getRsRegisterIndex(), simm16);
+		context.prepareMemWrite32(context.getRsRegisterIndex(), simm16, true);
 		context.loadRt();
 		context.loadRs();
 		if (simm16 != 0) {
@@ -4533,10 +4533,10 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadImm(0x00FFFFFF);
 		mv.visitInsn(Opcodes.SWAP);
 		mv.visitInsn(Opcodes.ISHR);
-		context.memRead32(context.getRsRegisterIndex(), simm16);
+		context.memRead32(context.getRsRegisterIndex(), simm16, true);
 		mv.visitInsn(Opcodes.IAND);
 		mv.visitInsn(Opcodes.IOR);
-		context.memWrite32(context.getRsRegisterIndex(), simm16);
+		context.memWrite32(context.getRsRegisterIndex(), simm16, true);
 	}
 }
 @Override
@@ -4600,7 +4600,7 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	context.prepareFtForStore();
-	context.memRead32(context.getRsRegisterIndex(), context.getImm16(true));
+	context.memRead32(context.getRsRegisterIndex(), context.getImm16(true), false);
 	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
 	context.storeFt();
 }
@@ -4641,7 +4641,7 @@ public void compile(ICompilerContext context, int insn) {
 	int rs = context.getRsRegisterIndex();
 
 	context.prepareVtForStoreInt(1, vt, 0);
-	context.memRead32(rs, simm14);
+	context.memRead32(rs, simm14, false);
 	context.storeVtInt(1, vt, 0);
 }
 @Override
@@ -4787,7 +4787,7 @@ public void compile(ICompilerContext context, int insn) {
 	} else {
 	    for (int n = 0; n < vsize; n++) {
 	    	context.prepareVtForStoreInt(vsize, vt, n);
-	    	context.memRead32(rs, simm14 + n * 4);
+	    	context.memRead32(rs, simm14 + n * 4, false);
 	    	context.storeVtInt(vsize, vt, n);
 	    }
 	}
@@ -4824,9 +4824,9 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	int rs = context.getRsRegisterIndex();
 	int simm16 = context.getImm16(true);
-	context.prepareMemWrite32(rs, simm16);
+	context.prepareMemWrite32(rs, simm16, false);
 	context.loadRt();
-	context.memWrite32(rs, simm16);
+	context.memWrite32(rs, simm16, false);
 
 	if (!context.isRtRegister0()) {
 		context.storeRt(1);
@@ -4863,10 +4863,10 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	int rs = context.getRsRegisterIndex();
 	int simm16 = context.getImm16(true);
-	context.prepareMemWrite32(rs, simm16);
+	context.prepareMemWrite32(rs, simm16, false);
 	context.loadFt();
 	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
-	context.memWrite32(rs, simm16);
+	context.memWrite32(rs, simm16, false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4903,9 +4903,9 @@ public void compile(ICompilerContext context, int insn) {
 	int vt = vt5 | (vt2<<5);
 	int simm14 = context.getImm14(true);
 	int rs  = context.getRsRegisterIndex();
-	context.prepareMemWrite32(rs, simm14);
+	context.prepareMemWrite32(rs, simm14, false);
 	context.loadVtInt(1, vt, 0);
-	context.memWrite32(rs, simm14);
+	context.memWrite32(rs, simm14, false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5049,9 +5049,9 @@ public void compile(ICompilerContext context, int insn) {
 		}
 	} else {
         for (int n = 0; n < vsize; n++) {
-        	context.prepareMemWrite32(rs, simm14 + n * 4);
+        	context.prepareMemWrite32(rs, simm14 + n * 4, false);
         	context.loadVtInt(vsize, vt, n);
-        	context.memWrite32(rs, simm14 + n * 4);
+        	context.memWrite32(rs, simm14 + n * 4, false);
         }
 	}
 }
