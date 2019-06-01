@@ -193,9 +193,13 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 					// This ID will configure:
 					// - sceNandGetPageSize returning 0x200
 					// - sceNandGetPagesPerBlock returning 0x20
-					// - sceNandGetTotalBlocks returning 0x800
+					// - sceNandGetTotalBlocks returning 0x800 (32MB) / 0x1000 (64MB)
 					data[0] = 0xEC; // Manufacturer's code (SAMSUNG)
-					data[1] = 0x75; // Device code (K9F5608U0C)
+					if (sceNand.isSmallNand()) {
+						data[1] = 0x75; // Device code (K9F5608U0C), 32MB
+					} else {
+						data[1] = 0x36; // Device code (K9F1208R0B), 64MB
+					}
 				}
 				break;
 			case PSP_NAND_COMMAND_READ_EXTRA:

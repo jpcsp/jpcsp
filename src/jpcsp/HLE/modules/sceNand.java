@@ -1102,7 +1102,7 @@ public class sceNand extends HLEModule {
 		}
     }
 
-    private static boolean isSmallNand() {
+    public static boolean isSmallNand() {
     	return Nand.getTotalSizeMb() <= 32;
     }
 
