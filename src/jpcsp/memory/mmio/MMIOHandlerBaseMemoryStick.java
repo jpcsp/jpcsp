@@ -496,6 +496,14 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 						log.debug(String.format("MMIOHandlerBaseMemoryStick.startTPC MS_TPC_WRITE_IO_DATA writeSize=0x%X", writeSize));
 					}
 					break;
+				case MS_TPC_WRITE_PAGE_DATA:
+					// Data will be written through writeTPCData()
+					writeSize = size;
+					pageDataIndex = 0;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("MMIOHandlerBaseMemoryStick.startTPC MS_TPC_WRITE_PAGE_DATA writeSize=0x%X", writeSize));
+					}
+					break;
 				default:
 					log.error(String.format("MMIOHandlerBaseMemoryStick.startTPC unknown TPC 0x%01X", tpcCode));
 					break;
@@ -558,6 +566,15 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 			case MSPRO_CMD_WAKEUP:
 				// Simply ignore these commands
 				break;
+			case MSPRO_CMD_READ_DATA:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("MMIOHandlerBaseMemoryStick.startCmd MSPRO_CMD_READ_DATA dataCount=0x%04X, dataAddress=0x%08X", getDataCount(), getDataAddress()));
+				}
+				setNumberOfPages(getDataCount());
+				setStartBlock(0);
+				setPageLba(getDataAddress());
+				commandCompleted = false;
+				break;
 			case MSPRO_CMD_WRITE_DATA:
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("MMIOHandlerBaseMemoryStick.startCmd MSPRO_CMD_WRITE_DATA dataCount=0x%04X, dataAddress=0x%08X", getDataCount(), getDataAddress()));
@@ -565,6 +582,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 				setNumberOfPages(getDataCount());
 				setStartBlock(0);
 				setPageLba(getDataAddress());
+				commandCompleted = false;
 				break;
 			case MSPRO_CMD_READ_IO_ATRB:
 				if (log.isDebugEnabled()) {
@@ -756,12 +774,42 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 			case MS_TPC_READ_IO_DATA:
 				data = readData16() | (readData16() << 16);
 				break;
+			case MS_TPC_READ_PAGE_DATA:
+				if (pageDataIndex == 0) {
+					readPageBuffer();
+				}
+				data = pageBufferMemory.read32(pageDataIndex);
+				increaseReadPageDataIndex(4);
+				break;
+			default:
+				log.error(String.format("MMIOHandlerBaseMemoryStick.readTPCData32 unimplemented tpcCode=0x%01X(%s)", getTPCCode(), getTPCName(getTPCCode())));
+				data = 0;
+				break;
 		}
 
 		return data;
 	}
 
 	protected abstract void initMsproAttributeMemory();
+
+	private void increaseReadPageDataIndex(int length) {
+		pageDataIndex += length;
+		if (pageDataIndex >= PAGE_SIZE) {
+			pageDataIndex = 0;
+			pageIndex++;
+			if (pageIndex >= numberOfPages) {
+				setRegisterValue(MS_INT_REG_ADDRESS, MS_INT_REG_CED);
+				pageIndex = 0;
+				commandDataIndex = 0;
+				clearBusy();
+				status |= MS_STATUS_UNKNOWN;
+				sys |= 0x4000;
+				unk08 |= 0x0040;
+				unk08 &= ~0x000F; // Clear error code
+				setInterrupt();
+			}
+		}
+	}
 
 	private int readPageData32() {
 		int value;
@@ -783,21 +831,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 				break;
 		}
 
-		pageDataIndex += 4;
-		if (pageDataIndex >= PAGE_SIZE) {
-			pageDataIndex = 0;
-			pageIndex++;
-			if (pageIndex >= numberOfPages) {
-				pageIndex = 0;
-				commandDataIndex = 0;
-				clearBusy();
-				status |= MS_STATUS_UNKNOWN;
-				sys |= 0x4000;
-				unk08 |= 0x0040;
-				unk08 &= ~0x000F; // Clear error code
-				setInterrupt();
-			}
-		}
+		increaseReadPageDataIndex(4);
 
 		return value;
 	}
@@ -866,6 +900,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 			return;
 		}
 
+		int dataAddress;
 		switch (getTPCCode()) {
 			case MS_TPC_SET_RW_REG_ADDRESS:
 				// Sets the read address & size, write address & size
@@ -920,7 +955,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 				tpcExSetCmdIndex++;
 				break;
 			case MS_TPC_WRITE_IO_DATA:
-				int dataAddress = getDataAddress();
+				dataAddress = getDataAddress();
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("MMIOHandlerBaseMemoryStick.writeTPCData MS_TPC_WRITE_IO_DATA dataAddress=0x%X, pageDataIndex=0x%X, writeSize=0x%X, dataIndex=0x%X, value=0x%08X", dataAddress, pageDataIndex, writeSize, dataIndex, value));
 				}
@@ -939,6 +974,13 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 						setInterrupt();
 					}
 				}
+				break;
+			case MS_TPC_WRITE_PAGE_DATA:
+				pageBufferMemory.write32(pageDataIndex, value);
+				increaseWritePageDataIndex(4);
+				break;
+			default:
+				log.error(String.format("MMIOHandlerBaseMemoryStick.writeTPCData unimplemented tpcCode=0x%01X(%s)", getTPCCode(), getTPCName(getTPCCode())));
 				break;
 		}
 	}
@@ -1001,25 +1043,17 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 
 	protected abstract void writePageBuffer();
 
-	private void writePageData32(int value) {
-		switch (cmd) {
-			case MSPRO_CMD_WRITE_DATA:
-				pageBufferMemory.write32(pageDataIndex, value);
-				break;
-			default:
-				log.error(String.format("MMIOHandlerBaseMemoryStick.writePageData32 unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
-				break;
-		}
-
+	private void increaseWritePageDataIndex(int length) {
 		pageDataIndex += 4;
 		if (pageDataIndex >= PAGE_SIZE) {
 			pageDataIndex = 0;
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("MMIOHandlerBaseMemoryStick.writePageData32 writing page 0x%X/0x%X", pageIndex, numberOfPages));
+				log.debug(String.format("MMIOHandlerBaseMemoryStick.increaseWritePageDataIndex writing page 0x%X/0x%X", pageIndex, numberOfPages));
 			}
 			writePageBuffer();
 			pageIndex++;
 			if (pageIndex >= numberOfPages) {
+				setRegisterValue(MS_INT_REG_ADDRESS, MS_INT_REG_CED);
 				pageIndex = 0;
 				commandDataIndex = 0;
 				clearBusy();
@@ -1030,6 +1064,19 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 				setInterrupt();
 			}
 		}
+	}
+
+	private void writePageData32(int value) {
+		switch (cmd) {
+			case MSPRO_CMD_WRITE_DATA:
+				pageBufferMemory.write32(pageDataIndex, value);
+				break;
+			default:
+				log.error(String.format("MMIOHandlerBaseMemoryStick.writePageData32 unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
+				break;
+		}
+
+		increaseReadPageDataIndex(4);
 	}
 
 	@Override
