@@ -21,6 +21,7 @@ import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._t9;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getMMIO;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.Modules.LoadCoreForKernelModule;
 import static jpcsp.HLE.modules.InitForKernel.SCE_INIT_APITYPE_KERNEL_REBOOT;
@@ -100,10 +101,14 @@ public class reboot extends HLEModule {
     private static final int BOOT_IPL          = 0;
     private static final int BOOT_LOADEXEC_PRX = 1;
     private static final int BOOT_REBOOT_BIN   = 2;
+    private static final int BOOT_PREIPL       = 3;
     private static final int bootMethod = BOOT_LOADEXEC_PRX;
     private static final int threadManInfo = 0x88048740;
+    // The address of the Pre-IPL code
+    private final int preIplAddress = 0xBFC00000;
+    private final int preIplSize = 0x1000;
 	// The Pre-IPL code is copying itself to 0x80010000
-	private final TPointer preIplCode = new TPointer(Memory.getInstance(), START_SCRATCHPAD | 0x80000000);
+	private final TPointer preIplCopy = new TPointer(Memory.getInstance(), START_SCRATCHPAD | 0x80000000);
 	private int iplEntry;
 	private int iplBase;
 	private int iplSize;
@@ -137,6 +142,7 @@ public class reboot extends HLEModule {
     		case BOOT_IPL:          result = bootIpl();         break;
     		case BOOT_LOADEXEC_PRX: result = bootLoadexecPrx(); break;
     		case BOOT_REBOOT_BIN:   result = bootRebootBin();   break;
+    		case BOOT_PREIPL:       result = bootPreIpl();      break;
     		default:                result = false;             break;
     	}
 
@@ -471,7 +477,7 @@ public class reboot extends HLEModule {
 		}
 
     	// The memory remap has already been done by the IPL code at this point
-    	RuntimeContextLLE.getMMIO().remapMemoryAtProcessorReset();
+    	getMMIO().remapMemoryAtProcessorReset();
 
     	int rebootMemSize = rebootModule.text_size + rebootModule.data_size + rebootModule.bss_size;
     	SysMemInfo rebootMemInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot", PSP_SMEM_Addr, rebootMemSize, rebootModule.text_addr);
@@ -515,7 +521,7 @@ public class reboot extends HLEModule {
     	SceModule rebootModule = createRebootModule(rebootFileName);
     	rebootModule.text_size = rebootFileLength;
 
-    	MMIO mmio = (MMIO) RuntimeContextLLE.getMMIO();
+    	MMIO mmio = (MMIO) getMMIO();
     	// The memory remap has already been done by the IPL code at this point
     	mmio.remapMemoryAtProcessorReset();
 
@@ -550,12 +556,12 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-    	addMMIORange(preIplCode, 0x1000);
-    	installHLESyscallWithJump(new TPointer(preIplCode, 0x000), this, "hlePreIplStart");
-    	installHLESyscall(new TPointer(preIplCode, 0x2A0), this, "hlePreIplIcacheInvalidateAll");
-    	installHLESyscall(new TPointer(preIplCode, 0x2D8), this, "hlePreIplDcacheWritebackInvalidateAll");
-    	installHLESyscall(new TPointer(preIplCode, 0x334), this, "hlePreIplNandReadPage");
-    	installHLESyscall(new TPointer(preIplCode, 0x418), this, "hlePreIplMemoryStickReadSector");
+    	addMMIORange(preIplCopy, 0x1000);
+    	installHLESyscallWithJump(new TPointer(preIplCopy, 0x000), this, "hlePreIplStart");
+    	installHLESyscall(new TPointer(preIplCopy, 0x2A0), this, "hlePreIplIcacheInvalidateAll");
+    	installHLESyscall(new TPointer(preIplCopy, 0x2D8), this, "hlePreIplDcacheWritebackInvalidateAll");
+    	installHLESyscall(new TPointer(preIplCopy, 0x334), this, "hlePreIplNandReadPage");
+    	installHLESyscall(new TPointer(preIplCopy, 0x418), this, "hlePreIplMemoryStickReadSector");
 
 		SceModule iplModule = new SceModule(true);
 		iplModule.modname = getName();
@@ -576,12 +582,70 @@ public class reboot extends HLEModule {
     	return true;
 	}
 
-	private void addFunctionNid(int moduleAddress, SceModule module, String name) {
+    /**
+     * Boot using the PRE-IPL code. This requires a dump of the PRE-IPL
+     * from a real PSP.
+     * 
+     * @return true if can be booted
+     */
+    private boolean bootPreIpl() {
+    	TPointer preIpl = new TPointer(getMMIO(), preIplAddress);
+
+    	File preIplFile = new File("psp_bios.bin");
+		try {
+			IVirtualFile vFile = new LocalVirtualFile(new SeekableRandomFile(preIplFile, "r"));
+			int result = vFile.ioRead(preIpl, preIplSize);
+			vFile.ioClose();
+
+			if (result != preIplSize) {
+				return false;
+			}
+		} catch (FileNotFoundException e) {
+			return false;
+		}
+
+		addMMIORange(preIpl, preIplSize);
+		addMMIORange(preIplCopy, preIplSize);
+		// The IPL will be loaded at 0x040EC000 from the Nand
+		addMMIORange(0x040EC000, 0x1E000);
+		// The 2nd part of the IPL will be uncompressed at 0x04000000
+		addMMIORange(0x04000000, 0xE0000);
+
+		SceModule iplModule = new SceModule(true);
+		iplModule.modname = getName();
+		iplModule.pspfilename = "preipl:";
+		iplModule.baseAddress = preIplAddress;
+		iplModule.text_addr = preIplAddress;
+		iplModule.text_size = preIplSize;
+		iplModule.data_size = 0;
+		iplModule.bss_size = 0;
+
+    	Modules.ThreadManForUserModule.Initialise(iplModule, preIplAddress, 0, iplModule.pspfilename, -1, 0, false);
+
+		SceModule rebootModule = new SceModule(true);
+    	rebootModule.baseAddress = rebootBaseAddress;
+    	rebootModule.text_addr = rebootBaseAddress;
+    	addFunctionNames(rebootModule);
+
+    	addFunctionNid(0x04008C24, "sceIdStorageReadLeaf");
+    	addFunctionNid(0x040094AC, "sceIdStorageLookup");
+    	addFunctionNid(0x040087BC, "sceIdStorageInit");
+    	addFunctionNid(0x0400C5F4, "sceSysregGetFuseId");
+    	addFunctionNid(0x0400067C, "sceKernelUtilsSha1Digest");
+    	addFunctionNid(0x0400C5B4, "sceSysregGetTachyonVersion");
+
+    	return true;
+	}
+
+    private void addFunctionNid(int address, String name) {
     	int nid = HLEModuleManager.getInstance().getNIDFromFunctionName(name);
     	if (nid != 0) {
-    		int address = module.text_addr + moduleAddress;
     		LoadCoreForKernelModule.addFunctionNid(address, nid);
     	}
+    }
+
+    private void addFunctionNid(int moduleAddress, SceModule module, String name) {
+    	addFunctionNid(module.text_addr + moduleAddress, name);
     }
 
     private void addFunctionNames(SceModule rebootModule) {
@@ -859,14 +923,14 @@ public class reboot extends HLEModule {
 
     private boolean loadIpl() {
     	int result;
-    	Memory mem = RuntimeContextLLE.getMMIO();
+    	Memory mem = getMMIO();
 
-    	final TPointer nandSpareBuffer = new TPointer(preIplCode, 0x810);
-    	final TPointer iplFatSectorBuffer = new TPointer(preIplCode, 0x81C);
+    	final TPointer nandSpareBuffer = new TPointer(preIplCopy, 0x810);
+    	final TPointer iplFatSectorBuffer = new TPointer(preIplCopy, 0x81C);
 
     	for (int iplFatPpn = sceNand.iplTablePpnStart; true; iplFatPpn += Nand.pagesPerBlock) {
     		// Pre-IPL patched?
-        	if (preIplCode.getValue32(0x154) == MOVE(_v0, _zr)) { 
+        	if (preIplCopy.getValue32(0x154) == MOVE(_v0, _zr)) { 
         		result = 0;
         	} else {
         		result = Modules.sceNandModule.hleNandReadPages(iplFatPpn, iplFatSectorBuffer, nandSpareBuffer, 1, true, false, true);
@@ -978,7 +1042,7 @@ public class reboot extends HLEModule {
     	int continueAddress = iplEntry;
 
 		// Pre-IPL patched?
-    	int opcode = preIplCode.getValue32(0xFC);
+    	int opcode = preIplCopy.getValue32(0xFC);
     	if ((opcode & 0xFFFF0000) == LUI(_t9, 0)) {
     		continueAddress = opcode << 16;
 
