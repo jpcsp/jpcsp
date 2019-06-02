@@ -32,7 +32,9 @@ import static jpcsp.HLE.modules.sceNand.iplTablePpnEnd;
 import static jpcsp.HLE.modules.sceNand.iplTablePpnStart;
 import static jpcsp.hardware.Nand.pageSize;
 import static jpcsp.hardware.Nand.pagesPerBlock;
+import static jpcsp.util.Utilities.clearFlag;
 import static jpcsp.util.Utilities.endianSwap16;
+import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.lineSeparator;
 import static jpcsp.util.Utilities.readUnaligned32;
 import static jpcsp.util.Utilities.writeUnaligned32;
@@ -310,10 +312,10 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 		return scramble;
 	}
 
-	private void startDma(int dmaControl) {
-		this.dmaControl = dmaControl;
+	private void startDma(int value) {
+		dmaControl = value;
 
-		if ((dmaControl & DMA_CONTROL_START) != 0) {
+		if (hasFlag(dmaControl, DMA_CONTROL_START)) {
 			int ppn = dmaAddress >> 10;
 			int scramble = getScramble(ppn);
 
@@ -348,6 +350,7 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 					log.debug(String.format("hleNandWritePages ppn=0x%X, lbn=0x%X, scramble=0x%X: %s%sSpare: %s", ppn, lbn, scramble, Utilities.getMemoryDump(userBytes), lineSeparator, Utilities.getMemoryDump(spareBytes)));
 				}
 
+				dmaControl = clearFlag(dmaControl, DMA_CONTROL_START);
 				triggerInterrupt(PSP_NAND_INTR_WRITE_COMPLETED);
 			} else {
 				TPointer user = scramble != 0 ? scrambleBufferMemory.getPointer() : pageDataMemory.getPointer();
@@ -368,6 +371,7 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 					sceNand.scramblePage(scramble, ppn, scrambleBuffer, MMIOHandlerNandPage.getInstance().getData());
 				}
 
+				dmaControl = clearFlag(dmaControl, DMA_CONTROL_START);
 				triggerInterrupt(PSP_NAND_INTR_READ_COMPLETED);
 			}
 		}
