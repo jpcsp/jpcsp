@@ -271,6 +271,11 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 							MMIOHandlerWlan.getInstance().reset();
 						}
 						break;
+					case sceSyscon.PSP_SYSCON_DEVICE_UNKNOWN:
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(UNKNOWN), reset=%b", device, reset));
+						}
+						break;
 					default:
 						log.error(String.format("PSP_SYSCON_CMD_RESET_DEVICE unimplemented device=0x%X, reset=%b", device, reset));
 						break;

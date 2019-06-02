@@ -117,6 +117,7 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_LED_WLAN  = 1; // W-LAN LED
     public static final int PSP_SYSCON_LED_POWER = 2; // Power LED
     public static final int PSP_SYSCON_LED_BT    = 3; // Bluetooth LED (only PSP GO)
+    public static final int PSP_SYSCON_DEVICE_UNKNOWN = 1;
     public static final int PSP_SYSCON_DEVICE_UMD = 2;
     public static final int PSP_SYSCON_DEVICE_WLAN = 4;
     private final int scratchPad[] = new int[32];
