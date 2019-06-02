@@ -93,9 +93,11 @@ public class sceIdStorage extends HLEModule {
 		switch (key) {
 			case 0x0004:
 				buffer.setValue32(0, 0x4272796E); // Fixed value "nyrB"
+				buffer.setUnsignedValue8(24, 0x94);
 				break;
 			case 0x0005:
 				buffer.setValue32(0, 0x436C6B67); // Fixed value "gklC"
+				buffer.setUnsignedValue8(16, 0x0A);
 				break;
 			case 0x0006:
 				buffer.setValue32(0, 0x4D446472); // Fixed value "rdDM"
