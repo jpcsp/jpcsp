@@ -236,6 +236,7 @@ public class MMIO extends Memory {
 		removeHandler(0xBFD00000, 0x1000);
 
 		RuntimeContext.removeCodeBlocks(0xBFD00000, 0x1000);
+		RuntimeContext.invalidateRange(0xBFC00000, 0x1000);
     }
 
     protected IMMIOHandler getHandler(int address) {

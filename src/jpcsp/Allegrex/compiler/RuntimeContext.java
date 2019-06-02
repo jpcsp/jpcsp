@@ -1003,8 +1003,10 @@ public class RuntimeContext {
     	codeBlocksHighestAddress = Integer.MIN_VALUE;
     	for (CodeBlock codeBlock : codeBlocks.values()) {
     		if (!codeBlock.isInternal()) {
-	    		codeBlocksLowestAddress = Math.min(codeBlocksLowestAddress, codeBlock.getLowestAddress());
-	    		codeBlocksHighestAddress = Math.max(codeBlocksHighestAddress, codeBlock.getHighestAddress());
+        		int lowestAddress = codeBlock.getLowestAddress() & addressMask;
+        		int highestAddress = codeBlock.getHighestAddress() & addressMask;
+	    		codeBlocksLowestAddress = Math.min(codeBlocksLowestAddress, lowestAddress);
+	    		codeBlocksHighestAddress = Math.max(codeBlocksHighestAddress, highestAddress);
     		}
     	}
     }
@@ -1014,6 +1016,9 @@ public class RuntimeContext {
     	CodeBlock previousCodeBlock = codeBlocks.put(maskedAddress, codeBlock);
 
     	if (!codeBlock.isInternal()) {
+    		int lowestAddress = codeBlock.getLowestAddress() & addressMask;
+    		int highestAddress = codeBlock.getHighestAddress() & addressMask;
+
 	    	if (previousCodeBlock != null) {
 	    		// One code block has been deleted, recompute the whole code blocks range
 	    		computeCodeBlocksRange();
@@ -1024,12 +1029,12 @@ public class RuntimeContext {
 	    		}
 	    	} else {
 	    		// One new code block has been added, update the code blocks range
-	    		codeBlocksLowestAddress = Math.min(codeBlocksLowestAddress, codeBlock.getLowestAddress());
-	    		codeBlocksHighestAddress = Math.max(codeBlocksHighestAddress, codeBlock.getHighestAddress());
+	    		codeBlocksLowestAddress = Math.min(codeBlocksLowestAddress, lowestAddress);
+	    		codeBlocksHighestAddress = Math.max(codeBlocksHighestAddress, highestAddress);
 	    	}
 
-	    	int startIndex = ((codeBlock.getLowestAddress() & addressMask) - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
-    		int endIndex = ((codeBlock.getHighestAddress() & addressMask) - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
+	    	int startIndex = (lowestAddress - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
+    		int endIndex = (highestAddress - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
     		for (int i = startIndex; i <= endIndex; i++) {
     			if (i >= 0 && i < fastCodeBlockLookup.length) {
     				CodeBlockList codeBlockList = fastCodeBlockLookup[i];
