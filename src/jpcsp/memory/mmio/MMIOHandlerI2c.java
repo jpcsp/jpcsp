@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_I2C_INTR;
+import static jpcsp.util.Utilities.clearFlag;
+import static jpcsp.util.Utilities.hasFlag;
+import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
 
@@ -36,11 +39,13 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 	private static final int STATE_VERSION = 0;
 	public static final int PSP_CY27040_I2C_ADDR = 0xD2;
 	public static final int PSP_WM8750_I2C_ADDR = 0x34;
+	private static final int INTERRUPT_FLAG = 0x1;
 	private int i2cAddress;
 	private int dataLength;
 	private int transmitData[] = new int[16];
 	private int receiveData[] = new int[16];
 	private int dataIndex = -1;
+	private int interrupt;
 	private final IAction completeCommandAction = new CompleteCommandAction();
 
 	private class CompleteCommandAction implements IAction {
@@ -60,6 +65,7 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 		i2cAddress = stream.readInt();
 		dataLength = stream.readInt();
 		dataIndex = stream.readInt();
+		interrupt = stream.readInt();
 		stream.readInts(transmitData);
 		stream.readInts(receiveData);
 		super.read(stream);
@@ -71,6 +77,7 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 		stream.writeInt(i2cAddress);
 		stream.writeInt(dataLength);
 		stream.writeInt(dataIndex);
+		stream.writeInt(interrupt);
 		stream.writeInts(transmitData);
 		stream.writeInts(receiveData);
 		super.write(stream);
@@ -97,8 +104,22 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 		dataIndex = -1;
 	}
 
+	private void checkInterrupt() {
+		if (hasFlag(interrupt, INTERRUPT_FLAG)) {
+			RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_I2C_INTR);
+		} else {
+			RuntimeContextLLE.clearInterrupt(getProcessor(), PSP_I2C_INTR);
+		}
+	}
+
 	private void completeCommand() {
-		RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_I2C_INTR);
+		interrupt = setFlag(interrupt, INTERRUPT_FLAG);
+		checkInterrupt();
+	}
+
+	private void clearInterrupt(int value) {
+		interrupt = clearFlag(interrupt, value);
+		checkInterrupt();
 	}
 
 	private void startCommand(int command) {
@@ -153,12 +174,6 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 		}
 	}
 
-	private void acknowledgeInterrupt(int value) {
-		if (value == 1) {
-			RuntimeContextLLE.clearInterrupt(getProcessor(), PSP_I2C_INTR);
-		}
-	}
-
 	@Override
 	public int read32(int address) {
 		int value;
@@ -170,6 +185,7 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 			case 0x10: value = 0; break; // Unknown
 			case 0x14: value = 0; break; // Unknown
 			case 0x1C: value = 0; break; // Unknown
+			case 0x28: value = interrupt; break;
 			default: value = super.read32(address); break;
 		}
 
@@ -189,7 +205,7 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 			case 0x10: break; // Unknown
 			case 0x14: break; // Unknown
 			case 0x1C: break; // Unknown
-			case 0x28: acknowledgeInterrupt(value); break;
+			case 0x28: clearInterrupt(value); break;
 			case 0x2C: break; // Unknown
 			default: super.write32(address, value); break;
 		}
