@@ -375,8 +375,9 @@ public class sceSyscon extends HLEModule {
      * @return 0 on success.
      */
     @HLEUnimplemented
-	@HLEFunction(nid = 0x9D88A8DE, version = 150)
-	public int sceSysconGetWakeUpReq(TPointer req) {
+	@HLEFunction(nid = 0xA9AEF39F, version = 150)
+	@HLEFunction(nid = 0x9D88A8DE, version = 660)
+	public int sceSysconGetWakeUpReq(@BufferInfo(usage=Usage.out) TPointer32 req) {
     	return 0;
 	}
 
@@ -890,6 +891,31 @@ public class sceSyscon extends HLEModule {
 	@HLEFunction(nid = 0x2D6F2728, version = 660)
 	public int sceSysconGetHPConnect() {
     	// Has no parameters
+    	return 0;
+    }
+
+    /**
+     * Set the tachyon watchdog timer.
+     *
+     * @param wdt	The timer value (0 - 0x7F).
+     * @return		0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x2EE82492, version = 150)
+	public int sceSysconCtrlTachyonWDT(int wdt) {
+    	return 0;
+    }
+
+    /**
+     * Get the wake up factor (?).
+     *
+     * @param factor	Pointer to a buffer where the factor will be stored.
+     * @return			0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xF775BC34, version = 150)
+	@HLEFunction(nid = 0xF33E1B14, version = 660)
+	public int sceSysconGetWakeUpFactor(@BufferInfo(usage=Usage.out) TPointer32 factor) {
     	return 0;
     }
 }

@@ -33,6 +33,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_LED;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_LEPTON_POWER;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_MS_POWER;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_POWER;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_TACHYON_WDT;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_VOLTAGE;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_WLAN_POWER;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_ANALOG;
@@ -46,6 +47,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POWER_STATUS;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POWER_SUPPLY_STATUS;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_STATUS2;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_TIMESTAMP;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_WAKE_UP_FACTOR;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_NOP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_READ_ALARM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_READ_CLOCK;
@@ -243,6 +245,8 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 
 		// The default response
 		int[] responseData = new int[] { 0x82 };
+
+		MMIOHandlerGpio.getInstance().clearPort(GPIO_PORT_SYSCON_END_CMD);
 
 		int unknown;
 		int address;
@@ -495,6 +499,18 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				responseData = Utilities.add(responseData, 0); // Response code
 				responseData = Utilities.add(responseData, Battery.readEeprom(address + 0));
 				responseData = Utilities.add(responseData, Battery.readEeprom(address + 1));
+				break;
+			case PSP_SYSCON_CMD_CTRL_TACHYON_WDT:
+				int tachyonWatchdogTimer = data[PSP_SYSCON_TX_DATA];
+				sceSysconModule.sceSysconCtrlTachyonWDT(tachyonWatchdogTimer);
+				break;
+			case PSP_SYSCON_CMD_GET_WAKE_UP_FACTOR:
+				// Return unknown value, taken from a real PSP
+				responseData = addResponseData16(responseData, 0x04C0);
+				break;
+			case sceSyscon.PSP_SYSCON_CMD_GET_WAKE_UP_REQ:
+				// Return unknown value, taken from a real PSP
+				responseData = Utilities.add(responseData, 0xFF);
 				break;
 			default:
 				log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
