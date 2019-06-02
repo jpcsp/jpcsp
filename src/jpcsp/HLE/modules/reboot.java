@@ -16,6 +16,7 @@
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._t9;
 import static jpcsp.Allegrex.Common._v0;
@@ -30,6 +31,7 @@ import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
 import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
 import static jpcsp.HLE.modules.ThreadManForUser.LUI;
 import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
+import static jpcsp.HLE.modules.ThreadManForUser.SW;
 import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscall;
 import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscallWithJump;
 import static jpcsp.MemoryMap.START_SCRATCHPAD;
@@ -39,6 +41,7 @@ import static jpcsp.util.Utilities.readUnaligned32;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -55,6 +58,9 @@ import jpcsp.Allegrex.Interpreter;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -64,6 +70,7 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelLoadExecVSHParam;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -74,11 +81,13 @@ import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.crypto.KIRK;
 import jpcsp.crypto.PRX;
+import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.format.PSP;
 import jpcsp.hardware.Model;
 import jpcsp.hardware.Nand;
 import jpcsp.memory.IntArrayMemory;
 import jpcsp.memory.mmio.MMIO;
+import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
@@ -98,6 +107,7 @@ public class reboot extends HLEModule {
 	private int iplEntry;
 	private int iplBase;
 	private int iplSize;
+	private IVirtualFile iplVirtualFile;
 
     private static class SetLog4jMDC implements IAction {
 		@Override
@@ -545,6 +555,7 @@ public class reboot extends HLEModule {
     	installHLESyscall(new TPointer(preIplCode, 0x2A0), this, "hlePreIplIcacheInvalidateAll");
     	installHLESyscall(new TPointer(preIplCode, 0x2D8), this, "hlePreIplDcacheWritebackInvalidateAll");
     	installHLESyscall(new TPointer(preIplCode, 0x334), this, "hlePreIplNandReadPage");
+    	installHLESyscall(new TPointer(preIplCode, 0x418), this, "hlePreIplMemoryStickReadSector");
 
 		SceModule iplModule = new SceModule(true);
 		iplModule.modname = getName();
@@ -778,6 +789,10 @@ public class reboot extends HLEModule {
     }
 
     private static void dumpThreadTypeList(Memory mem, int list) {
+    	if (list == 0) {
+    		return;
+    	}
+
     	for (int cb = mem.read32(list); cb != list; cb = mem.read32(cb)) {
     		SceSysmemUidCB sceSysmemUidCB = new SceSysmemUidCB();
     		sceSysmemUidCB.read(mem, cb);
@@ -786,7 +801,11 @@ public class reboot extends HLEModule {
     }
 
     private static void dumpThread(Memory mem, int address, String comment) {
-		int uid = mem.read32(address + 8);
+    	if (address == 0) {
+    		return;
+    	}
+
+    	int uid = mem.read32(address + 8);
 		int status = mem.read32(address + 12);
 		int currentPriority = mem.read32(address + 16);
 
@@ -821,7 +840,11 @@ public class reboot extends HLEModule {
     }
 
     private static void dumpThreadList(Memory mem, int list, String comment) {
-    	for (int address = mem.read32(list); address != list; address = mem.read32(address)) {
+    	if (list == 0) {
+    		return;
+    	}
+
+    	for (int address = mem.read32(list); address != 0 && address != list; address = mem.read32(address)) {
     		dumpThread(mem, address, comment);
     	}
     }
@@ -857,7 +880,19 @@ public class reboot extends HLEModule {
     		}
     	}
 
-    	final TPointer decryptBuffer = new TPointer(mem, 0xBFD00000);
+    	if (iplVirtualFile == null) {
+			File iplBin = new File("ipl.bin");
+			if (iplBin.canRead() && iplBin.length() >= 0x1000) {
+				try {
+					iplVirtualFile = new LocalVirtualFile(new SeekableRandomFile(iplBin, "r"));
+				} catch (FileNotFoundException e) {
+					// Ignore exception
+				}
+				addMMIORange(0x040E0000, 0x4000);
+			}
+    	}
+
+		final TPointer decryptBuffer = new TPointer(mem, 0xBFD00000);
     	final int decryptBufferPages = 8;
     	final int decryptBufferSize = decryptBufferPages * Nand.pageSize;
 		int nextAddr = 0;
@@ -871,12 +906,19 @@ public class reboot extends HLEModule {
 
 			for (int j = 0; j < Nand.pagesPerBlock && iplEntry == 0; j += decryptBufferPages) {
 				for (int page = 0; page < decryptBufferPages; page++) {
-					result = Modules.sceNandModule.hleNandReadPages(ppn + j + page, new TPointer(decryptBuffer, page * Nand.pageSize), nandSpareBuffer, 1, true, false, true);
-					if (result != 0) {
-						return false;
-					}
-					if (nandSpareBuffer.getValue32(4) != sceNand.iplId) {
-						return false;
+					if (iplVirtualFile == null) {
+						result = Modules.sceNandModule.hleNandReadPages(ppn + j + page, new TPointer(decryptBuffer, page * Nand.pageSize), nandSpareBuffer, 1, true, false, true);
+						if (result != 0) {
+							return false;
+						}
+						if (nandSpareBuffer.getValue32(4) != sceNand.iplId) {
+							return false;
+						}
+					} else {
+						result = iplVirtualFile.ioRead(new TPointer(decryptBuffer, page * Nand.pageSize), Nand.pageSize);
+						if (result < 0) {
+							return false;
+						}
 					}
 				}
 
@@ -966,6 +1008,32 @@ public class reboot extends HLEModule {
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hlePreIplMemoryStickReadSector(int lba, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=MMIOHandlerMemoryStick.PAGE_SIZE, usage=Usage.out) TPointer address) {
+    	if (iplVirtualFile == null) {
+    		MMIOHandlerMemoryStick.getInstance().readSector(lba, address);
+    	} else {
+    		iplVirtualFile.ioLseek((lba - 0x10) * MMIOHandlerMemoryStick.PAGE_SIZE);
+    		iplVirtualFile.ioRead(address, MMIOHandlerMemoryStick.PAGE_SIZE);
+    	}
+
+    	addMMIORange(address, MMIOHandlerMemoryStick.PAGE_SIZE);
+
+    	return 0;
+    }
+
+    private void patchMainBin(TPointer addr) {
+    	// disable decryption of key at 0xBFD00200
+    	addr.setValue32(0x90, MOVE(_v0, _zr)); 
+
+    	// Always generate a random value full of 0's
+    	addr.setValue32(0x5DF8, SW(_zr, _s0, 0));
+    	addr.setValue32(0x5DFC, SW(_zr, _s0, 4));
+    	addr.setValue32(0x5E00, SW(_zr, _s0, 8));
+    	addr.setValue32(0x5E04, SW(_zr, _s0, 12));
+    	addr.setValue32(0x5E08, SW(_zr, _s0, 16));
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleIplGzipDecompress(TPointer outBufferAddr, int outBufferLength, TPointer inBufferAddr, @CanBeNull TPointer32 crc32Addr) {
     	if (Modules.sceDefltModule.sceGzipIsValid(inBufferAddr)) {
     		return Modules.sceDefltModule.sceGzipDecompress(outBufferAddr, outBufferLength, inBufferAddr, crc32Addr);
@@ -983,8 +1051,7 @@ public class reboot extends HLEModule {
 
 		    	addMMIORange(outBufferAddr.getAddress(), readLength);
 
-		    	// Patching main.bin
-		    	outBufferAddr.setValue32(0x90, MOVE(_v0, _zr)); // disable decryption of key at 0xBFD00200
+		    	patchMainBin(outBufferAddr);
 			} catch (IOException e) {
 				log.error("hleIplGzipDecompress", e);
 			}
