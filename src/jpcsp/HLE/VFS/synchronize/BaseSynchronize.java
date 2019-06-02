@@ -22,7 +22,6 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.state.StateInputStream;
@@ -77,17 +76,32 @@ public abstract class BaseSynchronize implements ISynchronize {
     	stream.writeLong(lastSync);
 	}
 
-	protected ScePspDateTime now() {
+	protected ScePspDateTime nowDate() {
 		return ScePspDateTime.fromMicros(hleGetCurrentMicros());
+	}
+
+	protected long now() {
+		// Use the real time, not the PSP clock so that the
+		// synch can be done while the PSP is paused.
+		return System.currentTimeMillis();
 	}
 
 	private int checkDeltaSynchronize(int syncDelayMillis) {
 		int result = 0;
 
 		synchronized (lock) {
-	    	long now = Emulator.getClock().currentTimeMillis();
+	    	long now = now();
 	    	long millisSinceLastWrite = now - lastWrite;
+
+	    	if (log.isTraceEnabled()) {
+	    		log.trace(String.format("checkDeltaSynchronize syncDelayMillis=0x%X, millisSinceLastWrite=0x%X, lastSync=0x%X, lastWrite=0x%X, now=0x%X", syncDelayMillis, millisSinceLastWrite, lastSync, lastWrite, now));
+	    	}
+
 	    	if (lastSync < lastWrite && millisSinceLastWrite >= syncDelayMillis) {
+		    	if (log.isTraceEnabled()) {
+		    		log.trace(String.format("checkDeltaSynchronize deltaSynchronize() now"));
+		    	}
+
 	    		result = deltaSynchronize();
 	    		lastSync = now;
 	    	}
@@ -107,7 +121,7 @@ public abstract class BaseSynchronize implements ISynchronize {
 
     @Override
 	public void notifyWrite() {
-    	long now = Emulator.getClock().currentTimeMillis();
+    	long now = now();
 		synchronized (lock) {
 			lastWrite = now;
 		}

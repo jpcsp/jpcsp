@@ -44,7 +44,7 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 		this.input = input;
 		this.output = output;
 
-		lastSyncDate = now();
+		lastSyncDate = nowDate();
 	}
 
 	@Override
@@ -85,7 +85,7 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 		invalidateCachedData();
 		closeCachedFiles();
 
-		ScePspDateTime newLastSync = now();
+		ScePspDateTime newLastSync = nowDate();
 
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("deltaSynchronize %s start", name));
@@ -105,7 +105,17 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 	}
 
 	private boolean isModifiedSinceLastSync(SceIoDirent dirent) {
-		return dirent.stat.mtime.after(lastSyncDate);
+		if (dirent.stat.mtime.after(lastSyncDate)) {
+			return true;
+		}
+
+		// When modifying an entry, the PSP is sometimes
+		// writing no time at all in the directory entry.
+		if (dirent.stat.mtime.toMSDOSTime() == 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private boolean isDirectory(SceIoDirent entry) {
