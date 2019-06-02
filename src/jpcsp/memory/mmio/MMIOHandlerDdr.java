@@ -120,8 +120,10 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 			case 0x04: doFlush(value); break;
 			case 0x20: break;
 			case 0x24: break;
+			case 0x2C: break; // Unknown, used during IPL boot
 			case 0x30: break; // Unknown, used during sceDdrChangePllClock()
 			case 0x34: break; // Unknown, used during sceDdrChangePllClock()
+			case 0x38: break; // Unknown, used during IPL boot
 			case 0x40: break; // Unknown, used during sceDdrChangePllClock()
 			case 0x44: break; // Unknown, used during sceDdrChangePllClock()
 			default: super.write32(address, value); break;
