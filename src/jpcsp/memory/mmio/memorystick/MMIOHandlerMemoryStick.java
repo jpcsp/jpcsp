@@ -311,6 +311,8 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 			value = disabledBlocksPageMemory.read16(dataIndex);
 		} else if (dataAddress == CIS_IDI_PAGE) {
 			log.error(String.format("MMIOHandlerMemoryStick.readData16 unimplemented reading from CIS_IDI_PAGE"));
+		} else {
+			log.error(String.format("MMIOHandlerMemoryStick.readData16 unimplemented reading from dataAddress=0x%X", dataAddress));
 		}
 
 		return value;
@@ -408,8 +410,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 			} else {
 				offset = (lba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
 
-				sceMSstorModule.hleMSstorPartitionIoLseek(null, offset, PSP_SEEK_SET);
-				sceMSstorModule.hleMSstorPartitionIoWrite(null, pageBufferPointer, PAGE_SIZE);
+				sceMSstorModule.hleMSstorPartitionIoWrite(offset, pageBufferPointer, PAGE_SIZE);
 			}
 
 			pageLba++;

@@ -386,6 +386,19 @@ public class sceMSstor extends HLEModule {
     	return len;
     }
 
+    public int hleMSstorPartitionIoWrite(long offset, TPointer data, int len) {
+    	if (vFile != null) {
+    		scanThread.waitForCompletion();
+    		synchronized (writeLock) {
+    			position = vFile.ioLseek(offset);
+        		len = vFile.ioWrite(data, len);
+    			sync.notifyWrite();
+			}
+    	}
+
+    	return len;
+    }
+
     private static byte[] readBytes(String fileName) {
     	byte[] bytes = null;
     	try {
