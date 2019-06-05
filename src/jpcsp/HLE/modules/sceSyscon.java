@@ -133,6 +133,12 @@ public class sceSyscon extends HLEModule {
 			scratchPad[i + 8] = scratchPad8 & 0xFF;
 		}
 
+		// Unknown 4-bytes value at offset 8
+		int scratchPad12 = 0;
+		for (int i = 0; i < 4; i++, scratchPad12 >>= 8) {
+			scratchPad[i + 12] = scratchPad12 & 0xFF;
+		}
+
 		// 5-bytes value at offset 16, used to initialize the clock.
 		// Set this value to 0 to force the clock initialization at boot time.
 		long scratchPad16 = sceRtc.hleGetCurrentTick() >> 19;
