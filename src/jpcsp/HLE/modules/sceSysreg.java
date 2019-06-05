@@ -23,17 +23,33 @@ import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.hardware.Model;
+import jpcsp.settings.AbstractStringSettingsListener;
+import jpcsp.settings.Settings;
 
 public class sceSysreg extends HLEModule {
     public static Logger log = Modules.getLogger("sceSysreg");
     private long fuseId = 0x12345678ABCDEFL; // Dummy Fuse ID
     private int fuseConfig = 0x2400; // Value retrieved from a real PSP
 
-    public void setFuseId(long fuseId) {
+    private class FuseIdSettingsListener extends AbstractStringSettingsListener {
+		@Override
+		protected void settingsValueChanged(String value) {
+			fuseId = Settings.parseLong(value);
+		}
+    }
+
+	@Override
+	public void start() {
+		setSettingsListener("sceSysreg.fuseId", new FuseIdSettingsListener());
+
+		super.start();
+	}
+
+	public void setFuseId(long fuseId) {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("setFuseId 0x%X", fuseId));
     	}
-    	this.fuseId = fuseId;
+    	Settings.getInstance().writeLong("sceSysreg.fuseId", fuseId);
     }
 
     @HLEUnimplemented
