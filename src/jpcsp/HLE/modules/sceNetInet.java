@@ -190,7 +190,7 @@ public class sceNetInet extends HLEModule {
     private static class BroadcastAddressSettingsListener extends AbstractStringSettingsListener {
 		@Override
 		protected void settingsValueChanged(String value) {
-			// Force a new evaluation of broadcasrAddresses in getBroadcastInetSocketAddress()
+			// Force a new evaluation of broadcastAddresses in getBroadcastInetSocketAddress()
 			broadcastAddresses = null;
 		}
     }
