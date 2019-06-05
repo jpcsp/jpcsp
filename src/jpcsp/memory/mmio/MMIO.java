@@ -104,6 +104,9 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
     	addHandler(0xBE780000, 0x20, new MMIOHandlerDisplayControllerSlim(0xBE780000), 2);
 
+    	// Unknown address being only accessed during IPL boot
+    	addHandlerRW(0xB1800000, 0x4);
+
     	// The memory at 0xBFC00000 is only visible during the IPL execution
     	addHandlerRW(0xBFC00000, 0x1000); // 4K embedded RAM
     	// The memory at 0xBFD00000 will be remapped to 0xBFC00000 after IPL execution

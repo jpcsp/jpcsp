@@ -290,11 +290,15 @@ public class Settings {
     }
 
     public static int parseInt(String value) {
+    	return Utilities.parseInteger(value);
+    }
+
+    public static long parseLong(String value) {
         value = value.trim();
         if (value.startsWith("0x")) {
-            return Integer.parseInt(value.substring(2), 16);
+            return Long.parseLong(value.substring(2), 16);
         }
-        return Integer.parseInt(value);
+        return Long.parseLong(value);
     }
 
     public static float parseFloat(String value) {
@@ -323,6 +327,15 @@ public class Settings {
         return parseInt(value);
     }
 
+    public long readLong(String option, long defaultValue) {
+        String value = getProperty(option);
+        if (value == null) {
+            return defaultValue;
+        }
+
+        return parseLong(value);
+    }
+
     public void writeBool(String option, boolean value) {
         String state = value ? "1" : "0";
         setProperty(option, state);
@@ -331,6 +344,12 @@ public class Settings {
 
     public void writeInt(String option, int value) {
         String state = Integer.toString(value);
+        setProperty(option, state);
+        writeSettings();
+    }
+
+    public void writeLong(String option, long value) {
+        String state = Long.toString(value);
         setProperty(option, state);
         writeSettings();
     }
@@ -365,6 +384,77 @@ public class Settings {
         }
 
         return parseFloat(value);
+    }
+
+    private static int[] parseInts(String s) {
+    	String[] values = s.split(",");
+    	if (values == null) {
+    		return null;
+    	}
+
+    	int[] ints = new int[values.length];
+    	for (int i = 0; i < values.length; i++) {
+    		ints[i] = parseInt(values[i]);
+    	}
+
+    	return ints;
+    }
+
+    public int[] readInts(String option, int[] defaultValue) {
+    	String value = getProperty(option);
+    	if (value == null) {
+    		return defaultValue;
+    	}
+
+    	return parseInts(value);
+    }
+
+    private static String formatInts(int[] values) {
+    	StringBuilder s = new StringBuilder();
+    	if (values != null) {
+	    	for (int value : values) {
+	    		if (s.length() > 0) {
+	    			s.append(", ");
+	    		}
+	    		s.append(String.format("0x%X", value));
+	    	}
+    	}
+
+    	return s.toString();
+    }
+
+    public void writeInts(String option, int[] values) {
+    	writeString(option, formatInts(values));
+    }
+
+    public byte[] readBytes(String option, byte[] defaultValue) {
+    	String value = getProperty(option);
+    	if (value == null) {
+    		return defaultValue;
+    	}
+
+    	int[] ints = parseInts(value);
+    	if (ints == null) {
+    		return null;
+    	}
+
+    	byte[] bytes = new byte[ints.length];
+    	for (int i = 0; i < ints.length; i++) {
+    		bytes[i] = (byte) ints[i];
+    	}
+
+    	return bytes;
+    }
+
+    public void writeBytes(String option, byte[] values) {
+    	int[] ints = null;
+    	if (values != null) {
+    		ints = new int[values.length];
+    		for (int i = 0; i < values.length; i++) {
+    			ints[i] = values[i] & 0xFF;
+    		}
+    	}
+    	writeString(option, formatInts(ints));
     }
 
     public HashMap<Integer, keyCode> loadKeys() {

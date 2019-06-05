@@ -36,6 +36,7 @@ import static jpcsp.HLE.modules.ThreadManForUser.SW;
 import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscall;
 import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscallWithJump;
 import static jpcsp.MemoryMap.START_SCRATCHPAD;
+import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_SERVICE_BATTERY;
 import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.readCompleteFile;
 import static jpcsp.util.Utilities.readUnaligned32;
@@ -88,6 +89,7 @@ import jpcsp.hardware.Model;
 import jpcsp.hardware.Nand;
 import jpcsp.memory.IntArrayMemory;
 import jpcsp.memory.mmio.MMIO;
+import jpcsp.memory.mmio.MMIOHandlerGpio;
 import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
@@ -112,7 +114,6 @@ public class reboot extends HLEModule {
 	private int iplEntry;
 	private int iplBase;
 	private int iplSize;
-	private IVirtualFile iplVirtualFile;
 
     private static class SetLog4jMDC implements IAction {
 		@Override
@@ -364,10 +365,9 @@ public class reboot extends HLEModule {
 		}
     }
 
-	private SceModule createRebootModule(String fileName) {
+	private SceModule createRebootModule() {
     	SceModule rebootModule = new SceModule(true);
     	rebootModule.modname = getName();
-    	rebootModule.pspfilename = fileName;
     	rebootModule.baseAddress = rebootBaseAddress;
     	rebootModule.text_addr = rebootBaseAddress;
     	rebootModule.text_size = 0;
@@ -392,7 +392,7 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-    	SceModule rebootModule = createRebootModule(loadexecFileName);
+    	SceModule rebootModule = createRebootModule();
 
     	IntArrayMemory intArrayMemory = new IntArrayMemory(new int[0x40000 >> 2], 0, MemoryMap.START_RAM);
     	TPointer tempMemory = intArrayMemory.getPointer();
@@ -518,7 +518,7 @@ public class reboot extends HLEModule {
     		return false;
     	}
 
-    	SceModule rebootModule = createRebootModule(rebootFileName);
+    	SceModule rebootModule = createRebootModule();
     	rebootModule.text_size = rebootFileLength;
 
     	MMIO mmio = (MMIO) getMMIO();
@@ -552,7 +552,14 @@ public class reboot extends HLEModule {
      * @return true if can be booted
      */
     private boolean bootIpl() {
-    	if (!loadIpl()) {
+		// The Pre-IPL is testing the GPIO port 4 to decide if needs to boot
+		// from the Nand (normal battery) or from the MemoryStick (service/Pandora battery)
+    	boolean bootFromNand = !MMIOHandlerGpio.getInstance().readPort(GPIO_PORT_SERVICE_BATTERY);
+    	if (log.isInfoEnabled()) {
+    		log.info(String.format("Loading IPL from %s", bootFromNand ? "Nand" : "MemoryStick"));
+    	}
+
+    	if (!loadIpl(bootFromNand)) {
     		return false;
     	}
 
@@ -565,7 +572,6 @@ public class reboot extends HLEModule {
 
 		SceModule iplModule = new SceModule(true);
 		iplModule.modname = getName();
-		iplModule.pspfilename = "ipl:";
 		iplModule.baseAddress = iplBase;
 		iplModule.text_addr = iplBase;
 		iplModule.text_size = iplSize;
@@ -613,7 +619,6 @@ public class reboot extends HLEModule {
 
 		SceModule iplModule = new SceModule(true);
 		iplModule.modname = getName();
-		iplModule.pspfilename = "preipl:";
 		iplModule.baseAddress = preIplAddress;
 		iplModule.text_addr = preIplAddress;
 		iplModule.text_size = preIplSize;
@@ -633,6 +638,7 @@ public class reboot extends HLEModule {
     	addFunctionNid(0x0400C5F4, "sceSysregGetFuseId");
     	addFunctionNid(0x0400067C, "sceKernelUtilsSha1Digest");
     	addFunctionNid(0x0400C5B4, "sceSysregGetTachyonVersion");
+    	addFunctionNid(0x04003AF0, "sceKernelUtilsSha1Digest");
 
     	return true;
 	}
@@ -921,39 +927,29 @@ public class reboot extends HLEModule {
     	addMMIORange(startAddress.getAddress(), length);
     }
 
-    private boolean loadIpl() {
+    private boolean loadIpl(boolean loadFromNand) {
     	int result;
     	Memory mem = getMMIO();
 
     	final TPointer nandSpareBuffer = new TPointer(preIplCopy, 0x810);
     	final TPointer iplFatSectorBuffer = new TPointer(preIplCopy, 0x81C);
 
-    	for (int iplFatPpn = sceNand.iplTablePpnStart; true; iplFatPpn += Nand.pagesPerBlock) {
-    		// Pre-IPL patched?
-        	if (preIplCopy.getValue32(0x154) == MOVE(_v0, _zr)) { 
-        		result = 0;
-        	} else {
-        		result = Modules.sceNandModule.hleNandReadPages(iplFatPpn, iplFatSectorBuffer, nandSpareBuffer, 1, true, false, true);
-        	}
+    	if (loadFromNand) {
+	    	for (int iplFatPpn = sceNand.iplTablePpnStart; true; iplFatPpn += Nand.pagesPerBlock) {
+	    		// Pre-IPL patched?
+	        	if (preIplCopy.getValue32(0x154) == MOVE(_v0, _zr)) { 
+	        		result = 0;
+	        	} else {
+	        		result = Modules.sceNandModule.hleNandReadPages(iplFatPpn, iplFatSectorBuffer, nandSpareBuffer, 1, true, false, true);
+	        	}
 
-    		if (result != 0) {
-    			return false;
-    		}
-    		if (nandSpareBuffer.getValue32(4) == sceNand.iplId) {
-    			break;
-    		}
-    	}
-
-    	if (iplVirtualFile == null) {
-			File iplBin = new File("ipl.bin");
-			if (iplBin.canRead() && iplBin.length() >= 0x1000) {
-				try {
-					iplVirtualFile = new LocalVirtualFile(new SeekableRandomFile(iplBin, "r"));
-				} catch (FileNotFoundException e) {
-					// Ignore exception
-				}
-				addMMIORange(0x040E0000, 0x4000);
-			}
+	    		if (result != 0) {
+	    			return false;
+	    		}
+	    		if (nandSpareBuffer.getValue32(4) == sceNand.iplId) {
+	    			break;
+	    		}
+	    	}
     	}
 
 		final TPointer decryptBuffer = new TPointer(mem, 0xBFD00000);
@@ -963,14 +959,14 @@ public class reboot extends HLEModule {
 		iplBase = 0;
 		iplEntry = 0;
 		for (int i = 0; i < Nand.pageSize && iplEntry == 0; i += 2) {
-			int ppn = iplFatSectorBuffer.getUnsignedValue16(i) * Nand.pagesPerBlock;
-			if (ppn == 0) {
-				break;
-			}
-
 			for (int j = 0; j < Nand.pagesPerBlock && iplEntry == 0; j += decryptBufferPages) {
 				for (int page = 0; page < decryptBufferPages; page++) {
-					if (iplVirtualFile == null) {
+					if (loadFromNand) {
+						int ppn = iplFatSectorBuffer.getUnsignedValue16(i) * Nand.pagesPerBlock;
+						if (ppn == 0) {
+							break;
+						}
+
 						result = Modules.sceNandModule.hleNandReadPages(ppn + j + page, new TPointer(decryptBuffer, page * Nand.pageSize), nandSpareBuffer, 1, true, false, true);
 						if (result != 0) {
 							return false;
@@ -979,10 +975,7 @@ public class reboot extends HLEModule {
 							return false;
 						}
 					} else {
-						result = iplVirtualFile.ioRead(new TPointer(decryptBuffer, page * Nand.pageSize), Nand.pageSize);
-						if (result < 0) {
-							return false;
-						}
+						MMIOHandlerMemoryStick.getInstance().readSector(j + page + 16, new TPointer(decryptBuffer, page * Nand.pageSize));
 					}
 				}
 
@@ -1029,15 +1022,40 @@ public class reboot extends HLEModule {
     }
 
     private void patchIpl(Memory mem) {
-    	int sceGzipDecompressAddr = iplBase + 0x910;
-    	if (mem.read32(sceGzipDecompressAddr) == ADDIU(_sp, _sp, -64)) {
-        	installHLESyscall(new TPointer(mem, sceGzipDecompressAddr), this, "hleIplGzipDecompress");
+    	int keyAddr = iplBase + 0x2880;
+    	if (Memory.isAddressGood(keyAddr) && mem.read32(keyAddr) == 0x59119BCF) {
+    		int[] keyWithoutPreIpl = new int[] {
+    				0x18, 0x2A, 0x72, 0xA2, 0x55, 0x43, 0x56, 0xD8,
+    				0x0A, 0x5F, 0x87, 0x57, 0x77, 0xB9, 0x8F, 0x93,
+    				0xA2, 0xA8, 0xC4, 0xFB, 0x48, 0x0F, 0xD1, 0x25,
+    				0x61, 0x96, 0x4A, 0xDF, 0x00, 0x00, 0x00, 0x00
+    		};
+    		int[] keyWithPreIp = new int[] {
+    				0x10, 0x7C, 0xD5, 0x09, 0x6A, 0xB5, 0x89, 0x76,
+    				0x49, 0xF6, 0xEA, 0x54, 0x0B, 0x30, 0x3E, 0x2B,
+    				0x47, 0x17, 0x6D, 0x0B, 0x04, 0x70, 0x3E, 0xB0,
+    				0x3C, 0x01, 0x44, 0x89, 0x00, 0x00, 0x00, 0x00
+    		};
+    		int checksum = 0;
+    		for (int i = 0; i < keyWithoutPreIpl.length; i++) {
+    			mem.write8(keyAddr + i, (byte) (keyWithoutPreIpl[i] ^ keyWithPreIp[i] ^ mem.read8(keyAddr + i)));
+    			checksum += keyWithoutPreIpl[i];
+    		}
+    		mem.write8(keyAddr + 0x20, (byte) checksum);
+
+    		// The 2nd part of the IPL will be uncompressed at 0x04000000
+    		addMMIORange(0x04000000, 0xE0000);
+    	} else {
+        	int sceGzipDecompressAddr = iplBase + 0x910;
+        	if (mem.read32(sceGzipDecompressAddr) == ADDIU(_sp, _sp, -64)) {
+            	installHLESyscall(new TPointer(mem, sceGzipDecompressAddr), this, "hleIplGzipDecompress");
+        	}
     	}
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hlePreIplStart() {
-    	loadIpl();
+    	loadIpl(true);
 
     	int continueAddress = iplEntry;
 
@@ -1073,12 +1091,7 @@ public class reboot extends HLEModule {
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hlePreIplMemoryStickReadSector(int lba, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=MMIOHandlerMemoryStick.PAGE_SIZE, usage=Usage.out) TPointer address) {
-    	if (iplVirtualFile == null) {
-    		MMIOHandlerMemoryStick.getInstance().readSector(lba, address);
-    	} else {
-    		iplVirtualFile.ioLseek((lba - 0x10) * MMIOHandlerMemoryStick.PAGE_SIZE);
-    		iplVirtualFile.ioRead(address, MMIOHandlerMemoryStick.PAGE_SIZE);
-    	}
+		MMIOHandlerMemoryStick.getInstance().readSector(lba, address);
 
     	addMMIORange(address, MMIOHandlerMemoryStick.PAGE_SIZE);
 

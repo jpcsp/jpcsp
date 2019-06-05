@@ -145,7 +145,18 @@ public class Battery {
     	eeprom[address] = (byte) (value & 0xFF);
     }
 
-	public static void read(StateInputStream stream) throws IOException {
+    public static int readEepromBatterySerialNumber() {
+    	int batterySerialNumber = 0;
+    	// Read the serial number from the EEPROM
+    	batterySerialNumber |= readEeprom(15) << 24;
+    	batterySerialNumber |= readEeprom(14) << 16;
+    	batterySerialNumber |= readEeprom(19) << 8;
+    	batterySerialNumber |= readEeprom(18);
+
+    	return batterySerialNumber;
+    }
+
+    public static void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
 		lifeTime = stream.readInt();
 		temperature = stream.readInt();

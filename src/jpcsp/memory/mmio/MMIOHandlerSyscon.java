@@ -506,7 +506,10 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				break;
 			case PSP_SYSCON_CMD_GET_WAKE_UP_FACTOR:
 				// Return unknown value, taken from a real PSP
-				responseData = addResponseData16(responseData, 0x04C0);
+				unknown = 0x04C0;
+				// The flag 0x80 need to be disabled during the IPL boot
+				unknown &= ~0x0080;
+				responseData = addResponseData16(responseData, unknown);
 				break;
 			case sceSyscon.PSP_SYSCON_CMD_GET_WAKE_UP_REQ:
 				// Return unknown value, taken from a real PSP

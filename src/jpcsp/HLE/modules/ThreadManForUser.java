@@ -773,8 +773,10 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, String argument) {
-    	int address = prepareThreadArguments(thread, argument.length() + 1);
-    	writeStringZ(Memory.getInstance(), address, argument);
+    	if (argument != null) {
+    		int address = prepareThreadArguments(thread, argument.length() + 1);
+    		writeStringZ(Memory.getInstance(), address, argument);
+    	}
     }
 
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, byte[] argument, int argumentSize) {
