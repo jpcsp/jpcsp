@@ -47,7 +47,7 @@ public class scePopsMan extends HLEModule {
     	ebootPbpUid = -1;
     	vFileEbootPbp = null;
 
-    	String popsFileName = String.format("flash0:/kd/pops_%02dg.prx", Model.getModel() + 1);
+    	String popsFileName = String.format("flash0:/kd/pops_%02dg.prx", Model.getGeneration());
 
 //    	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/vsh/module/paf.prx", 0x19);
     	return Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(popsFileName, 0x20);

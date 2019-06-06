@@ -597,7 +597,7 @@ public class reboot extends HLEModule {
     private boolean bootPreIpl() {
     	TPointer preIpl = new TPointer(getMMIO(), preIplAddress);
 
-    	File preIplFile = new File("psp_bios.bin");
+    	File preIplFile = new File(String.format("preIpl_%02dg.bin", Model.getGeneration()));
 		try {
 			IVirtualFile vFile = new LocalVirtualFile(new SeekableRandomFile(preIplFile, "r"));
 			int result = vFile.ioRead(preIpl, preIplSize);
@@ -1116,7 +1116,7 @@ public class reboot extends HLEModule {
     		return Modules.sceDefltModule.sceGzipDecompress(outBufferAddr, outBufferLength, inBufferAddr, crc32Addr);
     	}
 
-    	File mainBin = new File("main.bin");
+    	File mainBin = new File(String.format("iplMain_%02dg.bin", Model.getGeneration()));
     	if (mainBin.canRead()) {
     		byte[] buffer = new byte[outBufferLength];
 			try {
