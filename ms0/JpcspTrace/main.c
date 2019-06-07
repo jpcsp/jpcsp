@@ -23,6 +23,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #include <psprtc.h>
 #include <pspidstorage.h>
 #include <string.h>
+#include <stdio.h>
 #include "systemctrl.h"
 #include "common.h"
 #include <pspnand_driver.h>
@@ -39,6 +40,41 @@ int sceNandReadExtraOnly(u32 ppn, void *spare, u32 len);
    void sceAta_driver_BE6261DA(int unknown);
    int sceAta_driver_4D225674();
 #endif
+
+typedef struct SceSysconPacket {
+    /** Next packet in the list. */
+    struct SceSysconPacket *next;
+    /** Status (probably only modified internally) */
+    u32 status;
+    /** Packet synchronization semaphore ID */
+    SceUID semaId;
+    /** Transmitted data.
+     * First byte is command number,
+     * second one is the transmitted data length,
+     * the rest is data depending on the command.
+     */
+    u8 tx[16];
+    /** Received data.
+     * First byte is status (probably, unused),
+     * second one is the received data length,
+     * third one is response code (?),
+     * the rest is data depending on the command.
+     */
+    u8 rx[16];
+    /** Callback ran after a GPIO interrupt, probably after the packet has been executed. */
+    s32 (*callback)(struct SceSysconPacket *, void *argp);
+    /** GP value to use in the callback. */
+    u32 gp;
+    /** Second argument passed to the callback. */
+    void *argp;
+    /** Current time when the packet was started. */
+    u32 time;
+    /** Some kind of timeout when running the packet. */
+    u32 delay;
+    /** Reserved for internal (hardware) use. */
+    u8 reserved[32];
+} SceSysconPacket;
+s32 sceSysconCmdExec(SceSysconPacket *packet, u32 flags);
 
 PSP_MODULE_INFO("JpcspTrace", PSP_MODULE_KERNEL, 1, 0);
 
@@ -83,6 +119,13 @@ int sceUtilsBufferCopyWithRangeAddr = 0;
 #endif
 
 SyscallInfo *moduleSyscalls = NULL;
+int cpuIntr;
+int logCommands = 1;
+#if BUFFER_CONFIG_FILE
+char *bufferConfigFile;
+int bufferConfigFileSize;
+int bufferConfigFileIndex = 0;
+#endif
 
 typedef struct {
         const char *name;
@@ -466,6 +509,14 @@ void patchSyscall(char *module, char *library, const char *name, u32 nid, int nu
 	#endif
 }
 
+void delay(int durationMicros) {
+	u32 start = LW(0xBC600000); // Read system time
+	u32 now;
+	do {
+		now = LW(0xBC600000); // Read system time
+	} while (now - start < durationMicros);
+}
+
 void dumpMemory(u32 startAddress, u32 length, const char *fileName) {
 	SceUID fd = ioOpen(fileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
 	if (fd < 0) {
@@ -537,54 +588,135 @@ void decryptMeimg(char *fromFileName, char *toFileName) {
 	freeAlloc(allocBuffer, allocSize);
 }
 
-void executeKirkCommand(int cmd, char *outputFileName, int outputSize, char *inputFileName, int inputSize) {
-	SceUID in = ioOpen(inputFileName, PSP_O_RDONLY, 0777);
-	if (in < 0) {
-		printLog("Cannot open input file\n");
-		return;
+void executeSysconCommand(int cmd, char *outputFileName, int outputSize, char *inputFileName, int inputSize) {
+	SceSysconPacket sysconPacket;
+
+	memset(&sysconPacket, 0, sizeof(sysconPacket));
+	sysconPacket.tx[0] = cmd;
+	sysconPacket.tx[1] = inputSize + 2;
+
+	if (inputFileName[0] == '0' && inputFileName[1] == 'x') {
+		void *inputBuffer = (void *) parseHex(inputFileName);
+		memcpy(sysconPacket.tx + 2, inputBuffer, inputSize);
+	} else {
+		SceUID in = ioOpen(inputFileName, PSP_O_RDONLY, 0777);
+		if (in < 0) {
+			printLog("Cannot open input file\n");
+			return;
+		}
+
+		int result = sceIoRead(in, sysconPacket.tx + 2, inputSize);
+		ioClose(in);
+		if (result < 0) {
+			printLog("Error reading input file\n");
+			return;
+		}
 	}
 
-	u32 allocInputSize = inputSize + 0x40;
-	void *allocInputBuffer = alloc(allocInputSize);
-	memset(allocInputBuffer, 0, allocInputSize);
-	void *inputBuffer = (void *) ((((u32) allocInputBuffer) + 0x3F) & ~0x3F);
+	u32 start = LW(0xBC600000);
+	int result = sceSysconCmdExec(&sysconPacket, 0);
+	u32 end = LW(0xBC600000);
 
-	int result = sceIoRead(in, inputBuffer, inputSize);
-	ioClose(in);
 	if (result < 0) {
-		printLog("Error reading input file\n");
-		freeAlloc(allocInputBuffer, allocInputSize);
+		printLogH("Error ", result, " received while executing syscon command\n");
+		printLogH("Input : ", LW(sysconPacket.tx), "\n");
+		printLogH("Output: ", LW(sysconPacket.rx), "\n");
 		return;
 	}
 
-	u32 allocOutputSize = outputSize + 0x40;
-	void *allocOutputBuffer = alloc(allocOutputSize);
-	memset(allocOutputBuffer, 0, allocOutputSize);
-	void *outputBuffer = (void *) ((((u32) allocOutputBuffer) + 0x3F) & ~0x3F);
+	printLogH("Syscon command executed in ", end - start, " us\n");
+
+	if (outputFileName[0] == '0' && outputFileName[1] == 'x') {
+		void *outputBuffer = (void *) parseHex(outputFileName);
+		memcpy(outputBuffer, sysconPacket.rx, outputSize);
+	} else {
+		sceIoRemove(outputFileName);
+		SceUID out = ioOpen(outputFileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+		if (out < 0) {
+			printLog("Cannot open output file\n");
+			return;
+		}
+		ioWrite(out, sysconPacket.rx, outputSize);
+		ioClose(out);
+	}
+}
+
+void executeKirkCommand(int cmd, char *outputFileName, int outputSize, char *inputFileName, int inputSize) {
+	u32 allocInputSize;
+	void *allocInputBuffer;
+	void *inputBuffer;
+	u32 allocOutputSize;
+	void *allocOutputBuffer;
+	void *outputBuffer;
+
+	if (inputFileName[0] == '0' && inputFileName[1] == 'x') {
+		allocInputSize = 0;
+		allocInputBuffer = NULL;
+		inputBuffer = (void *) parseHex(inputFileName);
+	} else {
+		SceUID in = ioOpen(inputFileName, PSP_O_RDONLY, 0777);
+		if (in < 0) {
+			printLog("Cannot open input file\n");
+			return;
+		}
+
+		allocInputSize = inputSize + 0x40;
+		allocInputBuffer = alloc(allocInputSize);
+		memset(allocInputBuffer, 0, allocInputSize);
+		inputBuffer = (void *) ((((u32) allocInputBuffer) + 0x3F) & ~0x3F);
+
+		int result = sceIoRead(in, inputBuffer, inputSize);
+		ioClose(in);
+		if (result < 0) {
+			printLog("Error reading input file\n");
+			freeAlloc(allocInputBuffer, allocInputSize);
+			return;
+		}
+	}
+
+	if (outputFileName[0] == '0' && outputFileName[1] == 'x') {
+		allocOutputSize = 0;
+		allocOutputBuffer = NULL;
+		outputBuffer = (void *) parseHex(outputFileName);
+	} else {
+		allocOutputSize = outputSize + 0x40;
+		allocOutputBuffer = alloc(allocOutputSize);
+		memset(allocOutputBuffer, 0, allocOutputSize);
+		outputBuffer = (void *) ((((u32) allocOutputBuffer) + 0x3F) & ~0x3F);
+	}
 
 	u32 start = LW(0xBC600000);
 	int kirkResult = sceUtilsBufferCopyWithRange(outputBuffer, outputSize, inputBuffer, inputSize, cmd);
 	u32 end = LW(0xBC600000);
 	if (kirkResult != 0) {
 		printLogH("Error ", kirkResult, " received while executing kirk command\n");
-		freeAlloc(allocOutputBuffer, allocOutputSize);
-		freeAlloc(allocInputBuffer, allocInputSize);
+		if (allocOutputBuffer != NULL) {
+			freeAlloc(allocOutputBuffer, allocOutputSize);
+		}
+		if (allocInputBuffer != NULL) {
+			freeAlloc(allocInputBuffer, allocInputSize);
+		}
 		return;
 	}
 	printLogH("Kirk command executed in ", end - start, " us\n");
 
-	sceIoRemove(outputFileName);
-	SceUID out = ioOpen(outputFileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
-	if (out < 0) {
-		ioClose(in);
-		printLog("Cannot open output file\n");
-		return;
+	if (allocInputBuffer != NULL) {
+		freeAlloc(allocInputBuffer, allocInputSize);
 	}
-	ioWrite(out, outputBuffer, outputSize);
-	ioClose(out);
 
-	freeAlloc(allocOutputBuffer, allocOutputSize);
-	freeAlloc(allocInputBuffer, allocInputSize);
+	if (allocOutputBuffer != NULL) {
+		sceIoRemove(outputFileName);
+		SceUID out = ioOpen(outputFileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+		if (out < 0) {
+			printLog("Cannot open output file\n");
+			freeAlloc(allocOutputBuffer, allocOutputSize);
+			return;
+		}
+		ioWrite(out, outputBuffer, outputSize);
+		ioClose(out);
+	
+		freeAlloc(allocOutputBuffer, allocOutputSize);
+	}
 }
 
 void executeIdStorageRead(int key, char *outputFileName) {
@@ -897,10 +1029,18 @@ void testAta() {
 
 int readChar(SceUID fd) {
 	char c;
+
+#if BUFFER_CONFIG_FILE
+	if (bufferConfigFileIndex >= bufferConfigFileSize) {
+		return -1;
+	}
+	c = bufferConfigFile[bufferConfigFileIndex++];
+#else
 	int length = sceIoRead(fd, &c, 1);
 	if (length < 1) {
 		return -1;
 	}
+#endif
 
 	return c & 0xFF;
 }
@@ -960,12 +1100,25 @@ void patchSyscalls(char *filePath) {
 		printLogSH("sceIoOpen '", filePath, "' = ", fd, "\n");
 		return;
 	}
+#if BUFFER_CONFIG_FILE
+	bufferConfigFileSize = sceIoLseek32(fd, 0, SEEK_END);
+	sceIoLseek32(fd, 0, SEEK_SET);
+	bufferConfigFile = alloc(bufferConfigFileSize);
+	if (bufferConfigFile == NULL) {
+		printLogH("Cannot allocate ", bufferConfigFileSize, " for config file\n");
+		return;
+	}
+	sceIoRead(fd, bufferConfigFile, bufferConfigFileSize);
+	sceIoClose(fd);
+#endif
 
 	printLog("Config file:\n");
 	while (readLine(fd, lineBuffer) >= 0) {
 		line = lineBuffer;
 
-		printLogS("> ", line, "\n");
+		if (logCommands) {
+			printLogS("> ", line, "\n");
+		}
 
 		// Skip leading spaces & tabs
 		line = skipSpaces(line);
@@ -992,14 +1145,79 @@ void patchSyscalls(char *filePath) {
 			char *fileName = param3;
 
 			dumpMemory(startAddress, length, fileName);
+		} else if (strcmp(name, "write8") == 0) {
+			u32 address = parseHex(param1);
+			u32 value = parseHex(param2);
+			SW8(value, address);
+		} else if (strcmp(name, "write16") == 0) {
+			u32 address = parseHex(param1);
+			u32 value = parseHex(param2);
+			SW16(value, address);
 		} else if (strcmp(name, "write32") == 0) {
 			u32 address = parseHex(param1);
 			u32 value = parseHex(param2);
 			SW(value, address);
+		} else if (strcmp(name, "read8") == 0) {
+			u32 address = parseHex(param1);
+			u32 value = LW8(address);
+			printLogHH("read8(", address, ")=", value, "\n");
+		} else if (strcmp(name, "read16") == 0) {
+			u32 address = parseHex(param1);
+			u32 value = LW16(address);
+			printLogHH("read16(", address, ")=", value, "\n");
 		} else if (strcmp(name, "read32") == 0) {
 			u32 address = parseHex(param1);
 			u32 value = LW(address);
 			printLogHH("read32(", address, ")=", value, "\n");
+		} else if (strcmp(name, "memcpy") == 0) {
+			void *dst = (void *) parseHex(param1);
+			void *src = (void *) parseHex(param2);
+			size_t size = (size_t) parseHex(param3);
+			memcpy(dst, src, size);
+		} else if (strcmp(name, "memset") == 0) {
+			void *dst = (void *) parseHex(param1);
+			int c = parseHex(param2);
+			size_t size = (size_t) parseHex(param3);
+			memset(dst, c, size);
+		} else if (strcmp(name, "xor") == 0) {
+			char *param4 = nextWord(&line);
+
+			u8 *dst = (u8 *) parseHex(param1);
+			u8 *src1 = (u8 *) parseHex(param2);
+			u8 *src2 = (u8 *) parseHex(param3);
+			u32 size = parseHex(param4);
+			for (; size > 0; size--) {
+				*dst++ = *src1++ ^ *src2++;
+			}
+		} else if (strcmp(name, "Echo") == 0) {
+			printLogSS(param1, " ", param2, " ", param3);
+			printLogS(" ", line, "\n");
+		} else if (strcmp(name, "DisableInterrupts") == 0) {
+			DISABLE_INTR(cpuIntr);
+		} else if (strcmp(name, "EnableInterrupts") == 0) {
+			ENABLE_INTR(cpuIntr);
+		} else if (strcmp(name, "LogCommands") == 0) {
+			logCommands = parseHex(param1);
+		} else if (strcmp(name, "Delay") == 0) {
+			int durationMicros = parseHex(param1);
+			delay(durationMicros);
+		} else if (strcmp(name, "WaitFor32") == 0) {
+			u32 address = parseHex(param1);
+			u32 targetValue = parseHex(param2);
+			u32 start = LW(0xBC600000); // Read system time
+			u32 now;
+			u32 currentValue;
+
+			do {
+				currentValue = LW(address);
+				now = LW(0xBC600000); // Read system time
+			} while (currentValue != targetValue && now - start < 1000000);
+
+			if (currentValue == targetValue) {
+				printLogH("Wait successful after ", now - start, " microseconds\n");
+			} else {
+				printLogH("Wait timeout after ", now - start, " microseconds\n");
+			}
 		} else if (strcmp(name, "DecryptMeimg") == 0) {
 			char *fromFileName = param1;
 			char *toFileName = param2;
@@ -1016,6 +1234,17 @@ void patchSyscalls(char *filePath) {
 			int inputSize = parseHex(param5);
 
 			executeKirkCommand(cmd, outputFileName, outputSize, inputFileName, inputSize);
+		} else if (strcmp(name, "ExecuteSysconCommand") == 0) {
+			char *param4 = nextWord(&line);
+			char *param5 = nextWord(&line);
+
+			int cmd = parseHex(param1);
+			char *outputFileName = param2;
+			int outputSize = parseHex(param3);
+			char *inputFileName = param4;
+			int inputSize = parseHex(param5);
+
+			executeSysconCommand(cmd, outputFileName, outputSize, inputFileName, inputSize);
 		} else if (strcmp(name, "IdStorageRead") == 0) {
 			int key = parseHex(param1);
 			char *outputFileName = param2;
@@ -1042,7 +1271,11 @@ void patchSyscalls(char *filePath) {
 		}
 	}
 
+#if BUFFER_CONFIG_FILE
+	freeAlloc(bufferConfigFile, bufferConfigFileSize);
+#else
 	sceIoClose(fd);
+#endif
 }
 
 void patchModule(SceModule *module) {

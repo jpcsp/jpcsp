@@ -28,6 +28,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define DUMP_MMIO			0
 #define TEST_ATA			0
 #define DUMP_PSAR			0
+#define BUFFER_CONFIG_FILE		1
 
 
 #define ALIGN_UP(n, alignment) (((n) + ((alignment) - 1)) & ~((alignment) - 1))
