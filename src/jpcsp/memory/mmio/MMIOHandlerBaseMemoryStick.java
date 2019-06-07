@@ -1076,7 +1076,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 				break;
 		}
 
-		increaseReadPageDataIndex(4);
+		increaseWritePageDataIndex(4);
 	}
 
 	@Override

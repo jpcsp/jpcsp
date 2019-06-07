@@ -384,6 +384,8 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 			}
 
 			pageLba++;
+		} else {
+			log.error(String.format("MMIOHandlerMemoryStick.readPageBuffer unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
 		}
 	}
 
@@ -414,6 +416,8 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 			}
 
 			pageLba++;
+		} else {
+			log.error(String.format("MMIOHandlerMemoryStick.writePageBuffer unimplemented cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
 		}
 	}
 
