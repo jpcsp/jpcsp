@@ -185,7 +185,12 @@ public abstract class Memory implements IState {
         if (ignoreInvalidMemoryAccess) {
             log.warn("IGNORED: " + message);
         } else {
-            log.error(message);
+            if (Thread.currentThread().getName().startsWith("Dmac Thread for 0x")) {
+            	// Include a stack dump for Dmac threads
+            	log.error(message, new Throwable());
+            } else {
+                log.error(message);
+            }
             Emulator.PauseEmuWithStatus(status);
         }
     }
