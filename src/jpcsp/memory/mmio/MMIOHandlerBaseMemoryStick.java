@@ -583,6 +583,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 				setStartBlock(0);
 				setPageLba(getDataAddress());
 				commandCompleted = false;
+				setInterrupt();
 				break;
 			case MSPRO_CMD_READ_IO_ATRB:
 				if (log.isDebugEnabled()) {
