@@ -69,7 +69,12 @@ public class Battery {
     	BatteryUpdateThread.initialize();
     }
 
-	public static int getLifeTime() {
+    private static void batterySerialNumberUpdated() {
+    	int batterySerialNumber = readEepromBatterySerialNumber();
+    	Settings.getInstance().writeInt(settingsBatterySerialNumber, batterySerialNumber);
+    }
+
+    public static int getLifeTime() {
         return lifeTime;
     }
 
@@ -143,6 +148,10 @@ public class Battery {
 
     public static void writeEeprom(int address, int value) {
     	eeprom[address] = (byte) (value & 0xFF);
+
+    	if (address == 14 || address == 15 || address == 18 || address == 19) {
+    		batterySerialNumberUpdated();
+    	}
     }
 
     public static int readEepromBatterySerialNumber() {
