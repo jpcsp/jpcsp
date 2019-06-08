@@ -348,8 +348,20 @@ public class Settings {
         writeSettings();
     }
 
+    public void writeIntHex(String option, int value) {
+        String state = String.format("0x%X", value);
+        setProperty(option, state);
+        writeSettings();
+    }
+
     public void writeLong(String option, long value) {
         String state = Long.toString(value);
+        setProperty(option, state);
+        writeSettings();
+    }
+
+    public void writeLongHex(String option, long value) {
+        String state = String.format("0x%X", value);
         setProperty(option, state);
         writeSettings();
     }

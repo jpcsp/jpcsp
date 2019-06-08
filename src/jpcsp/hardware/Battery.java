@@ -71,7 +71,7 @@ public class Battery {
 
     private static void batterySerialNumberUpdated() {
     	int batterySerialNumber = readEepromBatterySerialNumber();
-    	Settings.getInstance().writeInt(settingsBatterySerialNumber, batterySerialNumber);
+    	Settings.getInstance().writeIntHex(settingsBatterySerialNumber, batterySerialNumber);
     }
 
     public static int getLifeTime() {
