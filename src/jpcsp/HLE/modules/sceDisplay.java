@@ -334,6 +334,10 @@ public class sceDisplay extends HLEModule {
                 }
             }
 
+            if (!isFbShowing) {
+                reDisplay.clear(0.0f, 0.0f, 0.0f, 0.0f);
+            }
+
             setInsideRendering(false);
 
             // Perform OpenGL double buffering
