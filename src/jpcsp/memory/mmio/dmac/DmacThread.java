@@ -65,6 +65,7 @@ public class DmacThread extends Thread {
 	private volatile IAction completedAction;
 	private volatile boolean exit;
 	private volatile boolean abortJob;
+	private volatile boolean inProgress;
 
 	public DmacThread(DmacProcessor dmacProcessor) {
 		this.dmacProcessor = dmacProcessor;
@@ -82,8 +83,10 @@ public class DmacThread extends Thread {
 		while (!exit) {
 			try {
 				job.acquire();
-				if (!exit) {
+				if (!exit && !abortJob) {
+					inProgress = true;
 					dmacMemcpy();
+					inProgress = false;
 				}
 			} catch (InterruptedException e) {
 				// Ignore exception
@@ -114,6 +117,10 @@ public class DmacThread extends Thread {
 		abortJob = true;
 
 		trigger.release();
+
+		while (inProgress) {
+			// Active polling as this will complete very quickly
+		}
 	}
 
 	private void dmacMemcpy(int dst, int src, int dstLength, int srcLength, int dstStepLength, int srcStepLength, boolean dstIncrement, boolean srcIncrement) {
