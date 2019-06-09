@@ -29,12 +29,11 @@ public class sceKernelDeflateDecompress extends AbstractNativeCodeSequence {
 	public static Logger log = UtilsForKernel.log;
 
 	public static void call() {
-		Memory mem = getMemory();
-		TPointer dest = new TPointer(mem, getGprA0());
+		TPointer dest = getPointer(getGprA0());
 		int destSize = getGprA1();
 		int srcAddr = getGprA2();
-		TPointer src = new TPointer(mem, srcAddr);
-		TPointer32 endOfDecompressedDestAddr = new TPointer32(mem, getGprA3(), true);
+		TPointer src = getPointer(srcAddr);
+		TPointer32 endOfDecompressedDestAddr = getPointer32(getGprA3());
 
 		int result = Modules.UtilsForKernelModule.sceKernelDeflateDecompress(dest, destSize, src, endOfDecompressedDestAddr);
 

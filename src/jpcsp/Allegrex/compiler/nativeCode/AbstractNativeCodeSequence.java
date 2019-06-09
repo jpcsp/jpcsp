@@ -28,9 +28,12 @@ import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 
 /**
  * @author gid15
@@ -67,16 +70,8 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 		return RuntimeContext.cpu;
 	}
 
-	static protected Memory getMemoryForLLE() {
-		if (RuntimeContextLLE.hasMMIO()) {
-			return RuntimeContextLLE.getMMIO();
-		}
-
-		return getMemory();
-	}
-
-	static protected Memory getMemory() {
-		return RuntimeContext.memory;
+	static protected Memory getMemory(int address) {
+		return Emulator.getMemory(address);
 	}
 
 	static protected int getPc() {
@@ -124,15 +119,15 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	}
 
 	static protected int getStackParam0() {
-		return getMemory().read32(getGprSp());
+		return read32(getGprSp());
 	}
 
 	static protected int getStackParam1() {
-		return getMemory().read32(getGprSp() + 4);
+		return read32(getGprSp() + 4);
 	}
 
 	static protected int getStackParam2() {
-		return getMemory().read32(getGprSp() + 8);
+		return read32(getGprSp() + 8);
 	}
 
 	static protected int getGprSp() {
@@ -170,7 +165,7 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 
 	static public void strcpy(int dstAddr, int srcAddr) {
 		int srcLength = getStrlen(srcAddr);
-		getMemory().memcpy(dstAddr, srcAddr, srcLength + 1);
+		memcpy(dstAddr, srcAddr, srcLength + 1);
 	}
 
 	static public int strcmp(int src1Addr, int src2Addr) {
@@ -351,7 +346,7 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	}
 
 	static protected void invalidateCache(int address, int length) {
-		address = getMemory().normalize(address);
+		address = getMemory(address).normalize(address);
 		int endAddress = address + length;
 		final int invalidateSize = 64;
 		address = alignDown(address, invalidateSize - 1);
@@ -360,5 +355,55 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 			RuntimeContext.invalidateRange(address, invalidateSize);
 			address += invalidateSize;
 		}
+	}
+
+	static protected TPointer getPointer(int address) {
+		if (address == 0) {
+			return TPointer.NULL;
+		}
+		return new TPointer(getMemory(address), address);
+	}
+
+	static protected TPointer32 getPointer32(int address) {
+		if (address == 0) {
+			return TPointer32.NULL;
+		}
+		return new TPointer32(getMemory(address), address);
+	}
+
+	static protected IMemoryReader getMemoryReader(int address, int length, int step) {
+		return MemoryReader.getMemoryReader(getMemory(address), address, length, step);
+	}
+
+	static protected IMemoryReader getMemoryReader(int address, int step) {
+		return MemoryReader.getMemoryReader(getMemory(address), address, step);
+	}
+
+	static protected IMemoryWriter getMemoryWriter(int address, int length, int step) {
+		return MemoryWriter.getMemoryWriter(getMemory(address), address, length, step);
+	}
+
+	static protected int read32(int address) {
+		return getMemory(address).read32(address);
+	}
+
+	static protected int read16(int address) {
+		return getMemory(address).read16(address);
+	}
+
+	static protected int read8(int address) {
+		return getMemory(address).read8(address);
+	}
+
+	static protected void write32(int address, int data) {
+		getMemory(address).write32(address, data);
+	}
+
+	static protected void memcpy(int dstAddr, int srcAddr, int length) {
+		getMemory(dstAddr).memcpy(dstAddr, srcAddr, length);
+	}
+
+	static protected void memcpyWithVideoCheck(int dstAddr, int srcAddr, int length) {
+		getMemory(dstAddr).memcpyWithVideoCheck(dstAddr, srcAddr, length);
 	}
 }

@@ -38,11 +38,11 @@ public class Strcmp extends AbstractNativeCodeSequence {
 			}
 		} else {
 			if (!Memory.isAddressGood(str1)) {
-				getMemory().invalidMemoryAddress(str1, "strcmp", Emulator.EMU_STATUS_MEM_READ);
+				getMemory(str1).invalidMemoryAddress(str1, "strcmp", Emulator.EMU_STATUS_MEM_READ);
 				return;
 			}
 			if (!Memory.isAddressGood(str2)) {
-				getMemory().invalidMemoryAddress(str2, "strcmp", Emulator.EMU_STATUS_MEM_READ);
+				getMemory(str2).invalidMemoryAddress(str2, "strcmp", Emulator.EMU_STATUS_MEM_READ);
 				return;
 			}
 
@@ -67,11 +67,11 @@ public class Strcmp extends AbstractNativeCodeSequence {
 			}
 		} else {
 			if (!Memory.isAddressGood(str1)) {
-				getMemory().invalidMemoryAddress(str1, "strcmp", Emulator.EMU_STATUS_MEM_READ);
+				getMemory(str1).invalidMemoryAddress(str1, "strcmp", Emulator.EMU_STATUS_MEM_READ);
 				return;
 			}
 			if (!Memory.isAddressGood(str2)) {
-				getMemory().invalidMemoryAddress(str2, "strcmp", Emulator.EMU_STATUS_MEM_READ);
+				getMemory(str2).invalidMemoryAddress(str2, "strcmp", Emulator.EMU_STATUS_MEM_READ);
 				return;
 			}
 

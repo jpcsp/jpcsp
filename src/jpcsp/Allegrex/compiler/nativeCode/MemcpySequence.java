@@ -28,7 +28,7 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		int srcAddr = getRegisterValue(srcAddrReg);
 		int length  = getRegisterValue(lengthReg);
 
-		getMemory().memcpy(dstAddr, srcAddr, length);
+		memcpy(dstAddr, srcAddr, length);
 
 		// Update registers
 		setRegisterValue(dstAddrReg, dstAddr + length);
@@ -41,7 +41,7 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		int srcAddr = getRegisterValue(srcAddrReg);
 		int length  = getRegisterValue(lengthReg);
 
-		getMemory().memcpy(dstAddr + dstOffset, srcAddr + srcOffset, length);
+		memcpy(dstAddr + dstOffset, srcAddr + srcOffset, length);
 
 		// Update registers
 		setRegisterValue(dstAddrReg, dstAddr + length);
@@ -55,7 +55,7 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		int targetAddr = getRegisterValue(targetAddrReg);
 
 		int length = targetAddr - getRegisterValue(targetReg);
-		getMemory().memcpy(dstAddr, srcAddr, length);
+		memcpy(dstAddr, srcAddr, length);
 
 		// Update registers
 		setRegisterValue(dstAddrReg, dstAddr + length);
@@ -68,7 +68,7 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		int targetAddr = getRegisterValue(targetAddrReg);
 
 		int length = targetAddr - getRegisterValue(targetReg);
-		getMemory().memcpy(dstAddr + dstOffset, srcAddr + srcOffset, length);
+		memcpy(dstAddr + dstOffset, srcAddr + srcOffset, length);
 
 		// Update registers
 		setRegisterValue(dstAddrReg, dstAddr + length);
@@ -78,9 +78,9 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		int valueAddr = srcAddr + length - valueBytes;
 		int value;
 		switch (valueBytes) {
-		case 1: value = getMemory().read8(valueAddr);  break;
-		case 2: value = getMemory().read16(valueAddr); break;
-		case 4: value = getMemory().read32(valueAddr); break;
+		case 1: value = getMemory(dstAddr).read8(valueAddr);  break;
+		case 2: value = getMemory(dstAddr).read16(valueAddr); break;
+		case 4: value = getMemory(dstAddr).read32(valueAddr); break;
 		default: value = 0; Compiler.log.error("MemcpySequence.call(): Unimplemented valueBytes=" + valueBytes); break;
 		}
 		setRegisterValue(valueReg, value);
@@ -91,7 +91,7 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		int srcAddr = getRegisterValue(srcAddrReg);
 		int length  = (getRegisterValue(lengthReg) + lengthOffset) * step;
 
-		getMemory().memcpy(dstAddr, srcAddr, length);
+		memcpy(dstAddr, srcAddr, length);
 
 		// Update registers
 		setRegisterValue(dstAddrReg, dstAddr + length);
@@ -104,7 +104,7 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		int srcAddr = getRegisterValue(srcAddrReg);
 		int length  = (count - getRegisterValue(lengthReg)) * step;
 
-		getMemory().memcpy(dstAddr, srcAddr, length);
+		memcpy(dstAddr, srcAddr, length);
 
 		// Update registers
 		setRegisterValue(dstAddrReg, dstAddr + length);
@@ -116,14 +116,14 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		int dstAddr = getRegisterValue(dstAddrReg) + dstOffset;
 		int srcAddr = getRegisterValue(srcAddrReg) + srcOffset;
 
-		getMemory().memcpy(dstAddr, srcAddr, length);
+		memcpy(dstAddr, srcAddr, length);
 	}
 
 	static public void callFixedLength(int dstAddrReg, int srcAddrReg, int dstOffset, int srcOffset, int length, int updatedSrcAddrReg) {
 		int dstAddr = getRegisterValue(dstAddrReg) + dstOffset;
 		int srcAddr = getRegisterValue(srcAddrReg) + srcOffset;
 
-		getMemory().memcpy(dstAddr, srcAddr, length);
+		memcpy(dstAddr, srcAddr, length);
 
 		setRegisterValue(updatedSrcAddrReg, srcAddr);
 	}
@@ -131,9 +131,9 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 	static public void callIndirectLength(int dstAddrReg, int srcAddrReg, int lengthAddrReg, int lengthAddrOffset) {
 		int dstAddr = getRegisterValue(dstAddrReg);
 		int srcAddr = getRegisterValue(srcAddrReg);
-		int length  = getMemory().read32(getRegisterValue(lengthAddrReg) + lengthAddrOffset);
+		int length  = read32(getRegisterValue(lengthAddrReg) + lengthAddrOffset);
 
-		getMemory().memcpy(dstAddr, srcAddr, length);
+		memcpy(dstAddr, srcAddr, length);
 
 		// Update registers
 		setRegisterValue(dstAddrReg, dstAddr + length);

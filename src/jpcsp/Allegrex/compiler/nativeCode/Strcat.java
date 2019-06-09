@@ -27,7 +27,7 @@ public class Strcat extends AbstractNativeCodeSequence {
 
 		int dstLength = getStrlen(dstAddr);
 		int srcLength = getStrlen(srcAddr);
-		getMemory().memcpy(dstAddr + dstLength, srcAddr, srcLength + 1);
+		getMemory(dstAddr).memcpy(dstAddr + dstLength, srcAddr, srcLength + 1);
 
 		setGprV0(dstAddr);
 	}

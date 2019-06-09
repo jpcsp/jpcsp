@@ -18,7 +18,6 @@ package jpcsp.Allegrex.compiler.nativeCode;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.UtilsForUser;
@@ -28,10 +27,9 @@ public class sceKernelUtilsSha1Digest extends AbstractNativeCodeSequence {
 	public static Logger log = UtilsForUser.log;
 
 	public static void call() {
-		Memory mem = getMemory();
-		TPointer inAddr = new TPointer(mem, getGprA0());
+		TPointer inAddr = getPointer(getGprA0());
 		int inSize = getGprA1();
-		TPointer outAddr = new TPointer(mem, getGprA2());
+		TPointer outAddr = getPointer(getGprA2());
 
 		int result = Modules.UtilsForUserModule.sceKernelUtilsSha1Digest(inAddr, inSize, outAddr);
 

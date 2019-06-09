@@ -18,8 +18,6 @@ package jpcsp.Allegrex.compiler.nativeCode;
 
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
-import jpcsp.memory.MemoryReader;
-import jpcsp.memory.MemoryWriter;
 import jpcsp.sound.Utils;
 
 /**
@@ -41,7 +39,7 @@ public class SoundMix extends AbstractNativeCodeSequence {
 		int inAddr = getRegisterValue(inAddrReg);
 		int inOutAddr = getRegisterValue(inOutAddrReg);
 		int count = getRegisterValue(countReg);
-		int maxCount = getMemory().read32(getRegisterValue(maxCountAddrReg));
+		int maxCount = read32(getRegisterValue(maxCountAddrReg));
 		float inLeftVolume = getFRegisterValue(leftVolumeFReg);
 		float inRightVolume = getFRegisterValue(rightVolumeFReg);
 
@@ -54,9 +52,9 @@ public class SoundMix extends AbstractNativeCodeSequence {
 		int stereoChannelAddr = getRegisterValue(stereoChannelAddrReg);
 		int length = getRegisterValue(lengthReg) * lengthStep;
 
-		IMemoryReader leftChannelReader = MemoryReader.getMemoryReader(leftChannelAddr, length, 2);
-		IMemoryReader rightChannelReader = MemoryReader.getMemoryReader(rightChannelAddr, length, 2);
-		IMemoryWriter stereoChannelWriter = MemoryWriter.getMemoryWriter(stereoChannelAddr, length << 1, 2);
+		IMemoryReader leftChannelReader = getMemoryReader(leftChannelAddr, length, 2);
+		IMemoryReader rightChannelReader = getMemoryReader(rightChannelAddr, length, 2);
+		IMemoryWriter stereoChannelWriter = getMemoryWriter(stereoChannelAddr, length << 1, 2);
 
 		for (int i = 0; i < length; i += 2) {
 			int left = leftChannelReader.readNext();

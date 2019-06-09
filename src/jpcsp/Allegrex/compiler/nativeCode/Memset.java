@@ -30,7 +30,7 @@ public class Memset extends AbstractNativeCodeSequence {
 		int c = getGprA1() & 0xFF;
 		int n = getGprA2();
 
-		getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n);
+		getMemory(dstAddr).memsetWithVideoCheck(dstAddr, (byte) c, n);
 
 		setGprV0(dstAddr);
 	}
@@ -46,7 +46,7 @@ public class Memset extends AbstractNativeCodeSequence {
 		int c = getRegisterValue(cReg);
 		int n = getRegisterValue(nReg) - endValue;
 
-		getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n);
+		getMemory(dstAddr).memsetWithVideoCheck(dstAddr, (byte) c, n);
 
 		setRegisterValue(dstAddrReg, dstAddr + n);
 		setRegisterValue(nReg, endValue);
@@ -62,9 +62,9 @@ public class Memset extends AbstractNativeCodeSequence {
 			// All bytes identical?
 			if ((c & 0xFF) == ((c >> 8) & 0xFF) && (c & 0xFFFF) == ((c >> 16) & 0xFFFF)) {
 				// This is equivalent to a normal memset
-				getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n);
+				getMemory(dstAddr).memsetWithVideoCheck(dstAddr, (byte) c, n);
 			} else {
-				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dstAddr, n, 4);
+				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(getMemory(dstAddr), dstAddr, n, 4);
 				for (int i = 0; i < n; i += 4) {
 					memoryWriter.writeNext(c);
 				}
@@ -81,7 +81,7 @@ public class Memset extends AbstractNativeCodeSequence {
 		int c = getRegisterValue(cReg);
 		int n = (endValue - getRegisterValue(nReg)) * direction * step;
 
-		getMemory().memsetWithVideoCheck(dstAddr, (byte) c, n);
+		getMemory(dstAddr).memsetWithVideoCheck(dstAddr, (byte) c, n);
 
 		setRegisterValue(dstAddrReg, dstAddr + n);
 		setRegisterValue(nReg, endValue);

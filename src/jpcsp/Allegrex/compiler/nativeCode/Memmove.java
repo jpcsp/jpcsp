@@ -26,7 +26,7 @@ public class Memmove extends AbstractNativeCodeSequence {
 		int srcAddr = getGprA1();
 		int n = getGprA2();
 
-		getMemory().memmove(dstAddr, srcAddr, n);
+		getMemory(dstAddr).memmove(dstAddr, srcAddr, n);
 
 		setGprV0(dstAddr);
 	}
@@ -36,6 +36,6 @@ public class Memmove extends AbstractNativeCodeSequence {
 		int n = getGprA1();
 
 		int dest = (addr + alignment) & ~alignment;
-		getMemory().memmove(dest, addr + addrOffset, n - addrOffset);
+		getMemory(addr).memmove(dest, addr + addrOffset, n - addrOffset);
 	}
 }

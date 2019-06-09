@@ -18,7 +18,6 @@ package jpcsp.Allegrex.compiler.nativeCode;
 
 import static jpcsp.Allegrex.Common._ra;
 import jpcsp.AllegrexOpcodes;
-import jpcsp.Memory;
 
 /**
  * @author gid15
@@ -30,15 +29,13 @@ public class PatchCallingJAL extends AbstractNativeCodeSequence {
 	 * Try to optimize it to avoid too much recompilations.
 	 */
 	public static int call(int addressReg) {
-		Memory mem = getMemory();
-
 		int patchAddr = getRegisterValue(_ra) - 8;
 
 		int jumpAddr = getRegisterValue(addressReg);
 		int opcode = (AllegrexOpcodes.JAL << 26) | ((jumpAddr >> 2) & 0x03FFFFFF);
-		mem.write32(patchAddr, opcode);
+		write32(patchAddr, opcode);
 
-		int delaySlotOpcode = mem.read32(patchAddr + 4);
+		int delaySlotOpcode = read32(patchAddr + 4);
 		interpret(delaySlotOpcode);
 
 		if (log.isDebugEnabled()) {

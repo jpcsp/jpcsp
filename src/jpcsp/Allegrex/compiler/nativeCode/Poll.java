@@ -30,7 +30,7 @@ public class Poll extends AbstractNativeCodeSequence {
 
 		int value;
 		do {
-			value = getMemory().read8(address);
+			value = read8(address);
 			if (value == 0) {
 				if (RuntimeContext.wantSync) {
 					RuntimeContext.sync();

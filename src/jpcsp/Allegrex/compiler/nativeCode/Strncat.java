@@ -29,8 +29,8 @@ public class Strncat extends AbstractNativeCodeSequence {
 		int dstLength = getStrlen(dstAddr);
 		int srcLength = getStrlen(srcAddr, length);
 		length = Math.min(srcLength, length);
-		getMemory().memcpy(dstAddr + dstLength, srcAddr, length);
-		getMemory().write8(dstAddr + dstLength + length, (byte) 0);
+		getMemory(dstAddr).memcpy(dstAddr + dstLength, srcAddr, length);
+		getMemory(dstAddr).write8(dstAddr + dstLength + length, (byte) 0);
 
 		setGprV0(dstAddr);
 	}

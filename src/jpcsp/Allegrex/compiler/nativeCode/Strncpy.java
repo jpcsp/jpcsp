@@ -28,10 +28,10 @@ public class Strncpy extends AbstractNativeCodeSequence {
 
 		int srcLength = getStrlen(srcAddr);
 		if (srcLength < n) {
-			getMemory().memcpy(dstAddr, srcAddr, srcLength + 1);
-			getMemory().memset(dstAddr + srcLength + 1, (byte) 0, n - srcLength - 1);
+			getMemory(dstAddr).memcpy(dstAddr, srcAddr, srcLength + 1);
+			getMemory(dstAddr).memset(dstAddr + srcLength + 1, (byte) 0, n - srcLength - 1);
 		} else {
-			getMemory().memcpy(dstAddr, srcAddr, n);
+			getMemory(dstAddr).memcpy(dstAddr, srcAddr, n);
 		}
 
 		setGprV0(dstAddr);

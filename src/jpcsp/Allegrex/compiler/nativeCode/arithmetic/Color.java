@@ -35,13 +35,13 @@ public class Color extends AbstractNativeCodeSequence {
 	static public void float2int(int source, int result) {
 		int addr = getRegisterValue((source >> 21) & 31) + (int) (short) (source & 0xFFFC);
 
-		int value1 = (int) (Float.intBitsToFloat(getMemory().read32(addr)) * 255f);
+		int value1 = (int) (Float.intBitsToFloat(read32(addr)) * 255f);
 		value1 = Math.min(255, Math.max(0, value1));
-		int value2 = (int) (Float.intBitsToFloat(getMemory().read32(addr + 4)) * 255f);
+		int value2 = (int) (Float.intBitsToFloat(read32(addr + 4)) * 255f);
 		value2 = Math.min(255, Math.max(0, value2));
-		int value3 = (int) (Float.intBitsToFloat(getMemory().read32(addr + 8)) * 255f);
+		int value3 = (int) (Float.intBitsToFloat(read32(addr + 8)) * 255f);
 		value3 = Math.min(255, Math.max(0, value3));
-		int value4 = (int) (Float.intBitsToFloat(getMemory().read32(addr + 12)) * 255f);
+		int value4 = (int) (Float.intBitsToFloat(read32(addr + 12)) * 255f);
 		value4 = Math.min(255, Math.max(0, value4));
 
 		int value = value1 | (value2 << 8) | (value3 << 16) | (value4 << 24);

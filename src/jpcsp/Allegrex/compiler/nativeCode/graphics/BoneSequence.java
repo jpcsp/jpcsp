@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode.graphics;
 
-import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
 import jpcsp.graphics.GeCommands;
 import jpcsp.memory.IMemoryReader;
@@ -30,15 +29,14 @@ import jpcsp.memory.MemoryWriter;
  */
 public class BoneSequence extends AbstractNativeCodeSequence {
 	static public void call(int baseAddressReg, int offset1, int offset2, int offset3, int destAddressReg) {
-		Memory mem = getMemory();
 		int baseAddress = getRegisterValue(baseAddressReg);
-		int paramAddr = mem.read32(baseAddress + offset1);
-		int count = mem.read16(paramAddr + offset2);
+		int paramAddr = read32(baseAddress + offset1);
+		int count = read16(paramAddr + offset2);
 		if (count <= 0) {
 			return;
 		}
 		int destAddr = getRegisterValue(destAddressReg);
-		int srcBaseAddr = mem.read32(baseAddress + offset3);
+		int srcBaseAddr = read32(baseAddress + offset3);
 		final float[] src1 = new float[16];
 		final float[] src2 = new float[16];
 		final float[] dst = new float[16];
