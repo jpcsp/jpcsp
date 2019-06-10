@@ -132,6 +132,122 @@
 8800DA08:[00E01021]: addu       $v0, $a3, $zr <=> move $v0, $a3
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memmove">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memmove</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0x88008974: [0x27BDFFE0] - addiu      $sp, $sp, -32
+0x88008978: [0x7C88E000] - ext        $t0, $a0, 0, 29
+0x8800897C: [0x7CA7E000] - ext        $a3, $a1, 0, 29
+0x88008980: [0xAFB20008] - sw         $s2, 8($sp)
+0x88008984: [0x00801021] - addu       $v0, $a0, $zr <=> move $v0, $a0
+0x88008988: [0x00A09021] - addu       $s2, $a1, $zr <=> move $s2, $a1
+0x8800898C: [0xAFB10004] - sw         $s1, 4($sp)
+0x88008990: [0x00C08821] - addu       $s1, $a2, $zr <=> move $s1, $a2
+0x88008994: [0xAFB00000] - sw         $s0, 0($sp)
+0x88008998: [0x00808021] - addu       $s0, $a0, $zr <=> move $s0, $a0
+0x8800899C: [0xAFBF0010] - sw         $ra, 16($sp)
+0x880089A0: [0x11070049] - beq        $t0, $a3, 0x88008AC8
+0x880089A4: [0xAFB3000C] - sw         $s3, 12($sp)
+0x880089A8: [0x7C821740] - ext        $v0, $a0, 29, 3
+0x880089AC: [0x240A002C] - addiu      $t2, $zr, 44 <=> li $t2, 44
+0x880089B0: [0x004A4807] - srav       $t1, $t2, $v0
+0x880089B4: [0x31230001] - andi       $v1, $t1, 1
+0x880089B8: [0x14600054] - bne        $v1, $zr, 0x88008B0C
+0x880089BC: [0x01074823] - subu       $t1, $t0, $a3
+0x880089C0: [0x252B003F] - addiu      $t3, $t1, 63
+0x880089C4: [0x2D63007E] - sltiu      $v1, $t3, 126
+0x880089C8: [0x14600050] - bne        $v1, $zr, 0x88008B0C
+0x880089CC: [0x0107602B] - sltu       $t4, $t0, $a3
+0x880089D0: [0x15800052] - bne        $t4, $zr, 0x88008B1C
+0x880089D4: [0x00044023] - subu       $t0, $zr, $a0 <=> negu $t0, $a0
+0x880089D8: [0x3113003F] - andi       $s3, $t0, 63
+0x880089DC: [0x0266382B] - sltu       $a3, $s3, $a2
+0x880089E0: [0x10E0004E] - beq        $a3, $zr, 0x88008B1C
+0x880089E4: [0x312D0003] - andi       $t5, $t1, 3
+0x880089E8: [0x15A00048] - bne        $t5, $zr, 0x88008B0C
+0x880089EC: [0x00000000] - nop
+0x880089F0: [0x00862021] - addu       $a0, $a0, $a2
+0x880089F4: [0x3086003F] - andi       $a2, $a0, 63
+0x880089F8: [0x54C0003F] - bnel       $a2, $zr, 0x88008AF8
+0x880089FC: [0x02268823] - subu       $s1, $s1, $a2
+0x88008A00: [0x02338823] - subu       $s1, $s1, $s3
+0x88008A04: [0x1220002D] - beq        $s1, $zr, 0x88008ABC
+0x88008A08: [0x02537821] - addu       $t7, $s2, $s3
+0x88008A0C: [0x02132821] - addu       $a1, $s0, $s3
+0x88008A10: [0x00B1C021] - addu       $t8, $a1, $s1
+0x88008A14: [0x2704FFC0] - addiu      $a0, $t8, -64
+0x88008A18: [0x01F17021] - addu       $t6, $t7, $s1
+0x88008A1C: [0x0085302B] - sltu       $a2, $a0, $a1
+0x88008A20: [0x14C00026] - bne        $a2, $zr, 0x88008ABC
+0x88008A24: [0x25C3FFC0] - addiu      $v1, $t6, -64
+0x88008A28: [0xBC980000] - cache      0x18, 0($a0)
+0x88008A2C: [0x8C680000] - lw         $t0, 0($v1)
+0x88008A30: [0xAC880000] - sw         $t0, 0($a0)
+0x88008A34: [0x8C680004] - lw         $t0, 4($v1)
+0x88008A38: [0xAC880004] - sw         $t0, 4($a0)
+0x88008A3C: [0x8C680008] - lw         $t0, 8($v1)
+0x88008A40: [0xAC880008] - sw         $t0, 8($a0)
+0x88008A44: [0x8C68000C] - lw         $t0, 12($v1)
+0x88008A48: [0xAC88000C] - sw         $t0, 12($a0)
+0x88008A4C: [0x8C680010] - lw         $t0, 16($v1)
+0x88008A50: [0xAC880010] - sw         $t0, 16($a0)
+0x88008A54: [0x8C680014] - lw         $t0, 20($v1)
+0x88008A58: [0xAC880014] - sw         $t0, 20($a0)
+0x88008A5C: [0x8C680018] - lw         $t0, 24($v1)
+0x88008A60: [0xAC880018] - sw         $t0, 24($a0)
+0x88008A64: [0x8C68001C] - lw         $t0, 28($v1)
+0x88008A68: [0xAC88001C] - sw         $t0, 28($a0)
+0x88008A6C: [0x8C680020] - lw         $t0, 32($v1)
+0x88008A70: [0xAC880020] - sw         $t0, 32($a0)
+0x88008A74: [0x8C680024] - lw         $t0, 36($v1)
+0x88008A78: [0xAC880024] - sw         $t0, 36($a0)
+0x88008A7C: [0x8C680028] - lw         $t0, 40($v1)
+0x88008A80: [0xAC880028] - sw         $t0, 40($a0)
+0x88008A84: [0x8C68002C] - lw         $t0, 44($v1)
+0x88008A88: [0xAC88002C] - sw         $t0, 44($a0)
+0x88008A8C: [0x8C680030] - lw         $t0, 48($v1)
+0x88008A90: [0xAC880030] - sw         $t0, 48($a0)
+0x88008A94: [0x8C680034] - lw         $t0, 52($v1)
+0x88008A98: [0xAC880034] - sw         $t0, 52($a0)
+0x88008A9C: [0x8C680038] - lw         $t0, 56($v1)
+0x88008AA0: [0xAC880038] - sw         $t0, 56($a0)
+0x88008AA4: [0x8C68003C] - lw         $t0, 60($v1)
+0x88008AA8: [0xAC88003C] - sw         $t0, 60($a0)
+0x88008AAC: [0x2484FFC0] - addiu      $a0, $a0, -64
+0x88008AB0: [0x0085882B] - sltu       $s1, $a0, $a1
+0x88008AB4: [0x1220FFDC] - beq        $s1, $zr, 0x88008A28
+0x88008AB8: [0x2463FFC0] - addiu      $v1, $v1, -64
+0x88008ABC: [0x56600009] - bnel       $s3, $zr, 0x88008AE4
+0x88008AC0: [0x02402821] - addu       $a1, $s2, $zr <=> move $a1, $s2
+0x88008AC4: [0x02001021] - addu       $v0, $s0, $zr <=> move $v0, $s0
+0x88008AC8: [0x8FBF0010] - lw         $ra, 16($sp)
+0x88008ACC: [0x8FB3000C] - lw         $s3, 12($sp)
+0x88008AD0: [0x8FB20008] - lw         $s2, 8($sp)
+0x88008AD4: [0x8FB10004] - lw         $s1, 4($sp)
+0x88008AD8: [0x8FB00000] - lw         $s0, 0($sp)
+0x88008ADC: [0x03E00008] - jr         $ra
+0x88008AE0: [0x27BD0020] - addiu      $sp, $sp, 32
+0x88008AE4: [0x02603021] - addu       $a2, $s3, $zr <=> move $a2, $s3
+0x88008AE8: [0x0E003666/FC000000] - jal        0x8800D998 [memmove]
+0x88008AEC: [0x02002021] - addu       $a0, $s0, $zr <=> move $a0, $s0
+0x88008AF0: [0x0A0022B2/FC000000] - j          0x88008AC8 [sceSystemMemoryManager.sub_00008AC8]
+0x88008AF4: [0x02001021] - addu       $v0, $s0, $zr <=> move $v0, $s0
+0x88008AF8: [0x02112021] - addu       $a0, $s0, $s1
+0x88008AFC: [0x0E003666/FC000000] - jal        0x8800D998 [memmove]
+0x88008B00: [0x00B12821] - addu       $a1, $a1, $s1
+0x88008B04: [0x0A002281/FC000000] - j          0x88008A04 [sceSystemMemoryManager.sub_00008A04]
+0x88008B08: [0x02338823] - subu       $s1, $s1, $s3
+0x88008B0C: [0x0E003666/FC000000] - jal        0x8800D998 [memmove]
+0x88008B10: [0x00000000] - nop
+0x88008B14: [0x0A0022B3/FC000000] - j          0x88008ACC [sceSystemMemoryManager.sub_00008ACC]
+0x88008B18: [0x8FBF0010] - lw         $ra, 16($sp)
+0x88008B1C: [0x0E0035C5/FC000000] - jal        0x8800D714 [sceSystemMemoryManager.sub_0000D714]
+0x88008B20: [0x00000000] - nop
+0x88008B24: [0x0A0022B3/FC000000] - j          0x88008ACC [sceSystemMemoryManager.sub_00008ACC]
+0x88008B28: [0x8FBF0010] - lw         $ra, 16($sp)
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="alignMemory">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memmove</Class>
 		<IsReturning>true</IsReturning>
@@ -3927,6 +4043,174 @@
 0800D858:[254A0004]: addiu      $t2, $t2, 4
 0800D85C:[14A6FFFB]: bne        $a1, $a2, 0x0800D84C
 0800D860:[ACA9FFFC]: sw         $t1, -4($a1)
+0800D864:[0A0035CC/FC000000]: j          0x0800D730 [sceSystemMemoryManager.sub_0000D730]
+0800D868:[00A01821]: addu       $v1, $a1, $zr <=> move $v1, $a1
+0800D86C:[50A30008]: beql       $a1, $v1, 0x0800D890
+0800D870:[01602821]: addu       $a1, $t3, $zr <=> move $a1, $t3
+0800D874:[89410003]: lwl        $at, 3($t2)
+0800D878:[99410000]: lwr        $at, 0($t2)
+0800D87C:[254A0004]: addiu      $t2, $t2, 4
+0800D880:[24630004]: addiu      $v1, $v1, 4
+0800D884:[1465FFFB]: bne        $v1, $a1, 0x0800D874
+0800D888:[AC61FFFC]: sw         $at, -4($v1)
+0800D88C:[01602821]: addu       $a1, $t3, $zr <=> move $a1, $t3
+0800D890:[7C052804]: ins        $a1, $zr, 0, 6
+0800D894:[BC780000]: cache      0x18, 0($v1)
+0800D898:[89410003]: lwl        $at, 3($t2)
+0800D89C:[99410000]: lwr        $at, 0($t2)
+0800D8A0:[89470007]: lwl        $a3, 7($t2)
+0800D8A4:[99470004]: lwr        $a3, 4($t2)
+0800D8A8:[8948000B]: lwl        $t0, 11($t2)
+0800D8AC:[99480008]: lwr        $t0, 8($t2)
+0800D8B0:[8949000F]: lwl        $t1, 15($t2)
+0800D8B4:[9949000C]: lwr        $t1, 12($t2)
+0800D8B8:[AC610000]: sw         $at, 0($v1)
+0800D8BC:[AC670004]: sw         $a3, 4($v1)
+0800D8C0:[AC680008]: sw         $t0, 8($v1)
+0800D8C4:[AC69000C]: sw         $t1, 12($v1)
+0800D8C8:[89410013]: lwl        $at, 19($t2)
+0800D8CC:[99410010]: lwr        $at, 16($t2)
+0800D8D0:[89470017]: lwl        $a3, 23($t2)
+0800D8D4:[99470014]: lwr        $a3, 20($t2)
+0800D8D8:[8948001B]: lwl        $t0, 27($t2)
+0800D8DC:[99480018]: lwr        $t0, 24($t2)
+0800D8E0:[8949001F]: lwl        $t1, 31($t2)
+0800D8E4:[9949001C]: lwr        $t1, 28($t2)
+0800D8E8:[AC610010]: sw         $at, 16($v1)
+0800D8EC:[AC670014]: sw         $a3, 20($v1)
+0800D8F0:[AC680018]: sw         $t0, 24($v1)
+0800D8F4:[AC69001C]: sw         $t1, 28($v1)
+0800D8F8:[89410023]: lwl        $at, 35($t2)
+0800D8FC:[99410020]: lwr        $at, 32($t2)
+0800D900:[89470027]: lwl        $a3, 39($t2)
+0800D904:[99470024]: lwr        $a3, 36($t2)
+0800D908:[8948002B]: lwl        $t0, 43($t2)
+0800D90C:[99480028]: lwr        $t0, 40($t2)
+0800D910:[8949002F]: lwl        $t1, 47($t2)
+0800D914:[9949002C]: lwr        $t1, 44($t2)
+0800D918:[AC610020]: sw         $at, 32($v1)
+0800D91C:[AC670024]: sw         $a3, 36($v1)
+0800D920:[AC680028]: sw         $t0, 40($v1)
+0800D924:[AC69002C]: sw         $t1, 44($v1)
+0800D928:[89410033]: lwl        $at, 51($t2)
+0800D92C:[99410030]: lwr        $at, 48($t2)
+0800D930:[89470037]: lwl        $a3, 55($t2)
+0800D934:[99470034]: lwr        $a3, 52($t2)
+0800D938:[8948003B]: lwl        $t0, 59($t2)
+0800D93C:[99480038]: lwr        $t0, 56($t2)
+0800D940:[8949003F]: lwl        $t1, 63($t2)
+0800D944:[9949003C]: lwr        $t1, 60($t2)
+0800D948:[AC610030]: sw         $at, 48($v1)
+0800D94C:[AC670034]: sw         $a3, 52($v1)
+0800D950:[24630040]: addiu      $v1, $v1, 64
+0800D954:[AC68FFF8]: sw         $t0, -8($v1)
+0800D958:[254A0040]: addiu      $t2, $t2, 64
+0800D95C:[1465FFCD]: bne        $v1, $a1, 0x0800D894
+0800D960:[AC69FFFC]: sw         $t1, -4($v1)
+0800D964:[0A00360C/FC000000]: j          0x0800D830 [sceSystemMemoryManager.sub_0000D830]
+0800D968:[00000000]: nop
+0800D96C:[00674023]: subu       $t0, $v1, $a3
+0800D970:[88A10003]: lwl        $at, 3($a1)
+0800D974:[98A10000]: lwr        $at, 0($a1)
+0800D978:[B8810000]: swr        $at, 0($a0)
+0800D97C:[00A85021]: addu       $t2, $a1, $t0
+0800D980:[0A0035D7/FC000000]: j          0x0800D75C [sceSystemMemoryManager.sub_0000D75C]
+0800D984:[00881821]: addu       $v1, $a0, $t0
+0800D988:[1480FF62]: bne        $a0, $zr, 0x0800D714
+0800D98C:[00000000]: nop
+0800D990:[03E00008]: jr         $ra
+0800D994:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpy">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcpy</Class>
+		<Method>callWithInvalidateCache</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0800D714:[00A05021]: addu       $t2, $a1, $zr <=> move $t2, $a1
+0800D718:[00801821]: addu       $v1, $a0, $zr <=> move $v1, $a0
+0800D71C:[1085000B]: beq        $a0, $a1, 0x0800D74C
+0800D720:[00865821]: addu       $t3, $a0, $a2
+0800D724:[2CC70008]: sltiu      $a3, $a2, 8
+0800D728:[10E0000A]: beq        $a3, $zr, 0x0800D754
+0800D72C:[30870003]: andi       $a3, $a0, 3
+0800D730:[106B0006]: beq        $v1, $t3, 0x0800D74C
+0800D734:[00000000]: nop
+0800D738:[914C0000]: lbu        $t4, 0($t2)
+0800D73C:[A06C0000]: sb         $t4, 0($v1)
+0800D740:[24630001]: addiu      $v1, $v1, 1
+0800D744:[146BFFFC]: bne        $v1, $t3, 0x0800D738
+0800D748:[254A0001]: addiu      $t2, $t2, 1
+0800D74C:[03E00008]: jr         $ra
+0800D750:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+0800D754:[54E00085]: bnel       $a3, $zr, 0x0800D96C
+0800D758:[24030004]: addiu      $v1, $zr, 4 <=> li $v1, 4
+0800D75C:[7C650F40]: ext        $a1, $v1, 29, 2
+0800D760:[14A00036]: bne        $a1, $zr, 0x0800D83C
+0800D764:[2CC70080]: sltiu      $a3, $a2, 128
+0800D768:[14E00034]: bne        $a3, $zr, 0x0800D83C
+0800D76C:[2465003F]: addiu      $a1, $v1, 63
+0800D770:[31460003]: andi       $a2, $t2, 3
+0800D774:[14C0003D]: bne        $a2, $zr, 0x0800D86C
+0800D778:[7C052804]: ins        $a1, $zr, 0, 6
+0800D77C:[50A30007]: beql       $a1, $v1, 0x0800D79C
+0800D780:[01602821]: addu       $a1, $t3, $zr <=> move $a1, $t3
+0800D784:[8D410000]: lw         $at, 0($t2)
+0800D788:[254A0004]: addiu      $t2, $t2, 4
+0800D78C:[24630004]: addiu      $v1, $v1, 4
+0800D790:[1465FFFC]: bne        $v1, $a1, 0x0800D784
+0800D794:[AC61FFFC]: sw         $at, -4($v1)
+0800D798:[01602821]: addu       $a1, $t3, $zr <=> move $a1, $t3
+0800D79C:[7C052804]: ins        $a1, $zr, 0, 6
+0800D7A0:[BC780000]: cache      0x18, 0($v1)
+0800D7A4:[8D410000]: lw         $at, 0($t2)
+0800D7A8:[8D470004]: lw         $a3, 4($t2)
+0800D7AC:[8D480008]: lw         $t0, 8($t2)
+0800D7B0:[8D49000C]: lw         $t1, 12($t2)
+0800D7B4:[AC610000]: sw         $at, 0($v1)
+0800D7B8:[AC670004]: sw         $a3, 4($v1)
+0800D7BC:[AC680008]: sw         $t0, 8($v1)
+0800D7C0:[AC69000C]: sw         $t1, 12($v1)
+0800D7C4:[8D410010]: lw         $at, 16($t2)
+0800D7C8:[8D470014]: lw         $a3, 20($t2)
+0800D7CC:[8D480018]: lw         $t0, 24($t2)
+0800D7D0:[8D49001C]: lw         $t1, 28($t2)
+0800D7D4:[AC610010]: sw         $at, 16($v1)
+0800D7D8:[AC670014]: sw         $a3, 20($v1)
+0800D7DC:[AC680018]: sw         $t0, 24($v1)
+0800D7E0:[AC69001C]: sw         $t1, 28($v1)
+0800D7E4:[8D410020]: lw         $at, 32($t2)
+0800D7E8:[8D470024]: lw         $a3, 36($t2)
+0800D7EC:[8D480028]: lw         $t0, 40($t2)
+0800D7F0:[8D49002C]: lw         $t1, 44($t2)
+0800D7F4:[AC610020]: sw         $at, 32($v1)
+0800D7F8:[AC670024]: sw         $a3, 36($v1)
+0800D7FC:[AC680028]: sw         $t0, 40($v1)
+0800D800:[AC69002C]: sw         $t1, 44($v1)
+0800D804:[8D410030]: lw         $at, 48($t2)
+0800D808:[8D470034]: lw         $a3, 52($t2)
+0800D80C:[8D480038]: lw         $t0, 56($t2)
+0800D810:[8D49003C]: lw         $t1, 60($t2)
+0800D814:[AC610030]: sw         $at, 48($v1)
+0800D818:[AC670034]: sw         $a3, 52($v1)
+0800D81C:[24630040]: addiu      $v1, $v1, 64
+0800D820:[AC68FFF8]: sw         $t0, -8($v1)
+0800D824:[254A0040]: addiu      $t2, $t2, 64
+0800D828:[1465FFDD]: bne        $v1, $a1, 0x0800D7A0
+0800D82C:[AC69FFFC]: sw         $t1, -4($v1)
+0800D830:[10ABFFC6]: beq        $a1, $t3, 0x0800D74C
+0800D834:[00000000]: nop
+0800D838:[00A01821]: addu       $v1, $a1, $zr <=> move $v1, $a1
+0800D83C:[01603021]: addu       $a2, $t3, $zr <=> move $a2, $t3
+0800D840:[7C060804]: ins        $a2, $zr, 0, 2
+0800D844:[10660007]: beq        $v1, $a2, 0x0800D864
+0800D848:[00602821]: addu       $a1, $v1, $zr <=> move $a1, $v1
+0800D84C:[24A50004]: addiu      $a1, $a1, 4
+0800D850:[89490003]: lwl        $t1, 3($t2)
+0800D854:[99490000]: lwr        $t1, 0($t2)
+0800D858:[254A0004]: addiu      $t2, $t2, 4
+0800D85C:[14A6FFFB]: bne        $a1, $a2, 0x0800D84C
+0800D860:[ACA9FFFC]: sw         $t1, -4($a1)
 0800D864:[0A0035CC/FC000000]: j          0x0800D730
 0800D868:[00A01821]: addu       $v1, $a1, $zr <=> move $v1, $a1
 0800D86C:[50A30008]: beql       $a1, $v1, 0x0800D890
@@ -4000,6 +4284,171 @@
 0800D97C:[00A85021]: addu       $t2, $a1, $t0
 0800D980:[0A0035D7/FC000000]: j          0x0800D75C
 0800D984:[00881821]: addu       $v1, $a0, $t0
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpy">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcpy</Class>
+		<Method>callWithInvalidateCache</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0880AB40:[00A05021]: addu       $t2, $a1, $zr <=> move $t2, $a1
+0880AB44:[00801821]: addu       $v1, $a0, $zr <=> move $v1, $a0
+0880AB48:[1085000B]: beq        $a0, $a1, 0x0880AB78
+0880AB4C:[00865821]: addu       $t3, $a0, $a2
+0880AB50:[2CC70008]: sltiu      $a3, $a2, 8
+0880AB54:[10E0000A]: beq        $a3, $zr, 0x0880AB80
+0880AB58:[30870003]: andi       $a3, $a0, 3
+0880AB5C:[106B0006]: beq        $v1, $t3, 0x0880AB78
+0880AB60:[00000000]: nop
+0880AB64:[914C0000]: lbu        $t4, 0($t2)
+0880AB68:[A06C0000]: sb         $t4, 0($v1)
+0880AB6C:[24630001]: addiu      $v1, $v1, 1
+0880AB70:[146BFFFC]: bne        $v1, $t3, 0x0880AB64
+0880AB74:[254A0001]: addiu      $t2, $t2, 1
+0880AB78:[03E00008]: jr         $ra
+0880AB7C:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+0880AB80:[54E00086]: bnel       $a3, $zr, 0x0880AD9C
+0880AB84:[24030004]: addiu      $v1, $zr, 4 <=> li $v1, 4
+0880AB88:[00602821]: addu       $a1, $v1, $zr <=> move $a1, $v1
+0880AB8C:[7C05E004]: ins        $a1, $zr, 0, 29
+0880AB90:[14A00036]: bne        $a1, $zr, 0x0880AC6C
+0880AB94:[2CC70080]: sltiu      $a3, $a2, 128
+0880AB98:[14E00034]: bne        $a3, $zr, 0x0880AC6C
+0880AB9C:[2465003F]: addiu      $a1, $v1, 63
+0880ABA0:[31460003]: andi       $a2, $t2, 3
+0880ABA4:[14C0003D]: bne        $a2, $zr, 0x0880AC9C
+0880ABA8:[7C052804]: ins        $a1, $zr, 0, 6
+0880ABAC:[50A30007]: beql       $a1, $v1, 0x0880ABCC
+0880ABB0:[01602821]: addu       $a1, $t3, $zr <=> move $a1, $t3
+0880ABB4:[8D410000]: lw         $at, 0($t2)
+0880ABB8:[254A0004]: addiu      $t2, $t2, 4
+0880ABBC:[24630004]: addiu      $v1, $v1, 4
+0880ABC0:[1465FFFC]: bne        $v1, $a1, 0x0880ABB4
+0880ABC4:[AC61FFFC]: sw         $at, -4($v1)
+0880ABC8:[01602821]: addu       $a1, $t3, $zr <=> move $a1, $t3
+0880ABCC:[7C052804]: ins        $a1, $zr, 0, 6
+0880ABD0:[BC780000]: cache      0x18, 0($v1)
+0880ABD4:[8D410000]: lw         $at, 0($t2)
+0880ABD8:[8D470004]: lw         $a3, 4($t2)
+0880ABDC:[8D480008]: lw         $t0, 8($t2)
+0880ABE0:[8D49000C]: lw         $t1, 12($t2)
+0880ABE4:[AC610000]: sw         $at, 0($v1)
+0880ABE8:[AC670004]: sw         $a3, 4($v1)
+0880ABEC:[AC680008]: sw         $t0, 8($v1)
+0880ABF0:[AC69000C]: sw         $t1, 12($v1)
+0880ABF4:[8D410010]: lw         $at, 16($t2)
+0880ABF8:[8D470014]: lw         $a3, 20($t2)
+0880ABFC:[8D480018]: lw         $t0, 24($t2)
+0880AC00:[8D49001C]: lw         $t1, 28($t2)
+0880AC04:[AC610010]: sw         $at, 16($v1)
+0880AC08:[AC670014]: sw         $a3, 20($v1)
+0880AC0C:[AC680018]: sw         $t0, 24($v1)
+0880AC10:[AC69001C]: sw         $t1, 28($v1)
+0880AC14:[8D410020]: lw         $at, 32($t2)
+0880AC18:[8D470024]: lw         $a3, 36($t2)
+0880AC1C:[8D480028]: lw         $t0, 40($t2)
+0880AC20:[8D49002C]: lw         $t1, 44($t2)
+0880AC24:[AC610020]: sw         $at, 32($v1)
+0880AC28:[AC670024]: sw         $a3, 36($v1)
+0880AC2C:[AC680028]: sw         $t0, 40($v1)
+0880AC30:[AC69002C]: sw         $t1, 44($v1)
+0880AC34:[8D410030]: lw         $at, 48($t2)
+0880AC38:[8D470034]: lw         $a3, 52($t2)
+0880AC3C:[8D480038]: lw         $t0, 56($t2)
+0880AC40:[8D49003C]: lw         $t1, 60($t2)
+0880AC44:[AC610030]: sw         $at, 48($v1)
+0880AC48:[AC670034]: sw         $a3, 52($v1)
+0880AC4C:[24630040]: addiu      $v1, $v1, 64
+0880AC50:[AC68FFF8]: sw         $t0, -8($v1)
+0880AC54:[254A0040]: addiu      $t2, $t2, 64
+0880AC58:[1465FFDD]: bne        $v1, $a1, 0x0880ABD0
+0880AC5C:[AC69FFFC]: sw         $t1, -4($v1)
+0880AC60:[10ABFFC5]: beq        $a1, $t3, 0x0880AB78
+0880AC64:[00000000]: nop
+0880AC68:[00A01821]: addu       $v1, $a1, $zr <=> move $v1, $a1
+0880AC6C:[01603021]: addu       $a2, $t3, $zr <=> move $a2, $t3
+0880AC70:[7C060804]: ins        $a2, $zr, 0, 2
+0880AC74:[10660007]: beq        $v1, $a2, 0x0880AC94
+0880AC78:[00602821]: addu       $a1, $v1, $zr <=> move $a1, $v1
+0880AC7C:[24A50004]: addiu      $a1, $a1, 4
+0880AC80:[89490003]: lwl        $t1, 3($t2)
+0880AC84:[99490000]: lwr        $t1, 0($t2)
+0880AC88:[254A0004]: addiu      $t2, $t2, 4
+0880AC8C:[14A6FFFB]: bne        $a1, $a2, 0x0880AC7C
+0880AC90:[ACA9FFFC]: sw         $t1, -4($a1)
+0880AC94:[0A202AD7/FC000000]: j          0x0880AB5C [sceKernelLibrary.sub_0000055C]
+0880AC98:[00A01821]: addu       $v1, $a1, $zr <=> move $v1, $a1
+0880AC9C:[50A30008]: beql       $a1, $v1, 0x0880ACC0
+0880ACA0:[01602821]: addu       $a1, $t3, $zr <=> move $a1, $t3
+0880ACA4:[89410003]: lwl        $at, 3($t2)
+0880ACA8:[99410000]: lwr        $at, 0($t2)
+0880ACAC:[254A0004]: addiu      $t2, $t2, 4
+0880ACB0:[24630004]: addiu      $v1, $v1, 4
+0880ACB4:[1465FFFB]: bne        $v1, $a1, 0x0880ACA4
+0880ACB8:[AC61FFFC]: sw         $at, -4($v1)
+0880ACBC:[01602821]: addu       $a1, $t3, $zr <=> move $a1, $t3
+0880ACC0:[7C052804]: ins        $a1, $zr, 0, 6
+0880ACC4:[BC780000]: cache      0x18, 0($v1)
+0880ACC8:[89410003]: lwl        $at, 3($t2)
+0880ACCC:[99410000]: lwr        $at, 0($t2)
+0880ACD0:[89470007]: lwl        $a3, 7($t2)
+0880ACD4:[99470004]: lwr        $a3, 4($t2)
+0880ACD8:[8948000B]: lwl        $t0, 11($t2)
+0880ACDC:[99480008]: lwr        $t0, 8($t2)
+0880ACE0:[8949000F]: lwl        $t1, 15($t2)
+0880ACE4:[9949000C]: lwr        $t1, 12($t2)
+0880ACE8:[AC610000]: sw         $at, 0($v1)
+0880ACEC:[AC670004]: sw         $a3, 4($v1)
+0880ACF0:[AC680008]: sw         $t0, 8($v1)
+0880ACF4:[AC69000C]: sw         $t1, 12($v1)
+0880ACF8:[89410013]: lwl        $at, 19($t2)
+0880ACFC:[99410010]: lwr        $at, 16($t2)
+0880AD00:[89470017]: lwl        $a3, 23($t2)
+0880AD04:[99470014]: lwr        $a3, 20($t2)
+0880AD08:[8948001B]: lwl        $t0, 27($t2)
+0880AD0C:[99480018]: lwr        $t0, 24($t2)
+0880AD10:[8949001F]: lwl        $t1, 31($t2)
+0880AD14:[9949001C]: lwr        $t1, 28($t2)
+0880AD18:[AC610010]: sw         $at, 16($v1)
+0880AD1C:[AC670014]: sw         $a3, 20($v1)
+0880AD20:[AC680018]: sw         $t0, 24($v1)
+0880AD24:[AC69001C]: sw         $t1, 28($v1)
+0880AD28:[89410023]: lwl        $at, 35($t2)
+0880AD2C:[99410020]: lwr        $at, 32($t2)
+0880AD30:[89470027]: lwl        $a3, 39($t2)
+0880AD34:[99470024]: lwr        $a3, 36($t2)
+0880AD38:[8948002B]: lwl        $t0, 43($t2)
+0880AD3C:[99480028]: lwr        $t0, 40($t2)
+0880AD40:[8949002F]: lwl        $t1, 47($t2)
+0880AD44:[9949002C]: lwr        $t1, 44($t2)
+0880AD48:[AC610020]: sw         $at, 32($v1)
+0880AD4C:[AC670024]: sw         $a3, 36($v1)
+0880AD50:[AC680028]: sw         $t0, 40($v1)
+0880AD54:[AC69002C]: sw         $t1, 44($v1)
+0880AD58:[89410033]: lwl        $at, 51($t2)
+0880AD5C:[99410030]: lwr        $at, 48($t2)
+0880AD60:[89470037]: lwl        $a3, 55($t2)
+0880AD64:[99470034]: lwr        $a3, 52($t2)
+0880AD68:[8948003B]: lwl        $t0, 59($t2)
+0880AD6C:[99480038]: lwr        $t0, 56($t2)
+0880AD70:[8949003F]: lwl        $t1, 63($t2)
+0880AD74:[9949003C]: lwr        $t1, 60($t2)
+0880AD78:[AC610030]: sw         $at, 48($v1)
+0880AD7C:[AC670034]: sw         $a3, 52($v1)
+0880AD80:[24630040]: addiu      $v1, $v1, 64
+0880AD84:[AC68FFF8]: sw         $t0, -8($v1)
+0880AD88:[254A0040]: addiu      $t2, $t2, 64
+0880AD8C:[1465FFCD]: bne        $v1, $a1, 0x0880ACC4
+0880AD90:[AC69FFFC]: sw         $t1, -4($v1)
+0880AD94:[0A202B18/FC000000]: j          0x0880AC60 [sceKernelLibrary.sub_00000660]
+0880AD98:[00000000]: nop
+0880AD9C:[00674023]: subu       $t0, $v1, $a3
+0880ADA0:[88A10003]: lwl        $at, 3($a1)
+0880ADA4:[98A10000]: lwr        $at, 0($a1)
+0880ADA8:[B8810000]: swr        $at, 0($a0)
+0880ADAC:[00A85021]: addu       $t2, $a1, $t0
+0880ADB0:[0A202AE2/FC000000]: j          0x0880AB88 [sceKernelLibrary.sub_00000588]
+0880ADB4:[00881821]: addu       $v1, $a0, $t0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memset">
@@ -4658,6 +5107,184 @@
 08A7F608:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memset">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0x880087E0: [0x27BDFFF0] - addiu      $sp, $sp, -16
+0x880087E4: [0xAFB00000] - sw         $s0, 0($sp)
+0x880087E8: [0x00808021] - addu       $s0, $a0, $zr <=> move $s0, $a0
+0x880087EC: [0x2CC40008] - sltiu      $a0, $a2, 8
+0x880087F0: [0xAFBF0004] - sw         $ra, 4($sp)
+0x880087F4: [0x1080000B] - beq        $a0, $zr, 0x88008824
+0x880087F8: [0x02061821] - addu       $v1, $s0, $a2
+0x880087FC: [0x12030004] - beq        $s0, $v1, 0x88008810
+0x88008800: [0x02001021] - addu       $v0, $s0, $zr <=> move $v0, $s0
+0x88008804: [0x24420001] - addiu      $v0, $v0, 1
+0x88008808: [0x1443FFFE] - bne        $v0, $v1, 0x88008804
+0x8800880C: [0xA045FFFF] - sb         $a1, -1($v0)
+0x88008810: [0x02001021] - addu       $v0, $s0, $zr <=> move $v0, $s0
+0x88008814: [0x8FBF0004] - lw         $ra, 4($sp)
+0x88008818: [0x8FB00000] - lw         $s0, 0($sp)
+0x8800881C: [0x03E00008] - jr         $ra
+0x88008820: [0x27BD0010] - addiu      $sp, $sp, 16
+0x88008824: [0x26040003] - addiu      $a0, $s0, 3
+0x88008828: [0x7CA57A04] - ins        $a1, $a1, 8, 8
+0x8800882C: [0x7C040804] - ins        $a0, $zr, 0, 2
+0x88008830: [0x10900004] - beq        $a0, $s0, 0x88008844
+0x88008834: [0x7CA5FC04] - ins        $a1, $a1, 16, 16
+0x88008838: [0xBA050000] - swr        $a1, 0($s0)
+0x8800883C: [0x00903823] - subu       $a3, $a0, $s0
+0x88008840: [0x00C73023] - subu       $a2, $a2, $a3
+0x88008844: [0x30680003] - andi       $t0, $v1, 3
+0x88008848: [0x11000002] - beq        $t0, $zr, 0x88008854
+0x8800884C: [0x00000000] - nop
+0x88008850: [0xA865FFFF] - swl        $a1, -1($v1)
+0x88008854: [0x0E002219/FC000000] - jal        0x88008864 [sceKernelMemset32]
+0x88008858: [0x00000000] - nop
+0x8800885C: [0x0A002205/FC000000] - j          0x88008814 [sceSystemMemoryManager.sub_00008814]
+0x88008860: [0x02001021] - addu       $v0, $s0, $zr <=> move $v0, $s0
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memset">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0880ADB8:[2CC70008]: sltiu      $a3, $a2, 8
+0880ADBC:[10E00008]: beq        $a3, $zr, 0x0880ADE0
+0880ADC0:[00861821]: addu       $v1, $a0, $a2
+0880ADC4:[10830004]: beq        $a0, $v1, 0x0880ADD8
+0880ADC8:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+0880ADCC:[24420001]: addiu      $v0, $v0, 1
+0880ADD0:[1443FFFE]: bne        $v0, $v1, 0x0880ADCC
+0880ADD4:[A045FFFF]: sb         $a1, -1($v0)
+0880ADD8:[03E00008]: jr         $ra
+0880ADDC:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+0880ADE0:[24880003]: addiu      $t0, $a0, 3
+0880ADE4:[01003821]: addu       $a3, $t0, $zr <=> move $a3, $t0
+0880ADE8:[7CA57A04]: ins        $a1, $a1, 8, 8
+0880ADEC:[7C070804]: ins        $a3, $zr, 0, 2
+0880ADF0:[10E40004]: beq        $a3, $a0, 0x0880AE04
+0880ADF4:[7CA5FC04]: ins        $a1, $a1, 16, 16
+0880ADF8:[B8850000]: swr        $a1, 0($a0)
+0880ADFC:[00E44823]: subu       $t1, $a3, $a0
+0880AE00:[00C93023]: subu       $a2, $a2, $t1
+0880AE04:[306A0003]: andi       $t2, $v1, 3
+0880AE08:[51400003]: beql       $t2, $zr, 0x0880AE18
+0880AE0C:[01001821]: addu       $v1, $t0, $zr <=> move $v1, $t0
+0880AE10:[A865FFFF]: swl        $a1, -1($v1)
+0880AE14:[01001821]: addu       $v1, $t0, $zr <=> move $v1, $t0
+0880AE18:[7C03E004]: ins        $v1, $zr, 0, 29
+0880AE1C:[14600034]: bne        $v1, $zr, 0x0880AEF0
+0880AE20:[7C060804]: ins        $a2, $zr, 0, 2
+0880AE24:[2CC80101]: sltiu      $t0, $a2, 257
+0880AE28:[15000031]: bne        $t0, $zr, 0x0880AEF0
+0880AE2C:[24E8003F]: addiu      $t0, $a3, 63
+0880AE30:[7C082804]: ins        $t0, $zr, 0, 6
+0880AE34:[11070009]: beq        $t0, $a3, 0x0880AE5C
+0880AE38:[00E63021]: addu       $a2, $a3, $a2
+0880AE3C:[01076823]: subu       $t5, $t0, $a3
+0880AE40:[31AC0004]: andi       $t4, $t5, 4
+0880AE44:[15800028]: bne        $t4, $zr, 0x0880AEE8
+0880AE48:[00ED1021]: addu       $v0, $a3, $t5
+0880AE4C:[ACE50000]: sw         $a1, 0($a3)
+0880AE50:[24E70008]: addiu      $a3, $a3, 8
+0880AE54:[14E2FFFD]: bne        $a3, $v0, 0x0880AE4C
+0880AE58:[ACE5FFFC]: sw         $a1, -4($a3)
+0880AE5C:[30C3003F]: andi       $v1, $a2, 63
+0880AE60:[1060000A]: beq        $v1, $zr, 0x0880AE8C
+0880AE64:[00000000]: nop
+0880AE68:[00C33023]: subu       $a2, $a2, $v1
+0880AE6C:[306E0004]: andi       $t6, $v1, 4
+0880AE70:[00C03821]: addu       $a3, $a2, $zr <=> move $a3, $a2
+0880AE74:[15C0001A]: bne        $t6, $zr, 0x0880AEE0
+0880AE78:[00C31821]: addu       $v1, $a2, $v1
+0880AE7C:[ACE50000]: sw         $a1, 0($a3)
+0880AE80:[24E70008]: addiu      $a3, $a3, 8
+0880AE84:[14E3FFFD]: bne        $a3, $v1, 0x0880AE7C
+0880AE88:[ACE5FFFC]: sw         $a1, -4($a3)
+0880AE8C:[BD180000]: cache      0x18, 0($t0)
+0880AE90:[AD050000]: sw         $a1, 0($t0)
+0880AE94:[AD050004]: sw         $a1, 4($t0)
+0880AE98:[AD050008]: sw         $a1, 8($t0)
+0880AE9C:[AD05000C]: sw         $a1, 12($t0)
+0880AEA0:[AD050010]: sw         $a1, 16($t0)
+0880AEA4:[AD050014]: sw         $a1, 20($t0)
+0880AEA8:[AD050018]: sw         $a1, 24($t0)
+0880AEAC:[AD05001C]: sw         $a1, 28($t0)
+0880AEB0:[AD050020]: sw         $a1, 32($t0)
+0880AEB4:[AD050024]: sw         $a1, 36($t0)
+0880AEB8:[AD050028]: sw         $a1, 40($t0)
+0880AEBC:[AD05002C]: sw         $a1, 44($t0)
+0880AEC0:[AD050030]: sw         $a1, 48($t0)
+0880AEC4:[AD050034]: sw         $a1, 52($t0)
+0880AEC8:[AD050038]: sw         $a1, 56($t0)
+0880AECC:[25080040]: addiu      $t0, $t0, 64
+0880AED0:[1506FFEE]: bne        $t0, $a2, 0x0880AE8C
+0880AED4:[AD05FFFC]: sw         $a1, -4($t0)
+0880AED8:[0A202B76/FC000000]: j          0x0880ADD8 [sceKernelLibrary.sub_000007D8]
+0880AEDC:[00000000]: nop
+0880AEE0:[0A202BA1/FC000000]: j          0x0880AE84 [sceKernelLibrary.sub_00000884]
+0880AEE4:[24C70004]: addiu      $a3, $a2, 4
+0880AEE8:[0A202B95/FC000000]: j          0x0880AE54 [sceKernelLibrary.sub_00000854]
+0880AEEC:[24E70004]: addiu      $a3, $a3, 4
+0880AEF0:[30CB0004]: andi       $t3, $a2, 4
+0880AEF4:[00E01821]: addu       $v1, $a3, $zr <=> move $v1, $a3
+0880AEF8:[15600007]: bne        $t3, $zr, 0x0880AF18
+0880AEFC:[00E63021]: addu       $a2, $a3, $a2
+0880AF00:[AC650000]: sw         $a1, 0($v1)
+0880AF04:[24630008]: addiu      $v1, $v1, 8
+0880AF08:[1466FFFD]: bne        $v1, $a2, 0x0880AF00
+0880AF0C:[AC65FFFC]: sw         $a1, -4($v1)
+0880AF10:[0A202B76/FC000000]: j          0x0880ADD8 [sceKernelLibrary.sub_000007D8]
+0880AF14:[00000000]: nop
+0880AF18:[0A202BC2/FC000000]: j          0x0880AF08 [sceKernelLibrary.sub_00000908]
+0880AF1C:[24E30004]: addiu      $v1, $a3, 4
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memset">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+080087D0:[14800003]: bne        $a0, $zr, 0x080087E0
+080087D4:[00000000]: nop
+080087D8:[03E00008]: jr         $ra
+080087DC:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+080087E0:[27BDFFF0]: addiu      $sp, $sp, -16
+080087E4:[AFB00000]: sw         $s0, 0($sp)
+080087E8:[00808021]: addu       $s0, $a0, $zr <=> move $s0, $a0
+080087EC:[2CC40008]: sltiu      $a0, $a2, 8
+080087F0:[AFBF0004]: sw         $ra, 4($sp)
+080087F4:[1080000B]: beq        $a0, $zr, 0x08008824
+080087F8:[02061821]: addu       $v1, $s0, $a2
+080087FC:[12030004]: beq        $s0, $v1, 0x08008810
+08008800:[02001021]: addu       $v0, $s0, $zr <=> move $v0, $s0
+08008804:[24420001]: addiu      $v0, $v0, 1
+08008808:[1443FFFE]: bne        $v0, $v1, 0x08008804
+0800880C:[A045FFFF]: sb         $a1, -1($v0)
+08008810:[02001021]: addu       $v0, $s0, $zr <=> move $v0, $s0
+08008814:[8FBF0004]: lw         $ra, 4($sp)
+08008818:[8FB00000]: lw         $s0, 0($sp)
+0800881C:[03E00008]: jr         $ra
+08008820:[27BD0010]: addiu      $sp, $sp, 16
+08008824:[26040003]: addiu      $a0, $s0, 3
+08008828:[7CA57A04]: ins        $a1, $a1, 8, 8
+0800882C:[7C040804]: ins        $a0, $zr, 0, 2
+08008830:[10900004]: beq        $a0, $s0, 0x08008844
+08008834:[7CA5FC04]: ins        $a1, $a1, 16, 16
+08008838:[BA050000]: swr        $a1, 0($s0)
+0800883C:[00903823]: subu       $a3, $a0, $s0
+08008840:[00C73023]: subu       $a2, $a2, $a3
+08008844:[30680003]: andi       $t0, $v1, 3
+08008848:[11000002]: beq        $t0, $zr, 0x08008854
+0800884C:[00000000]: nop
+08008850:[A865FFFF]: swl        $a1, -1($v1)
+08008854:[0E002219/FC000000]: jal        0x08008864 [sceKernelMemset32]
+08008858:[00000000]: nop
+0800885C:[0A002205/FC000000]: j          0x08008814 [sceSystemMemoryManager.sub_00008814]
+08008860:[02001021]: addu       $v0, $s0, $zr <=> move $v0, $s0
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="bzero">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<IsReturning>true</IsReturning>
@@ -4930,6 +5557,46 @@
 08805098:[27BD0008]: addiu      $sp, $sp, 8
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="strcat">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcat</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0800E35C:[27BDFFF0]: addiu      $sp, $sp, -16
+0800E360:[2C860001]: sltiu      $a2, $a0, 1
+0800E364:[2CA20001]: sltiu      $v0, $a1, 1
+0800E368:[AFB10004]: sw         $s1, 4($sp)
+0800E36C:[00A08821]: addu       $s1, $a1, $zr <=> move $s1, $a1
+0800E370:[00C22825]: or         $a1, $a2, $v0
+0800E374:[AFB20008]: sw         $s2, 8($sp)
+0800E378:[00001821]: addu       $v1, $zr, $zr <=> li $v1, 0
+0800E37C:[00809021]: addu       $s2, $a0, $zr <=> move $s2, $a0
+0800E380:[AFBF000C]: sw         $ra, 12($sp)
+0800E384:[14A00010]: bne        $a1, $zr, 0x0800E3C8
+0800E388:[AFB00000]: sw         $s0, 0($sp)
+0800E38C:[0E003A72/FC000000]: jal        0x0800E9C8 [strlen]
+0800E390:[00000000]: nop
+0800E394:[02202021]: addu       $a0, $s1, $zr <=> move $a0, $s1
+0800E398:[0E003A72/FC000000]: jal        0x0800E9C8 [strlen]
+0800E39C:[00408021]: addu       $s0, $v0, $zr <=> move $s0, $v0
+0800E3A0:[02223821]: addu       $a3, $s1, $v0
+0800E3A4:[02504021]: addu       $t0, $s2, $s0
+0800E3A8:[24460001]: addiu      $a2, $v0, 1
+0800E3AC:[01002021]: addu       $a0, $t0, $zr <=> move $a0, $t0
+0800E3B0:[02202821]: addu       $a1, $s1, $zr <=> move $a1, $s1
+0800E3B4:[11070004]: beq        $t0, $a3, 0x0800E3C8
+0800E3B8:[00001821]: addu       $v1, $zr, $zr <=> li $v1, 0
+0800E3BC:[0E003662/FC000000]: jal        0x0800D988 [memcpy]
+0800E3C0:[00000000]: nop
+0800E3C4:[02401821]: addu       $v1, $s2, $zr <=> move $v1, $s2
+0800E3C8:[8FBF000C]: lw         $ra, 12($sp)
+0800E3CC:[8FB20008]: lw         $s2, 8($sp)
+0800E3D0:[8FB10004]: lw         $s1, 4($sp)
+0800E3D4:[8FB00000]: lw         $s0, 0($sp)
+0800E3D8:[00601021]: addu       $v0, $v1, $zr <=> move $v0, $v1
+0800E3DC:[03E00008]: jr         $ra
+0800E3E0:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strncat">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strncat</Class>
 		<IsReturning>true</IsReturning>
@@ -5130,6 +5797,24 @@
 0899EF70:[02021821]: addu       $v1, $s0, $v0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="strchr">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strchr</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0800E3E4:[7C052C20]: seb        $a1, $a1
+0800E3E8:[10800008]: beq        $a0, $zr, 0x0800E40C
+0800E3EC:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+0800E3F0:[80830000]: lb         $v1, 0($a0)
+0800E3F4:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+0800E3F8:[10650004]: beq        $v1, $a1, 0x0800E40C
+0800E3FC:[24840001]: addiu      $a0, $a0, 1
+0800E400:[5460FFFC]: bnel       $v1, $zr, 0x0800E3F4
+0800E404:[80830000]: lb         $v1, 0($a0)
+0800E408:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+0800E40C:[03E00008]: jr         $ra
+0800E410:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strrchr">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strrchr</Class>
 		<IsReturning>true</IsReturning>
@@ -5149,6 +5834,30 @@
 089C4768:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
 089C476C:[03E00008]: jr         $ra
 089C4770:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="strrchr">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strrchr</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0800E9FC:[7C052C20]: seb        $a1, $a1
+0800EA00:[00803021]: addu       $a2, $a0, $zr <=> move $a2, $a0
+0800EA04:[1080000D]: beq        $a0, $zr, 0x0800EA3C
+0800EA08:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+0800EA0C:[90C30000]: lbu        $v1, 0($a2)
+0800EA10:[1460FFFE]: bne        $v1, $zr, 0x0800EA0C
+0800EA14:[24C60001]: addiu      $a2, $a2, 1
+0800EA18:[24C6FFFF]: addiu      $a2, $a2, -1
+0800EA1C:[80C80000]: lb         $t0, 0($a2)
+0800EA20:[00C01021]: addu       $v0, $a2, $zr <=> move $v0, $a2
+0800EA24:[0086382B]: sltu       $a3, $a0, $a2
+0800EA28:[11050004]: beq        $t0, $a1, 0x0800EA3C
+0800EA2C:[24C6FFFF]: addiu      $a2, $a2, -1
+0800EA30:[54E0FFFB]: bnel       $a3, $zr, 0x0800EA20
+0800EA34:[80C80000]: lb         $t0, 0($a2)
+0800EA38:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+0800EA3C:[03E00008]: jr         $ra
+0800EA40:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="strcmp">
@@ -5645,6 +6354,51 @@
 08604004:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="strncmp">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strncmp</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0800E86C:[2C880001]: sltiu      $t0, $a0, 1
+0800E870:[2CA20001]: sltiu      $v0, $a1, 1
+0800E874:[01023825]: or         $a3, $t0, $v0
+0800E878:[50E00008]: beql       $a3, $zr, 0x0800E89C
+0800E87C:[24C6FFFF]: addiu      $a2, $a2, -1
+0800E880:[10850004]: beq        $a0, $a1, 0x0800E894
+0800E884:[00001821]: addu       $v1, $zr, $zr <=> li $v1, 0
+0800E888:[2403FFFF]: addiu      $v1, $zr, -1 <=> li $v1, -1
+0800E88C:[24050001]: addiu      $a1, $zr, 1 <=> li $a1, 1
+0800E890:[00A4180B]: movn       $v1, $a1, $a0
+0800E894:[03E00008]: jr         $ra
+0800E898:[00601021]: addu       $v0, $v1, $zr <=> move $v0, $v1
+0800E89C:[04C0000A]: bltz       $a2, 0x0800E8C8
+0800E8A0:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+0800E8A4:[80A70000]: lb         $a3, 0($a1)
+0800E8A8:[80830000]: lb         $v1, 0($a0)
+0800E8AC:[10670008]: beq        $v1, $a3, 0x0800E8D0
+0800E8B0:[24A50001]: addiu      $a1, $a1, 1
+0800E8B4:[04C20004]: bltzl      $a2, 0x0800E8C8
+0800E8B8:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+0800E8BC:[80860000]: lb         $a2, 0($a0)
+0800E8C0:[80A4FFFF]: lb         $a0, -1($a1)
+0800E8C4:[00C41023]: subu       $v0, $a2, $a0
+0800E8C8:[0A003A25/FC000000]: j          0x0800E894 [sceSystemMemoryManager.sub_0000E894]
+0800E8CC:[00401821]: addu       $v1, $v0, $zr <=> move $v1, $v0
+0800E8D0:[00603821]: addu       $a3, $v1, $zr <=> move $a3, $v1
+0800E8D4:[24C6FFFF]: addiu      $a2, $a2, -1
+0800E8D8:[24840001]: addiu      $a0, $a0, 1
+0800E8DC:[10E0FFED]: beq        $a3, $zr, 0x0800E894
+0800E8E0:[00001821]: addu       $v1, $zr, $zr <=> li $v1, 0
+0800E8E4:[04C0FFF8]: bltz       $a2, 0x0800E8C8
+0800E8E8:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+0800E8EC:[80A90000]: lb         $t1, 0($a1)
+0800E8F0:[808A0000]: lb         $t2, 0($a0)
+0800E8F4:[24A50001]: addiu      $a1, $a1, 1
+0800E8F8:[1149FFF6]: beq        $t2, $t1, 0x0800E8D4
+0800E8FC:[01403821]: addu       $a3, $t2, $zr <=> move $a3, $t2
+0800E900:[0A003A2D/FC000000]: j          0x0800E8B4 [sceSystemMemoryManager.sub_0000E8B4]
+0800E904:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strcasecmp">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcasecmp</Class>
 		<IsReturning>true</IsReturning>
@@ -5826,6 +6580,26 @@
 08805124:[00C01821]: addu       $v1, $a2, $zr <=> move $v1, $a2
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="strcpy">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcpy</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0800E494:[2C860001]: sltiu      $a2, $a0, 1
+0800E498:[2CA30001]: sltiu      $v1, $a1, 1
+0800E49C:[00C33825]: or         $a3, $a2, $v1
+0800E4A0:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+0800E4A4:[14E00007]: bne        $a3, $zr, 0x0800E4C4
+0800E4A8:[00803021]: addu       $a2, $a0, $zr <=> move $a2, $a0
+0800E4AC:[90A70000]: lbu        $a3, 0($a1)
+0800E4B0:[24A50001]: addiu      $a1, $a1, 1
+0800E4B4:[A0C70000]: sb         $a3, 0($a2)
+0800E4B8:[14E0FFFC]: bne        $a3, $zr, 0x0800E4AC
+0800E4BC:[24C60001]: addiu      $a2, $a2, 1
+0800E4C0:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+0800E4C4:[03E00008]: jr         $ra
+0800E4C8:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strlen">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strlen</Class>
 		<IsReturning>true</IsReturning>
@@ -5952,6 +6726,43 @@
 08AB3D84:[00A03025]: or         $a2, $a1, $zr <=> move $a2, $a1
 08AB3D88:[03E00008]: jr         $ra
 08AB3D8C:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="strncpy">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strncpy</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0800E908:[2C870001]: sltiu      $a3, $a0, 1
+0800E90C:[2CA30001]: sltiu      $v1, $a1, 1
+0800E910:[00E34025]: or         $t0, $a3, $v1
+0800E914:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+0800E918:[1500000D]: bne        $t0, $zr, 0x0800E950
+0800E91C:[00803821]: addu       $a3, $a0, $zr <=> move $a3, $a0
+0800E920:[18C0000A]: blez       $a2, 0x0800E94C
+0800E924:[00001821]: addu       $v1, $zr, $zr <=> li $v1, 0
+0800E928:[90A80000]: lbu        $t0, 0($a1)
+0800E92C:[24A50001]: addiu      $a1, $a1, 1
+0800E930:[A0E80000]: sb         $t0, 0($a3)
+0800E934:[11000008]: beq        $t0, $zr, 0x0800E958
+0800E938:[24E70001]: addiu      $a3, $a3, 1
+0800E93C:[24630001]: addiu      $v1, $v1, 1
+0800E940:[0066502A]: slt        $t2, $v1, $a2
+0800E944:[5540FFF9]: bnel       $t2, $zr, 0x0800E92C
+0800E948:[90A80000]: lbu        $t0, 0($a1)
+0800E94C:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+0800E950:[03E00008]: jr         $ra
+0800E954:[00000000]: nop
+0800E958:[24630001]: addiu      $v1, $v1, 1
+0800E95C:[0066282A]: slt        $a1, $v1, $a2
+0800E960:[10A00006]: beq        $a1, $zr, 0x0800E97C
+0800E964:[00000000]: nop
+0800E968:[24630001]: addiu      $v1, $v1, 1
+0800E96C:[0066482A]: slt        $t1, $v1, $a2
+0800E970:[A0E00000]: sb         $zr, 0($a3)
+0800E974:[1520FFFC]: bne        $t1, $zr, 0x0800E968
+0800E978:[24E70001]: addiu      $a3, $a3, 1
+0800E97C:[03E00008]: jr         $ra
+0800E980:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="SystemTimeSeconds">
@@ -7423,6 +8234,81 @@
 0x88008F38: [0x00000000] - nop
 0x88008F3C: [0x03E00008] - jr         $ra
 0x88008F40: [0x00000000] - nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memset32">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<Method>callMemset32</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0x88008864: [0x27BDFFE0] - addiu      $sp, $sp, -32
+0x88008868: [0x30870003] - andi       $a3, $a0, 3
+0x8800886C: [0xAFB10004] - sw         $s1, 4($sp)
+0x88008870: [0x7C060804] - ins        $a2, $zr, 0, 2
+0x88008874: [0x00808821] - addu       $s1, $a0, $zr <=> move $s1, $a0
+0x88008878: [0xAFB00000] - sw         $s0, 0($sp)
+0x8800887C: [0x00001821] - addu       $v1, $zr, $zr <=> li $v1, 0
+0x88008880: [0x00A08021] - addu       $s0, $a1, $zr <=> move $s0, $a1
+0x88008884: [0xAFBF0010] - sw         $ra, 16($sp)
+0x88008888: [0xAFB3000C] - sw         $s3, 12($sp)
+0x8800888C: [0x14E00029] - bne        $a3, $zr, 0x88008934
+0x88008890: [0xAFB20008] - sw         $s2, 8($sp)
+0x88008894: [0x7C821740] - ext        $v0, $a0, 29, 3
+0x88008898: [0x2408002C] - addiu      $t0, $zr, 44 <=> li $t0, 44
+0x8800889C: [0x00483807] - srav       $a3, $t0, $v0
+0x880088A0: [0x30E30001] - andi       $v1, $a3, 1
+0x880088A4: [0x1460002F] - bne        $v1, $zr, 0x88008964
+0x880088A8: [0x2CC90101] - sltiu      $t1, $a2, 257
+0x880088AC: [0x1520002D] - bne        $t1, $zr, 0x88008964
+0x880088B0: [0x2493003F] - addiu      $s3, $a0, 63
+0x880088B4: [0x7C132804] - ins        $s3, $zr, 0, 6
+0x880088B8: [0x12640003] - beq        $s3, $a0, 0x880088C8
+0x880088BC: [0x00869021] - addu       $s2, $a0, $a2
+0x880088C0: [0x0E00477C/FC000000] - jal        0x88011DF0 [sceSystemMemoryManager.sub_00011DF0]
+0x880088C4: [0x02643023] - subu       $a2, $s3, $a0
+0x880088C8: [0x3246003F] - andi       $a2, $s2, 63
+0x880088CC: [0x14C00021] - bne        $a2, $zr, 0x88008954
+0x880088D0: [0x02462023] - subu       $a0, $s2, $a2
+0x880088D4: [0x02401021] - addu       $v0, $s2, $zr <=> move $v0, $s2
+0x880088D8: [0x12720015] - beq        $s3, $s2, 0x88008930
+0x880088DC: [0x02603021] - addu       $a2, $s3, $zr <=> move $a2, $s3
+0x880088E0: [0xBCD80000] - cache      0x18, 0($a2)
+0x880088E4: [0xACD00000] - sw         $s0, 0($a2)
+0x880088E8: [0xACD00004] - sw         $s0, 4($a2)
+0x880088EC: [0xACD00008] - sw         $s0, 8($a2)
+0x880088F0: [0xACD0000C] - sw         $s0, 12($a2)
+0x880088F4: [0xACD00010] - sw         $s0, 16($a2)
+0x880088F8: [0xACD00014] - sw         $s0, 20($a2)
+0x880088FC: [0xACD00018] - sw         $s0, 24($a2)
+0x88008900: [0xACD0001C] - sw         $s0, 28($a2)
+0x88008904: [0xACD00020] - sw         $s0, 32($a2)
+0x88008908: [0xACD00024] - sw         $s0, 36($a2)
+0x8800890C: [0xACD00028] - sw         $s0, 40($a2)
+0x88008910: [0xACD0002C] - sw         $s0, 44($a2)
+0x88008914: [0xACD00030] - sw         $s0, 48($a2)
+0x88008918: [0xACD00034] - sw         $s0, 52($a2)
+0x8800891C: [0xACD00038] - sw         $s0, 56($a2)
+0x88008920: [0xACD0003C] - sw         $s0, 60($a2)
+0x88008924: [0x24C60040] - addiu      $a2, $a2, 64
+0x88008928: [0x14C2FFED] - bne        $a2, $v0, 0x880088E0
+0x8800892C: [0x00000000] - nop
+0x88008930: [0x02201821] - addu       $v1, $s1, $zr <=> move $v1, $s1
+0x88008934: [0x8FBF0010] - lw         $ra, 16($sp)
+0x88008938: [0x8FB3000C] - lw         $s3, 12($sp)
+0x8800893C: [0x8FB20008] - lw         $s2, 8($sp)
+0x88008940: [0x8FB10004] - lw         $s1, 4($sp)
+0x88008944: [0x8FB00000] - lw         $s0, 0($sp)
+0x88008948: [0x00601021] - addu       $v0, $v1, $zr <=> move $v0, $v1
+0x8800894C: [0x03E00008] - jr         $ra
+0x88008950: [0x27BD0020] - addiu      $sp, $sp, 32
+0x88008954: [0x0E00477C/FC000000] - jal        0x88011DF0 [sceSystemMemoryManager.sub_00011DF0]
+0x88008958: [0x02002821] - addu       $a1, $s0, $zr <=> move $a1, $s0
+0x8800895C: [0x0A002235/FC000000] - j          0x880088D4 [sceSystemMemoryManager.sub_000088D4]
+0x88008960: [0x00409021] - addu       $s2, $v0, $zr <=> move $s2, $v0
+0x88008964: [0x0E00477C/FC000000] - jal        0x88011DF0 [sceSystemMemoryManager.sub_00011DF0]
+0x88008968: [0x00000000] - nop
+0x8800896C: [0x0A00224D/FC000000] - j          0x88008934 [sceSystemMemoryManager.sub_00008934]
+0x88008970: [0x00401821] - addu       $v1, $v0, $zr <=> move $v1, $v0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memcmpSequence">
