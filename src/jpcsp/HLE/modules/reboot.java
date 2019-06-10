@@ -104,7 +104,7 @@ public class reboot extends HLEModule {
     private static final int BOOT_LOADEXEC_PRX = 1;
     private static final int BOOT_REBOOT_BIN   = 2;
     private static final int BOOT_PREIPL       = 3;
-    private static final int bootMethod = BOOT_LOADEXEC_PRX;
+    private static final int bootMethod = BOOT_IPL;
     private static final int threadManInfo = 0x88048740;
     // The address of the Pre-IPL code
     private final int preIplAddress = 0xBFC00000;
