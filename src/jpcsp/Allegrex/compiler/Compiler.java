@@ -21,6 +21,7 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_BRANCHING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_STARTS_NEW_BLOCK;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_SYSCALL;
+import static jpcsp.HLE.modules.ThreadManForUser.BREAK;
 
 import java.io.File;
 import java.io.IOException;
@@ -143,6 +144,7 @@ public class Compiler implements ICompiler {
     public static Logger log = Logger.getLogger("compiler");
 	private static Compiler instance;
 	private static int resetCount = 0;
+	private static final int opcodeBreak0 = BREAK(0);
 	private CompilerClassLoader classLoader;
 	public static CpuDurationStatistics compileDuration = new CpuDurationStatistics("Compilation Time");
 	private Document configuration;
@@ -405,6 +407,7 @@ public class Compiler implements ICompiler {
         pendingBlockAddresses.clear();
         pendingBlockAddresses.push(startAddress);
         Set<Integer> branchingToAddresses = new HashSet<Integer>();
+        Set<Integer> pendingEndBlockAddresses = new HashSet<Integer>();
         while (!pendingBlockAddresses.isEmpty()) {
             int pc = pendingBlockAddresses.pop();
             if (!isAddressGood(pc)) {
@@ -462,6 +465,15 @@ public class Compiler implements ICompiler {
                         if (recursive) {
                             context.blocksToBeAnalysed.push(branchingTo);
                         }
+
+                        // If the block is ending with a JAL to a BREAK 0 instruction,
+                        // consider this JAL to be the end of the block.
+                        // This often happens in paf.prx.
+                        if (endPc != pc && branchingTo != 0 && Emulator.getMemory(branchingTo).read32(branchingTo) == opcodeBreak0) {
+                        	endPc = npc;
+                        	int pendingEndBlockAddress = npc + 4;
+                        	pendingEndBlockAddresses.add(pendingEndBlockAddress);
+                        }
                     } else if (isBranching) {
                         if (branchingTo != 0) {  // Ignore "J 0x00000000" instruction
                     		boolean analyseBranch = true;
@@ -499,6 +511,14 @@ public class Compiler implements ICompiler {
             for (int branchingTo : branchingToAddresses) {
             	codeBlock.setIsBranchTarget(branchingTo);
             }
+        }
+
+        if (!pendingEndBlockAddresses.isEmpty()) {
+	        for (int pendingEndBlockAddress : pendingEndBlockAddresses) {
+	        	if (codeBlock.getCodeInstruction(pendingEndBlockAddress) == null) {
+	        		codeBlock.addEndBlockInstruction(pendingEndBlockAddress);
+	        	}
+	        }
         }
 
         codeBlock.addCodeBlock();

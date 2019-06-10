@@ -891,6 +891,10 @@ public class ThreadManForUser extends HLEModule {
     	return (AllegrexOpcodes.BEQ << 26) | (_zr << 21) | (_zr << 16) | (destination & 0x0000FFFF);
     }
 
+    public static int BREAK(int breakCode) {
+    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.BREAK | (breakCode << 6);
+    }
+
     private void reserveInternalMemory() {
         // Reserve the memory used by the internal handlers
         SysMemInfo internalMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-InternalHandlers", SysMemUserForUser.PSP_SMEM_Addr, INTERNAL_THREAD_ADDRESS_SIZE, INTERNAL_THREAD_ADDRESS_START);

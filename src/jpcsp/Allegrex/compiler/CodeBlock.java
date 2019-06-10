@@ -79,15 +79,7 @@ public class CodeBlock {
 		highestAddress = startAddress;
 	}
 
-	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo, boolean useMMIO) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("CodeBlock.addInstruction 0x%X - %s", address, insn.disasm(address, opcode)));
-		}
-
-		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo);
-
-		codeInstruction.setUseMMIO(useMMIO);
-
+	private void insertInstruction(int address, CodeInstruction codeInstruction) {
 		// Insert the codeInstruction in the codeInstructions list
 		// and keep the list sorted by address.
 		if (codeInstructions.isEmpty() || codeInstructions.getLast().getAddress() < address) {
@@ -106,6 +98,18 @@ public class CodeBlock {
 				lowestAddress = address;
 			}
 		}
+	}
+
+	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo, boolean useMMIO) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("CodeBlock.addInstruction 0x%08X - %s", address, insn.disasm(address, opcode)));
+		}
+
+		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo);
+
+		codeInstruction.setUseMMIO(useMMIO);
+
+		insertInstruction(address, codeInstruction);
 
 		if (address > highestAddress) {
 			highestAddress = address;
@@ -114,6 +118,16 @@ public class CodeBlock {
 		memoryRanges.addAddress(address);
 
 		flags |= insn.getFlags();
+	}
+
+	public void addEndBlockInstruction(int address) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("CodeBlock.addEndBlockInstruction 0x%08X", address));
+		}
+
+		CodeInstruction codeInstruction = new EndBlockCodeInstruction(address);
+
+		insertInstruction(address, codeInstruction);
 	}
 
 	public void setIsBranchTarget(int address) {
