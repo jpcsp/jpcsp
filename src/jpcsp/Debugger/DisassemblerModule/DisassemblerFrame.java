@@ -317,11 +317,11 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
                     String line;
                     if (breakpoints.indexOf(pc) != -1) {
-                        line = String.format("<*>%08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode));
+                        line = String.format("<*>0x%08X:[0x%08X]: %s", pc, opcode, insn.disasm(pc, opcode));
                     } else if (pc == cpu.pc) {
-                        line = String.format("-->%08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode));
+                        line = String.format("-->0x%08X:[0x%08X]: %s", pc, opcode, insn.disasm(pc, opcode));
                     } else {
-                        line = String.format("   %08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode));
+                        line = String.format("   0x%08X:[0x%08X]: %s", pc, opcode, insn.disasm(pc, opcode));
                     }
                     listmodel.addElement(line);
 
@@ -1449,7 +1449,7 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
                     } catch (Exception e) {
                         disasm = "???";
                     }
-                    bufferedWriter.write(String.format("%08X:[%08X]: %s", i, opcode, disasm));
+                    bufferedWriter.write(String.format("0x%08X:[0x%08X]: %s", i, opcode, disasm));
                 } else {
                     // should we even both printing these?
                     bufferedWriter.write(String.format("%08X: invalid address", i));
@@ -1536,7 +1536,7 @@ private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         String value = (String) disasmListGetSelectedValue();
         if (value != null) {
             try {
-                String address = value.substring(3, 11);
+                String address = value.substring(3, 13);
                 int addr = Utilities.parseAddress(address);
                 if (!breakpoints.contains(addr)) {
                     breakpoints.add(addr);
@@ -1566,7 +1566,7 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
         if (value != null) {
             boolean breakpointexists = value.startsWith("<*>");
             if (breakpointexists) {
-                String address = value.substring(3, 11);
+                String address = value.substring(3, 13);
                 int addr = Utilities.parseAddress(address);
                 int b = breakpoints.indexOf(addr);
                 breakpoints.remove(b);
