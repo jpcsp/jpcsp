@@ -626,7 +626,7 @@ public class RuntimeContext {
 				// is receiving a new scheduler action (see onNextScheduleModified()),
 				// or whenever an interrupt has been triggered ().
 				synchronized (idleSyncObject) {
-					idleSyncObject.wait(intDelay / 1000, intDelay % 1000);
+					idleSyncObject.wait(intDelay / 1000, (intDelay % 1000) * 1000);
 				}
 			} catch (InterruptedException e) {
 				// Ignore exception
@@ -672,7 +672,7 @@ public class RuntimeContext {
     	syncThreadImmediately();
     }
 
-    private static RuntimeThread getRuntimeThread() {
+    public static RuntimeThread getRuntimeThread() {
     	Thread currentThread = Thread.currentThread();
 		if (currentThread instanceof RuntimeThread) {
 			return (RuntimeThread) currentThread;
@@ -1644,12 +1644,12 @@ public class RuntimeContext {
     public static void checkSyncWithSleep() {
     	long delay = Emulator.getScheduler().getNextActionDelay(idleSleepMicros);
 
+    	if (log.isTraceEnabled()) {
+    		log.debug(String.format("checkSyncWithSleep delay=0x%X", delay));
+    	}
+
     	if (delay > 0) {
-    		int intDelay = (int) delay;
-    		if (intDelay < 0) {
-    			intDelay = idleSleepMicros;
-    		}
-    		sleep(intDelay / 1000, intDelay % 1000);
+    		idleSleepInterruptable();
     	} else if (wantSync) {
 			sleep(idleSleepMicros);
     	} else {
