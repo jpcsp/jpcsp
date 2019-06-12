@@ -242,7 +242,7 @@ public class sceDisplay extends HLEModule {
             	reDisplay.endDisplay();
 
                 if (log.isDebugEnabled()) {
-                    log.debug("sceDisplay.paintGL - ExternalGE - end display");
+                    log.debug(String.format("sceDisplay.paintGL - ExternalGE - end display - isFbShowing=%b", isFbShowing));
                 }
             } else if (isUsingSoftwareRenderer()) {
                 // Software rendering: the processing of the GE list is done by the

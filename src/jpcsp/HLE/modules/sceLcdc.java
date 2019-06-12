@@ -31,4 +31,11 @@ public class sceLcdc extends HLEModule {
 	public int sceLcdc_driver_E9DBD35F(int unknown1, int displayWidth, int displayHeight, int unknown2) {
     	return 0;
 	}
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0xC004BBE0, version = 150)
+	public int sceLcdc_driver_C004BBE0() {
+    	// Has no parameters
+    	return 0;
+	}
 }
