@@ -180,6 +180,7 @@ public class Modules {
     public static SystemCtrlForKernel SystemCtrlForKernelModule = new SystemCtrlForKernel();
     public static sceHibari sceHibariModule = new sceHibari();
     public static sceSystimer sceSystimerModule = new sceSystimer();
+    public static sceUsbBus sceUsbBusModule = new sceUsbBus();
 
     public static Logger log = Logger.getLogger("hle");
 
