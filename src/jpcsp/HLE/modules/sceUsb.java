@@ -279,4 +279,10 @@ public class sceUsb extends HLEModule {
 
 		return 0;
 	}
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xEDA8A020, version = 150)
+    public int sceUsbRestart(int delayMilliseconds) {
+    	return 0;
+    }
 }
