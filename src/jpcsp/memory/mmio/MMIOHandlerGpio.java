@@ -71,15 +71,7 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 	private MMIOHandlerGpio(int baseAddress) {
 		super(baseAddress);
 
-		// The Pre-IPL is testing the GPIO port 4 to decide if needs to boot
-		// from the Nand (normal battery) or from the MemoryStick (service/Pandora battery)
-		Battery.initialize();
-		if (readEepromBatterySerialNumber() == BATTERY_SERIAL_NUMBER_SERVICE) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Booting from a service battery"));
-			}
-			setPort(GPIO_PORT_SERVICE_BATTERY);
-		}
+		reset();
 	}
 
 	@Override
@@ -112,6 +104,32 @@ public class MMIOHandlerGpio extends MMIOHandlerBase {
 		stream.writeInt(isCapturePort);
 		stream.writeInt(isTimerCaptureEnabled);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		ports = 0;
+		isOutput = 0;
+		isInputOn = 0;
+		isInterruptEnabled = 0;
+		isInterruptTriggered = 0;
+		isEdgeDetection = 0;
+		isRisingEdge = 0;
+		isFallingEdge = 0;
+		isCapturePort = 0;
+		isTimerCaptureEnabled = 0;
+
+		// The Pre-IPL is testing the GPIO port 4 to decide if needs to boot
+		// from the Nand (normal battery) or from the MemoryStick (service/Pandora battery)
+		Battery.initialize();
+		if (readEepromBatterySerialNumber() == BATTERY_SERIAL_NUMBER_SERVICE) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Booting from a service battery"));
+			}
+			setPort(GPIO_PORT_SERVICE_BATTERY);
+		}
 	}
 
 	private static String getPortName(int port) {

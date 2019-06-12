@@ -56,7 +56,8 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_RECEIVE_SETPARAM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_RESET_DEVICE;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_SEND_SETPARAM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_UNKNOWN_30;
-import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_UNKNOWN_35;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_SHUTDOWN_PSP;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_SUSPEND_PSP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_ALARM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_CLOCK;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_SCRATCHPAD;
@@ -72,8 +73,12 @@ import java.util.Arrays;
 import org.apache.log4j.Logger;
 
 import jpcsp.Controller;
+import jpcsp.Emulator;
 import jpcsp.State;
+import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeThread;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceSyscon;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.LED;
@@ -110,6 +115,19 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	private static final int NUMBER_INTERNAL_REGISTERS = 8;
 	private final byte[][] internalRegisters = new byte[8][8];
 
+	private static class ResetAction implements IAction {
+		@Override
+		public void execute() {
+			log.info("Reset PSP");
+			Emulator.getProcessor().enableInterrupts();
+			RuntimeThread runtimeThread = RuntimeContext.getRuntimeThread();
+			if (runtimeThread != null) {
+				runtimeThread.setInSyscall(true);
+			}
+			Modules.scePowerModule.scePowerRequestColdReset(0);
+		}
+	}
+
 	public static MMIOHandlerSyscon getInstance() {
 		if (instance == null) {
 			instance = new MMIOHandlerSyscon(BASE_ADDRESS);
@@ -139,6 +157,16 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 		stream.writeBoolean(endDataIndex);
 		stream.writeInt(error);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		Arrays.fill(data, 0);
+		dataIndex = 0;
+		endDataIndex = false;
+		error = 0;
 	}
 
 	private void clearData() {
@@ -275,10 +303,12 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 							MMIOHandlerWlan.getInstance().reset();
 						}
 						break;
-					case sceSyscon.PSP_SYSCON_DEVICE_UNKNOWN:
+					case sceSyscon.PSP_SYSCON_DEVICE_PSP:
 						if (log.isDebugEnabled()) {
-							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(UNKNOWN), reset=%b", device, reset));
+							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(PSP), reset=%b", device, reset));
 						}
+
+						Emulator.getScheduler().addAction(new ResetAction());
 						break;
 					default:
 						log.error(String.format("PSP_SYSCON_CMD_RESET_DEVICE unimplemented device=0x%X, reset=%b", device, reset));
@@ -464,7 +494,14 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				break;
 			case PSP_SYSCON_CMD_GET_STATUS2:
 				break;
-			case PSP_SYSCON_CMD_UNKNOWN_35:
+			case PSP_SYSCON_CMD_SHUTDOWN_PSP:
+				log.info("Shutdown PSP");
+				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_SHUTDOWN);
+				break;
+			case PSP_SYSCON_CMD_SUSPEND_PSP:
+				unknown = data[PSP_SYSCON_TX_DATA];
+				log.info("Suspend PSP");
+				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_SUSPEND);
 				break;
 			case PSP_SYSCON_CMD_UNKNOWN_30:
 				int length = data[PSP_SYSCON_TX_LEN] - 3;

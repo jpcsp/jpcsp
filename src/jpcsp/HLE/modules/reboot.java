@@ -129,6 +129,7 @@ public class reboot extends HLEModule {
 
         Model.setModel(Settings.getInstance().readInt("emu.model"));
     	Modules.SysMemUserForUserModule.setMemory64MB(Model.getGeneration() > 1);
+    	RuntimeContextLLE.reset();
         RuntimeContextLLE.start();
         RuntimeContext.updateMemory();
 

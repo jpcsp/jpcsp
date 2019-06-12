@@ -50,11 +50,11 @@ public class DmacProcessor implements IState {
 	public static final int DMAC_ATTRIBUTES_SRC_INCREMENT          = 0x04000000;
 	public static final int DMAC_ATTRIBUTES_DST_INCREMENT          = 0x08000000;
 	public static final int DMAC_ATTRIBUTES_TRIGGER_INTERRUPT      = 0x80000000;
-	private Memory memSrc;
-	private Memory memDst;
-	private IAction interruptAction;
-	private IAction completedAction;
-	private DmacThread dmacThread;
+	private final Memory memSrc;
+	private final Memory memDst;
+	private final IAction interruptAction;
+	private final IAction completedAction;
+	private final DmacThread dmacThread;
 	private int dst;
 	private int src;
 	private int next;
@@ -102,6 +102,14 @@ public class DmacProcessor implements IState {
 		stream.writeInt(next);
 		stream.writeInt(attributes);
 		stream.writeInt(status);
+	}
+
+	public void reset() {
+		dst = 0;
+		src = 0;
+		next = 0;
+		attributes = 0;
+		status = 0;
 	}
 
 	public int getDst() {

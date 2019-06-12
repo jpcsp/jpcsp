@@ -20,6 +20,8 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
 import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.isFallingBit;
 import static jpcsp.util.Utilities.isRaisingBit;
+import static jpcsp.util.Utilities.setBit;
+import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
 
@@ -130,11 +132,11 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	public static final int SYSREG_IO_SPI5         = 29;
 	public static final int SYSREG_AVC_POWER       = 2;
 	public static final int SYSREG_USBMS_USB_CONNECTED      = 0x000001;
-	public static final int SYSREG_USBMS_USB_INTERRUPT1     = 1;
-	public static final int SYSREG_USBMS_USB_INTERRUPT2     = 2;
-	public static final int SYSREG_USBMS_USB_INTERRUPT3     = 3;
-	public static final int SYSREG_USBMS_USB_INTERRUPT4     = 4;
-	public static final int SYSREG_USBMS_USB_INTERRUPT_MASK = 0xF << SYSREG_USBMS_USB_INTERRUPT1;
+	public static final int SYSREG_USBMS_USB_INTERRUPT_CABLE_CONNECTED    = 1;
+	public static final int SYSREG_USBMS_USB_INTERRUPT_CABLE_DISCONNECTED = 2;
+	public static final int SYSREG_USBMS_USB_INTERRUPT3                   = 3; // Reset???
+	public static final int SYSREG_USBMS_USB_INTERRUPT4                   = 4;
+	public static final int SYSREG_USBMS_USB_INTERRUPT_MASK = 0xF << SYSREG_USBMS_USB_INTERRUPT_CABLE_CONNECTED;
 	public static final int SYSREG_USBMS_MS0_CONNECTED      = 0x000100;
 	public static final int SYSREG_USBMS_MS0_INTERRUPT_MASK = 0x001E00;
 	public static final int SYSREG_USBMS_MS1_CONNECTED      = 0x010000;
@@ -174,17 +176,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	private MMIOHandlerSystemControl(int baseAddress) {
 		super(baseAddress);
 
-		ramSize = RAM_SIZE_16MB;
-		tachyonVersion = Modules.sceSysregModule.sceSysregGetTachyonVersion();
-
-		if (MemoryStick.isInserted()) {
-			usbAndMemoryStick |= SYSREG_USBMS_MS0_CONNECTED;
-		}
-
-		if (Usb.isCableConnected()) {
-			usbAndMemoryStick |= SYSREG_USBMS_USB_CONNECTED;
-			resetDevices |= 1 << SYSREG_RESET_USB;
-		}
+		reset();
 	}
 
 	@Override
@@ -235,6 +227,42 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		stream.writeInt(unknown6C);
 		stream.writeInt(unknown74);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		resetDevices = 0;
+		busClockDevices = 0;
+		clock1Devices = 0;
+		clockDevices = 0;
+		ioDevices = 0;
+		usbAndMemoryStick = 0;
+		avcPower = 0;
+		interrupts = 0;
+		pllFrequency = 0;
+		spiClkSelect = 0;
+		gpioEnable = 0;
+		ataClkSelect = 0;
+		unknown00 = 0;
+		unknown3C = 0;
+		unknown60 = 0;
+		unknown6C = 0;
+		unknown74 = 0;
+		
+		ramSize = RAM_SIZE_16MB;
+		tachyonVersion = Modules.sceSysregModule.sceSysregGetTachyonVersion();
+
+		if (MemoryStick.isInserted()) {
+			usbAndMemoryStick = setFlag(usbAndMemoryStick, SYSREG_USBMS_MS0_CONNECTED);
+		}
+
+		if (Usb.isCableConnected()) {
+			usbAndMemoryStick = setFlag(usbAndMemoryStick, SYSREG_USBMS_USB_CONNECTED);
+			resetDevices = setBit(resetDevices, SYSREG_RESET_USB);
+			triggerUsbMemoryStickInterrupt(SYSREG_USBMS_USB_INTERRUPT_CABLE_CONNECTED);
+		}
 	}
 
 	private static String getResetDeviceName(int bit) {
@@ -422,7 +450,23 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	}
 
 	public void triggerUsbMemoryStickInterrupt(int bit) {
-		usbAndMemoryStick |= 1 << bit;
+		if (!hasBit(usbAndMemoryStick, bit)) {
+			usbAndMemoryStick = setBit(usbAndMemoryStick, bit);
+			switch (bit) {
+				case SYSREG_USBMS_USB_INTERRUPT_CABLE_CONNECTED:
+					RuntimeContextLLE.triggerInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT_CABLE_CONNECTED);
+					break;
+				case SYSREG_USBMS_USB_INTERRUPT_CABLE_DISCONNECTED:
+					RuntimeContextLLE.triggerInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT_CABLE_DISCONNECTED);
+					break;
+				case SYSREG_USBMS_USB_INTERRUPT3:
+					RuntimeContextLLE.triggerInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT3);
+					break;
+				case SYSREG_USBMS_USB_INTERRUPT4:
+					RuntimeContextLLE.triggerInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT4);
+					break;
+			}
+		}
 	}
 
 	private void clearUsbMemoryStick(int mask) {
@@ -430,17 +474,17 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		mask &= SYSREG_USBMS_USB_INTERRUPT_MASK | SYSREG_USBMS_MS0_INTERRUPT_MASK | SYSREG_USBMS_MS1_INTERRUPT_MASK;
 		usbAndMemoryStick &= ~mask;
 
-		if (isFallingBit(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT1)) {
-			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_58);
+		if (isFallingBit(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT_CABLE_CONNECTED)) {
+			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT_CABLE_CONNECTED);
 		}
-		if (isFallingBit(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT2)) {
-			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_59);
+		if (isFallingBit(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT_CABLE_DISCONNECTED)) {
+			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT_CABLE_DISCONNECTED);
 		}
 		if (isFallingBit(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT3)) {
-			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_57);
+			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT3);
 		}
 		if (isFallingBit(oldUsbAndMemoryStick, usbAndMemoryStick, SYSREG_USBMS_USB_INTERRUPT4)) {
-			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_56);
+			RuntimeContextLLE.clearInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT4);
 		}
 	}
 

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -80,6 +81,26 @@ public class MMIOHandlerMemoryAccessControl extends MMIOHandlerBase {
 		stream.writeInt(unknown3C);
 		stream.writeInts(unknown40_to_7C);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		Arrays.fill(memoryProtection, 0);
+		unknown10 = 0;
+		unknown14 = 0;
+		unknown18 = 0;
+		unknown1C = 0;
+		unknown20 = 0;
+		unknown24 = 0;
+		unknown28 = 0;
+		unknown2C = 0;
+		unknown30 = 0;
+		unknown34 = 0;
+		unknown38 = 0;
+		unknown3C = 0;
+		Arrays.fill(unknown40_to_7C, 0);
 	}
 
 	@Override

@@ -55,6 +55,7 @@ public class MMIOHandlerAta2 extends MMIOHandlerBase {
 		int value;
 		switch (address - baseAddress) {
 			case 0x00: value = 0x00010033; break; // Unknown value
+			case 0x10: value = 0; break; // Reset in progress?
 			case 0x34: value = 0; break; // Unknown value
 			case 0x40: value = 0; break; // Unknown value, flag 0x2 is being tested
 			default: value = super.read32(address); break;

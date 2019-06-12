@@ -65,6 +65,13 @@ public class RuntimeContextLLE {
 		createMMIO();
 	}
 
+	public static void reset() {
+		if (mmio != null) {
+			((MMIO) mmio).reset();
+			mmio.Initialise();
+		}
+	}
+
 	public static void createMMIO() {
 		if (mmio == null) {
 			Memory mem = Emulator.getMemory();

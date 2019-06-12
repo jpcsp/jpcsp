@@ -79,6 +79,14 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
+	@Override
+	public void reset() {
+		super.reset();
+
+		maxVblankInterrupts = 0;
+		baseTimeMicros = getNow();
+	}
+
 	private long getTimeMicros() {
 		return getNow() - baseTimeMicros;
 	}

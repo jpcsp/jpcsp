@@ -205,7 +205,10 @@ public class MMIOHandlerAta extends MMIOHandlerBase {
 		drive = 0x00;
 	}
 
+	@Override
 	public void reset() {
+		super.reset();
+
 		setSignature();
 	}
 

@@ -208,7 +208,10 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
-	private void reset() {
+	@Override
+	public void reset() {
+		super.reset();
+
 		controller1.reset();
 		controller2.reset();
 	}

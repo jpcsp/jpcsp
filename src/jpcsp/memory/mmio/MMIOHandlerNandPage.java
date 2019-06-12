@@ -19,6 +19,7 @@ package jpcsp.memory.mmio;
 import static jpcsp.hardware.Nand.pageSize;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -59,6 +60,14 @@ public class MMIOHandlerNandPage extends MMIOHandlerBase {
 		stream.writeInts(data);
 		stream.writeInts(ecc);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		Arrays.fill(data, 0);
+		Arrays.fill(ecc, 0);
 	}
 
 	public int[] getData() {

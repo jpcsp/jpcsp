@@ -58,7 +58,7 @@ public class WM8750 implements IState {
 		NUMBER_REGISTERS = Model.getGeneration() == 1 ? 43 : 50;
 		registers = new int[NUMBER_REGISTERS];
 
-		resetToDefaultValues();
+		reset();
 	}
 
     @Override
@@ -73,7 +73,7 @@ public class WM8750 implements IState {
 		stream.writeInts(registers);
 	}
 
-	private void resetToDefaultValues() {
+	public void reset() {
 		System.arraycopy(defaultRegisterValues, 0, registers, 0, NUMBER_REGISTERS);
 	}
 
@@ -100,7 +100,7 @@ public class WM8750 implements IState {
 	private void setRegisterValue(int register, int value) {
 		if (register == REGISTER_RESET) {
 			// Writing to this register resets all registers to their default state
-			resetToDefaultValues();
+			reset();
 		} else {
 			registers[register] = value & 0x1FF;
 		}

@@ -19,6 +19,7 @@ package jpcsp.memory.mmio;
 import jpcsp.state.IState;
 
 public interface IMMIOHandler extends IState {
+	public void reset();
 	public int read8(int address);
 	public int read16(int address);
 	public int read32(int address);

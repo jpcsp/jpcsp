@@ -50,6 +50,14 @@ public class MMIOHandlerLdcControllerSlim extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
+	@Override
+	public void reset() {
+		super.reset();
+
+		unknown08 = 0;
+		unknown0C = 0;
+	}
+
 	private void setUnknown04(int value) {
 		if (value == 0x2) {
 			unknown0C |= 0x2;

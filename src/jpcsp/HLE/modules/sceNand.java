@@ -114,36 +114,7 @@ public class sceNand extends HLEModule {
 
     @Override
 	public void start() {
-		writeProtected = true;
-		scramble = 0;
-
-		ppnToLbn = new int[getTotalPages()];
-		flash1LbnStart = flash0LbnStart + (getTotalSectorsFlash0() / pagesPerBlock) + 1; // 0x602 on PSP-1000, 0xA42 on PSP-2000
-		flash2LbnStart = flash1LbnStart + (getTotalSectorsFlash1() / pagesPerBlock) + 1; // 0x702 on PSP-1000, 0xB82 on PSP-2000
-		flash3LbnStart = flash2LbnStart + (getTotalSectorsFlash2() / pagesPerBlock) + 1; // 0x742 on PSP-1000, 0xC82 on PSP-2000
-		flash4LbnStart = flash3LbnStart + (getTotalSectorsFlash3() / pagesPerBlock) + 1; // 0x77E on PSP-1000, 0xECA on PSP-2000
-		flash5LbnStart = flash4LbnStart + (getTotalSectorsFlash4() / pagesPerBlock) + 1; // None  on PSP-1000, 0xEFE on PSP-2000
-
-		dumpBlocks = readBytes("nand.block");
-		dumpSpares = readBytes("nand.spare");
-		dumpResults = readInts("nand.result");
-
-		final int startPpnToLbn = idStoragePpnEnd + 1;
-		final int numberUsedBlocks = 0x1E0;
-		final int numberBlocks = isSmallNand() ? 0x1F0 : 0x1F8;
-		final int numberFreePages = (numberBlocks - numberUsedBlocks) * pagesPerBlock;
-		Arrays.fill(ppnToLbn, 0, startPpnToLbn, 0x0000);
-		for (int ppn = startPpnToLbn, lbn = 0; ppn < ppnToLbn.length; ) {
-			Arrays.fill(ppnToLbn, ppn, ppn + pagesPerBlock, lbn);
-			ppn += pagesPerBlock;
-			lbn++;
-
-			// The blocks from 0x1E0 to 0x1F0/0x1F8 have to be free
-			if ((lbn % numberUsedBlocks) == 0) {
-				Arrays.fill(ppnToLbn, ppn, ppn + numberFreePages, 0xFFFF);
-				ppn += numberFreePages;
-			}
-		}
+    	reset();
 
 		if (log.isDebugEnabled()) {
 			for (int ppn = 0; ppn < ppnToLbn.length; ppn++) {
@@ -166,13 +137,6 @@ public class sceNand extends HLEModule {
 		if (log.isTraceEnabled()) {
 			for (int ppn = 0; ppn < ppnToLbn.length; ppn++) {
 				log.trace(String.format("ppn=0x%04X -> lbn=0x%04X", ppn, ppnToLbn[ppn]));
-			}
-		}
-
-		if (!emulateNand) {
-			byte[] fuseId = readBytes("nand.fuseid");
-			if (fuseId != null && fuseId.length == 8) {
-				Modules.sceSysregModule.setFuseId(Utilities.readUnaligned64(fuseId, 0));
 			}
 		}
 
@@ -497,13 +461,93 @@ public class sceNand extends HLEModule {
     }
 
     private void synchronizeAll() {
-		syncFlash0.synchronize();
-		syncFlash1.synchronize();
-		syncFlash2.synchronize();
+    	if (syncFlash0 != null) {
+    		syncFlash0.synchronize();
+    	}
+    	if (syncFlash1 != null) {
+    		syncFlash1.synchronize();
+    	}
+    	if (syncFlash2 != null) {
+    		syncFlash2.synchronize();
+    	}
 		if (syncFlash3 != null) {
 			syncFlash3.synchronize();
 		}
-		syncIpl.synchronize();
+    	if (syncIpl != null) {
+    		syncIpl.synchronize();
+    	}
+    }
+
+    public void reset() {
+		// Flush any pending writes before doing the reset
+    	synchronizeAll();
+
+		if (vFileFlash0 != null) {
+			vFileFlash0.ioClose();
+			vFileFlash0 = null;
+		}
+		if (vFileFlash1 != null) {
+			vFileFlash1.ioClose();
+			vFileFlash1 = null;
+		}
+		if (vFileFlash2 != null) {
+			vFileFlash2.ioClose();
+			vFileFlash2 = null;
+		}
+		if (vFileFlash3 != null) {
+			vFileFlash3.ioClose();
+			vFileFlash3 = null;
+		}
+
+		syncFlash0 = null;
+		syncFlash1 = null;
+		syncFlash2 = null;
+		syncFlash3 = null;
+		syncIpl = null;
+		nandMemory = null;
+		nandMemoryPointer = null;
+		nandSpareMemory = null;
+		nandSpareMemoryPointer = null;
+		initNandInProgress = false;
+
+		writeProtected = true;
+		scramble = 0;
+
+		Nand.init();
+		ppnToLbn = new int[getTotalPages()];
+		flash1LbnStart = flash0LbnStart + (getTotalSectorsFlash0() / pagesPerBlock) + 1; // 0x602 on PSP-1000, 0xA42 on PSP-2000
+		flash2LbnStart = flash1LbnStart + (getTotalSectorsFlash1() / pagesPerBlock) + 1; // 0x702 on PSP-1000, 0xB82 on PSP-2000
+		flash3LbnStart = flash2LbnStart + (getTotalSectorsFlash2() / pagesPerBlock) + 1; // 0x742 on PSP-1000, 0xC82 on PSP-2000
+		flash4LbnStart = flash3LbnStart + (getTotalSectorsFlash3() / pagesPerBlock) + 1; // 0x77E on PSP-1000, 0xECA on PSP-2000
+		flash5LbnStart = flash4LbnStart + (getTotalSectorsFlash4() / pagesPerBlock) + 1; // None  on PSP-1000, 0xEFE on PSP-2000
+
+		dumpBlocks = readBytes("nand.block");
+		dumpSpares = readBytes("nand.spare");
+		dumpResults = readInts("nand.result");
+
+		final int startPpnToLbn = idStoragePpnEnd + 1;
+		final int numberUsedBlocks = 0x1E0;
+		final int numberBlocks = isSmallNand() ? 0x1F0 : 0x1F8;
+		final int numberFreePages = (numberBlocks - numberUsedBlocks) * pagesPerBlock;
+		Arrays.fill(ppnToLbn, 0, startPpnToLbn, 0x0000);
+		for (int ppn = startPpnToLbn, lbn = 0; ppn < ppnToLbn.length; ) {
+			Arrays.fill(ppnToLbn, ppn, ppn + pagesPerBlock, lbn);
+			ppn += pagesPerBlock;
+			lbn++;
+
+			// The blocks from 0x1E0 to 0x1F0/0x1F8 have to be free
+			if ((lbn % numberUsedBlocks) == 0) {
+				Arrays.fill(ppnToLbn, ppn, ppn + numberFreePages, 0xFFFF);
+				ppn += numberFreePages;
+			}
+		}
+
+		if (!emulateNand) {
+			byte[] fuseId = readBytes("nand.fuseid");
+			if (fuseId != null && fuseId.length == 8) {
+				Modules.sceSysregModule.setFuseId(Utilities.readUnaligned64(fuseId, 0));
+			}
+		}
     }
 
     private static byte[] readBytes(String fileName) {

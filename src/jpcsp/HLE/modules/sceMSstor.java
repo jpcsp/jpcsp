@@ -157,6 +157,8 @@ public class sceMSstor extends HLEModule {
     	stream.writeLong(position);
 
     	if (vFile != null) {
+    		flush();
+
     		stream.writeBoolean(true);
     		((IState) vFile).write(stream);
     		sync.write(stream);
@@ -165,6 +167,27 @@ public class sceMSstor extends HLEModule {
     	}
 
     	super.write(stream);
+    }
+
+    private void flush() {
+    	if (sync != null) {
+    		sync.synchronize();
+    	}
+    }
+
+    public void reset() {
+		// Flush any pending writes before doing the reset
+    	flush();
+    	sync = null;
+
+    	if (vFile != null) {
+    		vFile.ioClose();
+    		vFile = null;
+    	}
+
+    	scanThread = null;
+
+    	hleInit();
     }
 
     @HLEUnimplemented

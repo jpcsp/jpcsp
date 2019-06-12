@@ -87,4 +87,10 @@ public class MMIOHandlerProxyOnCpu implements IMMIOHandler {
 		proxyOnMain.write(stream);
 		proxyOnMe.write(stream);
 	}
+
+	@Override
+	public void reset() {
+		proxyOnMain.reset();
+		proxyOnMe.reset();
+	}
 }

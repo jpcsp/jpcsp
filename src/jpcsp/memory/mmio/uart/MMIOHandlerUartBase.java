@@ -76,6 +76,21 @@ public class MMIOHandlerUartBase extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
+	@Override
+	public void reset() {
+		super.reset();
+
+		data = 0;
+		status = 0;
+		baudrateDivisor = 0L;
+		control = 0;
+		unknown04 = 0;
+		unknown30 = 0;
+		unknown34 = 0;
+		unknown38 = 0;
+		interrupt = 0;
+	}
+
 	private void clearInterrupt(int mask) {
 		interrupt &= ~mask;
 	}

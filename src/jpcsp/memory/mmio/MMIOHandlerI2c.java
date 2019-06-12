@@ -22,6 +22,7 @@ import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -81,6 +82,21 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 		stream.writeInts(transmitData);
 		stream.writeInts(receiveData);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		i2cAddress = 0;
+		dataLength = 0;
+		dataIndex = -1;
+		interrupt = 0;
+		Arrays.fill(transmitData, 0);
+		Arrays.fill(receiveData, 0);
+
+		CY27040.getInstance().reset();
+		WM8750.getInstance().reset();
 	}
 
 	private void writeData(int value) {

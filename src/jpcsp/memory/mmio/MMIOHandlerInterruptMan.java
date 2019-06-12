@@ -26,6 +26,7 @@ import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.hasBit;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -86,6 +87,15 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 		stream.writeBooleans(interruptEnabled);
 		stream.writeBooleans(interruptOccurred);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		Arrays.fill(interruptTriggered, false);
+		Arrays.fill(interruptEnabled, false);
+		Arrays.fill(interruptOccurred, false);
 	}
 
 	public void triggerInterrupt(int interruptNumber) {

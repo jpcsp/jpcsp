@@ -42,10 +42,12 @@ import static jpcsp.util.Utilities.writeUnaligned64;
 
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.sceNand;
 import jpcsp.hardware.Model;
@@ -112,7 +114,7 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 		dataMemory = new IntArrayMemory(data);
 		scrambleBufferMemory = new IntArrayMemory(scrambleBuffer);
 
-		status = PSP_NAND_STATUS_READY;
+		reset();
 	}
 
 	@Override
@@ -149,6 +151,26 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 		stream.writeInt(unknown200);
 		stream.writeBoolean(needPageAddress);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		Modules.sceNandModule.reset();
+
+		control = 0;
+		status = PSP_NAND_STATUS_READY;
+		command = 0;
+		pageAddress = 0;
+		Arrays.fill(data, 0);
+		dataIndex = 0;
+		dmaAddress = 0;
+		dmaControl = 0;
+		dmaStatus = 0;
+		dmaInterrupt = 0;
+		unknown200 = 0;
+		needPageAddress = false;
 	}
 
 	private void startCommand(int command) {

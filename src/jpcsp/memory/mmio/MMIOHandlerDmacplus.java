@@ -139,6 +139,23 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
+	@Override
+	public void reset() {
+		super.reset();
+
+		flagsCompleted = 0;
+		flagsError = 0;
+		for (int i = 0; i < dmacProcessors.length; i++) {
+			dmacProcessors[i].reset();
+		}
+		displayFrameBufferAddr = 0;
+		displayWidth = 0;
+		displayFrameBufferWidth = 0;
+		displayPixelFormatCoded = 0;
+		displayFlags = 0;
+		updateDisplay();
+	}
+
 	private void setCompleted(int flagCompleted) {
 		flagsCompleted |= flagCompleted;
 

@@ -101,6 +101,19 @@ public class MMIOHandlerTimer extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
+	@Override
+	public void reset() {
+		super.reset();
+
+		status = 0;
+		counter = 0;
+		prsclNumerator = 0;
+		prsclDenominator = 0;
+		schedule = 0L;
+		start = 0L;
+		overflowRead = 0;
+	}
+
 	private void triggerTimerInterrupt() {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Triggering %s interrupt for %s", getInterruptName(interruptNumber), this));

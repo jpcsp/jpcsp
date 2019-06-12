@@ -24,6 +24,7 @@ import static jpcsp.util.Utilities.endianSwap16;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFile;
@@ -97,8 +98,6 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 
 		log = sceMSstor.log;
 
-		sceMSstorModule.hleInit();
-
     	try {
 			vFileIpl = new LocalVirtualFile(new SeekableRandomFile("ms.ipl.bin", "rw"));
 		} catch (FileNotFoundException e) {
@@ -132,8 +131,10 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 	}
 
 	@Override
-	protected void reset() {
+	public void reset() {
 		super.reset();
+
+		Modules.sceMSstorModule.reset();
 
 		long totalSize = MemoryStick.getTotalSize();
 

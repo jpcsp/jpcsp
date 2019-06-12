@@ -47,7 +47,7 @@ public class CY27040 implements IState {
 	}
 
 	private CY27040() {
-		revision = 0x03;
+		reset();
 	}
 
     @Override
@@ -64,6 +64,12 @@ public class CY27040 implements IState {
 		stream.writeInt(revision);
 		stream.writeInt(clock);
 		stream.writeInt(spreadSpectrum);
+	}
+
+	public void reset() {
+		revision = 0x03;
+		clock = 0;
+		spreadSpectrum = 0;
 	}
 
 	public void executeTransmitReceiveCommand(int[] transmitData, int[] receiveData) {

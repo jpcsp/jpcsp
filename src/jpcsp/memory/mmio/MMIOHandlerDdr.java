@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -61,6 +62,15 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
+	@Override
+	public void reset() {
+		super.reset();
+
+		unknown40 = 0;
+		Arrays.fill(flushActions, null);
+		Arrays.fill(flushDone, false);
+	}
+
 	public synchronized boolean checkAndClearFlushDone(int value) {
 		boolean check = flushDone[value];
 		flushDone[value] = false;
@@ -102,6 +112,7 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 			case 0x00: value = 0; break;
 			case 0x04: value = 0; break;
 			case 0x20: value = 0; break;
+			case 0x2C: value = 0; break;
 			case 0x30: value = 0; break; // Unknown, used during sceDdrChangePllClock()
 			case 0x40: value = unknown40; unknown40 ^= 0x100; break; // Unknown, used during sceDdrChangePllClock()
 			default: value = super.read32(address); break;

@@ -385,6 +385,8 @@ public class Emulator implements Runnable {
     public static final int EMU_STATUS_JUMPSELF = 0x80;
     public static final int EMU_STATUS_BREAK = 0x100;
     public static final int EMU_STATUS_HALT = 0x200;
+    public static final int EMU_STATUS_SHUTDOWN = 0x400;
+    public static final int EMU_STATUS_SUSPEND = 0x800;
 
     public static synchronized void PauseEmuWithStatus(int status) {
         PauseEmu(true, status);

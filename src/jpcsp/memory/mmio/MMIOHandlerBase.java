@@ -95,6 +95,10 @@ public class MMIOHandlerBase implements IMMIOHandler {
 	}
 
 	@Override
+	public void reset() {
+	}
+
+	@Override
 	public String toString() {
 		return String.format("%s at 0x%08X", getClass().getName(), baseAddress);
 	}

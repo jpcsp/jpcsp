@@ -228,6 +228,11 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			flushAudioData();
 		}
 
+		public synchronized void reset() {
+			dataIndex = 0;
+			stalled = true;
+		}
+
 		@Override
 		public String toString() {
 			return String.format("line#%d, dataIndex=0x%X, stalled=%b, numberBlockingBuffers=%d, waitingBuffers=%d", lineNumber, dataIndex, stalled, numberBlockingBuffers, audioLine.getWaitingBuffers());
@@ -315,6 +320,27 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			audioLineStates[i].write(stream);
 		}
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		busy = 0;
+		interrupt = 0;
+		inProgress = 0;
+		flags10 = 0;
+		flags20 = 0;
+		interruptEnabled = 0;
+		flags2C = 0;
+		volume = 0;
+		frequency0 = 0;
+		frequency1 = 0;
+		frequencyFlags = 0;
+		hardwareFrequency = 0;
+		for (int i = 0; i < audioLineStates.length; i++) {
+			audioLineStates[i].reset();
+		}
 	}
 
 	public int getDmacSyncDelay(int address, int size) {

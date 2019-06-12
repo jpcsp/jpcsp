@@ -300,7 +300,10 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 		return String.format("UNKNOWN_CMD_%X", cmd);
 	}
 
-	protected void reset() {
+	@Override
+	public void reset() {
+		super.reset();
+
 		Arrays.fill(registers, 0);
 		interrupt = 0;
 		commandState = 0;

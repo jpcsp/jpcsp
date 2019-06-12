@@ -116,6 +116,21 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	}
 
 	@Override
+	public void reset() {
+		super.reset();
+
+		error = 0;
+		command = 0;
+		result = 0;
+		status = 0;
+		statusAsync = 0;
+		statusAsyncEnd = 0;
+		sourceAddr = 0;
+		destAddr = 0;
+		completePhase1Schedule = 0L;
+	}
+
+	@Override
 	public int read32(int address) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("0x%08X - read32(0x%08X) on %s", getPc(), address, this));

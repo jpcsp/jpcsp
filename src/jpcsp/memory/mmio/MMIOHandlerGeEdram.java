@@ -37,7 +37,7 @@ public class MMIOHandlerGeEdram extends MMIOHandlerBase {
 	public MMIOHandlerGeEdram(int baseAddress) {
 		super(baseAddress);
 
-		unknown00 = 0x00012223;
+		reset();
 	}
 
 	@Override
@@ -64,6 +64,19 @@ public class MMIOHandlerGeEdram extends MMIOHandlerBase {
 		stream.writeInt(unknown80);
 		stream.writeInt(unknown90);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		unknown00 = 0x00012223;
+		unknown20 = 0;
+		unknown30 = 0;
+		unknown40 = 0;
+		unknown70 = 0;
+		unknown80 = 0;
+		unknown90 = 0;
 	}
 
 	@Override

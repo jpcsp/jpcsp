@@ -1556,6 +1556,9 @@ public class VfpuState extends FpuState {
                 case 4:
                 	setRegister(rt, 0);
                 	break;
+                case 7:
+                	setRegister(rt, 0);
+                	break;
                 case 8: /* 136 - RCX0 */
                 	setRegister(rt, rnd.getSeed());
                     break;

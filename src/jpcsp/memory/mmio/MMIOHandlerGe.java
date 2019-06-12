@@ -53,6 +53,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	private int oaddr2;
 	private int cmdStatus;
 	private int interrupt;
+	private int unknown200;
+	private int unknown400;
 
 	public static MMIOHandlerGe getInstance() {
 		if (instance == null) {
@@ -85,6 +87,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		setOaddr2(stream.readInt());
 		setCmdStatus(stream.readInt());
 		setInterrupt(stream.readInt());
+		unknown200 = stream.readInt();
+		unknown400 = stream.readInt();
 		for (int cmd = 0x00; cmd <= 0xFF; cmd++) {
 			int value = stream.readInt();
 			writeGeCmd(cmd, value);
@@ -126,6 +130,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		stream.writeInt(getOaddr2());
 		stream.writeInt(getCmdStatus());
 		stream.writeInt(getInterrupt());
+		stream.writeInt(unknown200);
+		stream.writeInt(unknown400);
 		for (int cmd = 0x00; cmd <= 0xFF; cmd++) {
 			stream.writeInt(readGeCmd(cmd));
 		}
@@ -146,6 +152,47 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		}
 		stream.writeInt(getCtrl());
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		setStatus(0);
+		setList(0);
+		setStall(0);
+		setRaddr1(0);
+		setRaddr2(0);
+		setVaddr(0);
+		setIaddr(0);
+		setOaddr(0);
+		setOaddr1(0);
+		setOaddr2(0);
+		setCmdStatus(0);
+		setInterrupt(0);
+		unknown200 = 0;
+		unknown400 = 0;
+		for (int cmd = 0x00; cmd <= 0xFF; cmd++) {
+			int value = 0;
+			writeGeCmd(cmd, value);
+		}
+		for (int i = 0; i < 8 * 12; i++) {
+			writeGeBone(i, 0);
+		}
+		for (int i = 0; i < 12; i++) {
+			writeGeWorld(i, 0);
+		}
+		for (int i = 0; i < 12; i++) {
+			writeGeView(i, 0);
+		}
+		for (int i = 0; i < 16; i++) {
+			writeGeProjection(i, 0);
+		}
+		for (int i = 0; i < 12; i++) {
+			writeGeTexture(i, 0);
+		}
+		// Setting the ctrl must be the last action as it might trigger a GE list execution
+		setCtrl(0);
 	}
 
 	public void onGeInterrupt() {
@@ -498,9 +545,10 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 			case 0x120: value = getOaddr(); break;
 			case 0x124: value = getOaddr1(); break;
 			case 0x128: value = getOaddr2(); break;
+			case 0x200: value = unknown200; break;
 			case 0x304: value = getCmdStatus(); break;
 			case 0x308: value = getInterrupt(); break;
-			case 0x400: value = 0; break; // Unknown
+			case 0x400: value = unknown400; break;
 			default:
 				if (localAddress >= 0x800 && localAddress < 0xC00) {
 					value = readGeCmd((localAddress - 0x800) >> 2);
@@ -541,11 +589,12 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 			case 0x120: setOaddr(value); break;
 			case 0x124: setOaddr1(value); break;
 			case 0x128: setOaddr2(value); break;
+			case 0x200: unknown200 = value; break;
 			case 0x304: setCmdStatus(value); break;
 			case 0x308: clearInterrupt(value); break;
 			case 0x30C: changeInterrupt(value); break;
 			case 0x310: changeCmdStatus(value); break;
-			case 0x400: break; // Unknown
+			case 0x400: unknown400 = value; break;
 			default: super.write32(address, value); break;
 		}
 

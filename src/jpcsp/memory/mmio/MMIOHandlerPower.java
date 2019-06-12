@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.scePower;
+import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -31,7 +32,7 @@ public class MMIOHandlerPower extends MMIOHandlerBase {
 	private final PowerObject unknown2 = new PowerObject();
 	private final PowerObject unknown3 = new PowerObject();
 
-	private static class PowerObject {
+	private static class PowerObject implements IState {
 		private static final int STATE_VERSION = 0;
 		public int unknown00;
 		public int unknown04;
@@ -76,6 +77,7 @@ public class MMIOHandlerPower extends MMIOHandlerBase {
 			}
 		}
 
+		@Override
 		public void read(StateInputStream stream) throws IOException {
 			stream.readVersion(STATE_VERSION);
 			unknown00 = stream.readInt();
@@ -88,6 +90,7 @@ public class MMIOHandlerPower extends MMIOHandlerBase {
 			unknown1C = stream.readInt();
 		}
 
+		@Override
 		public void write(StateOutputStream stream) throws IOException {
 			stream.writeVersion(STATE_VERSION);
 			stream.writeInt(unknown00);
@@ -98,6 +101,17 @@ public class MMIOHandlerPower extends MMIOHandlerBase {
 			stream.writeInt(unknown14);
 			stream.writeInt(unknown18);
 			stream.writeInt(unknown1C);
+		}
+
+		public void reset() {
+			unknown00 = 0;
+			unknown04 = 0;
+			unknown08 = 0;
+			unknown0C = 0;
+			unknown10 = 0;
+			unknown14 = 0;
+			unknown18 = 0;
+			unknown1C = 0;
 		}
 	}
 
@@ -121,6 +135,15 @@ public class MMIOHandlerPower extends MMIOHandlerBase {
 		unknown2.write(stream);
 		unknown3.write(stream);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		unknown1.reset();
+		unknown2.reset();
+		unknown3.reset();
 	}
 
 	@Override

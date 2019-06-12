@@ -22,6 +22,7 @@ import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_BLUETOOTH;
 import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_UMD;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -105,6 +106,19 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 		stream.writeInts(transferAddresses);
 		stream.writeInts(transferSizes);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		command = 0;
+		reset = 0;
+		interrupt = 0;
+		interruptEnabled = 0;
+		totalTransferLength = 0;
+		Arrays.fill(transferAddresses, 0);
+		Arrays.fill(transferSizes, 0);
 	}
 
 	private void updateUmd() {

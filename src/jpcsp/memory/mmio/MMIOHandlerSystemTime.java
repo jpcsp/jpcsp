@@ -59,6 +59,13 @@ public class MMIOHandlerSystemTime extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
+	@Override
+	public void reset() {
+		super.reset();
+
+		alarm = 0L;
+	}
+
 	private int getSystemTime() {
 		return (int) SystemTimeManager.getSystemTime();
 	}

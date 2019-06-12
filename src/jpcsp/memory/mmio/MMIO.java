@@ -64,7 +64,13 @@ public class MMIO extends Memory {
         return true;
     }
 
-	@Override
+    public void reset() {
+    	for (IMMIOHandler handler : sortedHandlers.values()) {
+    		handler.reset();
+    	}
+    }
+
+    @Override
 	public void Initialise() {
     	handlers.clear();
 
@@ -89,7 +95,7 @@ public class MMIO extends Memory {
     	addHandler(0xBD500000, 0x94, new MMIOHandlerGeEdram(0xBD500000));
     	addHandler(0xBD600000, 0x50, new MMIOHandlerAta2(0xBD600000));
     	addHandler(MMIOHandlerAta.BASE_ADDRESS, 0xF, MMIOHandlerAta.getInstance());
-    	addHandler(MMIOHandlerUsb.BASE_ADDRESS, 0x420, MMIOHandlerUsb.getInstance());
+    	addHandler(MMIOHandlerUsb.BASE_ADDRESS, 0x518, MMIOHandlerUsb.getInstance());
     	addHandler(0xBDE00000, 0x3C, new MMIOHandlerKirk(0xBDE00000));
     	addHandler(MMIOHandlerUmd.BASE_ADDRESS, 0x98, MMIOHandlerUmd.getInstance());
     	addHandler(MMIOHandlerAudio.BASE_ADDRESS, 0x80, MMIOHandlerAudio.getInstance());
@@ -236,10 +242,9 @@ public class MMIO extends Memory {
 		// at address 0xBFD00000 is now made available at address 0xBFC00000 and
 		// the address 0xBFD00000 becomes invalid.
 		memcpy(0xBFC00000, 0xBFD00000, 0x1000);
-		removeHandler(0xBFD00000, 0x1000);
-
-		RuntimeContext.removeCodeBlocks(0xBFD00000, 0x1000);
 		RuntimeContext.invalidateRange(0xBFC00000, 0x1000);
+		removeHandler(0xBFD00000, 0x1000);
+		RuntimeContext.removeCodeBlocks(0xBFD00000, 0x1000);
     }
 
     protected IMMIOHandler getHandler(int address) {

@@ -22,6 +22,7 @@ import static jpcsp.memory.FastMemory.memory8Mask;
 import static jpcsp.memory.FastMemory.memory8Shift;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -54,6 +55,13 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 		stream.writeVersion(STATE_VERSION);
 		stream.writeInts(memory);
 		super.write(stream);
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+
+		Arrays.fill(memory, 0);
 	}
 
 	public int[] getInternalMemory() {

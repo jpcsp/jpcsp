@@ -52,6 +52,16 @@ public class MMIOHandlerCpuBusFrequency extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
+	@Override
+	public void reset() {
+		super.reset();
+
+		cpuFrequencyNumerator = 0;
+		cpuFrequencyDenominator = 0;
+		busFrequencyNumerator = 0;
+		busFrequencyDenominator = 0;
+	}
+
 	private int getFrequency(int numerator, int denominator) {
 		return (numerator << 16) | denominator;
 	}
