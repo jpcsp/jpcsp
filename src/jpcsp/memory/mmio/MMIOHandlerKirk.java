@@ -65,14 +65,14 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	private final int version = 0x30313030; // "0010"
 	private int error;
 	private int command;
-	private int result = RESULT_SUCCESS;
-	private int status = STATUS_PHASE1_IN_PROGRESS | STATUS_PHASE2_IN_PROGRESS;
+	private int result;
+	private int status;
 	private int statusAsync;
 	private int statusAsyncEnd;
 	private int sourceAddr;
 	private int destAddr;
 	private final CompletePhase1Action completePhase1Action = new CompletePhase1Action();
-	private long completePhase1Schedule = 0L;
+	private long completePhase1Schedule;
 
 	private class CompletePhase1Action implements IAction {
 		@Override
@@ -83,6 +83,8 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 
 	public MMIOHandlerKirk(int baseAddress) {
 		super(baseAddress);
+
+		reset();
 	}
 
 	@Override
@@ -98,7 +100,13 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		destAddr = stream.readInt();
 		super.read(stream);
 
-		completePhase1Schedule = 0L;
+		// If the phase1 was in progress, complete it
+		if ((status & STATUS_PHASE1_MASK) == STATUS_PHASE1_IN_PROGRESS) {
+			completePhase1Schedule = Scheduler.getNow();
+			Scheduler.getInstance().addAction(completePhase1Schedule, completePhase1Action);
+		} else {
+			completePhase1Schedule = 0L;
+		}
 	}
 
 	@Override
@@ -121,8 +129,8 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 
 		error = 0;
 		command = 0;
-		result = 0;
-		status = 0;
+		result = RESULT_SUCCESS;
+		status = STATUS_PHASE1_IN_PROGRESS | STATUS_PHASE2_IN_PROGRESS;
 		statusAsync = 0;
 		statusAsyncEnd = 0;
 		sourceAddr = 0;
