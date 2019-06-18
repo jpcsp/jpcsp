@@ -46,7 +46,8 @@ public class DmacProcessor implements IState {
 	public static final int DMAC_ATTRIBUTES_SRC_LENGTH_SHIFT_SHIFT = 18;
 	//                                                               0x00E00000
 	public static final int DMAC_ATTRIBUTES_DST_LENGTH_SHIFT_SHIFT = 21;
-	public static final int DMAC_ATTRIBUTES_UNKNOWN                = 0x02000000;
+	public static final int DMAC_ATTRIBUTES_UNKNOWN1               = 0x01000000;
+	public static final int DMAC_ATTRIBUTES_UNKNOWN2               = 0x02000000;
 	public static final int DMAC_ATTRIBUTES_SRC_INCREMENT          = 0x04000000;
 	public static final int DMAC_ATTRIBUTES_DST_INCREMENT          = 0x08000000;
 	public static final int DMAC_ATTRIBUTES_TRIGGER_INTERRUPT      = 0x80000000;

@@ -26,7 +26,8 @@ import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_SRC_INCREMENT
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_SRC_LENGTH_SHIFT_SHIFT;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_SRC_STEP_SHIFT;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_TRIGGER_INTERRUPT;
-import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_UNKNOWN;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_UNKNOWN1;
+import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_ATTRIBUTES_UNKNOWN2;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_DDR_VALUE;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_DDR_VALUE_SHIFT;
 import static jpcsp.memory.mmio.dmac.DmacProcessor.DMAC_STATUS_REQUIRES_DDR;
@@ -248,7 +249,7 @@ public class DmacThread extends Thread {
 		}
 
 		// TODO Not sure about the real meaning of this attribute flag...
-		if (hasFlag(attributes, DMAC_ATTRIBUTES_UNKNOWN)) {
+		if (hasFlag(attributes, DMAC_ATTRIBUTES_UNKNOWN2)) {
 			// It seems to completely ignore the other attribute values
 			srcIncrement = true;
 			dstIncrement = true;
@@ -256,6 +257,14 @@ public class DmacThread extends Thread {
 			dstStepLength = 1;
 			srcLengthShift = 0;
 			dstLengthShift = 0;
+		}
+
+		// TODO Not sure about the real meaning of this attribute flag...
+		if (hasFlag(attributes, DMAC_ATTRIBUTES_UNKNOWN1)) {
+			// It seems to completely ignore the srcIncrement/dstIncrement attribute values.
+			// It is used by sceDmacplus when copying ME memory to SC
+			srcIncrement = true;
+			dstIncrement = true;
 		}
 
 		int srcLength = length << srcLengthShift;
