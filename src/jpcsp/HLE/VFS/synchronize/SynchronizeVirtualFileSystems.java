@@ -195,6 +195,9 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 			for (int j = 0; j < outputEntries.length; j++) {
 				if (sameEntryNameAndAttributes(inputEntry, outputEntries[j])) {
 					if (!isDirectory(inputEntry) && isModifiedSinceLastSync(inputEntry)) {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("deltaSynchronize: entry to be updated inputEntry=%s, lastSyncDate=%s", inputEntry, lastSyncDate));
+						}
 						toBeUpdated.add(inputEntry);
 					}
 					outputEntries[j] = null;
@@ -204,12 +207,18 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 			}
 
 			if (!found) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("deltaSynchronize: entry to be created inputEntry=%s", inputEntry));
+				}
 				toBeCreated.add(inputEntry);
 			}
 		}
 
 		for (int i = 0; i < outputEntries.length; i++) {
 			if (outputEntries[i] != null) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("deltaSynchronize: entry to be deleted outputEntry=%s", outputEntries[i]));
+				}
 				int result = deleteEntry(dirName, outputEntries[i]);
 				if (result != 0) {
 					return result;

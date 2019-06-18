@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.synchronize;
 
+import static jpcsp.HLE.VFS.AbstractVirtualFileSystem.IO_ERROR;
 import static jpcsp.HLE.modules.sceRtc.hleGetCurrentMicros;
 
 import java.io.IOException;
@@ -77,7 +78,8 @@ public abstract class BaseSynchronize implements ISynchronize {
 	}
 
 	protected ScePspDateTime nowDate() {
-		return ScePspDateTime.fromMicros(hleGetCurrentMicros());
+		// Time is stored as local time in FAT directory entries
+		return ScePspDateTime.fromMicrosLocal(hleGetCurrentMicros());
 	}
 
 	protected long now() {
@@ -102,8 +104,16 @@ public abstract class BaseSynchronize implements ISynchronize {
 		    		log.trace(String.format("checkDeltaSynchronize deltaSynchronize() now"));
 		    	}
 
-	    		result = deltaSynchronize();
-	    		lastSync = now;
+		    	try {
+		    		result = deltaSynchronize();
+		    	} catch (Exception e) {
+		    		log.error("checkDeltaSynchronize", e);
+		    		result = IO_ERROR;
+		    	}
+
+		    	if (result >= 0) {
+	    			lastSync = now;
+	    		}
 	    	}
 		}
 

@@ -317,11 +317,16 @@ public class FatFileInfo {
 
 		if (clusters != null) {
 			s.append(", clusters=[");
-			for (int i = 0; i < clusters.length; i++) {
+			// Display maximum 20 cluster entries
+			int length = Math.min(clusters.length, 20);
+			for (int i = 0; i < length; i++) {
 				if (i > 0) {
 					s.append(", ");
 				}
 				s.append(String.format("0x%X", clusters[i]));
+			}
+			if (length < clusters.length) {
+				s.append(", ...");
 			}
 			s.append("]");
 		}

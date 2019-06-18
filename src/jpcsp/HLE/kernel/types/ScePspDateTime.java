@@ -156,9 +156,7 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure implements 
         return new ScePspDateTime(year, month, day, hour, minute, second, microsecond);
     }
 
-    /** @param microseconds */
-    public static ScePspDateTime fromMicros(long micros) {
-        Calendar cal = Calendar.getInstance(GMT);
+    private static ScePspDateTime fromMicros(long micros, Calendar cal) {
         Date date = new Date(micros / 1000L);
         cal.setTime(date);
 
@@ -171,6 +169,15 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure implements 
         int microsecond = (int)(micros % 1000000L);
 
         return new ScePspDateTime(year, month, day, hour, minute, second, microsecond);
+    }
+    /** @param microseconds */
+    public static ScePspDateTime fromMicros(long micros) {
+        return fromMicros(micros, Calendar.getInstance(GMT));
+    }
+
+    /** @param microseconds */
+    public static ScePspDateTime fromMicrosLocal(long micros) {
+        return fromMicros(micros, Calendar.getInstance());
     }
 
 	@Override
