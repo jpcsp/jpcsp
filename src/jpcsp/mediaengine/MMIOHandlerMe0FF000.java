@@ -18,9 +18,12 @@ package jpcsp.mediaengine;
 
 import java.io.IOException;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.modules.sceMeCore;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.state.StateInputStream;
@@ -28,6 +31,7 @@ import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
 public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
+	public static Logger log = sceMeCore.log;
 	private static final int STATE_VERSION = 0;
 	private int status;
 	private int power;
@@ -101,7 +105,9 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 			case 0x05:
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X", command, status, unknown10));
-					log.debug(Utilities.getMemoryDump(getMemory(), unknown10, 0x1A4, 4, 16));
+					if (log.isTraceEnabled()) {
+						log.trace(Utilities.getMemoryDump(getMemory(), unknown10, 0x1A4, 4, 16));
+					}
 				}
 				break;
 			case 0x08:
@@ -118,7 +124,9 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 				// Used at startup
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Unknown command 0x%X, status=0x%X, power=0x%X, unknown10=0x%08X", command, status, power, unknown10));
-					log.debug(String.format("unknown10: %s", Utilities.getMemoryDump(getMemory(), unknown10, 0x2000, 4, 16)));
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("unknown10: %s", Utilities.getMemoryDump(getMemory(), unknown10, 0x2000, 4, 16)));
+					}
 				}
 				break;
 			case 0x20:
@@ -140,7 +148,9 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 			case 0x40:
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Unknown command 0x%X, status=0x%X, unknown10=0x%08X, unknown14=0x%X, unknown18=0x%X", command, status, unknown10, unknown14, unknown18));
-					log.debug(String.format("unknown10: %s", Utilities.getMemoryDump(getMemory(), unknown10, (unknown14 + 1) << 2), 4, 16));
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("unknown10: %s", Utilities.getMemoryDump(getMemory(), unknown10, (unknown14 + 1) << 2), 4, 16));
+					}
 				}
 				break;
 			case 0x42:
@@ -198,41 +208,44 @@ public class MMIOHandlerMe0FF000 extends MMIOHandlerMeBase {
 				break;
 			case 0x5A:
 				TPointer outputAddr = new TPointer(getMemory(), unknown10);
-				int unknownParameter1 = unknown18;
-				int unknownParameter2 = (unknown14 & 0xFFFF) + 1;
-				int unknownParameter3 = (unknown14 >>> 16) + 1;
-				int unknownParameter4 = unknown20 >> 1;
+				int unknownParameter1 = unknown18; // source address/offset in ME address space?
+				int outputSamplesNonInterlaced = (unknown14 & 0xFFFF) + 1;
+				int outputSamplesInterlaced = (unknown14 >>> 16) + 1;
+				int outputBytesPerSample = unknown20;
+				int outputChannels = unknown20 >> 1;
 				int numberOfSamples = unknown28 & 0xFFFF;
 				int unknownParameter6 = unknown28 >>> 16;
 				int unknownParameter7 = unknown24 + 1;
-				if (unknown14 == 0x03FF0000 && unknown18 == 0 && unknown20 == 2 && unknown24 == 3 && unknown28 == 0x10800) {
+				if (outputSamplesNonInterlaced == 1 && outputSamplesInterlaced == 0x400 && unknownParameter1 == 0 && outputBytesPerSample == 2 && unknownParameter7 == 4 && numberOfSamples == 0x800 && unknownParameter6 == 1) {
 					// Used by sceSasCore
-					for (int i = 0; i < numberOfSamples; i++) {
-						outputAddr.setUnalignedValue16(i * 2, 0x1234);
+					for (int i = 0; i < outputSamplesInterlaced; i++) {
+						outputAddr.setUnalignedValue16(i * outputBytesPerSample, 0x1234);
 					}
-				} else if (unknown14 == 0x23F0000 && unknown18 == 0x200 && unknown20 == 4 && unknown24 == 3 && unknown28 == 0x10800) {
+				} else if (outputSamplesNonInterlaced == 1 && outputSamplesInterlaced == 0x400 && unknownParameter1 == 0 && outputBytesPerSample == 4 && unknownParameter7 == 4 && numberOfSamples == 0x800 && unknownParameter6 == 1) {
+					// Used by sceSasCore
+					for (int i = 0; i < outputSamplesInterlaced; i++) {
+						outputAddr.setUnalignedValue16(i * outputBytesPerSample, 0x1234);
+					}
+				} else if (outputSamplesNonInterlaced == 1 && outputSamplesInterlaced == 0x240 && unknownParameter1 == 0x200 && outputBytesPerSample == 4 && unknownParameter7 == 4 && numberOfSamples == 0x800 && unknownParameter6 == 1) {
 					// Used by MP3 decode
-					numberOfSamples = 576; // TODO The number of samples is depending on the layer value from the MP3 header
-					for (int i = 0; i < numberOfSamples; i++) {
-						outputAddr.setUnalignedValue16(i * 4, 0x1234);
+					for (int i = 0; i < outputSamplesInterlaced; i++) {
+						outputAddr.setUnalignedValue16(i * outputBytesPerSample, 0x1234);
 					}
-				} else if (unknown18 != 0x548 || unknown20 != 4 || unknown24 != 3 || unknown28 != 0x10800) {
-					log.error(String.format("Unknown command 0x%X, status=0x%X, outputAddr=%s, unknownParameter1=0x%X, unknownParameter2=0x%X, unknownParameter3=0x%X, unknownParameter4=0x%X, numberOfSamples=0x%X, unknownParameter6=0x%X, unknownParameter7=0x%X", command, status, outputAddr, unknownParameter1, unknownParameter2, unknownParameter3, unknownParameter4, numberOfSamples, unknownParameter6, unknownParameter7));
-				} else if (unknown14 == 0x07FF0000) {
+				} else if (outputSamplesNonInterlaced == 1 && outputSamplesInterlaced == 0x800 && unknownParameter1 == 0x548 && outputBytesPerSample == 4 && unknownParameter7 == 4 && numberOfSamples == 0x800 && unknownParameter6 == 1) {
 					// Interlaced left and right samples
-					for (int i = 0; i < numberOfSamples; i++) {
-						outputAddr.setUnalignedValue16(i * 4, 0x1234);
+					for (int i = 0; i < outputSamplesInterlaced; i++) {
+						outputAddr.setUnalignedValue16(i * outputBytesPerSample, 0x1234);
 					}
-				} else if (unknown14 == 0x000103FF) {
+				} else if (outputSamplesNonInterlaced == 0x400 && outputSamplesInterlaced == 2 && unknownParameter1 == 0x548 && outputBytesPerSample == 4 && unknownParameter7 == 4 && numberOfSamples == 0x800 && unknownParameter6 == 1) {
 					// Non-interlaced left and right samples
-					for (int i = 0; i < numberOfSamples; i++) {
+					for (int i = 0; i < outputSamplesNonInterlaced; i++) {
 						outputAddr.setUnalignedValue16(i * 2, 0x1234);
 					}
 				} else {
-					log.error(String.format("Unknown command 0x%X, status=0x%X, outputAddr=%s, unknownParameter1=0x%X, unknownParameter2=0x%X, unknownParameter3=0x%X, unknownParameter4=0x%X, numberOfSamples=0x%X, unknownParameter6=0x%X, unknownParameter7=0x%X", command, status, outputAddr, unknownParameter1, unknownParameter2, unknownParameter3, unknownParameter4, numberOfSamples, unknownParameter6, unknownParameter7));
+					log.error(String.format("Unknown command 0x%X, status=0x%X, outputAddr=%s, unknownParameter1=0x%X, outputSamplesNonInterlaced=0x%X, outputSamplesInterlaced=0x%X, outputChannels=0x%X, numberOfSamples=0x%X, unknownParameter6=0x%X, unknownParameter7=0x%X", command, status, outputAddr, unknownParameter1, outputSamplesNonInterlaced, outputSamplesInterlaced, outputChannels, numberOfSamples, unknownParameter6, unknownParameter7));
 				}
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("Unknown command 0x%X, status=0x%X, outputAddr=%s, unknownParameter1=0x%X, unknownParameter2=0x%X, unknownParameter3=0x%X, unknownParameter4=0x%X, numberOfSamples=0x%X, unknownParameter6=0x%X, unknownParameter7=0x%X", command, status, outputAddr, unknownParameter1, unknownParameter2, unknownParameter3, unknownParameter4, numberOfSamples, unknownParameter6, unknownParameter7));
+					log.debug(String.format("Unknown command 0x%X, status=0x%X, outputAddr=%s, unknownParameter1=0x%X, outputSamplesNonInterlaced=0x%X, outputSamplesInterlaced=0x%X, outputChannels=0x%X, numberOfSamples=0x%X, unknownParameter6=0x%X, unknownParameter7=0x%X", command, status, outputAddr, unknownParameter1, outputSamplesNonInterlaced, outputSamplesInterlaced, outputChannels, numberOfSamples, unknownParameter6, unknownParameter7));
 				}
 				break;
 			case 0x5B:
