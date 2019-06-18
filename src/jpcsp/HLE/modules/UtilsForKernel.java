@@ -97,7 +97,6 @@ public class UtilsForKernel extends HLEModule {
 			memoryWriter.flush();
 			endOfDecompressedDestAddr.setValue(src.getAddress() + (int) inflater.getBytesRead());
 		} catch (IOException e) {
-			log.error("sceKernelDeflateDecompress", e);
 			return SceKernelErrors.ERROR_INVALID_FORMAT;
 		}
 

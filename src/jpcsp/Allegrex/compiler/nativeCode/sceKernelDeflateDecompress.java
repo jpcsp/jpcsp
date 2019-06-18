@@ -35,18 +35,24 @@ public class sceKernelDeflateDecompress extends AbstractNativeCodeSequence {
 		TPointer src = getPointer(srcAddr);
 		TPointer32 endOfDecompressedDestAddr = getPointer32(getGprA3());
 
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceKernelDeflateDecompress(dest=%s, destSize=0x%X, src=%s, endOfDecompressedDestAddr=%s", dest, destSize, src, endOfDecompressedDestAddr));
+		}
+
 		int result = Modules.UtilsForKernelModule.sceKernelDeflateDecompress(dest, destSize, src, endOfDecompressedDestAddr);
 
 		// Preserve the higher bits of the src address
-		if (endOfDecompressedDestAddr.isNotNull()) {
+		if (result >= 0 && endOfDecompressedDestAddr.isNotNull()) {
 			endOfDecompressedDestAddr.setValue(endOfDecompressedDestAddr.getValue() | (srcAddr & ~Memory.addressMask));
 		}
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceKernelDeflateDecompress returning 0x%X", result));
-			log.debug(String.format("dest[out]:%s", Utilities.getMemoryDump(dest, destSize)));
-			if (endOfDecompressedDestAddr.isNotNull()) {
-				log.debug(String.format("endOfDecompressedDestAddr[out]: 0x%08X", endOfDecompressedDestAddr.getValue()));
+			if (result >= 0) {
+				log.debug(String.format("dest[out]:%s", Utilities.getMemoryDump(dest, destSize)));
+				if (endOfDecompressedDestAddr.isNotNull()) {
+					log.debug(String.format("endOfDecompressedDestAddr[out]: 0x%08X", endOfDecompressedDestAddr.getValue()));
+				}
 			}
 		}
 
