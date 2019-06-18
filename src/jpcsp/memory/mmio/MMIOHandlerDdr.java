@@ -18,6 +18,8 @@ package jpcsp.memory.mmio;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -32,7 +34,8 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 	public static final int BASE_ADDRESS = 0xBD000000;
 	private static MMIOHandlerDdr instance;
 	private int unknown40;
-	private final IAction flushActions[] = new IAction[16];
+	@SuppressWarnings("unchecked")
+	private final Set<IAction> flushActions[] = (Set<IAction>[]) new HashSet[16];
 	private final boolean flushDone[] = new boolean[16];
 
 	public static MMIOHandlerDdr getInstance() {
@@ -44,6 +47,12 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 
 	private MMIOHandlerDdr(int baseAddress) {
 		super(baseAddress);
+
+		for (int i = 0; i < flushActions.length; i++) {
+			flushActions[i] = new HashSet<IAction>();
+		}
+
+		reset();
 	}
 
 	@Override
@@ -67,7 +76,9 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 		super.reset();
 
 		unknown40 = 0;
-		Arrays.fill(flushActions, null);
+		for (int i = 0; i < flushActions.length; i++) {
+			flushActions[i].clear();
+		}
 		Arrays.fill(flushDone, false);
 	}
 
@@ -79,14 +90,13 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 	}
 
 	public synchronized void setFlushAction(int value, IAction action) {
-		flushActions[value] = action;
+		flushActions[value].add(action);
 	}
 
 	public synchronized void clearFlushAction(int value, IAction action) {
-		if (flushActions[value] != action) {
-			log.error(String.format("clearFlushAction action mismatch between %s and %s", flushActions[value], action));
+		if (!flushActions[value].remove(action)) {
+			log.error(String.format("clearFlushAction action not found %s", action));
 		}
-		flushActions[value] = null;
 	}
 
 	public synchronized void clearFlushDone(int value) {
@@ -100,8 +110,10 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 			log.debug(String.format("MMIOHandlerDdr.doFlush 0x%01X", value));
 		}
 
-		if (flushActions[value] != null) {
-			flushActions[value].execute();
+		if (!flushActions[value].isEmpty()) {
+			for (IAction action : flushActions[value]) {
+				action.execute();
+			}
 		}
 	}
 
