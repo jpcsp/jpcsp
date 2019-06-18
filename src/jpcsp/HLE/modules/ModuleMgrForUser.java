@@ -1055,6 +1055,7 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xA1A78C58, version = 150)
+    @HLEFunction(nid = 0xCE0A74A5, version = 660)
     public int sceKernelLoadModuleDisc(PspString path, int flags, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
