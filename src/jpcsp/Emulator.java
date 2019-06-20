@@ -301,6 +301,8 @@ public class Emulator implements Runnable {
                 clock.resume();
             }
 
+            RuntimeContextLLE.run();
+
             if (RuntimeContext.isCompilerEnabled()) {
                 RuntimeContext.run();
             } else {

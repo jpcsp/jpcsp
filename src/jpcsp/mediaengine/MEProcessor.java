@@ -136,7 +136,7 @@ public class MEProcessor extends Processor {
 		}
 	}
 
-	private void sync() {
+	public void sync() {
 		METhread meThread = METhread.getInstance();
 		meThread.setProcessor(this);
 		meThread.sync();
