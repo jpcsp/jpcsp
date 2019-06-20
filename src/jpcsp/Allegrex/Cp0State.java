@@ -27,6 +27,7 @@ import static jpcsp.Allegrex.Common.COP0_STATE_SCCODE;
 import static jpcsp.Allegrex.Common.COP0_STATE_STATUS;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.state.IState;
@@ -41,19 +42,15 @@ import jpcsp.state.StateOutputStream;
  */
 public class Cp0State implements IState {
 	private static final int STATE_VERSION = 0;
+	public static final int STATUS_IE  = 0x00000001;
+	public static final int STATUS_EXL = 0x00000002;
+	public static final int STATUS_ERL = 0x00000004;
+	public static final int STATUS_BEV = 0x00400000;
 	private final int[] data = new int[32];
 	private final int[] control = new int[32];
 
 	public Cp0State() {
-		final int dataCacheSize = 16 * 1024; // 16KB
-		final int instructionCacheSize = 16 * 1024; // 16KB
-
-		int config = 0;
-		// 3 bits to indicate the data cache size
-		config |= Math.min(Integer.numberOfTrailingZeros(dataCacheSize) - 12, 7) << 6;
-		// 3 bits to indicate the instruction cache size
-		config |= Math.min(Integer.numberOfTrailingZeros(instructionCacheSize) - 12, 7) << 9;
-		setConfig(config);
+		reset();
 	}
 
 	@Override
@@ -70,7 +67,24 @@ public class Cp0State implements IState {
     	stream.writeInts(control);
     }
 
-    public int getDataRegister(int n) {
+	public void reset() {
+		Arrays.fill(data, 0);
+		Arrays.fill(control, 0);
+
+		final int dataCacheSize = 16 * 1024; // 16KB
+		final int instructionCacheSize = 16 * 1024; // 16KB
+
+		int config = 0;
+		// 3 bits to indicate the data cache size
+		config |= Math.min(Integer.numberOfTrailingZeros(dataCacheSize) - 12, 7) << 6;
+		// 3 bits to indicate the instruction cache size
+		config |= Math.min(Integer.numberOfTrailingZeros(instructionCacheSize) - 12, 7) << 9;
+		setConfig(config);
+
+		setStatus(STATUS_IE);
+	}
+
+	public int getDataRegister(int n) {
 		return data[n];
 	}
 

@@ -17,6 +17,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import static jpcsp.Allegrex.BcuState.jumpTarget;
+import static jpcsp.Allegrex.Cp0State.STATUS_BEV;
+import static jpcsp.Allegrex.Cp0State.STATUS_ERL;
+import static jpcsp.Allegrex.Cp0State.STATUS_IE;
+import static jpcsp.util.Utilities.clearFlag;
+import static jpcsp.util.Utilities.hasFlag;
+import static jpcsp.util.Utilities.notHasFlag;
+import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
 
@@ -40,7 +47,6 @@ public class Processor implements IState {
     public Cp0State cp0 = new Cp0State();
     public static final Memory memory = Memory.getInstance();
     protected Logger log = Logger.getLogger("cpu");
-    private boolean interruptsEnabled;
     private int opcode;
     private Instruction instruction;
     private int delaySlotOpcode;
@@ -65,8 +71,8 @@ public class Processor implements IState {
     }
 
     public void reset() {
-    	interruptsEnabled = true;
         cpu.reset();
+        cp0.reset();
     }
 
     @Override
@@ -74,7 +80,6 @@ public class Processor implements IState {
     	stream.readVersion(STATE_VERSION);
 		cpu.read(stream);
 		cp0.read(stream);
-		interruptsEnabled = stream.readBoolean();
     }
 
     @Override
@@ -82,7 +87,6 @@ public class Processor implements IState {
     	stream.writeVersion(STATE_VERSION);
     	cpu.write(stream);
     	cp0.write(stream);
-    	stream.writeBoolean(interruptsEnabled);
     }
 
     public void interpret() {
@@ -118,21 +122,41 @@ public class Processor implements IState {
         cpu.nextPc();
     }
 
-	public boolean isInterruptsEnabled() {
-		return interruptsEnabled;
-	}
+    public boolean isInterruptsEnabled() {
+    	int status = cp0.getStatus();
+
+    	// When the status ERL bit is set, all interrupts are disabled regardless of all other settings
+    	if (hasFlag(status, STATUS_ERL)) {
+    		return false;
+    	}
+
+    	// When the status IE bit is not set, all interrupts are disabled
+    	if (notHasFlag(status, STATUS_IE)) {
+    		return false;
+    	}
+
+    	return true;
+    }
 
 	public boolean isInterruptsDisabled() {
 		return !isInterruptsEnabled();
 	}
 
 	public void setInterruptsEnabled(boolean interruptsEnabled) {
-		if (this.interruptsEnabled != interruptsEnabled) {
-			this.interruptsEnabled = interruptsEnabled;
+		int status = cp0.getStatus();
 
-			if (interruptsEnabled) {
+		if (interruptsEnabled) {
+			if (notHasFlag(status, STATUS_IE)) {
+				// Enabling interrupts
+				cp0.setStatus(setFlag(status, STATUS_IE));
+
 				// Interrupts have been enabled
 				IntrManager.getInstance().onInterruptsEnabled();
+			}
+		} else {
+			if (hasFlag(status, STATUS_IE)) {
+				// Disabling interrupts
+				cp0.setStatus(clearFlag(status, STATUS_IE));
 			}
 		}
 	}
@@ -220,15 +244,13 @@ public class Processor implements IState {
 	public void triggerReset() {
 		int status = 0;
 		// BEV = 1 during bootstrapping
-		status |= 0x00400000;
+		status = setFlag(status, STATUS_BEV);
 		// ERL = 1 after reset
-		status |= 0x00000004;
+		status = setFlag(status, STATUS_ERL);
 		// Set the initial status
 		cp0.setStatus(status);
 		// Set Ebase = 0
 		cp0.setEbase(0);
-		// All interrupts disabled
-		disableInterrupts();
 
 		cpu.pc = 0xBFC00000;
 	}

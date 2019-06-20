@@ -35,9 +35,11 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_USES_VFPU_PFXS;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USES_VFPU_PFXT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
+import static jpcsp.Allegrex.Cp0State.STATUS_IE;
 import static jpcsp.Allegrex.FpuState.IMPLEMENT_ROUNDING_MODES;
 import static jpcsp.Allegrex.compiler.CompilerContext.arraycopyDescriptor;
 import static jpcsp.Allegrex.compiler.CompilerContext.runtimeContextInternalName;
+import static jpcsp.util.Utilities.hasFlag;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -748,10 +750,11 @@ public final String category() { return "ALLEGREX"; }
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
+	boolean interruptsEnabled = hasFlag(processor.cp0.getStatus(), STATUS_IE);
 	if (log.isTraceEnabled()) {
-		log.trace(String.format("0x%08X - mfic interruptsEnabled=%b", processor.cpu.pc, processor.isInterruptsEnabled()));
+		log.trace(String.format("0x%08X - mfic interruptsEnabled=%b", processor.cpu.pc, interruptsEnabled));
 	}
-	processor.cpu.setRegister(rt, processor.isInterruptsEnabled() ? 1 : 0);
+	processor.cpu.setRegister(rt, interruptsEnabled ? 1 : 0);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -778,7 +781,7 @@ public void interpret(Processor processor, int insn) {
 
 	int value = processor.cpu.getRegister(rt);
 	if (log.isTraceEnabled()) {
-		log.trace(String.format("0x%08X - mtic interruptEnabled=%b", processor.cpu.pc, value != 0));
+		log.trace(String.format("0x%08X - mtic interruptsEnabled=%b", processor.cpu.pc, value != 0));
 	}
 	processor.setInterruptsEnabled(value != 0);
 

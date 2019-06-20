@@ -35,8 +35,8 @@ import org.apache.log4j.Logger;
 public class Kernel_Library extends HLEModule {
     public static Logger log = Modules.getLogger("Kernel_Library");
 
-    private final int flagInterruptsEnabled = 1;
-    private final int flagInterruptsDisabled = 0;
+    private static final int flagInterruptsEnabled = 1;
+    private static final int flagInterruptsDisabled = 0;
 
     /**
      * Suspend all interrupts.
@@ -44,14 +44,9 @@ public class Kernel_Library extends HLEModule {
      * @returns The current state of the interrupt controller, to be used with ::sceKernelCpuResumeIntr().
      */
     @HLEFunction(nid = 0x092968F4, version = 150)
-    public int sceKernelCpuSuspendIntr(Processor processor) {
-        int returnValue;
-        if (processor.isInterruptsEnabled()) {
-        	returnValue = flagInterruptsEnabled;
-        	processor.disableInterrupts();
-        } else {
-        	returnValue = flagInterruptsDisabled;
-        }
+    public boolean sceKernelCpuSuspendIntr(Processor processor) {
+        boolean returnValue = processor.isInterruptsEnabled();
+    	processor.disableInterrupts();
 
         return returnValue;
     }

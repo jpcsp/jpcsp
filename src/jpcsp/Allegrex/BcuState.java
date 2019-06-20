@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import static jpcsp.util.Utilities.clearFlag;
+import static jpcsp.util.Utilities.hasFlag;
+
 import java.io.IOException;
 
 import jpcsp.Emulator;
@@ -275,16 +278,14 @@ public class BcuState extends LsuState {
     public int doERET(Processor processor) {
     	int status = processor.cp0.getStatus();
     	int epc;
-    	if ((status & 0x4) != 0) {
-    		status &= ~0x4; // Clear ERL
+    	if (hasFlag(status, Cp0State.STATUS_ERL)) {
+    		status = clearFlag(status, Cp0State.STATUS_ERL); // Clear ERL
     		epc = processor.cp0.getErrorEpc();
     	} else {
-    		status &= ~0x2; // Clear EXL
+    		status = clearFlag(status, Cp0State.STATUS_EXL); // Clear EXL
     		epc = processor.cp0.getEpc();
     	}
     	processor.cp0.setStatus(status);
-
-    	processor.enableInterrupts();
 
     	if (Emulator.log.isDebugEnabled()) {
     		Emulator.log.debug(String.format("0x%08X - eret with status=0x%X, epc=0x%08X", processor.cpu.pc, status, epc));
