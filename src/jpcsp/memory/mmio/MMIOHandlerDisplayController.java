@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.scheduler.Scheduler;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -40,12 +41,16 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 	private static final int numberDisplayRows = 286;
 	private static final int rowSyncMicros = (displaySyncMicros + (numberDisplayRows / 2)) / numberDisplayRows;
 	private TriggerVblankInterruptAction triggerVblankInterruptAction;
+	private long triggerVblankInterruptSchedule;
 	// Used for debugging: limit the number of VBLANK interrupts being triggered
 	private static int maxVblankInterrupts = 0;
 
 	private class TriggerVblankInterruptAction implements IAction {
 		@Override
 		public void execute() {
+			// The scheduler action has been executed, no need to remove it during scheduleNextVblankInterrupt()
+			triggerVblankInterruptSchedule = 0L;
+
 			triggerVblankInterrupt();
 		}
 	}
@@ -67,6 +72,9 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 		maxVblankInterrupts = stream.readInt();
 		baseTimeMicros = getNow() - stream.readLong();
 		super.read(stream);
+
+		triggerVblankInterruptSchedule = 0L;
+		triggerVblankInterruptAction = null;
 
 		startVblankInterrupts();
 	}
@@ -123,10 +131,20 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 		}
 
 		long schedule = getNextVblankSchedule();
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Scheduling next Vblank at 0x%X, %s", schedule, this));
+		if (schedule != triggerVblankInterruptSchedule) {
+			Scheduler scheduler = getScheduler();
+
+			// Remove any action still pending
+			if (triggerVblankInterruptSchedule != 0L) {
+				scheduler.removeAction(triggerVblankInterruptSchedule, triggerVblankInterruptAction);
+			}
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Scheduling next Vblank at 0x%X, %s", schedule, this));
+			}
+			triggerVblankInterruptSchedule = schedule;
+			scheduler.addAction(triggerVblankInterruptSchedule, triggerVblankInterruptAction);
 		}
-		getScheduler().addAction(schedule, triggerVblankInterruptAction);
 	}
 
 	public void triggerVblankInterrupt() {
@@ -137,6 +155,8 @@ public class MMIOHandlerDisplayController extends MMIOHandlerBase {
 	private void startVblankInterrupts() {
 		if (triggerVblankInterruptAction == null) {
 			triggerVblankInterruptAction = new TriggerVblankInterruptAction();
+			triggerVblankInterruptSchedule = 0L;
+
 			scheduleNextVblankInterrupt();
 		}
 	}
