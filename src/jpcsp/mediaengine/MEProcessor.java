@@ -16,9 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.mediaengine;
 
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.pendingInterruptIPbitsME;
 import static jpcsp.HLE.kernel.managers.ExceptionManager.EXCEP_INT;
 import static jpcsp.mediaengine.MEMemory.SIZE_ME_RAM;
 import static jpcsp.util.Utilities.dumpToFile;
+import static jpcsp.util.Utilities.hasFlag;
+import static jpcsp.util.Utilities.notHasFlag;
+import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
 
@@ -30,6 +34,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.Cp0State;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
@@ -65,7 +70,6 @@ public class MEProcessor extends Processor {
 	private MEMemory meMemory;
 	private final int[] vmeRegisters = new int[0x590]; // Highest VME register number seen is 0x058F
 	private boolean halt;
-	private int pendingInterruptIPbits;
 	private Instruction optimizedInstructions1[];
 	private Instruction optimizedInstructions2[];
 	private static final int optimizedRunStart1 = MemoryMap.START_RAM + 0x300000;
@@ -85,7 +89,6 @@ public class MEProcessor extends Processor {
 		stream.readVersion(STATE_VERSION);
 		stream.readInts(vmeRegisters);
 		halt = stream.readBoolean();
-		pendingInterruptIPbits = stream.readInt();
 		super.read(stream);
 
 		optimizedInstructions1 = null;
@@ -98,7 +101,6 @@ public class MEProcessor extends Processor {
 		stream.writeVersion(STATE_VERSION);
 		stream.writeInts(vmeRegisters);
 		stream.writeBoolean(halt);
-		stream.writeInt(pendingInterruptIPbits);
 		super.write(stream);
 	}
 
@@ -126,9 +128,9 @@ public class MEProcessor extends Processor {
 	}
 
 	public void triggerException(int IP) {
-		pendingInterruptIPbits |= IP;
+		pendingInterruptIPbitsME |= IP;
 
-		if (pendingInterruptIPbits != 0) {
+		if (pendingInterruptIPbitsME != 0) {
 			halt = false;
 			METhread.getInstance().sync();
 		}
@@ -159,10 +161,10 @@ public class MEProcessor extends Processor {
 
 	public void halt() {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MEProcessor.halt: pendingInterruptIPbits=0x%X, isInterruptExecutionAllowed=%b, doTriggerException=%b, status=0x%X, pc=0x%08X", pendingInterruptIPbits, isInterruptExecutionAllowed(), MMIOHandlerInterruptMan.getInstance(this).doTriggerException(), cp0.getStatus(), cpu.pc));
+			log.debug(String.format("MEProcessor.halt: pendingInterruptIPbitsME=0x%X, isInterruptExecutionAllowed=%b, doTriggerException=%b, status=0x%X, pc=0x%08X", pendingInterruptIPbitsME, isInterruptExecutionAllowed(), MMIOHandlerInterruptMan.getInstance(this).doTriggerException(), cp0.getStatus(), cpu.pc));
 		}
 
-		if (pendingInterruptIPbits == 0 && !MMIOHandlerInterruptMan.getInstance(this).doTriggerException()) {
+		if (pendingInterruptIPbitsME == 0 && !MMIOHandlerInterruptMan.getInstance(this).doTriggerException()) {
 			halt = true;
 		}
 	}
@@ -172,7 +174,7 @@ public class MEProcessor extends Processor {
 	}
 
 	private boolean isInterruptExecutionAllowed() {
-		if (pendingInterruptIPbits == 0) {
+		if (pendingInterruptIPbitsME == 0) {
 			return false;
 		}
 
@@ -183,12 +185,12 @@ public class MEProcessor extends Processor {
 		int status = cp0.getStatus();
 
 		// Is the processor already in an exception state?
-		if ((status & 0x2) != 0) {
+		if (hasFlag(status, Cp0State.STATUS_EXL)) {
 			return false;
 		}
 
 		// Is the interrupt masked?
-		if (((pendingInterruptIPbits << 8) & status) == 0) {
+		if (((pendingInterruptIPbitsME << 8) & status) == 0) {
 			return false;
 		}
 
@@ -218,12 +220,12 @@ public class MEProcessor extends Processor {
 
 		// Set the EXL bit
 		int status = cp0.getStatus();
-		status |= 0x2; // Set EXL bit
+		status = setFlag(status, Cp0State.STATUS_EXL); // Set EXL bit
 		cp0.setStatus(status);
 
 		int ebase;
 		// BEV bit set?
-		if ((status & 0x00400000) == 0) {
+		if (notHasFlag(status, Cp0State.STATUS_BEV)) {
 			ebase = cp0.getEbase();
 		} else {
 			ebase = 0xBFC00000;
@@ -237,8 +239,8 @@ public class MEProcessor extends Processor {
 	private void checkPendingInterruptException() {
 		if (isInterruptExecutionAllowed()) {
 			int cause = cp0.getCause();
-			cause |= (pendingInterruptIPbits << 8);
-			pendingInterruptIPbits = 0;
+			cause |= (pendingInterruptIPbitsME << 8);
+			pendingInterruptIPbitsME = 0;
 			cp0.setCause(cause);
 
 			setExceptionCause(EXCEP_INT);
@@ -279,7 +281,7 @@ public class MEProcessor extends Processor {
 		int startPc = cpu.pc;
 
 		while (!halt && !Emulator.pause) {
-			if (pendingInterruptIPbits != 0) {
+			if (pendingInterruptIPbitsME != 0) {
 				checkPendingInterruptException();
 			}
 
@@ -319,7 +321,7 @@ public class MEProcessor extends Processor {
 		int startPc = cpu.pc;
 
 		while (!halt && !Emulator.pause) {
-			if (pendingInterruptIPbits != 0) {
+			if (pendingInterruptIPbitsME != 0) {
 				checkPendingInterruptException();
 			}
 
@@ -353,7 +355,7 @@ public class MEProcessor extends Processor {
 		int startPc = cpu.pc;
 
 		while (!halt && !Emulator.pause) {
-			if (pendingInterruptIPbits != 0) {
+			if (pendingInterruptIPbitsME != 0) {
 				checkPendingInterruptException();
 			}
 
@@ -391,7 +393,7 @@ public class MEProcessor extends Processor {
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MEProcessor starting run: halt=%b, pendingInterruptIPbits=0x%X, pc=0x%08X", halt, pendingInterruptIPbits, cpu.pc));
+			log.debug(String.format("MEProcessor starting run: halt=%b, pendingInterruptIPbitsME=0x%X, pc=0x%08X", halt, pendingInterruptIPbitsME, cpu.pc));
 		}
 
 		final boolean hasMemoryInt = RuntimeContext.hasMemoryInt();
@@ -408,7 +410,7 @@ public class MEProcessor extends Processor {
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MEProcessor exiting run: halt=%b, pendingInterruptIPbits=0x%X, isInterruptExecutionAllowed=%b, status=0x%X, pc=0x%08X", halt, pendingInterruptIPbits, isInterruptExecutionAllowed(), cp0.getStatus(), cpu.pc));
+			log.debug(String.format("MEProcessor exiting run: halt=%b, pendingInterruptIPbitsME=0x%X, isInterruptExecutionAllowed=%b, status=0x%X, pc=0x%08X", halt, pendingInterruptIPbitsME, isInterruptExecutionAllowed(), cp0.getStatus(), cpu.pc));
 		}
 	}
 }

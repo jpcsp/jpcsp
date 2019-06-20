@@ -2326,7 +2326,7 @@ public class CompilerContext implements ICompilerContext {
     	}
 
     	Label noPendingInterrupt = new Label();
-        mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextLLEInternalName, "pendingInterruptIPbits", "I");
+        mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextLLEInternalName, "pendingInterruptIPbitsMain", "I");
         mv.visitJumpInsn(Opcodes.IFEQ, noPendingInterrupt);
         int returnAddress = codeInstruction.getAddress();
         loadImm(returnAddress);

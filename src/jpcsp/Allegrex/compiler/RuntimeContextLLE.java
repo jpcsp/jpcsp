@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.util.Utilities.hasFlag;
+import static jpcsp.util.Utilities.notHasFlag;
+import static jpcsp.util.Utilities.setFlag;
+
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
@@ -24,6 +28,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import jpcsp.Allegrex.Cp0State;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -45,7 +50,8 @@ public class RuntimeContextLLE {
 	private static final int STATE_VERSION = 0;
 	private static boolean isLLEActive;
 	private static Memory mmio;
-	public volatile static int pendingInterruptIPbits;
+	public volatile static int pendingInterruptIPbitsMain;
+	public volatile static int pendingInterruptIPbitsME;
 
 	public static boolean isLLEActive() {
 		return isLLEActive;
@@ -145,12 +151,18 @@ public class RuntimeContextLLE {
 		}
 
 		if (processor.cp0.isMainCpu()) {
-			pendingInterruptIPbits |= IPbits;
+			pendingInterruptIPbitsMain |= IPbits;
 
 			RuntimeContext.onLLEInterrupt();
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("triggerInterruptException IPbits=0x%X, pendingInterruptIPbits=0x%X", IPbits, pendingInterruptIPbits));
+				log.debug(String.format("triggerInterruptException IPbits=0x%X, pendingInterruptIPbitsMain=0x%X", IPbits, pendingInterruptIPbitsMain));
+			}
+		} else if (processor.cp0.isMediaEngineCpu()) {
+			pendingInterruptIPbitsME |= IPbits;
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("triggerInterruptException IPbits=0x%X, pendingInterruptIPbitsME=0x%X", IPbits, pendingInterruptIPbitsME));
 			}
 		}
 	}
@@ -217,7 +229,11 @@ public class RuntimeContextLLE {
 			return;
 		}
 
-		pendingInterruptIPbits &= ~IPbits;
+		if (processor.cp0.isMainCpu()) {
+			pendingInterruptIPbitsMain &= ~IPbits;
+		} else if (processor.cp0.isMediaEngineCpu()) {
+			pendingInterruptIPbitsME &= ~IPbits;
+		}
 	}
 
 	private static boolean isInterruptExceptionAllowed(Processor processor, int IPbits) {
@@ -236,12 +252,12 @@ public class RuntimeContextLLE {
 		}
 
 		// Is the processor already in an exception state?
-		if ((status & 0x2) != 0) {
+		if (hasFlag(status, Cp0State.STATUS_EXL)) {
 			return false;
 		}
 
 		// Is the interrupt masked?
-		if ((status & 0x1) == 0 || ((IPbits << 8) & status) == 0) {
+		if (notHasFlag(status, Cp0State.STATUS_IE) || ((IPbits << 8) & status) == 0) {
 			return false;
 		}
 
@@ -270,7 +286,7 @@ public class RuntimeContextLLE {
 
 		int pc;
 		// BEV flag set?
-		if ((processor.cp0.getStatus() & 0x00400000) != 0) {
+		if (hasFlag(processor.cp0.getStatus(), Cp0State.STATUS_BEV)) {
 			pc = 0xBFC00200;
 		} else {
 			pc = processor.cp0.getEbase();
@@ -278,21 +294,32 @@ public class RuntimeContextLLE {
 
 		// Set the EXL bit
 		int status = processor.cp0.getStatus();
-		status |= 0x2; // Set EXL bit
+		status = setFlag(status, Cp0State.STATUS_EXL); // Set EXL bit
 		processor.cp0.setStatus(status);
 
 		return pc;
 	}
 
 	/*
-	 * synchronized method as it is modifying pendingInterruptIPbits which can be updated from different threads
+	 * synchronized method as it is modifying pendingInterruptIPbitsXX which can be updated from different threads
 	 */
 	public static synchronized int checkPendingInterruptException(int returnAddress) {
 		Processor processor = getProcessor();
-		if (isInterruptExceptionAllowed(processor, pendingInterruptIPbits)) {
+		int IPbits = 0;
+		if (processor.cp0.isMainCpu()) {
+			IPbits = pendingInterruptIPbitsMain;
+		} else if (processor.cp0.isMediaEngineCpu()) {
+			IPbits = pendingInterruptIPbitsME;
+		}
+
+		if (isInterruptExceptionAllowed(processor, IPbits)) {
 			int cause = processor.cp0.getCause();
-			cause |= (pendingInterruptIPbits << 8);
-			pendingInterruptIPbits = 0;
+			cause |= (IPbits << 8);
+			if (processor.cp0.isMainCpu()) {
+				pendingInterruptIPbitsMain = 0;
+			} else if (processor.cp0.isMediaEngineCpu()) {
+				pendingInterruptIPbitsME = 0;
+			}
 			processor.cp0.setCause(cause);
 
 			// The compiler is only calling this function when
@@ -310,18 +337,20 @@ public class RuntimeContextLLE {
 	}
 
 	/*
-	 * synchronized method as it is modifying pendingInterruptIPbits which can be updated from different threads
+	 * synchronized method as it is modifying pendingInterruptIPbitsXX which can be updated from different threads
 	 */
 	public static synchronized void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
-		pendingInterruptIPbits = stream.readInt();
+		pendingInterruptIPbitsMain = stream.readInt();
+		pendingInterruptIPbitsME = stream.readInt();
 	}
 
 	/*
-	 * synchronized method as it is reading pendingInterruptIPbits which can be updated from different threads
+	 * synchronized method as it is reading pendingInterruptIPbitsXX which can be updated from different threads
 	 */
 	public static synchronized void write(StateOutputStream stream) throws IOException {
 		stream.writeVersion(STATE_VERSION);
-		stream.writeInt(pendingInterruptIPbits);
+		stream.writeInt(pendingInterruptIPbitsMain);
+		stream.writeInt(pendingInterruptIPbitsME);
 	}
 }

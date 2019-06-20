@@ -1734,7 +1734,7 @@ public class RuntimeContext {
 				((MEProcessor) processor).halt();
     		} else {
     			if (log.isDebugEnabled()) {
-    				log.debug(String.format("Allegrex halt pendingInterruptIPbits=0x%X", RuntimeContextLLE.pendingInterruptIPbits));
+    				log.debug(String.format("Allegrex halt pendingInterruptIPbitsMain=0x%X", RuntimeContextLLE.pendingInterruptIPbitsMain));
     			}
 	    		reboot.dumpAllThreads();
 	    		if (false) {
