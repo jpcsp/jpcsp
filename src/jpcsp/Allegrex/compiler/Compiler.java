@@ -469,13 +469,13 @@ public class Compiler implements ICompiler {
                         // If the block is ending with a JAL to a BREAK 0 instruction,
                         // consider this JAL to be the end of the block.
                         // This often happens in paf.prx.
-                        if (endPc != pc && branchingTo != 0 && Emulator.getMemory(branchingTo).read32(branchingTo) == opcodeBreak0) {
+                        if (endPc != pc && (branchingTo & Memory.addressMask) != 0 && Emulator.getMemory(branchingTo).read32(branchingTo) == opcodeBreak0) {
                         	endPc = npc;
                         	int pendingEndBlockAddress = npc + 4;
                         	pendingEndBlockAddresses.add(pendingEndBlockAddress);
                         }
                     } else if (isBranching) {
-                        if (branchingTo != 0) {  // Ignore "J 0x00000000" instruction
+                        if ((branchingTo & Memory.addressMask) != 0) {  // Ignore "J 0x00000000" instruction
                     		boolean analyseBranch = true;
                     		if (maxBranchInstructions < 0) {
                     			analyseBranch = false;
