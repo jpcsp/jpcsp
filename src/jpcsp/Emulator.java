@@ -107,6 +107,7 @@ public class Emulator implements Runnable {
         RendererExecutor.exit();
         VertexCache.getInstance().exit();
         Compiler.exit();
+        RuntimeContextLLE.exit();
         RuntimeContext.exit();
         Profiler.exit();
         GEProfiler.exit();

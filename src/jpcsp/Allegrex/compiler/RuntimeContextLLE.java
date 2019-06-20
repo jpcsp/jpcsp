@@ -79,6 +79,14 @@ public class RuntimeContextLLE {
 		MEProcessor.getInstance().sync();
 	}
 
+	public static void exit() {
+		if (!isLLEActive()) {
+			return;
+		}
+
+		MEProcessor.getInstance().exit();
+	}
+
 	public static void reset() {
 		if (mmio != null) {
 			((MMIO) mmio).reset();

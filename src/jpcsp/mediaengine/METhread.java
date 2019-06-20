@@ -47,6 +47,7 @@ public class METhread extends Thread {
 	public static void exit() {
 		if (instance != null) {
 			instance.exit = true;
+			instance.sync();
 		}
 	}
 
