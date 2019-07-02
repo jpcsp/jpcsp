@@ -533,6 +533,11 @@ public class DebuggerMemory extends Memory {
 	}
 
 	@Override
+	public void reset() {
+		mem.reset();
+	}
+
+	@Override
 	public int normalize(int address) {
 		return mem.normalize(address);
 	}

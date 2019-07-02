@@ -471,6 +471,9 @@ public abstract class Memory implements IState {
     public void remapMemoryAtProcessorReset() {
     }
 
+    public void reset() {
+    }
+
     protected void read(StateInputStream stream, int address, int length) throws IOException {
     	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(this, address, length, 4);
     	for (int i = 0; i < length; i += 4) {

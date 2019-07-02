@@ -39,6 +39,7 @@ import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.memory.mmio.MMIOHandlerInterruptMan;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -77,6 +78,14 @@ public class MEProcessor extends Processor {
 	private static final int optimizedRunStart2 = MemoryMap.START_RAM;
 	private static final int optimizedRunEnd2   = optimizedRunStart2 + 0x3000;
 
+	private class ExitAction implements IAction {
+		@Override
+		public void execute() {
+			METhread.exit();
+			halt = true;
+		}
+	}
+
 	public static MEProcessor getInstance() {
 		if (instance == null) {
 			instance = new MEProcessor();
@@ -113,6 +122,8 @@ public class MEProcessor extends Processor {
 		cp0.setCpuid(CPUID_ME);
 
 		halt = true;
+
+		RuntimeContextLLE.registerExitAction(new ExitAction());
 	}
 
 	public MEMemory getMEMemory() {
@@ -134,11 +145,6 @@ public class MEProcessor extends Processor {
 			halt = false;
 			METhread.getInstance().sync();
 		}
-	}
-
-	public void exit() {
-		METhread.exit();
-		halt = true;
 	}
 
 	public void sync() {

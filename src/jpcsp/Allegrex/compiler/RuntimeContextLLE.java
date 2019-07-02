@@ -21,6 +21,8 @@ import static jpcsp.util.Utilities.notHasFlag;
 import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 
@@ -32,6 +34,7 @@ import jpcsp.Allegrex.Cp0State;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.reboot;
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.mediaengine.METhread;
@@ -52,6 +55,7 @@ public class RuntimeContextLLE {
 	private static Memory mmio;
 	public volatile static int pendingInterruptIPbitsMain;
 	public volatile static int pendingInterruptIPbitsME;
+	private final static List<IAction> exitActions = new LinkedList<IAction>();
 
 	public static boolean isLLEActive() {
 		return isLLEActive;
@@ -84,12 +88,20 @@ public class RuntimeContextLLE {
 			return;
 		}
 
-		MEProcessor.getInstance().exit();
+		for (IAction action : exitActions) {
+			action.execute();
+		}
+	}
+
+	public static void registerExitAction(IAction action) {
+		if (!exitActions.contains(action)) {
+			exitActions.add(action);
+		}
 	}
 
 	public static void reset() {
 		if (mmio != null) {
-			((MMIO) mmio).reset();
+			mmio.reset();
 			mmio.Initialise();
 		}
 	}

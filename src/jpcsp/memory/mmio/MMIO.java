@@ -64,6 +64,7 @@ public class MMIO extends Memory {
         return true;
     }
 
+    @Override
     public void reset() {
     	for (IMMIOHandler handler : sortedHandlers.values()) {
     		handler.reset();

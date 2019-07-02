@@ -23,6 +23,7 @@ import static jpcsp.util.Utilities.isRaisingFlag;
 import java.io.IOException;
 
 import jpcsp.Memory;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
@@ -73,6 +74,13 @@ public class DmacProcessor implements IState {
 		}
 	}
 
+	private class ExitAction implements IAction {
+		@Override
+		public void execute() {
+			dmacThread.exit();
+		}
+	}
+
 	public DmacProcessor(Memory memSrc, Memory memDst, int baseAddress, IAction interruptAction) {
 		this.memSrc = memSrc;
 		this.memDst = memDst;
@@ -83,6 +91,8 @@ public class DmacProcessor implements IState {
 		dmacThread.setName(String.format("Dmac Thread for 0x%08X", baseAddress));
 		dmacThread.setDaemon(true);
 		dmacThread.start();
+
+		RuntimeContextLLE.registerExitAction(new ExitAction());
 	}
 
 	@Override
