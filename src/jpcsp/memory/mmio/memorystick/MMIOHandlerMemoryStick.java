@@ -363,7 +363,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 		if (log.isDebugEnabled()) {
 			byte[] buffer = new byte[PAGE_SIZE];
 			for (int i = 0; i < buffer.length; i++) {
-				buffer[i] = pageBufferPointer.getValue8(i);
+				buffer[i] = address.getValue8(i);
 			}
 			log.debug(String.format("MMIOHandlerMemoryStick.readSector startBlock=0x%X, lba=0x%X, offset=0x%X: %s", startBlock, lba, offset, Utilities.getMemoryDump(buffer)));
 		}
