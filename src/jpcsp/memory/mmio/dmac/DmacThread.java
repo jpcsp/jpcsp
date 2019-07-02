@@ -97,6 +97,7 @@ public class DmacThread extends Thread {
 
 	public void exit() {
 		exit = true;
+		abortJob();
 	}
 
 	public void execute(Memory memDst, Memory memSrc, int dst, int src, int next, int attributes, int status, IAction interruptAction, IAction completedAction) {
@@ -196,6 +197,10 @@ public class DmacThread extends Thread {
 		int length = srcLength;
 		for (int i = 0; i < length && !abortJob; i += 4) {
 			memDst.write32(dst, memSrc.read32(src + i));
+
+			// Update the DMAC registers
+			dmacProcessor.setSrc(src + i);
+			dmacProcessor.setAttributes((attributes & 0xFFFFF000) | (length - i - 4) >> 2);
 		}
 
 		final MMIOHandlerAudio mmioHandlerAudio = MMIOHandlerAudio.getInstance();
@@ -216,6 +221,9 @@ public class DmacThread extends Thread {
 	}
 
 	private boolean isAudio(int ddrValue) {
+		// Not sure about the exact meaning of these unknown status flags,
+		// but this combination is only used for the audio output and
+		// requires an exact timing.
 		return (status & (DMAC_STATUS_UNKNOWN | DMAC_STATUS_REQUIRES_DDR | DMAC_STATUS_DDR_VALUE)) == (0x0100C800 | DMAC_STATUS_REQUIRES_DDR | (ddrValue << DMAC_STATUS_DDR_VALUE_SHIFT));
 	}
 
@@ -294,9 +302,7 @@ public class DmacThread extends Thread {
 
 			memSrc.memcpy(normalizedDst, normalizedSrc, srcLength);
 		} else if (isAudio()) {
-			// Not sure about the exact meaning of these unknown status flags,
-			// but this combination is only used for the audio output and
-			// requires an exact timing.
+			// The audio output requires an exact timing
 			dmacMemcpyAudio(normalizedDst, normalizedSrc, dstLength, srcLength, dstStepLength, srcStepLength, dstIncrement, srcIncrement);
 		} else {
 			dmacMemcpy(normalizedDst, normalizedSrc, dstLength, srcLength, dstStepLength, srcStepLength, dstIncrement, srcIncrement);
@@ -314,6 +320,9 @@ public class DmacThread extends Thread {
 			}
 			// Clear the length field
 			dmacProcessor.setAttributes(attributes & 0xFFFFF000);
+		}
+		if (next != 0) {
+			dmacProcessor.setNext(memSrc.read32(next + 8));
 		}
 
 		// Trigger an interrupt if requested in the attributes
@@ -400,6 +409,9 @@ public class DmacThread extends Thread {
 
 				if (waitForTrigger) {
 					while (memSrc.read32(next + 8) == 0) {
+						if (log.isTraceEnabled()) {
+							log.trace(String.format("dmacMemcpy next at 0x%08X is 0, waiting", next + 8));
+						}
 						if (!waitForTrigger()) {
 							break;
 						}
