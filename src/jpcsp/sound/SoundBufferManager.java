@@ -58,19 +58,28 @@ public class SoundBufferManager {
 
 	public void checkFreeBuffers(int alSource) {
         while (true) {
-        	int processedBuffers = AL10.alGetSourcei(alSource, AL10.AL_BUFFERS_PROCESSED);
-        	if (processedBuffers <= 0) {
+        	int alBuffer = checkFreeBuffer(alSource);
+        	if (alBuffer < 0) {
         		break;
         	}
-    		int alBuffer = AL10.alSourceUnqueueBuffers(alSource);
-    		if (log.isTraceEnabled()) {
-    			log.trace(String.format("free buffer %d", alBuffer));
-    		}
-
-    		synchronized (freeBuffers) {
-        		freeBuffers.push(alBuffer);
-			}
         }
+	}
+
+	public int checkFreeBuffer(int alSource) {
+    	int processedBuffers = AL10.alGetSourcei(alSource, AL10.AL_BUFFERS_PROCESSED);
+    	if (processedBuffers <= 0) {
+    		return -1;
+    	}
+		int alBuffer = AL10.alSourceUnqueueBuffers(alSource);
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("free buffer %d", alBuffer));
+		}
+
+		synchronized (freeBuffers) {
+    		freeBuffers.push(alBuffer);
+		}
+
+		return alBuffer;
 	}
 
 	public ByteBuffer getDirectBuffer(int size) {

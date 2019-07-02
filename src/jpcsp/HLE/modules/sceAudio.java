@@ -724,7 +724,7 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x01562BA3, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutput2Reserve(@CheckArgument("checkReserveSampleCount") int sampleCount) {
-        return hleAudioSRCChReserve(sampleCount, 44100, SoundChannel.FORMAT_STEREO);
+        return hleAudioSRCChReserve(sampleCount, 44100, 2);
     }
 
     @HLEFunction(nid = 0x43196845, version = 150, checkInsideInterrupt = true)
@@ -773,8 +773,8 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x38553111, version = 150, checkInsideInterrupt = true)
-    public int sceAudioSRCChReserve(@CheckArgument("checkReserveSampleCount") int sampleCount, @CheckArgument("checkFrequency") int freq, @CheckArgument("checkChannelCount") int format) {
-        return hleAudioSRCChReserve(sampleCount, freq, format);
+    public int sceAudioSRCChReserve(@CheckArgument("checkReserveSampleCount") int sampleCount, @CheckArgument("checkFrequency") int freq, @CheckArgument("checkChannelCount") int numChannels) {
+        return hleAudioSRCChReserve(sampleCount, freq, numChannels);
     }
 
     @HLEFunction(nid = 0x5C37C0AE, version = 150, checkInsideInterrupt = true)

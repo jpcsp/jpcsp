@@ -70,19 +70,22 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 
 	private class AudioLineState implements IState {
 		private static final int STATE_VERSION = 0;
+		private static final int STARTUP_COUNT = 10;
 		private final int lineNumber;
 		private AudioLine audioLine = new AudioLine();
 		private final int data[] = new int[64];
 		private int dataIndex;
-		private int numberBlockingBuffers;
+		private int numberBlockingBufferSamples;
 		private boolean stalled;
+		private int startup;
+		private int frequency;
 
 		public AudioLineState(int lineNumber) {
 			this.lineNumber = lineNumber;
 
-			stalled = true;
+			setStalled();
 
-			updateNumberBlockingBuffers();
+			updateNumberBlockingBufferSamples();
 		}
 
 		@Override
@@ -92,8 +95,10 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			stream.readInts(data);
 			dataIndex = stream.readInt();
 			stalled = stream.readBoolean();
+			frequency = stream.readInt();
 
-			updateNumberBlockingBuffers();
+			audioLine.setFrequency(frequency);
+			updateNumberBlockingBufferSamples();
 
 			// The audio is actually stalled when reloading a state
 			setStalled();
@@ -106,21 +111,23 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			stream.writeInts(data);
 			stream.writeInt(dataIndex);
 			stream.writeBoolean(stalled);
+			stream.writeInt(frequency);
 		}
 
 		private void setStalled() {
 			dataIndex = 0;
 			stalled = true;
+			startup = STARTUP_COUNT;
 		}
 
 		public synchronized void poll() {
 			if (hasBit(interruptEnabled, lineNumber)) {
-				int waitingBuffers = audioLine.getWaitingBuffers();
+				int waitingBufferSamples = audioLine.getWaitingBufferSamples();
 				if (log.isTraceEnabled()) {
-					log.trace(String.format("poll waitingBuffers=%d on %s", waitingBuffers, this));
+					log.trace(String.format("poll waitingBufferSamples=0x%X on %s", waitingBufferSamples, this));
 				}
 
-				if (waitingBuffers <= 0 && dataIndex == 0) {
+				if (waitingBufferSamples <= 0 && dataIndex == 0) {
 					setInterruptBit(lineNumber);
 					setStalled();
 				}
@@ -189,17 +196,19 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			dataIndex = 0;
 		}
 
-		private void updateNumberBlockingBuffers() {
-			float bufferSizeInSamples = audioLine.getFrequency() * BUFFER_SIZE_IN_MILLIS / 1000.f;
-			numberBlockingBuffers = Math.round(bufferSizeInSamples / data.length);
+		private void updateNumberBlockingBufferSamples() {
+			numberBlockingBufferSamples = Math.round(audioLine.getFrequency() * BUFFER_SIZE_IN_MILLIS / 1000.f);
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("number of blocking buffers=%d", numberBlockingBuffers));
+				log.debug(String.format("number of blocking buffer samples=0x%X", numberBlockingBufferSamples));
 			}
 		}
 
 		public synchronized void setFrequency(int frequency) {
-			audioLine.setFrequency(frequency);
-			updateNumberBlockingBuffers();
+			if (this.frequency != frequency) {
+				this.frequency = frequency;
+				audioLine.setFrequency(frequency);
+				updateNumberBlockingBufferSamples();
+			}
 		}
 
 		public synchronized void setVolume(int volume) {
@@ -209,16 +218,20 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		public synchronized int getDmacSyncDelay(int size) {
 			int syncDelay = 0;
 
-			int waitingBuffers = audioLine.getWaitingBuffers();
+			int waitingBufferSamples = audioLine.getWaitingBufferSamples();
 			// Do not delay the Dmac copy when the clock is paused (e.g. when compiling)
-			if (waitingBuffers >= numberBlockingBuffers && !getClock().isPaused()) {
+			if (waitingBufferSamples >= numberBlockingBufferSamples && !getClock().isPaused()) {
 				int numberSamples = size >> 2;
 				int frequency = audioLine.getFrequency();
-				syncDelay = 1000000 * numberSamples / frequency;
+				// Use "long" for calculation to avoid "int" overflows
+				syncDelay = (int) (1000000L * numberSamples / frequency);
+			} else if (startup > 0) {
+				syncDelay = 5;
+				startup--;
 			}
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("syncDelay=0x%X milliseconds, waitingBuffers=%d", syncDelay, waitingBuffers));
+				log.debug(String.format("syncDelay=0x%X milliseconds, waitingBufferSamples=0x%X", syncDelay, waitingBufferSamples));
 			}
 
 			return syncDelay;
@@ -229,13 +242,12 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		}
 
 		public synchronized void reset() {
-			dataIndex = 0;
-			stalled = true;
+			setStalled();
 		}
 
 		@Override
 		public String toString() {
-			return String.format("line#%d, dataIndex=0x%X, stalled=%b, numberBlockingBuffers=%d, waitingBuffers=%d", lineNumber, dataIndex, stalled, numberBlockingBuffers, audioLine.getWaitingBuffers());
+			return String.format("line#%d, dataIndex=0x%X, stalled=%b, numberBlockingBuffers=%d, waitingBufferSamples=0x%X", lineNumber, dataIndex, stalled, numberBlockingBufferSamples, audioLine.getWaitingBufferSamples());
 		}
 	}
 
@@ -432,20 +444,20 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 
 	private void setFrequency0(int frequency0) {
 		this.frequency0 = frequency0;
-		updateAudioLineFrequency();
+		updateAudioFrequency();
 	}
 
 	private void setFrequency1(int frequency1) {
 		this.frequency1 = frequency1;
-		updateAudioLineFrequency();
+		updateAudioFrequency();
 	}
 
 	private void setHardwareFrequency(int hardwareFrequency) {
 		this.hardwareFrequency = hardwareFrequency;
-		updateAudioLineFrequency();
+		updateAudioFrequency();
 	}
 
-	private void updateAudioLineFrequency() {
+	public void updateAudioFrequency() {
 		// The frequency controlling the audio output is taken from the CY27040 controller
 		int frequency = CY27040.getInstance().getAudioFreq();
 		for (int i = 0; i < audioLineStates.length; i++) {
@@ -472,6 +484,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			case 0x0C: value = inProgress; break;
 			case 0x1C: value = interrupt; break;
 			case 0x28: value = 0x37; break; // flags when some actions are completed?
+			case 0x40: value = frequencyFlags; break;
 			case 0x50: value = 0; break; // This doesn't seem to return the volume value
 			default: value = super.read32(address); break;
 		}

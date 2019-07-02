@@ -21,6 +21,8 @@ import static jpcsp.HLE.modules.sceAudio.PSP_AUDIO_VOLUME_MAX;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.lwjgl.LWJGLException;
@@ -39,6 +41,8 @@ public class AudioLine implements IState {
 	private final SoundBufferManager soundBufferManager;
 	private final int alSource;
 	private int frequency = 44100;
+	private int waitingBufferSamples;
+	private final Map<Integer, Integer> waitingBufferSizes = new HashMap<Integer, Integer>();
 
 	public AudioLine() {
 		initOpenAL();
@@ -67,7 +71,17 @@ public class AudioLine implements IState {
 	}
 
 	private void checkFreeBuffers() {
-    	soundBufferManager.checkFreeBuffers(alSource);
+		while (true) {
+			int alBuffer = soundBufferManager.checkFreeBuffer(alSource);
+			if (alBuffer < 0) {
+				break;
+			}
+
+			Integer bufferSizeInSamples = waitingBufferSizes.get(alBuffer);
+			if (bufferSizeInSamples != null) {
+				waitingBufferSamples -= bufferSizeInSamples.intValue();
+			}
+		}
     }
 
 	public int getFrequency() {
@@ -99,6 +113,8 @@ public class AudioLine implements IState {
 		directBuffer.rewind();
 
     	int alBuffer = soundBufferManager.getBuffer();
+    	waitingBufferSizes.put(alBuffer, length);
+    	waitingBufferSamples += length;
 		AL10.alBufferData(alBuffer, AL10.AL_FORMAT_STEREO16, directBuffer, frequency);
 		AL10.alSourceQueueBuffers(alSource, alBuffer);
 		soundBufferManager.releaseDirectBuffer(directBuffer);
@@ -117,10 +133,17 @@ public class AudioLine implements IState {
 		return AL10.alGetSourcei(alSource, AL10.AL_BUFFERS_QUEUED) - AL10.alGetSourcei(alSource, AL10.AL_BUFFERS_PROCESSED);
 	}
 
+	public int getWaitingBufferSamples() {
+		return waitingBufferSamples;
+	}
+
 	@Override
 	public void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
 		frequency = stream.readInt();
+
+		waitingBufferSamples = 0;
+		waitingBufferSizes.clear();
 	}
 
 	@Override

@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.memory.mmio.MMIOHandlerAudio;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -47,7 +48,7 @@ public class CY27040 implements IState {
 	}
 
 	private CY27040() {
-		reset();
+		resetInternally();
 	}
 
     @Override
@@ -56,7 +57,9 @@ public class CY27040 implements IState {
     	revision = stream.readInt();
     	clock = stream.readInt();
     	spreadSpectrum = stream.readInt();
-	}
+
+    	updateAudioFrequency();
+    }
 
 	@Override
 	public void write(StateOutputStream stream) throws IOException {
@@ -66,7 +69,16 @@ public class CY27040 implements IState {
 		stream.writeInt(spreadSpectrum);
 	}
 
+	private void updateAudioFrequency() {
+		MMIOHandlerAudio.getInstance().updateAudioFrequency();
+	}
+
 	public void reset() {
+		resetInternally();
+		updateAudioFrequency();
+	}
+
+	private void resetInternally() {
 		revision = 0x03;
 		clock = 0;
 		spreadSpectrum = 0;
@@ -109,6 +121,7 @@ public class CY27040 implements IState {
 				break;
 			case 0x81:
 				clock = transmitData[1] & 0xFF;
+				updateAudioFrequency();
 				break;
 			case 0x82:
 				spreadSpectrum = transmitData[1] & 0xFF;
