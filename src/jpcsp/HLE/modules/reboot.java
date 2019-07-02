@@ -618,6 +618,10 @@ public class reboot extends HLEModule {
 		// The 2nd part of the IPL will be uncompressed at 0x04000000
 		addMMIORange(0x04000000, 0xE0000);
 
+		// For multiloader_ipl.bin
+		addMMIORange(0x041E0000, 0x4000);
+		addMMIORange(0x040E0000, 0x5000);
+
 		SceModule iplModule = new SceModule(true);
 		iplModule.modname = getName();
 		iplModule.baseAddress = preIplAddress;
@@ -1031,7 +1035,7 @@ public class reboot extends HLEModule {
     				0xA2, 0xA8, 0xC4, 0xFB, 0x48, 0x0F, 0xD1, 0x25,
     				0x61, 0x96, 0x4A, 0xDF, 0x00, 0x00, 0x00, 0x00
     		};
-    		int[] keyWithPreIp = new int[] {
+    		int[] keyWithPreIpl = new int[] {
     				0x10, 0x7C, 0xD5, 0x09, 0x6A, 0xB5, 0x89, 0x76,
     				0x49, 0xF6, 0xEA, 0x54, 0x0B, 0x30, 0x3E, 0x2B,
     				0x47, 0x17, 0x6D, 0x0B, 0x04, 0x70, 0x3E, 0xB0,
@@ -1039,7 +1043,7 @@ public class reboot extends HLEModule {
     		};
     		int checksum = 0;
     		for (int i = 0; i < keyWithoutPreIpl.length; i++) {
-    			mem.write8(keyAddr + i, (byte) (keyWithoutPreIpl[i] ^ keyWithPreIp[i] ^ mem.read8(keyAddr + i)));
+    			mem.write8(keyAddr + i, (byte) (keyWithoutPreIpl[i] ^ keyWithPreIpl[i] ^ mem.read8(keyAddr + i)));
     			checksum += keyWithoutPreIpl[i];
     		}
     		mem.write8(keyAddr + 0x20, (byte) checksum);
