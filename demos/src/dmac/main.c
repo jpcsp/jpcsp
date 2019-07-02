@@ -22,6 +22,7 @@ PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU);
 #define SW(value, addr)   (*((volatile u32*) (addr)) = (u32) (value))
 
 volatile int done = 0;
+volatile int interruptHandlerCalled = 0;
 volatile int callbackCalled = 0;
 volatile int callbackArg0;
 volatile int callbackArg1;
@@ -30,6 +31,11 @@ volatile u32 systemTimeStart;
 volatile u32 systemTimeEnd;
 u8 __attribute__((aligned(64))) srcBuffer[32768];
 u8 __attribute__((aligned(64))) dstBuffer[32768];
+u8 *inputBuffer = NULL;
+int inputBufferSize = 0;
+int inputBufferIndex = 0;
+int fileLength = 0;
+SceUID partitionId = -1;
 int sceCodec_driver_376399B6(int busy);
 
 #define SYSTEM_TIME LW(0xBC600000)
@@ -124,7 +130,7 @@ void printBuffersWithOffset(int offset, int length) {
 
 	if (offset == 0) {
 		if (callbackCalled) {
-			pspDebugScreenPrintf("dmaCallback(0x%08X, %d)\n", callbackArg0, callbackArg1);
+			pspDebugScreenPrintf("dmaCallback(0x%08X, %d) called %d times\n", callbackArg0, callbackArg1, callbackCalled);
 		}
 	}
 }
@@ -137,7 +143,7 @@ int dmaCallback(int unknown1, int error) {
 	systemTimeEnd = SYSTEM_TIME;
 	callbackArg0 = unknown1;
 	callbackArg1 = error;
-	callbackCalled = 1;
+	callbackCalled++;
 
 	if (callbackDisplayDmacRegisters) {
 		pspDebugScreenPrintf("Callback 0xBC900100 = 0x%08X\n", LW(0xBC900100));
@@ -519,24 +525,163 @@ void runTest6() {
 	sceCodec_driver_376399B6(0);
 }
 
+int copyInputBuffer(int offset, int length, int inputBufferIndex, int fileLength) {
+	int copyLength = 2 * length;
+	if (inputBufferIndex + copyLength > fileLength) {
+		copyLength = fileLength - inputBufferIndex;
+	}
+	if (copyLength < 0) {
+		copyLength = 0;
+	}
+	memcpy(srcBuffer + offset, inputBuffer + inputBufferIndex, copyLength);
+
+	return inputBufferIndex + copyLength;
+}
+
+int audioInterruptHandler() {
+	int oldIntr;
+	asm("mfic %0, $0\n" : "=r" (oldIntr));
+	asm("mtic $0, $0\n");
+
+	interruptHandlerCalled++;
+
+	int hwAttr = LW(0xBE00001C) & 0x1;
+	if (hwAttr != 0) {
+	}
+
+	SW(0x0, 0xBE000024);
+	AUDIO_SET_BUSY(0);
+	sceCodec_driver_376399B6(0);
+
+	asm("mtic %0, $0\n" : : "r" (oldIntr));
+
+	return -1;
+}
+
 void runTest7() {
 	int result;
-	DmaOperationLink dmaOperationLink;
-	int length = 0x1F00;
+	DmaOperationLink dmaOperationLink1;
+	DmaOperationLink dmaOperationLink2;
+	DmaOperationLink dmaOperationLink3;
+	DmaOperationLink dmaOperationLink4;
+	int length = 0x1000;
+	int i;
+	u32 test;
+
+	if (inputBufferSize == 0) {
+		inputBufferSize = 0x1000000;
+		partitionId = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "AudioRaw", PSP_SMEM_Low, inputBufferSize, 0);
+		if (partitionId < 0) {
+			pspDebugScreenPrintf("sceKernelAllocPartitionMemory returned 0x%08X\n", partitionId);
+			inputBufferSize = 0;
+		} else {
+			inputBuffer = sceKernelGetBlockHeadAddr(partitionId);
+			if (inputBuffer == NULL) {
+				pspDebugScreenPrintf("sceKernelGetBlockHeadAddr returned 0x%08X\n", (u32) inputBuffer);
+				inputBufferSize = 0;
+			}
+		}
+
+		SceUID fd = sceIoOpen("ms0:/audio.raw", PSP_O_RDONLY, 0);
+		if (fd < 0) {
+			pspDebugScreenPrintf("Error while opening 'ms0:/audio.raw': 0x%08X\n", fd);
+			fileLength = 0;
+		} else {
+			fileLength = sceIoLseek32(fd, 0, PSP_SEEK_END);
+			if (fileLength > 0) {
+				sceIoLseek32(fd, 0, PSP_SEEK_SET);
+
+				if (fileLength > inputBufferSize) {
+					fileLength = inputBufferSize;
+				}
+				int readLength = sceIoRead(fd, inputBuffer, fileLength);
+				if (readLength < 0) {
+					pspDebugScreenPrintf("Error while reading input file: 0x%08X\n", readLength);
+				} else {
+					fileLength = readLength;
+				}
+			}
+			sceIoClose(fd);
+		}
+
+		result = sceKernelReleaseIntrHandler(10);
+		if (result < 0) {
+			pspDebugScreenPrintf("sceKernelReleaseIntrHandler returned 0x%08X\n", result);
+		}
+		result = sceKernelRegisterIntrHandler(10, 2, audioInterruptHandler, 0, 0);
+		if (result < 0) {
+			pspDebugScreenPrintf("sceKernelRegisterIntrHandler returned 0x%08X\n", result);
+		}
+		result = sceKernelEnableIntr(10);
+		if (result < 0) {
+			pspDebugScreenPrintf("sceKernelEnableIntr returned 0x%08X\n", result);
+		}
+	}
 
 	init();
-	dmaOperationLink.src = DMACPTR(srcBuffer);
-	dmaOperationLink.dst = DMACPTR(0xBE000060);
-	dmaOperationLink.next = NULL;
-	setAttribute(&dmaOperationLink, length, 3, 3, 2, 2, 1, 0, 1);
-	sceKernelDcacheWritebackRange(&dmaOperationLink, sizeof(dmaOperationLink));
+	dmaOperationLink1.src = DMACPTR(srcBuffer + 0 * length);
+	dmaOperationLink1.dst = DMACPTR(0xBE000060);
+	dmaOperationLink1.next = DMACPTR(&dmaOperationLink2);
+	setAttribute(&dmaOperationLink1, length, 3, 3, 2, 2, 1, 0, 0);
+	sceKernelDcacheWritebackRange(&dmaOperationLink1, sizeof(dmaOperationLink1));
+
+	dmaOperationLink2.src = DMACPTR(srcBuffer + 1 * length);
+	dmaOperationLink2.dst = DMACPTR(0xBE000060);
+	dmaOperationLink2.next = NULL;
+	setAttribute(&dmaOperationLink2, length, 3, 3, 2, 2, 1, 0, 1);
+	sceKernelDcacheWritebackRange(&dmaOperationLink2, sizeof(dmaOperationLink2));
+
+	dmaOperationLink3.src = DMACPTR(srcBuffer + 2 * length);
+	dmaOperationLink3.dst = DMACPTR(0xBE000060);
+	dmaOperationLink3.next = DMACPTR(&dmaOperationLink4);
+	setAttribute(&dmaOperationLink3, length, 3, 3, 2, 2, 1, 0, 0);
+	sceKernelDcacheWritebackRange(&dmaOperationLink3, sizeof(dmaOperationLink3));
+
+	dmaOperationLink4.src = DMACPTR(srcBuffer + 3 * length);
+	dmaOperationLink4.dst = DMACPTR(0xBE000060);
+	dmaOperationLink4.next = NULL;
+	setAttribute(&dmaOperationLink4, length, 3, 3, 2, 2, 1, 0, 1);
+	sceKernelDcacheWritebackRange(&dmaOperationLink4, sizeof(dmaOperationLink4));
+
+	inputBufferIndex = copyInputBuffer(0, length, inputBufferIndex, fileLength);
+
+	int oldIntr;
+	asm("mfic %0, $0\n" : "=r" (oldIntr));
+	asm("mtic $0, $0\n");
 
 	AUDIO_SET_BUSY(1);
 	sceCodec_driver_376399B6(1);
 	SW(0x0, 0xBE000004);
+
+	u32 startLoop = SYSTEM_TIME;
+	while (LW(0xBE00000C) & 0x1) {
+		u32 now = SYSTEM_TIME;
+		if (now - startLoop > 10000) {
+			pspDebugScreenPrintf("Timeout while initializing audio!\n");
+			break;
+		}
+	}
+
 	SW(0x6, 0xBE000008);
 	SW(0x1, 0xBE00002C);
 	SW(0x1, 0xBE000020);
+
+	for (i = 0; i < 24; i++) {
+		u32 startLoop = SYSTEM_TIME;
+		while ((LW(0xBE000028) & 0x10) == 0) {
+			u32 now = SYSTEM_TIME;
+			if (now - startLoop > 1000) {
+				pspDebugScreenPrintf("Timeout while initializing audio index#%d!\n", i);
+				break;
+			}
+		}
+		SW(0x0, 0xBE000060);
+	}
+
+	test = LW(0xBE000028);
+	if (test & 0x1) {
+		pspDebugScreenPrintf("Completion flag 0x%X already set before starting!\n", test);
+	}
 
 	DmaOperation *dmaOp = sceKernelDmaOpAlloc();
 
@@ -551,7 +696,7 @@ void runTest7() {
 		pspDebugScreenPrintf("sceKernelDmaOpSetCallback = 0x%08X\n", result);
 	}
 
-	result = sceKernelDmaOpSetupLink(dmaOp, flags, &dmaOperationLink);
+	result = sceKernelDmaOpSetupLink(dmaOp, flags, &dmaOperationLink1);
 	if (result != 0) {
 		pspDebugScreenPrintf("sceKernelDmaOpSetupLink = 0x%08X\n", result);
 	}
@@ -563,16 +708,79 @@ void runTest7() {
 
 	systemTimeStart = SYSTEM_TIME;
 	systemTimeEnd = systemTimeStart;
+	int count = 0x10000 / (2 * (length >> 2));
 
 	SW(0x7, 0xBE000008);
 	SW(0x1, 0xBE000004);
 	SW(0x1, 0xBE000010);
 	SW(0x1, 0xBE000024);
 
+	asm("mtic %0, $0\n" : : "r" (oldIntr));
+
+	int timeout = 0;
+	while ((inputBufferIndex + 2 * length) <= fileLength && !timeout) {
+		for (i = 0; i < count && !timeout; i++) {
+			int step = i & 0x1;
+			inputBufferIndex = copyInputBuffer((1 - step) * 2 * length, length, inputBufferIndex, fileLength);
+
+			int currentCallbackCalled = callbackCalled;
+			u32 ddrFlushStart = SYSTEM_TIME;
+			if (step) {
+				dmaOperationLink2.next = NULL;
+				dmaOperationLink4.next = DMACPTR(&dmaOperationLink1);
+			} else {
+				dmaOperationLink2.next = DMACPTR(&dmaOperationLink3);
+				dmaOperationLink4.next = NULL;
+			}
+			sceKernelDcacheWritebackRange(&dmaOperationLink2, sizeof(dmaOperationLink2));
+			sceKernelDcacheWritebackRange(&dmaOperationLink4, sizeof(dmaOperationLink4));
+			sceDdrFlush(4);
+
+			while (callbackCalled == currentCallbackCalled) {
+					u32 now = SYSTEM_TIME;
+					if (now - ddrFlushStart > 100000) {
+						timeout = 1;
+						break;
+					}
+			}
+
+			if (callbackCalled == currentCallbackCalled) {
+				pspDebugScreenPrintf("Callback not called after sceDdrFlush!\n");
+			}
+		}
+
+		int currentInterruptHandlerCalled = interruptHandlerCalled;
+		u32 startLoop = SYSTEM_TIME;
+		while ((LW(0xBE00000C) & 0x1) && !timeout) {
+			u32 now = SYSTEM_TIME;
+			if (now - startLoop > 1000000) {
+				pspDebugScreenPrintf("Timeout while waiting for end of inProgress!\n");
+				timeout = 1;
+				break;
+			}
+			if (interruptHandlerCalled != currentInterruptHandlerCalled) {
+				break;
+			}
+		}
+	}
+
+	if (inputBufferIndex >= fileLength) {
+		if (partitionId >= 0) {
+			sceKernelFreePartitionMemory(partitionId);
+			partitionId = -1;
+		}
+		inputBufferSize = 0;
+		inputBufferIndex = 0;
+		inputBuffer = NULL;
+		fileLength = 0;
+	}
+
 	sceKernelDelayThread(100000);
 
 	if (callbackCalled) {
-		pspDebugScreenPrintf("Duration=%d microseconds for %d audio samples\n", systemTimeEnd - systemTimeStart, length >> 2);
+		pspDebugScreenPrintf("Callback called %d times\n", callbackCalled);
+		pspDebugScreenPrintf("Interrupt handler called %d times\n", interruptHandlerCalled);
+		pspDebugScreenPrintf("Duration=%d microseconds for %d audio samples\n", systemTimeEnd - systemTimeStart, 2 * count * (length >> 2));
 		// Results:
 		//      11 microseconds for    8 audio samples
 		//      11 microseconds for   16 audio samples
@@ -616,12 +824,14 @@ void runTest7() {
 }
 
 void runTest() {
+#if 0
 	runTest1();
 	runTest2();
 	runTest3();
 	runTest4();
 	runTest5();
 	runTest6();
+#endif
 	runTest7();
 }
 
