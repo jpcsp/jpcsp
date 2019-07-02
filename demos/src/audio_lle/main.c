@@ -17,7 +17,7 @@ PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU);
 
 #define UCACHED(ptr)    (void *)((u32)(void *)(ptr) & 0x1FFFFFFF)                /* KU0 - cached. */
 
-#define LW(addr) (*((u32 *)(addr)))
+#define LW(addr) (*((volatile u32 *)(addr)))
 #define SW(value, addr)   (*((volatile u32*) (addr)) = (u32) (value))
 
 int channelSampleCount = 0xFFC0;
@@ -103,6 +103,12 @@ int audioInterruptHandler() {
 			sceKernelDmaOpQuit(dmaPtr[0]);
 			dmaPtr[0]->unknown32 = (u32) UCACHED(audioBuf + dmacSamples * 4);
 		}
+		if (hwAttr & 0x2) {
+			sceKernelDmaOpQuit(dmaPtr[1]);
+			hwBuf[4].next = NULL;
+			hwBuf[6].next = NULL;
+			sceKernelDcacheWritebackRange(hwBuf, sizeof(hwBuf));
+		}
 
 		audioFlags = attr;
 	}
@@ -123,12 +129,12 @@ int pspMin(int a, int b) {
 	return a <= b ? a : b;
 }
 
-int dmaUpdate() {
-	int v = audioFlags & ~0x1;
+int dmaUpdate(int arg) {
+	int v = audioFlags & ~(0x1 << arg);
 	SW(v, 0xBE000004);
 	audioFlags = v;
-	sceKernelDmaOpQuit(dmaPtr[0]);
-	sceKernelDmaOpDeQueue(dmaPtr[0]);
+	sceKernelDmaOpQuit(dmaPtr[arg]);
+	sceKernelDmaOpDeQueue(dmaPtr[arg]);
 	if (audioFlags == 0) {
 		AUDIO_SET_BUSY(0);
 		sceCodec_driver_376399B6(0);
@@ -143,56 +149,88 @@ int audioOutputDmaCb(int unused, int arg1) {
 	callbackCalled++;
 
 	u32 now = SYSTEM_TIME;
-	if (previousAudioCbTime != 0 && timingsIndex < timingsSize && 1) {
+	if (previousAudioCbTime != 0 && timingsIndex < timingsSize && 0) {
 		timings[timingsIndex++] = now - previousAudioCbTime;
 		previousAudioCbTime = now;
 	}
 
 	sceKernelSetEventFlag(evFlagId, 0x20000000);
 	if (arg1 != 0) {
-		dmaUpdate();
+		dmaUpdate(0);
 	}
 
 	return 0;
 }
 
-void updateAudioBuf() {
+int audioSRCOutputDmaCb(int arg0, int arg1) {
+	u32 now = SYSTEM_TIME;
+	if (previousAudioCbTime != 0 && timingsIndex < timingsSize && 0) {
+		timings[timingsIndex++] = now - previousAudioCbTime;
+		previousAudioCbTime = now;
+	}
+
+	if (arg1 != 0) {
+		dmaUpdate(1);
+		return -1;
+	}
+
+	u32 dmacNext = LW(arg0 + 40);
+	u32 delta = dmacNext - (u32) UCACHED(&hwBuf[5]);
+	int shift = delta < 32 ? 2 : 0;
+	hwBuf[4 + shift].next = NULL;
+
+	if (dmacNext == 0) {
+		hwBuf[6].next = NULL;
+	}
+	sceKernelDcacheWritebackRange(hwBuf, sizeof(hwBuf));
+
+	sceKernelSetEventFlag(evFlagId, 0x40000000);
+
+	callbackCalled++;
+
+	return 0;
+}
+
+void updateAudioBuf(int arg) {
 	updateAudioBufCalled++;
 
+	int v = arg + 1;
 	if (audioFlags == 0) {
 		AUDIO_SET_BUSY(1);
 		sceCodec_driver_376399B6(1);
 	}
 
-	int v2 = audioFlags | 0x1;
-	SW(v2 ^ 0x1, 0xBE000004);
+	int v2 = v | audioFlags;
+	SW(v2 ^ v, 0xBE000004);
 	audioFlags = v2;
 
-	while ((LW(0xBE00000C) & 0x1) != 0) {
+	while ((LW(0xBE00000C) & v) != 0) {
 	}
 
-	sceKernelDmaOpQuit(dmaPtr[0]);
-	SW(0x1 ^ 0x7, 0xBE000008);
-	SW(0x1, 0xBE00002C);
-	SW(0x1, 0xBE000020);
+	sceKernelDmaOpQuit(dmaPtr[arg]);
+	SW(v ^ 0x7, 0xBE000008);
+	SW(v, 0xBE00002C);
+	SW(v, 0xBE000020);
+	v <<= 4;
 
 	u32 start = SYSTEM_TIME;
 	int i;
 	for (i = 0; i < 24; i++) {
-		while ((LW(0xBE000028) & 0x10) == 0) {
+		while ((LW(0xBE000028) & v) == 0) {
 		}
-		SW(0x0, 0xBE000060);
+		SW(0x0, 0xBE000060 + (arg << 4));
 	}
 	u32 end = SYSTEM_TIME;
 	if (timingsIndex < timingsSize && 0) {
 		timings[timingsIndex++] = end - start;
 	}
 
-	if (sceKernelDmaOpAssign(dmaPtr[0], 0xFF, 0xFF, 0x0100C941) == 0) {
-        if (sceKernelDmaOpSetCallback(dmaPtr[0], audioOutputDmaCb, 0) == 0) {
-            if (sceKernelDmaOpSetupLink(dmaPtr[0], 0x0100C941, hwBuf[0].next == NULL ? &(hwBuf[2]) : &(hwBuf[0])) == 0) {
-                sceKernelSetEventFlag(evFlagId, 0x20000000);
-                sceKernelDmaOpEnQueue(dmaPtr[0]);
+	if (sceKernelDmaOpAssign(dmaPtr[arg], 0xFF, 0xFF, 0x0100C941 + (arg << 6)) == 0) {
+        if (sceKernelDmaOpSetCallback(dmaPtr[arg], arg == 0 ? audioOutputDmaCb : audioSRCOutputDmaCb, 0) == 0) {
+			int shift = hwBuf[arg * 4].next == NULL ? 2 : 0;
+            if (sceKernelDmaOpSetupLink(dmaPtr[arg], 0x0100C941 + (arg << 6), &(hwBuf[arg * 4 + shift])) == 0) {
+                sceKernelSetEventFlag(evFlagId, 0x20000000 << arg);
+                sceKernelDmaOpEnQueue(dmaPtr[arg]);
             }
         }
 	}
@@ -253,7 +291,7 @@ int audioMixerThread() {
 
 			hwBuf[1 + 2 * step].next = NULL;
 			hwBuf[1 + 2 * (1 - step)].next = UCACHED(&(hwBuf[step * 2]));
-			sceKernelDcacheWritebackRange(hwBuf, 4 * sizeof(DmaOperationLink));
+			sceKernelDcacheWritebackRange(hwBuf, sizeof(hwBuf));
 			sceDdrFlush(4);
 
 			if ((audioFlags & 0x1) == 0) {
@@ -265,7 +303,7 @@ int audioMixerThread() {
 				asm("mfic %0, $0\n" : "=r" (oldIntr));
 				asm("mtic $0, $0\n");
 
-				updateAudioBuf();
+				updateAudioBuf(0);
 
 				asm("mtic %0, $0\n" : : "r" (oldIntr));
 			}
@@ -290,7 +328,44 @@ int audioOutput(void *buffer) {
 	memset(audioBuf, 0, size);
 	sceKernelDcacheWritebackRange(audioBuf, size);
 
-	updateAudioBuf();
+	updateAudioBuf(0);
+
+	return channelSampleCount;
+}
+
+int audioSRCOutput(void *buffer) {
+	int offset = 4;
+	if (hwBuf[offset].next != NULL) {
+		offset += 2;
+		if (hwBuf[offset].next != NULL) {
+			return -1;
+		}
+	}
+
+	if (buffer == NULL) {
+		return 0;
+	}
+
+	int size = channelSampleCount * 4;
+	sceKernelDcacheWritebackRange(buffer, size);
+
+	int sizePart2 = size > 0x400C ? size - 0x3FFC : 16;
+	int sizePart1 = size - sizePart2;
+	hwBuf[offset + 0].src = UCACHED(buffer);
+	hwBuf[offset + 0].next = UCACHED(&hwBuf[offset + 1]);
+	hwBuf[offset + 0].attributes = 0x04489000 | (sizePart1 >> 2);
+	hwBuf[offset + 1].src = UCACHED(buffer + sizePart1);
+	hwBuf[offset + 1].next = NULL;
+	hwBuf[offset + 1].attributes = 0x84489000 | (sizePart2 >> 2);
+	sceKernelDcacheWritebackRange(hwBuf, sizeof(hwBuf));
+
+	if ((audioFlags & 0x2) == 0) {
+		updateAudioBuf(1);
+	} else {
+		hwBuf[offset == 4 ? 7 : 5].next = UCACHED(&hwBuf[offset]);
+		sceKernelDcacheWritebackRange(hwBuf, sizeof(hwBuf));
+		sceDdrFlush(4);
+	}
 
 	return channelSampleCount;
 }
@@ -319,7 +394,57 @@ int audioOutputBlocking(void *buffer) {
 	return result;
 }
 
-void runTest() {
+int audioSRCOutputBlocking(void *buffer) {
+	int oldIntr;
+	asm("mfic %0, $0\n" : "=r" (oldIntr));
+	asm("mtic $0, $0\n");
+
+	int result = audioSRCOutput(buffer);
+	asm("mtic %0, $0\n" : : "r" (oldIntr));
+
+#if 0
+	u32 start = SYSTEM_TIME;
+	u32 previousSrc = 0;
+	while (timingsIndex < timingsSize - 8) {
+		u32 now = SYSTEM_TIME;
+		u32 timestamp = now - start;
+		if (timestamp > 200000) {
+			break;
+		}
+		u32 src = LW(0xBC900100);
+		if (src != previousSrc) {
+			timings[timingsIndex++] = timestamp;
+			timings[timingsIndex++] = src;
+			timings[timingsIndex++] = LW(0xBC900104);
+			timings[timingsIndex++] = LW(0xBC900108);
+			timings[timingsIndex++] = LW(0xBC90010C);
+			timings[timingsIndex++] = LW(0xBC900110);
+			timings[timingsIndex++] = callbackCalled;
+			timings[timingsIndex++] = interruptHandlerCalled;
+			previousSrc = src;
+		}
+	}
+	timings[timingsIndex++] = 0;
+	timings[timingsIndex++] = 0;
+	timings[timingsIndex++] = 0;
+	timings[timingsIndex++] = 0;
+	timings[timingsIndex++] = 0;
+	timings[timingsIndex++] = 0;
+	timings[timingsIndex++] = 0;
+	timings[timingsIndex++] = 0;
+#endif
+
+	if (result > 0 || (result == 0 && (audioFlags & 0x2) != 0)) {
+		int result2 = sceKernelWaitEventFlag(evFlagId, 0x40000000, 0x20, 0, 0);
+		if (result2 < 0) {
+			result = result2;
+		}
+	}
+
+	return result;
+}
+
+void runTest(int arg) {
 	int inputBufferSize = 0x1000000;
 	int partitionId = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "Audio Raw", PSP_SMEM_Low, inputBufferSize, 0);
 	if (partitionId < 0) {
@@ -400,6 +525,16 @@ void runTest() {
 		hwBuf[i + 1].dst = UCACHED(0xBE000060);
 		hwBuf[i + 1].next = NULL;
 		hwBuf[i + 1].attributes = 0x84489004;
+
+		hwBuf[i + 4].src = NULL;
+		hwBuf[i + 4].dst = UCACHED(0xBE000070);
+		hwBuf[i + 4].next = NULL;
+		hwBuf[i + 4].attributes = 0;
+
+		hwBuf[i + 5].src = NULL;
+		hwBuf[i + 5].dst = UCACHED(0xBE000070);
+		hwBuf[i + 5].next = NULL;
+		hwBuf[i + 5].attributes = 0;
 	}
 	sceKernelDcacheWritebackRange(hwBuf, sizeof(hwBuf));
 	dmaPtr[0]->unknown32 = (u32) UCACHED(audioBuf);
@@ -408,10 +543,13 @@ void runTest() {
 //	SW(0x100, 0xBE000038);
 //	SW(0x100, 0xBE00003C);
 //	SW(0x100, 0xBE000044);
-	sceClockgenAudioClkSetFreq(48000);
+	sceClockgenAudioClkSetFreq(48000); // 44100 or 48000. This value is really selecting the playback frequency for both audio outputs (normal and SRC)
 //	sceCodec_driver_FCA6D35B(48000);
 
 	channelId = 0;
+	interruptHandlerCalled = 0;
+	callbackCalled = 0;
+	updateAudioBufCalled = 0;
 
 	SceUID id = sceKernelCreateThread("SceAudioMixer", audioMixerThread, 5, 0x1600, PSP_THREAD_ATTR_NO_FILLSTACK, 0);
     if (id < 0 || sceKernelStartThread(id, 0, 0) != 0) {
@@ -431,11 +569,20 @@ void runTest() {
 		pspDebugScreenPrintf("sceKernelEnableIntr returned 0x%08X\n", result);
 	}
 
+	if (arg == 1) {
+		// The 2 DMA queues can only transfer maximum 0xFFF samples each
+		if (channelSampleCount > 0xFFF * 2) {
+			channelSampleCount = 0xFFF * 2;
+		}
+	}
+
 	pspDebugScreenPrintf("Press Circle to stop the test\n");
 
 	SceCtrlData pad;
 
 	int inputBufferIndex = 0;
+	u32 startAudio = SYSTEM_TIME;
+	int loopCount = 0;
 	while (inputBufferIndex + channelSampleCount * 4 <= fileLength) {
 		if (sceCtrlPeekBufferPositive(&pad, 1) > 0) {
 			if (pad.Buttons & PSP_CTRL_CIRCLE) {
@@ -446,17 +593,35 @@ void runTest() {
 		pspDebugScreenPrintf(".");
 
 		u32 start = SYSTEM_TIME;
-		audioOutputBlocking(inputBuffer + inputBufferIndex);
+		if (arg == 0) {
+			result = audioOutputBlocking(inputBuffer + inputBufferIndex);
+		} else {
+			result = audioSRCOutputBlocking(inputBuffer + inputBufferIndex);
+		}
 		u32 end = SYSTEM_TIME;
 		if (timingsIndex < timingsSize && 0) {
 			timings[timingsIndex++] = end - start;
 		}
 
-		inputBufferIndex += channelSampleCount * 4;
-	}
+		if (result < 0) {
+			pspDebugScreenPrintf("\nError 0x%08X", result);
+			break;
+		}
 
-	pspDebugScreenPrintf("\nTest completed\n");
-	pspDebugScreenPrintf("Calls: intr=%d, callbacks=%d, updateAudioBuf=%d\n", interruptHandlerCalled, callbackCalled, updateAudioBufCalled);
+		loopCount++;
+		inputBufferIndex += channelSampleCount * 4;
+#if 0
+		if (loopCount >= 2) {
+			break;
+		}
+#endif
+	}
+	u32 endAudio = SYSTEM_TIME;
+
+	u32 durationMs = ((endAudio - startAudio) + 500) / 1000;
+	u32 playedSamples = (inputBufferIndex / 4) - channelSampleCount;
+	pspDebugScreenPrintf("\nTest completed, played frequency=%d\n", playedSamples * 1000 / durationMs);
+	pspDebugScreenPrintf("Calls: intr=%d, callbacks=%d, updateAudioBuf=%d, loops=%d\n", interruptHandlerCalled, callbackCalled, updateAudioBufCalled, loopCount);
 
 	sceIoRemove("ms0:/audioTimings.u16");
 	fd = sceIoOpen("ms0:/audioTimings.u16", PSP_O_WRONLY | PSP_O_CREAT, 0777);
@@ -493,7 +658,8 @@ int main(int argc, char *argv[]) {
 
 	while (!done) {
 		if (displayInstructions) {
-			pspDebugScreenPrintf("Press Cross to start the Audio LLE Test\n");
+			pspDebugScreenPrintf("Press Cross to start the Audio LLE sceAudioOutputBlocking Test\n");
+			pspDebugScreenPrintf("Press Square to start the Audio LLE sceAudioSRCOutputBlocking Test\n");
 			pspDebugScreenPrintf("Press Triangle to exit\n");
 			displayInstructions = 0;
 		}
@@ -533,7 +699,12 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (buttonDown & PSP_CTRL_CROSS) {
-			runTest();
+			runTest(0);
+			displayInstructions = 1;
+		}
+
+		if (buttonDown & PSP_CTRL_SQUARE) {
+			runTest(1);
 			displayInstructions = 1;
 		}
 
