@@ -16,6 +16,8 @@
  */
 package jpcsp.crypto;
 
+import static jpcsp.util.Utilities.endianSwap64;
+
 import java.nio.ByteBuffer;
 
 import jpcsp.util.Utilities;
@@ -890,6 +892,28 @@ public class KIRK {
         return 0;
     }
 
+    // Initialize
+    private int executeKIRKCmd15(ByteBuffer out, int outSize, ByteBuffer in, int inSize) {
+    	if (outSize != 28 && inSize < 8) {
+            return PSP_KIRK_INVALID_SIZE;
+    	}
+
+    	long input = endianSwap64(in.getLong());
+    	long output = input + 1;
+    	out.putLong(endianSwap64(output));
+
+    	// Unknown output values.
+    	// The values differ at each call, even for 2 calls in sequence.
+    	// Maybe they represent the state of the random number generator.
+    	out.putInt(0x12345678);
+    	out.putInt(0x12345678);
+    	out.putInt(0x12345678);
+    	out.putInt(0x12345678);
+    	out.putInt(0x12345678);
+
+    	return 0;
+    }
+
     /*
      * HLE functions: high level implementation of crypto functions from
      * several modules which employ various algorithms and communicate with the
@@ -935,7 +959,7 @@ public class KIRK {
             case PSP_KIRK_CMD_ECDSA_VERIFY:
                 return executeKIRKCmd17(in, insize);
             case PSP_KIRK_CMD_INIT:
-            	return 0;
+                return executeKIRKCmd15(out, outsize, in, insize);
             case PSP_KIRK_CMD_CERT_VERIFY:
             	return 0;
             default:

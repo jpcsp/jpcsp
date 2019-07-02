@@ -140,24 +140,27 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 
 	@Override
 	public int read32(int address) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X) on %s", getPc(), address, this));
+		int value;
+		switch (address - baseAddress) {
+			case 0x00: value = signature; break;
+			case 0x04: value = version; break;
+			case 0x08: value = error; break;
+			case 0x0C: value = 0; break; // Unknown
+			case 0x10: value = command; break;
+			case 0x14: value = result; break;
+			case 0x1C: value = getStatus(); break;
+			case 0x20: value = statusAsync; break;
+			case 0x24: value = statusAsyncEnd; break;
+			case 0x2C: value = sourceAddr; break;
+			case 0x30: value = destAddr; break;
+			default: value = super.read32(address); break;
 		}
 
-		switch (address - baseAddress) {
-			case 0x00: return signature;
-			case 0x04: return version;
-			case 0x08: return error;
-			case 0x0C: return 0; // Unknown
-			case 0x10: return command;
-			case 0x14: return result;
-			case 0x1C: return getStatus();
-			case 0x20: return statusAsync;
-			case 0x24: return statusAsyncEnd;
-			case 0x2C: return sourceAddr;
-			case 0x30: return destAddr;
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("0x%08X - read32(0x%08X) returning 0x%08X", getPc(), address, value));
 		}
-		return super.read32(address);
+
+		return value;
 	}
 
 	@Override
@@ -244,8 +247,8 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
             	outSize = 0;
             	break;
             case PSP_KIRK_CMD_INIT:
-            	inSize = 0;
-            	outSize = 0;
+            	inSize = 8;
+            	outSize = 28;
             	break;
             case PSP_KIRK_CMD_CERT_VERIFY:
             	inSize = 0xB8;

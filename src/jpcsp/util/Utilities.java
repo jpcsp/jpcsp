@@ -1026,6 +1026,10 @@ public class Utilities {
         return ((x >> 8) & 0x00FF) | ((x << 8) & 0xFF00);
     }
 
+    public static long endianSwap64(long x) {
+        return Long.reverseBytes(x);
+    }
+
     public static int readUnaligned32(Memory mem, int address) {
         switch (address & 3) {
             case 0:
