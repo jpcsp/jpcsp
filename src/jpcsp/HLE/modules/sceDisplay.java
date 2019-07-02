@@ -2319,7 +2319,7 @@ public class sceDisplay extends HLEModule {
             }
         }
 
-        if (topaddr == fb.getTopAddr() && bufferwidth == fb.getBufferWidth() && pixelformat == fb.getPixelFormat() && syncType == sync) {
+        if (topaddr == fb.getTopAddr() && bufferwidth == fb.getBufferWidth() && pixelformat == fb.getPixelFormat() && syncType == sync && isFbShowing) {
             // No FB parameter changed, nothing to do...
             return 0;
         }
