@@ -61,6 +61,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_SUSPEND_PSP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_ALARM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_CLOCK;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_WRITE_SCRATCHPAD;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_DEVICE_PSP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_DEVICE_UMD;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_DEVICE_WLAN;
 import static jpcsp.HLE.modules.sceSyscon.getSysconCmdName;
@@ -278,6 +279,8 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 
 		int unknown;
 		int address;
+		boolean power;
+		int parameterId;
 		switch (cmd) {
 			case PSP_SYSCON_CMD_NOP:
 				// Doing nothing
@@ -303,7 +306,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 							MMIOHandlerWlan.getInstance().reset();
 						}
 						break;
-					case sceSyscon.PSP_SYSCON_DEVICE_PSP:
+					case PSP_SYSCON_DEVICE_PSP:
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(PSP), reset=%b", device, reset));
 						}
@@ -362,8 +365,8 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 						break;
 				}
 				break;
-			case PSP_SYSCON_CMD_RECEIVE_SETPARAM: {
-				int parameterId = 0;
+			case PSP_SYSCON_CMD_RECEIVE_SETPARAM:
+				parameterId = 0;
 				// Depending on the Baryon version, there is a parameter or not
 				if (data[PSP_SYSCON_TX_LEN] >= 3) {
 					parameterId = data[PSP_SYSCON_TX_DATA];
@@ -381,9 +384,8 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 					responseData = Utilities.add(responseData, 0);
 				}
 				break;
-			}
-			case PSP_SYSCON_CMD_SEND_SETPARAM: {
-				int parameterId = 0;
+			case PSP_SYSCON_CMD_SEND_SETPARAM:
+				parameterId = 0;
 				if (data[PSP_SYSCON_TX_LEN] >= 11) {
 					parameterId = data[PSP_SYSCON_TX_DATA + 10];
 				}
@@ -395,17 +397,14 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 					log.debug(String.format("startSysconCmd PSP_SYSCON_CMD_SEND_SETPARAM parameterId=0x%X, forceSuspendCapacity=0x%X", parameterId, forceSuspendCapacity));
 				}
 				break;
-			}
-			case PSP_SYSCON_CMD_CTRL_HR_POWER: {
-				boolean power = data[PSP_SYSCON_TX_DATA] != 0;
+			case PSP_SYSCON_CMD_CTRL_HR_POWER:
+				power = data[PSP_SYSCON_TX_DATA] != 0;
 				Modules.sceSysconModule.sceSysconCtrlHRPower(power);
 				break;
-			}
-			case PSP_SYSCON_CMD_CTRL_WLAN_POWER: {
-				boolean power = data[PSP_SYSCON_TX_DATA] != 0;
+			case PSP_SYSCON_CMD_CTRL_WLAN_POWER:
+				power = data[PSP_SYSCON_TX_DATA] != 0;
 				Modules.sceSysconModule.sceSysconCtrlWlanPower(power);
 				break;
-			}
 			case PSP_SYSCON_CMD_GET_POWER_SUPPLY_STATUS:
 				responseData = addResponseData32(responseData, sceSysconModule.getPowerSupplyStatus());
 				break;
@@ -481,7 +480,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				sceSysconModule.writeAlarm(alarm);
 				break;
 			case PSP_SYSCON_CMD_CTRL_MS_POWER:
-				boolean power = getData32(data, PSP_SYSCON_TX_DATA) != 0;
+				power = getData32(data, PSP_SYSCON_TX_DATA) != 0;
 				MemoryStick.setMsPower(power);
 				break;
 			case PSP_SYSCON_CMD_CTRL_POWER:
@@ -504,32 +503,42 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_SUSPEND);
 				break;
 			case PSP_SYSCON_CMD_UNKNOWN_30:
-				int length = data[PSP_SYSCON_TX_LEN] - 3;
-				int registerAndFlag = data[PSP_SYSCON_TX_DATA];
-				int register = registerAndFlag & 0x7F;
-				if (register > NUMBER_INTERNAL_REGISTERS) {
-					log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
-				} else if (hasFlag(registerAndFlag, 0x80)) {
-					// Writing to internal registers
-					if (length <= internalRegisters[register].length) {
-						for (int i = 0; i < length; i++) {
-							internalRegisters[register][i] = (byte) data[PSP_SYSCON_TX_DATA + 1 + i];
+				// The UNKNOWN_30 command is not supported on PSP Fat
+				if (Model.getGeneration() < 2) {
+					responseData = new int[] { 0x84 };
+				} else {
+					int length = data[PSP_SYSCON_TX_LEN] - 3;
+					int registerAndFlag = data[PSP_SYSCON_TX_DATA];
+					int register = registerAndFlag & 0x7F;
+					if (register > NUMBER_INTERNAL_REGISTERS) {
+						log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
+					} else if (hasFlag(registerAndFlag, 0x80)) {
+						// Writing to internal registers
+						if (length <= internalRegisters[register].length) {
+							for (int i = 0; i < length; i++) {
+								internalRegisters[register][i] = (byte) data[PSP_SYSCON_TX_DATA + 1 + i];
+							}
+						} else {
+							log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
 						}
 					} else {
-						log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
-					}
-				} else {
-					// Reading from internal registers
-					responseData = Utilities.add(responseData, 0); // Response code
-					for (int i = 0; i < internalRegisters[register].length; i++) {
-						responseData = Utilities.add(responseData, internalRegisters[register][i] & 0xFF);
+						// Reading from internal registers
+						responseData = Utilities.add(responseData, 0); // Response code
+						for (int i = 0; i < internalRegisters[register].length; i++) {
+							responseData = Utilities.add(responseData, internalRegisters[register][i] & 0xFF);
+						}
 					}
 				}
 				break;
 			case PSP_SYSCON_CMD_BATTERY_WRITE_EEPROM:
-				address = data[PSP_SYSCON_TX_DATA] << 1;
-				Battery.writeEeprom(address + 0, data[PSP_SYSCON_TX_DATA + 1]);
-				Battery.writeEeprom(address + 1, data[PSP_SYSCON_TX_DATA + 2]);
+				// The BATTERY_WRITE_EEPROM command is no longer supported on motherboard TA-085v2 (Baryon 0x00234000) and later models
+				if (Model.getBaryonVersion() >= 0x00230000) {
+					responseData = new int[] { 0x84 };
+				} else {
+					address = data[PSP_SYSCON_TX_DATA] << 1;
+					Battery.writeEeprom(address + 0, data[PSP_SYSCON_TX_DATA + 1]);
+					Battery.writeEeprom(address + 1, data[PSP_SYSCON_TX_DATA + 2]);
+				}
 				break;
 			case PSP_SYSCON_CMD_BATTERY_READ_EEPROM:
 				address = data[PSP_SYSCON_TX_DATA] << 1;
