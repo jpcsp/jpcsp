@@ -118,9 +118,11 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_LED_WLAN  = 1; // W-LAN LED
     public static final int PSP_SYSCON_LED_POWER = 2; // Power LED
     public static final int PSP_SYSCON_LED_BT    = 3; // Bluetooth LED (only PSP GO)
-    public static final int PSP_SYSCON_DEVICE_PSP = 1;
-    public static final int PSP_SYSCON_DEVICE_UMD = 2;
-    public static final int PSP_SYSCON_DEVICE_WLAN = 4;
+    public static final int PSP_SYSCON_DEVICE_PSP = 0x01;
+    public static final int PSP_SYSCON_DEVICE_UMD = 0x02;
+    public static final int PSP_SYSCON_DEVICE_WLAN = 0x04;
+    public static final int PSP_SYSCON_DEVICE_RESET_MODE_2 = 0x40;
+    public static final int PSP_SYSCON_DEVICE_RESET_MODE_1 = 0x80;
     private final int scratchPad[] = new int[32];
     private int alarm;
 
@@ -420,7 +422,7 @@ public class sceSyscon extends HLEModule {
      * Reset the device.
      *
      * @param device The device identifier, passed to the syscon.
-     * @param reset The resetting mode ([0..1]).
+     * @param reset The resetting mode ([0, 1 or 2]).
      * 
      * @return 0 on success.
      */

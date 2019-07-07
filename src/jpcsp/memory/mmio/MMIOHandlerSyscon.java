@@ -289,32 +289,33 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				UMDDrive.setUmdPower(data[PSP_SYSCON_TX_DATA] != 0);
 				break;
 			case PSP_SYSCON_CMD_RESET_DEVICE:
-				int device = data[PSP_SYSCON_TX_DATA] & 0x7F;
-				boolean reset = (data[PSP_SYSCON_TX_DATA] & 0x80) != 0;
+				int device = data[PSP_SYSCON_TX_DATA] & 0x3F;
+				boolean resetMode1 = (data[PSP_SYSCON_TX_DATA] & sceSyscon.PSP_SYSCON_DEVICE_RESET_MODE_1) != 0;
+				boolean resetMode2 = (data[PSP_SYSCON_TX_DATA] & sceSyscon.PSP_SYSCON_DEVICE_RESET_MODE_2) != 0;
 				switch (device) {
 					case PSP_SYSCON_DEVICE_UMD:
 						if (log.isDebugEnabled()) {
-							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(UMD Drive), reset=%b", device, reset));
+							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(UMD Drive), reset=%b", device, resetMode1));
 						}
 						break;
 					case PSP_SYSCON_DEVICE_WLAN:
 						if (log.isDebugEnabled()) {
-							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(WLAN), reset=%b", device, reset));
+							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(WLAN), reset=%b", device, resetMode1));
 						}
 
-						if (reset) {
+						if (resetMode1) {
 							MMIOHandlerWlan.getInstance().reset();
 						}
 						break;
 					case PSP_SYSCON_DEVICE_PSP:
 						if (log.isDebugEnabled()) {
-							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(PSP), reset=%b", device, reset));
+							log.debug(String.format("PSP_SYSCON_CMD_RESET_DEVICE device=0x%X(PSP), resetMode1=%b, resetMode2=%b", device, resetMode1, resetMode2));
 						}
 
 						Emulator.getScheduler().addAction(new ResetAction());
 						break;
 					default:
-						log.error(String.format("PSP_SYSCON_CMD_RESET_DEVICE unimplemented device=0x%X, reset=%b", device, reset));
+						log.error(String.format("PSP_SYSCON_CMD_RESET_DEVICE unimplemented device=0x%X, reset=%b", device, resetMode1));
 						break;
 				}
 				break;
