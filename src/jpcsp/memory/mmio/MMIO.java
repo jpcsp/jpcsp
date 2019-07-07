@@ -134,6 +134,26 @@ public class MMIO extends Memory {
 		}
 	}
 
+	public static int[] getXorKeyBFD00210() {
+		switch (Model.getGeneration()) {
+			case 2: return new int[] { 0x539CBC37, 0x7CC9CD1C, 0x66128056, 0x531C4971 };
+			case 3:
+			case 9: return new int[] { 0xDA87A21B, 0x982BFA1D, 0xDC328074, 0x575ABEE7 };
+		}
+
+		return null;
+	}
+
+	public static int[] getKeyBFD00210() {
+		switch (Model.getGeneration()) {
+			case 2: return KeyVault.keys660_k2;
+			case 3:
+			case 9: return KeyVault.keys660_k7;
+		}
+
+		return null;
+	}
+
 	private void initMMIO() {
 		// Initialization of key values used to decrypt pspbtcnf.bin
     	switch (Model.getGeneration()) {
@@ -169,7 +189,7 @@ public class MMIO extends Memory {
     			//   0xB3DFE33E
     			//   0x822AE86C
     			// which will be used to decrypt flash0:/kd/pspbtcnf_02g.bin and _02g PRXes
-    			xorKey(0xBFD00210, KeyVault.keys660_k2, new int[] { 0x539CBC37, 0x7CC9CD1C, 0x66128056, 0x531C4971 });
+    			xorKey(0xBFD00210, getKeyBFD00210(), getXorKeyBFD00210());
     	    	break;
     		case 3:
     		case 9:
@@ -186,7 +206,7 @@ public class MMIO extends Memory {
     			// The result of the xor has to match KeyVault.keys660_k7
     			// which will be used to decrypt flash0:/kd/pspbtcnf_03g.bin or pspbtcnf_09g.bin
     			// and _03g/_09g PRXes
-    			xorKey(0xBFD00210, KeyVault.keys660_k7, new int[] { 0xDA87A21B, 0x982BFA1D, 0xDC328074, 0x575ABEE7 });
+    			xorKey(0xBFD00210, getKeyBFD00210(), getXorKeyBFD00210());
     	    	break;
 	    	default:
 	    		log.error(String.format("Unimplemented MMIO initialization for PSP Model %s", Model.getModelName()));

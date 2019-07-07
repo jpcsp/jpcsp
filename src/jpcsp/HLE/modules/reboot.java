@@ -100,15 +100,16 @@ public class reboot extends HLEModule {
     public static boolean loadCoreInitialized = false;
     private static final String rebootFileName = "flash0:/reboot.bin";
     private static final int rebootBaseAddress = MemoryMap.START_KERNEL + 0x600000;
-    private static final int BOOT_IPL          = 0;
-    private static final int BOOT_LOADEXEC_PRX = 1;
-    private static final int BOOT_REBOOT_BIN   = 2;
-    private static final int BOOT_PREIPL       = 3;
-    private static final int bootMethod = BOOT_IPL;
+    private static final int BOOT_PREIPL       = 0;
+    private static final int BOOT_IPL          = 1;
+    private static final int BOOT_LOADEXEC_PRX = 2;
+    private static final int BOOT_REBOOT_BIN   = 3;
     private static final int threadManInfo = 0x88048740;
     // The address of the Pre-IPL code
     private final int preIplAddress = 0xBFC00000;
     private final int preIplSize = 0x1000;
+    private final static int IPL_KEY_MODEL_GENERATION_1 = 0x59119BCF;
+    private final static int IPL_KEY_MODEL_GENERATION_2 = 0xBC6532EC;
 	// The Pre-IPL code is copying itself to 0x80010000
 	private final TPointer preIplCopy = new TPointer(Memory.getInstance(), START_SCRATCHPAD | 0x80000000);
 	private int iplEntry;
@@ -140,6 +141,7 @@ public class reboot extends HLEModule {
     	HLEModuleManager.getInstance().startModules(fromSyscall);
 
     	boolean result;
+    	int bootMethod = getBestBootMethod();
     	switch (bootMethod) {
     		case BOOT_IPL:          result = bootIpl();         break;
     		case BOOT_LOADEXEC_PRX: result = bootLoadexecPrx(); break;
@@ -156,6 +158,31 @@ public class reboot extends HLEModule {
     	}
 
     	return result;
+    }
+
+    private String getPreIplFileName() {
+    	return String.format("preIpl_%02dg.bin", Model.getGeneration());
+    }
+
+    private int getBestBootMethod() {
+    	int bootMethod;
+
+    	switch (Model.getGeneration()) {
+	    	case 1:
+	    	case 2:
+	    		File preIplFile = new File(getPreIplFileName());
+	    		if (preIplFile.canRead() && preIplFile.length() == 0x1000) {
+	    			bootMethod = BOOT_PREIPL;
+	    		} else {
+	    			bootMethod = BOOT_IPL;
+	    		}
+	    		break;
+	    	default:
+	    		bootMethod = BOOT_LOADEXEC_PRX;
+	    		break;
+    	}
+
+    	return bootMethod;
     }
 
     /**
@@ -598,7 +625,7 @@ public class reboot extends HLEModule {
     private boolean bootPreIpl() {
     	TPointer preIpl = new TPointer(getMMIO(), preIplAddress);
 
-    	File preIplFile = new File(String.format("preIpl_%02dg.bin", Model.getGeneration()));
+    	File preIplFile = new File(getPreIplFileName());
 		try {
 			IVirtualFile vFile = new LocalVirtualFile(new SeekableRandomFile(preIplFile, "r"));
 			int result = vFile.ioRead(preIpl, preIplSize);
@@ -621,6 +648,9 @@ public class reboot extends HLEModule {
 		// For multiloader_ipl.bin
 		addMMIORange(0x041E0000, 0x4000);
 		addMMIORange(0x040E0000, 0x5000);
+
+		// For Pro-CFW CIPL
+		addMMIORange(0xBFD00000, 0x1000);
 
 		SceModule iplModule = new SceModule(true);
 		iplModule.modname = getName();
@@ -1026,35 +1056,66 @@ public class reboot extends HLEModule {
 		return true;
     }
 
-    private void patchIpl(Memory mem) {
-    	int keyAddr = iplBase + 0x2880;
-    	if (Memory.isAddressGood(keyAddr) && mem.read32(keyAddr) == 0x59119BCF) {
-    		int[] keyWithoutPreIpl = new int[] {
-    				0x18, 0x2A, 0x72, 0xA2, 0x55, 0x43, 0x56, 0xD8,
-    				0x0A, 0x5F, 0x87, 0x57, 0x77, 0xB9, 0x8F, 0x93,
-    				0xA2, 0xA8, 0xC4, 0xFB, 0x48, 0x0F, 0xD1, 0x25,
-    				0x61, 0x96, 0x4A, 0xDF, 0x00, 0x00, 0x00, 0x00
-    		};
-    		int[] keyWithPreIpl = new int[] {
-    				0x10, 0x7C, 0xD5, 0x09, 0x6A, 0xB5, 0x89, 0x76,
-    				0x49, 0xF6, 0xEA, 0x54, 0x0B, 0x30, 0x3E, 0x2B,
-    				0x47, 0x17, 0x6D, 0x0B, 0x04, 0x70, 0x3E, 0xB0,
-    				0x3C, 0x01, 0x44, 0x89, 0x00, 0x00, 0x00, 0x00
-    		};
-    		int checksum = 0;
-    		for (int i = 0; i < keyWithoutPreIpl.length; i++) {
-    			mem.write8(keyAddr + i, (byte) (keyWithoutPreIpl[i] ^ keyWithPreIpl[i] ^ mem.read8(keyAddr + i)));
-    			checksum += keyWithoutPreIpl[i];
-    		}
-    		mem.write8(keyAddr + 0x20, (byte) checksum);
+    private void patchIplKey(TPointer keyAddr, int[] keyWithoutPreIpl, int[] keyWithPreIpl) {
+		int checksum = 0;
+		for (int i = 0; i < keyWithoutPreIpl.length; i++) {
+			keyAddr.setUnsignedValue8(i, keyWithoutPreIpl[i] ^ keyWithPreIpl[i] ^ keyAddr.getUnsignedValue8(i));
+			checksum += keyWithoutPreIpl[i];
+		}
+		keyAddr.setUnsignedValue8(0x20, checksum);
 
-    		// The 2nd part of the IPL will be uncompressed at 0x04000000
-    		addMMIORange(0x04000000, 0xE0000);
-    	} else {
-        	int sceGzipDecompressAddr = iplBase + 0x910;
-        	if (mem.read32(sceGzipDecompressAddr) == ADDIU(_sp, _sp, -64)) {
-            	installHLESyscall(new TPointer(mem, sceGzipDecompressAddr), this, "hleIplGzipDecompress");
-        	}
+		// The 2nd part of the IPL will be uncompressed at 0x04000000
+		addMMIORange(0x04000000, 0xE0000);
+    }
+
+    private void patchIpl(Memory mem) {
+    	TPointer keyAddr = null;
+    	int iplKeyValue = 0;
+
+    	if (Memory.isAddressGood(iplBase)) {
+    		keyAddr = new TPointer(mem, iplBase + 0x2880);
+    		iplKeyValue = keyAddr.getValue32(0);
+    	}
+
+    	int[] keyWithoutPreIpl;
+    	int[] keyWithPreIpl;
+    	switch (iplKeyValue) {
+    		case IPL_KEY_MODEL_GENERATION_1:
+	    		keyWithoutPreIpl = new int[] {
+	    				0x18, 0x2A, 0x72, 0xA2, 0x55, 0x43, 0x56, 0xD8,
+	    				0x0A, 0x5F, 0x87, 0x57, 0x77, 0xB9, 0x8F, 0x93,
+	    				0xA2, 0xA8, 0xC4, 0xFB, 0x48, 0x0F, 0xD1, 0x25,
+	    				0x61, 0x96, 0x4A, 0xDF, 0x00, 0x00, 0x00, 0x00
+	    		};
+	    		keyWithPreIpl = new int[] {
+	    				0x10, 0x7C, 0xD5, 0x09, 0x6A, 0xB5, 0x89, 0x76,
+	    				0x49, 0xF6, 0xEA, 0x54, 0x0B, 0x30, 0x3E, 0x2B,
+	    				0x47, 0x17, 0x6D, 0x0B, 0x04, 0x70, 0x3E, 0xB0,
+	    				0x3C, 0x01, 0x44, 0x89, 0x00, 0x00, 0x00, 0x00
+	    		};
+	    		patchIplKey(keyAddr, keyWithoutPreIpl, keyWithPreIpl);
+	    		break;
+    		case IPL_KEY_MODEL_GENERATION_2:
+	    		keyWithoutPreIpl = new int[] {
+	    				0x83, 0x03, 0x5C, 0x90, 0xAA, 0x59, 0x03, 0x86,
+	    				0xE9, 0x7C, 0x99, 0x94, 0xA1, 0xC0, 0x82, 0x78,
+	    				0xA8, 0x8A, 0x7E, 0x71, 0x92, 0x5A, 0x03, 0x2B,
+	    				0xE8, 0xEE, 0xBE, 0x3B, 0x00, 0x00, 0x00, 0x00
+	    		};
+	    		keyWithPreIpl = new int[] {
+	    				0x87, 0x9D, 0x0C, 0x16, 0x42, 0xC1, 0x99, 0xFD,
+	    				0x77, 0xC2, 0x43, 0x2F, 0x45, 0xBD, 0x60, 0x25,
+	    				0xB4, 0xA7, 0x5A, 0x42, 0x17, 0x51, 0xF1, 0x15,
+	    				0xDA, 0x1F, 0xDA, 0x02, 0x00, 0x00, 0x00, 0x00
+	    		};
+	    		patchIplKey(keyAddr, keyWithoutPreIpl, keyWithPreIpl);
+	    		break;
+    		default:
+	        	int sceGzipDecompressAddr = iplBase + 0x910;
+	        	if (mem.read32(sceGzipDecompressAddr) == ADDIU(_sp, _sp, -64)) {
+	            	installHLESyscall(new TPointer(mem, sceGzipDecompressAddr), this, "hleIplGzipDecompress");
+	        	}
+	        	break;
     	}
     }
 

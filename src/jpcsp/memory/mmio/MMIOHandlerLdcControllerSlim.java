@@ -68,7 +68,9 @@ public class MMIOHandlerLdcControllerSlim extends MMIOHandlerBase {
 		unknown08 = value;
 
 		switch (value) {
+			case 0x0030:
 			case 0x1E00:
+			case 0x2000:
 			case 0xC100:
 			case 0xC120:
 			case 0xC122:

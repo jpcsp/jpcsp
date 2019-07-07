@@ -247,6 +247,32 @@ public class TPointer implements ITPointerBase {
 		return bytes;
 	}
 
+	public int[] getArrayUnsigned8(int n) {
+		return getArrayUnsigned8(0, n);
+	}
+
+	public int[] getArrayUnsigned8(int offset, int n) {
+		return getArrayUnsigned8(offset, new int[n], 0, n);
+	}
+
+	public int[] getArrayUnsigned8(int[] bytes) {
+		if (bytes == null) {
+			return bytes;
+		}
+		return getArrayUnsigned8(0, bytes, 0, bytes.length);
+	}
+
+	public int[] getArrayUnsigned8(int offset, int[] bytes, int bytesOffset, int n) {
+		if (isNotNull()) {
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(getMemory(), getAddress() + offset, n, 1);
+			for (int i = 0; i < n; i++) {
+				bytes[bytesOffset + i] = memoryReader.readNext();
+			}
+		}
+
+		return bytes;
+	}
+
 	public void setArray(byte[] bytes) {
 		if (bytes != null) {
 			setArray(bytes, bytes.length);
