@@ -61,10 +61,10 @@ public class KUBridge extends HLEModule {
      */
     @HLEFunction(nid = 0x24331850, version = 150)
     public int kuKernelGetModel() {
-		int result = Model.getModel();
+		int result = Model.getGeneration() - 1;
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("kuKernelGetModel returning %d(%s)", result, Model.getModelName(result)));
+			log.debug(String.format("kuKernelGetModel returning %d(%s)", result, Model.getModelName()));
 		}
 
 		return result;

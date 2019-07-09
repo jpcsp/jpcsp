@@ -34,6 +34,7 @@ import javax.swing.MutableComboBoxModel;
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.HLE.modules.sceUtility;
+import jpcsp.hardware.Model;
 import jpcsp.settings.Settings;
 
 import com.jidesoft.swing.FolderChooser;
@@ -387,6 +388,19 @@ public class SettingsGUI extends javax.swing.JFrame {
         };
     }
 
+    public static String[] getModelNames() {
+    	return new String[] {
+    			Model.getModelName(Model.MODEL_PSP_FAT),
+    			Model.getModelName(Model.MODEL_PSP_SLIM),
+    			Model.getModelName(Model.MODEL_PSP_BRITE),
+    			Model.getModelName(Model.MODEL_PSP_BRITE2),
+    			Model.getModelName(Model.MODEL_PSP_GO),
+    			Model.getModelName(Model.MODEL_PSP_BRITE3),
+    			Model.getModelName(Model.MODEL_PSP_BRITE4),
+    			Model.getModelName(Model.MODEL_PSP_STREET)
+    	};
+    }
+
     private ComboBoxModel makeResolutions() {
         MutableComboBoxModel comboBox = new DefaultComboBoxModel();
         comboBox.addElement("Native");
@@ -591,7 +605,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         modelLabel.setText(bundle.getString("SettingsGUI.modelLabel.text")); // NOI18N
 
-        modelBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "PSP-1000", "PSP-2000", "PSP-3000", "PSP-3000 (V2)", "PSP-N1000 (GO)" }));
+        modelBox.setModel(new javax.swing.DefaultComboBoxModel(getModelNames()));
 
         javax.swing.GroupLayout GeneralPanelLayout = new javax.swing.GroupLayout(GeneralPanel);
         GeneralPanel.setLayout(GeneralPanelLayout);

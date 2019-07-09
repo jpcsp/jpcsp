@@ -368,7 +368,7 @@ public class reboot extends HLEModule {
 		sceLoadCoreBootInfo.endAddr = new TPointer(sceKernelLoadExecVSHParamAddr, 0x380);
 		sceLoadCoreBootInfo.modProtId = -1;
 		sceLoadCoreBootInfo.modArgProtId = -1;
-		sceLoadCoreBootInfo.model = Model.getModel();
+		sceLoadCoreBootInfo.model = Model.getGeneration() - 1;
 		sceLoadCoreBootInfo.dipswLo = Modules.KDebugForKernelModule.sceKernelDipswLow32();
 		sceLoadCoreBootInfo.dipswHi = Modules.KDebugForKernelModule.sceKernelDipswHigh32();
 		if (Modules.KDebugForKernelModule.sceKernelDipsw(30) != 0x1) {
@@ -506,6 +506,8 @@ public class reboot extends HLEModule {
 
     	// The memory remap has already been done by the IPL code at this point
     	getMMIO().remapMemoryAtProcessorReset();
+
+    	addMMIORange(0xBFC00F00, 0x100);
 
     	int rebootMemSize = rebootModule.text_size + rebootModule.data_size + rebootModule.bss_size;
     	SysMemInfo rebootMemInfo = Modules.SysMemUserForUserModule.malloc(VSHELL_PARTITION_ID, "reboot", PSP_SMEM_Addr, rebootMemSize, rebootModule.text_addr);

@@ -391,10 +391,10 @@ public class SysMemForKernel extends HLEModule {
     @HLEFunction(nid = 0x6373995D, version = 280)
     @HLEFunction(nid = 0x07C586A1, version = 660)
     public int sceKernelGetModel() {
-		int result = Model.getModel(); // <= 0 original, 1 slim
+		int result = Model.getGeneration() - 1;
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceKernelGetModel returning %d(%s)", result, Model.getModelName(result)));
+			log.debug(String.format("sceKernelGetModel returning %d(%s)", result, Model.getModelName()));
 		}
 
 		return result;

@@ -27,8 +27,11 @@ public class Model {
     public static final int MODEL_PSP_BRITE = 2;
     public static final int MODEL_PSP_BRITE2 = 3;
     public static final int MODEL_PSP_GO = 4;
+    public static final int MODEL_PSP_BRITE3 = 5;
+    public static final int MODEL_PSP_BRITE4 = 6;
+    public static final int MODEL_PSP_STREET = 7;
 	private static int model = MODEL_PSP_FAT;
-	private static final ModelDescriptor modelDescriptors[] = new ModelDescriptor[5];
+	private static final ModelDescriptor modelDescriptors[] = new ModelDescriptor[8];
 
 	private static class ModelDescriptor {
 		public String modelName;
@@ -66,14 +69,18 @@ public class Model {
 		// Tachyon = 0x00600000, Baryon = 0x00285000, Pommel = 0x00000133 TA-092 3g
 		// Tachyon = 0x00810000, Baryon = 0x002C4000, Pommel = 0x00000141 TA-093 4g
 		// Tachyon = ??????????, Baryon = ??????????, Pommel = ?????????? TA-094 5g (Go N1000)
-		// Tachyon = ??????????, Baryon = ??????????, Pommel = ?????????? TA-095 v1 7g/9g
-		// Tachyon = 0x00820000, Baryon = 0x002E4000, Pommel = 0x00000154 TA-095 v2 7g/9g
-		// Tachyon = ??????????, Baryon = ??????????, Pommel = ?????????? TA-096 11g (Street E1000)
-		modelDescriptors[MODEL_PSP_FAT   ] = new ModelDescriptor("MODEL_PSP_FAT"   , 1, 0x00300000, 0x00040600, 0x00000103);
-		modelDescriptors[MODEL_PSP_SLIM  ] = new ModelDescriptor("MODEL_PSP_SLIM"  , 2, 0x00500000, 0x0022B200, 0x00000123);
-		modelDescriptors[MODEL_PSP_BRITE ] = new ModelDescriptor("MODEL_PSP_BRITE" , 3, 0x00600000, 0x00263100, 0x00000132);
-		modelDescriptors[MODEL_PSP_BRITE2] = new ModelDescriptor("MODEL_PSP_BRITE2", 9, 0x00820000, 0x002E4000, 0x00000154);
-		modelDescriptors[MODEL_PSP_GO    ] = new ModelDescriptor("MODEL_PSP_GO"    , 5, 0x00720000, 0x00304000, 0x00000133);
+		// Tachyon = 0x00810000, Baryon = 0x012E4000, Pommel = 0x00000154 TA-095 v1 7g
+		// Tachyon = 0x00810000, Baryon = 0x002E4000, Pommel = 0x00000154 TA-095 v1 9g
+		// Tachyon = 0x00820000, Baryon = 0x002E4000, Pommel = 0x00000154 TA-095 v2 9g
+		// Tachyon = 0x00900000, Baryon = 0x00403000, Pommel = 0x00000154 TA-096 11g (Street E1000)
+		modelDescriptors[MODEL_PSP_FAT   ] = new ModelDescriptor("PSP-1000 (Fat)"                  ,  1, 0x00300000, 0x00040600, 0x00000103);
+		modelDescriptors[MODEL_PSP_SLIM  ] = new ModelDescriptor("PSP-2000 (Slim)"                 ,  2, 0x00500000, 0x0022B200, 0x00000123);
+		modelDescriptors[MODEL_PSP_BRITE ] = new ModelDescriptor("PSP-3000 (Brite, 3rd Generation)",  3, 0x00600000, 0x00263100, 0x00000132);
+		modelDescriptors[MODEL_PSP_BRITE2] = new ModelDescriptor("PSP-3000 (Brite, 4th Generation)",  4, 0x00810000, 0x002C4000, 0x00000141);
+		modelDescriptors[MODEL_PSP_GO    ] = new ModelDescriptor("PSP-N1000 (GO)"                  ,  5, 0x00720000, 0x00304000, 0x00000133);
+		modelDescriptors[MODEL_PSP_BRITE3] = new ModelDescriptor("PSP-3000 (Brite, 7th Generation)",  7, 0x00810000, 0x012E4000, 0x00000154);
+		modelDescriptors[MODEL_PSP_BRITE4] = new ModelDescriptor("PSP-3000 (Brite, 9th Generation)",  9, 0x00820000, 0x002E4000, 0x00000154);
+		modelDescriptors[MODEL_PSP_STREET] = new ModelDescriptor("PSP-E1000 (Street)"              , 11, 0x00900000, 0x00403000, 0x00000154);
 	}
 
 	public static int getModel() {

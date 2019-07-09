@@ -83,6 +83,7 @@ import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.Audio;
 import jpcsp.hardware.MemoryStick;
+import jpcsp.hardware.Model;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
@@ -2350,6 +2351,8 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         log.info("Using the following settings:");
 
         // Log the configuration settings
+        logConfigurationPanel("SettingsGUI.GeneralPanel.title");
+        logConfigurationSettingList("SettingsGUI.modelLabel.text", "emu.model", SettingsGUI.getModelNames(), true, true);
         logConfigurationPanel("SettingsGUI.RegionPanel.title");
         logConfigurationSettingList("SettingsGUI.languageLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE, SettingsGUI.getImposeLanguages(), true, true);
         logConfigurationSettingList("SettingsGUI.buttonLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, SettingsGUI.getImposeButtons(), true, true);
