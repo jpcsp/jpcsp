@@ -131,6 +131,12 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	public static final int SYSREG_IO_SPI4         = 28;
 	public static final int SYSREG_IO_SPI5         = 29;
 	public static final int SYSREG_AVC_POWER       = 2;
+	public static final int SYSREG_SELECTED_APB_TIMER0   = 0x00000007;
+	public static final int SYSREG_SELECTED_APB_TIMER1   = 0x00000070;
+	public static final int SYSREG_SELECTED_APB_TIMER2   = 0x00000700;
+	public static final int SYSREG_SELECTED_APB_TIMER3   = 0x00007000;
+	public static final int SYSREG_SELECTED_AUDIO_CLOCK0 = 0x00010000;
+	public static final int SYSREG_SELECTED_AUDIO_CLOCK1 = 0x00020000;
 	public static final int SYSREG_USBMS_USB_CONNECTED      = 0x000001;
 	public static final int SYSREG_USBMS_USB_INTERRUPT_CABLE_CONNECTED    = 1;
 	public static final int SYSREG_USBMS_USB_INTERRUPT_CABLE_DISCONNECTED = 2;
@@ -162,9 +168,13 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	private int ataClkSelect;
 	private int unknown00;
 	private int unknown3C;
-	private int unknown60;
+	private int selectedClkTimer;
 	private int unknown6C;
 	private int unknown74;
+	private int unknownC4;
+	private int unknownE8;
+	private int unknownF0;
+	private int unknown100;
 
 	public static MMIOHandlerSystemControl getInstance() {
 		if (instance == null) {
@@ -198,9 +208,13 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		ataClkSelect = stream.readInt();
 		unknown00 = stream.readInt();
 		unknown3C = stream.readInt();
-		unknown60 = stream.readInt();
+		selectedClkTimer = stream.readInt();
 		unknown6C = stream.readInt();
 		unknown74 = stream.readInt();
+		unknownC4 = stream.readInt();
+		unknownE8 = stream.readInt();
+		unknownF0 = stream.readInt();
+		unknown100 = stream.readInt();
 		super.read(stream);
 	}
 
@@ -223,9 +237,13 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		stream.writeInt(ataClkSelect);
 		stream.writeInt(unknown00);
 		stream.writeInt(unknown3C);
-		stream.writeInt(unknown60);
+		stream.writeInt(selectedClkTimer);
 		stream.writeInt(unknown6C);
 		stream.writeInt(unknown74);
+		stream.writeInt(unknownC4);
+		stream.writeInt(unknownE8);
+		stream.writeInt(unknownF0);
+		stream.writeInt(unknown100);
 		super.write(stream);
 	}
 
@@ -247,9 +265,13 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		ataClkSelect = 0;
 		unknown00 = 0;
 		unknown3C = 0;
-		unknown60 = 0;
+		selectedClkTimer = 0;
 		unknown6C = 0;
 		unknown74 = 0;
+		unknownC4 = 0;
+		unknownE8 = 0;
+		unknownF0 = 0;
+		unknown100 = 0;
 		
 		ramSize = RAM_SIZE_16MB;
 		tachyonVersion = Modules.sceSysregModule.sceSysregGetTachyonVersion();
@@ -521,26 +543,30 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	public int read32(int address) {
 		int value;
 		switch (address - baseAddress) {
-			case 0x00: value = unknown00; break;
-			case 0x3C: value = unknown3C; break;
-			case 0x40: value = (tachyonVersion << 8) | ramSize; break;
-			case 0x4C: value = resetDevices; break;
-			case 0x50: value = busClockDevices; break;
-			case 0x54: value = clock1Devices; break;
-			case 0x58: value = clockDevices; break;
-			case 0x5C: value = ataClkSelect; break;
-			case 0x60: value = unknown60; break;
-			case 0x64: value = spiClkSelect; break;
-			case 0x68: value = pllFrequency; break;
-			case 0x6C: value = unknown6C; break;
-			case 0x70: value = avcPower; break;
-			case 0x74: value = unknown74; break;
-			case 0x78: value = ioDevices; break;
-			case 0x7C: value = gpioEnable; break;
-			case 0x80: value = usbAndMemoryStick; break;
-			case 0x90: value = (int) Modules.sceSysregModule.sceSysregGetFuseId(); break;
-			case 0x94: value = (int) (Modules.sceSysregModule.sceSysregGetFuseId() >> 32); break;
-			case 0x98: value = Modules.sceSysregModule.sceSysregGetFuseConfig(); break;
+			case 0x000: value = unknown00; break;
+			case 0x03C: value = unknown3C; break;
+			case 0x040: value = (tachyonVersion << 8) | ramSize; break;
+			case 0x04C: value = resetDevices; break;
+			case 0x050: value = busClockDevices; break;
+			case 0x054: value = clock1Devices; break;
+			case 0x058: value = clockDevices; break;
+			case 0x05C: value = ataClkSelect; break;
+			case 0x060: value = selectedClkTimer; break;
+			case 0x064: value = spiClkSelect; break;
+			case 0x068: value = pllFrequency; break;
+			case 0x06C: value = unknown6C; break;
+			case 0x070: value = avcPower; break;
+			case 0x074: value = unknown74; break;
+			case 0x078: value = ioDevices; break;
+			case 0x07C: value = gpioEnable; break;
+			case 0x080: value = usbAndMemoryStick; break;
+			case 0x090: value = (int) Modules.sceSysregModule.sceSysregGetFuseId(); break;
+			case 0x094: value = (int) (Modules.sceSysregModule.sceSysregGetFuseId() >> 32); break;
+			case 0x098: value = Modules.sceSysregModule.sceSysregGetFuseConfig(); break;
+			case 0x0C4: value = unknownC4; break;
+			case 0x0E8: value = unknownE8; break;
+			case 0x0F0: value = unknownF0; break;
+			case 0x100: value = unknown100; break;
 			default: value = super.read32(address); break;
 		}
 
@@ -554,25 +580,29 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	@Override
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
-			case 0x00: unknown00 = value; break;
-			case 0x04: clearInterrupts(value); break;
-			case 0x3C: unknown3C = value; break;
-			case 0x40: setRamSize(value); break;
-			case 0x44: sysregInterruptToOther(value); break;
-			case 0x4C: setResetDevices(value); break;
-			case 0x50: setBusClockDevices(value); break;
-			case 0x5C: ataClkSelect = value; break;
-			case 0x54: setClock1Devices(value); break;
-			case 0x58: setClockDevices(value); break;
-			case 0x60: unknown60 = value; break;
-			case 0x64: spiClkSelect = value; break;
-			case 0x68: setPllFrequency(value); break;
-			case 0x6C: unknown6C = value; break;
-			case 0x70: setAvcPower(value); break;
-			case 0x74: unknown74 = value; break;
-			case 0x78: setIoDevices(value); break;
-			case 0x7C: gpioEnable = value; break;
-			case 0x80: clearUsbMemoryStick(value); break;
+			case 0x000: unknown00 = value; break;
+			case 0x004: clearInterrupts(value); break;
+			case 0x03C: unknown3C = value; break;
+			case 0x040: setRamSize(value); break;
+			case 0x044: sysregInterruptToOther(value); break;
+			case 0x04C: setResetDevices(value); break;
+			case 0x050: setBusClockDevices(value); break;
+			case 0x05C: ataClkSelect = value; break;
+			case 0x054: setClock1Devices(value); break;
+			case 0x058: setClockDevices(value); break;
+			case 0x060: selectedClkTimer = value; break;
+			case 0x064: spiClkSelect = value; break;
+			case 0x068: setPllFrequency(value); break;
+			case 0x06C: unknown6C = value; break;
+			case 0x070: setAvcPower(value); break;
+			case 0x074: unknown74 = value; break;
+			case 0x078: setIoDevices(value); break;
+			case 0x07C: gpioEnable = value; break;
+			case 0x080: clearUsbMemoryStick(value); break;
+			case 0x0C4: unknownC4 = value; break;
+			case 0x0E8: unknownE8 = value; break;
+			case 0x0F0: unknownF0 = value; break;
+			case 0x100: unknown100 = value; break;
 			default: super.write32(address, value); break;
 		}
 

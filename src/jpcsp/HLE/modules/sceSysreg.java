@@ -545,7 +545,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x74C6F776, version = 150)
-    public int sceSysregApbTimerClkEnable() {
+    public int sceSysregApbTimerClkEnable(int apbTimerIndex) {
     	return 0;
     }
 
@@ -732,7 +732,9 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA4706857, version = 150)
-    public int sceSysregApbTimerClkSelect() {
+    public int sceSysregApbTimerClkSelect(int apbTimerIndex, int selectedTimerClk) {
+    	// apbTimerIndex: [0..3]
+    	// selectedTimerClk: [0..7]
     	return 0;
     }
 
@@ -858,7 +860,8 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC36775AD, version = 150)
-    public int sceSysregAudioClkSelect() {
+    public int sceSysregAudioClkSelect(int audioClockIndex) {
+    	// audioClockIndex: [0..1]
     	return 0;
     }
 
@@ -930,7 +933,7 @@ public class sceSysreg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDED12806, version = 150)
-    public int sceSysregApbTimerClkDisable() {
+    public int sceSysregApbTimerClkDisable(int apbTimerIndex) {
     	return 0;
     }
 
