@@ -51,6 +51,7 @@ import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.sceFont.FontRegistryEntry;
+import jpcsp.hardware.Model;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
@@ -2229,7 +2230,12 @@ public class sceReg extends HLEModule {
 
 		index = registry.addDirectory(parent, "SYSTEM", 17, 2);
 		registry.addKey(index, "owner_name", ownerName, 0x80);
-		registry.addKey(index, "backlight_brightness", 3);
+		int backlightBrightness = 3;
+		if (Model.getGeneration() == 11) {
+			// The maximum backlight brightness is 2 on a PSP-E1000 (Street)
+			backlightBrightness = Math.min(backlightBrightness, 2);
+		}
+		registry.addKey(index, "backlight_brightness", backlightBrightness);
 		registry.addKey(index, "umd_autoboot", 0);
 		registry.addKey(index, "usb_charge", 1);
 		registry.addKey(index, "umd_cache", 1);
