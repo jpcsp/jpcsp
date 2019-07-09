@@ -36,6 +36,16 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 	private static final int STATE_VERSION = 0;
 	private final LcdcController controller1 = new LcdcController();
 	private final LcdcController controller2 = new LcdcController();
+	// Used only for tachyon version >= 0x00800000
+	private int enabled;
+	private int scaledXResolution;
+	private int yResolution;
+	private int unknown18C;
+	private int unknown190;
+	private int unknown194;
+	private int unknown198;
+	private int displayFlags;
+	private int displayClock;
 
 	private static class LcdcController {
 		private static final int STATE_VERSION = 0;
@@ -197,6 +207,15 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 		stream.readVersion(STATE_VERSION);
 		controller1.read(stream);
 		controller2.read(stream);
+		enabled = stream.readInt();
+		scaledXResolution = stream.readInt();
+		yResolution = stream.readInt();
+		unknown18C = stream.readInt();
+		unknown190 = stream.readInt();
+		unknown194 = stream.readInt();
+		unknown198 = stream.readInt();
+		displayFlags = stream.readInt();
+		displayClock = stream.readInt();
 		super.read(stream);
 	}
 
@@ -205,6 +224,15 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 		stream.writeVersion(STATE_VERSION);
 		controller1.write(stream);
 		controller2.write(stream);
+		stream.writeInt(enabled);
+		stream.writeInt(scaledXResolution);
+		stream.writeInt(yResolution);
+		stream.writeInt(unknown18C);
+		stream.writeInt(unknown190);
+		stream.writeInt(unknown194);
+		stream.writeInt(unknown198);
+		stream.writeInt(displayFlags);
+		stream.writeInt(displayClock);
 		super.write(stream);
 	}
 
@@ -214,6 +242,15 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 
 		controller1.reset();
 		controller2.reset();
+		enabled = 0;
+		scaledXResolution = 0;
+		yResolution = 0;
+		unknown18C = 0;
+		unknown190 = 0;
+		unknown194 = 0;
+		unknown198 = 0;
+		displayFlags = 0;
+		displayClock = 0;
 	}
 
 	@Override
@@ -252,6 +289,15 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 			case 0x148:
 			case 0x14C:
 			case 0x150: value = controller2.read32(address - baseAddress - 0x100); break;
+			case 0x180: value = enabled; break;
+			case 0x184: value = scaledXResolution; break;
+			case 0x188: value = yResolution; break;
+			case 0x18C: value = unknown18C; break;
+			case 0x190: value = unknown190; break;
+			case 0x194: value = unknown194; break;
+			case 0x198: value = unknown198; break;
+			case 0x1A0: value = displayFlags; break;
+			case 0x1B0: value = displayClock; break;
 			default: value = super.read32(address); break;
 		}
 
@@ -297,6 +343,16 @@ public class MMIOHandlerLcdc extends MMIOHandlerBase {
 			case 0x148:
 			case 0x14C:
 			case 0x170: controller2.write32(address - baseAddress - 0x100, value); break;
+			case 0x180: enabled = value; break;
+			case 0x184: scaledXResolution = value; break;
+			case 0x188: yResolution = value; break;
+			case 0x18C: unknown18C = value; break;
+			case 0x190: unknown190 = value; break;
+			case 0x194: unknown194 = value; break;
+			case 0x198: unknown198 = value; break;
+			case 0x1A0: displayFlags = value; break;
+			case 0x1B0: displayClock = value; break;
+			case 0x200: if (value != 1) { super.write32(address, value); } break;
 			default: super.write32(address, value); break;
 		}
 

@@ -30,6 +30,7 @@ import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceI2c;
 import jpcsp.memory.mmio.cy27040.CY27040;
+import jpcsp.memory.mmio.wm1801.WM1801;
 import jpcsp.memory.mmio.wm8750.WM8750;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.state.StateInputStream;
@@ -40,6 +41,7 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 	private static final int STATE_VERSION = 0;
 	public static final int PSP_CY27040_I2C_ADDR = 0xD2;
 	public static final int PSP_WM8750_I2C_ADDR = 0x34;
+	public static final int PSP_WM1801_I2C_ADDR = 0x94;
 	private static final int INTERRUPT_FLAG = 0x1;
 	private int i2cAddress;
 	private int dataLength;
@@ -69,7 +71,12 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 		interrupt = stream.readInt();
 		stream.readInts(transmitData);
 		stream.readInts(receiveData);
-		super.read(stream);
+
+		CY27040.getInstance().read(stream);
+    	WM8750.getInstance().read(stream);
+    	WM1801.getInstance().read(stream);
+
+    	super.read(stream);
 	}
 
 	@Override
@@ -81,7 +88,12 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 		stream.writeInt(interrupt);
 		stream.writeInts(transmitData);
 		stream.writeInts(receiveData);
-		super.write(stream);
+
+		CY27040.getInstance().write(stream);
+    	WM8750.getInstance().write(stream);
+    	WM1801.getInstance().write(stream);
+
+    	super.write(stream);
 	}
 
 	@Override
@@ -97,6 +109,7 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 
 		CY27040.getInstance().reset();
 		WM8750.getInstance().reset();
+		WM1801.getInstance().reset();
 	}
 
 	private void writeData(int value) {
@@ -159,8 +172,11 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 					case PSP_WM8750_I2C_ADDR:
 						WM8750.getInstance().executeTransmitReceiveCommand(transmitData, receiveData);
 						break;
+					case PSP_WM1801_I2C_ADDR:
+						WM1801.getInstance().executeTransmitReceiveCommand(transmitData, receiveData);
+						break;
 					default:
-						log.error(String.format("MMIOHandlerI2c.startCommand unknown i2cAddress=0x%X", i2cAddress));
+						log.error(String.format("MMIOHandlerI2c.startCommand 0x%X unknown i2cAddress=0x%X", command, i2cAddress));
 						return;
 				}
 				break;
@@ -173,8 +189,11 @@ public class MMIOHandlerI2c extends MMIOHandlerBase {
 					case PSP_WM8750_I2C_ADDR:
 						WM8750.getInstance().executeTransmitCommand(transmitData);
 						break;
+					case PSP_WM1801_I2C_ADDR:
+						WM1801.getInstance().executeTransmitCommand(transmitData);
+						break;
 					default:
-						log.error(String.format("MMIOHandlerI2c.startCommand unknown i2cAddress=0x%X", i2cAddress));
+						log.error(String.format("MMIOHandlerI2c.startCommand 0x%X unknown i2cAddress=0x%X", command, i2cAddress));
 						return;
 				}
 				break;

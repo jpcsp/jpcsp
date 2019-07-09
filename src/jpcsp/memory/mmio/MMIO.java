@@ -36,12 +36,10 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.modules.memlmd;
 import jpcsp.crypto.KeyVault;
 import jpcsp.hardware.Model;
-import jpcsp.memory.mmio.cy27040.CY27040;
 import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart3;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart4;
 import jpcsp.memory.mmio.uart.MMIOHandlerUartBase;
-import jpcsp.memory.mmio.wm8750.WM8750;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -75,8 +73,11 @@ public class MMIO extends Memory {
 	public void Initialise() {
     	handlers.clear();
 
+    	addHandler(0xA7F00000, 0x24, new MMIOHandlerA7F00000(0xA7F00000), 4);
+    	addHandlerRW(0xA7F80000, 0x2000, 4);
+
     	addHandler(0xBC000000, 0x80, new MMIOHandlerMemoryAccessControl(0xBC000000));
-    	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, 0x9C, MMIOHandlerSystemControl.getInstance());
+    	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, 0x104, MMIOHandlerSystemControl.getInstance());
     	addHandler(0xBC200000, 0x8, new MMIOHandlerCpuBusFrequency(0xBC200000));
     	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, MMIOHandlerInterruptMan.getProxyInstance());
     	addHandler(0xBC500000, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500000, IntrManager.PSP_SYSTIMER0_INTR));
@@ -136,9 +137,14 @@ public class MMIO extends Memory {
 
 	public static int[] getXorKeyBFD00210() {
 		switch (Model.getGeneration()) {
-			case 2: return new int[] { 0x539CBC37, 0x7CC9CD1C, 0x66128056, 0x531C4971 };
+			case 2:
+				return new int[] { 0x539CBC37, 0x7CC9CD1C, 0x66128056, 0x531C4971 };
 			case 3:
-			case 9: return new int[] { 0xDA87A21B, 0x982BFA1D, 0xDC328074, 0x575ABEE7 };
+			case 4:
+			case 7:
+			case 9:
+			case 11:
+				return new int[] { 0xDA87A21B, 0x982BFA1D, 0xDC328074, 0x575ABEE7 };
 		}
 
 		return null;
@@ -146,9 +152,14 @@ public class MMIO extends Memory {
 
 	public static int[] getKeyBFD00210() {
 		switch (Model.getGeneration()) {
-			case 2: return KeyVault.keys660_k2;
+			case 2:
+				return KeyVault.keys660_k2;
 			case 3:
-			case 9: return KeyVault.keys660_k7;
+			case 4:
+			case 7:
+			case 9:
+			case 11:
+				return KeyVault.keys660_k7;
 		}
 
 		return null;
@@ -192,7 +203,10 @@ public class MMIO extends Memory {
     			xorKey(0xBFD00210, getKeyBFD00210(), getXorKeyBFD00210());
     	    	break;
     		case 3:
+    		case 4:
+			case 7:
     		case 9:
+    		case 11:
     			// Same key as used for generation 1, but different XOR.
     			// Will be used to decrypt (01g) PRXes.
     			xorKey(0xBFD00200, KeyVault.keys660_k1, new int[] { 0xA8F5FC35, 0x7F8D6DB9, 0x1B4E5413, 0x150FBA9C });
@@ -220,7 +234,7 @@ public class MMIO extends Memory {
 
 	protected void addHandler(int baseAddress, int length, IMMIOHandler handler, int minimumGeneration) {
 		if (Model.getGeneration() >= minimumGeneration) {
-			addHandler(baseAddress, length, null, handler);
+			addHandler(baseAddress, length, handler);
 		}
     }
 
@@ -241,6 +255,12 @@ public class MMIO extends Memory {
 
     protected void addHandlerRW(int baseAddress, int length) {
     	addHandlerRW(baseAddress, length, null);
+    }
+
+    protected void addHandlerRW(int baseAddress, int length, int minimumGeneration) {
+    	if (Model.getGeneration() >= minimumGeneration) {
+    		addHandlerRW(baseAddress, length);
+    	}
     }
 
     protected void addHandlerRW(int baseAddress, int length, Logger log) {
@@ -418,8 +438,6 @@ public class MMIO extends Memory {
     			log.debug(String.format("Read State for %s at 0x%08X", handler, baseAddress));
     		}
     	}
-    	CY27040.getInstance().read(stream);
-    	WM8750.getInstance().read(stream);
 	}
 
 	@Override
@@ -433,7 +451,5 @@ public class MMIO extends Memory {
     		}
     		handler.write(stream);
     	}
-    	CY27040.getInstance().write(stream);
-    	WM8750.getInstance().write(stream);
 	}
 }
