@@ -108,7 +108,7 @@ public class MMIO extends Memory {
     	addHandler(0xBE4C0000, MMIOHandlerUartBase.SIZE_OF, new MMIOHandlerUart4(0xBE4C0000));
     	addHandler(0xBE500000, MMIOHandlerUartBase.SIZE_OF, new MMIOHandlerUart3(0xBE500000));
     	addHandler(MMIOHandlerSyscon.BASE_ADDRESS, 0x28, MMIOHandlerSyscon.getInstance());
-    	addHandler(0xBE5C0000, 0x28, new MMIOHandlerLdcControllerSlim(0xBE5C0000), 2);
+    	addHandler(0xBE5C0000, 0x28, new MMIOHandlerLcdControllerSlim(0xBE5C0000), 2);
     	addHandler(MMIOHandlerDisplayController.BASE_ADDRESS, 0x28, MMIOHandlerDisplayController.getInstance());
     	addHandler(0xBE780000, 0x20, new MMIOHandlerDisplayControllerSlim(0xBE780000), 2);
 

@@ -25,13 +25,13 @@ import jpcsp.hardware.Model;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
-public class MMIOHandlerLdcControllerSlim extends MMIOHandlerBase {
+public class MMIOHandlerLcdControllerSlim extends MMIOHandlerBase {
 	public static Logger log = sceHibari.log;
 	private static final int STATE_VERSION = 0;
 	private int unknown08;
 	private int unknown0C;
 
-	public MMIOHandlerLdcControllerSlim(int baseAddress) {
+	public MMIOHandlerLcdControllerSlim(int baseAddress) {
 		super(baseAddress);
 	}
 
