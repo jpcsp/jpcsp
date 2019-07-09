@@ -38,6 +38,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_VOLTAGE;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_CTRL_WLAN_POWER;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_ANALOG;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_BARYON;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_BATT_VOLT;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_DIGITAL_KEY;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_DIGITAL_KEY_ANALOG;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY;
@@ -48,6 +49,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POWER_SUPPLY_STATUS
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_STATUS2;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_TIMESTAMP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_WAKE_UP_FACTOR;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_WAKE_UP_REQ;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_NOP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_READ_ALARM;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_READ_CLOCK;
@@ -558,9 +560,12 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				unknown &= ~0x0080;
 				responseData = addResponseData16(responseData, unknown);
 				break;
-			case sceSyscon.PSP_SYSCON_CMD_GET_WAKE_UP_REQ:
+			case PSP_SYSCON_CMD_GET_WAKE_UP_REQ:
 				// Return unknown value, taken from a real PSP
 				responseData = Utilities.add(responseData, 0xFF);
+				break;
+			case PSP_SYSCON_CMD_GET_BATT_VOLT:
+				responseData = Utilities.add(responseData, 0x00);
 				break;
 			default:
 				log.error(String.format("startSysconCmd: unknown cmd=0x%02X(%s), %s", cmd, getSysconCmdName(cmd), this));
