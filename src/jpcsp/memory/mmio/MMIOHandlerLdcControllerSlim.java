@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.sceHibari;
+import jpcsp.hardware.Model;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -72,10 +73,13 @@ public class MMIOHandlerLdcControllerSlim extends MMIOHandlerBase {
 			case 0x1E00:
 			case 0x2000:
 			case 0xC100:
+			case 0xC101:
 			case 0xC120:
 			case 0xC122:
 			case 0xC123:
 			case 0xC124:
+			case 0xC12C:
+			case 0xC13E:
 			case 0xC140:
 			case 0xC167:
 			case 0xC168:
@@ -94,7 +98,11 @@ public class MMIOHandlerLdcControllerSlim extends MMIOHandlerBase {
 				break;
 			case 0xC200:
 				unknown0C |= 0x4;
-				unknown08 |= 0x00D7;
+				if (Model.getGeneration() == 7) {
+					unknown08 |= 0x0007; // display_07g.prx is expecting 0x07
+				} else {
+					unknown08 |= 0x00D7; // display_0[349]g.prx are expecting 0xD7
+				}
 				break;
 		}
 	}
