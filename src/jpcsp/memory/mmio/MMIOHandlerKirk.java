@@ -371,6 +371,9 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 
 	private void startProcessing(int value) {
 		switch (value) {
+			case 0:
+				// No effect
+				break;
 			case 1:
 				setStatus(STATUS_PHASE1_MASK, STATUS_PHASE1_IN_PROGRESS);
 				if (log.isDebugEnabled()) {
@@ -397,13 +400,16 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				log.error(String.format("source: %s", Utilities.getMemoryDump(getMemory(), normalizeAddress(sourceAddr), 0x100)));
 				break;
 			default:
-				log.warn(String.format("0x%08X - KIRK unknown startProcessing value 0x%X on %s", getPc(), value, this));
+				log.error(String.format("0x%08X - KIRK unknown startProcessing value 0x%X on %s", getPc(), value, this));
 				break;
 		}
 	}
 
 	private void endProcessing(int value) {
 		switch (value) {
+			case 0:
+				// No effect
+				break;
 			case 1:
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("KIRK endProcessing 1 on %s", this));
@@ -416,7 +422,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 				}
 				break;
 			default:
-				log.warn(String.format("0x%08X - KIRK unknown endProcessing value 0x%X on %s", getPc(), value, this));
+				log.error(String.format("0x%08X - KIRK unknown endProcessing value 0x%X on %s", getPc(), value, this));
 				break;
 		}
 	}
