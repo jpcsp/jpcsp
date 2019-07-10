@@ -80,6 +80,9 @@ public class AudioLine implements IState {
 			Integer bufferSizeInSamples = waitingBufferSizes.get(alBuffer);
 			if (bufferSizeInSamples != null) {
 				waitingBufferSamples -= bufferSizeInSamples.intValue();
+				if (waitingBufferSamples < 0) {
+					waitingBufferSamples = 0;
+				}
 			}
 		}
     }
@@ -134,6 +137,8 @@ public class AudioLine implements IState {
 	}
 
 	public int getWaitingBufferSamples() {
+		checkFreeBuffers();
+
 		return waitingBufferSamples;
 	}
 
