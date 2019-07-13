@@ -26,13 +26,13 @@ import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
 
-public class MMIOHandlerEFlash3 extends MMIOHandlerBase {
+public class MMIOHandlerEFlash2 extends MMIOHandlerBase {
 	public static Logger log = sceEFlash.log;
 	private static final int STATE_VERSION = 0;
 	private int unknown28;
 	private int unknown20;
 
-	public MMIOHandlerEFlash3(int baseAddress) {
+	public MMIOHandlerEFlash2(int baseAddress) {
 		super(baseAddress);
 
 		reset();
