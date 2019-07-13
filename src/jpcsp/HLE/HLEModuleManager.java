@@ -274,7 +274,8 @@ public class HLEModuleManager {
         SystemCtrlForKernel(Modules.SystemCtrlForKernelModule),
         sceHibari(Modules.sceHibariModule),
         sceSystimer(Modules.sceSystimerModule),
-        sceUsbBus(Modules.sceUsbBusModule);
+        sceUsbBus(Modules.sceUsbBusModule),
+        sceUsbHost(Modules.sceUsbHostModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;

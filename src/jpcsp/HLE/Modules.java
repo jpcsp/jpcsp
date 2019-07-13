@@ -181,6 +181,7 @@ public class Modules {
     public static sceHibari sceHibariModule = new sceHibari();
     public static sceSystimer sceSystimerModule = new sceSystimer();
     public static sceUsbBus sceUsbBusModule = new sceUsbBus();
+    public static sceUsbHost sceUsbHostModule = new sceUsbHost();
 
     public static Logger log = Logger.getLogger("hle");
 
