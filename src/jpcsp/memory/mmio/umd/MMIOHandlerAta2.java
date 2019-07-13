@@ -14,13 +14,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio;
+package jpcsp.memory.mmio.umd;
 
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.sceAta;
+import jpcsp.memory.mmio.MMIOHandlerBase;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 

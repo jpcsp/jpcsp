@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio;
+package jpcsp.memory.mmio.umd;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_UMD_INTR;
 import static jpcsp.filesystems.umdiso.ISectorDevice.sectorLength;
@@ -30,6 +30,8 @@ import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.iso.UmdIsoReaderVirtualFile;
 import jpcsp.HLE.modules.sceUmdMan;
+import jpcsp.memory.mmio.MMIOHandlerBase;
+import jpcsp.memory.mmio.MMIOHandlerGpio;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;

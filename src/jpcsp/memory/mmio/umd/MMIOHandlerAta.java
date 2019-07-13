@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio;
+package jpcsp.memory.mmio.umd;
 
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterrupt;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterrupt;
@@ -28,6 +28,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceAta;
+import jpcsp.memory.mmio.MMIOHandlerBase;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;

@@ -87,7 +87,7 @@ import jpcsp.hardware.Model;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
-import jpcsp.memory.mmio.MMIOHandlerUmd;
+import jpcsp.memory.mmio.umd.MMIOHandlerUmd;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.remote.HTTPServer;
 import jpcsp.settings.Settings;

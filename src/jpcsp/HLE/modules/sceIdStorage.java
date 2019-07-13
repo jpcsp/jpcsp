@@ -18,7 +18,7 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.Modules.sceChkregModule;
 import static jpcsp.hardware.Nand.pageSize;
-import static jpcsp.memory.mmio.MMIOHandlerUmd.regionCodes;
+import static jpcsp.memory.mmio.umd.MMIOHandlerUmd.regionCodes;
 import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.endianSwap32;
 

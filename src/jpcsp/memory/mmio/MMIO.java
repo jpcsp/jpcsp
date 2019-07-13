@@ -43,6 +43,9 @@ import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart3;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart4;
 import jpcsp.memory.mmio.uart.MMIOHandlerUartBase;
+import jpcsp.memory.mmio.umd.MMIOHandlerAta;
+import jpcsp.memory.mmio.umd.MMIOHandlerAta2;
+import jpcsp.memory.mmio.umd.MMIOHandlerUmd;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
