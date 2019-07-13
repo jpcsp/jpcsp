@@ -19,9 +19,9 @@ package jpcsp.HLE.modules;
 import static jpcsp.HLE.modules.sceUmdUser.PSP_UMD_READABLE;
 import static jpcsp.HLE.modules.sceUmdUser.PSP_UMD_READY;
 import static jpcsp.filesystems.umdiso.ISectorDevice.sectorLength;
-import static jpcsp.memory.mmio.umd.MMIOHandlerAta.ATA_SENSE_ASC_MEDIUM_NOT_PRESENT;
-import static jpcsp.memory.mmio.umd.MMIOHandlerAta.ATA_SENSE_KEY_NOT_READY;
-import static jpcsp.memory.mmio.umd.MMIOHandlerAta.ATA_SENSE_KEY_NO_SENSE;
+import static jpcsp.memory.mmio.umd.MMIOHandlerUmdAta.ATA_SENSE_ASC_MEDIUM_NOT_PRESENT;
+import static jpcsp.memory.mmio.umd.MMIOHandlerUmdAta.ATA_SENSE_KEY_NOT_READY;
+import static jpcsp.memory.mmio.umd.MMIOHandlerUmdAta.ATA_SENSE_KEY_NO_SENSE;
 
 import java.io.IOException;
 

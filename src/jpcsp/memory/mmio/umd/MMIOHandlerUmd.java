@@ -249,13 +249,13 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 				region.setValue32(4, 0);
 
 				interrupt |= 0x1;
-				MMIOHandlerAta.getInstance().packetCommandCompleted();
+				MMIOHandlerUmdAta.getInstance().packetCommandCompleted();
 				break;
 			case 0x09:
 				interrupt |= 0x1;
 				break;
 			case 0x0A: // Called after ATA_CMD_OP_READ_BIG to read the data
-				int lba = MMIOHandlerAta.getInstance().getLogicalBlockAddress();
+				int lba = MMIOHandlerUmdAta.getInstance().getLogicalBlockAddress();
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("MMIOHandlerUmd.setCommand command=0x%X, transferLength=0x%X, lba=0x%X", command, totalTransferLength, lba));
 				}
@@ -301,7 +301,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 				}
 
 				interrupt |= 0x1;
-				MMIOHandlerAta.getInstance().packetCommandCompleted();
+				MMIOHandlerUmdAta.getInstance().packetCommandCompleted();
 				break;
 			case 0x0B:
 				break;

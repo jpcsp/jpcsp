@@ -43,7 +43,7 @@ import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart3;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart4;
 import jpcsp.memory.mmio.uart.MMIOHandlerUartBase;
-import jpcsp.memory.mmio.umd.MMIOHandlerAta;
+import jpcsp.memory.mmio.umd.MMIOHandlerUmdAta;
 import jpcsp.memory.mmio.umd.MMIOHandlerAta2;
 import jpcsp.memory.mmio.umd.MMIOHandlerUmd;
 import jpcsp.state.StateInputStream;
@@ -102,7 +102,7 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerGe.BASE_ADDRESS, 0xE50, MMIOHandlerGe.getInstance());
     	addHandler(0xBD500000, 0x94, new MMIOHandlerGeEdram(0xBD500000));
     	addHandler(0xBD600000, 0x50, new MMIOHandlerAta2(0xBD600000));
-    	addHandler(MMIOHandlerAta.BASE_ADDRESS, 0xF, MMIOHandlerAta.getInstance());
+    	addHandler(MMIOHandlerUmdAta.BASE_ADDRESS, 0xF, MMIOHandlerUmdAta.getInstance());
     	addHandler(MMIOHandlerUsb.BASE_ADDRESS, 0x518, MMIOHandlerUsb.getInstance());
     	if (Model.getModel() == Model.MODEL_PSP_GO) {
     		addHandler(0xBD900000, 0x48, new MMIOHandlerEFlash(0xBD900000));

@@ -47,7 +47,7 @@ public class MMIOHandlerAta2 extends MMIOHandlerBase {
 
 	private void writeReset(int value) {
 		if (value != 0) {
-			MMIOHandlerAta.getInstance().reset();
+			MMIOHandlerUmdAta.getInstance().reset();
 		}
 	}
 
