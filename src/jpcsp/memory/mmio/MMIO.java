@@ -145,6 +145,8 @@ public class MMIO extends Memory {
 			case 9:
 			case 11:
 				return new int[] { 0xDA87A21B, 0x982BFA1D, 0xDC328074, 0x575ABEE7 };
+			case 5:
+				return new int[] { 0x2AFCC7CF, 0xC7C84535, 0xD6B9C66F, 0x2957A953 };
 		}
 
 		return null;
@@ -160,6 +162,8 @@ public class MMIO extends Memory {
 			case 9:
 			case 11:
 				return KeyVault.keys660_k7;
+			case 5:
+				return KeyVault.keys660_k5;
 		}
 
 		return null;
@@ -220,6 +224,21 @@ public class MMIO extends Memory {
     			// The result of the xor has to match KeyVault.keys660_k7
     			// which will be used to decrypt flash0:/kd/pspbtcnf_03g.bin or pspbtcnf_09g.bin
     			// and _03g/_09g PRXes
+    			xorKey(0xBFD00210, getKeyBFD00210(), getXorKeyBFD00210());
+    	    	break;
+    		case 5:
+    			// Same key as used for generation 1, but different XOR.
+    			// Will be used to decrypt (01g) PRXes.
+    			xorKey(0xBFD00200, KeyVault.keys660_k1, new int[] { 0x444D3E9C, 0x7FDE2596, 0x52F26426, 0xE09216CC });
+
+    			// The 4 values stored at 0xBFD00210 will be xor-ed
+    			// with the following 4 values which are hardcoded in reboot_05g.bin
+    			//   0x2AFCC7CF
+    			//   0xC7C84535
+    			//   0xD6B9C66F
+    			//   0x2957A953
+    			// The result of the xor has to match KeyVault.keys660_k5
+    			// which will be used to decrypt flash0:/kd/pspbtcnf_05g.bin and _05g PRXes
     			xorKey(0xBFD00210, getKeyBFD00210(), getXorKeyBFD00210());
     	    	break;
 	    	default:
