@@ -2575,6 +2575,12 @@ public class sceDisplay extends HLEModule {
 		return 0;
 	}
 
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xE55F0D50, version = 150)
+	public int sceDisplaySetBacklightSel(int unknown0, int unknown1) {
+		return 0;
+	}
+
 	public static class BufferInfo {
 
         public int topAddr;
