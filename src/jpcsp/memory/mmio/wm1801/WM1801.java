@@ -28,7 +28,7 @@ public class WM1801 implements IState {
 	public static Logger log = Logger.getLogger("WM1801");
 	private static final int STATE_VERSION = 0;
 	private static WM1801 instance;
-	private final static int NUMBER_REGISTERS = 91;
+	private final static int NUMBER_REGISTERS = 128;
 	private final int registers[] = new int[NUMBER_REGISTERS];
 	private static final int defaultRegisterValues[] = new int[NUMBER_REGISTERS];
 	public final static int REGISTER_RESET = 15;
