@@ -19,6 +19,7 @@ package jpcsp.memory.mmio.umd;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_ATA_INTR;
 import static jpcsp.filesystems.umdiso.ISectorDevice.sectorLength;
 
+import jpcsp.HLE.modules.sceAta;
 import jpcsp.memory.mmio.MMIOHandlerBaseAta;
 
 /**
@@ -40,6 +41,8 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 
 	private MMIOHandlerUmdAta(int baseAddress) {
 		super(baseAddress);
+
+		log = sceAta.log;
 	}
 
 	@Override
@@ -276,7 +279,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 				prepareDataEndWithDelay(0, 1000);
 				break;
 			default:
-				log.error(String.format("MMIOHandlerAta.executePacketCommand unknown operation code 0x%02X(%s)", operationCode, getOperationCodeName(operationCode)));
+				log.error(String.format("MMIOHandlerUmdAta.executePacketCommand unknown operation code 0x%02X(%s)", operationCode, getOperationCodeName(operationCode)));
 				break;
 		}
 	}
