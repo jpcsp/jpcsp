@@ -183,7 +183,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 					stalled = false;
 					dataIndex = 0;
 				} else if (value != 0) {
-					log.error(String.format("sendAudioData unknown audio data 0x%08X in stalled state, %s", value, toString()));
+					log.warn(String.format("sendAudioData unknown audio data 0x%08X in stalled state, %s", value, toString()));
 				}
 			}
 
