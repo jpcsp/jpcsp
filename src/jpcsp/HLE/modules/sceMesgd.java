@@ -55,6 +55,7 @@ public class sceMesgd extends HLEModule {
         	case 0x63BAB403:
         	case 0xD8231EF0:
         	case 0xD82310F0:
+        	case 0xD82328F0:
         		type = 2;
         		break;
     		default:
