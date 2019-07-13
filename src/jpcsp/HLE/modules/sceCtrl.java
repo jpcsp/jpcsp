@@ -84,6 +84,7 @@ public class sceCtrl extends HLEModule {
     public final static int PSP_CTRL_NOTE     = 0x0800000;
     public final static int PSP_CTRL_DISC     = 0x1000000;
     public final static int PSP_CTRL_MS       = 0x2000000;
+    public final static int PSP_CTRL_SLIDE_OPEN = 0x20000000;
 
     // PspCtrlMode
     public final static int PSP_CTRL_MODE_DIGITAL = 0x0;

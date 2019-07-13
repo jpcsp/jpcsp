@@ -19,6 +19,7 @@ package jpcsp;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_CIRCLE;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_CROSS;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_DOWN;
+import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_SLIDE_OPEN;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_HOLD;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_HOME;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_LEFT;
@@ -37,6 +38,7 @@ import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_VOLUP;
 import static jpcsp.HLE.modules.sceCtrl.PSP_CTRL_WLAN_UP;
 
 import jpcsp.hardware.Audio;
+import jpcsp.hardware.Slide;
 import jpcsp.hardware.Wlan;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
@@ -594,6 +596,15 @@ public class Controller {
     		Buttons |= PSP_CTRL_WLAN_UP;
     	} else {
     		Buttons &= ~PSP_CTRL_WLAN_UP;
+    	}
+
+    	// The PSP Go has a slide which can be opened or closed
+    	if (Slide.hasSlide()) {
+    		if (Slide.isSlideOpen()) {
+    			Buttons |= PSP_CTRL_SLIDE_OPEN;
+    		} else {
+    			Buttons &= ~PSP_CTRL_SLIDE_OPEN;
+    		}
     	}
     }
 
