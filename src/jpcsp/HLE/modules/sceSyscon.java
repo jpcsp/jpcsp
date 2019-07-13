@@ -121,6 +121,7 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_DEVICE_PSP = 0x01;
     public static final int PSP_SYSCON_DEVICE_UMD = 0x02;
     public static final int PSP_SYSCON_DEVICE_WLAN = 0x04;
+    public static final int PSP_SYSCON_DEVICE_BT = 0x20;
     public static final int PSP_SYSCON_DEVICE_RESET_MODE_2 = 0x40;
     public static final int PSP_SYSCON_DEVICE_RESET_MODE_1 = 0x80;
     private final int scratchPad[] = new int[32];
@@ -930,6 +931,24 @@ public class sceSyscon extends HLEModule {
 	@HLEFunction(nid = 0xF775BC34, version = 150)
 	@HLEFunction(nid = 0xF33E1B14, version = 660)
 	public int sceSysconGetWakeUpFactor(@BufferInfo(usage=Usage.out) TPointer32 factor) {
+    	return 0;
+    }
+
+    /**
+     * Set the bluetooth power.
+     * 
+     * @param power Set the bluetooth power.
+     * @return      0 on success.
+     */
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x7208FF18, version = 661)
+	public int sceSysconCtrlBtPower(boolean power) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x765775EB, version = 661)
+	public int sceSyscon_driver_765775EB(boolean power) {
     	return 0;
     }
 }
