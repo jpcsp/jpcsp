@@ -1401,7 +1401,7 @@ public class RuntimeContext {
         		// This is a fast track to avoid checking all the code blocks
         		int startIndex = (addr - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
 				int endIndex = (addr + size - MemoryMap.START_RAM) >> fastCodeBlockLookupShift;
-				if (startIndex >= 0 && endIndex <= fastCodeBlockLookup.length) {
+				if (startIndex >= 0 && endIndex < fastCodeBlockLookup.length) {
 					for (int index = startIndex; index <= endIndex; index++) {
 	        			CodeBlockList codeBlockList = fastCodeBlockLookup[index];
 	        			if (codeBlockList == null) {

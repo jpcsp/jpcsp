@@ -19,6 +19,7 @@ package jpcsp.util;
 import java.io.IOException;
 import java.io.InputStream;
 
+import jpcsp.Memory;
 import jpcsp.HLE.TPointer;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
@@ -40,12 +41,18 @@ public class MemoryInputStream extends InputStream {
 
 	@Override
 	public int read() throws IOException {
+		if (!Memory.isAddressGood(memoryReader.getCurrentAddress()) ) {
+			return -1;
+		}
 		return memoryReader.readNext();
 	}
 
 	@Override
 	public int read(byte[] buffer, int offset, int length) throws IOException {
 		for (int i = 0; i < length; i++) {
+			if (!Memory.isAddressGood(memoryReader.getCurrentAddress()) ) {
+				return i;
+			}
 			buffer[offset + i] = (byte) memoryReader.readNext();
 		}
 
