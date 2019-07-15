@@ -63,8 +63,8 @@ public class IntrManager {
 	public static final int PSP_MEMLMD_INTR                      = 24;
 	public static final int PSP_GE_INTR                          = 25;
 	public static final int PSP_USB_INTERRUPT_CONNECTION         = 26;
-	public static final int PSP_EFLASH1_INTR                     = 27;
-	public static final int PSP_EFLASH2_INTR                     = 28;
+	public static final int PSP_EFLASH_ATA2_INTR                 = 27;
+	public static final int PSP_EFLASH_DMA_INTR                  = 28;
 	public static final int PSP_VBLANK_INTR                      = 30;
 	public static final int PSP_MECODEC_INTR                     = 31;
 	public static final int PSP_HPREMOTE_INTR                    = 36;
@@ -141,6 +141,9 @@ public class IntrManager {
 			PSP_INTERRUPT_NAMES[PSP_DMA1_INTR]      = "DMA1";
 			PSP_INTERRUPT_NAMES[PSP_MEMLMD_INTR]    = "MEMLMD";
 			PSP_INTERRUPT_NAMES[PSP_GE_INTR]        = "GE";
+			PSP_INTERRUPT_NAMES[PSP_USB_INTERRUPT_CONNECTION] = "USB_CONNECTION";
+			PSP_INTERRUPT_NAMES[PSP_EFLASH_ATA2_INTR] = "EFLASH_ATA2";
+			PSP_INTERRUPT_NAMES[PSP_EFLASH_DMA_INTR]= "EFLASH_DMA";
 			PSP_INTERRUPT_NAMES[PSP_VBLANK_INTR]    = "VBLANK";
 			PSP_INTERRUPT_NAMES[PSP_MECODEC_INTR]   = "MECODEC";
 			PSP_INTERRUPT_NAMES[PSP_HPREMOTE_INTR]  = "HPREMOTE";

@@ -18,46 +18,32 @@ package jpcsp.memory.mmio.eflash;
 
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterrupt;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterrupt;
-import static jpcsp.HLE.kernel.managers.IntrManager.PSP_EFLASH_ATA2_INTR;
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_EFLASH_DMA_INTR;
 import static jpcsp.util.Utilities.clearFlag;
+import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Memory;
 import jpcsp.HLE.modules.sceEFlash;
 import jpcsp.memory.mmio.MMIOHandlerBase;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
-/**
- * PSP Go 16GB internal memory (eflash)
- *
- */
-public class MMIOHandlerEFlash extends MMIOHandlerBase {
+public class MMIOHandlerEFlashDma extends MMIOHandlerBase {
 	public static Logger log = sceEFlash.log;
-	public static final int BASE_ADDRESS = 0xBD900000;
-	private static MMIOHandlerEFlash instance;
 	private static final int STATE_VERSION = 0;
-	private int unknown14;
-	private int unknown18;
-	private int unknown24;
-	private int unknown28;
-	private int unknown34;
-	private int unknown38;
-	private int unknown40;
+	private int control;
 	private int interrupt;
+	private int unknown28;
+	private int dmaAddr;
+	private int dmaSize;
+	private int unknown40;
 
-	public static MMIOHandlerEFlash getInstance() {
-		if (instance == null) {
-			instance = new MMIOHandlerEFlash(BASE_ADDRESS);
-		}
-
-		return instance;
-	}
-
-	private MMIOHandlerEFlash(int baseAddress) {
+	public MMIOHandlerEFlashDma(int baseAddress) {
 		super(baseAddress);
 
 		reset();
@@ -66,41 +52,35 @@ public class MMIOHandlerEFlash extends MMIOHandlerBase {
 	@Override
 	public void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
-		unknown14 = stream.readInt();
-		unknown18 = stream.readInt();
-		unknown24 = stream.readInt();
-		unknown28 = stream.readInt();
-		unknown34 = stream.readInt();
-		unknown38 = stream.readInt();
-		unknown40 = stream.readInt();
+		control = stream.readInt();
 		interrupt = stream.readInt();
+		unknown28 = stream.readInt();
+		dmaAddr = stream.readInt();
+		dmaSize = stream.readInt();
+		unknown40 = stream.readInt();
 		super.read(stream);
 	}
 
 	@Override
 	public void write(StateOutputStream stream) throws IOException {
 		stream.writeVersion(STATE_VERSION);
-		stream.writeInt(unknown14);
-		stream.writeInt(unknown18);
-		stream.writeInt(unknown24);
-		stream.writeInt(unknown28);
-		stream.writeInt(unknown34);
-		stream.writeInt(unknown38);
-		stream.writeInt(unknown40);
+		stream.writeInt(control);
 		stream.writeInt(interrupt);
+		stream.writeInt(unknown28);
+		stream.writeInt(dmaAddr);
+		stream.writeInt(dmaSize);
+		stream.writeInt(unknown40);
 		super.write(stream);
 	}
 
 	@Override
 	public void reset() {
-		unknown14 = 0;
-		unknown18 = 0;
-		unknown24 = 0;
-		unknown28 = 0;
-		unknown34 = 0;
-		unknown38 = 0;
-		unknown40 = 0;
+		control = 0;
 		interrupt = 0;
+		unknown28 = 0;
+		dmaAddr = 0;
+		dmaSize = 0;
+		unknown40 = 0;
 
 		super.reset();
 	}
@@ -112,16 +92,11 @@ public class MMIOHandlerEFlash extends MMIOHandlerBase {
 	}
 
 	private void checkInterrupt() {
-		if ((interrupt & 0xFFFF0000) != 0) {
-			triggerInterrupt(getProcessor(), PSP_EFLASH_ATA2_INTR);
+		if (interrupt != 0) {
+			triggerInterrupt(getProcessor(), PSP_EFLASH_DMA_INTR);
 		} else {
-			clearInterrupt(getProcessor(), PSP_EFLASH_ATA2_INTR);
+			clearInterrupt(getProcessor(), PSP_EFLASH_DMA_INTR);
 		}
-	}
-
-	public void setInterruptFlag(int value) {
-		interrupt = setFlag(interrupt, value);
-		checkInterrupt();
 	}
 
 	private void clearInterruptFlag(int value) {
@@ -129,12 +104,56 @@ public class MMIOHandlerEFlash extends MMIOHandlerBase {
 		checkInterrupt();
 	}
 
+	private void setInterruptFlag(int value) {
+		interrupt = setFlag(interrupt, value);
+		checkInterrupt();
+	}
+
+	private void clearUnknown28(int value) {
+		unknown28 = clearFlag(unknown28, value);
+	}
+
+	private void writeUnknown28(int value) {
+		unknown28 = value;
+	}
+
+	private void writeControl(int value) {
+		control = value;
+
+		if (hasBit(control, 0)) {
+			// Copy to or from memory?
+			if (hasBit(control, 1)) {
+				// Copy from EFlash ATA to memory (for ATA read operation)
+				MMIOHandlerEFlashAta eflashAta = MMIOHandlerEFlashAta.getInstance();
+				Memory mem = getMemory();
+				int addr = dmaAddr;
+				for (int j = 0; j < dmaSize; j += 2, addr += 2) {
+					int data16 = eflashAta.read16(MMIOHandlerEFlashAta.BASE_ADDRESS);
+					mem.writeUnsigned16(addr, data16);
+				}
+
+				setInterruptFlag(0x1);
+			} else {
+				// Copy from memory to EFlash ATA (for ATA write operation)
+				MMIOHandlerEFlashAta eflashAta = MMIOHandlerEFlashAta.getInstance();
+				Memory mem = getMemory();
+				int addr = dmaAddr;
+				for (int j = 0; j < dmaSize; j += 2, addr += 2) {
+					int data16 = mem.read16(addr);
+					eflashAta.write16(MMIOHandlerEFlashAta.BASE_ADDRESS, (short) data16);
+				}
+
+				setInterruptFlag(0x1);
+			}
+		}
+	}
+
 	@Override
 	public int read32(int address) {
 		int value;
 		switch (address - baseAddress) {
-			case 0x34: value = unknown34; break;
-			case 0x44: value = interrupt; break;
+			case 0x20: value = interrupt; break;
+			case 0x28: value = unknown28; break;
 			default: value = super.read32(address); break;
 		}
 
@@ -148,18 +167,15 @@ public class MMIOHandlerEFlash extends MMIOHandlerBase {
 	@Override
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
-			case 0x04: if (value != 0x04024002) { super.write32(address, value); } break;
-			case 0x10: writeReset(value); break;
-			case 0x14: unknown14 = value; break;
-			case 0x18: unknown18 = value; break;
-			case 0x24: unknown24 = value; break;
-			case 0x28: unknown28 = value; break;
-			case 0x2C: if (value != 0) { super.write32(address, value); } break;
-			case 0x30: if (value != 0) { super.write32(address, value); } break;
-			case 0x34: unknown34 = value; break;
-			case 0x38: unknown38 = value; break;
+			case 0x08: writeReset(value); break;
+			case 0x10: writeControl(value); break;
+			case 0x24: clearInterruptFlag(value); break;
+			case 0x28: writeUnknown28(value); break;
+			case 0x2C: clearUnknown28(value); break;
+			case 0x30: dmaAddr = value; break;
+			case 0x34: dmaSize = value; break;
 			case 0x40: unknown40 = value; break;
-			case 0x44: clearInterruptFlag(value); break;
+			case 0x44: if (value != 0) { super.write32(address, value); } break;
 			default: super.write32(address, value); break;
 		}
 

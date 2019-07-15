@@ -51,6 +51,16 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 	}
 
 	@Override
+	protected boolean supportsCmdPacket() {
+		return true;
+	}
+
+	@Override
+	protected void executeCommand(int command, int[] data, int dataLength, int totalDataLength, boolean firstCommand) {
+		log.error(String.format("MMIOHandlerUmdAta.executeCommand unimplemented command 0x%X", command));
+	}
+
+	@Override
 	protected void executePacketCommand(int[] data) {
 		int operationCode = data[0];
 		int allocationLength;
@@ -79,7 +89,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 				prepareData("    "); // Product Revision Level
 				prepareData("1.090 Oct18 ,2004   "); // Vendor-specific
 				// Duration 2ms
-				prepareDataEndWithDelay(allocationLength, 2000);
+				prepareDataEndWithDelay(allocationLength, allocationLength, 2000);
 				break;
 			case ATA_CMD_OP_TEST_UNIT_READY:
 				if (log.isDebugEnabled()) {
@@ -87,7 +97,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 				}
 
 				// Duration 1ms
-				packetCommandCompletedWithDelay(1000);
+				commandCompletedWithDelay(1000);
 				break;
 			case ATA_CMD_OP_REQUEST_SENSE:
 				allocationLength = data[4];
@@ -120,7 +130,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 				prepareData8(0); // Sense Key Specific
 				prepareData8(0); // Sense Key Specific
 				// Duration 2ms
-				prepareDataEndWithDelay(allocationLength, 2000);
+				prepareDataEndWithDelay(allocationLength, allocationLength, 2000);
 				break;
 			case ATA_CMD_OP_READ_STRUCTURE:
 				allocationLength = data[9] | (data[8] << 8);
@@ -159,7 +169,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 						log.error(String.format("ATA_CMD_OP_READ_STRUCTURE unknown formatCode=0x%X", formatCode));
 						break;
 				}
-				prepareDataEndWithDelay(allocationLength, delayUs);
+				prepareDataEndWithDelay(allocationLength, allocationLength, delayUs);
 				break;
 			case ATA_CMD_OP_UNKNOWN_F0:
 				unknown = data[1];
@@ -172,7 +182,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 				allocationLength = 1;
 				prepareDataInit(allocationLength);
 				prepareData8(0x08); // Unknown value. The following values are accepted: 0x08, 0x47, 0x48, 0x50
-				prepareDataEnd(allocationLength);
+				prepareDataEnd(allocationLength, allocationLength);
 				break;
 			case ATA_CMD_OP_MODE_SENSE_BIG:
 				allocationLength = data[8] | (data[7] << 8);
@@ -221,7 +231,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 						log.error(String.format("ATA_CMD_OP_MODE_SENSE_BIG unknown pageCode=0x%X", pageCode));
 						break;
 				}
-				prepareDataEndWithDelay(allocationLength, delayUs);
+				prepareDataEndWithDelay(allocationLength, allocationLength, delayUs);
 				break;
 			case ATA_CMD_OP_MODE_SELECT_BIG:
 				int parameterListLength = data[8] | (data[7] << 8);
@@ -241,7 +251,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 				}
 
 				prepareDataInit(unknown);
-				prepareDataEnd(unknown);
+				prepareDataEnd(unknown, unknown);
 				break;
 			case ATA_CMD_OP_UNKNOWN_F7:
 				unknown = data[2];
@@ -250,7 +260,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 					log.debug(String.format("ATA_CMD_OP_UNKNOWN_F7 unknown=0x%X", unknown));
 				}
 
-				packetCommandCompleted();
+				commandCompleted();
 				break;
 			case ATA_CMD_OP_UNKNOWN_FC:
 				allocationLength = data[8] | (data[7] << 8);
@@ -263,7 +273,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 				for (int i = 0; i < allocationLength; i++) {
 					prepareData8(0);
 				}
-				prepareDataEnd(allocationLength);
+				prepareDataEnd(allocationLength, allocationLength);
 				break;
 			case ATA_CMD_OP_READ_BIG:
 				int logicalBlockAddress = data[5] | (data[4] << 8) | (data[3] << 16) | (data[2] << 24);
@@ -276,10 +286,51 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 				setLogicalBlockAddress(logicalBlockAddress);
 				prepareDataInit(0);
 				// Duration 1ms (TODO duration not verified on a real PSP)
-				prepareDataEndWithDelay(0, 1000);
+				prepareDataEndWithDelay(0, 0, 1000);
 				break;
 			default:
 				log.error(String.format("MMIOHandlerUmdAta.executePacketCommand unknown operation code 0x%02X(%s)", operationCode, getOperationCodeName(operationCode)));
+				break;
+		}
+	}
+
+	private void executePacketCommandParameterList(int operationCode, int[] data) {
+		switch (operationCode) {
+			case ATA_CMD_OP_MODE_SELECT_BIG:
+				int pageCode = data[0] & 0x3F;
+				int pageLength = data[1];
+
+				if (pageCode != 0) {
+					log.error(String.format("ATA_CMD_OP_MODE_SELECT_BIG parameter unknown pageCode=0x%X", pageCode));
+				}
+				if (pageLength != 0x1A) {
+					log.error(String.format("ATA_CMD_OP_MODE_SELECT_BIG parameter unknown pageLength=0x%X", pageLength));
+				}
+
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("ATA_CMD_OP_MODE_SELECT_BIG parameters pageCode=0x%X, pageLength=0x%X", pageCode, pageLength));
+				}
+				break;
+			default:
+				log.error(String.format("MMIOHandlerBaseAta.executePacketCommandParameterList unknown operation code 0x%02X(%s)", operationCode, getOperationCodeName(operationCode)));
+				break;
+		}
+
+		commandCompleted();
+	}
+
+	@Override
+	protected void executeCommandWithData(int command, int pendingOperationCodeParameters, int[] data, int dataLength, boolean firstCommand, boolean lastCommand) {
+		switch (command) {
+			case ATA_CMD_PACKET:
+				if (pendingOperationCodeParameters < 0) {
+					executePacketCommand(data);
+				} else {
+					executePacketCommandParameterList(pendingOperationCodeParameters, data);
+				}
+				break;
+			default:
+				log.error(String.format("MMIOHandlerUmdAta.executeCommandWithData unknown command 0x%X(%s)", command, getCommandName(command)));
 				break;
 		}
 	}

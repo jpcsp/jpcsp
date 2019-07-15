@@ -38,7 +38,7 @@ import jpcsp.crypto.KeyVault;
 import jpcsp.hardware.Model;
 import jpcsp.memory.mmio.eflash.MMIOHandlerEFlash;
 import jpcsp.memory.mmio.eflash.MMIOHandlerEFlashAta;
-import jpcsp.memory.mmio.eflash.MMIOHandlerEFlash2;
+import jpcsp.memory.mmio.eflash.MMIOHandlerEFlashDma;
 import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart3;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart4;
@@ -105,9 +105,9 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerUmdAta.BASE_ADDRESS, 0xF, MMIOHandlerUmdAta.getInstance());
     	addHandler(MMIOHandlerUsb.BASE_ADDRESS, 0x518, MMIOHandlerUsb.getInstance());
     	if (Model.getModel() == Model.MODEL_PSP_GO) {
-    		addHandler(0xBD900000, 0x48, new MMIOHandlerEFlash(0xBD900000));
-    		addHandler(0xBDA00000, 0x10, new MMIOHandlerEFlashAta(0xBDA00000));
-    		addHandler(0xBDB00000, 0x48, new MMIOHandlerEFlash2(0xBDB00000));
+    		addHandler(MMIOHandlerEFlash.BASE_ADDRESS, 0x48, MMIOHandlerEFlash.getInstance());
+    		addHandler(MMIOHandlerEFlashAta.BASE_ADDRESS, 0x10, MMIOHandlerEFlashAta.getInstance());
+    		addHandler(0xBDB00000, 0x48, new MMIOHandlerEFlashDma(0xBDB00000));
     	}
     	addHandler(0xBDE00000, 0x3C, new MMIOHandlerKirk(0xBDE00000));
     	addHandler(MMIOHandlerUmd.BASE_ADDRESS, 0x98, MMIOHandlerUmd.getInstance());

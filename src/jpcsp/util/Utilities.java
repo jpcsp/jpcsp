@@ -89,6 +89,9 @@ import jpcsp.memory.MemoryWriter;
 import jpcsp.memory.mmio.MMIO;
 
 public class Utilities {
+	public static final int KB = 1024;
+	public static final int MB = 1024 * KB;
+	public static final long GB = 1024L * MB;
     private static final int[] round4 = {0, 3, 2, 1};
     public  static final String lineSeparator = System.getProperty("line.separator");
     private static final char[] lineTemplate = (lineSeparator + "0x00000000 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  >................<").toCharArray();

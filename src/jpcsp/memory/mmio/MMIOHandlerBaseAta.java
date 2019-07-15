@@ -26,6 +26,7 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
+import jpcsp.util.Utilities;
 
 /**
  * See "ATA Packet Interface for CD-ROMs SFF-8020i" and ATAPI-4 specification
@@ -43,7 +44,16 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 	public static final int ATA_INTERRUPT_REASON_CoD = 0x01;
 	public static final int ATA_INTERRUPT_REASON_IO = 0x02;
 	public static final int ATA_CONTROL_SOFT_RESET = 0x04;
+	// ATA command
+	public static final int ATA_CMD_DEV_RESET = 0x08;
 	public static final int ATA_CMD_PACKET = 0xA0;
+	public static final int ATA_CMD_READ = 0xC8;
+	public static final int ATA_CMD_WRITE = 0xCA;
+	public static final int ATA_CMD_SLEEP = 0xE6;
+	public static final int ATA_CMD_FLUSH = 0xE7;
+	public static final int ATA_CMD_ID_ATA = 0xEC;
+	public static final int ATA_CMD_SET_FEATURES = 0xEF;
+	// ATA PACKET operations
 	public static final int ATA_CMD_OP_TEST_UNIT_READY = 0x00;
 	public static final int ATA_CMD_OP_REQUEST_SENSE = 0x03;
 	public static final int ATA_CMD_OP_INQUIRY = 0x12;
@@ -61,14 +71,19 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 	public static final int ATA_CMD_OP_UNKNOWN_F1 = 0xF1;
 	public static final int ATA_CMD_OP_UNKNOWN_F7 = 0xF7;
 	public static final int ATA_CMD_OP_UNKNOWN_FC = 0xFC;
+	//
+	public static final int SETFEATURES_XFER = 0x03;
+	public static final int XFER_UDMA_2 = 0x42;
 	public static final int ATA_INQUIRY_PERIPHERAL_DEVICE_TYPE_CDROM = 0x05;
 	public static final int ATA_SENSE_KEY_NO_SENSE = 0x0;
 	public static final int ATA_SENSE_KEY_NOT_READY = 0x2;
 	public static final int ATA_SENSE_ASC_MEDIUM_NOT_PRESENT = 0x3A;
 	public static final int ATA_PAGE_CODE_POWER_CONDITION = 0x1A;
-	private final int[] data = new int[256];
+	public static final int SECTOR_SIZE = 512;
+	private final int[] data = new int[SECTOR_SIZE];
 	private int dataIndex;
 	private int dataLength;
+	private int totalDataLength;
 	private int error;
 	private int features;
 	private int sectorCount;
@@ -84,24 +99,26 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 
 	private class PrepareDataEndAction implements IAction {
 		private int allocationLength;
+		private int totalDataLength;
 
-		public PrepareDataEndAction(int allocationLength) {
+		public PrepareDataEndAction(int allocationLength, int totalDataLength) {
 			this.allocationLength = allocationLength;
+			this.totalDataLength = totalDataLength;
 		}
 
 		@Override
 		public void execute() {
-			prepareDataEnd(allocationLength);
+			prepareDataEnd(allocationLength, totalDataLength);
 		}
 	}
 
-	private class PacketCommandCompletedAction implements IAction {
-		public PacketCommandCompletedAction() {
+	private class CommandCompletedAction implements IAction {
+		public CommandCompletedAction() {
 		}
 
 		@Override
 		public void execute() {
-			packetCommandCompleted();
+			commandCompleted();
 		}
 	}
 
@@ -117,6 +134,7 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		stream.readInts(data);
 		dataIndex = stream.readInt();
 		dataLength = stream.readInt();
+		totalDataLength = stream.readInt();
 		error = stream.readInt();
 		features = stream.readInt();
 		sectorCount = stream.readInt();
@@ -138,6 +156,7 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		stream.writeInts(data);
 		stream.writeInt(dataIndex);
 		stream.writeInt(dataLength);
+		stream.writeInt(totalDataLength);
 		stream.writeInt(error);
 		stream.writeInt(features);
 		stream.writeInt(sectorCount);
@@ -153,12 +172,19 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		super.write(stream);
 	}
 
-	private static String getCommandName(int command) {
+	protected static String getCommandName(int command) {
 		switch (command) {
-			case ATA_CMD_PACKET: return "PACKET";
+			case ATA_CMD_DEV_RESET:    return "ATA_CMD_DEV_RESET";
+			case ATA_CMD_PACKET:       return "ATA_CMD_PACKET";
+			case ATA_CMD_READ:         return "ATA_CMD_READ";
+			case ATA_CMD_WRITE:        return "ATA_CMD_WRITE";
+			case ATA_CMD_SLEEP:        return "ATA_CMD_SLEEP";
+			case ATA_CMD_FLUSH:        return "ATA_CMD_FLUSH";
+			case ATA_CMD_ID_ATA:       return "ATA_CMD_ID_ATA";
+			case ATA_CMD_SET_FEATURES: return "ATA_CMD_SET_FEATURES";
 		}
 
-		return String.format("UNKNOWN_CMD_0x%02X", command);
+		return String.format("ATA_CMD_UNKNOWN_0x%02X", command);
 	}
 
 	protected static String getOperationCodeName(int operationCode) {
@@ -182,6 +208,7 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 	}
 
 	protected abstract int getInterruptNumber();
+	protected abstract boolean supportsCmdPacket();
 
 	protected void setLogicalBlockAddress(int logicalBlockAddress) {
 		this.logicalBlockAddress = logicalBlockAddress;
@@ -191,12 +218,23 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 	public void reset() {
 		super.reset();
 
-		// This is the required signature for a device supporting the ATA_CMD_PACKET command
 		sectorCount = 0x01;
 		sectorNumber = 0x01;
-		cylinderLow = 0x14;
-		cylinderHigh = 0xEB;
+		if (supportsCmdPacket()) {
+			// This is the required signature for a device supporting the ATA_CMD_PACKET command
+			cylinderLow = 0x14;
+			cylinderHigh = 0xEB;
+		} else {
+			// This is the required signature for a device not supporting the ATA_CMD_PACKET command
+			cylinderLow = 0x00;
+			cylinderHigh = 0x00;
+		}
 		drive = 0x00;
+		dataIndex = 0;
+		dataLength = 0;
+		totalDataLength = 0;
+		pendingOperationCodeParameters = -1;
+		logicalBlockAddress = 0;
 	}
 
 	private void setByteCount(int byteCount) {
@@ -204,7 +242,7 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		cylinderHigh = (byteCount >> 8) & 0xFF;
 	}
 
-	private void setInterruptReason(boolean CoD, boolean io) {
+	protected void setInterruptReason(boolean CoD, boolean io) {
 		if (CoD) {
 			sectorCount |= ATA_INTERRUPT_REASON_CoD;
 		} else {
@@ -218,25 +256,54 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		}
 	}
 
+	protected abstract void executePacketCommand(int[] data);
+	protected abstract void executeCommand(int command, int[] data, int dataLength, int totalDataLength, boolean firstCommand);
+	protected abstract void executeCommandWithData(int command, int pendingOperationCodeParameters, int[] data, int dataLength, boolean firstCommand, boolean lastCommand);
+
+	protected void prepareDataReceive(int length, int totalDataLength) {
+		status |= ATA_STATUS_BUSY;
+		setInterruptReason(true, false);
+		status |= ATA_STATUS_DATA_REQUEST;
+		status &= ~ATA_STATUS_BUSY;
+		dataLength = length;
+		this.totalDataLength = totalDataLength;
+		pendingOperationCodeParameters = -1;
+	}
+
 	private void setCommand(int command) {
 		this.command = command;
 		dataIndex = 0;
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerAta.setCommand command 0x%02X(%s)", command, getCommandName(this.command)));
+			log.debug(String.format("MMIOHandlerBaseAta.setCommand command 0x%02X(%s)", command, getCommandName(this.command)));
 		}
 
 		switch (command) {
 			case ATA_CMD_PACKET:
-				status |= ATA_STATUS_BUSY;
-				setInterruptReason(true, false);
-				status |= ATA_STATUS_DATA_REQUEST;
-				status &= ~ATA_STATUS_BUSY;
-				dataLength = 12;
-				pendingOperationCodeParameters = -1;
+				if (supportsCmdPacket()) {
+					prepareDataReceive(12, 12);
+				} else {
+					log.error(String.format("MMIOHandlerBaseAta.setCommand unsupported ATA_CMD_PACKET"));
+				}
+				break;
+			case ATA_CMD_DEV_RESET: // Leave sleep
+			case ATA_CMD_ID_ATA: // ATA Identify Drive
+			case ATA_CMD_SET_FEATURES:
+			case ATA_CMD_SLEEP:
+			case ATA_CMD_FLUSH:
+				executeCommand(command, data, 0, 0, true);
+				break;
+			case ATA_CMD_READ: // Read DMA
+			case ATA_CMD_WRITE: // Write DMA
+				if (supportsCmdPacket()) {
+					// Use prohibited for devices implementing the PACKET Command feature set.
+					log.error(String.format("MMIOHandlerBaseAta.setCommand unsupported command=0x%X(%s)", command, getCommandName(command)));
+				} else {
+					executeCommand(command, data, 0, 0, true);
+				}
 				break;
 			default:
-				log.error(String.format("MMIOHandlerAta.setCommand unknown command 0x%02X", command));
+				log.error(String.format("MMIOHandlerBaseAta.setCommand unknown command 0x%02X", command));
 				break;
 		}
 	}
@@ -245,7 +312,7 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		this.control = control;
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerAta.setControl control 0x%02X", this.control));
+			log.debug(String.format("MMIOHandlerBaseAta.setControl control 0x%02X", this.control));
 		}
 
 		if ((control & ATA_CONTROL_SOFT_RESET) != 0) {
@@ -257,8 +324,28 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		this.features = features;
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerAta.setFeatures features 0x%02X", this.features));
+			log.debug(String.format("MMIOHandlerBaseAta.setFeatures features 0x%02X", this.features));
 		}
+	}
+
+	protected int getFeatures() {
+		return features;
+	}
+
+	protected int getSectorCount() {
+		return sectorCount;
+	}
+
+	protected int getLBA() {
+		return sectorNumber | (cylinderLow << 8) | (cylinderHigh << 16) | ((drive & 0x0F) << 24);
+	}
+
+	protected boolean isLBA() {
+		return Utilities.hasBit(drive, 6);
+	}
+
+	protected int getCommand() {
+		return command;
 	}
 
 	private void writeData16(int data16) {
@@ -270,13 +357,24 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerAta.writeData 0x%04X", data16));
+			log.debug(String.format("MMIOHandlerBaseAta.writeData 0x%04X", data16));
 		}
 
 		if (dataIndex >= dataLength) {
-			dataLength = 0;
+			totalDataLength -= dataIndex;
 			dataIndex = 0;
-			executeCommand();
+			if (totalDataLength > 0) {
+				dataLength = Math.min(totalDataLength, SECTOR_SIZE);
+				executeCommandWithData(command, pendingOperationCodeParameters, data, dataLength, false, false);
+			} else {
+				status &= ~ATA_STATUS_DATA_REQUEST;
+				status |= ATA_STATUS_BUSY;
+
+				executeCommandWithData(command, pendingOperationCodeParameters, data, dataLength, false, true);
+
+				dataLength = 0;
+				pendingOperationCodeParameters = -1;
+			}
 		}
 	}
 
@@ -289,12 +387,12 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 			}
 		}
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerAta.getData16 returning 0x%04X", data16));
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("MMIOHandlerBaseAta.getData16 dataIndex=0x%X, dataLength=0x%X, totalDataLength=0x%X returning 0x%04X", dataIndex, dataLength, totalDataLength, data16));
 		}
 
 		if (dataIndex >= dataLength) {
-			packetCommandCompleted();
+			commandCompleted();
 		}
 
 		return data16;
@@ -305,21 +403,24 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		Arrays.fill(data, 0, allocationLength, 0);
 	}
 
-	protected void prepareDataEnd(int allocationLength) {
+	protected void prepareDataEnd(int allocationLength, int totalDataLength) {
 		dataLength = Math.min(allocationLength, dataIndex);
+		this.totalDataLength = Math.max(dataLength, totalDataLength);
 		dataIndex = 0;
 		setByteCount(dataLength);
 		setInterruptReason(false, true);
 		status |= ATA_STATUS_DATA_REQUEST;
 		status &= ~ATA_STATUS_BUSY;
-		triggerInterrupt(getProcessor(), getInterruptNumber());
+		if (getInterruptNumber() >= 0) {
+			triggerInterrupt(getProcessor(), getInterruptNumber());
+		}
 	}
 
-	protected void prepareDataEndWithDelay(int allocationLength, int delayUs) {
+	protected void prepareDataEndWithDelay(int allocationLength, int totalDataLength, int delayUs) {
 		if (delayUs <= 0) {
-			prepareDataEnd(allocationLength);
+			prepareDataEnd(allocationLength, totalDataLength);
 		} else {
-			Scheduler.getInstance().addAction(Scheduler.getNow() + delayUs, new PrepareDataEndAction(allocationLength));
+			Scheduler.getInstance().addAction(Scheduler.getNow() + delayUs, new PrepareDataEndAction(allocationLength, totalDataLength));
 		}
 	}
 
@@ -353,21 +454,29 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		}
 	}
 
-	public void packetCommandCompleted() {
-		dataLength = 0;
+	public void commandCompleted() {
+		totalDataLength -= dataIndex;
 		dataIndex = 0;
-		status &= ~ATA_STATUS_DATA_REQUEST;
-		status &= ~ATA_STATUS_BUSY;
-		status |= ATA_STATUS_DEVICE_READY;
-		setInterruptReason(true, true);
-		triggerInterrupt(getProcessor(), getInterruptNumber());
+		if (totalDataLength > 0) {
+			dataLength = Math.min(totalDataLength, SECTOR_SIZE);
+			executeCommand(command, data, dataLength, totalDataLength, false);
+		} else {
+			dataLength = 0;
+			status &= ~ATA_STATUS_DATA_REQUEST;
+			status &= ~ATA_STATUS_BUSY;
+			status |= ATA_STATUS_DEVICE_READY;
+			setInterruptReason(true, true);
+			if (getInterruptNumber() >= 0) {
+				triggerInterrupt(getProcessor(), getInterruptNumber());
+			}
+		}
 	}
 
-	public void packetCommandCompletedWithDelay(int delayUs) {
+	public void commandCompletedWithDelay(int delayUs) {
 		if (delayUs <= 0) {
-			packetCommandCompleted();
+			commandCompleted();
 		} else {
-			Scheduler.getInstance().addAction(Scheduler.getNow() + delayUs, new PacketCommandCompletedAction());
+			Scheduler.getInstance().addAction(Scheduler.getNow() + delayUs, new CommandCompletedAction());
 		}
 	}
 
@@ -383,58 +492,14 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		setInterruptReason(false, false);
 		status &= ~ATA_STATUS_BUSY;
 		status |= ATA_STATUS_DATA_REQUEST;
-		triggerInterrupt(getProcessor(), getInterruptNumber());
-	}
-
-	private void executeCommand() {
-		status &= ~ATA_STATUS_DATA_REQUEST;
-		status |= ATA_STATUS_BUSY;
-
-		switch (command) {
-			case ATA_CMD_PACKET:
-				if (pendingOperationCodeParameters < 0) {
-					executePacketCommand(data);
-				} else {
-					executePacketCommandParameterList(pendingOperationCodeParameters);
-					pendingOperationCodeParameters = -1;
-				}
-				break;
-			default:
-				log.error(String.format("MMIOHandlerAta.executeCommand unknown command 0x%02X", command));
-				break;
+		if (getInterruptNumber() >= 0) {
+			triggerInterrupt(getProcessor(), getInterruptNumber());
 		}
-	}
-
-	protected abstract void executePacketCommand(int[] data);
-
-	private void executePacketCommandParameterList(int operationCode) {
-		switch (operationCode) {
-			case ATA_CMD_OP_MODE_SELECT_BIG:
-				int pageCode = data[0] & 0x3F;
-				int pageLength = data[1];
-
-				if (pageCode != 0) {
-					log.error(String.format("ATA_CMD_OP_MODE_SELECT_BIG parameter unknown pageCode=0x%X", pageCode));
-				}
-				if (pageLength != 0x1A) {
-					log.error(String.format("ATA_CMD_OP_MODE_SELECT_BIG parameter unknown pageLength=0x%X", pageLength));
-				}
-
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("ATA_CMD_OP_MODE_SELECT_BIG parameters pageCode=0x%X, pageLength=0x%X", pageCode, pageLength));
-				}
-				break;
-			default:
-				log.error(String.format("MMIOHandlerAta.executePacketCommandParameterList unknown operation code 0x%02X(%s)", operationCode, getOperationCodeName(operationCode)));
-				break;
-		}
-
-		packetCommandCompleted();
 	}
 
 	private void endOfData(int value) {
 		if (value != 0) {
-			log.error(String.format("MMIOHandlerAta.endOfData unknown value=0x%02X", value));
+			log.error(String.format("MMIOHandlerBaseAta.endOfData unknown value=0x%02X", value));
 		}
 	}
 
@@ -442,7 +507,9 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 	 * Returns the regular status and clears the interrupt
 	 */
 	private int getRegularStatus() {
-		clearInterrupt(getProcessor(), getInterruptNumber());
+		if (getInterruptNumber() >= 0) {
+			clearInterrupt(getProcessor(), getInterruptNumber());
+		}
 		return status;
 	}
 

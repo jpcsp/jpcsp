@@ -249,7 +249,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 				region.setValue32(4, 0);
 
 				interrupt |= 0x1;
-				MMIOHandlerUmdAta.getInstance().packetCommandCompleted();
+				MMIOHandlerUmdAta.getInstance().commandCompleted();
 				break;
 			case 0x09:
 				interrupt |= 0x1;
@@ -301,7 +301,7 @@ public class MMIOHandlerUmd extends MMIOHandlerBase {
 				}
 
 				interrupt |= 0x1;
-				MMIOHandlerUmdAta.getInstance().packetCommandCompleted();
+				MMIOHandlerUmdAta.getInstance().commandCompleted();
 				break;
 			case 0x0B:
 				break;

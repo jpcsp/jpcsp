@@ -26,10 +26,12 @@ import jpcsp.HLE.TPointer;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
+import jpcsp.util.Utilities;
 
 public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements IState {
 	private static final int STATE_VERSION = 0;
 	private final SortedSet<Block> blocks = new TreeSet<Block>();
+	private boolean compareAtWrite;
 
 	private static class Block implements Comparable<Block>, IState {
 		private static final int STATE_VERSION = 0;
@@ -107,6 +109,12 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 
 	public WriteCacheVirtualFile(IVirtualFile vFile) {
 		super(vFile);
+	}
+
+	public WriteCacheVirtualFile(IVirtualFile vFile, boolean compareAtWrite) {
+		super(vFile);
+
+		this.compareAtWrite = compareAtWrite;
 	}
 
 	private void mergeBlocks(Block block1, Block block2) {
@@ -245,9 +253,24 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 	public int ioWrite(TPointer inputPointer, int inputLength) {
 		long position = vFile.getPosition();
 		byte[] data = inputPointer.getArray8(inputLength);
-		Block block = new Block(position, position + inputLength, data);
 
-		addBlock(block);
+		boolean ignoreWrite = false;
+		if (compareAtWrite) {
+			// If the written data is matching the data already present on vFile,
+			// ignore the write operation.
+			byte[] targetData = new byte[inputLength];
+			vFile.ioRead(targetData, 0, inputLength);
+
+			ignoreWrite = Utilities.equals(data, 0, targetData, 0, inputLength);
+		} else {
+			vFile.ioLseek(position + inputLength);
+		}
+
+		if (!ignoreWrite) {
+			Block block = new Block(position, position + inputLength, data);
+
+			addBlock(block);
+		}
 
 		return inputLength;
 	}
@@ -255,11 +278,26 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 	@Override
 	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
 		long position = vFile.getPosition();
-		byte[] data = new byte[inputLength];
-		System.arraycopy(inputBuffer, inputOffset, data, 0, inputLength);
-		Block block = new Block(position, position + inputLength, data);
 
-		addBlock(block);
+		boolean ignoreWrite = false;
+		if (compareAtWrite) {
+			// If the written data is matching the data already present on vFile,
+			// ignore the write operation.
+			byte[] targetData = new byte[inputLength];
+			vFile.ioRead(targetData, 0, inputLength);
+
+			ignoreWrite = Utilities.equals(inputBuffer, inputOffset, targetData, 0, inputLength);
+		} else {
+			vFile.ioLseek(position + inputLength);
+		}
+
+		if (!ignoreWrite) {
+			byte[] data = new byte[inputLength];
+			System.arraycopy(inputBuffer, inputOffset, data, 0, inputLength);
+			Block block = new Block(position, position + inputLength, data);
+
+			addBlock(block);
+		}
 
 		return inputLength;
 	}
@@ -267,6 +305,7 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 	@Override
 	public void read(StateInputStream stream) throws IOException {
     	stream.readVersion(STATE_VERSION);
+    	compareAtWrite = stream.readBoolean();
     	int numberBlocks = stream.readInt();
     	blocks.clear();
     	for (int i = 0; i < numberBlocks; i++) {
@@ -281,6 +320,7 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 	@Override
 	public void write(StateOutputStream stream) throws IOException {
     	stream.writeVersion(STATE_VERSION);
+    	stream.writeBoolean(compareAtWrite);
     	int numberBlocks = blocks.size();
     	stream.writeInt(numberBlocks);
     	for (Block block : blocks) {
