@@ -164,7 +164,7 @@ public class SafeDirectBufferMemory extends DirectBufferMemory {
 		}
 
 		if (!isAddressGood(address, length)) {
-			invalidMemoryAddress(address, "memset", Emulator.EMU_STATUS_MEM_WRITE);
+			invalidMemoryAddress(address, length, "memset", Emulator.EMU_STATUS_MEM_WRITE);
 			return;
 		}
 
@@ -174,7 +174,7 @@ public class SafeDirectBufferMemory extends DirectBufferMemory {
 	@Override
 	public void copyToMemory(int address, ByteBuffer source, int length) {
 		if (!isAddressGood(address, length)) {
-			invalidMemoryAddress(address, "copyToMemory", Emulator.EMU_STATUS_MEM_WRITE);
+			invalidMemoryAddress(address, length, "copyToMemory", Emulator.EMU_STATUS_MEM_WRITE);
 			return;
 		}
 
@@ -190,7 +190,7 @@ public class SafeDirectBufferMemory extends DirectBufferMemory {
 		        // because we cannot build a buffer starting at 0x4154000 and ending
 		        // at 0x4054000.
 		    } else {
-		        invalidMemoryAddress(address, "getBuffer", Emulator.EMU_STATUS_MEM_READ);
+		        invalidMemoryAddress(address, length, "getBuffer", Emulator.EMU_STATUS_MEM_READ);
 		        return null;
 		    }
 		}
@@ -205,11 +205,11 @@ public class SafeDirectBufferMemory extends DirectBufferMemory {
 		}
 
 		if (!isAddressGood(destination, length)) {
-			invalidMemoryAddress(destination, "memcpy", Emulator.EMU_STATUS_MEM_WRITE);
+			invalidMemoryAddress(destination, length, "memcpy", Emulator.EMU_STATUS_MEM_WRITE);
 			return;
 		}
 		if (!isAddressGood(source, length)) {
-			invalidMemoryAddress(source, "memcpy", Emulator.EMU_STATUS_MEM_READ);
+			invalidMemoryAddress(source, length, "memcpy", Emulator.EMU_STATUS_MEM_READ);
 			return;
 		}
 

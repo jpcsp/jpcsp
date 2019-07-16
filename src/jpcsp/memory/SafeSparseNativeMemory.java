@@ -127,7 +127,7 @@ public class SafeSparseNativeMemory extends SparseNativeMemory {
 		}
 
 		if (!isAddressGood(address, length)) {
-			invalidMemoryAddress(address, "memset", Emulator.EMU_STATUS_MEM_WRITE);
+			invalidMemoryAddress(address, length, "memset", Emulator.EMU_STATUS_MEM_WRITE);
 			return;
 		}
 
@@ -137,7 +137,7 @@ public class SafeSparseNativeMemory extends SparseNativeMemory {
 	@Override
 	public void copyToMemory(int address, ByteBuffer source, int length) {
 		if (!isAddressGood(address, length)) {
-			invalidMemoryAddress(address, "copyToMemory", Emulator.EMU_STATUS_MEM_WRITE);
+			invalidMemoryAddress(address, length, "copyToMemory", Emulator.EMU_STATUS_MEM_WRITE);
 			return;
 		}
 
@@ -153,7 +153,7 @@ public class SafeSparseNativeMemory extends SparseNativeMemory {
 		        // because we cannot build a buffer starting at 0x4154000 and ending
 		        // at 0x4054000.
 		    } else {
-		        invalidMemoryAddress(address, "getBuffer", Emulator.EMU_STATUS_MEM_READ);
+		        invalidMemoryAddress(address, length, "getBuffer", Emulator.EMU_STATUS_MEM_READ);
 		        return null;
 		    }
 		}
