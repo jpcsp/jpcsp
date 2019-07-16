@@ -171,6 +171,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	private int selectedClkTimer;
 	private int unknown6C;
 	private int unknown74;
+	private int unknownB8;
 	private int unknownC4;
 	private int unknownE8;
 	private int unknownF0;
@@ -211,6 +212,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		selectedClkTimer = stream.readInt();
 		unknown6C = stream.readInt();
 		unknown74 = stream.readInt();
+		unknownB8 = stream.readInt();
 		unknownC4 = stream.readInt();
 		unknownE8 = stream.readInt();
 		unknownF0 = stream.readInt();
@@ -240,6 +242,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		stream.writeInt(selectedClkTimer);
 		stream.writeInt(unknown6C);
 		stream.writeInt(unknown74);
+		stream.writeInt(unknownB8);
 		stream.writeInt(unknownC4);
 		stream.writeInt(unknownE8);
 		stream.writeInt(unknownF0);
@@ -268,6 +271,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		selectedClkTimer = 0;
 		unknown6C = 0;
 		unknown74 = 0;
+		unknownB8 = 0;
 		unknownC4 = 0;
 		unknownE8 = 0;
 		unknownF0 = 0;
@@ -563,6 +567,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 			case 0x090: value = (int) Modules.sceSysregModule.sceSysregGetFuseId(); break;
 			case 0x094: value = (int) (Modules.sceSysregModule.sceSysregGetFuseId() >> 32); break;
 			case 0x098: value = Modules.sceSysregModule.sceSysregGetFuseConfig(); break;
+			case 0x0B8: value = unknownB8; break;
 			case 0x0C4: value = unknownC4; break;
 			case 0x0E8: value = unknownE8; break;
 			case 0x0F0: value = unknownF0; break;
@@ -599,6 +604,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 			case 0x078: setIoDevices(value); break;
 			case 0x07C: gpioEnable = value; break;
 			case 0x080: clearUsbMemoryStick(value); break;
+			case 0x0B8: unknownB8 = value; break;
 			case 0x0C4: unknownC4 = value; break;
 			case 0x0E8: unknownE8 = value; break;
 			case 0x0F0: unknownF0 = value; break;
