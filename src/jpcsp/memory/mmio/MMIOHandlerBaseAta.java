@@ -49,6 +49,7 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 	public static final int ATA_CMD_PACKET = 0xA0;
 	public static final int ATA_CMD_READ = 0xC8;
 	public static final int ATA_CMD_WRITE = 0xCA;
+	public static final int ATA_CMD_STANDBYNOW1 = 0xE0;
 	public static final int ATA_CMD_SLEEP = 0xE6;
 	public static final int ATA_CMD_FLUSH = 0xE7;
 	public static final int ATA_CMD_ID_ATA = 0xEC;
@@ -178,6 +179,7 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 			case ATA_CMD_PACKET:       return "ATA_CMD_PACKET";
 			case ATA_CMD_READ:         return "ATA_CMD_READ";
 			case ATA_CMD_WRITE:        return "ATA_CMD_WRITE";
+			case ATA_CMD_STANDBYNOW1:  return "ATA_CMD_STANDBYNOW1";
 			case ATA_CMD_SLEEP:        return "ATA_CMD_SLEEP";
 			case ATA_CMD_FLUSH:        return "ATA_CMD_FLUSH";
 			case ATA_CMD_ID_ATA:       return "ATA_CMD_ID_ATA";
@@ -291,6 +293,7 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 			case ATA_CMD_SET_FEATURES:
 			case ATA_CMD_SLEEP:
 			case ATA_CMD_FLUSH:
+			case ATA_CMD_STANDBYNOW1:
 				executeCommand(command, data, 0, 0, true);
 				break;
 			case ATA_CMD_READ: // Read DMA

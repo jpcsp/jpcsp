@@ -88,6 +88,9 @@ public class MMIOHandlerEFlashDma extends MMIOHandlerBase {
 	private void writeReset(int value) {
 		if (value == 1) {
 			reset();
+
+			// This also performs a reset of the EFlash Ata interface
+			MMIOHandlerEFlashAta.getInstance().reset();
 		}
 	}
 

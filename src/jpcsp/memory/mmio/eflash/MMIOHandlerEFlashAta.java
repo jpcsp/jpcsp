@@ -206,6 +206,9 @@ public class MMIOHandlerEFlashAta extends MMIOHandlerBaseAta {
 			case ATA_CMD_DEV_RESET:
 				prepareDataEnd(0, 0);
 				break;
+			case ATA_CMD_STANDBYNOW1:
+				prepareDataEnd(0, 0);
+				break;
 			default:
 				log.error(String.format("MMIOHandlerEFlashAta.executeCommand unimplemented command 0x%X(%s)", command, getCommandName(command)));
 				break;
