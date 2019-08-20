@@ -83,6 +83,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(fullscreenCheck, "gui.fullscreen");
         setBoolFromSettings(useCompiler, "emu.compiler");
         setBoolFromSettings(profilerCheck, "emu.profiler");
+        setBoolFromSettings(accurateVfpuDotCheck, "emu.accurateVfpuDot");
         setBoolFromSettings(shadersCheck, "emu.useshaders");
         setBoolFromSettings(geometryShaderCheck, "emu.useGeometryShader");
         setBoolFromSettings(loadAndRunCheck, "emu.loadAndRun");
@@ -206,6 +207,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(fullscreenCheck, "gui.fullscreen");
         setBoolToSettings(useCompiler, "emu.compiler");
         setBoolToSettings(profilerCheck, "emu.profiler");
+        setBoolToSettings(accurateVfpuDotCheck, "emu.accurateVfpuDot");
         setBoolToSettings(shadersCheck, "emu.useshaders");
         setBoolToSettings(geometryShaderCheck, "emu.useGeometryShader");
         setBoolToSettings(loadAndRunCheck, "emu.loadAndRun");
@@ -505,6 +507,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         useCompiler = new javax.swing.JCheckBox();
         methodMaxInstructionsBox = new javax.swing.JComboBox();
         profilerCheck = new javax.swing.JCheckBox();
+        accurateVfpuDotCheck = new javax.swing.JCheckBox();
         methodMaxInstructionsLabel = new javax.swing.JLabel();
         DisplayPanel = new javax.swing.JPanel();
         antiAliasLabel = new javax.swing.JLabel();
@@ -1011,6 +1014,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         profilerCheck.setText(bundle.getString("SettingsGUI.profileCheck.text")); // NOI18N
 
+        accurateVfpuDotCheck.setText(bundle.getString("SettingsGUI.accurateVfpuDotCheck.text")); // NOI18N
+
         methodMaxInstructionsLabel.setText(bundle.getString("SettingsGUI.methodMaxInstructionsLabel.text")); // NOI18N
 
         javax.swing.GroupLayout CompilerPanelLayout = new javax.swing.GroupLayout(CompilerPanel);
@@ -1025,7 +1030,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, CompilerPanelLayout.createSequentialGroup()
                         .addComponent(methodMaxInstructionsBox, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(methodMaxInstructionsLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(methodMaxInstructionsLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE))
+                	.addComponent(accurateVfpuDotCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(358, Short.MAX_VALUE))
         );
         CompilerPanelLayout.setVerticalGroup(
@@ -1039,6 +1045,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addGroup(CompilerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(methodMaxInstructionsBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(methodMaxInstructionsLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(accurateVfpuDotCheck)
                 .addContainerGap(415, Short.MAX_VALUE))
         );
 
@@ -1431,6 +1439,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JCheckBox onlyGEGraphicsCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
     private javax.swing.JCheckBox profilerCheck;
+    private javax.swing.JCheckBox accurateVfpuDotCheck;
     private javax.swing.JPanel renderPanel;
     private javax.swing.JComboBox resolutionBox;
     private javax.swing.JLabel resolutionLabel;

@@ -54,6 +54,7 @@ public class Processor implements IState {
 
 	public Processor() {
     	setLogger(log);
+    	cpu.initialize();
         reset();
     }
 

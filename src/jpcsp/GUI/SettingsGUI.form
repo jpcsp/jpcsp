@@ -970,6 +970,7 @@
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="methodMaxInstructionsLabel" alignment="0" min="-2" pref="238" max="-2" attributes="1"/>
                           </Group>
+                          <Component id="accurateVfpuDotCheck" alignment="0" max="32767" attributes="1"/>
                       </Group>
                       <EmptySpace pref="358" max="32767" attributes="0"/>
                   </Group>
@@ -987,6 +988,8 @@
                           <Component id="methodMaxInstructionsBox" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="methodMaxInstructionsLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="accurateVfpuDotCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace pref="415" max="32767" attributes="0"/>
                   </Group>
               </Group>
@@ -1017,6 +1020,13 @@
               <Properties>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
                   <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.profileCheck.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="accurateVfpuDotCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.accurateVfpuDotCheck.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
             </Component>

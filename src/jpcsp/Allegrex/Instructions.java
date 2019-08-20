@@ -37,6 +37,7 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
 import static jpcsp.Allegrex.Cp0State.STATUS_IE;
 import static jpcsp.Allegrex.FpuState.IMPLEMENT_ROUNDING_MODES;
+import static jpcsp.Allegrex.VfpuState.useAccurateVfpuDot;
 import static jpcsp.Allegrex.compiler.CompilerContext.arraycopyDescriptor;
 import static jpcsp.Allegrex.compiler.CompilerContext.runtimeContextInternalName;
 import static jpcsp.util.Utilities.hasFlag;
@@ -6128,24 +6129,29 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	int vsize = context.getVsize();
-	if (vsize > 1) {
-	    context.startPfxCompiled();
-		context.prepareVdForStore(1, 0);
-		context.loadVs(0);
-		context.loadVt(0);
-		context.getMethodVisitor().visitInsn(Opcodes.FMUL);
-		for (int n = 1; n < vsize; n++) {
-			context.loadVs(n);
-			context.loadVt(n);
-			context.getMethodVisitor().visitInsn(Opcodes.FMUL);
-			context.getMethodVisitor().visitInsn(Opcodes.FADD);
-		}
-		context.storeVd(1, 0);
-		context.endPfxCompiled(1);
+	// Use the interpreter if we need an accurate "dot" implementation
+	if (useAccurateVfpuDot) {
+		super.compile(context, insn);
 	} else {
-		// Unsupported VDOT.S
-		context.compileInterpreterInstruction();
+		int vsize = context.getVsize();
+		if (vsize > 1) {
+		    context.startPfxCompiled();
+			context.prepareVdForStore(1, 0);
+			context.loadVs(0);
+			context.loadVt(0);
+			context.getMethodVisitor().visitInsn(Opcodes.FMUL);
+			for (int n = 1; n < vsize; n++) {
+				context.loadVs(n);
+				context.loadVt(n);
+				context.getMethodVisitor().visitInsn(Opcodes.FMUL);
+				context.getMethodVisitor().visitInsn(Opcodes.FADD);
+			}
+			context.storeVd(1, 0);
+			context.endPfxCompiled(1);
+		} else {
+			// Unsupported VDOT.S
+			context.compileInterpreterInstruction();
+		}
 	}
 }
 @Override
@@ -6232,26 +6238,31 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	int vsize = context.getVsize();
-	if (vsize > 1) {
-	    context.startPfxCompiled();
-		context.prepareVdForStore(1, 0);
-		context.loadVs(0);
-		context.loadVt(0);
-		context.getMethodVisitor().visitInsn(Opcodes.FMUL);
-		for (int n = 1; n < vsize - 1; n++) {
-			context.loadVs(n);
-			context.loadVt(n);
-			context.getMethodVisitor().visitInsn(Opcodes.FMUL);
-			context.getMethodVisitor().visitInsn(Opcodes.FADD);
-		}
-		context.loadVt(vsize - 1);
-		context.getMethodVisitor().visitInsn(Opcodes.FADD);
-		context.storeVd(1, 0);
-		context.endPfxCompiled(1);
+	// Use the interpreter if we need an accurate "dot" implementation
+	if (useAccurateVfpuDot) {
+		super.compile(context, insn);
 	} else {
-		// Unsupported VHDP.S
-		context.compileInterpreterInstruction();
+		int vsize = context.getVsize();
+		if (vsize > 1) {
+		    context.startPfxCompiled();
+			context.prepareVdForStore(1, 0);
+			context.loadVs(0);
+			context.loadVt(0);
+			context.getMethodVisitor().visitInsn(Opcodes.FMUL);
+			for (int n = 1; n < vsize - 1; n++) {
+				context.loadVs(n);
+				context.loadVt(n);
+				context.getMethodVisitor().visitInsn(Opcodes.FMUL);
+				context.getMethodVisitor().visitInsn(Opcodes.FADD);
+			}
+			context.loadVt(vsize - 1);
+			context.getMethodVisitor().visitInsn(Opcodes.FADD);
+			context.storeVd(1, 0);
+			context.endPfxCompiled(1);
+		} else {
+			// Unsupported VHDP.S
+			context.compileInterpreterInstruction();
+		}
 	}
 }
 @Override
@@ -9642,32 +9653,37 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	int vsize = context.getVsize();
-	if (vsize > 1) {
-	    context.startPfxCompiled();
-		int vs = context.getVsRegisterIndex();
-		int vt = context.getVtRegisterIndex();
-		int vd = context.getVdRegisterIndex();
-		for (int i = 0; i < vsize; i++) {
-			for (int j = 0; j < vsize; j++) {
-				context.prepareVdForStore(vsize, vd + i, j);
-				context.loadVs(vsize, vs + j, 0);
-				context.loadVt(vsize, vt + i, 0);
-				context.getMethodVisitor().visitInsn(Opcodes.FMUL);
-				for (int n = 1; n < vsize; n++) {
-					context.loadVs(vsize, vs + j, n);
-					context.loadVt(vsize, vt + i, n);
-					context.getMethodVisitor().visitInsn(Opcodes.FMUL);
-					context.getMethodVisitor().visitInsn(Opcodes.FADD);
-				}
-				context.storeVd(vsize, vd + i, j);
-			}
-			context.flushPfxCompiled(vsize, vd + i, true);
-		}
-		context.endPfxCompiled(vsize, true, false);
+	// Use the interpreter if we need an accurate "dot" implementation
+	if (useAccurateVfpuDot) {
+		super.compile(context, insn);
 	} else {
-		// Unsupported VMMUL.S
-		context.compileInterpreterInstruction();
+		int vsize = context.getVsize();
+		if (vsize > 1) {
+		    context.startPfxCompiled();
+			int vs = context.getVsRegisterIndex();
+			int vt = context.getVtRegisterIndex();
+			int vd = context.getVdRegisterIndex();
+			for (int i = 0; i < vsize; i++) {
+				for (int j = 0; j < vsize; j++) {
+					context.prepareVdForStore(vsize, vd + i, j);
+					context.loadVs(vsize, vs + j, 0);
+					context.loadVt(vsize, vt + i, 0);
+					context.getMethodVisitor().visitInsn(Opcodes.FMUL);
+					for (int n = 1; n < vsize; n++) {
+						context.loadVs(vsize, vs + j, n);
+						context.loadVt(vsize, vt + i, n);
+						context.getMethodVisitor().visitInsn(Opcodes.FMUL);
+						context.getMethodVisitor().visitInsn(Opcodes.FADD);
+					}
+					context.storeVd(vsize, vd + i, j);
+				}
+				context.flushPfxCompiled(vsize, vd + i, true);
+			}
+			context.endPfxCompiled(vsize, true, false);
+		} else {
+			// Unsupported VMMUL.S
+			context.compileInterpreterInstruction();
+		}
 	}
 }
 @Override
@@ -9794,29 +9810,34 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	final int vsize = 3;
-	final int vs = context.getVsRegisterIndex();
-	MethodVisitor mv = context.getMethodVisitor();
-	context.loadVt(vsize, 0);
-	context.storeFTmp1();
-	context.loadVt(vsize, 1);
-	context.storeFTmp2();
-	context.loadVt(vsize, 2);
-	context.storeFTmp3();
-	for (int n = 0; n < vsize; n++) {
-		context.prepareVdForStore(vsize, n);
-		context.loadVs(vsize, vs + n, 0);
-		context.loadFTmp1();
-		mv.visitInsn(Opcodes.FMUL);
-		context.loadVs(vsize, vs + n, 1);
-		context.loadFTmp2();
-		mv.visitInsn(Opcodes.FMUL);
-		mv.visitInsn(Opcodes.FADD);
-		context.loadVs(vsize, vs + n, 2);
-		context.loadFTmp3();
-		mv.visitInsn(Opcodes.FMUL);
-		mv.visitInsn(Opcodes.FADD);
-		context.storeVd(vsize, n);
+	// Use the interpreter if we need an accurate "dot" implementation
+	if (useAccurateVfpuDot) {
+		super.compile(context, insn);
+	} else {
+		final int vsize = 3;
+		final int vs = context.getVsRegisterIndex();
+		MethodVisitor mv = context.getMethodVisitor();
+		context.loadVt(vsize, 0);
+		context.storeFTmp1();
+		context.loadVt(vsize, 1);
+		context.storeFTmp2();
+		context.loadVt(vsize, 2);
+		context.storeFTmp3();
+		for (int n = 0; n < vsize; n++) {
+			context.prepareVdForStore(vsize, n);
+			context.loadVs(vsize, vs + n, 0);
+			context.loadFTmp1();
+			mv.visitInsn(Opcodes.FMUL);
+			context.loadVs(vsize, vs + n, 1);
+			context.loadFTmp2();
+			mv.visitInsn(Opcodes.FMUL);
+			mv.visitInsn(Opcodes.FADD);
+			context.loadVs(vsize, vs + n, 2);
+			context.loadFTmp3();
+			mv.visitInsn(Opcodes.FMUL);
+			mv.visitInsn(Opcodes.FADD);
+			context.storeVd(vsize, n);
+		}
 	}
 }
 @Override
@@ -9848,31 +9869,36 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	final int vsize = 4;
-	final int vs = context.getVsRegisterIndex();
-	MethodVisitor mv = context.getMethodVisitor();
-	context.loadVt(3, 0);
-	context.storeFTmp1();
-	context.loadVt(3, 1);
-	context.storeFTmp2();
-	context.loadVt(3, 2);
-	context.storeFTmp3();
-	for (int n = 0; n < vsize; n++) {
-		context.prepareVdForStore(vsize, n);
-		context.loadVs(vsize, vs + n, 0);
-		context.loadFTmp1();
-		mv.visitInsn(Opcodes.FMUL);
-		context.loadVs(vsize, vs + n, 1);
-		context.loadFTmp2();
-		mv.visitInsn(Opcodes.FMUL);
-		mv.visitInsn(Opcodes.FADD);
-		context.loadVs(vsize, vs + n, 2);
-		context.loadFTmp3();
-		mv.visitInsn(Opcodes.FMUL);
-		mv.visitInsn(Opcodes.FADD);
-		context.loadVs(vsize, vs + n, 3);
-		mv.visitInsn(Opcodes.FADD);
-		context.storeVd(vsize, n);
+	// Use the interpreter if we need an accurate "dot" implementation
+	if (useAccurateVfpuDot) {
+		super.compile(context, insn);
+	} else {
+		final int vsize = 4;
+		final int vs = context.getVsRegisterIndex();
+		MethodVisitor mv = context.getMethodVisitor();
+		context.loadVt(3, 0);
+		context.storeFTmp1();
+		context.loadVt(3, 1);
+		context.storeFTmp2();
+		context.loadVt(3, 2);
+		context.storeFTmp3();
+		for (int n = 0; n < vsize; n++) {
+			context.prepareVdForStore(vsize, n);
+			context.loadVs(vsize, vs + n, 0);
+			context.loadFTmp1();
+			mv.visitInsn(Opcodes.FMUL);
+			context.loadVs(vsize, vs + n, 1);
+			context.loadFTmp2();
+			mv.visitInsn(Opcodes.FMUL);
+			mv.visitInsn(Opcodes.FADD);
+			context.loadVs(vsize, vs + n, 2);
+			context.loadFTmp3();
+			mv.visitInsn(Opcodes.FMUL);
+			mv.visitInsn(Opcodes.FADD);
+			context.loadVs(vsize, vs + n, 3);
+			mv.visitInsn(Opcodes.FADD);
+			context.storeVd(vsize, n);
+		}
 	}
 }
 @Override
@@ -9904,35 +9930,40 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	final int vsize = 4;
-	final int vs = context.getVsRegisterIndex();
-	MethodVisitor mv = context.getMethodVisitor();
-	context.loadVt(vsize, 0);
-	context.storeFTmp1();
-	context.loadVt(vsize, 1);
-	context.storeFTmp2();
-	context.loadVt(vsize, 2);
-	context.storeFTmp3();
-	context.loadVt(vsize, 3);
-	context.storeFTmp4();
-	for (int n = 0; n < vsize; n++) {
-		context.prepareVdForStore(vsize, n);
-		context.loadVs(vsize, vs + n, 0);
-		context.loadFTmp1();
-		mv.visitInsn(Opcodes.FMUL);
-		context.loadVs(vsize, vs + n, 1);
-		context.loadFTmp2();
-		mv.visitInsn(Opcodes.FMUL);
-		mv.visitInsn(Opcodes.FADD);
-		context.loadVs(vsize, vs + n, 2);
-		context.loadFTmp3();
-		mv.visitInsn(Opcodes.FMUL);
-		mv.visitInsn(Opcodes.FADD);
-		context.loadVs(vsize, vs + n, 3);
-		context.loadFTmp4();
-		mv.visitInsn(Opcodes.FMUL);
-		mv.visitInsn(Opcodes.FADD);
-		context.storeVd(vsize, n);
+	// Use the interpreter if we need an accurate "dot" implementation
+	if (useAccurateVfpuDot) {
+		super.compile(context, insn);
+	} else {
+		final int vsize = 4;
+		final int vs = context.getVsRegisterIndex();
+		MethodVisitor mv = context.getMethodVisitor();
+		context.loadVt(vsize, 0);
+		context.storeFTmp1();
+		context.loadVt(vsize, 1);
+		context.storeFTmp2();
+		context.loadVt(vsize, 2);
+		context.storeFTmp3();
+		context.loadVt(vsize, 3);
+		context.storeFTmp4();
+		for (int n = 0; n < vsize; n++) {
+			context.prepareVdForStore(vsize, n);
+			context.loadVs(vsize, vs + n, 0);
+			context.loadFTmp1();
+			mv.visitInsn(Opcodes.FMUL);
+			context.loadVs(vsize, vs + n, 1);
+			context.loadFTmp2();
+			mv.visitInsn(Opcodes.FMUL);
+			mv.visitInsn(Opcodes.FADD);
+			context.loadVs(vsize, vs + n, 2);
+			context.loadFTmp3();
+			mv.visitInsn(Opcodes.FMUL);
+			mv.visitInsn(Opcodes.FADD);
+			context.loadVs(vsize, vs + n, 3);
+			context.loadFTmp4();
+			mv.visitInsn(Opcodes.FMUL);
+			mv.visitInsn(Opcodes.FADD);
+			context.storeVd(vsize, n);
+		}
 	}
 }
 @Override

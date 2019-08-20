@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import static java.lang.Float.floatToRawIntBits;
 import static java.lang.Float.isInfinite;
 import static java.lang.Float.isNaN;
 import static java.lang.Math.abs;
@@ -27,6 +28,8 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 import jpcsp.Memory;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -37,7 +40,17 @@ import jpcsp.state.StateOutputStream;
  */
 public class VfpuState extends FpuState {
 	private static final int STATE_VERSION = 0;
-    // We have a problem using Float.intBitsToFloat():
+	public static boolean useAccurateVfpuDot = false;
+	private static final AccurateVfpuDotSettingsListerner accurateVfpuDotSettingsListerner = new AccurateVfpuDotSettingsListerner();
+
+	private static class AccurateVfpuDotSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			useAccurateVfpuDot = value;
+		}
+	}
+
+	// We have a problem using Float.intBitsToFloat():
     // extract from the JDK 1.6 documentation:
     //    "...Consequently, for some int values,
     //     floatToRawIntBits(intBitsToFloat(start)) may not equal start.
@@ -346,6 +359,10 @@ public class VfpuState extends FpuState {
         rnd = new Random();
     }
 
+    public void initialize() {
+    	Settings.getInstance().registerSettingsListener("VfpuState", "emu.accurateVfpuDot", accurateVfpuDotSettingsListerner);
+    }
+
     public void copy(VfpuState that) {
         super.copy(that);
         System.arraycopy(that.vprFloat, 0, vprFloat, 0, vprFloat.length);
@@ -451,6 +468,8 @@ public class VfpuState extends FpuState {
     private final float[] v1 = new float[4];
     private final float[] v2 = new float[4];
     private final float[] v3 = new float[4];
+    private final float[] v = new float[4];
+    private final float[] vv = new float[4];
     private final int[] v1i = new int[4];
     private final int[] v2i = new int[4];
     private final int[] v3i = new int[4];
@@ -1312,6 +1331,141 @@ public class VfpuState extends FpuState {
         return s | (e << 10) | (f >> 13);
     }
 
+    private int getUExp(float value) {
+    	return (floatToRawIntBits(value) >> 23) & 0xFF;
+    }
+
+    private int getRawMant(float value) {
+    	return floatToRawIntBits(value) & 0x007FFFFF;
+    }
+
+    private int getMant(float value) {
+    	// Note: this returns the hidden 1.
+    	return getRawMant(value) | 0x00800000;
+    }
+
+    private int getSign(float value) {
+    	return floatToRawIntBits(value) & 0x80000000;
+    }
+
+    // Based on the implementation from "[Unknown]" in PPSSPP
+    private float vfpuDot(int vsize, float a[], float b[]) {
+    	if (!useAccurateVfpuDot) {
+    		float dot = a[0] * b[0];
+    		for (int i = 1; i < vsize; i++) {
+    			dot += a[i] * b[i];
+    		}
+    		return dot;
+    	}
+
+    	final int EXTRA_BITS = 2;
+
+    	final int exps[] = new int[4];
+    	final int mants[] = new int[4];
+    	final int signs[] = new int[4];
+    	int maxExp = 0;
+    	int lastInf = -1;
+
+    	for (int i = 0; i < vsize; i++) {
+    		int aExp = getUExp(a[i]);
+    		int bExp = getUExp(b[i]);
+    		int aMant = getMant(a[i]) << EXTRA_BITS;
+    		int bMant = getMant(b[i]) << EXTRA_BITS;
+
+    		exps[i] = aExp + bExp - 127;
+    		if (aExp == 255) {
+    			// INF * 0 = NAN
+    			if (getRawMant(a[i]) != 0 || bExp == 0) {
+    				return Float.intBitsToFloat(0x7F800001);
+    			}
+    			mants[i] = getMant(0f) << EXTRA_BITS;
+    			exps[i] = 255;
+    		} else if (bExp == 255) {
+    			if (getRawMant(b[i]) != 0 || aExp == 0) {
+    				return Float.intBitsToFloat(0x7F800001);
+    			}
+    			mants[i] = getMant(0f) << EXTRA_BITS;
+    			exps[i] = 255;
+    		} else {
+    			long adjust = ((long) aMant) * ((long) bMant);
+    			mants[i] = ((int) (adjust >> (23 + EXTRA_BITS))) & 0x7FFFFFFF;
+    		}
+
+    		signs[i] = getSign(a[i]) ^ getSign(b[i]);
+
+    		if (exps[i] > maxExp) {
+    			maxExp = exps[i];
+    		}
+
+    		if (exps[i] >= 255) {
+    			// Infinity minus infinity is not a real number.
+    			if (lastInf != -1 && signs[i] != lastInf) {
+    				return Float.intBitsToFloat(0x7F800001);
+    			}
+    			lastInf = signs[i];
+    		}
+    	}
+
+    	int mantSum = 0;
+    	for (int i = 0; i < vsize; i++) {
+    		int exp = maxExp - exps[i];
+    		if (exp >= 32) {
+    			mants[i] = 0;
+    		} else {
+    			mants[i] >>= exp;
+    		}
+
+    		if (signs[i] != 0) {
+    			mants[i] = -mants[i];
+    		}
+
+    		mantSum += mants[i];
+    	}
+
+    	int signSum = 0;
+    	if (mantSum < 0) {
+    		signSum = 0x80000000;
+    		mantSum = -mantSum;
+    	}
+
+    	// Truncate off the extra bits now.  We want to zero them for rounding purposes.
+    	mantSum >>= EXTRA_BITS;
+
+    	if (mantSum == 0 || maxExp < 0) {
+    		return 0f;
+    	}
+
+    	int shift = Integer.numberOfLeadingZeros(mantSum) - 8;
+    	if (shift < 0) {
+    		// Round to even if we'd shift away a 0.5.
+    		int roundBit = 1 << (-shift - 1);
+    		if ((mantSum & roundBit) != 0 && (mantSum & (roundBit << 1)) != 0) {
+    			mantSum += roundBit;
+    			shift = Integer.numberOfLeadingZeros(mantSum) - 8;
+    		} else if ((mantSum & roundBit) != 0 && (mantSum & (roundBit - 1)) != 0) {
+    			mantSum += roundBit;
+    			shift = Integer.numberOfLeadingZeros(mantSum) - 8;
+    		}
+
+    		mantSum >>= -shift;
+    		maxExp += -shift;
+    	} else {
+    		mantSum <<= shift;
+    		maxExp -= shift;
+    	}
+
+    	if (maxExp >= 255) {
+    		maxExp = 255;
+    		mantSum = 0;
+    	} else if (maxExp <= 0) {
+    		return 0f;
+    	}
+
+    	float result = Float.intBitsToFloat(signSum | (maxExp << 23) | (mantSum & 0x007FFFFF));
+
+    	return result;
+    }
+
     // group VFPU0
     // VFPU0:VADD
     public void doVADD(int vsize, int vd, int vs, int vt) {
@@ -1396,13 +1550,7 @@ public class VfpuState extends FpuState {
         loadVs(vsize, vs);
         loadVt(vsize, vt);
 
-        float dot = v1[0] * v2[0];
-
-        for (int i = 1; i < vsize; ++i) {
-            dot += v1[i] * v2[i];
-        }
-
-        v3[0] = dot;
+    	v3[0] = vfpuDot(vsize, v1, v2);
 
         saveVd(1, vd, v3);
     }
@@ -1434,16 +1582,10 @@ public class VfpuState extends FpuState {
         loadVs(vsize, vs);
         loadVt(vsize, vt);
 
-        float hdp = v1[0] * v2[0];
-
-        int i;
-
-        for (i = 1; i < vsize - 1; ++i) {
-            hdp += v1[i] * v2[i];
-        }
-
 		// Tested: last element is only v2[i] (and not v1[i]*v2[i])
-        v2[0] = hdp + v2[i];
+        v1[vsize - 1] = 1f;
+
+        v2[0] = vfpuDot(vsize, v1, v2);
 
         saveVd(1, vd, v2);
     }
@@ -1474,7 +1616,14 @@ public class VfpuState extends FpuState {
         loadVs(2, vs);
         loadVt(2, vt);
 
-        v1[0] = v1[0] * v2[1] - v1[1] * v2[0];
+        if (useAccurateVfpuDot) {
+        	v1[1] = -v1[1];
+        	v3[0] = v2[1];
+        	v3[1] = v2[0];
+        	v1[0] = vfpuDot(vsize, v1, v3);
+        } else {
+        	v1[0] = v1[0] * v2[1] - v1[1] * v2[0];
+        }
 
         saveVd(1, vd, v1);
     }
@@ -2393,8 +2542,15 @@ public class VfpuState extends FpuState {
 
         loadVs(vsize, vs);
 
-        for (int i = 1; i < vsize; ++i) {
-            v1[0] += v1[i];
+        if (useAccurateVfpuDot) {
+        	for (int i = 0; i < vsize; i++) {
+        		v2[i] = 1f;
+        	}
+        	v1[0] = vfpuDot(vsize, v1, v2);
+        } else {
+	        for (int i = 1; i < vsize; ++i) {
+	            v1[0] += v1[i];
+	        }
         }
 
         saveVd(1, vd, v1);
@@ -2408,10 +2564,11 @@ public class VfpuState extends FpuState {
 
         loadVs(vsize, vs);
 
-        v1[0] /= vsize;
-        for (int i = 1; i < vsize; ++i) {
-            v1[0] += v1[i] / vsize;
-        }
+    	final float mult = 1f / vsize;
+    	for (int i = 0; i < vsize; i++) {
+    		v2[i] = mult;
+    	}
+    	v1[0] = vfpuDot(vsize, v1, v2);
 
         saveVd(1, vd, v1);
     }
@@ -2971,11 +3128,8 @@ public class VfpuState extends FpuState {
             loadVt(vsize, vt + i);
             for (int j = 0; j < vsize; ++j) {
                 loadVs(vsize, vs + j);
-                float dot = v1[0] * v2[0];
-                for (int k = 1; k < vsize; ++k) {
-                    dot += v1[k] * v2[k];
-                }
-                v3[j] = dot;
+
+                v3[j] = vfpuDot(vsize, v1, v2);
             }
             saveVd(vsize, vd + i, v3);
         }
@@ -2985,9 +3139,11 @@ public class VfpuState extends FpuState {
     public void doVHTFM2(int vd, int vs, int vt) {
         loadVt(1, vt);
         loadVs(2, vs + 0);
-        v3[0] = v1[0] * v2[0] + v1[1];
+        v2[1] = 1f;
+        v3[0] = vfpuDot(2, v1, v2);
         loadVs(2, vs + 1);
-        v3[1] = v1[0] * v2[0] + v1[1];
+        v2[1] = 1f;
+        v3[1] = vfpuDot(2, v1, v2);
         saveVd(2, vd, v3);
     }
 
@@ -2995,9 +3151,9 @@ public class VfpuState extends FpuState {
     public void doVTFM2(int vd, int vs, int vt) {
         loadVt(2, vt);
         loadVs(2, vs + 0);
-        v3[0] = v1[0] * v2[0] + v1[1] * v2[1];
+    	v3[0] = vfpuDot(2, v1, v2);
         loadVs(2, vs + 1);
-        v3[1] = v1[0] * v2[0] + v1[1] * v2[1];
+    	v3[1] = vfpuDot(2, v1, v2);
         saveVd(2, vd, v3);
     }
 
@@ -3005,11 +3161,14 @@ public class VfpuState extends FpuState {
     public void doVHTFM3(int vd, int vs, int vt) {
         loadVt(2, vt);
         loadVs(3, vs + 0);
-        v3[0] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2];
+        v2[2] = 1f;
+        v3[0] = vfpuDot(3, v1, v2);
         loadVs(3, vs + 1);
-        v3[1] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2];
+        v2[2] = 1f;
+        v3[1] = vfpuDot(3, v1, v2);
         loadVs(3, vs + 2);
-        v3[2] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2];
+        v2[2] = 1f;
+        v3[2] = vfpuDot(3, v1, v2);
         saveVd(3, vd, v3);
     }
 
@@ -3017,11 +3176,11 @@ public class VfpuState extends FpuState {
     public void doVTFM3(int vd, int vs, int vt) {
         loadVt(3, vt);
         loadVs(3, vs + 0);
-        v3[0] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+    	v3[0] = vfpuDot(3, v1, v2);
         loadVs(3, vs + 1);
-        v3[1] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+    	v3[1] = vfpuDot(3, v1, v2);
         loadVs(3, vs + 2);
-        v3[2] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+    	v3[2] = vfpuDot(3, v1, v2);
         saveVd(3, vd, v3);
     }
 
@@ -3029,13 +3188,17 @@ public class VfpuState extends FpuState {
     public void doVHTFM4(int vd, int vs, int vt) {
         loadVt(3, vt);
         loadVs(4, vs + 0);
-        v3[0] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3];
+        v2[3] = 1f;
+    	v3[0] = vfpuDot(4, v1, v2);
         loadVs(4, vs + 1);
-        v3[1] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3];
+        v2[3] = 1f;
+    	v3[1] = vfpuDot(4, v1, v2);
         loadVs(4, vs + 2);
-        v3[2] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3];
+        v2[3] = 1f;
+    	v3[2] = vfpuDot(4, v1, v2);
         loadVs(4, vs + 3);
-        v3[3] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3];
+        v2[3] = 1f;
+    	v3[3] = vfpuDot(4, v1, v2);
         saveVd(4, vd, v3);
     }
 
@@ -3043,13 +3206,13 @@ public class VfpuState extends FpuState {
     public void doVTFM4(int vd, int vs, int vt) {
         loadVt(4, vt);
         loadVs(4, vs + 0);
-        v3[0] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3];
+    	v3[0] = vfpuDot(4, v1, v2);
         loadVs(4, vs + 1);
-        v3[1] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3];
+    	v3[1] = vfpuDot(4, v1, v2);
         loadVs(4, vs + 2);
-        v3[2] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3];
+    	v3[2] = vfpuDot(4, v1, v2);
         loadVs(4, vs + 3);
-        v3[3] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3];
+    	v3[3] = vfpuDot(4, v1, v2);
         saveVd(4, vd, v3);
     }
 
@@ -3065,9 +3228,21 @@ public class VfpuState extends FpuState {
         loadVs(3, vs);
         loadVt(3, vt);
 
-        v3[0] = +v1[1] * v2[2] - v1[2] * v2[1];
-        v3[1] = +v1[2] * v2[0] - v1[0] * v2[2];
-        v3[2] = +v1[0] * v2[1] - v1[1] * v2[0];
+        v[0] = v1[1];
+        v[1] = -v1[2];
+        vv[0] = v2[2];
+        vv[1] = v2[1];
+        v3[0] = vfpuDot(2, v, vv);
+        v[0] = v1[2];
+        v[1] = -v1[0];
+        vv[0] = v2[0];
+        vv[1] = v2[2];
+        v3[1] = vfpuDot(2, v, vv);
+        v[0] = v1[0];
+        v[1] = -v1[1];
+        vv[0] = v2[1];
+        vv[1] = v2[0];
+        v3[2] = vfpuDot(2, v, vv);
 
         saveVd(3, vd, v3);
     }
@@ -3077,10 +3252,26 @@ public class VfpuState extends FpuState {
         loadVs(4, vs);
         loadVt(4, vt);
 
-        v3[0] = +v1[0] * v2[3] + v1[1] * v2[2] - v1[2] * v2[1] + v1[3] * v2[0];
-        v3[1] = -v1[0] * v2[2] + v1[1] * v2[3] + v1[2] * v2[0] + v1[3] * v2[1];
-        v3[2] = +v1[0] * v2[1] - v1[1] * v2[0] + v1[2] * v2[3] + v1[3] * v2[2];
-        v3[3] = -v1[0] * v2[0] - v1[1] * v2[1] - v1[2] * v2[2] + v1[3] * v2[3];
+        v[0] = v2[3];
+        v[1] = v2[2];
+        v[2] = -v2[1];
+        v[3] = v2[0];
+        v3[0] = vfpuDot(4, v1, v);
+        v[0] = -v2[2];
+        v[1] = v2[3];
+        v[2] = v2[0];
+        v[3] = v2[1];
+        v3[1] = vfpuDot(4, v1, v);
+        v[0] = v2[1];
+        v[1] = -v2[0];
+        v[2] = v2[3];
+        v[3] = v2[2];
+        v3[2] = vfpuDot(4, v1, v);
+        v[0] = -v2[0];
+        v[1] = -v2[1];
+        v[2] = -v2[2];
+        v[3] = v2[3];
+        v3[3] = vfpuDot(4, v1, v);
 
         saveVd(4, vd, v3);
     }
