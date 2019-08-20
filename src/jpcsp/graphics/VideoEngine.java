@@ -3951,7 +3951,9 @@ public class VideoEngine {
     }
 
     private void executeCommandSTE() {
-        context.stencilTestFlag.setEnabled(normalArgument);
+    	if (!context.clearMode) {
+    		context.stencilTestFlag.setEnabled(normalArgument);
+    	}
     }
 
     private void executeCommandAAE() {
@@ -4995,7 +4997,9 @@ public class VideoEngine {
                 break;
         }
         context.stencilMask = (normalArgument >> 16) & 0xFF;
-        re.setStencilFunc(context.stencilFunc, context.stencilRef, context.stencilMask);
+        if (!context.clearMode) {
+        	re.setStencilFunc(context.stencilFunc, context.stencilRef, context.stencilMask);
+        }
 
         if (isLogDebugEnabled) {
             log(String.format("sceGuStencilFunc(func=%d, ref=0x%02X, mask=0x%02X)", context.stencilFunc, context.stencilRef, context.stencilMask));
@@ -5029,7 +5033,9 @@ public class VideoEngine {
             }
         }
 
-        re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
+        if (!context.clearMode) {
+        	re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
+        }
 
         if (isLogDebugEnabled) {
             log("sceGuStencilOp(fail=" + (normalArgument & 0xFF) + ", zfail=" + ((normalArgument >> 8) & 0xFF) + ", zpass=" + ((normalArgument >> 16) & 0xFF) + ")");
@@ -6658,7 +6664,7 @@ public class VideoEngine {
         }
 
         /*
-         * Load the 2D ortho (only after the depth settings
+         * Load the 2D ortho (only after the depth settings)
          */
         if (loadOrtho2D) {
             re.setProjectionMatrix(getOrthoMatrix(0, 480, 272, 0, 0, -0xFFFF));
