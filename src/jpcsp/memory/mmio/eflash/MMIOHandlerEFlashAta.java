@@ -55,9 +55,12 @@ public class MMIOHandlerEFlashAta extends MMIOHandlerBaseAta {
 
 		eflashFile = new WriteCacheVirtualFile(new NullVirtualFile(eflashSize), true);
 
+		// See
+		//   https://github.com/uyjulian/pfsshell/tree/master/apa/src
+		// for more information about the APA partition system
 		eflashFile.ioLseek(0x2000 * SECTOR_SIZE);
 		writeUnaligned32(buffer, 0, 0x4150414C); // "LAPA"
-		writeUnaligned32(buffer, 4, 0); // count of sectors pending to be written
+		writeUnaligned32(buffer, 4, 0); // number of sectors in the APA journal
 		eflashFile.ioWrite(buffer, 0, SECTOR_SIZE);
 	}
 
@@ -191,7 +194,7 @@ public class MMIOHandlerEFlashAta extends MMIOHandlerBaseAta {
 					prepareDataReceive(dataLength, totalDataLength);
 
 					if (log.isDebugEnabled()) {
-						log.error(String.format("MMIOHandlerEFlashAta.executeCommand ATA_CMD_WRITE LBA=0x%X, sectorCount=0x%X", lba, sectorCount));
+						log.debug(String.format("MMIOHandlerEFlashAta.executeCommand ATA_CMD_WRITE LBA=0x%X, sectorCount=0x%X", lba, sectorCount));
 					}
 				} else {
 					log.error(String.format("MMIOHandlerEFlashAta.executeCommand ATA_CMD_WRITE unimplemented non-LBA read"));
