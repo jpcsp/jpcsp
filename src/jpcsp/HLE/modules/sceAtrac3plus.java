@@ -857,7 +857,10 @@ public class sceAtrac3plus extends HLEModule {
         info.numLoops = 0;
         info.inputFileDataOffset = 0;
 
-        if (bufferSize < 12) {
+        if (bufferSize < 0) {
+        	// PSP is handling the size as an unsigned value
+        	bufferSize = Integer.MAX_VALUE;
+        } else if (bufferSize < 12) {
         	log.error(String.format("Atrac buffer too small %d", bufferSize));
         	return ERROR_ATRAC_INVALID_SIZE;
         }
