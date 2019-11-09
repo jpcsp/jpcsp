@@ -47,6 +47,7 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspFileBuffer;
@@ -857,10 +858,7 @@ public class sceAtrac3plus extends HLEModule {
         info.numLoops = 0;
         info.inputFileDataOffset = 0;
 
-        if (bufferSize < 0) {
-        	// PSP is handling the size as an unsigned value
-        	bufferSize = Integer.MAX_VALUE;
-        } else if (bufferSize < 12) {
+        if (bufferSize < 12) {
         	log.error(String.format("Atrac buffer too small %d", bufferSize));
         	return ERROR_ATRAC_INVALID_SIZE;
         }
@@ -1009,6 +1007,14 @@ public class sceAtrac3plus extends HLEModule {
         	return SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
         }
 
+        // readSize and bufferSize are unsigned int's. Allow negative values.
+        if (readSize < 0) {
+        	readSize = MemoryMap.SIZE_RAM;
+        }
+        if (bufferSize < 0) {
+        	bufferSize = MemoryMap.SIZE_RAM;
+        }
+
         if (log.isTraceEnabled()) {
         	log.trace(String.format("hleSetHalfwayBuffer buffer: %s", Utilities.getMemoryDump(buffer.getAddress(), readSize)));
         }
@@ -1046,6 +1052,12 @@ public class sceAtrac3plus extends HLEModule {
         // readSize and bufferSize are unsigned int's.
         // Allow negative values.
         // "Tales of VS - ULJS00209" is even passing an uninitialized value bufferSize=0xDEADBEEF
+        if (readSize < 0) {
+        	readSize = MemoryMap.SIZE_RAM;
+        }
+        if (bufferSize < 0) {
+        	bufferSize = MemoryMap.SIZE_RAM;
+        }
 
         if (log.isTraceEnabled()) {
         	log.trace(String.format("hleSetHalfwayBufferAndGetID buffer=%s", Utilities.getMemoryDump(buffer, readSize)));
