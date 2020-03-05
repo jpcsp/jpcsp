@@ -196,8 +196,8 @@ public class sceMpeg extends HLEModule {
     		return getAddr(data.getPointer(28), streamChannelCode, 68, streamBase);
     	}
 
-    	public TPointer getDataStreamAddr(TPointer data, int streamChannelCode) {
-    		return getAddr(data.getPointer(24), streamChannelCode, 16, streamDataBase);
+    	public DataStream getDataStream(TPointer data, int streamChannelCode) {
+    		return new DataStream(getAddr(data.getPointer(24), streamChannelCode, 16, streamDataBase));
     	}
     }
 
@@ -228,6 +228,94 @@ public class sceMpeg extends HLEModule {
     	streamChannelDescriptors[3] = new StreamChannelDescriptor(0xBD100000, 0xFFF00000, 16, 0x0F, 48);
     	streamChannelDescriptors[4] = new StreamChannelDescriptor(0xBD800000, 0xFFE00000, 16, 0x1F, 64);
     	streamChannelDescriptors[5] = new StreamChannelDescriptor(0xBD200000, 0xFFF00000, 16, 0x0F, 96);
+    }
+
+    private static class DataStream {
+    	private static final int INVALID_PTR_ADDR = -1;
+    	private TPointer dataStreamAddr;
+
+    	public DataStream(TPointer dataStreamAddr) {
+			this.dataStreamAddr = dataStreamAddr;
+		}
+
+    	public static DataStream getFromData(TPointer data) {
+    		return new DataStream(data.getPointer(24));
+    	}
+
+    	public TPointer getDataStreamAddr() {
+    		return dataStreamAddr;
+    	}
+
+    	public TPointer getStreamPacketsQueueHead() {
+    		return dataStreamAddr.getPointer(4);
+    	}
+
+    	public void setStreamPacketsQueueHead(TPointer head, int count) {
+    		dataStreamAddr.setPointer(4, head);
+    		setStreamPacketsCount(count);
+    	}
+
+    	public int getStreamPacketsCount() {
+    		return dataStreamAddr.getValue32(12);
+    	}
+
+    	public void setStreamPacketsCount(int count) {
+    		dataStreamAddr.setValue32(12, count);
+    	}
+
+    	public void registerStream(TPointer streamAddr) {
+    		clear();
+    		dataStreamAddr.setPointer(8, streamAddr);
+    	}
+
+    	public void init() {
+    		clear();
+    		dataStreamAddr.setValue32(8, INVALID_PTR_ADDR);
+    	}
+
+    	public void unregisterStream() {
+    		init();
+    	}
+
+    	public TPointer getRegisteredStream() {
+    		return dataStreamAddr.getPointer(8);
+    	}
+
+    	public boolean isRegisteredStream() {
+    		return dataStreamAddr.getValue32(8) != INVALID_PTR_ADDR;
+    	}
+
+    	public boolean isEmptyQueue() {
+    		return dataStreamAddr.getValue32(4) == INVALID_PTR_ADDR;
+    	}
+
+    	public void clear() {
+    		dataStreamAddr.setValue32(0, INVALID_PTR_ADDR);
+    		dataStreamAddr.setValue32(4, INVALID_PTR_ADDR);
+    		setStreamPacketsCount(0);
+    	}
+
+    	public void enqueDataPacket(TPointer dataPacketAddr) {
+    		dataPacketAddr.setValue32(0, INVALID_PTR_ADDR);
+    		dataPacketAddr.setValue32(4, dataStreamAddr.getValue32(0));
+			if (dataStreamAddr.getValue32(0) != INVALID_PTR_ADDR) {
+				dataStreamAddr.getPointer(0).setPointer(0, dataPacketAddr);
+			}
+			dataStreamAddr.setPointer(0, dataPacketAddr);
+			if (dataStreamAddr.getValue32(4) == -1) {
+				dataStreamAddr.setValue32(4, dataStreamAddr.getValue32(0));
+			}
+			setStreamPacketsCount(getStreamPacketsCount() + 1);
+    	}
+
+    	public void nextDataStream() {
+    		dataStreamAddr.add(16);
+    	}
+
+    	@Override
+		public String toString() {
+			return dataStreamAddr.toString();
+		}
     }
 
     @Override
@@ -704,29 +792,20 @@ public class sceMpeg extends HLEModule {
     				return result;
     			}
 
-    			TPointer dataStreamAddr = getDataStreamAddress(data, packetInfo.startCode);
-    			if (dataStreamAddr != null && dataStreamAddr.getValue32(8) != -1) {
+    			DataStream dataStream = getDataStream(data, packetInfo.startCode);
+    			if (dataStream != null && dataStream.isRegisteredStream()) {
     				if (packetIndex >= 2) {
     					return ERROR_MPEG_ILLEGAL_STREAM;
     				}
     				int packetByteIndex = packetInfo.packetHeaderAddr - sceMpegRingbuffer.data;
     				int packetNumber = packetByteIndex / sceMpegRingbuffer.packetSize;
     				if (log.isTraceEnabled()) {
-    					log.trace(String.format("Found data for stream 0x%08X/%s in ringbuffer packet #%d offset 0x%X", packetInfo.startCode, dataStreamAddr, packetNumber, packetByteIndex % sceMpegRingbuffer.packetSize));
+    					log.trace(String.format("Found data for stream 0x%08X/%s in ringbuffer packet #%d offset 0x%X", packetInfo.startCode, dataStream, packetNumber, packetByteIndex % sceMpegRingbuffer.packetSize));
     				}
     				TPointer ringbufferPacketInfo = new TPointer(sceMpegRingbuffer.mpeg.getMemory(), sceMpegRingbuffer.dataUpperBound + packetNumber * 104 + packetIndex * 52);
-    				ringbufferPacketInfo.setValue32(0, -1);
-    				ringbufferPacketInfo.setValue32(4, dataStreamAddr.getValue32(0));
+    				dataStream.enqueDataPacket(ringbufferPacketInfo);
     				packetInfo.write(ringbufferPacketInfo, 8);
-    				if (dataStreamAddr.getValue32(0) != -1) {
-    					dataStreamAddr.getPointer(0).setPointer(0, ringbufferPacketInfo);
-    				}
-    				dataStreamAddr.setPointer(0, ringbufferPacketInfo);
-    				if (dataStreamAddr.getValue32(4) == -1) {
-    					dataStreamAddr.setValue32(4, dataStreamAddr.getValue32(0));
-    				}
-    				dataStreamAddr.setValue32(12, dataStreamAddr.getValue32(12) + 1);
-    				verifyDataStream(dataStreamAddr, "scanStreamPackets: ");
+    				verifyDataStream(dataStream, "scanStreamPackets: ");
     			}
 
     			packetIndex++;
@@ -969,14 +1048,14 @@ public class sceMpeg extends HLEModule {
     	return ringbuffer;
     }
 
-    private TPointer getDataStreamAddress(TPointer data, TPointer streamAddr) {
-    	return getDataStreamAddress(data, streamAddr.getValue32(0));
+    private DataStream getDataStream(TPointer data, TPointer streamAddr) {
+    	return getDataStream(data, streamAddr.getValue32(0));
     }
 
-    private TPointer getDataStreamAddress(TPointer data, int streamChannelCode) {
+    private DataStream getDataStream(TPointer data, int streamChannelCode) {
     	for (StreamChannelDescriptor descriptor : streamChannelDescriptors) {
     		if (descriptor.isMatching(streamChannelCode)) {
-    			return descriptor.getDataStreamAddr(data, streamChannelCode);
+    			return descriptor.getDataStream(data, streamChannelCode);
     		}
     	}
 
@@ -993,56 +1072,55 @@ public class sceMpeg extends HLEModule {
     	return null;
     }
 
-    private void verifyDataStream(TPointer dataStreamAddr, String message) {
-    	int count = dataStreamAddr.getValue32(12);
-    	if (dataStreamAddr.getValue32(4) == -1) {
+    private void verifyDataStream(DataStream dataStream, String message) {
+    	int count = dataStream.getStreamPacketsCount();
+    	if (dataStream.isEmptyQueue()) {
     		if (count != 0) {
-    			log.error(String.format("%sEmpty data stream %s with count=%d", message, dataStreamAddr, count));
+    			log.error(String.format("%sEmpty data stream %s with count=%d", message, dataStream, count));
     		}
     		return;
     	}
     	if (count == 0) {
-			log.error(String.format("%sNon-empty data stream %s with count=%d", message, dataStreamAddr, count));
+			log.error(String.format("%sNon-empty data stream %s with count=%d", message, dataStream, count));
 			return;
     	}
 
-    	TPointer queue = dataStreamAddr.getPointer(4);
-    	int addr = dataStreamAddr.getValue32(4);
+    	TPointer queue = dataStream.getStreamPacketsQueueHead();
     	for (int i = 1; i < count; i++) {
-    		addr = queue.getValue32(0);
-    		if (addr == -1) {
-    			log.error(String.format("%sFound end of queue in %s at %d/%d", message, dataStreamAddr, i, count));
+    		int addr = queue.getValue32(0);
+    		if (addr == DataStream.INVALID_PTR_ADDR) {
+    			log.error(String.format("%sFound end of queue in %s at %d/%d", message, dataStream, i, count));
     			return;
     		}
     		queue = queue.getPointer(0);
     	}
 
-    	if (queue.getValue32(0) != -1) {
-    		log.error(String.format("%sNot end of queue in %s with count=%d", message, dataStreamAddr, count));
+    	if (queue.getValue32(0) != DataStream.INVALID_PTR_ADDR) {
+    		log.error(String.format("%sNot end of queue in %s with count=%d", message, dataStream, count));
     		return;
     	}
 
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("verifyDataStream %s, count=%d: successful", dataStreamAddr, count));
+    		log.trace(String.format("verifyDataStream %s, count=%d: successful", dataStream, count));
     	}
     }
 
-    private int getFirstStreamPacket(TPointer dataStreamAddr, SceMpegStreamPacketInfo streamPacketInfo) {
-    	return getStreamPacket(dataStreamAddr, 0, streamPacketInfo);
+    private int getFirstStreamPacket(DataStream dataStream, SceMpegStreamPacketInfo streamPacketInfo) {
+    	return getStreamPacket(dataStream, 0, streamPacketInfo);
     }
 
-    private int getStreamPacket(TPointer dataStreamAddr, int index, SceMpegStreamPacketInfo streamPacketInfo) {
-    	verifyDataStream(dataStreamAddr, "getStreamPacket: ");
-    	if (dataStreamAddr.getValue32(4) == -1) {
+    private int getStreamPacket(DataStream dataStream, int index, SceMpegStreamPacketInfo streamPacketInfo) {
+    	verifyDataStream(dataStream, "getStreamPacket: ");
+    	if (dataStream.isEmptyQueue()) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
-    	int count = dataStreamAddr.getValue32(12);
+    	int count = dataStream.getStreamPacketsCount();
     	if (count <= index) {
     		return ERROR_MPEG_NO_DATA;
     	}
 
-    	TPointer queue = dataStreamAddr.getPointer(4);
+    	TPointer queue = dataStream.getStreamPacketsQueueHead();
     	for (int i = 0; i < index; i++) {
     		queue = queue.getPointer(0);
     	}
@@ -1051,24 +1129,24 @@ public class sceMpeg extends HLEModule {
 		return 0;
     }
 
-    private int dequeueStreamPackets(TPointer dataStreamAddr, int count) {
-    	verifyDataStream(dataStreamAddr, "dequeueStreamPackets: ");
+    private int dequeueStreamPackets(DataStream dataStream, int count) {
+    	verifyDataStream(dataStream, "dequeueStreamPackets: ");
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("dequeueStreamPackets dataStreamAddr=%s, count=%d", dataStreamAddr, count));
+    		log.trace(String.format("dequeueStreamPackets dataStream=%s, count=%d", dataStream, count));
     	}
 
     	if (count <= 0) {
     		return 0;
     	}
 
-    	if (dataStreamAddr.getValue32(4) == -1) {
+    	if (dataStream.isEmptyQueue()) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
-    	int currentCount = dataStreamAddr.getValue32(12);
+    	int currentCount = dataStream.getStreamPacketsCount();
     	count = Math.min(count, currentCount);
     	int newCount = currentCount - count;
-    	TPointer queue = dataStreamAddr.getPointer(4);
+    	TPointer queue = dataStream.getStreamPacketsQueueHead();
     	for (; count > 0; count--) {
     		TPointer next = queue.getPointer(0);
     		queue.setValue32(0, -1);
@@ -1076,12 +1154,10 @@ public class sceMpeg extends HLEModule {
     		queue = next;
     	}
 
-    	dataStreamAddr.setValue32(12, newCount);
     	if (newCount <= 0) {
-    		dataStreamAddr.setValue32(0, -1);
-    		dataStreamAddr.setValue32(4, -1);
+    		dataStream.clear();
     	} else {
-        	dataStreamAddr.setPointer(4, queue);
+        	dataStream.setStreamPacketsQueueHead(queue, newCount);
     	}
 
     	return 0;
@@ -1115,8 +1191,8 @@ public class sceMpeg extends HLEModule {
     }
 
     private int copyStreamData(TPointer data, TPointer streamAddr, TPointer auAddr, int mode) {
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null || dataStreamAddr.getValue32(4) == -1) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null || dataStream.isEmptyQueue()) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
@@ -1127,12 +1203,12 @@ public class sceMpeg extends HLEModule {
     	TPointer esBufferAddr = getEsBufferPointer(data, au.esBuffer);
     	int requiredLength = streamAddr.getValue32(36);
     	int totalLength = 0;
-    	int count = dataStreamAddr.getValue32(12);
-    	TPointer dataPacketsQueue = dataStreamAddr.getPointer(4);
+    	int count = dataStream.getStreamPacketsCount();
+    	TPointer dataPacketsQueue = dataStream.getStreamPacketsQueueHead();
 		int processedCount = 0;
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("copyStreamData streamAddr=%s, dataStreamAddr=%s, requiredLength=0x%X, packets count=%d", streamAddr, dataStreamAddr, requiredLength, count));
+			log.trace(String.format("copyStreamData streamAddr=%s, dataStream=%s, requiredLength=0x%X, packets count=%d", streamAddr, dataStream, requiredLength, count));
 		}
 
 		TPointer pesPacketCopyListStart = new TPointer(data, 44);
@@ -1218,7 +1294,7 @@ public class sceMpeg extends HLEModule {
     	au.esSize += totalLength;
     	au.write(auAddr);
 
-    	dequeueStreamPackets(dataStreamAddr, processedCount);
+    	dequeueStreamPackets(dataStream, processedCount);
 
     	return result;
     }
@@ -1483,12 +1559,10 @@ public class sceMpeg extends HLEModule {
 
     	TPointer dataStreamsAddr = new TPointer(dataAligned, 0x740);
     	dataAligned.setPointer(24, dataStreamsAddr);
+    	DataStream dataStream = new DataStream(dataStreamsAddr);
     	for (int i = 0; i < MAX_STREAMS; i++) {
-    		TPointer dataStreamAddr = new TPointer(dataStreamsAddr, i * 16);
-    		dataStreamAddr.setValue32(0, -1);
-    		dataStreamAddr.setValue32(4, -1);
-    		dataStreamAddr.setValue32(8, -1);
-    		dataStreamAddr.setValue32(12, 0);
+    		dataStream.init();
+    		dataStream.nextDataStream();
     	}
 
     	TPointer streamsAddr2 = new TPointer(dataStreamsAddr, 0x740);
@@ -1621,15 +1695,12 @@ public class sceMpeg extends HLEModule {
     	TPointer videocodecBuffer = data.getPointer(1728);
     	Modules.sceVideocodecModule.sceVideocodecDelete(videocodecBuffer, 0);
 
-		TPointer dataStreamAddr = data.getPointer(24);
+		DataStream dataStream = DataStream.getFromData(data);
     	for (int i = 0; i < MAX_STREAMS; i++) {
-    		dataStreamAddr.setValue32(0, -1);
-    		dataStreamAddr.setValue32(4, -1);
-    		dataStreamAddr.setValue32(8, -1);
-    		dataStreamAddr.setValue32(12, 0);
+    		dataStream.init();
 
     		// Next data stream
-    		dataStreamAddr.add(16);
+    		dataStream.nextDataStream();
     	}
 
     	return 0;
@@ -1674,33 +1745,27 @@ public class sceMpeg extends HLEModule {
 		streamAddr.setValue32(56, 0);
 		streamAddr.setValue32(64, 0);
 
-		TPointer dataStreamAddr = getDataStreamAddress(data, streamChannelCode);
-		if (dataStreamAddr == null) {
+		DataStream dataStream = getDataStream(data, streamChannelCode);
+		if (dataStream == null) {
 			return ERROR_MPEG_INVALID_VALUE;
 		}
-		if (dataStreamAddr.getValue32(8) != -1) {
+		if (dataStream.isRegisteredStream()) {
 			return ERROR_MPEG_ALREADY_USED;
 		}
-		dataStreamAddr.setValue32(0, -1);
-		dataStreamAddr.setValue32(4, -1);
-		dataStreamAddr.setPointer(8, streamAddr);
-		dataStreamAddr.setValue32(12, 0);
+		dataStream.registerStream(streamAddr);
 		if (streamType != 0) {
 			streamAddr.setValue32(8, -1);
 		} else {
 			int dataStream6ChannelCode = streamTypeDescriptors[6].getChannelCode(streamChannelNum);
-			TPointer dataStream6Addr = getDataStreamAddress(data, dataStream6ChannelCode);
-			if (dataStream6Addr == null) {
+			DataStream dataStream6 = getDataStream(data, dataStream6ChannelCode);
+			if (dataStream6 == null) {
 				return ERROR_MPEG_INVALID_VALUE;
 			}
-			if (dataStream6Addr.getValue32(8) != -1) {
+			if (dataStream6.isRegisteredStream()) {
 				return ERROR_MPEG_ALREADY_USED;
 			}
-			dataStream6Addr.setValue32(0, -1);
-			dataStream6Addr.setValue32(4, -1);
-			dataStream6Addr.setPointer(8, streamAddr);
-			dataStream6Addr.setValue32(12, 0);
-			streamAddr.setPointer(8, dataStream6Addr);
+			dataStream6.registerStream(streamAddr);
+			streamAddr.setPointer(8, dataStream6.getDataStreamAddr());
 		}
 
     	return streamAddr.getAddress();
@@ -1717,22 +1782,16 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0x591A4AA2, version = 150, checkInsideInterrupt = true, stackUsage = 0x18)
     public int sceMpegUnRegistStream(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.inout) TPointer streamAddr) {
     	TPointer data = mpeg.getPointer();
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
-    	if (dataStreamAddr.getValue32(8) != -1) {
-    		dataStreamAddr.setValue32(0, -1);
-    		dataStreamAddr.setValue32(4, -1);
-    		dataStreamAddr.setValue32(8, -1);
-    		dataStreamAddr.setValue32(12, 0);
+    	if (dataStream.isRegisteredStream()) {
+    		dataStream.unregisterStream();
     		if (streamAddr.getValue32(8) != -1) {
-    			TPointer dataStream6Addr = streamAddr.getPointer(8);
-    			dataStream6Addr.setValue32(0, -1);
-    			dataStream6Addr.setValue32(4, -1);
-    			dataStream6Addr.setValue32(8, -1);
-    			dataStream6Addr.setValue32(12, 0);
+    			DataStream dataStream6 = new DataStream(streamAddr.getPointer(8));
+    			dataStream6.unregisterStream();
     		}
     	}
 
@@ -1855,12 +1914,12 @@ public class sceMpeg extends HLEModule {
     public int sceMpegChangeGetAvcAuMode(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.in) TPointer streamAddr, int mode) {
     	TPointer data = mpeg.getPointer();
 
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
-    	if (dataStreamAddr.getValue32(8) == -1) {
+    	if (!dataStream.isRegisteredStream()) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
@@ -1888,8 +1947,8 @@ public class sceMpeg extends HLEModule {
     public int sceMpegChangeGetAuMode(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.in) TPointer streamAddr, int mode) {
     	TPointer data = mpeg.getPointer();
 
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
@@ -1921,20 +1980,20 @@ public class sceMpeg extends HLEModule {
     	}
 
     	TPointer data = mpeg.getPointer();
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_NO_DATA;
     	}
 
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceMpegGetAvcAu dataStreamAddr=%s", dataStreamAddr));
+    		log.trace(String.format("sceMpegGetAvcAu dataStream=%s", dataStream));
     	}
 
     	SceMpegStreamPacketInfo packetInfo = new SceMpegStreamPacketInfo();
 
 		int result;
     	while (true) {
-    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+    		result = getFirstStreamPacket(dataStream, packetInfo);
     		if (result < 0) {
     			result = ERROR_MPEG_NO_DATA;
     			break;
@@ -1950,9 +2009,9 @@ public class sceMpeg extends HLEModule {
 					au.pts = packetInfo.pts;
 					au.dts = packetInfo.dts;
 
-					TPointer dataStream6Addr = streamAddr.getPointer(8);
+					DataStream dataStream6 = new DataStream(streamAddr.getPointer(8));
 					SceMpegStreamPacketInfo stream6PacketInfo = new SceMpegStreamPacketInfo();
-					result = getFirstStreamPacket(dataStream6Addr, stream6PacketInfo);
+					result = getFirstStreamPacket(dataStream6, stream6PacketInfo);
 					if (result < 0) {
 		    			result = ERROR_MPEG_NO_DATA;
 						break;
@@ -1974,7 +2033,7 @@ public class sceMpeg extends HLEModule {
 						continue;
 					}
 
-					dequeueStreamPackets(dataStream6Addr, 1);
+					dequeueStreamPackets(dataStream6, 1);
 
 					dataAddr.memcpy(stream6PacketInfo.packetDataAddr, stream6PacketInfo.packetDataLength);
 					streamAddr.setValue32(16, 0);
@@ -2050,13 +2109,13 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0x8C1E027D, version = 150, checkInsideInterrupt = true)
     public int sceMpegGetPcmAu(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.in) TPointer streamAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.out) TPointer auAddr, @BufferInfo(usage=Usage.out) @CanBeNull TPointer32 attrAddr) {
     	TPointer data = mpeg.getPointer();
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceMpegGetPcmAu dataStreamAddr=%s", dataStreamAddr));
+    		log.trace(String.format("sceMpegGetPcmAu dataStream=%s", dataStream));
     	}
 
     	SceMpegStreamPacketInfo packetInfo = new SceMpegStreamPacketInfo();
@@ -2066,7 +2125,7 @@ public class sceMpeg extends HLEModule {
 
 		int result;
     	while (true) {
-    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+    		result = getFirstStreamPacket(dataStream, packetInfo);
     		if (log.isTraceEnabled()) {
     			log.trace(String.format("sceMpegGetPcmAu stream packet 0x%X: %s", result, packetInfo));
     		}
@@ -2080,7 +2139,7 @@ public class sceMpeg extends HLEModule {
 				au.esSize = 0;
 				TPointer dataAddr;
 				while (true) {
-		    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+		    		result = getFirstStreamPacket(dataStream, packetInfo);
 		    		if (result < 0) {
 		    			au.write(auAddr);
 		    			return ERROR_MPEG_NO_DATA;
@@ -2102,7 +2161,7 @@ public class sceMpeg extends HLEModule {
 						streamAddr.setValue32(24, 0);
 						break;
 					}
-					dequeueStreamPackets(dataStreamAddr, 1);
+					dequeueStreamPackets(dataStream, 1);
 				}
 				au.write(auAddr);
 
@@ -2139,13 +2198,13 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0xE1CE83A7, version = 150, checkInsideInterrupt = true)
     public int sceMpegGetAtracAu(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.in) TPointer streamAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.out) TPointer auAddr, @BufferInfo(usage=Usage.out) @CanBeNull TPointer32 attrAddr) {
     	TPointer data = mpeg.getPointer();
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceMpegGetAtracAu dataStreamAddr=%s", dataStreamAddr));
+    		log.trace(String.format("sceMpegGetAtracAu dataStream=%s", dataStream));
     	}
 
     	SceMpegStreamPacketInfo packetInfo = new SceMpegStreamPacketInfo();
@@ -2155,7 +2214,7 @@ public class sceMpeg extends HLEModule {
 
 		int result;
     	while (true) {
-    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+    		result = getFirstStreamPacket(dataStream, packetInfo);
     		if (log.isTraceEnabled()) {
     			log.trace(String.format("sceMpegGetAtracAu stream packet 0x%X: %s", result, packetInfo));
     		}
@@ -2171,7 +2230,7 @@ public class sceMpeg extends HLEModule {
 
 			if (streamAddr.getValue32(44) == 0 || streamAddr.getValue32(56) != 0) {
 				while (true) {
-		    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+		    		result = getFirstStreamPacket(dataStream, packetInfo);
 		    		if (result < 0) {
 		    			au.write(auAddr);
 		    			return ERROR_MPEG_NO_DATA;
@@ -2192,7 +2251,7 @@ public class sceMpeg extends HLEModule {
 						streamAddr.setValue32(24, 0);
 						break;
 					}
-					dequeueStreamPackets(dataStreamAddr, 1);
+					dequeueStreamPackets(dataStream, 1);
 				}
 				au.write(auAddr);
 
@@ -2221,7 +2280,7 @@ public class sceMpeg extends HLEModule {
 					destinationAddr.add(length);
 					streamAddr.setValue32(56, streamAddr.getValue32(56) - length);
 
-					result = getStreamPacket(dataStreamAddr, packetIndex, packetInfo);
+					result = getStreamPacket(dataStream, packetIndex, packetInfo);
 					if (result < 0) {
 						streamAddr.setValue32(36, 4);
 						streamAddr.setValue32(52, 1);
@@ -2258,8 +2317,8 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0x500F0429, version = 150, checkInsideInterrupt = true)
     public int sceMpegFlushStream(@CheckArgument("checkMpeg") TPointer32 mpeg, TPointer streamAddr) {
     	TPointer data = mpeg.getPointer();
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
@@ -2276,15 +2335,11 @@ public class sceMpeg extends HLEModule {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
-    	if (dataStreamAddr.getValue32(8) != -1) {
-    		dataStreamAddr.setValue32(0, -1);
-    		dataStreamAddr.setValue32(4, -1);
-    		dataStreamAddr.setValue32(12, 0);
+    	if (dataStream.isRegisteredStream()) {
+    		dataStream.clear();
     		if (streamAddr.getValue32(8) != -1) {
-    			TPointer dataStream6Addr = streamAddr.getPointer(8);
-    			dataStream6Addr.setValue32(0, -1);
-    			dataStream6Addr.setValue32(4, -1);
-    			dataStream6Addr.setValue32(12, 0);
+    			DataStream dataStream6 = new DataStream(streamAddr.getPointer(8));
+    			dataStream6.clear();
     		}
     	}
 
@@ -2313,17 +2368,17 @@ public class sceMpeg extends HLEModule {
     public int sceMpegFlushAllStream(@CheckArgument("checkMpeg") TPointer32 mpeg) {
     	TPointer data = mpeg.getPointer();
 
-		TPointer dataStreamAddr = data.getPointer(24);
+		DataStream dataStream = DataStream.getFromData(data);
     	for (int i = 0; i < MAX_STREAMS; i++) {
-    		if (dataStreamAddr.getValue32(8) != -1) {
-    			int result = sceMpegFlushStream(mpeg, dataStreamAddr.getPointer(8));
+    		if (dataStream.isRegisteredStream()) {
+    			int result = sceMpegFlushStream(mpeg, dataStream.getRegisteredStream());
     			if (result != 0) {
     				return result;
     			}
     		}
 
     		// Next data stream
-    		dataStreamAddr.add(16);
+    		dataStream.nextDataStream();
     	}
 
     	return 0;
@@ -2860,10 +2915,10 @@ public class sceMpeg extends HLEModule {
     	int minPacketIndex = sceMpegRingbuffer.packetsRead;
 
     	TPointer data = sceMpegRingbuffer.mpeg.getPointer();
-		TPointer dataStreamAddr = data.getPointer(24);
+		DataStream dataStream = DataStream.getFromData(data);
     	for (int i = 0; i < MAX_STREAMS; i++) {
-    		if (dataStreamAddr.getValue32(8) != -1 && dataStreamAddr.getValue32(4) != -1) {
-    			int size = dataStreamAddr.getPointer(4).getValue32(36) - sceMpegRingbuffer.data;
+    		if (dataStream.isRegisteredStream() && !dataStream.isEmptyQueue()) {
+    			int size = dataStream.getStreamPacketsQueueHead().getValue32(36) - sceMpegRingbuffer.data;
     			int packetIndex = size / sceMpegRingbuffer.packetSize;
     			if (packetIndex == sceMpegRingbuffer.packetsWritten && size > 0) {
     				minPacketIndex = -1;
@@ -2886,7 +2941,7 @@ public class sceMpeg extends HLEModule {
     		}
 
     		// Next data stream
-    		dataStreamAddr.add(16);
+    		dataStream.nextDataStream();
     	}
 
     	if (minPacketIndex == -1) {
@@ -2914,17 +2969,17 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0x3C37A7A6, version = 150, checkInsideInterrupt = true)
     public int sceMpegNextAvcRpAu(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.in) TPointer streamAddr) {
     	TPointer data = mpeg.getPointer();
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceMpegNextAvcRpAu dataStreamAddr=%s", dataStreamAddr));
+    		log.trace(String.format("sceMpegNextAvcRpAu dataStream=%s", dataStream));
     	}
 
     	SceMpegStreamPacketInfo packetInfo = new SceMpegStreamPacketInfo();
-		int result = getFirstStreamPacket(streamAddr.getPointer(8), packetInfo);
+		int result = getFirstStreamPacket(new DataStream(streamAddr.getPointer(8)), packetInfo);
 		int dataStream6DataAddr;
     	if (result != 0) {
     		result = SceKernelErrors.ERROR_MPEG_NO_NEXT_DATA;
@@ -2933,24 +2988,24 @@ public class sceMpeg extends HLEModule {
     		dataStream6DataAddr = packetInfo.packetDataAddr;
     	}
 
-		int count = dataStreamAddr.getValue32(12);
+		int count = dataStream.getStreamPacketsCount();
 		if (count > 0) {
 			SceMpegRingbuffer sceMpegRingbuffer = new SceMpegRingbuffer();
 			sceMpegRingbuffer.read(data.getPointer(16));
 
 	    	int processed = 0;
 	    	for (int i = 0; i < count; i++, processed++) {
-	    		getFirstStreamPacket(dataStreamAddr, packetInfo);
+	    		getFirstStreamPacket(dataStream, packetInfo);
 	    		if (dataStream6DataAddr != 0) {
 	    			if (compareAddresses(sceMpegRingbuffer, dataStream6DataAddr, packetInfo.packetDataAddr) == 1) {
 	    				break;
 	    			}
 	    		}
-	    		dequeueStreamPackets(dataStreamAddr, 1);
+	    		dequeueStreamPackets(dataStream, 1);
 	    	}
 
 	    	if (log.isTraceEnabled()) {
-	    		log.trace(String.format("sceMpegNextAvcRpAu removed %d packets from data stream %s", processed, dataStreamAddr));
+	    		log.trace(String.format("sceMpegNextAvcRpAu removed %d packets from data stream %s", processed, dataStream));
 	    	}
 		}
 
@@ -2964,13 +3019,13 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0x01977054, version = 150)
     public int sceMpegGetUserdataAu(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.in) TPointer streamAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.out) TPointer auAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.out) @CanBeNull TPointer headerAddr) {
     	TPointer data = mpeg.getPointer();
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceMpegGetUserdataAu dataStreamAddr=%s", dataStreamAddr));
+    		log.trace(String.format("sceMpegGetUserdataAu dataStream=%s", dataStream));
     	}
 
     	SceMpegStreamPacketInfo packetInfo = new SceMpegStreamPacketInfo();
@@ -2980,7 +3035,7 @@ public class sceMpeg extends HLEModule {
 
 		int result;
     	while (true) {
-    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+    		result = getFirstStreamPacket(dataStream, packetInfo);
     		if (log.isTraceEnabled()) {
     			log.trace(String.format("sceMpegGetUserdataAu stream packet 0x%X: %s", result, packetInfo));
     		}
@@ -2994,7 +3049,7 @@ public class sceMpeg extends HLEModule {
 				if (streamAddr.getValue32(44) == 0) {
 					au.esSize = 0;
 					while (true) {
-			    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+			    		result = getFirstStreamPacket(dataStream, packetInfo);
 			    		if (result < 0) {
 			    			au.write(auAddr);
 			    			return ERROR_MPEG_NO_DATA;
@@ -3010,12 +3065,12 @@ public class sceMpeg extends HLEModule {
 			    			break;
 			    		}
 	
-						dequeueStreamPackets(dataStreamAddr, 1);
+						dequeueStreamPackets(dataStream, 1);
 					}
 					au.write(auAddr);
 				}
 
-				result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+				result = getFirstStreamPacket(dataStream, packetInfo);
 	    		if (result < 0) {
 	    			return ERROR_MPEG_NO_DATA;
 	    		}
@@ -3043,7 +3098,7 @@ public class sceMpeg extends HLEModule {
 					headerOffset += length;
 					streamAddr.setValue32(56, streamAddr.getValue32(56) - length);
 
-					result = getStreamPacket(dataStreamAddr, 1, packetInfo);
+					result = getStreamPacket(dataStream, 1, packetInfo);
 					if (result < 0) {
 						streamAddr.setValue32(52, 1);
 						break;
@@ -3052,7 +3107,7 @@ public class sceMpeg extends HLEModule {
 					streamAddr.setValue32(44, streamAddr.getValue32(44) + length);
 					length = packetInfo.packetDataLength - 2;
 
-					dequeueStreamPackets(dataStreamAddr, 1);
+					dequeueStreamPackets(dataStream, 1);
 				}
 
 				int n = 8 - streamAddr.getValue32(56);
@@ -3199,8 +3254,8 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0xB27711A8, version = 150)
     public int sceMpeg_B27711A8(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.in) TPointer streamAddr, int packetIndex, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8 + MPEG_AVC_ES_SIZE, usage=Usage.out) TPointer resultBuffer) {
     	TPointer data = mpeg.getPointer();
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
@@ -3215,7 +3270,7 @@ public class sceMpeg extends HLEModule {
     		resultBuffer.memcpy(8, dataAddr, MPEG_AVC_ES_SIZE);
     	} else {
         	SceMpegStreamPacketInfo packetInfo = new SceMpegStreamPacketInfo();
-    		int result = getStreamPacket(dataStreamAddr, packetIndex, packetInfo);
+    		int result = getStreamPacket(dataStream, packetIndex, packetInfo);
     		if (result != 0) {
     			return ERROR_MPEG_NO_NEXT_DATA;
     		}
@@ -3242,13 +3297,13 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0xD4DD6E75, version = 150)
     public int sceMpeg_D4DD6E75(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=68, usage=Usage.inout) TPointer streamAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.out) TPointer auAddr, @BufferInfo(usage=Usage.out) @CanBeNull TPointer32 unknownAddr) {
 		TPointer data = mpeg.getPointer();
-    	TPointer dataStreamAddr = getDataStreamAddress(data, streamAddr);
-    	if (dataStreamAddr == null) {
+    	DataStream dataStream = getDataStream(data, streamAddr);
+    	if (dataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
     	if (log.isTraceEnabled()) {
-    		log.trace(String.format("sceMpeg_D4DD6E75 dataStreamAddr=%s", dataStreamAddr));
+    		log.trace(String.format("sceMpeg_D4DD6E75 dataStream=%s", dataStream));
     	}
 
     	SceMpegStreamPacketInfo packetInfo = new SceMpegStreamPacketInfo();
@@ -3258,7 +3313,7 @@ public class sceMpeg extends HLEModule {
 
 		int result;
     	while (true) {
-    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+    		result = getFirstStreamPacket(dataStream, packetInfo);
     		if (log.isTraceEnabled()) {
     			log.trace(String.format("sceMpeg_D4DD6E75 stream packet 0x%X: %s", result, packetInfo));
     		}
@@ -3272,7 +3327,7 @@ public class sceMpeg extends HLEModule {
 				if (streamAddr.getValue32(44) == 0) {
 					au.esSize = 0;
 					while (true) {
-			    		result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+			    		result = getFirstStreamPacket(dataStream, packetInfo);
 			    		if (result < 0) {
 			    			au.write(auAddr);
 			    			return ERROR_MPEG_NO_DATA;
@@ -3282,12 +3337,12 @@ public class sceMpeg extends HLEModule {
 			    			break;
 			    		}
 	
-						dequeueStreamPackets(dataStreamAddr, 1);
+						dequeueStreamPackets(dataStream, 1);
 					}
 					au.write(auAddr);
 				}
 
-				result = getFirstStreamPacket(dataStreamAddr, packetInfo);
+				result = getFirstStreamPacket(dataStream, packetInfo);
 	    		if (result < 0) {
 	    			return ERROR_MPEG_NO_DATA;
 	    		}
@@ -3327,7 +3382,7 @@ public class sceMpeg extends HLEModule {
 					destinationAddr.add(length);
 					streamAddr.decrValue32(56, length);
 
-					result = getStreamPacket(dataStreamAddr, packetIndex, packetInfo);
+					result = getStreamPacket(dataStream, packetIndex, packetInfo);
 					if (result < 0) {
 						streamAddr.setValue32(36, 4);
 						streamAddr.setValue32(52, 1);
@@ -3480,26 +3535,26 @@ public class sceMpeg extends HLEModule {
     public int sceMpeg_C2F02CDD(@CheckArgument("checkMpeg") TPointer32 mpeg, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) TPointer videoStreamAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4, usage=Usage.in) TPointer audioStreamAddr, @BufferInfo(usage=Usage.out) TPointer32 videoAudioDiffAddr) {
     	TPointer data = mpeg.getPointer();
 
-    	TPointer videoDataStreamAddr = getDataStreamAddress(data, videoStreamAddr);
-    	if (videoDataStreamAddr == null) {
+    	DataStream videoDataStream = getDataStream(data, videoStreamAddr);
+    	if (videoDataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
-    	TPointer audioDataStreamAddr = getDataStreamAddress(data, audioStreamAddr);
-    	if (audioDataStreamAddr == null) {
+    	DataStream audioDataStream = getDataStream(data, audioStreamAddr);
+    	if (audioDataStream == null) {
     		return ERROR_MPEG_INVALID_VALUE;
     	}
 
-    	if (videoDataStreamAddr.getValue32(4) == -1 || audioDataStreamAddr.getValue32(4) == -1) {
+    	if (videoDataStream.isEmptyQueue() || audioDataStream.isEmptyQueue()) {
     		return ERROR_MPEG_NO_DATA;
     	}
 
 		SceMpegRingbuffer sceMpegRingbuffer = new SceMpegRingbuffer();
 		sceMpegRingbuffer.read(data.getPointer(16));
 
-		int videoSize = videoDataStreamAddr.getPointer(4).getValue32(36) - sceMpegRingbuffer.data;
+		int videoSize = videoDataStream.getStreamPacketsQueueHead().getValue32(36) - sceMpegRingbuffer.data;
 		int videoPacketIndex = videoSize / sceMpegRingbuffer.packetSize;
-		int audioSize = audioDataStreamAddr.getPointer(4).getValue32(36) - sceMpegRingbuffer.data;
+		int audioSize = audioDataStream.getStreamPacketsQueueHead().getValue32(36) - sceMpegRingbuffer.data;
 		int audioPacketIndex = audioSize / sceMpegRingbuffer.packetSize;
 
 		int videoAudioDiff;
