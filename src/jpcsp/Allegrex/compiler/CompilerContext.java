@@ -3922,6 +3922,12 @@ public class CompilerContext implements ICompilerContext {
 		if (getCodeInstruction().hasFlags(Instruction.FLAG_USES_VFPU_PFXT | Instruction.FLAG_USES_VFPU_PFXD)) {
 			pfxVdOverlap |= isVtVdOverlap();
 		}
+
+		if (getCodeInstruction().getInsn() == Instructions.VMMOV) {
+			if (pfxVdOverlap) {
+				log.error(String.format("pfxVdOverlap for %s", getCodeInstruction()));
+			}
+		}
     }
 
     @Override
@@ -4004,7 +4010,10 @@ public class CompilerContext implements ICompilerContext {
                 return false;
             }
             if (codeInstruction.hasFlags(flag)) {
-            	return codeInstruction.hasFlags(Instruction.FLAG_COMPILED_PFX);
+            	// Even if the instruction is flagged with FLAG_COMPILED_PFX,
+            	// it can sometimes be interpreted
+            	// (e.g. depending on the VfpuState.useAccurateVfpuDot flag)
+            	return codeInstruction.hasFlags(Instruction.FLAG_COMPILED_PFX) && !codeInstruction.hasFlags(Instruction.FLAG_INTERPRETED);
             }
         }
     }
