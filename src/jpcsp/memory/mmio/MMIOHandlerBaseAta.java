@@ -375,13 +375,13 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 
 				executeCommandWithData(command, pendingOperationCodeParameters, data, dataLength, false, true);
 
-				dataLength = 0;
 				pendingOperationCodeParameters = -1;
 			}
 		}
 	}
 
 	private int getData16() {
+		int originalDataIndex = dataIndex;
 		int data16 = 0;
 		if (dataIndex < dataLength) {
 			data16 = data[dataIndex++];
@@ -391,7 +391,7 @@ public abstract class MMIOHandlerBaseAta extends MMIOHandlerBase {
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("MMIOHandlerBaseAta.getData16 dataIndex=0x%X, dataLength=0x%X, totalDataLength=0x%X returning 0x%04X", dataIndex, dataLength, totalDataLength, data16));
+			log.trace(String.format("MMIOHandlerBaseAta.getData16 dataIndex=0x%X, dataLength=0x%X, totalDataLength=0x%X returning 0x%04X", originalDataIndex, dataLength, totalDataLength, data16));
 		}
 
 		if (dataIndex >= dataLength) {

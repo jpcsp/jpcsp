@@ -140,7 +140,8 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 					log.debug(String.format("ATA_CMD_OP_READ_STRUCTURE formatCode=0x%X, allocationLength=0x%X", formatCode, allocationLength));
 				}
 
-				prepareDataInit(allocationLength);
+				int returnLength = allocationLength + 4;
+				prepareDataInit(returnLength);
 				delayUs = 0;
 				switch (formatCode) {
 					case 0x00:
@@ -162,6 +163,9 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 						prepareData24(0x000000); // End Sector Number in Layer 0
 						prepareData8(0); // BCA (Burst Cutting Area) Flag
 						prepareData8(0x07); // Reserved
+						for (int i = 22; i < returnLength; i++) {
+							prepareData8(0); // Unknown
+						}
 						// Duration 6ms
 						delayUs = 6000;
 						break;
@@ -169,7 +173,7 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 						log.error(String.format("ATA_CMD_OP_READ_STRUCTURE unknown formatCode=0x%X", formatCode));
 						break;
 				}
-				prepareDataEndWithDelay(allocationLength, allocationLength, delayUs);
+				prepareDataEndWithDelay(returnLength, returnLength, delayUs);
 				break;
 			case ATA_CMD_OP_UNKNOWN_F0:
 				unknown = data[1];
@@ -250,8 +254,8 @@ public class MMIOHandlerUmdAta extends MMIOHandlerBaseAta {
 					log.debug(String.format("ATA_CMD_OP_UNKNOWN_F1 unknown=0x%X", unknown));
 				}
 
-				prepareDataInit(unknown);
-				prepareDataEnd(unknown, unknown);
+				prepareDataInit(0);
+				prepareDataEnd(0, 0);
 				break;
 			case ATA_CMD_OP_UNKNOWN_F7:
 				unknown = data[2];
