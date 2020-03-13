@@ -83,7 +83,6 @@ import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.Audio;
 import jpcsp.hardware.MemoryStick;
-import jpcsp.hardware.Model;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
@@ -2392,6 +2391,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("SettingsGUI.useCompiler.text", "emu.compiler", false, true);
         logConfigurationSettingBool("SettingsGUI.profileCheck.text", "emu.profiler", false, true);
         logConfigurationSettingInt("SettingsGUI.methodMaxInstructionsLabel.text", "emu.compiler.methodMaxInstructions", false, true);
+        logConfigurationSettingBool("SettingsGUI.accurateVfpuDotCheck.text", "emu.accurateVfpuDot", false, true);
 
         logConfigurationPanel("SettingsGUI.DisplayPanel.title");
         logConfigurationSettingString("SettingsGUI.antiAliasLabel.text", "emu.graphics.antialias", true, true);
