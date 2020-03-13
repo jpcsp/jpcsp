@@ -32,9 +32,11 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceMp4AvcCscStruct;
 import jpcsp.HLE.modules.sceDmacplus;
+import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceMpegbase;
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.memory.mmio.dmac.DmacProcessor;
+import jpcsp.scheduler.Scheduler;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -79,6 +81,7 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 	private int mpegAvcBufferRGB;
 	private int mpegAvcBufferUnknown;
 	private final int[] mpegAvcCodes = new int[4];
+	private IAction mpegAvcCompletedAction;
 
 	private class DmacCompletedAction implements IAction {
 		private int flagCompleted;
@@ -101,6 +104,8 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 		dmacProcessors[0] = new DmacProcessor(scMemory, meMemory, baseAddress + 0x180, new DmacCompletedAction(COMPLETED_FLAG_SC2ME));
 		dmacProcessors[1] = new DmacProcessor(meMemory, scMemory, baseAddress + 0x1A0, new DmacCompletedAction(COMPLETED_FLAG_ME2SC));
 		dmacProcessors[2] = new DmacProcessor(scMemory, scMemory, baseAddress + 0x1C0, new DmacCompletedAction(COMPLETED_FLAG_SC128_MEMCPY));
+
+		mpegAvcCompletedAction = new DmacCompletedAction(COMPLETED_FLAG_AVC);
 
 		updateDisplay();
 	}
@@ -308,7 +313,7 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 				mp4AvcCscStruct.bufferMemory = MEProcessor.getInstance().getMEMemory();
 				Modules.sceMpegbaseModule.hleMpegBaseCscAvc(bufferRGB, bufferUnknown, mpegAvcBufferWidth, pixelMode, mp4AvcCscStruct);
 
-				setCompleted(COMPLETED_FLAG_AVC);
+				Scheduler.getInstance().addAction(Scheduler.getNow() + sceMpeg.avcCscDelay, mpegAvcCompletedAction);
 				break;
 			default:
 				log.error(String.format("setMpegAvcCmd unknown cmd=0x%X", cmd));

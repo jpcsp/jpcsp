@@ -130,7 +130,7 @@ public class sceMpeg extends HLEModule {
 	private static final int streamDataOffsets[] = { 0, 4, 4, 2, 0, 2, 0 };
 	private static final int esSizemaxLengths[] = { 0x18400, 0x800, 0x140, 0xA0000, 0, 0x19100, 0x800 };
 	private static final int sceMpegAvcCscOffsets[] = { 0, 0, 0, 0 };
-	private static final int avcCscDelay = 5000;
+	public static final int avcCscDelay = 5000;
 
     private static class StreamTypeDescriptor {
     	private final int code;
