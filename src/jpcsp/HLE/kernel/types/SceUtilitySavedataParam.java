@@ -566,6 +566,17 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         return success;
     }
 
+    private String getIcon1FileName(int buf) {
+        String icon1FileName;
+        if (mem.read8(icon1FileData.buf) != 0x89) {
+            icon1FileName = icon1PMFFileName;
+        } else {
+            icon1FileName = icon1PNGFileName;
+        }
+
+        return icon1FileName;
+    }
+
     public void load(Memory mem) throws IOException {
         String path = getBasePath();
 
@@ -585,13 +596,7 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         if (icon1FileData.buf == 0) {
             icon1FileData.size = 0;
         } else {
-            String icon1FileName;
-            if (mem.read8(icon1FileData.buf) != 0x89) {
-                icon1FileName = icon1PMFFileName;
-            } else {
-                icon1FileName = icon1PNGFileName;
-            }
-            safeLoad(mem, icon1FileName, icon1FileData);
+            safeLoad(mem, getIcon1FileName(icon1FileData.buf), icon1FileData);
         }
 
         // Read PIC1.PNG
@@ -643,14 +648,9 @@ public class SceUtilitySavedataParam extends pspUtilityBaseDialog {
         writePNG(mem, path, icon0FileName, icon0FileData.buf, icon0FileData.size);
 
         // Check and write ICON1.PMF or ICON1.PNG
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(icon1FileData.buf, 1);
-        String icon1FileName;
-        if ((byte) memoryReader.readNext() != (byte) 0x89) {
-            icon1FileName = icon1PMFFileName;
-        } else {
-            icon1FileName = icon1PNGFileName;
+        if (icon1FileData.buf != 0) {
+	        writePNG(mem, path, getIcon1FileName(icon1FileData.buf), icon1FileData.buf, icon1FileData.size);
         }
-        writePNG(mem, path, icon1FileName, icon1FileData.buf, icon1FileData.size);
 
         // Write PIC1.PNG
         writePNG(mem, path, pic1FileName, pic1FileData.buf, pic1FileData.size);
