@@ -5285,6 +5285,23 @@
 08008860:[02001021]: addu       $v0, $s0, $zr <=> move $v0, $s0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memset">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0x04000514: [0x10800008] - beq        $a0, $zr, 0x04000538
+0x04000518: [0x00001021] - addu       $v0, $zr, $zr <=> li $v0, 0
+0x0400051C: [0x18C00005] - blez       $a2, 0x04000534
+0x04000520: [0x00801021] - addu       $v0, $a0, $zr <=> move $v0, $a0
+0x04000524: [0x24C6FFFF] - addiu      $a2, $a2, -1
+0x04000528: [0xA0450000] - sb         $a1, 0($v0)
+0x0400052C: [0x1CC0FFFD] - bgtz       $a2, 0x04000524
+0x04000530: [0x24420001] - addiu      $v0, $v0, 1
+0x04000534: [0x00801021] - addu       $v0, $a0, $zr <=> move $v0, $a0
+0x04000538: [0x03E00008] - jr         $ra
+0x0400053C: [0x00000000] - nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="bzero">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<IsReturning>true</IsReturning>
