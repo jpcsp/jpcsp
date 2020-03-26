@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Hash;
 import jpcsp.util.Utilities;
@@ -42,6 +43,7 @@ public class NativeCallbacks {
 	private static DurationStatistics writeByteBuffer = new DurationStatistics("writeByteBuffer");
 	private static DurationStatistics writeByteBufferArea = new DurationStatistics("writeByteBufferArea");
 	private static DurationStatistics getHashCode = new DurationStatistics("getHashCode");
+	private static DurationStatistics onRenderSprite = new DurationStatistics("onRenderSprite");
 
 	// Array indexed by the log category
 	private static final Logger[] logs = new Logger[] {
@@ -54,7 +56,9 @@ public class NativeCallbacks {
 			log.info(read32.toString());
 			log.info(readByteBuffer.toString());
 			log.info(writeByteBuffer.toString());
+			log.info(writeByteBufferArea.toString());
 			log.info(getHashCode.toString());
+			log.info(onRenderSprite.toString());
 		}
 	}
 
@@ -194,5 +198,14 @@ public class NativeCallbacks {
 				log.error(String.format("Unknown log level %d: %s", level, message));
 				break;
 		}
+	}
+
+	public static void onRenderSprite(int textureAddress, int renderedTextureWidth, int renderedTextureHeight) {
+		onRenderSprite.start();
+		PspGeList currentList = ExternalGE.getCurrentList();
+		if (currentList != null) {
+			currentList.onRenderSprite(textureAddress, renderedTextureWidth, renderedTextureHeight);
+		}
+		onRenderSprite.end();
 	}
 }

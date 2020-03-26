@@ -28,7 +28,6 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.State;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.sceDisplay;
@@ -341,7 +340,7 @@ public class ExternalGE {
 	}
 
 	public static void finishList(PspGeList list) {
-		Modules.sceGe_userModule.hleGeListSyncDone(list);
+		list.onGeListSyncDone();
 
 		synchronized (drawListQueue) {
 			if (list == currentList) {

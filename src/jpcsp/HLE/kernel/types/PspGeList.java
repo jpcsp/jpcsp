@@ -22,6 +22,8 @@ import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_DRAWING;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_QUEUED;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_STALL_REACHED;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_STRINGS;
+import static jpcsp.HLE.modules.sceGe_user.log;
+import static jpcsp.scheduler.Scheduler.getNow;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -29,11 +31,11 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.scheduler.Scheduler;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 
@@ -67,6 +69,23 @@ public class PspGeList {
     private IMemoryReader baseMemoryReader;
     private int baseMemoryReaderStartAddress;
     private int baseMemoryReaderEndAddress;
+    private long startTimestamp;
+    private long minimumDuration;
+    private long pauseTimestamp;
+    private long pauseDuration;
+
+    private static class OnGeListSyncDone implements IAction {
+    	private PspGeList list;
+
+		public OnGeListSyncDone(PspGeList list) {
+			this.list = list;
+		}
+
+		@Override
+		public void execute() {
+			Modules.sceGe_userModule.hleGeListSyncDone(list);
+		}
+    }
 
     public PspGeList(int id) {
     	videoEngine = VideoEngine.getInstance();
@@ -112,6 +131,8 @@ public class PspGeList {
     	finished = false;
     	reset = false;
         ended = false;
+        pauseDuration = 0L;
+        minimumDuration = 0L;
 
     	sync = new Semaphore(0);
     }
@@ -229,7 +250,7 @@ public class PspGeList {
 				return false;
 			} catch (InterruptedException e) {
 				// Ignore exception and retry again
-				sceGe_user.log.debug(String.format("PspGeList waitForSync %s", e));
+				log.debug(String.format("PspGeList waitForSync %s", e));
 			}
     	}
 
@@ -274,6 +295,7 @@ public class PspGeList {
     }
 
     public void startList() {
+    	startTimestamp = getNow();
     	paused = false;
     	ExternalGE.onGeStartList(this);
     	if (ExternalGE.isActive()) {
@@ -285,6 +307,7 @@ public class PspGeList {
     }
 
     public void startListHead() {
+    	startTimestamp = getNow();
         paused = false;
         ExternalGE.onGeStartList(this);
         if (ExternalGE.isActive()) {
@@ -296,9 +319,18 @@ public class PspGeList {
 
     public void pauseList() {
     	paused = true;
+    	pauseTimestamp = getNow();
+    }
+
+    private void updatePauseDuration() {
+    	if (pauseTimestamp != 0L) {
+    		pauseDuration += getNow() - pauseTimestamp;
+    		pauseTimestamp = 0L;
+    	}
     }
 
     public void restartList() {
+    	updatePauseDuration();
     	paused = false;
     	restarted = true;
     	sync();
@@ -310,6 +342,7 @@ public class PspGeList {
     }
 
     public void clearPaused() {
+    	updatePauseDuration();
     	paused = false;
     }
 
@@ -432,6 +465,45 @@ public class PspGeList {
 		}
 
 		return status;
+	}
+
+	public void onGeListSyncDone() {
+		if (minimumDuration != 0L && getNow() < startTimestamp + pauseDuration + minimumDuration) {
+			long schedule = startTimestamp + pauseDuration + minimumDuration;
+			minimumDuration = 0L;
+			pauseDuration = 0L;
+			Scheduler.getInstance().addAction(schedule, new OnGeListSyncDone(this));
+		} else {
+			Modules.sceGe_userModule.hleGeListSyncDone(this);
+		}
+	}
+
+	private void addMinimumDuration(int duration) {
+		minimumDuration += duration;
+	}
+
+	public void onRenderSprite(int textureAddress, int renderedTextureWidth, int renderedTextureHeight) {
+		if (Memory.isVRAM(textureAddress) || renderedTextureWidth < 128 || renderedTextureHeight <= 64) {
+			return;
+		}
+
+		int duration = 0;
+		if (renderedTextureWidth == 128 && renderedTextureHeight == 272) {
+			// Probably a video texture being rendered in 4 vertical stripes (each 128 pixels wide)
+			duration = 16666 / 4; // 60 FPS
+		} else if (renderedTextureWidth >= 512 && renderedTextureHeight >= 256) {
+			duration = 66666; // 15 FPS
+		} else if (renderedTextureWidth >= 256 && renderedTextureHeight >= 256) {
+			duration = 33333; // 30 FPS
+		} else if (renderedTextureWidth >= 512 && renderedTextureHeight >= 128) {
+			duration = 33333; // 30 FPS
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("onRenderSprite textureAddress=0x%08X, renderedTextureWidth=%d, renderedTextureHeight=%d, duration=%dus", textureAddress, renderedTextureWidth, renderedTextureHeight, duration));
+		}
+
+		addMinimumDuration(duration);
 	}
 
 	@Override

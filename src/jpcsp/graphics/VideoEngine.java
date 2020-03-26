@@ -1052,7 +1052,7 @@ public class VideoEngine {
         if (skipThisFrame && skipListWhenSkippingFrame) {
             listHasEnded = true;
             currentList.status = PSP_GE_LIST_DONE;
-            Modules.sceGe_userModule.hleGeListSyncDone(currentList);
+            currentList.onGeListSyncDone();
             executeHleAction();
             return;
         }
@@ -1113,7 +1113,7 @@ public class VideoEngine {
                 long listEndMicroTime = Emulator.getClock().microTime();
                 GEProfiler.geListDuration(listEndMicroTime - listStartMicroTime);
             }
-            Modules.sceGe_userModule.hleGeListSyncDone(currentList);
+            currentList.onGeListSyncDone();
         }
 
         executeHleAction();
@@ -2666,9 +2666,14 @@ public class VideoEngine {
                 // Non-optimized VertexInfo reading
                 VertexInfo cachedVertexInfo = null;
                 if (useVertexCache) {
-                    vertexCacheLookupStatistics.start();
-                    cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
-                    vertexCacheLookupStatistics.end();
+                	if (type == PRIM_SPRITES && !Memory.isVRAM(context.texture_base_pointer[0])) {
+                		// Do not cache SPRITES rendered from RAM as we need to time their rendering
+                		cachedVertexInfo = null;
+                	} else {
+                		vertexCacheLookupStatistics.start();
+                		cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
+                		vertexCacheLookupStatistics.end();
+                	}
                 }
 
                 if (!useVertexCache && re.isVertexArrayAvailable()) {
@@ -2838,6 +2843,10 @@ public class VideoEngine {
                                 }
                                 if (v2.p[1] > maxSpriteWidth) {
                                     maxSpriteWidth = (int) v2.p[1];
+                                }
+
+                                if (context.vinfo.texture != 0 && context.textureFlag.isEnabled() && !context.clearMode) {
+                                	currentList.onRenderSprite(context.texture_base_pointer[0], (int) (v2.t[0] - v1.t[0]), (int) (v2.t[1] - v1.t[1]));
                                 }
 
                                 //
