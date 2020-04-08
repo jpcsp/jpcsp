@@ -654,6 +654,14 @@ public class VideoEngine {
         synchronized (drawListQueue) {
             listCount = drawListQueue.size();
             currentList = drawListQueue.poll();
+
+            // If we have a single list being stalled at its start, assume we have no list to run.
+            // This helps keeping the UI responsive in case the application is submitting a list
+            // but is keeping it in a stall state for a long time.
+            if (listCount == 1 && currentList != null && currentList.isStalledAtStart()) {
+            	drawListQueue.add(currentList);
+            	currentList = null;
+            }
         }
         if (currentList == null) {
             return false;
