@@ -44,12 +44,14 @@ public class DeferredVStub32 extends DeferredStub {
 
 		// Write back the relocated 32bit value
 		mem.write32(getImportAddress(), value);
+        invalidate(getImportAddress(), 4);
 	}
 
 	@Override
 	public void unresolve(Memory mem) {
 		if (hasSavedValue) {
 			mem.write32(getImportAddress(), savedValue);
+	        invalidate(getImportAddress(), 4);
 		}
 
     	if (sourceModule != null) {

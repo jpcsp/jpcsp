@@ -2020,6 +2020,16 @@ public class CompilerContext implements ICompilerContext {
 
         	mv.visitLabel(afterVersionCheckLabel);
         }
+
+        // If the syscall can modify MIPS code, throw a StackPopException to force
+        // a check and possible recompilation of the MIPS code blocks.
+        if (func.canModifyCode()) {
+    		mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(StackPopException.class));
+    		mv.visitInsn(Opcodes.DUP_X1);
+    		mv.visitInsn(Opcodes.SWAP);
+			mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(StackPopException.class), "<init>", "(I)V");
+			mv.visitInsn(Opcodes.ATHROW);
+    	}
     }
 
     /**

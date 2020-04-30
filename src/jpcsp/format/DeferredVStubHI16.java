@@ -51,12 +51,14 @@ public class DeferredVStubHI16 extends DeferredStub {
 		}
 
 		mem.write16(getImportAddress(), relocatedHiValue);
+        invalidate(getImportAddress(), 2);
 	}
 
 	@Override
 	public void unresolve(Memory mem) {
 		if (hasSavedValue) {
 			mem.write16(getImportAddress(), savedValue);
+	        invalidate(getImportAddress(), 2);
 		}
 
     	if (sourceModule != null) {

@@ -21,6 +21,7 @@ import static jpcsp.HLE.modules.ThreadManForUser.J;
 import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
 
 import jpcsp.Memory;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.types.SceModule;
 
 public class DeferredStub {
@@ -51,6 +52,10 @@ public class DeferredStub {
         return nid;
     }
 
+    protected void invalidate(int address, int size) {
+    	RuntimeContext.invalidateRange(address, size);
+    }
+
     public void resolve(Memory mem, int address) {
     	if (!savedImport) {
 			savedImport1 = mem.read32(importAddress);
@@ -61,6 +66,7 @@ public class DeferredStub {
 		// j <address>
         mem.write32(importAddress, J(address));
         mem.write32(importAddress + 4, 0); // write a nop over our "unmapped import detection special syscall"
+        invalidate(importAddress, 8);
     }
 
     public void unresolve(Memory mem) {
@@ -71,6 +77,7 @@ public class DeferredStub {
         	// syscall <syscallUnmappedImport>
             mem.write32(importAddress + 4, SYSCALL(syscallUnmappedImport));
     	}
+        invalidate(importAddress, 8);
 
     	if (sourceModule != null) {
     		// Add this stub back to the list of unresolved imports from the source module

@@ -45,12 +45,14 @@ public class DeferredVstubLO16 extends DeferredStub {
 		// Write back the relocation address to hi16 and lo16
 		short relocatedLoValue = (short) loValue;
 		mem.write16(getImportAddress(), relocatedLoValue);
+        invalidate(getImportAddress(), 2);
 	}
 
 	@Override
 	public void unresolve(Memory mem) {
 		if (hasSavedValue) {
 			mem.write16(getImportAddress(), savedValue);
+	        invalidate(getImportAddress(), 2);
 		}
 
     	if (sourceModule != null) {

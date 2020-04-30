@@ -704,7 +704,7 @@ public class ModuleMgrForUser extends HLEModule {
 		this.startModuleHandler = startModuleHandler;
 	}
 
-    @HLEFunction(nid = 0xB7F46618, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xB7F46618, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelLoadModuleByID(int uid, @CanBeNull TPointer optionAddr) {
         String name = Modules.IoFileMgrForUserModule.getFileFilename(uid);
 
@@ -733,8 +733,8 @@ public class ModuleMgrForUser extends HLEModule {
         return hleKernelLoadModule(loadModuleContext);
     }
 
-    @HLEFunction(nid = 0x977DE386, version = 150, checkInsideInterrupt = true)
-    @HLEFunction(nid = 0x939E4270, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x977DE386, version = 150, checkInsideInterrupt = true, canModifyCode = true)
+    @HLEFunction(nid = 0x939E4270, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelLoadModule(PspString path, int flags, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
@@ -762,7 +762,7 @@ public class ModuleMgrForUser extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xF9275D98, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xF9275D98, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelLoadModuleBufferUsbWlan(int bufSize, @BufferInfo(lengthInfo=LengthInfo.previousParameter, usage=Usage.in) TPointer buffer, int flags, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
@@ -881,13 +881,13 @@ public class ModuleMgrForUser extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x2E0911AA, version = 150, checkInsideInterrupt = true)
-    @HLEFunction(nid = 0x387E3CA9, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x2E0911AA, version = 150, checkInsideInterrupt = true, canModifyCode = true)
+    @HLEFunction(nid = 0x387E3CA9, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelUnloadModule(int uid) {
     	return hleKernelUnloadModule(uid);
     }
 
-    @HLEFunction(nid = 0xD675EBB8, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xD675EBB8, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelSelfStopUnloadModule(int exitCode, int argSize, @CanBeNull TPointer argp) {
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -914,7 +914,7 @@ public class ModuleMgrForUser extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x8F2DF740, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x8F2DF740, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelStopUnloadSelfModuleWithStatus(int exitCode, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
 
@@ -952,7 +952,7 @@ public class ModuleMgrForUser extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xCC1D3699, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xCC1D3699, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelStopUnloadSelfModule(int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
 
@@ -1054,8 +1054,8 @@ public class ModuleMgrForUser extends HLEModule {
         return module.modid;
     }
 
-    @HLEFunction(nid = 0xA1A78C58, version = 150)
-    @HLEFunction(nid = 0xCE0A74A5, version = 660)
+    @HLEFunction(nid = 0xA1A78C58, version = 150, canModifyCode = true)
+    @HLEFunction(nid = 0xCE0A74A5, version = 660, canModifyCode = true)
     public int sceKernelLoadModuleDisc(PspString path, int flags, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
@@ -1076,7 +1076,7 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xFEF27DC1, version = 271, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xFEF27DC1, version = 271, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelLoadModuleDNAS(PspString path, TPointer key, int unknown, @CanBeNull TPointer32 optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
@@ -1101,7 +1101,7 @@ public class ModuleMgrForUser extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xF2D8D1B4, version = 271)
+    @HLEFunction(nid = 0xF2D8D1B4, version = 271, canModifyCode = true)
     public int sceKernelLoadModuleNpDrm(PspString path, int flags, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
@@ -1129,7 +1129,7 @@ public class ModuleMgrForUser extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0xE4C4211C, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xE4C4211C, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelLoadModuleWithBlockOffset(PspString path, int memoryBlockId, int memoryBlockOffset, int flags) {
     	return 0;
     }

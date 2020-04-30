@@ -72,4 +72,11 @@ public @interface HLEFunction {
 	 * through a jump instruction instead of a syscall.
 	 */
 	public boolean jumpCall() default false;
+
+	/**
+	 * Specifies that this function can modify memory where
+	 * MIPS code is stored and that the compiler should
+	 * verify if any code has been updated.
+	 */
+	public boolean canModifyCode() default false;
 }
