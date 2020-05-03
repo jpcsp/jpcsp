@@ -65,6 +65,7 @@ public class CodeBlock {
 	private final static String[] interfacesForExecutable = new String[] { Type.getInternalName(IExecutable.class) };
 	private final static String[] exceptions = new String[] { Type.getInternalName(Exception.class) };
 	private int instanceIndex;
+	private int nextInstanceIndex;
 	private Instruction[] interpretedInstructions;
 	private int[] interpretedOpcodes;
 	private MemoryRanges memoryRanges = new MemoryRanges();
@@ -72,11 +73,19 @@ public class CodeBlock {
 	private HLEModuleFunction hleFunction;
 	private IAction updateOpcodesAction;
 
-	public CodeBlock(int startAddress, int instanceCount) {
+	public CodeBlock(int startAddress, int instanceIndex) {
 		this.startAddress = startAddress;
-		this.instanceIndex = instanceCount;
+		this.instanceIndex = instanceIndex;
 		lowestAddress = startAddress;
 		highestAddress = startAddress;
+
+		// Verify if we have not yet compiled a CodeBlock with a higher instanceIndex
+		CodeBlock previousCodeBlock = RuntimeContext.getCodeBlock(startAddress);
+		if (previousCodeBlock != null && previousCodeBlock.getInstanceIndex() > instanceIndex) {
+			nextInstanceIndex = previousCodeBlock.getInstanceIndex() + 1;
+		} else {
+			nextInstanceIndex = instanceIndex + 1;
+		}
 	}
 
 	private void insertInstruction(int address, CodeInstruction codeInstruction) {
@@ -626,8 +635,7 @@ public class CodeBlock {
     }
 
     public int getNewInstanceIndex() {
-    	instanceIndex++;
-    	return instanceIndex;
+    	return nextInstanceIndex++;
     }
 
 	public Instruction[] getInterpretedInstructions() {
