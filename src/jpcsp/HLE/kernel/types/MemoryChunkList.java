@@ -66,14 +66,15 @@ public class MemoryChunkList {
 	 * @return              the base address of the allocated memory,
 	 *                      0 if the memory could not be allocated
 	 */
-	public int allocLow(int size, int addrAlignment) {
+	public MemoryChunk allocLow(int size, int addrAlignment) {
+		size = Utilities.alignUp(size, addrAlignment);
 		for (MemoryChunk memoryChunk = low; memoryChunk != null; memoryChunk = memoryChunk.next) {
 			if (memoryChunk.isAvailable(size, addrAlignment)) {
 				return allocLow(memoryChunk, size, addrAlignment);
 			}
 		}
 
-		return 0;
+		return null;
 	}
 
 	/**
@@ -84,14 +85,15 @@ public class MemoryChunkList {
 	 * @return              the base address of the allocated memory
 	 *                      0 if the memory could not be allocated
 	 */
-	public int allocHigh(int size, int addrAlignment) {
+	public MemoryChunk allocHigh(int size, int addrAlignment) {
+		size = Utilities.alignUp(size, addrAlignment);
 		for (MemoryChunk memoryChunk = high; memoryChunk != null; memoryChunk = memoryChunk.previous) {
 			if (memoryChunk.isAvailable(size, addrAlignment)) {
 				return allocHigh(memoryChunk, size, addrAlignment);
 			}
 		}
 
-		return 0;
+		return null;
 	}
 
 	/**
@@ -102,14 +104,14 @@ public class MemoryChunkList {
 	 * @return            the base address of the allocated memory,
 	 *                    0 if the memory could not be allocated
 	 */
-	public int alloc(int addr, int size) {
+	public MemoryChunk alloc(int addr, int size) {
 		for (MemoryChunk memoryChunk = low; memoryChunk != null; memoryChunk = memoryChunk.next) {
 			if (memoryChunk.addr <= addr && addr < memoryChunk.addr + memoryChunk.size) {
 				return alloc(memoryChunk, addr, size);
 			}
 		}
 
-		return 0;
+		return null;
 	}
 
 	/**
@@ -121,7 +123,7 @@ public class MemoryChunkList {
 	 * @param addrAlignment base address alignment of the requested block
 	 * @return              the base address of the allocated memory
 	 */
-	private int allocLow(MemoryChunk memoryChunk, int size, int addrAlignment) {
+	private MemoryChunk allocLow(MemoryChunk memoryChunk, int size, int addrAlignment) {
 		int addr = Utilities.alignUp(memoryChunk.addr, addrAlignment);
 
 		return alloc(memoryChunk, addr, size);
@@ -136,8 +138,8 @@ public class MemoryChunkList {
 	 * @param addrAlignment base address alignment of the requested block
 	 * @return              the base address of the allocated memory
 	 */
-	private int allocHigh(MemoryChunk memoryChunk, int size, int addrAlignment) {
-		int addr = Utilities.alignDown(memoryChunk.addr + memoryChunk.size, addrAlignment) - size;
+	private MemoryChunk allocHigh(MemoryChunk memoryChunk, int size, int addrAlignment) {
+		int addr = Utilities.alignDown(memoryChunk.addr + memoryChunk.size - size, addrAlignment);
 
 		return alloc(memoryChunk, addr, size);
 	}
@@ -154,11 +156,11 @@ public class MemoryChunkList {
 	 * @return            the base address of the allocated memory, or 0
 	 *                    if the MemoryChunk is too small to allocate the desired size.
 	 */
-	private int alloc(MemoryChunk memoryChunk, int addr, int size) {
+	private MemoryChunk alloc(MemoryChunk memoryChunk, int addr, int size) {
 		if (addr < memoryChunk.addr || memoryChunk.addr + memoryChunk.size < addr + size) {
 			// The MemoryChunk is too small to allocate the desired size
 			// are the requested address is outside the MemoryChunk
-			return 0;
+			return null;
 		} else if (memoryChunk.size == size) {
 			// Allocate the complete MemoryChunk
 			remove(memoryChunk);
@@ -184,7 +186,7 @@ public class MemoryChunkList {
 
 		sanityChecks();
 
-		return addr;
+		return new MemoryChunk(addr, size);
 	}
 
 	/**
@@ -318,6 +320,18 @@ public class MemoryChunkList {
 				}
 				addr = memoryChunk.addr + memoryChunk.size;
 			}
+		}
+
+		int sizeLow = 0;
+		for (MemoryChunk memoryChunk = low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+			sizeLow += memoryChunk.size;
+		}
+		int sizeHigh = 0;
+		for (MemoryChunk memoryChunk = high; memoryChunk != null; memoryChunk = memoryChunk.previous) {
+			sizeHigh += memoryChunk.size;
+		}
+		if (sizeLow != sizeHigh) {
+			log.error(String.format("Size of low and high MemoryChunk differs: 0x%X != 0x%X", sizeLow, sizeHigh));
 		}
 	}
 

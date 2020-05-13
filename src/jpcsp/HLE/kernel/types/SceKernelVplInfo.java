@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import static jpcsp.HLE.kernel.managers.VplManager.PSP_VPL_ATTR_ADDR_HIGH;
+import static jpcsp.HLE.kernel.managers.VplManager.log;
 
 import java.util.HashMap;
 
@@ -45,7 +46,7 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
     public final int uid;
     public final int partitionid;
     private final int allocAddress;
-    private HashMap<Integer, Integer> dataBlockMap;  //Hash map to store each data address and respective size.
+    private HashMap<Integer, MemoryChunk> dataBlockMap;  //Hash map to store each data address and respective size.
     private MemoryChunkList freeMemoryChunks;
 
     private SceKernelVplInfo(String name, int partitionid, int attr, int size, int memType) {
@@ -61,7 +62,7 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
 
         freeSize = poolSize;
 
-        dataBlockMap = new HashMap<Integer, Integer>();
+        dataBlockMap = new HashMap<Integer, MemoryChunk>();
 
         uid = SceUidManager.getNewUid("ThreadMan-Vpl");
         threadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_VPL, uid, attr, VplManager.PSP_VPL_ATTR_PRIORITY);
@@ -97,7 +98,7 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
         if (totalVplSize <= maxFreeSize) {
             info = new SceKernelVplInfo(name, partitionid, attr, totalVplSize, memType);
         } else {
-            VplManager.log.warn(String.format("tryCreateVpl not enough free mem (want=%d ,free=%d, diff=%d)", totalVplSize, maxFreeSize, totalVplSize - maxFreeSize));
+            log.warn(String.format("tryCreateVpl not enough free mem (want=%d ,free=%d, diff=%d)", totalVplSize, maxFreeSize, totalVplSize - maxFreeSize));
         }
 
         return info;
@@ -121,8 +122,8 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
     public boolean free(int addr) {
         if (!dataBlockMap.containsKey(addr)) {
             // Address is not in valid range.
-        	if (VplManager.log.isDebugEnabled()) {
-        		VplManager.log.debug(String.format("Free VPL 0x%08X address not allocated", addr));
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Free VPL 0x%08X address not allocated", addr));
         	}
 
             return false;
@@ -132,20 +133,19 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
         Memory mem = Memory.getInstance();
         int top = mem.read32(addr - vplBlockHeaderSize);
         if (top != allocAddress) {
-            VplManager.log.warn(String.format("Free VPL 0x%08X corrupted header", addr));
+            log.warn(String.format("Free VPL 0x%08X corrupted header", addr));
             return false;
         }
 
         // Recover free size from deallocated block.
-        int deallocSize = dataBlockMap.remove(addr);
+        MemoryChunk deallocMemoryChunk = dataBlockMap.remove(addr);
 
         // Free the allocated block
-        freeSize += deallocSize;
-        MemoryChunk memoryChunk = new MemoryChunk(addr - vplBlockHeaderSize, deallocSize);
-        freeMemoryChunks.add(memoryChunk);
+        freeSize += deallocMemoryChunk.size;
+        freeMemoryChunks.add(deallocMemoryChunk);
 
-        if (VplManager.log.isDebugEnabled()) {
-        	VplManager.log.debug(String.format("Free VPL: Block 0x%08X with size=%d freed", addr, deallocSize));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("Free VPL: Block 0x%08X with size=0x%X freed", addr, deallocMemoryChunk.size));
         }
 
         return true;
@@ -156,13 +156,15 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
         int allocSize = Utilities.alignUp(size, vplAddrAlignment) + vplBlockHeaderSize;
 
         if (allocSize <= freeSize) {
+        	MemoryChunk allocatedMemoryChunk = null;
             if ((attr & PSP_VPL_ATTR_ADDR_HIGH) == PSP_VPL_ATTR_ADDR_HIGH) {
-            	addr = freeMemoryChunks.allocHigh(allocSize, vplAddrAlignment);
+            	allocatedMemoryChunk = freeMemoryChunks.allocHigh(allocSize, vplAddrAlignment);
             } else {
-            	addr = freeMemoryChunks.allocLow(allocSize, vplAddrAlignment);
+            	allocatedMemoryChunk = freeMemoryChunks.allocLow(allocSize, vplAddrAlignment);
             }
-            if (addr != 0) {
+            if (allocatedMemoryChunk != null) {
             	// 8-byte header per data block.
+            	addr = allocatedMemoryChunk.addr;
             	Memory mem = Memory.getInstance();
             	mem.write32(addr, allocAddress);
             	mem.write32(addr + 4, 0);
@@ -170,7 +172,7 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
 
             	freeSize -= allocSize;
 
-            	dataBlockMap.put(addr, allocSize);
+            	dataBlockMap.put(addr, allocatedMemoryChunk);
             }
         }
 

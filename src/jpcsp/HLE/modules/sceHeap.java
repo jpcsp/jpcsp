@@ -59,24 +59,23 @@ public class sceHeap extends HLEModule {
     	}
 
     	public int alloc(int size, int alignment) {
-    		int allocatedAddr = 0;
+    		MemoryChunk allocatedMemoryChunk = null;
     		switch (allocType) {
     			case PSP_SMEM_Low:
-    				allocatedAddr = freeMemoryChunks.allocLow(size, alignment - 1);
+    				allocatedMemoryChunk = freeMemoryChunks.allocLow(size, alignment - 1);
     				break;
     			case PSP_SMEM_High:
-    				allocatedAddr = freeMemoryChunks.allocHigh(size, alignment - 1);
+    				allocatedMemoryChunk = freeMemoryChunks.allocHigh(size, alignment - 1);
     				break;
     		}
 
-    		if (allocatedAddr == 0) {
+    		if (allocatedMemoryChunk == null) {
     			return 0;
     		}
 
-    		MemoryChunk memoryChunk = new MemoryChunk(allocatedAddr, size);
-    		allocatedMemoryChunks.put(allocatedAddr, memoryChunk);
+    		allocatedMemoryChunks.put(allocatedMemoryChunk.addr, allocatedMemoryChunk);
 
-    		return allocatedAddr;
+    		return allocatedMemoryChunk.addr;
     	}
 
     	public boolean free(int addr) {

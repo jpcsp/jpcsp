@@ -125,14 +125,14 @@ public class SysMemForKernel extends HLEModule {
     			return 0;
     		}
 
-    		int addr = freeMemoryChunks.allocLow(blockSize + HEAP_BLOCK_HEADER_SIZE, 0);
-    		if (addr == 0) {
+    		MemoryChunk allocatedMemoryChunk = freeMemoryChunks.allocLow(blockSize + HEAP_BLOCK_HEADER_SIZE, 0);
+    		if (allocatedMemoryChunk == null) {
     			return 0;
     		}
 
-    		Memory.getInstance().write32(addr, blockSize);
+    		Memory.getInstance().write32(allocatedMemoryChunk.addr, allocatedMemoryChunk.size - HEAP_BLOCK_HEADER_SIZE);
 
-    		return addr + HEAP_BLOCK_HEADER_SIZE;
+    		return allocatedMemoryChunk.addr + HEAP_BLOCK_HEADER_SIZE;
     	}
 
     	public void freeBlock(int addr) {

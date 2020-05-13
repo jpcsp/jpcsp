@@ -276,7 +276,7 @@ public class SysMemUserForUser extends HLEModule {
     		return null;
     	}
 
-    	int allocatedAddress = 0;
+    	MemoryChunk allocatedMemoryChunk = null;
         int allocatedSize = 0;
 
         if (isValidPartitionId(partitionid)) {
@@ -296,14 +296,14 @@ public class SysMemUserForUser extends HLEModule {
 	        switch (type) {
 	        	case PSP_SMEM_Low:
 	        	case PSP_SMEM_LowAligned:
-	        		allocatedAddress = freeMemoryChunk.allocLow(allocatedSize, alignment);
+	        		allocatedMemoryChunk = freeMemoryChunk.allocLow(allocatedSize, alignment);
 	        		break;
 	        	case PSP_SMEM_High:
 	        	case PSP_SMEM_HighAligned:
-	        		allocatedAddress = freeMemoryChunk.allocHigh(allocatedSize, alignment);
+	        		allocatedMemoryChunk = freeMemoryChunk.allocHigh(allocatedSize, alignment);
 	        		break;
 	        	case PSP_SMEM_Addr:
-	        		allocatedAddress = freeMemoryChunk.alloc(addr & Memory.addressMask, allocatedSize);
+	        		allocatedMemoryChunk = freeMemoryChunk.alloc(addr & Memory.addressMask, allocatedSize);
 	        		break;
 	    		default:
 	    			log.warn(String.format("malloc: unknown type %s", getTypeName(type)));
@@ -311,7 +311,7 @@ public class SysMemUserForUser extends HLEModule {
         }
 
         SysMemInfo sysMemInfo;
-		if (allocatedAddress == 0) {
+		if (allocatedMemoryChunk == null) {
             log.warn(String.format("malloc cannot allocate partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X, maxFreeMem=0x%X, totalFreeMem=0x%X", partitionid, name, getTypeName(type), size, addr, maxFreeMemSize(partitionid), totalFreeMemSize(partitionid)));
 			if (log.isTraceEnabled()) {
 				log.trace("Free list: " + getDebugFreeMem());
@@ -319,10 +319,10 @@ public class SysMemUserForUser extends HLEModule {
 			}
 			sysMemInfo = null;
 		} else {
-			sysMemInfo = new SysMemInfo(partitionid, name, type, size, allocatedSize, allocatedAddress);
+			sysMemInfo = new SysMemInfo(partitionid, name, type, size, allocatedMemoryChunk.size, allocatedMemoryChunk.addr);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("malloc partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, name, getTypeName(type), size, addr, allocatedAddress));
+				log.debug(String.format("malloc partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, name, getTypeName(type), size, addr, allocatedMemoryChunk.addr));
 				if (log.isTraceEnabled()) {
 					log.trace("Free list after malloc: " + getDebugFreeMem());
 					log.trace("Allocated blocks after malloc:\n" + getDebugAllocatedMem() + "\n");
@@ -360,7 +360,11 @@ public class SysMemUserForUser extends HLEModule {
     }
 
     private int alloc(int partitionId, int addr, int size) {
-		return freeMemoryChunks[partitionId].alloc(addr, size);
+    	MemoryChunk allocatedMemoryChunk = freeMemoryChunks[partitionId].alloc(addr, size);
+    	if (allocatedMemoryChunk == null) {
+    		return 0;
+    	}
+    	return allocatedMemoryChunk.addr;
     }
 
     public void free(SysMemInfo info) {
