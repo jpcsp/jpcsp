@@ -197,7 +197,7 @@ public class HLEModuleManager {
         sceUsb(Modules.sceUsbModule),
         sceHeap(Modules.sceHeapModule, new String[] { "libheap", "sceHeap_Library" }),
         KDebugForKernel(Modules.KDebugForKernelModule),
-        sceCcc(Modules.sceCccModule, new String[] { "libccc" }),
+        sceCcc(Modules.sceCccModule, new String[] { "libccc", "sceCcc_Library" }),
         scePauth(Modules.scePauthModule),
         sceSfmt19937(Modules.sceSfmt19937Module, new String[] { "libsfmt19937", "sceSfmt19937_Library" }),
         sceMd5(Modules.sceMd5Module, new String[] { "libmd5" }),
