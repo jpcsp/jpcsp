@@ -380,13 +380,13 @@ public class sceGe_user extends HLEModule {
 	        if (log.isDebugEnabled()) {
 	        	log.debug(String.format("hleGeListEnQueue optParams=%s", optParams));
 	        }
-	        if (optParams.stackDepth >= 256) {
-	        	return SceKernelErrors.ERROR_INVALID_SIZE;
-	        }
     	}
 
     	boolean useCachedMemory = false;
     	if (Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() >= 0x02000000) {
+			if (optParams.stackDepth >= 256) {
+	        	return SceKernelErrors.ERROR_INVALID_SIZE;
+	        }
 	        boolean isBusy;
 	    	if (ExternalGE.isActive()) {
 	    		isBusy = ExternalGE.hasDrawList(listAddr.getAddress(), stackAddr);
