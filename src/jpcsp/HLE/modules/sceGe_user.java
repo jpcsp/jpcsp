@@ -380,7 +380,7 @@ public class sceGe_user extends HLEModule {
 	        if (log.isDebugEnabled()) {
 	        	log.debug(String.format("hleGeListEnQueue optParams=%s", optParams));
 	        }
-	        if (optParams.stackDepth >= 256) {
+	        if (optParams.stackDepth < 0 || optParams.stackDepth >= 256) {
 	        	return SceKernelErrors.ERROR_INVALID_SIZE;
 	        }
     	}
