@@ -1367,11 +1367,16 @@ public class sceMpeg extends HLEModule {
     		detailPointer.setValue32(20, videocodecBuffer2.getValue32(20)); // Frame crop rect (right)
     		detailPointer.setValue32(24, videocodecBuffer2.getValue32(24)); // Frame crop rect (top)
     		detailPointer.setValue32(28, videocodecBuffer2.getValue32(28)); // Frame crop rect (bottom)
-    		detailPointer.setValue32(32, numberOfDecodedImages); 
-    		detailPointer.setValue32(36, videocodecBuffer2.getValue32(36));
-    		detailPointer.setValue32(40, videocodecBuffer.getValue32(48));
-    		detailPointer.setValue32(44, mpegAvcYuvStruct.getValue32(36));
-    		detailPointer.setValue32(48, mpegAvcYuvStruct.getValue32(40));
+    		detailPointer.setValue32(32, numberOfDecodedImages);
+    		// mpeg.prx versions 0x010A and later are returning 4 additional values.
+    		// mpeg.prx versions 0x0108 and earlier are not returning those values.
+    		// Not sure about version 0x0109.
+    		if (getModuleElfVersion() == 0 || getModuleElfVersion() > 0x0108) {
+	    		detailPointer.setValue32(36, videocodecBuffer2.getValue32(36));
+	    		detailPointer.setValue32(40, videocodecBuffer.getValue32(48));
+	    		detailPointer.setValue32(44, mpegAvcYuvStruct.getValue32(36));
+	    		detailPointer.setValue32(48, mpegAvcYuvStruct.getValue32(40));
+    		}
     	}
     	
     	return 0;

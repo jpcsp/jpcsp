@@ -93,6 +93,7 @@ public class ModuleMgrForUser extends HLEModule {
         public SceKernelThreadInfo thread;
         public ByteBuffer moduleBuffer;
         public int moduleVersion;
+        public int moduleElfVersion;
         public boolean isSignChecked;
         public Memory mem;
 
@@ -177,7 +178,7 @@ public class ModuleMgrForUser extends HLEModule {
         	if (log.isInfoEnabled()) {
         		log.info(String.format("hleKernelLoadModule(path='%s') HLE module %s loaded", loadModuleContext.fileName, loadModuleContext.moduleName));
         	}
-            return moduleManager.LoadFlash0Module(loadModuleContext.moduleName, loadModuleContext.moduleVersion);
+            return moduleManager.LoadFlash0Module(loadModuleContext.moduleName, loadModuleContext.moduleVersion, loadModuleContext.moduleElfVersion);
         }
 
         return -1;
@@ -257,6 +258,7 @@ public class ModuleMgrForUser extends HLEModule {
 				if (moduleInfo != null) {
 					loadModuleContext.moduleName = moduleInfo.modname;
 					loadModuleContext.moduleVersion = moduleInfo.moduleVersion;
+					loadModuleContext.moduleElfVersion = moduleInfo.getVersionAsInt();
 				}
 			}
 		} catch (IOException e) {

@@ -310,8 +310,7 @@ public class SceModule {
      * PSPModuleInfo object comes from the loader/ELF. */
     public void copy(PSPModuleInfo moduleInfo) {
         attribute = (short)(moduleInfo.getM_attr() & 0xFFFF);
-        version[0] = (byte)( moduleInfo.getM_version()       & 0xFF);
-        version[1] = (byte)((moduleInfo.getM_version() >> 8) & 0xFF);
+        setVersion(moduleInfo.getM_version());
         modname = moduleInfo.getM_namez();
         gp_value = (int)(moduleInfo.getM_gp() & 0xFFFFFFFFL);
         ent_top = (int)moduleInfo.getM_exports();
@@ -320,7 +319,16 @@ public class SceModule {
         stub_size = (int)moduleInfo.getM_imp_end() - stub_top;
     }
 
-	@Override
+    public void setVersion(int value) {
+    	version[0] = (byte) value;
+    	version[1] = (byte) (value >> 8);
+    }
+
+    public int getVersionAsInt() {
+    	return (version[0] & 0xFF) | ((version[1] & 0xFF) << 8);
+    }
+
+    @Override
 	public String toString() {
 		StringBuilder s = new StringBuilder("SceModule ");
 		if (modname != null) {

@@ -39,6 +39,7 @@ abstract public class HLEModule {
 	private String name;
 	private boolean started = false;
 	private int moduleVersion;
+	private int moduleElfVersion;
 
 	public HashMap<String, HLEModuleFunction> installedHLEModuleFunctions = new HashMap<String, HLEModuleFunction>();
 
@@ -152,6 +153,14 @@ abstract public class HLEModule {
 
 	public void setModuleVersion(int moduleVersion) {
 		this.moduleVersion = moduleVersion;
+	}
+
+    public int getModuleElfVersion() {
+		return moduleElfVersion;
+	}
+
+	public void setModuleElfVersion(int moduleElfVersion) {
+		this.moduleElfVersion = moduleElfVersion;
 	}
 
     @Override
