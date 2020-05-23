@@ -25,6 +25,7 @@ import jpcsp.NIDMapper;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.PSF;
@@ -62,7 +63,7 @@ public class SceModule {
     public int text_size;
     public int data_size;
     public int bss_size;
-    private List<SysMemInfo> allocatedMemory;
+    private final List<SysMemInfo> allocatedMemory = new LinkedList<SysMemInfo>();
     public int nsegment; // usually just 1 segment
     public int[] segmentaddr = new int[4]; // static memory footprint of the module
     public int[] segmentsize = new int[4]; // static memory footprint of the module
@@ -77,8 +78,7 @@ public class SceModule {
     public int module_reboot_before_thread_attr;
 
     // internal info
-    public static final int size = 196;
-    public final int address;
+    public int address;
     public final boolean isFlashModule;
     public boolean isLoaded;
     public boolean isStarted;
@@ -107,18 +107,14 @@ public class SceModule {
     public List<DeferredStub> resolvedImports;
     private List<String> moduleNames = new LinkedList<String>();
 
-    private static int sceModuleAddressOffset = 0x08400000; // reset this when we reset the emu
-    public static void ResetAllocator() {
-        sceModuleAddressOffset = 0x08400000;
-    }
-
     public SceModule(boolean isFlashModule) {
         this.isFlashModule = isFlashModule;
 
         modid = SceUidManager.getNewUid("SceModule");
 
-        sceModuleAddressOffset -= (size + 256) & ~255;
-        address = sceModuleAddressOffset;
+        SysMemInfo sysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, String.format("SceModule-0x%X", modid), SysMemUserForUser.PSP_SMEM_HighAligned, sizeOf(), 255);
+        addAllocatedMemory(sysMemInfo);
+        address = sysMemInfo.addr;
 
         // Link SceModule structs together
         if (previousModule != null) {
@@ -135,7 +131,6 @@ public class SceModule {
         unresolvedImports = new LinkedList<DeferredStub>();
         importFixupAttempts = 0;
         resolvedImports = new LinkedList<DeferredStub>();
-        allocatedMemory = new LinkedList<SysMemInfo>();
     }
 
     public void addModuleName(String moduleName) {
@@ -202,6 +197,8 @@ public class SceModule {
 
         	HLEModuleManager.getInstance().UnloadFlash0Module(this);
     	}
+
+    	address = 0;
     }
 
     public void addAllocatedMemory(SysMemInfo sysMemInfo) {
@@ -326,6 +323,10 @@ public class SceModule {
 
     public int getVersionAsInt() {
     	return (version[0] & 0xFF) | ((version[1] & 0xFF) << 8);
+    }
+
+    public int sizeOf() {
+    	return 196;
     }
 
     @Override

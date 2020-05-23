@@ -208,6 +208,10 @@ public class Loader {
         	patchModule(module);
         }
 
+        if (analyzeOnly) {
+        	module.free();
+        }
+
         return module;
     }
 

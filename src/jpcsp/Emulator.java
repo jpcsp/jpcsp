@@ -262,7 +262,6 @@ public class Emulator implements Runnable {
 
         Battery.initialize();
         Wlan.initialize();
-        jpcsp.HLE.kernel.types.SceModule.ResetAllocator();
         SceUidManager.reset();
         HLEUidObjectMapping.reset();
         ProOnlineNetworkAdapter.init();

@@ -324,7 +324,7 @@ public class SysMemUserForUser extends HLEModule {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("malloc partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, name, getTypeName(type), size, addr, allocatedMemoryChunk.addr));
 				if (log.isTraceEnabled()) {
-					log.trace("Free list after malloc: " + getDebugFreeMem());
+					log.trace("Free list after malloc:\n" + getDebugFreeMem() + "\n");
 					log.trace("Allocated blocks after malloc:\n" + getDebugAllocatedMem() + "\n");
 				}
 			}
@@ -334,7 +334,14 @@ public class SysMemUserForUser extends HLEModule {
     }
 
     public String getDebugFreeMem() {
-    	return freeMemoryChunks[USER_PARTITION_ID].toString();
+    	StringBuilder s = new StringBuilder();
+    	s.append(String.format("partition=%d: ", KERNEL_PARTITION_ID));
+    	s.append(freeMemoryChunks[KERNEL_PARTITION_ID].toString());
+    	s.append("\n");
+    	s.append(String.format("partition=%d: ", USER_PARTITION_ID));
+    	s.append(freeMemoryChunks[USER_PARTITION_ID].toString());
+
+    	return s.toString();
     }
 
     public String getDebugAllocatedMem() {
