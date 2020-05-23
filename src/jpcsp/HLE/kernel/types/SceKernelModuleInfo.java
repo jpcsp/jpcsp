@@ -33,7 +33,7 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructureVariabl
     public int data_size;
     public int bss_size;
     public short attribute;
-    public byte[] version = new byte[2];
+    public int version;
     public String name;
 
     public SceKernelModuleInfo() {
@@ -57,8 +57,7 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructureVariabl
         data_size = sceModule.data_size;
         bss_size = sceModule.bss_size;
         attribute = sceModule.attribute;
-        version[0] = sceModule.version[0];
-        version[1] = sceModule.version[1];
+        version = sceModule.version;
         name = sceModule.modname;
     }
 
@@ -85,8 +84,7 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructureVariabl
         data_size       = read32();
         bss_size        = read32();
         attribute       = (short)(read16() & 0xFFFF);
-        version[0]      = (byte)(read8() & 0xFF);
-        version[1]      = (byte)(read8() & 0xFF);
+        version         = read16();
         name            = readStringNZ(28);
     }
 
@@ -111,8 +109,7 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructureVariabl
         write32(data_size);
         write32(bss_size);
         write16(attribute);
-        write8(version[0]);
-        write8(version[1]);
+        write16((short) version);
         writeStringNZ(28, name);
     }
 }

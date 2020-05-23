@@ -807,7 +807,7 @@ public class Loader {
 
         if (!analyzeOnly) {
 	        if (log.isInfoEnabled()) {
-	        	log.info(String.format("Found ModuleInfo at 0x%08X, name:'%s', version: %02X%02X, attr: 0x%08X, gp: 0x%08X", moduleInfoAddr, module.modname, module.version[1], module.version[0], module.attribute, module.gp_value));
+	        	log.info(String.format("Found ModuleInfo at 0x%08X, name:'%s', version: %04X, attr: 0x%08X, gp: 0x%08X", moduleInfoAddr, module.modname, module.version, module.attribute, module.gp_value));
 	        }
 
 	        if ((module.attribute & SceModule.PSP_MODULE_KERNEL) != 0) {

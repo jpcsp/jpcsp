@@ -457,7 +457,7 @@ public class HLEModuleManager {
         SceModule fakeModule = new SceModule(true);
         fakeModule.modname = name;
         fakeModule.moduleVersion = moduleVersion;
-        fakeModule.setVersion(moduleElfVersion);
+        fakeModule.version = moduleElfVersion;
         fakeModule.write(Memory.getInstance(), fakeModule.address);
         Managers.modules.addModule(fakeModule);
 

@@ -38,7 +38,7 @@ public class SceModule {
     // PSP info
     public int next; // should be handled by a manager
     public short attribute;
-    public byte[] version = new byte[2];
+    public int version;
     public String modname; // 27 printable chars
     public final byte terminal = (byte)0;
     public int status;  // 2 bytes for status + 2 bytes of padding
@@ -210,8 +210,7 @@ public class SceModule {
     public void write(Memory mem, int address) {
         mem.write32(address, next);
         mem.write16(address + 4, attribute);
-        mem.write8(address + 6, version[0]);
-        mem.write8(address + 7, version[1]);
+        mem.write16(address + 6, (short) version);
         Utilities.writeStringNZ(mem, address + 8, 28, modname);
         mem.write32(address + 36, status);
         mem.write32(address + 40, unk1);
@@ -258,8 +257,7 @@ public class SceModule {
     public void read(Memory mem, int address) {
         next = mem.read32(address);
         attribute = (short)mem.read16(address + 4);
-        version[0] = (byte)mem.read8(address + 6);
-        version[1] = (byte)mem.read8(address + 7);
+        version = mem.read16(address + 6);
         modname = Utilities.readStringNZ(mem, address + 8, 28);
         status = mem.read32(address + 36);
         unk1 = mem.read32(address + 40);
@@ -307,22 +305,13 @@ public class SceModule {
      * PSPModuleInfo object comes from the loader/ELF. */
     public void copy(PSPModuleInfo moduleInfo) {
         attribute = (short)(moduleInfo.getM_attr() & 0xFFFF);
-        setVersion(moduleInfo.getM_version());
+        version = moduleInfo.getM_version();
         modname = moduleInfo.getM_namez();
         gp_value = (int)(moduleInfo.getM_gp() & 0xFFFFFFFFL);
         ent_top = (int)moduleInfo.getM_exports();
         ent_size = (int)moduleInfo.getM_exp_end() - ent_top;
         stub_top = (int)moduleInfo.getM_imports();
         stub_size = (int)moduleInfo.getM_imp_end() - stub_top;
-    }
-
-    public void setVersion(int value) {
-    	version[0] = (byte) value;
-    	version[1] = (byte) (value >> 8);
-    }
-
-    public int getVersionAsInt() {
-    	return (version[0] & 0xFF) | ((version[1] & 0xFF) << 8);
     }
 
     public int sizeOf() {

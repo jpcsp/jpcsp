@@ -258,7 +258,7 @@ public class ModuleMgrForUser extends HLEModule {
 				if (moduleInfo != null) {
 					loadModuleContext.moduleName = moduleInfo.modname;
 					loadModuleContext.moduleVersion = moduleInfo.moduleVersion;
-					loadModuleContext.moduleElfVersion = moduleInfo.getVersionAsInt();
+					loadModuleContext.moduleElfVersion = moduleInfo.version;
 				}
 			}
 		} catch (IOException e) {
