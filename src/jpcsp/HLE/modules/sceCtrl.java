@@ -96,6 +96,8 @@ public class sceCtrl extends HLEModule {
     protected int currentSamplingIndex;
     protected int currentReadingIndex;
     protected int latchSamplingCount;
+    // Only those buttons can be read in user mode
+    private final static int PSP_CTRL_USER_MODE_BUTTONS = PSP_CTRL_SELECT | PSP_CTRL_START | PSP_CTRL_UP | PSP_CTRL_RIGHT | PSP_CTRL_DOWN | PSP_CTRL_LEFT | PSP_CTRL_LTRIGGER | PSP_CTRL_RTRIGGER | PSP_CTRL_TRIANGLE | PSP_CTRL_CIRCLE | PSP_CTRL_CROSS | PSP_CTRL_SQUARE | PSP_CTRL_HOME | PSP_CTRL_HOLD;
     // PSP remembers the last 64 samples.
     protected final static int SAMPLE_BUFFER_SIZE = 64;
     protected List<ThreadWaitingForSampling> threadsWaitingForSampling;
@@ -226,9 +228,18 @@ public class sceCtrl extends HLEModule {
 			this.Buttons = Buttons;
 		}
 
-        public int write(Memory mem, int addr, boolean positive) {
+        public int write(Memory mem, int addr, boolean positive, boolean userMode) {
+        	int buttons = Buttons;
+        	if (userMode) {
+        		// Only those buttons can be read in user mode
+        		buttons &= PSP_CTRL_USER_MODE_BUTTONS;
+        	}
+        	if (!positive) {
+        		buttons = ~buttons;
+        	}
+
             mem.write32(addr, TimeStamp);
-            mem.write32(addr + 4, positive ? Buttons : ~Buttons);
+            mem.write32(addr + 4, buttons);
             mem.write8(addr + 8, Lx);
             mem.write8(addr + 9, Ly);
 
@@ -378,11 +389,17 @@ public class sceCtrl extends HLEModule {
             currentReadingIndex = currentSamplingIndex;
         }
 
+        boolean userMode = false;
+        SceKernelThreadInfo currentThread = Modules.ThreadManForUserModule.getCurrentThread();
+        if (currentThread != null) {
+        	userMode = currentThread.isUserMode();
+        }
+
         for (int ctrlCount = 0; ctrlCount < count; ctrlCount++) {
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("now=%d, samples[%d]=%s", getTimestamp(), readIndex, samples[readIndex]));
         	}
-            addr = samples[readIndex].write(mem, addr, positive);
+            addr = samples[readIndex].write(mem, addr, positive, userMode);
             readIndex = incrementSampleIndex(readIndex);
         }
 
