@@ -2854,7 +2854,7 @@ public class VideoEngine {
                                 }
 
                                 if (context.vinfo.texture != 0 && context.textureFlag.isEnabled() && !context.clearMode) {
-                                	currentList.onRenderSprite(context.texture_base_pointer[0], (int) (v2.t[0] - v1.t[0]), (int) (v2.t[1] - v1.t[1]));
+                                	currentList.onRenderSprite(context.texture_base_pointer[0], (int) (v2.t[0] - v1.t[0]), (int) (v2.t[1] - v1.t[1]), context.texture_storage);
                                 }
 
                                 //

@@ -23,6 +23,7 @@ import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_QUEUED;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_STALL_REACHED;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_STRINGS;
 import static jpcsp.HLE.modules.sceGe_user.log;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.scheduler.Scheduler.getNow;
 
 import java.util.LinkedList;
@@ -482,8 +483,12 @@ public class PspGeList {
 		minimumDuration += duration;
 	}
 
-	public void onRenderSprite(int textureAddress, int renderedTextureWidth, int renderedTextureHeight) {
-		if (Memory.isVRAM(textureAddress) || renderedTextureWidth < 128 || renderedTextureHeight <= 64) {
+	public void onRenderSprite(int textureAddress, int renderedTextureWidth, int renderedTextureHeight, int textureFormat) {
+		// The following textures are rendered at full speed:
+		// - stored in VRAM
+		// - small size
+		// - indexed or compressed format
+		if (Memory.isVRAM(textureAddress) || renderedTextureWidth < 128 || renderedTextureHeight <= 64 || textureFormat > TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 			return;
 		}
 
@@ -500,7 +505,7 @@ public class PspGeList {
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("onRenderSprite textureAddress=0x%08X, renderedTextureWidth=%d, renderedTextureHeight=%d, duration=%dus", textureAddress, renderedTextureWidth, renderedTextureHeight, duration));
+			log.debug(String.format("onRenderSprite textureAddress=0x%08X, renderedTextureWidth=%d, renderedTextureHeight=%d, textureFormat=%d, duration=%dus", textureAddress, renderedTextureWidth, renderedTextureHeight, textureFormat, duration));
 		}
 
 		addMinimumDuration(duration);

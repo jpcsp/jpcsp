@@ -200,11 +200,11 @@ public class NativeCallbacks {
 		}
 	}
 
-	public static void onRenderSprite(int textureAddress, int renderedTextureWidth, int renderedTextureHeight) {
+	public static void onRenderSprite(int textureAddress, int renderedTextureWidth, int renderedTextureHeight, int textureFormat) {
 		onRenderSprite.start();
 		PspGeList currentList = ExternalGE.getCurrentList();
 		if (currentList != null) {
-			currentList.onRenderSprite(textureAddress, renderedTextureWidth, renderedTextureHeight);
+			currentList.onRenderSprite(textureAddress, renderedTextureWidth, renderedTextureHeight, textureFormat);
 		}
 		onRenderSprite.end();
 	}
