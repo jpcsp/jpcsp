@@ -899,6 +899,7 @@ public class VideoEngine {
         if (errorCount >= maxErrorCount) {
             if (tryToFallback()) {
                 log.error("Aborting current list processing due to too many errors");
+				Emulator.PauseEmu();
             }
         }
     }
