@@ -929,15 +929,13 @@ public class scePsmf extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDE78E9FC, version = 150)
-    public int scePsmf_DE78E9FC(@CheckArgument("checkPsmf") TPointer32 psmf, int unknown) {
-    	// Get number of Psmf Marks
+    public int scePsmfGetNumberOfPsmfMarks(@CheckArgument("checkPsmf") TPointer32 psmf, int unknown) {
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x43AC7DBB, version = 150)
-    public int scePsmf_43AC7DBB(@CheckArgument("checkPsmf") TPointer32 psmf, int unknown, int markNumber, TPointer markInfoAddr) {
-    	// Get Psmf Mark Information
+    public int scePsmfGetPsmfMark(@CheckArgument("checkPsmf") TPointer32 psmf, int unknown, int markNumber, TPointer markInfoAddr) {
     	int markType = 0;
     	int markTimestamp = 0;
     	int markEntryEsStream = 0;
