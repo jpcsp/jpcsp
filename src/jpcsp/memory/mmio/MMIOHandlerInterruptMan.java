@@ -212,7 +212,7 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
 			// Interrupt triggered:
-			case 0 :
+			case 0x00:
 				// interruptman.prx is only writing the values 0x80000000 and 0x40000000
 				// which seems to have the effect of clearing the triggers for these interrupts.
 				// The Media Engine is also writing the value 0x00000020.
@@ -233,9 +233,9 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 				}
 				break;
 			// Interrupt enabled:
-			case 8 : setBits1(interruptEnabled, value); break;
-			case 24: setBits2(interruptEnabled, value); break;
-			case 40: setBits3(interruptEnabled, value); break;
+			case 0x08: setBits1(interruptEnabled, value); break;
+			case 0x18: setBits2(interruptEnabled, value); break;
+			case 0x28: setBits3(interruptEnabled, value); break;
 			// Unknown:
 			default: super.write32(address, value); break;
 		}
