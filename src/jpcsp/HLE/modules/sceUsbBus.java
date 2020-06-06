@@ -29,6 +29,9 @@ import jpcsp.HLE.TPointer;
 
 public class sceUsbBus extends HLEModule {
     public static Logger log = Modules.getLogger("sceUsbBus");
+    private boolean unknownFlag1;
+    private boolean unknownFlag2;
+    private boolean unknownFlag3;
 
     /**
      * Queue a send request (IN from host pov)
@@ -43,27 +46,35 @@ public class sceUsbBus extends HLEModule {
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x48CCE3C1, version = 150)
-    public int sceUsbBus_driver_48CCE3C1() {
-    	return 0;
+    @HLEFunction(nid = 0x90B82F55, version = 150)
+    public void sceUsbBus_driver_90B82F55() {
+    	unknownFlag1 = true;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7B87815D, version = 150)
-    public int sceUsbBus_driver_7B87815D() {
-    	return 0;
+    public void sceUsbBus_driver_7B87815D() {
+    	unknownFlag1 = false;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x8A3EB5D2, version = 150)
-    public int sceUsbBus_driver_8A3EB5D2() {
-    	return 0;
+    public boolean sceUsbBus_driver_8A3EB5D2() {
+    	return unknownFlag2;
     }
 
     @HLEUnimplemented
-    @HLEFunction(nid = 0x90B82F55, version = 150)
-    public int sceUsbBus_driver_90B82F55() {
-    	return 0;
+    @HLEFunction(nid = 0xFBA2072B, version = 150)
+    public void sceUsbBus_driver_FBA2072B() {
+    	if (unknownFlag1) {
+    		unknownFlag2 = true;
+    	}
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x48CCE3C1, version = 150)
+    public boolean sceUsbBus_driver_48CCE3C1() {
+    	return unknownFlag3;
     }
 
     /**
@@ -141,12 +152,6 @@ public class sceUsbBus extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xE65441C1, version = 150)
     public int sceUsbbdStall(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.inout) TPointer endp) {
-    	return 0;
-    }
-
-    @HLEUnimplemented
-    @HLEFunction(nid = 0xFBA2072B, version = 150)
-    public int sceUsbBus_driver_FBA2072B() {
     	return 0;
     }
 }

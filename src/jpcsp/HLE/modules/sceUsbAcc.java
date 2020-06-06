@@ -18,18 +18,21 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 
 public class sceUsbAcc extends HLEModule {
     public static Logger log = Modules.getLogger("sceUsbAcc");
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x0CD7D4AA, version = 260)
-	public int sceUsbAccGetInfo(TPointer resultAddr) {
+	public int sceUsbAccGetInfo(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 8, usage = Usage.out) TPointer resultAddr) {
 		// resultAddr is pointing to an 8-byte area.
 		// Not sure about the content...
 		resultAddr.clear(8);
@@ -43,4 +46,22 @@ public class sceUsbAcc extends HLEModule {
 		// Has no parameters
 		return 0;
 	}
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2A100C1F, version = 260)
+    public int sceUsbAcc_internal_2A100C1F(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer req) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x2E251404, version = 260)
+    public int sceUsbAccRegisterType(int type) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x18B04C82, version = 260)
+    public int sceUsbAccUnregisterType(int type) {
+    	return 0;
+    }
 }
