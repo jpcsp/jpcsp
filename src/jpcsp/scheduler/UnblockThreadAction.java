@@ -18,12 +18,17 @@ package jpcsp.scheduler;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 
 public class UnblockThreadAction implements IAction {
 	private int threadId;
 
 	public UnblockThreadAction(int threadId) {
 		this.threadId = threadId;
+	}
+
+	public SceKernelThreadInfo getThreadInfo() {
+		return Modules.ThreadManForUserModule.getThreadById(threadId);
 	}
 
 	@Override

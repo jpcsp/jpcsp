@@ -745,8 +745,23 @@ public class sceDisplay extends HLEModule {
 
 		@Override
 		public void execute() {
-			ExternalGE.onDisplayStopWaitVblank();
-			super.execute();
+			// Check that the thread is still waiting on the VBLANK.
+			// The thread could have been resumed earlier through the VblankWaitStateChecker.
+			boolean unblock = true;
+			SceKernelThreadInfo threadInfo = getThreadInfo();
+			if (threadInfo != null) {
+				if (threadInfo.waitType != SceKernelThreadInfo.JPCSP_WAIT_DISPLAY_VBLANK) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("VblankUnblockThreadAction not unblocking %s", threadInfo));
+					}
+					unblock = false;
+				}
+			}
+
+			if (unblock) {
+				ExternalGE.onDisplayStopWaitVblank();
+				super.execute();
+			}
 		}
     }
 
