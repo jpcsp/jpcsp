@@ -23,7 +23,9 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.NIDMapper;
 import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
@@ -230,5 +232,10 @@ public class SystemCtrlForKernel extends HLEModule {
     @HLEFunction(nid = 0x16C3B7EE, version = 150)
     public int sctrlSEGetConfig(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=72, usage=Usage.out) TPointer configAddr) {
     	return 0;
+    }
+
+    @HLEFunction(nid = 0x159AF5CC, version = 150)
+    public int sctrlHENFindFunction(@CanBeNull PspString szMod, @CanBeNull PspString szLib, int nid) {
+    	return NIDMapper.getInstance().getAddressByNid(nid, szMod.getString());
     }
 }

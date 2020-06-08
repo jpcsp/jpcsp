@@ -222,13 +222,17 @@ public class NIDMapper {
     	freeSyscallNumber = 0x4000;
     }
 
-    private void addNIDInfo(NIDInfo info) {
+    private void addModuleNIDInfo(NIDInfo info) {
     	Map<Integer, NIDInfo> moduleMap = moduleNidMap.get(info.getModuleName());
     	if (moduleMap == null) {
     		moduleMap = new HashMap<Integer, NIDInfo>();
     		moduleNidMap.put(info.getModuleName(), moduleMap);
     	}
     	moduleMap.put(info.getNid(), info);
+    }
+
+    private void addNIDInfo(NIDInfo info) {
+    	addModuleNIDInfo(info);
 
     	// For HLE NID's, do not trust the module names defined in Jpcsp, use only the NID.
     	if (!info.isValidModuleName()) {
@@ -351,6 +355,12 @@ public class NIDMapper {
     	if (info != null) {
     		// Only modules from flash0 are allowed to overwrite NIDs from syscalls
         	if (module.pspfilename == null || !module.pspfilename.startsWith("flash0:")) {
+        		if (!moduleName.equals(info.moduleName)) {
+        			// Remember the module NID even if it cannot overwrite an HLE syscall.
+        			// The address can be retrieved by sctrlHENFindFunction(), e.g. by prometheus.prx.
+	        		info = new NIDInfo(nid, address, moduleName, variableExport);
+	        		addModuleNIDInfo(info);
+        		}
         		return;
         	}
         	if (log.isInfoEnabled()) {
