@@ -981,4 +981,10 @@ public class SysMemForKernel extends HLEModule {
     public int sceKernelFillFreeBlock(int mpid, int c) {
     	return 0;
     }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x536AD5E1, version = 150)
+    public int SysMemForKernel_536AD5E1() {
+    	return 0;
+    }
 }
