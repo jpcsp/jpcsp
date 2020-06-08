@@ -478,7 +478,9 @@ public class Loader {
 	            }
             } else {
 	            LoadELFModuleInfo(f, module, baseAddress, elf, elfOffset, analyzeOnly);
-	            LoadSDKVersion(f, module, elf, elfOffset);
+	            if (elf.getHeader().requiresRelocation()) {
+	            	LoadSDKVersion(f, module, elf, elfOffset);
+	            }
             }
             return true;
         }
