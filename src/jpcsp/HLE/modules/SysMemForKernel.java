@@ -987,4 +987,14 @@ public class SysMemForKernel extends HLEModule {
     public int SysMemForKernel_536AD5E1() {
     	return 0;
     }
+
+    @HLEFunction(nid = 0x9697CD32, version = 150)
+    public int sceKernelPartitionTotalFreeMemSize(int partitionId) {
+		return Modules.SysMemUserForUserModule.totalFreeMemSize(partitionId);
+    }
+
+    @HLEFunction(nid = 0xE6581468, version = 150)
+    public int sceKernelPartitionMaxFreeMemSize(int partitionId) {
+		return Modules.SysMemUserForUserModule.maxFreeMemSize(partitionId);
+    }
 }
