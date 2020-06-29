@@ -139,7 +139,7 @@ public class sceUsbBus extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xCC57EC9D, version = 150)
-    public int sceUsbbdReqCancel() {
+    public int sceUsbbdReqCancel(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer req) {
     	return 0;
     }
 
