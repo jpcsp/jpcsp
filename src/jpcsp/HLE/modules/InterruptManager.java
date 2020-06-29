@@ -144,4 +144,14 @@ public class InterruptManager extends HLEModule {
 	public int sceKernelRegisterSystemCallTable(TPointer syscallTable) {
 		return 0;
 	}
+
+	/*
+	 * Returns the syscall number implementing the given function address
+	 */
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8B61808B, version = 150)
+	@HLEFunction(nid = 0xF153B371, version = 660)
+	public int sceKernelQuerySystemCall(TPointer func) {
+		return -1;
+	}
 }
