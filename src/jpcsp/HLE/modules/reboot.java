@@ -841,12 +841,12 @@ public class reboot extends HLEModule {
     		RuntimeContext.setLog4jMDC("Interrupt");
     	} else {
         	Memory mem = Memory.getInstance();
-	    	int currentThread = mem.read32(threadManInfo + 0);
+	    	int currentThread = mem.internalRead32(threadManInfo + 0);
 	    	if (Memory.isAddressGood(currentThread)) {
-				int uid = mem.read32(currentThread + 8);
+				int uid = mem.internalRead32(currentThread + 8);
 				int cb = SysMemForKernel.getCBFromUid(uid);
-				int nameAddr = mem.read32(cb + 16);
-				String name = Utilities.readStringZ(mem, nameAddr);
+				int nameAddr = mem.internalRead32(cb + 16);
+				String name = Utilities.readInternalStringZ(mem, nameAddr);
 
 				RuntimeContext.setLog4jMDC(name, uid);
 	    	} else {

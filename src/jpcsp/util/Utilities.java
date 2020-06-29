@@ -187,6 +187,10 @@ public class Utilities {
         return sb.toString();
     }
 
+    public static int getMaxLength(int address) {
+    	return Math.max(0, MemoryMap.END_RAM - address + 1);
+    }
+
     /**
      * Read a string from memory. The string ends when the maximal length is
      * reached or a '\0' byte is found. The memory bytes are interpreted as
@@ -200,10 +204,7 @@ public class Utilities {
     public static String readStringNZ(Memory mem, int address, int n) {
         address &= Memory.addressMask;
         if (address + n > MemoryMap.END_RAM) {
-            n = MemoryMap.END_RAM - address + 1;
-            if (n < 0) {
-            	n = 0;
-            }
+            n = getMaxLength(address);
         }
 
         // Allocate a byte array to store the bytes of the string.
@@ -224,8 +225,7 @@ public class Utilities {
             	bytes = extendArray(bytes, 10000);
             }
 
-            bytes[length] = (byte) b;
-            length++;
+            bytes[length++] = (byte) b;
         }
 
         // Convert the bytes to UTF-8
@@ -234,7 +234,32 @@ public class Utilities {
 
     public static String readStringZ(Memory mem, int address) {
         address &= Memory.addressMask;
-        return readStringNZ(mem, address, MemoryMap.END_RAM - address + 1);
+        return readStringNZ(mem, address, getMaxLength(address));
+    }
+
+    public static String readInternalStringZ(Memory mem, int address) {
+        address &= Memory.addressMask;
+    	return readInternalStringNZ(mem, address, getMaxLength(address));
+    }
+
+    public static String readInternalStringNZ(Memory mem, int address, int n) {
+		byte[] bytes = new byte[256];
+		int length = 0;
+		for (int i = 0; i < n; i++) {
+			int b = mem.internalRead8(address + i);
+			if (b == 0) {
+				break;
+			}
+
+			if (length >= bytes.length) {
+                // Extend the bytes array
+            	bytes = extendArray(bytes, 256);
+			}
+			bytes[length++] = (byte) b;
+		}
+
+		// Convert the bytes to UTF-8
+		return new String(bytes, 0, length, Constants.charset);
     }
 
     public static String readStringZ(int address) {
@@ -717,14 +742,15 @@ public class Utilities {
         String string;
         StringBuilder outputBuilder = new StringBuilder();
 
+        BufferedReader reader = null;
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+            reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
             while (null != (string = reader.readLine())) {
                 outputBuilder.append(string).append('\n');
             }
         } finally {
             if (close) {
-                close(inputStream);
+                close(reader, inputStream);
             }
         }
         return outputBuilder.toString();

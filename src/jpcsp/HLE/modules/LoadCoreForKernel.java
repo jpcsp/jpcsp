@@ -594,7 +594,7 @@ public class LoadCoreForKernel extends HLEModule {
     	int registeredMods = mem.internalRead32(g_loadCore + 524);
     	int module = getModuleByAddress(mem, registeredMods, address);
     	if (module != 0) {
-    		String moduleName = Utilities.readStringNZ(module + 8, 27);
+    		String moduleName = Utilities.readInternalStringNZ(mem, module + 8, 27);
     		int moduleStart = mem.internalRead32(module + 80) & Memory.addressMask;
     		int moduleStop = mem.internalRead32(module + 84) & Memory.addressMask;
     		int moduleBootStart = mem.internalRead32(module + 88) & Memory.addressMask;

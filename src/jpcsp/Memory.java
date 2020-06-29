@@ -340,6 +340,10 @@ public abstract class Memory implements IState {
         return true;
     }
 
+    public int internalRead8(int address) {
+    	return read8(address);
+    }
+
     public int internalRead32(int address) {
     	return read32(address);
     }
