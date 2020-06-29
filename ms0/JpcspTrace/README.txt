@@ -150,6 +150,57 @@ The format of the file JpcspTrace.config is the following:
   where the first parameter is the address and
   the second parameter is the 32-bit value that need to be found
   at the given address before continuing execution.
+- the content of MIPS registered can be watched in almost any
+  kernel module:
+	Watch <module-name> <name> 0xNNNN <register-list>
+
+  The code at the offsets 0xNNNN and 0xNNNN+4 of the module <module-name>
+  will be patched so that the content of any registers can be logged
+  each time this code is executed.
+  As the watched code can be into the code executed during an interrupt,
+  the watched values are first logged into a "Watch" buffer and
+  only be written to the log file at the next logging of a syscall.
+  The <name> can be any character sequence without spaces which will only
+  be used during logging to help identifying which Watch point is being logged.
+
+  The list of registers to be logged is defined in <register-list> which can
+  be a white-spare or comma-separated list of registers.
+  Examples:
+	- $a0 $s0 $t0
+	  will log the values of the 3 registers $a0, $s0 and $t0 at the time
+	  after the instruction at offset 0xNNNN and before the instruction at offset 0xNNNN+4
+	- $a0, $s0, $t0
+	  the registers can be comma-separated
+	- a0 s0 t0
+	  the '$' sign before the register name is optional
+	- < $a0 $s0 $t0
+	  will log the values of the 3 registers $a0, $s0 and $t0 at the time
+	  before the instruction at offset 0xNNNN
+	- > $a0 $s0 $t0
+	  will log the values of the 3 registers $a0, $s0 and $t0 at the time
+	  after the instruction at offset 0xNNNN+4
+	- *$a0 0xN
+	  will log the content of the memory at the address stored in the register $a0.
+	  0xN bytes will be logged.
+	- $a0 *$a0 0xN
+	  will log the value of the register $a0 and the content of the memory
+	  at the address stored in the register $a0. 0xN bytes will be logged.
+
+  Complete examples:
+	- Watch sceUSB_Driver Interrupt_0x1A 0x00006D10 > $s2
+	  will log something like:
+		00:20.886 sceUSB_Driver.Interrupt_0x1A: $s2=0x00000008
+	- Watch sceUSB_Driver Interrupt_0x1A_0x000066C0 0x000066C0 > $t1 $t3 *$t3 0xC
+	  will log something like (the log line is followed by the 12 bytes at the memory pointed by $t3):
+		00:21.009 sceUSB_Driver.Interrupt_0x1A_0x000066C0: $t1=0xBD800014, $t3=0xA818A4F0
+		01 00 00 08 00 00 00 00 00 F2 07 08
+
+  Restriction: multiple register values can be logged but only maximum one memory content
+               (i.e. "*$reg") can be logged into one Watch command.
+  Restriction: the code at the offsets 0xNNNN and 0xNNNN+4 may not
+               contain any MIPS instructions having a delay slot (e.g. branching instructions).
+- the size (in bytes) of the internal Watch buffer can be defined with the command
+	WatchBufferLength 0xNNNN
 - one syscall to be traced is described in a single line:
 	<syscall-name> <nid> <number-of-parameters> <parameter-types>
 

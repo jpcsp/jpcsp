@@ -119,6 +119,7 @@ int sceUtilsBufferCopyWithRangeAddr = 0;
 #endif
 
 SyscallInfo *moduleSyscalls = NULL;
+WatchInfo *moduleWatches = NULL;
 int cpuIntr;
 int logCommands = 1;
 #if BUFFER_CONFIG_FILE
@@ -427,6 +428,245 @@ void *getEntryByNID(int nid) {
 	}
 
 	return NULL;
+}
+
+int hasDelaySlot(u32 instruction) {
+	u32 table0 = instruction >> 26;
+	// Covering j, jal, beq, bne, blez, bgtz
+	if (table0 >= 2 && table0 <= 7) {
+		return 1;
+	}
+	// Covering beql, bnel, blezl, bgtzl
+	if (table0 >= 20 && table0 <= 23) {
+		return 1;
+	}
+	if (table0 == 0) {
+		u32 table1 = instruction & 0x3F;
+		// Covering jr, jalr
+		if (table1 >= 8 && table1 <= 9) {
+			return 1;
+		}
+	} else if (table0 == 1) {
+		u32 table2 = (instruction >> 16) & 0x1F;
+		// Covering bltz, bgez, bltzl, bgezl
+		if (table2 <= 3) {
+			return 1;
+		}
+		// Covering bltzal, bgezal, bltzall, bgezall
+		if (table2 >= 16 && table2 <= 19) {
+			return 1;
+		}
+	} else if (table0 == 17) {
+		if (((instruction >> 21) & 0x1F) == 8) {
+			// Covering bc1f, bc1t, bc1fl, bc1tl
+			if (((instruction >> 16) & 0x1F) <= 3) {
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+int tryPatchWatch(WatchInfo *watchInfo) {
+	SceModule2 *module = (SceModule2 *) sceKernelFindModuleByName(watchInfo->moduleName);
+	if (module == NULL) {
+		return 0;
+	}
+
+	u32 address = module->text_addr + watchInfo->offset;
+
+	u32 originalInstruction1 = LW(address);
+	u32 originalInstruction2 = LW(address + 4);
+
+	if (hasDelaySlot(originalInstruction1) || hasDelaySlot(originalInstruction2)) {
+		printLogSH("ERROR delay slot found at ", watchInfo->moduleName, " offset ", watchInfo->offset, "\n");
+		return -1;
+	}
+
+	watchInfo->originalInstruction1 = originalInstruction1;
+	watchInfo->originalInstruction2 = originalInstruction2;
+	watchInfo->address = address;
+
+	// Prepare loading of addresses using lui/ori
+	int watchBufferCurrentAddr = (int) &watchInfo->commonInfo->watchBufferCurrent;
+	int watchBufferCurrentAddrHi = (watchBufferCurrentAddr >> 16) & 0xFFFF;
+	int watchBufferCurrentAddrLo = watchBufferCurrentAddr & 0xFFFF;
+	int watchInfoAddr = (int) watchInfo;
+	int watchInfoAddrHi = (watchInfoAddr >> 16) & 0xFFFF;
+	int watchInfoAddrLo = watchInfoAddr & 0xFFFF;
+	int watchBufferEndAddr = (int) &watchInfo->commonInfo->watchBufferEnd;
+	int watchBufferEndAddrHi = (watchBufferEndAddr >> 16) & 0xFFFF;
+	int watchBufferEndAddrLo = watchBufferEndAddr & 0xFFFF;
+
+	// Decide when to log:
+	// - originalInstructions= 0: log between originalInstruction1 and originalInstruction2
+	// - originalInstructions=-1: log before originalInstruction1
+	// - originalInstructions= 1: log after  originalInstruction2
+	int originalInstructions = 0;
+	if (watchInfo->flags & FLAG_LOG_BEFORE_CALL) {
+		originalInstructions = -1;
+	} else if (watchInfo->flags & FLAG_LOG_AFTER_CALL) {
+		originalInstructions = 1;
+	}
+
+	int offset = 0;
+	u32 *instructions = (u32 *) watchInfo->entry;
+	// Depending on when the logging is performed, insert the original instructions
+	if (originalInstructions >= 0) {
+		*instructions++ = originalInstruction1;
+		if (originalInstructions > 0) {
+			*instructions++ = originalInstruction2;
+		}
+	}
+	// Save $a0 and $a1 registers which are trashed by the logging code
+	*instructions++ = 0x27BDFFF0;                                    // addiu $sp, $sp, -16
+	*instructions++ = 0xAFA40000;                                    // sw    $a0, 0($sp)
+	*instructions++ = 0xAFA50004;                                    // sw    $a1, 4($sp)
+	// Load the value from commonInfo->watchBufferCurrent
+	*instructions++ = 0x3C050000 | watchBufferCurrentAddrHi;         // lui   $a1, watchBufferCurrentAddr
+	*instructions++ = 0x34A50000 | watchBufferCurrentAddrLo;         // ori   $a1, $a1, watchBufferCurrentAddr
+	*instructions++ = 0x8CA40000;                                    // lw    $a0, 0($a1)
+	// Load the value from commonInfo->watchBufferEnd
+	*instructions++ = 0x3C050000 | watchBufferEndAddrHi;             // lui   $a1, watchBufferEndAddrHi
+	*instructions++ = 0x34A50000 | watchBufferEndAddrLo;             // ori   $a1, $a1, watchBufferEndAddrLo
+	*instructions++ = 0x8CA50000;                                    // lw    $a1, 0($a1)
+	// Return if watchBufferCurrent >= watchBufferEnd
+	*instructions++ = 0x0085282B;                                    // sltu  $a1, $a0, $a1
+	u32 *branchInstruction = instructions;
+	*instructions++ = 0x10A00000;                                    // beqz  $a1, returnLabel
+	// Store watchInfo into watchBufferCurrent[0]
+	*instructions++ = 0x3C050000 | watchInfoAddrHi;                  // lui   $a1, watchInfoAddrHi
+	*instructions++ = 0x34A50000 | watchInfoAddrLo;                  // ori   $a1, $a1, watchInfoAddrLo
+	*instructions++ = 0xAC850000 | offset;                           // sw    $a1, offset($a0)
+	offset += 4;
+	// Store the current system time
+	*instructions++ = 0x3C05BC60;                                    // lui   $a1, 0xBC60
+	*instructions++ = 0x8CA50000;                                    // lw    $a1, 0($a1)
+	*instructions++ = 0xAC850000 | offset;                           // sw    $a1, offset($a0)
+	offset += 4;
+	// Store all the watched registers into watchBufferCurrent[offset]
+	int reg;
+	int registers = watchInfo->registers;
+	for (reg = 0; reg < 32; reg++, registers >>= 1) {
+		if (registers & 0x1) {
+			if (reg == 4) { // $a0
+				*instructions++ = 0x8FA50000;                        // lw    $a1, 0($sp)
+				*instructions++ = 0xAC850000 | offset;               // sw    $a1, offset($a0)
+			} else if (reg == 5) { // $a1
+				*instructions++ = 0x8FA50004;                        // lw    $a1, 4($sp)
+				*instructions++ = 0xAC850000 | offset;               // sw    $a1, offset($a0)
+			} else {
+				*instructions++ = 0xAC800000 | (reg << 16) | offset; // sw    $reg, offset($a0)
+			}
+			offset += 4;
+		}
+	}
+	// Store the content at the watched memory address
+	if (watchInfo->memoryLength > 0) {
+		int i;
+		reg = watchInfo->memoryAddressRegister;
+		for (i = 0; i < watchInfo->memoryLength; i += 4, offset += 4) {
+			int loadReg = reg;
+			if (reg == 4) {
+				*instructions++ = 0x8FA50000;                        // lw    $a1, 0($sp)
+				loadReg = 5;
+			} else if (reg == 5) {
+				*instructions++ = 0x8FA50004;                        // lw    $a1, 4($sp)
+			} else {
+				*instructions++ = 0x00002821;                        // addu  $a1, $zr, $zr <=> li $a1, 0
+			}
+			// Load the content at watched memory address if it is not NULL
+			*instructions++ = 0x54000001 | (loadReg << 21);          // bnel  loadReg, $zr, swInstruction
+			*instructions++ = 0x8C050000 | (loadReg << 21) | i;      // lw    $a1, i(loadReg)
+			*instructions++ = 0xAC850000 | offset;                   // sw    $a1, offset($a0)
+		}
+	}
+	// Update commonInfo->watchBufferCurrent
+	*instructions++ = 0x24840000 | offset;                           // addiu $a0, $a0, offset
+	*instructions++ = 0x3C050000 | watchBufferCurrentAddrHi;         // lui   $a1, watchBufferCurrentAddr
+	*instructions++ = 0x34A50000 | watchBufferCurrentAddrLo;         // ori   $a1, $a1, watchBufferCurrentAddr
+	*instructions++ = 0xACA40000;                                    // sw    $a0, 0($a1)
+	// Patch the above branch instruction
+	*branchInstruction = (*branchInstruction & 0xFFFF0000) | (instructions - branchInstruction - 1);
+	                                                                 // returnLabel:
+	// Restore the saved $a0 and $a1 registers
+	*instructions++ = 0x8FA40000;                                    // lw    $a0, 0($sp)
+	*instructions++ = 0x8FA50004;                                    // lw    $a1, 4($sp)
+	*instructions++ = 0x27BD0010;                                    // addiu $sp, $sp, 16
+	// Depending on when the logging is performed, insert the original instructions
+	if (originalInstructions <= 0) {
+		if (originalInstructions < 0) {
+			*instructions++ = originalInstruction1;
+		}
+		*instructions++ = originalInstruction2;
+	}
+	// Jump back to the original code
+	*instructions++ = MAKE_JUMP(address + 8);                        // jump  back
+	*instructions++ = NOP;                                           // nop   (delay slot)
+
+	REDIRECT_FUNCTION(watchInfo->entry, address);
+
+	#if 0
+		printLogHH("Watch flags=", watchInfo->flags, ", registers=", watchInfo->registers, "\n");
+		printLogMem(watchInfo->moduleName, address, 8);
+		printLogMem(watchInfo->name, watchInfo->entry, (30 + watchInfo->numberRegisters) * 4);
+	#endif
+
+	sceKernelDcacheWritebackAll();
+	sceKernelIcacheClearAll();
+
+	allocWatchBuffer();
+
+	return 1;
+}
+
+int getNumberRegisters(u32 registers) {
+	int count;
+	for (count = 0; registers != 0; registers >>= 1) {
+		if (registers & 0x1) {
+			count++;
+		}
+	}
+
+	return count;
+}
+
+void patchWatch(const char *moduleName, const char *name, u32 offset, u32 registers, u32 flags, int memoryAddressRegister, u32 memoryLength) {
+	int numberRegisters = getNumberRegisters(registers);
+	int asmBlocks = 30 + numberRegisters + ((memoryLength + 3) >> 2) * 4;
+
+	// Allocate memory for the patch code and WatchInfo
+	int memSize = asmBlocks * 4 + sizeof(WatchInfo) + strlen(moduleName) + 1 + strlen(name) + 1;
+	uint32_t *asmblock = alloc(memSize);
+	if (asmblock == NULL) {
+		return;
+	}
+
+	WatchInfo *watchInfo = (WatchInfo *) (asmblock + asmBlocks);
+	char *moduleNameCopy = (char *) (watchInfo + 1);
+	char *nameCopy = append(moduleNameCopy, moduleName) + 1;
+	append(nameCopy, name);
+
+	watchInfo->moduleName = moduleNameCopy;
+	watchInfo->name = nameCopy;
+	watchInfo->offset = offset;
+	watchInfo->registers = registers;
+	watchInfo->flags = flags;
+	watchInfo->numberRegisters = numberRegisters;
+	watchInfo->memoryAddressRegister = memoryAddressRegister;
+	watchInfo->memoryLength = memoryLength;
+	watchInfo->originalInstruction1 = 0;
+	watchInfo->originalInstruction2 = 0;
+	watchInfo->address = 0;
+	watchInfo->entry = (u32) asmblock;
+	watchInfo->next = NULL;
+	watchInfo->commonInfo = commonInfo;
+
+	if (!tryPatchWatch(watchInfo)) {
+		watchInfo->next = moduleWatches;
+		moduleWatches = watchInfo;
+	}
 }
 
 void patchSyscall(char *module, char *library, const char *name, u32 nid, int numParams, u32 paramTypes, u32 flags) {
@@ -1091,7 +1331,74 @@ char *nextWord(char **ps) {
 	return start;
 }
 
-void patchSyscalls(char *filePath) {
+void parseRegisters(char **ps, u32 *pFlags, u32 *pRegisters, int *pMemoryAddressRegister, u32 *pMemoryLength) {
+	int i;
+	int isMemoryAddress = 0;
+
+	do {
+		char *s = nextWord(ps);
+		if (*s == '\0') {
+			break;
+		}
+
+		if (isMemoryAddress) {
+			*pMemoryLength = parseHex(s);
+			isMemoryAddress = 0;
+			continue;
+		}
+
+		if (*s == '<') {
+			*pFlags |= FLAG_LOG_BEFORE_CALL;
+			s++;
+			if (*s == '\0') {
+				*ps = s + 1;
+				continue;
+			}
+		}
+		if (*s == '>') {
+			*pFlags |= FLAG_LOG_AFTER_CALL;
+			s++;
+			if (*s == '\0') {
+				*ps = s + 1;
+				continue;
+			}
+		}
+		if (*s == ',') {
+			s = skipSpaces(s + 1);
+		}
+		if (*s == '*') {
+			s++;
+			isMemoryAddress = 1;
+		}
+		if (*s == '$') {
+			s++;
+		}
+		int registerNumber = -1;
+		if (s[2] == '\0') {
+			char s0 = s[0];
+			char s1 = s[1];
+			char *registerName = registerNames;
+			for (i = 0; i < 32; i++, registerName += 2) {
+				if (s0 == registerName[0] && s1 == registerName[1]) {
+					registerNumber = i;
+					break;
+				}
+			}
+		}
+
+		if (registerNumber < 0) {
+			break;
+		}
+
+		if (isMemoryAddress) {
+			*pMemoryAddressRegister = registerNumber;
+		} else {
+			*pRegisters |= 1 << registerNumber;
+		}
+	} while (1);
+}
+
+void readConfigFile(char *filePath) {
 	char lineBuffer[200];
 	char *line;
 
@@ -1256,6 +1563,18 @@ void patchSyscalls(char *filePath) {
 		} else if (strcmp(name, "TestAta") == 0) {
 			testAta();
 #endif
+		} else if (strcmp(name, "WatchBufferLength") == 0) {
+			commonInfo->maxWatchBufferLength = parseHex(param1);
+		} else if (strcmp(name, "Watch") == 0) {
+			char *moduleName = param1;
+			char *name = param2;
+			u32 offset = parseHex(param3);
+			u32 flags = 0;
+			u32 registers = 0;
+			int memoryAddressRegister = 0;
+			u32 memoryLength = 0;
+			parseRegisters(&line, &flags, &registers, &memoryAddressRegister, &memoryLength);
+			patchWatch(moduleName, name, offset, registers, flags, memoryAddressRegister, memoryLength);
 		} else {
 			u32 nid = parseHex(param1);
 			u32 numParams = parseHex(param2);
@@ -1390,6 +1709,19 @@ int startModuleHandler(SceModule2 *startingModule) {
 			// No SyscallInfo has been updated,
 			// we just need to patch the starting module.
 			patchModule((SceModule *) startingModule);
+		}
+
+		WatchInfo **pLastWatchInfo = &moduleWatches;
+		WatchInfo *watchInfo;
+		for (watchInfo = moduleWatches; watchInfo != NULL; watchInfo = watchInfo->next) {
+			if (tryPatchWatch(watchInfo)) {
+				// The patch for the Watch is now implemented, unlink the entry
+				*pLastWatchInfo = watchInfo->next;
+			}
+
+			if (*pLastWatchInfo == watchInfo) {
+				pLastWatchInfo = &watchInfo->next;
+			}
 		}
 	}
 
@@ -1656,6 +1988,11 @@ int module_start(SceSize args, void * argp) {
 	commonInfo->freeSize = 0;
 	commonInfo->inWriteLog = 0;
 	commonInfo->bufferLogWrites = 0;
+	commonInfo->watchBuffer = NULL;
+	commonInfo->watchBufferCurrent = NULL;
+	commonInfo->watchBufferEnd = NULL;
+	commonInfo->maxWatchBufferLength = DEFAULT_WATCH_BUFFER_SIZE;
+	commonInfo->startSystemTime = sceKernelGetSystemTimeLow();
 
 	sceIoRemove(logFilename);
 
@@ -1718,7 +2055,7 @@ int module_start(SceSize args, void * argp) {
 #if DUMP_PSAR
 	findPatches();
 #endif
-	patchSyscalls("ms0:/seplugins/JpcspTrace.config");
+	readConfigFile("ms0:/seplugins/JpcspTrace.config");
 
 	// Load only JpcspTraceUser.prx if it is required
 	if (moduleSyscalls != NULL) {

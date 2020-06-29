@@ -33,6 +33,7 @@ CommonInfo *commonInfo;
 void *freeAddr = NULL;
 int freeSize = 0;
 char *logFilename = "ms0:/log.txt";
+char *registerNames = "zratv0v1a0a1a2a3t0t1t2t3t4t5t6t7s0s1s2s3s4s5s6s7t8t9k0k1gpspfpra";
 
 #if DEBUG_MUTEX
 typedef struct {
@@ -234,6 +235,7 @@ void appendToLogBuffer(const char *s, int length) {
 }
 
 void flushLogBuffer() {
+	flushWatchBuffer();
 	while (commonInfo->logBufferLength > 0) {
 		// Try to write pending output.
 		// This will succeed as soon as the interrupts are enabled again.
@@ -282,6 +284,86 @@ void writeLog(const char *s, int length) {
 	}
 
 	commonInfo->inWriteLog--;
+}
+
+char *appendTimestamp(char *s, u32 systemTime) {
+	u32 timestamp = systemTime - commonInfo->startSystemTime;
+	timestamp = timestamp / 1000; // Convert microseconds to milliseconds
+	int milliseconds = timestamp % 1000;
+	timestamp = (timestamp - milliseconds) / 1000;
+	int seconds = timestamp % 60;
+	timestamp = (timestamp - seconds) / 60;
+	int minutes = timestamp; // Do not expect more than 60 minutes
+	s = appendInt(s, minutes, 2);
+	*s++ = ':';
+	s = appendInt(s, seconds, 2);
+	*s++ = '.';
+	s = appendInt(s, milliseconds, 3);
+
+	return s;
+}
+
+void allocWatchBuffer() {
+	// Allocate a buffer if not yet allocated
+	if (commonInfo->watchBuffer == NULL) {
+		void *watchBuffer = alloc(commonInfo->maxWatchBufferLength);
+		if (watchBuffer != NULL) {
+			commonInfo->watchBuffer = watchBuffer;
+			commonInfo->watchBufferCurrent = watchBuffer;
+			commonInfo->watchBufferEnd = watchBuffer + commonInfo->maxWatchBufferLength - 32;
+		}
+	}
+}
+
+void flushWatchBuffer() {
+	char buffer[200];
+
+	u32 *watchBuffer = commonInfo->watchBuffer;
+	while (watchBuffer != commonInfo->watchBufferCurrent) {
+		WatchInfo *watchInfo = (WatchInfo *) *watchBuffer++;
+		u32 systemTime = *watchBuffer++;
+
+		char *s = buffer;
+		if (logTimestamp) {
+			s = appendTimestamp(s, systemTime);
+			*s++ = ' ';
+		}
+		s = append(s, watchInfo->moduleName);
+		*s++ = '.';
+		s = append(s, watchInfo->name);
+		*s++ = ':';
+		*s++ = ' ';
+
+		int reg;
+		u32 registers = watchInfo->registers;
+		int first = 1;
+		for (reg = 0; reg < 32; reg++, registers >>= 1) {
+			if (registers & 0x1) {
+				u32 registerValue = *watchBuffer++;
+				if (first) {
+					first = 0;
+				} else {
+					*s++ = ',';
+					*s++ = ' ';
+				}
+				char *registerName = registerNames + (reg * 2);
+				*s++ = '$';
+				*s++ = registerName[0];
+				*s++ = registerName[1];
+				*s++ = '=';
+				s = appendHex(s, registerValue, 8);
+			}
+		}
+		*s++ = '\n';
+		writeLog(buffer, s - buffer);
+
+		if (watchInfo->memoryLength > 0) {
+			u32 memoryLength4 = (watchInfo->memoryLength + 3) >> 2;
+			printLogMemNoPrefix((u32) watchBuffer, memoryLength4 << 2);
+			watchBuffer += memoryLength4;
+		}
+	}
+	commonInfo->watchBufferCurrent = commonInfo->watchBuffer;
 }
 
 void printLog(const char *s) {
@@ -363,15 +445,12 @@ char *flushBuffer(char *buffer, char *s) {
 	return buffer;
 }
 
-void printLogMem(const char *s1, int addr, int length) {
+void printLogMemNoPrefix(int addr, int length) {
 	int i, j;
 	int lineStart;
 	char buffer[100];
 	char *s = buffer;
 
-	s = append(s, s1);
-	s = appendHex(s, addr, 8);
-	s = append(s, ":\n");
 	if (addr != 0) {
 		lineStart = 0;
 		for (i = 0; i < length; i++) {
@@ -396,6 +475,17 @@ void printLogMem(const char *s1, int addr, int length) {
 		}
 	}
 	flushBuffer(buffer, s);
+}
+
+void printLogMem(const char *s1, int addr, int length) {
+	char buffer[100];
+	char *s = buffer;
+
+	s = append(s, s1);
+	s = appendHex(s, addr, 8);
+	s = append(s, ":\n");
+	flushBuffer(buffer, s);
+	printLogMemNoPrefix(addr, length);
 }
 
 #ifdef DEBUG_UTILITY_SAVEDATA
@@ -670,7 +760,6 @@ void logStackUsage(const SyscallInfo *syscallInfo) {
 	printLogSH("Stack usage ", syscallInfo->name, ": ", stackUsage, "\n");
 }
 
-
 void syscallLog(const SyscallInfo *syscallInfo, int inOut, const u32 *parameters, u64 result, u32 ra, u32 sp, u32 gp) {
 	char buffer[250];
 	char *s = buffer;
@@ -749,17 +838,9 @@ void syscallLog(const SyscallInfo *syscallInfo, int inOut, const u32 *parameters
 	}
 
 	if (logTimestamp) {
-		pspTime time;
-		if (sceRtcGetCurrentClockLocalTime(&time) == 0) {
-			s = appendInt(s, time.hour, 2);
-			*s++ = ':';
-			s = appendInt(s, time.minutes, 2);
-			*s++ = ':';
-			s = appendInt(s, time.seconds, 2);
-			*s++ = '.';
-			s = appendInt(s, time.microseconds / 1000, 3); // Log only milliseconds
-			*s++ = ' ';
-		}
+		u32 now = sceKernelGetSystemTimeLow();
+		s = appendTimestamp(s, now);
+		*s++ = ' ';
 	}
 
 	if (logThreadName) {

@@ -17,10 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 #define DEBUG			0
 #define DEBUG_MUTEX		0
-#define DEBUG_UTILITY_SAVEDATA		1
-#define DEBUG_UTILITY_OSK			1
-#define DEBUG_UTILITY_MSG			1
+#define DEBUG_UTILITY_SAVEDATA		0
+#define DEBUG_UTILITY_OSK			0
+#define DEBUG_UTILITY_MSG			0
 #define DEFAULT_LOG_BUFFER_SIZE		8*1024
+#define DEFAULT_WATCH_BUFFER_SIZE	1*1024
 #define DUMP_VIDEOCODEC_FRAMES	0
 #define DUMP_sceMpegBaseCscAvc_CALLS	0
 #define DUMP_sceMpegBaseYCrCbCopy_CALLS	0
@@ -78,6 +79,11 @@ typedef struct {
 	int freeSize;
 	volatile int inWriteLog;
 	int bufferLogWrites;
+	u32 *watchBuffer;
+	u32 *watchBufferCurrent;
+	u32 *watchBufferEnd;
+	int maxWatchBufferLength;
+	u32 startSystemTime;
 } CommonInfo;
 
 typedef struct SyscallInfo {
@@ -92,6 +98,24 @@ typedef struct SyscallInfo {
 	CommonInfo *commonInfo;
 } SyscallInfo;
 
+typedef struct WatchInfo {
+	char *moduleName;
+	char *name;
+	u32 offset;
+	u32 registers;
+	u32 flags;
+	int numberRegisters;
+	int memoryAddressRegister;
+	u32 memoryLength;
+	u32 originalInstruction1;
+	u32 originalInstruction2;
+	u32 address;
+	u32 entry;
+	struct WatchInfo *next;
+	CommonInfo *commonInfo;
+} WatchInfo;
+
+extern char *registerNames;
 extern char *logFilename;
 extern CommonInfo *commonInfo;
 extern int (* ioOpen)(const char *s, int flags, int permissions);
@@ -114,6 +138,7 @@ void printLogHH(const char *s1, int hex1, const char *s2, int hex2, const char *
 void printLogSH(const char *s1, const char *s2, const char *s3, int hex, const char *s4);
 void printLogHS(const char *s1, int hex, const char *s2, const char *s3, const char *s4);
 void printLogSS(const char *s1, const char *s2, const char *s3, const char *s4, const char *s5);
+void printLogMemNoPrefix(int addr, int length);
 void printLogMem(const char *s1, int addr, int length);
 void syscallLog(const SyscallInfo *syscallInfo, int inOut, const u32 *parameters, u64 result, u32 ra, u32 sp, u32 gp);
 int userIoOpen(const char *s, int flags, int permissions);
@@ -121,3 +146,5 @@ int userIoWrite(SceUID id, const void *data, int size);
 int userIoClose(SceUID id);
 void prepareStackUsage(u32 sp);
 void logStackUsage(const SyscallInfo *syscallInfo);
+void allocWatchBuffer();
+void flushWatchBuffer();
