@@ -16,9 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.memory.mmio.MMIOHandlerSystemControl.SYSREG_USBMS_USB_INTERRUPT3;
 import static jpcsp.util.Utilities.clearFlag;
+import static jpcsp.util.Utilities.isFallingBit;
+import static jpcsp.util.Utilities.isFallingFlag;
+import static jpcsp.util.Utilities.isRaisingFlag;
 import static jpcsp.util.Utilities.notHasBit;
+import static jpcsp.util.Utilities.notHasFlag;
 import static jpcsp.util.Utilities.setBit;
+import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
 
@@ -27,6 +33,7 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceUsb;
@@ -41,67 +48,115 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 	private static final int STATE_VERSION = 0;
 	public static final int BASE_ADDRESS = 0xBD800000;
 	private static MMIOHandlerUsb instance;
-	private final Endpoint[] sendingEndpoints;
-	private final Endpoint[] receivingEndpoints;
+	private final Endpoint[] sendingEndpoints = new SendingEndpoint[5];
+	private final Endpoint[] receivingEndpoints = new ReceivingEndpoint[5];
 	private int unknown400;
 	private int unknown404;
 	private int unknown408;
+	public static final int CONNECTION_INTERRUPT_CONNECT = 0;
+	public static final int CONNECTION_INTERRUPT_STREAMING = 1;
+	public static final int CONNECTION_INTERRUPT_DETACH_1 = 2;
+	public static final int CONNECTION_INTERRUPT_DETACH_2 = 4;
+	public static final int CONNECTION_INTERRUPT_UNKNOWN_6 = 6;
 	private int connectionInterrupt;
 	private int connectionInterruptEnabled;
 	private int unknown414;
 	private int endpointsInterfacesDisabled;
 	private int unknown41C;
+	// One int value as bit field:
+	// bit 19-27: unknown
 	private int unknown504;
-	private int unknown508;
-	private int unknown50C;
-	private int unknown510;
-	private int unknown514;
+	// 4 int values as bit field:
+	// - bits 0-3: unknown
+	// - bits 4: unknown
+	// - bits 5-6: unknown
+	// - bit 7: unknown
+	// - bits 11-14: unknown
+	// - bits 15-18: unknown
+	// - bits 19-29: unknown
+	// - bit 30: unknown
+	private final int[] unknown508 = new int[4];
+	private int state = 0;
 
 	private class UsbReset implements IAction {
 		@Override
 		public void execute() {
-			MMIOHandlerSystemControl.getInstance().triggerUsbMemoryStickInterrupt(MMIOHandlerSystemControl.SYSREG_USBMS_USB_INTERRUPT3);
+			MMIOHandlerSystemControl.getInstance().triggerUsbMemoryStickInterrupt(SYSREG_USBMS_USB_INTERRUPT3);
 		}
 	}
 
-	protected static class Endpoint implements IState {
+	protected class Endpoint implements IState {
 		private static final int STATE_VERSION = 0;
+		protected static final int CONTROL_UNKNOWN_002 = 0x002;
 		protected static final int CONTROL_UNKNOWN_008 = 0x008;
+		protected static final int CONTROL_TRANSFER_TYPE_MASK = 0x030;
+		protected static final int TRANSFER_TYPE_CONTROL     = 0;
+		protected static final int TRANSFER_TYPE_ISOCHRONOUS = 1;
+		protected static final int TRANSFER_TYPE_BULK        = 2;
+		protected static final int TRANSFER_TYPE_INTERRUPT   = 3;
 		protected static final int CONTROL_UNKNOWN_040 = 0x040;
+		protected static final int CONTROL_UNKNOWN_080 = 0x080;
 		protected static final int CONTROL_UNKNOWN_100 = 0x100;
-		protected static final int CONTROL_UNKNOWN04_UNKNOWN_040 = 0x040;
-		protected static final int CONTROL_UNKNOWN04_UNKNOWN_080 = 0x080;
-		protected static final int CONTROL_UNKNOWN04_UNKNOWN_200 = 0x200;
-		protected static final int CONTROL_UNKNOWN04_UNKNOWN_400 = 0x400;
-		private final Memory mem;
-		private int control;
-		private int unknown04;
-		private int unknown08;
-		private int unknown0C;
-		private int address10;
-		private int address14;
-		private int unknown18;
-		private int unknown1C;
+		protected static final int STATUS_UNKNOWN_010 = 0x010;
+		protected static final int STATUS_UNKNOWN_020 = 0x020;
+		protected static final int STATUS_UNKNOWN_040 = 0x040;
+		protected static final int STATUS_UNKNOWN_080 = 0x080;
+		protected static final int STATUS_UNKNOWN_200 = 0x200;
+		protected static final int STATUS_UNKNOWN_400 = 0x400;
+		protected static final int STATUS_UNKNOWN_4000 = 0x4000;
+		protected final Memory mem;
+		protected final int endpointNumber;
+		protected int control;
+		protected int status;
+		protected int maxPacketSizeInWords; // Maximum number of 32-bit values (0x10 means 64 bytes)
+		protected int maxPacketSizeInBytes; // Maximum number of bytes
+		protected int address10;
+		protected int address14;
 
-		public Endpoint(Memory mem) {
+		public Endpoint(Memory mem, int endpointNumber) {
 			this.mem = mem;
+			this.endpointNumber = endpointNumber;
 		}
 
-		private void clearUnknown04(int mask) {
-			unknown04 = clearFlag(unknown04, mask);
+		protected void clearStatus(int mask) {
+			status = clearFlag(status, mask);
+		}
+
+		protected int getTransferType() {
+			return (control & CONTROL_TRANSFER_TYPE_MASK) >> 4;
+		}
+
+		protected void setAddress10(int value) {
+			address10 = value;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("setAddress10: %s", Utilities.getMemoryDump(address10, 16)));
+			}
+		}
+
+		protected void setAddress14(int value) {
+			address14 = value;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("setAddress14: %s", Utilities.getMemoryDump(address14, 12)));
+			}
+		}
+
+		protected int readStatus() {
+			return status;
+		}
+
+		protected void setControl(int value) {
+			control = value;
 		}
 
 		public int read32(int offset) {
 			int value = 0;
 			switch (offset) {
 				case 0x00: value = control; break;
-				case 0x04: value = unknown04; break;
-				case 0x08: value = unknown08; break;
-				case 0x0C: value = unknown0C; break;
+				case 0x04: value = readStatus(); break;
+				case 0x08: value = maxPacketSizeInWords; break;
+				case 0x0C: value = maxPacketSizeInBytes; break;
 				case 0x10: value = address10; break;
 				case 0x14: value = address14; break;
-				case 0x18: value = unknown18; break;
-				case 0x1C: value = unknown1C; break;
 				default:
 					log.error(String.format("Endpoint.read32 invalid offset 0x%X", offset));
 					break;
@@ -110,36 +165,14 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 			return value;
 		}
 
-		private void setAddress14(int value) {
-			address14 = value;
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("setAddress14: %s", Utilities.getMemoryDump(address14, 32)));
-			}
-		}
-
-		private void setControl(int value) {
-			control = value;
-
-			if (Utilities.hasFlag(control, CONTROL_UNKNOWN_008)) {
-				int length = mem.read16(address14 + 0);
-				int flags = mem.read16(address14 + 2);
-				int address = mem.read32(address14 + 8);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("setControl sending length=0x%X, flags=0x%X, %s", length, flags, Utilities.getMemoryDump(address, length)));
-				}
-			}
-		}
-
 		public void write32(int offset, int value) {
 			switch (offset) {
 				case 0x00: setControl(value); break;
-				case 0x04: clearUnknown04(value); break;
-				case 0x08: unknown08 = value; break;
-				case 0x0C: unknown0C = value; break;
-				case 0x10: address10 = value; break;
+				case 0x04: clearStatus(value); break;
+				case 0x08: maxPacketSizeInWords = value; break;
+				case 0x0C: maxPacketSizeInBytes = value; break; // Possible values: 0x40
+				case 0x10: setAddress10(value); break;
 				case 0x14: setAddress14(value); break;
-				case 0x18: unknown18 = value; break;
-				case 0x1C: unknown1C = value; break;
 				default:
 					log.error(String.format("Endpoint.write32 invalid offset 0x%X", offset));
 					break;
@@ -150,37 +183,223 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 		public void read(StateInputStream stream) throws IOException {
 			stream.readVersion(STATE_VERSION);
 			control = stream.readInt();
-			unknown04 = stream.readInt();
-			unknown08 = stream.readInt();
-			unknown0C = stream.readInt();
+			status = stream.readInt();
+			maxPacketSizeInWords = stream.readInt();
+			maxPacketSizeInBytes = stream.readInt();
 			address10 = stream.readInt();
 			address14 = stream.readInt();
-			unknown18 = stream.readInt();
-			unknown1C = stream.readInt();
 		}
 
 		@Override
 		public void write(StateOutputStream stream) throws IOException {
 			stream.writeVersion(STATE_VERSION);
 			stream.writeInt(control);
-			stream.writeInt(unknown04);
-			stream.writeInt(unknown08);
-			stream.writeInt(unknown0C);
+			stream.writeInt(status);
+			stream.writeInt(maxPacketSizeInWords);
+			stream.writeInt(maxPacketSizeInBytes);
 			stream.writeInt(address10);
 			stream.writeInt(address14);
-			stream.writeInt(unknown18);
-			stream.writeInt(unknown1C);
 		}
 
 		public void reset() {
 			control = 0;
-			unknown04 = 0;
-			unknown08 = 0;
-			unknown0C = 0;
+			status = 0;
+			maxPacketSizeInWords = 0;
+			maxPacketSizeInBytes = 0;
 			address10 = 0;
 			address14 = 0;
-			unknown18 = 0;
-			unknown1C = 0;
+		}
+	}
+
+	protected class ReceivingEndpoint extends Endpoint {
+		public ReceivingEndpoint(Memory mem, int endpointNumber) {
+			super(mem, endpointNumber);
+		}
+
+		private void sendRequest(boolean deviceToHost, int type, int recipient, int bRequest, int wValue, int wIndex, int wLength) {
+			unknown414 = setBit(unknown414, 16 + endpointNumber);
+			mem.write32(address10, 0x2 << 30);
+			status |= STATUS_UNKNOWN_020;
+			TPointer deviceRequest = new TPointer(mem, address10 + 8);
+			int bmRequestType = 0;
+			bmRequestType |= ((deviceToHost ? 1 : 0) << 7); // Device to Host / Host to Device
+			bmRequestType |= (type << 5);
+			bmRequestType |= (recipient << 0);
+			deviceRequest.setUnsignedValue8(0, bmRequestType);
+			deviceRequest.setUnsignedValue8(1, bRequest);
+			deviceRequest.setUnsignedValue16(2, wValue);
+			deviceRequest.setUnsignedValue16(4, wIndex);
+			deviceRequest.setUnsignedValue16(6, wLength);
+			control = clearFlag(control, CONTROL_UNKNOWN_100);
+			control = setFlag(control, CONTROL_UNKNOWN_040);
+			RuntimeContextLLE.triggerInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT_CONNECTION);
+		}
+
+		protected void setControl(int value) {
+			int oldControl = control;
+			super.setControl(value);
+
+			if (isRaisingFlag(oldControl, control, CONTROL_UNKNOWN_100) && notHasFlag(control, CONTROL_UNKNOWN_040) && endpointNumber == 0) {
+				if (state == 0) {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 state=%d", state));
+					sendRequest(true, 2, 1, 1, 3, 0, 1);
+					state++;
+				} else if (state == 3) {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 state=%d", state));
+					sendRequest(false, 2, 1, 1, 0, 0, 8);
+					state++;
+				} else if (state == 5) {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 state=%d", state));
+					// GET_DESCRIPTOR for the device descriptor:
+					// the PSP will send an 18 bytes long device descriptor
+					sendRequest(true, 0, 0, 6, 0x100, 0, 18);
+					state++;
+				} else if (state == 8) {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 state=%d", state));
+					// GET_DESCRIPTOR for the configuration descriptor
+					sendRequest(true, 0, 0, 6, 0x200, 0, 0x94);
+					state++;
+				} else if (state == 11) {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 state=%d", state));
+					sendingEndpoints[endpointNumber].control = clearFlag(sendingEndpoints[endpointNumber].control, CONTROL_UNKNOWN_008 | CONTROL_UNKNOWN_002);
+					state++;
+				} else if (state == 15) {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 state=%d", state));
+					sendRequest(true, 2, 1, 3, 0, 3, 5);
+					state++;
+				} else if (state == 18) {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 state=%d", state));
+					sendingEndpoints[endpointNumber].control = clearFlag(sendingEndpoints[endpointNumber].control, CONTROL_UNKNOWN_008 | CONTROL_UNKNOWN_002);
+					state++;
+				} else if (state == 20) {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 state=%d", state));
+					sendRequest(true, 2, 1, 8, 0, 3, 8);
+					state++;
+				} else if (state == 23) {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 state=%d", state));
+					sendingEndpoints[endpointNumber].control = clearFlag(sendingEndpoints[endpointNumber].control, CONTROL_UNKNOWN_008 | CONTROL_UNKNOWN_002);
+					state++;
+				} else if (state == 25) {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 state=%d", state));
+					sendingEndpoints[endpointNumber].control = clearFlag(sendingEndpoints[endpointNumber].control, CONTROL_UNKNOWN_008 | CONTROL_UNKNOWN_002);
+					unknown414 = setBit(unknown414, 16 + endpointNumber);
+					mem.write32(address14, 0x2 << 30);
+					state++;
+				} else {
+					log.error(String.format("receivingEndpoints[0].control CONTROL_UNKNOWN_100 unimplemented state=%d", state));
+				}
+			}
+		}
+	}
+
+	protected class SendingEndpoint extends Endpoint {
+		public SendingEndpoint(Memory mem, int endpointNumber) {
+			super(mem, endpointNumber);
+		}
+
+		private void completeRequest(boolean pendingData) {
+			log.error(String.format("setControl CONTROL_UNKNOWN_008 state=%d", state));
+			if (pendingData) {
+				control = clearFlag(control, CONTROL_UNKNOWN_008);
+			}
+			unknown414 = setBit(unknown414, endpointNumber);
+			status |= Endpoint.STATUS_UNKNOWN_400;
+			receivingEndpoints[endpointNumber].control = clearFlag(receivingEndpoints[endpointNumber].control, CONTROL_UNKNOWN_040 | CONTROL_UNKNOWN_100);
+			int flags = mem.read16(address14 + 2);
+			flags = (flags & 0x3FFF) | (2 << 14);
+			mem.write16(address14 + 2, (short) flags);
+			RuntimeContextLLE.triggerInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT_CONNECTION);
+			state++;
+		}
+
+		protected void setControl(int value) {
+			int oldControl = control;
+
+			super.setControl(value);
+
+			if (isRaisingFlag(oldControl, control, CONTROL_UNKNOWN_008)) {
+				int length = mem.read16(address14 + 0);
+				int flags = mem.read16(address14 + 2);
+				int address = mem.read32(address14 + 8);
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("setControl CONTROL_UNKNOWN_008 length=0x%X, flags=0x%X, address=0x%08X: %s", length, flags, address, Utilities.getMemoryDump(mem, address, length)));
+				}
+
+				if (length == 4) {
+					if (log.isDebugEnabled()) {
+						int parameter0 = mem.read16(address + 0);
+						int parameter2 = mem.read8(address + 2);
+						int length3 = mem.read8(address + 3);
+						log.debug(String.format("setControl sending length=0x%X, flags=0x%04X, parameter0=0x%04X, parameter2=0x%02X, length3=0x%02X", length, flags, parameter0, parameter2, length3, Utilities.getMemoryDump(address + 4, length3)));
+					}
+					switch (mem.read8(address + 2)) {
+						case 0xA4: // set saturation
+							int saturationValue = mem.read8(address + 4); // [0..6]
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("setSaturation %d", saturationValue));
+							}
+							break;
+						case 0xA5: // set brightness
+							int brightnessValue = mem.read8(address + 4); // [128..255]
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("setBrightness %d", brightnessValue));
+							}
+							break;
+						case 0xA6: // set contrast
+							int contrastValue = mem.read8(address + 4);
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("setContrast %d", contrastValue));
+							}
+							break;
+						case 0x2B:
+							log.error("setControl 0x2B triggering interrupt");
+							mem.writeUnsigned16(address14 + 2, (flags & 0x3FFF) | (0x2 << 14));
+							triggerConnectionInterrupt(5);
+							break;
+						default:
+							log.error(String.format("setControl length=%d, unknown parameter2 0x%02X", length, mem.read8(address + 2)));
+							break;
+					}
+				} else if (length == 1) {
+					int parameter0 = mem.read8(address + 0);
+					switch (parameter0) {
+						case 0x00:
+							log.error("setControl length=1, parameter0=0x00");
+							break;
+						case 0x01:
+							log.error("setControl length=1, parameter0=0x01");
+							break;
+						default:
+							log.error(String.format("setControl length=%d, unknown parameter0 0x%02X", length, mem.read8(address + 2)));
+							break;
+					}
+				} else if (length == 18) {
+					log.error("setControl length=18");
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("GET_DESCRIPTOR for device: %s", Utilities.getMemoryDump(mem, address, length)));
+					}
+				} else if (length == 0x40) {
+//					mem.memset(address, (byte) 0, length);
+				} else if (length == 6) {
+//					mem.memset(address, (byte) 0, length);
+				}
+
+				if (state == 2 || state == 7 || state == 14 || state == 19 || state == 24) {
+					completeRequest(false);
+				} else if (state == 12 || state == 13) {
+					completeRequest(true);
+				} else {
+					log.error(String.format("setControl CONTROL_UNKNOWN_008 unimplemented state=%d", state));
+				}
+			} else if (isFallingFlag(oldControl, control, CONTROL_UNKNOWN_008)) {
+				if (state == 4 || state == 9 || state == 16 || state == 21) {
+					log.error(String.format("setControl clear CONTROL_UNKNOWN_008 state=%d", state));
+					receivingEndpoints[endpointNumber].control = clearFlag(receivingEndpoints[endpointNumber].control, CONTROL_UNKNOWN_040);
+					state++;
+				} else {
+					log.error(String.format("setControl clear CONTROL_UNKNOWN_008 unimplemented state=%d", state));
+				}
+			}
 		}
 	}
 
@@ -194,14 +413,11 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 	private MMIOHandlerUsb(int baseAddress) {
 		super(baseAddress);
 
-		sendingEndpoints = new Endpoint[5];
 		for (int i = 0; i < sendingEndpoints.length; i++) {
-			sendingEndpoints[i] = new Endpoint(getMemory());
+			sendingEndpoints[i] = new SendingEndpoint(getMemory(), i);
 		}
-
-		receivingEndpoints = new Endpoint[4];
 		for (int i = 0; i < receivingEndpoints.length; i++) {
-			receivingEndpoints[i] = new Endpoint(getMemory());
+			receivingEndpoints[i] = new ReceivingEndpoint(getMemory(), i);
 		}
 	}
 
@@ -223,10 +439,7 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 		endpointsInterfacesDisabled = stream.readInt();
 		unknown41C = stream.readInt();
 		unknown504 = stream.readInt();
-		unknown508 = stream.readInt();
-		unknown50C = stream.readInt();
-		unknown510 = stream.readInt();
-		unknown514 = stream.readInt();
+		stream.readInts(unknown508);
 		super.read(stream);
 	}
 
@@ -248,10 +461,7 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 		stream.writeInt(endpointsInterfacesDisabled);
 		stream.writeInt(unknown41C);
 		stream.writeInt(unknown504);
-		stream.writeInt(unknown508);
-		stream.writeInt(unknown50C);
-		stream.writeInt(unknown510);
-		stream.writeInt(unknown514);
+		stream.writeInts(unknown508);
 		super.write(stream);
 	}
 
@@ -274,10 +484,9 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 		endpointsInterfacesDisabled = 0;
 		unknown41C = 0;
 		unknown504 = 0;
-		unknown508 = 0;
-		unknown50C = 0;
-		unknown510 = 0;
-		unknown514 = 0;
+		for (int i = 0; i < unknown508.length; i++) {
+			unknown508[i] = 0;
+		}
 	}
 
 	public void triggerReset() {
@@ -311,24 +520,29 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 		checkConnectionInterrupt();
 	}
 
+	private void moveToConnectionEstablished() {
+		// Normal USB: this is required to move the connection to state PSP_USB_CONNECTION_ESTABLISHED
+		unknown408 = 0xF;
+		triggerConnectionInterrupt(CONNECTION_INTERRUPT_CONNECT);
+	}
+
 	private void setUnknown404(int value) {
+		int oldValue = unknown404;
 		unknown404 = value;
 
 		if (value == 0x210) {
-			// Normal USB: this is required to move the connection to state PSP_USB_CONNECTION_ESTABLISHED
-			unknown408 = 0xF;
-			triggerConnectionInterrupt(0);
-//			triggerConnectionInterrupt(1);
-//			triggerConnectionInterrupt(2);
-//			triggerConnectionInterrupt(3);
-//			triggerConnectionInterrupt(4);
-//			triggerConnectionInterrupt(5);
-//			triggerConnectionInterrupt(6);
-		} else if (value == 0x21C) {
-			// Camera USB: this is required to move the connection to state PSP_USB_CONNECTION_ESTABLISHED
-			unknown408 = 0xF;
-			triggerConnectionInterrupt(2);
-//			triggerConnectionInterrupt(5);
+			if (false) {
+				moveToConnectionEstablished();
+			}
+		} else if (value == 0x21C && oldValue == 0x210) {
+			if (false) {
+				// Camera USB: this is required to move the connection to state PSP_USB_CONNECTION_ESTABLISHED
+				triggerConnectionInterrupt(5);
+			}
+		} else if (value == 0x61C) {
+			// Set during sceUsbDeactivate()
+		} else if (value == 0x610) {
+			// Set at initialization
 		}
 	}
 
@@ -341,12 +555,22 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 	}
 
 	private void setEndpointsInterfacesDisabled(int value) {
+		int oldEndpointsInterfacesDisabled = endpointsInterfacesDisabled;
+		value &= 0x01FF01FF; // Real PSP supports only those values
 		endpointsInterfacesDisabled = value;
 
-		if (isEndpointEnabled(1)) {
-			unknown414 = setBit(unknown414, 1);
-			sendingEndpoints[1].unknown04 |= Endpoint.CONTROL_UNKNOWN04_UNKNOWN_040;
-			triggerConnectionInterrupt(5);
+		for (int i = 0; i < sendingEndpoints.length; i++) {
+			if (isFallingBit(oldEndpointsInterfacesDisabled, endpointsInterfacesDisabled, i)) {
+				if (state == 1 || state == 6 || state == 10 || state == 17 || state == 22) {
+					log.error(String.format("setEndpointsInterfacesDisabled enabling interface %d, state=%d", i, state));
+					unknown414 = setBit(unknown414, i);
+					sendingEndpoints[i].status |= Endpoint.STATUS_UNKNOWN_040;
+					RuntimeContextLLE.triggerInterrupt(getProcessor(), IntrManager.PSP_USB_INTERRUPT_CONNECTION);
+					state++;
+				} else {
+					log.error(String.format("setEndpointsInterfacesDisabled unimplemented enabling interface %d, state=%d", i, state));
+				}
+			}
 		}
 	}
 
@@ -426,6 +650,14 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 			case 0x274:
 			case 0x278:
 			case 0x27C: value = receivingEndpoints[3].read32(address - baseAddress - 0x260); break;
+			case 0x280:
+			case 0x284:
+			case 0x288:
+			case 0x28C:
+			case 0x290:
+			case 0x294:
+			case 0x298:
+			case 0x29C: value = receivingEndpoints[4].read32(address - baseAddress - 0x280); break;
 			case 0x400: value = unknown400; break;
 			case 0x404: value = unknown404; break;
 			case 0x408: value = unknown408; break;
@@ -471,6 +703,22 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 			case 0x054:
 			case 0x058:
 			case 0x05C: sendingEndpoints[2].write32(address - baseAddress - 0x040, value); break;
+			case 0x060:
+			case 0x064:
+			case 0x068:
+			case 0x06C:
+			case 0x070:
+			case 0x074:
+			case 0x078:
+			case 0x07C: sendingEndpoints[3].write32(address - baseAddress - 0x060, value); break;
+			case 0x080:
+			case 0x084:
+			case 0x088:
+			case 0x08C:
+			case 0x090:
+			case 0x094:
+			case 0x098:
+			case 0x09C: sendingEndpoints[4].write32(address - baseAddress - 0x080, value); break;
 			case 0x200:
 			case 0x204:
 			case 0x208:
@@ -503,6 +751,14 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 			case 0x274:
 			case 0x278:
 			case 0x27C: receivingEndpoints[3].write32(address - baseAddress - 0x260, value); break;
+			case 0x280:
+			case 0x284:
+			case 0x288:
+			case 0x28C:
+			case 0x290:
+			case 0x294:
+			case 0x298:
+			case 0x29C: receivingEndpoints[4].write32(address - baseAddress - 0x280, value); break;
 			case 0x400: unknown400 = value; break; // Possible values: 0xA0 (unknown meaning) | 0x8 (activated without charging) | 0x1 (unknown meaning)
 			case 0x404: setUnknown404(value); break;
 			case 0x40C: clearConnectionInterrupt(value); break;
@@ -511,10 +767,10 @@ public class MMIOHandlerUsb extends MMIOHandlerBase {
 			case 0x418: setEndpointsInterfacesDisabled(value); break;
 			case 0x41C: unknown41C = value; break; // Possible values: 0
 			case 0x504: unknown504 = value; break;
-			case 0x508: unknown508 = value; break;
-			case 0x50C: unknown50C = value; break;
-			case 0x510: unknown510 = value; break;
-			case 0x514: unknown514 = value; break;
+			case 0x508: unknown508[0] = value; break;
+			case 0x50C: unknown508[1] = value; break;
+			case 0x510: unknown508[2] = value; break;
+			case 0x514: unknown508[3] = value; break;
 			default: super.write32(address, value); break;
 		}
 
