@@ -86,6 +86,7 @@ import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
+import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.mmio.umd.MMIOHandlerUmd;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.remote.HTTPServer;
@@ -3034,6 +3035,9 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             } else if (args[i].equals("--settingsFileName")) {
             	// This argument has already been processed in initSettings()
             	i++;
+            } else if (args[i].equals("--debuggerMemoryFileName")) {
+            	// This argument has already been processed in initSettings()
+            	i++;
             } else {
                 printUsage();
                 break;
@@ -3066,12 +3070,23 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     	}
     }
 
+    private static void initDebuggerMemory(String args[]) {
+    	// Verify if the debugger memory file name has been provided on the command line
+    	for (int i = 0; i < args.length; i++) {
+    		if (args[i].equals("--debuggerMemoryFileName")) {
+    			i++;
+    			DebuggerMemory.mBrkFilePath = args[i];
+    		}
+    	}
+    }
+
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
     	initLog(args);
     	initSettings(args);
+    	initDebuggerMemory(args);
 
 		// Re-enable all disabled algorithms as the PSP is allowing them
 		Security.setProperty("jdk.certpath.disabledAlgorithms", "");
