@@ -183,6 +183,8 @@ public class Modules {
     public static sceUsbBus sceUsbBusModule = new sceUsbBus();
     public static sceUsbHost sceUsbHostModule = new sceUsbHost();
     public static sceEFlash sceEFlashModule = new sceEFlash();
+    public static sceVshCommonUtil sceVshCommonUtilModule = new sceVshCommonUtil();
+    public static sceLFatFs sceLFatFsModule = new sceLFatFs();
 
     public static Logger log = Logger.getLogger("hle");
 

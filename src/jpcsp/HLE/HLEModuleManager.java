@@ -276,7 +276,9 @@ public class HLEModuleManager {
         sceSystimer(Modules.sceSystimerModule),
         sceUsbBus(Modules.sceUsbBusModule),
         sceUsbHost(Modules.sceUsbHostModule),
-        sceEFlash(Modules.sceEFlashModule);
+        sceEFlash(Modules.sceEFlashModule),
+        sceVshCommonUtil(Modules.sceVshCommonUtilModule),
+        sceLFatFs(Modules.sceLFatFsModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
