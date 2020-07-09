@@ -703,7 +703,7 @@ public class sceFont extends HLEModule {
 	        	if (charInfoBitmapAddress != 0) {
 	        		triggerFreeCallback(charInfoBitmapAddress, new AfterCharInfoFreeCallback(thread, charInfo));
 	        	} else {
-	        		triggerAllocCallback(charInfo.bitmapWidth * charInfo.bitmapHeight, new AfterCharInfoAllocCallback(thread));
+	        		triggerAllocCallback(Math.max(4, charInfo.bitmapWidth * charInfo.bitmapHeight), new AfterCharInfoAllocCallback(thread));
 	        	}
 
 	        	if (charInfoBitmapAddress == 0) {
@@ -854,7 +854,7 @@ public class sceFont extends HLEModule {
 			@Override
             public void execute() {
 				charInfoBitmapAddress = 0;
-            	triggerAllocCallback(charInfo.bitmapWidth * charInfo.bitmapHeight, new AfterCharInfoAllocCallback(thread));
+            	triggerAllocCallback(Math.max(4, charInfo.bitmapWidth * charInfo.bitmapHeight), new AfterCharInfoAllocCallback(thread));
             }
         }
 
@@ -1100,7 +1100,7 @@ public class sceFont extends HLEModule {
     }
 
     @HLEFunction(nid = 0x980F4895, version = 150, checkInsideInterrupt = true)
-    public int sceFontGetCharGlyphImage(int fontHandle, int charCode, TPointer glyphImagePtr) {
+    public int sceFontGetCharGlyphImage(int fontHandle, int charCode, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 24, usage = Usage.in) TPointer glyphImagePtr) {
         charCode&= 0xffff;
         Font font = getFont(fontHandle, false);     
 
@@ -1237,7 +1237,7 @@ public class sceFont extends HLEModule {
     }
 
     @HLEFunction(nid = 0xCA1E6945, version = 150, checkInsideInterrupt = true, stackUsage = 0x120)
-    public int sceFontGetCharGlyphImage_Clip(int fontHandle, int charCode, TPointer glyphImagePtr, int clipXPos, int clipYPos, int clipWidth, int clipHeight) {
+    public int sceFontGetCharGlyphImage_Clip(int fontHandle, int charCode, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 24, usage = Usage.in) TPointer glyphImagePtr, int clipXPos, int clipYPos, int clipWidth, int clipHeight) {
         charCode&= 0xffff;
         Font font = getFont(fontHandle, false);
         // Identical to sceFontGetCharGlyphImage, but uses a clipping
@@ -1435,21 +1435,21 @@ public class sceFont extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x568BE516, version = 150)
-    public int sceFontGetShadowGlyphImage(int fontHandle, int charCode, TPointer glyphImagePtr) {
+    public int sceFontGetShadowGlyphImage(int fontHandle, int charCode, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 24, usage = Usage.in) TPointer glyphImagePtr) {
         charCode&= 0xffff;
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5DCF6858, version = 150)
-    public int sceFontGetShadowGlyphImage_Clip(int fontHandle, int charCode, TPointer glyphImagePtr, int clipXPos, int clipYPos, int clipWidth, int clipHeight) {
+    public int sceFontGetShadowGlyphImage_Clip(int fontHandle, int charCode, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 24, usage = Usage.in) TPointer glyphImagePtr, int clipXPos, int clipYPos, int clipWidth, int clipHeight) {
         charCode&= 0xffff;
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xAA3DE7B5, version = 150)
-    public int sceFontGetShadowInfo(int fontHandle, int charCode, TPointer charInfoPtr) {
+    public int sceFontGetShadowInfo(int fontHandle, int charCode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=60, usage=Usage.out) TPointer charInfoPtr) {
         charCode&= 0xffff;
         return 0;
     }
