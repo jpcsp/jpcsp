@@ -18,11 +18,13 @@ package jpcsp.HLE.modules;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.hardware.Model;
+import jpcsp.mediaengine.MEProcessor;
 import jpcsp.settings.AbstractStringSettingsListener;
 import jpcsp.settings.Settings;
 
@@ -357,6 +359,10 @@ public class sceSysreg extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x48F1C4AD, version = 150)
     public int sceSysregMeResetDisable() {
+    	if (RuntimeContextLLE.hasMMIO()) {
+    		log.error("sceSysregMeResetDisable MMIO");
+    		MEProcessor.getInstance().triggerReset();
+    	}
     	return 0;
     }
 
