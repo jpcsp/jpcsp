@@ -1,6 +1,13 @@
 package jpcsp.util;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 
 public class FileUtil {
@@ -72,5 +79,22 @@ public class FileUtil {
             current = current.getParentFile();
         }
         return null;
+    }
+
+    public static File[] listFilesRecursively(File directory, FileFilter fileFilter) {
+    	File[] result = new File[0];
+    	File[] paths = directory.listFiles();
+    	for (File path : paths) {
+    		if (fileFilter == null || fileFilter.accept(path)) {
+				result = Utilities.add(result, path);
+			}
+
+    		if (path.isDirectory()) {
+    			File[] subPaths = listFilesRecursively(path, fileFilter);
+    			result = Utilities.add(result, subPaths);
+    		}
+    	}
+
+    	return result;
     }
 }

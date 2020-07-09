@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -59,6 +58,7 @@ import jpcsp.format.PSF;
 import jpcsp.format.psmf.PsmfAudioDemuxVirtualFile;
 import jpcsp.settings.Settings;
 import jpcsp.util.Constants;
+import jpcsp.util.FileUtil;
 
 /**
  * @author Orphis, gid15
@@ -157,9 +157,14 @@ public class UmdBrowser extends javax.swing.JDialog {
                     pathPrefix = path.getPath();
                 }
 
-                File[] pathPrograms = path.listFiles(new UmdFileFilter());
+                // Search recursively under the given path
+                File[] pathPrograms = FileUtil.listFilesRecursively(path, new UmdFileFilter());
 
-                programList.addAll(Arrays.asList(pathPrograms));
+                for (File pathProgram : pathPrograms) {
+                	if (!programList.contains(pathProgram)) {
+                		programList.add(pathProgram);
+                	}
+                }
             }
 
             // Sort the programs based on their file name

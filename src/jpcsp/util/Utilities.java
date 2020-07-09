@@ -1771,6 +1771,21 @@ public class Utilities {
     	return newArray;
     }
 
+    public static File[] add(File[] array, File[] files) {
+    	if (files == null) {
+    		return array;
+    	}
+    	if (array == null) {
+    		return files.clone();
+    	}
+
+    	File[] newArray = new File[array.length + files.length];
+    	System.arraycopy(array, 0, newArray, 0, array.length);
+    	System.arraycopy(files, 0, newArray, array.length, files.length);
+
+    	return newArray;
+    }
+
     public static byte[] readCompleteFile(IVirtualFile vFile) {
         if (vFile == null) {
             return null;
