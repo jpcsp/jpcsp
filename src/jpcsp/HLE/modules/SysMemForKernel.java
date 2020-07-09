@@ -149,7 +149,7 @@ public class SysMemForKernel extends HLEModule {
 		}
     }
 
-	@Override
+    @Override
 	public void start() {
 		heaps = new HashMap<Integer, SysMemForKernel.HeapInformation>();
 		npEnv = "np"; // Used in URLs to connect to the playstation sites
@@ -922,9 +922,14 @@ public class SysMemForKernel extends HLEModule {
     }
 
     @HLEUnimplemented
+    @HLEFunction(nid = 0x310802A9, version = 150)
+    public int sceKernelRegisterGetIdFunc(TPointer function) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
     @HLEFunction(nid = 0xD0C1460D, version = 150)
-    public int sceKernelGetId() {
-    	// Has no parameters
+    public int sceKernelGetId(PspString fileName, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.out) TPointer keyAddr) {
     	return 0;
     }
 

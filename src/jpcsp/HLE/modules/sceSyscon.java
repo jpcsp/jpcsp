@@ -951,4 +951,10 @@ public class sceSyscon extends HLEModule {
 	public int sceSyscon_driver_765775EB(boolean power) {
     	return 0;
     }
+
+    @HLEUnimplemented
+	@HLEFunction(nid = 0x9BC5E33B, version = 660)
+	public int sceSyscon_driver_9BC5E33B(int unknown) {
+    	return 0;
+    }
 }
