@@ -283,7 +283,7 @@ public class reboot extends HLEModule {
 
     	// Decrypt and decompress loadexec.prx using the provided KL4E decompressor.
     	PRX prxEngine = new CryptoEngine().getPRXEngine();
-    	buffer = prxEngine.DecryptAndUncompressPRX(buffer, buffer.length, true, kl4eDecompress, tempBuffer, tempBufferSize);
+    	buffer = prxEngine.DecryptAndUncompressPRX(buffer, buffer.length, true, null, kl4eDecompress, tempBuffer, tempBufferSize);
     	if (buffer == null) {
     		return null;
     	}
@@ -436,7 +436,7 @@ public class reboot extends HLEModule {
     	TPointer kl3eDecompress = getKl3eDecompress(kl3eBaseAddress, kl4eDecompress, tempBuffer, tempBufferSize);
 
     	PRX prxEngine = new CryptoEngine().getPRXEngine();
-    	loadexecBuffer = prxEngine.DecryptAndUncompressPRX(loadexecBuffer, loadexecBuffer.length, true, kl4eDecompress, tempBuffer, tempBufferSize);
+    	loadexecBuffer = prxEngine.DecryptAndUncompressPRX(loadexecBuffer, loadexecBuffer.length, true, null, kl4eDecompress, tempBuffer, tempBufferSize);
     	if (loadexecBuffer == null) {
     		return false;
     	}
@@ -462,7 +462,7 @@ public class reboot extends HLEModule {
     		log.debug(String.format("Found reboot.prx at offset 0x%X: %s", rebootOffset, Utilities.getMemoryDump(rebootBuffer)));
     	}
 
-    	rebootBuffer = prxEngine.DecryptAndUncompressPRX(rebootBuffer, rebootLength, false);
+    	rebootBuffer = prxEngine.DecryptAndUncompressPRX(rebootBuffer, rebootLength, false, null);
 
     	try {
 			offset = 0;

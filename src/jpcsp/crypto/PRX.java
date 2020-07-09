@@ -60,10 +60,11 @@ public class PRX {
     public PRX() {
     }
 
-    // PRXDecrypter TAG struct.
+	// PRXDecrypter TAG struct.
     private class TAG_INFO {
         int tag; // 4 byte value at offset 0xD0 in the PRX file
         int[] key; // 144 bytes keys
+        int[] xor1; // Optional xor1
         int code; // code for scramble
         int codeExtra; // code extra for scramble (old tags)
 
@@ -78,7 +79,13 @@ public class PRX {
             this.tag = tag;
             this.key = key;
             this.code = code;
-            this.codeExtra = 0;
+        }
+
+        public TAG_INFO(int tag, int[] key, int[] xor1, int code) {
+            this.tag = tag;
+            this.key = key;
+            this.xor1 = xor1;
+            this.code = code;
         }
 
 		private int[] intArrayToTagArray(int[] array) {
@@ -94,11 +101,7 @@ public class PRX {
 
         @Override
 		public String toString() {
-        	byte[] bytes = new byte[key.length];
-        	for (int i = 0; i < key.length; i++) {
-        		bytes[i] = (byte) key[i];
-        	}
-        	return String.format("tag=0x%08X, key=%s, code=0x%02X, codeExtra=0x%02X", tag, Utilities.getMemoryDump(bytes), code, codeExtra);
+        	return String.format("tag=0x%08X, key=%s, code=0x%02X, codeExtra=0x%02X", tag, Utilities.getMemoryDump(intArrayToByteArray(key)), code, codeExtra);
 		}
     }
     
@@ -242,6 +245,7 @@ public class PRX {
         new TAG_INFO(0x0B2B90F0, KeyVault.key_9DC14891_1, 0x5C),
         new TAG_INFO(0x0B2B91F0, KeyVault.key_9DC14891_2, 0x5C),
         new TAG_INFO(0x0B2B92F0, KeyVault.key_9DC14891_3, 0x5C),
+        new TAG_INFO(0x0DAA06F0, KeyVault.key_0DAA06F0, KeyVault.xor_0DAA06F0, 0x65),
     	// 144-bytes keys
         new TAG_INFO(0x00000000, KeyVault.g_key00, 0x42, 0x00),
         new TAG_INFO(0x02000000, KeyVault.key_5C3A61FE, 0x45, 0x00),
@@ -270,6 +274,19 @@ public class PRX {
         new TAG_INFO(0xBB67C59F, KeyVault.g_key7F, 0x60, 0x60),
         new TAG_INFO(0xBB67C59F, KeyVault.g_key1B, 0x61, 0x61),
     	new TAG_INFO(0x0E000000, KeyVault.key_102DC8AF_2, 0x51, 0x00)};
+
+	public static byte[] intArrayToByteArray(int[] array) {
+		if (array == null) {
+			return null;
+		}
+
+		byte[] bytes = new byte[array.length];
+    	for (int i = 0; i < array.length; i++) {
+    		bytes[i] = (byte) array[i];
+    	}
+
+    	return bytes;
+	}
 
     private TAG_INFO GetTagInfo(int tag) {
         int iTag;
@@ -336,11 +353,11 @@ public class PRX {
         }
     }
 
-    public byte[] DecryptAndUncompressPRX(byte[] buf, int size, boolean isSignChecked) {
-    	return DecryptAndUncompressPRX(buf, size, isSignChecked, null, null, 0);
+    public byte[] DecryptAndUncompressPRX(byte[] buf, int size, boolean isSignChecked, byte[] key) {
+    	return DecryptAndUncompressPRX(buf, size, isSignChecked, key, null, null, 0);
     }
 
-    public byte[] DecryptAndUncompressPRX(byte[] buf, int size, boolean isSignChecked, TPointer kl4eDecompress, TPointer tempBuffer, int tempBufferSize) {
+    public byte[] DecryptAndUncompressPRX(byte[] buf, int size, boolean isSignChecked, byte[] key, TPointer kl4eDecompress, TPointer tempBuffer, int tempBufferSize) {
         int compAttribute = readUnaligned16(buf, 0x6);
     	int pspSize = readUnaligned32(buf, 0x2C);
     	int elfSize = readUnaligned32(buf, 0x28);
@@ -427,7 +444,7 @@ public class PRX {
     			break;
         }
 
-        int resultSize = DecryptPRX(resultBuffer, size, type, null, null);
+        int resultSize = DecryptPRX(resultBuffer, size, type, null, key);
         if (resultSize < 0) {
         	return null;
         }
@@ -529,6 +546,10 @@ public class PRX {
         if (pti == null) {
         	log.error(String.format("DecryptPRX unknown tag 0x%08X", tag));
             return -1;
+        }
+
+        if (pti.xor1 != null && xor1 == null) {
+        	xor1 = intArrayToByteArray(pti.xor1);
         }
 
         // Fetch the final ELF size.

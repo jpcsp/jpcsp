@@ -27,7 +27,7 @@ public class PGDVirtualFile extends BufferedVirtualFile {
 		init(key, pgdFile, 0);
 	}
 
-	protected PGDVirtualFile(byte[] key, IVirtualFile pgdFile, int dataOffset) {
+	public PGDVirtualFile(byte[] key, IVirtualFile pgdFile, int dataOffset) {
 		init(key, pgdFile, dataOffset);
 	}
 

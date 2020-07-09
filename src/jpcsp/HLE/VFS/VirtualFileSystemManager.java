@@ -28,17 +28,28 @@ public class VirtualFileSystemManager {
 	protected HashMap<String, IVirtualFileSystem> virtualFileSystems = new HashMap<String, IVirtualFileSystem>();
 	private IVirtualFileSystem xmbVfs;
 
+	public VirtualFileSystemManager() {
+		FakeVirtualFileSystem.getInstance().registerAllFakeVirtualFiles(this);
+	}
+
 	public void register(String name, IVirtualFileSystem vfs) {
-		name = name.toLowerCase();
 		virtualFileSystems.put(name, vfs);
 	}
 
 	public void unregister(String name) {
-		name = name.toLowerCase();
 		virtualFileSystems.remove(name);
 	}
 
 	public IVirtualFileSystem getVirtualFileSystem(String absoluteFileName, StringBuilder localFileName) {
+		IVirtualFileSystem vfs = virtualFileSystems.get(absoluteFileName);
+		if (vfs != null) {
+			if (localFileName != null) {
+				localFileName.setLength(0);
+				localFileName.append(absoluteFileName);
+			}
+			return vfs;
+		}
+
 		int colon = absoluteFileName.indexOf(':');
 		if (colon < 0) {
 			return null;

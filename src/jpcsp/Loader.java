@@ -63,6 +63,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.HLE.modules.scePopsMan;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.DeferredVStub32;
@@ -361,8 +362,10 @@ public class Loader {
         }
         module.fileFormat |= FORMAT_PSP;
 
+        byte[] key = scePopsMan.readEbootKeys(module.pspfilename);
+
         long start = System.currentTimeMillis();
-    	ByteBuffer decryptedPrx = psp.decrypt(f, isSignChecked);
+    	ByteBuffer decryptedPrx = psp.decrypt(f, isSignChecked, key);
     	long end = System.currentTimeMillis();
 
     	if (decryptedPrx == null) {
@@ -1240,11 +1243,30 @@ public class Loader {
         }
     }
 
-    private void ProcessUnresolvedImports(SceModule sourceModule, TPointer baseAddress, boolean fromSyscall) {
+    private boolean isPopsLoader(SceModule module) throws IOException {
+        // Pops loader from EBOOT.PBP
+    	if (module.pspfilename.endsWith(scePopsMan.EBOOT_PBP)) {
+	        if ("complex".equals(module.modname) || "simple".equals(module.modname)) {
+	        	for (DeferredStub deferredStub : module.unresolvedImports) {
+	        		if (deferredStub.getNid() == 0x29B3FB24 && "scePopsMan".equals(deferredStub.getModuleName())) {
+	        			return true;
+	        		}
+	        	}
+	        }
+    	}
+
+        return false;
+    }
+
+    private void ProcessUnresolvedImports(SceModule sourceModule, TPointer baseAddress, boolean fromSyscall) throws IOException {
         Memory mem = baseAddress.getMemory();
         NIDMapper nidMapper = NIDMapper.getInstance();
         int numberoffailedNIDS = 0;
         int numberofmappedNIDS = 0;
+
+        if (isPopsLoader(sourceModule)) {
+			Modules.scePopsManModule.loadOnDemand(sourceModule);
+        }
 
         for (SceModule module : Managers.modules.values()) {
             module.importFixupAttempts++;

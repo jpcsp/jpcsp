@@ -16,11 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.util.Utilities.readCompleteFile;
+
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -30,16 +36,63 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.VFS.FakeVirtualFileSystem;
 import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.crypto.PBPVirtualFile;
 import jpcsp.HLE.VFS.local.LocalVirtualFile;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.hardware.Model;
 
 public class scePopsMan extends HLEModule {
     public static Logger log = Modules.getLogger("scePopsMan");
+    public static final String EBOOT_PBP = "EBOOT.PBP";
+    private static final String KEYS_BIN = "KEYS.BIN";
+    private static final String ebootDummyFileName = "ms0:/PSP/GAME/DUMMY0000/" + EBOOT_PBP;
     private String ebootPbp;
     private int ebootPbpUid;
     private IVirtualFile vFileEbootPbp;
+
+    public static byte[] readEbootKeys(String ebootFileName) throws IOException {
+    	if (ebootFileName == null || !ebootFileName.endsWith(EBOOT_PBP)) {
+    		return null;
+    	}
+
+    	String keysFileName = ebootFileName.substring(0, ebootFileName.length() - EBOOT_PBP.length()) + KEYS_BIN;
+    	byte[] key = readCompleteFile(keysFileName);
+    	if (key == null) {
+    		File keysFile = new File(keysFileName);
+    		if (keysFile.canRead() && keysFile.length() > 0) {
+				InputStream is = new FileInputStream(keysFile);
+    			key = new byte[(int) keysFile.length()];
+    			is.read(key);
+    			is.close();
+    		}
+    	}
+
+    	return key;
+    }
+
+    public void loadOnDemand(SceModule module) throws IOException {
+		String ebootFileName = module.pspfilename;
+		byte[] key = readEbootKeys(ebootFileName);
+		IVirtualFile ebootVirtualFile = new PBPVirtualFile(key, new LocalVirtualFile(new SeekableRandomFile(ebootFileName, "r")));
+		FakeVirtualFileSystem.getInstance().registerFakeVirtualFile(ebootDummyFileName, ebootVirtualFile);
+		// popsman.prx requires a valid EBOOT.PBP file name (i.e. starting with "ms0:")
+		module.pspfilename = ebootDummyFileName;
+
+    	// popsman.prx is accessing some hardware registers
+    	RuntimeContextLLE.createMMIO();
+
+		// popsman.prx requires at least v3.00
+		Modules.SysMemUserForUserModule.hleSetCompiledSdkVersion(0x03000000);
+
+		// popsman.prx requires valid applicationType and bootFrom values
+		Modules.InitForKernelModule.setApplicationType(InitForKernel.SCE_INIT_APPLICATION_POPS);
+		Modules.InitForKernelModule.setBootFrom(InitForKernel.SCE_INIT_BOOT_MS);
+
+		Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/kd/popsman.prx", 0x10);
+    }
 
     @HLEFunction(nid = 0x29B3FB24, version = 150)
     public int scePopsManLoadModule(PspString ebootPbp, int unknown) {

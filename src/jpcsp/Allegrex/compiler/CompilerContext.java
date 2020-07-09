@@ -1061,7 +1061,11 @@ public class CompilerContext implements ICompilerContext {
     		// }
     		mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(parameterType));
     		mv.visitInsn(Opcodes.DUP);
-    		loadMemory();
+    		if (useMMIO()) {
+    			loadMMIO();
+    		} else {
+    			loadMemory();
+    		}
     		parameterReader.loadNextInt();
 
     		boolean canBeNull = false;
@@ -1072,7 +1076,7 @@ public class CompilerContext implements ICompilerContext {
     			}
     		}
 
-    		if (checkMemoryAccess() && afterSyscallLabel != null) {
+    		if (checkMemoryAccess() && afterSyscallLabel != null && !useMMIO()) {
     			Label addressGood = new Label();
     			if (canBeNull) {
         			mv.visitInsn(Opcodes.DUP);

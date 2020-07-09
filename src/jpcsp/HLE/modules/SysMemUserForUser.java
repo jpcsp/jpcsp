@@ -613,7 +613,7 @@ public class SysMemUserForUser extends HLEModule {
 		return compiledSdkVersion;
 	}
 
-	protected void hleSetCompiledSdkVersion(int sdkVersion) {
+	public void hleSetCompiledSdkVersion(int sdkVersion) {
 		compiledSdkVersion = sdkVersion;
 	}
 

@@ -118,15 +118,25 @@ public class InitForKernel extends HLEModule {
     public static final int SCE_INIT_APITYPE_KERNEL_REBOOT  = 0x300;
     // Debug.
 	public static final int SCE_INIT_APITYPE_DEBUG = 0x420; // doesn't start reboot
+	private int applicationType = SCE_INIT_APPLICATION_GAME;
+	private int bootFrom = SCE_INIT_BOOT_DISC;
+
+	public void setApplicationType(int applicationType) {
+		this.applicationType = applicationType;
+	}
+
+	public void setBootFrom(int bootFrom) {
+		this.bootFrom = bootFrom;
+	}
 
 	@HLEFunction(nid = 0x7233B5BC, version = 150)
 	public int sceKernelApplicationType() {
-		return SCE_INIT_APPLICATION_GAME;
+		return applicationType;
 	}
 
 	@HLEFunction(nid = 0x27932388, version = 150)
 	public int sceKernelBootFrom() {
-		return SCE_INIT_BOOT_DISC;
+		return bootFrom;
 	}
 
 	@HLEUnimplemented
@@ -150,9 +160,18 @@ public class InitForKernel extends HLEModule {
 		return 0;
 	}
 
+	/**
+	 * Get a chunk's memory block ID.
+	 * 
+	 * @param chunkId The ID of the chunk which memory block ID you want to receive.
+	 *                Between 0 - 15.
+	 * 
+	 * @return The memory block ID on success (greater than or equal to 0) or 
+	 *         SCE_ERROR_KERNEL_ILLEGAL_CHUNK_ID.
+	 */
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x2C6E9FE9, version = 150)
-	public int sceKernelGetChunk() {
+	public int sceKernelGetChunk(int chunkId) {
 		return 0;
 	}
 

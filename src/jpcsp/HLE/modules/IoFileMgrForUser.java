@@ -2437,7 +2437,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Can't execute another operation until the previous one completed
             log.warn(String.format("hleIoIoctl - id 0x%X PSP_ERROR_ASYNC_BUSY", id));
             result = ERROR_KERNEL_ASYNC_BUSY;
-        } else if (info.vFile != null && cmd != 0x04100001) {
+        } else if (info.vFile != null) {
     		timings = info.vFile.getTimings();
         	result = info.vFile.ioIoctl(cmd, new TPointer(mem, indata_addr), inlen, new TPointer(mem, outdata_addr), outlen);
         } else {
