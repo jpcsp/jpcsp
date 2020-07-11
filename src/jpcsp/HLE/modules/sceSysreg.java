@@ -360,7 +360,7 @@ public class sceSysreg extends HLEModule {
     @HLEFunction(nid = 0x48F1C4AD, version = 150)
     public int sceSysregMeResetDisable() {
     	if (RuntimeContextLLE.hasMMIO()) {
-    		log.error("sceSysregMeResetDisable MMIO");
+    		log.debug("sceSysregMeResetDisable MMIO");
     		MEProcessor.getInstance().triggerReset();
     	}
     	return 0;
