@@ -496,6 +496,7 @@ public class sceGe_user extends HLEModule {
     }
 
     @HLEFunction(nid = 0x1F6752AD, version = 150)
+    @HLEFunction(nid = 0x5D28A52B, version = 660)
     public int sceGeEdramGetSize() {
         return MemoryMap.SIZE_VRAM;
     }
@@ -805,6 +806,7 @@ public class sceGe_user extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x5BAA5439, version = 150)
+    @HLEFunction(nid = 0xD8633888, version = 660)
     public int sceGeEdramSetSize(int size) {
     	return 0;
     }
