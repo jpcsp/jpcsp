@@ -185,6 +185,7 @@ public class Modules {
     public static sceEFlash sceEFlashModule = new sceEFlash();
     public static sceVshCommonUtil sceVshCommonUtilModule = new sceVshCommonUtil();
     public static sceLFatFs sceLFatFsModule = new sceLFatFs();
+    public static pspvmc pspvmcModule = new pspvmc();
 
     public static Logger log = Logger.getLogger("hle");
 
