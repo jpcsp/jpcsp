@@ -2596,6 +2596,12 @@ public class sceDisplay extends HLEModule {
 		return 0;
 	}
 
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xE97E9718, version = 660)
+	public int sceDisplaySetPseudoVsync(int unknown) {
+		return 0;
+	}
+
 	public static class BufferInfo {
 
         public int topAddr;
