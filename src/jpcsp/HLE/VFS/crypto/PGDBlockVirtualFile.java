@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.crypto;
 
+import static jpcsp.crypto.PGD.PGD_MAGIC;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -64,9 +66,10 @@ public class PGDBlockVirtualFile extends AbstractProxyVirtualFile {
 		super.ioRead(inBuf, 0, pgdHeaderSize);
 
 		// Check if the "PGD" header is present
-        if (inBuf[0] != 0 || inBuf[1] != 'P' || inBuf[2] != 'G' || inBuf[3] != 'D') {
+		int magic = Utilities.readUnaligned32(inBuf, 0);
+        if (magic != PGD_MAGIC) {
             // No "PGD" found in the header,
-            log.warn(String.format("No PGD header detected %02X %02X %02X %02X ('%c%c%c%c') detected in file '%s'", inBuf[0] & 0xFF, inBuf[1] & 0xFF, inBuf[2] & 0xFF, inBuf[3] & 0xFF, (char) inBuf[0], (char) inBuf[1], (char) inBuf[2], (char) inBuf[3], vFile));
+            log.warn(String.format("No PGD header detected 0x%08X ('%c%c%c%c') detected in file '%s'", magic, (char) inBuf[0], (char) inBuf[1], (char) inBuf[2], (char) inBuf[3], vFile));
             return;
         }
         headerPresent = true;

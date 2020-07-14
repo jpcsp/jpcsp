@@ -17,6 +17,7 @@
 package jpcsp.crypto;
 
 public class PGD {
+	public static final int PGD_MAGIC = 0x44475000; // "\0PGD"
     private static AMCTRL amctrl;
     private AMCTRL.BBCipher_Ctx pgdCipherContext;
     private AMCTRL.BBMac_Ctx pgdMacContext;
