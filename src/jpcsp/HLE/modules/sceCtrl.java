@@ -331,9 +331,9 @@ public class sceCtrl extends HLEModule {
     }
 
     public void hleCtrlExecuteSampling() {
-        if (log.isDebugEnabled()) {
-            log.debug("hleCtrlExecuteSampling");
-        }
+    	if (log.isTraceEnabled()) {
+    		log.trace("hleCtrlExecuteSampling");
+    	}
 
         Controller controller = State.controller;
         controller.hleControllerPoll();
