@@ -2274,6 +2274,7 @@ public class sceDisplay extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA544C486, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x03F16FD4, version = 660, checkInsideInterrupt = true)
     public int sceDisplaySetResumeMode(int resumeMode) {
         return 0;
     }
@@ -2495,6 +2496,7 @@ public class sceDisplay extends HLEModule {
     }
 
     @HLEFunction(nid = 0x46F186C3, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xE38CA615, version = 660, checkInsideInterrupt = true)
     public int sceDisplayWaitVblankStartCB() {
         return hleDisplayWaitVblankStart(1, true);
     }
