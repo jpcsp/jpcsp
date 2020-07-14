@@ -493,6 +493,9 @@ public class Compiler implements ICompiler {
 
                     		if (analyseBranch) {
                         		pendingBlockAddresses.push(branchingTo);
+                        		if (!isAddressGood(branchingTo)) {
+                        			log.error(String.format("Trying to compile an invalid address 0x%08X at 0x%08X while compiling from 0x%08X", branchingTo, pc, startAddress));
+                        		}
                     		} else {
                         		branchingToAddresses.add(branchingTo);
                     		}
