@@ -99,7 +99,7 @@ public class Processor implements IState {
         instruction.interpret(this, opcode);
 
     	if (RuntimeContext.debugCodeBlockCalls) {
-    		if (instruction == Instructions.JAL) {
+    		if (instruction == Instructions.JAL && cp0.isMediaEngineCpu()) {
     			RuntimeContext.debugCodeBlockStart(cpu, cpu.pc);
     		} else if (instruction == Instructions.JR && ((opcode >> 21) & 31) == Common._ra && Memory.isAddressGood(cpu._ra)) {
     			int opcodeCaller = cpu.memory.read32(cpu._ra - 8);
