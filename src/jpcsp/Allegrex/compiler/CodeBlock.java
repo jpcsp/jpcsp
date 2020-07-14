@@ -471,7 +471,7 @@ public class CodeBlock {
     	}
 
     	StringWriter debugOutput = null;
-    	if (log.isDebugEnabled()) {
+    	if (log.isTraceEnabled()) {
     	    debugOutput = new StringWriter();
     	    PrintWriter debugPrintWriter = new PrintWriter(debugOutput);
     	    cv = new TraceClassVisitor(cv, debugPrintWriter);
@@ -495,7 +495,7 @@ public class CodeBlock {
         cv.visitEnd();
 
     	if (debugOutput != null) {
-    	    log.debug(debugOutput.toString());
+    	    log.trace(debugOutput.toString());
     	}
 
 	    compiledClass = loadExecutable(context, className, cw.toByteArray());
