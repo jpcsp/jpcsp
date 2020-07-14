@@ -16,10 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.hardware.Audio;
@@ -158,6 +161,7 @@ public class sceImpose extends HLEModule {
     }
 
 	@HLEFunction(nid = 0x8C943191, version = 150)
+	@HLEFunction(nid = 0x5557F4E2, version = 660)
 	public int sceImposeGetBatteryIconStatus(TPointer32 chargingPtr, TPointer32 iconStatusPtr) {
 		int batteryPowerPercent = Battery.getCurrentPowerPercent();
 
@@ -209,6 +213,9 @@ public class sceImpose extends HLEModule {
 			case PSP_IMPOSE_BACKLIGHT_OFF_INTERVAL:
 				value = 0;
 				break;
+			case PSP_IMPOSE_BACKLIGHT_BRIGHTNESS:
+				value = 3;
+				break;
 			case PSP_IMPOSE_20000000:
 				value = 0;
 				break;
@@ -218,7 +225,6 @@ public class sceImpose extends HLEModule {
 			case PSP_IMPOSE_80000007:
 				value = impose80000007;
 				break;
-			case PSP_IMPOSE_BACKLIGHT_BRIGHTNESS:
 			case PSP_IMPOSE_EQUALIZER_MODE:
 			case PSP_IMPOSE_TIME_FORMAT:
 			case PSP_IMPOSE_DATE_FORMAT:
@@ -360,6 +366,13 @@ public class sceImpose extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xBB3F5DEC, version = 150)
 	public int sceImpose_BB3F5DEC(int unknown1, int unknown2, int unknown3) {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xB497314D, version = 660)
+	public int sceImpose_driver_B497314D(int param, @BufferInfo(usage = Usage.out) TPointer64 resultAddr) {
+		resultAddr.setValue(0L);
 		return 0;
 	}
 }
