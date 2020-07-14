@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.RE.externalge.CoreThreadMMIO;
@@ -237,6 +238,7 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 
 	private void setStall(int stall) {
 		this.stall = stall;
+		Modules.sceGe_userModule.onMMIOGeStallAddressChanged(stall);
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreSadr(stall);
 			CoreThreadMMIO.getInstance().sync();

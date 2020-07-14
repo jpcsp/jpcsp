@@ -921,9 +921,9 @@ public class SysMemForKernel extends HLEModule {
     	return dstAddr.getAddress();
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x310802A9, version = 150)
     public int sceKernelRegisterGetIdFunc(TPointer function) {
+    	Modules.scePopsManModule.hlePopsRegisterGetIdFunc(function);
     	return 0;
     }
 

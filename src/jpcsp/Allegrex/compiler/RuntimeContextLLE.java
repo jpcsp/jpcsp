@@ -66,7 +66,12 @@ public class RuntimeContextLLE {
 	}
 
 	public static void start() {
-		isLLEActive = reboot.enableReboot;
+		if (reboot.enableReboot) {
+			isLLEActive = true;
+			RuntimeContext.javaThreadScheduling = false;
+		} else {
+			RuntimeContext.javaThreadScheduling = true;
+		}
 
 		if (!isLLEActive()) {
 			return;
@@ -187,7 +192,7 @@ public class RuntimeContextLLE {
 				log.debug(String.format("triggerInterruptException IPbits=0x%X, pendingInterruptIPbitsMain=0x%X", IPbits, pendingInterruptIPbitsMain));
 			}
 		} else if (processor.cp0.isMediaEngineCpu()) {
-			pendingInterruptIPbitsME |= IPbits;
+			getMediaEngineProcessor().triggerException(IPbits);
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("triggerInterruptException IPbits=0x%X, pendingInterruptIPbitsME=0x%X", IPbits, pendingInterruptIPbitsME));

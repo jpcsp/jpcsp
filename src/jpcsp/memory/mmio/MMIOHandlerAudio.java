@@ -16,8 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getMainProcessor;
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getMediaEngineProcessor;
 import static jpcsp.Emulator.getClock;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_AUDIO_INTR;
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_I2C_INTR;
 import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.isFallingBit;
@@ -404,9 +407,12 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 				log.debug("Triggering interrupt PSP_AUDIO_INTR");
 			}
 
-			RuntimeContextLLE.triggerInterrupt(getProcessor(), PSP_AUDIO_INTR);
+			RuntimeContextLLE.triggerInterrupt(getMainProcessor(), PSP_AUDIO_INTR);
+			// This is triggering a different interrupt bit on the ME
+			RuntimeContextLLE.triggerInterrupt(getMediaEngineProcessor(), PSP_I2C_INTR);
 		} else {
-			RuntimeContextLLE.clearInterrupt(getProcessor(), PSP_AUDIO_INTR);
+			RuntimeContextLLE.clearInterrupt(getMainProcessor(), PSP_AUDIO_INTR);
+			RuntimeContextLLE.clearInterrupt(getMediaEngineProcessor(), PSP_I2C_INTR);
 		}
 	}
 
@@ -423,6 +429,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		for (int i = 0; i < 3; i++) {
 			if (isFallingBit(inProgress, flags, i)) {
 				inProgress = clearBit(inProgress, i);
+				interrupt = clearBit(interrupt, i);
 			}
 		}
 	}

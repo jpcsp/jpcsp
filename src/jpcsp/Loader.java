@@ -1940,5 +1940,7 @@ public class Loader {
     		patch(mem, module, 0x00004550, 0x14E0002C, 0x1000002C); // Allow loading of privileged modules being not encrypted (https://github.com/uofw/uofw/blob/master/src/loadcore/loadelf.c#L352)
     		patch(mem, module, 0x00003D58, 0x10C0FFBE, NOP()); // Allow linking user stub to kernel lib
     	}
+
+    	Modules.scePopsManModule.patchModule(mem, module);
     }
 }

@@ -1,5 +1,8 @@
 package jpcsp.HLE.VFS.crypto;
 
+import static jpcsp.format.Elf32Header.ELF_MAGIC;
+import static jpcsp.format.PSP.PSP_MAGIC;
+
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractProxyVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
@@ -47,5 +50,20 @@ public class PBPVirtualFile extends AbstractProxyVirtualFile {
 		vFileDuplicate.ioLseek(getPosition());
 
 		return vFileDuplicate;
+	}
+
+	@Override
+	public int ioRead(TPointer outputPointer, int outputLength) {
+		int result = super.ioRead(outputPointer, outputLength);
+
+		// If the PBP file is not encrypted, patch the "~ELF" header with "~PSP"
+		// to let popsman.prx think it is still encrypted.
+		if (key == null && outputLength == 4 && result == outputLength) {
+			if (outputPointer.getUnalignedValue32() == ELF_MAGIC) {
+				outputPointer.setUnalignedValue32(0, PSP_MAGIC);
+			}
+		}
+
+		return result;
 	}
 }

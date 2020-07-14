@@ -211,7 +211,9 @@ public class ThreadManForUser extends HLEModule {
     public static final int WLAN_DOWN_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xB0;
     public static final int WLAN_IOCTL_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xC0;
     public static final int WLAN_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xD0;
-    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0xE0;
+    public static final int POPS_START_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xE0;
+    public static final int POPS_DECOMPRESS_DATA_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xF0;
+    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x100;
     public static final int INTERNAL_THREAD_ADDRESS_SIZE = INTERNAL_THREAD_ADDRESS_END - INTERNAL_THREAD_ADDRESS_START;
     private HashMap<Integer, pspBaseCallback> callbackMap;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
@@ -669,6 +671,8 @@ public class ThreadManForUser extends HLEModule {
         installWlanDownCallback();
         installWlanIoctlCallback();
         installWlanLoopHandler();
+        installPopsStartHandler();
+        installPopsDecompressData();
 
         alarms = new HashMap<Integer, SceKernelAlarmInfo>();
         vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
@@ -1104,6 +1108,24 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleKernelWlanLoop() {
         Modules.sceWlanModule.hleWlanThread();
+    }
+
+    private void installPopsStartHandler() {
+    	installHLESyscall(POPS_START_ADDRESS, "hlePopsStartHandler");
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hlePopsStartHandler(int argumentSize, TPointer argument) {
+        return Modules.scePopsManModule.hlePopsStartHandler(argumentSize, argument);
+    }
+
+    private void installPopsDecompressData() {
+    	installHLESyscall(POPS_DECOMPRESS_DATA_ADDRESS, "hlePopsDecompressData");
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hlePopsDecompressData(int destSize, TPointer src, TPointer dest) {
+        return Modules.scePopsManModule.hlePopsDecompressData(destSize, src, dest);
     }
 
     /** to be called when exiting the emulation */

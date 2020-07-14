@@ -127,6 +127,7 @@ public class RuntimeContext {
 	private static final Object idleSyncObject = new Object();
 	public static int firmwareVersion;
 	private static boolean isHomebrew = false;
+	public static boolean javaThreadScheduling = true;
 
 	private static class CompilerEnabledSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -192,7 +193,7 @@ public class RuntimeContext {
 		}
 
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-        	log.debug(String.format("jumpCall returning 0x%08X", returnValue));
+        	log.debug(String.format("jumpCall returning 0x%08X, $v0=0x%08X", returnValue, cpu._v0));
         }
 
         return returnValue;
@@ -754,7 +755,7 @@ public class RuntimeContext {
     	do {
     		wantSync = false;
 
-	    	if (!IntrManager.getInstance().canExecuteInterruptNow() && !RuntimeContextLLE.isLLEActive()) {
+	    	if (!IntrManager.getInstance().canExecuteInterruptNow() && javaThreadScheduling) {
 	    		syncFast();
 	    	} else {
 		    	syncPause();
@@ -1729,7 +1730,7 @@ public class RuntimeContext {
 
     private static int haltCount = 0;
     public static void executeHalt(Processor processor) throws StopThreadException {
-    	if (reboot.enableReboot) {
+    	if (RuntimeContextLLE.hasMMIO()) {
     		if (processor.cp0.isMediaEngineCpu()) {
 				((MEProcessor) processor).halt();
     		} else {
@@ -1781,7 +1782,7 @@ public class RuntimeContext {
     		log.debug(String.format("idle wantSync=%b", wantSync));
     	}
 
-		if (RuntimeContextLLE.isLLEActive()) {
+		if (!javaThreadScheduling) {
 			if (!toBeStoppedThreads.isEmpty()) {
 				wantSync = true;
 			}

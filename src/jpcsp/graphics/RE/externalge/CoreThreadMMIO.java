@@ -41,6 +41,7 @@ import jpcsp.memory.mmio.MMIOHandlerGe;
  */
 public class CoreThreadMMIO extends Thread {
 	protected static Logger log = ExternalGE.log;
+	private static boolean enabled = true;
 	private static CoreThreadMMIO instance;
 	private volatile boolean exit;
 	private Semaphore sync;
@@ -50,7 +51,9 @@ public class CoreThreadMMIO extends Thread {
 			instance = new CoreThreadMMIO();
 			instance.setDaemon(true);
 			instance.setName("ExternalGE - Core Thread for MMIO");
-			instance.start();
+			if (isEnabled()) {
+				instance.start();
+			}
 		}
 
 		return instance;
@@ -61,6 +64,23 @@ public class CoreThreadMMIO extends Thread {
 			instance.exit = true;
 			instance = null;
 		}
+	}
+
+	public static void setEnabled() {
+		boolean wasEnabled = enabled;
+		enabled = true;
+
+		if (!wasEnabled && instance != null) {
+			instance.start();
+		}
+	}
+
+	public static void setDisabled() {
+		enabled = false;
+	}
+
+	public static boolean isEnabled() {
+		return enabled;
 	}
 
 	private CoreThreadMMIO() {

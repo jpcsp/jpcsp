@@ -56,6 +56,10 @@ public class PBP {
     static private final int PSP_DATA = 6;
     static private final int PSAR_DATA = 7;
 
+    static public final int PBP_HEADER_SIZE = 8 + TOTAL_FILES * 4;
+    static public final int PBP_PSP_DATA_OFFSET = 8 + PSP_DATA * 4;
+    static public final int PBP_PSAR_DATA_OFFSET = 8 + PSAR_DATA * 4;
+
     private String info;
     private int size_pbp;
 

@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -46,6 +47,7 @@ import jpcsp.HLE.kernel.types.interrupts.GeCallbackInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.GeInterruptHandler;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.externalge.CoreThreadMMIO;
 import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
@@ -385,6 +387,10 @@ public class sceGe_user extends HLEModule {
 	        }
     	}
 
+    	if (RuntimeContextLLE.isLLEActive()) {
+    		CoreThreadMMIO.setDisabled();
+    	}
+
     	boolean useCachedMemory = false;
     	if (Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() >= 0x02000000) {
 	        boolean isBusy;
@@ -495,6 +501,19 @@ public class sceGe_user extends HLEModule {
 		}
     }
 
+    public void onMMIOGeStallAddressChanged(int lleStallAddr) {
+    	PspGeList currentList;
+    	if (ExternalGE.isActive()) {
+    		currentList = ExternalGE.getFirstDrawList();
+    	} else {
+    		currentList = VideoEngine.getInstance().getFirstDrawList();
+    	}
+
+    	if (currentList != null) {
+    		currentList.setStallAddr(lleStallAddr);
+    	}
+    }
+
     @HLEFunction(nid = 0x1F6752AD, version = 150)
     @HLEFunction(nid = 0x5D28A52B, version = 660)
     public int sceGeEdramGetSize() {
@@ -581,6 +600,7 @@ public class sceGe_user extends HLEModule {
     }
 
     @HLEFunction(nid = 0xAB49E76A, version = 150)
+    @HLEFunction(nid = 0xAFE6C9EF, version = 660)
     public int sceGeListEnQueue(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr) {
     	return hleGeListEnQueue(listAddr, stallAddr, cbid, argAddr, 0, false);
     }
@@ -621,6 +641,7 @@ public class sceGe_user extends HLEModule {
     }
 
     @HLEFunction(nid = 0x03444EB4, version = 150)
+    @HLEFunction(nid = 0x4B9554EB, version = 660)
     public int sceGeListSync(@CheckArgument("checkListId") int id, @CheckArgument("checkMode") int mode) {
         if (mode == 0 && IntrManager.getInstance().isInsideInterrupt()) {
     		log.debug("sceGeListSync (mode==0) cannot be called inside an interrupt handler!");
