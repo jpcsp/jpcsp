@@ -165,6 +165,7 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x34885E0D, version = 150)
+    @HLEFunction(nid = 0x4E267E02, version = 660)
     public int sceRtcConvertUtcToLocalTime(TPointer64 utcPtr, TPointer64 localPtr) {
     	// Add the offset of the local time zone to UTC
         TimeZone localTimeZone = getLocalTimeZone();
