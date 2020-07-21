@@ -42,6 +42,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.state.StateInputStream;
@@ -279,7 +280,8 @@ public class HLEModuleManager {
         sceEFlash(Modules.sceEFlashModule),
         sceVshCommonUtil(Modules.sceVshCommonUtilModule),
         sceLFatFs(Modules.sceLFatFsModule),
-        pspvmc(Modules.pspvmcModule);
+        pspvmc(Modules.pspvmcModule),
+        sceAmctrl(Modules.sceAmctrlModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
@@ -440,19 +442,21 @@ public class HLEModuleManager {
     }
 
     public int LoadFlash0Module(String name) {
-    	return LoadFlash0Module(name, 0, 0);
+    	return LoadFlash0Module(name, 0, 0, SysMemUserForUser.USER_PARTITION_ID, SysMemUserForUser.PSP_SMEM_Low);
     }
 
     /** @return the UID assigned to the module or negative on error
      * TODO need to figure out how the uids work when 1 prx contains several modules. */
-    public int LoadFlash0Module(String name, int moduleVersion, int moduleElfVersion) {
+    public int LoadFlash0Module(String name, int moduleVersion, int moduleElfVersion, int moduleMemoryPartition, int moduleMemoryType) {
     	if (name != null) {
 	        List<HLEModule> modules = flash0prxMap.get(name.toLowerCase());
 	        if (modules != null) {
 	            for (HLEModule module : modules) {
-	            	installModuleWithAnnotations(module);
 	            	module.setModuleVersion(moduleVersion);
 	            	module.setModuleElfVersion(moduleElfVersion);
+	            	module.setModuleMemoryPartition(moduleMemoryPartition);
+	            	module.setModuleMemoryType(moduleMemoryType);
+	            	installModuleWithAnnotations(module);
 	            }
 	        }
     	}

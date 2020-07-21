@@ -18,6 +18,8 @@ package jpcsp.crypto;
 
 import java.nio.ByteBuffer;
 
+import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
+
 public class AMCTRL {
 
     private static KIRK kirk;
@@ -34,8 +36,7 @@ public class AMCTRL {
     }
 
     // AMCTRL context structs.
-    public static class BBCipher_Ctx {
-
+    public static class BBCipher_Ctx extends pspAbstractMemoryMappedStructure {
         private int mode;
         private int seed;
         private byte[] buf = new byte[16];
@@ -44,10 +45,28 @@ public class AMCTRL {
             mode = 0;
             seed = 0;
         }
+
+		@Override
+		protected void read() {
+    		mode = read32();
+    		seed = read32();
+    		read8Array(buf);
+		}
+
+		@Override
+		protected void write() {
+    		write32(mode);
+    		write32(seed);
+    		write8Array(buf);
+		}
+
+		@Override
+		public int sizeof() {
+			return 24;
+		}
     }
 
-    public static class BBMac_Ctx {
-
+    public static class BBMac_Ctx extends pspAbstractMemoryMappedStructure {
         private int mode;
         private byte[] key = new byte[16];
         private byte[] pad = new byte[16];
@@ -57,6 +76,27 @@ public class AMCTRL {
             mode = 0;
             padSize = 0;
         }
+
+		@Override
+		protected void read() {
+    		mode = read32();
+    		read8Array(key);
+    		read8Array(pad);
+    		padSize = read32();
+		}
+
+		@Override
+		protected void write() {
+    		write32(mode);
+    		write8Array(key);
+    		write8Array(pad);
+    		write32(padSize);
+		}
+
+		@Override
+		public int sizeof() {
+			return 40;
+		}
     }
 
     private static boolean isNullKey(byte[] key) {
@@ -387,7 +427,7 @@ public class AMCTRL {
 
     public int hleDrmBBMacFinal2(BBMac_Ctx ctx, byte[] hash, byte[] key) {
         byte[] resBuf = new byte[0x10];
-        byte[] hashBuf = new byte[0x10];
+        byte[] hashBuf;
 
         int mode = ctx.mode;
 

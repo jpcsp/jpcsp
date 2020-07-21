@@ -178,7 +178,9 @@ public class ModuleMgrForUser extends HLEModule {
         	if (log.isInfoEnabled()) {
         		log.info(String.format("hleKernelLoadModule(path='%s') HLE module %s loaded", loadModuleContext.fileName, loadModuleContext.moduleName));
         	}
-            return moduleManager.LoadFlash0Module(loadModuleContext.moduleName, loadModuleContext.moduleVersion, loadModuleContext.moduleElfVersion);
+	        int moduleMemoryPartition = loadModuleContext.lmOption != null && loadModuleContext.lmOption.mpidText != 0 ? loadModuleContext.lmOption.mpidText : SysMemUserForUser.USER_PARTITION_ID;
+	        int moduleMemoryType = loadModuleContext.lmOption != null ? loadModuleContext.lmOption.position : SysMemUserForUser.PSP_SMEM_Low;
+            return moduleManager.LoadFlash0Module(loadModuleContext.moduleName, loadModuleContext.moduleVersion, loadModuleContext.moduleElfVersion, moduleMemoryPartition, moduleMemoryType);
         }
 
         return -1;

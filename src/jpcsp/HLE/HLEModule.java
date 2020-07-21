@@ -40,6 +40,8 @@ abstract public class HLEModule {
 	private boolean started = false;
 	private int moduleVersion;
 	private int moduleElfVersion;
+	private int moduleMemoryPartition = SysMemUserForUser.USER_PARTITION_ID;
+	private int moduleMemoryType = SysMemUserForUser.PSP_SMEM_Low;
 
 	public HashMap<String, HLEModuleFunction> installedHLEModuleFunctions = new HashMap<String, HLEModuleFunction>();
 
@@ -100,7 +102,7 @@ abstract public class HLEModule {
 				Modules.log.debug(String.format("Allocating 0x%X bytes for HLE module %s", memoryUsage, getName()));
 			}
 
-			memory = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("Module-%s", getName()), SysMemUserForUser.PSP_SMEM_Low, memoryUsage, 0);
+			memory = Modules.SysMemUserForUserModule.malloc(moduleMemoryPartition, String.format("Module-%s", getName()), moduleMemoryType, memoryUsage, 0);
 		} else {
 			memory = null;
 		}
@@ -163,7 +165,23 @@ abstract public class HLEModule {
 		this.moduleElfVersion = moduleElfVersion;
 	}
 
-    @Override
+	public int getModuleMemoryPartition() {
+		return moduleMemoryPartition;
+	}
+
+	public void setModuleMemoryPartition(int moduleMemoryPartition) {
+		this.moduleMemoryPartition = moduleMemoryPartition;
+	}
+
+	public int getModuleMemoryType() {
+		return moduleMemoryType;
+	}
+
+	public void setModuleMemoryType(int moduleMemoryType) {
+		this.moduleMemoryType = moduleMemoryType;
+	}
+
+	@Override
 	public String toString() {
 		return getName();
 	}
