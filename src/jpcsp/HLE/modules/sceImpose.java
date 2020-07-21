@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.State;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.HLEFunction;
@@ -28,6 +29,7 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.hardware.Audio;
 import jpcsp.hardware.Battery;
 import jpcsp.settings.Settings;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -349,11 +351,12 @@ public class sceImpose extends HLEModule {
 		return result;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x9BA61B49, version = 150)
-	public int sceImpose_9BA61B49() {
-		// Possible return values: 0 or 1
-		return 0;
+	public boolean sceImpose_9BA61B49_isHomeButtonPressed() {
+		int buttons = State.controller.getButtons();
+		boolean homeButtonPressed = Utilities.hasFlag(buttons, sceCtrl.PSP_CTRL_HOME);
+
+		return homeButtonPressed;
 	}
 
 	@HLEUnimplemented
