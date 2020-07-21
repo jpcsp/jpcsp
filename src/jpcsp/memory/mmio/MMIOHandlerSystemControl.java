@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
+import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.isFallingBit;
 import static jpcsp.util.Utilities.isRaisingBit;
@@ -461,6 +462,18 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 
 	private void setClock1Devices(int value) {
 		clock1Devices = value;
+	}
+
+	public void enableClockDevice(int bit) {
+		clockDevices = setBit(clockDevices, bit);
+	}
+
+	public void disableClockDevice(int bit) {
+		clockDevices = clearBit(clockDevices, bit);
+	}
+
+	public boolean isClockDeviceEnabled(int bit) {
+		return hasBit(clockDevices, bit);
 	}
 
 	private void setClockDevices(int value) {

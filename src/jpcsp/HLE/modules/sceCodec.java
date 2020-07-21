@@ -132,10 +132,13 @@ public class sceCodec extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x376399B6, version = 660)
-    public int sceCodec_driver_376399B6(boolean audioBusy) {
-    	return 0;
+    public void sceCodec_driver_376399B6(boolean enable) {
+    	if (enable) {
+    		Modules.sceSysregModule.sceSysregAudioClkoutClkEnable();
+    	} else {
+    		Modules.sceSysregModule.sceSysregAudioClkoutClkDisable();
+    	}
     }
 
     @HLEUnimplemented
