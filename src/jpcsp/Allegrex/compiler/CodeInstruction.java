@@ -205,6 +205,11 @@ public class CodeInstruction {
     	// the delay slot instruction, as it might theoretically modify the
     	// content of the Rs register.
         context.loadRs();
+
+        // The PSP ignores the lowest 2 bits of the address.
+        context.loadImm(0xFFFFFFFC);
+        mv.visitInsn(Opcodes.IAND);
+
         compileDelaySlot(context, mv);
         context.visitJump();
     }
@@ -215,7 +220,7 @@ public class CodeInstruction {
     	// content of the Rs register.
         context.loadRs();
 
-        // It seems the PSP ignores the lowest 2 bits of the address.
+        // The PSP ignores the lowest 2 bits of the address.
         // These bits are used and set by interruptman.prx
         // but never cleared explicitly before executing a jalr instruction.
         context.loadImm(0xFFFFFFFC);
