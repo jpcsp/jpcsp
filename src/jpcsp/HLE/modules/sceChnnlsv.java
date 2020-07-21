@@ -26,7 +26,6 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
-import jpcsp.HLE.TPointer8;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.crypto.SAVEDATA;
 import jpcsp.util.Utilities;
@@ -98,7 +97,7 @@ public class sceChnnlsv extends HLEModule{
      *
      */
     @HLEFunction(nid = 0xC4C494F8, version = 150)
-    public int sceSdGetLastIndex(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.inout) TPointer ctx2Addr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer8 hash, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer8 key) {
+    public int sceSdGetLastIndex(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.inout) TPointer ctx2Addr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.out) TPointer hash, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer key) {
     	SAVEDATA.SD_Ctx1 ctx = new SAVEDATA.SD_Ctx1();
     	ctx.read(ctx2Addr);
 
@@ -136,7 +135,7 @@ public class sceChnnlsv extends HLEModule{
      *
      */
     @HLEFunction(nid = 0xABFDFC8B, version = 150)
-    public int sceSdCreateList(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer ctx2Addr, int encMode, int genMode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.inout) TPointer8 data, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer8 key) {
+    public int sceSdCreateList(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer ctx2Addr, int encMode, int genMode, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.inout) TPointer data, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=16, usage=Usage.in) TPointer key) {
     	SAVEDATA.SD_Ctx2 ctx = new SAVEDATA.SD_Ctx2();
     	ctx.read(ctx2Addr);
 
@@ -184,7 +183,7 @@ public class sceChnnlsv extends HLEModule{
      *
      */
     @HLEFunction(nid = 0x850A7FA1, version = 150)
-    public int sceSdSetMember(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer ctx2Addr, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer8 data, int dataLength) {
+    public int sceSdSetMember(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=24, usage=Usage.inout) TPointer ctx2Addr, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer data, int dataLength) {
     	SAVEDATA.SD_Ctx2 ctx = new SAVEDATA.SD_Ctx2();
     	ctx.read(ctx2Addr);
 

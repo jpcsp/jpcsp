@@ -336,7 +336,10 @@ public class sceMpegbase extends HLEModule {
     		int bufferLength = packetInfo.getValue32(12) & 0x00000FFF;
 
     		if (log.isDebugEnabled()) {
-    			log.debug(String.format("sceMpegBasePESpacketCopy packet at %s: bufferAddr=0x%08X, destinationAddr=0x%08X, nextInfoAddr=%s, bufferLength=0x%X: %s", packetInfo, bufferAddr, destinationAddr, nextPacketInfo, bufferLength, Utilities.getMemoryDump(bufferAddr, bufferLength)));
+    			log.debug(String.format("sceMpegBasePESpacketCopy packet at %s: bufferAddr=0x%08X, destinationAddr=0x%08X, nextInfoAddr=%s, bufferLength=0x%X", packetInfo, bufferAddr, destinationAddr, nextPacketInfo, bufferLength));
+    			if (log.isTraceEnabled()) {
+        			log.debug(String.format("sceMpegBasePESpacketCopy %s", Utilities.getMemoryDump(bufferAddr, bufferLength)));
+    			}
     		}
     		if (bufferLength == 0) {
     			return SceKernelErrors.ERROR_INVALID_SIZE;

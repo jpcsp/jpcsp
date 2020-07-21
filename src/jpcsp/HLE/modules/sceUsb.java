@@ -18,6 +18,9 @@ package jpcsp.HLE.modules;
 
 import java.util.HashMap;
 
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -103,7 +106,7 @@ public class sceUsb extends HLEModule {
 	 */
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xAE5DE6AF, version = 150)
-	public int sceUsbStart(String driverName, int size, @CanBeNull TPointer args) {
+	public int sceUsbStart(String driverName, int size, @BufferInfo(lengthInfo = LengthInfo.previousParameter, usage = Usage.in) @CanBeNull TPointer args) {
 		usbStarted = true;
 
 		HLEModuleManager moduleManager = HLEModuleManager.getInstance();
@@ -130,7 +133,7 @@ public class sceUsb extends HLEModule {
 	 */
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xC2464FA0, version = 150)
-	public int sceUsbStop(PspString driverName, int size, @CanBeNull TPointer args) {
+	public int sceUsbStop(PspString driverName, int size, @BufferInfo(lengthInfo = LengthInfo.previousParameter, usage = Usage.in) @CanBeNull TPointer args) {
 		usbStarted = false;
 
 		SceModule module = loadedModules.remove(driverName.getString());
