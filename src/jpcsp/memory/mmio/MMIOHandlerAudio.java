@@ -21,11 +21,14 @@ import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getMediaEngineProcessor;
 import static jpcsp.Emulator.getClock;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_AUDIO_INTR;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_I2C_INTR;
+import static jpcsp.memory.mmio.MMIOHandlerSystemControl.SYSREG_CLK_AUDIO_CLKOUT;
 import static jpcsp.util.Utilities.clearBit;
+import static jpcsp.util.Utilities.clearFlag;
 import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.isFallingBit;
 import static jpcsp.util.Utilities.notHasBit;
 import static jpcsp.util.Utilities.setBit;
+import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
 
@@ -63,6 +66,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	private int flags10;
 	private int flags20;
 	private int interruptEnabled;
+	private int flags28 = 0x37;
 	private int flags2C;
 	private int volume;
 	private int frequency0;
@@ -304,6 +308,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		flags10 = stream.readInt();
 		flags20 = stream.readInt();
 		interruptEnabled = stream.readInt();
+		flags28 = stream.readInt();
 		flags2C = stream.readInt();
 		volume = stream.readInt();
 		frequency0 = stream.readInt();
@@ -325,6 +330,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		stream.writeInt(flags10);
 		stream.writeInt(flags20);
 		stream.writeInt(interruptEnabled);
+		stream.writeInt(flags28);
 		stream.writeInt(flags2C);
 		stream.writeInt(volume);
 		stream.writeInt(frequency0);
@@ -347,6 +353,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		flags10 = 0;
 		flags20 = 0;
 		interruptEnabled = 0;
+		flags28 = 0x37; // flags when some actions are completed?
 		flags2C = 0;
 		volume = 0;
 		frequency0 = 0;
@@ -377,9 +384,9 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		switch (address - baseAddress) {
 			case 0x60: audioLineStates[0].dmacFlush(); break;
 			case 0x70: audioLineStates[1].dmacFlush(); break;
-		default:
-			log.error(String.format("dmacFlush unimplemented address=0x%08X", address));
-			break;
+			default:
+				log.error(String.format("dmacFlush unimplemented address=0x%08X", address));
+				break;
 		}
 	}
 
@@ -483,6 +490,20 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		}
 	}
 
+	private void updateFlags28() {
+		if (MMIOHandlerSystemControl.getInstance().isClockDeviceEnabled(SYSREG_CLK_AUDIO_CLKOUT)) {
+			flags28 = clearFlag(flags28, 0x2);
+		} else {
+			flags28 = setFlag(flags28, 0x2);
+		}
+	}
+
+	private int getFlags28() {
+		updateFlags28();
+
+		return flags28;
+	}
+
 	@Override
 	public int read32(int address) {
 		int value;
@@ -490,7 +511,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 			case 0x00: value = busy; break;
 			case 0x0C: value = inProgress; break;
 			case 0x1C: value = interrupt; break;
-			case 0x28: value = 0x37; break; // flags when some actions are completed?
+			case 0x28: value = getFlags28(); break;
 			case 0x40: value = frequencyFlags; break;
 			case 0x50: value = 0; break; // This doesn't seem to return the volume value
 			default: value = super.read32(address); break;
