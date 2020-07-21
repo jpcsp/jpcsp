@@ -49,6 +49,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.reboot;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.mmio.MMIOHandlerDisplayController;
@@ -1650,7 +1651,28 @@ public class RuntimeContext {
     	}
 
     	if (delay > 0) {
-    		idleSleepInterruptable();
+    		if (ExternalGE.isActive() || Modules.sceDisplayModule.isUsingSoftwareRenderer()) {
+        		idleSleepInterruptable();
+    		} else {
+    			//
+    			// When using the OpenGL renderer, the Java "Object.wait(1, 0)" method
+    			// is sometimes taking several milliseconds to complete (up to 15ms)
+    			// even though we are requesting to only wait for 1ms or less.
+    			// These long delays are happening sporadically only when two different
+    			// threads are using the Object.wait() method at the same time.
+    			//
+    			// I don't know why, but this behaviour is only happening using the OpenGL
+    			// renderer, it doesn't happen using the external or internal software
+    			// renderer, even though two different threads are also using the
+    			// Object.wait() method at the same time.
+    			// Maybe this is related to the Lwjgl library implementing the OpenGL interface.
+    			//
+    			// As a work-around, we are forcing the "Sync Daemon" thread to
+    			// not call Object.wait() when using the OpenGL renderer.
+    			// The "Sync Daemon" thread is then using a Thread.sleep() call.
+    			//
+    			sleep(Math.min((int) delay, idleSleepMicros));
+    		}
     	} else if (wantSync) {
 			sleep(idleSleepMicros);
     	} else {

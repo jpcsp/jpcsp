@@ -26,6 +26,7 @@ public class RuntimeSyncThread extends Thread {
 
 	@Override
 	public void run() {
+		RuntimeContext.setLog4jMDC();
 		boolean enabled = true;
 
 		while (enabled) {
