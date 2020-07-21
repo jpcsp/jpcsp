@@ -54,6 +54,10 @@ public class DebuggerMemory extends Memory {
     private HashSet<Integer> memoryReadBreakpoint;
     private HashSet<Integer> memoryWriteBreakpoint;
     private List<MemoryBreakpoint> memoryBreakpoints;
+    private int lowestReadBreakpointAddress;
+    private int highestReadBreakpointAddress;
+    private int lowestWriteBreakpointAddress;
+    private int highestWriteBreakpointAddress;
     private Memory mem;
     // external breakpoint list
     public static String mBrkFilePath = "Memory.mbrk";
@@ -65,7 +69,11 @@ public class DebuggerMemory extends Memory {
         memoryWriteBreakpoint = new HashSet<Integer>();
         memoryBreakpoints = new LinkedList<MemoryBreakpoint>();
 
-        // backwards compatibility
+        lowestReadBreakpointAddress = Integer.MAX_VALUE;
+        highestReadBreakpointAddress = 0;
+        lowestWriteBreakpointAddress = Integer.MAX_VALUE;
+        highestWriteBreakpointAddress = 0;
+
         if (new File(mBrkFilePath).exists()) {
             importBreakpoints(mBrkFilePath);
         }
@@ -267,6 +275,12 @@ public class DebuggerMemory extends Memory {
 
     public void addReadBreakpoint(int address) {
         address &= Memory.addressMask;
+        if (address < lowestReadBreakpointAddress) {
+        	lowestReadBreakpointAddress = address;
+        }
+        if (address > highestReadBreakpointAddress) {
+        	highestReadBreakpointAddress = address;
+        }
         memoryReadBreakpoint.add(address);
     }
 
@@ -289,6 +303,12 @@ public class DebuggerMemory extends Memory {
 
     public void addWriteBreakpoint(int address) {
         address &= Memory.addressMask;
+        if (address < lowestWriteBreakpointAddress) {
+        	lowestWriteBreakpointAddress = address;
+        }
+        if (address > highestWriteBreakpointAddress) {
+        	highestWriteBreakpointAddress = address;
+        }
         memoryWriteBreakpoint.add(address);
     }
 
@@ -310,15 +330,13 @@ public class DebuggerMemory extends Memory {
     }
 
     public void addReadWriteBreakpoint(int address) {
-        address &= Memory.addressMask;
-        memoryReadBreakpoint.add(address);
-        memoryWriteBreakpoint.add(address);
+        addReadBreakpoint(address);
+        addWriteBreakpoint(address);
     }
 
     public void removeReadWriteBreakpoint(int address) {
-        address &= Memory.addressMask;
-        memoryReadBreakpoint.remove(address);
-        memoryWriteBreakpoint.remove(address);
+    	removeReadBreakpoint(address);
+    	removeWriteBreakpoint(address);
     }
 
     public void addRangeReadWriteBreakpoint(int start, int end) {
@@ -407,6 +425,50 @@ public class DebuggerMemory extends Memory {
         }
     }
 
+    private boolean isCheckingMemoryWriteAccess(int address, int length, boolean trace) {
+        if ((traceMemoryWrite || trace) && log.isTraceEnabled()) {
+        	return true;
+        }
+
+        address &= Memory.addressMask;
+
+        // Quick check using the lowest and highest values
+        if (address > highestWriteBreakpointAddress || address + length < lowestWriteBreakpointAddress) {
+        	return false;
+        }
+
+        // Check if we have a write breakpoint in the address range
+        for (int i = 0; i < length; i++, address++) {
+	        if (memoryWriteBreakpoint.contains(address)) {
+	        	return true;
+	        }
+        }
+
+        return false;
+    }
+
+    private boolean isCheckingMemoryReadAccess(int address, int length, boolean trace) {
+        if ((traceMemoryRead || trace) && log.isTraceEnabled()) {
+        	return true;
+        }
+
+        address &= Memory.addressMask;
+
+        // Quick check using the lowest and highest values
+        if (address > highestReadBreakpointAddress || address + length < lowestReadBreakpointAddress) {
+        	return false;
+        }
+
+        // Check if we have a read breakpoint in the address range
+        for (int i = 0; i < length; i++, address++) {
+	        if (memoryReadBreakpoint.contains(address)) {
+	        	return true;
+	        }
+        }
+
+        return false;
+    }
+
     @Override
     public void Initialise() {
         mem.Initialise();
@@ -419,11 +481,15 @@ public class DebuggerMemory extends Memory {
 
     @Override
     public void copyToMemory(int address, ByteBuffer source, int length) {
-        // Perform copyToMemory using write8 to check memory access
-        for (int i = 0; i < length && source.hasRemaining(); i++) {
-            byte value = source.get();
-            write8(address + i, value);
-        }
+    	if (isCheckingMemoryWriteAccess(address, length, traceMemoryWrite8)) {
+	        // Perform copyToMemory using write8 to check memory access
+	        for (int i = 0; i < length && source.hasRemaining(); i++) {
+	            byte value = source.get();
+	            write8(address + i, value);
+	        }
+    	} else {
+    		mem.copyToMemory(address, source, length);
+    	}
     }
 
     @Override
@@ -442,35 +508,43 @@ public class DebuggerMemory extends Memory {
     	destination = normalize(destination);
 		source = normalize(source);
 
-		// Overlapping address ranges must be correctly handled:
-		//   If source >= destination:
-		//                 [---source---]
-		//       [---destination---]
-		//      => Copy from the head
-		//   If source < destination:
-		//       [---source---]
-		//                 [---destination---]
-		//      => Copy from the tail
-		//
-    	if (!checkOverlap || source >= destination || !areOverlapping(destination, source, length)) {
-    		// Perform memcpy using read8/write8 to check memory access
-            for (int i = 0; i < length; i++) {
-                write8(destination + i, (byte) read8(source + i));
-            }
-    	} else {
-    		// Perform memcpy using read8/write8 to check memory access
-			for (int i = length - 1; i >= 0; i--) {
-				write8(destination + i, (byte) read8(source + i));
-			}
-    	}
+		if (isCheckingMemoryWriteAccess(destination, length, traceMemoryWrite8) || isCheckingMemoryReadAccess(source, length, traceMemoryRead8)) {
+			// Overlapping address ranges must be correctly handled:
+			//   If source >= destination:
+			//                 [---source---]
+			//       [---destination---]
+			//      => Copy from the head
+			//   If source < destination:
+			//       [---source---]
+			//                 [---destination---]
+			//      => Copy from the tail
+			//
+	    	if (!checkOverlap || source >= destination || !areOverlapping(destination, source, length)) {
+	    		// Perform memcpy using read8/write8 to check memory access
+	            for (int i = 0; i < length; i++) {
+	                write8(destination + i, (byte) read8(source + i));
+	            }
+	    	} else {
+	    		// Perform memcpy using read8/write8 to check memory access
+				for (int i = length - 1; i >= 0; i--) {
+					write8(destination + i, (byte) read8(source + i));
+				}
+	    	}
+		} else {
+			mem.memcpy(destination, source, length);
+		}
     }
 
     @Override
     public void memset(int address, byte data, int length) {
-        // Perform memset using write8 to check memory access
-        for (int i = 0; i < length; i++) {
-            write8(address + i, data);
-        }
+    	if (isCheckingMemoryWriteAccess(address, length, traceMemoryWrite8)) {
+	        // Perform memset using write8 to check memory access
+	        for (int i = 0; i < length; i++) {
+	            write8(address + i, data);
+	        }
+    	} else {
+    		mem.memset(address, data, length);
+    	}
     }
 
     @Override
