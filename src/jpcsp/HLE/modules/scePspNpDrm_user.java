@@ -347,6 +347,10 @@ public class scePspNpDrm_user extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x0F9547E6, version = 150)
     public int sceNpDrmGetVersionKey(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.out) TPointer keyAddr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=4152, usage=Usage.in) TPointer actDatAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=152, usage=Usage.in) TPointer rifAddr, int type) {
+    	byte[] ebootKey = Modules.scePopsManModule.getEbootKey();
+    	if (ebootKey != null) {
+    		keyAddr.setArray(ebootKey);
+    	}
         return 0;
     }
 

@@ -72,6 +72,7 @@ public class scePopsMan extends HLEModule {
     private IVirtualFile vFileEbootPbp;
     private int getIdFunction;
     private boolean isCustomPs1;
+    private byte[] ebootKey;
 
     public static byte[] readEbootKeys(String ebootFileName) throws IOException {
     	if (ebootFileName == null || !ebootFileName.endsWith(EBOOT_PBP)) {
@@ -93,10 +94,14 @@ public class scePopsMan extends HLEModule {
     	return key;
     }
 
+    public byte[] getEbootKey() {
+    	return ebootKey;
+    }
+
     public void loadOnDemand(SceModule module) throws IOException {
 		String ebootFileName = module.pspfilename;
-		byte[] key = readEbootKeys(ebootFileName);
-		IVirtualFile ebootVirtualFile = new PBPVirtualFile(key, new LocalVirtualFile(new SeekableRandomFile(ebootFileName, "r")));
+		ebootKey = readEbootKeys(ebootFileName);
+		IVirtualFile ebootVirtualFile = new PBPVirtualFile(ebootKey, new LocalVirtualFile(new SeekableRandomFile(ebootFileName, "r")));
 		FakeVirtualFileSystem.getInstance().registerFakeVirtualFile(ebootDummyFileName, ebootVirtualFile);
 		// popsman.prx requires a valid EBOOT.PBP file name (i.e. starting with "ms0:")
 		module.pspfilename = ebootDummyFileName;
@@ -136,10 +141,10 @@ public class scePopsMan extends HLEModule {
 		}
 		vFile.ioClose();
 
-		// Register a fake "flash2:/act.dat" file
-		byte[] actDatBuffer = new byte[4152];
-		IVirtualFile fakeActDatVirtualFile = new ByteArrayVirtualFile(actDatBuffer);
-		FakeVirtualFileSystem.getInstance().registerFakeVirtualFile("flash2:/act.dat", fakeActDatVirtualFile);
+//		// Register a fake "flash2:/act.dat" file
+//		byte[] actDatBuffer = new byte[4152];
+//		IVirtualFile fakeActDatVirtualFile = new ByteArrayVirtualFile(actDatBuffer);
+//		FakeVirtualFileSystem.getInstance().registerFakeVirtualFile("flash2:/act.dat", fakeActDatVirtualFile);
 
     	// popsman.prx is accessing some hardware registers
 		RuntimeContextLLE.enableLLE();
@@ -338,7 +343,7 @@ public class scePopsMan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x68C55F4C, version = 150)
-    public int sceMeAudio_68C55F4C() {
+    public int sceMeAudio_68C55F4C(boolean unknown) {
     	return 0;
     }
 
