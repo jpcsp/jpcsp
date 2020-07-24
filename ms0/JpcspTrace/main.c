@@ -881,6 +881,50 @@ void executeSysconCommand(int cmd, char *outputFileName, int outputSize, char *i
 	}
 }
 
+void dumpString(SceUID out, char *s) {
+	ioWrite(out, s, strlen(s));
+}
+
+void dumpPreDecryptXml(SceUID out, int cmd, void *buffer, int size, int isInput) {
+	char tmp[10];
+	int i;
+	u8 *bytes = buffer;
+
+	if (isInput) {
+		appendInt(tmp, cmd, 0);
+		dumpString(out, "\t<PreDecryptInfo cmd=\"");
+		dumpString(out, tmp);
+		dumpString(out, "\">\n");
+		dumpString(out, "\t\t<Input>\n");
+	} else {
+		dumpString(out, "\t\t<Output>\n");
+	}
+
+	if (size > 0) {
+		dumpString(out, "\t\t\t\t");
+	}
+	for (i = 0; i < size; i++) {
+		appendHex(tmp, bytes[i], 2);
+		dumpString(out, tmp);
+		if (i < size - 1) {
+			if ((i & 0xF) == 0xF) {
+				dumpString(out, ",\n\t\t\t\t");
+			} else {
+				dumpString(out, ", ");
+			}
+		} else {
+			dumpString(out, "\n");
+		}
+	}
+
+	if (isInput) {
+		dumpString(out, "\t\t</Input>\n");
+	} else {
+		dumpString(out, "\t\t</Output>\n");
+		dumpString(out, "\t</PreDecryptInfo>\n");
+	}
+}
+
 void executeKirkCommand(int cmd, char *outputFileName, int outputSize, char *inputFileName, int inputSize) {
 	u32 allocInputSize;
 	void *allocInputBuffer;
@@ -952,7 +996,14 @@ void executeKirkCommand(int cmd, char *outputFileName, int outputSize, char *inp
 			freeAlloc(allocOutputBuffer, allocOutputSize);
 			return;
 		}
-		ioWrite(out, outputBuffer, outputSize);
+
+		int n = strlen(outputFileName);
+		if (n >= 4 && strcmp(outputFileName + n - 4, ".xml") == 0) {
+			dumpPreDecryptXml(out, cmd, inputBuffer, inputSize, 1);
+			dumpPreDecryptXml(out, cmd, outputBuffer, outputSize, 0);
+		} else {
+			ioWrite(out, outputBuffer, outputSize);
+		}
 		ioClose(out);
 	
 		freeAlloc(allocOutputBuffer, allocOutputSize);
@@ -2042,6 +2093,8 @@ int module_start(SceSize args, void * argp) {
 	int initKeyConfig = sceKernelInitKeyConfig();
 	if (initKeyConfig == PSP_INIT_KEYCONFIG_VSH) {
 		printLog("JpcspTrace enabled for VSH\n");
+	} else if (initKeyConfig == PSP_INIT_KEYCONFIG_POPS) {
+		printLog("JpcspTrace enabled for POPS\n");
 	} else if (initKeyConfig != PSP_INIT_KEYCONFIG_GAME) {
 		printLogH("sceKernelInitKeyConfig returned ", initKeyConfig, "\n");
 		return 1;
