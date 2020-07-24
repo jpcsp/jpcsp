@@ -120,6 +120,7 @@ public class sceFont extends HLEModule {
         public FontLib fontLib;
         private final int handle;
         private int fontFileSize;
+        private int openAllocMemSizeForMode0;
         public int maxGlyphBaseYI;
         public int maxBitmapWidth;
         public int maxBitmapHeight;
@@ -128,8 +129,9 @@ public class sceFont extends HLEModule {
             this.pgf = pgf;
             this.fontInfo = fontInfo;
             fontLib = null;
-            this.handle = 0;
+            handle = 0;
             this.fontFileSize = fontFileSize;
+            openAllocMemSizeForMode0 = 0;
             if (pgf != null) {
 	            maxGlyphBaseYI = pgf.getMaxBaseYAdjust();
 	            maxBitmapWidth = pgf.getMaxGlyphWidth();
@@ -137,12 +139,13 @@ public class sceFont extends HLEModule {
             }
         }
 
-        public Font(Font font, FontLib fontLib, int handle, int fontFileSize) {
-            this.pgf = font.pgf;
-            this.fontInfo = font.fontInfo;
+        public Font(Font font, FontLib fontLib, int handle) {
+            pgf = font.pgf;
+            fontInfo = font.fontInfo;
             this.fontLib = fontLib;
             this.handle = handle;
-            this.fontFileSize = fontFileSize;
+            fontFileSize = font.fontFileSize;
+            openAllocMemSizeForMode0 = font.openAllocMemSizeForMode0;
             maxGlyphBaseYI = font.maxGlyphBaseYI;
             maxBitmapWidth = font.maxBitmapWidth;
             maxBitmapHeight = font.maxBitmapHeight;
@@ -205,6 +208,7 @@ public class sceFont extends HLEModule {
         public int expire_date;
         public int shadow_option;
         public int fontFileSize;
+        public int openAllocMemSizeForMode0;
         public int maxGlyphBaseYI;
         public int maxBitmapWidth;
         public int maxBitmapHeight;
@@ -214,7 +218,8 @@ public class sceFont extends HLEModule {
                 int family_code, int style, int sub_style, int language_code,
                 int region_code, int country_code, String file_name,
                 String font_name, int expire_date, int shadow_option,
-                int fontFileSize, int maxGlyphBaseYI, int maxBitmapWidth, int maxBitmapHeight) {
+                int fontFileSize, int openAllocMemSizeForMode0,
+                int maxGlyphBaseYI, int maxBitmapWidth, int maxBitmapHeight) {
             this.h_size = h_size;
             this.v_size = v_size;
             this.h_resolution = h_resolution;
@@ -232,6 +237,7 @@ public class sceFont extends HLEModule {
             this.expire_date = expire_date;
             this.shadow_option = shadow_option;
             this.fontFileSize = fontFileSize;
+            this.openAllocMemSizeForMode0 = openAllocMemSizeForMode0;
             this.maxGlyphBaseYI = maxGlyphBaseYI;
             this.maxBitmapWidth = maxBitmapWidth;
             this.maxBitmapHeight = maxBitmapHeight;
@@ -281,28 +287,28 @@ public class sceFont extends HLEModule {
 
     protected void loadFontRegistry() {
         fontRegistry = new LinkedList<FontRegistryEntry>();
-        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_DB, 0, FONT_LANGUAGE_JAPANESE, 0, 1, "jpn0.pgf", "FTT-NewRodin Pro DB", 0, 0, 1581700, 0x4B4, 19, 20));
-        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn0.pgf", "FTT-NewRodin Pro Latin", 0, 0, 69108, 0x4B2, 23, 20));
-        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn1.pgf", "FTT-Matisse Pro Latin", 0, 0, 65124, 0x482, 23, 20));
-        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn2.pgf", "FTT-NewRodin Pro Latin", 0, 0, 72948, 0x4B2, 25, 20));
-        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn3.pgf", "FTT-Matisse Pro Latin", 0, 0, 67700, 0x482, 25, 20));
-        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn4.pgf", "FTT-NewRodin Pro Latin", 0, 0, 72828, 0x4F7, 24, 21));
-        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_BOLD, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn5.pgf", "FTT-Matisse Pro Latin", 0, 0, 68220, 0x49C, 24, 20));
-        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn6.pgf", "FTT-NewRodin Pro Latin", 0, 0, 77032, 0x4F7, 27, 21));
-        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn7.pgf", "FTT-Matisse Pro Latin", 0, 0, 71144, 0x49C, 27, 20));
-        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn8.pgf", "FTT-NewRodin Pro Latin", 0, 0, 41000, 0x321, 16, 14));
-        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn9.pgf", "FTT-Matisse Pro Latin", 0, 0, 40164, 0x302, 16, 14));
-        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn10.pgf", "FTT-NewRodin Pro Latin", 0, 0, 42692, 0x321, 17, 14));
-        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn11.pgf", "FTT-Matisse Pro Latin", 0, 0, 41488, 0x302, 17, 14));
-        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn12.pgf", "FTT-NewRodin Pro Latin", 0, 0, 43136, 0x34F, 17, 15));
-        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_BOLD, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn13.pgf", "FTT-Matisse Pro Latin", 0, 0, 41772, 0x312, 17, 14));
-        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn14.pgf", "FTT-NewRodin Pro Latin", 0, 0, 45184, 0x34F, 18, 15));
-        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn15.pgf", "FTT-Matisse Pro Latin", 0, 0, 43044, 0x312, 18, 14));
-        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_KOREAN, 0, 3, "kr0.pgf", "AsiaNHH(512Johab)", 0, 0, 394192, 0x3CB, 21, 20));
+        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_DB, 0, FONT_LANGUAGE_JAPANESE, 0, 1, "jpn0.pgf", "FTT-NewRodin Pro DB", 0, 0, 1581700, 145844, 0x4B4, 19, 20));
+        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn0.pgf", "FTT-NewRodin Pro Latin", 0, 0, 69108, 16680, 0x4B2, 23, 20));
+        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn1.pgf", "FTT-Matisse Pro Latin", 0, 0, 65124, 16920, 0x482, 23, 20));
+        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn2.pgf", "FTT-NewRodin Pro Latin", 0, 0, 72948, 16872, 0x4B2, 25, 20));
+        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn3.pgf", "FTT-Matisse Pro Latin", 0, 0, 67700, 17112, 0x482, 25, 20));
+        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn4.pgf", "FTT-NewRodin Pro Latin", 0, 0, 72828, 16648, 0x4F7, 24, 21));
+        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_BOLD, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn5.pgf", "FTT-Matisse Pro Latin", 0, 0, 68220, 16928, 0x49C, 24, 20));
+        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn6.pgf", "FTT-NewRodin Pro Latin", 0, 0, 77032, 16792, 0x4F7, 27, 21));
+        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn7.pgf", "FTT-Matisse Pro Latin", 0, 0, 71144, 17160, 0x49C, 27, 20));
+        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn8.pgf", "FTT-NewRodin Pro Latin", 0, 0, 41000, 16192, 0x321, 16, 14));
+        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn9.pgf", "FTT-Matisse Pro Latin", 0, 0, 40164, 16476, 0x302, 16, 14));
+        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn10.pgf", "FTT-NewRodin Pro Latin", 0, 0, 42692, 16300, 0x321, 17, 14));
+        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn11.pgf", "FTT-Matisse Pro Latin", 0, 0, 41488, 16656, 0x302, 17, 14));
+        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn12.pgf", "FTT-NewRodin Pro Latin", 0, 0, 43136, 16176, 0x34F, 17, 15));
+        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_BOLD, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn13.pgf", "FTT-Matisse Pro Latin", 0, 0, 41772, 16436, 0x312, 17, 14));
+        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn14.pgf", "FTT-NewRodin Pro Latin", 0, 0, 45184, 16272, 0x34F, 18, 15));
+        fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn15.pgf", "FTT-Matisse Pro Latin", 0, 0, 43044, 16704, 0x312, 18, 14));
+        fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_KOREAN, 0, 3, "kr0.pgf", "AsiaNHH(512Johab)", 0, 0, 394192, 51856, 0x3CB, 21, 20));
 
         // Add the Chinese fixed font file if it is present, i.e. if copied from a real PSP flash0:/font/gb3s1518.bwfon
         if (Modules.IoFileMgrForUserModule.statFile(fontDirPath + "/gb3s1518.bwfon") != null) {
-        	fontRegistry.add(new FontRegistryEntry(BWFont.charBitmapWidth << 6, BWFont.charBitmapHeight << 6, 0, 0, 0, 0, 0, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_CHINESE, 0, 0, "gb3s1518.bwfon", "gb3s1518", 0, 0, 1023372, 0, 0, 0));
+        	fontRegistry.add(new FontRegistryEntry(BWFont.charBitmapWidth << 6, BWFont.charBitmapHeight << 6, 0, 0, 0, 0, 0, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_CHINESE, 0, 0, "gb3s1518.bwfon", "gb3s1518", 0, 0, 1023372, 0, 0, 0, 0));
         }
     }
 
@@ -493,6 +499,7 @@ public class sceFont extends HLEModule {
         // So it is important to use the font file sizes from a real PSP, so that
         // the correct memory is being allocated.
         font.fontFileSize = fontRegistryEntry.fontFileSize;
+        font.openAllocMemSizeForMode0 = fontRegistryEntry.openAllocMemSizeForMode0;
 
         // The following values are critical for some applications and need to match
         // the values from a real PSP font file.
@@ -630,7 +637,7 @@ public class sceFont extends HLEModule {
                 throw (new SceKernelErrorException(SceKernelErrors.ERROR_FONT_TOO_MANY_OPEN_FONTS));
             }
 
-            font = new Font(font, this, fonts[freeFontIndex], font.fontFileSize);
+            font = new Font(font, this, fonts[freeFontIndex]);
             mem.write32(fonts[freeFontIndex], FONT_IS_OPEN);
             fontsMap.put(font.getHandle(), font);
 
@@ -641,7 +648,8 @@ public class sceFont extends HLEModule {
             		// For jpn0.pgf, the alloc callback is called multiple times:
             		//     0x7F8, 0x7F8, 0x7F8, 0x350, 0x3FC, 0x0, 0x0, 0x1BFC8, 0x5AB8
             		// in total: 0x239B4
-            		allocSize = 0x239B4;
+            		// Use the alloc size of the specific font, taken from a real PSP.
+            		allocSize = font.openAllocMemSizeForMode0;
             	} else if (mode == 1) {
             		// mode == 1: the whole font file is read in memory
             		allocSize += font.fontFileSize;
