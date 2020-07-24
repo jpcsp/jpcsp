@@ -391,8 +391,8 @@ public class ModuleMgrForUser extends HLEModule {
         SysMemInfo moduleInfo = null;
 
         if (loadModuleContext.allocMem) {
-	        mpidText = loadModuleContext.lmOption != null && loadModuleContext.lmOption.mpidText != 0 ? loadModuleContext.lmOption.mpidText : SysMemUserForUser.USER_PARTITION_ID;
-	        mpidData = loadModuleContext.lmOption != null && loadModuleContext.lmOption.mpidData != 0 ? loadModuleContext.lmOption.mpidData : SysMemUserForUser.USER_PARTITION_ID;
+	        mpidText = loadModuleContext.lmOption != null && loadModuleContext.lmOption.mpidText != 0 ? loadModuleContext.lmOption.mpidText : loadModuleContext.basePartition;
+	        mpidData = loadModuleContext.lmOption != null && loadModuleContext.lmOption.mpidData != 0 ? loadModuleContext.lmOption.mpidData : loadModuleContext.basePartition;
 	        final int allocType = loadModuleContext.lmOption != null ? loadModuleContext.lmOption.position : SysMemUserForUser.PSP_SMEM_Low;
 	        final int moduleHeaderSize = 256;
 
@@ -400,7 +400,7 @@ public class ModuleMgrForUser extends HLEModule {
 	        SceModule testModule = getModuleInfo(loadModuleContext.fileName, loadModuleContext.moduleBuffer, mpidText, mpidData, loadModuleContext.isSignChecked);
 	        int totalAllocSize = moduleHeaderSize + getModuleRequiredMemorySize(testModule);
 	        if (log.isDebugEnabled()) {
-	        	log.debug(String.format("Module '%s' requires %d bytes memory", loadModuleContext.fileName, totalAllocSize));
+	        	log.debug(String.format("Module '%s' requires 0x%X bytes memory in partition=%d", loadModuleContext.fileName, totalAllocSize, mpidText));
 	        }
 
 	        // Take the partition IDs from the module information, if available
@@ -675,6 +675,10 @@ public class ModuleMgrForUser extends HLEModule {
         return Modules.ThreadManForUserModule.getCurrentThread().moduleid;
     }
 
+    protected SceModule getSelfModule() {
+        return Managers.modules.getModuleByUID(getSelfModuleId());
+    }
+
     public int hleKernelUnloadModule(int uid) {
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         if (sceModule == null) {
@@ -893,7 +897,7 @@ public class ModuleMgrForUser extends HLEModule {
 
     @HLEFunction(nid = 0xD675EBB8, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelSelfStopUnloadModule(int exitCode, int argSize, @CanBeNull TPointer argp) {
-        SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
+        SceModule sceModule = getSelfModule();
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
@@ -920,7 +924,7 @@ public class ModuleMgrForUser extends HLEModule {
 
     @HLEFunction(nid = 0x8F2DF740, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelStopUnloadSelfModuleWithStatus(int exitCode, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
-        SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
+        SceModule sceModule = getSelfModule();
 
         if (log.isInfoEnabled()) {
         	log.info(String.format("sceKernelStopUnloadSelfModuleWithStatus %s, exitCode=0x%X", sceModule, exitCode));
@@ -958,7 +962,7 @@ public class ModuleMgrForUser extends HLEModule {
 
     @HLEFunction(nid = 0xCC1D3699, version = 150, checkInsideInterrupt = true, canModifyCode = true)
     public int sceKernelStopUnloadSelfModule(int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
-        SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
+        SceModule sceModule = getSelfModule();
 
         if (log.isInfoEnabled()) {
         	log.info(String.format("sceKernelStopUnloadSelfModule %s", sceModule));
