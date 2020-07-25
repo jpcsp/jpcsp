@@ -49,6 +49,10 @@ public class semaphore extends HLEModule {
 	private static int dumpIndex = 0;
 
     public int hleUtilsBufferCopyWithRange(byte[] out, int outOffset, int outSize, byte[] in, int inOffset, int inSize, int cmd) {
+    	return hleUtilsBufferCopyWithRange(out, outOffset, outSize, in, inOffset, inSize, cmd, true);
+    }
+
+    public int hleUtilsBufferCopyWithRange(byte[] out, int outOffset, int outSize, byte[] in, int inOffset, int inSize, int cmd, boolean dumpError) {
     	if (log.isTraceEnabled()) {
     		log.trace(String.format("hleUtilsBufferCopyWithRange cmd=0x%X, input(size=0x%X): %s", cmd, inSize, Utilities.getMemoryDump(in, inOffset, inSize)));
     	}
@@ -81,7 +85,7 @@ public class semaphore extends HLEModule {
 
 	    	CryptoEngine crypto = new CryptoEngine();
 	    	result = crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, outSize, inBuffer, inSizeAligned, inSize, cmd);
-	    	if (result != 0) {
+	    	if (result != 0 && dumpError) {
 				String dumpFileName = String.format("dump.hleUtilsBufferCopyWithRange.%d", dumpIndex++);
 				log.error(String.format("hleUtilsBufferCopyWithRange returned error result=0x%X for command=0x%X, outputSize=0x%X, inputSize=0x%X, input dumped into file '%s'", result, cmd, correctOutSize, inSize, dumpFileName));
 				try {

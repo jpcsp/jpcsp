@@ -28,6 +28,7 @@ import static jpcsp.util.Utilities.writeUnaligned32;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.log4j.Logger;
@@ -299,6 +300,10 @@ public class PRX {
     }
 
     private int ScramblePRX(byte[] buf, int offset, int size, int code) {
+    	return ScramblePRX(buf, offset, size, code, true);
+    }
+
+    private int ScramblePRX(byte[] buf, int offset, int size, int code, boolean dumpError) {
         // Set CBC mode.
     	writeUnaligned32(buf, offset + 0, PSP_KIRK_CMD_MODE_DECRYPT_CBC);
 
@@ -312,12 +317,7 @@ public class PRX {
         // Set the the data size to size.
     	writeUnaligned32(buf, offset + 16, size);
 
-        int result = semaphoreModule.hleUtilsBufferCopyWithRange(buf, offset, size, buf, offset, size + 0x14, KIRK.PSP_KIRK_CMD_DECRYPT);
-        if (result != 0) {
-        	log.error(String.format("ScramblePRX returning 0x%X", result));
-        }
-
-        return result;
+        return semaphoreModule.hleUtilsBufferCopyWithRange(buf, offset, size, buf, offset, size + 0x14, KIRK.PSP_KIRK_CMD_DECRYPT, dumpError);
     }
   
     private static boolean isNullKey(byte[] key) {
@@ -529,6 +529,132 @@ public class PRX {
         }
 
         return resultBuffer;
+    }
+
+    private int dumpDecryptHeader(PrintStream out, int addr, int code, int length) {
+    	out.format("write32 0x%08X 0x%X", addr, PSP_KIRK_CMD_MODE_DECRYPT_CBC);
+    	out.println();
+    	out.format("write32 0x%08X 0x%X", addr + 4, 0x0);
+    	out.println();
+    	out.format("write32 0x%08X 0x%X", addr + 8, 0x0);
+    	out.println();
+    	out.format("write32 0x%08X 0x%X", addr + 12, code);
+    	out.println();
+    	out.format("write32 0x%08X 0x%X", addr + 16, length);
+    	out.println();
+
+    	return addr + 20;
+    }
+
+    private int dumpBuffer(PrintStream out, int addr, byte[] buffer, int offset, int length) {
+    	for (int i = 0; i < length; i += 4) {
+    		out.format("write32 0x%08X 0x%08X", addr + i, Utilities.readUnaligned32(buffer, offset + i));
+        	out.println();
+    	}
+    	return addr + length;
+    }
+
+    private int dumpBuffer(PrintStream out, int addr, int buffer, int length) {
+    	if (addr != buffer) {
+    		out.format("memcpy 0x%08X 0x%08X 0x%X", addr, buffer, length);
+        	out.println();
+    	}
+    	return addr + length;
+    }
+
+    private void dumpDecrypt(PrintStream out, int addrIn, int addrOut, int length, String fileName) {
+    	out.format("ExecuteKirkCommand 0x%X %s 0x%X 0x%08X 0x%X", KIRK.PSP_KIRK_CMD_DECRYPT, fileName, length, addrIn, length + 20);
+    	out.println();
+    	out.format("ExecuteKirkCommand 0x%X 0x%08X 0x%X 0x%08X 0x%X", KIRK.PSP_KIRK_CMD_DECRYPT, addrOut, length, addrIn, length + 20);
+    	out.println();
+    }
+
+    private void dumpXor(PrintStream out, int addrOut, int addrIn, byte[] xor, int xorOffset, int xorLength, int addrXor, int length) {
+    	if (xor == null) {
+    		if (addrOut != addrIn) {
+    			out.format("memcpy 0x%08X 0x%08X 0x%X", addrOut, addrIn, length);
+    	    	out.println();
+    		}
+    	} else {
+	    	dumpBuffer(out, addrXor, xor, xorOffset, xorLength);
+	    	while (length > 0) {
+	    		int stepLength = Math.min(length, xorLength);
+
+	    		out.format("xor 0x%08X 0x%08X 0x%08X 0x%X", addrOut, addrIn, addrXor, stepLength);
+	        	out.println();
+
+	        	addrOut += stepLength;
+	    		addrIn += stepLength;
+	    		length -= stepLength;
+	    	}
+    	}
+    }
+
+    private void dumpXor(PrintStream out, int addrOut, int addrIn, byte[] xor, int addrXor, int length) {
+    	dumpXor(out, addrOut, addrIn, xor, 0, xor == null ? 0 : xor.length, addrXor, length);
+    }
+
+    private void dumpErrorForType5(byte[] xor1, byte[] xor2, int code, byte[] buf1, byte[] buf3) {
+    	try {
+        	log.error(String.format("Copy the created file"));
+        	log.error(String.format("    JpcspTrace.config"));
+        	log.error(String.format("to your MemoryStick on the PSP under seplugins/JpcspTrace.config"));
+        	log.error(String.format("Then run the JpcspTrace plugin on your PSP."));
+        	log.error(String.format("After the run of JpcspTrace, 3 files will be created on your MemoryStick:"));
+        	log.error(String.format("- PreDecrypt1.xml"));
+        	log.error(String.format("- PreDecrypt2.xml"));
+        	log.error(String.format("- PreDecrypt3.xml"));
+        	log.error(String.format("Add the content of those 3 files to the Jpcsp file"));
+        	log.error(String.format("  src/jpcsp/crypto/PreDecrypt.xml"));
+        	log.error(String.format("under the section marked with 'Pre-decrypted data for POPS'"));
+
+        	PrintStream out = new PrintStream("JpcspTrace.config");
+        	out.format("LogBufferLength 0x2000");
+        	out.println();
+        	out.format("BufferLogWrites");
+        	out.println();
+
+        	int baseAddr1 = 0xBFC00500;
+	    	int addr;
+	    	int length = 0x50;
+	    	addr = dumpDecryptHeader(out, baseAddr1, code, length);
+	    	addr = dumpBuffer(out, addr, buf1, 0x80, 0x30);
+	    	addr = dumpBuffer(out, addr, buf1, 0xC0, 0x10);
+	    	addr = dumpBuffer(out, addr, buf1, 0x12C, 0x10);
+	    	int tempAddr = baseAddr1 + 20 + length;
+	    	dumpXor(out, baseAddr1 + 20, baseAddr1 + 20, xor1, tempAddr, length);
+	    	dumpXor(out, baseAddr1 + 20, baseAddr1 + 20, xor2, tempAddr, length);
+	    	dumpDecrypt(out, baseAddr1, baseAddr1, length, "ms0:/PreDecrypt1.xml");
+
+	    	int baseAddr2 = baseAddr1 + length;
+	    	length = 0x60;
+	    	addr = dumpDecryptHeader(out, baseAddr2, code, length);
+	    	addr = dumpBuffer(out, addr, buf1, 0x140, 0x10);
+	    	addr = dumpBuffer(out, addr, baseAddr1 + 0x40, 0x10);
+	    	addr = dumpBuffer(out, addr, buf1, 0x13C, 0x4);
+	    	addr = dumpBuffer(out, addr, baseAddr1, 0x3C);
+	    	tempAddr = baseAddr2 + 20 + length;
+	    	dumpXor(out, baseAddr2 + 20, baseAddr2 + 20, xor1, tempAddr, length);
+	    	dumpDecrypt(out, baseAddr2, baseAddr2, length, "ms0:/PreDecrypt2.xml");
+
+	    	dumpBuffer(out, baseAddr2 + length, baseAddr1 + 0x3C, 0x4);
+	    	int baseAddr3 = baseAddr2 + length + 0x4;
+	    	length = 0x40;
+	    	tempAddr = baseAddr3 + length;
+	    	dumpXor(out, baseAddr3, baseAddr2 + 0x24, buf3, 0x10, 0x40, tempAddr, length);
+
+	    	int baseAddr4 = baseAddr3 + length;
+	    	length = 0x40;
+	    	addr = dumpDecryptHeader(out, baseAddr4, code, length);
+	    	addr = dumpBuffer(out, addr, baseAddr3, 0x40);
+	    	dumpDecrypt(out, baseAddr4, baseAddr4, length, "ms0:/PreDecrypt3.xml");
+
+        	out.format("FlushLogBuffer");
+        	out.println();
+        	out.close();
+    	} catch (IOException e) {
+			log.error(e);
+		}
     }
 
     public int DecryptPRX(byte[] buf, int size, int type, byte[] xor1, byte[] xor2) {
@@ -763,8 +889,16 @@ public class PRX {
 
                 System.arraycopy(tmp, 0, buf2, 0x14, 0x50);
 
+                // Type 5 is used for POPS or scePauth
+                boolean dumpError = type != 5;
+
                 // Apply scramble.
-                ScramblePRX(buf2, 0, 0x50, pti.code);
+                result = ScramblePRX(buf2, 0, 0x50, pti.code, dumpError);
+
+                if (result != 0 && !dumpError) {
+                	dumpErrorForType5(xor1, xor2, pti.code, buf1, buf3);
+                	return result;
+                }
 
                 // Copy to buf4.
                 System.arraycopy(buf2, 0, buf4, 0, 0x50);
