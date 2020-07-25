@@ -57,6 +57,7 @@ import jpcsp.HLE.VFS.local.LocalVirtualFile;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.crypto.AMCTRL;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.hardware.Model;
 import jpcsp.memory.mmio.MMIOHandlerGe;
@@ -141,11 +142,6 @@ public class scePopsMan extends HLEModule {
 		}
 		vFile.ioClose();
 
-//		// Register a fake "flash2:/act.dat" file
-//		byte[] actDatBuffer = new byte[4152];
-//		IVirtualFile fakeActDatVirtualFile = new ByteArrayVirtualFile(actDatBuffer);
-//		FakeVirtualFileSystem.getInstance().registerFakeVirtualFile("flash2:/act.dat", fakeActDatVirtualFile);
-
     	// popsman.prx is accessing some hardware registers
 		RuntimeContextLLE.enableLLE();
     	RuntimeContextLLE.createMMIO();
@@ -164,6 +160,7 @@ public class scePopsMan extends HLEModule {
 		mem.write32(0xBFC00008, 0x1402000D); // bne $zr, $v0, 0xBFC00040
 		mem.write32(0xBFC0000C, 0x00000000); // nop
 
+//		Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/vsh/module/paf.prx", 0x9);
 		Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/kd/popsman.prx", 0x10);
     }
 
@@ -186,6 +183,14 @@ public class scePopsMan extends HLEModule {
     		};
     		patch(mem, module, decompPatchOffsets[getGeneration()], 0x0E000000, JAL(POPS_DECOMPRESS_DATA_ADDRESS), 0xFE000000); // Replace "jal sub_0000E02C" with "jal hlePopsDecompressData"
     	}
+    }
+
+    public int hookDrmBBMacFinal2(AMCTRL.BBMac_Ctx ctx, int result) {
+    	if (isCustomPs1) {
+    		result = 0;
+    	}
+
+    	return result;
     }
 
     public int hlePopsDecompressData(int destSize, TPointer src, TPointer dest) {

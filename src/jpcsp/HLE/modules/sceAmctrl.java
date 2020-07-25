@@ -76,6 +76,8 @@ public class sceAmctrl extends HLEModule {
 
     	int result = crypto.getAMCTRLEngine().hleDrmBBMacFinal2(ctx, hashBytes, keyBytes);
 
+    	result = Modules.scePopsManModule.hookDrmBBMacFinal2(ctx, result);
+
     	ctx.write(ctxAddr);
 
     	return result;
