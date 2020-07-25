@@ -26,7 +26,6 @@ import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
@@ -161,11 +160,6 @@ public class MEProcessor extends Processor {
 		// Force a re-read of all the instructions as another me*img.img file could have been loaded
 		optimizedInstructions1 = null;
 		optimizedInstructions2 = null;
-
-		if (log.isTraceEnabled()) {
-			// The TRACE level is generating too much output during the initial reset (or after a sceKernelLoadExec())
-			log.setLevel(Level.DEBUG);
-		}
 
 		sync();
 	}
