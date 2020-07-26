@@ -1201,8 +1201,10 @@ public class sceUtility extends HLEModule {
                                 }
                             }
 
-                            GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
-                            openDialog(gu);
+                            if (isReadyForVisible()) {
+	                            GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
+	                            openDialog(gu);
+                            }
                             break;
                         }
                         case display: {
@@ -1363,8 +1365,10 @@ public class sceUtility extends HLEModule {
                 case SceUtilitySavedataParam.MODE_LISTSAVE: {
                     switch (dialogState) {
                         case init: {
-                            GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, savedataParams.saveNameList);
-                            openDialog(gu);
+                        	if (isReadyForVisible()) {
+	                            GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, savedataParams.saveNameList);
+	                            openDialog(gu);
+                        	}
                             break;
                         }
                         case display: {
