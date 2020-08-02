@@ -19,6 +19,7 @@ package jpcsp.HLE.kernel.types;
 
 /** usermode version of SceModule */
 public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructureVariableLength {
+	public static final int SIZE_OF = 96;
 
     // PSP info
     // http://psp.jim.sh/pspsdk-doc/structSceKernelModuleInfo.html

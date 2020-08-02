@@ -1025,7 +1025,7 @@ public class ModuleMgrForUser extends HLEModule {
     public int sceKernelQueryModuleInfo(int uid, TPointer infoAddr) {
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         if (sceModule == null) {
-            log.warn("sceKernelQueryModuleInfo unknown module UID 0x" + Integer.toHexString(uid));
+            log.warn(String.format("sceKernelQueryModuleInfo unknown module UID 0x%X", uid));
             return -1;
         }
 
@@ -1034,7 +1034,7 @@ public class ModuleMgrForUser extends HLEModule {
         moduleInfo.write(infoAddr);
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelQueryModuleInfo returning %s", Utilities.getMemoryDump(infoAddr.getAddress(), infoAddr.getValue32())));
+        	log.debug(String.format("sceKernelQueryModuleInfo returning %s", Utilities.getMemoryDump(infoAddr.getAddress(), Math.min(SceKernelModuleInfo.SIZE_OF, infoAddr.getValue32()))));
         }
 
         return 0;
