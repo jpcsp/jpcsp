@@ -22,6 +22,7 @@ import static jpcsp.util.Utilities.writeBytes;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
@@ -71,6 +72,7 @@ public class sceNetAdhoc extends HLEModule {
     // the other computer, netClientPortShift=100 and netServerPortShift=0.
     private int netClientPortShift = 0;
     private int netServerPortShift = 0;
+    private InetAddress localInetAddress;
 
     // Period to update the Game Mode
     protected static final int GAME_MODE_UPDATE_MICROS = 12000;
@@ -288,13 +290,30 @@ public class sceNetAdhoc extends HLEModule {
 	}
 
     public void setNetClientPortShift(int netClientPortShift) {
-    	this.netClientPortShift = netClientPortShift;
-    	log.info(String.format("Using netClientPortShift=%d", netClientPortShift));
+    	if (localInetAddress == null) {
+	    	this.netClientPortShift = netClientPortShift;
+	    	log.info(String.format("Using netClientPortShift=%d", netClientPortShift));
+    	}
     }
 
     public void setNetServerPortShift(int netServerPortShift) {
-    	this.netServerPortShift = netServerPortShift;
-    	log.info(String.format("Using netServerPortShift=%d", netServerPortShift));
+    	if (localInetAddress == null) {
+	    	this.netServerPortShift = netServerPortShift;
+	    	log.info(String.format("Using netServerPortShift=%d", netServerPortShift));
+    	}
+    }
+
+    public void setLocalIPAddress(String localIPAddress) {
+    	try {
+			localInetAddress = InetAddress.getByName(localIPAddress);
+		} catch (UnknownHostException e) {
+			localInetAddress = null;
+			log.error(e);
+		}
+    }
+
+    public InetAddress getLocalInetAddress() {
+    	return localInetAddress;
     }
 
     public int getClientPortFromRealPort(byte[] clientMacAddress, int realPort) {

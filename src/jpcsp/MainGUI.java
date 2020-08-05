@@ -2976,6 +2976,14 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 }
             } else if (args[i].equals("--ProOnline")) {
                 ProOnlineNetworkAdapter.setEnabled(true);
+            } else if (args[i].equals("--localIPAddress")) {
+            	i++;
+            	if (i < args.length) {
+            		Modules.sceNetAdhocModule.setLocalIPAddress(args[i]);
+            	} else {
+            		printUsage();
+            		break;
+            	}
             } else if (args[i].equals("--vsh")) {
             	runFromVsh = true;
             	logStart();

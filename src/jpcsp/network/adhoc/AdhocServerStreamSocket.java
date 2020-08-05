@@ -22,6 +22,8 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 
+import jpcsp.HLE.Modules;
+
 /**
  * @author gid15
  *
@@ -31,7 +33,7 @@ public class AdhocServerStreamSocket extends AdhocSocket {
 
 	@Override
 	public int bind(int port) throws IOException {
-		serverSocket = new ServerSocket(port);
+		serverSocket = new ServerSocket(port, 50, Modules.sceNetAdhocModule.getLocalInetAddress());
 		serverSocket.setSoTimeout(1);
 
 		return serverSocket.getLocalPort();

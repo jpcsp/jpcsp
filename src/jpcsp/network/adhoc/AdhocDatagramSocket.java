@@ -22,6 +22,8 @@ import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 
+import jpcsp.HLE.Modules;
+
 /**
  * @author gid15
  *
@@ -40,7 +42,7 @@ public class AdhocDatagramSocket extends AdhocSocket {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Opening socket on real port %d", port));
 			}
-			socket = new DatagramSocket(port);
+			socket = new DatagramSocket(port, Modules.sceNetAdhocModule.getLocalInetAddress());
 		}
 		socket.setBroadcast(true);
 		socket.setSoTimeout(1);

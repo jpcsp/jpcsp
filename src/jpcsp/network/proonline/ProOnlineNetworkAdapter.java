@@ -311,7 +311,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 	private void connectToMetaServer() {
 		try {
-			metaSocket = new Socket(metaServer, metaPort);
+			metaSocket = new Socket(metaServer, metaPort, Modules.sceNetAdhocModule.getLocalInetAddress(), 0);
 			metaSocket.setReuseAddress(true);
 			metaSocket.setSoTimeout(500);
 
