@@ -600,11 +600,8 @@ public class PRX {
         	log.error(String.format("    JpcspTrace.config"));
         	log.error(String.format("to your MemoryStick on the PSP under seplugins/JpcspTrace.config"));
         	log.error(String.format("Then run the JpcspTrace plugin on your PSP."));
-        	log.error(String.format("After the run of JpcspTrace, 3 files will be created on your MemoryStick:"));
-        	log.error(String.format("- PreDecrypt1.xml"));
-        	log.error(String.format("- PreDecrypt2.xml"));
-        	log.error(String.format("- PreDecrypt3.xml"));
-        	log.error(String.format("Add the content of those 3 files to the Jpcsp file"));
+        	log.error(String.format("After the run of JpcspTrace, the file PreDecrypt.xml will be created on your MemoryStick."));
+        	log.error(String.format("Add the content of this file to the Jpcsp file"));
         	log.error(String.format("  src/jpcsp/crypto/PreDecrypt.xml"));
         	log.error(String.format("under the section marked with 'Pre-decrypted data for POPS'"));
 
@@ -624,7 +621,7 @@ public class PRX {
 	    	int tempAddr = baseAddr1 + 20 + length;
 	    	dumpXor(out, baseAddr1 + 20, baseAddr1 + 20, xor1, tempAddr, length);
 	    	dumpXor(out, baseAddr1 + 20, baseAddr1 + 20, xor2, tempAddr, length);
-	    	dumpDecrypt(out, baseAddr1, baseAddr1, length, "ms0:/PreDecrypt1.xml");
+	    	dumpDecrypt(out, baseAddr1, baseAddr1, length, "ms0:/PreDecrypt.xml");
 
 	    	int baseAddr2 = baseAddr1 + length;
 	    	length = 0x60;
@@ -635,7 +632,7 @@ public class PRX {
 	    	addr = dumpBuffer(out, addr, baseAddr1, 0x3C);
 	    	tempAddr = baseAddr2 + 20 + length;
 	    	dumpXor(out, baseAddr2 + 20, baseAddr2 + 20, xor1, tempAddr, length);
-	    	dumpDecrypt(out, baseAddr2, baseAddr2, length, "ms0:/PreDecrypt2.xml");
+	    	dumpDecrypt(out, baseAddr2, baseAddr2, length, ">ms0:/PreDecrypt.xml");
 
 	    	dumpBuffer(out, baseAddr2 + length, baseAddr1 + 0x3C, 0x4);
 	    	int baseAddr3 = baseAddr2 + length + 0x4;
@@ -647,7 +644,7 @@ public class PRX {
 	    	length = 0x40;
 	    	addr = dumpDecryptHeader(out, baseAddr4, code, length);
 	    	addr = dumpBuffer(out, addr, baseAddr3, 0x40);
-	    	dumpDecrypt(out, baseAddr4, baseAddr4, length, "ms0:/PreDecrypt3.xml");
+	    	dumpDecrypt(out, baseAddr4, baseAddr4, length, ">ms0:/PreDecrypt.xml");
 
         	out.format("FlushLogBuffer");
         	out.println();
@@ -897,7 +894,7 @@ public class PRX {
 
                 if (result != 0 && !dumpError) {
                 	dumpErrorForType5(xor1, xor2, pti.code, buf1, buf3);
-                	return result;
+                	return -1;
                 }
 
                 // Copy to buf4.
