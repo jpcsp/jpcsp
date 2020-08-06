@@ -80,6 +80,7 @@ The format of the file JpcspTrace.config is the following:
   If the output file name starts with "0x", it will be interpreted as a memory address
   and the result of the KIRK command will be stored at that address
   instead of being written to the output file.
+  If the output file name starts with ">", the output will be appended to the file name.
   If the output file name ends with ".xml", the output will be written into the same
   format as Jpcsp file PreDecrypt.xml, so that the result can easily be added to it.
 - a SYSCON command can be executed and its output saved to a file by using the command:

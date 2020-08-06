@@ -989,8 +989,15 @@ void executeKirkCommand(int cmd, char *outputFileName, int outputSize, char *inp
 	}
 
 	if (allocOutputBuffer != NULL) {
-		sceIoRemove(outputFileName);
-		SceUID out = ioOpen(outputFileName, PSP_O_WRONLY | PSP_O_CREAT, 0777);
+		int flags = PSP_O_WRONLY | PSP_O_CREAT;
+		if (outputFileName[0] == '>') {
+			flags |= PSP_O_APPEND;
+			outputFileName++;
+		} else {
+			sceIoRemove(outputFileName);
+		}
+
+		SceUID out = ioOpen(outputFileName, flags, 0777);
 		if (out < 0) {
 			printLog("Cannot open output file\n");
 			freeAlloc(allocOutputBuffer, allocOutputSize);
