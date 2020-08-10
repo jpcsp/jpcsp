@@ -19,6 +19,7 @@ package jpcsp.state;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 
 public class StateOutputStream extends ObjectOutputStream {
 	public static final int NULL_ARRAY_LENGTH = -1;
@@ -83,5 +84,15 @@ public class StateOutputStream extends ObjectOutputStream {
 
 	public void writeString(String s) throws IOException {
 		writeObject(s);
+	}
+
+	public void write(InetAddress inetAddress) throws IOException {
+		if (inetAddress == null) {
+			writeInt(-1);
+		} else {
+			byte[] inetAddressBytes = inetAddress.getAddress();
+			writeInt(inetAddressBytes.length);
+			write(inetAddressBytes);
+		}
 	}
 }

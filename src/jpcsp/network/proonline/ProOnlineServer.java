@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.proonline;
 
+import static jpcsp.hardware.Wlan.getLocalInetAddress;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -164,7 +166,7 @@ public class ProOnlineServer {
 		packetFactory = new PacketFactory();
 
 		try {
-			serverSocket = new ServerSocket(port);
+			serverSocket = new ServerSocket(port, 50, getLocalInetAddress());
 			serverSocket.setSoTimeout(1);
 		} catch (IOException e) {
 			log.error(String.format("Server socket at port %d not available: %s", port, e));

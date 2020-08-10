@@ -19,6 +19,7 @@ package jpcsp.network.jpcsp;
 import static jpcsp.HLE.Modules.sceNetAdhocModule;
 import static jpcsp.HLE.Modules.sceNetAdhocctlModule;
 import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_GAMEMODE;
+import static jpcsp.hardware.Wlan.getLocalInetAddress;
 import static jpcsp.network.jpcsp.JpcspAdhocPtpMessage.PTP_MESSAGE_TYPE_DATA;
 
 import java.io.IOException;
@@ -181,7 +182,7 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 
     private void openSocket() throws SocketException {
     	if (adhocctlSocket == null) {
-    		adhocctlSocket = new DatagramSocket(sceNetAdhocModule.getRealPortFromServerPort(adhocctlBroadcastPort));
+    		adhocctlSocket = new DatagramSocket(sceNetAdhocModule.getRealPortFromServerPort(adhocctlBroadcastPort), getLocalInetAddress());
     		// For broadcast
     		adhocctlSocket.setBroadcast(true);
     		// Non-blocking (timeout = 0 would mean blocking)
@@ -205,10 +206,15 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 	    	SocketAddress[] socketAddress = sceNetAdhocModule.getMultiSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocctlBroadcastPort));
 	    	for (int i = 0; i < socketAddress.length; i++) {
 		    	DatagramPacket packet = new DatagramPacket(adhocctlMessage.getMessage(), JpcspAdhocctlMessage.getMessageLength(), socketAddress[i]);
-		    	adhocctlSocket.send(packet);
-
-		    	if (log.isDebugEnabled()) {
-		    		log.debug(String.format("broadcast sent to peer[%s]: %s", socketAddress[i], adhocctlMessage));
+		    	try {
+		    		adhocctlSocket.send(packet);
+			    	if (log.isDebugEnabled()) {
+			    		log.debug(String.format("broadcast sent to peer[%s]: %s", socketAddress[i], adhocctlMessage));
+			    	}
+		    	} catch (SocketException e) {
+					if (log.isDebugEnabled()) {
+						log.debug("broadcastPeers", e);
+					}
 		    	}
 	    	}
 		} catch (SocketException e) {

@@ -84,6 +84,7 @@ import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.Audio;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Screen;
+import jpcsp.hardware.Wlan;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
 import jpcsp.memory.DebuggerMemory;
@@ -2979,7 +2980,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             } else if (args[i].equals("--localIPAddress")) {
             	i++;
             	if (i < args.length) {
-            		Modules.sceNetAdhocModule.setLocalIPAddress(args[i]);
+            		Wlan.setLocalIPAddress(args[i]);
             	} else {
             		printUsage();
             		break;

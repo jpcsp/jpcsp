@@ -23,6 +23,7 @@ import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_DAT
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_TYPE_SONY;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+import static jpcsp.hardware.Wlan.getLocalInetAddress;
 
 import java.io.IOException;
 import java.net.BindException;
@@ -352,7 +353,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 			do {
 				retry = false;
 	    		try {
-					wlanSocket = new DatagramSocket(wlanSocketPort);
+					wlanSocket = new DatagramSocket(wlanSocketPort, getLocalInetAddress());
 		    		// For broadcast
 					wlanSocket.setBroadcast(true);
 		    		// Non-blocking (timeout = 0 would mean blocking)

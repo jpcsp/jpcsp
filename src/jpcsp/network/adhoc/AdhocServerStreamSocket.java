@@ -16,13 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.adhoc;
 
+import static jpcsp.hardware.Wlan.getLocalInetAddress;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
-
-import jpcsp.HLE.Modules;
 
 /**
  * @author gid15
@@ -33,7 +33,7 @@ public class AdhocServerStreamSocket extends AdhocSocket {
 
 	@Override
 	public int bind(int port) throws IOException {
-		serverSocket = new ServerSocket(port, 50, Modules.sceNetAdhocModule.getLocalInetAddress());
+		serverSocket = new ServerSocket(port, 50, getLocalInetAddress());
 		serverSocket.setSoTimeout(1);
 
 		return serverSocket.getLocalPort();

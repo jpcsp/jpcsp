@@ -21,6 +21,7 @@ import static jpcsp.state.StateOutputStream.NULL_ARRAY_LENGTH;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.net.InetAddress;
 
 import jpcsp.Emulator;
 
@@ -103,5 +104,15 @@ public class StateInputStream extends ObjectInputStream {
 			Emulator.log.error("readString", e);
 			return null;
 		}
+	}
+
+	public InetAddress readInetAddress() throws IOException {
+		int inetAddressLength = readInt();
+		if (inetAddressLength < 0) {
+			return null;
+		}
+		byte[] inetAddressBytes = new byte[inetAddressLength];
+		read(inetAddressBytes);
+		return InetAddress.getByAddress(inetAddressBytes);
 	}
 }

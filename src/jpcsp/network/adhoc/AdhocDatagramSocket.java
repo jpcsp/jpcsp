@@ -16,13 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.adhoc;
 
+import static jpcsp.hardware.Wlan.getLocalInetAddress;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
-
-import jpcsp.HLE.Modules;
 
 /**
  * @author gid15
@@ -42,7 +42,7 @@ public class AdhocDatagramSocket extends AdhocSocket {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Opening socket on real port %d", port));
 			}
-			socket = new DatagramSocket(port, Modules.sceNetAdhocModule.getLocalInetAddress());
+			socket = new DatagramSocket(port, getLocalInetAddress());
 		}
 		socket.setBroadcast(true);
 		socket.setSoTimeout(1);

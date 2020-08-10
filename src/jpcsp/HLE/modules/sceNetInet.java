@@ -286,8 +286,15 @@ public class sceNetInet extends HLEModule {
         		int localBroadcastAddressInt = localAddress & subnetMask;
         		localBroadcastAddressInt |= INADDR_BROADCAST & ~subnetMask;
 
-        		broadcastAddresses = new InetAddress[1];
+        		InetAddress loopbackInetAddress = InetAddress.getLoopbackAddress();
+        		int loopbackAddress = bytesToInternetAddress(loopbackInetAddress.getAddress());
+        		int loopbackSubnetMask = Integer.reverseBytes(0xFF000000);
+        		int loopbackBroadcastAddressInt = loopbackAddress & loopbackSubnetMask;
+        		loopbackBroadcastAddressInt |= INADDR_BROADCAST & ~loopbackSubnetMask;
+
+        		broadcastAddresses = new InetAddress[2];
         		broadcastAddresses[0] = InetAddress.getByAddress(internetAddressToBytes(localBroadcastAddressInt));
+        		broadcastAddresses[1] = InetAddress.getByAddress(internetAddressToBytes(loopbackBroadcastAddressInt));
         	}
 
         	if (log.isDebugEnabled()) {

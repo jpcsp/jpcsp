@@ -144,10 +144,17 @@ public abstract class AdhocObject {
 		int realPort = Modules.sceNetAdhocModule.getRealPortFromClientPort(adhocMessage.getToMacAddress(), destPort);
 		SocketAddress[] socketAddress = Modules.sceNetAdhocModule.getMultiSocketAddress(adhocMessage.getToMacAddress(), realPort);
 		for (int i = 0; i < socketAddress.length; i++) {
-			socket.send(socketAddress[i], adhocMessage);
+			try {
+				socket.send(socketAddress[i], adhocMessage);
 
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Successfully sent %d bytes to %s, port %d(%d): %s", adhocMessage.getDataLength(), socketAddress[i], destPort, realPort, adhocMessage));
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Successfully sent %d bytes to %s, port %d(%d): %s", adhocMessage.getDataLength(), socketAddress[i], destPort, realPort, adhocMessage));
+				}
+			} catch (SocketException e) {
+				// Ignore "Network is unreachable"
+				if (log.isDebugEnabled()) {
+					log.debug("send", e);
+				}
 			}
 		}
 	}

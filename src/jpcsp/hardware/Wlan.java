@@ -19,6 +19,8 @@ package jpcsp.hardware;
 import static jpcsp.HLE.modules.sceNet.convertStringToMacAddress;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import org.apache.log4j.Logger;
 
@@ -43,6 +45,7 @@ public class Wlan {
     public static int PSP_ADHOC_CHANNEL_DEFAULT = 11;
     private static int signalStrength = 100;
     private static WlanSwitchSettingsListener wlanSwitchSettingsListener;
+    private static InetAddress localInetAddress;
 
     private static class WlanSwitchSettingsListener extends AbstractBoolSettingsListener {
 		@Override
@@ -104,15 +107,34 @@ public class Wlan {
     	return signalStrength;
     }
 
-	public static void read(StateInputStream stream) throws IOException {
+    public static InetAddress getLocalInetAddress() {
+    	return localInetAddress;
+    }
+
+    public static boolean hasLocalInetAddress() {
+    	return localInetAddress != null;
+    }
+
+    public static void setLocalIPAddress(String localIPAddress) {
+    	try {
+			localInetAddress = InetAddress.getByName(localIPAddress);
+		} catch (UnknownHostException e) {
+			localInetAddress = null;
+			log.error(e);
+		}
+    }
+
+    public static void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
 		byte[] stateMacAddress = new byte[MAC_ADDRESS_LENGTH];
 		stream.read(stateMacAddress);
 		setMacAddress(stateMacAddress);
+		localInetAddress = stream.readInetAddress();
 	}
 
 	public static void write(StateOutputStream stream) throws IOException {
 		stream.writeVersion(STATE_VERSION);
 		stream.write(getMacAddress());
+		stream.write(localInetAddress);
 	}
 }

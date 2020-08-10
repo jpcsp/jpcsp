@@ -22,6 +22,7 @@ import static jpcsp.HLE.modules.sceNetInet.internetAddressToBytes;
 import static jpcsp.HLE.modules.sceNetInet.internetAddressToString;
 import static jpcsp.HLE.modules.sceWlan.WLAN_CMD_DATA;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+import static jpcsp.hardware.Wlan.getLocalInetAddress;
 import static jpcsp.network.protocols.ARP.ARP_OPERATION_REPLY;
 import static jpcsp.network.protocols.ARP.ARP_OPERATION_REQUEST;
 import static jpcsp.network.protocols.DHCP.DHCP_BOOT_REPLY;
@@ -429,7 +430,7 @@ public class AccessPoint implements IProcessHTTPRequest {
 			do {
 				retry = false;
 	    		try {
-	    			apSocket = new DatagramSocket(apSocketPort);
+	    			apSocket = new DatagramSocket(apSocketPort, getLocalInetAddress());
 		    		// For broadcast
 	    			apSocket.setBroadcast(true);
 		    		// Non-blocking (timeout = 0 would mean blocking)

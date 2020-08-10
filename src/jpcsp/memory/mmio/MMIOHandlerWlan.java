@@ -20,6 +20,7 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_WLAN_INTR;
 import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
 import static jpcsp.HLE.modules.sceWlan.WLAN_CMD_DATA;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+import static jpcsp.hardware.Wlan.getLocalInetAddress;
 import static jpcsp.hardware.Wlan.getMacAddress;
 import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.endianSwap32;
@@ -336,7 +337,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 			for (int i = 0; i < maxDataSocketPorts; i++) {
 	    		try {
 	    			int port = dataSocketPortBase + i;
-	    			dataSocket = new DatagramSocket(port);
+	    			dataSocket = new DatagramSocket(port, getLocalInetAddress());
 		    		// For broadcast
 	    			dataSocket.setBroadcast(true);
 		    		// Non-blocking (timeout = 0 would mean blocking)

@@ -22,6 +22,7 @@ import static jpcsp.HLE.modules.sceNpAuth.addTicketDateParam;
 import static jpcsp.HLE.modules.sceNpAuth.addTicketLongParam;
 import static jpcsp.HLE.modules.sceNpAuth.addTicketParam;
 import static jpcsp.filesystems.umdiso.UmdIsoFile.sectorLength;
+import static jpcsp.hardware.Wlan.getLocalInetAddress;
 import static jpcsp.util.Utilities.getDefaultPortForProtocol;
 
 import java.awt.AWTException;
@@ -184,7 +185,7 @@ public class HTTPServer {
 						serverSocket = factory.createServerSocket(descriptor.getPort());
 					}
 				} else {
-					serverSocket = new ServerSocket(descriptor.getPort());
+					serverSocket = new ServerSocket(descriptor.getPort(), 50, getLocalInetAddress());
 				}
 				if (serverSocket != null) {
 					serverSocket.setSoTimeout(1);
