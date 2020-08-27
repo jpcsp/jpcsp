@@ -389,13 +389,20 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 			if (broadcastAddress != null) {
 				for (int i = 0; i < broadcastAddress.length; i++) {
 					DatagramPacket packet = new DatagramPacket(buffer, bufferLength, broadcastAddress[i]);
-					wlanSocket.send(packet);
+					try {
+						wlanSocket.send(packet);
+					} catch (SocketException e) {
+						// Ignore "Network is unreachable"
+						if (log.isDebugEnabled()) {
+							log.debug("sendPacketFromAccessPoint", e);
+						}
+					}
 				}
 			}
 		} catch (UnknownHostException e) {
-			log.error("sendAccessPointPacket", e);
+			log.error("sendPacketFromAccessPoint", e);
 		} catch (IOException e) {
-			log.error("sendAccessPointPacket", e);
+			log.error("sendPacketFromAccessPoint", e);
 		}
 	}
 
@@ -417,7 +424,14 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 			if (broadcastAddress != null) {
 				for (int i = 0; i < broadcastAddress.length; i++) {
 					DatagramPacket packet = new DatagramPacket(buffer, bufferLength, broadcastAddress[i]);
-					wlanSocket.send(packet);
+					try {
+						wlanSocket.send(packet);
+					} catch (SocketException e) {
+						// Ignore "Network is unreachable"
+						if (log.isDebugEnabled()) {
+							log.debug("sendPacket", e);
+						}
+					}
 				}
 			}
 		} catch (UnknownHostException e) {

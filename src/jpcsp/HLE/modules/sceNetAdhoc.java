@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -366,11 +367,18 @@ public class sceNetAdhoc extends HLEModule {
 			    	SocketAddress socketAddress[] = Modules.sceNetAdhocModule.getMultiSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, Modules.sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocGameModePort));
 			    	for (int i = 0; i < socketAddress.length; i++) {
 			    		DatagramPacket packet = new DatagramPacket(adhocGameModeMessage.getMessage(), adhocGameModeMessage.getMessageLength(), socketAddress[i]);
-			    		gameModeSocket.send(packet);
+						try {
+							gameModeSocket.send(packet);
 
-				    	if (log.isDebugEnabled()) {
-				    		log.debug(String.format("GameMode message sent to %s: %s", socketAddress[i], adhocGameModeMessage));
-				    	}
+							if (log.isDebugEnabled()) {
+					    		log.debug(String.format("GameMode message sent to %s: %s", socketAddress[i], adhocGameModeMessage));
+					    	}
+						} catch (SocketException e) {
+							// Ignore "Network is unreachable"
+							if (log.isDebugEnabled()) {
+								log.debug("hleGameModeUpdate", e);
+							}
+						}
 			    	}
 				} catch (SocketTimeoutException e) {
 					// Ignore exception

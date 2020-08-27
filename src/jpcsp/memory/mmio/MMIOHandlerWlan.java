@@ -590,7 +590,14 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 								log.trace(String.format("broadcastAdhocDataPacket to %s", broadcastAddress[j]));
 							}
 							DatagramPacket datagramPacket = new DatagramPacket(buffer, bufferLength, broadcastAddress[j]);
-							dataSocket.send(datagramPacket);
+							try {
+								dataSocket.send(datagramPacket);
+							} catch (SocketException e) {
+								// Ignore "Network is unreachable"
+								if (log.isDebugEnabled()) {
+									log.debug("broadcastAdhocDataPacket", e);
+								}
+							}
 						}
 					}
 				} catch (UnknownHostException e) {
@@ -626,13 +633,20 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 			if (broadcastAddress != null) {
 				for (int i = 0; i < broadcastAddress.length; i++) {
 					DatagramPacket packet = new DatagramPacket(buffer, bufferLength, broadcastAddress[i]);
-					dataSocket.send(packet);
+					try {
+						dataSocket.send(packet);
+					} catch (SocketException e) {
+						// Ignore "Network is unreachable"
+						if (log.isDebugEnabled()) {
+							log.debug("sendDataPacketToAccessPoint", e);
+						}
+					}
 				}
 			}
 		} catch (UnknownHostException e) {
-			log.error("sendAccessPointDataPacket", e);
+			log.error("sendDataPacketToAccessPoint", e);
 		} catch (IOException e) {
-			log.error("sendAccessPointDataPacket", e);
+			log.error("sendDataPacketToAccessPoint", e);
 		}
 	}
 
@@ -1289,7 +1303,14 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND);
 							log.trace(String.format("sendPacketFromAccessPoint to %s", broadcastAddress[j]));
 						}
 						DatagramPacket datagramPacket = new DatagramPacket(buffer, offset, bufferLength, broadcastAddress[j]);
-						dataSocket.send(datagramPacket);
+						try {
+							dataSocket.send(datagramPacket);
+						} catch (SocketException e) {
+							// Ignore "Network is unreachable"
+							if (log.isDebugEnabled()) {
+								log.debug("sendPacketFromAccessPoint", e);
+							}
+						}
 					}
 				}
 			} catch (UnknownHostException e) {
