@@ -68,6 +68,7 @@ public class scePopsMan extends HLEModule {
     public static final String EBOOT_PBP = "EBOOT.PBP";
     private static final String KEYS_BIN = "KEYS.BIN";
     private static final String ebootDummyFileName = "ms0:/PSP/GAME/DUMMY0000/" + EBOOT_PBP;
+    private static final int COMPILED_SKD_VERSION = 0x03050000; // popsman.prx requires at least v3.05
     private String ebootPbp;
     private int ebootPbpUid;
     private IVirtualFile vFileEbootPbp;
@@ -146,8 +147,8 @@ public class scePopsMan extends HLEModule {
 		RuntimeContextLLE.enableLLE();
     	RuntimeContextLLE.createMMIO();
 
-		// popsman.prx requires at least v3.00
-		Modules.SysMemUserForUserModule.hleSetCompiledSdkVersion(0x03000000);
+		// popsman.prx requires at least v3.05
+		Modules.SysMemUserForUserModule.hleSetCompiledSdkVersion(COMPILED_SKD_VERSION);
 
 		// popsman.prx requires valid applicationType and bootFrom values
 		Modules.InitForKernelModule.setApplicationType(InitForKernel.SCE_INIT_APPLICATION_POPS);
@@ -160,7 +161,6 @@ public class scePopsMan extends HLEModule {
 		mem.write32(0xBFC00008, 0x1402000D); // bne $zr, $v0, 0xBFC00040
 		mem.write32(0xBFC0000C, 0x00000000); // nop
 
-//		Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/vsh/module/paf.prx", 0x9);
 		Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule("flash0:/kd/popsman.prx", 0x10);
     }
 
@@ -415,7 +415,7 @@ public class scePopsMan extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDE630CD2, version = 150)
-    public int sceMeAudio_DE630CD2() {
+    public int sceMeAudio_DE630CD2(int unknown, int spRegisterValue) {
     	return 0;
     }
 
