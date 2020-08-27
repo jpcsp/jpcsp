@@ -530,10 +530,10 @@ public class VideoEngine {
 
     public void stop() {
         // If we are still drawing a list, stop the list processing
+        synchronized (drawListQueue) {
+            drawListQueue.clear();
+        }
         if (currentList != null) {
-            synchronized (drawListQueue) {
-                drawListQueue.clear();
-            }
             listHasEnded = true;
             try {
                 Thread.sleep(100);
