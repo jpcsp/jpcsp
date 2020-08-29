@@ -106,8 +106,10 @@ public class sceNetAdhocctl extends HLEModule {
 	// The connection will be set CONNECTED with a delay of 200ms.
 	private static final int CONNECT_COMPLETE_DELAY_MILLIS = 200;
 
-    private HashMap<Integer, AdhocctlHandler> adhocctlIdMap = new HashMap<Integer, AdhocctlHandler>();
+    private HashMap<Integer, AdhocctlHandler> adhocctlHandlerIdMap = new HashMap<Integer, AdhocctlHandler>();
     private static final String adhocctlHandlerIdPurpose = "sceNetAdhocctl-Handler";
+    private HashMap<Integer, AdhocctlStateCallback> adhocctlStateCallbackIdMap = new HashMap<Integer, AdhocctlStateCallback>();
+    private static final String adhocctlStateCallbackIdPurpose = "sceNetAdhocctl-StateCallback";
 
     protected class AdhocctlHandler {
         private int entryAddr;
@@ -149,6 +151,49 @@ public class sceNetAdhocctl extends HLEModule {
 		@Override
 		public String toString() {
 			return String.format("AdhocctlHandler[id=%d, entry=0x%08X, arg=0x%08X]", getId(), entryAddr, currentArg);
+		}
+    }
+
+    protected class AdhocctlStateCallback {
+        private int entryAddr;
+        private int currentState;
+        private int currentError;
+        private int currentArg;
+        private final int id;
+
+        private AdhocctlStateCallback(int addr, int arg) {
+            entryAddr = addr;
+            currentArg = arg;
+            // PSP returns a handler ID between 0 and 3
+            id = SceUidManager.getNewId(adhocctlStateCallbackIdPurpose, 0, 3);
+        }
+
+        protected void triggerAdhocctlStateCallback() {
+            SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+            if (thread != null) {
+                Modules.ThreadManForUserModule.executeCallback(thread, entryAddr, null, true, currentState, currentError, currentArg);
+            }
+        }
+
+        protected int getId() {
+            return id;
+        }
+
+        protected void setState(int state) {
+            currentState = state;
+        }
+
+        protected void setError(int error) {
+            currentError = error;
+        }
+
+        protected void delete() {
+        	SceUidManager.releaseId(id, adhocctlStateCallbackIdPurpose);
+        }
+
+		@Override
+		public String toString() {
+			return String.format("AdhocctlStateCallback[id=%d, entry=0x%08X, arg=0x%08X]", getId(), entryAddr, currentArg);
 		}
     }
 
@@ -258,9 +303,11 @@ public class sceNetAdhocctl extends HLEModule {
 				if (adhocctlCurrentMode == PSP_ADHOCCTL_MODE_GAMEMODE) {
 	    			setState(PSP_ADHOCCTL_STATE_GAME);
 	    			notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_GAME, 0);
+	    			notifyAdhocctlStateCallback(0);
 				} else {
 					setState(PSP_ADHOCCTL_STATE_CONNECTED);
 					notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_CONNECTED, 0);
+	    			notifyAdhocctlStateCallback(0);
 				}
 				doJoin = false;
 			}
@@ -298,14 +345,17 @@ public class sceNetAdhocctl extends HLEModule {
     	if (doTerminate) {
     		setState(PSP_ADHOCCTL_STATE_DISCONNECTED);
     		notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_DISCONNECTED, 0);
+    		notifyAdhocctlStateCallback(0);
     		setGroupName(null, PSP_ADHOCCTL_MODE_NONE);
     	} else if (doDisconnect) {
     		setState(PSP_ADHOCCTL_STATE_DISCONNECTED);
     		notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_DISCONNECTED, 0);
+    		notifyAdhocctlStateCallback(0);
     		setGroupName(null, PSP_ADHOCCTL_MODE_NONE);
     		doDisconnect = false;
     	} else if (doScan) {
     		setState(PSP_ADHOCCTL_STATE_SCAN);
+    		notifyAdhocctlStateCallback(0);
     		scanStartMillis = Emulator.getClock().milliTime();
             doScan = false;
     	} else if (doJoin) {
@@ -347,6 +397,7 @@ public class sceNetAdhocctl extends HLEModule {
     			// Return to DISCONNECTED state and trigger SCAN event
     			setState(PSP_ADHOCCTL_STATE_DISCONNECTED);
     	        notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_SCAN, 0);
+        		notifyAdhocctlStateCallback(0);
     		}
     	}
 
@@ -403,13 +454,25 @@ public class sceNetAdhocctl extends HLEModule {
     }
 
     protected void notifyAdhocctlHandler(int event, int error) {
-        for (AdhocctlHandler handler : adhocctlIdMap.values()) {
+        for (AdhocctlHandler handler : adhocctlHandlerIdMap.values()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("Notifying handler %s with event=%d, error=%d", handler, event, error));
         	}
             handler.setEvent(event);
             handler.setError(error);
             handler.triggerAdhocctlHandler();
+        }
+    }
+
+    protected void notifyAdhocctlStateCallback(int error) {
+    	int state = hleNetAdhocctlGetState();
+        for (AdhocctlStateCallback stateCallback : adhocctlStateCallbackIdMap.values()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Notifying state callback %s with state=%d, error=%d", stateCallback, state, error));
+        	}
+        	stateCallback.setState(state);
+        	stateCallback.setError(error);
+        	stateCallback.triggerAdhocctlStateCallback();
         }
     }
 
@@ -733,7 +796,7 @@ public class sceNetAdhocctl extends HLEModule {
      * Register an adhoc event handler
      *
      * @param handler - The event handler.
-     * @param unknown60 - Pass NULL.
+     * @param adhocctlHandlerArg - The event handler arg.
      *
      * @return Handler id on success, < 0 on error.
      */
@@ -750,7 +813,7 @@ public class sceNetAdhocctl extends HLEModule {
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceNetAdhocctlAddHandler returning id=0x%X", id));
         }
-        adhocctlIdMap.put(id, adhocctlHandler);
+        adhocctlHandlerIdMap.put(id, adhocctlHandler);
 
         return id;
     }
@@ -766,7 +829,7 @@ public class sceNetAdhocctl extends HLEModule {
     public int sceNetAdhocctlDelHandler(int id) {
     	checkInitialized();
 
-        AdhocctlHandler handler = adhocctlIdMap.remove(id);
+        AdhocctlHandler handler = adhocctlHandlerIdMap.remove(id);
         if (handler != null) {
         	handler.delete();
         }
@@ -1173,6 +1236,47 @@ public class sceNetAdhocctl extends HLEModule {
         	}
         	macAddress.write(gameModeInfoAddr, offset);
         	offset += macAddress.sizeof();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Register an adhoc state callback
+     *
+     * @param handler - The state callback.
+     * @param adhocctlStateCallbackArg - The state callback arg.
+     *
+     * @return Handler id on success, < 0 on error.
+     */
+    @HLEFunction(nid = 0xF8BABD85, version = 150)
+    public int sceNetAdhocctl_lib_F8BABD85(TPointer stateCallbackFunction, int adhocctlStateCallbackArg) {
+    	AdhocctlStateCallback adhocctlStateCallback = new AdhocctlStateCallback(stateCallbackFunction.getAddress(), adhocctlStateCallbackArg);
+        int id = adhocctlStateCallback.getId();
+        if (id == SceUidManager.INVALID_ID) {
+        	return SceKernelErrors.ERROR_NET_ADHOCCTL_TOO_MANY_HANDLERS;
+        }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceNetAdhocctl_lib_F8BABD85 returning id=0x%X", id));
+        }
+        adhocctlStateCallbackIdMap.put(id, adhocctlStateCallback);
+
+        return id;
+    }
+
+   /**
+    * Delete an adhoc state callback
+    *
+    * @param id - The state callback id as returned by sceNetAdhocctl_lib_F8BABD85.
+    *
+    * @return 0 on success, < 0 on error.
+    */
+    @HLEFunction(nid = 0x1C679240, version = 150)
+    public int sceNetAdhocctl_lib_1C679240(int id) {
+        AdhocctlStateCallback stateCallback = adhocctlStateCallbackIdMap.remove(id);
+        if (stateCallback != null) {
+        	stateCallback.delete();
         }
 
         return 0;
