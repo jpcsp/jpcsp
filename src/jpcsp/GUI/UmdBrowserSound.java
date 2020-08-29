@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.GUI;
 
+import java.util.Arrays;
+
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
@@ -30,6 +32,7 @@ import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceAtrac3plus.AtracFileInfo;
+import jpcsp.hardware.Audio;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.ICodec;
 import jpcsp.memory.IMemoryWriter;
@@ -210,6 +213,11 @@ public class UmdBrowserSound {
 		for (int i = 0; i < bytes.length; i++) {
 			bytes[i] = (byte) mem.read8(samplesAddr + i);
 		}
+
+		if (Audio.isMuted()) {
+			Arrays.fill(bytes, (byte) 0);
+		}
+
 		mLine.write(bytes, 0, bytes.length);
 
 		return true;
