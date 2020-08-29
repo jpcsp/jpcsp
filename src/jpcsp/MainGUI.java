@@ -696,6 +696,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         AudioOpt.setText(bundle.getString("MainGUI.AudioOpt.text")); // NOI18N
 
         MuteOpt.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.SHIFT_MASK));
+        MuteOpt.setSelected(Settings.getInstance().readBool("emu.mutesound"));
         MuteOpt.setText(bundle.getString("MainGUI.MuteOpt.text")); // NOI18N
         MuteOpt.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2663,6 +2664,7 @@ private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 private void MuteOptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MuteOptActionPerformed
         Audio.setMuted(!Audio.isMuted());
         MuteOpt.setSelected(Audio.isMuted());
+        Settings.getInstance().writeBool("emu.mutesound", Audio.isMuted());
 }//GEN-LAST:event_MuteOptActionPerformed
 
 private void ClockSpeedNormalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockSpeedNormalActionPerformed
