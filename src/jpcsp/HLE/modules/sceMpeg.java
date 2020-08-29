@@ -463,7 +463,7 @@ public class sceMpeg extends HLEModule {
     		return;
     	}
 
-    	int moduleMemory = getModuleMemory();
+    	int moduleMemory = getModuleMemory("flash0:/kd/mpeg.prx");
 
 		Memory mem = getMemory();
 		initVideocodecBuffer = new TPointer(mem, moduleMemory);

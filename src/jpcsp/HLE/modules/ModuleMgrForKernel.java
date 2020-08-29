@@ -17,8 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import java.nio.ByteBuffer;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -45,11 +45,11 @@ import jpcsp.util.Utilities;
 
 public class ModuleMgrForKernel extends HLEModule {
 	public static Logger log = Modules.getLogger("ModuleMgrForKernel");
-	private Set<String> modulesWithMemoryAllocated;
+	private Map<String, SysMemInfo> modulesWithMemoryAllocated;
 
 	@Override
 	public void start() {
-		modulesWithMemoryAllocated = new HashSet<>();
+		modulesWithMemoryAllocated = new HashMap<String, SysMemInfo>();
 
 		super.start();
 	}
@@ -58,7 +58,14 @@ public class ModuleMgrForKernel extends HLEModule {
 		if (modulesWithMemoryAllocated == null) {
 			return false;
 		}
-		return modulesWithMemoryAllocated.contains(moduleName);
+		return modulesWithMemoryAllocated.containsKey(moduleName);
+	}
+
+	public SysMemInfo getMemoryAllocatedForModule(String moduleName) {
+		if (modulesWithMemoryAllocated == null) {
+			return null;
+		}
+		return modulesWithMemoryAllocated.get(moduleName);
 	}
 
 	@HLEFunction(nid = 0xBA889C07, version = 150)
@@ -145,7 +152,7 @@ public class ModuleMgrForKernel extends HLEModule {
         	log.debug(String.format("sceKernelLoadModuleToBlock sysMemInfo=%s", sysMemInfo));
         }
 
-        modulesWithMemoryAllocated.add(path.getString());
+        modulesWithMemoryAllocated.put(path.getString(), sysMemInfo);
 
     	// If we cannot load the module file, return the same blockId
     	separatedBlockId.setValue(blockId);

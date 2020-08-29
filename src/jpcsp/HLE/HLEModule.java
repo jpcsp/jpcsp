@@ -127,6 +127,19 @@ abstract public class HLEModule {
 		return memory.addr;
 	}
 
+	protected int getModuleMemory(String moduleName) {
+		if (memory != null) {
+			return getModuleMemory();
+		}
+
+		SysMemInfo allocatedModuleMemory = Modules.ModuleMgrForKernelModule.getMemoryAllocatedForModule(moduleName);
+		if (allocatedModuleMemory == null) {
+			return 0;
+		}
+
+		return allocatedModuleMemory.addr;
+	}
+
 	protected Memory getMemory() {
 		return Memory.getInstance();
 	}
