@@ -30,7 +30,7 @@ import jpcsp.network.adhoc.MatchingObject;
  * - n bytes for the message data
  */
 public class JpcspAdhocMatchingEventMessage extends AdhocMatchingEventMessage {
-	protected static final int HEADER_SIZE = MAC_ADDRESS_LENGTH + MAC_ADDRESS_LENGTH + 1;
+	protected static final int HEADER_SIZE = 4 + MAC_ADDRESS_LENGTH + MAC_ADDRESS_LENGTH + 1;
 
 	public JpcspAdhocMatchingEventMessage(MatchingObject matchingObject, int event) {
 		super(matchingObject, event);
@@ -48,6 +48,7 @@ public class JpcspAdhocMatchingEventMessage extends AdhocMatchingEventMessage {
 	public byte[] getMessage() {
 		byte[] message = new byte[getMessageLength()];
 		offset = 0;
+		addInt32ToBytes(message, getId());
 		addToBytes(message, fromMacAddress);
 		addToBytes(message, toMacAddress);
 		addToBytes(message, (byte) getEvent());
@@ -60,6 +61,7 @@ public class JpcspAdhocMatchingEventMessage extends AdhocMatchingEventMessage {
 	public void setMessage(byte[] message, int length) {
 		if (length >= HEADER_SIZE) {
 			offset = 0;
+			id = copyInt32FromBytes(message);
 			copyFromBytes(message, fromMacAddress);
 			copyFromBytes(message, toMacAddress);
 			setEvent(copyByteFromBytes(message));

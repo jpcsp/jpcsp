@@ -113,6 +113,7 @@ public class JpcspPtpObject extends PtpObject {
 			}
 
 			if (adhocPtpMessage != null && adhocPtpMessage.isForMe()) {
+				adhocPtpMessage.setAlreadyReceived();
 				switch (adhocPtpMessage.getType()) {
 					case PTP_MESSAGE_TYPE_CONNECT:
 						int acceptedId = adhocPtpMessage.getDataInt32();
@@ -202,6 +203,7 @@ public class JpcspPtpObject extends PtpObject {
 			}
 
 			if (adhocPtpMessage != null && adhocPtpMessage.isForMe()) {
+				adhocPtpMessage.setAlreadyReceived();
 				switch (adhocPtpMessage.getType()) {
 					case PTP_MESSAGE_TYPE_CONNECT_CONFIRM:
 						// Connect successfully completed, retrieve the new destination port

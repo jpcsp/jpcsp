@@ -30,7 +30,7 @@ import jpcsp.network.adhoc.AdhocMessage;
  * - n bytes for the message data
  */
 public class JpcspAdhocPtpMessage extends AdhocMessage {
-	protected static final int HEADER_SIZE = MAC_ADDRESS_LENGTH + MAC_ADDRESS_LENGTH + 1;
+	protected static final int HEADER_SIZE = 4 + MAC_ADDRESS_LENGTH + MAC_ADDRESS_LENGTH + 1;
 	public static final int PTP_MESSAGE_TYPE_CONNECT = 1;
 	public static final int PTP_MESSAGE_TYPE_CONNECT_CONFIRM = 2;
 	public static final int PTP_MESSAGE_TYPE_DATA = 3;
@@ -54,6 +54,7 @@ public class JpcspAdhocPtpMessage extends AdhocMessage {
 	public byte[] getMessage() {
 		byte[] message = new byte[getMessageLength()];
 		offset = 0;
+		addInt32ToBytes(message, getId());
 		addToBytes(message, fromMacAddress);
 		addToBytes(message, toMacAddress);
 		addToBytes(message, type);
@@ -66,6 +67,7 @@ public class JpcspAdhocPtpMessage extends AdhocMessage {
 	public void setMessage(byte[] message, int length) {
 		if (length >= HEADER_SIZE) {
 			offset = 0;
+			id = copyInt32FromBytes(message);
 			copyFromBytes(message, fromMacAddress);
 			copyFromBytes(message, toMacAddress);
 			type = copyByteFromBytes(message);

@@ -329,6 +329,7 @@ public abstract class PdpObject extends AdhocObject {
 				InetAddress receivedAddress = socket.getReceivedAddress();
 				AdhocMessage adhocMessage = createAdhocMessage(bytes, length);
 				if (isForMe(adhocMessage, receivedPort, receivedAddress)) {
+					adhocMessage.setAlreadyReceived();
 					if (getRcvdData() + adhocMessage.getDataLength() <= getBufSize()) {
 						addReceivedMessage(adhocMessage, receivedPort);
 					} else {

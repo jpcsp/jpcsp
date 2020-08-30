@@ -28,7 +28,7 @@ import jpcsp.network.adhoc.AdhocMessage;
  * - n bytes for the message data
  */
 public class JpcspAdhocPdpMessage extends AdhocMessage {
-	protected static final int HEADER_SIZE = MAC_ADDRESS_LENGTH + MAC_ADDRESS_LENGTH;
+	protected static final int HEADER_SIZE = 4 + MAC_ADDRESS_LENGTH + MAC_ADDRESS_LENGTH;
 
 	public JpcspAdhocPdpMessage(int address, int length, byte[] destMacAddress) {
 		super(address, length, destMacAddress);
@@ -46,6 +46,7 @@ public class JpcspAdhocPdpMessage extends AdhocMessage {
 	public void setMessage(byte[] message, int length) {
 		if (length >= HEADER_SIZE) {
 			offset = 0;
+			id = copyInt32FromBytes(message);
 			copyFromBytes(message, fromMacAddress);
 			copyFromBytes(message, toMacAddress);
 			data = new byte[length - HEADER_SIZE];
@@ -57,6 +58,7 @@ public class JpcspAdhocPdpMessage extends AdhocMessage {
 	public byte[] getMessage() {
 		byte[] message = new byte[getMessageLength()];
 		offset = 0;
+		addInt32ToBytes(message, getId());
 		addToBytes(message, fromMacAddress);
 		addToBytes(message, toMacAddress);
 		addToBytes(message, data);

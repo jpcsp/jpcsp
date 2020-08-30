@@ -28,8 +28,12 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
 
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -96,6 +100,13 @@ public class sceNetAdhoc extends HLEModule {
     private static final int adhocGameModePort = 31000;
     private DatagramSocket gameModeSocket;
     private boolean isInitialized;
+
+    // The same message can be received over multiple broadcasting interfaces.
+	// Remember which messages have already been received to ensure that each
+    // message is only being processed once, even if received multiple times
+    private Map<byte[], Set<Integer>> alreadyReceivedAdhocMessageIds = new HashMap<byte[], Set<Integer>>();
+    private Set<byte[]> uniqueMacAdresses = new HashSet<byte[]>();
+    private int currentAdhocMessageId;
 
     private class ClientPortShiftSettingsListener extends AbstractBoolSettingsListener {
 		@Override
@@ -286,9 +297,46 @@ public class sceNetAdhoc extends HLEModule {
 	    currentFreePort = 0x4000;
 	    replicaGameModeAreas = new LinkedList<sceNetAdhoc.GameModeArea>();
 	    isInitialized = false;
+	    alreadyReceivedAdhocMessageIds.clear();
+	    currentAdhocMessageId = 0;
 
 	    super.start();
 	}
+
+    public int getNewAdhocMessageId() {
+    	return currentAdhocMessageId++;
+    }
+
+    private byte[] getUniqueFromMacAddress(AdhocMessage adhocMessage) {
+    	byte[] fromMacAddress = adhocMessage.getFromMacAddress();
+    	for (byte[] uniqueMacAddress : uniqueMacAdresses) {
+    		if (Arrays.equals(uniqueMacAddress, fromMacAddress)) {
+    			return uniqueMacAddress;
+    		}
+    	}
+
+    	uniqueMacAdresses.add(fromMacAddress);
+    	return fromMacAddress;
+    }
+
+    public boolean isAlreadyReceived(AdhocMessage adhocMessage) {
+    	byte[] uniqueFromMacAddress = getUniqueFromMacAddress(adhocMessage);
+    	Set<Integer> alreadyReceivedIds = alreadyReceivedAdhocMessageIds.get(uniqueFromMacAddress);
+    	if (alreadyReceivedIds == null) {
+    		return false;
+    	}
+    	return alreadyReceivedIds.contains(adhocMessage.getId());
+    }
+
+    public void setAlreadyReceived(AdhocMessage adhocMessage) {
+    	byte[] uniqueFromMacAddress = getUniqueFromMacAddress(adhocMessage);
+    	Set<Integer> alreadyReceivedIds = alreadyReceivedAdhocMessageIds.get(uniqueFromMacAddress);
+    	if (alreadyReceivedIds == null) {
+    		alreadyReceivedIds = new HashSet<Integer>();
+    		alreadyReceivedAdhocMessageIds.put(uniqueFromMacAddress, alreadyReceivedIds);
+    	}
+    	alreadyReceivedIds.add(adhocMessage.getId());
+    }
 
     public void setNetClientPortShift(int netClientPortShift) {
     	if (!hasLocalInetAddress()) {

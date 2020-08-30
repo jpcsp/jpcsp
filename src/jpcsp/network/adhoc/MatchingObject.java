@@ -472,6 +472,7 @@ public abstract class MatchingObject extends AdhocObject {
 				InetAddress receivedAddress = socket.getReceivedAddress();
 				AdhocMatchingEventMessage adhocMatchingEventMessage = createMessage(bytes, length);
 				if (isForMe(adhocMatchingEventMessage, receivedPort, receivedAddress)) {
+					adhocMatchingEventMessage.setAlreadyReceived();
 					int event = adhocMatchingEventMessage.getEvent();
 					int macAddr = buffer.addr;
 					int optData = buffer.addr + 8;

@@ -302,7 +302,7 @@ public abstract class PtpObject extends PdpObject {
 		return result;
 	}
 
-	// For Ptp sockets, data in read as a byte stream. Data is not organized in packets.
+	// For Ptp sockets, data is read as a byte stream. Data is not organized in packets.
 	// Read as much data as the provided buffer can contain.
 	public int recv(TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
 		int result = 0;
@@ -409,6 +409,7 @@ public abstract class PtpObject extends PdpObject {
 					InetAddress receivedAddress = socket.getReceivedAddress();
 					AdhocMessage adhocMessage = createAdhocMessage(bytes, length);
 					if (isForMe(adhocMessage, receivedPort, receivedAddress)) {
+						adhocMessage.setAlreadyReceived();
 						receivedMessage = adhocMessage;
 						receivedMessageOffset = 0;
 					} else {

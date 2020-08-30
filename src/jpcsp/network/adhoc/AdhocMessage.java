@@ -21,6 +21,8 @@ import static jpcsp.HLE.modules.sceNetAdhoc.ANY_MAC_ADDRESS;
 import static jpcsp.HLE.modules.sceNetAdhoc.isAnyMacAddress;
 import static jpcsp.HLE.modules.sceNetAdhoc.isSameMacAddress;
 import static jpcsp.util.Utilities.writeBytes;
+
+import jpcsp.HLE.Modules;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
@@ -34,22 +36,46 @@ import jpcsp.memory.MemoryReader;
  * - n bytes for the message data
  */
 public abstract class AdhocMessage {
+	// Unique message id which is used to avoid processing one message multiple
+	// times even if it is received over multiple broadcast interfaces.
+	protected int id;
 	protected byte[] fromMacAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
 	protected byte[] toMacAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
 	protected byte[] data = new byte[0];
 	protected int offset;
-	public static final int MAX_HEADER_SIZE = 13;
+	public static final int MAX_HEADER_SIZE = 17;
 
 	public AdhocMessage() {
+		id = getNewId();
 		init(0, 0, ANY_MAC_ADDRESS);
 	}
 
 	public AdhocMessage(byte[] fromMacAddress, byte[] toMacAddress) {
+		id = getNewId();
 		init(0, 0, toMacAddress);
 	}
 
 	public AdhocMessage(byte[] message, int length) {
+		id = getNewId();
 		setMessage(message, length);
+	}
+
+	public AdhocMessage(int address, int length) {
+		id = getNewId();
+		init(address, length, ANY_MAC_ADDRESS);
+	}
+
+	public AdhocMessage(int address, int length, byte[] toMacAddress) {
+		id = getNewId();
+		init(address, length, toMacAddress);
+	}
+
+	private int getNewId() {
+		return Modules.sceNetAdhocModule.getNewAdhocMessageId();
+	}
+
+	public int getId() {
+		return id;
 	}
 
 	protected void addToBytes(byte[] bytes, byte value) {
@@ -82,14 +108,6 @@ public abstract class AdhocMessage {
 		       ((copyByteFromBytes(bytes) & 0xFF) << 8) |
 		       ((copyByteFromBytes(bytes) & 0xFF) << 16) |
 		       ((copyByteFromBytes(bytes) & 0xFF) << 24);
-	}
-
-	public AdhocMessage(int address, int length) {
-		init(address, length, ANY_MAC_ADDRESS);
-	}
-
-	public AdhocMessage(int address, int length, byte[] toMacAddress) {
-		init(address, length, toMacAddress);
 	}
 
 	private void init(int address, int length, byte[] toMacAddress) {
@@ -174,12 +192,22 @@ public abstract class AdhocMessage {
 		System.arraycopy(toMacAddress, 0, this.toMacAddress, 0, this.toMacAddress.length);
 	}
 
+	public void setAlreadyReceived() {
+		Modules.sceNetAdhocModule.setAlreadyReceived(this);
+	}
+
 	public boolean isForMe() {
+		// The same message can be received over multiple broadcasting interfaces.
+		// Make sure we are processing such a message only once.
+		if (Modules.sceNetAdhocModule.isAlreadyReceived(this)) {
+			return false;
+		}
+
 		return isAnyMacAddress(toMacAddress) || isSameMacAddress(toMacAddress, Wlan.getMacAddress());
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[fromMacAddress=%s, toMacAddress=%s, dataLength=%d]", getClass().getSimpleName(), convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength());
+		return String.format("%s[id=0x%X, fromMacAddress=%s, toMacAddress=%s, dataLength=%d]", getClass().getSimpleName(), getId(), convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength());
 	}
 }
