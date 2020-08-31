@@ -27,7 +27,6 @@ import jpcsp.network.adhoc.AdhocMessage;
  */
 public class ProOnlineAdhocMessage extends AdhocMessage {
 	private ProOnlineNetworkAdapter proOnline;
-	protected static final int HEADER_SIZE = 4;
 
 	public ProOnlineAdhocMessage(ProOnlineNetworkAdapter networkAdapter, byte[] message, int length) {
 		super(message, length);
@@ -48,7 +47,6 @@ public class ProOnlineAdhocMessage extends AdhocMessage {
 	public byte[] getMessage() {
 		byte[] message = new byte[getMessageLength()];
 		offset = 0;
-		addInt32ToBytes(message, getId());
 		addToBytes(message, data);
 
 		return message;
@@ -58,15 +56,10 @@ public class ProOnlineAdhocMessage extends AdhocMessage {
 	public void setMessage(byte[] message, int length) {
 		if (length >= 0) {
 			offset = 0;
-			id = copyInt32FromBytes(message);
+			clearId(); // id is not used for ProOnline
 			data = new byte[length];
 			copyFromBytes(message, data);
 		}
-	}
-
-	@Override
-	public int getMessageLength() {
-		return super.getMessageLength() + HEADER_SIZE;
 	}
 
 	@Override

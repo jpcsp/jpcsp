@@ -33,7 +33,7 @@ import jpcsp.network.adhoc.MatchingObject;
  */
 public class ProOnlineAdhocMatchingEventMessage extends AdhocMatchingEventMessage {
 	protected static Logger log = ProOnlineNetworkAdapter.log;
-	protected static final int HEADER_SIZE = 4 + 1 + 4;
+	protected static final int HEADER_SIZE = 1 + 4;
 	private int packetOpcode;
 
 	public ProOnlineAdhocMatchingEventMessage(MatchingObject matchingObject, int event, int packetOpcode) {
@@ -55,7 +55,6 @@ public class ProOnlineAdhocMatchingEventMessage extends AdhocMatchingEventMessag
 	public byte[] getMessage() {
 		byte[] message = new byte[getMessageLength()];
 		offset = 0;
-		addInt32ToBytes(message, getId());
 		addToBytes(message, (byte) getPacketOpcode());
 		addInt32ToBytes(message, getDataLength());
 		addToBytes(message, data);
@@ -67,7 +66,7 @@ public class ProOnlineAdhocMatchingEventMessage extends AdhocMatchingEventMessag
 	public void setMessage(byte[] message, int length) {
 		if (length >= HEADER_SIZE) {
 			offset = 0;
-			id = copyInt32FromBytes(message);
+			clearId(); // id is not used for ProOnline
 			setPacketOpcode(copyByteFromBytes(message));
 			int dataLength = copyInt32FromBytes(message);
 			data = new byte[Math.min(dataLength, length - HEADER_SIZE)];

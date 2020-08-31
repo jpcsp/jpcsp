@@ -38,7 +38,7 @@ import jpcsp.memory.MemoryReader;
 public abstract class AdhocMessage {
 	// Unique message id which is used to avoid processing one message multiple
 	// times even if it is received over multiple broadcast interfaces.
-	protected int id;
+	private int id;
 	protected byte[] fromMacAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
 	protected byte[] toMacAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
 	protected byte[] data = new byte[0];
@@ -76,6 +76,18 @@ public abstract class AdhocMessage {
 
 	public int getId() {
 		return id;
+	}
+
+	public boolean hasId() {
+		return id != 0;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public void clearId() {
+		id = 0;
 	}
 
 	protected void addToBytes(byte[] bytes, byte value) {
@@ -193,14 +205,18 @@ public abstract class AdhocMessage {
 	}
 
 	public void setAlreadyReceived() {
-		Modules.sceNetAdhocModule.setAlreadyReceived(this);
+		if (hasId()) {
+			Modules.sceNetAdhocModule.setAlreadyReceived(this);
+		}
 	}
 
 	public boolean isForMe() {
-		// The same message can be received over multiple broadcasting interfaces.
-		// Make sure we are processing such a message only once.
-		if (Modules.sceNetAdhocModule.isAlreadyReceived(this)) {
-			return false;
+		if (hasId()) {
+			// The same message can be received over multiple broadcasting interfaces.
+			// Make sure we are processing such a message only once.
+			if (Modules.sceNetAdhocModule.isAlreadyReceived(this)) {
+				return false;
+			}
 		}
 
 		return isAnyMacAddress(toMacAddress) || isSameMacAddress(toMacAddress, Wlan.getMacAddress());

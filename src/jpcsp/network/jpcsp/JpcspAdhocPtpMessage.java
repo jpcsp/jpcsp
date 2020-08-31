@@ -67,7 +67,7 @@ public class JpcspAdhocPtpMessage extends AdhocMessage {
 	public void setMessage(byte[] message, int length) {
 		if (length >= HEADER_SIZE) {
 			offset = 0;
-			id = copyInt32FromBytes(message);
+			setId(copyInt32FromBytes(message));
 			copyFromBytes(message, fromMacAddress);
 			copyFromBytes(message, toMacAddress);
 			type = copyByteFromBytes(message);

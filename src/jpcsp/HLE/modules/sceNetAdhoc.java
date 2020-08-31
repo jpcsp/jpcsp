@@ -298,7 +298,7 @@ public class sceNetAdhoc extends HLEModule {
 	    replicaGameModeAreas = new LinkedList<sceNetAdhoc.GameModeArea>();
 	    isInitialized = false;
 	    alreadyReceivedAdhocMessageIds.clear();
-	    currentAdhocMessageId = 0;
+	    currentAdhocMessageId = 1;
 
 	    super.start();
 	}
