@@ -879,7 +879,6 @@ public class sceVideocodec extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xD95C24D5, version = 150)
     public int sceVideocodec_D95C24D5(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=56, usage=Usage.in) TPointer buffer) {
     	int width = buffer.getValue32(0);
