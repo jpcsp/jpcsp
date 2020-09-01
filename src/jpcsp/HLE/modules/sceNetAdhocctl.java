@@ -876,7 +876,7 @@ public class sceNetAdhocctl extends HLEModule {
     /**
      * Get a list of peers
      *
-     * @param length - The length of the list.
+     * @param lengthLuma - The length of the list.
      * @param buf - An allocated area of size length.
      *
      * @return 0 on success, < 0 on error.
@@ -972,7 +972,7 @@ public class sceNetAdhocctl extends HLEModule {
      * Get mac address from nickname
      *
      * @param nickname - The nickname.
-     * @param length - The length of the list.
+     * @param lengthLuma - The length of the list.
      * @param buf - An allocated area of size length.
      *
      * @return 0 on success, < 0 on error.
@@ -1072,7 +1072,7 @@ public class sceNetAdhocctl extends HLEModule {
     /**
      * Get the results of a scan
      *
-     * @param length - The length of the list.
+     * @param lengthLuma - The length of the list.
      * @param buf - An allocated area of size length.
      *
      * @return 0 on success, < 0 on error.

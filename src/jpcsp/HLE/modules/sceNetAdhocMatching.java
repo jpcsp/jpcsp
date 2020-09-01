@@ -434,7 +434,7 @@ public class sceNetAdhocMatching extends HLEModule {
      * Get a list of matching members
      *
      * @param matchingid - The ID returned from ::sceNetAdhocMatchingCreate
-     * @param length - The length of the list.
+     * @param lengthLuma - The length of the list.
      * @param buf - An allocated area of size length.
      *
      * @return 0 on success, < 0 on error.

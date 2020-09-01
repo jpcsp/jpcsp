@@ -32,6 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jpcsp.HLE.Modules;
+import jpcsp.hardware.Wlan;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.network.proonline.ProOnlineServer;
 
@@ -70,13 +71,36 @@ public class AutoDetectJpcsp {
 		}
 	}
 
+	private boolean mustStartProOnlineServer() {
+		if (!ProOnlineNetworkAdapter.isEnabled()) {
+			return false;
+		}
+
+		String proOnlineMetaServer = ProOnlineNetworkAdapter.getMetaServer();
+		// The ProOnline server has to be started if the metaserver is configured as "localhost"
+		if (proOnlineMetaServer.equalsIgnoreCase("localhost")) {
+			return true;
+		}
+
+		// The ProOnline server has to be started if the metaserver is configured as the IP address
+		// defined as the local IP address.
+		if (Wlan.hasLocalInetAddress()) {
+			InetAddress localInetAddress = Wlan.getLocalInetAddress();
+			if (proOnlineMetaServer.equalsIgnoreCase(localInetAddress.getHostName())) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private void discover() {
 		if (isOtherJpcspAvailable()) {
 			log.debug(String.format("Other Jpcsp is running"));
 		} else {
 			startDaemon();
 
-			if (ProOnlineNetworkAdapter.isEnabled() && ProOnlineNetworkAdapter.getMetaServer().equalsIgnoreCase("localhost")) {
+			if (mustStartProOnlineServer()) {
 				ProOnlineServer.getInstance().start();
 			}
 		}

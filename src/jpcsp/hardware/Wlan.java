@@ -118,6 +118,10 @@ public class Wlan {
     public static void setLocalIPAddress(String localIPAddress) {
     	try {
 			localInetAddress = InetAddress.getByName(localIPAddress);
+
+			if (log.isInfoEnabled()) {
+				log.info(String.format("Forcing local IP Address to %s", localInetAddress));
+			}
 		} catch (UnknownHostException e) {
 			localInetAddress = null;
 			log.error(e);
