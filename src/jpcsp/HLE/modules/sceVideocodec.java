@@ -41,6 +41,7 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.sceMpegbase.YCbCrImageState;
 import jpcsp.media.codec.CodecFactory;
 import jpcsp.media.codec.IVideoCodec;
 import jpcsp.memory.IMemoryReader;
@@ -929,6 +930,16 @@ public class sceVideocodec extends HLEModule {
 	    	log.debug(String.format("sceVideocodec_D95C24D5 otherBuffer1=%s, size=0x%X", otherBuffer1, size5));
 	    	log.debug(String.format("sceVideocodec_D95C24D5 otherBuffer2=%s, size=0x%X", otherBuffer2, size5));
 	    }
+
+	    YCbCrImageState imageState = new YCbCrImageState();
+	    sceMpegbase.read(imageState, width, height, buffer0.getMemory(), buffer0.getAddress(), buffer1.getAddress(), buffer2.getAddress(), buffer3.getAddress(), buffer4.getAddress(), buffer5.getAddress(), buffer6.getAddress(), buffer7.getAddress());
+
+	    sceMpegbase.write(otherBuffer0, size4, imageState.luma, 0);
+	    sceMpegbase.write(otherBuffer1, size5, imageState.cb, 0);
+	    sceMpegbase.write(otherBuffer2, size5, imageState.cr, 0);
+
+        imageState.releaseIntBuffers();
+
 	    return 0;
     }
 }

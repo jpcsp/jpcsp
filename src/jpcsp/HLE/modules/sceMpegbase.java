@@ -60,6 +60,26 @@ public class sceMpegbase extends HLEModule {
 	private static Set<int[]> intBuffers;
 	private static final int MAX_INT_BUFFERS_SIZE = 12;
 
+	public static class YCbCrImageState {
+		public int width;
+		public int height;
+		public int lengthLuma;
+        public int[] luma;
+        public int[] cb;
+        public int[] cr;
+
+        public void releaseIntBuffers() {
+            releaseIntBuffer(luma);
+            luma = null;
+
+            releaseIntBuffer(cb);
+            cb = null;
+
+            releaseIntBuffer(cr);
+            cr = null;
+        }
+	}
+
 	@Override
 	public void start() {
 		pixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
@@ -129,7 +149,7 @@ public class sceMpegbase extends HLEModule {
     	}
     }
 
-    private static void read(Memory mem, int addr, int length, int[] buffer, int offset) {
+    public static void read(Memory mem, int addr, int length, int[] buffer, int offset) {
     	if (mem == Emulator.getMemory()) {
     		addr |= MemoryMap.START_RAM;
     	}
@@ -158,7 +178,37 @@ public class sceMpegbase extends HLEModule {
         }
     }
 
-	private static void copy(Memory mem, int dst, int src, int length) {
+    public static void read(TPointer addr, int length, int[] buffer, int offset) {
+    	read(addr.getMemory(), addr.getAddress(), length, buffer, offset);
+    }
+
+    public static void write(Memory mem, int addr, int length, int[] buffer, int offset) {
+    	// Optimize the most common case
+        if (mem.hasMemoryInt(addr)) {
+        	int length4 = length >> 2;
+        	int addrOffset = mem.getMemoryIntOffset(addr);
+        	int[] memoryInt = mem.getMemoryInt(addr);
+	        for (int i = 0, j = offset; i < length4; i++) {
+	        	int value = buffer[j++] & 0xFF;
+	        	value |= (buffer[j++] & 0xFF) << 8;
+	        	value |= (buffer[j++] & 0xFF) << 16;
+	        	value |= (buffer[j++]       ) << 24;
+	        	memoryInt[addrOffset++] = value;
+	        }
+        } else {
+    	    IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(mem, addr, length, 1);
+	        for (int i = 0, j = offset; i < length; i++) {
+	        	memoryWriter.writeNext(buffer[j++]);
+	        }
+	        memoryWriter.flush();
+        }
+    }
+
+    public static void write(TPointer addr, int length, int[] buffer, int offset) {
+    	write(addr.getMemory(), addr.getAddress(), length, buffer, offset);
+    }
+
+    private static void copy(Memory mem, int dst, int src, int length) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("copy dst=0x%08X, src=0x%08X, length=0x%X", dst, src, length));
 		}
@@ -169,30 +219,7 @@ public class sceMpegbase extends HLEModule {
 		copy(mem, dst, src, blocks << 4);
 	}
 
-    public int hleMpegBaseCscAvc(TPointer bufferRGB, TPointer unknown, int bufferWidth, int videoPixelMode, SceMp4AvcCscStruct mp4AvcCscStruct) {
-    	int rangeX = 0;
-        int rangeY = 0;
-        int rangeWidth = mp4AvcCscStruct.width << 4;
-        int rangeHeight = mp4AvcCscStruct.height << 4;
-
-    	return hleMpegBaseCscAvcRange(bufferRGB, unknown, bufferWidth, videoPixelMode, mp4AvcCscStruct, rangeX, rangeY, rangeWidth, rangeHeight);
-    }
-
-    private int hleMpegBaseCscAvcRange(TPointer bufferRGB, TPointer unknown, int bufferWidth, int videoPixelMode, SceMp4AvcCscStruct mp4AvcCscStruct, int rangeX, int rangeY, int rangeWidth, int rangeHeight) {
-    	if (bufferWidth == 0) {
-    		bufferWidth = defaultBufferWidth;
-    	}
-
-    	int width = mp4AvcCscStruct.width << 4;
-    	int height = mp4AvcCscStruct.height << 4;
-
-		int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
-        int destAddr = bufferRGB.getAddress();
-
-        if (log.isTraceEnabled()) {
-        	log.trace(String.format("hleMpegBaseCscAvcRange bufferWidth=%d, width=%d, height=%d, pixelMode=%d, destAddr=%s", bufferWidth, width, height, videoPixelMode, bufferRGB));
-        }
-
+	public static void read(YCbCrImageState imageState, int width, int height, Memory mem, int buffer0, int buffer1, int buffer2, int buffer3, int buffer4, int buffer5, int buffer6, int buffer7) {
         int width2 = width >> 1;
     	int height2 = height >> 1;
         int length = width * height;
@@ -212,10 +239,10 @@ public class sceMpegbase extends HLEModule {
 		int[] bufferCrCb1 = getIntBuffer(sizeCrCb1);
 		int[] bufferCrCb2 = getIntBuffer(sizeCrCb2);
 
-		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer0, sizeY1, bufferY1, 0);
-		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer1, sizeY2, bufferY2, 0);
-		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer4, sizeCrCb1, bufferCrCb1, 0);
-		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer5, sizeCrCb2, bufferCrCb2, 0);
+		read(mem, buffer0, sizeY1, bufferY1, 0);
+		read(mem, buffer1, sizeY2, bufferY2, 0);
+		read(mem, buffer4, sizeCrCb1, bufferCrCb1, 0);
+		read(mem, buffer5, sizeCrCb2, bufferCrCb2, 0);
 		for (int x = 0, j = 0; x < width; x += 32) {
 			for (int y = 0, i = x; y < height; y += 2, i += 2 * width, j += 16) {
 				System.arraycopy(bufferY1, j, luma, i, 16);
@@ -243,10 +270,10 @@ public class sceMpegbase extends HLEModule {
 			}
 		}
 
-		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer2, sizeY1, bufferY1, 0);
-		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer3, sizeY2, bufferY2, 0);
-		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer6, sizeCrCb1, bufferCrCb1, 0);
-		read(mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer7, sizeCrCb2, bufferCrCb2, 0);
+		read(mem, buffer2, sizeY1, bufferY1, 0);
+		read(mem, buffer3, sizeY2, bufferY2, 0);
+		read(mem, buffer6, sizeCrCb1, bufferCrCb1, 0);
+		read(mem, buffer7, sizeCrCb2, bufferCrCb2, 0);
 		for (int x = 0, j = 0; x < width; x += 32) {
 			for (int y = 1, i = x + width; y < height; y += 2, i += 2 * width, j += 16) {
 				System.arraycopy(bufferY1, j, luma, i, 16);
@@ -279,13 +306,46 @@ public class sceMpegbase extends HLEModule {
         releaseIntBuffer(bufferCrCb1);
         releaseIntBuffer(bufferCrCb2);
 
-        // Convert YCbCr to ABGR
-        int[] abgr = getIntBuffer(length);
-        H264Utils.YUV2ABGR(width, height, luma, cb, cr, abgr);
+		imageState.width = width;
+		imageState.height = height;
+		imageState.lengthLuma = length;
+		imageState.luma = luma;
+		imageState.cb = cb;
+		imageState.cr = cr;
+	}
 
-        releaseIntBuffer(luma);
-        releaseIntBuffer(cb);
-        releaseIntBuffer(cr);
+	public int hleMpegBaseCscAvc(TPointer bufferRGB, TPointer unknown, int bufferWidth, int videoPixelMode, SceMp4AvcCscStruct mp4AvcCscStruct) {
+    	int rangeX = 0;
+        int rangeY = 0;
+        int rangeWidth = mp4AvcCscStruct.width << 4;
+        int rangeHeight = mp4AvcCscStruct.height << 4;
+
+    	return hleMpegBaseCscAvcRange(bufferRGB, unknown, bufferWidth, videoPixelMode, mp4AvcCscStruct, rangeX, rangeY, rangeWidth, rangeHeight);
+    }
+
+    private int hleMpegBaseCscAvcRange(TPointer bufferRGB, TPointer unknown, int bufferWidth, int videoPixelMode, SceMp4AvcCscStruct mp4AvcCscStruct, int rangeX, int rangeY, int rangeWidth, int rangeHeight) {
+    	if (bufferWidth == 0) {
+    		bufferWidth = defaultBufferWidth;
+    	}
+
+    	int width = mp4AvcCscStruct.width << 4;
+    	int height = mp4AvcCscStruct.height << 4;
+
+		int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
+        int destAddr = bufferRGB.getAddress();
+
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("hleMpegBaseCscAvcRange bufferWidth=%d, width=%d, height=%d, pixelMode=%d, destAddr=%s", bufferWidth, width, height, videoPixelMode, bufferRGB));
+        }
+
+        YCbCrImageState imageState = new YCbCrImageState();
+        read(imageState, width, height, mp4AvcCscStruct.bufferMemory, mp4AvcCscStruct.buffer0, mp4AvcCscStruct.buffer1, mp4AvcCscStruct.buffer2, mp4AvcCscStruct.buffer3, mp4AvcCscStruct.buffer4, mp4AvcCscStruct.buffer5, mp4AvcCscStruct.buffer6, mp4AvcCscStruct.buffer7);
+
+        // Convert YCbCr to ABGR
+        int[] abgr = getIntBuffer(imageState.lengthLuma);
+        H264Utils.YUV2ABGR(width, height, imageState.luma, imageState.cb, imageState.cr, abgr);
+
+        imageState.releaseIntBuffers();
 
 		// Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
         VideoEngine.getInstance().addVideoTexture(destAddr, destAddr + (rangeY + rangeHeight) * bufferWidth * bytesPerPixel);
