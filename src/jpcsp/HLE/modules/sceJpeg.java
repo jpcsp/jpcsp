@@ -375,7 +375,7 @@ public class sceJpeg extends HLEModule {
         int addressCb = addressY + sizeY;
         int addressCr = addressCb + sizeCb;
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("hleJpegCsc 0x%08X, 0x%08X, 0x%08X", addressY, addressCb, addressCr));
+        	log.debug(String.format("hleJpegCsc addressY=0x%08X, addressCb=0x%08X, addressCr=0x%08X", addressY, addressCb, addressCr));
         }
 
         // Read all the Cb and Cr values into an array as they will not be accessed sequentially.

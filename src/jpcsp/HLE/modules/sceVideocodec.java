@@ -887,6 +887,9 @@ public class sceVideocodec extends HLEModule {
     		return ERROR_AVC_INVALID_VALUE;
     	}
 
+    	// Read input the Y, Cb and Cr data which is stored
+    	// in the format produced by sceVideocodec,
+    	// i.e. using 8 buffers.
     	int size0;
 		int size1 = (height >> 1) * (width >> 1);
     	if ((width & 0x10) == 0) {
@@ -896,46 +899,54 @@ public class sceVideocodec extends HLEModule {
     	}
     	int size2 = size0 >> 1;
 		int size3 = size1 >> 1;
-		int size4 = width * height;
-		int size5 = size4 >> 2;
-	    if ((width & 0x70) == 0x70) {
-	    	size4 += height << 4;
-	    	size5 += height << 2;
-	    }
 
 	    TPointer buffer0 = buffer.getPointer(12);
-	    TPointer buffer1 = buffer.getPointer(16);
-	    TPointer buffer2 = buffer.getPointer(20);
-	    TPointer buffer3 = buffer.getPointer(24);
-	    TPointer buffer4 = buffer.getPointer(28);
-	    TPointer buffer5 = buffer.getPointer(32);
-	    TPointer buffer6 = buffer.getPointer(36);
+	    TPointer buffer1 = buffer.getPointer(28);
+	    TPointer buffer2 = buffer.getPointer(16);
+	    TPointer buffer3 = buffer.getPointer(32);
+	    TPointer buffer4 = buffer.getPointer(20);
+	    TPointer buffer5 = buffer.getPointer(36);
+	    TPointer buffer6 = buffer.getPointer(24);
 	    TPointer buffer7 = buffer.getPointer(40);
-	    TPointer otherBuffer0 = buffer.getPointer(44);
-	    TPointer otherBuffer1 = buffer.getPointer(48);
-	    TPointer otherBuffer2 = buffer.getPointer(52);
 
 	    if (log.isDebugEnabled()) {
-	    	log.debug(String.format("sceVideocodec_D95C24D5 buffer0=%s, size=0x%X", buffer0, size0));
-	    	log.debug(String.format("sceVideocodec_D95C24D5 buffer1=%s, size=0x%X", buffer1, size0));
-	    	log.debug(String.format("sceVideocodec_D95C24D5 buffer2=%s, size=0x%X", buffer2, size1));
-	    	log.debug(String.format("sceVideocodec_D95C24D5 buffer3=%s, size=0x%X", buffer3, size1));
-	    	log.debug(String.format("sceVideocodec_D95C24D5 buffer4=%s, size=0x%X", buffer4, size2));
-	    	log.debug(String.format("sceVideocodec_D95C24D5 buffer5=%s, size=0x%X", buffer5, size2));
-	    	log.debug(String.format("sceVideocodec_D95C24D5 buffer6=%s, size=0x%X", buffer6, size3));
-	    	log.debug(String.format("sceVideocodec_D95C24D5 buffer7=%s, size=0x%X", buffer7, size3));
-
-	    	log.debug(String.format("sceVideocodec_D95C24D5 otherBuffer0=%s, size=0x%X", otherBuffer0, size4));
-	    	log.debug(String.format("sceVideocodec_D95C24D5 otherBuffer1=%s, size=0x%X", otherBuffer1, size5));
-	    	log.debug(String.format("sceVideocodec_D95C24D5 otherBuffer2=%s, size=0x%X", otherBuffer2, size5));
+	    	log.debug(String.format("sceVideocodec_D95C24D5 input buffer0=%s, size=0x%X", buffer0, size0));
+	    	log.debug(String.format("sceVideocodec_D95C24D5 input buffer1=%s, size=0x%X", buffer1, size0));
+	    	log.debug(String.format("sceVideocodec_D95C24D5 input buffer2=%s, size=0x%X", buffer2, size1));
+	    	log.debug(String.format("sceVideocodec_D95C24D5 input buffer3=%s, size=0x%X", buffer3, size1));
+	    	log.debug(String.format("sceVideocodec_D95C24D5 input buffer4=%s, size=0x%X", buffer4, size2));
+	    	log.debug(String.format("sceVideocodec_D95C24D5 input buffer5=%s, size=0x%X", buffer5, size2));
+	    	log.debug(String.format("sceVideocodec_D95C24D5 input buffer6=%s, size=0x%X", buffer6, size3));
+	    	log.debug(String.format("sceVideocodec_D95C24D5 input buffer7=%s, size=0x%X", buffer7, size3));
 	    }
 
 	    YCbCrImageState imageState = new YCbCrImageState();
 	    sceMpegbase.read(imageState, width, height, buffer0.getMemory(), buffer0.getAddress(), buffer1.getAddress(), buffer2.getAddress(), buffer3.getAddress(), buffer4.getAddress(), buffer5.getAddress(), buffer6.getAddress(), buffer7.getAddress());
 
-	    sceMpegbase.write(otherBuffer0, size4, imageState.luma, 0);
-	    sceMpegbase.write(otherBuffer1, size5, imageState.cb, 0);
-	    sceMpegbase.write(otherBuffer2, size5, imageState.cr, 0);
+	    // Write the output Y, Cb and Cr data into the format
+	    // used by sceJpegCsc, i.e. using only 3 buffers where
+	    // the data is written sequentially instead of using
+	    // vertical pixel bands.
+		int sizeY = width * height;
+		int sizeCbCr = sizeY >> 2;
+	    if ((width & 0x70) == 0x70) {
+	    	sizeY += height << 4;
+	    	sizeCbCr += height << 2;
+	    }
+
+	    TPointer bufferY = buffer.getPointer(44);
+	    TPointer bufferCb = buffer.getPointer(48);
+	    TPointer bufferCr = buffer.getPointer(52);
+
+	    if (log.isDebugEnabled()) {
+	    	log.debug(String.format("sceVideocodec_D95C24D5 output bufferY=%s, size=0x%X", bufferY, sizeY));
+	    	log.debug(String.format("sceVideocodec_D95C24D5 output bufferCb=%s, size=0x%X", bufferCb, sizeCbCr));
+	    	log.debug(String.format("sceVideocodec_D95C24D5 output bufferCr=%s, size=0x%X", bufferCr, sizeCbCr));
+	    }
+
+	    sceMpegbase.write(bufferY, sizeY, imageState.luma, 0);
+	    sceMpegbase.write(bufferCb, sizeCbCr, imageState.cb, 0);
+	    sceMpegbase.write(bufferCr, sizeCbCr, imageState.cr, 0);
 
         imageState.releaseIntBuffers();
 

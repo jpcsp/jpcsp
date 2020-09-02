@@ -862,12 +862,12 @@ public class sceMpeg extends HLEModule {
 			sceMpegAvcDecodeYCbCrBuffer2.setValue32(4, height);
 			sceMpegAvcDecodeYCbCrBuffer2.setValue32(8, destinationAddr.getValue32(12));
 			sceMpegAvcDecodeYCbCrBuffer2.setValue32(12, mpegAvcYuvStruct.getValue32( 0));
-			sceMpegAvcDecodeYCbCrBuffer2.setValue32(16, mpegAvcYuvStruct.getValue32( 4));
-			sceMpegAvcDecodeYCbCrBuffer2.setValue32(20, mpegAvcYuvStruct.getValue32( 8));
-			sceMpegAvcDecodeYCbCrBuffer2.setValue32(24, mpegAvcYuvStruct.getValue32(12));
-			sceMpegAvcDecodeYCbCrBuffer2.setValue32(28, mpegAvcYuvStruct.getValue32(16));
-			sceMpegAvcDecodeYCbCrBuffer2.setValue32(32, mpegAvcYuvStruct.getValue32(20));
-			sceMpegAvcDecodeYCbCrBuffer2.setValue32(36, mpegAvcYuvStruct.getValue32(24));
+			sceMpegAvcDecodeYCbCrBuffer2.setValue32(16, mpegAvcYuvStruct.getValue32( 8));
+			sceMpegAvcDecodeYCbCrBuffer2.setValue32(20, mpegAvcYuvStruct.getValue32(16));
+			sceMpegAvcDecodeYCbCrBuffer2.setValue32(24, mpegAvcYuvStruct.getValue32(24));
+			sceMpegAvcDecodeYCbCrBuffer2.setValue32(28, mpegAvcYuvStruct.getValue32( 4));
+			sceMpegAvcDecodeYCbCrBuffer2.setValue32(32, mpegAvcYuvStruct.getValue32(12));
+			sceMpegAvcDecodeYCbCrBuffer2.setValue32(36, mpegAvcYuvStruct.getValue32(20));
 			sceMpegAvcDecodeYCbCrBuffer2.setValue32(40, mpegAvcYuvStruct.getValue32(28));
 			sceMpegAvcDecodeYCbCrBuffer2.setValue32(44, destinationAddr.getValue32(20));
 			sceMpegAvcDecodeYCbCrBuffer2.setValue32(48, destinationAddr.getValue32(20) + size1);
