@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -353,11 +354,15 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 			do {
 				retry = false;
 	    		try {
+	    			InetAddress localInetAddress = getLocalInetAddress();
 					wlanSocket = new DatagramSocket(wlanSocketPort, getLocalInetAddress());
 		    		// For broadcast
 					wlanSocket.setBroadcast(true);
 		    		// Non-blocking (timeout = 0 would mean blocking)
 					wlanSocket.setSoTimeout(1);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("createWlanSocket successful on port %d, localInetAddress %s", wlanSocketPort, localInetAddress));
+					}
 	    		} catch (BindException e) {
 	    			if (log.isDebugEnabled()) {
 	    				log.debug(String.format("createWlanSocket port %d already in use (%s) - retrying with port %d", wlanSocketPort, e, wlanSocketPort + 1));
@@ -411,6 +416,11 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     		return accessPoint.getPort();
     	}
 
+    	if (Wlan.hasLocalInetAddress()) {
+    		return wlanSocketPort;
+    	}
+
+    	// If no specific local IP address has been assigned, use port shifting
     	return wlanSocketPort ^ 1;
     }
 
@@ -426,10 +436,13 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 					DatagramPacket packet = new DatagramPacket(buffer, bufferLength, broadcastAddress[i]);
 					try {
 						wlanSocket.send(packet);
+						if (log.isTraceEnabled()) {
+							log.trace(String.format("sendPacket successful on %s", broadcastAddress[i]));
+						}
 					} catch (SocketException e) {
 						// Ignore "Network is unreachable"
 						if (log.isDebugEnabled()) {
-							log.debug("sendPacket", e);
+							log.debug(String.format("sendPacket on %s", broadcastAddress[i]), e);
 						}
 					}
 				}
