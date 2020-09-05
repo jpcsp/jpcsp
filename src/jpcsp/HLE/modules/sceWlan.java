@@ -24,6 +24,7 @@ import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_TYPE_SONY;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.hardware.Wlan.getLocalInetAddress;
+import static jpcsp.scheduler.Scheduler.getNow;
 
 import java.io.IOException;
 import java.net.BindException;
@@ -65,7 +66,6 @@ import jpcsp.hardware.Wlan;
 import jpcsp.network.accesspoint.AccessPoint;
 import jpcsp.network.accesspoint.IAccessPointCallback;
 import jpcsp.network.protocols.EtherFrame;
-import jpcsp.scheduler.Scheduler;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -112,6 +112,12 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     private int wlanDropRate;
     private int wlanDropDuration;
     private AccessPoint accessPoint;
+	private boolean scanInProgress;
+	private int scanCallCount;
+	private long scanCallTimestamp;
+	private TPointer scanHandleAddr;
+	private TPointer scanInputAddr;
+	private TPointer scanOutputAddr;
 
     private static class GameModeState {
     	public long timeStamp;
@@ -134,25 +140,6 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 		@Override
 		public String toString() {
 			return String.format("macAddress=%s, updated=%b, timeStamp=%d, dataLength=0x%X, data=%s", macAddress, updated, timeStamp, dataLength, Utilities.getMemoryDump(data, 0, dataLength));
-		}
-    }
-
-    private class WlanScanAction implements IAction {
-    	private TPointer handleAddr;
-    	private TPointer inputAddr;
-    	private TPointer outputAddr;
-    	private int callCount;
-
-		public WlanScanAction(TPointer handleAddr, int inputAddr, int outputAddr) {
-			this.handleAddr = handleAddr;
-			this.inputAddr = new TPointer(handleAddr.getMemory(), inputAddr);
-			this.outputAddr = new TPointer(handleAddr.getMemory(), outputAddr);
-		}
-
-		@Override
-		public void execute() {
-			hleWlanScanAction(handleAddr, inputAddr, outputAddr, this, callCount);
-			callCount++;
 		}
     }
 
@@ -234,6 +221,13 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 			// Receive all available messages
 		}
 
+    	if (scanInProgress) {
+    		long now = getNow();
+    		if (now - scanCallTimestamp >= wlanScanActionDelayUs) {
+    			hleWlanScanAction();
+    		}
+    	}
+
     	if (dummyMessageStep > 0) {
     		sendDummyMessage(dummyMessageStep, dummyMessageHandleAddr);
     		dummyMessageStep = 0;
@@ -246,21 +240,22 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	return wlanThreadUid != Modules.ThreadManForUserModule.getCurrentThreadID();
     }
 
-    private void hleWlanScanAction(TPointer handleAddr, TPointer inputAddr, TPointer outputAddr, WlanScanAction action, int callCount) {
+    private void hleWlanScanAction() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleWlanScanAction scanCallCount=%d", scanCallCount));
+    	}
+
     	// Send a scan request packet
     	byte[] scanRequestPacket = new byte[1 + MAC_ADDRESS_LENGTH];
     	scanRequestPacket[0] = WLAN_CMD_SCAN_REQUEST;
     	System.arraycopy(Wlan.getMacAddress(), 0, scanRequestPacket, 1, MAC_ADDRESS_LENGTH);
 		sendPacket(scanRequestPacket, scanRequestPacket.length);
 
-		while (hleWlanReceive()) {
-			// Process all pending messages
-		}
-
-		if (callCount < 20) {
+		if (scanCallCount < 20) {
 			// Schedule this action for 20 times (1 second)
 			// before terminating the scan action
-			Emulator.getScheduler().addAction(Scheduler.getNow() + wlanScanActionDelayUs, action);
+			scanCallTimestamp = getNow();
+			scanCallCount++;
 		} else {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("End of scan action:"));
@@ -269,9 +264,9 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 				}
 			}
 
-			TPointer addr = new TPointer(outputAddr);
+			TPointer addr = new TPointer(scanOutputAddr);
 			for (int i = 0; i < 14; i++) {
-				int channel = inputAddr.getValue8(10 + i);
+				int channel = scanInputAddr.getValue8(10 + i);
 				if (channel == 0) {
 					break;
 				}
@@ -296,13 +291,19 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 				}
 			}
 
-			if (addr.getAddress() > outputAddr.getAddress()) {
+			if (addr.getAddress() > scanOutputAddr.getAddress()) {
 				addr.setValue32(-96, 0); // Last SSID, no next one
 			}
 
-			// Signal the sema when the scan has completed
 	    	SceNetIfHandle handle = new SceNetIfHandle();
-	    	handle.read(handleAddr);
+	    	handle.read(scanHandleAddr);
+
+	    	scanHandleAddr = null;
+	    	scanInputAddr = null;
+	    	scanOutputAddr = null;
+	    	scanInProgress = false;
+
+			// Signal the sema when the scan has completed
     		Modules.ThreadManForUserModule.sceKernelSignalSema(handle.handleInternal.ioctlSemaId, 1);
 		}
     }
@@ -988,7 +989,12 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 
 	    			if (createWlanSocket()) {
 	    				signalSema = false;
-	    				Emulator.getScheduler().addAction(Scheduler.getNow(), new WlanScanAction(handleAddr, inputAddr, outputAddr));
+	    				scanHandleAddr = handleAddr;
+	    				scanInputAddr = new TPointer(handleAddr.getMemory(), inputAddr);
+	    				scanOutputAddr = new TPointer(handleAddr.getMemory(), outputAddr);
+	    				scanCallCount = 0;
+	    				scanCallTimestamp = 0L;
+	    				scanInProgress = true;
 	    			}
     			}
     			break;
@@ -1005,7 +1011,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     			joinChannelSSID(channel, ssid, mode);
 
     			signalSema = false;
-    			Emulator.getScheduler().addAction(Scheduler.getNow() + wlanCreateActionDelayUs, new WlanCreateAction(handleAddr));
+    			Emulator.getScheduler().addAction(getNow() + wlanCreateActionDelayUs, new WlanCreateAction(handleAddr));
     			break;
     		case IOCTL_CMD_CONNECT: // Called by sceNetAdhocctlConnect() and sceNetAdhocctlJoin()
     			// Receiving as input the SSID structure returned by cmd=IOCTL_CMD_START_SCANNING
@@ -1017,7 +1023,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     			joinChannelSSID(scanInfo.channel, scanInfo.ssid, scanInfo.mode);
 
     			signalSema = false;
-    			Emulator.getScheduler().addAction(Scheduler.getNow() + wlanConnectActionDelayUs, new WlanConnectAction(handleAddr));
+    			Emulator.getScheduler().addAction(getNow() + wlanConnectActionDelayUs, new WlanConnectAction(handleAddr));
     			break;
     		case IOCTL_CMD_GET_INFO: // Get joined SSID
     			// Remark: returning the joined SSID in the inputAddr!
@@ -1035,7 +1041,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     			joinedChannel = -1;
 
     			signalSema = false;
-    			Emulator.getScheduler().addAction(Scheduler.getNow() + wlanDisconnectActionDelayUs, new WlanDisconnectAction(handleAddr));
+    			Emulator.getScheduler().addAction(getNow() + wlanDisconnectActionDelayUs, new WlanDisconnectAction(handleAddr));
     			break;
     		case IOCTL_CMD_ENTER_GAME_MODE: // Enter Game Mode
     			pspNetMacAddress multicastMacAddress = new pspNetMacAddress();

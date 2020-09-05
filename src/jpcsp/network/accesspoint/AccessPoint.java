@@ -330,7 +330,7 @@ public class AccessPoint implements IProcessHTTPRequest {
 	public AccessPoint(IAccessPointCallback callback) {
 		this.callback = callback;
 
-		// Generate a random MAC address for the Address Point
+		// Generate a random MAC address for the Access Point
 		apMacAddress = new pspNetMacAddress(pspNetMacAddress.getRandomMacAddress());
 
 		apIpAddress = getIpAddress(sceNetApctl.getGateway());
