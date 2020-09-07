@@ -68,12 +68,14 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_LWMUTEX;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MBX;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SEMA;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_VPL;
+import static jpcsp.HLE.kernel.types.SceModule.PSP_MODULE_KERNEL;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.Memory.addressMask;
 import static jpcsp.MemoryMap.END_KERNEL;
 import static jpcsp.MemoryMap.START_KERNEL;
 import static jpcsp.util.Utilities.alignUp;
+import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.writeStringZ;
 
 import java.lang.management.ManagementFactory;
@@ -3852,11 +3854,31 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0x446D8DE6, version = 150)
     public int sceKernelCreateThread(@StringInfo(maxLength = 32) String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr) {
     	int mpidStack = USER_PARTITION_ID;
+
         // Inherit kernel mode if user mode bit is not set
-    	if (currentThread.isKernelMode() && !SceKernelThreadInfo.isUserMode(attr)) {
-            log.debug("sceKernelCreateThread inheriting kernel mode");
-            attr |= PSP_THREAD_ATTR_KERNEL;
-            mpidStack = KERNEL_PARTITION_ID;
+    	if (!SceKernelThreadInfo.isUserMode(attr)) {
+    		boolean inheritKernelMode = false;
+	    	if (currentThread.isKernelMode()) {
+	    		inheritKernelMode = true;
+	    	} else {
+	    		// When calling from kernel modules loaded from flash0, inherit the kernel mode
+	        	SceModule callerModule = Managers.modules.getModuleByAddress(Emulator.getProcessor().cpu.pc);
+	        	SceModule calledModule = Managers.modules.getModuleByAddress(entry_addr);
+	        	if (callerModule != null && calledModule != null) {
+	        		if (log.isDebugEnabled()) {
+	        			log.debug(String.format("sceKernelCreateThread callerModule=%s, attribute=0x%04X, calledModule=%s, attribute=0x%04X", callerModule, callerModule.attribute, calledModule, calledModule.attribute));
+	        		}
+	        		if (hasFlag(callerModule.attribute, PSP_MODULE_KERNEL) && hasFlag(calledModule.attribute, PSP_MODULE_KERNEL)) {
+	        			inheritKernelMode = true;
+	        		}
+	        	}
+	    	}
+
+	    	if (inheritKernelMode) {
+	            log.debug("sceKernelCreateThread inheriting kernel mode");
+	            attr |= PSP_THREAD_ATTR_KERNEL;
+	            mpidStack = KERNEL_PARTITION_ID;
+	    	}
     	}
 
     	SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr, mpidStack);
