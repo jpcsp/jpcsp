@@ -16,10 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.proonline;
 
+import static jpcsp.HLE.modules.sceNetAdhoc.isMyMacAddress;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.network.INetworkAdapter;
 import jpcsp.network.adhoc.AdhocMessage;
 import jpcsp.network.adhoc.AdhocSocket;
@@ -53,5 +56,32 @@ public class ProOnlineMatchingObject extends MatchingObject {
 	@Override
 	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
 		return proOnline.isForMe(adhocMessage, port, address);
+	}
+
+	@Override
+	public int selectTarget(pspNetMacAddress macAddress, int optLen, int optData) {
+		boolean sendBirth = isPendingJoinRequest(macAddress);
+
+		int result = super.selectTarget(macAddress, optLen, optData);
+
+		if (sendBirth) {
+			// Inform the other members of the new member
+			for (pspNetMacAddress member : getMembers()) {
+				if (!macAddress.equals(member) && !isMyMacAddress(member.macAddress)) {
+					ProOnlineAdhocMatchingEventMessage birthMessageToOtherMembers = MatchingPacketFactory.createBirthPacket(proOnline, this, member.macAddress, macAddress.macAddress);
+					try {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("selectTarget sending birth message for new member %s to %s", macAddress, member));
+						}
+
+						send(birthMessageToOtherMembers);
+					} catch (IOException e) {
+						log.error("selectTarget", e);
+					}
+				}
+			}
+		}
+
+		return result;
 	}
 }

@@ -282,12 +282,16 @@ public abstract class MatchingObject extends AdhocObject {
 		return result;
 	}
 
+	protected boolean isPendingJoinRequest(pspNetMacAddress macAddress) {
+		return pendingJoinRequest != null && sceNetAdhoc.isSameMacAddress(pendingJoinRequest, macAddress.macAddress);
+	}
+
 	public int selectTarget(pspNetMacAddress macAddress, int optLen, int optData) {
 		int result = 0;
 
 		try {
 			int event;
-			if (pendingJoinRequest != null && sceNetAdhoc.isSameMacAddress(pendingJoinRequest, macAddress.macAddress)) {
+			if (isPendingJoinRequest(macAddress)) {
 				event = PSP_ADHOC_MATCHING_EVENT_ACCEPT;
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Sending accept to port %d", getPort()));
@@ -417,7 +421,7 @@ public abstract class MatchingObject extends AdhocObject {
 		return true;
 	}
 
-	private void addMember(byte[] macAddr) {
+	public void addMember(byte[] macAddr) {
 		for (pspNetMacAddress member : members) {
 			if (sceNetAdhoc.isSameMacAddress(macAddr, member.macAddress)) {
 				// Already in the members list

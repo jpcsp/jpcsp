@@ -26,6 +26,12 @@ import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_HEL
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_JOIN;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import jpcsp.Memory;
+import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhocMatching;
 import jpcsp.network.adhoc.MatchingObject;
 
@@ -67,6 +73,7 @@ public class MatchingPacketFactory {
 		public void setMessage(byte[] message, int length) {
 			if (length >= getMessageLength()) {
 				offset = 0;
+				clearId(); // id is not used for ProOnline
 				setPacketOpcode(copyByteFromBytes(message));
 			}
 		}
@@ -127,6 +134,7 @@ public class MatchingPacketFactory {
 	 */
 	private static class MatchingPacketAccept extends ProOnlineAdhocMatchingEventMessage {
 		protected static final int HEADER_SIZE = 1 + 4 + 4;
+		private List<byte[]> siblings;
 
 		public MatchingPacketAccept(MatchingObject matchingObject, int address, int length, byte[] toMacAddress) {
 			super(matchingObject, PSP_ADHOC_MATCHING_EVENT_ACCEPT, ADHOC_MATCHING_PACKET_ACCEPT, address, length, toMacAddress);
@@ -164,15 +172,18 @@ public class MatchingPacketFactory {
 		public void setMessage(byte[] message, int length) {
 			if (length >= HEADER_SIZE) {
 				offset = 0;
+				clearId(); // id is not used for ProOnline
 				setPacketOpcode(copyByteFromBytes(message));
 				int dataLength = copyInt32FromBytes(message);
 				int siblingCount = copyInt32FromBytes(message);
 				int restLength = length - HEADER_SIZE - siblingCount * MAC_ADDRESS_LENGTH;
 				data = new byte[Math.min(dataLength, restLength)];
 				copyFromBytes(message, data);
-				byte[] mac = new byte[MAC_ADDRESS_LENGTH];
+				siblings = new LinkedList<byte[]>();
 				for (int i = 0; i < siblingCount; i++) {
+					byte[] mac = new byte[MAC_ADDRESS_LENGTH];
 					copyFromBytes(message, mac);
+					siblings.add(mac);
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("Received Sibling#%d: MAC %s", i, convertMacAddressToString(mac)));
 					}
@@ -195,6 +206,12 @@ public class MatchingPacketFactory {
 
 		@Override
 		public void processOnReceive(int macAddr, int optData, int optLen) {
+			if (siblings != null) {
+				for (byte[] sibling : siblings) {
+					getMatchingObject().addMember(sibling);
+				}
+			}
+
 			// Send the PSP_ADHOC_MATCHING_EVENT_ACCEPT event immediately followed by
 			// PSP_ADHOC_MATCHING_EVENT_COMPLETE
 			super.processOnReceive(macAddr, optData, optLen);
@@ -249,6 +266,60 @@ public class MatchingPacketFactory {
 		}
 	}
 
+	private static class MatchingPacketBirth extends ProOnlineAdhocMatchingEventMessage {
+		public byte[] macAddress;
+
+		public MatchingPacketBirth(MatchingObject matchingObject, byte[] toMacAddress, byte[] macAddress) {
+			super(matchingObject, PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING, ADHOC_MATCHING_PACKET_BIRTH, 0, 0, toMacAddress);
+			this.macAddress = new byte[MAC_ADDRESS_LENGTH];
+			System.arraycopy(macAddress, 0, this.macAddress, 0, this.macAddress.length);
+		}
+
+		public MatchingPacketBirth(MatchingObject matchingObject, byte[] message, int length) {
+			super(matchingObject, PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING, message, length);
+		}
+
+		@Override
+		public byte[] getMessage() {
+			byte[] message = new byte[getMessageLength()];
+			offset = 0;
+			addToBytes(message, (byte) getPacketOpcode());
+			addToBytes(message, macAddress);
+
+			return message;
+		}
+
+		@Override
+		public void setMessage(byte[] message, int length) {
+			if (length >= getMessageLength()) {
+				offset = 0;
+				clearId(); // id is not used for ProOnline
+				setPacketOpcode(copyByteFromBytes(message));
+				macAddress = new byte[MAC_ADDRESS_LENGTH];
+				copyFromBytes(message, macAddress);
+			}
+		}
+
+		@Override
+		public int getMessageLength() {
+			return 1 + MAC_ADDRESS_LENGTH;
+		}
+
+		@Override
+		public void processOnReceive(int macAddr, int optData, int optLen) {
+			pspNetMacAddress fromMacAddress = new pspNetMacAddress();
+			fromMacAddress.read(Memory.getInstance(), macAddr);
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("MatchingPacketBirth.processOnReceive fromMacAddress=%s, optData=0x%08X, optLen=0x%X, macAddress=%s", fromMacAddress, optData, optLen, new pspNetMacAddress(macAddress)));
+			}
+
+			getMatchingObject().addMember(macAddress);
+
+			super.processOnReceive(macAddr, optData, optLen);
+		}
+	}
+
 	public static ProOnlineAdhocMatchingEventMessage createPacket(ProOnlineNetworkAdapter proOnline, MatchingObject matchingObject, byte[] message, int length) {
 		if (length > 0 && message != null && message.length > 0) {
 			switch (message[0]) {
@@ -266,6 +337,8 @@ public class MatchingPacketFactory {
 					return new MatchingPacketBulk(matchingObject, message, length);
 				case ADHOC_MATCHING_PACKET_BYE:
 					return new MatchingPacketBye(matchingObject, message, length);
+				case ADHOC_MATCHING_PACKET_BIRTH:
+					return new MatchingPacketBirth(matchingObject, message, length);
 			}
 		}
 
@@ -312,5 +385,9 @@ public class MatchingPacketFactory {
 		}
 
 		return null;
+	}
+
+	public static ProOnlineAdhocMatchingEventMessage createBirthPacket(ProOnlineNetworkAdapter proOnline, MatchingObject matchingObject, byte[] toMacAddress, byte[] macAddress) {
+		return new MatchingPacketBirth(matchingObject, toMacAddress, macAddress);
 	}
 }

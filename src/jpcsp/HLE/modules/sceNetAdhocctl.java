@@ -1032,7 +1032,7 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x8916C003, version = 150)
-    public int sceNetAdhocctlGetNameByAddr(pspNetMacAddress macAddress, TPointer nickNameAddr) {
+    public int sceNetAdhocctlGetNameByAddr(pspNetMacAddress macAddress, @BufferInfo(usage = Usage.out, lengthInfo = LengthInfo.fixedLength, length = NICK_NAME_LENGTH) TPointer nickNameAddr) {
     	checkInitialized();
 
         String nickName = "";
