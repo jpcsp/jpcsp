@@ -21,11 +21,13 @@ import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_ACC
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_CANCEL;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_COMPLETE;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_DATA;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_DISCONNECT;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_HELLO;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_JOIN;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+import static jpcsp.network.proonline.ProOnlineNetworkAdapter.log;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -339,6 +341,9 @@ public class MatchingPacketFactory {
 					return new MatchingPacketBye(matchingObject, message, length);
 				case ADHOC_MATCHING_PACKET_BIRTH:
 					return new MatchingPacketBirth(matchingObject, message, length);
+				default:
+					log.error(String.format("MatchingPacketFactory.createPacket unimplemented packet opdate=%d", message[0]));
+					break;
 			}
 		}
 
@@ -361,6 +366,9 @@ public class MatchingPacketFactory {
 				return new MatchingPacketBulk(matchingObject);
 			case PSP_ADHOC_MATCHING_EVENT_DISCONNECT:
 				return new MatchingPacketBye(matchingObject);
+			default:
+				log.error(String.format("MatchingPacketFactory.createPacket unimplemented event=%d", event));
+				break;
 		}
 
 		return null;
@@ -382,6 +390,17 @@ public class MatchingPacketFactory {
 				return new MatchingPacketBulk(matchingObject, data, dataLength, macAddress);
 			case PSP_ADHOC_MATCHING_EVENT_DISCONNECT:
 				return new MatchingPacketBye(matchingObject);
+			case PSP_ADHOC_MATCHING_EVENT_COMPLETE:
+				// There is no event complete message, the PSP_ADHOC_MATCHING_EVENT_COMPLETE
+				// has already been triggered immediately.
+				break;
+			case PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM:
+				// There is no data confirmation message, the PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM
+				// has already been triggered immediately when calling sceNetAdhocMatchingSendData().
+				break;
+			default:
+				log.error(String.format("MatchingPacketFactory.createPacket unimplemented event=%d to %s", event, new pspNetMacAddress(macAddress)));
+				break;
 		}
 
 		return null;

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.proonline;
 
 import static jpcsp.HLE.modules.sceNetAdhoc.isMyMacAddress;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -81,6 +82,16 @@ public class ProOnlineMatchingObject extends MatchingObject {
 				}
 			}
 		}
+
+		return result;
+	}
+
+	@Override
+	public int send(pspNetMacAddress macAddress, int dataLen, int data) {
+		int result = super.send(macAddress, dataLen, data);
+
+		// Trigger the PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM event immediately
+		notifyCallbackEvent(PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM, macAddress.getBaseAddress(), dataLen, data);
 
 		return result;
 	}
