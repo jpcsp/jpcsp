@@ -723,4 +723,9 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	public void updatePeers() {
 		// Nothing to do
 	}
+
+	@Override
+	public AdhocMatchingEventMessage createAdhocMatchingBirthMessage(MatchingObject matchingObject, byte[] toMacAddress, byte[] birthMacAddress) {
+		return MatchingPacketFactory.createBirthPacket(this, matchingObject, toMacAddress, birthMacAddress);
+	}
 }

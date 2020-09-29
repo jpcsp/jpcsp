@@ -26,7 +26,7 @@ import org.apache.log4j.Logger;
  *
  */
 public abstract class BaseNetworkAdapter implements INetworkAdapter {
-	protected static Logger log = Logger.getLogger("network");
+	public static Logger log = Logger.getLogger("network");
 
 	@Override
 	public void start() {

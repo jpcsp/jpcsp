@@ -18,6 +18,7 @@ package jpcsp.network.jpcsp;
 
 import static jpcsp.HLE.Modules.sceNetAdhocModule;
 import static jpcsp.HLE.Modules.sceNetAdhocctlModule;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_BIRTH;
 import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_GAMEMODE;
 import static jpcsp.hardware.Wlan.getLocalInetAddress;
 import static jpcsp.network.jpcsp.JpcspAdhocPtpMessage.PTP_MESSAGE_TYPE_DATA;
@@ -166,6 +167,9 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 
 	@Override
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, byte[] message, int length) {
+		if (message[JpcspAdhocMatchingEventMessage.HEADER_SIZE - 1] == PSP_ADHOC_MATCHING_EVENT_INTERNAL_BIRTH) {
+			return new JpcspAdhocMatchingBirthEventMessage(matchingObject, message, length);
+		}
 		return new JpcspAdhocMatchingEventMessage(matchingObject, message, length);
 	}
 
@@ -277,5 +281,10 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 	public void updatePeers() {
 		broadcastPeers();
 		pollPeers();
+	}
+
+	@Override
+	public AdhocMatchingEventMessage createAdhocMatchingBirthMessage(MatchingObject matchingObject, byte[] toMacAddress, byte[] birthMacAddress) {
+		return new JpcspAdhocMatchingBirthEventMessage(matchingObject, toMacAddress, birthMacAddress);
 	}
 }

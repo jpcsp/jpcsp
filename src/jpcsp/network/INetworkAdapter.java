@@ -150,6 +150,15 @@ public interface INetworkAdapter {
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, byte[] message, int length);
 
 	/**
+	 * Create an Adhoc Birth message (notifying a member of a new member)
+	 * @param matchingObject  the matching object
+	 * @param toMacAddress    the destination MAC address
+	 * @param birthMacAddress the new MAC address to be announced
+	 * @return                the new Adhoc Matching message
+	 */
+	public AdhocMatchingEventMessage createAdhocMatchingBirthMessage(MatchingObject matchingObject, byte[] toMacAddress, byte[] birthMacAddress);
+
+	/**
 	 * When connecting or joining to a group, check when the CONNECTED state can be reached.
 	 * @return true if the CONNECTED state can be reached
 	 *         false if still processing the connection

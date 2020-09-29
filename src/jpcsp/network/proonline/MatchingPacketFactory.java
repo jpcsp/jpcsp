@@ -24,6 +24,7 @@ import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_DAT
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_DISCONNECT;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_HELLO;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_BIRTH;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_JOIN;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
@@ -269,16 +270,16 @@ public class MatchingPacketFactory {
 	}
 
 	private static class MatchingPacketBirth extends ProOnlineAdhocMatchingEventMessage {
-		public byte[] macAddress;
+		public byte[] birthMacAddress;
 
-		public MatchingPacketBirth(MatchingObject matchingObject, byte[] toMacAddress, byte[] macAddress) {
-			super(matchingObject, PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING, ADHOC_MATCHING_PACKET_BIRTH, 0, 0, toMacAddress);
-			this.macAddress = new byte[MAC_ADDRESS_LENGTH];
-			System.arraycopy(macAddress, 0, this.macAddress, 0, this.macAddress.length);
+		public MatchingPacketBirth(MatchingObject matchingObject, byte[] toMacAddress, byte[] birthMacAddress) {
+			super(matchingObject, PSP_ADHOC_MATCHING_EVENT_INTERNAL_BIRTH, ADHOC_MATCHING_PACKET_BIRTH, 0, 0, toMacAddress);
+			this.birthMacAddress = new byte[MAC_ADDRESS_LENGTH];
+			System.arraycopy(birthMacAddress, 0, this.birthMacAddress, 0, this.birthMacAddress.length);
 		}
 
 		public MatchingPacketBirth(MatchingObject matchingObject, byte[] message, int length) {
-			super(matchingObject, PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING, message, length);
+			super(matchingObject, PSP_ADHOC_MATCHING_EVENT_INTERNAL_BIRTH, message, length);
 		}
 
 		@Override
@@ -286,7 +287,7 @@ public class MatchingPacketFactory {
 			byte[] message = new byte[getMessageLength()];
 			offset = 0;
 			addToBytes(message, (byte) getPacketOpcode());
-			addToBytes(message, macAddress);
+			addToBytes(message, birthMacAddress);
 
 			return message;
 		}
@@ -297,8 +298,8 @@ public class MatchingPacketFactory {
 				offset = 0;
 				clearId(); // id is not used for ProOnline
 				setPacketOpcode(copyByteFromBytes(message));
-				macAddress = new byte[MAC_ADDRESS_LENGTH];
-				copyFromBytes(message, macAddress);
+				birthMacAddress = new byte[MAC_ADDRESS_LENGTH];
+				copyFromBytes(message, birthMacAddress);
 			}
 		}
 
@@ -313,10 +314,10 @@ public class MatchingPacketFactory {
 			fromMacAddress.read(Memory.getInstance(), macAddr);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("MatchingPacketBirth.processOnReceive fromMacAddress=%s, optData=0x%08X, optLen=0x%X, macAddress=%s", fromMacAddress, optData, optLen, new pspNetMacAddress(macAddress)));
+				log.debug(String.format("MatchingPacketBirth.processOnReceive fromMacAddress=%s, optData=0x%08X, optLen=0x%X, macAddress=%s", fromMacAddress, optData, optLen, new pspNetMacAddress(birthMacAddress)));
 			}
 
-			getMatchingObject().addMember(macAddress);
+			getMatchingObject().addMember(birthMacAddress);
 
 			super.processOnReceive(macAddr, optData, optLen);
 		}
@@ -406,7 +407,7 @@ public class MatchingPacketFactory {
 		return null;
 	}
 
-	public static ProOnlineAdhocMatchingEventMessage createBirthPacket(ProOnlineNetworkAdapter proOnline, MatchingObject matchingObject, byte[] toMacAddress, byte[] macAddress) {
-		return new MatchingPacketBirth(matchingObject, toMacAddress, macAddress);
+	public static ProOnlineAdhocMatchingEventMessage createBirthPacket(ProOnlineNetworkAdapter proOnline, MatchingObject matchingObject, byte[] toMacAddress, byte[] birthMacAddress) {
+		return new MatchingPacketBirth(matchingObject, toMacAddress, birthMacAddress);
 	}
 }

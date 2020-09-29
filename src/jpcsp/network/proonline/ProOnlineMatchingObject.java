@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.proonline;
 
-import static jpcsp.HLE.modules.sceNetAdhoc.isMyMacAddress;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM;
 
 import java.io.IOException;
@@ -60,39 +59,18 @@ public class ProOnlineMatchingObject extends MatchingObject {
 	}
 
 	@Override
-	public int selectTarget(pspNetMacAddress macAddress, int optLen, int optData) {
-		boolean sendBirth = isPendingJoinRequest(macAddress);
+	public int send(pspNetMacAddress macAddress, int dataLen, int data) {
+		int result = super.send(macAddress, dataLen, data);
 
-		int result = super.selectTarget(macAddress, optLen, optData);
-
-		if (sendBirth) {
-			// Inform the other members of the new member
-			for (pspNetMacAddress member : getMembers()) {
-				if (!macAddress.equals(member) && !isMyMacAddress(member.macAddress)) {
-					ProOnlineAdhocMatchingEventMessage birthMessageToOtherMembers = MatchingPacketFactory.createBirthPacket(proOnline, this, member.macAddress, macAddress.macAddress);
-					try {
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("selectTarget sending birth message for new member %s to %s", macAddress, member));
-						}
-
-						send(birthMessageToOtherMembers);
-					} catch (IOException e) {
-						log.error("selectTarget", e);
-					}
-				}
-			}
-		}
+		// Trigger the PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM event immediately
+		notifyCallbackEvent(PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM, macAddress.getBaseAddress(), 0, 0);
 
 		return result;
 	}
 
 	@Override
-	public int send(pspNetMacAddress macAddress, int dataLen, int data) {
-		int result = super.send(macAddress, dataLen, data);
-
-		// Trigger the PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM event immediately
-		notifyCallbackEvent(PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM, macAddress.getBaseAddress(), dataLen, data);
-
-		return result;
+	protected boolean sendBirthMessageToSelected() {
+		// ProOnline is already sending the siblings in the accept response packet, no need to send a birth message to the selected member
+		return false;
 	}
 }

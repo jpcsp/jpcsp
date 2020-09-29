@@ -81,8 +81,13 @@ public class sceNetAdhocMatching extends HLEModule {
     /** Data timeout event. */
     public static final int PSP_ADHOC_MATCHING_EVENT_DATA_TIMEOUT = 13;
 
+    /** Internal messages */
+    public static final int PSP_ADHOC_MATCHING_EVENT_INTERNAL_FIRST = 100;
     /** Internal ping message. */
-    public static final int PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING = 100;
+    public static final int PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING = PSP_ADHOC_MATCHING_EVENT_INTERNAL_FIRST;
+    /** Internal birth message. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_INTERNAL_BIRTH = PSP_ADHOC_MATCHING_EVENT_INTERNAL_FIRST + 1;
+
 
     /**
      * Matching modes used in sceNetAdhocMatchingCreate

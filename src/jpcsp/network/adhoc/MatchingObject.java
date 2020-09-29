@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.adhoc;
 
+import static jpcsp.HLE.modules.sceNetAdhoc.isMyMacAddress;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_ACCEPT;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_CANCEL;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_COMPLETE;
@@ -270,7 +271,7 @@ public abstract class MatchingObject extends AdhocObject {
 		try {
 			AdhocMatchingEventMessage adhocMatchingEventMessage = createMessage(PSP_ADHOC_MATCHING_EVENT_DATA, data, dataLen, macAddress.macAddress);
 			send(adhocMatchingEventMessage, macAddress, dataLen, data);
-			result = dataLen;
+			result = 0; // Return 0 in case of success, do not return dataLen
 		} catch (SocketException e) {
 			log.error("send", e);
 		} catch (UnknownHostException e) {
@@ -282,12 +283,17 @@ public abstract class MatchingObject extends AdhocObject {
 		return result;
 	}
 
-	protected boolean isPendingJoinRequest(pspNetMacAddress macAddress) {
+	private boolean isPendingJoinRequest(pspNetMacAddress macAddress) {
 		return pendingJoinRequest != null && sceNetAdhoc.isSameMacAddress(pendingJoinRequest, macAddress.macAddress);
+	}
+
+	protected boolean sendBirthMessageToSelected() {
+		return true;
 	}
 
 	public int selectTarget(pspNetMacAddress macAddress, int optLen, int optData) {
 		int result = 0;
+		boolean sendBirth = isPendingJoinRequest(macAddress);
 
 		try {
 			int event;
@@ -318,6 +324,40 @@ public abstract class MatchingObject extends AdhocObject {
 			log.error("selectTarget", e);
 		} catch (IOException e) {
 			log.error("selectTarget", e);
+		}
+
+		if (sendBirth) {
+			// Inform the other members of the new member
+			for (pspNetMacAddress member : getMembers()) {
+				if (!macAddress.equals(member) && !isMyMacAddress(member.macAddress)) {
+					AdhocMatchingEventMessage birthMessageToOtherMembers = createBirthMessage(member.macAddress, macAddress.macAddress);
+					try {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("selectTarget sending birth message for new member %s to %s", macAddress, member));
+						}
+
+						send(birthMessageToOtherMembers);
+					} catch (IOException e) {
+						log.error("selectTarget", e);
+					}
+				}
+			}
+
+			if (sendBirthMessageToSelected()) {
+				// Inform the selected member of the other already selected members
+				for (pspNetMacAddress member : getMembers()) {
+					AdhocMatchingEventMessage birthMessageToSelectedMember = createBirthMessage(macAddress.macAddress, member.macAddress);
+					try {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("selectTarget sending birth message for member %s to selected member %s", member, macAddress));
+						}
+
+						send(birthMessageToSelectedMember);
+					} catch (IOException e) {
+						log.error("selectTarget", e);
+					}
+				}
+			}
 		}
 
 		return result;
@@ -571,13 +611,12 @@ public abstract class MatchingObject extends AdhocObject {
 		return getNetworkAdapter().createAdhocMatchingEventMessage(this, message, length);
 	}
 
-	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
-		return adhocMessage.isForMe();
+	protected AdhocMatchingEventMessage createBirthMessage(byte[] toMacAddress, byte[] birthMacAddress) {
+		return getNetworkAdapter().createAdhocMatchingBirthMessage(this, toMacAddress, birthMacAddress);
 	}
 
-	@Override
-	public String toString() {
-		return String.format("MatchingObject[id=0x%X, mode=%d, maxPeers=%d, port=%d, callback=0x%08X]", getId(), mode, maxPeers, getPort(), callback);
+	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
+		return adhocMessage.isForMe();
 	}
 
 	protected void send(AdhocMatchingEventMessage adhocMatchingEventMessage, pspNetMacAddress macAddress, int dataLen, int data) throws IOException {
@@ -586,5 +625,10 @@ public abstract class MatchingObject extends AdhocObject {
 		if (adhocMatchingEventMessage != null) {
 			adhocMatchingEventMessage.processOnSend(macAddress.getBaseAddress(), data, dataLen);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return String.format("MatchingObject[id=0x%X, mode=%d, maxPeers=%d, port=%d, callback=0x%08X]", getId(), mode, maxPeers, getPort(), callback);
 	}
 }

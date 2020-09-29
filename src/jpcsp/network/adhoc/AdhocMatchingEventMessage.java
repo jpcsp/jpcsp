@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.adhoc;
 
-import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING;
+import jpcsp.HLE.modules.sceNetAdhocMatching;
 
 /**
  * @author gid15
@@ -57,7 +57,7 @@ public abstract class AdhocMatchingEventMessage extends AdhocMessage {
 	}
 
 	public void processOnReceive(int macAddr, int optData, int optLen) {
-		if (event != PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING) {
+		if (event < sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_FIRST) {
 			matchingObject.notifyCallbackEvent(getEvent(), macAddr, optLen, optData);
 		}
 	}
