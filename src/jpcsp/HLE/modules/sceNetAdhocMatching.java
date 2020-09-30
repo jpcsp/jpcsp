@@ -445,7 +445,7 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xC58BCD9E, version = 150)
-    public int sceNetAdhocMatchingGetMembers(@CheckArgument("checkMatchingId") int matchingId, @BufferInfo(usage=Usage.inout) TPointer32 sizeAddr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.out) TPointer buf) {
+    public int sceNetAdhocMatchingGetMembers(@CheckArgument("checkMatchingId") int matchingId, @BufferInfo(usage=Usage.inout) TPointer32 sizeAddr, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12 * 3, usage=Usage.out) TPointer buf) {
     	final int matchingMemberSize = 12;
 
         MatchingObject matchingObject = matchingObjects.get(matchingId);

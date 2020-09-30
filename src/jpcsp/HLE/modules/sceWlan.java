@@ -1346,7 +1346,11 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     }
 
     private int createWlanInterface() {
-		SceNetIfHandle handle = new SceNetIfHandle();
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("Using MAC address %s", sceNet.convertMacAddressToString(Wlan.getMacAddress())));
+    	}
+
+    	SceNetIfHandle handle = new SceNetIfHandle();
 		handle.callbackArg4 = 0x11040404; // dummy callback value
 		handle.upCallbackAddr = ThreadManForUser.WLAN_UP_CALLBACK_ADDRESS;
 		handle.downCallbackAddr = ThreadManForUser.WLAN_DOWN_CALLBACK_ADDRESS;

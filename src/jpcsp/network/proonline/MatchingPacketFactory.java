@@ -209,7 +209,9 @@ public class MatchingPacketFactory {
 
 		@Override
 		public void processOnReceive(int macAddr, int optData, int optLen) {
-			if (siblings != null) {
+			if (siblings != null && !siblings.isEmpty()) {
+				// Add all the members in the same order as received
+				getMatchingObject().clearMembers();
 				for (byte[] sibling : siblings) {
 					getMatchingObject().addMember(sibling);
 				}

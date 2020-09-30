@@ -490,6 +490,10 @@ public abstract class MatchingObject extends AdhocObject {
 		}
 	}
 
+	public void clearMembers() {
+		members.clear();
+	}
+
 	public void addCallbackEvent(int event, int macAddr, int optLen, int optData) {
 		CallbackEvent callbackEvent = new CallbackEvent(event, macAddr, optLen, optData);
 		pendingCallbackEvents.add(callbackEvent);

@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.adhoc;
 
+import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
+
 import jpcsp.HLE.modules.sceNetAdhocMatching;
 
 /**
@@ -64,5 +66,10 @@ public abstract class AdhocMatchingEventMessage extends AdhocMessage {
 
 	public void processOnSend(int macAddr, int optData, int optLen) {
 		// Nothing to do
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[id=0x%X, fromMacAddress=%s, toMacAddress=%s, event=%d, dataLength=%d]", getClass().getSimpleName(), getId(), convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getEvent(), getDataLength());
 	}
 }
