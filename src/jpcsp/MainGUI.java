@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.Security;
@@ -89,6 +90,7 @@ import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.mmio.umd.MMIOHandlerUmd;
+import jpcsp.network.AutoDetectLocalIPAddress;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.remote.HTTPServer;
 import jpcsp.settings.Settings;
@@ -3153,8 +3155,16 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 }
 
                 maingui.processArgs(fargs);
+                initAfterArgs();
             }
         });
+    }
+
+    private static void initAfterArgs() {
+    	if (!Wlan.hasLocalInetAddress()) {
+    		InetAddress localIPAddress = AutoDetectLocalIPAddress.getInstance().getLocalIPAddress();
+    		Wlan.setLocalInetAddress(localIPAddress);
+    	}
     }
 
     @Override

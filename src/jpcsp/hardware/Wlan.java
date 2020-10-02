@@ -115,15 +115,17 @@ public class Wlan {
     	return localInetAddress != null;
     }
 
+    public static void setLocalInetAddress(InetAddress localInetAddress) {
+    	Wlan.localInetAddress = localInetAddress;
+		if (log.isInfoEnabled()) {
+			log.info(String.format("Forcing local IP Address to %s", localInetAddress));
+		}
+    }
+
     public static void setLocalIPAddress(String localIPAddress) {
     	try {
-			localInetAddress = InetAddress.getByName(localIPAddress);
-
-			if (log.isInfoEnabled()) {
-				log.info(String.format("Forcing local IP Address to %s", localInetAddress));
-			}
+			setLocalInetAddress(InetAddress.getByName(localIPAddress));
 		} catch (UnknownHostException e) {
-			localInetAddress = null;
 			log.error(e);
 		}
     }
