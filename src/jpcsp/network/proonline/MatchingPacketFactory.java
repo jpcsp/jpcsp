@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.proonline;
 
 import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
+import static jpcsp.HLE.modules.sceNetAdhoc.isMyMacAddress;
+import static jpcsp.HLE.modules.sceNetAdhoc.isSameMacAddress;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_ACCEPT;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_CANCEL;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_COMPLETE;
@@ -34,8 +36,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.Memory;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhocMatching;
+import jpcsp.hardware.Wlan;
 import jpcsp.network.adhoc.MatchingObject;
 
 /**
@@ -53,6 +57,27 @@ public class MatchingPacketFactory {
 	public static final int ADHOC_MATCHING_PACKET_BIRTH = 7;
 	public static final int ADHOC_MATCHING_PACKET_DEATH = 8;
 	public static final int ADHOC_MATCHING_PACKET_BYE = 9;
+
+	private static class DelayedEventCallback implements IAction {
+		private MatchingObject matchingObject;
+		private int event;
+		private int macAddr;
+		private int optLen;
+		private int optData;
+
+		public DelayedEventCallback(MatchingObject matchingObject, int event, int macAddr, int optLen, int optData) {
+			this.matchingObject = matchingObject;
+			this.event = event;
+			this.macAddr = macAddr;
+			this.optLen = optLen;
+			this.optData = optData;
+		}
+
+		@Override
+		public void execute() {
+			matchingObject.notifyCallbackEvent(event, macAddr, optLen, optData);
+		}
+	}
 
 	private static abstract class MatchingPacketOpcode extends ProOnlineAdhocMatchingEventMessage {
 		public MatchingPacketOpcode(MatchingObject matchingObject, int event, byte[] message, int length) {
@@ -160,11 +185,16 @@ public class MatchingPacketFactory {
 			int siblingCount = getSiblingCount();
 			addInt32ToBytes(message, siblingCount);
 			addToBytes(message, data);
-			for (int i = 0; i < siblingCount; i++) {
-				byte[] macAddress = getMatchingObject().getMembers().get(i).macAddress;
-				addToBytes(message, macAddress);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Sending Sibling#%d: MAC %s", i, convertMacAddressToString(macAddress)));
+			List<pspNetMacAddress> members = getMatchingObject().getMembers();
+			for (int memberIndex = 0, siblingIndex = 0; memberIndex < members.size(); memberIndex++) {
+				byte[] macAddress = members.get(memberIndex).macAddress;
+				// ProOnline does not send as siblings the host itself and the member that just joined
+				if (!isMyMacAddress(macAddress) && !isSameMacAddress(macAddress, getMatchingObject().getPendingJoinRequest())) {
+					addToBytes(message, macAddress);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Sending Sibling#%d: MAC %s", siblingIndex, convertMacAddressToString(macAddress)));
+					}
+					siblingIndex++;
 				}
 			}
 
@@ -183,12 +213,12 @@ public class MatchingPacketFactory {
 				data = new byte[Math.min(dataLength, restLength)];
 				copyFromBytes(message, data);
 				siblings = new LinkedList<byte[]>();
-				for (int i = 0; i < siblingCount; i++) {
+				for (int siblingIndex = 0; siblingIndex < siblingCount; siblingIndex++) {
 					byte[] mac = new byte[MAC_ADDRESS_LENGTH];
 					copyFromBytes(message, mac);
 					siblings.add(mac);
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("Received Sibling#%d: MAC %s", i, convertMacAddressToString(mac)));
+						log.debug(String.format("Received Sibling#%d: MAC %s", siblingIndex, convertMacAddressToString(mac)));
 					}
 				}
 			}
@@ -199,7 +229,12 @@ public class MatchingPacketFactory {
 			if (getMatchingObject().getMode() != sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_HOST) {
 				return 0;
 			}
-			return getMatchingObject().getMembers().size();
+
+			int memberCount = getMatchingObject().getMembers().size();
+			// Do not send as siblings the host itself and the member that just joined
+			int siblingCount = memberCount - 2;
+
+			return Math.max(siblingCount, 0);
 		}
 
 		@Override
@@ -209,19 +244,32 @@ public class MatchingPacketFactory {
 
 		@Override
 		public void processOnReceive(int macAddr, int optData, int optLen) {
-			if (siblings != null && !siblings.isEmpty()) {
+			if (siblings != null) {
+				MatchingObject matchingObject = getMatchingObject();
+
+				// Read the MAC address of the host which is the source MAC address of this message
+				pspNetMacAddress hostMacAddress = new pspNetMacAddress();
+				hostMacAddress.read(Memory.getInstance(), macAddr);
+
 				// Add all the members in the same order as received
-				getMatchingObject().clearMembers();
+				matchingObject.clearMembers();
+
+				// Add the host always first
+				matchingObject.addMember(hostMacAddress.macAddress);
+
+				// Add the siblings in the same order as received
 				for (byte[] sibling : siblings) {
-					getMatchingObject().addMember(sibling);
+					matchingObject.addMember(sibling);
 				}
+
+				// Add myself (who just joined) as the last member
+				matchingObject.addMember(Wlan.getMacAddress());
 			}
 
-			// Send the PSP_ADHOC_MATCHING_EVENT_ACCEPT event immediately followed by
-			// PSP_ADHOC_MATCHING_EVENT_COMPLETE
-			super.processOnReceive(macAddr, optData, optLen);
-
-			getMatchingObject().notifyCallbackEvent(PSP_ADHOC_MATCHING_EVENT_COMPLETE, macAddr, optLen, optData);
+			// Send the PSP_ADHOC_MATCHING_EVENT_ACCEPT event,
+			// immediately followed by PSP_ADHOC_MATCHING_EVENT_COMPLETE
+			IAction triggerEventComplete = new DelayedEventCallback(getMatchingObject(), PSP_ADHOC_MATCHING_EVENT_COMPLETE, macAddr, optLen, optData);
+			getMatchingObject().notifyCallbackEvent(getEvent(), macAddr, optLen, optData, triggerEventComplete);
 		}
 
 		@Override
@@ -319,6 +367,7 @@ public class MatchingPacketFactory {
 				log.debug(String.format("MatchingPacketBirth.processOnReceive fromMacAddress=%s, optData=0x%08X, optLen=0x%X, macAddress=%s", fromMacAddress, optData, optLen, new pspNetMacAddress(birthMacAddress)));
 			}
 
+			// Add the member that just joined as the last member
 			getMatchingObject().addMember(birthMacAddress);
 
 			super.processOnReceive(macAddr, optData, optLen);

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.adhoc;
 
 import static jpcsp.HLE.modules.sceNetAdhoc.isMyMacAddress;
+import static jpcsp.HLE.modules.sceNetAdhoc.isSameMacAddress;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_ACCEPT;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_CANCEL;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_COMPLETE;
@@ -42,6 +43,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.SysMemUserForUser;
@@ -76,6 +78,7 @@ public abstract class MatchingObject extends AdhocObject {
 	private boolean inConnection;
 	private boolean connected;
 	private boolean pendingComplete;
+	// List of all the members of this matching object. This is including the host (as the first member) and also myself
 	private LinkedList<pspNetMacAddress> members = new LinkedList<pspNetMacAddress>();
 	private LinkedList<CallbackEvent> pendingCallbackEvents = new LinkedList<MatchingObject.CallbackEvent>();
 
@@ -283,8 +286,12 @@ public abstract class MatchingObject extends AdhocObject {
 		return result;
 	}
 
+	public byte[] getPendingJoinRequest() {
+		return pendingJoinRequest;
+	}
+
 	private boolean isPendingJoinRequest(pspNetMacAddress macAddress) {
-		return pendingJoinRequest != null && sceNetAdhoc.isSameMacAddress(pendingJoinRequest, macAddress.macAddress);
+		return pendingJoinRequest != null && isSameMacAddress(pendingJoinRequest, macAddress.macAddress);
 	}
 
 	protected boolean sendBirthMessageToSelected() {
@@ -422,7 +429,7 @@ public abstract class MatchingObject extends AdhocObject {
 		}
 	}
 
-    public void notifyCallbackEvent(int event, int macAddr, int optLen, int optData) {
+    public void notifyCallbackEvent(int event, int macAddr, int optLen, int optData, IAction afterAction) {
     	if (getCallback() == 0) {
     		return;
     	}
@@ -430,7 +437,11 @@ public abstract class MatchingObject extends AdhocObject {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("Notify callback 0x%08X, event=%d, macAddr=0x%08X, optLen=%d, optData=0x%08X", getCallback(), event, macAddr, optLen, optData));
     	}
-    	Modules.ThreadManForUserModule.executeCallback(eventThread, getCallback(), null, true, getId(), event, macAddr, optLen, optData);
+    	Modules.ThreadManForUserModule.executeCallback(eventThread, getCallback(), afterAction, true, getId(), event, macAddr, optLen, optData);
+    }
+
+    public void notifyCallbackEvent(int event, int macAddr, int optLen, int optData) {
+    	notifyCallbackEvent(event, macAddr, optLen, optData, null);
     }
 
 	public boolean eventLoop() {

@@ -19,7 +19,7 @@ package jpcsp.network.adhoc;
 import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
 import static jpcsp.HLE.modules.sceNetAdhoc.ANY_MAC_ADDRESS;
 import static jpcsp.HLE.modules.sceNetAdhoc.isAnyMacAddress;
-import static jpcsp.HLE.modules.sceNetAdhoc.isSameMacAddress;
+import static jpcsp.HLE.modules.sceNetAdhoc.isMyMacAddress;
 import static jpcsp.util.Utilities.writeBytes;
 
 import jpcsp.HLE.Modules;
@@ -219,7 +219,7 @@ public abstract class AdhocMessage {
 			}
 		}
 
-		return isAnyMacAddress(toMacAddress) || isSameMacAddress(toMacAddress, Wlan.getMacAddress());
+		return isAnyMacAddress(toMacAddress) || isMyMacAddress(toMacAddress);
 	}
 
 	@Override
