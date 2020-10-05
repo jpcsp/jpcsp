@@ -315,12 +315,12 @@ public abstract class PdpObject extends AdhocObject {
 	}
 
 	public void update() throws IOException {
-		// Receive all messages available
-		while (rcvdData < getBufSize()) {
+		// Receive all available messages, even if the receive buffer is full
+		while (true) {
 			try {
 				openSocket();
 				socket.setTimeout(1);
-				byte[] bytes = new byte[getBufSize() - rcvdData + MAX_HEADER_SIZE];
+				byte[] bytes = new byte[getBufSize() + MAX_HEADER_SIZE];
 				int length = socket.receive(bytes, bytes.length);
 				if (length <= 0) {
 					break;
@@ -333,6 +333,7 @@ public abstract class PdpObject extends AdhocObject {
 					if (getRcvdData() + adhocMessage.getDataLength() <= getBufSize()) {
 						addReceivedMessage(adhocMessage, receivedPort);
 					} else {
+						// If the message does not fit into the receive buffer, discard the whole message
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("Discarded message, receive buffer full (%d of %d): %s", getRcvdData(), getBufSize(), adhocMessage));
 						}

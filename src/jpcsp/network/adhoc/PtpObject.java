@@ -388,7 +388,8 @@ public abstract class PtpObject extends PdpObject {
 
 	@Override
 	public void update() throws IOException {
-		// Receive all messages available
+		// Receive all available messages.
+		// Should we only receive until the buffer is full?
 		while (getRcvdData() < getBufSize()) {
 			if (receivedMessage != null) {
 				receivedMessageOffset += addReceivedMessage(receivedMessage, receivedMessageOffset);
@@ -417,9 +418,6 @@ public abstract class PtpObject extends PdpObject {
 							log.debug(String.format("Received message not for me: %s", adhocMessage));
 						}
 					}
-//				} catch (SocketException e) {
-//					log.error("update", e);
-//					break;
 				} catch (SocketTimeoutException e) {
 					// Timeout
 					break;
