@@ -741,7 +741,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return Number of bytes received, < 0 on error.
      */
     @HLEFunction(nid = 0xDFE53E03, version = 150)
-    public int sceNetAdhocPdpRecv(@CheckArgument("checkPdpId") int id, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=6, usage=Usage.out) TPointer srcMacAddr, @BufferInfo(usage=Usage.out) TPointer16 portAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.out) TPointer data, @BufferInfo(usage=Usage.inout) TPointer32 dataLengthAddr, int timeout, int nonblock) {
+    public int sceNetAdhocPdpRecv(@CheckArgument("checkPdpId") int id, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=6, usage=Usage.out) TPointer srcMacAddr, @BufferInfo(usage=Usage.out) TPointer16 portAddr, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=128, usage=Usage.out) TPointer data, @BufferInfo(usage=Usage.inout) TPointer32 dataLengthAddr, int timeout, int nonblock) {
         int result = pdpObjects.get(id).recv(srcMacAddr, portAddr, data, dataLengthAddr, timeout, nonblock);
 
         return result;

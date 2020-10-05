@@ -525,15 +525,8 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	System.arraycopy(buffer, offset, packetMacAddress, 0, MAC_ADDRESS_LENGTH);
     	offset += MAC_ADDRESS_LENGTH;
     	length -= MAC_ADDRESS_LENGTH;
-    	byte[] myMacAddress = Wlan.getMacAddress();
-    	boolean macAddressEqual = true;
-    	for (int i = 0; i < MAC_ADDRESS_LENGTH; i++) {
-    		if (packetMacAddress[i] != myMacAddress[i]) {
-    			macAddressEqual = false;
-    			break;
-    		}
-    	}
-    	if (macAddressEqual) {
+
+    	if (sceNetAdhoc.isMyMacAddress(packetMacAddress)) {
     		// This packet is coming from myself, ignore it
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("Ignoring packet coming from myself"));
