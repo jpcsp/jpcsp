@@ -219,6 +219,11 @@ public abstract class AdhocMessage {
 			}
 		}
 
+		if (isMyMacAddress(fromMacAddress)) {
+    		// This packet is coming from myself, ignore it
+			return false;
+		}
+
 		return isAnyMacAddress(toMacAddress) || isMyMacAddress(toMacAddress);
 	}
 
