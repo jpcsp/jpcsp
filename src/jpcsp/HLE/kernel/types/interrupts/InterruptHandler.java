@@ -21,15 +21,17 @@ import jpcsp.HLE.TPointer;
 
 public class InterruptHandler extends AbstractInterruptHandler {
 	private TPointer func;
+	private int gp;
 	private int funcArg;
 
-	public InterruptHandler(TPointer func, int funcArg) {
+	public InterruptHandler(TPointer func, int gp, int funcArg) {
 		this.func = func;
+		this.gp = gp;
 		this.funcArg = funcArg;
 	}
 
 	@Override
 	protected void executeInterrupt() {
-		Modules.ThreadManForUserModule.executeCallback(null, func.getAddress(), null, true, funcArg);
+		Modules.ThreadManForUserModule.executeCallback(func.getAddress(), gp, null, funcArg);
 	}
 }

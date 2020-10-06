@@ -72,6 +72,15 @@ public class ModuleManager {
         return null;
     }
 
+    public int getModuleGpByAddress(int address) {
+    	SceModule module = getModuleByAddress(address);
+    	if (module == null) {
+    		return 0;
+    	}
+
+    	return module.gp_value;
+    }
+
     public static final ModuleManager singleton;
 
     static {

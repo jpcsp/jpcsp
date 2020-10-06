@@ -1138,10 +1138,9 @@ public class LoadCoreForKernel extends HLEModule {
 	 * 
 	 * @return The global pointer value (greater than 0) of the found module on success.
 	 */
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x410084F9, version = 660)
 	public int sceKernelGetModuleGPByAddressForKernel(int addr) {
-		return 0;
+		return Managers.modules.getModuleGpByAddress(addr);
 	}
 
 	/**

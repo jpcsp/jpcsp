@@ -19,11 +19,12 @@ package jpcsp.HLE.kernel.types.interrupts;
 public class SubIntrHandler extends AbstractAllegrexInterruptHandler {
 	private boolean enabled;
 
-	public SubIntrHandler(int address, int id, int argument) {
+	public SubIntrHandler(int address, int gp, int id, int argument) {
 		// call: handler(int id, void* argument)
 		// -> argumentA0 = id
 		// -> argumentA1 = argument
 		super(address, id, argument);
+		setGp(gp);
 	}
 
 	public int getId() {

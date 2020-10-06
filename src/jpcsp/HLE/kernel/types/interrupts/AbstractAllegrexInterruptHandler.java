@@ -22,6 +22,7 @@ public class AbstractAllegrexInterruptHandler {
 	private int address;
 	private int[] arguments = new int[4];
 	private int numberArguments;
+	private int gp;
 
 	public AbstractAllegrexInterruptHandler(int address) {
 		this.address = address;
@@ -80,6 +81,14 @@ public class AbstractAllegrexInterruptHandler {
 
 	public int getNumberArguments() {
 		return numberArguments;
+	}
+
+	public int getGp() {
+		return gp;
+	}
+
+	public void setGp(int gp) {
+		this.gp = gp;
 	}
 
 	public void copyArgumentsToCpu(CpuState cpu) {

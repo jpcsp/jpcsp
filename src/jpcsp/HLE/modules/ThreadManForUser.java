@@ -342,9 +342,11 @@ public class ThreadManForUser extends HLEModule {
         private int id;
         private int address;
         private int[] parameters;
+        private int gp;
         private int savedIdRegister;
         private int savedRa;
         private int savedPc;
+        private int savedGp;
         private int savedV0;
         private int savedV1;
         private IAction afterAction;
@@ -352,10 +354,11 @@ public class ThreadManForUser extends HLEModule {
         private boolean preserveCpuState;
         private CpuState savedCpuState;
 
-        public Callback(int id, int address, int[] parameters, IAction afterAction, boolean returnVoid, boolean preserveCpuState) {
+        public Callback(int id, int address, int[] parameters, int gp, IAction afterAction, boolean returnVoid, boolean preserveCpuState) {
             this.id = id;
             this.address = address;
             this.parameters = parameters;
+            this.gp = gp;
             this.afterAction = afterAction;
             this.returnVoid = returnVoid;
             this.preserveCpuState = preserveCpuState;
@@ -371,6 +374,7 @@ public class ThreadManForUser extends HLEModule {
 			savedIdRegister = cpu.getRegister(CALLBACKID_REGISTER);
 	        savedRa = cpu._ra;
 	        savedPc = cpu.pc;
+	        savedGp = cpu._gp;
 	        savedV0 = cpu._v0;
 	        savedV1 = cpu._v1;
 	        if (preserveCpuState) {
@@ -384,6 +388,7 @@ public class ThreadManForUser extends HLEModule {
 	        	}
 	        }
 
+	        cpu._gp = gp;
 	        cpu.setRegister(CALLBACKID_REGISTER, id);
 	        cpu._ra = CALLBACK_EXIT_HANDLER_ADDRESS;
 	        cpu.pc = address;
@@ -393,6 +398,7 @@ public class ThreadManForUser extends HLEModule {
 
 		public void executeExit(CpuState cpu) {
             cpu.setRegister(CALLBACKID_REGISTER, savedIdRegister);
+            cpu._gp = savedGp;
             cpu._ra = savedRa;
             cpu.pc = savedPc;
 
@@ -1978,12 +1984,42 @@ public class ThreadManForUser extends HLEModule {
      * @param address     the address to be called
      * @param afterAction the action to be executed after the completion of the code
      * @param returnVoid  the code has a void return value, i.e. $v0/$v1 have to be restored
+     * @param gp          the value of the $gp register to be set
      */
-    public void callAddress(int address, IAction afterAction, boolean returnVoid) {
-        callAddress(null, address, afterAction, returnVoid, false, null);
+    public void callAddress(int address, IAction afterAction, boolean returnVoid, int gp) {
+        callAddress(null, address, afterAction, returnVoid, false, null, gp);
+    }
+
+    /**
+     * Execute the code at the given address.
+     * The code is executed in the context of the currentThread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param address     address of the callback
+     * @param gp          value of the $gp register
+     * @param afterAction action to be executed after the completion of the callback
+     * @param registerA0  first parameter of the callback ($a0)
+     */
+    public void executeCallback(int address, int gp, IAction afterAction, int registerA0) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X), afterAction=%s", address, registerA0, afterAction));
+        }
+
+        callAddress(null, address, afterAction, true, true, new int[]{registerA0}, gp);
     }
 
     private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, boolean preserveCpuState, int[] parameters) {
+    	int gp = 0;
+    	if (thread != null) {
+    		gp = thread.gpReg_addr;
+    	}
+
+    	callAddress(thread, address, afterAction, returnVoid, preserveCpuState, parameters, gp);
+    }
+
+    private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, boolean preserveCpuState, int[] parameters, int gp) {
         if (thread != null) {
             // Save the wait state of the thread to restore it after the call
             afterAction = new AfterCallAction(thread, afterAction);
@@ -1996,7 +2032,7 @@ public class ThreadManForUser extends HLEModule {
         }
 
         int callbackId = callbackManager.getNewCallbackId();
-        Callback callback = new Callback(callbackId, address, parameters, afterAction, returnVoid, preserveCpuState);
+        Callback callback = new Callback(callbackId, address, parameters, gp, afterAction, returnVoid, preserveCpuState);
 
         callbackManager.addCallback(callback);
 
@@ -4533,7 +4569,7 @@ public class ThreadManForUser extends HLEModule {
         AfterSceKernelExtendThreadStackAction afterAction = new AfterSceKernelExtendThreadStackAction(thread, cpu.pc, cpu._sp, cpu._ra, extendedStackSysMemInfo);
         cpu._a0 = entryParameter;
         cpu._sp = extendedStackSysMemInfo.addr + size;
-        callAddress(entryAddr.getAddress(), afterAction, false);
+        callAddress(entryAddr.getAddress(), afterAction, false, cpu._gp);
 
         return afterAction.getReturnValue();
     }
@@ -4553,7 +4589,7 @@ public class ThreadManForUser extends HLEModule {
         AfterSceKernelExtendThreadStackAction afterAction = new AfterSceKernelExtendThreadStackAction(thread, cpu.pc, cpu._sp, cpu._ra, extendedStackSysMemInfo);
         cpu._a0 = entryParameter;
         cpu._sp = extendedStackSysMemInfo.addr + size;
-        callAddress(entryAddr.getAddress(), afterAction, false);
+        callAddress(entryAddr.getAddress(), afterAction, false, cpu._gp);
 
         return afterAction.getReturnValue();
     }

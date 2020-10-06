@@ -26,6 +26,7 @@ import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.interrupts.AbstractAllegrexInterruptHandler;
@@ -262,7 +263,7 @@ public class IntrManager {
 						log.debug("Calling InterruptHandler " + allegrexInterruptHandler.toString());
 					}
 					allegrexInterruptHandler.copyArgumentsToCpu(Emulator.getProcessor().cpu);
-					Modules.ThreadManForUserModule.callAddress(allegrexInterruptHandler.getAddress(), continueAction, true);
+					Modules.ThreadManForUserModule.callAddress(allegrexInterruptHandler.getAddress(), continueAction, true, allegrexInterruptHandler.getGp());
 					somethingExecuted = true;
 				}
 			} else {
@@ -367,7 +368,8 @@ public class IntrManager {
 			return SceKernelErrors.ERROR_KERNEL_SUBINTR_ALREADY_REGISTERED;
 		}
 
-		SubIntrHandler subIntrHandler = new SubIntrHandler(handlerAddress.getAddress(), subIntrNumber, handlerArgument);
+		int gp = Managers.modules.getModuleGpByAddress(handlerAddress.getAddress());
+		SubIntrHandler subIntrHandler = new SubIntrHandler(handlerAddress.getAddress(), gp, subIntrNumber, handlerArgument);
 		subIntrHandler.setEnabled(false);
 		intrHandlers[intrNumber].addSubIntrHandler(subIntrNumber, subIntrHandler);
 
@@ -430,7 +432,8 @@ public class IntrManager {
 			return -1;
 		}
 
-		AbstractInterruptHandler interruptHandler = new InterruptHandler(func, funcArg);
+		int gp = Managers.modules.getModuleGpByAddress(func.getAddress());
+		AbstractInterruptHandler interruptHandler = new InterruptHandler(func, gp, funcArg);
 		addInterruptHandler(intrNumber, interruptHandler);
 
 		return 0;
