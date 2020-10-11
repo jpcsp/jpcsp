@@ -961,7 +961,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 success, < 0 on error.
      */
     @HLEFunction(nid = 0x4DA4C788, version = 150)
-    public int sceNetAdhocPtpSend(@CheckArgument("checkPtpId") int id, TPointer data, TPointer32 dataSizeAddr, int timeout, int nonblock) {
+    public int sceNetAdhocPtpSend(@CheckArgument("checkPtpId") int id, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 32, usage = Usage.in) TPointer data, @BufferInfo(usage = Usage.in) TPointer32 dataSizeAddr, int timeout, int nonblock) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("Send data: %s", Utilities.getMemoryDump(data.getAddress(), dataSizeAddr.getValue())));
 		}
@@ -981,7 +981,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x8BEA2B3E, version = 150)
-    public int sceNetAdhocPtpRecv(@CheckArgument("checkPtpId") int id, TPointer data, TPointer32 dataSizeAddr, int timeout, int nonblock) {
+    public int sceNetAdhocPtpRecv(@CheckArgument("checkPtpId") int id, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 32, usage = Usage.out) TPointer data, @BufferInfo(usage = Usage.out) TPointer32 dataSizeAddr, int timeout, int nonblock) {
         return ptpObjects.get(id).recv(data, dataSizeAddr, timeout, nonblock);
     }
 
@@ -1037,7 +1037,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0xB9685118, version = 150)
-    public int sceNetAdhocGetPtpStat(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+    public int sceNetAdhocGetPtpStat(@BufferInfo(usage = Usage.inout) TPointer32 sizeAddr, @CanBeNull @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 2 * 36, usage = Usage.out) TPointer buf) {
 		checkInitialized();
 
     	final int objectInfoSize = 36;
@@ -1070,18 +1070,18 @@ public class sceNetAdhoc extends HLEModule {
         			log.debug(String.format("sceNetAdhocGetPtpStat returning %s at 0x%08X", ptpObject, buf.getAddress() + offset));
         		}
 
-        		/** Pointer to next PDP structure in list: will be written later */
+        		/** Offset 0: Pointer to next PDP structure in list: will be written later */
         		offset += 4;
 
-        		/** ptp ID */
+        		/** Offset 4: ptp ID */
         		buf.setValue32(offset, ptpObject.getId());
         		offset += 4;
 
-        		/** MAC address */
+        		/** Offset 8: MAC address */
         		ptpObject.getMacAddress().write(buf.getMemory(), buf.getAddress() + offset);
         		offset += ptpObject.getMacAddress().sizeof();
 
-        		/** Dest MAC address */
+        		/** Offset 14: Dest MAC address */
         		if (ptpObject.getDestMacAddress() != null) {
         			ptpObject.getDestMacAddress().write(buf.getMemory(), buf.getAddress() + offset);
         			offset += ptpObject.getDestMacAddress().sizeof();
@@ -1090,24 +1090,24 @@ public class sceNetAdhoc extends HLEModule {
         			offset += nonExistingDestMacAddress.sizeof();
         		}
 
-        		/** Port */
+        		/** Offset 20: Port */
         		buf.setValue16(offset, (short) ptpObject.getPort());
         		offset += 2;
 
-        		/** Dest Port */
+        		/** Offset 22: Dest Port */
         		buf.setValue16(offset, (short) ptpObject.getDestPort());
         		offset += 2;
 
-        		/** Bytes sent */
+        		/** Offset 24: Bytes sent */
         		buf.setValue32(offset, ptpObject.getSentData());
         		offset += 4;
 
-        		/** Bytes received */
+        		/** Offset 28: Bytes received */
         		buf.setValue32(offset, ptpObject.getRcvdData());
         		offset += 4;
 
-        		/** Unknown */
-        		buf.setValue32(offset, 4); // PSP seems to return value 4 here
+        		/** Offset 32: Status of connection, possible values 0..4, unknown meaning */
+        		buf.setValue32(offset, 4);
         		offset += 4;
         	}
 
