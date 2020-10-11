@@ -372,6 +372,10 @@ public abstract class PtpObject extends PdpObject {
 		int addr = buffer.addr + getRcvdData();
 		adhocMessage.writeDataToMemory(addr, offset, length);
 		rcvdData += length;
+
+		// Update the timestamp of the peer
+		Modules.sceNetAdhocctlModule.hleNetAdhocctlPeerUpdateTimestamp(adhocMessage.getFromMacAddress());
+
 		if (log.isDebugEnabled()) {
 			if (offset == 0) {
 				log.debug(String.format("Successfully received message (length=%d, rcvdData=%d) %s", length, getRcvdData(), adhocMessage));
