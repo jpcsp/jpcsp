@@ -16,14 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+
 import java.util.Random;
 
 import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhoc;
-import jpcsp.hardware.Wlan;
 
 public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
-	public final byte[] macAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
+	public final byte[] macAddress = new byte[MAC_ADDRESS_LENGTH];
 
 	public pspNetMacAddress() {
 	}
@@ -105,12 +106,26 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 	}
 
 	public static byte[] getRandomMacAddress() {
-		byte[] macAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
+		byte[] macAddress = new byte[MAC_ADDRESS_LENGTH];
 
 		Random random = new Random();
 		for (int i = 0; i < macAddress.length; i++) {
 			macAddress[i] = (byte) random.nextInt(256);
 		}
+
+		// The following OUI's (Organizationally Unique Identifier) seems to be used for PSPs
+		byte[][] validOUIs = new byte[][] {
+			new byte[] { (byte) 0x00, (byte) 0x01, (byte) 0x4A }, // Confirmed
+			new byte[] { (byte) 0x00, (byte) 0x02, (byte) 0xC7 }, // Confirmed
+			new byte[] { (byte) 0x00, (byte) 0x04, (byte) 0x1F }, // Not confirmed
+			new byte[] { (byte) 0x00, (byte) 0x13, (byte) 0x15 }  // Not confirmed
+		};
+		// Select one random OUI
+		byte[] oui = validOUIs[random.nextInt(validOUIs.length)];
+		macAddress[0] = oui[0];
+		macAddress[1] = oui[1];
+		macAddress[2] = oui[2];
+
 		// Both least significant bits of the first byte have a special meaning
 		// (see http://en.wikipedia.org/wiki/Mac_address):
 		// bit 0: 0=Unicast / 1=Multicast
