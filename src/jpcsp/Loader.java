@@ -575,7 +575,7 @@ public class Loader {
                 int memLen = (int)phdr.getP_memsz();
 
                 if (log.isDebugEnabled()) {
-                	log.debug(String.format("PH#%d: loading program %08X - file %08X - mem %08X", i, memOffset, memOffset + fileLen, memOffset + memLen));
+                	log.debug(String.format("PH#%d: loading program 0x%08X-0x%08X", i, memOffset, memOffset + memLen));
                 	log.debug(String.format("PH#%d:\n%s", i, phdr));
                 }
 
