@@ -185,10 +185,10 @@ public class VfpuState extends FpuState {
         public static class PfxSrc /* $128, $129 */ {
         	private static final int STATE_VERSION = 0;
 
-            public int[] swz;
-            public boolean[] abs;
-            public boolean[] cst;
-            public boolean[] neg;
+            public final int[] swz = new int[4];
+            public final boolean[] abs = new boolean[4];
+            public final boolean[] cst = new boolean[4];
+            public final boolean[] neg = new boolean[4];
             public boolean enabled;
 
             public void reset() {
@@ -202,11 +202,7 @@ public class VfpuState extends FpuState {
             }
 
             public PfxSrc() {
-                swz = new int[4];
-                abs = new boolean[4];
-                cst = new boolean[4];
-                neg = new boolean[4];
-                enabled = false;
+            	reset();
             }
 
             public void copy(PfxSrc that) {
@@ -219,6 +215,16 @@ public class VfpuState extends FpuState {
 
             public PfxSrc(PfxSrc that) {
                 copy(that);
+            }
+
+            public void setEnabledFromAttributes() {
+            	enabled = false;
+            	for (int i = 0; i < 4; i++) {
+            		if (swz[i] != i || abs[i] || cst[i] || neg[i]) {
+            			enabled = true;
+            			break;
+            		}
+            	}
             }
 
             public void read(StateInputStream stream) throws IOException {
@@ -245,8 +251,8 @@ public class VfpuState extends FpuState {
         public static class PfxDst /* 130 */ {
         	private static final int STATE_VERSION = 0;
 
-            public int[] sat;
-            public boolean[] msk;
+            public final int[] sat = new int[4];
+            public final boolean[] msk = new boolean[4];
             public boolean enabled;
 
             public void reset() {
@@ -256,9 +262,7 @@ public class VfpuState extends FpuState {
             }
 
             public PfxDst() {
-                sat = new int[4];
-                msk = new boolean[4];
-                enabled = false;
+            	reset();
             }
 
             public void copy(PfxDst that) {
@@ -269,6 +273,16 @@ public class VfpuState extends FpuState {
 
             public PfxDst(PfxDst that) {
                 copy(that);
+            }
+
+            public void setEnabledFromAttributes() {
+            	enabled = false;
+            	for (int i = 0; i < 4; i++) {
+            		if (sat[i] != 0 || msk[i]) {
+            			enabled = true;
+            			break;
+            		}
+            	}
             }
 
             public void read(StateInputStream stream) throws IOException {
@@ -1645,6 +1659,9 @@ public class VfpuState extends FpuState {
             int value = 0;
             switch (imm7) {
                 case 0: /* 128 */
+                	if (!vcr.pfxs.enabled) {
+                		vcr.pfxs.reset();
+                	}
                     value |= vcr.pfxs.swz[0] << 0;
                     value |= vcr.pfxs.swz[1] << 2;
                     value |= vcr.pfxs.swz[2] << 4;
@@ -1664,6 +1681,9 @@ public class VfpuState extends FpuState {
                     setRegister(rt, value);
                     break;
                 case 1: /* 129 */
+                	if (!vcr.pfxt.enabled) {
+                		vcr.pfxt.reset();
+                	}
                     value |= vcr.pfxt.swz[0] << 0;
                     value |= vcr.pfxt.swz[1] << 2;
                     value |= vcr.pfxt.swz[2] << 4;
@@ -1683,6 +1703,9 @@ public class VfpuState extends FpuState {
                     setRegister(rt, value);
                     break;
                 case 2: /* 130 */
+                	if (!vcr.pfxd.enabled) {
+                		vcr.pfxd.reset();
+                	}
                     value |= vcr.pfxd.sat[0] << 0;
                     value |= vcr.pfxd.sat[1] << 2;
                     value |= vcr.pfxd.sat[2] << 4;
@@ -1760,7 +1783,7 @@ public class VfpuState extends FpuState {
                 vcr.pfxs.neg[1] = ((value >> 17) & 1) == 1;
                 vcr.pfxs.neg[2] = ((value >> 18) & 1) == 1;
                 vcr.pfxs.neg[3] = ((value >> 19) & 1) == 1;
-                vcr.pfxs.enabled = true;
+                vcr.pfxs.setEnabledFromAttributes();
                 break;               
             case 1: /* 129 */
                 vcr.pfxt.swz[0] = ((value >> 0 ) & 3);
@@ -1779,7 +1802,7 @@ public class VfpuState extends FpuState {
                 vcr.pfxt.neg[1] = ((value >> 17) & 1) == 1;
                 vcr.pfxt.neg[2] = ((value >> 18) & 1) == 1;
                 vcr.pfxt.neg[3] = ((value >> 19) & 1) == 1;
-                vcr.pfxt.enabled = true;
+                vcr.pfxt.setEnabledFromAttributes();
                 break;
             case 2: /* 130 */
                 vcr.pfxd.sat[0] = ((value >> 0 ) & 3);
@@ -1790,7 +1813,7 @@ public class VfpuState extends FpuState {
                 vcr.pfxd.msk[1] = ((value >> 9 ) & 1) == 1;
                 vcr.pfxd.msk[2] = ((value >> 10) & 1) == 1;
                 vcr.pfxd.msk[3] = ((value >> 11) & 1) == 1;
-                vcr.pfxd.enabled = true;
+                vcr.pfxd.setEnabledFromAttributes();
                 break;
             case 3: /* 131 */
                 for (int i = 0; i < vcr.cc.length; i++) {
