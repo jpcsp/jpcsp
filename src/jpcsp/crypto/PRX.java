@@ -341,14 +341,14 @@ public class PRX {
     	MixXOR(outbuf, 0, size, inbuf, 0, xor, 0);
     }
 
-    private void RoundXOR(byte[] buf, int size, byte[] xor1, byte[] xor2) {
+    private void RoundXOR(byte[] buf, int offset, int size, byte[] xor1, byte[] xor2) {
         for (int i = 0; i < size; i++) {
             if (!isNullKey(xor1)) {
-                buf[i] ^= xor1[i & 0xf];
+                buf[offset + i] ^= xor1[i & 0xf];
             }
 
             if (!isNullKey(xor2)) {
-                buf[i] ^= xor2[i & 0xf];
+                buf[offset + i] ^= xor2[i & 0xf];
             }
         }
     }
@@ -783,7 +783,7 @@ public class PRX {
             // Round XOR key for PRX type 3,5,7 and 10.
             if (type == 3 || type == 5 || type == 7 || type == 10) {
                 if (!isNullKey(xor2)) {
-                    RoundXOR(buf2, 0x90, xor2, null);
+                    RoundXOR(buf2, 0, 0x90, xor2, null);
                 }
             }
 
@@ -843,15 +843,8 @@ public class PRX {
                 System.arraycopy(buf1, 0xC0, buf2, 0x90 + 0x30, 0x10);
                 System.arraycopy(buf1, 0x12C, buf2, 0x90 + 0x30 + 0x10, 0x10);
 
-                byte[] tmp = new byte[0x50];
-                for (int i = 0; i < tmp.length; i++) {
-                    tmp[i] = buf2[0x90 + i];
-                }
-
                 // Round XOR with xor1 and xor2.
-                RoundXOR(tmp, 0x50, xor1, xor2);
-
-                System.arraycopy(tmp, 0, buf2, 0x90, 0x50);
+                RoundXOR(buf2, 0x90, 0x50, xor1, xor2);
 
                 // Decrypt signature (type 3).
                 result = semaphoreModule.hleUtilsBufferCopyWithRange(buf4, 0, 0xB4, buf2, 0, 0x150, KIRK.PSP_KIRK_CMD_DECRYPT_SIGN);
@@ -872,19 +865,12 @@ public class PRX {
                 System.arraycopy(buf1, 0xB0, buf2, 0xC0, 0x10);
                 System.arraycopy(buf1, 0, buf2, 0xD0, 0x80);
             } else if (type == 5 || type == 7 || type == 10) {
-                System.arraycopy(buf1, 0x80, buf2, 0x14, 0x30);
+            	System.arraycopy(buf1, 0x80, buf2, 0x14, 0x30);
                 System.arraycopy(buf1, 0xC0, buf2, 0x44, 0x10);
                 System.arraycopy(buf1, 0x12C, buf2, 0x54, 0x10);
 
-                byte[] tmp = new byte[0x50];
-                for (int i = 0; i < tmp.length; i++) {
-                    tmp[i] = buf2[0x14 + i];
-                }
-
                 // Round XOR with xor1 and xor2.
-                RoundXOR(tmp, 0x50, xor1, xor2);
-
-                System.arraycopy(tmp, 0, buf2, 0x14, 0x50);
+                RoundXOR(buf2, 0x14, 0x50, xor1, xor2);
 
                 // Type 5 is used for POPS or scePauth
                 boolean dumpError = type != 5;
@@ -941,12 +927,7 @@ public class PRX {
                 System.arraycopy(buf2, 0x5C, buf4, 0x14, 0x60);
 
                 if (type == 3 || type == 5 || type == 7 || type == 10) {
-                    byte[] tmp = new byte[0x60];
-                    for (int i = 0; i < tmp.length; i++) {
-                        tmp[i] = buf4[0x14 + i];
-                    }
-                    RoundXOR(tmp, 0x60, xor1, null);
-                    System.arraycopy(tmp, 0, buf4, 0x14, 0x60);
+                    RoundXOR(buf4, 0x14, 0x60, xor1, null);
                 }
                 ScramblePRX(buf4, 0, 0x60, pti.code);
                 System.arraycopy(buf4, 0, buf2, 0x5C, 0x60);
