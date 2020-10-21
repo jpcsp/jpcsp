@@ -25,6 +25,9 @@ import java.util.zip.CRC32;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.crypto.KeyVault;
 import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.HLE.BufferInfo;
+import jpcsp.HLE.BufferInfo.LengthInfo;
+import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
@@ -39,7 +42,7 @@ public class scePauth extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xF7AA47F6, version = 500)
-    public int scePauth_F7AA47F6(TPointer inputAddr, int inputLength, @CanBeNull TPointer32 resultLengthAddr, TPointer keyAddr) {
+    public int scePauth_F7AA47F6(@BufferInfo(lengthInfo = LengthInfo.nextParameter, usage = Usage.inout) TPointer inputAddr, int inputLength, @BufferInfo(usage = Usage.out) @CanBeNull TPointer32 resultLengthAddr, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 16, usage = Usage.in) TPointer keyAddr) {
     	CryptoEngine crypto = new CryptoEngine();
         byte[] in = inputAddr.getArray8(inputLength);
         byte[] key = keyAddr.getArray8(0x10);
@@ -92,10 +95,9 @@ public class scePauth extends HLEModule {
                 pauthKey.close();
                 
                 // Decryption is not working properly due to a missing KIRK key.
-                int reslength = crypto.getPRXEngine().DecryptPRX(in, inputLength, 5, key, xor);
-                
-                // Fake the result.
-                inputAddr.clear(reslength);
+                int reslength = crypto.getPRXEngine().DecryptPRX(in, inputLength, 5, xor, key);
+
+                inputAddr.setArray(in, reslength);
                 resultLengthAddr.setValue(reslength);
             }
         } catch (IOException ioe) {
@@ -158,12 +160,11 @@ public class scePauth extends HLEModule {
                 pauthKey.write(key);
                 pauthPRX.close();
                 pauthKey.close();
-                
+
                 // Decryption is not working properly due to a missing KIRK key.
-                int reslength = crypto.getPRXEngine().DecryptPRX(in, inputLength, 5, key, xor);
-                
-                // Fake the result.
-                inputAddr.clear(reslength);
+                int reslength = crypto.getPRXEngine().DecryptPRX(in, inputLength, 5, xor, key);
+
+                inputAddr.setArray(in, reslength);
                 resultLengthAddr.setValue(reslength);
             }
         } catch (IOException ioe) {
