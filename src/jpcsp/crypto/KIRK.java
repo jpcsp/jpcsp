@@ -23,10 +23,7 @@ import java.nio.ByteBuffer;
 import jpcsp.util.Utilities;
 
 public class KIRK {
-
     // PSP specific values.
-    private int fuseID0;
-    private int fuseID1;
     private byte[] priv_iv = new byte[0x10];
     private byte[] prng_data = new byte[0x14];
 
@@ -111,15 +108,14 @@ public class KIRK {
         }
     }
 
-    private static class AES128_CMAC_Header {
-
+    protected static class AES128_CMAC_Header {
         private byte[] AES128Key = new byte[16];
         private byte[] CMACKey = new byte[16];
         private byte[] CMACHeaderHash = new byte[16];
         private byte[] CMACDataHash = new byte[16];
         private byte[] unk1 = new byte[32];
         private int mode;
-        private byte useECDSAhash;
+        protected byte useECDSAhash;
         private byte[] unk2 = new byte[11];
         private int dataSize;
         private int dataOffset;
@@ -152,18 +148,17 @@ public class KIRK {
         }
     }
 
-    private static class AES128_CMAC_ECDSA_Header {
-
+    protected static class AES128_CMAC_ECDSA_Header {
         private byte[] AES128Key = new byte[16];
         private byte[] ECDSAHeaderSig_r = new byte[20];
         private byte[] ECDSAHeaderSig_s = new byte[20];
         private byte[] ECDSADataSig_r = new byte[20];
         private byte[] ECDSADataSig_s = new byte[20];
-        private int mode;
-        private byte useECDSAhash;
+        protected int mode;
+        protected byte useECDSAhash;
         private byte[] unk1 = new byte[11];
-        private int dataSize;
-        private int dataOffset;
+        protected int dataSize;
+        protected int dataOffset;
         private byte[] unk2 = new byte[8];
         private byte[] unk3 = new byte[16];
 
@@ -277,62 +272,17 @@ public class KIRK {
 
     // Helper functions.
     private static int[] getAESKeyFromSeed(int seed) {
-        switch (seed) {
-            case 0x02:
-                return KeyVault.kirkAESKey20;
-            case 0x03:
-                return KeyVault.kirkAESKey1;
-            case 0x04:
-                return KeyVault.kirkAESKey2;
-            case 0x05:
-                return KeyVault.kirkAESKey3;
-            case 0x07:
-                return KeyVault.kirkAESKey21;
-            case 0x0A:
-            	return new int[] { 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A };
-            case 0x0C:
-                return KeyVault.kirkAESKey4;
-            case 0x0D:
-                return KeyVault.kirkAESKey5;
-            case 0x0E:
-                return KeyVault.kirkAESKey6;
-            case 0x0F:
-                return KeyVault.kirkAESKey7;
-            case 0x10:
-                return KeyVault.kirkAESKey8;
-            case 0x11:
-                return KeyVault.kirkAESKey9;
-            case 0x12:
-                return KeyVault.kirkAESKey10;
-            case 0x38:
-                return KeyVault.kirkAESKey11;
-            case 0x39:
-                return KeyVault.kirkAESKey12;
-            case 0x3A:
-                return KeyVault.kirkAESKey13;
-            case 0x44:
-                return KeyVault.kirkAESKey22;
-            case 0x4B:
-                return KeyVault.kirkAESKey14;
-            case 0x53:
-                return KeyVault.kirkAESKey15;
-            case 0x57:
-                return KeyVault.kirkAESKey16;
-            case 0x5D:
-                return KeyVault.kirkAESKey17;
-            case 0x63:
-                return KeyVault.kirkAESKey18;
-            case 0x64:
-                return KeyVault.kirkAESKey19;
-            default:
-                return null;
-        }
+    	if (seed < 0 || seed >= KeyVault.keyvault.length) {
+    		return null;
+    	}
+
+    	return KeyVault.keyvault[seed];
     }
 
     public KIRK() {
     }
 
-    public KIRK(byte[] seed, int seedLength, int fuseid0, int fuseid1) {
+    public KIRK(byte[] seed, int seedLength) {
         // Set up the data for the pseudo random number generator using a
         // seed set by the user.
         byte[] temp = new byte[0x104];
@@ -375,9 +325,6 @@ public class KIRK {
         System.arraycopy(key, 0, temp, 0x1C, 0x10);
         bPRNG.clear();
         executeKIRKCmd11(bPRNG, bTemp, 0x104);
-
-        fuseID0 = fuseid0;
-        fuseID1 = fuseid1;
     }
 
     /*
@@ -865,10 +812,12 @@ public class KIRK {
         }
 
         // TODO
-        ECDSA ecdsa = new ECDSA();
-        ECDSASignCtx ctx = new ECDSASignCtx(in);
-        ECDSASig sig = new ECDSASig();
-        ecdsa.setCurve();
+        if (false) {
+	        ECDSA ecdsa = new ECDSA();
+	        ECDSASignCtx ctx = new ECDSASignCtx(in);
+	        ECDSASig sig = new ECDSASig();
+	        ecdsa.setCurve();
+        }
 
         return 0;
     }
@@ -885,9 +834,11 @@ public class KIRK {
         }
 
         // TODO
-        ECDSA ecdsa = new ECDSA();
-        ECDSAVerifyCtx ctx = new ECDSAVerifyCtx(in);
-        ecdsa.setCurve();
+        if (false) {
+	        ECDSA ecdsa = new ECDSA();
+	        ECDSAVerifyCtx ctx = new ECDSAVerifyCtx(in);
+	        ecdsa.setCurve();
+        }
 
         return 0;
     }
@@ -919,14 +870,6 @@ public class KIRK {
      * several modules which employ various algorithms and communicate with the
      * crypto engine in different ways.
      */
-
-    /*
-     * sceUtils - memlmd_01g.prx and memlmd_02g.prx
-     */
-    public void hleUtilsSetFuseID(int id0, int id1) {
-        fuseID0 = id0;
-        fuseID1 = id1;
-    }
 
     public int hleUtilsBufferCopyWithRange(ByteBuffer out, int outsize, ByteBuffer in, int insize, int cmd) {
     	return hleUtilsBufferCopyWithRange(out, outsize, in, insize, insize, cmd);

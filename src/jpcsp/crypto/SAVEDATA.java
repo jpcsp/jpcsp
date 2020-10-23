@@ -34,8 +34,8 @@ public class SAVEDATA {
     };
 
     public SAVEDATA() {
-        // Start the KIRK engine with a dummy seed and fuseID.
-        kirk = new KIRK(sdseed, 0x14, 0xDEADC0DE, 0x12345678);
+        // Start the KIRK engine with a dummy seed
+        kirk = new KIRK(sdseed, 0x14);
     }
 
     // CHNNLSV SD context structs.

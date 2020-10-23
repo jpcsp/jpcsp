@@ -25,6 +25,9 @@ import static jpcsp.util.Utilities.add;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -38,6 +41,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import jpcsp.HLE.Modules;
+import jpcsp.util.Utilities;
 
 /**
  * List of values that can't be decrypted on Jpcsp due to missing keys.
@@ -46,6 +50,7 @@ import jpcsp.HLE.Modules;
 public class PreDecrypt {
 	public static Logger log = CryptoEngine.log;
 	private static PreDecryptInfo preDecrypts[];
+	private static int preDecryptIndex;
 
 	private static class PreDecryptInfo {
 		private byte[] input;
@@ -122,24 +127,28 @@ public class PreDecrypt {
 		}
 
 		private static void toString(StringBuilder s, byte[] bytes, String name) {
-			s.append(String.format(", %s=[", name));
+			s.append(String.format("\t<%s>", name));
 			if (bytes != null) {
 				for (int i = 0; i < bytes.length; i++) {
 					if (i > 0) {
 						s.append(", ");
 					}
+					if ((i % 16) == 0) {
+						s.append("\n\t\t");
+					}
 					s.append(String.format("0x%02X", bytes[i]));
 				}
 			}
-			s.append("]");
+			s.append(String.format("\n\t</%s>\n", name));
 		}
 
 		@Override
 		public String toString() {
 			StringBuilder s = new StringBuilder();
-			s.append(String.format("cmd=0x%X", cmd));
+			s.append(String.format("<PreDecryptInfo cmd=\"%d\">\n", cmd));
 			toString(s, input, "Input");
 			toString(s, output, "Output");
+			s.append("</PreDecryptInfo>");
 
 			return s.toString();
 		}
@@ -309,12 +318,45 @@ public class PreDecrypt {
 		addInfo(parseBytes(input), parseBytes(output), cmd);
 	}
 
+	private static boolean isUseless(byte[] input, byte[] output, int cmd) {
+		ByteBuffer inBuffer = ByteBuffer.wrap(input).order(ByteOrder.LITTLE_ENDIAN);
+		byte[] kirkOutput = new byte[output.length];
+		ByteBuffer outBuffer = ByteBuffer.wrap(kirkOutput).order(ByteOrder.LITTLE_ENDIAN);
+
+    	int inSizeAligned = Utilities.alignUp(input.length, 15);
+    	CryptoEngine crypto = new CryptoEngine();
+    	int result = crypto.getKIRKEngine().hleUtilsBufferCopyWithRange(outBuffer, output.length, inBuffer, inSizeAligned, input.length, cmd);
+
+    	if (result != 0) {
+    		// The KIRK engine cannot process the command
+    		return false;
+    	}
+
+    	// The KIRK engine can process the command, verify that we have the same output
+    	return Arrays.equals(kirkOutput, output);
+	}
+
 	private static void addInfo(byte[] input, byte[] output, int cmd) {
+		preDecryptIndex++;
+
 		PreDecryptInfo info = new PreDecryptInfo(input, output, cmd);
 		for (int i = 0; i < preDecrypts.length; i++) {
 			if (info.equals(preDecrypts[i])) {
-				log.warn(String.format("PreDecrypt.xml: duplicate entry %s", info));
+				log.warn(String.format("PreDecrypt.xml: duplicate entry #%d:\n%s", preDecryptIndex, info));
 				return;
+			}
+		}
+
+		if (isUseless(input, output, cmd)) {
+			log.warn(String.format("PreDecrypt.xml: useless entry #%d:\n%s", preDecryptIndex, info));
+			return;
+		}
+
+		if (log.isDebugEnabled()) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("PreDecrypt.xml: adding entry #%d:\n%s", preDecryptIndex, info));
+			} else {
+				log.debug(String.format("PreDecrypt.xml: adding entry #%d, cmd=%d", preDecryptIndex, cmd));
 			}
 		}
 
