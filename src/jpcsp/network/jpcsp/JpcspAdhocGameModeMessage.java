@@ -16,22 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.jpcsp;
 
-import jpcsp.HLE.modules.sceNetAdhoc.GameModeArea;
-
 /**
  * @author gid15
  *
  */
 public class JpcspAdhocGameModeMessage extends JpcspAdhocPdpMessage {
-	public JpcspAdhocGameModeMessage(GameModeArea gameModeArea) {
-		super();
-		setData(gameModeArea.getNewData());
-		gameModeArea.resetNewData();
-		if (gameModeArea.macAddress != null) {
-			setToMacAddress(gameModeArea.macAddress.macAddress);
-		}
-	}
-
 	public JpcspAdhocGameModeMessage(byte[] message, int length) {
 		super(message, length);
 	}

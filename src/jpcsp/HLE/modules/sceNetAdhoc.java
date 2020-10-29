@@ -17,13 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.modules.sceNetAdhocctl.fillNextPointersInLinkedList;
-import static jpcsp.hardware.Wlan.getLocalInetAddress;
 import static jpcsp.hardware.Wlan.hasLocalInetAddress;
-import static jpcsp.util.Utilities.writeBytes;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -32,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,22 +46,20 @@ import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructureVariableLength;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
 import jpcsp.hardware.Wlan;
-import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.MemoryReader;
 import jpcsp.network.INetworkAdapter;
 import jpcsp.network.adhoc.AdhocMessage;
+import jpcsp.network.adhoc.AdhocSocket;
 import jpcsp.network.adhoc.PdpObject;
 import jpcsp.network.adhoc.PtpObject;
 import jpcsp.network.upnp.AutoDetectJpcsp;
-import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Utilities;
 
@@ -81,6 +76,7 @@ public class sceNetAdhoc extends HLEModule {
 
     // Period to update the Game Mode
     protected static final int GAME_MODE_UPDATE_MICROS = 12000;
+    protected static final int GAME_MODE_TIMEOUT_MICROS = GAME_MODE_UPDATE_MICROS / 2;
 
     protected static final int PSP_ADHOC_POLL_READY_TO_SEND = 1;
     protected static final int PSP_ADHOC_POLL_DATA_AVAILABLE = 2;
@@ -93,13 +89,13 @@ public class sceNetAdhoc extends HLEModule {
 	public static final byte[] ANY_MAC_ADDRESS = new byte[] {
 		(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF
 	};
-	private GameModeScheduledAction gameModeScheduledAction;
 	protected GameModeArea masterGameModeArea;
 	protected LinkedList<GameModeArea> replicaGameModeAreas;
 	private static final String replicaIdPurpose = "sceNetAdhoc-Replica";
     private static final int adhocGameModePort = 31000;
-    private DatagramSocket gameModeSocket;
+    private AdhocSocket gameModeSocket;
     private boolean isInitialized;
+    private GameModeUpdateThread gameModeUpdateThread;
 
     // The same message can be received over multiple broadcasting interfaces.
 	// Remember which messages have already been received to ensure that each
@@ -130,50 +126,30 @@ public class sceNetAdhoc extends HLEModule {
 		}
     }
 
-    protected static class GameModeScheduledAction implements IAction {
-    	private final int scheduleRepeatMicros;
-    	private long nextSchedule;
-
-    	public GameModeScheduledAction(int scheduleRepeatMicros) {
-    		this.scheduleRepeatMicros = scheduleRepeatMicros;
-    	}
-
-    	public void stop() {
-    		Scheduler.getInstance().removeAction(nextSchedule, this);
-    	}
-
-    	public void start() {
-    		Scheduler.getInstance().addAction(this);
-    	}
-
-    	@Override
-		public void execute() {
-    		Modules.sceNetAdhocModule.hleGameModeUpdate();
-
-    		nextSchedule = Scheduler.getNow() + scheduleRepeatMicros;
-    		Scheduler.getInstance().addAction(nextSchedule, this);
-		}
-    }
-
     public static class GameModeArea {
     	public pspNetMacAddress macAddress;
-    	public int addr;
+    	public TPointer addr;
     	public int size;
     	public int id;
+    	private byte[] data;
     	private byte[] newData;
     	private long updateTimestamp;
 
-    	public GameModeArea(int addr, int size) {
+    	public GameModeArea(TPointer addr, int size) {
     		this.addr = addr;
     		this.size = size;
     		id = -1;
+
+    		readData();
     	}
 
-    	public GameModeArea(pspNetMacAddress macAddress, int addr, int size) {
+    	public GameModeArea(pspNetMacAddress macAddress, TPointer addr, int size) {
     		this.macAddress = macAddress;
     		this.addr = addr;
     		this.size = size;
     		id = SceUidManager.getNewUid(replicaIdPurpose);
+
+    		readData();
     	}
 
     	public void delete() {
@@ -183,36 +159,41 @@ public class sceNetAdhoc extends HLEModule {
     		}
     	}
 
-    	public void setNewData(byte[] newData) {
-    		updateTimestamp = Emulator.getClock().microTime();
+    	public synchronized void setNewData(byte[] newData) {
+    		updateTimestamp = getNow();
     		this.newData = newData;
     	}
 
+    	private synchronized void readData() {
+    		data = addr.getArray8(size);
+    	}
+
     	public void setNewData() {
-    		byte[] data = new byte[size];
-    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, size, 1);
-    		for (int i = 0; i < data.length; i++) {
-    			data[i] = (byte) memoryReader.readNext();
+    		setNewData(addr.getArray8(size));
+    	}
+
+    	public synchronized void resetNewData() {
+    		if (newData != null) {
+    			data = newData;
+        		newData = null;
     		}
-
-    		setNewData(data);
     	}
 
-    	public void resetNewData() {
-    		newData = null;
-    	}
-
-    	public byte[] getNewData() {
+    	public synchronized byte[] getNewData() {
     		return newData;
     	}
 
-    	public boolean hasNewData() {
+    	public synchronized byte[] getData() {
+    		return data;
+    	}
+
+    	public synchronized boolean hasNewData() {
     		return newData != null;
     	}
 
-    	public void writeNewData() {
+    	public synchronized void writeNewData() {
     		if (newData != null) {
-    			writeBytes(addr, Math.min(size, newData.length), newData, 0);
+    			addr.setArray(newData, size);
     		}
     	}
 
@@ -223,9 +204,9 @@ public class sceNetAdhoc extends HLEModule {
     	@Override
 		public String toString() {
 			if (macAddress == null) {
-				return String.format("Master GameModeArea addr=0x%08X, size=%d", addr, size);
+				return String.format("Master GameModeArea addr=%s, size=0x%X", addr, size);
 			}
-			return String.format("Replica GameModeArea id=%d, macAddress=%s, addr=0x%08X, size=%d", id, macAddress, addr, size);
+			return String.format("Replica GameModeArea id=0x%X, macAddress=%s, addr=%s, size=0x%X", id, macAddress, addr, size);
 		}
     }
 
@@ -259,7 +240,7 @@ public class sceNetAdhoc extends HLEModule {
 
 		@Override
 		public String toString() {
-			return String.format("PollId[id=%d, events=0x%X(%s), revents=0x%X(%s)]", id, events, getPollEventName(events), revents, getPollEventName(revents));
+			return String.format("PollId[id=0x%X, events=0x%X(%s), revents=0x%X(%s)]", id, events, getPollEventName(events), revents, getPollEventName(revents));
 		}
 	}
 
@@ -282,7 +263,43 @@ public class sceNetAdhoc extends HLEModule {
 		}
 	}
 
-    @Override
+	private class GameModeUpdateThread extends Thread {
+		private boolean exit;
+
+		@Override
+		public void run() {
+			RuntimeContext.setLog4jMDC();
+
+			long nextStart = getNow();
+
+			while (!exit) {
+				long start = nextStart;
+				if (getNow() >= nextStart) {
+					start = getNow();
+				} else {
+					while (!exit) {
+						long now = getNow();
+						if (now >= nextStart) {
+							break;
+						}
+						Utilities.sleep((int) (nextStart - now));
+					}
+				}
+
+				if (exit) {
+					break;
+				}
+
+				nextStart = hleGameModeUpdate(start);
+			}
+		}
+
+		public void exit() {
+			exit = true;
+		}
+	}
+
+	@Override
 	public void start() {
     	setSettingsListener("emu.netClientPortShift", new ClientPortShiftSettingsListener());
     	setSettingsListener("emu.netServerPortShift", new ServerPortShiftSettingsListener());
@@ -302,6 +319,10 @@ public class sceNetAdhoc extends HLEModule {
 
 	    super.start();
 	}
+
+    public static long getNow() {
+    	return Emulator.getClock().microTime();
+    }
 
     public int getNewAdhocMessageId() {
     	return currentAdhocMessageId++;
@@ -394,97 +415,164 @@ public class sceNetAdhoc extends HLEModule {
     	stopGameMode();
     }
 
-    public void hleGameModeUpdate() {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("hleGameModeUpdate"));
-    	}
+    private boolean sendGameModeBuffer(byte[] toMacAddress, byte[] buffer, int length) throws IOException {
+    	boolean success = false;
 
-		try {
-			if (gameModeSocket == null) {
-				gameModeSocket = new DatagramSocket(Modules.sceNetAdhocModule.getRealPortFromServerPort(adhocGameModePort), getLocalInetAddress());
-	    		// For broadcast
-				gameModeSocket.setBroadcast(true);
-	    		// Non-blocking (timeout = 0 would mean blocking)
-				gameModeSocket.setSoTimeout(1);
-			}
+    	AdhocMessage adhocGameModeMessage = getNetworkAdapter().createAdhocGameModeMessage(buffer, length);
+    	adhocGameModeMessage.setFromMacAddress(Wlan.getMacAddress());
+    	adhocGameModeMessage.setToMacAddress(toMacAddress);
+    	SocketAddress socketAddress[] = Modules.sceNetAdhocModule.getMultiSocketAddress(toMacAddress, Modules.sceNetAdhocModule.getRealPortFromClientPort(toMacAddress, adhocGameModePort));
+    	for (int i = 0; i < socketAddress.length; i++) {
+			try {
+				gameModeSocket.send(socketAddress[i], adhocGameModeMessage);
+				success = true;
 
-			// Send master area
-			if (masterGameModeArea != null && masterGameModeArea.hasNewData()) {
-				try {
-					AdhocMessage adhocGameModeMessage = getNetworkAdapter().createAdhocGameModeMessage(masterGameModeArea);
-			    	SocketAddress socketAddress[] = Modules.sceNetAdhocModule.getMultiSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, Modules.sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocGameModePort));
-			    	for (int i = 0; i < socketAddress.length; i++) {
-			    		DatagramPacket packet = new DatagramPacket(adhocGameModeMessage.getMessage(), adhocGameModeMessage.getMessageLength(), socketAddress[i]);
-						try {
-							gameModeSocket.send(packet);
-
-							if (log.isDebugEnabled()) {
-					    		log.debug(String.format("GameMode message sent to %s: %s", socketAddress[i], adhocGameModeMessage));
-					    	}
-						} catch (SocketException e) {
-							// Ignore "Network is unreachable"
-							if (log.isDebugEnabled()) {
-								log.debug("hleGameModeUpdate", e);
-							}
-						}
-			    	}
-				} catch (SocketTimeoutException e) {
-					// Ignore exception
+				if (log.isDebugEnabled()) {
+		    		log.debug(String.format("GameMode message sent to %s: %s", socketAddress[i], adhocGameModeMessage));
+		    	}
+			} catch (SocketException e) {
+				// Ignore "Network is unreachable"
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("hleGameModeUpdate failed for %s", socketAddress[i]));
+					log.debug("hleGameModeUpdate", e);
 				}
 			}
+    	}
 
-			// Receive all waiting messages
-			do {
-				try {
-					byte[] bytes = new byte[10000];
-			    	DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-			    	gameModeSocket.receive(packet);
-			    	AdhocMessage adhocGameModeMessage = getNetworkAdapter().createAdhocGameModeMessage(packet.getData(), packet.getLength());
+    	return success;
+    }
 
+    private void sendMasterGameModeArea() throws IOException {
+    	byte[] data;
+    	if (masterGameModeArea == null) {
+    		// Send dummy data
+    		data = new byte[1];
+    	} else if (masterGameModeArea.hasNewData()) {
+    		data = masterGameModeArea.getNewData();
+        	masterGameModeArea.resetNewData();
+    	} else {
+    		data = masterGameModeArea.getData();
+    	}
+    	sendGameModeBuffer(ANY_MAC_ADDRESS, data, data.length);
+    }
+
+    private void receiveReplicaGameModeArea(long start) throws IOException {
+    	while (true) {
+			try {
+				byte[] bytes = new byte[10000];
+		    	int length = gameModeSocket.receive(bytes, bytes.length);
+		    	AdhocMessage adhocGameModeMessage = getNetworkAdapter().createAdhocGameModeMessage(bytes, length);
+	
+		    	if (adhocGameModeMessage.isForMe(gameModeSocket.getReceivedPort(), gameModeSocket.getReceivedAddress())) {
 			    	if (log.isDebugEnabled()) {
 			    		log.debug(String.format("GameMode received: %s", adhocGameModeMessage));
 			    	}
-
-			    	for (GameModeArea gameModeArea : replicaGameModeAreas) {
-			    		if (isSameMacAddress(gameModeArea.macAddress.macAddress, adhocGameModeMessage.getFromMacAddress())) {
-			    			if (log.isDebugEnabled()) {
-			    				log.debug(String.format("Received new Data for GameMode Area %s", gameModeArea));
-			    			}
-			    			gameModeArea.setNewData(adhocGameModeMessage.getData());
-			    			break;
-			    		}
-			    	}
-				} catch (SocketTimeoutException e) {
-					// No more messages available
+		
+		    		if (length == 0) {
+		    			if (log.isDebugEnabled()) {
+		    				log.debug(String.format("Received request to send Master GameMode Area %s", masterGameModeArea));
+		    			}
+		    			sendMasterGameModeArea();
+//		    			break;
+		    		} else if (length == 1) {
+		    			// Dummy data received, Master Game Mode Area of the sender was not yet ready
+		    		} else {
+				    	for (GameModeArea gameModeArea : replicaGameModeAreas) {
+				    		if (isSameMacAddress(gameModeArea.macAddress.macAddress, adhocGameModeMessage.getFromMacAddress())) {
+				    			if (log.isDebugEnabled()) {
+				    				log.debug(String.format("Received new Data for GameMode Area %s", gameModeArea));
+				    			}
+				    			gameModeArea.setNewData(adhocGameModeMessage.getData());
+//				    			break;
+				    		}
+				    	}
+		    		}
+		    	}
+			} catch (SocketTimeoutException e) {
+				// Timeout exceeded, stop waiting
+				if (getNow() - start > GAME_MODE_TIMEOUT_MICROS) {
 					break;
 				}
-			} while (true);
+
+				// No message available yet, try again
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("receiveReplicaGameModeArea waiting for message..."));
+				}
+			}
+    	}
+    }
+
+    public long hleGameModeUpdate(long start) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleGameModeUpdate starting at start=%d", start));
+    	}
+
+    	long nextStart = start + GAME_MODE_UPDATE_MICROS;
+
+    	try {
+			if (gameModeSocket == null) {
+				gameModeSocket = getNetworkAdapter().createAdhocGameModeSocket();
+				gameModeSocket.bind(Modules.sceNetAdhocModule.getRealPortFromServerPort(adhocGameModePort));
+			}
+
+			List<pspNetMacAddress> gameModeMacs = Modules.sceNetAdhocctlModule.requiredGameModeMacs;
+			if (gameModeMacs.size() > 0) {
+				// Sending first my own master game mode area
+				sendMasterGameModeArea();
+
+				// Then ask in turn, each Game Mode MAC to send its master game mode area
+				for (pspNetMacAddress macAddress : gameModeMacs) {
+					if (!isMyMacAddress(macAddress.macAddress)) {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("hleGameModeUpdate sending request to %s to broadcast its Master GameMode Area", macAddress));
+						}
+						byte[] command = new byte[0];
+						if (sendGameModeBuffer(macAddress.macAddress, command, command.length)) {
+							receiveReplicaGameModeArea(start);
+						}
+					}
+				}
+			} else {
+				int numberGameModeMacs = Modules.sceNetAdhocctlModule.hleNetAdhocctlGetGameModeMacs().size();
+				for (int i = 0; i < numberGameModeMacs; i++) {
+					receiveReplicaGameModeArea(start);
+				}
+			}
 		} catch (IOException e) {
 			log.error("hleGameModeUpdate", e);
 		}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleGameModeUpdate ending with nextStart=%d", nextStart));
+    	}
+
+    	return nextStart;
     }
 
     protected void startGameMode() {
-    	if (gameModeScheduledAction == null) {
+    	if (gameModeUpdateThread == null) {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("Starting GameMode"));
     		}
-    		gameModeScheduledAction = new GameModeScheduledAction(GAME_MODE_UPDATE_MICROS);
-    		gameModeScheduledAction.start();
+    		gameModeUpdateThread = new GameModeUpdateThread();
+    		gameModeUpdateThread.setName("sceNetAdhoc GameMode Updade Thread");
+    		gameModeUpdateThread.setDaemon(true);
+    		gameModeUpdateThread.start();
     	}
     }
 
     protected void stopGameMode() {
-    	if (gameModeScheduledAction != null) {
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Stopping GameMode"));
-    		}
-    		gameModeScheduledAction.stop();
-    		gameModeScheduledAction = null;
+    	if (gameModeUpdateThread != null) {
+    		gameModeUpdateThread.exit();
+    		gameModeUpdateThread = null;
     	}
 
     	if (gameModeSocket != null) {
-    		gameModeSocket.close();
+    		try {
+				gameModeSocket.close();
+			} catch (IOException e) {
+				log.error("stopGameMode", e);
+			}
     		gameModeSocket = null;
     	}
     }
@@ -539,7 +627,7 @@ public class sceNetAdhoc extends HLEModule {
 
 		if (!pdpObjects.containsKey(pdpId)) {
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("Invalid Pdp Id=%d", pdpId));
+				log.debug(String.format("Invalid Pdp Id=0x%X", pdpId));
 			}
 			throw new SceKernelErrorException(SceKernelErrors.ERROR_NET_ADHOC_INVALID_SOCKET_ID);
 		}
@@ -552,7 +640,7 @@ public class sceNetAdhoc extends HLEModule {
 
 		if (!ptpObjects.containsKey(ptpId)) {
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("Invalid Ptp Id=%d", ptpId));
+				log.debug(String.format("Invalid Ptp Id=0x%X", ptpId));
 			}
 			throw new SceKernelErrorException(SceKernelErrors.ERROR_NET_ADHOC_INVALID_SOCKET_ID);
 		}
@@ -648,7 +736,7 @@ public class sceNetAdhoc extends HLEModule {
 
         	pollId.write(mem);
 
-        	log.info(String.format("sceNetAdhocPollSocket pollId[%d]=%s", i, pollId));
+        	log.info(String.format("sceNetAdhocPollSocket pollId[0x%X]=%s", i, pollId));
         }
 
         return countEvents;
@@ -684,7 +772,7 @@ public class sceNetAdhoc extends HLEModule {
 			// Allocate a free port
 			port = getFreePort();
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("sceNetAdhocPdpCreate: using free port %d", port));
+				log.debug(String.format("sceNetAdhocPdpCreate: using free port 0x%X", port));
 			}
 		}
 
@@ -788,7 +876,7 @@ public class sceNetAdhoc extends HLEModule {
     	int size = sizeAddr.getValue();
     	sizeAddr.setValue(objectInfoSize * pdpObjects.size());
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceNetAdhocGetPdpStat returning size=%d", sizeAddr.getValue()));
+    		log.debug(String.format("sceNetAdhocGetPdpStat returning size=0x%X", sizeAddr.getValue()));
     	}
 
     	if (buf.isNotNull()) {
@@ -1046,7 +1134,7 @@ public class sceNetAdhoc extends HLEModule {
     	// Return size required
     	sizeAddr.setValue(objectInfoSize * ptpObjects.size());
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceNetAdhocGetPtpStat returning size=%d", sizeAddr.getValue()));
+    		log.debug(String.format("sceNetAdhocGetPtpStat returning size=0x%X", sizeAddr.getValue()));
     	}
 
     	if (buf.isNotNull()) {
@@ -1129,7 +1217,7 @@ public class sceNetAdhoc extends HLEModule {
     public int sceNetAdhocGameModeCreateMaster(TPointer data, int size) {
 		checkInitialized();
 
-        masterGameModeArea = new GameModeArea(data.getAddress(), size);
+        masterGameModeArea = new GameModeArea(data, size);
         startGameMode();
 
         return 0;
@@ -1152,8 +1240,8 @@ public class sceNetAdhoc extends HLEModule {
         int result = 0;
         for (GameModeArea gameModeArea : replicaGameModeAreas) {
         	if (isSameMacAddress(gameModeArea.macAddress.macAddress, macAddress.macAddress)) {
-        		// Updating the exiting replica
-        		gameModeArea.addr = data.getAddress();
+        		// Updating the existing replica
+        		gameModeArea.addr = data;
         		gameModeArea.size = size;
         		result = gameModeArea.id;
         		found = true;
@@ -1162,7 +1250,7 @@ public class sceNetAdhoc extends HLEModule {
         }
 
         if (!found) {
-        	GameModeArea gameModeArea = new GameModeArea(macAddress, data.getAddress(), size);
+        	GameModeArea gameModeArea = new GameModeArea(macAddress, data, size);
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("Adding GameMode Replica %s", gameModeArea));
         	}
@@ -1203,15 +1291,13 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xFA324B4E, version = 150)
-    public int sceNetAdhocGameModeUpdateReplica(int id, @CanBeNull TPointer infoAddr) {
+    public int sceNetAdhocGameModeUpdateReplica(int id, @BufferInfo(lengthInfo = LengthInfo.variableLength, usage = Usage.out) @CanBeNull TPointer infoAddr) {
 		checkInitialized();
 
         for (GameModeArea gameModeArea : replicaGameModeAreas) {
         	if (gameModeArea.id == id) {
         		GameModeUpdateInfo gameModeUpdateInfo = new GameModeUpdateInfo();
-        		if (infoAddr.isNotNull()) {
-        			gameModeUpdateInfo.read(infoAddr);
-        		}
+    			gameModeUpdateInfo.read(infoAddr);
 
         		if (gameModeArea.hasNewData()) {
         			if (log.isDebugEnabled()) {
@@ -1227,10 +1313,8 @@ public class sceNetAdhoc extends HLEModule {
         			gameModeUpdateInfo.updated = 0;
         		}
 
-        		if (infoAddr.getAddress() != 0) {
-        			gameModeUpdateInfo.timeStamp = gameModeArea.getUpdateTimestamp();
-        			gameModeUpdateInfo.write(Memory.getInstance());
-        		}
+    			gameModeUpdateInfo.timeStamp = gameModeArea.getUpdateTimestamp();
+    			gameModeUpdateInfo.write(infoAddr);
         		break;
         	}
         }

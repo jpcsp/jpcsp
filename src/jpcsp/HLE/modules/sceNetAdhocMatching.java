@@ -253,8 +253,8 @@ public class sceNetAdhocMatching extends HLEModule {
      */
     @HLEFunction(nid = 0x93EF3843, version = 150)
     public int sceNetAdhocMatchingStart(@CheckArgument("checkMatchingId") int matchingId, int evthPri, int evthStack, int inthPri, int inthStack, int optLen, @CanBeNull TPointer optData) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("Matching opt data: %s", Utilities.getMemoryDump(optData.getAddress(), optLen)));
+		if (log.isTraceEnabled() && optData.isNotNull()) {
+			log.trace(String.format("Matching opt data: %s", Utilities.getMemoryDump(optData, optLen)));
 		}
 
         return matchingObjects.get(matchingId).start(evthPri, USER_PARTITION_ID, evthStack, inthPri, USER_PARTITION_ID, inthStack, optLen, optData.getAddress());
@@ -277,8 +277,8 @@ public class sceNetAdhocMatching extends HLEModule {
      */
     @HLEFunction(nid = 0xE8454C65, version = 150)
     public int sceNetAdhocMatchingStart2(@CheckArgument("checkMatchingId") int matchingId, int evthPri, int evthPartitionId, int evthStack, int inthPri, int inthPartitionId, int inthStack, int optLen, @CanBeNull TPointer optData) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("Matching opt data: %s", Utilities.getMemoryDump(optData.getAddress(), optLen)));
+		if (log.isTraceEnabled() && optData.isNotNull()) {
+			log.trace(String.format("Matching opt data: %s", Utilities.getMemoryDump(optData, optLen)));
 		}
 
         return matchingObjects.get(matchingId).start(evthPri, evthPartitionId, evthStack, inthPri, inthPartitionId, inthStack, optLen, optData.getAddress());

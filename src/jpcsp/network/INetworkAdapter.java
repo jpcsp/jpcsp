@@ -19,9 +19,9 @@ package jpcsp.network;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 
-import jpcsp.HLE.modules.sceNetAdhoc.GameModeArea;
 import jpcsp.network.adhoc.AdhocMatchingEventMessage;
 import jpcsp.network.adhoc.AdhocMessage;
+import jpcsp.network.adhoc.AdhocSocket;
 import jpcsp.network.adhoc.MatchingObject;
 import jpcsp.network.adhoc.PdpObject;
 import jpcsp.network.adhoc.PtpObject;
@@ -85,13 +85,6 @@ public interface INetworkAdapter {
 	 * @return         an AdhocMessage
 	 */
 	public AdhocMessage createAdhocPtpMessage(byte[] message, int length);
-
-	/**
-	 * Create an Adhoc GameMode message from a PSP GameModeArea
-	 * @param gameModeArea the GameMode area
-	 * @return             an AdhocMessage
-	 */
-	public AdhocMessage createAdhocGameModeMessage(GameModeArea gameModeArea);
 
 	/**
 	 * Create an Adhoc GameMode message from a network packet
@@ -210,4 +203,6 @@ public interface INetworkAdapter {
 	 * Called when executing sceNetAdhocctlScan.
 	 */
 	public void sceNetAdhocctlScan();
+
+	public AdhocSocket createAdhocGameModeSocket();
 }

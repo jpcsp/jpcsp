@@ -39,11 +39,12 @@ import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.HLE.modules.sceUtility;
-import jpcsp.HLE.modules.sceNetAdhoc.GameModeArea;
 import jpcsp.hardware.Wlan;
 import jpcsp.network.BaseNetworkAdapter;
+import jpcsp.network.adhoc.AdhocDatagramSocket;
 import jpcsp.network.adhoc.AdhocMatchingEventMessage;
 import jpcsp.network.adhoc.AdhocMessage;
+import jpcsp.network.adhoc.AdhocSocket;
 import jpcsp.network.adhoc.MatchingObject;
 import jpcsp.network.adhoc.PdpObject;
 import jpcsp.network.adhoc.PtpObject;
@@ -123,11 +124,6 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 	@Override
 	public AdhocMessage createAdhocPtpMessage(byte[] message, int length) {
 		return new JpcspAdhocPtpMessage(message, length);
-	}
-
-	@Override
-	public AdhocMessage createAdhocGameModeMessage(GameModeArea gameModeArea) {
-		return new JpcspAdhocGameModeMessage(gameModeArea);
 	}
 
 	@Override
@@ -294,5 +290,10 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 	@Override
 	public AdhocMatchingEventMessage createAdhocMatchingBirthMessage(MatchingObject matchingObject, byte[] toMacAddress, byte[] birthMacAddress) {
 		return new JpcspAdhocMatchingBirthEventMessage(matchingObject, toMacAddress, birthMacAddress);
+	}
+
+	@Override
+	public AdhocSocket createAdhocGameModeSocket() {
+		return new AdhocDatagramSocket();
 	}
 }

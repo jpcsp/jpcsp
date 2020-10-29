@@ -44,7 +44,9 @@ public class AdhocDatagramSocket extends AdhocSocket {
 			}
 			socket = new DatagramSocket(port, getLocalInetAddress());
 		}
+		// For broadcast
 		socket.setBroadcast(true);
+		// Non-blocking (timeout = 0 would mean blocking)
 		socket.setSoTimeout(1);
 
 		return socket.getLocalPort();

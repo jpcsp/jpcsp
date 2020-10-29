@@ -29,6 +29,11 @@ import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_HEL
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_BIRTH;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_JOIN;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_LEFT;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_REJECT;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_CLIENT;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_HOST;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_PTP;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.network.proonline.ProOnlineNetworkAdapter.log;
 
@@ -293,6 +298,46 @@ public class MatchingPacketFactory {
 		public MatchingPacketCancel(MatchingObject matchingObject, byte[] message, int length) {
 			super(matchingObject, PSP_ADHOC_MATCHING_EVENT_CANCEL, message, length);
 		}
+
+		@Override
+		public void processOnReceive(int macAddr, int optData, int optLen) {
+			MatchingObject matchingObject = getMatchingObject();
+
+			pspNetMacAddress macAddress = new pspNetMacAddress();
+			macAddress.read(Memory.getInstance(), macAddr);
+
+			// Set the correct event to be triggered
+			switch (matchingObject.getMode()) {
+				case PSP_ADHOC_MATCHING_MODE_CLIENT:
+					if (matchingObject.isPendingJoinRequest(macAddress)) {
+						setEvent(PSP_ADHOC_MATCHING_EVENT_REJECT);
+					} else if (matchingObject.isParent(macAddress)) {
+						// TODO Which event(s) need to be triggered?
+						setEvent(PSP_ADHOC_MATCHING_EVENT_LEFT);
+					}
+					break;
+				case PSP_ADHOC_MATCHING_MODE_HOST:
+					if (matchingObject.isPendingJoinRequest(macAddress)) {
+						setEvent(PSP_ADHOC_MATCHING_EVENT_CANCEL);
+					} else {
+						setEvent(PSP_ADHOC_MATCHING_EVENT_LEFT);
+					}
+					break;
+				case PSP_ADHOC_MATCHING_MODE_PTP:
+					if (matchingObject.isPendingJoinRequest(macAddress)) {
+						setEvent(PSP_ADHOC_MATCHING_EVENT_REJECT);
+					} else {
+						setEvent(PSP_ADHOC_MATCHING_EVENT_LEFT);
+					}
+					break;
+			}
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("MatchingPacketCancel.processOnReceive mode=%d, new event=%d", matchingObject.getMode(), getEvent()));
+			}
+
+			super.processOnReceive(macAddr, optData, optLen);
+		}
 	}
 
 	private static class MatchingPacketBulk extends ProOnlineAdhocMatchingEventMessage {
@@ -437,6 +482,7 @@ public class MatchingPacketFactory {
 			case PSP_ADHOC_MATCHING_EVENT_ACCEPT:
 				return new MatchingPacketAccept(matchingObject, data, dataLength, macAddress);
 			case PSP_ADHOC_MATCHING_EVENT_CANCEL:
+			case PSP_ADHOC_MATCHING_EVENT_LEFT:
 				return new MatchingPacketCancel(matchingObject, data, dataLength, macAddress);
 			case PSP_ADHOC_MATCHING_EVENT_DATA:
 				return new MatchingPacketBulk(matchingObject, data, dataLength, macAddress);

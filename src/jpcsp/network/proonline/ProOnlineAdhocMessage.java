@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.proonline;
 
 import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
+
+import java.net.InetAddress;
+
 import jpcsp.network.adhoc.AdhocMessage;
 
 /**
@@ -26,7 +29,11 @@ import jpcsp.network.adhoc.AdhocMessage;
  * - n bytes for the message data
  */
 public class ProOnlineAdhocMessage extends AdhocMessage {
-	private ProOnlineNetworkAdapter proOnline;
+	private final ProOnlineNetworkAdapter proOnline;
+
+	public ProOnlineAdhocMessage(ProOnlineNetworkAdapter networkAdapter) {
+		this.proOnline = networkAdapter;
+	}
 
 	public ProOnlineAdhocMessage(ProOnlineNetworkAdapter networkAdapter, byte[] message, int length) {
 		super(message, length);
@@ -60,6 +67,11 @@ public class ProOnlineAdhocMessage extends AdhocMessage {
 			data = new byte[length];
 			copyFromBytes(message, data);
 		}
+	}
+
+	@Override
+	public boolean isForMe(int port, InetAddress address) {
+		return proOnline.isForMe(this, port, address);
 	}
 
 	@Override

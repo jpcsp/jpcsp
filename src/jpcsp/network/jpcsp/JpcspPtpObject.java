@@ -112,7 +112,7 @@ public class JpcspPtpObject extends PtpObject {
 				}
 			}
 
-			if (adhocPtpMessage != null && adhocPtpMessage.isForMe()) {
+			if (adhocPtpMessage != null && adhocPtpMessage.isForMe(socket.getReceivedPort(), socket.getReceivedAddress())) {
 				adhocPtpMessage.setAlreadyReceived();
 				switch (adhocPtpMessage.getType()) {
 					case PTP_MESSAGE_TYPE_CONNECT:
@@ -202,7 +202,7 @@ public class JpcspPtpObject extends PtpObject {
 				}
 			}
 
-			if (adhocPtpMessage != null && adhocPtpMessage.isForMe()) {
+			if (adhocPtpMessage != null && adhocPtpMessage.isForMe(socket.getReceivedPort(), socket.getReceivedAddress())) {
 				adhocPtpMessage.setAlreadyReceived();
 				switch (adhocPtpMessage.getType()) {
 					case PTP_MESSAGE_TYPE_CONNECT_CONFIRM:

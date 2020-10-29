@@ -22,6 +22,8 @@ import static jpcsp.HLE.modules.sceNetAdhoc.isAnyMacAddress;
 import static jpcsp.HLE.modules.sceNetAdhoc.isMyMacAddress;
 import static jpcsp.util.Utilities.writeBytes;
 
+import java.net.InetAddress;
+
 import jpcsp.HLE.Modules;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.IMemoryReader;
@@ -210,7 +212,7 @@ public abstract class AdhocMessage {
 		}
 	}
 
-	public boolean isForMe() {
+	public boolean isForMe(int port, InetAddress address) {
 		if (hasId()) {
 			// The same message can be received over multiple broadcasting interfaces.
 			// Make sure we are processing such a message only once.

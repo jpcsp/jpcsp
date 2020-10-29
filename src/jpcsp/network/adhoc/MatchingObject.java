@@ -28,7 +28,9 @@ import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_HEL
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_JOIN;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_LEFT;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_REJECT;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_CLIENT;
+import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_HOST;
 import static jpcsp.network.adhoc.AdhocMessage.MAX_HEADER_SIZE;
 
 import java.io.IOException;
@@ -290,8 +292,23 @@ public abstract class MatchingObject extends AdhocObject {
 		return pendingJoinRequest;
 	}
 
-	private boolean isPendingJoinRequest(pspNetMacAddress macAddress) {
+	public boolean isPendingJoinRequest(pspNetMacAddress macAddress) {
 		return pendingJoinRequest != null && isSameMacAddress(pendingJoinRequest, macAddress.macAddress);
+	}
+
+	public boolean isParent(pspNetMacAddress macAddress) {
+		if (getMode() == PSP_ADHOC_MATCHING_MODE_CLIENT) {
+			if (getMembers().size() > 0) {
+				// The parent is the first member
+				pspNetMacAddress parent = getMembers().get(0);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("isParent mac=%s, parent=%s", macAddress, parent));
+				}
+				return macAddress.equals(parent);
+			}
+		}
+
+		return false;
 	}
 
 	protected boolean sendBirthMessageToSelected() {
@@ -310,7 +327,7 @@ public abstract class MatchingObject extends AdhocObject {
 					log.debug(String.format("Sending accept to port %d", getPort()));
 				}
 
-				if (getMode() == sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_HOST) {
+				if (getMode() == PSP_ADHOC_MATCHING_MODE_HOST) {
 					addMember(macAddress.macAddress);
 					connected = true;
 					inConnection = false;
@@ -399,7 +416,7 @@ public abstract class MatchingObject extends AdhocObject {
 		} catch (IOException e) {
 			log.error("cancelTarget", e);
 		}
-		removeMember(macAddress.macAddress);
+		//removeMember(macAddress.macAddress);
 		connected = false;
 		inConnection = false;
 
@@ -557,6 +574,9 @@ public abstract class MatchingObject extends AdhocObject {
 					}
 					adhocMatchingEventMessage.processOnReceive(macAddr, optData, optLen);
 
+					// The event could have been modified by processOnReceive()
+					event = adhocMatchingEventMessage.getEvent();
+
 					if (event == PSP_ADHOC_MATCHING_EVENT_ACCEPT) {
 						addMember(adhocMatchingEventMessage.getFromMacAddress());
 						if (log.isDebugEnabled()) {
@@ -585,7 +605,7 @@ public abstract class MatchingObject extends AdhocObject {
 						}
 						adhocMatchingEventMessage = createMessage(PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM, 0, 0, macAddress.macAddress);
 						send(adhocMatchingEventMessage);
-					} else if (event == PSP_ADHOC_MATCHING_EVENT_DISCONNECT || event == PSP_ADHOC_MATCHING_EVENT_LEFT) {
+					} else if (event == PSP_ADHOC_MATCHING_EVENT_DISCONNECT || event == PSP_ADHOC_MATCHING_EVENT_LEFT || event == PSP_ADHOC_MATCHING_EVENT_REJECT || event == PSP_ADHOC_MATCHING_EVENT_CANCEL) {
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("Received disconnect/leave from %s", macAddress));
 						}
@@ -631,7 +651,7 @@ public abstract class MatchingObject extends AdhocObject {
 	}
 
 	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
-		return adhocMessage.isForMe();
+		return adhocMessage.isForMe(port, address);
 	}
 
 	protected void send(AdhocMatchingEventMessage adhocMatchingEventMessage, pspNetMacAddress macAddress, int dataLen, int data) throws IOException {

@@ -29,6 +29,8 @@ import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
+import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -283,6 +285,9 @@ public class sceNetAdhocctl extends HLEModule {
 		for (pspNetMacAddress macAddress : gameModeMacs) {
 			if (sceNetAdhoc.isSameMacAddress(macAddress.macAddress, macAddr)) {
 				// Already in the list
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Already found Game Mode MAC: %s", macAddress));
+				}
 				return;
 			}
 		}
@@ -391,14 +396,14 @@ public class sceNetAdhocctl extends HLEModule {
     	} else if (adhocctlCurrentState == PSP_ADHOCCTL_STATE_SCAN) {
     		networkAdapter.updatePeers();
 
-    		// End of SCAN?
-    		long now = Emulator.getClock().milliTime();
-    		if (now - scanStartMillis > SCAN_DURATION_MILLIS) {
-    			// Return to DISCONNECTED state and trigger SCAN event
-    			setState(PSP_ADHOCCTL_STATE_DISCONNECTED);
-    	        notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_SCAN, 0);
-        		notifyAdhocctlStateCallback(0);
-    		}
+			// End of SCAN?
+			long now = Emulator.getClock().milliTime();
+			if (now - scanStartMillis > SCAN_DURATION_MILLIS) {
+				// Return to DISCONNECTED state and trigger SCAN event
+				setState(PSP_ADHOCCTL_STATE_DISCONNECTED);
+		        notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_SCAN, 0);
+	    		notifyAdhocctlStateCallback(0);
+			}
     	}
 
     	if (doTerminate) {
@@ -417,6 +422,9 @@ public class sceNetAdhocctl extends HLEModule {
     }
 
     public void setGroupName(String groupName, int mode) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("setGroupName '%s', mode=%d", groupName, mode));
+    	}
     	adhocctlCurrentGroup = groupName;
     	adhocctlCurrentMode = mode;
     	gameModeJoinComplete = false;
@@ -446,7 +454,11 @@ public class sceNetAdhocctl extends HLEModule {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("hleNetAdhocctlConnectGame groupName='%s'", groupName));
     	}
-    	setGroupName(groupName, PSP_ADHOCCTL_MODE_GAMEMODE);
+
+    	if (hleNetAdhocctlGetGroupName() == null || !hleNetAdhocctlGetGroupName().equals(groupName)) {
+    		setGroupName(groupName, PSP_ADHOCCTL_MODE_GAMEMODE);
+    		networkAdapter.sceNetAdhocctlConnect();
+    	}
     }
 
     public int hleNetAdhocctlGetState() {
@@ -604,6 +616,10 @@ public class sceNetAdhocctl extends HLEModule {
     public boolean isGameModeComplete() {
 		// The Join for GameMode is complete when all the required MACs have joined
     	return gameModeMacs.size() >= requiredGameModeMacs.size();
+    }
+
+    public List<pspNetMacAddress> hleNetAdhocctlGetGameModeMacs() {
+    	return gameModeMacs;
     }
 
     public List<pspNetMacAddress> hleNetAdhocctlGetRequiredGameModeMacs() {
@@ -1144,7 +1160,7 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xA5C055CE, version = 150)
-    public int sceNetAdhocctlCreateEnterGameMode(@CanBeNull @StringInfo(maxLength=GROUP_NAME_LENGTH) PspString groupName, int unknown, int num, TPointer macsAddr, int timeout, int unknown2) {
+    public int sceNetAdhocctlCreateEnterGameMode(@CanBeNull @StringInfo(maxLength=GROUP_NAME_LENGTH) PspString groupName, int unknown, int num, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 2 * MAC_ADDRESS_LENGTH, usage = Usage.in) TPointer macsAddr, int timeout, int unknown2) {
     	checkInitialized();
 
     	if (unknown <= 0 || unknown > 3 || num < 2 || num > 16) {
@@ -1168,7 +1184,7 @@ public class sceNetAdhocctl extends HLEModule {
 
         // We have to wait for all the MACs to have joined to go into CONNECTED state
         doJoin = true;
-        setGroupName(groupName.getString(), PSP_ADHOCCTL_MODE_GAMEMODE);
+        hleNetAdhocctlConnectGame(groupName.getString());
 
         return 0;
     }
@@ -1196,7 +1212,7 @@ public class sceNetAdhocctl extends HLEModule {
     	checkInitialized();
 
         doJoin = true;
-        setGroupName(groupName.getString(), PSP_ADHOCCTL_MODE_GAMEMODE);
+        hleNetAdhocctlConnectGame(groupName.getString());
 
         return 0;
     }
@@ -1224,7 +1240,7 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x5A014CE0, version = 150)
-    public int sceNetAdhocctlGetGameModeInfo(TPointer gameModeInfoAddr) {
+    public int sceNetAdhocctlGetGameModeInfo(@BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 4 + 3 * MAC_ADDRESS_LENGTH, usage = Usage.out) TPointer gameModeInfoAddr) {
     	checkInitialized();
 
         int offset = 0;

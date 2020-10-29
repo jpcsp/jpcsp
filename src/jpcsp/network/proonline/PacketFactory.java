@@ -16,9 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.proonline;
 
+import static jpcsp.HLE.Modules.sceNetAdhocctlModule;
 import static jpcsp.HLE.modules.sceNetAdhocctl.ADHOC_ID_LENGTH;
 import static jpcsp.HLE.modules.sceNetAdhocctl.GROUP_NAME_LENGTH;
 import static jpcsp.HLE.modules.sceNetAdhocctl.NICK_NAME_LENGTH;
+import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_GAMEMODE;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.network.proonline.ProOnlineNetworkAdapter.convertIpToString;
 
@@ -406,6 +408,25 @@ public class PacketFactory {
 
 		@Override
 		public void process() {
+			int adhocctlMode = Modules.sceNetAdhocctlModule.hleNetAdhocctlGetMode();
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("ConnectPacketS2C Adhocctl mode=%d", adhocctlMode));
+			}
+
+			if (adhocctlMode == PSP_ADHOCCTL_MODE_GAMEMODE) {
+				sceNetAdhocctlModule.hleNetAdhocctlAddGameModeMac(mac.macAddress);
+
+				// If we just joined the GAMEMODE using sceNetAdhocctlJoinEnterGameMode(),
+				// we don't know how many MAC addresses need to join.
+				// So, just complete the join as soon as someone else has sent a CONNECT (i.e. the host)
+				if (sceNetAdhocctlModule.hleNetAdhocctlGetRequiredGameModeMacs().size() <= 0) {
+					// Add my own MAC address
+					sceNetAdhocctlModule.hleNetAdhocctlAddGameModeMac(Wlan.getMacAddress());
+					// and complete the join
+					sceNetAdhocctlModule.hleNetAdhocctlSetGameModeJoinComplete(true);
+				}
+			}
+
 			proOnline.addFriend(nickName, mac, ip);
 		}
 	}

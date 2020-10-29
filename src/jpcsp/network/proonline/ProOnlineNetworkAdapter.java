@@ -36,11 +36,11 @@ import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.HLE.modules.sceNetApctl;
-import jpcsp.HLE.modules.sceNetAdhoc.GameModeArea;
 import jpcsp.network.BaseNetworkAdapter;
 import jpcsp.network.INetworkAdapter;
 import jpcsp.network.adhoc.AdhocMatchingEventMessage;
 import jpcsp.network.adhoc.AdhocMessage;
+import jpcsp.network.adhoc.AdhocSocket;
 import jpcsp.network.adhoc.MatchingObject;
 import jpcsp.network.adhoc.PdpObject;
 import jpcsp.network.adhoc.PtpObject;
@@ -515,6 +515,19 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		return new InetSocketAddress(inetAddress, realPort);
 	}
 
+	@Override
+	public SocketAddress[] getMultiSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
+		if (sceNetAdhoc.isAnyMacAddress(macAddress)) {
+			SocketAddress[] multiSocketAddress = new SocketAddress[macIps.size()];
+			for (int i = 0; i < multiSocketAddress.length; i++) {
+				multiSocketAddress[i] = getSocketAddress(macIps.get(i).mac, realPort);
+			}
+			return multiSocketAddress;
+		}
+
+		return super.getMultiSocketAddress(macAddress, realPort);
+	}
+
 	public synchronized int getNumberMacIps() {
 		return macIps.size();
 	}
@@ -617,15 +630,8 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	}
 
 	@Override
-	public AdhocMessage createAdhocGameModeMessage(GameModeArea gameModeArea) {
-		log.error("Adhoc GameMode not supported by ProOnline");
-		return null;
-	}
-
-	@Override
 	public AdhocMessage createAdhocGameModeMessage(byte[] message, int length) {
-		log.error("Adhoc GameMode not supported by ProOnline");
-		return null;
+		return new ProOnlineAdhocGameModeMessage(this, message, length);
 	}
 
 	@Override
@@ -727,5 +733,10 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	@Override
 	public AdhocMatchingEventMessage createAdhocMatchingBirthMessage(MatchingObject matchingObject, byte[] toMacAddress, byte[] birthMacAddress) {
 		return MatchingPacketFactory.createBirthPacket(this, matchingObject, toMacAddress, birthMacAddress);
+	}
+
+	@Override
+	public AdhocSocket createAdhocGameModeSocket() {
+		return new ProOnlineAdhocDatagramSocket(this);
 	}
 }

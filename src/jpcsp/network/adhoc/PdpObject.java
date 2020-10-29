@@ -358,7 +358,7 @@ public abstract class PdpObject extends AdhocObject {
 	}
 
 	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
-		return adhocMessage.isForMe();
+		return adhocMessage.isForMe(port, address);
 	}
 
 	protected static void setReturnValue(SceKernelThreadInfo thread, int value) {
