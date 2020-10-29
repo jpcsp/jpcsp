@@ -36,7 +36,7 @@ public class sceKernelDeflateDecompress extends AbstractNativeCodeSequence {
 		TPointer32 endOfDecompressedDestAddr = getPointer32(getGprA3());
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceKernelDeflateDecompress(dest=%s, destSize=0x%X, src=%s, endOfDecompressedDestAddr=%s", dest, destSize, src, endOfDecompressedDestAddr));
+			log.debug(String.format("sceKernelDeflateDecompress(dest=%s, destSize=0x%X, src=%s, endOfDecompressedDestAddr=%s)", dest, destSize, src, endOfDecompressedDestAddr));
 		}
 
 		int result = Modules.UtilsForKernelModule.sceKernelDeflateDecompress(dest, destSize, src, endOfDecompressedDestAddr);

@@ -76,7 +76,7 @@ public class UtilsForKernel extends HLEModule {
     		Inflater inflater = new Inflater(true); // ZLIB header and checksum fields are ignored
 			InflaterInputStream is = new InflaterInputStream(new MemoryInputStream(src), inflater);
 			IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dest, destSize, 1);
-			while (decompressedLength < destSize) {
+			while (true) {
 				int length = is.read(buffer);
 				if (length < 0) {
 					// End of stream
