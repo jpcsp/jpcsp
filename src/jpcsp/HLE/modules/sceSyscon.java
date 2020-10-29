@@ -579,7 +579,7 @@ public class sceSyscon extends HLEModule {
 	public int sceSysconReadScratchPad(int src, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer dst, int size) {
     	int values[] = new int[size];
     	readScratchpad(src, values, size);
-    	for (int i = 0; i < scratchPad.length; i++) {
+    	for (int i = 0; i < size; i++) {
     		dst.setValue8(i, (byte) values[i]);
     	}
 
