@@ -352,12 +352,8 @@ public class PreDecrypt {
 			return;
 		}
 
-		if (log.isDebugEnabled()) {
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("PreDecrypt.xml: adding entry #%d:\n%s", preDecryptIndex, info));
-			} else {
-				log.debug(String.format("PreDecrypt.xml: adding entry #%d, cmd=%d", preDecryptIndex, cmd));
-			}
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("PreDecrypt.xml: adding entry #%d:\n%s", preDecryptIndex, info));
 		}
 
 		PreDecryptInfo[] newPreDecrypts = new PreDecryptInfo[preDecrypts.length + 1];
