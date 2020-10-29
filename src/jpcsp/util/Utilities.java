@@ -2334,4 +2334,14 @@ public class Utilities {
 
     	return newArray;
 	}
+
+	public static int memcmp(byte[] buf1, int offset1, byte[] buf2, int offset2, int size) {
+		for (int i = 0; i < size; i++) {
+			if (buf1[offset1 + i] != buf2[offset2 + i]) {
+				return (buf1[offset1 + i] - buf2[offset2 + i]) & 0xFF;
+			}
+		}
+
+		return 0;
+	}
 }

@@ -24,6 +24,7 @@ import static jpcsp.util.Utilities.writeUnaligned32;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -38,9 +39,9 @@ import jpcsp.hardware.Model;
 
 public class sceResmgr extends HLEModule {
     public static Logger log = Modules.getLogger("sceResmgr");
-	// Fake a version 6.59 so that the PSP Update 6.60 can be executed
-	public static final String dummyIndexDatContent = "release:6.59:\n" +
-			"build:5454,0,3,1,0:builder@vsh-build6\n" +
+	// Fake a version 6.00 so that the PSP Updates 6.XX can be executed
+	public static final String dummyIndexDatContent = "release:2.00:\n" +
+			"build:0000,0,3,1,0:builder@vsh-build6\n" +
 			"system:57716@release_660,0x06060010:\n" +
 			"vsh:p6616@release_660,v58533@release_660,20110727:\n" +
 			"target:1:WorldWide\n";
@@ -53,7 +54,16 @@ public class sceResmgr extends HLEModule {
 	}
 
     private static void createDummyIndexDat() {
-    	String indexDatFileName = String.format("flash0:/vsh/etc/index_%02dg.dat", Model.getGeneration());
+    	int firmwareVersion = Emulator.getInstance().getFirmwareVersion();
+    	String fileNameFormat;
+    	if (firmwareVersion == 0 || firmwareVersion >= 500) {
+    		// Starting with FW 5.00, the filename includes the PSP generation
+    		fileNameFormat = "flash0:/vsh/etc/index_%02dg.dat";
+    	} else {
+    		// Before FW 5.00, the filename does not include the PSP generation
+    		fileNameFormat = "flash0:/vsh/etc/index.dat";
+    	}
+    	String indexDatFileName = String.format(fileNameFormat, Model.getGeneration());
     	byte[] content = readCompleteFile(indexDatFileName);
     	if (content != null && content.length > 0) {
     		// File already exists

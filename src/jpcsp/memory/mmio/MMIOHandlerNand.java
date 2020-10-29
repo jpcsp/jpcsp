@@ -263,15 +263,37 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 		return scramble;
 	}
 
+	private static int getScrambleConstant() {
+		final int firmwareVersion = RuntimeContextLLE.getFirmwareVersion();
+		if (firmwareVersion >= 660) {
+			return 0x556D81FE;
+		} else if (firmwareVersion >= 630) {
+			return 0xE3701A7B;
+		} else if (firmwareVersion >= 600) {
+			return 0xCCB8E98B;
+		} else if (firmwareVersion >= 500) {
+			return 0x9232CA96;
+		} else if (firmwareVersion >= 300) {
+			return 0xD2978A5B;
+		}
+
+		return 0;
+	}
+
 	public static int getScrambleDataSector(long fuseId, int partitionNumber) {
 		if (partitionNumber == 3) {
 			return 0x3C22812A;
 		}
 
 		int scramble = ((int) fuseId) ^ Integer.rotateRight((int) (fuseId >> 32), partitionNumber * 3);
-		scramble ^= 0x556D81FE;
+		final int scrambleConstant = getScrambleConstant();
+		scramble ^= scrambleConstant;
 		if (scramble == 0) {
-			scramble = Integer.rotateRight(0x556D81FE, partitionNumber);
+			scramble = Integer.rotateRight(scrambleConstant, partitionNumber);
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("getScrambleDataSector partitionNumber=%d, value=0x%08X, scramble=0x%08X", partitionNumber, scrambleConstant, scramble));
 		}
 
 		return scramble;

@@ -364,6 +364,13 @@ public class Loader {
 
         byte[] key = scePopsMan.readEbootKeys(module.pspfilename);
 
+        if (module.psf != null) {
+        	String updaterVer = module.psf.getString("UPDATER_VER");
+        	if (updaterVer != null) {
+        		Emulator.getInstance().setFirmwareVersion(updaterVer);
+        	}
+        }
+
         long start = System.currentTimeMillis();
     	ByteBuffer decryptedPrx = psp.decrypt(f, isSignChecked, key);
     	long end = System.currentTimeMillis();
@@ -531,7 +538,7 @@ public class Loader {
                 log.info("Unrecognized file format");
                 log.info(String.format("File magic %02X %02X %02X %02X", m0, m1, m2, m3));
                 if (log.isDebugEnabled()) {
-                    byte[] buffer = new byte[256];
+                    byte[] buffer = new byte[0x150];
                     buffer[0] = m0;
                     buffer[1] = m1;
                     buffer[2] = m2;

@@ -176,6 +176,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 	private int unknownC4;
 	private int unknownE8;
 	private int unknownF0;
+	private int unknownFC;
 	private int unknown100;
 
 	public static MMIOHandlerSystemControl getInstance() {
@@ -217,6 +218,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		unknownC4 = stream.readInt();
 		unknownE8 = stream.readInt();
 		unknownF0 = stream.readInt();
+		unknownFC = stream.readInt();
 		unknown100 = stream.readInt();
 		super.read(stream);
 	}
@@ -247,6 +249,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		stream.writeInt(unknownC4);
 		stream.writeInt(unknownE8);
 		stream.writeInt(unknownF0);
+		stream.writeInt(unknownFC);
 		stream.writeInt(unknown100);
 		super.write(stream);
 	}
@@ -276,6 +279,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 		unknownC4 = 0;
 		unknownE8 = 0;
 		unknownF0 = 0;
+		unknownFC = 0;
 		unknown100 = 0;
 		
 		ramSize = RAM_SIZE_16MB;
@@ -584,6 +588,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 			case 0x0C4: value = unknownC4; break;
 			case 0x0E8: value = unknownE8; break;
 			case 0x0F0: value = unknownF0; break;
+			case 0x0FC: value = unknownFC; break;
 			case 0x100: value = unknown100; break;
 			default: value = super.read32(address); break;
 		}

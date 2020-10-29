@@ -18,6 +18,7 @@ package jpcsp.Allegrex.compiler;
 
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.notHasFlag;
+import static jpcsp.util.Utilities.readCompleteFile;
 import static jpcsp.util.Utilities.setFlag;
 
 import java.io.IOException;
@@ -31,6 +32,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Cp0State;
+import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -55,6 +57,7 @@ public class RuntimeContextLLE {
 	private static Memory mmio;
 	public volatile static int pendingInterruptIPbitsMain;
 	public volatile static int pendingInterruptIPbitsME;
+	private static int firmwareVersion = -1;
 	private final static List<IAction> exitActions = new LinkedList<IAction>();
 
 	public static boolean isLLEActive() {
@@ -385,5 +388,29 @@ public class RuntimeContextLLE {
 		stream.writeVersion(STATE_VERSION);
 		stream.writeInt(pendingInterruptIPbitsMain);
 		stream.writeInt(pendingInterruptIPbitsME);
+	}
+
+	public static int getFirmwareVersion() {
+		if (firmwareVersion < 0) {
+			firmwareVersion = 0;
+	    	String versionFileName = "flash0:/vsh/etc/version.txt";
+	    	byte[] content = readCompleteFile(versionFileName);
+	    	if (content != null && content.length > 0) {
+	    		String contentString = new String(content);
+	    		int index1 = contentString.indexOf(':');
+	    		if (index1 >= 0) {
+	    			int index2 = contentString.indexOf(':', index1 + 1);
+	    			if (index2 >= 0) {
+	    				String versionString = contentString.substring(index1 + 1, index2);
+	    				firmwareVersion = HLEModuleManager.psfFirmwareVersionToInt(versionString);
+	    				if (log.isDebugEnabled()) {
+	    					log.debug(String.format("firmwareVersion=%d", firmwareVersion));
+	    				}
+	    			}
+	    		}
+	    	}
+		}
+
+    	return firmwareVersion;
 	}
 }

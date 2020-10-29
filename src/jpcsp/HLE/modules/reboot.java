@@ -104,7 +104,6 @@ public class reboot extends HLEModule {
     private static final int BOOT_IPL          = 1;
     private static final int BOOT_LOADEXEC_PRX = 2;
     private static final int BOOT_REBOOT_BIN   = 3;
-    private static final int threadManInfo = 0x88048740;
     // The address of the Pre-IPL code
     private final int preIplAddress = 0xBFC00000;
     private final int preIplSize = 0x1000;
@@ -669,13 +668,27 @@ public class reboot extends HLEModule {
     	rebootModule.text_addr = rebootBaseAddress;
     	addFunctionNames(rebootModule);
 
-    	addFunctionNid(0x04008C24, "sceIdStorageReadLeaf");
-    	addFunctionNid(0x040094AC, "sceIdStorageLookup");
-    	addFunctionNid(0x040087BC, "sceIdStorageInit");
-    	addFunctionNid(0x0400C5F4, "sceSysregGetFuseId");
-    	addFunctionNid(0x0400067C, "sceKernelUtilsSha1Digest");
-    	addFunctionNid(0x0400C5B4, "sceSysregGetTachyonVersion");
-    	addFunctionNid(0x04003AF0, "sceKernelUtilsSha1Digest");
+    	switch (RuntimeContextLLE.getFirmwareVersion()) {
+    		case 639:
+	        	addFunctionNid(0x04008A88, "sceIdStorageReadLeaf");
+	        	addFunctionNid(0x04009310, "sceIdStorageLookup");
+	        	addFunctionNid(0x04008620, "sceIdStorageInit");
+	        	addFunctionNid(0x0400C450, "sceSysregGetFuseId");
+	        	addFunctionNid(0x0400067C, "sceKernelUtilsSha1Digest");
+	        	addFunctionNid(0x0400C410, "sceSysregGetTachyonVersion");
+	        	addFunctionNid(0x04003A20, "sceKernelUtilsSha1Digest");
+    			break;
+	    	case 660:
+	    	case 661:
+	        	addFunctionNid(0x04008C24, "sceIdStorageReadLeaf");
+	        	addFunctionNid(0x040094AC, "sceIdStorageLookup");
+	        	addFunctionNid(0x040087BC, "sceIdStorageInit");
+	        	addFunctionNid(0x0400C5F4, "sceSysregGetFuseId");
+	        	addFunctionNid(0x0400067C, "sceKernelUtilsSha1Digest");
+	        	addFunctionNid(0x0400C5B4, "sceSysregGetTachyonVersion");
+	        	addFunctionNid(0x04003AF0, "sceKernelUtilsSha1Digest");
+	        	break;
+    	}
 
     	return true;
 	}
@@ -841,17 +854,22 @@ public class reboot extends HLEModule {
     		RuntimeContext.setLog4jMDC("Interrupt");
     	} else {
         	Memory mem = Memory.getInstance();
-	    	int currentThread = mem.internalRead32(threadManInfo + 0);
-	    	if (Memory.isAddressGood(currentThread)) {
-				int uid = mem.internalRead32(currentThread + 8);
-				int cb = SysMemForKernel.getCBFromUid(uid);
-				int nameAddr = mem.internalRead32(cb + 16);
-				String name = Utilities.readInternalStringZ(mem, nameAddr);
-
-				RuntimeContext.setLog4jMDC(name, uid);
+        	int threadManInfo = LoadCoreForKernelModule.getThreadManInfo();
+        	if (threadManInfo != 0) {
+		    	int currentThread = mem.internalRead32(threadManInfo + 0);
+		    	if (Memory.isAddressGood(currentThread)) {
+					int uid = mem.internalRead32(currentThread + 8);
+					int cb = SysMemForKernel.getCBFromUid(uid);
+					int nameAddr = mem.internalRead32(cb + 16);
+					String name = Utilities.readInternalStringZ(mem, nameAddr);
+	
+					RuntimeContext.setLog4jMDC(name, uid);
+		    	} else {
+					RuntimeContext.setLog4jMDC("root");
+		    	}
 	    	} else {
 				RuntimeContext.setLog4jMDC("root");
-	    	}
+        	}
     	}
     }
 
@@ -865,7 +883,10 @@ public class reboot extends HLEModule {
     	}
 
     	Memory mem = Memory.getInstance();
-    	mem.write32(threadManInfo + 0, 0);
+    	int threadManInfo = LoadCoreForKernelModule.getThreadManInfo();
+    	if (threadManInfo != 0) {
+    		mem.write32(threadManInfo + 0, 0);
+    	}
 
     	setLog4jMDC(processor);
     }
@@ -876,6 +897,10 @@ public class reboot extends HLEModule {
     	}
 
     	Memory mem = Memory.getInstance();
+    	int threadManInfo = LoadCoreForKernelModule.getThreadManInfo();
+    	if (threadManInfo == 0) {
+    		return;
+    	}
     	int currentThread = mem.read32(threadManInfo + 0);
     	int nextThread = mem.read32(threadManInfo + 4);
 

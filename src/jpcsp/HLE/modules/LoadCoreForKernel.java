@@ -19,11 +19,13 @@ package jpcsp.HLE.modules;
 import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -53,14 +55,23 @@ import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.PSPModuleInfo;
 import jpcsp.util.Utilities;
 
+import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.AllegrexOpcodes.ADDIU;
+import static jpcsp.AllegrexOpcodes.ADDU;
+import static jpcsp.AllegrexOpcodes.J;
+import static jpcsp.AllegrexOpcodes.JR;
+import static jpcsp.AllegrexOpcodes.LUI;
+import static jpcsp.AllegrexOpcodes.LW;
+import static jpcsp.AllegrexOpcodes.SPECIAL;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.modules.ModuleMgrForUser.SCE_HEADER_LENGTH;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
 import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
 import static jpcsp.HLE.modules.ThreadManForUser.JR;
+import static jpcsp.HLE.modules.ThreadManForUser.SW;
 import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
 import static jpcsp.Loader.SCE_MAGIC;
 import static jpcsp.format.Elf32SectionHeader.SHF_ALLOCATE;
@@ -84,6 +95,9 @@ public class LoadCoreForKernel extends HLEModule {
     private int availableSyscallStubs;
     private final Map<String, String> functionNames = new HashMap<String, String>();
     private final Map<Integer, Integer> functionNids = new HashMap<Integer, Integer>();
+    private int loadCoreBaseAddress;
+    private int threadManInfo;
+    private int syscallBaseAddress;
 
 	private class OnModuleStartAction implements IAction {
 		@Override
@@ -495,12 +509,207 @@ public class LoadCoreForKernel extends HLEModule {
     	currentThread.cpuContext._a1 = argp.getAddress();
     }
 
+    private int scanForLoadConstantValueIntoRegister(Memory mem, int addr, int reg) {
+    	int value = 0;
+		int baseRegister = -1;
+		int offsetLow = 0;
+		// Search backwards for such a sequence of instructions:
+		//    lui    $baseRegister, offsetHigh
+		//    ...
+		//    addiu  $reg, $baseRegister, offsetLow
+		//    ...
+		//
+		// The value is then
+		//    (offsetHigh << 16) + offsetLow
+		//
+		for (int i = 4; i < 300; i += 4) {
+			int opcode = mem.internalRead32(addr - i);
+			if ((opcode >>> 26) == ADDIU && ((opcode >> 16) & 0x1F) == reg) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Found addiu at 0x%08X", addr - i));
+				}
+				baseRegister = (opcode >> 21) & 0x1F;
+				offsetLow = opcode & 0xFFFF;
+			} else if ((opcode >>> 26) == LUI && ((opcode >> 16) & 0x1F) == baseRegister) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Found lui at 0x%08X", addr - i));
+				}
+				int offsetHigh = opcode & 0xFFFF;
+				value = (offsetHigh << 16) + (short) offsetLow;
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Found constant value=0x%08X", value));
+				}
+				break;
+			}
+		}
+
+		return value;
+    }
+
     private int getLoadCoreBaseAddress() {
-    	return 0x8802111C;
+    	// If the loadCodeBaseAddress has not yet been identified,
+    	// scan for the initialization
+    	//     g_loadCore.registeredMods = NULL;
+    	// in the loadCoreInit() function.
+    	// See https://github.com/uofw/uofw/blob/master/src/loadcore/loadcore.c
+    	if (loadCoreBaseAddress == 0) {
+			Memory mem = Memory.getInstance();
+			if (log.isDebugEnabled()) {
+				log.debug("Searching for the loadCodeBaseAddress");
+			}
+
+    		//
+    		// Search for such a sequence of instructions:
+    		//    lui    $baseRegister, offsetHigh
+    		//    ...
+    		//    addiu  $a0, $baseRegister, offsetLow
+    		//    ...
+    		//    sw     $zr, 524($a0)
+    		//
+    		// The loadCodeBaseAddress is then
+    		//    (offsetHigh << 16) + offsetLow
+    		//
+    		// First search for the 3rd instruction
+			int swOpcode = SW(_zr, _a0, 524); // sw $zr, 524($a0)
+			for (int i = 0x16000; i < 0x18000 && loadCoreBaseAddress == 0; i += 4) {
+				int addr = MemoryMap.START_KERNEL + i;
+				if (mem.internalRead32(addr) == swOpcode) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Found sw at 0x%08X", addr));
+					}
+    				// Now, search backwards for the 1st and 2nd instructions
+					loadCoreBaseAddress = scanForLoadConstantValueIntoRegister(mem, addr, _a0);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Found loadCoreBaseAddress=0x%08X", loadCoreBaseAddress));
+					}
+				}
+			}
+    	}
+
+    	return loadCoreBaseAddress;
     }
 
     private int getSyscallBaseAddress() {
-    	return 0xA8026410;
+    	// If the syscallBaseAddress has not yet been identified,
+    	// scan the interrupt function.
+    	if (syscallBaseAddress == 0) {
+    		Memory mem = Memory.getInstance();
+    		int ebase = RuntimeContextLLE.getProcessor().cp0.getEbase();
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Found ebase=0x%08X", ebase));
+    		}
+
+    		//
+    		// Search for such a sequence of instructions located at the address from the ebase register:
+    		//    j      label
+    		//    ...
+    		// label:
+    		//    lui    $baseRegister, offsetHigh
+    		//    ...
+    		//    lw     $jumpRegister, offsetLow($baseRegister)
+    		//    ...
+    		//    jr     $jumpRegister
+    		//
+    		// The syscallBaseAddress is then
+    		//    (offsetHigh << 16) + offsetLow
+    		//
+    		// First search for the 1st instruction
+    		for (int i = 0; i < 100; i += 4) {
+    			int opcode = mem.internalRead32(ebase + i);
+    			if ((opcode >>> 26) == J) {
+    				int addr = (ebase & 0xF0000000) | ((opcode & 0x3FFFFFF) << 2);
+    				if (log.isDebugEnabled()) {
+    					log.debug(String.format("Found jump instruction to 0x%08X at 0x%08X", addr, ebase + i));
+    				}
+    				// Then, from the jump address, search for the 4th instruction
+    				for (int j = 0; j < 100 && syscallBaseAddress == 0; j += 4) {
+    					opcode = mem.internalRead32(addr + j);
+    					if ((opcode >>> 26) == SPECIAL && (opcode & 0x3F) == JR) {
+    	    				if (log.isDebugEnabled()) {
+    	    					log.debug(String.format("Found jr instruction at 0x%08X", addr + j));
+    	    				}
+    						int jumpRegister = (opcode >> 21) & 0x1F;
+    						int offsetLow = 0;
+    						int baseRegister = -1;
+    						// Now, search backwards for the 2nd and 3rd instructions
+    						for (int k = 4; k < 100 && syscallBaseAddress == 0; k += 4) {
+    							opcode = mem.internalRead32(addr + j - k);
+    							if ((opcode >>> 26) == LW && ((opcode >> 16) & 0x1F) == jumpRegister) {
+    								if (log.isDebugEnabled()) {
+    									log.debug(String.format("Found lw at 0x%08X", addr + j - k));
+    								}
+    								baseRegister = (opcode >> 21) & 0x1F;
+    								offsetLow = opcode & 0xFFFF;
+    							} else if ((opcode >>> 26) == LUI && ((opcode >> 16) & 0x1F) == baseRegister) {
+    								if (log.isDebugEnabled()) {
+    									log.debug(String.format("Found lui at 0x%08X", addr + j - k));
+    								}
+    								int offsetHigh = opcode & 0xFFFF;
+    								syscallBaseAddress = (offsetHigh << 16) + (short) offsetLow;
+    	    						if (log.isDebugEnabled()) {
+    	    							log.debug(String.format("Found syscallBaseAddress=0x%08X", syscallBaseAddress));
+    	    						}
+    							}
+    						}
+    					}
+    				}
+    			}
+    		}
+    	}
+
+    	return syscallBaseAddress;
+    }
+
+    public int getThreadManInfo() {
+    	// If the threadManInfo has not yet been identified,
+    	// scan the sceThreadManager.module_bootstart() function.
+    	if (threadManInfo == 0) {
+        	int g_loadCore = getLoadCoreBaseAddress();
+        	if (g_loadCore != 0) {
+    			if (log.isDebugEnabled()) {
+    				log.debug("Searching for the threadManInfo");
+    			}
+            	Memory mem = Memory.getInstance();
+            	int registeredMods = mem.internalRead32(g_loadCore + 524);
+            	int threadManModule = getModuleByName(mem, registeredMods, "sceThreadManager");
+            	if (threadManModule != 0) {
+            		int moduleBootStart = mem.internalRead32(threadManModule + 88);
+            		if (log.isDebugEnabled()) {
+            			log.debug(String.format("Found sceThreadManager.module_bootstart=0x%08X", moduleBootStart));
+            		}
+
+            		//
+            		// Search for such a sequence of instructions:
+            		//    lui    $baseRegister, offsetHigh
+            		//    ...
+            		//    addiu  $valueRegister, $baseRegister, offsetLow
+            		//    ...
+            		//    addu   $a0, $valueRegister, $zr
+            		//
+            		// The threadManInfo is then
+            		//    (offsetHigh << 16) + offsetLow
+            		//
+            		// First search for the 3rd instruction
+            		for (int i = 0; i < 200 && threadManInfo == 0; i += 4) {
+            			int addr = moduleBootStart + i;
+            			int opcode = mem.internalRead32(addr);
+            			if ((opcode >>> 26) == SPECIAL && (opcode & 0x3F) == ADDU && ((opcode >> 11) & 0x1F) == _a0 && ((opcode >> 16) & 0x1F) == _zr) {
+            				int valueRegister = (opcode >> 21) & 0x1F;
+            				if (log.isDebugEnabled()) {
+            					log.debug(String.format("Found addu at 0x%08X", addr));
+            				}
+            				// Now, search backwards for the 1st and 2nd instructions
+            				threadManInfo = scanForLoadConstantValueIntoRegister(mem, addr, valueRegister);
+        					if (log.isDebugEnabled()) {
+        						log.debug(String.format("Found threadManInfo=0x%08X", threadManInfo));
+        					}
+            			}
+            		}
+            	}
+        	}
+    	}
+
+    	return threadManInfo;
     }
 
     public HLEModuleFunction getHLEFunctionByAddress(int address) {
@@ -512,6 +721,9 @@ public class LoadCoreForKernel extends HLEModule {
 
     	Memory mem = Memory.getInstance();
     	int g_loadCore = getLoadCoreBaseAddress();
+    	if (g_loadCore == 0) {
+    		return null;
+    	}
     	int registeredLibs = g_loadCore + 0;
 
     	int[] nids = getFunctionNIDsByAddress(mem, registeredLibs, address);
@@ -550,7 +762,11 @@ public class LoadCoreForKernel extends HLEModule {
 		int address = 0;
 		int syscallIndex = syscallCode << 2;
 		if (syscallIndex < 256) {
-			address = mem.read32(getSyscallBaseAddress() + syscallIndex);
+			int syscallBaseAddres = getSyscallBaseAddress();
+			if (syscallBaseAddres == 0) {
+				return null;
+			}
+			address = mem.read32(syscallBaseAddres + syscallIndex);
 		} else {
 			int syscallTable = Emulator.getProcessor().cp0.getSyscallTable();
 			while (syscallTable != 0) {
@@ -591,6 +807,9 @@ public class LoadCoreForKernel extends HLEModule {
 
     	address &= Memory.addressMask;
     	int g_loadCore = getLoadCoreBaseAddress();
+    	if (g_loadCore == 0) {
+    		return null;
+    	}
     	int registeredMods = mem.internalRead32(g_loadCore + 524);
     	int module = getModuleByAddress(mem, registeredMods, address);
     	if (module != 0) {
@@ -665,6 +884,21 @@ public class LoadCoreForKernel extends HLEModule {
 		}
 
 		return nids;
+    }
+
+    private int getModuleByName(Memory mem, int linkedModules, String name) {
+    	while (linkedModules != 0 && Memory.isAddressGood(linkedModules)) {
+    		String moduleName = Utilities.readInternalStringNZ(mem, linkedModules + 8, 27);
+
+    		if (name.equals(moduleName)) {
+    			return linkedModules;
+    		}
+
+    		// Next
+    		linkedModules = mem.internalRead32(linkedModules);
+    	}
+
+    	return 0;
     }
 
     private int getModuleByAddress(Memory mem, int linkedModules, int address) {

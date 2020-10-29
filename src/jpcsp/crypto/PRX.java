@@ -29,10 +29,13 @@ import static jpcsp.util.Utilities.writeUnaligned32;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Interpreter;
 import jpcsp.HLE.TPointer;
@@ -290,13 +293,25 @@ public class PRX {
 	}
 
     private TAG_INFO GetTagInfo(int tag) {
-        int iTag;
-        for (iTag = 0; iTag < g_tagInfo.length; iTag++) {
-            if (g_tagInfo[iTag].tag == tag) {
-                return g_tagInfo[iTag];
+    	List<TAG_INFO> tagInfos = new LinkedList<TAG_INFO>();
+        for (TAG_INFO tagInfo : g_tagInfo) {
+            if (tagInfo.tag == tag) {
+            	tagInfos.add(tagInfo);
             }
         }
-        return null;
+
+        if (tagInfos.size() == 0) {
+        	return null;
+        }
+
+        if (tagInfos.size() > 1) {
+	        log.warn(String.format("GetTagInfo found multiple TAG_INFO for tag=0x%08X, using the last one:", tag));
+	        for (TAG_INFO tagInfo : tagInfos) {
+	        	log.warn(String.format("%s", tagInfo));
+	        }
+        }
+
+    	return tagInfos.get(tagInfos.size() - 1);
     }
 
     private int ScramblePRX(byte[] buf, int offset, int size, int code) {
@@ -362,16 +377,16 @@ public class PRX {
     	int pspSize = readUnaligned32(buf, 0x2C);
     	int elfSize = readUnaligned32(buf, 0x28);
         int decryptMode = read8(buf, 0x7C);
+    	int tag = readUnaligned32(buf, 0xD0);
 
     	byte[] resultBuffer = new byte[Math.max(elfSize, pspSize)];
     	System.arraycopy(buf, 0, resultBuffer, 0, Math.min(size, resultBuffer.length));
 
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("DecryptAndUncompressPRX size=0x%X, compAttribute=0x%X, pspSize=0x%X, elfSize=0x%X, decryptMode=0x%X", size, compAttribute, pspSize, elfSize, decryptMode));
+    		log.debug(String.format("DecryptAndUncompressPRX size=0x%X, compAttribute=0x%X, pspSize=0x%X, elfSize=0x%X, decryptMode=0x%X, tag=0x%08X", size, compAttribute, pspSize, elfSize, decryptMode, tag));
     	}
 
     	int type;
-    	int tag;
         switch (decryptMode) {
         	case DECRYPT_MODE_VSH_MODULE:
         		if (isSignChecked) {
@@ -381,7 +396,6 @@ public class PRX {
 	            	}
         		}
 
-        		tag = readUnaligned32(buf, 0xD0);
                 if (tag == 0x02000000) {
                 	type = 8;
                 } else {
@@ -396,7 +410,6 @@ public class PRX {
 	            	}
         		}
 
-        		tag = readUnaligned32(buf, 0xD0);
         		if (tag == 0x457B90F0) {
         			type = 9;
         		} else if (tag == 0x457B8AF0 || tag == 0x457B80F0) {
@@ -446,6 +459,7 @@ public class PRX {
 
         int resultSize = DecryptPRX(resultBuffer, size, type, null, key);
         if (resultSize < 0) {
+        	log.error(String.format("DecryptPRX returning %d", resultSize));
         	return null;
         }
 
@@ -978,6 +992,10 @@ public class PRX {
             	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_SHA1_HASH returned error %d", result));
             }
 
+            if (Utilities.memcmp(buf2, 0, buf4, 0, 0x14) != 0) {
+            	log.error(String.format("DecryptPRX: SHA1 Hash not matching: %s%s", Utilities.getMemoryDump(buf2, 0, 0x14), Utilities.getMemoryDump(buf4, 0, 0x14)));
+            }
+
             if ((type >= 2 && type <= 7) || type == 9 || type == 10) {
                 byte[] tmp1 = new byte[0x40];
                 byte[] tmp2 = new byte[0x40];
@@ -1034,8 +1052,12 @@ public class PRX {
                 System.arraycopy(buf2, 0xB0, buf, 0xB0, 0xA0);
             }
 
-            if (type == 8) {
+            // Check only done for UPDATE_VER > 6.20
+            if (type == 8 && Emulator.getInstance().getFirmwareVersion() > 620) {
                 if (buf[0xA4] != 0x01) {
+                	if (log.isDebugEnabled()) {
+                		log.debug(String.format("error -303, type=%d, firmwareVersion=%d: %s", type, Emulator.getInstance().getFirmwareVersion(), Utilities.getMemoryDump(buf, 0, 0x150)));
+                	}
                     return -303;
                 }
             }
