@@ -78,7 +78,7 @@ public class sceNand extends HLEModule {
     public static final int iplTablePpnStart = 0x80;
     public static final int iplTablePpnEnd = 0x17F;
     public static final int iplPpnStart = 0x200;
-    public static final int iplPpnEnd = 0x31F;
+    public static final int iplPpnEnd = 0x3DF;
     public static final int idStoragePpnStart = 0x600;
     public static final int idStoragePpnEnd = 0x7FF;
     public static final int iplId = 0x6DC64A38;

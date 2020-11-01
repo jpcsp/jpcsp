@@ -300,6 +300,11 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 	}
 
 	public int getScramble(int ppn) {
+		// Scramble has only been introduced in Firmware 3.00
+		if (RuntimeContextLLE.getFirmwareVersion() < 300) {
+			return 0;
+		}
+
 		long fuseId = sceSysregModule.sceSysregGetFuseId();
 		int lbn = sceNandModule.getLbnFromPpn(ppn);
 		int sector = ppn % pagesPerBlock;
