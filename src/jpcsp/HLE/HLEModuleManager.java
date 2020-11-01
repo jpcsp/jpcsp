@@ -16,8 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
-import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
-import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
+import static jpcsp.util.HLEUtilities.NOP;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -43,10 +42,9 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
-import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
-import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
+import jpcsp.util.HLEUtilities;
 
 /**
  * Manager for the HLE modules.
@@ -516,9 +514,8 @@ public class HLEModuleManager {
     		syscallToFunction.put(syscallCode, func);
 
     		if (func.requiresJumpCall()) {
-    			SysMemInfo sysMemInfo = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, String.format("JumpCall-%s", func.getFunctionName()), PSP_SMEM_Low, 8, 0);
-    			int jumpCallAddress = sysMemInfo.addr;
-            	int returnInstruction = // jr $ra
+    			int jumpCallAddress = HLEUtilities.getInstance().allocateInternalMemory(8);
+    			int returnInstruction = // jr $ra
                 	    (AllegrexOpcodes.SPECIAL << 26)
                 	    | AllegrexOpcodes.JR
                 	    | ((Common._ra) << 21);
@@ -547,7 +544,7 @@ public class HLEModuleManager {
         	if (Memory.isAddressGood(address)) {
             	Memory mem = Memory.getInstance();
 	        	if ((mem.internalRead32(address) >>> 26) == AllegrexOpcodes.J) {
-	        		if (mem.internalRead32(address + 4) == ThreadManForUser.NOP()) {
+	        		if (mem.internalRead32(address + 4) == NOP()) {
 	        			int jumpAddress = (mem.internalRead32(address) & 0x03FFFFFF) << 2;
 
 	        			nid = nidMapper.getNidByAddress(jumpAddress);

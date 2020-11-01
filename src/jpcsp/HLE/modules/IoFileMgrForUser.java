@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.Common._s0;
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.VFS.local.LocalVirtualFileSystem.fixMsDirectoryFiles;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_ALREADY_EXISTS;
@@ -36,6 +37,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MEMSTICK_DEVCTL_BAD_P
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_IO;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK_FAT;
+import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 
@@ -100,6 +102,7 @@ import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
+import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -169,6 +172,7 @@ public class IoFileMgrForUser extends HLEModule {
     private final static boolean useVirtualFileSystem = false;
     protected VirtualFileSystemManager vfsManager;
     protected Map<String, String> assignedDevices;
+    private int ASYNC_LOOP_ADDRESS;
 
     public static class IoOperationTiming {
         private int delayMillis;
@@ -723,6 +727,8 @@ public class IoFileMgrForUser extends HLEModule {
 		noDelayTimings.put(IoOperation.iodevctl, new IoFileMgrForUser.IoOperationTiming());
 		noDelayTimings.put(IoOperation.read, new IoFileMgrForUser.IoOperationTiming());
 		noDelayTimings.put(IoOperation.write, new IoFileMgrForUser.IoOperationTiming());
+
+    	ASYNC_LOOP_ADDRESS = HLEUtilities.getInstance().installLoopHandler(this, "hleAsyncThread");
 
 		super.start();
     }
@@ -1299,6 +1305,7 @@ public class IoFileMgrForUser extends HLEModule {
     /*
      * Async thread functions.
      */
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleAsyncThread(Processor processor) {
         CpuState cpu = processor.cpu;
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -1383,9 +1390,7 @@ public class IoFileMgrForUser extends HLEModule {
             }
 
             // The stack of the async thread is always allocated in the kernel partition
-            info.asyncThread = threadMan.hleKernelCreateThread("SceIofileAsync",
-                    ThreadManForUser.ASYNC_LOOP_ADDRESS, asyncPriority, stackSize,
-                    threadMan.getCurrentThread().attr, 0, SysMemUserForUser.KERNEL_PARTITION_ID);
+            info.asyncThread = threadMan.hleKernelCreateThread("SceIofileAsync", ASYNC_LOOP_ADDRESS, asyncPriority, stackSize, threadMan.getCurrentThread().attr, 0, KERNEL_PARTITION_ID);
 
             if (info.asyncThread.getStackAddr() == 0) {
         		log.warn(String.format("Cannot start the Async IO thread, not enough memory to create its stack"));

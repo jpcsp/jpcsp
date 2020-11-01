@@ -16,14 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import static jpcsp.HLE.modules.ThreadManForUser.JAL;
-import static jpcsp.HLE.modules.ThreadManForUser.POPS_DECOMPRESS_DATA_ADDRESS;
-import static jpcsp.HLE.modules.ThreadManForUser.POPS_START_ADDRESS;
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.crypto.PGD.PGD_MAGIC;
 import static jpcsp.format.PBP.PBP_HEADER_SIZE;
 import static jpcsp.format.PBP.PBP_PSAR_DATA_OFFSET;
 import static jpcsp.format.PBP.PBP_PSP_DATA_OFFSET;
 import static jpcsp.hardware.Model.getGeneration;
+import static jpcsp.util.HLEUtilities.JAL;
 import static jpcsp.util.Utilities.patch;
 import static jpcsp.util.Utilities.readCompleteFile;
 import static jpcsp.util.Utilities.readUnaligned32;
@@ -61,6 +60,7 @@ import jpcsp.crypto.AMCTRL;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.hardware.Model;
 import jpcsp.memory.mmio.MMIOHandlerGe;
+import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
 
 public class scePopsMan extends HLEModule {
@@ -69,6 +69,8 @@ public class scePopsMan extends HLEModule {
     private static final String KEYS_BIN = "KEYS.BIN";
     private static final String ebootDummyFileName = "ms0:/PSP/GAME/DUMMY0000/" + EBOOT_PBP;
     private static final int COMPILED_SKD_VERSION = 0x03050000; // popsman.prx requires at least v3.05
+    private int POPS_DECOMPRESS_DATA_ADDRESS;
+    private int POPS_START_ADDRESS;
     private String ebootPbp;
     private int ebootPbpUid;
     private IVirtualFile vFileEbootPbp;
@@ -99,6 +101,14 @@ public class scePopsMan extends HLEModule {
     public byte[] getEbootKey() {
     	return ebootKey;
     }
+
+	@Override
+	public void start() {
+    	POPS_DECOMPRESS_DATA_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hlePopsDecompressData");
+    	POPS_START_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hlePopsStartHandler");
+
+    	super.start();
+	}
 
     public void loadOnDemand(SceModule module) throws IOException {
 		String ebootFileName = module.pspfilename;
@@ -193,6 +203,7 @@ public class scePopsMan extends HLEModule {
     	return result;
     }
 
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hlePopsDecompressData(int destSize, TPointer src, TPointer dest) {
     	int result = Modules.UtilsForKernelModule.sceKernelDeflateDecompress(dest, destSize, src, TPointer32.NULL);
     	if (result >= 0) {
@@ -210,6 +221,7 @@ public class scePopsMan extends HLEModule {
     	rootThread.cpuContext.npc = POPS_START_ADDRESS;
     }
 
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hlePopsStartHandler(int argumentSize, TPointer argument) {
     	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getCurrentThread();
     	if (log.isDebugEnabled()) {

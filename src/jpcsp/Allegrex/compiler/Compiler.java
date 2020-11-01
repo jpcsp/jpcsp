@@ -21,7 +21,7 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_BRANCHING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_STARTS_NEW_BLOCK;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_SYSCALL;
-import static jpcsp.HLE.modules.ThreadManForUser.BREAK;
+import static jpcsp.util.HLEUtilities.BREAK;
 
 import java.io.File;
 import java.io.IOException;

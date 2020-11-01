@@ -18,10 +18,10 @@ package jpcsp.HLE.VFS.patch;
 
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
-import static jpcsp.HLE.modules.ThreadManForUser.JR;
-import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
-import static jpcsp.HLE.modules.ThreadManForUser.NOP;
-import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
+import static jpcsp.util.HLEUtilities.JR;
+import static jpcsp.util.HLEUtilities.MOVE;
+import static jpcsp.util.HLEUtilities.NOP;
+import static jpcsp.util.HLEUtilities.SYSCALL;
 import static jpcsp.util.Utilities.read8;
 import static jpcsp.util.Utilities.readUnaligned16;
 import static jpcsp.util.Utilities.readUnaligned32;

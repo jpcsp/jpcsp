@@ -19,7 +19,6 @@ package jpcsp.HLE.modules;
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.modules.IoFileMgrForUser.PSP_SEEK_SET;
-import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscall;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -60,6 +59,7 @@ import jpcsp.settings.Settings;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
+import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
 
 public class sceMSstor extends HLEModule {
@@ -447,8 +447,8 @@ public class sceMSstor extends HLEModule {
 		addr += sizeIoFunctionStub;
 		controllerFuncs.ioDevctl = addr;
 		addr += sizeIoFunctionStub;
-		installHLESyscall(controllerFuncs.ioInit, this, "hleMSstorControllerIoInit");
-		installHLESyscall(controllerFuncs.ioDevctl, this, "hleMSstorControllerIoDevctl");
+		HLEUtilities.getInstance().installHLESyscall(controllerFuncs.ioInit, this, "hleMSstorControllerIoInit");
+		HLEUtilities.getInstance().installHLESyscall(controllerFuncs.ioDevctl, this, "hleMSstorControllerIoDevctl");
 
 		storageFuncs.ioInit = addr;
 		addr += sizeIoFunctionStub;
@@ -460,11 +460,11 @@ public class sceMSstor extends HLEModule {
 		addr += sizeIoFunctionStub;
 		storageFuncs.ioClose = addr;
 		addr += sizeIoFunctionStub;
-		installHLESyscall(storageFuncs.ioInit, this, "hleMSstorStorageIoInit");
-		installHLESyscall(storageFuncs.ioDevctl, this, "hleMSstorStorageIoDevctl");
-		installHLESyscall(storageFuncs.ioOpen, this, "hleMSstorStorageIoOpen");
-		installHLESyscall(storageFuncs.ioIoctl, this, "hleMSstorStorageIoIoctl");
-		installHLESyscall(storageFuncs.ioClose, this, "hleMSstorStorageIoClose");
+		HLEUtilities.getInstance().installHLESyscall(storageFuncs.ioInit, this, "hleMSstorStorageIoInit");
+		HLEUtilities.getInstance().installHLESyscall(storageFuncs.ioDevctl, this, "hleMSstorStorageIoDevctl");
+		HLEUtilities.getInstance().installHLESyscall(storageFuncs.ioOpen, this, "hleMSstorStorageIoOpen");
+		HLEUtilities.getInstance().installHLESyscall(storageFuncs.ioIoctl, this, "hleMSstorStorageIoIoctl");
+		HLEUtilities.getInstance().installHLESyscall(storageFuncs.ioClose, this, "hleMSstorStorageIoClose");
 
 		partitionFuncs.ioInit = addr;
 		addr += sizeIoFunctionStub;
@@ -482,14 +482,14 @@ public class sceMSstor extends HLEModule {
 		addr += sizeIoFunctionStub;
 		partitionFuncs.ioWrite = addr;
 		addr += sizeIoFunctionStub;
-		installHLESyscall(partitionFuncs.ioInit, this, "hleMSstorPartitionIoInit");
-		installHLESyscall(partitionFuncs.ioDevctl, this, "hleMSstorPartitionIoDevctl");
-		installHLESyscall(partitionFuncs.ioOpen, this, "hleMSstorPartitionIoOpen");
-		installHLESyscall(partitionFuncs.ioClose, this, "hleMSstorPartitionIoClose");
-		installHLESyscall(partitionFuncs.ioIoctl, this, "hleMSstorPartitionIoIoctl");
-		installHLESyscall(partitionFuncs.ioLseek, this, "hleMSstorPartitionIoLseek");
-		installHLESyscall(partitionFuncs.ioRead, this, "hleMSstorPartitionIoRead");
-		installHLESyscall(partitionFuncs.ioWrite, this, "hleMSstorPartitionIoWrite");
+		HLEUtilities.getInstance().installHLESyscall(partitionFuncs.ioInit, this, "hleMSstorPartitionIoInit");
+		HLEUtilities.getInstance().installHLESyscall(partitionFuncs.ioDevctl, this, "hleMSstorPartitionIoDevctl");
+		HLEUtilities.getInstance().installHLESyscall(partitionFuncs.ioOpen, this, "hleMSstorPartitionIoOpen");
+		HLEUtilities.getInstance().installHLESyscall(partitionFuncs.ioClose, this, "hleMSstorPartitionIoClose");
+		HLEUtilities.getInstance().installHLESyscall(partitionFuncs.ioIoctl, this, "hleMSstorPartitionIoIoctl");
+		HLEUtilities.getInstance().installHLESyscall(partitionFuncs.ioLseek, this, "hleMSstorPartitionIoLseek");
+		HLEUtilities.getInstance().installHLESyscall(partitionFuncs.ioRead, this, "hleMSstorPartitionIoRead");
+		HLEUtilities.getInstance().installHLESyscall(partitionFuncs.ioWrite, this, "hleMSstorPartitionIoWrite");
     }
 
     private Fat32VirtualFile openFile() {

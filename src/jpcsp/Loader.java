@@ -20,15 +20,18 @@ import static jpcsp.Allegrex.Common._a2;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
 import static jpcsp.Allegrex.Common._zr;
-import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
-import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
-import static jpcsp.HLE.modules.ThreadManForUser.NOP;
+import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
 import static jpcsp.Memory.addressMask;
 import static jpcsp.format.Elf32ProgramHeader.PF_X;
 import static jpcsp.format.Elf32SectionHeader.SHF_ALLOCATE;
 import static jpcsp.format.Elf32SectionHeader.SHF_EXECUTE;
 import static jpcsp.format.Elf32SectionHeader.SHF_NONE;
 import static jpcsp.format.Elf32SectionHeader.SHF_WRITE;
+import static jpcsp.util.HLEUtilities.ADDIU;
+import static jpcsp.util.HLEUtilities.JR;
+import static jpcsp.util.HLEUtilities.MOVE;
+import static jpcsp.util.HLEUtilities.NOP;
 import static jpcsp.util.Utilities.patch;
 import static jpcsp.util.Utilities.patchRemoveStringChar;
 import static jpcsp.util.Utilities.readUByte;
@@ -62,9 +65,9 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
-import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.scePopsMan;
 import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.DeferredVStub32;
 import jpcsp.format.DeferredVStubHI16;
@@ -1922,13 +1925,13 @@ public class Loader {
 
     	if ("sceMemlmd".equals(module.modname)) {
     		patch(mem, module, 0x000017EC, 0x0E000000, MOVE(_v0, _zr), 0xFE000000); // replace "jal sceUtilsBufferCopy(cmd=15)" with "move $v0, $zr"
-    		SysMemInfo dummyArea = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "patch-sceMemlmd", SysMemUserForUser.PSP_SMEM_Low, 256, 0);
+    		SysMemInfo dummyArea = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, "patch-sceMemlmd", PSP_SMEM_Low, 256, 0);
     		patch(mem, module, 0x000024C0, 0xBFC00220, dummyArea.addr); // replace hardware register address with dummy address
     		patch(mem, module, 0x000024D4, 0xBFC00280, dummyArea.addr); // replace hardware register address with dummy address
     		patch(mem, module, 0x000024D8, 0xBFC00A00, dummyArea.addr); // replace hardware register address with dummy address
     		patch(mem, module, 0x000024DC, 0xBFC00340, dummyArea.addr); // replace hardware register address with dummy address
     		// Replace entry of sceUtilsBufferCopyWithRange with "return 0".
-    		patch(mem, module, 0x00001CFC, 0x27BDFFE0, ThreadManForUser.JR());
+    		patch(mem, module, 0x00001CFC, 0x27BDFFE0, JR());
     		patch(mem, module, 0x00001D00, 0x3C020000, MOVE(_v0, _zr), 0xFFFF0000);
     		// Patch memlmd_9D36A439 with "return 1"
     		patch(mem, module, 0x00001414, 0x0044102B, ADDIU(_v0, _zr, 1)); // replace "sltu $v0, $v0, $a0" with "li $v0, 1"

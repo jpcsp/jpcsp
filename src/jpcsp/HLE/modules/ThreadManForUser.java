@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.Common._a0;
-import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
@@ -74,6 +73,10 @@ import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.Memory.addressMask;
 import static jpcsp.MemoryMap.END_KERNEL;
 import static jpcsp.MemoryMap.START_KERNEL;
+import static jpcsp.util.HLEUtilities.B;
+import static jpcsp.util.HLEUtilities.JR;
+import static jpcsp.util.HLEUtilities.MOVE;
+import static jpcsp.util.HLEUtilities.SYSCALL;
 import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.writeStringZ;
@@ -90,7 +93,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -105,13 +107,11 @@ import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
-import jpcsp.HLE.HLEModuleFunction;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.StringInfo;
-import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
@@ -141,6 +141,7 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.HLEUtilities;
 
 import org.apache.log4j.Logger;
 
@@ -198,25 +199,11 @@ public class ThreadManForUser extends HLEModule {
 
     protected static final int CALLBACKID_REGISTER = _s0;
     protected CallbackManager callbackManager = new CallbackManager();
-    public static final int INTERNAL_THREAD_ADDRESS_START = MemoryMap.START_RAM;
-    protected static final int IDLE_THREAD_ADDRESS = INTERNAL_THREAD_ADDRESS_START;
-    public static final int THREAD_EXIT_HANDLER_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x10;
-    public static final int CALLBACK_EXIT_HANDLER_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x20;
-    public static final int ASYNC_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x30;
-    public static final int NET_APCTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x40;
-    public static final int NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x50;
-    public static final int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x60;
-    public static final int NET_ADHOC_CTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x70;
-    public static final int UTILITY_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x80;
-    public static final int WLAN_SEND_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x90;
-    public static final int WLAN_UP_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xA0;
-    public static final int WLAN_DOWN_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xB0;
-    public static final int WLAN_IOCTL_CALLBACK_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xC0;
-    public static final int WLAN_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xD0;
-    public static final int POPS_START_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xE0;
-    public static final int POPS_DECOMPRESS_DATA_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xF0;
-    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x100;
-    public static final int INTERNAL_THREAD_ADDRESS_SIZE = INTERNAL_THREAD_ADDRESS_END - INTERNAL_THREAD_ADDRESS_START;
+    public static int INTERNAL_THREAD_ADDRESS_START = MemoryMap.START_USERSPACE;
+    public static int INTERNAL_THREAD_ADDRESS_SIZE = 0x100;
+    public static int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + INTERNAL_THREAD_ADDRESS_SIZE;
+    public static int THREAD_EXIT_HANDLER_ADDRESS;
+    public static int CALLBACK_EXIT_HANDLER_ADDRESS;
     private HashMap<Integer, pspBaseCallback> callbackMap;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
     private static final boolean LOG_INSTRUCTIONS = false;
@@ -668,19 +655,6 @@ public class ThreadManForUser extends HLEModule {
         installIdleThreads();
         installThreadExitHandler();
         installCallbackExitHandler();
-        installAsyncLoopHandler();
-        installNetApctlLoopHandler();
-        installNetAdhocMatchingEventLoopHandler();
-        installNetAdhocMatchingInputLoopHandler();
-        installNetAdhocCtlLoopHandler();
-        installUtilityLoopHandler();
-        installWlanSendCallback();
-        installWlanUpCallback();
-        installWlanDownCallback();
-        installWlanIoctlCallback();
-        installWlanLoopHandler();
-        installPopsStartHandler();
-        installPopsDecompressData();
 
         alarms = new HashMap<Integer, SceKernelAlarmInfo>();
         vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
@@ -825,95 +799,7 @@ public class ThreadManForUser extends HLEModule {
         return address;
     }
 
-    public static int NOP() {
-    	// sll $zr, $zr, 0 <=> nop
-    	return (AllegrexOpcodes.SLL << 26) | (_zr << 16) | (_zr << 11) | (0 << 6);
-    }
-
-    public static int SYNC() {
-    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYNC;
-    }
-
-    public static int MOVE(int rd, int rs) {
-    	// addu rd, rs, $zr <=> move rd, rs
-    	return AllegrexOpcodes.ADDU | (rd << 11) | (_zr << 16) | (rs << 21);
-    }
-
-    public static int LUI(int rd, int imm16) {
-    	return (AllegrexOpcodes.LUI << 26) | (rd << 16) | (imm16 & 0xFFFF);
-    }
-
-    public static int ADDIU(int rt, int rs, int imm16) {
-    	return (AllegrexOpcodes.ADDIU << 26) | (rs << 21) | (rt << 16) | (imm16 & 0xFFFF);
-    }
-
-    public static int ORI(int rt, int rs, int imm16) {
-    	return (AllegrexOpcodes.ORI << 26) | (rs << 21) | (rt << 16) | (imm16 & 0xFFFF);
-    }
-
-    public static int SW(int rt, int base, int imm16) {
-    	return (AllegrexOpcodes.SW << 26) | (base << 21) | (rt << 16) | (imm16 & 0xFFFF);
-    }
-
-    public static int SB(int rt, int rs, int imm16) {
-    	return (AllegrexOpcodes.SB << 26) | (rs << 21) | (rt << 16) | (imm16 & 0xFFFF);
-    }
-
-    public static int LW(int rt, int base, int imm16) {
-    	return (AllegrexOpcodes.LW << 26) | (base << 21) | (rt << 16) | (imm16 & 0xFFFF);
-    }
-
-    public static int JAL(int address) {
-    	return (AllegrexOpcodes.JAL << 26) | ((address >> 2) & 0x03FFFFFF);
-    }
-
-    public static int J(int address) {
-    	return (AllegrexOpcodes.J << 26) | ((address >> 2) & 0x03FFFFFF);
-    }
-
-    public static int SYSCALL(int syscallCode) {
-    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (syscallCode << 6);
-    }
-
-    public static int SYSCALL(HLEModule hleModule, String functionName) {
-    	HLEModuleFunction hleModuleFunction = hleModule.getHleFunctionByName(functionName);
-    	if (hleModuleFunction == null) {
-    		return SYSCALL(SyscallHandler.syscallUnmappedImport);
-    	}
-
-    	// syscall [functionName]
-    	return SYSCALL(hleModuleFunction.getSyscallCode());
-    }
-
-    private int SYSCALL(String functionName) {
-    	return SYSCALL(this, functionName);
-    }
-
-    public static int JR() {
-    	return JR(_ra);
-    }
-
-    public static int JR(int reg) {
-    	// jr $reg
-    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.JR | (reg << 21);
-    }
-
-    public static int B(int destination) {
-    	// beq $zr, $zr, destination <=> b destination
-    	return (AllegrexOpcodes.BEQ << 26) | (_zr << 21) | (_zr << 16) | (destination & 0x0000FFFF);
-    }
-
-    public static int BREAK(int breakCode) {
-    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.BREAK | (breakCode << 6);
-    }
-
     private void reserveInternalMemory() {
-        // Reserve the memory used by the internal handlers
-        SysMemInfo internalMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-InternalHandlers", SysMemUserForUser.PSP_SMEM_Addr, INTERNAL_THREAD_ADDRESS_SIZE, INTERNAL_THREAD_ADDRESS_START);
-        if (internalMemInfo == null) {
-        	log.error(String.format("Cannot reserve internal memory at 0x%08X", INTERNAL_THREAD_ADDRESS_START));
-        }
-
         // This memory is always reserved on a real PSP
         int internalUserMemorySize = 0x4000;
         SysMemInfo rootMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, internalUserMemorySize, MemoryMap.START_USERSPACE);
@@ -940,10 +826,11 @@ public class ThreadManForUser extends HLEModule {
      * Generate 2 idle threads which can toggle between each other when there are no ready threads
      */
     private void installIdleThreads() {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(IDLE_THREAD_ADDRESS, 0x20, 4);
+    	int IDLE_THREAD_ADDRESS = HLEUtilities.getInstance().allocateInternalMemory(12);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(IDLE_THREAD_ADDRESS, 12, 4);
         memoryWriter.writeNext(MOVE(_a0, _zr));
         memoryWriter.writeNext(B(-2));
-        memoryWriter.writeNext(SYSCALL("sceKernelDelayThread"));
+        memoryWriter.writeNext(SYSCALL(this, "sceKernelDelayThread"));
         memoryWriter.flush();
 
         int idleThreadStackSize = 0x1000;
@@ -967,173 +854,16 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void installThreadExitHandler() {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(THREAD_EXIT_HANDLER_ADDRESS, 0x10, 4);
+    	THREAD_EXIT_HANDLER_ADDRESS = HLEUtilities.getInstance().allocateInternalMemory(12);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(THREAD_EXIT_HANDLER_ADDRESS, 12, 4);
         memoryWriter.writeNext(MOVE(_a0, _v0));
         memoryWriter.writeNext(JR());
-        memoryWriter.writeNext(SYSCALL("hleKernelExitThread"));
-        memoryWriter.flush();
-    }
-
-    public static void installHLESyscall(int address, HLEModule hleModule, String name) {
-    	installHLESyscall(new TPointer(Memory.getInstance(), address), hleModule, name);
-    }
-
-    public static void installHLESyscall(TPointer address, HLEModule hleModule, String name) {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 8, 4);
-        memoryWriter.writeNext(JR());
-        memoryWriter.writeNext(SYSCALL(hleModule, name));
-        memoryWriter.flush();
-    }
-
-    public static void installHLESyscallWithJump(TPointer address, HLEModule hleModule, String name) {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 16, 4);
-        memoryWriter.writeNext(NOP());
-        memoryWriter.writeNext(SYSCALL(hleModule, name));
-        memoryWriter.writeNext(JR(_v0));
-        memoryWriter.writeNext(NOP());
-        memoryWriter.flush();
-    }
-
-    private void installHLESyscall(int address, String name) {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 8, 4);
-        memoryWriter.writeNext(JR());
-        memoryWriter.writeNext(SYSCALL(name));
+        memoryWriter.writeNext(HLEUtilities.SYSCALL(this, "hleKernelExitThread"));
         memoryWriter.flush();
     }
 
     private void installCallbackExitHandler() {
-    	installHLESyscall(CALLBACK_EXIT_HANDLER_ADDRESS, "hleKernelExitCallback");
-    }
-
-    private void installLoopHandler(String hleFunctionName, int address) {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 8, 4);
-        memoryWriter.writeNext(B(-1));
-        memoryWriter.writeNext(SYSCALL(hleFunctionName));
-        memoryWriter.flush();
-    }
-
-    public static void installHLEThread(int address, HLEModule hleModule, String hleFunctionName) {
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 8, 4);
-        memoryWriter.writeNext(B(-1));
-        memoryWriter.writeNext(SYSCALL(hleModule, hleFunctionName));
-        memoryWriter.flush();
-    }
-
-    private void installAsyncLoopHandler() {
-    	installLoopHandler("hleKernelAsyncLoop", ASYNC_LOOP_ADDRESS);
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleKernelAsyncLoop(Processor processor) {
-        Modules.IoFileMgrForUserModule.hleAsyncThread(processor);
-    }
-
-    private void installNetApctlLoopHandler() {
-    	installLoopHandler("hleKernelNetApctlLoop", NET_APCTL_LOOP_ADDRESS);
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleKernelNetApctlLoop(Processor processor) {
-    	Modules.sceNetApctlModule.hleNetApctlThread(processor);
-    }
-
-    private void installNetAdhocMatchingEventLoopHandler() {
-    	installLoopHandler("hleKernelNetAdhocMatchingEventLoop", NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS);
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleKernelNetAdhocMatchingEventLoop(Processor processor) {
-    	Modules.sceNetAdhocMatchingModule.hleNetAdhocMatchingEventThread(processor);
-    }
-
-    private void installNetAdhocMatchingInputLoopHandler() {
-    	installLoopHandler("hleKernelNetAdhocMatchingInputLoop", NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS);
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleKernelNetAdhocMatchingInputLoop(Processor processor) {
-    	Modules.sceNetAdhocMatchingModule.hleNetAdhocMatchingInputThread(processor);
-    }
-
-    private void installNetAdhocCtlLoopHandler() {
-    	installLoopHandler("hleKernelNetAdhocctlLoop", NET_ADHOC_CTL_LOOP_ADDRESS);
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleUtilityLoop(Processor processor) {
-    	Modules.sceUtilityModule.hleUtilityThread(processor);
-    }
-
-    private void installUtilityLoopHandler() {
-    	installLoopHandler("hleUtilityLoop", UTILITY_LOOP_ADDRESS);
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleKernelNetAdhocctlLoop(Processor processor) {
-    	Modules.sceNetAdhocctlModule.hleNetAdhocctlThread(processor);
-    }
-
-    private void installWlanSendCallback() {
-    	installHLESyscall(WLAN_SEND_CALLBACK_ADDRESS, "hleWlanSendCallback");
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hleWlanSendCallback(TPointer handleAddr) {
-        return Modules.sceWlanModule.hleWlanSendCallback(handleAddr);
-    }
-
-    private void installWlanUpCallback() {
-    	installHLESyscall(WLAN_UP_CALLBACK_ADDRESS, "hleWlanUpCallback");
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hleWlanUpCallback(TPointer handleAddr) {
-        return Modules.sceWlanModule.hleWlanUpCallback(handleAddr);
-    }
-
-    private void installWlanDownCallback() {
-    	installHLESyscall(WLAN_DOWN_CALLBACK_ADDRESS, "hleWlanDownCallback");
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hleWlanDownCallback(TPointer handleAddr) {
-        return Modules.sceWlanModule.hleWlanDownCallback(handleAddr);
-    }
-
-    private void installWlanIoctlCallback() {
-    	installHLESyscall(WLAN_IOCTL_CALLBACK_ADDRESS, "hleWlanIoctlCallback");
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hleWlanIoctlCallback(TPointer handleAddr, int cmd, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer unknown, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.in) TPointer32 buffersAddr) {
-        return Modules.sceWlanModule.hleWlanIoctlCallback(handleAddr, cmd, unknown, buffersAddr);
-    }
-
-    private void installWlanLoopHandler() {
-    	installLoopHandler("hleKernelWlanLoop", WLAN_LOOP_ADDRESS);
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleKernelWlanLoop() {
-        Modules.sceWlanModule.hleWlanThread();
-    }
-
-    private void installPopsStartHandler() {
-    	installHLESyscall(POPS_START_ADDRESS, "hlePopsStartHandler");
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hlePopsStartHandler(int argumentSize, TPointer argument) {
-        return Modules.scePopsManModule.hlePopsStartHandler(argumentSize, argument);
-    }
-
-    private void installPopsDecompressData() {
-    	installHLESyscall(POPS_DECOMPRESS_DATA_ADDRESS, "hlePopsDecompressData");
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hlePopsDecompressData(int destSize, TPointer src, TPointer dest) {
-        return Modules.scePopsManModule.hlePopsDecompressData(destSize, src, dest);
+    	CALLBACK_EXIT_HANDLER_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hleKernelExitCallback");
     }
 
     /** to be called when exiting the emulation */

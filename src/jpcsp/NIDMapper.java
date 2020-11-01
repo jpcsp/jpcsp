@@ -58,9 +58,9 @@ public class NIDMapper {
     	 */
     	public NIDInfo(int nid, int address, String moduleName, boolean variableExport) {
 			this.nid = nid;
-			this.address = address;
 			this.moduleName = moduleName;
 			this.variableExport = variableExport;
+			setAddress(address);
 			name = null;
 			syscall = -1;
 			firmwareVersion = 999;
@@ -85,8 +85,6 @@ public class NIDMapper {
     		this.moduleName = moduleName;
     		variableExport = false;
     		this.firmwareVersion = firmwareVersion;
-    		address = 0;
-    		overwritten = false;
 			loaded = true;
 			validModuleName = false; // the given moduleName is probably not the correct one...
     	}
@@ -384,7 +382,7 @@ public class NIDMapper {
     		return;
     	}
 
-    	info.address = address;
+    	info.setAddress(address);
     }
 
     /**
@@ -434,7 +432,7 @@ public class NIDMapper {
 
     public int getAddressBySyscall(int syscall) {
     	NIDInfo info = getNIDInfoBySyscall(syscall);
-    	if (info == null || !info.hasAddress()) {
+    	if (info == null || !info.hasAddress() || !info.isOverwritten()) {
     		return 0;
     	}
 

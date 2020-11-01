@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.Allegrex.Common._s0;
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.sceNetAdhocctl.fillNextPointersInLinkedList;
 import static jpcsp.util.Utilities.writeBytes;
@@ -41,6 +42,7 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.network.INetworkAdapter;
 import jpcsp.network.adhoc.MatchingObject;
+import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -50,6 +52,8 @@ public class sceNetAdhocMatching extends HLEModule {
     protected HashMap<Integer, MatchingObject> matchingObjects;
     public static final int loopThreadRegisterArgument = _s0; // $s0 is preserved across calls
     private boolean isInitialized;
+	public int NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS;
+	public int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS;
 
     /**
      * Matching events used in pspAdhocMatchingCallback
@@ -104,6 +108,9 @@ public class sceNetAdhocMatching extends HLEModule {
 		matchingObjects = new HashMap<Integer, MatchingObject>();
 		isInitialized = false;
 
+		NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS = HLEUtilities.getInstance().installLoopHandler(this, "hleNetAdhocMatchingEventThread");
+		NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = HLEUtilities.getInstance().installLoopHandler(this, "hleNetAdhocMatchingInputThread");
+
 		super.start();
 	}
 
@@ -121,6 +128,7 @@ public class sceNetAdhocMatching extends HLEModule {
 		return matchingId;
 	}
 
+    @HLEFunction(nid = HLESyscallNid, version = 150)
 	public void hleNetAdhocMatchingEventThread(Processor processor) {
 		int matchingId = processor.cpu.getRegister(loopThreadRegisterArgument);
 		if (log.isTraceEnabled()) {
@@ -137,6 +145,7 @@ public class sceNetAdhocMatching extends HLEModule {
 		}
 	}
 
+    @HLEFunction(nid = HLESyscallNid, version = 150)
 	public void hleNetAdhocMatchingInputThread(Processor processor) {
 		int matchingId = processor.cpu.getRegister(loopThreadRegisterArgument);
 		if (log.isTraceEnabled()) {

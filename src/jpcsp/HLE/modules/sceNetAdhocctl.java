@@ -29,6 +29,8 @@ import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
+import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 
 import java.util.HashMap;
@@ -45,6 +47,7 @@ import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
 import jpcsp.hardware.Wlan;
 import jpcsp.network.INetworkAdapter;
+import jpcsp.util.HLEUtilities;
 
 import org.apache.log4j.Logger;
 
@@ -112,6 +115,7 @@ public class sceNetAdhocctl extends HLEModule {
     private static final String adhocctlHandlerIdPurpose = "sceNetAdhocctl-Handler";
     private HashMap<Integer, AdhocctlStateCallback> adhocctlStateCallbackIdMap = new HashMap<Integer, AdhocctlStateCallback>();
     private static final String adhocctlStateCallbackIdPurpose = "sceNetAdhocctl-StateCallback";
+    private int NET_ADHOC_CTL_LOOP_ADDRESS;
 
     protected class AdhocctlHandler {
         private int entryAddr;
@@ -260,6 +264,8 @@ public class sceNetAdhocctl extends HLEModule {
 		isInitialized = false;
 		networkAdapter = Modules.sceNetModule.getNetworkAdapter();
 
+		NET_ADHOC_CTL_LOOP_ADDRESS = HLEUtilities.getInstance().installLoopHandler(this, "hleNetAdhocctlThread");
+
 		super.start();
 	}
 
@@ -340,6 +346,7 @@ public class sceNetAdhocctl extends HLEModule {
 		return 500000;
 	}
 
+    @HLEFunction(nid = HLESyscallNid, version = 150)
 	public void hleNetAdhocctlThread(Processor processor) {
     	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
@@ -680,7 +687,7 @@ public class sceNetAdhocctl extends HLEModule {
         doScan = false;
         doDisconnect = false;
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        adhocctlThread = threadMan.hleKernelCreateThread("SceNetAdhocctl", ThreadManForUser.NET_ADHOC_CTL_LOOP_ADDRESS, priority, stackSize, 0, 0, SysMemUserForUser.USER_PARTITION_ID);
+        adhocctlThread = threadMan.hleKernelCreateThread("SceNetAdhocctl", NET_ADHOC_CTL_LOOP_ADDRESS, priority, stackSize, 0, 0, USER_PARTITION_ID);
         threadMan.hleKernelStartThread(adhocctlThread, 0, TPointer.NULL, adhocctlThread.gpReg_addr);
 
         networkAdapter.sceNetAdhocctlInit();

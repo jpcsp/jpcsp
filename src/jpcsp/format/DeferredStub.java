@@ -17,8 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import static jpcsp.HLE.SyscallHandler.syscallUnmappedImport;
-import static jpcsp.HLE.modules.ThreadManForUser.J;
-import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
+import static jpcsp.util.HLEUtilities.J;
+import static jpcsp.util.HLEUtilities.SYSCALL;
 
 import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.RuntimeContext;

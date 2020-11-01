@@ -58,6 +58,7 @@ import jpcsp.util.Utilities;
 import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getFirmwareVersion;
 import static jpcsp.AllegrexOpcodes.ADDIU;
 import static jpcsp.AllegrexOpcodes.ADDU;
 import static jpcsp.AllegrexOpcodes.J;
@@ -69,10 +70,11 @@ import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.modules.ModuleMgrForUser.SCE_HEADER_LENGTH;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Low;
-import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
-import static jpcsp.HLE.modules.ThreadManForUser.JR;
-import static jpcsp.HLE.modules.ThreadManForUser.SW;
-import static jpcsp.HLE.modules.ThreadManForUser.SYSCALL;
+import static jpcsp.util.HLEUtilities.ADDIU;
+import static jpcsp.util.HLEUtilities.JR;
+import static jpcsp.util.HLEUtilities.NOP;
+import static jpcsp.util.HLEUtilities.SW;
+import static jpcsp.util.HLEUtilities.SYSCALL;
 import static jpcsp.Loader.SCE_MAGIC;
 import static jpcsp.format.Elf32SectionHeader.SHF_ALLOCATE;
 import static jpcsp.format.Elf32SectionHeader.SHF_EXECUTE;
@@ -571,7 +573,7 @@ public class LoadCoreForKernel extends HLEModule {
     		//
     		// First search for the 3rd instruction
 			int swOpcode = SW(_zr, _a0, 524); // sw $zr, 524($a0)
-			for (int i = 0x16000; i < 0x18000 && loadCoreBaseAddress == 0; i += 4) {
+			for (int i = 0x13000; i < 0x18000 && loadCoreBaseAddress == 0; i += 4) {
 				int addr = MemoryMap.START_KERNEL + i;
 				if (mem.internalRead32(addr) == swOpcode) {
 					if (log.isDebugEnabled()) {
@@ -733,7 +735,7 @@ public class LoadCoreForKernel extends HLEModule {
 	    		//   J   realAddress
 	    		//   NOP
 	        	if ((mem.internalRead32(address) >>> 26) == AllegrexOpcodes.J) {
-	        		if (mem.internalRead32(address + 4) == ThreadManForUser.NOP()) {
+	        		if (mem.internalRead32(address + 4) == NOP()) {
 	        			int jumpAddress = (mem.internalRead32(address) & 0x03FFFFFF) << 2;
 
 	        			nids = getFunctionNIDsByAddress(mem, registeredLibs, jumpAddress);
@@ -813,14 +815,33 @@ public class LoadCoreForKernel extends HLEModule {
     	int registeredMods = mem.internalRead32(g_loadCore + 524);
     	int module = getModuleByAddress(mem, registeredMods, address);
     	if (module != 0) {
-    		String moduleName = Utilities.readInternalStringNZ(mem, module + 8, 27);
-    		int moduleStart = mem.internalRead32(module + 80) & Memory.addressMask;
-    		int moduleStop = mem.internalRead32(module + 84) & Memory.addressMask;
-    		int moduleBootStart = mem.internalRead32(module + 88) & Memory.addressMask;
-    		int moduleRebootBefore = mem.internalRead32(module + 92) & Memory.addressMask;
-    		int moduleRebootPhase = mem.internalRead32(module + 96) & Memory.addressMask;
-    		int entryAddr = mem.internalRead32(module + 100) & Memory.addressMask;
-    		int textAddr = mem.internalRead32(module + 108) & Memory.addressMask;
+    		String moduleName;
+    		int moduleStart;
+    		int moduleStop;
+    		int moduleBootStart;
+    		int moduleRebootBefore;
+    		int moduleRebootPhase;
+    		int entryAddr;
+    		int textAddr;
+    		if (RuntimeContextLLE.getFirmwareVersion() < 300) {
+    			moduleName = Utilities.readInternalStringNZ(mem, mem.internalRead32(module + 40), 27);
+    			moduleStart = 0;
+    			moduleStop = 0;
+    			moduleBootStart = 0;
+    			moduleRebootBefore = 0;
+    			moduleRebootPhase = 0;
+    			entryAddr = 0;
+    			textAddr = 0;
+    		} else {
+    			moduleName = Utilities.readInternalStringNZ(mem, module + 8, 27);
+    			moduleStart = mem.internalRead32(module + 80) & Memory.addressMask;
+    			moduleStop = mem.internalRead32(module + 84) & Memory.addressMask;
+    			moduleBootStart = mem.internalRead32(module + 88) & Memory.addressMask;
+    			moduleRebootBefore = mem.internalRead32(module + 92) & Memory.addressMask;
+    			moduleRebootPhase = mem.internalRead32(module + 96) & Memory.addressMask;
+    			entryAddr = mem.internalRead32(module + 100) & Memory.addressMask;
+    			textAddr = mem.internalRead32(module + 108) & Memory.addressMask;
+    		}
 
     		if (address == moduleStart) {
     			functionName = String.format("%s.module_start", moduleName);
@@ -886,6 +907,13 @@ public class LoadCoreForKernel extends HLEModule {
 		return nids;
     }
 
+    private int getNextModule(Memory mem, int module) {
+		if (getFirmwareVersion() < 300) {
+			return mem.internalRead32(module + 4);
+		}
+		return mem.internalRead32(module + 0);
+    }
+
     private int getModuleByName(Memory mem, int linkedModules, String name) {
     	while (linkedModules != 0 && Memory.isAddressGood(linkedModules)) {
     		String moduleName = Utilities.readInternalStringNZ(mem, linkedModules + 8, 27);
@@ -895,7 +923,7 @@ public class LoadCoreForKernel extends HLEModule {
     		}
 
     		// Next
-    		linkedModules = mem.internalRead32(linkedModules);
+    		linkedModules = getNextModule(mem, linkedModules);
     	}
 
     	return 0;
@@ -911,7 +939,7 @@ public class LoadCoreForKernel extends HLEModule {
     		}
 
     		// Next
-    		linkedModules = mem.internalRead32(linkedModules);
+    		linkedModules = getNextModule(mem, linkedModules);
     	}
 
     	return 0;

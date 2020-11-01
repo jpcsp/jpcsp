@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.Modules.sceNetIfhandleModule;
 import static jpcsp.HLE.kernel.managers.SceUidManager.INVALID_ID;
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_CONTROL;
@@ -66,6 +67,7 @@ import jpcsp.hardware.Wlan;
 import jpcsp.network.accesspoint.AccessPoint;
 import jpcsp.network.accesspoint.IAccessPointCallback;
 import jpcsp.network.protocols.EtherFrame;
+import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -118,6 +120,11 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 	private TPointer scanHandleAddr;
 	private TPointer scanInputAddr;
 	private TPointer scanOutputAddr;
+	private int WLAN_LOOP_ADDRESS;
+	private int WLAN_UP_CALLBACK_ADDRESS;
+	private int WLAN_DOWN_CALLBACK_ADDRESS;
+	private int WLAN_SEND_CALLBACK_ADDRESS;
+	private int WLAN_IOCTL_CALLBACK_ADDRESS;
 
     private static class GameModeState {
     	public long timeStamp;
@@ -197,9 +204,16 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 		channelModes = new int[maxChannel + 1];
 		joinedChannel = -1;
 
+		WLAN_LOOP_ADDRESS = HLEUtilities.getInstance().installLoopHandler(this, "hleWlanThread");
+		WLAN_UP_CALLBACK_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hleWlanUpCallback");
+		WLAN_DOWN_CALLBACK_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hleWlanDownCallback");
+		WLAN_SEND_CALLBACK_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hleWlanSendCallback");
+		WLAN_IOCTL_CALLBACK_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hleWlanIoctlCallback");
+
 		super.start();
 	}
 
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleWlanThread() {
     	if (log.isTraceEnabled()) {
     		log.trace(String.format("hleWlanThread isGameMode=%b", isGameMode));
@@ -802,6 +816,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	}
     }
 
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleWlanSendCallback(TPointer handleAddr) {
     	SceNetIfHandle handle = new SceNetIfHandle();
     	handle.read(handleAddr);
@@ -837,6 +852,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     }
 
     // Called by sceNetIfhandleIfUp
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleWlanUpCallback(TPointer handleAddr) {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("hleWlanUpCallback handleAddr: %s", Utilities.getMemoryDump(handleAddr.getAddress(), 44)));
@@ -859,7 +875,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	addActiveMacAddress(new pspNetMacAddress(Wlan.getMacAddress()));
 
     	// This thread will call hleWlanThread() in a loop
-    	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceWlanHal", ThreadManForUser.WLAN_LOOP_ADDRESS, 39, 2048, 0, 0, KERNEL_PARTITION_ID);
+    	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceWlanHal", WLAN_LOOP_ADDRESS, 39, 2048, 0, 0, KERNEL_PARTITION_ID);
     	if (thread != null) {
     		wlanThreadUid = thread.uid;
     		Modules.ThreadManForUserModule.hleKernelStartThread(thread, 0, TPointer.NULL, 0);
@@ -871,6 +887,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     }
 
     // Called by sceNetIfhandleIfDown
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public int hleWlanDownCallback(TPointer handleAddr) {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("hleWlanDownCallback handleAddr: %s", Utilities.getMemoryDump(handleAddr.getAddress(), 44)));
@@ -895,7 +912,8 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	return 0;
     }
 
-    public int hleWlanIoctlCallback(TPointer handleAddr, int cmd, TPointer unknown, TPointer32 buffersAddr) {
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleWlanIoctlCallback(TPointer handleAddr, int cmd, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.in) TPointer unknown, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=8, usage=Usage.in) TPointer32 buffersAddr) {
     	SceNetIfHandle handle = new SceNetIfHandle();
     	handle.read(handleAddr);
 
@@ -1345,10 +1363,10 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 
     	SceNetIfHandle handle = new SceNetIfHandle();
 		handle.callbackArg4 = 0x11040404; // dummy callback value
-		handle.upCallbackAddr = ThreadManForUser.WLAN_UP_CALLBACK_ADDRESS;
-		handle.downCallbackAddr = ThreadManForUser.WLAN_DOWN_CALLBACK_ADDRESS;
-		handle.sendCallbackAddr = ThreadManForUser.WLAN_SEND_CALLBACK_ADDRESS;
-		handle.ioctlCallbackAddr = ThreadManForUser.WLAN_IOCTL_CALLBACK_ADDRESS;
+		handle.upCallbackAddr = WLAN_UP_CALLBACK_ADDRESS;
+		handle.downCallbackAddr = WLAN_DOWN_CALLBACK_ADDRESS;
+		handle.sendCallbackAddr = WLAN_SEND_CALLBACK_ADDRESS;
+		handle.ioctlCallbackAddr = WLAN_IOCTL_CALLBACK_ADDRESS;
 		int handleMem = Modules.sceNetIfhandleModule.hleNetMallocInternal(handle.sizeof());
 		TPointer handleAddr = new TPointer(Memory.getInstance(), handleMem);
 		handle.write(handleAddr);

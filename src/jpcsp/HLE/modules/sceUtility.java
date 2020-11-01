@@ -20,11 +20,15 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.Allegrex.Common._s1;
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
+import static jpcsp.HLE.Modules.ThreadManForUserModule;
+import static jpcsp.HLE.Modules.sceUtilityModule;
 import static jpcsp.HLE.VFS.local.LocalVirtualFileSystem.getMsFileName;
 import static jpcsp.HLE.kernel.types.SceUtilitySavedataParam.ERROR_SAVEDATA_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_JPEG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_FORMAT_PNG;
 import static jpcsp.HLE.kernel.types.SceUtilityScreenshotParams.PSP_UTILITY_SCREENSHOT_NAMERULE_AUTONUM;
+import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.sceFont.PSP_FONT_PIXELFORMAT_4;
 import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_SIZE;
 import static jpcsp.HLE.modules.sceSuspendForUser.KERNEL_VOLATILE_MEM_START;
@@ -144,6 +148,7 @@ import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.Settings;
+import jpcsp.util.HLEUtilities;
 import jpcsp.util.MemoryInputStream;
 import jpcsp.util.Utilities;
 import jpcsp.util.sceGu;
@@ -184,6 +189,8 @@ public class sceUtility extends HLEModule {
         utilityPrivateModules.put("libslim", "flash0:/vsh/module/libslim.prx");
         utilityPrivateModules.put("libwww", "flash0:/vsh/module/libwww.prx");
         utilityPrivateModules.put("libfont_hv", "flash0:/vsh/module/libfont_hv.prx");
+
+        UTILITY_LOOP_ADDRESS = HLEUtilities.getInstance().installLoopHandler(this, "hleUtilityThread");
 
         super.start();
     }
@@ -430,6 +437,7 @@ public class sceUtility extends HLEModule {
     protected HashMap<Integer, SceModule> loadedNetModules = new HashMap<Integer, SceModule>();
     protected HashMap<Integer, String> waitingNetModules = new HashMap<Integer, String>();
     protected InstallUtilityDialogState installState;
+    private int UTILITY_LOOP_ADDRESS;
 
 	private String getNetModuleName(int module) {
     	if (module < 0 || module >= utilityNetModuleNames.length) {
@@ -541,6 +549,7 @@ public class sceUtility extends HLEModule {
     	return formattedDateTime;
     }
 
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleUtilityThread(Processor processor) {
     	SceKernelThreadInfo currentThread = Modules.ThreadManForUserModule.getCurrentThread();
     	int action = processor.cpu.getRegister(utilityThreadActionRegister);
@@ -756,11 +765,11 @@ public class sceUtility extends HLEModule {
                 // Start with INIT
                 status = PSP_UTILITY_DIALOG_STATUS_INIT;
                 dialogState = DialogState.init;
-                Modules.sceUtilityModule.startedDialogState = this;
+                sceUtilityModule.startedDialogState = this;
 
                 // Execute the init thread, it will update the status
-                SceKernelThreadInfo initThread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceUtilityInit", ThreadManForUser.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0, SysMemUserForUser.USER_PARTITION_ID);
-                Modules.ThreadManForUserModule.hleKernelStartThread(initThread, 0, TPointer.NULL, initThread.gpReg_addr);
+                SceKernelThreadInfo initThread = ThreadManForUserModule.hleKernelCreateThread("SceUtilityInit", sceUtilityModule.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0, USER_PARTITION_ID);
+                ThreadManForUserModule.hleKernelStartThread(initThread, 0, TPointer.NULL, initThread.gpReg_addr);
                 initThread.cpuContext.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_INIT_START);
                 initThread.cpuContext.setRegister(utilityThreadDelayRegister, getInitDelay());
             }
@@ -827,8 +836,8 @@ public class sceUtility extends HLEModule {
             status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
 
             // Execute the shutdown thread, it will set the status to 0.
-            SceKernelThreadInfo shutdownThread = Modules.ThreadManForUserModule.hleKernelCreateThread("SceUtilityShutdown", ThreadManForUser.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0, SysMemUserForUser.USER_PARTITION_ID);
-            Modules.ThreadManForUserModule.hleKernelStartThread(shutdownThread, 0, TPointer.NULL, shutdownThread.gpReg_addr);
+            SceKernelThreadInfo shutdownThread = ThreadManForUserModule.hleKernelCreateThread("SceUtilityShutdown", sceUtilityModule.UTILITY_LOOP_ADDRESS, params.base.accessThread, 0x800, 0, 0, USER_PARTITION_ID);
+            ThreadManForUserModule.hleKernelStartThread(shutdownThread, 0, TPointer.NULL, shutdownThread.gpReg_addr);
             shutdownThread.cpuContext.setRegister(utilityThreadActionRegister, UTILITY_THREAD_ACTION_SHUTDOWN_START);
             shutdownThread.cpuContext.setRegister(utilityThreadDelayRegister, getShutdownDelay());
 

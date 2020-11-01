@@ -17,8 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_PSMFPLAYER_NO_MEMORY;
-import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscall;
-import static jpcsp.HLE.modules.ThreadManForUser.installHLEThread;
 import static jpcsp.HLE.modules.scePsmf.PSMF_ATRAC_STREAM;
 import static jpcsp.HLE.modules.scePsmf.PSMF_AUDIO_STREAM;
 import static jpcsp.HLE.modules.scePsmf.PSMF_AVC_STREAM;
@@ -65,6 +63,7 @@ import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.IoFileMgrForUser.IoInfo;
 import jpcsp.hardware.Screen;
+import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
 
 /**
@@ -2178,28 +2177,28 @@ public class scePsmfPlayer extends HLEModule {
 		// Install HLE threads
 		scePsmfPlayerMCThreadEntry = moduleMemory;
 		moduleMemory += 0x10;
-		installHLEThread(scePsmfPlayerMCThreadEntry, this, "hlePsmfPlayerMCThread");
+		HLEUtilities.getInstance().installHLEThread(scePsmfPlayerMCThreadEntry, this, "hlePsmfPlayerMCThread");
 
 		scePsmfPlayerOpenControlThreadEntry = moduleMemory;
 		moduleMemory += 0x10;
-		installHLEThread(scePsmfPlayerOpenControlThreadEntry, this, "hlePsmfPlayerOpenControlThread");
+		HLEUtilities.getInstance().installHLEThread(scePsmfPlayerOpenControlThreadEntry, this, "hlePsmfPlayerOpenControlThread");
 
 		scePsmfPlayerDecodeThreadEntry = moduleMemory;
 		moduleMemory += 0x10;
-		installHLEThread(scePsmfPlayerDecodeThreadEntry, this, "hlePsmfPlayerDecodeThread");
+		HLEUtilities.getInstance().installHLEThread(scePsmfPlayerDecodeThreadEntry, this, "hlePsmfPlayerDecodeThread");
 
 		scePsmfPlayerReadThreadEntry = moduleMemory;
 		moduleMemory += 0x10;
-		installHLEThread(scePsmfPlayerReadThreadEntry, this, "hlePsmfPlayerReadThread");
+		HLEUtilities.getInstance().installHLEThread(scePsmfPlayerReadThreadEntry, this, "hlePsmfPlayerReadThread");
 
 		scePsmfPlayerAbortThreadEntry = moduleMemory;
 		moduleMemory += 0x10;
-		installHLEThread(scePsmfPlayerAbortThreadEntry, this, "hlePsmfPlayerAbortThread");
+		HLEUtilities.getInstance().installHLEThread(scePsmfPlayerAbortThreadEntry, this, "hlePsmfPlayerAbortThread");
 
 		// Install callback
 		scePsmfPlayerRingbufferPutEntry = moduleMemory;
 		moduleMemory += 0x10;
-		installHLESyscall(scePsmfPlayerRingbufferPutEntry, this, "hlePsmfPlayerRingbufferPutCallback");
+		HLEUtilities.getInstance().installHLESyscall(scePsmfPlayerRingbufferPutEntry, this, "hlePsmfPlayerRingbufferPutCallback");
 	}
 
 	private void initCommonDecode(TPointer commonDecodeAddr, TPointer mpeg) {

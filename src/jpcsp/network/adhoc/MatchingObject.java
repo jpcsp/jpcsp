@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.adhoc;
 
+import static jpcsp.HLE.Modules.sceNetAdhocMatchingModule;
 import static jpcsp.HLE.modules.sceNetAdhoc.isMyMacAddress;
 import static jpcsp.HLE.modules.sceNetAdhoc.isSameMacAddress;
 import static jpcsp.HLE.modules.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_ACCEPT;
@@ -190,14 +191,14 @@ public abstract class MatchingObject extends AdhocObject {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 			if (eventThread == null) {
 	            eventThread = threadMan.hleKernelCreateThread("SceNetAdhocMatchingEvent",
-	                          ThreadManForUser.NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS,
+	                          sceNetAdhocMatchingModule.NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS,
 				              evthPri, evthStack, threadMan.getCurrentThread().attr, 0, SysMemUserForUser.USER_PARTITION_ID);
 				threadMan.hleKernelStartThread(eventThread, 0, TPointer.NULL, eventThread.gpReg_addr);
 	            eventThread.cpuContext.setRegister(sceNetAdhocMatching.loopThreadRegisterArgument, getId());
 			}
 			if (inputThread == null) {
 				inputThread = threadMan.hleKernelCreateThread("SceNetAdhocMatchingInput",
-				              ThreadManForUser.NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS,
+				              sceNetAdhocMatchingModule.NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS,
 				              inthPri, inthStack, threadMan.getCurrentThread().attr, 0, SysMemUserForUser.USER_PARTITION_ID);
 				threadMan.hleKernelStartThread(inputThread, 0, TPointer.NULL, inputThread.gpReg_addr);
 				inputThread.cpuContext.setRegister(sceNetAdhocMatching.loopThreadRegisterArgument, getId());

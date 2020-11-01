@@ -56,6 +56,7 @@ import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.Settings;
 import jpcsp.sound.SoundChannel;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.HLEUtilities;
 import jpcsp.util.JpcspDialogManager;
 
 import org.apache.log4j.Logger;
@@ -271,9 +272,10 @@ public class Emulator implements Runnable {
         }
         MemorySections.getInstance().reset();
 
+        Modules.SysMemUserForUserModule.start();
+        HLEUtilities.getInstance().init();
         HLEModuleManager.getInstance().init();
         Managers.reset();
-        Modules.SysMemUserForUserModule.start();
         Modules.SysMemUserForUserModule.setFirmwareVersion(firmwareVersion);
     	Modules.ThreadManForUserModule.start();
     }

@@ -20,8 +20,8 @@ import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
-import static jpcsp.HLE.modules.ThreadManForUser.NOP;
-import static jpcsp.HLE.modules.ThreadManForUser.SYNC;
+import static jpcsp.util.HLEUtilities.NOP;
+import static jpcsp.util.HLEUtilities.SYNC;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.Instructions;

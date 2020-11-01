@@ -29,12 +29,10 @@ import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Addr;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.SysMemUserForUser.VSHELL_PARTITION_ID;
-import static jpcsp.HLE.modules.ThreadManForUser.ADDIU;
-import static jpcsp.HLE.modules.ThreadManForUser.LUI;
-import static jpcsp.HLE.modules.ThreadManForUser.MOVE;
-import static jpcsp.HLE.modules.ThreadManForUser.SW;
-import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscall;
-import static jpcsp.HLE.modules.ThreadManForUser.installHLESyscallWithJump;
+import static jpcsp.util.HLEUtilities.ADDIU;
+import static jpcsp.util.HLEUtilities.LUI;
+import static jpcsp.util.HLEUtilities.MOVE;
+import static jpcsp.util.HLEUtilities.SW;
 import static jpcsp.MemoryMap.START_SCRATCHPAD;
 import static jpcsp.memory.mmio.MMIOHandlerGpio.GPIO_PORT_SERVICE_BATTERY;
 import static jpcsp.util.Utilities.clearBit;
@@ -92,6 +90,7 @@ import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerGpio;
 import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
 import jpcsp.settings.Settings;
+import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
 
 public class reboot extends HLEModule {
@@ -593,11 +592,11 @@ public class reboot extends HLEModule {
     	}
 
     	addMMIORange(preIplCopy, 0x1000);
-    	installHLESyscallWithJump(new TPointer(preIplCopy, 0x000), this, "hlePreIplStart");
-    	installHLESyscall(new TPointer(preIplCopy, 0x2A0), this, "hlePreIplIcacheInvalidateAll");
-    	installHLESyscall(new TPointer(preIplCopy, 0x2D8), this, "hlePreIplDcacheWritebackInvalidateAll");
-    	installHLESyscall(new TPointer(preIplCopy, 0x334), this, "hlePreIplNandReadPage");
-    	installHLESyscall(new TPointer(preIplCopy, 0x418), this, "hlePreIplMemoryStickReadSector");
+    	HLEUtilities.getInstance().installHLESyscallWithJump(new TPointer(preIplCopy, 0x000), this, "hlePreIplStart");
+    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x2A0), this, "hlePreIplIcacheInvalidateAll");
+    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x2D8), this, "hlePreIplDcacheWritebackInvalidateAll");
+    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x334), this, "hlePreIplNandReadPage");
+    	HLEUtilities.getInstance().installHLESyscall(new TPointer(preIplCopy, 0x418), this, "hlePreIplMemoryStickReadSector");
 
 		SceModule iplModule = new SceModule(true);
 		iplModule.modname = getName();
@@ -1140,7 +1139,7 @@ public class reboot extends HLEModule {
     		default:
 	        	int sceGzipDecompressAddr = iplBase + 0x910;
 	        	if (mem.read32(sceGzipDecompressAddr) == ADDIU(_sp, _sp, -64)) {
-	            	installHLESyscall(new TPointer(mem, sceGzipDecompressAddr), this, "hleIplGzipDecompress");
+	        		HLEUtilities.getInstance().installHLESyscall(new TPointer(mem, sceGzipDecompressAddr), this, "hleIplGzipDecompress");
 	        	}
 	        	break;
     	}
@@ -1226,7 +1225,7 @@ public class reboot extends HLEModule {
 				log.error("hleIplGzipDecompress", e);
 			}
     	} else {
-    		installHLESyscallWithJump(outBufferAddr, this, "hleIplStart");
+    		HLEUtilities.getInstance().installHLESyscallWithJump(outBufferAddr, this, "hleIplStart");
     	}
 
     	return 0;

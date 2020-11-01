@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
+import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.sceNetAdhocctl.IBSS_NAME_LENGTH;
 import static jpcsp.HLE.modules.sceNetAdhocctl.fillNextPointersInLinkedList;
 import jpcsp.HLE.BufferInfo;
@@ -41,6 +43,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.hardware.Wlan;
 import jpcsp.settings.Settings;
+import jpcsp.util.HLEUtilities;
 import jpcsp.Emulator;
 import jpcsp.Processor;
 
@@ -140,6 +143,12 @@ public class sceNetApctl extends HLEModule {
     private boolean doScan;
     private volatile long scanStartMillis;
     private static final int SCAN_DURATION_MILLIS = 700;
+    private int NET_APCTL_LOOP_ADDRESS;
+
+	@Override
+	public void start() {
+		NET_APCTL_LOOP_ADDRESS = HLEUtilities.getInstance().installLoopHandler(this, "hleNetApctlThread");
+	}
 
 	@Override
 	public void stop() {
@@ -350,6 +359,7 @@ public class sceNetApctl extends HLEModule {
 		}
 	}
 
+    @HLEFunction(nid = HLESyscallNid, version = 150)
 	public void hleNetApctlThread(Processor processor) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("hleNetApctlThread state=%d", state));
@@ -421,9 +431,7 @@ public class sceNetApctl extends HLEModule {
 	public int sceNetApctlInit(int stackSize, int initPriority) {
 		if (sceNetApctlThread == null) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-			sceNetApctlThread = threadMan.hleKernelCreateThread("SceNetApctl",
-					ThreadManForUser.NET_APCTL_LOOP_ADDRESS, initPriority, stackSize,
-					threadMan.getCurrentThread().attr, 0, SysMemUserForUser.USER_PARTITION_ID);
+			sceNetApctlThread = threadMan.hleKernelCreateThread("SceNetApctl", NET_APCTL_LOOP_ADDRESS, initPriority, stackSize, threadMan.getCurrentThread().attr, 0, USER_PARTITION_ID);
 			sceNetApctlThreadTerminate = false;
 			threadMan.hleKernelStartThread(sceNetApctlThread, 0, TPointer.NULL, sceNetApctlThread.gpReg_addr);
 		}
