@@ -329,6 +329,9 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				State.controller.hleControllerPoll();
 				responseData = addAnalogResponseData(responseData);
 				break;
+			case sceSyscon.PSP_SYSCON_CMD_UNKNOWN_05:
+				responseData = addResponseData32(responseData, 13094); // Unknown unsigned value, expected to be larger or equal to 13094
+				break;
 			case PSP_SYSCON_CMD_GET_DIGITAL_KEY_ANALOG:
 				State.controller.hleControllerPoll();
 				responseData = addButtonsResponseData(responseData, false);

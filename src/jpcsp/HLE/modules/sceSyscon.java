@@ -44,6 +44,7 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_CMD_GET_BARYON                    = 0x01;
     public static final int PSP_SYSCON_CMD_GET_DIGITAL_KEY               = 0x02;
     public static final int PSP_SYSCON_CMD_GET_ANALOG                    = 0x03;
+    public static final int PSP_SYSCON_CMD_UNKNOWN_05                    = 0x05;
     public static final int PSP_SYSCON_CMD_GET_DIGITAL_KEY_ANALOG        = 0x06;
     public static final int PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY        = 0x07;
     public static final int PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY_ANALOG = 0x08;
@@ -171,6 +172,7 @@ public class sceSyscon extends HLEModule {
     		cmdNames[PSP_SYSCON_CMD_GET_BARYON] = "GET_BARYON";
     		cmdNames[PSP_SYSCON_CMD_GET_DIGITAL_KEY] = "GET_DIGITAL_KEY";
     		cmdNames[PSP_SYSCON_CMD_GET_ANALOG] = "GET_ANALOG";
+    		cmdNames[PSP_SYSCON_CMD_UNKNOWN_05] = "UNKNOWN_05";
     		cmdNames[PSP_SYSCON_CMD_GET_DIGITAL_KEY_ANALOG] = "GET_DIGITAL_KEY_ANALOG";
     		cmdNames[PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY] = "GET_KERNEL_DIGITAL_KEY";
     		cmdNames[PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY_ANALOG] = "GET_KERNEL_DIGITAL_KEY_ANALOG";
