@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -53,9 +52,11 @@ import jpcsp.format.Elf32Header;
 import jpcsp.format.Elf32ProgramHeader;
 import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.PSPModuleInfo;
+import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
 
 import static jpcsp.Allegrex.Common._a0;
+import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getFirmwareVersion;
@@ -99,6 +100,16 @@ public class LoadCoreForKernel extends HLEModule {
     private final Map<Integer, Integer> functionNids = new HashMap<Integer, Integer>();
     private int loadCoreBaseAddress;
     private int threadManInfo;
+    public int threadManInfoCurrentThreadOffset = 0;
+    public int threadManInfoNextThreadOffset = 4;
+    public int threadManInfoThreadTypeOffset;
+    public int threadManInfoSleepingThreadsOffset;
+    public int threadManInfoDelayedThreadsOffset;
+    public int threadManInfoStoppedThreadsOffset;
+    public int threadManInfoSuspendedThreadsOffset;
+    public int threadManInfoDeadThreadsOffset;
+    public int threadManInfoUnknownThreadsOffset;
+    public int threadManInfoReadyThreadsOffset;
     private int syscallBaseAddress;
 
 	private class OnModuleStartAction implements IAction {
@@ -662,17 +673,28 @@ public class LoadCoreForKernel extends HLEModule {
     	return syscallBaseAddress;
     }
 
+    private int getRegisteredModules(Memory mem) {
+    	int g_loadCore = getLoadCoreBaseAddress();
+    	if (g_loadCore == 0) {
+    		return 0;
+    	}
+
+    	final int registeredModulesOffset = getFirmwareVersion() < 300 ? 528 : 524;
+		int registeredModules = mem.internalRead32(g_loadCore + registeredModulesOffset);
+
+    	return registeredModules;
+    }
+
     public int getThreadManInfo() {
     	// If the threadManInfo has not yet been identified,
     	// scan the sceThreadManager.module_bootstart() function.
     	if (threadManInfo == 0) {
-        	int g_loadCore = getLoadCoreBaseAddress();
-        	if (g_loadCore != 0) {
+        	Memory mem = Memory.getInstance();
+        	int registeredMods = getRegisteredModules(mem);
+        	if (registeredMods != 0) {
     			if (log.isDebugEnabled()) {
     				log.debug("Searching for the threadManInfo");
     			}
-            	Memory mem = Memory.getInstance();
-            	int registeredMods = mem.internalRead32(g_loadCore + 524);
             	int threadManModule = getModuleByName(mem, registeredMods, "sceThreadManager");
             	if (threadManModule != 0) {
             		int moduleBootStart = mem.internalRead32(threadManModule + 88);
@@ -705,6 +727,74 @@ public class LoadCoreForKernel extends HLEModule {
         					if (log.isDebugEnabled()) {
         						log.debug(String.format("Found threadManInfo=0x%08X", threadManInfo));
         					}
+
+        					// Search for "addiu $reg, $valueRegister, offset" instructions
+        					int lastOffset = addr;
+        					int[] offsets = null;
+        					final int wantedNumberOfOffsets = 6;
+        					for (int j = 0; j < 200; j += 4) {
+        						opcode = mem.internalRead32(addr + j);
+        						if ((opcode >>> 26) == ADDIU && ((opcode >> 21) & 0x1F) == valueRegister) {
+        							int offset = (short) (opcode & 0xFFFF);
+        							if (log.isDebugEnabled()) {
+        								log.debug(String.format("Found addiu with offset %d at 0x%08X", offset, addr + j));
+        							}
+        							offsets = Utilities.add(offsets, offset);
+        							lastOffset = addr + j;
+
+        							if (offsets.length >= wantedNumberOfOffsets) {
+        								break;
+        							}
+        						}
+        					}
+
+        					if (offsets != null && offsets.length >= wantedNumberOfOffsets) {
+        						// Sort the offsets, as they are always stored in the same order
+        						Arrays.sort(offsets);
+        						int n = 0;
+        						threadManInfoReadyThreadsOffset = offsets[n++];
+        						threadManInfoSleepingThreadsOffset = offsets[n++];
+        						threadManInfoDelayedThreadsOffset = offsets[n++];
+        						threadManInfoStoppedThreadsOffset = offsets[n++];
+        						threadManInfoSuspendedThreadsOffset = offsets[n++];
+        						threadManInfoDeadThreadsOffset = offsets[n++];
+        						// Not sure at which FW version this offset has been introduced
+        						if (getFirmwareVersion() >= 660) {
+        							threadManInfoUnknownThreadsOffset = threadManInfoDeadThreadsOffset + 8;
+        						} else {
+        							threadManInfoUnknownThreadsOffset = -1;
+        						}
+
+        						if (log.isDebugEnabled()) {
+        							log.debug(String.format("Found threadManInfoReadyThreadsOffset=%d", threadManInfoReadyThreadsOffset));
+        							log.debug(String.format("Found threadManInfoSleepingThreadsOffset=%d", threadManInfoSleepingThreadsOffset));
+        							log.debug(String.format("Found threadManInfoDelayedThreadsOffset=%d", threadManInfoDelayedThreadsOffset));
+        							log.debug(String.format("Found threadManInfoStoppedThreadsOffset=%d", threadManInfoStoppedThreadsOffset));
+        							log.debug(String.format("Found threadManInfoSuspendedThreadsOffset=%d", threadManInfoSuspendedThreadsOffset));
+        							log.debug(String.format("Found threadManInfoDeadThreadsOffset=%d", threadManInfoDeadThreadsOffset));
+        							log.debug(String.format("Found threadManInfoUnknownThreadsOffset=%d", threadManInfoUnknownThreadsOffset));
+        						}
+        					}
+
+        					threadManInfoThreadTypeOffset = -1;
+        					// Search for "addiu $a1, $zr, 2028" instruction
+        					opcode = HLEUtilities.ADDIU(_a1, _zr, 2048);
+        					for (int j = 0; j < 200; j += 4) {
+        						if (mem.internalRead32(lastOffset + j) == opcode) {
+        							// Search for "lw $a0, threadManInfoThreadTypeOffset($reg)" instruction
+        							for (int k = 0; k < 200; k += 4) {
+        								opcode = mem.internalRead32(lastOffset + j + k);
+        								if ((opcode >>> 26) == LW && ((opcode >> 16) & 0x1F) == _a0) {
+        									threadManInfoThreadTypeOffset = (short) (opcode & 0xFFFF);
+        									if (log.isDebugEnabled()) {
+        										log.debug(String.format("Found threadManInfoThreadTypeOffset=%d", threadManInfoThreadTypeOffset));
+        									}
+        									break;
+        								}
+        							}
+        							break;
+        						}
+        					}
             			}
             		}
             	}
@@ -734,7 +824,7 @@ public class LoadCoreForKernel extends HLEModule {
 	    		// Verify if this not the address of a stub call:
 	    		//   J   realAddress
 	    		//   NOP
-	        	if ((mem.internalRead32(address) >>> 26) == AllegrexOpcodes.J) {
+	        	if ((mem.internalRead32(address) >>> 26) == J) {
 	        		if (mem.internalRead32(address + 4) == NOP()) {
 	        			int jumpAddress = (mem.internalRead32(address) & 0x03FFFFFF) << 2;
 
@@ -807,41 +897,22 @@ public class LoadCoreForKernel extends HLEModule {
     		return hleModuleFunction.getFunctionName();
     	}
 
-    	address &= Memory.addressMask;
-    	int g_loadCore = getLoadCoreBaseAddress();
-    	if (g_loadCore == 0) {
+    	int registeredMods = getRegisteredModules(mem);
+    	if (registeredMods == 0) {
     		return null;
     	}
-    	int registeredMods = mem.internalRead32(g_loadCore + 524);
+
+    	address &= Memory.addressMask;
     	int module = getModuleByAddress(mem, registeredMods, address);
     	if (module != 0) {
-    		String moduleName;
-    		int moduleStart;
-    		int moduleStop;
-    		int moduleBootStart;
-    		int moduleRebootBefore;
-    		int moduleRebootPhase;
-    		int entryAddr;
-    		int textAddr;
-    		if (RuntimeContextLLE.getFirmwareVersion() < 300) {
-    			moduleName = Utilities.readInternalStringNZ(mem, mem.internalRead32(module + 40), 27);
-    			moduleStart = 0;
-    			moduleStop = 0;
-    			moduleBootStart = 0;
-    			moduleRebootBefore = 0;
-    			moduleRebootPhase = 0;
-    			entryAddr = 0;
-    			textAddr = 0;
-    		} else {
-    			moduleName = Utilities.readInternalStringNZ(mem, module + 8, 27);
-    			moduleStart = mem.internalRead32(module + 80) & Memory.addressMask;
-    			moduleStop = mem.internalRead32(module + 84) & Memory.addressMask;
-    			moduleBootStart = mem.internalRead32(module + 88) & Memory.addressMask;
-    			moduleRebootBefore = mem.internalRead32(module + 92) & Memory.addressMask;
-    			moduleRebootPhase = mem.internalRead32(module + 96) & Memory.addressMask;
-    			entryAddr = mem.internalRead32(module + 100) & Memory.addressMask;
-    			textAddr = mem.internalRead32(module + 108) & Memory.addressMask;
-    		}
+    		String moduleName = Utilities.readInternalStringNZ(mem, module + 8, 27);
+			int moduleStart = mem.internalRead32(module + 80) & Memory.addressMask;
+			int moduleStop = mem.internalRead32(module + 84) & Memory.addressMask;
+			int moduleBootStart = mem.internalRead32(module + 88) & Memory.addressMask;
+			int moduleRebootBefore = mem.internalRead32(module + 92) & Memory.addressMask;
+			int moduleRebootPhase = mem.internalRead32(module + 96) & Memory.addressMask;
+			int entryAddr = mem.internalRead32(module + 100) & Memory.addressMask;
+			int textAddr = mem.internalRead32(module + 108) & Memory.addressMask;
 
     		if (address == moduleStart) {
     			functionName = String.format("%s.module_start", moduleName);
@@ -880,12 +951,20 @@ public class LoadCoreForKernel extends HLEModule {
     private int[] getFunctionNIDsByAddress(Memory mem, int registeredLibs, int address) {
     	int[] nids = null;
 
+    	final int firmwareVersion = RuntimeContextLLE.getFirmwareVersion();
 		for (int i = 0; i < 512; i += 4) {
 			int linkedLibraries = mem.internalRead32(registeredLibs + i);
 	    	while (linkedLibraries != 0) {
-	    		int numExports = mem.internalRead32(linkedLibraries + 16);
-	    		int entryTable = mem.internalRead32(linkedLibraries + 32);
-	
+	    		int numExports;
+	    		int entryTable;
+	    		if (firmwareVersion < 260) {
+		    		numExports = mem.internalRead16(linkedLibraries + 14);
+		    		entryTable = mem.internalRead32(linkedLibraries + 16);
+	    		} else {
+	    			numExports = mem.internalRead32(linkedLibraries + 16);
+		    		entryTable = mem.internalRead32(linkedLibraries + 32);
+	    		}
+
 	    		for (int j = 0; j < numExports; j++) {
 	    			int nid = mem.internalRead32(entryTable + j * 4);
 	    			int entryAddress = mem.internalRead32(entryTable + (j + numExports) * 4) & Memory.addressMask;
@@ -907,13 +986,6 @@ public class LoadCoreForKernel extends HLEModule {
 		return nids;
     }
 
-    private int getNextModule(Memory mem, int module) {
-		if (getFirmwareVersion() < 300) {
-			return mem.internalRead32(module + 4);
-		}
-		return mem.internalRead32(module + 0);
-    }
-
     private int getModuleByName(Memory mem, int linkedModules, String name) {
     	while (linkedModules != 0 && Memory.isAddressGood(linkedModules)) {
     		String moduleName = Utilities.readInternalStringNZ(mem, linkedModules + 8, 27);
@@ -923,7 +995,7 @@ public class LoadCoreForKernel extends HLEModule {
     		}
 
     		// Next
-    		linkedModules = getNextModule(mem, linkedModules);
+    		linkedModules = mem.internalRead32(linkedModules + 0);
     	}
 
     	return 0;
@@ -939,7 +1011,7 @@ public class LoadCoreForKernel extends HLEModule {
     		}
 
     		// Next
-    		linkedModules = getNextModule(mem, linkedModules);
+    		linkedModules = mem.internalRead32(linkedModules + 0);
     	}
 
     	return 0;

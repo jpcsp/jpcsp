@@ -1053,7 +1053,8 @@ public class PRX {
             }
 
             // Check only done for UPDATE_VER > 6.20
-            if (type == 8 && Emulator.getInstance().getFirmwareVersion() > 620) {
+            int firmwareVersion = Emulator.getInstance().getFirmwareVersion();
+            if (type == 8 && firmwareVersion > 620 && firmwareVersion != 999) {
                 if (buf[0xA4] != 0x01) {
                 	if (log.isDebugEnabled()) {
                 		log.debug(String.format("error -303, type=%d, firmwareVersion=%d: %s", type, Emulator.getInstance().getFirmwareVersion(), Utilities.getMemoryDump(buf, 0, 0x150)));

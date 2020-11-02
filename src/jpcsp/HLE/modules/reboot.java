@@ -855,7 +855,7 @@ public class reboot extends HLEModule {
         	Memory mem = Memory.getInstance();
         	int threadManInfo = LoadCoreForKernelModule.getThreadManInfo();
         	if (threadManInfo != 0) {
-		    	int currentThread = mem.internalRead32(threadManInfo + 0);
+		    	int currentThread = mem.internalRead32(threadManInfo + LoadCoreForKernelModule.threadManInfoCurrentThreadOffset);
 		    	if (Memory.isAddressGood(currentThread)) {
 					int uid = mem.internalRead32(currentThread + 8);
 					int cb = SysMemForKernel.getCBFromUid(uid);
@@ -900,22 +900,26 @@ public class reboot extends HLEModule {
     	if (threadManInfo == 0) {
     		return;
     	}
-    	int currentThread = mem.read32(threadManInfo + 0);
-    	int nextThread = mem.read32(threadManInfo + 4);
+    	int currentThread = mem.read32(threadManInfo + LoadCoreForKernelModule.threadManInfoCurrentThreadOffset);
+    	int nextThread = mem.read32(threadManInfo + LoadCoreForKernelModule.threadManInfoNextThreadOffset);
 
-    	dumpThreadTypeList(mem, mem.read32(threadManInfo + 1228));
+    	if (LoadCoreForKernelModule.threadManInfoThreadTypeOffset != -1) {
+    		dumpThreadTypeList(mem, mem.read32(threadManInfo + LoadCoreForKernelModule.threadManInfoThreadTypeOffset));
+    	}
     	dumpThread(mem, currentThread, "Current thread");
     	if (nextThread != 0 && nextThread != currentThread) {
     		dumpThread(mem, nextThread, "Next thread");
     	}
-    	dumpThreadList(mem, threadManInfo + 1176, "Sleeping thread");
-    	dumpThreadList(mem, threadManInfo + 1184, "Delayed thread");
-    	dumpThreadList(mem, threadManInfo + 1192, "Stopped thread");
-    	dumpThreadList(mem, threadManInfo + 1200, "Suspended thread");
-    	dumpThreadList(mem, threadManInfo + 1208, "Dead thread");
-    	dumpThreadList(mem, threadManInfo + 1216, "??? thread");
+    	dumpThreadList(mem, threadManInfo + LoadCoreForKernelModule.threadManInfoSleepingThreadsOffset, "Sleeping thread");
+    	dumpThreadList(mem, threadManInfo + LoadCoreForKernelModule.threadManInfoDelayedThreadsOffset, "Delayed thread");
+    	dumpThreadList(mem, threadManInfo + LoadCoreForKernelModule.threadManInfoStoppedThreadsOffset, "Stopped thread");
+    	dumpThreadList(mem, threadManInfo + LoadCoreForKernelModule.threadManInfoSuspendedThreadsOffset, "Suspended thread");
+    	dumpThreadList(mem, threadManInfo + LoadCoreForKernelModule.threadManInfoDeadThreadsOffset, "Dead thread");
+    	if (LoadCoreForKernelModule.threadManInfoUnknownThreadsOffset != -1) {
+    		dumpThreadList(mem, threadManInfo + LoadCoreForKernelModule.threadManInfoUnknownThreadsOffset, "??? thread");
+    	}
     	for (int priority = 0; priority < 128; priority++) {
-    		dumpThreadList(mem, threadManInfo + 152 + priority * 8, String.format("Ready thread[prio=0x%X]", priority));
+    		dumpThreadList(mem, threadManInfo + LoadCoreForKernelModule.threadManInfoReadyThreadsOffset + priority * 8, String.format("Ready thread[prio=0x%X]", priority));
     	}
     }
 

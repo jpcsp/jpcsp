@@ -137,6 +137,11 @@ public class RuntimeContextLLE {
     	Compiler compiler = Compiler.getInstance();
     	compiler.addMMIORange(MemoryMap.START_KERNEL, 0x800000);
     	compiler.addMMIORange(0xBFC00C00, 0x240);
+
+    	int firmwareVersion = getFirmwareVersion();
+    	if (firmwareVersion >= 280 && firmwareVersion <= 303) {
+    		compiler.addMMIORange(MemoryMap.START_USERSPACE, 0x30000);
+    	}
     }
 
 	public static boolean hasMMIO() {

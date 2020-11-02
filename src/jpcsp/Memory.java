@@ -344,6 +344,10 @@ public abstract class Memory implements IState {
     	return read8(address);
     }
 
+    public int internalRead16(int address) {
+    	return read16(address);
+    }
+
     public int internalRead32(int address) {
     	return read32(address);
     }

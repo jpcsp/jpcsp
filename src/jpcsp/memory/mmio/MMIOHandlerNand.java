@@ -273,8 +273,18 @@ public class MMIOHandlerNand extends MMIOHandlerBase {
 			return 0xCCB8E98B;
 		} else if (firmwareVersion >= 500) {
 			return 0x9232CA96;
-		} else if (firmwareVersion >= 300) {
+		} else if (firmwareVersion >= 390) {
 			return 0xD2978A5B;
+		} else if (firmwareVersion >= 370) {
+			return 0xF490D272;
+		} else if (firmwareVersion >= 350) {
+			return 0xDF6238BA;
+		} else if (firmwareVersion >= 330) {
+			return 0x9B9D2561;
+		} else if (firmwareVersion >= 310) {
+			return 0xFE4E483D;
+		} else if (firmwareVersion >= 300) {
+			return 0xFBFC21B8;
 		}
 
 		return 0;

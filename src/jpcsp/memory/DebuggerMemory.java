@@ -576,6 +576,13 @@ public class DebuggerMemory extends Memory {
     }
 
     @Override
+    public int internalRead16(int address) {
+    	int value = mem.read16(address);
+    	// No tracing
+        return value;
+    }
+
+    @Override
     public int internalRead32(int address) {
     	int value = mem.read32(address);
     	// No tracing

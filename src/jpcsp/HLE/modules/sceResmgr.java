@@ -70,22 +70,28 @@ public class sceResmgr extends HLEModule {
     		return;
     	}
 
-    	// A few entries in PreDecrypt.xml will allow the decryption of this dummy file
-    	byte[] buffer = new byte[0x1F0];
-    	write8(buffer, 0x7C, PRX.DECRYPT_MODE_NO_EXEC); // decryptMode
-    	writeUnaligned32(buffer, 0xB0, 0x9F); // dataSize
-    	writeUnaligned32(buffer, 0xB4, 0x80); // dataOffset
-    	int tag;
-    	switch (Model.getGeneration()) {
-    		case 1:  tag = 0x0B2B90F0; break;
-    		case 2:  tag = 0x0B2B91F0; break;
-    		default: tag = 0x0B2B92F0; break;
+    	if (firmwareVersion == 0 || firmwareVersion > 200) {
+	    	// A few entries in PreDecrypt.xml will allow the decryption of this dummy file
+	    	byte[] buffer = new byte[0x1F0];
+	    	write8(buffer, 0x7C, PRX.DECRYPT_MODE_NO_EXEC); // decryptMode
+	    	writeUnaligned32(buffer, 0xB0, 0x9F); // dataSize
+	    	writeUnaligned32(buffer, 0xB4, 0x80); // dataOffset
+	    	int tag;
+	    	switch (Model.getGeneration()) {
+	    		case 1:  tag = 0x0B2B90F0; break;
+	    		case 2:  tag = 0x0B2B91F0; break;
+	    		default: tag = 0x0B2B92F0; break;
+	    	}
+	    	writeUnaligned32(buffer, 0xD0, tag); // tag
+
+	    	writeStringNZ(buffer, 0x150, buffer.length - 0x150, dummyIndexDatContent);
+
+	    	writeCompleteFile(indexDatFileName, buffer, true);
+    	} else {
+    		// Before FW 2.00, index.dat is not encrypted
+    		byte[] buffer = dummyIndexDatContent.getBytes();
+    		writeCompleteFile(indexDatFileName, buffer, true);
     	}
-    	writeUnaligned32(buffer, 0xD0, tag); // tag
-
-    	writeStringNZ(buffer, 0x150, buffer.length - 0x150, dummyIndexDatContent);
-
-    	writeCompleteFile(indexDatFileName, buffer, true);
     }
 
 	@HLEFunction(nid = 0x9DC14891, version = 150)
