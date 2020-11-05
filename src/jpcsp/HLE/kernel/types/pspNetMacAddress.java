@@ -116,9 +116,7 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 		// The following OUI's (Organizationally Unique Identifier) seems to be used for PSPs
 		byte[][] validOUIs = new byte[][] {
 			new byte[] { (byte) 0x00, (byte) 0x01, (byte) 0x4A }, // Confirmed
-			new byte[] { (byte) 0x00, (byte) 0x02, (byte) 0xC7 }, // Confirmed
-			new byte[] { (byte) 0x00, (byte) 0x04, (byte) 0x1F }, // Not confirmed
-			new byte[] { (byte) 0x00, (byte) 0x13, (byte) 0x15 }  // Not confirmed
+			new byte[] { (byte) 0x00, (byte) 0x02, (byte) 0xC7 }  // Confirmed
 		};
 		// Select one random OUI
 		byte[] oui = validOUIs[random.nextInt(validOUIs.length)];
