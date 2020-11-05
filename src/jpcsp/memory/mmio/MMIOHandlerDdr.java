@@ -104,6 +104,7 @@ public class MMIOHandlerDdr extends MMIOHandlerBase {
 	}
 
 	public synchronized void doFlush(int value) {
+		value &= 0xF;
 		flushDone[value] = true;
 
 		if (log.isDebugEnabled()) {

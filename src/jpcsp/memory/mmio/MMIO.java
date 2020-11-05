@@ -127,11 +127,11 @@ public class MMIO extends Memory {
     	addHandlerRW(0xB1800000, 0x4);
 
     	// The memory at 0xBFC00000 is only visible during the IPL execution
-    	addHandlerRW(0xBFC00000, 0x1000); // 4K embedded RAM
+    	addHandlerRW(0xBFC00000, 0x100000); // 1Mb embedded RAM
     	// The memory at 0xBFD00000 will be remapped to 0xBFC00000 after IPL execution
     	// making the original memory at 0xBFC00000 no longer accessible.
     	// See remapMemoryAtProcessorReset().
-    	addHandlerRW(0xBFD00000, 0x1000); // 4K embedded RAM
+    	addHandlerRW(0xBFD00000, 0x100000); // 1Mb embedded RAM
 
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS1, 0x90C, MMIOHandlerNandPage.getInstance());
     	addHandler(MMIOHandlerNandPage.BASE_ADDRESS2, 0x90C, MMIOHandlerNandPage.getInstance());
@@ -312,10 +312,11 @@ public class MMIO extends Memory {
 		// When resetting the main processor, the memory content that was accessible
 		// at address 0xBFD00000 is now made available at address 0xBFC00000 and
 		// the address 0xBFD00000 becomes invalid.
-		memcpy(0xBFC00000, 0xBFD00000, 0x1000);
-		RuntimeContext.invalidateRange(0xBFC00000, 0x1000);
-		removeHandler(0xBFD00000, 0x1000);
-		RuntimeContext.removeCodeBlocks(0xBFD00000, 0x1000);
+    	final int size = 0x100000;
+		memcpy(0xBFC00000, 0xBFD00000, size);
+		RuntimeContext.invalidateRange(0xBFC00000, size);
+		removeHandler(0xBFD00000, size);
+		RuntimeContext.removeCodeBlocks(0xBFD00000, size);
     }
 
     protected IMMIOHandler getHandler(int address) {

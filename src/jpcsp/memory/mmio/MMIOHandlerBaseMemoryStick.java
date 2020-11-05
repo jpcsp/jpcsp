@@ -567,6 +567,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 			case MS_CMD_SLEEP:
 			case MSPRO_CMD_SLEEP:
 			case MSPRO_CMD_WAKEUP:
+			case MSPRO_CMD_STOP:
 				// Simply ignore these commands
 				break;
 			case MSPRO_CMD_READ_DATA:
@@ -607,7 +608,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 				commandCompleted = false;
 				break;
 			default:
-				log.error(String.format("MMIOHandlerBaseMemoryStick.startCmd unknown cmd=0x%02X", cmd));
+				log.error(String.format("MMIOHandlerBaseMemoryStick.startCmd unknown cmd=0x%02X(%s)", cmd, getCommandName(cmd)));
 				break;
 		}
 

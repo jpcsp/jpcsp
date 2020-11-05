@@ -584,14 +584,18 @@ public class LoadCoreForKernel extends HLEModule {
     		//
     		// First search for the 3rd instruction
 			int swOpcode = SW(_zr, _a0, 524); // sw $zr, 524($a0)
+			if (getFirmwareVersion() <= 201) {
+				swOpcode = SW(_zr, _a1, 20); // sw $zr, 20($a1)
+			}
 			for (int i = 0x13000; i < 0x18000 && loadCoreBaseAddress == 0; i += 4) {
 				int addr = MemoryMap.START_KERNEL + i;
 				if (mem.internalRead32(addr) == swOpcode) {
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("Found sw at 0x%08X", addr));
 					}
+					int register = (swOpcode >> 21) & 0x1F;
     				// Now, search backwards for the 1st and 2nd instructions
-					loadCoreBaseAddress = scanForLoadConstantValueIntoRegister(mem, addr, _a0);
+					loadCoreBaseAddress = scanForLoadConstantValueIntoRegister(mem, addr, register);
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("Found loadCoreBaseAddress=0x%08X", loadCoreBaseAddress));
 					}
@@ -679,8 +683,16 @@ public class LoadCoreForKernel extends HLEModule {
     		return 0;
     	}
 
-    	final int registeredModulesOffset = getFirmwareVersion() < 300 ? 528 : 524;
-		int registeredModules = mem.internalRead32(g_loadCore + registeredModulesOffset);
+    	int registeredModulesOffset;
+    	if (getFirmwareVersion() <= 201) {
+    		registeredModulesOffset = 20;
+    	} else if (getFirmwareVersion() < 300) {
+    		registeredModulesOffset = 528;
+    	} else {
+    		registeredModulesOffset = 524;
+    	}
+
+    	int registeredModules = mem.internalRead32(g_loadCore + registeredModulesOffset);
 
     	return registeredModules;
     }
@@ -952,8 +964,9 @@ public class LoadCoreForKernel extends HLEModule {
     	int[] nids = null;
 
     	final int firmwareVersion = RuntimeContextLLE.getFirmwareVersion();
-		for (int i = 0; i < 512; i += 4) {
-			int linkedLibraries = mem.internalRead32(registeredLibs + i);
+    	final int registeredLibsEntries = firmwareVersion <= 201 ? 1 : 128;
+		for (int i = 0; i < registeredLibsEntries; i++) {
+			int linkedLibraries = mem.internalRead32(registeredLibs + i * 4);
 	    	while (linkedLibraries != 0) {
 	    		int numExports;
 	    		int entryTable;

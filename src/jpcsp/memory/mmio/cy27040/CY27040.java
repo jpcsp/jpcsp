@@ -79,7 +79,7 @@ public class CY27040 implements IState {
 	}
 
 	private void resetInternally() {
-		revision = 0x03;
+		revision = 0x04; // PSP Firmware 1.50 is only supporting revisions 4 or 8
 		clock = 0;
 		spreadSpectrum = 0;
 	}

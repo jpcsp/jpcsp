@@ -849,7 +849,7 @@ public class reboot extends HLEModule {
     	}
 
     	boolean isInterruptContext = processor.cp0.getControlRegister(13) != 0;
-    	if (isInterruptContext) {
+    	if (isInterruptContext && RuntimeContextLLE.getFirmwareVersion() > 200) {
     		RuntimeContext.setLog4jMDC("Interrupt");
     	} else {
         	Memory mem = Memory.getInstance();

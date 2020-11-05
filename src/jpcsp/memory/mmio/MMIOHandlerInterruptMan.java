@@ -20,6 +20,7 @@ import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterruptException;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterruptException;
 import static jpcsp.HLE.kernel.managers.ExceptionManager.IP2;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_ATA_INTR;
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_I2C_INTR;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;
 import static jpcsp.util.Utilities.clearBit;
@@ -215,7 +216,7 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 			case 0x00:
 				// interruptman.prx is only writing the values 0x80000000 and 0x40000000
 				// which seems to have the effect of clearing the triggers for these interrupts.
-				// The Media Engine is also writing the value 0x00000020.
+				// The Media Engine is also writing the value 0x00000020 and 0x00001000.
 				if (hasBit(value, PSP_VBLANK_INTR)) {
 					clearInterrupt(PSP_VBLANK_INTR);
 					value = clearBit(value, PSP_VBLANK_INTR);
@@ -227,6 +228,10 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 				if (hasBit(value, PSP_ATA_INTR)) {
 					clearInterrupt(PSP_ATA_INTR);
 					value = clearBit(value, PSP_ATA_INTR);
+				}
+				if (hasBit(value, PSP_I2C_INTR)) {
+					clearInterrupt(PSP_I2C_INTR);
+					value = clearBit(value, PSP_I2C_INTR);
 				}
 				if (value != 0) {
 					super.write32(address, value);

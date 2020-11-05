@@ -16,11 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.readCompleteFile;
 import static jpcsp.util.Utilities.write8;
 import static jpcsp.util.Utilities.writeCompleteFile;
 import static jpcsp.util.Utilities.writeStringNZ;
 import static jpcsp.util.Utilities.writeUnaligned32;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.IntBuffer;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -35,11 +41,13 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.crypto.PRX;
+import jpcsp.graphics.capture.CaptureImage;
 import jpcsp.hardware.Model;
+import jpcsp.settings.Settings;
 
 public class sceResmgr extends HLEModule {
     public static Logger log = Modules.getLogger("sceResmgr");
-	// Fake a version 6.00 so that the PSP Updates 6.XX can be executed
+	// Fake a version 2.00 so that the PSP Updates can be executed
 	public static final String dummyIndexDatContent = "release:2.00:\n" +
 			"build:0000,0,3,1,0:builder@vsh-build6\n" +
 			"system:57716@release_660,0x06060010:\n" +
@@ -49,6 +57,7 @@ public class sceResmgr extends HLEModule {
     @Override
 	public void start() {
     	createDummyIndexDat();
+    	createDummyBackgroundImages();
 
     	super.start();
 	}
@@ -70,7 +79,7 @@ public class sceResmgr extends HLEModule {
     		return;
     	}
 
-    	if (firmwareVersion == 0 || firmwareVersion > 200) {
+    	if (firmwareVersion == 0 || firmwareVersion >= 250) {
 	    	// A few entries in PreDecrypt.xml will allow the decryption of this dummy file
 	    	byte[] buffer = new byte[0x1F0];
 	    	write8(buffer, 0x7C, PRX.DECRYPT_MODE_NO_EXEC); // decryptMode
@@ -88,13 +97,80 @@ public class sceResmgr extends HLEModule {
 
 	    	writeCompleteFile(indexDatFileName, buffer, true);
     	} else {
-    		// Before FW 2.00, index.dat is not encrypted
+    		// Before FW 2.50, index.dat is not encrypted
     		byte[] buffer = dummyIndexDatContent.getBytes();
     		writeCompleteFile(indexDatFileName, buffer, true);
     	}
     }
 
-	@HLEFunction(nid = 0x9DC14891, version = 150)
+    /**
+     * Create 12 dummy background images under flash0:/vsh/resource
+     *     01.bmp
+     *     02.bmp
+     *     03.bmp
+     *     04.bmp
+     *     05.bmp
+     *     06.bmp
+     *     07.bmp
+     *     08.bmp
+     *     09.bmp
+     *     10.bmp
+     *     11.bmp
+     *     12.bmp
+     * The dummy images try to match the colors from a real PSP.
+     */
+    private void createDummyBackgroundImages() {
+    	String directory = String.format("%s/vsh/resource", Settings.getInstance().getDirectoryMapping("flash0"));
+    	File baseDirectory = new File(directory);
+    	if (baseDirectory.isDirectory()) {
+    		String[] fileNames = baseDirectory.list();
+    		if (fileNames != null && fileNames.length >= 12) {
+    			return;
+    		}
+    	} else {
+    		baseDirectory.mkdirs();
+    	}
+
+    	final int imageWidth = 60;
+    	final int imageHeight = 34;
+    	final int[] buffer = new int[imageWidth * imageHeight];
+    	final int[] monthColors = new int[] { // Colors are in ABGR format
+    			0xE3E3E3,
+    			0x49E5F5,
+    			0x19E094,
+    			0xA186F2,
+    			0x0A950A,
+    			0xAC5E9D,
+    			0x90AB00,
+    			0x99360A,
+    			0xDB5BCA,
+    			0x19BCEE,
+    			0x184B77,
+    			0x171BEC
+    	};
+
+    	// The PSP has one image per month
+    	for (int month = 1; month <= 12; month++) {
+    		// Each month has a different color
+    		int monthColor = monthColors[month - 1];
+
+    		// Fill the whole image with a fixed color
+    		Arrays.fill(buffer, monthColor);
+
+    		// Save the NN.bmp file
+    		CaptureImage image = new CaptureImage(0, 0, IntBuffer.wrap(buffer), imageWidth, imageHeight, imageWidth, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888, false, 0, false, true, null);
+	    	String fileName = String.format("%s/%02d.bmp", directory, month);
+	    	image.setFileFormat("bmp");
+	    	image.setFileName(fileName);
+	    	try {
+				image.write();
+			} catch (IOException e) {
+				log.error("write BMP", e);
+			}
+    	}
+    }
+
+    @HLEFunction(nid = 0x9DC14891, version = 150)
     public int sceResmgr_9DC14891(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultLengthAddr) {
     	int resultLength;
 
