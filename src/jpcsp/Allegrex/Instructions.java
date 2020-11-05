@@ -611,7 +611,8 @@ public void interpret(Processor processor, int insn) {
 	int imm20 = (insn>>6)&1048575;
 
 	try {
-		SyscallHandler.syscall(imm20, Processor.isInstructionInDelaySlot(processor.cpu.memory, processor.cpu.pc));
+		int continueAddress = SyscallHandler.syscall(imm20, Processor.isInstructionInDelaySlot(processor.cpu.memory, processor.cpu.pc));
+		processor.cpu.pc = continueAddress;
 	} catch (Exception e) {
 		log.error("syscall", e);
 	}
