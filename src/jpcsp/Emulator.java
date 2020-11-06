@@ -52,6 +52,7 @@ import jpcsp.hardware.Nand;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.MemorySections;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
+import jpcsp.network.xlinkkai.XLinkKaiWlanAdapter;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.Settings;
 import jpcsp.sound.SoundChannel;
@@ -266,6 +267,7 @@ public class Emulator implements Runnable {
         SceUidManager.reset();
         HLEUidObjectMapping.reset();
         ProOnlineNetworkAdapter.init();
+        XLinkKaiWlanAdapter.init();
 
         if (State.fileLogger != null) {
             State.fileLogger.resetLogging();

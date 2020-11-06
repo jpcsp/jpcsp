@@ -18,24 +18,16 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.Modules.sceNetIfhandleModule;
+import static jpcsp.HLE.Modules.sceWlanModule;
 import static jpcsp.HLE.kernel.managers.SceUidManager.INVALID_ID;
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_CONTROL;
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_DATA;
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_TYPE_SONY;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
-import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
-import static jpcsp.hardware.Wlan.getLocalInetAddress;
 import static jpcsp.scheduler.Scheduler.getNow;
 
 import java.io.IOException;
-import java.net.BindException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -64,6 +56,8 @@ import jpcsp.HLE.kernel.types.SceNetWlanScanInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
 import jpcsp.hardware.Wlan;
+import jpcsp.network.IWlanAdapter;
+import jpcsp.network.WlanAdapterFactory;
 import jpcsp.network.accesspoint.AccessPoint;
 import jpcsp.network.accesspoint.IAccessPointCallback;
 import jpcsp.network.protocols.EtherFrame;
@@ -85,21 +79,16 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     public static final int IOCTL_CMD_SET_WEP_KEY = 0x47;
     public static final int WLAN_MODE_INFRASTRUCTURE = 1;
     public static final int WLAN_MODE_ADHOC = 2;
-    private static int wlanSocketPort = 30010;
     private static final int wlanThreadPollingDelayUs = 12000; // 12ms
     private static final int wlanScanActionDelayUs = 50000; // 50ms
     private static final int wlanConnectActionDelayUs = 50000; // 50ms
     private static final int wlanCreateActionDelayUs = 50000; // 50ms
     private static final int wlanDisconnectActionDelayUs = 50000; // 50ms
-    public static final byte WLAN_CMD_DATA          = (byte) 0;
-    public static final byte WLAN_CMD_SCAN_REQUEST  = (byte) 1;
-    public static final byte WLAN_CMD_SCAN_RESPONSE = (byte) 2;
     static private final byte[] dummyOtherMacAddress = new byte[] { 0x10,  0x22, 0x33, 0x44, 0x55, 0x66 };
-    private static final int[] channels = new int[] { 1, 6, 11 };
+    public static final int[] channels = new int[] { 1, 6, 11 };
     private int joinedChannel;
     private int dummyMessageStep;
     private TPointer dummyMessageHandleAddr;
-    private DatagramSocket wlanSocket;
     private TPointer wlanHandleAddr;
     private int wlanThreadUid;
     private int unknownValue1;
@@ -125,6 +114,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 	private int WLAN_DOWN_CALLBACK_ADDRESS;
 	private int WLAN_SEND_CALLBACK_ADDRESS;
 	private int WLAN_IOCTL_CALLBACK_ADDRESS;
+	private IWlanAdapter wlanAdapter;
 
     private static class GameModeState {
     	public long timeStamp;
@@ -210,6 +200,8 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 		WLAN_SEND_CALLBACK_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hleWlanSendCallback");
 		WLAN_IOCTL_CALLBACK_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hleWlanIoctlCallback");
 
+		wlanAdapter = WlanAdapterFactory.createWlanAdapter();
+
 		super.start();
 	}
 
@@ -259,11 +251,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     		log.debug(String.format("hleWlanScanAction scanCallCount=%d", scanCallCount));
     	}
 
-    	// Send a scan request packet
-    	byte[] scanRequestPacket = new byte[1 + MAC_ADDRESS_LENGTH];
-    	scanRequestPacket[0] = WLAN_CMD_SCAN_REQUEST;
-    	System.arraycopy(Wlan.getMacAddress(), 0, scanRequestPacket, 1, MAC_ADDRESS_LENGTH);
-		sendPacket(scanRequestPacket, scanRequestPacket.length);
+    	wlanAdapter.wlanScan();
 
 		if (scanCallCount < 20) {
 			// Schedule this action for 20 times (1 second)
@@ -355,6 +343,70 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 		Modules.ThreadManForUserModule.sceKernelSignalSema(handle.handleInternal.ioctlSemaId, 1);
     }
 
+    private boolean hleWlanReceiveMessage() {
+    	boolean packetReceived = false;
+
+		try {
+	    	byte[] bytes = new byte[10000];
+	    	int dataLength = wlanAdapter.receiveWlanPacket(bytes, 0, bytes.length);
+	    	if (dataLength < 0) {
+	    		return packetReceived;
+	    	}
+
+	    	if (log.isDebugEnabled()) {
+				log.debug(String.format("hleWlanReceiveMessage message: %s", Utilities.getMemoryDump(bytes, 0, dataLength)));
+			}
+
+			packetReceived = true;
+
+	    	SceNetIfMessage message = new SceNetIfMessage();
+	    	final int size = message.sizeof() + dataLength;
+	    	int allocatedAddr = Modules.sceNetIfhandleModule.hleNetMallocInternal(size);
+	    	if (allocatedAddr > 0) {
+	    		Memory mem = Memory.getInstance();
+		    	mem.memset(allocatedAddr, (byte) 0, size);
+		    	RuntimeContext.debugMemory(allocatedAddr, size);
+
+		    	TPointer messageAddr = new TPointer(mem, allocatedAddr);
+		    	TPointer data = new TPointer(mem, messageAddr.getAddress() + message.sizeof());
+
+		    	// Write the received bytes to memory
+		    	Utilities.writeBytes(data.getAddress(), dataLength, bytes, 0);
+
+		    	// Write the message header
+		    	message.dataAddr = data.getAddress();
+				message.dataLength = dataLength;
+				message.unknown16 = 1;
+				message.unknown18 = 2;
+				message.unknown24 = dataLength;
+				message.write(messageAddr);
+
+		    	SceNetWlanMessage wlanMessage = new SceNetWlanMessage();
+		    	wlanMessage.read(data);
+		    	sceWlanModule.addActiveMacAddress(wlanMessage.srcMacAddress);
+		    	sceWlanModule.addActiveMacAddress(wlanMessage.dstMacAddress);
+
+		    	if (dataLength > 0) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Notifying received message: %s", message));
+						log.debug(String.format("Message WLAN: %s", wlanMessage));
+						log.debug(String.format("Message data: %s", Utilities.getMemoryDump(data.getAddress(), dataLength)));
+					}
+
+					int sceNetIfEnqueue = NIDMapper.getInstance().getAddressByName("sceNetIfEnqueue");
+					if (sceNetIfEnqueue != 0) {
+						SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+						Modules.ThreadManForUserModule.executeCallback(thread, sceNetIfEnqueue, null, true, sceWlanModule.getHandleAddr().getAddress(), messageAddr.getAddress());
+					}
+				}
+	    	}
+		} catch (IOException e) {
+			log.error("hleWlanReceiveMessage", e);
+		}
+
+		return packetReceived;
+    }
+
     private boolean hleWlanReceive() {
     	if (isGameMode) {
     		return hleWlanReceiveGameMode();
@@ -363,129 +415,45 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	return hleWlanReceiveMessage();
     }
 
-    private boolean createWlanSocket() {
-    	if (wlanSocket == null) {
-			boolean retry;
-			do {
-				retry = false;
-	    		try {
-	    			InetAddress localInetAddress = getLocalInetAddress();
-					wlanSocket = new DatagramSocket(wlanSocketPort, getLocalInetAddress());
-		    		// For broadcast
-					wlanSocket.setBroadcast(true);
-		    		// Non-blocking (timeout = 0 would mean blocking)
-					wlanSocket.setSoTimeout(1);
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("createWlanSocket successful on port %d, localInetAddress %s", wlanSocketPort, localInetAddress));
-					}
-	    		} catch (BindException e) {
-	    			if (log.isDebugEnabled()) {
-	    				log.debug(String.format("createWlanSocket port %d already in use (%s) - retrying with port %d", wlanSocketPort, e, wlanSocketPort + 1));
-	    			}
-	    			// The port is already busy, retrying with another port
-	    			wlanSocketPort++;
-	    			retry = true;
-				} catch (SocketException e) {
-					log.error("createWlanSocket", e);
-				}
-			} while (retry);
+    public boolean hasJoinedChannel() {
+    	return joinedChannel >= 0;
+    }
+
+    public int getJoinedChannel() {
+    	return joinedChannel;
+    }
+
+    public int getChannelMode(int channel) {
+    	return channelModes[channel];
+    }
+
+    public String getChannelSSID(int channel) {
+    	return channelSSIDs[channel];
+    }
+
+    public String getJoinedChannelSSID() {
+    	if (!hasJoinedChannel()) {
+    		return null;
     	}
-
-    	return wlanSocket != null;
+    	return getChannelSSID(getJoinedChannel());
     }
 
-    public static int getSocketPort() {
-    	return wlanSocketPort;
+    public AccessPoint getAccessPoint() {
+    	return accessPoint;
     }
 
-	@Override
+    public TPointer getHandleAddr() {
+    	return wlanHandleAddr;
+    }
+
+    @Override
 	public void sendPacketFromAccessPoint(byte[] buffer, int bufferLength, EtherFrame etherFrame) {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sendAccessPointPacket %s", Utilities.getMemoryDump(buffer, 0, bufferLength)));
     	}
 
-    	try {
-			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(getSocketPort());
-			if (broadcastAddress != null) {
-				for (int i = 0; i < broadcastAddress.length; i++) {
-					DatagramPacket packet = new DatagramPacket(buffer, bufferLength, broadcastAddress[i]);
-					try {
-						wlanSocket.send(packet);
-					} catch (SocketException e) {
-						// Ignore "Network is unreachable"
-						if (log.isDebugEnabled()) {
-							log.debug("sendPacketFromAccessPoint", e);
-						}
-					}
-				}
-			}
-		} catch (UnknownHostException e) {
-			log.error("sendPacketFromAccessPoint", e);
-		} catch (IOException e) {
-			log.error("sendPacketFromAccessPoint", e);
-		}
+    	wlanAdapter.sendAccessPointPacket(buffer, 0, bufferLength, etherFrame);
 	}
-
-	private int getBroadcastPort(int channel) {
-    	if (channel >= 0 && channelModes[channel] == WLAN_MODE_INFRASTRUCTURE) {
-    		return accessPoint.getPort();
-    	}
-
-    	if (Wlan.hasLocalInetAddress()) {
-    		return wlanSocketPort;
-    	}
-
-    	// If no specific local IP address has been assigned, use port shifting
-    	return wlanSocketPort ^ 1;
-    }
-
-    protected void sendPacket(byte[] buffer, int bufferLength) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sendPacket %s", Utilities.getMemoryDump(buffer, 0, bufferLength)));
-    	}
-
-    	try {
-			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(getBroadcastPort(joinedChannel));
-			if (broadcastAddress != null) {
-				for (int i = 0; i < broadcastAddress.length; i++) {
-					DatagramPacket packet = new DatagramPacket(buffer, bufferLength, broadcastAddress[i]);
-					try {
-						wlanSocket.send(packet);
-						if (log.isTraceEnabled()) {
-							log.trace(String.format("sendPacket successful on %s", broadcastAddress[i]));
-						}
-					} catch (SocketException e) {
-						// Ignore "Network is unreachable"
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("sendPacket on %s", broadcastAddress[i]), e);
-						}
-					}
-				}
-			}
-		} catch (UnknownHostException e) {
-			log.error("sendPacket", e);
-		} catch (IOException e) {
-			log.error("sendPacket", e);
-		}
-    }
-
-    protected void sendDataPacket(byte[] buffer, int bufferLength) {
-    	byte[] packetBuffer = new byte[bufferLength + 1 + 32];
-    	int offset = 0;
-    	// Add the cmd in front of the data
-    	packetBuffer[offset] = WLAN_CMD_DATA;
-    	offset++;
-    	// Add the joined SSID in front of the data
-    	if (joinedChannel >= 0) {
-    		Utilities.writeStringNZ(packetBuffer, offset, 32, channelSSIDs[joinedChannel]);
-    	}
-    	offset += 32;
-    	// Add the data
-    	System.arraycopy(buffer, 0, packetBuffer, offset, bufferLength);
-    	offset += bufferLength;
-
-    	sendPacket(packetBuffer, offset);
-    }
 
     private GameModeState getGameModeStat(byte[] macAddress) {
     	GameModeState myGameModeState = null;
@@ -503,7 +471,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	return getGameModeStat(Wlan.getMacAddress());
     }
 
-    private void addActiveMacAddress(pspNetMacAddress macAddress) {
+    public void addActiveMacAddress(pspNetMacAddress macAddress) {
     	if (!sceNetAdhoc.isAnyMacAddress(macAddress.macAddress)) {
     		if (!activeMacAddresses.contains(macAddress)) {
     			activeMacAddresses.add(macAddress);
@@ -522,7 +490,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	return false;
     }
 
-    private void setChannelSSID(int channel, String ssid, int mode) {
+    public void setChannelSSID(int channel, String ssid, int mode) {
     	if (ssid != null && ssid.length() > 0 && isValidChannel(channel)) {
     		channelSSIDs[channel] = ssid;
     		channelModes[channel] = mode;
@@ -534,177 +502,17 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	joinedChannel = channel;
     }
 
-    private void processCmd(byte cmd, byte[] buffer, int offset, int length) {
-    	byte[] packetMacAddress = new byte[MAC_ADDRESS_LENGTH];
-    	System.arraycopy(buffer, offset, packetMacAddress, 0, MAC_ADDRESS_LENGTH);
-    	offset += MAC_ADDRESS_LENGTH;
-    	length -= MAC_ADDRESS_LENGTH;
-
-    	if (sceNetAdhoc.isMyMacAddress(packetMacAddress)) {
-    		// This packet is coming from myself, ignore it
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Ignoring packet coming from myself"));
-    		}
-    		return;
-    	}
-
-    	if (cmd == WLAN_CMD_SCAN_REQUEST) {
-    		byte[] scanResponse = new byte[1 + MAC_ADDRESS_LENGTH + (32 + 2) * channels.length];
-    		int responseOffset = 0;
-
-    		scanResponse[responseOffset] = WLAN_CMD_SCAN_RESPONSE;
-    		responseOffset++;
-
-    		System.arraycopy(Wlan.getMacAddress(), 0, scanResponse, responseOffset, MAC_ADDRESS_LENGTH);
-    		responseOffset += MAC_ADDRESS_LENGTH;
-
-    		for (int channel : channels) {
-    			scanResponse[responseOffset] = (byte) channel;
-    			responseOffset++;
-
-    			scanResponse[responseOffset] = (byte) channelModes[channel];
-    			responseOffset++;
-
-    			Utilities.writeStringNZ(scanResponse, responseOffset, 32, channelSSIDs[channel]);
-        		responseOffset += 32;
-    		}
-    		sendPacket(scanResponse, responseOffset);
-    	} else if (cmd == WLAN_CMD_SCAN_RESPONSE) {
-    		while (length >= 34) {
-    			int channel = buffer[offset];
-    			offset++;
-    			length--;
-
-    			int mode = buffer[offset];
-    			offset++;
-    			length--;
-
-    			String ssid = Utilities.readStringNZ(buffer, offset, 32);
-    			if (ssid != null && ssid.length() > 0) {
-    				// Do not overwrite the information for our joined channel
-    				if (channel != joinedChannel) {
-    					setChannelSSID(channel, ssid, mode);
-    				}
-    			}
-    			offset += 32;
-    			length -= 32;
-    		}
-    	} else {
-    		if (log.isInfoEnabled()) {
-    			log.info(String.format("processCmd unknown cmd=0x%X, buffer=%s", cmd, Utilities.getMemoryDump(buffer, offset, length)));
-    		}
-    	}
-    }
-
-    private boolean hleWlanReceiveMessage() {
-    	boolean packetReceived = false;
-
-    	if (!createWlanSocket()) {
-    		return packetReceived;
-    	}
-
-    	byte[] bytes = new byte[10000];
-		DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-		try {
-			wlanSocket.receive(packet);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("hleWlanReceiveMessage message: %s", Utilities.getMemoryDump(packet.getData(), packet.getOffset(), packet.getLength())));
-			}
-
-			packetReceived = true;
-
-			byte[] dataBytes = packet.getData();
-			int dataOffset = packet.getOffset();
-			int dataLength = packet.getLength();
-
-			byte cmd = dataBytes[dataOffset];
-			dataOffset++;
-			dataLength--;
-			if (cmd != WLAN_CMD_DATA) {
-				processCmd(cmd, dataBytes, dataOffset, dataLength);
-				return packetReceived;
-			}
-
-			String ssid = Utilities.readStringNZ(dataBytes, dataOffset, 32);
-			dataOffset += 32;
-			dataLength -= 32;
-
-			if (joinedChannel >= 0 && !ssid.equals(channelSSIDs[joinedChannel])) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("hleWlanReceiveMessage message SSID('%s') not matching the joined SSID('%s')", ssid, channelSSIDs[joinedChannel]));
-				}
-				return packetReceived;
-			}
-
-	    	SceNetIfMessage message = new SceNetIfMessage();
-	    	final int size = message.sizeof() + dataLength;
-	    	int allocatedAddr = Modules.sceNetIfhandleModule.hleNetMallocInternal(size);
-	    	if (allocatedAddr > 0) {
-	    		Memory mem = Memory.getInstance();
-		    	mem.memset(allocatedAddr, (byte) 0, size);
-		    	RuntimeContext.debugMemory(allocatedAddr, size);
-
-		    	TPointer messageAddr = new TPointer(mem, allocatedAddr);
-		    	TPointer data = new TPointer(mem, messageAddr.getAddress() + message.sizeof());
-
-		    	// Write the received bytes to memory
-		    	Utilities.writeBytes(data.getAddress(), dataLength, dataBytes, dataOffset);
-
-		    	// Write the message header
-		    	message.dataAddr = data.getAddress();
-				message.dataLength = dataLength;
-				message.unknown16 = 1;
-				message.unknown18 = 2;
-				message.unknown24 = dataLength;
-				message.write(messageAddr);
-
-		    	SceNetWlanMessage wlanMessage = new SceNetWlanMessage();
-		    	wlanMessage.read(data);
-		    	addActiveMacAddress(wlanMessage.srcMacAddress);
-		    	addActiveMacAddress(wlanMessage.dstMacAddress);
-
-		    	if (dataLength > 0) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Notifying received message: %s", message));
-						log.debug(String.format("Message WLAN: %s", wlanMessage));
-						log.debug(String.format("Message data: %s", Utilities.getMemoryDump(data.getAddress(), dataLength)));
-					}
-
-					int sceNetIfEnqueue = NIDMapper.getInstance().getAddressByName("sceNetIfEnqueue");
-					if (sceNetIfEnqueue != 0) {
-						SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
-						Modules.ThreadManForUserModule.executeCallback(thread, sceNetIfEnqueue, null, true, wlanHandleAddr.getAddress(), messageAddr.getAddress());
-					}
-				}
-	    	}
-		} catch (SocketTimeoutException e) {
-			// Timeout can be ignored as we are polling
-		} catch (IOException e) {
-			log.error("hleWlanReceiveMessage", e);
-		}
-
-		return packetReceived;
-    }
-
     private void hleWlanSendGameMode() {
     	GameModeState myGameModeState = getMyGameModeState();
     	if (myGameModeState == null) {
     		return;
     	}
 
-    	byte[] buffer = new byte[myGameModeState.dataLength + myGameModeState.macAddress.sizeof()];
-    	int offset = 0;
-
-    	System.arraycopy(myGameModeState.macAddress.macAddress, 0, buffer, offset, myGameModeState.macAddress.sizeof());
-    	offset += myGameModeState.macAddress.sizeof();
-
-    	System.arraycopy(myGameModeState.data, 0, buffer, offset, myGameModeState.dataLength);
-
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("hleWlanSendGameMode sending packet: %s", Utilities.getMemoryDump(buffer, 0, buffer.length)));
+    		log.debug(String.format("hleWlanSendGameMode sending packet: %s", Utilities.getMemoryDump(myGameModeState.data, 0, myGameModeState.dataLength)));
     	}
 
-    	sendDataPacket(buffer, buffer.length);
+    	wlanAdapter.sendGameModePacket(myGameModeState.macAddress, myGameModeState.data, 0, myGameModeState.dataLength);
 
     	myGameModeState.updated = false;
     }
@@ -712,53 +520,25 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     private boolean hleWlanReceiveGameMode() {
     	boolean packetReceived = false;
 
-    	if (!createWlanSocket()) {
-    		return packetReceived;
-    	}
-
     	pspNetMacAddress macAddress = new pspNetMacAddress();
 
-    	byte[] bytes = new byte[gameModeDataLength + macAddress.sizeof() + 1 + 8];
-		DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
 		try {
-			wlanSocket.receive(packet);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("hleWlanReceiveGameMode message: %s", Utilities.getMemoryDump(packet.getData(), packet.getOffset(), packet.getLength())));
+	    	byte[] bytes = new byte[gameModeDataLength];
+	    	int dataLength = wlanAdapter.receiveGameModePacket(macAddress, bytes, 0, bytes.length);
+	    	if (dataLength < 0) {
+	    		return packetReceived;
+	    	}
+
+	    	if (log.isDebugEnabled()) {
+				log.debug(String.format("hleWlanReceiveGameMode message: %s", Utilities.getMemoryDump(bytes, 0, dataLength)));
 			}
 
 			packetReceived = true;
 
-			byte[] dataBytes = packet.getData();
-			int dataOffset = packet.getOffset();
-			int dataLength = packet.getLength();
-
-			byte cmd = dataBytes[dataOffset];
-			dataOffset++;
-			dataLength--;
-			if (cmd != WLAN_CMD_DATA) {
-				processCmd(cmd, dataBytes, dataOffset, dataLength);
-				return packetReceived;
-			}
-
-			String ssid = Utilities.readStringNZ(dataBytes, dataOffset, 32);
-			dataOffset += 32;
-			dataLength -= 32;
-
-			if (joinedChannel >= 0 && !ssid.equals(channelSSIDs[joinedChannel])) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("hleWlanReceiveGameMode message SSID('%s') not matching the joined SSID('%s')", ssid, channelSSIDs[joinedChannel]));
-				}
-				return packetReceived;
-			}
-
-			macAddress.setMacAddress(dataBytes, dataOffset);
-			dataOffset += macAddress.sizeof();
-			dataLength -= macAddress.sizeof();
-
 			GameModeState gameModeState = getGameModeStat(macAddress.macAddress);
 			if (gameModeState != null) {
 				int length = Math.min(dataLength, gameModeState.dataLength);
-				System.arraycopy(dataBytes, dataOffset, gameModeState.data, 0, length);
+				System.arraycopy(bytes, 0, gameModeState.data, 0, length);
 
 				gameModeState.doUpdate();
 				if (log.isDebugEnabled()) {
@@ -789,10 +569,6 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     		log.debug(String.format("hleWlanSendMessage message data: %s", Utilities.getMemoryDump(message.dataAddr + wlanMessage.sizeof(), message.dataLength - wlanMessage.sizeof())));
     	}
 
-    	if (!createWlanSocket()) {
-    		return;
-    	}
-
     	byte[] messageBytes = null;
     	while (true) {
     		if (message.dataLength > 0) {
@@ -808,11 +584,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	}
 
     	if (messageBytes != null) {
-    		sendDataPacket(messageBytes, messageBytes.length);
-    	}
-
-    	if (false) {
-    		sendDummyMessage(handleAddr, message, wlanMessage);
+        	wlanAdapter.sendWlanPacket(messageBytes, 0, messageBytes.length);
     	}
     }
 
@@ -998,7 +770,8 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     					setChannelSSID(channel, ssid, mode);
     				}
 
-	    			if (createWlanSocket()) {
+    				try {
+						wlanAdapter.start();
 	    				signalSema = false;
 	    				scanHandleAddr = handleAddr;
 	    				scanInputAddr = new TPointer(handleAddr.getMemory(), inputAddr);
@@ -1006,7 +779,9 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 	    				scanCallCount = 0;
 	    				scanCallTimestamp = 0L;
 	    				scanInProgress = true;
-	    			}
+					} catch (IOException e) {
+						log.error("wlanAdapter.start", e);
+					}
     			}
     			break;
     		case IOCTL_CMD_CREATE: // Called by sceNetAdhocctlCreate()

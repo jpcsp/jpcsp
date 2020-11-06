@@ -92,6 +92,7 @@ import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.mmio.umd.MMIOHandlerUmd;
 import jpcsp.network.AutoDetectLocalIPAddress;
 import jpcsp.network.proonline.ProOnlineNetworkAdapter;
+import jpcsp.network.xlinkkai.XLinkKaiWlanAdapter;
 import jpcsp.remote.HTTPServer;
 import jpcsp.settings.Settings;
 import jpcsp.util.*;
@@ -2810,6 +2811,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     		umdvideoplayer.exit();
     	}
         ProOnlineNetworkAdapter.exit();
+        XLinkKaiWlanAdapter.exit();
         Modules.ThreadManForUserModule.exit();
         Modules.sceDisplayModule.exit();
         Modules.IoFileMgrForUserModule.exit();
