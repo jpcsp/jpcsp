@@ -236,7 +236,11 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     		log.debug(String.format("hleWlanScanAction scanCallCount=%d", scanCallCount));
     	}
 
-    	wlanAdapter.wlanScan();
+    	try {
+			wlanAdapter.wlanScan();
+		} catch (IOException e) {
+			log.error("hleWlanScanAction", e);
+		}
 
 		if (scanCallCount < 20) {
 			// Schedule this action for 20 times (1 second)
@@ -437,7 +441,11 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     		log.debug(String.format("sendAccessPointPacket %s", Utilities.getMemoryDump(buffer, 0, bufferLength)));
     	}
 
-    	wlanAdapter.sendAccessPointPacket(buffer, 0, bufferLength, etherFrame);
+    	try {
+			wlanAdapter.sendAccessPointPacket(buffer, 0, bufferLength, etherFrame);
+		} catch (IOException e) {
+			log.error("sendPacketFromAccessPoint", e);
+		}
 	}
 
     private GameModeState getGameModeStat(byte[] macAddress) {
@@ -497,7 +505,11 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     		log.debug(String.format("hleWlanSendGameMode sending packet: %s", Utilities.getMemoryDump(myGameModeState.data, 0, myGameModeState.dataLength)));
     	}
 
-    	wlanAdapter.sendGameModePacket(myGameModeState.macAddress, myGameModeState.data, 0, myGameModeState.dataLength);
+    	try {
+			wlanAdapter.sendGameModePacket(myGameModeState.macAddress, myGameModeState.data, 0, myGameModeState.dataLength);
+		} catch (IOException e) {
+			log.error("hleWlanSendGameMode", e);
+		}
 
     	myGameModeState.updated = false;
     }
@@ -569,7 +581,11 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	}
 
     	if (messageBytes != null) {
-        	wlanAdapter.sendWlanPacket(messageBytes, 0, messageBytes.length);
+        	try {
+				wlanAdapter.sendWlanPacket(messageBytes, 0, messageBytes.length);
+			} catch (IOException e) {
+				log.error("hleWlanSendMessage", e);
+			}
     	}
     }
 
@@ -768,18 +784,13 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     					setChannelSSID(channel, ssid, mode);
     				}
 
-    				try {
-						wlanAdapter.start();
-	    				signalSema = false;
-	    				scanHandleAddr = handleAddr;
-	    				scanInputAddr = new TPointer(handleAddr.getMemory(), inputAddr);
-	    				scanOutputAddr = new TPointer(handleAddr.getMemory(), outputAddr);
-	    				scanCallCount = 0;
-	    				scanCallTimestamp = 0L;
-	    				scanInProgress = true;
-					} catch (IOException e) {
-						log.error("wlanAdapter.start", e);
-					}
+    				signalSema = false;
+    				scanHandleAddr = handleAddr;
+    				scanInputAddr = new TPointer(handleAddr.getMemory(), inputAddr);
+    				scanOutputAddr = new TPointer(handleAddr.getMemory(), outputAddr);
+    				scanCallCount = 0;
+    				scanCallTimestamp = 0L;
+    				scanInProgress = true;
     			}
     			break;
     		case IOCTL_CMD_CREATE: // Called by sceNetAdhocctlCreate()

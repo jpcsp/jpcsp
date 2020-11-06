@@ -30,7 +30,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
@@ -107,38 +106,32 @@ public class JpcspWlanAdapter extends BaseWlanAdapter {
     	return wlanSocketPort ^ 1;
     }
 
-    private void sendPacket(byte[] buffer, int offset, int length) {
+    private void sendPacket(byte[] buffer, int offset, int length) throws IOException {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sendPacket %s", Utilities.getMemoryDump(buffer, offset, length)));
     	}
 
-    	try {
-			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(getBroadcastPort(sceWlanModule.getJoinedChannel()));
-			if (broadcastAddress != null) {
-				for (int i = 0; i < broadcastAddress.length; i++) {
-					DatagramPacket packet = new DatagramPacket(buffer, offset, length, broadcastAddress[i]);
-					try {
-						wlanSocket.send(packet);
-						if (log.isTraceEnabled()) {
-							log.trace(String.format("sendPacket successful on %s", broadcastAddress[i]));
-						}
-					} catch (SocketException e) {
-						// Ignore "Network is unreachable"
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("sendPacket on %s", broadcastAddress[i]), e);
-						}
+		InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(getBroadcastPort(sceWlanModule.getJoinedChannel()));
+		if (broadcastAddress != null) {
+			for (int i = 0; i < broadcastAddress.length; i++) {
+				DatagramPacket packet = new DatagramPacket(buffer, offset, length, broadcastAddress[i]);
+				try {
+					wlanSocket.send(packet);
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("sendPacket successful on %s", broadcastAddress[i]));
+					}
+				} catch (SocketException e) {
+					// Ignore "Network is unreachable"
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("sendPacket on %s", broadcastAddress[i]), e);
 					}
 				}
 			}
-		} catch (UnknownHostException e) {
-			log.error("sendPacket", e);
-		} catch (IOException e) {
-			log.error("sendPacket", e);
 		}
     }
 
 	@Override
-	public void sendWlanPacket(byte[] buffer, int offset, int length) {
+	public void sendWlanPacket(byte[] buffer, int offset, int length) throws IOException {
     	if (!createWlanSocket()) {
     		return;
     	}
@@ -158,7 +151,7 @@ public class JpcspWlanAdapter extends BaseWlanAdapter {
     	sendPacket(packetBuffer, 0, packetOffset);
 	}
 
-    private void processCmd(byte cmd, byte[] buffer, int offset, int length) {
+    private void processCmd(byte cmd, byte[] buffer, int offset, int length) throws IOException {
     	byte[] packetMacAddress = new byte[MAC_ADDRESS_LENGTH];
     	System.arraycopy(buffer, offset, packetMacAddress, 0, MAC_ADDRESS_LENGTH);
     	offset += MAC_ADDRESS_LENGTH;
@@ -272,7 +265,7 @@ public class JpcspWlanAdapter extends BaseWlanAdapter {
 	}
 
 	@Override
-	public void sendGameModePacket(pspNetMacAddress macAddress, byte[] buffer, int offset, int length) {
+	public void sendGameModePacket(pspNetMacAddress macAddress, byte[] buffer, int offset, int length) throws IOException {
 		byte[] bytes = new byte[macAddress.sizeof() + length];
 		int bytesOffset = 0;
 
@@ -337,7 +330,7 @@ public class JpcspWlanAdapter extends BaseWlanAdapter {
 	}
 
 	@Override
-	public void wlanScan() {
+	public void wlanScan() throws IOException {
     	// Send a scan request packet
     	byte[] scanRequestPacket = new byte[1 + MAC_ADDRESS_LENGTH];
     	scanRequestPacket[0] = WLAN_CMD_SCAN_REQUEST;
@@ -346,26 +339,20 @@ public class JpcspWlanAdapter extends BaseWlanAdapter {
 	}
 
 	@Override
-	public void sendAccessPointPacket(byte[] buffer, int offset, int length, EtherFrame etherFrame) {
-    	try {
-			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(getSocketPort());
-			if (broadcastAddress != null) {
-				for (int i = 0; i < broadcastAddress.length; i++) {
-					DatagramPacket packet = new DatagramPacket(buffer, offset, length, broadcastAddress[i]);
-					try {
-						wlanSocket.send(packet);
-					} catch (SocketException e) {
-						// Ignore "Network is unreachable"
-						if (log.isDebugEnabled()) {
-							log.debug("sendPacketFromAccessPoint", e);
-						}
+	public void sendAccessPointPacket(byte[] buffer, int offset, int length, EtherFrame etherFrame) throws IOException {
+		InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(getSocketPort());
+		if (broadcastAddress != null) {
+			for (int i = 0; i < broadcastAddress.length; i++) {
+				DatagramPacket packet = new DatagramPacket(buffer, offset, length, broadcastAddress[i]);
+				try {
+					wlanSocket.send(packet);
+				} catch (SocketException e) {
+					// Ignore "Network is unreachable"
+					if (log.isDebugEnabled()) {
+						log.debug("sendPacketFromAccessPoint", e);
 					}
 				}
 			}
-		} catch (UnknownHostException e) {
-			log.error("sendPacketFromAccessPoint", e);
-		} catch (IOException e) {
-			log.error("sendPacketFromAccessPoint", e);
 		}
 	}
 }
