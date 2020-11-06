@@ -20,9 +20,6 @@ import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.Modules.sceNetIfhandleModule;
 import static jpcsp.HLE.Modules.sceWlanModule;
 import static jpcsp.HLE.kernel.managers.SceUidManager.INVALID_ID;
-import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_CONTROL;
-import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_DATA;
-import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_TYPE_SONY;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.scheduler.Scheduler.getNow;
 
@@ -84,11 +81,8 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     private static final int wlanConnectActionDelayUs = 50000; // 50ms
     private static final int wlanCreateActionDelayUs = 50000; // 50ms
     private static final int wlanDisconnectActionDelayUs = 50000; // 50ms
-    static private final byte[] dummyOtherMacAddress = new byte[] { 0x10,  0x22, 0x33, 0x44, 0x55, 0x66 };
     public static final int[] channels = new int[] { 1, 6, 11 };
     private int joinedChannel;
-    private int dummyMessageStep;
-    private TPointer dummyMessageHandleAddr;
     private TPointer wlanHandleAddr;
     private int wlanThreadUid;
     private int unknownValue1;
@@ -182,7 +176,6 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     @Override
 	public void start() {
 		wlanThreadUid = INVALID_ID;
-		dummyMessageStep = -1;
 		activeMacAddresses = new LinkedList<pspNetMacAddress>();
 		gameModeStates = new LinkedList<GameModeState>();
 		gameModeDataLength = 256;
@@ -200,8 +193,6 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 		WLAN_SEND_CALLBACK_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hleWlanSendCallback");
 		WLAN_IOCTL_CALLBACK_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hleWlanIoctlCallback");
 
-		wlanAdapter = WlanAdapterFactory.createWlanAdapter();
-
 		super.start();
 	}
 
@@ -211,15 +202,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     		log.trace(String.format("hleWlanThread isGameMode=%b", isGameMode));
     	}
 
-    	if (wlanThreadMustExit()) {
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Exiting hleWlanThread %s", Modules.ThreadManForUserModule.getCurrentThread()));
-    		}
-    		Modules.ThreadManForUserModule.hleKernelExitDeleteThread(0);
-    		return;
-    	}
-
-    	if (isGameMode) {
+    	if (isGameMode && !wlanThreadMustExit()) {
     		hleWlanSendGameMode();
     	}
 
@@ -227,19 +210,21 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 			// Receive all available messages
 		}
 
-    	if (scanInProgress) {
+    	if (scanInProgress && !wlanThreadMustExit()) {
     		long now = getNow();
     		if (now - scanCallTimestamp >= wlanScanActionDelayUs) {
     			hleWlanScanAction();
     		}
     	}
 
-    	if (dummyMessageStep > 0) {
-    		sendDummyMessage(dummyMessageStep, dummyMessageHandleAddr);
-    		dummyMessageStep = 0;
+    	if (wlanThreadMustExit()) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Exiting hleWlanThread %s", Modules.ThreadManForUserModule.getCurrentThread()));
+    		}
+    		Modules.ThreadManForUserModule.hleKernelExitDeleteThread(0);
+    	} else {
+    		Modules.ThreadManForUserModule.hleKernelDelayThread(wlanThreadPollingDelayUs, true);
     	}
-
-    	Modules.ThreadManForUserModule.hleKernelDelayThread(wlanThreadPollingDelayUs, true);
     }
 
     private boolean wlanThreadMustExit() {
@@ -643,6 +628,13 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 
     	wlanHandleAddr = handleAddr;
 
+		wlanAdapter = WlanAdapterFactory.createWlanAdapter();
+		try {
+			wlanAdapter.start();
+		} catch (IOException e) {
+			log.error("hleWlanUpCallback", e);
+		}
+
     	// Add my own MAC address to the active list
     	addActiveMacAddress(new pspNetMacAddress(Wlan.getMacAddress()));
 
@@ -679,7 +671,13 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	// This will force the current wlan thread to exit
     	wlanThreadUid = INVALID_ID;
 
-    	Modules.ThreadManForUserModule.sceKernelSignalSema(handle.handleInternal.ioctlSemaId, 1);
+		try {
+			wlanAdapter.stop();
+		} catch (IOException e) {
+			log.error("hleWlanDownCallback", e);
+		}
+
+		Modules.ThreadManForUserModule.sceKernelSignalSema(handle.handleInternal.ioctlSemaId, 1);
 
     	return 0;
     }
@@ -873,225 +871,6 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	}
 
     	return 0;
-    }
-
-    static private void sendDummyMessage(int step, TPointer handleAddr) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sendDummyMessage step=%d", step));
-    	}
-    	Memory mem = Memory.getInstance();
-    	SceNetIfMessage message = new SceNetIfMessage();
-    	SceNetWlanMessage wlanMessage = new SceNetWlanMessage();
-
-    	final int size = message.sizeof() + wlanMessage.sizeof() + SceNetWlanMessage.maxContentLength + 0x12;
-    	int allocatedAddr = Modules.sceNetIfhandleModule.hleNetMallocInternal(size);
-    	if (allocatedAddr <= 0) {
-    		return;
-    	}
-    	RuntimeContext.debugMemory(allocatedAddr, size);
-    	mem.memset(allocatedAddr, (byte) 0, size);
-
-    	TPointer messageAddr = new TPointer(mem, allocatedAddr);
-    	TPointer data = new TPointer(mem, messageAddr.getAddress() + message.sizeof());
-    	TPointer header = new TPointer(mem, data.getAddress());
-    	TPointer content = new TPointer(mem, header.getAddress() + wlanMessage.sizeof());
-
-    	int dataLength;
-    	int controlType;
-    	int contentLength;
-    	switch (step) {
-    		case 1:
-	        	controlType = 2; // possible values: [1..8]
-		    	contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-		    	dataLength = wlanMessage.sizeof() + contentLength;
-	
-		    	wlanMessage.dstMacAddress = new pspNetMacAddress(Wlan.getMacAddress());
-		    	wlanMessage.srcMacAddress = new pspNetMacAddress(dummyOtherMacAddress);
-		    	wlanMessage.protocolType = WLAN_PROTOCOL_TYPE_SONY;
-		    	wlanMessage.protocolSubType = WLAN_PROTOCOL_SUBTYPE_CONTROL; // 1 or 2 -> 1 will trigger sceNetIfhandleModule.unknownCallback3, 2 will trigger sceNetIfhandleModule.unknownCallback1
-		    	wlanMessage.unknown16 = 1; // possible value: only 1
-		    	wlanMessage.controlType = controlType;
-		    	wlanMessage.contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-	
-		    	content.clear(contentLength);
-		    	break;
-    		case 2:
-	        	controlType = 0;
-		    	contentLength = 0x4C;
-		    	dataLength = wlanMessage.sizeof() + contentLength;
-
-		    	wlanMessage.dstMacAddress = new pspNetMacAddress(new byte[] { -1, -1, -1, -1, -1, -1}); // Broadcast MAC address
-		    	wlanMessage.srcMacAddress = new pspNetMacAddress(dummyOtherMacAddress);
-		    	wlanMessage.protocolType = WLAN_PROTOCOL_TYPE_SONY;
-		    	wlanMessage.protocolSubType = WLAN_PROTOCOL_SUBTYPE_DATA; // 1 or 2 -> 1 will trigger sceNetIfhandleModule.unknownCallback3, 2 will trigger sceNetIfhandleModule.unknownCallback1
-		    	wlanMessage.unknown16 = 0;
-		    	wlanMessage.controlType = controlType;
-		    	wlanMessage.contentLength = contentLength;
-
-		    	content.clear(contentLength);
-		    	content.setStringNZ(0x34, 5, "Jpcsp");
-		    	break;
-    		case 3:
-    			controlType = 2; // possible values: [1..8]
-    			contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-    			dataLength = wlanMessage.sizeof() + contentLength + 0x12;
-
-		    	wlanMessage.dstMacAddress = new pspNetMacAddress(new byte[] { -1, -1, -1, -1, -1, -1});
-		    	wlanMessage.srcMacAddress = new pspNetMacAddress(dummyOtherMacAddress);
-		    	wlanMessage.protocolType = WLAN_PROTOCOL_TYPE_SONY;
-		    	wlanMessage.protocolSubType = WLAN_PROTOCOL_SUBTYPE_CONTROL; // 1 or 2 -> 1 will trigger sceNetIfhandleModule.unknownCallback3, 2 will trigger sceNetIfhandleModule.unknownCallback1
-		    	wlanMessage.unknown16 = 1; // possible value: only 1
-		    	wlanMessage.controlType = controlType;
-		    	wlanMessage.contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-
-		    	content.setStringNZ(0, 0x80, "JpcspOther");
-		    	content.setValue8(0x80, (byte) 1);
-		    	content.setValue8(0x81, (byte) 4);
-		    	content.setUnalignedValue32(0x82, Modules.SysMemUserForUserModule.sceKernelDevkitVersion());
-		    	content.setValue8(0x86, (byte) 2);
-		    	content.setValue8(0x87, (byte) 4);
-		    	content.setUnalignedValue32(0x88, Modules.SysMemUserForUserModule.sceKernelGetCompiledSdkVersion());
-		    	content.setValue8(0x8C, (byte) 3);
-		    	content.setValue8(0x8D, (byte) 4);
-		    	content.setUnalignedValue32(0x8E, Modules.SysMemForKernelModule.sceKernelGetModel());
-		    	break;
-    		case 4:
-    			controlType = 3; // possible values: [1..8]
-    			contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-    			dataLength = wlanMessage.sizeof() + contentLength + 0x12;
-
-		    	wlanMessage.dstMacAddress = new pspNetMacAddress(Wlan.getMacAddress());
-		    	wlanMessage.srcMacAddress = new pspNetMacAddress(dummyOtherMacAddress);
-		    	wlanMessage.protocolType = WLAN_PROTOCOL_TYPE_SONY;
-		    	wlanMessage.protocolSubType = WLAN_PROTOCOL_SUBTYPE_CONTROL; // 1 or 2 -> 1 will trigger sceNetIfhandleModule.unknownCallback3, 2 will trigger sceNetIfhandleModule.unknownCallback1
-		    	wlanMessage.unknown16 = 1; // possible value: only 1
-		    	wlanMessage.controlType = controlType;
-		    	wlanMessage.contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-
-		    	content.clear(contentLength);
-		    	content.setStringNZ(0xA0, 0x80, "JpcspOther");
-		    	content.setValue8(0x120, (byte) 1);
-		    	content.setValue8(0x121, (byte) 4);
-		    	content.setUnalignedValue32(0x82, Modules.SysMemUserForUserModule.sceKernelDevkitVersion());
-		    	content.setValue8(0x126, (byte) 2);
-		    	content.setValue8(0x127, (byte) 4);
-		    	content.setUnalignedValue32(0x88, Modules.SysMemUserForUserModule.sceKernelGetCompiledSdkVersion());
-		    	content.setValue8(0x12C, (byte) 3);
-		    	content.setValue8(0x12D, (byte) 4);
-		    	content.setUnalignedValue32(0x12E, Modules.SysMemForKernelModule.sceKernelGetModel());
-		    	break;
-    		case 5:
-    			controlType = 4; // possible values: [1..8]
-    			contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-    			dataLength = wlanMessage.sizeof() + contentLength;
-
-		    	wlanMessage.dstMacAddress = new pspNetMacAddress(Wlan.getMacAddress());
-		    	wlanMessage.srcMacAddress = new pspNetMacAddress(dummyOtherMacAddress);
-		    	wlanMessage.protocolType = WLAN_PROTOCOL_TYPE_SONY;
-		    	wlanMessage.protocolSubType = WLAN_PROTOCOL_SUBTYPE_CONTROL; // 1 or 2 -> 1 will trigger sceNetIfhandleModule.unknownCallback3, 2 will trigger sceNetIfhandleModule.unknownCallback1
-		    	wlanMessage.unknown16 = 1; // possible value: only 1
-		    	wlanMessage.controlType = controlType;
-		    	wlanMessage.contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-
-		    	content.clear(contentLength);
-		    	break;
-    		case 6:
-    			controlType = 5; // possible values: [1..8]
-    			contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-    			dataLength = wlanMessage.sizeof() + contentLength;
-
-		    	wlanMessage.dstMacAddress = new pspNetMacAddress(Wlan.getMacAddress());
-		    	wlanMessage.srcMacAddress = new pspNetMacAddress(dummyOtherMacAddress);
-		    	wlanMessage.protocolType = WLAN_PROTOCOL_TYPE_SONY;
-		    	wlanMessage.protocolSubType = WLAN_PROTOCOL_SUBTYPE_CONTROL; // 1 or 2 -> 1 will trigger sceNetIfhandleModule.unknownCallback3, 2 will trigger sceNetIfhandleModule.unknownCallback1
-		    	wlanMessage.unknown16 = 1; // possible value: only 1
-		    	wlanMessage.controlType = controlType;
-		    	wlanMessage.contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-
-		    	content.clear(contentLength);
-		    	break;
-    		case 7:
-    			controlType = 6; // possible values: [1..8]
-    			contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-    			dataLength = wlanMessage.sizeof() + contentLength;
-
-		    	wlanMessage.dstMacAddress = new pspNetMacAddress(Wlan.getMacAddress());
-		    	wlanMessage.srcMacAddress = new pspNetMacAddress(dummyOtherMacAddress);
-		    	wlanMessage.protocolType = WLAN_PROTOCOL_TYPE_SONY;
-		    	wlanMessage.protocolSubType = WLAN_PROTOCOL_SUBTYPE_CONTROL; // 1 or 2 -> 1 will trigger sceNetIfhandleModule.unknownCallback3, 2 will trigger sceNetIfhandleModule.unknownCallback1
-		    	wlanMessage.unknown16 = 1; // possible value: only 1
-		    	wlanMessage.controlType = controlType;
-		    	wlanMessage.contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-
-		    	content.clear(contentLength);
-		    	break;
-    		case 8:
-    			controlType = 8; // possible values: [1..8]
-    			contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-    			dataLength = wlanMessage.sizeof() + contentLength;
-
-		    	wlanMessage.dstMacAddress = new pspNetMacAddress(Wlan.getMacAddress());
-		    	wlanMessage.srcMacAddress = new pspNetMacAddress(dummyOtherMacAddress);
-		    	wlanMessage.protocolType = WLAN_PROTOCOL_TYPE_SONY;
-		    	wlanMessage.protocolSubType = WLAN_PROTOCOL_SUBTYPE_CONTROL; // 1 or 2 -> 1 will trigger sceNetIfhandleModule.unknownCallback3, 2 will trigger sceNetIfhandleModule.unknownCallback1
-		    	wlanMessage.unknown16 = 1; // possible value: only 1
-		    	wlanMessage.controlType = controlType;
-		    	wlanMessage.contentLength = SceNetWlanMessage.contentLengthFromMessageType[controlType];
-
-		    	content.clear(contentLength);
-		    	break;
-    		default:
-    			dataLength = 0;
-    			break;
-		}
-
-    	wlanMessage.write(header);
-
-    	message.dataAddr = data.getAddress();
-		message.dataLength = dataLength;
-		message.unknown18 = 0;
-		message.unknown24 = dataLength;
-		message.write(messageAddr);
-
-		if (dataLength > 0) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Sending dummy message: %s", message));
-				log.debug(String.format("Dummy message data: %s", Utilities.getMemoryDump(data.getAddress(), dataLength)));
-			}
-
-			int sceNetIfEnqueue = NIDMapper.getInstance().getAddressByName("sceNetIfEnqueue");
-			if (sceNetIfEnqueue != 0) {
-				SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
-				Modules.ThreadManForUserModule.executeCallback(thread, sceNetIfEnqueue, null, true, handleAddr.getAddress(), messageAddr.getAddress());
-			}
-		}
-    }
-
-    private void sendDummyMessage(TPointer handleAddr, SceNetIfMessage sentMessage, SceNetWlanMessage sentWlanMessage) {
-    	int step = 0;
-    	if (false) {
-    		step = 1;
-    	} else if (false) {
-    		step = 2;
-    	} else if (dummyMessageStep < 0 && !sentWlanMessage.dstMacAddress.equals(dummyOtherMacAddress)) {
-    		step = 3;
-		} else if (sentWlanMessage.controlType == 3) {
-			step = 5;
-		} else if (sentWlanMessage.controlType == 4) {
-			step = 5;
-		} else if (sentWlanMessage.controlType == 5) {
-			step = 7;
-		} else if (sentWlanMessage.controlType == 7) {
-			step = 8;
-		} else {
-			step = 0;
-		}
-
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("Adding action step=%d for sending dummy message", step));
-    	}
-    	dummyMessageStep = step;
-    	dummyMessageHandleAddr = handleAddr;
     }
 
     private class AfterNetCreateIfhandleEtherAction implements IAction {

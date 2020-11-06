@@ -27,6 +27,7 @@ import jpcsp.network.protocols.EtherFrame;
  */
 public interface IWlanAdapter {
 	public void start() throws IOException;
+	public void stop() throws IOException;
 	public void sendWlanPacket(byte[] buffer, int offset, int length);
 	public void sendAccessPointPacket(byte[] buffer, int offset, int length, EtherFrame etherFrame);
 	public void sendGameModePacket(pspNetMacAddress macAddress, byte[] buffer, int offset, int length);

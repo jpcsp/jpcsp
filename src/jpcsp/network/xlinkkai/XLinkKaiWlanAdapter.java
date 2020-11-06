@@ -22,7 +22,6 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.network.BaseWlanAdapter;
-import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.network.protocols.EtherFrame;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
@@ -63,6 +62,11 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 	@Override
 	public void start() throws IOException {
+		log.error("Unimplemented");
+	}
+
+	@Override
+	public void stop() throws IOException {
 		log.error("Unimplemented");
 	}
 

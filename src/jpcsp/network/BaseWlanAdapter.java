@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
 /**
@@ -24,4 +26,8 @@ import org.apache.log4j.Logger;
  */
 public abstract class BaseWlanAdapter implements IWlanAdapter {
 	public static Logger log = Logger.getLogger("wlan");
+
+	@Override
+	public void stop() throws IOException {
+	}
 }
