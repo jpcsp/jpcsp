@@ -155,6 +155,7 @@ public class ModuleMgrForUser extends HLEModule {
         // by a file located under flash0 (decrypted from a real PSP).
         String modulePrxFileName = moduleManager.getModulePrxFileName(loadModuleContext.moduleName);
         if (modulePrxFileName != null) {
+        	loadModuleContext.isSignChecked = isSignChecked(modulePrxFileName);
         	StringBuilder localFileName = new StringBuilder();
         	IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(modulePrxFileName, localFileName);
         	if (vfs.ioGetstat(localFileName.toString(), new SceIoStat()) == 0) {
