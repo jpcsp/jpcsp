@@ -242,7 +242,7 @@ public class HLEModuleManager {
         sceMeVideo(Modules.sceMeVideoModule),
         sceMeAudio(Modules.sceMeAudioModule),
         InitForKernel(Modules.InitForKernelModule),
-        sceMemab(Modules.sceMemabModule, new String[] { "memab", "sceMemab" }),
+        sceMemab(Modules.sceMemabModule, new String[] { "memab", "sceMemab" }, "flash0:/kd/memab.prx"),
         DmacManForKernel(Modules.DmacManForKernelModule),
         sceSyscon(Modules.sceSysconModule),
         sceLed(Modules.sceLedModule),
