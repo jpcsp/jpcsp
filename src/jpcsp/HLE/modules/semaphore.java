@@ -113,9 +113,11 @@ public class semaphore extends HLEModule {
     	// Read the whole input buffer, including a possible header
     	// (up to 144 bytes, depending on the KIRK command)
     	byte[] inBytes = new byte[inSize + 144]; // Up to 144 bytes header
-    	IMemoryReader memoryReaderIn = MemoryReader.getMemoryReader(inAddr, inSize, 1);
-    	for (int i = 0; i < inSize; i++) {
-    		inBytes[i] = (byte) memoryReaderIn.readNext();
+    	if (inSize > 0) {
+	    	IMemoryReader memoryReaderIn = MemoryReader.getMemoryReader(inAddr, inSize, 1);
+	    	for (int i = 0; i < inSize; i++) {
+	    		inBytes[i] = (byte) memoryReaderIn.readNext();
+	    	}
     	}
 
     	// Some KIRK commands (e.g. PSP_KIRK_CMD_SHA1_HASH) only update a part of the output buffer.
