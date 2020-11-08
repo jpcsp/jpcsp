@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.xlinkkai;
 
 import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
+import static jpcsp.scheduler.Scheduler.getNow;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -44,6 +45,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	private InetAddress destAddr;
 	final static private int destPort = 34523;
 	final static private String applicationName = "Jpcsp";
+	final static long timeout = 2000000; // 2 seconds
 	private volatile boolean connected;
 	private volatile boolean disconnected;
 	private List<byte[]> receivedData = new LinkedList<byte[]>();
@@ -197,8 +199,15 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		send(String.format("connect;%s;%s;", uniqueIdentifier, applicationName));
 
 		// Wait for confirmation of connection
+		long start = getNow();
 		while (!connected) {
 			receive();
+
+			long now = getNow();
+			if (now - start > timeout) {
+				log.error(String.format("Cannot connect to XLink Kai, please make sure it is started"));
+				throw new IOException("Cannot connect to XLink Kai");
+			}
 		}
 	}
 
@@ -207,8 +216,15 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		send(String.format("disconnect;%s;%s;", uniqueIdentifier, applicationName));
 
 		// Wait for confirmation of disconnection
+		long start = getNow();
 		while (!disconnected) {
 			receive();
+
+			long now = getNow();
+			if (now - start > timeout) {
+				log.error(String.format("Cannot disconnect from XLink Kai, please make sure it is started"));
+				throw new IOException("Cannot disconnect from XLink Kai");
+			}
 		}
 	}
 
