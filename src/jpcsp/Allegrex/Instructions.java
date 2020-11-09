@@ -4516,6 +4516,8 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
+	context.compileRTRSIMM("doSWR", true);
+	/* need fix below
 	if (!context.isRtRegister0()) {
 		MethodVisitor mv = context.getMethodVisitor();
 		int simm16 = context.getImm16(true);
@@ -4543,6 +4545,7 @@ public void compile(ICompilerContext context, int insn) {
 		mv.visitInsn(Opcodes.IOR);
 		context.memWrite32(context.getRsRegisterIndex(), simm16, true);
 	}
+	*/
 }
 @Override
 public String disasm(int address, int insn) {
