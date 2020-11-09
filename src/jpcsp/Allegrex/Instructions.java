@@ -4455,37 +4455,35 @@ public void interpret(Processor processor, int insn) {
 
 
                 processor.cpu.doSWL(rt, rs, (int)(short)imm16);
-            
+
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	if (!context.isRtRegister0()) {
-		MethodVisitor mv = context.getMethodVisitor();
-		int simm16 = context.getImm16(true);
-		context.prepareMemWrite32(context.getRsRegisterIndex(), simm16, true);
-		context.loadRt();
-		context.loadRs();
-		if (simm16 != 0) {
-			context.loadImm16(true);
-			mv.visitInsn(Opcodes.IADD);
-		}
-		context.loadImm(0x3);
-		mv.visitInsn(Opcodes.IAND);
-		context.loadImm(0x3);
-		mv.visitInsn(Opcodes.ISHL);
-		mv.visitInsn(Opcodes.DUP_X1);
-		context.loadImm(0x3 << 3);
-		mv.visitInsn(Opcodes.IXOR);
-		mv.visitInsn(Opcodes.IUSHR);
-		mv.visitInsn(Opcodes.SWAP);
-		context.loadImm(0xFFFFFF00);
-		mv.visitInsn(Opcodes.SWAP);
-		mv.visitInsn(Opcodes.ISHL);
-		context.memRead32(context.getRsRegisterIndex(), simm16, true);
-		mv.visitInsn(Opcodes.IAND);
-		mv.visitInsn(Opcodes.IOR);
-		context.memWrite32(context.getRsRegisterIndex(), simm16, true);
+	MethodVisitor mv = context.getMethodVisitor();
+	int simm16 = context.getImm16(true);
+	context.prepareMemWrite32(context.getRsRegisterIndex(), simm16, true);
+	context.loadRt();
+	context.loadRs();
+	if (simm16 != 0) {
+		context.loadImm16(true);
+		mv.visitInsn(Opcodes.IADD);
 	}
+	context.loadImm(0x3);
+	mv.visitInsn(Opcodes.IAND);
+	context.loadImm(0x3);
+	mv.visitInsn(Opcodes.ISHL);
+	mv.visitInsn(Opcodes.DUP_X1);
+	context.loadImm(0x3 << 3);
+	mv.visitInsn(Opcodes.IXOR);
+	mv.visitInsn(Opcodes.IUSHR);
+	mv.visitInsn(Opcodes.SWAP);
+	context.loadImm(0xFFFFFF00);
+	mv.visitInsn(Opcodes.SWAP);
+	mv.visitInsn(Opcodes.ISHL);
+	context.memRead32(context.getRsRegisterIndex(), simm16, true);
+	mv.visitInsn(Opcodes.IAND);
+	mv.visitInsn(Opcodes.IOR);
+	context.memWrite32(context.getRsRegisterIndex(), simm16, true);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4516,33 +4514,31 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	if (!context.isRtRegister0()) {
-		MethodVisitor mv = context.getMethodVisitor();
-		int simm16 = context.getImm16(true);
-		context.prepareMemWrite32(context.getRsRegisterIndex(), simm16, true);
-		context.loadRt();
-		context.loadRs();
-		if (simm16 != 0) {
-			context.loadImm16(true);
-			mv.visitInsn(Opcodes.IADD);
-		}
-		context.loadImm(0x3);
-		mv.visitInsn(Opcodes.IAND);
-		context.loadImm(0x3);
-		mv.visitInsn(Opcodes.ISHL);
-		mv.visitInsn(Opcodes.DUP_X1);
-		mv.visitInsn(Opcodes.ISHL);
-		mv.visitInsn(Opcodes.SWAP);
-		context.loadImm(0x3 << 3);
-		mv.visitInsn(Opcodes.IXOR);
-		context.loadImm(0x00FFFFFF);
-		mv.visitInsn(Opcodes.SWAP);
-		mv.visitInsn(Opcodes.ISHR);
-		context.memRead32(context.getRsRegisterIndex(), simm16, true);
-		mv.visitInsn(Opcodes.IAND);
-		mv.visitInsn(Opcodes.IOR);
-		context.memWrite32(context.getRsRegisterIndex(), simm16, true);
+	MethodVisitor mv = context.getMethodVisitor();
+	int simm16 = context.getImm16(true);
+	context.prepareMemWrite32(context.getRsRegisterIndex(), simm16, true);
+	context.loadRt();
+	context.loadRs();
+	if (simm16 != 0) {
+		context.loadImm16(true);
+		mv.visitInsn(Opcodes.IADD);
 	}
+	context.loadImm(0x3);
+	mv.visitInsn(Opcodes.IAND);
+	context.loadImm(0x3);
+	mv.visitInsn(Opcodes.ISHL);
+	mv.visitInsn(Opcodes.DUP_X1);
+	mv.visitInsn(Opcodes.ISHL);
+	mv.visitInsn(Opcodes.SWAP);
+	context.loadImm(0x3 << 3);
+	mv.visitInsn(Opcodes.IXOR);
+	context.loadImm(0x00FFFFFF);
+	mv.visitInsn(Opcodes.SWAP);
+	mv.visitInsn(Opcodes.ISHR);
+	context.memRead32(context.getRsRegisterIndex(), simm16, true);
+	mv.visitInsn(Opcodes.IAND);
+	mv.visitInsn(Opcodes.IOR);
+	context.memWrite32(context.getRsRegisterIndex(), simm16, true);
 }
 @Override
 public String disasm(int address, int insn) {
