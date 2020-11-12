@@ -3109,6 +3109,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 
     	PreDecrypt.init();
         AES128.init();
+        libkirk.AES.init();
 
         HTTPServer.getInstance();
 

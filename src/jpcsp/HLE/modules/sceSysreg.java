@@ -33,8 +33,9 @@ import jpcsp.settings.Settings;
 
 public class sceSysreg extends HLEModule {
     public static Logger log = Modules.getLogger("sceSysreg");
-    private static final String settingsFuseId = "sceSysreg.fuseId";
-    private long fuseId = 0x12345678ABCDEFL; // Dummy Fuse ID
+    public static final String settingsFuseId = "sceSysreg.fuseId";
+    public static final long dummyFuseId = 0x12345678ABCDEFL;
+    private long fuseId = dummyFuseId;
     private int fuseConfig = 0x2400; // Value retrieved from a real PSP
 
     private class FuseIdSettingsListener extends AbstractStringSettingsListener {

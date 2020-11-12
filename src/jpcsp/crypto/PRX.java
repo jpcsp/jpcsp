@@ -462,6 +462,9 @@ public class PRX {
         	log.error(String.format("DecryptPRX returning %d", resultSize));
         	return null;
         }
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("DecryptPRX size=0x%X returned %s", pspSize, Utilities.getMemoryDump(resultBuffer, 0, pspSize)));
+        }
 
         if ((compAttribute & SCE_EXEC_FILE_COMPRESSED) != 0) {
         	if ((compAttribute & 0xF00) == 0) {
@@ -540,6 +543,10 @@ public class PRX {
         	byte[] newBuffer = new byte[resultSize];
         	System.arraycopy(resultBuffer, 0, newBuffer, 0, resultSize);
         	resultBuffer = newBuffer;
+        }
+
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("DecryptAndUncompressPRX returning size=0x%X: %s", resultSize, Utilities.getMemoryDump(resultBuffer)));
         }
 
         return resultBuffer;
@@ -732,7 +739,7 @@ public class PRX {
             }
 
             // Scramble the data by calling CMD7.
-            result = semaphoreModule.hleUtilsBufferCopyWithRange(oldbuf, 0x2C, 0x70, oldbuf, 0x2C, 0x70, KIRK.PSP_KIRK_CMD_DECRYPT);
+            result = semaphoreModule.hleUtilsBufferCopyWithRange(oldbuf, 0x2C, 0x70, oldbuf, 0x2C, 0x70 + 0x14, KIRK.PSP_KIRK_CMD_DECRYPT);
             if (result != 0) {
             	log.error(String.format("DecryptPRX: KIRK command PSP_KIRK_CMD_DECRYPT returned error %d", result));
             }

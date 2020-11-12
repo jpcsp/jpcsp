@@ -16,7 +16,11 @@
  */
 package jpcsp.crypto;
 
+import static jpcsp.util.Utilities.writeUnaligned32;
+
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import jpcsp.Emulator;
 import jpcsp.State;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
@@ -135,41 +139,25 @@ public class SAVEDATA {
 
     private void ScrambleSD(byte[] buf, int size, int seed, int cbc, int kirk_code) {
         // Set CBC mode.
-        buf[0] = 0;
-        buf[1] = 0;
-        buf[2] = 0;
-        buf[3] = (byte) cbc;
+    	writeUnaligned32(buf, 0, cbc);
 
-        // Set unkown parameters to 0.
-        buf[4] = 0;
-        buf[5] = 0;
-        buf[6] = 0;
-        buf[7] = 0;
-
-        buf[8] = 0;
-        buf[9] = 0;
-        buf[10] = 0;
-        buf[11] = 0;
+        // Set unknown parameters to 0.
+    	writeUnaligned32(buf, 4, 0);
+    	writeUnaligned32(buf, 8, 0);
 
         // Set the the key seed to seed.
-        buf[12] = 0;
-        buf[13] = 0;
-        buf[14] = 0;
-        buf[15] = (byte) seed;
+    	writeUnaligned32(buf, 12, seed);
 
         // Set the the data size to size.
-        buf[16] = (byte) ((size >> 24) & 0xFF);
-        buf[17] = (byte) ((size >> 16) & 0xFF);
-        buf[18] = (byte) ((size >> 8) & 0xFF);
-        buf[19] = (byte) (size & 0xFF);
-        
+    	writeUnaligned32(buf, 16, size);
+
         // Ignore PSP_KIRK_CMD_ENCRYPT_FUSE and PSP_KIRK_CMD_DECRYPT_FUSE. 
         if (kirk_code == KIRK.PSP_KIRK_CMD_ENCRYPT_FUSE || kirk_code == KIRK.PSP_KIRK_CMD_DECRYPT_FUSE) {
             return; 
         }
 
-        ByteBuffer bBuf = ByteBuffer.wrap(buf);
-        kirk.hleUtilsBufferCopyWithRange(bBuf, size, bBuf, size, kirk_code);
+        ByteBuffer bBuf = ByteBuffer.wrap(buf).order(ByteOrder.LITTLE_ENDIAN);
+        kirk.hleUtilsBufferCopyWithRange(bBuf, size, bBuf, size + 20, kirk_code);
     }
 
     private int getModeSeed(int mode) {
@@ -503,7 +491,7 @@ public class SAVEDATA {
             byte[] seed = new byte[0x14];
 
             // Generate SHA-1 to act as seed for encryption.
-            ByteBuffer bSeed = ByteBuffer.wrap(seed);
+            ByteBuffer bSeed = ByteBuffer.wrap(seed).order(ByteOrder.LITTLE_ENDIAN);
             kirk.hleUtilsBufferCopyWithRange(bSeed, 0x14, null, 0, KIRK.PSP_KIRK_CMD_PRNG);
 
             // Propagate SHA-1 in kirk header.

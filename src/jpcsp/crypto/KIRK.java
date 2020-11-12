@@ -17,12 +17,16 @@
 package jpcsp.crypto;
 
 import static jpcsp.util.Utilities.endianSwap64;
+import static jpcsp.util.Utilities.readUnaligned32;
 
 import java.nio.ByteBuffer;
 
+import jpcsp.HLE.modules.sceSysreg;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 public class KIRK {
+	private static final boolean useLibkirk = true;
     // PSP specific values.
     private byte[] priv_iv = new byte[0x10];
     private byte[] prng_data = new byte[0x14];
@@ -77,7 +81,6 @@ public class KIRK {
 
     // KIRK header structs.
     private class SHA1_Header {
-
         private int dataSize;
         private byte[] data;
 
@@ -92,7 +95,6 @@ public class KIRK {
     }
 
     private static class AES128_CBC_Header {
-
         private int mode;
         private int unk1;
         private int unk2;
@@ -209,7 +211,6 @@ public class KIRK {
     }
 
     private static class ECDSAKeygenCtx {
-
         private byte[] private_key = new byte[0x14];
         private ECDSAPoint public_key;
         private ByteBuffer out;
@@ -283,48 +284,57 @@ public class KIRK {
     }
 
     public KIRK(byte[] seed, int seedLength) {
-        // Set up the data for the pseudo random number generator using a
-        // seed set by the user.
-        byte[] temp = new byte[0x104];
-        temp[0] = 0;
-        temp[1] = 0;
-        temp[2] = 1;
-        temp[3] = 0;
+    	if (useLibkirk) {
+    		long fuseId = sceSysreg.dummyFuseId;
+    		String fuseIdString = Settings.getInstance().readString(sceSysreg.settingsFuseId, null);
+    		if (fuseIdString != null) {
+    			fuseId = Settings.parseLong(fuseIdString);
+    		}
+    		libkirk.KirkEngine.kirk_init(fuseId);
+    	} else {
+	        // Set up the data for the pseudo random number generator using a
+	        // seed set by the user.
+	        byte[] temp = new byte[0x104];
+	        temp[0] = 0;
+	        temp[1] = 0;
+	        temp[2] = 1;
+	        temp[3] = 0;
 
-        ByteBuffer bTemp = ByteBuffer.wrap(temp);
-        ByteBuffer bPRNG = ByteBuffer.wrap(prng_data);
+	        ByteBuffer bTemp = ByteBuffer.wrap(temp);
+	        ByteBuffer bPRNG = ByteBuffer.wrap(prng_data);
 
-        // Random data to act as a key.
-        byte[] key = {(byte) 0x07, (byte) 0xAB, (byte) 0xEF, (byte) 0xF8, (byte) 0x96,
-            (byte) 0x8C, (byte) 0xF3, (byte) 0xD6, (byte) 0x14, (byte) 0xE0, (byte) 0xEB, (byte) 0xB2,
-            (byte) 0x9D, (byte) 0x8B, (byte) 0x4E, (byte) 0x74};
+	        // Random data to act as a key.
+	        byte[] key = {(byte) 0x07, (byte) 0xAB, (byte) 0xEF, (byte) 0xF8, (byte) 0x96,
+	            (byte) 0x8C, (byte) 0xF3, (byte) 0xD6, (byte) 0x14, (byte) 0xE0, (byte) 0xEB, (byte) 0xB2,
+	            (byte) 0x9D, (byte) 0x8B, (byte) 0x4E, (byte) 0x74};
 
-        // Direct call to get the system time.
-        int systime = (int) System.currentTimeMillis();
+	        // Direct call to get the system time.
+	        int systime = (int) System.currentTimeMillis();
 
-        // Generate a SHA-1 hash for the PRNG.
-        if (seedLength > 0) {
-            byte[] seedBuf = new byte[seedLength + 4];
-            ByteBuffer bSeedBuf = ByteBuffer.wrap(seedBuf);
+	        // Generate a SHA-1 hash for the PRNG.
+	        if (seedLength > 0) {
+	            byte[] seedBuf = new byte[seedLength + 4];
+	            ByteBuffer bSeedBuf = ByteBuffer.wrap(seedBuf);
             
-            SHA1_Header seedHeader = new SHA1_Header(bSeedBuf);
-            bSeedBuf.rewind();
+	            SHA1_Header seedHeader = new SHA1_Header(bSeedBuf);
+	            bSeedBuf.rewind();
             
-            seedHeader.dataSize = seedLength;
-            executeKIRKCmd11(bPRNG, bSeedBuf, seedLength + 4);
-        }
+	            seedHeader.dataSize = seedLength;
+	            executeKIRKCmd11(bPRNG, bSeedBuf, seedLength + 4);
+	        }
 
-        // Use the system time for randomness.
-        System.arraycopy(prng_data, 0, temp, 4, 0x14);
-        temp[0x18] = (byte) (systime & 0xFF);
-        temp[0x19] = (byte) ((systime >> 8) & 0xFF);
-        temp[0x1A] = (byte) ((systime >> 16) & 0xFF);
-        temp[0x1B] = (byte) ((systime >> 24) & 0xFF);
+	        // Use the system time for randomness.
+	        System.arraycopy(prng_data, 0, temp, 4, 0x14);
+	        temp[0x18] = (byte) (systime & 0xFF);
+	        temp[0x19] = (byte) ((systime >> 8) & 0xFF);
+	        temp[0x1A] = (byte) ((systime >> 16) & 0xFF);
+	        temp[0x1B] = (byte) ((systime >> 24) & 0xFF);
 
-        // Set the final PRNG number.
-        System.arraycopy(key, 0, temp, 0x1C, 0x10);
-        bPRNG.clear();
-        executeKIRKCmd11(bPRNG, bTemp, 0x104);
+	        // Set the final PRNG number.
+	        System.arraycopy(key, 0, temp, 0x1C, 0x10);
+	        bPRNG.clear();
+	        executeKIRKCmd11(bPRNG, bTemp, 0x104);
+    	}
     }
 
     /*
@@ -876,37 +886,82 @@ public class KIRK {
     }
 
     public int hleUtilsBufferCopyWithRange(ByteBuffer out, int outsize, ByteBuffer in, int insizeAligned, int insize, int cmd) {
-        switch (cmd) {
-            case PSP_KIRK_CMD_DECRYPT_PRIVATE:
-                return executeKIRKCmd1(out, in, insizeAligned);
-            case PSP_KIRK_CMD_ENCRYPT:
-                return executeKIRKCmd4(out, in, insizeAligned);
-            case PSP_KIRK_CMD_ENCRYPT_FUSE:
-                return executeKIRKCmd5(out, in, insizeAligned);
-            case PSP_KIRK_CMD_DECRYPT:
-                return executeKIRKCmd7(out, in, insizeAligned);
-            case PSP_KIRK_CMD_DECRYPT_FUSE:
-                return executeKIRKCmd8(out, in, insizeAligned);
-            case PSP_KIRK_CMD_PRIV_SIG_CHECK:
-                return executeKIRKCmd10(in, insizeAligned);
-            case PSP_KIRK_CMD_SHA1_HASH:
-                return executeKIRKCmd11(out, in, insizeAligned);
-            case PSP_KIRK_CMD_ECDSA_GEN_KEYS:
-                return executeKIRKCmd12(out, outsize);
-            case PSP_KIRK_CMD_ECDSA_MULTIPLY_POINT:
-                return executeKIRKCmd13(out, outsize, in, insize);
-            case PSP_KIRK_CMD_PRNG:
-                return executeKIRKCmd14(out, insizeAligned);
-            case PSP_KIRK_CMD_ECDSA_SIGN:
-                return executeKIRKCmd16(out, outsize, in, insize);
-            case PSP_KIRK_CMD_ECDSA_VERIFY:
-                return executeKIRKCmd17(in, insize);
-            case PSP_KIRK_CMD_INIT:
-                return executeKIRKCmd15(out, outsize, in, insize);
-            case PSP_KIRK_CMD_CERT_VERIFY:
-            	return 0;
-            default:
-                return PSP_KIRK_INVALID_OPERATION; // Dummy.
-        }
+    	if (useLibkirk) {
+    		return libkirkUtilsBufferCopyWithRange(out, outsize, in, insizeAligned, insize, cmd);
+    	} else {
+	        switch (cmd) {
+	            case PSP_KIRK_CMD_DECRYPT_PRIVATE:
+	                return executeKIRKCmd1(out, in, insizeAligned);
+	            case PSP_KIRK_CMD_ENCRYPT:
+	                return executeKIRKCmd4(out, in, insizeAligned);
+	            case PSP_KIRK_CMD_ENCRYPT_FUSE:
+	                return executeKIRKCmd5(out, in, insizeAligned);
+	            case PSP_KIRK_CMD_DECRYPT:
+	                return executeKIRKCmd7(out, in, insizeAligned);
+	            case PSP_KIRK_CMD_DECRYPT_FUSE:
+	                return executeKIRKCmd8(out, in, insizeAligned);
+	            case PSP_KIRK_CMD_PRIV_SIG_CHECK:
+	                return executeKIRKCmd10(in, insizeAligned);
+	            case PSP_KIRK_CMD_SHA1_HASH:
+	                return executeKIRKCmd11(out, in, insizeAligned);
+	            case PSP_KIRK_CMD_ECDSA_GEN_KEYS:
+	                return executeKIRKCmd12(out, outsize);
+	            case PSP_KIRK_CMD_ECDSA_MULTIPLY_POINT:
+	                return executeKIRKCmd13(out, outsize, in, insize);
+	            case PSP_KIRK_CMD_PRNG:
+	                return executeKIRKCmd14(out, insizeAligned);
+	            case PSP_KIRK_CMD_ECDSA_SIGN:
+	                return executeKIRKCmd16(out, outsize, in, insize);
+	            case PSP_KIRK_CMD_ECDSA_VERIFY:
+	                return executeKIRKCmd17(in, insize);
+	            case PSP_KIRK_CMD_INIT:
+	                return executeKIRKCmd15(out, outsize, in, insize);
+	            case PSP_KIRK_CMD_CERT_VERIFY:
+	            	return 0;
+	            default:
+	                return PSP_KIRK_INVALID_OPERATION; // Dummy.
+	        }
+    	}
+    }
+
+    private int libkirkUtilsBufferCopyWithRange(ByteBuffer out, int outsize, ByteBuffer in, int insizeAligned, int insize, int cmd) {
+    	byte[] inbuff = new byte[insize];
+    	if (insize > 0) {
+    		int inPosition = in.position();
+    		in.get(inbuff, 0, insize);
+    		in.position(inPosition);
+    	}
+
+		// For some commands, the real output size is provided in the input data
+    	switch (cmd) {
+    		case PSP_KIRK_CMD_DECRYPT:
+    		case PSP_KIRK_CMD_DECRYPT_FUSE:
+        		outsize = readUnaligned32(inbuff, 16);
+        		break;
+			case PSP_KIRK_CMD_ENCRYPT:
+			case PSP_KIRK_CMD_ENCRYPT_FUSE:
+        		outsize = readUnaligned32(inbuff, 16) + 20;
+        		break;
+			case PSP_KIRK_CMD_DECRYPT_PRIVATE:
+				int dataSize = readUnaligned32(inbuff, 112);
+				outsize = Utilities.alignUp(dataSize, 15);
+				break;
+    	}
+
+    	byte[] outbuff = new byte[outsize];
+    	int outPosition = 0;
+    	if (outsize > 0) {
+        	outPosition = out.position();
+    		out.get(outbuff, 0, outsize);
+    	}
+
+    	int result = libkirk.KirkEngine.sceUtilsBufferCopyWithRange(outbuff, 0, outsize, inbuff, 0, insize, cmd);
+
+    	if (outsize > 0) {
+	    	out.position(outPosition);
+	    	out.put(outbuff, 0, outsize);
+    	}
+
+    	return result;
     }
 }
