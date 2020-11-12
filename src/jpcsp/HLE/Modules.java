@@ -187,6 +187,7 @@ public class Modules {
     public static sceLFatFs sceLFatFsModule = new sceLFatFs();
     public static pspvmc pspvmcModule = new pspvmc();
     public static sceAmctrl sceAmctrlModule = new sceAmctrl();
+    public static sceNwman sceNwmanModule = new sceNwman();
 
     public static Logger log = Logger.getLogger("hle");
 

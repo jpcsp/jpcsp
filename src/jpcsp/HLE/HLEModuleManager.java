@@ -279,7 +279,8 @@ public class HLEModuleManager {
         sceVshCommonUtil(Modules.sceVshCommonUtilModule),
         sceLFatFs(Modules.sceLFatFsModule),
         pspvmc(Modules.pspvmcModule),
-        sceAmctrl(Modules.sceAmctrlModule);
+        sceAmctrl(Modules.sceAmctrlModule),
+        sceNwman(Modules.sceNwmanModule);
 
     	private HLEModule module;
     	private boolean loadedByDefault;
