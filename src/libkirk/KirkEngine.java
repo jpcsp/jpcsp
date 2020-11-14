@@ -938,7 +938,7 @@ public class KirkEngine {
 		final byte[] k = new byte[BIGNUMBER_SIZE];
 		KIRK_CMD12_BUFFER keypair = new KIRK_CMD12_BUFFER();
 
-		if (outsize != 0x3C) {
+		if (outsize != KIRK_CMD12_BUFFER.SIZEOF) {
 			return KIRK_INVALID_SIZE;
 		}
 
@@ -968,10 +968,10 @@ public class KirkEngine {
 		final byte[] k = new byte[0x15];
 		KIRK_CMD13_BUFFER pointmult = new KIRK_CMD13_BUFFER(inbuff, inoffset);
 		//k[0]=0;
-		if (outsize != 0x28 && outsize != 0x3C) {
+		if (outsize != 0x28 && outsize != KIRK_CMD13_BUFFER.SIZEOF) {
 			return KIRK_INVALID_SIZE;
 		}
-		if (insize != 0x3C) {
+		if (insize != KIRK_CMD13_BUFFER.SIZEOF) {
 			return KIRK_INVALID_SIZE;
 		}
 
@@ -1105,10 +1105,10 @@ public class KirkEngine {
 		final byte[] dec_private = new byte[0x20];
 		KIRK_CMD16_BUFFER signbuf = new KIRK_CMD16_BUFFER(inbuff, inoffset);
 		ECDSA_SIG sig = new ECDSA_SIG();
-		if (insize != 0x34) {
+		if (insize != KIRK_CMD16_BUFFER.SIZEOF) {
 			return KIRK_INVALID_SIZE;
 		}
-		if (outsize != 0x28) {
+		if (outsize != 0x28 && outsize != KIRK_CMD16_BUFFER.SIZEOF) {
 			return KIRK_INVALID_SIZE;
 		}
 
@@ -1138,7 +1138,7 @@ public class KirkEngine {
 
 	public static int kirk_CMD17(byte[] inbuff, int inoffset, int insize) {
 		KIRK_CMD17_BUFFER sig = new KIRK_CMD17_BUFFER(inbuff, inoffset);
-		if (insize != 0x64) {
+		if (insize != KIRK_CMD17_BUFFER.SIZEOF) {
 			return KIRK_INVALID_SIZE;
 		}
 

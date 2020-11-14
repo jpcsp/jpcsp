@@ -85,7 +85,7 @@ public class AES {
     }
 
     public static int rijndael_set_key(rijndael_ctx ctx, byte[] key, int keyoffset, int bits) {
-		ctx.keySpec = new SecretKeySpec(key, keyoffset, key.length, "AES");
+		ctx.keySpec = new SecretKeySpec(key, keyoffset, bits / 8, "AES");
 
 		return 0;
     }

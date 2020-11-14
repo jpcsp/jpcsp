@@ -310,8 +310,8 @@ public class EC {
 
 		bn_from_mon(R, ec_N, BIGNUMBER_SIZE);
 		bn_from_mon(S, ec_N, BIGNUMBER_SIZE);
-		arraycopy(R, 1, outR, outRoffset, 0x20);
-		arraycopy(S, 1, outS, outSoffset, 0x20);
+		arraycopy(R, 1, outR, outRoffset, BIGNUMBER_SIZE - 1);
+		arraycopy(S, 1, outS, outSoffset, BIGNUMBER_SIZE - 1);
 	}
 
 	public static boolean check_ecdsa(ECPoint Q, byte[] inR, byte[] inS, byte[] hash) {
