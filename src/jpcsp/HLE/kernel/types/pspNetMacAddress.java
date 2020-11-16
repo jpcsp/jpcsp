@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+import static jpcsp.util.Utilities.hasBit;
 
 import java.util.Random;
 
@@ -90,6 +91,17 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Is the MAC address a multicast MAC address?
+	 * 
+	 * @return true if the MAC address is a multicast MAC address
+	 */
+	public boolean isMulticast() {
+		// See http://en.wikipedia.org/wiki/Mac_address:
+		// bit 0: 0=Unicast / 1=Multicast
+		return hasBit(macAddress[0], 0);
 	}
 
 	@Override

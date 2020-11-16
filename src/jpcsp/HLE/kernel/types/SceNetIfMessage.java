@@ -19,13 +19,14 @@ package jpcsp.HLE.kernel.types;
 public class SceNetIfMessage extends pspAbstractMemoryMappedStructure {
 	public static final int TYPE_SHORT_MESSAGE = 2;
 	public static final int TYPE_LONG_MESSAGE = 9 | TYPE_SHORT_MESSAGE;
-	public static final int TYPE_UNKNOWN_100 = 0x100;
+	public static final int TYPE_MULTICAST_ANY = 0x100; // The message has been addressed to the MAC address FF:FF:FF:FF:FF:FF
+	public static final int TYPE_MULTICAST_GROUP = 0x200; // The message has been addresses to a multicast MAC address, but which is not FF:FF:FF:FF:FF:FF
 	public int nextDataAddr;
 	public int nextMessageAddr;
 	public int dataAddr;
 	public int dataLength;
 	public int unknown16;
-	public int unknown18;
+	public int type;
 	public int unknown20;
 	public int unknown24;
 	public int unknown28;
@@ -41,7 +42,7 @@ public class SceNetIfMessage extends pspAbstractMemoryMappedStructure {
 		dataAddr = read32(); // Offset 8
 		dataLength = read32(); // Offset 12
 		unknown16 = read16(); // Offset 16
-		unknown18 = read16(); // Offset 18
+		type = read16(); // Offset 18
 		unknown20 = read32(); // Offset 20
 		unknown24 = read32(); // Offset 24
 		unknown28 = read32(); // Offset 28
@@ -61,7 +62,7 @@ public class SceNetIfMessage extends pspAbstractMemoryMappedStructure {
 		write32(dataAddr);
 		write32(dataLength);
 		write16((short) unknown16);
-		write16((short) unknown18);
+		write16((short) type);
 		write32(unknown20);
 		write32(unknown24);
 		write32(unknown28);
@@ -81,6 +82,6 @@ public class SceNetIfMessage extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("nextDataAddr=0x%08X, nextMessageAddr=0x%08X, dataAddr=0x%08X, dataLength=0x%X, unknown16=0x%X, unknown18=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", nextDataAddr, nextMessageAddr, dataAddr, dataLength, unknown16, unknown18, unknown20, unknown24, unknown28);
+		return String.format("nextDataAddr=0x%08X, nextMessageAddr=0x%08X, dataAddr=0x%08X, dataLength=0x%X, unknown16=0x%X, type=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", nextDataAddr, nextMessageAddr, dataAddr, dataLength, unknown16, type, unknown20, unknown24, unknown28);
 	}
 }

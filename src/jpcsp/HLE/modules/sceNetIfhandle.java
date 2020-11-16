@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import static jpcsp.HLE.kernel.types.SceNetIfMessage.TYPE_SHORT_MESSAGE;
+import static jpcsp.util.Utilities.hasFlag;
+
 import java.util.HashMap;
 
 import jpcsp.Memory;
@@ -337,7 +340,7 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x1560F143, version = 150)
-    public int sceNetMCopyback() {
+    public int sceNetMCopyback(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=76, usage=Usage.in) TPointer messageAddr, int dataOffset, int length, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.previousParameter, usage=Usage.in) TPointer sourceAddr) {
     	return 0;
     }
 
@@ -507,7 +510,7 @@ public class sceNetIfhandle extends HLEModule {
     			totalSize -= sizeAdj;
     			message.read(messageAddr);
     			totalSize = Math.max(totalSize - sizeAdj, 0);
-    	    	if ((message.unknown18 & 2) != 0) {
+    	    	if (hasFlag(message.type, TYPE_SHORT_MESSAGE)) {
     	    		message.unknown24 = totalSize;
     	    		message.write(messageAddr);
     	    	}
@@ -534,7 +537,7 @@ public class sceNetIfhandle extends HLEModule {
     	    	}
     		} else {
     	    	message.read(messageAddr);
-    	    	if ((message.unknown18 & 2) != 0) {
+    	    	if (hasFlag(message.type, TYPE_SHORT_MESSAGE)) {
     	    		message.unknown24 -= sizeAdj;
     	    		message.write(messageAddr);
     	    	}
@@ -558,7 +561,7 @@ public class sceNetIfhandle extends HLEModule {
 	    	} while (messageAddr.isNotNull() && sizeAdj > 0);
 
 	    	message.read(messageAddr);
-	    	if ((message.unknown18 & 2) != 0) {
+	    	if (hasFlag(message.type, TYPE_SHORT_MESSAGE)) {
 	    		message.unknown24 -= totalSizeAdj - sizeAdj;
 	    		message.write(messageAddr);
 	    	}

@@ -20,6 +20,9 @@ import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.Modules.sceNetIfhandleModule;
 import static jpcsp.HLE.Modules.sceWlanModule;
 import static jpcsp.HLE.kernel.managers.SceUidManager.INVALID_ID;
+import static jpcsp.HLE.kernel.types.SceNetIfMessage.TYPE_MULTICAST_ANY;
+import static jpcsp.HLE.kernel.types.SceNetIfMessage.TYPE_MULTICAST_GROUP;
+import static jpcsp.HLE.kernel.types.SceNetIfMessage.TYPE_SHORT_MESSAGE;
 import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
 import static jpcsp.scheduler.Scheduler.getNow;
 
@@ -357,29 +360,36 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 		    	RuntimeContext.debugMemory(allocatedAddr, size);
 
 		    	TPointer messageAddr = new TPointer(mem, allocatedAddr);
-		    	TPointer data = new TPointer(mem, messageAddr.getAddress() + message.sizeof());
+		    	TPointer data = new TPointer(messageAddr, message.sizeof());
 
 		    	// Write the received bytes to memory
-		    	Utilities.writeBytes(data.getAddress(), dataLength, bytes, 0);
-
-		    	// Write the message header
-		    	message.dataAddr = data.getAddress();
-				message.dataLength = dataLength;
-				message.unknown16 = 1;
-				message.unknown18 = 2;
-				message.unknown24 = dataLength;
-				message.write(messageAddr);
+		    	data.setArray(bytes, dataLength);
 
 		    	SceNetWlanMessage wlanMessage = new SceNetWlanMessage();
 		    	wlanMessage.read(data);
 		    	sceWlanModule.addActiveMacAddress(wlanMessage.srcMacAddress);
 		    	sceWlanModule.addActiveMacAddress(wlanMessage.dstMacAddress);
 
+		    	// Write the message header
+		    	message.dataAddr = data.getAddress();
+				message.dataLength = dataLength;
+				message.unknown16 = 1;
+				message.type = TYPE_SHORT_MESSAGE;
+				if (wlanMessage.dstMacAddress.isMulticast()) {
+					if (wlanMessage.dstMacAddress.isAnyMacAddress()) {
+						message.type |= TYPE_MULTICAST_ANY;
+					} else {
+						message.type |= TYPE_MULTICAST_GROUP;
+					}
+				}
+				message.unknown24 = dataLength;
+				message.write(messageAddr);
+
 		    	if (dataLength > 0) {
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("Notifying received message: %s", message));
 						log.debug(String.format("Message WLAN: %s", wlanMessage));
-						log.debug(String.format("Message data: %s", Utilities.getMemoryDump(data.getAddress(), dataLength)));
+						log.debug(String.format("Message data: %s", Utilities.getMemoryDump(data, dataLength)));
 					}
 
 					int sceNetIfEnqueue = NIDMapper.getInstance().getAddressByName("sceNetIfEnqueue");
