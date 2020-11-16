@@ -21,6 +21,7 @@ import static jpcsp.HLE.Modules.semaphoreModule;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_MODE_CMD1;
 import static jpcsp.crypto.KIRK.PSP_KIRK_CMD_MODE_DECRYPT_CBC;
 import static jpcsp.util.Utilities.alignUp;
+import static jpcsp.util.Utilities.intArrayToByteArray;
 import static jpcsp.util.Utilities.read8;
 import static jpcsp.util.Utilities.readUnaligned16;
 import static jpcsp.util.Utilities.readUnaligned32;
@@ -278,19 +279,6 @@ public class PRX {
         new TAG_INFO(0xBB67C59F, KeyVault.g_key7F, 0x60, 0x60),
         new TAG_INFO(0xBB67C59F, KeyVault.g_key1B, 0x61, 0x61),
     	new TAG_INFO(0x0E000000, KeyVault.key_102DC8AF_2, 0x51, 0x00)};
-
-	public static byte[] intArrayToByteArray(int[] array) {
-		if (array == null) {
-			return null;
-		}
-
-		byte[] bytes = new byte[array.length];
-    	for (int i = 0; i < array.length; i++) {
-    		bytes[i] = (byte) array[i];
-    	}
-
-    	return bytes;
-	}
 
     private TAG_INFO GetTagInfo(int tag) {
     	List<TAG_INFO> tagInfos = new LinkedList<TAG_INFO>();
