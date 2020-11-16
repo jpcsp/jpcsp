@@ -41,6 +41,7 @@
  */
 package libkirk;
 
+import static jpcsp.util.Utilities.endianSwap64;
 import static libkirk.AES.AES_CMAC;
 import static libkirk.AES.AES_cbc_decrypt;
 import static libkirk.AES.AES_cbc_encrypt;
@@ -67,8 +68,10 @@ import static libkirk.Utilities.memcmp;
 import static libkirk.Utilities.memcpy;
 import static libkirk.Utilities.memset;
 import static libkirk.Utilities.read32;
+import static libkirk.Utilities.read64;
 import static libkirk.Utilities.read8;
 import static libkirk.Utilities.write32;
+import static libkirk.Utilities.write64;
 import static libkirk.Utilities.write8;
 
 import jpcsp.crypto.KeyVault;
@@ -114,7 +117,7 @@ public class KirkEngine {
 	public static final int KIRK_CMD_ECDSA_GEN_KEYS       = 12;
 	public static final int KIRK_CMD_ECDSA_MULTIPLY_POINT = 13;
 	public static final int KIRK_CMD_PRNG                 = 14;
-	public static final int KIRK_CMD_15                   = 15;
+	public static final int KIRK_CMD_INIT                 = 15;
 	public static final int KIRK_CMD_ECDSA_SIGN           = 16;
 	public static final int KIRK_CMD_ECDSA_VERIFY         = 17;
     public static final int KIRK_CMD_CERT_VERIFY          = 18;
@@ -1031,6 +1034,31 @@ public class KirkEngine {
 		return KIRK_OPERATION_SUCCESS;
 	}
 
+	public static int kirk_CMD15(byte[] outbuff, int outsize, byte[] inbuff, int insize) {
+		return kirk_CMD15(outbuff, 0, outsize, inbuff, 0, insize);
+	}
+
+	public static int kirk_CMD15(byte[] outbuff, int outoffset, int outsize, byte[] inbuff, int inoffset, int insize) {
+		if (outsize != 28 || insize < 8) {
+			return KIRK_OPERATION_SUCCESS;
+		}
+
+    	long input = endianSwap64(read64(inbuff, inoffset));
+    	long output = input + 1;
+    	outoffset = write64(outbuff, outoffset, output);
+
+    	// Unknown output values.
+    	// The values differ at each call, even for 2 calls in sequence.
+    	// Maybe they represent the state of the random number generator.
+    	outoffset = write32(outbuff, outoffset, 0x12345678);
+    	outoffset = write32(outbuff, outoffset, 0x12345678);
+    	outoffset = write32(outbuff, outoffset, 0x12345678);
+    	outoffset = write32(outbuff, outoffset, 0x12345678);
+    	outoffset = write32(outbuff, outoffset, 0x12345678);
+
+    	return KIRK_OPERATION_SUCCESS;
+	}
+
 	public static void decrypt_kirk16_private(byte[] dA_out, byte[] dA_enc) {
 		decrypt_kirk16_private(dA_out, 0, dA_enc, 0);
 	}
@@ -1256,6 +1284,7 @@ public class KirkEngine {
 			case KIRK_CMD_ECDSA_GEN_KEYS:       return kirk_CMD12(outbuff, outoffset, outsize);
 			case KIRK_CMD_ECDSA_MULTIPLY_POINT: return kirk_CMD13(outbuff, outoffset, outsize, inbuff, inoffset, insize);
 			case KIRK_CMD_PRNG:                 return kirk_CMD14(outbuff, outoffset, outsize);
+			case KIRK_CMD_INIT:                 return kirk_CMD15(outbuff, outoffset, outsize, inbuff, inoffset, insize);
 			case KIRK_CMD_ECDSA_SIGN:           return kirk_CMD16(outbuff, outoffset, outsize, inbuff, inoffset, insize);
 			case KIRK_CMD_ECDSA_VERIFY:         return kirk_CMD17(inbuff, inoffset, insize);
 			case KIRK_CMD_CERT_VERIFY:          return kirk_CMD18(inbuff, inoffset, insize);

@@ -78,6 +78,16 @@ public class Utilities {
 		return offset;
 	}
 
+	public static long read64(byte[] buffer, int offset) {
+		return read32(buffer, offset) & 0xFFFFFFFFL | (((long) read32(buffer, offset + 4)) << 32);
+	}
+
+	public static int write64(byte[] buffer, int offset, long value) {
+		offset = write32(buffer, offset, (int) value);
+		offset = write32(buffer, offset, (int) (value >> 32));
+		return offset;
+	}
+
 	public static void memcpy(byte[] dst, byte[] src, int length) {
 		arraycopy(src, 0, dst, 0, length);
 	}
