@@ -118,6 +118,10 @@ public class AES {
 
         try {
             cipher.init(mode, ctx.keySpec, ivec);
+            // If the size is not a multiple of 16 bytes,
+            // padding bytes are read in src past the given size.
+            // It is required to really read the padding data present in src
+            // and not reading padding 0's instead.
             cipher.doFinal(src, srcOffset, alignUp(size, 15), dst, dstOffset);
         } catch (InvalidKeyException e) {
         	log.error("doCipher", e);

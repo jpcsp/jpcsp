@@ -76,12 +76,14 @@ public class sceMemab extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x9BF0C95D, version = 150)
-    public int sceMemab_9BF0C95D(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.out) TPointer unknownOutput1, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=160, usage=Usage.in) TPointer unknownInput, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=272, usage=Usage.out) TPointer unknownOutput2) {
-    	RuntimeContext.debugMemory(unknownInput.getAddress(), 160);
-    	unknownOutput1.clear(192);
-    	RuntimeContext.debugMemory(unknownOutput1.getAddress(), 192);
-    	unknownOutput2.clear(272);
-    	RuntimeContext.debugMemory(unknownOutput2.getAddress(), 272);
+    public int sceMemab_9BF0C95D(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=192, usage=Usage.out) TPointer keysOutput, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=160, usage=Usage.in) TPointer encryptedInputMessage, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=272, usage=Usage.out) TPointer encryptedResponseMessage) {
+    	// Receiving certificate & public key from other PSP, generating random private & public keys and
+    	// generating a response message
+    	RuntimeContext.debugMemory(encryptedInputMessage.getAddress(), 160);
+    	keysOutput.clear(192);
+    	RuntimeContext.debugMemory(keysOutput.getAddress(), 192);
+    	encryptedResponseMessage.clear(272);
+    	RuntimeContext.debugMemory(encryptedResponseMessage.getAddress(), 272);
 
     	return 0;
     }
@@ -124,6 +126,7 @@ public class sceMemab extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xCB5D3916, version = 150)
     public int sceMemab_CB5D3916(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=60, usage=Usage.inout) TPointer unknownInputOutput, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer unknownInput, int inputLength, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.out) TPointer unknownOutput, int unknown1, int unknown2) {
+    	// Decrypt a data message sent to the MAC address FF:FF:FF:FF:FF:FF
     	unknownInputOutput.clear(60);
     	RuntimeContext.debugMemory(unknownInputOutput.getAddress(), 60);
     	RuntimeContext.debugMemory(unknownInput.getAddress(), inputLength);
@@ -136,6 +139,7 @@ public class sceMemab extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xD47A50B1, version = 150)
     public int sceMemab_D47A50B1(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=76, usage=Usage.inout) TPointer unknownInputOutput, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer unknownInput, int inputLength, @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=32, usage=Usage.out) TPointer unknownOutput, int unknown1, int unknown2) {
+    	// Decrypt a data message sent to a single MAC address (i.e. not sent to a multicast MAC address)
     	unknownInputOutput.clear(76);
     	RuntimeContext.debugMemory(unknownInputOutput.getAddress(), 76);
     	RuntimeContext.debugMemory(unknownInput.getAddress(), inputLength);

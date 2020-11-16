@@ -1031,11 +1031,11 @@ public class KirkEngine {
 		return KIRK_OPERATION_SUCCESS;
 	}
 
-	private static void decrypt_kirk16_private(byte[] dA_out, byte[] dA_enc) {
+	public static void decrypt_kirk16_private(byte[] dA_out, byte[] dA_enc) {
 		decrypt_kirk16_private(dA_out, 0, dA_enc, 0);
 	}
 
-	private static void decrypt_kirk16_private(byte[] dA_out, int dA_outoffset, byte[] dA_enc, int dA_encoffset) {
+	public static void decrypt_kirk16_private(byte[] dA_out, int dA_outoffset, byte[] dA_enc, int dA_encoffset) {
 		kirk16_data keydata = new kirk16_data();
 		final byte[] subkey_1 = new byte[0x10];
 		final byte[] subkey_2 = new byte[0x10];
@@ -1095,6 +1095,72 @@ public class KirkEngine {
 
 		/* cbc decrypt the dA */
 		AES_cbc_decrypt(aes_ctx, dA_enc, dA_encoffset, dA_out, dA_outoffset, 0x20);
+	}
+
+	public static void encrypt_kirk16_private(byte[] dA_out, byte[] dA_dec) {
+		encrypt_kirk16_private(dA_out, 0, dA_dec, 0);
+	}
+
+	public static void encrypt_kirk16_private(byte[] dA_out, int dA_outoffset, byte[] dA_dec, int dA_decoffset) {
+		kirk16_data keydata = new kirk16_data();
+		final byte[] subkey_1 = new byte[0x10];
+		final byte[] subkey_2 = new byte[0x10];
+		AES.AES_ctx aes_ctx = new AES.AES_ctx();
+
+		keydata.fuseid[7] = (byte) (g_fuse90 & 0xFF);
+		keydata.fuseid[6] = (byte) ((g_fuse90>>8) & 0xFF);
+		keydata.fuseid[5] = (byte) ((g_fuse90>>16) & 0xFF);
+		keydata.fuseid[4] = (byte) ((g_fuse90>>24) & 0xFF); 
+		keydata.fuseid[3] = (byte) (g_fuse94 & 0xFF);
+		keydata.fuseid[2] = (byte) ((g_fuse94>>8) & 0xFF);
+		keydata.fuseid[1] = (byte) ((g_fuse94>>16) & 0xFF);
+		keydata.fuseid[0] = (byte) ((g_fuse94>>24) & 0xFF);
+
+		/* set encryption key */
+		rijndael_set_key(aes_ctx, kirk16_key, 128);
+
+		/* set the subkeys */
+		for (int i = 0; i < 0x10; i++) {
+			/* set to the fuseid */
+			subkey_2[i] = subkey_1[i] = keydata.fuseid[i % 8];
+		}
+	 
+		/* do aes crypto */
+		for (int i = 0; i < 3; i++) {
+			/* encrypt + decrypt */
+			rijndael_encrypt(aes_ctx, subkey_1, subkey_1);
+			rijndael_decrypt(aes_ctx, subkey_2, subkey_2);
+		}
+	 
+		/* set new key */
+		rijndael_set_key(aes_ctx, subkey_1, 128);
+	 
+		/* now lets make the key mesh */
+		for (int i = 0; i < 3; i++) {
+			/* do encryption in group of 3 */
+			for (int k = 0; k < 3; k++) {
+				/* crypto */
+				rijndael_encrypt(aes_ctx, subkey_2, subkey_2);
+			}
+
+			/* copy to out block */
+			memcpy(keydata.mesh, i * 0x10, subkey_2, 0x10);
+		}
+
+		/* set the key to the mesh */
+		rijndael_set_key(aes_ctx, keydata.mesh, 0x20, 128);
+	 
+		/* do the encryption routines for the aes key */
+		for (int i = 0; i < 2; i++) {
+			/* encrypt the data */
+			rijndael_encrypt(aes_ctx, keydata.mesh, 0x10, keydata.mesh, 0x10);
+		}
+	 
+		/* set the key to that mesh shit */
+		rijndael_set_key(aes_ctx, keydata.mesh, 0x10, 128);
+
+		/* cbc encrypt the dA */
+		AES_cbc_encrypt(aes_ctx, dA_dec, dA_decoffset, dA_out, dA_outoffset, 0x20);
 	}
 
 	public static int kirk_CMD16(byte[] outbuff, int outsize, byte[] inbuff, int insize) {

@@ -17,10 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.Modules.sceChkregModule;
+import static jpcsp.HLE.modules.sceChkreg.PS_CODE_EUROPE;
 import static jpcsp.hardware.Nand.pageSize;
 import static jpcsp.memory.mmio.umd.MMIOHandlerUmd.regionCodes;
 import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.endianSwap32;
+import static jpcsp.util.Utilities.intArrayToByteArray;
 
 import org.apache.log4j.Logger;
 
@@ -36,6 +38,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.pspIdStorageCertificate;
 
 public class sceIdStorage extends HLEModule {
 	public static Logger log = Modules.getLogger("sceIdStorage");
@@ -87,7 +90,21 @@ public class sceIdStorage extends HLEModule {
     	buffer.setValue8(offset++, (byte) 0);
     }
 
-	public int hleIdStorageReadLeaf(int key, TPointer buffer) {
+    private void storeCertificate(TPointer buffer, int offset, int[] hash, int[] signature, int[] publicKey, int[] decryptedPrivateKey, int[] unknown) {
+    	storeCertificate(buffer, offset, intArrayToByteArray(hash), intArrayToByteArray(signature), intArrayToByteArray(publicKey), intArrayToByteArray(decryptedPrivateKey), intArrayToByteArray(unknown));
+    }
+
+    private void storeCertificate(TPointer buffer, int offset, byte[] hash, byte[] signature, byte[] publicKey, byte[] decryptedPrivateKey, byte[] unknown) {
+    	pspIdStorageCertificate certificate = new pspIdStorageCertificate();
+    	certificate.setHash(hash);
+    	certificate.setSignature(signature);
+    	certificate.setPublicKey(publicKey);
+    	certificate.encryptPrivateKey(decryptedPrivateKey);
+    	certificate.setUnknown(unknown);
+    	certificate.write(buffer, offset);
+    }
+
+    public int hleIdStorageReadLeaf(int key, TPointer buffer) {
 		buffer.clear(pageSize);
 
 		switch (key) {
@@ -160,10 +177,37 @@ public class sceIdStorage extends HLEModule {
 				buffer.clear(certificateOffset, certificateLength);
 				int unknownValue = sceChkregModule.getValueReturnedBy6894A027();
 				buffer.setValue32(certificateOffset + 0, endianSwap32(1));
-				buffer.setUnsignedValue16(certificateOffset + 4, endianSwap16(5));
+				buffer.setUnsignedValue16(certificateOffset + 4, endianSwap16(PS_CODE_EUROPE));
 				buffer.setUnsignedValue16(certificateOffset + 6, endianSwap16(1));
 				buffer.setUnsignedValue8(certificateOffset + 8, (0x23 << 2) | ((unknownValue >> 6) & 0x03));
 				buffer.setUnsignedValue8(certificateOffset + 9, (unknownValue << 2) & 0xFC);
+
+				// Certificate used by sceNetAdhocAuth functions.
+				// The certificate is stored at offset 0xF0
+				final int[] hash = new int[] {
+						0x00, 0x00, 0x00, 0x01, 0x00, 0x05, 0x00, 0x01, 0x08, 0x29, 0x3D, 0x33, 0x7A, 0xE6, 0xC5, 0x7D,
+						0x3B, 0x5B, 0xDD, 0x80, 0xAF, 0xBF, 0x4E, 0x5E, 0xD9, 0x9B, 0xB1, 0x98, 0x28, 0xB6, 0x9F, 0x35,
+						0xF2, 0x38, 0x3A, 0xFF, 0x05, 0xB8, 0x46, 0x85, 0xF9, 0xC5, 0x5E, 0x37, 0x84, 0xE2, 0x80, 0x79,
+						0xF8, 0x61, 0x92, 0x4A, 0x56, 0x07, 0xAE, 0x68						
+				};
+				final int[] signature = new int[] {
+						0xF2, 0x31, 0x6F, 0x76, 0x4B, 0x94, 0x95, 0xBC,	0xD0, 0x51, 0x03, 0x6B, 0x7B, 0xAC, 0x4E, 0xB1,
+						0x39, 0xD3, 0xD5, 0xC9, 0xD6, 0x0F, 0x16, 0x56, 0xD9, 0xF9, 0x31, 0x32, 0x76, 0x8A, 0xD5, 0xCF,
+						0xE4, 0x30, 0x88, 0xC1, 0x93, 0xBD, 0xF7, 0x95
+				};
+				final int[] publicKey = new int[] {
+						0x06, 0x48, 0x5F, 0xD0, 0x29, 0x85, 0x3B, 0x55, 0x2F, 0x7E, 0xFD, 0xD6, 0x7A, 0x2D, 0xE7, 0xA1,
+						0xA4, 0xE2, 0x55, 0x37, 0xB2, 0x45, 0x9D, 0x87, 0x86, 0x42, 0x6D, 0x5B, 0x27, 0xEF, 0xA5, 0xA9,
+						0x31, 0x1C, 0xB8, 0xAB, 0xAB, 0xFA, 0x0E, 0xCE
+				};
+				final int[] decryptedPrivateKey = new int[] {
+						0x49, 0x5C, 0xE5, 0x31, 0x58, 0xD5, 0x01, 0x32, 0x25, 0x17, 0xC3, 0x16, 0x75, 0x2E, 0x76, 0x28,
+						0xEA, 0x05, 0xA9, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+				};
+				final int[] unknown = new int[] {
+						0x68, 0x28, 0x1C, 0x8E, 0xA3, 0xD1, 0x7D, 0x05, 0x22, 0xC6, 0x7A, 0x42, 0xBF, 0x7E, 0x9D, 0xCD
+				};
+				storeCertificate(buffer, 0xF0, hash, signature, publicKey, decryptedPrivateKey, unknown);
 				break;
 			case 0x0102:
 				// Used by sceChkregCheckRegion()
