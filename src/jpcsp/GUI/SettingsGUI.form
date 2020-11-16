@@ -195,7 +195,7 @@
                           <Component id="modelLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="modelBox" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace pref="116" max="32767" attributes="0"/>
+                      <EmptySpace pref="141" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -705,7 +705,7 @@
                       <Component id="disableOptimizedVertexInfoReading" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="saveStencilToMemory" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="51" max="32767" attributes="0"/>
+                      <EmptySpace pref="72" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -917,7 +917,7 @@
                       <Component id="ignoreUnmappedImports" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="useDebugMemory" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="414" max="32767" attributes="0"/>
+                      <EmptySpace pref="440" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -1091,7 +1091,7 @@
                       </Group>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
                       <Component id="fullscreenCheck" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="392" max="32767" attributes="0"/>
+                      <EmptySpace pref="416" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -1155,9 +1155,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="useDebugFont" alignment="0" max="32767" attributes="1"/>
-                      </Group>
+                      <Component id="useDebugFont" max="32767" attributes="1"/>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
               </Group>
@@ -1167,7 +1165,7 @@
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="useDebugFont" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="368" max="32767" attributes="0"/>
+                      <EmptySpace pref="486" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -1222,7 +1220,7 @@
                       <Component id="extractEboot" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="disableDLC" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="368" max="32767" attributes="0"/>
+                      <EmptySpace pref="394" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -1288,43 +1286,46 @@
                                   <Component id="broadcastAddressLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace min="-2" pref="39" max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="102" alignment="0" attributes="0">
-                                      <Component id="metaServerTextField" min="-2" pref="154" max="-2" attributes="0"/>
-                                      <EmptySpace min="-2" pref="31" max="-2" attributes="0"/>
-                                      <Component id="metaServerRemindLabel" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                                  <Group type="102" alignment="0" attributes="0">
-                                      <EmptySpace min="10" pref="10" max="-2" attributes="0"/>
-                                      <Component id="broadcastAddressRemindLabel" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                                  <Component id="broadcastAddressTextField" alignment="0" min="-2" pref="264" max="-2" attributes="0"/>
-                              </Group>
                           </Group>
-                          <Group type="102" alignment="0" attributes="0">
+                          <Group type="102" attributes="0">
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="netClientPortShiftRadioButton" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Component id="enableProOnlineRadioButton" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="enableProOnlineRadioButton" max="32767" attributes="0"/>
+                                  <Component id="XlinkaiSupportRadioButton" alignment="0" max="32767" attributes="0"/>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Component id="lanMultiPlayerRadioButton" max="32767" attributes="0"/>
+                                      <EmptySpace min="6" pref="6" max="-2" attributes="0"/>
+                                  </Group>
                               </Group>
-                              <EmptySpace type="separate" max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="enableProOnlineLabel" min="-2" max="-2" attributes="0"/>
-                                  <Component id="netClientPortShiftLabel" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                          </Group>
-                          <Group type="102" alignment="0" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="netServerPortShiftRadioButton" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Component id="lanMultiPlayerRadioButton" alignment="0" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace type="separate" max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="lanMultiPlayerLabel" min="-2" max="-2" attributes="0"/>
-                                  <Component id="netServerPortShiftLabel" min="-2" max="-2" attributes="0"/>
-                              </Group>
+                              <EmptySpace min="-2" pref="38" max="-2" attributes="0"/>
                           </Group>
                       </Group>
-                      <EmptySpace pref="150" max="32767" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Group type="102" attributes="0">
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Component id="enableProOnlineLabel" max="32767" attributes="0"/>
+                                      <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
+                                  </Group>
+                                  <Component id="lanMultiPlayerLabel" max="32767" attributes="0"/>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Component id="XlinKaiLabel" max="32767" attributes="0"/>
+                                      <EmptySpace min="156" pref="156" max="-2" attributes="0"/>
+                                  </Group>
+                              </Group>
+                              <EmptySpace min="-2" pref="203" max="-2" attributes="0"/>
+                          </Group>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Component id="metaServerTextField" min="-2" pref="154" max="-2" attributes="0"/>
+                              <EmptySpace min="-2" pref="31" max="-2" attributes="0"/>
+                              <Component id="metaServerRemindLabel" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <Group type="102" alignment="0" attributes="0">
+                              <EmptySpace min="10" pref="10" max="-2" attributes="0"/>
+                              <Component id="broadcastAddressRemindLabel" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <Component id="broadcastAddressTextField" alignment="0" min="-2" pref="264" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace min="-2" pref="150" max="-2" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -1333,38 +1334,33 @@
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace min="-2" pref="53" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="lanMultiPlayerRadioButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="lanMultiPlayerRadioButton" alignment="3" max="32767" attributes="0"/>
                           <Component id="lanMultiPlayerLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace max="-2" attributes="0"/>
+                      <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="netServerPortShiftRadioButton" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="netServerPortShiftLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="netClientPortShiftRadioButton" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="netClientPortShiftLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="enableProOnlineRadioButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="enableProOnlineRadioButton" alignment="3" max="32767" attributes="0"/>
                           <Component id="enableProOnlineLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
+                      <EmptySpace min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="XlinkaiSupportRadioButton" alignment="3" max="32767" attributes="0"/>
+                          <Component id="XlinKaiLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace min="-2" pref="43" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="metaServerLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="metaServerTextField" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="metaServerRemindLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                      <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="broadcastAddressLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="broadcastAddressTextField" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                      <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
                       <Component id="broadcastAddressRemindLabel" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="242" max="32767" attributes="0"/>
+                      <EmptySpace min="-2" pref="271" max="-2" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -1380,25 +1376,18 @@
                 </Property>
               </Properties>
             </Component>
-            <Component class="javax.swing.JRadioButton" name="netServerPortShiftRadioButton">
+            <Component class="javax.swing.JRadioButton" name="XlinkaiSupportRadioButton">
               <Properties>
                 <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                   <ComponentRef name="buttonGroup3"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.netServerPortShiftRadioButton.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.XlinkaiSupportRadioButton.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
-            </Component>
-            <Component class="javax.swing.JRadioButton" name="netClientPortShiftRadioButton">
-              <Properties>
-                <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
-                  <ComponentRef name="buttonGroup3"/>
-                </Property>
-                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.netClientPortShiftRadioButton.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
-                </Property>
-              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="XlinkaiSupportRadioButtonActionPerformed"/>
+              </Events>
             </Component>
             <Component class="javax.swing.JRadioButton" name="enableProOnlineRadioButton">
               <Properties>
@@ -1417,17 +1406,10 @@
                 </Property>
               </Properties>
             </Component>
-            <Component class="javax.swing.JLabel" name="netServerPortShiftLabel">
+            <Component class="javax.swing.JLabel" name="XlinKaiLabel">
               <Properties>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.netServerPortShiftLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
-                </Property>
-              </Properties>
-            </Component>
-            <Component class="javax.swing.JLabel" name="netClientPortShiftLabel">
-              <Properties>
-                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.netClientPortShiftLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.XlinKaiLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
             </Component>

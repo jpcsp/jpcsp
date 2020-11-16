@@ -2416,9 +2416,8 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
         logConfigurationPanel("SettingsGUI.networkPanel.TabConstraints.tabTitle");
         logConfigurationSettingBool("SettingsGUI.lanMultiPlayerRadioButton.text", "emu.lanMultiPlayer", false, false);
-        logConfigurationSettingBool("SettingsGUI.netServerPortShiftRadioButton.text", "emu.netServerPortShift", false, false);
-        logConfigurationSettingBool("SettingsGUI.netClientPortShiftRadioButton.text", "emu.netClientPortShift", false, false);
         logConfigurationSettingBool("SettingsGUI.enableProOnlineRadioButton.text", "emu.enableProOnline", false, false);
+        logConfigurationSettingBool("SettingsGUI.XlinkaiSupportRadioButton.text", "emu.enableXLinkKai", false, false);
         logConfigurationSettingString("SettingsGUI.metaServerLabel.text", "network.ProOnline.metaServer", true, true);
         logConfigurationSettingString("SettingsGUI.broadcastAddressLabel.text", "network.broadcastAddress", true, true);
     }
