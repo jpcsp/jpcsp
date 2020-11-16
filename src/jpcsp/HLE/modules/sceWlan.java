@@ -382,7 +382,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 						message.type |= TYPE_MULTICAST_GROUP;
 					}
 				}
-				message.unknown24 = dataLength;
+				message.totalDataLength = dataLength;
 				message.write(messageAddr);
 
 		    	if (dataLength > 0) {

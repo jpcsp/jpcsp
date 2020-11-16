@@ -511,7 +511,7 @@ public class sceNetIfhandle extends HLEModule {
     			message.read(messageAddr);
     			totalSize = Math.max(totalSize - sizeAdj, 0);
     	    	if (hasFlag(message.type, TYPE_SHORT_MESSAGE)) {
-    	    		message.unknown24 = totalSize;
+    	    		message.totalDataLength = totalSize;
     	    		message.write(messageAddr);
     	    	}
 
@@ -538,7 +538,7 @@ public class sceNetIfhandle extends HLEModule {
     		} else {
     	    	message.read(messageAddr);
     	    	if (hasFlag(message.type, TYPE_SHORT_MESSAGE)) {
-    	    		message.unknown24 -= sizeAdj;
+    	    		message.totalDataLength -= sizeAdj;
     	    		message.write(messageAddr);
     	    	}
     		}
@@ -562,7 +562,7 @@ public class sceNetIfhandle extends HLEModule {
 
 	    	message.read(messageAddr);
 	    	if (hasFlag(message.type, TYPE_SHORT_MESSAGE)) {
-	    		message.unknown24 -= totalSizeAdj - sizeAdj;
+	    		message.totalDataLength -= totalSizeAdj - sizeAdj;
 	    		message.write(messageAddr);
 	    	}
     	}

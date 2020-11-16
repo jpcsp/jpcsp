@@ -216,7 +216,7 @@ public class sceNet extends HLEModule {
 
     		message.dataAddr = data.getAddress();
     		message.dataLength = 60 + contentLength;
-    		message.unknown24 = 60 + contentLength;
+    		message.totalDataLength = 60 + contentLength;
     		message.write(readMessage);
 
     		TPointer readContext = new TPointer(Memory.getInstance(), readContextAddr.getValue());

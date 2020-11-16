@@ -28,7 +28,7 @@ public class SceNetIfMessage extends pspAbstractMemoryMappedStructure {
 	public int unknown16;
 	public int type;
 	public int unknown20;
-	public int unknown24;
+	public int totalDataLength;
 	public int unknown28;
 	public int unknown48;
 	public int unknown60;
@@ -44,7 +44,7 @@ public class SceNetIfMessage extends pspAbstractMemoryMappedStructure {
 		unknown16 = read16(); // Offset 16
 		type = read16(); // Offset 18
 		unknown20 = read32(); // Offset 20
-		unknown24 = read32(); // Offset 24
+		totalDataLength = read32(); // Offset 24
 		unknown28 = read32(); // Offset 28
 		readUnknown(16); // Offset 32
 		unknown48 = read32(); // Offset 48
@@ -64,7 +64,7 @@ public class SceNetIfMessage extends pspAbstractMemoryMappedStructure {
 		write16((short) unknown16);
 		write16((short) type);
 		write32(unknown20);
-		write32(unknown24);
+		write32(totalDataLength);
 		write32(unknown28);
 		writeSkip(16);
 		write32(unknown48);
@@ -82,6 +82,6 @@ public class SceNetIfMessage extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("nextDataAddr=0x%08X, nextMessageAddr=0x%08X, dataAddr=0x%08X, dataLength=0x%X, unknown16=0x%X, type=0x%X, unknown20=0x%X, unknown24=0x%X, unknown28=0x%X", nextDataAddr, nextMessageAddr, dataAddr, dataLength, unknown16, type, unknown20, unknown24, unknown28);
+		return String.format("nextDataAddr=0x%08X, nextMessageAddr=0x%08X, dataAddr=0x%08X, dataLength=0x%X, unknown16=0x%X, type=0x%X, unknown20=0x%X, totalDataLength=0x%X, unknown28=0x%X", nextDataAddr, nextMessageAddr, dataAddr, dataLength, unknown16, type, unknown20, totalDataLength, unknown28);
 	}
 }
