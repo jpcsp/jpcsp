@@ -39,6 +39,7 @@ import jpcsp.util.Utilities;
 
 public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	public static Logger log = Logger.getLogger("XLinkKai");
+	private static final boolean filterDuplicateMessages = true;
 	private static boolean enabled = false;
 	private DatagramSocket socket;
 	private String uniqueIdentifier;
@@ -49,6 +50,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	private volatile boolean connected;
 	private volatile boolean disconnected;
 	private List<byte[]> receivedData = new LinkedList<byte[]>();
+	private byte[] lastDataReceived = null;
 
 	private static class EnabledSettingsListener extends AbstractBoolSettingsListener {
 		@Override
@@ -190,6 +192,16 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 		byte[] buffer = new byte[length];
 		System.arraycopy(data, offset, buffer, 0, length);
+
+		// I do receive all messages 2 times, not sure why.
+		// Filter out any received message which is identical to the previously received message.
+		if (filterDuplicateMessages) {
+			if (lastDataReceived != null && buffer.length == lastDataReceived.length && Utilities.equals(buffer, 0, lastDataReceived, 0, length)) {
+				lastDataReceived = null;
+				return;
+			}
+			lastDataReceived = buffer.clone();
+		}
 
 		receivedData.add(buffer);
 	}
