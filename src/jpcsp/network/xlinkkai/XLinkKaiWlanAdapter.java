@@ -197,6 +197,9 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		// Filter out any received message which is identical to the previously received message.
 		if (filterDuplicateMessages) {
 			if (lastDataReceived != null && buffer.length == lastDataReceived.length && Utilities.equals(buffer, 0, lastDataReceived, 0, length)) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Dropping duplicate data message"));
+				}
 				lastDataReceived = null;
 				return;
 			}

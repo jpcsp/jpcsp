@@ -17,23 +17,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_WLAN_INTR;
+import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_CONTROL;
+import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_DATA;
+import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_TYPE_SONY;
 import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
-import static jpcsp.hardware.Wlan.getLocalInetAddress;
 import static jpcsp.hardware.Wlan.getMacAddress;
 import static jpcsp.network.jpcsp.JpcspWlanAdapter.WLAN_CMD_DATA;
 import static jpcsp.util.Utilities.alignUp;
+import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.endianSwap32;
+import static jpcsp.util.Utilities.hasFlag;
+import static jpcsp.util.Utilities.readUnaligned16;
 import static jpcsp.util.Utilities.writeUnaligned32;
 
 import java.io.IOException;
-import java.net.BindException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,14 +43,12 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhocctl;
-import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.HLE.modules.sceWlan;
 import jpcsp.memory.IntArrayMemory;
-import jpcsp.network.INetworkAdapter;
-import jpcsp.network.NetworkAdapterFactory;
+import jpcsp.network.IWlanAdapter;
+import jpcsp.network.WlanAdapterFactory;
 import jpcsp.network.accesspoint.AccessPoint;
 import jpcsp.network.accesspoint.IAccessPointCallback;
-import jpcsp.network.jpcsp.JpcspWlanAdapter;
 import jpcsp.network.protocols.EtherFrame;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -185,13 +182,9 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	private boolean adhocStarted;
 	private boolean adhocJoined;
 	private String adhocSsid;
-	private static final int dataSocketPortBase = 31000;
-    private static final int maxDataSocketPorts = 16;
-	private DatagramSocket dataSocket;
-    private int dataSocketPort;
     private AccessPoint accessPoint;
-    private INetworkAdapter networkAdapter;
-    private boolean networkAdapterInited;
+    private IWlanAdapter wlanAdapter;
+    private List<byte[]> pendingReceivedMessages = new LinkedList<byte[]>();
 
     public static MMIOHandlerWlan getInstance() {
     	if (instance == null) {
@@ -286,10 +279,13 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	}
 
 	private void createNetworkAdapter() {
-		if (networkAdapter == null) {
-			networkAdapter = NetworkAdapterFactory.createNetworkAdapter();
-			networkAdapter.start();
-			networkAdapterInited = false;
+		if (wlanAdapter == null) {
+			wlanAdapter = WlanAdapterFactory.createWlanAdapter();
+			try {
+				wlanAdapter.start();
+			} catch (IOException e) {
+				log.error("createNetworkAdapter", e);
+			}
 		}
 	}
 
@@ -325,43 +321,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 			groupName = ssid;
 		}
 
-		if (!networkAdapterInited) {
-			Modules.sceNetAdhocctlModule.hleNetAdhocctlInit(productType, productId);
-			networkAdapter.sceNetAdhocctlInit();
-			networkAdapterInited = true;
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("productId=%s, productType=%d, groupName=%s", productId, productType, groupName));
 		}
 		Modules.sceNetAdhocctlModule.setGroupName(groupName, sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL);
-	}
-
-	private boolean createDataSocket() {
-		if (dataSocket == null) {
-			for (int i = 0; i < maxDataSocketPorts; i++) {
-	    		try {
-	    			int port = dataSocketPortBase + i;
-	    			dataSocket = new DatagramSocket(port, getLocalInetAddress());
-		    		// For broadcast
-	    			dataSocket.setBroadcast(true);
-		    		// Non-blocking (timeout = 0 would mean blocking)
-	    			dataSocket.setSoTimeout(1);
-	    			dataSocketPort = port;
-	    			break;
-	    		} catch (BindException e) {
-	    			// The port is already busy, retrying with another port
-	    			if (log.isDebugEnabled()) {
-	    				log.debug(String.format("createDataSocket port %d already in use (%s) - retrying with port %d", dataSocketPort, e, dataSocketPort + 1));
-	    			}
-				} catch (SocketException e) {
-					log.error("createDataSocket", e);
-					break;
-				}
-			}
-
-			if (dataSocket == null) {
-				log.error(String.format("createDataSocket could not create broadcast socket in port range [%d..%d]", dataSocketPortBase, dataSocketPortBase + maxDataSocketPorts - 1));
-			}
-		}
-
-		return dataSocket != null;
 	}
 
 	static private int swap32(int value) {
@@ -397,6 +360,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		registers[WLAN_REG_RESULT] &= ~flag;
 	}
 
+	private boolean hasResultFlag(int flag) {
+		return hasFlag(registers[WLAN_REG_RESULT], flag);
+	}
+
 	private int getWlanOutputPacketSize() {
 		return getRegisterValue(WLAN_REG_OUTPUT_PACKET_SIZE, 2);
 	}
@@ -417,7 +384,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				}
 				break;
 			case WLAN_REG_RESULT:
-				receiveBroadcastMessages();
+				receiveMessage();
 				break;
 		}
 
@@ -523,98 +490,116 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		addResultFlag(WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE);
 	}
 
-	private void receiveBroadcastMessages() {
-		if (!createDataSocket()) {
-			return;
-		}
+	private void receiveMessages() {
+    	byte[] buffer = new byte[10000];
+		while (true) {
+			try {
+		    	int length = wlanAdapter.receiveWlanPacket(buffer, 0, buffer.length);
+		    	if (length < 0) {
+		    		break;
+		    	}
 
-    	byte[] bytes = new byte[10000];
-		DatagramPacket datagramPacket = new DatagramPacket(bytes, bytes.length);
-		try {
-			dataSocket.receive(datagramPacket);
-			byte[] buffer = datagramPacket.getData();
-			int offset = datagramPacket.getOffset();
-			int length = datagramPacket.getLength();
-
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("receiveBroadcastMessages received message: %s", Utilities.getMemoryDump(buffer, offset, length)));
+		    	byte[] pendingReceivedMessage = new byte[length];
+		    	System.arraycopy(buffer, 0, pendingReceivedMessage, 0, length);
+		    	pendingReceivedMessages.add(pendingReceivedMessage);
+			} catch (IOException e) {
+				log.error("receiveMessages", e);
 			}
-
-			final int rxPacketLocation = 24; // Needs to be 24 and not 20 (which would be sufficient to be past the header)
-			receiveDataPacket.writeUnsigned16(0, 0); // rxStatus
-			receiveDataPacket.write8(2, (byte) 0); // SNR
-			receiveDataPacket.write8(3, (byte) 0); // rxControl
-			receiveDataPacket.writeUnsigned16(4, length); // rxPacketLength
-			receiveDataPacket.write8(6, (byte) 0); // NF
-			receiveDataPacket.write8(7, (byte) 0); // rxRate
-			receiveDataPacket.write32(8, rxPacketLocation); // rxPacketLocation
-			receiveDataPacket.write32(12, 0); // reserved
-			receiveDataPacket.write8(16, (byte) 0); // priority
-			receiveDataPacket.write8(17, (byte) 0); // reserved
-			receiveDataPacket.writeUnsigned16(18, 0); // reserved
-			receiveDataPacketPtr.clear(20, rxPacketLocation - 20);
-			receiveDataPacketPtr.setArray(rxPacketLocation, buffer, offset, length);
-
-			// The PSP is moving 12 bytes from the offset 16 to the offset 24:
-			//     memmove(addr + 24, addr + 16, 12)
-			// This doesn't really make sense as it overwrites the source and destination
-			// MAC addresses of the EtherFrame. Maybe due to a bug in the Wlan card firmware?
-			// Anyway, we have to mimic this behavior.
-			receiveDataPacketPtr.setArray(16, buffer, offset, 12);
-
-			processReceiveDataPacket(rxPacketLocation + length);
-		} catch (SocketTimeoutException e) {
-			// Timeout can be ignored as we are polling
-		} catch (IOException e) {
-			log.error("hleWlanReceiveMessage", e);
 		}
 	}
 
-	private void broadcastAdhocDataPacket(byte[] buffer, int bufferLength) {
-		if (!createDataSocket()) {
+	private void receiveMessage() {
+		if (wlanAdapter == null) {
 			return;
 		}
 
-		if (log.isTraceEnabled()) {
-    		log.trace(String.format("broadcastAdhocDataPacket %s", Utilities.getMemoryDump(buffer, 0, bufferLength)));
+		receiveMessages();
+
+		if (hasResultFlag(WLAN_RESULT_DATA_PACKET_RECEIVED)) {
+			return;
 		}
 
-		// Broadcast on all data socket ports, excepted on my own port
-		for (int i = 0; i < maxDataSocketPorts; i++) {
-			int broadcastDataPort = dataSocketPortBase + i;
-			if (broadcastDataPort != dataSocketPort) {
-		    	try {
-					InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(broadcastDataPort);
-					if (broadcastAddress != null) {
-						for (int j = 0; j < broadcastAddress.length; j++) {
-							if (log.isTraceEnabled()) {
-								log.trace(String.format("broadcastAdhocDataPacket to %s", broadcastAddress[j]));
-							}
-							DatagramPacket datagramPacket = new DatagramPacket(buffer, bufferLength, broadcastAddress[j]);
-							try {
-								dataSocket.send(datagramPacket);
-							} catch (SocketException e) {
-								// Ignore "Network is unreachable"
-								if (log.isDebugEnabled()) {
-									log.debug("broadcastAdhocDataPacket", e);
-								}
-							}
-						}
-					}
-				} catch (UnknownHostException e) {
-					log.error("broadcastAdhocDataPacket", e);
-				} catch (IOException e) {
-					log.error("broadcastAdhocDataPacket", e);
+		if (pendingReceivedMessages.isEmpty()) {
+			return;
+		}
+
+		byte[] receivedMessage = pendingReceivedMessages.remove(0);
+		int receivedMessageLength = receivedMessage.length;
+
+		if (pendingReceivedMessages.size() > 0) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("receiveMessage: %d pending messages already received", pendingReceivedMessages.size()));
+			}
+		}
+
+		if (log.isDebugEnabled()) {
+			if (receivedMessageLength >= 18 && endianSwap16(readUnaligned16(receivedMessage, 12)) == WLAN_PROTOCOL_TYPE_SONY) {
+				int subtype = endianSwap16(readUnaligned16(receivedMessage, 14));
+				if (subtype == WLAN_PROTOCOL_SUBTYPE_CONTROL) {
+					int controlType = Utilities.read8(receivedMessage, 17);
+					log.debug(String.format("Receiving Control packet controlType=%d", controlType));
+				} else if (subtype == WLAN_PROTOCOL_SUBTYPE_DATA) {
+					log.debug(String.format("Receiving Data packet"));
 				}
 			}
+		}
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("receiveMessages received message: %s", Utilities.getMemoryDump(receivedMessage, 0, receivedMessageLength)));
+		}
+
+		final int rxPacketLocation = 24; // Needs to be 24 and not 20 (which would be sufficient to be past the header)
+		receiveDataPacket.writeUnsigned16(0, 0); // rxStatus
+		receiveDataPacket.write8(2, (byte) 0); // SNR
+		receiveDataPacket.write8(3, (byte) 0); // rxControl
+		receiveDataPacket.writeUnsigned16(4, receivedMessageLength); // rxPacketLength
+		receiveDataPacket.write8(6, (byte) 0); // NF
+		receiveDataPacket.write8(7, (byte) 0); // rxRate
+		receiveDataPacket.write32(8, rxPacketLocation); // rxPacketLocation
+		receiveDataPacket.write32(12, 0); // reserved
+		receiveDataPacket.write8(16, (byte) 0); // priority
+		receiveDataPacket.write8(17, (byte) 0); // reserved
+		receiveDataPacket.writeUnsigned16(18, 0); // reserved
+		receiveDataPacketPtr.clear(20, rxPacketLocation - 20);
+		receiveDataPacketPtr.setArray(rxPacketLocation, receivedMessage, 0, receivedMessageLength);
+
+		// The PSP is moving 12 bytes from the offset 16 to the offset 24:
+		//     memmove(addr + 24, addr + 16, 12)
+		// This doesn't really make sense as it overwrites the source and destination
+		// MAC addresses of the EtherFrame. Maybe due to a bug in the Wlan card firmware?
+		// Anyway, we have to mimic this behavior.
+		if (true) {
+			receiveDataPacketPtr.setArray(16, receivedMessage, 0, 12);
+		}
+
+		processReceiveDataPacket(rxPacketLocation + receivedMessageLength);
+	}
+
+	private void sendAdhocDataPacket(byte[] buffer, int bufferLength) {
+		if (log.isDebugEnabled()) {
+			if (bufferLength >= 18 && endianSwap16(readUnaligned16(buffer, 12)) == WLAN_PROTOCOL_TYPE_SONY) {
+				int subtype = endianSwap16(readUnaligned16(buffer, 14));
+				if (subtype == WLAN_PROTOCOL_SUBTYPE_CONTROL) {
+					int controlType = Utilities.read8(buffer, 17);
+					log.debug(String.format("Sending Control packet controlType=%d", controlType));
+				} else if (subtype == WLAN_PROTOCOL_SUBTYPE_DATA) {
+					log.debug(String.format("Sending Data packet"));
+				}
+			}
+		}
+
+		if (log.isTraceEnabled()) {
+    		log.trace(String.format("sendAdhocDataPacket %s", Utilities.getMemoryDump(buffer, 0, bufferLength)));
+		}
+
+		try {
+			wlanAdapter.sendWlanPacket(buffer, 0, bufferLength);
+		} catch (IOException e) {
+			log.error("sendAdhocDataPacket", e);
 		}
 	}
 
 	private void sendDataPacketToAccessPoint(byte[] txPacket, int txPacketLength) {
-		if (!createDataSocket()) {
-			return;
-		}
-
 		createAccessPoint();
 
     	byte[] buffer = new byte[txPacketLength + 1 + 32];
@@ -630,22 +615,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
     	int bufferLength = offset;
     	try {
-			InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(accessPoint.getPort());
-			if (broadcastAddress != null) {
-				for (int i = 0; i < broadcastAddress.length; i++) {
-					DatagramPacket packet = new DatagramPacket(buffer, bufferLength, broadcastAddress[i]);
-					try {
-						dataSocket.send(packet);
-					} catch (SocketException e) {
-						// Ignore "Network is unreachable"
-						if (log.isDebugEnabled()) {
-							log.debug("sendDataPacketToAccessPoint", e);
-						}
-					}
-				}
-			}
-		} catch (UnknownHostException e) {
-			log.error("sendDataPacketToAccessPoint", e);
+        	wlanAdapter.sendAccessPointPacket(buffer, 0, bufferLength, null);
 		} catch (IOException e) {
 			log.error("sendDataPacketToAccessPoint", e);
 		}
@@ -667,10 +637,12 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 		byte[] txPacket = sendDataPacketPtr.getArray8(txPacketLocation, txPacketLength);
 		if (adhocStarted || adhocJoined) {
-			broadcastAdhocDataPacket(txPacket, txPacketLength);
+			sendAdhocDataPacket(txPacket, txPacketLength);
 		} else {
 			sendDataPacketToAccessPoint(txPacket, txPacketLength);
 		}
+
+		addResultFlag(WLAN_RESULT_READY_TO_SEND);
 	}
 
 	private void processReceiveDataPacket(int size) {
@@ -853,7 +825,11 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 						createNetworkAdapter();
 
 						if (!adhocStarted && !adhocJoined) {
-							networkAdapter.sceNetAdhocctlScan();
+							try {
+								wlanAdapter.wlanScan();
+							} catch (IOException e) {
+								log.error("CMD_802_11_SCAN", e);
+							}
 							networks = Modules.sceNetAdhocctlModule.getNetworks();
 							count = networks.size();
 						} else {
@@ -1060,7 +1036,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				commandPacketPtr.setArray(8, getMacAddress());
 
 				setSsid(ssid);
-				networkAdapter.sceNetAdhocctlConnect();
+				//wlanAdapter.sceNetAdhocctlConnect();
 				adhocStarted = true;
 				break;
 			case CMD_802_11_AD_HOC_STOP:
@@ -1097,7 +1073,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				}
 
 				setSsid(ssid);
-				networkAdapter.sceNetAdhocctlConnect();
+				//wlanAdapter.sceNetAdhocctlConnect();
 				adhocJoined = true;
 addResultFlag(WLAN_RESULT_READY_TO_SEND);
 				break;
@@ -1286,39 +1262,14 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND);
 
 	@Override
 	public void sendPacketFromAccessPoint(byte[] buffer, int bufferLength, EtherFrame etherFrame) {
-		final int offset = 33;
-		bufferLength -= offset;
-
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("sendPacketFromAccessPoint bufferLength=0x%X, etherFrame=%s, buffer: %s", bufferLength, etherFrame, Utilities.getMemoryDump(buffer, offset, bufferLength)));
+			log.trace(String.format("sendPacketFromAccessPoint bufferLength=0x%X, etherFrame=%s, buffer: %s", bufferLength, etherFrame, Utilities.getMemoryDump(buffer, 0, bufferLength)));
 		}
 
-		// Broadcast on all data socket ports
-		for (int i = 0; i < maxDataSocketPorts; i++) {
-			int broadcastDataPort = dataSocketPortBase + i;
-	    	try {
-				InetSocketAddress broadcastAddress[] = sceNetInet.getBroadcastInetSocketAddress(broadcastDataPort);
-				if (broadcastAddress != null) {
-					for (int j = 0; j < broadcastAddress.length; j++) {
-						if (log.isTraceEnabled()) {
-							log.trace(String.format("sendPacketFromAccessPoint to %s", broadcastAddress[j]));
-						}
-						DatagramPacket datagramPacket = new DatagramPacket(buffer, offset, bufferLength, broadcastAddress[j]);
-						try {
-							dataSocket.send(datagramPacket);
-						} catch (SocketException e) {
-							// Ignore "Network is unreachable"
-							if (log.isDebugEnabled()) {
-								log.debug("sendPacketFromAccessPoint", e);
-							}
-						}
-					}
-				}
-			} catch (UnknownHostException e) {
-				log.error("sendPacketFromAccessPoint", e);
-			} catch (IOException e) {
-				log.error("sendPacketFromAccessPoint", e);
-			}
+    	try {
+			wlanAdapter.sendAccessPointPacket(buffer, 0, bufferLength, etherFrame);
+		} catch (IOException e) {
+			log.error("sendPacketFromAccessPoint", e);
 		}
 	}
 }

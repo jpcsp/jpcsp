@@ -570,7 +570,7 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC28F6FF2, version = 150)
-    public int sceNetIfEnqueue() {
+    public int sceNetIfEnqueue(@CanBeNull TPointer handleAddr, @BufferInfo(lengthInfo = LengthInfo.fixedLength, length = 48, usage = Usage.in) TPointer messageAddr) {
     	return 0;
     }
 
@@ -600,7 +600,7 @@ public class sceNetIfhandle extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD5AD6DEA, version = 150)
-    public int sceNetIfhandle_driver_D5AD6DEA(@CanBeNull TPointer handleAddr) {
+    public int sceNetIfhandle_driver_D5AD6DEA(@CanBeNull TPointer handleAddr, int dummyDataAddr, int dummyDataLength) {
     	if (handleAddr.isNull()) {
     		return 0;
     	}
