@@ -530,6 +530,8 @@ public class DebuggerMemory extends Memory {
 					write8(destination + i, (byte) read8(source + i));
 				}
 	    	}
+		} else if (checkOverlap) {
+			mem.memmove(destination, source, length);
 		} else {
 			mem.memcpy(destination, source, length);
 		}
