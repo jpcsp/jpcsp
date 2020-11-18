@@ -47,9 +47,11 @@ import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.modules.sceSysreg;
 import jpcsp.HLE.modules.semaphore;
 import jpcsp.hardware.Model;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.settings.Settings;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
@@ -149,6 +151,8 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		completePhase1Schedule = 0L;
 		Arrays.fill(lastPrngOutput, 0);
 		stepPreDecryptKeySeed0x15 = 0;
+
+		initKirk();
 	}
 
 	private static boolean isEqual(TPointer addr, int length, int[] values) {
@@ -262,6 +266,15 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		}
 	}
 
+	private void initKirk() {
+		long fuseId = sceSysreg.dummyFuseId;
+		String fuseIdString = Settings.getInstance().readString(sceSysreg.settingsFuseId, null);
+		if (fuseIdString != null) {
+			fuseId = Settings.parseLong(fuseIdString);
+		}
+		libkirk.KirkEngine.kirk_init(fuseId);
+	}
+
 	private int hleUtilsBufferCopyWithRange() {
 		TPointer outAddr = new TPointer(getMemory(), normalizeAddress(destAddr));
 		TPointer inAddr = new TPointer(getMemory(), normalizeAddress(sourceAddr));
@@ -327,6 +340,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
             case PSP_KIRK_CMD_INIT:
             	inSize = 8;
             	outSize = 28;
+            	initKirk();
             	break;
             case PSP_KIRK_CMD_CERT_VERIFY:
             	inSize = 0xB8;

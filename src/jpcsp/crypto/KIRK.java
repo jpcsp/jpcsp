@@ -27,6 +27,7 @@ import jpcsp.util.Utilities;
 
 public class KIRK {
 	private static final boolean useLibkirk = true;
+	private static boolean libkirkInitialized = false;
     // PSP specific values.
     private byte[] priv_iv = new byte[0x10];
     private byte[] prng_data = new byte[0x14];
@@ -285,12 +286,15 @@ public class KIRK {
 
     public KIRK(byte[] seed, int seedLength) {
     	if (useLibkirk) {
-    		long fuseId = sceSysreg.dummyFuseId;
-    		String fuseIdString = Settings.getInstance().readString(sceSysreg.settingsFuseId, null);
-    		if (fuseIdString != null) {
-    			fuseId = Settings.parseLong(fuseIdString);
+    		if (!libkirkInitialized) {
+	    		long fuseId = sceSysreg.dummyFuseId;
+	    		String fuseIdString = Settings.getInstance().readString(sceSysreg.settingsFuseId, null);
+	    		if (fuseIdString != null) {
+	    			fuseId = Settings.parseLong(fuseIdString);
+	    		}
+	    		libkirk.KirkEngine.kirk_init(fuseId);
+	    		libkirkInitialized = true;
     		}
-    		libkirk.KirkEngine.kirk_init(fuseId);
     	} else {
 	        // Set up the data for the pseudo random number generator using a
 	        // seed set by the user.

@@ -578,6 +578,9 @@ public class KirkEngine {
 	/* ------------------------- IMPLEMENTATION ------------------------- */
 
 	public static int kirk_init(long fuseId) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("kirk_init fuseId=0x%X", fuseId));
+		}
 		AES.init();
 		return kirk_init2("Lazy Dev should have initialized!".getBytes(), 33, (int) fuseId, (int) (fuseId >> 32));
 	}
