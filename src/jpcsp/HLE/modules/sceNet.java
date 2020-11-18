@@ -711,7 +711,15 @@ public class sceNet extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xCA3CF5EB, version = 150)
-    public int _sce_pspnet_thread_enter(@BufferInfo(usage=Usage.out) TPointer32 errorAddr) {
+    public int _sce_pspnet_thread_enter(int optionalErrorAddr) {
+    	// The parameter errorAddr is only present in sceNet_Library 1.02 or higher
+    	TPointer32 errorAddr;
+    	if (getModuleElfVersion() >= 0x0102) {
+    		errorAddr = new TPointer32(getMemory(), optionalErrorAddr);
+    	} else {
+    		errorAddr = TPointer32.NULL;
+    	}
+
     	int currentThreadId = Modules.ThreadManForUserModule.getCurrentThreadID();
     	if (!allocatedThreadStructures.containsKey(currentThreadId)) {
         	int size = 92;
