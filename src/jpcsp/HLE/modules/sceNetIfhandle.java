@@ -616,10 +616,29 @@ public class sceNetIfhandle extends HLEModule {
     	return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xE2F4F1C9, version = 150)
-    public int sceNetIfDequeue() {
-    	return 0;
+    public int sceNetIfDequeue(@CanBeNull TPointer handleAddr) {
+    	if (handleAddr.isNull()) {
+    		return 0;
+    	}
+
+    	SceNetIfHandle handle = new SceNetIfHandle();
+		handle.read(handleAddr);
+
+    	Memory mem = handleAddr.getMemory();
+    	TPointer firstMessageAddr = new TPointer(mem, handle.addrFirstMessageToBeSent);
+    	SceNetIfMessage message = new SceNetIfMessage();
+    	message.read(firstMessageAddr);
+
+    	// Unlink the message from the handle
+    	handle.addrFirstMessageToBeSent = message.nextMessageAddr;
+    	handle.numberOfMessagesToBeSent--;
+    	if (handle.addrFirstMessageToBeSent == 0) {
+    		handle.addrLastMessageToBeSent = 0;
+    	}
+    	handle.write(handleAddr);
+
+    	return firstMessageAddr.getAddress();
     }
 
     @HLEUnimplemented

@@ -176,6 +176,19 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 		}
     }
 
+    private class AfterNetIfDequeueAction implements IAction {
+    	private TPointer handleAddr;
+
+		public AfterNetIfDequeueAction(TPointer handleAddr) {
+			this.handleAddr = handleAddr;
+		}
+
+		@Override
+		public void execute() {
+			afterNetIfDequeue(handleAddr, Emulator.getProcessor().cpu._v0);
+		}
+    }
+
     @Override
 	public void start() {
 		wlanThreadUid = INVALID_ID;
@@ -599,29 +612,23 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	}
     }
 
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public int hleWlanSendCallback(TPointer handleAddr) {
-    	SceNetIfHandle handle = new SceNetIfHandle();
-    	handle.read(handleAddr);
+    private void afterNetIfDequeue(TPointer handleAddr, int returnValue) {
+    	if (returnValue <= 0) {
+    		log.error(String.format("sceNetIfDequeue returned error 0x%08X", returnValue));
+    		return;
+    	}
 
     	Memory mem = handleAddr.getMemory();
-    	TPointer firstMessageAddr = new TPointer(mem, handle.addrFirstMessageToBeSent);
+    	TPointer firstMessageAddr = new TPointer(mem, returnValue);
+		if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleWlanSendCallback handleAddr=%s, firstMessageAddr=%s", handleAddr, firstMessageAddr));
+		}
+
     	SceNetIfMessage message = new SceNetIfMessage();
     	message.read(firstMessageAddr);
     	RuntimeContext.debugMemory(firstMessageAddr.getAddress(), message.sizeof());
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("hleWlanSendCallback handleAddr=%s: %s", handleAddr, handle));
-    	}
 
     	hleWlanSendMessage(handleAddr, message);
-
-    	// Unlink the message from the handle
-    	handle.addrFirstMessageToBeSent = message.nextMessageAddr;
-    	handle.numberOfMessagesToBeSent--;
-    	if (handle.addrFirstMessageToBeSent == 0) {
-    		handle.addrLastMessageToBeSent = 0;
-    	}
-    	handle.write(handleAddr);
 
     	// Call sceNetMFreem to free the received message
     	int sceNetMFreem = NIDMapper.getInstance().getAddressByName("sceNetMFreem");
@@ -629,6 +636,16 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     		Modules.ThreadManForUserModule.executeCallback(null, sceNetMFreem, null, true, firstMessageAddr.getAddress());
     	} else {
     		Modules.sceNetIfhandleModule.sceNetMFreem(firstMessageAddr);
+    	}
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public int hleWlanSendCallback(TPointer handleAddr) {
+    	int sceNetIfDequeue = NIDMapper.getInstance().getAddressByName("sceNetIfDequeue");
+    	if (sceNetIfDequeue != 0) {
+    		Modules.ThreadManForUserModule.executeCallback(null, sceNetIfDequeue, new AfterNetIfDequeueAction(handleAddr), true, handleAddr.getAddress());
+    	} else {
+    		afterNetIfDequeue(handleAddr, Modules.sceNetIfhandleModule.sceNetIfDequeue(handleAddr));
     	}
 
     	return 0;
