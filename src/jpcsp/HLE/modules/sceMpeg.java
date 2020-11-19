@@ -2894,7 +2894,7 @@ public class sceMpeg extends HLEModule {
     		callbackNumPackets = sceMpegRingbuffer.packets - sceMpegRingbuffer.packetsWritten;
     	}
     	int callbackDataAddress = sceMpegRingbuffer.data + sceMpegRingbuffer.packetsWritten * sceMpegRingbuffer.packetSize;
-        AfterRingbufferPutCallback afterRingbufferPutCallback = new AfterRingbufferPutCallback(ringbufferAddr, numPackets - callbackNumPackets, getProcessor().cpu._gp);
+        AfterRingbufferPutCallback afterRingbufferPutCallback = new AfterRingbufferPutCallback(ringbufferAddr, numPackets, getProcessor().cpu._gp);
 
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceMpegRingbufferPut calling callback 0x%08X with dataAddress=0x%08X, numPackets=0x%X", sceMpegRingbuffer.callbackAddr, callbackDataAddress, callbackNumPackets));
