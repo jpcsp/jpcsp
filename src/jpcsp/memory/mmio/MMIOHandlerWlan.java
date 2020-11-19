@@ -32,7 +32,6 @@ import static jpcsp.util.Utilities.readUnaligned16;
 import static jpcsp.util.Utilities.writeUnaligned32;
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -184,7 +183,6 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	private String adhocSsid;
     private AccessPoint accessPoint;
     private IWlanAdapter wlanAdapter;
-    private List<byte[]> pendingReceivedMessages = new LinkedList<byte[]>();
 
     public static MMIOHandlerWlan getInstance() {
     	if (instance == null) {
@@ -490,46 +488,26 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		addResultFlag(WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE);
 	}
 
-	private void receiveMessages() {
-    	byte[] buffer = new byte[10000];
-		while (true) {
-			try {
-		    	int length = wlanAdapter.receiveWlanPacket(buffer, 0, buffer.length);
-		    	if (length < 0) {
-		    		break;
-		    	}
-
-		    	byte[] pendingReceivedMessage = new byte[length];
-		    	System.arraycopy(buffer, 0, pendingReceivedMessage, 0, length);
-		    	pendingReceivedMessages.add(pendingReceivedMessage);
-			} catch (IOException e) {
-				log.error("receiveMessages", e);
-			}
-		}
-	}
-
 	private void receiveMessage() {
 		if (wlanAdapter == null) {
 			return;
 		}
 
-		receiveMessages();
-
 		if (hasResultFlag(WLAN_RESULT_DATA_PACKET_RECEIVED)) {
 			return;
 		}
 
-		if (pendingReceivedMessages.isEmpty()) {
+		byte[] receivedMessage = new byte[10000];
+		int receivedMessageLength;
+		try {
+			receivedMessageLength = wlanAdapter.receiveWlanPacket(receivedMessage, 0, receivedMessage.length);
+		} catch (IOException e) {
+			log.error("receiveMessage", e);
 			return;
 		}
 
-		byte[] receivedMessage = pendingReceivedMessages.remove(0);
-		int receivedMessageLength = receivedMessage.length;
-
-		if (pendingReceivedMessages.size() > 0) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("receiveMessage: %d pending messages already received", pendingReceivedMessages.size()));
-			}
+		if (receivedMessageLength < 0) {
+			return;
 		}
 
 		if (log.isDebugEnabled()) {
@@ -545,7 +523,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("receiveMessages received message: %s", Utilities.getMemoryDump(receivedMessage, 0, receivedMessageLength)));
+			log.trace(String.format("receiveMessage received message: %s", Utilities.getMemoryDump(receivedMessage, 0, receivedMessageLength)));
 		}
 
 		final int rxPacketLocation = 24; // Needs to be 24 and not 20 (which would be sufficient to be past the header)

@@ -304,7 +304,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 	@Override
 	public int receiveGameModePacket(pspNetMacAddress macAddress, byte[] buffer, int offset, int length) throws IOException {
-		log.error("Unimplemented receiveGameModePacket");
+		// TODO receiveGameModePacket not implemented
 		return -1;
 	}
 

@@ -2357,4 +2357,21 @@ public class Utilities {
 
     	return bytes;
 	}
+
+	public static byte[] getArray(byte[] array, int length) {
+		return getArray(array, 0, length);
+	}
+
+	public static byte[] getArray(byte[] array, int offset, int length) {
+		if (array == null) {
+			return null;
+		}
+
+		byte[] newArray = new byte[length];
+		if (length > 0) {
+			System.arraycopy(array, offset, newArray, 0, length);
+		}
+
+		return newArray;
+	}
 }

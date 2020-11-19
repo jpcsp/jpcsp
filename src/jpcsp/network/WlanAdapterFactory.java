@@ -33,6 +33,9 @@ public class WlanAdapterFactory {
 			wlanAdapter = new JpcspWlanAdapter();
 		}
 
+		// Make sure that all the methods are asynchronous and are executed without delay
+		wlanAdapter = new AsyncWlanAdapter(wlanAdapter);
+
 		return wlanAdapter;
 	}
 }
