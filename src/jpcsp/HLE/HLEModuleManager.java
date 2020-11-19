@@ -41,10 +41,10 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceModule;
-import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.HLEUtilities;
+import jpcsp.util.Utilities;
 
 /**
  * Manager for the HLE modules.
@@ -163,8 +163,8 @@ public class HLEModuleManager {
         sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule, new String[] { "pspnet_adhoc_discover", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC", "sceNetAdhocDiscover_Library" }, "flash0:/kd/pspnet_adhoc_discover.prx"),
         sceNetAdhocMatching(Modules.sceNetAdhocMatchingModule, new String[] { "pspnet_adhoc_matching", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC", "sceNetAdhocMatching_Library" }, "flash0:/kd/pspnet_adhoc_matching.prx"),
         sceNetAdhocTransInt(Modules.sceNetAdhocTransIntModule, new String[] { "pspnet_adhoc_transfer_int", "sceNetAdhocTransInt_Library" }, "flash0:/kd/pspnet_adhoc_transfer_int.prx"),
-        sceNetAdhocAuth(Modules.sceNetAdhocAuthModule, new String[] { "pspnet_adhoc_auth", "sceNetAdhocAuth_Service" }, "flash0:/kd/pspnet_adhoc_auth.prx"),
-        sceNetAdhocDownload(Modules.sceNetAdhocDownloadModule, new String[] { "pspnet_adhoc_download", "sceNetAdhocDownload_Library" }, "flash0:/kd/pspnet_adhoc_download.prx"),
+        sceNetAdhocAuth(Modules.sceNetAdhocAuthModule, new String[] { "pspnet_adhoc_auth", "sceNetAdhocAuth_Service", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }, "flash0:/kd/pspnet_adhoc_auth.prx"),
+        sceNetAdhocDownload(Modules.sceNetAdhocDownloadModule, new String[] { "pspnet_adhoc_download", "sceNetAdhocDownload_Library", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }, "flash0:/kd/pspnet_adhoc_download.prx"),
         sceNetIfhandle(Modules.sceNetIfhandleModule, new String[] { "ifhandle", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON", "sceNetIfhandle_Service" }, "flash0:/kd/ifhandle.prx"),
         sceNetApctl(Modules.sceNetApctlModule, new String[] { "pspnet_apctl", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON", "sceNetApctl_Library" }, "flash0:/kd/pspnet_apctl.prx"),
         sceNetInet(Modules.sceNetInetModule, new String[] { "pspnet_inet", "PSP_NET_MODULE_INET", "PSP_MODULE_NET_INET", "sceNetInet_Library" }, "flash0:/kd/pspnet_inet.prx"),
@@ -242,7 +242,7 @@ public class HLEModuleManager {
         sceMeVideo(Modules.sceMeVideoModule),
         sceMeAudio(Modules.sceMeAudioModule),
         InitForKernel(Modules.InitForKernelModule),
-        sceMemab(Modules.sceMemabModule, new String[] { "memab", "sceMemab" }, "flash0:/kd/memab.prx"),
+        sceMemab(Modules.sceMemabModule, new String[] { "memab", "sceMemab", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }, "flash0:/kd/memab.prx"),
         DmacManForKernel(Modules.DmacManForKernelModule),
         sceSyscon(Modules.sceSysconModule),
         sceLed(Modules.sceLedModule),
@@ -440,8 +440,33 @@ public class HLEModuleManager {
     	return null;
     }
 
-    public int LoadFlash0Module(String name) {
-    	return LoadFlash0Module(name, 0, 0, SysMemUserForUser.USER_PARTITION_ID, SysMemUserForUser.PSP_SMEM_Low);
+    public int[] LoadFlash0Module(String name) {
+    	int result = 0;
+    	int[] moduleIds = null;
+    	if (name != null) {
+	        List<HLEModule> modules = flash0prxMap.get(name.toLowerCase());
+	        if (modules != null) {
+	            for (HLEModule module : modules) {
+	            	ModuleInfo moduleInfo = moduleInfos.get(module);
+	            	if (moduleInfo != null) {
+	            		String prxFileName = moduleInfo.getPrxFileName();
+	            		if (prxFileName != null) {
+	            			if (log.isDebugEnabled()) {
+	            				log.debug(String.format("Loading module '%s' for '%s'", prxFileName, name));
+	            			}
+	            			result = Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(prxFileName, 0x10);
+	            			if (result < 0) {
+	            				log.error(String.format("Could not load '%s': 0x%08X", prxFileName, result));
+	            			} else {
+	            				moduleIds = Utilities.add(moduleIds, result);
+	            			}
+	            		}
+	            	}
+	            }
+	        }
+    	}
+
+    	return moduleIds;
     }
 
     /** @return the UID assigned to the module or negative on error

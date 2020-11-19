@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
@@ -55,14 +57,14 @@ public class sceUsb extends HLEModule {
 
 	protected boolean usbActivated = false;
 	protected boolean usbStarted = false;
-	protected HashMap<String, SceModule> loadedModules;
+	protected HashMap<String, List<SceModule>> loadedModules;
 	protected int callbackId = -1;
 
 	@Override
 	public void start() {
 		usbActivated = false;
 		usbStarted = false;
-		loadedModules = new HashMap<String, SceModule>();
+		loadedModules = new HashMap<String, List<SceModule>>();
 
 		super.start();
 	}
@@ -112,9 +114,17 @@ public class sceUsb extends HLEModule {
 		HLEModuleManager moduleManager = HLEModuleManager.getInstance();
 		if (moduleManager.hasFlash0Module(driverName)) {
 			log.info(String.format("Loading HLE module '%s'", driverName));
-			int sceModuleId = moduleManager.LoadFlash0Module(driverName);
-			SceModule module = Managers.modules.getModuleByUID(sceModuleId);
-			loadedModules.put(driverName, module);
+			int[] sceModuleIds = moduleManager.LoadFlash0Module(driverName);
+			List<SceModule> modules = new LinkedList<SceModule>();
+			if (sceModuleIds != null) {
+				for (int sceModuleId : sceModuleIds) {
+					SceModule module = Managers.modules.getModuleByUID(sceModuleId);
+					if (module != null) {
+						modules.add(module);
+					}
+				}
+			}
+			loadedModules.put(driverName, modules);
 		}
 
 		notifyCallback();
@@ -136,10 +146,12 @@ public class sceUsb extends HLEModule {
 	public int sceUsbStop(PspString driverName, int size, @BufferInfo(lengthInfo = LengthInfo.previousParameter, usage = Usage.in) @CanBeNull TPointer args) {
 		usbStarted = false;
 
-		SceModule module = loadedModules.remove(driverName.getString());
-		if (module != null) {
+		List<SceModule> modules = loadedModules.remove(driverName.getString());
+		if (modules != null) {
 			HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-			moduleManager.UnloadFlash0Module(module);
+			for (SceModule module : modules) {
+				moduleManager.UnloadFlash0Module(module);
+			}
 		}
 
 		notifyCallback();
