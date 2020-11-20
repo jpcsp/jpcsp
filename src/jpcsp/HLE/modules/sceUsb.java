@@ -16,17 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
-import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
@@ -35,9 +30,7 @@ import jpcsp.HLE.TPointer32;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
-import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.hardware.Usb;
 
 public class sceUsb extends HLEModule {
@@ -57,14 +50,12 @@ public class sceUsb extends HLEModule {
 
 	protected boolean usbActivated = false;
 	protected boolean usbStarted = false;
-	protected HashMap<String, List<SceModule>> loadedModules;
 	protected int callbackId = -1;
 
 	@Override
 	public void start() {
 		usbActivated = false;
 		usbStarted = false;
-		loadedModules = new HashMap<String, List<SceModule>>();
 
 		super.start();
 	}
@@ -106,30 +97,15 @@ public class sceUsb extends HLEModule {
 	 *
 	 * @return 0 on success
 	 */
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xAE5DE6AF, version = 150)
 	public int sceUsbStart(String driverName, int size, @BufferInfo(lengthInfo = LengthInfo.previousParameter, usage = Usage.in) @CanBeNull TPointer args) {
 		usbStarted = true;
 
-		HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-		if (moduleManager.hasFlash0Module(driverName)) {
-			log.info(String.format("Loading HLE module '%s'", driverName));
-			int[] sceModuleIds = moduleManager.LoadFlash0Module(driverName);
-			List<SceModule> modules = new LinkedList<SceModule>();
-			if (sceModuleIds != null) {
-				for (int sceModuleId : sceModuleIds) {
-					SceModule module = Managers.modules.getModuleByUID(sceModuleId);
-					if (module != null) {
-						modules.add(module);
-					}
-				}
-			}
-			loadedModules.put(driverName, modules);
-		}
+		int result = Modules.sceUtilityModule.loadModules(driverName);
 
 		notifyCallback();
 
-		return 0;
+		return result;
 	}
 
 	/**
@@ -141,22 +117,15 @@ public class sceUsb extends HLEModule {
 	 *
 	 * @return 0 on success
 	 */
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xC2464FA0, version = 150)
-	public int sceUsbStop(PspString driverName, int size, @BufferInfo(lengthInfo = LengthInfo.previousParameter, usage = Usage.in) @CanBeNull TPointer args) {
+	public int sceUsbStop(String driverName, int size, @BufferInfo(lengthInfo = LengthInfo.previousParameter, usage = Usage.in) @CanBeNull TPointer args) {
 		usbStarted = false;
 
-		List<SceModule> modules = loadedModules.remove(driverName.getString());
-		if (modules != null) {
-			HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-			for (SceModule module : modules) {
-				moduleManager.UnloadFlash0Module(module);
-			}
-		}
+		int result = Modules.sceUtilityModule.unloadModules(driverName);
 
 		notifyCallback();
 
-		return 0;
+		return result;
 	}
 
 	/**

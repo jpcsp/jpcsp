@@ -152,7 +152,7 @@ public class ModuleMgrForUser extends HLEModule {
     	getModuleInfoFromFileContent(loadModuleContext);
 
         // Check if the module is not overwritten
-        // by a file located under flash0 (decrypted from a real PSP).
+        // by a file located under flash0 (copied from a real PSP).
         String modulePrxFileName = moduleManager.getModulePrxFileName(loadModuleContext.moduleName);
         if (modulePrxFileName != null) {
         	loadModuleContext.isSignChecked = isSignChecked(modulePrxFileName);
@@ -161,6 +161,9 @@ public class ModuleMgrForUser extends HLEModule {
         	if (vfs.ioGetstat(localFileName.toString(), new SceIoStat()) == 0) {
         		// The flash0 file is available, load it
         		loadModuleContext.fileName = modulePrxFileName;
+        		if (log.isInfoEnabled()) {
+        			log.info(String.format("hleKernelLoadModule('%s') file '%s' loaded", loadModuleContext.moduleName, modulePrxFileName));
+        		}
         		return -1;
         	}
         }
