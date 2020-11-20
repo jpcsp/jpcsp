@@ -310,6 +310,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 	@Override
 	public void wlanScan() throws IOException {
-		log.error("Unimplemented wlanScan");
+		// Nothing to do for now
+		log.debug("Unimplemented wlanScan");
 	}
 }

@@ -218,6 +218,15 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     		log.trace(String.format("hleWlanThread isGameMode=%b", isGameMode));
     	}
 
+    	if (wlanThreadMustExit()) {
+    		// Only exit the hleWlanThread thread at this point,
+    		// i.e. before we perform any action that could change the current thread
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Exiting hleWlanThread %s", Modules.ThreadManForUserModule.getCurrentThread()));
+    		}
+    		Modules.ThreadManForUserModule.hleKernelExitDeleteThread(0);
+    	}
+
     	if (isGameMode && !wlanThreadMustExit()) {
     		hleWlanSendGameMode();
     	}
@@ -233,14 +242,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     		}
     	}
 
-    	if (wlanThreadMustExit()) {
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Exiting hleWlanThread %s", Modules.ThreadManForUserModule.getCurrentThread()));
-    		}
-    		Modules.ThreadManForUserModule.hleKernelExitDeleteThread(0);
-    	} else {
-    		Modules.ThreadManForUserModule.hleKernelDelayThread(wlanThreadPollingDelayUs, true);
-    	}
+		Modules.ThreadManForUserModule.hleKernelDelayThread(wlanThreadPollingDelayUs, true);
     }
 
     private boolean wlanThreadMustExit() {
@@ -310,7 +312,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 	    	scanOutputAddr = null;
 	    	scanInProgress = false;
 
-			// Signal the sema when the scan has completed
+	    	// Signal the sema when the scan has completed
     		Modules.ThreadManForUserModule.sceKernelSignalSema(handle.handleInternal.ioctlSemaId, 1);
 		}
     }
