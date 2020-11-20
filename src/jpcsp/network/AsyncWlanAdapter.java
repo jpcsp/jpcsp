@@ -334,6 +334,10 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
 
 	@Override
 	public void sendWlanPacket(byte[] buffer, int offset, int length) {
+		if (wlanPacketsSenderThread == null) {
+			return;
+		}
+
 		byte[] sentWlanPacket = getArray(buffer, offset, length);
 
 		synchronized (wlanSenderLock) {
@@ -345,6 +349,10 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
 
 	@Override
 	public void sendAccessPointPacket(byte[] buffer, int offset, int length, EtherFrame etherFrame) {
+		if (accessPointPacketsSenderThread == null) {
+			return;
+		}
+
 		byte[] sentAccessPointPacket = getArray(buffer, offset, length);
 		EtherFrame sentAccessPointEtherFrame = new EtherFrame(etherFrame);
 
@@ -358,6 +366,10 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
 
 	@Override
 	public void sendGameModePacket(pspNetMacAddress macAddress, byte[] buffer, int offset, int length) {
+		if (gameModePacketsSenderThread == null) {
+			return;
+		}
+
 		byte[] sentGameModePacket = getArray(buffer, offset, length);
 		pspNetMacAddress sentGameModeMacAddress = new pspNetMacAddress(macAddress.macAddress);
 
