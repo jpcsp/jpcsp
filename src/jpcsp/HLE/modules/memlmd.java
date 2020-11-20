@@ -63,7 +63,7 @@ public class memlmd extends HLEModule {
     		tmpBuffer[0x14 + i] = (byte) (buffer[0x80 + i] ^ xorInputKey[i & 0xF]);
     	}
 
-    	int result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(tmpBuffer, 0, outSize, tmpBuffer, 0, tmpBuffer.length, PSP_KIRK_CMD_DECRYPT_FUSE);
+    	int result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(tmpBuffer, outSize, tmpBuffer, tmpBuffer.length, PSP_KIRK_CMD_DECRYPT_FUSE);
     	if (result != 0) {
     		return -1;
     	}

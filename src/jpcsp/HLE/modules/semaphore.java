@@ -48,6 +48,10 @@ public class semaphore extends HLEModule {
 	public static Logger log = Modules.getLogger("semaphore");
 	private static int dumpIndex = 0;
 
+    public int hleUtilsBufferCopyWithRange(byte[] out, int outSize, byte[] in, int inSize, int cmd) {
+    	return hleUtilsBufferCopyWithRange(out, 0, outSize, in, 0, inSize, cmd);
+    }
+
     public int hleUtilsBufferCopyWithRange(byte[] out, int outOffset, int outSize, byte[] in, int inOffset, int inSize, int cmd) {
     	return hleUtilsBufferCopyWithRange(out, outOffset, outSize, in, inOffset, inSize, cmd, true);
     }
@@ -130,7 +134,7 @@ public class semaphore extends HLEModule {
 	    	}
     	}
 
-    	int result = hleUtilsBufferCopyWithRange(outBytes, 0, outSize, inBytes, 0, originalInSize, cmd);
+    	int result = hleUtilsBufferCopyWithRange(outBytes, outSize, inBytes, originalInSize, cmd);
 
     	// Write back the whole output buffer to the memory.
     	if (outSize > 0) {
