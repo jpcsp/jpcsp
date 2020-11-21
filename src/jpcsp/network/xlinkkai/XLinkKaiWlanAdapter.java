@@ -29,6 +29,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -39,6 +40,8 @@ import jpcsp.hardware.Wlan;
 import jpcsp.network.BaseWlanAdapter;
 import jpcsp.network.protocols.EtherFrame;
 import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.AbstractIntSettingsListener;
+import jpcsp.settings.AbstractStringSettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
@@ -49,7 +52,8 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	private DatagramSocket socket;
 	private String uniqueIdentifier;
 	private InetAddress destAddr;
-	final static private int destPort = 34523;
+	private String destServer = "localhost";
+	private int destPort = 34523;
 	final static private String applicationName = "Jpcsp";
 	final static long timeout = 2000000; // 2 seconds
 	private volatile boolean connected;
@@ -61,6 +65,20 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		@Override
 		protected void settingsValueChanged(boolean value) {
 			setEnabled(value);
+		}
+	}
+
+	private class ServerSettingsListener extends AbstractStringSettingsListener {
+		@Override
+		protected void settingsValueChanged(String value) {
+			setServer(value);
+		}
+	}
+
+	private class PortSettingsListener extends AbstractIntSettingsListener {
+		@Override
+		protected void settingsValueChanged(int value) {
+			setPort(value);
 		}
 	}
 
@@ -84,6 +102,36 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 		if (!isEnabled()) {
 			return;
+		}
+	}
+
+	public XLinkKaiWlanAdapter() {
+		Settings.getInstance().registerSettingsListener("XLinkKai", "network.XLinkKai.server", new ServerSettingsListener());
+		Settings.getInstance().registerSettingsListener("XLinkKai", "network.XLinkKai.port", new PortSettingsListener());
+	}
+
+	public void setServer(String server) {
+		destServer = server;
+
+		// If we are already started, we also need to change the destAddr
+		if (destAddr != null) {
+			try {
+				destAddr = InetAddress.getByName(destServer);
+			} catch (UnknownHostException e) {
+				log.error("Cannot change XLink Kai server", e);
+			}
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setServer '%s'", server));
+		}
+	}
+
+	public void setPort(int port) {
+		destPort = port;
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setPort %d", port));
 		}
 	}
 
@@ -265,7 +313,11 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	public void start() throws IOException {
 		uniqueIdentifier = String.format("%s_%s", applicationName, convertMacAddressToString(Wlan.getMacAddress()));
 
-		destAddr = InetAddress.getByName("localhost");
+		destAddr = InetAddress.getByName(destServer);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("XLink Kai server %s(%s), port %d", destServer, destAddr, destPort));
+		}
 
 		// Create socket for DDS communication
 		socket = new DatagramSocket();

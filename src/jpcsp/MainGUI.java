@@ -2419,6 +2419,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("SettingsGUI.enableProOnlineRadioButton.text", "emu.enableProOnline", false, false);
         logConfigurationSettingBool("SettingsGUI.XlinkaiSupportRadioButton.text", "emu.enableXLinkKai", false, false);
         logConfigurationSettingString("SettingsGUI.metaServerLabel.text", "network.ProOnline.metaServer", true, true);
+        logConfigurationSettingString("SettingsGUI.XLinkKaiServerLabel.text", "network.XLinkKai.server", true, true);
         logConfigurationSettingString("SettingsGUI.broadcastAddressLabel.text", "network.broadcastAddress", true, true);
     }
 

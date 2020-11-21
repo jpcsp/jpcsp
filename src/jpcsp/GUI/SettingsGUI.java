@@ -131,6 +131,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setIntFromSettings(modelBox, "emu.model");
         setBoolFromSettings(umdBrowser, classicUmdDialog, "emu.umdbrowser");
         setStringFromSettings(metaServerTextField, "network.ProOnline.metaServer");
+        setStringFromSettings(XLinkKaiServerTextField, "network.XLinkKai.server");
         setStringFromSettings(broadcastAddressTextField, "network.broadcastAddress");
         setBoolFromSettings(lanMultiPlayerRadioButton, "emu.lanMultiPlayer");
         setBoolFromSettings(enableProOnlineRadioButton, "emu.enableProOnline");
@@ -254,6 +255,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setIntToSettings(modelBox, "emu.model");
         setBoolToSettings(umdBrowser, "emu.umdbrowser");
         setStringToSettings(metaServerTextField, "network.ProOnline.metaServer");
+        setStringToSettings(XLinkKaiServerTextField, "network.XLinkKai.server");
         setStringToSettings(broadcastAddressTextField,"network.broadcastAddress");
         setBoolToSettings(lanMultiPlayerRadioButton, "emu.lanMultiPlayer");
         setBoolToSettings(enableProOnlineRadioButton, "emu.enableProOnline");
@@ -531,6 +533,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         metaServerLabel = new javax.swing.JLabel();
         metaServerTextField = new javax.swing.JTextField();
         metaServerRemindLabel = new javax.swing.JLabel();
+        XLinkKaiServerLabel = new javax.swing.JLabel();
+        XLinkKaiServerTextField = new javax.swing.JTextField();
+        XLinkKaiServerRemindLabel = new javax.swing.JLabel();
         broadcastAddressLabel = new javax.swing.JLabel();
         broadcastAddressTextField = new javax.swing.JTextField();
         broadcastAddressRemindLabel = new javax.swing.JLabel();
@@ -1185,6 +1190,12 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         metaServerRemindLabel.setText(bundle.getString("SettingsGUI.metaServerRemindLabel.text")); // NOI18N
 
+        XLinkKaiServerLabel.setText(bundle.getString("SettingsGUI.XLinkKaiServerLabel.text")); // NOI18N
+
+        XLinkKaiServerTextField.setText(bundle.getString("SettingsGUI.XLinkKaiServerTextField.text")); // NOI18N
+
+        XLinkKaiServerRemindLabel.setText(bundle.getString("SettingsGUI.XLinkKaiServerRemindLabel.text")); // NOI18N
+
         broadcastAddressLabel.setText(bundle.getString("SettingsGUI.broadcastAddressLabel.text")); // NOI18N
 
         broadcastAddressTextField.setText(bundle.getString("SettingsGUI.broadcastAddressTextField.text")); // NOI18N
@@ -1201,6 +1212,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addGroup(networkPanelLayout.createSequentialGroup()
                         .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(metaServerLabel)
+                            .addComponent(XLinkKaiServerLabel)
                             .addComponent(broadcastAddressLabel))
                         .addGap(39, 39, 39))
                     .addGroup(networkPanelLayout.createSequentialGroup()
@@ -1227,6 +1239,10 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addGap(31, 31, 31)
                         .addComponent(metaServerRemindLabel))
                     .addGroup(networkPanelLayout.createSequentialGroup()
+                            .addComponent(XLinkKaiServerTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 154, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(31, 31, 31)
+                            .addComponent(XLinkKaiServerRemindLabel))
+                    .addGroup(networkPanelLayout.createSequentialGroup()
                         .addGap(10, 10, 10)
                         .addComponent(broadcastAddressRemindLabel))
                     .addComponent(broadcastAddressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 264, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -1252,6 +1268,11 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(metaServerLabel)
                     .addComponent(metaServerTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(metaServerRemindLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(XLinkKaiServerLabel)
+                        .addComponent(XLinkKaiServerTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(XLinkKaiServerRemindLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(broadcastAddressLabel)
@@ -1425,6 +1446,9 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel metaServerLabel;
     private javax.swing.JLabel metaServerRemindLabel;
     private javax.swing.JTextField metaServerTextField;
+    private javax.swing.JLabel XLinkKaiServerLabel;
+    private javax.swing.JLabel XLinkKaiServerRemindLabel;
+    private javax.swing.JTextField XLinkKaiServerTextField;
     private javax.swing.JComboBox methodMaxInstructionsBox;
     private javax.swing.JLabel methodMaxInstructionsLabel;
     private javax.swing.JComboBox modelBox;
