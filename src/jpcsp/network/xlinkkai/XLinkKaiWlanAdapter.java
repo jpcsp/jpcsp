@@ -16,6 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.xlinkkai;
 
+import static java.util.ResourceBundle.getBundle;
+import static javax.swing.JOptionPane.OK_CANCEL_OPTION;
+import static javax.swing.JOptionPane.OK_OPTION;
+import static javax.swing.JOptionPane.WARNING_MESSAGE;
+import static javax.swing.JOptionPane.showConfirmDialog;
 import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
 import static jpcsp.scheduler.Scheduler.getNow;
 
@@ -211,7 +216,9 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 	private void connect() throws IOException {
 		connected = false;
-		send(String.format("connect;%s;%s;", uniqueIdentifier, applicationName));
+		String connectString = String.format("connect;%s;%s;", uniqueIdentifier, applicationName);
+
+		send(connectString);
 
 		// Wait for confirmation of connection
 		long start = getNow();
@@ -220,8 +227,15 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 			long now = getNow();
 			if (now - start > timeout) {
-				log.error(String.format("Cannot connect to XLink Kai, please make sure it is started"));
-				throw new IOException("Cannot connect to XLink Kai");
+				int response = showConfirmDialog(null, getBundle("jpcsp/languages/jpcsp").getString("XLinkKai.cannotConnect"), "XLink Kai", OK_CANCEL_OPTION, WARNING_MESSAGE);
+				if (response == OK_OPTION) {
+					// Retry to connect
+					send(connectString);
+					start = getNow();
+				} else {
+					log.error(String.format("Could not connect to XLink Kai, please make sure it is started"));
+					throw new IOException("Could not connect to XLink Kai");
+				}
 			}
 		}
 	}
