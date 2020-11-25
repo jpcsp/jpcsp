@@ -51,7 +51,7 @@ public class DmacThread extends Thread {
 	private static final int DMAC_MEMCPY_STEP16 = 1;
 	private static final int DMAC_MEMCPY_STEP8 = 2;
 	private static final int DMAC_MEMCPY_STEP4 = 3;
-	private static final int dmacMemcpyStepLength[] = new int[8];
+	public static final int dmacMemcpyStepLength[] = new int[8];
 	private final Semaphore job = new Semaphore(0);
 	private final Semaphore trigger = new Semaphore(0);
 	private final DmacProcessor dmacProcessor;

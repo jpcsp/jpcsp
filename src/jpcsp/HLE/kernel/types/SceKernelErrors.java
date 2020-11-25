@@ -282,6 +282,8 @@ public class SceKernelErrors {
 
     public final static int ERROR_KERNEL_POWER_CANNOT_CANCEL                    = 0x80020261;
 
+    public final static int ERROR_KERNEL_DMAC_INVALID_ARGUMENT                  = 0x800202CF;
+
     public final static int ERROR_KERNEL_TOO_MANY_OPEN_FILES                    = 0x80020320;
     public final static int ERROR_KERNEL_NO_SUCH_DEVICE                         = 0x80020321;
     public final static int ERROR_KERNEL_BAD_FILE_DESCRIPTOR                    = 0x80020323;
