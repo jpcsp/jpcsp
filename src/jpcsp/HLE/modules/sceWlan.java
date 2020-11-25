@@ -874,11 +874,11 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     			ssidLength = mem.read8(inputAddr + 12);
     			ssid = Utilities.readStringNZ(mem,  inputAddr + 14, ssidLength);
 
-    			pspNetMacAddress macAddress = new pspNetMacAddress();
-    			macAddress.read(mem, outputAddr + 0);
+    			pspNetMacAddress masterMacAddress = new pspNetMacAddress();
+    			masterMacAddress.read(mem, outputAddr + 0);
 
     			if (log.isDebugEnabled()) {
-    				log.debug(String.format("hleWlanIoctlCallback cmd=0x%X, ssid='%s', multicastMacAddress=%s, macAddress=%s", cmd, ssid, multicastMacAddress, macAddress));
+    				log.debug(String.format("hleWlanIoctlCallback cmd=0x%X, ssid='%s', multicastMacAddress=%s, masterMacAddress=%s", cmd, ssid, multicastMacAddress, masterMacAddress));
     			}
     			isGameMode = true;
     			break;
@@ -1029,6 +1029,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x482CAE9A, version = 150)
+    @HLEFunction(nid = 0x1C18F5FE, version = 660)
     public int sceWlanDevAttach() {
     	// Has no parameters
     	int result = createWlanInterface();
@@ -1042,6 +1043,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC9A8CAB7, version = 150)
+    @HLEFunction(nid = 0x8DF43D4C, version = 660)
     public int sceWlanDevDetach() {
     	if (accessPoint != null) {
     		accessPoint.exit();
@@ -1200,5 +1202,17 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     @HLEUnimplemented
     @HLEFunction(nid = 0x90E5530F, version = 150)
     public void sceWlanDrv_driver_90E5530F(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer wlanDriver1, int wlanDriver1Size, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer wlanDriver2, int wlanDriver2Size) {
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9658C9F7, version = 150)
+    public int sceWlanGPRegisterCallback(int callbackUid) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4C7F62E0, version = 150)
+    public int sceWlanGPUnRegisterCallback(int callbackUid) {
+    	return 0;
     }
 }

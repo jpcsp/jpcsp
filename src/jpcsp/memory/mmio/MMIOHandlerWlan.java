@@ -165,15 +165,19 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	private final IntArrayMemory receiveDataPacket = new IntArrayMemory(new int[0xC00 / 4]);
 	private final TPointer receiveDataPacketPtr = receiveDataPacket.getPointer();
 	private static final int DUMMY_ATTRIBUTE_ENTRY = 0x1234;
-	private static final int WLAN_REG_RECEIVED_PACKET_LENGTH = 0x40;
-	private static final int WLAN_REG_OUTPUT_PACKET_SIZE = 0x44;
-	private static final int WLAN_REG_CMD_RESPONSE_PACKET_LENGTH = 0x4A;
-	private static final int WLAN_REG_INPUT_PACKET_SIZE = 0x4C;
-	private static final int WLAN_REG_RESULT = 0x54;
+	public static final int WLAN_REG_RECEIVED_PACKET_LENGTH = 0x40; // 16 bits
+	public static final int WLAN_REG_OUTPUT_PACKET_SIZE = 0x44; // 16 bits
+	public static final int WLAN_REG_CMD_RESPONSE_PACKET_LENGTH = 0x4A;
+	public static final int WLAN_REG_INPUT_PACKET_SIZE = 0x4C;
+	public static final int WLAN_REG_EVENT_INFORMATION = 0x4E; // 32 bits
+	public static final int WLAN_REG_RESULT = 0x54;
 	//
-	private static final int WLAN_RESULT_READY_TO_SEND = 0x01;
-	private static final int WLAN_RESULT_DATA_PACKET_RECEIVED = 0x02;
-	private static final int WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE = 0x10;
+	public static final int WLAN_RESULT_READY_TO_SEND_DATA = 0x01;
+	public static final int WLAN_RESULT_DATA_PACKET_RECEIVED = 0x02;
+	public static final int WLAN_RESULT_READY_TO_SEND_COMMAND = 0x04;
+	public static final int WLAN_RESULT_EVENT_RECEIVED = 0x08;
+	public static final int WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE = 0x10;
+	public static final int WLAN_RESULT_UNKNOWN_80 = 0x80;
 	//
 	private final byte[] chipCode = new byte[0x173FC];
 	private int chipCodeIndex;
@@ -403,11 +407,11 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		switch (register) {
 			case 0x56:
 				// Writing to this register seems to also have the effect of updating the result register
-				addResultFlag(0x04);
+				addResultFlag(WLAN_RESULT_READY_TO_SEND_COMMAND);
 				break;
 			case 0x5E:
 				// Writing to this register seems to also have the effect of updating the result register
-				addResultFlag(0x80);
+				addResultFlag(WLAN_RESULT_UNKNOWN_80);
 				break;
 		}
 	}
@@ -443,6 +447,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 								log.trace(String.format("MMIOHandlerWlan.readData16 finished reading command packet: %s", Utilities.getMemoryDump(buffer, 0, bufferLength)));
 							}
 							clearResultFlag(WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE);
+							addResultFlag(WLAN_RESULT_READY_TO_SEND_COMMAND);
 							break;
 						case DATA_ADDRESS_PACKET:
 							if (log.isTraceEnabled()) {
@@ -620,7 +625,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 			sendDataPacketToAccessPoint(txPacket, txPacketLength);
 		}
 
-		addResultFlag(WLAN_RESULT_READY_TO_SEND);
+		addResultFlag(WLAN_RESULT_READY_TO_SEND_DATA);
 	}
 
 	private void processReceiveDataPacket(int size) {
@@ -783,11 +788,19 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				pspNetMacAddress macAddressFilter = new pspNetMacAddress();
 				macAddressFilter.read(commandPacket, 11);
 				ssid = null;
+				int[] channels = null;
 				if (bssType == BSS_TYPE_ADHOC) {
 					ssid = commandPacketPtr.getStringNZ(17, 32);
+					for (int i = 0; i < 14; i++) {
+						int channel = commandPacketPtr.getUnsignedValue8(52 + i);
+						if (channel == 0) {
+							break;
+						}
+						channels = Utilities.add(channels, channel);
+					}
 				}
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("processCommandPacket CMD_802_11_SCAN bodySize=0x%X, bssType=0x%X, macAddressFilter=%s, unknown=%s", bodySize, bssType, macAddressFilter, Utilities.getMemoryDump(commandPacket, 17, size - 17)));
+					log.debug(String.format("processCommandPacket CMD_802_11_SCAN bodySize=0x%X, bssType=0x%X, macAddressFilter=%s, channels=%s, unknown=%s", bodySize, bssType, macAddressFilter, channels, Utilities.getMemoryDump(commandPacket, 17, size - 17)));
 				}
 
 				commandPacketPtr.clear(11, 21); // Clear the request MAC address and SSID
@@ -1024,6 +1037,14 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				adhocSsid = null;
 				adhocStarted = false;
 				adhocJoined = false;
+				if (wlanAdapter != null) {
+					try {
+						wlanAdapter.stop();
+					} catch (IOException e) {
+						log.error("CMD_802_11_AD_HOC_STOP", e);
+					}
+					wlanAdapter = null;
+				}
 				break;
 			case CMD_802_11_AD_HOC_JOIN:
 				bssid = commandPacketPtr.getArray8(8, 6);
@@ -1053,7 +1074,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				setSsid(ssid);
 				//wlanAdapter.sceNetAdhocctlConnect();
 				adhocJoined = true;
-addResultFlag(WLAN_RESULT_READY_TO_SEND);
+addResultFlag(WLAN_RESULT_READY_TO_SEND_DATA);
 				break;
 			case CMD_802_11_AUTHENTICATE:
 				peerMacAddress = new pspNetMacAddress();
@@ -1062,7 +1083,7 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("processCommandPacket CMD_802_11_AUTHENTICATE bodySize=0x%X, peerMacAddress=%s, authType=0x%X", bodySize, peerMacAddress, authType));
 				}
-addResultFlag(WLAN_RESULT_READY_TO_SEND);
+addResultFlag(WLAN_RESULT_READY_TO_SEND_DATA);
 				break;
 			case CMD_UNKNOWN_0012:
 				peerMacAddress = new pspNetMacAddress();
