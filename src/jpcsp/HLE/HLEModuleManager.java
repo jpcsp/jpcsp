@@ -85,6 +85,8 @@ public class HLEModuleManager {
 			, "flash0:/vsh/module/paf.prx"
 			, "flash0:/vsh/module/common_gui.prx"
 			, "flash0:/vsh/module/common_util.prx"
+			, "flash0:/kd/wlan.prx"
+			, "flash0:/kd/wlanfirm_01g.prx"
 //			, "flash0:/kd/memlmd_01g.prx"
 //			, "flash0:/kd/loadcore.prx"
 //			, "flash0:/kd/loadexec_01g.prx"
@@ -110,6 +112,7 @@ public class HLEModuleManager {
 	private static final String[] moduleFileNamesLLE = {
 			  "flash0:/kd/lowio.prx"
 			, "flash0:/kd/audio.prx"
+			, "flash0:/kd/wlan.prx"
 	};
 
 	/**
