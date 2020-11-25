@@ -22,6 +22,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEModule;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 
 public class sceSuspendForKernel extends HLEModule {
     public static Logger log = Modules.getLogger("sceSuspendForKernel");
@@ -29,6 +30,18 @@ public class sceSuspendForKernel extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x98A1D061, version = 150)
     public int sceKernelPowerRebootStart(int unknown) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x91A77137, version = 150)
+    public int sceKernelRegisterSuspendHandler(int reg, TPointer handler, int param) {
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB43D1A8C, version = 150)
+    public int sceKernelRegisterResumeHandler(int reg, TPointer handler, int param) {
     	return 0;
     }
 }
