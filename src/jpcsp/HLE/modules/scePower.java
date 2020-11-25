@@ -608,4 +608,18 @@ public class scePower extends HLEModule {
 
     	return 0;
     }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x6D2CA84B, version = 150)
+	@HLEFunction(nid = 0x2638EF48, version = 660)
+    public int scePowerWlanActivate() {
+        return 0;
+    }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x23BB0A60, version = 150)
+	@HLEFunction(nid = 0x8C6BEFD9, version = 660)
+    public int scePowerWlanDeactivate() {
+        return 0;
+    }
 }
