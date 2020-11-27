@@ -3108,22 +3108,22 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xE9B3061E, version = 150)
-    public int sceKernelSendMbx(@CheckArgument("checkMbxID") int uid, TPointer msgAddr) {
+    public int sceKernelSendMbx(@CheckArgument("checkMbxID") int uid, @BufferInfo(usage = Usage.in, lengthInfo = LengthInfo.fixedLength, length = 0x10) TPointer msgAddr) {
         return Managers.mbx.sceKernelSendMbx(uid, msgAddr);
     }
 
     @HLEFunction(nid = 0x18260574, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelReceiveMbx(@CheckArgument("checkMbxID") int uid, TPointer32 addrMsgAddr, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelReceiveMbx(@CheckArgument("checkMbxID") int uid, @BufferInfo(usage = Usage.out) TPointer32 addrMsgAddr, @CanBeNull @BufferInfo(usage = Usage.in) TPointer32 timeoutAddr) {
     	return Managers.mbx.sceKernelReceiveMbx(uid, addrMsgAddr, timeoutAddr);
     }
 
     @HLEFunction(nid = 0xF3986382, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelReceiveMbxCB(@CheckArgument("checkMbxID") int uid,  TPointer32 addrMsgAddr, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelReceiveMbxCB(@CheckArgument("checkMbxID") int uid, @BufferInfo(usage = Usage.out) TPointer32 addrMsgAddr, @CanBeNull @BufferInfo(usage = Usage.in) TPointer32 timeoutAddr) {
     	return Managers.mbx.sceKernelReceiveMbxCB(uid, addrMsgAddr, timeoutAddr);
     }
 
     @HLEFunction(nid = 0x0D81716A, version = 150)
-    public int sceKernelPollMbx(@CheckArgument("checkMbxID") int uid,  TPointer32 addrMsgAddr) {
+    public int sceKernelPollMbx(@CheckArgument("checkMbxID") int uid, @BufferInfo(usage = Usage.out) TPointer32 addrMsgAddr) {
     	return Managers.mbx.sceKernelPollMbx(uid, addrMsgAddr);
     }
 

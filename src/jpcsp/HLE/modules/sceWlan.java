@@ -1056,18 +1056,21 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x8D5F551B, version = 150)
+    @HLEFunction(nid = 0x561FD176, version = 660)
     public int sceWlanDrv_lib_8D5F551B(int unknown) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x749B813A, version = 150)
+    @HLEFunction(nid = 0x58EDD140, version = 660)
     public int sceWlanSetHostDiscover(int unknown1, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer unknown2) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xFE8A0B46, version = 150)
+    @HLEFunction(nid = 0x0CAB500F, version = 660)
     public int sceWlanSetWakeUp(int unknown1, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=40, usage=Usage.in) TPointer unknown2) {
         return 0;
     }
@@ -1078,6 +1081,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     }
 
     @HLEFunction(nid = 0x5ED4049A, version = 150)
+    @HLEFunction(nid = 0xED79DCD4, version = 660)
     public int sceWlanGPPrevEstablishActive(pspNetMacAddress macAddress) {
     	int index = 0;
     	for (pspNetMacAddress activeMacAddress : activeMacAddresses) {
@@ -1094,6 +1098,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
      * Called by sceNetAdhocGameModeUpdateReplica()
      */
     @HLEFunction(nid = 0xA447103A, version = 150)
+    @HLEFunction(nid = 0x04DBA413, version = 660)
     public int sceWlanGPRecv(int id, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer buffer, int bufferLength, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.out) TPointer updateInfoAddr) {
     	if (!isGameMode) {
     		return SceKernelErrors.ERROR_WLAN_NOT_IN_GAMEMODE;
@@ -1124,6 +1129,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
      * Called by sceNetAdhocGameModeUpdateMaster()
      */
     @HLEFunction(nid = 0xB4D7CB74, version = 150)
+    @HLEFunction(nid = 0xEEC2F8AB, version = 660)
     public int sceWlanGPSend(int unknown, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.in) TPointer buffer, int bufferLength) {
     	if (!isGameMode) {
     		return SceKernelErrors.ERROR_WLAN_NOT_IN_GAMEMODE;
@@ -1206,12 +1212,14 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x9658C9F7, version = 150)
+    @HLEFunction(nid = 0x02E66C38, version = 660)
     public int sceWlanGPRegisterCallback(int callbackUid) {
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x4C7F62E0, version = 150)
+    @HLEFunction(nid = 0x54764A18, version = 660)
     public int sceWlanGPUnRegisterCallback(int callbackUid) {
     	return 0;
     }

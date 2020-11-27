@@ -239,10 +239,6 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	}
 
 	private void processData(byte[] data, int offset, int length) throws IOException {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Processing data message %s", Utilities.getMemoryDump(data, offset, length)));
-		}
-
 		byte[] buffer = new byte[length];
 		System.arraycopy(data, offset, buffer, 0, length);
 
@@ -257,6 +253,10 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 				return;
 			}
 			lastDataReceived = buffer.clone();
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Processing data message %s", Utilities.getMemoryDump(buffer)));
 		}
 
 		receivedData.add(buffer);
