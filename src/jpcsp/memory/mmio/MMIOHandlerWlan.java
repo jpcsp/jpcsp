@@ -21,9 +21,12 @@ import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_CON
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_DATA;
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_TYPE_SONY;
 import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
+import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_GAMEMODE;
+import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.hardware.Wlan.getMacAddress;
 import static jpcsp.network.jpcsp.JpcspWlanAdapter.WLAN_CMD_DATA;
+import static jpcsp.scheduler.Scheduler.getNow;
 import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.endianSwap32;
@@ -179,11 +182,17 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	public static final int WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE = 0x10;
 	public static final int WLAN_RESULT_UNKNOWN_80 = 0x80;
 	//
+	public static final int WLAN_EVENT_UNKNOWN_40 = 0x40;
+	public static final int WLAN_EVENT_UNKNOWN_80 = 0x80;
+	//
 	private final byte[] chipCode = new byte[0x173FC];
 	private int chipCodeIndex;
 	private boolean booting;
 	private boolean adhocStarted;
 	private boolean adhocJoined;
+	private boolean gameMode;
+	private long gameModeEvent_80;
+	private long gameModeEvent_40;
 	private String adhocSsid;
     private AccessPoint accessPoint;
     private IWlanAdapter wlanAdapter;
@@ -247,7 +256,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		// 0x0011 0x0002 0x0B11
 		attributesMemory.writeUnsigned16(0, 0x0011);
 		attributesMemory.writeUnsigned16(2, 0x0001);
-		attributesMemory.writeUnsigned16(4, 0x1B18);
+		attributesMemory.writeUnsigned16(4, 0x0001);
 
 		for (int i = 1; i < 8; i++) {
 			int offset = i * 8;
@@ -316,17 +325,24 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					return;
 			}
 			productId = m.group(2);
+			gameMode = "G".equals(m.group(3));
 			groupName = m.group(4);
 		} else {
 			productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_SYSTEM;
 			productId = "000000001";
+			gameMode = false;
 			groupName = ssid;
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("productId=%s, productType=%d, groupName=%s", productId, productType, groupName));
+			log.debug(String.format("productId=%s, productType=%d, gameMode=%b, groupName=%s", productId, productType, gameMode, groupName));
 		}
-		Modules.sceNetAdhocctlModule.setGroupName(groupName, sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL);
+		Modules.sceNetAdhocctlModule.setGroupName(groupName, gameMode ? PSP_ADHOCCTL_MODE_GAMEMODE : PSP_ADHOCCTL_MODE_NORMAL);
+
+		if (gameMode) {
+			gameModeEvent_80 = getNow() + 15000;
+			gameModeEvent_40 = 0L;
+		}
 	}
 
 	static private int swap32(int value) {
@@ -366,6 +382,17 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		return hasFlag(registers[WLAN_REG_RESULT], flag);
 	}
 
+	private void setCardEvent(int cardEvent) {
+		cardEvent &= 0xFF;
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setCardEvent 0x%02X", cardEvent));
+		}
+
+		setRegisterValue(WLAN_REG_EVENT_INFORMATION, 4, 0x00000010 | (cardEvent << 8));
+		addResultFlag(WLAN_RESULT_EVENT_RECEIVED);
+	}
+
 	private int getWlanOutputPacketSize() {
 		return getRegisterValue(WLAN_REG_OUTPUT_PACKET_SIZE, 2);
 	}
@@ -387,6 +414,20 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				break;
 			case WLAN_REG_RESULT:
 				receiveMessage();
+				if (gameMode) {
+					long now = getNow();
+					if (gameModeEvent_40 != 0L) {
+						if (now >= gameModeEvent_40) {
+							setCardEvent(WLAN_EVENT_UNKNOWN_40);
+							gameModeEvent_80 = now + 5000;
+							gameModeEvent_40 = 0L;
+						}
+					} else if (now >= gameModeEvent_80) {
+						setCardEvent(WLAN_EVENT_UNKNOWN_80);
+						gameModeEvent_40 = now + 10000;
+						gameModeEvent_80 = now + 15000;
+					}
+				}
 				break;
 		}
 
@@ -825,7 +866,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 							count = networks.size();
 						} else {
 							peers = Modules.sceNetAdhocctlModule.getPeers();
-							count = peers.size() + 1; // Add 1 to include myself
+//							count = peers.size() + 1; // Add 1 to include myself
 						}
 						break;
 				}
@@ -1006,7 +1047,13 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("processCommandPacket CMD_UNKNOWN_007C bodySize=0x%X, unknown8=0x%X, unknown10=0x%X", bodySize, unknown8, unknown10));
 				}
-				if (bodySize == 0xC && unknown8 == 1 && unknown10 == 1) {
+
+				int wlanCardVersion = attributesMemory.read16(4);
+				if (wlanCardVersion != 0x1B11 && wlanCardVersion != 0x1B18) {
+					// This command is only sent for these two versions
+					log.error(String.format("processCommandPacket CMD_UNKNOWN_007C unimplemented for wlanCardVersion 0x%04X: %s", wlanCardVersion, Utilities.getMemoryDump(commandPacket, 0, size)));
+					resultCode = -1;
+				} else if (bodySize == 0xC && unknown8 == 1 && unknown10 == 1) {
 					// Executed just before a CMD_802_11_AD_HOC_START command
 				} else if (bodySize == 0xC && unknown8 == 1 && unknown10 == 0) {
 					// Executed just before a CMD_802_11_AD_HOC_STOP command
@@ -1072,9 +1119,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				}
 
 				setSsid(ssid);
-				//wlanAdapter.sceNetAdhocctlConnect();
 				adhocJoined = true;
-addResultFlag(WLAN_RESULT_READY_TO_SEND_DATA);
 				break;
 			case CMD_802_11_AUTHENTICATE:
 				peerMacAddress = new pspNetMacAddress();
@@ -1083,7 +1128,6 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND_DATA);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("processCommandPacket CMD_802_11_AUTHENTICATE bodySize=0x%X, peerMacAddress=%s, authType=0x%X", bodySize, peerMacAddress, authType));
 				}
-addResultFlag(WLAN_RESULT_READY_TO_SEND_DATA);
 				break;
 			case CMD_UNKNOWN_0012:
 				peerMacAddress = new pspNetMacAddress();
@@ -1240,6 +1284,18 @@ addResultFlag(WLAN_RESULT_READY_TO_SEND_DATA);
 				writeDataEndOfCommand(dataAddress, dataIndex + 4);
 			}
 		}
+	}
+
+	@Override
+	protected void startCmd(int cmd) {
+		switch (cmd) {
+			case MSPRO_CMD_WAKEUP:
+				// Note sure if this is the WAKEUP command which is triggering this event
+				setCardEvent(WLAN_EVENT_UNKNOWN_40);
+				break;
+		}
+
+		super.startCmd(cmd);
 	}
 
 	@Override

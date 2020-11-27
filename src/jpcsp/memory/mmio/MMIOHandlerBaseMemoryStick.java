@@ -534,7 +534,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 		return blockAddress * PAGES_PER_BLOCK + pageAddress;
 	}
 
-	private void startCmd(int cmd) {
+	protected void startCmd(int cmd) {
 		setCmd(cmd);
 
 		if (log.isDebugEnabled()) {
