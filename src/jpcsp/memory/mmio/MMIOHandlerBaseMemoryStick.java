@@ -616,6 +616,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 		pageDataIndex = 0;
 		dataIndex = 0;
 		status |= MS_STATUS_UNKNOWN;
+		dmaTpcCode = -1;
 
 		if (commandCompleted) {
 			// Set only the CED (Command EnD) bit in the INT register,
@@ -659,12 +660,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 					status |= MS_STATUS_UNKNOWN;
 					sys |= 0x4000;
 					setInterrupt();
-					dmaTpcCode = -1;
 				}
-			}
-
-			if (pageDataIndex >= readSize) {
-				dmaTpcCode = -1;
 			}
 		}
 
