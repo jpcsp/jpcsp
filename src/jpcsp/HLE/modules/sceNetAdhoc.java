@@ -586,25 +586,15 @@ public class sceNetAdhoc extends HLEModule {
 	}
 
 	public static boolean isSameMacAddress(byte[] macAddress1, byte[] macAddress2) {
-		if (macAddress1.length != macAddress2.length) {
-			return false;
-		}
-
-		for (int i = 0; i < macAddress1.length; i++) {
-			if (macAddress1[i] != macAddress2[i]) {
-				return false;
-			}
-		}
-
-		return true;
+		return pspNetMacAddress.equals(macAddress1, macAddress2);
 	}
 
 	public static boolean isAnyMacAddress(byte[] macAddress) {
-		return isSameMacAddress(macAddress, ANY_MAC_ADDRESS);
+		return pspNetMacAddress.isAnyMacAddress(macAddress);
 	}
 
 	public static boolean isMyMacAddress(byte[] macAddress) {
-		return isSameMacAddress(Wlan.getMacAddress(), macAddress);
+		return pspNetMacAddress.isMyMacAddress(macAddress);
 	}
 
 	private int getFreePort() {

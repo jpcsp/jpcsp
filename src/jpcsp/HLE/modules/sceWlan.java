@@ -390,7 +390,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 				message.dataLength = dataLength;
 				message.unknown16 = 1;
 				message.type = TYPE_SHORT_MESSAGE;
-				if (wlanMessage.dstMacAddress.isMulticast()) {
+				if (wlanMessage.dstMacAddress.isMulticastMacAddress()) {
 					if (wlanMessage.dstMacAddress.isAnyMacAddress()) {
 						message.type |= TYPE_MULTICAST_ANY;
 					} else {

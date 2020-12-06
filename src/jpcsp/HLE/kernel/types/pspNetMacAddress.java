@@ -17,12 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+import static jpcsp.hardware.Wlan.validMacAddressOUIs;
 import static jpcsp.util.Utilities.hasBit;
 
 import java.util.Random;
 
-import jpcsp.HLE.modules.sceNet;
-import jpcsp.HLE.modules.sceNetAdhoc;
+import jpcsp.hardware.Wlan;
 
 public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 	public final byte[] macAddress = new byte[MAC_ADDRESS_LENGTH];
@@ -36,14 +36,14 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
-		for (int i = 0; i < macAddress.length; i++) {
+		for (int i = 0; i < MAC_ADDRESS_LENGTH; i++) {
 			macAddress[i] = (byte) read8();
 		}
 	}
 
 	@Override
 	protected void write() {
-		for (int i = 0; i < macAddress.length; i++) {
+		for (int i = 0; i < MAC_ADDRESS_LENGTH; i++) {
 			write8(macAddress[i]);
 		}
 	}
@@ -53,12 +53,12 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 	}
 
 	public void setMacAddress(byte[] macAddress, int offset) {
-		System.arraycopy(macAddress, offset, this.macAddress, 0, Math.min(macAddress.length - offset, this.macAddress.length));
+		System.arraycopy(macAddress, offset, this.macAddress, 0, MAC_ADDRESS_LENGTH);
 	}
 
 	@Override
 	public int sizeof() {
-		return macAddress.length;
+		return MAC_ADDRESS_LENGTH;
 	}
 
 	/**
@@ -68,8 +68,31 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 	 *            false otherwise
 	 */
 	public boolean isAnyMacAddress() {
-		for (int i = 0; i < macAddress.length; i++) {
-			if (macAddress[i] != (byte) 0xFF) {
+		return isAnyMacAddress(macAddress);
+	}
+
+	/**
+	 * Is the MAC address the special ANY MAC address (FF:FF:FF:FF:FF:FF)?
+	 * 
+	 * @param macAddress the buffer containing the MAC address
+	 * @return    true if this is the special ANY MAC address
+	 *            false otherwise
+	 */
+	public static boolean isAnyMacAddress(byte[] macAddress) {
+		return isAnyMacAddress(macAddress, 0);
+	}
+
+	/**
+	 * Is the MAC address the special ANY MAC address (FF:FF:FF:FF:FF:FF)?
+	 * 
+	 * @param macAddress the buffer containing the MAC address
+	 * @param offset     the buffer offset where the MAC address is stored
+	 * @return    true if this is the special ANY MAC address
+	 *            false otherwise
+	 */
+	public static boolean isAnyMacAddress(byte[] macAddress, int offset) {
+		for (int i = 0; i < MAC_ADDRESS_LENGTH; i++) {
+			if (macAddress[offset + i] != (byte) 0xFF) {
 				return false;
 			}
 		}
@@ -84,8 +107,31 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 	 *            false otherwise
 	 */
 	public boolean isEmptyMacAddress() {
-		for (int i = 0; i < macAddress.length; i++) {
-			if (macAddress[i] != (byte) 0x00) {
+		return isEmptyMacAddress(macAddress);
+	}
+
+	/**
+	 * Is the MAC address the empty MAC address (00:00:00:00:00:00)?
+	 * 
+	 * @param macAddress the buffer containing the MAC address
+	 * @return    true if this is the empty MAC address
+	 *            false otherwise
+	 */
+	public static boolean isEmptyMacAddress(byte[] macAddress) {
+		return isEmptyMacAddress(macAddress, 0);
+	}
+
+	/**
+	 * Is the MAC address the empty MAC address (00:00:00:00:00:00)?
+	 * 
+	 * @param macAddress the buffer containing the MAC address
+	 * @param offset     the buffer offset where the MAC address is stored
+	 * @return    true if this is the empty MAC address
+	 *            false otherwise
+	 */
+	public static boolean isEmptyMacAddress(byte[] macAddress, int offset) {
+		for (int i = 0; i < MAC_ADDRESS_LENGTH; i++) {
+			if (macAddress[offset + i] != (byte) 0x00) {
 				return false;
 			}
 		}
@@ -98,43 +144,147 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 	 * 
 	 * @return true if the MAC address is a multicast MAC address
 	 */
-	public boolean isMulticast() {
-		// See http://en.wikipedia.org/wiki/Mac_address:
-		// bit 0: 0=Unicast / 1=Multicast
-		return hasBit(macAddress[0], 0);
+	public boolean isMulticastMacAddress() {
+		return isMulticastMacAddress(macAddress);
 	}
 
+	/**
+	 * Is the MAC address a multicast MAC address?
+	 * 
+	 * @param macAddress the buffer containing the MAC address
+	 * @return true if the MAC address is a multicast MAC address
+	 */
+	public static boolean isMulticastMacAddress(byte[] macAddress) {
+		return isMulticastMacAddress(macAddress, 0);
+	}
+
+	/**
+	 * Is the MAC address a multicast MAC address?
+	 * 
+	 * @param macAddress the buffer containing the MAC address
+	 * @param offset     the buffer offset where the MAC address is stored
+	 * @return true if the MAC address is a multicast MAC address
+	 */
+	public static boolean isMulticastMacAddress(byte[] macAddress, int offset) {
+		// See http://en.wikipedia.org/wiki/Mac_address:
+		// bit 0: 0=Unicast / 1=Multicast
+		return hasBit(macAddress[offset], 0);
+	}
+
+	/**
+	 * Is this MAC address matching my own MAC address?
+	 * 
+	 * @return true if this MAC address is matching my own MAC address
+	 */
+	public boolean isMyMacAddress() {
+		return isMyMacAddress(macAddress);
+	}
+
+	/**
+	 * Is the given MAC address matching my own MAC address?
+	 * 
+	 * @param macAddress the buffer containing the MAC address
+	 * @return true      if the MAC address is matching my own MAC address
+	 */
+	public static boolean isMyMacAddress(byte[] macAddress) {
+		return isMyMacAddress(macAddress, 0);
+	}
+
+	/**
+	 * Is the given MAC address matching my own MAC address?
+	 * 
+	 * @param macAddress the buffer containing the MAC address
+	 * @param offset     the buffer offset where the MAC address is stored
+	 * @return true      if the MAC address is matching my own MAC address
+	 */
+	public static boolean isMyMacAddress(byte[] macAddress, int offset) {
+		return equals(Wlan.getMacAddress(), 0, macAddress, offset);
+	}
+
+	/**
+	 * Is this MAC address equal to the given Object?
+	 * 
+	 * @param object the object
+	 * @return true  if the object is a pspNetMacAddress instance
+	 *               with a MAC address which is equal to this MAC address
+	 */
 	@Override
 	public boolean equals(Object object) {
 		if (object instanceof pspNetMacAddress) {
 			pspNetMacAddress macAddress = (pspNetMacAddress) object;
-			return sceNetAdhoc.isSameMacAddress(macAddress.macAddress, this.macAddress);
+			return equals(macAddress.macAddress);
 		}
 		return super.equals(object);
 	}
 
+	/**
+	 * Is this MAC address equal to the given MAC address?
+	 * 
+	 * @param macAddress the buffer containing the given MAC address
+	 * @return true      if this MAC address is equal to the given MAC address
+	 */
 	public boolean equals(byte[] macAddress) {
-		return sceNetAdhoc.isSameMacAddress(macAddress, this.macAddress);
+		return equals(macAddress, this.macAddress);
 	}
 
-	public static byte[] getRandomMacAddress() {
-		byte[] macAddress = new byte[MAC_ADDRESS_LENGTH];
+	/**
+	 * Are two given MAC addresses equal?
+	 * 
+	 * @param macAddress1 the buffer containing the first MAC address
+	 * @param macAddress2 the buffer containing the second MAC address
+	 * @return true       if both MAC addresses are equal
+	 */
+	public static boolean equals(byte[] macAddress1, byte[] macAddress2) {
+		return equals(macAddress1, 0, macAddress2, 0);
+	}
 
-		Random random = new Random();
-		for (int i = 0; i < macAddress.length; i++) {
-			macAddress[i] = (byte) random.nextInt(256);
+	/**
+	 * Are two given MAC addresses equal?
+	 * 
+	 * @param macAddress1 the buffer containing the first MAC address
+	 * @param offset1     the buffer offset where the first MAC address is stored
+	 * @param macAddress2 the buffer containing the second MAC address
+	 * @param offset2     the buffer offset where the second MAC address is stored
+	 * @return true       if both MAC addresses are equal
+	 */
+	public static boolean equals(byte[] macAddress1, int offset1, byte[] macAddress2, int offset2) {
+		if (macAddress1 == null) {
+			return macAddress2 == null;
+		}
+		if (macAddress2 == null) {
+			return false;
 		}
 
-		// The following OUI's (Organizationally Unique Identifier) seems to be used for PSPs
-		byte[][] validOUIs = new byte[][] {
-			new byte[] { (byte) 0x00, (byte) 0x01, (byte) 0x4A }, // Confirmed
-			new byte[] { (byte) 0x00, (byte) 0x02, (byte) 0xC7 }  // Confirmed
-		};
-		// Select one random OUI
-		byte[] oui = validOUIs[random.nextInt(validOUIs.length)];
+		for (int i = 0; i < MAC_ADDRESS_LENGTH; i++) {
+			if (macAddress1[offset1 + i] != macAddress2[offset2 + i]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Generate a random MAC address.
+	 * The generated MAC address will have a valid OUI
+	 * (Organizationally Unique Identifier),
+	 * i.e. one of the possible OUI's used by real PSPs.
+	 * 
+	 * @return byte[] the generated random MAC address
+	 */
+	public static byte[] getRandomMacAddress() {
+		byte[] macAddress = new byte[MAC_ADDRESS_LENGTH];
+		Random random = new Random();
+
+		// Select one random OUI from the list of valid ones
+		byte[] oui = validMacAddressOUIs[random.nextInt(validMacAddressOUIs.length)];
 		macAddress[0] = oui[0];
 		macAddress[1] = oui[1];
 		macAddress[2] = oui[2];
+
+		for (int i = 3; i < MAC_ADDRESS_LENGTH; i++) {
+			macAddress[i] = (byte) random.nextInt(256);
+		}
 
 		// Both least significant bits of the first byte have a special meaning
 		// (see http://en.wikipedia.org/wiki/Mac_address):
@@ -145,12 +295,37 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 		return macAddress;
 	}
 
+    /**
+     * Convert a 6-byte MAC address into a string representation (xx:xx:xx:xx:xx:xx)
+     * in lower-case.
+     * The PSP always returns MAC addresses in lower-case.
+     *
+	 * @param macAddress the buffer containing the MAC address
+     * @return           string representation of the MAC address: xx:xx:xx:xx:xx:xx (in lower-case).
+     */
+	public static String toString(byte[] macAddress) {
+		return toString(macAddress, 0);
+	}
+
+    /**
+     * Convert a 6-byte MAC address into a string representation (xx:xx:xx:xx:xx:xx)
+     * in lower-case.
+     * The PSP always returns MAC addresses in lower-case.
+     *
+	 * @param macAddress the buffer containing the MAC address
+	 * @param offset     the buffer offset where the MAC address is stored
+     * @return           string representation of the MAC address: xx:xx:xx:xx:xx:xx (in lower-case).
+     */
+	public static String toString(byte[] macAddress, int offset) {
+    	return String.format("%02x:%02x:%02x:%02x:%02x:%02x", macAddress[offset + 0], macAddress[offset + 1], macAddress[offset + 2], macAddress[offset + 3], macAddress[offset + 4], macAddress[offset + 5]);
+	}
+
 	@Override
 	public String toString() {
 		// When the base address is not set, return the MAC address only:
 		// "nn:nn:nn:nn:nn:nn"
 		if (getBaseAddress() == 0) {
-			return sceNet.convertMacAddressToString(macAddress);
+			return toString(macAddress);
 		}
 		// When the MAC address is not set, return the base address only:
 		// "0xNNNNNNNN"
@@ -160,6 +335,6 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 
 		// When both the base address and the MAC address are set,
 		// return "0xNNNNNNNN(nn:nn:nn:nn:nn:nn)"
-		return String.format("%s(%s)", super.toString(), sceNet.convertMacAddressToString(macAddress));
+		return String.format("%s(%s)", super.toString(), toString(macAddress));
 	}
 }

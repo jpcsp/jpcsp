@@ -120,7 +120,7 @@ public class sceNet extends HLEModule {
      * @return            string representation of the MAC address: xx:xx:xx:xx:xx:xx (in lower-case).
      */
     public static String convertMacAddressToString(byte[] macAddress) {
-    	return String.format("%02x:%02x:%02x:%02x:%02x:%02x", macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
+    	return pspNetMacAddress.toString(macAddress);
     }
 
     protected static int parseHexDigit(char c) {

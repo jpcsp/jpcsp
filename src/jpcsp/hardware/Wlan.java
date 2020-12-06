@@ -46,6 +46,11 @@ public class Wlan {
     private static int signalStrength = 100;
     private static WlanSwitchSettingsListener wlanSwitchSettingsListener;
     private static InetAddress localInetAddress;
+	// The following MAC Address OUI's (Organizationally Unique Identifier) are reserved for PSPs
+	public static final byte[][] validMacAddressOUIs = new byte[][] {
+		new byte[] { (byte) 0x00, (byte) 0x01, (byte) 0x4A }, // Confirmed
+		new byte[] { (byte) 0x00, (byte) 0x02, (byte) 0xC7 }  // Confirmed
+	};
 
     private static class WlanSwitchSettingsListener extends AbstractBoolSettingsListener {
 		@Override
