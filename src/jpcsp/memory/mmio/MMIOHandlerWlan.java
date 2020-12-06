@@ -20,6 +20,9 @@ import static jpcsp.HLE.kernel.managers.IntrManager.PSP_WLAN_INTR;
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_CONTROL;
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_DATA;
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_TYPE_SONY;
+import static jpcsp.HLE.kernel.types.pspNetMacAddress.isAnyMacAddress;
+import static jpcsp.HLE.kernel.types.pspNetMacAddress.isMulticastMacAddress;
+import static jpcsp.HLE.kernel.types.pspNetMacAddress.isMyMacAddress;
 import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
 import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_GAMEMODE;
 import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL;
@@ -35,6 +38,7 @@ import static jpcsp.util.Utilities.readUnaligned16;
 import static jpcsp.util.Utilities.writeUnaligned32;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,6 +50,7 @@ import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.HLE.modules.sceWlan;
+import jpcsp.hardware.Wlan;
 import jpcsp.memory.IntArrayMemory;
 import jpcsp.network.IWlanAdapter;
 import jpcsp.network.WlanAdapterFactory;
@@ -150,6 +155,8 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	public static final int CMD_FUNC_SHUTDOWN                 = 0x00AA;
 	public static final int CMD_802_11_BEACON_CTRL            = 0x00B0;
 	//
+	public static final int RX_RATE_11_MBPS                   = 0x3;
+	//
 	public static final int BSS_TYPE_INFRASTRUCTURE = 1;
 	public static final int BSS_TYPE_ADHOC = 2;
 	//
@@ -196,6 +203,8 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	private String adhocSsid;
     private AccessPoint accessPoint;
     private IWlanAdapter wlanAdapter;
+    private final byte[] otherMacAddress = new byte[MAC_ADDRESS_LENGTH];
+    private final byte[] gameModeGroupAddress = new byte[MAC_ADDRESS_LENGTH];
 
     public static MMIOHandlerWlan getInstance() {
     	if (instance == null) {
@@ -338,11 +347,6 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 			log.debug(String.format("productId=%s, productType=%d, gameMode=%b, groupName=%s", productId, productType, gameMode, groupName));
 		}
 		Modules.sceNetAdhocctlModule.setGroupName(groupName, gameMode ? PSP_ADHOCCTL_MODE_GAMEMODE : PSP_ADHOCCTL_MODE_NORMAL);
-
-		if (gameMode) {
-			gameModeEvent_80 = getNow() + 15000;
-			gameModeEvent_40 = 0L;
-		}
 	}
 
 	static private int swap32(int value) {
@@ -401,6 +405,31 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		setRegisterValue(WLAN_REG_INPUT_PACKET_SIZE, 2, inputPacketSize);
 	}
 
+	public byte[] getGameModeGroupAddress() {
+		return gameModeGroupAddress;
+	}
+
+	private void sendGameModeEvents() {
+		if (!gameMode) {
+			return;
+		}
+
+		long now = getNow();
+		if (gameModeEvent_40 != 0L) {
+			if (now >= gameModeEvent_40) {
+				setCardEvent(WLAN_EVENT_UNKNOWN_40);
+				gameModeEvent_80 = now + 5000;
+				gameModeEvent_40 = 0L;
+			}
+		} else if (gameModeEvent_80 != 0L) {
+			if (now >= gameModeEvent_80) {
+				setCardEvent(WLAN_EVENT_UNKNOWN_80);
+				gameModeEvent_40 = now + 10000;
+				gameModeEvent_80 = now + 15000;
+			}
+		}
+	}
+
 	@Override
 	protected int getRegisterValue(int register) {
 		switch (register) {
@@ -414,20 +443,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				break;
 			case WLAN_REG_RESULT:
 				receiveMessage();
-				if (gameMode) {
-					long now = getNow();
-					if (gameModeEvent_40 != 0L) {
-						if (now >= gameModeEvent_40) {
-							setCardEvent(WLAN_EVENT_UNKNOWN_40);
-							gameModeEvent_80 = now + 5000;
-							gameModeEvent_40 = 0L;
-						}
-					} else if (now >= gameModeEvent_80) {
-						setCardEvent(WLAN_EVENT_UNKNOWN_80);
-						gameModeEvent_40 = now + 10000;
-						gameModeEvent_80 = now + 15000;
-					}
-				}
+				sendGameModeEvents();
 				break;
 		}
 
@@ -452,7 +468,11 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				break;
 			case 0x5E:
 				// Writing to this register seems to also have the effect of updating the result register
-				addResultFlag(WLAN_RESULT_UNKNOWN_80);
+				if (hasFlag(value, 0x80)) {
+					addResultFlag(WLAN_RESULT_UNKNOWN_80);
+				} else {
+					clearResultFlag(WLAN_RESULT_UNKNOWN_80);
+				}
 				break;
 		}
 	}
@@ -534,6 +554,36 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		addResultFlag(WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE);
 	}
 
+	private boolean isForMe(byte[] destMacAddress, int destMacAddressOffset, byte[] fromMacAddress, int fromMacAddressOffset) {
+		if (isMyMacAddress(fromMacAddress, fromMacAddressOffset)) {
+    		// This packet is coming from myself, ignore it
+			return false;
+		}
+
+		if (isMulticastMacAddress(destMacAddress, destMacAddressOffset)) {
+			// If sent to FF:FF:FF:FF:FF:FF, accept it
+			if (isAnyMacAddress(destMacAddress, destMacAddressOffset)) {
+				return true;
+			}
+
+			// If sent to the GameMode group address, accept it
+			if (pspNetMacAddress.equals(gameModeGroupAddress, 0, destMacAddress, destMacAddressOffset)) {
+				return true;
+			}
+
+			// Sent to an unknown multicast address, ignore it
+			return false;
+		}
+
+		if (isMyMacAddress(destMacAddress, destMacAddressOffset)) {
+			// Sent directly to me, accept it
+			return true;
+		}
+
+		// Sent to an unknown address, ignore it
+		return false;
+	}
+
 	private void receiveMessage() {
 		if (wlanAdapter == null) {
 			return;
@@ -556,6 +606,16 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 			return;
 		}
 
+		if (receivedMessageLength < 12 || !isForMe(receivedMessage, 0, receivedMessage, MAC_ADDRESS_LENGTH)) {
+			if (log.isDebugEnabled()) {
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("Received message not for me: %s", Utilities.getMemoryDump(receivedMessage, 0, receivedMessageLength)));
+				} else {
+					log.debug(String.format("Received message not for me: destMacAddress=%s, sourceMacAddress=%s", pspNetMacAddress.toString(receivedMessage, 0), pspNetMacAddress.toString(receivedMessage, MAC_ADDRESS_LENGTH)));
+				}
+			}
+		}
+
 		if (log.isDebugEnabled()) {
 			if (receivedMessageLength >= 18 && endianSwap16(readUnaligned16(receivedMessage, 12)) == WLAN_PROTOCOL_TYPE_SONY) {
 				int subtype = endianSwap16(readUnaligned16(receivedMessage, 14));
@@ -567,36 +627,77 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				}
 			}
 		}
+		if (Utilities.memcmp(receivedMessage, 6, Wlan.getMacAddress(), 0, MAC_ADDRESS_LENGTH) != 0) {
+			System.arraycopy(receivedMessage, 6, otherMacAddress, 0, MAC_ADDRESS_LENGTH);
+		}
 
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("receiveMessage received message: %s", Utilities.getMemoryDump(receivedMessage, 0, receivedMessageLength)));
 		}
 
-		final int rxPacketLocation = 24; // Needs to be 24 and not 20 (which would be sufficient to be past the header)
-		receiveDataPacket.writeUnsigned16(0, 0); // rxStatus
-		receiveDataPacket.write8(2, (byte) 0); // SNR
-		receiveDataPacket.write8(3, (byte) 0); // rxControl
-		receiveDataPacket.writeUnsigned16(4, receivedMessageLength); // rxPacketLength
-		receiveDataPacket.write8(6, (byte) 0); // NF
-		receiveDataPacket.write8(7, (byte) 0); // rxRate
-		receiveDataPacket.write32(8, rxPacketLocation); // rxPacketLocation
-		receiveDataPacket.write32(12, 0); // reserved
-		receiveDataPacket.write8(16, (byte) 0); // priority
-		receiveDataPacket.write8(17, (byte) 0); // reserved
-		receiveDataPacket.writeUnsigned16(18, 0); // reserved
-		receiveDataPacketPtr.clear(20, rxPacketLocation - 20);
-		receiveDataPacketPtr.setArray(rxPacketLocation, receivedMessage, 0, receivedMessageLength);
+		int totalDataPacketLength;
+		if (pspNetMacAddress.equals(receivedMessage, gameModeGroupAddress)) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Identified packet sent to GameMode Group Address %s", convertMacAddressToString(gameModeGroupAddress)));
+			}
 
-		// The PSP is moving 12 bytes from the offset 16 to the offset 24:
-		//     memmove(addr + 24, addr + 16, 12)
-		// This doesn't really make sense as it overwrites the source and destination
-		// MAC addresses of the EtherFrame. Maybe due to a bug in the Wlan card firmware?
-		// Anyway, we have to mimic this behavior.
-		if (true) {
+			totalDataPacketLength = receivedMessageLength + 28;
+			receiveDataPacket.writeUnsigned16(0, 0x0503); // rxStatus
+			receiveDataPacket.write8(2, (byte) 0); // SNR
+			receiveDataPacket.write8(3, (byte) 0); // rxControl
+			receiveDataPacket.writeUnsigned16(4, receivedMessageLength + 12); // rxPacketLength
+			receiveDataPacketPtr.clear(6, 10);
+			receiveDataPacket.writeUnsigned16(16, receivedMessageLength + 8); // Must match totalDataPacketLength - 20
+			receiveDataPacket.writeUnsigned16(18, 1); // Must be 1
+			receiveDataPacketPtr.setArray(20, receivedMessage, 0, MAC_ADDRESS_LENGTH * 2); // destMacAddress & srcMacAddress
+			receiveDataPacket.writeUnsigned16(32, 0x0A01);
+			receiveDataPacket.writeUnsigned16(34, 0xAAAA);
+			receiveDataPacket.write32(36, 3);
+			receiveDataPacketPtr.setArray(40, receivedMessage, 12, receivedMessageLength - 12);
+
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("processReceiveDataPacket GameMode totalDataPacketLength=0x%X, data:%s", totalDataPacketLength, Utilities.getMemoryDump(receiveDataPacket, 0, totalDataPacketLength)));
+			}
+		} else {
+			final int rxPacketLocation = 24; // Needs to be 24 and not 20 (which would be sufficient to be past the header)
+			totalDataPacketLength = rxPacketLocation + receivedMessageLength;
+			int rxStatus = 0;
+			int signalToNoiseRatio = 0;
+			int rxControl = 0;
+			int rxPacketLength = receivedMessageLength;
+			int noiseFloor = 0;
+			int rxRate = RX_RATE_11_MBPS;
+			int reserved1 = 0;
+			int priority = 0;
+			int reserved2 = 0;
+			int reserved3 = 0;
+			receiveDataPacket.writeUnsigned16(0, rxStatus); // rxStatus
+			receiveDataPacket.write8(2, (byte) signalToNoiseRatio); // SNR
+			receiveDataPacket.write8(3, (byte) rxControl); // rxControl
+			receiveDataPacket.writeUnsigned16(4, rxPacketLength); // rxPacketLength
+			receiveDataPacket.write8(6, (byte) noiseFloor); // NF
+			receiveDataPacket.write8(7, (byte) rxRate); // rxRate
+			receiveDataPacket.write32(8, rxPacketLocation); // rxPacketLocation
+			receiveDataPacket.write32(12, reserved1); // reserved
+			receiveDataPacket.write8(16, (byte) priority); // priority
+			receiveDataPacket.write8(17, (byte) reserved2); // reserved
+			receiveDataPacket.writeUnsigned16(18, reserved3); // reserved
+			receiveDataPacketPtr.clear(20, rxPacketLocation - 20);
+			receiveDataPacketPtr.setArray(rxPacketLocation, receivedMessage, 0, receivedMessageLength);
+
+			// The PSP is moving 12 bytes from the offset 16 to the offset 24:
+			//     memmove(addr + 24, addr + 16, 12)
+			// This doesn't really make sense as it overwrites the source and destination
+			// MAC addresses of the EtherFrame. Maybe due to a bug in the Wlan card firmware?
+			// Anyway, we have to mimic this behavior.
 			receiveDataPacketPtr.setArray(16, receivedMessage, 0, 12);
+
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("processReceiveDataPacket totalDataPacketLength=0x%X, rxStatus=0x%X, SNR=0x%X, rxControl=0x%X, rxPacketLength=0x%X, NF=0x%X, rxRate=0x%X, rxPacketLocation=0x%X, reserved1=0x%X, priority=0x%X, reserved2=0x%X, reserved3=0x%X, data:%s", totalDataPacketLength, rxStatus, signalToNoiseRatio, rxControl, rxPacketLength, noiseFloor, rxRate, rxPacketLocation, reserved1, priority, reserved2, reserved3, Utilities.getMemoryDump(receiveDataPacket, rxPacketLocation, rxPacketLength)));
+			}
 		}
 
-		processReceiveDataPacket(rxPacketLocation + receivedMessageLength);
+		processReceiveDataPacket(totalDataPacketLength);
 	}
 
 	private void sendAdhocDataPacket(byte[] buffer, int bufferLength) {
@@ -655,6 +756,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		int priority = sendDataPacket.read8(20);
 		int flags = sendDataPacket.read8(21);
 		int reserved = sendDataPacket.read16(22);
+
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("processTransmitDataPacket size=0x%X, txStatus=0x%X, txControl=0x%X, txPacketLocation=0x%X, txPacketLength=0x%X, txDestAddr=%s, priority=0x%X, flags=0x%X, reserved=0x%X, data:%s", size, txStatus, txControl, txPacketLocation, txPacketLength, txDestAddr, priority, flags, reserved, Utilities.getMemoryDump(sendDataPacket, txPacketLocation, txPacketLength)));
 		}
@@ -670,22 +772,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	}
 
 	private void processReceiveDataPacket(int size) {
-		int rxStatus = receiveDataPacket.read16(0);
-		int signalToNoiseRatio = receiveDataPacket.read8(2); // SNR
-		int rxControl = receiveDataPacket.read8(3);
-		int rxPacketLength = receiveDataPacket.read16(4);
-		int noiseFloor = receiveDataPacket.read8(6); // NF
-		int rxRate = receiveDataPacket.read8(7);
-		int rxPacketLocation = receiveDataPacket.read32(8);
-		int reserved1 = receiveDataPacket.read32(12);
-		int priority = receiveDataPacket.read8(16);
-		int reserved2 = receiveDataPacket.read8(17);
-		int reserved3 = receiveDataPacket.read16(18);
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("processReceiveDataPacket size=0x%X, rxStatus=0x%X, SNR=0x%X, rxControl=0x%X, rxPacketLength=0x%X, NF=0x%X, rxRate=0x%X, rxPacketLocation=0x%X, reserved1=0x%X, priority=0x%X, reserved2=0x%X, reserved3=0x%X, data:%s", size, rxStatus, signalToNoiseRatio, rxControl, rxPacketLength, noiseFloor, rxRate, rxPacketLocation, reserved1, priority, reserved2, reserved3, Utilities.getMemoryDump(receiveDataPacket, rxPacketLocation, rxPacketLength)));
-		}
-
-		setRegisterValue(WLAN_REG_RECEIVED_PACKET_LENGTH, 2, alignUp(size, 7));
+		setRegisterValue(WLAN_REG_RECEIVED_PACKET_LENGTH, 2, size);
 
 		endianSwap32(receiveDataPacket, 0, size);
 
@@ -808,7 +895,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					log.debug(String.format("processCommandPacket CMD_UNKNOWN_007A bodySize=0x%X, %s", bodySize, Utilities.getMemoryDump(commandPacket, 0, size)));
 				}
 				break;
-			case CMD_MAC_CONTROL:
+			case CMD_MAC_CONTROL: {
 				action = commandPacket.read16(8);
 				boolean rxOn = (action & 0x0001) != 0;
 				boolean txOn = (action & 0x0002) != 0;
@@ -824,6 +911,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					log.debug(String.format("processCommandPacket CMD_MAC_CONTROL bodySize=0x%X, action=0x%X, rxOn=%b, txOn=%b, wepOn=%b, unknown20=%b, unknown40=%b, promiscousOn=%b, multicastOn=%b, enableProtection=%b, enableWMM=%b, wepType104=%b", bodySize, action, rxOn, txOn, wepOn, unknown20, unknown40, promiscousOn, multicastOn, enableProtection, enableWMM, wepType104));
 				}
 				break;
+			}
 			case CMD_802_11_SCAN:
 				bssType = commandPacket.read8(10);
 				pspNetMacAddress macAddressFilter = new pspNetMacAddress();
@@ -864,6 +952,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 							}
 							networks = Modules.sceNetAdhocctlModule.getNetworks();
 							count = networks.size();
+							count++; // Add 1 to include other PSP MAC address
 						} else {
 							peers = Modules.sceNetAdhocctlModule.getPeers();
 //							count = peers.size() + 1; // Add 1 to include myself
@@ -889,10 +978,18 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 						case BSS_TYPE_ADHOC:
 							capabilities |= 0x0002; // WLAN_CAPABILITY_IBSS
 							if (networks != null) {
-								if (log.isDebugEnabled()) {
-									log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning network#%d: %s", n, networks.get(n)));
+								if (n >= networks.size()) {
+									// Return other PSP MAC address
+									bssid = otherMacAddress;
+									if (log.isDebugEnabled()) {
+										log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning other PSP MAC address: %s", sceNet.convertMacAddressToString(bssid)));
+									}
+								} else {
+									if (log.isDebugEnabled()) {
+										log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning network#%d: %s", n, networks.get(n)));
+									}
+									bssid = networks.get(n).bssid.getBytes();
 								}
-								bssid = networks.get(n).bssid.getBytes();
 							} else {
 								if (n >= peers.size()) {
 									// Return myself
@@ -1041,7 +1138,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					resultCode = -1;
 				}
 				break;
-			case CMD_UNKNOWN_007C:
+			case CMD_UNKNOWN_007C: {
 				int unknown8 = commandPacket.read16(8);
 				int unknown10 = commandPacket.read16(10);
 				if (log.isDebugEnabled()) {
@@ -1062,6 +1159,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					resultCode = -1;
 				}
 				break;
+			}
 			case CMD_802_11_AD_HOC_START:
 				ssid = commandPacketPtr.getStringNZ(8, 32);
 				bssType = commandPacketPtr.getUnsignedValue8(40);
@@ -1092,6 +1190,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					}
 					wlanAdapter = null;
 				}
+
+				gameMode = false;
+				gameModeEvent_40 = 0L;
+				gameModeEvent_80 = 0L;
 				break;
 			case CMD_802_11_AD_HOC_JOIN:
 				bssid = commandPacketPtr.getArray8(8, 6);
@@ -1190,6 +1292,75 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				int reasonCode = commandPacket.read16(14);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("processCommandPacket CMD_802_11_DEAUTHENTICATE bodySize=0x%X, peerMacAddress=%s, reasonCode=0x%X", bodySize, peerMacAddress, reasonCode));
+				}
+				break;
+			case CMD_802_11_BEACON_STOP:
+				int unknown06 = commandPacket.read16(6);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("processCommandPacket CMD_802_11_BEACON_STOP bodySize=0x%X, unknown=0x%X", bodySize, unknown06));
+				}
+				break;
+			case CMD_UNKNOWN_002A: {
+				int unknown8 = commandPacket.read32(8);
+				int unknown16 = commandPacket.read8(16);
+				int unknown17 = commandPacket.read8(17);
+				int unknown18 = commandPacket.read8(18);
+				int unknown19 = commandPacket.read8(19);
+				int unknown20 = commandPacket.read8(20);
+				int unknown21 = commandPacket.read8(21);
+				int unknown22 = commandPacket.read8(22);
+				int unknown23 = commandPacket.read8(23);
+				int unknown24 = commandPacket.read32(24);
+				int unknown28 = commandPacket.read32(28);
+				int unknown32 = commandPacket.read16(32);
+				ssid = commandPacketPtr.getStringNZ(34, 32);
+				pspNetMacAddress macAddress66 = new pspNetMacAddress(commandPacketPtr.getArray8(66, MAC_ADDRESS_LENGTH));
+				int unknown72 = commandPacket.read16(72);
+				byte[] unknown74 = commandPacketPtr.getArray8(72, unknown72);
+				int unknown90 = commandPacket.read16(90);
+				int unknown92 = commandPacket.read16(92);
+				pspNetMacAddress macAddress94 = new pspNetMacAddress(commandPacketPtr.getArray8(94, MAC_ADDRESS_LENGTH));
+
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("processCommandPacket CMD_UNKNOWN_002A unknown8=0x%X, unknown16=0x%X, unknown17=0x%X, unknown18=0x%X, unknown19=0x%X, unknown20=0x%X, unknown21=0x%X, unknown22=0x%X, unknown23=0x%X, unknown24=0x%X, unknown28=0x%X, unknown32=0x%X, ssid='%s', macAddress66=%s, unknown72=0x%X, unknown74=%s, unknown90=0x%X, unknown92=0x%X, macAddress94=%s", unknown8, unknown16, unknown17, unknown18, unknown19, unknown20, unknown21, unknown22, unknown23, unknown24, unknown28, unknown32, ssid, macAddress66, unknown72, unknown74, unknown90, unknown92, macAddress94));
+				}
+
+				commandPacket.write32(8, unknown8);
+				responseSize = 12;
+
+				if (gameMode) {
+					if (unknown8 == 1) {
+						// Store the GameMode group address
+						System.arraycopy(macAddress94.macAddress, 0, gameModeGroupAddress, 0, MAC_ADDRESS_LENGTH);
+
+						// Start sending events
+						gameModeEvent_80 = getNow() + 5000;
+						gameModeEvent_40 = 0L;
+					} else if (unknown8 == 0) {
+						// Clear the GameMode group address
+						Arrays.fill(gameModeGroupAddress, (byte) 0);
+
+						// Stop sending events
+						gameModeEvent_80 = 0L;
+						gameModeEvent_40 = 0L;
+					}
+				}
+				break;
+			}
+			case CMD_BBP_REG_ACCESS:
+				action = commandPacket.read16(8);
+				int registerNumber = commandPacket.read16(10);
+				int registerValue = commandPacket.read32(12);
+
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("processCommandPacket CMD_BBP_REG_ACCESS action=%d(%s), registerNumber=0x%X, registerValue=0x%X", action, action == 1 ? "SET" : "GET", registerNumber, registerValue));
+				}
+				if (action == 1 && registerNumber == 0x2C && registerValue == 0x38) {
+					// Ignore
+				} else if (action == 1 && registerNumber == 0x2D && registerValue == 0x4) {
+					// Ignore
+				} else {
+					log.error(String.format("processCommandPacket CMD_BBP_REG_ACCESS unimplemented action=%d(%s), registerNumber=0x%X, registerValue=0x%X", action, action == 1 ? "SET" : "GET", registerNumber, registerValue));
 				}
 				break;
 			default:
