@@ -640,7 +640,7 @@ public class sceMemab extends HLEModule {
     }
 
     /**
-     * Encrypting (PSP_KIRK_CMD_ENCRYPT) the data in unknownInputOutput buffer.
+     * Encrypting GameMode data.
      * Called by sceNetAdhocAuth_lib_AAB06250.
      * 
      * @param xorKey
@@ -657,7 +657,7 @@ public class sceMemab extends HLEModule {
     }
 
     /**
-     * Decrypting (PSP_KIRK_CMD_DECRYPT) the data in unknownInputOutput buffer.
+     * Decrypting GameMode data.
      * Called by sceNetAdhocAuth_lib_015A8A64.
      * 
      * @param xorKey
