@@ -106,6 +106,8 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 	private TPointer scanHandleAddr;
 	private TPointer scanInputAddr;
 	private TPointer scanOutputAddr;
+	private String scanSsid;
+	private int[] scanChannels;
 	private int WLAN_LOOP_ADDRESS;
 	private int WLAN_UP_CALLBACK_ADDRESS;
 	private int WLAN_DOWN_CALLBACK_ADDRESS;
@@ -202,6 +204,8 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 		channelSSIDs = new String[maxChannel + 1];
 		channelModes = new int[maxChannel + 1];
 		joinedChannel = -1;
+		scanSsid = null;
+		scanChannels = null;
 
 		WLAN_LOOP_ADDRESS = HLEUtilities.getInstance().installLoopHandler(this, "hleWlanThread");
 		WLAN_UP_CALLBACK_ADDRESS = HLEUtilities.getInstance().installHLESyscall(this, "hleWlanUpCallback");
@@ -255,7 +259,7 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	}
 
     	try {
-			wlanAdapter.wlanScan();
+			wlanAdapter.wlanScan(scanSsid, scanChannels);
 		} catch (IOException e) {
 			log.error("hleWlanScanAction", e);
 		}
@@ -311,6 +315,8 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 	    	scanInputAddr = null;
 	    	scanOutputAddr = null;
 	    	scanInProgress = false;
+	    	scanSsid = null;
+	    	scanChannels = null;
 
 	    	// Signal the sema when the scan has completed
     		Modules.ThreadManForUserModule.sceKernelSignalSema(handle.handleInternal.ioctlSemaId, 1);
@@ -803,13 +809,14 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 
 	    			mem.write32(outputAddr, 0); // Link to next SSID
     			} else {
-    				if (channel != joinedChannel) {
-    	    			// When called by sceNetAdhocctlCreate() or sceNetAdhocctlConnect(),
-    	    			// the SSID is available in the inputAddr structure.
-    	    			// When called by sceNetAdhocctlScan(), no SSID is available
-    	    			// in the inputAddr structure.
-    	    			ssidLength = mem.read8(inputAddr + 24);
-    	    			ssid = Utilities.readStringNZ(mem, inputAddr + 28, ssidLength);
+	    			// When called by sceNetAdhocctlCreate() or sceNetAdhocctlConnect(),
+	    			// the SSID is available in the inputAddr structure.
+	    			// When called by sceNetAdhocctlScan(), no SSID is available
+	    			// in the inputAddr structure.
+	    			ssidLength = mem.read8(inputAddr + 24);
+	    			ssid = Utilities.readStringNZ(mem, inputAddr + 28, ssidLength);
+
+	    			if (channel != joinedChannel) {
     					setChannelSSID(channel, ssid, mode);
     				}
 
@@ -817,6 +824,8 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     				scanHandleAddr = handleAddr;
     				scanInputAddr = new TPointer(handleAddr.getMemory(), inputAddr);
     				scanOutputAddr = new TPointer(handleAddr.getMemory(), outputAddr);
+    				scanSsid = ssid;
+    				scanChannels = new int[] { channel };
     				scanCallCount = 0;
     				scanCallTimestamp = 0L;
     				scanInProgress = true;

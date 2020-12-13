@@ -25,6 +25,7 @@ import static jpcsp.HLE.kernel.types.pspNetMacAddress.isMulticastMacAddress;
 import static jpcsp.HLE.kernel.types.pspNetMacAddress.isMyMacAddress;
 import static jpcsp.HLE.modules.sceNet.convertMacAddressToString;
 import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_GAMEMODE;
+import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_NONE;
 import static jpcsp.HLE.modules.sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.hardware.Wlan.getMacAddress;
@@ -190,7 +191,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	public static final int WLAN_RESULT_UNKNOWN_80 = 0x80;
 	//
 	public static final int WLAN_EVENT_UNKNOWN_40 = 0x40;
-	public static final int WLAN_EVENT_UNKNOWN_80 = 0x80;
+	public static final int WLAN_EVENT_GAMEMODE_SEND_MASTER = 0x80;
 	//
 	private final byte[] chipCode = new byte[0x173FC];
 	private int chipCodeIndex;
@@ -309,44 +310,52 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		}
 	}
 
+	public String getSsid() {
+		return adhocSsid;
+	}
+
 	private void setSsid(String ssid) {
 		this.adhocSsid = ssid;
 
-		String productId;
-		int productType;
-		String groupName;
+		if (ssid != null) {
+			String productId;
+			int productType;
+			String groupName;
 
-		Pattern p = Pattern.compile("PSP_([AXS])(.........)_([LG])_(.*)");
-		Matcher m = p.matcher(ssid);
-		if (m.matches()) {
-			switch (m.group(1)) {
-				case "A":
-					productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_COMMERCIAL;
-					break;
-				case "X":
-					productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_DEBUG;
-					break;
-				case "S":
-					productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_SYSTEM;
-					break;
-				default:
-					log.error(String.format("Unknown product type '%s' in SSID='%s'", m.group(1), ssid));
-					return;
+			Pattern p = Pattern.compile("PSP_([AXS])(.........)_([LG])_(.*)");
+			Matcher m = p.matcher(ssid);
+			if (m.matches()) {
+				switch (m.group(1)) {
+					case "A":
+						productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_COMMERCIAL;
+						break;
+					case "X":
+						productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_DEBUG;
+						break;
+					case "S":
+						productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_SYSTEM;
+						break;
+					default:
+						log.error(String.format("Unknown product type '%s' in SSID='%s'", m.group(1), ssid));
+						return;
+				}
+				productId = m.group(2);
+				gameMode = "G".equals(m.group(3));
+				groupName = m.group(4);
+			} else {
+				productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_SYSTEM;
+				productId = "000000001";
+				gameMode = false;
+				groupName = ssid;
 			}
-			productId = m.group(2);
-			gameMode = "G".equals(m.group(3));
-			groupName = m.group(4);
-		} else {
-			productType = sceNetAdhocctl.PSP_ADHOCCTL_TYPE_SYSTEM;
-			productId = "000000001";
-			gameMode = false;
-			groupName = ssid;
-		}
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("productId=%s, productType=%d, gameMode=%b, groupName=%s", productId, productType, gameMode, groupName));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("productId=%s, productType=%d, gameMode=%b, groupName=%s", productId, productType, gameMode, groupName));
+			}
+			Modules.sceNetAdhocctlModule.setGroupName(groupName, gameMode ? PSP_ADHOCCTL_MODE_GAMEMODE : PSP_ADHOCCTL_MODE_NORMAL);
+		} else {
+			Modules.sceNetAdhocctlModule.setGroupName(null, PSP_ADHOCCTL_MODE_NONE);
 		}
-		Modules.sceNetAdhocctlModule.setGroupName(groupName, gameMode ? PSP_ADHOCCTL_MODE_GAMEMODE : PSP_ADHOCCTL_MODE_NORMAL);
 	}
 
 	static private int swap32(int value) {
@@ -423,7 +432,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 			}
 		} else if (gameModeEvent_80 != 0L) {
 			if (now >= gameModeEvent_80) {
-				setCardEvent(WLAN_EVENT_UNKNOWN_80);
+				setCardEvent(WLAN_EVENT_GAMEMODE_SEND_MASTER);
 				gameModeEvent_40 = now + 10000;
 				gameModeEvent_80 = now + 15000;
 			}
@@ -946,16 +955,19 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 						if (!adhocStarted && !adhocJoined) {
 							try {
-								wlanAdapter.wlanScan();
+								wlanAdapter.wlanScan(ssid, channels);
 							} catch (IOException e) {
 								log.error("CMD_802_11_SCAN", e);
 							}
 							networks = Modules.sceNetAdhocctlModule.getNetworks();
 							count = networks.size();
-							count++; // Add 1 to include other PSP MAC address
+							if (!pspNetMacAddress.isEmptyMacAddress(otherMacAddress)) {
+								count++; // Add 1 to include other PSP MAC address
+							}
 						} else {
 							peers = Modules.sceNetAdhocctlModule.getPeers();
-//							count = peers.size() + 1; // Add 1 to include myself
+							count = peers.size();
+//							count++; // Add 1 to include myself
 						}
 						break;
 				}
@@ -964,11 +976,12 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				int offset = 33;
 
 				final int rssi = 40; // RSSI - Received Signal Strength Indication, value range [0..40] for 1% to 100%
+				final int channel = 1;
 				bssid = null;
 				for (int n = 0; n < count; n++) {
 					commandPacketPtr.setValue8(14 + n, (byte) rssi);
 
-					int capabilities = 0x0000; // Flags
+					int capabilities = 0x0020; // Flags (WLAN_CAPABILITY_SHORT_PREAMBLE)
 					switch (bssType) {
 						case BSS_TYPE_INFRASTRUCTURE:
 							capabilities |= 0x0001; // WLAN_CAPABILITY_BSS
@@ -1010,22 +1023,24 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					commandPacketPtr.setArray(offset + 2, bssid);
 					long packetTimestamp = 0x0L;
 					commandPacketPtr.setUnalignedValue64(offset + 8, packetTimestamp);
-					int beaconInterval = 1000; // Need to be != 0
+					int beaconInterval = 100; // Need to be != 0
 					commandPacketPtr.setUnalignedValue16(offset + 16, beaconInterval);
 					commandPacketPtr.setUnalignedValue16(offset + 18, capabilities);
 					int params = offset + 20;
 
-					commandPacketPtr.setUnsignedValue8(params + 0, 2); // WLAN_EID_FH_PARAMS
-					commandPacketPtr.setUnsignedValue8(params + 1, 5); // length
-					commandPacketPtr.setUnalignedValue16(params + 2, 0); // dwell time
-					commandPacketPtr.setUnsignedValue8(params + 4, 0); // hop set
-					commandPacketPtr.setUnsignedValue8(params + 5, 0); // hop pattern
-					commandPacketPtr.setUnsignedValue8(params + 6, 0); // hop index
-					params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
+					if (bssType == BSS_TYPE_INFRASTRUCTURE) {
+						commandPacketPtr.setUnsignedValue8(params + 0, 2); // WLAN_EID_FH_PARAMS
+						commandPacketPtr.setUnsignedValue8(params + 1, 5); // length
+						commandPacketPtr.setUnalignedValue16(params + 2, 0); // dwell time
+						commandPacketPtr.setUnsignedValue8(params + 4, 0); // hop set
+						commandPacketPtr.setUnsignedValue8(params + 5, 0); // hop pattern
+						commandPacketPtr.setUnsignedValue8(params + 6, 0); // hop index
+						params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
+					}
 
 					commandPacketPtr.setUnsignedValue8(params + 0, 3); // WLAN_EID_DS_PARAMS
 					commandPacketPtr.setUnsignedValue8(params + 1, 1); // length
-					commandPacketPtr.setUnsignedValue8(params + 2, 1); // Channel number
+					commandPacketPtr.setUnsignedValue8(params + 2, channel); // Channel number
 					params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
 
 					int ssidLength = ssid.length();
@@ -1034,7 +1049,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					commandPacketPtr.setStringNZ(params + 2, ssidLength, ssid);
 					params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
 
-					int[] rates = new int[] { 0x82, 0x84, 0x8B, 0x96 }; // Supported rates: 1MB, 2MB, 5MB, 11MB
+					int[] rates = new int[] { 0x82, 0x84, 0x0B, 0x16 }; // Supported rates: 1MB, 2MB, 5MB, 11MB
 					commandPacketPtr.setUnsignedValue8(params + 0, 1); // WLAN_EID_SUPP_RATES
 					commandPacketPtr.setUnsignedValue8(params + 1, rates.length); // length
 					for (int i = 0; i < rates.length; i++) {
@@ -1042,51 +1057,55 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					}
 					params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
 
-					int[] extendedRates = new int[] { 0x0C, 0x12 }; // Supported rates: 6MB, 9MB
-					commandPacketPtr.setUnsignedValue8(params + 0, 50); // WLAN_EID_EXT_SUPP_RATES
-					commandPacketPtr.setUnsignedValue8(params + 1, extendedRates.length); // length
-					for (int i = 0; i < extendedRates.length; i++) {
-						commandPacketPtr.setUnsignedValue8(params + 2 + i, extendedRates[i]);
+					if (bssType == BSS_TYPE_INFRASTRUCTURE) {
+						int[] extendedRates = new int[] { 0x0C, 0x12 }; // Supported rates: 6MB, 9MB
+						commandPacketPtr.setUnsignedValue8(params + 0, 50); // WLAN_EID_EXT_SUPP_RATES
+						commandPacketPtr.setUnsignedValue8(params + 1, extendedRates.length); // length
+						for (int i = 0; i < extendedRates.length; i++) {
+							commandPacketPtr.setUnsignedValue8(params + 2 + i, extendedRates[i]);
+						}
+						params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
 					}
-					params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
 
 					commandPacketPtr.setUnsignedValue8(params + 0, 6); // WLAN_EID_IBSS_PARAMS
 					commandPacketPtr.setUnsignedValue8(params + 1, 2); // length
 					commandPacketPtr.setUnalignedValue16(params + 2, 0); // ATIM window
 					params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
 
-					commandPacketPtr.setUnsignedValue8(params + 0, 48); // WLAN_EID_RSN
-					commandPacketPtr.setUnsignedValue8(params + 1, 18); // length
-					commandPacketPtr.setUnalignedValue16(params + 2, 1); // Version
-					// Group Cipher Suite
-					commandPacketPtr.setUnsignedValue8(params + 4, 0x00);
-					commandPacketPtr.setUnsignedValue8(params + 5, 0x0F);
-					commandPacketPtr.setUnsignedValue8(params + 6, 0xAC);
-					commandPacketPtr.setUnsignedValue8(params + 7, 0x05); // WEP-104
-					// Pairwise Cipher Suite
-					commandPacketPtr.setUnalignedValue16(params + 8, 1); // Pairwise Cipher Suite Count
-					commandPacketPtr.setUnsignedValue8(params + 10, 0x00);
-					commandPacketPtr.setUnsignedValue8(params + 11, 0x0F);
-					commandPacketPtr.setUnsignedValue8(params + 12, 0xAC);
-					commandPacketPtr.setUnsignedValue8(params + 13, 0x05); // WEP-104
-					// Authentication Suite
-					commandPacketPtr.setUnalignedValue16(params + 14, 1); // Authentication Suite Count
-					commandPacketPtr.setUnsignedValue8(params + 16, 0x00);
-					commandPacketPtr.setUnsignedValue8(params + 17, 0x0F);
-					commandPacketPtr.setUnsignedValue8(params + 18, 0xAC);
-					commandPacketPtr.setUnsignedValue8(params + 19, 0x05); // WEP-104
-					params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
+					if (bssType == BSS_TYPE_INFRASTRUCTURE) {
+						commandPacketPtr.setUnsignedValue8(params + 0, 48); // WLAN_EID_RSN
+						commandPacketPtr.setUnsignedValue8(params + 1, 18); // length
+						commandPacketPtr.setUnalignedValue16(params + 2, 1); // Version
+						// Group Cipher Suite
+						commandPacketPtr.setUnsignedValue8(params + 4, 0x00);
+						commandPacketPtr.setUnsignedValue8(params + 5, 0x0F);
+						commandPacketPtr.setUnsignedValue8(params + 6, 0xAC);
+						commandPacketPtr.setUnsignedValue8(params + 7, 0x05); // WEP-104
+						// Pairwise Cipher Suite
+						commandPacketPtr.setUnalignedValue16(params + 8, 1); // Pairwise Cipher Suite Count
+						commandPacketPtr.setUnsignedValue8(params + 10, 0x00);
+						commandPacketPtr.setUnsignedValue8(params + 11, 0x0F);
+						commandPacketPtr.setUnsignedValue8(params + 12, 0xAC);
+						commandPacketPtr.setUnsignedValue8(params + 13, 0x05); // WEP-104
+						// Authentication Suite
+						commandPacketPtr.setUnalignedValue16(params + 14, 1); // Authentication Suite Count
+						commandPacketPtr.setUnsignedValue8(params + 16, 0x00);
+						commandPacketPtr.setUnsignedValue8(params + 17, 0x0F);
+						commandPacketPtr.setUnsignedValue8(params + 18, 0xAC);
+						commandPacketPtr.setUnsignedValue8(params + 19, 0x05); // WEP-104
+						params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
 
-					commandPacketPtr.setUnsignedValue8(params + 0, 221); // WLAN_EID_VENDOR_SPECIFIC
-					commandPacketPtr.setUnsignedValue8(params + 1, 22); // length
-					commandPacketPtr.setArray(params + 2, new byte[] { (byte) 0x00,  (byte) 0x50, (byte) 0xF2, (byte) 0x01 });
-					commandPacketPtr.setUnalignedValue16(params + 6, 0x0000);
-					commandPacketPtr.setArray(params + 8, new byte[] { (byte) 0x00,  (byte) 0x50, (byte) 0xF2, (byte) 0x01 });
-					commandPacketPtr.setUnalignedValue16(params + 12, 0x0001); // Count for following entries
-					commandPacketPtr.setArray(params + 14, new byte[] { (byte) 0x00,  (byte) 0x50, (byte) 0xF2, (byte) 0x02 });
-					commandPacketPtr.setUnalignedValue16(params + 18, 0x0001); // Count for following entries
-					commandPacketPtr.setArray(params + 20, new byte[] { (byte) 0x00,  (byte) 0x50, (byte) 0xF2, (byte) 0x01 });
-					params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
+						commandPacketPtr.setUnsignedValue8(params + 0, 221); // WLAN_EID_VENDOR_SPECIFIC
+						commandPacketPtr.setUnsignedValue8(params + 1, 22); // length
+						commandPacketPtr.setArray(params + 2, new byte[] { (byte) 0x00,  (byte) 0x50, (byte) 0xF2, (byte) 0x01 });
+						commandPacketPtr.setUnalignedValue16(params + 6, 0x0000);
+						commandPacketPtr.setArray(params + 8, new byte[] { (byte) 0x00,  (byte) 0x50, (byte) 0xF2, (byte) 0x01 });
+						commandPacketPtr.setUnalignedValue16(params + 12, 0x0001); // Count for following entries
+						commandPacketPtr.setArray(params + 14, new byte[] { (byte) 0x00,  (byte) 0x50, (byte) 0xF2, (byte) 0x02 });
+						commandPacketPtr.setUnalignedValue16(params + 18, 0x0001); // Count for following entries
+						commandPacketPtr.setArray(params + 20, new byte[] { (byte) 0x00,  (byte) 0x50, (byte) 0xF2, (byte) 0x01 });
+						params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
+					}
 
 					commandPacketPtr.setUnalignedValue16(offset + 0, params - offset - 2); // Total IE length
 
@@ -1179,9 +1198,9 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("processCommandPacket CMD_802_11_AD_HOC_STOP bodySize=0x%X", bodySize));
 				}
-				adhocSsid = null;
 				adhocStarted = false;
 				adhocJoined = false;
+				setSsid(null);
 				if (wlanAdapter != null) {
 					try {
 						wlanAdapter.stop();

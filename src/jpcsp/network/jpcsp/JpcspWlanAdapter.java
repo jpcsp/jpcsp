@@ -330,7 +330,7 @@ public class JpcspWlanAdapter extends BaseWlanAdapter {
 	}
 
 	@Override
-	public void wlanScan() throws IOException {
+	public void wlanScan(String ssid, int[] channels) throws IOException {
     	// Send a scan request packet
     	byte[] scanRequestPacket = new byte[1 + MAC_ADDRESS_LENGTH];
     	scanRequestPacket[0] = WLAN_CMD_SCAN_REQUEST;

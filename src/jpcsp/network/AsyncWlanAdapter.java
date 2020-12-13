@@ -419,7 +419,7 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
 	}
 
 	@Override
-	public void wlanScan() throws IOException {
-		wlanAdapter.wlanScan();
+	public void wlanScan(String ssid, int[] channels) throws IOException {
+		wlanAdapter.wlanScan(ssid, channels);
 	}
 }

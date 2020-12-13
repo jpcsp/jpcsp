@@ -34,6 +34,10 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 		setMacAddress(macAddress);
 	}
 
+	public pspNetMacAddress(byte[] macAddress, int offset) {
+		setMacAddress(macAddress, offset);
+	}
+
 	@Override
 	protected void read() {
 		for (int i = 0; i < MAC_ADDRESS_LENGTH; i++) {

@@ -33,5 +33,5 @@ public interface IWlanAdapter {
 	public void sendGameModePacket(pspNetMacAddress macAddress, byte[] buffer, int offset, int length) throws IOException;
 	public int receiveWlanPacket(byte[] buffer, int offset, int length) throws IOException;
 	public int receiveGameModePacket(pspNetMacAddress macAddress, byte[] buffer, int offset, int length) throws IOException;
-	public void wlanScan() throws IOException;
+	public void wlanScan(String ssid, int[] channels) throws IOException;
 }
