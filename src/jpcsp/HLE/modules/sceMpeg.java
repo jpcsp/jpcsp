@@ -22,6 +22,8 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_NO_DATA;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_NO_NEXT_DATA;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MPEG_UNKNOWN_STREAM_ID;
+import static jpcsp.HLE.modules.SysMemUserForUser.KERNEL_PARTITION_ID;
+import static jpcsp.HLE.modules.SysMemUserForUser.PSP_SMEM_Addr;
 import static jpcsp.HLE.modules.SysMemUserForUser.USER_PARTITION_ID;
 import static jpcsp.HLE.modules.sceAudiocodec.PSP_CODEC_AT3PLUS;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
@@ -57,6 +59,7 @@ import jpcsp.HLE.kernel.types.SceMp4AvcCscStruct;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
+import jpcsp.HLE.modules.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Screen;
 import jpcsp.media.codec.util.BitReader;
 import jpcsp.media.codec.util.IBitReader;
@@ -113,6 +116,11 @@ public class sceMpeg extends HLEModule {
     // MPEG Userdata elementary stream.
     private static final int MPEG_DATA_ES_SIZE = 0xA0000;
     private static final int MPEG_DATA_ES_OUTPUT_SIZE = 0xA0000;
+    // ES Buffers in ME memory
+    private static final int esBuffer1 = 0x0004A000;
+    private static final int esBuffer2 = 0x00062400;
+    private static final int esBufferSize = 0x18400;
+    //
     private boolean hleInitialized = false;
     private TPointer initVideocodecBuffer;
     private TPointer initVideocodecBuffer2;
@@ -458,12 +466,25 @@ public class sceMpeg extends HLEModule {
     	return Emulator.getInstance().getFirmwareVersion() <= 260;
     }
 
+    public static void allocateEsBuffers() {
+    	// The esBuffers are normally located into the ME memory.
+    	// For this HLE module, allocate the esBuffers in the kernel partition as a simulation of the ME memory.
+        SysMemInfo sysMemInfo1 = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, "sceMpeg.esBuffer1", PSP_SMEM_Addr, esBufferSize, esBuffer1 | MemoryMap.START_RAM);
+        SysMemInfo sysMemInfo2 = Modules.SysMemUserForUserModule.malloc(KERNEL_PARTITION_ID, "sceMpeg.esBuffer2", PSP_SMEM_Addr, esBufferSize, esBuffer2 | MemoryMap.START_RAM);
+        if (sysMemInfo1 == null || sysMemInfo2 == null) {
+        	log.error(String.format("allocateEsBuffers failed to allocate both esBuffers in kernel memory"));
+        }
+    }
+
     private void initHLE() {
     	if (hleInitialized) {
     		return;
     	}
 
     	int moduleMemory = getModuleMemory("flash0:/kd/mpeg.prx");
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("initHLE moduleMemory=0x%08X", moduleMemory));
+    	}
 
 		Memory mem = getMemory();
 		initVideocodecBuffer = new TPointer(mem, moduleMemory);
@@ -1209,7 +1230,7 @@ public class sceMpeg extends HLEModule {
 		int processedCount = 0;
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("copyStreamData streamAddr=%s, dataStream=%s, requiredLength=0x%X, packets count=%d", streamAddr, dataStream, requiredLength, count));
+			log.trace(String.format("copyStreamData streamAddr=%s, dataStream=%s, esBufferAddr=%s, requiredLength=0x%X, packets count=%d", streamAddr, dataStream, esBufferAddr, requiredLength, count));
 		}
 
 		TPointer pesPacketCopyListStart = new TPointer(data, 44);
@@ -1584,8 +1605,9 @@ public class sceMpeg extends HLEModule {
     	for (int i = 0; i < numberEsBuffers; i++) {
     		dataAligned.setValue8(1716 + i, (byte) 0);
     	}
-    	dataAligned.setValue32(1720, 0x0004A000); // First esBuffer, fixed address in kernel memory
-    	dataAligned.setValue32(1724, 0x00062400); // Second esBuffer, fixed address in kernel memory
+
+    	dataAligned.setValue32(1720, esBuffer1); // First esBuffer, fixed address in ME memory
+    	dataAligned.setValue32(1724, esBuffer2); // Second esBuffer, fixed address in ME memory
 
     	TPointer videocodecBuffer = new TPointer(dataAligned, 0xB300);
     	TPointer audiocodecBuffer = new TPointer(dataAligned, 0xB500);

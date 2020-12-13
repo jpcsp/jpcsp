@@ -156,6 +156,7 @@ public class SysMemUserForUser extends HLEModule {
 	        freeMemoryChunks = new MemoryChunkList[6];
 	        freeMemoryChunks[KERNEL_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_KERNEL, KERNEL_VOLATILE_MEM_START - 1);
 	        freeMemoryChunks[VSHELL_PARTITION_ID] = createMemoryChunkList(KERNEL_VOLATILE_MEM_START, KERNEL_VOLATILE_MEM_START + KERNEL_VOLATILE_MEM_SIZE - 1);
+	        sceMpeg.allocateEsBuffers();
 		}
         freeMemoryChunks[USER_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_USERSPACE, MemoryMap.END_USERSPACE);
 	}
@@ -337,9 +338,11 @@ public class SysMemUserForUser extends HLEModule {
     	StringBuilder s = new StringBuilder();
     	s.append(String.format("partition=%d: ", KERNEL_PARTITION_ID));
     	s.append(freeMemoryChunks[KERNEL_PARTITION_ID].toString());
-    	s.append("\n");
-    	s.append(String.format("partition=%d: ", USER_PARTITION_ID));
-    	s.append(freeMemoryChunks[USER_PARTITION_ID].toString());
+    	if (freeMemoryChunks[USER_PARTITION_ID] != null) {
+	    	s.append("\n");
+	    	s.append(String.format("partition=%d: ", USER_PARTITION_ID));
+	    	s.append(freeMemoryChunks[USER_PARTITION_ID].toString());
+    	}
 
     	return s.toString();
     }
