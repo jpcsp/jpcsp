@@ -719,8 +719,8 @@ public class sceNetApctl extends HLEModule {
 	public int sceNetApctlGetBSSDescEntryUser(int entryId, int infoId, TPointer result) {
 		switch (infoId) {
 			case PSP_NET_APCTL_DESC_IBSS: // IBSS, 6 bytes
-				String ibss = Modules.sceNetAdhocctlModule.hleNetAdhocctlGetIBSS();
-				result.setStringNZ(IBSS_NAME_LENGTH, ibss);
+				byte[] ibss = Modules.sceNetAdhocctlModule.hleNetAdhocctlGetIBSS();
+				result.setArray(ibss, IBSS_NAME_LENGTH);
 				break;
 			case PSP_NET_APCTL_DESC_SSID_NAME:
 				// Return 32 bytes

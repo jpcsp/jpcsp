@@ -36,6 +36,8 @@ import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jpcsp.Emulator;
 import jpcsp.Processor;
@@ -48,6 +50,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.hardware.Wlan;
 import jpcsp.network.INetworkAdapter;
 import jpcsp.util.HLEUtilities;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -87,7 +90,7 @@ public class sceNetAdhocctl extends HLEModule {
     private boolean isInitialized;
 	protected int adhocctlCurrentState;
     protected String adhocctlCurrentGroup;
-    protected String adhocctlCurrentIBSS;
+    protected byte[] adhocctlCurrentIBSS;
     protected int adhocctlCurrentMode;
     protected int adhocctlCurrentChannel;
     protected int adhocctlCurrentType;
@@ -237,18 +240,20 @@ public class sceNetAdhocctl extends HLEModule {
     	public int channel;
     	/** Name of the connection (alphanumeric characters only) */
     	public String name;
-    	/** The BSSID */
-    	public String bssid;
+    	/** The IBSS */
+    	public byte[] ibss;
     	/** mode */
     	public int mode;
+    	/** SSID */
+    	public String ssid;
 
-    	public boolean equals(int channel, String name, String bssid, int mode) {
-    		return channel == this.channel && name.equals(this.name) && bssid.equals(this.bssid) && mode == this.mode;
+    	public boolean equals(int channel, String name, byte[] ibss, int mode) {
+    		return channel == this.channel && name.equals(this.name) && Utilities.equals(this.ibss, 0, ibss, 0, IBSS_NAME_LENGTH) && mode == this.mode;
     	}
 
 		@Override
 		public String toString() {
-			return String.format("AdhocctlNetwork[channel=%d, name='%s', bssid='%s', mode=%d]", channel, name, bssid, mode);
+			return String.format("AdhocctlNetwork[channel=%d, name='%s', ibss='%s', mode=%d, ssid='%s']", channel, name, pspNetMacAddress.toString(ibss), mode, ssid);
 		}
     }
 
@@ -258,7 +263,7 @@ public class sceNetAdhocctl extends HLEModule {
 		networks = new LinkedList<sceNetAdhocctl.AdhocctlNetwork>();
 		gameModeMacs = new LinkedList<pspNetMacAddress>();
 		requiredGameModeMacs = new LinkedList<pspNetMacAddress>();
-		adhocctlCurrentIBSS = "Jpcsp";
+		adhocctlCurrentIBSS = "Jpcsp0".getBytes();
 		adhocctlCurrentMode = PSP_ADHOCCTL_MODE_NONE;
 		adhocctlCurrentChannel = Wlan.getAdhocChannel();
 		isInitialized = false;
@@ -508,7 +513,7 @@ public class sceNetAdhocctl extends HLEModule {
     	return adhocctlCurrentGroup;
     }
 
-    public String hleNetAdhocctlGetIBSS() {
+    public byte[] hleNetAdhocctlGetIBSS() {
     	return adhocctlCurrentIBSS;
     }
 
@@ -521,10 +526,88 @@ public class sceNetAdhocctl extends HLEModule {
     }
 
     public void hleNetAdhocctlAddNetwork(String groupName, pspNetMacAddress mac, int mode) {
-    	hleNetAdhocctlAddNetwork(groupName, mac, adhocctlCurrentChannel, adhocctlCurrentIBSS, mode);
+    	hleNetAdhocctlAddNetwork(groupName, mac, adhocctlCurrentChannel, adhocctlCurrentIBSS, mode, null);
     }
 
-    public void hleNetAdhocctlAddNetwork(String groupName, pspNetMacAddress mac, int channel, String ibss, int mode) {
+    private Matcher getSsidMatcher(String ssid) {
+    	if (ssid == null) {
+    		return null;
+    	}
+
+    	Pattern p = Pattern.compile("PSP_([AXS])(.........)_([LG])_(.*)");
+		Matcher m = p.matcher(ssid);
+		if (!m.matches()) {
+			return null;
+		}
+
+		return m;
+    }
+
+    private int getProductType(String ssid) {
+		Matcher m = getSsidMatcher(ssid);
+		if (m == null) {
+			return -1;
+		}
+
+		switch (m.group(1)) {
+			case "A": return PSP_ADHOCCTL_TYPE_COMMERCIAL;
+			case "X": return PSP_ADHOCCTL_TYPE_DEBUG;
+			case "S": return PSP_ADHOCCTL_TYPE_SYSTEM;
+		}
+
+		log.error(String.format("Unknown product type '%s' in SSID='%s'", m.group(1), ssid));
+
+		return -1;
+    }
+
+    private String getProductId(String ssid) {
+    	Matcher m = getSsidMatcher(ssid);
+    	if (m == null) {
+    		return null;
+    	}
+
+    	return m.group(2);
+    }
+
+    private int getMode(String ssid) {
+    	Matcher m = getSsidMatcher(ssid);
+    	if (m == null) {
+    		return PSP_ADHOCCTL_MODE_NONE;
+    	}
+
+    	switch (m.group(3)) {
+    		case "L": return PSP_ADHOCCTL_MODE_NORMAL;
+    		case "G": return PSP_ADHOCCTL_MODE_GAMEMODE;
+    	}
+
+    	log.error(String.format("Unknown mode '%s' in SSID='%s'", m.group(3), ssid));
+
+		return PSP_ADHOCCTL_MODE_NONE;
+    }
+
+    private String getGroupName(String ssid) {
+    	Matcher m = getSsidMatcher(ssid);
+    	if (m == null) {
+    		return null;
+    	}
+
+    	return m.group(4);
+    }
+
+    public void hleNetAdhocctlAddNetwork(pspNetMacAddress mac, String ssid, byte[] ibss, int channel) {
+    	int productType = getProductType(ssid);
+    	String productId = getProductId(ssid);
+    	int mode = getMode(ssid);
+    	String groupName = getGroupName(ssid);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleNetAdhocctlAddNetwork mac=%s, ssid=%s(productType=%d, productId=%s, mode=%d, groupName=%s), channel=%d", mac, ssid, productType, productId, mode, groupName, channel));
+    	}
+
+    	hleNetAdhocctlAddNetwork(groupName, mac, channel, ibss, mode, ssid);
+    }
+
+    public void hleNetAdhocctlAddNetwork(String groupName, pspNetMacAddress mac, int channel, byte[] ibss, int mode, String ssid) {
 		boolean found = false;
 		for (AdhocctlNetwork network : networks) {
 			if (network.equals(channel, groupName, ibss, mode)) {
@@ -537,8 +620,9 @@ public class sceNetAdhocctl extends HLEModule {
 			AdhocctlNetwork network = new AdhocctlNetwork();
 			network.channel = channel;
 			network.name = groupName;
-			network.bssid = ibss;
+			network.ibss = ibss;
 			network.mode = mode;
+			network.ssid = ssid;
 			networks.add(network);
 
 			if (log.isDebugEnabled()) {
@@ -1086,7 +1170,7 @@ public class sceNetAdhocctl extends HLEModule {
         }
         paramsAddr.setValue32(0, adhocctlCurrentChannel);
         paramsAddr.setStringNZ(4, GROUP_NAME_LENGTH, adhocctlCurrentGroup);
-        paramsAddr.setStringNZ(12, IBSS_NAME_LENGTH, adhocctlCurrentIBSS);
+        paramsAddr.setArray(12, adhocctlCurrentIBSS, IBSS_NAME_LENGTH);
         paramsAddr.setStringNZ(18, NICK_NAME_LENGTH, sceUtility.getSystemParamNickname());
 
         return 0;
@@ -1135,8 +1219,8 @@ public class sceNetAdhocctl extends HLEModule {
         		buf.setStringNZ(offset, GROUP_NAME_LENGTH, network.name);
         		offset += GROUP_NAME_LENGTH;
 
-        		/** The BSSID */
-        		buf.setStringNZ(offset, IBSS_NAME_LENGTH, network.bssid);
+        		/** The IBSS */
+        		buf.setArray(offset, network.ibss, IBSS_NAME_LENGTH);
         		offset += IBSS_NAME_LENGTH;
 
         		/** Padding */

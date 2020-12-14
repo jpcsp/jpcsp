@@ -801,7 +801,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		int action;
 		String ssid;
 		int bssType;
-		byte[] bssid;
+		byte[] ibss;
 		pspNetMacAddress peerMacAddress;
 		switch (cmd) {
 			case CMD_GET_HW_SPEC:
@@ -977,7 +977,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 				final int rssi = 40; // RSSI - Received Signal Strength Indication, value range [0..40] for 1% to 100%
 				final int channel = 1;
-				bssid = null;
+				ibss = null;
 				for (int n = 0; n < count; n++) {
 					commandPacketPtr.setValue8(14 + n, (byte) rssi);
 
@@ -985,7 +985,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					switch (bssType) {
 						case BSS_TYPE_INFRASTRUCTURE:
 							capabilities |= 0x0001; // WLAN_CAPABILITY_BSS
-							bssid = new byte[] { 'J', 'p', 'c', 's', 'p', (byte) ('0' + n) };
+							ibss = String.format("Jpcsp%d", n).getBytes();
 							ssid = String.format("Jpcsp SSID %d", n + 1);
 							break;
 						case BSS_TYPE_ADHOC:
@@ -993,34 +993,35 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 							if (networks != null) {
 								if (n >= networks.size()) {
 									// Return other PSP MAC address
-									bssid = otherMacAddress;
+									ibss = otherMacAddress;
 									if (log.isDebugEnabled()) {
-										log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning other PSP MAC address: %s", sceNet.convertMacAddressToString(bssid)));
+										log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning other PSP MAC address: %s", sceNet.convertMacAddressToString(ibss)));
 									}
 								} else {
 									if (log.isDebugEnabled()) {
 										log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning network#%d: %s", n, networks.get(n)));
 									}
-									bssid = networks.get(n).bssid.getBytes();
+									ibss = networks.get(n).ibss;
+									ssid = networks.get(n).ssid;
 								}
 							} else {
 								if (n >= peers.size()) {
 									// Return myself
-									bssid = getMacAddress();
+									ibss = getMacAddress();
 									if (log.isDebugEnabled()) {
-										log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning myself: %s", sceNet.convertMacAddressToString(bssid)));
+										log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning myself: %s", sceNet.convertMacAddressToString(ibss)));
 									}
 								} else {
 									if (log.isDebugEnabled()) {
 										log.debug(String.format("processCommandPacket CMD_802_11_SCAN returning peer#%d: %s", n, peers.get(n)));
 									}
-									bssid = peers.get(n).macAddress;
+									ibss = peers.get(n).macAddress;
 								}
 							}
 							break;
 					}
 
-					commandPacketPtr.setArray(offset + 2, bssid);
+					commandPacketPtr.setArray(offset + 2, ibss, 6);
 					long packetTimestamp = 0x0L;
 					commandPacketPtr.setUnalignedValue64(offset + 8, packetTimestamp);
 					int beaconInterval = 100; // Need to be != 0
@@ -1215,7 +1216,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				gameModeEvent_80 = 0L;
 				break;
 			case CMD_802_11_AD_HOC_JOIN:
-				bssid = commandPacketPtr.getArray8(8, 6);
+				ibss = commandPacketPtr.getArray8(8, 6);
 				ssid = commandPacketPtr.getStringNZ(14, 32);
 				bssType = commandPacketPtr.getUnsignedValue8(46);
 				beaconPeriod = commandPacketPtr.getUnalignedValue16(47);
@@ -1236,7 +1237,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 							dataRatesString.append(String.format("0x%02X", dataRates[i] & 0xFF));
 						}
 					}
-					log.debug(String.format("processCommandPacket CMD_802_11_AD_HOC_JOIN bodySize=0x%X, bssid=%s, ssid='%s', bssType=0x%X, beaconPeriod=0x%X, dtimPeriod=0x%X, timestamp=0x%X, startTimestamp=0x%X, capabilities=0x%X, failTimeout=0x%X, probeDelay=0x%X, dataRates=%s", bodySize, convertMacAddressToString(bssid), ssid, bssType, beaconPeriod, dtimPeriod, timestamp, startTimestamp, capabilities, failTimeout, probeDelay, dataRatesString));
+					log.debug(String.format("processCommandPacket CMD_802_11_AD_HOC_JOIN bodySize=0x%X, bssid=%s, ssid='%s', bssType=0x%X, beaconPeriod=0x%X, dtimPeriod=0x%X, timestamp=0x%X, startTimestamp=0x%X, capabilities=0x%X, failTimeout=0x%X, probeDelay=0x%X, dataRates=%s", bodySize, convertMacAddressToString(ibss), ssid, bssType, beaconPeriod, dtimPeriod, timestamp, startTimestamp, capabilities, failTimeout, probeDelay, dataRatesString));
 				}
 
 				setSsid(ssid);

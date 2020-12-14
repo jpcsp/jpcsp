@@ -51,7 +51,6 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhoc;
-import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.mmio.MMIOHandlerWlan;
 import jpcsp.network.BaseWlanAdapter;
@@ -448,10 +447,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		sendDataPacket(dataPacket, 0, dataPacket.length);
 	}
 
-	private void sendProbeRequest(String ssid) throws IOException {
-		byte[] buffer = new byte[100];
-		int offset = 0;
-
+	private int addHeader(byte[] buffer, int offset, int type, byte[] destMacAddress, int destMacAddressOffset, byte[] bssId) {
 		write8(buffer, offset, 0); // Header revision
 		offset++;
 		write8(buffer, offset, 0); // Header pad
@@ -477,93 +473,26 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		offset += 2;
 		writeUnaligned16(buffer, headerLengthOffset, offset);
 
-		write8(buffer, offset, 0x40); // Frame Control Version/Type/Subtype for Probe Request
+		write8(buffer, offset, type); // Frame Control Version/Type/Subtype for Probe Response
 		offset++;
 		write8(buffer, offset, 0x00); // Frame Control Flags
 		offset++;
 		writeUnaligned16(buffer, offset, 0xFFFF); // Duration
 		offset += 2;
 
-		writeMacAddress(buffer, offset, ANY_MAC_ADDRESS); // Destination address
+		writeMacAddress(buffer, offset, destMacAddress, destMacAddressOffset); // Destination address
 		offset += MAC_ADDRESS_LENGTH;
 		writeMacAddress(buffer, offset, getMacAddress()); // Source address
 		offset += MAC_ADDRESS_LENGTH;
-		writeMacAddress(buffer, offset, ANY_MAC_ADDRESS); // BSS Id
+		writeMacAddress(buffer, offset, bssId); // BSS Id
 		offset += MAC_ADDRESS_LENGTH;
 		writeUnaligned16(buffer, offset, 0x0000); // Fragment number/Sequence number
 		offset += 2;
 
-		write8(buffer, offset, 0x00); // Tag Number: SSID parameter set
-		offset++;
-		byte[] ssidBytes = ssid == null ? new byte[0] : ssid.getBytes();
-		write8(buffer, offset, ssidBytes.length); // Tag length
-		offset++;
-		if (ssidBytes.length > 0) {
-			System.arraycopy(ssidBytes, 0, buffer, offset, ssidBytes.length);
-			offset += ssidBytes.length;
-		}
-
-		write8(buffer, offset, 0x01); // Tag Number: Supported Rates
-		offset++;
-		write8(buffer, offset, 4); // Tag length
-		offset++;
-		write8(buffer, offset, 0x82); // Supported Rates: 1(B)
-		offset++;
-		write8(buffer, offset, 0x84); // Supported Rates: 2(B)
-		offset++;
-		write8(buffer, offset, 0x8B); // Supported Rates: 5.5(B)
-		offset++;
-		write8(buffer, offset, 0x96); // Supported Rates: 11(B)
-		offset++;
-
-		sendRawMessage(buffer, 0, offset);
+		return offset;
 	}
 
-	private void sendProbeResponse(byte[] destMacAddress, int destMacAddresssOffset, String ssid, int channel) throws IOException {
-		byte[] buffer = new byte[100];
-		int offset = 0;
-
-		write8(buffer, offset, 0); // Header revision
-		offset++;
-		write8(buffer, offset, 0); // Header pad
-		offset++;
-		int headerLengthOffset = offset;
-		writeUnaligned16(buffer, offset, 0); // Header length (will be updated below)
-		offset += 2;
-		writeUnaligned32(buffer, offset, 0x0000482E); // Present flags
-		offset += 4;
-		write8(buffer, offset, 0); // Flags
-		offset++;
-		write8(buffer, offset, 0x04); // Data Rate
-		offset++;
-		writeUnaligned16(buffer, offset, 2412); // Channel frequency
-		offset += 2;
-		writeUnaligned16(buffer, offset, 0x00A0); // Channel flags
-		offset += 2;
-		write8(buffer, offset, -45); // Antenna signal: -45 dBm
-		offset++;
-		write8(buffer, offset, 1); // Antenna
-		offset++;
-		writeUnaligned16(buffer, offset, 0x0000); // RX flags
-		offset += 2;
-		writeUnaligned16(buffer, headerLengthOffset, offset);
-
-		write8(buffer, offset, 0x50); // Frame Control Version/Type/Subtype for Probe Response
-		offset++;
-		write8(buffer, offset, 0x00); // Frame Control Flags
-		offset++;
-		writeUnaligned16(buffer, offset, 0xFFFF); // Duration
-		offset += 2;
-
-		writeMacAddress(buffer, offset, destMacAddress, destMacAddresssOffset); // Destination address
-		offset += MAC_ADDRESS_LENGTH;
-		writeMacAddress(buffer, offset, getMacAddress()); // Source address
-		offset += MAC_ADDRESS_LENGTH;
-		writeMacAddress(buffer, offset, getMacAddress()); // BSS Id
-		offset += MAC_ADDRESS_LENGTH;
-		writeUnaligned16(buffer, offset, 0x0000); // Fragment number/Sequence number
-		offset += 2;
-
+	private int addProbeHeader(byte[] buffer, int offset) {
 		writeUnaligned64(buffer, offset, 0L); // Timestamp
 		offset += 8;
 		writeUnaligned16(buffer, offset, 100); // Beacon interval
@@ -571,6 +500,10 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		writeUnaligned16(buffer, offset, 0x0022); // Capabilities (WLAN_CAPABILITY_IBSS | WLAN_CAPABILITY_SHORT_PREAMBLE)
 		offset += 2;
 
+		return offset;
+	}
+
+	private int addTagSSID(byte[] buffer, int offset, String ssid) {
 		write8(buffer, offset, 0x00); // Tag Number: SSID parameter set
 		offset++;
 		byte[] ssidBytes = ssid == null ? new byte[0] : ssid.getBytes();
@@ -581,6 +514,21 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 			offset += ssidBytes.length;
 		}
 
+		return offset;
+	}
+
+	private int addTagCurrentChannel(byte[] buffer, int offset, int channel) {
+		write8(buffer, offset, 0x03); // Tag Number: Current Channel
+		offset++;
+		write8(buffer, offset, 1); // Tag length
+		offset++;
+		write8(buffer, offset, channel); // Channel number
+		offset++;
+
+		return offset;
+	}
+
+	private int addTagSupportedRates(byte[] buffer, int offset) {
 		write8(buffer, offset, 0x01); // Tag Number: Supported Rates
 		offset++;
 		write8(buffer, offset, 4); // Tag length
@@ -594,19 +542,41 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		write8(buffer, offset, 0x16); // Supported Rates: 11
 		offset++;
 
-		write8(buffer, offset, 0x03); // Tag Number: Current Channel
-		offset++;
-		write8(buffer, offset, 1); // Tag length
-		offset++;
-		write8(buffer, offset, channel); // Channel number
-		offset++;
+		return offset;
+	}
 
+	private int addTagATIMWindow(byte[] buffer, int offset) {
 		write8(buffer, offset, 0x06); // Tag Number: ATIM window
 		offset++;
 		write8(buffer, offset, 2); // Tag length
 		offset++;
 		writeUnaligned16(buffer, offset, 0); // ATIM window 0
 		offset += 2;
+
+		return offset;
+	}
+
+	private void sendProbeRequest(String ssid) throws IOException {
+		byte[] buffer = new byte[100];
+		int offset = 0;
+
+		offset = addHeader(buffer, offset, 0x40, ANY_MAC_ADDRESS, 0, ANY_MAC_ADDRESS);
+		offset = addTagSSID(buffer, offset, ssid);
+		offset = addTagSupportedRates(buffer, offset);
+
+		sendRawMessage(buffer, 0, offset);
+	}
+
+	private void sendProbeResponse(byte[] destMacAddress, int destMacAddresssOffset, String ssid, int channel) throws IOException {
+		byte[] buffer = new byte[100];
+		int offset = 0;
+
+		offset = addHeader(buffer, offset, 0x50, destMacAddress, destMacAddresssOffset, getMacAddress());
+		offset = addProbeHeader(buffer, offset);
+		offset = addTagSSID(buffer, offset, ssid);
+		offset = addTagSupportedRates(buffer, offset);
+		offset = addTagCurrentChannel(buffer, offset, channel);
+		offset = addTagATIMWindow(buffer, offset);
 
 		sendRawMessage(buffer, 0, offset);
 	}
@@ -615,90 +585,12 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		byte[] buffer = new byte[100];
 		int offset = 0;
 
-		write8(buffer, offset, 0); // Header revision
-		offset++;
-		write8(buffer, offset, 0); // Header pad
-		offset++;
-		int headerLengthOffset = offset;
-		writeUnaligned16(buffer, offset, 0); // Header length (will be updated below)
-		offset += 2;
-		writeUnaligned32(buffer, offset, 0x0000482E); // Present flags
-		offset += 4;
-		write8(buffer, offset, 0); // Flags
-		offset++;
-		write8(buffer, offset, 0x04); // Data Rate
-		offset++;
-		writeUnaligned16(buffer, offset, 2412); // Channel frequency
-		offset += 2;
-		writeUnaligned16(buffer, offset, 0x00A0); // Channel flags
-		offset += 2;
-		write8(buffer, offset, -45); // Antenna signal: -45 dBm
-		offset++;
-		write8(buffer, offset, 1); // Antenna
-		offset++;
-		writeUnaligned16(buffer, offset, 0x0000); // RX flags
-		offset += 2;
-		writeUnaligned16(buffer, headerLengthOffset, offset);
-
-		write8(buffer, offset, 0x80); // Frame Control Version/Type/Subtype for Beacon frame
-		offset++;
-		write8(buffer, offset, 0x00); // Frame Control Flags
-		offset++;
-		writeUnaligned16(buffer, offset, 0xFFFF); // Duration
-		offset += 2;
-
-		writeMacAddress(buffer, offset, ANY_MAC_ADDRESS); // Destination address
-		offset += MAC_ADDRESS_LENGTH;
-		writeMacAddress(buffer, offset, getMacAddress()); // Source address
-		offset += MAC_ADDRESS_LENGTH;
-		writeMacAddress(buffer, offset, getMacAddress()); // BSS Id
-		offset += MAC_ADDRESS_LENGTH;
-		writeUnaligned16(buffer, offset, 0x0000); // Fragment number/Sequence number
-		offset += 2;
-
-		writeUnaligned64(buffer, offset, 0L); // Timestamp
-		offset += 8;
-		writeUnaligned16(buffer, offset, 100); // Beacon interval
-		offset += 2;
-		writeUnaligned16(buffer, offset, 0x0022); // Capabilities (WLAN_CAPABILITY_IBSS | WLAN_CAPABILITY_SHORT_PREAMBLE)
-		offset += 2;
-
-		write8(buffer, offset, 0x00); // Tag Number: SSID parameter set
-		offset++;
-		byte[] ssidBytes = ssid == null ? new byte[0] : ssid.getBytes();
-		write8(buffer, offset, ssidBytes.length); // Tag length
-		offset++;
-		if (ssidBytes.length > 0) {
-			System.arraycopy(ssidBytes, 0, buffer, offset, ssidBytes.length);
-			offset += ssidBytes.length;
-		}
-
-		write8(buffer, offset, 0x03); // Tag Number: Current Channel
-		offset++;
-		write8(buffer, offset, 1); // Tag length
-		offset++;
-		write8(buffer, offset, channel); // Channel number
-		offset++;
-
-		write8(buffer, offset, 0x01); // Tag Number: Supported Rates
-		offset++;
-		write8(buffer, offset, 4); // Tag length
-		offset++;
-		write8(buffer, offset, 0x82); // Supported Rates: 1(B)
-		offset++;
-		write8(buffer, offset, 0x84); // Supported Rates: 2(B)
-		offset++;
-		write8(buffer, offset, 0x8B); // Supported Rates: 5.5(B)
-		offset++;
-		write8(buffer, offset, 0x96); // Supported Rates: 11(B)
-		offset++;
-
-		write8(buffer, offset, 0x06); // Tag Number: ATIM window
-		offset++;
-		write8(buffer, offset, 2); // Tag length
-		offset++;
-		writeUnaligned16(buffer, offset, 0); // ATIM window 0
-		offset += 2;
+		offset = addHeader(buffer, offset, 0x80, ANY_MAC_ADDRESS, 0, getMacAddress());
+		offset = addProbeHeader(buffer, offset);
+		offset = addTagSSID(buffer, offset, ssid);
+		offset = addTagCurrentChannel(buffer, offset, channel);
+		offset = addTagSupportedRates(buffer, offset);
+		offset = addTagATIMWindow(buffer, offset);
 
 		sendRawMessage(buffer, 0, offset);
 	}
@@ -778,7 +670,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 				int channel = 1;
 				String ssid = null;
 				pspNetMacAddress sourceMacAddress = new pspNetMacAddress(buffer, offset + headerLength + 10);
-				int mode = sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL;
+				byte[] ibss = sourceMacAddress.macAddress;
 				for (int i = offset + headerLength + 0x24; i < length; i += 2) {
 					int tagNumber = read8(buffer, i);
 					int tagLength = read8(buffer, i + 1);
@@ -790,9 +682,9 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 					i += tagLength;
 				}
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("processRawMessage Probe Response sourceMacAddress=%s, channel=%d, ssid=%s, mode=%d", sourceMacAddress, channel, ssid, mode));
+					log.debug(String.format("processRawMessage Probe Response sourceMacAddress=%s, ssid=%s, channel=%d", sourceMacAddress, ssid, channel));
 				}
-				Modules.sceNetAdhocctlModule.hleNetAdhocctlAddNetwork("", sourceMacAddress, channel, ssid, mode);
+				Modules.sceNetAdhocctlModule.hleNetAdhocctlAddNetwork(sourceMacAddress, ssid, ibss, channel);
 			} else {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("processRawMessage unknown frameControl=0x%04X", frameControlField));

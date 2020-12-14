@@ -36,7 +36,7 @@ public class JpcspAdhocctlMessage {
 	protected String nickName;
 	protected byte[] macAddress = new byte[MAC_ADDRESS_LENGTH];
 	protected String groupName;
-	protected String ibss;
+	protected byte[] ibss;
 	protected int mode;
 	protected int channel;
 	protected boolean gameModeComplete;
@@ -61,7 +61,8 @@ public class JpcspAdhocctlMessage {
 		offset += macAddress.length;
 		groupName = copyFromMessage(message, offset, GROUP_NAME_LENGTH);
 		offset += GROUP_NAME_LENGTH;
-		ibss = copyFromMessage(message, offset, IBSS_NAME_LENGTH);
+		ibss = new byte[IBSS_NAME_LENGTH];
+		copyFromMessage(message, offset, ibss);
 		offset += IBSS_NAME_LENGTH;
 		mode = copyInt32FromMessage(message, offset);
 		offset += 4;
@@ -209,6 +210,6 @@ public class JpcspAdhocctlMessage {
 			macs.append("]");
 		}
 
-		return String.format("JpcspAdhocctlMessage[nickName='%s', macAddress=%s, groupName='%s', IBSS='%s', mode=%d, channel=%d, gameModeComplete=%b%s]", nickName, sceNet.convertMacAddressToString(macAddress), groupName, ibss, mode, channel, gameModeComplete, macs.toString());
+		return String.format("JpcspAdhocctlMessage[nickName='%s', macAddress=%s, groupName='%s', IBSS='%s', mode=%d, channel=%d, gameModeComplete=%b%s]", nickName, sceNet.convertMacAddressToString(macAddress), groupName, pspNetMacAddress.toString(ibss), mode, channel, gameModeComplete, macs.toString());
 	}
 }

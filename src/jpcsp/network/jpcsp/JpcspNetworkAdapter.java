@@ -255,7 +255,7 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 			    	}
 
 			    	if (adhocctlMessage.ibss.equals(sceNetAdhocctlModule.hleNetAdhocctlGetIBSS())) {
-			    		sceNetAdhocctlModule.hleNetAdhocctlAddNetwork(adhocctlMessage.groupName, new pspNetMacAddress(adhocctlMessage.macAddress), adhocctlMessage.channel, adhocctlMessage.ibss, adhocctlMessage.mode);
+			    		sceNetAdhocctlModule.hleNetAdhocctlAddNetwork(adhocctlMessage.groupName, new pspNetMacAddress(adhocctlMessage.macAddress), adhocctlMessage.channel, adhocctlMessage.ibss, adhocctlMessage.mode, null);
 
 			    		if (adhocctlMessage.mode == PSP_ADHOCCTL_MODE_GAMEMODE) {
 			    			sceNetAdhocctlModule.hleNetAdhocctlAddGameModeMac(adhocctlMessage.macAddress);
