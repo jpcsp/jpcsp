@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
+import jpcsp.Emulator;
+import jpcsp.Processor;
+import jpcsp.Allegrex.Cp0State;
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.BufferInfo.LengthInfo;
 import jpcsp.HLE.BufferInfo.Usage;
@@ -28,16 +31,102 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.interrupts.AbstractInterruptHandler;
+import jpcsp.memory.mmio.MMIOHandlerInterruptMan;
+import jpcsp.scheduler.Scheduler;
+import jpcsp.util.HLEUtilities;
+
+import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
+import static jpcsp.HLE.kernel.managers.IntrManager.EXCEP_INT;
+import static jpcsp.HLE.kernel.managers.IntrManager.IP2;
+import static jpcsp.memory.mmio.MMIOHandlerInterruptMan.NUMBER_INTERRUPTS;
+import static jpcsp.util.Utilities.clearFlag;
 
 import org.apache.log4j.Logger;
 
 public class InterruptManager extends HLEModule {
     public static Logger log = Modules.getLogger("InterruptManager");
 
+	private int hleExceptionHandlerAddr;
+
+	private static class HLEInterruptHandler extends AbstractInterruptHandler {
+		private int interruptNumber;
+
+		public HLEInterruptHandler(int interruptNumber) {
+			this.interruptNumber = interruptNumber;
+		}
+
+		@Override
+		protected void executeInterrupt() {
+			IntrManager.getInstance().triggerInterrupt(interruptNumber);
+		}
+	}
+
+	private static class HLEExceptionHandler extends AbstractInterruptHandler {
+		private Processor processor;
+
+		public HLEExceptionHandler(Processor processor) {
+			this.processor = processor;
+		}
+
+		@Override
+		protected void executeInterrupt() {
+			int cause = processor.cp0.getCause();
+			int exceptionNumber = (cause & 0xFF) >> 2;
+
+			if (exceptionNumber == EXCEP_INT) {
+				int ipBits = (cause >> 8) & 0xFF;
+				if (ipBits == IP2) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("hleExceptionHandler for IP2"));
+					}
+
+					MMIOHandlerInterruptMan interruptMan = MMIOHandlerInterruptMan.getInstance(processor);
+					for (int interruptNumber = 0; interruptNumber < NUMBER_INTERRUPTS; interruptNumber++) {
+						if (interruptMan.hasInterruptTriggered(interruptNumber)) {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("hleExceptionHandler for interrupt %s", IntrManager.getInterruptName(interruptNumber)));
+							}
+							Scheduler.getInstance().addAction(new HLEInterruptHandler(interruptNumber));
+						}
+					}
+				} else {
+					log.error(String.format("hleExceptionHandler unimplemented IP 0x%02X", ipBits));
+				}
+			} else {
+				log.error(String.format("hleExceptionHandler unimplemented exceptionNumber=%d", exceptionNumber));
+			}
+
+			// Clear the EXL bit
+			int status = processor.cp0.getStatus();
+			status = clearFlag(status, Cp0State.STATUS_EXL); // Clear EXL bit
+			processor.cp0.setStatus(status);
+		}
+	}
+
+	@Override
+	public void start() {
+		hleExceptionHandlerAddr = HLEUtilities.getInstance().installHLEInterruptHandler(this, "hleExceptionHandler");
+		super.start();
+	}
+
 	@Override
 	public void stop() {
 		Managers.intr.stop();
 		super.stop();
+	}
+
+	public void hleEnableInterrupt(int interruptNumber) {
+    	Processor processor = Emulator.getProcessor();
+		MMIOHandlerInterruptMan interruptMan = MMIOHandlerInterruptMan.getInstance(processor);
+		interruptMan.enableInterrupt(interruptNumber);
+		processor.cp0.setStatus(processor.cp0.getStatus() | (IP2 << 8));
+		processor.cp0.setEbase(hleExceptionHandlerAddr);
+	}
+
+	@HLEFunction(nid = HLESyscallNid, version = 150)
+    public void hleExceptionHandler(Processor processor) throws Exception {
+		Scheduler.getInstance().addAction(new HLEExceptionHandler(processor));
 	}
 
 	@HLEFunction(nid = 0xCA04A2B9, version = 150)
@@ -110,13 +199,11 @@ public class InterruptManager extends HLEModule {
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x0C5F7AE3, version = 150)
-	public int sceKernelCallSubIntrHandler(int intrNum, int subIntrNum, int handlerArg0, int handlerArg2) {
-		return 0;
+	public int sceKernelCallSubIntrHandler(int intrNumber, int subIntrNumber, int handlerArg0, int handlerArg2) {
+		return Managers.intr.sceKernelCallSubIntrHandler(intrNumber, subIntrNumber, handlerArg0, handlerArg2);
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x58DD8978, version = 150)
 	public int sceKernelRegisterIntrHandler(int intrNumber, int unknown, TPointer func, int funcArg, @CanBeNull @BufferInfo(lengthInfo=LengthInfo.fixedLength, length=12, usage=Usage.in) TPointer32 handler) {
 		return Managers.intr.sceKernelRegisterIntrHandler(intrNumber, unknown, func, funcArg, handler);

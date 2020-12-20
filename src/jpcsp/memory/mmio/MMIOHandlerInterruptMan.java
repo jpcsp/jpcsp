@@ -18,7 +18,7 @@ package jpcsp.memory.mmio;
 
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.clearInterruptException;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.triggerInterruptException;
-import static jpcsp.HLE.kernel.managers.ExceptionManager.IP2;
+import static jpcsp.HLE.kernel.managers.IntrManager.IP2;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_ATA_INTR;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_I2C_INTR;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
@@ -43,7 +43,7 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 	private static final int STATE_VERSION = 0;
 	private static MMIOHandlerProxyOnCpu instance;
 	public static final int BASE_ADDRESS = 0xBC300000;
-	private static final int NUMBER_INTERRUPTS = 64;
+	public static final int NUMBER_INTERRUPTS = 64;
 	private final boolean interruptTriggered[] = new boolean[NUMBER_INTERRUPTS];
 	private final boolean interruptEnabled[] = new boolean[NUMBER_INTERRUPTS];
 	private final boolean interruptOccurred[] = new boolean[NUMBER_INTERRUPTS];
@@ -111,6 +111,17 @@ public class MMIOHandlerInterruptMan extends MMIOHandlerBase {
 			interruptTriggered[interruptNumber] = false;
 			checkException();
 		}
+	}
+
+	public void enableInterrupt(int interruptNumber) {
+		if (!hasInterruptEnabled(interruptNumber)) {
+			interruptEnabled[interruptNumber] = true;
+			checkException();
+		}
+	}
+
+	public boolean hasInterruptEnabled(int interruptNumber) {
+		return interruptEnabled[interruptNumber];
 	}
 
 	public boolean hasInterruptTriggered(int interruptNumber) {

@@ -44,6 +44,31 @@ import org.apache.log4j.Logger;
 public class IntrManager {
     protected static Logger log = Modules.getLogger("ThreadManForUser");
 
+    // Exceptions
+	public static final int EXCEP_INT = 0; // Interrupt
+	public static final int EXCEP_ADEL = 4; // Load of instruction fetch exception
+	public static final int EXCEP_ADES = 5; // Address store exception
+	public static final int EXCEP_IBE = 6; // Instruction fetch bus error
+	public static final int EXCEP_DBE = 7; // Load/store bus error
+	public static final int EXCEP_SYS = 8; // Syscall
+	public static final int EXCEP_BP = 9; // Breakpoint
+	public static final int EXCEP_RI = 10; // Reserved instruction
+	public static final int EXCEP_CPU = 11; // Coprocessor unusable
+	public static final int EXCEP_OV = 12; // Arithmetic overflow
+	public static final int EXCEP_FPE = 15; // Floating-point exception
+	public static final int EXCEP_WATCH = 23; // Watch (reference to WatchHi/WatchLo)
+	public static final int EXCEP_VCED = 31; // "Virtual Coherency Exception Data" (used for NMI handling apparently)
+
+	public static final int IP0 = (1 << 0);
+	public static final int IP1 = (1 << 1);
+	public static final int IP2 = (1 << 2);
+	public static final int IP3 = (1 << 3);
+	public static final int IP4 = (1 << 4);
+	public static final int IP5 = (1 << 5);
+	public static final int IP6 = (1 << 6);
+	public static final int IP7 = (1 << 7);
+
+	// Interrupts
 	public static final int PSP_GPIO_INTR                        =  4;
 	public static final int PSP_ATA_INTR                         =  5;
 	public static final int PSP_UMD_INTR                         =  6;
@@ -336,6 +361,9 @@ public class IntrManager {
 	}
 
 	public void setInsideInterrupt(boolean insideInterrupt) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setInsideInterrupt insideInterrupt=%b", insideInterrupt));
+		}
 		this.insideInterrupt = insideInterrupt;
 	}
 
@@ -432,9 +460,41 @@ public class IntrManager {
 			return -1;
 		}
 
+		int size = handler.getValue(0);
+		int attr = handler.getValue(4);
+		int cb = handler.getValue(8);
 		int gp = Managers.modules.getModuleGpByAddress(func.getAddress());
-		AbstractInterruptHandler interruptHandler = new InterruptHandler(func, gp, funcArg);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceKernelRegisterIntrHandler intrNumber=0x%X, func=%s, gp=0x%08X, funcArg=0x%08X, size=0x%X, attr=0x%X, cb=0x%08X", intrNumber, func, gp, funcArg, size, attr, cb));
+		}
+
+		if (intrHandlers[intrNumber] == null) {
+			IntrHandler intrHandler = new IntrHandler();
+			intrHandlers[intrNumber] = intrHandler;
+		}
+
+		AbstractInterruptHandler interruptHandler = new InterruptHandler(func, gp, intrNumber, funcArg, cb);
 		addInterruptHandler(intrNumber, interruptHandler);
+
+		return 0;
+	}
+
+	public int sceKernelCallSubIntrHandler(int intrNumber, int subIntrNumber, int handlerArg0, int handlerArg2) {
+		if (intrNumber < 0 || intrNumber >= IntrManager.PSP_NUMBER_INTERRUPTS) {
+			return -1;
+		}
+
+		SubIntrHandler subIntrHandler = intrHandlers[intrNumber].getSubIntrHandler(subIntrNumber);
+		if (subIntrHandler == null) {
+			return -1;
+		}
+
+		if (isInsideInterrupt()) {
+			Modules.ThreadManForUserModule.executeCallback(subIntrHandler.getAddress(), subIntrHandler.getGp(), null, subIntrHandler.getId(), subIntrHandler.getArgument());
+		} else {
+			triggerInterrupt(intrNumber, null, null, subIntrHandler);
+		}
 
 		return 0;
 	}

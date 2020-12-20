@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types.interrupts;
 
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_VBLANK_INTR;
+import static jpcsp.HLE.kernel.managers.IntrManager.VBLANK_SCHEDULE_MICROS;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -27,7 +30,7 @@ import jpcsp.scheduler.Scheduler;
 public class VBlankInterruptHandler extends AbstractInterruptHandler {
 	private List<IAction> vblankActions = new LinkedList<IAction>();
 	private List<IAction> vblankActionsOnce = new LinkedList<IAction>();
-	private long nextVblankSchedule = IntrManager.VBLANK_SCHEDULE_MICROS;
+	private long nextVblankSchedule = VBLANK_SCHEDULE_MICROS;
 
 	@Override
 	protected void executeInterrupt() {
@@ -37,10 +40,10 @@ public class VBlankInterruptHandler extends AbstractInterruptHandler {
 		scheduler.addAction(nextVblankSchedule, this);
 
 		// The next VBlank schedule is the next 1/60 interval after now
-		nextVblankSchedule += IntrManager.VBLANK_SCHEDULE_MICROS;
+		nextVblankSchedule += VBLANK_SCHEDULE_MICROS;
 		long now = Scheduler.getNow();
 		while (nextVblankSchedule < now) {
-			nextVblankSchedule += IntrManager.VBLANK_SCHEDULE_MICROS;
+			nextVblankSchedule += VBLANK_SCHEDULE_MICROS;
 		}
 
 		// Execute all the registered VBlank actions (each time)
@@ -59,7 +62,7 @@ public class VBlankInterruptHandler extends AbstractInterruptHandler {
 		vblankActionsOnce.clear();
 
 		// Trigger VBLANK interrupt
-		IntrManager.getInstance().triggerInterrupt(IntrManager.PSP_VBLANK_INTR, null, null);
+		IntrManager.getInstance().triggerInterrupt(PSP_VBLANK_INTR);
 	}
 
 	public void addVBlankAction(IAction action) {

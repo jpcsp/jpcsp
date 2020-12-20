@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.HLE.kernel.managers.IntrManager.IP2;
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_MECODEC_INTR;
 import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.hasBit;
@@ -32,7 +33,6 @@ import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.ResetException;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Usb;
@@ -422,7 +422,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 				}
 				MMIOHandlerMeCore.getInstance().hleStartMeCommand();
 				RuntimeContextLLE.triggerInterrupt(RuntimeContextLLE.getMediaEngineProcessor(), PSP_MECODEC_INTR);
-				RuntimeContextLLE.getMediaEngineProcessor().triggerException(ExceptionManager.IP2);
+				RuntimeContextLLE.getMediaEngineProcessor().triggerException(IP2);
 			} else {
 				// Interrupt from the Media Engine cpu to the main cpu
 				if (log.isDebugEnabled()) {

@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.mediaengine;
 
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.pendingInterruptIPbitsME;
-import static jpcsp.HLE.kernel.managers.ExceptionManager.EXCEP_INT;
+import static jpcsp.HLE.kernel.managers.IntrManager.EXCEP_INT;
 import static jpcsp.mediaengine.MEMemory.SIZE_ME_RAM;
 import static jpcsp.util.Utilities.dumpToFile;
 import static jpcsp.util.Utilities.hasFlag;

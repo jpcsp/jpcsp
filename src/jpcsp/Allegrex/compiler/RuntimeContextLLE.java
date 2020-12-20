@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.HLE.kernel.managers.IntrManager.EXCEP_BP;
+import static jpcsp.HLE.kernel.managers.IntrManager.EXCEP_INT;
+import static jpcsp.HLE.kernel.managers.IntrManager.EXCEP_SYS;
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.notHasFlag;
 import static jpcsp.util.Utilities.readCompleteFile;
@@ -34,7 +37,6 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.Cp0State;
 import jpcsp.HLE.HLEModuleManager;
 import jpcsp.HLE.kernel.Managers;
-import jpcsp.HLE.kernel.managers.ExceptionManager;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.reboot;
@@ -210,7 +212,7 @@ public class RuntimeContextLLE {
 
 	public static int triggerSyscallException(Processor processor, int syscallCode, boolean inDelaySlot) {
 		processor.cp0.setSyscallCode(syscallCode << 2);
-		int pc = triggerException(processor, ExceptionManager.EXCEP_SYS, inDelaySlot);
+		int pc = triggerException(processor, EXCEP_SYS, inDelaySlot);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Calling exception handler for Syscall at 0x%08X, epc=0x%08X", pc, processor.cp0.getEpc()));
@@ -220,7 +222,7 @@ public class RuntimeContextLLE {
 	}
 
 	public static int triggerBreakException(Processor processor, boolean inDelaySlot) {
-		int pc = triggerException(processor, ExceptionManager.EXCEP_BP, inDelaySlot);
+		int pc = triggerException(processor, EXCEP_BP, inDelaySlot);
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Calling exception handler for Break at 0x%08X, epc=0x%08X", pc, processor.cp0.getEpc()));
@@ -365,7 +367,7 @@ public class RuntimeContextLLE {
 
 			// The compiler is only calling this function when
 			// we are not in a delay slot
-			int pc = prepareExceptionHandlerCall(processor, ExceptionManager.EXCEP_INT, false);
+			int pc = prepareExceptionHandlerCall(processor, EXCEP_INT, false);
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Calling exception handler for %s at 0x%08X, epc=0x%08X, cause=0x%X", MMIOHandlerInterruptMan.getInstance(processor).toStringInterruptTriggered(), pc, processor.cp0.getEpc(), processor.cp0.getCause()));

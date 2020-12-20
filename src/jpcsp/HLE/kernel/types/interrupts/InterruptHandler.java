@@ -18,20 +18,43 @@ package jpcsp.HLE.kernel.types.interrupts;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.IAction;
 
 public class InterruptHandler extends AbstractInterruptHandler {
 	private TPointer func;
 	private int gp;
+	private int interruptNumber;
 	private int funcArg;
+	private int cb;
 
-	public InterruptHandler(TPointer func, int gp, int funcArg) {
+	private static class AfterInterruptHandler implements IAction {
+		private boolean insideInterrupt;
+
+		public AfterInterruptHandler(boolean insideInterrupt) {
+			this.insideInterrupt = insideInterrupt;
+		}
+
+		@Override
+		public void execute() {
+			Managers.intr.setInsideInterrupt(insideInterrupt);
+		}
+	}
+
+	public InterruptHandler(TPointer func, int gp, int interruptNumber, int funcArg, int cb) {
 		this.func = func;
 		this.gp = gp;
+		this.interruptNumber = interruptNumber;
 		this.funcArg = funcArg;
+		this.cb = cb;
 	}
 
 	@Override
 	protected void executeInterrupt() {
-		Modules.ThreadManForUserModule.executeCallback(func.getAddress(), gp, null, funcArg);
+		IntrManager intrManager = Managers.intr;
+		boolean insideInterrupt = intrManager.isInsideInterrupt();
+		intrManager.setInsideInterrupt(true);
+		Modules.ThreadManForUserModule.executeCallback(func.getAddress(), gp, new AfterInterruptHandler(insideInterrupt), interruptNumber, funcArg, cb);
 	}
 }

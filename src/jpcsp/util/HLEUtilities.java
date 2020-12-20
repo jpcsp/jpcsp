@@ -148,6 +148,10 @@ public class HLEUtilities {
     	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.BREAK | (breakCode << 6);
     }
 
+    public static int ERET() {
+    	return (AllegrexOpcodes.COP0 << 26) | AllegrexOpcodes.ERET | 0x8;
+    }
+
     public void installHLESyscall(int address, HLEModule hleModule, String hleFunctionName) {
     	installHLESyscall(new TPointer(Memory.getInstance(), address), hleModule, hleFunctionName);
     }
@@ -199,5 +203,17 @@ public class HLEUtilities {
 
     public int installHLEThread(HLEModule hleModule, String hleFunctionName) {
     	return installHLEThread(allocateInternalMemory(8), hleModule, hleFunctionName);
+    }
+
+    public int installHLEInterruptHandler(HLEModule hleModule, String hleFunctionName) {
+    	int addr = allocateInternalMemory(16);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, 16, 4);
+        memoryWriter.writeNext(NOP()); // Do not start the CodeBlock with a SYSCALL, the compiler would assume it is not returning
+        memoryWriter.writeNext(SYSCALL(hleModule, hleFunctionName));
+        memoryWriter.writeNext(ERET());
+        memoryWriter.writeNext(NOP());
+        memoryWriter.flush();
+
+    	return addr;
     }
 }
