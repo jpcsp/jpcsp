@@ -647,7 +647,16 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		int headerRevision = read8(buffer, offset + 0);
 		if (headerRevision == 0x00) {
 			int headerLength = readUnaligned16(buffer, offset + 2);
-			if (pspNetMacAddress.isMyMacAddress(buffer, offset + headerLength + 10)) {
+			final int headerLength802_11 = 24;
+			if (headerLength + headerLength802_11 > length) {
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("Received raw message with an incorrect header length: packet length=0x%X, header length=0x%X", length, headerLength));
+				}
+				return;
+			}
+
+			final int sourceMacAddressOffset = offset + headerLength + 10;
+			if (pspNetMacAddress.isMyMacAddress(buffer, sourceMacAddressOffset)) {
 				log.trace(String.format("processRawMessage ignoring raw message coming from myself"));
 				return;
 			}
@@ -670,7 +679,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 				// Probe Request
 				int channel = 1;
 				String matchSsid = null;
-				for (int i = offset + headerLength + 0x24; i < length; i += 2) {
+				for (int i = offset + headerLength + headerLength802_11; i < length; i += 2) {
 					int tagNumber = read8(buffer, i);
 					int tagLength = read8(buffer, i + 1);
 					if (tagNumber == 0) {
@@ -681,7 +690,6 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 					i += tagLength;
 				}
 
-				int sourceMacAddressOffset = offset + headerLength + 10;
 				String currentSsid = MMIOHandlerWlan.getInstance().getSsid();
 				if (isSSIDMatching(currentSsid, matchSsid)) {
 					// Send the Probe Response back to the sender of the Probe Request
@@ -699,9 +707,9 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 				// Probe Response
 				int channel = 1;
 				String ssid = null;
-				pspNetMacAddress sourceMacAddress = new pspNetMacAddress(buffer, offset + headerLength + 10);
+				pspNetMacAddress sourceMacAddress = new pspNetMacAddress(buffer, sourceMacAddressOffset);
 				byte[] ibss = sourceMacAddress.macAddress;
-				for (int i = offset + headerLength + 0x24; i < length; i += 2) {
+				for (int i = offset + headerLength + headerLength802_11; i < length; i += 2) {
 					int tagNumber = read8(buffer, i);
 					int tagLength = read8(buffer, i + 1);
 					if (tagNumber == 0) {
