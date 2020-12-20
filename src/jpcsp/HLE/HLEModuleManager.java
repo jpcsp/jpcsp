@@ -155,7 +155,7 @@ public class HLEModuleManager {
         sceMpegVsh(Modules.sceMpegModule, new String[] { "mpeg_vsh", "mpeg_vsh370", }, "flash0:/kd/mpeg_vsh.prx"),
         sceMpegbase(Modules.sceMpegbaseModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC", "avcodec", "sceMpegbase_Driver" }, "flash0:/kd/avcodec.prx"),
         sceFont(Modules.sceFontModule, new String[] { "libfont", "sceFont_Library" }),
-        scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer", "psmf_jk", "scePsmfP_library" }),
+        scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer", "scePsmfP_library", "psmf_jk", "jkPsmfP_library" }),
         scePsmf(Modules.scePsmfModule, new String[] { "psmf", "scePsmf_library" }),
         sceMp3(Modules.sceMp3Module, new String[] { "PSP_AV_MODULE_MP3", "PSP_MODULE_AV_MP3", "LIBMP3", "sceMp3_Library" }),
         sceDeflt(Modules.sceDefltModule, new String[] { "libdeflt", "sceDEFLATE_Library", "DEFLATE_Library" }),
@@ -803,8 +803,8 @@ public class HLEModuleManager {
 
         	IAction onModuleStartAction = null;
 
-        	// loadcore.prx requires start parameters
         	if ("flash0:/kd/loadcore.prx".equals(moduleFileName)) {
+            	// loadcore.prx requires start parameters
         		onModuleStartAction = Modules.LoadCoreForKernelModule.getModuleStartAction();
         	}
 
