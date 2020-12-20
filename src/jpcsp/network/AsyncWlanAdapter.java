@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.scheduler.Scheduler.getNow;
 import static jpcsp.util.Utilities.getArray;
 
@@ -41,6 +42,7 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
 	private final Object wlanReceiverLock = new Object();
     private final List<byte[]> receivedWlanPackets = new LinkedList<byte[]>();
 	private WlanPacketsReceiverThread wlanPacketsReceiverThread;
+	private static final int maxReceivedWlanPacketsSize = 0; // 0 means no max limit
 	// For GameMode packets receiver
     private final Object gameModeReceiverLock = new Object();
     private final List<byte[]> receivedGameModePackets = new LinkedList<byte[]>();
@@ -125,6 +127,7 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
 	private class WlanPacketsReceiverThread extends BaseReceiverThread {
 		@Override
 		public void run() {
+			setLog4jMDC();
 			while (!exit) {
 				try {
 					long start = getNow();
@@ -133,8 +136,34 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
 						delay(start);
 					} else {
 						byte[] receivedWlanPacket = getArray(buffer, length);
+						int size;
+						boolean added;
 						synchronized (wlanReceiverLock) {
-							receivedWlanPackets.add(receivedWlanPacket);
+							size = receivedWlanPackets.size();
+							if (maxReceivedWlanPacketsSize > 0 && size >= maxReceivedWlanPacketsSize) {
+								added = false;
+							} else {
+								receivedWlanPackets.add(receivedWlanPacket);
+								added = true;
+							}
+						}
+
+						if (!added) {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Dropped packet, receivedWlanPackets size=%d", size));
+							}
+						} else if (size > 100) {
+							if ((size % 10) == 0) {
+								log.error(String.format("Extremely slow processing of network traffic (%d packets waiting in receive queue)", size));
+							}
+						} else if (size > 10) {
+							if ((size % 10) == 0) {
+								log.warn(String.format("Slow processing of network traffic (%d packets waiting in receive queue)", size));
+							}
+						} else {
+							if (log.isTraceEnabled()) {
+								log.trace(String.format("receivedWlanPackets size=%d", size));
+							}
 						}
 					}
 				} catch (IOException e) {
@@ -149,6 +178,7 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
 
 		@Override
 		public void run() {
+			setLog4jMDC();
 			while (!exit) {
 				try {
 					long start = getNow();
@@ -172,6 +202,7 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
     private class WlanPacketsSenderThread extends BaseSenderThread {
 		@Override
 		public void run() {
+			setLog4jMDC();
 			while (!exit) {
 				if (waitForSync()) {
 					while (!exit) {
@@ -200,6 +231,7 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
     private class GameModePacketsSenderThread extends BaseSenderThread {
 		@Override
 		public void run() {
+			setLog4jMDC();
 			while (!exit) {
 				if (waitForSync()) {
 					while (!exit) {
@@ -230,6 +262,7 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
     private class AccessPointPacketsSenderThread extends BaseSenderThread {
 		@Override
 		public void run() {
+			setLog4jMDC();
 			while (!exit) {
 				if (waitForSync()) {
 					while (!exit) {
