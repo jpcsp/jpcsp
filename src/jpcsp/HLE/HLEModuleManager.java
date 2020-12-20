@@ -806,6 +806,9 @@ public class HLEModuleManager {
         	if ("flash0:/kd/loadcore.prx".equals(moduleFileName)) {
             	// loadcore.prx requires start parameters
         		onModuleStartAction = Modules.LoadCoreForKernelModule.getModuleStartAction();
+        	} else if ("flash0:/kd/wlan.prx".equals(moduleFileName)) {
+            	// wlan.prx requires interrupts to be enabled
+        		onModuleStartAction = Modules.sceWlanModule.getModuleStartAction();
         	}
 
         	Modules.ModuleMgrForUserModule.hleKernelLoadAndStartModule(moduleFileName, startPriority++, onModuleStartAction);

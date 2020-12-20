@@ -19,6 +19,7 @@ package jpcsp.HLE.modules;
 import static jpcsp.HLE.HLEModuleManager.HLESyscallNid;
 import static jpcsp.HLE.Modules.sceNetIfhandleModule;
 import static jpcsp.HLE.Modules.sceWlanModule;
+import static jpcsp.HLE.kernel.managers.IntrManager.PSP_WLAN_INTR;
 import static jpcsp.HLE.kernel.managers.SceUidManager.INVALID_ID;
 import static jpcsp.HLE.kernel.types.SceNetIfMessage.TYPE_MULTICAST_ANY;
 import static jpcsp.HLE.kernel.types.SceNetIfMessage.TYPE_MULTICAST_GROUP;
@@ -191,7 +192,14 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 		}
     }
 
-    @Override
+	private class OnModuleStartAction implements IAction {
+		@Override
+		public void execute() {
+			onModuleStart();
+		}
+	}
+
+	@Override
 	public void start() {
 		wlanThreadUid = INVALID_ID;
 		activeMacAddresses = new LinkedList<pspNetMacAddress>();
@@ -215,6 +223,14 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
 
 		super.start();
 	}
+
+    public IAction getModuleStartAction() {
+    	return new OnModuleStartAction();
+    }
+
+    private void onModuleStart() {
+    	Modules.InterruptManagerModule.hleEnableInterrupt(PSP_WLAN_INTR);
+    }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleWlanThread() {
