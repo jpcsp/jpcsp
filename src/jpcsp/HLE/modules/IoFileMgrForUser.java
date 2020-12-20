@@ -3150,7 +3150,7 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x6A638D83, version = 150, checkInsideInterrupt = true)
-    public int sceIoRead(int id, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer data_addr, int size) {
+    public int sceIoRead(int id, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out, maxDumpLength = 0x1000) TPointer data_addr, int size) {
         return hleIoRead(id, data_addr.getAddress(), size, false);
     }
 
