@@ -199,13 +199,14 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	private boolean adhocStarted;
 	private boolean adhocJoined;
 	private boolean gameMode;
-	private long gameModeEvent_80;
+	private long gameModeEventSendMaster;
 	private long gameModeEvent_40;
 	private String adhocSsid;
     private AccessPoint accessPoint;
     private IWlanAdapter wlanAdapter;
     private final byte[] otherMacAddress = new byte[MAC_ADDRESS_LENGTH];
     private final byte[] gameModeGroupAddress = new byte[MAC_ADDRESS_LENGTH];
+    private final byte[] gameModeMasterAddress = new byte[MAC_ADDRESS_LENGTH];
 
     public static MMIOHandlerWlan getInstance() {
     	if (instance == null) {
@@ -380,7 +381,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 	@Override
 	protected int getInterruptBit() {
-		return 0x0000;
+		return 0x0070;
 	}
 
 	private void addResultFlag(int flag) {
@@ -397,13 +398,18 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 	private void setCardEvent(int cardEvent) {
 		cardEvent &= 0xFF;
+		if (hasResultFlag(WLAN_RESULT_EVENT_RECEIVED)) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("setCardEvent ignoring 0x%02X", cardEvent));
+			}
+		} else {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("setCardEvent 0x%02X", cardEvent));
+			}
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("setCardEvent 0x%02X", cardEvent));
+			setRegisterValue(WLAN_REG_EVENT_INFORMATION, 4, 0x00000010 | (cardEvent << 8));
+			addResultFlag(WLAN_RESULT_EVENT_RECEIVED);
 		}
-
-		setRegisterValue(WLAN_REG_EVENT_INFORMATION, 4, 0x00000010 | (cardEvent << 8));
-		addResultFlag(WLAN_RESULT_EVENT_RECEIVED);
 	}
 
 	private int getWlanOutputPacketSize() {
@@ -418,6 +424,15 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		return gameModeGroupAddress;
 	}
 
+	public byte[] getGameModeMasterAddress() {
+		return gameModeMasterAddress;
+	}
+
+	public boolean isGameModeMaster() {
+		// Am I the GameMode master?
+		return isMyMacAddress(gameModeMasterAddress);
+	}
+
 	private void sendGameModeEvents() {
 		if (!gameMode) {
 			return;
@@ -427,14 +442,17 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		if (gameModeEvent_40 != 0L) {
 			if (now >= gameModeEvent_40) {
 				setCardEvent(WLAN_EVENT_UNKNOWN_40);
-				gameModeEvent_80 = now + 5000;
+				gameModeEventSendMaster = now + 1000;
 				gameModeEvent_40 = 0L;
 			}
-		} else if (gameModeEvent_80 != 0L) {
-			if (now >= gameModeEvent_80) {
+		} else if (gameModeEventSendMaster != 0L) {
+			if (now >= gameModeEventSendMaster) {
 				setCardEvent(WLAN_EVENT_GAMEMODE_SEND_MASTER);
-				gameModeEvent_40 = now + 10000;
-				gameModeEvent_80 = now + 15000;
+				if (isGameModeMaster()) {
+					gameModeEvent_40 = now + 26000;
+				} else {
+					gameModeEventSendMaster = now + 15000;
+				}
 			}
 		}
 	}
@@ -595,10 +613,16 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 	private void receiveMessage() {
 		if (wlanAdapter == null) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("receiveMessage no wlanAdapter"));
+			}
 			return;
 		}
 
 		if (hasResultFlag(WLAN_RESULT_DATA_PACKET_RECEIVED)) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("receiveMessage data packet already received"));
+			}
 			return;
 		}
 
@@ -612,6 +636,9 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		}
 
 		if (receivedMessageLength < 0) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("receiveMessage no message available"));
+			}
 			return;
 		}
 
@@ -623,6 +650,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					log.debug(String.format("Received message not for me: destMacAddress=%s, sourceMacAddress=%s", pspNetMacAddress.toString(receivedMessage, 0), pspNetMacAddress.toString(receivedMessage, MAC_ADDRESS_LENGTH)));
 				}
 			}
+			return;
 		}
 
 		if (log.isDebugEnabled()) {
@@ -1213,7 +1241,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 				gameMode = false;
 				gameModeEvent_40 = 0L;
-				gameModeEvent_80 = 0L;
+				gameModeEventSendMaster = 0L;
 				break;
 			case CMD_802_11_AD_HOC_JOIN:
 				ibss = commandPacketPtr.getArray8(8, 6);
@@ -1339,10 +1367,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				byte[] unknown74 = commandPacketPtr.getArray8(72, unknown72);
 				int unknown90 = commandPacket.read16(90);
 				int unknown92 = commandPacket.read16(92);
-				pspNetMacAddress macAddress94 = new pspNetMacAddress(commandPacketPtr.getArray8(94, MAC_ADDRESS_LENGTH));
+				pspNetMacAddress macAddressGameMode = new pspNetMacAddress(commandPacketPtr.getArray8(94, MAC_ADDRESS_LENGTH));
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("processCommandPacket CMD_UNKNOWN_002A unknown8=0x%X, unknown16=0x%X, unknown17=0x%X, unknown18=0x%X, unknown19=0x%X, unknown20=0x%X, unknown21=0x%X, unknown22=0x%X, unknown23=0x%X, unknown24=0x%X, unknown28=0x%X, unknown32=0x%X, ssid='%s', macAddress66=%s, unknown72=0x%X, unknown74=%s, unknown90=0x%X, unknown92=0x%X, macAddress94=%s", unknown8, unknown16, unknown17, unknown18, unknown19, unknown20, unknown21, unknown22, unknown23, unknown24, unknown28, unknown32, ssid, macAddress66, unknown72, unknown74, unknown90, unknown92, macAddress94));
+					log.debug(String.format("processCommandPacket CMD_UNKNOWN_002A unknown8=0x%X, unknown16=0x%X, unknown17=0x%X, unknown18=0x%X, unknown19=0x%X, unknown20=0x%X, unknown21=0x%X, unknown22=0x%X, unknown23=0x%X, unknown24=0x%X, unknown28=0x%X, unknown32=0x%X, ssid='%s', macAddress66=%s, unknown72=0x%X, unknown74=%s, unknown90=0x%X, unknown92=0x%X, macAddressGameMode=%s", unknown8, unknown16, unknown17, unknown18, unknown19, unknown20, unknown21, unknown22, unknown23, unknown24, unknown28, unknown32, ssid, macAddress66, unknown72, unknown74, unknown90, unknown92, macAddressGameMode));
 				}
 
 				commandPacket.write32(8, unknown8);
@@ -1351,18 +1379,26 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				if (gameMode) {
 					if (unknown8 == 1) {
 						// Store the GameMode group address
-						System.arraycopy(macAddress94.macAddress, 0, gameModeGroupAddress, 0, MAC_ADDRESS_LENGTH);
+						System.arraycopy(macAddressGameMode.macAddress, 0, gameModeGroupAddress, 0, MAC_ADDRESS_LENGTH);
+						// Store the GameMode master address (this is the group address without the multicast bits)
+						System.arraycopy(gameModeGroupAddress, 0, gameModeMasterAddress, 0, MAC_ADDRESS_LENGTH);
+						gameModeMasterAddress[0] &= 0xFC; // Clear multicast bits
 
 						// Start sending events
-						gameModeEvent_80 = getNow() + 5000;
+						gameModeEventSendMaster = getNow() + 14000; // 14ms
 						gameModeEvent_40 = 0L;
 					} else if (unknown8 == 0) {
 						// Clear the GameMode group address
 						Arrays.fill(gameModeGroupAddress, (byte) 0);
+						Arrays.fill(gameModeMasterAddress, (byte) 0);
+
+						clearResultFlag(WLAN_RESULT_DATA_PACKET_RECEIVED);
 
 						// Stop sending events
-						gameModeEvent_80 = 0L;
+						gameModeEventSendMaster = 0L;
 						gameModeEvent_40 = 0L;
+					} else {
+						log.error(String.format("processCommandPacket CMD_UNKNOWN_002A unknown unknown8=0x%X, unknown16=0x%X, unknown17=0x%X, unknown18=0x%X, unknown19=0x%X, unknown20=0x%X, unknown21=0x%X, unknown22=0x%X, unknown23=0x%X, unknown24=0x%X, unknown28=0x%X, unknown32=0x%X, ssid='%s', macAddress66=%s, unknown72=0x%X, unknown74=%s, unknown90=0x%X, unknown92=0x%X, macAddressGameMode=%s", unknown8, unknown16, unknown17, unknown18, unknown19, unknown20, unknown21, unknown22, unknown23, unknown24, unknown28, unknown32, ssid, macAddress66, unknown72, unknown74, unknown90, unknown92, macAddressGameMode));
 					}
 				}
 				break;
@@ -1382,6 +1418,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 				} else {
 					log.error(String.format("processCommandPacket CMD_BBP_REG_ACCESS unimplemented action=%d(%s), registerNumber=0x%X, registerValue=0x%X", action, action == 1 ? "SET" : "GET", registerNumber, registerValue));
 				}
+				gameModeEvent_40 = getNow() + 100000; // 100ms
 				break;
 			default:
 				log.error(String.format("processCommandPacket unimplemented cmd=0x%X, size=0x%X, %s", cmd, size, Utilities.getMemoryDump(commandPacket, 0, size)));

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio;
 
 import static jpcsp.util.Utilities.endianSwap16;
+import static jpcsp.util.Utilities.hasFlag;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -331,6 +332,10 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 	}
 
 	private void writeSys(int sys) {
+		if (hasFlag(sys, MS_SYS_INTERRUPT)) {
+			clearInterrupt(getInterruptBit());
+		}
+
 		sys &= ~(MS_SYS_COMMAND | MS_SYS_INTERRUPT);
 
 		this.sys = sys;
