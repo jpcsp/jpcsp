@@ -76,6 +76,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	private volatile boolean disconnected;
 	private List<byte[]> receivedData = new LinkedList<byte[]>();
 	private byte[] lastDataReceived = null;
+	private int gameModeCounter;
 	private static final boolean workaroundBugMulticast = false;
 	private static final byte[] rawIdentifier = "802.11.Raw".getBytes();
 
@@ -369,6 +370,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		connected = false;
 		disconnected = false;
 		receivedData.clear();
+		gameModeCounter = 0;
 
 		connect();
 		enableChat();
@@ -381,6 +383,14 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 	@Override
 	public void sendWlanPacket(byte[] buffer, int offset, int length) throws IOException {
+		// In GameMode, the master is sending a beacon frame before sending its GameMode data packet 
+		byte[] gameModeGroupAddress = MMIOHandlerWlan.getInstance().getGameModeGroupAddress();
+		if (pspNetMacAddress.equals(gameModeGroupAddress, 0, buffer, offset) && MMIOHandlerWlan.getInstance().isGameModeMaster()) {
+			// If sending in GameMode and I am the Master, send a Beacon frame, including the Sony Specific GameMode counter
+			gameModeCounter = (gameModeCounter + 1) & 0xF;
+			sendBeacon(MMIOHandlerWlan.getInstance().getSsid(), 1, gameModeCounter);
+		}
+
 		sendDataPacket(buffer, offset, length);
 	}
 
@@ -581,8 +591,8 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		sendRawMessage(buffer, 0, offset);
 	}
 
-	private void sendBeacon(String ssid, int channel) throws IOException {
-		byte[] buffer = new byte[100];
+	private void sendBeacon(String ssid, int channel, int gameModeCounter) throws IOException {
+		byte[] buffer = new byte[200];
 		int offset = 0;
 
 		offset = addHeader(buffer, offset, 0x80, ANY_MAC_ADDRESS, 0, getMacAddress());
@@ -591,6 +601,26 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		offset = addTagCurrentChannel(buffer, offset, channel);
 		offset = addTagSupportedRates(buffer, offset);
 		offset = addTagATIMWindow(buffer, offset);
+
+		if (gameModeCounter >= 0) {
+			write8(buffer, offset, 0xDD); // Tag Number: Vendor Specific
+			offset++;
+			write8(buffer, offset, 10); // Tag length
+			offset++;
+			write8(buffer, offset + 0, 0x00); // OUI: Sony
+			write8(buffer, offset + 1, 0x04); // OUI: Sony
+			write8(buffer, offset + 2, 0x1F); // OUI: Sony
+			offset += 3;
+			// Vendor Specific Data
+			write8(buffer, offset + 0, 0x00); 
+			write8(buffer, offset + 1, 0x00); 
+			write8(buffer, offset + 2, 0x02); 
+			write8(buffer, offset + 3, gameModeCounter);
+			write8(buffer, offset + 4, 0x02);
+			write8(buffer, offset + 5, 0x0F);
+			write8(buffer, offset + 6, 0x08);
+			offset += 7;
+		}
 
 		sendRawMessage(buffer, 0, offset);
 	}
@@ -630,7 +660,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("processRawMessage Beacon frame, sending own Beacon"));
 					}
-					sendBeacon(MMIOHandlerWlan.getInstance().getSsid(), 1);
+					sendBeacon(MMIOHandlerWlan.getInstance().getSsid(), 1, -1);
 				} else {
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("processRawMessage Beacon frame in GameMode, ignoring"));
