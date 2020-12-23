@@ -728,8 +728,7 @@ public class sceMpeg extends HLEModule {
         		log.debug(String.format("hleMpegRingbufferPostPut calling callback 0x%08X with dataAddress=0x%08X, numPackets=0x%X", sceMpegRingbuffer.callbackAddr, callbackDataAddress, callbackNumPackets));
         	}
 
-            getProcessor().cpu._gp = sceMpegRingbuffer.gp;
-        	Modules.ThreadManForUserModule.executeCallback(null, sceMpegRingbuffer.callbackAddr, afterRingbufferPutCallback, false, callbackDataAddress, callbackNumPackets, sceMpegRingbuffer.callbackArgs);
+        	Modules.ThreadManForUserModule.executeCallback(sceMpegRingbuffer.callbackAddr, sceMpegRingbuffer.gp, afterRingbufferPutCallback, false, false, callbackDataAddress, callbackNumPackets, sceMpegRingbuffer.callbackArgs);
         } else {
         	int processedPackets = afterRingbufferPutCallback.getProcessedPackets();
         	processedPackets = Math.min(processedPackets, sceMpegRingbuffer.packetsInRingbuffer);
@@ -2921,8 +2920,7 @@ public class sceMpeg extends HLEModule {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceMpegRingbufferPut calling callback 0x%08X with dataAddress=0x%08X, numPackets=0x%X", sceMpegRingbuffer.callbackAddr, callbackDataAddress, callbackNumPackets));
     	}
-        getProcessor().cpu._gp = sceMpegRingbuffer.gp;
-    	Modules.ThreadManForUserModule.executeCallback(null, sceMpegRingbuffer.callbackAddr, afterRingbufferPutCallback, false, callbackDataAddress, callbackNumPackets, sceMpegRingbuffer.callbackArgs);
+    	Modules.ThreadManForUserModule.executeCallback(sceMpegRingbuffer.callbackAddr, sceMpegRingbuffer.gp, afterRingbufferPutCallback, false, false, callbackDataAddress, callbackNumPackets, sceMpegRingbuffer.callbackArgs);
 
         return afterRingbufferPutCallback.getReturnValue();
     }

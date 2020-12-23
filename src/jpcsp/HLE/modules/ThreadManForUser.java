@@ -1783,6 +1783,31 @@ public class ThreadManForUser extends HLEModule {
         callAddress(null, address, afterAction, true, true, new int[]{registerA0, registerA1, registerA2}, gp);
     }
 
+    /**
+     * Execute the code at the given address.
+     * The code is executed in the context of the currentThread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param address     address of the callback
+     * @param gp          value of the $gp register
+     * @param afterAction action to be executed after the completion of the callback
+     * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
+     * @param preserverCpuState preserve the complete CpuState while executing the callback.
+     *                    All the registers will be restored after the callback execution.
+     * @param registerA0  first parameter of the callback ($a0)
+     * @param registerA1  second parameter of the callback ($a1)
+     * @param registerA2  third parameter of the callback ($a2)
+     */
+    public void executeCallback(int address, int gp, IAction afterAction, boolean returnVoid, boolean preserveCpuState, int registerA0, int registerA1, int registerA2) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X), afterAction=%s", address, registerA0, registerA1, registerA2, afterAction));
+        }
+
+        callAddress(null, address, afterAction, returnVoid, preserveCpuState, new int[]{registerA0, registerA1, registerA2}, gp);
+    }
+
     private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, boolean preserveCpuState, int[] parameters) {
     	int gp = 0;
     	if (thread != null) {
