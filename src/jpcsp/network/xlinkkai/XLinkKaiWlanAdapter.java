@@ -155,6 +155,10 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	}
 
 	private void send(byte[] buffer, int offset, int length) throws IOException {
+		if (socket == null) {
+			return;
+		}
+
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("Sending bytes %s", Utilities.getMemoryDump(buffer, offset, length)));
 		}
@@ -193,6 +197,10 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	}
 
 	private byte[] receiveBytes() throws IOException {
+		if (socket == null) {
+			return null;
+		}
+
 		byte[] buffer = new byte[10000];
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 		try {
@@ -355,7 +363,19 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	public void start() throws IOException {
 		uniqueIdentifier = String.format("%s_%s", applicationName, convertMacAddressToString(Wlan.getMacAddress()));
 
-		destAddr = InetAddress.getByName(destServer);
+		while (true) {
+			try {
+				destAddr = InetAddress.getByName(destServer);
+				break;
+			} catch (UnknownHostException e) {
+				int response = showConfirmDialog(null, getBundle("jpcsp/languages/jpcsp").getString("XLinkKai.cannotConnect"), "XLink Kai", OK_CANCEL_OPTION, WARNING_MESSAGE);
+				if (response == OK_OPTION) {
+					// Retry
+				} else {
+					throw e;
+				}
+			}
+		}
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("XLink Kai server %s(%s), port %d", destServer, destAddr, destPort));
