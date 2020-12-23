@@ -330,7 +330,7 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xF79472D7, version = 150)
-    public int sceNetAdhocMatchingSendData(@CheckArgument("checkMatchingId") int matchingId, pspNetMacAddress macAddress, int dataLen, TPointer data) {
+    public int sceNetAdhocMatchingSendData(@CheckArgument("checkMatchingId") int matchingId, pspNetMacAddress macAddress, int dataLen, @BufferInfo(lengthInfo = LengthInfo.previousParameter, usage = Usage.in) TPointer data) {
         if (log.isTraceEnabled()) {
         	log.trace(String.format("Send data: %s", Utilities.getMemoryDump(data.getAddress(), dataLen)));
         }
