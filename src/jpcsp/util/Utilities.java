@@ -2055,6 +2055,13 @@ public class Utilities {
 		return true;
 	}
 
+	public static boolean equals(String a, String b) {
+		if (a == null) {
+			return b == null;
+		}
+
+		return a.equals(b);
+	}
 
     public static void patch(Memory mem, SceModule module, int offset, int oldValue, int newValue) {
     	patch(mem, module, offset, oldValue, newValue, 0xFFFFFFFF);

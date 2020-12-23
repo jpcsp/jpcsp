@@ -248,7 +248,7 @@ public class sceNetAdhocctl extends HLEModule {
     	public String ssid;
 
     	public boolean equals(int channel, String name, byte[] ibss, int mode) {
-    		return channel == this.channel && name.equals(this.name) && Utilities.equals(this.ibss, 0, ibss, 0, IBSS_NAME_LENGTH) && mode == this.mode;
+    		return channel == this.channel && mode == this.mode && Utilities.equals(name, this.name) && Utilities.equals(this.ibss, 0, ibss, 0, IBSS_NAME_LENGTH);
     	}
 
 		@Override
