@@ -357,7 +357,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 		}
 	}
 
-	private int getStatus() {
+	protected int getStatus() {
 		// Lowest 4 bits of the status are identical to bits 4..7 from MS_INT_REG_ADDRESS register
 		return (status & ~0xF) | ((getRegisterValue(MS_INT_REG_ADDRESS) >> 4) & 0xF);
 	}
@@ -379,7 +379,7 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 		checkInterrupt();
 	}
 
-	private void setInterrupt() {
+	protected void setInterrupt() {
 		setInterrupt(getInterruptBit());
 	}
 
@@ -405,11 +405,15 @@ public abstract class MMIOHandlerBaseMemoryStick extends MMIOHandlerBase {
 	protected abstract int getInterruptBit();
 
 	private void checkInterrupt() {
-		if (interrupt != 0) {
+		if (hasInterrupt()) {
 			RuntimeContextLLE.triggerInterrupt(getProcessor(), getInterruptNumber());
 		} else {
 			RuntimeContextLLE.clearInterrupt(getProcessor(), getInterruptNumber());
 		}
+	}
+
+	protected boolean hasInterrupt() {
+		return interrupt != 0;
 	}
 
 	protected boolean isMemoryStickPro() {

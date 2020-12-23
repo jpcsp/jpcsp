@@ -36,6 +36,7 @@ import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.readUnaligned16;
+import static jpcsp.util.Utilities.setFlag;
 import static jpcsp.util.Utilities.writeUnaligned32;
 
 import java.io.IOException;
@@ -381,15 +382,45 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 	@Override
 	protected int getInterruptBit() {
-		return 0x0070;
+		return 0x0070; // Value found by tracing on a real PSP
+	}
+
+	private boolean hasPendingResult() {
+		return hasResultFlag(WLAN_RESULT_READY_TO_SEND_DATA | WLAN_RESULT_DATA_PACKET_RECEIVED | WLAN_RESULT_READY_TO_SEND_COMMAND | WLAN_RESULT_EVENT_RECEIVED | WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE);
+	}
+
+	private void checkResultInterrupt() {
+		if (hasPendingResult()) {
+			setInterrupt();
+		}
+	}
+
+	@Override
+	protected int getStatus() {
+		int status = super.getStatus();
+
+		// The WLAN interrupt handler is expecting to have both
+		//     MS_INT_REG_CED and MS_INT_REG_BREQ
+		// flags set in the status (i.e. in the lower 4 bits of the status).
+		if (hasInterrupt() && (status & 0x000F) == (MS_INT_REG_CED >> 4) && hasPendingResult()) {
+			status = setFlag(status, MS_INT_REG_BREQ >> 4);
+		}
+
+		return status;
 	}
 
 	private void addResultFlag(int flag) {
-		registers[WLAN_REG_RESULT] |= flag;
+		if (!hasResultFlag(flag)) {
+			registers[WLAN_REG_RESULT] |= flag;
+			checkResultInterrupt();
+		}
 	}
 
 	private void clearResultFlag(int flag) {
-		registers[WLAN_REG_RESULT] &= ~flag;
+		if (hasResultFlag(flag)) {
+			registers[WLAN_REG_RESULT] &= ~flag;
+			checkResultInterrupt();
+		}
 	}
 
 	private boolean hasResultFlag(int flag) {
@@ -409,6 +440,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 			setRegisterValue(WLAN_REG_EVENT_INFORMATION, 4, 0x00000010 | (cardEvent << 8));
 			addResultFlag(WLAN_RESULT_EVENT_RECEIVED);
+			setInterrupt();
 		}
 	}
 
@@ -448,7 +480,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		} else if (gameModeEventSendMaster != 0L) {
 			if (now >= gameModeEventSendMaster) {
 				setCardEvent(WLAN_EVENT_GAMEMODE_SEND_MASTER);
-				if (isGameModeMaster()) {
+				if (isGameModeMaster() || true) {
 					gameModeEvent_40 = now + 26000;
 				} else {
 					gameModeEventSendMaster = now + 15000;
@@ -482,11 +514,12 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		switch (register) {
 			case WLAN_REG_RESULT:
 				// Writing to this register seems to only have the effect to clear bits of its value
-				value = registers[register] & value;
+				clearResultFlag(~value);
+				break;
+			default:
+				super.setRegisterValue(register, value);
 				break;
 		}
-
-		super.setRegisterValue(register, value);
 
 		switch (register) {
 			case 0x56:
@@ -1072,7 +1105,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 					commandPacketPtr.setUnsignedValue8(params + 2, channel); // Channel number
 					params += 2 + commandPacketPtr.getUnsignedValue8(params + 1);
 
-					int ssidLength = ssid.length();
+					int ssidLength = ssid == null ? 0 : ssid.length();
 					commandPacketPtr.setUnsignedValue8(params + 0, 0); // WLAN_EID_SSID
 					commandPacketPtr.setUnsignedValue8(params + 1, ssidLength); // length
 					commandPacketPtr.setStringNZ(params + 2, ssidLength, ssid);
@@ -1385,8 +1418,12 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 						gameModeMasterAddress[0] &= 0xFC; // Clear multicast bits
 
 						// Start sending events
-						gameModeEventSendMaster = getNow() + 14000; // 14ms
-						gameModeEvent_40 = 0L;
+//						gameModeEventSendMaster = getNow() + 14000; // 14ms
+//						gameModeEvent_40 = 0L;
+						gameModeEventSendMaster = 0L;
+						gameModeEvent_40 = getNow() + 14000; // 14ms
+					} else if (unknown8 == 4 || unknown8 == 9 || unknown8 == 10 || unknown8 == 11) {
+						// Ignored
 					} else if (unknown8 == 0) {
 						// Clear the GameMode group address
 						Arrays.fill(gameModeGroupAddress, (byte) 0);
