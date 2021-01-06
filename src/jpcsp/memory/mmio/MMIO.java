@@ -44,6 +44,7 @@ import jpcsp.memory.mmio.uart.MMIOHandlerUart3;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart4;
 import jpcsp.memory.mmio.uart.MMIOHandlerUartBase;
 import jpcsp.memory.mmio.umd.MMIOHandlerUmdAta;
+import jpcsp.memory.mmio.wlan.MMIOHandlerWlan;
 import jpcsp.memory.mmio.umd.MMIOHandlerAta2;
 import jpcsp.memory.mmio.umd.MMIOHandlerUmd;
 import jpcsp.state.StateInputStream;
@@ -73,6 +74,10 @@ public class MMIO extends Memory {
     	for (IMMIOHandler handler : sortedHandlers.values()) {
     		handler.reset();
     	}
+    }
+
+    public Memory getBackendMemory() {
+    	return mem;
     }
 
     @Override

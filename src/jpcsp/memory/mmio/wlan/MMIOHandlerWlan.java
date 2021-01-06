@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio;
+package jpcsp.memory.mmio.wlan;
 
 import static jpcsp.HLE.kernel.managers.IntrManager.PSP_WLAN_INTR;
 import static jpcsp.HLE.kernel.types.SceNetWlanMessage.WLAN_PROTOCOL_SUBTYPE_CONTROL;
@@ -54,6 +54,8 @@ import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.HLE.modules.sceWlan;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.IntArrayMemory;
+import jpcsp.memory.mmio.MMIOHandlerBaseMemoryStick;
+import jpcsp.memory.mmio.MMIOHandlerDdr;
 import jpcsp.network.IWlanAdapter;
 import jpcsp.network.WlanAdapterFactory;
 import jpcsp.network.accesspoint.AccessPoint;

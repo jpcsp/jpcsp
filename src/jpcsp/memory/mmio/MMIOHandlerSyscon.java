@@ -88,6 +88,7 @@ import jpcsp.hardware.LED;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Model;
 import jpcsp.hardware.UMDDrive;
+import jpcsp.memory.mmio.wlan.MMIOHandlerWlan;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;

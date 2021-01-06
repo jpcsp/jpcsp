@@ -52,7 +52,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.hardware.Wlan;
-import jpcsp.memory.mmio.MMIOHandlerWlan;
+import jpcsp.memory.mmio.wlan.MMIOHandlerWlan;
 import jpcsp.network.BaseWlanAdapter;
 import jpcsp.network.protocols.EtherFrame;
 import jpcsp.settings.AbstractBoolSettingsListener;

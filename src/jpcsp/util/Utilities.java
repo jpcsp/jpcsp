@@ -2212,6 +2212,10 @@ public class Utilities {
     	return value | flag;
     }
 
+    public static int setFlag(int value1, int value2, int flag) {
+    	return setFlag(clearFlag(value1, flag), value2 & flag);
+    }
+
     public static int clearFlag(int value, int flag) {
     	return value & ~flag;
     }

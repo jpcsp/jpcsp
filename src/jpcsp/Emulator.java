@@ -350,12 +350,15 @@ public class Emulator implements Runnable {
     private static void PauseEmu(boolean hasStatus, int status) {
         if (run && !pause) {
             pause = true;
+            Emulator.status = status;
 
             if (hasStatus) {
                 StepLogger.setStatus(status);
             }
 
-            gui.RefreshButtons();
+            if (gui != null) {
+            	gui.RefreshButtons();
+            }
 
             if (State.debugger != null) {
                 State.debugger.RefreshButtons();
@@ -393,6 +396,7 @@ public class Emulator implements Runnable {
     public static final int EMU_STATUS_HALT = 0x200;
     public static final int EMU_STATUS_SHUTDOWN = 0x400;
     public static final int EMU_STATUS_SUSPEND = 0x800;
+    public static int status = EMU_STATUS_UNKNOWN;
 
     public static synchronized void PauseEmuWithStatus(int status) {
         PauseEmu(true, status);
