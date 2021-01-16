@@ -355,4 +355,9 @@ public class JpcspWlanAdapter extends BaseWlanAdapter {
 			}
 		}
 	}
+
+	@Override
+	public void sendChatMessage(String message) {
+		log.info(String.format("Chat: %s", message));
+	}
 }

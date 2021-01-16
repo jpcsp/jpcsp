@@ -455,4 +455,9 @@ public class AsyncWlanAdapter extends BaseWlanAdapter {
 	public void wlanScan(String ssid, int[] channels) throws IOException {
 		wlanAdapter.wlanScan(ssid, channels);
 	}
+
+	@Override
+	public void sendChatMessage(String message) {
+		wlanAdapter.sendChatMessage(message);
+	}
 }

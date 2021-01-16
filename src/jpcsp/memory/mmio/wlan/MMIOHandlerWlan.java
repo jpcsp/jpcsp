@@ -303,6 +303,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		}
 	}
 
+	public IWlanAdapter getWlanAdapter() {
+		return wlanAdapter;
+	}
+
 	private void createNetworkAdapter() {
 		if (wlanAdapter == null) {
 			wlanAdapter = WlanAdapterFactory.createWlanAdapter();

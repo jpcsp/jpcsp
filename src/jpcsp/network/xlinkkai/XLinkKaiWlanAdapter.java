@@ -43,11 +43,14 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
+import jpcsp.GUI.ChatGUI;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhoc;
@@ -79,6 +82,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	private int gameModeCounter;
 	private static final boolean workaroundBugMulticast = false;
 	private static final byte[] rawIdentifier = "802.11.Raw".getBytes();
+	private ChatGUI chatGUI;
 
 	private static class EnabledSettingsListener extends AbstractBoolSettingsListener {
 		@Override
@@ -246,20 +250,73 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 				}
 				// Send a keepalive response
 				send("keepalive;");
+
+				// Refresh the list of players
+				send("getplayernames;");
 			} else if (controlMessage.startsWith("message;")) {
 				String message = controlMessage.substring(8);
-				if (log.isInfoEnabled()) {
-					log.info(String.format("Received message '%s'", message));
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Received message '%s'", message));
+				}
+				if (chatGUI != null) {
+					chatGUI.addChatMessage("System message", message);
 				}
 			} else if (controlMessage.startsWith("chat;")) {
 				String message = controlMessage.substring(5);
-				if (log.isInfoEnabled()) {
-					log.info(String.format("Received chat '%s'", message));
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Received chat '%s'", message));
+				}
+
+				String playerName = "chat";
+				int endOfPlayerName = message.indexOf(": ");
+				if (endOfPlayerName >= 0) {
+					playerName = message.substring(0, endOfPlayerName);
+					message = message.substring(endOfPlayerName + 2);
+				}
+				if (chatGUI != null) {
+					chatGUI.addChatMessage(playerName, message);
 				}
 			} else if (controlMessage.startsWith("directmessage;")) {
 				String message = controlMessage.substring(14);
-				if (log.isInfoEnabled()) {
-					log.info(String.format("Received direct message '%s'", message));
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Received direct message '%s'", message));
+				}
+
+				String playerName = "Direct message";
+				int endOfPlayerName = message.indexOf(": ");
+				if (endOfPlayerName >= 0) {
+					playerName = message.substring(0, endOfPlayerName);
+					message = message.substring(endOfPlayerName + 2);
+				}
+				if (chatGUI != null) {
+					chatGUI.addChatMessage(playerName, message);
+				}
+			} else if (controlMessage.startsWith("player_names;")) {
+				String names = controlMessage.substring(13);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Received player names '%s'", names));
+				}
+
+				String[] players = names.split(";");
+				List<String> chatMembers = new LinkedList<String>();
+				if (players != null) {
+					for (int i = 0; i < players.length; i++) {
+						if (players[i].length() > 0) {
+							chatMembers.add(players[i]);
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Player#%d: '%s'", i, players[i]));
+							}
+						}
+					}
+				}
+
+				// Open the chat window only if we have some players to show
+				if (chatGUI == null && chatMembers.size() > 0) {
+					openChat();
+				}
+
+				if (chatGUI != null) {
+					chatGUI.updateMembers(chatMembers);
 				}
 			} else {
 				log.warn(String.format("Received unknown control message '%s'", controlMessage));
@@ -357,6 +414,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 	private void enableChat() throws IOException {
 		send("setting;chat;true;");
+		send("getplayernames;");
 	}
 
 	@Override
@@ -398,6 +456,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 	@Override
 	public void stop() throws IOException {
+		closeChat();
 		disconnect();
 	}
 
@@ -751,6 +810,31 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		} else {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("processRawMessage unknown headerRevision=0x%02X", headerRevision));
+			}
+		}
+	}
+
+	private void openChat() {
+		if (chatGUI == null || !chatGUI.isVisible()) {
+			chatGUI = new ChatGUI();
+			Emulator.getMainGUI().startBackgroundWindowDialog(chatGUI);
+		}
+	}
+
+	private void closeChat() {
+		if (chatGUI != null) {
+			chatGUI.dispose();
+			chatGUI = null;
+		}
+	}
+
+	@Override
+	public void sendChatMessage(String message) {
+		try {
+			send("chat;" + message);
+		} catch (IOException e) {
+			if (log.isDebugEnabled()) {
+				log.debug("sendChatMessage", e);
 			}
 		}
 	}

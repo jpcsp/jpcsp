@@ -35,7 +35,9 @@ import javax.swing.SwingConstants;
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceUtility;
+import jpcsp.memory.mmio.wlan.MMIOHandlerWlan;
 import jpcsp.network.INetworkAdapter;
+import jpcsp.network.IWlanAdapter;
 
 import org.apache.log4j.Logger;
 
@@ -177,15 +179,22 @@ public class ChatGUI extends JFrame {
             log.debug(String.format("Sending chat message '%s'", message));
         }
 
-        // Send the chat message to the network adapter
-        INetworkAdapter networkAdapter = Modules.sceNetModule.getNetworkAdapter();
-        if (networkAdapter != null) {
-            networkAdapter.sendChatMessage(message);
-            chatMessage.setText("");
-
-            // Add my own chat to the messages
-            addChatMessage(getMyNickName(), message, true);
+        // Send the chat message to the Wlan adapter or to the network adapter
+        IWlanAdapter wlanAdapter = Modules.sceWlanModule.getWlanAdapter();
+        if (wlanAdapter == null) {
+        	wlanAdapter = MMIOHandlerWlan.getInstance().getWlanAdapter();
         }
+        INetworkAdapter networkAdapter = Modules.sceNetModule.getNetworkAdapter();
+        if (wlanAdapter != null) {
+        	wlanAdapter.sendChatMessage(message);
+        } else if (networkAdapter != null) {
+            networkAdapter.sendChatMessage(message);
+        }
+
+        chatMessage.setText("");
+
+        // Add my own chat to the messages
+        addChatMessage(getMyNickName(), message, true);
     }
 
     private void addChatLine(String line) {

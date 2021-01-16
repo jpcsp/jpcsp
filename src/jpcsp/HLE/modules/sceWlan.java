@@ -482,6 +482,10 @@ public class sceWlan extends HLEModule implements IAccessPointCallback {
     	return wlanHandleAddr;
     }
 
+    public IWlanAdapter getWlanAdapter() {
+    	return wlanAdapter;
+    }
+
     @Override
 	public void sendPacketFromAccessPoint(byte[] buffer, int bufferLength, EtherFrame etherFrame) {
     	if (log.isDebugEnabled()) {
