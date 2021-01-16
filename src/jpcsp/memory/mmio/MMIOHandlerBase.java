@@ -66,6 +66,21 @@ public class MMIOHandlerBase implements IMMIOHandler {
 	}
 
 	@Override
+	public int internalRead8(int address) {
+		return read8(address);
+	}
+
+	@Override
+	public int internalRead16(int address) {
+		return read16(address);
+	}
+
+	@Override
+	public int internalRead32(int address) {
+		return read32(address);
+	}
+
+	@Override
 	public void write8(int address, byte value) {
 		log.error(String.format("0x%08X - Unimplemented write8(0x%08X, 0x%02X)", getPc(), address, value));
 	}

@@ -30,8 +30,10 @@ import org.apache.log4j.xml.DOMConfigurator;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.arm.ARMInterpreter;
 import jpcsp.arm.ARMMemory;
 import jpcsp.arm.ARMProcessor;
+import jpcsp.hardware.Model;
 import jpcsp.memory.mmio.wlan.WlanEmulator;
 import jpcsp.util.LWJGLFixer;
 
@@ -52,7 +54,11 @@ public class ARMTest {
 	}
 
 	public void testFirmware() {
-		File inputFile = new File("wlanfirm_02g.prx");
+		int model = Model.MODEL_PSP_SLIM;
+//		model = Model.MODEL_PSP_FAT;
+
+		Model.setModel(model);
+		File inputFile = new File(String.format("wlanfirm_%02dg.prx", Model.getGeneration()));
 		byte[] buffer = new byte[(int) inputFile.length()];
 		int length = buffer.length;
 		try {
@@ -94,7 +100,7 @@ public class ARMTest {
 			}
 		}
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("elfOffset=0x%X, bootCodeOffset=0x%X, bootCodeSize=0x%X, dataOffset=0x%X, dataSize=0x%X", elfOffset, bootCodeOffset, bootCodeSize, dataOffset, dataSize));
+			log.debug(String.format("Reading '%s', elfOffset=0x%X, bootCodeOffset=0x%X, bootCodeSize=0x%X, dataOffset=0x%X, dataSize=0x%X", inputFile, elfOffset, bootCodeOffset, bootCodeSize, dataOffset, dataSize));
 		}
 
 		int[] data = new int[dataSize >> 2];
@@ -110,31 +116,42 @@ public class ARMTest {
 
 		mem.getHandlerWlanFirmware().setData(data, data.length);
 
+		ARMProcessor processor = WlanEmulator.getInstance().getProcessor();
+		ARMInterpreter interpreter = WlanEmulator.getInstance().getInterpreter();
+
 		RuntimeContext.debugCodeBlockCalls = true;
 		Emulator.run = true;
-		WlanEmulator.getInstance().getProcessor().resetException();
-		WlanEmulator.getInstance().getInterpreter().run();
+		processor.resetException();
+		interpreter.run();
 
+		if (false) {
+			int addr = Model.getGeneration() >= 2 ? 0x0000EFD9 : 0x0000C979;
+			processor.setRegister(0, 0x18);
+			log.debug(String.format("Executing 0x%08X", addr));
+			processor.jumpWithMode(addr);
+			Emulator.pause = false;
+			interpreter.run();
+		}
 		if (true) {
 			while (Emulator.status == EMU_STATUS_MEM_READ || Emulator.status == EMU_STATUS_MEM_WRITE) {
 				Emulator.pause = false;
-				WlanEmulator.getInstance().getInterpreter().run();
+				interpreter.run();
 			}
 		}
-		if (false) {
+		if (false && Model.getGeneration() >= 2) {
 			// Init exception registers in all processor modes
-			WlanEmulator.getInstance().getInterpreter().disasm(0x00000F59, 0x4);
-			WlanEmulator.getInstance().getInterpreter().disasm(0x00000F5C, 0xC8);
+			interpreter.disasm(0x00000F59, 0x4);
+			interpreter.disasm(0x00000F5C, 0xC8);
 			//
-			WlanEmulator.getInstance().getInterpreter().disasm(0x0000EFD9, 0x46);
-			//
-			WlanEmulator.getInstance().getInterpreter().disasm(0x0000103D, 0x8);
-			WlanEmulator.getInstance().getInterpreter().disasm(0x00001871, 0x54);
+			interpreter.disasm(0x0000EFD9, 0x46);
+			// Process interrupt flags read from 0x80002800
+			interpreter.disasm(0x0000103D, 0x8);
+			interpreter.disasm(0x00001871, 0x54);
 		}
 		if (false) {
 			Emulator.pause = false;
-			WlanEmulator.getInstance().getProcessor().interruptRequestException();
-			WlanEmulator.getInstance().getInterpreter().run();
+			processor.interruptRequestException();
+			interpreter.run();
 		}
 	}
 }

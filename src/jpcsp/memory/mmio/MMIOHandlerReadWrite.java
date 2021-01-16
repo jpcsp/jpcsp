@@ -70,16 +70,17 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 
 	@Override
 	public int read32(int address) {
+		int data = internalRead32(address);
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X)=0x%08X", getPc(), address, memory[(address - baseAddress) >> 2]));
+			log.trace(String.format("0x%08X - read32(0x%08X)=0x%08X", getPc(), address, data));
 		}
 
-		return memory[(address - baseAddress) >> 2];
+		return data;
 	}
 
 	@Override
 	public int read16(int address) {
-		int data = (memory[(address - baseAddress) >> 2] >> memory16Shift[address & 0x02]) & 0xFFFF;
+		int data = internalRead16(address);
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("0x%08X - read16(0x%08X)=0x%04X", getPc(), address, data));
 		}
@@ -89,12 +90,27 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 
 	@Override
 	public int read8(int address) {
-		int data = (memory[(address - baseAddress) >> 2] >> memory8Shift[address & 0x03]) & 0xFF;
+		int data = internalRead8(address);
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("0x%08X - read8(0x%08X)=0x%02X", getPc(), address, data));
 		}
 	
 		return data;
+	}
+
+	@Override
+	public int internalRead8(int address) {
+		return (memory[(address - baseAddress) >> 2] >> memory8Shift[address & 0x03]) & 0xFF;
+	}
+
+	@Override
+	public int internalRead16(int address) {
+		return (memory[(address - baseAddress) >> 2] >> memory16Shift[address & 0x02]) & 0xFFFF;
+	}
+
+	@Override
+	public int internalRead32(int address) {
+		return memory[(address - baseAddress) >> 2];
 	}
 
 	@Override

@@ -380,6 +380,33 @@ public class MMIO extends Memory {
 		return mem.read32(address);
 	}
 
+    @Override
+	public int internalRead8(int address) {
+    	IMMIOHandler handler = getHandler(address);
+    	if (handler != null) {
+    		return handler.internalRead8(address);
+    	}
+		return mem.internalRead8(address);
+	}
+
+	@Override
+	public int internalRead16(int address) {
+    	IMMIOHandler handler = getHandler(address);
+    	if (handler != null) {
+    		return handler.internalRead16(address);
+    	}
+		return mem.internalRead16(address);
+	}
+
+	@Override
+	public int internalRead32(int address) {
+    	IMMIOHandler handler = getHandler(address);
+    	if (handler != null) {
+    		return handler.internalRead32(address);
+    	}
+		return mem.internalRead32(address);
+	}
+
 	@Override
 	public void write8(int address, byte data) {
     	IMMIOHandler handler = getHandler(address);

@@ -25,8 +25,6 @@ import static jpcsp.util.Utilities.setFlag;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Memory;
-
 /**
  * @author gid15
  *
@@ -60,6 +58,7 @@ public class ARMProcessor {
 	public static final int REG_SP = 13;
 	public static final int REG_LR = 14;
 	public static final int REG_PC = 15;
+	public static final int NUMBER_REGISTERS = 16;
 	public static final int CPSR_BIT_N = 31;
 	public static final int CPSR_BIT_Z = 30;
 	public static final int CPSR_BIT_C = 29;
@@ -83,7 +82,7 @@ public class ARMProcessor {
 	private int pc;
 	private int cpsr;
 	private boolean thumbMode;
-	public Memory mem;
+	public ARMMemory mem;
 	public ARMInterpreter interpreter;
 	private int currentInstructionPc;
 	public boolean shifterCarryOut;
@@ -109,7 +108,7 @@ public class ARMProcessor {
 
 	private void interpretThumb() {
 		currentInstructionPc = pc;
-		int insn = mem.read16(pc);
+		int insn = mem.internalRead16(pc);
 		pc += 2;
 		ARMInstruction instruction = ARMDecoder.thumbInstruction(insn);
 		if (log.isTraceEnabled()) {
@@ -120,7 +119,7 @@ public class ARMProcessor {
 
 	private void interpretARM() {
 		currentInstructionPc = pc;
-		int insn = mem.read32(pc);
+		int insn = mem.internalRead32(pc);
 		pc += 4;
 		ARMInstruction instruction = ARMDecoder.instruction(insn);
 		if (log.isTraceEnabled()) {
@@ -175,6 +174,22 @@ public class ARMProcessor {
 
 	private void setCpsrBit(int bit) {
 		cpsr = setBit(cpsr, bit);
+	}
+
+	private boolean hasCpsrBit(int bit) {
+		return hasBit(cpsr, bit);
+	}
+
+	public boolean isInterruptEnabled() {
+		return !hasCpsrBit(CPSR_BIT_I);
+	}
+
+	public void setInterruptEnabled() {
+		clearCpsrBit(CPSR_BIT_I);
+	}
+
+	public void setInterruptDisabled() {
+		setCpsrBit(CPSR_BIT_I);
 	}
 
 	public void resetException() {
@@ -335,6 +350,10 @@ public class ARMProcessor {
 		return currentInstructionPc;
 	}
 
+	public boolean isNextInstructionPc(int addr) {
+		return pc == addr;
+	}
+
 	public void link() {
 		setLr(pc);
 	}
@@ -350,6 +369,21 @@ public class ARMProcessor {
 	public void branchWithLink(int offset) {
 		link();
 		branch(offset);
+	}
+
+	public void jumpWithMode(int addr) {
+		if (hasBit(addr, 0)) {
+			if (!thumbMode) {
+				setThumbMode();
+			}
+			addr = clearBit(addr, 0);
+		} else {
+			if (thumbMode) {
+				setARMMode();
+			}
+		}
+
+		jump(addr);
 	}
 
 	public void jump(int addr) {

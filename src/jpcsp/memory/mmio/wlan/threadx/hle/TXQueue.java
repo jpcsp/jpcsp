@@ -14,28 +14,27 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.wlan;
-
-import jpcsp.arm.ARMProcessor;
+package jpcsp.memory.mmio.wlan.threadx.hle;
 
 /**
  * @author gid15
  *
  */
-public class HLEJumpCall extends BaseHLECall {
-	private int register;
-
-	public HLEJumpCall(int register) {
-		this.register = register;
-	}
+public class TXQueue {
+	public static final int SIZEOF = 56;
+	public int queuePtr;
+	public String queueName;
+	public int messageSize;
+	public int capacity;
+	public int enqueued;
+	public int availableStorage;
+	public int queueStart;
+	public int queueEnd;
+	public int queueRead;
+	public int queueWrite;
 
 	@Override
-	public void call(ARMProcessor processor, int imm) {
-		int addr = processor.getRegister(register);
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("HLEJumpR0Call imm=0x%X, r0=0x%08X", imm, addr));
-		}
-
-		jump(processor, addr);
+	public String toString() {
+		return String.format("TXQueue queuePtr=0x%08X, queueName='%s', messageSize=0x%X, queueStart=0x%08X, queueSize=0x%X", queuePtr, queueName, messageSize, queueStart, capacity);
 	}
 }

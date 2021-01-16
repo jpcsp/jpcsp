@@ -26,4 +26,7 @@ public interface IMMIOHandler extends IState {
 	public void write8(int address, byte value);
 	public void write16(int address, short value);
 	public void write32(int address, int value);
+	public int internalRead8(int address);
+	public int internalRead16(int address);
+	public int internalRead32(int address);
 }

@@ -62,6 +62,21 @@ public class MMIOHandlerProxyOnCpu implements IMMIOHandler {
 	}
 
 	@Override
+	public int internalRead8(int address) {
+		return getInstance().internalRead8(address);
+	}
+
+	@Override
+	public int internalRead16(int address) {
+		return getInstance().internalRead16(address);
+	}
+
+	@Override
+	public int internalRead32(int address) {
+		return getInstance().internalRead32(address);
+	}
+
+	@Override
 	public void write8(int address, byte value) {
 		getInstance().write8(address, value);
 	}

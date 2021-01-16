@@ -36,14 +36,17 @@ public class ARMInterpreter {
 	public static Logger log = ARMProcessor.log;
 	private ARMProcessor processor;
 	private final Map<Integer, IARMHLECall> hleCalls = new HashMap<Integer, IARMHLECall>();
+	public static final int PC_END_RUN = 0xFFFFFFFC;
 
 	public ARMInterpreter(ARMProcessor processor) {
 		this.processor = processor;
 		processor.setInterpreter(this);
+
+		registerHLECall(PC_END_RUN, 0, null);
 	}
 
 	public void run() {
-		while (!Emulator.pause) {
+		while (!Emulator.pause && !processor.isNextInstructionPc(PC_END_RUN)) {
 			processor.interpret();
 		}
 	}

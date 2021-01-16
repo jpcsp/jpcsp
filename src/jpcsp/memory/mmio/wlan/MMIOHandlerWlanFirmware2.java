@@ -34,26 +34,22 @@ import jpcsp.state.StateOutputStream;
 public class MMIOHandlerWlanFirmware2 extends MMIOARMHandlerBase {
 	public static Logger log = sceWlan.log;
 	private static final int STATE_VERSION = 0;
-	private int unknown824;
-	private int unknown828;
+	private final MMIOHandlerWlanFirmware handlerWlanFirmware;
 
-	public MMIOHandlerWlanFirmware2(int baseAddress) {
+	public MMIOHandlerWlanFirmware2(int baseAddress, MMIOHandlerWlanFirmware handlerWlanFirmware) {
 		super(baseAddress);
+		this.handlerWlanFirmware = handlerWlanFirmware;
 	}
 
 	@Override
 	public void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
-		unknown824 = stream.readInt();
-		unknown828 = stream.readInt();
 		super.read(stream);
 	}
 
 	@Override
 	public void write(StateOutputStream stream) throws IOException {
 		stream.writeVersion(STATE_VERSION);
-		stream.writeInt(unknown824);
-		stream.writeInt(unknown828);
 		super.write(stream);
 	}
 
@@ -62,7 +58,7 @@ public class MMIOHandlerWlanFirmware2 extends MMIOARMHandlerBase {
 		int value;
 		switch (address - baseAddress) {
 			case 0x081C: value = 0; break;
-			case 0x0824: value = 0; break;
+			case 0x0824: value = handlerWlanFirmware.readEEPROMCmd8(); break;
 			default: value = super.read8(address); break;
 		}
 
@@ -93,8 +89,13 @@ public class MMIOHandlerWlanFirmware2 extends MMIOARMHandlerBase {
 	public int read32(int address) {
 		int value;
 		switch (address - baseAddress) {
-			case 0x9000: value = 0; break;
+			case 0x020C: value = 0; break;
+			case 0x0224: value = 0; break;
 			case 0x0808: value = 0; break;
+			case 0x8000: value = handlerWlanFirmware.getInterrupt(); break;
+			case 0x8008: value = 0; break;
+			case 0x9000: value = 0; break;
+			case 0x9024: value = 0; break;
 			default: value = super.read32(address); break;
 		}
 
@@ -111,9 +112,9 @@ public class MMIOHandlerWlanFirmware2 extends MMIOARMHandlerBase {
 		switch (address - baseAddress) {
 			case 0x0000: if (value8 != 0x01) { super.write8(address, value); }; break;
 			case 0x0004: if (value8 != 0x00) { super.write8(address, value); }; break;
-			case 0x0804: if (value8 != 0x82 && value8 != 0x58 && value8 != 0x54) { super.write8(address, value); }; break;
-			case 0x0824: unknown824 = value8; break;
-			case 0x0828: unknown828 = value8; break;
+			case 0x0804: handlerWlanFirmware.eepromMode = value8; if (value8 != 0x82 && value8 != 0x58 && value8 != 0x54) { super.write8(address, value); }; break;
+			case 0x0824: handlerWlanFirmware.writeEEPROMCmdLow8(value8); break;
+			case 0x0828: handlerWlanFirmware.writeEEPROMCmdHigh8(value8); break;
 			default: super.write8(address, value); break;
 		}
 
@@ -126,7 +127,7 @@ public class MMIOHandlerWlanFirmware2 extends MMIOARMHandlerBase {
 	public void write16(int address, short value) {
 		final int value16 = value & 0xFFFF;
 		switch (address - baseAddress) {
-			case 0x0800: if (value16 != 0x8 && value16 != 0x1 && value16 != 0x0) { super.write16(address, value); }; break;
+			case 0x0800: if (value16 != 0x0 && value16 != 0x1 && value16 != 0x4 && value16 != 0x8 && value16 != 0x10 && value16 != 0x18 && value16 != 0x20) { super.write16(address, value); }; break;
 			case 0x0804: if (value16 != 0x0) { super.write16(address, value); }; break;
 			case 0x0808: if (value16 != 0x542) { super.write16(address, value); }; break;
 			default: super.write16(address, value); break;
@@ -134,6 +135,25 @@ public class MMIOHandlerWlanFirmware2 extends MMIOARMHandlerBase {
 
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("0x%08X - write16(0x%08X, 0x%04X) on %s", getPc(), address, value16, this));
+		}
+	}
+
+	@Override
+	public void write32(int address, int value) {
+		switch (address - baseAddress) {
+			case 0x020C: if (value != 0x10) { super.write32(address, value); } break;
+			case 0x0224: if (value != 0x2) { super.write32(address, value); } break;
+			case 0x8008: if (value != 0x10 && value != 0x100 && value != 0x400 && value != 0x8000 && value != 0x10000 && value != 0x185F0) { super.write32(address, value); } break;
+			case 0x800C: if (value != 0x100 && value != 0x400 && value != 0x8000 && value != 0x10000) { super.write32(address, value); } break;
+			case 0x9000: if (value != 0xA) { super.write32(address, value); } break;
+			case 0x9010: if (value != 0xF) { super.write32(address, value); } break;
+			case 0x9024: if (value != 0x1) { super.write32(address, value); } break;
+			case 0x9028: if (value != 0x1) { super.write32(address, value); } break;
+			default: super.write32(address, value); break;
+		}
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X) on %s", getPc(), address, value, this));
 		}
 	}
 }

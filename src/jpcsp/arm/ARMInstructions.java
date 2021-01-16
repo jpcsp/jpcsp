@@ -438,12 +438,7 @@ public class ARMInstructions {
         public void interpret(ARMProcessor processor, int insn) {
         	int rm = (insn >> 3) & 0xF;
         	int addr = processor.getRegister(rm);
-        	if (hasBit(addr, 0)) {
-        		addr = clearBit(addr, 0);
-        	} else {
-        		processor.setARMMode();
-        	}
-    		processor.jump(addr);
+    		processor.jumpWithMode(addr);
 
     		if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
     			if (rm == REG_LR) {
@@ -451,13 +446,13 @@ public class ARMInstructions {
     			} else if (rm == 0) {
     				log.debug(String.format("Starting CodeBlock 0x%08X, lr=0x%08X, sp=0x%08X", addr, clearBit(processor.getLr(), 0), processor.getSp()));
     			} else if (rm == 1) {
-    				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), clearBit(processor.getLr(), 0), processor.getSp()));
+    				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%08X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), clearBit(processor.getLr(), 0), processor.getSp()));
     			} else if (rm == 2) {
-    				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%X, r1=0x%X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), clearBit(processor.getLr(), 0), processor.getSp()));
+    				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%08X, r1=0x%08X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), clearBit(processor.getLr(), 0), processor.getSp()));
     			} else if (rm == 3) {
-    				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%X, r1=0x%X, r2=0x%X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), processor.getRegister(2), clearBit(processor.getLr(), 0), processor.getSp()));
+    				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%08X, r1=0x%08X, r2=0x%08X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), processor.getRegister(2), clearBit(processor.getLr(), 0), processor.getSp()));
     			} else {
-    				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%X, r1=0x%X, r2=0x%X, r3=0x%X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), processor.getRegister(2), processor.getRegister(3), clearBit(processor.getLr(), 0), processor.getSp()));
+    				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%08X, r1=0x%08X, r2=0x%08X, r3=0x%08X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), processor.getRegister(2), processor.getRegister(3), clearBit(processor.getLr(), 0), processor.getSp()));
     			}
 			}
         }
@@ -473,13 +468,8 @@ public class ARMInstructions {
         public void interpret(ARMProcessor processor, int insn) {
         	int rm = (insn >> 3) & 0xF;
         	int addr = processor.getRegister(rm);
-        	if (hasBit(addr, 0)) {
-        		addr = clearBit(addr, 0);
-        	} else {
-        		processor.setARMMode();
-        	}
         	processor.linkWithThumb();
-    		processor.jump(addr);
+    		processor.jumpWithMode(addr);
         }
 
         @Override
@@ -518,8 +508,8 @@ public class ARMInstructions {
 
     		if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
     			// Log if not branching to a "bx rn" instruction
-    			if ((processor.mem.read16(addr) & 0xFF87) != 0x4700) {
-    				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%X, r1=0x%X, r2=0x%X, r3=0x%X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), processor.getRegister(2), processor.getRegister(3), clearBit(processor.getLr(), 0), processor.getSp()));
+    			if ((processor.mem.internalRead16(addr) & 0xFF87) != 0x4700) {
+    				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%08X, r1=0x%08X, r2=0x%08X, r3=0x%08X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), processor.getRegister(2), processor.getRegister(3), clearBit(processor.getLr(), 0), processor.getSp()));
     			}
 			}
         }
@@ -541,7 +531,7 @@ public class ARMInstructions {
         	processor.setARMMode();
 
     		if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
-				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%X, r1=0x%X, r2=0x%X, r3=0x%X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), processor.getRegister(2), processor.getRegister(3), clearBit(processor.getLr(), 0), processor.getSp()));
+				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%08X, r1=0x%08X, r2=0x%08X, r3=0x%08X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), processor.getRegister(2), processor.getRegister(3), clearBit(processor.getLr(), 0), processor.getSp()));
 			}
         }
 
@@ -1110,11 +1100,7 @@ public class ARMInstructions {
         	if (processor.isCondition(insn)) {
         		int rn = insn & 0xF;
         		int addr = processor.getRegister(rn);
-        		if (hasBit(addr, 0)) {
-        			addr = clearBit(addr, 0);
-        			processor.setThumbMode();
-        		}
-        		processor.jump(addr);
+        		processor.jumpWithMode(addr);
         	}
         }
 
@@ -1167,12 +1153,7 @@ public class ARMInstructions {
 
         	if (hasFlag(insn, 0x0100)) {
     			int value = processor.mem.read32(sp);
-    			if (hasBit(value, 0)) {
-    				value = clearBit(value, 0);
-    			} else {
-    				processor.setARMMode();
-    			}
-    			processor.jump(value);
+    			processor.jumpWithMode(value);
     			sp += 4;
 
     			if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
@@ -1212,6 +1193,29 @@ public class ARMInstructions {
         }
     };
 
+    public static final ARMInstruction SUB_Reg_Imm_Thumb = new ARMInstruction() {
+        @Override
+        public void interpret(ARMProcessor processor, int insn) {
+        	int rd = insn & 0x7;
+        	int rn = (insn >> 3) & 0x7;
+        	int imm3 = (insn >> 6) & 0x7;
+        	int value1 = processor.getRegister(rn);
+        	int value2 = imm3;
+        	int value = value1 - value2;
+        	processor.setRegister(rd, value);
+        	processor.setCpsrResult(value, getAdditionC(value1, value2, value), getAdditionV(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+        	int imm3 = (insn >> 6) & 0x7;
+        	if (imm3 == 0) {
+                return String.format("mov %s, %s", getRegisterName(insn & 0x7), getRegisterName((insn >> 3) & 0x7));
+        	}
+            return String.format("sub %s, %s, #%d", getRegisterName(insn & 0x7), getRegisterName((insn >> 3) & 0x7), imm3);
+        }
+    };
+
     public static final ARMInstruction ADD_Reg_Thumb = new ARMInstruction() {
         @Override
         public void interpret(ARMProcessor processor, int insn) {
@@ -1228,6 +1232,25 @@ public class ARMInstructions {
         @Override
         public String disasm(int address, int insn) {
             return String.format("add %s, %s, %s", getRegisterName(insn & 0x7), getRegisterName((insn >> 3) & 0x7), getRegisterName((insn >> 6) & 0x7));
+        }
+    };
+
+    public static final ARMInstruction SUB_Reg_Thumb = new ARMInstruction() {
+        @Override
+        public void interpret(ARMProcessor processor, int insn) {
+        	int rd = insn & 0x7;
+        	int rn = (insn >> 3) & 0x7;
+        	int rm = (insn >> 6) & 0x7;
+        	int value1 = processor.getRegister(rn);
+        	int value2 = processor.getRegister(rm);
+        	int value = value1 - value2;
+        	processor.setRegister(rd, value);
+        	processor.setCpsrResult(value, getSubstractC(value1, value2, value), getSubstractV(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("sub %s, %s, %s", getRegisterName(insn & 0x7), getRegisterName((insn >> 3) & 0x7), getRegisterName((insn >> 6) & 0x7));
         }
     };
 
@@ -1366,6 +1389,9 @@ public class ARMInstructions {
         	int rd = (insn & 0x7) | ((insn >> 4) & 0x8);
         	int rm = (insn >> 3) & 0xF;
         	int value = processor.getRegister(rm);
+        	if (rd == REG_PC) {
+        		value = clearBit(value, 0);
+        	}
         	processor.setRegister(rd, value);
         }
 
@@ -1550,6 +1576,23 @@ public class ARMInstructions {
         }
     };
 
+    public static final ARMInstruction LDRSB_Thumb = new ARMInstruction() {
+        @Override
+        public void interpret(ARMProcessor processor, int insn) {
+        	int rd = insn & 0x7;
+        	int rn = (insn >> 3) & 0x7;
+        	int rm = (insn >> 6) & 0x7;
+        	int addr = processor.getRegister(rn) + processor.getRegister(rm);
+        	int value = (byte) processor.mem.read8(addr);
+        	processor.setRegister(rd, value);
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("ldrsb %s, [%s, %s]", getRegisterName(insn & 0x7), getRegisterName((insn >> 3) & 0x7), getRegisterName((insn >> 6) & 0x7));
+        }
+    };
+
     public static final ARMInstruction LDRH_Reg_Thumb = new ARMInstruction() {
         @Override
         public void interpret(ARMProcessor processor, int insn) {
@@ -1564,6 +1607,23 @@ public class ARMInstructions {
         @Override
         public String disasm(int address, int insn) {
             return String.format("ldrh %s, [%s, %s]", getRegisterName(insn & 0x7), getRegisterName((insn >> 3) & 0x7), getRegisterName((insn >> 6) & 0x7));
+        }
+    };
+
+    public static final ARMInstruction LDRSH_Thumb = new ARMInstruction() {
+        @Override
+        public void interpret(ARMProcessor processor, int insn) {
+        	int rd = insn & 0x7;
+        	int rn = (insn >> 3) & 0x7;
+        	int rm = (insn >> 6) & 0x7;
+        	int addr = processor.getRegister(rn) + processor.getRegister(rm);
+        	int value = (short) processor.mem.read16(addr);
+        	processor.setRegister(rd, value);
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("ldrsh %s, [%s, %s]", getRegisterName(insn & 0x7), getRegisterName((insn >> 3) & 0x7), getRegisterName((insn >> 6) & 0x7));
         }
     };
 
@@ -2106,6 +2166,18 @@ public class ARMInstructions {
         @Override
         public String disasm(int address, int insn) {
             return String.format("swi 0x%06X", insn & 0x00FFFFFF);
+        }
+    };
+
+    public static final ARMInstruction SWI_Thumb = new ARMInstruction() {
+        @Override
+        public void interpret(ARMProcessor processor, int insn) {
+        	processor.softwareInterruptException();
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("swi 0x%02X", insn & 0x00FF);
         }
     };
 

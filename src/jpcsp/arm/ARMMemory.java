@@ -35,6 +35,8 @@ import jpcsp.memory.mmio.wlan.MMIOHandlerWlanFirmware2;
  * - 0x04000000 - 0x04001FFF: ARM internal RAM
  * - 0x80000000 - 0x80002FFF: ARM memory mapped I/O
  * - 0xC0000000 - 0xC0017FFF: ARM internal RAM
+ * 
+ * Basic information available from http://wiki.laptop.org/go/88W8388
  *
  * @author gid15
  *
@@ -47,10 +49,10 @@ public class ARMMemory extends MMIO {
 	public static final int SIZE_RAM4 = 0x2000;
 	public static final int BASE_RAM4 = 0x04000000;
 	public static final int END_RAM4 = BASE_RAM4 + SIZE_RAM4 - 1;
-	public static final int SIZE_HANDLER8 = 0xB000;
+	public static final int SIZE_HANDLER8 = 0x10000;
 	public static final int BASE_HANDLER8 = 0x80000000;
 	public static final int END_HANDLER8 = BASE_HANDLER8 + SIZE_HANDLER8 - 1;
-	public static final int SIZE_HANDLER9 = 0xA000;
+	public static final int SIZE_HANDLER9 = 0x10000;
 	public static final int BASE_HANDLER9 = 0x90000000;
 	public static final int END_HANDLER9 = BASE_HANDLER9 + SIZE_HANDLER9 - 1;
 	public static final int SIZE_RAMC = 0x18000;
@@ -98,15 +100,19 @@ public class ARMMemory extends MMIO {
 			this.processor = processor;
 		}
 
-		@Override
-	    public void invalidMemoryAddress(int address, String prefix, int status) {
-            log.error(String.format("%s - Invalid memory address: 0x%08X PC=0x%08X", prefix, address, processor.getCurrentInstructionPc()));
+	    private void invalidMemoryAddress(int address, String value, String prefix, int status) {
+            log.error(String.format("0x%08X - %s - Invalid memory address: 0x%08X%s", processor.getCurrentInstructionPc(), prefix, address, value));
             Emulator.PauseEmuWithStatus(status);
+	    }
+
+	    @Override
+	    public void invalidMemoryAddress(int address, String prefix, int status) {
+	    	invalidMemoryAddress(address, "", prefix, status);
 	    }
 
 		@Override
 	    public void invalidMemoryAddress(int address, int length, String prefix, int status) {
-            log.error(String.format("%s - Invalid memory address: 0x%08X-0x%08X(length=0x%X) PC=0x%08X", prefix, address, address + length, length, processor.getCurrentInstructionPc()));
+            log.error(String.format("0x%08X - %s - Invalid memory address: 0x%08X-0x%08X(length=0x%X)", processor.getCurrentInstructionPc(), prefix, address, address + length, length));
             Emulator.PauseEmuWithStatus(status);
 	    }
 
@@ -134,17 +140,17 @@ public class ARMMemory extends MMIO {
 
 		@Override
 		public void write8(int address, byte data) {
-			invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
+			invalidMemoryAddress(address, String.format(" (0x%02X)", data & 0xFF), "write8", Emulator.EMU_STATUS_MEM_WRITE);
 		}
 
 		@Override
 		public void write16(int address, short data) {
-			invalidMemoryAddress(address, "write16", Emulator.EMU_STATUS_MEM_WRITE);
+			invalidMemoryAddress(address, String.format(" (0x%04X)", data & 0xFFFF), "write16", Emulator.EMU_STATUS_MEM_WRITE);
 		}
 
 		@Override
 		public void write32(int address, int data) {
-			invalidMemoryAddress(address, "write32", Emulator.EMU_STATUS_MEM_WRITE);
+			invalidMemoryAddress(address, String.format(" (0x%08X)", data), "write32", Emulator.EMU_STATUS_MEM_WRITE);
 		}
 
 		@Override
@@ -189,7 +195,7 @@ public class ARMMemory extends MMIO {
 
 		handlerWlanFirmware = new MMIOHandlerWlanFirmware(BASE_HANDLER8);
 
-		handlerWlanFirmware2 = new MMIOHandlerWlanFirmware2(BASE_HANDLER9);
+		handlerWlanFirmware2 = new MMIOHandlerWlanFirmware2(BASE_HANDLER9, handlerWlanFirmware);
 
 		ramC = new int[SIZE_RAMC >> 2];
 		ramCHandler = new ARMMMIOHandlerReadWrite(BASE_RAMC, SIZE_RAMC, ramC);
@@ -237,4 +243,27 @@ public class ARMMemory extends MMIO {
 
 		return super.getHandler(address);
 	}
+
+    public static boolean isAddressGood(int address) {
+		if (address >= BASE_RAM0 && address <= END_RAM0) {
+			return true;
+		}
+		if (address >= BASE_RAM4 && address <= END_RAM4) {
+			return true;
+		}
+		if (address >= BASE_HANDLER8 && address <= END_HANDLER8) {
+			return true;
+		}
+		if (address >= BASE_HANDLER9 && address <= END_HANDLER9) {
+			return true;
+		}
+		if (address >= BASE_RAMC && address <= END_RAMC) {
+			return true;
+		}
+		if (address >= BASE_ROMF && address <= END_ROMF) {
+			return true;
+		}
+
+		return false;
+    }
 }

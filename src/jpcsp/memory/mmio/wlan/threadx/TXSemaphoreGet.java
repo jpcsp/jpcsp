@@ -14,25 +14,29 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio.wlan;
+package jpcsp.memory.mmio.wlan.threadx;
 
 import jpcsp.arm.ARMProcessor;
 
 /**
+ * UINT tx_semaphore_get(TX_SEMAPHORE *semaphore_ptr,
+ *                       ULONG wait_option)
+ *
  * @author gid15
  *
  */
-public class HLEInitExceptions extends BaseHLECall {
+public class TXSemaphoreGet extends TXBaseCall {
 	@Override
 	public void call(ARMProcessor processor, int imm) {
-		log.error(String.format("Unimplemented HLEInitExceptions imm=0x%X", imm));
+		int semaphorePtr = getParameterValue(processor, 0);
+		int waitOption = getParameterValue(processor, 1);
 
-		if (imm == 1) {
-//			jump(processor, 0x00000F59);
-			processor.setRegister(0, 0x12345678);
-			jump(processor, 0x0000EFD9);
-		} else {
-			returnToLr(processor);
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("TXSemaphoreGet semaphorePtr=0x%08X, waitOption=0x%X", semaphorePtr, waitOption));
 		}
+
+		int result = getTxManager().semaphoreGet(processor, semaphorePtr, waitOption);
+
+		returnToLr(processor, result);
 	}
 }

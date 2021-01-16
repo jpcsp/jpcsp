@@ -60,6 +60,8 @@ import static jpcsp.arm.ARMInstructions.LDRB_Imm_Thumb;
 import static jpcsp.arm.ARMInstructions.LDRB_Reg_Thumb;
 import static jpcsp.arm.ARMInstructions.LDRH_Imm_Thumb;
 import static jpcsp.arm.ARMInstructions.LDRH_Reg_Thumb;
+import static jpcsp.arm.ARMInstructions.LDRSB_Thumb;
+import static jpcsp.arm.ARMInstructions.LDRSH_Thumb;
 import static jpcsp.arm.ARMInstructions.LDR_Imm_Thumb;
 import static jpcsp.arm.ARMInstructions.LDR_Pc_Thumb;
 import static jpcsp.arm.ARMInstructions.LDR_Reg_Thumb;
@@ -100,8 +102,11 @@ import static jpcsp.arm.ARMInstructions.STR_Reg_Thumb;
 import static jpcsp.arm.ARMInstructions.STR_Stack_Thumb;
 import static jpcsp.arm.ARMInstructions.SUB;
 import static jpcsp.arm.ARMInstructions.SUB_Imm_Thumb;
+import static jpcsp.arm.ARMInstructions.SUB_Reg_Imm_Thumb;
+import static jpcsp.arm.ARMInstructions.SUB_Reg_Thumb;
 import static jpcsp.arm.ARMInstructions.SUB_Sp_Thumb;
 import static jpcsp.arm.ARMInstructions.SWI;
+import static jpcsp.arm.ARMInstructions.SWI_Thumb;
 import static jpcsp.arm.ARMInstructions.TEQ;
 import static jpcsp.arm.ARMInstructions.TST;
 import static jpcsp.arm.ARMInstructions.TST_Thumb;
@@ -801,12 +806,12 @@ public class ARMDecoder {
 			ASR_Imm_Thumb, // 0x17
 			ADD_Reg_Thumb, // 0x18
 			ADD_Reg_Thumb, // 0x19
-			UNK_Thumb, // 0x1A
-			UNK_Thumb, // 0x1B
+			SUB_Reg_Thumb, // 0x1A
+			SUB_Reg_Thumb, // 0x1B
 			ADD_Reg_Imm_Thumb, // 0x1C
 			ADD_Reg_Imm_Thumb, // 0x1D
-			UNK_Thumb, // 0x1E
-			UNK_Thumb, // 0x1F
+			SUB_Reg_Imm_Thumb, // 0x1E
+			SUB_Reg_Imm_Thumb, // 0x1F
 			MOV_Immediate_Thumb, // 0x20
 			MOV_Immediate_Thumb, // 0x21
 			MOV_Immediate_Thumb, // 0x22
@@ -866,16 +871,16 @@ public class ARMDecoder {
 			STRH_Reg_Thumb, // 0x53
 			STRB_Reg_Thumb, // 0x54
 			STRB_Reg_Thumb, // 0x55
-			UNK_Thumb, // 0x56
-			UNK_Thumb, // 0x57
+			LDRSB_Thumb, // 0x56
+			LDRSB_Thumb, // 0x57
 			LDR_Reg_Thumb, // 0x58
 			LDR_Reg_Thumb, // 0x59
 			LDRH_Reg_Thumb, // 0x5A
 			LDRH_Reg_Thumb, // 0x5B
 			LDRB_Reg_Thumb, // 0x5C
 			LDRB_Reg_Thumb, // 0x5D
-			UNK_Thumb, // 0x5E
-			UNK_Thumb, // 0x5F
+			LDRSH_Thumb, // 0x5E
+			LDRSH_Thumb, // 0x5F
 			STR_Imm_Thumb, // 0x60
 			STR_Imm_Thumb, // 0x61
 			STR_Imm_Thumb, // 0x62
@@ -1007,8 +1012,8 @@ public class ARMDecoder {
 			B_Cond_Thumb, // 0xDB
 			B_Cond_Thumb, // 0xDC
 			B_Cond_Thumb, // 0xDD
-			B_Cond_Thumb, // 0xDE
-			B_Cond_Thumb, // 0xDF
+			UNK_Thumb, // 0xDE
+			SWI_Thumb, // 0xDF
 			B_Thumb, // 0xE0
 			B_Thumb, // 0xE1
 			B_Thumb, // 0xE2

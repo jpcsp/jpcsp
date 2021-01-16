@@ -16,13 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio.wlan;
 
-import static jpcsp.arm.ARMProcessor.REG_R0;
-
 import org.apache.log4j.Logger;
 
 import jpcsp.arm.ARMInterpreter;
 import jpcsp.arm.ARMMemory;
 import jpcsp.arm.ARMProcessor;
+import jpcsp.memory.mmio.wlan.threadx.hle.TXManager;
 
 /**
  * Emulator for the Wlan firmware
@@ -36,6 +35,7 @@ public class WlanEmulator {
 	private final ARMMemory mem; 
 	private final ARMProcessor processor;
 	private final ARMInterpreter interpreter;
+	private final TXManager txManager;
 
 	public static WlanEmulator getInstance() {
 		if (instance == null) {
@@ -48,14 +48,9 @@ public class WlanEmulator {
 		mem = new ARMMemory(log);
 		processor = new ARMProcessor(mem);
 		interpreter = new ARMInterpreter(processor);
+		txManager = new TXManager();
 
-		// Required for PSP generation 1
-		interpreter.registerHLECall(0xFFFF2B79, 0, new HLEInitExceptions());
-		// Required for PSP generation 2 or later
-		interpreter.registerHLECall(0xFFFF233D, 1, new HLEInitExceptions());
-		interpreter.registerHLECall(0xFFFF4409, 0, new HLEJumpCall(REG_R0));
-		interpreter.registerHLECall(0xFFFF1D79, 1, new HLENullCall(3));
-		interpreter.registerHLECall(0xFFFF440D, 1, new HLENullCall(3));
+		txManager.installHLECalls(interpreter);
 	}
 
 	public ARMInterpreter getInterpreter() {
@@ -68,5 +63,9 @@ public class WlanEmulator {
 
 	public ARMMemory getMemory() {
 		return mem;
+	}
+
+	public TXManager getTxManager() {
+		return txManager;
 	}
 }
