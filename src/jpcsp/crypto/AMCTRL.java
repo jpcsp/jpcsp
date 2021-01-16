@@ -16,6 +16,8 @@
  */
 package jpcsp.crypto;
 
+import static jpcsp.util.Utilities.writeUnaligned32;
+
 import java.nio.ByteBuffer;
 
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
@@ -139,36 +141,20 @@ public class AMCTRL {
 
     private void ScrambleBB(byte[] buf, int size, int seed, int cbc, int kirk_code) {
         // Set CBC mode.
-        buf[0] = 0;
-        buf[1] = 0;
-        buf[2] = 0;
-        buf[3] = (byte) cbc;
+    	writeUnaligned32(buf, 0, cbc);
 
         // Set unkown parameters to 0.
-        buf[4] = 0;
-        buf[5] = 0;
-        buf[6] = 0;
-        buf[7] = 0;
-
-        buf[8] = 0;
-        buf[9] = 0;
-        buf[10] = 0;
-        buf[11] = 0;
+    	writeUnaligned32(buf, 4, 0);
+    	writeUnaligned32(buf, 8, 0);
 
         // Set the the key seed to seed.
-        buf[12] = 0;
-        buf[13] = 0;
-        buf[14] = 0;
-        buf[15] = (byte) seed;
+    	writeUnaligned32(buf, 12, seed);
 
         // Set the the data size to size.
-        buf[16] = (byte) ((size >> 24) & 0xFF);
-        buf[17] = (byte) ((size >> 16) & 0xFF);
-        buf[18] = (byte) ((size >> 8) & 0xFF);
-        buf[19] = (byte) (size & 0xFF);
+    	writeUnaligned32(buf, 16, size);
 
         ByteBuffer bBuf = ByteBuffer.wrap(buf);
-        kirk.hleUtilsBufferCopyWithRange(bBuf, size, bBuf, size, kirk_code);
+        kirk.hleUtilsBufferCopyWithRange(bBuf, size, bBuf, size + 20, kirk_code);
     }
 
     private void cipherMember(BBCipher_Ctx ctx, byte[] data, int data_offset, int length) {
@@ -198,10 +184,7 @@ public class AMCTRL {
         // Apply extra padding if ctx.seed is not 1.
         if (ctx.seed != 0x1) {
             System.arraycopy(keyBuf2, 0, keyBuf1, 0, 0xC);
-            keyBuf1[0xC] = (byte) ((ctx.seed - 1) & 0xFF);
-            keyBuf1[0xD] = (byte) (((ctx.seed - 1) >> 8) & 0xFF);
-            keyBuf1[0xE] = (byte) (((ctx.seed - 1) >> 16) & 0xFF);
-            keyBuf1[0xF] = (byte) (((ctx.seed - 1) >> 24) & 0xFF);
+            writeUnaligned32(keyBuf1, 0xC, ctx.seed - 1);
         }
 
         // Copy the first 0xC bytes of the obtained key and replicate them
@@ -209,10 +192,7 @@ public class AMCTRL {
         // 4 bytes (endian swapped) to achieve a full numbered list.
         for (int i = 0x14; i < (length + 0x14); i += 0x10) {
             System.arraycopy(keyBuf2, 0, dataBuf, i, 0xC);
-            dataBuf[i + 0xC] = (byte) (ctx.seed & 0xFF);
-            dataBuf[i + 0xD] = (byte) ((ctx.seed >> 8) & 0xFF);
-            dataBuf[i + 0xE] = (byte) ((ctx.seed >> 16) & 0xFF);
-            dataBuf[i + 0xF] = (byte) ((ctx.seed >> 24) & 0xFF);
+            writeUnaligned32(dataBuf, i + 0xC, ctx.seed);
             ctx.seed++;
         }
 
