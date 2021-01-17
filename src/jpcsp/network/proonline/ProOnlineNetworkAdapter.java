@@ -311,18 +311,33 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	}
 
 	private void connectToMetaServer() {
+		metaSocket = null;
+
 		try {
+			// If connecting to a local metaserver, use a local IP address (127.0.0.N)
 			metaSocket = new Socket(metaServer, metaPort, getLocalInetAddress(), 0);
-			metaSocket.setReuseAddress(true);
-			metaSocket.setSoTimeout(500);
-
-			PacketFactory.SceNetAdhocctlLoginPacketC2S loginPacket = new PacketFactory.SceNetAdhocctlLoginPacketC2S(this);
-
-			sendToMetaServer(loginPacket);
 		} catch (UnknownHostException e) {
 			log.error(String.format("Could not connect to meta server %s:%d", metaServer, metaPort), e);
 		} catch (IOException e) {
-			log.error(String.format("Could not connect to meta server %s:%d", metaServer, metaPort), e);
+			try {
+				// If connecting to a non-local metaserver, use the computer IP address
+				metaSocket = new Socket(metaServer, metaPort);
+			} catch (IOException ee) {
+				log.error(String.format("Could not connect to meta server %s:%d", metaServer, metaPort), e);
+			}
+		}
+
+		if (metaSocket != null) {
+			try {
+				metaSocket.setReuseAddress(true);
+				metaSocket.setSoTimeout(500);
+	
+				PacketFactory.SceNetAdhocctlLoginPacketC2S loginPacket = new PacketFactory.SceNetAdhocctlLoginPacketC2S(this);
+	
+				sendToMetaServer(loginPacket);
+			} catch (IOException e) {
+				log.error(String.format("Could not connect to meta server %s:%d", metaServer, metaPort), e);
+			}
 		}
 	}
 
