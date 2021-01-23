@@ -49,6 +49,7 @@ import static jpcsp.arm.ARMInstructions.CDP;
 import static jpcsp.arm.ARMInstructions.CMN;
 import static jpcsp.arm.ARMInstructions.CMN_Thumb;
 import static jpcsp.arm.ARMInstructions.CMP;
+import static jpcsp.arm.ARMInstructions.CMP_High_Thumb;
 import static jpcsp.arm.ARMInstructions.CMP_Imm_Thumb;
 import static jpcsp.arm.ARMInstructions.CMP_Thumb;
 import static jpcsp.arm.ARMInstructions.EOR;
@@ -849,7 +850,7 @@ public class ARMDecoder {
 			DP_Thumb, // 0x42
 			DP_Thumb, // 0x43
 			ADD_High_Thumb, // 0x44
-			UNK_Thumb, // 0x45
+			CMP_High_Thumb, // 0x45
 			MOV_High_Thumb, // 0x46
 			new STUB() {
 				@Override

@@ -20,6 +20,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.arm.ARMProcessor;
 import jpcsp.memory.mmio.MMIOHandlerBase;
+import jpcsp.settings.Settings;
 
 /**
  * @author gid15
@@ -48,7 +49,9 @@ public class MMIOARMHandlerBase extends MMIOHandlerBase {
 
     private void invalidMemoryAddress(int address, String value, String prefix, int status) {
         log.error(String.format("0x%08X - %s - Invalid memory address: 0x%08X%s", getPc(), prefix, address, value));
-        Emulator.PauseEmuWithStatus(status);
+        if (!Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess")) {
+        	Emulator.PauseEmuWithStatus(status);
+        }
     }
 
     @Override

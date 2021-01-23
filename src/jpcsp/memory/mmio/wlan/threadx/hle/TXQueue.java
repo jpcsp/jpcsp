@@ -33,6 +33,14 @@ public class TXQueue {
 	public int queueRead;
 	public int queueWrite;
 
+	public void init() {
+		enqueued = 0;
+		availableStorage = capacity;
+		queueEnd = queueStart + ((capacity * messageSize) << 2);
+		queueRead = queueStart;
+		queueWrite = queueStart;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("TXQueue queuePtr=0x%08X, queueName='%s', messageSize=0x%X, queueStart=0x%08X, queueSize=0x%X", queuePtr, queueName, messageSize, queueStart, capacity);

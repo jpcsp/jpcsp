@@ -89,8 +89,12 @@ public class MMIOHandlerWlanFirmware2 extends MMIOARMHandlerBase {
 	public int read32(int address) {
 		int value;
 		switch (address - baseAddress) {
+			case 0x0200: value = 0; break;
+			case 0x0208: value = 0; break;
 			case 0x020C: value = 0; break;
 			case 0x0224: value = 0; break;
+			case 0x0228: value = 0; break;
+			case 0x0238: value = 0; break;
 			case 0x0808: value = 0; break;
 			case 0x8000: value = handlerWlanFirmware.getInterrupt(); break;
 			case 0x8008: value = 0; break;
@@ -141,8 +145,12 @@ public class MMIOHandlerWlanFirmware2 extends MMIOARMHandlerBase {
 	@Override
 	public void write32(int address, int value) {
 		switch (address - baseAddress) {
-			case 0x020C: if (value != 0x10) { super.write32(address, value); } break;
+			case 0x0200: if (value != 0x4 && value != 0xC) { super.write32(address, value); } break;
+			case 0x0208: if (value != 0x0) { super.write32(address, value); } break;
+			case 0x020C: if (value != 0x0 && value != 0x2 && value != 0x10) { super.write32(address, value); } break;
 			case 0x0224: if (value != 0x2) { super.write32(address, value); } break;
+			case 0x0228: if (value != 0x40) { super.write32(address, value); } break;
+			case 0x0238: if (value != 0x0) { super.write32(address, value); } break;
 			case 0x8008: if (value != 0x10 && value != 0x100 && value != 0x400 && value != 0x8000 && value != 0x10000 && value != 0x185F0) { super.write32(address, value); } break;
 			case 0x800C: if (value != 0x100 && value != 0x400 && value != 0x8000 && value != 0x10000) { super.write32(address, value); } break;
 			case 0x9000: if (value != 0xA) { super.write32(address, value); } break;

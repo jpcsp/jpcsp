@@ -36,6 +36,15 @@ public class WlanEmulator {
 	private final ARMProcessor processor;
 	private final ARMInterpreter interpreter;
 	private final TXManager txManager;
+	private ARMProcessorThread thread;
+
+	private class ARMProcessorThread extends Thread {
+		@Override
+		public void run() {
+			bootFromThread();
+			thread = null;
+		}
+	}
 
 	public static WlanEmulator getInstance() {
 		if (instance == null) {
@@ -49,8 +58,6 @@ public class WlanEmulator {
 		processor = new ARMProcessor(mem);
 		interpreter = new ARMInterpreter(processor);
 		txManager = new TXManager();
-
-		txManager.installHLECalls(interpreter);
 	}
 
 	public ARMInterpreter getInterpreter() {
@@ -67,5 +74,18 @@ public class WlanEmulator {
 
 	public TXManager getTxManager() {
 		return txManager;
+	}
+
+	public void bootFromThread() {
+		txManager.installHLECalls(interpreter);
+		processor.resetException();
+		interpreter.run();
+	}
+
+	public void boot() {
+		thread = new ARMProcessorThread();
+		thread.setName("ARM Processor Thread");
+		thread.setDaemon(true);
+		thread.start();
 	}
 }

@@ -82,4 +82,9 @@ public abstract class BaseHLECall implements IARMHLECall {
 			log.debug(String.format("Returning from CodeBlock 0x%08X for %s", clearBit(addr, 0), comment));
 		}
 	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName();
+	}
 }

@@ -37,6 +37,8 @@ public class ARMInterpreter {
 	private ARMProcessor processor;
 	private final Map<Integer, IARMHLECall> hleCalls = new HashMap<Integer, IARMHLECall>();
 	public static final int PC_END_RUN = 0xFFFFFFFC;
+	private boolean exitInterpreter;
+	private boolean inInterpreter;
 
 	public ARMInterpreter(ARMProcessor processor) {
 		this.processor = processor;
@@ -46,8 +48,25 @@ public class ARMInterpreter {
 	}
 
 	public void run() {
-		while (!Emulator.pause && !processor.isNextInstructionPc(PC_END_RUN)) {
+		inInterpreter = true;
+		while (!Emulator.pause && !exitInterpreter && !processor.isNextInstructionPc(PC_END_RUN)) {
 			processor.interpret();
+		}
+		inInterpreter = false;
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Exiting ARMInterpreter loop at 0x%08X", processor.getNextInstructionPc()));
+		}
+		exitInterpreter = false;
+	}
+
+	public void exitInterpreter() {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Request to exit ARMInterpreter inInterpreter=%b", inInterpreter));
+		}
+
+		if (inInterpreter) {
+			exitInterpreter = true;
 		}
 	}
 
@@ -72,8 +91,12 @@ public class ARMInterpreter {
 		}
 	}
 
+	public IARMHLECall getHLECall(int addr, int imm) {
+		return hleCalls.get(addr);
+	}
+
 	public boolean interpretHLE(int addr, int imm) {
-		IARMHLECall hleCall = hleCalls.get(addr);
+		IARMHLECall hleCall = getHLECall(addr, imm);
 		if (hleCall == null) {
 			return false;
 		}

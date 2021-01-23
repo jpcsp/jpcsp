@@ -350,6 +350,10 @@ public class ARMProcessor {
 		return currentInstructionPc;
 	}
 
+	public int getNextInstructionPc() {
+		return pc;
+	}
+
 	public boolean isNextInstructionPc(int addr) {
 		return pc == addr;
 	}

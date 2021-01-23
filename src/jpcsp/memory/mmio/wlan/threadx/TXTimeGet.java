@@ -19,22 +19,19 @@ package jpcsp.memory.mmio.wlan.threadx;
 import jpcsp.arm.ARMProcessor;
 
 /**
- * VOID tx_execution_isr_exit()
+ * ULONG tx_time_get(VOID)
  *
- * Called after the execution of an exception.
- * Does not return.
- * 
  * @author gid15
  *
  */
-public class TXExecutionISRExit extends TXBaseCall {
-	@Override
+public class TXTimeGet extends TXBaseCall {
 	public void call(ARMProcessor processor, int imm) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("TXExecutionISRExit"));
+			log.debug(String.format("TXTimeGet"));
 		}
 
-		// This will return to the main loop in TXManager.
-		processor.interpreter.exitInterpreter();
+		int result = getTxManager().timeGet(processor);
+
+		returnToLr(processor, result);
 	}
 }

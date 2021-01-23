@@ -28,6 +28,7 @@ import jpcsp.memory.mmio.MMIO;
 import jpcsp.memory.mmio.MMIOHandlerReadWrite;
 import jpcsp.memory.mmio.wlan.MMIOHandlerWlanFirmware;
 import jpcsp.memory.mmio.wlan.MMIOHandlerWlanFirmware2;
+import jpcsp.settings.Settings;
 
 /**
  * The WLAN ARM memory:
@@ -102,7 +103,9 @@ public class ARMMemory extends MMIO {
 
 	    private void invalidMemoryAddress(int address, String value, String prefix, int status) {
             log.error(String.format("0x%08X - %s - Invalid memory address: 0x%08X%s", processor.getCurrentInstructionPc(), prefix, address, value));
-            Emulator.PauseEmuWithStatus(status);
+            if (!Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess")) {
+            	Emulator.PauseEmuWithStatus(status);
+            }
 	    }
 
 	    @Override
@@ -113,7 +116,9 @@ public class ARMMemory extends MMIO {
 		@Override
 	    public void invalidMemoryAddress(int address, int length, String prefix, int status) {
             log.error(String.format("0x%08X - %s - Invalid memory address: 0x%08X-0x%08X(length=0x%X)", processor.getCurrentInstructionPc(), prefix, address, address + length, length));
-            Emulator.PauseEmuWithStatus(status);
+            if (!Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess")) {
+            	Emulator.PauseEmuWithStatus(status);
+            }
 	    }
 
 	    @Override

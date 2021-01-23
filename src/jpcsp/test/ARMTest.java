@@ -25,11 +25,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.arm.ARMDisassembler;
 import jpcsp.arm.ARMInterpreter;
 import jpcsp.arm.ARMMemory;
 import jpcsp.arm.ARMProcessor;
@@ -103,10 +105,8 @@ public class ARMTest {
 			log.debug(String.format("Reading '%s', elfOffset=0x%X, bootCodeOffset=0x%X, bootCodeSize=0x%X, dataOffset=0x%X, dataSize=0x%X", inputFile, elfOffset, bootCodeOffset, bootCodeSize, dataOffset, dataSize));
 		}
 
-		int[] data = new int[dataSize >> 2];
-		for (int i = 0; i < data.length; i++) {
-			data[i] = readUnaligned32(buffer, elfOffset + dataOffset + (i << 2));
-		}
+		byte[] data = new byte[dataSize];
+		System.arraycopy(buffer, elfOffset + dataOffset, data, 0, dataSize);
 
 		ARMMemory mem = WlanEmulator.getInstance().getMemory();
 		int baseAddress = ARMMemory.BASE_RAM0;
@@ -117,12 +117,15 @@ public class ARMTest {
 		mem.getHandlerWlanFirmware().setData(data, data.length);
 
 		ARMProcessor processor = WlanEmulator.getInstance().getProcessor();
-		ARMInterpreter interpreter = WlanEmulator.getInstance().getInterpreter();
+		ARMInterpreter interpreter = processor.interpreter;
 
+		if (false) {
+			ARMDisassembler disassembler = new ARMDisassembler(log, Level.INFO, processor.mem, processor.interpreter);
+			disassembler.disasm(0);
+		}
 		RuntimeContext.debugCodeBlockCalls = true;
 		Emulator.run = true;
-		processor.resetException();
-		interpreter.run();
+		WlanEmulator.getInstance().bootFromThread();
 
 		if (false) {
 			int addr = Model.getGeneration() >= 2 ? 0x0000EFD9 : 0x0000C979;
@@ -132,7 +135,7 @@ public class ARMTest {
 			Emulator.pause = false;
 			interpreter.run();
 		}
-		if (true) {
+		if (false) {
 			while (Emulator.status == EMU_STATUS_MEM_READ || Emulator.status == EMU_STATUS_MEM_WRITE) {
 				Emulator.pause = false;
 				interpreter.run();

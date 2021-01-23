@@ -36,6 +36,7 @@ import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.readUnaligned16;
+import static jpcsp.util.Utilities.readUnaligned32;
 import static jpcsp.util.Utilities.setFlag;
 import static jpcsp.util.Utilities.writeUnaligned32;
 
@@ -171,6 +172,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	//
 	private static MMIOHandlerWlan instance;
 	public static final int BASE_ADDRESS = 0xBD300000;
+	public static final boolean useWlanFirmwareEmulation = false;
 	private final IntArrayMemory attributesMemory = new IntArrayMemory(new int[0x40 / 4]);
 	private final IntArrayMemory commandPacket = new IntArrayMemory(new int[0xC00 / 4]);
 	private final TPointer commandPacketPtr = commandPacket.getPointer();
@@ -196,8 +198,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	public static final int WLAN_EVENT_UNKNOWN_40 = 0x40;
 	public static final int WLAN_EVENT_GAMEMODE_SEND_MASTER = 0x80;
 	//
-	private final byte[] chipCode = new byte[0x173FC];
-	private int chipCodeIndex;
+	private final byte[] firmwareBootCode = new byte[0x85C + 0xC];
+	private final byte[] firmwareData = new byte[0x173FC];
+	private int firmwareBootCodeIndex;
+	private int firmwareDataIndex;
 	private boolean booting;
 	private boolean adhocStarted;
 	private boolean adhocJoined;
@@ -210,6 +214,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
     private final byte[] otherMacAddress = new byte[MAC_ADDRESS_LENGTH];
     private final byte[] gameModeGroupAddress = new byte[MAC_ADDRESS_LENGTH];
     private final byte[] gameModeMasterAddress = new byte[MAC_ADDRESS_LENGTH];
+	private MMIOHandlerWlanFirmware handlerWlanFirmware;
 
     public static MMIOHandlerWlan getInstance() {
     	if (instance == null) {
@@ -230,8 +235,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	@Override
 	public void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
-		stream.readBytes(chipCode);
-		chipCodeIndex = stream.readInt();
+		stream.readBytes(firmwareBootCode);
+		stream.readBytes(firmwareData);
+		firmwareDataIndex = stream.readInt();
+		firmwareBootCodeIndex = stream.readInt();
 		booting = stream.readBoolean();
 		adhocStarted = stream.readBoolean();
 		adhocJoined = stream.readBoolean();
@@ -246,8 +253,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	@Override
 	public void write(StateOutputStream stream) throws IOException {
 		stream.writeVersion(STATE_VERSION);
-		stream.writeBytes(chipCode);
-		stream.writeInt(chipCodeIndex);
+		stream.writeBytes(firmwareBootCode);
+		stream.writeBytes(firmwareData);
+		stream.writeInt(firmwareDataIndex);
+		stream.writeInt(firmwareBootCodeIndex);
 		stream.writeBoolean(booting);
 		stream.writeBoolean(adhocStarted);
 		stream.writeBoolean(adhocJoined);
@@ -293,8 +302,12 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		sendDataPacketPtr.clear(sendDataPacket.getSize());
 		receiveDataPacketPtr.clear(receiveDataPacket.getSize());
 
-		chipCodeIndex = -1;
+		firmwareDataIndex = -1;
+		firmwareBootCodeIndex = 0;
 		booting = true;
+		if (useWlanFirmwareEmulation) {
+			handlerWlanFirmware = WlanEmulator.getInstance().getMemory().getHandlerWlanFirmware();
+		}
 	}
 
 	private void createAccessPoint() {
@@ -471,6 +484,32 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		return isMyMacAddress(gameModeMasterAddress);
 	}
 
+	private void memcpyToFirmware(int dest, TPointer src, int length) {
+		Memory firmwareMemory = handlerWlanFirmware.getMemory();
+		if (((src.getAddress() | dest | length) & 0x3) == 0) {
+			for (int i = 0; i < length; i += 4) {
+				firmwareMemory.write32(dest + i, src.getValue32(i));
+			}
+		} else {
+			for (int i = 0; i < length; i++) {
+				firmwareMemory.write8(dest + i, src.getValue8(i));
+			}
+		}
+	}
+
+	private void memcpyFromFirmware(TPointer dest, int src, int length) {
+		Memory firmwareMemory = handlerWlanFirmware.getMemory();
+		if (((dest.getAddress() | src | length) & 0x3) == 0) {
+			for (int i = 0; i < length; i += 4) {
+				dest.setValue32(i, firmwareMemory.read32(src + i));
+			}
+		} else {
+			for (int i = 0; i < length; i++) {
+				dest.setUnsignedValue8(i, firmwareMemory.read8(src + i));
+			}
+		}
+	}
+
 	private void sendGameModeEvents() {
 		if (!gameMode) {
 			return;
@@ -495,20 +534,52 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		}
 	}
 
+	private void checkWlanFirmwareResult() {
+		if (!hasResultFlag(WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE)) {
+			int commandResponseLength = handlerWlanFirmware.getLengthE810();
+			if (commandResponseLength > 0) {
+				int commandResponseAddr = handlerWlanFirmware.getAddrE810();
+
+				memcpyFromFirmware(commandPacketPtr, commandResponseAddr, commandResponseLength);
+				handlerWlanFirmware.clearLengthE810();
+
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("checkWlanFirmwareResult response cmd=0x%X, length=0x%X, resultCode=0x%X: %s", commandPacket.read16(0) & 0x7FFF, commandResponseLength, commandPacket.read16(6), Utilities.getMemoryDump(commandPacket, 0, commandResponseLength)));
+				}
+
+				setRegisterValue(WLAN_REG_CMD_RESPONSE_PACKET_LENGTH, 2, alignUp(commandResponseLength, 7));
+
+				endianSwap32(commandPacket, 0, commandResponseLength);
+
+				addResultFlag(WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE);
+			}
+		}
+	}
+
 	@Override
 	protected int getRegisterValue(int register) {
 		switch (register) {
 			case WLAN_REG_CMD_RESPONSE_PACKET_LENGTH:
 				if (booting) {
-					// Finished writing the chip code, return a fixed magic value
-					setRegisterValue(WLAN_REG_CMD_RESPONSE_PACKET_LENGTH, 4, endianSwap32(0x46554755));
-					chipCodeIndex = -1;
+					if (useWlanFirmwareEmulation) {
+						handlerWlanFirmware.setData(firmwareData, firmwareDataIndex);
+					} else {
+						// Finished writing the chip code, return a fixed magic value
+						setRegisterValue(WLAN_REG_CMD_RESPONSE_PACKET_LENGTH, 4, endianSwap32(0x46554755));
+					}
+					firmwareDataIndex = -1;
 					booting = false;
+				}
+				if (useWlanFirmwareEmulation && !hasResultFlag(WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE)) {
+					setRegisterValue(WLAN_REG_CMD_RESPONSE_PACKET_LENGTH, 4, handlerWlanFirmware.getLength());
 				}
 				break;
 			case WLAN_REG_RESULT:
 				receiveMessage();
 				sendGameModeEvents();
+				if (useWlanFirmwareEmulation) {
+					checkWlanFirmwareResult();
+				}
 				break;
 		}
 
@@ -861,6 +932,12 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		int sequenceNumber = commandPacket.read16(4);
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("processCommandPacket cmd=0x%X, bodySize=0x%X, sequenceNumber=0x%X, %s", cmd, bodySize, sequenceNumber, Utilities.getMemoryDump(commandPacket, 0, size)));
+		}
+
+		if (useWlanFirmwareEmulation) {
+			memcpyToFirmware(handlerWlanFirmware.getAddr(), commandPacketPtr, bodySize);
+			handlerWlanFirmware.setInterrupt(MMIOHandlerWlanFirmware.INTERRUPT_UNKNOWN_8);
+			return;
 		}
 
 		int resultCode = 0;
@@ -1522,7 +1599,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	@Override
 	protected void writeData16(int dataAddress, int dataIndex, int value, boolean endOfCommand) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerWlan.writeData16 dataAddress=0x%X, dataIndex=0x%X, outputPacketSize=0x%X, chipCodeIndex=0x%X, value=0x%04X, endOfCommand=%b", dataAddress, dataIndex, getWlanOutputPacketSize(), chipCodeIndex, value, endOfCommand));
+			log.debug(String.format("MMIOHandlerWlan.writeData16 dataAddress=0x%X, dataIndex=0x%X, outputPacketSize=0x%X, chipCodeIndex=0x%X, value=0x%04X, endOfCommand=%b", dataAddress, dataIndex, getWlanOutputPacketSize(), firmwareDataIndex, value, endOfCommand));
 		}
 
 		if (booting) {
@@ -1538,16 +1615,32 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	@Override
 	protected void writeData32(int dataAddress, int dataIndex, int value, boolean endOfCommand) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerWlan.writeData32 dataAddress=0x%X, dataIndex=0x%X, outputPacketSize=0x%X, chipCodeIndex=0x%X, value=0x%08X, endOfCommand=%b", dataAddress, dataIndex, getWlanOutputPacketSize(), chipCodeIndex, value, endOfCommand));
+			log.debug(String.format("MMIOHandlerWlan.writeData32 dataAddress=0x%X, dataIndex=0x%X, outputPacketSize=0x%X, chipCodeIndex=0x%X, value=0x%08X, endOfCommand=%b", dataAddress, dataIndex, getWlanOutputPacketSize(), firmwareDataIndex, value, endOfCommand));
 		}
 
 		if (booting) {
 			if (getWlanOutputPacketSize() == 0 && dataIndex == 0xC) {
-				chipCodeIndex = 0;
+				// Ending the reception of the firmware boot code
+				// and continuing with the firmware data
+				if (useWlanFirmwareEmulation) {
+					// Writing the boot code to the firmware at address 0
+					Memory mem = handlerWlanFirmware.getMemory();
+					for (int i = 0; i < firmwareBootCodeIndex; i += 4) {
+						mem.write32(i, readUnaligned32(firmwareBootCode, i));
+					}
+					WlanEmulator.getInstance().boot();
+				}
+				firmwareBootCodeIndex = -1;
+				firmwareDataIndex = 0;
 				setWlanInputPacketSize(0x600);
-			} else if (chipCodeIndex >= 0) {
-				writeUnaligned32(chipCode, chipCodeIndex, value);
-				chipCodeIndex += 4;
+			} else if (firmwareBootCodeIndex >= 0) {
+				// Receiving the firmware boot code first
+				writeUnaligned32(firmwareBootCode, firmwareBootCodeIndex, endianSwap32(value));
+				firmwareBootCodeIndex += 4;
+			} else if (firmwareDataIndex >= 0) {
+				// Receiving the firmware data (after the boot code)
+				writeUnaligned32(firmwareData, firmwareDataIndex, endianSwap32(value));
+				firmwareDataIndex += 4;
 			}
 		} else {
 			getSendPacket(dataAddress).write32(dataIndex, value);

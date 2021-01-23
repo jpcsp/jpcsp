@@ -19,22 +19,26 @@ package jpcsp.memory.mmio.wlan.threadx;
 import jpcsp.arm.ARMProcessor;
 
 /**
- * VOID tx_execution_isr_exit()
+ * UINT tx_queue_send(TX_QUEUE *queue_ptr,
+ *                    VOID *source_ptr,
+ *                    ULONG wait_option)
  *
- * Called after the execution of an exception.
- * Does not return.
- * 
  * @author gid15
  *
  */
-public class TXExecutionISRExit extends TXBaseCall {
+public class TXQueueSend extends TXBaseCall {
 	@Override
 	public void call(ARMProcessor processor, int imm) {
+		int queuePtr = getParameterValue(processor, 0);
+		int sourcePtr = getParameterValue(processor, 1);
+		int waitOption = getParameterValue(processor, 2);
+
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("TXExecutionISRExit"));
+			log.debug(String.format("TXQueueSend queuePtr=0x%08X, sourcePtr=0x%08X, waitOption=0x%X", queuePtr, sourcePtr, waitOption));
 		}
 
-		// This will return to the main loop in TXManager.
-		processor.interpreter.exitInterpreter();
+		int result = getTxManager().queueSend(processor, queuePtr, sourcePtr, waitOption);
+
+		returnToLr(processor, result);
 	}
 }

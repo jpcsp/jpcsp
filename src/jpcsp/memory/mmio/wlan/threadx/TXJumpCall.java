@@ -46,4 +46,9 @@ public class TXJumpCall extends BaseHLECall {
 
 		jump(processor, addr);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("TXJumpCall %s", getRegisterName(register));
+	}
 }

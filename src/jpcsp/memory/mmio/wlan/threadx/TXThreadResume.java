@@ -19,22 +19,22 @@ package jpcsp.memory.mmio.wlan.threadx;
 import jpcsp.arm.ARMProcessor;
 
 /**
- * VOID tx_execution_isr_exit()
+ * UINT tx_thread_resume(TX_THREAD *thread_ptr)
  *
- * Called after the execution of an exception.
- * Does not return.
- * 
  * @author gid15
  *
  */
-public class TXExecutionISRExit extends TXBaseCall {
+public class TXThreadResume extends TXBaseCall {
 	@Override
 	public void call(ARMProcessor processor, int imm) {
+		int threadPtr = getParameterValue(processor, 0);
+
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("TXExecutionISRExit"));
+			log.debug(String.format("TXThreadResume threadPtr=0x%08X", threadPtr));
 		}
 
-		// This will return to the main loop in TXManager.
-		processor.interpreter.exitInterpreter();
+		int result = getTxManager().threadResume(processor, threadPtr);
+
+		returnToLr(processor, result);
 	}
 }

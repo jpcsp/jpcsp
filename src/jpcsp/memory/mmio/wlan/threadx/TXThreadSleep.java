@@ -19,22 +19,22 @@ package jpcsp.memory.mmio.wlan.threadx;
 import jpcsp.arm.ARMProcessor;
 
 /**
- * VOID tx_execution_isr_exit()
+ * UINT tx_thread_sleep(ULONG timer_ticks)
  *
- * Called after the execution of an exception.
- * Does not return.
- * 
  * @author gid15
  *
  */
-public class TXExecutionISRExit extends TXBaseCall {
+public class TXThreadSleep extends TXBaseCall {
 	@Override
 	public void call(ARMProcessor processor, int imm) {
+		int timerTicks = getParameterValue(processor, 0);
+
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("TXExecutionISRExit"));
+			log.debug(String.format("TXThreadSleep timerTicks=0x%X", timerTicks));
 		}
 
-		// This will return to the main loop in TXManager.
-		processor.interpreter.exitInterpreter();
+		int result = getTxManager().threadSleep(processor, timerTicks);
+
+		returnToLr(processor, result);
 	}
 }

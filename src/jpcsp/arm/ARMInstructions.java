@@ -325,7 +325,11 @@ public class ARMInstructions {
 	}
 
 	private static final boolean getSubstractC(int value1, int value2, int value) {
-		return !(value < 0);
+		boolean neg = value < 0;
+		boolean neg1 = value1 < 0;
+		boolean neg2 = value2 < 0;
+		boolean borrow = neg1 ? neg2 && neg : neg2 || neg;
+		return !borrow;
 	}
 
 	private static final boolean getSubstractV(int value1, int value2, int value) {
@@ -442,7 +446,7 @@ public class ARMInstructions {
 
     		if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
     			if (rm == REG_LR) {
-    				log.debug(String.format("Returning from CodeBlock to 0x%08X, sp=0x%08X, r0=0x%08X", addr, processor.getSp(), processor.getRegister(0)));
+    				log.debug(String.format("Returning from CodeBlock to 0x%08X, sp=0x%08X, r0=0x%08X", clearBit(addr, 0), processor.getSp(), processor.getRegister(0)));
     			} else if (rm == 0) {
     				log.debug(String.format("Starting CodeBlock 0x%08X, lr=0x%08X, sp=0x%08X", addr, clearBit(processor.getLr(), 0), processor.getSp()));
     			} else if (rm == 1) {
@@ -1152,12 +1156,12 @@ public class ARMInstructions {
         	}
 
         	if (hasFlag(insn, 0x0100)) {
-    			int value = processor.mem.read32(sp);
-    			processor.jumpWithMode(value);
+    			int addr = processor.mem.read32(sp);
+    			processor.jumpWithMode(addr);
     			sp += 4;
 
     			if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
-    				log.debug(String.format("Returning from CodeBlock to 0x%08X, sp=0x%08X, r0=0x%08X", value, sp, processor.getRegister(0)));
+    				log.debug(String.format("Returning from CodeBlock to 0x%08X, sp=0x%08X, r0=0x%08X", clearBit(addr, 0), sp, processor.getRegister(0)));
     			}
         	}
 
@@ -1883,6 +1887,23 @@ public class ARMInstructions {
         }
     };
 
+    public static final ARMInstruction CMP_High_Thumb = new ARMInstruction() {
+        @Override
+        public void interpret(ARMProcessor processor, int insn) {
+        	int rn = (insn & 0x7) | ((insn >> 4) & 0x8);
+        	int rm = (insn >> 3) & 0xF;
+        	int value1 = processor.getRegister(rn);
+        	int value2 = processor.getRegister(rm);
+        	int value = value1 - value2;
+			processor.setCpsrResult(value, getSubstractC(value1, value2, value), getSubstractV(value1, value2, value));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+			return String.format("cmp %s, %s", getRegisterName((insn & 0x7) | ((insn >> 4) & 0x8)), getRegisterName(insn >> 3));
+        }
+    };
+
     public static final ARMInstruction AND_Thumb = new ARMInstruction() {
         @Override
         public void interpret(ARMProcessor processor, int insn) {
@@ -2291,6 +2312,7 @@ public class ARMInstructions {
     public static final ARMInstruction BKPT = new ARMInstruction() {
         @Override
         public void interpret(ARMProcessor processor, int insn) {
+        	// The BKPT must be unconditional
         	int imm16 = ((insn >> 4) & 0xFFF0) | (insn & 0xF);
         	if (!processor.interpreter.interpretHLE(processor.getCurrentInstructionPc(), imm16)) {
             	processor.prefetchAbortException();

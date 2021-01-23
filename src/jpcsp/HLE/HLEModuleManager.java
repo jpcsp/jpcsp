@@ -41,6 +41,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.hardware.Model;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.HLEUtilities;
@@ -761,6 +762,11 @@ public class HLEModuleManager {
 
 		List<String> availableModuleFileNames = new LinkedList<>();
 		for (String moduleFileName : moduleFileNamesToBeLoaded) {
+			// Replace "01g" with "0Ng" where N is the PSP model generation
+			if (moduleFileName.contains("01g")) {
+				moduleFileName = moduleFileName.replace("01g", String.format("%02dg", Model.getGeneration()));
+			}
+
 			if (runningFromVsh || !isModuleFileNameVshOnly(moduleFileName)) {
 				StringBuilder localFileName = new StringBuilder();
 				IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(moduleFileName, localFileName);

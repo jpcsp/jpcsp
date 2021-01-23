@@ -23,6 +23,7 @@ import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.readUnaligned16;
 import static jpcsp.util.Utilities.readUnaligned32;
 import static jpcsp.util.Utilities.setBit;
+import static jpcsp.util.Utilities.setFlag;
 import static jpcsp.util.Utilities.writeUnaligned16;
 import static jpcsp.util.Utilities.writeUnaligned32;
 
@@ -49,11 +50,11 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 	public static Logger log = sceWlan.log;
 	private static final int STATE_VERSION = 0;
 	private static final int STATUS_COMPLETED = 0x4;
-	private static final int INTERRUPT_UNKNOWN_4 = 4;
-	private static final int INTERRUPT_UNKNOWN_8 = 8;
-	private static final int INTERRUPT_UNKNOWN_10 = 10;
-	private static final int INTERRUPT_UNKNOWN_15 = 15;
-	private static final int INTERRUPT_UNKNOWN_16 = 16;
+	public static final int INTERRUPT_UNKNOWN_4 = 4;
+	public static final int INTERRUPT_UNKNOWN_8 = 8;
+	public static final int INTERRUPT_UNKNOWN_10 = 10;
+	public static final int INTERRUPT_UNKNOWN_15 = 15;
+	public static final int INTERRUPT_UNKNOWN_16 = 16;
 	private static int EEPROM_ADDRESS_SIZE = 3;
 	private int addr;
 	private int status;
@@ -80,14 +81,18 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 	private int lengthA41C;
 	private int addrA41C;
 	private int unknownA510;
+	private int unknownA53C;
+	private int lengthE810;
+	private int addrE810;
+	private int addrE820;
 	protected int eepromMode;
 	private int eepromIndex;
 	private int eepromCmd;
 	private final byte[] eepromData = new byte[0x200]; 
 	private final byte[] macAddress = new byte[MAC_ADDRESS_LENGTH];
-	private int[] data;
-	private int dataOffset;
-	private int dataLength;
+	private volatile byte[] data;
+	private volatile int dataOffset;
+	private volatile int dataLength;
 
 	public MMIOHandlerWlanFirmware(int baseAddress) {
 		super(baseAddress);
@@ -109,6 +114,11 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		interrupt = setBit(interrupt, INTERRUPT_UNKNOWN_16);
 		unknown3024 = 0x1;
 		unknownA510 = 0x6F22C8BF;
+		status |= STATUS_COMPLETED;
+		Memory mem = getMemory();
+		mem.write16(addr + 0, (short) MMIOHandlerWlan.CMD_GET_HW_SPEC);
+		mem.write16(addr + 2, (short) 46);
+		mem.write16(addr + 4, (short) 0);
 	}
 
 	@Override
@@ -140,6 +150,10 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		lengthA41C = stream.readInt();
 		addrA41C = stream.readInt();
 		unknownA510 = stream.readInt();
+		unknownA53C = stream.readInt();
+		lengthE810 = stream.readInt();
+		addrE810 = stream.readInt();
+		addrE820 = stream.readInt();
 		eepromMode = stream.readInt();
 		eepromIndex = stream.readInt();
 		eepromCmd = stream.readInt();
@@ -177,6 +191,10 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		stream.writeInt(lengthA41C);
 		stream.writeInt(addrA41C);
 		stream.writeInt(unknownA510);
+		stream.writeInt(unknownA53C);
+		stream.writeInt(lengthE810);
+		stream.writeInt(addrE810);
+		stream.writeInt(addrE820);
 		stream.writeInt(eepromMode);
 		stream.writeInt(eepromIndex);
 		stream.writeInt(eepromCmd);
@@ -232,24 +250,46 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		checksumEEPROM(offset2, length2);
 	}
 
-	public void setData(int[] data, int dataLength) {
+	public void setData(byte[] data, int dataLength) {
 		this.data = data;
 		this.dataLength = dataLength;
 		dataOffset = 0;
 	}
 
+	public int getLength() {
+		return length;
+	}
+
+	public int getAddr() {
+		return addr;
+	}
+
+	public int getAddrE810() {
+		return addrE810;
+	}
+
+	public int getLengthE810() {
+		return lengthE810;
+	}
+
+	public void clearLengthE810() {
+		lengthE810 = 0;
+	}
+
 	private int getStatus( ) {
+		int returnedStatus = status;
+
 		if (data != null && length > 0) {
 			Memory mem = getMemory();
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Reading 0x%X / 0x%X", dataOffset, dataLength));
 			}
 
-			for (int i = 0; i < length; i += 4) {
+			for (int i = 0; i < length; i++) {
 				if (dataOffset < dataLength) {
-					mem.write32(addr + i, data[dataOffset++]);
+					mem.write8(addr + i, data[dataOffset++]);
 				} else {
-					mem.write32(addr + i, 0);
+					mem.write8(addr + i, (byte) 0);
 				}
 			}
 
@@ -258,9 +298,16 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 					log.debug(String.format("Reading data to 0x%08X, length=0x%X", mem.read32(addr + 4), mem.read32(addr + 8) - 4));
 				}
 			}
+
+			if (dataOffset >= dataLength) {
+				dataOffset = 0;
+				dataLength = 0;
+				data = null;
+			}
+			returnedStatus |= STATUS_COMPLETED;
 		}
 
-		return status | STATUS_COMPLETED;
+		return returnedStatus;
 	}
 
 	private void clearStatus(int mask) {
@@ -271,8 +318,31 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		return interrupt;
 	}
 
+	private void checkInterrupt() {
+		if (interrupt != 0) {
+			WlanEmulator.getInstance().getTxManager().triggerIrqException();
+		}
+	}
+
 	private void clearInterrupt(int flags) {
 		interrupt = clearFlag(interrupt, flags);
+	}
+
+	public void setInterrupt(int interruptBit) {
+		interrupt = setBit(interrupt, interruptBit);
+
+		// Both INTERRUPT_UNKNOWN_4 and unknown3024 bit 0 seems to be related
+		if (interruptBit == INTERRUPT_UNKNOWN_4) {
+			unknown3024 = setBit(unknown3024, 0);
+		}
+		if (interruptBit == INTERRUPT_UNKNOWN_8) {
+			status = setFlag(status, STATUS_COMPLETED);
+		}
+		if (interruptBit == INTERRUPT_UNKNOWN_10) {
+			unknownA510 = 0x6F22C8BF;
+		}
+
+		checkInterrupt();
 	}
 
 	private void clearUnknown3024(int mask) {
@@ -495,7 +565,10 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 	public int read32(int address) {
 		int value;
 		switch (address - baseAddress) {
+			case 0x000C: value = length; break;
+			case 0x0010: value = 0; break;
 			case 0x0024: value = getStatus(); break;
+			case 0x0034: value = 0; break;
 			case 0x2000: value = 0; break;
 			case 0x200C: value = 0; break;
 			case 0x2018: value = 0; break;
@@ -509,7 +582,10 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0x2800: value = getInterrupt(); break;
 			case 0x2808: value = 0; break;
 			case 0x3024: value = unknown3024; break;
+			case 0xA000: value = 0; break;
 			case 0xA010: value = 0; break;
+			case 0xA014: value = 0; break;
+			case 0xA040: value = 0; break;
 			case 0xA044: value = 0; break;
 			case 0xA048: value = 0; break;
 			case 0xA04C: value = 0; break;
@@ -530,6 +606,7 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA130: value = 0; break;
 			case 0xA134: value = 0; break;
 			case 0xA138: value = 0; break;
+			case 0xA2D0: value = 0; break;
 			case 0xA2D4: value = 0; break;
 			case 0xA300: value = 0; break;
 			case 0xA3F0: value = 0; break;
@@ -543,27 +620,48 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA410: value = 0; break;
 			case 0xA414: value = 0; break;
 			case 0xA41C: value = 0; break;
+			case 0xA430: value = 0; break;
+			case 0xA440: value = 0; break;
 			case 0xA444: value = 0; break;
 			case 0xA448: value = 0; break;
 			case 0xA44C: value = 0; break;
 			case 0xA450: value = 0; break;
 			case 0xA454: value = 0; break;
+			case 0xA458: value = 0; break;
 			case 0xA45C: value = 0; break;
+			case 0xA46C: value = 0; break;
 			case 0xA510: value = unknownA510; break;
 			case 0xA514: value = 0; break;
 			case 0xA528: value = readUnaligned32(macAddress, 0); break;
 			case 0xA52C: value = readUnaligned16(macAddress, 4); break;
-			case 0xA53C: value = 0; break;
+			case 0xA530: value = 0; break;
+			case 0xA534: value = 0; break;
+			case 0xA53C: value = unknownA53C; break;
 			case 0xA5F0: value = 0; break;
 			case 0xA600: value = 0; break;
+			case 0xA604: value = 0; break;
+			case 0xA608: value = 0; break;
+			case 0xA60C: value = 0; break;
+			case 0xA610: value = 0; break;
+			case 0xA614: value = 0; break;
+			case 0xA618: value = 0; break;
+			case 0xA61C: value = 0; break;
+			case 0xA620: value = 0; break;
+			case 0xA624: value = 0; break;
+			case 0xA628: value = 0; break;
+			case 0xA62C: value = 0; break;
+			case 0xA644: value = 0; break;
 			case 0xA650: value = 0; break;
 			case 0xA658: value = 0; break;
 			case 0xA8E4: value = 0; break;
 			case 0xA824: value = 0; break;
+			case 0xA848: value = 0; break;
 			case 0xA890: value = 0; break;
 			case 0xA930: value = 0; break;
 			case 0xD00C: value = 0; break;
+			case 0xE800: value = lengthE810; break;
 			case 0xE840: value = 0; break;
+			case 0xE848: value = 0; break;
 			case 0xE8A0: value = 0; break;
 			case 0xE8A4: value = 0; break;
 			default: value = super.read32(address); break;
@@ -580,6 +678,7 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 	public void write8(int address, byte value) {
 		final int value8 = value & 0xFF;
 		switch (address - baseAddress) {
+			case 0xA550: if (value8 != 0x11) { super.write8(address, value); }; break;
 			case 0xC000: if (value8 != 0x01) { super.write8(address, value); }; break;
 			case 0xC004: if (value8 != 0x00) { super.write8(address, value); }; break;
 			case 0xC100: if (value8 != 0x00) { super.write8(address, value); }; break;
@@ -601,6 +700,7 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0x000C: length = value16; break;
 			case 0x200C: if (value16 != 0x777F && value16 != 0xFFFF) { super.write16(address, value); } break;
 			case 0x2030: unknown2030 = value16; break;
+			case 0xA640: if (value16 != 0x2) { super.write16(address, value); } break;
 			case 0xC100: if (value16 != 0x2 && value16 != 0x4 && value16 != 0x8) { super.write16(address, value); } break;
 			case 0xC108: if (value16 != 0x582) { super.write16(address, value); } break;
 			default: super.write16(address, value); break;
@@ -616,13 +716,13 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		switch (address - baseAddress) {
 			case 0x0000: if (value != 0x0) { super.write32(address, value); } break;
 			case 0x000C: length = value; break;
-			case 0x0010: if (value != 0x0) { super.write32(address, value); } break;
+			case 0x0010: if (value != 0x0 && value != 0x4010) { super.write32(address, value); } break;
 			case 0x0020: if (value != 0x0 && value != 0x1) { super.write32(address, value); } break;
 			case 0x0024: clearStatus(value); break;
 			case 0x0028: if (value != 0xFF) { super.write32(address, value); } break;
 			case 0x002C: if (value != 0xFF) { super.write32(address, value); } break;
 			case 0x0030: if (value != 0xFF) { super.write32(address, value); } break;
-			case 0x0034: if (value != 0x4) { super.write32(address, value); } break;
+			case 0x0034: if (value != 0x4 && value != 0x5 && value != 0x8 && value != 0x10) { super.write32(address, value); } break;
 			case 0x0038: addr0038 = value; break;
 			case 0x003C: addr = value; break;
 			case 0x0040: addr0040 = value; break;
@@ -654,7 +754,7 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA024: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA028: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA02C: if (value != 0x0) { super.write32(address, value); } break;
-			case 0xA040: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xA040: if (value != 0x0 && value != 0x4) { super.write32(address, value); } break;
 			case 0xA044: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA048: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA04C: if (value != 0x0) { super.write32(address, value); } break;
@@ -687,21 +787,21 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA0D4: if (value != 0x1F) { super.write32(address, value); } break;
 			case 0xA0D8: if (value != 0x7) { super.write32(address, value); } break;
 			case 0xA0DC: if (value != 0x1F) { super.write32(address, value); } break;
-			case 0xA0E0: if (value != 0x1F) { super.write32(address, value); } break;
+			case 0xA0E0: if (value != 0x1F && value != 0x5B) { super.write32(address, value); } break;
 			case 0xA100: if (value != 0x0 && value != 0x14) { super.write32(address, value); } break;
-			case 0xA104: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA108: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA10C: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA110: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA114: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA118: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA11C: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA120: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA124: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA128: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA12C: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA130: if (value != 0x1000) { super.write32(address, value); } break;
-			case 0xA134: if (value != 0x1000 && value != 0xA) { super.write32(address, value); } break;
+			case 0xA104: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA108: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA10C: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA110: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA114: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA118: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA11C: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA120: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA124: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA128: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA12C: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA130: if (value != 0x0 && value != 0x100 && value != 0x1000) { super.write32(address, value); } break;
+			case 0xA134: if (value != 0x0 && value != 0x100 && value != 0x1000 && value != 0xA) { super.write32(address, value); } break;
 			case 0xA138: if (value != 0x14 && value != 0x56E) { super.write32(address, value); } break;
 			case 0xA160: if (value != 0x20) { super.write32(address, value); } break;
 			case 0xA164: if (value != 0x20) { super.write32(address, value); } break;
@@ -747,8 +847,9 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA2C4: if (value != 0x60) { super.write32(address, value); } break;
 			case 0xA2C8: if (value != 0x60) { super.write32(address, value); } break;
 			case 0xA2CC: if (value != 0x60) { super.write32(address, value); } break;
+			case 0xA2D0: if (value != 0x0 && value != 0x8000) { super.write32(address, value); } break;
 			case 0xA2D4: if (value != 0x0 && value != 0x10) { super.write32(address, value); } break;
-			case 0xA300: if (value != 0x0 && value != 0x8 && value != 0xA) { super.write32(address, value); } break;
+			case 0xA300: if (value != 0x0 && value != 0x8 && value != 0xA && value != 0xC) { super.write32(address, value); } break;
 			case 0xA3E0: if (value != 0x60) { super.write32(address, value); } break;
 			case 0xA3F0: lengthA3F4 = value; break;
 			case 0xA3F4: addrA3F4 = value; break;
@@ -769,23 +870,42 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA440: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA45C: if (value != 0x200) { super.write32(address, value); } break;
 			case 0xA468: if (value != 0x1E) { super.write32(address, value); } break;
-			case 0xA46C: if (value != 0xFDDDF015 && value != 0xFFDDF015) { super.write32(address, value); } break;
+			case 0xA46C: if (value != 0xFDDDF015 && value != 0xFFDDF015 && value != 0x40 && value != 0x0) { super.write32(address, value); } break;
 			case 0xA470: if (value != 0xFFFFFFFF) { super.write32(address, value); } break;
-			case 0xA500: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xA500: if (value != 0x0 && value != 0x2) { super.write32(address, value); } break;
 			case 0xA510: unknownA510 &= value; break; // Writing seems to clear bits
-			case 0xA514: if (value != 0x0 && value != 0x6F32CCBF && value != 0x6F128CBF) { super.write32(address, value); } break;
+			case 0xA514: if (value != 0x0 && value != 0x6F32CCBF && value != 0x6F128CBF && value != 0x02000000 && value != 0x08000000) { super.write32(address, value); } break;
 			case 0xA518: if (value != 0xFFFFFFFF) { super.write32(address, value); } break;
 			case 0xA528: writeUnaligned32(macAddress, 0, value); break;
 			case 0xA52C: writeUnaligned16(macAddress, 4, value & 0xFFFF); break;
-			case 0xA53C: if (value != 0x4 && value != 0x40404) { super.write32(address, value); } break;
+			case 0xA530: if (value != 0x0 && (value & 0x000000FF) != 0x00000002) { super.write32(address, value); } break; // Seems to be 0 or a random value always ending with 02 (a locally administered MAC address?)
+			case 0xA534: if (value != 0x0 && (value & 0xFFFF0000) != 0x00000000) { super.write32(address, value); } break; // Seems to be 0 or a random 16-bit value
+			case 0xA53C: unknownA53C = value; if (value != 0x4 && value != 0x40404) { super.write32(address, value); } break;
+			case 0xA554: if (value != 0x5F505350) { super.write32(address, value); } break;
+			case 0xA558: if (value != 0x454C5541) { super.write32(address, value); } break;
+			case 0xA55C: if (value != 0x39303053) { super.write32(address, value); } break;
+			case 0xA560: if (value != 0x4C5F3138) { super.write32(address, value); } break;
+			case 0xA564: if (value != 0x0000005F) { super.write32(address, value); } break;
+			case 0xA568: if (value != 0x00000000) { super.write32(address, value); } break;
+			case 0xA56C: if (value != 0x00000000) { super.write32(address, value); } break;
+			case 0xA570: if (value != 0x00000000) { super.write32(address, value); } break;
 			case 0xA588: if (value != 0x1) { super.write32(address, value); } break;
 			case 0xA58C: if (value != 0x18000) { super.write32(address, value); } break;
 			case 0xA5F0: if (value != 0x1 && value != 0x40000000) { super.write32(address, value); } break;
+			case 0xA600: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xA604: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xA608: if (value != 0x32000) { super.write32(address, value); } break;
+			case 0xA60C: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xA610: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xA614: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA618: if (value != 0x64) { super.write32(address, value); } break;
+			case 0xA61C: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA620: if (value != 0xFF) { super.write32(address, value); } break;
-			case 0xA628: if (value != 0x1 && value != 0xFF) { super.write32(address, value); } break;
+			case 0xA624: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xA628: if (value != 0x0 && value != 0x1 && value != 0xFF) { super.write32(address, value); } break;
 			case 0xA62C: if (value != 0x0) { super.write32(address, value); } break;
-			case 0xA640: if (value != 0x80 && value != 0x100 && value != 0x1FF) { super.write32(address, value); } break;
+			case 0xA640: if (value != 0x1 && value != 0x80 && value != 0x100 && value != 0x1FF) { super.write32(address, value); } break;
+			case 0xA644: if (value != 0x0 && value != 0x1) { super.write32(address, value); } break;
 			case 0xA650: if (value != 0x0 && value != 0x4) { super.write32(address, value); } break;
 			case 0xA658: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA660: if (value != 0x28 && value != 0x2C) { super.write32(address, value); } break;
@@ -799,8 +919,8 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA68C: if (value != 0x16) { super.write32(address, value); } break;
 			case 0xA690: if (value != 0x16) { super.write32(address, value); } break;
 			case 0xA694: if (value != 0x16) { super.write32(address, value); } break;
-			case 0xA698: if (value != 0x16 && value != 0x19) { super.write32(address, value); } break;
-			case 0xA69C: if (value != 0x16) { super.write32(address, value); } break;
+			case 0xA698: if (value != 0x16 && value != 0x19 && value != 0x32) { super.write32(address, value); } break;
+			case 0xA69C: if (value != 0x16 && value != 0x32) { super.write32(address, value); } break;
 			case 0xA800: if (value != 0x1 && value != 0x4 && value != 0x2) { super.write32(address, value); } break;
 			case 0xA820: if (value != 0x10200 && value != 0x10C00) { super.write32(address, value); } break;
 			case 0xA824: if (value != 0x1000008 && value != 0x0 && value != 0x80 && value != 0x80008 && value != 0x400) { super.write32(address, value); } break;
@@ -812,7 +932,11 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA8D4: if (value != 0xFFFFFFFF) { super.write32(address, value); } break;
 			case 0xA8E4: if (value != 0x0 && value != 0x2) { super.write32(address, value); } break;
 			case 0xD00C: if (value != 0x10) { super.write32(address, value); } break;
-			case 0xE840: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xE800: lengthE810 = value; break;
+			case 0xE810: addrE810 = value; break;
+			case 0xE820: addrE820 = value; break;
+			case 0xE830: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xE840: if (value != 0x0 && value != 0x100000 && value != 0x1BC0) { super.write32(address, value); } break;
 			case 0xE844: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xE8A0: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xE8A4: if (value != 0x0) { super.write32(address, value); } break;

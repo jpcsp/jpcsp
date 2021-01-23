@@ -16,8 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio.wlan.threadx;
 
+import static jpcsp.memory.mmio.wlan.threadx.hle.TXManager.TX_INITIALIZE_IN_PROGRESS;
+import static jpcsp.memory.mmio.wlan.threadx.hle.TXManager.TX_INITIALIZE_IS_FINISHED;
 import static jpcsp.util.Utilities.setBit;
 
+import org.apache.log4j.Level;
+
+import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.arm.ARMDisassembler;
 import jpcsp.arm.ARMProcessor;
 
 /**
@@ -37,9 +43,24 @@ public class TXKernelEnter extends TXBaseCall {
 
 	@Override
 	public void call(ARMProcessor processor, int imm) {
+		RuntimeContext.setLog4jMDC("initialize");
+
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("TXKernelEnter txInitializeLowLevel=0x%08X, txIrqHandler=0x%08X, txApplicationDefine=0x%08X", txInitializeLowLevel, txIrqHandler, txApplicationDefine));
 		}
+
+		if (true) {
+			ARMDisassembler disassembler = new ARMDisassembler(log, Level.INFO, processor.mem, processor.interpreter);
+			log.info(String.format("Disassembling _tx_initialize_low_level"));
+			disassembler.disasm(txInitializeLowLevel);
+			log.info(String.format("Disassembling tx_application_define"));
+			disassembler.disasm(txApplicationDefine);
+			log.info(String.format("Disassembling IRQ Handler"));
+			disassembler.disasm(txIrqHandler);
+			disassembler.disasm(0xC00014CD);
+		}
+
+		getTxManager().threadSystemState = TX_INITIALIZE_IN_PROGRESS;
 
 		// Execute _tx_initialize_low_level
 		execute(processor, txInitializeLowLevel, "_tx_initialize_low_level");
@@ -48,6 +69,8 @@ public class TXKernelEnter extends TXBaseCall {
 
 		// Execute tx_application_define
 		execute(processor, txApplicationDefine, "tx_application_define");
+
+		getTxManager().threadSystemState = TX_INITIALIZE_IS_FINISHED;
 
 		// Return to threadSchedule
 		int threadSchedule = setBit(processor.getCurrentInstructionPc() + 2, 0);
