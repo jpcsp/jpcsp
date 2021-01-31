@@ -175,10 +175,17 @@ public class sceGe_user extends HLEModule {
     private void triggerAsyncCallback(int cbid, int listId, int listPc, int behavior, int signalId, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
     	SceKernelCallbackInfo callback = callbacks.get(cbid);
     	if (callback != null && callback.hasCallbackFunction()) {
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("Scheduling Async Callback %s, listId=0x%X, listPc=0x%08X, behavior=%d, signalId=0x%X", callback.toString(), listId, listPc, behavior, signalId));
+    		// Retrieve the value of the $gp register to be used for the GE callback
+    		int gp = 0;
+    		SceKernelThreadInfo threadInfo = Modules.ThreadManForUserModule.getThreadById(callback.getThreadId());
+    		if (threadInfo != null) {
+    			gp = threadInfo.gpReg_addr;
     		}
-    		GeCallbackInterruptHandler geCallbackInterruptHandler = new GeCallbackInterruptHandler(callback.getCallbackFunction(), callback.getCallbackArgument(), listPc);
+
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Scheduling Async Callback %s, listId=0x%X, listPc=0x%08X, behavior=%d, signalId=0x%X, gp=0x%08X", callback.toString(), listId, listPc, behavior, signalId, gp));
+    		}
+    		GeCallbackInterruptHandler geCallbackInterruptHandler = new GeCallbackInterruptHandler(callback.getCallbackFunction(), callback.getCallbackArgument(), listPc, gp);
     		GeInterruptHandler geInterruptHandler = new GeInterruptHandler(geCallbackInterruptHandler, listId, behavior, signalId);
     		Emulator.getScheduler().addAction(geInterruptHandler);
     	} else {
