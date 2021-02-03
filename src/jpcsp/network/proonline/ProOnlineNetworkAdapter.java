@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.proonline;
 
 import static jpcsp.HLE.modules.sceNetAdhoc.isSameMacAddress;
-import static jpcsp.hardware.Wlan.getLocalInetAddress;
+import static jpcsp.hardware.Wlan.getLocalInetAddressFor;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -315,7 +315,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 		try {
 			// If connecting to a local metaserver, use a local IP address (127.0.0.N)
-			metaSocket = new Socket(metaServer, metaPort, getLocalInetAddress(), 0);
+			metaSocket = new Socket(metaServer, metaPort, getLocalInetAddressFor(metaServer), 0);
 		} catch (UnknownHostException e) {
 			log.error(String.format("Could not connect to meta server %s:%d", metaServer, metaPort), e);
 		} catch (IOException e) {

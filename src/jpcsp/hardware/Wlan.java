@@ -116,6 +116,47 @@ public class Wlan {
     	return localInetAddress;
     }
 
+    private static boolean isLocalInetAddressFor(InetAddress inetAddress) {
+    	if (localInetAddress == null || inetAddress == null) {
+    		return true;
+    	}
+
+    	// Can the local InetAddress reach the given InetAddress?
+    	byte[] addr1 = localInetAddress.getAddress();
+    	byte[] addr2 = inetAddress.getAddress();
+    	// Assume both addresses are on the same network if the first 3 bytes are matching.
+    	// We would normally use the network mask if available...
+    	for (int i = 0; i < 3; i++) {
+    		if (addr1[i] != addr2[i]) {
+    			return false;
+    		}
+    	}
+
+    	return true;
+    }
+
+    /**
+     * Return a local InetAddress to be used in order to reach the given remote address.
+     *
+     * @param remoteAddress the host name which needs to be reachable by the returned address
+     * @return the local InetAddress or the wildcard address 0.0.0.0
+     */
+    public static InetAddress getLocalInetAddressFor(String remoteAddress) {
+    	if (hasLocalInetAddress()) {
+	    	try {
+				InetAddress remoteInetAddress = InetAddress.getByName(remoteAddress);
+				if (!isLocalInetAddressFor(remoteInetAddress)) {
+					// Return the wildcard address 0.0.0.0
+					return InetAddress.getByAddress(new byte[4]);
+				}
+			} catch (UnknownHostException e) {
+				// Ignore
+			}
+    	}
+
+    	return getLocalInetAddress();
+    }
+
     public static boolean hasLocalInetAddress() {
     	return localInetAddress != null;
     }
