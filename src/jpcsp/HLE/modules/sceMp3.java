@@ -193,7 +193,7 @@ public class sceMp3 extends HLEModule {
         }
 
         public int notifyAddStream(int bytesToAdd) {
-        	bytesToAdd = Math.min(bytesToAdd, getWritableBytes());
+        	bytesToAdd = Math.max(bytesToAdd, getWritableBytes());
 
             if (log.isTraceEnabled()) {
                 log.trace(String.format("notifyAddStream inputBuffer %s: %s", inputBuffer, Utilities.getMemoryDump(inputBuffer.getWriteAddr(), bytesToAdd)));
