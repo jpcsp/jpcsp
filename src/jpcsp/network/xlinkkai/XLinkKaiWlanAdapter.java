@@ -82,6 +82,10 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	private static final boolean workaroundBugMulticast = false;
 	private static final byte[] rawIdentifier = "802.11.Raw".getBytes();
 	private ChatGUI chatGUI;
+	private String username;
+	private String arena = "";
+	private String gameName = "";
+	private String gameConsole = "";
 
 	private static class EnabledSettingsListener extends AbstractBoolSettingsListener {
 		@Override
@@ -222,6 +226,20 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		return data;
 	}
 
+	private String extractParameters(String s) {
+		if (s != null) {
+			int start = s.indexOf(';');
+			if (start >= 0) {
+				s = s.substring(start + 1);
+				if (s.endsWith(";")) {
+					s = s.substring(0, s.length() - 1);
+				}
+			}
+		}
+
+		return s;
+	}
+
 	private void process(byte[] data) throws IOException {
 		if (data.length < 4) {
 			log.warn(String.format("Received too short packet %s", Utilities.getMemoryDump(data)));
@@ -247,13 +265,11 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Received keepalive"));
 				}
+
 				// Send a keepalive response
 				send("keepalive;");
-
-				// Refresh the list of players
-				send("getplayernames;");
 			} else if (controlMessage.startsWith("message;")) {
-				String message = controlMessage.substring(8);
+				String message = extractParameters(controlMessage);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Received message '%s'", message));
 				}
@@ -261,7 +277,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 					chatGUI.addChatMessage("System message", message);
 				}
 			} else if (controlMessage.startsWith("chat;")) {
-				String message = controlMessage.substring(5);
+				String message = extractParameters(controlMessage);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Received chat '%s'", message));
 				}
@@ -276,7 +292,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 					chatGUI.addChatMessage(playerName, message);
 				}
 			} else if (controlMessage.startsWith("directmessage;")) {
-				String message = controlMessage.substring(14);
+				String message = extractParameters(controlMessage);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Received direct message '%s'", message));
 				}
@@ -291,17 +307,18 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 					chatGUI.addChatMessage(playerName, message);
 				}
 			} else if (controlMessage.startsWith("player_names;")) {
-				String names = controlMessage.substring(13);
+				String names = extractParameters(controlMessage);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Received player names '%s'", names));
 				}
 
-				String[] players = names.split(";");
+				String[] players = names.split("/");
 				List<String> chatMembers = new LinkedList<String>();
 				if (players != null) {
 					for (int i = 0; i < players.length; i++) {
-						if (players[i].length() > 0) {
-							chatMembers.add(players[i]);
+						String player = players[i];
+						if (player.length() > 0 && !player.equals(username)) {
+							chatMembers.add(player);
 							if (log.isDebugEnabled()) {
 								log.debug(String.format("Player#%d: '%s'", i, players[i]));
 							}
@@ -317,6 +334,59 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 				if (chatGUI != null) {
 					chatGUI.updateMembers(chatMembers);
 				}
+			} else if (controlMessage.startsWith("player_join;")) {
+				String name = extractParameters(controlMessage);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Player '%s' joined", name));
+				}
+
+				if (!name.equals(username)) {
+					openChat();
+					if (chatGUI != null) {
+						chatGUI.addMember(name);
+					}
+				}
+			} else if (controlMessage.startsWith("player_leave;")) {
+				String name = extractParameters(controlMessage);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Player '%s' leaved", name));
+				}
+
+				if (chatGUI != null && !name.equals(username)) {
+					chatGUI.removeMember(name);
+				}
+			} else if (controlMessage.startsWith("arena;")) {
+				arena = extractParameters(controlMessage);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Arena '%s'", arena));
+				}
+
+				// The game info is reset when changing the arena
+				gameConsole = "";
+				gameName = "";
+				updateChat();
+
+				// Refresh the list of players when changing the arena
+				send("getplayernames;");
+			} else if (controlMessage.startsWith("gameinfo;")) {
+				String gameInfo = extractParameters(controlMessage);
+				String[] gameInfos = gameInfo.split(";");
+				if (gameInfos != null && gameInfos.length >= 2) {
+					gameConsole = gameInfos[0];
+					gameName = gameInfos[1];
+				}
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Game info Console '%s', Game name '%s'", gameConsole, gameName));
+				}
+
+				updateChat();
+			} else if (controlMessage.startsWith("username;")) {
+				username = extractParameters(controlMessage);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Username '%s'", username));
+				}
+
+				updateChat();
 			} else {
 				log.warn(String.format("Received unknown control message '%s'", controlMessage));
 			}
@@ -451,6 +521,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 
 		connect();
 		enableChat();
+		send("getusername;");
 	}
 
 	@Override
@@ -816,6 +887,7 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	private void openChat() {
 		if (chatGUI == null || !chatGUI.isVisible()) {
 			chatGUI = new ChatGUI();
+			updateChat();
 			Emulator.getMainGUI().startBackgroundWindowDialog(chatGUI);
 		}
 	}
@@ -824,6 +896,18 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 		if (chatGUI != null) {
 			chatGUI.dispose();
 			chatGUI = null;
+		}
+	}
+
+	private void updateChat() {
+		if (chatGUI != null) {
+			chatGUI.setMyNickName(username);
+			chatGUI.setGroupName(gameName);
+			if (arena != null && arena.length() > 0) {
+				chatGUI.setTitle(String.format("Chat in %s", arena));
+			} else {
+				chatGUI.setTitle("Chat");
+			}
 		}
 	}
 

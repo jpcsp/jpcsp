@@ -65,6 +65,9 @@ public class ChatGUI extends JFrame {
     private static final String membersHeader = "<html>";
     private static final String membersFooter = "</html>";
     private HashMap<String, Color> nickNameColors = new HashMap<String, Color>();
+    private String myNickName;
+    private String adhocId;
+    private String groupName;
     private int allColorsIndex = 0;
     // Always assign the GRAY color to me.
     private static final Color colorForMe = Color.GRAY;
@@ -281,13 +284,53 @@ public class ChatGUI extends JFrame {
     	updateMembersLabel();
     }
 
-    private static String getMyNickName() {
-        return sceUtility.getSystemParamNickname();
+    public void addMember(String member) {
+    	if (!members.contains(member)) {
+    		members.add(member);
+    		updateMembersLabel();
+    	}
     }
-    private static String getAdhocID(){
-        return Modules.sceNetAdhocctlModule.hleNetAdhocctlGetAdhocID();
+
+    public void removeMember(String member) {
+    	if (members.contains(member)) {
+    		members.remove(member);
+    		updateMembersLabel();
+    	}
     }
-    private static String getGroupName(){
-        return Modules.sceNetAdhocctlModule.hleNetAdhocctlGetGroupName();
+
+    private String getMyNickName() {
+    	if (myNickName == null) {
+    		return sceUtility.getSystemParamNickname();
+    	}
+    	return myNickName;
+    }
+
+    public void setMyNickName(String myNickName) {
+    	this.myNickName = myNickName;
+    	updateMembersLabel();
+    }
+
+    private String getAdhocID() {
+    	if (adhocId == null) {
+    		return Modules.sceNetAdhocctlModule.hleNetAdhocctlGetAdhocID();
+    	}
+    	return adhocId;
+    }
+
+    public void setAdhocId(String adhocId) {
+    	this.adhocId = adhocId;
+        adhocIDLabel.setText(getAdhocID());
+    }
+
+    private String getGroupName() {
+    	if (groupName == null) {
+    		return Modules.sceNetAdhocctlModule.hleNetAdhocctlGetGroupName();
+    	}
+    	return groupName;
+    }
+
+    public void setGroupName(String groupName) {
+    	this.groupName = groupName;
+        groupNameLabel.setText(getGroupName());
     }
 }
