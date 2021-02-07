@@ -20,6 +20,7 @@ import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.hardware.Wlan.getMacAddress;
 import static jpcsp.util.Utilities.clearFlag;
 import static jpcsp.util.Utilities.hasBit;
+import static jpcsp.util.Utilities.isRaisingBit;
 import static jpcsp.util.Utilities.readUnaligned16;
 import static jpcsp.util.Utilities.readUnaligned32;
 import static jpcsp.util.Utilities.setBit;
@@ -49,6 +50,7 @@ import jpcsp.util.Utilities;
 public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 	public static Logger log = sceWlan.log;
 	private static final int STATE_VERSION = 0;
+	public static final int SSID_LENGTH = 32;
 	private static final int STATUS_COMPLETED = 0x4;
 	public static final int INTERRUPT_UNKNOWN_4 = 4;
 	public static final int INTERRUPT_UNKNOWN_8 = 8;
@@ -65,31 +67,32 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 	private int addr0044;
 	private int unknown2030;
 	private int unknown3024;
-	private int addrA000;
+	private final WlanBufferInfo bufferA000 = new WlanBufferInfo();
 	private int addrA004;
 	private int addrA008;
-	private int lengthA3F4;
-	private int addrA3F4;
-	private int lengthA3FC;
-	private int addrA3FC;
-	private int lengthA404;
-	private int addrA404;
-	private int lengthA40C;
-	private int addrA40C;
-	private int lengthA414;
-	private int addrA414;
-	private int lengthA41C;
-	private int addrA41C;
+	private final WlanBufferInfo buffer1 = new WlanBufferInfo();
+	private final WlanBufferInfo buffer2 = new WlanBufferInfo();
+	private final WlanBufferInfo buffer3 = new WlanBufferInfo();
+	private final WlanBufferInfo buffer4 = new WlanBufferInfo();
+	private final WlanBufferInfo buffer5 = new WlanBufferInfo();
+	private final WlanBufferInfo buffer6 = new WlanBufferInfo();
 	private int unknownA510;
 	private int unknownA53C;
-	private int lengthE810;
-	private int addrE810;
+	private int unknownA644;
+	private int beaconInterval; // Typical value: 100ms = 0x32000 (100ms << 11)
+	private int commandResponseLength;
+	private int commandResponseAddr;
 	private int addrE820;
 	protected int eepromMode;
 	private int eepromIndex;
 	private int eepromCmd;
 	private final byte[] eepromData = new byte[0x200]; 
+	private final byte[] basebandProcessorRegisters = new byte[0x100];
+	private final byte[] phyRegisters = new byte[0x100];
 	private final byte[] macAddress = new byte[MAC_ADDRESS_LENGTH];
+	private final byte[] BSSID = new byte[MAC_ADDRESS_LENGTH];
+	private int ssidLength;
+	private final byte[] SSID = new byte[SSID_LENGTH];
 	private volatile byte[] data;
 	private volatile int dataOffset;
 	private volatile int dataLength;
@@ -104,6 +107,7 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 
 		Arrays.fill(macAddress, (byte) 0);
 		initEEPROM();
+		phyRegisters[0x00] = (byte) 0x86;
 	}
 
 	public void test() {
@@ -121,6 +125,57 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		mem.write16(addr + 4, (short) 0);
 	}
 
+	private void scanMemory(int[] ints, int startAddr, int length) {
+		Memory mem = getMemory();
+		int endAddr = startAddr + length;
+		for (int addr = startAddr; addr < endAddr; addr++) {
+			if (mem.internalRead8(addr) == ints[0]) {
+				boolean matching = true;
+				for (int i = 0; i < ints.length; i++) {
+					if (mem.internalRead8(addr + i) != ints[i]) {
+						matching = false;
+						break;
+					}
+				}
+				// Length before SSID
+				if (mem.internalRead8(addr - 1) != ints.length) {
+					matching = false;
+				}
+
+				if (matching) {
+					log.info(String.format("Found SSID at:%s", Utilities.getMemoryDump(mem, addr - 0x80, 0x100)));
+					addr += ints.length - 1;
+				}
+			}
+		}
+	}
+
+	public void scanMemory(String ssid) {
+		byte[] bytes = ssid.getBytes();
+		int[] ints = new int[bytes.length];
+		for (int i = 0; i < bytes.length; i++) {
+			ints[i] = bytes[i] & 0xFF;
+		}
+
+		log.info(String.format("addr0038=0x%08X", addr0038));
+		log.info(String.format("addr0040=0x%08X", addr0040));
+		log.info(String.format("addr0044=0x%08X", addr0044));
+		log.info(String.format("addrA000=0x%08X", bufferA000.addr));
+		log.info(String.format("addrA004=0x%08X", addrA004));
+		log.info(String.format("addrA008=0x%08X", addrA008));
+		log.info(String.format("addrA3F4=0x%08X", buffer1.addr));
+		log.info(String.format("addrA3FC=0x%08X", buffer2.addr));
+		log.info(String.format("addrA404=0x%08X", buffer3.addr));
+		log.info(String.format("addrA40C=0x%08X", buffer4.addr));
+		log.info(String.format("addrA414=0x%08X", buffer5.addr));
+		log.info(String.format("addrA41C=0x%08X", buffer6.addr));
+		log.info(String.format("addrE810=0x%08X", commandResponseAddr));
+		log.info(String.format("addrE820=0x%08X", addrE820));
+		scanMemory(ints, 0x00000000, 0x18000);
+		scanMemory(ints, 0x04000000, 0x2000);
+		scanMemory(ints, 0xC0000000, 0x18000);
+	}
+
 	@Override
 	public void read(StateInputStream stream) throws IOException {
 		stream.readVersion(STATE_VERSION);
@@ -134,31 +189,30 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		addr0044 = stream.readInt();
 		unknown2030 = stream.readInt();
 		unknown3024 = stream.readInt();
-		addrA000 = stream.readInt();
+		bufferA000.read(stream);
 		addrA004 = stream.readInt();
 		addrA008 = stream.readInt();
-		lengthA3F4 = stream.readInt();
-		addrA3F4 = stream.readInt();
-		lengthA3FC = stream.readInt();
-		addrA3FC = stream.readInt();
-		lengthA404 = stream.readInt();
-		addrA404 = stream.readInt();
-		lengthA40C = stream.readInt();
-		addrA40C = stream.readInt();
-		lengthA414 = stream.readInt();
-		addrA414 = stream.readInt();
-		lengthA41C = stream.readInt();
-		addrA41C = stream.readInt();
+		buffer1.read(stream);
+		buffer2.read(stream);
+		buffer3.read(stream);
+		buffer4.read(stream);
+		buffer5.read(stream);
+		buffer6.read(stream);
 		unknownA510 = stream.readInt();
 		unknownA53C = stream.readInt();
-		lengthE810 = stream.readInt();
-		addrE810 = stream.readInt();
+		unknownA644 = stream.readInt();
+		beaconInterval = stream.readInt();
+		commandResponseLength = stream.readInt();
+		commandResponseAddr = stream.readInt();
 		addrE820 = stream.readInt();
 		eepromMode = stream.readInt();
 		eepromIndex = stream.readInt();
 		eepromCmd = stream.readInt();
 		stream.readBytes(eepromData);
 		stream.readBytes(macAddress);
+		stream.readBytes(BSSID);
+		ssidLength = stream.readInt();
+		stream.readBytes(SSID);
 		super.read(stream);
 	}
 
@@ -175,31 +229,30 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		stream.writeInt(addr0044);
 		stream.writeInt(unknown2030);
 		stream.writeInt(unknown3024);
-		stream.writeInt(addrA000);
+		bufferA000.write(stream);
 		stream.writeInt(addrA004);
 		stream.writeInt(addrA008);
-		stream.writeInt(lengthA3F4);
-		stream.writeInt(addrA3F4);
-		stream.writeInt(lengthA3FC);
-		stream.writeInt(addrA3FC);
-		stream.writeInt(lengthA404);
-		stream.writeInt(addrA404);
-		stream.writeInt(lengthA40C);
-		stream.writeInt(addrA40C);
-		stream.writeInt(lengthA414);
-		stream.writeInt(addrA414);
-		stream.writeInt(lengthA41C);
-		stream.writeInt(addrA41C);
+		buffer1.write(stream);
+		buffer2.write(stream);
+		buffer3.write(stream);
+		buffer4.write(stream);
+		buffer5.write(stream);
+		buffer6.write(stream);
 		stream.writeInt(unknownA510);
 		stream.writeInt(unknownA53C);
-		stream.writeInt(lengthE810);
-		stream.writeInt(addrE810);
+		stream.writeInt(unknownA644);
+		stream.writeInt(beaconInterval);
+		stream.writeInt(commandResponseLength);
+		stream.writeInt(commandResponseAddr);
 		stream.writeInt(addrE820);
 		stream.writeInt(eepromMode);
 		stream.writeInt(eepromIndex);
 		stream.writeInt(eepromCmd);
 		stream.writeBytes(eepromData);
 		stream.writeBytes(macAddress);
+		stream.writeBytes(BSSID);
+		stream.writeInt(ssidLength);
+		stream.writeBytes(SSID);
 		super.write(stream);
 	}
 
@@ -264,16 +317,20 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		return addr;
 	}
 
-	public int getAddrE810() {
-		return addrE810;
+	public int getCommandResponseAddr() {
+		return commandResponseAddr;
 	}
 
-	public int getLengthE810() {
-		return lengthE810;
+	public int getCommandResponseLength() {
+		return commandResponseLength;
 	}
 
-	public void clearLengthE810() {
-		lengthE810 = 0;
+	public void clearCommandResponseLength() {
+		commandResponseLength = 0;
+	}
+
+	public byte[] getBSSID() {
+		return BSSID;
 	}
 
 	private int getStatus( ) {
@@ -338,11 +395,27 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		if (interruptBit == INTERRUPT_UNKNOWN_8) {
 			status = setFlag(status, STATUS_COMPLETED);
 		}
-		if (interruptBit == INTERRUPT_UNKNOWN_10) {
-			unknownA510 = 0x6F22C8BF;
-		}
+//		if (interruptBit == INTERRUPT_UNKNOWN_10) {
+//			unknownA510 = 0x6F22C8BF;
+//		}
 
 		checkInterrupt();
+	}
+
+	public void setUnknownA510(int value) {
+		unknownA510 = value;
+	}
+
+	public void setUnknownA510Bit(int bit) {
+		unknownA510 = setBit(unknownA510, bit);
+	}
+
+	public WlanBufferInfo getBufferA000() {
+		return bufferA000;
+	}
+
+	public WlanBufferInfo getBuffer5() {
+		return buffer5;
 	}
 
 	private void clearUnknown3024(int mask) {
@@ -361,7 +434,67 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 //		return unknown2030;
 	}
 
-	private void writeEEPROMCmdMode54(int value, boolean highByte) {
+	private void startTransmission() {
+		Memory mem = getMemory();
+		int addr = addrA004;
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("startTransmission 0x%08X: %s", addrA004, Utilities.getMemoryDump(mem, addr, 0x80)));
+		}
+		int flag = mem.read8(addr);
+		int messageAddr = readUnaligned32(mem, addr + 4);
+		int messageLength = readUnaligned16(mem, messageAddr) + 0x20;
+
+		// Remove the messageLength from the message itself
+		messageAddr += 2;
+		messageLength -= 2;
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("startTransmission 0x%08X, flag=0x%02X, length=0x%X: %s", messageAddr, flag, messageLength, Utilities.getMemoryDump(mem, messageAddr, messageLength)));
+		}
+
+		setUnknownA510Bit(26); // TODO Investigate which bit needs to be set (not working: 7, 11, 15)
+	}
+
+	private void writeSSID() {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("SSID set to '%s'", new String(SSID, 0, ssidLength)));
+		}
+	}
+
+	private void setUnknownA644(int value) {
+		int oldValue = unknownA644;
+		unknownA644 = value;
+
+		if (isRaisingBit(oldValue, value, 0)) {
+			startTransmission();
+		}
+	}
+
+	private int readBasebandProcessorRegister() {
+		int basebandProcessorRegisterValue;
+		if (eepromIndex == 3) {
+			int basebandProcessorRegister = (eepromCmd >> 8) & 0xFF;
+			basebandProcessorRegisterValue = basebandProcessorRegisters[basebandProcessorRegister] & 0xFF;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("readBasebandProcessorRegister get basebandProcessorRegisters[0x%02X]=0x%02X", basebandProcessorRegister, basebandProcessorRegisterValue));
+			}
+		} else if (eepromIndex == 1) {
+			int basebandProcessorRegister = (eepromCmd >> 16) & 0xFF;
+			basebandProcessorRegisterValue = basebandProcessorRegisters[basebandProcessorRegister] & 0xFF;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("readBasebandProcessorRegister get basebandProcessorRegisters[0x%02X]=0x%02X", basebandProcessorRegister, basebandProcessorRegisterValue));
+			}
+		} else {
+			log.error(String.format("readBasebandProcessorRegister unknown eepromIndex=%d, eepromCmd=0x%06X", eepromIndex, eepromCmd));
+			basebandProcessorRegisterValue = 0;
+		}
+		eepromCmd = 0;
+		eepromIndex = 0;
+
+		return basebandProcessorRegisterValue;
+	}
+
+	private void writeBasebandProcessorRegister(int value, boolean highByte) {
 		switch (eepromIndex) {
 			case 0:
 			case 1:
@@ -379,41 +512,59 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 					eepromCmd = (eepromCmd & 0xFFFF00) | value;
 				}
 				break;
+			default:
+				log.error(String.format("writeEepromRegister invalid eepromIndex=%d, value=0x%02X, highByte=%b", eepromIndex, value, highByte));
+				break;
 		}
 		eepromIndex++;
 
 		if (eepromIndex >= 4) {
+			int basebandProcessorRegister = (eepromCmd >> 8) & 0xFF;
+			int basebandProcessorRegisterValue = eepromCmd & 0xFF;
+			basebandProcessorRegisters[basebandProcessorRegister] = (byte) basebandProcessorRegisterValue;
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("writeEEPROMCmdMode54 unknown eepromCmd=0x%06X", eepromCmd));
+				log.debug(String.format("writeBasebandProcessorRegister set basebandProcessorRegisters[0x%02X]=0x%02X", basebandProcessorRegister, basebandProcessorRegisterValue));
 			}
 			eepromCmd = 0;
 			eepromIndex = 0;
 		}
 	}
 
-	private void writeEEPROMCmdMode58(int value, boolean highByte) {
-		if (value == 0x00 && highByte) {
-			eepromCmd = 0x86 << 24;
-			eepromIndex = 0;
+	private int readPhyRegister() {
+		int phyRegisterValue;
+		if (eepromIndex == 1) {
+			int phyRegister = (eepromCmd >> 8) & 0xFF;
+			phyRegisterValue = phyRegisters[phyRegister] & 0xFF;
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("writeEEPROMCmdMode58 value=0x%02X", value, highByte));
-			}
-		} else if (value == 0x01 && highByte) {
-			eepromCmd = 0x00 << 24;
-			eepromIndex = 0;
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("writeEEPROMCmdMode58 value=0x%02X", value, highByte));
-			}
-		} else if (value == 0x0C && highByte) {
-			eepromCmd = 0x00 << 24;
-			eepromIndex = 0;
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("writeEEPROMCmdMode58 value=0x%02X", value, highByte));
+				log.debug(String.format("readPhyRegister get phyRegisters[0x%02X]=0x%02X", phyRegister, phyRegisterValue));
 			}
 		} else {
+			log.error(String.format("readPhyRegister unknown eepromIndex=%d, eepromCmd=0x%06X", eepromIndex, eepromCmd));
+			phyRegisterValue = 0;
+		}
+		eepromCmd = 0;
+		eepromIndex = 0;
+
+		return phyRegisterValue;
+	}
+
+	private void writePhyRegister(int value, boolean highByte) {
+		if (highByte) {
+			eepromCmd = (eepromCmd & 0x00FF) | (value << 8);
+		} else {
+			eepromCmd = (eepromCmd & 0xFF00) | value;
+		}
+		eepromIndex++;
+
+		if (eepromIndex >= 2) {
+			int phyRegister = (eepromCmd >> 8) & 0xFF;
+			int phyRegisterValue = eepromCmd & 0xFF;
+			phyRegisters[phyRegister] = (byte) phyRegisterValue;
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("writeEEPROMCmdMode58 unknown value=0x%02X, highByte=%b", value, highByte));
+				log.debug(String.format("writePhyRegister set phyRegisters[0x%02X]=0x%02X", phyRegister, phyRegisterValue));
 			}
+			eepromCmd = 0;
+			eepromIndex = 0;
 		}
 	}
 
@@ -462,8 +613,8 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 
 	public void writeEEPROMCmdHigh8(int value) {
 		switch (eepromMode) {
-			case 0x54: writeEEPROMCmdMode54(value, true); break;
-			case 0x58: writeEEPROMCmdMode58(value, true); break;
+			case 0x54: writeBasebandProcessorRegister(value, true); break;
+			case 0x58: writePhyRegister(value, true); break;
 			default:
 				log.error(String.format("writeEEPROMCmdHigh8 unknown eepromMode=0x%X, value=0x%X", eepromMode, value));
 				break;
@@ -472,8 +623,8 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 
 	public void writeEEPROMCmdLow8(int value) {
 		switch (eepromMode) {
-			case 0x54: writeEEPROMCmdMode54(value, false); break;
-			case 0x58: writeEEPROMCmdMode58(value, false); break;
+			case 0x54: writeBasebandProcessorRegister(value, false); break;
+			case 0x58: writePhyRegister(value, false); break;
 			case 0x82: writeEEPROMCmdMode82(value); break;
 			default:
 				log.error(String.format("writeEEPROMCmdLow8 unknown eepromMode=0x%X, value=0x%X", eepromMode, value));
@@ -481,7 +632,7 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		}
 	}
 
-	public int readEEPROMCmd8() {
+	private int readEEPROMCmdMode82() {
 		int value = 0;
 		switch (eepromIndex) {
 			case 0: value = eepromCmd >> 24; break;
@@ -495,6 +646,21 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 		if (eepromIndex == 4) {
 			eepromCmd = 0;
 			eepromIndex = 0;
+		}
+
+		return value;
+	}
+
+	public int readEEPROMCmd8() {
+		int value;
+		switch (eepromMode) {
+			case 0x54: value = readBasebandProcessorRegister(); break;
+			case 0x58: value = readPhyRegister(); break;
+			case 0x82: value = readEEPROMCmdMode82(); break;
+			default:
+				log.error(String.format("readEEPROMCmd8 unknown eepromMode=0x%X", eepromMode));
+				value = 0;
+				break;
 		}
 
 		return value;
@@ -582,9 +748,11 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0x2800: value = getInterrupt(); break;
 			case 0x2808: value = 0; break;
 			case 0x3024: value = unknown3024; break;
-			case 0xA000: value = 0; break;
-			case 0xA010: value = 0; break;
-			case 0xA014: value = 0; break;
+			case 0xA000: value = bufferA000.addr; break;
+			case 0xA004: value = addrA004; break;
+			case 0xA008: value = addrA008; break;
+			case 0xA010: value = bufferA000.writeIndex; break;
+			case 0xA014: value = bufferA000.readIndex; break;
 			case 0xA040: value = 0; break;
 			case 0xA044: value = 0; break;
 			case 0xA048: value = 0; break;
@@ -609,24 +777,28 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA2D0: value = 0; break;
 			case 0xA2D4: value = 0; break;
 			case 0xA300: value = 0; break;
-			case 0xA3F0: value = 0; break;
-			case 0xA3F4: value = 0; break;
-			case 0xA3F8: value = 0; break;
-			case 0xA3FC: value = 0; break;
-			case 0xA400: value = 0; break;
-			case 0xA404: value = 0; break;
-			case 0xA408: value = 0; break;
-			case 0xA40C: value = 0; break;
-			case 0xA410: value = 0; break;
-			case 0xA414: value = 0; break;
-			case 0xA41C: value = 0; break;
-			case 0xA430: value = 0; break;
-			case 0xA440: value = 0; break;
-			case 0xA444: value = 0; break;
-			case 0xA448: value = 0; break;
-			case 0xA44C: value = 0; break;
-			case 0xA450: value = 0; break;
-			case 0xA454: value = 0; break;
+			case 0xA3F0: value = buffer1.length; break;
+			case 0xA3F4: value = buffer1.addr; break;
+			case 0xA3F8: value = buffer2.length; break;
+			case 0xA3FC: value = buffer2.addr; break;
+			case 0xA400: value = buffer3.length; break;
+			case 0xA404: value = buffer3.addr; break;
+			case 0xA408: value = buffer4.length; break;
+			case 0xA40C: value = buffer4.addr; break;
+			case 0xA410: value = buffer5.length; break;
+			case 0xA414: value = buffer5.addr; break;
+			case 0xA418: value = buffer6.length; break;
+			case 0xA41C: value = buffer6.addr; break;
+			case 0xA430: value = buffer1.readIndex; break;
+			case 0xA434: value = buffer2.readIndex; break;
+			case 0xA438: value = buffer3.readIndex; break;
+			case 0xA43C: value = buffer4.readIndex; break;
+			case 0xA440: value = buffer5.readIndex; break;
+			case 0xA444: value = buffer1.writeIndex; break;
+			case 0xA448: value = buffer2.writeIndex; break;
+			case 0xA44C: value = buffer3.writeIndex; break;
+			case 0xA450: value = buffer4.writeIndex; break;
+			case 0xA454: value = buffer5.writeIndex; break;
 			case 0xA458: value = 0; break;
 			case 0xA45C: value = 0; break;
 			case 0xA46C: value = 0; break;
@@ -634,13 +806,13 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA514: value = 0; break;
 			case 0xA528: value = readUnaligned32(macAddress, 0); break;
 			case 0xA52C: value = readUnaligned16(macAddress, 4); break;
-			case 0xA530: value = 0; break;
-			case 0xA534: value = 0; break;
+			case 0xA530: value = readUnaligned32(BSSID, 0); break;
+			case 0xA534: value = readUnaligned16(BSSID, 4); break;
 			case 0xA53C: value = unknownA53C; break;
 			case 0xA5F0: value = 0; break;
 			case 0xA600: value = 0; break;
 			case 0xA604: value = 0; break;
-			case 0xA608: value = 0; break;
+			case 0xA608: value = beaconInterval; break;
 			case 0xA60C: value = 0; break;
 			case 0xA610: value = 0; break;
 			case 0xA614: value = 0; break;
@@ -659,7 +831,8 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA890: value = 0; break;
 			case 0xA930: value = 0; break;
 			case 0xD00C: value = 0; break;
-			case 0xE800: value = lengthE810; break;
+			case 0xE800: value = commandResponseLength; break;
+			case 0xE810: value = commandResponseAddr; break;
 			case 0xE840: value = 0; break;
 			case 0xE848: value = 0; break;
 			case 0xE8A0: value = 0; break;
@@ -678,7 +851,7 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 	public void write8(int address, byte value) {
 		final int value8 = value & 0xFF;
 		switch (address - baseAddress) {
-			case 0xA550: if (value8 != 0x11) { super.write8(address, value); }; break;
+			case 0xA550: ssidLength = value8; break;
 			case 0xC000: if (value8 != 0x01) { super.write8(address, value); }; break;
 			case 0xC004: if (value8 != 0x00) { super.write8(address, value); }; break;
 			case 0xC100: if (value8 != 0x00) { super.write8(address, value); }; break;
@@ -743,11 +916,11 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0x3010: if (value != 0xB) { super.write32(address, value); } break;
 			case 0x3024: clearUnknown3024(value); break;
 			case 0x3028: if (value != 0x1) { super.write32(address, value); } break;
-			case 0xA000: addrA000 = value; break;
+			case 0xA000: bufferA000.addr = value; break;
 			case 0xA004: addrA004 = value; break;
 			case 0xA008: addrA008 = value; break;
-			case 0xA010: if (value != 0x0) { super.write32(address, value); } break;
-			case 0xA014: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xA010: bufferA000.writeIndex = value; break;
+			case 0xA014: bufferA000.readIndex = value; break;
 			case 0xA018: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA01C: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA020: if (value != 0x0) { super.write32(address, value); } break;
@@ -851,23 +1024,23 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA2D4: if (value != 0x0 && value != 0x10) { super.write32(address, value); } break;
 			case 0xA300: if (value != 0x0 && value != 0x8 && value != 0xA && value != 0xC) { super.write32(address, value); } break;
 			case 0xA3E0: if (value != 0x60) { super.write32(address, value); } break;
-			case 0xA3F0: lengthA3F4 = value; break;
-			case 0xA3F4: addrA3F4 = value; break;
-			case 0xA3F8: lengthA3FC = value; break;
-			case 0xA3FC: addrA3FC = value; break;
-			case 0xA400: lengthA404 = value; break;
-			case 0xA404: addrA404 = value; break;
-			case 0xA408: lengthA40C = value; break;
-			case 0xA40C: addrA40C = value; break;
-			case 0xA410: lengthA414 = value; break;
-			case 0xA414: addrA414 = value; break;
-			case 0xA418: lengthA41C = value; break;
-			case 0xA41C: addrA41C = value; break;
-			case 0xA430: if (value != 0x0) { super.write32(address, value); } break;
-			case 0xA434: if (value != 0x0) { super.write32(address, value); } break;
-			case 0xA438: if (value != 0x0) { super.write32(address, value); } break;
-			case 0xA43C: if (value != 0x0) { super.write32(address, value); } break;
-			case 0xA440: if (value != 0x0) { super.write32(address, value); } break;
+			case 0xA3F0: buffer1.length = value; break;
+			case 0xA3F4: buffer1.addr = value; break;
+			case 0xA3F8: buffer2.length = value; break;
+			case 0xA3FC: buffer2.addr = value; break;
+			case 0xA400: buffer3.length = value; break;
+			case 0xA404: buffer3.addr = value; break;
+			case 0xA408: buffer4.length = value; break;
+			case 0xA40C: buffer4.addr = value; break;
+			case 0xA410: buffer5.length = value; break;
+			case 0xA414: buffer5.addr = value; break;
+			case 0xA418: buffer6.length = value; break;
+			case 0xA41C: buffer6.addr = value; break;
+			case 0xA430: buffer1.readIndex = value; break; // write32(0x8000A430, read32(0x8000A444))
+			case 0xA434: buffer2.readIndex = value; break; // write32(0x8000A434, read32(0x8000A448))
+			case 0xA438: buffer3.readIndex = value; break; // write32(0x8000A438, read32(0x8000A44C))
+			case 0xA43C: buffer4.readIndex = value; break; // write32(0x8000A43C, read32(0x8000A450))
+			case 0xA440: buffer5.readIndex = value; break; // write32(0x8000A440, read32(0x8000A454))
 			case 0xA45C: if (value != 0x200) { super.write32(address, value); } break;
 			case 0xA468: if (value != 0x1E) { super.write32(address, value); } break;
 			case 0xA46C: if (value != 0xFDDDF015 && value != 0xFFDDF015 && value != 0x40 && value != 0x0) { super.write32(address, value); } break;
@@ -878,23 +1051,24 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA518: if (value != 0xFFFFFFFF) { super.write32(address, value); } break;
 			case 0xA528: writeUnaligned32(macAddress, 0, value); break;
 			case 0xA52C: writeUnaligned16(macAddress, 4, value & 0xFFFF); break;
-			case 0xA530: if (value != 0x0 && (value & 0x000000FF) != 0x00000002) { super.write32(address, value); } break; // Seems to be 0 or a random value always ending with 02 (a locally administered MAC address?)
-			case 0xA534: if (value != 0x0 && (value & 0xFFFF0000) != 0x00000000) { super.write32(address, value); } break; // Seems to be 0 or a random 16-bit value
+			case 0xA530: writeUnaligned32(BSSID, 0, value); if (value != 0x0 && (value & 0x000000FF) != 0x00000002) { super.write32(address, value); } break; // Seems to be 0 or a random value always ending with 02 (a locally administered MAC address?)
+			case 0xA534: writeUnaligned16(BSSID, 4, value & 0xFFFF); if (value != 0x0 && (value & 0xFFFF0000) != 0x00000000) { super.write32(address, value); } break; // Seems to be 0 or a random 16-bit value
+			case 0xA538: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA53C: unknownA53C = value; if (value != 0x4 && value != 0x40404) { super.write32(address, value); } break;
-			case 0xA554: if (value != 0x5F505350) { super.write32(address, value); } break;
-			case 0xA558: if (value != 0x454C5541) { super.write32(address, value); } break;
-			case 0xA55C: if (value != 0x39303053) { super.write32(address, value); } break;
-			case 0xA560: if (value != 0x4C5F3138) { super.write32(address, value); } break;
-			case 0xA564: if (value != 0x0000005F) { super.write32(address, value); } break;
-			case 0xA568: if (value != 0x00000000) { super.write32(address, value); } break;
-			case 0xA56C: if (value != 0x00000000) { super.write32(address, value); } break;
-			case 0xA570: if (value != 0x00000000) { super.write32(address, value); } break;
+			case 0xA554: writeUnaligned32(SSID,  0, value); break;
+			case 0xA558: writeUnaligned32(SSID,  4, value); break;
+			case 0xA55C: writeUnaligned32(SSID,  8, value); break;
+			case 0xA560: writeUnaligned32(SSID, 12, value); break;
+			case 0xA564: writeUnaligned32(SSID, 16, value); break;
+			case 0xA568: writeUnaligned32(SSID, 20, value); break;
+			case 0xA56C: writeUnaligned32(SSID, 24, value); break;
+			case 0xA570: writeUnaligned32(SSID, 28, value); writeSSID(); break;
 			case 0xA588: if (value != 0x1) { super.write32(address, value); } break;
 			case 0xA58C: if (value != 0x18000) { super.write32(address, value); } break;
 			case 0xA5F0: if (value != 0x1 && value != 0x40000000) { super.write32(address, value); } break;
 			case 0xA600: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA604: if (value != 0x0) { super.write32(address, value); } break;
-			case 0xA608: if (value != 0x32000) { super.write32(address, value); } break;
+			case 0xA608: beaconInterval = value; if (value != 0x32000) { super.write32(address, value); } break;
 			case 0xA60C: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA610: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA614: if (value != 0x0) { super.write32(address, value); } break;
@@ -905,7 +1079,7 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA628: if (value != 0x0 && value != 0x1 && value != 0xFF) { super.write32(address, value); } break;
 			case 0xA62C: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA640: if (value != 0x1 && value != 0x80 && value != 0x100 && value != 0x1FF) { super.write32(address, value); } break;
-			case 0xA644: if (value != 0x0 && value != 0x1) { super.write32(address, value); } break;
+			case 0xA644: setUnknownA644(value); break;
 			case 0xA650: if (value != 0x0 && value != 0x4) { super.write32(address, value); } break;
 			case 0xA658: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xA660: if (value != 0x28 && value != 0x2C) { super.write32(address, value); } break;
@@ -932,8 +1106,8 @@ public class MMIOHandlerWlanFirmware extends MMIOARMHandlerBase {
 			case 0xA8D4: if (value != 0xFFFFFFFF) { super.write32(address, value); } break;
 			case 0xA8E4: if (value != 0x0 && value != 0x2) { super.write32(address, value); } break;
 			case 0xD00C: if (value != 0x10) { super.write32(address, value); } break;
-			case 0xE800: lengthE810 = value; break;
-			case 0xE810: addrE810 = value; break;
+			case 0xE800: commandResponseLength = value; break;
+			case 0xE810: commandResponseAddr = value; break;
 			case 0xE820: addrE820 = value; break;
 			case 0xE830: if (value != 0x0) { super.write32(address, value); } break;
 			case 0xE840: if (value != 0x0 && value != 0x100000 && value != 0x1BC0) { super.write32(address, value); } break;

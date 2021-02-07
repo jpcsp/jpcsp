@@ -18,15 +18,15 @@ package jpcsp.memory.mmio.wlan.threadx;
 
 import static jpcsp.arm.ARMInstructions.getRegisterName;
 import static jpcsp.arm.ARMProcessor.REG_R0;
+import static jpcsp.memory.mmio.wlan.threadx.hle.TXManager.disassembleFunctions;
 
 import jpcsp.arm.ARMProcessor;
-import jpcsp.memory.mmio.wlan.BaseHLECall;
 
 /**
  * @author gid15
  *
  */
-public class TXJumpCall extends BaseHLECall {
+public class TXJumpCall extends TXBaseCall {
 	private int register;
 
 	public TXJumpCall(int register) {
@@ -36,12 +36,17 @@ public class TXJumpCall extends BaseHLECall {
 	@Override
 	public void call(ARMProcessor processor, int imm) {
 		int addr = processor.getRegister(register);
+
+		if (disassembleFunctions) {
+			getTxManager().disassemble(processor, String.format("Disassembling %s", this), addr);
+		}
+
 		if (log.isDebugEnabled()) {
 			StringBuilder args = new StringBuilder();
 			for (int i = REG_R0; i < register; i++) {
 				args.append(String.format(", %s=0x%08X", getRegisterName(i), processor.getRegister(i)));
 			}
-			log.debug(String.format("HLEJumpCall imm=0x%X, %s=0x%08X%s", imm, getRegisterName(register), addr, args));
+			log.debug(String.format("HLEJumpCall %s=0x%08X%s", getRegisterName(register), addr, args));
 		}
 
 		jump(processor, addr);

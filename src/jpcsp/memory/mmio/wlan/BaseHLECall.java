@@ -69,6 +69,14 @@ public abstract class BaseHLECall implements IARMHLECall {
 		return Utilities.readStringZ(processor.mem, address);
 	}
 
+	protected String readStringNZ(ARMProcessor processor, int address, int length) {
+		if (address == 0) {
+			return null;
+		}
+
+		return Utilities.readStringNZ(processor.mem, address, length);
+	}
+
 	protected void execute(ARMProcessor processor, int addr, String comment) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Starting CodeBlock 0x%08X for %s", clearBit(addr, 0), comment));
@@ -81,6 +89,10 @@ public abstract class BaseHLECall implements IARMHLECall {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Returning from CodeBlock 0x%08X for %s", clearBit(addr, 0), comment));
 		}
+	}
+
+	protected String getMemoryDump(ARMProcessor processor, int addr, int length) {
+		return Utilities.getMemoryDump(processor.mem, addr, length);
 	}
 
 	@Override

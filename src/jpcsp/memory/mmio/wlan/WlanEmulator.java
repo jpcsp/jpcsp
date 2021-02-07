@@ -83,9 +83,13 @@ public class WlanEmulator {
 	}
 
 	public void boot() {
-		thread = new ARMProcessorThread();
-		thread.setName("ARM Processor Thread");
-		thread.setDaemon(true);
-		thread.start();
+		if (thread == null) {
+			thread = new ARMProcessorThread();
+			thread.setName("ARM Processor Thread");
+			thread.setDaemon(true);
+			thread.start();
+		} else {
+			log.error(String.format("WlanEmulator.boot() ARMProcessorThread already running"));
+		}
 	}
 }

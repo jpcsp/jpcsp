@@ -249,11 +249,24 @@ public class ARMMemory extends MMIO {
 		return super.getHandler(address);
 	}
 
-    public static boolean isAddressGood(int address) {
+	public static boolean isAddressInRAM(int address) {
 		if (address >= BASE_RAM0 && address <= END_RAM0) {
 			return true;
 		}
 		if (address >= BASE_RAM4 && address <= END_RAM4) {
+			return true;
+		}
+		if (address >= BASE_RAMC && address <= END_RAMC) {
+			return true;
+		}
+		return false;
+	}
+
+	public static boolean isAddressGood(int address) {
+		if (isAddressInRAM(address)) {
+			return true;
+		}
+		if (address >= BASE_ROMF && address <= END_ROMF) {
 			return true;
 		}
 		if (address >= BASE_HANDLER8 && address <= END_HANDLER8) {
@@ -262,13 +275,13 @@ public class ARMMemory extends MMIO {
 		if (address >= BASE_HANDLER9 && address <= END_HANDLER9) {
 			return true;
 		}
-		if (address >= BASE_RAMC && address <= END_RAMC) {
-			return true;
-		}
-		if (address >= BASE_ROMF && address <= END_ROMF) {
-			return true;
-		}
 
 		return false;
     }
+
+	@Override
+	public int normalize(int address) {
+		// There is no need to normalize an ARM address
+		return address;
+	}
 }

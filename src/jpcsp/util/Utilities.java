@@ -202,10 +202,12 @@ public class Utilities {
      * @return the string converted to UTF-8
      */
     public static String readStringNZ(Memory mem, int address, int n) {
-        address &= Memory.addressMask;
-        if (address + n > MemoryMap.END_RAM) {
-            n = getMaxLength(address);
-        }
+    	if (mem == RuntimeContext.memory) {
+	        address &= Memory.addressMask;
+	        if (address + n > MemoryMap.END_RAM) {
+	            n = getMaxLength(address);
+	        }
+    	}
 
         // Allocate a byte array to store the bytes of the string.
         // At first, allocate maximum 10000 bytes in case we don't know

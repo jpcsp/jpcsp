@@ -21,6 +21,7 @@ import static jpcsp.Emulator.EMU_STATUS_UNIMPLEMENTED;
 import static jpcsp.arm.ARMProcessor.COPROCESSOR_SYSTEM_CONTROL;
 import static jpcsp.arm.ARMProcessor.REG_LR;
 import static jpcsp.arm.ARMProcessor.REG_PC;
+import static jpcsp.arm.ARMProcessor.REG_R0;
 import static jpcsp.arm.ARMProcessor.REG_SP;
 import static jpcsp.util.Utilities.clearBit;
 import static jpcsp.util.Utilities.clearFlag;
@@ -397,6 +398,8 @@ public class ARMInstructions {
         		int offset = insn << 8 >> 6;
         		processor.branch(offset);
 
+        		checkHLECall(processor);
+
         		if (offset == -8) {
                     log.error("Pausing emulator - branch to self (death loop)");
         			Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_JUMPSELF);
@@ -415,6 +418,8 @@ public class ARMInstructions {
         public void interpret(ARMProcessor processor, int insn) {
         	if (processor.isCondition(insn)) {
         		processor.branchWithLink(insn << 8 >> 6);
+
+        		checkHLECall(processor);
         	}
         }
 
@@ -429,6 +434,8 @@ public class ARMInstructions {
         public void interpret(ARMProcessor processor, int insn) {
     		processor.branchWithLink((insn << 8 >> 6) + ((insn >> 23) & 0x2));
         	processor.setThumbMode();
+
+        	checkHLECall(processor);
         }
 
         @Override
@@ -443,6 +450,8 @@ public class ARMInstructions {
         	int rm = (insn >> 3) & 0xF;
         	int addr = processor.getRegister(rm);
     		processor.jumpWithMode(addr);
+
+    		checkHLECall(processor);
 
     		if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
     			if (rm == REG_LR) {
@@ -474,6 +483,8 @@ public class ARMInstructions {
         	int addr = processor.getRegister(rm);
         	processor.linkWithThumb();
     		processor.jumpWithMode(addr);
+
+    		checkHLECall(processor);
         }
 
         @Override
@@ -510,7 +521,9 @@ public class ARMInstructions {
         	int addr = lr + (offset << 1);
         	processor.jump(addr);
 
-    		if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
+        	checkHLECall(processor);
+
+        	if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
     			// Log if not branching to a "bx rn" instruction
     			if ((processor.mem.internalRead16(addr) & 0xFF87) != 0x4700) {
     				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%08X, r1=0x%08X, r2=0x%08X, r3=0x%08X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), processor.getRegister(2), processor.getRegister(3), clearBit(processor.getLr(), 0), processor.getSp()));
@@ -533,6 +546,8 @@ public class ARMInstructions {
         	int addr = clearFlag(lr + (offset << 1), 0x3);
         	processor.jump(addr);
         	processor.setARMMode();
+
+        	checkHLECall(processor);
 
     		if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
 				log.debug(String.format("Starting CodeBlock 0x%08X, r0=0x%08X, r1=0x%08X, r2=0x%08X, r3=0x%08X, lr=0x%08X, sp=0x%08X", addr, processor.getRegister(0), processor.getRegister(1), processor.getRegister(2), processor.getRegister(3), clearBit(processor.getLr(), 0), processor.getSp()));
@@ -1067,6 +1082,10 @@ public class ARMInstructions {
     				value = processor.mem.read32(addr);
     			}
         		processor.setRegister(rd, value);
+
+        		if (rd == REG_PC) {
+        			checkHLECall(processor);
+        		}
         	}
         }
 
@@ -1105,6 +1124,14 @@ public class ARMInstructions {
         		int rn = insn & 0xF;
         		int addr = processor.getRegister(rn);
         		processor.jumpWithMode(addr);
+
+        		checkHLECall(processor);
+
+        		if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
+        			if (rn == REG_LR) {
+        				log.debug(String.format("Returning from CodeBlock to 0x%08X, sp=0x%08X, r0=0x%08X", clearBit(addr, 0), processor.getSp(), processor.getRegister(0)));
+        			}
+    			}
         	}
         }
 
@@ -1159,6 +1186,8 @@ public class ARMInstructions {
     			int addr = processor.mem.read32(sp);
     			processor.jumpWithMode(addr);
     			sp += 4;
+
+    			checkHLECall(processor);
 
     			if (RuntimeContext.debugCodeBlockCalls && log.isDebugEnabled()) {
     				log.debug(String.format("Returning from CodeBlock to 0x%08X, sp=0x%08X, r0=0x%08X", clearBit(addr, 0), sp, processor.getRegister(0)));
@@ -1524,7 +1553,19 @@ public class ARMInstructions {
         public void interpret(ARMProcessor processor, int insn) {
         	int cond = (insn >> 8) & 0xF;
         	if (processor.isConditionCode(cond)) {
-        		processor.branch(insn << 24 >> 23);
+        		// Check for the following sequence, which is a delay loop:
+        		//   0x00005BE0: [0x3801] - sub r0, #0x1
+        		//   0x00005BE2: [0xD2FD] - bcs 0x00005BE0
+        		if (insn == 0xD2FD && processor.mem.internalRead16(processor.getCurrentInstructionPc() - 2) == 0x3801) {
+        			processor.interpreter.delayHLE(processor.getRegister(REG_R0));
+        			// Simulate the completion of the delay loop
+        			processor.setRegister(REG_R0, -1);
+        			// Continue execution after this branch instruction
+        		} else {
+        			processor.branch(insn << 24 >> 23);
+        		}
+
+        		checkHLECall(processor);
         	}
         }
 
@@ -1538,6 +1579,8 @@ public class ARMInstructions {
         @Override
         public void interpret(ARMProcessor processor, int insn) {
     		processor.branch(insn << 21 >> 20);
+
+    		checkHLECall(processor);
         }
 
         @Override

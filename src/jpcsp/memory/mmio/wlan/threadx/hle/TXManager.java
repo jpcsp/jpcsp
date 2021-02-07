@@ -32,16 +32,22 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.arm.ARMDisassembler;
 import jpcsp.arm.ARMInterpreter;
 import jpcsp.arm.ARMProcessor;
 import jpcsp.arm.IARMHLECall;
 import jpcsp.hardware.Model;
 import jpcsp.memory.mmio.wlan.threadx.TXJumpCall;
+import jpcsp.memory.mmio.wlan.HLEMemcmp;
+import jpcsp.memory.mmio.wlan.HLEMemcpy;
+import jpcsp.memory.mmio.wlan.HLEMemset0;
 import jpcsp.memory.mmio.wlan.HLENullCall;
+import jpcsp.memory.mmio.wlan.HLEStrncpy;
 import jpcsp.memory.mmio.wlan.threadx.TXEventFlagsCreate;
 import jpcsp.memory.mmio.wlan.threadx.TXEventFlagsGet;
 import jpcsp.memory.mmio.wlan.threadx.TXEventFlagsSet;
@@ -58,7 +64,10 @@ import jpcsp.memory.mmio.wlan.threadx.TXThreadCreate;
 import jpcsp.memory.mmio.wlan.threadx.TXThreadResume;
 import jpcsp.memory.mmio.wlan.threadx.TXThreadSleep;
 import jpcsp.memory.mmio.wlan.threadx.TXTimeGet;
+import jpcsp.memory.mmio.wlan.threadx.TXTimerActivate;
+import jpcsp.memory.mmio.wlan.threadx.TXTimerChange;
 import jpcsp.memory.mmio.wlan.threadx.TXTimerCreate;
+import jpcsp.memory.mmio.wlan.threadx.TXTimerDeactivate;
 import jpcsp.util.Utilities;
 
 /**
@@ -130,6 +139,7 @@ public class TXManager {
 	public static final int TX_NO_WAIT = 0x0;
 	public static final int TX_WAIT_FOREVER = 0xFFFFFFFF;
 	//
+	public static final boolean disassembleFunctions = true;
 	private final Map<Integer, TXThread> txThreads = new HashMap<Integer, TXThread>();
 	private final Map<Integer, TXTimer> txTimers = new HashMap<Integer, TXTimer>();
 	private final List<TXTimer> activatedTimers = new LinkedList<TXTimer>();
@@ -147,6 +157,7 @@ public class TXManager {
 	public static final int TX_INITIALIZE_IS_FINISHED = 0x00000000;
 	public int threadSystemState = TX_INITIALIZE_IN_PROGRESS;
 	private boolean pendingIrqException;
+	private ARMDisassembler disassembler;
 
 	public TXManager() {
 	}
@@ -156,26 +167,48 @@ public class TXManager {
 
 		installHLECall(interpreter, 0xFFFF2B79, 0xFFFF233D, new TXKernelEnter(0x00000E69, 0x00000F41, 0x0000C979), new TXKernelEnter(0x00000F59, 0x0000103D, 0x0000EFD9));
 		installHLECall(interpreter, 0xFFFF1C01, 0xFFFF13E5, new TXEventFlagsCreate());
-		installHLECall(interpreter, 0xFFFF0000, 0xFFFF1479, new TXEventFlagsGet());
+		installHLECall(interpreter, 0x00000000, 0xFFFF1479, new TXEventFlagsGet());
 		installHLECall(interpreter, 0xFFFF1D39, 0xFFFF1519, new TXEventFlagsSet());
 		installHLECall(interpreter, 0xFFFF2341, 0xFFFF1B1D, new TXQueueCreate());
-		installHLECall(interpreter, 0xFFFF0000, 0xFFFF1CE1, new TXQueueReceive());
-		installHLECall(interpreter, 0xFFFF0000, 0xFFFF1D2D, new TXQueueSend());
+		installHLECall(interpreter, 0x00000000, 0xFFFF1CE1, new TXQueueReceive());
+		installHLECall(interpreter, 0x00000000, 0xFFFF1D2D, new TXQueueSend());
 		installHLECall(interpreter, 0xFFFF25A5, 0xFFFF1D79, new TXSemaphoreCreate());
 		installHLECall(interpreter, 0xFFFF263D, 0xFFFF1E0D, new TXSemaphoreGet());
 		installHLECall(interpreter, 0xFFFF26C5, 0xFFFF1E95, new TXSemaphorePut());
+		installHLECall(interpreter, 0xFFFF0000, 0xFFFF1ECD, new TXTimerActivate());
 		installHLECall(interpreter, 0xFFFF2719, 0xFFFF1EE9, new TXThreadCreate());
+		installHLECall(interpreter, 0x00000000, 0xFFFF1F91, new TXTimerDeactivate());
 		installHLECall(interpreter, 0xFFFF2945, 0xFFFF2111, new TXTimerCreate());
-		installHLECall(interpreter, 0xFFFF0000, 0xFFFF21C9, new TXThreadResume());
-		installHLECall(interpreter, 0xFFFF0000, 0xFFFF39E5, new TXTimeGet());
-		installHLECall(interpreter, 0xFFFF0000, 0xFFFF3F59, new TXThreadSleep());
+		installHLECall(interpreter, 0x00000000, 0xFFFF20D5, new TXTimerChange());
+		installHLECall(interpreter, 0x00000000, 0xFFFF21C9, new TXThreadResume());
+		installHLECall(interpreter, 0x00000000, 0xFFFF39E5, new TXTimeGet());
+		installHLECall(interpreter, 0x00000000, 0xFFFF3F59, new TXThreadSleep());
 		installHLECall(interpreter, 0xFFFF4C69, 0xFFFF4409, new TXJumpCall(REG_R0));
 		installHLECall(interpreter, 0xFFFF4C6B, 0xFFFF440B, new TXJumpCall(REG_R1));
 		installHLECall(interpreter, 0xFFFF4C6D, 0xFFFF440D, new TXJumpCall(REG_R2));
 		installHLECall(interpreter, 0xFFFF4C6F, 0xFFFF440F, new TXJumpCall(REG_R3));
 		installHLECall(interpreter, 0xFFFF4C79, 0xFFFF4419, new TXExecutionISRExit());
-		installHLECall(interpreter, 0xFFFF0000, 0xFFFF4599, new HLENullCall(0));
+		installHLECall(interpreter, 0x00000000, 0xFFFF4599, new HLENullCall(0));
 		installHLECall(interpreter, 0xFFFF4F5D, 0xFFFF46FD, new TXInterruptControl());
+
+		// These HLE calls are only used to display debugging information
+		registerHLECall(interpreter, 0x00000000, 0x000007A5, new HLEMemcpy());
+		registerHLECall(interpreter, 0x00000000, 0x000007A8, new HLEMemcpy());
+		registerHLECall(interpreter, 0x00000000, 0x000006ED, new HLEMemcpy());
+		registerHLECall(interpreter, 0x00000000, 0x000006F0, new HLEMemcpy());
+		registerHLECall(interpreter, 0x00000000, 0xC000002D, new HLEMemcpy());
+		registerHLECall(interpreter, 0x00000000, 0xC0000030, new HLEMemcpy());
+		registerHLECall(interpreter, 0x00000000, 0xC000000C, new HLEMemcmp());
+		registerHLECall(interpreter, 0x00000000, 0x00000535, new HLEMemcmp());
+		registerHLECall(interpreter, 0x00000000, 0x00000649, new HLEMemset0());
+		registerHLECall(interpreter, 0x00000000, 0x0000064C, new HLEMemset0());
+		registerHLECall(interpreter, 0x00000000, 0x00000691, new HLEMemset0());
+		registerHLECall(interpreter, 0x00000000, 0x00000694, new HLEMemset0());
+		registerHLECall(interpreter, 0x00000000, 0xC000018D, new HLEMemset0());
+		registerHLECall(interpreter, 0x00000000, 0xC0000190, new HLEMemset0());
+		registerHLECall(interpreter, 0x00000000, 0xC00000FD, new HLEStrncpy());
+		registerHLECall(interpreter, 0x00000000, 0xC0000100, new HLEStrncpy());
+		registerHLECall(interpreter, 0x00000000, 0x0000F031, new HLEStrncpy());
 	}
 
 	private void installHLECall(ARMInterpreter interpreter, int address1, int address2, IARMHLECall hleCall) {
@@ -187,10 +220,32 @@ public class TXManager {
 
 		if (Model.getGeneration() >= 2) {
 			// Required for PSP generation 2 or later
-			interpreter.registerHLECall(address2, hleCallIndex, hleCall2);
+			if (address2 != 0) {
+				interpreter.installHLECall(address2, hleCallIndex, hleCall2);
+			}
 		} else {
 			// Required for PSP generation 1
-			interpreter.registerHLECall(address1, hleCallIndex, hleCall1);
+			if (address1 != 0) {
+				interpreter.installHLECall(address1, hleCallIndex, hleCall1);
+			}
+		}
+	}
+
+	private void registerHLECall(ARMInterpreter interpreter, int address1, int address2, IARMHLECall hleCall) {
+		registerHLECall(interpreter, address1, address2, hleCall, hleCall);
+	}
+
+	private void registerHLECall(ARMInterpreter interpreter, int address1, int address2, IARMHLECall hleCall1, IARMHLECall hleCall2) {
+		if (Model.getGeneration() >= 2) {
+			// Required for PSP generation 2 or later
+			if (address2 != 0) {
+				interpreter.registerHLECall(address2, hleCall2);
+			}
+		} else {
+			// Required for PSP generation 1
+			if (address1 != 0) {
+				interpreter.registerHLECall(address1, hleCall1);
+			}
 		}
 	}
 
@@ -206,12 +261,16 @@ public class TXManager {
 		}
 	}
 
+	public int getSystemTick() {
+		return systemTick;
+	}
+
 	public void threadSchedule(ARMProcessor processor) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Entering threadSchedule"));
 		}
 
-		boolean testIrq = true;
+		boolean testIrq = false;
 		long previousSystemTickNanos = System.nanoTime();
 		while (!Emulator.pause) {
 			long nowNanos = System.nanoTime();
@@ -309,6 +368,10 @@ public class TXManager {
 		txThread.initRegisters();
 
 		txThreads.put(threadPtr, txThread);
+
+		if (disassembleFunctions) {
+			disassemble(processor, String.format("Disassembling %s", txThread), entryFunction);
+		}
 
 		if (autoStart != 0) {
 			if (threadResume(processor, txThread)) {
@@ -502,6 +565,10 @@ public class TXManager {
 
 		txTimers.put(timerPtr, txTimer);
 
+		if (disassembleFunctions) {
+			disassemble(processor, String.format("Disassembling %s", txTimer), expirationFunction);
+		}
+
 		if (autoActivate != 0) {
 			timerActivate(processor, txTimer);
 		}
@@ -514,6 +581,47 @@ public class TXManager {
 			txTimer.expirationTicks = systemTick + txTimer.remainingTicks;
 			activatedTimers.add(txTimer);
 		}
+	}
+
+	public int timerActivate(ARMProcessor processor, int timerPtr) {
+		TXTimer txTimer = txTimers.get(timerPtr);
+		if (txTimer == null) {
+			log.error(String.format("timerActivate unknown timerPtr=0x%08X", timerPtr));
+			return TX_PTR_ERROR;
+		}
+
+		timerActivate(processor, txTimer);
+
+		return TX_SUCCESS;
+	}
+
+	public void timerDeactivate(ARMProcessor processor, TXTimer txTimer) {
+		activatedTimers.remove(txTimer);
+	}
+
+	public int timerDeactivate(ARMProcessor processor, int timerPtr) {
+		TXTimer txTimer = txTimers.get(timerPtr);
+		if (txTimer == null) {
+			log.error(String.format("timerDeactivate unknown timerPtr=0x%08X", timerPtr));
+			return TX_PTR_ERROR;
+		}
+
+		timerDeactivate(processor, txTimer);
+
+		return TX_SUCCESS;
+	}
+
+	public int timerChange(ARMProcessor processor, int timerPtr, int initialTicks, int rescheduleTicks) {
+		TXTimer txTimer = txTimers.get(timerPtr);
+		if (txTimer == null) {
+			log.error(String.format("timerChange unknown timerPtr=0x%08X", timerPtr));
+			return TX_PTR_ERROR;
+		}
+
+		txTimer.remainingTicks = initialTicks;
+		txTimer.rescheduleTicks = rescheduleTicks;
+
+		return TX_SUCCESS;
 	}
 
 	public void triggerIrqException() {
@@ -872,6 +980,25 @@ public class TXManager {
 	}
 
 	public int timeGet(ARMProcessor processor) {
-		return systemTick;
+		return getSystemTick();
+	}
+
+	public void disassemble(ARMProcessor processor, String comment, int addr) {
+		if (disassembleFunctions) {
+			final Level logLevel = Level.INFO;
+			if (log.isEnabledFor(logLevel)) {
+				if (disassembler == null) {
+					disassembler = new ARMDisassembler(log, logLevel, processor.mem, processor.interpreter);
+				}
+
+				if (!disassembler.isAlreadyDisassembled(addr)) {
+					if (comment != null) {
+						log.log(logLevel, comment);
+					}
+
+					disassembler.disasm(addr);
+				}
+			}
+		}
 	}
 }

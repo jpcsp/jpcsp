@@ -38,6 +38,7 @@ import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.readUnaligned16;
 import static jpcsp.util.Utilities.readUnaligned32;
 import static jpcsp.util.Utilities.setFlag;
+import static jpcsp.util.Utilities.writeUnaligned16;
 import static jpcsp.util.Utilities.writeUnaligned32;
 
 import java.io.IOException;
@@ -54,6 +55,7 @@ import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.HLE.modules.sceWlan;
 import jpcsp.hardware.Wlan;
+import jpcsp.memory.ByteArrayMemory;
 import jpcsp.memory.IntArrayMemory;
 import jpcsp.memory.mmio.MMIOHandlerBaseMemoryStick;
 import jpcsp.memory.mmio.MMIOHandlerDdr;
@@ -266,6 +268,79 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		sendDataPacket.write(stream);
 		receiveDataPacket.write(stream);
 		super.write(stream);
+	}
+
+	private static String getWlanCommandName(int cmd) {
+		switch (cmd) {
+			case CMD_GET_HW_SPEC                   : return "CMD_GET_HW_SPEC";
+			case CMD_EEPROM_UPDATE                 : return "CMD_EEPROM_UPDATE";
+			case CMD_802_11_RESET                  : return "CMD_802_11_RESET";
+			case CMD_802_11_SCAN                   : return "CMD_802_11_SCAN";
+			case CMD_802_11_GET_LOG                : return "CMD_802_11_GET_LOG";
+			case CMD_MAC_MULTICAST_ADR             : return "CMD_MAC_MULTICAST_ADR";
+			case CMD_802_11_AUTHENTICATE           : return "CMD_802_11_AUTHENTICATE";
+			case CMD_802_11_SET_WEP                : return "CMD_802_11_SET_WEP";
+			case CMD_802_11_GET_STAT               : return "CMD_802_11_GET_STAT";
+			case CMD_802_3_GET_STAT                : return "CMD_802_3_GET_STAT";
+			case CMD_802_11_SNMP_MIB               : return "CMD_802_11_SNMP_MIB";
+			case CMD_MAC_REG_MAP                   : return "CMD_MAC_REG_MAP";
+			case CMD_BBP_REG_MAP                   : return "CMD_BBP_REG_MAP";
+			case CMD_MAC_REG_ACCESS                : return "CMD_MAC_REG_ACCESS";
+			case CMD_BBP_REG_ACCESS                : return "CMD_BBP_REG_ACCESS";
+			case CMD_RF_REG_ACCESS                 : return "CMD_RF_REG_ACCESS";
+			case CMD_802_11_RADIO_CONTROL          : return "CMD_802_11_RADIO_CONTROL";
+			case CMD_802_11_RF_CHANNEL             : return "CMD_802_11_RF_CHANNEL";
+			case CMD_802_11_RF_TX_POWER            : return "CMD_802_11_RF_TX_POWER";
+			case CMD_802_11_RSSI                   : return "CMD_802_11_RSSI";
+			case CMD_802_11_RF_ANTENNA             : return "CMD_802_11_RF_ANTENNA";
+			case CMD_802_11_PS_MODE                : return "CMD_802_11_PS_MODE";
+			case CMD_802_11_DATA_RATE              : return "CMD_802_11_DATA_RATE";
+			case CMD_RF_REG_MAP                    : return "CMD_RF_REG_MAP";
+			case CMD_802_11_DEAUTHENTICATE         : return "CMD_802_11_DEAUTHENTICATE";
+			case CMD_802_11_REASSOCIATE            : return "CMD_802_11_REASSOCIATE";
+			case CMD_MAC_CONTROL                   : return "CMD_MAC_CONTROL";
+			case CMD_802_11_AD_HOC_START           : return "CMD_802_11_AD_HOC_START";
+			case CMD_802_11_AD_HOC_JOIN            : return "CMD_802_11_AD_HOC_JOIN";
+			case CMD_802_11_QUERY_TKIP_REPLY_CNTRS : return "CMD_802_11_QUERY_TKIP_REPLY_CNTRS";
+			case CMD_802_11_ENABLE_RSN             : return "CMD_802_11_ENABLE_RSN";
+			case CMD_802_11_SET_AFC                : return "CMD_802_11_SET_AFC";
+			case CMD_802_11_GET_AFC                : return "CMD_802_11_GET_AFC";
+			case CMD_802_11_DEEP_SLEEP             : return "CMD_802_11_DEEP_SLEEP";
+			case CMD_802_11_AD_HOC_STOP            : return "CMD_802_11_AD_HOC_STOP";
+			case CMD_802_11_HOST_SLEEP_CFG         : return "CMD_802_11_HOST_SLEEP_CFG";
+			case CMD_802_11_WAKEUP_CONFIRM         : return "CMD_802_11_WAKEUP_CONFIRM";
+			case CMD_802_11_HOST_SLEEP_ACTIVATE    : return "CMD_802_11_HOST_SLEEP_ACTIVATE";
+			case CMD_802_11_BEACON_STOP            : return "CMD_802_11_BEACON_STOP";
+			case CMD_802_11_MAC_ADDRESS            : return "CMD_802_11_MAC_ADDRESS";
+			case CMD_802_11_LED_GPIO_CTRL          : return "CMD_802_11_LED_GPIO_CTRL";
+			case CMD_802_11_ASSOCIATE              : return "CMD_802_11_ASSOCIATE";
+			case CMD_802_11_BAND_CONFIG            : return "CMD_802_11_BAND_CONFIG";
+			case CMD_802_11_EEPROM_ACCESS          : return "CMD_802_11_EEPROM_ACCESS";
+			case CMD_GSPI_BUS_CONFIG               : return "CMD_GSPI_BUS_CONFIG";
+			case CMD_802_11D_DOMAIN_INFO           : return "CMD_802_11D_DOMAIN_INFO";
+			case CMD_802_11_KEY_MATERIAL           : return "CMD_802_11_KEY_MATERIAL";
+			case CMD_802_11_SLEEP_PARAMS           : return "CMD_802_11_SLEEP_PARAMS";
+			case CMD_802_11_INACTIVITY_TIMEOUT     : return "CMD_802_11_INACTIVITY_TIMEOUT";
+			case CMD_802_11_SLEEP_PERIOD           : return "CMD_802_11_SLEEP_PERIOD";
+			case CMD_802_11_TPC_CFG                : return "CMD_802_11_TPC_CFG";
+			case CMD_802_11_PA_CFG                 : return "CMD_802_11_PA_CFG";
+			case CMD_802_11_FW_WAKE_METHOD         : return "CMD_802_11_FW_WAKE_METHOD";
+			case CMD_802_11_SUBSCRIBE_EVENT        : return "CMD_802_11_SUBSCRIBE_EVENT";
+			case CMD_802_11_RATE_ADAPT_RATESET     : return "CMD_802_11_RATE_ADAPT_RATESET";
+			case CMD_802_11_TX_RATE_QUERY          : return "CMD_802_11_TX_RATE_QUERY";
+			case CMD_GET_TSF                       : return "CMD_GET_TSF";
+			case CMD_BT_ACCESS                     : return "CMD_BT_ACCESS";
+			case CMD_FWT_ACCESS                    : return "CMD_FWT_ACCESS";
+			case CMD_802_11_MONITOR_MODE           : return "CMD_802_11_MONITOR_MODE";
+			case CMD_MESH_ACCESS                   : return "CMD_MESH_ACCESS";
+			case CMD_MESH_CONFIG_OLD               : return "CMD_MESH_CONFIG_OLD";
+			case CMD_MESH_CONFIG                   : return "CMD_MESH_CONFIG";
+			case CMD_SET_BOOT2_VER                 : return "CMD_SET_BOOT2_VER";
+			case CMD_FUNC_INIT                     : return "CMD_FUNC_INIT";
+			case CMD_FUNC_SHUTDOWN                 : return "CMD_FUNC_SHUTDOWN";
+			case CMD_802_11_BEACON_CTRL            : return "CMD_802_11_BEACON_CTRL";
+		}
+		return String.format("CMD_UNKNOWN_%04X", cmd);
 	}
 
 	@Override
@@ -497,6 +572,10 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		}
 	}
 
+	private void memcpyToFirmware(int dest, byte[] buffer, int length) {
+		memcpyToFirmware(dest, new ByteArrayMemory(buffer).getPointer(), length);
+	}
+
 	private void memcpyFromFirmware(TPointer dest, int src, int length) {
 		Memory firmwareMemory = handlerWlanFirmware.getMemory();
 		if (((dest.getAddress() | src | length) & 0x3) == 0) {
@@ -536,12 +615,12 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 
 	private void checkWlanFirmwareResult() {
 		if (!hasResultFlag(WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE)) {
-			int commandResponseLength = handlerWlanFirmware.getLengthE810();
+			int commandResponseLength = handlerWlanFirmware.getCommandResponseLength();
 			if (commandResponseLength > 0) {
-				int commandResponseAddr = handlerWlanFirmware.getAddrE810();
+				int commandResponseAddr = handlerWlanFirmware.getCommandResponseAddr();
 
 				memcpyFromFirmware(commandPacketPtr, commandResponseAddr, commandResponseLength);
-				handlerWlanFirmware.clearLengthE810();
+				handlerWlanFirmware.clearCommandResponseLength();
 
 				if (log.isTraceEnabled()) {
 					log.trace(String.format("checkWlanFirmwareResult response cmd=0x%X, length=0x%X, resultCode=0x%X: %s", commandPacket.read16(0) & 0x7FFF, commandResponseLength, commandPacket.read16(6), Utilities.getMemoryDump(commandPacket, 0, commandResponseLength)));
@@ -562,13 +641,21 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 			case WLAN_REG_CMD_RESPONSE_PACKET_LENGTH:
 				if (booting) {
 					if (useWlanFirmwareEmulation) {
-						handlerWlanFirmware.setData(firmwareData, firmwareDataIndex);
+						if (firmwareDataIndex > 0) {
+							handlerWlanFirmware.setData(firmwareData, firmwareDataIndex);
+						}
+						if (handlerWlanFirmware.getLength() == endianSwap32(0x46554755)) {
+							firmwareDataIndex = -1;
+							booting = false;
+						} else {
+							firmwareDataIndex = 0;
+						}
 					} else {
 						// Finished writing the chip code, return a fixed magic value
 						setRegisterValue(WLAN_REG_CMD_RESPONSE_PACKET_LENGTH, 4, endianSwap32(0x46554755));
+						firmwareDataIndex = -1;
+						booting = false;
 					}
-					firmwareDataIndex = -1;
-					booting = false;
 				}
 				if (useWlanFirmwareEmulation && !hasResultFlag(WLAN_RESULT_COMMAND_RESPONSE_AVAILABLE)) {
 					setRegisterValue(WLAN_REG_CMD_RESPONSE_PACKET_LENGTH, 4, handlerWlanFirmware.getLength());
@@ -931,10 +1018,57 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 		int bodySize = commandPacket.read16(2);
 		int sequenceNumber = commandPacket.read16(4);
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("processCommandPacket cmd=0x%X, bodySize=0x%X, sequenceNumber=0x%X, %s", cmd, bodySize, sequenceNumber, Utilities.getMemoryDump(commandPacket, 0, size)));
+			log.trace(String.format("processCommandPacket cmd=0x%X(%s), bodySize=0x%X, sequenceNumber=0x%X, %s", cmd, getWlanCommandName(cmd), bodySize, sequenceNumber, Utilities.getMemoryDump(commandPacket, 0, size)));
 		}
 
 		if (useWlanFirmwareEmulation) {
+if (cmd == CMD_GET_HW_SPEC) {
+	handlerWlanFirmware.setInterrupt(MMIOHandlerWlanFirmware.INTERRUPT_UNKNOWN_10);
+	handlerWlanFirmware.setUnknownA510Bit(21);
+}
+if (cmd == CMD_802_11_SCAN) {
+	String ssid = commandPacketPtr.getStringNZ(17, 32);
+	handlerWlanFirmware.scanMemory(ssid);
+	int bit = 15;
+//	handlerWlanFirmware.setUnknownA510(0x6F22C8BF);
+	// Possible values unknownA510: 0x6F22C8BF 
+	// Bits: untested: 0, 1, 2, 3, 4, 5, 7, 11, 14, 17, 21, 24, 25, 27, 29, 30
+	//       tested: 15, 26
+	if (bit == 26) {
+		final int frameOffset = 0x10;
+		final int frameMaxSize = 0x1C0;
+		final int length = frameOffset + frameMaxSize;
+		final byte[] buffer = new byte[length];
+		writeUnaligned16(buffer, frameOffset, 0x124);
+		int subtype = 12; // [0..12] 1, 3, 5, 8, 9, 11: no effect, 10, 12: some effect
+		writeUnaligned16(buffer, frameOffset + 0x2, subtype << 4);
+		if (subtype == 10 || subtype == 12) {
+			System.arraycopy(handlerWlanFirmware.getBSSID(), 0, buffer, frameOffset + 0xC, MAC_ADDRESS_LENGTH);
+			int unknown = 0x1234;
+			writeUnaligned16(buffer, frameOffset + 0x20, unknown);
+		}
+		memcpyToFirmware(handlerWlanFirmware.getBuffer5().addr, buffer, length);
+	}
+	if (bit == 15) {
+		WlanBufferInfo bufferA000 = handlerWlanFirmware.getBufferA000();
+		int addr = bufferA000.addr;
+		int addr2 = addr + 0x100;
+		int addr3 = addr + 0x200;
+		handlerWlanFirmware.getMemory().write32(bufferA000.addr | (bufferA000.readIndex & 0xFF) | 0xD00, addr);
+		handlerWlanFirmware.getMemory().write32(addr + 0x24, addr2);
+		handlerWlanFirmware.getMemory().write8(addr + 0xA, (byte) 0x12);
+		handlerWlanFirmware.getMemory().write16(addr + 0x2, (short) 0x3456);
+		handlerWlanFirmware.getMemory().write16(addr + 0x1C, (short) 0x789A);
+		handlerWlanFirmware.getMemory().write32(addr2 + 0x38, addr3);
+		int frameType = 0; // 0-management, 1-control, 2-data
+		int frameSubtype = 4; // 4-Probe request
+		int frameControlField = ((frameType & 0x3) << 2) | ((frameSubtype & 0xF) << 4);
+		handlerWlanFirmware.getMemory().write16(addr3 + 0x2, (short) frameControlField);
+		bufferA000.incrementWriteIndex();
+	}
+	handlerWlanFirmware.setUnknownA510Bit(bit);
+	handlerWlanFirmware.setInterrupt(MMIOHandlerWlanFirmware.INTERRUPT_UNKNOWN_10);
+}
 			memcpyToFirmware(handlerWlanFirmware.getAddr(), commandPacketPtr, bodySize);
 			handlerWlanFirmware.setInterrupt(MMIOHandlerWlanFirmware.INTERRUPT_UNKNOWN_8);
 			return;
@@ -1615,7 +1749,7 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
 	@Override
 	protected void writeData32(int dataAddress, int dataIndex, int value, boolean endOfCommand) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("MMIOHandlerWlan.writeData32 dataAddress=0x%X, dataIndex=0x%X, outputPacketSize=0x%X, chipCodeIndex=0x%X, value=0x%08X, endOfCommand=%b", dataAddress, dataIndex, getWlanOutputPacketSize(), firmwareDataIndex, value, endOfCommand));
+			log.debug(String.format("MMIOHandlerWlan.writeData32 dataAddress=0x%X, dataIndex=0x%X, outputPacketSize=0x%X, chipCodeIndex=0x%X, value=0x%08X, endOfCommand=%b, booting=%b", dataAddress, dataIndex, getWlanOutputPacketSize(), firmwareDataIndex, value, endOfCommand, booting));
 		}
 
 		if (booting) {

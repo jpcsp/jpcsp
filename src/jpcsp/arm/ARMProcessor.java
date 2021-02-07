@@ -59,6 +59,21 @@ public class ARMProcessor {
 	public static final int REG_LR = 14;
 	public static final int REG_PC = 15;
 	public static final int NUMBER_REGISTERS = 16;
+	public static final int COND_EQ = 0x0;
+	public static final int COND_NE = 0x1;
+	public static final int COND_CS = 0x2;
+	public static final int COND_CC = 0x3;
+	public static final int COND_MI = 0x4;
+	public static final int COND_PL = 0x5;
+	public static final int COND_VS = 0x6;
+	public static final int COND_VC = 0x7;
+	public static final int COND_HI = 0x8;
+	public static final int COND_LS = 0x9;
+	public static final int COND_GE = 0xA;
+	public static final int COND_LT = 0xB;
+	public static final int COND_GT = 0xC;
+	public static final int COND_LE = 0xD;
+	public static final int COND_AL = 0xE;
 	public static final int CPSR_BIT_N = 31;
 	public static final int CPSR_BIT_Z = 30;
 	public static final int CPSR_BIT_C = 29;
@@ -400,21 +415,21 @@ public class ARMProcessor {
 
 	public boolean isConditionCode(int code) {
 		switch (code) {
-			case 0x0: /* EQ */ return hasBit(cpsr, CPSR_BIT_Z);
-			case 0x1: /* NE */ return !hasBit(cpsr, CPSR_BIT_Z);
-			case 0x2: /* CS */ return hasBit(cpsr, CPSR_BIT_C);
-			case 0x3: /* CC */ return !hasBit(cpsr, CPSR_BIT_C);
-			case 0x4: /* MI */ return hasBit(cpsr, CPSR_BIT_N);
-			case 0x5: /* PL */ return !hasBit(cpsr, CPSR_BIT_N);
-			case 0x6: /* VS */ return hasBit(cpsr, CPSR_BIT_V);
-			case 0x7: /* VC */ return !hasBit(cpsr, CPSR_BIT_V);
-			case 0x8: /* HI */ return hasBit(cpsr, CPSR_BIT_C) && !hasBit(cpsr, CPSR_BIT_Z);
-			case 0x9: /* LS */ return !hasBit(cpsr, CPSR_BIT_C) || hasBit(cpsr, CPSR_BIT_Z);
-			case 0xA: /* GE */ return hasBit(cpsr, CPSR_BIT_N) == hasBit(cpsr, CPSR_BIT_V);
-			case 0xB: /* LT */ return hasBit(cpsr, CPSR_BIT_N) != hasBit(cpsr, CPSR_BIT_V);
-			case 0xC: /* GT */ return !hasBit(cpsr, CPSR_BIT_Z) && (hasBit(cpsr, CPSR_BIT_N) == hasBit(cpsr, CPSR_BIT_V));
-			case 0xD: /* LE */ return hasBit(cpsr, CPSR_BIT_Z) || (hasBit(cpsr, CPSR_BIT_N) != hasBit(cpsr, CPSR_BIT_V));
-			case 0xE: /* AL */ return true;
+			case COND_EQ: return hasBit(cpsr, CPSR_BIT_Z);
+			case COND_NE: return !hasBit(cpsr, CPSR_BIT_Z);
+			case COND_CS: return hasBit(cpsr, CPSR_BIT_C);
+			case COND_CC: return !hasBit(cpsr, CPSR_BIT_C);
+			case COND_MI: return hasBit(cpsr, CPSR_BIT_N);
+			case COND_PL: return !hasBit(cpsr, CPSR_BIT_N);
+			case COND_VS: return hasBit(cpsr, CPSR_BIT_V);
+			case COND_VC: return !hasBit(cpsr, CPSR_BIT_V);
+			case COND_HI: return hasBit(cpsr, CPSR_BIT_C) && !hasBit(cpsr, CPSR_BIT_Z);
+			case COND_LS: return !hasBit(cpsr, CPSR_BIT_C) || hasBit(cpsr, CPSR_BIT_Z);
+			case COND_GE: return hasBit(cpsr, CPSR_BIT_N) == hasBit(cpsr, CPSR_BIT_V);
+			case COND_LT: return hasBit(cpsr, CPSR_BIT_N) != hasBit(cpsr, CPSR_BIT_V);
+			case COND_GT: return !hasBit(cpsr, CPSR_BIT_Z) && (hasBit(cpsr, CPSR_BIT_N) == hasBit(cpsr, CPSR_BIT_V));
+			case COND_LE: return hasBit(cpsr, CPSR_BIT_Z) || (hasBit(cpsr, CPSR_BIT_N) != hasBit(cpsr, CPSR_BIT_V));
+			case COND_AL: return true;
 		}
 
 		log.error(String.format("Unknown condition code 0x%X", code));

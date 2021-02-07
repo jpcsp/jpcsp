@@ -34,6 +34,13 @@ public abstract class ARMInstruction extends Instruction {
 		log.error("Unsupported for ARMInstruction");
 	}
 
+	protected void checkHLECall(ARMProcessor processor) {
+		IARMHLECall hleCall = processor.interpreter.getHLECall(processor.getNextInstructionPc());
+		if (hleCall != null) {
+			hleCall.call(processor, 0);
+		}
+	}
+
 	@Override
 	public ARMInstruction instance(int insn) {
 		return this;

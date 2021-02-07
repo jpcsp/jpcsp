@@ -36,6 +36,7 @@ import jpcsp.arm.ARMInterpreter;
 import jpcsp.arm.ARMMemory;
 import jpcsp.arm.ARMProcessor;
 import jpcsp.hardware.Model;
+import jpcsp.hardware.Wlan;
 import jpcsp.memory.mmio.wlan.WlanEmulator;
 import jpcsp.util.LWJGLFixer;
 
@@ -51,6 +52,7 @@ public class ARMTest {
         DOMConfigurator.configure("LogSettings.xml");
         log = ARMProcessor.log;
 		RuntimeContext.setLog4jMDC();
+		Wlan.initialize();
 
 		new ARMTest().testFirmware();
 	}

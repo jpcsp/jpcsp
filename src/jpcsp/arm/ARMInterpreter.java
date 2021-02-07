@@ -26,7 +26,6 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
-import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -44,7 +43,7 @@ public class ARMInterpreter {
 		this.processor = processor;
 		processor.setInterpreter(this);
 
-		registerHLECall(PC_END_RUN, 0, null);
+		installHLECall(PC_END_RUN, 0, null);
 	}
 
 	public void run() {
@@ -91,8 +90,16 @@ public class ARMInterpreter {
 		}
 	}
 
-	public IARMHLECall getHLECall(int addr, int imm) {
+	public boolean hasHLECall(int addr) {
+		return hleCalls.containsKey(addr);
+	}
+
+	public IARMHLECall getHLECall(int addr) {
 		return hleCalls.get(addr);
+	}
+
+	public IARMHLECall getHLECall(int addr, int imm) {
+		return getHLECall(addr);
 	}
 
 	public boolean interpretHLE(int addr, int imm) {
@@ -106,13 +113,24 @@ public class ARMInterpreter {
 		return true;
 	}
 
-	public void registerHLECall(int addr, int imm, IARMHLECall hleCall) {
-		if (Utilities.hasBit(addr, 0)) {
-			addr = Utilities.clearBit(addr, 0);
+	public void registerHLECall(int addr, IARMHLECall hleCall) {
+		hleCalls.put(clearBit(addr, 0), hleCall);
+	}
+
+	public void installHLECall(int addr, int imm, IARMHLECall hleCall) {
+		if (hasBit(addr, 0)) {
+			addr = clearBit(addr, 0);
 			processor.mem.write16(addr, (short) (0xBE00 | (imm & 0x00FF)));
 		} else {
 			processor.mem.write32(addr, 0xE1200070 | ((imm & 0xFFF0) << 4) | (imm & 0x000F));
 		}
-		hleCalls.put(addr, hleCall);
+		registerHLECall(addr, hleCall);
+	}
+
+	public void delayHLE(int count) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("delayHLE count=0x%X", count));
+		}
+		// Just ignore delay loops
 	}
 }
