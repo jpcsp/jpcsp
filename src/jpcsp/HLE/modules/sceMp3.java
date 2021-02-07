@@ -521,7 +521,7 @@ public class sceMp3 extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0x44E07129, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x44E07129, version = 150, checkInsideInterrupt = true, stackUsage = 0x38)
     public int sceMp3Init(@CheckArgument("checkId") int id) {
     	Mp3Info mp3Info = getMp3Info(id);
     	mp3Info.init();
@@ -559,7 +559,7 @@ public class sceMp3 extends HLEModule {
         return 0;
     }
 
-    @HLEFunction(nid = 0xD021C0FB, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xD021C0FB, version = 150, checkInsideInterrupt = true, stackUsage = 0x28)
     public int sceMp3Decode(@CheckArgument("checkInitId") int id, TPointer32 bufferAddress) {
         int result = getMp3Info(id).decode(bufferAddress);
 
@@ -579,7 +579,7 @@ public class sceMp3 extends HLEModule {
         return getMp3Info(id).isStreamDataNeeded();
     }
 
-    @HLEFunction(nid = 0xF5478233, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xF5478233, version = 150, checkInsideInterrupt = true, stackUsage = 0x8)
     public int sceMp3ReleaseMp3Handle(@CheckArgument("checkInitId") int id) {
     	getMp3Info(id).release();
 
