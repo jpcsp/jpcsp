@@ -32,6 +32,8 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
+import org.apache.log4j.Level;
+
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
@@ -278,7 +280,9 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         if (bitMask == 0xFF) {
             return false;
         } else if (bitMask != 0x00) {
-            log.warn(String.format("Unimplemented %s 0x%02X", name, bitMask));
+        	if (log.isEnabledFor(Level.WARN)) {
+        		log.warn(String.format("Unimplemented %s 0x%02X", name, bitMask));
+        	}
         }
 
         return true;
@@ -786,7 +790,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
                 	src = getBestBlend(blendColor, oneMinusBlendColor, context.sfix);
                 	dst = getBestBlend(blendColor, oneMinusBlendColor, context.dfix);
 
-                	if (log.isInfoEnabled()) {
+                	if (log.isEnabledFor(Level.WARN)) {
                 		log.warn(String.format("UNSUPPORTED: Both different SFIX (0x%06X) and DFIX (0x%06X) are not supported (blend equation=%d), approximating with 0x%06X/0x%06X", context.sfix, context.dfix, context.blendEquation, getColorFromBlend(src, blendColor, oneMinusBlendColor), getColorFromBlend(dst, blendColor, oneMinusBlendColor)));
                 	}
                 }
