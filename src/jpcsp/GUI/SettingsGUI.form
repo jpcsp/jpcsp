@@ -620,7 +620,7 @@
                                       <EmptySpace min="315" pref="315" max="-2" attributes="0"/>
                                   </Group>
                                   <Group type="102" alignment="0" attributes="0">
-                                      <Component id="onlyGEGraphicsCheck" max="32767" attributes="0"/>
+                                      <Component id="hideEffectsCheck" max="32767" attributes="0"/>
                                       <EmptySpace min="331" pref="331" max="-2" attributes="0"/>
                                   </Group>
                                   <Group type="102" alignment="0" attributes="0">
@@ -680,7 +680,7 @@
                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
                       <Component id="disableVBOCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="onlyGEGraphicsCheck" min="-2" max="-2" attributes="0"/>
+                      <Component id="hideEffectsCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="useVertexCache" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
@@ -718,10 +718,10 @@
                 </Property>
               </Properties>
             </Component>
-            <Component class="javax.swing.JCheckBox" name="onlyGEGraphicsCheck">
+            <Component class="javax.swing.JCheckBox" name="hideEffectsCheck">
               <Properties>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.onlyGEGraphicsCheck.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.hideEffectsCheck.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
             </Component>

@@ -2374,7 +2374,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("SettingsGUI.useSoftwareRenderer.text", "emu.useSoftwareRenderer", false, false);
         logConfigurationSettingBool("SettingsGUI.useExternalSoftwareRenderer.text", "emu.useExternalSoftwareRenderer", false, false);
         logConfigurationSettingBool("SettingsGUI.disableVBOCheck.text", "emu.disablevbo", false, true);
-        logConfigurationSettingBool("SettingsGUI.onlyGEGraphicsCheck.text", "emu.onlyGEGraphics", false, true);
+        logConfigurationSettingBool("SettingsGUI.hideEffectsCheck.text", "emu.hideEffects", false, true);
         logConfigurationSettingBool("SettingsGUI.useVertexCache.text", "emu.useVertexCache", false, true);
         logConfigurationSettingBool("SettingsGUI.shaderCheck.text", "emu.useshaders", false, true);
         logConfigurationSettingBool("SettingsGUI.geometryShaderCheck.text", "emu.useGeometryShader", false, true);

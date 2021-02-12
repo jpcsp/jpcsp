@@ -113,7 +113,7 @@ public class SettingsGUI extends javax.swing.JFrame {
             useOpenglRenderer.setSelected(true);
         }
 
-        setBoolFromSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
+        setBoolFromSettings(hideEffectsCheck, "emu.hideEffects");
         setBoolFromSettings(useDebugFont, "emu.useDebugFont");
         setBoolFromSettings(useDebugMemory, "emu.useDebuggerMemory");
         setBoolFromSettings(useVertexCache, "emu.useVertexCache");
@@ -237,7 +237,7 @@ public class SettingsGUI extends javax.swing.JFrame {
             useOpenglRenderer.setSelected(true);
         }
 
-        setBoolToSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
+        setBoolToSettings(hideEffectsCheck, "emu.hideEffects");
         setBoolToSettings(useDebugFont, "emu.useDebugFont");
         setBoolToSettings(useDebugMemory, "emu.useDebuggerMemory");
         setBoolToSettings(useVertexCache, "emu.useVertexCache");
@@ -482,7 +482,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         nicknameTextField = new javax.swing.JTextField();
         VideoPanel = new javax.swing.JPanel();
         disableVBOCheck = new javax.swing.JCheckBox();
-        onlyGEGraphicsCheck = new javax.swing.JCheckBox();
+        hideEffectsCheck = new javax.swing.JCheckBox();
         useVertexCache = new javax.swing.JCheckBox();
         shadersCheck = new javax.swing.JCheckBox();
         geometryShaderCheck = new javax.swing.JCheckBox();
@@ -827,7 +827,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         disableVBOCheck.setText(bundle.getString("SettingsGUI.disableVBOCheck.text")); // NOI18N
 
-        onlyGEGraphicsCheck.setText(bundle.getString("SettingsGUI.onlyGEGraphicsCheck.text")); // NOI18N
+        hideEffectsCheck.setText(bundle.getString("SettingsGUI.hideEffectsCheck.text")); // NOI18N
 
         useVertexCache.setText(bundle.getString("SettingsGUI.useVertexCache.text")); // NOI18N
 
@@ -903,7 +903,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                                 .addComponent(disableVBOCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGap(315, 315, 315))
                             .addGroup(VideoPanelLayout.createSequentialGroup()
-                                .addComponent(onlyGEGraphicsCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(hideEffectsCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGap(331, 331, 331))
                             .addGroup(VideoPanelLayout.createSequentialGroup()
                                 .addComponent(useVertexCache, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -947,7 +947,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(disableVBOCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(onlyGEGraphicsCheck)
+                .addComponent(hideEffectsCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useVertexCache)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -1456,7 +1456,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JPanel networkPanel;
     private javax.swing.JTextField nicknameTextField;
     private javax.swing.JLabel nicknamelLabel;
-    private javax.swing.JCheckBox onlyGEGraphicsCheck;
+    private javax.swing.JCheckBox hideEffectsCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
     private javax.swing.JCheckBox profilerCheck;
     private javax.swing.JPanel renderPanel;
