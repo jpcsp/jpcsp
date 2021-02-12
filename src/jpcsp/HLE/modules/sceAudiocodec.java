@@ -17,6 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import static jpcsp.HLE.modules.sceAtrac3plus.atracDecodeDelay;
+import static jpcsp.HLE.modules.sceMp3.ID3;
+import static jpcsp.HLE.modules.sceMp3.isMp3Magic;
+import static jpcsp.util.Utilities.endianSwap32;
+import static jpcsp.util.Utilities.readUnaligned32;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -223,6 +227,42 @@ public class sceAudiocodec extends HLEModule {
 		return outputBufferSize;
 	}
 
+	private void setMp3Header(TPointer workArea, Mp3Header mp3Header) {
+		// See https://github.com/uofw/uofw/blob/master/src/avcodec/audiocodec.c
+		workArea.setValue32(68, mp3Header.bitrateIndex); // MP3 bitrateIndex [0..14]
+		workArea.setValue32(72, mp3Header.rawSampleRateIndex); // MP3 freqType [0..3]
+
+		int type;
+		if (mp3Header.mpeg25 != 0) {
+			type = 2;
+		} else if (mp3Header.lsf != 0) {
+			type = 0;
+		} else {
+			type = 1;
+		}
+		workArea.setValue32(56, type); // type [0..2]
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Mp3 header bitrateIndex=%d, rawSampleRateIndex=%d, type=%d", mp3Header.bitrateIndex, mp3Header.rawSampleRateIndex, type));
+		}
+	}
+
+	private int findMp3Header(TPointer workArea, int inputBuffer) {
+        Memory mem = Memory.getInstance();
+        // Skip the ID3 tags
+    	if ((readUnaligned32(mem, inputBuffer) & 0x00FFFFFF) == ID3) {
+    		int size = endianSwap32(readUnaligned32(mem, inputBuffer + 6));
+    		// Highest bit of each byte has to be ignored (format: 0x7F7F7F7F)
+    		size = (size & 0x7F) | ((size & 0x7F00) >> 1) | ((size & 0x7F0000) >> 2) | ((size & 0x7F000000) >> 3);
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Skipping ID3 of size 0x%X", size));
+    		}
+    		inputBuffer += 10 + size;
+    	}
+
+    	return inputBuffer;
+	}
+
 	@HLEFunction(nid = 0x70A703F8, version = 150)
 	public int sceAudiocodecDecode(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
 		workArea.setValue32(8, 0); // err field
@@ -272,6 +312,7 @@ public class sceAudiocodec extends HLEModule {
 				break;
 			case PSP_CODEC_MP3:
 				inputBufferSize = workArea.getValue32(40);
+				inputBuffer = findMp3Header(workArea, inputBuffer);
 				break;
 			case PSP_CODEC_AAC:
 				if (workArea.getValue8(44) == 0) {
@@ -322,23 +363,7 @@ public class sceAudiocodec extends HLEModule {
 		if (codec instanceof Mp3Decoder) {
 			Mp3Header mp3Header = ((Mp3Decoder) codec).getMp3Header();
 			if (mp3Header != null) {
-				// See https://github.com/uofw/uofw/blob/master/src/avcodec/audiocodec.c
-				workArea.setValue32(68, mp3Header.bitrateIndex); // MP3 bitrateIndex [0..14]
-				workArea.setValue32(72, mp3Header.rawSampleRateIndex); // MP3 freqType [0..3]
-
-				int type;
-				if (mp3Header.mpeg25 != 0) {
-					type = 2;
-				} else if (mp3Header.lsf != 0) {
-					type = 0;
-				} else {
-					type = 1;
-				}
-				workArea.setValue32(56, type); // type [0..2]
-
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceAudiocodecDecode MP3 bitrateIndex=%d, rawSampleRateIndex=%d, type=%d", mp3Header.bitrateIndex, mp3Header.rawSampleRateIndex, type));
-				}
+				setMp3Header(workArea, mp3Header);
 			}
 		}
 
@@ -352,6 +377,28 @@ public class sceAudiocodec extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x8ACA11D5, version = 150)
 	public int sceAudiocodecGetInfo(@BufferInfo(lengthInfo=LengthInfo.fixedLength, length=audiocodecBufferSize, usage=Usage.inout) TPointer workArea, int codecType) {
+		switch (codecType) {
+			case PSP_CODEC_MP3:
+				workArea.setValue32(60, 3); // Unknown value, required by sceMp3Init from libmp3.prx
+	            Memory mem = Memory.getInstance();
+	    		int inputBuffer = workArea.getValue32(24);
+	    		inputBuffer = findMp3Header(workArea, inputBuffer);
+	        	int header = readUnaligned32(mem, inputBuffer);
+
+	        	if (!isMp3Magic(header)) {
+	        		log.error(String.format("Invalid Mp3 header 0x%08X", header));
+	        	} else {
+	        		header = Utilities.endianSwap32(header);
+	        		if (log.isDebugEnabled()) {
+	        			log.debug(String.format("Mp3 header: 0x%08X", header));
+	        		}
+
+	        		Mp3Header mp3Header = new Mp3Header();
+	        		Mp3Decoder.decodeHeader(mp3Header, header);
+	        		setMp3Header(workArea, mp3Header);
+	        	}
+				break;
+		}
 		return 0;
 	}
 

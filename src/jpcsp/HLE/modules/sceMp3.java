@@ -45,7 +45,7 @@ import org.apache.log4j.Logger;
 public class sceMp3 extends HLEModule {
     public static Logger log = Modules.getLogger("sceMp3");
     private Mp3Info[] ids;
-    private static final int ID3 = 0x00334449; // "ID3"
+    public static final int ID3 = 0x00334449; // "ID3"
     private static final int TAG_Xing = 0x676E6958; // "Xing"
     private static final int TAG_Info = 0x6F666E49; // "Info"
     private static final int TAG_VBRI = 0x49524256; // "VBRI"
@@ -193,7 +193,7 @@ public class sceMp3 extends HLEModule {
         }
 
         public int notifyAddStream(int bytesToAdd) {
-        	bytesToAdd = Math.min(bytesToAdd, getWritableBytes());
+        	bytesToAdd = Math.min(bytesToAdd, getInternalWritableBytes());
 
             if (log.isTraceEnabled()) {
                 log.trace(String.format("notifyAddStream inputBuffer %s: %s", inputBuffer, Utilities.getMemoryDump(inputBuffer.getWriteAddr(), bytesToAdd)));
@@ -226,7 +226,7 @@ public class sceMp3 extends HLEModule {
         public int decode(TPointer32 outputBufferAddress) {
         	int result;
         	int decodeOutputAddr = outputAddr + outputIndex;
-        	if (inputBuffer.isFileEnd() && inputBuffer.getCurrentSize() <= 0) {
+        	if (inputBuffer.getCurrentSize() <= 0) {
         		int outputBytes = codec.getNumberOfSamples() * 4;
         		Memory mem = Memory.getInstance();
         		mem.memset(decodeOutputAddr, (byte) 0, outputBytes);
@@ -295,8 +295,12 @@ public class sceMp3 extends HLEModule {
             return result;
         }
 
+        private int getInternalWritableBytes() {
+        	return inputBuffer.getNoFileWriteSize();
+        }
+
         public int getWritableBytes() {
-        	int writeSize = inputBuffer.getNoFileWriteSize();
+        	int writeSize = getInternalWritableBytes();
 
         	// Never return more than halfBufferSize (tested on PSP using JpcspTrace),
         	// even when 2*halfBufferSize would be free.

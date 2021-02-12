@@ -158,7 +158,7 @@ public class HLEModuleManager {
         sceFont(Modules.sceFontModule, new String[] { "libfont", "sceFont_Library" }),
         scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer", "scePsmfP_library", "psmf_jk", "jkPsmfP_library" }),
         scePsmf(Modules.scePsmfModule, new String[] { "psmf", "scePsmf_library" }),
-        sceMp3(Modules.sceMp3Module, new String[] { "PSP_AV_MODULE_MP3", "PSP_MODULE_AV_MP3", "LIBMP3", "sceMp3_Library" }),
+        sceMp3(Modules.sceMp3Module, new String[] { "PSP_AV_MODULE_MP3", "PSP_MODULE_AV_MP3", "LIBMP3", "sceMp3_Library" }, "flash0:/kd/libmp3.prx"),
         sceDeflt(Modules.sceDefltModule, new String[] { "libdeflt", "sceDEFLATE_Library", "DEFLATE_Library" }),
         sceWlan(Modules.sceWlanModule),
         sceNet(Modules.sceNetModule, new String[] { "pspnet", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON", "sceNet_Library" }, "flash0:/kd/pspnet.prx"),
