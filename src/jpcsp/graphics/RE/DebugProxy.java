@@ -876,4 +876,36 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.setLogicOp(logicOp);
 	}
+
+	@Override
+	public void setLightPosition(int light, float[] position) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setLightPosition light=%d, (%f, %f, %f)", light, position[0], position[1], position[2]));
+		}
+		super.setLightPosition(light, position);
+	}
+
+	@Override
+	public void setLightMode(int mode) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setLightMode mode=%d", mode));
+		}
+		super.setLightMode(mode);
+	}
+
+	@Override
+	public void setLightType(int light, int type, int kind) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setLightType light=%d, type=%d, kind=%d", light, type, kind));
+		}
+		super.setLightType(light, type, kind);
+	}
+
+	@Override
+	public void setMaterialShininess(float shininess) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setMaterialShininess %f", shininess));
+		}
+		super.setMaterialShininess(shininess);
+	}
 }

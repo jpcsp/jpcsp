@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE;
 
 import static java.lang.Math.abs;
+import static jpcsp.HLE.modules.sceDisplay.getPixelFormatBytes;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
 import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES;
@@ -276,15 +277,22 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         return !context.clearMode || directMode;
     }
 
-    protected static boolean getBooleanColorMask(String name, int bitMask) {
+    protected boolean getBooleanColorMask(String name, int bitMask) {
         if (bitMask == 0xFF) {
             return false;
-        } else if (bitMask != 0x00) {
-        	if (log.isEnabledFor(Level.WARN)) {
-        		log.warn(String.format("Unimplemented %s 0x%02X", name, bitMask));
-        	}
+        } else if (bitMask == 0x00) {
+        	return true;
+        } else if (bitMask >= 0xF0 && getPixelFormatBytes(context.psm) == 2) {
+        	// For 16-bit pixel formats, a bitmask value of 0xFN is (mostly) equivalent to a bitmask value of 0xFF
+        	return false;
+        } else if (bitMask <= 0x0F && getPixelFormatBytes(context.psm) == 2) {
+        	// For 16-bit pixel formats, a bitmask value of 0x0N is (mostly) equivalent to a bitmask value of 0x00
+        	return true;
         }
 
+    	if (log.isEnabledFor(Level.WARN)) {
+    		log.warn(String.format("Unimplemented %s 0x%02X", name, bitMask));
+    	}
         return true;
     }
 
