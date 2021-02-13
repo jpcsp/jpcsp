@@ -67,7 +67,7 @@ public class sceMp3 extends HLEModule {
         if (ids == null || ids.length == 0) {
             throw new SceKernelErrorException(ERROR_MP3_INVALID_ID);
         }
-        if (id < 0 || id >= ids.length) {
+        if (id < 0 || id >= 2 || id >= ids.length) {
             throw new SceKernelErrorException(ERROR_MP3_INVALID_ID);
         }
 
@@ -584,7 +584,13 @@ public class sceMp3 extends HLEModule {
     }
 
     @HLEFunction(nid = 0xF5478233, version = 150, checkInsideInterrupt = true, stackUsage = 0x8)
-    public int sceMp3ReleaseMp3Handle(@CheckArgument("checkInitId") int id) {
+    public int sceMp3ReleaseMp3Handle(int id) {
+		if (id < 0 || id >= 2) {
+			if (log.isDebugEnabled()) {
+				log.debug("sceMp3ReleaseMp3Handle returning ERROR_MP3_INVALID_ID");
+			}
+            return ERROR_MP3_INVALID_ID;
+		}
     	getMp3Info(id).release();
 
         return 0;
