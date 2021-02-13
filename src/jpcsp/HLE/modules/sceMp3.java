@@ -589,7 +589,7 @@ public class sceMp3 extends HLEModule {
 			if (log.isDebugEnabled()) {
 				log.debug("sceMp3ReleaseMp3Handle returning ERROR_MP3_INVALID_ID");
 			}
-            return ERROR_MP3_INVALID_ID;
+        return ERROR_MP3_INVALID_ID;
 		}
     	getMp3Info(id).release();
 
