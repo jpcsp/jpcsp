@@ -44,7 +44,7 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_CMD_GET_BARYON                    = 0x01;
     public static final int PSP_SYSCON_CMD_GET_DIGITAL_KEY               = 0x02;
     public static final int PSP_SYSCON_CMD_GET_ANALOG                    = 0x03;
-    public static final int PSP_SYSCON_CMD_UNKNOWN_05                    = 0x05;
+    public static final int PSP_SYSCON_CMD_GET_TACHYON_TEMP              = 0x05;
     public static final int PSP_SYSCON_CMD_GET_DIGITAL_KEY_ANALOG        = 0x06;
     public static final int PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY        = 0x07;
     public static final int PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY_ANALOG = 0x08;
@@ -127,6 +127,7 @@ public class sceSyscon extends HLEModule {
     public static final int PSP_SYSCON_DEVICE_RESET_MODE_1 = 0x80;
     private final int scratchPad[] = new int[32];
     private int alarm;
+    private int tachyonTemp = 13094; // Unsigned value, expected to be larger or equal to 13094
 
 	@Override
 	public void start() {
@@ -172,7 +173,7 @@ public class sceSyscon extends HLEModule {
     		cmdNames[PSP_SYSCON_CMD_GET_BARYON] = "GET_BARYON";
     		cmdNames[PSP_SYSCON_CMD_GET_DIGITAL_KEY] = "GET_DIGITAL_KEY";
     		cmdNames[PSP_SYSCON_CMD_GET_ANALOG] = "GET_ANALOG";
-    		cmdNames[PSP_SYSCON_CMD_UNKNOWN_05] = "UNKNOWN_05";
+    		cmdNames[PSP_SYSCON_CMD_GET_TACHYON_TEMP] = "GET_TACHYON_TEMP";
     		cmdNames[PSP_SYSCON_CMD_GET_DIGITAL_KEY_ANALOG] = "GET_DIGITAL_KEY_ANALOG";
     		cmdNames[PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY] = "GET_KERNEL_DIGITAL_KEY";
     		cmdNames[PSP_SYSCON_CMD_GET_KERNEL_DIGITAL_KEY_ANALOG] = "GET_KERNEL_DIGITAL_KEY_ANALOG";
@@ -315,6 +316,10 @@ public class sceSyscon extends HLEModule {
 
     public void writeAlarm(int alarm) {
     	this.alarm = alarm;
+    }
+
+    public int getTachyonTemp() {
+    	return tachyonTemp;
     }
 
     /**
@@ -957,6 +962,13 @@ public class sceSyscon extends HLEModule {
     @HLEUnimplemented
 	@HLEFunction(nid = 0x9BC5E33B, version = 660)
 	public int sceSyscon_driver_9BC5E33B(int unknown) {
+    	return 0;
+    }
+
+	@HLEFunction(nid = 0x3B657A27)
+	public int sceSysconGetTachyonTemp(TPointer32 tempAddr) {
+    	tempAddr.setValue(getTachyonTemp());
+
     	return 0;
     }
 }

@@ -47,6 +47,7 @@ import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POMMEL_VERSION;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POWER_STATUS;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_POWER_SUPPLY_STATUS;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_STATUS2;
+import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_TACHYON_TEMP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_TIMESTAMP;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_WAKE_UP_FACTOR;
 import static jpcsp.HLE.modules.sceSyscon.PSP_SYSCON_CMD_GET_WAKE_UP_REQ;
@@ -330,8 +331,8 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 				State.controller.hleControllerPoll();
 				responseData = addAnalogResponseData(responseData);
 				break;
-			case sceSyscon.PSP_SYSCON_CMD_UNKNOWN_05:
-				responseData = addResponseData32(responseData, 13094); // Unknown unsigned value, expected to be larger or equal to 13094
+			case PSP_SYSCON_CMD_GET_TACHYON_TEMP:
+				responseData = addResponseData32(responseData, Modules.sceSysconModule.getTachyonTemp());
 				break;
 			case PSP_SYSCON_CMD_GET_DIGITAL_KEY_ANALOG:
 				State.controller.hleControllerPoll();
