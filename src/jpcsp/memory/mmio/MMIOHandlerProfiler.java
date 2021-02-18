@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
-import jpcsp.util.Utilities;
 
 public class MMIOHandlerProfiler extends MMIOHandlerBase {
 	private static final int STATE_VERSION = 0;
