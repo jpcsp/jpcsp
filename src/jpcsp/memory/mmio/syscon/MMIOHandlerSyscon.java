@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.memory.mmio;
+package jpcsp.memory.mmio.syscon;
 
 import static jpcsp.HLE.Modules.scePowerModule;
 import static jpcsp.HLE.Modules.sceSysconModule;
@@ -89,6 +89,8 @@ import jpcsp.hardware.LED;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Model;
 import jpcsp.hardware.UMDDrive;
+import jpcsp.memory.mmio.MMIOHandlerBase;
+import jpcsp.memory.mmio.MMIOHandlerGpio;
 import jpcsp.memory.mmio.wlan.MMIOHandlerWlan;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;

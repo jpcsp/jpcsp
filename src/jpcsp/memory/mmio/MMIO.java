@@ -40,6 +40,7 @@ import jpcsp.memory.mmio.eflash.MMIOHandlerEFlash;
 import jpcsp.memory.mmio.eflash.MMIOHandlerEFlashAta;
 import jpcsp.memory.mmio.eflash.MMIOHandlerEFlashDma;
 import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
+import jpcsp.memory.mmio.syscon.MMIOHandlerSyscon;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart3;
 import jpcsp.memory.mmio.uart.MMIOHandlerUart4;
 import jpcsp.memory.mmio.uart.MMIOHandlerUartBase;
