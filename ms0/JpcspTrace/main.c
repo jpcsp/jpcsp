@@ -202,11 +202,15 @@ int parseHexDigit(char hex) {
 	return 0;
 }
 
+int isHexStart(const char *s) {
+	return s[0] == '0' && (s[1] == 'x' || s[1] == 'X');
+}
+
 u32 parseHex(const char *s) {
 	u32 hex = 0;
 
 	// Skip leading "0x"
-	if (s[0] == '0' && s[1] == 'x') {
+	if (isHexStart(s)) {
 		s += 2;
 	}
 
@@ -483,6 +487,8 @@ int tryPatchWatch(WatchInfo *watchInfo) {
 		printLogSH("ERROR delay slot found at ", watchInfo->moduleName, " offset ", watchInfo->offset, "\n");
 		return -1;
 	}
+	printLogHH("Patching instruction ", originalInstruction1, " at offset ", watchInfo->offset, "\n");
+	printLogHH("Patching instruction ", originalInstruction2, " at offset ", watchInfo->offset + 4, "\n");
 
 	watchInfo->originalInstruction1 = originalInstruction1;
 	watchInfo->originalInstruction2 = originalInstruction2;
@@ -835,7 +841,7 @@ void executeSysconCommand(int cmd, char *outputFileName, int outputSize, char *i
 	sysconPacket.tx[0] = cmd;
 	sysconPacket.tx[1] = inputSize + 2;
 
-	if (inputFileName[0] == '0' && inputFileName[1] == 'x') {
+	if (isHexStart(inputFileName)) {
 		void *inputBuffer = (void *) parseHex(inputFileName);
 		memcpy(sysconPacket.tx + 2, inputBuffer, inputSize);
 	} else {
@@ -866,7 +872,7 @@ void executeSysconCommand(int cmd, char *outputFileName, int outputSize, char *i
 
 	printLogH("Syscon command executed in ", end - start, " us\n");
 
-	if (outputFileName[0] == '0' && outputFileName[1] == 'x') {
+	if (isHexStart(outputFileName)) {
 		void *outputBuffer = (void *) parseHex(outputFileName);
 		memcpy(outputBuffer, sysconPacket.rx, outputSize);
 	} else {
@@ -933,7 +939,7 @@ void executeKirkCommand(int cmd, char *outputFileName, int outputSize, char *inp
 	void *allocOutputBuffer;
 	void *outputBuffer;
 
-	if (inputFileName[0] == '0' && inputFileName[1] == 'x') {
+	if (isHexStart(inputFileName)) {
 		allocInputSize = 0;
 		allocInputBuffer = NULL;
 		inputBuffer = (void *) parseHex(inputFileName);
@@ -958,7 +964,7 @@ void executeKirkCommand(int cmd, char *outputFileName, int outputSize, char *inp
 		}
 	}
 
-	if (outputFileName[0] == '0' && outputFileName[1] == 'x') {
+	if (isHexStart(outputFileName)) {
 		allocOutputSize = 0;
 		allocOutputBuffer = NULL;
 		outputBuffer = (void *) parseHex(outputFileName);
