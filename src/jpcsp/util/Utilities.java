@@ -2387,4 +2387,20 @@ public class Utilities {
 
 		return newArray;
 	}
+
+	public static void memset(byte[] array, byte value, int length) {
+		memset(array, 0, value, length);
+	}
+
+	public static void memset(byte[] array, int offset, byte value, int length) {
+		Arrays.fill(array, offset, offset + length, value);
+	}
+
+	public static int sizeof(byte[] array) {
+		if (array == null) {
+			return 0;
+		}
+
+		return array.length;
+	}
 }

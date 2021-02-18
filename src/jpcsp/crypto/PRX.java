@@ -40,6 +40,7 @@ import jpcsp.Emulator;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Interpreter;
 import jpcsp.HLE.TPointer;
+import jpcsp.format.KL4E;
 import jpcsp.util.Utilities;
 
 public class PRX {
@@ -473,7 +474,7 @@ public class PRX {
 						elfOffset += length;
 					}
 					in.close();
-	
+
 					// Return the uncompressed ELF file
 					resultSize = elfOffset;
 					resultBuffer = elfBuffer;
@@ -523,10 +524,21 @@ public class PRX {
 					return null;
 				}
         	} else {
-        		log.error(String.format("KL4E decompression unimplemented, compAttribute=0x%X", compAttribute));
         		if (log.isDebugEnabled()) {
         			log.debug(String.format("DecryptAndUncompressPRX KL4E: %s", Utilities.getMemoryDump(resultBuffer, 0, resultSize)));
         		}
+
+        		// KLE4 compressed
+        		byte[] elfBuffer = new byte[elfSize];
+        		int decompressResult = KL4E.decompress_kle(elfBuffer, 0, elfSize, resultBuffer, 4, null, true);
+
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("DecryptAndUncompressPRX KL4E result 0x%X: %s", decompressResult, Utilities.getMemoryDump(elfBuffer, 0, elfSize)));
+        		}
+
+				// Return the uncompressed ELF file
+        		resultSize = decompressResult;
+        		resultBuffer = elfBuffer;
         	}
         }
 
