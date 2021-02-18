@@ -91,6 +91,7 @@ public class MMIO extends Memory {
     	addHandler(MMIOHandlerSystemControl.BASE_ADDRESS, 0x104, MMIOHandlerSystemControl.getInstance());
     	addHandler(0xBC200000, 0x8, new MMIOHandlerCpuBusFrequency(0xBC200000));
     	addHandler(MMIOHandlerInterruptMan.BASE_ADDRESS, 0x30, MMIOHandlerInterruptMan.getProxyInstance());
+    	addHandler(0xBC400000, 0x54, new MMIOHandlerProfiler(0xBC400000));
     	addHandler(0xBC500000, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500000, IntrManager.PSP_SYSTIMER0_INTR));
     	addHandler(0xBC500010, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500010, IntrManager.PSP_SYSTIMER1_INTR));
     	addHandler(0xBC500020, 0x10, new int[] { 0x0100 }, new MMIOHandlerTimer(0xBC500020, IntrManager.PSP_SYSTIMER2_INTR));
