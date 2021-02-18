@@ -792,6 +792,43 @@ public class KirkEngine {
 		return KIRK_OPERATION_SUCCESS;
 	}
 
+	public static int kirk_CMD5(byte[] outbuff, byte[] inbuff, int size) {
+		return kirk_CMD5(outbuff, 0, inbuff, 0, size);
+	}
+
+	public static int kirk_CMD5(byte[] outbuff, int outoffset, byte[] inbuff, int inoffset, int size) {
+		KIRK_AES128CBC_HEADER header = new KIRK_AES128CBC_HEADER(inbuff, inoffset);
+		AES.AES_ctx aesKey = new AES.AES_ctx();
+
+		if (!is_kirk_initialized) {
+			return KIRK_NOT_INITIALIZED;
+		}
+		if (header.mode != KIRK_MODE_ENCRYPT_CBC) {
+			return KIRK_INVALID_MODE;
+		}
+		if (header.data_size == 0) {
+			return KIRK_DATA_SIZE_ZERO;
+		}
+
+		byte[] key = null;
+		if (header.keyseed == 0x100) {
+			key = new byte[0x10];
+		}
+		if (key == null) {
+			return KIRK_INVALID_SIZE;
+		}
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Kirk cmd=0x%X(KIRK_CMD_ENCRYPT_IV_FUSE) %s", KIRK_CMD_ENCRYPT_IV_FUSE, header));
+		}
+
+		//Set the key
+		AES_set_key(aesKey, key, 128);
+		AES_cbc_encrypt(aesKey, inbuff, inoffset + KIRK_AES128CBC_HEADER.SIZEOF, outbuff, outoffset + KIRK_AES128CBC_HEADER.SIZEOF, header.data_size);
+
+		return KIRK_OPERATION_SUCCESS;
+	}
+
 	public static int kirk_CMD7(byte[] outbuff, byte[] inbuff, int size) {
 		return kirk_CMD7(outbuff, 0, inbuff, 0, size);
 	}
@@ -1280,6 +1317,7 @@ public class KirkEngine {
 			case KIRK_CMD_ENCRYPT_PRIVATE:      return kirk_CMD0 (outbuff, outoffset, inbuff, inoffset, insize, true);
 			case KIRK_CMD_DECRYPT_PRIVATE:      return kirk_CMD1 (outbuff, outoffset, inbuff, inoffset, insize);
 			case KIRK_CMD_ENCRYPT_IV_0:         return kirk_CMD4 (outbuff, outoffset, inbuff, inoffset, insize);
+			case KIRK_CMD_ENCRYPT_IV_FUSE:      return kirk_CMD5 (outbuff, outoffset, inbuff, inoffset, insize);
 			case KIRK_CMD_DECRYPT_IV_0:         return kirk_CMD7 (outbuff, outoffset, inbuff, inoffset, insize);
 			case KIRK_CMD_DECRYPT_IV_FUSE:      return kirk_CMD8 (outbuff, outoffset, inbuff, inoffset, insize);
 			case KIRK_CMD_PRIV_SIGN_CHECK:      return kirk_CMD10(inbuff, inoffset, insize);
