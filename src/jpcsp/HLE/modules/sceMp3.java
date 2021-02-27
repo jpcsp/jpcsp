@@ -584,7 +584,7 @@ public class sceMp3 extends HLEModule {
     }
 
     @HLEFunction(nid = 0xF5478233, version = 150, checkInsideInterrupt = true, stackUsage = 0x8)
-    public int sceMp3ReleaseMp3Handle(@CheckArgument("checkInitId") int id) {
+    public int sceMp3ReleaseMp3Handle(@CheckArgument("checkId") int id) {
     	getMp3Info(id).release();
 
         return 0;
