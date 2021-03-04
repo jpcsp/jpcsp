@@ -261,6 +261,12 @@ public class sceNetApctl extends HLEModule {
 	}
 
     public static String getPrimaryDNS() {
+    	// If a primary DNS is defined in the Settings, use it
+    	String primaryDNS = Settings.getInstance().readString("primaryDNS");
+    	if (primaryDNS != null && primaryDNS.length() > 0) {
+    		return primaryDNS;
+    	}
+
     	String ip = getLocalHostIP();
     	if (ip != null) {
     		// Try to guess the primary DNS by replacing the last part of our
@@ -268,7 +274,7 @@ public class sceNetApctl extends HLEModule {
     		// e.g.: ip=A.B.C.D -> primaryDNS=A.B.C.1
     		int lastDot = ip.lastIndexOf(".");
     		if (lastDot >= 0) {
-    			String primaryDNS = ip.substring(0, lastDot) + ".1";
+    			primaryDNS = ip.substring(0, lastDot) + ".1";
     			return primaryDNS;
     		}
     	}
@@ -529,7 +535,11 @@ public class sceNetApctl extends HLEModule {
 				break;
 			}
 			case PSP_NET_APCTL_INFO_PRIMDNS: {
-				pInfo.setStringNZ(16, getPrimaryDNS());
+				String primaryDNS = getPrimaryDNS();
+				pInfo.setStringNZ(16, primaryDNS);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetApctlGetInfo returning Primary DNS '%s'", primaryDNS));
+				}
 				break;
 			}
 			case PSP_NET_APCTL_INFO_SECDNS: {
