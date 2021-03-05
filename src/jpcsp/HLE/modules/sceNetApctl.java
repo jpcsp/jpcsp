@@ -268,7 +268,7 @@ public class sceNetApctl extends HLEModule {
 
     public static String getPrimaryDNS() {
     	// If a primary DNS is defined in the Settings, use it
-    	String primaryDNS = Settings.getInstance().readString("primaryDNS");
+    	String primaryDNS = Settings.getInstance().readString("network.primaryDNS");
     	if (primaryDNS != null && primaryDNS.length() > 0) {
     		return primaryDNS;
     	}

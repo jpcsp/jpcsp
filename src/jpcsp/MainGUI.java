@@ -2421,6 +2421,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingString("SettingsGUI.metaServerLabel.text", "network.ProOnline.metaServer", true, true);
         logConfigurationSettingString("SettingsGUI.XLinkKaiServerLabel.text", "network.XLinkKai.server", true, true);
         logConfigurationSettingString("SettingsGUI.broadcastAddressLabel.text", "network.broadcastAddress", true, true);
+        logConfigurationSettingString("SettingsGUI.primaryDNSLabel.text", "network.primaryDNS", true, true);
     }
 
     public void loadAndRun() {

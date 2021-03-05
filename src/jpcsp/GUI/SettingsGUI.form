@@ -1285,6 +1285,7 @@
                                   <Component id="metaServerLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="XLinkKaiServerLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="broadcastAddressLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="primaryDNSLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace min="-2" pref="39" max="-2" attributes="0"/>
                           </Group>
@@ -1330,6 +1331,7 @@
                               <Component id="broadcastAddressRemindLabel" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <Component id="broadcastAddressTextField" alignment="0" min="-2" pref="264" max="-2" attributes="0"/>
+                          <Component id="primaryDNSTextField" alignment="0" min="-2" pref="264" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace min="-2" pref="150" max="-2" attributes="0"/>
                   </Group>
@@ -1372,6 +1374,11 @@
                       </Group>
                       <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
                       <Component id="broadcastAddressRemindLabel" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="primaryDNSLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="primaryDNSTextField" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
                       <EmptySpace min="-2" pref="271" max="-2" attributes="0"/>
                   </Group>
               </Group>
@@ -1492,6 +1499,20 @@
               <Properties>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
                   <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.broadcastAddressRemindLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="primaryDNSLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.primaryDNSLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JTextField" name="primaryDNSTextField">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.primaryDNSTextField.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
             </Component>

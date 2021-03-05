@@ -133,6 +133,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setStringFromSettings(metaServerTextField, "network.ProOnline.metaServer");
         setStringFromSettings(XLinkKaiServerTextField, "network.XLinkKai.server");
         setStringFromSettings(broadcastAddressTextField, "network.broadcastAddress");
+        setStringFromSettings(primaryDNSTextField, "network.primaryDNS");
         setBoolFromSettings(lanMultiPlayerRadioButton, "emu.lanMultiPlayer");
         setBoolFromSettings(enableProOnlineRadioButton, "emu.enableProOnline");
         setBoolFromSettings(XlinkaiSupportRadioButton, "emu.enableXLinkKai");
@@ -257,6 +258,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setStringToSettings(metaServerTextField, "network.ProOnline.metaServer");
         setStringToSettings(XLinkKaiServerTextField, "network.XLinkKai.server");
         setStringToSettings(broadcastAddressTextField,"network.broadcastAddress");
+        setStringToSettings(primaryDNSTextField,"network.primaryDNS");
         setBoolToSettings(lanMultiPlayerRadioButton, "emu.lanMultiPlayer");
         setBoolToSettings(enableProOnlineRadioButton, "emu.enableProOnline");
         setBoolToSettings(XlinkaiSupportRadioButton, "emu.enableXLinkKai");
@@ -539,6 +541,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         broadcastAddressLabel = new javax.swing.JLabel();
         broadcastAddressTextField = new javax.swing.JTextField();
         broadcastAddressRemindLabel = new javax.swing.JLabel();
+        primaryDNSLabel = new javax.swing.JLabel();
+        primaryDNSTextField = new javax.swing.JTextField();
         cancelButton = new jpcsp.GUI.CancelButton();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
@@ -1202,6 +1206,10 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         broadcastAddressRemindLabel.setText(bundle.getString("SettingsGUI.broadcastAddressRemindLabel.text")); // NOI18N
 
+        primaryDNSLabel.setText(bundle.getString("SettingsGUI.primaryDNSLabel.text")); // NOI18N
+
+        primaryDNSTextField.setText(bundle.getString("SettingsGUI.primaryDNSTextField.text")); // NOI18N
+
         javax.swing.GroupLayout networkPanelLayout = new javax.swing.GroupLayout(networkPanel);
         networkPanel.setLayout(networkPanelLayout);
         networkPanelLayout.setHorizontalGroup(
@@ -1213,7 +1221,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(metaServerLabel)
                             .addComponent(XLinkKaiServerLabel)
-                            .addComponent(broadcastAddressLabel))
+                            .addComponent(broadcastAddressLabel)
+                            .addComponent(primaryDNSLabel))
                         .addGap(39, 39, 39))
                     .addGroup(networkPanelLayout.createSequentialGroup()
                         .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1245,7 +1254,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addGroup(networkPanelLayout.createSequentialGroup()
                         .addGap(10, 10, 10)
                         .addComponent(broadcastAddressRemindLabel))
-                    .addComponent(broadcastAddressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 264, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(broadcastAddressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 264, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(primaryDNSTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 264, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(150, 150, 150))
         );
         networkPanelLayout.setVerticalGroup(
@@ -1279,6 +1289,10 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(broadcastAddressTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(broadcastAddressRemindLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(primaryDNSLabel)
+                    .addComponent(primaryDNSTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(271, 271, 271))
         );
 
@@ -1394,6 +1408,8 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel broadcastAddressLabel;
     private javax.swing.JLabel broadcastAddressRemindLabel;
     private javax.swing.JTextField broadcastAddressTextField;
+    private javax.swing.JLabel primaryDNSLabel;
+    private javax.swing.JTextField primaryDNSTextField;
     private javax.swing.JButton btnUMDPathAdd;
     private javax.swing.JButton btnUMDPathRemove;
     private javax.swing.JComboBox buttonBox;
