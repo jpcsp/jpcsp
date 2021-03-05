@@ -250,7 +250,13 @@ public class sceNetApctl extends HLEModule {
     public static String getSSID() {
 		String ssid = null;
 		try {
-			ssid = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getDisplayName();
+			NetworkInterface networkInterface = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
+			if (networkInterface != null) {
+				ssid = networkInterface.getDisplayName();
+			}
+			if (ssid == null) {
+				ssid = "Jpcsp";
+			}
 		} catch (SocketException e) {
 			log.error(e);
 		} catch (UnknownHostException e) {
