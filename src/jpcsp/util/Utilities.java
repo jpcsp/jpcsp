@@ -1075,6 +1075,20 @@ public class Utilities {
         }
     }
 
+    public static int internalReadUnaligned32(Memory mem, int address) {
+        switch (address & 3) {
+            case 0:
+                return mem.internalRead32(address);
+            case 2:
+                return mem.internalRead16(address) | (mem.internalRead16(address + 2) << 16);
+            default:
+                return (mem.internalRead8(address + 3) << 24)
+                     | (mem.internalRead8(address + 2) << 16)
+                     | (mem.internalRead8(address + 1) << 8)
+                     | (mem.internalRead8(address));
+        }
+    }
+
     public static int readUnaligned16(Memory mem, int address) {
     	if ((address & 1) == 0) {
     		return mem.read16(address);
@@ -1090,8 +1104,16 @@ public class Utilities {
         return (readUnaligned32(mem, address) & 0xFFFFFFFFL) | (((long) readUnaligned32(mem, address + 4)) << 32);
     }
 
+    public static int u8(byte value) {
+    	return value & 0xFF;
+    }
+
+    public static int u16(short value) {
+    	return value & 0xFFFF;
+    }
+
     public static int read8(byte[] buffer, int offset) {
-        return buffer[offset] & 0xFF;
+        return u8(buffer[offset]);
     }
 
     public static int readUnaligned32(byte[] buffer, int offset) {

@@ -68,11 +68,23 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 		return memory;
 	}
 
+	protected String getTraceFormatRead32() {
+		return "0x%08X - read32(0x%08X)=0x%08X";
+	}
+
+	protected String getTraceFormatRead16() {
+		return "0x%08X - read16(0x%08X)=0x%04X";
+	}
+
+	protected String getTraceFormatRead8() {
+		return "0x%08X - read8(0x%08X)=0x%02X";
+	}
+
 	@Override
 	public int read32(int address) {
 		int data = internalRead32(address);
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read32(0x%08X)=0x%08X", getPc(), address, data));
+			log.trace(String.format(getTraceFormatRead32(), getPc(), address, data));
 		}
 
 		return data;
@@ -82,7 +94,7 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	public int read16(int address) {
 		int data = internalRead16(address);
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read16(0x%08X)=0x%04X", getPc(), address, data));
+			log.trace(String.format(getTraceFormatRead16(), getPc(), address, data));
 		}
 
 		return data;
@@ -92,7 +104,7 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	public int read8(int address) {
 		int data = internalRead8(address);
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - read8(0x%08X)=0x%02X", getPc(), address, data));
+			log.trace(String.format(getTraceFormatRead8(), getPc(), address, data));
 		}
 	
 		return data;
@@ -113,10 +125,22 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 		return memory[(address - baseAddress) >> 2];
 	}
 
+	protected String getTraceFormatWrite32() {
+		return "0x%08X - write32(0x%08X, 0x%08X)";
+	}
+
+	protected String getTraceFormatWrite16() {
+		return "0x%08X - write16(0x%08X, 0x%04X)";
+	}
+
+	protected String getTraceFormatWrite8() {
+		return "0x%08X - write8(0x%08X, 0x%02X)";
+	}
+
 	@Override
 	public void write32(int address, int value) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write32(0x%08X, 0x%08X)", getPc(), address, value));
+			log.trace(String.format(getTraceFormatWrite32(), getPc(), address, value));
 		}
 
 		memory[(address - baseAddress) >> 2] = value;
@@ -125,7 +149,7 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	@Override
 	public void write16(int address, short value) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write16(0x%08X, 0x%04X)", getPc(), address, value & 0xFFFF));
+			log.trace(String.format(getTraceFormatWrite16(), getPc(), address, value & 0xFFFF));
 		}
 
 		int index = address & 0x02;
@@ -137,7 +161,7 @@ public class MMIOHandlerReadWrite extends MMIOHandlerBase {
 	@Override
 	public void write8(int address, byte value) {
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("0x%08X - write8(0x%08X, 0x%02X)", getPc(), address, value & 0xFF));
+			log.trace(String.format(getTraceFormatWrite8(), getPc(), address, value & 0xFF));
 		}
 
 		int index = address & 0x03;
