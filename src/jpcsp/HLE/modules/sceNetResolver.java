@@ -31,6 +31,13 @@ import jpcsp.HLE.TPointer32;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.Hashtable;
+
+import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
 
 import org.apache.log4j.Logger;
 
@@ -143,8 +150,43 @@ public class sceNetResolver extends HLEModule {
 	@HLEFunction(nid = 0x224C5F44, version = 150)
 	public int sceNetResolverStartNtoA(@CheckArgument("checkRid") int rid, PspString hostname, @BufferInfo(usage=Usage.out) TPointer32 addr, int timeout, int retry) {
 		try {
-			InetAddress inetAddress = InetAddress.getByName(hostname.getString());
-			int resolvedAddress = sceNetInet.bytesToInternetAddress(inetAddress.getAddress());
+			int resolvedAddress = 0;
+
+			// If a specific Primary DNS server address has been specified in the configuration settings,
+			// try to resolve the host name using that DNS server.
+			if (sceNetApctl.hasPrimaryDNS()) {
+				String primaryDNS = sceNetApctl.getPrimaryDNS();
+
+				Hashtable<String, String> env = new Hashtable<>();
+				env.put("java.naming.factory.initial", "com.sun.jndi.dns.DnsContextFactory");
+				env.put("java.naming.provider.url", String.format("dns://%s/", primaryDNS));
+
+				try {
+					DirContext ictx = new InitialDirContext(env);
+					Attributes attrs = ictx.getAttributes(hostname.getString(), new String[] { "A" });
+					Attribute ipAttribute = attrs.get("A");
+					if (ipAttribute != null) {
+						String ip = (String) ipAttribute.get();
+						if (ip != null) {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("sceNetResolverStartNtoA resolved using Primary DNS '%s': resolved '%s' into '%s'", primaryDNS, hostname.getString(), ip));
+							}
+							InetAddress inetAddress = InetAddress.getByName(ip);
+							resolvedAddress = sceNetInet.bytesToInternetAddress(inetAddress.getAddress());
+						}
+					}
+				} catch (NamingException e) {
+					if (log.isDebugEnabled()) {
+						log.debug("sceNetResolverStartNtoA with Primary DNS", e);
+					}
+				}
+			}
+
+			if (resolvedAddress == 0) {
+				InetAddress inetAddress = InetAddress.getByName(hostname.getString());
+				resolvedAddress = sceNetInet.bytesToInternetAddress(inetAddress.getAddress());
+			}
+
 			addr.setValue(resolvedAddress);
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("sceNetResolverStartNtoA returning address 0x%08X('%s')", resolvedAddress, sceNetInet.internetAddressToString(resolvedAddress)));
