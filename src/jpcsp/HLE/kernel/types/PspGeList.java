@@ -411,6 +411,9 @@ public class PspGeList {
 	}
 
 	public synchronized int readNextInstruction() {
+		if (memoryReader == baseMemoryReader && (pc < baseMemoryReaderStartAddress || pc >= baseMemoryReaderEndAddress)) {
+			resetMemoryReader(pc - 4);
+		}
 		pc += 4;
 		return memoryReader.readNext();
 	}
