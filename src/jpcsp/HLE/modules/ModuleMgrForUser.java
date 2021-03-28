@@ -485,7 +485,6 @@ public class ModuleMgrForUser extends HLEModule {
     private int delayedKernelLoadModule(LoadModuleContext loadModuleContext) {
         int result = hleKernelLoadHLEModule(loadModuleContext);
         if (result >= 0) {
-        	Modules.ThreadManForUserModule.hleKernelDelayThread(loadHLEModuleDelay, false);
             return result;
         }
 
