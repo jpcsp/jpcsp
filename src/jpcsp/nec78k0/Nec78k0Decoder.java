@@ -889,14 +889,14 @@ public class Nec78k0Decoder {
 			UNK2, // 0x55
 			UNK2, // 0x56
 			UNK2, // 0x57
-			UNK2, // 0x58
+			AND_A_r, // 0x58
 			UNK2, // 0x59
-			UNK2, // 0x5A
-			UNK2, // 0x5B
-			UNK2, // 0x5C
-			UNK2, // 0x5D
-			UNK2, // 0x5E
-			UNK2, // 0x5F
+			AND_A_r, // 0x5A
+			AND_A_r, // 0x5B
+			AND_A_r, // 0x5C
+			AND_A_r, // 0x5D
+			AND_A_r, // 0x5E
+			AND_A_r, // 0x5F
 			UNK2, // 0x60
 			UNK2, // 0x61
 			UNK2, // 0x62
@@ -1005,7 +1005,7 @@ public class Nec78k0Decoder {
 			UNK2, // 0xC9
 			UNK2, // 0xCA
 			UNK2, // 0xCB
-			UNK2, // 0xCC
+			MOV1_CY_A, // 0xCC
 			UNK2, // 0xCD
 			OR1_A, // 0xCE
 			UNK2, // 0xCF
@@ -1154,7 +1154,7 @@ public class Nec78k0Decoder {
 			DEC_r, // 0x55
 			DEC_r, // 0x56
 			DEC_r, // 0x57
-			UNK1, // 0x58
+			AND_A_addr, // 0x58
 			UNK1, // 0x59
 			SET1_saddr, // 0x5A
 			CLR1_saddr, // 0x5B

@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.test;
 
-import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.IICIF0;
+import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.getInterruptName;
 import static jpcsp.nec78k0.Nec78k0Memory.BASE_RAM0;
 import static jpcsp.nec78k0.Nec78k0Memory.END_RAM0;
 import static jpcsp.util.Utilities.readUnaligned32;
@@ -61,9 +61,12 @@ public class Syscon78k0Test {
 	}
 
 	public void testFirmware() {
-		int model = Model.MODEL_PSP_SLIM;
-//		model = Model.MODEL_PSP_FAT;
-//		model = Model.MODEL_PSP_STREET;
+		int model = Model.MODEL_PSP_SLIM; // syscon_02g.bin
+//		model = Model.MODEL_PSP_FAT;      // syscon_01g.bin
+//		model = Model.MODEL_PSP_BRITE;    // syscon_03g.bin
+//		model = Model.MODEL_PSP_BRITE2;   // syscon_04g.bin
+//		model = Model.MODEL_PSP_BRITE4;   // syscon_09g.bin
+//		model = Model.MODEL_PSP_STREET;   // syscon_11g.bin
 
 		Model.setModel(model);
 		String fileName = String.format("syscon_%02dg.bin", Model.getGeneration());
@@ -93,7 +96,7 @@ public class Syscon78k0Test {
 			for (int i = 0; i < 0x40; i += 2) {
 				int addr = mem.internalRead16(i);
 				if (addr != 0 && addr != 0xFFFF) {
-					log.info(String.format("Disassembling Vector Table entry 0x%02X: 0x%04X", i, addr));
+					log.info(String.format("Disassembling Vector Table entry 0x%02X(%s): 0x%04X", i, getInterruptName(i), addr));
 					processor.disassemble(addr);
 				}
 			}
@@ -125,16 +128,14 @@ public class Syscon78k0Test {
 
 		interpreter.run();
 
-		// Try to simulate one I2C communication...
-		long start = Emulator.getClock().currentTimeMillis();
-		while (mem.getSysconSfr().hasInterruptMask(IICIF0) && (Emulator.getClock().currentTimeMillis() - start) < 3000) {
+		long minimumDuration = 3000L; // Run for at least 3 seconds
+		long start = now();
+		while ((now() - start) < minimumDuration) {
 			interpreter.run();
 		}
-		mem.getSysconSfr().setInterruptRequest(IICIF0);
-//		mem.getSysconSfr().setI2cStatus(0x01 | 0x02);
-//		mem.getSysconSfr().setPortInputBit(1, 6);
-		while (mem.getSysconSfr().hasInterruptRequest(IICIF0)) {
-			interpreter.run();
-		}
+	}
+
+	public static long now() {
+		return Emulator.getClock().currentTimeMillis();
 	}
 }

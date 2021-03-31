@@ -114,7 +114,7 @@ public class MMIOHandlerSyscon extends MMIOHandlerBase {
 	public static final int BARYON_STATUS_POWER_SWITCH = 0x10;
 	public static final int BARYON_STATUS_LOW_BATTERY  = 0x20;
 	public static final int BARYON_STATUS_GSENSOR      = 0x80;
-	private static final int MAX_DATA_LENGTH = 16;
+	public static final int MAX_DATA_LENGTH = 16;
 	private int data[] = new int[MAX_DATA_LENGTH];
 	private int dataIndex;
 	private boolean endDataIndex;

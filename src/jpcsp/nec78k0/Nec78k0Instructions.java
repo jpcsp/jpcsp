@@ -1231,7 +1231,7 @@ public class Nec78k0Instructions {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
         	int value1 = processor.getRegister(REG_A);
-        	int value2 = processor.mem.read16(processor.getRegisterPair(REG_PAIR_HL));
+        	int value2 = processor.mem.read8(processor.getRegisterPair(REG_PAIR_HL));
         	int value = value1 + value2;
         	processor.setRegister(REG_A, value);
         	processor.setPswResult(value, getAdditionCY(value1, value2, value), getAdditionAC(value1, value2, value));
@@ -1247,7 +1247,7 @@ public class Nec78k0Instructions {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
         	int value1 = processor.getRegister(REG_A);
-        	int value2 = processor.mem.read16(processor.getRegisterPair(REG_PAIR_HL) + (byte) insn);
+        	int value2 = processor.mem.read8(processor.getRegisterPair(REG_PAIR_HL) + (byte) insn);
         	int value = value1 + value2;
         	if (processor.isCarryFlag()) {
         		value++;
@@ -1266,7 +1266,7 @@ public class Nec78k0Instructions {
         @Override
         public void interpret(Nec78k0Processor processor, int insn) {
         	int value1 = processor.getRegister(REG_A);
-        	int value2 = processor.mem.read16(processor.getRegisterPair(REG_PAIR_HL) + (byte) insn);
+        	int value2 = processor.mem.read8(processor.getRegisterPair(REG_PAIR_HL) + (byte) insn);
         	int value = value1 + value2;
         	processor.setRegister(REG_A, value);
         	processor.setPswResult(value, getAdditionCY(value1, value2, value), getAdditionAC(value1, value2, value));
@@ -2079,6 +2079,47 @@ public class Nec78k0Instructions {
         @Override
         public String disasm(int address, int insn) {
             return String.format("cmp %s, %s", getRegisterName(REG_A), getBasedAddressing(getRegisterPairName(REG_PAIR_HL), insn));
+        }
+    };
+
+    public static final Nec78k0Instruction AND_A_addr = new Nec78k0Instruction3() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value = processor.getRegister(REG_A) & processor.mem.read8(getWord(insn));
+        	processor.setRegister(REG_A, value);
+        	processor.setPswResult(value);
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("and %s, %s", getRegisterName(REG_A), getWord(insn));
+        }
+    };
+
+    public static final Nec78k0Instruction MOV1_CY_A = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int bit = (insn >> 4) & 0x7;
+        	processor.setCarryFlag(hasBit(processor.getRegister(REG_A), bit));
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("mov1 %s, %s.%d", cyName, getRegisterName(REG_A), (insn >> 4) & 0x7);
+        }
+    };
+
+    public static final Nec78k0Instruction AND_A_r = new Nec78k0Instruction2() {
+        @Override
+        public void interpret(Nec78k0Processor processor, int insn) {
+        	int value = processor.getRegister(REG_A) & processor.getRegister(insn);
+        	processor.setRegister(REG_A, value);
+        	processor.setPswResult(value);
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            return String.format("and %s, %s", getRegisterName(REG_A), getRegisterName(insn));
         }
     };
 }

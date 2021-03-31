@@ -368,6 +368,7 @@ public class Nec78k0Processor {
 		push16(pc);
 
 		setPc(addr);
+		checkPendingInterrupt();
 	}
 
 	public void ret() {
@@ -376,6 +377,7 @@ public class Nec78k0Processor {
 		}
 
 		setPc(pop16());
+		checkPendingInterrupt();
 	}
 
 	public void reti() {
@@ -407,9 +409,6 @@ public class Nec78k0Processor {
 	private void interrupt(int vectorTableAddress, boolean highPriority) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Triggering interrupt 0x%02X(%s), highPriority=%b", vectorTableAddress, MMIOHandlerSysconFirmwareSfr.getInterruptName(vectorTableAddress), highPriority));
-			if (vectorTableAddress == 0x2E) {
-				mem.getSysconSfr().clearInterruptRequest(MMIOHandlerSysconFirmwareSfr.WTIIF);
-			}
 		}
 
 		int addr = mem.read16(vectorTableAddress);
@@ -435,7 +434,8 @@ public class Nec78k0Processor {
 	}
 
 	public void branch(int disp) {
-		pc += disp;
+		setPc(pc + disp);
+		checkPendingInterrupt();
 	}
 
 	public void jump(int addr) {
@@ -445,7 +445,8 @@ public class Nec78k0Processor {
 			log.error(String.format("Jumping to address 0x%04X, something is wrong", addr));
 			Emulator.PauseEmuWithStatus(EMU_STATUS_UNIMPLEMENTED);
 		}
-		pc = addr;
+		setPc(addr);
+		checkPendingInterrupt();
 	}
 
 	public void halt() {
@@ -457,6 +458,7 @@ public class Nec78k0Processor {
 		}
 
 		if (!checkPendingInterrupt()) {
+			interpreter.setHalted(true);
 			interpreter.exitInterpreter();
 		}
 	}

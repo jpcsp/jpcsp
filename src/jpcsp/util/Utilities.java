@@ -2268,6 +2268,10 @@ public class Utilities {
     	return setFlag(value, getFlagFromBit(bit));
     }
 
+    public static int setBit(int value1, int value2, int bit) {
+    	return setFlag(value1, value2, getFlagFromBit(bit));
+    }
+
     public static int clearBit(int value, int bit) {
     	return clearFlag(value, getFlagFromBit(bit));
     }
@@ -2424,5 +2428,21 @@ public class Utilities {
 		}
 
 		return array.length;
+	}
+
+	public static int getByte0(int value) {
+		return value & 0xFF;
+	}
+
+	public static int getByte1(int value) {
+		return getByte0(value >> 8);
+	}
+
+	public static int setByte0(int value, int value8) {
+		return (value & 0xFFFFFF00) | getByte0(value8);
+	}
+
+	public static int setByte1(int value, int value8) {
+		return (value & 0xFFFF00FF) | (getByte0(value8) << 8);
 	}
 }

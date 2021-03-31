@@ -20,6 +20,7 @@ import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.NUMBER_SPECI
 import static jpcsp.nec78k0.Nec78k0Processor.PSW_ADDRESS;
 import static jpcsp.nec78k0.Nec78k0Processor.SFR_ADDRESS;
 import static jpcsp.nec78k0.Nec78k0Processor.SP_ADDRESS;
+import static jpcsp.util.Utilities.hasFlag;
 
 /**
  * @author gid15
@@ -133,7 +134,7 @@ public class SysconSfrNames {
 		addSfrName(0xFF96, "SIOA0");
 		addSfrName(0xFF97, "ADTC0");
 		addSfrName(0xFF99, "WDTE");
-		addSfrName(0xFF9F, "OSCCTL", new String[] { "AMPH", null, null, null, null, null, "OSCSEL", "EXCLK" });
+		addSfrName(0xFF9F, "OSCCTL", new String[] { "AMPH", null, null, null, "OSCSELS", "EXCLKS", "OSCSEL", "EXCLK" });
 		addSfrName(0xFFA0, "RCM", new String[] { "RSTOP", "LSRSTOP", null, null, null, null, null, "RSTS" });
 		addSfrName(0xFFA1, "MCM", new String[] { "MCM0", "MCS", "XSEL" });
 		addSfrName(0xFFA2, "MOC", new String[] { null, null, null, null, null, null, null, "MSTOP" });
@@ -239,12 +240,18 @@ public class SysconSfrNames {
 
 		value &= 0xFF;
 		for (int i = 0; value != 0; i++, value >>= 1) {
-			if ((value & 1) != 0) {
+			if (hasFlag(value, 0x01)) {
 				if (s.length() > 0) {
 					s.append("|");
 				}
 				s.append(getSfr1Name(addr, i));
 			}
+		}
+
+		// If returning some names, including between parenthesis
+		if (s.length() > 0) {
+			s.insert(0, '(');
+			s.append(')');
 		}
 
 		return s.toString();

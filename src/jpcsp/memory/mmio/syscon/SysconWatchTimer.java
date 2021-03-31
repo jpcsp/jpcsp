@@ -123,9 +123,24 @@ public class SysconWatchTimer extends Thread {
 				case 7: stepIntervalTimer = 62500; break; // 62.5ms
 			}
 		} else {
-			log.error(String.format("setWatchTimerOperationMode unimplemented WTM7=0: WTM=0x%02X", watchTimerOperationMode));
-			stepWatchTimer = Integer.MAX_VALUE;
-			stepIntervalTimer = Integer.MAX_VALUE;
+			// Assume operation at Fprs = 5 MHz
+			switch ((watchTimerOperationMode >> 2) & 0x3) {
+				case 0: stepWatchTimer = 419000; break; // 0.419s
+				case 1: stepWatchTimer = 210000; break; // 0.21s
+				case 2: stepWatchTimer = 819; break; // 819us
+				case 3: stepWatchTimer = 410; break; // 410us
+			}
+
+			switch ((watchTimerOperationMode >> 4) & 0x7) {
+				case 0: stepIntervalTimer = 410; break; // 410us
+				case 1: stepIntervalTimer = 820; break; // 820us
+				case 2: stepIntervalTimer = 1640; break; // 1.64ms
+				case 3: stepIntervalTimer = 3280; break; // 3.28ms
+				case 4: stepIntervalTimer = 6550; break; // 6.55ms
+				case 5: stepIntervalTimer = 13100; break; // 13.1ms
+				case 6: stepIntervalTimer = 26200; break; // 26.2ms
+				case 7: stepIntervalTimer = 52400; break; // 52.4ms
+			}
 		}
 
 		long now = now();

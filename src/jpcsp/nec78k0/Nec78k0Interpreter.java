@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.nec78k0;
 
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
@@ -30,6 +33,8 @@ public class Nec78k0Interpreter {
 	public static final int PC_END_RUN = 0xFFFF;
 	private boolean exitInterpreter;
 	private boolean inInterpreter;
+	private final Semaphore update = new Semaphore(0);
+	private boolean halted;
 
 	public Nec78k0Interpreter(Nec78k0Processor processor) {
 		this.processor = processor;
@@ -38,7 +43,15 @@ public class Nec78k0Interpreter {
 
 	public void run() {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Interpreting 0x%04X", processor.getNextInstructionPc()));
+			log.debug(String.format("Interpreting 0x%04X, halted=%b", processor.getNextInstructionPc(), isHalted()));
+		}
+
+		while (isHalted()) {
+			try {
+				update.tryAcquire(1, 10L, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				// Ignore exception
+			}
 		}
 
 		inInterpreter = true;
@@ -62,5 +75,15 @@ public class Nec78k0Interpreter {
 		if (inInterpreter) {
 			exitInterpreter = true;
 		}
+	}
+
+	public boolean isHalted() {
+		return halted;
+	}
+
+	public void setHalted(boolean halted) {
+		this.halted = halted;
+
+		update.release();
 	}
 }

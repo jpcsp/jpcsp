@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.nec78k0;
 
 import static jpcsp.nec78k0.Nec78k0Instructions.BC;
+import static jpcsp.nec78k0.Nec78k0Instructions.BF_A_addr;
 import static jpcsp.nec78k0.Nec78k0Instructions.BF_saddr;
 import static jpcsp.nec78k0.Nec78k0Instructions.BF_sfr;
 import static jpcsp.nec78k0.Nec78k0Instructions.BNC;
@@ -24,6 +25,7 @@ import static jpcsp.nec78k0.Nec78k0Instructions.BNZ;
 import static jpcsp.nec78k0.Nec78k0Instructions.BR_AX;
 import static jpcsp.nec78k0.Nec78k0Instructions.BR_jdisp;
 import static jpcsp.nec78k0.Nec78k0Instructions.BR_word;
+import static jpcsp.nec78k0.Nec78k0Instructions.BT_A_addr;
 import static jpcsp.nec78k0.Nec78k0Instructions.BT_saddr;
 import static jpcsp.nec78k0.Nec78k0Instructions.BT_sfr;
 import static jpcsp.nec78k0.Nec78k0Instructions.BZ;
@@ -107,7 +109,7 @@ public class Nec78k0Disassembler {
 		if (instr == BR_word) {
 			int jumpTo = getWord(insn);
 			addJump(pendingAddresses, addr, jumpTo);
-		} else if (instr == BR_jdisp || instr == BZ || instr == BNZ || instr == BNC || instr == BC || instr == BF_saddr || instr == BF_sfr || instr == BT_saddr || instr == BT_sfr || instr == DBNZ_B || instr == DBNZ_C || instr == DBNZ_saddr) {
+		} else if (instr == BR_jdisp || instr == BZ || instr == BNZ || instr == BNC || instr == BC || instr == BF_A_addr || instr == BF_saddr || instr == BF_sfr || instr == BT_A_addr || instr == BT_saddr || instr == BT_sfr || instr == DBNZ_B || instr == DBNZ_C || instr == DBNZ_saddr) {
 			int jumpTo = getJdisp(addr, insn, instr);
 			addJump(pendingAddresses, addr, jumpTo);
 		} else if (instr == CALL) {
