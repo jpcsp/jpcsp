@@ -31,10 +31,6 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.crypto.PRX;
-import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.IMemoryWriter;
-import jpcsp.memory.MemoryReader;
-import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 public class sceMesgd extends HLEModule {
@@ -79,11 +75,7 @@ public class sceMesgd extends HLEModule {
 
     @HLEFunction(nid = 0x102DC8AF, version = 150)
     public int sceMesgd_driver_102DC8AF(@BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.inout) TPointer buffer, int bufferSize, @BufferInfo(usage=Usage.out) TPointer32 resultSizeAddr) {
-    	byte[] bytes = new byte[bufferSize];
-    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(buffer, bufferSize, 1);
-    	for (int i = 0; i < bufferSize; i++) {
-    		bytes[i] = (byte) memoryReader.readNext();
-    	}
+    	byte[] bytes = buffer.getArray8(bufferSize);
 
     	int result = hleMesgd_driver_102DC8AF(bytes, 0, bufferSize, resultSizeAddr);
     	if (result != 0) {
@@ -91,11 +83,7 @@ public class sceMesgd extends HLEModule {
     	}
 
     	int resultSize = resultSizeAddr.getValue();
-    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(buffer, resultSize, 1);
-    	for (int i = 0; i < resultSize; i++) {
-    		memoryWriter.writeNext(bytes[i]);
-    	}
-    	memoryWriter.flush();
+    	buffer.setArray(bytes, resultSize);
 
     	return 0;
     }

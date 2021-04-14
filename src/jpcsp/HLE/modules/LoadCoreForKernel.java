@@ -567,8 +567,8 @@ public class LoadCoreForKernel extends HLEModule {
     	// See https://github.com/uofw/uofw/blob/master/src/loadcore/loadcore.c
     	if (loadCoreBaseAddress == 0) {
 			Memory mem = Memory.getInstance();
-			if (log.isDebugEnabled()) {
-				log.debug("Searching for the loadCodeBaseAddress");
+			if (log.isTraceEnabled()) {
+				log.trace("Searching for the loadCodeBaseAddress");
 			}
 
     		//

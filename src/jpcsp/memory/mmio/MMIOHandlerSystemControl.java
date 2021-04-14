@@ -442,7 +442,7 @@ public class MMIOHandlerSystemControl extends MMIOHandlerBase {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Reset main processor (SYSREG_RESET_SC)"));
 			}
-			RuntimeContextLLE.getMMIO().remapMemoryAtProcessorReset();;
+			RuntimeContextLLE.getMMIO().remapMemoryAtProcessorReset();
 			Emulator.getProcessor().triggerReset();
 			throw new ResetException();
 		}
