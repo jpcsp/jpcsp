@@ -38,6 +38,7 @@ import static jpcsp.memory.mmio.MMIO.getKeyBFD00210;
 import static jpcsp.memory.mmio.MMIO.getXorKeyBFD00210;
 import static jpcsp.memory.mmio.MMIO.normalizeAddress;
 import static jpcsp.util.Utilities.alignUp;
+import static jpcsp.util.Utilities.u8;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -215,6 +216,57 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	    buffer.setValue32(12, buffer.getValue32(12) ^ x4);
 	}
 
+	private static int[] getXorKeyStep1() {
+		switch (Model.getGeneration()) {
+			case 2:
+				return new int[] { 0x61, 0x7A, 0x56, 0x42, 0xF8, 0xED, 0xC5, 0xE4, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B };
+			case 3:
+				return new int[] { 0x61, 0x7A, 0x56, 0x42, 0xF8, 0xED, 0xC5, 0xE4, 0x25, 0x25, 0x25, 0x25, 0x25, 0x25, 0x25, 0x25 };
+			case 4:
+			case 7:
+			case 9:
+			case 11:
+				return new int[] { 0x8D, 0x5D, 0xA6, 0x08, 0xF2, 0xBB, 0xC6, 0xCC, 0x23, 0x23, 0x23, 0x23, 0x23, 0x23, 0x23, 0x23 };
+		}
+
+		log.error(String.format("getXorKeyStep1 unimplemented for PSP generation %d", Model.getGeneration()));
+		return new int[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	}
+
+	private static int[] getXorKeyStep2() {
+		switch (Model.getGeneration()) {
+			case 2:
+				return new int[] { 0x0B, 0xDD, 0xED, 0xC7, 0xB5, 0x24, 0xBC, 0x22 };
+			case 3:
+			case 4:
+			case 7:
+			case 9:
+			case 11:
+				return new int[] { 0x16, 0xA0, 0x7A, 0xD9, 0xEB, 0xDA, 0x3B, 0xBA };
+			case 5:
+		}
+
+		log.error(String.format("getXorKeyStep2 unimplemented for PSP generation %d", Model.getGeneration()));
+		return new int[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	}
+
+	private static int[] getXorKeyStep3() {
+		switch (Model.getGeneration()) {
+			case 2:
+				return new int[] { 0x80, 0x85, 0xFA, 0xD6, 0xC9, 0x24, 0xEF, 0x53 };
+			case 3:
+			case 4:
+			case 7:
+			case 9:
+			case 11:
+				return new int[] { 0xC0, 0xB4, 0xBD, 0x73, 0xA6, 0xCC, 0xB2, 0xD2 };
+			case 5:
+		}
+
+		log.error(String.format("getXorKeyStep3 unimplemented for PSP generation %d", Model.getGeneration()));
+		return new int[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	}
+
 	private boolean preDecrypt(TPointer outAddr, int outSize, TPointer inAddr, int inSize) {
 		boolean processed = false;
 
@@ -232,8 +284,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			if (keySeed == 0x15 && dataSize == 16 && Model.getGeneration() >= 2) {
 				switch (stepPreDecryptKeySeed0x15) {
 					case 1:
-						final int constantValue = Model.getGeneration() == 2 ? 0x0B : 0x25;
-						final int[] values = new int[] { 0x61, 0x7A, 0x56, 0x42, 0xF8, 0xED, 0xC5, 0xE4, constantValue, constantValue, constantValue, constantValue, constantValue, constantValue, constantValue, constantValue };
+						final int[] values = getXorKeyStep1();
 						for (int i = 0; i < values.length; i++) {
 							values[i] ^= lastPrngOutput[i];
 						}
@@ -258,9 +309,9 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 							final int key1[] = new int[] { 0xDB, 0xB1, 0x1E, 0x20, 0x48, 0x83, 0xB1, 0x6F, 0x65, 0x8C, 0x3D, 0x30, 0xE0, 0xFE, 0xCB, 0xBF };
 							final byte xorKey1_1[] = getKey(getXorKeyBFD00210());
 							final int keyFromVault1[] = getKeyBFD00210();
-							final int xorKey1_2[] = new int[] { 0x0B, 0xDD, 0xED, 0xC7, 0xB5, 0x24, 0xBC, 0x22 };
+							final int xorKey1_2[] = getXorKeyStep2();
 							for (int i = 0; i < 8; i++) {
-								key1[i + 8] ^= keyFromVault1[i] ^ (xorKey1_1[i] & 0xFF) ^ xorKey1_2[i];
+								key1[i + 8] ^= keyFromVault1[i] ^ u8(xorKey1_1[i]) ^ xorKey1_2[i];
 							}
 							for (int i = 0; i < key1.length; i++) {
 								outAddr.setUnsignedValue8(i, key1[i] ^ (lastPrngOutput[i] + 0x01));
@@ -280,9 +331,9 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 							final int key2[] = new int[] { 0x04, 0xF4, 0x69, 0x8A, 0x8C, 0xAA, 0x95, 0x30, 0xCE, 0x3B, 0xE8, 0x84, 0xCA, 0x9A, 0x07, 0x9A };
 							final byte xorKey2_1[] = getKey(getXorKeyBFD00210());
 							final int keyFromVault2[] = getKeyBFD00210();
-							final int xorKey2_2[] = new int[] { 0x80, 0x85, 0xFA, 0xD6, 0xC9, 0x24, 0xEF, 0x53 };
+							final int xorKey2_2[] = getXorKeyStep3();
 							for (int i = 0; i < 8; i++) {
-								key2[i + 8] ^= keyFromVault2[i + 8] ^ (xorKey2_1[i + 8] & 0xFF) ^ xorKey2_2[i];
+								key2[i + 8] ^= keyFromVault2[i + 8] ^ u8(xorKey2_1[i + 8]) ^ xorKey2_2[i];
 							}
 							final int add16 = 0xCAB9;
 							for (int i = 0; i < key2.length; i += 2) {
