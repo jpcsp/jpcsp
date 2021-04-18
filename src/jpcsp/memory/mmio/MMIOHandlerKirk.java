@@ -37,6 +37,7 @@ import static jpcsp.crypto.KIRK.PSP_KIRK_INVALID_OPERATION;
 import static jpcsp.memory.mmio.MMIO.getKeyBFD00210;
 import static jpcsp.memory.mmio.MMIO.getXorKeyBFD00210;
 import static jpcsp.memory.mmio.MMIO.normalizeAddress;
+import static jpcsp.util.Utilities.alignUp;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -81,7 +82,8 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 	private final CompletePhase1Action completePhase1Action = new CompletePhase1Action();
 	private long completePhase1Schedule;
 	final int[] lastPrngOutput = new int[20];
-	int stepPreDecryptKeySeed0x15 = 0;
+	private int stepPreDecryptKeySeed0x15 = 0;
+	private boolean initDone;
 
 	private class CompletePhase1Action implements IAction {
 		@Override
@@ -109,6 +111,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		destAddr = stream.readInt();
 		stream.readInts(lastPrngOutput);
 		stepPreDecryptKeySeed0x15 = stream.readInt();
+		initDone = stream.readBoolean();
 		super.read(stream);
 
 		// If the phase1 was in progress, complete it
@@ -133,6 +136,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		stream.writeInt(destAddr);
 		stream.writeInts(lastPrngOutput);
 		stream.writeInt(stepPreDecryptKeySeed0x15);
+		stream.writeBoolean(initDone);
 		super.write(stream);
 	}
 
@@ -151,6 +155,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		completePhase1Schedule = 0L;
 		Arrays.fill(lastPrngOutput, 0);
 		stepPreDecryptKeySeed0x15 = 0;
+		initDone = false;
 
 		initKirk();
 	}
@@ -169,8 +174,57 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 		return isEqual(addr, length, new int[length]);
 	}
 
+	/*
+	 * descramble03g based on https://github.com/John-K/pspdecrypt/blob/master/pspdecrypt_lib.cpp
+	 */
+	/* xor keys & original descrambling code thanks to Davee and Proxima's awesome work! */
+	private static final int xorkeys[] = {
+	    0x61A0C918, 0x45695E82, 0x9CAFD36E, 0xFA499B0F,
+	    0x7E84B6E2, 0x91324D29, 0xB3522009, 0xA8BC0FAF,
+	    0x48C3C1C5, 0xE4C2A9DC, 0x00012ED1, 0x57D9327C,
+	    0xAFB8E4EF, 0x72489A15, 0xC6208D85, 0x06021249,
+	    0x41BE16DB, 0x2BD98F2F, 0xD194BEEB, 0xD1A6E669,
+	    0xC0AC336B, 0x88FF3544, 0x5E018640, 0x34318761,
+	    0x5974E1D2, 0x1E55581B, 0x6F28379E, 0xA90E2587,
+	    0x091CB883, 0xBDC2088A, 0x7E76219C, 0x9C4BEE1B,
+	    0xDD322601, 0xBB477339, 0x6678CF47, 0xF3C1209B,
+	    0x5A96E435, 0x908896FA, 0x5B2D962A, 0x7FEC378C,
+	    0xE3A3B3AE, 0x8B902D93, 0xD0DF32EF, 0x6484D261,
+	    0x0A84A153, 0x7EB16575, 0xB10E53DD, 0x1B222753,
+	    0x58DD63D0, 0x8E8B8D48, 0x755B32C2, 0xA63DFFF7,
+	    0x97CABF7C, 0x33BDC660, 0x64522286, 0x403F3698,
+	    0x3406C651, 0x9F4B8FB9, 0xE284F475, 0xB9189A13,
+	    0x12C6F917, 0x5DE6B7ED, 0xDB674F88, 0x06DDB96E,
+	    0x2B2165A6, 0x0F920D3F, 0x732B3475, 0x1908D613
+	};
+
+	private static void descramble03g(TPointer buffer, int xorKeyIndex) {
+		int idx = (xorKeyIndex >> 5) & 0x3F;
+		int rot = xorKeyIndex & 0x1F;
+		int x1 = xorkeys[idx + 0];
+		int x2 = xorkeys[idx + 1];
+		int x3 = xorkeys[idx + 2];
+		int x4 = xorkeys[idx + 3];
+	    x1 = ((x1 >>> rot) | (x1 << (0x20-rot)));
+	    x2 = Integer.reverse(((x2 >>> rot) | (x2 << (0x20-rot))));
+	    x3 = (((x3 >>> rot) | (x3 << (0x20-rot)))  ^ x4);
+	    x4 = ((x4 >>> rot) | (x4 << (0x20-rot)));
+	    buffer.setValue32( 0, buffer.getValue32( 0) ^ x1);
+	    buffer.setValue32( 4, buffer.getValue32( 4) ^ x2);
+	    buffer.setValue32( 8, buffer.getValue32( 8) ^ x3);
+	    buffer.setValue32(12, buffer.getValue32(12) ^ x4);
+	}
+
 	private boolean preDecrypt(TPointer outAddr, int outSize, TPointer inAddr, int inSize) {
 		boolean processed = false;
+
+		if (!initDone && command == PSP_KIRK_CMD_DECRYPT_PRIVATE && Model.getGeneration() >= 3 && inSize > 0xC0) {
+			final int xorKeyIndex = 1;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Calling descramble03g xorKeyIndex=0x%X", xorKeyIndex));
+			}
+			descramble03g(inAddr, xorKeyIndex);
+		}
 
 		if (command == PSP_KIRK_CMD_DECRYPT) {
 			int keySeed = inAddr.getValue32(12);
@@ -178,7 +232,8 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			if (keySeed == 0x15 && dataSize == 16 && Model.getGeneration() >= 2) {
 				switch (stepPreDecryptKeySeed0x15) {
 					case 1:
-						final int[] values = new int[] { 0x61, 0x7A, 0x56, 0x42, 0xF8, 0xED, 0xC5, 0xE4, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B };
+						final int constantValue = Model.getGeneration() == 2 ? 0x0B : 0x25;
+						final int[] values = new int[] { 0x61, 0x7A, 0x56, 0x42, 0xF8, 0xED, 0xC5, 0xE4, constantValue, constantValue, constantValue, constantValue, constantValue, constantValue, constantValue, constantValue };
 						for (int i = 0; i < values.length; i++) {
 							values[i] ^= lastPrngOutput[i];
 						}
@@ -295,21 +350,21 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
 			case PSP_KIRK_CMD_DECRYPT_FUSE:
 				// AES128_CBC_Header
 				dataSize = inAddr.getValue32(16);
-				inSize = dataSize + 20;
-				outSize = dataSize;
+				inSize = alignUp(dataSize, 15) + 20;
+				outSize = alignUp(dataSize, 15);
 				break;
 			case PSP_KIRK_CMD_DECRYPT_PRIVATE:
 				// AES128_CMAC_Header
 				dataSize = inAddr.getValue32(112);
 				dataOffset = inAddr.getValue32(116);
-				inSize = 144 + Utilities.alignUp(dataSize, 15) + dataOffset;
+				inSize = 144 + alignUp(dataSize, 15) + dataOffset;
 				outSize = Utilities.alignUp(dataSize, 15);
 				break;
 			case PSP_KIRK_CMD_PRIV_SIG_CHECK:
 				// AES128_CMAC_Header
 				dataSize = inAddr.getValue32(112);
 				dataOffset = inAddr.getValue32(116);
-				inSize = 144 + Utilities.alignUp(dataSize, 15) + dataOffset;
+				inSize = 144 + alignUp(dataSize, 15) + dataOffset;
 				outSize = 0;
 				break;
 			case PSP_KIRK_CMD_SHA1_HASH:
@@ -341,6 +396,7 @@ public class MMIOHandlerKirk extends MMIOHandlerBase {
             	inSize = 8;
             	outSize = 28;
             	initKirk();
+            	initDone = true;
             	break;
             case PSP_KIRK_CMD_CERT_VERIFY:
             	inSize = 0xB8;

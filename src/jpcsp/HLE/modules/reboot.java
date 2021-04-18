@@ -165,20 +165,20 @@ public class reboot extends HLEModule {
     private int getBestBootMethod() {
     	int bootMethod;
 
-    	switch (Model.getGeneration()) {
-	    	case 1:
-	    	case 2:
-	    		File preIplFile = new File(getPreIplFileName());
-	    		if (preIplFile.canRead() && preIplFile.length() == 0x1000) {
-	    			bootMethod = BOOT_PREIPL;
-	    		} else {
+		File preIplFile = new File(getPreIplFileName());
+		if (preIplFile.canRead() && preIplFile.length() == 0x1000) {
+			bootMethod = BOOT_PREIPL;
+		} else {
+	    	switch (Model.getGeneration()) {
+		    	case 1:
+		    	case 2:
 	    			bootMethod = BOOT_IPL;
-	    		}
-	    		break;
-	    	default:
-	    		bootMethod = BOOT_LOADEXEC_PRX;
-	    		break;
-    	}
+		    		break;
+		    	default:
+		    		bootMethod = BOOT_LOADEXEC_PRX;
+		    		break;
+	    	}
+		}
 
     	return bootMethod;
     }

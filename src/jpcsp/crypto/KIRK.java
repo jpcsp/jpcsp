@@ -16,6 +16,7 @@
  */
 package jpcsp.crypto;
 
+import static jpcsp.util.Utilities.alignUp;
 import static jpcsp.util.Utilities.endianSwap64;
 import static jpcsp.util.Utilities.readUnaligned32;
 
@@ -937,18 +938,20 @@ public class KIRK {
     	}
 
 		// For some commands, the real output size is provided in the input data
+    	int dataSize;
     	switch (cmd) {
     		case PSP_KIRK_CMD_DECRYPT:
     		case PSP_KIRK_CMD_DECRYPT_FUSE:
-        		outsize = readUnaligned32(inbuff, 16);
+    			dataSize = readUnaligned32(inbuff, 16);
+        		outsize = alignUp(dataSize, 15);
         		break;
 			case PSP_KIRK_CMD_ENCRYPT:
 			case PSP_KIRK_CMD_ENCRYPT_FUSE:
         		outsize = readUnaligned32(inbuff, 16) + 20;
         		break;
 			case PSP_KIRK_CMD_DECRYPT_PRIVATE:
-				int dataSize = readUnaligned32(inbuff, 112);
-				outsize = Utilities.alignUp(dataSize, 15);
+				dataSize = readUnaligned32(inbuff, 112);
+				outsize = alignUp(dataSize, 15);
 				break;
     	}
 
