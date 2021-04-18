@@ -1327,11 +1327,11 @@
                               <Component id="XLinkKaiServerRemindLabel" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
-                              <EmptySpace min="10" pref="10" max="-2" attributes="0"/>
+                              <Component id="broadcastAddressTextField" min="-2" pref="154" max="-2" attributes="0"/>
+                              <EmptySpace min="-2" pref="31" max="-2" attributes="0"/>
                               <Component id="broadcastAddressRemindLabel" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <Component id="broadcastAddressTextField" alignment="0" min="-2" pref="264" max="-2" attributes="0"/>
-                          <Component id="primaryDNSTextField" alignment="0" min="-2" pref="264" max="-2" attributes="0"/>
+                          <Component id="primaryDNSTextField" alignment="0" min="-2" pref="154" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace min="-2" pref="150" max="-2" attributes="0"/>
                   </Group>
@@ -1371,9 +1371,8 @@
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="broadcastAddressLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="broadcastAddressTextField" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="broadcastAddressRemindLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
-                      <Component id="broadcastAddressRemindLabel" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="primaryDNSLabel" alignment="3" min="-2" max="-2" attributes="0"/>
