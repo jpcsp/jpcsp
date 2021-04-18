@@ -181,6 +181,10 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	}
 
 	private void openChat() {
+		if (!hasChatEnabled()) {
+			return;
+		}
+
 		if (chatGUI == null || !chatGUI.isVisible()) {
 			chatGUI = new ChatGUI();
 			Emulator.getMainGUI().startBackgroundWindowDialog(chatGUI);
@@ -704,7 +708,9 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			log.debug(String.format("Displaying chat message from '%s': '%s'", nickName, message));
 		}
 
-		chatGUI.addChatMessage(nickName, message);
+		if (chatGUI != null) {
+			chatGUI.addChatMessage(nickName, message);
+		}
 	}
 
 	public static void init() {

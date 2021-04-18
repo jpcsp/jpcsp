@@ -2422,6 +2422,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingString("SettingsGUI.XLinkKaiServerLabel.text", "network.XLinkKai.server", true, true);
         logConfigurationSettingString("SettingsGUI.broadcastAddressLabel.text", "network.broadcastAddress", true, true);
         logConfigurationSettingString("SettingsGUI.primaryDNSLabel.text", "network.primaryDNS", true, true);
+        logConfigurationSettingBool("SettingsGUI.enableChat.text", "network.enableChat", false, true);
     }
 
     public void loadAndRun() {

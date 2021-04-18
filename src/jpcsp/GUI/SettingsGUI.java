@@ -35,6 +35,7 @@ import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.hardware.Model;
+import jpcsp.network.BaseNetworkAdapter;
 import jpcsp.settings.Settings;
 
 import com.jidesoft.swing.FolderChooser;
@@ -137,7 +138,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(lanMultiPlayerRadioButton, "emu.lanMultiPlayer");
         setBoolFromSettings(enableProOnlineRadioButton, "emu.enableProOnline");
         setBoolFromSettings(XlinkaiSupportRadioButton, "emu.enableXLinkKai");
-        
+        setBoolFromSettings(enableChatCheck, BaseNetworkAdapter.settingsEnableChat);
+
         // special handling for UMD paths
         DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
         dlm.clear();
@@ -262,6 +264,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(lanMultiPlayerRadioButton, "emu.lanMultiPlayer");
         setBoolToSettings(enableProOnlineRadioButton, "emu.enableProOnline");
         setBoolToSettings(XlinkaiSupportRadioButton, "emu.enableXLinkKai");
+        setBoolToSettings(enableChatCheck, BaseNetworkAdapter.settingsEnableChat);
 
         // special handling for UMD paths
         DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
@@ -543,6 +546,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         broadcastAddressRemindLabel = new javax.swing.JLabel();
         primaryDNSLabel = new javax.swing.JLabel();
         primaryDNSTextField = new javax.swing.JTextField();
+        enableChatCheck = new javax.swing.JCheckBox();
         cancelButton = new jpcsp.GUI.CancelButton();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
@@ -1210,6 +1214,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         primaryDNSTextField.setText(bundle.getString("SettingsGUI.primaryDNSTextField.text")); // NOI18N
 
+        enableChatCheck.setText(bundle.getString("SettingsGUI.enableChat.text")); // NOI18N
+
         javax.swing.GroupLayout networkPanelLayout = new javax.swing.GroupLayout(networkPanel);
         networkPanel.setLayout(networkPanelLayout);
         networkPanelLayout.setHorizontalGroup(
@@ -1222,7 +1228,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                             .addComponent(metaServerLabel)
                             .addComponent(XLinkKaiServerLabel)
                             .addComponent(broadcastAddressLabel)
-                            .addComponent(primaryDNSLabel))
+                            .addComponent(primaryDNSLabel)
+                        .addComponent(enableChatCheck))
                         .addGap(39, 39, 39))
                     .addGroup(networkPanelLayout.createSequentialGroup()
                         .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1292,6 +1299,9 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(primaryDNSLabel)
                     .addComponent(primaryDNSTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(networkPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(enableChatCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addGap(271, 271, 271))
         );
 
@@ -1464,6 +1474,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel XLinkKaiServerLabel;
     private javax.swing.JLabel XLinkKaiServerRemindLabel;
     private javax.swing.JTextField XLinkKaiServerTextField;
+    private javax.swing.JCheckBox enableChatCheck;
     private javax.swing.JComboBox methodMaxInstructionsBox;
     private javax.swing.JLabel methodMaxInstructionsLabel;
     private javax.swing.JComboBox modelBox;

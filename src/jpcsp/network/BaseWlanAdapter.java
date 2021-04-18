@@ -16,9 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network;
 
+import static jpcsp.network.BaseNetworkAdapter.settingsEnableChat;
+
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
+
+import jpcsp.settings.Settings;
 
 /**
  * @author gid15
@@ -29,5 +33,9 @@ public abstract class BaseWlanAdapter implements IWlanAdapter {
 
 	@Override
 	public void stop() throws IOException {
+	}
+
+	public boolean hasChatEnabled() {
+		return Settings.getInstance().readBool(settingsEnableChat);
 	}
 }

@@ -1287,6 +1287,7 @@
                                   <Component id="broadcastAddressLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="primaryDNSLabel" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
+                              <Component id="enableChatCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <EmptySpace min="-2" pref="39" max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" attributes="0">
@@ -1378,6 +1379,9 @@
                           <Component id="primaryDNSLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="primaryDNSTextField" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="enableChatCheck" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
                       <EmptySpace min="-2" pref="271" max="-2" attributes="0"/>
                   </Group>
               </Group>
@@ -1406,6 +1410,13 @@
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="XlinkaiSupportRadioButtonActionPerformed"/>
               </Events>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="enableChatCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="SettingsGUI.enableChat.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+              </Properties>
             </Component>
             <Component class="javax.swing.JRadioButton" name="enableProOnlineRadioButton">
               <Properties>

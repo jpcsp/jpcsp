@@ -21,12 +21,15 @@ import java.net.UnknownHostException;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.settings.Settings;
+
 /**
  * @author gid15
  *
  */
 public abstract class BaseNetworkAdapter implements INetworkAdapter {
 	public static Logger log = Logger.getLogger("network");
+	public static final String settingsEnableChat = "network.enableChat";
 
 	@Override
 	public void start() {
@@ -42,5 +45,9 @@ public abstract class BaseNetworkAdapter implements INetworkAdapter {
 		socketAddresses[0] = getSocketAddress(macAddress, realPort);
 
 		return socketAddresses;
+	}
+
+	public boolean hasChatEnabled() {
+		return Settings.getInstance().readBool(settingsEnableChat);
 	}
 }

@@ -885,6 +885,10 @@ public class XLinkKaiWlanAdapter extends BaseWlanAdapter {
 	}
 
 	private void openChat() {
+		if (!hasChatEnabled()) {
+			return;
+		}
+
 		if (chatGUI == null || !chatGUI.isVisible()) {
 			chatGUI = new ChatGUI();
 			updateChat();
