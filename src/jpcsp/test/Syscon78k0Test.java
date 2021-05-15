@@ -131,6 +131,10 @@ public class Syscon78k0Test {
 		long minimumDuration = 3000L; // Run for at least 3 seconds
 		long start = now();
 		while ((now() - start) < minimumDuration) {
+			// TODO This is triggering the start of the serial communication where the firmware is receiving requests from the PSP.
+			// Not yet found how to properly come to that state.
+			processor.mem.write8(0xFE34, (byte) 0x01);
+
 			interpreter.run();
 		}
 	}

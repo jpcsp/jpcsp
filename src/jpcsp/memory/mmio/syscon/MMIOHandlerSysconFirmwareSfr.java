@@ -50,6 +50,7 @@ import static jpcsp.util.Utilities.getByte1;
 import static jpcsp.util.Utilities.hasBit;
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.isFallingBit;
+import static jpcsp.util.Utilities.notHasBit;
 import static jpcsp.util.Utilities.setBit;
 import static jpcsp.util.Utilities.setByte0;
 import static jpcsp.util.Utilities.setByte1;
@@ -59,9 +60,10 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.State;
+import jpcsp.HLE.modules.sceSyscon;
 import jpcsp.nec78k0.Nec78k0MMIOHandlerBase;
-import jpcsp.nec78k0.Nec78k0Processor;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 import jpcsp.util.Utilities;
@@ -77,32 +79,32 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	// Interrupt Vector Table addresses
 	public static final int INTLVI   = 0x04;
 	public static final int INTP0    = 0x06;
-	public static final int INTP1    = 0x08;
-	public static final int INTP2    = 0x0A;
-	public static final int INTP3    = 0x0C;
-	public static final int INTP4    = 0x0E;
-	public static final int INTP5    = 0x10;
+	public static final int INTP1    = 0x08; // KEY_POWER
+	public static final int INTP2    = 0x0A; // SYSCON_REQ
+	public static final int INTP3    = 0x0C; // WLAN_WAKEUP
+	public static final int INTP4    = 0x0E; // HPRMC_WAKEUP
+	public static final int INTP5    = 0x10; // POMMEL_ALERT
 	public static final int INTSRE6  = 0x12;
 	public static final int INTSR6   = 0x14;
 	public static final int INTST6   = 0x16;
-	public static final int INTCSI10 = 0x18;
+	public static final int INTCSI10 = 0x18; // Serial interface CSI10
 	public static final int INTST0   = 0x18;
 	public static final int INTTMH1  = 0x1A;
 	public static final int INTTMH0  = 0x1C;
-	public static final int INTTM50  = 0x1E;
+	public static final int INTTM50  = 0x1E; // 8-bit timer H0
 	public static final int INTTM000 = 0x20;
 	public static final int INTTM010 = 0x22;
-	public static final int INTAD    = 0x24;
+	public static final int INTAD    = 0x24; // A/D Converter
 	public static final int INTSR0   = 0x26;
-	public static final int INTWTI   = 0x28;
-	public static final int INTTM51  = 0x2A;
+	public static final int INTWTI   = 0x28; // Watch timer - Interval timer operation 
+	public static final int INTTM51  = 0x2A; // 8-bit timer H1
 	public static final int INTKR    = 0x2C;
-	public static final int INTWT    = 0x2E;
+	public static final int INTWT    = 0x2E; // Watch timer - Watch timer operation
 	public static final int INTP6    = 0x30;
 	public static final int INTP7    = 0x32;
-	public static final int INTIIC0  = 0x34;
+	public static final int INTIIC0  = 0x34; // Serial interface IIC0 (I2C bus mode)
 	public static final int INTDMU   = 0x34;
-	public static final int INTCSI11 = 0x36;
+	public static final int INTCSI11 = 0x36; // Serial interface CSI11
 	public static final int INTTM001 = 0x38;
 	public static final int INTTM011 = 0x3A;
 	public static final int INTACSI  = 0x3C;
@@ -118,6 +120,15 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	public static final int PIF5    = INTtoIF(INTP5);
 	public static final int PIF6    = INTtoIF(INTP6);
 	public static final int PIF7    = INTtoIF(INTP7);
+	public static final int TMIF50  = INTtoIF(INTTM50);
+	public static final int TMIF000 = INTtoIF(INTTM000);
+	public static final int TMIF010 = INTtoIF(INTTM010);
+	public static final int ADIF    = INTtoIF(INTAD);
+	public static final int TMIF51  = INTtoIF(INTTM51);
+	public static final int CSIIF10 = INTtoIF(INTCSI10);
+	public static final int CSIIF11 = INTtoIF(INTCSI11);
+	public static final int TMIF001 = INTtoIF(INTTM001);
+	public static final int TMIF011 = INTtoIF(INTTM011);
 	public static final int NUMBER_INTERRUPT_FLAGS = 28;
 	//
 	// I2C Control
@@ -139,11 +150,13 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	public static final int STD0  = 1; // Detection of start condition
 	public static final int SPD0  = 0; // Detection of stop condition
 	//
+	private final SysconScheduler scheduler;
 	private final SysconWatchTimer watchTimer;
 	private static final int NUMBER_PORTS = 15;
 	private final int[] portOutputs = new int[NUMBER_PORTS];
 	private final int[] portInputs = new int[NUMBER_PORTS];
 	private final int[] portModes = new int[NUMBER_PORTS];
+	private final int[] pullUpResistorOptions = new int[NUMBER_PORTS];
 	// Ports:
 	// P0.0      LCD32_ON (Output)
 	// P0.1      HP_DETECT (Input)
@@ -222,7 +235,6 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private int interruptMaskFlag1; // 16-bit value
 	private int prioritySpecificationFlag0; // 16-bit value
 	private int prioritySpecificationFlag1; // 16-bit value
-	private int watchTimerOperationMode;
 	private int i2cShift;
 	private int i2cSlaveAddress;
 	private int i2cControl;
@@ -232,29 +244,20 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private int i2cFunctionExpansion;
 	private final int[] i2cBuffer = new int[MMIOHandlerSyscon.MAX_DATA_LENGTH];
 	private int i2cBufferIndex;
-	private int adConverterMode;
-	private int analogInputChannelSpecification;
-	private int adPortConfiguration;
-	private int timerCompare50;
+	private final SysconAdConverter adConverter;
+	private final SysconTimerEventCounter16 timer00;
+	private final SysconTimerEventCounter16 timer01;
+	private final SysconTimerEventCounter8 timer50;
+	private final SysconTimerEventCounter8 timer51;
 	private int timerHCompare00;
 	private int timerHCompare10;
 	private int timerHCompare01;
 	private int timerHCompare11;
-	private int timerClockSelection50;
-	private int timerModeControl50;
-	private int timerClockSelection51;
-	private int timerCompare51;
-	private int timerModeControl51;
-	private int timerModeControl00;
-	private int prescalerMode00;
-	private int compareControl00;
-	private int timerCompare000;
 	private int asynchronousSerialInterfaceOperationMode;
 	private int timerHModeRegister0;
 	private int timerHModeRegister1;
-	private int serialOperationMode10;
-	private int serialClockSelection10;
-	private int serialOperationMode11;
+	private final SysconSerialInterfaceCSI1n serialInterfaceCSI10;
+	private final SysconSerialInterfaceCSI1n serialInterfaceCSI11;
 	private int internalOscillationMode;
 	private int mainClockMode;
 	private int mainOscillationControl;
@@ -273,13 +276,26 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	public MMIOHandlerSysconFirmwareSfr(int baseAddress) {
 		super(baseAddress);
 
+		scheduler = new SysconScheduler();
+
+		watchTimer = new SysconWatchTimer(this, scheduler);
+		adConverter = new SysconAdConverter(this, scheduler);
+		timer00 = new SysconTimerEventCounter16(this, scheduler, "Timer00", TMIF000, TMIF010);
+		timer01 = new SysconTimerEventCounter16(this, scheduler, "Timer01", TMIF001, TMIF011);
+		timer50 = new SysconTimerEventCounter8(this, scheduler, "Timer50", TMIF50);
+		timer51 = new SysconTimerEventCounter8(this, scheduler, "Timer51", TMIF51);
+		serialInterfaceCSI10 = new SysconSerialInterfaceCSI1n(this, "CSI10", CSIIF10);
+		serialInterfaceCSI11 = new SysconSerialInterfaceCSI1n(this, "CSI11", CSIIF11);
+
 		reset();
 
-		watchTimer = new SysconWatchTimer(this);
-		watchTimer.setName("Syscon Watch Timer");
-		watchTimer.setDaemon(true);
-		watchTimer.setWatchTimerOperationMode(watchTimerOperationMode);
-		watchTimer.start();
+		scheduler.setName("Syscon Scheduler");
+		scheduler.setDaemon(true);
+		scheduler.start();
+
+		if (dummyTesting) {
+			serialInterfaceCSI11.setBuffer(new int[] { sceSyscon.PSP_SYSCON_CMD_GET_BARYON, 2, 0xFC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
+		}
 	}
 
 	public static int INTtoIF(int vectorTableAddress) {
@@ -291,15 +307,10 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	}
 
 	@Override
-	public void setProcessor(Nec78k0Processor processor) {
-		watchTimer.setProcessor(processor);
-
-		super.setProcessor(processor);
-	}
-
-	@Override
 	public void setLogger(Logger log) {
+		scheduler.setLogger(log);
 		watchTimer.setLogger(log);
+
 		super.setLogger(log);
 	}
 
@@ -309,6 +320,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		stream.readInts(portInputs);
 		stream.readInts(portOutputs);
 		stream.readInts(portModes);
+		stream.readInts(pullUpResistorOptions);
 		stream.readInts(i2cBuffer);
 		interruptRequestFlag0 = stream.readInt();
 		interruptRequestFlag1 = stream.readInt();
@@ -316,7 +328,6 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		interruptMaskFlag1 = stream.readInt();
 		prioritySpecificationFlag0 = stream.readInt();
 		prioritySpecificationFlag1 = stream.readInt();
-		watchTimerOperationMode = stream.readInt();
 		i2cShift = stream.readInt();
 		i2cSlaveAddress = stream.readInt();
 		i2cControl = stream.readInt();
@@ -325,29 +336,21 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		i2cClockSelection = stream.readInt();
 		i2cFunctionExpansion = stream.readInt();
 		i2cBufferIndex = stream.readInt();
-		adConverterMode = stream.readInt();
-		analogInputChannelSpecification = stream.readInt();
-		adPortConfiguration = stream.readInt();
-		timerCompare50 = stream.readInt();
+		adConverter.read(stream);
 		timerHCompare00 = stream.readInt();
 		timerHCompare10 = stream.readInt();
 		timerHCompare01 = stream.readInt();
 		timerHCompare11 = stream.readInt();
-		timerClockSelection50 = stream.readInt();
-		timerModeControl50 = stream.readInt();
-		timerClockSelection51 = stream.readInt();
-		timerCompare51 = stream.readInt();
-		timerModeControl51 = stream.readInt();
-		timerModeControl00 = stream.readInt();
-		prescalerMode00 = stream.readInt();
-		compareControl00 = stream.readInt();
-		timerCompare000 = stream.readInt();
+		timer00.read(stream);
+		timer01.read(stream);
+		timer50.read(stream);
+		timer51.read(stream);
+		watchTimer.read(stream);
 		asynchronousSerialInterfaceOperationMode = stream.readInt();
 		timerHModeRegister0 = stream.readInt();
 		timerHModeRegister1 = stream.readInt();
-		serialOperationMode10 = stream.readInt();
-		serialClockSelection10 = stream.readInt();
-		serialOperationMode11 = stream.readInt();
+		serialInterfaceCSI10.read(stream);
+		serialInterfaceCSI11.read(stream);
 		internalOscillationMode = stream.readInt();
 		mainClockMode = stream.readInt();
 		mainOscillationControl = stream.readInt();
@@ -371,6 +374,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		stream.writeInts(portInputs);
 		stream.writeInts(portOutputs);
 		stream.writeInts(portModes);
+		stream.writeInts(pullUpResistorOptions);
 		stream.writeInts(i2cBuffer);
 		stream.writeInt(interruptRequestFlag0);
 		stream.writeInt(interruptRequestFlag1);
@@ -378,7 +382,6 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		stream.writeInt(interruptMaskFlag1);
 		stream.writeInt(prioritySpecificationFlag0);
 		stream.writeInt(prioritySpecificationFlag1);
-		stream.writeInt(watchTimerOperationMode);
 		stream.writeInt(i2cShift);
 		stream.writeInt(i2cSlaveAddress);
 		stream.writeInt(i2cControl);
@@ -387,29 +390,21 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		stream.writeInt(i2cClockSelection);
 		stream.writeInt(i2cFunctionExpansion);
 		stream.writeInt(i2cBufferIndex);
-		stream.writeInt(adConverterMode);
-		stream.writeInt(analogInputChannelSpecification);
-		stream.writeInt(adPortConfiguration);
-		stream.writeInt(timerCompare50);
+		adConverter.write(stream);
 		stream.writeInt(timerHCompare00);
 		stream.writeInt(timerHCompare10);
 		stream.writeInt(timerHCompare01);
 		stream.writeInt(timerHCompare11);
-		stream.writeInt(timerClockSelection50);
-		stream.writeInt(timerModeControl50);
-		stream.writeInt(timerClockSelection51);
-		stream.writeInt(timerCompare51);
-		stream.writeInt(timerModeControl51);
-		stream.writeInt(timerModeControl00);
-		stream.writeInt(prescalerMode00);
-		stream.writeInt(compareControl00);
-		stream.writeInt(timerCompare000);
+		timer00.write(stream);
+		timer01.write(stream);
+		timer50.write(stream);
+		timer51.write(stream);
+		watchTimer.write(stream);
 		stream.writeInt(asynchronousSerialInterfaceOperationMode);
 		stream.writeInt(timerHModeRegister0);
 		stream.writeInt(timerHModeRegister1);
-		stream.writeInt(serialOperationMode10);
-		stream.writeInt(serialClockSelection10);
-		stream.writeInt(serialOperationMode11);
+		serialInterfaceCSI10.write(stream);
+		serialInterfaceCSI11.write(stream);
 		stream.writeInt(internalOscillationMode);
 		stream.writeInt(mainClockMode);
 		stream.writeInt(mainOscillationControl);
@@ -432,13 +427,13 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		Arrays.fill(portOutputs, 0x00);
 		Arrays.fill(portInputs, 0x00);
 		Arrays.fill(portModes, 0xFF);
+		Arrays.fill(pullUpResistorOptions, 0x00);
 		interruptRequestFlag0 = 0x0000;
 		interruptRequestFlag1 = 0x0000;
 		interruptMaskFlag0 = 0xFFFF;
 		interruptMaskFlag1 = 0xFFFF;
 		prioritySpecificationFlag0 = 0xFFFF;
 		prioritySpecificationFlag1 = 0xFFFF;
-		watchTimerOperationMode = 0x00;
 		// I2C
 		i2cShift = 0x00;
 		i2cSlaveAddress = 0x00;
@@ -448,15 +443,18 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		i2cClockSelection = 0x00;
 		i2cFunctionExpansion = 0x00;
 
-		adConverterMode = 0x00;
-		timerModeControl50 = 0x00;
-		timerModeControl51 = 0x00;
+		watchTimer.reset();
+		adConverter.reset();
+		timer00.reset();
+		timer01.reset();
+		timer50.reset();
+		timer51.reset();
+		watchTimer.reset();
 		asynchronousSerialInterfaceOperationMode = 0x01;
 		timerHModeRegister0 = 0x00;
 		timerHModeRegister1 = 0x00;
-		serialOperationMode10 = 0x00;
-		serialClockSelection10 = 0x00;
-		serialOperationMode11 = 0x00;
+		serialInterfaceCSI10.reset();
+		serialInterfaceCSI11.reset();
 		internalOscillationMode = 0x80;
 		mainClockMode = 0x00;
 		mainOscillationControl = 0x80;
@@ -466,11 +464,17 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		setPortInputBit(12, 0);
 		// Input P1.6 = 1
 		setPortInputBit(1, 6);
+
 		// Input P3.0 = 1
 //		setPortInputBit(3, 0);
-		setInterruptRequest(PIF0);
-		setInterruptRequest(PIF1);
-		setInterruptRequest(PIF5);
+
+//		setInterruptRequest(PIF0);
+//		setInterruptRequest(PIF1);
+//		setInterruptRequest(PIF5);
+	}
+
+	public static long now() {
+		return Emulator.getClock().microTime();
 	}
 
 	/////////////////////
@@ -573,51 +577,6 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 				log.debug(String.format("Start Watch Dog Timer"));
 			}
 		}
-	}
-
-	/////////////////////
-	// Watch Timer
-	/////////////////////
-
-	private void setWatchTimerOperationMode(int value) {
-		if (watchTimerOperationMode != value) {
-			watchTimerOperationMode = value;
-			watchTimer.setWatchTimerOperationMode(watchTimerOperationMode);
-		}
-	}
-
-	/////////////////////////
-	// Timer/Event Counters
-	/////////////////////////
-
-	private void setTimerModeControl50(int value) {
-		if (hasBit(value, 0)) {
-			log.error(String.format("setTimerModeControl50 unimplemented output enabled 0x%02X", value));
-		}
-		if (hasBit(value, 7)) {
-			log.error(String.format("setTimerModeControl50 unimplemented TM50 count operation 0x%02X", value));
-		}
-
-		timerModeControl50 = value;
-	}
-
-	private void setTimerModeControl51(int value) {
-		if (hasBit(value, 0)) {
-			log.error(String.format("setTimerModeControl51 unimplemented output enabled 0x%02X", value));
-		}
-		if (hasBit(value, 7)) {
-			log.error(String.format("setTimerModeControl51 unimplemented TM51 count operation 0x%02X", value));
-		}
-
-		timerModeControl51 = value;
-	}
-
-	private void setTimerModeControl00(int value) {
-		if (hasBit(value, 2) || hasBit(value, 3)) {
-			log.error(String.format("setTimerModeControl00 unimplemented operation enable 0x%02X", value));
-		}
-
-		timerModeControl00 = value;
 	}
 
 	/////////////////////////
@@ -869,6 +828,13 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 
 	private void setInterruptMaskFlag0(int interruptMaskFlag0) {
 		this.interruptMaskFlag0 = interruptMaskFlag0;
+
+		if (dummyTesting) {
+			if (hasBit(serialInterfaceCSI11.getOperationMode(), 7) && notHasBit(interruptMaskFlag0, PIF2)) {
+				// Simulate a SYSCON_REQ
+				setInterruptRequest(PIF2);
+			}
+		}
 	}
 
 	private void setInterruptMaskFlag1(int interruptMaskFlag1) {
@@ -882,10 +848,14 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	public int getI2cShift() {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("getI2cShift 0x%02X", i2cShift));
+			if (isI2cRead()) {
+				log.debug(String.format("I2c read from slaveAddress 0x%02X, data#%d 0x%02X", getI2cSlaveAddress(), i2cBufferIndex - 1, i2cShift));
+			}
 		}
 		return i2cShift;
 	}
 
+int n = 0;
 	public void setI2cShift(int i2cShift) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("setI2cShift 0x%02X", i2cShift));
@@ -898,11 +868,27 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			clearI2cStatusBit(STD0);
 			clearI2cStatusBit(SPD0); // Clear detection of stop condition
 			i2cBufferIndex = 0;
-			if (dummyTesting && isI2cRead()) {
-				i2cBuffer[0] = 0x00;
-				i2cBuffer[1] = 0x00;
+			if (isI2cRead()) {
+				if (dummyTesting) {
+					if (n <= 1) {
+						i2cBuffer[0] = 0x61;
+						i2cBuffer[0] = 0x01;
+//						i2cBuffer[0] = 0x21;
+						i2cBuffer[1] = 0x00;
+					} else {
+						i2cBuffer[0] = 0x01;
+						i2cBuffer[1] = 0xC0;
+					}
+					n++;
+				}
+			}
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("I2c start %s to slaveAddress 0x%02X", isI2cRead() ? "read" : "write", getI2cSlaveAddress()));
 			}
 		} else if (isI2cWrite()) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("I2c write to slaveAddress 0x%02X, data#%d 0x%02X", getI2cSlaveAddress(), i2cBufferIndex, i2cShift));
+			}
 			i2cBuffer[i2cBufferIndex++] = i2cShift;
 		}
 
@@ -957,7 +943,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		// Wait cancellation?
 		if (hasBit(i2cControl, WREL0)) {
 			if (isI2cRead()) {
-				setI2cShift(i2cBuffer[i2cBufferIndex++]);
+				int data = i2cBuffer[i2cBufferIndex++];
+				setI2cShift(data);
 			}
 			i2cControl = clearBit(i2cControl, WREL0);
 		}
@@ -1028,21 +1015,6 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	}
 
 	/////////////////////
-	// A/D Converter
-	/////////////////////
-
-	private void setAdConverterMode(int value) {
-		if (hasBit(value, 0)) {
-			log.error(String.format("setAdConverterMode unimplemented comparator operation 0x%02X", value));
-		}
-		if (hasBit(value, 7)) {
-			log.error(String.format("setAdConverterMode unimplemented conversion operation 0x%02X", value));
-		}
-
-		adConverterMode = value;
-	}
-
-	/////////////////////
 	// Serial Interface
 	/////////////////////
 
@@ -1058,30 +1030,6 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		}
 
 		asynchronousSerialInterfaceOperationMode = value;
-	}
-
-	private void setSerialOperationMode10(int value) {
-		if (hasBit(value, 7)) {
-			log.error(String.format("setSerialOperationMode10 unimplemented operation in 3-wire serial I/O mode 0x%02X", value));
-		}
-		if (hasBit(value, 6)) {
-			log.error(String.format("setSerialOperationMode10 unimplemented transmit/receive mode 0x%02X", value));
-		}
-
-		// Bit 0 is read-only
-		serialOperationMode10 = setBit(value, serialOperationMode10, 0);
-	}
-
-	private void setSerialOperationMode11(int value) {
-		if (hasBit(value, 7)) {
-			log.error(String.format("setSerialOperationMode11 unimplemented operation in 3-wire serial I/O mode 0x%02X", value));
-		}
-		if (hasBit(value, 6)) {
-			log.error(String.format("setSerialOperationMode11 unimplemented transmit/receive mode 0x%02X", value));
-		}
-
-		// Bit 0 is read-only
-		serialOperationMode11 = setBit(value, serialOperationMode11, 0);
 	}
 
 	/////////////////////
@@ -1112,10 +1060,17 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF05: value = getPortValue(5); break;
 			case 0xFF06: value = getPortValue(6); break;
 			case 0xFF07: value = getPortValue(7); break;
+			case 0xFF08: value = getByte0(adConverter.getResult()); break;
+			case 0xFF09: value = getByte1(adConverter.getResult()); break;
 			case 0xFF0C: value = getPortValue(12); break;
 			case 0xFF0D: value = getPortValue(13); break;
 			case 0xFF0E: value = getPortValue(14); break;
+			case 0xFF0F: value = serialInterfaceCSI10.getIOShift(); break;
+			case 0xFF10: value = getByte0(timer00.getTimerCounter()); break;
+			case 0xFF11: value = getByte1(timer00.getTimerCounter()); break;
+			case 0xFF16: value = timer50.getTimerCounter(); break;
 			case PSW_ADDRESS: value = processor.getPsw(); break;
+			case 0xFF1F: value = timer51.getTimerCounter(); break;
 			case 0xFF20: value = getPortMode(0); break;
 			case 0xFF21: value = getPortMode(1); break;
 			case 0xFF22: value = getPortMode(2); break;
@@ -1124,17 +1079,31 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF25: value = getPortMode(5); break;
 			case 0xFF26: value = getPortMode(6); break;
 			case 0xFF27: value = getPortMode(7); break;
-			case 0xFF28: value = adConverterMode; break;
+			case 0xFF28: value = adConverter.getMode(); break;
 			case 0xFF2C: value = getPortMode(12); break;
 			case 0xFF2E: value = getPortMode(14); break;
-			case 0xFF43: value = timerModeControl51 & 0xF3; break; // Bits 2 and 3 are write-only
+			case 0xFF30: value = pullUpResistorOptions[0]; break;
+			case 0xFF31: value = pullUpResistorOptions[1]; break;
+			case 0xFF33: value = pullUpResistorOptions[3]; break;
+			case 0xFF34: value = pullUpResistorOptions[4]; break;
+			case 0xFF35: value = pullUpResistorOptions[5]; break;
+			case 0xFF36: value = pullUpResistorOptions[6]; break;
+			case 0xFF37: value = pullUpResistorOptions[7]; break;
+			case 0xFF3C: value = pullUpResistorOptions[12]; break;
+			case 0xFF3E: value = pullUpResistorOptions[14]; break;
+			case 0xFF43: value = timer51.getTimerModeControl(); break;
+			case 0xFF4A: value = serialInterfaceCSI11.getIOShift(); break;
+			case 0xFF4C: value = serialInterfaceCSI11.getTransmitBuffer(); break;
 			case 0xFF50: value = asynchronousSerialInterfaceOperationMode; break;
 			case 0xFF69: value = timerHModeRegister0; break;
+			case 0xFF6B: value = timer50.getTimerModeControl(); break;
 			case 0xFF6C: value = timerHModeRegister1; break;
-			case 0xFF6F: value = watchTimerOperationMode; break;
-			case 0xFF80: value = serialOperationMode10; break;
-			case 0xFF81: value = serialClockSelection10; break;
-			case 0xFF88: value = serialOperationMode11; break;
+			case 0xFF6F: value = watchTimer.getOperationMode(); break;
+			case 0xFF80: value = serialInterfaceCSI10.getOperationMode(); break;
+			case 0xFF81: value = serialInterfaceCSI10.getClockSelection(); break;
+			case 0xFF84: value = serialInterfaceCSI10.getTransmitBuffer(); break;
+			case 0xFF88: value = serialInterfaceCSI11.getOperationMode(); break;
+			case 0xFF89: value = serialInterfaceCSI11.getClockSelection(); break;
 			case 0xFFA0: value = internalOscillationMode; break;
 			case 0xFFA1: value = mainClockMode; break;
 			case 0xFFA2: value = mainOscillationControl; break;
@@ -1147,6 +1116,8 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFFAA: value = getI2cStatus(); break;
 			case 0xFFAB: value = getI2cFlag(); break;
 			case 0xFFAC: value = getResetControlFlag(); break;
+			case 0xFFB0: value = getByte0(timer01.getTimerCounter()); break;
+			case 0xFFB1: value = getByte1(timer01.getTimerCounter()); break;
 			case 0xFFE0: value = getByte0(interruptRequestFlag0); break;
 			case 0xFFE1: value = getByte1(interruptRequestFlag0); break;
 			case 0xFFE2: value = getByte0(interruptRequestFlag1); break;
@@ -1183,7 +1154,10 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	public int internalRead16(int address) {
 		int value;
 		switch (address) {
+			case 0xFF08: value = adConverter.getResult(); break;
+			case 0xFF10: value = timer00.getTimerCounter(); break;
 			case SP_ADDRESS: value = processor.getSp(); break;
+			case 0xFFB0: value = timer01.getTimerCounter(); break;
 			default: value = super.read16(address); break;
 		}
 
@@ -1251,7 +1225,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF0C: setPortOutput(12, value8); break;
 			case 0xFF0D: setPortOutput(13, value8); break;
 			case 0xFF0E: setPortOutput(14, value8); break;
-			case 0xFF17: timerCompare50 = value8; break;
+			case 0xFF17: timer50.setCompare0(value8); break;
 			case 0xFF18: timerHCompare00 = value8; break;
 			case 0xFF19: timerHCompare10 = value8; break;
 			case 0xFF1A: timerHCompare01 = value8; break;
@@ -1265,28 +1239,40 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFF25: setPortMode(5, value8); break;
 			case 0xFF26: setPortMode(6, value8); break;
 			case 0xFF27: setPortMode(7, value8); break;
-			case 0xFF28: setAdConverterMode(value8); break;
-			case 0xFF29: analogInputChannelSpecification = value8; break;
+			case 0xFF28: adConverter.setMode(value8); break;
+			case 0xFF29: adConverter.setAnalogInputChannelSpecification(value8); break;
 			case 0xFF2C: setPortMode(12, value8); break;
 			case 0xFF2E: setPortMode(14, value8); break;
-			case 0xFF2F: adPortConfiguration = value8; break;
-			case 0xFF41: timerCompare51 = value8; break;
-			case 0xFF43: setTimerModeControl51(value8); break;
+			case 0xFF2F: adConverter.setPortConfiguration(value8); break;
+			case 0xFF30: pullUpResistorOptions[0] = value8; break;
+			case 0xFF31: pullUpResistorOptions[1] = value8; break;
+			case 0xFF33: pullUpResistorOptions[3] = value8; break;
+			case 0xFF34: pullUpResistorOptions[4] = value8; break;
+			case 0xFF35: pullUpResistorOptions[5] = value8; break;
+			case 0xFF36: pullUpResistorOptions[6] = value8; break;
+			case 0xFF37: pullUpResistorOptions[7] = value8; break;
+			case 0xFF3C: pullUpResistorOptions[12] = value8; break;
+			case 0xFF3E: pullUpResistorOptions[14] = value8; break;
+			case 0xFF41: timer51.setCompare0(value8); break;
+			case 0xFF43: timer51.setTimerModeControl(value8); break;
 			case 0xFF48: externalInterruptRisingEdgeEnable = value8; break;
 			case 0xFF49: externalInterruptFallingEdgeEnable = value8; break;
+			case 0xFF4C: serialInterfaceCSI11.setTransmitBuffer(value8); break;
 			case 0xFF50: setAsynchronousSerialInterfaceOperationMode(value8); break;
 			case 0xFF56: clockSelection6 = value8; break;
 			case 0xFF57: baudRateGeneratorControl6 = value8; break;
 			case 0xFF58: asynchronousSerialInterfaceOperationMode = value8; break;
 			case 0xFF69: setTimerHModeRegister0(value8); break;
-			case 0xFF6A: timerClockSelection50 = value; break;
-			case 0xFF6B: setTimerModeControl50(value8); break;
+			case 0xFF6A: timer50.setClockSelection(value8); break;
+			case 0xFF6B: timer50.setTimerModeControl(value8); break;
 			case 0xFF6C: setTimerHModeRegister1(value8); break;
-			case 0xFF6F: setWatchTimerOperationMode(value8); break;
-			case 0xFF80: setSerialOperationMode10(value8); break;
-			case 0xFF81: serialClockSelection10 = value8; break;
-			case 0xFF88: setSerialOperationMode11(value8); break;
-			case 0xFF8C: timerClockSelection51 = value8; break;
+			case 0xFF6F: watchTimer.setOperationMode(value8); break;
+			case 0xFF80: serialInterfaceCSI10.setOperationMode(value8); break;
+			case 0xFF81: serialInterfaceCSI10.setClockSelection(value8); break;
+			case 0xFF84: serialInterfaceCSI10.setTransmitBuffer(value8); break;
+			case 0xFF88: serialInterfaceCSI11.setOperationMode(value8); break;
+			case 0xFF89: serialInterfaceCSI11.setClockSelection(value8); break;
+			case 0xFF8C: timer51.setClockSelection(value8); break;
 			case 0xFF99: setWatchdogTimerEnable(value8); break;
 			case 0xFF9F: clockOperationModeSelect = value8; break;
 			case 0xFFA0: internalOscillationMode = value8; break;
@@ -1299,9 +1285,14 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 			case 0xFFA8: setI2cClockSelection(value8); break;
 			case 0xFFA9: setI2cFunctionExpansion(value8); break;
 			case 0xFFAB: setI2cFlag(value8); break;
-			case 0xFFBA: setTimerModeControl00(value8); break;
-			case 0xFFBB: prescalerMode00 = value8; break;
-			case 0xFFBC: compareControl00 = value8; break;
+			case 0xFFB6: timer01.setTimerModeControl(value8); break;
+			case 0xFFB7: timer01.setPrescalerMode(value8); break;
+			case 0xFFB8: timer01.setCompareControl(value8); break;
+			case 0xFFB9: timer01.setOutputControl(value8); break;
+			case 0xFFBA: timer00.setTimerModeControl(value8); break;
+			case 0xFFBB: timer00.setPrescalerMode(value8); break;
+			case 0xFFBC: timer00.setCompareControl(value8); break;
+			case 0xFFBD: timer00.setOutputControl(value8); break;
 			case 0xFFC0: if (value8 != 0xA5) { super.write8(address, value); } break; // Unknown register, used only on some hardware
 			case 0xFFC4: if (value8 != 0x01 && value8 != 0xFE) { super.write8(address, value); } break; // Unknown register, used only on some hardware
 			case 0xFFE0: interruptRequestFlag0 = setByte0(interruptRequestFlag0, value8); break;
@@ -1341,8 +1332,11 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private void internalWrite16(int address, short value) {
 		final int value16 = value & 0xFFFF;
 		switch (address) {
-			case 0xFF12: timerCompare000 = value16; break;
+			case 0xFF12: timer00.setCompare00(value16); break;
+			case 0xFF14: timer00.setCompare01(value16); break;
 			case SP_ADDRESS: processor.setSp(value16); break;
+			case 0xFFB2: timer01.setCompare00(value16); break;
+			case 0xFFB4: timer01.setCompare01(value16); break;
 			case 0xFFE0: interruptRequestFlag0 = value16; break;
 			case 0xFFE2: interruptRequestFlag1 = value16; break;
 			case 0xFFE4: setInterruptMaskFlag0(value16); break;
