@@ -1441,6 +1441,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
         if (State.debugger == null) {
             State.debugger = new DisassemblerFrame(emulator);
+
+            // When opening the debugger, recompile all code blocks as debugger-specific code needs to be generated
+            RuntimeContext.invalidateAll();
         } else {
             State.debugger.RefreshDebugger(false);
         }

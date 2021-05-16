@@ -72,6 +72,7 @@ public class CodeBlock {
 	private int flags;
 	private HLEModuleFunction hleFunction;
 	private IAction updateOpcodesAction;
+	private final boolean debuggerEnabled;
 
 	public CodeBlock(int startAddress, int instanceIndex) {
 		this.startAddress = startAddress;
@@ -86,6 +87,8 @@ public class CodeBlock {
 		} else {
 			nextInstanceIndex = instanceIndex + 1;
 		}
+
+		debuggerEnabled = RuntimeContext.enableDebugger;
 	}
 
 	private void insertInstruction(int address, CodeInstruction codeInstruction) {
@@ -654,7 +657,7 @@ public class CodeBlock {
 		this.interpretedOpcodes = interpretedOpcodes;
 	}
 
-	public boolean areOpcodesChanged() {
+	private boolean areOpcodesChanged() {
 		return memoryRanges.areValuesChanged();
 	}
 
@@ -734,6 +737,18 @@ public class CodeBlock {
 		flags = 0;
 		hleFunction = null;
 		updateOpcodesAction = null;
+	}
+
+	private boolean isDebuggerChanged() {
+		if (debuggerEnabled) {
+			// No need to recompile when closing the debugger
+			return false;
+		}
+		return debuggerEnabled != RuntimeContext.enableDebugger;
+	}
+
+	public boolean isNoLongerValid() {
+		return isDebuggerChanged() || areOpcodesChanged();
 	}
 
 	@Override

@@ -296,7 +296,7 @@ public class Compiler implements ICompiler {
     		return;
     	}
 
-    	if (codeBlock.areOpcodesChanged()) {
+    	if (codeBlock.isNoLongerValid()) {
     		IAction updateOpcodesAction = codeBlock.getUpdateOpcodesAction();
     		if (updateOpcodesAction != null) {
     			// Execute the action provided by the code block to update the opcodes

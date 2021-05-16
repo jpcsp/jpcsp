@@ -393,6 +393,14 @@ public class RuntimeContext {
     	}
     }
 
+    private static void initialiseDebugger() {
+        if (State.debugger != null || (memory instanceof DebuggerMemory) || debugMemoryRead || debugMemoryWrite) {
+        	enableDebugger = true;
+        } else {
+        	enableDebugger = false;
+        }
+    }
+
     public static boolean initialise() {
         if (!compilerEnabled) {
             return false;
@@ -407,11 +415,7 @@ public class RuntimeContext {
 
         updateMemory();
 
-        if (State.debugger != null || (memory instanceof DebuggerMemory) || debugMemoryRead || debugMemoryWrite) {
-        	enableDebugger = true;
-        } else {
-        	enableDebugger = false;
-        }
+        initialiseDebugger();
 
         Profiler.initialise();
 
@@ -1339,13 +1343,18 @@ public class RuntimeContext {
     			// of their opcodes and invalidate only those code blocks that
     			// have been modified.
         		log.debug("RuntimeContext.invalidateAll advanced");
+
+        		// Make sure that the enableDebugger flag is set correctly as it is used by the code block validation
+        		initialiseDebugger();
+
         		Compiler compiler = Compiler.getInstance();
 	    		for (CodeBlock codeBlock : codeBlocks.values()) {
+	    			boolean isNoLongerValid = codeBlock.isNoLongerValid();
 	    			if (log.isDebugEnabled()) {
-	    				log.debug(String.format("invalidateAll %s: opcodes changed %b", codeBlock, codeBlock.areOpcodesChanged()));
+	    				log.debug(String.format("invalidateAll %s: isNoLongerValid %b", codeBlock, isNoLongerValid));
 	    			}
 
-	    			if (codeBlock.areOpcodesChanged()) {
+	    			if (isNoLongerValid) {
 	    				compiler.invalidateCodeBlock(codeBlock);
 	    			}
 	    		}

@@ -33,7 +33,7 @@ public class CheckChangedExecutable extends InvalidatedExecutable {
 		// Restore the previous executable
 		codeBlock.getExecutable().setExecutable(getExecutable());
 
-		if (codeBlock.areOpcodesChanged()) {
+		if (codeBlock.isNoLongerValid()) {
 			Compiler.getInstance().invalidateCodeBlock(codeBlock);
 		}
 
