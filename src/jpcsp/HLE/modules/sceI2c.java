@@ -52,7 +52,7 @@ public class sceI2c extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x49B159DE, version = 150)
-	public int sceI2cMasterReceive() {
+	public int sceI2cMasterReceive(int receiveI2cAddress, @BufferInfo(lengthInfo=LengthInfo.nextParameter, usage=Usage.out) TPointer receiveBuffer, int receiveBufferSize) {
     	return 0;
 	}
 

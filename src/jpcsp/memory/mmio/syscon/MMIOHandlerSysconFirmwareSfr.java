@@ -74,7 +74,7 @@ import jpcsp.util.Utilities;
  */
 public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private static final int STATE_VERSION = 0;
-	private static boolean dummyTesting = true;
+	public static boolean dummyTesting = true;
 	public static final int NUMBER_SPECIAL_FUNCTION_REGISTERS = 256;
 	// Interrupt Vector Table addresses
 	public static final int INTLVI   = 0x04;
@@ -130,25 +130,6 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	public static final int TMIF001 = INTtoIF(INTTM001);
 	public static final int TMIF011 = INTtoIF(INTTM011);
 	public static final int NUMBER_INTERRUPT_FLAGS = 28;
-	//
-	// I2C Control
-	public static final int IICE0 = 7; // I2C operation enable
-	public static final int LREL0 = 6; // Exit from communications
-	public static final int WREL0 = 5; // Wait cancellation
-	public static final int SPIE0 = 4; // Enable/disable generation of interrupt request when stop condition is detected
-	public static final int WTIM0 = 3; // Control of wait and interrupt request generation
-	public static final int ACKE0 = 2; // Acknowledgement control
-	public static final int STT0  = 1; // Start condition trigger
-	public static final int SPT0  = 0; // Stop condition trigger
-	// I2C Status
-	public static final int MSTS0 = 7; // Master device status
-	public static final int ALD0  = 6; // Detection of arbitration loss
-	public static final int EXC0  = 5; // Detection of extension code reception
-	public static final int COI0  = 4; // Detection of matching addresses
-	public static final int TRC0  = 3; // Detection of transmit/receive status
-	public static final int ACKD0 = 2; // Detection of acknowledge
-	public static final int STD0  = 1; // Detection of start condition
-	public static final int SPD0  = 0; // Detection of stop condition
 	//
 	private final SysconScheduler scheduler;
 	private final SysconWatchTimer watchTimer;
@@ -235,15 +216,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	private int interruptMaskFlag1; // 16-bit value
 	private int prioritySpecificationFlag0; // 16-bit value
 	private int prioritySpecificationFlag1; // 16-bit value
-	private int i2cShift;
-	private int i2cSlaveAddress;
-	private int i2cControl;
-	private int i2cStatus;
-	private int i2cFlag;
-	private int i2cClockSelection;
-	private int i2cFunctionExpansion;
-	private final int[] i2cBuffer = new int[MMIOHandlerSyscon.MAX_DATA_LENGTH];
-	private int i2cBufferIndex;
+	private final SysconI2c i2c;
 	private final SysconAdConverter adConverter;
 	private final SysconTimerEventCounter16 timer00;
 	private final SysconTimerEventCounter16 timer01;
@@ -279,6 +252,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		scheduler = new SysconScheduler();
 
 		watchTimer = new SysconWatchTimer(this, scheduler);
+		i2c = new SysconI2c(this);
 		adConverter = new SysconAdConverter(this, scheduler);
 		timer00 = new SysconTimerEventCounter16(this, scheduler, "Timer00", TMIF000, TMIF010);
 		timer01 = new SysconTimerEventCounter16(this, scheduler, "Timer01", TMIF001, TMIF011);
@@ -321,21 +295,13 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		stream.readInts(portOutputs);
 		stream.readInts(portModes);
 		stream.readInts(pullUpResistorOptions);
-		stream.readInts(i2cBuffer);
 		interruptRequestFlag0 = stream.readInt();
 		interruptRequestFlag1 = stream.readInt();
 		interruptMaskFlag0 = stream.readInt();
 		interruptMaskFlag1 = stream.readInt();
 		prioritySpecificationFlag0 = stream.readInt();
 		prioritySpecificationFlag1 = stream.readInt();
-		i2cShift = stream.readInt();
-		i2cSlaveAddress = stream.readInt();
-		i2cControl = stream.readInt();
-		i2cStatus = stream.readInt();
-		i2cFlag = stream.readInt();
-		i2cClockSelection = stream.readInt();
-		i2cFunctionExpansion = stream.readInt();
-		i2cBufferIndex = stream.readInt();
+		i2c.read(stream);
 		adConverter.read(stream);
 		timerHCompare00 = stream.readInt();
 		timerHCompare10 = stream.readInt();
@@ -375,21 +341,13 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		stream.writeInts(portOutputs);
 		stream.writeInts(portModes);
 		stream.writeInts(pullUpResistorOptions);
-		stream.writeInts(i2cBuffer);
 		stream.writeInt(interruptRequestFlag0);
 		stream.writeInt(interruptRequestFlag1);
 		stream.writeInt(interruptMaskFlag0);
 		stream.writeInt(interruptMaskFlag1);
 		stream.writeInt(prioritySpecificationFlag0);
 		stream.writeInt(prioritySpecificationFlag1);
-		stream.writeInt(i2cShift);
-		stream.writeInt(i2cSlaveAddress);
-		stream.writeInt(i2cControl);
-		stream.writeInt(i2cStatus);
-		stream.writeInt(i2cFlag);
-		stream.writeInt(i2cClockSelection);
-		stream.writeInt(i2cFunctionExpansion);
-		stream.writeInt(i2cBufferIndex);
+		i2c.write(stream);
 		adConverter.write(stream);
 		stream.writeInt(timerHCompare00);
 		stream.writeInt(timerHCompare10);
@@ -434,15 +392,7 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 		interruptMaskFlag1 = 0xFFFF;
 		prioritySpecificationFlag0 = 0xFFFF;
 		prioritySpecificationFlag1 = 0xFFFF;
-		// I2C
-		i2cShift = 0x00;
-		i2cSlaveAddress = 0x00;
-		i2cControl = 0x00;
-		i2cStatus = 0x00;
-		i2cFlag = 0x00;
-		i2cClockSelection = 0x00;
-		i2cFunctionExpansion = 0x00;
-
+		i2c.reset();
 		watchTimer.reset();
 		adConverter.reset();
 		timer00.reset();
@@ -845,175 +795,6 @@ public class MMIOHandlerSysconFirmwareSfr extends Nec78k0MMIOHandlerBase {
 	// I2C Interface
 	/////////////////////
 
-	public int getI2cShift() {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("getI2cShift 0x%02X", i2cShift));
-			if (isI2cRead()) {
-				log.debug(String.format("I2c read from slaveAddress 0x%02X, data#%d 0x%02X", getI2cSlaveAddress(), i2cBufferIndex - 1, i2cShift));
-			}
-		}
-		return i2cShift;
-	}
-
-int n = 0;
-	public void setI2cShift(int i2cShift) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("setI2cShift 0x%02X", i2cShift));
-		}
-		this.i2cShift = i2cShift;
-
-		// Start condition detected?
-		if (hasI2cStatusBit(STD0)) {
-			setI2cSlaveAddress(i2cShift);
-			clearI2cStatusBit(STD0);
-			clearI2cStatusBit(SPD0); // Clear detection of stop condition
-			i2cBufferIndex = 0;
-			if (isI2cRead()) {
-				if (dummyTesting) {
-					if (n <= 1) {
-						i2cBuffer[0] = 0x61;
-						i2cBuffer[0] = 0x01;
-//						i2cBuffer[0] = 0x21;
-						i2cBuffer[1] = 0x00;
-					} else {
-						i2cBuffer[0] = 0x01;
-						i2cBuffer[1] = 0xC0;
-					}
-					n++;
-				}
-			}
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("I2c start %s to slaveAddress 0x%02X", isI2cRead() ? "read" : "write", getI2cSlaveAddress()));
-			}
-		} else if (isI2cWrite()) {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("I2c write to slaveAddress 0x%02X, data#%d 0x%02X", getI2cSlaveAddress(), i2cBufferIndex, i2cShift));
-			}
-			i2cBuffer[i2cBufferIndex++] = i2cShift;
-		}
-
-		setI2cStatusBit(ACKD0); // Detection of acknowledge
-		setInterruptRequest(IICIF0);
-	}
-
-	public int getI2cSlaveAddress() {
-		// Bit 0 is fixed to 0
-		return clearBit(i2cSlaveAddress, 0);
-	}
-
-	public void setI2cSlaveAddress(int i2cSlaveAddress) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("setI2cSlaveAddress 0x%02X", i2cSlaveAddress));
-		}
-		this.i2cSlaveAddress = i2cSlaveAddress;
-	}
-
-	private boolean isI2cRead() {
-		return hasBit(i2cSlaveAddress, 0);
-	}
-
-	private boolean isI2cWrite() {
-		return !isI2cRead();
-	}
-
-	public int getI2cControl() {
-		return i2cControl;
-	}
-
-	public void setI2cControl(int i2cControl) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("setI2cControl 0x%02X(%s)", i2cControl, getSfr1Names(0xFFA6, i2cControl)));
-		}
-
-		// Trigger stop condition?
-		if (hasBit(i2cControl, SPT0)) {
-			clearI2cStatusBit(ACKD0); // Clear detection of acknowledge
-			setI2cSlaveAddress(0); // Clear slave address
-			setI2cStatusBit(SPD0); // Detection of stop condition
-			i2cControl = clearBit(i2cControl, SPT0);
-			i2cBufferIndex = 0;
-		}
-
-		// Trigger start condition?
-		if (hasBit(i2cControl, STT0)) {
-			setI2cStatusBit(STD0); // Detection of start condition
-			i2cControl = clearBit(i2cControl, STT0);
-		}
-
-		// Wait cancellation?
-		if (hasBit(i2cControl, WREL0)) {
-			if (isI2cRead()) {
-				int data = i2cBuffer[i2cBufferIndex++];
-				setI2cShift(data);
-			}
-			i2cControl = clearBit(i2cControl, WREL0);
-		}
-
-		this.i2cControl = i2cControl;
-	}
-
-	public int getI2cStatus() {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("getI2cStatus 0x%02X(%s)", i2cStatus, getSfr1Names(0xFFAA, i2cStatus)));
-		}
-		return i2cStatus;
-	}
-
-	private void setI2cStatusBit(int bit) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("setI2cStatusBit %s", getSfr1Name(0xFFAA, bit)));
-		}
-		i2cStatus = setBit(i2cStatus, bit);
-	}
-
-	private void clearI2cStatusBit(int bit) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("clearI2cStatusBit %s", getSfr1Name(0xFFAA, bit)));
-		}
-		i2cStatus = clearBit(i2cStatus, bit);
-	}
-
-	private boolean hasI2cStatusBit(int bit) {
-		boolean result = hasBit(i2cStatus, bit);
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("hasI2cStatusBit %s returning %b", getSfr1Name(0xFFAA, bit), result));
-		}
-		return result;
-	}
-
-	public int getI2cFlag() {
-		return i2cFlag;
-	}
-
-	public void setI2cFlag(int i2cFlag) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("setI2cFlag 0x%02X", i2cFlag));
-		}
-		this.i2cFlag = i2cFlag;
-	}
-
-	public int getI2cClockSelection() {
-		return i2cClockSelection;
-	}
-
-	public void setI2cClockSelection(int i2cClockSelection) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("setI2cClockSelection 0x%02X", i2cClockSelection));
-		}
-		this.i2cClockSelection = i2cClockSelection;
-	}
-
-	public int getI2cFunctionExpansion() {
-		return i2cFunctionExpansion;
-	}
-
-	public void setI2cFunctionExpansion(int i2cFunctionExpansion) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("setI2cFunctionExpansion 0x%02X", i2cFunctionExpansion));
-		}
-		this.i2cFunctionExpansion = i2cFunctionExpansion;
-	}
-
 	/////////////////////
 	// Serial Interface
 	/////////////////////
@@ -1108,13 +889,13 @@ int n = 0;
 			case 0xFFA1: value = mainClockMode; break;
 			case 0xFFA2: value = mainOscillationControl; break;
 			case 0xFFA3: value = getOscillationStabilizationTimeCounterStatus(); break;
-			case 0xFFA5: value = getI2cShift(); break;
-			case 0xFFA6: value = getI2cControl(); break;
-			case 0xFFA7: value = getI2cSlaveAddress(); break;
-			case 0xFFA8: value = getI2cClockSelection(); break;
-			case 0xFFA9: value = getI2cFunctionExpansion(); break;
-			case 0xFFAA: value = getI2cStatus(); break;
-			case 0xFFAB: value = getI2cFlag(); break;
+			case 0xFFA5: value = i2c.getShift(); break;
+			case 0xFFA6: value = i2c.getControl(); break;
+			case 0xFFA7: value = i2c.getSlaveAddress(); break;
+			case 0xFFA8: value = i2c.getClockSelection(); break;
+			case 0xFFA9: value = i2c.getFunctionExpansion(); break;
+			case 0xFFAA: value = i2c.getStatus(); break;
+			case 0xFFAB: value = i2c.getFlag(); break;
 			case 0xFFAC: value = getResetControlFlag(); break;
 			case 0xFFB0: value = getByte0(timer01.getTimerCounter()); break;
 			case 0xFFB1: value = getByte1(timer01.getTimerCounter()); break;
@@ -1279,12 +1060,12 @@ int n = 0;
 			case 0xFFA1: setMainClockMode(value8); break;
 			case 0xFFA2: setMainOscillationControl(value8); break;
 			case 0xFFA4: oscillationStabilizationTimeSelect = value8; break;
-			case 0xFFA5: setI2cShift(value8); break;
-			case 0xFFA6: setI2cControl(value8); break;
-			case 0xFFA7: setI2cSlaveAddress(value8); break;
-			case 0xFFA8: setI2cClockSelection(value8); break;
-			case 0xFFA9: setI2cFunctionExpansion(value8); break;
-			case 0xFFAB: setI2cFlag(value8); break;
+			case 0xFFA5: i2c.setShift(value8); break;
+			case 0xFFA6: i2c.setControl(value8); break;
+			case 0xFFA7: i2c.setSlaveAddress(value8); break;
+			case 0xFFA8: i2c.setClockSelection(value8); break;
+			case 0xFFA9: i2c.setFunctionExpansion(value8); break;
+			case 0xFFAB: i2c.setFlag(value8); break;
 			case 0xFFB6: timer01.setTimerModeControl(value8); break;
 			case 0xFFB7: timer01.setPrescalerMode(value8); break;
 			case 0xFFB8: timer01.setCompareControl(value8); break;

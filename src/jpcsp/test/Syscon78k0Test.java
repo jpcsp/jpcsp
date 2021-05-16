@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.test;
 
+import static jpcsp.HLE.modules.sceSyscon.getSysconCmdName;
 import static jpcsp.memory.mmio.syscon.MMIOHandlerSysconFirmwareSfr.getInterruptName;
 import static jpcsp.nec78k0.Nec78k0Memory.BASE_RAM0;
 import static jpcsp.nec78k0.Nec78k0Memory.END_RAM0;
@@ -100,24 +101,24 @@ public class Syscon78k0Test {
 					processor.disassemble(addr);
 				}
 			}
-			for (int i = 0x88; i < 0xB0; i += 2) {
+			for (int i = 0x88; i < 0xAE; i += 2) {
 				int addr = mem.internalRead16(i);
 				if (addr != 0 && addr != 0xFFFF) {
-					log.info(String.format("Disassembling sysconCmdGetOps table 0x%02X: 0x%04X", i, addr));
+					log.info(String.format("Disassembling sysconCmdGetOps table 0x%02X(%s): 0x%04X", i, getSysconCmdName((i - 0x88) / 2), addr));
 					processor.disassemble(addr);
 				}
 			}
-			for (int i = 0xB0; i < 0xE0; i += 2) {
+			for (int i = 0xAE; i < 0xDC; i += 2) {
 				int addr = mem.internalRead16(i);
 				if (addr != 0 && addr != 0xFFFF) {
-					log.info(String.format("Disassembling mainOperations table 0x%02X: 0x%04X", i, addr));
+					log.info(String.format("Disassembling mainOperations table 0x%02X(%s): 0x%04X", i, getSysconCmdName((i - 0xAE) / 2 + 0x20), addr));
 					processor.disassemble(addr);
 				}
 			}
-			for (int i = 0xE0; i < 0x10C; i += 2) {
+			for (int i = 0xDC; i < 0x10A; i += 2) {
 				int addr = mem.internalRead16(i);
 				if (addr != 0 && addr != 0xFFFF) {
-					log.info(String.format("Disassembling peripheralOperations table 0x%02X: 0x%04X", i, addr));
+					log.info(String.format("Disassembling peripheralOperations table 0x%02X(%s): 0x%04X", i, getSysconCmdName((i - 0xDC) / 2 + 0x40), addr));
 					processor.disassemble(addr);
 				}
 			}
