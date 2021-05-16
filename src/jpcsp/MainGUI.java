@@ -2298,7 +2298,7 @@ private void ejectMsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     }
 
     private void logStart() {
-        log.info(String.format("Java version: %s (%s)", System.getProperty("java.version"), System.getProperty("java.runtime.version")));
+        log.info(String.format("Java version: %s (%s) on %s", System.getProperty("java.version"), System.getProperty("java.runtime.version"), System.getProperty("os.name")));
         log.info(String.format("Java library path: %s", System.getProperty("java.library.path")));
 
         logConfigurationSettings();
@@ -2928,6 +2928,13 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }
 
     private void processArgs(String[] args) {
+    	if (log.isInfoEnabled()) {
+	    	log.info(String.format("Started with the following command line options:"));
+	    	for (int i = 0; i < args.length; i++) {
+	    		log.info(String.format("    \"%s\"", args[i]));
+	    	}
+    	}
+
     	for (int i = 0; i < args.length; i++) {
             if (args[i].equals("-t") || args[i].equals("--tests")) {
                 throw (new RuntimeException("Shouldn't get there"));
