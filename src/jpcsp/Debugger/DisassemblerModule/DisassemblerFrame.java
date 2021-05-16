@@ -17,7 +17,9 @@
 package jpcsp.Debugger.DisassemblerModule;
 
 import static jpcsp.Allegrex.Common._ra;
+import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.Allegrex.Common.gprNames;
+import static jpcsp.util.Utilities.readStringNZ;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -27,6 +29,8 @@ import java.awt.datatransfer.ClipboardOwner;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -55,6 +59,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.GprState;
 import jpcsp.Allegrex.Instructions;
+import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Debugger.DumpDebugState;
@@ -94,11 +99,15 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     protected int gpi, gpo;
     private int selectedRegCount;
     private final Color[] selectedRegColors = new Color[]{new Color(128, 255, 255), new Color(255, 255, 128), new Color(128, 255, 128)};
-    private String[] selectedRegNames = new String[selectedRegColors.length];
+    private final String[] selectedRegNames = new String[selectedRegColors.length];
+    private final int[] selectedRegOffsets = new int[selectedRegColors.length];
     private final Color selectedAddressColor = new Color(255, 128, 255);
     private String selectedAddress;
     private MemoryBreakpointsDialog mbpDialog;
     private SearchTask searchTask;
+	private static final String validStringCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz !\"$%&/()=?{[]}+*#',;.:-_@^<>|";
+	private static final int maxStringValueLength = 32;
+	private static final int minStringValueLength = 4;
 
     /**
      * Creates new form DisassemblerFrame
@@ -158,6 +167,30 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 }
             }
         });
+
+        // When double-clicking on a register name, display the memory
+        // pointed by that register into the memory viewer.
+        gprTable.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent me) {
+				if (me.getClickCount() == 2) {
+					if (me.getSource() == gprTable && gprTable.getSelectedColumn() == 0) {
+						int registerNumber = gprTable.getSelectedRow() - 3;
+						if (registerNumber >= Common._zr && registerNumber <= Common._ra) {
+							int value = Emulator.getProcessor().cpu.getRegister(registerNumber);
+							if (Memory.isAddressGood(value)) {
+								if (State.memoryViewer == null) {
+									State.memoryViewer = new MemoryViewer();
+									Emulator.getMainGUI().startWindowDialog(State.memoryViewer);
+								}
+								State.memoryViewer.goToAddress(value);
+							}
+						}
+					}
+				}
+				super.mouseClicked(me);
+			}
+		});
 
         ViewTooltips.register(disasmList);
         disasmList.setCellRenderer(new StyledListCellRenderer() {
@@ -367,6 +400,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         // enable memory breakpoint manager if debugger memory is available
         ManageMemBreaks.setEnabled(Memory.getInstance() instanceof DebuggerMemory);
         miManageMemoryBreakpoints.setEnabled(Memory.getInstance() instanceof DebuggerMemory);
+
+        RefreshButtons();
     }
 
     private void updateSelectedRegisters(String text) {
@@ -391,16 +426,31 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 if (!regName.startsWith(gprNames[i])) {
                     continue;
                 }
-                // check if we are already tracking this register
+
+            	int registerOffset = 0;
+            	if (text.charAt(lastFind - 1) == '(') {
+            		int offsetStart = 0;
+            		for (int j = lastFind - 2; j >= 0; j--) {
+            			if ("-0123456789".indexOf(text.charAt(j)) < 0) {
+            				offsetStart = j + 1;
+            				break;
+            			}
+            		}
+            		String offsetString = text.substring(offsetStart, lastFind - 1);
+            		registerOffset = Integer.parseInt(offsetString);
+            	}
+
+            	// check if we are already tracking this register with the same offset
                 boolean found = false;
                 for (int j = 0; j < selectedRegCount && !found; j++) {
-                    found = regName.startsWith(selectedRegNames[j]);
+                    found = regName.startsWith(selectedRegNames[j]) && selectedRegOffsets[j] == registerOffset;
                 }
 
                 // start tracking this register and update the highlighting
                 // of the table
                 if (!found) {
-                    selectedRegNames[selectedRegCount] = gprNames[i];
+                	selectedRegNames[selectedRegCount] = gprNames[i];
+                	selectedRegOffsets[selectedRegCount] = registerOffset;
                     gprTable.highlightRegister(
                             selectedRegNames[selectedRegCount],
                             selectedRegColors[selectedRegCount]);
@@ -1469,7 +1519,7 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
 // following methods are for the JPopmenu in Jlist
 private void CopyAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyAddressActionPerformed
         String value = (String) disasmListGetSelectedValue();
-        String address = value.substring(3, 11);
+        String address = value.substring(3, 13);
         StringSelection stringSelection = new StringSelection(address);
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         clipboard.setContents(stringSelection, this);
@@ -1692,7 +1742,71 @@ private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
 }//GEN-LAST:event_PauseDebuggerActionPerformed
 
-    public final void RefreshButtons() {
+	private boolean isValidStringChar(int c) {
+		return validStringCharacters.indexOf(c) >= 0;
+	}
+
+	private boolean isStringValue(int addr) {
+		for (int i = 0; i < maxStringValueLength; i++) {
+			int c = Emulator.getMemory().internalRead8(addr + i);
+			if (c == 0 && i >= minStringValueLength) {
+				break;
+			}
+			if (!isValidStringChar(c)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public String getRegistersInfo() {
+		StringBuilder s = new StringBuilder();
+    	for (int i = 0; i < selectedRegCount; i++) {
+    		String registerName = selectedRegNames[i];
+			int registerOffset = selectedRegOffsets[i];
+    		int registerNumber = -1;
+    		for (int j = 0; j < gprNames.length; j++) {
+    			if (registerName.equals(gprNames[j])) {
+    				registerNumber = j;
+    				break;
+    			}
+    		}
+
+    		if (registerNumber > _zr && registerNumber < _ra) {
+    			int registerValue = Emulator.getProcessor().cpu.getRegister(registerNumber);
+    			int registerAddress = registerValue + registerOffset;
+
+    			s.append(i == 0 ? " " : ", ");
+    			if (registerOffset == 0) {
+    				s.append(String.format("%s = 0x%08X", registerName, registerAddress));
+    			} else {
+    				s.append(String.format("%s + %d = 0x%08X", registerName, registerOffset, registerAddress));
+    			}
+
+    			if (Memory.isAddressGood(registerAddress)) {
+    				s.append(" (");
+    				if (isStringValue(registerAddress)) {
+    					s.append("'");
+    					s.append(readStringNZ(registerAddress, maxStringValueLength));
+    					s.append("'");
+    				} else {
+	    				for (int j = 0; j < 4; j++) {
+	    					if (j > 0) {
+	    						s.append(" ");
+	    					}
+	    					s.append(String.format("0x%02X", Emulator.getMemory().internalRead8(registerAddress + j)));
+	    				}
+    				}
+    				s.append(")");
+    			}
+    		}
+    	}
+
+    	return s.toString();
+	}
+
+	public final void RefreshButtons() {
         // Called from Emulator
         RunDebugger.setSelected(Emulator.run && !Emulator.pause);
         PauseDebugger.setSelected(Emulator.run && Emulator.pause);
@@ -1704,7 +1818,7 @@ private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         if (Emulator.run && !Emulator.pause) {
             statusLabel.setText(bundle.getString("DisassemblerFrame.strEmuRunning.text"));
         } else if (Emulator.run && Emulator.pause) {
-            statusLabel.setText(bundle.getString("DisassemblerFrame.strEmuHalted.text") + " (" + StepLogger.getStatusString() + ").");
+            statusLabel.setText(bundle.getString("DisassemblerFrame.strEmuHalted.text") + " (" + StepLogger.getStatusString() + ")." + getRegistersInfo());
         } else {
             statusLabel.setText(bundle.getString("DisassemblerFrame.strEmuNotRunning.text"));
         }

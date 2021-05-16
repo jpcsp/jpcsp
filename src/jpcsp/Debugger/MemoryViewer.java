@@ -345,6 +345,12 @@ private void btnGoToVRAMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
         RefreshMemory();
     }//GEN-LAST:event_jPanel1ComponentResized
 
+    public void goToAddress(int address) {
+    	startaddress = address;
+        AddressField.setText(String.format("0x%08X", startaddress));
+    	RefreshMemory();
+    }
+
     @Override
     public void dispose() {
         Emulator.getMainGUI().endWindowDialog();
