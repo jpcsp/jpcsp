@@ -20,7 +20,6 @@ package jpcsp.HLE;
 import jpcsp.HLE.modules.*;
 
 import org.apache.log4j.Logger;
-import org.lwjgl.LWJGLException;
 
 public class Modules {
 	// The modules must be named using the following convention:
@@ -38,7 +37,7 @@ public class Modules {
     public static StdioForUser StdioForUserModule = new StdioForUser();
     public static StdioForKernel StdioForKernelModule = new StdioForKernel();
     public static sceCtrl sceCtrlModule = new sceCtrl();
-    public static sceDisplay sceDisplayModule;
+    public static sceDisplay sceDisplayModule = new sceDisplay();
     public static sceGe_user sceGe_userModule = new sceGe_user();
     public static scePower scePowerModule = new scePower();
     public static sceUmdUser sceUmdUserModule = new sceUmdUser();
@@ -193,13 +192,5 @@ public class Modules {
 
     public static Logger getLogger(String module) {
         return Logger.getLogger("hle." + module);
-    }
-
-    static {
-    	try {
-			sceDisplayModule = new sceDisplay();
-		} catch (LWJGLException e) {
-			log.error("Error while creating sceDisplay", e);
-		}
     }
 }

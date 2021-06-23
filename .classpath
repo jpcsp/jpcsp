@@ -14,17 +14,17 @@
 	<classpathentry kind="lib" path="lib/logback-classic.jar"/>
 	<classpathentry kind="lib" path="lib/logback-core.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api.jar"/>
-	<classpathentry kind="lib" path="lib/jinput-2.0.5.jar"/>
-	<classpathentry kind="lib" path="lib/jinput-platform-2.0.5-natives-linux.jar"/>
-	<classpathentry kind="lib" path="lib/jinput-platform-2.0.5-natives-osx.jar"/>
-	<classpathentry kind="lib" path="lib/jinput-platform-2.0.5-natives-windows.jar"/>
-	<classpathentry kind="lib" path="lib/lwjgl_util-2.9.3.jar"/>
-	<classpathentry kind="lib" path="lib/lwjgl-2.9.3.jar" sourcepath="lib/lwjgl-2.9.3-sources.jar"/>
-	<classpathentry kind="lib" path="lib/lwjgl-platform-2.9.3-natives-linux.jar"/>
-	<classpathentry kind="lib" path="lib/lwjgl-platform-2.9.3-natives-osx.jar"/>
-	<classpathentry kind="lib" path="lib/lwjgl-platform-2.9.3-natives-windows.jar"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk16-145.jar"/>
 	<classpathentry kind="lib" path="lib/xuggle-xuggler-noarch-5.4.jar"/>
 	<classpathentry kind="lib" path="lib/jna-4.2.2.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl3-awt-0.1.8.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-natives-windows.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-openal-natives-windows.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-opengl-natives-windows.jar"/>
+	<classpathentry kind="lib" path="lib/jinput-2.0.9.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-jawt.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-openal.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-opengl.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

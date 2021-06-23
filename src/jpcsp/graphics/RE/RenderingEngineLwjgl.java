@@ -21,9 +21,6 @@ import static jpcsp.graphics.RE.DirectBufferUtilities.allocateDirectBuffer;
 import static jpcsp.graphics.RE.DirectBufferUtilities.copyBuffer;
 import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectBuffer;
 import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectByteBuffer;
-import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectFloatBuffer;
-import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectIntBuffer;
-import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectShortBuffer;
 
 import jpcsp.graphics.VideoEngine;
 import jpcsp.plugins.XBRZNativeFilter;
@@ -34,14 +31,14 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
-import org.lwjgl.opengl.ARBBufferObject;
 import org.lwjgl.opengl.ARBFramebufferObject;
 import org.lwjgl.opengl.ARBGeometryShader4;
 import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.ARBVertexArrayObject;
-import org.lwjgl.opengl.EXTMultiDrawArrays;
+import org.lwjgl.opengl.ARBVertexBufferObject;
 import org.lwjgl.opengl.EXTTextureCompressionS3TC;
 import org.lwjgl.opengl.EXTTextureFilterAnisotropic;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL13;
@@ -50,7 +47,6 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
-import org.lwjgl.opengl.GLContext;
 import org.lwjgl.opengl.NVTextureBarrier;
 
 /**
@@ -113,8 +109,8 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
         GL11.GL_ONE_MINUS_SRC_ALPHA, // GU_ONE_MINUS_DOUBLE_SRC_ALPHA
         GL11.GL_DST_ALPHA, // GU_DOUBLE_DST_ALPHA
         GL11.GL_ONE_MINUS_DST_ALPHA, // GU_ONE_MINUS_DOUBLE_DST_ALPHA
-        GL11.GL_CONSTANT_COLOR, // GU_FIX_BLEND_COLOR
-        GL11.GL_ONE_MINUS_CONSTANT_COLOR, // GU_FIX_BLEND_ONE_MINUS_COLOR
+        GL20.GL_CONSTANT_COLOR, // GU_FIX_BLEND_COLOR
+        GL20.GL_ONE_MINUS_CONSTANT_COLOR, // GU_FIX_BLEND_ONE_MINUS_COLOR
         GL11.GL_ZERO, // GU_FIX for 0x000000
         GL11.GL_ONE // GU_FIX for 0xFFFFFF
     };
@@ -129,8 +125,8 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
         GL11.GL_ONE_MINUS_SRC_ALPHA, // 7
         GL11.GL_DST_ALPHA, // 8
         GL11.GL_ONE_MINUS_DST_ALPHA, // 9
-        GL11.GL_CONSTANT_COLOR, // GU_FIX_BLEND_COLOR
-        GL11.GL_ONE_MINUS_CONSTANT_COLOR, // GU_FIX_BLEND_ONE_MINUS_COLOR
+        GL20.GL_CONSTANT_COLOR, // GU_FIX_BLEND_COLOR
+        GL20.GL_ONE_MINUS_CONSTANT_COLOR, // GU_FIX_BLEND_ONE_MINUS_COLOR
         GL11.GL_ZERO, // GU_FIX_BLACK
         GL11.GL_ONE // GU_FIX_WHITE
     };
@@ -433,17 +429,19 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     protected boolean hasOpenGL30;
 
     public static String getVersion() {
+    	GL.createCapabilities();
+
         return GL11.glGetString(GL11.GL_VERSION);
     }
 
     public static IRenderingEngine newInstance() {
-        if (GLContext.getCapabilities().OpenGL31) {
+        if (GL.getCapabilities().OpenGL31) {
             log.info("Using RenderingEngineLwjgl31");
             return new RenderingEngineLwjgl31();
-        } else if (GLContext.getCapabilities().OpenGL15) {
+        } else if (GL.getCapabilities().OpenGL15) {
             log.info("Using RenderingEngineLwjgl15");
             return new RenderingEngineLwjgl15();
-        } else if (GLContext.getCapabilities().OpenGL12) {
+        } else if (GL.getCapabilities().OpenGL12) {
             log.info("Using RenderingEngineLwjgl12");
             return new RenderingEngineLwjgl12();
         }
@@ -463,14 +461,14 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
         log.info(String.format("OpenGL version: %s, vender: %s, renderer: %s", openGLVersion, openGLVendor, openGLRenderer));
 
         vendorIntel = "Intel".equalsIgnoreCase(openGLVendor);
-        hasOpenGL30 = GLContext.getCapabilities().OpenGL30;
+        hasOpenGL30 = GL.getCapabilities().OpenGL30;
 
-        if (GLContext.getCapabilities().OpenGL20) {
+        if (GL.getCapabilities().OpenGL20) {
             String shadingLanguageVersion = GL11.glGetString(GL20.GL_SHADING_LANGUAGE_VERSION);
             log.info("Shading Language version: " + shadingLanguageVersion);
         }
 
-        if (GLContext.getCapabilities().OpenGL30) {
+        if (GL.getCapabilities().OpenGL30) {
             int contextFlags = GL11.glGetInteger(GL30.GL_CONTEXT_FLAGS);
             String s = String.format("GL_CONTEXT_FLAGS: 0x%X", contextFlags);
             if ((contextFlags & GL30.GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0) {
@@ -479,7 +477,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
             log.info(s);
         }
 
-        if (GLContext.getCapabilities().OpenGL32) {
+        if (GL.getCapabilities().OpenGL32) {
             int contextProfileMask = GL11.glGetInteger(GL32.GL_CONTEXT_PROFILE_MASK);
             String s = String.format("GL_CONTEXT_PROFILE_MASK: 0x%X", contextProfileMask);
             if ((contextProfileMask & GL32.GL_CONTEXT_CORE_PROFILE_BIT) != 0) {
@@ -530,27 +528,27 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setMaterialEmissiveColor(float[] color) {
-        GL11.glMaterial(GL11.GL_FRONT, GL11.GL_EMISSION, getDirectBuffer(color));
+        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_EMISSION, getDirectBuffer(color));
     }
 
     @Override
     public void setMaterialAmbientColor(float[] color) {
-        GL11.glMaterial(GL11.GL_FRONT, GL11.GL_AMBIENT, getDirectBuffer(color));
+        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_AMBIENT, getDirectBuffer(color));
     }
 
     @Override
     public void setMaterialDiffuseColor(float[] color) {
-        GL11.glMaterial(GL11.GL_FRONT, GL11.GL_DIFFUSE, getDirectBuffer(color));
+        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_DIFFUSE, getDirectBuffer(color));
     }
 
     @Override
     public void setMaterialSpecularColor(float[] color) {
-        GL11.glMaterial(GL11.GL_FRONT, GL11.GL_SPECULAR, getDirectBuffer(color));
+        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_SPECULAR, getDirectBuffer(color));
     }
 
     @Override
     public void setLightModelAmbientColor(float[] color) {
-        GL11.glLightModel(GL11.GL_LIGHT_MODEL_AMBIENT, getDirectBuffer(color));
+        GL11.glLightModelfv(GL11.GL_LIGHT_MODEL_AMBIENT, getDirectBuffer(color));
     }
 
     @Override
@@ -560,17 +558,17 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setLightAmbientColor(int light, float[] color) {
-        GL11.glLight(GL11.GL_LIGHT0 + light, GL11.GL_AMBIENT, getDirectBuffer(color));
+        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_AMBIENT, getDirectBuffer(color));
     }
 
     @Override
     public void setLightDiffuseColor(int light, float[] color) {
-        GL11.glLight(GL11.GL_LIGHT0 + light, GL11.GL_DIFFUSE, getDirectBuffer(color));
+        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_DIFFUSE, getDirectBuffer(color));
     }
 
     @Override
     public void setLightSpecularColor(int light, float[] color) {
-        GL11.glLight(GL11.GL_LIGHT0 + light, GL11.GL_SPECULAR, getDirectBuffer(color));
+        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_SPECULAR, getDirectBuffer(color));
     }
 
     @Override
@@ -590,12 +588,12 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setLightDirection(int light, float[] direction) {
-        GL11.glLight(GL11.GL_LIGHT0 + light, GL11.GL_SPOT_DIRECTION, getDirectBuffer(direction));
+        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_SPOT_DIRECTION, getDirectBuffer(direction));
     }
 
     @Override
     public void setLightPosition(int light, float[] position) {
-        GL11.glLight(GL11.GL_LIGHT0 + light, GL11.GL_POSITION, getDirectBuffer(position));
+        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_POSITION, getDirectBuffer(position));
     }
 
     @Override
@@ -726,7 +724,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setUniformMatrix4(int id, int count, float[] values) {
-        GL20.glUniformMatrix4(id, false, getDirectBuffer(values, count * 16));
+        GL20.glUniformMatrix4fv(id, false, getDirectBuffer(values, count * 16));
     }
 
     @Override
@@ -748,7 +746,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     public boolean compilerShader(int shader, String source) {
         GL20.glShaderSource(shader, source);
         GL20.glCompileShader(shader);
-        return GL20.glGetShader(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_TRUE;
+        return GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_TRUE;
     }
 
     @Override
@@ -784,18 +782,18 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public boolean linkProgram(int program) {
         GL20.glLinkProgram(program);
-        return GL20.glGetProgram(program, GL20.GL_LINK_STATUS) == GL11.GL_TRUE;
+        return GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == GL11.GL_TRUE;
     }
 
     @Override
     public boolean validateProgram(int program) {
         GL20.glValidateProgram(program);
-        return GL20.glGetProgram(program, GL20.GL_VALIDATE_STATUS) == GL11.GL_TRUE;
+        return GL20.glGetProgrami(program, GL20.GL_VALIDATE_STATUS) == GL11.GL_TRUE;
     }
 
     @Override
     public String getProgramInfoLog(int program) {
-        int infoLogLength = GL20.glGetProgram(program, GL20.GL_INFO_LOG_LENGTH);
+        int infoLogLength = GL20.glGetProgrami(program, GL20.GL_INFO_LOG_LENGTH);
 
         if (infoLogLength <= 1) {
             return null;
@@ -813,7 +811,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public String getShaderInfoLog(int shader) {
-        int infoLogLength = GL20.glGetShader(shader, GL20.GL_INFO_LOG_LENGTH);
+        int infoLogLength = GL20.glGetShaderi(shader, GL20.GL_INFO_LOG_LENGTH);
         if (infoLogLength <= 1) {
             return null;
         }
@@ -846,26 +844,26 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void deleteBuffer(int buffer) {
-        ARBBufferObject.glDeleteBuffersARB(buffer);
+        ARBVertexBufferObject.glDeleteBuffersARB(buffer);
     }
 
     @Override
     public int genBuffer() {
-        return ARBBufferObject.glGenBuffersARB();
+        return ARBVertexBufferObject.glGenBuffersARB();
     }
 
     @Override
     public void setBufferData(int target, int size, Buffer buffer, int usage) {
         if (buffer instanceof ByteBuffer) {
-            ARBBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (ByteBuffer) buffer), bufferUsageToGL[usage]);
+        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (ByteBuffer) buffer), bufferUsageToGL[usage]);
         } else if (buffer instanceof IntBuffer) {
-            ARBBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (IntBuffer) buffer), bufferUsageToGL[usage]);
+        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (IntBuffer) buffer), bufferUsageToGL[usage]);
         } else if (buffer instanceof ShortBuffer) {
-            ARBBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (ShortBuffer) buffer), bufferUsageToGL[usage]);
+        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (ShortBuffer) buffer), bufferUsageToGL[usage]);
         } else if (buffer instanceof FloatBuffer) {
-            ARBBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (FloatBuffer) buffer), bufferUsageToGL[usage]);
+        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (FloatBuffer) buffer), bufferUsageToGL[usage]);
         } else if (buffer == null) {
-            ARBBufferObject.glBufferDataARB(bufferTargetToGL[target], size, bufferUsageToGL[usage]);
+        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], size, bufferUsageToGL[usage]);
         } else {
             throw new IllegalArgumentException();
         }
@@ -874,13 +872,13 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setBufferSubData(int target, int offset, int size, Buffer buffer) {
         if (buffer instanceof ByteBuffer) {
-            ARBBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (ByteBuffer) buffer));
+        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (ByteBuffer) buffer));
         } else if (buffer instanceof IntBuffer) {
-            ARBBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (IntBuffer) buffer));
+        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (IntBuffer) buffer));
         } else if (buffer instanceof ShortBuffer) {
-            ARBBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (ShortBuffer) buffer));
+        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (ShortBuffer) buffer));
         } else if (buffer instanceof FloatBuffer) {
-            ARBBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (FloatBuffer) buffer));
+        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (FloatBuffer) buffer));
         } else {
             throw new IllegalArgumentException();
         }
@@ -913,19 +911,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-        switch (type) {
-            case RE_FLOAT:
-                GL11.glColorPointer(size, stride, getDirectFloatBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_BYTE:
-                GL11.glColorPointer(size, false, stride, getDirectByteBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_UNSIGNED_BYTE:
-                GL11.glColorPointer(size, true, stride, getDirectByteBuffer(bufferSize, buffer, 0));
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+        GL11.glColorPointer(size, pointerTypeToGL[type], stride, getDirectByteBuffer(bufferSize, buffer, 0));
     }
 
     @Override
@@ -935,19 +921,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer) {
-        switch (type) {
-            case RE_FLOAT:
-                GL11.glNormalPointer(stride, getDirectFloatBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_BYTE:
-                GL11.glNormalPointer(stride, getDirectByteBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_INT:
-                GL11.glNormalPointer(stride, getDirectIntBuffer(bufferSize, buffer, 0));
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+        GL11.glNormalPointer(pointerTypeToGL[type], stride, getDirectByteBuffer(bufferSize, buffer, 0));
     }
 
     @Override
@@ -957,19 +931,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-        switch (type) {
-            case RE_FLOAT:
-                GL11.glTexCoordPointer(size, stride, getDirectFloatBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_SHORT:
-                GL11.glTexCoordPointer(size, stride, getDirectShortBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_INT:
-                GL11.glTexCoordPointer(size, stride, getDirectIntBuffer(bufferSize, buffer, 0));
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+        GL11.glTexCoordPointer(pointerTypeToGL[type], size, stride, getDirectByteBuffer(bufferSize, buffer, 0));
     }
 
     @Override
@@ -979,19 +941,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-        switch (type) {
-            case RE_FLOAT:
-                GL11.glVertexPointer(size, stride, getDirectFloatBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_SHORT:
-                GL11.glVertexPointer(size, stride, getDirectShortBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_INT:
-                GL11.glVertexPointer(size, stride, getDirectIntBuffer(bufferSize, buffer, 0));
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+        GL11.glVertexPointer(pointerTypeToGL[type], size, stride, getDirectByteBuffer(bufferSize, buffer, 0));
     }
 
     @Override
@@ -1001,31 +951,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, int bufferSize, Buffer buffer) {
-        switch (type) {
-            case RE_FLOAT:
-                GL20.glVertexAttribPointer(id, size, false, stride, getDirectFloatBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_SHORT:
-                GL20.glVertexAttribPointer(id, size, false, false, stride, getDirectShortBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_UNSIGNED_SHORT:
-                GL20.glVertexAttribPointer(id, size, true, false, stride, getDirectShortBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_INT:
-                GL20.glVertexAttribPointer(id, size, false, false, stride, getDirectIntBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_UNSIGNED_INT:
-                GL20.glVertexAttribPointer(id, size, true, false, stride, getDirectIntBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_BYTE:
-                GL20.glVertexAttribPointer(id, size, false, false, stride, getDirectByteBuffer(bufferSize, buffer, 0));
-                break;
-            case RE_UNSIGNED_BYTE:
-                GL20.glVertexAttribPointer(id, size, true, false, stride, getDirectByteBuffer(bufferSize, buffer, 0));
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+        GL20.glVertexAttribPointer(id, size, pointerTypeToGL[type], normalized, stride, getDirectByteBuffer(bufferSize, buffer, 0));
     }
 
     @Override
@@ -1155,7 +1081,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setFogColor(float[] color) {
-        GL11.glFog(GL11.GL_FOG_COLOR, getDirectBuffer(color));
+        GL11.glFogfv(GL11.GL_FOG_COLOR, getDirectBuffer(color));
     }
 
     @Override
@@ -1166,7 +1092,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setTextureEnvColor(float[] color) {
-        GL11.glTexEnv(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_COLOR, getDirectBuffer(color));
+        GL11.glTexEnvfv(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_COLOR, getDirectBuffer(color));
     }
 
     @Override
@@ -1290,18 +1216,18 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public boolean isQueryAvailable() {
         // glGenQueries is available only if the GL version is 1.5 or greater
-        return GLContext.getCapabilities().OpenGL15;
+        return GL.getCapabilities().OpenGL15;
     }
 
     @Override
     public boolean isShaderAvailable() {
         // glCreateShader is available only if the GL version is 2.0 or greater
-        return GLContext.getCapabilities().OpenGL20;
+        return GL.getCapabilities().OpenGL20;
     }
 
     @Override
     public void bindBuffer(int target, int buffer) {
-        ARBBufferObject.glBindBufferARB(bufferTargetToGL[target], buffer);
+        ARBVertexBufferObject.glBindBufferARB(bufferTargetToGL[target], buffer);
     }
 
     @Override
@@ -1337,7 +1263,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public int getActiveUniformOffset(int program, int uniformIndex) {
-        return ARBUniformBufferObject.glGetActiveUniforms(program, uniformIndex, ARBUniformBufferObject.GL_UNIFORM_OFFSET);
+        return ARBUniformBufferObject.glGetActiveUniformsi(program, uniformIndex, ARBUniformBufferObject.GL_UNIFORM_OFFSET);
     }
 
     @Override
@@ -1375,7 +1301,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setMatrix(float[] values) {
         if (values != null) {
-            GL11.glLoadMatrix(getDirectBuffer(values));
+            GL11.glLoadMatrixf(getDirectBuffer(values));
         } else {
             GL11.glLoadIdentity();
         }
@@ -1389,7 +1315,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void multMatrix(float[] values) {
         if (values != null) {
-            GL11.glMultMatrix(getDirectBuffer(values));
+            GL11.glMultMatrixf(getDirectBuffer(values));
         }
     }
 
@@ -1440,7 +1366,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public boolean isFramebufferObjectAvailable() {
-        return GLContext.getCapabilities().GL_ARB_framebuffer_object;
+        return GL.getCapabilities().GL_ARB_framebuffer_object;
     }
 
     @Override
@@ -1460,14 +1386,14 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public boolean isVertexArrayAvailable() {
-        return GLContext.getCapabilities().GL_ARB_vertex_array_object;
+        return GL.getCapabilities().GL_ARB_vertex_array_object;
     }
 
     @Override
     public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count) {
         // "first" and "count" have to be direct buffers
         //GL14.glMultiDrawArrays(primitive, first, count);
-        EXTMultiDrawArrays.glMultiDrawArraysEXT(primitive, first, count);
+        GL14.glMultiDrawArrays(primitive, first, count);
     }
 
     @Override
@@ -1493,11 +1419,11 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setPixelMap(int map, int mapSize, Buffer buffer) {
         if (buffer instanceof IntBuffer) {
-            GL11.glPixelMapu(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (IntBuffer) buffer));
+            GL11.glPixelMapuiv(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (IntBuffer) buffer));
         } else if (buffer instanceof FloatBuffer) {
-            GL11.glPixelMap(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (FloatBuffer) buffer));
+            GL11.glPixelMapfv(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (FloatBuffer) buffer));
         } else if (buffer instanceof ShortBuffer) {
-            GL11.glPixelMapu(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (ShortBuffer) buffer));
+            GL11.glPixelMapusv(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (ShortBuffer) buffer));
         } else {
             throw new IllegalArgumentException();
         }
@@ -1534,7 +1460,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public String getShadingLanguageVersion() {
-        if (GLContext.getCapabilities().OpenGL20) {
+        if (GL.getCapabilities().OpenGL20) {
             return GL11.glGetString(GL20.GL_SHADING_LANGUAGE_VERSION);
         }
 
@@ -1669,6 +1595,6 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
 	@Override
 	public boolean isTextureBarrierAvailable() {
-		return GLContext.getCapabilities().GL_NV_texture_barrier;
+		return GL.getCapabilities().GL_NV_texture_barrier;
 	}
 }

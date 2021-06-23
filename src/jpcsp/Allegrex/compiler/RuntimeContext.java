@@ -56,6 +56,7 @@ import jpcsp.memory.mmio.MMIOHandlerDisplayController;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
+import jpcsp.sound.SoundChannel;
 import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
@@ -914,6 +915,7 @@ public class RuntimeContext {
 
     public static void runThread(RuntimeThread thread) {
     	setLog4jMDC();
+    	SoundChannel.setThreadInitContext();
 
     	thread.setInSyscall(true);
 
@@ -958,6 +960,8 @@ public class RuntimeContext {
 	    		e.printStackTrace();
         	}
 		}
+
+    	SoundChannel.clearThreadInitContext();
 
 		SceKernelThreadInfo threadInfo = thread.getThreadInfo();
     	alreadyStoppedThreads.put(threadInfo, thread);

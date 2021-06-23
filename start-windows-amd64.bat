@@ -28,7 +28,7 @@ if not exist "%JAVA_CMD%" goto JAVAMISSING
 
 :RUN
 echo Running Jpcsp 64bit...
-"%JAVA_CMD%" -Xmx2048m -Xss2m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-amd64 -jar bin/jpcsp.jar %*
+"%JAVA_CMD%" -Xmx2048m -Xss2m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-amd64;lib/jinput-2.0.9-natives-all -classpath "bin/jpcsp.jar;lib/lwjgl-3.2.3/lwjgl.jar;lib/lwjgl-3.2.3/lwjgl-openal.jar;lib/lwjgl-3.2.3/lwjgl-opengl.jar;lib/lwjgl-3.2.3/lwjgl-jawt.jar;lib/lwjgl-3.2.3/lwjgl-natives-windows.jar;lib/lwjgl-3.2.3/lwjgl-openal-natives-windows.jar;lib/lwjgl-3.2.3/lwjgl-opengl-natives-windows.jar" jpcsp.MainGUI %*
 if ERRORLEVEL 1 goto PAUSE
 goto END
 

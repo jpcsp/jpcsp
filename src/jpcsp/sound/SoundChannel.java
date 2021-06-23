@@ -17,18 +17,25 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.sound;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 import jpcsp.HLE.modules.sceAudio;
 
 import org.apache.log4j.Logger;
-import org.lwjgl.LWJGLException;
 import org.lwjgl.openal.AL;
 import org.lwjgl.openal.AL10;
 import org.lwjgl.openal.AL11;
+import org.lwjgl.openal.ALC;
+import org.lwjgl.openal.ALC10;
+import org.lwjgl.openal.ALCCapabilities;
+import org.lwjgl.openal.EXTThreadLocalContext;
 
 public class SoundChannel {
 	private static Logger log = sceAudio.log;
 	private static volatile boolean isExit = false;
+	private static volatile boolean isInit = false;
+	private static long initDevice;
+	private static long initContext;
 	public static final int FORMAT_MONO = 0x10;
 	public static final int FORMAT_STEREO = 0x00;
     //
@@ -63,21 +70,39 @@ public class SoundChannel {
     private boolean busy;
 
     public static void init() {
-		if (!AL.isCreated()) {
-			try {
-				AL.create();
-				isExit = false;
-			} catch (LWJGLException e) {
-				log.error(e);
-			}
-		}
+    	if (!isInit) {
+	    	initDevice = ALC10.alcOpenDevice((String) null);
+	    	ALCCapabilities deviceCapabilities = ALC.createCapabilities(initDevice);
+	    	initContext = ALC10.alcCreateContext(initDevice, (IntBuffer) null);
+	    	setThreadInitContext();
+	    	AL.createCapabilities(deviceCapabilities);
+
+	    	isInit = true;
+    	}
+
+    	isExit = false;
     }
 
     public static void exit() {
-    	if (AL.isCreated()) {
-    		isExit = true;
-    		AL.destroy();
+    	if (isInit) {
+    		clearThreadInitContext();
+    		ALC10.alcDestroyContext(initContext);
+    		initContext = 0L;
+    		ALC10.alcCloseDevice(initDevice);
+    		initDevice = 0L;
+
+    		isInit = false;
     	}
+
+    	isExit = true;
+    }
+
+    public static void setThreadInitContext() {
+    	EXTThreadLocalContext.alcSetThreadContext(initContext);
+    }
+
+    public static void clearThreadInitContext() {
+    	EXTThreadLocalContext.alcSetThreadContext(0L);
     }
 
     public SoundChannel(int index) {

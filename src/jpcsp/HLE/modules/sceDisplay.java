@@ -35,7 +35,7 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
 import java.awt.Dimension;
-import java.awt.event.ComponentEvent;
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.awt.Rectangle;
 import java.awt.Robot;
@@ -93,12 +93,8 @@ import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
-import org.lwjgl.LWJGLException;
-import org.lwjgl.opengl.AWTGLCanvas;
-import org.lwjgl.opengl.ContextAttribs;
-import org.lwjgl.opengl.Display;
-import org.lwjgl.opengl.DisplayMode;
-import org.lwjgl.opengl.PixelFormat;
+import org.lwjgl.opengl.awt.GLData;
+import org.lwjgl.opengl.awt.AWTGLCanvas;
 
 public class sceDisplay extends HLEModule {
     public static Logger log = Modules.getLogger("sceDisplay");
@@ -106,12 +102,17 @@ public class sceDisplay extends HLEModule {
     class AWTGLCanvas_sceDisplay extends AWTGLCanvas {
 		private static final long serialVersionUID = -3808789665048696700L;
 
-		public AWTGLCanvas_sceDisplay() throws LWJGLException {
-            super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(antiAliasSamplesNum), null, new ContextAttribs().withDebug(useDebugGL));
+		public AWTGLCanvas_sceDisplay(GLData glData) {
+            super(glData);
         }
 
-        @Override
-        protected void paintGL() {
+		@Override
+		public void paint(Graphics g) {
+			render();
+		}
+
+		@Override
+        public void paintGL() {
             VideoEngine videoEngine = VideoEngine.getInstance();
 
             if (log.isTraceEnabled()) {
@@ -343,10 +344,7 @@ public class sceDisplay extends HLEModule {
             // Perform OpenGL double buffering
             if (doSwapBuffers) {
                 paintFrameCount++;
-                try {
-                    canvas.swapBuffers();
-                } catch (LWJGLException e) {
-                }
+                canvas.swapBuffers();
             }
 
             // Update the current FPS every second
@@ -367,10 +365,7 @@ public class sceDisplay extends HLEModule {
         }
 
         @Override
-        protected void initGL() {
-            setSwapInterval(0);
-            super.initGL();
-
+        public void initGL() {
             // Collect debugging information...
             initGLcalled = true;
             openGLversion = RenderingEngineLwjgl.getVersion();
@@ -383,12 +378,8 @@ public class sceDisplay extends HLEModule {
             }
             canvasWidth = width;
             canvasHeight = height;
+            setViewportResizeScaleFactor(width, height);
             super.setBounds(x, y, width, height);
-        }
-
-        @Override
-        public void componentResized(ComponentEvent e) {
-            setViewportResizeScaleFactor(getWidth(), getHeight());
         }
     }
 
@@ -792,7 +783,7 @@ public class sceDisplay extends HLEModule {
         }
     }
 
-    public sceDisplay() throws LWJGLException {
+    public sceDisplay() {
         setSettingsListener("emu.graphics.antialias", new AntiAliasSettingsListerner());
 
         DisplaySettingsListener displaySettingsListener = new DisplaySettingsListener();
@@ -809,7 +800,7 @@ public class sceDisplay extends HLEModule {
 
     	displayScreen = new DisplayScreen();
 
-        canvas = new AWTGLCanvas_sceDisplay();
+        canvas = new AWTGLCanvas_sceDisplay(createGLData());
         setScreenResolution(displayScreen.getWidth(), displayScreen.getHeight());
 
         // Remember the last window size only if not running in full screen
@@ -827,6 +818,19 @@ public class sceDisplay extends HLEModule {
         fb = new FrameBufferSettings(START_VRAM, 512, Screen.width, Screen.height, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
         ge = new FrameBufferSettings(fb);
     }
+
+	private GLData createGLData() {
+		GLData glData = new GLData();
+		glData.redSize = 8;
+		glData.blueSize = 8;
+		glData.greenSize = 8;
+		glData.alphaSize = 8;
+		glData.stencilSize = 8;
+		glData.samples = antiAliasSamplesNum;
+		glData.debug = useDebugGL;
+		glData.swapInterval = 0;
+		return glData;
+	}
 
     public void setDesiredFPS(int desiredFPS) {
         this.desiredFps = desiredFPS;
@@ -1003,17 +1007,13 @@ public class sceDisplay extends HLEModule {
 
         // Log debug information...
         if (log.isDebugEnabled()) {
-            try {
-                DisplayMode[] availableDisplayModes = Display.getAvailableDisplayModes();
-                for (int i = 0; availableDisplayModes != null && i < availableDisplayModes.length; i++) {
-                    log.debug(String.format("Available Display Mode #%d = %s", i, availableDisplayModes[i]));
-                }
-                log.debug(String.format("Desktop Display Mode = %s", Display.getDesktopDisplayMode()));
-                log.debug(String.format("Current Display Mode = %s", Display.getDisplayMode()));
-                log.debug(String.format("initGL called = %b, OpenGL Version = %s", initGLcalled, openGLversion));
-            } catch (LWJGLException e) {
-                log.error(e);
-            }
+//            DisplayMode[] availableDisplayModes = Display.getAvailableDisplayModes();
+//            for (int i = 0; availableDisplayModes != null && i < availableDisplayModes.length; i++) {
+//                log.debug(String.format("Available Display Mode #%d = %s", i, availableDisplayModes[i]));
+//            }
+//            log.debug(String.format("Desktop Display Mode = %s", Display.getDesktopDisplayMode()));
+//            log.debug(String.format("Current Display Mode = %s", Display.getDisplayMode()));
+            log.debug(String.format("initGL called = %b, OpenGL Version = %s", initGLcalled, openGLversion));
         }
 
         if (!initGLcalled && !calledFromCommandLine) {

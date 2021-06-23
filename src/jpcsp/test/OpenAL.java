@@ -24,8 +24,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import jpcsp.util.LWJGLFixer;
-import org.lwjgl.LWJGLException;
-import org.lwjgl.openal.AL;
 import org.lwjgl.openal.AL10;
 
 public class OpenAL {
@@ -125,7 +123,6 @@ public class OpenAL {
 	 */
 	public static void main(String[] args) {
 		try {
-			AL.create();
 			//FileInputStream fis = new FileInputStream("tmp/xxDISCIDxx/Atrac/Atrac-NNNNNNNN-NNNNNNNN.at3.decoded");
 			FileInputStream fis = new FileInputStream("tmp/xxDISCIDxx/Mpeg-nnnn/AudioStream-0.raw");
 			isRawFile = true;
@@ -180,8 +177,6 @@ public class OpenAL {
 				read(fis, alSource);
 			}
 			AL10.alSourceStop(alSource);
-		} catch (LWJGLException e) {
-			e.printStackTrace();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
