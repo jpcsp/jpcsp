@@ -732,7 +732,7 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	context.storePc();
 	context.loadProcessor();
-    context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "executeHalt", "(" + Type.getDescriptor(Processor.class) + ")V");
+    context.invokeStaticMethod(runtimeContextInternalName, "executeHalt", "(" + Type.getDescriptor(Processor.class) + ")V");
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2441,7 +2441,7 @@ public void compile(ICompilerContext context, int insn) {
 		} else {
 			context.prepareRdForStore();
 			context.loadRs();
-			context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class), "numberOfLeadingZeros", "(I)I");
+			context.invokeStaticMethod(Type.getInternalName(Integer.class), "numberOfLeadingZeros", "(I)I");
 			context.storeRd();
 		}
 	}
@@ -2481,7 +2481,7 @@ public void compile(ICompilerContext context, int insn) {
 			context.loadRs();
 			context.loadImm(-1);
 			context.getMethodVisitor().visitInsn(Opcodes.IXOR);
-			context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class), "numberOfLeadingZeros", "(I)I");
+			context.invokeStaticMethod(Type.getInternalName(Integer.class), "numberOfLeadingZeros", "(I)I");
 			context.storeRd();
 		}
 	}
@@ -4602,7 +4602,7 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	context.prepareFtForStore();
 	context.memRead32(context.getRsRegisterIndex(), context.getImm16(true), false);
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
+	context.invokeStaticMethod(Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
 	context.storeFt();
 }
 @Override
@@ -4866,7 +4866,7 @@ public void compile(ICompilerContext context, int insn) {
 	int simm16 = context.getImm16(true);
 	context.prepareMemWrite32(rs, simm16, false);
 	context.loadFt();
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
+	context.invokeStaticMethod(Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
 	context.memWrite32(rs, simm16, false);
 }
 @Override
@@ -5259,7 +5259,7 @@ public void compile(ICompilerContext context, int insn) {
 	context.prepareFdForStore();
 	context.loadFs();
     context.getMethodVisitor().visitInsn(Opcodes.F2D);
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "sqrt", "(D)D");
+	context.invokeStaticMethod(Type.getInternalName(Math.class), "sqrt", "(D)D");
     context.getMethodVisitor().visitInsn(Opcodes.D2F);
 	context.storeFd();
 }
@@ -5292,7 +5292,7 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	context.prepareFdForStore();
 	context.loadFs();
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "abs", "(F)F");
+	context.invokeStaticMethod(Type.getInternalName(Math.class), "abs", "(F)F");
 	context.storeFd();
 }
 @Override
@@ -5387,8 +5387,8 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	context.prepareFdForStore();
 	context.loadFs();
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "round", "(F)I");
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
+	context.invokeStaticMethod(Type.getInternalName(Math.class), "round", "(F)I");
+	context.invokeStaticMethod(Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
 	context.storeFd();
 }
 @Override
@@ -5421,7 +5421,7 @@ public void compile(ICompilerContext context, int insn) {
 	context.prepareFdForStore();
 	context.loadFs();
 	context.getMethodVisitor().visitInsn(Opcodes.F2I);
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
+	context.invokeStaticMethod(Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
 	context.storeFd();
 }
 @Override
@@ -5454,9 +5454,9 @@ public void compile(ICompilerContext context, int insn) {
 	context.prepareFdForStore();
 	context.loadFs();
 	context.getMethodVisitor().visitInsn(Opcodes.F2D);
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "ceil", "(D)D");
+	context.invokeStaticMethod(Type.getInternalName(Math.class), "ceil", "(D)D");
 	context.getMethodVisitor().visitInsn(Opcodes.D2I);
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
+	context.invokeStaticMethod(Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
 	context.storeFd();
 }
 @Override
@@ -5489,9 +5489,9 @@ public void compile(ICompilerContext context, int insn) {
 	context.prepareFdForStore();
 	context.loadFs();
 	context.getMethodVisitor().visitInsn(Opcodes.F2D);
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "floor", "(D)D");
+	context.invokeStaticMethod(Type.getInternalName(Math.class), "floor", "(D)D");
 	context.getMethodVisitor().visitInsn(Opcodes.D2I);
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
+	context.invokeStaticMethod(Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
 	context.storeFd();
 }
 @Override
@@ -5523,7 +5523,7 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	context.prepareFdForStore();
 	context.loadFs();
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
+	context.invokeStaticMethod(Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
 	context.getMethodVisitor().visitInsn(Opcodes.I2F);
 	context.storeFd();
 }
@@ -5597,10 +5597,10 @@ public void compile(ICompilerContext context, int insn) {
 	context.loadFs();
 	context.getMethodVisitor().visitInsn(Opcodes.DUP);
 	context.storeFTmp1();
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isNaN", "(F)Z");
+	context.invokeStaticMethod(Type.getInternalName(Float.class), "isNaN", "(F)Z");
 	context.getMethodVisitor().visitJumpInsn(Opcodes.IFNE, isNaN);
 	context.loadFTmp2();
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isNaN", "(F)Z");
+	context.invokeStaticMethod(Type.getInternalName(Float.class), "isNaN", "(F)Z");
 	context.getMethodVisitor().visitJumpInsn(Opcodes.IFEQ, isNotNaN);
 	context.getMethodVisitor().visitLabel(isNaN);
 	context.getMethodVisitor().visitInsn((fcond & 1) != 0 ? Opcodes.ICONST_1 : Opcodes.ICONST_0);
@@ -5655,7 +5655,7 @@ public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
 		context.prepareRtForStore();
 		context.loadFCr();
-		context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
+		context.invokeStaticMethod(Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
 		context.storeRt();
 	}
 }
@@ -5717,7 +5717,7 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	context.prepareFCrForStore();
 	context.loadRt();
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
+	context.invokeStaticMethod(Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
 	context.storeFCr();
 }
 @Override
@@ -6014,7 +6014,7 @@ public void compile(ICompilerContext context, int insn) {
 			context.prepareVdForStore(n);
 			context.loadVs(n);
 			context.loadVtInt(n);
-			context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+			context.invokeStaticMethod(Type.getInternalName(Math.class), "scalb", "(FI)F");
 			context.storeVd(n);
 		}
 		context.endPfxCompiled();
@@ -6615,7 +6615,7 @@ public void compile(ICompilerContext context, int insn) {
 			boolean updateOrAnd = false;
 			switch (cond & 3) {
 				case 0: {
-					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "abs", "(F)F");
+					context.invokeStaticMethod(Type.getInternalName(Math.class), "abs", "(F)F");
 					mv.visitInsn(Opcodes.FCONST_0);
 					mv.visitInsn(Opcodes.FCMPL); // Use FCMPL or FCMPG, it doesn't matter for testing NE or EQ
 					Label trueLabel = new Label();
@@ -6651,20 +6651,20 @@ public void compile(ICompilerContext context, int insn) {
 					break;
 				}
 				case 1: {
-					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isNaN", "(F)Z");
+					context.invokeStaticMethod(Type.getInternalName(Float.class), "isNaN", "(F)Z");
 					updateOrAnd = true;
 					break;
 				}
 				case 2: {
-					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isInfinite", "(F)Z");
+					context.invokeStaticMethod(Type.getInternalName(Float.class), "isInfinite", "(F)Z");
 					updateOrAnd = true;
 					break;
 				}
 				case 3: {
 					mv.visitInsn(Opcodes.DUP);
-					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isNaN", "(F)Z");
+					context.invokeStaticMethod(Type.getInternalName(Float.class), "isNaN", "(F)Z");
 					mv.visitInsn(Opcodes.SWAP);
-					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isInfinite", "(F)Z");
+					context.invokeStaticMethod(Type.getInternalName(Float.class), "isInfinite", "(F)Z");
 					mv.visitInsn(Opcodes.IOR);
 					updateOrAnd = true;
 					break;
@@ -8787,19 +8787,19 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadVs(n);
 		if (imm5 != 0) {
 			context.loadImm(imm5);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+			context.invokeStaticMethod(Type.getInternalName(Math.class), "scalb", "(FI)F");
 		}
 		Label afterLabel = new Label();
 		Label notNaNValueLabel = new Label();
 		mv.visitInsn(Opcodes.DUP);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isNaN", "(F)Z");
+		context.invokeStaticMethod(Type.getInternalName(Float.class), "isNaN", "(F)Z");
 		mv.visitJumpInsn(Opcodes.IFEQ, notNaNValueLabel);
 		mv.visitInsn(Opcodes.POP);
 		context.loadImm(0x7FFFFFFF);
 		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
 		mv.visitLabel(notNaNValueLabel);
 		mv.visitInsn(Opcodes.F2D);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "rint", "(D)D");
+		context.invokeStaticMethod(Type.getInternalName(Math.class), "rint", "(D)D");
 		mv.visitInsn(Opcodes.D2I);
 		mv.visitLabel(afterLabel);
 		context.storeVdInt(n);
@@ -8854,24 +8854,24 @@ public void compile(ICompilerContext context, int insn) {
 		mv.visitJumpInsn(Opcodes.IFLT, negativeLabel);
 		if (imm5 != 0) {
 			context.loadImm(imm5);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+			context.invokeStaticMethod(Type.getInternalName(Math.class), "scalb", "(FI)F");
 		}
 		mv.visitInsn(Opcodes.F2D);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "floor", "(D)D");
+		context.invokeStaticMethod(Type.getInternalName(Math.class), "floor", "(D)D");
 		mv.visitJumpInsn(Opcodes.GOTO, afterSignTestLabel);
 		mv.visitLabel(negativeLabel);
 		if (imm5 != 0) {
 			context.loadImm(imm5);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+			context.invokeStaticMethod(Type.getInternalName(Math.class), "scalb", "(FI)F");
 		}
 		mv.visitInsn(Opcodes.F2D);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "ceil", "(D)D");
+		context.invokeStaticMethod(Type.getInternalName(Math.class), "ceil", "(D)D");
 		mv.visitLabel(afterSignTestLabel);
 
 		Label afterLabel = new Label();
 		Label notNaNValueLabel = new Label();
 		mv.visitInsn(Opcodes.DUP2);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class), "isNaN", "(D)Z");
+		context.invokeStaticMethod(Type.getInternalName(Double.class), "isNaN", "(D)Z");
 		mv.visitJumpInsn(Opcodes.IFEQ, notNaNValueLabel);
 		mv.visitInsn(Opcodes.POP2);
 		context.loadImm(0x7FFFFFFF);
@@ -8925,14 +8925,14 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadVs(n);
 		if (imm5 != 0) {
 			context.loadImm(imm5);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+			context.invokeStaticMethod(Type.getInternalName(Math.class), "scalb", "(FI)F");
 		}
 		mv.visitInsn(Opcodes.F2D);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "ceil", "(D)D");
+		context.invokeStaticMethod(Type.getInternalName(Math.class), "ceil", "(D)D");
 		Label afterLabel = new Label();
 		Label notNaNValueLabel = new Label();
 		mv.visitInsn(Opcodes.DUP2);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class), "isNaN", "(D)Z");
+		context.invokeStaticMethod(Type.getInternalName(Double.class), "isNaN", "(D)Z");
 		mv.visitJumpInsn(Opcodes.IFEQ, notNaNValueLabel);
 		mv.visitInsn(Opcodes.POP2);
 		context.loadImm(0x7FFFFFFF);
@@ -8986,14 +8986,14 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadVs(n);
 		if (imm5 != 0) {
 			context.loadImm(imm5);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+			context.invokeStaticMethod(Type.getInternalName(Math.class), "scalb", "(FI)F");
 		}
 		mv.visitInsn(Opcodes.F2D);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "floor", "(D)D");
+		context.invokeStaticMethod(Type.getInternalName(Math.class), "floor", "(D)D");
 		Label afterLabel = new Label();
 		Label notNaNValueLabel = new Label();
 		mv.visitInsn(Opcodes.DUP2);
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class), "isNaN", "(D)Z");
+		context.invokeStaticMethod(Type.getInternalName(Double.class), "isNaN", "(D)Z");
 		mv.visitJumpInsn(Opcodes.IFEQ, notNaNValueLabel);
 		mv.visitInsn(Opcodes.POP2);
 		context.loadImm(0x7FFFFFFF);
@@ -9048,7 +9048,7 @@ public void compile(ICompilerContext context, int insn) {
 		mv.visitInsn(Opcodes.I2F);
 		if (imm5 != 0) {
 			context.loadImm(-imm5);
-			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+			context.invokeStaticMethod(Type.getInternalName(Math.class), "scalb", "(FI)F");
 		}
 		context.storeVd(n);
 	}
@@ -10161,14 +10161,14 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadVprInt();
 		context.loadImm(vdVprIndex);
 		context.loadImm(16);
-    	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
+    	context.invokeStaticMethod(Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
 
     	context.loadVprFloat();
 		context.loadImm(vsVprIndex);
 		context.loadVprFloat();
 		context.loadImm(vdVprIndex);
 		context.loadImm(16);
-    	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
+    	context.invokeStaticMethod(Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
 	} else {
 		context.startPfxCompiled(false);
 		for (int i = 0; i < vsize; i++) {
@@ -10359,7 +10359,7 @@ public void compile(ICompilerContext context, int insn) {
     mv.visitLdcInsn(0.25f);
     mv.visitInsn(Opcodes.FMUL);
 	mv.visitInsn(Opcodes.F2D);
-	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "floor", "(D)D");
+	context.invokeStaticMethod(Type.getInternalName(Math.class), "floor", "(D)D");
 	mv.visitInsn(Opcodes.D2F);
     mv.visitLdcInsn(4f);
     mv.visitInsn(Opcodes.FMUL);
@@ -10426,12 +10426,12 @@ public void compile(ICompilerContext context, int insn) {
 
     // Compute cos(angle)
     mv.visitInsn(Opcodes.DUP2);
-    mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "cos", "(D)D");
+    context.invokeStaticMethod(Type.getInternalName(Math.class), "cos", "(D)D");
     mv.visitInsn(Opcodes.D2F);
     context.storeFTmp1();
 
     // Compute sin(angle)
-    mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "sin", "(D)D");
+    context.invokeStaticMethod(Type.getInternalName(Math.class), "sin", "(D)D");
     mv.visitInsn(Opcodes.D2F);
     if ((imm5 & 16) != 0) {
     	mv.visitInsn(Opcodes.FNEG);

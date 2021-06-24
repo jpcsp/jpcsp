@@ -7,7 +7,6 @@
 	<classpathentry kind="lib" path="lib/jgz-0.2.jar"/>
 	<classpathentry kind="lib" path="lib/jide-oss-2.8.4.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
-	<classpathentry kind="lib" path="lib/asm-all-4.0_RC1.jar"/>
 	<classpathentry kind="lib" path="lib/jaxen-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/jdom1.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-cli.jar"/>
@@ -26,5 +25,9 @@
 	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-jawt.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-openal.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-opengl.jar"/>
+	<classpathentry kind="lib" path="lib/asm-9.1.jar"/>
+	<classpathentry kind="lib" path="lib/asm-util-9.1.jar"/>
+	<classpathentry kind="lib" path="lib/asm-tree-9.1.jar"/>
+	<classpathentry kind="lib" path="lib/asm-analysis-9.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

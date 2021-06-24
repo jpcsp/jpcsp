@@ -53,6 +53,7 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
+import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.util.TraceClassVisitor;
 
@@ -178,6 +179,7 @@ public class ClassSpecializer {
 		private String superClassName;
 
 		public SpecializedClassVisitor(String specializedClassName, HashMap<String, Object> variables) {
+			super(Opcodes.ASM9);
 			this.specializedClassName = specializedClassName;
 			this.variables = variables;
 		}
@@ -454,9 +456,9 @@ public class ClassSpecializer {
 				// Analyze the method using the BasicInterpreter.
 				// As a result, the computed frames are null for instructions
 				// that cannot be reached.
-				Analyzer analyzer = new Analyzer(new BasicInterpreter());
+				Analyzer<BasicValue> analyzer = new Analyzer<BasicValue>(new BasicInterpreter());
 				analyzer.analyze(specializedClassName, method);
-				Frame[] frames = analyzer.getFrames();
+				Frame<BasicValue>[] frames = analyzer.getFrames();
 				AbstractInsnNode[] insns = method.instructions.toArray();
 				for (int i = 0; i < frames.length; i++) {
 					AbstractInsnNode insn = insns[i];

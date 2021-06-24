@@ -223,7 +223,7 @@ public class CodeBlock {
 	    MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
 	    mv.visitCode();
         mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, objectInternalName, "<init>", "()V");
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, objectInternalName, "<init>", "()V", false);
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(1, 1);
 	    mv.visitEnd();
@@ -235,7 +235,7 @@ public class CodeBlock {
     	// public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception;
     	mv = cv.visitMethod(Opcodes.ACC_PUBLIC, context.getExecMethodName(), context.getExecMethodDesc(), null, exceptions);
         mv.visitCode();
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(), context.getStaticExecMethodName(), context.getStaticExecMethodDesc());
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(), context.getStaticExecMethodName(), context.getStaticExecMethodDesc(), false);
         mv.visitInsn(Opcodes.IRETURN);
         mv.visitMaxs(1, 1);
         mv.visitEnd();

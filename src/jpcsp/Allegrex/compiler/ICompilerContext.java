@@ -180,4 +180,5 @@ public interface ICompilerContext {
     public boolean hasNoPfx();
     public void loadVprInt();
     public void loadVprFloat();
+    public void invokeStaticMethod(String classInternalName, String methodName, String methodDescriptor);
 }

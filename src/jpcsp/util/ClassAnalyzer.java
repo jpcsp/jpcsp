@@ -24,6 +24,7 @@ import java.util.Iterator;
 
 import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -78,6 +79,7 @@ public class ClassAnalyzer {
 		private Method method;
 
 		public AnalyzerClassVisitor(Method method) {
+			super(Opcodes.ASM9);
 			this.method = method;
 			this.methodName = method.getName();
 		}
