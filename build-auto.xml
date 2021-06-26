@@ -16,20 +16,15 @@
 		<pathelement location="lib/lwjgl-3.2.3/lwjgl-openal.jar" />
 		<pathelement location="lib/lwjgl-3.2.3/lwjgl-jawt.jar" />
 		<pathelement location="lib/lwjgl3-awt-0.1.8.jar" />
-		<pathelement location="lib/javassist.jar" />
-		<pathelement location="lib/jgz-0.2.jar" />
 		<pathelement location="lib/jide-oss-2.8.4.jar" />
 		<pathelement location="lib/log4j-1.2.15.jar" />
-		<pathelement location="lib/asm-all-4.0_RC1.jar" />
-		<pathelement location="lib/jaxen-1.1.1.jar" />
-		<pathelement location="lib/jdom1.1.jar" />
+		<pathelement location="lib/asm-9.1.jar" />
+		<pathelement location="lib/asm-analysis-9.1.jar" />
+		<pathelement location="lib/asm-tree-9.1.jar" />
+		<pathelement location="lib/asm-util-9.1.jar" />
 		<pathelement location="lib/xuggle-xuggler-noarch-5.4.jar" />
-		<pathelement location="lib/commons-cli.jar" />
-		<pathelement location="lib/logback-classic.jar" />
-		<pathelement location="lib/logback-core.jar" />
-		<pathelement location="lib/slf4j-api.jar" />
-		<pathelement location="lib/bcprov-jdk16-145.jar" />
-		<pathelement location="lib/jna-4.2.2.jar" />
+		<pathelement location="lib/bcprov-jdk15on-169.jar" />
+		<pathelement location="lib/jna-5.8.0.jar" />
 	</path>
 
 	<macrodef name="gitversion" description="Get last git commit version.">
@@ -96,7 +91,7 @@
 	<target name="run">
 		<java classname="${jpcsp.mainclass}" failonerror="true" fork="yes">
 			<jvmarg value="-Xmx512m" />
-			<jvmarg value="-Djava.library.path=lib/windows-x86" />
+			<jvmarg value="-Djava.library.path=lib/windows-x86;lib/jinput-2.0.9-natives-all" />
 			<classpath refid="Jpcsp.classpath" />
 		</java>
 	</target>

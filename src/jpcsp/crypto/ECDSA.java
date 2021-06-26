@@ -55,10 +55,12 @@ public class ECDSA {
             curve = new ECCurve.Fp(
                     new BigInteger("FFFFFFFFFFFFFFFF00000001FFFFFFFFFFFFFFFF", 16),  // p 
                     new BigInteger("FFFFFFFFFFFFFFFF00000001FFFFFFFFFFFFFFFC", 16),  // a
-                    new BigInteger("A68BEDC33418029C1D3CE33B9A321FCCBB9E0F0B", 16)); // b
-            
+                    new BigInteger("A68BEDC33418029C1D3CE33B9A321FCCBB9E0F0B", 16),  // b
+                    null,  // order
+                    null); // cofactor
+
             spec = new ECParameterSpec(curve, 
-                    curve.createPoint(new BigInteger("128EC4256487FD8FDF64E2437BC0A1F6D5AFDE2C", 16), new BigInteger("5958557EB1DB001260425524DBC379D5AC5F4ADF", 16), false), // G
+                    curve.createPoint(new BigInteger("128EC4256487FD8FDF64E2437BC0A1F6D5AFDE2C", 16), new BigInteger("5958557EB1DB001260425524DBC379D5AC5F4ADF", 16)), // G
                     new BigInteger("00FFFFFFFFFFFFFFFEFFFFB5AE3C523E63944F2127", 16)); // n
 
             g = KeyPairGenerator.getInstance("ECDSA", "BC");

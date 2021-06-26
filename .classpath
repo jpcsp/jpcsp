@@ -2,20 +2,9 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="resources"/>
-	<classpathentry kind="lib" path="lib/javassist.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/jgz-0.2.jar"/>
-	<classpathentry kind="lib" path="lib/jide-oss-2.8.4.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
-	<classpathentry kind="lib" path="lib/jaxen-1.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/jdom1.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-cli.jar"/>
-	<classpathentry kind="lib" path="lib/logback-classic.jar"/>
-	<classpathentry kind="lib" path="lib/logback-core.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-api.jar"/>
-	<classpathentry kind="lib" path="lib/bcprov-jdk16-145.jar"/>
 	<classpathentry kind="lib" path="lib/xuggle-xuggler-noarch-5.4.jar"/>
-	<classpathentry kind="lib" path="lib/jna-4.2.2.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl3-awt-0.1.8.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-natives-windows.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-openal-natives-windows.jar"/>
@@ -29,5 +18,8 @@
 	<classpathentry kind="lib" path="lib/asm-util-9.1.jar"/>
 	<classpathentry kind="lib" path="lib/asm-tree-9.1.jar"/>
 	<classpathentry kind="lib" path="lib/asm-analysis-9.1.jar"/>
+	<classpathentry kind="lib" path="lib/jide-oss-2.8.4.jar"/>
+	<classpathentry kind="lib" path="lib/jna-5.8.0.jar"/>
+	<classpathentry kind="lib" path="lib/bcprov-jdk15on-169.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
