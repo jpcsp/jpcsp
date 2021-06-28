@@ -5,7 +5,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
 	<classpathentry kind="lib" path="lib/xuggle-xuggler-noarch-5.4.jar"/>
-	<classpathentry kind="lib" path="lib/lwjgl3-awt-0.1.8.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl3-awt-0.1.8.jar" sourcepath="lib/lwjgl3-awt-0.1.8-sources.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-natives-windows.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-openal-natives-windows.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-opengl-natives-windows.jar"/>
@@ -18,8 +18,8 @@
 	<classpathentry kind="lib" path="lib/asm-util-9.1.jar"/>
 	<classpathentry kind="lib" path="lib/asm-tree-9.1.jar"/>
 	<classpathentry kind="lib" path="lib/asm-analysis-9.1.jar"/>
-	<classpathentry kind="lib" path="lib/jide-oss-2.8.4.jar"/>
 	<classpathentry kind="lib" path="lib/jna-5.8.0.jar"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk15on-169.jar"/>
+	<classpathentry kind="lib" path="lib/jide-oss-3.6.18.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
