@@ -24,7 +24,11 @@ import static jpcsp.MemoryMap.START_VRAM;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
-import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
+import static jpcsp.graphics.VideoEngineUtilities.drawFrameBuffer;
+import static jpcsp.graphics.VideoEngineUtilities.drawFrameBufferFromMemory;
+import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
+import static jpcsp.graphics.VideoEngineUtilities.getViewportResizeScaleFactor;
+import static jpcsp.graphics.VideoEngineUtilities.getViewportResizeScaleFactorInt;
 import static jpcsp.util.Utilities.makePow2;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
@@ -68,22 +72,21 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
-import jpcsp.graphics.GEProfiler;
+import jpcsp.graphics.DisplayScreen;
+import jpcsp.graphics.FrameBufferSettings;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VertexCache;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.VideoEngineUtilities;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.RenderingEngineFactory;
 import jpcsp.graphics.RE.RenderingEngineLwjgl;
-import jpcsp.graphics.RE.buffer.IREBufferManager;
 import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.GETextureManager;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Screen;
-import jpcsp.memory.IMemoryReaderWriter;
-import jpcsp.memory.MemoryReaderWriter;
 import jpcsp.scheduler.UnblockThreadAction;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.AbstractStringSettingsListener;
@@ -94,17 +97,26 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.awt.GLData;
+import org.lwjgl.opengl.awt.PlatformWin32GLCanvas;
 import org.lwjgl.opengl.awt.AWTGLCanvas;
 
 public class sceDisplay extends HLEModule {
     public static Logger log = Modules.getLogger("sceDisplay");
+    private static final boolean multiThreadingLockDisplay = true;
 
-    class AWTGLCanvas_sceDisplay extends AWTGLCanvas {
+    public class AWTGLCanvas_sceDisplay extends AWTGLCanvas {
 		private static final long serialVersionUID = -3808789665048696700L;
 
 		public AWTGLCanvas_sceDisplay(GLData glData) {
             super(glData);
         }
+
+		public long getDisplayWindow() {
+			if (platformCanvas instanceof PlatformWin32GLCanvas) {
+				return ((PlatformWin32GLCanvas) platformCanvas).hwnd;
+			}
+			return 0L;
+		}
 
 		@Override
 		public void paint(Graphics g) {
@@ -115,8 +127,8 @@ public class sceDisplay extends HLEModule {
         public void paintGL() {
             VideoEngine videoEngine = VideoEngine.getInstance();
 
-            if (log.isTraceEnabled()) {
-                log.trace(String.format("paintGL resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, canvas.getSize().width, canvas.getSize().height, canvasWidth, canvasHeight, canvas.getLocation().x, canvas.getLocation().y));
+    		if (log.isTraceEnabled()) {
+                log.trace(String.format("paintGL resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", getViewportResizeScaleFactor(), canvas.getSize().width, canvas.getSize().height, canvasWidth, canvasHeight, canvas.getLocation().x, canvas.getLocation().y));
             }
 
             if (resizePending && Emulator.getMainGUI().isVisible()) {
@@ -155,8 +167,13 @@ public class sceDisplay extends HLEModule {
                     if (isUsingSoftwareRenderer()) {
                         reDisplay = RenderingEngineFactory.createRenderingEngineForDisplay();
                         reDisplay.setGeContext(videoEngine.getContext());
-                    } else {
+                    } else if (ExternalGE.isActive()) {
                         reDisplay = re;
+                    } else {
+                        reDisplay = RenderingEngineFactory.createRenderingEngineForDisplay();
+                        reDisplay.setGeContext(videoEngine.getContext());
+                        // Share the buffer manager between the 2 rendering engines
+                        reDisplay.setBufferManager(re.getBufferManager());
                     }
                 } else {
                     re = RenderingEngineFactory.createInitialRenderingEngine();
@@ -164,14 +181,14 @@ public class sceDisplay extends HLEModule {
                 }
             }
 
+            lockDisplay();
+
             if (startModules) {
                 saveGEToTexture = Settings.getInstance().readBool("emu.enablegetexture");
                 if (saveGEToTexture) {
                     GETextureManager.getInstance().reset(reDisplay);
                 }
                 videoEngine.start();
-                drawBuffer = reDisplay.getBufferManager().genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
-                drawBufferArray = new float[16];
                 startModules = false;
                 if (saveGEToTexture && !re.isFramebufferObjectAvailable()) {
                     saveGEToTexture = false;
@@ -182,14 +199,23 @@ public class sceDisplay extends HLEModule {
 
             if (!isStarted) {
                 reDisplay.clear(0.0f, 0.0f, 0.0f, 0.0f);
+                unlockDisplay();
                 return;
             }
 
             if (createTex) {
                 // Create two textures: one at original PSP size and
                 // one resized to the display size
-                texFb = createTexture(texFb, false);
-                resizedTexFb = createTexture(resizedTexFb, true);
+
+            	// Lock the texFb while recreating it to avoid that it is used at the same by the Video Engine Thread
+            	synchronized (texFbLock) {
+                    texFb = createTexture(texFb, false);
+				}
+
+            	// Lock the resizedTexFb while recreating it to avoid that it is used at the same by the Video Engine Thread
+            	synchronized (resizedTexFbLock) {
+                    resizedTexFb = createTexture(resizedTexFb, true);
+				}
 
                 checkTemp();
                 createTex = false;
@@ -220,11 +246,11 @@ public class sceDisplay extends HLEModule {
 
             	reDisplay.startDisplay();
             	if (ExternalGE.getScreenScale() <= 1) {
-            		drawFrameBufferFromMemory(currentFb);
+            		drawFrameBufferFromMemory(reDisplay, currentFb, texFb);
             	} else {
 				    ByteBuffer scaledScreen = ExternalGE.getScaledScreen(fb.getTopAddr(), fb.getBufferWidth(), fb.getHeight(), fb.getPixelFormat());
 				    if (scaledScreen == null) {
-	            		drawFrameBufferFromMemory(currentFb);
+	            		drawFrameBufferFromMemory(reDisplay, currentFb, texFb);
 				    } else {
 	            		int screenScale = ExternalGE.getScreenScale();
 					    fb.getPixels().clear();
@@ -237,7 +263,7 @@ public class sceDisplay extends HLEModule {
 					            fb.getPixelFormat(),
 					            scaledScreen.remaining(), scaledScreen);
 
-					    drawFrameBuffer(fb, false, true, fb.getBufferWidth(), fb.getPixelFormat(), displayScreen.getWidth(fb), displayScreen.getHeight(fb));
+					    drawFrameBuffer(reDisplay, false, true, fb.getBufferWidth(), fb.getPixelFormat(), displayScreen.getWidth(fb), displayScreen.getHeight(fb));
 				    }
             	}
             	reDisplay.endDisplay();
@@ -246,41 +272,19 @@ public class sceDisplay extends HLEModule {
                     log.debug(String.format("sceDisplay.paintGL - ExternalGE - end display - isFbShowing=%b", isFbShowing));
                 }
             } else if (isUsingSoftwareRenderer()) {
-                // Software rendering: the processing of the GE list is done by the
-                // SoftwareRenderingDisplayThread.
-                // We just need to display the frame buffer.
-                if (softwareRenderingDisplayThread == null) {
-                    re.startDisplay();
-                    videoEngine.update();
-                    re.endDisplay();
-                }
-
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("sceDisplay.paintGL - software - rendering the FB 0x%08X", currentFb.getTopAddr()));
                 }
 
                 reDisplay.startDisplay();
-                drawFrameBufferFromMemory(currentFb);
+        		drawFrameBufferFromMemory(reDisplay, currentFb, texFb);
                 reDisplay.endDisplay();
 
                 if (log.isDebugEnabled()) {
                     log.debug("sceDisplay.paintGL - software - end display");
                 }
             } else if (isOnlyGEGraphics()) {
-                // Hardware rendering where only the currently rendered GE list is displayed,
-                // not the frame buffer from memory.
-                if (log.isDebugEnabled()) {
-                    log.debug("sceDisplay.paintGL - start display - only GE");
-                }
-                re.startDisplay();
-
-                // Display this screen (i.e. swap buffers) only if something has been rendered
-                doSwapBuffers = videoEngine.update();
-
-                re.endDisplay();
-                if (log.isDebugEnabled()) {
-                    log.debug("sceDisplay.paintGL - end display - only GE");
-                }
+            	// Nothing to do
             } else {
                 // Hardware rendering:
                 // 1) GE list is rendered to the screen
@@ -289,33 +293,7 @@ public class sceDisplay extends HLEModule {
                 if (log.isDebugEnabled()) {
                     log.debug("sceDisplay.paintGL - start display");
                 }
-                re.startDisplay();
-
-                // The GE will be reloaded to the screen by the VideoEngine
-                if (videoEngine.update()) {
-                    // Save the GE only if it actually drew something
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("sceDisplay.paintGL - saving the GE to memory 0x%08X", ge.getTopAddr()));
-                    }
-
-                    if (saveGEToTexture && !videoEngine.isVideoTexture(ge.getTopAddr())) {
-                        GETexture geTexture = GETextureManager.getInstance().getGETexture(reDisplay, ge.getTopAddr(), ge.getBufferWidth(), ge.getWidth(), ge.getHeight(), ge.getPixelFormat(), true);
-                        geTexture.copyScreenToTexture(re);
-                    } else {
-                        // Set texFb as the current texture
-                        reDisplay.bindTexture(resizedTexFb);
-                        reDisplay.setTextureFormat(ge.getPixelFormat(), false);
-
-                        // Copy screen to the current texture
-                        reDisplay.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(ge.getWidth()), getResizedHeight(ge.getHeight()));
-
-                        // Re-render GE/current texture upside down
-                        drawFrameBuffer(currentFb, true, true, currentFb.getBufferWidth(), currentFb.getPixelFormat(), currentFb.getWidth(), currentFb.getHeight());
-
-                        // Save GE/current texture to vram
-                        copyScreenToPixels(ge.getPixels(), ge.getBufferWidth(), ge.getPixelFormat(), ge.getWidth(), ge.getHeight());
-                    }
-                }
+                reDisplay.startDisplay();
 
                 // Render the FB
                 if (log.isDebugEnabled()) {
@@ -325,10 +303,10 @@ public class sceDisplay extends HLEModule {
                     GETexture geTexture = GETextureManager.getInstance().getGETexture(reDisplay, currentFb.getTopAddr(), currentFb.getBufferWidth(), currentFb.getWidth(), currentFb.getHeight(), currentFb.getPixelFormat(), true);
                     geTexture.copyTextureToScreen(reDisplay);
                 } else {
-                    drawFrameBufferFromMemory(currentFb);
+            		drawFrameBufferFromMemory(reDisplay, currentFb, texFb);
                 }
 
-                re.endDisplay();
+                reDisplay.endDisplay();
 
                 if (log.isDebugEnabled()) {
                     log.debug("sceDisplay.paintGL - end display");
@@ -362,6 +340,8 @@ public class sceDisplay extends HLEModule {
             	action.execute();
             }
             displayActionsOnce.clear();
+
+            unlockDisplay();
         }
 
         @Override
@@ -383,107 +363,12 @@ public class sceDisplay extends HLEModule {
         }
     }
 
-    private static class FrameBufferSettings {
-
-        private int topAddr;
-        private int bottomAddr;
-        private int bufferWidth;
-        private int width;
-        private int height;
-        private int pixelFormat;
-        private Buffer pixels;
-        private int size;
-
-        public FrameBufferSettings(int topAddr, int bufferWidth, int width, int height, int pixelFormat) {
-            this.topAddr = topAddr & Memory.addressMask;
-            this.bufferWidth = bufferWidth;
-            this.width = width;
-            this.height = height;
-            this.pixelFormat = pixelFormat;
-            update();
-        }
-
-        public FrameBufferSettings(FrameBufferSettings copy) {
-            topAddr = copy.topAddr;
-            bottomAddr = copy.bottomAddr;
-            bufferWidth = copy.bufferWidth;
-            width = copy.width;
-            height = copy.height;
-            pixelFormat = copy.pixelFormat;
-            pixels = copy.pixels;
-            size = copy.size;
-        }
-
-        private void update() {
-            size = bufferWidth * height * getPixelFormatBytes(pixelFormat);
-            bottomAddr = topAddr + size;
-            pixels = Memory.getInstance().getBuffer(topAddr, size);
-        }
-
-        public int getTopAddr() {
-            return topAddr;
-        }
-
-        public int getBottomAddr() {
-            return bottomAddr;
-        }
-
-        public int getBufferWidth() {
-            return bufferWidth;
-        }
-
-        public int getPixelFormat() {
-            return pixelFormat;
-        }
-
-        public Buffer getPixels() {
-            return pixels;
-        }
-
-        public Buffer getPixels(int topAddr) {
-        	if (this.topAddr == topAddr) {
-        		return pixels;
-        	}
-        	return Memory.getInstance().getBuffer(topAddr, size);
-        }
-
-        public int getWidth() {
-            return width;
-        }
-
-        public int getHeight() {
-            return height;
-        }
-
-        public int getSize() {
-        	return size;
-        }
-
-        public boolean isRawAddressInside(int address) {
-            // vram address is lower than main memory so check the end of the buffer first, it's more likely to fail
-            return address >= topAddr && address < bottomAddr;
-        }
-
-        public boolean isAddressInside(int address) {
-            return isRawAddressInside(address & Memory.addressMask);
-        }
-
-        public void setDimension(int width, int height) {
-            this.width = width;
-            this.height = height;
-            update();
-        }
-
-        @Override
-        public String toString() {
-            return String.format("0x%08X-0x%08X, %dx%d, bufferWidth=%d, pixelFormat=%d", topAddr, bottomAddr, width, height, bufferWidth, pixelFormat);
-        }
-    }
     protected AWTGLCanvas_sceDisplay canvas;
 
-    public AWTGLCanvas getCanvas() {
+    public AWTGLCanvas_sceDisplay getCanvas() {
         return canvas;
     }
+
     private boolean onlyGEGraphics = false;
     private boolean saveGEToTexture = false;
     private boolean useSoftwareRenderer = false;
@@ -505,16 +390,12 @@ public class sceDisplay extends HLEModule {
     private IRenderingEngine reDisplay;
     private boolean startModules;
     private boolean isStarted;
-    private int drawBuffer;
-    private float[] drawBufferArray;
     private boolean resetDisplaySettings;
     private boolean resetGeTextures;
 
     // current display mode
     private int mode;
     // Resizing options
-    private static float viewportResizeFilterScaleFactor = 1f;
-    private static int viewportResizeFilterScaleFactorInt = 1;
     private boolean resizePending;
     // current framebuffer and GE settings
     private FrameBufferSettings fb;
@@ -545,6 +426,8 @@ public class sceDisplay extends HLEModule {
     private boolean createTex;
     private int texFb;
     private int resizedTexFb;
+    public Object texFbLock = new Object();
+    public Object resizedTexFbLock = new Object();
     private float texS;
     private float texT;
     private Robot captureRobot;
@@ -559,8 +442,6 @@ public class sceDisplay extends HLEModule {
     private long lastVblankMicroTime;
     private DisplayVblankAction displayVblankAction;
     public DurationStatistics statistics;
-    public DurationStatistics statisticsCopyGeToMemory;
-    public DurationStatistics statisticsCopyMemoryToGe;
     // Async Display
     private AsyncDisplayThread asyncDisplayThread;
     private SoftwareRenderingDisplayThread softwareRenderingDisplayThread;
@@ -575,15 +456,13 @@ public class sceDisplay extends HLEModule {
     private int framesSkippedInSequence;
     private LinkedList<Long> frameTimestamps = new LinkedList<Long>();
     private boolean skipNextFrameBufferSwitch;
-    // Stencil copy
-    private static final int[] stencilPixelMasks = new int[]{0, 0x7FFF, 0x0FFF, 0x00FFFFFF};
-    private static final int[] stencilValueMasks = new int[]{0, 0x80, 0xF0, 0xFF};
-    private static final int[] stencilValueShifts = new int[]{0, 8, 8, 24};
     // Mpeg audio hack
     private int framePerSecFactor;
     // Display actions
     private List<IAction> displayActions = new LinkedList<IAction>();
     private List<IAction> displayActionsOnce = new LinkedList<IAction>();
+    // For multi-threading rendering
+    private Semaphore lockDisplay = new Semaphore(1);
 
     private class OnlyGeSettingsListener extends AbstractBoolSettingsListener {
 
@@ -690,12 +569,6 @@ public class sceDisplay extends HLEModule {
                     Modules.sceDisplayModule.setRenderingEngine(re);
                     VideoEngine.getInstance().start();
             	}
-
-            	if (re != null) {
-                    re.startDisplay();
-                    VideoEngine.getInstance().update();
-                    re.endDisplay();
-                }
             }
         }
     }
@@ -819,7 +692,26 @@ public class sceDisplay extends HLEModule {
         ge = new FrameBufferSettings(fb);
     }
 
-	private GLData createGLData() {
+    public void lockDisplay() {
+    	if (multiThreadingLockDisplay) {
+	    	try {
+	    		log.debug("lockDisplay");
+	    		lockDisplay.acquire();
+	    		log.debug("lockDisplay acquired");
+	    	} catch (InterruptedException e) {
+	    		log.error("lockDisplay", e);
+	    	}
+    	}
+    }
+
+    public void unlockDisplay() {
+    	if (multiThreadingLockDisplay) {
+    		log.debug("unlockDisplay");
+    		lockDisplay.release();
+    	}
+    }
+
+    private GLData createGLData() {
 		GLData glData = new GLData();
 		glData.redSize = 8;
 		glData.blueSize = 8;
@@ -844,10 +736,6 @@ public class sceDisplay extends HLEModule {
         canvasWidth = width;
         canvasHeight = height;
         canvas.setSize(width, height);
-    }
-
-    public float getViewportResizeScaleFactor() {
-        return viewportResizeFilterScaleFactor;
     }
 
     public void setViewportResizeScaleFactor(int width, int height) {
@@ -880,7 +768,7 @@ public class sceDisplay extends HLEModule {
         resizePending = true;
     }
 
-    private void forceSetViewportResizeScaleFactor(float viewportResizeFilterScaleFactor) {
+    public void forceSetViewportResizeScaleFactor(float viewportResizeFilterScaleFactor) {
 		// Save the current window size only if not in full screen
 		if (!Emulator.getMainGUI().isFullScreen()) {
 			Settings.getInstance().writeFloat(resizeScaleFactorSettings, viewportResizeFilterScaleFactor);
@@ -889,8 +777,7 @@ public class sceDisplay extends HLEModule {
 		// The GE has been resized, reset the GETextureManager at next paintGL
 		resetGeTextures = true;
 
-		sceDisplay.viewportResizeFilterScaleFactor = viewportResizeFilterScaleFactor;
-		sceDisplay.viewportResizeFilterScaleFactorInt = Math.round((float) Math.ceil(viewportResizeFilterScaleFactor));
+		VideoEngineUtilities.setViewportResizeScaleFactor(viewportResizeFilterScaleFactor);
 
 		Dimension size = new Dimension(getResizedWidth(displayScreen.getWidth()), getResizedHeight(displayScreen.getHeight()));
 
@@ -908,7 +795,7 @@ public class sceDisplay extends HLEModule {
 		createTex = true;
 
 		if (ExternalGE.isActive()) {
-			ExternalGE.setScreenScale(viewportResizeFilterScaleFactorInt);
+			ExternalGE.setScreenScale(getViewportResizeScaleFactorInt());
 		}
 
 		if (log.isDebugEnabled()) {
@@ -922,20 +809,9 @@ public class sceDisplay extends HLEModule {
     		return;
     	}
 
-    	if (viewportResizeFilterScaleFactor != sceDisplay.viewportResizeFilterScaleFactor) {
+    	if (viewportResizeFilterScaleFactor != getViewportResizeScaleFactor()) {
     		forceSetViewportResizeScaleFactor(viewportResizeFilterScaleFactor);
     	}
-    }
-
-    public void updateDisplaySize() {
-    	float scaleFactor = viewportResizeFilterScaleFactor;
-    	setDisplayMinimumSize();
-    	Emulator.getMainGUI().setDisplaySize(getResizedWidth(displayScreen.getWidth()), getResizedHeight(displayScreen.getHeight()));
-		forceSetViewportResizeScaleFactor(scaleFactor);
-    }
-
-    public void setDisplayMinimumSize() {
-		Emulator.getMainGUI().setDisplayMinimumSize(displayScreen.getWidth(), displayScreen.getHeight());
     }
 
     /**
@@ -946,7 +822,7 @@ public class sceDisplay extends HLEModule {
      * @return the resized value
      */
     public static int getResizedWidth(int width) {
-        return Math.round(width * viewportResizeFilterScaleFactor);
+        return Math.round(width * getViewportResizeScaleFactor());
     }
 
     public boolean isDisplaySwappedXY() {
@@ -962,7 +838,7 @@ public class sceDisplay extends HLEModule {
      * @return the resized value, as a power of 2.
      */
     public static int getResizedWidthPow2(int widthPow2) {
-        return widthPow2 * viewportResizeFilterScaleFactorInt;
+        return widthPow2 * getViewportResizeScaleFactorInt();
     }
 
     /**
@@ -973,7 +849,7 @@ public class sceDisplay extends HLEModule {
      * @return the resized value
      */
     public static int getResizedHeight(int height) {
-        return Math.round(height * viewportResizeFilterScaleFactor);
+        return Math.round(height * getViewportResizeScaleFactor());
     }
 
     /**
@@ -985,7 +861,7 @@ public class sceDisplay extends HLEModule {
      * @return the resized value, as a power of 2.
      */
     public static int getResizedHeightPow2(int heightPow2) {
-        return heightPow2 * viewportResizeFilterScaleFactorInt;
+        return heightPow2 * getViewportResizeScaleFactorInt();
     }
 
     private void setAntiAliasSamplesNum(int samples) {
@@ -1002,8 +878,7 @@ public class sceDisplay extends HLEModule {
     @Override
     public void start() {
         statistics = new DurationStatistics("sceDisplay Statistics");
-        statisticsCopyGeToMemory = new DurationStatistics("Copy GE to Memory");
-        statisticsCopyMemoryToGe = new DurationStatistics("Copy Memory to GE");
+        VideoEngineUtilities.start();
 
         // Log debug information...
         if (log.isDebugEnabled()) {
@@ -1032,7 +907,7 @@ public class sceDisplay extends HLEModule {
 
             texS = (float) fb.getWidth() / (float) bufferWidth;
             texT = (float) fb.getHeight() / (float) makePow2(fb.getHeight());
-            displayScreen.update();
+            displayScreen.update(texS, texT);
 
             createTex = true;
         }
@@ -1116,8 +991,7 @@ public class sceDisplay extends HLEModule {
         if (statistics != null && DurationStatistics.collectStatistics) {
             log.info("----------------------------- sceDisplay exit -----------------------------");
             log.info(statistics.toString());
-            log.info(statisticsCopyGeToMemory.toString());
-            log.info(statisticsCopyMemoryToGe.toString());
+            VideoEngineUtilities.exit();
         }
     }
 
@@ -1183,10 +1057,14 @@ public class sceDisplay extends HLEModule {
     public void setGeDirty(boolean dirty) {
         geDirty = dirty;
 
-        if (dirty && softwareRenderingDisplayThread != null) {
-            // Start immediately the software rendering.
-            // No need to wait for the OpenGL display call.
-            softwareRenderingDisplayThread.display();
+        if (dirty) {
+	        if (softwareRenderingDisplayThread != null) {
+	            // Start immediately the software rendering.
+	            // No need to wait for the OpenGL display call.
+	            softwareRenderingDisplayThread.display();
+	        } else {
+	        	VideoEngine.getInstance().onUpdateDrawList();
+	        }
         }
     }
 
@@ -1230,7 +1108,7 @@ public class sceDisplay extends HLEModule {
 
             // Nothing changed
             if (forceLoadGEToScreen) {
-                loadGEToScreen();
+                VideoEngineUtilities.loadGEToScreen(re);
             }
 
             return;
@@ -1270,7 +1148,7 @@ public class sceDisplay extends HLEModule {
         boolean loadGEToScreen = !isUsingSoftwareRenderer() && !VideoEngine.getInstance().isSkipThisFrame();
 
         if (copyGEToMemory && (ge.getTopAddr() != topaddr || ge.getPixelFormat() != pixelformat)) {
-            copyGeToMemory(false, false);
+            VideoEngineUtilities.copyGeToMemory(re, false, false);
             loadGEToScreen = true;
         }
 
@@ -1285,7 +1163,7 @@ public class sceDisplay extends HLEModule {
         checkTemp();
 
         if (loadGEToScreen) {
-            loadGEToScreen();
+            VideoEngineUtilities.loadGEToScreen(re);
 
             if (State.captureGeNextFrame) {
                 captureGeImage();
@@ -1293,10 +1171,6 @@ public class sceDisplay extends HLEModule {
         }
 
         setGeBufCalledAtLeastOnce = true;
-    }
-
-    public static int getPixelFormatBytes(int pixelformat) {
-        return IRenderingEngine.sizeOfTextureType[pixelformat];
     }
 
     public boolean isGeAddress(int address) {
@@ -1361,22 +1235,22 @@ public class sceDisplay extends HLEModule {
     public void rotate(int angleId) {
     	switch (angleId) {
     		case 0:
-    			displayScreen = new DisplayScreenRotation90();
+    			displayScreen = new DisplayScreen.DisplayScreenRotation90();
     			break;
     		case 1:
-    			displayScreen = new DisplayScreenRotation270();
+    			displayScreen = new DisplayScreen.DisplayScreenRotation270();
     			break;
     		case 2:
-    			displayScreen = new DisplayScreenRotation180();
+    			displayScreen = new DisplayScreen.DisplayScreenRotation180();
     			break;
     		case 3:
-    			displayScreen = new DisplayScreenMirrorX(new DisplayScreen());
+    			displayScreen = new DisplayScreen.DisplayScreenMirrorX(new DisplayScreen());
     			break;
     		case 4:
     			displayScreen = new DisplayScreen();
     			break;
     	}
-    	updateDisplaySize();
+    	VideoEngineUtilities.updateDisplaySize();
     }
 
     public void saveScreen() {
@@ -1428,6 +1302,10 @@ public class sceDisplay extends HLEModule {
         return ge.getTopAddr();
     }
 
+    public int getBottomAddrGe() {
+        return ge.getBottomAddr();
+    }
+
     public int getBufferWidthGe() {
         return ge.getBufferWidth();
     }
@@ -1438,6 +1316,10 @@ public class sceDisplay extends HLEModule {
 
     public int getHeightGe() {
         return ge.getHeight();
+    }
+
+    public int getPixelFormatGe() {
+        return ge.getPixelFormat();
     }
 
     public BufferInfo getBufferInfoGe() {
@@ -1458,6 +1340,46 @@ public class sceDisplay extends HLEModule {
 
     public int getCanvasHeight() {
         return canvasHeight;
+    }
+
+    public int getResizedTexFb() {
+    	return resizedTexFb;
+    }
+
+    public int getTexFb() {
+    	return texFb;
+    }
+
+    public Buffer getPixelsGe() {
+    	return ge.getPixels();
+    }
+
+    public int getSizeGe() {
+    	return ge.getSize();
+    }
+
+    public Buffer getPixelsGe(int topAddr) {
+    	return ge.getPixels(topAddr);
+    }
+
+    public DisplayScreen getDisplayScreen() {
+    	return displayScreen;
+    }
+
+    public float getTexS() {
+    	return texS;
+    }
+
+    public float getTexT() {
+    	return texT;
+    }
+
+    public ByteBuffer getTempByteBuffer() {
+    	return tempByteBuffer;
+    }
+
+    public Buffer getTempBuffer() {
+    	return temp;
     }
 
     public void captureGeImage() {
@@ -1637,92 +1559,6 @@ public class sceDisplay extends HLEModule {
         }
     }
 
-    private void loadGEToScreen() {
-        if (VideoEngine.log.isDebugEnabled()) {
-            VideoEngine.log.debug(String.format("Reloading GE Memory (0x%08X-0x%08X) to screen (%dx%d)", ge.getTopAddr(), ge.getBottomAddr(), ge.getWidth(), ge.getHeight()));
-        }
-
-        if (statisticsCopyMemoryToGe != null) {
-            statisticsCopyMemoryToGe.start();
-        }
-
-        if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(ge.getTopAddr())) {
-            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, ge.getTopAddr(), ge.getBufferWidth(), ge.getWidth(), ge.getHeight(), ge.getPixelFormat(), true);
-            geTexture.copyTextureToScreen(re);
-        } else {
-            if (re.isVertexArrayAvailable()) {
-                re.bindVertexArray(0);
-            }
-
-            // Set texFb as the current texture
-            re.bindTexture(texFb);
-
-            // Define the texture from the GE Memory
-            re.setPixelStore(ge.getBufferWidth(), getPixelFormatBytes(ge.getPixelFormat()));
-            int textureSize = ge.getBufferWidth() * ge.getHeight() * getPixelFormatBytes(ge.getPixelFormat());
-            ge.getPixels().clear();
-            re.setTexSubImage(0, 0, 0, ge.getBufferWidth(), ge.getHeight(), ge.getPixelFormat(), ge.getPixelFormat(), textureSize, ge.getPixels());
-
-            // Draw the GE
-            drawFrameBuffer(fb, false, true, ge.getBufferWidth(), ge.getPixelFormat(), ge.getWidth(), ge.getHeight());
-        }
-
-        if (statisticsCopyMemoryToGe != null) {
-            statisticsCopyMemoryToGe.end();
-        }
-    }
-
-    private void copyStencilToMemory() {
-        if (ge.getPixelFormat() >= stencilPixelMasks.length) {
-            log.warn(String.format("copyGeToMemory: unimplemented pixelformat %d for Stencil buffer copy", ge.getPixelFormat()));
-            return;
-        }
-        if (stencilValueMasks[ge.getPixelFormat()] == 0) {
-            // No stencil value for BGR5650, nothing to copy for the stencil
-            return;
-        }
-
-        // Be careful to not overwrite parts of the GE memory used by the application for another purpose.
-        VideoEngine videoEngine = VideoEngine.getInstance();
-        int stencilWidth = Math.min(ge.getWidth(), ge.getBufferWidth());
-        int stencilHeight = Math.min(ge.getHeight(), videoEngine.getMaxSpriteHeight());
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("Copy stencil to GE: pixelFormat=%d, %dx%d, maxSprite=%dx%d", ge.getPixelFormat(), stencilWidth, stencilHeight, videoEngine.getMaxSpriteWidth(), videoEngine.getMaxSpriteHeight()));
-        }
-
-        int stencilBufferSize = stencilWidth * stencilHeight;
-        tempByteBuffer.clear();
-        re.setPixelStore(stencilWidth, 1);
-        re.readStencil(0, 0, stencilWidth, stencilHeight, stencilBufferSize, tempByteBuffer);
-
-        int bytesPerPixel = IRenderingEngine.sizeOfTextureType[ge.getPixelFormat()];
-        IMemoryReaderWriter memoryReaderWriter = MemoryReaderWriter.getMemoryReaderWriter(ge.getTopAddr(), stencilHeight * ge.getBufferWidth() * bytesPerPixel, bytesPerPixel);
-        tempByteBuffer.rewind();
-        final int stencilPixelMask = stencilPixelMasks[ge.getPixelFormat()];
-        final int stencilValueMask = stencilValueMasks[ge.getPixelFormat()];
-        final int stencilValueShift = stencilValueShifts[ge.getPixelFormat()];
-        for (int y = 0; y < stencilHeight; y++) {
-            // The stencil buffer is stored upside-down by OpenGL
-            tempByteBuffer.position((stencilHeight - y - 1) * stencilWidth);
-
-            for (int x = 0; x < stencilWidth; x++) {
-                int pixel = memoryReaderWriter.readCurrent();
-                int stencilValue = tempByteBuffer.get() & stencilValueMask;
-                pixel = (pixel & stencilPixelMask) | (stencilValue << stencilValueShift);
-                memoryReaderWriter.writeNext(pixel);
-            }
-
-            if (stencilWidth < ge.getBufferWidth()) {
-                memoryReaderWriter.skip(ge.getBufferWidth() - stencilWidth);
-            }
-        }
-        memoryReaderWriter.flush();
-
-        if (GEProfiler.isProfilerEnabled()) {
-            GEProfiler.copyStencilToMemory();
-        }
-    }
-
     /**
      * Copy the GE at from given address to memory.
      * This is only required when saving the GE to textures.
@@ -1758,238 +1594,6 @@ public class sceDisplay extends HLEModule {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("copyGeToMemory done with geTopAddress=0x%08X", geTopAddress));
     	}
-    }
-
-    public void copyGeToMemory(boolean preserveScreen, boolean forceCopyToMemory) {
-    	copyGeToMemory(ge.getTopAddr(), preserveScreen, forceCopyToMemory);
-    }
-
-    public void copyGeToMemory(int geTopAddress, boolean preserveScreen, boolean forceCopyToMemory) {
-        if (isUsingSoftwareRenderer()) {
-            // GE is already in memory when using the software renderer
-            return;
-        }
-
-        if (VideoEngine.log.isDebugEnabled()) {
-            VideoEngine.log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", geTopAddress, geTopAddress + ge.getSize()));
-        }
-
-        if (statisticsCopyGeToMemory != null) {
-            statisticsCopyGeToMemory.start();
-        }
-
-        if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(geTopAddress)) {
-            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, geTopAddress, ge.getBufferWidth(), ge.getWidth(), ge.getHeight(), ge.getPixelFormat(), true);
-            geTexture.copyScreenToTexture(re);
-        } else {
-        	forceCopyToMemory = true;
-        }
-
-        if (forceCopyToMemory) {
-            // Set texFb as the current texture
-            re.bindTexture(resizedTexFb);
-            re.setTextureFormat(ge.getPixelFormat(), false);
-
-            // Copy screen to the current texture
-            re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(Math.min(ge.getBufferWidth(), ge.getWidth())), getResizedHeight(ge.getHeight()));
-
-            // Re-render GE/current texture upside down
-            drawFrameBuffer(fb, true, true, ge.getBufferWidth(), ge.getPixelFormat(), ge.getWidth(), ge.getHeight());
-
-            copyScreenToPixels(ge.getPixels(geTopAddress), ge.getBufferWidth(), ge.getPixelFormat(), ge.getWidth(), ge.getHeight());
-
-            if (saveStencilToMemory) {
-                copyStencilToMemory();
-            }
-
-            if (preserveScreen) {
-                // Redraw the screen
-                re.bindTexture(resizedTexFb);
-                drawFrameBuffer(fb, false, false, ge.getBufferWidth(), ge.getPixelFormat(), ge.getWidth(), ge.getHeight());
-            }
-        }
-
-        if (statisticsCopyGeToMemory != null) {
-            statisticsCopyGeToMemory.end();
-        }
-
-        if (GEProfiler.isProfilerEnabled()) {
-            GEProfiler.copyGeToMemory();
-        }
-    }
-
-    /**
-     * @param keepOriginalSize : true = draw as psp size false = draw as window
-     * size
-     *
-     */
-    private void drawFrameBuffer(FrameBufferSettings fb, boolean keepOriginalSize, boolean invert, int bufferwidth, int pixelformat, int width, int height) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("drawFrameBuffer fb=%s, keepOriginalSize=%b, invert=%b, bufferWidth=%d, pixelFormat=%d, width=%d, height=%d, %s", fb, keepOriginalSize, invert, bufferwidth, pixelformat, width, height, displayScreen));
-        }
-
-        reDisplay.startDirectRendering(true, false, true, true, !invert, width, height);
-        if (keepOriginalSize) {
-            reDisplay.setViewport(0, 0, width, height);
-        } else {
-            reDisplay.setViewport(0, 0, getResizedWidth(width), getResizedHeight(height));
-        }
-
-        reDisplay.setTextureFormat(pixelformat, false);
-
-        float scale = 1f;
-        if (keepOriginalSize) {
-        	// When keeping the original size, we still have to adjust the size of the texture mapping.
-        	// E.g. when the screen has been resized to 576x326 (resizeScaleFactor=1.2),
-        	// the texture has been created with a size 1024x1024 and the following texture
-        	// coordinates have to used:
-        	//     (576/1024, 326/1024),
-        	// while texS==480/512 and texT==272/512
-        	scale = (float) getResizedHeight(height) / (float) getResizedHeightPow2(makePow2(height));
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("drawFrameBuffer scale = %f / %f = %f", scale, texT, scale / texT));
-        	}
-        	scale /= texT;
-        }
-
-        int i = 0;
-        drawBufferArray[i++] = displayScreen.getTextureLowerRightS() * scale;
-        drawBufferArray[i++] = displayScreen.getTextureLowerRightT() * scale;
-        drawBufferArray[i++] = (float) width;
-        drawBufferArray[i++] = (float) height;
-
-        drawBufferArray[i++] = displayScreen.getTextureLowerLeftS() * scale;
-        drawBufferArray[i++] = displayScreen.getTextureLowerLeftT() * scale;
-        drawBufferArray[i++] = 0f;
-        drawBufferArray[i++] = (float) height;
-
-        drawBufferArray[i++] = displayScreen.getTextureUpperLeftS() * scale;
-        drawBufferArray[i++] = displayScreen.getTextureUpperLeftT() * scale;
-        drawBufferArray[i++] = 0f;
-        drawBufferArray[i++] = 0f;
-
-        drawBufferArray[i++] = displayScreen.getTextureUpperRightS() * scale;
-        drawBufferArray[i++] = displayScreen.getTextureUpperRightT() * scale;
-        drawBufferArray[i++] = (float) width;
-        drawBufferArray[i++] = 0f;
-
-        int bufferSizeInFloats = i;
-        IREBufferManager bufferManager = reDisplay.getBufferManager();
-        ByteBuffer byteBuffer = bufferManager.getBuffer(drawBuffer);
-        byteBuffer.clear();
-        byteBuffer.asFloatBuffer().put(drawBufferArray, 0, bufferSizeInFloats);
-
-        if (reDisplay.isVertexArrayAvailable()) {
-            reDisplay.bindVertexArray(0);
-        }
-        reDisplay.setVertexInfo(null, false, false, true, IRenderingEngine.RE_QUADS);
-        reDisplay.enableClientState(IRenderingEngine.RE_TEXTURE);
-        reDisplay.disableClientState(IRenderingEngine.RE_COLOR);
-        reDisplay.disableClientState(IRenderingEngine.RE_NORMAL);
-        reDisplay.enableClientState(IRenderingEngine.RE_VERTEX);
-        bufferManager.setTexCoordPointer(drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
-        bufferManager.setVertexPointer(drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
-        bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, drawBuffer, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
-        reDisplay.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
-
-        reDisplay.endDirectRendering();
-    }
-
-    private void drawFrameBufferFromMemory(FrameBufferSettings fb) {
-        fb.getPixels().clear();
-        reDisplay.bindTexture(texFb);
-        reDisplay.setTextureFormat(fb.getPixelFormat(), false);
-        reDisplay.setPixelStore(fb.getBufferWidth(), getPixelFormatBytes(fb.getPixelFormat()));
-        int textureSize = fb.getBufferWidth() * fb.getHeight() * getPixelFormatBytes(fb.getPixelFormat());
-        reDisplay.setTexSubImage(0,
-                0, 0, fb.getBufferWidth(), fb.getHeight(),
-                fb.getPixelFormat(),
-                fb.getPixelFormat(),
-                textureSize, fb.getPixels());
-
-        drawFrameBuffer(fb, false, true, fb.getBufferWidth(), fb.getPixelFormat(), displayScreen.getWidth(fb), displayScreen.getHeight(fb));
-    }
-
-    private void copyBufferByLines(IntBuffer dstBuffer, IntBuffer srcBuffer, int dstBufferWidth, int srcBufferWidth, int pixelFormat, int width, int height) {
-        int pixelsPerElement = 4 / getPixelFormatBytes(pixelFormat);
-        for (int y = 0; y < height; y++) {
-            int srcStartOffset = y * srcBufferWidth / pixelsPerElement;
-            int dstStartOffset = y * dstBufferWidth / pixelsPerElement;
-            srcBuffer.limit(srcStartOffset + (width + 1) / pixelsPerElement);
-            srcBuffer.position(srcStartOffset);
-            dstBuffer.position(dstStartOffset);
-            if (srcBuffer.remaining() < dstBuffer.remaining()) {
-                dstBuffer.put(srcBuffer);
-            }
-        }
-    }
-
-    private void copyScreenToPixels(Buffer pixels, int bufferWidth, int pixelFormat, int width, int height) {
-        // Set texFb as the current texture
-        reDisplay.bindTexture(texFb);
-        reDisplay.setTextureFormat(fb.getPixelFormat(), false);
-
-        reDisplay.setPixelStore(bufferWidth, getPixelFormatBytes(pixelFormat));
-
-        // Copy screen to the current texture
-        reDisplay.copyTexSubImage(0, 0, 0, 0, 0, Math.min(bufferWidth, width), height);
-
-        // Copy the current texture into memory
-        Buffer buffer = (pixels.capacity() >= temp.capacity() ? pixels : temp);
-        buffer.clear();
-        reDisplay.getTexImage(0, pixelFormat, pixelFormat, buffer);
-
-        // Copy temp into pixels, temp is probably square and pixels is less,
-        // a smaller rectangle, otherwise we could copy straight into pixels.
-        if (buffer == temp) {
-            temp.clear();
-            pixels.clear();
-            temp.limit(pixels.limit());
-
-            if (temp instanceof ByteBuffer) {
-                ByteBuffer srcBuffer = (ByteBuffer) temp;
-                ByteBuffer dstBuffer = (ByteBuffer) pixels;
-                dstBuffer.put(srcBuffer);
-            } else if (temp instanceof IntBuffer) {
-                IntBuffer srcBuffer = (IntBuffer) temp;
-                IntBuffer dstBuffer = (IntBuffer) pixels;
-
-                VideoEngine videoEngine = VideoEngine.getInstance();
-                if (videoEngine.isUsingTRXKICK() && videoEngine.getMaxSpriteHeight() < Integer.MAX_VALUE) {
-                    // Hack: God of War is using GE command lists stored into the non-visible
-                    // part of the GE buffer. The lists are copied from the main memory into
-                    // the VRAM using TRXKICK. Be careful to not overwrite these non-visible
-                    // parts.
-                    //
-                    // Copy only the visible part of the GE to the memory, e.g.
-                    // when width==480 and bufferwidth==1024, copy only 480 pixels
-                    // per line and skip 1024-480 pixels.
-                    int srcBufferWidth = bufferWidth;
-                    int dstBufferWidth = bufferWidth;
-                    int pixelsPerElement = 4 / getPixelFormatBytes(pixelFormat);
-                    int maxHeight = videoEngine.getMaxSpriteHeight();
-                    int maxWidth = videoEngine.getMaxSpriteWidth();
-                    int textureAlignment = (pixelsPerElement == 1 ? 3 : 7);
-                    maxHeight = (maxHeight + textureAlignment) & ~textureAlignment;
-                    maxWidth = (maxWidth + textureAlignment) & ~textureAlignment;
-                    if (VideoEngine.log.isDebugEnabled()) {
-                        VideoEngine.log.debug("maxSpriteHeight=" + maxHeight + ", maxSpriteWidth=" + maxWidth);
-                    }
-                    if (maxHeight > height) {
-                        maxHeight = height;
-                    }
-                    if (maxWidth > width) {
-                        maxWidth = width;
-                    }
-                    copyBufferByLines(dstBuffer, srcBuffer, dstBufferWidth, srcBufferWidth, pixelFormat, maxWidth, maxHeight);
-                } else {
-                    dstBuffer.put(srcBuffer);
-                }
-            } else {
-                throw new RuntimeException("unhandled buffer type");
-            }
-        }
-        // We only use "temp" buffer in this function, its limit() will get restored on the next call to clear()
     }
 
     public int hleDisplayWaitVblankStart(int cycles, boolean doCallbacks) {
@@ -2392,7 +1996,7 @@ public class sceDisplay extends HLEModule {
 
         texS = (float) fb.getWidth() / (float) bufferwidth;
         texT = (float) fb.getHeight() / (float) makePow2(fb.getHeight());
-        displayScreen.update();
+        displayScreen.update(texS, texT);
 
         detailsDirty = true;
         isFbShowing = true;
@@ -2623,168 +2227,6 @@ public class sceDisplay extends HLEModule {
         }
     }
 
-    protected class DisplayScreen {
-    	private float[] values;
-
-    	public DisplayScreen() {
-    		update();
-    	}
-
-    	public void update() {
-    		int[] indices = getIndices();
-    		if (indices == null) {
-    			return;
-    		}
-    		float[] baseValues = new float[] { 0f, 0f, texS, 0f, 0f, texT, texS, texT };
-    		values = new float[baseValues.length];
-    		for (int i = 0; i < values.length; i++) {
-    			values[i] = baseValues[indices[i]];
-    		}
-    	}
-
-    	protected int[] getIndices() {
-    		return new int[] { 0, 1, 2, 3, 4, 5, 6, 7 };
-    	}
-
-    	protected boolean isSwappedXY() {
-    		return false;
-    	}
-
-    	protected int getWidth(int width, int height) {
-    		return isSwappedXY() ? height : width;
-    	}
-
-    	protected int getHeight(int width, int height) {
-    		return isSwappedXY() ? width : height;
-    	}
-
-    	public int getWidth() {
-    		return getWidth(Screen.width, Screen.height);
-    	}
-
-    	public int getHeight() {
-    		return getHeight(Screen.width, Screen.height);
-    	}
-
-    	public int getWidth(FrameBufferSettings fb) {
-    		return getWidth(fb.getWidth(), fb.getHeight());
-    	}
-
-    	public int getHeight(FrameBufferSettings fb) {
-    		return getHeight(fb.getWidth(), fb.getHeight());
-    	}
-
-    	public float getTextureUpperLeftS() {
-    		return values[0];
-    	}
-
-    	public float getTextureUpperLeftT() {
-    		return values[1];
-    	}
-
-    	public float getTextureUpperRightS() {
-    		return values[2];
-    	}
-
-    	public float getTextureUpperRightT() {
-    		return values[3];
-    	}
-
-    	public float getTextureLowerLeftS() {
-    		return values[4];
-    	}
-
-    	public float getTextureLowerLeftT() {
-    		return values[5];
-    	}
-
-    	public float getTextureLowerRightS() {
-    		return values[6];
-    	}
-
-    	public float getTextureLowerRightT() {
-    		return values[7];
-    	}
-
-		@Override
-		public String toString() {
-			return String.format("DisplayScreen [%f, %f, %f, %f, %f, %f, %f, %f, %b]", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], isSwappedXY());
-		}
-    }
-
-    protected class DisplayScreenRotation90 extends DisplayScreen {
-		@Override
-		protected int[] getIndices() {
-			return new int[] { 4, 5, 0, 1, 6, 7, 2, 3 };
-		}
-
-		@Override
-		protected boolean isSwappedXY() {
-			return true;
-		}
-    }
-
-    protected class DisplayScreenRotation180 extends DisplayScreen {
-		@Override
-		protected int[] getIndices() {
-			return new int[] { 6, 7, 4, 5, 2, 3, 0, 1 };
-		}
-    }
-
-    protected class DisplayScreenRotation270 extends DisplayScreen {
-		@Override
-		protected int[] getIndices() {
-			return new int[] { 2, 3, 6, 7, 0, 1, 4, 5 };
-		}
-
-		@Override
-		protected boolean isSwappedXY() {
-			return true;
-		}
-    }
-
-    protected class DisplayScreenMirrorX extends DisplayScreen {
-    	private DisplayScreen displayScreen;
-
-    	public DisplayScreenMirrorX(DisplayScreen displayScreen) {
-    		this.displayScreen = displayScreen;
-    		update();
-    	}
-
-    	@Override
-		protected int[] getIndices() {
-    		if (displayScreen == null) {
-    			return null;
-    		}
-    		int[] i = displayScreen.getIndices();
-			return new int[] { i[2], i[3], i[0], i[1], i[6], i[7], i[4], i[5] };
-		}
-
-		@Override
-		protected boolean isSwappedXY() {
-			return displayScreen.isSwappedXY();
-		}
-    }
-
-    protected class DisplayScreenMirrorY extends DisplayScreen {
-    	private DisplayScreen displayScreen;
-
-    	public DisplayScreenMirrorY(DisplayScreen displayScreen) {
-    		this.displayScreen = displayScreen;
-    	}
-
-		@Override
-		protected int[] getIndices() {
-    		int[] i = displayScreen.getIndices();
-			return new int[] { i[4], i[5], i[6], i[7], i[0], i[1], i[2], i[3] };
-		}
-
-		@Override
-		protected boolean isSwappedXY() {
-			return displayScreen.isSwappedXY();
-		}
-    }
-
     private class ScreenshotAction implements IAction {
 		@Override
 		public void execute() {
@@ -2801,7 +2243,7 @@ public class sceDisplay extends HLEModule {
 
 		@Override
 		public void execute() {
-			copyGeToMemory(geTopAddress, true, true);
+			VideoEngineUtilities.copyGeToMemory(re, geTopAddress, true, true);
 			doneCopyGeToMemory = true;
 		}
     }

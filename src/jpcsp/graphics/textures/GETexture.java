@@ -19,6 +19,7 @@ package jpcsp.graphics.textures;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
+import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -33,6 +34,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.VideoEngineUtilities;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
 import jpcsp.graphics.capture.CaptureManager;
@@ -73,7 +75,7 @@ public class GETexture {
 		this.width = width;
 		this.height = height;
 		this.pixelFormat = pixelFormat;
-		bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelFormat);
+		bytesPerPixel = getPixelFormatBytes(pixelFormat);
 		length = bufferWidth * height * bytesPerPixel;
 		widthPow2 = Utilities.makePow2(width);
 		heightPow2 = Utilities.makePow2(height);
@@ -91,7 +93,7 @@ public class GETexture {
 			return 1;
 		}
 
-		return Modules.sceDisplayModule.getViewportResizeScaleFactor();
+		return VideoEngineUtilities.getViewportResizeScaleFactor();
 	}
 
 	public void bind(IRenderingEngine re, boolean forDrawing) {
@@ -132,7 +134,7 @@ public class GETexture {
             re.setTextureMipmapMaxLevel(0);
             re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
             if (drawBufferId == -1) {
-            	drawBufferId = re.getBufferManager().genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
+            	drawBufferId = re.getBufferManager().genBuffer(re, IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
             }
 		} else {
 			re.bindTexture(textureId);
@@ -263,9 +265,9 @@ public class GETexture {
         re.disableClientState(IRenderingEngine.RE_COLOR);
         re.disableClientState(IRenderingEngine.RE_NORMAL);
         re.enableClientState(IRenderingEngine.RE_VERTEX);
-        bufferManager.setTexCoordPointer(drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
-        bufferManager.setVertexPointer(drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
-        bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, drawBufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
+        bufferManager.setTexCoordPointer(re, drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
+        bufferManager.setVertexPointer(re, drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
+        bufferManager.setBufferData(re, IRenderingEngine.RE_ARRAY_BUFFER, drawBufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
         re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
         re.endDirectRendering();
@@ -318,7 +320,7 @@ public class GETexture {
     	prepareBuffer();
         re.bindTexture(textureId);
 		re.setTextureFormat(pixelFormat, false);
-        re.setPixelStore(bufferWidth, sceDisplay.getPixelFormatBytes(pixelFormat));
+        re.setPixelStore(bufferWidth, getPixelFormatBytes(pixelFormat));
         re.getTexImage(0, pixelFormat, pixelFormat, buffer);
 
     	buffer.clear();
@@ -360,7 +362,7 @@ public class GETexture {
 
 	public void delete(IRenderingEngine re) {
 		if (drawBufferId != -1) {
-			re.getBufferManager().deleteBuffer(drawBufferId);
+			re.getBufferManager().deleteBuffer(re, drawBufferId);
 			drawBufferId = -1;
 		}
 		if (textureId != -1) {
@@ -462,7 +464,7 @@ public class GETexture {
     	prepareBuffer();
         re.bindTexture(textureId);
 		re.setTextureFormat(pixelFormat, false);
-        re.setPixelStore(bufferWidth, sceDisplay.getPixelFormatBytes(pixelFormat));
+        re.setPixelStore(bufferWidth, getPixelFormatBytes(pixelFormat));
         re.getTexImage(0, pixelFormat, pixelFormat, buffer);
 
         CaptureManager.captureImage(address, 0, buffer, width, height, bufferWidth, pixelFormat, false, 0, true, false);

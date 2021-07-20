@@ -20,6 +20,7 @@ import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -331,7 +332,7 @@ public class sceMpegbase extends HLEModule {
     	int width = mp4AvcCscStruct.width << 4;
     	int height = mp4AvcCscStruct.height << 4;
 
-		int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
+		int bytesPerPixel = getPixelFormatBytes(videoPixelMode);
         int destAddr = bufferRGB.getAddress();
 
         if (log.isTraceEnabled()) {
@@ -479,7 +480,7 @@ public class sceMpegbase extends HLEModule {
     	int height = sceMpegYCrCbBuffer.frameBufferHeight16 << 4;
 
     	int videoPixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-		int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
+		int bytesPerPixel = getPixelFormatBytes(videoPixelMode);
         int rangeX = 0;
         int rangeY = 0;
         int rangeWidth = width;

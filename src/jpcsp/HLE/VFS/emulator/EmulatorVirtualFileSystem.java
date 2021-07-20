@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.emulator;
 
-import static jpcsp.HLE.modules.sceDisplay.getPixelFormatBytes;
+import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
 
 import java.io.IOException;
 import java.nio.Buffer;

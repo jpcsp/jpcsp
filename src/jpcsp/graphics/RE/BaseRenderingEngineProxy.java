@@ -768,6 +768,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
+	public void setBufferManager(IREBufferManager bufferManager) {
+		proxy.setBufferManager(bufferManager);
+	}
+
+	@Override
 	public boolean canAllNativeVertexInfo() {
 		return proxy.canAllNativeVertexInfo();
 	}
@@ -1045,5 +1050,20 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public void setViewportScale(float sx, float sy, float sz) {
 		proxy.setViewportScale(sx, sy, sz);
+	}
+
+	@Override
+	public long fenceSync() {
+		return proxy.fenceSync();
+	}
+
+	@Override
+	public void clientWaitSync(long sync, long timeout) {
+		proxy.clientWaitSync(sync, timeout);
+	}
+
+	@Override
+	public void deleteSync(long sync) {
+		proxy.deleteSync(sync);
 	}
 }

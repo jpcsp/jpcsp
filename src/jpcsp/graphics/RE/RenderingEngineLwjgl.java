@@ -17,10 +17,6 @@ package jpcsp.graphics.RE;
 
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED;
-import static jpcsp.graphics.RE.DirectBufferUtilities.allocateDirectBuffer;
-import static jpcsp.graphics.RE.DirectBufferUtilities.copyBuffer;
-import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectBuffer;
-import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectByteBuffer;
 
 import jpcsp.graphics.VideoEngine;
 import jpcsp.plugins.XBRZNativeFilter;
@@ -33,6 +29,7 @@ import java.nio.ShortBuffer;
 
 import org.lwjgl.opengl.ARBFramebufferObject;
 import org.lwjgl.opengl.ARBGeometryShader4;
+import org.lwjgl.opengl.ARBSync;
 import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.ARBVertexArrayObject;
 import org.lwjgl.opengl.ARBVertexBufferObject;
@@ -528,27 +525,27 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setMaterialEmissiveColor(float[] color) {
-        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_EMISSION, getDirectBuffer(color));
+        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_EMISSION, directBufferUtilities.getDirectBuffer(color));
     }
 
     @Override
     public void setMaterialAmbientColor(float[] color) {
-        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_AMBIENT, getDirectBuffer(color));
+        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_AMBIENT, directBufferUtilities.getDirectBuffer(color));
     }
 
     @Override
     public void setMaterialDiffuseColor(float[] color) {
-        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_DIFFUSE, getDirectBuffer(color));
+        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_DIFFUSE, directBufferUtilities.getDirectBuffer(color));
     }
 
     @Override
     public void setMaterialSpecularColor(float[] color) {
-        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_SPECULAR, getDirectBuffer(color));
+        GL11.glMaterialfv(GL11.GL_FRONT, GL11.GL_SPECULAR, directBufferUtilities.getDirectBuffer(color));
     }
 
     @Override
     public void setLightModelAmbientColor(float[] color) {
-        GL11.glLightModelfv(GL11.GL_LIGHT_MODEL_AMBIENT, getDirectBuffer(color));
+        GL11.glLightModelfv(GL11.GL_LIGHT_MODEL_AMBIENT, directBufferUtilities.getDirectBuffer(color));
     }
 
     @Override
@@ -558,17 +555,17 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setLightAmbientColor(int light, float[] color) {
-        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_AMBIENT, getDirectBuffer(color));
+        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_AMBIENT, directBufferUtilities.getDirectBuffer(color));
     }
 
     @Override
     public void setLightDiffuseColor(int light, float[] color) {
-        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_DIFFUSE, getDirectBuffer(color));
+        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_DIFFUSE, directBufferUtilities.getDirectBuffer(color));
     }
 
     @Override
     public void setLightSpecularColor(int light, float[] color) {
-        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_SPECULAR, getDirectBuffer(color));
+        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_SPECULAR, directBufferUtilities.getDirectBuffer(color));
     }
 
     @Override
@@ -588,12 +585,12 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setLightDirection(int light, float[] direction) {
-        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_SPOT_DIRECTION, getDirectBuffer(direction));
+        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_SPOT_DIRECTION, directBufferUtilities.getDirectBuffer(direction));
     }
 
     @Override
     public void setLightPosition(int light, float[] position) {
-        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_POSITION, getDirectBuffer(position));
+        GL11.glLightfv(GL11.GL_LIGHT0 + light, GL11.GL_POSITION, directBufferUtilities.getDirectBuffer(position));
     }
 
     @Override
@@ -724,7 +721,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setUniformMatrix4(int id, int count, float[] values) {
-        GL20.glUniformMatrix4fv(id, false, getDirectBuffer(values, count * 16));
+        GL20.glUniformMatrix4fv(id, false, directBufferUtilities.getDirectBuffer(values, count * 16));
     }
 
     @Override
@@ -855,13 +852,13 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setBufferData(int target, int size, Buffer buffer, int usage) {
         if (buffer instanceof ByteBuffer) {
-        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (ByteBuffer) buffer), bufferUsageToGL[usage]);
+        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], directBufferUtilities.getDirectBuffer(size, (ByteBuffer) buffer), bufferUsageToGL[usage]);
         } else if (buffer instanceof IntBuffer) {
-        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (IntBuffer) buffer), bufferUsageToGL[usage]);
+        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], directBufferUtilities.getDirectBuffer(size, (IntBuffer) buffer), bufferUsageToGL[usage]);
         } else if (buffer instanceof ShortBuffer) {
-        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (ShortBuffer) buffer), bufferUsageToGL[usage]);
+        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], directBufferUtilities.getDirectBuffer(size, (ShortBuffer) buffer), bufferUsageToGL[usage]);
         } else if (buffer instanceof FloatBuffer) {
-        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (FloatBuffer) buffer), bufferUsageToGL[usage]);
+        	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], directBufferUtilities.getDirectBuffer(size, (FloatBuffer) buffer), bufferUsageToGL[usage]);
         } else if (buffer == null) {
         	ARBVertexBufferObject.glBufferDataARB(bufferTargetToGL[target], size, bufferUsageToGL[usage]);
         } else {
@@ -872,13 +869,13 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setBufferSubData(int target, int offset, int size, Buffer buffer) {
         if (buffer instanceof ByteBuffer) {
-        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (ByteBuffer) buffer));
+        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, directBufferUtilities.getDirectBuffer(size, (ByteBuffer) buffer));
         } else if (buffer instanceof IntBuffer) {
-        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (IntBuffer) buffer));
+        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, directBufferUtilities.getDirectBuffer(size, (IntBuffer) buffer));
         } else if (buffer instanceof ShortBuffer) {
-        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (ShortBuffer) buffer));
+        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, directBufferUtilities.getDirectBuffer(size, (ShortBuffer) buffer));
         } else if (buffer instanceof FloatBuffer) {
-        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (FloatBuffer) buffer));
+        	ARBVertexBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, directBufferUtilities.getDirectBuffer(size, (FloatBuffer) buffer));
         } else {
             throw new IllegalArgumentException();
         }
@@ -911,7 +908,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-        GL11.glColorPointer(size, pointerTypeToGL[type], stride, getDirectByteBuffer(bufferSize, buffer, 0));
+        GL11.glColorPointer(size, pointerTypeToGL[type], stride, directBufferUtilities.getDirectByteBuffer(bufferSize, buffer, 0));
     }
 
     @Override
@@ -921,7 +918,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer) {
-        GL11.glNormalPointer(pointerTypeToGL[type], stride, getDirectByteBuffer(bufferSize, buffer, 0));
+        GL11.glNormalPointer(pointerTypeToGL[type], stride, directBufferUtilities.getDirectByteBuffer(bufferSize, buffer, 0));
     }
 
     @Override
@@ -931,7 +928,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-        GL11.glTexCoordPointer(pointerTypeToGL[type], size, stride, getDirectByteBuffer(bufferSize, buffer, 0));
+        GL11.glTexCoordPointer(pointerTypeToGL[type], size, stride, directBufferUtilities.getDirectByteBuffer(bufferSize, buffer, 0));
     }
 
     @Override
@@ -941,7 +938,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-        GL11.glVertexPointer(pointerTypeToGL[type], size, stride, getDirectByteBuffer(bufferSize, buffer, 0));
+        GL11.glVertexPointer(pointerTypeToGL[type], size, stride, directBufferUtilities.getDirectByteBuffer(bufferSize, buffer, 0));
     }
 
     @Override
@@ -951,7 +948,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, int bufferSize, Buffer buffer) {
-        GL20.glVertexAttribPointer(id, size, pointerTypeToGL[type], normalized, stride, getDirectByteBuffer(bufferSize, buffer, 0));
+        GL20.glVertexAttribPointer(id, size, pointerTypeToGL[type], normalized, stride, directBufferUtilities.getDirectByteBuffer(bufferSize, buffer, 0));
     }
 
     @Override
@@ -981,52 +978,52 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer) {
-        GL13.glCompressedTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, getDirectByteBuffer(compressedSize, buffer, 0));
+        GL13.glCompressedTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, directBufferUtilities.getDirectByteBuffer(compressedSize, buffer, 0));
     }
 
     @Override
     public void setTexImagexBRZ(int level, int internalFormat, int width, int height, int bufwidth, int format, int type, int textureSize, Buffer buffer) {
         if (buffer == null) {
-            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (ByteBuffer) buffer));
         } else if (buffer instanceof ByteBuffer) {
             if (bufwidth != -1) {
-                ByteBuffer tmpbuf = DirectBufferUtilities.getDirectBuffer(textureSize, (ByteBuffer) buffer);
+                ByteBuffer tmpbuf = directBufferUtilities.getDirectBuffer(textureSize, (ByteBuffer) buffer);
                 int length = tmpbuf.remaining();
                 byte[] buf = new byte[length];
                 tmpbuf.get(buf);
                 XBRZNativeFilter.ScaleandSetTexImage(2, buf, level, textureInternalFormatToGL[internalFormat], width, height, bufwidth, textureFormatToGL[format], textureTypeToGL[type]);
             } else {
-                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (ByteBuffer) buffer));
             }
         } else if (buffer instanceof IntBuffer) {
             if (bufwidth != -1) {
-                IntBuffer tmpbuf = DirectBufferUtilities.getDirectBuffer(textureSize, (IntBuffer) buffer);
+                IntBuffer tmpbuf = directBufferUtilities.getDirectBuffer(textureSize, (IntBuffer) buffer);
                 int length = tmpbuf.remaining();
                 int[] buf = new int[length];
                 tmpbuf.get(buf);
                 XBRZNativeFilter.ScaleandSetTexImage(2, buf, level, textureInternalFormatToGL[internalFormat], width, height, bufwidth, textureFormatToGL[format], textureTypeToGL[type]);
             } else {
-                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (IntBuffer) buffer));
             }
         } else if (buffer instanceof ShortBuffer) {
             if (bufwidth != -1) {
-                ShortBuffer tmpbuf = DirectBufferUtilities.getDirectBuffer(textureSize, (ShortBuffer) buffer);
+                ShortBuffer tmpbuf = directBufferUtilities.getDirectBuffer(textureSize, (ShortBuffer) buffer);
                 int length = tmpbuf.remaining();
                 short[] buf = new short[length];
                 tmpbuf.get(buf);
                 XBRZNativeFilter.ScaleandSetTexImage(2, buf, level, textureInternalFormatToGL[internalFormat], width, height, bufwidth, textureFormatToGL[format], textureTypeToGL[type]);
             } else {
-                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (ShortBuffer) buffer));
             }
         } else if (buffer instanceof FloatBuffer) {
             if (bufwidth != -1) {
-                FloatBuffer tmpbuf = DirectBufferUtilities.getDirectBuffer(textureSize, (FloatBuffer) buffer);
+                FloatBuffer tmpbuf = directBufferUtilities.getDirectBuffer(textureSize, (FloatBuffer) buffer);
                 int length = tmpbuf.remaining();
                 float[] buf = new float[length];
                 tmpbuf.get(buf);
                 XBRZNativeFilter.ScaleandSetTexImage(2, buf, level, textureInternalFormatToGL[internalFormat], width, height, bufwidth, textureFormatToGL[format], textureTypeToGL[type]);
             } else {
-                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (FloatBuffer) buffer));
             }
         } else {
             throw new IllegalArgumentException();
@@ -1036,13 +1033,13 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
         if (buffer instanceof ByteBuffer || buffer == null) {
-            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (ByteBuffer) buffer));
         } else if (buffer instanceof IntBuffer) {
-            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (IntBuffer) buffer));
         } else if (buffer instanceof ShortBuffer) {
-            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (ShortBuffer) buffer));
         } else if (buffer instanceof FloatBuffer) {
-            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (FloatBuffer) buffer));
         } else {
             throw new IllegalArgumentException();
         }
@@ -1051,13 +1048,13 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, int textureSize, Buffer buffer) {
         if (buffer instanceof ByteBuffer || buffer == null) {
-            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (ByteBuffer) buffer));
         } else if (buffer instanceof IntBuffer) {
-            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
+            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (IntBuffer) buffer));
         } else if (buffer instanceof ShortBuffer) {
-            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
+            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (ShortBuffer) buffer));
         } else if (buffer instanceof FloatBuffer) {
-            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
+            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], directBufferUtilities.getDirectBuffer(textureSize, (FloatBuffer) buffer));
         } else {
             throw new IllegalArgumentException();
         }
@@ -1081,7 +1078,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setFogColor(float[] color) {
-        GL11.glFogfv(GL11.GL_FOG_COLOR, getDirectBuffer(color));
+        GL11.glFogfv(GL11.GL_FOG_COLOR, directBufferUtilities.getDirectBuffer(color));
     }
 
     @Override
@@ -1092,7 +1089,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public void setTextureEnvColor(float[] color) {
-        GL11.glTexEnvfv(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_COLOR, getDirectBuffer(color));
+        GL11.glTexEnvfv(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_COLOR, directBufferUtilities.getDirectBuffer(color));
     }
 
     @Override
@@ -1169,21 +1166,21 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void getTexImage(int level, int format, int type, Buffer buffer) {
         if (buffer instanceof ByteBuffer) {
-            ByteBuffer directBuffer = allocateDirectBuffer((ByteBuffer) buffer);
+            ByteBuffer directBuffer = directBufferUtilities.allocateDirectBuffer((ByteBuffer) buffer);
             GL11.glGetTexImage(GL11.GL_TEXTURE_2D, level, textureFormatToGL[format], textureTypeToGL[type], (ByteBuffer) buffer);
-            copyBuffer((ByteBuffer) buffer, directBuffer);
+            directBufferUtilities.copyBuffer((ByteBuffer) buffer, directBuffer);
         } else if (buffer instanceof IntBuffer) {
-            IntBuffer directBuffer = allocateDirectBuffer((IntBuffer) buffer);
+            IntBuffer directBuffer = directBufferUtilities.allocateDirectBuffer((IntBuffer) buffer);
             GL11.glGetTexImage(GL11.GL_TEXTURE_2D, level, textureFormatToGL[format], textureTypeToGL[type], directBuffer);
-            copyBuffer((IntBuffer) buffer, directBuffer);
+            directBufferUtilities.copyBuffer((IntBuffer) buffer, directBuffer);
         } else if (buffer instanceof ShortBuffer) {
-            ShortBuffer directBuffer = allocateDirectBuffer((ShortBuffer) buffer);
+            ShortBuffer directBuffer = directBufferUtilities.allocateDirectBuffer((ShortBuffer) buffer);
             GL11.glGetTexImage(GL11.GL_TEXTURE_2D, level, textureFormatToGL[format], textureTypeToGL[type], (ShortBuffer) buffer);
-            copyBuffer((ShortBuffer) buffer, directBuffer);
+            directBufferUtilities.copyBuffer((ShortBuffer) buffer, directBuffer);
         } else if (buffer instanceof FloatBuffer) {
-            FloatBuffer directBuffer = allocateDirectBuffer((FloatBuffer) buffer);
+            FloatBuffer directBuffer = directBufferUtilities.allocateDirectBuffer((FloatBuffer) buffer);
             GL11.glGetTexImage(GL11.GL_TEXTURE_2D, level, textureFormatToGL[format], textureTypeToGL[type], (FloatBuffer) buffer);
-            copyBuffer((FloatBuffer) buffer, directBuffer);
+            directBufferUtilities.copyBuffer((FloatBuffer) buffer, directBuffer);
         } else {
             throw new IllegalArgumentException();
         }
@@ -1247,14 +1244,14 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 
     @Override
     public int getUniformIndex(int program, String name) {
-        IntBuffer indicesBuffer = DirectBufferUtilities.allocateDirectBuffer(4).asIntBuffer();
+        IntBuffer indicesBuffer = directBufferUtilities.allocateDirectBuffer(4).asIntBuffer();
         ARBUniformBufferObject.glGetUniformIndices(program, new String[]{name}, indicesBuffer);
         return indicesBuffer.get(0);
     }
 
     @Override
     public int[] getUniformIndices(int program, String[] names) {
-        IntBuffer indicesBuffer = DirectBufferUtilities.allocateDirectBuffer(names.length << 2).asIntBuffer();
+        IntBuffer indicesBuffer = directBufferUtilities.allocateDirectBuffer(names.length << 2).asIntBuffer();
         ARBUniformBufferObject.glGetUniformIndices(program, names, indicesBuffer);
         int[] indices = new int[names.length];
         indicesBuffer.get(indices);
@@ -1301,7 +1298,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setMatrix(float[] values) {
         if (values != null) {
-            GL11.glLoadMatrixf(getDirectBuffer(values));
+            GL11.glLoadMatrixf(directBufferUtilities.getDirectBuffer(values));
         } else {
             GL11.glLoadIdentity();
         }
@@ -1315,7 +1312,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void multMatrix(float[] values) {
         if (values != null) {
-            GL11.glMultMatrixf(getDirectBuffer(values));
+            GL11.glMultMatrixf(directBufferUtilities.getDirectBuffer(values));
         }
     }
 
@@ -1419,11 +1416,11 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void setPixelMap(int map, int mapSize, Buffer buffer) {
         if (buffer instanceof IntBuffer) {
-            GL11.glPixelMapuiv(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (IntBuffer) buffer));
+            GL11.glPixelMapuiv(pixelMapToGL[map], directBufferUtilities.getDirectBuffer(mapSize, (IntBuffer) buffer));
         } else if (buffer instanceof FloatBuffer) {
-            GL11.glPixelMapfv(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (FloatBuffer) buffer));
+            GL11.glPixelMapfv(pixelMapToGL[map], directBufferUtilities.getDirectBuffer(mapSize, (FloatBuffer) buffer));
         } else if (buffer instanceof ShortBuffer) {
-            GL11.glPixelMapusv(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (ShortBuffer) buffer));
+            GL11.glPixelMapusv(pixelMapToGL[map], directBufferUtilities.getDirectBuffer(mapSize, (ShortBuffer) buffer));
         } else {
             throw new IllegalArgumentException();
         }
@@ -1475,13 +1472,13 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     @Override
     public void readStencil(int x, int y, int width, int height, int bufferSize, Buffer buffer) {
         if (buffer instanceof IntBuffer) {
-            GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, DirectBufferUtilities.getDirectBuffer(bufferSize, (IntBuffer) buffer));
+            GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, directBufferUtilities.getDirectBuffer(bufferSize, (IntBuffer) buffer));
         } else if (buffer instanceof FloatBuffer) {
-            GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, DirectBufferUtilities.getDirectBuffer(bufferSize, (FloatBuffer) buffer));
+            GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, directBufferUtilities.getDirectBuffer(bufferSize, (FloatBuffer) buffer));
         } else if (buffer instanceof ShortBuffer) {
-            GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, DirectBufferUtilities.getDirectBuffer(bufferSize, (ShortBuffer) buffer));
+            GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, directBufferUtilities.getDirectBuffer(bufferSize, (ShortBuffer) buffer));
         } else if (buffer instanceof ByteBuffer) {
-            GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, DirectBufferUtilities.getDirectBuffer(bufferSize, (ByteBuffer) buffer));
+            GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, directBufferUtilities.getDirectBuffer(bufferSize, (ByteBuffer) buffer));
         } else {
             throw new IllegalArgumentException();
         }
@@ -1564,13 +1561,13 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
     public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
         switch (indexType) {
             case IRenderingEngine.RE_UNSIGNED_BYTE:
-                GL11.glDrawElements(primitiveToGL[primitive], DirectBufferUtilities.getDirectByteBuffer(count, indices, indicesOffset));
+                GL11.glDrawElements(primitiveToGL[primitive], directBufferUtilities.getDirectByteBuffer(count, indices, indicesOffset));
                 break;
             case IRenderingEngine.RE_UNSIGNED_SHORT:
-                GL11.glDrawElements(primitiveToGL[primitive], DirectBufferUtilities.getDirectShortBuffer(count << 1, indices, indicesOffset));
+                GL11.glDrawElements(primitiveToGL[primitive], directBufferUtilities.getDirectShortBuffer(count << 1, indices, indicesOffset));
                 break;
             case IRenderingEngine.RE_UNSIGNED_INT:
-                GL11.glDrawElements(primitiveToGL[primitive], DirectBufferUtilities.getDirectIntBuffer(count << 2, indices, indicesOffset));
+                GL11.glDrawElements(primitiveToGL[primitive], directBufferUtilities.getDirectIntBuffer(count << 2, indices, indicesOffset));
                 break;
             default:
                 log.error(String.format("drawElements unknown indexType=%d", indexType));
@@ -1596,5 +1593,33 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 	@Override
 	public boolean isTextureBarrierAvailable() {
 		return GL.getCapabilities().GL_NV_texture_barrier;
+	}
+
+	@Override
+	public long fenceSync() {
+		if (GL.getCapabilities().OpenGL32) {
+			return GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		} else if (GL.getCapabilities().GL_ARB_sync) {
+			return ARBSync.glFenceSync(ARBSync.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		}
+		return 0L;
+	}
+
+	@Override
+	public void clientWaitSync(long sync, long timeout) {
+		if (GL.getCapabilities().OpenGL32) {
+			GL32.glClientWaitSync(sync, GL32.GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
+		} else if (GL.getCapabilities().GL_ARB_sync) {
+			ARBSync.glClientWaitSync(sync, ARBSync.GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
+		}
+	}
+
+	@Override
+	public void deleteSync(long sync) {
+		if (GL.getCapabilities().OpenGL32) {
+			GL32.glDeleteSync(sync);
+		} else if (GL.getCapabilities().GL_ARB_sync) {
+			ARBSync.glDeleteSync(sync);
+		}
 	}
 }

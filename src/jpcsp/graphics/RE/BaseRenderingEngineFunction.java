@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE;
 
 import static java.lang.Math.abs;
-import static jpcsp.HLE.modules.sceDisplay.getPixelFormatBytes;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
 import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES;
@@ -27,6 +26,7 @@ import static jpcsp.graphics.RE.software.PixelColor.getBlue;
 import static jpcsp.graphics.RE.software.PixelColor.getColorBGR;
 import static jpcsp.graphics.RE.software.PixelColor.getGreen;
 import static jpcsp.graphics.RE.software.PixelColor.getRed;
+import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
 import static jpcsp.util.Utilities.matrixMult;
 
 import java.nio.Buffer;
@@ -159,12 +159,6 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 
 		return emptyBuffer;
 	}
-
-    @Override
-    public void setRenderingEngine(IRenderingEngine re) {
-        getBufferManager().setRenderingEngine(re);
-        super.setRenderingEngine(re);
-    }
 
     protected void setFlag(EnableDisableFlag flag) {
         if (flag.isEnabled()) {
@@ -409,20 +403,20 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         if (context.clearMode) {
             setClearModeSettings(clearModeContext.color, clearModeContext.stencil, clearModeContext.depth);
         } else {
-            context.depthTestFlag.updateEnabled();
-            context.blendFlag.updateEnabled();
-            context.alphaTestFlag.updateEnabled();
-            context.fogFlag.updateEnabled();
-            context.colorLogicOpFlag.updateEnabled();
-            context.stencilTestFlag.updateEnabled();
-            context.cullFaceFlag.updateEnabled();
-            context.textureFlag.update();
+            context.depthTestFlag.updateEnabled(re);
+            context.blendFlag.updateEnabled(re);
+            context.alphaTestFlag.updateEnabled(re);
+            context.fogFlag.updateEnabled(re);
+            context.colorLogicOpFlag.updateEnabled(re);
+            context.stencilTestFlag.updateEnabled(re);
+            context.cullFaceFlag.updateEnabled(re);
+            context.textureFlag.update(re);
             re.setDepthMask(context.depthMask);
             re.setTextureFunc(context.textureFunc, context.textureAlphaUsed, context.textureColorDoubled);
         }
         re.setTextureMapMode(context.tex_map_mode, context.tex_proj_map_mode);
-        context.scissorTestFlag.updateEnabled();
-        context.lightingFlag.updateEnabled();
+        context.scissorTestFlag.updateEnabled(re);
+        context.lightingFlag.updateEnabled(re);
         re.setTextureMipmapMagFilter(context.tex_mag_filter);
         re.setTextureMipmapMinFilter(context.tex_min_filter);
         re.setTextureWrapMode(context.tex_wrap_s, context.tex_wrap_t);
@@ -547,7 +541,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     @Override
     public void startDisplay() {
         for (int light = 0; light < context.lightFlags.length; light++) {
-            context.lightFlags[light].update();
+            context.lightFlags[light].update(re);
         }
         super.startDisplay();
     }

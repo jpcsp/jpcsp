@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
-import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectBuffer;
-
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -50,13 +48,13 @@ public class RenderingEngineLwjgl15 extends RenderingEngineLwjgl12 {
 	@Override
 	public void setBufferData(int target, int size, Buffer buffer, int usage) {
 		if (buffer instanceof ByteBuffer) {
-			GL15.glBufferData(bufferTargetToGL[target], getDirectBuffer(size, (ByteBuffer) buffer), bufferUsageToGL[usage]);
+			GL15.glBufferData(bufferTargetToGL[target], directBufferUtilities.getDirectBuffer(size, (ByteBuffer) buffer), bufferUsageToGL[usage]);
 		} else if (buffer instanceof IntBuffer) {
-			GL15.glBufferData(bufferTargetToGL[target], getDirectBuffer(size, (IntBuffer) buffer), bufferUsageToGL[usage]);
+			GL15.glBufferData(bufferTargetToGL[target], directBufferUtilities.getDirectBuffer(size, (IntBuffer) buffer), bufferUsageToGL[usage]);
 		} else if (buffer instanceof ShortBuffer) {
-			GL15.glBufferData(bufferTargetToGL[target], getDirectBuffer(size, (ShortBuffer) buffer), bufferUsageToGL[usage]);
+			GL15.glBufferData(bufferTargetToGL[target], directBufferUtilities.getDirectBuffer(size, (ShortBuffer) buffer), bufferUsageToGL[usage]);
 		} else if (buffer instanceof FloatBuffer) {
-			GL15.glBufferData(bufferTargetToGL[target], getDirectBuffer(size, (FloatBuffer) buffer), bufferUsageToGL[usage]);
+			GL15.glBufferData(bufferTargetToGL[target], directBufferUtilities.getDirectBuffer(size, (FloatBuffer) buffer), bufferUsageToGL[usage]);
 		} else if (buffer == null) {
 			GL15.glBufferData(bufferTargetToGL[target], size, bufferUsageToGL[usage]);
 		} else {
@@ -67,13 +65,13 @@ public class RenderingEngineLwjgl15 extends RenderingEngineLwjgl12 {
 	@Override
 	public void setBufferSubData(int target, int offset, int size, Buffer buffer) {
 		if (buffer instanceof ByteBuffer) {
-			GL15.glBufferSubData(bufferTargetToGL[target], offset, getDirectBuffer(size, (ByteBuffer) buffer));
+			GL15.glBufferSubData(bufferTargetToGL[target], offset, directBufferUtilities.getDirectBuffer(size, (ByteBuffer) buffer));
 		} else if (buffer instanceof IntBuffer) {
-			GL15.glBufferSubData(bufferTargetToGL[target], offset, getDirectBuffer(size, (IntBuffer) buffer));
+			GL15.glBufferSubData(bufferTargetToGL[target], offset, directBufferUtilities.getDirectBuffer(size, (IntBuffer) buffer));
 		} else if (buffer instanceof ShortBuffer) {
-			GL15.glBufferSubData(bufferTargetToGL[target], offset, getDirectBuffer(size, (ShortBuffer) buffer));
+			GL15.glBufferSubData(bufferTargetToGL[target], offset, directBufferUtilities.getDirectBuffer(size, (ShortBuffer) buffer));
 		} else if (buffer instanceof FloatBuffer) {
-			GL15.glBufferSubData(bufferTargetToGL[target], offset, getDirectBuffer(size, (FloatBuffer) buffer));
+			GL15.glBufferSubData(bufferTargetToGL[target], offset, directBufferUtilities.getDirectBuffer(size, (FloatBuffer) buffer));
 		} else {
 			throw new IllegalArgumentException();
 		}

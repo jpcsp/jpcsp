@@ -180,7 +180,7 @@ public class ShaderContextUBO extends ShaderContext {
             && re.isExtensionAvailable("GL_ARB_uniform_buffer_object");
 	}
 
-	public ShaderContextUBO(IRenderingEngine re) {
+	public ShaderContextUBO() {
 		shaderUniformInfos = new ArrayList<ShaderUniformInfo>();
 
 		// Add all the shader uniform objects
@@ -356,6 +356,11 @@ public class ShaderContextUBO extends ShaderContext {
 		}
 
 		super.initShaderProgram(re, shaderProgram);
+	}
+
+	@Override
+	public void startDisplay(IRenderingEngine re) {
+		re.bindBufferBase(IRenderingEngine.RE_UNIFORM_BUFFER, bindingPoint, buffer);
 	}
 
 	@Override

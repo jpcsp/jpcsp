@@ -41,7 +41,6 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 	// pspsdk defines the context as an array of 512 unsigned int's
 	public static final int SIZE_OF = 512 * 4;
 
-	protected IRenderingEngine re;
 	protected boolean dirty;
 
 	public int base;
@@ -216,22 +215,18 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
         dirty = false;
     }
 
-    public void setRenderingEngine(IRenderingEngine re) {
-    	this.re = re;
-    }
-
     /**
      * Update the RenderingEngine based on the context values.
      * This method can only be called by a thread being allowed to perform
      * RenderingEngine calls (i.e. the GUI thread).
      */
-    public void update() {
+    public void update(IRenderingEngine re) {
     	if (!dirty) {
     		return;
     	}
 
     	for (EnableDisableFlag flag : flags) {
-    		flag.update();
+    		flag.update(re);
     	}
     	if (fogFlag.isEnabled()) {
     		re.setFogHint();
@@ -675,8 +670,8 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
             return enabled ? 1 : 0;
         }
 
-        public void setEnabled(int enabledInt) {
-            setEnabled(enabledInt != 0);
+        public void setEnabled(IRenderingEngine re, int enabledInt) {
+            setEnabled(re, enabledInt != 0);
         }
 
         /**
@@ -684,16 +679,16 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
          *
          * @param enabled        new flag value
          */
-        public void setEnabled(boolean enabled) {
+        public void setEnabled(IRenderingEngine re, boolean enabled) {
             this.enabled = enabled;
-            update();
+            update(re);
 
             if (log.isDebugEnabled() && name != null) {
                 log.debug(String.format("sceGu%s(%s)", enabled ? "Enable" : "Disable", name));
             }
         }
 
-        public void update() {
+        public void update(IRenderingEngine re) {
             // Update the flag in RenderingEngine
             if (enabled) {
             	re.enableFlag(reFlag);
@@ -702,7 +697,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
             }
         }
 
-        public void updateEnabled() {
+        public void updateEnabled(IRenderingEngine re) {
         	if (enabled) {
         		re.enableFlag(reFlag);
         	}

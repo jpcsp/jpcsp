@@ -16,16 +16,16 @@ public class NullRenderingEngine implements IRenderingEngine {
 	protected IRenderingEngine re = this;
 	protected GeContext context;
     protected IREBufferManager bufferManager;
+    protected final DirectBufferUtilities directBufferUtilities;
 
     public NullRenderingEngine() {
 		bufferManager = BufferManagerFactory.createBufferManager(this);
-		bufferManager.setRenderingEngine(this);
+		directBufferUtilities = new DirectBufferUtilities();
     }
 
-    @Override
+	@Override
 	public void setRenderingEngine(IRenderingEngine re) {
 		this.re = re;
-		bufferManager.setRenderingEngine(re);
 	}
 
 	@Override
@@ -36,6 +36,11 @@ public class NullRenderingEngine implements IRenderingEngine {
 	@Override
 	public IREBufferManager getBufferManager() {
 		return bufferManager;
+	}
+
+	@Override
+	public void setBufferManager(IREBufferManager bufferManager) {
+		this.bufferManager = bufferManager;
 	}
 
 	@Override
@@ -860,5 +865,18 @@ public class NullRenderingEngine implements IRenderingEngine {
 
 	@Override
 	public void setViewportScale(float sx, float sy, float sz) {
+	}
+
+	@Override
+	public long fenceSync() {
+		return 0L;
+	}
+
+	@Override
+	public void clientWaitSync(long sync, long timeout) {
+	}
+
+	@Override
+	public void deleteSync(long sync) {
 	}
 }

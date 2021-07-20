@@ -32,7 +32,6 @@ import org.apache.log4j.Logger;
  */
 public abstract class BaseBufferManager implements IREBufferManager {
 	protected final static Logger log = VideoEngine.log;
-	protected IRenderingEngine re;
 	protected Hashtable<Integer, BufferInfo> buffers;
 	protected static final int[] sizeOfType = new int[] {
 		1, // RE_BYTE
@@ -102,17 +101,12 @@ public abstract class BaseBufferManager implements IREBufferManager {
 		buffers = new Hashtable<Integer, BufferInfo>();
 	}
 
-	@Override
-	public void setRenderingEngine(IRenderingEngine re) {
-		this.re = re;
-	}
-
 	protected ByteBuffer createByteBuffer(int size) {
 		return ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
 	}
 
 	@Override
-	public void deleteBuffer(int buffer) {
+	public void deleteBuffer(IRenderingEngine re, int buffer) {
 		buffers.remove(buffer);
 	}
 

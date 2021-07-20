@@ -20,6 +20,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.util.Utilities;
 
 /**
@@ -41,7 +42,7 @@ public class BufferManagerDefault extends BaseBufferManager {
 	}
 
 	@Override
-	public int genBuffer(int target, int type, int size, int usage) {
+	public int genBuffer(IRenderingEngine re, int target, int type, int size, int usage) {
 		int totalSize = size * sizeOfType[type];
 		ByteBuffer byteBuffer = createByteBuffer(totalSize);
 
@@ -53,48 +54,48 @@ public class BufferManagerDefault extends BaseBufferManager {
 	}
 
 	@Override
-	public void bindBuffer(int target, int buffer) {
+	public void bindBuffer(IRenderingEngine re, int target, int buffer) {
 		// Not supported
 	}
 
 	@Override
-	public void setColorPointer(int buffer, int size, int type, int stride, int offset) {
+	public void setColorPointer(IRenderingEngine re, int buffer, int size, int type, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
 		re.setColorPointer(size, type, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
-	public void setNormalPointer(int buffer, int type, int stride, int offset) {
+	public void setNormalPointer(IRenderingEngine re, int buffer, int type, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
 		re.setNormalPointer(type, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
-	public void setTexCoordPointer(int buffer, int size, int type, int stride, int offset) {
+	public void setTexCoordPointer(IRenderingEngine re, int buffer, int size, int type, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
 		re.setTexCoordPointer(size, type, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
-	public void setVertexAttribPointer(int buffer, int id, int size, int type, boolean normalized, int stride, int offset) {
+	public void setVertexAttribPointer(IRenderingEngine re, int buffer, int id, int size, int type, boolean normalized, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
 		re.setVertexAttribPointer(id, size, type, normalized, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
-	public void setVertexPointer(int buffer, int size, int type, int stride, int offset) {
+	public void setVertexPointer(IRenderingEngine re, int buffer, int size, int type, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
 		re.setVertexPointer(size, type, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
-	public void setWeightPointer(int buffer, int size, int type, int stride, int offset) {
+	public void setWeightPointer(IRenderingEngine re, int buffer, int size, int type, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
 		re.setWeightPointer(size, type, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
-	public void setBufferData(int target, int buffer, int size, Buffer data, int usage) {
+	public void setBufferData(IRenderingEngine re, int target, int buffer, int size, Buffer data, int usage) {
 		BufferInfo bufferInfo = buffers.get(buffer);
 		if (bufferInfo.byteBuffer != data) {
 			bufferInfo.byteBuffer.clear();
@@ -105,7 +106,7 @@ public class BufferManagerDefault extends BaseBufferManager {
 	}
 
 	@Override
-	public void setBufferSubData(int target, int buffer, int offset, int size, Buffer data, int usage) {
+	public void setBufferSubData(IRenderingEngine re, int target, int buffer, int offset, int size, Buffer data, int usage) {
 		BufferInfo bufferInfo = buffers.get(buffer);
 		if (bufferInfo.byteBuffer != data) {
 			bufferInfo.byteBuffer.clear();

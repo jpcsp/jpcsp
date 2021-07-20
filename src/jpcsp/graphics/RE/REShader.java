@@ -149,7 +149,7 @@ public class REShader extends BaseRenderingEngineFunction {
         useShaderColorMask = Settings.getInstance().readBool("emu.enableshadercolormask");
 
         if (useUniformBufferObject) {
-			shaderContext = new ShaderContextUBO(re);
+			shaderContext = new ShaderContextUBO();
 		} else {
 			shaderContext = new ShaderContext();
 		}
@@ -725,6 +725,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	@Override
 	public void startDisplay() {
+		shaderContext.startDisplay(re);
 		defaultShaderProgram.use(re);
 
 		if (useRenderToTexture) {
@@ -924,6 +925,7 @@ public class REShader extends BaseRenderingEngineFunction {
 		} else {
 			shaderProgram = defaultShaderProgram;
 		}
+
 		shaderProgram.use(re);
 		if (log.isTraceEnabled()) {
 			log.trace("Using shader " + shaderProgram);

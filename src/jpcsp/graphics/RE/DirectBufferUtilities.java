@@ -29,15 +29,15 @@ import java.nio.ShortBuffer;
 import jpcsp.graphics.VideoEngine;
 
 public class DirectBufferUtilities {
-	protected static int directBufferSize = 100;
-	protected static ByteBuffer directBuffer = ByteBuffer.allocateDirect(directBufferSize).order(ByteOrder.nativeOrder());
-	protected static FloatBuffer directFloatBuffer = ByteBuffer.allocateDirect(128 * VideoEngine.SIZEOF_FLOAT).order(ByteOrder.nativeOrder()).asFloatBuffer();
+	private int directBufferSize = 100;
+	private ByteBuffer directBuffer = ByteBuffer.allocateDirect(directBufferSize).order(ByteOrder.nativeOrder());
+	private FloatBuffer directFloatBuffer = ByteBuffer.allocateDirect(128 * VideoEngine.SIZEOF_FLOAT).order(ByteOrder.nativeOrder()).asFloatBuffer();
 
-	public static FloatBuffer getDirectBuffer(float[] values) {
+	public FloatBuffer getDirectBuffer(float[] values) {
 		return getDirectBuffer(values, values.length);
 	}
 
-	public static FloatBuffer getDirectBuffer(float[] values, int length) {
+	public FloatBuffer getDirectBuffer(float[] values, int length) {
 		directFloatBuffer.clear();
 		directFloatBuffer.limit(length);
 		directFloatBuffer.put(values, 0, length);
@@ -46,7 +46,7 @@ public class DirectBufferUtilities {
 		return directFloatBuffer;
 	}
 
-	public static IntBuffer getDirectBuffer(int size, IntBuffer buffer) {
+	public IntBuffer getDirectBuffer(int size, IntBuffer buffer) {
 		if (buffer == null) {
 			return buffer;
 		}
@@ -65,7 +65,7 @@ public class DirectBufferUtilities {
 		return directBuffer;
 	}
 
-	public static FloatBuffer getDirectBuffer(int size, FloatBuffer buffer) {
+	public FloatBuffer getDirectBuffer(int size, FloatBuffer buffer) {
 		if (buffer == null) {
 			return buffer;
 		}
@@ -84,7 +84,7 @@ public class DirectBufferUtilities {
 		return directBuffer;
 	}
 
-	public static ShortBuffer getDirectBuffer(int size, ShortBuffer buffer) {
+	public ShortBuffer getDirectBuffer(int size, ShortBuffer buffer) {
 		if (buffer == null) {
 			return buffer;
 		}
@@ -103,7 +103,7 @@ public class DirectBufferUtilities {
 		return directBuffer;
 	}
 
-	public static ByteBuffer getDirectBuffer(int size, ByteBuffer buffer) {
+	public ByteBuffer getDirectBuffer(int size, ByteBuffer buffer) {
 		if (buffer == null) {
 			return buffer;
 		}
@@ -120,7 +120,7 @@ public class DirectBufferUtilities {
 		return directBuffer;
 	}
 
-	private static ByteBuffer getByteBuffer(int size, Buffer buffer, int bufferOffset) {
+	private ByteBuffer getByteBuffer(int size, Buffer buffer, int bufferOffset) {
 		if (buffer instanceof ByteBuffer) {
 			buffer.limit(size);
 			buffer.position(bufferOffset);
@@ -148,23 +148,23 @@ public class DirectBufferUtilities {
 		throw new IllegalArgumentException();
 	}
 
-	public static ByteBuffer getDirectByteBuffer(int size, Buffer buffer, int bufferOffset) {
+	public ByteBuffer getDirectByteBuffer(int size, Buffer buffer, int bufferOffset) {
 		return getDirectBuffer(size, getByteBuffer(size, buffer, bufferOffset));
 	}
 
-	public static FloatBuffer getDirectFloatBuffer(int size, Buffer buffer, int bufferOffset) {
+	public FloatBuffer getDirectFloatBuffer(int size, Buffer buffer, int bufferOffset) {
 		return getDirectBuffer(size, getByteBuffer(size, buffer, bufferOffset).asFloatBuffer());
 	}
 
-	public static IntBuffer getDirectIntBuffer(int size, Buffer buffer, int bufferOffset) {
+	public IntBuffer getDirectIntBuffer(int size, Buffer buffer, int bufferOffset) {
 		return getDirectBuffer(size, getByteBuffer(size, buffer, bufferOffset).asIntBuffer());
 	}
 
-	public static ShortBuffer getDirectShortBuffer(int size, Buffer buffer, int bufferOffset) {
+	public ShortBuffer getDirectShortBuffer(int size, Buffer buffer, int bufferOffset) {
 		return getDirectBuffer(size, getByteBuffer(size, buffer, bufferOffset).asShortBuffer());
 	}
 
-	public static ByteBuffer allocateDirectBuffer(int size) {
+	public ByteBuffer allocateDirectBuffer(int size) {
 		if (size > directBufferSize) {
 			directBufferSize = size;
 			directBuffer = ByteBuffer.allocateDirect(directBufferSize).order(ByteOrder.nativeOrder());
@@ -176,7 +176,7 @@ public class DirectBufferUtilities {
 		return directBuffer;
 	}
 
-	public static ByteBuffer allocateDirectBuffer(ByteBuffer buffer) {
+	public ByteBuffer allocateDirectBuffer(ByteBuffer buffer) {
 		if (buffer.isDirect()) {
 			return buffer;
 		}
@@ -184,7 +184,7 @@ public class DirectBufferUtilities {
 		return allocateDirectBuffer(buffer.remaining());
 	}
 
-	public static IntBuffer allocateDirectBuffer(IntBuffer buffer) {
+	public IntBuffer allocateDirectBuffer(IntBuffer buffer) {
 		if (buffer.isDirect()) {
 			return buffer;
 		}
@@ -192,7 +192,7 @@ public class DirectBufferUtilities {
 		return allocateDirectBuffer(buffer.remaining() << 2).asIntBuffer();
 	}
 
-	public static ShortBuffer allocateDirectBuffer(ShortBuffer buffer) {
+	public ShortBuffer allocateDirectBuffer(ShortBuffer buffer) {
 		if (buffer.isDirect()) {
 			return buffer;
 		}
@@ -200,7 +200,7 @@ public class DirectBufferUtilities {
 		return allocateDirectBuffer(buffer.remaining() << 1).asShortBuffer();
 	}
 
-	public static FloatBuffer allocateDirectBuffer(FloatBuffer buffer) {
+	public FloatBuffer allocateDirectBuffer(FloatBuffer buffer) {
 		if (buffer.isDirect()) {
 			return buffer;
 		}
@@ -208,28 +208,28 @@ public class DirectBufferUtilities {
 		return allocateDirectBuffer(buffer.remaining() << 2).asFloatBuffer();
 	}
 
-	public static void copyBuffer(ByteBuffer dstBuffer, ByteBuffer srcBuffer) {
+	public void copyBuffer(ByteBuffer dstBuffer, ByteBuffer srcBuffer) {
 		if (dstBuffer != srcBuffer) {
 			srcBuffer.rewind();
 			dstBuffer.put(srcBuffer);
 		}
 	}
 
-	public static void copyBuffer(IntBuffer dstBuffer, IntBuffer srcBuffer) {
+	public void copyBuffer(IntBuffer dstBuffer, IntBuffer srcBuffer) {
 		if (dstBuffer != srcBuffer) {
 			srcBuffer.rewind();
 			dstBuffer.put(srcBuffer);
 		}
 	}
 
-	public static void copyBuffer(ShortBuffer dstBuffer, ShortBuffer srcBuffer) {
+	public void copyBuffer(ShortBuffer dstBuffer, ShortBuffer srcBuffer) {
 		if (dstBuffer != srcBuffer) {
 			srcBuffer.rewind();
 			dstBuffer.put(srcBuffer);
 		}
 	}
 
-	public static void copyBuffer(FloatBuffer dstBuffer, FloatBuffer srcBuffer) {
+	public void copyBuffer(FloatBuffer dstBuffer, FloatBuffer srcBuffer) {
 		if (dstBuffer != srcBuffer) {
 			srcBuffer.rewind();
 			dstBuffer.put(srcBuffer);

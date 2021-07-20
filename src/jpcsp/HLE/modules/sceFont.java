@@ -28,6 +28,8 @@ import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_BOLD_ITALIC;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_DB;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_ITALIC;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_REGULAR;
+import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
+
 import jpcsp.HLE.BufferInfo;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
@@ -342,12 +344,12 @@ public class sceFont extends HLEModule {
         int bufferStorage = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
         int bufferWidth = 800;
         int fontBufWidth = bufferWidth;
-        int fontBpl = bufferWidth * sceDisplay.getPixelFormatBytes(bufferStorage);
+        int fontBpl = bufferWidth * getPixelFormatBytes(bufferStorage);
         int fontBufHeight = MemoryMap.SIZE_VRAM / fontBpl;
         SceFontInfo fontInfo = font.fontInfo;
         PGF pgf = font.pgf;
 
-        int memoryLength = fontBpl * fontBufHeight * sceDisplay.getPixelFormatBytes(bufferStorage);
+        int memoryLength = fontBpl * fontBufHeight * getPixelFormatBytes(bufferStorage);
         Memory mem = Memory.getInstance();
         mem.memset(addr, (byte) 0, memoryLength);
 

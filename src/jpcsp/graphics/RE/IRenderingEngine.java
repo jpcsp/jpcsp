@@ -457,6 +457,7 @@ public interface IRenderingEngine {
 	public int getQueryResult(int id);
 	public void clear(float red, float green, float blue, float alpha);
 	public IREBufferManager getBufferManager();
+	public void setBufferManager(IREBufferManager bufferManager);
 	public boolean canAllNativeVertexInfo();
 	public boolean canNativeSpritesPrimitive();
 	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type);
@@ -511,4 +512,7 @@ public interface IRenderingEngine {
 	public boolean canDiscardVertices();
 	public void setViewportPos(float x, float y, float z);
 	public void setViewportScale(float sx, float sy, float sz);
+	public long fenceSync();
+	public void clientWaitSync(long sync, long timeout);
+	public void deleteSync(long sync);
 }

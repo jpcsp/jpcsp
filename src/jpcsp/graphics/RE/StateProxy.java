@@ -174,6 +174,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 	protected void init() {
 		flags = new boolean[RE_NUMBER_FLAGS];
+		flags[GU_DITHER] = true; // dither seems to be enabled by default in OpenGL
 
 		uniformInt = new int[maxProgramId][maxUniformId];
 		uniformFloat = new float[maxProgramId][maxUniformId];

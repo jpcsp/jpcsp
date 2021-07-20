@@ -54,7 +54,7 @@ public class BufferManagerVBO extends BaseBufferManager {
 	}
 
 	@Override
-	public int genBuffer(int target, int type, int size, int usage) {
+	public int genBuffer(IRenderingEngine re, int target, int type, int size, int usage) {
 		int totalSize = size * sizeOfType[type];
 		ByteBuffer byteBuffer = createByteBuffer(totalSize);
 
@@ -62,7 +62,7 @@ public class BufferManagerVBO extends BaseBufferManager {
 		if (buffer >= bufferDataSize.length) {
 			bufferDataSize = Utilities.extendArray(bufferDataSize, buffer - bufferDataSize.length + 1);
 		}
-		setBufferData(target, buffer, totalSize, byteBuffer, usage);
+		setBufferData(re, target, buffer, totalSize, byteBuffer, usage);
 
 		buffers.put(buffer, new BufferInfo(buffer, byteBuffer, type, size));
 
@@ -70,67 +70,67 @@ public class BufferManagerVBO extends BaseBufferManager {
 	}
 
 	@Override
-	public void bindBuffer(int target, int buffer) {
+	public void bindBuffer(IRenderingEngine re, int target, int buffer) {
 		re.bindBuffer(target, buffer);
 	}
 
 	@Override
-	public void deleteBuffer(int buffer) {
+	public void deleteBuffer(IRenderingEngine re, int buffer) {
 		re.deleteBuffer(buffer);
-		super.deleteBuffer(buffer);
+		super.deleteBuffer(re, buffer);
 	}
 
 	@Override
-	public void setColorPointer(int buffer, int size, int type, int stride, int offset) {
-		bindBuffer(RE_ARRAY_BUFFER, buffer);
+	public void setColorPointer(IRenderingEngine re, int buffer, int size, int type, int stride, int offset) {
+		bindBuffer(re, RE_ARRAY_BUFFER, buffer);
 		re.setColorPointer(size, type, stride, offset);
 	}
 
 	@Override
-	public void setNormalPointer(int buffer, int type, int stride, int offset) {
-		bindBuffer(RE_ARRAY_BUFFER, buffer);
+	public void setNormalPointer(IRenderingEngine re, int buffer, int type, int stride, int offset) {
+		bindBuffer(re, RE_ARRAY_BUFFER, buffer);
 		re.setNormalPointer(type, stride, offset);
 	}
 
 	@Override
-	public void setTexCoordPointer(int buffer, int size, int type, int stride, int offset) {
-		bindBuffer(RE_ARRAY_BUFFER, buffer);
+	public void setTexCoordPointer(IRenderingEngine re, int buffer, int size, int type, int stride, int offset) {
+		bindBuffer(re, RE_ARRAY_BUFFER, buffer);
 		re.setTexCoordPointer(size, type, stride, offset);
 	}
 
 	@Override
-	public void setVertexAttribPointer(int buffer, int id, int size, int type, boolean normalized, int stride, int offset) {
-		bindBuffer(RE_ARRAY_BUFFER, buffer);
+	public void setVertexAttribPointer(IRenderingEngine re, int buffer, int id, int size, int type, boolean normalized, int stride, int offset) {
+		bindBuffer(re, RE_ARRAY_BUFFER, buffer);
 		re.setVertexAttribPointer(id, size, type, normalized, stride, offset);
 	}
 
 	@Override
-	public void setVertexPointer(int buffer, int size, int type, int stride, int offset) {
-		bindBuffer(RE_ARRAY_BUFFER, buffer);
+	public void setVertexPointer(IRenderingEngine re, int buffer, int size, int type, int stride, int offset) {
+		bindBuffer(re, RE_ARRAY_BUFFER, buffer);
 		re.setVertexPointer(size, type, stride, offset);
 	}
 
 	@Override
-	public void setWeightPointer(int buffer, int size, int type, int stride, int offset) {
-		bindBuffer(RE_ARRAY_BUFFER, buffer);
+	public void setWeightPointer(IRenderingEngine re, int buffer, int size, int type, int stride, int offset) {
+		bindBuffer(re, RE_ARRAY_BUFFER, buffer);
 		re.setWeightPointer(size, type, stride, offset);
 	}
 
 	@Override
-	public void setBufferData(int target, int buffer, int size, Buffer data, int usage) {
-		bindBuffer(target, buffer);
+	public void setBufferData(IRenderingEngine re, int target, int buffer, int size, Buffer data, int usage) {
+		bindBuffer(re, target, buffer);
 		re.setBufferData(target, size, data, usage);
 		bufferDataSize[buffer] = size;
 	}
 
 	@Override
-	public void setBufferSubData(int target, int buffer, int offset, int size, Buffer data, int usage) {
-		bindBuffer(target, buffer);
+	public void setBufferSubData(IRenderingEngine re, int target, int buffer, int offset, int size, Buffer data, int usage) {
+		bindBuffer(re, target, buffer);
 
 		// Some drivers seem to require an aligned buffer data size to handle correctly unaligned data.
 		int requiredBufferDataSize = round4(offset) + round4(size);
 		if (requiredBufferDataSize > bufferDataSize[buffer]) {
-			setBufferData(target, buffer, requiredBufferDataSize, null, usage);
+			setBufferData(re, target, buffer, requiredBufferDataSize, null, usage);
 		}
 
 		re.setBufferSubData(target, offset, size, data);

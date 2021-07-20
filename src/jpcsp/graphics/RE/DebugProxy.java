@@ -608,7 +608,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void setBufferSubData(int target, int offset, int size, Buffer buffer) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("setBufferSubData target=%d, offset=%d, size=%d, buffer size=%d", target, offset, size, buffer == null ? 0 : buffer.capacity()));
+			log.debug(String.format("setBufferSubData target=%d, offset=%d, size=%d, buffer size=%d, buffer type=%s, buffer direct=%b", target, offset, size, buffer == null ? 0 : buffer.capacity(), buffer.getClass().getName(), buffer.isDirect()));
 		}
 		super.setBufferSubData(target, offset, size, buffer);
 	}
@@ -907,5 +907,64 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("setMaterialShininess %f", shininess));
 		}
 		super.setMaterialShininess(shininess);
+	}
+
+	@Override
+	public long fenceSync() {
+		long value = super.fenceSync();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("fenceSync %d", value));
+		}
+		return value;
+	}
+
+	@Override
+	public void clientWaitSync(long sync, long timeout) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("clientWaitSync sync=%d, timeout=%d", sync, timeout));
+		}
+		super.clientWaitSync(sync, timeout);
+	}
+
+	@Override
+	public void deleteSync(long sync) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("deleteSync sync=%d", sync));
+		}
+		super.deleteSync(sync);
+	}
+
+	@Override
+	public int genBuffer() {
+		int value = super.genBuffer();
+		if (isLogDebugEnabled) {
+			log.debug(String.format("genBuffer %d", value));
+		}
+		return value;
+	}
+
+	@Override
+	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniformBlockBinding program=%d, blockIndex=%d, bindingPoint=%d", program, blockIndex, bindingPoint));
+		}
+		super.setUniformBlockBinding(program, blockIndex, bindingPoint);
+	}
+
+	@Override
+	public int getUniformBlockIndex(int program, String name) {
+		int value = super.getUniformBlockIndex(program, name);
+		if (isLogDebugEnabled) {
+			log.debug(String.format("getUniformBlockIndex program=%d, name='%s' returning %d", program, name, value));
+		}
+		return value;
+	}
+
+	@Override
+	public void bindBufferBase(int target, int bindingPoint, int buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindBufferBase target=%d, bindingPoint=%d, binbufferdingPoint=%d", target, bindingPoint, buffer));
+		}
+		super.bindBufferBase(target, bindingPoint, buffer);
 	}
 }

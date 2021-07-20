@@ -16,9 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
-import jpcsp.HLE.Modules;
+import static jpcsp.HLE.Modules.sceDisplayModule;
+import static jpcsp.util.DurationStatistics.collectStatistics;
+
 import jpcsp.graphics.RE.software.RESoftware;
-import jpcsp.util.DurationStatistics;
 
 /**
  * @author gid15
@@ -29,11 +30,13 @@ public class RenderingEngineFactory {
 	private static final boolean enableCheckErrorsProxy = false;
 	private static final boolean enableStatisticsProxy = false;
 
-	private static IRenderingEngine createRenderingEngine(boolean enableSoftwareRendering) {
+	private static IRenderingEngine createRenderingEngine(boolean forDisplay) {
+		final boolean isUsingSoftwareRenderer = sceDisplayModule.isUsingSoftwareRenderer();
+
 		// Build the rendering pipeline, from the last entry to the first one.
 		IRenderingEngine re;
 
-		if (enableSoftwareRendering) {
+		if (isUsingSoftwareRenderer) {
 			// RenderingEngine using a complete software implementation, i.e. not using the GPU
 			re = new RESoftware();
 		} else {
@@ -45,7 +48,7 @@ public class RenderingEngineFactory {
 			re = new CheckErrorsProxy(re);
 		}
 
-		if (enableStatisticsProxy && DurationStatistics.collectStatistics) {
+		if (enableStatisticsProxy && collectStatistics) {
 			// Proxy collecting statistics for all the calls (number of calls and execution time)
 			re = new StatisticsProxy(re);
 		}
@@ -55,7 +58,7 @@ public class RenderingEngineFactory {
 			re = new DebugProxy(re);
 		}
 
-		if (!enableSoftwareRendering) {
+		if (!isUsingSoftwareRenderer) {
 			if (REShader.useShaders(re)) {
 				// RenderingEngine using shaders
 				re = new REShader(re);
@@ -89,7 +92,7 @@ public class RenderingEngineFactory {
 	 * @return the rendering engine to be used
 	 */
 	public static IRenderingEngine createRenderingEngine() {
-		return createRenderingEngine(Modules.sceDisplayModule.isUsingSoftwareRenderer());
+		return createRenderingEngine(false);
 	}
 
 	/**
@@ -99,7 +102,7 @@ public class RenderingEngineFactory {
 	 * @return the rendering engine to be used for display
 	 */
 	public static IRenderingEngine createRenderingEngineForDisplay() {
-		return createRenderingEngine(false);
+		return createRenderingEngine(true);
 	}
 
 	/**

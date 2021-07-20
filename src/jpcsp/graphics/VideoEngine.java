@@ -18,6 +18,8 @@ package jpcsp.graphics;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static jpcsp.HLE.modules.sceDisplay.getResizedHeight;
+import static jpcsp.HLE.modules.sceDisplay.getResizedWidth;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_CANCEL_DONE;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_DONE;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_DRAWING;
@@ -37,6 +39,10 @@ import static jpcsp.HLE.modules.sceGe_user.PSP_GE_MATRIX_VIEW;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_MATRIX_WORLD;
 import static jpcsp.Memory.isVRAM;
 import static jpcsp.graphics.GeCommands.*;
+import static jpcsp.graphics.VideoEngineUtilities.copyGeToMemory;
+import static jpcsp.graphics.VideoEngineUtilities.copyScreenToPixels;
+import static jpcsp.graphics.VideoEngineUtilities.drawFrameBuffer;
+import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
 import static jpcsp.util.Utilities.matrixMult;
 import static jpcsp.util.Utilities.round4;
 import static jpcsp.util.Utilities.vectorMult;
@@ -289,6 +295,8 @@ public class VideoEngine {
     private int maxTextureSizeLog2 = 9;
     private boolean doubleTexture2DCoords = false;
     private boolean hideEffects = false;
+    // VideoEngine Thread
+    private VideoEngineThread videoEngineThread;
 
     public static class MatrixUpload {
 
@@ -433,6 +441,10 @@ public class VideoEngine {
         synchronized (drawListQueue) {
             drawListQueue.addLast(list);
         }
+
+        if (videoEngineThread != null) {
+    		videoEngineThread.update();
+    	}
     }
 
     /**
@@ -442,6 +454,16 @@ public class VideoEngine {
         synchronized (drawListQueue) {
             drawListQueue.addFirst(list);
         }
+
+        if (videoEngineThread != null) {
+    		videoEngineThread.update();
+    	}
+    }
+
+    public void onUpdateDrawList() {
+    	if (videoEngineThread != null) {
+    		videoEngineThread.update();
+    	}
     }
 
     public int numberDrawLists() {
@@ -534,11 +556,16 @@ public class VideoEngine {
     private void deletePendingBuffers() {
         while (!buffersToBeDeleted.isEmpty()) {
             int buffer = buffersToBeDeleted.remove(0);
-            bufferManager.deleteBuffer(buffer);
+            bufferManager.deleteBuffer(re, buffer);
         }
     }
 
     public void stop() {
+        if (videoEngineThread != null) {
+        	videoEngineThread.exit();
+        	videoEngineThread = null;
+        }
+
         // If we are still drawing a list, stop the list processing
         synchronized (drawListQueue) {
             drawListQueue.clear();
@@ -577,7 +604,6 @@ public class VideoEngine {
         display = Modules.sceDisplayModule;
         re = display.getRenderingEngine();
         re.setGeContext(context);
-        context.setRenderingEngine(re);
         bufferManager = re.getBufferManager();
 
         if (!re.getBufferManager().useVBO()) {
@@ -587,9 +613,9 @@ public class VideoEngine {
 
         deletePendingBuffers();
 
-        bufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, drawBufferSizeInBytes / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
-        nativeBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_BYTE, drawBufferSizeInBytes, IRenderingEngine.RE_STREAM_DRAW);
-        indexBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, IRenderingEngine.RE_UNSIGNED_BYTE, indexDrawBufferSizeInBytes, IRenderingEngine.RE_STREAM_DRAW);
+        bufferId = bufferManager.genBuffer(re, IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, drawBufferSizeInBytes / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
+        nativeBufferId = bufferManager.genBuffer(re, IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_BYTE, drawBufferSizeInBytes, IRenderingEngine.RE_STREAM_DRAW);
+        indexBufferId = bufferManager.genBuffer(re, IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, IRenderingEngine.RE_UNSIGNED_BYTE, indexDrawBufferSizeInBytes, IRenderingEngine.RE_STREAM_DRAW);
         floatBufferArray = new float[drawBufferSizeInBytes / SIZEOF_FLOAT];
 
         if (useAsyncVertexCache) {
@@ -611,6 +637,13 @@ public class VideoEngine {
         listCount = 0;
 
         cachedInstructions = new HashMap<Integer, int[]>();
+
+        if (videoEngineThread == null) {
+        	videoEngineThread = new VideoEngineThread(VideoEngine.getInstance());
+        	videoEngineThread.setDaemon(true);
+        	videoEngineThread.setName("Video Engine Thread");
+        	videoEngineThread.start();
+        }
     }
 
     public IRenderingEngine getRenderingEngine() {
@@ -815,7 +848,7 @@ public class VideoEngine {
             fbBufChanged = false;
         }
 
-        context.update();
+        context.update(re);
 
         if (wantClearTextureCache) {
             TextureCache.getInstance().reset(re);
@@ -892,8 +925,8 @@ public class VideoEngine {
 
         re.waitForRenderingCompletion();
 
-        context.reTextureGenS.setEnabled(false);
-        context.reTextureGenT.setEnabled(false);
+        context.reTextureGenS.setEnabled(re, false);
+        context.reTextureGenT.setEnabled(re, false);
 
         if (useVertexCache) {
             if (primCount > VertexCache.cacheMaxSize) {
@@ -2573,7 +2606,7 @@ public class VideoEngine {
                             indicesBufferOffset = 0;
                         }
 
-                        bufferManager.setBufferSubData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, 0, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
+                        bufferManager.setBufferSubData(re, IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, 0, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
                     } else {
                         firstVertex = firstVertexInfo;
                     }
@@ -2626,7 +2659,7 @@ public class VideoEngine {
                                 int indexBufferSize = multiDrawNumberOfVertex * bytesPerIndex;
                                 Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
                                 indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
-                                bufferManager.setBufferSubData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, 0, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
+                                bufferManager.setBufferSubData(re, IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, 0, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
                             }
 
                             vertexAddress = context.vinfo.ptr_vertex + firstVertexInfo * context.vinfo.vertexSize;
@@ -2652,7 +2685,7 @@ public class VideoEngine {
                     useBufferManager = true;
 
                     if (buffer != null) {
-                        bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, firstVertexInfo * stride, stride * numberOfVertexInfo, buffer, IRenderingEngine.RE_STREAM_DRAW);
+                        bufferManager.setBufferSubData(re, IRenderingEngine.RE_ARRAY_BUFFER, bufferId, firstVertexInfo * stride, stride * numberOfVertexInfo, buffer, IRenderingEngine.RE_STREAM_DRAW);
                     }
 
                     if (vertexInfoReader.hasNative()) {
@@ -2661,7 +2694,7 @@ public class VideoEngine {
                         int vertexAddr = context.vinfo.ptr_vertex + firstVertexInfo * context.vinfo.vertexSize;
                         Buffer vertexData = mem.getBuffer(vertexAddr, size);
                         size = fixNativeBufferOffset(vertexData, vertexAddr, size);
-                        bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, nativeBufferId, firstVertexInfo * context.vinfo.vertexSize, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
+                        bufferManager.setBufferSubData(re, IRenderingEngine.RE_ARRAY_BUFFER, nativeBufferId, firstVertexInfo * context.vinfo.vertexSize, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
                     }
                 }
 
@@ -2669,7 +2702,7 @@ public class VideoEngine {
 
                 if (needSetDataPointers) {
                     if (hasIndex) {
-                        bufferManager.bindBuffer(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId);
+                        bufferManager.bindBuffer(re, IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId);
                     }
                     if (useTexture) {
                         boolean textureNative;
@@ -2850,7 +2883,7 @@ public class VideoEngine {
                                 ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
                                 byteBuffer.clear();
                                 byteBuffer.asFloatBuffer().put(floatBufferArray, 0, bufferSizeInFloats);
-                                bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
+                                bufferManager.setBufferSubData(re, IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
                             }
                         } else {
                             if (isLogDebugEnabled) {
@@ -3058,7 +3091,7 @@ public class VideoEngine {
                                 ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
                                 byteBuffer.clear();
                                 byteBuffer.asFloatBuffer().put(floatBufferArray, 0, bufferSizeInFloats);
-                                bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
+                                bufferManager.setBufferSubData(re, IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
                             }
                         } else {
                             if (isLogDebugEnabled) {
@@ -3073,7 +3106,7 @@ public class VideoEngine {
                         re.drawArrays(IRenderingEngine.RE_QUADS, 0, numberOfVertex * 2);
                         drawArraysStatistics.end();
                         if (!context.clearMode) {
-                            context.cullFaceFlag.updateEnabled();
+                            context.cullFaceFlag.updateEnabled(re);
                         }
                         break;
                 }
@@ -3294,7 +3327,7 @@ public class VideoEngine {
 
         int pixelFormatGe = context.psm;
         int bpp = (context.textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) ? 2 : 4;
-        int bppGe = sceDisplay.getPixelFormatBytes(pixelFormatGe);
+        int bppGe = getPixelFormatBytes(pixelFormatGe);
 
         boolean transferUsingMemcpy = insideMultiTrxkick;
         if (insideMultiTrxkick) {
@@ -3313,7 +3346,7 @@ public class VideoEngine {
         	if (!insideMultiTrxkick || !multiTrxkickCopyGeToMemoryDone) {
         		re.waitForRenderingCompletion();
         		// Force a copy to the memory if performing the transfer using memcpy
-        		display.copyGeToMemory(true, transferUsingMemcpy);
+        		copyGeToMemory(re, true, transferUsingMemcpy);
 
         		multiTrxkickCopyGeToMemoryDone = true;
         	}
@@ -3458,9 +3491,9 @@ public class VideoEngine {
             re.disableClientState(IRenderingEngine.RE_COLOR);
             re.disableClientState(IRenderingEngine.RE_NORMAL);
             re.enableClientState(IRenderingEngine.RE_VERTEX);
-            bufferManager.setTexCoordPointer(bufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
-            bufferManager.setVertexPointer(bufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
-            bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
+            bufferManager.setTexCoordPointer(re, bufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
+            bufferManager.setVertexPointer(re, bufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
+            bufferManager.setBufferSubData(re, IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
             re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
             re.endDirectRendering();
@@ -3879,6 +3912,39 @@ public class VideoEngine {
         if (isLogDebugEnabled) {
             log(helper.getCommandString(FINISH) + " " + getArgumentLog(normalArgument));
         }
+
+        // Save the GE to memory before triggered the FINISH interrupt/callback
+        if (isLogDebugEnabled) {
+            log.debug(String.format("Saving the GE to memory 0x%08X", display.getTopAddrGe()));
+        }
+        if (display.getSaveGEToTexture() && !isVideoTexture(display.getTopAddrGe())) {
+            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, display.getTopAddrGe(), display.getBufferWidthGe(), display.getWidthGe(), display.getHeightGe(), display.getPixelFormatGe(), true);
+            geTexture.copyScreenToTexture(re);
+        } else {
+            // Lock the resizedTexFb to avoid that it is recreated at the same time by the GUI thread
+        	synchronized (display.resizedTexFbLock) {
+	            // Set resizedTexFb as the current texture
+	            re.bindTexture(display.getResizedTexFb());
+	            re.setTextureFormat(display.getPixelFormatGe(), false);
+
+	            // Copy screen to the current texture
+	            re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(display.getWidthGe()), getResizedHeight(display.getHeightGe()));
+
+	            // Re-render GE/current texture upside down
+	            drawFrameBuffer(re);
+
+	            // Save GE/current texture to vram
+	            copyScreenToPixels(re, display.getPixelsGe(), display.getBufferWidthGe(), display.getPixelFormatGe(), display.getWidthGe(), display.getHeightGe());
+        	}
+        }
+
+        // Wait for the completion of all the rendering commands
+        long sync = re.fenceSync();
+        re.clientWaitSync(sync, 100000000L); // wait for maximum 100ms as a fallback
+        re.deleteSync(sync);
+
+        // Now that the GE has been saved to memory and that all the rendering commands are completed,
+        // we can generate the FINISH interrupt/callback
         currentList.clearRestart();
         currentList.finishList();
         currentList.pushFinishCallback(currentList.id, normalArgument);
@@ -3965,7 +4031,7 @@ public class VideoEngine {
     }
 
     private void executeCommandLTE() {
-        context.lightingFlag.setEnabled(normalArgument);
+        context.lightingFlag.setEnabled(re, normalArgument);
         if (context.lightingFlag.isEnabled()) {
             lightingChanged = true;
             materialChanged = true;
@@ -3975,45 +4041,45 @@ public class VideoEngine {
     private void executeCommandLTEn() {
         int lnum = command - LTE0;
         EnableDisableFlag lightFlag = context.lightFlags[lnum];
-        lightFlag.setEnabled(normalArgument);
+        lightFlag.setEnabled(re, normalArgument);
         if (lightFlag.isEnabled()) {
             lightingChanged = true;
         }
     }
 
     private void executeCommandCPE() {
-        context.clipPlanesFlag.setEnabled(normalArgument);
+        context.clipPlanesFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandBCE() {
-        context.cullFaceFlag.setEnabled(normalArgument);
+        context.cullFaceFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandTME() {
-        context.textureFlag.setEnabled(normalArgument);
+        context.textureFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandFGE() {
-        context.fogFlag.setEnabled(normalArgument);
+        context.fogFlag.setEnabled(re, normalArgument);
         if (context.fogFlag.isEnabled()) {
             re.setFogHint();
         }
     }
 
     private void executeCommandDTE() {
-        context.ditherFlag.setEnabled(normalArgument);
+        context.ditherFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandABE() {
-        context.blendFlag.setEnabled(normalArgument);
+        context.blendFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandATE() {
-        context.alphaTestFlag.setEnabled(normalArgument);
+        context.alphaTestFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandZTE() {
-        context.depthTestFlag.setEnabled(normalArgument);
+        context.depthTestFlag.setEnabled(re, normalArgument);
         if (context.depthTestFlag.isEnabled()) {
             // OpenGL requires the Depth parameters to be reloaded
             depthChanged = true;
@@ -4022,27 +4088,27 @@ public class VideoEngine {
 
     private void executeCommandSTE() {
     	if (!context.clearMode) {
-    		context.stencilTestFlag.setEnabled(normalArgument);
+    		context.stencilTestFlag.setEnabled(re, normalArgument);
     	}
     }
 
     private void executeCommandAAE() {
-        context.lineSmoothFlag.setEnabled(normalArgument);
+        context.lineSmoothFlag.setEnabled(re, normalArgument);
         if (context.lineSmoothFlag.isEnabled()) {
             re.setLineSmoothHint();
         }
     }
 
     private void executeCommandPCE() {
-        context.patchCullFaceFlag.setEnabled(normalArgument);
+        context.patchCullFaceFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandCTE() {
-        context.colorTestFlag.setEnabled(normalArgument);
+        context.colorTestFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandLOE() {
-        context.colorLogicOpFlag.setEnabled(normalArgument);
+        context.colorLogicOpFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandBOFS() {
@@ -4086,7 +4152,7 @@ public class VideoEngine {
 
     private void executeCommandPFACE() {
         // 0 - Clockwise oriented patch / 1 - Counter clockwise oriented patch.
-        context.patchFaceFlag.setEnabled(normalArgument);
+        context.patchFaceFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandMMS() {
@@ -4300,7 +4366,7 @@ public class VideoEngine {
     private void executeCommandRNORM() {
         // This seems to be taked into account when calculating the lighting
         // for the current normal.
-        context.faceNormalReverseFlag.setEnabled(normalArgument);
+        context.faceNormalReverseFlag.setEnabled(re, normalArgument);
     }
 
     private void executeCommandCMAT() {
@@ -5405,9 +5471,9 @@ public class VideoEngine {
             if (!useBufferManager) {
                 re.setTexCoordPointer(nTexCoord, type, stride, offset);
             } else if (isNative) {
-                bufferManager.setTexCoordPointer(nativeBufferId, nTexCoord, type, context.vinfo.vertexSize, offset);
+                bufferManager.setTexCoordPointer(re, nativeBufferId, nTexCoord, type, context.vinfo.vertexSize, offset);
             } else {
-                bufferManager.setTexCoordPointer(bufferId, nTexCoord, type, stride, offset);
+                bufferManager.setTexCoordPointer(re, bufferId, nTexCoord, type, stride, offset);
             }
         }
     }
@@ -5417,9 +5483,9 @@ public class VideoEngine {
             if (!useBufferManager) {
                 re.setColorPointer(nColor, type, stride, offset);
             } else if (isNative) {
-                bufferManager.setColorPointer(nativeBufferId, nColor, type, context.vinfo.vertexSize, offset);
+                bufferManager.setColorPointer(re, nativeBufferId, nColor, type, context.vinfo.vertexSize, offset);
             } else {
-                bufferManager.setColorPointer(bufferId, nColor, type, stride, offset);
+                bufferManager.setColorPointer(re, bufferId, nColor, type, stride, offset);
             }
         }
     }
@@ -5428,9 +5494,9 @@ public class VideoEngine {
         if (!useBufferManager) {
             re.setVertexPointer(nVertex, type, stride, offset);
         } else if (isNative) {
-            bufferManager.setVertexPointer(nativeBufferId, nVertex, type, context.vinfo.vertexSize, offset);
+            bufferManager.setVertexPointer(re, nativeBufferId, nVertex, type, context.vinfo.vertexSize, offset);
         } else {
-            bufferManager.setVertexPointer(bufferId, nVertex, type, stride, offset);
+            bufferManager.setVertexPointer(re, bufferId, nVertex, type, stride, offset);
         }
     }
 
@@ -5439,9 +5505,9 @@ public class VideoEngine {
             if (!useBufferManager) {
                 re.setNormalPointer(type, stride, offset);
             } else if (isNative) {
-                bufferManager.setNormalPointer(nativeBufferId, type, context.vinfo.vertexSize, offset);
+                bufferManager.setNormalPointer(re, nativeBufferId, type, context.vinfo.vertexSize, offset);
             } else {
-                bufferManager.setNormalPointer(bufferId, type, stride, offset);
+                bufferManager.setNormalPointer(re, bufferId, type, stride, offset);
             }
         }
     }
@@ -6431,7 +6497,7 @@ public class VideoEngine {
             		return;
             	}
 
-            	display.copyGeToMemory(true, false);
+            	copyGeToMemory(re, true, false);
                 // Re-bind the texture to be loaded, as the bind might have been changed during the GE copy.
                 re.bindTexture(context.currentTextureId);
             }
@@ -6638,9 +6704,9 @@ public class VideoEngine {
             }
 
             re.setScissor(scissorX, scissorY, scissorWidth, scissorHeight);
-            context.scissorTestFlag.setEnabled(true);
+            context.scissorTestFlag.setEnabled(re, true);
         } else {
-            context.scissorTestFlag.setEnabled(false);
+            context.scissorTestFlag.setEnabled(re, false);
         }
     }
 
@@ -6760,8 +6826,8 @@ public class VideoEngine {
             // each time in 2D mode... Otherwise textures are not displayed.
             modelMatrixUpload.setChanged(true);
         } else {
-            context.lightingFlag.update();
-            context.fogFlag.update();
+            context.lightingFlag.update(re);
+            context.fogFlag.update(re);
         }
 
         /*
@@ -6836,8 +6902,8 @@ public class VideoEngine {
         if (textureMatrixUpload.isChanged()) {
             if (context.transform_mode != VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
                 re.setTextureMapMode(TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV, TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES);
-                context.reTextureGenS.setEnabled(false);
-                context.reTextureGenT.setEnabled(false);
+                context.reTextureGenS.setEnabled(re, false);
+                context.reTextureGenT.setEnabled(re, false);
 
                 float[] textureMatrix = new float[]{
                     1.f / context.texture_width[0], 0, 0, 0,
@@ -6857,8 +6923,8 @@ public class VideoEngine {
                 re.setTextureMapMode(context.tex_map_mode, context.tex_proj_map_mode);
                 switch (context.tex_map_mode) {
                     case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV: {
-                        context.reTextureGenS.setEnabled(false);
-                        context.reTextureGenT.setEnabled(false);
+                        context.reTextureGenS.setEnabled(re, false);
+                        context.reTextureGenT.setEnabled(re, false);
 
                         float[] textureMatrix = new float[]{
                             context.tex_scale_x, 0, 0, 0,
@@ -6881,8 +6947,8 @@ public class VideoEngine {
                     }
 
                     case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX: {
-                        context.reTextureGenS.setEnabled(false);
-                        context.reTextureGenT.setEnabled(false);
+                        context.reTextureGenS.setEnabled(re, false);
+                        context.reTextureGenT.setEnabled(re, false);
                         float[] textureMatrix = context.texture_uploaded_matrix;
                         if (textureFlipped) {
                             // Map the (U,V) from ([0..1],[0..1]) to ([0..1],[1..0])
@@ -6903,8 +6969,8 @@ public class VideoEngine {
 
                     case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
                         re.setTextureEnvironmentMapping(context.tex_shade_u, context.tex_shade_v);
-                        context.reTextureGenS.setEnabled(true);
-                        context.reTextureGenT.setEnabled(true);
+                        context.reTextureGenS.setEnabled(re, true);
+                        context.reTextureGenT.setEnabled(re, true);
                         for (int i = 0; i < 3; i++) {
                             context.tex_envmap_matrix[i + 0] = context.light_pos[context.tex_shade_u][i];
                             context.tex_envmap_matrix[i + 4] = context.light_pos[context.tex_shade_v][i];
@@ -6937,7 +7003,7 @@ public class VideoEngine {
 
         context.useVertexColor = false;
         if (!context.lightingFlag.isEnabled() || context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-            context.reColorMaterial.setEnabled(false);
+            context.reColorMaterial.setEnabled(re, false);
             if (context.vinfo.color != 0) {
                 context.useVertexColor = true;
             } else {
@@ -6950,7 +7016,7 @@ public class VideoEngine {
                 boolean diffuse = (context.mat_flags & 2) != 0;
                 boolean specular = (context.mat_flags & 4) != 0;
                 re.setColorMaterial(ambient, diffuse, specular);
-                context.reColorMaterial.setEnabled(true);
+                context.reColorMaterial.setEnabled(re, true);
                 if (!ambient) {
                     re.setMaterialAmbientColor(context.mat_ambient);
                 }
@@ -6964,7 +7030,7 @@ public class VideoEngine {
             }
             re.setVertexColor(context.mat_ambient);
         } else {
-            context.reColorMaterial.setEnabled(false);
+            context.reColorMaterial.setEnabled(re, false);
             if (materialChanged) {
                 re.setColorMaterial(false, false, false);
                 re.setMaterialAmbientColor(context.mat_ambient);
@@ -7408,7 +7474,7 @@ public class VideoEngine {
                 ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
                 byteBuffer.clear();
                 byteBuffer.asFloatBuffer().put(floatBufferArray, 0, bufferSizeInFloats);
-                bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
+                bufferManager.setBufferSubData(re, IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
             }
         } else {
             needSetDataPointers = cachedVertexInfo.bindVertex(re);
@@ -7874,7 +7940,7 @@ public class VideoEngine {
         @Override
         public void execute() {
             restoreContext(addr);
-            context.update();
+            context.update(re);
             sync.release();
         }
     }

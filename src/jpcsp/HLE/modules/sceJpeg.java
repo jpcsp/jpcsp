@@ -18,6 +18,7 @@ package jpcsp.HLE.modules;
 
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.graphics.RE.IRenderingEngine.sizeOfTextureType;
+import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
 import static jpcsp.memory.ImageReader.colorARGBtoABGR;
 
 import java.awt.image.BufferedImage;
@@ -190,7 +191,7 @@ public class sceJpeg extends HLEModule {
         }
         memoryWriter.flush();
 
-        VideoEngine.getInstance().addVideoTexture(imageBuffer.getAddress(), imageBuffer.getAddress() + bufferWidth * height * sceDisplay.getPixelFormatBytes(pixelFormat));
+        VideoEngine.getInstance().addVideoTexture(imageBuffer.getAddress(), imageBuffer.getAddress() + bufferWidth * height * getPixelFormatBytes(pixelFormat));
     }
 
     private static void generateFakeImage(int dest_addr, int frameWidth, int imageWidth, int imageHeight, int pixelMode) {
@@ -198,7 +199,7 @@ public class sceJpeg extends HLEModule {
 
         Random random = new Random();
         final int pixelSize = 3;
-        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelMode);
+        final int bytesPerPixel = getPixelFormatBytes(pixelMode);
         for (int y = 0; y < imageHeight - pixelSize + 1; y += pixelSize) {
             int address = dest_addr + y * frameWidth * bytesPerPixel;
             final int width = Math.min(imageWidth, frameWidth);
@@ -226,7 +227,7 @@ public class sceJpeg extends HLEModule {
 
     protected void generateFakeImage(TPointer imageBuffer, int width, int height, int bufferWidth, int pixelFormat) {
         generateFakeImage(imageBuffer.getAddress(), bufferWidth, width, height, pixelFormat);
-        VideoEngine.getInstance().addVideoTexture(imageBuffer.getAddress(), imageBuffer.getAddress() + bufferWidth * height * sceDisplay.getPixelFormatBytes(pixelFormat));
+        VideoEngine.getInstance().addVideoTexture(imageBuffer.getAddress(), imageBuffer.getAddress() + bufferWidth * height * getPixelFormatBytes(pixelFormat));
     }
 
     public int hleGetYCbCrBufferSize(BufferedImage bufferedImage) {

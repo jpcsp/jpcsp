@@ -188,6 +188,10 @@ public class ShaderContext {
 		// Nothing to do here
 	}
 
+	public void startDisplay(IRenderingEngine re) {
+		// Nothing to do here
+	}
+
 	public float getZPos() {
 		return zPos;
 	}

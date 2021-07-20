@@ -17,6 +17,7 @@
 package jpcsp;
 
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
+import static jpcsp.graphics.VideoEngineUtilities.getViewportResizeScaleFactor;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -82,6 +83,7 @@ import jpcsp.format.PBP;
 import jpcsp.format.PSF;
 import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.VideoEngineUtilities;
 import jpcsp.hardware.Audio;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.hardware.Screen;
@@ -235,7 +237,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             @Override
             public void run() {
                 // let the layout manager settle before setting the minimum size
-                Modules.sceDisplayModule.setDisplayMinimumSize();
+                VideoEngineUtilities.setDisplayMinimumSize();
 
                 // as the console log window position depends on the main
                 // window's size run this here
@@ -1148,7 +1150,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
             makeFullScreenMenu();
         } else {
-            float viewportResizeScaleFactor = Modules.sceDisplayModule.getViewportResizeScaleFactor();
+            float viewportResizeScaleFactor = getViewportResizeScaleFactor();
             if (viewportResizeScaleFactor <= 1.5f) {
                 oneTimeResize.setSelected(true);
             } else if (viewportResizeScaleFactor <= 2.5f) {
