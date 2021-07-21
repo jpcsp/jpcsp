@@ -40,6 +40,7 @@ import jpcsp.HLE.modules.sceAudio;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.mmio.audio.AudioLine;
 import jpcsp.memory.mmio.cy27040.CY27040;
+import jpcsp.sound.SoundChannel;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
@@ -289,6 +290,7 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 	private MMIOHandlerAudio(int baseAddress) {
 		super(baseAddress);
 
+		SoundChannel.init();
     	for (int i = 0; i < audioLineStates.length; i++) {
     		audioLineStates[i] = new AudioLineState(i);
 		}
