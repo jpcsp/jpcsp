@@ -21,5 +21,7 @@
 	<classpathentry kind="lib" path="lib/jna-5.8.0.jar"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk15on-169.jar"/>
 	<classpathentry kind="lib" path="lib/jide-oss-3.6.18.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-glfw.jar"/>
+	<classpathentry kind="lib" path="lib/lwjgl-3.2.3/lwjgl-glfw-natives-windows.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
