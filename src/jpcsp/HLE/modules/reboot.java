@@ -92,6 +92,7 @@ import jpcsp.memory.mmio.memorystick.MMIOHandlerMemoryStick;
 import jpcsp.settings.Settings;
 import jpcsp.util.HLEUtilities;
 import jpcsp.util.Utilities;
+import libkirk.KirkEngine;
 
 public class reboot extends HLEModule {
     public static Logger log = Modules.getLogger("reboot");
@@ -1044,7 +1045,10 @@ public class reboot extends HLEModule {
 					}
 				}
 
-				result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(decryptBuffer, decryptBufferSize, decryptBuffer, decryptBufferSize, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
+				int dataSize = decryptBuffer.getValue32(112);
+				int dataOffset = decryptBuffer.getValue32(116);
+				int inSize = KirkEngine.KIRK_CMD1_HEADER.SIZEOF + Utilities.alignUp(dataSize, 15) + dataOffset;
+				result = Modules.semaphoreModule.hleUtilsBufferCopyWithRange(decryptBuffer, decryptBufferSize, decryptBuffer, inSize, KIRK.PSP_KIRK_CMD_DECRYPT_PRIVATE);
 				if (result != 0) {
 					log.error(String.format("hleUtilsBufferCopyWithRange returned 0x%08X", result));
 				}
