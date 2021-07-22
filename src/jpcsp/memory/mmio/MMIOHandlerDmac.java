@@ -26,6 +26,7 @@ import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceDmac;
 import jpcsp.memory.mmio.dmac.DmacProcessor;
+import jpcsp.sound.SoundChannel;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -52,6 +53,7 @@ public class MMIOHandlerDmac extends MMIOHandlerBase {
 	public MMIOHandlerDmac(int baseAddress) {
 		super(baseAddress);
 
+		SoundChannel.init();
 		for (int i = 0; i < dmacProcessors.length; i++) {
 			dmacProcessors[i] = new DmacProcessor(getMemory(), getMemory(), baseAddress + 0x100 + i * 0x20, new DmacCompletedAction(1 << i));
 		}

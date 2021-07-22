@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory.mmio;
 
+import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getMainProcessor;
 import static jpcsp.Allegrex.compiler.RuntimeContextLLE.getMediaEngineProcessor;
 import static jpcsp.Emulator.getClock;
@@ -34,8 +35,8 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.compiler.RuntimeContextLLE;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceAudio;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.mmio.audio.AudioLine;
@@ -259,23 +260,45 @@ public class MMIOHandlerAudio extends MMIOHandlerBase {
 		}
 	}
 
-	private class PollAudioLinesThread extends Thread {
+	private class PollAudioLinesThread extends Thread implements IAction {
+		private volatile boolean exit;
+		private volatile boolean end;
+
 		@Override
 		public void run() {
-			RuntimeContext.setLog4jMDC();
+			setLog4jMDC();
+			SoundChannel.setThreadInitContext();
+			RuntimeContextLLE.registerExitAction(this);
 
-			boolean exit = false;
 			while (!exit) {
 				try {
-			    	for (int i = 0; i < audioLineStates.length; i++) {
+			    	for (int i = 0; i < audioLineStates.length && !exit; i++) {
 			    		audioLineStates[i].poll();
 					}
 
-			    	Utilities.sleep(10, 0);
+			    	if (!exit) {
+			    		Utilities.sleep(10, 0);
+			    	}
 				} catch (UnsatisfiedLinkError e) {
 					exit = true;
 				}
 			}
+
+			SoundChannel.clearThreadInitContext();
+
+			end = true;
+		}
+
+		public void exit() {
+			exit = true;
+			while (!end) {
+				// Active polling as this will terminate very quickly
+			}
+		}
+
+		@Override
+		public void execute() {
+			exit();
 		}
 	}
 

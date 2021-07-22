@@ -43,6 +43,7 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.memory.mmio.MMIOHandlerAudio;
 import jpcsp.memory.mmio.MMIOHandlerDdr;
 import jpcsp.memory.mmio.MMIOHandlerDmac;
+import jpcsp.sound.SoundChannel;
 import jpcsp.util.Utilities;
 
 public class DmacThread extends Thread {
@@ -80,6 +81,7 @@ public class DmacThread extends Thread {
 	@Override
 	public void run() {
 		setLog4jMDC();
+		SoundChannel.setThreadInitContext();
 
 		while (!exit) {
 			try {
@@ -93,6 +95,10 @@ public class DmacThread extends Thread {
 				// Ignore exception
 			}
 		}
+
+		SoundChannel.clearThreadInitContext();
+
+		inProgress = false;
 	}
 
 	public void exit() {
@@ -117,8 +123,10 @@ public class DmacThread extends Thread {
 
 	public void abortJob() {
 		abortJob = true;
+		inProgress = true;
 
 		trigger.release();
+		job.release();
 
 		while (inProgress) {
 			// Active polling as this will complete very quickly

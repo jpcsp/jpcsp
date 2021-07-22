@@ -37,6 +37,7 @@ import jpcsp.HLE.modules.sceMpegbase;
 import jpcsp.mediaengine.MEProcessor;
 import jpcsp.memory.mmio.dmac.DmacProcessor;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.sound.SoundChannel;
 import jpcsp.state.StateInputStream;
 import jpcsp.state.StateOutputStream;
 
@@ -99,6 +100,7 @@ public class MMIOHandlerDmacplus extends MMIOHandlerBase {
 	public MMIOHandlerDmacplus(int baseAddress) {
 		super(baseAddress);
 
+		SoundChannel.init();
 		Memory meMemory = MEProcessor.getInstance().getMEMemory();
 		Memory scMemory = getMemory();
 		dmacProcessors[0] = new DmacProcessor(scMemory, meMemory, baseAddress + 0x180, new DmacCompletedAction(COMPLETED_FLAG_SC2ME));
