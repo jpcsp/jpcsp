@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import static jpcsp.sound.SoundChannel.alCheckError;
+
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,6 +51,7 @@ public class SoundBufferManager {
 		synchronized (freeBuffers) {
 			if (freeBuffers.isEmpty()) {
 				int alBuffer = AL10.alGenBuffers();
+				alCheckError("alGenBuffers");
 				freeBuffers.push(alBuffer);
 			}
 
@@ -67,10 +70,12 @@ public class SoundBufferManager {
 
 	public int checkFreeBuffer(int alSource) {
     	int processedBuffers = AL10.alGetSourcei(alSource, AL10.AL_BUFFERS_PROCESSED);
+		alCheckError("alGetSourcei AL_BUFFERS_PROCESSED");
     	if (processedBuffers <= 0) {
     		return -1;
     	}
 		int alBuffer = AL10.alSourceUnqueueBuffers(alSource);
+		alCheckError("alSourceUnqueueBuffers");
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("free buffer %d", alBuffer));
 		}

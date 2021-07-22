@@ -32,6 +32,7 @@ import org.lwjgl.openal.EXTThreadLocalContext;
 
 public class SoundChannel {
 	private static Logger log = sceAudio.log;
+	private static final boolean doCheckError = false;
 	private static volatile boolean isExit = false;
 	private static volatile boolean isInit = false;
 	private static long initDevice;
@@ -77,7 +78,15 @@ public class SoundChannel {
 	    	setThreadInitContext();
 	    	AL.createCapabilities(deviceCapabilities);
 
+	    	// Check if a required extension is available
+	    	final String extensionName = "ALC_EXT_thread_local_context";
+	    	if (!ALC10.alcIsExtensionPresent(initDevice, extensionName)) {
+	    		log.error(String.format("Required extension %s is not available", extensionName));
+	    	}
+
 	    	isInit = true;
+    	} else {
+    		setThreadInitContext();
     	}
 
     	isExit = false;
@@ -98,11 +107,19 @@ public class SoundChannel {
     }
 
     public static void setThreadInitContext() {
-    	EXTThreadLocalContext.alcSetThreadContext(initContext);
+    	if (!EXTThreadLocalContext.alcSetThreadContext(initContext)) {
+    		log.error(String.format("setThreadInitContext alcMakeContextCurrent failed with error 0x%X", ALC10.alcGetError(initDevice)));
+    	} else if (log.isDebugEnabled()) {
+    		log.debug(String.format("setThreadInitContext initContext=0x%X, thread=0x%X", initContext, Thread.currentThread().getId()));
+    	}
     }
 
     public static void clearThreadInitContext() {
-    	EXTThreadLocalContext.alcSetThreadContext(0L);
+    	if (!EXTThreadLocalContext.alcSetThreadContext(0L)) {
+    		log.error(String.format("clearThreadInitContext alcMakeContextCurrent failed with error 0x%X", ALC10.alcGetError(initDevice)));
+    	} else if (log.isDebugEnabled()) {
+    		log.debug(String.format("clearThreadInitContext thread=0x%X", Thread.currentThread().getId()));
+    	}
     }
 
     public SoundChannel(int index) {
@@ -116,6 +133,26 @@ public class SoundChannel {
 		updateNumberBlockingBuffers();
 
 		AL10.alSourcei(alSource, AL10.AL_LOOPING, AL10.AL_FALSE);
+		alCheckError("alSourcei AL_LOOPING");
+	}
+
+	public static void alCheckError(String comment) {
+		if (doCheckError) {
+			int alError = AL10.alGetError();
+			if (alError != AL10.AL_NO_ERROR) {
+				String errorString;
+				switch (alError) {
+					case AL10.AL_INVALID_ENUM:      errorString = "AL_INVALID_ENUM";      break;
+					case AL10.AL_INVALID_NAME:      errorString = "AL_INVALID_NAME";      break;
+					case AL10.AL_INVALID_OPERATION: errorString = "AL_INVALID_OPERATION"; break;
+					case AL10.AL_INVALID_VALUE:     errorString = "AL_INVALID_VALUE";     break;
+					default:
+						errorString = String.format("0x%X", alError);
+						break;
+				}
+				log.error(String.format("%s returning error %s", comment, errorString));
+			}
+		}
 	}
 
     private void updateNumberBlockingBuffers() {
@@ -214,6 +251,7 @@ public class SoundChannel {
 		if (state != AL10.AL_PLAYING) {
 			if (minimumNumberBuffers <= 0 || getWaitingBuffers() >= minimumNumberBuffers) {
 				AL10.alSourcePlay(alSource);
+				alCheckError("alSourcePlay");
 			}
 		}
     }
@@ -227,7 +265,9 @@ public class SoundChannel {
 		directBuffer.rewind();
 		int alFormat = isFormatStereo() ? AL10.AL_FORMAT_STEREO16 : AL10.AL_FORMAT_MONO16;
 		AL10.alBufferData(alBuffer, alFormat, directBuffer, getSampleRate());
+		alCheckError("alBufferData");
 		AL10.alSourceQueueBuffers(alSource, alBuffer);
+		alCheckError("alSourceQueueBuffers");
 		soundBufferManager.releaseDirectBuffer(directBuffer);
 		alSourcePlay();
 		checkFreeBuffers();
@@ -243,6 +283,7 @@ public class SoundChannel {
 
     public void release() {
     	AL10.alSourceStop(alSource);
+		alCheckError("alSourceStop");
     	checkFreeBuffers();
     }
 
@@ -258,6 +299,7 @@ public class SoundChannel {
 
     private int getSourceSampleOffset() {
     	int sampleOffset = AL10.alGetSourcei(alSource, AL11.AL_SAMPLE_OFFSET);
+		alCheckError("alGetSourcei AL_SAMPLE_OFFSET");
     	if (isFormatStereo()) {
     		sampleOffset /= 2;
     	}
@@ -328,6 +370,7 @@ public class SoundChannel {
     	checkFreeBuffers();
 
     	int state = AL10.alGetSourcei(alSource, AL10.AL_SOURCE_STATE);
+		alCheckError("alGetSourcei AL_SOURCE_STATE");
 		if (state == AL10.AL_PLAYING) {
 			return false;
 		}

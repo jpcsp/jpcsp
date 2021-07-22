@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.memory.mmio.audio;
 
 import static jpcsp.HLE.modules.sceAudio.PSP_AUDIO_VOLUME_MAX;
+import static jpcsp.sound.SoundChannel.alCheckError;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,14 +45,22 @@ public class AudioLine implements IState {
 
 	public AudioLine() {
 		soundBufferManager = SoundBufferManager.getInstance();
+
 		alSource = AL10.alGenSources();
+		alCheckError("alGenSources");
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("alGenSources returning alSource=%d", alSource));
+		}
+
 		AL10.alSourcei(alSource, AL10.AL_LOOPING, AL10.AL_FALSE);
+		alCheckError("alSourcei AL_LOOPING");
 	}
 
 	private void alSourcePlay() {
 		int state = AL10.alGetSourcei(alSource, AL10.AL_SOURCE_STATE);
 		if (state != AL10.AL_PLAYING) {
 			AL10.alSourcePlay(alSource);
+			alCheckError("alSourcePlay");
 		}
 	}
 
@@ -86,9 +95,10 @@ public class AudioLine implements IState {
 	public void setVolume(int volume) {
 		float gain = volume / (float) PSP_AUDIO_VOLUME_MAX;
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("AudioLine volume=0x%X, gain=%f", volume, gain));
+			log.debug(String.format("AudioLine alSource=%d, volume=0x%X, gain=%f", alSource, volume, gain));
 		}
 		AL10.alSourcef(alSource, AL10.AL_GAIN, gain);
+		alCheckError("alSourcef AL_GAIN");
 	}
 
 	public void writeAudioData(int[] data, int offset, int length) {
@@ -101,10 +111,15 @@ public class AudioLine implements IState {
 		directBuffer.rewind();
 
     	int alBuffer = soundBufferManager.getBuffer();
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("writeAudioData alBuffer=%d", alBuffer));
+    	}
     	waitingBufferSizes.put(alBuffer, length);
     	waitingBufferSamples += length;
 		AL10.alBufferData(alBuffer, AL10.AL_FORMAT_STEREO16, directBuffer, frequency);
+		alCheckError("alBufferData");
 		AL10.alSourceQueueBuffers(alSource, alBuffer);
+		alCheckError("alSourceQueueBuffers");
 		soundBufferManager.releaseDirectBuffer(directBuffer);
 
 		alSourcePlay();
