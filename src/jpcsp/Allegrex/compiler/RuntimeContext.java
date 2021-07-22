@@ -921,6 +921,7 @@ public class RuntimeContext {
 
     	if (isStoppedThread()) {
 			// This thread has already been stopped before it is really starting...
+        	SoundChannel.clearThreadInitContext();
     		return;
     	}
 
@@ -928,6 +929,7 @@ public class RuntimeContext {
 
     	if (isStoppedThread()) {
 			// This thread has already been stopped before it is really starting...
+        	SoundChannel.clearThreadInitContext();
     		return;
     	}
 
