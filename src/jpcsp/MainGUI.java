@@ -97,7 +97,11 @@ import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.network.xlinkkai.XLinkKaiWlanAdapter;
 import jpcsp.remote.HTTPServer;
 import jpcsp.settings.Settings;
-import jpcsp.util.*;
+import jpcsp.util.FileUtil;
+import jpcsp.util.JpcspDialogManager;
+import jpcsp.util.LWJGLFixer;
+import jpcsp.util.MetaInformation;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -220,17 +224,20 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         
         // Check if any plugins are available.
         xbrzCheck.setEnabled(false);
-        String path = System.getProperty("java.library.path");
-        if (path != null && path.length() > 0) {
-	        File plugins = new File(path);
-	        String[] pluginList = plugins.list();
-	        if (pluginList != null) {
-		        for (String list : pluginList) {
-		            if (list.contains("XBRZ4JPCSP")) {
-		                xbrzCheck.setEnabled(true);
-		            }
+        String libraryPath = System.getProperty("java.library.path");
+        if (libraryPath != null && libraryPath.length() > 0) {
+        	String[] paths = libraryPath.split(File.pathSeparator);
+        	for (String path : paths) {
+		        File plugins = new File(path);
+		        String[] pluginList = plugins.list();
+		        if (pluginList != null) {
+			        for (String list : pluginList) {
+			            if (list.contains("XBRZ4JPCSP")) {
+			                xbrzCheck.setEnabled(true);
+			            }
+			        }
 		        }
-	        }
+        	}
         }
 
         SwingUtilities.invokeLater(new Runnable() {
@@ -2905,12 +2912,21 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 
     private void printUsage() {
     	String javaLibraryPath = System.getProperty("java.library.path");
-    	if (javaLibraryPath == null || javaLibraryPath.length() == 0) {
-    		javaLibraryPath = "lib/windows-amd64";
+    	String startCmd = "start-windows-amd64.bat";
+    	if (javaLibraryPath != null) {
+    		if (javaLibraryPath.contains("windows-amd64")) {
+    			startCmd = "start-windows-amd64.bat";
+    		} else if (javaLibraryPath.contains("windows-x86")) {
+    			startCmd = "start-windows-x86.bat";
+    		} else if (javaLibraryPath.contains("linux-amd64")) {
+    			startCmd = "sh start-linux-amd64.sh";
+    		} else if (javaLibraryPath.contains("linux-x86")) {
+    			startCmd = "sh start-linux-x86.sh";
+    		}
     	}
 
     	final PrintStream out = System.err;
-        out.println(String.format("Usage: java -Xmx1024m -Xss2m -XX:ReservedCodeCacheSize=64m -Djava.library.path=%s -jar bin/jpcsp.jar [OPTIONS]", javaLibraryPath));
+        out.println(String.format("Usage: %s [OPTIONS]", startCmd));
         out.println();
         out.println("  -d, --debugger             Open debugger at start.");
         out.println("  -f, --loadfile FILE        Load a file.");

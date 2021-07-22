@@ -1914,13 +1914,11 @@ public class Utilities {
     	return true;
     }
 
-    public static boolean isSystemLibraryExisting(String libraryName) {
+    private static boolean isSystemLibraryExisting(String libraryName, String path) {
     	String[] extensions = new String[] { ".dll", ".so" };
 
-    	String path = System.getProperty("java.library.path");
-    	if (path == null) {
-    		path = "";
-    	} else if (!path.endsWith("/")) {
+    	path = path.trim();
+    	if (!path.endsWith("/")) {
     		path += "/";
     	}
 
@@ -1929,6 +1927,22 @@ public class Utilities {
         	if (libraryFile.canExecute()) {
         		return true;
         	}
+    	}
+
+    	return false;
+    }
+
+    public static boolean isSystemLibraryExisting(String libraryName) {
+    	String libraryPaths = System.getProperty("java.library.path");
+    	if (libraryPaths == null) {
+    		libraryPaths = "";
+    	}
+
+    	String[] paths = libraryPaths.split(File.pathSeparator);
+    	for (String path : paths) {
+    		if (isSystemLibraryExisting(libraryName, path)) {
+    			return true;
+    		}
     	}
 
     	return false;
