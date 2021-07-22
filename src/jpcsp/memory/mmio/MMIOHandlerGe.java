@@ -30,6 +30,7 @@ import jpcsp.Allegrex.compiler.RuntimeContextLLE;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.externalge.CoreThreadMMIO;
 import jpcsp.graphics.RE.externalge.ExternalGE;
 import jpcsp.graphics.RE.externalge.NativeUtils;
@@ -68,8 +69,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		super(baseAddress);
 
 		ExternalGE.init();
-		if (!ExternalGE.isActive()) {
-			log.error(String.format("MMIOHandlerGe is only working with the External Software Renderer"));
+		if (!ExternalGE.isActive() && !VideoEngine.getInstance().lleIsActive()) {
+			log.error(String.format("MMIOHandlerGe is only working with the External Software Renderer or the OpenGL Renderer"));
 		}
 	}
 
@@ -204,6 +205,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	private int getStatus() {
 		if (ExternalGE.isActive()) {
 			status = NativeUtils.getCoreStat();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			status = VideoEngine.getInstance().lleGetCoreStat();
 		}
 		return status;
 	}
@@ -212,12 +215,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.status = status;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreStat(status);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreStat(status);
 		}
 	}
 
 	private int getList() {
 		if (ExternalGE.isActive()) {
 			list = NativeUtils.getCoreMadr();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			list = VideoEngine.getInstance().lleGetCoreMadr();
 		}
 		return list;
 	}
@@ -226,12 +233,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.list = list;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreMadr(list);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreMadr(list);
 		}
 	}
 
 	private int getStall() {
 		if (ExternalGE.isActive()) {
 			stall = NativeUtils.getCoreSadr();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			stall = VideoEngine.getInstance().lleGetCoreSadr();
 		}
 		return stall;
 	}
@@ -242,12 +253,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreSadr(stall);
 			CoreThreadMMIO.getInstance().sync();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreSadr(stall);
 		}
 	}
 
 	private int getRaddr1() {
 		if (ExternalGE.isActive()) {
 			raddr1 = NativeUtils.getCoreRadr1();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			raddr1 = VideoEngine.getInstance().lleGetCoreRadr1();
 		}
 		return raddr1;
 	}
@@ -256,12 +271,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.raddr1 = raddr1;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreRadr1(raddr1);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreRadr1(raddr1);
 		}
 	}
 
 	private int getRaddr2() {
 		if (ExternalGE.isActive()) {
 			raddr2 = NativeUtils.getCoreRadr2();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			raddr2 = VideoEngine.getInstance().lleGetCoreRadr2();
 		}
 		return raddr2;
 	}
@@ -270,12 +289,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.raddr2 = raddr2;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreRadr2(raddr2);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreRadr2(raddr2);
 		}
 	}
 
 	private int getVaddr() {
 		if (ExternalGE.isActive()) {
 			vaddr = NativeUtils.getCoreVadr();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			vaddr = VideoEngine.getInstance().lleGetCoreVadr();
 		}
 		return vaddr;
 	}
@@ -284,12 +307,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.vaddr = vaddr;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreVadr(vaddr);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreVadr(vaddr);
 		}
 	}
 
 	private int getIaddr() {
 		if (ExternalGE.isActive()) {
 			iaddr = NativeUtils.getCoreIadr();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			iaddr = VideoEngine.getInstance().lleGetCoreIadr();
 		}
 		return iaddr;
 	}
@@ -298,12 +325,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.iaddr = iaddr;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreIadr(iaddr);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreIadr(iaddr);
 		}
 	}
 
 	private int getOaddr() {
 		if (ExternalGE.isActive()) {
 			oaddr = NativeUtils.getCoreOadr();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			oaddr = VideoEngine.getInstance().lleGetCoreOadr();
 		}
 		return oaddr;
 	}
@@ -312,12 +343,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.oaddr = oaddr;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreOadr(oaddr);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreOadr(oaddr);
 		}
 	}
 
 	private int getOaddr1() {
 		if (ExternalGE.isActive()) {
 			oaddr1 = NativeUtils.getCoreOadr1();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			oaddr1 = VideoEngine.getInstance().lleGetCoreOadr1();
 		}
 		return oaddr1;
 	}
@@ -326,12 +361,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.oaddr1 = oaddr1;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreOadr1(oaddr1);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreOadr1(oaddr1);
 		}
 	}
 
 	private int getOaddr2() {
 		if (ExternalGE.isActive()) {
 			oaddr2 = NativeUtils.getCoreOadr2();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			oaddr2 = VideoEngine.getInstance().lleGetCoreOadr2();
 		}
 		return oaddr2;
 	}
@@ -340,12 +379,16 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.oaddr2 = oaddr2;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreOadr2(oaddr2);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreOadr2(oaddr2);
 		}
 	}
 
 	private int getCmdStatus() {
 		if (ExternalGE.isActive()) {
 			cmdStatus = NativeUtils.getCoreIntrStat();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			cmdStatus = VideoEngine.getInstance().lleGetCoreIntrStat();
 		}
 		return cmdStatus;
 	}
@@ -354,6 +397,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.cmdStatus = cmdStatus;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreIntrStat(cmdStatus);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreIntrStat(cmdStatus);
 		}
 
 		// Clearing some flags from cmdStatus is also clearing the related interrupt flags
@@ -368,6 +413,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	private synchronized int getInterrupt() {
 		if (ExternalGE.isActive()) {
 			interrupt = NativeUtils.getCoreInterrupt();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			interrupt = VideoEngine.getInstance().lleGetCoreInterrupt();
 		}
 		return interrupt;
 	}
@@ -386,6 +433,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		this.interrupt = interrupt;
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreInterrupt(interrupt);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreInterrupt(interrupt);
 		}
 
 		checkInterrupt();
@@ -407,16 +456,24 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 			// Update the screen scale only at the start of a new list
 			NativeUtils.setScreenScale(ExternalGE.getScreenScale());
 			CoreThreadMMIO.getInstance().sync();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleStartGeList();
 		}
 	}
 
 	private void stopGeList() {
-		// TODO
+		if (ExternalGE.isActive()) {
+			// TODO Implement LLE stopGeList() for the external software renderer
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleStopGeList();
+		}
 	}
 
 	private int getCtrl() {
 		if (ExternalGE.isActive()) {
 			ctrl = NativeUtils.getCoreCtrl();
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			ctrl = VideoEngine.getInstance().lleGetCoreCtrl();
 		}
 		return ctrl;
 	}
@@ -427,6 +484,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 
 		if (ExternalGE.isActive()) {
 			NativeUtils.setCoreCtrl(ctrl);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCoreCtrl(ctrl);
 		}
 
 		if ((oldCtrl & CTRL_ACTIVE) != (ctrl & CTRL_ACTIVE)) {
@@ -442,6 +501,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		int value = 0;
 		if (ExternalGE.isActive()) {
 			value = ExternalGE.getCmd(cmd);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			value = VideoEngine.getInstance().lleGetCmd(cmd);
 		}
 
 		if (log.isDebugEnabled()) {
@@ -457,6 +518,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 			if (GeCommands.pureStateCommands[cmd]) {
 				ExternalGE.interpretCmd(cmd, value);
 			}
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetCmd(cmd, value);
 		}
 	}
 
@@ -464,6 +527,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		float[] matrix = null;
 		if (ExternalGE.isActive()) {
 			 matrix = ExternalGE.getMatrix(matrixType);
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			matrix = VideoEngine.getInstance().lleGetMatrix(matrixType);
 		}
 
 		if (matrix == null || matrixIndex < 0 || matrixIndex >= matrix.length) {
@@ -486,6 +551,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	private void writeGeBone(int bone, int value) {
 		if (ExternalGE.isActive()) {
 			ExternalGE.setMatrix(sceGe_user.PSP_GE_MATRIX_BONE0 + (bone / 12), bone %12, Float.intBitsToFloat(value << 8));
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetMatrix(sceGe_user.PSP_GE_MATRIX_BONE0 + (bone / 12), bone %12, Float.intBitsToFloat(value << 8));
 		}
 	}
 
@@ -496,6 +563,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	private void writeGeWorld(int world, int value) {
 		if (ExternalGE.isActive()) {
 			ExternalGE.setMatrix(sceGe_user.PSP_GE_MATRIX_WORLD, world, Float.intBitsToFloat(value << 8));
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetMatrix(sceGe_user.PSP_GE_MATRIX_WORLD, world, Float.intBitsToFloat(value << 8));
 		}
 	}
 
@@ -506,6 +575,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	private void writeGeView(int view, int value) {
 		if (ExternalGE.isActive()) {
 			ExternalGE.setMatrix(sceGe_user.PSP_GE_MATRIX_VIEW, view, Float.intBitsToFloat(value << 8));
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetMatrix(sceGe_user.PSP_GE_MATRIX_VIEW, view, Float.intBitsToFloat(value << 8));
 		}
 	}
 
@@ -516,6 +587,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	private void writeGeProjection(int projection, int value) {
 		if (ExternalGE.isActive()) {
 			ExternalGE.setMatrix(sceGe_user.PSP_GE_MATRIX_PROJECTION, projection, Float.intBitsToFloat(value << 8));
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetMatrix(sceGe_user.PSP_GE_MATRIX_PROJECTION, projection, Float.intBitsToFloat(value << 8));
 		}
 	}
 
@@ -526,6 +599,8 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	private void writeGeTexture(int texture, int value) {
 		if (ExternalGE.isActive()) {
 			ExternalGE.setMatrix(sceGe_user.PSP_GE_MATRIX_TEXGEN, texture, Float.intBitsToFloat(value << 8));
+		} else if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleSetMatrix(sceGe_user.PSP_GE_MATRIX_TEXGEN, texture, Float.intBitsToFloat(value << 8));
 		}
 	}
 

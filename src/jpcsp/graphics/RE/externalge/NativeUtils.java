@@ -59,6 +59,8 @@ public class NativeUtils {
 	public static final int INTR_STAT_END    = 0x2;
 	public static final int INTR_STAT_FINISH = 0x4;
 	public static final int CTRL_ACTIVE      = 0x1;
+	public static final int CTRL_RET1        = 0x100;
+	public static final int CTRL_RET2        = 0x200;
 
 	public static void init() {
 		if (!isInitialized) {

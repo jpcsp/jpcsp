@@ -186,7 +186,7 @@ public class PspGeList {
     	if (this.pc != pc) {
     		int oldPc = this.pc;
     		this.pc = pc;
-    		resetMemoryReader(oldPc);
+			resetMemoryReader(oldPc);
     	}
     }
 
@@ -194,7 +194,21 @@ public class PspGeList {
 		return pc;
 	}
 
-    public void jumpAbsolute(int argument) {
+	public void setListAddr(int addr) {
+		init();
+
+		list_addr = addr & pcAddressMask;
+		setPc(list_addr);
+    	finished = false;
+    	reset = false;
+        ended = false;
+        pauseDuration = 0L;
+        minimumDuration = 0L;
+
+    	sync = new Semaphore(0);
+	}
+
+	public void jumpAbsolute(int argument) {
     	setPc(Memory.normalizeAddress(argument));
     }
 
@@ -389,7 +403,9 @@ public class PspGeList {
 	}
 
 	private void resetMemoryReader(int oldPc) {
-		if (pc >= baseMemoryReaderStartAddress && pc < baseMemoryReaderEndAddress) {
+		if (pc == 0) {
+			memoryReader = null;
+		} else if (pc >= baseMemoryReaderStartAddress && pc < baseMemoryReaderEndAddress) {
 			memoryReader = baseMemoryReader;
 			memoryReader.skip((pc - baseMemoryReader.getCurrentAddress()) >> 2);
 		} else if (memoryReader == null || memoryReader == baseMemoryReader || pc < oldPc) {

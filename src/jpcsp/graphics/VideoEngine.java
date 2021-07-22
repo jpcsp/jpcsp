@@ -39,12 +39,21 @@ import static jpcsp.HLE.modules.sceGe_user.PSP_GE_MATRIX_VIEW;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_MATRIX_WORLD;
 import static jpcsp.Memory.isVRAM;
 import static jpcsp.graphics.GeCommands.*;
+import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_ACTIVE;
+import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_RET1;
+import static jpcsp.graphics.RE.externalge.NativeUtils.CTRL_RET2;
+import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
+import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_FINISH;
+import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_SIGNAL;
 import static jpcsp.graphics.VideoEngineUtilities.copyGeToMemory;
 import static jpcsp.graphics.VideoEngineUtilities.copyScreenToPixels;
 import static jpcsp.graphics.VideoEngineUtilities.drawFrameBuffer;
 import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
+import static jpcsp.util.Utilities.clearFlag;
+import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.matrixMult;
 import static jpcsp.util.Utilities.round4;
+import static jpcsp.util.Utilities.setFlag;
 import static jpcsp.util.Utilities.vectorMult;
 import static jpcsp.util.Utilities.vectorMult44;
 
@@ -96,6 +105,7 @@ import jpcsp.hardware.Screen;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.ImageReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.memory.mmio.MMIOHandlerGe;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.util.CpuDurationStatistics;
@@ -297,6 +307,16 @@ public class VideoEngine {
     private boolean hideEffects = false;
     // VideoEngine Thread
     private VideoEngineThread videoEngineThread;
+    // For LLE implementation
+    private boolean lleRun;
+    private PspGeList lleGeList;
+    private int lleRaddr1;
+    private int lleRaddr2;
+    private int lleOaddr1;
+    private int lleOaddr2;
+    private int lleInterrupt;
+    private int lleIntrStat;
+    private int lleCtrl;
 
     public static class MatrixUpload {
 
@@ -432,6 +452,8 @@ public class VideoEngine {
         if (avoidDrawElementsWithNonZeroIndexOffset) {
             indexByteBuffer = ByteBuffer.allocateDirect(indexDrawBufferSizeInBytes).order(ByteOrder.nativeOrder());
         }
+
+        display = Modules.sceDisplayModule;
     }
 
     /**
@@ -1131,7 +1153,7 @@ public class VideoEngine {
         waitForSyncCount = 0;
         while (!listHasEnded && (!Emulator.pause || State.captureGeNextFrame)) {
             if (currentList.isPaused() || currentList.isEnded()) {
-                if (executeListPaused()) {
+                if (lleRun || executeListPaused()) {
                     break;
                 }
             } else if (currentList.isStallReached()) {
@@ -1173,6 +1195,13 @@ public class VideoEngine {
         // Restore the context to the state at the beginning of the list processing (used by sceGu).
         if (currentList.hasSaveContextAddr()) {
             restoreContext(currentList.getSaveContextAddr());
+        }
+
+        if (lleRun) {
+        	if (currentList.isPaused()) {
+            	lleRun = false;
+        		MMIOHandlerGe.getInstance().onGeInterrupt();
+        	}
         }
     }
 
@@ -3753,6 +3782,18 @@ public class VideoEngine {
             }
         }
 
+        if (lleRun) {
+	        if (hasFlag(lleCtrl, CTRL_RET1)) {
+				lleCtrl = setFlag(lleCtrl, CTRL_RET2);
+				lleRaddr2 = oldPc;
+				lleOaddr2 = context.baseOffset;
+			} else {
+				lleCtrl = setFlag(lleCtrl, CTRL_RET1);
+				lleRaddr1 = oldPc;
+				lleOaddr1 = context.baseOffset;
+			}
+        }
+
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
         }
@@ -3760,29 +3801,52 @@ public class VideoEngine {
 
     private void executeCommandRET() {
         int oldPc = currentList.getPc();
-        currentList.ret();
+        if (lleRun) {
+        	if (hasFlag(lleCtrl, CTRL_RET2)) {
+        		lleCtrl = clearFlag(lleCtrl, CTRL_RET2);
+        		context.baseOffset = lleOaddr2;
+        		currentList.setPc(lleRaddr2);
+        	} else if (hasFlag(lleCtrl, CTRL_RET1)) {
+        		lleCtrl = clearFlag(lleCtrl, CTRL_RET1);
+        		context.baseOffset = lleOaddr1;
+        		currentList.setPc(lleRaddr1);
+        	}
+        } else {
+        	currentList.ret();
+        }
         int newPc = currentList.getPc();
+
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(RET), oldPc, newPc));
         }
     }
 
     private void executeCommandEND() {
-        int previousCommand = command(currentList.readPreviousInstruction());
-        // Ignore the END command if the command before was not SIGNAL or FINISH
-        if (previousCommand == SIGNAL || previousCommand == FINISH) {
-            // Try to end the current list.
-            // The list only ends (isEnded() == true) if FINISH was called previously.
-            // In SIGNAL + END cases, isEnded() still remains false.
-            currentList.endList();
-            currentList.pauseList();
+    	if (lleRun) {
+    		lleCtrl = clearFlag(lleCtrl, CTRL_ACTIVE);
+    		lleInterrupt = setFlag(lleInterrupt, INTR_STAT_END);
+    		lleIntrStat = setFlag(lleIntrStat, INTR_STAT_END);
+        	currentList.pauseList();
             if (isLogDebugEnabled) {
-                log(String.format("%s pc=0x%08X", helper.getCommandString(END), currentList.getPc()));
+                log(String.format("%s with LLE pc=0x%08X", helper.getCommandString(END), currentList.getPc()));
             }
-            updateGeBuf();
-        } else if (isLogWarnEnabled) {
-            log.warn(String.format("Ignoring %s 0x%06X command without %s/%s at pc=0x%08X", helper.getCommandString(END), normalArgument, helper.getCommandString(SIGNAL), helper.getCommandString(FINISH), currentList.getPc() - 4));
-        }
+    	} else {
+	        int previousCommand = command(currentList.readPreviousInstruction());
+	        // Ignore the END command if the command before was not SIGNAL or FINISH
+	        if (previousCommand == SIGNAL || previousCommand == FINISH) {
+	            // Try to end the current list.
+	            // The list only ends (isEnded() == true) if FINISH was called previously.
+	            // In SIGNAL + END cases, isEnded() still remains false.
+	            currentList.endList();
+	            currentList.pauseList();
+	            if (isLogDebugEnabled) {
+	                log(String.format("%s pc=0x%08X", helper.getCommandString(END), currentList.getPc()));
+	            }
+	            updateGeBuf();
+	        } else if (isLogWarnEnabled) {
+	            log.warn(String.format("Ignoring %s 0x%06X command without %s/%s at pc=0x%08X", helper.getCommandString(END), normalArgument, helper.getCommandString(SIGNAL), helper.getCommandString(FINISH), currentList.getPc() - 4));
+	        }
+    	}
     }
 
     private void executeCommandSIGNAL() {
@@ -3790,6 +3854,11 @@ public class VideoEngine {
         int signal = normalArgument & 0xFFFF;
         if (isLogDebugEnabled) {
             log(String.format("%s (behavior=%d, signal=0x%X)", helper.getCommandString(SIGNAL), behavior, signal));
+        }
+
+        if (lleRun) {
+    		lleIntrStat = setFlag(lleIntrStat, INTR_STAT_SIGNAL);
+    		return;
         }
 
         switch (behavior) {
@@ -3943,11 +4012,15 @@ public class VideoEngine {
         re.clientWaitSync(sync, 100000000L); // wait for maximum 100ms as a fallback
         re.deleteSync(sync);
 
-        // Now that the GE has been saved to memory and that all the rendering commands are completed,
-        // we can generate the FINISH interrupt/callback
-        currentList.clearRestart();
-        currentList.finishList();
-        currentList.pushFinishCallback(currentList.id, normalArgument);
+        if (lleRun) {
+    		lleIntrStat = setFlag(lleIntrStat, INTR_STAT_FINISH);
+        } else {
+	        // Now that the GE has been saved to memory and that all the rendering commands are completed,
+	        // we can generate the FINISH interrupt/callback
+	        currentList.clearRestart();
+	        currentList.finishList();
+	        currentList.pushFinishCallback(currentList.id, normalArgument);
+        }
     }
 
     private void executeCommandBASE() {
@@ -7908,6 +7981,182 @@ public class VideoEngine {
 
     public boolean isDoubleTexture2DCoords() {
         return doubleTexture2DCoords;
+    }
+
+    public boolean lleIsActive() {
+    	return !ExternalGE.isActive() && !display.isUsingSoftwareRenderer();
+    }
+
+    private void lleInitList() {
+    	if (lleGeList == null) {
+    		lleGeList = new PspGeList(0);
+    	}
+    }
+
+    public int lleGetCoreStat() {
+    	return 0;
+    }
+
+    public void lleSetCoreStat(int status) {
+    	// Nothing to do, unused
+    }
+
+    public int lleGetCoreMadr() {
+    	lleInitList();
+    	return lleGeList.getPc();
+    }
+
+    public void lleSetCoreMadr(int list) {
+    	lleInitList();
+    	lleGeList.setListAddr(list);
+    }
+
+    public int lleGetCoreSadr() {
+    	lleInitList();
+    	return lleGeList.getStallAddr();
+    }
+
+    public void lleSetCoreSadr(int stall) {
+    	lleInitList();
+    	lleGeList.setStallAddr(stall);
+        if (videoEngineThread != null) {
+    		videoEngineThread.update();
+    	}
+    }
+
+    public int lleGetCoreRadr1() {
+    	return lleRaddr1;
+    }
+
+    public void lleSetCoreRadr1(int raddr1) {
+    	lleRaddr1 = raddr1;
+    }
+
+    public int lleGetCoreRadr2() {
+    	return lleRaddr2;
+    }
+
+    public void lleSetCoreRadr2(int raddr2) {
+    	lleRaddr2 = raddr2;
+    }
+
+    public int lleGetCoreVadr() {
+    	return context.vinfo.ptr_vertex;
+    }
+
+    public void lleSetCoreVadr(int vaddr) {
+    	context.vinfo.ptr_index = vaddr;
+    }
+
+    public int lleGetCoreIadr() {
+    	return context.vinfo.ptr_index;
+    }
+
+    public void lleSetCoreIadr(int iaddr) {
+    	context.vinfo.ptr_index = iaddr;
+    }
+
+    public int lleGetCoreOadr() {
+    	return context.baseOffset;
+    }
+
+    public void lleSetCoreOadr(int oaddr) {
+    	context.baseOffset = oaddr;
+    }
+
+    public int lleGetCoreOadr1() {
+    	return lleOaddr1;
+    }
+
+    public void lleSetCoreOadr1(int oaddr1) {
+    	lleOaddr1 = oaddr1;
+    }
+
+    public int lleGetCoreOadr2() {
+    	return lleOaddr2;
+    }
+
+    public void lleSetCoreOadr2(int oaddr2) {
+    	lleOaddr2 = oaddr2;
+    }
+
+    public int lleGetCoreIntrStat() {
+    	return lleIntrStat;
+    }
+
+    public void lleSetCoreIntrStat(int intrStat) {
+    	lleIntrStat = intrStat;
+    }
+
+    public int lleGetCoreInterrupt() {
+    	return lleInterrupt;
+    }
+
+    public void lleSetCoreInterrupt(int interrupt) {
+    	lleInterrupt = interrupt;
+    }
+
+    public int lleGetCoreCtrl() {
+    	return lleCtrl;
+    }
+
+    public void lleSetCoreCtrl(int ctrl) {
+    	lleCtrl = ctrl;
+    }
+
+    public void lleStartGeList() {
+    	lleInitList();
+    	if (isLogDebugEnabled) {
+    		log.debug(String.format("lleStartGeList %s", lleGeList));
+    	}
+    	lleRun = true;
+    	lleGeList.startList();
+    }
+
+    public void lleStopGeList() {
+    	// TODO
+    }
+
+    public int lleGetCmd(int cmd) {
+    	return getCommandValue(cmd);
+    }
+
+    public void lleSetCmd(int cmd, int value) {
+    	currentCMDValues[cmd] = value;
+    }
+
+    public float[] lleGetMatrix(int matrixType) {
+    	return getMatrix(matrixType);
+    }
+
+    public void lleSetMatrix(int matrixType, int offset, float value) {
+        switch (matrixType) {
+	        case PSP_GE_MATRIX_BONE0:
+	        case PSP_GE_MATRIX_BONE1:
+	        case PSP_GE_MATRIX_BONE2:
+	        case PSP_GE_MATRIX_BONE3:
+	        case PSP_GE_MATRIX_BONE4:
+	        case PSP_GE_MATRIX_BONE5:
+	        case PSP_GE_MATRIX_BONE6:
+	        case PSP_GE_MATRIX_BONE7:
+	            context.bone_uploaded_matrix[matrixType - PSP_GE_MATRIX_BONE0][offset] = value;
+	            break;
+	        case PSP_GE_MATRIX_WORLD:
+	            context.model_uploaded_matrix[offset] = value;
+	            break;
+	        case PSP_GE_MATRIX_VIEW:
+	            context.view_uploaded_matrix[offset] = value;
+	            break;
+	        case PSP_GE_MATRIX_PROJECTION:
+	            context.proj_uploaded_matrix[offset] = value;
+	            break;
+	        case PSP_GE_MATRIX_TEXGEN:
+	            context.texture_uploaded_matrix[offset] = value;
+	            break;
+            default:
+            	log.error(String.format("lleSetMatrix unknown matrixType=%d, offset=%d, value=%f", matrixType, offset, value));
+            	break;
+	    }
     }
 
     private class SaveContextAction implements IAction {
