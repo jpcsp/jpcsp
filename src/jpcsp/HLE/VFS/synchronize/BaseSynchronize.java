@@ -41,15 +41,21 @@ public abstract class BaseSynchronize implements ISynchronize {
     private SynchronizeThread synchronizeThread;
 
     private class SynchronizeThread extends Thread {
-		@Override
+    	private volatile boolean exit;
+
+    	@Override
 		public void run() {
 			RuntimeContext.setLog4jMDC();
 
-			while (true) {
-				checkDeltaSynchronize(deltaSyncDelayMillis);;
+			while (!exit) {
 				Utilities.sleep(deltaSyncIntervalMillis, 0);
+				checkDeltaSynchronize(deltaSyncDelayMillis);;
 			}
 		}
+
+    	public void exit() {
+    		exit = true;
+    	}
     }
 
 	protected BaseSynchronize(String name, Object lock) {
@@ -136,4 +142,8 @@ public abstract class BaseSynchronize implements ISynchronize {
 			lastWrite = now;
 		}
 	}
+
+    public void exit() {
+    	synchronizeThread.exit();
+    }
 }
