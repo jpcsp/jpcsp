@@ -50,35 +50,41 @@ public class VideoEngineThread extends Thread {
     private long videoEngineContext;
 
     public static boolean isActive() {
-    	return Platform.get() == Platform.WINDOWS;
+    	switch (Platform.get()) {
+	    	case WINDOWS:
+	    	case LINUX:
+	    		return true;
+    		default:
+    	    	return false;
+    	}
     }
 
     public VideoEngineThread(VideoEngine videoEngine) {
 		this.videoEngine = videoEngine;
 
-		long currentContext = WGL.wglGetCurrentContext();
+		long currentContext;
 		long displayWindow = Modules.sceDisplayModule.getCanvas().getDisplayWindow();
 		switch (Platform.get()) {
 			case WINDOWS:
 				long dc = User32.GetDC(displayWindow);
 				videoEngineContext = WGL.wglCreateContext(dc);
+				currentContext = WGL.wglGetCurrentContext();
 				if (!WGL.wglShareLists(currentContext, videoEngineContext)) {
 					log.error(String.format("Cannot share context 0x%X with 0x%X", currentContext, videoEngineContext));
 				}
 				User32.ReleaseDC(displayWindow, dc);
 				break;
 			case LINUX:
-				// TODO Not yet working for Linux
 				int screen = X11.XDefaultScreen(displayWindow);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("XDefaultScreen displayWindow=0x%X, screen=%d", displayWindow, screen));
 				}
 				XVisualInfo visualInfo = GLX.glXChooseVisual(displayWindow, screen, new int[] { 0 });
-				long glxCurrentContext = GLX.glXGetCurrentContext();
+				currentContext = GLX.glXGetCurrentContext();
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("glxCurrentContext=0x%X", glxCurrentContext));
+					log.debug(String.format("glxCurrentContext=0x%X", currentContext));
 				}
-				videoEngineContext = GLX.glXCreateContext(displayWindow, visualInfo, glxCurrentContext, true);
+				videoEngineContext = GLX.glXCreateContext(displayWindow, visualInfo, currentContext, true);
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("videoEngineContext=0x%X", videoEngineContext));
 				}
@@ -109,8 +115,8 @@ public class VideoEngineThread extends Thread {
 				User32.ReleaseDC(displayWindow, dc);
 				break;
 			case LINUX:
-				// TODO Not yet working for Linux
-				if (!GLX.glXMakeCurrent(displayWindow, displayModule.getCanvas().getDisplayDrawable(), videoEngineContext)) {
+				long drawable = displayModule.getCanvas().getDisplayDrawable();
+				if (!GLX.glXMakeCurrent(displayWindow, drawable, videoEngineContext)) {
 					log.error(String.format("Cannot make context 0x%X current", videoEngineContext));
 				}
 				break;

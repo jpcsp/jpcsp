@@ -281,7 +281,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Dimension dim = getDimensionFromDisplay(width, height);
         dim.height += mainToolBar.getHeight();
         dim.height += MenuBar.getHeight();
-        setMinimumSize(dim);
+    	Dimension currentMinimumSize = getMinimumSize();
+    	if (currentMinimumSize == null || !dim.equals(currentMinimumSize)) {
+    		setMinimumSize(dim);
+    	}
     }
 
     @Override
