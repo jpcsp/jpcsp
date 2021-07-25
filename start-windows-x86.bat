@@ -35,7 +35,7 @@ ver | findstr "5\.1\." > nul
 if %ERRORLEVEL% EQU 0 set MAX_MEM_SIZE=768m
 
 echo Running Jpcsp 32bit...
-"%JAVA_CMD%" -Xmx%MAX_MEM_SIZE% -Xss2m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-x86;lib/jinput-2.0.9-natives-all -classpath "bin/jpcsp.jar;lib/lwjgl-3.2.3/lwjgl.jar;lib/lwjgl-3.2.3/lwjgl-openal.jar;lib/lwjgl-3.2.3/lwjgl-opengl.jar;lib/lwjgl-3.2.3/lwjgl-jawt.jar;lib/lwjgl-3.2.3/lwjgl-natives-windows.jar;lib/lwjgl-3.2.3/lwjgl-openal-natives-windows.jar;lib/lwjgl-3.2.3/lwjgl-opengl-natives-windows.jar" jpcsp.MainGUI %*
+"%JAVA_CMD%" -Xmx%MAX_MEM_SIZE% -Xss2m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-x86;lib/jinput-2.0.9-natives-all -classpath "bin/jpcsp.jar;lib/lwjgl-3.2.3/lwjgl.jar;lib/lwjgl-3.2.3/lwjgl-openal.jar;lib/lwjgl-3.2.3/lwjgl-opengl.jar;lib/lwjgl-3.2.3/lwjgl-jawt.jar;lib/lwjgl-3.2.3/lwjgl-natives-windows-x86.jar;lib/lwjgl-3.2.3/lwjgl-openal-natives-windows-x86.jar;lib/lwjgl-3.2.3/lwjgl-opengl-natives-windows-x86.jar" jpcsp.MainGUI %*
 if ERRORLEVEL 1 goto PAUSE
 goto END
 
