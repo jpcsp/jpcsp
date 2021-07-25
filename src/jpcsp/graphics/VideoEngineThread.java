@@ -23,9 +23,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GLX;
 import org.lwjgl.opengl.WGL;
+import org.lwjgl.system.Platform;
+import org.lwjgl.system.linux.X11;
+import org.lwjgl.system.linux.XVisualInfo;
 import org.lwjgl.system.windows.User32;
 
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.RE.IRenderingEngine;
@@ -44,30 +49,75 @@ public class VideoEngineThread extends Thread {
     private boolean run = true;
     private long videoEngineContext;
 
-	public VideoEngineThread(VideoEngine videoEngine) {
+    public static boolean isActive() {
+    	return Platform.get() == Platform.WINDOWS;
+    }
+
+    public VideoEngineThread(VideoEngine videoEngine) {
 		this.videoEngine = videoEngine;
 
 		long currentContext = WGL.wglGetCurrentContext();
 		long displayWindow = Modules.sceDisplayModule.getCanvas().getDisplayWindow();
-		long dc = User32.GetDC(displayWindow);
-		videoEngineContext = WGL.wglCreateContext(dc);
-		if (!WGL.wglShareLists(currentContext, videoEngineContext)) {
-			log.error(String.format("Cannot share context 0x%X with 0x%X", currentContext, videoEngineContext));
+		switch (Platform.get()) {
+			case WINDOWS:
+				long dc = User32.GetDC(displayWindow);
+				videoEngineContext = WGL.wglCreateContext(dc);
+				if (!WGL.wglShareLists(currentContext, videoEngineContext)) {
+					log.error(String.format("Cannot share context 0x%X with 0x%X", currentContext, videoEngineContext));
+				}
+				User32.ReleaseDC(displayWindow, dc);
+				break;
+			case LINUX:
+				// TODO Not yet working for Linux
+				int screen = X11.XDefaultScreen(displayWindow);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("XDefaultScreen displayWindow=0x%X, screen=%d", displayWindow, screen));
+				}
+				XVisualInfo visualInfo = GLX.glXChooseVisual(displayWindow, screen, new int[] { 0 });
+				long glxCurrentContext = GLX.glXGetCurrentContext();
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("glxCurrentContext=0x%X", glxCurrentContext));
+				}
+				videoEngineContext = GLX.glXCreateContext(displayWindow, visualInfo, glxCurrentContext, true);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("videoEngineContext=0x%X", videoEngineContext));
+				}
+				break;
+			default:
+				log.error(String.format("Unsupported platform %s", Platform.get().getName()));
+				break;
 		}
-		User32.ReleaseDC(displayWindow, dc);
 	}
 
 	@Override
 	public void run() {
 		final IRenderingEngine re = videoEngine.getRenderingEngine();
 		final sceDisplay displayModule = Modules.sceDisplayModule;
+		RuntimeContext.setLog4jMDC();
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Start of Video Engine Thread with videoEngineContext=0x%X", videoEngineContext));
+		}
 
 		long displayWindow = displayModule.getCanvas().getDisplayWindow();
-		long dc = User32.GetDC(displayWindow);
-		if (!WGL.wglMakeCurrent(dc, videoEngineContext)) {
-			log.error(String.format("Cannot make context 0x%X current", videoEngineContext));
+		switch (Platform.get()) {
+			case WINDOWS:
+				long dc = User32.GetDC(displayWindow);
+				if (!WGL.wglMakeCurrent(dc, videoEngineContext)) {
+					log.error(String.format("Cannot make context 0x%X current", videoEngineContext));
+				}
+				User32.ReleaseDC(displayWindow, dc);
+				break;
+			case LINUX:
+				// TODO Not yet working for Linux
+				if (!GLX.glXMakeCurrent(displayWindow, displayModule.getCanvas().getDisplayDrawable(), videoEngineContext)) {
+					log.error(String.format("Cannot make context 0x%X current", videoEngineContext));
+				}
+				break;
+			default:
+				log.error(String.format("Unsupported platform %s", Platform.get().getName()));
+				break;
 		}
-		User32.ReleaseDC(displayWindow, dc);
 
         GL.createCapabilities();
 

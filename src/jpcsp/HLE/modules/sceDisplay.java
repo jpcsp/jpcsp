@@ -77,6 +77,7 @@ import jpcsp.graphics.FrameBufferSettings;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VertexCache;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.VideoEngineThread;
 import jpcsp.graphics.VideoEngineUtilities;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.RenderingEngineFactory;
@@ -97,12 +98,13 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.awt.GLData;
+import org.lwjgl.opengl.awt.PlatformLinuxGLCanvas;
 import org.lwjgl.opengl.awt.PlatformWin32GLCanvas;
 import org.lwjgl.opengl.awt.AWTGLCanvas;
 
 public class sceDisplay extends HLEModule {
     public static Logger log = Modules.getLogger("sceDisplay");
-    private static final boolean multiThreadingLockDisplay = true;
+    private static final boolean multiThreadingLockDisplay = false;
 
     public class AWTGLCanvas_sceDisplay extends AWTGLCanvas {
 		private static final long serialVersionUID = -3808789665048696700L;
@@ -114,6 +116,16 @@ public class sceDisplay extends HLEModule {
 		public long getDisplayWindow() {
 			if (platformCanvas instanceof PlatformWin32GLCanvas) {
 				return ((PlatformWin32GLCanvas) platformCanvas).hwnd;
+			}
+			if (platformCanvas instanceof PlatformLinuxGLCanvas) {
+				return ((PlatformLinuxGLCanvas) platformCanvas).display;
+			}
+			return 0L;
+		}
+
+		public long getDisplayDrawable() {
+			if (platformCanvas instanceof PlatformLinuxGLCanvas) {
+				return ((PlatformLinuxGLCanvas) platformCanvas).drawable;
 			}
 			return 0L;
 		}
@@ -285,13 +297,9 @@ public class sceDisplay extends HLEModule {
                 }
             } else if (isOnlyGEGraphics()) {
             	// Nothing to do
-            } else {
-                // Hardware rendering:
-                // 1) GE list is rendered to the screen
-                // 2) the result of the rendering is stored into the GE frame buffer
-                // 3) the active FB frame buffer is reloaded from memory to the screen for final display
+            } else if (VideoEngineThread.isActive()) {
                 if (log.isDebugEnabled()) {
-                    log.debug("sceDisplay.paintGL - start display");
+                    log.debug("sceDisplay.paintGL - start display with Video Engine Thread");
                 }
                 reDisplay.startDisplay();
 
@@ -307,6 +315,34 @@ public class sceDisplay extends HLEModule {
                 }
 
                 reDisplay.endDisplay();
+
+                if (log.isDebugEnabled()) {
+                    log.debug("sceDisplay.paintGL - end display");
+                }
+            } else {
+                // Hardware rendering:
+                // 1) GE list is rendered to the screen
+                // 2) the result of the rendering is stored into the GE frame buffer
+                // 3) the active FB frame buffer is reloaded from memory to the screen for final display
+                if (log.isDebugEnabled()) {
+                    log.debug("sceDisplay.paintGL - start display without Video Engine Thread");
+                }
+
+                re.startDisplay();
+                videoEngine.update();
+
+                // Render the FB
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("sceDisplay.paintGL - rendering the FB 0x%08X", currentFb.getTopAddr()));
+                }
+                if (saveGEToTexture && !videoEngine.isVideoTexture(fb.getTopAddr())) {
+                    GETexture geTexture = GETextureManager.getInstance().getGETexture(re, currentFb.getTopAddr(), currentFb.getBufferWidth(), currentFb.getWidth(), currentFb.getHeight(), currentFb.getPixelFormat(), true);
+                    geTexture.copyTextureToScreen(re);
+                } else {
+            		drawFrameBufferFromMemory(re, currentFb, texFb);
+                }
+
+                re.endDisplay();
 
                 if (log.isDebugEnabled()) {
                     log.debug("sceDisplay.paintGL - end display");

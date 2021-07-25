@@ -660,7 +660,7 @@ public class VideoEngine {
 
         cachedInstructions = new HashMap<Integer, int[]>();
 
-        if (videoEngineThread == null) {
+        if (videoEngineThread == null && VideoEngineThread.isActive()) {
         	videoEngineThread = new VideoEngineThread(VideoEngine.getInstance());
         	videoEngineThread.setDaemon(true);
         	videoEngineThread.setName("Video Engine Thread");
@@ -7984,7 +7984,7 @@ public class VideoEngine {
     }
 
     public boolean lleIsActive() {
-    	return !ExternalGE.isActive() && !display.isUsingSoftwareRenderer();
+    	return !ExternalGE.isActive() && !display.isUsingSoftwareRenderer() && VideoEngineThread.isActive();
     }
 
     private void lleInitList() {
