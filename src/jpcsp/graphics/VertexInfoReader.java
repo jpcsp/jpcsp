@@ -68,7 +68,7 @@ public class VertexInfoReader {
 	private float[] position = new float[3];
 	private boolean canAllNativeVertexInfo;
 
-	private final static int typeNone = -1;
+	private final static int typeNone = 0;
 
 	// Readers skipping the padding at the end of a vertex element,
 	// indexed by the alignment (1 = byte-aligned, 2 = short-aligned, 4 = int-aligned)
