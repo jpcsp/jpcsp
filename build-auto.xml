@@ -14,9 +14,10 @@
 		<pathelement location="lib/lwjgl-3.2.3/lwjgl.jar" />
 		<pathelement location="lib/lwjgl-3.2.3/lwjgl-opengl.jar" />
 		<pathelement location="lib/lwjgl-3.2.3/lwjgl-openal.jar" />
+		<pathelement location="lib/lwjgl-3.2.3/lwjgl-glfw.jar" />
 		<pathelement location="lib/lwjgl-3.2.3/lwjgl-jawt.jar" />
 		<pathelement location="lib/lwjgl3-awt-0.1.8.jar" />
-		<pathelement location="lib/jide-oss-2.8.4.jar" />
+		<pathelement location="lib/jide-oss-3.6.18.jar" />
 		<pathelement location="lib/log4j-1.2.15.jar" />
 		<pathelement location="lib/asm-9.1.jar" />
 		<pathelement location="lib/asm-analysis-9.1.jar" />
