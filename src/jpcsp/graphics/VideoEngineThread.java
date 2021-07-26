@@ -17,18 +17,15 @@
 package jpcsp.graphics;
 
 import static jpcsp.HLE.modules.sceDisplay.getTexturePixelFormat;
+import static jpcsp.graphics.VideoEngineUtilities.canShareContext;
+import static jpcsp.graphics.VideoEngineUtilities.createContext;
+import static jpcsp.graphics.VideoEngineUtilities.setContext;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GLX;
-import org.lwjgl.opengl.WGL;
-import org.lwjgl.system.Platform;
-import org.lwjgl.system.linux.X11;
-import org.lwjgl.system.linux.XVisualInfo;
-import org.lwjgl.system.windows.User32;
 
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
@@ -44,86 +41,30 @@ import jpcsp.graphics.textures.FBTexture;
  */
 public class VideoEngineThread extends Thread {
 	private static Logger log = VideoEngine.log;
-	private final VideoEngine videoEngine;
-    private Semaphore update = new Semaphore(1);
-    private boolean run = true;
-    private long videoEngineContext;
+    private final Semaphore update = new Semaphore(1);
+    private final long context;
+    private volatile boolean run = true;
 
     public static boolean isActive() {
-    	switch (Platform.get()) {
-	    	case WINDOWS:
-	    	case LINUX:
-	    		return true;
-    		default:
-    	    	return false;
-    	}
+    	return canShareContext();
     }
 
-    public VideoEngineThread(VideoEngine videoEngine) {
-		this.videoEngine = videoEngine;
-
-		long currentContext;
-		long displayWindow = Modules.sceDisplayModule.getCanvas().getDisplayWindow();
-		switch (Platform.get()) {
-			case WINDOWS:
-				long dc = User32.GetDC(displayWindow);
-				videoEngineContext = WGL.wglCreateContext(dc);
-				currentContext = WGL.wglGetCurrentContext();
-				if (!WGL.wglShareLists(currentContext, videoEngineContext)) {
-					log.error(String.format("Cannot share context 0x%X with 0x%X", currentContext, videoEngineContext));
-				}
-				User32.ReleaseDC(displayWindow, dc);
-				break;
-			case LINUX:
-				int screen = X11.XDefaultScreen(displayWindow);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("XDefaultScreen displayWindow=0x%X, screen=%d", displayWindow, screen));
-				}
-				XVisualInfo visualInfo = GLX.glXChooseVisual(displayWindow, screen, new int[] { 0 });
-				currentContext = GLX.glXGetCurrentContext();
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("glxCurrentContext=0x%X", currentContext));
-				}
-				videoEngineContext = GLX.glXCreateContext(displayWindow, visualInfo, currentContext, true);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("videoEngineContext=0x%X", videoEngineContext));
-				}
-				break;
-			default:
-				log.error(String.format("Unsupported platform %s", Platform.get().getName()));
-				break;
-		}
+    public VideoEngineThread() {
+		context = createContext();
 	}
 
 	@Override
 	public void run() {
+		RuntimeContext.setLog4jMDC();
+		final VideoEngine videoEngine = VideoEngine.getInstance();
 		final IRenderingEngine re = videoEngine.getRenderingEngine();
 		final sceDisplay displayModule = Modules.sceDisplayModule;
-		RuntimeContext.setLog4jMDC();
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Start of Video Engine Thread with videoEngineContext=0x%X", videoEngineContext));
+			log.debug(String.format("Start of Video Engine Thread with context=0x%X", context));
 		}
 
-		long displayWindow = displayModule.getCanvas().getDisplayWindow();
-		switch (Platform.get()) {
-			case WINDOWS:
-				long dc = User32.GetDC(displayWindow);
-				if (!WGL.wglMakeCurrent(dc, videoEngineContext)) {
-					log.error(String.format("Cannot make context 0x%X current", videoEngineContext));
-				}
-				User32.ReleaseDC(displayWindow, dc);
-				break;
-			case LINUX:
-				long drawable = displayModule.getCanvas().getDisplayDrawable();
-				if (!GLX.glXMakeCurrent(displayWindow, drawable, videoEngineContext)) {
-					log.error(String.format("Cannot make context 0x%X current", videoEngineContext));
-				}
-				break;
-			default:
-				log.error(String.format("Unsupported platform %s", Platform.get().getName()));
-				break;
-		}
+		setContext(context);
 
         GL.createCapabilities();
 
