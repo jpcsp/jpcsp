@@ -661,7 +661,7 @@ public class VideoEngine {
         cachedInstructions = new HashMap<Integer, int[]>();
 
         if (videoEngineThread == null && VideoEngineThread.isActive()) {
-        	videoEngineThread = new VideoEngineThread(VideoEngine.getInstance());
+        	videoEngineThread = new VideoEngineThread();
         	videoEngineThread.setDaemon(true);
         	videoEngineThread.setName("Video Engine Thread");
         	videoEngineThread.start();
@@ -822,9 +822,7 @@ public class VideoEngine {
 
     public void resetCurrentListCMDValues() {
         // Reset all the values
-        for (int i = 0; i < currentListCMDValues.length; i++) {
-            currentListCMDValues[i] = -1;
-        }
+    	Arrays.fill(currentListCMDValues, -1);
     }
 
     private void startUpdate() {
@@ -1259,6 +1257,10 @@ public class VideoEngine {
 
     private static int intArgument(int instruction) {
         return (instruction & 0x00FFFFFF);
+    }
+
+    private static int instruction(int cmd, int value) {
+    	return intArgument(value) | (cmd << 24);
     }
 
     private static float floatArgument(int normalArgument) {
@@ -3762,12 +3764,28 @@ public class VideoEngine {
 
     private void executeCommandCALL() {
         int oldPc = currentList.getPc();
-        currentList.callRelativeOffset(normalArgument);
+        if (lleRun) {
+        	currentList.jumpRelativeOffset(normalArgument);
+
+        	if (hasFlag(lleCtrl, CTRL_RET1)) {
+				lleCtrl = setFlag(lleCtrl, CTRL_RET2);
+				lleRaddr2 = oldPc;
+				lleOaddr2 = context.baseOffset;
+			} else {
+				lleCtrl = setFlag(lleCtrl, CTRL_RET1);
+				lleRaddr1 = oldPc;
+				lleOaddr1 = context.baseOffset;
+			}
+        } else {
+        	currentList.callRelativeOffset(normalArgument);
+        }
         int newPc = currentList.getPc();
         if (!Memory.isAddressGood(newPc)) {
             error(String.format("Call instruction to invalid address 0x%08X", newPc));
-            // Return immediately
-            currentList.ret();
+            if (!lleRun) {
+	            // Return immediately
+	            currentList.ret();
+            }
         } else {
             if (cachedInstructions.containsKey(newPc)) {
                 int[] instructions = cachedInstructions.get(newPc);
@@ -3780,18 +3798,6 @@ public class VideoEngine {
                     currentList.setMemoryReader(memoryReader);
                 }
             }
-        }
-
-        if (lleRun) {
-	        if (hasFlag(lleCtrl, CTRL_RET1)) {
-				lleCtrl = setFlag(lleCtrl, CTRL_RET2);
-				lleRaddr2 = oldPc;
-				lleOaddr2 = context.baseOffset;
-			} else {
-				lleCtrl = setFlag(lleCtrl, CTRL_RET1);
-				lleRaddr1 = oldPc;
-				lleOaddr1 = context.baseOffset;
-			}
         }
 
         if (isLogDebugEnabled) {
@@ -8114,15 +8120,16 @@ public class VideoEngine {
     }
 
     public void lleStopGeList() {
-    	// TODO
+    	lleGeList.pauseList();
     }
 
     public int lleGetCmd(int cmd) {
-    	return getCommandValue(cmd);
+    	// The LLE requires the cmd to be present in the highest 8 bits
+    	return instruction(cmd, getCommandValue(cmd));
     }
 
     public void lleSetCmd(int cmd, int value) {
-    	currentCMDValues[cmd] = value;
+    	currentCMDValues[cmd] = intArgument(value);
     }
 
     public float[] lleGetMatrix(int matrixType) {
@@ -8157,6 +8164,17 @@ public class VideoEngine {
             	log.error(String.format("lleSetMatrix unknown matrixType=%d, offset=%d, value=%f", matrixType, offset, value));
             	break;
 	    }
+    }
+
+    public void lleInterpretCmd(int cmd, int value) {
+    	// Force an execute of the given command
+    	currentListCMDValues[cmd] = -1;
+
+        executeCommand(instruction(cmd, value));
+    }
+
+    public void lleReset() {
+    	re.reset();
     }
 
     private class SaveContextAction implements IAction {

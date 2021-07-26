@@ -226,9 +226,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		colorMaterialSpecular = new StateBoolean();
 	}
 
-	@Override
-	public void startDisplay() {
-		// The following properties are lost when starting a new display
+	private void resetState() {
 		for (int i = 0; i < clientState.length; i++) {
 			clientState[i].setUndefined();
 		}
@@ -327,6 +325,19 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			}
 			useTextureAnisotropicFilter = VideoEngine.getInstance().isUseTextureAnisotropicFilter();
 		}
+	}
+
+	@Override
+	public void reset() {
+		resetState();
+
+		super.reset();
+	}
+
+	@Override
+	public void startDisplay() {
+		// The following properties are lost when starting a new display
+		resetState();
 
 		super.startDisplay();
 	}

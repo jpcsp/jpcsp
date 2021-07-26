@@ -195,25 +195,12 @@ public class PspGeList {
 	}
 
 	public void setListAddr(int addr) {
-		init();
-
 		list_addr = addr & pcAddressMask;
 		setPc(list_addr);
-    	finished = false;
-    	reset = false;
-        ended = false;
-        pauseDuration = 0L;
-        minimumDuration = 0L;
-
-    	sync = new Semaphore(0);
 	}
 
 	public void jumpAbsolute(int argument) {
     	setPc(Memory.normalizeAddress(argument));
-    }
-
-    public void jumpRelative(int argument) {
-    	setPc(getAddressRel(argument));
     }
 
     public void jumpRelativeOffset(int argument) {
@@ -224,12 +211,6 @@ public class PspGeList {
     	pushStack(pc);
     	pushStack(videoEngine.getBaseOffset());
     	jumpAbsolute(argument);
-    }
-
-    public void callRelative(int argument) {
-    	pushStack(pc);
-    	pushStack(videoEngine.getBaseOffset());
-    	jumpRelative(argument);
     }
 
     public void callRelativeOffset(int argument) {
@@ -311,7 +292,11 @@ public class PspGeList {
 
     public void startList() {
     	startTimestamp = getNow();
+    	finished = false;
+        ended = false;
     	paused = false;
+
+    	sync = new Semaphore(0);
     	ExternalGE.onGeStartList(this);
     	if (ExternalGE.isActive()) {
     		ExternalGE.startList(this);
@@ -405,7 +390,7 @@ public class PspGeList {
 	private void resetMemoryReader(int oldPc) {
 		if (pc == 0) {
 			memoryReader = null;
-		} else if (pc >= baseMemoryReaderStartAddress && pc < baseMemoryReaderEndAddress) {
+		} else if (pc >= baseMemoryReaderStartAddress && pc < baseMemoryReaderEndAddress && baseMemoryReader != null) {
 			memoryReader = baseMemoryReader;
 			memoryReader.skip((pc - baseMemoryReader.getCurrentAddress()) >> 2);
 		} else if (memoryReader == null || memoryReader == baseMemoryReader || pc < oldPc) {

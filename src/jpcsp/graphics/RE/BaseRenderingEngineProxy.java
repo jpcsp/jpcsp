@@ -1066,4 +1066,9 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void deleteSync(long sync) {
 		proxy.deleteSync(sync);
 	}
+
+	@Override
+	public void reset() {
+		proxy.reset();
+	}
 }

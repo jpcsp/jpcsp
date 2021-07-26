@@ -515,4 +515,5 @@ public interface IRenderingEngine {
 	public long fenceSync();
 	public void clientWaitSync(long sync, long timeout);
 	public void deleteSync(long sync);
+	public void reset();
 }

@@ -160,6 +160,10 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 	public void reset() {
 		super.reset();
 
+		if (VideoEngine.getInstance().lleIsActive()) {
+			VideoEngine.getInstance().lleReset();
+		}
+
 		setStatus(0);
 		setList(0);
 		setStall(0);
@@ -175,8 +179,7 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 		unknown200 = 0;
 		unknown400 = 0;
 		for (int cmd = 0x00; cmd <= 0xFF; cmd++) {
-			int value = 0;
-			writeGeCmd(cmd, value);
+			writeGeCmd(cmd, 0);
 		}
 		for (int i = 0; i < 8 * 12; i++) {
 			writeGeBone(i, 0);
@@ -520,6 +523,9 @@ public class MMIOHandlerGe extends MMIOHandlerBase {
 			}
 		} else if (VideoEngine.getInstance().lleIsActive()) {
 			VideoEngine.getInstance().lleSetCmd(cmd, value);
+			if (GeCommands.pureStateCommands[cmd]) {
+				VideoEngine.getInstance().lleInterpretCmd(cmd, value);
+			}
 		}
 	}
 

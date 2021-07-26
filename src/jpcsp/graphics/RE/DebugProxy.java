@@ -967,4 +967,12 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.bindBufferBase(target, bindingPoint, buffer);
 	}
+
+	@Override
+	public void reset() {
+		if (isLogDebugEnabled) {
+			log.debug("reset");
+		}
+		super.reset();
+	}
 }

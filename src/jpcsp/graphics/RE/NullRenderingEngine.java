@@ -879,4 +879,8 @@ public class NullRenderingEngine implements IRenderingEngine {
 	@Override
 	public void deleteSync(long sync) {
 	}
+
+	@Override
+	public void reset() {
+	}
 }
