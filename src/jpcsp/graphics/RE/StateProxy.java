@@ -72,7 +72,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int viewportWidth;
 	protected int viewportHeight;
 	protected HashMap<Integer, int[]> bufferDataInt;
-	protected HashMap<Integer, TextureState> textureStates;
+	// Keep the texture states in a static map
+	// as they are shared between all the OpenGL contexts,
+	// hence also shared between all the rendering engine instances.
+	protected static HashMap<Integer, TextureState> textureStates;
 	protected TextureState currentTextureState;
 	protected int matrixMode;
 	protected boolean fogHintSet;

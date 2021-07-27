@@ -820,6 +820,32 @@ public class VideoEngine {
         }
     }
 
+    private void saveGeToMemory() {
+        if (isLogDebugEnabled) {
+            log.debug(String.format("Saving the GE to memory 0x%08X", display.getTopAddrGe()));
+        }
+        if (display.getSaveGEToTexture() && !isVideoTexture(display.getTopAddrGe())) {
+            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, display.getTopAddrGe(), display.getBufferWidthGe(), display.getWidthGe(), display.getHeightGe(), display.getPixelFormatGe(), true);
+            geTexture.copyScreenToTexture(re);
+        } else {
+            // Lock the resizedTexFb to avoid that it is recreated at the same time by the GUI thread
+        	synchronized (display.resizedTexFbLock) {
+	            // Set resizedTexFb as the current texture
+	            re.bindTexture(display.getResizedTexFb());
+	            re.setTextureFormat(display.getPixelFormatGe(), false);
+
+	            // Copy screen to the current texture
+	            re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(display.getWidthGe()), getResizedHeight(display.getHeightGe()));
+
+	            // Re-render GE/current texture upside down
+	            drawFrameBuffer(re);
+
+	            // Save GE/current texture to vram
+	            copyScreenToPixels(re, display.getPixelsGe(), display.getBufferWidthGe(), display.getPixelFormatGe(), display.getWidthGe(), display.getHeightGe());
+        	}
+        }
+    }
+
     public void resetCurrentListCMDValues() {
         // Reset all the values
     	Arrays.fill(currentListCMDValues, -1);
@@ -1132,8 +1158,10 @@ public class VideoEngine {
         listHasEnded = false;
         currentList.status = PSP_GE_LIST_DRAWING;
 
+        lleRun = currentList == lleGeList;
+
         if (isLogDebugEnabled) {
-            log("executeList " + currentList);
+            log(String.format("executeList %s, lleRun=%b", currentList, lleRun));
         }
 
         executeHleAction();
@@ -1197,7 +1225,6 @@ public class VideoEngine {
 
         if (lleRun) {
         	if (currentList.isPaused()) {
-            	lleRun = false;
         		MMIOHandlerGe.getInstance().onGeInterrupt();
         	}
         }
@@ -1205,6 +1232,28 @@ public class VideoEngine {
 
     public PspGeList getCurrentList() {
         return currentList;
+    }
+
+    private static float[] convertMatrix4x4to3x4(float[] matrix4x4) {
+    	float[] matrix3x4 = new float[3 * 4];
+
+    	matrix3x4[0] = matrix4x4[0];
+    	matrix3x4[1] = matrix4x4[1];
+    	matrix3x4[2] = matrix4x4[2];
+
+    	matrix3x4[3] = matrix4x4[4];
+    	matrix3x4[4] = matrix4x4[5];
+    	matrix3x4[5] = matrix4x4[6];
+
+    	matrix3x4[6] = matrix4x4[8];
+    	matrix3x4[7] = matrix4x4[9];
+    	matrix3x4[8] = matrix4x4[10];
+
+    	matrix3x4[9] = matrix4x4[12];
+    	matrix3x4[10] = matrix4x4[13];
+    	matrix3x4[11] = matrix4x4[14];
+
+    	return matrix3x4;
     }
 
     public float[] getMatrix(int mtxtype) {
@@ -1221,16 +1270,16 @@ public class VideoEngine {
                 resmtx = context.bone_uploaded_matrix[mtxtype - PSP_GE_MATRIX_BONE0];
                 break;
             case PSP_GE_MATRIX_WORLD:
-                resmtx = context.model_uploaded_matrix;
+                resmtx = convertMatrix4x4to3x4(context.model_uploaded_matrix);
                 break;
             case PSP_GE_MATRIX_VIEW:
-                resmtx = context.view_uploaded_matrix;
+                resmtx = convertMatrix4x4to3x4(context.view_uploaded_matrix);
                 break;
             case PSP_GE_MATRIX_PROJECTION:
                 resmtx = context.proj_uploaded_matrix;
                 break;
             case PSP_GE_MATRIX_TEXGEN:
-                resmtx = context.texture_uploaded_matrix;
+                resmtx = convertMatrix4x4to3x4(context.texture_uploaded_matrix);
                 break;
             default:
                 resmtx = null;
@@ -3863,7 +3912,10 @@ public class VideoEngine {
         }
 
         if (lleRun) {
-    		lleIntrStat = setFlag(lleIntrStat, INTR_STAT_SIGNAL);
+            // Save the GE to memory before triggering the SIGNAL interrupt
+            saveGeToMemory();
+
+            lleIntrStat = setFlag(lleIntrStat, INTR_STAT_SIGNAL);
     		return;
         }
 
@@ -3988,30 +4040,8 @@ public class VideoEngine {
             log(helper.getCommandString(FINISH) + " " + getArgumentLog(normalArgument));
         }
 
-        // Save the GE to memory before triggered the FINISH interrupt/callback
-        if (isLogDebugEnabled) {
-            log.debug(String.format("Saving the GE to memory 0x%08X", display.getTopAddrGe()));
-        }
-        if (display.getSaveGEToTexture() && !isVideoTexture(display.getTopAddrGe())) {
-            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, display.getTopAddrGe(), display.getBufferWidthGe(), display.getWidthGe(), display.getHeightGe(), display.getPixelFormatGe(), true);
-            geTexture.copyScreenToTexture(re);
-        } else {
-            // Lock the resizedTexFb to avoid that it is recreated at the same time by the GUI thread
-        	synchronized (display.resizedTexFbLock) {
-	            // Set resizedTexFb as the current texture
-	            re.bindTexture(display.getResizedTexFb());
-	            re.setTextureFormat(display.getPixelFormatGe(), false);
-
-	            // Copy screen to the current texture
-	            re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(display.getWidthGe()), getResizedHeight(display.getHeightGe()));
-
-	            // Re-render GE/current texture upside down
-	            drawFrameBuffer(re);
-
-	            // Save GE/current texture to vram
-	            copyScreenToPixels(re, display.getPixelsGe(), display.getBufferWidthGe(), display.getPixelFormatGe(), display.getWidthGe(), display.getHeightGe());
-        	}
-        }
+        // Save the GE to memory before triggering the FINISH interrupt/callback
+        saveGeToMemory();
 
         // Wait for the completion of all the rendering commands
         long sync = re.fenceSync();
@@ -8112,11 +8142,10 @@ public class VideoEngine {
 
     public void lleStartGeList() {
     	lleInitList();
+    	lleGeList.startList();
     	if (isLogDebugEnabled) {
     		log.debug(String.format("lleStartGeList %s", lleGeList));
     	}
-    	lleRun = true;
-    	lleGeList.startList();
     }
 
     public void lleStopGeList() {
@@ -8129,6 +8158,9 @@ public class VideoEngine {
     }
 
     public void lleSetCmd(int cmd, int value) {
+    	if (isLogDebugEnabled) {
+    		log.debug(String.format("lleSetCmd cmd=0%02X(%s), value=0x%06X", cmd, helper.getCommandString(cmd), value));
+    	}
     	currentCMDValues[cmd] = intArgument(value);
     }
 
@@ -8167,6 +8199,10 @@ public class VideoEngine {
     }
 
     public void lleInterpretCmd(int cmd, int value) {
+    	if (isLogDebugEnabled) {
+    		log.debug(String.format("lleInterpretCmd cmd=0%02X(%s), value=0x%06X", cmd, helper.getCommandString(cmd), value));
+    	}
+
     	// Force an execute of the given command
     	currentListCMDValues[cmd] = -1;
 
@@ -8174,6 +8210,9 @@ public class VideoEngine {
     }
 
     public void lleReset() {
+    	if (isLogDebugEnabled) {
+    		log.debug("lleReset");
+    	}
     	re.reset();
     }
 
