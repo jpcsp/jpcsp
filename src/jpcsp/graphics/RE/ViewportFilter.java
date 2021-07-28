@@ -16,7 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
-import jpcsp.HLE.modules.sceDisplay;
+import static jpcsp.graphics.VideoEngineUtilities.getResizedHeight;
+import static jpcsp.graphics.VideoEngineUtilities.getResizedWidth;
 
 public class ViewportFilter extends BaseRenderingEngineProxy {
     private boolean isDirectRendering;
@@ -40,10 +41,10 @@ public class ViewportFilter extends BaseRenderingEngineProxy {
 	public void setViewport(int x, int y, int width, int height) {
 		// No viewport resizing when rendering in direct mode
 		if (!isDirectRendering) {
-			x = sceDisplay.getResizedWidth(x);
-			y = sceDisplay.getResizedHeight(y);
-			width = sceDisplay.getResizedWidth(width);
-			height = sceDisplay.getResizedHeight(height);
+			x = getResizedWidth(x);
+			y = getResizedHeight(y);
+			width = getResizedWidth(width);
+			height = getResizedHeight(height);
 		}
 		super.setViewport(x, y, width, height);
 	}
@@ -52,10 +53,10 @@ public class ViewportFilter extends BaseRenderingEngineProxy {
 	public void setScissor(int x, int y, int width, int height) {
 		// No viewport resizing when rendering in direct mode
 		if (!isDirectRendering) {
-			x = sceDisplay.getResizedWidth(x);
-			y = sceDisplay.getResizedHeight(y);
-			width = sceDisplay.getResizedWidth(width);
-			height = sceDisplay.getResizedHeight(height);
+			x = getResizedWidth(x);
+			y = getResizedHeight(y);
+			width = getResizedWidth(width);
+			height = getResizedHeight(height);
 		}
 		super.setScissor(x, y, width, height);
 	}

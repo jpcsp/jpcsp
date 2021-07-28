@@ -31,7 +31,6 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.VideoEngineUtilities;
@@ -118,8 +117,8 @@ public class GETexture {
 			resizeScale = viewportResizeScaleFactor;
 
 			if (useViewportResize) {
-				texS = sceDisplay.getResizedWidth(width) / (float) getTexImageWidth();
-				texT = sceDisplay.getResizedHeight(height) / (float) getTexImageHeight();
+				texS = VideoEngineUtilities.getResizedWidth(width) / (float) getTexImageWidth();
+				texT = VideoEngineUtilities.getResizedHeight(height) / (float) getTexImageHeight();
 			} else {
 				texS = width / (float) bufferWidth;
 				texT = height / (float) heightPow2;
@@ -150,11 +149,11 @@ public class GETexture {
 	}
 
 	public int getTexImageWidth() {
-		return useViewportResize ? sceDisplay.getResizedWidthPow2(bufferWidth) : bufferWidth;
+		return useViewportResize ? VideoEngineUtilities.getResizedWidthPow2(bufferWidth) : bufferWidth;
 	}
 
 	public int getTexImageHeight() {
-		return useViewportResize ? sceDisplay.getResizedHeightPow2(heightPow2) : heightPow2;
+		return useViewportResize ? VideoEngineUtilities.getResizedHeightPow2(heightPow2) : heightPow2;
 	}
 
 	public int getWidth() {
@@ -166,11 +165,11 @@ public class GETexture {
 	}
 
 	public int getResizedWidth() {
-		return useViewportResize ? sceDisplay.getResizedWidth(width) : width;
+		return useViewportResize ? VideoEngineUtilities.getResizedWidth(width) : width;
 	}
 
 	public int getResizedHeight() {
-		return useViewportResize ? sceDisplay.getResizedHeight(height) : height;
+		return useViewportResize ? VideoEngineUtilities.getResizedHeight(height) : height;
 	}
 
 	public int getWidthPow2() {
@@ -195,8 +194,8 @@ public class GETexture {
 		int texWidth = Math.min(bufferWidth, width);
 		int texHeight = height;
 		if (useViewportResize) {
-			texWidth = sceDisplay.getResizedWidth(texWidth);
-			texHeight = sceDisplay.getResizedHeight(texHeight);
+			texWidth = VideoEngineUtilities.getResizedWidth(texWidth);
+			texHeight = VideoEngineUtilities.getResizedHeight(texHeight);
 		}
 		re.copyTexSubImage(0, 0, 0, 0, 0, texWidth, texHeight);
 
@@ -210,6 +209,10 @@ public class GETexture {
 	}
 
 	public void copyTextureToScreen(IRenderingEngine re) {
+		copyTextureToScreen(re, width, height);
+	}
+
+	public void copyTextureToScreen(IRenderingEngine re, int width, int height) {
 		copyTextureToScreen(re, 0, 0, width, height, true, true, true, true, true);
 	}
 
@@ -257,6 +260,9 @@ public class GETexture {
         drawFloatBuffer.put(x + width);
         drawFloatBuffer.put(y);
 
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("drawTexture (%f, %f) to (%d, %d) and (0, 0) to (%d, %d)", texS, texT, x + width, y + height, x, y));
+        }
         if (re.isVertexArrayAvailable()) {
         	re.bindVertexArray(0);
         }

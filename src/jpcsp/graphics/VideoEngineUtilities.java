@@ -17,9 +17,8 @@
 package jpcsp.graphics;
 
 import static jpcsp.HLE.Modules.sceDisplayModule;
-import static jpcsp.HLE.modules.sceDisplay.getResizedHeight;
-import static jpcsp.HLE.modules.sceDisplay.getResizedHeightPow2;
-import static jpcsp.HLE.modules.sceDisplay.getResizedWidth;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 import static jpcsp.util.Utilities.makePow2;
 
@@ -44,6 +43,7 @@ import jpcsp.graphics.textures.GETextureManager;
 import jpcsp.memory.IMemoryReaderWriter;
 import jpcsp.memory.MemoryReaderWriter;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -51,6 +51,7 @@ import jpcsp.util.DurationStatistics;
  */
 public class VideoEngineUtilities {
 	public static Logger log = VideoEngine.log;
+    public static final int internalTextureFormat = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
     // For HiDPI monitors
     private static boolean glfwInit;
     private static float monitorContentScaleX = 1f;
@@ -58,6 +59,7 @@ public class VideoEngineUtilities {
     // Resizing
     private static float viewportResizeScaleFactor = 1f;
     private static int viewportResizeScaleFactorInt = 1;
+    private static boolean viewportResizeScaleFactorChanged;
     //
     private static int drawBuffer;
     private static final float[] drawBufferArray = new float[16];
@@ -68,6 +70,13 @@ public class VideoEngineUtilities {
     private static final int[] stencilPixelMasks = new int[]{0, 0x7FFF, 0x0FFF, 0x00FFFFFF};
     private static final int[] stencilValueMasks = new int[]{0, 0x80, 0xF0, 0xFF};
     private static final int[] stencilValueShifts = new int[]{0, 8, 8, 24};
+    // GE texture
+    private static final Object geTextureLock = new Object();
+    private static int geTextureId;
+    private static int geTextureBufferWidth;
+    private static int geTextureWidth;
+    private static int geTextureHeight;
+    private static int geTexturePixelFormat;
 
     public static void start() {
         statisticsCopyGeToMemory = new DurationStatistics("Copy GE to Memory");
@@ -126,9 +135,12 @@ public class VideoEngineUtilities {
 		return viewportResizeScaleFactor;
 	}
 
-	public static void setViewportResizeScaleFactor(float viewportResizeScaleFactor) {
-		VideoEngineUtilities.viewportResizeScaleFactor = viewportResizeScaleFactor;
-		VideoEngineUtilities.viewportResizeScaleFactorInt = Math.round((float) Math.ceil(viewportResizeScaleFactor));
+	public static void setViewportResizeScaleFactor(float value) {
+		if (value != viewportResizeScaleFactor) {
+			viewportResizeScaleFactor = value;
+			viewportResizeScaleFactorInt = Math.round((float) Math.ceil(value));
+			viewportResizeScaleFactorChanged = true;
+		}
 	}
 
 	public static int getViewportResizeScaleFactorInt() {
@@ -143,7 +155,11 @@ public class VideoEngineUtilities {
     	float scaleFactor = viewportResizeScaleFactor;
     	setDisplayMinimumSize();
     	Emulator.getMainGUI().setDisplaySize(getResizedWidth(getDisplayScreen().getWidth()), getResizedHeight(getDisplayScreen().getHeight()));
-		sceDisplayModule.forceSetViewportResizeScaleFactor(scaleFactor);
+
+    	if (viewportResizeScaleFactorChanged) {
+    		viewportResizeScaleFactorChanged = false;
+    		sceDisplayModule.forceSetViewportResizeScaleFactor(scaleFactor);
+    	}
     }
 
     public static void setDisplayMinimumSize() {
@@ -276,10 +292,10 @@ public class VideoEngineUtilities {
         }
 
         if (forceCopyToMemory) {
-            // Lock the resizedTexFb to avoid that it is recreated at the same time by the GUI thread
-        	synchronized (sceDisplayModule.resizedTexFbLock) {
+            // Lock the geTexture to avoid that it is recreated at the same time by another thread
+        	synchronized (geTextureLock) {
 	            // Set resizedTexFb as the current texture
-	            re.bindTexture(sceDisplayModule.getResizedTexFb());
+	            re.bindTexture(geTextureId);
 	            re.setTextureFormat(sceDisplayModule.getPixelFormatGe(), false);
 
 	            // Copy screen to the current texture
@@ -288,7 +304,7 @@ public class VideoEngineUtilities {
 	            // Re-render GE/current texture upside down
 	            drawFrameBuffer(re, true, true, sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getPixelFormatGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe());
 
-	            copyScreenToPixels(re, sceDisplayModule.getPixelsGe(geTopAddress), sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getPixelFormatGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe());
+	            copyGeScreenToPixels(re, sceDisplayModule.getPixelsGe(geTopAddress), sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getPixelFormatGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe());
 
 	            if (sceDisplayModule.isSaveStencilToMemory()) {
 	                copyStencilToMemory(re);
@@ -296,10 +312,10 @@ public class VideoEngineUtilities {
         	}
 
             if (preserveScreen) {
-                // Lock the resizedTexFb to avoid that it is recreated at the same time by the GUI thread
-            	synchronized (sceDisplayModule.resizedTexFbLock) {
+                // Lock the geTexture to avoid that it is recreated at the same time by another thread
+            	synchronized (geTextureLock) {
             		// Redraw the screen
-            		re.bindTexture(sceDisplayModule.getResizedTexFb());
+            		re.bindTexture(geTextureId);
             		drawFrameBuffer(re, false, false, sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getPixelFormatGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe());
             	}
             }
@@ -366,16 +382,16 @@ public class VideoEngineUtilities {
         }
     }
 
-    public static void copyScreenToPixels(IRenderingEngine re, Buffer pixels, int bufferWidth, int pixelFormat, int width, int height) {
+    public static void copyGeScreenToPixels(IRenderingEngine re, Buffer pixels, int bufferWidth, int pixelFormat, int width, int height) {
         Buffer temp = sceDisplayModule.getTempBuffer();
         Buffer buffer = (pixels.capacity() >= temp.capacity() ? pixels : temp);
         buffer.clear();
 
-        // Lock the texFb to avoid that it is recreated at the same time by the GUI thread
-        synchronized (sceDisplayModule.texFbLock) {
+        // Lock the geTexture to avoid that it is recreated at the same time by another thread
+        synchronized (geTextureLock) {
 	        // Set texFb as the current texture
-	        re.bindTexture(sceDisplayModule.getTexFb());
-	        re.setTextureFormat(sceDisplayModule.getPixelFormatFb(), false);
+	        re.bindTexture(geTextureId);
+	        re.setTextureFormat(pixelFormat, false);
 
 	        re.setPixelStore(bufferWidth, getPixelFormatBytes(pixelFormat));
 
@@ -419,8 +435,8 @@ public class VideoEngineUtilities {
                     int textureAlignment = (pixelsPerElement == 1 ? 3 : 7);
                     maxHeight = (maxHeight + textureAlignment) & ~textureAlignment;
                     maxWidth = (maxWidth + textureAlignment) & ~textureAlignment;
-                    if (VideoEngine.log.isDebugEnabled()) {
-                        VideoEngine.log.debug("maxSpriteHeight=" + maxHeight + ", maxSpriteWidth=" + maxWidth);
+                    if (log.isDebugEnabled()) {
+                        log.debug(String.format("maxSpriteHeight=%d, maxSpriteWidth=%d", maxHeight, maxWidth));
                     }
                     if (maxHeight > height) {
                         maxHeight = height;
@@ -454,8 +470,8 @@ public class VideoEngineUtilities {
     }
 
     public static void loadGEToScreen(IRenderingEngine re) {
-        if (VideoEngine.log.isDebugEnabled()) {
-            VideoEngine.log.debug(String.format("Reloading GE Memory (0x%08X-0x%08X) to screen (%dx%d)", sceDisplayModule.getTopAddrGe(), sceDisplayModule.getBottomAddrGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe()));
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Reloading GE Memory (0x%08X-0x%08X) to screen (%dx%d)", sceDisplayModule.getTopAddrGe(), sceDisplayModule.getBottomAddrGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe()));
         }
 
         if (statisticsCopyMemoryToGe != null) {
@@ -470,10 +486,10 @@ public class VideoEngineUtilities {
                 re.bindVertexArray(0);
             }
 
-            // Lock the texFb to avoid that it is recreated at the same time by the GUI thread
-            synchronized (sceDisplayModule.texFbLock) {
+            // Lock the geTexture to avoid that it is recreated at the same time by another thread
+            synchronized (geTextureLock) {
 	            // Set texFb as the current texture
-	            re.bindTexture(sceDisplayModule.getTexFb());
+	            re.bindTexture(geTextureId);
 
 	            // Define the texture from the GE Memory
 	            re.setPixelStore(sceDisplayModule.getBufferWidthGe(), getPixelFormatBytes(sceDisplayModule.getPixelFormatGe()));
@@ -559,5 +575,171 @@ public class VideoEngineUtilities {
 				log.error(String.format("VideoEngineUtilities.setContext: Unsupported platform %s", Platform.get().getName()));
 				break;
 		}
+    }
+
+    public static int createTexture(IRenderingEngine re, FrameBufferSettings fb, int textureId, boolean isResized) {
+        if (textureId != -1) {
+        	re.deleteTexture(textureId);
+        }
+        textureId = re.genTexture();
+
+        re.bindTexture(textureId);
+        re.setTextureFormat(fb.getPixelFormat(), false);
+
+        //
+        // The format of the frame (or GE) buffer is
+        //   A the alpha & stencil value
+        //   R the Red color component
+        //   G the Green color component
+        //   B the Blue color component
+        //
+        // GU_PSM_8888 : 0xAABBGGRR
+        // GU_PSM_4444 : 0xABGR
+        // GU_PSM_5551 : ABBBBBGGGGGRRRRR
+        // GU_PSM_5650 : BBBBBGGGGGGRRRRR
+        //
+        re.setTexImage(0,
+                internalTextureFormat,
+                isResized ? getResizedWidthPow2(fb.getBufferWidth()) : fb.getBufferWidth(),
+                isResized ? getResizedHeightPow2(Utilities.makePow2(fb.getHeight())) : Utilities.makePow2(fb.getHeight()),
+                getTexturePixelFormat(fb.getPixelFormat()),
+                getTexturePixelFormat(fb.getPixelFormat()),
+                0, null);
+        re.setTextureMipmapMinFilter(GeCommands.TFLT_NEAREST);
+        re.setTextureMipmapMagFilter(GeCommands.TFLT_NEAREST);
+        re.setTextureMipmapMinLevel(0);
+        re.setTextureMipmapMaxLevel(0);
+        re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+
+        return textureId;
+    }
+
+    /**
+     * Resize the given value according to the viewport resizing factor,
+     * assuming it is a value along the X-Axis (e.g. "x" or "width" value).
+     *
+     * @param width value on the X-Axis to be resized
+     * @return the resized value
+     */
+    public static int getResizedWidth(int width) {
+        return Math.round(width * getViewportResizeScaleFactor());
+    }
+
+    /**
+     * Resize the given value according to the viewport resizing factor,
+     * assuming it is a value along the X-Axis being a power of 2 (i.e. 2^n).
+     *
+     * @param wantedWidth value on the X-Axis to be resized, must be a power of
+     * 2.
+     * @return the resized value, as a power of 2.
+     */
+    public static int getResizedWidthPow2(int widthPow2) {
+        return widthPow2 * getViewportResizeScaleFactorInt();
+    }
+
+    /**
+     * Resize the given value according to the viewport resizing factor,
+     * assuming it is a value along the Y-Axis (e.g. "y" or "height" value).
+     *
+     * @param height value on the Y-Axis to be resized
+     * @return the resized value
+     */
+    public static int getResizedHeight(int height) {
+        return Math.round(height * getViewportResizeScaleFactor());
+    }
+
+    /**
+     * Resize the given value according to the viewport resizing factor,
+     * assuming it is a value along the Y-Axis being a power of 2 (i.e. 2^n).
+     *
+     * @param wantedWidth value on the Y-Axis to be resized, must be a power of
+     * 2.
+     * @return the resized value, as a power of 2.
+     */
+    public static int getResizedHeightPow2(int heightPow2) {
+        return heightPow2 * getViewportResizeScaleFactorInt();
+    }
+
+    public static int getTexturePixelFormat(int pixelFormat) {
+		// Always use a 32-bit texture to store the GE.
+		// 16-bit textures are causing color artifacts.
+    	return GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+    }
+
+    public static void saveGeToMemory(IRenderingEngine re) {
+    	final int bufferWidth = sceDisplayModule.getBufferWidthGe();
+    	final int width = sceDisplayModule.getWidthGe();
+    	final int height = sceDisplayModule.getHeightGe();
+    	final int pixelFormat = sceDisplayModule.getPixelFormatGe();
+
+    	if (log.isDebugEnabled()) {
+            log.debug(String.format("Saving the GE(bw=%d, %dx%d) to memory 0x%08X", bufferWidth, width, height, sceDisplayModule.getTopAddrGe()));
+        }
+
+        if (sceDisplayModule.getSaveGEToTexture() && !VideoEngine.getInstance().isVideoTexture(sceDisplayModule.getTopAddrGe())) {
+            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, sceDisplayModule.getTopAddrGe(), bufferWidth, width, height, pixelFormat, true);
+            geTexture.copyScreenToTexture(re);
+        } else {
+        	int resizedBufferWidth = getResizedWidthPow2(bufferWidth);
+        	int resizedWidth = getResizedWidth(width);
+        	int resizedHeight = getResizedHeight(height);
+            if (resizedBufferWidth != geTextureBufferWidth || resizedWidth != geTextureWidth || resizedHeight != geTextureHeight || pixelFormat != geTexturePixelFormat) {
+                // Lock the geTexture to avoid that it is being used at the same time by another thread
+            	synchronized (geTextureLock) {
+	            	if (geTextureId != 0) {
+	            		re.deleteTexture(geTextureId);
+	            	}
+	            	geTextureId = re.genTexture();
+	            	geTexturePixelFormat = pixelFormat;
+	            	geTextureBufferWidth = resizedBufferWidth;
+	            	geTextureWidth = resizedWidth;
+	            	geTextureHeight = resizedHeight;
+
+	            	re.bindTexture(geTextureId);
+	            	re.setTextureFormat(geTexturePixelFormat, false);
+
+	    	        //
+	    	        // The format of the frame (or GE) buffer is
+	    	        //   A the alpha & stencil value
+	    	        //   R the Red color component
+	    	        //   G the Green color component
+	    	        //   B the Blue color component
+	    	        //
+	    	        // GU_PSM_8888 : 0xAABBGGRR
+	    	        // GU_PSM_4444 : 0xABGR
+	    	        // GU_PSM_5551 : ABBBBBGGGGGRRRRR
+	    	        // GU_PSM_5650 : BBBBBGGGGGGRRRRR
+	    	        //
+	            	re.setTexImage(0,
+	    	                internalTextureFormat,
+	    	                resizedBufferWidth,
+	    	                getResizedHeightPow2(makePow2(height)),
+	    	                getTexturePixelFormat(geTexturePixelFormat),
+	    	                getTexturePixelFormat(geTexturePixelFormat),
+	    	                0, null);
+	            	re.setTextureMipmapMinFilter(GeCommands.TFLT_NEAREST);
+	            	re.setTextureMipmapMagFilter(GeCommands.TFLT_NEAREST);
+	            	re.setTextureMipmapMinLevel(0);
+	            	re.setTextureMipmapMaxLevel(0);
+	            	re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+            	}
+            }
+
+            // Lock the geTexture to avoid that it is recreated at the same time by another thread
+        	synchronized (geTextureLock) {
+	            // Set resizedTexFb as the current texture
+            	re.bindTexture(geTextureId);
+            	re.setTextureFormat(pixelFormat, false);
+
+	            // Copy screen to the current texture
+	            re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(resizedBufferWidth, resizedWidth), resizedHeight);
+
+	            // Re-render GE/current texture upside down
+	            drawFrameBuffer(re);
+
+	            // Save GE/current texture to vram
+	            copyGeScreenToPixels(re, sceDisplayModule.getPixelsGe(), bufferWidth, pixelFormat, width, height);
+        	}
+        }
     }
 }

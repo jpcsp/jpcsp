@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.externalge;
 
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_MATRIX_PROJECTION;
+import static jpcsp.graphics.VideoEngineUtilities.getResizedWidthPow2;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -30,7 +31,6 @@ import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.settings.AbstractBoolSettingsListener;
@@ -146,7 +146,7 @@ public class ExternalGE {
 			rendererThreadsDone = new Semaphore(0);
 		}
 		NativeUtils.setRendererAsyncRendering(numberRendererThread > 0);
-		setScreenScale(sceDisplay.getResizedWidthPow2(1));
+		setScreenScale(getResizedWidthPow2(1));
 		synchronized (screenScaleLock) {
 			NativeUtils.setScreenScale(getScreenScale());
 		}

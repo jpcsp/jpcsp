@@ -17,6 +17,8 @@
 package jpcsp;
 
 import static jpcsp.Allegrex.compiler.RuntimeContext.setLog4jMDC;
+import static jpcsp.graphics.VideoEngineUtilities.getResizedHeight;
+import static jpcsp.graphics.VideoEngineUtilities.getResizedWidth;
 import static jpcsp.graphics.VideoEngineUtilities.getViewportResizeScaleFactor;
 
 import java.awt.*;
@@ -289,7 +291,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     @Override
     public void setDisplaySize(int width, int height) {
-        setSize(getDimensionFromDisplay(width, height));
+    	if (width != getWidth() || height != getHeight()) {
+    		setSize(getDimensionFromDisplay(width, height));
+    	}
     }
 
     private void initJide() {
@@ -1369,7 +1373,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     @Override
     public void setFullScreenDisplaySize() {
-        Dimension size = new Dimension(sceDisplay.getResizedWidth(Screen.width), sceDisplay.getResizedHeight(Screen.height));
+        Dimension size = new Dimension(getResizedWidth(Screen.width), getResizedHeight(Screen.height));
         setFullScreenDisplaySize(size);
     }
 

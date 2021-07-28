@@ -18,8 +18,6 @@ package jpcsp.graphics;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static jpcsp.HLE.modules.sceDisplay.getResizedHeight;
-import static jpcsp.HLE.modules.sceDisplay.getResizedWidth;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_CANCEL_DONE;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_DONE;
 import static jpcsp.HLE.modules.sceGe_user.PSP_GE_LIST_DRAWING;
@@ -46,9 +44,8 @@ import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_END;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_FINISH;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_SIGNAL;
 import static jpcsp.graphics.VideoEngineUtilities.copyGeToMemory;
-import static jpcsp.graphics.VideoEngineUtilities.copyScreenToPixels;
-import static jpcsp.graphics.VideoEngineUtilities.drawFrameBuffer;
 import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
+import static jpcsp.graphics.VideoEngineUtilities.saveGeToMemory;
 import static jpcsp.util.Utilities.clearFlag;
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.matrixMult;
@@ -188,6 +185,9 @@ public class VideoEngine {
         IRenderingEngine.RE_UNSIGNED_SHORT,
         IRenderingEngine.RE_UNSIGNED_INT
     };
+    public static final int maxDrawingBufferWidth = 512;
+    public static final int maxDrawingWidth = Screen.width;
+    public static final int maxDrawingHeight = Screen.height;
     private static VideoEngine instance;
     private sceDisplay display;
     private IRenderingEngine re;
@@ -817,32 +817,6 @@ public class VideoEngine {
             // Update the frame buffer parameters at next display start.
             // Do not update the context here, possibly in the middle of a rendering...
             fbBufChanged = true;
-        }
-    }
-
-    private void saveGeToMemory() {
-        if (isLogDebugEnabled) {
-            log.debug(String.format("Saving the GE to memory 0x%08X", display.getTopAddrGe()));
-        }
-        if (display.getSaveGEToTexture() && !isVideoTexture(display.getTopAddrGe())) {
-            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, display.getTopAddrGe(), display.getBufferWidthGe(), display.getWidthGe(), display.getHeightGe(), display.getPixelFormatGe(), true);
-            geTexture.copyScreenToTexture(re);
-        } else {
-            // Lock the resizedTexFb to avoid that it is recreated at the same time by the GUI thread
-        	synchronized (display.resizedTexFbLock) {
-	            // Set resizedTexFb as the current texture
-	            re.bindTexture(display.getResizedTexFb());
-	            re.setTextureFormat(display.getPixelFormatGe(), false);
-
-	            // Copy screen to the current texture
-	            re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(display.getWidthGe()), getResizedHeight(display.getHeightGe()));
-
-	            // Re-render GE/current texture upside down
-	            drawFrameBuffer(re);
-
-	            // Save GE/current texture to vram
-	            copyScreenToPixels(re, display.getPixelsGe(), display.getBufferWidthGe(), display.getPixelFormatGe(), display.getWidthGe(), display.getHeightGe());
-        	}
         }
     }
 
@@ -3913,7 +3887,7 @@ public class VideoEngine {
 
         if (lleRun) {
             // Save the GE to memory before triggering the SIGNAL interrupt
-            saveGeToMemory();
+            saveGeToMemory(re);
 
             lleIntrStat = setFlag(lleIntrStat, INTR_STAT_SIGNAL);
     		return;
@@ -4041,7 +4015,7 @@ public class VideoEngine {
         }
 
         // Save the GE to memory before triggering the FINISH interrupt/callback
-        saveGeToMemory();
+        saveGeToMemory(re);
 
         // Wait for the completion of all the rendering commands
         long sync = re.fenceSync();

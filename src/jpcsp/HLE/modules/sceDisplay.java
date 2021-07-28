@@ -24,11 +24,20 @@ import static jpcsp.MemoryMap.START_VRAM;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
+import static jpcsp.graphics.VideoEngine.maxDrawingBufferWidth;
+import static jpcsp.graphics.VideoEngine.maxDrawingHeight;
+import static jpcsp.graphics.VideoEngine.maxDrawingWidth;
 import static jpcsp.graphics.VideoEngineUtilities.drawFrameBuffer;
 import static jpcsp.graphics.VideoEngineUtilities.drawFrameBufferFromMemory;
 import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
+import static jpcsp.graphics.VideoEngineUtilities.getResizedHeight;
+import static jpcsp.graphics.VideoEngineUtilities.getResizedHeightPow2;
+import static jpcsp.graphics.VideoEngineUtilities.getResizedWidth;
+import static jpcsp.graphics.VideoEngineUtilities.getResizedWidthPow2;
+import static jpcsp.graphics.VideoEngineUtilities.getTexturePixelFormat;
 import static jpcsp.graphics.VideoEngineUtilities.getViewportResizeScaleFactor;
 import static jpcsp.graphics.VideoEngineUtilities.getViewportResizeScaleFactorInt;
+import static jpcsp.graphics.VideoEngineUtilities.internalTextureFormat;
 import static jpcsp.util.Utilities.makePow2;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
@@ -140,7 +149,7 @@ public class sceDisplay extends HLEModule {
             VideoEngine videoEngine = VideoEngine.getInstance();
 
     		if (log.isTraceEnabled()) {
-                log.trace(String.format("paintGL resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", getViewportResizeScaleFactor(), canvas.getSize().width, canvas.getSize().height, canvasWidth, canvasHeight, canvas.getLocation().x, canvas.getLocation().y));
+                log.trace(String.format("paintGL resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d), createTex=%b", getViewportResizeScaleFactor(), canvas.getSize().width, canvas.getSize().height, canvasWidth, canvasHeight, canvas.getLocation().x, canvas.getLocation().y, createTex));
             }
 
             if (resizePending && Emulator.getMainGUI().isVisible()) {
@@ -218,16 +227,8 @@ public class sceDisplay extends HLEModule {
             if (createTex) {
                 // Create two textures: one at original PSP size and
                 // one resized to the display size
-
-            	// Lock the texFb while recreating it to avoid that it is used at the same by the Video Engine Thread
-            	synchronized (texFbLock) {
-                    texFb = createTexture(texFb, false);
-				}
-
-            	// Lock the resizedTexFb while recreating it to avoid that it is used at the same by the Video Engine Thread
-            	synchronized (resizedTexFbLock) {
-                    resizedTexFb = createTexture(resizedTexFb, true);
-				}
+                texFb = createTexture(texFb, false);
+                resizedTexFb = createTexture(resizedTexFb, true);
 
                 checkTemp();
                 createTex = false;
@@ -410,7 +411,6 @@ public class sceDisplay extends HLEModule {
     private boolean useSoftwareRenderer = false;
     private boolean saveStencilToMemory = false;
     private static final boolean useDebugGL = false;
-    private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
     private static final String resizeScaleFactorSettings = "emu.graphics.resizeScaleFactor";
     // sceDisplayModes enum
     public static final int PSP_DISPLAY_MODE_LCD = 0;
@@ -462,8 +462,6 @@ public class sceDisplay extends HLEModule {
     private boolean createTex;
     private int texFb;
     private int resizedTexFb;
-    public Object texFbLock = new Object();
-    public Object resizedTexFbLock = new Object();
     private float texS;
     private float texT;
     private Robot captureRobot;
@@ -724,7 +722,7 @@ public class sceDisplay extends HLEModule {
         resizePending = false;
         tempSize = 0;
 
-        fb = new FrameBufferSettings(START_VRAM, 512, Screen.width, Screen.height, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
+        fb = new FrameBufferSettings(START_VRAM, maxDrawingBufferWidth, maxDrawingWidth, maxDrawingHeight, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
         ge = new FrameBufferSettings(fb);
     }
 
@@ -850,54 +848,8 @@ public class sceDisplay extends HLEModule {
     	}
     }
 
-    /**
-     * Resize the given value according to the viewport resizing factor,
-     * assuming it is a value along the X-Axis (e.g. "x" or "width" value).
-     *
-     * @param width value on the X-Axis to be resized
-     * @return the resized value
-     */
-    public static int getResizedWidth(int width) {
-        return Math.round(width * getViewportResizeScaleFactor());
-    }
-
     public boolean isDisplaySwappedXY() {
     	return displayScreen.isSwappedXY();
-    }
-
-    /**
-     * Resize the given value according to the viewport resizing factor,
-     * assuming it is a value along the X-Axis being a power of 2 (i.e. 2^n).
-     *
-     * @param wantedWidth value on the X-Axis to be resized, must be a power of
-     * 2.
-     * @return the resized value, as a power of 2.
-     */
-    public static int getResizedWidthPow2(int widthPow2) {
-        return widthPow2 * getViewportResizeScaleFactorInt();
-    }
-
-    /**
-     * Resize the given value according to the viewport resizing factor,
-     * assuming it is a value along the Y-Axis (e.g. "y" or "height" value).
-     *
-     * @param height value on the Y-Axis to be resized
-     * @return the resized value
-     */
-    public static int getResizedHeight(int height) {
-        return Math.round(height * getViewportResizeScaleFactor());
-    }
-
-    /**
-     * Resize the given value according to the viewport resizing factor,
-     * assuming it is a value along the Y-Axis being a power of 2 (i.e. 2^n).
-     *
-     * @param wantedWidth value on the Y-Axis to be resized, must be a power of
-     * 2.
-     * @return the resized value, as a power of 2.
-     */
-    public static int getResizedHeightPow2(int heightPow2) {
-        return heightPow2 * getViewportResizeScaleFactorInt();
     }
 
     private void setAntiAliasSamplesNum(int samples) {
@@ -936,12 +888,11 @@ public class sceDisplay extends HLEModule {
         // E.g. sceKernelLoadExec() is not clearing/resetting the display.
         if (!HLEModuleManager.getInstance().isStartFromSyscall()) {
             mode = 0;
-            final int bufferWidth = 512;
-            fb = new FrameBufferSettings(START_VRAM, bufferWidth, Screen.width, Screen.height, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
+            fb = new FrameBufferSettings(START_VRAM, maxDrawingBufferWidth, maxDrawingWidth, maxDrawingHeight, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
             ge = new FrameBufferSettings(fb);
             sync = PSP_DISPLAY_SETBUF_IMMEDIATE;
 
-            texS = (float) fb.getWidth() / (float) bufferWidth;
+            texS = (float) fb.getWidth() / (float) maxDrawingBufferWidth;
             texT = (float) fb.getHeight() / (float) makePow2(fb.getHeight());
             displayScreen.update(texS, texT);
 
@@ -1378,14 +1329,6 @@ public class sceDisplay extends HLEModule {
         return canvasHeight;
     }
 
-    public int getResizedTexFb() {
-    	return resizedTexFb;
-    }
-
-    public int getTexFb() {
-    	return texFb;
-    }
-
     public Buffer getPixelsGe() {
     	return ge.getPixels();
     }
@@ -1713,13 +1656,6 @@ public class sceDisplay extends HLEModule {
 
     public int getVcount() {
         return vcount;
-    }
-
-    public static int getTexturePixelFormat(int pixelFormat) {
-//    	return pixelFormat;
-		// Always use a 32-bit texture to store the GE.
-		// 16-bit textures are causing color artifacts.
-    	return GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
     }
 
     private int createTexture(int textureId, boolean isResized) {

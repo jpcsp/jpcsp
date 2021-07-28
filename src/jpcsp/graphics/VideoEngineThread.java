@@ -16,7 +16,11 @@
  */
 package jpcsp.graphics;
 
-import static jpcsp.HLE.modules.sceDisplay.getTexturePixelFormat;
+import static jpcsp.MemoryMap.START_VRAM;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+import static jpcsp.graphics.VideoEngine.maxDrawingBufferWidth;
+import static jpcsp.graphics.VideoEngine.maxDrawingHeight;
+import static jpcsp.graphics.VideoEngine.maxDrawingWidth;
 import static jpcsp.graphics.VideoEngineUtilities.canShareContext;
 import static jpcsp.graphics.VideoEngineUtilities.createContext;
 import static jpcsp.graphics.VideoEngineUtilities.setContext;
@@ -70,7 +74,7 @@ public class VideoEngineThread extends Thread {
 
         re.startDisplay();
 
-        FBTexture renderTexture = new FBTexture(displayModule.getTopAddrFb(), displayModule.getBufferWidthFb(), displayModule.getWidthFb(), displayModule.getHeightFb(), getTexturePixelFormat(displayModule.getPixelFormatFb()));
+        FBTexture renderTexture = new FBTexture(START_VRAM, maxDrawingBufferWidth, maxDrawingWidth, maxDrawingHeight, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
 
 		while (run) {
 			waitForUpdate();
