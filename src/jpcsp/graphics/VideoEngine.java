@@ -45,7 +45,6 @@ import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_FINISH;
 import static jpcsp.graphics.RE.externalge.NativeUtils.INTR_STAT_SIGNAL;
 import static jpcsp.graphics.VideoEngineUtilities.copyGeToMemory;
 import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
-import static jpcsp.graphics.VideoEngineUtilities.saveGeToMemory;
 import static jpcsp.util.Utilities.clearFlag;
 import static jpcsp.util.Utilities.hasFlag;
 import static jpcsp.util.Utilities.matrixMult;
@@ -3887,7 +3886,7 @@ public class VideoEngine {
 
         if (lleRun) {
             // Save the GE to memory before triggering the SIGNAL interrupt
-            saveGeToMemory(re);
+            copyGeToMemory(re, false, false);
 
             lleIntrStat = setFlag(lleIntrStat, INTR_STAT_SIGNAL);
     		return;
@@ -4015,7 +4014,7 @@ public class VideoEngine {
         }
 
         // Save the GE to memory before triggering the FINISH interrupt/callback
-        saveGeToMemory(re);
+        copyGeToMemory(re, false, false);
 
         // Wait for the completion of all the rendering commands
         long sync = re.fenceSync();

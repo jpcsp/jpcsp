@@ -24,6 +24,7 @@ import static jpcsp.util.Utilities.makePow2;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import org.apache.log4j.Logger;
@@ -62,7 +63,6 @@ public class VideoEngineUtilities {
     private static boolean viewportResizeScaleFactorChanged;
     //
     private static int drawBuffer;
-    private static final float[] drawBufferArray = new float[16];
     // Statistics
     private static DurationStatistics statisticsCopyGeToMemory;
     private static DurationStatistics statisticsCopyMemoryToGe;
@@ -166,29 +166,67 @@ public class VideoEngineUtilities {
 		Emulator.getMainGUI().setDisplayMinimumSize(getDisplayScreen().getWidth(), getDisplayScreen().getHeight());
     }
 
+    public static void drawTexture(IRenderingEngine re, int drawBufferId, int pixelFormat, int x, int y, int width, int height, int viewportWidth, int viewportHeight, float textureLowerRightS, float textureLowerRightT, float textureLowerLeftS, float textureLowerLeftT, float textureUpperLeftS, float textureUpperLeftT, float textureUpperRightS, float textureUpperRightT, boolean invert, boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
+		re.startDirectRendering(true, false, true, true, !invert, width, height);
+		re.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
+		re.setViewport(0, 0, viewportWidth, viewportHeight);
+        re.setTextureFormat(pixelFormat, false);
+
+        IREBufferManager bufferManager = re.getBufferManager();
+        ByteBuffer drawByteBuffer = bufferManager.getBuffer(drawBufferId);
+        drawByteBuffer.clear();
+        FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
+        drawFloatBuffer.clear();
+        drawFloatBuffer.put(textureLowerRightS);
+        drawFloatBuffer.put(textureLowerRightT);
+        drawFloatBuffer.put(x + width);
+        drawFloatBuffer.put(y + height);
+
+        drawFloatBuffer.put(textureLowerLeftS);
+        drawFloatBuffer.put(textureLowerLeftT);
+        drawFloatBuffer.put(x);
+        drawFloatBuffer.put(y + height);
+
+        drawFloatBuffer.put(textureUpperLeftS);
+        drawFloatBuffer.put(textureUpperLeftT);
+        drawFloatBuffer.put(x);
+        drawFloatBuffer.put(y);
+
+        drawFloatBuffer.put(textureUpperRightS);
+        drawFloatBuffer.put(textureUpperRightT);
+        drawFloatBuffer.put(x + width);
+        drawFloatBuffer.put(y);
+
+        if (re.isVertexArrayAvailable()) {
+        	re.bindVertexArray(0);
+        }
+        re.setVertexInfo(null, false, false, true, IRenderingEngine.RE_QUADS);
+        re.enableClientState(IRenderingEngine.RE_TEXTURE);
+        re.disableClientState(IRenderingEngine.RE_COLOR);
+        re.disableClientState(IRenderingEngine.RE_NORMAL);
+        re.enableClientState(IRenderingEngine.RE_VERTEX);
+        bufferManager.setTexCoordPointer(re, drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
+        bufferManager.setVertexPointer(re, drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
+        bufferManager.setBufferData(re, IRenderingEngine.RE_ARRAY_BUFFER, drawBufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
+        re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
+
+        re.endDirectRendering();
+    }
+
     public static void drawFrameBuffer(IRenderingEngine re) {
         drawFrameBuffer(re, true, true, sceDisplayModule.getBufferWidthFb(), sceDisplayModule.getPixelFormatFb(), sceDisplayModule.getWidthFb(), sceDisplayModule.getHeightFb());
     }
 
-    public static void drawFrameBuffer(IRenderingEngine re, boolean keepOriginalSize, boolean invert, int bufferwidth, int pixelformat, int width, int height) {
+    public static void drawFrameBuffer(IRenderingEngine re, boolean keepOriginalSize, boolean invert, int bufferWidth, int pixelFormat, int width, int height) {
     	DisplayScreen displayScreen = getDisplayScreen();
 
     	if (log.isDebugEnabled()) {
-        	log.debug(String.format("drawFrameBuffer keepOriginalSize=%b, invert=%b, bufferWidth=%d, pixelFormat=%d, width=%d, height=%d, %s", keepOriginalSize, invert, bufferwidth, pixelformat, width, height, displayScreen));
+        	log.debug(String.format("drawFrameBuffer keepOriginalSize=%b, invert=%b, bufferWidth=%d, pixelFormat=%d, width=%d, height=%d, %s", keepOriginalSize, invert, bufferWidth, pixelFormat, width, height, displayScreen));
         }
-
-    	re.startDirectRendering(true, false, true, true, !invert, width, height);
-        if (keepOriginalSize) {
-            re.setViewport(0, 0, width, height);
-        } else {
-    		updateMonitorContentScale();
-        	updateDisplaySize();
-            re.setViewport(0, 0, Math.round(getResizedWidth(width) * monitorContentScaleX), Math.round(getResizedHeight(height) * monitorContentScaleY));
-        }
-
-        re.setTextureFormat(pixelformat, false);
 
         float scale = 1f;
+        int viewportWidth = width;
+        int viewportHeight = height;
         if (keepOriginalSize) {
         	// When keeping the original size, we still have to adjust the size of the texture mapping.
         	// E.g. when the screen has been resized to 576x326 (resizeScaleFactor=1.2),
@@ -202,68 +240,44 @@ public class VideoEngineUtilities {
         		log.debug(String.format("drawFrameBuffer scale = %f / %f = %f", scale, texT, scale / texT));
         	}
         	scale /= texT;
+        } else {
+    		updateMonitorContentScale();
+        	updateDisplaySize();
+            viewportWidth = Math.round(getResizedWidth(width) * monitorContentScaleX);
+            viewportHeight = Math.round(getResizedHeight(height) * monitorContentScaleY);
         }
-
-        int i = 0;
-        drawBufferArray[i++] = displayScreen.getTextureLowerRightS() * scale;
-        drawBufferArray[i++] = displayScreen.getTextureLowerRightT() * scale;
-        drawBufferArray[i++] = (float) width;
-        drawBufferArray[i++] = (float) height;
-
-        drawBufferArray[i++] = displayScreen.getTextureLowerLeftS() * scale;
-        drawBufferArray[i++] = displayScreen.getTextureLowerLeftT() * scale;
-        drawBufferArray[i++] = 0f;
-        drawBufferArray[i++] = (float) height;
-
-        drawBufferArray[i++] = displayScreen.getTextureUpperLeftS() * scale;
-        drawBufferArray[i++] = displayScreen.getTextureUpperLeftT() * scale;
-        drawBufferArray[i++] = 0f;
-        drawBufferArray[i++] = 0f;
-
-        drawBufferArray[i++] = displayScreen.getTextureUpperRightS() * scale;
-        drawBufferArray[i++] = displayScreen.getTextureUpperRightT() * scale;
-        drawBufferArray[i++] = (float) width;
-        drawBufferArray[i++] = 0f;
 
         if (drawBuffer == 0) {
             drawBuffer = re.getBufferManager().genBuffer(re, IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
         }
 
-        int bufferSizeInFloats = i;
-        IREBufferManager bufferManager = re.getBufferManager();
-        ByteBuffer byteBuffer = bufferManager.getBuffer(drawBuffer);
-        byteBuffer.clear();
-        byteBuffer.asFloatBuffer().put(drawBufferArray, 0, bufferSizeInFloats);
-
-        if (re.isVertexArrayAvailable()) {
-            re.bindVertexArray(0);
-        }
-        re.setVertexInfo(null, false, false, true, IRenderingEngine.RE_QUADS);
-        re.enableClientState(IRenderingEngine.RE_TEXTURE);
-        re.disableClientState(IRenderingEngine.RE_COLOR);
-        re.disableClientState(IRenderingEngine.RE_NORMAL);
-        re.enableClientState(IRenderingEngine.RE_VERTEX);
-        bufferManager.setTexCoordPointer(re, drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
-        bufferManager.setVertexPointer(re, drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
-        bufferManager.setBufferData(re, IRenderingEngine.RE_ARRAY_BUFFER, drawBuffer, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
-        re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
-
-        re.endDirectRendering();
+        drawTexture(re,
+        		drawBuffer,
+        		pixelFormat,
+        		0, 0,
+        		width, height,
+        		viewportWidth, viewportHeight,
+        		displayScreen.getTextureLowerRightS() * scale, displayScreen.getTextureLowerRightT() * scale,
+        		displayScreen.getTextureLowerLeftS() * scale, displayScreen.getTextureLowerLeftT() * scale,
+        		displayScreen.getTextureUpperLeftS() * scale, displayScreen.getTextureUpperLeftT() * scale,
+        		displayScreen.getTextureUpperRightS() * scale, displayScreen.getTextureUpperRightT() * scale,
+        		invert, true, true, true, true
+        		);
     }
 
     public static void drawFrameBufferFromMemory(IRenderingEngine re, FrameBufferSettings fb, int texFb) {
-        fb.getPixels().clear();
-        re.bindTexture(texFb);
-        re.setTextureFormat(fb.getPixelFormat(), false);
-        re.setPixelStore(fb.getBufferWidth(), getPixelFormatBytes(fb.getPixelFormat()));
-        int textureSize = fb.getBufferWidth() * fb.getHeight() * getPixelFormatBytes(fb.getPixelFormat());
-        re.setTexSubImage(0,
-                0, 0, fb.getBufferWidth(), fb.getHeight(),
-                fb.getPixelFormat(),
-                fb.getPixelFormat(),
-                textureSize, fb.getPixels());
+    	drawFromMemory(re, texFb, fb.getBufferWidth(), fb.getPixelFormat(), fb.getHeight(), getDisplayScreen().getWidth(fb), getDisplayScreen().getHeight(fb), fb.getPixels());
+    }
 
-        drawFrameBuffer(re, false, true, fb.getBufferWidth(), fb.getPixelFormat(), getDisplayScreen().getWidth(fb), getDisplayScreen().getHeight(fb));
+    public static void drawFromMemory(IRenderingEngine re, int textureId, int bufferWidth, int pixelFormat, int height, int renderWidth, int renderHeight, Buffer buffer) {
+        buffer.clear();
+        re.bindTexture(textureId);
+        re.setTextureFormat(pixelFormat, false);
+        re.setPixelStore(bufferWidth, getPixelFormatBytes(pixelFormat));
+        int textureSize = bufferWidth * height * getPixelFormatBytes(pixelFormat);
+        re.setTexSubImage(0, 0, 0, bufferWidth, height, pixelFormat, pixelFormat, textureSize, buffer);
+
+        drawFrameBuffer(re, false, true, bufferWidth, pixelFormat, renderWidth, renderHeight);
     }
 
     public static void copyGeToMemory(IRenderingEngine re, boolean preserveScreen, boolean forceCopyToMemory) {
@@ -276,7 +290,12 @@ public class VideoEngineUtilities {
             return;
         }
 
-        if (log.isDebugEnabled()) {
+    	final int bufferWidth = sceDisplayModule.getBufferWidthGe();
+    	final int width = sceDisplayModule.getWidthGe();
+    	final int height = sceDisplayModule.getHeightGe();
+    	final int pixelFormat = sceDisplayModule.getPixelFormatGe();
+
+    	if (log.isDebugEnabled()) {
             log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", geTopAddress, geTopAddress + sceDisplayModule.getSizeGe()));
         }
 
@@ -285,26 +304,71 @@ public class VideoEngineUtilities {
         }
 
         if (sceDisplayModule.getSaveGEToTexture() && !VideoEngine.getInstance().isVideoTexture(geTopAddress)) {
-            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, geTopAddress, sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe(), sceDisplayModule.getPixelFormatGe(), true);
+            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, geTopAddress, bufferWidth, width, height, pixelFormat, true);
             geTexture.copyScreenToTexture(re);
         } else {
         	forceCopyToMemory = true;
         }
 
         if (forceCopyToMemory) {
+        	int resizedBufferWidth = getResizedWidthPow2(bufferWidth);
+        	int resizedWidth = getResizedWidth(width);
+        	int resizedHeight = getResizedHeight(height);
+            if (resizedBufferWidth != geTextureBufferWidth || resizedWidth != geTextureWidth || resizedHeight != geTextureHeight || pixelFormat != geTexturePixelFormat) {
+                // Lock the geTexture to avoid that it is being used at the same time by another thread
+            	synchronized (geTextureLock) {
+	            	if (geTextureId != 0) {
+	            		re.deleteTexture(geTextureId);
+	            	}
+	            	geTextureId = re.genTexture();
+	            	geTexturePixelFormat = pixelFormat;
+	            	geTextureBufferWidth = resizedBufferWidth;
+	            	geTextureWidth = resizedWidth;
+	            	geTextureHeight = resizedHeight;
+
+	            	re.bindTexture(geTextureId);
+	            	re.setTextureFormat(geTexturePixelFormat, false);
+
+	    	        //
+	    	        // The format of the frame (or GE) buffer is
+	    	        //   A the alpha & stencil value
+	    	        //   R the Red color component
+	    	        //   G the Green color component
+	    	        //   B the Blue color component
+	    	        //
+	    	        // GU_PSM_8888 : 0xAABBGGRR
+	    	        // GU_PSM_4444 : 0xABGR
+	    	        // GU_PSM_5551 : ABBBBBGGGGGRRRRR
+	    	        // GU_PSM_5650 : BBBBBGGGGGGRRRRR
+	    	        //
+	            	re.setTexImage(0,
+	    	                internalTextureFormat,
+	    	                resizedBufferWidth,
+	    	                getResizedHeightPow2(makePow2(height)),
+	    	                getTexturePixelFormat(geTexturePixelFormat),
+	    	                getTexturePixelFormat(geTexturePixelFormat),
+	    	                0, null);
+	            	re.setTextureMipmapMinFilter(GeCommands.TFLT_NEAREST);
+	            	re.setTextureMipmapMagFilter(GeCommands.TFLT_NEAREST);
+	            	re.setTextureMipmapMinLevel(0);
+	            	re.setTextureMipmapMaxLevel(0);
+	            	re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+            	}
+            }
+
             // Lock the geTexture to avoid that it is recreated at the same time by another thread
         	synchronized (geTextureLock) {
 	            // Set resizedTexFb as the current texture
 	            re.bindTexture(geTextureId);
-	            re.setTextureFormat(sceDisplayModule.getPixelFormatGe(), false);
+	            re.setTextureFormat(pixelFormat, false);
 
 	            // Copy screen to the current texture
-	            re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(Math.min(sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getWidthGe())), getResizedHeight(sceDisplayModule.getHeightGe()));
+	            re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(resizedBufferWidth, resizedWidth), resizedHeight);
 
 	            // Re-render GE/current texture upside down
-	            drawFrameBuffer(re, true, true, sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getPixelFormatGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe());
+	            drawFrameBuffer(re);
 
-	            copyGeScreenToPixels(re, sceDisplayModule.getPixelsGe(geTopAddress), sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getPixelFormatGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe());
+	            copyGeScreenToPixels(re, sceDisplayModule.getPixelsGe(geTopAddress), bufferWidth, pixelFormat, width, height);
 
 	            if (sceDisplayModule.isSaveStencilToMemory()) {
 	                copyStencilToMemory(re);
@@ -488,17 +552,7 @@ public class VideoEngineUtilities {
 
             // Lock the geTexture to avoid that it is recreated at the same time by another thread
             synchronized (geTextureLock) {
-	            // Set texFb as the current texture
-	            re.bindTexture(geTextureId);
-
-	            // Define the texture from the GE Memory
-	            re.setPixelStore(sceDisplayModule.getBufferWidthGe(), getPixelFormatBytes(sceDisplayModule.getPixelFormatGe()));
-	            int textureSize = sceDisplayModule.getBufferWidthGe() * sceDisplayModule.getHeightGe() * getPixelFormatBytes(sceDisplayModule.getPixelFormatGe());
-	            sceDisplayModule.getPixelsGe().clear();
-	            re.setTexSubImage(0, 0, 0, sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getHeightGe(), sceDisplayModule.getPixelFormatGe(), sceDisplayModule.getPixelFormatGe(), textureSize, sceDisplayModule.getPixelsGe());
-
-	            // Draw the GE
-	            drawFrameBuffer(re, false, true, sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getPixelFormatGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe());
+            	drawFromMemory(re, geTextureId, sceDisplayModule.getBufferWidthGe(), sceDisplayModule.getPixelFormatGe(), sceDisplayModule.getHeightGe(), sceDisplayModule.getWidthGe(), sceDisplayModule.getHeightGe(), sceDisplayModule.getPixelsGe());
             }
         }
 
@@ -664,82 +718,5 @@ public class VideoEngineUtilities {
 		// Always use a 32-bit texture to store the GE.
 		// 16-bit textures are causing color artifacts.
     	return GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-    }
-
-    public static void saveGeToMemory(IRenderingEngine re) {
-    	final int bufferWidth = sceDisplayModule.getBufferWidthGe();
-    	final int width = sceDisplayModule.getWidthGe();
-    	final int height = sceDisplayModule.getHeightGe();
-    	final int pixelFormat = sceDisplayModule.getPixelFormatGe();
-
-    	if (log.isDebugEnabled()) {
-            log.debug(String.format("Saving the GE(bw=%d, %dx%d) to memory 0x%08X", bufferWidth, width, height, sceDisplayModule.getTopAddrGe()));
-        }
-
-        if (sceDisplayModule.getSaveGEToTexture() && !VideoEngine.getInstance().isVideoTexture(sceDisplayModule.getTopAddrGe())) {
-            GETexture geTexture = GETextureManager.getInstance().getGETexture(re, sceDisplayModule.getTopAddrGe(), bufferWidth, width, height, pixelFormat, true);
-            geTexture.copyScreenToTexture(re);
-        } else {
-        	int resizedBufferWidth = getResizedWidthPow2(bufferWidth);
-        	int resizedWidth = getResizedWidth(width);
-        	int resizedHeight = getResizedHeight(height);
-            if (resizedBufferWidth != geTextureBufferWidth || resizedWidth != geTextureWidth || resizedHeight != geTextureHeight || pixelFormat != geTexturePixelFormat) {
-                // Lock the geTexture to avoid that it is being used at the same time by another thread
-            	synchronized (geTextureLock) {
-	            	if (geTextureId != 0) {
-	            		re.deleteTexture(geTextureId);
-	            	}
-	            	geTextureId = re.genTexture();
-	            	geTexturePixelFormat = pixelFormat;
-	            	geTextureBufferWidth = resizedBufferWidth;
-	            	geTextureWidth = resizedWidth;
-	            	geTextureHeight = resizedHeight;
-
-	            	re.bindTexture(geTextureId);
-	            	re.setTextureFormat(geTexturePixelFormat, false);
-
-	    	        //
-	    	        // The format of the frame (or GE) buffer is
-	    	        //   A the alpha & stencil value
-	    	        //   R the Red color component
-	    	        //   G the Green color component
-	    	        //   B the Blue color component
-	    	        //
-	    	        // GU_PSM_8888 : 0xAABBGGRR
-	    	        // GU_PSM_4444 : 0xABGR
-	    	        // GU_PSM_5551 : ABBBBBGGGGGRRRRR
-	    	        // GU_PSM_5650 : BBBBBGGGGGGRRRRR
-	    	        //
-	            	re.setTexImage(0,
-	    	                internalTextureFormat,
-	    	                resizedBufferWidth,
-	    	                getResizedHeightPow2(makePow2(height)),
-	    	                getTexturePixelFormat(geTexturePixelFormat),
-	    	                getTexturePixelFormat(geTexturePixelFormat),
-	    	                0, null);
-	            	re.setTextureMipmapMinFilter(GeCommands.TFLT_NEAREST);
-	            	re.setTextureMipmapMagFilter(GeCommands.TFLT_NEAREST);
-	            	re.setTextureMipmapMinLevel(0);
-	            	re.setTextureMipmapMaxLevel(0);
-	            	re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
-            	}
-            }
-
-            // Lock the geTexture to avoid that it is recreated at the same time by another thread
-        	synchronized (geTextureLock) {
-	            // Set resizedTexFb as the current texture
-            	re.bindTexture(geTextureId);
-            	re.setTextureFormat(pixelFormat, false);
-
-	            // Copy screen to the current texture
-	            re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(resizedBufferWidth, resizedWidth), resizedHeight);
-
-	            // Re-render GE/current texture upside down
-	            drawFrameBuffer(re);
-
-	            // Save GE/current texture to vram
-	            copyGeScreenToPixels(re, sceDisplayModule.getPixelsGe(), bufferWidth, pixelFormat, width, height);
-        	}
-        }
     }
 }

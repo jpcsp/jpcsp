@@ -16,15 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.textures;
 
+import static jpcsp.HLE.Modules.sceDisplayModule;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
-import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 import static jpcsp.graphics.VideoEngineUtilities.getPixelFormatBytes;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import org.apache.log4j.Logger;
@@ -35,7 +34,6 @@ import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.VideoEngineUtilities;
 import jpcsp.graphics.RE.IRenderingEngine;
-import jpcsp.graphics.RE.buffer.IREBufferManager;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.util.Utilities;
 
@@ -209,74 +207,39 @@ public class GETexture {
 	}
 
 	public void copyTextureToScreen(IRenderingEngine re) {
-		copyTextureToScreen(re, width, height);
+		copyTextureToScreen(re, 0, 0, true, true, true, true, true);
 	}
 
-	public void copyTextureToScreen(IRenderingEngine re, int width, int height) {
-		copyTextureToScreen(re, 0, 0, width, height, true, true, true, true, true);
-	}
-
-	protected void copyTextureToScreen(IRenderingEngine re, int x, int y, int projectionWidth, int projectionHeight, boolean scaleToCanvas, boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
+	protected void copyTextureToScreen(IRenderingEngine re, int x, int y, boolean scaleToCanvas, boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("GETexture.copyTextureToScreen %s at %dx%d", toString(), x, y));
 		}
 
 		bind(re, true);
 
-		drawTexture(re, x, y, projectionWidth, projectionHeight, scaleToCanvas, redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
+		drawTexture(re, x, y, scaleToCanvas, redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
 	}
 
-	private void drawTexture(IRenderingEngine re, int x, int y, int projectionWidth, int projectionHeight, boolean scaleToCanvas, boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
-		re.startDirectRendering(true, false, true, true, true, projectionWidth, projectionHeight);
-		re.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
-		if (scaleToCanvas) {
-			re.setViewport(0, 0, Modules.sceDisplayModule.getCanvasWidth(), Modules.sceDisplayModule.getCanvasHeight());
-		} else {
-			re.setViewport(0, 0, projectionWidth, projectionHeight);
-		}
-
-        IREBufferManager bufferManager = re.getBufferManager();
-        ByteBuffer drawByteBuffer = bufferManager.getBuffer(drawBufferId);
-        drawByteBuffer.clear();
-        FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
-        drawFloatBuffer.clear();
-        drawFloatBuffer.put(texS);
-        drawFloatBuffer.put(texT);
-        drawFloatBuffer.put(x + width);
-        drawFloatBuffer.put(y + height);
-
-        drawFloatBuffer.put(0.f);
-        drawFloatBuffer.put(texT);
-        drawFloatBuffer.put(x);
-        drawFloatBuffer.put(y + height);
-
-        drawFloatBuffer.put(0.f);
-        drawFloatBuffer.put(0.f);
-        drawFloatBuffer.put(x);
-        drawFloatBuffer.put(y);
-
-        drawFloatBuffer.put(texS);
-        drawFloatBuffer.put(0.f);
-        drawFloatBuffer.put(x + width);
-        drawFloatBuffer.put(y);
+	private void drawTexture(IRenderingEngine re, int x, int y, boolean scaleToCanvas, boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
+    	int viewportWidth = width;
+    	int viewportHeight = height;
+    	if (scaleToCanvas) {
+    		viewportWidth = sceDisplayModule.getCanvasWidth();
+    		viewportHeight = sceDisplayModule.getCanvasHeight();
+    	}
 
         if (log.isTraceEnabled()) {
         	log.trace(String.format("drawTexture (%f, %f) to (%d, %d) and (0, 0) to (%d, %d)", texS, texT, x + width, y + height, x, y));
         }
-        if (re.isVertexArrayAvailable()) {
-        	re.bindVertexArray(0);
-        }
-        re.setVertexInfo(null, false, false, true, -1);
-        re.enableClientState(IRenderingEngine.RE_TEXTURE);
-        re.disableClientState(IRenderingEngine.RE_COLOR);
-        re.disableClientState(IRenderingEngine.RE_NORMAL);
-        re.enableClientState(IRenderingEngine.RE_VERTEX);
-        bufferManager.setTexCoordPointer(re, drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
-        bufferManager.setVertexPointer(re, drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
-        bufferManager.setBufferData(re, IRenderingEngine.RE_ARRAY_BUFFER, drawBufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
-        re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
-        re.endDirectRendering();
+        VideoEngineUtilities.drawTexture(re,
+				drawBufferId,
+				pixelFormat,
+				x, y,
+				width, height,
+				viewportWidth, viewportHeight,
+				texS, texT, 0f, texT, 0f, 0f, texS, 0f,
+				false, redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
 	}
 
 	protected void setChanged(boolean changed) {
@@ -445,7 +408,7 @@ public class GETexture {
 		}
 
 		// Draw the stencil texture and update only the alpha channel of the GE texture
-		drawTexture(re, 0, 0, width, height, true, false, false, false, true);
+		drawTexture(re, 0, 0, true, false, false, false, true);
 		re.checkAndLogErrors("drawTexture");
 
 		// Reset the framebuffer to the default one

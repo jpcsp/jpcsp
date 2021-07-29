@@ -37,11 +37,11 @@ public class GEResizedTexture extends GEProxyTexture {
 	protected void updateTexture(IRenderingEngine re) {
 		// Resize the GETexture to the requested texture size.
 		// This has to be performed each time the base GETexture has changed.
-		geTexture.copyTextureToScreen(re, x, y, getWidth(), getHeight(), false, true, true, true, true);
+		geTexture.copyTextureToScreen(re, x, y, false, true, true, true, true);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("GEResizedTexture[%dx%d, base=%s]", getWidth(), getHeight(), geTexture.toString());
+		return String.format("GEResizedTexture[%dx%d, base=%s]", width, height, geTexture.toString());
 	}
 }
