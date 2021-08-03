@@ -1071,4 +1071,9 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void reset() {
 		proxy.reset();
 	}
+
+	@Override
+	public int getTextureLevelParameter(int texture, int level, int parameter) {
+		return proxy.getTextureLevelParameter(texture, level, parameter);
+	}
 }

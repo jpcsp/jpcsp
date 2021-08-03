@@ -27,12 +27,14 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
+import org.lwjgl.opengl.ARBDirectStateAccess;
 import org.lwjgl.opengl.ARBFramebufferObject;
 import org.lwjgl.opengl.ARBGeometryShader4;
 import org.lwjgl.opengl.ARBSync;
 import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.ARBVertexArrayObject;
 import org.lwjgl.opengl.ARBVertexBufferObject;
+import org.lwjgl.opengl.EXTDirectStateAccess;
 import org.lwjgl.opengl.EXTTextureCompressionS3TC;
 import org.lwjgl.opengl.EXTTextureFilterAnisotropic;
 import org.lwjgl.opengl.GL;
@@ -44,6 +46,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
+import org.lwjgl.opengl.GL45;
 import org.lwjgl.opengl.NVTextureBarrier;
 
 /**
@@ -421,6 +424,26 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
         GL11.GL_COLOR_BUFFER_BIT, // RE_COLOR_BUFFER_BIT
         GL11.GL_DEPTH_BUFFER_BIT, // RE_DEPTH_BUFFER_BIT
         GL11.GL_STENCIL_BUFFER_BIT // RE_STENCIL_BUFFER_BIT
+    };
+    protected static final int[] textureLevelParameterToGL = {
+    	GL45.GL_TEXTURE_WIDTH, // RE_TEXTURE_WIDTH
+    	GL45.GL_TEXTURE_HEIGHT, // RE_TEXTURE_HEIGHT
+    	GL45.GL_TEXTURE_DEPTH, // RE_TEXTURE_DEPTH
+    	GL45.GL_TEXTURE_INTERNAL_FORMAT, // RE_TEXTURE_INTERNAL_FORMAT
+    	GL45.GL_TEXTURE_RED_TYPE, // RE_TEXTURE_RED_TYPE
+    	GL45.GL_TEXTURE_GREEN_TYPE, // RE_TEXTURE_GREEN_TYPE
+    	GL45.GL_TEXTURE_BLUE_TYPE, // RE_TEXTURE_BLUE_TYPE
+    	GL45.GL_TEXTURE_ALPHA_TYPE, // RE_TEXTURE_ALPHA_TYPE
+    	GL45.GL_TEXTURE_DEPTH_TYPE, // RE_TEXTURE_DEPTH_TYPE
+    	GL45.GL_TEXTURE_RED_SIZE, // RE_TEXTURE_RED_SIZE
+    	GL45.GL_TEXTURE_GREEN_SIZE, // RE_TEXTURE_GREEN_SIZE
+    	GL45.GL_TEXTURE_BLUE_SIZE, // RE_TEXTURE_BLUE_SIZE
+    	GL45.GL_TEXTURE_ALPHA_SIZE, // RE_TEXTURE_ALPHA_SIZE
+    	GL45.GL_TEXTURE_DEPTH_SIZE, // RE_TEXTURE_DEPTH_SIZE
+    	GL45.GL_TEXTURE_COMPRESSED, // RE_TEXTURE_COMPRESSED
+    	GL45.GL_TEXTURE_COMPRESSED_IMAGE_SIZE, // RE_TEXTURE_COMPRESSED_IMAGE_SIZE
+    	GL45.GL_TEXTURE_BUFFER_OFFSET, // RE_TEXTURE_BUFFER_OFFSET
+    	GL45.GL_TEXTURE_BUFFER_SIZE // RE_TEXTURE_BUFFER_SIZE
     };
     protected boolean vendorIntel;
     protected boolean hasOpenGL30;
@@ -1621,5 +1644,17 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 		} else if (GL.getCapabilities().GL_ARB_sync) {
 			ARBSync.glDeleteSync(sync);
 		}
+	}
+
+	@Override
+	public int getTextureLevelParameter(int texture, int level, int parameter) {
+		if (GL.getCapabilities().OpenGL45) {
+			return GL45.glGetTextureLevelParameteri(texture, level, textureLevelParameterToGL[parameter]);
+		} else if (GL.getCapabilities().GL_ARB_direct_state_access) {
+			return ARBDirectStateAccess.glGetTextureLevelParameteri(texture, level, textureLevelParameterToGL[parameter]);
+		} else if (GL.getCapabilities().GL_EXT_direct_state_access) {
+			return EXTDirectStateAccess.glGetTextureLevelParameteriEXT(texture, GL11.GL_TEXTURE_2D, level, textureLevelParameterToGL[parameter]);
+		}
+		return 0;
 	}
 }

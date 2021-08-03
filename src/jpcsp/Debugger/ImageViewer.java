@@ -21,6 +21,9 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.event.KeyEvent;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -28,11 +31,13 @@ import javax.swing.SwingUtilities;
 
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.WindowPropSaver;
 import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.TextureSettings;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.ImageReader;
 
@@ -61,6 +66,14 @@ public class ImageViewer extends javax.swing.JFrame {
         Color.BLUE,
         Color.GRAY
     };
+    private int textureId = 0;
+
+    private class GetTextureSettingsCompletedAction implements IAction {
+		@Override
+		public void execute() {
+			repaint();
+		}
+    }
 
     public ImageViewer() {
         // memoryImage construction overriden for MemoryImage
@@ -96,6 +109,11 @@ public class ImageViewer extends javax.swing.JFrame {
             bufferWidth = Integer.decode(bufferWidthField.getText());
             clutAddress = Integer.decode(clutAddressField.getText());
             clutNumberBlocks = Integer.decode(clutNumberBlocksField.getText());
+            if (textureIdField.getText().length() == 0) {
+            	textureId = 0;
+            } else {
+            	textureId = Integer.decode(textureIdField.getText());
+            }
         } catch (NumberFormatException nfe) {
             java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
             JOptionPane.showMessageDialog(this, bundle.getString("ImageViewer.strInvalidNumber.text") + " " + nfe.getLocalizedMessage());
@@ -125,6 +143,7 @@ public class ImageViewer extends javax.swing.JFrame {
         clutAddressField.setText(String.format("0x%08X", clutAddress));
         clutNumberBlocksField.setText(String.format("%d", clutNumberBlocks));
         clutFormatField.setSelectedIndex(clutFormat);
+    	textureIdField.setText(textureId == 0 ? "" : String.format("%d", textureId));
     }
 
     private void goToBufferInfo(sceDisplay.BufferInfo bufferInfo) {
@@ -155,14 +174,58 @@ public class ImageViewer extends javax.swing.JFrame {
 
         @Override
         public void paintComponent(Graphics g) {
-            if (Memory.isAddressGood(startAddress)) {
-                Insets insets = getInsets();
-                int minWidth = Math.min(imageWidth, bufferWidth);
+            Insets insets = getInsets();
 
-                g.setColor(backgroundColors[backgroundColor]);
-                g.fillRect(insets.left, insets.top, minWidth, imageHeight);
+            g.setColor(backgroundColors[backgroundColor]);
 
+        	if (textureId != 0) {
+        		TextureSettings textureSettings = Modules.sceDisplayModule.getTextureSettings(textureId, imageWidth, imageHeight, new GetTextureSettingsCompletedAction());
+        		if (textureSettings == null) {
+        			// Wait for the call of GetTextureSettingsCompletedAction.execute()
+        		} else {
+        			boolean resized = false;
+                    if (textureSettings.hasWidth() && textureSettings.getWidth() != imageWidth) {
+        				imageWidth = textureSettings.getWidth();
+        				widthField.setText(String.format("%d", imageWidth));
+        				resized = true;
+        			}
+        			if (textureSettings.hasHeight() && textureSettings.getHeight() != imageHeight) {
+        				imageHeight = textureSettings.getHeight();
+        				heightField.setText(String.format("%d", imageHeight));
+        				resized = true;
+        			}
+
+        			if (resized) {
+        				// This will force a new repaint
+        				setSize(getPreferredSize());
+        			} else {
+        				Buffer textureBuffer = textureSettings.getBuffer();
+
+        				g.fillRect(insets.left, insets.top, imageWidth, imageHeight);
+
+	                    for (int y = 0; y < imageHeight; y++) {
+		                    for (int x = 0; x < imageWidth; x++) {
+		                    	int colorABGR;
+		                    	if (textureBuffer instanceof IntBuffer) {
+		                    		colorABGR = ((IntBuffer) textureBuffer).get();
+		                    	} else if (textureBuffer instanceof ByteBuffer) {
+		                    		colorABGR = ((ByteBuffer) textureBuffer).getInt();
+		                    	} else {
+		                    		colorABGR = 0;
+		                    	}
+		                        int colorARGB = ImageReader.colorABGRtoARGB(colorABGR);
+		                        g.setColor(new Color(colorARGB, useAlpha));
+	
+		                        drawPixel(g, x + insets.left, y + insets.top);
+		                    }
+		                }
+        			}
+        		}
+        	} else if (Memory.isAddressGood(startAddress)) {
                 IMemoryReader imageReader = ImageReader.getImageReader(startAddress, imageWidth, imageHeight, bufferWidth, pixelFormat, imageSwizzle, clutAddress, clutFormat, clutNumberBlocks, clutStart, clutShift, clutMask, null, null);
+
+                int minWidth = Math.min(imageWidth, bufferWidth);
+                g.fillRect(insets.left, insets.top, minWidth, imageHeight);
 
                 for (int y = 0; y < imageHeight; y++) {
                     for (int x = 0; x < minWidth; x++) {
@@ -225,6 +288,9 @@ public class ImageViewer extends javax.swing.JFrame {
         btnGoToFB = new javax.swing.JButton();
         useAlphaField = new javax.swing.JCheckBox();
         memoryImage = new MemoryImage();
+        textureIdLabel = new javax.swing.JLabel();
+        textureIdField = new javax.swing.JTextField();
+        btnDisplayOpenGLTexture = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
@@ -362,6 +428,15 @@ public class ImageViewer extends javax.swing.JFrame {
             }
         });
 
+        textureIdLabel.setText(bundle.getString("ImageViewer.textureIdLabel.text")); // NOI18N
+
+        btnDisplayOpenGLTexture.setText(bundle.getString("ImageViewer.btnDisplayOpenGLTexture.text")); // NOI18N
+        btnDisplayOpenGLTexture.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	btnDisplayOpenGLTextureActionPerformed(evt);
+            }
+        });
+
         memoryImage.setBackground(new java.awt.Color(0, 0, 0));
         memoryImage.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(255, 0, 0), 10));
 
@@ -444,6 +519,14 @@ public class ImageViewer extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(btnGoToFB, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap())
+                .addGroup(layout.createSequentialGroup()
+                        .addGap(10, 10, 10)
+                		.addComponent(textureIdLabel)
+                        .addGap(10, 10, 10)
+                		.addComponent(textureIdField, 60, 60, 60)
+                        .addGap(10, 10, 10)
+                		.addComponent(btnDisplayOpenGLTexture)
+                		.addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -481,6 +564,11 @@ public class ImageViewer extends javax.swing.JFrame {
                     .addComponent(btnGoToAddress)
                     .addComponent(btnGoToGE)
                     .addComponent(btnGoToFB))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(textureIdLabel)
+                        .addComponent(textureIdField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnDisplayOpenGLTexture))
                 .addGap(18, 18, 18)
                 .addComponent(memoryImage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -510,6 +598,11 @@ public class ImageViewer extends javax.swing.JFrame {
     private void changeImageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeImageActionPerformed
         RefreshImage();
     }//GEN-LAST:event_changeImageActionPerformed
+
+    private void btnDisplayOpenGLTextureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDisplayOpenGLTextureActionPerformed
+        RefreshImage();
+    }//GEN-LAST:event_btnDisplayOpenGLTextureActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField addressField;
     private javax.swing.JComboBox backgroundColorField;
@@ -535,5 +628,8 @@ public class ImageViewer extends javax.swing.JFrame {
     private javax.swing.JCheckBox swizzleField;
     private javax.swing.JCheckBox useAlphaField;
     private javax.swing.JTextField widthField;
+    private javax.swing.JLabel textureIdLabel;
+    private javax.swing.JTextField textureIdField;
+    private javax.swing.JButton btnDisplayOpenGLTexture;
     // End of variables declaration//GEN-END:variables
 }

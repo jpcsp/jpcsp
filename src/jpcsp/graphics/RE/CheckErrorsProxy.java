@@ -1229,4 +1229,11 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 		super.drawElementsBurstMode(primitive, count, indexType, indicesOffset);
 		re.checkAndLogErrors("drawElementsBurstMode");
 	}
+
+	@Override
+	public int getTextureLevelParameter(int texture, int level, int parameter) {
+		int value = super.getTextureLevelParameter(texture, level, parameter);
+		re.checkAndLogErrors("getTextureLevelParameter");
+		return value;
+	}
 }

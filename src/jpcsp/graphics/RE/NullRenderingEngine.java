@@ -883,4 +883,9 @@ public class NullRenderingEngine implements IRenderingEngine {
 	@Override
 	public void reset() {
 	}
+
+	@Override
+	public int getTextureLevelParameter(int texture, int level, int parameter) {
+		return 0;
+	}
 }

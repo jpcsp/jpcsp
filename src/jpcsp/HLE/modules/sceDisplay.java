@@ -58,9 +58,13 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -84,6 +88,7 @@ import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.graphics.DisplayScreen;
 import jpcsp.graphics.FrameBufferSettings;
 import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.TextureSettings;
 import jpcsp.graphics.VertexCache;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.VideoEngineThread;
@@ -497,6 +502,9 @@ public class sceDisplay extends HLEModule {
     private List<IAction> displayActionsOnce = new LinkedList<IAction>();
     // For multi-threading rendering
     private Semaphore lockDisplay = new Semaphore(1);
+    // For getTextureImage
+    private Map<Integer, TextureSettings> getTextureSettingsDone = new HashMap<Integer, TextureSettings>();
+    private Set<Integer> getTextureSettingsPending = new HashSet<Integer>();
 
     private class OnlyGeSettingsListener extends AbstractBoolSettingsListener {
 
@@ -1512,6 +1520,33 @@ public class sceDisplay extends HLEModule {
         CaptureManager.captureImage(address, 0, temp, width, height, bufferWidth, pixelFormat, false, 0, true, false);
     }
 
+    public TextureSettings getTextureSettings(int textureId, int width, int height, IAction completedAction) {
+    	TextureSettings textureSettings = getTextureSettingsDone.remove(textureId);
+    	if (textureSettings != null) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("getTextureSettings returning %s", textureSettings));
+        	}
+    		return textureSettings;
+    	}
+
+    	if (getTextureSettingsPending.contains(textureId)) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("getTextureSettings already in progress"));
+        	}
+    	} else {
+	    	if (log.isDebugEnabled()) {
+	    		log.debug(String.format("getTextureSettings adding action to retrieve the texture settings within the OpenGL context"));
+	    	}
+	    	getTextureSettingsPending.add(textureId);
+	    	addDisplayActionOce(new GetTextureSettingsAction(reDisplay, textureId, width, height, completedAction));
+
+	    	geDirty = true;
+	    	step(true);
+    	}
+
+    	return null;
+    }
+
     private void reportFPSStats() {
         long timeNow = System.currentTimeMillis();
         long realElapsedTime = timeNow - prevStatsTime;
@@ -2217,6 +2252,64 @@ public class sceDisplay extends HLEModule {
 		public void execute() {
 			VideoEngineUtilities.copyGeToMemory(re, geTopAddress, true, true);
 			doneCopyGeToMemory = true;
+		}
+    }
+
+    private class GetTextureSettingsAction implements IAction {
+    	private final IRenderingEngine re;
+    	private final int textureId;
+    	private int width;
+    	private int height;
+    	private final IAction completedAction;
+
+		public GetTextureSettingsAction(IRenderingEngine re, int textureId, int width, int height, IAction completedAction) {
+			this.re = re;
+			this.textureId = textureId;
+			this.width = width;
+			this.height = height;
+			this.completedAction = completedAction;
+		}
+
+		@Override
+		public void execute() {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("GetTextureImageAction textureId=%d, width=%d, height=%d", textureId, width, height));
+			}
+
+			re.bindTexture(textureId);
+
+			TextureSettings textureSettings = new TextureSettings();
+	        textureSettings.setWidth(re.getTextureLevelParameter(textureId, 0, IRenderingEngine.RE_TEXTURE_WIDTH));
+	        textureSettings.setHeight(re.getTextureLevelParameter(textureId, 0, IRenderingEngine.RE_TEXTURE_HEIGHT));
+
+	        if (textureSettings.hasWidth()) {
+	        	width = textureSettings.getWidth();
+	        } else {
+	        	textureSettings.setWidth(width);
+	        }
+	        if (textureSettings.hasHeight()) {
+	        	height = textureSettings.getHeight();
+	        } else {
+	        	textureSettings.setHeight(height);
+	        }
+
+	        int pixelFormat = internalTextureFormat;
+	    	int bytesPerPixel = getPixelFormatBytes(pixelFormat);
+	        int sizeInBytes = width * height * bytesPerPixel;
+	        Buffer buffer = ByteBuffer.allocateDirect(sizeInBytes).order(ByteOrder.LITTLE_ENDIAN);
+
+	        // Copy the texture into the buffer
+	    	re.setPixelStore(width, getPixelFormatBytes(pixelFormat));
+	        re.getTexImage(0, pixelFormat, pixelFormat, buffer);
+
+	        textureSettings.setBuffer(buffer);
+
+	        getTextureSettingsDone.put(textureId, textureSettings);
+	        getTextureSettingsPending.remove(textureId);
+
+	        if (completedAction != null) {
+	        	completedAction.execute();
+	        }
 		}
     }
 }

@@ -312,6 +312,26 @@ public interface IRenderingEngine {
 	public static final int RE_DEPTH_BUFFER_BIT      = (1 << 1);
 	public static final int RE_STENCIL_BUFFER_BIT    = (1 << 2);
 
+	// Texture Level parameters
+	public static final int RE_TEXTURE_WIDTH                 = 0;
+	public static final int RE_TEXTURE_HEIGHT                = 1;
+	public static final int RE_TEXTURE_DEPTH                 = 2;
+	public static final int RE_TEXTURE_INTERNAL_FORMAT       = 3;
+	public static final int RE_TEXTURE_RED_TYPE              = 4;
+	public static final int RE_TEXTURE_GREEN_TYPE            = 5;
+	public static final int RE_TEXTURE_BLUE_TYPE             = 6;
+	public static final int RE_TEXTURE_ALPHA_TYPE            = 7;
+	public static final int RE_TEXTURE_DEPTH_TYPE            = 8;
+	public static final int RE_TEXTURE_RED_SIZE              = 9;
+	public static final int RE_TEXTURE_GREEN_SIZE            = 10;
+	public static final int RE_TEXTURE_BLUE_SIZE             = 11;
+	public static final int RE_TEXTURE_ALPHA_SIZE            = 12;
+	public static final int RE_TEXTURE_DEPTH_SIZE            = 13;
+	public static final int RE_TEXTURE_COMPRESSED            = 14;
+	public static final int RE_TEXTURE_COMPRESSED_IMAGE_SIZE = 15;
+	public static final int RE_TEXTURE_BUFFER_OFFSET         = 16;
+	public static final int RE_TEXTURE_BUFFER_SIZE           = 17;
+
 	public void setRenderingEngine(IRenderingEngine re);
 	public void setGeContext(GeContext context);
 	public void exit();
@@ -516,4 +536,5 @@ public interface IRenderingEngine {
 	public void clientWaitSync(long sync, long timeout);
 	public void deleteSync(long sync);
 	public void reset();
+	public int getTextureLevelParameter(int texture, int level, int parameter);
 }
