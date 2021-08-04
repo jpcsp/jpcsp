@@ -6396,7 +6396,7 @@ public class VideoEngine {
         
         // Check if scaling is needed for xBRZ.
         boolean scale = isUsexBRZFilter();
-        if ((texaddr > 83886080) && (texaddr < 142606336)) {
+        if (texaddr > MemoryMap.END_VRAM && texaddr < MemoryMap.START_USERSPACE) {
             scale = false;
         }
 
