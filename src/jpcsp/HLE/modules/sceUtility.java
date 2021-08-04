@@ -627,7 +627,6 @@ public class sceUtility extends HLEModule {
         protected long startVisibleTimeMillis;
         protected int buttonPressed;
         protected GuUtilityDialog guDialog;
-        protected boolean isOnlyGeGraphics;
         protected boolean isYesSelected;
 
         protected static enum DialogState {
@@ -665,14 +664,6 @@ public class sceUtility extends HLEModule {
 
             status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
             this.guDialog = guDialog;
-
-            // The option "Only GE Graphics" cannot be used during the
-            // rendering of the GU dialog. The GE list has to be rendered
-            // additionally to the application display.
-            isOnlyGeGraphics = Modules.sceDisplayModule.isOnlyGEGraphics();
-            if (isOnlyGeGraphics) {
-                Modules.sceDisplayModule.setOnlyGEGraphics(false);
-            }
         }
 
         protected boolean isDialogOpen() {
@@ -706,11 +697,6 @@ public class sceUtility extends HLEModule {
                 dialog = null;
             }
             if (guDialog != null) {
-                // Reset the previous state of the option "Only GE Graphics"
-                if (isOnlyGeGraphics) {
-                    Modules.sceDisplayModule.setOnlyGEGraphics(isOnlyGeGraphics);
-                }
-
                 guDialog = null;
             }
         }

@@ -301,8 +301,6 @@ public class sceDisplay extends HLEModule {
                 if (log.isDebugEnabled()) {
                     log.debug("sceDisplay.paintGL - software - end display");
                 }
-            } else if (isOnlyGEGraphics()) {
-            	// Nothing to do
             } else if (VideoEngineThread.isActive()) {
                 if (log.isDebugEnabled()) {
                     log.debug("sceDisplay.paintGL - start display with Video Engine Thread");
@@ -411,7 +409,6 @@ public class sceDisplay extends HLEModule {
         return canvas;
     }
 
-    private boolean onlyGEGraphics = false;
     private boolean saveGEToTexture = false;
     private boolean useSoftwareRenderer = false;
     private boolean saveStencilToMemory = false;
@@ -506,14 +503,6 @@ public class sceDisplay extends HLEModule {
     private Map<Integer, TextureSettings> getTextureSettingsDone = new HashMap<Integer, TextureSettings>();
     private Set<Integer> getTextureSettingsPending = new HashSet<Integer>();
 
-    private class OnlyGeSettingsListener extends AbstractBoolSettingsListener {
-
-        @Override
-        protected void settingsValueChanged(boolean value) {
-            setOnlyGEGraphics(value);
-        }
-    }
-
     private class SoftwareRendererSettingsListener extends AbstractBoolSettingsListener {
 
         @Override
@@ -593,7 +582,7 @@ public class sceDisplay extends HLEModule {
 
         @Override
         protected void doDisplay() {
-            if (!Modules.sceDisplayModule.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
+            if (VideoEngine.getInstance().hasDrawLists()) {
                 Modules.sceDisplayModule.canvas.repaint();
             }
         }
@@ -960,7 +949,6 @@ public class sceDisplay extends HLEModule {
             // Ignore.
         }
 
-        setSettingsListener("emu.onlyGEGraphics", new OnlyGeSettingsListener());
         setSettingsListener("emu.useSoftwareRenderer", new SoftwareRendererSettingsListener());
         setSettingsListener("emu.saveStencilToMemory", new SaveStencilToMemorySettingsListener());
 
@@ -993,7 +981,7 @@ public class sceDisplay extends HLEModule {
     public void step(boolean immediately) {
         long now = System.currentTimeMillis();
         if (immediately || now - lastUpdate > 1000 / 60 || geDirty) {
-            if (!isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
+            if (VideoEngine.getInstance().hasDrawLists()) {
                 if (geDirty || detailsDirty || displayDirty) {
                     detailsDirty = false;
                     displayDirty = false;
@@ -1177,16 +1165,6 @@ public class sceDisplay extends HLEModule {
 
     public boolean isFbAddress(int address) {
         return fb.isAddressInside(address);
-    }
-
-    public boolean isOnlyGEGraphics() {
-    	// "Only GE Graphics" makes only sense when the ExternalGE is not active
-        return onlyGEGraphics && !ExternalGE.isActive();
-    }
-
-    public void setOnlyGEGraphics(boolean onlyGEGraphics) {
-        this.onlyGEGraphics = onlyGEGraphics;
-        log.info(String.format("Only GE Graphics: %b", onlyGEGraphics));
     }
 
     public boolean isSaveStencilToMemory() {
