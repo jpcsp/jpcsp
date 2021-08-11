@@ -38,6 +38,9 @@ public class ElfHeaderInfo extends javax.swing.JFrame {
         ELFInfoArea.append(SectInfo);
 
         WindowPropSaver.loadWindowProperties(this);
+
+        // Scroll to the beginning of the ELF info
+        ELFInfoArea.setCaretPosition(0);
     }
 
     public void RefreshWindow() {
@@ -61,7 +64,6 @@ public class ElfHeaderInfo extends javax.swing.JFrame {
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         setTitle(bundle.getString("ElfHeaderInfo.title")); // NOI18N
-        setResizable(false);
 
         ELFInfoArea.setEditable(false);
         ELFInfoArea.setColumns(20);
