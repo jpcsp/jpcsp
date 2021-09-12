@@ -582,9 +582,7 @@ public class sceDisplay extends HLEModule {
 
         @Override
         protected void doDisplay() {
-            if (VideoEngine.getInstance().hasDrawLists()) {
-                Modules.sceDisplayModule.canvas.repaint();
-            }
+            Modules.sceDisplayModule.canvas.repaint();
         }
     }
 
@@ -981,14 +979,12 @@ public class sceDisplay extends HLEModule {
     public void step(boolean immediately) {
         long now = System.currentTimeMillis();
         if (immediately || now - lastUpdate > 1000 / 60 || geDirty) {
-            if (VideoEngine.getInstance().hasDrawLists()) {
-                if (geDirty || detailsDirty || displayDirty) {
-                    detailsDirty = false;
-                    displayDirty = false;
-                    geDirty = false;
+            if (geDirty || detailsDirty || displayDirty) {
+                detailsDirty = false;
+                displayDirty = false;
+                geDirty = false;
 
-                    asyncDisplayThread.display();
-                }
+                asyncDisplayThread.display();
             }
             lastUpdate = now;
         }
