@@ -460,9 +460,14 @@ public class IntrManager {
 			return -1;
 		}
 
-		int size = handler.getValue(0);
-		int attr = handler.getValue(4);
-		int cb = handler.getValue(8);
+		int size = 0;
+		int attr = 0;
+		int cb = 0;
+		if (handler.isNotNull()) {
+			size = handler.getValue(0);
+			attr = handler.getValue(4);
+			cb = handler.getValue(8);
+		}
 		int gp = Managers.modules.getModuleGpByAddress(func.getAddress());
 
 		if (log.isDebugEnabled()) {
