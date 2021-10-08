@@ -4760,7 +4760,7 @@ public class sceUtility extends HLEModule {
     }
 
     @HLEFunction(nid = 0x1281DA8E, version = 200)
-    public int sceUtilityInstallInitStart(TPointer paramsAddr) {
+    public int sceUtilityInstallInitStart(@BufferInfo(lengthInfo=LengthInfo.variableLength, usage=Usage.inout) TPointer paramsAddr) {
         return installState.executeInitStart(paramsAddr);
     }
 
