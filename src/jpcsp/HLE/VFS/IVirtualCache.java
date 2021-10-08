@@ -18,5 +18,6 @@ package jpcsp.HLE.VFS;
 
 public interface IVirtualCache {
 	public void invalidateCachedData();
+	public void flushCachedData();
 	public void closeCachedFiles();
 }

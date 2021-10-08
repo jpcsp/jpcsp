@@ -134,6 +134,13 @@ public abstract class AbstractProxyVirtualFile implements IVirtualFile, IVirtual
 	}
 
 	@Override
+	public void flushCachedData() {
+		if (vFile instanceof IVirtualCache) {
+			((IVirtualCache) vFile).flushCachedData();
+		}
+	}
+
+	@Override
 	public void closeCachedFiles() {
 		if (vFile instanceof IVirtualCache) {
 			((IVirtualCache) vFile).closeCachedFiles();

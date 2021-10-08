@@ -32,6 +32,7 @@ import static jpcsp.HLE.VFS.fat.FatUtils.storeSectorString;
 import static jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure.charset16;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -89,21 +90,9 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 			log.debug(String.format("totalSectors=0x%X, fatSectors=0x%X", totalSectors, fatSectors));
 		}
 
-		int usedSectors = reservedSectors + fatSectors * numberOfFats;
-		usedSectors += getFirstDataClusterOffset();
-		int maxNumberClusters = (totalSectors - usedSectors) / getSectorsPerCluster();
-		// Allocate the FAT cluster map
-		fatClusterMap = new int[maxNumberClusters];
-		// First 2 special entries in the cluster map
-		fatClusterMap[0] = 0xFFFFFFF8 & getClusterMask(); // 0xF8 is matching the boot sector Media type field
-		fatClusterMap[1] = 0xFFFFFFFF & getClusterMask();
-
-		// Allocate the FAT file info map
-		fatFileInfoMap = new FatFileInfo[maxNumberClusters];
-
 		secondFat = new byte[fatSectors * sectorSize];
 
-		builder = new FatBuilder(this, vfs, maxNumberClusters);
+		reset();
 	}
 
 	protected abstract int getClusterMask();
@@ -136,6 +125,26 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 
 	public void setFatSectorNumber(int fatSectorNumber) {
 		this.fatSectorNumber = fatSectorNumber;
+	}
+
+	private void reset() {
+		int usedSectors = reservedSectors + fatSectors * numberOfFats;
+		usedSectors += getFirstDataClusterOffset();
+		int maxNumberClusters = (totalSectors - usedSectors) / getSectorsPerCluster();
+
+		// Allocate the FAT cluster map
+		fatClusterMap = new int[maxNumberClusters];
+		// First 2 special entries in the cluster map
+		fatClusterMap[0] = 0xFFFFFFF8 & getClusterMask(); // 0xF8 is matching the boot sector Media type field
+		fatClusterMap[1] = 0xFFFFFFFF & getClusterMask();
+
+		// Allocate the FAT file info map
+		fatFileInfoMap = new FatFileInfo[maxNumberClusters];
+
+		// Reset the second FAT
+		Arrays.fill(secondFat, (byte) 0);
+
+		builder = new FatBuilder(this, vfs, maxNumberClusters);
 	}
 
 	public void scan() {
@@ -296,15 +305,22 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 			}
 
 			if (byteOffset < fileInfo.getFileSize()) {
-				if (vFile.ioLseek(byteOffset) != byteOffset) {
-					log.warn(String.format("readDataSector cannot seek file '%s' to 0x%X", fileInfo, byteOffset));
-					return;
-				}
-
 				int length = (int) Math.min(fileInfo.getFileSize() - byteOffset, (long) sectorSize);
-				int readLength = vFile.ioRead(currentSector, 0, length);
+				int readLength;
+				// synchronize the vFile to make sure that the ioLseek/ioRead combination is atomic
+				synchronized (vFile) {
+					if (vFile.ioLseek(byteOffset) != byteOffset) {
+						log.error(String.format("readDataSector cannot seek file '%s' to 0x%X", fileInfo, byteOffset));
+						return;
+					}
+
+					readLength = vFile.ioRead(currentSector, 0, length);
+				}
+				if (readLength != length) {
+					log.error(String.format("readDataSector cannot read sector readLength=0x%X(max length=0x%X, byteOffset=0x%X, fileSize=0x%X)", readLength, length, byteOffset, fileInfo.getFileSize()));
+				}
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("readDataSector readLength=0x%X", readLength));
+					log.debug(String.format("readDataSector readLength=0x%X(max length=0x%X, byteOffset=0x%X, fileSize=0x%X)", readLength, length, byteOffset, fileInfo.getFileSize()));
 				}
 			} else {
 				if (log.isDebugEnabled()) {
@@ -764,15 +780,18 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 			return false;
 		}
 
-		if (vFile.ioLseek(byteOffset) != byteOffset) {
-			log.warn(String.format("writeFileSector cannot seek file '%s' to 0x%X", fileInfo, byteOffset));
-			return false;
-		}
+		// synchronize the vFile to make sure that the ioLseek/ioWrite combination is atomic
+		synchronized (vFile) {
+			if (vFile.ioLseek(byteOffset) != byteOffset) {
+				log.warn(String.format("writeFileSector cannot seek file '%s' to 0x%X", fileInfo, byteOffset));
+				return false;
+			}
 
-		int writeLength = vFile.ioWrite(sector, 0, length);
-		if (writeLength != length) {
-			log.warn(String.format("writeFileSector cannot write file 0x%X bytes to file '%s': result 0x%X", length, fileInfo, writeLength));
-			return false;
+			int writeLength = vFile.ioWrite(sector, 0, length);
+			if (writeLength != length) {
+				log.warn(String.format("writeFileSector cannot write file 0x%X bytes to file '%s': result 0x%X", length, fileInfo, writeLength));
+				return false;
+			}
 		}
 
 		return true;
@@ -983,7 +1002,30 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
 
 	@Override
 	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
-		return IO_ERROR;
+		int writeLength = 0;
+		while (inputLength > 0) {
+			int sectorOffset = getSectorOffset(position);
+			int sectorLength = sectorSize - sectorOffset;
+			int length = Math.min(sectorLength, inputLength);
+
+			if (length != sectorSize) {
+				// Not writing a complete sector, read the current sector
+				int sectorNumber = getSectorNumber(position);
+				readSector(sectorNumber);
+			}
+
+			System.arraycopy(inputBuffer, inputOffset, currentSector, sectorOffset, length);
+
+			int sectorNumber = getSectorNumber(position);
+			writeSector(sectorNumber);
+
+			inputLength -= length;
+			inputOffset += length;
+			position += length;
+			writeLength += length;
+		}
+
+		return writeLength;
 	}
 
 	@Override
@@ -1177,6 +1219,15 @@ public abstract class FatVirtualFile implements IVirtualFile, IVirtualCache, ISt
     @Override
 	public void invalidateCachedData() {
     	// Nothing to do
+	}
+
+    @Override
+	public void flushCachedData() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("flushCachedData: rebuilding the FAT"));
+    	}
+    	reset();
+    	scan();
 	}
 
 	@Override

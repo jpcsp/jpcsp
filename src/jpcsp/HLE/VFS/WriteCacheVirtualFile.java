@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.TPointer;
 import jpcsp.state.IState;
 import jpcsp.state.StateInputStream;
@@ -30,6 +32,7 @@ import jpcsp.util.Utilities;
 
 public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements IState {
 	private static final int STATE_VERSION = 0;
+	private final Logger log;
 	private final SortedSet<Block> blocks = new TreeSet<Block>();
 	private boolean compareAtWrite;
 
@@ -80,6 +83,13 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 			return (int) (end - start);
 		}
 
+		public int ioWrite(IVirtualFile vFile) {
+			synchronized (vFile) {
+				vFile.ioLseek(start);
+				return vFile.ioWrite(data, 0, getLength());
+			}
+		}
+
 		@Override
 		public int compareTo(Block block) {
 			return Long.compare(start, block.start);
@@ -107,12 +117,14 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 		}
 	}
 
-	public WriteCacheVirtualFile(IVirtualFile vFile) {
+	public WriteCacheVirtualFile(Logger log, IVirtualFile vFile) {
 		super(vFile);
+		this.log = log;
 	}
 
-	public WriteCacheVirtualFile(IVirtualFile vFile, boolean compareAtWrite) {
+	public WriteCacheVirtualFile(Logger log, IVirtualFile vFile, boolean compareAtWrite) {
 		super(vFile);
+		this.log = log;
 
 		this.compareAtWrite = compareAtWrite;
 	}
@@ -158,6 +170,10 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 
 	@Override
 	public int ioRead(TPointer outputPointer, int outputLength) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("ioRead position=0x%X, length=0x%X", vFile.getPosition(), outputLength));
+		}
+
 		// Optimized the most common case
 		if (blocks.isEmpty()) {
 			return vFile.ioRead(outputPointer, outputLength);
@@ -205,6 +221,10 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 
 	@Override
 	public int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("ioRead position=0x%X, length=0x%X", vFile.getPosition(), outputLength));
+		}
+
 		// Optimized the most common case
 		if (blocks.isEmpty()) {
 			return vFile.ioRead(outputBuffer, outputOffset, outputLength);
@@ -254,6 +274,10 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 		long position = vFile.getPosition();
 		byte[] data = inputPointer.getArray8(inputLength);
 
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("ioWrite position=0x%X, length=0x%X, %s", position, inputLength, Utilities.getMemoryDump(data)));
+		}
+
 		boolean ignoreWrite = false;
 		if (compareAtWrite) {
 			// If the written data is matching the data already present on vFile,
@@ -279,6 +303,10 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
 		long position = vFile.getPosition();
 
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("ioWrite position=0x%X, length=0x%X, %s", position, inputLength, Utilities.getMemoryDump(inputBuffer, inputOffset, inputLength)));
+		}
+
 		boolean ignoreWrite = false;
 		if (compareAtWrite) {
 			// If the written data is matching the data already present on vFile,
@@ -300,6 +328,25 @@ public class WriteCacheVirtualFile extends AbstractProxyVirtualFile implements I
 		}
 
 		return inputLength;
+	}
+
+	@Override
+	public void flushCachedData() {
+		while (!blocks.isEmpty()) {
+			Block block = blocks.first();
+			blocks.remove(block);
+
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("WriteCacheVirtualFile.flushCachedData %s", block));
+			}
+
+			int length = block.ioWrite(vFile);
+			if (length < 0) {
+				log.error(String.format("WriteCacheVirtualFile.flushCachedData failed 0x%08X for %s", length, block));
+			}
+		}
+
+		super.flushCachedData();
 	}
 
 	@Override

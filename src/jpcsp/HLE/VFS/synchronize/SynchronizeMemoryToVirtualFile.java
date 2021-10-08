@@ -87,4 +87,11 @@ public class SynchronizeMemoryToVirtualFile extends BaseSynchronize {
 			((IVirtualCache) output).invalidateCachedData();
 		}
 	}
+
+	@Override
+	protected void flushCachedData() {
+		if (output instanceof IVirtualCache) {
+			((IVirtualCache) output).flushCachedData();
+		}
+	}
 }

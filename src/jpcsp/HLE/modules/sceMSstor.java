@@ -390,10 +390,27 @@ public class sceMSstor extends HLEModule {
     	return len;
     }
 
-    public int hleMSstorPartitionIoRead(byte[] buffer, int bufferOffset, int len) {
+    public int hleMSstorPartitionIoRead(long offset, TPointer data, int len) {
     	if (vFile != null) {
     		scanThread.waitForCompletion();
-    		len = vFile.ioRead(buffer, bufferOffset, len);
+			// synchronize the vFile to make sure that the ioLseek/ioRead combination is atomic
+    		synchronized (vFile) {
+            	vFile.ioLseek(offset);
+        		len = vFile.ioRead(data, len);
+			}
+    	}
+
+    	return len;
+    }
+
+    public int hleMSstorPartitionIoRead(long offset, byte[] buffer, int bufferOffset, int len) {
+    	if (vFile != null) {
+    		scanThread.waitForCompletion();
+			// synchronize the vFile to make sure that the ioLseek/ioRead combination is atomic
+    		synchronized (vFile) {
+            	vFile.ioLseek(offset);
+        		len = vFile.ioRead(buffer, bufferOffset, len);
+			}
     	}
 
     	return len;
@@ -417,8 +434,11 @@ public class sceMSstor extends HLEModule {
     	if (vFile != null) {
     		scanThread.waitForCompletion();
     		synchronized (writeLock) {
-    			position = vFile.ioLseek(offset);
-        		len = vFile.ioWrite(data, len);
+    			// synchronize the vFile to make sure that the ioLseek/ioWrite combination is atomic
+    			synchronized (vFile) {
+        			position = vFile.ioLseek(offset);
+            		len = vFile.ioWrite(data, len);
+				}
     			sync.notifyWrite();
 			}
     	}
@@ -499,7 +519,7 @@ public class sceMSstor extends HLEModule {
     private Fat32VirtualFile openFile() {
 		IVirtualFileSystem vfs = new LocalVirtualFileSystem(Settings.getInstance().getDirectoryMapping("ms0"), true);
 		Fat32VirtualFile fat32VirtualFile = new Fat32VirtualFile("ms0:", vfs);
-		vFile = new WriteCacheVirtualFile(fat32VirtualFile);
+		vFile = new WriteCacheVirtualFile(log, fat32VirtualFile);
 		IVirtualFileSystem input = new FatVirtualFileSystem("ms0", vFile);
 		sync = new SynchronizeVirtualFileSystems("ms0", input, vfs, writeLock);
 		if (log.isDebugEnabled()) {

@@ -53,7 +53,7 @@ public class MMIOHandlerEFlashAta extends MMIOHandlerBaseAta {
 
 		log = sceEFlash.log;
 
-		eflashFile = new WriteCacheVirtualFile(new NullVirtualFile(eflashSize), true);
+		eflashFile = new WriteCacheVirtualFile(log, new NullVirtualFile(eflashSize), true);
 
 		// See
 		//   https://github.com/uyjulian/pfsshell/tree/master/apa/src

@@ -277,8 +277,12 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements I
 	}
 
 	private void readSectors(int sectorNumber, byte[] buffer, int offset, int length) {
-		vFile.ioLseek(sectorNumber * (long) sectorSize);
-		int readLength = vFile.ioRead(buffer, offset, length);
+		int readLength;
+		// synchronize the vFile to make sure that the ioLseek/ioRead combination is atomic
+		synchronized (vFile) {
+			vFile.ioLseek(sectorNumber * (long) sectorSize);
+			readLength = vFile.ioRead(buffer, offset, length);
+		}
 		if (readLength != length) {
 			log.error(String.format("FatVirtualFileSystem.readSectors cannot read sectors sectorNumber=0x%X, length=0x%X, readLength=0x%X", sectorNumber, length, readLength));
 
@@ -309,7 +313,7 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements I
 	private int[] getClusters(int clusterNumber) {
 		int[] clusters = new int[] { clusterNumber };
 
-		while (clusterNumber < fatClusterMap.length) {
+		while (clusterNumber >= 0 && clusterNumber < fatClusterMap.length) {
 			int nextCluster = fatClusterMap[clusterNumber];
 			if (!isDataClusterNumber(nextCluster)) {
 				break;
@@ -339,6 +343,10 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements I
 				readSector(sectorNumber + i);
 
 				for (int offset = 0; offset < sectorSize; offset += directoryTableEntrySize) {
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("getDirectoryEntries sectorNumber=0x%X, offset=0x%X, %s", sectorNumber, offset, Utilities.getMemoryDump(currentSector, offset, directoryTableEntrySize)));
+					}
+
 					int firstByte = readSectorInt8(currentSector, offset + 0);
 					if (firstByte == 0x00) {
 						// End marker
@@ -370,11 +378,14 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements I
 							fatFileInfo.setFileName(entryName);
 							fatFileInfo.setReadOnly((fileAttributes & 0x01) != 0);
 							fatFileInfo.setDirectory((fileAttributes & 0x10) != 0);
+							fatFileInfo.setFileSize(fileSize);
+							fatFileInfo.setLastModified(lastModified);
 							if (entryClusterNumber != 0) {
 								fatFileInfo.setClusters(getClusters(entryClusterNumber));
 							}
-							fatFileInfo.setFileSize(fileSize);
-							fatFileInfo.setLastModified(lastModified);
+							if (log.isTraceEnabled()) {
+								log.trace(String.format("Found directoryEntry %s", fatFileInfo));
+							}
 
 							entries = Utilities.add(entries, fatFileInfo);
 						}
@@ -546,7 +557,12 @@ public class FatVirtualFileSystem extends AbstractVirtualFileSystem implements I
 		}
 	}
 
-	@Override
+    @Override
+	public void flushCachedData() {
+    	// Nothing to do
+	}
+
+    @Override
 	public void closeCachedFiles() {
 		if (vFile instanceof IVirtualCache) {
 			((IVirtualCache) vFile).closeCachedFiles();

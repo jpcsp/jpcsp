@@ -267,7 +267,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 
 			MemoryStickPbr32 memoryStickPbr32 = new MemoryStickPbr32();
 			sceMSstorModule.hleMSstorPartitionIoLseek(null, 0L, PSP_SEEK_SET);
-			sceMSstorModule.hleMSstorPartitionIoRead(memoryStickPbr32.bootSector, 0, memoryStickPbr32.bootSector.length);
+			sceMSstorModule.hleMSstorPartitionIoRead(0L, memoryStickPbr32.bootSector, 0, memoryStickPbr32.bootSector.length);
 			entryAddress = addMsproAttributeEntry(entryAddress, MSPRO_BLOCK_ID_PBR32, memoryStickPbr32);
 
 			msproAttribute.write(msproAttributeMemory);
@@ -356,8 +356,7 @@ public class MMIOHandlerMemoryStick extends MMIOHandlerBaseMemoryStick {
 		} else {
 			offset = (lba - FIRST_PAGE_LBA) * (long) PAGE_SIZE;
 
-			sceMSstorModule.hleMSstorPartitionIoLseek(null, offset, PSP_SEEK_SET);
-			sceMSstorModule.hleMSstorPartitionIoRead(null, address, PAGE_SIZE);
+			sceMSstorModule.hleMSstorPartitionIoRead(offset, address, PAGE_SIZE);
 		}
 
 		if (log.isDebugEnabled()) {

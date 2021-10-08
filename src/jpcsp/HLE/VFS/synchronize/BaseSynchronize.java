@@ -134,6 +134,7 @@ public abstract class BaseSynchronize implements ISynchronize {
 	protected abstract int deltaSynchronize();
 
     protected abstract void invalidateCachedData();
+    protected abstract void flushCachedData();
 
     @Override
 	public void notifyWrite() {

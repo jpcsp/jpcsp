@@ -38,6 +38,7 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 	private IVirtualFileSystem input;
 	private IVirtualFileSystem output;
 	private ScePspDateTime lastSyncDate;
+	private boolean somethingChanged;
 
 	public SynchronizeVirtualFileSystems(String name, IVirtualFileSystem input, IVirtualFileSystem output, Object lock) {
 		super(name, lock);
@@ -71,6 +72,20 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 		}
 	}
 
+	@Override
+	protected void flushCachedData() {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("SynchronizeVirtualFileSystems.flushCachedData on input=%s, output=%s", input, output));
+		}
+
+		if (input instanceof IVirtualCache) {
+			((IVirtualCache) input).flushCachedData();
+		}
+		if (output instanceof IVirtualCache) {
+			((IVirtualCache) output).flushCachedData();
+		}
+	}
+
 	private void closeCachedFiles() {
 		if (input instanceof IVirtualCache) {
 			((IVirtualCache) input).closeCachedFiles();
@@ -82,6 +97,8 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 
 	@Override
 	protected int deltaSynchronize() {
+		somethingChanged = false;
+
 		invalidateCachedData();
 		closeCachedFiles();
 
@@ -94,7 +111,12 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 		int result = deltaSynchronize("");
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("deltaSynchronize %s end", name));
+			log.trace(String.format("deltaSynchronize %s end, somethingChanged=%b", name, somethingChanged));
+		}
+
+		if (somethingChanged) {
+			flushCachedData();
+			somethingChanged = false;
 		}
 
 		// The new lastSync is the time when this sync has been started
@@ -214,18 +236,7 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 			}
 		}
 
-		for (int i = 0; i < outputEntries.length; i++) {
-			if (outputEntries[i] != null) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("deltaSynchronize: entry to be deleted outputEntry=%s", outputEntries[i]));
-				}
-				int result = deleteEntry(dirName, outputEntries[i]);
-				if (result != 0) {
-					return result;
-				}
-			}
-		}
-
+		// Create entries first as they might need entries that will be deleted below
 		for (SceIoDirent entry : toBeCreated) {
 			int result = createEntry(dirName, entry);
 			if (result != 0) {
@@ -237,6 +248,19 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 			int result = updateEntry(dirName, entry);
 			if (result != 0) {
 				return result;
+			}
+		}
+
+		// Delete entries as the last step
+		for (int i = 0; i < outputEntries.length; i++) {
+			if (outputEntries[i] != null) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("deltaSynchronize: entry to be deleted outputEntry=%s", outputEntries[i]));
+				}
+				int result = deleteEntry(dirName, outputEntries[i]);
+				if (result != 0) {
+					return result;
+				}
 			}
 		}
 
@@ -285,8 +309,12 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 			return IO_ERROR;
 		}
 
-		byte buffer[] = new byte[32 * 1024];
 		long inputLength = inputFile.length();
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("updateEntry %s, length=0x%X", fileName, inputLength));
+		}
+
+		byte buffer[] = new byte[32 * 1024];
 		while (inputLength > 0L) {
 			int length = Math.min(buffer.length, (int) inputLength);
 			int readLength = inputFile.ioRead(buffer, 0, length);
@@ -299,9 +327,14 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 			if (writeLength != readLength) {
 				log.error(String.format("updateEntry error writing file '%s': 0x%X", fileName, writeLength));
 				return IO_ERROR;
+			} else {
+				somethingChanged = true;
 			}
 
 			inputLength -= readLength;
+		}
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("updateEntry %s, completed successfully", fileName, inputLength));
 		}
 
 		inputFile.ioClose();
@@ -324,6 +357,8 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 
 			if (result != 0) {
 				log.error(String.format("createEntry could not create directory '%s'", fileName));
+			} else {
+				somethingChanged = true;
 			}
 		} else {
 			// Creating a file is the same as updating it
@@ -349,6 +384,8 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 
 			if (result != 0) {
 				log.error(String.format("deleteEntry could not delete '%s'", fileName));
+			} else {
+				somethingChanged = true;
 			}
 		}
 
@@ -375,6 +412,8 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 
 				if (result != 0) {
 					log.error(String.format("deleteDirectoryEntryRecursive could not delete '%s'", dirName));
+				} else {
+					somethingChanged = true;
 				}
 			}
 
@@ -390,6 +429,8 @@ public class SynchronizeVirtualFileSystems extends BaseSynchronize {
 
 		if (result != 0) {
 			log.error(String.format("deleteDirectoryEntryRecursive could not delete '%s'", dirName));
+		} else {
+			somethingChanged = true;
 		}
 
 		return result;
