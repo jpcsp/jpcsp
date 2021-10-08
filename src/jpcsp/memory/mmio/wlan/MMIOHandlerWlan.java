@@ -973,11 +973,13 @@ public class MMIOHandlerWlan extends MMIOHandlerBaseMemoryStick implements IAcce
     	offset += txPacketLength;
 
     	int bufferLength = offset;
-    	try {
-        	wlanAdapter.sendAccessPointPacket(buffer, 0, bufferLength, null);
-		} catch (IOException e) {
-			log.error("sendDataPacketToAccessPoint", e);
-		}
+    	if (wlanAdapter != null) {
+	    	try {
+	        	wlanAdapter.sendAccessPointPacket(buffer, 0, bufferLength, null);
+			} catch (IOException e) {
+				log.error("sendDataPacketToAccessPoint", e);
+			}
+    	}
 	}
 
 	private void processTransmitDataPacket(int size) {
