@@ -967,7 +967,7 @@ public class LoadCoreForKernel extends HLEModule {
     	final int registeredLibsEntries = firmwareVersion <= 201 ? 1 : 128;
 		for (int i = 0; i < registeredLibsEntries; i++) {
 			int linkedLibraries = mem.internalRead32(registeredLibs + i * 4);
-	    	while (linkedLibraries != 0) {
+	    	while (linkedLibraries != 0 && Memory.isAddressGood(linkedLibraries)) {
 	    		int numExports;
 	    		int entryTable;
 	    		if (firmwareVersion < 260) {
@@ -978,13 +978,16 @@ public class LoadCoreForKernel extends HLEModule {
 		    		entryTable = mem.internalRead32(linkedLibraries + 32);
 	    		}
 
-	    		for (int j = 0; j < numExports; j++) {
-	    			int nid = mem.internalRead32(entryTable + j * 4);
-	    			int entryAddress = mem.internalRead32(entryTable + (j + numExports) * 4) & Memory.addressMask;
-	
-	    			if (address == entryAddress) {
-	    				nids = Utilities.add(nids, nid);
-	    			}
+	    		// Sanity checks
+	    		if (Memory.isAddressGood(entryTable) && numExports <= 1000) {
+		    		for (int j = 0; j < numExports; j++) {
+		    			int nid = mem.internalRead32(entryTable + j * 4);
+		    			int entryAddress = mem.internalRead32(entryTable + (j + numExports) * 4) & Memory.addressMask;
+
+		    			if (address == entryAddress) {
+		    				nids = Utilities.add(nids, nid);
+		    			}
+		    		}
 	    		}
 	
 	    		// Next
