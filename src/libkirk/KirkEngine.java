@@ -789,6 +789,11 @@ public class KirkEngine {
 		AES_set_key(aesKey, key, 128);
 		AES_cbc_encrypt(aesKey, inbuff, inoffset + KIRK_AES128CBC_HEADER.SIZEOF, outbuff, outoffset + KIRK_AES128CBC_HEADER.SIZEOF, header.data_size);
 
+        // The header is kept in the output and the header.mode is updated from
+        // KIRK_MODE_ENCRYPT_CBC to KIRK_MODE_DECRYPT_CBC.
+		header.mode = KIRK_MODE_DECRYPT_CBC;
+		header.write(outbuff, outoffset);
+
 		return KIRK_OPERATION_SUCCESS;
 	}
 
